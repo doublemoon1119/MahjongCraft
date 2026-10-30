@@ -2,6 +2,7 @@ package com.doublemoon1119.mahjongcraft.testing.logic.rules.riichi
 
 import com.doublemoon1119.mahjongcraft.logic.base.Hand
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
+import com.doublemoon1119.mahjongcraft.logic.base.TileValue
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.PaoLiability
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiHandValueContext
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
@@ -18,6 +19,7 @@ object FakeRiichiHandValueContextFactory {
      *
      * @param hand 手牌實體。
      * @param winningTile 和牌的那張牌。
+     * @param winningTileValue 和牌張的完整牌值，例如赤五；預設只有 [winningTile] 的基本牌面。
      * @param isTsumo 是否為自摸。
      * @param isRiichi 是否立直，預設為 false。
      * @param isIppatsu 是否一發，預設為 false。
@@ -43,6 +45,7 @@ object FakeRiichiHandValueContextFactory {
     fun create(
         hand: Hand,
         winningTile: Tile,
+        winningTileValue: TileValue = TileValue(winningTile),
         isTsumo: Boolean,
         isRiichi: Boolean = false,
         isIppatsu: Boolean = false,
@@ -66,7 +69,7 @@ object FakeRiichiHandValueContextFactory {
         usesThreePlayerTiles: Boolean = false,
     ): RiichiHandValueContext = RiichiHandValueContext(
         hand = hand,
-        winningTile = winningTile,
+        winningTileValue = winningTileValue,
         isTsumo = isTsumo,
         isRiichi = isRiichi,
         isIppatsu = isIppatsu,

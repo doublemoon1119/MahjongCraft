@@ -8,6 +8,18 @@ package com.doublemoon1119.mahjongcraft.platform.minecraft.animation
  */
 object AnimationQueueDriver {
     /**
+     * 取得佇列最後排定的自訂狀態，不推進動畫或執行副作用。
+     *
+     * @param C 自訂狀態型別。
+     * @param queue 目前尚未完成的動畫步驟。
+     * @param currentState 沒有排定自訂狀態時採用的目前值。
+     * @return 最後一筆自訂狀態；沒有時為 currentState。
+     */
+    fun <C> finalCustomState(queue: List<AnimationStep<C>>, currentState: C): C = queue.fold(currentState) { state, step ->
+        if (step is AnimationStep.Custom) step.step else state
+    }
+
+    /**
      * 把 [steps] 附加至 [queue]，並把相鄰的 [AnimationStep.WaitUntil] 合併成較晚的絕對時間；等待之間若有
      * 任何實際動作就維持原序，避免改變不同動畫階段的時間語意。
      *

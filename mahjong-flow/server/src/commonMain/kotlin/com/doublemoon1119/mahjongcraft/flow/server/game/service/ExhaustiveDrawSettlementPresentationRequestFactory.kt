@@ -8,6 +8,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.ScoreRankingPlayer
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.roundRanksByPlayer
 import com.doublemoon1119.mahjongcraft.logic.base.ExhaustiveDrawReason
 import com.doublemoon1119.mahjongcraft.logic.base.PublicHandOrder
+import com.doublemoon1119.mahjongcraft.logic.base.toValue
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
 import com.doublemoon1119.mahjongcraft.logic.module.RevealedHandSettlement
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
@@ -49,9 +50,9 @@ object ExhaustiveDrawSettlementPresentationRequestFactory {
                 val reveal = revealedByPlayer[player.id]
                 val revealedTileIds = player.hand.allTiles
                     .map { it.id }
-                    .filter { it in currentState.revealedHandTileIds }
+                    .filter { it in currentState.publicTileEvidenceIds }
                 val standingTileIds = player.hand.standingTiles.map { it.id }
-                val fullyRevealedStandingHand = standingTileIds.all { it in currentState.revealedHandTileIds }
+                val fullyRevealedStandingHand = standingTileIds.all { it in currentState.publicTileEvidenceIds }
                 // 本局已經胡牌退場的玩家（見 TableState.finishedPlayerIds）只保留分數排行的那一列：
                 // 手牌在他胡牌時就已經收尾，這裡不能再要求公開一次，也不該被標成聽牌／不聽——
                 // 他根本沒有參與這次流局。
@@ -81,7 +82,7 @@ object ExhaustiveDrawSettlementPresentationRequestFactory {
                         PublicHandOrder.arrange(player.hand.tiles.map { it.id })
                     } else {
                         player.hand.tiles
-                            .sortedWith(compareBy(module.tileOrder) { it.tile })
+                            .sortedWith(compareBy(module.tileOrder.valueOrder) { it.toValue() })
                             .map { it.id }
                     },
                     drawnTileId = player.hand.lastDrawn?.id?.takeUnless { isFinished },

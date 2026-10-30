@@ -4,6 +4,7 @@ import com.doublemoon1119.mahjongcraft.logic.base.ExtensionGameAction
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.base.Hand
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
+import com.doublemoon1119.mahjongcraft.logic.base.TileValue
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPositionRules
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleModule
@@ -29,14 +30,14 @@ class NeutralPositionRulesTest {
         discardPile = FakeDiscardPile().discardTile(FakeIdentifiedTileFactory.create(Tile.Honor.Red)),
     )
     private val view = PositionView(
-        snapshot = FakeTableStateFactory.create(players = listOf(opponent, self)).toSnapshot(visibleHandPlayerIds = setOf(self.id), setAsideTiles = { emptyList() }),
+        snapshot = FakeTableStateFactory.create(players = listOf(opponent, self)).toSnapshot(visibleHandPlayerIds = setOf(self.id)),
         evaluatorId = self.id,
     )
 
     /** 和牌價值無法判斷。 */
     @Test
     fun `win values are unknown`() {
-        assertEquals(WinValue.Unknown, NeutralPositionRules.winValue(view, Hand(), Tile.Honor.Red, isTsumo = true))
+        assertEquals(WinValue.Unknown, NeutralPositionRules.winValue(view, Hand(), TileValue(Tile.Honor.Red), isTsumo = true))
     }
 
     /** 宣告沒有任何效果，聽牌後也沒有可以宣告的動作。 */
@@ -50,7 +51,7 @@ class NeutralPositionRulesTest {
     @Test
     fun `no tile is excluded bonus or declared`() {
         assertEquals(RonExclusions.NONE, NeutralPositionRules.ronExclusions(view, opponent.id))
-        assertEquals(0, NeutralPositionRules.bonusTileCount(view, Tile.Honor.Red))
+        assertEquals(0, NeutralPositionRules.bonusTileCount(view, TileValue(Tile.Honor.Red)))
         assertNull(NeutralPositionRules.declarationTile(view, opponent.id))
     }
 

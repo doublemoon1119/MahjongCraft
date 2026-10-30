@@ -6,6 +6,8 @@ import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
 import com.doublemoon1119.mahjongcraft.logic.base.MeldType
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.logic.base.TileOrder
+import com.doublemoon1119.mahjongcraft.logic.base.TileValue
+import com.doublemoon1119.mahjongcraft.logic.base.toValue
 import com.doublemoon1119.mahjongcraft.logic.judgment.ShantenCalculator
 import com.doublemoon1119.mahjongcraft.logic.judgment.ShantenResult
 import com.doublemoon1119.mahjongcraft.logic.module.PositionRules
@@ -94,14 +96,14 @@ internal class HandAssessor(
     /**
      * 手牌內容相同即視為相同的快取鍵。
      *
-     * @property tiles 依規則牌序排列的立牌牌面。
+     * @property tiles 依規則牌序排列的立牌牌值，保留組件特性。
      * @property meldTypes 副露種類，依副露順序排列。
-     * @property meldTiles 各副露中的牌面，分組並依規則牌序排列。
+     * @property meldTiles 各副露中的完整牌值，分組並依規則牌序排列。
      */
     private data class HandKey(
-        val tiles: List<Tile>,
+        val tiles: List<TileValue>,
         val meldTypes: List<MeldType>,
-        val meldTiles: List<List<Tile>>,
+        val meldTiles: List<List<TileValue>>,
     )
 
     /**
@@ -109,14 +111,14 @@ internal class HandAssessor(
      *
      * @property viewId 假設視角的編號。
      * @property hand 不含和牌張的手牌。
-     * @property tile 和牌張。
+     * @property tile 和牌張的完整牌值。
      * @property isTsumo 是否自摸。
      * @property declarations 假設已宣告的動作。
      */
     private data class WinValueKey(
         val viewId: Int,
         val hand: HandKey,
-        val tile: Tile,
+        val tile: TileValue,
         val isTsumo: Boolean,
         val declarations: Set<GameAction.Extension>,
     )
@@ -230,7 +232,7 @@ internal class HandAssessor(
             .map { declarations + it }
         return unseen.kinds.flatMap { kind -> unseen.faces(kind) }.mapNotNull { (face, count) ->
             val afterDraw = unseen.without(face)
-            val drawn = hand.addTile(IdentifiedTile(Uuid.NIL, face))
+            val drawn = hand.addTile(IdentifiedTile(id = Uuid.NIL, tile = face.tile, components = face.components))
             distinctDiscardIndices(drawn)
                 .mapNotNull { index ->
                     val rest = drawn.withoutTileAt(index)
@@ -311,7 +313,7 @@ internal class HandAssessor(
      *
      * @param hand 和牌前的手牌。
      * @param view 和牌時使用的假設局面。
-     * @param tile 自摸或榮和的牌面。
+     * @param tile 自摸或榮和的完整牌值。
      * @param isTsumo 是否以自摸方式和牌。
      * @param declarations 假設和牌前已宣告的動作。
      * @return 依資訊等級調整後的點數價值；規則判定不能和牌時為 null。
@@ -319,7 +321,7 @@ internal class HandAssessor(
     private fun winValue(
         hand: Hand,
         view: HypotheticalView,
-        tile: Tile,
+        tile: TileValue,
         isTsumo: Boolean,
         declarations: Set<GameAction.Extension>,
     ): Double? {
@@ -363,22 +365,22 @@ internal class HandAssessor(
      * [hand] 的快取鍵。
      *
      * @param hand 要轉成快取鍵的手牌。
-     * @return 不包含識別碼、按牌面整理的手牌鍵。
+     * @return 不包含識別碼、保留組件特性的手牌鍵。
      */
     private fun keyOf(hand: Hand): HandKey = HandKey(
-        tiles = hand.standingTiles.map { it.tile }.sortedWith(tileOrder),
+        tiles = hand.standingTiles.map { it.toValue() }.sortedWith(tileOrder.valueOrder),
         meldTypes = hand.melds.map { it.type },
-        meldTiles = hand.melds.map { meld -> meld.tiles.map { it.tile }.sortedWith(tileOrder) },
+        meldTiles = hand.melds.map { meld -> meld.tiles.map { it.toValue() }.sortedWith(tileOrder.valueOrder) },
     )
 }
 
 /**
- * 每種牌面各取第一張的位置，作為打出一張牌的候選。
+ * 每種完整牌值各取第一張的位置，保留牌面相同但特性不同的捨牌選擇。
  *
  * @param hand 要列舉候選位置的手牌。
- * @return 每種牌面各自第一張牌的索引。
+ * @return 每種牌值各自第一張牌的索引。
  */
-internal fun distinctDiscardIndices(hand: Hand): List<Int> = hand.tiles.withIndex().distinctBy { it.value.tile }.map { it.index }
+internal fun distinctDiscardIndices(hand: Hand): List<Int> = hand.tiles.withIndex().distinctBy { it.value.toValue() }.map { it.index }
 
 /**
  * 拿掉第 [index] 張立牌後的手牌。

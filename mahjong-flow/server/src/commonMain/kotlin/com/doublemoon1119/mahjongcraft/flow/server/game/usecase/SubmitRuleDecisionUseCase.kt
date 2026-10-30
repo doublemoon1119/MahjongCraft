@@ -13,12 +13,14 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.RuleDecisi
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepository
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameSnapshotSynchronizer
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.RuleDecisionPresentationUpdate
+import com.doublemoon1119.mahjongcraft.logic.component.ComponentRegistry
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import kotlin.uuid.Uuid
 
 /**
  * 驗證並提交一位玩家的規則選擇。
  *
+ * @property componentRegistry 正式組件定義與純效果來源。
  * @property gameRepository 權威對局資料倉庫。
  * @property moduleRegistry 麻將規則模組註冊中心。
  * @property resolverRegistry 規則選擇步驟解析器註冊中心。
@@ -31,6 +33,7 @@ class SubmitRuleDecisionUseCase(
     private val resolverRegistry: RuleDecisionResolverRegistry,
     private val snapshotSynchronizer: GameSnapshotSynchronizer,
     private val presentationPublisher: GamePresentationPublisher,
+    private val componentRegistry: ComponentRegistry,
 ) {
     /**
      * 對指定對局提交一次規則選擇。
@@ -122,7 +125,7 @@ class SubmitRuleDecisionUseCase(
         val outcome = result.outcome
         if (outcome is Outcome.Success) {
             result.presentationUpdate?.let { update ->
-                update.publish(presentationPublisher, moduleRegistry.getModule(update.current.config))
+                update.publish(presentationPublisher, moduleRegistry.getModule(update.current.config), componentRegistry)
             }
             snapshotSynchronizer.syncAll(gameId)
         }

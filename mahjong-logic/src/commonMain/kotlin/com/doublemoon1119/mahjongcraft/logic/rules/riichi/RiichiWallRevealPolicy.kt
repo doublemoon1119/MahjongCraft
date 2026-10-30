@@ -10,11 +10,9 @@ import com.doublemoon1119.mahjongcraft.logic.table.WallRevealPolicy
 object RiichiWallRevealPolicy : WallRevealPolicy {
     /** 根據規則中立流程節點更新日麻槓寶牌公開狀態。 */
     override fun resolve(context: WallRevealContext): WallRevealDecision {
-        // 沒有 dynamicRuleState 的桌況（例如部分不涉及日麻動態狀態的測試桌況）不可能存在
-        // 等待中的槓寶牌公開項目，因此一般 checkpoint 可安全視為無變更。真正的槓補牌仍會先由
-        // RiichiSupplementalDrawPolicy 驗證並拒絕缺少 RiichiDynamicState 的桌況。
-        val state = context.tableState.dynamicRuleState as? RiichiDynamicState
-            ?: return WallRevealDecision.NoChange
+        // 沒有本局進度就無法繼續日麻指示牌流程。
+        val state = context.tableState.components[RiichiTableComponents.WALL_PROGRESS]
+            ?: return WallRevealDecision.Rejected(INVALID_STATE_REASON_ID)
         if (!state.isValid(context)) return WallRevealDecision.Rejected(INVALID_STATE_REASON_ID)
 
         return when (context.checkpoint) {
@@ -31,12 +29,12 @@ object RiichiWallRevealPolicy : WallRevealPolicy {
      * 依來源動作決定新指示牌立即公開或加入等待佇列；拔北的補牌不公開新指示牌。
      *
      * @param context 補牌完成的節點情境。
-     * @param state 目前立直動態狀態。
+     * @param state 目前牌山進度。
      * @return 新狀態、無變更或拒絕原因。
      */
     private fun afterSupplementalDraw(
         context: WallRevealContext,
-        state: RiichiDynamicState,
+        state: RiichiWallProgress,
     ): WallRevealDecision {
         if (context.sourceAction == PULL_NORTH_GAME_ACTION) return WallRevealDecision.NoChange
         val action = context.sourceAction as? GameAction.Kan
@@ -53,7 +51,7 @@ object RiichiWallRevealPolicy : WallRevealPolicy {
             if (state.pendingKanDoraReveals.any { it.supplementalDrawNumber == drawNumber }) {
                 WallRevealDecision.Rejected(INVALID_STATE_REASON_ID)
             } else {
-                WallRevealDecision.Updated(state.copy(pendingKanDoraReveals = state.pendingKanDoraReveals + pending))
+                WallRevealDecision.Updated(state.copy(pendingKanDoraReveals = state.pendingKanDoraReveals + pending).toTableComponentPatch(state))
             }
         }
     }
@@ -62,10 +60,10 @@ object RiichiWallRevealPolicy : WallRevealPolicy {
      * 公開目前所有等待項目。
      *
      * @param context 目前公開節點與桌況。
-     * @param state 含待公開項目的動態狀態。
+     * @param state 含待公開項目的牌山進度。
      * @return 更新結果；沒有等待項目時為無變更。
      */
-    private fun revealPending(context: WallRevealContext, state: RiichiDynamicState): WallRevealDecision {
+    private fun revealPending(context: WallRevealContext, state: RiichiWallProgress): WallRevealDecision {
         val targetCount = state.pendingKanDoraReveals.maxOfOrNull { it.supplementalDrawNumber }
             ?: return WallRevealDecision.NoChange
         return revealThrough(context, state, targetCount)
@@ -81,7 +79,7 @@ object RiichiWallRevealPolicy : WallRevealPolicy {
      */
     private fun revealThrough(
         context: WallRevealContext,
-        state: RiichiDynamicState,
+        state: RiichiWallProgress,
         targetCount: Int,
     ): WallRevealDecision {
         if (targetCount !in state.revealedKanDoraCount..state.completedSupplementalDrawCount) {
@@ -93,12 +91,12 @@ object RiichiWallRevealPolicy : WallRevealPolicy {
                 it.supplementalDrawNumber > targetCount
             },
         )
-        val before = state.getVisibleTileIds(context.tableState)
-        val after = updated.getVisibleTileIds(context.tableState.copy(dynamicRuleState = updated))
+        val before = state.getDoraIndicators(context.tableState).first.mapTo(mutableSetOf()) { it.id }
+        val after = updated.getDoraIndicators(context.tableState).first.mapTo(mutableSetOf()) { it.id }
         val newlyRevealedTileIds = after - before
         val expectedNewTileCount = targetCount - state.revealedKanDoraCount
         return if (newlyRevealedTileIds.size == expectedNewTileCount) {
-            WallRevealDecision.Updated(updated, newlyRevealedTileIds)
+            WallRevealDecision.Updated(updated.toTableComponentPatch(state), newlyRevealedTileIds)
         } else {
             WallRevealDecision.Rejected(INVALID_STATE_REASON_ID)
         }
@@ -107,13 +105,13 @@ object RiichiWallRevealPolicy : WallRevealPolicy {
     /**
      * 胡牌成立時取消尚未公開的項目。
      *
-     * @param state 目前立直動態狀態。
+     * @param state 目前牌山進度。
      * @return 清除等待項目的更新；原本為空時不變。
      */
-    private fun cancelPending(state: RiichiDynamicState): WallRevealDecision = if (state.pendingKanDoraReveals.isEmpty()) {
+    private fun cancelPending(state: RiichiWallProgress): WallRevealDecision = if (state.pendingKanDoraReveals.isEmpty()) {
         WallRevealDecision.NoChange
     } else {
-        WallRevealDecision.Updated(state.copy(pendingKanDoraReveals = emptyList()))
+        WallRevealDecision.Updated(state.copy(pendingKanDoraReveals = emptyList()).toTableComponentPatch(state))
     }
 
     /**
@@ -122,7 +120,7 @@ object RiichiWallRevealPolicy : WallRevealPolicy {
      * @param context 提供目前玩家識別碼的桌況情境。
      * @return 次數在範圍內、等待槓次不重複且來源玩家存在時為 true。
      */
-    private fun RiichiDynamicState.isValid(context: WallRevealContext): Boolean {
+    private fun RiichiWallProgress.isValid(context: WallRevealContext): Boolean {
         val pendingNumbers = pendingKanDoraReveals.map { it.supplementalDrawNumber }
         val playerIds = context.tableState.players.mapTo(mutableSetOf()) { it.id }
         return completedSupplementalDrawCount in 0..RiichiSupplementalDrawPolicy.MAX_SUPPLEMENTAL_DRAWS &&
@@ -135,7 +133,7 @@ object RiichiWallRevealPolicy : WallRevealPolicy {
             }
     }
 
-    /** 無法解析日麻動態狀態的原因 ID。 */
+    /** 無法解析日麻牌山進度的原因 ID。 */
     const val INVALID_STATE_REASON_ID = "mahjongcraft:riichi/invalid_wall_reveal_state"
 
     /** 節點缺少必要來源動作或玩家的原因 ID。 */

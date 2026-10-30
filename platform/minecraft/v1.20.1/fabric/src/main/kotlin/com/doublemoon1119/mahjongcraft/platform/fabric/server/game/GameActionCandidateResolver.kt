@@ -2,13 +2,14 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.server.game
 
 import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
 import com.doublemoon1119.mahjongcraft.flow.server.game.model.PlayerDecisionOptions
+import com.doublemoon1119.mahjongcraft.flow.server.game.policy.GameVisibilityPolicy
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepository
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.GetPlayerDecisionOptionsUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.membership.repository.PlayerMembershipRepository
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
+import com.doublemoon1119.mahjongcraft.logic.base.TileFaceView
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
-import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.platform.minecraft.action.MinecraftKanActionTokenKeys
 import kotlin.uuid.Uuid
 
@@ -24,12 +25,14 @@ import kotlin.uuid.Uuid
  * @property moduleRegistry 解析對局規則模組的登錄表。
  * @property membershipRepository 玩家目前所在桌子（房間／對局共用同一個 Uuid）的歸屬查詢。
  * @property getPlayerDecisionOptions 查詢完整合法動作、選牌需求與捨牌分析的 Flow use case。
+ * @property visibilityPolicy 依本人的讀取權裁切牌面與外觀。
  */
 class GameActionCandidateResolver(
     private val gameRepository: GameRepository,
     private val moduleRegistry: MahjongModuleRegistry,
     private val membershipRepository: PlayerMembershipRepository,
     private val getPlayerDecisionOptions: GetPlayerDecisionOptionsUseCase,
+    private val visibilityPolicy: GameVisibilityPolicy,
 ) {
     /**
      * 列出玩家目前手牌（含剛摸到的牌）作為捨牌或動作選牌候選。
@@ -38,10 +41,12 @@ class GameActionCandidateResolver(
      * @return 可選手牌候選；玩家不在對局中時為空清單。
      */
     suspend fun listHandTileCandidates(playerId: Uuid): List<HandTileCandidate> {
-        val state = resolveTableState(playerId) ?: return emptyList()
-        val player = state.players.firstOrNull { it.id == playerId } ?: return emptyList()
+        val gameId = membershipRepository.getVenueId(playerId) ?: return emptyList()
+        val game = gameRepository.getGame(gameId) ?: return emptyList()
+        val player = game.tableState.players.firstOrNull { it.id == playerId } ?: return emptyList()
+        val faces = visibilityPolicy.tileFacesFor(game, playerId, player.hand.standingTiles.map { it.id })
         return disambiguateTokens(player.hand.standingTiles, { it.tile.notationToken() }) { identifiedTile, token ->
-            HandTileCandidate(identifiedTile.id, token, identifiedTile.tile)
+            HandTileCandidate(identifiedTile.id, token, faces.getValue(identifiedTile.id))
         }
     }
 
@@ -74,22 +79,24 @@ class GameActionCandidateResolver(
     suspend fun resolveActionCandidates(gameId: Uuid, playerId: Uuid): ResolvedGameActionCandidates? {
         val outcome = getPlayerDecisionOptions(gameId, playerId)
         if (outcome !is Outcome.Success) return null
-        val state = gameRepository.getTableState(gameId) ?: return null
-        return outcome.value.toCandidates(moduleRegistry.getModule(state.config).id)
+        val game = gameRepository.getGame(gameId) ?: return null
+        val referenceFace = outcome.value.referenceTile?.let { tile -> visibilityPolicy.tileFacesFor(game, playerId, listOf(tile.id))[tile.id] }
+        return outcome.value.toCandidates(moduleRegistry.getModule(game.tableState.config).id, referenceFace)
     }
 
     /**
      * 將 Flow 的完整決策選項映射成 Minecraft 指令與 HUD 共用的候選資料。
      *
      * @param ruleModuleId 對局所用規則模組識別碼。
+     * @param referenceFace 觸發牌經本人讀取權裁切的牌面；沒有觸發牌時為 null。
      * @return 映射後的動作候選與捨牌分析。
      */
-    private fun PlayerDecisionOptions.toCandidates(ruleModuleId: String): ResolvedGameActionCandidates {
+    private fun PlayerDecisionOptions.toCandidates(ruleModuleId: String, referenceFace: TileFaceView?): ResolvedGameActionCandidates {
         val candidates = disambiguateTokens(actions, { it.action.baseToken() }) { option, token ->
             GameActionCandidate(
                 action = option.action,
                 token = token,
-                referenceTile = referenceTile,
+                referenceTile = referenceFace,
                 tileSelectionRequirement = option.tileSelectionRequirement,
                 discardAnalyses = option.discardAnalyses,
             )
@@ -129,17 +136,6 @@ class GameActionCandidateResolver(
             seenCounts[base] = count
             build(item, if (count == 1) base else "${base}_$count")
         }
-    }
-
-    /**
-     * 以玩家目前的房間歸屬解析目標桌況；不在任何桌子或桌況不是對局時回傳 null。
-     *
-     * @param playerId 要查詢的玩家識別碼。
-     * @return 對局桌況；玩家不在對局中時為 null。
-     */
-    private suspend fun resolveTableState(playerId: Uuid): TableState? {
-        val gameId = membershipRepository.getVenueId(playerId) ?: return null
-        return gameRepository.getTableState(gameId)
     }
 }
 

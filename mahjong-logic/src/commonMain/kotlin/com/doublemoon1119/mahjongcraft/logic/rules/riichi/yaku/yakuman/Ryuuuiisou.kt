@@ -2,7 +2,6 @@ package com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.yakuman
 
 import com.doublemoon1119.mahjongcraft.logic.base.Hand
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.riichiCanonical
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.YakuResult
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.YakuType
 
@@ -42,7 +41,7 @@ fun calculateRyuuuiisou(
     )
 
     // 取得所有牌（去除赤寶牌標記）
-    val allTiles = hand.allTiles.map { it.tile.riichiCanonical } + winningTile.riichiCanonical
+    val allTiles = hand.allTiles.map { it.tile } + winningTile
 
     // 檢查所有牌是否都為綠牌
     val allAreGreen = allTiles.all { it in greenTiles }

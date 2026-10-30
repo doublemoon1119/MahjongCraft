@@ -4,15 +4,19 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.Game
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameFlowConfig
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.base.MeldType
+import com.doublemoon1119.mahjongcraft.logic.component.BuiltInComponentOwners
 import com.doublemoon1119.mahjongcraft.logic.judgment.LegalActionContext
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RIICHI_GAME_ACTION
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDynamicState
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RIICHI_STICK_POINTS
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiGameLength
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPlayerState
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleModule
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiSupplementalDrawPolicy
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiTableComponents
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.riichiDeclaration
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.riichiPotPoints
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.riichiWallProgress
 import com.doublemoon1119.mahjongcraft.logic.table.GameInitializer
 import com.doublemoon1119.mahjongcraft.logic.table.SupplementalDrawContext
 import com.doublemoon1119.mahjongcraft.logic.table.SupplementalDrawDecision
@@ -20,6 +24,7 @@ import com.doublemoon1119.mahjongcraft.logic.table.layout.PhysicalWallLayoutTran
 import com.doublemoon1119.mahjongcraft.logic.table.layout.PhysicalWallLayoutTransitionDecision
 import com.doublemoon1119.mahjongcraft.logic.table.layout.resolveTransitionValidated
 import com.doublemoon1119.mahjongcraft.logic.table.opening.WallOpening
+import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledCoreExtensionRegistries
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.registerBundledRuleModules
 import com.doublemoon1119.mahjongcraft.testing.flow.common.game.service.FakeGamePresentationPublisher
 import kotlin.test.Test
@@ -117,7 +122,7 @@ class DebugGameScenarioTest {
         val presentation = assertIs<DebugGameScenarioPresentation.InitialRound>(result.presentation)
         val publisher = FakeGamePresentationPublisher()
 
-        DebugGameScenarioPresentationPublisher(publisher, fixture.moduleRegistry).publish(result)
+        DebugGameScenarioPresentationPublisher(publisher, fixture.moduleRegistry, componentRegistry = bundledCoreExtensionRegistries().componentRegistry).publish(result)
 
         val gameId = result.game.id
         val wallContext = assertNotNull(publisher.getPublishedWallStructureContext(gameId))
@@ -139,7 +144,7 @@ class DebugGameScenarioTest {
         val result = DebugGameScenarioRegistry().get("mahjongcraft:riichi_before_ankan_1")!!.build(fixture.context)
         val publisher = FakeGamePresentationPublisher()
 
-        DebugGameScenarioPresentationPublisher(publisher, fixture.moduleRegistry).publish(result)
+        DebugGameScenarioPresentationPublisher(publisher, fixture.moduleRegistry, componentRegistry = bundledCoreExtensionRegistries().componentRegistry).publish(result)
 
         val gameId = result.game.id
         val wallContext = assertNotNull(publisher.getPublishedWallStructureContext(gameId))
@@ -163,7 +168,7 @@ class DebugGameScenarioTest {
         fixture.validator.validate(fixture.context, first)
         fixture.validator.validate(fixture.context, second)
         assertEquals(first.game.tableState.players.map { it.id }, second.game.tableState.players.map { it.id })
-        assertEquals(3, (first.game.tableState.dynamicRuleState as RiichiDynamicState).completedSupplementalDrawCount)
+        assertEquals(3, first.game.tableState.riichiWallProgress().completedSupplementalDrawCount)
         assertEquals(
             3,
             first.game.tableState.players.sumOf { player ->
@@ -190,7 +195,7 @@ class DebugGameScenarioTest {
             val closedKans = legalActions.filterIsInstance<GameAction.Kan>().filter {
                 it.type == GameAction.KanType.CLOSED_KAN
             }
-            assertEquals(number - 1, (state.dynamicRuleState as RiichiDynamicState).completedSupplementalDrawCount)
+            assertEquals(number - 1, state.riichiWallProgress().completedSupplementalDrawCount)
             assertEquals(1, closedKans.size, "Scenario $number must expose exactly one closed kan")
             assertFalse(GameAction.Tsumo in legalActions, "Scenario $number must not expose an accidental tsumo")
             assertEquals(71 - number * 2, state.tileWall.remainingCount)
@@ -283,7 +288,7 @@ class DebugGameScenarioTest {
             val afterState = state.copy(
                 tileWall = decision.tileWall,
                 reservedWallTiles = decision.reservedWallTiles,
-                dynamicRuleState = decision.dynamicRuleState,
+                components = decision.tableComponents.applyTo(state.components, BuiltInComponentOwners.TABLE),
                 physicalWallLayout = null,
             )
             val transition = assertIs<PhysicalWallLayoutTransitionDecision.Completed>(
@@ -300,7 +305,7 @@ class DebugGameScenarioTest {
             )
 
             assertEquals(state.reservedWallTiles.first().id, decision.drawnTiles.single().id)
-            assertEquals(number, (decision.dynamicRuleState as RiichiDynamicState).completedSupplementalDrawCount)
+            assertEquals(number, (requireNotNull(decision.tableComponents.values[RiichiTableComponents.WALL_PROGRESS])).completedSupplementalDrawCount)
             assertEquals(state.tileWall.remainingCount - 1, decision.tileWall.remainingCount)
             transition.phases.flatMap { it.moves }.forEach { move ->
                 assertEquals(currentLayout.placements.getValue(move.tileId), move.source)
@@ -361,9 +366,9 @@ class DebugGameScenarioTest {
         assertEquals(fixture.context.invokingPlayerId, actor.id)
         assertTrue(RIICHI_GAME_ACTION in legalActions)
         assertFalse(GameAction.Tsumo in legalActions)
-        assertFalse((actor.playerRuleState as RiichiPlayerState).isRiichi)
-        assertEquals(3, state.players.count { player -> (player.playerRuleState as RiichiPlayerState).isRiichi })
-        assertEquals(3, (state.dynamicRuleState as RiichiDynamicState).riichiStickCount)
+        assertNull(actor.riichiDeclaration)
+        assertEquals(3, state.players.count { player -> player.riichiDeclaration != null })
+        assertEquals(3, (state.riichiPotPoints() / RIICHI_STICK_POINTS))
         assertEquals(66, state.tileWall.remainingCount)
         assertEquals(14, state.reservedWallTiles.size)
         val declarationTile = assertNotNull(actor.hand.lastDrawn)
@@ -518,6 +523,7 @@ class DebugGameScenarioTest {
             "mahjongcraft:riichi_ippatsu_tsumo",
             "mahjongcraft:riichi_meld_showcase",
             "mahjongcraft:riichi_three_player_kan_and_pull_north",
+            "mahjongcraft:riichi_three_player_public_faces",
             "mahjongcraft:riichi_three_player_pull_north",
             "mahjongcraft:riichi_three_player_pull_north_in_riichi",
             "mahjongcraft:riichi_three_player_pull_north_with_melds",

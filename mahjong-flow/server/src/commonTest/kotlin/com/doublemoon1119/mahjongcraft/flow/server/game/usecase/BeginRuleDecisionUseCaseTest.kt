@@ -22,6 +22,7 @@ import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
+import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledCoreExtensionRegistries
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.registerBundledRuleModules
 import com.doublemoon1119.mahjongcraft.testing.flow.common.game.repository.FakeGameSnapshotRepository
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
@@ -148,7 +149,7 @@ class BeginRuleDecisionUseCaseTest {
             snapshotSynchronizer = GameSnapshotSynchronizer(
                 repository,
                 FakeGameSnapshotRepository(),
-                GameVisibilityPolicyImpl(moduleRegistry),
+                GameVisibilityPolicyImpl(moduleRegistry, componentRegistry = bundledCoreExtensionRegistries().componentRegistry),
             ),
             abortGameHandler = abortHandler,
         )(repository.getGame(testGameId)!!.tableState.id, timing)

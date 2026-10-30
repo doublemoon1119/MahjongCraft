@@ -32,12 +32,12 @@ sealed interface PresentationValue {
     ) : PresentationValue
 
     /**
-     * 保留手牌、副露及牌背語意的多組牌面。
+     * 保留手牌、副露及牌背語意的多組牌。
      *
-     * @property groups 各組牌面 asset key。
+     * @property groups 各組的牌；蓋著的牌只帶牌背。
      */
     data class TileGroupsValue(
-        val groups: List<List<String>>,
+        val groups: List<List<PresentationTile>>,
     ) : PresentationValue
 
     /**

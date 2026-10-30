@@ -1,6 +1,7 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.client.catalogue
 
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
+import com.doublemoon1119.mahjongcraft.logic.base.TileFaceView
 import com.doublemoon1119.mahjongcraft.platform.minecraft.catalogue.RuleCatalogueTileGroup
 import com.doublemoon1119.mahjongcraft.platform.minecraft.catalogue.RuleCatalogueTileGroupRole
 import kotlin.math.abs
@@ -152,7 +153,7 @@ class RuleCatalogueLayoutTest {
     /** 單組比可用寬度還寬時才在組內換列，牌面順序不變且不超出寬度。 */
     @Test
     fun `oversized groups wrap inside the group and keep tile order`() {
-        val tiles = (1..9).map { Tile.Numeric(Tile.Suit.Character, it) }
+        val tiles = (1..9).map { TileFaceView(Tile.Numeric(Tile.Suit.Character, it)) }
         val width = 100
         val result = RuleCatalogueTileLayout.measure(
             groups = listOf(
@@ -228,7 +229,7 @@ class RuleCatalogueLayoutTest {
      */
     private fun group(role: RuleCatalogueTileGroupRole, count: Int): RuleCatalogueTileGroup = RuleCatalogueTileGroup(
         role,
-        List(count) { Tile.Numeric(Tile.Suit.Character, it % 9 + 1) },
+        List(count) { TileFaceView(Tile.Numeric(Tile.Suit.Character, it % 9 + 1)) },
     )
 
     /**

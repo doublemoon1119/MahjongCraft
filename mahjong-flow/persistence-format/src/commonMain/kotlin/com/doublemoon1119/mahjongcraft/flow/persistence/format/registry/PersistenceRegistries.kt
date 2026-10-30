@@ -1,44 +1,44 @@
 package com.doublemoon1119.mahjongcraft.flow.persistence.format.registry
 
+import com.doublemoon1119.mahjongcraft.flow.persistence.format.component.ComponentPersistenceRegistry
+import com.doublemoon1119.mahjongcraft.flow.persistence.format.component.ComponentViewPersistenceRegistry
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.core.PersistenceDtoRegistry
 import com.doublemoon1119.mahjongcraft.logic.base.ExhaustiveDrawReason
 import com.doublemoon1119.mahjongcraft.logic.base.ExtensionGameAction
-import com.doublemoon1119.mahjongcraft.logic.config.DynamicRuleState
 import com.doublemoon1119.mahjongcraft.logic.config.MahjongRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.table.DiscardPile
-import com.doublemoon1119.mahjongcraft.logic.table.PlayerRuleState
 
 /**
  * 權威狀態 persistence codec 使用的所有可擴充 DTO registry。
  *
  * @property ruleConfigs 規則配置 registry。
  * @property discardPiles 牌河 registry。
- * @property playerRuleStates 玩家規則狀態 registry。
- * @property dynamicRuleStates 規則專屬動態對局狀態 registry。
  * @property exhaustiveDrawReasons 流局原因 registry。
  * @property extensionGameActions 擴充動作 registry。
+ * @property components 牌張與紀錄組件保存 registry。
+ * @property componentViews 提交時已裁切投影的保存 registry，不能還原為權威組件。
  */
 data class PersistenceRegistries(
     val ruleConfigs: PersistenceDtoRegistry<MahjongRuleConfig>,
     val discardPiles: PersistenceDtoRegistry<DiscardPile<*>>,
-    val playerRuleStates: PersistenceDtoRegistry<PlayerRuleState>,
-    val dynamicRuleStates: PersistenceDtoRegistry<DynamicRuleState>,
     val exhaustiveDrawReasons: PersistenceDtoRegistry<ExhaustiveDrawReason>,
     val extensionGameActions: PersistenceDtoRegistry<ExtensionGameAction>,
+    val components: ComponentPersistenceRegistry,
+    val componentViews: ComponentViewPersistenceRegistry,
 ) {
     /** 所有 registry 中登記為可在精簡牌譜中壓縮的 type key。 */
     val replayCompactTypeKeys: Set<String>
-        get() = ruleConfigs.replayCompactTypeKeys + discardPiles.replayCompactTypeKeys + playerRuleStates.replayCompactTypeKeys +
-            dynamicRuleStates.replayCompactTypeKeys + exhaustiveDrawReasons.replayCompactTypeKeys + extensionGameActions.replayCompactTypeKeys
+        get() = ruleConfigs.replayCompactTypeKeys + discardPiles.replayCompactTypeKeys +
+            exhaustiveDrawReasons.replayCompactTypeKeys + extensionGameActions.replayCompactTypeKeys
 
     /** 凍結所有 registry；凍結後不得新增 persistence mapper。 */
     fun freeze() {
         ruleConfigs.freeze()
         discardPiles.freeze()
-        playerRuleStates.freeze()
-        dynamicRuleStates.freeze()
         exhaustiveDrawReasons.freeze()
         extensionGameActions.freeze()
+        components.freeze()
+        componentViews.freeze()
     }
 }
 
@@ -46,8 +46,8 @@ data class PersistenceRegistries(
 fun emptyPersistenceRegistries(): PersistenceRegistries = PersistenceRegistries(
     ruleConfigs = PersistenceDtoRegistry(),
     discardPiles = PersistenceDtoRegistry(),
-    playerRuleStates = PersistenceDtoRegistry(),
-    dynamicRuleStates = PersistenceDtoRegistry(),
     exhaustiveDrawReasons = PersistenceDtoRegistry(),
     extensionGameActions = PersistenceDtoRegistry(),
+    components = ComponentPersistenceRegistry(),
+    componentViews = ComponentViewPersistenceRegistry(),
 )

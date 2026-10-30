@@ -4,11 +4,11 @@ import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.base.Hand
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPlayerState
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.registerBundledRuleModules
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeIdentifiedTileFactory
+import com.doublemoon1119.mahjongcraft.testing.logic.rules.riichi.riichiDeclarationComponents
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
 import kotlin.test.Test
@@ -66,13 +66,13 @@ class RobbingEligibilityTest {
                     id = kokushiPlayerId,
                     initialSeat = Wind.SOUTH,
                     hand = Hand(tiles = kokushiWaitingOnWhite().map(FakeIdentifiedTileFactory::create)),
-                    playerRuleState = RiichiPlayerState(),
+                    components = riichiDeclarationComponents(),
                 ),
                 FakeMahjongPlayerFactory.create(
                     id = singleWaitPlayerId,
                     initialSeat = Wind.WEST,
                     hand = Hand(tiles = singleWaitOnWhite().map(FakeIdentifiedTileFactory::create)),
-                    playerRuleState = RiichiPlayerState(),
+                    components = riichiDeclarationComponents(),
                 ),
             ),
             config = RiichiRuleConfig(),

@@ -4,14 +4,17 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.Game
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameConfig
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDynamicState
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPlayerState
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPlayerTileAreaIds
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.threeplayer.ThreePlayerRiichiRuleConfig
+import com.doublemoon1119.mahjongcraft.logic.table.PlayerTileAreas
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
+import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledCoreExtensionRegistries
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.registerBundledRuleModules
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeHandFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeIdentifiedTileFactory
+import com.doublemoon1119.mahjongcraft.testing.logic.rules.riichi.riichiDeclarationComponents
+import com.doublemoon1119.mahjongcraft.testing.logic.rules.riichi.riichiTableComponents
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
 import kotlin.test.Test
@@ -28,7 +31,7 @@ class HandReadinessVisibilityPolicyTest {
     /** 依觀察者身分決定手牌分析可見性的政策。 */
     private val policy = HandReadinessVisibilityPolicy(
         moduleRegistry = moduleRegistry,
-        visibilityPolicy = GameVisibilityPolicyImpl(moduleRegistry),
+        visibilityPolicy = GameVisibilityPolicyImpl(moduleRegistry, componentRegistry = bundledCoreExtensionRegistries().componentRegistry),
     )
 
     /** 參與者可取得自己的等待牌分析，不在對局中的觀察者無法取得。 */
@@ -60,14 +63,15 @@ class HandReadinessVisibilityPolicyTest {
         val player = FakeMahjongPlayerFactory.create(initialSeat = Wind.EAST, hand = FakeHandFactory.create(tiles = waitingHand))
         val puller = FakeMahjongPlayerFactory.create(
             initialSeat = Wind.SOUTH,
-            playerRuleState = RiichiPlayerState(nukiDoraTiles = List(2) { FakeIdentifiedTileFactory.create(Tile.Honor.North) }),
+            components = riichiDeclarationComponents(),
+            tileAreas = PlayerTileAreas.EMPTY.withArea(RiichiPlayerTileAreaIds.NORTH, List(2) { FakeIdentifiedTileFactory.create(Tile.Honor.North) }),
         )
         val config = ThreePlayerRiichiRuleConfig()
         val game = Game(
             tableState = FakeTableStateFactory.create(
                 players = listOf(player, puller, FakeMahjongPlayerFactory.create(initialSeat = Wind.WEST)),
                 config = config,
-                dynamicRuleState = RiichiDynamicState(),
+                components = riichiTableComponents(potPoints = 0),
             ),
             flowConfig = GameConfig(config).flowConfig,
             hostId = player.id,

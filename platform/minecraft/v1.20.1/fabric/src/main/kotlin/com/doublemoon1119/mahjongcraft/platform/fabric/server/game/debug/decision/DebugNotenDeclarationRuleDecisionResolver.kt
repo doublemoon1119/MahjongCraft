@@ -12,7 +12,7 @@ import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.config.MahjongRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiFamilyRuleModule
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPlayerState
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.riichiDeclaration
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.metadata.MahjongCraftMetadata
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.rule.DebugDeclareNotenAction
@@ -71,7 +71,7 @@ internal class DebugNotenDeclarationRuleDecisionResolver : RuleDecisionResolver 
         val tenpaiIds = riichiModule.declareExhaustiveDraw(tableState, emptySet()).tenpaiPlayerIds
         val choices = RuleDecisionInputSpec.SingleChoice(listOf(REVEAL_TENPAI_OPTION, DECLARE_NOTEN_OPTION))
         val inputSpecs = tableState.activePlayers
-            .filter { player -> player.id in tenpaiIds && (player.playerRuleState as? RiichiPlayerState)?.isRiichi != true }
+            .filter { player -> player.id in tenpaiIds && player.riichiDeclaration == null }
             .associate { it.id to choices }
         if (inputSpecs.isEmpty()) return null
         return RuleDecisionStep(stepId = NOTEN_DECLARATION_STEP, stepIndex = 0, inputSpecsByPlayerId = inputSpecs)

@@ -1,8 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.client.render
 
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.DefaultNetworkDtoRegistries
-import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
-import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.logic.config.MahjongRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.module.BuiltInRuleModuleIds
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
@@ -110,7 +108,7 @@ class ClientTileAppearanceResolverTest {
         val first = resolver.resolve(tableId)
         store.applyGameSnapshot(
             gameId = tableId,
-            snapshot = publicSnapshot.copy(revealedHandTiles = listOf(IdentifiedTile(Uuid.random(), Tile.Honor.North))),
+            snapshot = publicSnapshot.copy(publicTileIds = setOf(Uuid.random())),
             aiPlayerIds = emptySet(),
         )
 
@@ -141,12 +139,12 @@ class ClientTileAppearanceResolverTest {
             id = tableId,
             players = listOf(FakeMahjongPlayerFactory.create()),
             config = config,
-        ).toSnapshot(visibleHandPlayerIds = emptySet(), setAsideTiles = { emptyList() })
+        ).toSnapshot(visibleHandPlayerIds = emptySet())
         is TaiwanRuleConfig -> FakeTableStateFactory.create(
             id = tableId,
             players = listOf(FakeMahjongPlayerFactory.create()),
             config = config,
-        ).toSnapshot(visibleHandPlayerIds = emptySet(), setAsideTiles = { emptyList() })
+        ).toSnapshot(visibleHandPlayerIds = emptySet())
         else -> error("Unsupported test config")
     }
 

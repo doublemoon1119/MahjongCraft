@@ -3,10 +3,16 @@ package com.doublemoon1119.mahjongcraft.logic.rules.riichi
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.RiichiTileTypes
+import com.doublemoon1119.mahjongcraft.logic.component.ComponentSet
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDeclarationKind
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPlayerComponents
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.riichiDeclaration
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.RiichiTileValues
 import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayer
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeHandFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeIdentifiedTileFactory
+import com.doublemoon1119.mahjongcraft.testing.logic.rules.riichi.riichiDeclarationComponents
+import com.doublemoon1119.mahjongcraft.testing.logic.rules.riichi.withRedFives
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeDiscardPile
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
@@ -49,7 +55,7 @@ class RiichiLegalActionValidatorFuritenTest {
                 Tile.Numeric(Tile.Suit.Character, 2),
                 Tile.Numeric(Tile.Suit.Character, 3),
                 Tile.Numeric(Tile.Suit.Character, 4),
-                RiichiTileTypes.redFive(Tile.Suit.Character), // 赤5萬
+                Tile.Numeric(Tile.Suit.Character, 5), // 赤5萬
                 Tile.Numeric(Tile.Suit.Character, 6),
                 Tile.Numeric(Tile.Suit.Character, 7),
                 Tile.Numeric(Tile.Suit.Character, 8),
@@ -57,18 +63,18 @@ class RiichiLegalActionValidatorFuritenTest {
                 Tile.Numeric(Tile.Suit.Character, 9),
                 Tile.Numeric(Tile.Suit.Character, 9),
             ),
-        )
+        ).withRedFives(Tile.Suit.Character)
         // 模擬玩家已經打了赤5萬（振聽）
         val fakeDiscardPile = FakeDiscardPile().discard(
             FakeDiscardPile.FakeEntry(
-                FakeIdentifiedTileFactory.create(RiichiTileTypes.redFive(Tile.Suit.Character)),
+                FakeIdentifiedTileFactory.create(RiichiTileValues.redFive(Tile.Suit.Character)),
             ),
         )
-        val riichiState = RiichiPlayerState()
+        val riichiState = riichiDeclarationComponents()
         val player = FakeMahjongPlayerFactory.create(
             hand = playerHand,
             discardPile = fakeDiscardPile,
-            playerRuleState = riichiState,
+            components = (riichiState).merge((ComponentSet.EMPTY.with(RiichiPlayerComponents.PERMANENT_FURITEN, Unit))),
         )
         val tableState = FakeTableStateFactory.create(
             players = listOf(player),
@@ -116,17 +122,17 @@ class RiichiLegalActionValidatorFuritenTest {
                 FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 5)),
             ),
         )
-        val riichiState = RiichiPlayerState()
+        val riichiState = riichiDeclarationComponents()
         val player = FakeMahjongPlayerFactory.create(
             hand = playerHand,
             discardPile = fakeDiscardPile,
-            playerRuleState = riichiState,
+            components = (riichiState).merge((ComponentSet.EMPTY.with(RiichiPlayerComponents.PERMANENT_FURITEN, Unit))),
         )
         val tableState = FakeTableStateFactory.create(
             players = listOf(player),
         )
         // 他家打赤5萬
-        val incomingTile = FakeIdentifiedTileFactory.create(RiichiTileTypes.redFive(Tile.Suit.Character))
+        val incomingTile = FakeIdentifiedTileFactory.create(RiichiTileValues.redFive(Tile.Suit.Character))
 
         // 執行
         val actions = validator.getLegalActions(LegalActionTestContexts.discard(tableState, player, RelativeDirection.Across, incomingTile))
@@ -165,7 +171,7 @@ class RiichiLegalActionValidatorFuritenTest {
 
         var player = FakeMahjongPlayerFactory.create(
             hand = playerHand,
-            playerRuleState = RiichiPlayerState(),
+            components = riichiDeclarationComponents(),
         )
         // 建立已放過5萬的狀態
         player = player.addPassedTile(Tile.Numeric(Tile.Suit.Character, 5))
@@ -215,7 +221,7 @@ class RiichiLegalActionValidatorFuritenTest {
 
         var player = FakeMahjongPlayerFactory.create(
             hand = playerHand,
-            playerRuleState = RiichiPlayerState(),
+            components = riichiDeclarationComponents(),
         )
         // 放過普通5萬
         player = player.addPassedTile(Tile.Numeric(Tile.Suit.Character, 5))
@@ -224,7 +230,7 @@ class RiichiLegalActionValidatorFuritenTest {
             players = listOf(player),
         )
         // 他家打赤5萬
-        val incomingTile = FakeIdentifiedTileFactory.create(RiichiTileTypes.redFive(Tile.Suit.Character))
+        val incomingTile = FakeIdentifiedTileFactory.create(RiichiTileValues.redFive(Tile.Suit.Character))
 
         // 執行
         val actions = validator.getLegalActions(LegalActionTestContexts.discard(tableState, player, RelativeDirection.Across, incomingTile))
@@ -237,8 +243,8 @@ class RiichiLegalActionValidatorFuritenTest {
 
     /**
      * 測試立直後永久振聽：即使 `passedTilesInRound` 已經被清空（模擬下一次摸牌後的狀態）、且這張進來
-     * 的牌也不在牌河裡（單靠既有的 [RiichiPlayerState.getFuritenTiles] 判斷不會視為振聽），只要
-     * [RiichiPlayerState.isPermanentlyFuriten] 為 `true`，該局就應該一路不能榮和。
+     * 的牌也不在牌河裡（單靠既有的 [ComponentSet.getFuritenTiles] 判斷不會視為振聽），只要
+     * 玩家的永久振聽組件已成立，該局就應該一路不能榮和。
      */
     @Test
     fun `test cannot ron when permanently furiten after riichi even without matching discard or passed tile`() {
@@ -260,11 +266,11 @@ class RiichiLegalActionValidatorFuritenTest {
             ),
         )
         // 牌河跟 passedTilesInRound 都是乾淨的——沒有永久旗標的話，這張榮和牌本來應該合法。
-        val riichiState = RiichiPlayerState(riichiTile = FakeIdentifiedTileFactory.create(Tile.Honor.East), isPermanentlyFuriten = true)
+        val riichiState = riichiDeclarationComponents(declarationTile = FakeIdentifiedTileFactory.create(Tile.Honor.East))
         val player = FakeMahjongPlayerFactory.create(
             hand = playerHand,
             discardPile = FakeDiscardPile(),
-            playerRuleState = riichiState,
+            components = (riichiState).merge((ComponentSet.EMPTY.with(RiichiPlayerComponents.PERMANENT_FURITEN, Unit))),
         )
         val tableState = FakeTableStateFactory.create(players = listOf(player))
         val incomingTile = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 5))
@@ -345,7 +351,7 @@ class RiichiLegalActionValidatorFuritenTest {
             ),
         ),
         discardPile = discardPile,
-        playerRuleState = RiichiPlayerState(),
+        components = riichiDeclarationComponents(),
     )
 
     /**

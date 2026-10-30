@@ -90,7 +90,7 @@ internal object CompactWinDetailsCodec {
     }
 
     /**
-     * 編碼三種明確明細值，種類代碼為固定格式契約而非 enum ordinal。
+     * 編碼明確明細值，種類代碼為固定格式契約而非 enum ordinal。
      *
      * @param value 保存的明細值。
      * @return 精簡值。
@@ -99,7 +99,7 @@ internal object CompactWinDetailsCodec {
         HistoryDetailValueTypeKeys.QUANTITIES -> JsonArray(
             listOf(JsonPrimitive(QUANTITIES_CODE), array(value.getValue(ReplaySourceKeys.QUANTITIES)).mapArray { encodeQuantity(obj(it)) }),
         )
-        HistoryDetailValueTypeKeys.TILES -> JsonArray(listOf(JsonPrimitive(TILES_CODE), value.getValue(ReplaySourceKeys.TILE_IDS)))
+        HistoryDetailValueTypeKeys.TILE_FACES -> JsonArray(listOf(JsonPrimitive(TILE_FACES_CODE), array(value.getValue(ReplaySourceKeys.TILE_FACES))))
         HistoryDetailValueTypeKeys.ENTRIES -> JsonArray(
             listOf(
                 JsonPrimitive(ENTRIES_CODE),
@@ -152,9 +152,9 @@ internal object CompactWinDetailsCodec {
                     ),
                 )
             }
-            JsonPrimitive(TILES_CODE) -> {
-                require(value.size == 2) { "Compact tile detail has unexpected fields" }
-                JsonObject(mapOf(ReplaySourceKeys.TYPE to JsonPrimitive(HistoryDetailValueTypeKeys.TILES), ReplaySourceKeys.TILE_IDS to array(value[1])))
+            JsonPrimitive(TILE_FACES_CODE) -> {
+                require(value.size == 2) { "Compact tile face detail has unexpected fields" }
+                JsonObject(mapOf(ReplaySourceKeys.TYPE to JsonPrimitive(HistoryDetailValueTypeKeys.TILE_FACES), ReplaySourceKeys.TILE_FACES to array(value[1])))
             }
             JsonPrimitive(ENTRIES_CODE) -> {
                 require(value.size == 2) { "Compact entry detail has unexpected fields" }
@@ -203,8 +203,8 @@ internal object CompactWinDetailsCodec {
     /** 有單位數值固定代碼。 */
     private const val QUANTITIES_CODE = 0
 
-    /** 牌參照值固定代碼。 */
-    private const val TILES_CODE = 1
+    /** 公開牌面值固定代碼。 */
+    private const val TILE_FACES_CODE = 1
 
     /** 條目值固定代碼。 */
     private const val ENTRIES_CODE = 2

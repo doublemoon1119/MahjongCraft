@@ -6,7 +6,6 @@ import com.doublemoon1119.mahjongcraft.logic.rules.riichi.structure.Fuuro
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.structure.HandStructure
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.structure.Janto
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.structure.Mentsu
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.riichiCanonical
 
 /**
  * 麻將手牌分割器。
@@ -89,7 +88,7 @@ object RiichiHandDecomposer {
         winningTile: Tile,
         fuuro: List<Fuuro>,
     ): List<HandStructure.Standard> {
-        val tiles = handTiles.map { it.riichiCanonical } + winningTile.riichiCanonical
+        val tiles = handTiles + winningTile
 
         // 計算副露的牌張總數（碰為 3 張，槓為 4 張）
         val fuuroTilesAmount = fuuro.sumOf { it.mentsu.tiles.size }
@@ -122,7 +121,7 @@ object RiichiHandDecomposer {
         }
 
         val results = mutableListOf<HandStructure.Standard>()
-        val winTile = winningTile.riichiCanonical
+        val winTile = winningTile
         val winTileCount = tileCounts[winTile] ?: 0
 
         // 副露貢獻 fuuroCount 個面子，門清部分需要 4 - fuuroCount 個面子
@@ -391,7 +390,7 @@ object RiichiHandDecomposer {
     ): HandStructure.Chiitoitsu? {
         if (fuuro.isNotEmpty()) return null // 七對子不能有副露
 
-        val tiles = handTiles.map { it.riichiCanonical } + winningTile.riichiCanonical
+        val tiles = handTiles + winningTile
         if (tiles.size != 14) return null
 
         // 使用 groupingBy 來正確計算相同牌的數量
@@ -431,7 +430,7 @@ object RiichiHandDecomposer {
     ): HandStructure.KokushiMusou? {
         if (fuuro.isNotEmpty()) return null // 國士無雙不能有副露
 
-        val tiles = handTiles.map { it.riichiCanonical } + winningTile.riichiCanonical
+        val tiles = handTiles + winningTile
         if (tiles.size != 14) return null
 
         // 檢查是否有十三張不同的么九牌

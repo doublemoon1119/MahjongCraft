@@ -2,12 +2,13 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.server.game
 
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.PlayerDecisionPhase
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionInputSpec
+import com.doublemoon1119.mahjongcraft.flow.server.game.policy.GameVisibilityPolicy
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepository
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.base.Hand
 import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
 import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
-import com.doublemoon1119.mahjongcraft.logic.base.Tile
+import com.doublemoon1119.mahjongcraft.logic.base.TileFaceView
 import com.doublemoon1119.mahjongcraft.logic.base.TileOrder
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
@@ -32,6 +33,7 @@ import kotlin.uuid.Uuid
  * @property moduleRegistry 解析規則模組與牌序。
  * @property tileAssetRegistry 將牌面轉成素材 key。
  * @property analysisDtoMapper 將捨牌分析轉成同步 DTO。
+ * @property visibilityPolicy 依接收玩家的讀取權裁切牌面與外觀。
  */
 class PlayerDecisionPromptFactory(
     private val gameRepository: GameRepository,
@@ -39,6 +41,7 @@ class PlayerDecisionPromptFactory(
     private val moduleRegistry: MahjongModuleRegistry,
     private val tileAssetRegistry: MinecraftTileAssetRegistry,
     private val analysisDtoMapper: ReadinessAnalysisDtoMapper,
+    private val visibilityPolicy: GameVisibilityPolicy,
 ) {
     /**
      * 建立目前決策的私人 prompt；遊戲或玩家已失效時回傳 null。
@@ -56,12 +59,14 @@ class PlayerDecisionPromptFactory(
         val tileOrder = module.tileOrder
         val resolvedCandidates = candidateResolver.resolveActionCandidates(gameId, playerId) ?: return null
         val actions = resolvedCandidates.actions
+        val reactedTile = state.reactedTile()
+        val faces = visibilityPolicy.tileFacesFor(game, playerId, player.hand.standingTiles.map { it.id } + listOfNotNull(reactedTile?.id))
         val ruleDecision = game.pendingRuleDecision
             ?.takeIf { playerId !in it.completedPlayerIds }
             ?.inputSpecsByPlayerId
             ?.get(playerId)
             ?.toPrompt { tileId ->
-                player.hand.tiles.firstOrNull { it.id == tileId }?.tile?.toAssetKey(tileAssetRegistry)
+                faces[tileId]?.takeIf { player.hand.tiles.any { it.id == tileId } }?.toAssetKey(tileAssetRegistry)
             }
         val analyses = if (phase == PlayerDecisionPhase.OWN_TURN) {
             resolvedCandidates.discardAnalyses.map(analysisDtoMapper::toDto)
@@ -69,7 +74,6 @@ class PlayerDecisionPromptFactory(
             emptyList()
         }
         val trigger = state.triggerContext(playerId)
-        val reactedTile = state.reactedTile()
         val orderedAiPlayerIds = game.roomPlayerIds.filter(game::isAi)
         return PlayerDecisionPromptDto(
             ruleModuleId = resolvedCandidates.ruleModuleId,
@@ -90,9 +94,9 @@ class PlayerDecisionPromptFactory(
                 val setAsideTile = (candidate.action as? GameAction.Extension)?.let { module.tileSetAsideBy(player, it) }
                 val preview = candidate.action.previewTiles(
                     hand = player.hand,
-                    reactedTile = reactedTile,
+                    faces = faces,
                     tileOrder = tileOrder,
-                    setAsideTile = setAsideTile?.tile,
+                    setAsideTileId = setAsideTile?.id,
                 )
                 val requirement = candidate.tileSelectionRequirement
                 val selectionTiles = requirement?.let {
@@ -125,8 +129,8 @@ class PlayerDecisionPromptFactory(
             },
             // 自己回合顯示剛摸到的牌，反應他家時顯示正在反應的那張牌。
             triggerTileAssetKey = when (phase) {
-                PlayerDecisionPhase.OWN_TURN -> player.hand.lastDrawn?.tile?.toAssetKey(tileAssetRegistry)
-                else -> reactedTile?.tile?.toAssetKey(tileAssetRegistry)
+                PlayerDecisionPhase.OWN_TURN -> player.hand.lastDrawn?.let { faces[it.id] }?.toAssetKey(tileAssetRegistry)
+                else -> reactedTile?.let { faces[it.id] }?.toAssetKey(tileAssetRegistry)
             },
             triggerPlayerId = trigger?.playerId?.toString(),
             triggerPlayerName = trigger?.playerId?.let { sourceId ->
@@ -241,39 +245,39 @@ private fun RuleDecisionInputSpec.toPrompt(resolveAssetKey: (Uuid) -> String?): 
 }
 
 /**
- * 建立動作完成後的牌組預覽。每張牌都依動作帶的牌 ID 查出：來源是自己的手牌（含剛摸到的牌）與正在反應的
- * [reactedTile]（他家的捨牌，或等待搶和的宣告牌）；移出手牌的動作顯示規則回報要移出的 [setAsideTile]，規則沒有
- * 回報時不顯示牌。不依觸發這次決策的牌去推測。
+ * 建立動作完成後的牌組預覽。每張牌都依動作帶的牌 ID 從 [faces] 查出：來源是自己的手牌（含剛摸到的牌）與正在
+ * 反應的牌（他家的捨牌，或等待搶和的宣告牌），牌面已依接收玩家的讀取權裁切；移出手牌的動作顯示規則回報要移出的
+ * [setAsideTileId]，規則沒有回報時不顯示牌。不依觸發這次決策的牌去推測。
  *
  * 卡片預覽一律直立顯示，不套用鳴牌後最終桌面朝向——那是給實際擺上桌的牌用的空間慣例，套在決策卡片上
  * 反而讓玩家要多一拍才能解讀。只有吃才會標出 [ActionTilePreview.claimedTileIndex]（三張牌本身花色/
  * 數值不同，框出來才有辨識意義）；碰跟槓的牌彼此看起來完全一樣，框哪一張都沒有實質資訊，不標記。
  *
  * @param hand 玩家目前的手牌。
- * @param reactedTile 正在回應的牌；沒有反應來源時為 null。
+ * @param faces 自己的手牌與正在回應的牌經讀取權裁切後的牌面。
  * @param tileOrder 該規則的牌序。
- * @param setAsideTile 規則指定要移出手牌的牌；無指定時為 null。
+ * @param setAsideTileId 規則指定要移出手牌的牌張；無指定時為 null。
  * @return 動作完成後的牌面預覽及必要時標示的鳴取牌索引。
  */
 internal fun GameAction.previewTiles(
     hand: Hand,
-    reactedTile: IdentifiedTile?,
+    faces: Map<Uuid, TileFaceView>,
     tileOrder: TileOrder,
-    setAsideTile: Tile?,
+    setAsideTileId: Uuid?,
 ): ActionTilePreview {
-    val knownTiles = (hand.standingTiles + listOfNotNull(reactedTile)).associateBy { it.id }
-    fun tile(id: Uuid): Tile? = knownTiles[id]?.tile
+    fun tile(id: Uuid): TileFaceView? = faces[id]
     return when (this) {
         is GameAction.Chi -> {
-            val sorted = (withTiles + tileId).mapNotNull(::tile).sortedWith(tileOrder)
-            ActionTilePreview(sorted, claimedTileIndex = tile(tileId)?.let { sorted.indexOf(it) }?.takeIf { it >= 0 })
+            val claimed = tile(tileId)
+            val sorted = (withTiles + tileId).mapNotNull(::tile).sortedWith(compareBy(tileOrder) { it.tile })
+            ActionTilePreview(sorted, claimedTileIndex = claimed?.let { sorted.indexOf(it) }?.takeIf { it >= 0 })
         }
         is GameAction.Pon -> ActionTilePreview((withTiles + tileId).mapNotNull(::tile))
         is GameAction.Kan -> ActionTilePreview((withTiles + tileId).mapNotNull(::tile))
         is GameAction.Ron -> ActionTilePreview(listOfNotNull(tile(tileId)))
-        GameAction.Tsumo -> ActionTilePreview(listOfNotNull(hand.lastDrawn?.tile))
-        is GameAction.ExhaustiveDraw -> ActionTilePreview(reason.previewTiles(hand))
-        is GameAction.Extension -> ActionTilePreview(listOfNotNull(setAsideTile))
+        GameAction.Tsumo -> ActionTilePreview(listOfNotNull(hand.lastDrawn?.let { tile(it.id) }))
+        is GameAction.ExhaustiveDraw -> ActionTilePreview(reason.previewTiles(hand).map(::TileFaceView))
+        is GameAction.Extension -> ActionTilePreview(listOfNotNull(setAsideTileId?.let(::tile)))
         else -> ActionTilePreview(emptyList())
     }
 }
@@ -287,11 +291,11 @@ private fun TableState.reactedTile(): IdentifiedTile? = pendingRobbingReaction?.
 /**
  * 操作 HUD 一組牌面，[claimedTileIndex] 只有吃才會給值。
  *
- * @property tiles 預覽牌面。
+ * @property tiles 預覽牌面與外觀。
  * @property claimedTileIndex 吃牌時鳴取牌在預覽中的索引；其他動作為 null。
  */
 internal data class ActionTilePreview(
-    val tiles: List<Tile>,
+    val tiles: List<TileFaceView>,
     val claimedTileIndex: Int? = null,
 )
 

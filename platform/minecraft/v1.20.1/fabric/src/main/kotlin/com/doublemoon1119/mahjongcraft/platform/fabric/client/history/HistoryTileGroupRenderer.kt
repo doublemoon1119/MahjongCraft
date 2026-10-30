@@ -1,7 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.client.history
 
-import com.doublemoon1119.mahjongcraft.flow.network.dto.model.TileDto
-import com.doublemoon1119.mahjongcraft.flow.network.dto.model.toDomain
+import com.doublemoon1119.mahjongcraft.flow.network.dto.model.TileFaceViewDto
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.MahjongTileFaceRenderer
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.DecisionTileOrientationDto
 import com.doublemoon1119.mahjongcraft.platform.minecraft.history.HistoryDiscardMarkerDisplayRegistry
@@ -10,7 +9,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.BuiltInMinecraftT
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileSetAppearanceDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TILE_BACK_PREVIEW_ASSET_KEY
-import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.toAssetKey
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.backAppearance
 import net.minecraft.client.gui.DrawContext
 import net.minecraft.text.Text
 import net.minecraft.util.Formatting
@@ -40,12 +39,13 @@ internal class HistoryTileGroupRenderer(
      * @param taken 已被取走的牌索引；保留原槽位但不再畫牌面。
      * @param markers 牌張公開標記，僅用於提示與強調，不重新判斷規則。
      * @param appearance 該場公開規則指定的牌組外觀。
+     * @param showCatalogIndex 是否顯示局內牌索引；獨立展示牌面必須設為 false。
      * @return 指向牌面時的提示，或 null。
      */
     fun render(
         context: DrawContext,
         layout: HistoryTileGroupLayout,
-        catalog: List<TileDto>,
+        catalog: List<TileFaceViewDto>,
         x: Int,
         y: Int,
         mouseX: Int,
@@ -53,11 +53,15 @@ internal class HistoryTileGroupRenderer(
         taken: Set<Int> = emptySet(),
         markers: Map<Int, Set<String>> = emptyMap(),
         appearance: MinecraftTileSetAppearanceDefinition = BuiltInMinecraftTileAppearances.DEFAULT,
+        showCatalogIndex: Boolean = true,
     ): List<Text>? {
         var tooltip: List<Text>? = null
         layout.placements.forEach { placement ->
             val tile = catalog.getOrNull(placement.tile) ?: return@forEach
-            val asset = if (placement.faceDown) TILE_BACK_PREVIEW_ASSET_KEY else tile.toDomain().toAssetKey(assets)
+            val faceAsset = tile.toHistoryAssetKey(assets)
+            val asset = if (placement.faceDown) TILE_BACK_PREVIEW_ASSET_KEY else faceAsset
+            // 蓋著的牌依牌面樣式指定的牌身畫牌背；看不到牌面時就是規則外觀。
+            val tileAppearance = if (placement.faceDown) assets.backAppearance(faceAsset, appearance) else appearance
             val rotated = placement.orientation != DecisionTileOrientationDto.UPRIGHT
             val nominalWidth = if (rotated) placement.height else placement.width
             val nominalHeight = if (rotated) placement.width else placement.height
@@ -72,7 +76,7 @@ internal class HistoryTileGroupRenderer(
                 context.matrices.push()
                 context.matrices.translate((x + placement.x).toDouble(), (y + placement.y).toDouble(), 0.0)
                 context.matrices.scale(nominalWidth / BASE_WIDTH, nominalHeight / BASE_HEIGHT, 1f)
-                faces.renderGui(context, asset, 0, 0, BASE_WIDTH, BASE_HEIGHT, placement.orientation, appearance)
+                faces.renderGui(context, asset, 0, 0, BASE_WIDTH, BASE_HEIGHT, placement.orientation, tileAppearance)
                 context.matrices.pop()
             }
             if (!markers[placement.tile].isNullOrEmpty()) {
@@ -80,7 +84,7 @@ internal class HistoryTileGroupRenderer(
             }
             if (mouseX >= x + placement.x && mouseX < x + placement.x + placement.width && mouseY >= y + placement.y && mouseY < y + placement.y + placement.height) {
                 tooltip = buildList {
-                    add(Text.translatable(MinecraftHistoryScreenKeys.STATE_TILE_INDEX, placement.tile).formatted(Formatting.GRAY))
+                    if (showCatalogIndex) add(Text.translatable(MinecraftHistoryScreenKeys.STATE_TILE_INDEX, placement.tile).formatted(Formatting.GRAY))
                     if (placement.tile in taken) add(Text.translatable(MinecraftHistoryScreenKeys.STATE_TAKEN)) else add(Text.literal(asset))
                     markers[placement.tile].orEmpty().sorted().forEach { marker ->
                         val label = markerDisplays.find(marker)?.let { Text.translatable(it.labelTranslationKey) } ?: Text.literal(marker)

@@ -2,17 +2,20 @@ package com.doublemoon1119.mahjongcraft.flow.server.game.service
 
 import com.doublemoon1119.mahjongcraft.logic.base.Hand
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPlayerState
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPlayerTileAreaIds
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleModule
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.threeplayer.ThreePlayerRiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.threeplayer.ThreePlayerRiichiRuleModule
+import com.doublemoon1119.mahjongcraft.logic.table.PlayerTileAreas
 import com.doublemoon1119.mahjongcraft.logic.table.TileWall
 import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPhysicalLayout
 import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPlacement
 import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPosition
+import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledCoreExtensionRegistries
 import com.doublemoon1119.mahjongcraft.testing.flow.common.game.service.FakeGamePresentationPublisher
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeIdentifiedTileFactory
+import com.doublemoon1119.mahjongcraft.testing.logic.rules.riichi.riichiDeclarationComponents
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
 import kotlin.test.Test
@@ -31,7 +34,7 @@ class RuleDecisionPresentationUpdateTest {
         val table = FakeTableStateFactory.create(config = module.config)
         val publisher = FakeGamePresentationPublisher()
 
-        RuleDecisionPresentationUpdate(table, table).publish(publisher, module)
+        RuleDecisionPresentationUpdate(table, table).publish(publisher, module, componentRegistry = bundledCoreExtensionRegistries().componentRegistry)
 
         assertTrue(publisher.getPublishedPlayerTilesUpdates(table.id).isEmpty())
         assertTrue(publisher.getPublishedWallLayoutUpdates(table.id).isEmpty())
@@ -58,7 +61,7 @@ class RuleDecisionPresentationUpdateTest {
         )
         val publisher = FakeGamePresentationPublisher()
 
-        RuleDecisionPresentationUpdate(previous, current).publish(publisher, module)
+        RuleDecisionPresentationUpdate(previous, current).publish(publisher, module, componentRegistry = bundledCoreExtensionRegistries().componentRegistry)
 
         assertEquals(listOf(current.physicalWallLayout), publisher.getPublishedWallLayoutUpdates(current.id))
         assertEquals(listOf(wallTile.id), publisher.getPublishedPlayerTiles(current.id, 0)?.standingTileIds)
@@ -86,7 +89,8 @@ class RuleDecisionPresentationUpdateTest {
             players = listOf(
                 previous.players.single().copy(
                     hand = Hand(tiles = listOf(replacement)),
-                    playerRuleState = RiichiPlayerState(nukiDoraTiles = listOf(north)),
+                    components = riichiDeclarationComponents(),
+                    tileAreas = PlayerTileAreas.EMPTY.withArea(RiichiPlayerTileAreaIds.NORTH, listOf(north)),
                 ),
             ),
             tileWall = TileWall(listOf(remaining)),
@@ -94,7 +98,7 @@ class RuleDecisionPresentationUpdateTest {
         )
         val publisher = FakeGamePresentationPublisher()
 
-        RuleDecisionPresentationUpdate(previous, current).publish(publisher, threePlayerModule)
+        RuleDecisionPresentationUpdate(previous, current).publish(publisher, threePlayerModule, componentRegistry = bundledCoreExtensionRegistries().componentRegistry)
 
         val update = publisher.getPublishedPlayerTiles(current.id, 0)
         assertEquals(listOf(replacement.id), update?.standingTileIds)
@@ -110,12 +114,12 @@ class RuleDecisionPresentationUpdateTest {
         val previous = FakeTableStateFactory.create(config = threePlayerModule.config)
         val current = previous.copy(
             players = previous.players.mapIndexed { index, player ->
-                if (index == 0) player.copy(playerRuleState = RiichiPlayerState(nukiDoraTiles = listOf(north))) else player
+                if (index == 0) player.copy(components = riichiDeclarationComponents(), tileAreas = PlayerTileAreas.EMPTY.withArea(RiichiPlayerTileAreaIds.NORTH, listOf(north))) else player
             },
         )
         val publisher = FakeGamePresentationPublisher()
 
-        RuleDecisionPresentationUpdate(previous, current).publish(publisher, threePlayerModule)
+        RuleDecisionPresentationUpdate(previous, current).publish(publisher, threePlayerModule, componentRegistry = bundledCoreExtensionRegistries().componentRegistry)
 
         assertEquals(listOf(0), publisher.getPublishedPlayerTilesUpdates(current.id).map { it.seatIndex })
         assertEquals(listOf(north.id), publisher.getPublishedPlayerTiles(current.id, 0)?.setAsideTileIds)

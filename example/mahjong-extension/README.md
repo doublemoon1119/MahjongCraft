@@ -13,10 +13,15 @@ resolver. It does not copy or delegate to the bundled Riichi rule.
 This is a deliberately small demonstration rule, not a regional Mahjong rule.
 
 - Two to four players start with 100 points and three tiles.
-- Two players use four copies of Characters 1–4; three use 1–6; four use 1–8.
-  One Character 1 is replaced by the inverted Character 1. It has a distinct
-  identity, but pairing and sorting treat it as Character 1.
-- Each turn draws one tile and either declares a two-pair self-draw or discards.
+- The room chooses which ranks of Characters 1–8 go into the wall, four copies
+  of each selected rank. All eight ranks are selected by default. Selecting
+  Character 1 replaces one copy with the inverted Character 1; pairing and
+  sorting still treat it as Character 1.
+- Choose at least two ranks for two players, three for three players, or four
+  for four players. There must be enough tiles to deal three to each player
+  and leave at least one draw. Reducing the selection also reduces the room's
+  player limit; the server rejects a change below its current player count.
+- Each turn draws one tile and either wins with two pairs or discards.
   Four identical tiles count as two pairs. Calls, Ron and Kans are not used.
 - The two-player wall uses two opposite faces. Three- and four-player games use
   four faces. The rule owns this layout; it is not a room option.
@@ -26,11 +31,18 @@ This is a deliberately small demonstration rule, not a regional Mahjong rule.
 - A self-draw normally makes each other player pay 10 points. Exhausting the
   wall changes no scores; a three-tile hand containing a pair is ready.
   The dealer advances after each round. The default match has four rounds.
-- A player may make one public declaration after drawing. It changes a public
+- At the start of each round, the rule randomly selects one fewer bonus rank
+  than the number of ranks in the wall. The selected ranks are saved in the
+  round state. Each opponent pays one extra point per selected rank represented
+  in the winning hand; repeated copies of one rank count once. The Minecraft adapter displays
+  the same saved ranks in the centre of the table.
+- A player may reveal their hand once after drawing. It changes a public
   marker and does not change scoring or concealed information.
 
-The rule's settings can change payment, round count and the optional exchange,
-with payment from 1–100 points and match length from 1–16 rounds.
+The rule's settings can change the wall's ranks, payment, round count, the
+optional exchange and public tile faces, with payment from 1–100 points and match
+length from 1–16 rounds.
+The selected ranks change wall contents, not which otherwise complete hands may win.
 The example does not replace server
 validation with client controls.
 
@@ -47,6 +59,16 @@ players therefore exchange with each other. Choices stay private until the
 exchange is resolved, and the resolver supplies a legal automatic submission
 when a player times out.
 
+## Optional public tile faces
+
+Public tile faces are disabled by default. When enabled, the first three copies
+of each rank carry a saved public face component from the moment the deck is
+built; the fourth copy, including the inverted 1-man, stays ordinary. A tile
+effect turns the component into public face access and a public face appearance,
+so every player and spectator can read those tiles even when they lie face down
+in the wall or stand in another player's hand. The component itself is not sent
+to clients. The Minecraft adapter draws those tiles with a different body color.
+
 ## Tsumogiri strategy
 
 Tsumogiri means discarding the tile just drawn. The sample strategy is
@@ -56,13 +78,34 @@ is no drawn tile, it chooses the first standing tile. Reaction decisions use
 the legal actions supplied by the decision context, and rule decisions use the
 public default submission. It is an integration example, not a competitive AI.
 
+## Hand disclosure and pose
+
+The reveal action adds the optional `HAND_REVEALED` player component. A registered pure tile effect
+reads this component and makes the player's current standing and drawn tiles public and face up.
+Later draws follow the same effect. No second list of revealed tile IDs is stored, and the player
+component is cleared for a new round.
+
+Access and pose are independent. A public tile may stay upright or face down; placing a tile face up
+requires public access. The shared resolver supports every current tile area. This example's reveal
+effect intentionally applies only to its owner's standing and drawn tiles.
+
+Flow projects the result for each authorized reader before passing it to an AI or platform.
+The client receives cropped faces and pose values, not the raw component collection or access list.
+
+See
+[`ExamplePairingComponentRegistration.kt`](src/commonMain/kotlin/com/doublemoon1119/mahjongcraft/example/pairing/ExamplePairingComponentRegistration.kt)
+for the effect and round lifecycle, and
+[`TileComponentResolver.kt`](../../mahjong-logic/src/commonMain/kotlin/com/doublemoon1119/mahjongcraft/logic/tile/component/TileComponentResolver.kt)
+for shared validation.
+
 ## Public capability map
 
 | Capability | Example use |
 | --- | --- |
 | Rule and wall layout | Pairing rule and fixed two/four-wall layouts |
 | Rule decision | Optional simultaneous two-tile exchange |
-| Extension action and command | Once-per-round declaration |
+| Extension action and command | Once-per-round hand reveal |
+| Typed components and tile effects | Saved bonus tiles, hand reveal and optional public tile faces |
 | AI strategy | Tsumogiri decision context |
 | Network and persistence codecs | Example configuration, state, action and tile data |
 | Settlement and history presentation | Supplied by the Minecraft adapter |
@@ -81,8 +124,8 @@ That codec test does not prove that a world or a disk file is recovered.
 
 ## Identifiers and compatibility
 
-The declaration action keeps one identity everywhere it is serialized or
-presented: `mahjongcraft_example:pairing/declare`. The declaration command is
+The hand-reveal action keeps one identity everywhere it is serialized or
+presented: `mahjongcraft_example:pairing/reveal_hand`. The hand-reveal command is
 a separate ID because it is a different serialized type.
 
 The example is not a released compatibility surface. Changing its development

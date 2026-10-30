@@ -1,24 +1,24 @@
 package com.doublemoon1119.mahjongcraft.flow.persistence.format.rule
 
-import com.doublemoon1119.mahjongcraft.flow.persistence.format.game.toDomain
-import com.doublemoon1119.mahjongcraft.flow.persistence.format.game.toPersistenceDto
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDiscardEntry
+import com.doublemoon1119.mahjongcraft.flow.persistence.format.component.ComponentPersistenceRegistry
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDiscardPile
 
 /**
- * 將 [RiichiDiscardPile] 轉換成 persistence DTO。
+ * 保存日麻牌河，保留每次捨牌的紀錄組件。
  *
- * @return 轉換後的日麻牌河 persistence DTO。
+ * @param registry 組件保存轉換。
+ * @return 依捨牌順序排列的保存資料。
  */
-fun RiichiDiscardPile.toPersistenceDto(): RiichiDiscardPilePersistenceDto = RiichiDiscardPilePersistenceDto(
-    entries.map { RiichiDiscardEntryPersistenceDto(it.tile.toPersistenceDto(), it.isRiichi, it.isTaken) },
+fun RiichiDiscardPile.toPersistenceDto(registry: ComponentPersistenceRegistry): RiichiDiscardPilePersistenceDto = RiichiDiscardPilePersistenceDto(
+    entries.map { it.toPersistenceDto(registry) },
 )
 
 /**
- * 將日麻牌河 persistence DTO 還原成 [RiichiDiscardPile]。
+ * 還原日麻牌河及其紀錄組件。
  *
- * @return 還原後的日麻牌河。
+ * @param registry 組件保存轉換。
+ * @return 還原的牌河。
  */
-fun RiichiDiscardPilePersistenceDto.toDomain(): RiichiDiscardPile = entries.fold(RiichiDiscardPile()) { pile, entry ->
-    pile.discard(RiichiDiscardEntry(entry.tile.toDomain(), entry.isRiichi, entry.isTaken))
+fun RiichiDiscardPilePersistenceDto.toDomain(registry: ComponentPersistenceRegistry): RiichiDiscardPile = entries.fold(RiichiDiscardPile()) { pile, entry ->
+    pile.discard(entry.toDomain(registry))
 }

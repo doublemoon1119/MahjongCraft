@@ -1,95 +1,107 @@
 package com.doublemoon1119.mahjongcraft.flow.server.game.usecase
 
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
+import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDynamicState
+import com.doublemoon1119.mahjongcraft.logic.component.ComponentSet
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPendingKanDoraReveal
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleModule
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiWallProgress
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.riichiPotPoints
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.riichiWallProgress
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.toTableComponentPatch
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
+import com.doublemoon1119.mahjongcraft.logic.table.TileWall
 import com.doublemoon1119.mahjongcraft.logic.table.WallRevealDecision
+import com.doublemoon1119.mahjongcraft.logic.tile.component.BuiltInTileComponents
+import com.doublemoon1119.mahjongcraft.logic.tile.component.TileFaceAccess
+import com.doublemoon1119.mahjongcraft.logic.tile.component.publicFaceUpWallTileIds
+import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledCoreExtensionRegistries
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeIdentifiedTileFactory
+import com.doublemoon1119.mahjongcraft.testing.logic.rules.riichi.riichiTableComponents
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertIs
+import kotlin.test.assertTrue
 import kotlin.uuid.Uuid
 
-/** [WallRevealDecisionApplier] 的 Flow 邊界驗證測試。 */
+/** 驗證牌牆公開使用共同姿態及局部組件更新，不把可讀取牌面等同於翻牌。 */
 class WallRevealDecisionApplierTest {
-    /** 驗證宣告集合與可見差集一致時只套用規則動態狀態。 */
-    @Test
-    fun `test valid newly revealed tile set is applied`() {
-        val fixture = fixture()
-        val updatedDynamicState = fixture.dynamicState.copy(
-            revealedKanDoraCount = 1,
-            pendingKanDoraReveals = emptyList(),
-        )
-        val updatedTable = fixture.tableState.copy(dynamicRuleState = updatedDynamicState)
-        val newlyRevealedTileIds = updatedDynamicState.getVisibleTileIds(updatedTable) -
-            fixture.dynamicState.getVisibleTileIds(fixture.tableState)
+    /** 全部測試沿用同一份正式組件定義。 */
+    private val components = bundledCoreExtensionRegistries().componentRegistry
 
+    /** 受測的日麻規則。 */
+    private val module = RiichiRuleModule("test:wall_reveal", RiichiRuleConfig())
+
+    /** 正確的新公開牌集合可成立，供託及其他既有資料不被覆蓋。 */
+    @Test
+    fun `valid reveal updates progress while preserving pot points`() {
+        val table = fixture()
+        val original = table.riichiWallProgress()
+        val updated = original.copy(revealedKanDoraCount = 1, pendingKanDoraReveals = emptyList())
+        val expectedIds = updated.getDoraIndicators(table).first.map { it.id }.toSet() -
+            original.getDoraIndicators(table).first.map { it.id }.toSet()
         val result = assertIs<WallRevealDecisionApplier.Result.Applied>(
             WallRevealDecisionApplier.applyUpdatedDecision(
-                fixture.tableState,
-                WallRevealDecision.Updated(updatedDynamicState, newlyRevealedTileIds),
+                tableState = table,
+                decision = WallRevealDecision.Updated(updated.toTableComponentPatch(original), expectedIds),
+                module = module,
+                componentRegistry = components,
             ),
         )
-
-        assertEquals(updatedDynamicState, result.tableState.dynamicRuleState)
-        assertEquals(newlyRevealedTileIds, result.newlyRevealedTileIds)
+        assertEquals(updated, result.tableState.riichiWallProgress())
+        assertEquals(2000, result.tableState.riichiPotPoints())
+        assertEquals(expectedIds, result.newlyRevealedTileIds)
+        assertTrue(result.tableState.publicTileEvidenceIds.containsAll(expectedIds))
+        assertEquals(original, table.riichiWallProgress())
     }
 
-    /** 驗證 policy 不得宣告不屬於目前牌牆的公開牌 ID。 */
+    /** 不能把不存在於當前牌牆的 UUID 宣告為新公開牌。 */
     @Test
-    fun `test unknown newly revealed tile id is rejected`() {
-        val fixture = fixture()
+    fun `unknown newly revealed tile id is rejected`() {
+        val table = fixture()
         val result = WallRevealDecisionApplier.applyUpdatedDecision(
-            fixture.tableState,
-            WallRevealDecision.Updated(fixture.dynamicState, setOf(Uuid.random())),
+            tableState = table,
+            decision = WallRevealDecision.Updated(table.riichiWallProgress().toTableComponentPatch(table.riichiWallProgress()), setOf(Uuid.random())),
+            module = module,
+            componentRegistry = components,
         )
-
-        assertEquals(
-            WallRevealDecisionApplier.Result.Rejected(WallRevealDecisionApplier.INVALID_RESULT_REASON_ID),
-            result,
-        )
+        assertEquals(WallRevealDecisionApplier.Result.Rejected(WallRevealDecisionApplier.INVALID_RESULT_REASON_ID), result)
     }
 
-    /**
-     * 建立含一筆延後槓寶牌的有效日麻桌況。
-     *
-     * @return 桌況與對應動態規則狀態。
-     */
-    private fun fixture(): Fixture {
+    /** 可讀取但朝下的牌山牌不會混入共同翻牌集合。 */
+    @Test
+    fun `public face down wall tile is excluded from face up presentation`() {
+        val readable = IdentifiedTile(
+            id = Uuid.random(),
+            tile = Tile.Honor.Red,
+            components = ComponentSet.EMPTY.with(BuiltInTileComponents.FACE_ACCESS, TileFaceAccess.Public),
+        )
+        val table = fixture().copy(tileWall = TileWall(listOf(readable)))
+        val faceUpIds = module.publicFaceUpWallTileIds(table, components)
+        assertFalse(readable.id in faceUpIds)
+        assertEquals(table.riichiWallProgress().getDoraIndicators(table).first.map { it.id }.toSet(), faceUpIds)
+    }
+
+    /** 建立一筆待公開追加指示牌，同時保留兩千點供託。 */
+    private fun fixture(): TableState {
         val player = FakeMahjongPlayerFactory.create()
-        val dynamicState = RiichiDynamicState(
-            completedSupplementalDrawCount = 1,
-            revealedKanDoraCount = 0,
-            pendingKanDoraReveals = listOf(
-                RiichiPendingKanDoraReveal(player.id, GameAction.KanType.OPEN_KAN, 1),
+        return FakeTableStateFactory.create(
+            players = listOf(player),
+            config = module.config,
+            reservedWallTiles = List(14) { FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 3)) },
+            components = riichiTableComponents(
+                potPoints = 2000,
+                wallProgress = RiichiWallProgress(
+                    completedSupplementalDrawCount = 1,
+                    revealedKanDoraCount = 0,
+                    pendingKanDoraReveals = listOf(RiichiPendingKanDoraReveal(player.id, GameAction.KanType.OPEN_KAN, 1)),
+                ),
             ),
-        )
-        return Fixture(
-            FakeTableStateFactory.create(
-                players = listOf(player),
-                config = RiichiRuleConfig(),
-                reservedWallTiles = List(14) {
-                    FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 3))
-                },
-                dynamicRuleState = dynamicState,
-            ),
-            dynamicState,
         )
     }
-
-    /**
-     * 測試共用桌況與對應日麻動態狀態。
-     *
-     * @property tableState 含保留牌與一筆待翻槓寶牌的桌況。
-     * @property dynamicState 與桌況一致的日麻動態規則狀態。
-     */
-    private data class Fixture(
-        val tableState: TableState,
-        val dynamicState: RiichiDynamicState,
-    )
 }

@@ -271,6 +271,42 @@ class GameConfigPresentationRegistryTest {
         assertEquals("test.option", editor.translationKeyFor("test:option"))
     }
 
+    /** 多選欄位登記後不會保留呼叫端的選項清單或翻譯表參照。 */
+    @Test
+    fun `registry detaches multi choice translation mappings`() {
+        val optionIds = mutableListOf("test:one", "test:two")
+        val translationKeys = mutableMapOf("test:one" to "test.one")
+        val descriptionKeys = mutableMapOf("test:one" to "test.one.description")
+        val definition = minimalDefinition().copy(
+            fields = listOf(
+                GameConfigFieldDefinition(
+                    id = "test:multi",
+                    categoryId = "test:category",
+                    nameTranslationKey = "test.multi",
+                    descriptionTranslationKey = "test.multi.description",
+                    editor = GameConfigEditorSpec.MultiChoice(
+                        optionIds,
+                        optionTranslationKeys = translationKeys,
+                        optionDescriptionTranslationKeys = descriptionKeys,
+                    ),
+                    isEditable = false,
+                    read = { GameConfigPresentationValue.MultiChoiceValue(setOf("test:one")) },
+                ),
+            ),
+        )
+        val registry = GameConfigPresentationRegistryImpl(RuleDecisionResolverRegistry())
+        registry.register(definition)
+        optionIds += "test:three"
+        translationKeys["test:one"] = "test.changed"
+        descriptionKeys["test:one"] = "test.changed.description"
+
+        val editor = assertNotNull(registry.find("test:rule"))
+            .fields.single { it.id == "test:multi" }.editor as GameConfigEditorSpec.MultiChoice
+        assertEquals(listOf("test:one", "test:two"), editor.optionIds)
+        assertEquals("test.one", editor.translationKeyFor("test:one"))
+        assertEquals("test.one.description", editor.descriptionTranslationKeyFor("test:one"))
+    }
+
     /**
      * 建立可登記的最小唯讀設定 schema。
      *

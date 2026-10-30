@@ -32,7 +32,7 @@ class MahjongPlayerSnapshotTest {
             ),
         )
 
-        val snapshot = player.toSnapshot(isVisible = true, revealsClosedKanTiles = true, setAsideTiles = emptyList())
+        val snapshot = player.toSnapshot(isVisible = true, revealsClosedKanTiles = true)
 
         assertEquals(player.id, snapshot.id)
         assertEquals(Wind.EAST.ordinal, snapshot.initialSeatIndex)
@@ -55,7 +55,7 @@ class MahjongPlayerSnapshotTest {
             ),
         )
 
-        val snapshot = player.toSnapshot(isVisible = false, revealsClosedKanTiles = true, setAsideTiles = emptyList())
+        val snapshot = player.toSnapshot(isVisible = false, revealsClosedKanTiles = true)
 
         assertEquals(player.id, snapshot.id)
         assertEquals(Wind.SOUTH.ordinal, snapshot.initialSeatIndex)
@@ -73,7 +73,7 @@ class MahjongPlayerSnapshotTest {
      * 驗證玩家快照應正確傳遞牌河、規則狀態與分數。
      */
     @Test
-    fun `test toSnapshot preserves discardPile playerRuleState and score`() {
+    fun `test toSnapshot preserves discard pile and score`() {
         val id = Uuid.random()
         val discardPile = FakeDiscardPile()
         val player = FakeMahjongPlayerFactory.create(
@@ -82,12 +82,11 @@ class MahjongPlayerSnapshotTest {
             discardPile = discardPile,
         ).copy(score = 25000)
 
-        val snapshot = player.toSnapshot(isVisible = true, revealsClosedKanTiles = true, setAsideTiles = emptyList())
+        val snapshot = player.toSnapshot(isVisible = true, revealsClosedKanTiles = true)
 
         assertEquals(id, snapshot.id)
         assertEquals(Wind.WEST.ordinal, snapshot.initialSeatIndex)
-        assertEquals(discardPile, snapshot.discardPile)
-        assertNull(snapshot.playerRuleState)
+        assertEquals(discardPile.toSnapshot(), snapshot.discardPile)
         assertEquals(25000, snapshot.score)
     }
 }

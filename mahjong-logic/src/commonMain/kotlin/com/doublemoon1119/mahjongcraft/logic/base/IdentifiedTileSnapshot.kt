@@ -3,23 +3,26 @@ package com.doublemoon1119.mahjongcraft.logic.base
 import kotlin.uuid.Uuid
 
 /**
- * [IdentifiedTile] 對指定觀察者的可見快照。
+ * 一張牌對指定讀取者的可見資料。
  *
- * @property id 實體牌的唯一識別碼，即使牌面隱藏仍保留。
- * @property tile 可見時的牌面；隱藏時為 null。
+ * @property id 局內牌張的穩定識別碼；未知牌仍保留。
+ * @property face 已授權的牌面與顯示特徵；未知牌為 null，不攜帶其私有特徵。
  */
 data class IdentifiedTileSnapshot(
     val id: Uuid,
-    val tile: Tile?,
-)
+    val face: TileFaceView?,
+) {
+    /** 目前可讀取的基本牌面；未知牌為 null。 */
+    val tile: Tile? get() = face?.tile
+}
 
 /**
- * 產生一個 [IdentifiedTile] 的快照。
+ * 建立只含基本牌面的快照；規則特徵由正式可見性投影加入。
  *
- * @param isVisible 是否公開這張牌的牌面。
- * @return 保留實體牌 ID，並依可見性處理牌面的快照。
+ * @param isVisible 讀取者是否知道這張牌的牌面。
+ * @return 保留牌張身分並裁切牌面的快照。
  */
 fun IdentifiedTile.toSnapshot(isVisible: Boolean): IdentifiedTileSnapshot = IdentifiedTileSnapshot(
-    id = this.id,
-    tile = this.tile.takeIf { isVisible },
+    id = id,
+    face = tile.takeIf { isVisible }?.let(::TileFaceView),
 )

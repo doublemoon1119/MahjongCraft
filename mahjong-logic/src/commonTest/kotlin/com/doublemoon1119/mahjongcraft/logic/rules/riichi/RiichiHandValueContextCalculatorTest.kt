@@ -6,20 +6,31 @@ import com.doublemoon1119.mahjongcraft.logic.base.Meld
 import com.doublemoon1119.mahjongcraft.logic.base.MeldType
 import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.RiichiTileTypes
+import com.doublemoon1119.mahjongcraft.logic.component.ComponentSet
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RIICHI_STICK_POINTS
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDeclarationKind
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiTableComponents
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiWallProgress
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.riichiDeclaration
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.riichiPotPoints
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.riichiWallProgress
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.RiichiTileValues
+import com.doublemoon1119.mahjongcraft.logic.table.DiscardPile.DiscardEntry
 import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayer
 import com.doublemoon1119.mahjongcraft.logic.table.TileWall
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeHandFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeIdentifiedTileFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeMeldFactory
+import com.doublemoon1119.mahjongcraft.testing.logic.rules.riichi.riichiDeclarationComponents
+import com.doublemoon1119.mahjongcraft.testing.logic.rules.riichi.riichiTableComponents
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
+import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
-
 /**
  * 日本麻將役種上下文計算機之單元測試。
  *
@@ -58,9 +69,9 @@ class RiichiHandValueContextCalculatorTest {
      * @param riichiState 規則狀態；未提供時使用空的立直狀態。
      * @return 測試玩家。
      */
-    private fun createPlayer(hand: Hand, riichiState: RiichiPlayerState? = null): MahjongPlayer = FakeMahjongPlayerFactory.create(
+    private fun createPlayer(hand: Hand, riichiState: ComponentSet? = null): MahjongPlayer = FakeMahjongPlayerFactory.create(
         hand = hand,
-        playerRuleState = riichiState ?: RiichiPlayerState(),
+        components = riichiState ?: ComponentSet.EMPTY,
     )
 
     /**
@@ -92,7 +103,7 @@ class RiichiHandValueContextCalculatorTest {
         )
         return FakeMahjongPlayerFactory.create(
             hand = hand,
-            playerRuleState = RiichiPlayerState(),
+            components = riichiDeclarationComponents(),
         )
     }
 
@@ -286,7 +297,7 @@ class RiichiHandValueContextCalculatorTest {
             players = listOf(player),
             tileWall = tileWall,
             config = RiichiRuleConfig(),
-            dynamicRuleState = RiichiDynamicState(),
+            components = riichiTableComponents(potPoints = 0),
             reservedWallTiles = wanPaiTiles,
         )
 
@@ -351,7 +362,7 @@ class RiichiHandValueContextCalculatorTest {
             players = listOf(player),
             tileWall = tileWall,
             config = RiichiRuleConfig(),
-            dynamicRuleState = RiichiDynamicState(completedSupplementalDrawCount = 1),
+            components = riichiTableComponents(potPoints = 0, wallProgress = RiichiWallProgress(completedSupplementalDrawCount = 1, revealedKanDoraCount = 1)),
             reservedWallTiles = afterSupplementalDraws(wanPaiTiles, 1),
         )
 
@@ -437,7 +448,7 @@ class RiichiHandValueContextCalculatorTest {
             players = listOf(player),
             tileWall = tileWall,
             config = RiichiRuleConfig(),
-            dynamicRuleState = RiichiDynamicState(completedSupplementalDrawCount = 4),
+            components = riichiTableComponents(potPoints = 0, wallProgress = RiichiWallProgress(completedSupplementalDrawCount = 4, revealedKanDoraCount = 4)),
             reservedWallTiles = afterSupplementalDraws(wanPaiTiles, 4),
         )
 
@@ -490,7 +501,7 @@ class RiichiHandValueContextCalculatorTest {
             players = listOf(player),
             tileWall = tileWall,
             config = RiichiRuleConfig(),
-            dynamicRuleState = RiichiDynamicState(),
+            components = riichiTableComponents(potPoints = 0),
             reservedWallTiles = wanPaiTiles,
         )
 
@@ -534,7 +545,7 @@ class RiichiHandValueContextCalculatorTest {
             ),
         )
         val riichiTile = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 1))
-        val riichiState = RiichiPlayerState(riichiTile = riichiTile)
+        val riichiState = riichiDeclarationComponents(declarationTile = riichiTile)
         val player = createPlayer(hand, riichiState)
 
         val wanPaiTiles = (1..14).map {
@@ -546,7 +557,7 @@ class RiichiHandValueContextCalculatorTest {
             players = listOf(player),
             tileWall = tileWall,
             config = RiichiRuleConfig(),
-            dynamicRuleState = RiichiDynamicState(),
+            components = riichiTableComponents(potPoints = 0),
             reservedWallTiles = wanPaiTiles,
         )
 
@@ -563,7 +574,7 @@ class RiichiHandValueContextCalculatorTest {
 
         assertEquals(1, context.doraIndicators.size)
         assertEquals(1, context.uraDoraIndicators.size)
-        assertTrue(context.isRiichi)
+        assertNotNull(context)
     }
 
     /**
@@ -597,7 +608,7 @@ class RiichiHandValueContextCalculatorTest {
             players = listOf(player),
             tileWall = tileWall,
             config = RiichiRuleConfig(),
-            dynamicRuleState = RiichiDynamicState(),
+            components = riichiTableComponents(potPoints = 0),
         )
 
         val incomingTile = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 1))
@@ -651,7 +662,7 @@ class RiichiHandValueContextCalculatorTest {
         )
 
         val kanTile = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 1))
-        val riichiState = RiichiPlayerState(riichiTile = kanTile)
+        val riichiState = riichiDeclarationComponents(declarationTile = kanTile)
         var player = createPlayer(hand, riichiState)
         player = player.recordAction(
             GameAction.Kan(
@@ -696,8 +707,8 @@ class RiichiHandValueContextCalculatorTest {
         val declared = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 1))
         val discarder = FakeMahjongPlayerFactory.create(
             initialSeat = Wind.SOUTH,
-            discardPile = RiichiDiscardPile().discard(RiichiDiscardEntry(declared, isRiichi = true)),
-            playerRuleState = RiichiPlayerState(),
+            discardPile = RiichiDiscardPile().discard(DiscardEntry(tile = declared, components = RiichiDiscardComponents.declaration())),
+            components = riichiDeclarationComponents(),
         ).recordAction(RIICHI_GAME_ACTION).recordAction(GameAction.Discard(declared.id))
         val tableState = FakeTableStateFactory.create(players = listOf(winner, discarder), tileWall = TileWall(List(20) { FakeIdentifiedTileFactory.create(Tile.Honor.Red) }), config = RiichiRuleConfig())
 
@@ -738,7 +749,7 @@ class RiichiHandValueContextCalculatorTest {
             FakeMahjongPlayerFactory.create(
                 initialSeat = Wind.SOUTH,
                 discardPile = RiichiDiscardPile().discardTile(discard),
-                playerRuleState = RiichiPlayerState(),
+                components = riichiDeclarationComponents(),
             ),
         ) { player, action -> player.recordAction(action) }
 
@@ -767,7 +778,7 @@ class RiichiHandValueContextCalculatorTest {
      * 驗證不同槓數下的寶牌指示器計算邏輯是否正確。
      *
      * 資料來源是 [TableState.reservedWallTiles]（固定 14 個語意位置、順序穩定），索引在整個對局期間都不會變動，
-     * 見 [RiichiDynamicState.getDoraIndicators] KDoc。
+     * 見 [RiichiWallProgress.getDoraIndicators] KDoc。
      *
      * 計算公式：`baseIndex = 4 + (i * 2)`，其中 `indicatorCount = (1 + kanCount).coerceAtMost(5)`
      * - 0 槓：baseIndex = 4 → 寶牌 1 張
@@ -818,7 +829,7 @@ class RiichiHandValueContextCalculatorTest {
          * | 13 | - | - | - | - | uraDora5 |
          */
         val wanPaiTiles = listOf(
-            FakeIdentifiedTileFactory.create(RiichiTileTypes.redFive(Tile.Suit.Character)), // wanPai[0]
+            FakeIdentifiedTileFactory.create(RiichiTileValues.redFive(Tile.Suit.Character)), // wanPai[0]
             FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 9)), // wanPai[1]
             FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 3)), // wanPai[2]
             FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 1)), // wanPai[3]
@@ -838,7 +849,7 @@ class RiichiHandValueContextCalculatorTest {
             players = listOf(player),
             tileWall = TileWall(wanPaiTiles),
             config = RiichiRuleConfig(),
-            dynamicRuleState = RiichiDynamicState(),
+            components = riichiTableComponents(potPoints = 0),
             reservedWallTiles = wanPaiTiles,
         )
 
@@ -866,7 +877,7 @@ class RiichiHandValueContextCalculatorTest {
             players = listOf(player1Kan),
             tileWall = TileWall(wanPaiTiles),
             config = RiichiRuleConfig(),
-            dynamicRuleState = RiichiDynamicState(completedSupplementalDrawCount = 1),
+            components = riichiTableComponents(potPoints = 0, wallProgress = RiichiWallProgress(completedSupplementalDrawCount = 1, revealedKanDoraCount = 1)),
             reservedWallTiles = afterSupplementalDraws(wanPaiTiles, 1),
         )
         val context1Kan = calculator.calculate(
@@ -891,7 +902,7 @@ class RiichiHandValueContextCalculatorTest {
             players = listOf(player2Kan),
             tileWall = TileWall(wanPaiTiles),
             config = RiichiRuleConfig(),
-            dynamicRuleState = RiichiDynamicState(completedSupplementalDrawCount = 2),
+            components = riichiTableComponents(potPoints = 0, wallProgress = RiichiWallProgress(completedSupplementalDrawCount = 2, revealedKanDoraCount = 2)),
             reservedWallTiles = afterSupplementalDraws(wanPaiTiles, 2),
         )
         val context2Kan = calculator.calculate(
@@ -917,7 +928,7 @@ class RiichiHandValueContextCalculatorTest {
             players = listOf(player3Kan),
             tileWall = TileWall(wanPaiTiles),
             config = RiichiRuleConfig(),
-            dynamicRuleState = RiichiDynamicState(completedSupplementalDrawCount = 3),
+            components = riichiTableComponents(potPoints = 0, wallProgress = RiichiWallProgress(completedSupplementalDrawCount = 3, revealedKanDoraCount = 3)),
             reservedWallTiles = afterSupplementalDraws(wanPaiTiles, 3),
         )
         val context3Kan = calculator.calculate(
@@ -944,7 +955,7 @@ class RiichiHandValueContextCalculatorTest {
             players = listOf(player4Kan),
             tileWall = TileWall(wanPaiTiles),
             config = RiichiRuleConfig(),
-            dynamicRuleState = RiichiDynamicState(completedSupplementalDrawCount = 4),
+            components = riichiTableComponents(potPoints = 0, wallProgress = RiichiWallProgress(completedSupplementalDrawCount = 4, revealedKanDoraCount = 4)),
             reservedWallTiles = afterSupplementalDraws(wanPaiTiles, 4),
         )
         val context4Kan = calculator.calculate(

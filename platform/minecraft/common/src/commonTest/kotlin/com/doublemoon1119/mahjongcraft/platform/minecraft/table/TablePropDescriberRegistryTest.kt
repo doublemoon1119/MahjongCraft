@@ -50,7 +50,12 @@ class TablePropDescriberRegistryTest {
     @Test
     fun `placement rejects a kind without namespace`() {
         assertFailsWith<IllegalArgumentException> {
-            TablePropPlacement(kind = "scoring_stick", variant = "1000", seatIndex = 0, anchor = TableSeatAnchor.MELD_CORNER)
+            TablePropPlacement(
+                id = "example:registry-prop",
+                kind = "scoring_stick",
+                content = TablePropContent.CustomVariant("1000"),
+                location = TablePropLocation.Seat(seatIndex = 0, anchor = TableSeatAnchor.MELD_CORNER),
+            )
         }
     }
 }

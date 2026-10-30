@@ -13,6 +13,7 @@ import com.doublemoon1119.mahjongcraft.ai.riichi.RiichiOpponentModel
 import com.doublemoon1119.mahjongcraft.extension.CoreExtensionRegistries
 import com.doublemoon1119.mahjongcraft.extension.MahjongExtension
 import com.doublemoon1119.mahjongcraft.flow.client.game.ClientDecisionTimerStateStore
+import com.doublemoon1119.mahjongcraft.flow.common.game.event.GameEventPublicMarkerResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinRoundContinuationContext
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinRoundDirective
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.riichi.RiichiGameCommand
@@ -45,7 +46,6 @@ import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDiscardReadinessAnalyzer
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiGameAction
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.RiichiTileTypes
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.tile.TaiwanTileTypes
 import com.doublemoon1119.mahjongcraft.logic.tile.TileTypeRegistry
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.concurrency.ClientCoroutineScope
@@ -372,7 +372,7 @@ class FabricApplicationModuleTest {
         assertTrue(presentationRegistries.ruleCatalogueRegistry.isFrozen)
         assertSame(koin.get<GameAchievementResolverRegistry>(), presentationRegistries.gameAchievementResolverRegistry)
         assertTrue(presentationRegistries.gameAchievementResolverRegistry.isFrozen)
-        assertEquals(RiichiTileTypes.ALL + TaiwanTileTypes.ALL, tileTypeRegistry.getAll().map { it.id })
+        assertEquals(TaiwanTileTypes.ALL, tileTypeRegistry.getAll().map { it.id })
         assertTrue(minecraftTileAssetRegistry.isFrozen)
         assertTrue(aiStrategyDisplayNameRegistry.isFrozen)
         assertTrue(tileDisplayNameRegistry.isFrozen)
@@ -555,6 +555,7 @@ class FabricApplicationModuleTest {
         assertSame(koin.get<RuleDecisionResolverRegistry>(), core.ruleDecisionResolverRegistry)
         assertSame(koin.get<WinRoundContinuationResolverRegistry>(), core.winRoundContinuationResolverRegistry)
         assertSame(koin.get<WinSettlementDetailResolverRegistry>(), core.winSettlementDetailResolverRegistry)
+        assertSame(koin.get<GameEventPublicMarkerResolverRegistry>(), core.gameEventPublicMarkerResolverRegistry)
 
         assertSame(koin.get<MinecraftTileAssetRegistry>(), presentation.tileAssetRegistry)
         assertSame(koin.get<RuleCatalogueRegistry>(), presentation.ruleCatalogueRegistry)

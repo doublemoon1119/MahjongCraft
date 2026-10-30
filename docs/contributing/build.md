@@ -30,7 +30,7 @@
   API each read their own version from `gradle/libs.versions.toml`. The root and testing projects remain
   `0.0.0-dev` because they are not published.
 
-## Mod Dependency Requirements
+## Minecraft Mod Dependency Requirements
 
 - Keep dependency versions and runtime requirements in `gradle/libs.versions.toml`. A version used to
   compile the mod is not automatically its minimum supported version. Keep a separate requirement when
@@ -60,8 +60,9 @@
   artifact names distinct from product artifacts. Product project paths remain unchanged.
 - Product modules never depend on examples. Example resources and classes belong only to the example
   mod. Its development runs use separate worlds and do not modify the product's run classpath.
-- Keep metadata defaults unchanged for product modules. Examples set their own identity through
-  `MinecraftModPackagingExtension` instead of changing root metadata or copying compiler settings.
+- Keep metadata defaults unchanged for product modules. Examples set their own identity through the
+  owning packaging convention instead of changing root metadata or copying compiler settings. For
+  example, Minecraft adapters use `MinecraftModPackagingExtension`.
 - Verify both example-enabled and default builds. Test the actual remapped JAR contents, not just
   compilation, and keep configuration cache enabled. See the
   [Minecraft example guide](../../example/platform/minecraft/README.md) for run commands.

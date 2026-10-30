@@ -9,7 +9,6 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryRecording
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryRecordingTerminal
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.Game
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameFlowConfig
-import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepositoryImpl
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateSnapshot
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateStore
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
@@ -18,6 +17,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftServer
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftServerConfigState
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocationRegistry
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledPersistenceRegistries
+import com.doublemoon1119.mahjongcraft.testing.flow.common.game.repository.componentValidatedGameRepository
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
@@ -412,7 +412,7 @@ class FabricHistoryOutboxWriterTest {
      */
     private suspend fun startMatch(store: AuthoritativeStateStore): Game {
         val table = FakeTableStateFactory.create()
-        GameRepositoryImpl(store).updateGame(table.id, history = { _, _, _ ->
+        componentValidatedGameRepository(store).updateGame(table.id, history = { _, _, _ ->
             listOf(HistoryEventDraft(null, HistoryFact.MatchStarted(table, GameFlowConfig(), emptyMap())))
         }) { Game(table, GameFlowConfig()) to Unit }
         return checkNotNull(store.getGame(table.id))

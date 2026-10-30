@@ -24,9 +24,7 @@ class DiceRollPresentationEntity(
 ) : Entity(type, world) {
     /** 所屬麻將桌；未完成設定或資料損壞時為 `null`。 */
     val managedTableId: Uuid?
-        get() = dataTracker[TABLE_ID].takeIf(String::isNotBlank)?.let { encoded ->
-            runCatching { Uuid.parse(encoded) }.getOrNull()
-        }
+        get() = dataTracker[TABLE_ID].takeIf(String::isNotBlank)?.let { encoded -> runCatching { Uuid.parse(encoded) }.getOrNull() }
 
     /** 本次擲骰的最終點數，依投擲順序排列。 */
     val points: List<Int>
@@ -116,7 +114,7 @@ class DiceRollPresentationEntity(
 
     /** 從世界存檔還原完整擲骰結果時間線。 */
     override fun readCustomDataFromNbt(nbt: NbtCompound) {
-        dataTracker.set(TABLE_ID, nbt.getString(NBT_KEY_TABLE_ID))
+        dataTracker.set(TABLE_ID, ManagedTableNbt.read(nbt)?.toString().orEmpty())
         dataTracker.set(POINTS, nbt.getString(NBT_KEY_POINTS))
         dataTracker.set(REVEAL_GAME_TIME, nbt.getLong(NBT_KEY_REVEAL_GAME_TIME))
         dataTracker.set(END_GAME_TIME, nbt.getLong(NBT_KEY_END_GAME_TIME))
@@ -124,7 +122,7 @@ class DiceRollPresentationEntity(
 
     /** 將完整擲骰結果時間線寫入世界存檔。 */
     override fun writeCustomDataToNbt(nbt: NbtCompound) {
-        nbt.putString(NBT_KEY_TABLE_ID, dataTracker[TABLE_ID])
+        ManagedTableNbt.write(nbt, managedTableId)
         nbt.putString(NBT_KEY_POINTS, dataTracker[POINTS])
         nbt.putLong(NBT_KEY_REVEAL_GAME_TIME, revealGameTime)
         nbt.putLong(NBT_KEY_END_GAME_TIME, endGameTime)
@@ -151,9 +149,6 @@ class DiceRollPresentationEntity(
 
         /** 合法骰子點數。 */
         private val VALID_POINT_RANGE: IntRange = 1..6
-
-        /** 世界存檔中的桌子 ID key。 */
-        private const val NBT_KEY_TABLE_ID = "TableId"
 
         /** 世界存檔中的點數序列 key。 */
         private const val NBT_KEY_POINTS = "Points"

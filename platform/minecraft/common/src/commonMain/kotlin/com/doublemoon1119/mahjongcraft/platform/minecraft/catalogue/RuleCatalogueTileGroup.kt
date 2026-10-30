@@ -1,15 +1,15 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.catalogue
-import com.doublemoon1119.mahjongcraft.logic.base.Tile
+import com.doublemoon1119.mahjongcraft.logic.base.TileFaceView
 
 /**
- * 範例中的獨立牌組，沿用數牌、字牌及帶有穩定 ID 的擴充牌模型。
+ * 範例中的獨立牌組；每張牌是已公開的牌面，可帶外觀樣式，例如赤五。
  *
  * @property role 牌組語意，不依位置推測和牌張或副露。
- * @property tiles 牌種排列順序。
+ * @property tiles 依排列順序的牌面。
  */
 data class RuleCatalogueTileGroup(
     val role: RuleCatalogueTileGroupRole,
-    val tiles: List<Tile>,
+    val tiles: List<TileFaceView>,
 ) {
     init {
         require(tiles.isNotEmpty()) { "Catalogue tile group must not be empty" }

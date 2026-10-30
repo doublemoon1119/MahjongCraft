@@ -12,7 +12,11 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.api.seating.SeatProvid
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.seating.SeatRequest
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.seating.SeatTarget
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.BuiltInTablePropKinds
+import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TablePropContent
+import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TablePropDimensions
+import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TablePropKindDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TablePropTarget
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistryImpl
 import net.minecraft.entity.Entity
 import net.minecraft.server.world.ServerWorld
 import net.minecraft.util.math.Box
@@ -46,7 +50,7 @@ class FabricTablePropKindRegistrationTest {
     ) = FabricMahjongExtensionRegistrar.registerAndFreeze(
         extensions = extensions,
         registries = FabricExtensionRegistries(tablePropKindRegistry, seatProviderRegistry),
-        builtIn = BuiltInFabricMahjongExtension(FakeProvider()),
+        builtIn = BuiltInFabricMahjongExtension(FakeProvider(), MinecraftTileAssetRegistryImpl()),
         failurePolicy = ExtensionFailurePolicy.Default,
     )
 
@@ -55,10 +59,15 @@ class FabricTablePropKindRegistrationTest {
      *
      * @property id 桌面物件種類識別碼。
      */
-    private class FakeKind(override val id: String) : FabricTablePropKind {
+    private class FakeKind(id: String) : FabricTablePropKind {
+        override val definition = TablePropKindDefinition(id, TablePropDimensions(0.1, 0.1, 0.1))
+
+        override fun placementIdOf(entity: Entity): String? = null
+
+        override fun ruleModuleIdOf(entity: Entity): String? = null
         override fun findManaged(world: ServerWorld, tableId: Uuid, searchBox: Box): List<Entity> = emptyList()
 
-        override fun variantOf(entity: Entity): String? = null
+        override fun contentOf(entity: Entity): TablePropContent? = null
 
         override fun create(world: ServerWorld, tableId: Uuid, target: TablePropTarget): Entity? = null
     }
@@ -84,10 +93,10 @@ class FabricTablePropKindRegistrationTest {
 
         val sources = register(listOf(KindExtension("example:kind", listOf(custom))), tablePropKindRegistry = registry)
 
-        assertEquals(listOf(BuiltInTablePropKinds.SCORING_STICK, "example:marker"), registry.kinds.map { it.id })
+        assertEquals(listOf(BuiltInTablePropKinds.SCORING_STICK, "mahjongcraft:face_up_tile", "example:marker"), registry.kinds.map { it.id })
         assertSame(ScoringStickTablePropKind, registry.find(BuiltInTablePropKinds.SCORING_STICK))
         assertEquals(
-            listOf(null to listOf(BuiltInTablePropKinds.SCORING_STICK), "example:kind" to listOf("example:marker")),
+            listOf(null to listOf("mahjongcraft:face_up_tile", BuiltInTablePropKinds.SCORING_STICK), "example:kind" to listOf("example:marker")),
             sources.map { source ->
                 source.extensionId to source.categories
                     .filter { it.id == "mahjongcraft:table_prop_kind" }
@@ -148,7 +157,7 @@ class FabricTablePropKindRegistrationTest {
                 extension("example:second", "example:second-kind", "example:second-seat"),
             ),
             registries = FabricExtensionRegistries(tablePropRegistry, seatProviderRegistry),
-            builtIn = BuiltInFabricMahjongExtension(FakeProvider()),
+            builtIn = BuiltInFabricMahjongExtension(FakeProvider(), MinecraftTileAssetRegistryImpl()),
             failurePolicy = ExtensionFailurePolicy.Default,
         )
 
@@ -167,7 +176,7 @@ class FabricTablePropKindRegistrationTest {
         assertEquals(
             expected = listOf(
                 null to listOf(
-                    "mahjongcraft:table_prop_kind" to listOf(BuiltInTablePropKinds.SCORING_STICK),
+                    "mahjongcraft:table_prop_kind" to listOf("mahjongcraft:face_up_tile", BuiltInTablePropKinds.SCORING_STICK),
                     "mahjongcraft:seat_provider" to listOf("mahjongcraft:mahjong_stool"),
                 ),
                 "example:first" to listOf(

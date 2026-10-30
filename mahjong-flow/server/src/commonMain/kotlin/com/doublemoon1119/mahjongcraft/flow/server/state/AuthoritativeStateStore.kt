@@ -15,6 +15,8 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryTableResu
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryTransferResult
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.Game
 import com.doublemoon1119.mahjongcraft.flow.common.room.model.Room
+import com.doublemoon1119.mahjongcraft.flow.server.game.history.HistoryTilePresentationResolver
+import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -35,12 +37,14 @@ import kotlin.uuid.Uuid
  * @property historyClock 產生歷史事件 UTC 時間戳的時鐘；事件順序仍由序號決定。
  * @property maxPendingHistoryEvents 待寫佇列的容量上限；超出時只保留序號缺口，不阻塞對局。
  * @property historyRecordingObserver 接收每次交易記錄歷史事件的耗時與事件數；null 時不量測。
+ * @property tilePresentationResolver 解算每筆交易提交後的牌張呈現；null 時牌譜不含牌張呈現。
  */
 class AuthoritativeStateStore(
     historyRecordingEnabled: Boolean = false,
     private val historyClock: Clock = Clock.System,
     val maxPendingHistoryEvents: Int = 256,
     private val historyRecordingObserver: HistoryRecordingObserver? = null,
+    private val tilePresentationResolver: HistoryTilePresentationResolver? = null,
 ) {
     init {
         require(maxPendingHistoryEvents >= 0) { "Pending history capacity must not be negative" }
@@ -547,8 +551,10 @@ class AuthoritativeStateStore(
                         } else {
                             null
                         }
-                        runCatching { recording.append(game, entry.value + listOfNotNull(resultDraft), timestamp, maxPendingHistoryEvents) }
-                            .getOrElse { recording.recordMissing(game) }
+                        runCatching {
+                            val presentationDraft = tilePresentationDraft(before, after, hasSnapshot)
+                            recording.append(game, entry.value + listOfNotNull(presentationDraft, resultDraft), timestamp, maxPendingHistoryEvents)
+                        }.getOrElse { recording.recordMissing(game) }
                     }
                     if (recordingMark != null && update.historyDraftsByVenueId.isNotEmpty()) {
                         val appended = (withDrafts.pendingEvents.size - recording.pendingEvents.size).coerceAtLeast(0)
@@ -605,5 +611,27 @@ class AuthoritativeStateStore(
                 runCatching { pending.listener.onReleased(pending.sequence) }
             }
         }
+    }
+
+    /**
+     * 建立牌張呈現變化：開局交易列出所有牌，其他交易只列出呈現改變的牌。
+     *
+     * @param before 交易前的桌況；新對局為 null。
+     * @param after 交易後的桌況；對局移除時為 null。
+     * @param hasSnapshot 本交易是否保存開局完整桌況。
+     * @return 呈現變化的歷史事件；沒有解算器、沒有桌況或沒有變化時為 null。
+     */
+    private fun tilePresentationDraft(
+        before: TableState?,
+        after: TableState?,
+        hasSnapshot: Boolean,
+    ): HistoryEventDraft? {
+        val resolver = tilePresentationResolver ?: return null
+        if (after == null || (!hasSnapshot && before == after)) return null
+        val current = resolver.resolve(after)
+        val previous = if (hasSnapshot || before == null) emptyMap() else resolver.resolve(before)
+        val changes = current.filter { (tileId, presentation) -> previous[tileId] != presentation }
+        if (changes.isEmpty()) return null
+        return HistoryEventDraft(actorPlayerId = null, fact = HistoryFact.TilePresentationChanged(changes))
     }
 }

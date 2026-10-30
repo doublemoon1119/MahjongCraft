@@ -6,13 +6,13 @@ import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.logic.module.RevealedHandSettlement
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RIICHI_GAME_ACTION
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDiscardEntry
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDiscardComponents
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDiscardPile
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDynamicState
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPendingKanDoraReveal
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPlayerState
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.RiichiTileTypes
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiWallProgress
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.RiichiTileValues
+import com.doublemoon1119.mahjongcraft.logic.table.DiscardPile.DiscardEntry
 import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayer
 import com.doublemoon1119.mahjongcraft.logic.table.PendingReaction
 import com.doublemoon1119.mahjongcraft.logic.table.PendingRobbingReaction
@@ -28,12 +28,13 @@ import com.doublemoon1119.mahjongcraft.logic.table.opening.DiceRollResult
 import com.doublemoon1119.mahjongcraft.logic.table.opening.OpeningDiceRoll
 import com.doublemoon1119.mahjongcraft.logic.table.opening.WallOpening
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledPersistenceRegistries
+import com.doublemoon1119.mahjongcraft.testing.logic.rules.riichi.riichiDeclarationComponents
+import com.doublemoon1119.mahjongcraft.testing.logic.rules.riichi.riichiTableComponents
 import kotlinx.serialization.SerializationException
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.uuid.Uuid
-
 /** 驗證完整權威桌況經存檔 JSON 編解碼後仍保持一致。 */
 class TableStatePersistenceTest {
 
@@ -43,11 +44,7 @@ class TableStatePersistenceTest {
     /** 內建牌河的 persistence registry。 */
     private val discardPileRegistry = bundledPersistenceRegistries().discardPiles
 
-    /** 內建玩家規則狀態的 persistence registry。 */
-    private val playerRuleStateRegistry = bundledPersistenceRegistries().playerRuleStates
-
     /** 內建動態牌桌狀態的 persistence registry。 */
-    private val dynamicRuleStateRegistry = bundledPersistenceRegistries().dynamicRuleStates
 
     /** 內建擴充動作的 persistence registry。 */
     private val extensionGameActionRegistry = bundledPersistenceRegistries().extensionGameActions
@@ -103,7 +100,7 @@ class TableStatePersistenceTest {
         val state = createTableState()
         val declarerId = state.players.first().id
         val responderId = state.players.last().id
-        val robbedTile = identified(RiichiTileTypes.redFive(Tile.Suit.Dot))
+        val robbedTile = redFive(Tile.Suit.Dot)
         val kanAction = GameAction.Kan(
             type = GameAction.KanType.ADDED_KAN,
             tileId = robbedTile.id,
@@ -161,7 +158,7 @@ class TableStatePersistenceTest {
         val state = createTableState()
         val handTileId = state.players.first().hand.standingTiles.first().id
 
-        assertEncodedRoundTrip(state.copy(revealedHandTileIds = setOf(handTileId)))
+        assertEncodedRoundTrip(state.copy(publicTileEvidenceIds = setOf(handTileId)))
     }
 
     /** 途中流局 resolver 的等待牌資料在存檔往返後保留。 */
@@ -203,7 +200,7 @@ class TableStatePersistenceTest {
         assertFailsWith<IllegalArgumentException> { corrupted.toDomain() }
     }
 
-    /** 建立含兩位玩家、隱藏手牌、牌河與日麻動態規則狀態的測試桌況。 */
+    /** 建立含兩位玩家、隱藏手牌、牌河與日麻對局組件的測試桌況。 */
     private fun createTableState(): TableState {
         val humanDiscard = identified(Tile.Honor.East)
         val human = MahjongPlayer(
@@ -214,8 +211,8 @@ class TableStatePersistenceTest {
                 tiles = listOf(identified(Tile.Numeric(Tile.Suit.Character, 1))),
                 lastDrawn = identified(Tile.Numeric(Tile.Suit.Character, 2)),
             ),
-            discardPile = RiichiDiscardPile().discard(RiichiDiscardEntry(humanDiscard, isRiichi = true)),
-            playerRuleState = RiichiPlayerState(riichiTile = humanDiscard, isIppatsu = true),
+            discardPile = RiichiDiscardPile().discard(DiscardEntry(tile = humanDiscard, components = RiichiDiscardComponents.declaration())),
+            components = riichiDeclarationComponents(declarationTile = humanDiscard, isIppatsu = true),
             score = 24_000,
             passedTilesInRound = setOf(Tile.Honor.White),
             actionHistory = listOf(RIICHI_GAME_ACTION, GameAction.Discard(humanDiscard.id)),
@@ -226,7 +223,7 @@ class TableStatePersistenceTest {
             seatWind = Wind.SOUTH,
             hand = Hand(tiles = listOf(identified(Tile.Numeric(Tile.Suit.Bamboo, 9)))),
             discardPile = RiichiDiscardPile(),
-            playerRuleState = RiichiPlayerState(),
+            components = riichiDeclarationComponents(),
             score = 26_000,
         )
         return TableState(
@@ -236,7 +233,7 @@ class TableStatePersistenceTest {
             tileWall = TileWall(
                 listOf(
                     identified(Tile.Honor.Red),
-                    identified(RiichiTileTypes.redFive(Tile.Suit.Dot)),
+                    redFive(Tile.Suit.Dot),
                 ),
             ),
             dealerPlayerId = human.id,
@@ -244,12 +241,14 @@ class TableStatePersistenceTest {
             roundNumber = 5,
             comboCount = 2,
             currentPlayerIndex = 1,
-            dynamicRuleState = RiichiDynamicState(
-                riichiStickCount = 3,
-                completedSupplementalDrawCount = 2,
-                revealedKanDoraCount = 1,
-                pendingKanDoraReveals = listOf(
-                    RiichiPendingKanDoraReveal(human.id, GameAction.KanType.OPEN_KAN, 2),
+            components = riichiTableComponents(
+                potPoints = 3000,
+                wallProgress = RiichiWallProgress(
+                    completedSupplementalDrawCount = 2,
+                    revealedKanDoraCount = 1,
+                    pendingKanDoraReveals = listOf(
+                        RiichiPendingKanDoraReveal(human.id, GameAction.KanType.OPEN_KAN, 2),
+                    ),
                 ),
             ),
         )
@@ -276,20 +275,18 @@ class TableStatePersistenceTest {
     private fun TableState.toPersistenceDto(): TableStatePersistenceDto = toPersistenceDto(
         ruleConfigRegistry,
         discardPileRegistry,
-        playerRuleStateRegistry,
-        dynamicRuleStateRegistry,
         exhaustiveDrawReasonRegistry,
         extensionGameActionRegistry,
+        bundledPersistenceRegistries().components,
     )
 
     /** 使用所有內建 registry 將 persistence DTO 還原成 [TableState]。 */
     private fun TableStatePersistenceDto.toDomain(): TableState = toDomain(
         ruleConfigRegistry,
         discardPileRegistry,
-        playerRuleStateRegistry,
-        dynamicRuleStateRegistry,
         exhaustiveDrawReasonRegistry,
         extensionGameActionRegistry,
+        bundledPersistenceRegistries().components,
     )
 
     /**
@@ -300,3 +297,11 @@ class TableStatePersistenceTest {
      */
     private fun identified(tile: Tile): IdentifiedTile = IdentifiedTile(Uuid.random(), tile)
 }
+
+/**
+ * 建立帶赤寶牌特性與赤五外觀的牌張。
+ *
+ * @param suit 赤五的花色。
+ * @return 新的赤五牌張。
+ */
+private fun redFive(suit: Tile.Suit): IdentifiedTile = RiichiTileValues.redFive(suit).let { IdentifiedTile(Uuid.random(), it.tile, it.components) }

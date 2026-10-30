@@ -4,13 +4,13 @@ import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.base.Hand
 import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
+import com.doublemoon1119.mahjongcraft.logic.component.BuiltInComponentOwners
 import com.doublemoon1119.mahjongcraft.logic.judgment.DiscardReadinessAnalysis
 import com.doublemoon1119.mahjongcraft.logic.judgment.DiscardReadinessAnalyzer
 import com.doublemoon1119.mahjongcraft.logic.judgment.HandReadinessAnalysis
 import com.doublemoon1119.mahjongcraft.logic.judgment.ShantenResult
 import com.doublemoon1119.mahjongcraft.logic.judgment.WaitingTileAvailability
 import com.doublemoon1119.mahjongcraft.logic.judgment.WaitingTileAvailabilityIds
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.riichiCanonical
 import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayer
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import kotlin.uuid.Uuid
@@ -33,7 +33,7 @@ class RiichiDiscardReadinessAnalyzer(
         if (player.hand.standingTiles.size % COMPLETE_GROUP_SIZE != 1) return null
         val tenpai = shantenCalculator.calculate(Hand(player.hand.standingTiles, player.hand.melds)) as? ShantenResult.Tenpai
             ?: return null
-        val waits = tenpai.winningTiles.map(Tile::riichiCanonical).distinct()
+        val waits = tenpai.winningTiles.distinct()
         if (waits.isEmpty()) return null
         return HandReadinessAnalysis(
             waitingTiles = waitingTileAvailability(
@@ -69,8 +69,31 @@ class RiichiDiscardReadinessAnalyzer(
     ): List<DiscardReadinessAnalysis> {
         if (action != RIICHI_GAME_ACTION) return analyze(tableState = tableState, player = player, visibleTiles = visibleTiles)
         return analyzeWithProjection(tableState, player, visibleTiles) { discardResult, _ ->
-            applyRiichiDeclaration(tableState, player, discardResult)?.player
+            declaredPlayer(tableState = tableState, player = player, discardResult = discardResult)
         }
+    }
+
+    /**
+     * 依正式的立直宣告效果投影宣告後的玩家：打出宣告牌、標記宣告捨牌、記錄立直並支付立直棒。
+     *
+     * @param tableState 宣告前的權威桌況。
+     * @param player 宣告立直的玩家。
+     * @param discardResult 宣告打出的牌與打牌後手牌。
+     * @return 宣告後的玩家。
+     */
+    private fun declaredPlayer(
+        tableState: TableState,
+        player: MahjongPlayer,
+        discardResult: Hand.DiscardResult,
+    ): MahjongPlayer {
+        val effect = riichiDeclarationEffect(tableState, player, discardResult)
+        val pileWithDiscard = player.discardPile.discardTile(discardResult.tile)
+        return player.copy(
+            hand = discardResult.hand,
+            discardPile = pileWithDiscard.replaceEntryComponents(pileWithDiscard.entries.lastIndex, effect.discardComponents),
+            score = player.score - effect.cost,
+            components = effect.playerComponents.applyTo(player.components, BuiltInComponentOwners.PLAYER),
+        )
     }
 
     /**
@@ -88,17 +111,16 @@ class RiichiDiscardReadinessAnalyzer(
         visibleTiles: List<IdentifiedTile>,
         projectPlayer: (Hand.DiscardResult, MahjongPlayer) -> MahjongPlayer?,
     ): List<DiscardReadinessAnalysis> {
-        val riichiState = player.playerRuleState as? RiichiPlayerState
         return player.hand.standingTiles.mapNotNull { discard ->
             val result = player.hand.discardById(discard.id) ?: return@mapNotNull null
             val hypotheticalPlayer = player.copy(hand = result.hand)
             val projectedPlayer = projectPlayer(result, hypotheticalPlayer) ?: return@mapNotNull null
             val tenpai = shantenCalculator.calculate(Hand(result.hand.tiles, result.hand.melds)) as? ShantenResult.Tenpai
                 ?: return@mapNotNull null
-            val waits = tenpai.winningTiles.map(Tile::riichiCanonical).distinct()
+            val waits = tenpai.winningTiles.distinct()
             val status = when {
-                riichiState?.isPermanentlyFuriten == true -> PERMANENT_FURITEN
-                waits.any { it in discardedTiles(player) + discard.tile.riichiCanonical } -> DISCARD_FURITEN
+                player.components[RiichiPlayerComponents.PERMANENT_FURITEN] != null -> PERMANENT_FURITEN
+                waits.any { it in discardedTiles(player) + discard.tile } -> DISCARD_FURITEN
                 waits.any { it in passedTiles(player) } -> TEMPORARY_FURITEN
                 else -> null
             }
@@ -131,7 +153,7 @@ class RiichiDiscardReadinessAnalyzer(
         waits: List<Tile>,
     ): List<WaitingTileAvailability> {
         val visibleCounts = visibleTiles.distinctBy { it.id }
-            .groupingBy { it.tile.riichiCanonical }
+            .groupingBy { it.tile }
             .eachCount()
         return waits.map { tile ->
             WaitingTileAvailability(
@@ -154,7 +176,7 @@ class RiichiDiscardReadinessAnalyzer(
      * @return 適用的日麻狀態識別碼；沒有振聽時為 null。
      */
     private fun readinessStatus(player: MahjongPlayer, waits: List<Tile>): String? = when {
-        (player.playerRuleState as? RiichiPlayerState)?.isPermanentlyFuriten == true -> PERMANENT_FURITEN
+        player.components[RiichiPlayerComponents.PERMANENT_FURITEN] != null -> PERMANENT_FURITEN
         waits.any { it in discardedTiles(player) } -> DISCARD_FURITEN
         waits.any { it in passedTiles(player) } -> TEMPORARY_FURITEN
         else -> null
@@ -167,7 +189,7 @@ class RiichiDiscardReadinessAnalyzer(
      * @return 已捨出牌種集合。
      */
     private fun discardedTiles(player: MahjongPlayer): Set<Tile> = player.discardPile.entries
-        .mapTo(linkedSetOf()) { it.tile.tile.riichiCanonical }
+        .mapTo(linkedSetOf()) { it.tile.tile }
 
     /**
      * 取得玩家本局已跳過的日麻正規化牌種。
@@ -176,7 +198,7 @@ class RiichiDiscardReadinessAnalyzer(
      * @return 已跳過牌種集合。
      */
     private fun passedTiles(player: MahjongPlayer): Set<Tile> = player.passedTilesInRound
-        .mapTo(linkedSetOf(), Tile::riichiCanonical)
+        .toCollection(linkedSetOf())
 
     /**
      * 將日麻的和牌可用性判定轉為 [WaitingTileAvailability.winAvailability] 用的命名字串。

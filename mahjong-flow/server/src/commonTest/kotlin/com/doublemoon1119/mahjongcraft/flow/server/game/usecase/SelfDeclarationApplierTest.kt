@@ -2,13 +2,18 @@ package com.doublemoon1119.mahjongcraft.flow.server.game.usecase
 
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDynamicState
+import com.doublemoon1119.mahjongcraft.logic.component.ComponentPatch
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleModule
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiWallProgress
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.riichiWallProgress
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.toTableComponentPatch
 import com.doublemoon1119.mahjongcraft.logic.table.SupplementalDrawDecision
 import com.doublemoon1119.mahjongcraft.logic.table.SupplementalDrawReasonIds
 import com.doublemoon1119.mahjongcraft.logic.table.TileWall
+import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledCoreExtensionRegistries
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeIdentifiedTileFactory
+import com.doublemoon1119.mahjongcraft.testing.logic.rules.riichi.riichiTableComponents
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -33,7 +38,7 @@ class SelfDeclarationApplierTest {
             drawnTiles = listOf(drawnTile),
             tileWall = TileWall(listOf(remainingTile)),
             reservedWallTiles = listOf(reservedTile),
-            dynamicRuleState = state.dynamicRuleState,
+            tableComponents = ComponentPatch(),
         )
 
         val result = assertIs<SelfDeclarationApplier.Result.Applied>(
@@ -44,6 +49,8 @@ class SelfDeclarationApplierTest {
                 decision,
                 GameAction.Kan(GameAction.KanType.CLOSED_KAN, drawnTile.id, emptyList()),
                 module,
+
+                componentRegistry = bundledCoreExtensionRegistries().componentRegistry,
             ),
         )
 
@@ -66,7 +73,7 @@ class SelfDeclarationApplierTest {
             drawnTiles = listOf(reservedTile),
             tileWall = TileWall(),
             reservedWallTiles = listOf(reservedTile),
-            dynamicRuleState = state.dynamicRuleState,
+            tableComponents = ComponentPatch(),
         )
 
         val result = assertIs<SelfDeclarationApplier.Result.Rejected>(
@@ -77,6 +84,8 @@ class SelfDeclarationApplierTest {
                 invalidDecision,
                 GameAction.Kan(GameAction.KanType.CLOSED_KAN, reservedTile.id, emptyList()),
                 module,
+
+                componentRegistry = bundledCoreExtensionRegistries().componentRegistry,
             ),
         )
 
@@ -95,13 +104,13 @@ class SelfDeclarationApplierTest {
             config = RiichiRuleConfig(),
             tileWall = TileWall(listOf(loweredTile, replenishment)),
             reservedWallTiles = reservedTiles,
-            dynamicRuleState = RiichiDynamicState(),
+            components = riichiTableComponents(potPoints = 0),
         ).withFirstKanPhysicalWallLayout()
         val decision = SupplementalDrawDecision.Completed(
             drawnTiles = listOf(reservedTiles.first()),
             tileWall = TileWall(listOf(loweredTile)),
             reservedWallTiles = reservedTiles.drop(1) + replenishment,
-            dynamicRuleState = RiichiDynamicState(completedSupplementalDrawCount = 1),
+            tableComponents = RiichiWallProgress(completedSupplementalDrawCount = 1, revealedKanDoraCount = 1).toTableComponentPatch(beforeState.riichiWallProgress()),
         )
         val action = GameAction.Kan(GameAction.KanType.CLOSED_KAN, reservedTiles.first().id, emptyList())
 
@@ -113,6 +122,8 @@ class SelfDeclarationApplierTest {
                 decision,
                 action,
                 module,
+
+                componentRegistry = bundledCoreExtensionRegistries().componentRegistry,
             ),
         )
 

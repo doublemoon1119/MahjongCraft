@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.server.event
 
+import com.doublemoon1119.mahjongcraft.flow.api.event.CommittedMatchEventBatch
 import com.doublemoon1119.mahjongcraft.flow.api.event.MatchEvent
 import com.doublemoon1119.mahjongcraft.platform.fabric.logging.mahjongCraftLogger
 import com.doublemoon1119.mahjongcraft.platform.minecraft.event.GameEventDeliveryReporter
@@ -38,6 +39,22 @@ internal class FabricGameEventDeliveryReporter : GameEventDeliveryReporter {
             event.eventId,
             event.matchId,
             event.venueId,
+            cause,
+        )
+    }
+
+    /** 記錄失敗批次的識別碼、場次、場地與監聽者，與單一事件失敗分開。 */
+    override fun batchListenerFailed(
+        batch: CommittedMatchEventBatch,
+        listener: Any,
+        cause: Throwable,
+    ) {
+        logger.warn(
+            "Game event batch listener {} failed for batch {} in match {} at venue {}",
+            listener.javaClass.name,
+            batch.batchId,
+            batch.matchId,
+            batch.venueId,
             cause,
         )
     }

@@ -1,17 +1,64 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.tile
 
 import com.doublemoon1119.mahjongcraft.logic.base.MeldType
+import com.doublemoon1119.mahjongcraft.logic.base.PublicHandOrder
 import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
+import com.doublemoon1119.mahjongcraft.logic.tile.component.TilePose
+import com.doublemoon1119.mahjongcraft.logic.tile.component.TilePoseState
 import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongTableFacing
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongTableSeatLayout
 import kotlin.math.abs
 import kotlin.test.Test
+import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 import kotlin.test.fail
 import kotlin.uuid.Uuid
 
 /** 以牌區的最終位置驗證牌與牌、牌與桌角物件之間不會重疊。 */
 class MahjongPlayerAreaLayoutTest {
+    /** 完整平放手牌沿用玩家順序，未攤牌的共享布局維持公開順序。 */
+    @Test
+    fun `fully face up hand keeps player order while concealed hand uses public order`() {
+        val ids = List(13) { Uuid.random() }
+        val standing = MahjongPlayerAreaLayout.compute(inputForPose(ids, handIsLaidDown = false))
+        val laidDown = MahjongPlayerAreaLayout.compute(inputForPose(ids, handIsLaidDown = true))
+
+        assertTrue(standing.standing.all { it.footprint == MahjongTileFootprint.STANDING })
+        assertTrue(laidDown.standing.all { it.footprint == MahjongTileFootprint.LYING })
+        assertEquals(PublicHandOrder.arrange(ids), standing.standing.map { it.tileId })
+        assertEquals(ids, laidDown.standing.map { it.tileId })
+    }
+
+    /** 已攤牌的立牌遵循傳入牌序，關閉排序時不自作主張重排；摸牌位不加入立牌列。 */
+    @Test
+    fun `face up hand respects both supplied sorted and manual orders`() {
+        val ids = listOf(
+            Uuid.parse("00000000-0000-0000-0000-000000000003"),
+            Uuid.parse("00000000-0000-0000-0000-000000000001"),
+            Uuid.parse("00000000-0000-0000-0000-000000000002"),
+        )
+        val drawn = Uuid.random()
+        listOf(ids, ids.reversed()).forEach { order ->
+            val input = inputForPose(order, handIsLaidDown = true).copy(drawnTileId = drawn)
+            val result = MahjongPlayerAreaLayout.compute(input)
+            assertEquals(order, result.standing.map { it.tileId })
+            assertTrue(result.standing.none { it.tileId == drawn })
+        }
+    }
+
+    /** 同一手牌可同時有平放與直立牌，不將一張牌的姿態套用整手。 */
+    @Test
+    fun `mixed hand poses apply only to the selected physical tiles`() {
+        val ids = List(4) { Uuid.random() }
+        val input = inputForPose(ids, handIsLaidDown = false).copy(
+            tilePoseStates = listOf(TilePoseState(ids.first(), TilePose.FACE_UP)),
+        )
+        val layout = MahjongPlayerAreaLayout.compute(input)
+        assertEquals(PublicHandOrder.arrange(ids), layout.standing.map { it.tileId })
+        assertTrue(layout.standing.single { it.tileId == ids.first() }.footprint == MahjongTileFootprint.LYING)
+        assertTrue(layout.standing.filterNot { it.tileId == ids.first() }.all { it.footprint == MahjongTileFootprint.STANDING })
+    }
+
     /** 各種人數、座位、桌子朝向、副露組合、移出張數、桌角寬度與摸牌位下，牌區內的牌與桌角區都不互相重疊。 */
     @Test
     fun `player area tiles never overlap each other or the corner props`() {
@@ -56,21 +103,26 @@ class MahjongPlayerAreaLayoutTest {
                         (0..pattern.size).forEach { meldCount ->
                             (0..MAX_SET_ASIDE_TILES).forEach { setAsideCount ->
                                 CORNER_WIDTHS.forEach { cornerWidth ->
-                                    listOf(false, true).forEach { hasDrawnTile ->
-                                        val input = MahjongPlayerAreaLayoutInput(
-                                            controllerX = 0,
-                                            controllerY = 0,
-                                            controllerZ = 0,
-                                            tableFacing = tableFacing,
-                                            seatLayout = seatLayout,
-                                            seatIndex = seatIndex,
-                                            standingTileIds = List(INITIAL_HAND_SIZE - meldCount * MELD_HAND_TILES) { Uuid.random() },
-                                            hasDrawnTile = hasDrawnTile,
-                                            melds = pattern.take(meldCount).map { it.create() },
-                                            setAsideTileIds = List(setAsideCount) { Uuid.random() },
-                                            cornerWidth = cornerWidth,
-                                        )
-                                        check(input, MahjongPlayerAreaLayout.compute(input))
+                                    listOf(false, true).forEach { handIsLaidDown ->
+                                        listOf(false, true).forEach { hasDrawnTile ->
+                                            val ids = List(INITIAL_HAND_SIZE - meldCount * MELD_HAND_TILES) { Uuid.random() }
+                                            val drawn = Uuid.random().takeIf { hasDrawnTile }
+                                            val input = MahjongPlayerAreaLayoutInput(
+                                                controllerX = 0,
+                                                controllerY = 0,
+                                                controllerZ = 0,
+                                                tableFacing = tableFacing,
+                                                seatLayout = seatLayout,
+                                                seatIndex = seatIndex,
+                                                standingTileIds = ids,
+                                                drawnTileId = drawn,
+                                                melds = pattern.take(meldCount).map { it.create() },
+                                                setAsideTileIds = List(setAsideCount) { Uuid.random() },
+                                                cornerWidth = cornerWidth,
+                                                tilePoseStates = if (handIsLaidDown) (ids + listOfNotNull(drawn)).map { TilePoseState(it, TilePose.FACE_UP) } else emptyList(),
+                                            )
+                                            check(input, MahjongPlayerAreaLayout.compute(input))
+                                        }
                                     }
                                 }
                             }
@@ -80,6 +132,22 @@ class MahjongPlayerAreaLayoutTest {
             }
         }
     }
+
+    /** 建立姿態測試使用的最小牌區輸入。 */
+    private fun inputForPose(ids: List<Uuid>, handIsLaidDown: Boolean): MahjongPlayerAreaLayoutInput = MahjongPlayerAreaLayoutInput(
+        controllerX = 0,
+        controllerY = 0,
+        controllerZ = 0,
+        tableFacing = MahjongTableFacing.NORTH,
+        seatLayout = MahjongTableSeatLayout.forPlayerCount(4),
+        seatIndex = 0,
+        standingTileIds = ids,
+        drawnTileId = null,
+        melds = emptyList(),
+        setAsideTileIds = emptyList(),
+        cornerWidth = 0.0,
+        tilePoseStates = if (handIsLaidDown) ids.map { TilePoseState(it, TilePose.FACE_UP) } else emptyList(),
+    )
 
     /**
      * 算出牌區每張牌與桌角區在桌面上佔用的範圍。
@@ -92,8 +160,14 @@ class MahjongPlayerAreaLayoutTest {
         val alongIsX = rowRunsAlongX(input)
         val tiles = layout.standing + layout.melds.flatten() + layout.setAside
         val tileFootprints = tiles.map { tile -> Footprint.of(tile.tileId.toString(), tile.placement, tile.halfAlong(), tile.halfAcross(), alongIsX) }
-        val drawnFootprint = layout.drawnSlot.takeIf { input.hasDrawnTile }?.let { slot ->
-            Footprint.of("drawn slot", slot, MahjongTileDimensions.TILE_WIDTH / 2.0, MahjongTileDimensions.TILE_DEPTH / 2.0, alongIsX)
+        val drawnFootprint = layout.drawnSlot.takeIf { (input.drawnTileId != null) }?.let { slot ->
+            Footprint.of(
+                "drawn slot",
+                slot,
+                MahjongTileDimensions.TILE_WIDTH / 2.0,
+                if (input.tilePoseStates.any { it.tileId == input.drawnTileId && it.pose == TilePose.FACE_UP }) MahjongTileDimensions.TILE_HEIGHT / 2.0 else MahjongTileDimensions.TILE_DEPTH / 2.0,
+                alongIsX,
+            )
         }
         // 桌角物件佔用從桌角錨點起 cornerWidth 的範圍，橫向與平放的副露同寬。
         val cornerFootprint = input.cornerWidth.takeIf { it > 0.0 }?.let { width ->

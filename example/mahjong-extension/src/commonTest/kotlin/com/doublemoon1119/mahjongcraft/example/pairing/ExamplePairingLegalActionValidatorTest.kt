@@ -1,10 +1,11 @@
 package com.doublemoon1119.mahjongcraft.example.pairing
 
-import com.doublemoon1119.mahjongcraft.example.action.ExamplePairingDeclarationAction
+import com.doublemoon1119.mahjongcraft.example.action.ExamplePairingRevealHandAction
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.base.Hand
 import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
+import com.doublemoon1119.mahjongcraft.logic.component.ComponentSet
 import com.doublemoon1119.mahjongcraft.logic.judgment.LegalActionContext
 import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayer
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
@@ -17,9 +18,9 @@ import kotlin.uuid.Uuid
 
 /** 驗證範例規則使用統一的合法動作判定資料。 */
 class ExamplePairingLegalActionValidatorTest {
-    /** 完成牌型且來源為自己的摸牌時，提供自摸與宣告。 */
+    /** 完成牌型且來源為自己的摸牌時，提供自摸與攤牌。 */
     @Test
-    fun `complete own turn offers tsumo and declaration`() {
+    fun `complete own turn offers tsumo and hand reveal`() {
         for (firstTile in listOf(Tile.Numeric(Tile.Suit.Character, 1), ExamplePairingTileType.invertedOneMan())) {
             val hand = Hand(
                 tiles = listOf(identified(firstTile), numeric(1), numeric(2)),
@@ -27,7 +28,7 @@ class ExamplePairingLegalActionValidatorTest {
             )
             val actions = actions(hand)
             assertTrue(GameAction.Tsumo in actions)
-            assertTrue(GameAction.Extension(ExamplePairingDeclarationAction) in actions)
+            assertTrue(GameAction.Extension(ExamplePairingRevealHandAction) in actions)
         }
     }
 
@@ -41,7 +42,7 @@ class ExamplePairingLegalActionValidatorTest {
         assertTrue(GameAction.Tsumo !in actions(hand))
     }
 
-    /** 沒有摸牌時不提供自摸或摸牌後宣告。 */
+    /** 沒有摸牌時不提供自摸或摸牌後攤牌。 */
     @Test
     fun `no draw offers no post draw actions`() {
         assertEquals(emptyList(), actions(Hand(tiles = listOf(numeric(1), numeric(1), numeric(2)))))
@@ -59,7 +60,7 @@ class ExamplePairingLegalActionValidatorTest {
             initialSeatIndex = 0,
             hand = hand,
             discardPile = ExamplePairingDiscardPile(),
-            playerRuleState = ExamplePairingPlayerState(),
+            components = ComponentSet.EMPTY,
             seatWind = Wind.EAST,
         )
         val table = TableState(

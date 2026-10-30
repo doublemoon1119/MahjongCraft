@@ -29,21 +29,22 @@ import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RIICHI_GAME_ACTION
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDynamicState
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiExhaustiveDrawReason
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPlayerState
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.table.PendingReaction
 import com.doublemoon1119.mahjongcraft.logic.table.PendingRobbingReaction
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.logic.table.TileWall
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
+import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledCoreExtensionRegistries
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledWinCelebrationCueResolverRegistry
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.registerBundledRuleModules
 import com.doublemoon1119.mahjongcraft.testing.flow.common.game.repository.FakeGameSnapshotRepository
 import com.doublemoon1119.mahjongcraft.testing.flow.common.game.service.FakeGameEventPublisher
 import com.doublemoon1119.mahjongcraft.testing.flow.common.game.service.FakeGamePresentationPublisher
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeIdentifiedTileFactory
+import com.doublemoon1119.mahjongcraft.testing.logic.rules.riichi.riichiDeclarationComponents
+import com.doublemoon1119.mahjongcraft.testing.logic.rules.riichi.riichiTableComponents
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeDiscardPile
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
@@ -88,13 +89,13 @@ class GameActionRouterTest {
         val gameRepo = FakeGameRepository()
         val moduleRegistry = MahjongModuleRegistryImpl().apply { registerBundledRuleModules() }
         val snapshotRepo = FakeGameSnapshotRepository()
-        val snapshotSynchronizer = GameSnapshotSynchronizer(gameRepo, snapshotRepo, GameVisibilityPolicyImpl(moduleRegistry))
+        val snapshotSynchronizer = GameSnapshotSynchronizer(gameRepo, snapshotRepo, GameVisibilityPolicyImpl(moduleRegistry, componentRegistry = bundledCoreExtensionRegistries().componentRegistry))
         val handSortPreferenceStore = HandSortPreferenceStore()
         val postActionExhaustiveDrawResolverRegistry = PostActionExhaustiveDrawResolverRegistry().apply {
             BundledRiichiExtension.registerPostActionExhaustiveDrawResolvers(this)
             freeze()
         }
-        val winSettlementDetailResolverRegistry = WinSettlementDetailResolverRegistry().apply {
+        val winSettlementDetailResolverRegistry = WinSettlementDetailResolverRegistry(bundledCoreExtensionRegistries().componentRegistry).apply {
             BundledRiichiExtension.registerWinSettlementDetailResolvers(this)
             freeze()
         }
@@ -122,11 +123,15 @@ class GameActionRouterTest {
                     postActionExhaustiveDrawResolverRegistry = postActionExhaustiveDrawResolverRegistry,
                     eventPublisher = eventPublisher,
                     presentationPublisher = presentationPublisher,
+
+                    componentRegistry = bundledCoreExtensionRegistries().componentRegistry,
                 ),
+
+                componentRegistry = bundledCoreExtensionRegistries().componentRegistry,
             ),
         )
         val router = GameActionRouter(
-            drawTileUseCase = DrawTileUseCase(gameRepo, moduleRegistry, snapshotSynchronizer, eventPublisher, presentationPublisher),
+            drawTileUseCase = DrawTileUseCase(gameRepo, moduleRegistry, snapshotSynchronizer, eventPublisher, presentationPublisher, componentRegistry = bundledCoreExtensionRegistries().componentRegistry),
             discardTileUseCase = DiscardTileUseCase(
                 gameRepo,
                 moduleRegistry,
@@ -135,6 +140,8 @@ class GameActionRouterTest {
                 postActionExhaustiveDrawResolverRegistry,
                 eventPublisher,
                 presentationPublisher,
+
+                componentRegistry = bundledCoreExtensionRegistries().componentRegistry,
             ),
             declareTsumoUseCase = DeclareTsumoUseCase(
                 gameRepo,
@@ -145,8 +152,10 @@ class GameActionRouterTest {
                 winPresentationHandoff,
                 winCelebrationCueResolverRegistry = bundledWinCelebrationCueResolverRegistry(),
                 winSettlementDetailResolverRegistry = winSettlementDetailResolverRegistry,
+
+                componentRegistry = bundledCoreExtensionRegistries().componentRegistry,
             ),
-            declareKanUseCase = DeclareKanUseCase(gameRepo, moduleRegistry, snapshotSynchronizer, eventPublisher, presentationPublisher),
+            declareKanUseCase = DeclareKanUseCase(gameRepo, moduleRegistry, snapshotSynchronizer, eventPublisher, presentationPublisher, componentRegistry = bundledCoreExtensionRegistries().componentRegistry),
             respondToDiscardUseCase = RespondToDiscardUseCase(
                 gameRepo,
                 moduleRegistry,
@@ -158,6 +167,8 @@ class GameActionRouterTest {
                 winCelebrationCueResolverRegistry = bundledWinCelebrationCueResolverRegistry(),
                 winSettlementDetailResolverRegistry = winSettlementDetailResolverRegistry,
                 postActionExhaustiveDrawResolverRegistry = postActionExhaustiveDrawResolverRegistry,
+
+                componentRegistry = bundledCoreExtensionRegistries().componentRegistry,
             ),
             respondToRobbingUseCase = RespondToRobbingUseCase(
                 gameRepo,
@@ -168,6 +179,8 @@ class GameActionRouterTest {
                 winPresentationHandoff,
                 winCelebrationCueResolverRegistry = bundledWinCelebrationCueResolverRegistry(),
                 winSettlementDetailResolverRegistry = winSettlementDetailResolverRegistry,
+
+                componentRegistry = bundledCoreExtensionRegistries().componentRegistry,
             ),
             declareAbortiveDrawUseCase = DeclareAbortiveDrawUseCase(gameRepo, moduleRegistry, snapshotSynchronizer, eventPublisher),
             extensionCommandExecutor = extensionCommandExecutor,
@@ -334,7 +347,7 @@ class GameActionRouterTest {
             id = respondentId,
             initialSeat = Wind.SOUTH,
             hand = Hand(tiles = listOf(southTile1, southTile2)),
-            playerRuleState = RiichiPlayerState(),
+            components = riichiDeclarationComponents(),
         )
         return FakeTableStateFactory.create(
             id = gameId,
@@ -374,14 +387,14 @@ class GameActionRouterTest {
                 Tile.Numeric(Tile.Suit.Bamboo, 6), Tile.Numeric(Tile.Suit.Bamboo, 7), Tile.Numeric(Tile.Suit.Bamboo, 8),
             ).map { FakeIdentifiedTileFactory.create(it) } + FakeIdentifiedTileFactory.create(Tile.Honor.White),
         )
-        val robber = FakeMahjongPlayerFactory.create(id = robberId, initialSeat = Wind.SOUTH, hand = robberHand, playerRuleState = RiichiPlayerState())
+        val robber = FakeMahjongPlayerFactory.create(id = robberId, initialSeat = Wind.SOUTH, hand = robberHand, components = riichiDeclarationComponents())
         return FakeTableStateFactory.create(
             id = gameId,
             players = listOf(declarer, robber),
             config = RiichiRuleConfig(),
             reservedWallTiles = reservedWallTiles,
             currentPlayerIndex = 0,
-            dynamicRuleState = RiichiDynamicState(),
+            components = riichiTableComponents(potPoints = 0),
             pendingRobbingReaction = PendingRobbingReaction(declarerId, kanAction, robbedWhiteTile, setOf(robberId)),
         )
     }

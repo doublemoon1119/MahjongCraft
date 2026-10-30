@@ -13,20 +13,23 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.service.HandSortPreferen
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.config.GameLength
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDynamicState
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RIICHI_STICK_POINTS
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiExhaustiveDrawReason
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiGameLength
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.riichiPotPoints
 import com.doublemoon1119.mahjongcraft.logic.table.RoundCompletionClassification
 import com.doublemoon1119.mahjongcraft.logic.table.RoundCompletionSummary
 import com.doublemoon1119.mahjongcraft.logic.table.RoundTransitionDirective
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import com.doublemoon1119.mahjongcraft.logic.table.toSnapshot
+import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledCoreExtensionRegistries
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.registerBundledRuleModules
 import com.doublemoon1119.mahjongcraft.testing.flow.common.game.repository.FakeGameSnapshotRepository
 import com.doublemoon1119.mahjongcraft.testing.flow.common.game.service.FakeGameEventPublisher
 import com.doublemoon1119.mahjongcraft.testing.flow.common.game.service.FakeGamePresentationPublisher
+import com.doublemoon1119.mahjongcraft.testing.logic.rules.riichi.riichiTableComponents
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
 import kotlinx.coroutines.test.runTest
@@ -63,7 +66,7 @@ class AdvanceRoundUseCaseTest {
         val gameRepo = FakeGameRepository()
         val moduleRegistry = MahjongModuleRegistryImpl().apply { registerBundledRuleModules() }
         val snapshotRepo = FakeGameSnapshotRepository()
-        val snapshotSynchronizer = GameSnapshotSynchronizer(gameRepo, snapshotRepo, GameVisibilityPolicyImpl(moduleRegistry))
+        val snapshotSynchronizer = GameSnapshotSynchronizer(gameRepo, snapshotRepo, GameVisibilityPolicyImpl(moduleRegistry, componentRegistry = bundledCoreExtensionRegistries().componentRegistry))
         val handSortPreferenceStore = HandSortPreferenceStore()
         val eventPublisher = FakeGameEventPublisher()
         val presentationPublisher = FakeGamePresentationPublisher()
@@ -74,6 +77,7 @@ class AdvanceRoundUseCaseTest {
             handSortPreferenceStore,
             eventPublisher,
             presentationPublisher,
+            componentRegistry = bundledCoreExtensionRegistries().componentRegistry,
         )
 
         /**
@@ -267,7 +271,7 @@ class AdvanceRoundUseCaseTest {
             roundNumber = 1,
             comboCount = 0,
             prevalentWind = Wind.EAST,
-        ).copy(revealedHandTileIds = setOf(Uuid.random()))
+        ).copy(publicTileEvidenceIds = setOf(Uuid.random()))
         fixtures.setCompletedState(table)
 
         val result = fixtures.useCase(gameId)
@@ -283,7 +287,7 @@ class AdvanceRoundUseCaseTest {
             newState.dealerPlayerId,
             "Dealer should stay the same when tenpai at exhaustive draw.",
         )
-        assertEquals(emptySet(), newState.revealedHandTileIds, "Hands revealed at the draw are concealed again in the new round.")
+        assertEquals(emptySet(), newState.publicTileEvidenceIds, "Hands revealed at the draw are concealed again in the new round.")
     }
 
     /**
@@ -370,7 +374,7 @@ class AdvanceRoundUseCaseTest {
 
     /**
      * 驗證整場對局結束時，桌上未被任何人收下的立直棒歸給最終第一名（分數最高者）——這位玩家的分數
-     * 應加上 `立直棒數 * 1000`，動態規則狀態中的立直棒數應歸零。
+     * 應加上 `立直棒數 * 1000`，對局組件中的供託應歸零。
      */
     @Test
     fun `test advance round awards leftover stick pot to the top-ranked player at match end`() = runTest {
@@ -386,7 +390,7 @@ class AdvanceRoundUseCaseTest {
             roundNumber = 1,
             comboCount = 0,
             prevalentWind = Wind.EAST,
-            dynamicRuleState = RiichiDynamicState(riichiStickCount = 2),
+            components = riichiTableComponents(potPoints = 2000),
         )
         fixtures.setCompletedState(table)
 
@@ -399,7 +403,7 @@ class AdvanceRoundUseCaseTest {
         assertEquals(32000, finalTopPlayer.score, "The final 1st place player should collect all leftover riichi sticks (2 * 1000).")
         assertEquals(
             0,
-            (advanceResult.tableState.dynamicRuleState as RiichiDynamicState).riichiStickCount,
+            (advanceResult.tableState.riichiPotPoints() / RIICHI_STICK_POINTS),
             "The stick pot should be reset once collected.",
         )
         assertEquals(advanceResult.tableState, fixtures.gameRepo.getTableState(gameId), "Repository should reflect the swept state.")
@@ -424,7 +428,7 @@ class AdvanceRoundUseCaseTest {
             roundNumber = 1,
             comboCount = 0,
             prevalentWind = Wind.EAST,
-            dynamicRuleState = RiichiDynamicState(riichiStickCount = 1),
+            components = riichiTableComponents(potPoints = 1000),
         )
         fixtures.setCompletedState(table)
 
@@ -455,7 +459,7 @@ class AdvanceRoundUseCaseTest {
             roundNumber = 1,
             comboCount = 0,
             prevalentWind = Wind.EAST,
-            dynamicRuleState = RiichiDynamicState(riichiStickCount = 0),
+            components = riichiTableComponents(potPoints = 0),
         )
         fixtures.setCompletedState(table)
 
@@ -517,8 +521,8 @@ class AdvanceRoundUseCaseTest {
             config = RiichiRuleConfig(gameLength = RiichiGameLength.East),
         )
         fixtures.setCompletedState(table)
-        fixtures.snapshotRepo.setSnapshot(dealerId, table.toSnapshot(setOf(dealerId), setAsideTiles = { emptyList() }))
-        fixtures.snapshotRepo.setSnapshot(p2.id, table.toSnapshot(setOf(p2.id), setAsideTiles = { emptyList() }))
+        fixtures.snapshotRepo.setSnapshot(dealerId, table.toSnapshot(setOf(dealerId)))
+        fixtures.snapshotRepo.setSnapshot(p2.id, table.toSnapshot(setOf(p2.id)))
 
         fixtures.useCase(gameId)
 

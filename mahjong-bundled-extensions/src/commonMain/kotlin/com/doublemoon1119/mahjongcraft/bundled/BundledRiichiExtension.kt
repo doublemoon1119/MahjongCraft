@@ -8,6 +8,8 @@ import com.doublemoon1119.mahjongcraft.ai.riichi.RiichiDeclarationAiHandler
 import com.doublemoon1119.mahjongcraft.ai.riichi.RiichiOpponentModel
 import com.doublemoon1119.mahjongcraft.ai.riichi.RiichiPullNorthAiHandler
 import com.doublemoon1119.mahjongcraft.extension.MahjongExtension
+import com.doublemoon1119.mahjongcraft.flow.common.game.event.GameEventPublicMarkerResolverDefinition
+import com.doublemoon1119.mahjongcraft.flow.common.game.event.GameEventPublicMarkerResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameError
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.riichi.RiichiGameCommand
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.riichi.RiichiPullNorthCommand
@@ -15,40 +17,47 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.riichi.RiichiWinCelebrat
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.WinCelebrationCueResolverDefinition
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.WinCelebrationCueResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
+import com.doublemoon1119.mahjongcraft.flow.network.dto.component.ComponentViewNetworkDefinition
 import com.doublemoon1119.mahjongcraft.flow.network.dto.registry.DtoDefinition
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkDtoRegistries
-import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.riichi.RiichiDiscardPileDto
-import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.riichi.RiichiDynamicStateDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.riichi.RiichiDeclarationViewDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.riichi.RiichiDoraIndicatorViewDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.riichi.RiichiExhaustiveDrawReasonDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.riichi.RiichiGameActionDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.riichi.RiichiGameCommandDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.riichi.RiichiGameLengthDto
-import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.riichi.RiichiPlayerStateDto
-import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.riichi.RiichiPlayerStateSnapshotDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.riichi.RiichiPaoLiabilityViewDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.riichi.RiichiPermanentFuritenViewDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.riichi.RiichiPotPointsViewDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.riichi.RiichiPullNorthActionDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.riichi.RiichiPullNorthCommandDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.riichi.RiichiRedDoraViewDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.riichi.RiichiRuleConfigDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.riichi.RiichiScoreConfigDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.riichi.ThreePlayerRiichiRuleConfigDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.riichi.toDomain
+import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.riichi.toDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.riichi.toRiichiDto
-import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.riichi.toRiichiSnapshotDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.riichi.toThreePlayerRiichiDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.taiwan.toDomain
+import com.doublemoon1119.mahjongcraft.flow.persistence.format.component.ComponentIntPersistenceDto
+import com.doublemoon1119.mahjongcraft.flow.persistence.format.component.ComponentPersistenceDefinition
+import com.doublemoon1119.mahjongcraft.flow.persistence.format.component.ComponentUnitPersistenceDto
+import com.doublemoon1119.mahjongcraft.flow.persistence.format.component.ComponentViewPersistenceDefinition
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.core.PersistenceDtoDefinition
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.game.toDomain
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.game.toPersistenceDto
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.registry.PersistenceRegistries
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.rule.BuiltInDiscardPilePersistenceKeys
+import com.doublemoon1119.mahjongcraft.flow.persistence.format.rule.PaoLiabilityPersistenceDto
+import com.doublemoon1119.mahjongcraft.flow.persistence.format.rule.RiichiDeclarationPersistenceDto
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.rule.RiichiDiscardPilePersistenceDto
-import com.doublemoon1119.mahjongcraft.flow.persistence.format.rule.RiichiDynamicStatePersistenceDto
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.rule.RiichiExhaustiveDrawReasonPersistenceDto
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.rule.RiichiExhaustiveDrawReasonPersistenceValue
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.rule.RiichiGameActionPersistenceDto
-import com.doublemoon1119.mahjongcraft.flow.persistence.format.rule.RiichiPendingKanDoraRevealPersistenceDto
-import com.doublemoon1119.mahjongcraft.flow.persistence.format.rule.RiichiPlayerStatePersistenceDto
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.rule.RiichiPullNorthActionPersistenceDto
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.rule.RiichiRuleConfigPersistenceDto
+import com.doublemoon1119.mahjongcraft.flow.persistence.format.rule.RiichiWallProgressPersistenceDto
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.rule.ThreePlayerRiichiRuleConfigPersistenceDto
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.rule.toDomain
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.rule.toPersistenceDto
@@ -60,6 +69,7 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.ExtensionG
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.PostActionExhaustiveDrawResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.PostReactionRoundOutcomeResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.riichi.DeclareRiichiUseCase
+import com.doublemoon1119.mahjongcraft.flow.server.game.riichi.RiichiGameEventPublicMarkerResolver
 import com.doublemoon1119.mahjongcraft.flow.server.game.riichi.RiichiNagashiManganOutcomeResolver
 import com.doublemoon1119.mahjongcraft.flow.server.game.riichi.RiichiSuuchaRiichiResolver
 import com.doublemoon1119.mahjongcraft.flow.server.game.riichi.RiichiSuufonRendaResolver
@@ -68,33 +78,38 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.riichi.RiichiWinSettleme
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.WinSettlementDetailResolverDefinition
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.WinSettlementDetailResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DeclareTileSetAsideUseCase
+import com.doublemoon1119.mahjongcraft.logic.component.ComponentRegistry
 import com.doublemoon1119.mahjongcraft.logic.module.BuiltInRuleModuleIds
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleDefinition
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.PULL_NORTH_GAME_ACTION
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDiscardComponents
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDiscardPile
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDynamicState
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiExhaustiveDrawReason
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiGameAction
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiGameLength
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPendingKanDoraReveal
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPlayerState
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPlayerStateSnapshot
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPlayerComponentViews
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPlayerComponents
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleModule
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiScoreConfig
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiTableComponentViews
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiTableComponents
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.registerRiichiDiscardComponents
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.registerRiichiPlayerComponents
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.registerRiichiTableComponents
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.threeplayer.ThreePlayerRiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.threeplayer.ThreePlayerRiichiRuleModule
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.RiichiTileTypes
-import com.doublemoon1119.mahjongcraft.logic.tile.TileTypeDefinition
-import com.doublemoon1119.mahjongcraft.logic.tile.TileTypeRegistry
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.RiichiTileComponentViews
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.RiichiTileComponents
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.registerRiichiTileComponents
 import com.doublemoon1119.mahjongcraft.metadata.MahjongCraftMetadata
 import kotlin.uuid.Uuid
 
 /**
  * 隨 MahjongCraft 發布的日麻 extension（四人與三人）；日麻在平台無關層的所有登記都寫在這裡，透過與第三方相同的 [MahjongExtension] 回呼登記。
  *
- * 包含規則模組、赤五牌種、規則設定與規則狀態的網路及存檔格式、牌譜牌河格式、立直等擴充動作的格式、
+ * 包含規則模組、赤寶牌等牌張特性、規則設定與規則狀態的網路及存檔格式、牌譜牌河格式、立直等擴充動作的格式、
  * AI 與命令處理、對手模型、途中流局與流局滿貫判定、胡牌詳情，以及役滿演出提示。
  */
 object BundledRiichiExtension : MahjongExtension {
@@ -109,16 +124,66 @@ object BundledRiichiExtension : MahjongExtension {
         )
     }
 
-    override fun registerTileTypes(registry: TileTypeRegistry) {
-        RiichiTileTypes.ALL.forEach { id -> registry.register(TileTypeDefinition(id)) }
-    }
-
     override fun registerWinCelebrationCueResolvers(registry: WinCelebrationCueResolverRegistry) {
         registry.register(WinCelebrationCueResolverDefinition(BuiltInRuleModuleIds.RIICHI, RiichiWinCelebrationCueResolver))
         registry.register(WinCelebrationCueResolverDefinition(BuiltInRuleModuleIds.RIICHI_THREE_PLAYER, RiichiWinCelebrationCueResolver))
     }
 
     override fun registerNetworkDtos(registries: NetworkDtoRegistries) {
+        registries.componentViews.register(
+            ComponentViewNetworkDefinition(
+                viewType = RiichiTileComponentViews.DORA_INDICATOR,
+                dtoClass = RiichiDoraIndicatorViewDto::class,
+                serializer = RiichiDoraIndicatorViewDto.serializer(),
+                toDto = { RiichiDoraIndicatorViewDto },
+                toValue = {},
+            ),
+        )
+        registries.componentViews.register(
+            ComponentViewNetworkDefinition(
+                viewType = RiichiTileComponentViews.RED_DORA,
+                dtoClass = RiichiRedDoraViewDto::class,
+                serializer = RiichiRedDoraViewDto.serializer(),
+                toDto = { RiichiRedDoraViewDto },
+                toValue = {},
+            ),
+        )
+        registries.componentViews.register(
+            ComponentViewNetworkDefinition(
+                viewType = RiichiTableComponentViews.POT_POINTS,
+                dtoClass = RiichiPotPointsViewDto::class,
+                serializer = RiichiPotPointsViewDto.serializer(),
+                toDto = ::RiichiPotPointsViewDto,
+                toValue = { it.points },
+            ),
+        )
+        registries.componentViews.register(
+            ComponentViewNetworkDefinition(
+                viewType = RiichiPlayerComponentViews.DECLARATION,
+                dtoClass = RiichiDeclarationViewDto::class,
+                serializer = RiichiDeclarationViewDto.serializer(),
+                toDto = { it.toDto() },
+                toValue = { it.toDomain() },
+            ),
+        )
+        registries.componentViews.register(
+            ComponentViewNetworkDefinition(
+                viewType = RiichiPlayerComponentViews.PERMANENT_FURITEN,
+                dtoClass = RiichiPermanentFuritenViewDto::class,
+                serializer = RiichiPermanentFuritenViewDto.serializer(),
+                toDto = { RiichiPermanentFuritenViewDto },
+                toValue = {},
+            ),
+        )
+        registries.componentViews.register(
+            ComponentViewNetworkDefinition(
+                viewType = RiichiPlayerComponentViews.PAO_LIABILITY,
+                dtoClass = RiichiPaoLiabilityViewDto::class,
+                serializer = RiichiPaoLiabilityViewDto.serializer(),
+                toDto = { RiichiPaoLiabilityViewDto(it.toDto()) },
+                toValue = { it.liability.toDomain() },
+            ),
+        )
         registries.ruleConfig.register(
             definition = DtoDefinition(
                 domainClass = RiichiRuleConfig::class,
@@ -171,42 +236,6 @@ object BundledRiichiExtension : MahjongExtension {
                 serializer = RiichiGameLengthDto.TwoWinds.serializer(),
                 toDto = { RiichiGameLengthDto.TwoWinds },
                 toDomain = { RiichiGameLength.TwoWinds },
-            ),
-        )
-        registries.dynamicRuleState.register(
-            definition = DtoDefinition(
-                domainClass = RiichiDynamicState::class,
-                dtoClass = RiichiDynamicStateDto::class,
-                serializer = RiichiDynamicStateDto.serializer(),
-                toDto = RiichiDynamicState::toRiichiDto,
-                toDomain = RiichiDynamicStateDto::toDomain,
-            ),
-        )
-        registries.playerRuleState.register(
-            definition = DtoDefinition(
-                domainClass = RiichiPlayerState::class,
-                dtoClass = RiichiPlayerStateDto::class,
-                serializer = RiichiPlayerStateDto.serializer(),
-                toDto = RiichiPlayerState::toRiichiDto,
-                toDomain = RiichiPlayerStateDto::toDomain,
-            ),
-        )
-        registries.playerRuleState.register(
-            definition = DtoDefinition(
-                domainClass = RiichiPlayerStateSnapshot::class,
-                dtoClass = RiichiPlayerStateSnapshotDto::class,
-                serializer = RiichiPlayerStateSnapshotDto.serializer(),
-                toDto = RiichiPlayerStateSnapshot::toRiichiSnapshotDto,
-                toDomain = RiichiPlayerStateSnapshotDto::toDomain,
-            ),
-        )
-        registries.discardPile.register(
-            definition = DtoDefinition(
-                domainClass = RiichiDiscardPile::class,
-                dtoClass = RiichiDiscardPileDto::class,
-                serializer = RiichiDiscardPileDto.serializer(),
-                toDto = RiichiDiscardPile::toRiichiDto,
-                toDomain = RiichiDiscardPileDto::toDomain,
             ),
         )
         registries.exhaustiveDrawReason.register(
@@ -301,7 +330,94 @@ object BundledRiichiExtension : MahjongExtension {
         )
     }
 
+    override fun registerComponents(registry: ComponentRegistry) {
+        registerRiichiPlayerComponents(registry)
+        registerRiichiTableComponents(registry)
+        registerRiichiTileComponents(registry)
+        registerRiichiDiscardComponents(registry)
+    }
+
     override fun registerPersistenceDtos(registries: PersistenceRegistries) {
+        registries.componentViews.register(
+            ComponentViewPersistenceDefinition(
+                viewType = RiichiTileComponentViews.DORA_INDICATOR,
+                serializer = ComponentUnitPersistenceDto.serializer(),
+                toDto = { ComponentUnitPersistenceDto },
+                toDomain = {},
+            ),
+        )
+        registries.componentViews.register(
+            ComponentViewPersistenceDefinition(
+                viewType = RiichiTileComponentViews.RED_DORA,
+                serializer = ComponentUnitPersistenceDto.serializer(),
+                toDto = { ComponentUnitPersistenceDto },
+                toDomain = {},
+            ),
+        )
+        registries.components.register(
+            ComponentPersistenceDefinition(
+                component = RiichiTileComponents.DORA_INDICATOR,
+                serializer = ComponentUnitPersistenceDto.serializer(),
+                toDto = { ComponentUnitPersistenceDto },
+                toDomain = {},
+            ),
+        )
+        registries.components.register(
+            ComponentPersistenceDefinition(
+                component = RiichiTileComponents.RED_DORA,
+                serializer = ComponentUnitPersistenceDto.serializer(),
+                toDto = { ComponentUnitPersistenceDto },
+                toDomain = {},
+            ),
+        )
+        registries.components.register(
+            ComponentPersistenceDefinition(
+                component = RiichiTableComponents.POT_POINTS,
+                serializer = ComponentIntPersistenceDto.serializer(),
+                toDto = ::ComponentIntPersistenceDto,
+                toDomain = { it.value },
+            ),
+        )
+        registries.components.register(
+            ComponentPersistenceDefinition(
+                component = RiichiTableComponents.WALL_PROGRESS,
+                serializer = RiichiWallProgressPersistenceDto.serializer(),
+                toDto = { it.toPersistenceDto() },
+                toDomain = { it.toDomain() },
+            ),
+        )
+        registries.components.register(
+            ComponentPersistenceDefinition(
+                component = RiichiPlayerComponents.DECLARATION,
+                serializer = RiichiDeclarationPersistenceDto.serializer(),
+                toDto = { it.toPersistenceDto() },
+                toDomain = { it.toDomain() },
+            ),
+        )
+        registries.components.register(
+            ComponentPersistenceDefinition(
+                component = RiichiPlayerComponents.PERMANENT_FURITEN,
+                serializer = ComponentUnitPersistenceDto.serializer(),
+                toDto = { ComponentUnitPersistenceDto },
+                toDomain = {},
+            ),
+        )
+        registries.components.register(
+            ComponentPersistenceDefinition(
+                component = RiichiPlayerComponents.PAO_LIABILITY,
+                serializer = PaoLiabilityPersistenceDto.serializer(),
+                toDto = { it.toPersistenceDto() },
+                toDomain = { it.toDomain() },
+            ),
+        )
+        registries.components.register(
+            ComponentPersistenceDefinition(
+                component = RiichiDiscardComponents.RIICHI_DECLARED,
+                serializer = ComponentUnitPersistenceDto.serializer(),
+                toDto = { ComponentUnitPersistenceDto },
+                toDomain = {},
+            ),
+        )
         registries.ruleConfigs.register(
             definition = PersistenceDtoDefinition(
                 typeKey = "mahjongcraft:riichi/rule_config",
@@ -327,44 +443,8 @@ object BundledRiichiExtension : MahjongExtension {
                 typeKey = BuiltInDiscardPilePersistenceKeys.RIICHI,
                 domainClass = RiichiDiscardPile::class,
                 serializer = RiichiDiscardPilePersistenceDto.serializer(),
-                toDto = RiichiDiscardPile::toPersistenceDto,
-                toDomain = RiichiDiscardPilePersistenceDto::toDomain,
-                compactInReplay = true,
-            ),
-        )
-        registries.playerRuleStates.register(
-            definition = PersistenceDtoDefinition(
-                typeKey = RIICHI_PLAYER_STATE_TYPE_KEY,
-                domainClass = RiichiPlayerState::class,
-                serializer = RiichiPlayerStatePersistenceDto.serializer(),
-                toDto = RiichiPlayerState::toPersistenceDto,
-                toDomain = RiichiPlayerStatePersistenceDto::toDomain,
-                compactInReplay = true,
-            ),
-        )
-        registries.dynamicRuleStates.register(
-            definition = PersistenceDtoDefinition(
-                typeKey = "mahjongcraft:riichi/dynamic_state",
-                domainClass = RiichiDynamicState::class,
-                serializer = RiichiDynamicStatePersistenceDto.serializer(),
-                toDto = {
-                    RiichiDynamicStatePersistenceDto(
-                        riichiStickCount = it.riichiStickCount,
-                        completedSupplementalDrawCount = it.completedSupplementalDrawCount,
-                        revealedKanDoraCount = it.revealedKanDoraCount,
-                        pendingKanDoraReveals = it.pendingKanDoraReveals.map(RiichiPendingKanDoraReveal::toPersistenceDto),
-                        completedNorthDrawCount = it.completedNorthDrawCount,
-                    )
-                },
-                toDomain = {
-                    RiichiDynamicState(
-                        riichiStickCount = it.riichiStickCount,
-                        completedSupplementalDrawCount = it.completedSupplementalDrawCount,
-                        revealedKanDoraCount = it.revealedKanDoraCount,
-                        pendingKanDoraReveals = it.pendingKanDoraReveals.map(RiichiPendingKanDoraRevealPersistenceDto::toDomain),
-                        completedNorthDrawCount = it.completedNorthDrawCount,
-                    )
-                },
+                toDto = { it.toPersistenceDto(registries.components) },
+                toDomain = { it.toDomain(registries.components) },
                 compactInReplay = true,
             ),
         )
@@ -489,6 +569,7 @@ object BundledRiichiExtension : MahjongExtension {
                     snapshotSynchronizer = context.snapshotSynchronizer,
                     eventPublisher = context.eventPublisher,
                     presentationPublisher = context.presentationPublisher,
+                    componentRegistry = context.componentRegistry,
                 )
                 object : ExtensionGameCommandHandler<RiichiPullNorthCommand> {
                     override suspend fun execute(
@@ -518,7 +599,9 @@ object BundledRiichiExtension : MahjongExtension {
         registry.register(WinSettlementDetailResolverDefinition(BuiltInRuleModuleIds.RIICHI, RiichiWinSettlementDetailResolver))
         registry.register(WinSettlementDetailResolverDefinition(BuiltInRuleModuleIds.RIICHI_THREE_PLAYER, RiichiWinSettlementDetailResolver))
     }
-}
 
-/** 日麻玩家規則狀態的存檔種類 key。 */
-private const val RIICHI_PLAYER_STATE_TYPE_KEY: String = "mahjongcraft:riichi/player_state"
+    override fun registerGameEventPublicMarkerResolvers(registry: GameEventPublicMarkerResolverRegistry) {
+        registry.register(GameEventPublicMarkerResolverDefinition(BuiltInRuleModuleIds.RIICHI, RiichiGameEventPublicMarkerResolver))
+        registry.register(GameEventPublicMarkerResolverDefinition(BuiltInRuleModuleIds.RIICHI_THREE_PLAYER, RiichiGameEventPublicMarkerResolver))
+    }
+}

@@ -14,20 +14,20 @@ object ExampleMinecraftMessageKeys {
     /** 倒置一萬牌種名稱。 */
     const val TILE_INVERTED_ONE_MAN = "mahjongcraft_example.tile.inverted_one_man"
 
-    /** 示範宣告動作名稱。 */
-    const val DECLARE = "mahjongcraft_example.action.declare"
+    /** 攤牌動作名稱。 */
+    const val REVEAL_HAND = "mahjongcraft_example.action.reveal_hand"
 
-    /** 示範宣告動作說明。 */
-    const val DECLARE_DESCRIPTION = "mahjongcraft_example.action.declare.description"
+    /** 攤牌動作說明。 */
+    const val REVEAL_HAND_DESCRIPTION = "mahjongcraft_example.action.reveal_hand.description"
 
-    /** 宣告操作卡中央的效果說明。 */
-    const val DECLARE_CARD_BODY = "mahjongcraft_example.action.declare.card_body"
+    /** 攤牌操作卡中央的效果說明。 */
+    const val REVEAL_HAND_CARD_BODY = "mahjongcraft_example.action.reveal_hand.card_body"
 
-    /** 宣告按鈕旁的使用次數提示。 */
-    const val DECLARE_CARD_HINT = "mahjongcraft_example.action.declare.card_hint"
+    /** 攤牌按鈕旁的使用次數提示。 */
+    const val REVEAL_HAND_CARD_HINT = "mahjongcraft_example.action.reveal_hand.card_hint"
 
-    /** 已完成示範宣告的公開標記。 */
-    const val DECLARED = "mahjongcraft_example.indicator.declared"
+    /** 已攤牌的公開標記。 */
+    const val HAND_REVEALED = "mahjongcraft_example.indicator.hand_revealed"
 
     /** 換牌選擇步驟名稱。 */
     const val EXCHANGE = "mahjongcraft_example.rule_decision.exchange"
@@ -44,6 +44,12 @@ object ExampleMinecraftMessageKeys {
     /** 換牌開關欄位說明。 */
     const val CONFIG_EXCHANGE_DESCRIPTION = "mahjongcraft_example.room.config.field.exchange_enabled.description"
 
+    /** 公開牌面開關欄位名稱。 */
+    const val CONFIG_PUBLIC_FACES = "mahjongcraft_example.room.config.field.public_faces_enabled"
+
+    /** 公開牌面開關欄位說明。 */
+    const val CONFIG_PUBLIC_FACES_DESCRIPTION = "mahjongcraft_example.room.config.field.public_faces_enabled.description"
+
     /** 每位玩家付款點數欄位名稱。 */
     const val CONFIG_PAYMENT = "mahjongcraft_example.room.config.field.payment_per_player"
 
@@ -56,11 +62,47 @@ object ExampleMinecraftMessageKeys {
     /** 對局局數欄位說明。 */
     const val CONFIG_ROUNDS_DESCRIPTION = "mahjongcraft_example.room.config.field.round_count.description"
 
+    /** 牌山使用點數的多選欄位名稱。 */
+    const val CONFIG_WALL_TILE_VALUES = "mahjongcraft_example.room.config.field.wall_tile_values"
+
+    /** 牌山使用點數的多選欄位說明。 */
+    const val CONFIG_WALL_TILE_VALUES_DESCRIPTION = "mahjongcraft_example.room.config.field.wall_tile_values.description"
+
+    /** 一般牌種選項的加入張數說明。 */
+    const val CONFIG_WALL_TILE_OPTION_DESCRIPTION = "mahjongcraft_example.room.config.option.tile.description"
+
+    /** 一萬選項包含倒置一萬的說明。 */
+    const val CONFIG_WALL_ONE_DESCRIPTION = "mahjongcraft_example.room.config.option.tile_one.description"
+
+    /** 一萬至八萬選項各自明確登記的翻譯鍵。 */
+    val WALL_TILE_VALUE_OPTIONS: Map<Int, String> = mapOf(
+        1 to "mahjongcraft_example.room.config.option.tile_one",
+        2 to "mahjongcraft_example.room.config.option.tile_two",
+        3 to "mahjongcraft_example.room.config.option.tile_three",
+        4 to "mahjongcraft_example.room.config.option.tile_four",
+        5 to "mahjongcraft_example.room.config.option.tile_five",
+        6 to "mahjongcraft_example.room.config.option.tile_six",
+        7 to "mahjongcraft_example.room.config.option.tile_seven",
+        8 to "mahjongcraft_example.room.config.option.tile_eight",
+    )
+
     /** 局況中顯示剩餘牌山數量的文字。 */
     const val ROUND_INFO_WALL_REMAINING = "mahjongcraft_example.round_info.wall_remaining"
 
     /** 局況中顯示目前局數的文字。 */
     const val ROUND_INFO_ROUND_COUNT = "mahjongcraft_example.round_info.round_count"
+
+    /** 局況中顯示最近打出的牌。 */
+    const val ROUND_INFO_LATEST_DISCARD = "mahjongcraft_example.round_info.latest_discard"
+
+    /** 局況中顯示換牌功能狀態。 */
+    const val ROUND_INFO_EXCHANGE = "mahjongcraft_example.round_info.exchange"
+
+    /** 局況中顯示換牌功能已開啟。 */
+    const val ROUND_INFO_EXCHANGE_ENABLED = "mahjongcraft_example.round_info.exchange_enabled"
+
+    /** 局況中顯示換牌功能已關閉。 */
+    const val ROUND_INFO_EXCHANGE_DISABLED = "mahjongcraft_example.round_info.exchange_disabled"
 
     /** 規則目錄分類名稱。 */
     const val CATALOGUE_CATEGORY = "mahjongcraft_example.catalogue.category.pairing"
@@ -74,6 +116,15 @@ object ExampleMinecraftMessageKeys {
     /** 付款點數詳情欄位名稱。 */
     const val PAYMENT_PER_PLAYER = "mahjongcraft_example.settlement.payment_per_player"
 
-    /** 顯示付款數字與點數單位的文字。 */
-    const val POINTS = "mahjongcraft_example.settlement.points"
+    /** 自摸命中的不同加分牌種類數量欄位名稱。 */
+    const val BONUS_TILE_COUNT = "mahjongcraft_example.settlement.bonus_tile_count"
+
+    /** 顯示自摸手牌由加分牌取得的點數。 */
+    const val BONUS_TILE_POINTS = "mahjongcraft_example.settlement.bonus_tile_points"
+
+    /** 結算面板的本局加分牌標題。 */
+    const val BONUS_TILES = "mahjongcraft_example.settlement.bonus_tiles"
+
+    /** 每位玩家實際付款的點數文字。 */
+    const val PAYMENT_AMOUNT = "mahjongcraft_example.settlement.payment_amount"
 }

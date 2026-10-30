@@ -1,7 +1,9 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.table
 
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.yield
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -17,6 +19,36 @@ class TableCornerLayoutPlannerTest {
 
     /** 這一局的桌況。 */
     private val state = FakeTableStateFactory.create()
+
+    /** 舊平移等待被取消時，不會清掉後來接手的新平移。 */
+    @Test
+    fun `cancelling an old slide does not clear the replacement`() = runTest {
+        val planner = plannerWithRound(mapOf(0 to 0.0))
+        val first = assertNotNull(planner.planRuleStateUpdate(tableId, state, mapOf(0 to STICK)).slideId)
+        val waiting = launch {
+            planner.awaitSlideEnd(
+                tableId = tableId,
+                slideId = first,
+                areTilesMoving = { true },
+                waitOneTick = { yield() },
+                onSlowSlide = {},
+            )
+        }
+        yield()
+        val replacement = assertNotNull(planner.planRuleStateUpdate(tableId, state, mapOf(0 to 2 * STICK)).slideId)
+        waiting.cancel()
+        waiting.join()
+
+        assertTrue(
+            planner.awaitSlideEnd(
+                tableId = tableId,
+                slideId = replacement,
+                areTilesMoving = { false },
+                waitOneTick = {},
+                onSlowSlide = {},
+            ),
+        )
+    }
 
     /** 剛擺好的座位已經依新寬度讓開，物件同步時不再移動，只有其他已擺過的座位一起平移，並等平移結束才擺上物件。 */
     @Test

@@ -8,11 +8,16 @@ class RoundInfoLineDisplayRegistryImpl : RoundInfoLineDisplayRegistry {
     /** 依局況顯示行 key 索引的翻譯資訊。 */
     private val displays = mutableMapOf<String, RoundInfoLineDisplay>()
 
+    /** 規則訊息 ID 對應的翻譯定義。 */
+    private val messages = mutableMapOf<String, RoundInfoMessageDefinition>()
+
     /** 規則模組 ID 對應的局況顯示行 provider。 */
     private val providers = mutableMapOf<String, RoundInfoLineProvider>()
 
     override val registrationKeys: Set<String>
-        get() = displays.keys.mapTo(mutableSetOf()) { "line:$it" } + providers.keys.map { "provider:$it" }
+        get() = displays.keys.mapTo(mutableSetOf()) { "line:$it" } +
+            messages.keys.map { "message:$it" } +
+            providers.keys.map { "provider:$it" }
 
     override var isFrozen: Boolean = false
         private set
@@ -35,7 +40,16 @@ class RoundInfoLineDisplayRegistryImpl : RoundInfoLineDisplayRegistry {
         }
     }
 
+    override fun register(definition: RoundInfoMessageDefinition) {
+        val id = definition.id
+        check(!isFrozen) { "Round info line display registry is frozen" }
+        NamespacedId.requireValid(id) { "Round info message ID must be namespaced: $id" }
+        require(messages.putIfAbsent(id, definition) == null) { "Duplicate round info message: $id" }
+    }
+
     override fun find(key: String): RoundInfoLineDisplay? = displays[key]
+
+    override fun findMessage(id: String): RoundInfoMessageDefinition? = messages[id]
 
     override fun buildLines(ruleModuleId: String, tableState: TableState): List<RoundInfoLine> = providers[ruleModuleId]?.buildLines(tableState).orEmpty()
 

@@ -200,3 +200,20 @@ The module is currently configured with a JVM target.
 Its JVM tests also load recipe resources from the version-common module.
 Use the [complete Minecraft target build](../README.md) to verify packaging and the loader integration;
 this focused check does not replace it.
+
+## Rule-owned table props
+
+A rule can show scoring sticks, public bonus tiles or custom tokens through the same table-prop
+pipeline. Register a `TablePropDescriber` that returns the full scene for the current state.
+Each placement has a stable namespaced ID, typed content and either a standard seat anchor or a
+central order. The adapter finds space in the shared centre and checks the complete rotated bounds;
+there is no separate reserved area for Riichi sticks.
+
+Use `BuiltInTablePropKinds.FACE_UP_TILE` with `TablePropContent.FaceUpTile` for a public tile display.
+It creates a visual copy, not a playable tile. Its artwork follows the rule's registered tile-set
+appearance, including third-party tile namespaces. Custom kinds provide their own native renderer
+and a common `TablePropKindDefinition` with the same dimensions and content validation.
+
+See the [presentation conventions](../../../docs/contributing/minecraft-presentation.md#rule-owned-table-props)
+and the [Minecraft extension example](../../../example/platform/minecraft/README.md#bonus-tiles-and-table-props).
+These prop types are usable extension points; they do not add a new binary-compatibility guarantee.

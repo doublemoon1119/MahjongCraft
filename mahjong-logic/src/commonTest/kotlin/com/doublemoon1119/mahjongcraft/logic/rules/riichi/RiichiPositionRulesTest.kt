@@ -8,21 +8,39 @@ import com.doublemoon1119.mahjongcraft.logic.base.Meld
 import com.doublemoon1119.mahjongcraft.logic.base.MeldType
 import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
+import com.doublemoon1119.mahjongcraft.logic.base.TileFaceView
+import com.doublemoon1119.mahjongcraft.logic.base.TileValue
+import com.doublemoon1119.mahjongcraft.logic.base.toSnapshot
+import com.doublemoon1119.mahjongcraft.logic.component.ComponentViewSet
 import com.doublemoon1119.mahjongcraft.logic.module.BuiltInRuleModuleIds
 import com.doublemoon1119.mahjongcraft.logic.module.DeclarationEffect
 import com.doublemoon1119.mahjongcraft.logic.module.PositionView
 import com.doublemoon1119.mahjongcraft.logic.module.RonExclusions
 import com.doublemoon1119.mahjongcraft.logic.module.WinValue
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RIICHI_STICK_POINTS
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDeclarationKind
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPlayerTileAreaIds
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiTableComponents
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiWallProgress
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.riichiPotPoints
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.riichiWallProgress
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.threeplayer.ThreePlayerRiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.threeplayer.ThreePlayerRiichiRuleModule
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.RiichiTileTypes
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.RiichiTileComponentViews
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.RiichiTileValues
+import com.doublemoon1119.mahjongcraft.logic.table.DiscardPile.DiscardEntry
 import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayer
+import com.doublemoon1119.mahjongcraft.logic.table.PlayerTileAreas
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.logic.table.TileWallSnapshot
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import com.doublemoon1119.mahjongcraft.logic.table.toSnapshot
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeIdentifiedTileFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeMeldFactory
+import com.doublemoon1119.mahjongcraft.testing.logic.rules.riichi.riichiDeclarationComponents
+import com.doublemoon1119.mahjongcraft.testing.logic.rules.riichi.riichiTableComponents
+import com.doublemoon1119.mahjongcraft.testing.logic.rules.riichi.toRiichiSnapshotForTests
+import com.doublemoon1119.mahjongcraft.testing.logic.rules.riichi.withRedFives
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
 import kotlin.test.Test
@@ -55,14 +73,14 @@ class RiichiPositionRulesTest {
         val winningTile = FakeIdentifiedTileFactory.create(TWO_BAMBOO)
 
         val resolution = module.declareRon(table, winner, winningTile, discarderId = discarder.id)
-        val pot = module.collectStickPot(table)?.second ?: 0
+        val pot = module.collectStickPot(table).points
         val comboBonus = module.resolveComboBonusPayments(
             tableState = table,
             winnerId = winner.id,
             discarderId = discarder.id,
             resolution = resolution,
         ).values.sum()
-        val value = rules.winValue(view(table, winner), winner.hand, TWO_BAMBOO, isTsumo = false)
+        val value = rules.winValue(view(table, winner), winner.hand, TileValue(TWO_BAMBOO), isTsumo = false)
 
         assertEquals(600, comboBonus)
         assertEquals(WinValue.Points(resolution!!.totalGained + pot + comboBonus), value)
@@ -82,7 +100,7 @@ class RiichiPositionRulesTest {
             discarderId = null,
             resolution = resolution,
         ).values.sum()
-        val value = rules.winValue(view(table, winner), winner.hand, TWO_BAMBOO, isTsumo = true)
+        val value = rules.winValue(view(table, winner), winner.hand, TileValue(TWO_BAMBOO), isTsumo = true)
 
         assertEquals(300, comboBonus)
         assertEquals(WinValue.Points(resolution!!.totalGained + comboBonus), value)
@@ -94,8 +112,8 @@ class RiichiPositionRulesTest {
         val winner = seat(Wind.SOUTH, hand = noYakuTankiOnFiveBamboo(), discards = listOf(Tile.Honor.North))
         val table = table(listOf(seat(Wind.EAST), winner))
 
-        assertEquals(WinValue.NotWinnable, rules.winValue(view(table, winner), winner.hand, FIVE_BAMBOO, isTsumo = false))
-        assertIs<WinValue.Points>(rules.winValue(view(table, winner), winner.hand, FIVE_BAMBOO, isTsumo = true))
+        assertEquals(WinValue.NotWinnable, rules.winValue(view(table, winner), winner.hand, TileValue(FIVE_BAMBOO), isTsumo = false))
+        assertIs<WinValue.Points>(rules.winValue(view(table, winner), winner.hand, TileValue(FIVE_BAMBOO), isTsumo = true))
     }
 
     /** 假設宣告立直時，沒有役的門前聽牌也能榮和，且打點包含自己的那支立直棒。 */
@@ -107,7 +125,7 @@ class RiichiPositionRulesTest {
         val value = rules.winValue(
             view(table, winner),
             winner.hand,
-            FIVE_BAMBOO,
+            TileValue(FIVE_BAMBOO),
             isTsumo = false,
             declarations = setOf(RIICHI_GAME_ACTION),
         )
@@ -122,8 +140,8 @@ class RiichiPositionRulesTest {
         val winner = seat(Wind.SOUTH, hand = yakuhaiTankiOnTwoBamboo(), discards = listOf(TWO_BAMBOO))
         val table = table(listOf(seat(Wind.EAST), winner))
 
-        assertEquals(WinValue.NotWinnable, rules.winValue(view(table, winner), winner.hand, TWO_BAMBOO, isTsumo = false))
-        assertIs<WinValue.Points>(rules.winValue(view(table, winner), winner.hand, TWO_BAMBOO, isTsumo = true))
+        assertEquals(WinValue.NotWinnable, rules.winValue(view(table, winner), winner.hand, TileValue(TWO_BAMBOO), isTsumo = false))
+        assertIs<WinValue.Points>(rules.winValue(view(table, winner), winner.hand, TileValue(TWO_BAMBOO), isTsumo = true))
     }
 
     /** 沒有完成和牌型的牌不能和牌。 */
@@ -132,7 +150,7 @@ class RiichiPositionRulesTest {
         val winner = seat(Wind.SOUTH, hand = yakuhaiTankiOnTwoBamboo(), discards = listOf(Tile.Honor.North))
         val table = table(listOf(seat(Wind.EAST), winner))
 
-        assertEquals(WinValue.NotWinnable, rules.winValue(view(table, winner), winner.hand, FIVE_BAMBOO, isTsumo = true))
+        assertEquals(WinValue.NotWinnable, rules.winValue(view(table, winner), winner.hand, TileValue(FIVE_BAMBOO), isTsumo = true))
     }
 
     /** 立直要付出一支立直棒，且宣告後不能再換牌；其他擴充動作沒有效果。 */
@@ -152,16 +170,16 @@ class RiichiPositionRulesTest {
     @Test
     fun `a red five adds value and still matches the formal settlement`() {
         val plain = seat(Wind.SOUTH, hand = yakuhaiTankiOnTwoBamboo(), discards = listOf(Tile.Honor.North))
-        val red = seat(Wind.SOUTH, hand = yakuhaiTankiOnTwoBamboo(fiveDot = RED_FIVE_DOT), discards = listOf(Tile.Honor.North))
+        val red = seat(Wind.SOUTH, hand = yakuhaiTankiOnTwoBamboo().withRedFives(Tile.Suit.Dot), discards = listOf(Tile.Honor.North))
         val discarder = seat(Wind.EAST)
         val plainTable = table(listOf(discarder, plain))
         val redTable = table(listOf(discarder, red))
 
         val plainPoints = assertIs<WinValue.Points>(
-            rules.winValue(view(plainTable, plain), plain.hand, TWO_BAMBOO, isTsumo = false),
+            rules.winValue(view(plainTable, plain), plain.hand, TileValue(TWO_BAMBOO), isTsumo = false),
         ).points
         val redPoints = assertIs<WinValue.Points>(
-            rules.winValue(view(redTable, red), red.hand, TWO_BAMBOO, isTsumo = false),
+            rules.winValue(view(redTable, red), red.hand, TileValue(TWO_BAMBOO), isTsumo = false),
         ).points
         val redSettlement = module.declareRon(
             redTable,
@@ -177,11 +195,11 @@ class RiichiPositionRulesTest {
     /** 赤寶牌只加打點、不算役：只有赤寶牌的門前聽牌仍然不能榮和，自摸則成立。 */
     @Test
     fun `a red five does not count toward the minimum win requirement`() {
-        val winner = seat(Wind.SOUTH, hand = noYakuTankiOnFiveBamboo(fiveDot = RED_FIVE_DOT), discards = listOf(Tile.Honor.North))
+        val winner = seat(Wind.SOUTH, hand = noYakuTankiOnFiveBamboo().withRedFives(Tile.Suit.Dot), discards = listOf(Tile.Honor.North))
         val table = table(listOf(seat(Wind.EAST), winner))
 
-        assertEquals(WinValue.NotWinnable, rules.winValue(view(table, winner), winner.hand, FIVE_BAMBOO, isTsumo = false))
-        assertIs<WinValue.Points>(rules.winValue(view(table, winner), winner.hand, FIVE_BAMBOO, isTsumo = true))
+        assertEquals(WinValue.NotWinnable, rules.winValue(view(table, winner), winner.hand, TileValue(FIVE_BAMBOO), isTsumo = false))
+        assertIs<WinValue.Points>(rules.winValue(view(table, winner), winner.hand, TileValue(FIVE_BAMBOO), isTsumo = true))
     }
 
     /** 尚未立直的門清手牌（含暗槓）聽牌後可以立直；有副露、已經立直或點數不足一支立直棒時不行。 */
@@ -211,7 +229,10 @@ class RiichiPositionRulesTest {
     @Test
     fun `an opponent cannot ron tiles from their own discards`() {
         val self = seat(Wind.SOUTH, discards = listOf(character(1), character(2), character(3)))
-        val opponent = seat(Wind.EAST, discards = listOf(character(5), RED_FIVE_DOT))
+        val opponent = seat(Wind.EAST).copy(
+            discardPile = listOf(TileValue(character(5)), RED_FIVE_DOT)
+                .fold(RiichiDiscardPile()) { pile, value -> pile.discardTile(FakeIdentifiedTileFactory.create(value)) },
+        )
 
         assertEquals(
             RonExclusions(ownDiscards = setOf(character(5), dot(5))),
@@ -246,7 +267,7 @@ class RiichiPositionRulesTest {
         assertEquals(setOf(character(5)), passed)
     }
 
-    /** 已經立直的對手，宣告聽牌時打出的牌就是立直宣告牌；赤五正規化為普通五。 */
+    /** 已經立直的對手，宣告聽牌時打出的牌就是立直宣告牌；赤五的基本牌面是普通五。 */
     @Test
     fun `the declaration tile of a riichi opponent is the tile discarded to declare`() {
         val self = seat(Wind.SOUTH)
@@ -270,25 +291,48 @@ class RiichiPositionRulesTest {
         val self = seat(Wind.SOUTH)
         val view = view(table(listOf(seat(Wind.EAST), self)), self, doraIndicators = listOf(character(1), character(1), character(9)))
 
-        assertEquals(2, rules.bonusTileCount(view, character(2)))
-        assertEquals(1, rules.bonusTileCount(view, character(1)))
+        assertEquals(2, rules.bonusTileCount(view, TileValue(character(2))))
+        assertEquals(1, rules.bonusTileCount(view, TileValue(character(1))))
         assertEquals(1, rules.bonusTileCount(view, RED_FIVE_DOT))
-        assertEquals(0, rules.bonusTileCount(view, dot(5)))
+        assertEquals(0, rules.bonusTileCount(view, TileValue(dot(5))))
+    }
+
+    /** 看得到牌牆牌不代表它是寶牌指示牌，必須另外有已公開的用途。 */
+    @Test
+    fun `transparent wall faces are not automatically dora indicators`() {
+        val self = seat(Wind.SOUTH)
+        val original = view(table(listOf(seat(Wind.EAST), self)), self)
+        val tile = IdentifiedTileSnapshot(Uuid.random(), TileFaceView(dot(4)))
+        val transparent = original.copy(snapshot = original.snapshot.copy(tileWall = TileWallSnapshot(listOf(tile))))
+        val marked = transparent.copy(
+            snapshot = transparent.snapshot.copy(
+                tileWall = TileWallSnapshot(
+                    listOf(
+                        tile.copy(
+                            face = tile.face!!.copy(views = ComponentViewSet.EMPTY.with(RiichiTileComponentViews.DORA_INDICATOR, Unit)),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        assertEquals(0, rules.bonusTileCount(transparent, TileValue(dot(5))))
+        assertEquals(1, rules.bonusTileCount(marked, TileValue(dot(5))))
     }
 
     /** 三人麻將拔出的北計入和牌價值，且與正式榮和結算一致。 */
     @Test
     fun `three player win value counts pulled norths like the formal settlement`() {
         val pulled = seat(Wind.SOUTH, hand = threePlayerYakuhaiTanki(), discards = listOf(Tile.Honor.West))
-            .copy(playerRuleState = RiichiPlayerState(nukiDoraTiles = listOf(FakeIdentifiedTileFactory.create(Tile.Honor.North))))
-        val notPulled = pulled.copy(playerRuleState = RiichiPlayerState())
+            .copy(components = riichiDeclarationComponents(), tileAreas = PlayerTileAreas.EMPTY.withArea(RiichiPlayerTileAreaIds.NORTH, listOf(FakeIdentifiedTileFactory.create(Tile.Honor.North))))
+        val notPulled = pulled.copy(components = riichiDeclarationComponents(), tileAreas = PlayerTileAreas.EMPTY)
         val discarder = seat(Wind.EAST)
 
         val pulledTable = threePlayerTable(listOf(discarder, pulled, seat(Wind.WEST)))
         val resolution = threePlayerModule.declareRon(pulledTable, pulled, FakeIdentifiedTileFactory.create(TWO_BAMBOO), discarderId = discarder.id)
-        val pulledValue = threePlayerRules.winValue(threePlayerView(pulledTable, pulled), pulled.hand, TWO_BAMBOO, isTsumo = false)
+        val pulledValue = threePlayerRules.winValue(threePlayerView(pulledTable, pulled), pulled.hand, TileValue(TWO_BAMBOO), isTsumo = false)
         val notPulledTable = threePlayerTable(listOf(discarder, notPulled, seat(Wind.WEST)))
-        val notPulledValue = threePlayerRules.winValue(threePlayerView(notPulledTable, notPulled), notPulled.hand, TWO_BAMBOO, isTsumo = false)
+        val notPulledValue = threePlayerRules.winValue(threePlayerView(notPulledTable, notPulled), notPulled.hand, TileValue(TWO_BAMBOO), isTsumo = false)
 
         assertEquals(WinValue.Points(resolution!!.totalGained), pulledValue)
         assertTrue(assertIs<WinValue.Points>(pulledValue).points > assertIs<WinValue.Points>(notPulledValue).points)
@@ -300,10 +344,10 @@ class RiichiPositionRulesTest {
         val winner = seat(Wind.SOUTH, hand = threePlayerYakuhaiTanki(), discards = listOf(Tile.Honor.West))
         val table = threePlayerTable(listOf(seat(Wind.EAST), winner, seat(Wind.WEST)))
 
-        val withNineDora = threePlayerRules.winValue(threePlayerView(table, winner, listOf(character(1))), winner.hand, TWO_BAMBOO, isTsumo = false)
-        val withoutDora = threePlayerRules.winValue(threePlayerView(table, winner, listOf(Tile.Honor.East)), winner.hand, TWO_BAMBOO, isTsumo = false)
+        val withNineDora = threePlayerRules.winValue(threePlayerView(table, winner, listOf(character(1))), winner.hand, TileValue(TWO_BAMBOO), isTsumo = false)
+        val withoutDora = threePlayerRules.winValue(threePlayerView(table, winner, listOf(Tile.Honor.East)), winner.hand, TileValue(TWO_BAMBOO), isTsumo = false)
 
-        assertEquals(1, threePlayerRules.bonusTileCount(threePlayerView(table, winner, listOf(character(1))), character(9)))
+        assertEquals(1, threePlayerRules.bonusTileCount(threePlayerView(table, winner, listOf(character(1))), TileValue(character(9))))
         assertTrue(assertIs<WinValue.Points>(withNineDora).points > assertIs<WinValue.Points>(withoutDora).points)
     }
 
@@ -318,13 +362,13 @@ class RiichiPositionRulesTest {
 
         val projected = threePlayerRules.afterTileSetAside(view, north.id)
 
-        assertEquals(listOf(north), projected.evaluator.setAsideTiles)
-        assertEquals(listOf(north), assertIs<RiichiPlayerState>(projected.evaluator.playerRuleState).nukiDoraTiles)
+        assertEquals(listOf(north.toSnapshot(true)), projected.evaluator.setAsideTiles)
+        assertEquals(listOf(north.toSnapshot(true)), projected.evaluator.tileAreas.single { it.id == RiichiPlayerTileAreaIds.NORTH }.tiles)
         assertTrue(projected.evaluator.hand.standingTiles.none { it.id == north.id })
         assertNull(projected.evaluator.hand.lastDrawn)
         assertEquals(emptyList(), view.evaluator.setAsideTiles)
-        val before = assertIs<WinValue.Points>(threePlayerRules.winValue(view, tanki, TWO_BAMBOO, isTsumo = false)).points
-        val after = assertIs<WinValue.Points>(threePlayerRules.winValue(projected, tanki, TWO_BAMBOO, isTsumo = false)).points
+        val before = assertIs<WinValue.Points>(threePlayerRules.winValue(view, tanki, TileValue(TWO_BAMBOO), isTsumo = false)).points
+        val after = assertIs<WinValue.Points>(threePlayerRules.winValue(projected, tanki, TileValue(TWO_BAMBOO), isTsumo = false)).points
         assertTrue(after > before)
     }
 
@@ -334,24 +378,22 @@ class RiichiPositionRulesTest {
     }
 
     /**
-     * 二三四萬、四五六筒、七八九筒、中中中、二條：單騎聽二條，中提供役牌役；[fiveDot] 可換成赤五筒。
+     * 二三四萬、四五六筒、七八九筒、中中中、二條：單騎聽二條，中提供役牌役。
      *
-     * @param fiveDot 用於替換一般五筒的牌面。
      * @return 三人與四人日麻皆可用的測試手牌。
      */
-    private fun yakuhaiTankiOnTwoBamboo(fiveDot: Tile = dot(5)): Hand = handOf(
-        listOf(character(2), character(3), character(4), dot(4), fiveDot, dot(6), dot(7), dot(8), dot(9)) +
+    private fun yakuhaiTankiOnTwoBamboo(): Hand = handOf(
+        listOf(character(2), character(3), character(4), dot(4), dot(5), dot(6), dot(7), dot(8), dot(9)) +
             List(3) { Tile.Honor.Red } + TWO_BAMBOO,
     )
 
     /**
-     * 二三四萬、四五六筒、七八九筒、二三四條、五條：單騎聽五條，門前榮和沒有役；[fiveDot] 可換成赤五筒。
+     * 二三四萬、四五六筒、七八九筒、二三四條、五條：單騎聽五條，門前榮和沒有役。
      *
-     * @param fiveDot 用於替換一般五筒的牌面。
      * @return 門前榮和無役的測試手牌。
      */
-    private fun noYakuTankiOnFiveBamboo(fiveDot: Tile = dot(5)): Hand = handOf(
-        listOf(character(2), character(3), character(4), dot(4), fiveDot, dot(6), dot(7), dot(8), dot(9)) +
+    private fun noYakuTankiOnFiveBamboo(): Hand = handOf(
+        listOf(character(2), character(3), character(4), dot(4), dot(5), dot(6), dot(7), dot(8), dot(9)) +
             listOf(bamboo(2), bamboo(3), bamboo(4), FIVE_BAMBOO),
     )
 
@@ -362,15 +404,15 @@ class RiichiPositionRulesTest {
      * @param declarationTile 立直宣言牌。
      * @return 已立直且牌河包含宣言牌的測試玩家。
      */
-    private fun riichiDeclarer(discardsBefore: List<Tile>, declarationTile: Tile = Tile.Honor.West): MahjongPlayer {
+    private fun riichiDeclarer(discardsBefore: List<Tile>, declarationTile: TileValue = TileValue(Tile.Honor.West)): MahjongPlayer {
         val riichiTile = FakeIdentifiedTileFactory.create(declarationTile)
         val pile = discardsBefore
             .fold(RiichiDiscardPile()) { pile, tile -> pile.discardTile(FakeIdentifiedTileFactory.create(tile)) }
-            .discard(RiichiDiscardEntry(riichiTile, isRiichi = true))
+            .discard(DiscardEntry(tile = riichiTile, components = RiichiDiscardComponents.declaration()))
         return FakeMahjongPlayerFactory.create(
             initialSeat = Wind.EAST,
             discardPile = pile,
-            playerRuleState = RiichiPlayerState(riichiTile = riichiTile),
+            components = riichiDeclarationComponents(declarationTile = riichiTile),
         )
     }
 
@@ -390,7 +432,7 @@ class RiichiPositionRulesTest {
         players = players,
         dealerPlayerId = players.first().id,
         config = ThreePlayerRiichiRuleConfig(),
-        dynamicRuleState = RiichiDynamicState(),
+        components = riichiTableComponents(potPoints = 0),
     )
 
     /**
@@ -406,11 +448,11 @@ class RiichiPositionRulesTest {
         player: MahjongPlayer,
         doraIndicators: List<Tile> = emptyList(),
     ): PositionView {
-        val snapshot = table.toSnapshot(visibleHandPlayerIds = setOf(player.id), setAsideTiles = threePlayerModule::setAsideTiles)
+        val snapshot = table.toRiichiSnapshotForTests(player.id)
         val withIndicators = if (doraIndicators.isEmpty()) {
             snapshot
         } else {
-            snapshot.copy(tileWall = TileWallSnapshot(doraIndicators.map { IdentifiedTileSnapshot(id = Uuid.random(), tile = it) }))
+            snapshot.copy(tileWall = TileWallSnapshot(doraIndicators.map { IdentifiedTileSnapshot(id = Uuid.random(), face = TileFaceView(it, views = ComponentViewSet.EMPTY.with(RiichiTileComponentViews.DORA_INDICATOR, Unit))) }))
         }
         return PositionView(snapshot = withIndicators, evaluatorId = player.id)
     }
@@ -456,7 +498,7 @@ class RiichiPositionRulesTest {
         initialSeat = wind,
         hand = hand.copy(melds = hand.melds + melds),
         discardPile = discards.fold(RiichiDiscardPile()) { pile, tile -> pile.discardTile(FakeIdentifiedTileFactory.create(tile)) },
-        playerRuleState = RiichiPlayerState(riichiTile = if (riichi) FakeIdentifiedTileFactory.create(Tile.Honor.West) else null),
+        components = riichiDeclarationComponents(declarationTile = if (riichi) FakeIdentifiedTileFactory.create(Tile.Honor.West) else null),
     )
 
     /**
@@ -476,7 +518,7 @@ class RiichiPositionRulesTest {
         dealerPlayerId = players.first().id,
         config = RiichiRuleConfig(),
         comboCount = comboCount,
-        dynamicRuleState = RiichiDynamicState(riichiStickCount = riichiSticks),
+        components = riichiTableComponents(potPoints = (riichiSticks) * RIICHI_STICK_POINTS),
     )
 
     /**
@@ -492,11 +534,11 @@ class RiichiPositionRulesTest {
         player: MahjongPlayer,
         doraIndicators: List<Tile> = emptyList(),
     ): PositionView {
-        val snapshot = table.toSnapshot(visibleHandPlayerIds = setOf(player.id), setAsideTiles = { emptyList() })
+        val snapshot = table.toRiichiSnapshotForTests(player.id)
         val withIndicators = if (doraIndicators.isEmpty()) {
             snapshot
         } else {
-            snapshot.copy(tileWall = TileWallSnapshot(doraIndicators.map { IdentifiedTileSnapshot(id = Uuid.random(), tile = it) }))
+            snapshot.copy(tileWall = TileWallSnapshot(doraIndicators.map { IdentifiedTileSnapshot(id = Uuid.random(), face = TileFaceView(it, views = ComponentViewSet.EMPTY.with(RiichiTileComponentViews.DORA_INDICATOR, Unit))) }))
         }
         return PositionView(snapshot = withIndicators, evaluatorId = player.id)
     }
@@ -529,6 +571,6 @@ class RiichiPositionRulesTest {
     private companion object {
         val TWO_BAMBOO: Tile = Tile.Numeric(Tile.Suit.Bamboo, 2)
         val FIVE_BAMBOO: Tile = Tile.Numeric(Tile.Suit.Bamboo, 5)
-        val RED_FIVE_DOT: Tile = RiichiTileTypes.redFive(Tile.Suit.Dot)
+        val RED_FIVE_DOT: TileValue = RiichiTileValues.redFive(Tile.Suit.Dot)
     }
 }

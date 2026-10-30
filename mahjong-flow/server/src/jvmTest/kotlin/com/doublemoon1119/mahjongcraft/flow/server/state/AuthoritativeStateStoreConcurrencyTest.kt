@@ -4,6 +4,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.history.CommittedGameFac
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryEventDraft
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryFact
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepositoryImpl
+import com.doublemoon1119.mahjongcraft.testing.flow.common.game.repository.componentValidatedGameRepository
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
@@ -32,7 +33,7 @@ class AuthoritativeStateStoreConcurrencyTest {
     fun `second transaction waits for first committed callback`() = runBlocking {
         val store = AuthoritativeStateStore()
         val tableState = FakeTableStateFactory.create()
-        val repository = GameRepositoryImpl(store)
+        val repository = componentValidatedGameRepository(store)
         repository.setTableState(tableState)
         val committed = CountDownLatch(1)
         val release = CountDownLatch(1)
@@ -84,7 +85,7 @@ class AuthoritativeStateStoreConcurrencyTest {
     fun `released callback can read the committed snapshot`() = runBlocking {
         val store = AuthoritativeStateStore()
         val tableState = FakeTableStateFactory.create()
-        val repository = GameRepositoryImpl(store)
+        val repository = componentValidatedGameRepository(store)
         repository.setTableState(tableState)
         val released = CompletableDeferred<AuthoritativeStateSnapshot>()
         store.setCommittedFactsListener(
@@ -108,7 +109,7 @@ class AuthoritativeStateStoreConcurrencyTest {
     fun `release callback runs when the submitting coroutine is cancelled after commit`() = runBlocking {
         val store = AuthoritativeStateStore()
         val tableState = FakeTableStateFactory.create()
-        val repository = GameRepositoryImpl(store)
+        val repository = componentValidatedGameRepository(store)
         repository.setTableState(tableState)
         val released = CountDownLatch(1)
         lateinit var submittingJob: Job

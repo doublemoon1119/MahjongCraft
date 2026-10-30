@@ -177,7 +177,7 @@ class WinCelebrationShowcaseEntity(
      * @param nbt 儲存此實體資料的 NBT 複合標籤。
      */
     override fun readCustomDataFromNbt(nbt: NbtCompound) {
-        dataTracker.set(TABLE_ID, nbt.getString(NBT_KEY_TABLE_ID))
+        dataTracker.set(TABLE_ID, ManagedTableNbt.read(nbt)?.toString().orEmpty())
         dataTracker.set(START_GAME_TIME, nbt.getLong(NBT_KEY_START_GAME_TIME))
         dataTracker.set(END_GAME_TIME, nbt.getLong(NBT_KEY_END_GAME_TIME))
         dataTracker.set(ANIMATION_SEED, nbt.getLong(NBT_KEY_ANIMATION_SEED))
@@ -194,7 +194,7 @@ class WinCelebrationShowcaseEntity(
      * @param nbt 接收此實體資料的 NBT 複合標籤。
      */
     override fun writeCustomDataToNbt(nbt: NbtCompound) {
-        nbt.putString(NBT_KEY_TABLE_ID, managedTableId?.toString().orEmpty())
+        ManagedTableNbt.write(nbt, managedTableId)
         nbt.putLong(NBT_KEY_START_GAME_TIME, startGameTime)
         nbt.putLong(NBT_KEY_END_GAME_TIME, endGameTime)
         nbt.putLong(NBT_KEY_ANIMATION_SEED, animationSeed)
@@ -234,9 +234,6 @@ class WinCelebrationShowcaseEntity(
 
         /** 舞台追蹤範圍使用的非零高度。 */
         const val HEIGHT: Float = 4.0f
-
-        /** 管理此舞台的麻將桌 UUID 欄位。 */
-        private const val NBT_KEY_TABLE_ID = "ManagedTableId"
 
         /** 演出的絕對開始遊戲時間欄位。 */
         private const val NBT_KEY_START_GAME_TIME = "StartGameTime"
@@ -352,7 +349,7 @@ class WinCelebrationShowcaseEntity(
                         it.startYaw,
                         it.group,
                         it.standYaw,
-                        it.faceDown,
+                        it.backAppearanceId.orEmpty(),
                     ).joinToString("\u001c")
                 },
             ).joinToString("\u001f")
@@ -384,7 +381,7 @@ class WinCelebrationShowcaseEntity(
                         startYaw = startYaw,
                         group = cardParts.getOrNull(6)?.toIntOrNull() ?: 0,
                         standYaw = cardParts.getOrNull(7)?.toFloatOrNull() ?: startYaw,
-                        faceDown = cardParts.getOrNull(8)?.toBooleanStrictOrNull() ?: false,
+                        backAppearanceId = cardParts.getOrNull(8)?.ifBlank { null },
                     )
                 }.orEmpty()
                 ShowcaseWingSnapshot(seat, cue, cards)

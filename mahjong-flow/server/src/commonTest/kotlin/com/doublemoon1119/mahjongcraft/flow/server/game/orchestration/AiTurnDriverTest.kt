@@ -21,13 +21,16 @@ import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.base.Hand
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPlayerState
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.RiichiTileComponentViews
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.RiichiTileValues
 import com.doublemoon1119.mahjongcraft.logic.table.PendingReaction
 import com.doublemoon1119.mahjongcraft.logic.table.PendingRobbingReaction
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
+import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledCoreExtensionRegistries
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.registerBundledRuleModules
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeIdentifiedTileFactory
+import com.doublemoon1119.mahjongcraft.testing.logic.rules.riichi.riichiDeclarationComponents
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeDiscardPile
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
@@ -104,7 +107,7 @@ class AiTurnDriverTest {
             gameRepo,
             GetLegalActionsUseCase(gameRepo, moduleRegistry, actionContextResolver),
             strategyRegistry,
-            GameVisibilityPolicyImpl(moduleRegistry),
+            GameVisibilityPolicyImpl(moduleRegistry, componentRegistry = bundledCoreExtensionRegistries().componentRegistry),
             moduleRegistry,
             AiDecisionExecutor.direct(failurePolicy = ExtensionFailurePolicy.Default),
             AutomaticGameCommandResolver(moduleRegistry, actionContextResolver),
@@ -140,7 +143,7 @@ class AiTurnDriverTest {
             id = aiId,
             initialSeat = Wind.SOUTH,
             hand = Hand(tiles = listOf(FakeIdentifiedTileFactory.create(Tile.Honor.South))),
-            playerRuleState = RiichiPlayerState(),
+            components = riichiDeclarationComponents(),
         )
         val table = FakeTableStateFactory.create(
             id = gameId,
@@ -242,7 +245,7 @@ class AiTurnDriverTest {
             id = aiId,
             initialSeat = Wind.SOUTH,
             hand = Hand(tiles = listOf(matchingTileA, matchingTileB)),
-            playerRuleState = RiichiPlayerState(),
+            components = riichiDeclarationComponents(),
         )
         val table = FakeTableStateFactory.create(
             id = gameId,
@@ -365,7 +368,7 @@ class AiTurnDriverTest {
             id = aiId,
             initialSeat = Wind.EAST,
             hand = Hand(lastDrawn = lastDrawn),
-            playerRuleState = RiichiPlayerState(),
+            components = riichiDeclarationComponents(),
         )
         val table = FakeTableStateFactory.create(id = gameId, players = listOf(ai), config = RiichiRuleConfig(), currentPlayerIndex = 0)
         fixtures.gameRepo.setTableState(table, mapOf(aiId to strategyKey))
@@ -376,6 +379,32 @@ class AiTurnDriverTest {
         assertEquals(AiDecisionPhase.OwnTurn, fixtures.strategy.lastContext?.phase)
         assertEquals(aiId, fixtures.strategy.lastContext?.selfId)
         assertNull(fixtures.strategy.lastContext?.forcedDiscardTileId)
+    }
+
+    /** AI 的決策情境與真人一樣經可見性政策：看得到自己的牌面與赤五特徵，看不到他家的牌面與外觀。 */
+    @Test
+    fun `ai context sees its own traits but not other players' hidden faces`() = runTest {
+        val fixtures = Fixtures(strategyCommand = GameCommand.Discard(Uuid.random()))
+        val aiId = Uuid.random()
+        val ownRedFive = FakeIdentifiedTileFactory.create(RiichiTileValues.redFive(Tile.Suit.Dot))
+        val otherRedFive = FakeIdentifiedTileFactory.create(RiichiTileValues.redFive(Tile.Suit.Bamboo))
+        val ai = FakeMahjongPlayerFactory.create(
+            id = aiId,
+            initialSeat = Wind.EAST,
+            hand = Hand(tiles = listOf(ownRedFive), lastDrawn = FakeIdentifiedTileFactory.create(Tile.Honor.East)),
+            components = riichiDeclarationComponents(),
+        )
+        val other = FakeMahjongPlayerFactory.create(initialSeat = Wind.SOUTH, hand = Hand(tiles = listOf(otherRedFive)))
+        val table = FakeTableStateFactory.create(id = gameId, players = listOf(ai, other), config = RiichiRuleConfig(), currentPlayerIndex = 0)
+        fixtures.gameRepo.setTableState(table, mapOf(aiId to strategyKey))
+
+        fixtures.driver.resolveNextAction(gameId)
+
+        val snapshot = assertNotNull(fixtures.strategy.lastContext).snapshot
+        val ownFace = assertNotNull(snapshot.players.single { it.id == aiId }.hand.standingTiles.single { it.id == ownRedFive.id }.face)
+        assertEquals(RiichiTileValues.RED_FIVE_APPEARANCE_ID, ownFace.appearanceId)
+        assertEquals(Unit, ownFace.views[RiichiTileComponentViews.RED_DORA])
+        assertNull(snapshot.players.single { it.id == other.id }.hand.standingTiles.single().face)
     }
 
     /**
@@ -391,7 +420,7 @@ class AiTurnDriverTest {
             id = aiId,
             initialSeat = Wind.EAST,
             hand = Hand(lastDrawn = lastDrawn),
-            playerRuleState = RiichiPlayerState(riichiTile = riichiTile),
+            components = riichiDeclarationComponents(declarationTile = riichiTile),
         )
         val table = FakeTableStateFactory.create(id = gameId, players = listOf(ai), config = RiichiRuleConfig(), currentPlayerIndex = 0)
         fixtures.gameRepo.setTableState(table, mapOf(aiId to strategyKey))

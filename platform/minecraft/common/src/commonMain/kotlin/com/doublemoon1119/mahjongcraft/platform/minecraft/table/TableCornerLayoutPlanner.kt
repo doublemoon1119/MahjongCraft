@@ -1,6 +1,7 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.table
 
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
+import kotlinx.coroutines.CancellationException
 import kotlin.uuid.Uuid
 
 /**
@@ -128,17 +129,22 @@ class TableCornerLayoutPlanner(
         onSlowSlide: () -> Unit,
     ): Boolean {
         var waitedTicks = 0
-        while (slidesByTableId[tableId]?.id == slideId) {
-            when (areTilesMoving()) {
-                null -> return false
-                false -> return finishSlide(tableId, slideId)
-                true -> Unit
+        try {
+            while (slidesByTableId[tableId]?.id == slideId) {
+                when (areTilesMoving()) {
+                    null -> return false
+                    false -> return finishSlide(tableId, slideId)
+                    true -> Unit
+                }
+                if (waitedTicks == SLOW_SLIDE_WARNING_TICKS) onSlowSlide()
+                waitOneTick()
+                waitedTicks++
             }
-            if (waitedTicks == SLOW_SLIDE_WARNING_TICKS) onSlowSlide()
-            waitOneTick()
-            waitedTicks++
+            return false
+        } catch (cause: CancellationException) {
+            cancelSlide(tableId, slideId)
+            throw cause
         }
-        return false
     }
 
     /**
@@ -152,6 +158,11 @@ class TableCornerLayoutPlanner(
         if (slidesByTableId[tableId]?.id != slideId) return false
         slidesByTableId.remove(tableId)
         return true
+    }
+
+    /** 只取消仍由指定識別碼擁有的平移，避免舊工作清掉新更新。 */
+    private fun cancelSlide(tableId: Uuid, slideId: Long) {
+        if (slidesByTableId[tableId]?.id == slideId) slidesByTableId.remove(tableId)
     }
 
     /**

@@ -3,6 +3,7 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.text
 import com.doublemoon1119.mahjongcraft.logic.base.ExhaustiveDrawReason
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
+import com.doublemoon1119.mahjongcraft.logic.base.TileFaceView
 import com.doublemoon1119.mahjongcraft.logic.module.BuiltInRuleModuleIds
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiExhaustiveDrawReason
 import com.doublemoon1119.mahjongcraft.platform.minecraft.action.BuiltInGameActionIds
@@ -38,7 +39,7 @@ class GameActionDisplayTextTest {
         BuiltInMinecraftMahjongExtension.registerTileEmojis(this)
         BundledMinecraftMahjongExtensions.all.forEach { it.registerTileEmojis(this) }
     }
-    private val fiveDot = Tile.Numeric(Tile.Suit.Dot, 5)
+    private val fiveDot = TileFaceView(Tile.Numeric(Tile.Suit.Dot, 5))
 
     /** 驗證帶牌面的動作（例如打出）組出「動作 + 牌面」文字，牌面本身也正確解析（含 emoji 前綴）。 */
     @Test

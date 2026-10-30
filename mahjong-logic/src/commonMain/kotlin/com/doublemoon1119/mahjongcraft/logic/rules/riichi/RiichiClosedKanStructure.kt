@@ -1,7 +1,6 @@
 package com.doublemoon1119.mahjongcraft.logic.rules.riichi
 
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.riichiCanonical
 
 /** 檢查立直手牌的所有標準和牌拆法，確認要暗槓的三張牌只能作為刻子。 */
 internal object RiichiClosedKanStructure {
@@ -22,13 +21,13 @@ internal object RiichiClosedKanStructure {
         kanTile: Tile,
         existingMelds: Int,
     ): Boolean {
-        val canonicalTiles = standingTiles.map { it.riichiCanonical }
-        val baseTile = kanTile.riichiCanonical
+        val canonicalTiles = standingTiles
+        val baseTile = kanTile
         val requiredMelds = 4 - existingMelds
         if (requiredMelds !in 1..4 || canonicalTiles.size != requiredMelds * 3 + 1) return false
         if (canonicalTiles.count { it == baseTile } != 3 || winningTiles.isEmpty()) return false
         return winningTiles.all { waitingTile ->
-            val counts = (canonicalTiles + waitingTile.riichiCanonical).groupingBy { it }.eachCount().toMutableMap()
+            val counts = (canonicalTiles + waitingTile).groupingBy { it }.eachCount().toMutableMap()
             var interpretations = 0
             for (pair in counts.keys.toList()) {
                 interpretations = interpretations or withGroup(counts, listOf(pair, pair)) {

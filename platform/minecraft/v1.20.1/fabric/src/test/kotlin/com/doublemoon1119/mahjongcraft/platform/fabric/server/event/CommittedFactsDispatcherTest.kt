@@ -1,13 +1,14 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.server.event
 
+import com.doublemoon1119.mahjongcraft.flow.api.event.CommittedMatchEventBatch
 import com.doublemoon1119.mahjongcraft.flow.api.event.MatchEvent
+import com.doublemoon1119.mahjongcraft.flow.common.game.event.GameEventPublicMarkerResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryEventDraft
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryFact
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryWinDetails
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.BuiltInRoundOutcomeIds
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.Game
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameFlowConfig
-import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepositoryImpl
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateStore
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
@@ -16,6 +17,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.api.event.FabricGameEvent
 import com.doublemoon1119.mahjongcraft.platform.fabric.extension.FabricExtensionFailurePolicy
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.achievement.AchievementGrantGateway
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.achievement.FabricAchievementService
+import com.doublemoon1119.mahjongcraft.platform.minecraft.achievement.BuiltInAchievementIds
 import com.doublemoon1119.mahjongcraft.platform.minecraft.achievement.GameAchievementResolverRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.achievement.PlayerAchievements
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.event.GameEventContext
@@ -31,6 +33,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocationReg
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.registerBundledRuleModules
 import com.doublemoon1119.mahjongcraft.testing.flow.common.concurrency.TestCoroutineDispatchers
 import com.doublemoon1119.mahjongcraft.testing.flow.common.concurrency.createTestAppCoroutineScope
+import com.doublemoon1119.mahjongcraft.testing.flow.common.game.repository.componentValidatedGameRepository
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
 import kotlinx.coroutines.runBlocking
@@ -65,7 +68,7 @@ class CommittedFactsDispatcherTest {
     /** 建立獨立訂閱點並驗證完整橋接流程；離開時關閉 session 與背景執行器。 */
     private fun verifyBridgeSession() = runBlocking {
         val store = AuthoritativeStateStore()
-        val repository = GameRepositoryImpl(store)
+        val repository = componentValidatedGameRepository(store)
         val scheduler = QueueScheduler()
         val subscriptions = GameEventSubscriptions()
         val activeGame = game()
@@ -82,12 +85,13 @@ class CommittedFactsDispatcherTest {
         val gateway = RecordingGateway()
         val dispatcher = CommittedFactsDispatcher(
             store = store,
-            achievementService = achievementService(moduleRegistry, exclusions, gateway),
+            achievementService = achievementService(gateway),
             moduleRegistry = moduleRegistry,
             locations = FabricGameEventLocationSource(locations),
             reporter = reporter,
             exclusions = exclusions,
             failurePolicy = FabricExtensionFailurePolicy(),
+            markerResolvers = GameEventPublicMarkerResolverRegistry(),
         )
         val received = mutableListOf<String>()
         var observedGame: Game? = null
@@ -140,10 +144,28 @@ class CommittedFactsDispatcherTest {
                     },
                 ) { oldGame to Unit }
             }.get(5, TimeUnit.SECONDS)
+            submit(executor) {
+                repository.updateGame(
+                    gameId = oldGame.id,
+                    history = { _, _, _ ->
+                        listOf(
+                            HistoryEventDraft(
+                                null,
+                                HistoryFact.WinSettled(
+                                    BuiltInRoundOutcomeIds.TSUMO,
+                                    listOf(HistoryWinDetails(oldGame.tableState.players.first().id, emptyList())),
+                                ),
+                            ),
+                        )
+                    },
+                ) { oldGame.copy(tableState = oldGame.tableState.copy(comboCount = 1)) to Unit }
+            }.get(5, TimeUnit.SECONDS)
+            assertTrue(gateway.granted.isEmpty())
             dispatcher.stopSession()
             dispatcher.startSession(scheduler = scheduler, serverProvider = serverProvider, subscriptions = subscriptions)
             scheduler.runAll()
             assertTrue(received.isEmpty())
+            assertTrue(gateway.granted.isEmpty())
 
             runBlocking {
                 repository.updateGame(
@@ -181,14 +203,28 @@ class CommittedFactsDispatcherTest {
 
             assertEquals(1, scheduler.size())
             assertTrue(received.isEmpty())
+            assertTrue(gateway.granted.isEmpty())
+            exclusions.exclude(activeGame.matchId)
             scheduler.runAll()
+            exclusions.clear()
 
             assertEquals(listOf("started", "settled", "ended"), received)
             assertEquals(changedGame, observedGame)
             assertEquals(ownerThread, callbackThread)
             val capturedContext = assertNotNull(observedContext)
-            assertEquals(1, reporter.missingLocations.size)
+            assertEquals(listOf(oldGame.matchId, oldGame.matchId), reporter.missingLocations.map { it.first })
             assertTrue(gateway.granted.isNotEmpty())
+            val winnerGrants = gateway.granted.filter { it.playerId == activeGame.tableState.players.first().id }
+            assertEquals(1, winnerGrants.size)
+            assertTrue(
+                winnerGrants.single().achievementIds.containsAll(
+                    setOf(
+                        BuiltInAchievementIds.WIN,
+                        BuiltInAchievementIds.SELF_DRAW_WIN,
+                        BuiltInAchievementIds.FIRST_PLACE,
+                    ),
+                ),
+            )
             assertFailsWith<UnsupportedOperationException> { FabricGameEventContexts.server(capturedContext) }
 
             val abortedGame = changedGame.copy(matchId = Uuid.random())
@@ -218,10 +254,18 @@ class CommittedFactsDispatcherTest {
             assertEquals(activeLocation.x, endedLocation.x)
             assertEquals(activeLocation.y, endedLocation.y)
             assertEquals(activeLocation.z, endedLocation.z)
+            val resumedGame = changedGame.copy(matchId = Uuid.random())
+            repository.updateGame(
+                gameId = resumedGame.id,
+                history = { _, _, _ ->
+                    listOf(HistoryEventDraft(null, HistoryFact.MatchStarted(resumedGame.tableState, resumedGame.flowConfig, emptyMap())))
+                },
+            ) { resumedGame to Unit }
+            scheduler.runAll()
             val receivedBeforeExclusion = received.toList()
             val grantsBeforeExclusion = gateway.granted.size
-            exclusions.exclude(activeGame.matchId)
-            val excludedGame = changedGame.copy(tableState = changedGame.tableState.copy(comboCount = 1))
+            exclusions.exclude(resumedGame.matchId)
+            val excludedGame = resumedGame.copy(tableState = resumedGame.tableState.copy(comboCount = 1))
             submit(executor) {
                 repository.updateGame(
                     gameId = activeGame.id,
@@ -243,12 +287,13 @@ class CommittedFactsDispatcherTest {
             assertEquals(receivedBeforeExclusion, received)
             assertEquals(grantsBeforeExclusion, gateway.granted.size)
             dispatcher.stopSession()
-            assertFalse(exclusions.contains(activeGame.matchId))
+            assertFalse(exclusions.contains(resumedGame.matchId))
             assertFailsWith<IllegalStateException> { FabricGameEventContexts.server(capturedContext) }
             dispatcher.startSession(scheduler = scheduler, serverProvider = serverProvider, subscriptions = subscriptions)
             assertFailsWith<IllegalStateException> { FabricGameEventContexts.server(capturedContext) }
             dispatcher.stopSession()
             assertTrue(reporter.listenerFailures.isEmpty())
+            assertTrue(reporter.batchListenerFailures.isEmpty())
             assertTrue(reporter.schedulingFailures.isEmpty())
         } finally {
             dispatcher.stopSession()
@@ -259,24 +304,19 @@ class CommittedFactsDispatcherTest {
     /**
      * 建立測試用成果服務；事件橋接測試只驗證事件交付，不驗證成果內容。
      *
-     * @param moduleRegistry 測試用規則模組 registry。
-     * @param exclusions 與事件分派器共用的排除名單。
      * @param gateway 接收成果授予的測試 gateway。
-     * @return 與事件橋接共用排除名單的成果服務。
+     * @return 測試用成果服務。
      */
     private fun achievementService(
-        moduleRegistry: MahjongModuleRegistryImpl,
-        exclusions: GameEventExclusions,
         gateway: AchievementGrantGateway,
     ): FabricAchievementService {
         val dispatchers = TestCoroutineDispatchers()
         return FabricAchievementService(
             scope = createTestAppCoroutineScope(dispatchers),
             dispatchers = dispatchers,
-            moduleRegistry = moduleRegistry,
             resolverRegistry = GameAchievementResolverRegistryImpl(),
             gateway = gateway,
-            exclusions = exclusions,
+            failurePolicy = FabricExtensionFailurePolicy(),
         )
     }
 
@@ -331,6 +371,9 @@ class CommittedFactsDispatcherTest {
         /** 監聽者失敗診斷。 */
         val listenerFailures = mutableListOf<Throwable>()
 
+        /** 批次監聽者失敗診斷。 */
+        val batchListenerFailures = mutableListOf<Throwable>()
+
         /** 排程失敗診斷。 */
         val schedulingFailures = mutableListOf<Throwable>()
 
@@ -356,6 +399,14 @@ class CommittedFactsDispatcherTest {
             cause: Throwable,
         ) {
             listenerFailures += cause
+        }
+
+        override fun batchListenerFailed(
+            batch: CommittedMatchEventBatch,
+            listener: Any,
+            cause: Throwable,
+        ) {
+            batchListenerFailures += cause
         }
 
         /**

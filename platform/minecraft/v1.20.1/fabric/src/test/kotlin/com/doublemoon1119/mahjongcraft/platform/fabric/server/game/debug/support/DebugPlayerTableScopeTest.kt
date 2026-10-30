@@ -5,13 +5,13 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryFact
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryRecordingDecision
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.Game
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameFlowConfig
-import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepositoryImpl
 import com.doublemoon1119.mahjongcraft.flow.server.membership.repository.PlayerMembershipRepositoryImpl
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateStore
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateUpdate
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.event.GameEventExclusions
 import com.doublemoon1119.mahjongcraft.testing.flow.common.concurrency.TestCoroutineDispatchers
 import com.doublemoon1119.mahjongcraft.testing.flow.common.concurrency.createTestAppCoroutineScope
+import com.doublemoon1119.mahjongcraft.testing.flow.common.game.repository.componentValidatedGameRepository
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
@@ -36,7 +36,7 @@ class DebugPlayerTableScopeTest {
         }
         val playerTableScope = DebugPlayerTableScope(
             membershipRepository = PlayerMembershipRepositoryImpl(),
-            gameRepository = GameRepositoryImpl(store),
+            gameRepository = componentValidatedGameRepository(store),
             exclusions = GameEventExclusions(),
             stateStore = store,
             scope = createTestAppCoroutineScope(TestCoroutineDispatchers()),

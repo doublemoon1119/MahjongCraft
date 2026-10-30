@@ -7,6 +7,20 @@ import kotlin.test.assertTrue
 
 /** [AnimationQueueDriver] 的到期／推進判斷測試，涵蓋 bug 根因相關的持久化恢復情境。 */
 class AnimationQueueDriverTest {
+    /** 沒有自訂步驟時保留目前狀態，有多個時採用最後排定的值。 */
+    @Test
+    fun `final custom state follows the last queued target without consuming steps`() {
+        assertEquals("standing", AnimationQueueDriver.finalCustomState(emptyList(), "standing"))
+        val queue = listOf(
+            AnimationStep.Custom("face_up"),
+            AnimationStep.WaitUntil(100L),
+            AnimationStep.Custom("face_down"),
+        )
+        assertEquals("face_down", AnimationQueueDriver.finalCustomState(queue, "standing"))
+        assertEquals(3, queue.size)
+        assertEquals("face_up", AnimationQueueDriver.finalCustomState(queue.take(2), "standing"))
+    }
+
     /** 相同絕對時間的相鄰等待只保留一個。 */
     @Test
     fun `test append deduplicates adjacent waits with the same game time`() {

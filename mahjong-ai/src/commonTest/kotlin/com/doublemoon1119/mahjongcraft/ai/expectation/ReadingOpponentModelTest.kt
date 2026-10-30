@@ -8,19 +8,21 @@ import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.logic.module.BuiltInRuleModuleIds
 import com.doublemoon1119.mahjongcraft.logic.module.PositionView
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDiscardEntry
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDiscardComponents
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDiscardPile
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDynamicState
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPlayerState
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleModule
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanRuleModule
+import com.doublemoon1119.mahjongcraft.logic.table.DiscardPile.DiscardEntry
 import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayer
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import com.doublemoon1119.mahjongcraft.logic.table.toSnapshot
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeIdentifiedTileFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeMeldFactory
+import com.doublemoon1119.mahjongcraft.testing.logic.rules.riichi.riichiDeclarationComponents
+import com.doublemoon1119.mahjongcraft.testing.logic.rules.riichi.riichiTableComponents
+import com.doublemoon1119.mahjongcraft.testing.logic.rules.riichi.toRiichiSnapshotForTests
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeDiscardPile
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
@@ -74,7 +76,7 @@ class ReadingOpponentModelTest {
             discardPile = (1..6).fold(FakeDiscardPile()) { pile, value -> pile.discardTile(FakeIdentifiedTileFactory.create(m(value))) },
         )
         val view = PositionView(
-            snapshot = FakeTableStateFactory.create(players = listOf(active, self)).toSnapshot(visibleHandPlayerIds = setOf(self.id), setAsideTiles = { emptyList() }),
+            snapshot = FakeTableStateFactory.create(players = listOf(active, self)).toSnapshot(setOf(self.id)),
             evaluatorId = self.id,
         )
         val range = OpponentModelRegistry.NEUTRAL_READING_FACTOR_RANGE
@@ -105,8 +107,8 @@ class ReadingOpponentModelTest {
         val riichiTile = FakeIdentifiedTileFactory.create(Tile.Honor.West)
         val pile = discardsBefore
             .fold(RiichiDiscardPile()) { pile, tile -> pile.discardTile(FakeIdentifiedTileFactory.create(tile)) }
-            .discard(RiichiDiscardEntry(riichiTile, isRiichi = true))
-        return FakeMahjongPlayerFactory.create(initialSeat = Wind.EAST, discardPile = pile, playerRuleState = RiichiPlayerState(riichiTile = riichiTile))
+            .discard(DiscardEntry(tile = riichiTile, components = RiichiDiscardComponents.declaration()))
+        return FakeMahjongPlayerFactory.create(initialSeat = Wind.EAST, discardPile = pile, components = riichiDeclarationComponents(declarationTile = riichiTile))
     }
 
     /**
@@ -125,7 +127,7 @@ class ReadingOpponentModelTest {
         initialSeat = wind,
         hand = Hand(melds = melds),
         discardPile = discards.fold(RiichiDiscardPile()) { pile, tile -> pile.discardTile(FakeIdentifiedTileFactory.create(tile)) },
-        playerRuleState = RiichiPlayerState(),
+        components = riichiDeclarationComponents(),
     )
 
     /**
@@ -136,8 +138,8 @@ class ReadingOpponentModelTest {
      * @return 對應桌況的局面視角。
      */
     private fun riichiView(players: List<MahjongPlayer>, self: MahjongPlayer): PositionView = PositionView(
-        snapshot = FakeTableStateFactory.create(players = players, config = RiichiRuleConfig(), dynamicRuleState = RiichiDynamicState())
-            .toSnapshot(visibleHandPlayerIds = setOf(self.id), setAsideTiles = { emptyList() }),
+        snapshot = FakeTableStateFactory.create(players = players, config = RiichiRuleConfig(), components = riichiTableComponents(potPoints = 0))
+            .toRiichiSnapshotForTests(self.id),
         evaluatorId = self.id,
     )
 

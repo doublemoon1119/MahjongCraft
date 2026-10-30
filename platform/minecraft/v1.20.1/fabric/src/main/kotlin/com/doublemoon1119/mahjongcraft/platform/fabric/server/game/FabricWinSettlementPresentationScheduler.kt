@@ -18,6 +18,8 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.WinSettleme
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.WinSettlementRevealSequence
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.detailTextFormatter
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileWallPlacement
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.toAssetKey
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.winningHandFaceDownIndices
 import net.minecraft.server.world.ServerWorld
 import net.minecraft.util.math.BlockPos
@@ -27,11 +29,13 @@ import kotlin.uuid.Uuid
  * 將平台無關 request 轉成可持久化 Fabric 胡牌結算舞台。
  *
  * @property templateRegistry 查詢規則專屬胡牌結算版型與格式器。
+ * @property tileAssetRegistry 將公開展示牌面解析為平台素材，不查詢局內牌位置。
  * @property overlays 管理桌面 overlay 的暫時隱藏。
  * @property spawnGateway 生成並追蹤舞台 entity。
  */
 class FabricWinSettlementPresentationScheduler(
     private val templateRegistry: WinSettlementPresentationTemplateRegistry,
+    private val tileAssetRegistry: MinecraftTileAssetRegistry,
     private val overlays: PersistentTableOverlayCoordinator,
     private val spawnGateway: FabricEntitySpawnGateway,
 ) {
@@ -80,7 +84,7 @@ class FabricWinSettlementPresentationScheduler(
                         is WinSettlementDetailValue.Quantities -> formatter.quantities(value.quantities).let { text ->
                             WinSettlementDetailSnapshot(field.id, WinSettlementPresentationEntity.DETAIL_TEXT, listOf(text.translationKey) + text.arguments)
                         }
-                        is WinSettlementDetailValue.Tiles -> WinSettlementDetailSnapshot(field.id, WinSettlementPresentationEntity.DETAIL_TILES, value.tileIds.mapNotNull(tileAssetsById::get))
+                        is WinSettlementDetailValue.TileFaces -> WinSettlementDetailSnapshot(field.id, WinSettlementPresentationEntity.DETAIL_TILES, value.faces.map { it.toAssetKey(tileAssetRegistry) })
                         is WinSettlementDetailValue.Entries -> WinSettlementDetailSnapshot(
                             field.id,
                             WinSettlementPresentationEntity.DETAIL_ENTRIES,

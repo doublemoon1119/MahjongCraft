@@ -1,17 +1,21 @@
 package com.doublemoon1119.mahjongcraft.logic.rules.riichi
 
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
+import com.doublemoon1119.mahjongcraft.logic.base.Hand
 import com.doublemoon1119.mahjongcraft.logic.base.Meld
 import com.doublemoon1119.mahjongcraft.logic.base.MeldType
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
+import com.doublemoon1119.mahjongcraft.logic.base.TileValue
 import com.doublemoon1119.mahjongcraft.logic.judgment.ShantenResult
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDeclarationKind
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.threeplayer.ThreePlayerRiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.threeplayer.ThreePlayerRiichiRuleModule
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.RiichiTileTypes
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.RiichiTileValues
 import com.doublemoon1119.mahjongcraft.logic.table.TileWall
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeHandFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeIdentifiedTileFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeMeldFactory
+import com.doublemoon1119.mahjongcraft.testing.logic.rules.riichi.riichiDeclarationComponents
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
 import kotlin.random.Random
@@ -27,15 +31,15 @@ class RiichiClosedKanAfterRiichiTest {
     /** 同花色鄰近對子不影響獨立刻子，普通五與赤五皆可暗槓。 */
     @Test
     fun `recorded hand allows plain and red five dot closed kan`() {
-        val normalFive = Tile.Numeric(Tile.Suit.Dot, 5)
-        val redFive = RiichiTileTypes.redFive(Tile.Suit.Dot)
+        val normalFive = TileValue(Tile.Numeric(Tile.Suit.Dot, 5))
+        val redFive = RiichiTileValues.redFive(Tile.Suit.Dot)
         assertEquals(tiles(bamboos = "25").toSet(), waits(recordedHand))
         listOf(normalFive, redFive).forEach { incoming ->
-            val actions = closedKans(recordedHand, incoming)
+            val actions = closedKans(recordedHand.map(::TileValue), incoming)
             assertEquals(1, actions.size, "Both plain and red five must allow the recorded closed kan.")
             assertEquals(3, actions.single().withTiles.size)
         }
-        val handWithRedFive = recordedHand.toMutableList().apply {
+        val handWithRedFive = recordedHand.map(::TileValue).toMutableList().apply {
             this[indexOf(normalFive)] = redFive
         }
         assertEquals(1, closedKans(handWithRedFive, normalFive).size)
@@ -46,7 +50,7 @@ class RiichiClosedKanAfterRiichiTest {
     fun `three player riichi allows the recorded red five closed kan`() {
         assertEquals(
             1,
-            closedKans(recordedHand, RiichiTileTypes.redFive(Tile.Suit.Dot), threePlayer = true).size,
+            closedKans(recordedHand.map(::TileValue), RiichiTileValues.redFive(Tile.Suit.Dot), threePlayer = true).size,
         )
     }
 
@@ -56,8 +60,8 @@ class RiichiClosedKanAfterRiichiTest {
         assertEquals(
             1,
             closedKans(
-                standing = recordedHand,
-                incoming = RiichiTileTypes.redFive(Tile.Suit.Dot),
+                standing = recordedHand.map(::TileValue),
+                incoming = RiichiTileValues.redFive(Tile.Suit.Dot),
                 incomingStoredInHand = true,
             ).size,
         )
@@ -72,7 +76,7 @@ class RiichiClosedKanAfterRiichiTest {
         )
         val hand = tiles(dots = "33555", bamboos = "34678")
         assertEquals(tiles(bamboos = "25").toSet(), waits(hand, listOf(existing)))
-        assertEquals(1, closedKans(hand, RiichiTileTypes.redFive(Tile.Suit.Dot), listOf(existing)).size)
+        assertEquals(1, closedKans(hand.map(::TileValue), RiichiTileValues.redFive(Tile.Suit.Dot), listOf(existing)).size)
     }
 
     /** 獨立五條暗槓前後維持六、九條等待，附近的七條不構成禁止條件。 */
@@ -150,18 +154,27 @@ class RiichiClosedKanAfterRiichiTest {
     }
 
     /**
-     * 以正式四人或三人規則判斷立直後的暗槓，摸入牌另外傳入以免重複計數。
+     * 以普通牌面判斷四人日麻立直後的暗槓。
      *
      * @param standing 立直後、不含本次摸牌的立牌。
      * @param incoming 本次摸到的牌種。
+     * @return 目前提供的暗槓動作。
+     */
+    private fun closedKans(standing: List<Tile>, incoming: Tile): List<GameAction.Kan> = closedKans(standing.map(::TileValue), TileValue(incoming))
+
+    /**
+     * 以正式四人或三人規則判斷立直後的暗槓，摸入牌另外傳入以免重複計數。
+     *
+     * @param standing 立直後、不含本次摸牌的立牌牌值。
+     * @param incoming 本次摸到的牌值。
      * @param melds 已有的暗槓。
      * @param threePlayer 是否使用三人日麻模組。
      * @param incomingStoredInHand 是否將摸牌放在手牌內，而非透過獨立參數傳入。
      * @return 目前提供的暗槓動作。
      */
     private fun closedKans(
-        standing: List<Tile>,
-        incoming: Tile,
+        standing: List<TileValue>,
+        incoming: TileValue,
         melds: List<Meld> = emptyList(),
         threePlayer: Boolean = false,
         incomingStoredInHand: Boolean = false,
@@ -173,10 +186,12 @@ class RiichiClosedKanAfterRiichiTest {
         }
         val drawn = FakeIdentifiedTileFactory.create(incoming)
         val player = FakeMahjongPlayerFactory.create(
-            hand = FakeHandFactory.create(tiles = standing, melds = melds).copy(
+            hand = Hand(
+                tiles = standing.map { FakeIdentifiedTileFactory.create(it) },
+                melds = melds,
                 lastDrawn = drawn.takeIf { incomingStoredInHand },
             ),
-            playerRuleState = RiichiPlayerState(riichiTile = FakeIdentifiedTileFactory.create(Tile.Honor.East)),
+            components = riichiDeclarationComponents(declarationTile = FakeIdentifiedTileFactory.create(Tile.Honor.East)),
         )
         val table = FakeTableStateFactory.create(
             config = module.config,

@@ -23,7 +23,8 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
-import kotlinx.serialization.json.Json
+import kotlinx.serialization.StringFormat
+import kotlinx.serialization.encodeToString
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.nanoseconds
 
@@ -35,12 +36,14 @@ import kotlin.time.Duration.Companion.nanoseconds
  *
  * @property transport 有 requestId 配對及 session 失效通知的查詢傳輸。
  * @param parentScope 提供 client 排程的父作用域；關閉只取消本瀏覽自己的子作用域。
+ * @property json 含已登記擴充網路格式的編碼，用來估算快取內容大小。
  * @property now 判斷間隔的單調時間來源，不使用可被調整的日曆時鐘。
  * @property beforeDetailQuery 在詳細資料傳送前等待同 session 的其他唯讀查詢釋放配額。
  */
 internal class HistoryBrowseController(
     private val transport: HistoryQueryTransport,
     parentScope: CoroutineScope,
+    private val json: StringFormat,
     private val now: () -> Duration = { System.nanoTime().nanoseconds },
     private val requestGate: ClientHistoryRequestGate? = null,
     private val beforeDetailQuery: suspend () -> Unit = {},
@@ -844,7 +847,7 @@ internal class HistoryBrowseController(
     private fun acceptRoundEvents(response: HistoryRoundEventsResponseDto, intent: Intent.RoundEvents) {
         when (val result = HistoryRoundResponseValidator.validateEvents(intent.request(response.requestId), response)) {
             is HistoryRoundValidationResult.Success -> {
-                roundCache.putEvents(intent.cacheKey(), result.value, Json.encodeToString(result.value).toByteArray(Charsets.UTF_8).size)
+                roundCache.putEvents(intent.cacheKey(), result.value, json.encodeToString(result.value).toByteArray(Charsets.UTF_8).size)
                 applyRoundEvents(result.value, intent)
             }
             is HistoryRoundValidationResult.Error -> fail(result.code.toBrowseFailure())
@@ -861,7 +864,7 @@ internal class HistoryBrowseController(
     private fun acceptRoundState(response: HistoryRoundStateResponseDto, intent: Intent.RoundState) {
         when (val result = HistoryRoundResponseValidator.validateState(intent.request(response.requestId), response)) {
             is HistoryRoundValidationResult.Success -> {
-                roundCache.putState(intent.cacheKey(), result.value, Json.encodeToString(result.value).toByteArray(Charsets.UTF_8).size)
+                roundCache.putState(intent.cacheKey(), result.value, json.encodeToString(result.value).toByteArray(Charsets.UTF_8).size)
                 applyRoundState(result.value, intent)
             }
             is HistoryRoundValidationResult.Error -> fail(result.code.toBrowseFailure())

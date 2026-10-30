@@ -3,6 +3,8 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.server.tile
 import com.doublemoon1119.mahjongcraft.logic.base.MeldType
 import com.doublemoon1119.mahjongcraft.logic.base.PublicHandOrder
 import com.doublemoon1119.mahjongcraft.logic.table.GameInitializer
+import com.doublemoon1119.mahjongcraft.logic.tile.component.TilePose
+import com.doublemoon1119.mahjongcraft.logic.tile.component.TilePoseState
 import com.doublemoon1119.mahjongcraft.platform.fabric.block.MahjongTableBlock
 import com.doublemoon1119.mahjongcraft.platform.fabric.block.MahjongTablePart
 import com.doublemoon1119.mahjongcraft.platform.fabric.block.entity.MahjongTableBlockEntity
@@ -52,7 +54,7 @@ class FabricMahjongPlayerAreaPresenter(
 
     /**
      * 依 [MahjongPlayerAreaLayout] 算出的最終位置擺放立牌、摸牌位、副露與移出的牌：
-     * 1. 立牌依公開順序擺放（[MahjongTilePose.STANDING]），不使用 [MahjongPlayerAreaPresentation.standingTileIds] 的私人順序；
+     * 1. 未完整公開平放的立牌使用公開順序；全部平放時沿用 [MahjongPlayerAreaPresentation.standingTileIds] 的玩家牌序；
      *    本人的排列由用戶端依本人快照顯示，不改變其他觀察者看到的座標。
      * 2. 摸牌位在 [MahjongPlayerAreaPresentation.animateDrawnTile] 為 `true` 時改排定 [TileAnimationSteps.scheduleDrawnTile]，
      *    不直接定格。有 [MahjongPlayerAreaPresentation.followUpSteps] 時依 [DrawFollowUpTimeline] 逐步排定：先摸到第一步要移出的牌，
@@ -81,6 +83,14 @@ class FabricMahjongPlayerAreaPresenter(
         fun placeExisting(tile: MahjongTileEntity, placement: MahjongTileWallPlacement, pose: MahjongTilePose) {
             if (presentation.slideTicks > 0) {
                 TileAnimationSteps.scheduleSlide(tile, placement, pose, presentation.slideTicks)
+            } else if (pose == MahjongTilePose.FACE_UP && tile.tilePose == MahjongTilePose.STANDING) {
+                // 第一次攤牌要保留翻倒動畫；牌正在其他動畫時只把翻倒步驟附加到佇列尾端，不能中斷原動畫。
+                if (!tile.animating) {
+                    tile.teleportExistingManagedTile(placement)
+                    TileAnimationSteps.scheduleLaydown(tile, world.time)
+                } else if (!tile.isInvisible) {
+                    TileAnimationSteps.scheduleLaydown(tile, world.time)
+                }
             } else {
                 tile.tilePose = pose
                 tile.teleportExistingManagedTile(placement)
@@ -109,10 +119,11 @@ class FabricMahjongPlayerAreaPresenter(
                 seatLayout = presentation.seatLayout,
                 seatIndex = presentation.seatIndex,
                 standingTileIds = presentation.standingTileIds,
-                hasDrawnTile = presentation.drawnTileId != null,
+                drawnTileId = presentation.drawnTileId,
                 melds = presentation.melds,
                 setAsideTileIds = presentation.setAsideTileIds,
                 cornerWidth = presentation.cornerWidth,
+                tilePoseStates = presentation.tilePoseStates,
             ),
         )
 
@@ -124,7 +135,11 @@ class FabricMahjongPlayerAreaPresenter(
             if (standing.tileId in followUpDrawnTileIds) return@forEach
             val tile = claimTile(standing.tileId) ?: return@forEach
             tile.assignToTable(presentation.tableId)
-            placeExisting(tile, standing.placement, MahjongTilePose.STANDING)
+            placeExisting(
+                tile,
+                standing.placement,
+                poseFor(standing.tileId, presentation.tilePoseStates),
+            )
         }
 
         val drawnSlotPlacement = layout.drawnSlot
@@ -146,7 +161,12 @@ class FabricMahjongPlayerAreaPresenter(
             scheduledDraws.forEach { (tileId, startDelayTicks) ->
                 val tile = claimTile(tileId) ?: return@forEach
                 tile.assignToTable(presentation.tableId)
-                TileAnimationSteps.scheduleDrawnTile(tile, standingPlacements[tileId] ?: drawnSlotPlacement, startDelayTicks)
+                TileAnimationSteps.scheduleDrawnTile(
+                    tile = tile,
+                    finalPlacement = standingPlacements[tileId] ?: drawnSlotPlacement,
+                    startDelayTicks = startDelayTicks,
+                    endPose = poseFor(tileId, presentation.tilePoseStates),
+                )
             }
         } else {
             presentation.drawnTileId?.let { drawnTileId ->
@@ -161,9 +181,14 @@ class FabricMahjongPlayerAreaPresenter(
                             tile = tile,
                             finalPlacement = drawnSlotPlacement,
                             startDelayTicks = DrawFollowUpTimeline.initialDrawDelayTicks(claimsTiles),
+                            endPose = poseFor(drawnTileId, presentation.tilePoseStates),
                         )
                     } else {
-                        placeExisting(tile, drawnSlotPlacement, MahjongTilePose.STANDING)
+                        placeExisting(
+                            tile,
+                            drawnSlotPlacement,
+                            poseFor(drawnTileId, presentation.tilePoseStates),
+                        )
                     }
                 }
             }
@@ -375,16 +400,12 @@ class FabricMahjongPlayerAreaPresenter(
 
                 val restLaydownStartGameTime = winTileLaydownEndGameTime + MahjongTileTableLayout.WIN_PRE_HAND_LAYDOWN_DELAY_TICKS
                 val restTiles = (claimedStandingTiles - presentation.winningTileId).values.toList()
-                restTiles.forEachIndexed { index, tile ->
-                    TileAnimationSteps.scheduleLaydown(tile, restLaydownStartGameTime, playGroupSound = index == restTiles.size / 2)
-                }
+                TileAnimationSteps.scheduleGroupLaydown(restTiles, restLaydownStartGameTime)
                 restLaydownStartGameTime + MahjongTileTableLayout.WIN_LAYDOWN_DURATION_TICKS
             } else {
                 val handLaydownStartGameTime = reorderEndGameTime + MahjongTileTableLayout.WIN_PRE_HAND_LAYDOWN_DELAY_TICKS
                 val handTiles = claimedStandingTiles.values.toList()
-                handTiles.forEachIndexed { index, tile ->
-                    TileAnimationSteps.scheduleLaydown(tile, handLaydownStartGameTime, playGroupSound = index == handTiles.size / 2)
-                }
+                TileAnimationSteps.scheduleGroupLaydown(handTiles, handLaydownStartGameTime)
                 handLaydownStartGameTime + MahjongTileTableLayout.WIN_LAYDOWN_DURATION_TICKS
             }
         }
@@ -513,6 +534,7 @@ class FabricMahjongPlayerAreaPresenter(
                         flipAbsoluteGameTime,
                         playDealSound = !dealSoundScheduled,
                         playFlipSound = seatIndex !in flipSoundSeatIndices,
+                        endPose = poseFor(tileId, presentation.tilePoseStates),
                     )
                     dealSoundScheduled = true
                     flipSoundSeatIndices += seatIndex
@@ -617,5 +639,14 @@ class FabricMahjongPlayerAreaPresenter(
 
         /** controller 周圍查詢正式手牌／副露的垂直半徑。 */
         const val TILE_SEARCH_VERTICAL: Double = 2.0
+    }
+
+    /** 依逐張共同姿態轉成原生姿態；未指定的牌保持直立。 */
+    private fun poseFor(tileId: Uuid, states: List<TilePoseState>): MahjongTilePose = when (
+        states.firstOrNull { it.tileId == tileId }?.pose ?: TilePose.UPRIGHT
+    ) {
+        TilePose.UPRIGHT -> MahjongTilePose.STANDING
+        TilePose.FACE_UP -> MahjongTilePose.FACE_UP
+        TilePose.FACE_DOWN -> MahjongTilePose.FACE_DOWN
     }
 }

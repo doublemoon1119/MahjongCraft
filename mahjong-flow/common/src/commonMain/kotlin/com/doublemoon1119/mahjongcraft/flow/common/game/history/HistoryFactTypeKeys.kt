@@ -54,6 +54,9 @@ object HistoryFactTypeKeys {
     /** 桌況變更結果事實的種類識別碼。 */
     const val TABLE_CHANGED: String = "table_changed"
 
+    /** 牌張呈現變化事實的種類識別碼。 */
+    const val TILE_PRESENTATION_CHANGED: String = "tile_presentation_changed"
+
     /** 對局返回房間事實的種類識別碼。 */
     const val RETURNED_TO_ROOM: String = "returned_to_room"
 }

@@ -438,7 +438,7 @@ class FabricHistoryOutboxWriter(
         readAuthorizedHistoryRound(
             activeDatabase, access, historyQueryPolicy(), matchId, queryScope, excludedHistoryMatches(),
             { parseBoundedReplayJson(it) },
-            { CompactReplayRoundReader().readEvents(it, matchId, roundNumber, startIndex, limit) },
+            { CompactReplayRoundReader(replayRegistries.componentViews).readEvents(it, matchId, roundNumber, startIndex, limit) },
             { it.identity },
         )
     }
@@ -465,7 +465,7 @@ class FabricHistoryOutboxWriter(
         readAuthorizedHistoryRound(
             activeDatabase, access, historyQueryPolicy(), matchId, queryScope, excludedHistoryMatches(),
             { parseBoundedReplayJson(it) },
-            { CompactReplayRoundReader().readState(it, matchId, roundNumber, position) },
+            { CompactReplayRoundReader(replayRegistries.componentViews).readState(it, matchId, roundNumber, position) },
             { it.identity },
         )
     }

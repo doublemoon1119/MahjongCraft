@@ -17,20 +17,23 @@ import com.doublemoon1119.mahjongcraft.logic.base.Meld
 import com.doublemoon1119.mahjongcraft.logic.base.MeldType
 import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
+import com.doublemoon1119.mahjongcraft.logic.component.ComponentSet
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDynamicState
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPlayerState
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPlayerComponents
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.table.PendingRobbingReaction
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.logic.table.TileWall
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
+import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledCoreExtensionRegistries
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledWinCelebrationCueResolverRegistry
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.registerBundledRuleModules
 import com.doublemoon1119.mahjongcraft.testing.flow.common.game.repository.FakeGameSnapshotRepository
 import com.doublemoon1119.mahjongcraft.testing.flow.common.game.service.FakeGameEventPublisher
 import com.doublemoon1119.mahjongcraft.testing.flow.common.game.service.FakeGamePresentationPublisher
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeIdentifiedTileFactory
+import com.doublemoon1119.mahjongcraft.testing.logic.rules.riichi.riichiDeclarationComponents
+import com.doublemoon1119.mahjongcraft.testing.logic.rules.riichi.riichiTableComponents
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
 import kotlinx.coroutines.test.runTest
@@ -72,7 +75,7 @@ class RespondToRobbingUseCaseTest {
         val snapshotRepo = FakeGameSnapshotRepository()
 
         /** 依觀看政策同步對局快照的元件。 */
-        val snapshotSynchronizer = GameSnapshotSynchronizer(gameRepo, snapshotRepo, GameVisibilityPolicyImpl(moduleRegistry))
+        val snapshotSynchronizer = GameSnapshotSynchronizer(gameRepo, snapshotRepo, GameVisibilityPolicyImpl(moduleRegistry, componentRegistry = bundledCoreExtensionRegistries().componentRegistry))
 
         /** 記錄流程事件的發布替身。 */
         val eventPublisher = FakeGameEventPublisher()
@@ -84,7 +87,7 @@ class RespondToRobbingUseCaseTest {
         val winPresentationHandoff = WinPresentationHandoff()
 
         /** 和牌明細的解析器註冊中心。 */
-        val winSettlementDetailResolverRegistry = WinSettlementDetailResolverRegistry().apply {
+        val winSettlementDetailResolverRegistry = WinSettlementDetailResolverRegistry(bundledCoreExtensionRegistries().componentRegistry).apply {
             BundledRiichiExtension.registerWinSettlementDetailResolvers(this)
             freeze()
         }
@@ -99,6 +102,8 @@ class RespondToRobbingUseCaseTest {
             winPresentationHandoff,
             winCelebrationCueResolverRegistry = bundledWinCelebrationCueResolverRegistry(),
             winSettlementDetailResolverRegistry = winSettlementDetailResolverRegistry,
+
+            componentRegistry = bundledCoreExtensionRegistries().componentRegistry,
         )
     }
 
@@ -157,7 +162,7 @@ class RespondToRobbingUseCaseTest {
      */
     private fun setUpTable(
         reservedWallTiles: List<IdentifiedTile> = completeRiichiReservedWall(rinshanTile),
-        robberRuleState: RiichiPlayerState = RiichiPlayerState(),
+        robberRuleState: ComponentSet = riichiDeclarationComponents(),
     ): TableState {
         val declarer = FakeMahjongPlayerFactory.create(
             id = declarerId,
@@ -168,7 +173,7 @@ class RespondToRobbingUseCaseTest {
             id = robberId,
             initialSeat = Wind.SOUTH,
             hand = robberHand(),
-            playerRuleState = robberRuleState,
+            components = robberRuleState,
         )
         return FakeTableStateFactory.create(
             id = gameId,
@@ -176,7 +181,7 @@ class RespondToRobbingUseCaseTest {
             config = RiichiRuleConfig(),
             reservedWallTiles = reservedWallTiles,
             currentPlayerIndex = 0,
-            dynamicRuleState = RiichiDynamicState(),
+            components = riichiTableComponents(potPoints = 0),
             pendingRobbingReaction = PendingRobbingReaction(declarerId, kanAction, robbedWhiteTile, setOf(robberId)),
         ).withFirstKanPhysicalWallLayout()
     }
@@ -467,7 +472,7 @@ class RespondToRobbingUseCaseTest {
     fun `passing a robbable kan while in riichi marks permanent furiten`() = runTest {
         val fixtures = Fixtures()
         fixtures.gameRepo.setTableState(
-            setUpTable(robberRuleState = RiichiPlayerState(riichiTile = FakeIdentifiedTileFactory.create(Tile.Honor.East))),
+            setUpTable(robberRuleState = riichiDeclarationComponents(declarationTile = FakeIdentifiedTileFactory.create(Tile.Honor.East))),
         )
 
         val result = fixtures.useCase(gameId, robberId, GameAction.Pass)
@@ -475,7 +480,7 @@ class RespondToRobbingUseCaseTest {
         assertTrue(result is Outcome.Success, "Expected Success but got $result")
         val robber = fixtures.gameRepo.getTableState(gameId)!!.players.first { it.id == robberId }
         assertTrue(
-            (robber.playerRuleState as RiichiPlayerState).isPermanentlyFuriten,
+            robber.components[RiichiPlayerComponents.PERMANENT_FURITEN] != null,
             "Passing a robbable kan while in riichi should mark permanent furiten.",
         )
     }
@@ -490,7 +495,7 @@ class RespondToRobbingUseCaseTest {
             id = secondRobberId,
             initialSeat = Wind.WEST,
             hand = robberHand(),
-            playerRuleState = RiichiPlayerState(),
+            components = riichiDeclarationComponents(),
         )
         fixtures.gameRepo.setTableState(baseTable.copy(players = baseTable.players + secondRobber))
 

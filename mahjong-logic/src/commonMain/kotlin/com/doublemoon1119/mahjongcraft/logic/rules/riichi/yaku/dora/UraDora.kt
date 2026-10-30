@@ -2,7 +2,6 @@ package com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.dora
 
 import com.doublemoon1119.mahjongcraft.logic.base.Hand
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.riichiCanonical
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.YakuResult
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.YakuType
 
@@ -30,7 +29,7 @@ fun calculateUraDora(
 
     val uraDoraCount = uraDoraIndicators.sumOf { indicator ->
         val doraTile = getNextDora(indicator, usesThreePlayerTiles)
-        allTiles.count { it.riichiCanonical == doraTile }
+        allTiles.count { it == doraTile }
     }
 
     return YakuResult.han(YakuType.UraDora, uraDoraCount)

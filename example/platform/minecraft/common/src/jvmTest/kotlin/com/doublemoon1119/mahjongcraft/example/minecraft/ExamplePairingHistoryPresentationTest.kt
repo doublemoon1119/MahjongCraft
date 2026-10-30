@@ -1,7 +1,7 @@
 package com.doublemoon1119.mahjongcraft.example.minecraft
 
 import com.doublemoon1119.mahjongcraft.example.ExampleMahjongExtension
-import com.doublemoon1119.mahjongcraft.example.action.ExamplePairingDeclarationAction
+import com.doublemoon1119.mahjongcraft.example.action.ExamplePairingRevealHandAction
 import com.doublemoon1119.mahjongcraft.example.minecraft.text.ExampleMinecraftMessageKeys
 import com.doublemoon1119.mahjongcraft.example.pairing.ExamplePairingIds
 import com.doublemoon1119.mahjongcraft.example.pairing.ExamplePairingRuleConfig
@@ -29,11 +29,11 @@ import kotlin.test.assertIs
 import kotlin.test.assertNotNull
 import kotlin.uuid.Uuid
 
-/** 確認範例宣告經精簡牌譜讀取後仍能使用平台用語顯示。 */
+/** 確認範例攤牌動作經精簡牌譜讀取後仍能正確顯示。 */
 class ExamplePairingHistoryPresentationTest {
-    /** 保存並讀取範例宣告後，牌譜動作應顯示為「宣告」而非未知操作。 */
+    /** 保存並讀取範例攤牌後，牌譜動作應顯示為「攤牌」而非未知操作。 */
     @Test
-    fun `compact history preserves declaration action vocabulary`() = runTest {
+    fun `compact history preserves hand reveal action vocabulary`() = runTest {
         val matchId = Uuid.random()
         val venueId = Uuid.random()
         val playerIds = List(2) { Uuid.random() }
@@ -64,7 +64,7 @@ class ExamplePairingHistoryPresentationTest {
                 occurredAtEpochMillis = 200,
                 actorPlayerId = actor,
                 fact = HistoryFact.ActionAccepted(
-                    action = GameAction.Extension(ExamplePairingDeclarationAction),
+                    action = GameAction.Extension(ExamplePairingRevealHandAction),
                     result = HistoryActionResult(
                         affectedTileIds = emptyList(),
                         newlyRevealedTileIds = emptyList(),
@@ -97,10 +97,9 @@ class ExamplePairingHistoryPresentationTest {
             events = events,
             mapper = HistoryRecordingPersistenceMapper(registries),
             registries = registries,
-            setAsideTiles = { emptyList() },
         )
 
-        val read = CompactReplayRoundReader().readEvents(
+        val read = CompactReplayRoundReader(registries.componentViews).readEvents(
             document = document,
             expectedMatchId = matchId,
             roundNumber = 1,
@@ -113,12 +112,12 @@ class ExamplePairingHistoryPresentationTest {
             .filterIsInstance<HistoryReplayFact.KnownAction>()
             .single()
         val actionId = assertNotNull(action.extensionTypeId)
-        assertEquals(ExamplePairingIds.DECLARE_ACTION, actionId)
+        assertEquals(ExamplePairingIds.REVEAL_HAND_ACTION, actionId)
 
         val vocabulary = GameActionVocabularyRegistryImpl().apply {
             ExampleMinecraftMahjongExtension().registerGameActionVocabulary(this)
         }
         val definition = vocabulary.find(ExamplePairingIds.RULE_MODULE, actionId)
-        assertEquals(ExampleMinecraftMessageKeys.DECLARE, assertNotNull(definition).labelKey)
+        assertEquals(ExampleMinecraftMessageKeys.REVEAL_HAND, assertNotNull(definition).labelKey)
     }
 }

@@ -7,11 +7,13 @@ import com.doublemoon1119.mahjongcraft.logic.base.Meld
 import com.doublemoon1119.mahjongcraft.logic.base.MeldType
 import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDiscardEntry
+import com.doublemoon1119.mahjongcraft.logic.component.ComponentSet
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDiscardComponents
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDiscardPile
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPlayerState
+import com.doublemoon1119.mahjongcraft.logic.table.DiscardPile.DiscardEntry
 import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayer
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
+import com.doublemoon1119.mahjongcraft.testing.logic.rules.riichi.riichiDeclarationComponents
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
@@ -26,15 +28,15 @@ class TestPlayerDeltaTest {
         val drawn = tile()
         val before = player().copy(
             hand = Hand(lastDrawn = drawn),
-            playerRuleState = RiichiPlayerState(riichiTile = drawn),
+            components = riichiDeclarationComponents(declarationTile = drawn),
         )
         val after = before.copy(
             hand = Hand(),
-            playerRuleState = null,
+            components = ComponentSet.EMPTY,
         )
         val delta = requireNotNull(TestPlayerDelta.between(before, after))
         assertNull(delta.lastDrawn?.value)
-        assertNull(delta.ruleState?.value)
+        assertEquals(ComponentSet.EMPTY, delta.components)
         assertEquals(after, delta.applyTo(before))
     }
 
@@ -47,7 +49,7 @@ class TestPlayerDeltaTest {
         val claimed = tile()
         val before = player().copy(
             hand = Hand(tiles = listOf(first, second, third)),
-            discardPile = RiichiDiscardPile(listOf(RiichiDiscardEntry(claimed, isRiichi = true))),
+            discardPile = RiichiDiscardPile(listOf(DiscardEntry(tile = claimed, components = RiichiDiscardComponents.declaration()))),
         )
         val meld = Meld(MeldType.PON, listOf(first, second, claimed), claimed, RelativeDirection.Left, publiclyRevealedTileIds = listOf(first, second, claimed).map { it.id }.toSet(), faceDownTileIds = emptySet())
         val after = before.copy(

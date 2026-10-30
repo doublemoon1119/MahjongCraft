@@ -8,6 +8,9 @@ object MinecraftMessageKeys {
     /** 所有 MahjongCraft 玩家訊息 key 的共用前綴。 */
     private const val PREFIX = MinecraftModMetadata.MOD_ID + ".message."
 
+    /** 加分牌、籌碼或點棒等規則附加物件無法完整呈現。 */
+    const val TABLE_RULE_PROPS_UNAVAILABLE = PREFIX + "table_rule_props_unavailable"
+
     /** 對局已開始，玩家無法中途加入。 */
     const val GAME_ALREADY_STARTED = PREFIX + "game_already_started"
 
@@ -559,6 +562,7 @@ object MinecraftMessageKeys {
 
     /** Minecraft 語系資源必須提供的全部玩家回饋 key。 */
     val ALL: Set<String> = setOf(
+        TABLE_RULE_PROPS_UNAVAILABLE,
         DATA_FILE,
         DATA_FILE_UNCHANGED,
         DATA_FILE_COPY_HINT,

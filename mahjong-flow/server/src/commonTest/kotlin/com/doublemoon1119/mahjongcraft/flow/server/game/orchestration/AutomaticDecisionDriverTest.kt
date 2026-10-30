@@ -13,13 +13,14 @@ import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.logic.module.BuiltInAutomaticControlIds
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPlayerState
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.table.PendingReaction
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
+import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledCoreExtensionRegistries
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.registerBundledRuleModules
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeIdentifiedTileFactory
+import com.doublemoon1119.mahjongcraft.testing.logic.rules.riichi.riichiDeclarationComponents
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeDiscardPile
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
@@ -53,7 +54,7 @@ class AutomaticDecisionDriverTest {
         val repository = FakeGameRepository()
         val moduleRegistry = MahjongModuleRegistryImpl().apply { registerBundledRuleModules() }
         val contextResolver = PlayerActionContextResolver()
-        val evaluator = AutomaticDecisionEvaluator(moduleRegistry, GameVisibilityPolicyImpl(moduleRegistry), contextResolver)
+        val evaluator = AutomaticDecisionEvaluator(moduleRegistry, GameVisibilityPolicyImpl(moduleRegistry, componentRegistry = bundledCoreExtensionRegistries().componentRegistry), contextResolver)
         val driver = AutomaticDecisionDriver(
             repository,
             evaluator,
@@ -67,7 +68,7 @@ class AutomaticDecisionDriverTest {
         val matchingTiles = List(2) { FakeIdentifiedTileFactory.create(Tile.Honor.South) }
         val respondent = FakeMahjongPlayerFactory.create(
             hand = Hand(tiles = matchingTiles),
-            playerRuleState = RiichiPlayerState(),
+            components = riichiDeclarationComponents(),
         )
         val state = FakeTableStateFactory.create(
             players = listOf(discarder, respondent),
@@ -101,7 +102,7 @@ class AutomaticDecisionDriverTest {
             initialSeat = Wind.SOUTH,
             hand = Hand(tiles = tenpaiOnTwoBamboo()),
             discardPile = FakeDiscardPile().discardTile(FakeIdentifiedTileFactory.create(Tile.Honor.South)),
-            playerRuleState = RiichiPlayerState(),
+            components = riichiDeclarationComponents(),
         )
         val state = FakeTableStateFactory.create(
             players = listOf(discarder, winner),
@@ -127,7 +128,7 @@ class AutomaticDecisionDriverTest {
             initialSeat = Wind.EAST,
             hand = Hand(tiles = tenpaiOnTwoBamboo(), lastDrawn = winningTile),
             discardPile = FakeDiscardPile().discardTile(FakeIdentifiedTileFactory.create(Tile.Honor.South)),
-            playerRuleState = RiichiPlayerState(),
+            components = riichiDeclarationComponents(),
         )
         val opponent = FakeMahjongPlayerFactory.create(initialSeat = Wind.SOUTH)
         val state = FakeTableStateFactory.create(
@@ -149,7 +150,7 @@ class AutomaticDecisionDriverTest {
         val player = FakeMahjongPlayerFactory.create(
             initialSeat = Wind.EAST,
             hand = Hand(tiles = farFromTenpai(), lastDrawn = drawn),
-            playerRuleState = RiichiPlayerState(),
+            components = riichiDeclarationComponents(),
         )
         val opponent = FakeMahjongPlayerFactory.create(initialSeat = Wind.SOUTH)
         val state = FakeTableStateFactory.create(players = listOf(player, opponent), config = RiichiRuleConfig())
@@ -169,7 +170,7 @@ class AutomaticDecisionDriverTest {
         val player = FakeMahjongPlayerFactory.create(
             initialSeat = Wind.EAST,
             hand = Hand(tiles = farFromTenpai().dropLast(3) + kanTiles, lastDrawn = drawn),
-            playerRuleState = RiichiPlayerState(),
+            components = riichiDeclarationComponents(),
         )
         val opponent = FakeMahjongPlayerFactory.create(initialSeat = Wind.SOUTH)
         val state = FakeTableStateFactory.create(players = listOf(player, opponent), config = RiichiRuleConfig())
@@ -193,7 +194,7 @@ class AutomaticDecisionDriverTest {
             initialSeat = Wind.SOUTH,
             hand = Hand(tiles = shanponOnTwoBamboo()),
             discardPile = FakeDiscardPile().discardTile(FakeIdentifiedTileFactory.create(Tile.Honor.South)),
-            playerRuleState = RiichiPlayerState(),
+            components = riichiDeclarationComponents(),
         )
         val state = FakeTableStateFactory.create(
             players = listOf(discarder, winner),
@@ -258,7 +259,7 @@ class AutomaticDecisionDriverTest {
         )
         return AutomaticDecisionDriver(
             repository,
-            AutomaticDecisionEvaluator(moduleRegistry, GameVisibilityPolicyImpl(moduleRegistry), contextResolver),
+            AutomaticDecisionEvaluator(moduleRegistry, GameVisibilityPolicyImpl(moduleRegistry, componentRegistry = bundledCoreExtensionRegistries().componentRegistry), contextResolver),
             GameActionCommandMapper(ExtensionGameActionCommandFactoryRegistry()),
             contextResolver,
         )

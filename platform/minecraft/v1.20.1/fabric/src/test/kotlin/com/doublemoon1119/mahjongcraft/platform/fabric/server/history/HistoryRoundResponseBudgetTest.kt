@@ -13,7 +13,9 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryRoundEven
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryRoundEventsResponseDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryRoundPositionDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryRoundStateRequestDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.DefaultNetworkDtoRegistries
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
+import com.doublemoon1119.mahjongcraft.logic.base.TileFaceView
 import com.doublemoon1119.mahjongcraft.logic.table.MatchRoundPosition
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledNetworkJson
@@ -35,10 +37,10 @@ class HistoryRoundResponseBudgetTest {
             HistoryReplayTransaction(0, 0L, true, emptyList(), 1),
             HistoryReplayTransaction(1, 1L, false, listOf(HistoryReplayFact.Opaque("測".repeat(1000))), 2),
         )
-        val page = HistoryRoundEvents(identity, 1, transactions, null, HistoryRoundTileCatalog(listOf(Tile.Honor.East, Tile.Honor.South)))
-        val single = boundedHistoryRoundEvents(request, page.copy(transactions = transactions.take(1), nextTransactionIndex = 1, tileCatalog = HistoryRoundTileCatalog(listOf(Tile.Honor.East))), bundledNetworkJson())
+        val page = HistoryRoundEvents(identity, 1, transactions, null, HistoryRoundTileCatalog((listOf(Tile.Honor.East, Tile.Honor.South)).map(::TileFaceView)))
+        val single = boundedHistoryRoundEvents(request, page.copy(transactions = transactions.take(1), nextTransactionIndex = 1, tileCatalog = HistoryRoundTileCatalog((listOf(Tile.Honor.East)).map(::TileFaceView))), bundledNetworkJson(), DefaultNetworkDtoRegistries())
         val maximum = Json.encodeToString(HistoryRoundEventsResponseDto.serializer(), single).encodeToByteArray().size
-        val response = boundedHistoryRoundEvents(request, page, bundledNetworkJson(), maximum)
+        val response = boundedHistoryRoundEvents(request, page, bundledNetworkJson(), DefaultNetworkDtoRegistries(), maximum)
         val events = assertNotNull(response.events)
         assertEquals(listOf(0), events.transactions.map { it.index })
         assertEquals(1, events.tileCatalog.size)
@@ -51,8 +53,8 @@ class HistoryRoundResponseBudgetTest {
     fun `one oversized transaction returns failure without partial catalog`() {
         val identity = HistoryReplayIdentity(Uuid.random(), Uuid.random(), emptyList())
         val request = HistoryRoundEventsRequestDto("events", identity.matchId.toString(), roundNumber = 1, scope = HistoryQueryScopeDto.OWN, startTransactionIndex = 0, limit = 20)
-        val page = HistoryRoundEvents(identity, 1, listOf(HistoryReplayTransaction(0, 0L, false, emptyList(), 1)), 1, HistoryRoundTileCatalog(listOf(Tile.Honor.East)))
-        val response = boundedHistoryRoundEvents(request, page, bundledNetworkJson(), 1)
+        val page = HistoryRoundEvents(identity, 1, listOf(HistoryReplayTransaction(0, 0L, false, emptyList(), 1)), 1, HistoryRoundTileCatalog((listOf(Tile.Honor.East)).map(::TileFaceView)))
+        val response = boundedHistoryRoundEvents(request, page, bundledNetworkJson(), DefaultNetworkDtoRegistries(), 1)
         assertEquals(HistoryQueryErrorCodeDto.CONTENT_TOO_LARGE, response.errorCode)
         assertNull(response.events)
     }
@@ -62,7 +64,7 @@ class HistoryRoundResponseBudgetTest {
     fun `empty terminal page remains complete`() {
         val identity = HistoryReplayIdentity(Uuid.random(), Uuid.random(), emptyList())
         val page = HistoryRoundEvents(identity, 1, emptyList(), null, HistoryRoundTileCatalog(emptyList()))
-        val response = boundedHistoryRoundEvents(HistoryRoundEventsRequestDto("events", identity.matchId.toString(), roundNumber = 1, scope = HistoryQueryScopeDto.OWN, startTransactionIndex = 0, limit = 20), page, bundledNetworkJson())
+        val response = boundedHistoryRoundEvents(HistoryRoundEventsRequestDto("events", identity.matchId.toString(), roundNumber = 1, scope = HistoryQueryScopeDto.OWN, startTransactionIndex = 0, limit = 20), page, bundledNetworkJson(), DefaultNetworkDtoRegistries())
         assertEquals(emptyList(), assertNotNull(response.events).transactions)
         assertNull(response.events?.nextTransactionIndex)
     }
@@ -72,13 +74,13 @@ class HistoryRoundResponseBudgetTest {
     fun `state response is atomic under byte budget`() {
         val identity = HistoryReplayIdentity(Uuid.random(), Uuid.random(), emptyList())
         val state = HistoryRoundState(
-            identity, 1, HistoryRoundPosition.Initial, HistoryRoundTileCatalog(listOf(Tile.Honor.East)),
+            identity, 1, HistoryRoundPosition.Initial, HistoryRoundTileCatalog((listOf(Tile.Honor.East)).map(::TileFaceView)),
             emptyList(), emptyList(), emptyList(), 0, 0, Wind.EAST, MatchRoundPosition.initial(),
             0, emptySet(), false, false, null,
         )
         val request = HistoryRoundStateRequestDto("state", identity.matchId.toString(), roundNumber = 1, scope = HistoryQueryScopeDto.OWN, position = HistoryRoundPositionDto.Initial)
-        assertNotNull(boundedHistoryRoundState(request, state, bundledNetworkJson()).state)
-        val rejected = boundedHistoryRoundState(request, state, bundledNetworkJson(), 1)
+        assertNotNull(boundedHistoryRoundState(request, state, bundledNetworkJson(), DefaultNetworkDtoRegistries()).state)
+        val rejected = boundedHistoryRoundState(request, state, bundledNetworkJson(), DefaultNetworkDtoRegistries(), 1)
         assertEquals(HistoryQueryErrorCodeDto.CONTENT_TOO_LARGE, rejected.errorCode)
         assertNull(rejected.state)
     }

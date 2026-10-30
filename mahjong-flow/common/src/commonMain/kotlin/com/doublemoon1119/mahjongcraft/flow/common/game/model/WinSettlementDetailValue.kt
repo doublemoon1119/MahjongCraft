@@ -1,6 +1,6 @@
 package com.doublemoon1119.mahjongcraft.flow.common.game.model
 
-import kotlin.uuid.Uuid
+import com.doublemoon1119.mahjongcraft.logic.base.TileFaceView
 
 /**
  * 規則算出的一個胡牌詳情值；只描述結果本身，顯示文字與排版由平台依欄位與條目 ID 決定。
@@ -25,9 +25,11 @@ sealed interface WinSettlementDetailValue {
     data class Entries(val entries: List<WinSettlementDetailEntry>) : WinSettlementDetailValue
 
     /**
-     * 局內牌，例如日麻的寶牌指示牌。
+     * 直接描述的公開牌面，不引用牌山或任何玩家持有的特定牌張。
      *
-     * @property tileIds 依規則順序排列的牌 ID。
+     * 牌面已經以公共讀取者裁切，只帶允許展示的外觀與特徵，例如日麻的赤五。
+     *
+     * @property faces 依規則順序排列的展示牌面，保留重複值。
      */
-    data class Tiles(val tileIds: List<Uuid>) : WinSettlementDetailValue
+    data class TileFaces(val faces: List<TileFaceView>) : WinSettlementDetailValue
 }

@@ -1,8 +1,9 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.text
 
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
+import com.doublemoon1119.mahjongcraft.logic.base.TileFaceView
 import com.doublemoon1119.mahjongcraft.logic.base.TileTypeId
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.RiichiTileTypes
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.RiichiTileValues
 import com.doublemoon1119.mahjongcraft.platform.minecraft.extension.BuiltInMinecraftMahjongExtension
 import com.doublemoon1119.mahjongcraft.platform.minecraft.extension.BundledMinecraftMahjongExtensions
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetDefinition
@@ -43,13 +44,23 @@ class MahjongTileDisplayTextTest {
         assertEquals("mahjongcraft.message.tile_honor_red", translatable.key)
     }
 
-    /** 驗證已登記的內建赤五能查到對應翻譯 key，並帶赤五專屬的 emoji 前綴。 */
+    /** 驗證帶赤五外觀的五萬查到赤五的翻譯 key，並帶赤五專屬的 emoji 前綴。 */
     @Test
-    fun `registered extension tile resolves translation key with emoji prefix`() {
-        val text = Tile.Extension(RiichiTileTypes.RED_FIVE_CHARACTER).toDisplayText(displayNameRegistry, assetRegistry, emojiRegistry)
+    fun `registered tile style resolves translation key with emoji prefix`() {
+        val face = TileFaceView(Tile.Numeric(Tile.Suit.Character, 5), appearanceId = RiichiTileValues.RED_FIVE_APPEARANCE_ID)
+        val text = face.toDisplayText(displayNameRegistry, assetRegistry, emojiRegistry)
         assertEquals("🀬 ", (text.content as LiteralTextContent).string())
         val translatable = text.siblings.single().content as TranslatableTextContent
         assertEquals("mahjongcraft.message.tile_red_five_character", translatable.key)
+    }
+
+    /** 驗證外觀樣式沒有登記名稱時，使用基本牌面的名稱與 emoji。 */
+    @Test
+    fun `unregistered tile style falls back to the base face`() {
+        val face = TileFaceView(Tile.Numeric(Tile.Suit.Character, 4), appearanceId = RiichiTileValues.RED_FIVE_APPEARANCE_ID)
+        val text = face.toDisplayText(displayNameRegistry, assetRegistry, emojiRegistry)
+        val translatable = text.siblings.single().content as TranslatableTextContent
+        assertEquals("mahjongcraft.message.tile_suit_character", translatable.key)
     }
 
     /** 驗證未登記的擴充牌種 fallback 顯示原始 [TileTypeId] 字串，並退回未知牌 emoji 前綴。 */

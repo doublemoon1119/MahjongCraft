@@ -21,6 +21,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.room.model.LeaveReason
 import com.doublemoon1119.mahjongcraft.flow.common.room.model.RoomSnapshot
 import com.doublemoon1119.mahjongcraft.flow.common.room.repository.RoomSnapshotRepository
 import com.doublemoon1119.mahjongcraft.flow.common.room.service.RoomEventPublisher
+import com.doublemoon1119.mahjongcraft.flow.server.game.history.HistoryTilePresentationResolverImpl
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.AiDecisionExecutor
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.AiTurnDriver
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.AutomatedAdvanceManager
@@ -67,6 +68,7 @@ import com.doublemoon1119.mahjongcraft.flow.server.room.usecase.CreateRoomUseCas
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateStore
 import com.doublemoon1119.mahjongcraft.flow.server.time.MonotonicClockImpl
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
+import com.doublemoon1119.mahjongcraft.logic.component.AuthoritativeComponentValidatorImpl
 import com.doublemoon1119.mahjongcraft.logic.config.MahjongRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.logic.table.TableStateSnapshot
@@ -141,11 +143,14 @@ class HeadlessFlowHistoryRuntime private constructor(
         suspend fun create(
             scenario: HeadlessHistoryScenario,
             registries: HeadlessHistoryRegistries,
-            store: AuthoritativeStateStore = AuthoritativeStateStore(historyRecordingEnabled = true),
+            store: AuthoritativeStateStore = AuthoritativeStateStore(
+                historyRecordingEnabled = true,
+                tilePresentationResolver = HistoryTilePresentationResolverImpl(registries.moduleRegistry, registries.componentRegistry),
+            ),
             stepTimer: HeadlessStepTimer? = null,
             decisionExecutor: AiDecisionExecutor,
         ): HeadlessFlowHistoryRuntime {
-            val gameRepository = GameRepositoryImpl(store)
+            val gameRepository = GameRepositoryImpl(store, AuthoritativeComponentValidatorImpl(registries.moduleRegistry, registries.componentRegistry))
             val roomRepository = RoomRepositoryImpl(store)
             val membership = PlayerMembershipRepositoryImpl()
             val rooms = MemoryRoomSnapshots()
@@ -155,10 +160,10 @@ class HeadlessFlowHistoryRuntime private constructor(
             val presentation = NoOpPresentation()
             val busy = NoOpBusyGate()
             val moduleRegistry = registries.moduleRegistry
-            val snapshotPolicy = GameVisibilityPolicyImpl(moduleRegistry).let { policy ->
+            val snapshotPolicy = GameVisibilityPolicyImpl(moduleRegistry, componentRegistry = registries.componentRegistry).let { policy ->
                 if (stepTimer == null) policy else TimedVisibilityPolicy(policy, stepTimer::addSnapshotSync)
             }
-            val aiPolicy = GameVisibilityPolicyImpl(moduleRegistry).let { policy ->
+            val aiPolicy = GameVisibilityPolicyImpl(moduleRegistry, componentRegistry = registries.componentRegistry).let { policy ->
                 if (stepTimer == null) policy else TimedVisibilityPolicy(policy, stepTimer::addAiContext)
             }
             val aiStrategies = registries.aiStrategyRegistry.let { strategies ->
@@ -175,6 +180,7 @@ class HeadlessFlowHistoryRuntime private constructor(
             val commands = ExtensionGameCommandExecutor(
                 registry = registries.gameCommandRegistry,
                 context = ExtensionGameCommandContext(
+                    componentRegistry = registries.componentRegistry,
                     gameRepository = gameRepository,
                     moduleRegistry = moduleRegistry,
                     snapshotSynchronizer = synchronizer,
@@ -190,16 +196,17 @@ class HeadlessFlowHistoryRuntime private constructor(
                         postAction,
                         gameEvents,
                         presentation,
+                        componentRegistry = registries.componentRegistry,
                     ),
                 ),
             )
             val router = GameActionRouter(
-                DrawTileUseCase(gameRepository, moduleRegistry, synchronizer, gameEvents, presentation),
-                DiscardTileUseCase(gameRepository, moduleRegistry, synchronizer, handSort, postAction, gameEvents, presentation),
-                DeclareTsumoUseCase(gameRepository, moduleRegistry, synchronizer, gameEvents, presentation, winHandoff, createCue, winDetails),
-                DeclareKanUseCase(gameRepository, moduleRegistry, synchronizer, gameEvents, presentation),
-                RespondToDiscardUseCase(gameRepository, moduleRegistry, synchronizer, handSort, gameEvents, presentation, winHandoff, createCue, winDetails, postAction),
-                RespondToRobbingUseCase(gameRepository, moduleRegistry, synchronizer, gameEvents, presentation, winHandoff, createCue, winDetails),
+                DrawTileUseCase(gameRepository, moduleRegistry, synchronizer, gameEvents, presentation, componentRegistry = registries.componentRegistry),
+                DiscardTileUseCase(gameRepository, moduleRegistry, synchronizer, handSort, postAction, gameEvents, presentation, componentRegistry = registries.componentRegistry),
+                DeclareTsumoUseCase(gameRepository, moduleRegistry, synchronizer, gameEvents, presentation, winHandoff, createCue, winDetails, componentRegistry = registries.componentRegistry),
+                DeclareKanUseCase(gameRepository, moduleRegistry, synchronizer, gameEvents, presentation, componentRegistry = registries.componentRegistry),
+                RespondToDiscardUseCase(gameRepository, moduleRegistry, synchronizer, handSort, gameEvents, presentation, winHandoff, createCue, winDetails, postAction, componentRegistry = registries.componentRegistry),
+                RespondToRobbingUseCase(gameRepository, moduleRegistry, synchronizer, gameEvents, presentation, winHandoff, createCue, winDetails, componentRegistry = registries.componentRegistry),
                 DeclareAbortiveDrawUseCase(gameRepository, moduleRegistry, synchronizer, gameEvents),
                 commands,
             )
@@ -237,7 +244,15 @@ class HeadlessFlowHistoryRuntime private constructor(
                     registries.winRoundContinuationResolverRegistry,
                     synchronizer,
                 ),
-                advanceRoundUseCase = AdvanceRoundUseCase(gameRepository, moduleRegistry, synchronizer, handSort, gameEvents, presentation),
+                advanceRoundUseCase = AdvanceRoundUseCase(
+                    gameRepository,
+                    moduleRegistry,
+                    synchronizer,
+                    handSort,
+                    gameEvents,
+                    presentation,
+                    componentRegistry = registries.componentRegistry,
+                ),
                 returnToRoomUseCase = ReturnToRoomUseCase(store, rooms, roomEvents, presentation),
                 aiTurnDriver = ai,
                 forcedAutoPlayDriver = ForcedAutoPlayDriver(
@@ -262,7 +277,15 @@ class HeadlessFlowHistoryRuntime private constructor(
                 ),
                 automaticCommandResolver = AutomaticGameCommandResolver(moduleRegistry),
             )
-            val start = StartGameUseCase(store, moduleRegistry, synchronizer, handSort, gameEvents, presentation)
+            val start = StartGameUseCase(
+                store,
+                moduleRegistry,
+                synchronizer,
+                handSort,
+                gameEvents,
+                presentation,
+                componentRegistry = registries.componentRegistry,
+            )
             val venueId = Uuid.random()
             val host = Uuid.random()
             val config = GameConfig(ruleConfig = scenario.ruleConfig)

@@ -11,6 +11,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.animation.AnimationSte
 import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongTableFacing
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongPlayerInfoEntry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongPlayerScoreChange
+import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableOverlayVisibility
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
@@ -100,35 +101,35 @@ class MahjongPlayerInfoEntity(
     /**
      * 將玩家公開資訊隱藏至指定絕對遊戲時間。
      *
-     * @param gameTime 隱藏租約結束的 server game time；不晚於現有期限時不改變佇列。
+     * @param gameTime 隱藏租約結束的 server game time；不晚於現有期限時不改變期限。
      */
     fun hideUntil(gameTime: Long) {
         check(!world.isClient) { "Player info visibility lease must be changed by the server" }
-        if (gameTime <= hiddenUntilGameTime) return
-        hiddenUntilGameTime = gameTime
-        replaceAnimationQueue(
-            listOf(AnimationStep.SetInvisible(true), AnimationStep.WaitUntil(gameTime), AnimationStep.SetInvisible(false)),
-        )
+        val extendedUntil = TableOverlayVisibility.extend(hiddenUntilGameTime, gameTime)
+        if (extendedUntil == hiddenUntilGameTime) return
+        hiddenUntilGameTime = extendedUntil
+        applyVisibility()
     }
 
     /** 將玩家公開資訊隱藏至此 entity 被移除。 */
     fun hideUntilRemoved() {
         check(!world.isClient) { "Player info visibility lease must be changed by the server" }
         hiddenUntilGameTime = Long.MAX_VALUE
-        replaceAnimationQueue(listOf(AnimationStep.SetInvisible(true)))
+        applyVisibility()
     }
 
     /** 新局已確定開始時解除所有舊 presentation lease，立即恢復玩家公開資訊。 */
     fun showNow() {
         check(!world.isClient) { "Player info visibility lease must be changed by the server" }
         hiddenUntilGameTime = Long.MIN_VALUE
-        replaceAnimationQueue(emptyList())
-        setInvisible(false)
+        applyVisibility()
     }
 
     override fun tick() {
         super.tick()
-        if (world.isClient || age % ORPHAN_CHECK_INTERVAL_TICKS != 0) return
+        if (world.isClient) return
+        applyVisibility()
+        if (age % ORPHAN_CHECK_INTERVAL_TICKS != 0) return
         val expectedId = managedTableId ?: return discard()
         val table = controllerPos?.let { world.getBlockEntity(it) as? MahjongTableBlockEntity }
         if (table?.tableId != expectedId) discard()
@@ -154,26 +155,32 @@ class MahjongPlayerInfoEntity(
         dataTracker.set(PLAYERS, nbt.getString(NBT_PLAYERS).ifBlank { "[]" })
         dealerPlayerId = nbt.getString(NBT_DEALER).takeIf(String::isNotBlank)?.let { Uuid.parse(it) }
         dataTracker.set(TABLE_FACING, MahjongTableFacing.fromNameOrDefault(nbt.getString(NBT_FACING)).name)
-        managedTableId = nbt.getString(NBT_TABLE_ID).takeIf(String::isNotBlank)?.let { Uuid.parse(it) }
+        managedTableId = ManagedTableNbt.read(nbt)
         if (nbt.contains(NBT_CONTROLLER_X)) {
             controllerPos = BlockPos(nbt.getInt(NBT_CONTROLLER_X), nbt.getInt(NBT_CONTROLLER_Y), nbt.getInt(NBT_CONTROLLER_Z))
         }
-        hiddenUntilGameTime = nbt.getLong(NBT_HIDDEN_UNTIL).takeIf { it > 0L } ?: Long.MIN_VALUE
+        hiddenUntilGameTime = TableOverlayVisibilityNbt.read(nbt)
         readAnimationQueueFromNbt(nbt)
+        applyVisibility()
     }
 
     override fun writeCustomDataToNbt(nbt: NbtCompound) {
         nbt.putString(NBT_PLAYERS, dataTracker[PLAYERS])
         dealerPlayerId?.let { nbt.putString(NBT_DEALER, it.toString()) }
         nbt.putString(NBT_FACING, dataTracker[TABLE_FACING])
-        managedTableId?.let { nbt.putString(NBT_TABLE_ID, it.toString()) }
+        ManagedTableNbt.write(nbt, managedTableId)
         controllerPos?.let {
             nbt.putInt(NBT_CONTROLLER_X, it.x)
             nbt.putInt(NBT_CONTROLLER_Y, it.y)
             nbt.putInt(NBT_CONTROLLER_Z, it.z)
         }
-        if (hiddenUntilGameTime != Long.MIN_VALUE) nbt.putLong(NBT_HIDDEN_UNTIL, hiddenUntilGameTime)
+        TableOverlayVisibilityNbt.write(nbt, hiddenUntilGameTime)
         writeAnimationQueueToNbt(nbt)
+    }
+
+    /** 依已保存的期限設定伺服器隱藏狀態；每個伺服器 tick 與期限變更時套用，是隱藏狀態的唯一來源。 */
+    private fun applyVisibility() {
+        if (!world.isClient) isInvisible = TableOverlayVisibility.isHidden(hiddenUntilGameTime, world.time)
     }
 
     companion object {
@@ -183,11 +190,10 @@ class MahjongPlayerInfoEntity(
         private const val NBT_PLAYERS = "Players"
         private const val NBT_DEALER = "DealerPlayerId"
         private const val NBT_FACING = "TableFacing"
-        private const val NBT_TABLE_ID = "ManagedTableId"
         private const val NBT_CONTROLLER_X = "ControllerX"
         private const val NBT_CONTROLLER_Y = "ControllerY"
         private const val NBT_CONTROLLER_Z = "ControllerZ"
-        private const val NBT_HIDDEN_UNTIL = "HiddenUntilGameTime"
+
         private val JSON = Json
         private val logger = mahjongCraftLogger(MahjongPlayerInfoEntity::class)
         private val PLAYERS: TrackedData<String> = DataTracker.registerData(MahjongPlayerInfoEntity::class.java, TrackedDataHandlerRegistry.STRING)

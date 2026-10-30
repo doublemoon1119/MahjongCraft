@@ -3,19 +3,24 @@ package com.doublemoon1119.mahjongcraft.flow.persistence.format.history.replay
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryFact
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryFactTypeKeys
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryOutboxEvent
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryTileAudience
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryTilePresentation
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryReplayFact
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryReplayIdentity
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryReplayPlayerIdentity
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryRoundPosition
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryRoundTileCatalog
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.ActionTimeControl
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameFlowConfig
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionConfig
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.SpectatingPolicy
+import com.doublemoon1119.mahjongcraft.flow.persistence.format.component.ComponentViewPersistenceRegistry
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.config.GameFlowConfigPersistenceDto
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.config.toPersistenceDto
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.core.TypedPersistenceDto
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.HistoryRecordingPersistenceMapper
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
+import com.doublemoon1119.mahjongcraft.logic.component.ComponentViewSet
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleModule
 import com.doublemoon1119.mahjongcraft.logic.table.GameInitializer
@@ -23,8 +28,9 @@ import com.doublemoon1119.mahjongcraft.logic.table.PendingReaction
 import com.doublemoon1119.mahjongcraft.logic.table.opening.DiceRollResult
 import com.doublemoon1119.mahjongcraft.logic.table.opening.DiceRollSource
 import com.doublemoon1119.mahjongcraft.logic.table.opening.OpeningDiceRoll
+import com.doublemoon1119.mahjongcraft.logic.tile.component.TilePose
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledPersistenceRegistries
-import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledSetAsideTiles
+import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
@@ -35,6 +41,7 @@ import kotlinx.serialization.json.jsonPrimitive
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
+import kotlin.test.assertIs
 import kotlin.test.assertTrue
 import kotlin.uuid.Uuid
 
@@ -69,7 +76,6 @@ class CompactReplayCodecTest {
             events,
             HistoryRecordingPersistenceMapper(registries),
             registries,
-            bundledSetAsideTiles(events),
         )
 
         val transactions = CompactReplayCodec.decodeCompact(document).flatten()
@@ -88,6 +94,7 @@ class CompactReplayCodecTest {
             1,
             HistoryRoundTileCatalog(emptyList()),
             ReplayReadBudget(ReplayReadLimits()) {},
+            ComponentViewPersistenceRegistry(),
         )
 
         assertEquals(
@@ -132,7 +139,6 @@ class CompactReplayCodecTest {
             events,
             HistoryRecordingPersistenceMapper(registries),
             registries,
-            bundledSetAsideTiles(events),
         )
 
         val content = CompactReplayDictionary.decode(document.getValue(ReplayFormatKeys.PAYLOAD) as JsonObject)
@@ -140,6 +146,75 @@ class CompactReplayCodecTest {
         assertTrue("selectedTileIds" in reaction.keys)
         assertTrue("responses" in reaction.keys)
         assertTrue(ReplaySourceKeys.ID !in reaction.keys)
+    }
+
+    /** 相同的牌張呈現在文件中只保存一次，事實只帶字典代碼；完整解碼還原原本的呈現。 */
+    @Test
+    fun `identical tile presentations share one dictionary entry`() {
+        val state = GameInitializer.initialize(
+            id = Uuid.random(),
+            playerIds = List(4) { Uuid.random() },
+            module = RiichiRuleModule("test:riichi", RiichiRuleConfig()),
+            diceRollSource = DiceRollSource { DiceRollResult.of(List(it) { 1 }) },
+        ).tableState
+        val tiles = state.players[0].hand.tiles.take(2)
+        val shared = HistoryTilePresentation(null, ComponentViewSet.EMPTY, TilePose.UPRIGHT, HistoryTileAudience.Players(setOf(state.players[0].id)))
+        val matchId = Uuid.random()
+        val events = listOf(
+            HistoryOutboxEvent(matchId, state.id, 1, 1, 1, 100, null, HistoryFact.MatchStarted(state, GameFlowConfig(), emptyMap())),
+            HistoryOutboxEvent(matchId, state.id, 1, 2, 1, 100, null, HistoryFact.TilePresentationChanged(tiles.associate { it.id to shared })),
+            HistoryOutboxEvent(matchId, state.id, 1, 3, 3, 200, null, HistoryFact.MatchCompleted("test:complete", state.players.associate { it.id to it.score })),
+            HistoryOutboxEvent(matchId, state.id, 1, 4, 4, 300, null, HistoryFact.ReturnedToRoom),
+        )
+        val registries = bundledPersistenceRegistries()
+        val document = CompactReplayCodec.encodeCompact(
+            events,
+            HistoryRecordingPersistenceMapper(registries),
+            registries,
+        )
+
+        val content = CompactReplayDictionary.decode(document.getValue(ReplayFormatKeys.PAYLOAD) as JsonObject) as JsonObject
+        val header = content.getValue(ReplayFormatKeys.HEADER) as JsonObject
+        val dictionary = header.getValue(ReplayFormatKeys.PRESENTATION_TYPES) as JsonArray
+        assertEquals(1, dictionary.size)
+        val presentations = CompactReplayCodec.decodeCompact(document).flatten().flatMap { it.facts }
+            .single { it[ReplaySourceKeys.TYPE]?.jsonPrimitive?.content == HistoryFactTypeKeys.TILE_PRESENTATION_CHANGED }
+            .getValue(ReplaySourceKeys.PRESENTATIONS) as JsonObject
+        assertEquals(2, presentations.size)
+        assertTrue(presentations.values.all { it == dictionary.single() })
+    }
+
+    /** 牌張呈現字典超過讀取上限時整份拒絕；在上限內則正常讀出呈現。 */
+    @Test
+    fun `presentation dictionary beyond the read limit is rejected`() = runTest {
+        val state = GameInitializer.initialize(
+            id = Uuid.random(),
+            playerIds = List(4) { Uuid.random() },
+            module = RiichiRuleModule("test:riichi", RiichiRuleConfig()),
+            diceRollSource = DiceRollSource { DiceRollResult.of(List(it) { 1 }) },
+        ).tableState
+        val (upright, faceDown) = state.players[0].hand.tiles.take(2)
+        val audience = HistoryTileAudience.Players(setOf(state.players[0].id))
+        val matchId = Uuid.random()
+        val presentations = mapOf(
+            upright.id to HistoryTilePresentation(null, ComponentViewSet.EMPTY, TilePose.UPRIGHT, audience),
+            faceDown.id to HistoryTilePresentation(null, ComponentViewSet.EMPTY, TilePose.FACE_DOWN, audience),
+        )
+        val events = listOf(
+            HistoryOutboxEvent(matchId, state.id, 1, 1, 1, 100, null, HistoryFact.MatchStarted(state, GameFlowConfig(), emptyMap())),
+            HistoryOutboxEvent(matchId, state.id, 1, 2, 1, 100, null, HistoryFact.TilePresentationChanged(presentations)),
+            HistoryOutboxEvent(matchId, state.id, 1, 3, 3, 200, null, HistoryFact.MatchCompleted("test:complete", state.players.associate { it.id to it.score })),
+            HistoryOutboxEvent(matchId, state.id, 1, 4, 4, 300, null, HistoryFact.ReturnedToRoom),
+        )
+        val registries = bundledPersistenceRegistries()
+        val document = CompactReplayCodec.encodeCompact(events, HistoryRecordingPersistenceMapper(registries), registries)
+
+        val limited = CompactReplayRoundReader(registries.componentViews, ReplayReadLimits(maxPresentationTypes = 1))
+            .readState(document, matchId, 1, HistoryRoundPosition.Initial)
+        val unlimited = CompactReplayRoundReader(registries.componentViews).readState(document, matchId, 1, HistoryRoundPosition.Initial)
+
+        assertEquals(ReplayReadError.LIMIT_EXCEEDED, assertIs<ReplayReadResult.Failure>(limited).error)
+        assertIs<ReplayReadResult.Success<*>>(unlimited)
     }
 
     /**
@@ -216,7 +291,6 @@ class CompactReplayCodecTest {
                 events = listOf(event),
                 mapper = HistoryRecordingPersistenceMapper(registries),
                 registries = registries,
-                setAsideTiles = { emptyList() },
             )
         }
         assertEquals("Aborted matches cannot be archived as complete replays", error.message)

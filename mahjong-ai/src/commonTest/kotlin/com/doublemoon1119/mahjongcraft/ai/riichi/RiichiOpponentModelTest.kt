@@ -6,20 +6,22 @@ import com.doublemoon1119.mahjongcraft.logic.base.Meld
 import com.doublemoon1119.mahjongcraft.logic.base.MeldType
 import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
+import com.doublemoon1119.mahjongcraft.logic.base.TileValue
 import com.doublemoon1119.mahjongcraft.logic.module.BuiltInRuleModuleIds
 import com.doublemoon1119.mahjongcraft.logic.module.PositionView
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDiscardPile
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDynamicState
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPlayerState
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleModule
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.RiichiTileTypes
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.RiichiTileValues
 import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayer
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
-import com.doublemoon1119.mahjongcraft.logic.table.toSnapshot
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeIdentifiedTileFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeMeldFactory
+import com.doublemoon1119.mahjongcraft.testing.logic.rules.riichi.riichiDeclarationComponents
+import com.doublemoon1119.mahjongcraft.testing.logic.rules.riichi.riichiTableComponents
+import com.doublemoon1119.mahjongcraft.testing.logic.rules.riichi.toRiichiSnapshotForTests
+import com.doublemoon1119.mahjongcraft.testing.logic.rules.riichi.withRedFives
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
 import kotlin.test.Test
@@ -110,11 +112,11 @@ class RiichiOpponentModelTest {
     @Test
     fun `a red five and a plain five are the same tile for safety`() {
         val self = seat(Wind.SOUTH)
-        val discardedRed = seat(Wind.EAST, discards = listOf(RED_FIVE_DOT))
+        val discardedRed = seat(Wind.EAST).copy(discardPile = RiichiDiscardPile().discardTile(FakeIdentifiedTileFactory.create(RED_FIVE_DOT)))
         val discardedPlain = seat(Wind.EAST, discards = listOf(dot(5)))
 
         assertEquals(0.0, model.discardDanger(view(table(listOf(discardedRed, self)), self), discardedRed.id, dot(5)))
-        assertEquals(0.0, model.discardDanger(view(table(listOf(discardedPlain, self)), self), discardedPlain.id, RED_FIVE_DOT))
+        assertEquals(0.0, model.discardDanger(view(table(listOf(discardedPlain, self)), self), discardedPlain.id, RED_FIVE_DOT.tile))
     }
 
     /** 對手副露中的赤五會提高他的預估打點。 */
@@ -126,7 +128,7 @@ class RiichiOpponentModelTest {
             melds = listOf(
                 FakeMeldFactory.create(
                     type = MeldType.PON,
-                    tiles = listOf(dot(5), dot(5), RED_FIVE_DOT).map(FakeIdentifiedTileFactory::create),
+                    tiles = listOf(TileValue(dot(5)), TileValue(dot(5)), RED_FIVE_DOT).map { FakeIdentifiedTileFactory.create(it) },
                     sourceDirection = RelativeDirection.Across,
                 ),
             ),
@@ -144,7 +146,7 @@ class RiichiOpponentModelTest {
     @Test
     fun `a red five counts as a five when counting unseen tiles`() {
         val opponent = seat(Wind.EAST, discards = listOf(Tile.Honor.North))
-        val withRed = seat(Wind.SOUTH, hand = handOf(List(3) { dot(5) } + RED_FIVE_DOT))
+        val withRed = seat(Wind.SOUTH, hand = handOf(List(4) { dot(5) }).withRedFives(Tile.Suit.Dot))
         val withPlain = seat(Wind.SOUTH, hand = handOf(List(4) { dot(5) }))
 
         val redDanger = model.discardDanger(view(table(listOf(opponent, withRed)), withRed), opponent.id, dot(6))
@@ -206,20 +208,20 @@ class RiichiOpponentModelTest {
         initialSeat = wind,
         hand = hand.copy(melds = hand.melds + melds),
         discardPile = discards.fold(RiichiDiscardPile()) { pile, tile -> pile.discardTile(FakeIdentifiedTileFactory.create(tile)) },
-        playerRuleState = RiichiPlayerState(riichiTile = if (riichi) FakeIdentifiedTileFactory.create(Tile.Honor.West) else null),
+        components = riichiDeclarationComponents(declarationTile = if (riichi) FakeIdentifiedTileFactory.create(Tile.Honor.West) else null),
     )
 
     /**
      * 以第一位玩家作為莊家建立日麻桌況。
      *
      * @param players 依桌況座位順序排列的玩家。
-     * @return 使用日麻規則設定與動態狀態的桌況。
+     * @return 使用日麻規則設定與對局組件的桌況。
      */
     private fun table(players: List<MahjongPlayer>): TableState = FakeTableStateFactory.create(
         players = players,
         dealerPlayerId = players.first().id,
         config = RiichiRuleConfig(),
-        dynamicRuleState = RiichiDynamicState(),
+        components = riichiTableComponents(potPoints = 0),
     )
 
     /**
@@ -229,7 +231,7 @@ class RiichiOpponentModelTest {
      * @param player 評估者本人。
      * @return 對應玩家可見資訊的局面視角。
      */
-    private fun view(table: TableState, player: MahjongPlayer): PositionView = PositionView(snapshot = table.toSnapshot(visibleHandPlayerIds = setOf(player.id), setAsideTiles = { emptyList() }), evaluatorId = player.id)
+    private fun view(table: TableState, player: MahjongPlayer): PositionView = PositionView(snapshot = table.toRiichiSnapshotForTests(player.id), evaluatorId = player.id)
 
     /**
      * 建立萬子。
@@ -249,6 +251,6 @@ class RiichiOpponentModelTest {
 
     private companion object {
         /** 日麻的赤五筒牌面。 */
-        val RED_FIVE_DOT: Tile = RiichiTileTypes.redFive(Tile.Suit.Dot)
+        val RED_FIVE_DOT: TileValue = RiichiTileValues.redFive(Tile.Suit.Dot)
     }
 }

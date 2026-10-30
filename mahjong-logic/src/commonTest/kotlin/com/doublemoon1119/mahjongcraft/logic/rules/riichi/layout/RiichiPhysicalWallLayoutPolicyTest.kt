@@ -2,7 +2,7 @@ package com.doublemoon1119.mahjongcraft.logic.rules.riichi.layout
 
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDynamicState
+import com.doublemoon1119.mahjongcraft.logic.component.BuiltInComponentOwners
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiSupplementalDrawPolicy
 import com.doublemoon1119.mahjongcraft.logic.table.SupplementalDrawContext
@@ -21,6 +21,7 @@ import com.doublemoon1119.mahjongcraft.logic.table.layout.createInitialLayoutVal
 import com.doublemoon1119.mahjongcraft.logic.table.layout.resolveTransitionValidated
 import com.doublemoon1119.mahjongcraft.logic.table.opening.WallOpening
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeIdentifiedTileFactory
+import com.doublemoon1119.mahjongcraft.testing.logic.rules.riichi.riichiTableComponents
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
 import kotlin.math.abs
 import kotlin.test.Test
@@ -67,7 +68,7 @@ class RiichiPhysicalWallLayoutPolicyTest {
                 config = RiichiRuleConfig(),
                 tileWall = TileWall(wallLayout.drawOrder),
                 reservedWallTiles = wallLayout.reservedWallTiles,
-                dynamicRuleState = RiichiDynamicState(),
+                components = riichiTableComponents(potPoints = 0),
             )
             var physicalLayout = initialPhysicalLayout(wallLayout, opening)
             val originalRinshanIds = wallLayout.reservedWallTiles.take(4).map { it.id }
@@ -85,7 +86,7 @@ class RiichiPhysicalWallLayoutPolicyTest {
                 val updatedState = tableState.copy(
                     tileWall = supplemental.tileWall,
                     reservedWallTiles = supplemental.reservedWallTiles,
-                    dynamicRuleState = supplemental.dynamicRuleState,
+                    components = supplemental.tableComponents.applyTo(tableState.components, BuiltInComponentOwners.TABLE),
                 )
                 val transition = assertIs<PhysicalWallLayoutTransitionDecision.Completed>(
                     RiichiPhysicalWallLayoutPolicy(rinshanTileCount = 4).resolveTransitionValidated(
@@ -128,7 +129,7 @@ class RiichiPhysicalWallLayoutPolicyTest {
             config = RiichiRuleConfig(),
             tileWall = TileWall(wallLayout.drawOrder),
             reservedWallTiles = wallLayout.reservedWallTiles,
-            dynamicRuleState = RiichiDynamicState(),
+            components = riichiTableComponents(potPoints = 0),
         )
         val draw = initialState.tileWall.draw()
         val updatedState = initialState.copy(tileWall = draw.wall)
@@ -225,7 +226,7 @@ class RiichiPhysicalWallLayoutPolicyTest {
             config = RiichiRuleConfig(),
             tileWall = TileWall(wallLayout.drawOrder),
             reservedWallTiles = wallLayout.reservedWallTiles,
-            dynamicRuleState = RiichiDynamicState(),
+            components = riichiTableComponents(potPoints = 0),
         )
         var layout = initialPhysicalLayout(wallLayout, opening)
 
@@ -245,7 +246,7 @@ class RiichiPhysicalWallLayoutPolicyTest {
             val updatedState = tableState.copy(
                 tileWall = supplemental.tileWall,
                 reservedWallTiles = supplemental.reservedWallTiles,
-                dynamicRuleState = supplemental.dynamicRuleState,
+                components = supplemental.tableComponents.applyTo(tableState.components, BuiltInComponentOwners.TABLE),
             )
             val transition = assertIs<PhysicalWallLayoutTransitionDecision.Completed>(
                 RiichiPhysicalWallLayoutPolicy(rinshanTileCount = 4).resolveTransitionValidated(

@@ -411,7 +411,7 @@ class WinCelebrationShowcaseEntityRenderer(
         matrices.scale(scale, scale, scale)
         renderTile(
             assetKey = entity.winningTileAssetKey,
-            faceDown = false,
+            backAppearanceId = null,
             appearance = appearance,
             mode = ModelTransformationMode.HEAD,
             light = light,
@@ -562,14 +562,14 @@ class WinCelebrationShowcaseEntityRenderer(
             matrices.multiply(RotationAxis.POSITIVE_X.rotationDegrees((sin(phase) * SHAKE_PITCH_DEGREES * envelope).toFloat()))
             matrices.multiply(RotationAxis.POSITIVE_Z.rotationDegrees((sin(phase * SHAKE_SECONDARY_FREQUENCY_RATIO + PI / 3.0) * SHAKE_SECONDARY_TILT_DEGREES * envelope).toFloat()))
         }
-        if (card.faceDown) {
+        if (card.backAppearanceId != null) {
             // 繞牌自身的縱軸翻面：平躺時牌背朝上，站起來後牌背朝向觀眾。
             matrices.push()
             matrices.multiply(RotationAxis.POSITIVE_Y.rotationDegrees(180.0f))
-            renderTile(card.assetKey, true, appearance, ModelTransformationMode.HEAD, light, matrices, vertexConsumers)
+            renderTile(card.assetKey, card.backAppearanceId, appearance, ModelTransformationMode.HEAD, light, matrices, vertexConsumers)
             matrices.pop()
         } else {
-            renderTile(card.assetKey, false, appearance, ModelTransformationMode.HEAD, light, matrices, vertexConsumers)
+            renderTile(card.assetKey, null, appearance, ModelTransformationMode.HEAD, light, matrices, vertexConsumers)
             tileFaceRenderer.renderModelLabels(card.assetKey, matrices, vertexConsumers, light)
         }
         if (elapsed in ELYTRA_APPEAR_TICK..<ELYTRA_FADE_END_TICK) {
@@ -1236,10 +1236,10 @@ class WinCelebrationShowcaseEntityRenderer(
     }
 
     /**
-     * 以同一組公開牌組外觀繪製展示牌；蓋牌不會攜帶真實牌種。
+     * 繪製展示牌：露出牌面時使用公開牌組外觀，蓋著時使用卡片指定的牌背外觀；蓋牌不會攜帶真實牌種。
      *
      * @param assetKey 可見牌面資產 key；蓋牌時不會讀取。
-     * @param faceDown 是否繪製牌背。
+     * @param backAppearanceId 蓋著時的牌背外觀；露出牌面時為 null。
      * @param appearance 本次展示使用的公開牌組外觀。
      * @param mode Minecraft item 顯示模式。
      * @param light 世界光照值。
@@ -1248,16 +1248,16 @@ class WinCelebrationShowcaseEntityRenderer(
      */
     private fun renderTile(
         assetKey: String,
-        faceDown: Boolean,
+        backAppearanceId: String?,
         appearance: TileRenderAppearanceContext,
         mode: ModelTransformationMode,
         light: Int,
         matrices: MatrixStack,
         consumers: VertexConsumerProvider,
     ) {
-        if (faceDown) {
+        if (backAppearanceId != null) {
             MahjongTileItemRenderer.renderUnknownWithAppearance(
-                appearanceId = appearance.appearanceId,
+                appearanceId = backAppearanceId,
                 mode = mode,
                 matrices = matrices,
                 vertexConsumers = consumers,

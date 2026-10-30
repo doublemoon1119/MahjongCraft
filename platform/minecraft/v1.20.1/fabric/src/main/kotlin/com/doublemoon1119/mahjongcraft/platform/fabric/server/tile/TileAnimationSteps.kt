@@ -11,14 +11,13 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileWallPl
 
 /**
  * 麻將牌各種既有動畫（開局發牌、摸牌、捨牌、鳴牌、胡牌慶祝演出的強制理牌重排／倒牌）的單張牌排程
- * 邏輯，從各自原本所屬的正式桌子綁定 presenter（[FabricMahjongPlayerAreaPresenter]／
- * [FabricMahjongDiscardPresenter]）抽成獨立、不帶任何實例狀態的共用函式——這些函式全部只吃
- * `tile`／位置／絕對時刻這幾個純粹的參數，完全不涉及桌子座標系、`TableLocation` 或任何對局概念。
+ * 邏輯，由正式桌子綁定的 presenter（[FabricMahjongPlayerAreaPresenter]／[FabricMahjongDiscardPresenter]）
+ * 與 debug 動畫指令共用；不帶任何實例狀態。這些函式只吃 `tile`／位置／絕對時刻這幾個純粹的參數，
+ * 不涉及桌子座標系、`TableLocation` 或任何對局概念。
  *
- * 抽出來的理由：`FabricDebugCommand` 的動畫測試指令群組需要在完全不掛任何桌子／對局的臨時
- * 牌 entity 上重播一模一樣的動畫，讓開發者不需要真的建房/加入/開局就能預覽演出效果——重新複製一份
- * 邏輯容易在兩處實際動畫調整時忘記同步，因此改成兩邊共用同一份實作。`internal` 而非 `public`：只給
- * 同模組內的呼叫端使用，不對外公開成正式 API。
+ * `FabricDebugCommand` 的動畫測試指令群組在不掛任何桌子／對局的臨時牌 entity 上重播同樣的動畫，
+ * 讓開發者不必建房、加入、開局就能預覽演出效果；兩邊共用同一份實作，動畫調整時不會不同步。
+ * `internal`：只給同模組內的呼叫端使用，不對外公開成正式 API。
  */
 internal object TileAnimationSteps {
     /**
@@ -31,9 +30,9 @@ internal object TileAnimationSteps {
      * 同時翻牌。
      *
      * 起飛終點高度（`peakY`）是這張牌目前所在高度（`wallY`）加上 [DEAL_LIFT_HEIGHT]，不是統一對齊到
-     * [finalPlacement] 的高度——同一批兩敦牌各自的上下兩層原本高度就不同，若起飛終點固定用同一個絕對
-     * 高度，上下兩層會在起飛途中收斂到同一個高度，看起來像下層那張牌憑空消失；改成「相對自己原高度
-     * 往上抬固定量」，兩層之間的相對高度差在起飛階段維持不變。
+     * [finalPlacement] 的高度：同一批兩敦牌的上下兩層高度不同，若起飛終點固定用同一個絕對高度，上下兩層
+     * 會在起飛途中收斂到同一個高度，看起來像下層那張牌憑空消失；相對自己原高度往上抬固定量，兩層之間的
+     * 相對高度差在起飛階段維持不變。
      *
      * 起飛播完的那一刻，隱形與瞬間重新排列到手牌列上空是同一個瞬間發生；接著額外維持
      * [MahjongTileTableLayout.DEAL_SNAP_GAP_TICKS] 的隱形，讓「重新排成一列」感覺像是刻意的一個轉場
@@ -47,6 +46,7 @@ internal object TileAnimationSteps {
      * @param flipAbsoluteGameTime 這批牌共用的翻牌絕對 tick。
      * @param playDealSound 是否為此牌播放發牌聲。
      * @param playFlipSound 是否為此牌播放翻牌聲。
+     * @param endPose 翻牌動畫結束後的姿態；一般發牌為直立。
      */
     fun scheduleDealBatch(
         tile: MahjongTileEntity,
@@ -56,6 +56,7 @@ internal object TileAnimationSteps {
         flipAbsoluteGameTime: Long,
         playDealSound: Boolean = false,
         playFlipSound: Boolean = false,
+        endPose: MahjongTilePose = MahjongTilePose.STANDING,
     ) {
         val wallX = tile.x
         val wallY = tile.y
@@ -102,7 +103,7 @@ internal object TileAnimationSteps {
                 if (playFlipSound) add(handTurnSound(flipAbsoluteGameTime))
                 addAll(
                     listOf(
-                        AnimationStep.Custom(MahjongTilePose.STANDING),
+                        AnimationStep.Custom(endPose),
                         AnimationStep.PlayMotion(
                             durationTicks = MahjongTileTableLayout.DEAL_FLIP_DURATION_TICKS,
                             arcHeight = 0.0,
@@ -110,7 +111,7 @@ internal object TileAnimationSteps {
                             startOffsetY = 0.0,
                             startOffsetZ = 0.0,
                             startPoseRotationDegrees = MahjongTilePose.FACE_DOWN.rotationDegrees,
-                            endPoseRotationDegrees = MahjongTilePose.STANDING.rotationDegrees,
+                            endPoseRotationDegrees = endPose.rotationDegrees,
                         ),
                         AnimationStep.WaitUntil(viewingEndGameTime),
                         AnimationStep.Teleport(
@@ -135,11 +136,13 @@ internal object TileAnimationSteps {
      * @param tile 要排定摸牌動畫的牌 entity。
      * @param finalPlacement 摸牌動畫的落定位置。
      * @param startDelayTicks 起飛前等待的 tick 數；0 時立即開始。
+     * @param endPose 動畫結束後的姿態；一般摸牌為直立，已攤牌的手牌為平放正面朝上。
      */
     fun scheduleDrawnTile(
         tile: MahjongTileEntity,
         finalPlacement: MahjongTileWallPlacement,
         startDelayTicks: Long = 0L,
+        endPose: MahjongTilePose = MahjongTilePose.STANDING,
     ) {
         val wallX = tile.x
         val wallY = tile.y
@@ -164,7 +167,7 @@ internal object TileAnimationSteps {
                 ),
                 AnimationStep.SetInvisible(true),
                 AnimationStep.Teleport(finalPlacement.x, finalPlacement.y, finalPlacement.z, finalPlacement.yaw),
-                AnimationStep.Custom(MahjongTilePose.STANDING),
+                AnimationStep.Custom(endPose),
                 AnimationStep.WaitUntil(snapGapEndGameTime),
                 AnimationStep.SetInvisible(false),
                 AnimationStep.PlayMotion(
@@ -173,8 +176,8 @@ internal object TileAnimationSteps {
                     startOffsetX = 0.0,
                     startOffsetY = peakY - finalPlacement.y,
                     startOffsetZ = 0.0,
-                    startPoseRotationDegrees = MahjongTilePose.STANDING.rotationDegrees,
-                    endPoseRotationDegrees = MahjongTilePose.STANDING.rotationDegrees,
+                    startPoseRotationDegrees = endPose.rotationDegrees,
+                    endPoseRotationDegrees = endPose.rotationDegrees,
                 ),
                 drawnTileLandingSound(snapGapEndGameTime + MahjongTileTableLayout.DRAW_DROP_DURATION_TICKS),
             ),
@@ -362,7 +365,7 @@ internal object TileAnimationSteps {
     )
 
     /**
-     * 「倒牌」的單張牌動畫（胡牌慶祝演出）：姿態從立牌轉平放牌面朝上，位置完全不動，只有姿態旋轉角
+     * 「倒牌」的單張牌動畫（胡牌慶祝演出）：姿態從佇列最後排定的姿態轉平放牌面朝上，位置完全不動，只有姿態旋轉角
      * 隨動畫進度內插——硬性限制要求所有姿態轉換都要走 [AnimationStep.Custom] + [AnimationStep.PlayMotion]，
      * 不直接賦值 [MahjongTileEntity.tilePose]。[startGameTime] 是呼叫端算好、同一批牌共用同一份的絕對
      * 開始時刻，與 [scheduleInstantReorder] 使用同一條時間軸。
@@ -372,28 +375,65 @@ internal object TileAnimationSteps {
      * @param playGroupSound 是否為整組播放一次翻牌聲。
      */
     fun scheduleLaydown(tile: MahjongTileEntity, startGameTime: Long, playGroupSound: Boolean = false) {
-        tile.enqueueAll(
-            buildList {
-                if (playGroupSound) {
-                    add(handTurnSound(startGameTime + MahjongTileTableLayout.WIN_LAYDOWN_DURATION_TICKS))
-                }
-                addAll(
-                    listOf(
-                        AnimationStep.WaitUntil(startGameTime),
-                        AnimationStep.Custom(MahjongTilePose.FACE_UP),
-                        AnimationStep.PlayMotion(
-                            durationTicks = MahjongTileTableLayout.WIN_LAYDOWN_DURATION_TICKS,
-                            arcHeight = 0.0,
-                            startOffsetX = 0.0,
-                            startOffsetY = 0.0,
-                            startOffsetZ = 0.0,
-                            startPoseRotationDegrees = MahjongTilePose.STANDING.rotationDegrees,
-                            endPoseRotationDegrees = MahjongTilePose.FACE_UP.rotationDegrees,
-                        ),
+        tile.enqueueAll(laydownSteps(tile.queuedTilePose, startGameTime, playGroupSound))
+    }
+
+    /**
+     * 為同一組牌排定倒牌，整組只播放一次翻牌聲。
+     *
+     * @param tiles 同組要倒下的牌，依呈現順序排列。
+     * @param startGameTime 同組牌共用的絕對開始 tick。
+     */
+    fun scheduleGroupLaydown(tiles: List<MahjongTileEntity>, startGameTime: Long) {
+        val soundIndex = groupLaydownSoundIndex(tiles.map { it.queuedTilePose })
+        tiles.forEachIndexed { index, tile -> scheduleLaydown(tile, startGameTime, playGroupSound = index == soundIndex) }
+    }
+
+    /**
+     * 選出負責播放整組翻牌聲的牌：在這次真的要倒下的牌中取中間那張，已平放的牌不參與。
+     *
+     * @param startPoses 各張牌既有動畫結束後的姿態，依呈現順序排列。
+     * @return 負責播放聲音的牌在清單中的位置；全部已平放時為 null。
+     */
+    internal fun groupLaydownSoundIndex(startPoses: List<MahjongTilePose>): Int? {
+        val turning = startPoses.indices.filter { startPoses[it] != MahjongTilePose.FACE_UP }
+        return turning.getOrNull(turning.size / 2)
+    }
+
+    /**
+     * 從已排定的姿態建立倒牌步驟；已平放時不增加旋轉或翻牌聲。
+     *
+     * @param startPose 既有動畫結束後的姿態。
+     * @param startGameTime 倒牌開始的絕對遊戲時間。
+     * @param playGroupSound 是否播放整組翻牌聲。
+     * @return 必要的倒牌步驟；已正面朝上時為空清單。
+     */
+    fun laydownSteps(
+        startPose: MahjongTilePose,
+        startGameTime: Long,
+        playGroupSound: Boolean,
+    ): List<AnimationStep<MahjongTilePose>> {
+        if (startPose == MahjongTilePose.FACE_UP) return emptyList()
+        return buildList {
+            if (playGroupSound) {
+                add(handTurnSound(startGameTime + MahjongTileTableLayout.WIN_LAYDOWN_DURATION_TICKS))
+            }
+            addAll(
+                listOf(
+                    AnimationStep.WaitUntil(startGameTime),
+                    AnimationStep.Custom(MahjongTilePose.FACE_UP),
+                    AnimationStep.PlayMotion(
+                        durationTicks = MahjongTileTableLayout.WIN_LAYDOWN_DURATION_TICKS,
+                        arcHeight = 0.0,
+                        startOffsetX = 0.0,
+                        startOffsetY = 0.0,
+                        startOffsetZ = 0.0,
+                        startPoseRotationDegrees = startPose.rotationDegrees,
+                        endPoseRotationDegrees = MahjongTilePose.FACE_UP.rotationDegrees,
                     ),
-                )
-            },
-        )
+                ),
+            )
+        }
     }
 
     /**

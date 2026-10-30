@@ -8,7 +8,6 @@ import com.doublemoon1119.mahjongcraft.flow.common.room.model.Room
 import com.doublemoon1119.mahjongcraft.flow.common.room.model.toSnapshot
 import com.doublemoon1119.mahjongcraft.flow.common.room.repository.RoomSnapshotRepositoryImpl
 import com.doublemoon1119.mahjongcraft.flow.common.time.MonotonicClock
-import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepositoryImpl
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.DecisionTimerSynchronizationService
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameDecisionAuthorityResolver
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameDecisionTimerManager
@@ -18,6 +17,7 @@ import com.doublemoon1119.mahjongcraft.flow.server.room.repository.RoomRepositor
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateSnapshot
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateStore
 import com.doublemoon1119.mahjongcraft.logic.table.toSnapshot
+import com.doublemoon1119.mahjongcraft.testing.flow.common.game.repository.componentValidatedGameRepository
 import com.doublemoon1119.mahjongcraft.testing.flow.common.game.service.FakeDecisionTimerUpdatePublisher
 import com.doublemoon1119.mahjongcraft.testing.logic.config.FakeMahjongRuleConfig
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
@@ -35,7 +35,7 @@ class ServerSessionStateCleanerTest {
     fun `test clear removes room game and observer snapshots from the previous server session`() = runTest {
         val store = AuthoritativeStateStore()
         val roomRepository = RoomRepositoryImpl(store)
-        val gameRepository = GameRepositoryImpl(store)
+        val gameRepository = componentValidatedGameRepository(store)
         val roomSnapshots = RoomSnapshotRepositoryImpl()
         val gameSnapshots = GameSnapshotRepositoryImpl()
         val memberships = PlayerMembershipRepositoryImpl()
@@ -74,7 +74,7 @@ class ServerSessionStateCleanerTest {
             ),
         )
         roomSnapshots.setSnapshot(observerId, room.toSnapshot(observerId))
-        gameSnapshots.setSnapshot(observerId, game.toSnapshot(setOf(observerId), setAsideTiles = { emptyList() }))
+        gameSnapshots.setSnapshot(observerId, game.toSnapshot(setOf(observerId)))
         memberships.claim(observerId, room.id)
 
         cleaner.clear()

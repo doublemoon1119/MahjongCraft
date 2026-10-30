@@ -49,6 +49,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.MahjongTile
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.MatchSettlementPresentationEntityRenderer
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.PlayerPortraitRenderer
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.PublicPlayerIndicatorTextResolver
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.TablePropTileEntityRenderer
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.WinCelebrationEffectEntityRenderer
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.WinCelebrationShowcaseEntityRenderer
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.WinSettlementPresentationEntityRenderer
@@ -300,7 +301,14 @@ class MahjongCraftModClient : ClientModInitializer {
         EntityRendererRegistry.register(ModEntities.mahjongScoringStick, ::MahjongScoringStickEntityRenderer)
         EntityRendererRegistry.register(ModEntities.mahjongTileSelectionConfirm, ::MahjongTileSelectionConfirmEntityRenderer)
         EntityRendererRegistry.register(ModEntities.mahjongRoundInfo) { context ->
-            MahjongRoundInfoEntityRenderer(context, clientConfigStore, roundInfoLineDisplayRegistry)
+            MahjongRoundInfoEntityRenderer(
+                context,
+                clientConfigStore,
+                roundInfoLineDisplayRegistry,
+                tileDisplayNames,
+                tileAssetRegistry,
+                tileEmojiRegistry,
+            )
         }
         EntityRendererRegistry.register(ModEntities.mahjongPlayerInfo) { context ->
             MahjongPlayerInfoEntityRenderer(context, portraitRenderer, indicatorTextResolver, clientConfigStore)
@@ -316,10 +324,13 @@ class MahjongCraftModClient : ClientModInitializer {
             ExhaustiveDrawSettlementPresentationEntityRenderer(context, exhaustiveDrawReasonDisplayNames, portraitRenderer, tileFaceRenderer, playerNames, clientConfigStore, tileAppearanceResolver)
         }
         EntityRendererRegistry.register(ModEntities.winSettlementPresentation) { context ->
-            WinSettlementPresentationEntityRenderer(context, winSettlementTemplates, portraitRenderer, tileFaceRenderer, playerNames, clientConfigStore, indicatorTextResolver, tileAppearanceResolver)
+            WinSettlementPresentationEntityRenderer(context, winSettlementTemplates, portraitRenderer, tileFaceRenderer, playerNames, clientConfigStore, indicatorTextResolver, tileAppearanceResolver, tileAssetRegistry)
         }
         EntityRendererRegistry.register(ModEntities.matchSettlementPresentation) { context ->
             MatchSettlementPresentationEntityRenderer(context, matchSettlementTemplates, portraitRenderer, playerNames, clientConfigStore)
+        }
+        EntityRendererRegistry.register(ModEntities.tablePropTile) { context ->
+            TablePropTileEntityRenderer(context, tileFaceRenderer)
         }
         EntityRendererRegistry.register(ModEntities.mahjongTile) { context ->
             MahjongTileEntityRenderer(

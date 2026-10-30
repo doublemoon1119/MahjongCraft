@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.event
 
+import com.doublemoon1119.mahjongcraft.flow.api.event.CommittedMatchEventBatch
 import com.doublemoon1119.mahjongcraft.flow.api.event.MatchEvent
 import com.doublemoon1119.mahjongcraft.flow.common.error.ExtensionFailurePolicy
 import com.doublemoon1119.mahjongcraft.flow.common.game.event.GameEventProjector
@@ -142,6 +143,12 @@ class GameEventDeliveryJvmTest {
 
         override fun listenerFailed(
             event: MatchEvent,
+            listener: Any,
+            cause: Throwable,
+        ) = Unit
+
+        override fun batchListenerFailed(
+            batch: CommittedMatchEventBatch,
             listener: Any,
             cause: Throwable,
         ) = Unit

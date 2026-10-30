@@ -2,7 +2,8 @@ package com.doublemoon1119.mahjongcraft.logic.table
 
 import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
 import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
-import com.doublemoon1119.mahjongcraft.logic.config.DynamicRuleState
+import com.doublemoon1119.mahjongcraft.logic.component.BuiltInComponentOwners
+import com.doublemoon1119.mahjongcraft.logic.component.ComponentSet
 import com.doublemoon1119.mahjongcraft.logic.config.MahjongRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.module.RevealedHandSettlement
 import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPhysicalLayout
@@ -15,6 +16,7 @@ import kotlin.uuid.Uuid
  *
  * 負責管理所有參與玩家、牌山、規則配置以及跨規則通用的局數資訊。
  *
+ * @property components 此對象攜帶的規則組件。
  * @property id 當前遊戲的唯一識別碼
  * @property players 參與遊戲的玩家列表。
  * @property config 當前遊戲的規則配置，包含物理參數與計分規則。
@@ -27,7 +29,6 @@ import kotlin.uuid.Uuid
  * @property roundPosition 整場對局中的權威局位；既有場風與絕對局數欄位必須與它一致。
  * @property comboCount 連莊次數（日麻：本場數；台麻：連幾）。
  * @property currentPlayerIndex 目前輪到執行動作的玩家索引。
- * @property dynamicRuleState 規則特有的動態狀態實體（如日麻的立直棒、供託）。
  * @property pendingReaction 目前尚待其他玩家回應（吃/碰/槓/過）的捨牌反應視窗，若無則為 null。
  * @property pendingRobbingReaction 目前尚待其他玩家回應（搶和/過）的暗槓/加槓或移出手牌動作反應視窗，若無則為 null。
  * @property wallOpening 本局權威擲骰決定的牌牆開門位置；規則尚未支援開門流程時為 null。
@@ -39,9 +40,8 @@ import kotlin.uuid.Uuid
  * 「胡牌後本局可能不結束」的擴充（如持續胡牌局）；核心規則預設不會寫入這個集合，因此對現有
  * 規則永遠是空集合、行為不變。座位、分數、快照仍保留這些玩家；見 [isPlayerActive]、[activePlayers]、
  * [nextActivePlayerAfter]。
- * @property revealedHandTileIds 本局已經公開、但可能仍留在手牌中的牌：宣告暗槓、加槓或移出手牌的動作而開啟搶和反應
- * 視窗時，宣告擺出的牌就此公開；被搶和時宣告不成立，這些牌留在宣告者手上但仍是公開的。流局時規則要求攤開的手牌
- * （例如日麻流局時聽牌者的手牌）也記在這裡，直到本局結束。每局重新開始時為空集合。
+ * @property publicTileEvidenceIds 本局曾明確對所有合法觀察者公開的牌張，不限目前所在區域。
+ * 私人授權不能寫入此集合；牌移動或更換持有人不清除公共證據，換局才清空。
  * @property revealedHandSettlements 本局流局 resolver 第一次計算出的公開手牌與等待牌資料；呈現流程只讀這份結果，
  * 每局重新開始時為空集合。
  */
@@ -60,7 +60,6 @@ data class TableState(
     ),
     val comboCount: Int = 0,
     val currentPlayerIndex: Int = 0,
-    val dynamicRuleState: DynamicRuleState? = null,
     val pendingReaction: PendingReaction? = null,
     val pendingRobbingReaction: PendingRobbingReaction? = null,
     val wallOpening: WallOpening? = null,
@@ -68,10 +67,12 @@ data class TableState(
     val reservedWallTiles: List<IdentifiedTile> = emptyList(),
     val physicalWallLayout: TileWallPhysicalLayout? = null,
     val finishedPlayerIds: Set<Uuid> = emptySet(),
-    val revealedHandTileIds: Set<Uuid> = emptySet(),
+    val publicTileEvidenceIds: Set<Uuid> = emptySet(),
     val revealedHandSettlements: List<RevealedHandSettlement> = emptyList(),
+    val components: ComponentSet = ComponentSet.EMPTY,
 ) {
     init {
+        components.requireTarget(BuiltInComponentOwners.TABLE)
         require(players.map { it.id }.distinct().size == players.size) { "Table players must have unique IDs" }
         require(players.any { it.id == dealerPlayerId }) { "dealerPlayerId must belong to this table" }
         require(players.map { it.initialSeatIndex }.sorted() == players.indices.toList()) {

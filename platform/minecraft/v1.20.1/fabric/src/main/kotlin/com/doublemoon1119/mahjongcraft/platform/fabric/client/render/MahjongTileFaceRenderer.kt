@@ -11,6 +11,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileSetA
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileLabelColor
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileLabelRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileLabelText
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.findFor
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.tilePreviewTexture
 import net.minecraft.client.MinecraftClient
 import net.minecraft.client.font.TextRenderer
@@ -119,7 +120,7 @@ class MahjongTileFaceRenderer(
         vertex(right, top, preview.u1, preview.v0)
         vertex(right, bottom, preview.u1, preview.v1)
         vertex(left, bottom, preview.u0, preview.v1)
-        val label = tileLabelRegistry.find(assetKey) ?: return
+        val label = tileLabelRegistry.findFor(assetKey, tileAssetRegistry) ?: return
         if (!clientConfigStore.current.tileLabelsEnabled && !label.forced) return
         label.topLeft?.let { renderWorldLabel(it, left, right, top, width, height, alpha, false, z, matrices, consumers) }
         label.topRight?.let { renderWorldLabel(it, left, right, top, width, height, alpha, true, z, matrices, consumers) }
@@ -139,7 +140,7 @@ class MahjongTileFaceRenderer(
         consumers: VertexConsumerProvider,
         light: Int,
     ) {
-        val label = tileLabelRegistry.find(assetKey) ?: return
+        val label = tileLabelRegistry.findFor(assetKey, tileAssetRegistry) ?: return
         if (!clientConfigStore.current.tileLabelsEnabled && !label.forced) return
         label.topLeft?.let { renderModelLabel(it, true, matrices, consumers, light) }
         label.topRight?.let { renderModelLabel(it, false, matrices, consumers, light) }
@@ -268,7 +269,7 @@ class MahjongTileFaceRenderer(
             UV_DRAW_SCALE,
             UV_DRAW_SCALE,
         )
-        val label = tileLabelRegistry.find(assetKey) ?: return
+        val label = tileLabelRegistry.findFor(assetKey, tileAssetRegistry) ?: return
         if (!clientConfigStore.current.tileLabelsEnabled && !label.forced) return
         label.topLeft?.let { renderGuiLabel(context, it, x, y, width, height, alignRight = false) }
         label.topRight?.let { renderGuiLabel(context, it, x, y, width, height, alignRight = true) }

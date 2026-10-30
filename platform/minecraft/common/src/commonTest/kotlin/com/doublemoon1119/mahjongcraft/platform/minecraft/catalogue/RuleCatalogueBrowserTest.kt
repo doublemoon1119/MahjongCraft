@@ -1,6 +1,7 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.catalogue
 
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
+import com.doublemoon1119.mahjongcraft.logic.base.TileFaceView
 import com.doublemoon1119.mahjongcraft.logic.base.TileTypeId
 import com.doublemoon1119.mahjongcraft.logic.config.MahjongRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
@@ -204,7 +205,7 @@ class RuleCatalogueBrowserTest {
         val first = state.entries.first()
         val labelled = state.entries.first { it.id == "example:second" }
         assertEquals(listOf(RuleCatalogueLabel("example:points")), labelled.labels)
-        assertEquals(Tile.Extension(TileTypeId("example", "custom_tile")), first.examples.single().groups.single().tiles.single())
+        assertEquals(TileFaceView(Tile.Extension(TileTypeId("example", "custom_tile"))), first.examples.single().groups.single().tiles.single())
         assertEquals("example:text", state.entries.last().id)
         assertTrue(state.entries.last().examples.isEmpty())
     }
@@ -482,7 +483,7 @@ private fun sampleCatalogue(): RuleCatalogue = RuleCatalogue(
                     groups = listOf(
                         RuleCatalogueTileGroup(
                             RuleCatalogueTileGroupRole.ILLUSTRATION,
-                            listOf(Tile.Extension(TileTypeId("example", "custom_tile"))),
+                            listOf(TileFaceView(Tile.Extension(TileTypeId("example", "custom_tile")))),
                         ),
                     ),
                 ),

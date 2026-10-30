@@ -11,6 +11,7 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameSnapshotSync
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.isDrawWindowOpenFor
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
+import com.doublemoon1119.mahjongcraft.logic.component.ComponentRegistry
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import com.doublemoon1119.mahjongcraft.logic.table.DrawSource
 import kotlin.uuid.Uuid
@@ -21,6 +22,7 @@ import kotlin.uuid.Uuid
  * 負責處理玩家的摸牌請求，包含回合驗證、牌山狀態更新以及快照與事件的同步。摸牌後在同一筆寫入內交給
  * [DrawFollowUpApplier] 依規則自動處理，例如摸到花牌時自動移出並補牌。
  *
+ * @property componentRegistry 正式組件定義與純效果來源。
  * @property gameRepository 權威對局數據倉庫。
  * @property moduleRegistry 麻將規則模組註冊中心，用於解析當前對局的規則模組。
  * @property snapshotSynchronizer 對局快照同步服務。
@@ -33,6 +35,7 @@ class DrawTileUseCase(
     private val snapshotSynchronizer: GameSnapshotSynchronizer,
     private val eventPublisher: GameEventPublisher,
     private val presentationPublisher: GamePresentationPublisher,
+    private val componentRegistry: ComponentRegistry,
 ) {
     /**
      * 執行摸牌邏輯。
@@ -72,10 +75,11 @@ class DrawTileUseCase(
                             .copy(hand = state.currentPlayer.hand.copy(lastDrawn = tile))
                             .clearPassedTiles()
                             .recordAction(GameAction.Draw)
-                        val updatedPlayer = RuleHookResultValidator.requireRuleStateOnly(
-                            before = drawnPlayer,
-                            after = module.onPlayerDrew(drawnPlayer),
-                            hookName = "onPlayerDrew",
+                        val updatedPlayer = RuleComponentChecker(componentRegistry, module.id).applyPlayerPatch(
+                            tableState = state,
+                            player = drawnPlayer,
+                            patch = module.onPlayerDrew(drawnPlayer),
+                            source = "onPlayerDrew",
                         )
                         val updatedPlayers = state.players.map { if (it.id == playerId) updatedPlayer else it }
                         val remainingWallTileIds = (newWall.getAllTiles() + state.reservedWallTiles)
@@ -85,7 +89,7 @@ class DrawTileUseCase(
                             players = updatedPlayers,
                             physicalWallLayout = state.physicalWallLayout?.retainOnly(remainingWallTileIds),
                         )
-                        val followUp = DrawFollowUpApplier.run(drawnState, playerId, DrawSource.LiveWall, listOf(tile), module)
+                        val followUp = DrawFollowUpApplier.run(drawnState, playerId, DrawSource.LiveWall, listOf(tile), module, componentRegistry = componentRegistry)
 
                         followUp.tableState to Outcome.Success(DrawResult(tile, followUp))
                     }

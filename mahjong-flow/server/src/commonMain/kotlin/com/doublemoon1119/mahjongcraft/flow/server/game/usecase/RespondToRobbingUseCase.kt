@@ -24,6 +24,7 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.service.WinSettlementDet
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.WinSettlementPresentationRequestFactory
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
+import com.doublemoon1119.mahjongcraft.logic.component.ComponentRegistry
 import com.doublemoon1119.mahjongcraft.logic.judgment.LegalActionContext
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import com.doublemoon1119.mahjongcraft.logic.module.WinResolutionResult
@@ -54,6 +55,7 @@ import kotlin.uuid.Uuid
  * 分支不分辨 `sourceAction` 是不是捨牌，會一併算出吃/碰/明槓資格，但搶和情境下這些都不合法
  * （這張牌不是捨牌）——回應驗證時額外過濾，只接受 `Ron`/`Pass`。
  *
+ * @property componentRegistry 正式組件定義與純效果來源。
  * @property gameRepository 權威對局數據倉庫。
  * @property moduleRegistry 麻將規則模組註冊中心，用於解析當前對局的合法動作判定器與規則特有邏輯。
  * @property snapshotSynchronizer 對局快照同步服務。
@@ -72,6 +74,7 @@ class RespondToRobbingUseCase(
     private val winPresentationHandoff: WinPresentationHandoff,
     private val winCelebrationCueResolverRegistry: WinCelebrationCueResolverRegistry,
     private val winSettlementDetailResolverRegistry: WinSettlementDetailResolverRegistry,
+    private val componentRegistry: ComponentRegistry,
 ) {
     /**
      * 執行搶和反應回應邏輯。
@@ -178,10 +181,11 @@ class RespondToRobbingUseCase(
 
                     // 放過原本合法的搶槓：後果交給規則決定，見 MahjongRuleModule.onPlayerDeclinedWin。
                     val stateAfterResponse = if (action == GameAction.Pass && legalActions.any { it is GameAction.Ron }) {
-                        val declinedResponder = RuleHookResultValidator.requireRuleStateOnly(
-                            before = responder,
-                            after = module.onPlayerDeclinedWin(responder),
-                            hookName = "onPlayerDeclinedWin",
+                        val declinedResponder = RuleComponentChecker(componentRegistry, module.id).applyPlayerPatch(
+                            tableState = state,
+                            player = responder,
+                            patch = module.onPlayerDeclinedWin(responder),
+                            source = "onPlayerDeclinedWin",
                         )
                         state.copy(players = state.players.map { if (it.id == playerId) declinedResponder else it })
                     } else {
@@ -211,6 +215,7 @@ class RespondToRobbingUseCase(
                             checkpoint = WallRevealCheckpoint.WIN_CONFIRMED,
                             module = module,
                             sourceAction = GameAction.Ron(pending.robbedTile.id),
+                            componentRegistry = componentRegistry,
                         )
                         if (revealResult is WallRevealDecisionApplier.Result.Rejected) {
                             return@update state to Outcome.Error(
@@ -267,12 +272,14 @@ class RespondToRobbingUseCase(
                                 declaredAction,
                                 pending.robbedTile,
                                 module,
+                                componentRegistry = componentRegistry,
                             )
                             is GameAction.Extension -> SelfDeclarationApplier.applyTileSetAside(
                                 state = stateAfterPasses,
                                 declarerId = pending.declarerId,
                                 action = declaredAction,
                                 module = module,
+                                componentRegistry = componentRegistry,
                             )
                             else -> SelfDeclarationApplier.Result.Rejected(SupplementalDrawReasonIds.INVALID_RESULT)
                         }
@@ -296,6 +303,7 @@ class RespondToRobbingUseCase(
                                 drawnTiles = applied.drawnTiles,
                                 module = module,
                                 resumedDraws = pending.pendingFollowUpDraws.mapNotNull { draw -> heldTiles[draw.tileId]?.let { it to draw.source } },
+                                componentRegistry = componentRegistry,
                             )
                         } else {
                             null
@@ -364,7 +372,7 @@ class RespondToRobbingUseCase(
                     standingTileIds = declarer.hand.tiles.map { it.id },
                     drawnTileId = declarer.hand.lastDrawn?.id,
                     melds = declarer.hand.melds.map { it.toPresentation(newState.config.revealsClosedKanTiles) },
-                    setAsideTileIds = module.setAsideTiles(declarer).map { it.id },
+                    setAsideTileIds = declarer.setAsideTiles.map { it.id },
                 )
                 if (result.ruleStateChanged) presentationPublisher.publishRuleStateUpdated(gameId)
             }

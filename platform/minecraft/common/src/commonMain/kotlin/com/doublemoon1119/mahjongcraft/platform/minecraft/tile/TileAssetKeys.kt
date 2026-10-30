@@ -1,6 +1,7 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.tile
 
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
+import com.doublemoon1119.mahjongcraft.logic.base.TileFaceView
 
 /**
  * 未知/佔位牌（正面朝下、無法辨識）在 Minecraft 資源裡使用的素材識別字串。
@@ -10,8 +11,8 @@ const val UNKNOWN_TILE_ASSET_KEY = "unknown"
 /**
  * 將 [Tile] 轉換成 Minecraft 牌面資源映射使用的素材識別字串。
  *
- * 數牌格式為 `{花色字母}{數值}`，紅五額外加上 `_red` 後綴（例如 `m5_red`）；字牌則各自對應到固定的
- * 英文名稱（例如 `east`、`white_dragon`）。
+ * 數牌格式為 `{花色字母}{數值}`；字牌則各自對應到固定的英文名稱（例如 `east`、`white_dragon`）。
+ * 外觀樣式（例如赤五）不在這裡處理，改用 [TileFaceView.toAssetKey]。
  *
  * @param registry 保存 [Tile.Extension] 對應 asset key 的 runtime registry；內建與第三方牌種共用
  * 同一份查詢流程。無法解析的 Extension ID 會回退至 [UNKNOWN_TILE_ASSET_KEY]，讓物品與 entity 使用
@@ -29,6 +30,16 @@ fun Tile.toAssetKey(registry: MinecraftTileAssetRegistry): String = when (this) 
     Tile.Honor.White -> "white_dragon"
     is Tile.Extension -> registry.find(typeId) ?: UNKNOWN_TILE_ASSET_KEY
 }
+
+/**
+ * 將已知牌面轉成素材 key：外觀樣式有登記時使用該樣式的素材，否則使用基本牌面的素材。
+ *
+ * @param registry 牌面與外觀樣式的素材 registry。
+ * @return 對應的 Minecraft 素材 key。
+ */
+fun TileFaceView.toAssetKey(registry: MinecraftTileAssetRegistry): String = appearanceId
+    ?.let { registry.findStyle(it, tile) }
+    ?: tile.toAssetKey(registry)
 
 /**
  * 數牌花色對應的單字母素材前綴。

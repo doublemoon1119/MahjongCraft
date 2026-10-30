@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.achievement
 
+import com.doublemoon1119.mahjongcraft.flow.api.event.CommittedMatchEventBatch
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.CommittedGameFacts
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryActionResult
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryEventDraft
@@ -10,14 +11,12 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.Game
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameFlowConfig
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.module.BuiltInRuleModuleIds
-import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayer
 import com.doublemoon1119.mahjongcraft.logic.table.RoundCompletionClassification
 import com.doublemoon1119.mahjongcraft.logic.table.RoundCompletionSummary
 import com.doublemoon1119.mahjongcraft.logic.table.RoundTransitionDirective
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
-import com.doublemoon1119.mahjongcraft.testing.flow.bundled.registerBundledRuleModules
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
 import kotlin.test.Test
@@ -25,11 +24,8 @@ import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 import kotlin.uuid.Uuid
 
-/** 驗證 [GameAchievementDetector] 從已提交事實判定的通用成果與規則專屬成果分派。 */
+/** 驗證提交事實投影為公開批次後，[GameAchievementDetector] 的通用成果與規則專屬成果分派。 */
 class GameAchievementDetectorTest {
-    /** 含內建規則模組的測試 registry。 */
-    private val moduleRegistry = MahjongModuleRegistryImpl().apply { registerBundledRuleModules() }
-
     /** 自摸的贏家取得胡牌與自摸。 */
     @Test
     fun `self-draw winner gets win and self-draw achievements`() {
@@ -377,7 +373,6 @@ class GameAchievementDetectorTest {
      * @return 通用與規則成果合併 detector。
      */
     private fun detector(registry: GameAchievementResolverRegistry = GameAchievementResolverRegistryImpl()) = GameAchievementDetector(
-        moduleRegistry = moduleRegistry,
         resolverRegistry = registry,
     )
 
@@ -390,11 +385,11 @@ class GameAchievementDetectorTest {
      */
     private fun resolver(
         ruleModuleId: String,
-        resolve: (CommittedGameFacts) -> Map<Uuid, Set<String>>,
+        resolve: (CommittedMatchEventBatch) -> Map<Uuid, Set<String>>,
     ): GameAchievementResolver = object : GameAchievementResolver {
         override val ruleModuleId: String = ruleModuleId
 
-        override fun resolve(facts: CommittedGameFacts): Map<Uuid, Set<String>> = resolve(facts)
+        override fun resolve(batch: CommittedMatchEventBatch): Map<Uuid, Set<String>> = resolve(batch)
     }
 
     /**

@@ -123,12 +123,14 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.FabricMahjon
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.FabricTableLifecycleService
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.FabricTableLocationValidationService
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.FabricTablePresentationCleaner
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.FabricTablePropRefreshScheduler
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.FabricTableRemovalNotifier
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.FabricTableStateDelivery
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.FabricTableStateDeliveryEnvironment
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.OrphanedTableCleanupService
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.PersistentTableOverlayCoordinator
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.TableCleanupQueue
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.TablePropRefreshQueue
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.TableRemovalNotifier
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.TableStateDeliveryEnvironment
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.prop.FabricTablePropKindRegistry
@@ -299,6 +301,7 @@ val fabricServerModule = module {
     single<FabricMahjongTileSelectionConfirmPresenter>() bind MahjongTileSelectionConfirmPresenter::class
     single<FabricTableLifecycleService>()
     single<FabricTableLocationValidationService>()
+    single<FabricTablePropRefreshScheduler>()
     single<FabricTablePresentationCleaner>()
     single<FabricTableRemovalNotifier>() bind TableRemovalNotifier::class
     single<FabricTableStateDelivery>()
@@ -306,6 +309,7 @@ val fabricServerModule = module {
     single<OrphanedTableCleanupService>()
     single<PersistentTableOverlayCoordinator>()
     single<TableCleanupQueue>()
+    single<TablePropRefreshQueue>()
     single<FabricTablePropKindRegistryImpl>() bind FabricTablePropKindRegistry::class
     single<FabricTablePropPresenter>() bind TablePropPresenter::class
 

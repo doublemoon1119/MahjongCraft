@@ -8,6 +8,9 @@ enum class TablePropPresentationResult {
     /** 指定 dimension、controller 或桌子 UUID 與目前世界不一致。 */
     TABLE_NOT_FOUND,
 
-    /** 生成新物件失敗；這次已生成的部分會被移除，桌上原有的物件維持不變。 */
+    /** 搜尋範圍的實體尚未載入；已排入刷新佇列，不生成部分副本。 */
+    WAITING_FOR_CHUNKS,
+
+    /** 內容、位置或生成失敗；清除失效顯示，不留下部分結果。 */
     SPAWN_FAILED,
 }

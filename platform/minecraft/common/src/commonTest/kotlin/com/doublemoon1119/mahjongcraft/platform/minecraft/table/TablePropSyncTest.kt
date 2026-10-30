@@ -4,6 +4,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongTableFacin
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileTableLayout
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertIs
 import kotlin.test.assertTrue
 import kotlin.uuid.Uuid
 
@@ -26,7 +27,7 @@ class TablePropSyncTest {
         x: Double = 0.0,
         yaw: Float = 0f,
         kind: String = BuiltInTablePropKinds.SCORING_STICK,
-    ) = TablePropTarget(kind = kind, variant = variant, x = x, y = 65.0, z = 0.0, yaw = yaw)
+    ) = TablePropTarget(ruleModuleId = "example:rule", id = "example:target-${kind.substringAfter(':')}-$variant", kind = kind, content = TablePropContent.CustomVariant(variant), x = x, y = 65.0, z = 0.0, yaw = yaw)
 
     /** 已在正確落點的物件原樣保留，只生成缺少的、移除多出來的。 */
     @Test
@@ -104,14 +105,18 @@ class TablePropSyncTest {
     @Test
     fun `targets convert seat-local placements through the table layout`() {
         val placement = TablePropPlacement(
+            id = "example:seat-prop",
             kind = BuiltInTablePropKinds.SCORING_STICK,
-            variant = "100",
-            seatIndex = 2,
-            anchor = TableSeatAnchor.MELD_CORNER,
-            offset = TableSeatOffset(x = -0.1, y = 0.02, z = -0.03),
-            yawOffset = 90f,
+            content = TablePropContent.CustomVariant("100"),
+            location = TablePropLocation.Seat(
+                seatIndex = 2,
+                anchor = TableSeatAnchor.MELD_CORNER,
+                offset = TableSeatOffset(x = -0.1, y = 0.02, z = -0.03),
+                yawOffset = 90f,
+            ),
         )
         val presentation = TablePropPresentation(
+            ruleModuleId = "example:rule",
             tableId = Uuid.random(),
             tableLocation = TableLocation(dimensionId = "minecraft:overworld", x = 12, y = 64, z = -7),
             tableFacing = MahjongTableFacing.EAST,
@@ -127,12 +132,17 @@ class TablePropSyncTest {
             seatLayout = MahjongTableSeatLayout.FOUR_PLAYER,
             seatIndex = 2,
             anchor = TableSeatAnchor.MELD_CORNER,
-            offset = placement.offset,
-            yawOffset = 90f,
+            offset = (placement.location as TablePropLocation.Seat).offset,
+            yawOffset = placement.location.yawOffset,
+        )
+        val result = assertIs<TablePropLayoutResult.Success>(
+            presentation.targets(
+                mapOf(BuiltInTablePropKinds.SCORING_STICK to TablePropKindDefinition(BuiltInTablePropKinds.SCORING_STICK, TablePropDimensions(0.4, 0.0125, 0.0625))),
+            ),
         )
         assertEquals(
-            listOf(TablePropTarget(kind = BuiltInTablePropKinds.SCORING_STICK, variant = "100", x = world.x, y = world.y, z = world.z, yaw = world.yaw)),
-            presentation.targets(),
+            listOf(TablePropTarget(ruleModuleId = "example:rule", id = "example:seat-prop", kind = BuiltInTablePropKinds.SCORING_STICK, content = TablePropContent.CustomVariant("100"), x = world.x, y = world.y, z = world.z, yaw = world.yaw)),
+            result.targets,
         )
     }
 }

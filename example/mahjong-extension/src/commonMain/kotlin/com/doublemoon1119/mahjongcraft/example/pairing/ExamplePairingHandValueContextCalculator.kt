@@ -1,6 +1,7 @@
 package com.doublemoon1119.mahjongcraft.example.pairing
 
 import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
+import com.doublemoon1119.mahjongcraft.logic.base.toValue
 import com.doublemoon1119.mahjongcraft.logic.judgment.HandValueContextCalculator
 import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayer
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
@@ -24,7 +25,7 @@ class ExamplePairingHandValueContextCalculator : HandValueContextCalculator<Exam
 
     override fun calculate(input: Input): ExamplePairingHandValueContext = ExamplePairingHandValueContext(
         hand = input.player.hand,
-        winningTile = input.incomingTile.tile,
+        winningTileValue = input.incomingTile.toValue(),
         isTsumo = input.isTsumo,
         isMenzen = input.player.hand.exposedMelds.isEmpty(),
         roundWind = input.tableState.prevalentWind,

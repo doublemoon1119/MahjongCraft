@@ -63,6 +63,7 @@ object MahjongExtensionRegistrar {
             }
             extension.registerRuleModules(registries.moduleRegistry)
             extension.registerTileTypes(registries.tileTypeRegistry)
+            extension.registerComponents(registries.componentRegistry)
             extension.registerNetworkDtos(registries.networkRegistries)
             extension.registerPersistenceDtos(registries.persistenceRegistries)
             extension.registerWinCelebrationCueResolvers(registries.winCelebrationCueResolverRegistry)
@@ -76,6 +77,7 @@ object MahjongExtensionRegistrar {
             extension.registerRuleDecisionResolvers(registries.ruleDecisionResolverRegistry)
             extension.registerWinRoundContinuationResolvers(registries.winRoundContinuationResolverRegistry)
             extension.registerWinSettlementDetailResolvers(registries.winSettlementDetailResolverRegistry)
+            extension.registerGameEventPublicMarkerResolvers(registries.gameEventPublicMarkerResolverRegistry)
         } catch (cause: Throwable) {
             if (!failurePolicy.isIsolatable(cause)) throw cause
             throw MahjongExtensionRegistrationException(extension.id, cause)

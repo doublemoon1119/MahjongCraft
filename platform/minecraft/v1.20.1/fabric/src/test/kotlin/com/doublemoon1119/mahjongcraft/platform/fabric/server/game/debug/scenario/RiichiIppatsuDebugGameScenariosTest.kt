@@ -2,18 +2,19 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.scenar
 
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
+import com.doublemoon1119.mahjongcraft.logic.component.BuiltInComponentOwners
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RIICHI_GAME_ACTION
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPlayerState
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDeclarationKind
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.applyRiichiDeclaration
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.riichiDeclaration
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.riichiDeclarationEffect
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.registerBundledRuleModules
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
-import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 /** 驗證一發驗收情境的桌況能讓呼叫者在立直後一巡內和牌。 */
@@ -43,9 +44,9 @@ class RiichiIppatsuDebugGameScenariosTest {
                 assertEquals(context.invokingPlayerId, state.currentPlayer.id, scenario.id)
                 assertEquals(Tile.Honor.West, drawnTile.tile, scenario.id)
                 assertTrue(RIICHI_GAME_ACTION in state.currentOwnTurnActions(), scenario.id)
-                val riichiState = state.afterInvokerRiichi().seat(0).playerRuleState as RiichiPlayerState
+                val riichiState = assertNotNull(state.afterInvokerRiichi().seat(0).riichiDeclaration)
                 assertTrue(riichiState.isIppatsu, scenario.id)
-                assertNull(riichiState.doubleRiichiTile, "${scenario.id} should not be a double riichi")
+                assertEquals(RiichiDeclarationKind.RIICHI, riichiState.kind, "${scenario.id} should not be a double riichi")
                 assertTrue(
                     state.reservedWallTiles.none { it.tile == ONE_CHARACTER || it.tile == FOUR_CHARACTER },
                     "${scenario.id} should keep the waits out of the dead wall",
@@ -89,15 +90,22 @@ class RiichiIppatsuDebugGameScenariosTest {
     /**
      * 以目前玩家剛摸到的牌建立立直後桌況，保留目前玩家索引。
      *
-     * @return 更新玩家與動態規則狀態後的桌況。
+     * @return 更新玩家與對局組件後的桌況。
      */
     private fun TableState.afterInvokerRiichi(): TableState {
         val invoker = currentPlayer
         val discardResult = assertNotNull(invoker.hand.discardById(assertNotNull(invoker.hand.lastDrawn).id))
-        val declaration = assertNotNull(applyRiichiDeclaration(this, invoker, discardResult))
+        val effect = riichiDeclarationEffect(this, invoker, discardResult)
+        val pileWithDiscard = invoker.discardPile.discardTile(discardResult.tile)
+        val declared = invoker.copy(
+            hand = discardResult.hand,
+            discardPile = pileWithDiscard.replaceEntryComponents(pileWithDiscard.entries.lastIndex, effect.discardComponents),
+            score = invoker.score - effect.cost,
+            components = effect.playerComponents.applyTo(invoker.components, BuiltInComponentOwners.PLAYER),
+        )
         return copy(
-            players = players.map { if (it.id == invoker.id) declaration.player else it },
-            dynamicRuleState = declaration.dynamicRuleState,
+            players = players.map { if (it.id == invoker.id) declared else it },
+            components = effect.tableComponents.applyTo(components, BuiltInComponentOwners.TABLE),
         )
     }
 

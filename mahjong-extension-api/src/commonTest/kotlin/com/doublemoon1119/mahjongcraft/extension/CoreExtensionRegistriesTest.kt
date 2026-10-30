@@ -8,10 +8,14 @@ import com.doublemoon1119.mahjongcraft.ai.expectation.NeutralOpponentModel
 import com.doublemoon1119.mahjongcraft.ai.expectation.OpponentModelDefinition
 import com.doublemoon1119.mahjongcraft.ai.expectation.OpponentModelRegistry
 import com.doublemoon1119.mahjongcraft.bundled.BundledRiichiExtension
+import com.doublemoon1119.mahjongcraft.flow.common.game.event.GameEventPublicMarkerResolver
+import com.doublemoon1119.mahjongcraft.flow.common.game.event.GameEventPublicMarkerResolverDefinition
+import com.doublemoon1119.mahjongcraft.flow.common.game.event.GameEventPublicMarkerResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinRoundContinuationContext
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinRoundDirective
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.WinCelebrationCueResolverRegistryImpl
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.DefaultNetworkDtoRegistries
+import com.doublemoon1119.mahjongcraft.flow.persistence.format.registry.emptyPersistenceRegistries
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.ExtensionGameActionCommandFactoryRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.ExtensionGameCommandExecutorRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.PostActionExhaustiveDrawResolverRegistry
@@ -20,11 +24,12 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.RuleDecisi
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.WinRoundContinuationResolver
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.WinRoundContinuationResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.WinSettlementDetailResolverRegistry
+import com.doublemoon1119.mahjongcraft.logic.component.ComponentRegistryImpl
 import com.doublemoon1119.mahjongcraft.logic.module.BuiltInRuleModuleIds
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
 import com.doublemoon1119.mahjongcraft.logic.tile.TileTypeRegistryImpl
-import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledPersistenceRegistries
+import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledCoreExtensionRegistries
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -41,12 +46,34 @@ class CoreExtensionRegistriesTest {
 
         assertTrue(registries.tileTypeRegistry.isFrozen)
         assertTrue(registries.winSettlementDetailResolverRegistry.isFrozen)
+        assertTrue(registries.gameEventPublicMarkerResolverRegistry.isFrozen)
         assertFailsWith<IllegalStateException> {
             registries.aiStrategyRegistry.register(MahjongAiStrategyDefinition("example:late") { RandomAiStrategy(registries.gameActionAiRegistry) })
         }
         assertFailsWith<IllegalStateException> {
             registries.opponentModelRegistry.register(OpponentModelDefinition("example:late") { _, depth -> NeutralOpponentModel(depth) })
         }
+    }
+
+    /** 驗證公開事件標記 resolver 會出現在 bootstrap 診斷快照。 */
+    @Test
+    fun `registration snapshot tracks public event marker resolvers`() {
+        val registries = registries()
+        val before = registries.registrationSnapshot()
+        registries.gameEventPublicMarkerResolverRegistry.register(
+            GameEventPublicMarkerResolverDefinition("example:pairing", object : GameEventPublicMarkerResolver {}),
+        )
+
+        assertEquals(
+            listOf(
+                ExtensionRegistrationCategory(
+                    id = "mahjongcraft:game_event_public_marker_resolver",
+                    displayName = "Game Event Public Marker Resolver",
+                    registrationIds = listOf("example:pairing"),
+                ),
+            ),
+            before.additionsSince(registries.registrationSnapshot()),
+        )
     }
 
     /** 驗證診斷快照包含對手模型，新登記的規則會出現在前後快照的差異中。 */
@@ -115,8 +142,9 @@ class CoreExtensionRegistriesTest {
     private fun registries(): CoreExtensionRegistries = CoreExtensionRegistries(
         moduleRegistry = MahjongModuleRegistryImpl(),
         tileTypeRegistry = TileTypeRegistryImpl(),
+        componentRegistry = ComponentRegistryImpl(),
         networkRegistries = DefaultNetworkDtoRegistries(),
-        persistenceRegistries = bundledPersistenceRegistries(),
+        persistenceRegistries = emptyPersistenceRegistries(),
         winCelebrationCueResolverRegistry = WinCelebrationCueResolverRegistryImpl(),
         gameActionAiRegistry = ExtensionGameActionAiRegistry(MahjongModuleRegistryImpl()),
         aiStrategyRegistry = MahjongAiStrategyRegistryImpl(defaultKey = RandomAiStrategy.KEY),
@@ -127,6 +155,7 @@ class CoreExtensionRegistriesTest {
         postActionExhaustiveDrawResolverRegistry = PostActionExhaustiveDrawResolverRegistry(),
         ruleDecisionResolverRegistry = RuleDecisionResolverRegistry(),
         winRoundContinuationResolverRegistry = WinRoundContinuationResolverRegistry(),
-        winSettlementDetailResolverRegistry = WinSettlementDetailResolverRegistry(),
+        winSettlementDetailResolverRegistry = WinSettlementDetailResolverRegistry(bundledCoreExtensionRegistries().componentRegistry),
+        gameEventPublicMarkerResolverRegistry = GameEventPublicMarkerResolverRegistry(),
     )
 }

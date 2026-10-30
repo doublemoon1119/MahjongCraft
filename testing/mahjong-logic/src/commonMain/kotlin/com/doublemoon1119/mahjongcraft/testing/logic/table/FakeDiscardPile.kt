@@ -1,6 +1,7 @@
 package com.doublemoon1119.mahjongcraft.testing.logic.table
 
 import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
+import com.doublemoon1119.mahjongcraft.logic.component.ComponentSet
 import com.doublemoon1119.mahjongcraft.logic.table.DiscardPile
 import com.doublemoon1119.mahjongcraft.logic.table.DiscardPile.DiscardEntry
 
@@ -47,6 +48,19 @@ data class FakeDiscardPile(
         return copy(_entries = _entries.dropLast(1) + last.withTaken())
     }
 
+    /** 替換當前牌張，已取走的舊紀錄保持原值。 */
+    override fun replaceTile(tile: IdentifiedTile): FakeDiscardPile {
+        val entries = _entries.map { if (!it.isTaken && it.tile.id == tile.id) it.withTile(tile) else it }
+        require(entries.count { !it.isTaken && it.tile.id == tile.id } == 1) { "Tile is not in the current discard area" }
+        return copy(_entries = entries)
+    }
+
+    /** 替換指定紀錄的組件，其他紀錄保持原值。 */
+    override fun replaceEntryComponents(index: Int, components: ComponentSet): FakeDiscardPile {
+        require(index in _entries.indices) { "Discard entry index is out of range" }
+        return copy(_entries = _entries.mapIndexed { position, entry -> if (position == index) entry.withComponents(components) else entry })
+    }
+
     /**
      * 測試用的捨牌紀錄實體類別。
      *
@@ -58,7 +72,15 @@ data class FakeDiscardPile(
     class FakeEntry(
         tile: IdentifiedTile,
         isTaken: Boolean = false,
-    ) : DiscardPile.DiscardEntry(tile, isTaken) {
-        override fun withTaken(): FakeEntry = FakeEntry(tile, isTaken = true)
+        components: ComponentSet = ComponentSet.EMPTY,
+    ) : DiscardPile.DiscardEntry(tile, isTaken, components) {
+        override fun withTaken(): FakeEntry = FakeEntry(tile, isTaken = true, components = components)
+
+        override fun withTile(replacement: IdentifiedTile): FakeEntry {
+            require(replacement.id == tile.id && replacement.tile == tile.tile) { "Replacement must preserve tile identity and face" }
+            return FakeEntry(replacement, isTaken, components)
+        }
+
+        override fun withComponents(replacement: ComponentSet): FakeEntry = FakeEntry(tile, isTaken, replacement)
     }
 }

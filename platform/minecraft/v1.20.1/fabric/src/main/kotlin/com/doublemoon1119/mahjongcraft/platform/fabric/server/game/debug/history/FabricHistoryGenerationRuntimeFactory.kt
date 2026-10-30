@@ -15,11 +15,13 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.PostReacti
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.WinRoundContinuationResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.WinSettlementDetailResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateStore
+import com.doublemoon1119.mahjongcraft.logic.component.ComponentRegistry
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 
 /**
  * 使用 extension 初始化完成後的 registry 建立隔離生成環境，讓生成的對局與正式對局使用同一套規則登記。
  *
+ * @property componentRegistry 正式啟動已完成登記的組件規格。
  * @property moduleRegistry 規則模組。
  * @property aiStrategies AI 策略。
  * @property winCelebrationCueResolvers 胡牌演出提示。
@@ -32,6 +34,7 @@ import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
  */
 class FabricHistoryGenerationRuntimeFactory(
     private val moduleRegistry: MahjongModuleRegistry,
+    private val componentRegistry: ComponentRegistry,
     private val aiStrategies: MahjongAiStrategyRegistry,
     private val winCelebrationCueResolvers: WinCelebrationCueResolverRegistry,
     private val postActionExhaustiveDrawResolvers: PostActionExhaustiveDrawResolverRegistry,
@@ -82,6 +85,7 @@ class FabricHistoryGenerationRuntimeFactory(
      */
     private fun registries() = HeadlessHistoryRegistries(
         moduleRegistry = moduleRegistry,
+        componentRegistry = componentRegistry,
         aiStrategyRegistry = aiStrategies,
         winCelebrationCueResolverRegistry = winCelebrationCueResolvers,
         postActionExhaustiveDrawResolverRegistry = postActionExhaustiveDrawResolvers,

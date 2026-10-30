@@ -18,6 +18,23 @@ import com.doublemoon1119.mahjongcraft.logic.base.Tile
 object ThreePlayerRiichiDebugGameScenarios {
     /** 所有三人日麻驗收情境。 */
     val all: List<DebugGameScenario> = listOf(
+        // 一筒、白、北、南與九條的每一張都讓所有人看得到牌面，牌身換成不同顏色。白已從對手碰出成副露，南在呼叫者
+        // 牌河，九條排在王牌最前端；呼叫者手上有四張一筒、剛摸到北。拔北後北進移出區並補到九條，再暗槓一筒後
+        // 補到另一張九條，可依序確認牌山、王牌、手牌、副露、暗槓、牌河與移出區的公開牌面與牌身。
+        SeatSetupScenario(
+            id = "mahjongcraft:riichi_three_player_public_faces",
+            invoker = SeatSpec(
+                standingTiles = List(KAN_SIZE) { ONE_DOT },
+                pons = listOf(ScenarioPon(Tile.Honor.White, from = RelativeDirection.Left)),
+                drawnTile = Tile.Honor.North,
+                discards = listOf(Tile.Honor.South, Tile.Honor.West),
+            ),
+            liveWallFront = emptyList(),
+            waitingTiles = emptySet(),
+            deadWallFront = listOf(NINE_BAMBOO, NINE_BAMBOO),
+            playerCount = THREE_PLAYER_COUNT,
+            publicFaceTiles = setOf(ONE_DOT, Tile.Honor.White, Tile.Honor.North, Tile.Honor.South, NINE_BAMBOO),
+        ),
         // 剛摸到北、手上還有一張北。先拔剛摸到的北，補到九萬；再拔手上的北，補到四條，可以用拔北的補牌自摸。
         SeatSetupScenario(
             id = "mahjongcraft:riichi_three_player_pull_north",

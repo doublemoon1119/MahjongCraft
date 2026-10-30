@@ -46,6 +46,7 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.ReturnToRoomUseC
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateStore
 import com.doublemoon1119.mahjongcraft.flow.server.time.MonotonicClockImpl
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
+import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledCoreExtensionRegistries
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledWinCelebrationCueResolverRegistry
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.registerBundledRuleModules
 import com.doublemoon1119.mahjongcraft.testing.flow.common.game.repository.FakeGameSnapshotRepository
@@ -91,7 +92,7 @@ internal class SimulationRuntime(defaultStrategyKey: String) {
     }
 
     /** 胡牌詳情。 */
-    private val winSettlementDetailResolverRegistry = WinSettlementDetailResolverRegistry().apply {
+    private val winSettlementDetailResolverRegistry = WinSettlementDetailResolverRegistry(bundledCoreExtensionRegistries().componentRegistry).apply {
         BundledRiichiExtension.registerWinSettlementDetailResolvers(this)
         freeze()
     }
@@ -103,7 +104,7 @@ internal class SimulationRuntime(defaultStrategyKey: String) {
     }
 
     /** 快照同步；快照只寫入測試替身。 */
-    private val snapshotSynchronizer = GameSnapshotSynchronizer(gameRepository, FakeGameSnapshotRepository(), GameVisibilityPolicyImpl(moduleRegistry))
+    private val snapshotSynchronizer = GameSnapshotSynchronizer(gameRepository, FakeGameSnapshotRepository(), GameVisibilityPolicyImpl(moduleRegistry, componentRegistry = bundledCoreExtensionRegistries().componentRegistry))
 
     /** 手牌排序偏好。 */
     private val handSortPreferenceStore = HandSortPreferenceStore()
@@ -142,13 +143,17 @@ internal class SimulationRuntime(defaultStrategyKey: String) {
                 postActionExhaustiveDrawResolverRegistry = postActionExhaustiveDrawResolverRegistry,
                 eventPublisher = eventPublisher,
                 presentationPublisher = presentationPublisher,
+
+                componentRegistry = bundledCoreExtensionRegistries().componentRegistry,
             ),
+
+            componentRegistry = bundledCoreExtensionRegistries().componentRegistry,
         ),
     )
 
     /** 把命令分派給各 use case。 */
     private val router = GameActionRouter(
-        drawTileUseCase = DrawTileUseCase(gameRepository, moduleRegistry, snapshotSynchronizer, eventPublisher, presentationPublisher),
+        drawTileUseCase = DrawTileUseCase(gameRepository, moduleRegistry, snapshotSynchronizer, eventPublisher, presentationPublisher, componentRegistry = bundledCoreExtensionRegistries().componentRegistry),
         discardTileUseCase = DiscardTileUseCase(
             gameRepository,
             moduleRegistry,
@@ -157,6 +162,8 @@ internal class SimulationRuntime(defaultStrategyKey: String) {
             postActionExhaustiveDrawResolverRegistry,
             eventPublisher,
             presentationPublisher,
+
+            componentRegistry = bundledCoreExtensionRegistries().componentRegistry,
         ),
         declareTsumoUseCase = DeclareTsumoUseCase(
             gameRepository,
@@ -167,8 +174,10 @@ internal class SimulationRuntime(defaultStrategyKey: String) {
             winPresentationHandoff,
             winCelebrationCueResolverRegistry = bundledWinCelebrationCueResolverRegistry(),
             winSettlementDetailResolverRegistry = winSettlementDetailResolverRegistry,
+
+            componentRegistry = bundledCoreExtensionRegistries().componentRegistry,
         ),
-        declareKanUseCase = DeclareKanUseCase(gameRepository, moduleRegistry, snapshotSynchronizer, eventPublisher, presentationPublisher),
+        declareKanUseCase = DeclareKanUseCase(gameRepository, moduleRegistry, snapshotSynchronizer, eventPublisher, presentationPublisher, componentRegistry = bundledCoreExtensionRegistries().componentRegistry),
         respondToDiscardUseCase = RespondToDiscardUseCase(
             gameRepository,
             moduleRegistry,
@@ -180,6 +189,8 @@ internal class SimulationRuntime(defaultStrategyKey: String) {
             winCelebrationCueResolverRegistry = bundledWinCelebrationCueResolverRegistry(),
             winSettlementDetailResolverRegistry = winSettlementDetailResolverRegistry,
             postActionExhaustiveDrawResolverRegistry = postActionExhaustiveDrawResolverRegistry,
+
+            componentRegistry = bundledCoreExtensionRegistries().componentRegistry,
         ),
         respondToRobbingUseCase = RespondToRobbingUseCase(
             gameRepository,
@@ -190,6 +201,8 @@ internal class SimulationRuntime(defaultStrategyKey: String) {
             winPresentationHandoff,
             winCelebrationCueResolverRegistry = bundledWinCelebrationCueResolverRegistry(),
             winSettlementDetailResolverRegistry = winSettlementDetailResolverRegistry,
+
+            componentRegistry = bundledCoreExtensionRegistries().componentRegistry,
         ),
         declareAbortiveDrawUseCase = DeclareAbortiveDrawUseCase(gameRepository, moduleRegistry, snapshotSynchronizer, eventPublisher),
         extensionCommandExecutor = extensionCommandExecutor,
@@ -233,6 +246,7 @@ internal class SimulationRuntime(defaultStrategyKey: String) {
             handSortPreferenceStore,
             eventPublisher,
             presentationPublisher,
+            componentRegistry = bundledCoreExtensionRegistries().componentRegistry,
         ),
         returnToRoomUseCase = ReturnToRoomUseCase(
             AuthoritativeStateStore(),
@@ -244,7 +258,7 @@ internal class SimulationRuntime(defaultStrategyKey: String) {
             gameRepository,
             GetLegalActionsUseCase(gameRepository, moduleRegistry),
             aiStrategyRegistry,
-            GameVisibilityPolicyImpl(moduleRegistry),
+            GameVisibilityPolicyImpl(moduleRegistry, componentRegistry = bundledCoreExtensionRegistries().componentRegistry),
             moduleRegistry,
             AiDecisionExecutor.direct(failurePolicy = ExtensionFailurePolicy.Default),
             AutomaticGameCommandResolver(moduleRegistry),

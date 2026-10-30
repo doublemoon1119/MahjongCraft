@@ -13,12 +13,11 @@ import com.doublemoon1119.mahjongcraft.logic.judgment.LegalActionContext
 import com.doublemoon1119.mahjongcraft.logic.judgment.LegalActionValidator
 import com.doublemoon1119.mahjongcraft.logic.judgment.ShantenResult
 import com.doublemoon1119.mahjongcraft.logic.judgment.TileSelectionRequirement
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.riichiCanonical
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.RiichiTileComponents
 import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayer
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.logic.util.isHonor
 import com.doublemoon1119.mahjongcraft.logic.util.isTerminal
-import com.doublemoon1119.mahjongcraft.logic.util.preferPlainTiles
 
 /**
  * 日本麻將規則的合法動作判定器。
@@ -82,8 +81,8 @@ class RiichiLegalActionValidator(
         val legalActions = mutableListOf<GameAction>()
         val hand = player.hand
         val isMenzen = hand.exposedMelds.isEmpty() || hand.exposedMelds.all { it.type == MeldType.CLOSED_KAN }
-        val riichiState = player.playerRuleState as? RiichiPlayerState
-        val isRiichi = riichiState?.isRiichi == true
+        val riichiState = player.riichiDeclaration
+        val isRiichi = riichiState != null
 
         // 全場槓子數上限（明槓/暗槓/加槓皆算）固定 4 次，不論這 4 次是不是同一位玩家達成——「同一位
         // 玩家獨得全部 4 槓」只是不觸發 resolveSuukanNagare 流局判定（見該函式 KDoc，可能正在嘗試
@@ -128,8 +127,8 @@ class RiichiLegalActionValidator(
             return legalActions
         }
 
-        // 取得進牌的基礎類型（忽略赤寶牌屬性）
-        val incomingBaseTile = incomingTile.tile.riichiCanonical
+        // 進牌的基本牌面；赤五的基本牌面就是普通五
+        val incomingBaseTile = incomingTile.tile
 
         // 處理有 incomingTile 的情況
         if (sourceDirection == RelativeDirection.Self) {
@@ -151,7 +150,7 @@ class RiichiLegalActionValidator(
             // 2. 檢查是否可以加槓 (Added Kan)——牌山剩 1 張以下時不能加槓
             if (canDeclareAnotherKan && wallAllowsKan) {
                 player.hand.exposedMelds.forEach { meld ->
-                    if (meld.type == MeldType.PON && meld.tiles.first().tile.riichiCanonical == incomingBaseTile) {
+                    if (meld.type == MeldType.PON && meld.tiles.first().tile == incomingBaseTile) {
                         legalActions.add(GameAction.Kan(GameAction.KanType.ADDED_KAN, incomingTile.id, emptyList()))
                     }
                 }
@@ -163,7 +162,7 @@ class RiichiLegalActionValidator(
             // - 每種等待的所有和牌拆法中，槓牌都只能作為刻子。
             if (canDeclareAnotherKan && wallAllowsKan) {
                 val closedKanCandidates = handWithIncoming.standingTiles
-                    .groupBy { it.tile.riichiCanonical }
+                    .groupBy { it.tile }
                     .values
                     .filter { it.size == 4 }
                 closedKanCandidates.forEach { candidate ->
@@ -192,7 +191,7 @@ class RiichiLegalActionValidator(
                 val canPull = if (isRiichi) {
                     incomingBaseTile == Tile.Honor.North
                 } else {
-                    handWithIncoming.standingTiles.any { it.tile.riichiCanonical == Tile.Honor.North }
+                    handWithIncoming.standingTiles.any { it.tile == Tile.Honor.North }
                 }
                 if (canPull) legalActions.add(PULL_NORTH_GAME_ACTION)
             }
@@ -201,7 +200,7 @@ class RiichiLegalActionValidator(
             if (tableState.isFirstGoAround(player)) {
                 val isKyuushuKyuuhai = handWithIncoming.standingTiles
                     .filter { it.tile.isTerminal || it.tile.isHonor } // 過濾么九牌
-                    .map { it.tile.riichiCanonical }
+                    .map { it.tile }
                     .toSet().size >= 9
                 if (isKyuushuKyuuhai) {
                     legalActions.add(GameAction.ExhaustiveDraw(RiichiExhaustiveDrawReason.KyuushuKyuuhai))
@@ -222,17 +221,14 @@ class RiichiLegalActionValidator(
                     ),
                 )
 
-                val isFuriten = if (riichiState?.isPermanentlyFuriten == true) {
+                val isFuriten = if (player.components[RiichiPlayerComponents.PERMANENT_FURITEN] != null) {
                     // 立直後放過和牌機會即永久振聽，本局結束前恆為振聽，不需要再比對聽牌面或
                     // passedTilesInRound——那些之後可能因為摸牌清空，但永久振聽不受影響。
                     true
                 } else if (currentHandResult is ShantenResult.Tenpai) {
-                    val furitenTiles = riichiState?.getFuritenTiles(
-                        discardPile = player.discardPile,
-                        passedTilesInRound = player.passedTilesInRound,
-                    ) ?: emptySet()
+                    val furitenTiles = player.riichiFuritenTiles()
 
-                    currentHandResult.winningTiles.any { it.riichiCanonical in furitenTiles }
+                    currentHandResult.winningTiles.any { it in furitenTiles }
                 } else {
                     // 手牌原本未聽牌，不可能是振聽
                     false
@@ -255,17 +251,16 @@ class RiichiLegalActionValidator(
 
             // 2. 檢查是否可以碰 (Pon)
             // 立直後不能碰、河底牌不能碰
-            // 赤五與普通五視為同一張牌，故使用日麻標準牌比較
             // 放過碰之後同巡仍然可以碰：日麻沒有過水碰的限制，放過清單只用於同巡振聽（見 Ron 的判定）
-            val matchingForPon = player.hand.standingTiles.filter { it.tile.riichiCanonical == incomingBaseTile }
+            val matchingForPon = player.hand.standingTiles.filter { it.tile == incomingBaseTile }
             if (matchingForPon.size >= 2 && !isRiichi && wallHasMoreTiles) {
-                // 優先用一般牌組成刻子，赤五只在數量不足時才會被選中，讓玩家自然保留手上的赤寶牌。
-                legalActions.add(GameAction.Pon(incomingTile.id, matchingForPon.preferPlainTiles(2).map { it.id }))
+                // 優先用普通五組成刻子，赤五只在數量不足時才會被選中，讓玩家自然保留手上的赤寶牌。
+                val ponTiles = matchingForPon.sortedBy { it.components[RiichiTileComponents.RED_DORA] != null }.take(2)
+                legalActions.add(GameAction.Pon(incomingTile.id, ponTiles.map { it.id }))
             }
 
             // 3. 檢查是否可以吃 (Chi)
             // 立直後不能吃、河底牌不能吃
-            // 吃不受赤五外觀影響，必須使用日麻標準牌判斷數值與花色
             val incomingNumeric = incomingBaseTile as? Tile.Numeric
             if (allowsChi && sourceDirection == RelativeDirection.Left && incomingNumeric != null && !isRiichi && wallHasMoreTiles) {
                 val iTile = incomingNumeric
@@ -275,8 +270,8 @@ class RiichiLegalActionValidator(
                 if (iTile.value > 2) {
                     val t1 = Tile.Numeric(iTile.suit, iTile.value - 1)
                     val t2 = Tile.Numeric(iTile.suit, iTile.value - 2)
-                    val id1 = handTiles.find { it.tile.riichiCanonical == t1 }?.id
-                    val id2 = handTiles.find { it.tile.riichiCanonical == t2 }?.id
+                    val id1 = handTiles.find { it.tile == t1 }?.id
+                    val id2 = handTiles.find { it.tile == t2 }?.id
                     if (id1 != null && id2 != null) {
                         legalActions.add(GameAction.Chi(incomingTile.id, listOf(id1, id2)))
                     }
@@ -286,8 +281,8 @@ class RiichiLegalActionValidator(
                 if (iTile.value in 2..<9) {
                     val t1 = Tile.Numeric(iTile.suit, iTile.value - 1)
                     val t2 = Tile.Numeric(iTile.suit, iTile.value + 1)
-                    val id1 = handTiles.find { it.tile.riichiCanonical == t1 }?.id
-                    val id2 = handTiles.find { it.tile.riichiCanonical == t2 }?.id
+                    val id1 = handTiles.find { it.tile == t1 }?.id
+                    val id2 = handTiles.find { it.tile == t2 }?.id
                     if (id1 != null && id2 != null) {
                         legalActions.add(GameAction.Chi(incomingTile.id, listOf(id1, id2)))
                     }
@@ -297,8 +292,8 @@ class RiichiLegalActionValidator(
                 if (iTile.value < 8) {
                     val t1 = Tile.Numeric(iTile.suit, iTile.value + 1)
                     val t2 = Tile.Numeric(iTile.suit, iTile.value + 2)
-                    val id1 = handTiles.find { it.tile.riichiCanonical == t1 }?.id
-                    val id2 = handTiles.find { it.tile.riichiCanonical == t2 }?.id
+                    val id1 = handTiles.find { it.tile == t1 }?.id
+                    val id2 = handTiles.find { it.tile == t2 }?.id
                     if (id1 != null && id2 != null) {
                         legalActions.add(GameAction.Chi(incomingTile.id, listOf(id1, id2)))
                     }
@@ -307,11 +302,10 @@ class RiichiLegalActionValidator(
 
             // 4. 檢查是否可以大明槓 (Open Kan)
             // 立直後不能明槓、牌山剩 1 張以下時不能明槓
-            // 赤五與普通五視為同一張牌，故使用日麻標準牌比較
-            val openKanCount = player.hand.standingTiles.count { it.tile.riichiCanonical == incomingBaseTile }
+            val openKanCount = player.hand.standingTiles.count { it.tile == incomingBaseTile }
             if (canDeclareAnotherKan && wallAllowsKan && openKanCount == 3 && !isRiichi) {
                 val withTiles =
-                    player.hand.standingTiles.filter { it.tile.riichiCanonical == incomingBaseTile }.map { it.id }
+                    player.hand.standingTiles.filter { it.tile == incomingBaseTile }.map { it.id }
                 legalActions.add(GameAction.Kan(GameAction.KanType.OPEN_KAN, incomingTile.id, withTiles))
             }
         }
@@ -328,11 +322,11 @@ class RiichiLegalActionValidator(
      * 判定本局拔北補牌次數是否尚未用完。
      *
      * @param tableState 目前桌況。
-     * @return 存在立直動態狀態且拔北補牌次數小於四時為 true。
+     * @return 存在牌山進度且拔北補牌次數小於四時為 true。
      */
     private fun canPullAnotherNorth(tableState: TableState): Boolean {
-        val dynamicState = tableState.dynamicRuleState as? RiichiDynamicState ?: return false
-        return dynamicState.completedNorthDrawCount < RiichiSupplementalDrawPolicy.MAX_SUPPLEMENTAL_DRAWS
+        val wallProgress = tableState.components[RiichiTableComponents.WALL_PROGRESS] ?: return false
+        return wallProgress.completedNorthDrawCount < RiichiSupplementalDrawPolicy.MAX_SUPPLEMENTAL_DRAWS
     }
 
     /**
@@ -444,7 +438,7 @@ class RiichiLegalActionValidator(
         incomingTile: IdentifiedTile,
         revealsClosedKanTiles: Boolean,
     ): Boolean {
-        val incomingBaseTile = incomingTile.tile.riichiCanonical
+        val incomingBaseTile = incomingTile.tile
 
         // 取得暗槓前的聽牌列表
         val currentHand = Hand(
@@ -458,7 +452,7 @@ class RiichiLegalActionValidator(
             return false
         }
 
-        val winningTilesBefore = beforeKanResult.winningTiles.map { it.riichiCanonical }.toSet()
+        val winningTilesBefore = beforeKanResult.winningTiles.toSet()
         if (!RiichiClosedKanStructure.preservesTriplet(
                 standingTiles = player.hand.standingTiles.map { it.tile },
                 winningTiles = winningTilesBefore,
@@ -470,9 +464,9 @@ class RiichiLegalActionValidator(
         }
 
         // 暗槓模擬：將手牌中 3 張相同的牌移至副露區，再加上摸到的牌湊成 4 張牌
-        val tilesToKan = player.hand.standingTiles.filter { it.tile.riichiCanonical == incomingBaseTile }.toMutableList()
+        val tilesToKan = player.hand.standingTiles.filter { it.tile == incomingBaseTile }.toMutableList()
         tilesToKan.add(incomingTile)
-        val remainingTiles = player.hand.standingTiles.filter { it.tile.riichiCanonical != incomingBaseTile }
+        val remainingTiles = player.hand.standingTiles.filter { it.tile != incomingBaseTile }
 
         // 建立暗槓的 Meld
         val closedKanMeld = Meld(
@@ -496,7 +490,7 @@ class RiichiLegalActionValidator(
             return false
         }
 
-        val winningTilesAfter = afterKanResult.winningTiles.map { it.riichiCanonical }.toSet()
+        val winningTilesAfter = afterKanResult.winningTiles.toSet()
 
         // 比較兩者的聽牌列表是否完全相同
         return winningTilesBefore == winningTilesAfter

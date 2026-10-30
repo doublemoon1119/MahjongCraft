@@ -16,6 +16,8 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepositor
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameSnapshotSynchronizer
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.HandSortPreferenceStore
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
+import com.doublemoon1119.mahjongcraft.logic.component.ComponentRegistry
+import com.doublemoon1119.mahjongcraft.logic.component.initializeRuleComponents
 import com.doublemoon1119.mahjongcraft.logic.config.dealBatchSizes
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import com.doublemoon1119.mahjongcraft.logic.module.SettlementExtrasOccasion
@@ -23,9 +25,9 @@ import com.doublemoon1119.mahjongcraft.logic.table.GameInitializer
 import com.doublemoon1119.mahjongcraft.logic.table.MatchProgressionContext
 import com.doublemoon1119.mahjongcraft.logic.table.MatchProgressionDecision
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
-import com.doublemoon1119.mahjongcraft.logic.table.TileWallRevealable
 import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPhysicalLayout
 import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPosition
+import com.doublemoon1119.mahjongcraft.logic.tile.component.publicFaceUpWallTileIds
 import kotlin.uuid.Uuid
 
 /**
@@ -49,6 +51,7 @@ import kotlin.uuid.Uuid
  * @property handSortPreferenceStore 查詢玩家是否啟用自動整理手牌，見該類別 KDoc。
  * @property eventPublisher 對局通知服務。
  * @property presentationPublisher 對局 in-process 呈現觸發器。
+ * @property componentRegistry 正式開局與換局使用的組件建立及保留規格。
  * @property beginRuleDecisionUseCase 新局發牌後啟動規則選擇步驟的 use case；未注入時略過。
  * @property failurePolicy 判斷規則失敗能否回報為無法推進；取消與致命錯誤不得轉成一般錯誤。
  */
@@ -59,6 +62,7 @@ class AdvanceRoundUseCase(
     private val handSortPreferenceStore: HandSortPreferenceStore,
     private val eventPublisher: GameEventPublisher,
     private val presentationPublisher: GamePresentationPublisher,
+    private val componentRegistry: ComponentRegistry,
     private val beginRuleDecisionUseCase: BeginRuleDecisionUseCase? = null,
     private val failurePolicy: ExtensionFailurePolicy = ExtensionFailurePolicy.Default,
 ) {
@@ -138,7 +142,7 @@ class AdvanceRoundUseCase(
                             players = state.players.map { player ->
                                 extras.scoreDeltas[player.id]?.let { delta -> player.copy(score = player.score + delta) } ?: player
                             },
-                            dynamicRuleState = extras.dynamicRuleState,
+                            components = extras.components,
                         )
                         val advanceOutcome = AdvanceRoundOutcome(
                             result = AdvanceRoundResult(finalState, isMatchOver = true),
@@ -169,8 +173,11 @@ class AdvanceRoundUseCase(
                         val initializationResult = GameInitializer.startNextRound(
                             gameId = gameId,
                             roundAdvancement = roundAdvancement,
-                            previousDynamicRuleState = state.dynamicRuleState,
                             module = module,
+                        ).initializeRuleComponents(
+                            ruleModuleId = module.id,
+                            registry = componentRegistry,
+                            previousTableState = state,
                         )
                         val dealtState = initializationResult.tableState
                         // 發牌順序（哪張牌在哪一批發出），只提供給呈現使用，不是實際寫回權威狀態的手牌
@@ -258,7 +265,7 @@ class AdvanceRoundUseCase(
         advanceOutcome.initialPhysicalWallLayout?.let { layout ->
             val deadWallTileIds = newState.reservedWallTiles.map { tile -> tile.id }.toSet()
             val openingDiceCounts = newState.openingDiceRolls.map { it.dice.values.size }
-            val revealedTileIds = (newState.dynamicRuleState as? TileWallRevealable)?.getVisibleTileIds(newState) ?: emptySet()
+            val revealedTileIds = moduleRegistry.getModule(newState.config).publicFaceUpWallTileIds(newState, componentRegistry)
             presentationPublisher.publishWallStructure(
                 gameId,
                 requireNotNull(advanceOutcome.wallStructure),

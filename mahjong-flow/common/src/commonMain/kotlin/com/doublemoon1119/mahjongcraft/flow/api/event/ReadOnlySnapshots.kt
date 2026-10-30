@@ -39,3 +39,28 @@ internal class ReadOnlySetSnapshot<T>(elements: Iterable<T>) : AbstractSet<T>() 
         }
     }
 }
+
+/**
+ * 複製來源並只暴露不可修改的鍵值項目。
+ *
+ * @param K 鍵型別。
+ * @param V 值型別。
+ * @param source 要複製的映射。
+ */
+internal class ReadOnlyMapSnapshot<K, V>(source: Map<K, V>) : AbstractMap<K, V>() {
+    override val entries: Set<Map.Entry<K, V>> = ReadOnlySetSnapshot(
+        source.map { (entryKey, entryValue) ->
+            object : Map.Entry<K, V> {
+                override val key: K = entryKey
+
+                override val value: V = entryValue
+
+                override fun equals(other: Any?): Boolean = other is Map.Entry<*, *> && key == other.key && value == other.value
+
+                override fun hashCode(): Int = (key?.hashCode() ?: 0) xor (value?.hashCode() ?: 0)
+
+                override fun toString(): String = "$key=$value"
+            }
+        },
+    )
+}

@@ -8,7 +8,7 @@ import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.module.AutomaticControlAction
 import com.doublemoon1119.mahjongcraft.logic.module.AutomaticControlContext
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
-import com.doublemoon1119.mahjongcraft.logic.table.visibleTiles
+import com.doublemoon1119.mahjongcraft.logic.table.visibleTilesOutsideDrawPool
 import kotlin.uuid.Uuid
 
 /**
@@ -37,7 +37,7 @@ class AutomaticDecisionEvaluator(
         val options = PlayerDecisionOptionsResolver.resolve(
             state = state,
             player = player,
-            visibleTiles = visibilityPolicy.snapshotFor(game, playerId).visibleTiles(),
+            visibleTiles = visibilityPolicy.snapshotFor(game, playerId).visibleTilesOutsideDrawPool(module.createTileInterpretationPolicy()),
             moduleRegistry = moduleRegistry,
             actionContextResolver = actionContextResolver,
         )

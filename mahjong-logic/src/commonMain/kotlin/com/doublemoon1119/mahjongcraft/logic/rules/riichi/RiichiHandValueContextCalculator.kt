@@ -3,6 +3,7 @@ package com.doublemoon1119.mahjongcraft.logic.rules.riichi
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
+import com.doublemoon1119.mahjongcraft.logic.base.toValue
 import com.doublemoon1119.mahjongcraft.logic.judgment.HandValueContextCalculator
 import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayer
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
@@ -42,7 +43,7 @@ class RiichiHandValueContextCalculator(
     override fun calculate(input: Input): RiichiHandValueContext {
         val (tableState, player, incomingTile, isTsumo, isRobbingKan) = input
         val hand = player.hand
-        val riichiState = player.playerRuleState as? RiichiPlayerState ?: RiichiPlayerState()
+        val declaration = player.riichiDeclaration
         val actionHistory = player.actionHistory
         val discarder = if (isTsumo || isRobbingKan) null else discarderOf(tableState = tableState, winner = player, incomingTile = incomingTile)
 
@@ -66,9 +67,9 @@ class RiichiHandValueContextCalculator(
         val doraIndicators: List<Tile>
         val uraDoraIndicators: List<Tile>
 
-        val riichiDynamicState = tableState.dynamicRuleState as? RiichiDynamicState
-        if (riichiDynamicState != null) {
-            val indicators = riichiDynamicState.getDoraIndicators(tableState)
+        val wallProgress = tableState.components[RiichiTableComponents.WALL_PROGRESS]
+        if (wallProgress != null) {
+            val indicators = wallProgress.getDoraIndicators(tableState)
             doraIndicators = indicators.first.map { it.tile }
             uraDoraIndicators = indicators.second.map { it.tile }
         } else {
@@ -78,17 +79,19 @@ class RiichiHandValueContextCalculator(
 
         return RiichiHandValueContext.forPlayer(
             config = config,
-            riichiState = riichiState,
+            declaration = declaration,
             hand = hand,
-            winningTile = incomingTile.tile,
+            winningTile = incomingTile.toValue(),
             isTsumo = isTsumo,
             roundWind = tableState.prevalentWind,
             seatWind = player.seatWind,
             isDealer = tableState.isDealer(player.id),
             doraIndicators = doraIndicators,
+            paoLiability = player.components[RiichiPlayerComponents.PAO_LIABILITY],
+            nukiDoraTiles = player.tileAreas[RiichiPlayerTileAreaIds.NORTH]?.tiles.orEmpty().map { it.tile },
         ).copy(
-            isIppatsu = riichiState.isIppatsu,
-            uraDoraIndicators = if (riichiState.isRiichi) uraDoraIndicators else emptyList(),
+            isIppatsu = declaration?.isIppatsu == true,
+            uraDoraIndicators = if (declaration != null) uraDoraIndicators else emptyList(),
             isLastDraw = isLastDraw,
             isLastDiscard = isLastDiscard,
             isRobbingKan = isRobbingKan,
@@ -136,8 +139,8 @@ class RiichiHandValueContextCalculator(
      * @return 放銃者最後一張捨牌就是這張牌，且標記為立直宣言牌時為 true。
      */
     private fun isRiichiDeclarationDiscard(discarder: MahjongPlayer, incomingTile: IdentifiedTile): Boolean {
-        val last = discarder.discardPile.entries.lastOrNull() as? RiichiDiscardEntry ?: return false
-        return last.isRiichi && last.tile.id == incomingTile.id
+        val last = discarder.discardPile.entries.lastOrNull() ?: return false
+        return last.isRiichiDeclaration && last.tile.id == incomingTile.id
     }
 
     /**

@@ -21,12 +21,13 @@ import com.doublemoon1119.mahjongcraft.logic.module.AutomaticControlResult
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleDefinition
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPlayerState
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleModule
 import com.doublemoon1119.mahjongcraft.logic.table.PendingReaction
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
+import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledCoreExtensionRegistries
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeIdentifiedTileFactory
+import com.doublemoon1119.mahjongcraft.testing.logic.rules.riichi.riichiDeclarationComponents
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeDiscardPile
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
@@ -72,7 +73,7 @@ class ExtensionAutomaticControlTest {
         val contextResolver = PlayerActionContextResolver()
         val driver = AutomaticDecisionDriver(
             repository,
-            AutomaticDecisionEvaluator(extensionModuleRegistry(), GameVisibilityPolicyImpl(extensionModuleRegistry()), contextResolver),
+            AutomaticDecisionEvaluator(extensionModuleRegistry(), GameVisibilityPolicyImpl(extensionModuleRegistry(), componentRegistry = bundledCoreExtensionRegistries().componentRegistry), contextResolver),
             GameActionCommandMapper(ExtensionGameActionCommandFactoryRegistry()),
             contextResolver,
         )
@@ -94,7 +95,7 @@ class ExtensionAutomaticControlTest {
         val discarder = FakeMahjongPlayerFactory.create(discardPile = FakeDiscardPile().discardTile(discarded))
         val respondent = FakeMahjongPlayerFactory.create(
             hand = Hand(tiles = List(2) { FakeIdentifiedTileFactory.create(Tile.Honor.South) }),
-            playerRuleState = RiichiPlayerState(),
+            components = riichiDeclarationComponents(),
         )
         val state: TableState = FakeTableStateFactory.create(
             players = listOf(discarder, respondent),

@@ -13,11 +13,11 @@ import com.doublemoon1119.mahjongcraft.logic.base.Hand
 import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPlayerState
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.table.PendingReaction
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.registerBundledRuleModules
+import com.doublemoon1119.mahjongcraft.testing.logic.rules.riichi.riichiDeclarationComponents
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeDiscardPile
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
@@ -57,7 +57,7 @@ class ForcedAutoPlayDriverTest {
                         id = playerId,
                         initialSeat = Wind.SOUTH,
                         hand = Hand(tiles = List(2) { IdentifiedTile(Uuid.random(), Tile.Honor.Red) }),
-                        playerRuleState = RiichiPlayerState(),
+                        components = riichiDeclarationComponents(),
                     ),
                 ),
                 pendingReaction = PendingReaction(
@@ -92,7 +92,7 @@ class ForcedAutoPlayDriverTest {
                     FakeMahjongPlayerFactory.create(
                         id = playerId,
                         hand = Hand(lastDrawn = lastDrawn),
-                        playerRuleState = RiichiPlayerState(),
+                        components = riichiDeclarationComponents(),
                     ),
                 ),
             ),
@@ -150,13 +150,13 @@ class ForcedAutoPlayDriverTest {
                 discardPile = FakeDiscardPile().discardTile(
                     IdentifiedTile(Uuid.random(), Tile.Honor.South),
                 ),
-                playerRuleState = RiichiPlayerState(),
+                components = riichiDeclarationComponents(),
             ),
             FakeMahjongPlayerFactory.create(
                 id = reactorId,
                 initialSeat = Wind.SOUTH,
                 hand = Hand(tiles = List(2) { IdentifiedTile(Uuid.random(), Tile.Honor.South) }),
-                playerRuleState = RiichiPlayerState(),
+                components = riichiDeclarationComponents(),
             ),
             FakeMahjongPlayerFactory.create(id = bystanderId, initialSeat = Wind.WEST),
         )

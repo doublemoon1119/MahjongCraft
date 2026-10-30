@@ -2,7 +2,6 @@ package com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.dora
 
 import com.doublemoon1119.mahjongcraft.logic.base.Hand
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.riichiCanonical
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.YakuResult
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.YakuType
 
@@ -34,7 +33,7 @@ fun calculateDora(
 
     val doraCount = doraIndicators.sumOf { indicator ->
         val doraTile = getNextDora(indicator, usesThreePlayerTiles)
-        allTiles.count { it.riichiCanonical == doraTile }
+        allTiles.count { it == doraTile }
     }
 
     return YakuResult.han(YakuType.Dora, doraCount)
@@ -49,14 +48,14 @@ fun calculateDora(
  * @param usesThreePlayerTiles 是否使用沒有二～八萬的三人麻將牌組。
  * @return 對應的寶牌。
  */
-internal fun getNextDora(indicator: Tile, usesThreePlayerTiles: Boolean = false): Tile = when (val canonicalIndicator = indicator.riichiCanonical) {
+internal fun getNextDora(indicator: Tile, usesThreePlayerTiles: Boolean = false): Tile = when (indicator) {
     // 三人麻將的萬子只有一萬與九萬
-    is Tile.Numeric if usesThreePlayerTiles && canonicalIndicator.suit == Tile.Suit.Character ->
-        Tile.Numeric(Tile.Suit.Character, if (canonicalIndicator.value == 1) 9 else 1)
+    is Tile.Numeric if usesThreePlayerTiles && indicator.suit == Tile.Suit.Character ->
+        Tile.Numeric(Tile.Suit.Character, if (indicator.value == 1) 9 else 1)
     // 數牌：循環 1-9
     is Tile.Numeric -> {
-        val nextValue = if (canonicalIndicator.value == 9) 1 else canonicalIndicator.value + 1
-        Tile.Numeric(canonicalIndicator.suit, nextValue)
+        val nextValue = if (indicator.value == 9) 1 else indicator.value + 1
+        Tile.Numeric(indicator.suit, nextValue)
     }
     // 字牌：東→南→西→北→東（循環）
     is Tile.Honor.East -> Tile.Honor.South
@@ -68,5 +67,5 @@ internal fun getNextDora(indicator: Tile, usesThreePlayerTiles: Boolean = false)
     is Tile.Honor.Green -> Tile.Honor.Red
     is Tile.Honor.Red -> Tile.Honor.White
     // 未由日麻規則明確定義的擴充牌不作為寶牌指示牌
-    is Tile.Extension -> canonicalIndicator
+    is Tile.Extension -> indicator
 }

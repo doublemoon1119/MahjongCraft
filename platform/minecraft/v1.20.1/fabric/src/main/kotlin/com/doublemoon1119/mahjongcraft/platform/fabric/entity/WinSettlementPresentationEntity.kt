@@ -271,16 +271,16 @@ class WinSettlementPresentationEntity(
      * @param nbt 儲存此實體資料的 NBT 複合標籤。
      */
     override fun readCustomDataFromNbt(nbt: NbtCompound) {
-        dataTracker.set(TABLE_ID, nbt.getString("ManagedTableId"))
-        dataTracker.set(START_GAME_TIME, nbt.getLong("StartGameTime"))
-        dataTracker.set(END_GAME_TIME, nbt.getLong("EndGameTime"))
-        dataTracker.set(OUTCOME_ID, nbt.getString("OutcomeId"))
-        dataTracker.set(TEMPLATE_KEY, nbt.getString("TemplateKey"))
-        dataTracker.set(IS_TSUMO, nbt.getBoolean("IsTsumo"))
-        dataTracker.set(WINNERS, nbt.getString("Winners"))
-        dataTracker.set(RANKINGS, nbt.getString("Rankings"))
-        dataTracker.set(REVEAL_TIMING, nbt.getString("RevealTiming"))
-        dataTracker.set(CUSTOM_SOUND_CUES, nbt.getString("CustomSoundCues"))
+        dataTracker.set(TABLE_ID, ManagedTableNbt.read(nbt)?.toString().orEmpty())
+        dataTracker.set(START_GAME_TIME, nbt.getLong(NBT_KEY_START_GAME_TIME))
+        dataTracker.set(END_GAME_TIME, nbt.getLong(NBT_KEY_END_GAME_TIME))
+        dataTracker.set(OUTCOME_ID, nbt.getString(NBT_KEY_OUTCOME_ID))
+        dataTracker.set(TEMPLATE_KEY, nbt.getString(NBT_KEY_TEMPLATE_KEY))
+        dataTracker.set(IS_TSUMO, nbt.getBoolean(NBT_KEY_IS_TSUMO))
+        dataTracker.set(WINNERS, nbt.getString(NBT_KEY_WINNERS))
+        dataTracker.set(RANKINGS, nbt.getString(NBT_KEY_RANKINGS))
+        dataTracker.set(REVEAL_TIMING, nbt.getString(NBT_KEY_REVEAL_TIMING))
+        dataTracker.set(CUSTOM_SOUND_CUES, nbt.getString(NBT_KEY_CUSTOM_SOUND_CUES))
         readAnimationQueueFromNbt(nbt)
     }
 
@@ -290,20 +290,47 @@ class WinSettlementPresentationEntity(
      * @param nbt 接收此實體資料的 NBT 複合標籤。
      */
     override fun writeCustomDataToNbt(nbt: NbtCompound) {
-        nbt.putString("ManagedTableId", managedTableId?.toString().orEmpty())
-        nbt.putLong("StartGameTime", startGameTime)
-        nbt.putLong("EndGameTime", endGameTime)
-        nbt.putString("OutcomeId", outcomeId)
-        nbt.putString("TemplateKey", templateKey)
-        nbt.putBoolean("IsTsumo", isTsumo)
-        nbt.putString("Winners", dataTracker[WINNERS])
-        nbt.putString("Rankings", dataTracker[RANKINGS])
-        nbt.putString("RevealTiming", dataTracker[REVEAL_TIMING])
-        nbt.putString("CustomSoundCues", dataTracker[CUSTOM_SOUND_CUES])
+        ManagedTableNbt.write(nbt, managedTableId)
+        nbt.putLong(NBT_KEY_START_GAME_TIME, startGameTime)
+        nbt.putLong(NBT_KEY_END_GAME_TIME, endGameTime)
+        nbt.putString(NBT_KEY_OUTCOME_ID, outcomeId)
+        nbt.putString(NBT_KEY_TEMPLATE_KEY, templateKey)
+        nbt.putBoolean(NBT_KEY_IS_TSUMO, isTsumo)
+        nbt.putString(NBT_KEY_WINNERS, dataTracker[WINNERS])
+        nbt.putString(NBT_KEY_RANKINGS, dataTracker[RANKINGS])
+        nbt.putString(NBT_KEY_REVEAL_TIMING, dataTracker[REVEAL_TIMING])
+        nbt.putString(NBT_KEY_CUSTOM_SOUND_CUES, dataTracker[CUSTOM_SOUND_CUES])
         writeAnimationQueueToNbt(nbt)
     }
 
     companion object {
+        /** 已編碼的規則音效時序的固定保存鍵。 */
+        private const val NBT_KEY_CUSTOM_SOUND_CUES = "CustomSoundCues"
+
+        /** 結算舞台結束時間的固定保存鍵。 */
+        private const val NBT_KEY_END_GAME_TIME = "EndGameTime"
+
+        /** 是否為自摸的固定保存鍵。 */
+        private const val NBT_KEY_IS_TSUMO = "IsTsumo"
+
+        /** 本局結果識別碼的固定保存鍵。 */
+        private const val NBT_KEY_OUTCOME_ID = "OutcomeId"
+
+        /** 已編碼的排行榜資料的固定保存鍵。 */
+        private const val NBT_KEY_RANKINGS = "Rankings"
+
+        /** 已編碼的揭示時序的固定保存鍵。 */
+        private const val NBT_KEY_REVEAL_TIMING = "RevealTiming"
+
+        /** 結算舞台開始時間的固定保存鍵。 */
+        private const val NBT_KEY_START_GAME_TIME = "StartGameTime"
+
+        /** 結算模板識別碼的固定保存鍵。 */
+        private const val NBT_KEY_TEMPLATE_KEY = "TemplateKey"
+
+        /** 已編碼的和牌者資料的固定保存鍵。 */
+        private const val NBT_KEY_WINNERS = "Winners"
+
         /** 結算舞台的非零寬度。 */
         const val WIDTH = 6f
 

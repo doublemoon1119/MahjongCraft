@@ -9,6 +9,7 @@ import com.doublemoon1119.mahjongcraft.flow.persistence.format.state.Authoritati
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateSnapshot
 import com.doublemoon1119.mahjongcraft.logic.config.MahjongRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
+import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledComponentValidator
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledPersistenceRegistries
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.Json
@@ -27,7 +28,7 @@ import kotlin.uuid.Uuid
 /** 驗證 Minecraft NBT adapter 以位元組陣列保存 codec JSON，並維持每個世界各自的 snapshot。 */
 class MahjongAuthoritativePersistentStateTest {
     /** 使用所有內建 mapper 的待測 codec。 */
-    private val codec = AuthoritativeStatePersistenceCodec(bundledPersistenceRegistries())
+    private val codec = AuthoritativeStatePersistenceCodec(bundledPersistenceRegistries(), componentValidator = bundledComponentValidator())
 
     /** 既有 NBT 缺少 payload 時不得偽裝成新世界，空狀態只能由 create 建立。 */
     @Test
@@ -132,7 +133,7 @@ class MahjongAuthoritativePersistentStateTest {
         val registriesWithoutRules = bundledPersistenceRegistries().copy(
             ruleConfigs = PersistenceDtoRegistry<MahjongRuleConfig>(),
         )
-        val codecWithoutRules = AuthoritativeStatePersistenceCodec(registriesWithoutRules)
+        val codecWithoutRules = AuthoritativeStatePersistenceCodec(registriesWithoutRules, componentValidator = bundledComponentValidator())
         val nbt = NbtCompound().apply { putByteArray(MahjongAuthoritativePersistentState.NBT_KEY_STATE, encoded.encodeToByteArray()) }
 
         assertFailsWith<IllegalStateException> {

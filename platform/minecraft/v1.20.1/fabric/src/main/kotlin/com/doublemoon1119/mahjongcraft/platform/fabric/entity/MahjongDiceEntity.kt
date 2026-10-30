@@ -104,16 +104,14 @@ class MahjongDiceEntity(
 
     /**
      * 啟動一次已由伺服器決定結果的投擲動畫；[startDelayTicks] 是這次投擲該延遲多久才真正開始播放
-     * （例如等牌牆掉落動畫播完），以動畫佇列的 [AnimationStep.WaitUntil] 表達，不再需要呼叫端另外用
-     * `FabricTickMonotonicClock.scheduleAfter` 延遲呼叫這個方法本身——這個延遲本身現在會持久化，
-     * 撐得過伺服器重啟，理由見 [AnimatedMahjongEntity] KDoc。
+     * （例如等牌牆掉落動畫播完），以動畫佇列的 [AnimationStep.WaitUntil] 表達，呼叫端不另外延遲呼叫這個
+     * 方法；這段延遲隨佇列持久化，撐得過伺服器重啟，理由見 [AnimatedMahjongEntity] KDoc。
      * [sharedViewingEndGameTime] 可讓同一次投擲中不同 stagger 的骰子維持到相同絕對截止時間；未提供時
      * 沿用單顆骰子的自然截止時間。
      *
      * 動畫播完後額外接一段 [DiceRollAnimationSpec.EXTRA_VIEWING_TICKS] 的等待，讓佇列（[isAnimating]）
-     * 在點數落定後繼續維持「還在忙」一小段時間，給玩家看清楚點數的緩衝——這段緩衝過去是
-     * `TablePresentationBusyTracker` 自己另外加總的，現在改成掛在骰子自己的佇列尾端；佇列播完（含
-     * 這段緩衝）也正是 [tick] 判斷該自我 [discard] 的時機點，見該方法 KDoc。
+     * 在點數落定後繼續維持「還在忙」一小段時間，給玩家看清楚點數的緩衝。這段緩衝掛在骰子自己的佇列
+     * 尾端；佇列播完（含這段緩衝）也正是 [tick] 判斷該自我 [discard] 的時機點，見該方法 KDoc。
      *
      * @param finalPoint 伺服器決定的最終朝上點數。
      * @param seed 重建確定性動畫所用的亂數種子。
@@ -208,13 +206,10 @@ class MahjongDiceEntity(
      * [DiceRollAnimationSpec.EXTRA_VIEWING_TICKS] 觀看緩衝）就自我 [discard]，直接用
      * [AnimatedMahjongEntity.isAnimating]（佇列是否還有東西）判斷，不需要另外自己計算「該存在多久」。
      *
-     * 過去用一個獨立的「entity 生成起算、固定 tick 數後消失」計時器（[DiceRollAnimationSpec] 相關
-     * 常數），但骰子現在是立刻生成、把「等牌牆掉落動畫播完」這段等待折算成佇列最前面的
-     * `AnimationStep.Wait` step（見 [startRoll]），生成時間點跟動畫真正開始播放的時間點已經不再
-     * 相同——如果還是從生成那一刻起算固定 tick 數，那段等待會被誤算進骰子該存在的預算裡，導致動畫
-     * （含尾端觀看緩衝）都還沒播完就被判定「時間到」提前消失，這是實際踩過的問題。改用「佇列是否
-     * 還有東西」判斷不會有這個落差，也自動繼承佇列本身跨世界重新載入正確恢復的持久化保證，不需要
-     * 再另外處理「世界重新載入時可能一次補跑一大段 tick」這種邊界情況。
+     * 骰子立刻生成，「等牌牆掉落動畫播完」這段等待是佇列最前面的 `AnimationStep.Wait` step（見
+     * [startRoll]），所以生成時間點不等於動畫開始播放的時間點；不能從生成那一刻起算固定 tick 數，否則
+     * 等待會被算進存在時間，動畫（含尾端觀看緩衝）還沒播完就消失。以佇列是否還有東西判斷沒有這個落差，
+     * 也沿用佇列跨世界重新載入的持久化，不必另外處理重新載入時一次補跑大量 tick 的情況。
      */
     override fun tick() {
         super.tick()
@@ -248,10 +243,9 @@ class MahjongDiceEntity(
      */
     override fun readCustomDataFromNbt(nbt: NbtCompound) {
         point = MahjongDicePoint.fromValueOrDefault(nbt.getInt(NBT_KEY_POINT))
-        managedByGame = nbt.getBoolean(NBT_KEY_MANAGED_BY_GAME)
-        managedTableId = nbt.getString(NBT_KEY_MANAGED_TABLE_ID)
-            .takeIf(String::isNotBlank)
-            ?.let { encoded -> runCatching { Uuid.parse(encoded) }.getOrNull() }
+        val management = GameManagedEntityNbt.read(nbt)
+        managedByGame = management.managedByGame
+        managedTableId = management.tableId
         dataTracker.set(ANIMATION_SEED, nbt.getLong(NBT_KEY_ANIMATION_SEED))
         dataTracker.set(ANIMATION_START_OFFSET_X, nbt.getFloat(NBT_KEY_ANIMATION_START_OFFSET_X))
         dataTracker.set(ANIMATION_START_OFFSET_Y, nbt.getFloat(NBT_KEY_ANIMATION_START_OFFSET_Y))
@@ -263,8 +257,7 @@ class MahjongDiceEntity(
     /** 將點數、管理狀態、動畫佇列與投擲動畫本身的參數寫入世界存檔，理由同 [readCustomDataFromNbt]。 */
     override fun writeCustomDataToNbt(nbt: NbtCompound) {
         nbt.putInt(NBT_KEY_POINT, point.value)
-        nbt.putBoolean(NBT_KEY_MANAGED_BY_GAME, managedByGame)
-        managedTableId?.let { tableId -> nbt.putString(NBT_KEY_MANAGED_TABLE_ID, tableId.toString()) }
+        GameManagedEntityNbt.write(nbt, managedByGame, managedTableId)
         nbt.putLong(NBT_KEY_ANIMATION_SEED, animationSeed)
         nbt.putFloat(NBT_KEY_ANIMATION_START_OFFSET_X, dataTracker[ANIMATION_START_OFFSET_X])
         nbt.putFloat(NBT_KEY_ANIMATION_START_OFFSET_Y, dataTracker[ANIMATION_START_OFFSET_Y])
@@ -278,12 +271,6 @@ class MahjongDiceEntity(
 
         /** 點數世界存檔 key。 */
         private const val NBT_KEY_POINT = "Point"
-
-        /** 正式牌局管理狀態世界存檔 key。 */
-        private const val NBT_KEY_MANAGED_BY_GAME = "ManagedByGame"
-
-        /** 正式骰子所屬桌子 UUID 的世界存檔 key。 */
-        private const val NBT_KEY_MANAGED_TABLE_ID = "ManagedTableId"
 
         /** 投擲動畫 seed 世界存檔 key。 */
         private const val NBT_KEY_ANIMATION_SEED = "AnimationSeed"

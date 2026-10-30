@@ -5,13 +5,14 @@ import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.logic.config.RonResolution
 import com.doublemoon1119.mahjongcraft.logic.judgment.LegalActionContext
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPlayerState
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.riichiDeclaration
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.registerBundledRuleModules
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
+import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
 /** 驗證振聽驗收情境的桌況能重現預定的振聽判定。 */
@@ -129,7 +130,7 @@ class RiichiFuritenDebugGameScenariosTest {
         val game = build("riichi_furiten_declined_chankan").game
         val state = game.tableState
 
-        assertTrue((state.seat(0).playerRuleState as RiichiPlayerState).isRiichi)
+        assertNotNull(state.seat(0).riichiDeclaration)
         assertEquals(DebugScriptedAiStrategy.KAN_FIRST_KEY, game.aiPlayerStrategyKeys[state.seat(1).id])
         assertTrue(state.ownTurnKans(offset = 1).any { it.type == GameAction.KanType.ADDED_KAN })
         assertTrue(state.canRobKan(offset = 0, type = GameAction.KanType.ADDED_KAN))

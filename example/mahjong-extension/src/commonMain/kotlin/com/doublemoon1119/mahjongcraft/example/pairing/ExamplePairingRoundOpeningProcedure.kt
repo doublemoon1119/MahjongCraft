@@ -9,8 +9,14 @@ import com.doublemoon1119.mahjongcraft.logic.table.opening.RoundOpeningStep
 import com.doublemoon1119.mahjongcraft.logic.table.opening.WallOpening
 import kotlin.uuid.Uuid
 
-/** 簡易配對麻將使用兩顆骰子的首局兩輪、後續單輪開門程序。 */
-class ExamplePairingRoundOpeningProcedure : RoundOpeningProcedure {
+/**
+ * 簡易配對麻將使用兩顆骰子的首局兩輪、後續單輪開門程序。
+ *
+ * @property wallTileValueCount 牌山使用的牌面種類數。
+ */
+class ExamplePairingRoundOpeningProcedure(
+    private val wallTileValueCount: Int = 8,
+) : RoundOpeningProcedure {
     override val supportedDiceCounts: Set<Int> = setOf(2)
 
     override fun next(context: RoundOpeningContext): RoundOpeningStep = if (context.firstRound) firstRound(context) else laterRound(context)
@@ -89,16 +95,23 @@ class ExamplePairingRoundOpeningProcedure : RoundOpeningProcedure {
         dealerId: Uuid,
         dice: DiceRollResult,
     ): RoundOpeningStep.Complete {
-        val sideCount = if (context.playerIdsInTurnOrder.size == 2) 2 else 4
-        val stacksPerSide = if (context.playerIdsInTurnOrder.size == 2) 4 else context.playerIdsInTurnOrder.size
+        val stacksPerSide = ExamplePairingWallGeometry.stacksPerSide(
+            playerCount = context.playerIdsInTurnOrder.size,
+            wallTileValueCount = wallTileValueCount,
+        )
+        val sideCount = stacksPerSide.size
+        val sideOffset = wallSideOffset(dice, sideCount)
         return RoundOpeningStep.Complete(
             RoundOpeningCompletion(
                 dealerPlayerId = dealerId,
                 wallOpening = WallOpening(
-                    wallSideOffsetFromDealer = (dice.total - 1) % sideCount,
-                    stacksFromRight = (dice.total - 1) % stacksPerSide + 1,
+                    wallSideOffsetFromDealer = sideOffset,
+                    stacksFromRight = (dice.total - 1) % stacksPerSide[sideOffset] + 1,
                 ),
             ),
         )
     }
+
+    /** 依骰子總和循環取得相對莊家的開門面。 */
+    private fun wallSideOffset(dice: DiceRollResult, sideCount: Int): Int = (dice.total - 1) % sideCount
 }

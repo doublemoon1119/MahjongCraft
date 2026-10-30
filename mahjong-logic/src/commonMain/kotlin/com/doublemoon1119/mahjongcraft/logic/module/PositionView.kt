@@ -1,7 +1,7 @@
 package com.doublemoon1119.mahjongcraft.logic.module
 
-import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
 import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayerSnapshot
+import com.doublemoon1119.mahjongcraft.logic.table.PlayerTileAreaSnapshot
 import com.doublemoon1119.mahjongcraft.logic.table.TableStateSnapshot
 import kotlin.uuid.Uuid
 
@@ -47,22 +47,26 @@ data class PositionView(
      *
      * 評估者手牌中沒有這張牌時拋出例外。
      *
-     * @param tileId 要移出手牌的實體牌 ID。
+     * @param tileId 要移出手牌的牌張 ID。
+     * @param areaId 目標移出牌區的完整識別碼。
      * @return 手牌移除該牌後的新視角。
      * @throws NoSuchElementException 手牌中找不到該牌時拋出。
      * @throws IllegalArgumentException 評估者快照未包含該牌牌面時拋出。
      */
-    fun withTileSetAside(tileId: Uuid): PositionView {
+    fun withTileSetAside(tileId: Uuid, areaId: String): PositionView {
         val self = evaluator
         val tile = (self.hand.standingTiles + listOfNotNull(self.hand.lastDrawn)).first { it.id == tileId }
-        val face = requireNotNull(tile.tile) { "The evaluator must see its own tiles" }
+        requireNotNull(tile.face) { "The evaluator must see its own tiles" }
+        val previousArea = self.tileAreas.firstOrNull { it.id == areaId }
+        val area = PlayerTileAreaSnapshot(areaId, previousArea?.tiles.orEmpty() + tile)
+        val areas = if (previousArea == null) self.tileAreas + area else self.tileAreas.map { if (it.id == areaId) area else it }
         return withEvaluator(
             self.copy(
                 hand = self.hand.copy(
                     standingTiles = self.hand.standingTiles.filterNot { it.id == tileId },
                     lastDrawn = self.hand.lastDrawn?.takeUnless { it.id == tileId },
                 ),
-                setAsideTiles = self.setAsideTiles + IdentifiedTile(tileId, face),
+                tileAreas = areas,
             ),
         )
     }

@@ -77,10 +77,8 @@ import com.doublemoon1119.mahjongcraft.logic.module.BuiltInRuleModuleIds
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleDefinition
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDynamicState
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiExhaustiveDrawReason
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiGameLength
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPlayerState
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleModule
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanRuleConfig
@@ -93,6 +91,7 @@ import com.doublemoon1119.mahjongcraft.logic.table.RoundTransitionDirective
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.logic.table.TileWall
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
+import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledCoreExtensionRegistries
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledWinCelebrationCueResolverRegistry
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.registerBuiltInAiStrategies
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.registerBundledRuleModules
@@ -105,6 +104,8 @@ import com.doublemoon1119.mahjongcraft.testing.flow.common.game.service.WinPrese
 import com.doublemoon1119.mahjongcraft.testing.flow.common.room.repository.FakeRoomSnapshotRepository
 import com.doublemoon1119.mahjongcraft.testing.flow.common.room.service.FakeRoomEventPublisher
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeIdentifiedTileFactory
+import com.doublemoon1119.mahjongcraft.testing.logic.rules.riichi.riichiDeclarationComponents
+import com.doublemoon1119.mahjongcraft.testing.logic.rules.riichi.riichiTableComponents
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeDiscardPile
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
@@ -191,13 +192,13 @@ class GameFlowCoordinatorTest {
             }
         }
         val snapshotRepo = FakeGameSnapshotRepository()
-        val snapshotSynchronizer = GameSnapshotSynchronizer(gameRepo, snapshotRepo, GameVisibilityPolicyImpl(moduleRegistry))
+        val snapshotSynchronizer = GameSnapshotSynchronizer(gameRepo, snapshotRepo, GameVisibilityPolicyImpl(moduleRegistry, componentRegistry = bundledCoreExtensionRegistries().componentRegistry))
         val handSortPreferenceStore = HandSortPreferenceStore()
         val postActionExhaustiveDrawResolverRegistry = PostActionExhaustiveDrawResolverRegistry().apply {
             BundledRiichiExtension.registerPostActionExhaustiveDrawResolvers(this)
             freeze()
         }
-        val winSettlementDetailResolverRegistry = WinSettlementDetailResolverRegistry().apply {
+        val winSettlementDetailResolverRegistry = WinSettlementDetailResolverRegistry(bundledCoreExtensionRegistries().componentRegistry).apply {
             BundledRiichiExtension.registerWinSettlementDetailResolvers(this)
             freeze()
         }
@@ -227,11 +228,15 @@ class GameFlowCoordinatorTest {
                     postActionExhaustiveDrawResolverRegistry = postActionExhaustiveDrawResolverRegistry,
                     eventPublisher = eventPublisher,
                     presentationPublisher = presentationPublisher,
+
+                    componentRegistry = bundledCoreExtensionRegistries().componentRegistry,
                 ),
+
+                componentRegistry = bundledCoreExtensionRegistries().componentRegistry,
             ),
         )
         val router = GameActionRouter(
-            drawTileUseCase = DrawTileUseCase(gameRepo, moduleRegistry, snapshotSynchronizer, eventPublisher, presentationPublisher),
+            drawTileUseCase = DrawTileUseCase(gameRepo, moduleRegistry, snapshotSynchronizer, eventPublisher, presentationPublisher, componentRegistry = bundledCoreExtensionRegistries().componentRegistry),
             discardTileUseCase = DiscardTileUseCase(
                 gameRepo,
                 moduleRegistry,
@@ -240,6 +245,8 @@ class GameFlowCoordinatorTest {
                 postActionExhaustiveDrawResolverRegistry,
                 eventPublisher,
                 presentationPublisher,
+
+                componentRegistry = bundledCoreExtensionRegistries().componentRegistry,
             ),
             declareTsumoUseCase = DeclareTsumoUseCase(
                 gameRepo,
@@ -250,8 +257,10 @@ class GameFlowCoordinatorTest {
                 winPresentationHandoff,
                 winCelebrationCueResolverRegistry = bundledWinCelebrationCueResolverRegistry(),
                 winSettlementDetailResolverRegistry = winSettlementDetailResolverRegistry,
+
+                componentRegistry = bundledCoreExtensionRegistries().componentRegistry,
             ),
-            declareKanUseCase = DeclareKanUseCase(gameRepo, moduleRegistry, snapshotSynchronizer, eventPublisher, presentationPublisher),
+            declareKanUseCase = DeclareKanUseCase(gameRepo, moduleRegistry, snapshotSynchronizer, eventPublisher, presentationPublisher, componentRegistry = bundledCoreExtensionRegistries().componentRegistry),
             respondToDiscardUseCase = RespondToDiscardUseCase(
                 gameRepo,
                 moduleRegistry,
@@ -263,6 +272,8 @@ class GameFlowCoordinatorTest {
                 winCelebrationCueResolverRegistry = bundledWinCelebrationCueResolverRegistry(),
                 winSettlementDetailResolverRegistry = winSettlementDetailResolverRegistry,
                 postActionExhaustiveDrawResolverRegistry = postActionExhaustiveDrawResolverRegistry,
+
+                componentRegistry = bundledCoreExtensionRegistries().componentRegistry,
             ),
             respondToRobbingUseCase = RespondToRobbingUseCase(
                 gameRepo,
@@ -273,6 +284,8 @@ class GameFlowCoordinatorTest {
                 winPresentationHandoff,
                 winCelebrationCueResolverRegistry = bundledWinCelebrationCueResolverRegistry(),
                 winSettlementDetailResolverRegistry = winSettlementDetailResolverRegistry,
+
+                componentRegistry = bundledCoreExtensionRegistries().componentRegistry,
             ),
             declareAbortiveDrawUseCase = DeclareAbortiveDrawUseCase(gameRepo, moduleRegistry, snapshotSynchronizer, eventPublisher),
             extensionCommandExecutor = extensionCommandExecutor,
@@ -283,6 +296,8 @@ class GameFlowCoordinatorTest {
                     resolverRegistry = it,
                     snapshotSynchronizer = snapshotSynchronizer,
                     presentationPublisher = presentationPublisher,
+
+                    componentRegistry = bundledCoreExtensionRegistries().componentRegistry,
                 )
             },
         )
@@ -297,7 +312,7 @@ class GameFlowCoordinatorTest {
             gameRepo,
             getLegalActionsUseCase,
             aiStrategyRegistry,
-            GameVisibilityPolicyImpl(moduleRegistry),
+            GameVisibilityPolicyImpl(moduleRegistry, componentRegistry = bundledCoreExtensionRegistries().componentRegistry),
             moduleRegistry,
             AiDecisionExecutor.direct(failurePolicy = ExtensionFailurePolicy.Default),
             AutomaticGameCommandResolver(moduleRegistry),
@@ -349,6 +364,7 @@ class GameFlowCoordinatorTest {
                 handSortPreferenceStore,
                 eventPublisher,
                 presentationPublisher,
+                componentRegistry = bundledCoreExtensionRegistries().componentRegistry,
             ),
             // FakeGameRepository 是獨立於 AuthoritativeStateStore 的測試替身，這裡的 ReturnToRoomUseCase
             // 因此接不到同一份對局資料，對本檔案的測試而言只是滿足建構子的無害 no-op；真的驗證
@@ -383,7 +399,7 @@ class GameFlowCoordinatorTest {
                     moduleRegistry,
                     it,
                     aiStrategyRegistry,
-                    GameVisibilityPolicyImpl(moduleRegistry),
+                    GameVisibilityPolicyImpl(moduleRegistry, componentRegistry = bundledCoreExtensionRegistries().componentRegistry),
                     AiDecisionExecutor.direct(failurePolicy = ExtensionFailurePolicy.Default),
                 )
             },
@@ -499,7 +515,7 @@ class GameFlowCoordinatorTest {
         )
         val ai = FakeMahjongPlayerFactory.create(
             initialSeat = Wind.SOUTH,
-            playerRuleState = RiichiPlayerState(),
+            components = riichiDeclarationComponents(),
         )
         val table = FakeTableStateFactory.create(
             id = gameId,
@@ -893,13 +909,13 @@ class GameFlowCoordinatorTest {
         val player = FakeMahjongPlayerFactory.create(
             initialSeat = Wind.EAST,
             hand = Hand(tiles = listOf(required), lastDrawn = drawn),
-            playerRuleState = RiichiPlayerState(),
+            components = riichiDeclarationComponents(),
         )
         fixtures.gameRepo.setTableState(
             FakeTableStateFactory.create(
                 id = gameId,
                 config = RiichiRuleConfig(),
-                players = listOf(player, FakeMahjongPlayerFactory.create(initialSeat = Wind.SOUTH, playerRuleState = RiichiPlayerState())),
+                players = listOf(player, FakeMahjongPlayerFactory.create(initialSeat = Wind.SOUTH, components = riichiDeclarationComponents())),
                 currentPlayerIndex = 0,
             ),
             mapOf(player.id to FIXED_STRATEGY_KEY),
@@ -935,12 +951,12 @@ class GameFlowCoordinatorTest {
                 tiles = daisangenTiles.map { FakeIdentifiedTileFactory.create(it) },
                 lastDrawn = winningTile.takeIf { isTsumo },
             ),
-            playerRuleState = RiichiPlayerState(),
+            components = riichiDeclarationComponents(),
         )
         val other = FakeMahjongPlayerFactory.create(
             initialSeat = Wind.SOUTH,
             discardPile = if (isTsumo) FakeDiscardPile() else FakeDiscardPile().discardTile(winningTile),
-            playerRuleState = RiichiPlayerState(),
+            components = riichiDeclarationComponents(),
         )
         val table = FakeTableStateFactory.create(
             id = gameId,
@@ -990,9 +1006,9 @@ class GameFlowCoordinatorTest {
             initialSeat = Wind.EAST,
             hand = Hand(tiles = daisangenTiles.map { FakeIdentifiedTileFactory.create(it) }, lastDrawn = winningTile),
             discardPile = FakeDiscardPile().discardTile(FakeIdentifiedTileFactory.create(Tile.Honor.South)),
-            playerRuleState = RiichiPlayerState(),
+            components = riichiDeclarationComponents(),
         ).copy(score = 25000)
-        val other = FakeMahjongPlayerFactory.create(initialSeat = Wind.SOUTH, playerRuleState = RiichiPlayerState()).copy(score = 25000)
+        val other = FakeMahjongPlayerFactory.create(initialSeat = Wind.SOUTH, components = riichiDeclarationComponents()).copy(score = 25000)
         val table = FakeTableStateFactory.create(id = gameId, players = listOf(winner, other), config = RiichiRuleConfig(gameLength = RiichiGameLength.East), currentPlayerIndex = 0)
         fixtures.gameRepo.setTableState(table)
 
@@ -1270,11 +1286,11 @@ class GameFlowCoordinatorTest {
             initialSeat = Wind.EAST,
             hand = Hand(tiles = handTiles.map { FakeIdentifiedTileFactory.create(it) }, lastDrawn = winningTile),
             discardPile = FakeDiscardPile().discardTile(FakeIdentifiedTileFactory.create(Tile.Honor.South)),
-            playerRuleState = RiichiPlayerState(),
+            components = riichiDeclarationComponents(),
         ).copy(score = 25000)
-        val other = FakeMahjongPlayerFactory.create(id = otherId, initialSeat = Wind.SOUTH, playerRuleState = RiichiPlayerState()).copy(score = 25000)
+        val other = FakeMahjongPlayerFactory.create(id = otherId, initialSeat = Wind.SOUTH, components = riichiDeclarationComponents()).copy(score = 25000)
         // 三人桌：連續兩次中途胡牌之後仍必須留下至少一位 active 玩家，否則 ContinueRound 不合法。
-        val bystander = FakeMahjongPlayerFactory.create(initialSeat = Wind.WEST, playerRuleState = RiichiPlayerState()).copy(score = 25000)
+        val bystander = FakeMahjongPlayerFactory.create(initialSeat = Wind.WEST, components = riichiDeclarationComponents()).copy(score = 25000)
         val table = FakeTableStateFactory.create(
             id = gameId,
             players = listOf(winner, other, bystander),
@@ -1376,7 +1392,7 @@ class GameFlowCoordinatorTest {
             id = p2Id,
             initialSeat = Wind.SOUTH,
             hand = Hand(lastDrawn = p2LastDrawn),
-            playerRuleState = RiichiPlayerState(),
+            components = riichiDeclarationComponents(),
         )
         val table = FakeTableStateFactory.create(id = gameId, players = listOf(p1, p2), config = RiichiRuleConfig(gameLength = RiichiGameLength.East), currentPlayerIndex = 1)
         fixtures.gameRepo.setTableState(table)
@@ -1408,7 +1424,7 @@ class GameFlowCoordinatorTest {
             initialSeat = Wind.EAST,
             discardPile = FakeDiscardPile().discardTile(discardedTile),
         ).copy(score = 25000)
-        val respondent = FakeMahjongPlayerFactory.create(id = respondentId, initialSeat = Wind.SOUTH, hand = respondentHand, playerRuleState = RiichiPlayerState())
+        val respondent = FakeMahjongPlayerFactory.create(id = respondentId, initialSeat = Wind.SOUTH, hand = respondentHand, components = riichiDeclarationComponents())
         val table = FakeTableStateFactory.create(
             id = gameId,
             players = listOf(discarder, respondent),
@@ -1467,7 +1483,7 @@ class GameFlowCoordinatorTest {
             discardPile = FakeDiscardPile().discardTile(discardedTile),
         ).copy(score = 25000)
         val winners = listOf(firstWinnerId to Wind.SOUTH, secondWinnerId to Wind.WEST).map { (id, seat) ->
-            FakeMahjongPlayerFactory.create(id = id, initialSeat = seat, hand = ronReadyHand(), playerRuleState = RiichiPlayerState()).copy(score = 25000)
+            FakeMahjongPlayerFactory.create(id = id, initialSeat = seat, hand = ronReadyHand(), components = riichiDeclarationComponents()).copy(score = 25000)
         }
         val table = FakeTableStateFactory.create(
             id = gameId,
@@ -1621,7 +1637,7 @@ class GameFlowCoordinatorTest {
             initialSeat = Wind.EAST,
             hand = Hand(melds = listOf(existingPon), lastDrawn = robbedWhiteTile),
         ).copy(score = 25000)
-        val robber = FakeMahjongPlayerFactory.create(id = robberId, initialSeat = Wind.SOUTH, hand = robberHand, playerRuleState = RiichiPlayerState())
+        val robber = FakeMahjongPlayerFactory.create(id = robberId, initialSeat = Wind.SOUTH, hand = robberHand, components = riichiDeclarationComponents())
         return FakeTableStateFactory.create(
             id = gameId,
             players = listOf(declarer, robber),
@@ -1629,7 +1645,7 @@ class GameFlowCoordinatorTest {
             reservedWallTiles = reservedWallTiles,
             currentPlayerIndex = 0,
             pendingRobbingReaction = PendingRobbingReaction(declarerId, kanAction, robbedWhiteTile, setOf(robberId)),
-            dynamicRuleState = RiichiDynamicState(),
+            components = riichiTableComponents(potPoints = 0),
         )
     }
 
@@ -1728,7 +1744,7 @@ class GameFlowCoordinatorTest {
             reservedWallTiles = listOf(rinshanTile) +
                 List(13) { FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Bamboo, 1)) },
             currentPlayerIndex = 0,
-            dynamicRuleState = RiichiDynamicState(),
+            components = riichiTableComponents(potPoints = 0),
         )
         fixtures.gameRepo.setTableState(table)
 
@@ -1813,7 +1829,7 @@ class GameFlowCoordinatorTest {
             id = aiId,
             initialSeat = Wind.SOUTH,
             hand = Hand(tiles = aiHandTiles),
-            playerRuleState = RiichiPlayerState(),
+            components = riichiDeclarationComponents(),
         )
         val drawnTile = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Bamboo, 5))
         val table = FakeTableStateFactory.create(
@@ -1852,7 +1868,7 @@ class GameFlowCoordinatorTest {
             id = aiId,
             initialSeat = Wind.SOUTH,
             hand = Hand(tiles = listOf(southTile1, southTile2) + filler),
-            playerRuleState = RiichiPlayerState(),
+            components = riichiDeclarationComponents(),
         )
         // 若 AI 選擇過牌（而非碰），輪到的下一位就是它自己、需要先摸牌——牌山至少要有 1 張牌，
         // 否則會撞上牌山摸盡 → 一般流局 → 連莊/過莊判定，讓這個測試意外變成在測完全不同的情境。
@@ -1886,7 +1902,7 @@ class GameFlowCoordinatorTest {
         val ai = FakeMahjongPlayerFactory.create(
             id = aiId,
             initialSeat = Wind.EAST,
-            playerRuleState = RiichiPlayerState(),
+            components = riichiDeclarationComponents(),
         )
         val other = FakeMahjongPlayerFactory.create(initialSeat = Wind.SOUTH)
         // 一局制（OneGame，totalRounds = 1）且已經是 roundNumber = 1，下一次過莊判定就會讓
@@ -1924,9 +1940,9 @@ class GameFlowCoordinatorTest {
         val ai = FakeMahjongPlayerFactory.create(
             id = aiId,
             initialSeat = Wind.EAST,
-            playerRuleState = RiichiPlayerState(),
+            components = riichiDeclarationComponents(),
         )
-        val other = FakeMahjongPlayerFactory.create(initialSeat = Wind.SOUTH, playerRuleState = RiichiPlayerState())
+        val other = FakeMahjongPlayerFactory.create(initialSeat = Wind.SOUTH, components = riichiDeclarationComponents())
         val table = FakeTableStateFactory.create(
             id = gameId,
             players = listOf(ai, other),
@@ -1965,7 +1981,7 @@ class GameFlowCoordinatorTest {
             id = aiId,
             initialSeat = Wind.EAST,
             hand = Hand(lastDrawn = drawn),
-            playerRuleState = RiichiPlayerState(),
+            components = riichiDeclarationComponents(),
         )
         val human = FakeMahjongPlayerFactory.create(initialSeat = Wind.SOUTH)
         val table = FakeTableStateFactory.create(
@@ -2115,7 +2131,7 @@ class GameFlowCoordinatorTest {
             id = aiId,
             initialSeat = Wind.EAST,
             hand = Hand(lastDrawn = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Bamboo, 5))),
-            playerRuleState = RiichiPlayerState(),
+            components = riichiDeclarationComponents(),
         )
         val table = FakeTableStateFactory.create(
             id = gameId,

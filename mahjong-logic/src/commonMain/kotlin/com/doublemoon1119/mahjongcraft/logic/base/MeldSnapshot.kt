@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.logic.base
 
+import com.doublemoon1119.mahjongcraft.logic.component.ComponentViewSet
 import kotlin.uuid.Uuid
 
 /**
@@ -7,6 +8,8 @@ import kotlin.uuid.Uuid
  *
  * 每張牌是否可見由該牌是否屬於 [Meld.publiclyRevealedTileIds]、觀察者權限及規則設定共同決定。
  *
+ * @property componentViews 已按讀取者裁切的副露資料，不包含原始組件。
+ * @property id 副露的穩定識別碼。
  * @property type 副露種類。
  * @property tiles 依保存順序排列的牌張，未知牌仍保留實體識別碼。
  * @property sourceTile 鳴取的來源牌；沒有來源時為 null。
@@ -14,11 +17,13 @@ import kotlin.uuid.Uuid
  * @property faceDownTileIds 實際朝下擺放的牌張，不代表該觀察者是否知道牌面。
  */
 data class MeldSnapshot(
+    val id: Uuid,
     val type: MeldType,
     val tiles: List<IdentifiedTileSnapshot>,
     val sourceTile: IdentifiedTileSnapshot?,
     val sourceDirection: RelativeDirection,
     val faceDownTileIds: Set<Uuid>,
+    val componentViews: ComponentViewSet = ComponentViewSet.EMPTY,
 )
 
 /**
@@ -34,6 +39,7 @@ fun Meld.toSnapshot(handIsVisible: Boolean, revealsClosedKanTiles: Boolean): Mel
     val canSeeAll = handIsVisible || (type == MeldType.CLOSED_KAN && revealsClosedKanTiles)
     fun isVisible(tile: IdentifiedTile): Boolean = canSeeAll || (type != MeldType.CLOSED_KAN && tile.id in publiclyRevealedTileIds)
     return MeldSnapshot(
+        id = id,
         type = type,
         tiles = tiles.map { tile ->
             tile.toSnapshot(isVisible = isVisible(tile))

@@ -16,24 +16,24 @@ class MahjongScoringStickDenominationNbtTest {
         MahjongScoringStickDenomination.entries.forEach { denomination ->
             val nbt = NbtCompound()
 
-            MahjongScoringStickDenominationNbt.write(nbt, key, denomination)
+            MahjongScoringStickDenominationNbt.write(nbt, denomination)
 
             assertEquals(denomination.name, nbt.getString(key), "denomination must be stored by name")
-            assertEquals(denomination, MahjongScoringStickDenominationNbt.read(nbt, key))
+            assertEquals(denomination, MahjongScoringStickDenominationNbt.read(nbt))
         }
     }
 
     /** 缺少欄位、名稱無效或型別不符時使用百分棒。 */
     @Test
     fun `unknown values fall back to the smallest denomination`() {
-        assertEquals(MahjongScoringStickDenomination.P100, MahjongScoringStickDenominationNbt.read(NbtCompound(), key))
+        assertEquals(MahjongScoringStickDenomination.P100, MahjongScoringStickDenominationNbt.read(NbtCompound()))
         assertEquals(
             MahjongScoringStickDenomination.P100,
-            MahjongScoringStickDenominationNbt.read(NbtCompound().apply { putString(key, "P999") }, key),
+            MahjongScoringStickDenominationNbt.read(NbtCompound().apply { putString(key, "P999") }),
         )
         assertEquals(
             MahjongScoringStickDenomination.P100,
-            MahjongScoringStickDenominationNbt.read(NbtCompound().apply { putInt(key, 99) }, key),
+            MahjongScoringStickDenominationNbt.read(NbtCompound().apply { putInt(key, 99) }),
         )
     }
 }

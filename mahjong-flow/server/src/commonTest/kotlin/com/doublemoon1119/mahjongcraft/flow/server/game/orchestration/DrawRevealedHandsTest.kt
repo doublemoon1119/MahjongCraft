@@ -60,8 +60,8 @@ class DrawRevealedHandsTest {
         val result = table.copy(finishedPlayerIds = setOf(otherPlayer.id))
             .revealHandsOf(listOf(drawingPlayer.id, otherPlayer.id))
 
-        assertEquals(drawingPlayer.hand.standingTiles.map { it.id }.toSet(), result.revealedHandTileIds)
-        assertEquals(3, result.revealedHandTileIds.size)
+        assertEquals(drawingPlayer.hand.standingTiles.map { it.id }.toSet(), result.publicTileEvidenceIds)
+        assertEquals(3, result.publicTileEvidenceIds.size)
     }
 
     /** 途中流局記錄給所有玩家；九種九牌只公開宣告者的手牌，系統判定的流局不公開任何手牌。 */
@@ -74,8 +74,8 @@ class DrawRevealedHandsTest {
         val systemJudged = table.recordAbortiveDraw(reason, declarerId = null, module = module)
 
         declared.players.forEach { assertEquals(GameAction.ExhaustiveDraw(reason), it.actionHistory.last()) }
-        assertEquals(drawingPlayer.hand.standingTiles.map { it.id }.toSet(), declared.revealedHandTileIds)
-        assertEquals(emptySet(), systemJudged.revealedHandTileIds)
+        assertEquals(drawingPlayer.hand.standingTiles.map { it.id }.toSet(), declared.publicTileEvidenceIds)
+        assertEquals(emptySet(), systemJudged.publicTileEvidenceIds)
     }
 
     /** 途中流局的 waitingTiles 要跟公開名單一起保存在權威桌況，避免呈現階段重新解析。 */
@@ -91,6 +91,6 @@ class DrawRevealedHandsTest {
 
         assertEquals(1, module.resolverCalls)
         assertEquals(setOf(Tile.Honor.North), result.revealedHandSettlements.single().waitingTiles)
-        assertTrue(drawingPlayer.hand.standingTiles.map { it.id }.toSet().containsAll(result.revealedHandTileIds))
+        assertTrue(drawingPlayer.hand.standingTiles.map { it.id }.toSet().containsAll(result.publicTileEvidenceIds))
     }
 }

@@ -16,11 +16,12 @@ import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.logic.module.BuiltInAutomaticControlIds
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPlayerState
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.table.PendingReaction
 import com.doublemoon1119.mahjongcraft.logic.table.PendingRobbingReaction
+import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledCoreExtensionRegistries
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.registerBundledRuleModules
+import com.doublemoon1119.mahjongcraft.testing.logic.rules.riichi.riichiDeclarationComponents
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeDiscardPile
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
@@ -193,13 +194,13 @@ class GameDecisionAuthorityResolverTest {
         val contextResolver = PlayerActionContextResolver()
         val automaticResolver = GameDecisionAuthorityResolver(
             contextResolver,
-            AutomaticDecisionEvaluator(moduleRegistry, GameVisibilityPolicyImpl(moduleRegistry), contextResolver),
+            AutomaticDecisionEvaluator(moduleRegistry, GameVisibilityPolicyImpl(moduleRegistry, componentRegistry = bundledCoreExtensionRegistries().componentRegistry), contextResolver),
         )
         val discarded = IdentifiedTile(Uuid.random(), Tile.Honor.South)
         val discarder = FakeMahjongPlayerFactory.create(discardPile = FakeDiscardPile().discardTile(discarded))
         val respondent = FakeMahjongPlayerFactory.create(
             hand = Hand(tiles = List(2) { IdentifiedTile(Uuid.random(), Tile.Honor.South) }),
-            playerRuleState = RiichiPlayerState(),
+            components = riichiDeclarationComponents(),
         )
         val game = Game(
             tableState = FakeTableStateFactory.create(

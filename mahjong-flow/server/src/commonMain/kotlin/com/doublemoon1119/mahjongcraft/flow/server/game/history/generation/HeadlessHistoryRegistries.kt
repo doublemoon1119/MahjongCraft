@@ -7,11 +7,13 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.PostAction
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.PostReactionRoundOutcomeResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.WinRoundContinuationResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.WinSettlementDetailResolverRegistry
+import com.doublemoon1119.mahjongcraft.logic.component.ComponentRegistry
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 
 /**
  * [HeadlessFlowHistoryRuntime] 使用的規則整合，一律是執行環境已完成登記並凍結的 registry。
  *
+ * @property componentRegistry 與正式對局相同的組件登記與生命週期。
  * @property moduleRegistry 規則模組。
  * @property aiStrategyRegistry AI 策略。
  * @property winCelebrationCueResolverRegistry 胡牌演出提示。
@@ -23,6 +25,7 @@ import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
  */
 data class HeadlessHistoryRegistries(
     val moduleRegistry: MahjongModuleRegistry,
+    val componentRegistry: ComponentRegistry,
     val aiStrategyRegistry: MahjongAiStrategyRegistry,
     val winCelebrationCueResolverRegistry: WinCelebrationCueResolverRegistry,
     val postActionExhaustiveDrawResolverRegistry: PostActionExhaustiveDrawResolverRegistry,

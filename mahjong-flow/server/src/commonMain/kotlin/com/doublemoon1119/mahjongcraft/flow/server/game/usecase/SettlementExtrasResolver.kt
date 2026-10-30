@@ -2,7 +2,8 @@ package com.doublemoon1119.mahjongcraft.flow.server.game.usecase
 
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameAbortReasonIds
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.RuleContractViolationException
-import com.doublemoon1119.mahjongcraft.logic.config.DynamicRuleState
+import com.doublemoon1119.mahjongcraft.logic.component.BuiltInComponentOwners
+import com.doublemoon1119.mahjongcraft.logic.component.ComponentSet
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
 import com.doublemoon1119.mahjongcraft.logic.module.SettlementExtrasContext
 import com.doublemoon1119.mahjongcraft.logic.module.SettlementExtrasOccasion
@@ -13,7 +14,7 @@ import kotlin.uuid.Uuid
 /**
  * 收下場上供託，並依規則的 [MahjongRuleModule.allocateSettlementExtras] 決定供託與連莊點數的歸屬。
  *
- * 只計算分數變化與收下供託後的動態狀態，不寫入桌況；呼叫端把結果和手牌結算合併後一次寫入。規則的分配不合法時丟出
+ * 只計算分數變化與收下供託後的對局組件，不寫入桌況；呼叫端把結果和手牌結算合併後一次寫入。規則的分配不合法時丟出
  * [RuleContractViolationException]，由既有的中止收尾結束對局。
  */
 internal object SettlementExtrasResolver {
@@ -21,12 +22,12 @@ internal object SettlementExtrasResolver {
      * 供託與連莊點數的結算結果。
      *
      * @property scoreDeltas 供託與連莊點數造成的分數變化，只含分數有變的玩家。
-     * @property dynamicRuleState 收下供託後的動態狀態；規則沒有供託機制時是原本的狀態。
+     * @property components 收下供託後的桌況組件；其他組件保持原值。
      * @property stickPotRecipientIds 分到供託的玩家。
      */
     data class Result(
         val scoreDeltas: Map<Uuid, Int>,
-        val dynamicRuleState: DynamicRuleState?,
+        val components: ComponentSet,
         val stickPotRecipientIds: Set<Uuid>,
     )
 
@@ -39,7 +40,7 @@ internal object SettlementExtrasResolver {
      * @param candidatePlayerIds 可以收款的玩家，依優先順序排列。
      * @param discarderId 放銃者；沒有時為 null。
      * @param resolutions 各和牌者的手牌結算；沒有手牌結算時為空 map。
-     * @return 分數變化與收下供託後的動態狀態。
+     * @return 分數變化與收下供託後的對局組件。
      * @throws RuleContractViolationException 規則的分配或連莊點數付款不合法時。
      */
     fun resolve(
@@ -51,7 +52,7 @@ internal object SettlementExtrasResolver {
         resolutions: Map<Uuid, WinResolutionResult> = emptyMap(),
     ): Result {
         val stickPot = module.collectStickPot(state)
-        val stickPotAmount = stickPot?.second ?: 0
+        val stickPotAmount = stickPot?.points ?: 0
         val allocation = module.allocateSettlementExtras(
             SettlementExtrasContext(
                 tableState = state,
@@ -90,7 +91,9 @@ internal object SettlementExtrasResolver {
 
         return Result(
             scoreDeltas = deltas.filterValues { it != 0L }.mapValues { (_, delta) -> delta.toInt() },
-            dynamicRuleState = stickPot?.first ?: state.dynamicRuleState,
+            components = stickPot?.let {
+                requireValidRuleComponents("pointPotCollection") { it.tableComponents.applyTo(state.components, BuiltInComponentOwners.TABLE) }
+            } ?: state.components,
             stickPotRecipientIds = shares.filterValues { it > 0 }.keys,
         )
     }

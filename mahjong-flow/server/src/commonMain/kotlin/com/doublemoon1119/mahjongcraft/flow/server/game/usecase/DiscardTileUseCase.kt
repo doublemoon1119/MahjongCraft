@@ -15,6 +15,7 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameSnapshotSync
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.HandSortPreferenceStore
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.isOwnTurnWindowOpenFor
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
+import com.doublemoon1119.mahjongcraft.logic.component.ComponentRegistry
 import com.doublemoon1119.mahjongcraft.logic.config.MultiRonPolicy
 import com.doublemoon1119.mahjongcraft.logic.config.RonResolution
 import com.doublemoon1119.mahjongcraft.logic.judgment.LegalActionContext
@@ -41,6 +42,7 @@ import kotlin.uuid.Uuid
  * 除了一炮多響判定為流局之外，這張捨牌若沒有任何人可以吃/碰/槓/榮和，還會額外透過
  * [postActionExhaustiveDrawResolverRegistry] 檢查是否構成主動觸發的途中流局（例如日麻的四風連打）。
  *
+ * @property componentRegistry 正式組件定義與純效果來源。
  * @property gameRepository 權威對局數據倉庫。
  * @property moduleRegistry 麻將規則模組註冊中心，用於解析當前對局的合法動作判定器。
  * @property snapshotSynchronizer 對局快照同步服務。
@@ -57,6 +59,7 @@ class DiscardTileUseCase(
     private val postActionExhaustiveDrawResolverRegistry: PostActionExhaustiveDrawResolverRegistry,
     private val eventPublisher: GameEventPublisher,
     private val presentationPublisher: GamePresentationPublisher,
+    private val componentRegistry: ComponentRegistry,
 ) {
     /**
      * 執行捨牌邏輯。
@@ -98,6 +101,7 @@ class DiscardTileUseCase(
                         state to Outcome.Error(GameError.IllegalAction(playerId, gameId, GameAction.Discard(tileId)))
                     } else {
                         val module = moduleRegistry.getModule(state.config)
+                        val ruleComponents = RuleComponentChecker(componentRegistry, module.id)
                         val lastDrawn = state.currentPlayer.hand.lastDrawn
 
                         // 規則可以限定這次只能打出哪一張牌。
@@ -119,10 +123,11 @@ class DiscardTileUseCase(
                                 LegalActionContext.ownTurn(state, playerId),
                             )
                             if (ownTurnActions.any { it is GameAction.Tsumo }) {
-                                RuleHookResultValidator.requireRuleStateOnly(
-                                    before = state.currentPlayer,
-                                    after = module.onPlayerDeclinedWin(state.currentPlayer),
-                                    hookName = "onPlayerDeclinedWin",
+                                ruleComponents.applyPlayerPatch(
+                                    tableState = state,
+                                    player = state.currentPlayer,
+                                    patch = module.onPlayerDeclinedWin(state.currentPlayer),
+                                    source = "onPlayerDeclinedWin",
                                 )
                             } else {
                                 state.currentPlayer
@@ -131,16 +136,23 @@ class DiscardTileUseCase(
                             state.currentPlayer
                         }
 
-                        val discardedPlayer = playerAfterDeclineCheck
+                        val playerWithDiscard = playerAfterDeclineCheck
                             .copy(
                                 hand = organizedHand,
                                 discardPile = playerAfterDeclineCheck.discardPile.discardTile(discardedTile),
                             )
                             .recordAction(GameAction.Discard(tileId))
-                        val updatedPlayer = RuleHookResultValidator.requireRuleStateOnly(
-                            before = discardedPlayer,
-                            after = module.onPlayerDiscarded(discardedPlayer),
-                            hookName = "onPlayerDiscarded",
+                        val stateWithDiscard = ruleComponents.initializeCreatedRecords(
+                            before = state,
+                            after = state.copy(players = state.players.map { if (it.id == playerId) playerWithDiscard else it }),
+                            source = "Discard",
+                        )
+                        val discardedPlayer = stateWithDiscard.players.first { it.id == playerId }
+                        val updatedPlayer = ruleComponents.applyPlayerPatch(
+                            tableState = stateWithDiscard,
+                            player = discardedPlayer,
+                            patch = module.onPlayerDiscarded(discardedPlayer),
+                            source = "onPlayerDiscarded",
                         )
                         val updatedPlayers = state.players.map { if (it.id == playerId) updatedPlayer else it }
                         val stateAfterDiscard = state.copy(players = updatedPlayers)
@@ -157,6 +169,7 @@ class DiscardTileUseCase(
                                 module = module,
                                 actorPlayerId = playerId,
                                 sourceAction = GameAction.Discard(tileId),
+                                componentRegistry = componentRegistry,
                             )
                         } else {
                             WallRevealDecisionApplier.Result.Applied(resolved.tableState)
@@ -232,7 +245,7 @@ class DiscardTileUseCase(
             discarder.hand.tiles.map { it.id },
             null,
             discarder.hand.melds.map { it.toPresentation(newState.config.revealsClosedKanTiles) },
-            setAsideTileIds = module.setAsideTiles(discarder).map { it.id },
+            setAsideTileIds = discarder.setAsideTiles.map { it.id },
         )
         presentationPublisher.publishDiscardPileUpdated(
             gameId,

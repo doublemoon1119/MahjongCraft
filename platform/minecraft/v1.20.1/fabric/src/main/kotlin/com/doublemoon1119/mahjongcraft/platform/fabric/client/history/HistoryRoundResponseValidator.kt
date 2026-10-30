@@ -12,6 +12,7 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryRoundStat
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryRoundStateResponseDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryWinDetailValueDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryWinnerDetailsDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.model.TileDto
 import com.doublemoon1119.mahjongcraft.logic.base.NamespacedId
 import com.doublemoon1119.mahjongcraft.platform.fabric.network.HistoryQueryLimits
 import kotlin.uuid.Uuid
@@ -133,6 +134,7 @@ internal object HistoryRoundResponseValidator {
         ) {
             return HistoryRoundValidationResult.Invalid(HistoryRoundValidationError.SEAT_INDEX_INVALID)
         }
+        if (!state.tileCatalog.all { it.isDisplayableHistoryFace() }) return HistoryRoundValidationResult.Invalid(HistoryRoundValidationError.CONTENT_MISMATCH)
         if (!validTileIndexes(state.tileCatalog.size, state.wallTiles) || !validTileIndexes(state.tileCatalog.size, state.reservedTiles)) {
             return HistoryRoundValidationResult.Invalid(HistoryRoundValidationError.TILE_INDEX_INVALID)
         }
@@ -220,6 +222,7 @@ internal object HistoryRoundResponseValidator {
         ) {
             return HistoryRoundValidationResult.Invalid(HistoryRoundValidationError.TRANSACTION_INDEX_INVALID)
         }
+        if (!events.tileCatalog.all { it.isDisplayableHistoryFace() }) return HistoryRoundValidationResult.Invalid(HistoryRoundValidationError.CONTENT_MISMATCH)
         if (events.transactions.size > 0 && previousDeclaredCount != events.tileCatalog.size) {
             return HistoryRoundValidationResult.Invalid(HistoryRoundValidationError.TILE_INDEX_INVALID)
         }
@@ -323,14 +326,14 @@ internal object HistoryRoundResponseValidator {
                         textBytes += quantity?.let { it.unitId.toByteArray(Charsets.UTF_8).size + Int.SIZE_BYTES } ?: 0
                     }
                 }
-                is HistoryWinDetailValueDto.Tiles -> {
-                    if (!validTileIndexes(tileCatalogSize, value.tiles) ||
-                        declaredTileCount != null &&
-                        value.tiles.any { it >= declaredTileCount }
-                    ) {
-                        return false
+                is HistoryWinDetailValueDto.TileFaces -> {
+                    if (value.faces.size > HistoryQueryLimits.RESPONSE_BYTES / Int.SIZE_BYTES) return false
+                    for (face in value.faces) {
+                        if (!face.isDisplayableHistoryFace()) return false
+                        val tile = face.tile
+                        textBytes += if (tile is TileDto.Extension) tile.typeId.toByteArray(Charsets.UTF_8).size.toLong() else 2L * Int.SIZE_BYTES
+                        textBytes += face.appearanceId?.toByteArray(Charsets.UTF_8)?.size ?: 0
                     }
-                    textBytes += value.tiles.size.toLong() * Int.SIZE_BYTES
                 }
             }
         }

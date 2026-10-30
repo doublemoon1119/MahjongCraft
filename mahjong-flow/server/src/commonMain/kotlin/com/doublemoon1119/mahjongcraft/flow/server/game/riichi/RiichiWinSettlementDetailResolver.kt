@@ -8,17 +8,28 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementQuant
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.riichi.RiichiRoundOutcomeIds
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.riichi.RiichiWinSettlementIds
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.WinSettlementDetailResolver
+import com.doublemoon1119.mahjongcraft.logic.base.TileFaceView
+import com.doublemoon1119.mahjongcraft.logic.base.TileValue
+import com.doublemoon1119.mahjongcraft.logic.base.toValue
 import com.doublemoon1119.mahjongcraft.logic.judgment.HandValueResult
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDynamicState
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiHandValueResult
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.riichiWallProgress
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.YakuType
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 
 /** 日麻專屬的胡牌詳情解析器：一般胡牌的役種／翻符／寶牌，以及流局滿貫的特殊結算內容。 */
 object RiichiWinSettlementDetailResolver : WinSettlementDetailResolver {
-    override fun resolve(state: TableState, handValue: HandValueResult): List<WinSettlementDetailField> = riichiDetails(state, handValue)
+    override fun resolve(
+        state: TableState,
+        handValue: HandValueResult,
+        publicFace: (TileValue) -> TileFaceView,
+    ): List<WinSettlementDetailField> = riichiDetails(state, handValue, publicFace)
 
-    override fun resolveSpecialOutcome(state: TableState, outcome: ResolvedRoundOutcome): List<WinSettlementDetailField>? {
+    override fun resolveSpecialOutcome(
+        state: TableState,
+        outcome: ResolvedRoundOutcome,
+        publicFace: (TileValue) -> TileFaceView,
+    ): List<WinSettlementDetailField>? {
         if (outcome.id != RiichiRoundOutcomeIds.NAGASHI_MANGAN) return null
         return listOf(
             WinSettlementDetailField(
@@ -33,11 +44,16 @@ object RiichiWinSettlementDetailResolver : WinSettlementDetailResolver {
      *
      * @param state 胡牌成立時的權威桌況。
      * @param handValue 已完成計算的胡牌結果。
+     * @param publicFace 將指示牌轉成公開牌面的投影。
      * @return 日麻詳情欄位。
      */
-    internal fun riichiDetails(state: TableState, handValue: HandValueResult): List<WinSettlementDetailField> {
+    internal fun riichiDetails(
+        state: TableState,
+        handValue: HandValueResult,
+        publicFace: (TileValue) -> TileFaceView,
+    ): List<WinSettlementDetailField> {
         val result = handValue as? RiichiHandValueResult ?: return emptyList()
-        val indicators = (state.dynamicRuleState as? RiichiDynamicState)?.getDoraIndicators(state)
+        val indicators = state.riichiWallProgress().getDoraIndicators(state)
         return buildList {
             add(
                 WinSettlementDetailField(
@@ -63,10 +79,10 @@ object RiichiWinSettlementDetailResolver : WinSettlementDetailResolver {
                     ),
                 )
             }
-            add(WinSettlementDetailField(RiichiWinSettlementIds.DORA_FIELD, WinSettlementDetailValue.Tiles(indicators?.first.orEmpty().map { it.id })))
+            add(WinSettlementDetailField(RiichiWinSettlementIds.DORA_FIELD, WinSettlementDetailValue.TileFaces(indicators.first.map { publicFace(it.toValue()) })))
             // 只使用本次權威役種結果辨識立直資格，不從其他玩家的立直狀態推測。
             if (!result.isYakuman && result.yakuResults.any { it.yaku == YakuType.Riichi || it.yaku == YakuType.DoubleRiichi }) {
-                add(WinSettlementDetailField(RiichiWinSettlementIds.URA_DORA_FIELD, WinSettlementDetailValue.Tiles(indicators?.second.orEmpty().map { it.id })))
+                add(WinSettlementDetailField(RiichiWinSettlementIds.URA_DORA_FIELD, WinSettlementDetailValue.TileFaces(indicators.second.map { publicFace(it.toValue()) })))
             }
         }
     }

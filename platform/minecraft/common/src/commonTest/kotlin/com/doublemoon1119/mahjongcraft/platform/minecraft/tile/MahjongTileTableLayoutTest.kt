@@ -575,8 +575,8 @@ class MahjongTileTableLayoutTest {
     }
 
     /**
-     * 遊戲內實際回報過的 bug：摸牌位比立牌列尾端更靠近桌角一個 `stackStep` 加縫隙，若讓開偏移只看
-     * 立牌列自己的外緣（不管 `hasDrawnTile`），算出來的偏移會不夠，摸牌位仍然撞進副露區。
+     * 摸牌位比立牌列尾端更靠近桌角一個 `stackStep` 加縫隙；讓開偏移若只看立牌列自己的外緣（不管
+     * `hasDrawnTile`），偏移會不夠，摸牌位會撞進副露區。
      * `hasDrawnTile = true` 應該比 `false` 算出更大（或至少相等）的偏移，且摸牌位擺放後的外緣不得
      * 超過退讓後的邊界。
      */

@@ -56,14 +56,14 @@ class HistoryContractKeysTest {
     @Test
     fun `detail value type keys preserve serialized contract`() {
         assertEquals("quantities", HistoryDetailValueTypeKeys.QUANTITIES)
-        assertEquals("tiles", HistoryDetailValueTypeKeys.TILES)
+        assertEquals("tile_faces", HistoryDetailValueTypeKeys.TILE_FACES)
         assertEquals("entries", HistoryDetailValueTypeKeys.ENTRIES)
 
         assertEquals(
-            listOf("quantities", "tiles", "entries"),
+            listOf("quantities", "tile_faces", "entries"),
             listOf(
                 HistoryWinDetailValuePersistenceDto.Quantities.serializer(),
-                HistoryWinDetailValuePersistenceDto.Tiles.serializer(),
+                HistoryWinDetailValuePersistenceDto.TileFaces.serializer(),
                 HistoryWinDetailValuePersistenceDto.Entries.serializer(),
             ).map { it.descriptor.serialName },
         )

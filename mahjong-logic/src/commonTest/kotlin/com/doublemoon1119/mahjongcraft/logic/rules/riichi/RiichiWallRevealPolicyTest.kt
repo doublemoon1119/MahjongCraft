@@ -3,11 +3,15 @@ package com.doublemoon1119.mahjongcraft.logic.rules.riichi
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RIICHI_STICK_POINTS
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiTableComponents
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiWallProgress
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.logic.table.WallRevealCheckpoint
 import com.doublemoon1119.mahjongcraft.logic.table.WallRevealContext
 import com.doublemoon1119.mahjongcraft.logic.table.WallRevealDecision
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeIdentifiedTileFactory
+import com.doublemoon1119.mahjongcraft.testing.logic.rules.riichi.riichiTableComponents
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -25,7 +29,7 @@ class RiichiWallRevealPolicyTest {
         val result = assertIs<WallRevealDecision.Updated>(
             RiichiWallRevealPolicy.resolve(fixture.context(WallRevealCheckpoint.AFTER_SUPPLEMENTAL_DRAW)),
         )
-        val updated = assertIs<RiichiDynamicState>(result.dynamicRuleState)
+        val updated = requireNotNull(result.tableComponents.values[RiichiTableComponents.WALL_PROGRESS])
 
         assertEquals(1, updated.revealedKanDoraCount)
         assertTrue(updated.pendingKanDoraReveals.isEmpty())
@@ -41,7 +45,7 @@ class RiichiWallRevealPolicyTest {
             val result = assertIs<WallRevealDecision.Updated>(
                 RiichiWallRevealPolicy.resolve(fixture.context(WallRevealCheckpoint.AFTER_SUPPLEMENTAL_DRAW)),
             )
-            val updated = assertIs<RiichiDynamicState>(result.dynamicRuleState)
+            val updated = requireNotNull(result.tableComponents.values[RiichiTableComponents.WALL_PROGRESS])
 
             assertEquals(0, updated.revealedKanDoraCount)
             assertEquals(listOf(RiichiPendingKanDoraReveal(fixture.actorId, kanType, 1)), updated.pendingKanDoraReveals)
@@ -54,9 +58,12 @@ class RiichiWallRevealPolicyTest {
     fun `test completed discard reactions reveal pending indicator`() {
         val fixture = fixture(GameAction.KanType.OPEN_KAN)
         val pendingState = fixture.state.copy(
-            dynamicRuleState = fixture.dynamicState.copy(
-                pendingKanDoraReveals = listOf(
-                    RiichiPendingKanDoraReveal(fixture.actorId, GameAction.KanType.OPEN_KAN, 1),
+            components = fixture.state.components.with(
+                RiichiTableComponents.WALL_PROGRESS,
+                fixture.progress.copy(
+                    pendingKanDoraReveals = listOf(
+                        RiichiPendingKanDoraReveal(fixture.actorId, GameAction.KanType.OPEN_KAN, 1),
+                    ),
                 ),
             ),
         )
@@ -66,7 +73,7 @@ class RiichiWallRevealPolicyTest {
                 WallRevealContext(WallRevealCheckpoint.AFTER_DISCARD_REACTIONS, pendingState),
             ),
         )
-        val updated = assertIs<RiichiDynamicState>(result.dynamicRuleState)
+        val updated = requireNotNull(result.tableComponents.values[RiichiTableComponents.WALL_PROGRESS])
 
         assertEquals(1, updated.revealedKanDoraCount)
         assertTrue(updated.pendingKanDoraReveals.isEmpty())
@@ -78,9 +85,12 @@ class RiichiWallRevealPolicyTest {
     fun `test confirmed win cancels pending indicator`() {
         val fixture = fixture(GameAction.KanType.ADDED_KAN)
         val pendingState = fixture.state.copy(
-            dynamicRuleState = fixture.dynamicState.copy(
-                pendingKanDoraReveals = listOf(
-                    RiichiPendingKanDoraReveal(fixture.actorId, GameAction.KanType.ADDED_KAN, 1),
+            components = fixture.state.components.with(
+                RiichiTableComponents.WALL_PROGRESS,
+                fixture.progress.copy(
+                    pendingKanDoraReveals = listOf(
+                        RiichiPendingKanDoraReveal(fixture.actorId, GameAction.KanType.ADDED_KAN, 1),
+                    ),
                 ),
             ),
         )
@@ -88,7 +98,7 @@ class RiichiWallRevealPolicyTest {
         val result = assertIs<WallRevealDecision.Updated>(
             RiichiWallRevealPolicy.resolve(WallRevealContext(WallRevealCheckpoint.WIN_CONFIRMED, pendingState)),
         )
-        val updated = assertIs<RiichiDynamicState>(result.dynamicRuleState)
+        val updated = requireNotNull(result.tableComponents.values[RiichiTableComponents.WALL_PROGRESS])
 
         assertEquals(0, updated.revealedKanDoraCount)
         assertTrue(updated.pendingKanDoraReveals.isEmpty())
@@ -100,9 +110,12 @@ class RiichiWallRevealPolicyTest {
     fun `test next supplemental draw reveals earlier pending indicator`() {
         val fixture = fixture(GameAction.KanType.OPEN_KAN)
         val pendingState = fixture.state.copy(
-            dynamicRuleState = fixture.dynamicState.copy(
-                pendingKanDoraReveals = listOf(
-                    RiichiPendingKanDoraReveal(fixture.actorId, GameAction.KanType.OPEN_KAN, 1),
+            components = fixture.state.components.with(
+                RiichiTableComponents.WALL_PROGRESS,
+                fixture.progress.copy(
+                    pendingKanDoraReveals = listOf(
+                        RiichiPendingKanDoraReveal(fixture.actorId, GameAction.KanType.OPEN_KAN, 1),
+                    ),
                 ),
             ),
         )
@@ -113,7 +126,7 @@ class RiichiWallRevealPolicyTest {
             ),
         )
 
-        assertEquals(1, (result.dynamicRuleState as RiichiDynamicState).revealedKanDoraCount)
+        assertEquals(1, requireNotNull(result.tableComponents.values[RiichiTableComponents.WALL_PROGRESS]).revealedKanDoraCount)
     }
 
     /** 等待項目不得保存暗槓，因為暗槓必須立即公開。 */
@@ -121,9 +134,12 @@ class RiichiWallRevealPolicyTest {
     fun `test invalid pending closed kan is rejected`() {
         val fixture = fixture(GameAction.KanType.CLOSED_KAN)
         val invalidState = fixture.state.copy(
-            dynamicRuleState = fixture.dynamicState.copy(
-                pendingKanDoraReveals = listOf(
-                    RiichiPendingKanDoraReveal(fixture.actorId, GameAction.KanType.CLOSED_KAN, 1),
+            components = fixture.state.components.with(
+                RiichiTableComponents.WALL_PROGRESS,
+                fixture.progress.copy(
+                    pendingKanDoraReveals = listOf(
+                        RiichiPendingKanDoraReveal(fixture.actorId, GameAction.KanType.CLOSED_KAN, 1),
+                    ),
                 ),
             ),
         )
@@ -139,9 +155,12 @@ class RiichiWallRevealPolicyTest {
     fun `test pending reveal from unknown actor is rejected`() {
         val fixture = fixture(GameAction.KanType.OPEN_KAN)
         val invalidState = fixture.state.copy(
-            dynamicRuleState = fixture.dynamicState.copy(
-                pendingKanDoraReveals = listOf(
-                    RiichiPendingKanDoraReveal(Uuid.random(), GameAction.KanType.OPEN_KAN, 1),
+            components = fixture.state.components.with(
+                RiichiTableComponents.WALL_PROGRESS,
+                fixture.progress.copy(
+                    pendingKanDoraReveals = listOf(
+                        RiichiPendingKanDoraReveal(Uuid.random(), GameAction.KanType.OPEN_KAN, 1),
+                    ),
                 ),
             ),
         )
@@ -177,31 +196,31 @@ class RiichiWallRevealPolicyTest {
             FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, (index % 9) + 1))
         }
         val replacement = FakeIdentifiedTileFactory.create(Tile.Honor.Red)
-        val dynamicState = RiichiDynamicState(
-            completedSupplementalDrawCount = 1,
-            revealedKanDoraCount = 0,
-        )
+        val progress = RiichiWallProgress(completedSupplementalDrawCount = 1, revealedKanDoraCount = 0)
         val state = FakeTableStateFactory.create(
             config = RiichiRuleConfig(),
             reservedWallTiles = originalDeadWall.drop(1) + replacement,
-            dynamicRuleState = dynamicState,
+            components = riichiTableComponents(wallProgress = progress),
         )
         val actorId = state.currentPlayer.id
         val action = GameAction.Kan(kanType, Uuid.random(), emptyList())
-        return Fixture(originalDeadWall, dynamicState, state, actorId, action)
+        return Fixture(originalDeadWall, progress, state, actorId, action)
     }
 
-    /** Policy 測試共用資料。 */
+    /**
+     * 公開政策測試資料。
+     *
+     * @property originalDeadWall 補牌前的死牌區。
+     * @property progress 已完成補牌、尚未公開的進度。
+     * @property state 對應的權威桌況。
+     * @property actorId 動作玩家。
+     * @property action 來源槓牌動作。
+     */
     private data class Fixture(
-        /** 補牌前的原始死牌區。 */
         val originalDeadWall: List<IdentifiedTile>,
-        /** 已完成補牌但尚未公開的日麻動態狀態。 */
-        val dynamicState: RiichiDynamicState,
-        /** 對應的權威桌況。 */
+        val progress: RiichiWallProgress,
         val state: TableState,
-        /** 動作玩家。 */
         val actorId: Uuid,
-        /** 來源槓牌動作。 */
         val action: GameAction.Kan,
     ) {
         /** 建立指定節點的 policy context。 */

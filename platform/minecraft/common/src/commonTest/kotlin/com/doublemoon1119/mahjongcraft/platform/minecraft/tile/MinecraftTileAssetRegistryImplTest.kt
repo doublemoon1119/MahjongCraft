@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.tile
 
+import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.logic.base.TileTypeId
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -220,6 +221,77 @@ class MinecraftTileAssetRegistryImplTest {
     fun `freeze rejects a binding to an unknown appearance`() {
         val registry = MinecraftTileAssetRegistryImpl()
         registry.register(MinecraftRuleTileAppearanceDefinition("example:rule", "example:missing"))
+
+        assertFailsWith<IllegalArgumentException> { registry.freeze() }
+        assertFalse(registry.isFrozen)
+    }
+
+    /** 外觀樣式可以指定牌身外觀；沒有指定的樣式素材不改變牌身。 */
+    @Test
+    fun `style body appearance is resolved by asset key`() {
+        val registry = MinecraftTileAssetRegistryImpl()
+        val body = MinecraftTileSetAppearanceDefinition(
+            id = "example:blue_body",
+            coverTextureId = "example:item/mahjong_tile/blue_cover",
+        )
+        registry.register(body)
+        registry.register(MinecraftTileStyleAssetDefinition("example:public", Tile.Numeric(Tile.Suit.Character, 1), "example_public_m1", bodyAppearanceId = body.id))
+        registry.register(MinecraftTileStyleAssetDefinition("example:red", Tile.Numeric(Tile.Suit.Character, 5), "example_red_m5"))
+        registry.freeze()
+
+        assertEquals(body, registry.findBodyAppearance("example_public_m1"))
+        assertNull(registry.findBodyAppearance("example_red_m5"))
+        assertNull(registry.findBodyAppearance("m1"))
+    }
+
+    /** 蓋著的牌：樣式指定了牌身就用該牌身畫牌背，沒有指定或看不到牌面時用規則的外觀。 */
+    @Test
+    fun `back appearance follows the style body and falls back to the rule`() {
+        val registry = MinecraftTileAssetRegistryImpl()
+        val body = MinecraftTileSetAppearanceDefinition(
+            id = "example:blue_body",
+            coverTextureId = "example:item/mahjong_tile/blue_cover",
+        )
+        registry.register(body)
+        registry.register(MinecraftTileStyleAssetDefinition("example:public", Tile.Numeric(Tile.Suit.Character, 1), "example_public_m1", bodyAppearanceId = body.id))
+        registry.freeze()
+        val rule = BuiltInMinecraftTileAppearances.DEFAULT
+
+        assertEquals(body, registry.backAppearance("example_public_m1", rule))
+        assertEquals(rule, registry.backAppearance("m1", rule))
+        assertEquals(rule, registry.backAppearance(UNKNOWN_TILE_ASSET_KEY, rule))
+    }
+
+    /** 樣式素材沒有自己的標籤或 emoji 時沿用基本牌面的；有自己的時使用自己的。 */
+    @Test
+    fun `style asset without its own label or emoji uses the base face`() {
+        val registry = MinecraftTileAssetRegistryImpl()
+        registry.register(MinecraftTileStyleAssetDefinition("example:public", Tile.Numeric(Tile.Suit.Character, 1), "example_public_m1"))
+        registry.register(MinecraftTileStyleAssetDefinition("example:red", Tile.Numeric(Tile.Suit.Character, 5), "example_red_m5"))
+        registry.freeze()
+        val labels = TileLabelRegistryImpl().apply {
+            register(TileLabelDefinition("m1", redText("1")))
+            register(TileLabelDefinition("example_red_m5", redText("5")))
+            freeze()
+        }
+        val emojis = TileEmojiRegistryImpl().apply {
+            register(TileEmojiDefinition("m1", "🀇"))
+            freeze()
+        }
+
+        assertEquals("m1", registry.baseAssetKey("example_public_m1"))
+        assertEquals("m1", registry.baseAssetKey("m1"))
+        assertEquals(redText("1"), labels.findFor("example_public_m1", registry))
+        assertEquals(redText("5"), labels.findFor("example_red_m5", registry))
+        assertEquals("🀇", emojis.findFor("example_public_m1", registry))
+        assertNull(emojis.findFor("example_red_m5", registry))
+    }
+
+    /** 驗證凍結前會拒絕指向不存在外觀的樣式牌身。 */
+    @Test
+    fun `freeze rejects a style body referencing an unknown appearance`() {
+        val registry = MinecraftTileAssetRegistryImpl()
+        registry.register(MinecraftTileStyleAssetDefinition("example:public", Tile.Numeric(Tile.Suit.Character, 1), "example_public_m1", bodyAppearanceId = "example:missing"))
 
         assertFailsWith<IllegalArgumentException> { registry.freeze() }
         assertFalse(registry.isFrozen)

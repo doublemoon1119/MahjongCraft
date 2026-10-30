@@ -9,6 +9,7 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameSnapshotSync
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.HandSortPreferenceStore
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DeclareAndDiscardUseCase
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
+import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledCoreExtensionRegistries
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.registerBundledRuleModules
 import com.doublemoon1119.mahjongcraft.testing.flow.common.game.repository.FakeGameSnapshotRepository
 import com.doublemoon1119.mahjongcraft.testing.flow.common.game.service.FakeGameEventPublisher
@@ -109,7 +110,7 @@ class ExtensionGameCommandExecutorTest {
     private fun context(): ExtensionGameCommandContext {
         val gameRepository = FakeGameRepository()
         val moduleRegistry = MahjongModuleRegistryImpl().apply { registerBundledRuleModules() }
-        val snapshotSynchronizer = GameSnapshotSynchronizer(gameRepository, FakeGameSnapshotRepository(), GameVisibilityPolicyImpl(moduleRegistry))
+        val snapshotSynchronizer = GameSnapshotSynchronizer(gameRepository, FakeGameSnapshotRepository(), GameVisibilityPolicyImpl(moduleRegistry, componentRegistry = bundledCoreExtensionRegistries().componentRegistry))
         val handSortPreferenceStore = HandSortPreferenceStore()
         val resolverRegistry = PostActionExhaustiveDrawResolverRegistry()
         val eventPublisher = FakeGameEventPublisher()
@@ -130,7 +131,11 @@ class ExtensionGameCommandExecutorTest {
                 resolverRegistry,
                 eventPublisher,
                 presentationPublisher,
+
+                componentRegistry = bundledCoreExtensionRegistries().componentRegistry,
             ),
+
+            componentRegistry = bundledCoreExtensionRegistries().componentRegistry,
         )
     }
 

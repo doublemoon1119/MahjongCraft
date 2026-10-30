@@ -21,6 +21,8 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.riichi.RiichiWinSe
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.MeldPresentation
 import com.doublemoon1119.mahjongcraft.logic.base.MeldType
 import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
+import com.doublemoon1119.mahjongcraft.logic.base.Tile
+import com.doublemoon1119.mahjongcraft.logic.base.TileFaceView
 import com.doublemoon1119.mahjongcraft.logic.module.BuiltInPaymentReasonIds
 import com.doublemoon1119.mahjongcraft.logic.module.BuiltInRuleModuleIds
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiExhaustiveDrawReason
@@ -631,7 +633,12 @@ class FabricDebugPresentationCommand(
             FabricWinCelebrationShowcaseScheduler.Wing(
                 seatIndex = seat,
                 cueIds = listOf(cue),
-                cards = showcaseWingCards(standingTileIds = standing, melds = melds, assetKeyOf = assets::get)
+                cards = showcaseWingCards(
+                    standingTileIds = standing,
+                    melds = melds,
+                    assetKeyOf = assets::get,
+                    backAppearanceOf = tilePreviewSupport::backAppearanceId,
+                )
                     .map { it.copy(tileId = entityIds.getValue(it.tileId)) },
                 standYaw = MahjongTileTableLayout.seatYaw(layout.tableFacing, layout.seatLayout, seat),
             )
@@ -990,8 +997,8 @@ class FabricDebugPresentationCommand(
                             ),
                         )
                     }
-                    add(WinSettlementDetailField(RiichiWinSettlementIds.DORA_FIELD, WinSettlementDetailValue.Tiles(handIds.take(2))))
-                    add(WinSettlementDetailField(RiichiWinSettlementIds.URA_DORA_FIELD, WinSettlementDetailValue.Tiles(handIds.drop(2).take(1))))
+                    add(WinSettlementDetailField(RiichiWinSettlementIds.DORA_FIELD, WinSettlementDetailValue.TileFaces(listOf(Tile.Numeric(Tile.Suit.Character, 1), Tile.Numeric(Tile.Suit.Dot, 5)).map(::TileFaceView))))
+                    add(WinSettlementDetailField(RiichiWinSettlementIds.URA_DORA_FIELD, WinSettlementDetailValue.TileFaces(listOf(TileFaceView(Tile.Numeric(Tile.Suit.Bamboo, 3))))))
                 },
             )
         }
@@ -1091,17 +1098,13 @@ class FabricDebugPresentationCommand(
             TileAnimationSteps.scheduleLaydown(winningTile, winTileLaydownStartGameTime, playGroupSound = true)
             val restLaydownStartGameTime = winTileLaydownEndGameTime + MahjongTileTableLayout.WIN_PRE_HAND_LAYDOWN_DELAY_TICKS
             val restTiles = handTiles - winningTile
-            restTiles.forEachIndexed { index, tile ->
-                TileAnimationSteps.scheduleLaydown(tile, restLaydownStartGameTime, playGroupSound = index == restTiles.size / 2)
-            }
+            TileAnimationSteps.scheduleGroupLaydown(restTiles, restLaydownStartGameTime)
             handLaydownEndGameTime = restLaydownStartGameTime + MahjongTileTableLayout.WIN_LAYDOWN_DURATION_TICKS
         } else {
             val discardedPlacement = layout.discardPlacement(discardIndex = 0)
             winningTile = tilePreviewSupport.spawnFreeTile(world, discardedPlacement, MahjongTilePose.FACE_UP, assetKey)
             val handLaydownStartGameTime = reorderEndGameTime + MahjongTileTableLayout.WIN_PRE_HAND_LAYDOWN_DELAY_TICKS
-            handTiles.forEachIndexed { index, tile ->
-                TileAnimationSteps.scheduleLaydown(tile, handLaydownStartGameTime, playGroupSound = index == handTiles.size / 2)
-            }
+            TileAnimationSteps.scheduleGroupLaydown(handTiles, handLaydownStartGameTime)
             handLaydownEndGameTime = handLaydownStartGameTime + MahjongTileTableLayout.WIN_LAYDOWN_DURATION_TICKS
         }
 

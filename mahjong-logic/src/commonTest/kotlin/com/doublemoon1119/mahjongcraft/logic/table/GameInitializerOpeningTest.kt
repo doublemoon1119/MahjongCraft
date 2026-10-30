@@ -155,7 +155,6 @@ class GameInitializerOpeningTest {
             GameInitializer.startNextRound(
                 gameId = Uuid.random(),
                 roundAdvancement = advancement,
-                previousDynamicRuleState = null,
                 module = module(procedure),
                 diceRollSource = fixedDiceSource,
             )

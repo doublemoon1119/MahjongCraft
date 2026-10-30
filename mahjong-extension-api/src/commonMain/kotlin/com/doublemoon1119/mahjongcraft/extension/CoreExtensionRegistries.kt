@@ -3,6 +3,7 @@ package com.doublemoon1119.mahjongcraft.extension
 import com.doublemoon1119.mahjongcraft.ai.ExtensionGameActionAiRegistry
 import com.doublemoon1119.mahjongcraft.ai.MahjongAiStrategyRegistry
 import com.doublemoon1119.mahjongcraft.ai.expectation.OpponentModelRegistry
+import com.doublemoon1119.mahjongcraft.flow.common.game.event.GameEventPublicMarkerResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.WinCelebrationCueResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkDtoRegistries
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.registry.PersistenceRegistries
@@ -13,6 +14,7 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.PostReacti
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.RuleDecisionResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.WinRoundContinuationResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.WinSettlementDetailResolverRegistry
+import com.doublemoon1119.mahjongcraft.logic.component.ComponentRegistry
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import com.doublemoon1119.mahjongcraft.logic.tile.TileTypeRegistry
 
@@ -23,6 +25,7 @@ import com.doublemoon1119.mahjongcraft.logic.tile.TileTypeRegistry
  *
  * @property moduleRegistry 規則模組 registry。
  * @property tileTypeRegistry 牌種類型 registry。
+ * @property componentRegistry 組件、適用對象與衍生效果的登記。
  * @property networkRegistries 網路 DTO registry 集合。
  * @property persistenceRegistries 權威狀態 persistence registry 集合。
  * @property gameActionAiRegistry 擴充動作 AI handler registry。
@@ -35,12 +38,14 @@ import com.doublemoon1119.mahjongcraft.logic.tile.TileTypeRegistry
  * @property ruleDecisionResolverRegistry 規則選擇 resolver registry。
  * @property winRoundContinuationResolverRegistry 胡牌後續流程 resolver registry。
  * @property winSettlementDetailResolverRegistry 胡牌結算詳情 resolver registry。
+ * @property gameEventPublicMarkerResolverRegistry 公開遊戲事件標記 resolver registry。
  * @property winCelebrationCueResolverRegistry 胡牌呈現提示 resolver registry。
  */
 class CoreExtensionRegistries(
     // 規則與牌種
     val moduleRegistry: MahjongModuleRegistry,
     val tileTypeRegistry: TileTypeRegistry,
+    val componentRegistry: ComponentRegistry,
     // 資料交換與持久化
     val networkRegistries: NetworkDtoRegistries,
     val persistenceRegistries: PersistenceRegistries,
@@ -58,12 +63,14 @@ class CoreExtensionRegistries(
     val ruleDecisionResolverRegistry: RuleDecisionResolverRegistry,
     val winRoundContinuationResolverRegistry: WinRoundContinuationResolverRegistry,
     val winSettlementDetailResolverRegistry: WinSettlementDetailResolverRegistry,
+    val gameEventPublicMarkerResolverRegistry: GameEventPublicMarkerResolverRegistry,
 ) {
     /** 取得目前所有 core extension registry 的不可變診斷快照。 */
     fun registrationSnapshot(): ExtensionRegistrationSnapshot = ExtensionRegistrationSnapshot(
         listOf(
             snapshotCategory(CoreExtensionRegistrationCategoryIds.RULE_MODULE, "Rule Module", moduleRegistry.getAllModuleIds()),
             snapshotCategory(CoreExtensionRegistrationCategoryIds.TILE_TYPE, "Tile Type", tileTypeRegistry.getAll().map { it.id.toString() }),
+            snapshotCategory(CoreExtensionRegistrationCategoryIds.COMPONENT, "Component", componentRegistry.getAllOwners().map { "owner:${it.id}" } + componentRegistry.getAll().map { "value:${it.id}" } + componentRegistry.effectIds().map { "effect:$it" } + componentRegistry.getAllViews().map { "view:${it.id}" } + componentRegistry.projectionIds().map { "projection:$it" } + componentRegistry.lifecycleIds().map { "lifecycle:$it" }),
             snapshotCategory(CoreExtensionRegistrationCategoryIds.NETWORK_DTO, "Network DTO", networkRegistrationKeys()),
             snapshotCategory(CoreExtensionRegistrationCategoryIds.PERSISTENCE_DTO, "Persistence DTO", persistenceRegistrationKeys()),
             snapshotCategory(
@@ -105,11 +112,26 @@ class CoreExtensionRegistries(
                 "Win Settlement Detail Resolver",
                 winSettlementDetailResolverRegistry.registrationKeys,
             ),
+            snapshotCategory(
+                CoreExtensionRegistrationCategoryIds.GAME_EVENT_PUBLIC_MARKER_RESOLVER,
+                "Game Event Public Marker Resolver",
+                gameEventPublicMarkerResolverRegistry.registrationKeys,
+            ),
         ),
     )
 
     /** 依固定分類順序凍結集合內所有 registry。 */
     fun freezeAll() {
+        networkRegistries.componentViews.viewTypes.forEach { type ->
+            require(componentRegistry.getAllViews().any { it === type }) { "Component view definition is not registered: ${type.id}" }
+        }
+        persistenceRegistries.componentViews.viewTypes.forEach { type ->
+            require(componentRegistry.getAllViews().any { it === type }) { "Saved component view definition is not registered: ${type.id}" }
+        }
+        persistenceRegistries.components.componentTypes.forEach { type ->
+            require(componentRegistry.find(type.id) === type) { "Component persistence definition is not registered: ${type.id}" }
+        }
+        componentRegistry.freeze()
         moduleRegistry.freeze()
         tileTypeRegistry.freeze()
         networkRegistries.freeze()
@@ -125,16 +147,15 @@ class CoreExtensionRegistries(
         ruleDecisionResolverRegistry.freeze()
         winRoundContinuationResolverRegistry.freeze()
         winSettlementDetailResolverRegistry.freeze()
+        gameEventPublicMarkerResolverRegistry.freeze()
     }
 
     /** 彙整所有 network DTO 子 registry 的穩定 key。 */
     private fun networkRegistrationKeys(): Set<String> = buildSet {
+        addPrefixed("component_view", networkRegistries.componentViews.registrationKeys)
         addPrefixed("rule_config", networkRegistries.ruleConfig.registrationKeys)
         addPrefixed("score_config", networkRegistries.scoreConfig.registrationKeys)
         addPrefixed("game_length", networkRegistries.gameLength.registrationKeys)
-        addPrefixed("dynamic_rule_state", networkRegistries.dynamicRuleState.registrationKeys)
-        addPrefixed("player_rule_state", networkRegistries.playerRuleState.registrationKeys)
-        addPrefixed("discard_pile", networkRegistries.discardPile.registrationKeys)
         addPrefixed("exhaustive_draw_reason", networkRegistries.exhaustiveDrawReason.registrationKeys)
         addPrefixed("extension_game_action", networkRegistries.extensionGameAction.registrationKeys)
         addPrefixed("extension_game_command", networkRegistries.extensionGameCommand.registrationKeys)
@@ -144,10 +165,10 @@ class CoreExtensionRegistries(
     private fun persistenceRegistrationKeys(): Set<String> = buildSet {
         addPrefixed("rule_config", persistenceRegistries.ruleConfigs.registrationKeys)
         addPrefixed("discard_pile", persistenceRegistries.discardPiles.registrationKeys)
-        addPrefixed("player_rule_state", persistenceRegistries.playerRuleStates.registrationKeys)
-        addPrefixed("dynamic_rule_state", persistenceRegistries.dynamicRuleStates.registrationKeys)
         addPrefixed("exhaustive_draw_reason", persistenceRegistries.exhaustiveDrawReasons.registrationKeys)
         addPrefixed("extension_game_action", persistenceRegistries.extensionGameActions.registrationKeys)
+        addPrefixed("component", persistenceRegistries.components.registrationKeys)
+        addPrefixed("component_view", persistenceRegistries.componentViews.registrationKeys)
     }
 }
 

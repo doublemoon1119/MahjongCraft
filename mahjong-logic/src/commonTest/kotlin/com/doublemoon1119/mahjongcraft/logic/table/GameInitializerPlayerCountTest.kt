@@ -3,7 +3,7 @@ package com.doublemoon1119.mahjongcraft.logic.table
 import com.doublemoon1119.mahjongcraft.logic.base.ExhaustiveDrawReason
 import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
-import com.doublemoon1119.mahjongcraft.logic.config.DynamicRuleState
+import com.doublemoon1119.mahjongcraft.logic.base.TileValue
 import com.doublemoon1119.mahjongcraft.logic.config.GameLength
 import com.doublemoon1119.mahjongcraft.logic.config.MahjongRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.config.MultiRonPolicy
@@ -11,6 +11,7 @@ import com.doublemoon1119.mahjongcraft.logic.config.RonResolution
 import com.doublemoon1119.mahjongcraft.logic.config.ScoreConfig
 import com.doublemoon1119.mahjongcraft.logic.module.ExhaustiveDrawSettlementResult
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
+import com.doublemoon1119.mahjongcraft.logic.module.PointPotCollection
 import com.doublemoon1119.mahjongcraft.logic.module.RevealedHandSettlement
 import com.doublemoon1119.mahjongcraft.logic.module.WinResolutionResult
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDiscardPile
@@ -28,6 +29,8 @@ import com.doublemoon1119.mahjongcraft.logic.table.opening.RoundOpeningContext
 import com.doublemoon1119.mahjongcraft.logic.table.opening.RoundOpeningProcedure
 import com.doublemoon1119.mahjongcraft.logic.table.opening.RoundOpeningStep
 import com.doublemoon1119.mahjongcraft.logic.table.opening.WallOpening
+import com.doublemoon1119.mahjongcraft.logic.tile.TileComposition
+import com.doublemoon1119.mahjongcraft.logic.tile.TileCompositionEntry
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
@@ -75,7 +78,6 @@ class GameInitializerPlayerCountTest {
             val result = GameInitializer.startNextRound(
                 gameId = Uuid.random(),
                 roundAdvancement = advancement,
-                previousDynamicRuleState = null,
                 module = module,
             )
 
@@ -117,9 +119,6 @@ class GameInitializerPlayerCountTest {
         override fun createLegalActionValidator() = delegate.createLegalActionValidator()
         override fun createHandValueCalculator() = delegate.createHandValueCalculator()
         override fun createHandValueContextCalculator() = delegate.createHandValueContextCalculator()
-        override fun createInitialDynamicState() = delegate.createInitialDynamicState()
-        override fun createNextRoundDynamicState(previous: DynamicRuleState?) = delegate.createNextRoundDynamicState(previous)
-        override fun createInitialPlayerRuleState() = delegate.createInitialPlayerRuleState()
         override fun onPlayerDrew(player: MahjongPlayer) = delegate.onPlayerDrew(player)
         override fun onPlayerDiscarded(player: MahjongPlayer) = delegate.onPlayerDiscarded(player)
         override fun onMeldClaimed(players: List<MahjongPlayer>) = delegate.onMeldClaimed(players)
@@ -139,7 +138,7 @@ class GameInitializerPlayerCountTest {
             isRobbingKan = isRobbingKan,
         )
 
-        override fun collectStickPot(tableState: TableState): Pair<DynamicRuleState?, Int>? = delegate.collectStickPot(tableState)
+        override fun collectStickPot(tableState: TableState): PointPotCollection? = delegate.collectStickPot(tableState)
 
         override fun resolveComboBonusPayments(
             tableState: TableState,
@@ -174,6 +173,12 @@ class GameInitializerPlayerCountTest {
      * @property playerCount 本局完整玩家名單的人數。
      */
     private class VariableWallFactory(private val playerCount: Int) : TileWallFactory {
+        override fun composition(): TileComposition = TileComposition(
+            (0 until playerCount * 8).groupingBy { (it % 9) + 1 }.eachCount().map { (value, count) ->
+                TileCompositionEntry(TileValue(Tile.Numeric(Tile.Suit.Character, value)), count)
+            },
+        )
+
         override fun create(): TileWall = TileWall(
             List(playerCount * 8) { index ->
                 IdentifiedTile(Uuid.random(), Tile.Numeric(Tile.Suit.Character, (index % 9) + 1))

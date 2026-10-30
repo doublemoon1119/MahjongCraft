@@ -18,6 +18,7 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.service.HandSortPreferen
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.isOwnTurnWindowOpenFor
 import com.doublemoon1119.mahjongcraft.logic.base.ExhaustiveDrawReason
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
+import com.doublemoon1119.mahjongcraft.logic.component.ComponentRegistry
 import com.doublemoon1119.mahjongcraft.logic.judgment.LegalActionContext
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import com.doublemoon1119.mahjongcraft.logic.table.SidewaysMarkedDiscardPile
@@ -31,6 +32,7 @@ import kotlin.uuid.Uuid
  * 規則只提供純宣告效果，權威驗證、反應判定、流局檢查與副作用由這個用例統一處理，
  * 整個命令只會對對局寫入一次。
  *
+ * @property componentRegistry 正式組件定義與純效果來源。
  * @property gameRepository 權威對局資料倉庫。
  * @property moduleRegistry 麻將規則模組註冊中心。
  * @property snapshotSynchronizer 對局快照同步服務。
@@ -47,6 +49,7 @@ class DeclareAndDiscardUseCase(
     private val postActionExhaustiveDrawResolverRegistry: PostActionExhaustiveDrawResolverRegistry,
     private val eventPublisher: GameEventPublisher,
     private val presentationPublisher: GamePresentationPublisher,
+    private val componentRegistry: ComponentRegistry,
 ) {
     /**
      * 驗證並原子套用宣告與捨牌。
@@ -86,6 +89,7 @@ class DeclareAndDiscardUseCase(
             }
 
             val module = moduleRegistry.getModule(state.config)
+            val ruleComponents = RuleComponentChecker(componentRegistry, module.id)
             val validator = module.createLegalActionValidator()
             val context = LegalActionContext.ownTurn(state, playerId)
             val ownTurnActions = validator.getLegalActions(context)
@@ -111,21 +115,29 @@ class DeclareAndDiscardUseCase(
             }
             // 宣告附帶的捨牌與一般捨牌相同：先讓規則處理放棄自摸與打牌後的狀態，再套用宣告效果。
             val declinedChecked = if (player.hand.lastDrawn != null && ownTurnActions.any { it is GameAction.Tsumo }) {
-                RuleHookResultValidator.requireRuleStateOnly(
-                    before = player,
-                    after = module.onPlayerDeclinedWin(player),
-                    hookName = "onPlayerDeclinedWin",
+                ruleComponents.applyPlayerPatch(
+                    tableState = state,
+                    player = player,
+                    patch = module.onPlayerDeclinedWin(player),
+                    source = "onPlayerDeclinedWin",
                 )
             } else {
                 player
             }
-            val discardedPlayer = declinedChecked
+            val playerWithDiscard = declinedChecked
                 .copy(hand = discard.hand, discardPile = declinedChecked.discardPile.discardTile(discard.tile))
                 .recordAction(GameAction.Discard(tileId))
-            val afterDiscardHooks = RuleHookResultValidator.requireRuleStateOnly(
-                before = discardedPlayer,
-                after = module.onPlayerDiscarded(discardedPlayer),
-                hookName = "onPlayerDiscarded",
+            val stateWithDiscard = ruleComponents.initializeCreatedRecords(
+                before = state,
+                after = state.copy(players = state.players.map { if (it.id == playerId) playerWithDiscard else it }),
+                source = "Discard",
+            )
+            val discardedPlayer = stateWithDiscard.players.first { it.id == playerId }
+            val afterDiscardHooks = ruleComponents.applyPlayerPatch(
+                tableState = stateWithDiscard,
+                player = discardedPlayer,
+                patch = module.onPlayerDiscarded(discardedPlayer),
+                source = "onPlayerDiscarded",
             )
             val declaringPlayer = afterDiscardHooks.copy(
                 hand = player.hand,
@@ -136,42 +148,33 @@ class DeclareAndDiscardUseCase(
                 ?: return@update state to Outcome.Error(GameError.IllegalAction(playerId, gameId, action))
             val effect = policy.resolve(state, declaringPlayer, action, discard)
                 ?: return@update state to Outcome.Error(GameError.IllegalAction(playerId, gameId, action))
-            val expectedScore = declaringPlayer.score.toLong() - effect.cost.toLong()
-            val previousDiscardEntries = declaringPlayer.discardPile.entries
-            val effectDiscardEntries = effect.player.discardPile.entries
-            if (
-                (effect.cost > 0 && effect.cost > declaringPlayer.score) ||
-                expectedScore !in Int.MIN_VALUE.toLong()..Int.MAX_VALUE.toLong() ||
-                effect.player.id != declaringPlayer.id ||
-                effect.player.initialSeatIndex != declaringPlayer.initialSeatIndex ||
-                effect.player.seatWind != declaringPlayer.seatWind ||
-                effect.player.hand != discard.hand ||
-                effect.player.score.toLong() != expectedScore ||
-                effectDiscardEntries.size != previousDiscardEntries.size + 1 ||
-                effectDiscardEntries.dropLast(1) != previousDiscardEntries ||
-                effectDiscardEntries.lastOrNull()?.tile != discard.tile ||
-                effectDiscardEntries.lastOrNull()?.isTaken != false ||
-                effect.player.passedTilesInRound != declaringPlayer.passedTilesInRound ||
-                effect.player.actionHistory != declaringPlayer.actionHistory ||
-                effect.player.copy(
-                    hand = declaringPlayer.hand,
-                    discardPile = declaringPlayer.discardPile,
-                    score = declaringPlayer.score,
-                    playerRuleState = effect.player.playerRuleState,
-                    actionHistory = declaringPlayer.actionHistory,
-                ) != declaringPlayer.copy(playerRuleState = effect.player.playerRuleState)
-            ) {
+            if (effect.cost > 0 && effect.cost > declaringPlayer.score) {
                 throw RuleContractViolationException(
                     GameAbortReasonIds.RULE_EXECUTION_FAILED,
-                    "Declaration policy returned an unauthorized player mutation: $action",
+                    "Declaration cost exceeds the player's score: $action",
                 )
             }
-            val updatedPlayer = effect.player.copy(hand = organized.hand)
+            val playerWithEffect = ruleComponents.applyPlayerPatch(
+                tableState = state,
+                player = declaringPlayer,
+                patch = effect.playerComponents,
+                source = "declarationDiscardPolicy",
+            )
+            val pileWithDiscard = playerWithEffect.discardPile.discardTile(discard.tile)
+            val updatedPlayer = playerWithEffect.copy(
+                hand = organized.hand,
+                discardPile = pileWithDiscard.replaceEntryComponents(pileWithDiscard.entries.lastIndex, effect.discardComponents),
+                score = playerWithEffect.score - effect.cost,
+            )
                 .recordAction(action)
                 .recordAction(GameAction.Discard(tileId))
-            val updatedState = state.copy(
-                players = state.players.map { if (it.id == playerId) updatedPlayer else it },
-                dynamicRuleState = effect.dynamicRuleState,
+            val updatedState = ruleComponents.initializeCreatedRecords(
+                before = state,
+                after = state.copy(
+                    players = state.players.map { if (it.id == playerId) updatedPlayer else it },
+                    components = ruleComponents.applyTablePatch(state, effect.tableComponents, "declarationDiscardPolicy"),
+                ),
+                source = "declarationDiscardPolicy",
             )
             val resolved = DiscardReactionResolver.resolve(state, updatedState, module, playerId, discard.tile)
             val revealResult = if (resolved.abortiveDrawReason == null && resolved.tableState.pendingReaction == null) {
@@ -181,6 +184,7 @@ class DeclareAndDiscardUseCase(
                     module = module,
                     actorPlayerId = playerId,
                     sourceAction = GameAction.Discard(tileId),
+                    componentRegistry = componentRegistry,
                 )
             } else {
                 WallRevealDecisionApplier.Result.Applied(resolved.tableState)
@@ -225,7 +229,7 @@ class DeclareAndDiscardUseCase(
                 updated.hand.tiles.map { it.id },
                 null,
                 updated.hand.melds.map { it.toPresentation(result.tableState.config.revealsClosedKanTiles) },
-                setAsideTileIds = module.setAsideTiles(updated).map { it.id },
+                setAsideTileIds = updated.setAsideTiles.map { it.id },
             )
             presentationPublisher.publishDiscardPileUpdated(
                 gameId,

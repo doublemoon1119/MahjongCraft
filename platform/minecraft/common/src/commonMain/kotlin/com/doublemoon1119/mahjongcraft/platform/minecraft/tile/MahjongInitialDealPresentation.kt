@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.tile
 
+import com.doublemoon1119.mahjongcraft.logic.tile.component.TilePoseState
 import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongTableFacing
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongTableSeatLayout
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocation
@@ -29,6 +30,7 @@ import kotlin.uuid.Uuid
  * 掉落動畫、擲骰動畫都播完才輪到發牌），折算進每一張牌自己的佇列（一個 `AnimationStep.Wait` step），
  * 不是外層再包一層延遲呼叫本身——理由見 `AnimatedMahjongEntity` KDoc：呼叫端延遲呼叫這個方法本身
  * 沒辦法撐過伺服器重啟，只有掛在 entity 自己身上的佇列才可以。
+ * @property tilePoseStates 規則要求的逐張手牌姿態，發牌落位時套用。
  */
 data class MahjongInitialDealPresentation(
     val tableId: Uuid,
@@ -41,4 +43,5 @@ data class MahjongInitialDealPresentation(
     val cornerWidthBySeatIndex: Map<Int, Double>,
     val dealBatchSizes: List<Int>,
     val extraLeadDelayTicks: Int = 0,
+    val tilePoseStates: List<TilePoseState> = emptyList(),
 )

@@ -8,10 +8,8 @@ import com.doublemoon1119.mahjongcraft.logic.base.MeldType
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.logic.module.PositionRules
 import com.doublemoon1119.mahjongcraft.logic.module.PositionView
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPlayerState
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPlayerStateSnapshot
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.riichiCanonical
-import com.doublemoon1119.mahjongcraft.logic.table.PlayerRuleState
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.riichiDeclaration
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.RiichiTileInterpretationPolicy
 import kotlin.math.roundToInt
 import kotlin.uuid.Uuid
 
@@ -35,7 +33,7 @@ class RiichiOpponentModel(
 ) : OpponentModel {
     override fun baselineWinValue(view: PositionView, playerId: Uuid): Int {
         val player = view.player(playerId)
-        val isRiichi = player.playerRuleState.isRiichiForView()
+        val isRiichi = player.riichiDeclaration != null
         val isOpen = player.hand.melds.any { it.type != MeldType.CLOSED_KAN }
         val base = when {
             isRiichi -> RIICHI_BASELINE_VALUE
@@ -43,7 +41,7 @@ class RiichiOpponentModel(
             else -> CLOSED_BASELINE_VALUE
         }
         val doraInMelds = player.hand.melds
-            .flatMap { meld -> meld.tiles.mapNotNull { it.tile } }
+            .flatMap { meld -> meld.tiles.mapNotNull { it.face?.let(RiichiTileInterpretationPolicy::valueOf) } }
             .sumOf { rules.bonusTileCount(view, it) }
         val value = base + doraInMelds * DORA_BASELINE_BONUS
         return if (view.snapshot.dealerPlayerId == playerId) (value * DEALER_BASELINE_MULTIPLIER).roundToInt() else value
@@ -54,18 +52,17 @@ class RiichiOpponentModel(
         opponentId: Uuid,
         tile: Tile,
     ): Double {
-        val canonical = tile.riichiCanonical
         val safeTiles = rules.ronExclusions(view, opponentId).ownDiscards
-        if (canonical in safeTiles) return 0.0
+        if (tile in safeTiles) return 0.0
 
         val unseen = unseenCounts(view)
         val unseenOf = { candidate: Tile -> unseen[candidate] ?: 0 }
-        var weight = TANKI_WEIGHT * unseenOf(canonical) / COPIES_PER_TILE +
-            SHANPON_WEIGHT * pairCount(unseenOf(canonical)) / pairCount(COPIES_PER_TILE)
+        var weight = TANKI_WEIGHT * unseenOf(tile) / COPIES_PER_TILE +
+            SHANPON_WEIGHT * pairCount(unseenOf(tile)) / pairCount(COPIES_PER_TILE)
 
-        if (canonical is Tile.Numeric) {
-            val value = canonical.value
-            val numbered = { number: Int -> Tile.Numeric(canonical.suit, number) }
+        if (tile is Tile.Numeric) {
+            val value = tile.value
+            val numbered = { number: Int -> Tile.Numeric(tile.suit, number) }
             val holds = { first: Int, second: Int ->
                 unseenOf(numbered(first)).toDouble() * unseenOf(numbered(second)) / (COPIES_PER_TILE * COPIES_PER_TILE)
             }
@@ -86,7 +83,7 @@ class RiichiOpponentModel(
 
     override fun threat(view: PositionView, opponentId: Uuid): ThreatEstimate {
         val opponent = view.player(opponentId)
-        val readyProbability = if (opponent.playerRuleState.isRiichiForView()) {
+        val readyProbability = if (opponent.riichiDeclaration != null) {
             1.0
         } else {
             val openMelds = opponent.hand.melds.count { it.type != MeldType.CLOSED_KAN }
@@ -97,12 +94,6 @@ class RiichiOpponentModel(
             readyProbability = readyProbability,
             expectedWinValue = baselineWinValue(view, opponentId),
         )
-    }
-
-    private fun PlayerRuleState?.isRiichiForView(): Boolean = when (this) {
-        is RiichiPlayerState -> isRiichi
-        is RiichiPlayerStateSnapshot -> isRiichi
-        else -> false
     }
 
     /**
@@ -117,12 +108,12 @@ class RiichiOpponentModel(
             // 快照的立牌已包含剛摸到的牌
             addAll(self.hand.standingTiles.distinctBy { it.id }.mapNotNull { it.tile })
             view.snapshot.players.forEach { player ->
-                player.discardPile.entries.filterNot { it.isTaken }.forEach { add(it.tile.tile) }
+                player.discardPile.entries.filterNot { it.isTaken }.forEach { entry -> entry.tile.tile?.let { add(it) } }
                 player.hand.melds.forEach { meld -> addAll(meld.tiles.mapNotNull { it.tile }) }
             }
             addAll(view.snapshot.tileWall.tiles.mapNotNull { it.tile })
         }
-        val seen = visible.groupingBy { it.riichiCanonical }.eachCount()
+        val seen = visible.groupingBy { it }.eachCount()
         return TILE_KINDS.associateWith { kind -> (COPIES_PER_TILE - (seen[kind] ?: 0)).coerceAtLeast(0) }
     }
 

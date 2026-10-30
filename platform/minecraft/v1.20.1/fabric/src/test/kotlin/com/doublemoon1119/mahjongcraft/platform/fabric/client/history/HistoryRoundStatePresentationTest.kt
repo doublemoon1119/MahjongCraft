@@ -13,6 +13,7 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.model.MeldTypeDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.model.RelativeDirectionDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.model.SuitDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.model.TileDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.model.TileFaceViewDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.model.WindDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.snapshot.MatchRoundPhaseDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.snapshot.MatchRoundPositionDto
@@ -187,7 +188,7 @@ class HistoryRoundStatePresentationTest {
         ),
         roundNumber = 1,
         position = HistoryRoundPositionDto.Initial,
-        tileCatalog = (0..6).map { TileDto.Numeric(SuitDto.CHARACTER, (it % 9) + 1) },
+        tileCatalog = (0..6).map { TileFaceViewDto(TileDto.Numeric(SuitDto.CHARACTER, (it % 9) + 1), emptyList(), null) },
         players = players,
         wallTiles = emptyList(),
         reservedTiles = emptyList(),

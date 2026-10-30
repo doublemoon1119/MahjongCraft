@@ -2,8 +2,8 @@ package com.doublemoon1119.mahjongcraft.example
 
 import com.doublemoon1119.mahjongcraft.ai.MahjongAiStrategyDefinition
 import com.doublemoon1119.mahjongcraft.ai.MahjongAiStrategyRegistry
-import com.doublemoon1119.mahjongcraft.example.action.registerExamplePairingDeclarationFactory
-import com.doublemoon1119.mahjongcraft.example.action.registerExamplePairingDeclarationHandler
+import com.doublemoon1119.mahjongcraft.example.action.registerExamplePairingRevealHandFactory
+import com.doublemoon1119.mahjongcraft.example.action.registerExamplePairingRevealHandHandler
 import com.doublemoon1119.mahjongcraft.example.ai.ExampleAiStrategyIds
 import com.doublemoon1119.mahjongcraft.example.ai.ExampleTsumogiriAiStrategy
 import com.doublemoon1119.mahjongcraft.example.decision.ExamplePairingRuleDecisionResolver
@@ -12,6 +12,7 @@ import com.doublemoon1119.mahjongcraft.example.format.registerExamplePersistence
 import com.doublemoon1119.mahjongcraft.example.pairing.ExamplePairingIds
 import com.doublemoon1119.mahjongcraft.example.pairing.ExamplePairingRuleConfig
 import com.doublemoon1119.mahjongcraft.example.pairing.ExamplePairingRuleModule
+import com.doublemoon1119.mahjongcraft.example.pairing.registerExamplePairingComponents
 import com.doublemoon1119.mahjongcraft.extension.MahjongExtension
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkDtoRegistries
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.registry.PersistenceRegistries
@@ -20,6 +21,7 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.ExtensionG
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.RuleDecisionResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.WinSettlementDetailResolverDefinition
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.WinSettlementDetailResolverRegistry
+import com.doublemoon1119.mahjongcraft.logic.component.ComponentRegistry
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleDefinition
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import com.doublemoon1119.mahjongcraft.logic.tile.TileTypeDefinition
@@ -45,7 +47,10 @@ open class ExampleMahjongExtension : MahjongExtension {
         registry.register(TileTypeDefinition(id = ExamplePairingIds.INVERTED_ONE_MAN))
     }
 
-    /** 登記範例的設定、牌河、公開標記與動作網路格式。 */
+    /** 登記加分牌、攤牌狀態與公開牌面標記，以及前兩者的生命週期。 */
+    override fun registerComponents(registry: ComponentRegistry) = registerExamplePairingComponents(registry)
+
+    /** 登記範例的規則、計分與局數設定，以及流局原因、擴充動作與指令的網路格式。 */
     override fun registerNetworkDtos(registries: NetworkDtoRegistries) = registerExampleNetworkDtos(registries)
 
     /** 登記獨立的保存格式，供權威存檔與歷史沿用。 */
@@ -56,11 +61,11 @@ open class ExampleMahjongExtension : MahjongExtension {
         registry.register(MahjongAiStrategyDefinition(key = ExampleAiStrategyIds.TSUMOGIRI) { ExampleTsumogiriAiStrategy() })
     }
 
-    /** 登記示範宣告的命令建立方式。 */
-    override fun registerGameActionCommandFactories(registry: ExtensionGameActionCommandFactoryRegistry) = registerExamplePairingDeclarationFactory(registry)
+    /** 登記攤牌動作的命令建立方式。 */
+    override fun registerGameActionCommandFactories(registry: ExtensionGameActionCommandFactoryRegistry) = registerExamplePairingRevealHandFactory(registry)
 
-    /** 登記示範宣告的權威處理器。 */
-    override fun registerGameCommandHandlers(registry: ExtensionGameCommandExecutorRegistry) = registerExamplePairingDeclarationHandler(registry)
+    /** 登記攤牌動作的權威處理器。 */
+    override fun registerGameCommandHandlers(registry: ExtensionGameCommandExecutorRegistry) = registerExamplePairingRevealHandHandler(registry)
 
     /** 登記依換牌選項決定是否啟用的規則選擇。 */
     override fun registerRuleDecisionResolvers(registry: RuleDecisionResolverRegistry) {

@@ -1,6 +1,7 @@
 package com.doublemoon1119.mahjongcraft.logic.rules.taiwan
 
 import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
+import com.doublemoon1119.mahjongcraft.logic.component.ComponentSet
 import com.doublemoon1119.mahjongcraft.logic.table.DiscardPile
 import com.doublemoon1119.mahjongcraft.logic.table.DiscardPile.DiscardEntry
 
@@ -44,5 +45,20 @@ data class TaiwanDiscardPile(
     override fun takeLast(): TaiwanDiscardPile {
         val last = _entries.lastOrNull() ?: return this
         return copy(_entries = _entries.dropLast(1) + last.withTaken())
+    }
+
+    /** 替換目前仍在牌河的同張牌，不修改被取走的歷史紀錄。 */
+    override fun replaceTile(tile: IdentifiedTile): TaiwanDiscardPile {
+        val entries = _entries.map { entry ->
+            if (!entry.isTaken && entry.tile.id == tile.id) entry.withTile(tile) else entry
+        }
+        require(entries.count { !it.isTaken && it.tile.id == tile.id } == 1) { "Tile is not in the current discard area" }
+        return copy(_entries = entries)
+    }
+
+    /** 替換指定紀錄的組件，其他紀錄保持原值。 */
+    override fun replaceEntryComponents(index: Int, components: ComponentSet): TaiwanDiscardPile {
+        require(index in _entries.indices) { "Discard entry index is out of range" }
+        return copy(_entries = _entries.mapIndexed { position, entry -> if (position == index) entry.withComponents(components) else entry })
     }
 }

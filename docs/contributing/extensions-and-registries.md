@@ -31,6 +31,13 @@
   successful decisions. Share lifecycle and execution mechanics without merging endpoint authorization or
   data-recovery policies.
 
+## Platform Presentation
+
+Keep platform-specific rendering contracts in the platform's presentation guide rather than defining
+core extension behavior through one adapter. For example, see the Minecraft guide for
+[round information parameters](minecraft-presentation.md#round-info-parameters) and
+[tile corner labels](minecraft-presentation.md#tile-corner-labels).
+
 ## Extension Action Identity
 
 - Give each extension action one stable namespaced ID. Use that same constant for the action's `id`,
@@ -69,6 +76,30 @@
   rule can actually submit and save a change, not just that a bundled rule shows a control.
 - For an optional setting, test both sides: rules that need it can change and save it; rules that do not
   need it have no field and the server rejects changes to that value.
+
+## Multi-choice Room Settings
+
+- Use `GameConfigEditorSpec.MultiChoice` when a rule setting selects a set of options.
+  Register the full option IDs, their display order, explicit translation keys and
+  minimum/maximum selection counts. Use `optionDescriptionTranslationKeys` for
+  optional hover explanations; its keys must also be registered option IDs.
+  `MultiChoiceValue.optionIds` is a set: changing
+  its iteration order does not change the setting. An empty set is allowed only
+  when the minimum is zero.
+- The rule owns the actual setting and its network and persistence mappings.
+  The editor is a way to read and update that setting, not another wire format.
+  The server uses the editor's validation and rebuilds the submitted configuration;
+  screen controls never replace server checks.
+- Keep option collections and translations stable after registration. Display names
+  follow the registered option order, with the complete ID as the missing-name
+  fallback. Never infer a translation key from an option ID.
+- A selection screen edits a local selection first. Applying updates the room draft
+  once; cancelling leaves it alone. Temporary selections may be below the minimum
+  while replacing one option with another, but cannot be applied until valid.
+- A valid selection may still be unsuitable for the current match roster. Express
+  that restriction through the rule's player-count contract and test the real room
+  update and start paths. The pairing example uses this to keep enough tiles for
+  its initial hands and at least one draw.
 
 ## Rule Decision Windows
 
@@ -153,16 +184,46 @@
 
 ## Observer State Projection
 
-- Rule modules define what each observer may know through `projectPlayerRuleState` and
-  `projectDynamicRuleState`. The visibility policy applies these hooks to both network snapshots and AI
-  contexts. Do not send a raw `TableState.toSnapshot` result directly to either consumer.
-- The default player projection exposes state only to its owner; the default dynamic projection exposes
-  nothing. A spectator's permission to see tile faces does not grant access to private rule state.
-- Return immutable, explicitly public projections for other observers. Represent hidden fields as unknown,
-  not as false or another invented value. Register a network DTO for any new projection type; never write
-  projected state back into the authoritative game or its persistence format.
-- Projection hooks must not modify state or make game decisions. Authoritative validation and wall reveal
-  rules still read the original state. Test that changing hidden data leaves other observers' output unchanged.
+- Player rule data lives in typed components. Register a separate view and projection for each value
+  that a reader may receive. Unregistered projections expose nothing; permission to see someone's
+  tile faces does not grant access to their private rule data.
+- Describe tiles in any current area through `describeTileComponents(tableState)` or registered pure
+  component effects. Each description identifies one tile UUID. A property of one tile does not
+  apply to every tile with the same face.
+- `resolveTileComponents` combines area defaults, the tile's saved components and rule effects.
+  It rejects duplicate descriptions, references outside current areas, conflicting values and access
+  grants to players outside the match. All consumers use this resolver, including platform adapters.
+- Keep access separate from pose. A readable tile may stay face down or upright; a face-up tile must
+  be public. Neither a texture nor a pose grants permission to observe a match.
+- The visibility policy uses an authenticated player, spectator or public context before building
+  network snapshots and AI input. Do not send a raw `TableState.toSnapshot` result to either
+  consumer. Unknown faces carry no face-specific appearance or component views.
+- Derive effects from the same saved state without changing it. For example, a player's reveal
+  component can affect their current hand and future draws without storing another list of tile IDs.
+  Use the registered round lifecycle to reset, retain or transform each component.
+- Views must be immutable and contain only explicitly authorized data. Register their network
+  codecs; never write views back into authoritative state or use them as the persistence format.
+- Projections do not make game decisions. Test that changing private values leaves unauthorized
+  observers' output unchanged, including spectators and public events.
+
+## Component Lifecycles and Changes
+
+- Register a lifecycle for every player, table, discard-record and meld component. Its `appliesTo`
+  states which rules and configurations use the component; a saved component outside that scope is
+  rejected before any write. Tile components may come from the tile set itself and do not need a
+  lifecycle.
+- To reuse another extension's component in your rule, register a `ComponentLifecycleScope` for it
+  instead of editing the original registration. The original lifecycle's initial value, required
+  check and round transition then also apply to your rule. Register your own projection if your rule
+  should expose it.
+- A discard record or meld created by an action receives its registered initial values right after
+  the action. Values the rule already wrote take precedence. An added kan keeps the meld's ID and
+  components.
+- Every set or removed component in a `ComponentPatch` carries its expected previous value. Build
+  the patch with `ComponentPatch.basedOn` from the state the rule read; a stale value stops the
+  match through the contract-failure path instead of overwriting another committed result.
+- Flow checks components returned by hooks, effects and patches as soon as it receives them, using
+  the same registry checks as the final write.
 
 ## Legal Action Input
 
@@ -199,14 +260,16 @@
 - Higher reaction priority wins. Higher tie-break priority wins within that priority, followed by the
   nearest seat after the discarder. Do not compare priorities by subtraction. Winning reactions still use
   the shared multi-winner settlement path; a discard can belong to only one claimed meld.
-- A declaration that also discards a tile uses `ExtensionGameCommandContext.declareAndDiscardUseCase`.
-  Its handler supplies the action and discard ID, not a second repository write or its own publications.
-  `declarationDiscardPolicy` returns the complete permitted player and dynamic rule state. Preserve the
-  current dynamic state explicitly when unchanged; null means to clear it, not to skip its update.
-- Flow owns the discard, score validation, action history, reaction window and post-commit notifications.
-  A rule effect may change its own player rule state, dynamic rule state, declared cost and new discard's
-  public markers, but cannot replace hands, seats, identities or existing discard entries. Invalid rule
-  effects stop the match through the contract-failure path instead of becoming a pass or a normal discard.
+- A declaration that also discards a tile uses
+  `ExtensionGameCommandContext.declareAndDiscardUseCase`. Its handler supplies the action and
+  discard ID, not a second repository write or its own publications. `declarationDiscardPolicy`
+  returns a player-component patch, the new discard record's components, a table-component patch and
+  the declared cost. An empty patch keeps the current components; removals must be listed
+  explicitly, and every change carries its expected previous value.
+- Flow owns the discard, score deduction, action history, reaction window and post-commit
+  notifications. A rule effect describes component changes only, so it cannot touch hands, seats,
+  identities, scores or existing discard entries. Invalid rule effects stop the match through the
+  contract-failure path instead of becoming a pass or a normal discard.
 - Keep a meld's information visibility separate from its physical pose. `publiclyRevealedTileIds` says
   which faces other observers may know; `faceDownTileIds` says which tiles lie face down. The called discard
   is already public. Save both sets and the stable display order; do not sort hidden tiles by their faces
@@ -230,10 +293,10 @@
 - Points that change hands when an action stands come from `createActionScoringPolicy`. Flow asks once
   for each claim, kan and set-aside that stands, before the replacement draw, and not for actions that
   are robbed or cancelled. Player changes plus the pot deposit must add up to zero; keep the pot balance
-  in the rule's dynamic state and pay it out from the rule's settlement.
-- `onPlayerDrew`, `onPlayerDiscarded`, `onPlayerDeclinedWin` and `onMeldClaimed` may only change player
-  rule state. Changing scores, hands or discards in a hook stops the match; use the scoring policy or a
-  declaration cost instead.
+  in a table component and pay it out from the rule's settlement.
+- `onPlayerDrew`, `onPlayerDiscarded`, `onPlayerDeclinedWin`, `beforeDiscardClaimed` and
+  `onMeldClaimed` return player-component patches; `onMeldClaimed` keys them by player ID. A hook
+  cannot change scores, hands or discards; use the scoring policy or a declaration cost instead.
 
 ## Koin Registration
 

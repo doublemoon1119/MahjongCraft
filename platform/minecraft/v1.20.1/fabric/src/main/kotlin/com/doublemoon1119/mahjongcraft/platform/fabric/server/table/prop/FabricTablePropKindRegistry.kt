@@ -1,5 +1,7 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.server.table.prop
 
+import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TablePropKindDefinition
+
 /** 依 [FabricTablePropKind.id] 登記 Fabric 端的規則桌面物件種類。 */
 interface FabricTablePropKindRegistry {
     /** 目前已登記的種類識別碼快照。 */
@@ -7,6 +9,9 @@ interface FabricTablePropKindRegistry {
 
     /** registry 是否已凍結。 */
     val isFrozen: Boolean
+
+    /** 登記當下擷取的共用種類定義快照。 */
+    val definitions: Map<String, TablePropKindDefinition>
 
     /** 目前已登記的全部種類，依登記順序排列。 */
     val kinds: List<FabricTablePropKind>

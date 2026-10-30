@@ -37,4 +37,40 @@ class GameConfigPresentationTextTest {
             assertFalse(text.content is TranslatableTextContent)
         }
     }
+
+    /** 多選摘要依欄位選項順序顯示，而不是依集合插入順序顯示。 */
+    @Test
+    fun `multi choice text follows editor order`() {
+        val editor = GameConfigEditorSpec.MultiChoice(
+            optionIds = listOf("example:one", "example:two", "example:three"),
+            optionTranslationKeys = mapOf(
+                "example:one" to "example.option.one",
+                "example:two" to "example.option.two",
+                "example:three" to "example.option.three",
+            ),
+        )
+
+        val text = gameConfigPresentationText(
+            GameConfigPresentationValue.MultiChoiceValue(setOf("example:three", "example:one")),
+            editor,
+        )
+
+        assertEquals("example.option.one, example.option.three", text.string)
+    }
+
+    /** 歷史設定中的未知選項不能在摘要中被靜默丟棄。 */
+    @Test
+    fun `multi choice text preserves unknown ids after registered options`() {
+        val editor = GameConfigEditorSpec.MultiChoice(listOf("example:known"))
+        val first = gameConfigPresentationText(
+            GameConfigPresentationValue.MultiChoiceValue(linkedSetOf("other:unknown", "example:known")),
+            editor,
+        )
+        val reordered = gameConfigPresentationText(
+            GameConfigPresentationValue.MultiChoiceValue(linkedSetOf("example:known", "other:unknown")),
+            editor,
+        )
+        assertEquals("example:known, other:unknown", first.string)
+        assertEquals(first.string, reordered.string)
+    }
 }

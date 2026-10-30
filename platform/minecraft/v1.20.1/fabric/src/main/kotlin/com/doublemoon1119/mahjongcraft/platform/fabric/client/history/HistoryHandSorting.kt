@@ -1,7 +1,7 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.client.history
 
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryReplayPlayerStateDto
-import com.doublemoon1119.mahjongcraft.flow.network.dto.model.TileDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.model.TileFaceViewDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.model.toDomain
 import com.doublemoon1119.mahjongcraft.logic.base.TileOrder
 
@@ -51,15 +51,15 @@ internal class HistoryHandSorting {
      */
     fun orderedTiles(
         player: HistoryReplayPlayerStateDto,
-        catalog: List<TileDto>,
+        catalog: List<TileFaceViewDto>,
         order: TileOrder?,
     ): List<Int> {
         val standingTiles = player.handTiles.filterNot { it == player.lastDrawn }
         if (order == null) return standingTiles.toList()
 
         return standingTiles.withIndex().sortedWith { left, right ->
-            val leftTile = catalog.getOrNull(left.value)?.toDomain()
-            val rightTile = catalog.getOrNull(right.value)?.toDomain()
+            val leftTile = catalog.getOrNull(left.value)?.tile?.toDomain()
+            val rightTile = catalog.getOrNull(right.value)?.tile?.toDomain()
             when {
                 leftTile == null && rightTile == null -> left.index.compareTo(right.index)
                 leftTile == null -> 1

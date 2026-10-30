@@ -1,5 +1,7 @@
 package com.doublemoon1119.mahjongcraft.logic.base
 
+import com.doublemoon1119.mahjongcraft.logic.component.BuiltInComponentOwners
+import com.doublemoon1119.mahjongcraft.logic.component.ComponentSet
 import kotlin.uuid.Uuid
 
 /**
@@ -8,6 +10,8 @@ import kotlin.uuid.Uuid
  * 玩家透過鳴取他人的捨牌或宣告自己手中的牌而組成獨立牌組。
  * 組內可以有尚未公開的牌；是否門清及其計分影響由各規則判定。
  *
+ * @property id 這組副露的穩定識別碼；加槓時保留。
+ * @property components 這組副露攜帶的規則資料。
  * @property type 副露的種類，例如 [MeldType.CHI] 或 [MeldType.PON]。
  * @property tiles 組成該副露的所有 [IdentifiedTile]。
  * @property sourceTile 從其他玩家處鳴取而來的特定牌。若為暗槓 ([MeldType.CLOSED_KAN]) 則通常為 null。
@@ -22,8 +26,11 @@ data class Meld(
     val sourceDirection: RelativeDirection,
     val publiclyRevealedTileIds: Set<Uuid>,
     val faceDownTileIds: Set<Uuid>,
+    val id: Uuid = Uuid.random(),
+    val components: ComponentSet = ComponentSet.EMPTY,
 ) {
     init {
+        components.requireTarget(BuiltInComponentOwners.MELD)
         val tileIds = tiles.map { it.id }.toSet()
         require(tileIds.size == tiles.size) { "Meld tiles must have unique IDs" }
         require(sourceTile == null || sourceTile in tiles) { "Meld source must belong to the meld" }

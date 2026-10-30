@@ -5,7 +5,6 @@ import com.doublemoon1119.mahjongcraft.logic.judgment.HandValueContext
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.structure.CompletionType
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.structure.HandStructure
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.structure.Mentsu
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.riichiCanonical
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.standard.calculatePinfu
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import com.doublemoon1119.mahjongcraft.logic.util.isHonor
@@ -171,7 +170,7 @@ object FuCalculator {
         // 副露的符數
         val fuuroFu = structure.fuuro.sumOf { fuuro ->
             val mentsu = fuuro.mentsu
-            val tile = mentsu.tiles.first().riichiCanonical
+            val tile = mentsu.tiles.first()
 
             // 是否為么九牌
             val isTerminalOrHonor = tile.isTerminal || tile.isHonor
@@ -211,12 +210,12 @@ object FuCalculator {
         }
 
         // 雙碰聽牌榮和時，靠別人捨牌湊成的刻子（胡牌張所在的刻子）是明刻
-        val ronCompletedTriplet = Mentsu.Kotsu(context.winningTile.riichiCanonical)
+        val ronCompletedTriplet = Mentsu.Kotsu(context.winningTile)
             .takeIf { structure.completionType is CompletionType.Shanpon && !context.isTsumo }
 
         // 手牌中面子的符數
         val handFu = structure.mentsus.sumOf { mentsu ->
-            val tile = mentsu.tiles.first().riichiCanonical
+            val tile = mentsu.tiles.first()
 
             // 是否為么九牌
             val isTerminalOrHonor = tile.isTerminal || tile.isHonor
@@ -249,7 +248,7 @@ object FuCalculator {
         }
 
         // 雀頭符數
-        val jantoTile = structure.pair.tile.riichiCanonical
+        val jantoTile = structure.pair.tile
         val isJantoDragon = jantoTile in dragonTiles
         val isJantoKaze = jantoTile in kazeTiles
         val isJantoSeatOrRoundWind = jantoTile.isHonor && !isJantoDragon && !isJantoKaze

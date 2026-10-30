@@ -86,8 +86,17 @@ internal object ReplayFormatKeys {
     /** 動作種類字典。 */
     const val ACTION_TYPES = "actionTypes"
 
+    /** 牌張呈現字典；呈現變化事實只保存字典代碼。 */
+    const val PRESENTATION_TYPES = "presentationTypes"
+
     /** 差異路徑字典。 */
     const val PATCH_PATHS = "patchPaths"
+
+    /** 附組件版本的牌張參照所使用的局內索引。 */
+    const val TILE_REFERENCE = "r"
+
+    /** 此次牌張參照的權威組件版本，僅供伺服器保存，不直接交付讀取模型。 */
+    const val TILE_COMPONENTS = "c"
 
     /** 玩家投影中不分規則的牌河清單。 */
     const val DISCARDS = "discards"
@@ -125,6 +134,21 @@ internal object ReplayPatchKeys {
 
 /** 從權威歷史與桌況 DTO 讀取時使用的既有欄位名稱。 */
 internal object ReplaySourceKeys {
+    /** 牌張呈現變化事實中依牌索引排列的呈現結果。 */
+    const val PRESENTATIONS = "presentations"
+
+    /** 牌張呈現的外觀樣式。 */
+    const val APPEARANCE_ID = "appearanceId"
+
+    /** 牌張呈現的公開特徵。 */
+    const val VIEWS = "views"
+
+    /** 牌張呈現的共同姿態。 */
+    const val POSE = "pose"
+
+    /** 已保存的權威組件集合；內容保持原保存格式，不猜測其中的參照語意。 */
+    const val COMPONENTS = "components"
+
     /** 事件中的語意事實。 */
     const val FACT = "fact"
 
@@ -219,7 +243,6 @@ internal object ReplaySourceKeys {
     const val FINISHED_PLAYER_IDS = "finishedPlayerIds"
 
     /** 規則的動態桌況。 */
-    const val DYNAMIC_RULE_STATE = "dynamicRuleState"
 
     /** 目前等待中的一般反應。 */
     const val PENDING_REACTION = "pendingReaction"
@@ -320,9 +343,6 @@ internal object ReplaySourceKeys {
     /** 玩家座風。 */
     const val SEAT_WIND = "seatWind"
 
-    /** 玩家規則狀態。 */
-    const val PLAYER_RULE_STATE = "playerRuleState"
-
     /** 玩家牌河資料。 */
     const val DISCARD_PILE = "discardPile"
 
@@ -359,8 +379,8 @@ internal object ReplaySourceKeys {
     /** 有單位數值的數值。 */
     const val AMOUNT = "amount"
 
-    /** 明細牌參照陣列。 */
-    const val TILE_IDS = "tileIds"
+    /** 不引用局內牌張的結算展示牌面。 */
+    const val TILE_FACES = "faces"
 
     /** 明細條目清單。 */
     const val ENTRIES = "entries"

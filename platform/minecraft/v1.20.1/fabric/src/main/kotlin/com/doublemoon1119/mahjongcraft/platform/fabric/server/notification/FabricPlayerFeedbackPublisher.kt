@@ -366,9 +366,9 @@ class FabricPlayerFeedbackPublisher(
             message.append(Text.literal("\n")).append(Text.translatable(MinecraftMessageKeys.HAND_MELDS_TITLE))
             feedback.melds.forEach { meld ->
                 message.append(Text.literal(" ["))
-                meld.tiles.forEachIndexed { index, tile ->
+                meld.forEachIndexed { index, tile ->
                     if (index > 0) message.append(Text.literal(" "))
-                    message.append(tile.tile.toDisplayText(tileDisplayNames, tileAssetRegistry, tileEmojiRegistry))
+                    message.append(tile.toDisplayText(tileDisplayNames, tileAssetRegistry, tileEmojiRegistry))
                 }
                 message.append(Text.literal("]"))
             }

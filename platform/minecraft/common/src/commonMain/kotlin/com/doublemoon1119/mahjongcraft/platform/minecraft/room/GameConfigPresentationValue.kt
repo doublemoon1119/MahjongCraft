@@ -30,4 +30,13 @@ sealed interface GameConfigPresentationValue {
     data class ChoiceValue(
         val optionId: String,
     ) : GameConfigPresentationValue
+
+    /**
+     * 多選設定值，集合的迭代順序不影響是否為相同設定。
+     *
+     * @property optionIds 已選取的完整 Namespaced ID 集合。
+     */
+    data class MultiChoiceValue(
+        val optionIds: Set<String>,
+    ) : GameConfigPresentationValue
 }

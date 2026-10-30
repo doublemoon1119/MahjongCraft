@@ -156,7 +156,7 @@ internal fun riichiExhaustiveDrawSettlement(
 ): ExhaustiveDrawSettlementResult {
     val activePlayers = tableState.activePlayers
     require(notenDeclaredPlayerIds.all { id -> activePlayers.any { it.id == id } }) { "Only players still in the round may declare noten" }
-    require(activePlayers.none { it.id in notenDeclaredPlayerIds && (it.playerRuleState as? RiichiPlayerState)?.isRiichi == true }) {
+    require(activePlayers.none { it.id in notenDeclaredPlayerIds && it.riichiDeclaration != null }) {
         "A player who declared riichi cannot declare noten"
     }
     val shantenByPlayer = activePlayers.filterNot { it.id in notenDeclaredPlayerIds }.associateWith { shantenCalculator.calculate(it.hand) }

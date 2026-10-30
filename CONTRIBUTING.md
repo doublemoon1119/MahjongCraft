@@ -11,6 +11,8 @@ kind of change you are making; the rules in them apply even when this file does 
   visibility, match progress and failure, contracts, identifiers, extension points and testability.
 - [Extensions and registries](docs/contributing/extensions-and-registries.md): registration IDs,
   registries, Koin definitions, extension bootstrap and public API compatibility.
+- [Event hooks](docs/contributing/event-hooks.md): public match events, visibility, delivery order and
+  session lifetime.
 - [Architecture](docs/contributing/architecture.md): module responsibilities, dependencies, and where
   code belongs.
 - [Build](docs/contributing/build.md): Gradle configuration, platform targets and release versions.

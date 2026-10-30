@@ -12,7 +12,7 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryRoundOutc
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryWinDetailFieldDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryWinDetailQuantityDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryWinDetailValueDto
-import com.doublemoon1119.mahjongcraft.flow.network.dto.model.TileDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.model.TileFaceViewDto
 import com.doublemoon1119.mahjongcraft.logic.table.BuiltInMatchEndReasonIds
 import com.doublemoon1119.mahjongcraft.logic.table.RoundCompletionClassification
 import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionVocabularyRegistry
@@ -74,7 +74,7 @@ internal class HistoryRoundEventPresenter(
      * @param ruleId 對局規則模組 ID。
      * @return 單一事實的呈現資料。
      */
-    private fun HistoryReplayFactDto.present(tileCatalog: List<TileDto>, identitySeats: List<Int>, ruleId: String?): HistoryFactPresentation = (
+    private fun HistoryReplayFactDto.present(tileCatalog: List<TileFaceViewDto>, identitySeats: List<Int>, ruleId: String?): HistoryFactPresentation = (
         when (this) {
             is HistoryReplayFactDto.KnownAction -> HistoryFactPresentation(
                 text = actionText(ruleId, actionType, extensionTypeId),
@@ -305,7 +305,7 @@ internal class HistoryRoundEventPresenter(
                 } ?: entry.trailingText.takeIf(String::isNotBlank)?.let(Text::literal)
                 trailing?.let { text.append(" • ").append(it.copy().formatted(Formatting.GRAY)) } ?: text
             }
-            is HistoryWinDetailValueDto.Tiles -> emptyList()
+            is HistoryWinDetailValueDto.TileFaces -> emptyList()
         }
     }
 
@@ -380,7 +380,7 @@ internal class HistoryRoundEventPresenter(
      * @param indexes 牌目錄索引，保留原始順序與重複。
      * @return 可解析的牌種清單。
      */
-    private fun tiles(tileCatalog: List<TileDto>, indexes: List<Int>): List<TileDto> = indexes.mapNotNull(tileCatalog::getOrNull)
+    private fun tiles(tileCatalog: List<TileFaceViewDto>, indexes: List<Int>): List<TileFaceViewDto> = indexes.mapNotNull(tileCatalog::getOrNull)
 
     /**
      * 將保存格式的短動作名稱映射為呈現 registry 使用的穩定內建 ID。
@@ -448,8 +448,8 @@ internal data class HistoryTransactionPresentation(
 internal data class HistoryFactPresentation(
     val text: Text,
     val actorSeat: Int?,
-    val directTiles: List<TileDto>,
-    val revealedTiles: List<TileDto>,
+    val directTiles: List<TileFaceViewDto>,
+    val revealedTiles: List<TileFaceViewDto>,
     val outcome: HistoryOutcomePresentation?,
     val identifiers: List<String> = emptyList(),
     val scoreChanges: Map<Int, Int> = emptyMap(),

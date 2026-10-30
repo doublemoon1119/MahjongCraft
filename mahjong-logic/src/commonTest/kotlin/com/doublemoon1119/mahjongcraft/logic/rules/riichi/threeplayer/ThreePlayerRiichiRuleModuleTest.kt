@@ -5,18 +5,23 @@ import com.doublemoon1119.mahjongcraft.logic.base.Hand
 import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
 import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
+import com.doublemoon1119.mahjongcraft.logic.base.TileFaceView
+import com.doublemoon1119.mahjongcraft.logic.component.BuiltInComponentOwners
+import com.doublemoon1119.mahjongcraft.logic.component.ComponentSet
 import com.doublemoon1119.mahjongcraft.logic.module.BuiltInRuleModuleIds
 import com.doublemoon1119.mahjongcraft.logic.module.WinSettlementResult
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.LegalActionTestContexts
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.PULL_NORTH_GAME_ACTION
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDiscardPile
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDynamicState
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiGameLength
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiHandValueResult
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPlayerState
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPlayerTileAreaIds
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiSupplementalDrawPolicy
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.RiichiTileInterpretationPolicy
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.riichiCanonical
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiTableComponents
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiWallProgress
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.riichiDeclaration
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.riichiWallProgress
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.RiichiTileComponents
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.YakuType
 import com.doublemoon1119.mahjongcraft.logic.table.BuiltInMatchEndReasonIds
 import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayer
@@ -25,6 +30,7 @@ import com.doublemoon1119.mahjongcraft.logic.table.MatchProgressionDecision
 import com.doublemoon1119.mahjongcraft.logic.table.MatchRoundPhase
 import com.doublemoon1119.mahjongcraft.logic.table.MatchRoundPosition
 import com.doublemoon1119.mahjongcraft.logic.table.MatchRoundTransition
+import com.doublemoon1119.mahjongcraft.logic.table.PlayerTileAreas
 import com.doublemoon1119.mahjongcraft.logic.table.RoundCompletionClassification
 import com.doublemoon1119.mahjongcraft.logic.table.RoundCompletionSummary
 import com.doublemoon1119.mahjongcraft.logic.table.RoundTransitionDirective
@@ -37,6 +43,9 @@ import com.doublemoon1119.mahjongcraft.logic.table.opening.DiceRollResult
 import com.doublemoon1119.mahjongcraft.logic.table.opening.WallOpening
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeHandFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeIdentifiedTileFactory
+import com.doublemoon1119.mahjongcraft.testing.logic.rules.riichi.riichiDeclarationComponents
+import com.doublemoon1119.mahjongcraft.testing.logic.rules.riichi.riichiDoraIndicatorFace
+import com.doublemoon1119.mahjongcraft.testing.logic.rules.riichi.riichiTableComponents
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
 import kotlin.test.Test
@@ -88,11 +97,11 @@ class ThreePlayerRiichiRuleModuleTest {
         val tiles = module.createWallFactory(module.config.maxPlayers).create().getAllTiles()
 
         assertEquals(108, tiles.size)
-        val characters = tiles.map { it.tile.riichiCanonical }.filterIsInstance<Tile.Numeric>().filter { it.suit == Tile.Suit.Character }
+        val characters = tiles.map { it.tile }.filterIsInstance<Tile.Numeric>().filter { it.suit == Tile.Suit.Character }
         assertEquals(setOf(1, 9), characters.map { it.value }.toSet())
         assertEquals(8, characters.size)
-        val redSuits = tiles.filter { RiichiTileInterpretationPolicy.isRedDora(it.tile) }
-            .map { (it.tile.riichiCanonical as Tile.Numeric).suit }
+        val redSuits = tiles.filter { it.components[RiichiTileComponents.RED_DORA] != null }
+            .map { (it.tile as Tile.Numeric).suit }
         assertEquals(2, redSuits.size)
         assertEquals(setOf(Tile.Suit.Bamboo, Tile.Suit.Dot), redSuits.toSet())
     }
@@ -102,7 +111,7 @@ class ThreePlayerRiichiRuleModuleTest {
     fun `test wall without red dora has no red fives`() {
         val tiles = ThreePlayerRiichiWallFactory(ThreePlayerRiichiRuleConfig(redDoraCount = 0)).create().getAllTiles()
 
-        assertTrue(tiles.none { RiichiTileInterpretationPolicy.isRedDora(it.tile) })
+        assertTrue(tiles.none { it.components[RiichiTileComponents.RED_DORA] != null })
     }
 
     /** 驗證三面、每面 18 墩的布局：活牌 94 張（配牌 39 張後可摸 55 張）、王牌 14 張，座標不重複。 */
@@ -139,7 +148,7 @@ class ThreePlayerRiichiRuleModuleTest {
     fun `test chi is never offered`() {
         val player = FakeMahjongPlayerFactory.create(
             hand = FakeHandFactory.create(listOf(dot(2), dot(3))),
-            playerRuleState = RiichiPlayerState(),
+            components = riichiDeclarationComponents(),
         )
         val table = threePlayerTable(listOf(player, other(Wind.SOUTH), other(Wind.WEST)))
         val incoming = FakeIdentifiedTileFactory.create(dot(1))
@@ -154,7 +163,7 @@ class ThreePlayerRiichiRuleModuleTest {
     fun `test pull north is offered with a north in hand after drawing`() {
         val player = FakeMahjongPlayerFactory.create(
             hand = FakeHandFactory.create(listOf(Tile.Honor.North, dot(1), dot(5)), lastDrawn = bamboo(7)),
-            playerRuleState = RiichiPlayerState(),
+            components = riichiDeclarationComponents(),
         )
 
         assertTrue(PULL_NORTH_GAME_ACTION in selfTurnActions(player))
@@ -163,14 +172,14 @@ class ThreePlayerRiichiRuleModuleTest {
     /** 驗證立直後只能拔剛摸到的北。 */
     @Test
     fun `test riichi player can only pull the drawn north`() {
-        val riichiState = RiichiPlayerState(riichiTile = riichiTile())
+        val riichiState = riichiDeclarationComponents(declarationTile = riichiTile())
         val heldNorth = FakeMahjongPlayerFactory.create(
             hand = FakeHandFactory.create(listOf(Tile.Honor.North, dot(1), dot(5)), lastDrawn = bamboo(7)),
-            playerRuleState = riichiState,
+            components = riichiState,
         )
         val drawnNorth = FakeMahjongPlayerFactory.create(
             hand = FakeHandFactory.create(listOf(dot(1), dot(5), bamboo(7)), lastDrawn = Tile.Honor.North),
-            playerRuleState = riichiState,
+            components = riichiState,
         )
 
         assertFalse(PULL_NORTH_GAME_ACTION in selfTurnActions(heldNorth))
@@ -182,10 +191,10 @@ class ThreePlayerRiichiRuleModuleTest {
     fun `test pull north is not offered after four north draws`() {
         val player = FakeMahjongPlayerFactory.create(
             hand = FakeHandFactory.create(listOf(dot(1), dot(5), bamboo(7)), lastDrawn = Tile.Honor.North),
-            playerRuleState = RiichiPlayerState(),
+            components = riichiDeclarationComponents(),
         )
 
-        val actions = selfTurnActions(player, RiichiDynamicState(completedNorthDrawCount = RiichiSupplementalDrawPolicy.MAX_SUPPLEMENTAL_DRAWS))
+        val actions = selfTurnActions(player, riichiTableComponents(potPoints = 0, wallProgress = RiichiWallProgress(completedNorthDrawCount = RiichiSupplementalDrawPolicy.MAX_SUPPLEMENTAL_DRAWS)))
 
         assertFalse(PULL_NORTH_GAME_ACTION in actions)
     }
@@ -197,9 +206,9 @@ class ThreePlayerRiichiRuleModuleTest {
         val heldNorth = FakeIdentifiedTileFactory.create(Tile.Honor.North)
         val puller = FakeMahjongPlayerFactory.create(
             hand = Hand(tiles = listOf(heldNorth, FakeIdentifiedTileFactory.create(dot(1))), lastDrawn = drawnNorth),
-            playerRuleState = RiichiPlayerState(riichiTile = riichiTile(), isIppatsu = true),
+            components = riichiDeclarationComponents(declarationTile = riichiTile(), isIppatsu = true),
         )
-        val ippatsuOther = other(Wind.SOUTH).copy(playerRuleState = RiichiPlayerState(riichiTile = riichiTile(), isIppatsu = true))
+        val ippatsuOther = other(Wind.SOUTH).copy(components = riichiDeclarationComponents(declarationTile = riichiTile(), isIppatsu = true))
         val table = threePlayerTable(listOf(puller, ippatsuOther, other(Wind.WEST)))
 
         assertEquals(drawnNorth, module.tileSetAsideBy(puller, PULL_NORTH_GAME_ACTION))
@@ -208,9 +217,9 @@ class ThreePlayerRiichiRuleModuleTest {
         val pullerAfter = after.players.first { it.id == puller.id }
         assertNull(pullerAfter.hand.lastDrawn)
         assertEquals(listOf(heldNorth.id), pullerAfter.hand.tiles.filter { it.tile == Tile.Honor.North }.map { it.id })
-        assertEquals(listOf(drawnNorth), (pullerAfter.playerRuleState as RiichiPlayerState).nukiDoraTiles)
+        assertEquals(listOf(drawnNorth), pullerAfter.tileAreas[RiichiPlayerTileAreaIds.NORTH]?.tiles.orEmpty())
         assertEquals(PULL_NORTH_GAME_ACTION, pullerAfter.actionHistory.last())
-        assertTrue(after.players.none { (it.playerRuleState as? RiichiPlayerState)?.isIppatsu == true })
+        assertTrue(after.players.none { it.riichiDeclaration?.isIppatsu == true })
     }
 
     /** 驗證剛摸到的牌不是北時拔手中的北，剛摸到的牌併入手牌。 */
@@ -220,7 +229,7 @@ class ThreePlayerRiichiRuleModuleTest {
         val drawn = FakeIdentifiedTileFactory.create(bamboo(7))
         val puller = FakeMahjongPlayerFactory.create(
             hand = Hand(tiles = listOf(heldNorth, FakeIdentifiedTileFactory.create(dot(1))), lastDrawn = drawn),
-            playerRuleState = RiichiPlayerState(),
+            components = riichiDeclarationComponents(),
         )
         val table = threePlayerTable(listOf(puller, other(Wind.SOUTH), other(Wind.WEST)))
 
@@ -229,7 +238,7 @@ class ThreePlayerRiichiRuleModuleTest {
         val pullerAfter = after.players.first { it.id == puller.id }
         assertTrue(drawn in pullerAfter.hand.tiles)
         assertTrue(pullerAfter.hand.tiles.none { it.id == heldNorth.id })
-        assertEquals(listOf(heldNorth), (pullerAfter.playerRuleState as RiichiPlayerState).nukiDoraTiles)
+        assertEquals(listOf(heldNorth), pullerAfter.tileAreas[RiichiPlayerTileAreaIds.NORTH]?.tiles.orEmpty())
     }
 
     /** 驗證其他擴充動作不會被當成拔北，手中沒有北時也不會拔。 */
@@ -237,7 +246,7 @@ class ThreePlayerRiichiRuleModuleTest {
     fun `test set aside requires a north and the pull north action`() {
         val player = FakeMahjongPlayerFactory.create(
             hand = FakeHandFactory.create(listOf(dot(1)), lastDrawn = dot(2)),
-            playerRuleState = RiichiPlayerState(),
+            components = riichiDeclarationComponents(),
         )
         val table = threePlayerTable(listOf(player, other(Wind.SOUTH), other(Wind.WEST)))
 
@@ -254,7 +263,7 @@ class ThreePlayerRiichiRuleModuleTest {
             config = config,
             tileWall = TileWall(liveWall),
             reservedWallTiles = deadWall,
-            dynamicRuleState = RiichiDynamicState(completedSupplementalDrawCount = 2),
+            components = riichiTableComponents(potPoints = 0, wallProgress = RiichiWallProgress(completedSupplementalDrawCount = 2, revealedKanDoraCount = 2)),
         )
 
         val result = assertIs<SupplementalDrawDecision.Completed>(
@@ -265,10 +274,10 @@ class ThreePlayerRiichiRuleModuleTest {
 
         assertEquals(listOf(deadWall.first()), result.drawnTiles)
         assertEquals(deadWall.drop(1) + liveWall.last(), result.reservedWallTiles)
-        val dynamicState = result.dynamicRuleState as RiichiDynamicState
-        assertEquals(1, dynamicState.completedNorthDrawCount)
-        assertEquals(2, dynamicState.completedSupplementalDrawCount)
-        assertEquals(2, dynamicState.revealedKanDoraCount)
+        val wallProgress = requireNotNull(result.tableComponents.values[RiichiTableComponents.WALL_PROGRESS])
+        assertEquals(1, wallProgress.completedNorthDrawCount)
+        assertEquals(2, wallProgress.completedSupplementalDrawCount)
+        assertEquals(2, wallProgress.revealedKanDoraCount)
     }
 
     /** 驗證四次槓加四次拔北共八次補牌都取原本的嶺上牌，寶牌指示牌位置隨之左移且不被摸走。 */
@@ -282,7 +291,7 @@ class ThreePlayerRiichiRuleModuleTest {
             config = config,
             tileWall = TileWall(liveWall),
             reservedWallTiles = deadWall,
-            dynamicRuleState = RiichiDynamicState(),
+            components = riichiTableComponents(potPoints = 0),
         )
         val drawn = mutableListOf<IdentifiedTile>()
         val actions = List(4) { PULL_NORTH_GAME_ACTION } + List(4) { GameAction.Kan(GameAction.KanType.CLOSED_KAN, Uuid.random(), emptyList()) }
@@ -295,14 +304,14 @@ class ThreePlayerRiichiRuleModuleTest {
             state = state.copy(
                 tileWall = result.tileWall,
                 reservedWallTiles = result.reservedWallTiles,
-                dynamicRuleState = result.dynamicRuleState,
+                components = result.tableComponents.applyTo(state.components, BuiltInComponentOwners.TABLE),
             )
         }
 
         assertEquals(rinshan, drawn)
         assertEquals(14, state.reservedWallTiles.size)
-        val dynamicState = state.dynamicRuleState as RiichiDynamicState
-        assertEquals(firstIndicator, dynamicState.getDoraIndicators(state).first.first())
+        val wallProgress = state.riichiWallProgress()
+        assertEquals(firstIndicator, wallProgress.getDoraIndicators(state).first.first())
     }
 
     /**
@@ -318,7 +327,7 @@ class ThreePlayerRiichiRuleModuleTest {
             config = config,
             tileWall = TileWall(liveWall),
             reservedWallTiles = rinshan + indicatorStacks,
-            dynamicRuleState = RiichiDynamicState(),
+            components = riichiTableComponents(potPoints = 0),
         )
         repeat(4) {
             val kan = GameAction.Kan(GameAction.KanType.CLOSED_KAN, Uuid.random(), emptyList())
@@ -328,12 +337,12 @@ class ThreePlayerRiichiRuleModuleTest {
             state = state.copy(
                 tileWall = result.tileWall,
                 reservedWallTiles = result.reservedWallTiles,
-                dynamicRuleState = result.dynamicRuleState,
+                components = result.tableComponents.applyTo(state.components, BuiltInComponentOwners.TABLE),
             )
         }
-        val revealed = (state.dynamicRuleState as RiichiDynamicState).copy(revealedKanDoraCount = 4)
+        val revealed = state.riichiWallProgress().copy(revealedKanDoraCount = 4)
 
-        val (dora, ura) = revealed.getDoraIndicators(state.copy(dynamicRuleState = revealed))
+        val (dora, ura) = revealed.getDoraIndicators(state.copy(components = state.components.with(RiichiTableComponents.WALL_PROGRESS, revealed)))
 
         // 補進王牌的依序是活牌最後一張、倒數第二張……；每兩張組成一墩，後補的那張在上層。
         val replenished = liveWall.takeLast(4).reversed()
@@ -390,7 +399,8 @@ class ThreePlayerRiichiRuleModuleTest {
                 lastDrawn = dot(9),
             ),
             discardPile = RiichiDiscardPile().discardTile(FakeIdentifiedTileFactory.create(Tile.Honor.East)),
-            playerRuleState = RiichiPlayerState(nukiDoraTiles = norths),
+            components = riichiDeclarationComponents(),
+            tileAreas = PlayerTileAreas.EMPTY.withArea(RiichiPlayerTileAreaIds.NORTH, norths),
         )
         // 已拔兩次北，第一張寶牌指示牌從第 8 - 2 = 6 張開始；西的下一張是北。
         val deadWall = List(6) { FakeIdentifiedTileFactory.create(Tile.Honor.White) } +
@@ -398,7 +408,7 @@ class ThreePlayerRiichiRuleModuleTest {
             List(7) { FakeIdentifiedTileFactory.create(Tile.Honor.White) }
         val table = threePlayerTable(
             players = listOf(FakeMahjongPlayerFactory.create(initialSeat = Wind.EAST), winner, other(Wind.WEST)),
-            dynamicRuleState = RiichiDynamicState(completedNorthDrawCount = 2),
+            components = riichiTableComponents(potPoints = 0, wallProgress = RiichiWallProgress(completedNorthDrawCount = 2)),
             reservedWallTiles = deadWall,
         )
 
@@ -412,10 +422,10 @@ class ThreePlayerRiichiRuleModuleTest {
     /** 驗證萬子寶牌在一萬與九萬之間循環。 */
     @Test
     fun `test character dora wraps between one and nine`() {
-        assertTrue(module.isBonusTile(character(9), listOf(character(1))))
-        assertTrue(module.isBonusTile(character(1), listOf(character(9))))
-        assertFalse(module.isBonusTile(character(2), listOf(character(1))))
-        assertTrue(module.isBonusTile(dot(2), listOf(dot(1))))
+        assertTrue(module.isBonusTile(TileFaceView(character(9)), listOf(riichiDoraIndicatorFace(character(1)))))
+        assertTrue(module.isBonusTile(TileFaceView(character(1)), listOf(riichiDoraIndicatorFace(character(9)))))
+        assertFalse(module.isBonusTile(TileFaceView(character(2)), listOf(riichiDoraIndicatorFace(character(1)))))
+        assertTrue(module.isBonusTile(TileFaceView(dot(2)), listOf(riichiDoraIndicatorFace(dot(1)))))
     }
 
     /** 驗證不聽罰符總額 2000：一人聽牌時從另外兩家各收 1000。 */
@@ -545,20 +555,20 @@ class ThreePlayerRiichiRuleModuleTest {
      * 以三人日麻設定建立桌況。
      *
      * @param players 依座位排列的三名玩家。
-     * @param dynamicRuleState 日麻動態規則狀態。
+     * @param components 日麻桌況組件。
      * @param reservedWallTiles 王牌區牌張。
      * @param comboCount 本場數。
      * @return 三人日麻測試桌況。
      */
     private fun threePlayerTable(
         players: List<MahjongPlayer>,
-        dynamicRuleState: RiichiDynamicState = RiichiDynamicState(),
+        components: ComponentSet = riichiTableComponents(potPoints = 0),
         reservedWallTiles: List<IdentifiedTile> = emptyList(),
         comboCount: Int = 0,
     ): TableState = FakeTableStateFactory.create(
         players = players,
         config = config,
-        dynamicRuleState = dynamicRuleState,
+        components = components,
         reservedWallTiles = reservedWallTiles,
         comboCount = comboCount,
     )
@@ -567,14 +577,14 @@ class ThreePlayerRiichiRuleModuleTest {
      * 以自摸前狀態詢問自己回合的合法動作。
      *
      * @param player 當前玩家。
-     * @param dynamicRuleState 日麻動態規則狀態。
+     * @param components 日麻桌況組件。
      * @return 該玩家此時可執行的動作。
      */
     private fun selfTurnActions(
         player: MahjongPlayer,
-        dynamicRuleState: RiichiDynamicState = RiichiDynamicState(),
+        components: ComponentSet = riichiTableComponents(potPoints = 0),
     ): List<GameAction> {
-        val table = threePlayerTable(listOf(player, other(Wind.SOUTH), other(Wind.WEST)), dynamicRuleState = dynamicRuleState)
+        val table = threePlayerTable(listOf(player, other(Wind.SOUTH), other(Wind.WEST)), components = components)
         return module.createLegalActionValidator().getLegalActions(LegalActionTestContexts.ownTurn(table, table.players.first()))
     }
 
@@ -584,7 +594,7 @@ class ThreePlayerRiichiRuleModuleTest {
      * @param seat 玩家座位風。
      * @return 指定座位的測試玩家。
      */
-    private fun other(seat: Wind) = FakeMahjongPlayerFactory.create(initialSeat = seat, playerRuleState = RiichiPlayerState())
+    private fun other(seat: Wind) = FakeMahjongPlayerFactory.create(initialSeat = seat, components = riichiDeclarationComponents())
 
     /**
      * 摸到最後一張紅中、自摸大三元的玩家；已經打過牌，不會成立天和或地和。
@@ -605,7 +615,7 @@ class ThreePlayerRiichiRuleModuleTest {
             lastDrawn = Tile.Honor.Red,
         ),
         discardPile = RiichiDiscardPile().discardTile(FakeIdentifiedTileFactory.create(Tile.Honor.South)),
-        playerRuleState = RiichiPlayerState(),
+        components = riichiDeclarationComponents(),
     )
 
     /** 聽一筒與四筒的手牌。 */

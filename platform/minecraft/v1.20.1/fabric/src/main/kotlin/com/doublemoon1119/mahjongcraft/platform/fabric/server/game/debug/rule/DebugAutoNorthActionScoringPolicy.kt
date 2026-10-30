@@ -1,12 +1,15 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.rule
 
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
+import com.doublemoon1119.mahjongcraft.logic.component.ComponentPatch
+import com.doublemoon1119.mahjongcraft.logic.component.ComponentSet
 import com.doublemoon1119.mahjongcraft.logic.module.ActionScoring
 import com.doublemoon1119.mahjongcraft.logic.module.ActionScoringContext
 import com.doublemoon1119.mahjongcraft.logic.module.ActionScoringPolicy
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.PULL_NORTH_GAME_ACTION
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RIICHI_STICK_POINTS
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDynamicState
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiTableComponents
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.riichiPotPoints
 
 /**
  * 拔北與槓牌成立當下的收付。
@@ -22,11 +25,12 @@ internal object DebugAutoNorthActionScoringPolicy : ActionScoringPolicy {
         val stateAfterAction = context.tableStateAfterAction
         return when {
             context.action == PULL_NORTH_GAME_ACTION -> {
-                val dynamicState = stateAfterAction.dynamicRuleState as? RiichiDynamicState ?: return null
+                val potPoints = stateAfterAction.riichiPotPoints()
+                require(potPoints <= Int.MAX_VALUE - RIICHI_STICK_POINTS) { "Riichi pot points overflow" }
                 ActionScoring(
                     scoreDeltas = mapOf(context.actorPlayerId to -RIICHI_STICK_POINTS),
                     potDeposit = RIICHI_STICK_POINTS,
-                    dynamicRuleState = dynamicState.copy(riichiStickCount = dynamicState.riichiStickCount + 1),
+                    tableComponents = ComponentPatch.basedOn(stateAfterAction.components, values = ComponentSet.EMPTY.with(RiichiTableComponents.POT_POINTS, potPoints + RIICHI_STICK_POINTS)),
                 )
             }
             context.action is GameAction.Kan -> {
@@ -36,7 +40,7 @@ internal object DebugAutoNorthActionScoringPolicy : ActionScoringPolicy {
                 ActionScoring(
                     scoreDeltas = payerIds.associateWith { -payment } + (context.actorPlayerId to payment * payerIds.size),
                     potDeposit = 0,
-                    dynamicRuleState = stateAfterAction.dynamicRuleState,
+                    tableComponents = ComponentPatch(),
                 )
             }
             else -> null

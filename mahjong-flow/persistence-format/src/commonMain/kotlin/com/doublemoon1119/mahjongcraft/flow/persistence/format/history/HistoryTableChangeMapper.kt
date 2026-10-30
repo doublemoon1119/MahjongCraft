@@ -36,10 +36,9 @@ internal class HistoryTableChangeMapper(
             result.tableState.toPersistenceDto(
                 registries.ruleConfigs,
                 registries.discardPiles,
-                registries.playerRuleStates,
-                registries.dynamicRuleStates,
                 registries.exhaustiveDrawReasons,
                 registries.extensionGameActions,
+                registries.components,
             ),
         )
     }
@@ -57,10 +56,9 @@ internal class HistoryTableChangeMapper(
             dto.state.toDomain(
                 registries.ruleConfigs,
                 registries.discardPiles,
-                registries.playerRuleStates,
-                registries.dynamicRuleStates,
                 registries.exhaustiveDrawReasons,
                 registries.extensionGameActions,
+                registries.components,
             ),
         )
     }
@@ -72,13 +70,14 @@ internal class HistoryTableChangeMapper(
      * @return 保存該差異的 DTO。
      */
     private fun encodeChange(change: HistoryTableChange): HistoryTableChangePersistenceDto = HistoryTableChangePersistenceDto(
+        components = change.components?.let(registries.components::encode),
         changedPlayers = change.changedPlayers.map { playerChange ->
             HistoryPlayerChangePersistenceDto(
                 playerWithoutHistory = playerChange.playerWithoutHistory.toPersistenceDto(
                     registries.discardPiles,
-                    registries.playerRuleStates,
                     registries.exhaustiveDrawReasons,
                     registries.extensionGameActions,
+                    registries.components,
                 ),
                 retainedActionCount = playerChange.retainedActionCount,
                 appendedActions = playerChange.appendedActions.map {
@@ -86,11 +85,14 @@ internal class HistoryTableChangeMapper(
                 },
             )
         },
-        wall = change.wall?.let { HistoryWallChangePersistenceDto(it.removedFront, it.removedBack) },
-        currentPlayerIndex = change.currentPlayerIndex,
-        dynamicRuleState = change.dynamicRuleState?.let { changeValue ->
-            HistoryChangedValuePersistenceDto(changeValue.value?.let { registries.dynamicRuleStates.encode(it) })
+        wall = change.wall?.let {
+            HistoryWallChangePersistenceDto(
+                removedFront = it.removedFront,
+                removedBack = it.removedBack,
+                updatedTiles = it.updatedTiles.map { tile -> tile.toPersistenceDto(registries.components) },
+            )
         },
+        currentPlayerIndex = change.currentPlayerIndex,
         pendingReaction = change.pendingReaction?.let { changeValue ->
             HistoryChangedValuePersistenceDto(
                 changeValue.value?.toPersistenceDto(registries.exhaustiveDrawReasons, registries.extensionGameActions),
@@ -98,10 +100,10 @@ internal class HistoryTableChangeMapper(
         },
         pendingRobbingReaction = change.pendingRobbingReaction?.let { changeValue ->
             HistoryChangedValuePersistenceDto(
-                changeValue.value?.toPersistenceDto(registries.exhaustiveDrawReasons, registries.extensionGameActions),
+                changeValue.value?.toPersistenceDto(registries.exhaustiveDrawReasons, registries.extensionGameActions, registries.components),
             )
         },
-        reservedWallTiles = change.reservedWallTiles?.map { it.toPersistenceDto() },
+        reservedWallTiles = change.reservedWallTiles?.map { it.toPersistenceDto(registries.components) },
         physicalWallLayout = change.physicalWallLayout?.let { layout ->
             HistoryWallLayoutChangePersistenceDto(
                 layout.removedTileIds.map(Uuid::toString).toSet(),
@@ -109,7 +111,7 @@ internal class HistoryTableChangeMapper(
             )
         },
         finishedPlayerIds = change.finishedPlayerIds?.map(Uuid::toString)?.toSet(),
-        revealedHandTileIds = change.revealedHandTileIds?.map(Uuid::toString)?.toSet(),
+        publicTileEvidenceIds = change.publicTileEvidenceIds?.map(Uuid::toString)?.toSet(),
         revealedHandSettlements = change.revealedHandSettlements?.map { settlement ->
             RevealedHandSettlementPersistenceDto(
                 playerId = settlement.playerId.toString(),
@@ -126,13 +128,14 @@ internal class HistoryTableChangeMapper(
      * @return 可套用於前一桌況的結構差異。
      */
     private fun decodeChange(dto: HistoryTableChangePersistenceDto): HistoryTableChange = HistoryTableChange(
+        components = dto.components?.let(registries.components::decode),
         changedPlayers = dto.changedPlayers.map { playerChange ->
             HistoryPlayerChange(
                 playerWithoutHistory = playerChange.playerWithoutHistory.toDomain(
                     registries.discardPiles,
-                    registries.playerRuleStates,
                     registries.exhaustiveDrawReasons,
                     registries.extensionGameActions,
+                    registries.components,
                 ),
                 retainedActionCount = playerChange.retainedActionCount,
                 appendedActions = playerChange.appendedActions.map {
@@ -140,11 +143,14 @@ internal class HistoryTableChangeMapper(
                 },
             )
         },
-        wall = dto.wall?.let { HistoryWallChange(it.removedFront, it.removedBack) },
-        currentPlayerIndex = dto.currentPlayerIndex,
-        dynamicRuleState = dto.dynamicRuleState?.let { changeValue ->
-            HistoryChangedValue(changeValue.value?.let { registries.dynamicRuleStates.decode(it) })
+        wall = dto.wall?.let {
+            HistoryWallChange(
+                removedFront = it.removedFront,
+                removedBack = it.removedBack,
+                updatedTiles = it.updatedTiles.map { tile -> tile.toDomain(registries.components) },
+            )
         },
+        currentPlayerIndex = dto.currentPlayerIndex,
         pendingReaction = dto.pendingReaction?.let { changeValue ->
             HistoryChangedValue(
                 changeValue.value?.toDomain(registries.exhaustiveDrawReasons, registries.extensionGameActions),
@@ -152,10 +158,10 @@ internal class HistoryTableChangeMapper(
         },
         pendingRobbingReaction = dto.pendingRobbingReaction?.let { changeValue ->
             HistoryChangedValue(
-                changeValue.value?.toDomain(registries.exhaustiveDrawReasons, registries.extensionGameActions),
+                changeValue.value?.toDomain(registries.exhaustiveDrawReasons, registries.extensionGameActions, registries.components),
             )
         },
-        reservedWallTiles = dto.reservedWallTiles?.map { it.toDomain() },
+        reservedWallTiles = dto.reservedWallTiles?.map { it.toDomain(registries.components) },
         physicalWallLayout = dto.physicalWallLayout?.let { layout ->
             HistoryWallLayoutChange(
                 layout.removedTileIds.map(Uuid::parse).toSet(),
@@ -165,7 +171,7 @@ internal class HistoryTableChangeMapper(
             )
         },
         finishedPlayerIds = dto.finishedPlayerIds?.map(Uuid::parse)?.toSet(),
-        revealedHandTileIds = dto.revealedHandTileIds?.map(Uuid::parse)?.toSet(),
+        publicTileEvidenceIds = dto.publicTileEvidenceIds?.map(Uuid::parse)?.toSet(),
         revealedHandSettlements = dto.revealedHandSettlements?.map { settlement ->
             RevealedHandSettlement(
                 playerId = Uuid.parse(settlement.playerId),

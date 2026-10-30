@@ -2,11 +2,11 @@ package com.doublemoon1119.mahjongcraft.platform.minecraft.table
 
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.logic.module.BuiltInRuleModuleIds
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDynamicState
 import com.doublemoon1119.mahjongcraft.logic.table.TileWall
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.riichi.BundledRiichiMinecraftExtension
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeIdentifiedTileFactory
+import com.doublemoon1119.mahjongcraft.testing.logic.rules.riichi.riichiTableComponents
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -21,12 +21,15 @@ class RoundInfoLineDisplayRegistryTest {
         val registry = RoundInfoLineDisplayRegistryImpl().apply {
             BundledRiichiMinecraftExtension.registerRoundInfoPresentations(this)
             register(RoundInfoLineDisplayDefinition("example:custom", RoundInfoLineDisplay("example.message.custom")))
+            register(RoundInfoMessageDefinition("example:rule_text", "example.round_info.rule_text"))
         }
 
         val title = registry.find("mahjongcraft:riichi/round_title")
         assertEquals(true, title != null)
         assertEquals("example.message.custom", registry.find("example:custom")?.translationKey)
+        assertEquals("example.round_info.rule_text", registry.findMessage("example:rule_text")?.translationKey)
         assertNull(registry.find("example:unknown"))
+        assertNull(registry.findMessage("example:unknown"))
     }
 
     /** 日麻呈現端依桌況建立完整三行，不再要求 logic 模組組裝面板內容。 */
@@ -37,7 +40,7 @@ class RoundInfoLineDisplayRegistryTest {
             prevalentWind = Wind.SOUTH,
             roundNumber = 2,
             comboCount = 1,
-            dynamicRuleState = RiichiDynamicState(riichiStickCount = 2),
+            components = riichiTableComponents(potPoints = 2000),
         )
         val registry = RoundInfoLineDisplayRegistryImpl().apply { BundledRiichiMinecraftExtension.registerRoundInfoPresentations(this) }
 
@@ -79,6 +82,9 @@ class RoundInfoLineDisplayRegistryTest {
         assertFailsWith<IllegalStateException> {
             registry.register(RoundInfoLineDisplayDefinition("example:late", RoundInfoLineDisplay("example.message.late")))
         }
+        assertFailsWith<IllegalStateException> {
+            registry.register(RoundInfoMessageDefinition("example:late_message", "example.message.late"))
+        }
     }
 
     /** 驗證重複登記同一個 key 會被拒絕，避免第三方無意間覆蓋內建顯示。 */
@@ -91,6 +97,10 @@ class RoundInfoLineDisplayRegistryTest {
         assertFailsWith<IllegalArgumentException> {
             registry.register(RoundInfoLineDisplayDefinition("example:duplicate", RoundInfoLineDisplay("example.message.b")))
         }
+        registry.register(RoundInfoMessageDefinition("example:duplicate", "example.message.a"))
+        assertFailsWith<IllegalArgumentException> {
+            registry.register(RoundInfoMessageDefinition("example:duplicate", "example.message.b"))
+        }
     }
 
     /** 顯示行與 provider 使用同一 ID 時仍保留可辨識的診斷前綴。 */
@@ -98,10 +108,11 @@ class RoundInfoLineDisplayRegistryTest {
     fun `registration keys distinguish display and provider entries`() {
         val registry = RoundInfoLineDisplayRegistryImpl().apply {
             register(RoundInfoLineDisplayDefinition("example:same", RoundInfoLineDisplay("example.message.same")))
+            register(RoundInfoMessageDefinition("example:same", "example.message.same"))
             register(RoundInfoLineProviderDefinition("example:same", RoundInfoLineProvider { emptyList() }))
         }
 
-        assertEquals(setOf("line:example:same", "provider:example:same"), registry.registrationKeys)
+        assertEquals(setOf("line:example:same", "message:example:same", "provider:example:same"), registry.registrationKeys)
     }
 
     /** 顯示行 key 與規則模組 ID 都必須是完整 namespaced ID。 */
@@ -115,6 +126,9 @@ class RoundInfoLineDisplayRegistryTest {
         assertFailsWith<IllegalArgumentException> {
             registry.register(RoundInfoLineProviderDefinition("missing_namespace", RoundInfoLineProvider { emptyList() }))
         }
+        assertFailsWith<IllegalArgumentException> {
+            registry.register(RoundInfoMessageDefinition("missing_namespace", "example.message"))
+        }
     }
 
     /** 不同 namespace 可以使用相同 path，彼此不會覆蓋。 */
@@ -123,12 +137,26 @@ class RoundInfoLineDisplayRegistryTest {
         val registry = RoundInfoLineDisplayRegistryImpl().apply {
             register(RoundInfoLineDisplayDefinition("first:round", RoundInfoLineDisplay("first.message")))
             register(RoundInfoLineDisplayDefinition("second:round", RoundInfoLineDisplay("second.message")))
+            register(RoundInfoMessageDefinition("first:notice", "first.notice"))
+            register(RoundInfoMessageDefinition("second:notice", "second.notice"))
             register(RoundInfoLineProviderDefinition("first:rule", RoundInfoLineProvider { emptyList() }))
             register(RoundInfoLineProviderDefinition("second:rule", RoundInfoLineProvider { emptyList() }))
         }
 
         assertEquals("first.message", registry.find("first:round")?.translationKey)
         assertEquals("second.message", registry.find("second:round")?.translationKey)
-        assertEquals(setOf("line:first:round", "line:second:round", "provider:first:rule", "provider:second:rule"), registry.registrationKeys)
+        assertEquals("first.notice", registry.findMessage("first:notice")?.translationKey)
+        assertEquals("second.notice", registry.findMessage("second:notice")?.translationKey)
+        assertEquals(
+            setOf(
+                "line:first:round",
+                "line:second:round",
+                "message:first:notice",
+                "message:second:notice",
+                "provider:first:rule",
+                "provider:second:rule",
+            ),
+            registry.registrationKeys,
+        )
     }
 }

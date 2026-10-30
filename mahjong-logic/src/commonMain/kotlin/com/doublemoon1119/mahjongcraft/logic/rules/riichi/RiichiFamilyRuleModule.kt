@@ -1,7 +1,6 @@
 package com.doublemoon1119.mahjongcraft.logic.rules.riichi
 
 import com.doublemoon1119.mahjongcraft.logic.base.ExhaustiveDrawReason
-import com.doublemoon1119.mahjongcraft.logic.module.DeclarationDiscardEffect
 import com.doublemoon1119.mahjongcraft.logic.module.DeclarationDiscardPolicy
 import com.doublemoon1119.mahjongcraft.logic.module.ExhaustiveDrawSettlementResult
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
@@ -50,12 +49,7 @@ interface RiichiFamilyRuleModule<T : RiichiFamilyRuleConfig> : MahjongRuleModule
 
     /** 立直宣告與附帶捨牌的規則效果：扣一根立直棒，並記錄立直牌與一發資格。 */
     override fun declarationDiscardPolicy(): DeclarationDiscardPolicy = DeclarationDiscardPolicy { tableState, player, action, discardResult ->
-        if (action != RIICHI_GAME_ACTION) return@DeclarationDiscardPolicy null
-        val declaration = applyRiichiDeclaration(tableState, player, discardResult) ?: return@DeclarationDiscardPolicy null
-        DeclarationDiscardEffect(
-            player = declaration.player,
-            dynamicRuleState = declaration.dynamicRuleState,
-            cost = RIICHI_STICK_POINTS,
-        )
+        if (action != RIICHI_GAME_ACTION || player.discardPile !is RiichiDiscardPile) return@DeclarationDiscardPolicy null
+        riichiDeclarationEffect(tableState, player, discardResult)
     }
 }

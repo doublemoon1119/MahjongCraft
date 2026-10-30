@@ -8,6 +8,7 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryRoundEven
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryRoundStateRequestDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryRoundStateResponseDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.toDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkDtoRegistries
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkJson
 import com.doublemoon1119.mahjongcraft.platform.fabric.network.HistoryQueryLimits
 
@@ -17,6 +18,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.network.HistoryQueryLimit
  * @param request 原查詢上下文。
  * @param page 已授權讀取的事件頁。
  * @param json 線路編碼設定。
+ * @param registries 牌面特徵的網路轉換。
  * @param maximumBytes 回覆 UTF-8 位元組上限。
  * @return 可傳送頁面或單筆亦超限的失敗。
  */
@@ -24,9 +26,10 @@ internal fun boundedHistoryRoundEvents(
     request: HistoryRoundEventsRequestDto,
     page: HistoryRoundEvents,
     json: NetworkJson,
+    registries: NetworkDtoRegistries,
     maximumBytes: Int = HistoryQueryLimits.RESPONSE_BYTES,
 ): HistoryRoundEventsResponseDto {
-    val mapped = page.toDto()
+    val mapped = page.toDto(registries)
     var count = mapped.transactions.size
     while (true) {
         val transactions = mapped.transactions.take(count)
@@ -62,6 +65,7 @@ internal fun boundedHistoryRoundEvents(
  * @param request 原查詢上下文。
  * @param state 已授權的完整狀態。
  * @param json 線路編碼設定。
+ * @param registries 牌面特徵的網路轉換。
  * @param maximumBytes 回覆 UTF-8 位元組上限。
  * @return 完整狀態或超限錯誤。
  */
@@ -69,9 +73,10 @@ internal fun boundedHistoryRoundState(
     request: HistoryRoundStateRequestDto,
     state: HistoryRoundState,
     json: NetworkJson,
+    registries: NetworkDtoRegistries,
     maximumBytes: Int = HistoryQueryLimits.RESPONSE_BYTES,
 ): HistoryRoundStateResponseDto {
-    val response = HistoryRoundStateResponseDto(request.requestId, request.matchId, request.roundNumber, request.position, state = state.toDto(), errorCode = null)
+    val response = HistoryRoundStateResponseDto(request.requestId, request.matchId, request.roundNumber, request.position, state = state.toDto(registries), errorCode = null)
     return if (encodedHistoryResponseUtf8Size(json, HistoryRoundStateResponseDto.serializer(), response) <= maximumBytes) {
         response
     } else {

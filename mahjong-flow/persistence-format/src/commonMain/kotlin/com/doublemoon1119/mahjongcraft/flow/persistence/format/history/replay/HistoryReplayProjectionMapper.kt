@@ -21,16 +21,21 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryWi
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionTiming
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementDetailEntry
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementQuantity
+import com.doublemoon1119.mahjongcraft.flow.persistence.format.component.ComponentViewPersistenceRegistry
+import com.doublemoon1119.mahjongcraft.flow.persistence.format.core.TypedPersistenceDto
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.core.persistenceJson
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.game.MatchRoundPositionPersistenceDto
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.game.MeldTypePersistenceDto
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.game.RelativeDirectionPersistenceDto
+import com.doublemoon1119.mahjongcraft.flow.persistence.format.game.TileFaceViewPersistenceDto
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.game.toDomain
 import com.doublemoon1119.mahjongcraft.logic.base.MeldType
 import com.doublemoon1119.mahjongcraft.logic.base.MeldTypeId
 import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.logic.table.RoundCompletionClassification
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
+import com.doublemoon1119.mahjongcraft.logic.tile.component.TilePose
+import kotlinx.serialization.builtins.ListSerializer
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonNull
@@ -49,11 +54,22 @@ internal object HistoryReplayProjectionMapper {
      * @param position 選取位置。
      * @param tileCatalog 已宣告的局內實體牌。
      * @param budget 走訪預算。
+     * @param componentViews 牌面特徵的保存轉換。
+     * @param poses 依牌索引保存的共同姿態，決定副露哪些牌朝下。
      * @return 歷史桌況。
      */
-    fun mapState(projection: JsonElement, identity: HistoryReplayIdentity, roundNumber: Int, position: HistoryRoundPosition, tileCatalog: HistoryRoundTileCatalog, budget: ReplayReadBudget): HistoryRoundState {
+    fun mapState(
+        projection: JsonElement,
+        identity: HistoryReplayIdentity,
+        roundNumber: Int,
+        position: HistoryRoundPosition,
+        tileCatalog: HistoryRoundTileCatalog,
+        budget: ReplayReadBudget,
+        componentViews: ComponentViewPersistenceRegistry,
+        poses: Map<Int, TilePose>,
+    ): HistoryRoundState {
         val root = obj(projection)
-        val context = HistoryReplayProjectionContext(budget, tileCatalog.tiles.size, identity.players.size)
+        val context = HistoryReplayProjectionContext(budget, tileCatalog.tiles.size, identity.players.size, componentViews, poses)
         val encodedPlayers = array(root.getValue(ReplayFormatKeys.PLAYERS))
         require(encodedPlayers.size == identity.players.size) { "Replay player count does not match header" }
         val players = encodedPlayers.map { mapPlayer(obj(it), context) }
@@ -86,14 +102,24 @@ internal object HistoryReplayProjectionMapper {
      * @param roundNumber 局序號。
      * @param tileCatalog 已宣告的牌。
      * @param budget 走訪預算。
+     * @param componentViews 牌面特徵的保存轉換。
      * @return 有序歷史事實。
      */
-    fun mapFacts(facts: List<JsonObject>, actorSeats: List<Int?>, identity: HistoryReplayIdentity, roundNumber: Int, tileCatalog: HistoryRoundTileCatalog, budget: ReplayReadBudget): List<HistoryReplayFact> {
+    fun mapFacts(
+        facts: List<JsonObject>,
+        actorSeats: List<Int?>,
+        identity: HistoryReplayIdentity,
+        roundNumber: Int,
+        tileCatalog: HistoryRoundTileCatalog,
+        budget: ReplayReadBudget,
+        componentViews: ComponentViewPersistenceRegistry,
+    ): List<HistoryReplayFact> {
         require(roundNumber > 0 && facts.size == actorSeats.size) { "Replay fact context is inconsistent" }
-        val context = HistoryReplayProjectionContext(budget, tileCatalog.tiles.size, identity.players.size)
-        return facts.mapIndexed { index, fact ->
+        val context = HistoryReplayProjectionContext(budget, tileCatalog.tiles.size, identity.players.size, componentViews)
+        return facts.mapIndexedNotNull { index, fact ->
             budget.charge()
             val type = string(fact.getValue(ReplaySourceKeys.TYPE))
+            if (type == HistoryFactTypeKeys.TILE_PRESENTATION_CHANGED) return@mapIndexedNotNull null
             val actor = actorSeats[index]?.let(context::seat)
             val direct = fact[ReplaySourceKeys.DIRECT_TILES]?.let { refs(it, context) } ?: emptyList()
             val revealed = fact[ReplaySourceKeys.REVEALED_TILES]?.let { refs(it, context) } ?: emptyList()
@@ -158,6 +184,47 @@ internal object HistoryReplayProjectionMapper {
     }
 
     /**
+     * 讀取牌張呈現變化事實，驗證牌索引屬於本局已宣告的牌。
+     *
+     * @param fact 已解碼的呈現變化事實，呈現結果為字典代碼。
+     * @param tileCount 目前已宣告的牌數。
+     * @param budget 走訪預算。
+     * @param presentation 依字典代碼取得呈現結果；代碼不存在時拋出例外。
+     * @return 依牌索引排列的呈現結果。
+     */
+    fun tilePresentations(
+        fact: JsonObject,
+        tileCount: Int,
+        budget: ReplayReadBudget,
+        presentation: (Int) -> ReplayTilePresentation,
+    ): Map<Int, ReplayTilePresentation> = obj(fact.getValue(ReplaySourceKeys.PRESENTATIONS)).entries.associate { (key, raw) ->
+        budget.charge()
+        budget.tile(key.toIntOrNull() ?: invalid(), tileCount) to presentation(integer(raw))
+    }
+
+    /**
+     * 解碼一個牌張呈現字典項目，依項目大小記帳。
+     *
+     * @param value 保存的呈現字典項目。
+     * @param budget 走訪預算。
+     * @param componentViews 牌面特徵的保存轉換。
+     * @return 呈現結果。
+     */
+    fun tilePresentation(
+        value: JsonObject,
+        budget: ReplayReadBudget,
+        componentViews: ComponentViewPersistenceRegistry,
+    ): ReplayTilePresentation {
+        budget.inspectProjection(value)
+        val views = persistenceJson.decodeFromJsonElement(ListSerializer(TypedPersistenceDto.serializer()), value.getValue(ReplaySourceKeys.VIEWS))
+        return ReplayTilePresentation(
+            appearanceId = value.getValue(ReplaySourceKeys.APPEARANCE_ID).takeUnless { it == JsonNull }?.let(::string),
+            views = componentViews.decode(views),
+            pose = TilePose.valueOf(string(value.getValue(ReplaySourceKeys.POSE))),
+        )
+    }
+
+    /**
      * 讀取保存的動作種類，並驗證動作引用的牌都屬於本局。
      *
      * @param action 保存的動作物件。
@@ -166,7 +233,7 @@ internal object HistoryReplayProjectionMapper {
      */
     private fun actionTypes(action: JsonObject, context: HistoryReplayProjectionContext): Pair<String, String?> {
         val actionType = string(action.getValue(ReplaySourceKeys.TYPE))
-        action[ReplaySourceKeys.TILE_ID]?.let { context.tile(integer(it)) }
+        action[ReplaySourceKeys.TILE_ID]?.let { ref(it, context) }
         action[ReplaySourceKeys.WITH_TILE_IDS]?.let { refs(it, context) }
         val extensionType = if (actionType == HistoryActionTypeKeys.EXTENSION) {
             string(obj(action.getValue(ReplaySourceKeys.VALUE)).getValue(ReplaySourceKeys.TYPE_KEY))
@@ -187,7 +254,7 @@ internal object HistoryReplayProjectionMapper {
         context.charge()
         val hand = obj(value.getValue(ReplaySourceKeys.HAND))
         val tiles = refs(hand.getValue(ReplaySourceKeys.HAND_TILES), context)
-        val lastDrawn = hand.getValue(ReplaySourceKeys.LAST_DRAWN).takeUnless { it == JsonNull }?.let { context.tile(integer(it)) }
+        val lastDrawn = hand.getValue(ReplaySourceKeys.LAST_DRAWN).takeUnless { it == JsonNull }?.let { ref(it, context) }
         require(lastDrawn == null || lastDrawn !in tiles) { "Replay last drawn tile must be separate from standing hand tiles" }
         val discards = array(value.getValue(ReplayFormatKeys.DISCARDS)).map { discard(obj(it), context) }
         val setAside = refs(value.getValue(ReplayFormatKeys.SET_ASIDE_TILES), context)
@@ -213,7 +280,7 @@ internal object HistoryReplayProjectionMapper {
     private fun discard(value: JsonObject, context: HistoryReplayProjectionContext): HistoryReplayDiscard {
         context.charge()
         require(value.keys.all { it in DISCARD_KEYS }) { "Replay discard contains unexpected fields" }
-        val tile = context.tile(integer(value.getValue(ReplayFormatKeys.DISCARD_TILE)))
+        val tile = ref(value.getValue(ReplayFormatKeys.DISCARD_TILE), context)
         val taken = value[ReplayFormatKeys.DISCARD_TAKEN]?.let { if (boolean(it)) true else invalid() } ?: false
         val markers = value[ReplayFormatKeys.DISCARD_MARKERS]?.let { markers ->
             array(markers).map {
@@ -242,9 +309,11 @@ internal object HistoryReplayProjectionMapper {
             is MeldTypePersistenceDto.Extension -> MeldType.Extension(MeldTypeId.parse(saved.typeId))
         }
         val tiles = refs(value.getValue(ReplaySourceKeys.MELD_TILES), context)
-        val source = value.getValue(ReplaySourceKeys.SOURCE_TILE).takeUnless { it == JsonNull }?.let { context.tile(integer(it)) }
-        val faceDown = refs(value.getValue(ReplaySourceKeys.FACE_DOWN_TILE_IDS), context).toSet()
-        require(faceDown.all { it in tiles }) { "Replay meld face-down tile must belong to the meld" }
+        val source = value.getValue(ReplaySourceKeys.SOURCE_TILE).takeUnless { it == JsonNull }?.let { ref(it, context) }
+        val savedFaceDown = refs(value.getValue(ReplaySourceKeys.FACE_DOWN_TILE_IDS), context).toSet()
+        require(savedFaceDown.all { it in tiles }) { "Replay meld face-down tile must belong to the meld" }
+        // 保存了姿態的牌依姿態決定朝向，沒有姿態的牌沿用副露保存的朝下牌。
+        val faceDown = tiles.filterTo(linkedSetOf()) { tile -> context.poses[tile.tileIndex]?.let { it == TilePose.FACE_DOWN } ?: (tile in savedFaceDown) }
         val publiclyRevealed = refs(value.getValue(ReplaySourceKeys.PUBLICLY_REVEALED_TILE_IDS), context).toSet()
         require(publiclyRevealed.all { it in tiles }) { "Replay meld publicly revealed tile must belong to the meld" }
         require(source == null || source in tiles) { "Replay meld source must belong to the meld" }
@@ -325,7 +394,7 @@ internal object HistoryReplayProjectionMapper {
                 hand = item[ReplaySourceKeys.WINNING_HAND]?.takeUnless { it == JsonNull }?.let { handValue ->
                     val hand = obj(handValue)
                     val standing = refs(hand.getValue(ReplaySourceKeys.WINNING_STANDING_TILES), context)
-                    val winning = hand.getValue(ReplaySourceKeys.WINNING_TILE).takeUnless { it == JsonNull }?.let { context.tile(integer(it)) }
+                    val winning = hand.getValue(ReplaySourceKeys.WINNING_TILE).takeUnless { it == JsonNull }?.let { ref(it, context) }
                     require(standing.map { it.tileIndex }.distinct().size == standing.size) { "Replay winning hand contains duplicate standing tiles" }
                     require(winning == null || winning !in standing) { "Replay winning tile must be separate from standing tiles" }
                     HistoryReplayWinningHand(standing, winning)
@@ -358,11 +427,16 @@ internal object HistoryReplayProjectionMapper {
      *
      * @param value 已保存的明細值。
      * @param context 座位與牌參照驗證上下文。
-     * @return 有單位數值、牌參照或有序條目。
+     * @return 有單位數值、公開牌面或有序條目。
      */
     private fun detailValue(value: JsonObject, context: HistoryReplayProjectionContext): HistoryWinDetailValue = when (string(value.getValue(ReplaySourceKeys.TYPE))) {
         HistoryDetailValueTypeKeys.QUANTITIES -> HistoryWinDetailValue.Quantities(array(value.getValue(ReplaySourceKeys.QUANTITIES)).map { quantity(obj(it)) })
-        HistoryDetailValueTypeKeys.TILES -> HistoryWinDetailValue.Tiles(refs(value.getValue(ReplaySourceKeys.TILE_IDS), context))
+        HistoryDetailValueTypeKeys.TILE_FACES -> HistoryWinDetailValue.TileFaces(
+            array(value.getValue(ReplaySourceKeys.TILE_FACES)).map { face ->
+                context.charge()
+                persistenceJson.decodeFromJsonElement(TileFaceViewPersistenceDto.serializer(), face).toDomain(context.componentViews)
+            },
+        )
         HistoryDetailValueTypeKeys.ENTRIES -> HistoryWinDetailValue.Entries(
             array(value.getValue(ReplaySourceKeys.ENTRIES)).map { raw ->
                 val entry = obj(raw)
@@ -409,7 +483,22 @@ internal object HistoryReplayProjectionMapper {
      * @param context 局內牌目錄。
      * @return 原順序牌參照。
      */
-    private fun refs(value: JsonElement, context: HistoryReplayProjectionContext): List<HistoryTileReference> = array(value).map { context.tile(integer(it)) }
+    private fun refs(value: JsonElement, context: HistoryReplayProjectionContext): List<HistoryTileReference> = array(value).map { ref(it, context) }
+
+    /**
+     * 讀取牌張參照，保存在精簡文件中的權威組件不直接交付公開讀模型。
+     *
+     * @param value 局內索引，或帶有該次組件版本的索引封套。
+     * @param context 局內牌目錄及讀取預算。
+     * @return 只含已驗證局內身分的牌張參照。
+     */
+    private fun ref(value: JsonElement, context: HistoryReplayProjectionContext): HistoryTileReference {
+        if (value !is JsonObject) return context.tile(integer(value))
+        require(value.keys == TILE_VERSION_KEYS) { "Replay tile version contains unexpected fields" }
+        array(value.getValue(ReplayFormatKeys.TILE_COMPONENTS))
+        context.charge()
+        return context.tile(integer(value.getValue(ReplayFormatKeys.TILE_REFERENCE)))
+    }
 
     /**
      * 讀取嚴格物件。
@@ -453,6 +542,9 @@ internal object HistoryReplayProjectionMapper {
 
     /** 拒絕破損投影，不以預設資料替代。 */
     private fun invalid(): Nothing = throw ReplayReadException(ReplayReadError.INVALID_DOCUMENT)
+
+    /** 牌張版本封套只允許身分與內部保存組件。 */
+    private val TILE_VERSION_KEYS = setOf(ReplayFormatKeys.TILE_REFERENCE, ReplayFormatKeys.TILE_COMPONENTS)
 
     /** 牌河項目允許的欄位。 */
     private val DISCARD_KEYS = setOf(ReplayFormatKeys.DISCARD_TILE, ReplayFormatKeys.DISCARD_TAKEN, ReplayFormatKeys.DISCARD_MARKERS)

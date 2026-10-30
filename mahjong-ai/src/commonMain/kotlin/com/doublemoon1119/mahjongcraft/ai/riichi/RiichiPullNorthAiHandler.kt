@@ -9,7 +9,6 @@ import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiGameAction
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.riichiCanonical
 
 /**
  * 三人日麻拔北動作的 AI action handler。
@@ -23,8 +22,8 @@ object RiichiPullNorthAiHandler : ExtensionGameActionAiHandler<RiichiGameAction.
         module: MahjongRuleModule<*>,
     ): List<ExtensionCommandCandidate> {
         val hand = context.snapshot.players.first { it.id == context.selfId }.hand
-        val north = hand.lastDrawn?.takeIf { it.tile?.riichiCanonical == Tile.Honor.North }
-            ?: hand.standingTiles.firstOrNull { it.tile?.riichiCanonical == Tile.Honor.North }
+        val north = hand.lastDrawn?.takeIf { it.tile == Tile.Honor.North }
+            ?: hand.standingTiles.firstOrNull { it.tile == Tile.Honor.North }
             ?: return emptyList()
         return listOf(
             ExtensionCommandCandidate(

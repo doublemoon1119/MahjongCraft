@@ -1,6 +1,9 @@
 package com.doublemoon1119.mahjongcraft.flow.server.game.usecase
 
 import com.doublemoon1119.mahjongcraft.extension.MahjongExtension
+import com.doublemoon1119.mahjongcraft.flow.api.event.ActionsPerformedEvent
+import com.doublemoon1119.mahjongcraft.flow.api.event.PerformedActionKind
+import com.doublemoon1119.mahjongcraft.flow.common.game.event.GameEventProjector
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryFact
 import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkDtoRegistries
@@ -20,7 +23,13 @@ import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.base.Hand
 import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
-import com.doublemoon1119.mahjongcraft.logic.config.DynamicRuleState
+import com.doublemoon1119.mahjongcraft.logic.component.BuiltInComponentOwners
+import com.doublemoon1119.mahjongcraft.logic.component.ComponentLifecycleDefinition
+import com.doublemoon1119.mahjongcraft.logic.component.ComponentPatch
+import com.doublemoon1119.mahjongcraft.logic.component.ComponentRegistry
+import com.doublemoon1119.mahjongcraft.logic.component.ComponentRoundTransition
+import com.doublemoon1119.mahjongcraft.logic.component.ComponentSet
+import com.doublemoon1119.mahjongcraft.logic.component.ComponentType
 import com.doublemoon1119.mahjongcraft.logic.config.MultiRonPolicy
 import com.doublemoon1119.mahjongcraft.logic.config.RonResolution
 import com.doublemoon1119.mahjongcraft.logic.judgment.LegalActionContext
@@ -34,6 +43,7 @@ import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
 import com.doublemoon1119.mahjongcraft.logic.module.NoOpActionScoringPolicy
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiFamilyRuleConfig
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPlayerComponents
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleModule
 import com.doublemoon1119.mahjongcraft.logic.table.DrawFollowUpDecision
@@ -42,7 +52,6 @@ import com.doublemoon1119.mahjongcraft.logic.table.DrawSource
 import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayer
 import com.doublemoon1119.mahjongcraft.logic.table.NoOpWallRevealPolicy
 import com.doublemoon1119.mahjongcraft.logic.table.PendingReaction
-import com.doublemoon1119.mahjongcraft.logic.table.PlayerRuleState
 import com.doublemoon1119.mahjongcraft.logic.table.SupplementalDrawDecision
 import com.doublemoon1119.mahjongcraft.logic.table.SupplementalDrawPolicy
 import com.doublemoon1119.mahjongcraft.logic.table.SupplementalDrawReasonIds
@@ -100,7 +109,7 @@ class DrawFollowUpAndActionScoringIntegrationTest {
         assertIs<Outcome.Success<Unit>>(result)
         val drawer = fixture.drawer()
         assertEquals(ordinary, drawer.hand.lastDrawn)
-        assertEquals(listOf(firstFlower, secondFlower), (drawer.playerRuleState as FlowerState).flowers)
+        assertEquals(listOf(firstFlower, secondFlower), drawer.tileAreas["test:flowers"]?.tiles.orEmpty())
         assertEquals(listOf(GameAction.Draw, FLOWER_ACTION, GameAction.Draw, FLOWER_ACTION, GameAction.Draw), fixture.recordedActions())
         assertEquals(
             listOf(GameAction.Draw, FLOWER_ACTION, GameAction.Draw, FLOWER_ACTION, GameAction.Draw),
@@ -114,17 +123,26 @@ class DrawFollowUpAndActionScoringIntegrationTest {
         )
         assertEquals(listOf(firstFlower.id, secondFlower.id), published.setAsideTileIds)
         assertTrue(published.isNewlyDrawn)
+        val publicActions = fixture.actionEvents().single().actions
+        assertEquals(
+            listOf(PerformedActionKind.DECLARATION, PerformedActionKind.SUPPLEMENTAL_DRAW, PerformedActionKind.DECLARATION, PerformedActionKind.SUPPLEMENTAL_DRAW),
+            publicActions.map { it.kind },
+        )
+        val replacements = publicActions.filter { it.kind == PerformedActionKind.SUPPLEMENTAL_DRAW }
+        assertEquals(listOf(1, 1), replacements.map { it.supplementalTileCount })
+        assertEquals(listOf(FLOWER_ACTION.value.id, FLOWER_ACTION.value.id), replacements.map { it.supplementalSourceId })
+        assertTrue(replacements.all { it.tiles.isEmpty() })
     }
 
-    /** 移出手牌時規則更新的動態狀態在補牌後仍然保留。 */
+    /** 移出手牌時規則更新的對局組件在補牌後仍然保留。 */
     @Test
-    fun `dynamic state updated by a set aside survives the replacement draw`() = runTest {
-        val fixture = Fixture(TestBehavior(countsFlowersInDynamicState = true))
+    fun `table component updated by a set aside survives the replacement draw`() = runTest {
+        val fixture = Fixture(TestBehavior(countsFlowersInTableComponent = true))
         fixture.repository.setTableState(fixture.table(wall = listOf(tile(FLOWER), tile(ORDINARY), tile(FLOWER))))
 
         assertIs<Outcome.Success<Unit>>(fixture.draw(fixture.gameId, fixture.drawerId))
 
-        assertEquals(TestPot(2), fixture.repository.getTableState(fixture.gameId)!!.dynamicRuleState)
+        assertEquals(TestPot(2), fixture.repository.getTableState(fixture.gameId)!!.components[testPotComponent])
     }
 
     /** 摸到花卻已經沒有牌可以補時，依規則以流局結束本局。 */
@@ -186,13 +204,18 @@ class DrawFollowUpAndActionScoringIntegrationTest {
         val pausedStep = fixture.presentation.getPublishedPlayerTiles(fixture.gameId)!!.followUpSteps.single()
         assertEquals(flower.id, pausedStep.setAsideTileId)
         assertTrue(pausedStep.drawnTileIds.isEmpty())
+        assertTrue(fixture.actionEvents().isEmpty())
 
         assertIs<Outcome.Success<Unit>>(fixture.respondToRobbing(fixture.gameId, fixture.southId, GameAction.Pass))
 
         val resumed = fixture.drawer()
         assertNull(fixture.repository.getTableState(fixture.gameId)!!.pendingRobbingReaction)
         assertEquals(ordinary, resumed.hand.lastDrawn)
-        assertEquals(listOf(flower), (resumed.playerRuleState as FlowerState).flowers)
+        assertEquals(listOf(flower), resumed.tileAreas["test:flowers"]?.tiles.orEmpty())
+        assertEquals(
+            listOf(PerformedActionKind.DECLARATION, PerformedActionKind.SUPPLEMENTAL_DRAW),
+            fixture.actionEvents().single().actions.map { it.kind },
+        )
     }
 
     /** 槓後補到花時也會自動移出並再補牌；槓的收付可以把點數放進規則的點數池。 */
@@ -201,7 +224,7 @@ class DrawFollowUpAndActionScoringIntegrationTest {
         val behavior = TestBehavior(
             scoring = { context ->
                 (context.action as? GameAction.Kan)?.let {
-                    ActionScoring(mapOf(context.actorPlayerId to -1000), potDeposit = 1000, dynamicRuleState = TestPot(1000))
+                    ActionScoring(mapOf(context.actorPlayerId to -1000), potDeposit = 1000, tableComponents = ComponentPatch(values = ComponentSet.EMPTY.with(testPotComponent, TestPot(1000))))
                 }
             },
         )
@@ -218,9 +241,9 @@ class DrawFollowUpAndActionScoringIntegrationTest {
         val state = assertNotNull(fixture.repository.getTableState(fixture.gameId))
         val drawer = state.players.first { it.id == fixture.drawerId }
         assertEquals(ordinary, drawer.hand.lastDrawn)
-        assertEquals(listOf(flower), (drawer.playerRuleState as FlowerState).flowers)
+        assertEquals(listOf(flower), drawer.tileAreas["test:flowers"]?.tiles.orEmpty())
         assertEquals(INITIAL_SCORE - 1000, drawer.score)
-        assertEquals(TestPot(1000), state.dynamicRuleState)
+        assertEquals(TestPot(1000), state.components[testPotComponent])
         assertEquals(listOf(kan, GameAction.Draw, FLOWER_ACTION, GameAction.Draw), fixture.recordedActions())
         val scored = fixture.repository.historyDrafts.mapNotNull { it.fact as? HistoryFact.ActionScored }.single()
         assertEquals(kan, scored.action)
@@ -238,7 +261,7 @@ class DrawFollowUpAndActionScoringIntegrationTest {
                     ActionScoring(
                         mapOf(context.actorPlayerId to 2000, requireNotNull(context.sourcePlayerId) to -2000),
                         potDeposit = 0,
-                        dynamicRuleState = context.tableStateAfterAction.dynamicRuleState,
+                        tableComponents = ComponentPatch(),
                     )
                 } else {
                     null
@@ -271,11 +294,11 @@ class DrawFollowUpAndActionScoringIntegrationTest {
     @Test
     fun `invalid action scoring is a contract violation`() = runTest {
         val invalidScorings: List<(ActionScoringContext) -> ActionScoring> = listOf(
-            { ActionScoring(mapOf(it.actorPlayerId to 1000), potDeposit = 0, dynamicRuleState = null) },
-            { ActionScoring(mapOf(Uuid.random() to 1000, it.actorPlayerId to -1000), potDeposit = 0, dynamicRuleState = null) },
-            { ActionScoring(mapOf(it.actorPlayerId to 0), potDeposit = 0, dynamicRuleState = null) },
-            { ActionScoring(emptyMap(), potDeposit = 0, dynamicRuleState = null) },
-            { ActionScoring(mapOf(it.actorPlayerId to Int.MAX_VALUE), potDeposit = Int.MIN_VALUE + 1, dynamicRuleState = null) },
+            { ActionScoring(mapOf(it.actorPlayerId to 1000), potDeposit = 0, tableComponents = ComponentPatch()) },
+            { ActionScoring(mapOf(Uuid.random() to 1000, it.actorPlayerId to -1000), potDeposit = 0, tableComponents = ComponentPatch()) },
+            { ActionScoring(mapOf(it.actorPlayerId to 0), potDeposit = 0, tableComponents = ComponentPatch()) },
+            { ActionScoring(emptyMap(), potDeposit = 0, tableComponents = ComponentPatch()) },
+            { ActionScoring(mapOf(it.actorPlayerId to Int.MAX_VALUE), potDeposit = Int.MIN_VALUE + 1, tableComponents = ComponentPatch()) },
         )
         invalidScorings.forEach { invalid ->
             val fixture = Fixture(TestBehavior(scoring = { context -> invalid(context).takeIf { context.action == FLOWER_ACTION } }))
@@ -286,6 +309,26 @@ class DrawFollowUpAndActionScoringIntegrationTest {
 
             assertEquals(table, fixture.repository.getTableState(fixture.gameId))
         }
+    }
+
+    /** 收付讓玩家分數超出整數範圍時視為規則錯誤，桌況不改變。 */
+    @Test
+    fun `action scoring that overflows a score is a contract violation`() = runTest {
+        val fixture = Fixture(
+            TestBehavior(
+                scoring = { context ->
+                    ActionScoring(mapOf(context.actorPlayerId to 1000, context.tableStateAfterAction.players.first { it.id != context.actorPlayerId }.id to -1000), potDeposit = 0, tableComponents = ComponentPatch())
+                        .takeIf { context.action == FLOWER_ACTION }
+                },
+            ),
+        )
+        val base = fixture.table(wall = listOf(tile(FLOWER), tile(ORDINARY)))
+        val table = base.copy(players = base.players.map { if (it.id == fixture.drawerId) it.copy(score = Int.MAX_VALUE - 10) else it })
+        fixture.repository.setTableState(table)
+
+        assertFailsWith<RuleContractViolationException> { fixture.draw(fixture.gameId, fixture.drawerId) }
+
+        assertEquals(table, fixture.repository.getTableState(fixture.gameId))
     }
 
     /** 暫停在搶和視窗的移出還沒有成立，不收付點數。 */
@@ -308,10 +351,10 @@ class DrawFollowUpAndActionScoringIntegrationTest {
         assertEquals(0, scoringCalls)
     }
 
-    /** 摸牌後的掛勾只能修改規則狀態；改動分數時中止。 */
+    /** 摸牌後的掛勾回傳舊值已過時的變更時中止。 */
     @Test
-    fun `a draw hook that changes the score is rejected`() = runTest {
-        val fixture = Fixture(TestBehavior(hooksChangeScore = true))
+    fun `a draw hook with a stale component change is rejected`() = runTest {
+        val fixture = Fixture(TestBehavior(hooksSendStalePatch = true))
         val table = fixture.table(wall = listOf(tile(ORDINARY)))
         fixture.repository.setTableState(table)
 
@@ -320,10 +363,10 @@ class DrawFollowUpAndActionScoringIntegrationTest {
         assertEquals(table, fixture.repository.getTableState(fixture.gameId))
     }
 
-    /** 鳴牌後的掛勾只能修改規則狀態；改動分數時中止。 */
+    /** 鳴牌後的掛勾回傳舊值已過時的變更時中止。 */
     @Test
-    fun `a meld hook that changes the score is rejected`() = runTest {
-        val fixture = Fixture(TestBehavior(hooksChangeScore = true))
+    fun `a meld hook with a stale component change is rejected`() = runTest {
+        val fixture = Fixture(TestBehavior(hooksSendStalePatch = true))
         val hand = Hand(tiles = List(3) { tile(KAN_TILE) } + fillers(9), lastDrawn = tile(KAN_TILE))
         val table = fixture.table(drawerHand = hand, wall = listOf(tile(ORDINARY), tile(ORDINARY)))
         fixture.repository.setTableState(table)
@@ -345,7 +388,7 @@ class DrawFollowUpAndActionScoringIntegrationTest {
         assertIs<Outcome.Success<Unit>>(fixture.draw(fixture.gameId, fixture.drawerId))
 
         val drawer = fixture.drawer()
-        assertEquals(listOf(first, second), (drawer.playerRuleState as FlowerState).flowers)
+        assertEquals(listOf(first, second), drawer.tileAreas["test:flowers"]?.tiles.orEmpty())
         assertEquals(a, drawer.hand.lastDrawn)
         assertTrue(drawer.hand.tiles.containsAll(listOf(b, c)))
         assertTrue(drawer.hand.standingTiles.none { it.tile == FLOWER })
@@ -376,7 +419,7 @@ class DrawFollowUpAndActionScoringIntegrationTest {
         assertIs<Outcome.Success<Unit>>(fixture.respondToRobbing(fixture.gameId, fixture.southId, GameAction.Pass))
 
         val drawer = fixture.drawer()
-        assertEquals(listOf(first, second, third), (drawer.playerRuleState as FlowerState).flowers)
+        assertEquals(listOf(first, second, third), drawer.tileAreas["test:flowers"]?.tiles.orEmpty())
         assertEquals(ordinary.first(), drawer.hand.lastDrawn)
         assertTrue(drawer.hand.standingTiles.none { it.tile == FLOWER })
     }
@@ -414,7 +457,7 @@ class DrawFollowUpAndActionScoringIntegrationTest {
 
         assertIs<Outcome.Success<Unit>>(fixture.declareSetAside(fixture.gameId, fixture.drawerId, FLOWER_ACTION))
 
-        assertEquals(listOf(declared, replacement), (fixture.drawer().playerRuleState as FlowerState).flowers)
+        assertEquals(listOf(declared, replacement), fixture.drawer().tileAreas["test:flowers"]?.tiles.orEmpty())
         assertEquals(1, fixture.presentation.getPublishedPlayerTiles(fixture.gameId)!!.followUpSteps.size)
         assertEquals(1, fixture.presentation.getRuleStateUpdateCount(fixture.gameId))
     }
@@ -499,8 +542,8 @@ class DrawFollowUpAndActionScoringIntegrationTest {
      * @property robbingPlayerIds 可以搶花的玩家。
      * @property ignoresEmptyWall 摸到花時是否不檢查牌山，直接要求移出。
      * @property setAsideChangesOthers 移出手牌的結果是否違規改動其他玩家。
-     * @property hooksChangeScore 摸牌與鳴牌後的掛勾是否違規改動分數。
-     * @property countsFlowersInDynamicState 移出花牌時是否把已移出的張數寫進規則動態狀態。
+     * @property hooksSendStalePatch 摸牌與鳴牌後的掛勾是否回傳舊值已過時的變更。
+     * @property countsFlowersInTableComponent 移出花牌時是否把已移出的張數寫進桌況組件。
      * @property replacementCount 每次補牌從牌山尾端補的張數。
      * @property robbableTileIds 可以被搶的花；空集合代表每張花都可以搶。
      * @property robsKans [robbingPlayerIds] 是否也可以搶槓。
@@ -515,8 +558,8 @@ class DrawFollowUpAndActionScoringIntegrationTest {
         val robbingPlayerIds: MutableSet<Uuid> = mutableSetOf(),
         val ignoresEmptyWall: Boolean = false,
         val setAsideChangesOthers: Boolean = false,
-        val hooksChangeScore: Boolean = false,
-        val countsFlowersInDynamicState: Boolean = false,
+        val hooksSendStalePatch: Boolean = false,
+        val countsFlowersInTableComponent: Boolean = false,
         val replacementCount: Int = 1,
         val robbableTileIds: MutableSet<Uuid> = mutableSetOf(),
         val robsKans: Boolean = false,
@@ -555,19 +598,22 @@ class DrawFollowUpAndActionScoringIntegrationTest {
         val presentation = FakeGamePresentationPublisher()
 
         /** 透過公開 extension bootstrap 登記的規則。 */
-        private val modules = bundledCoreExtensionRegistries(additionalExtensions = listOf(FlowerExtension(behavior))).moduleRegistry
+        private val registries = bundledCoreExtensionRegistries(additionalExtensions = listOf(FlowerExtension(behavior)))
+
+        /** 規則與組件共用同一份登記。 */
+        private val modules = registries.moduleRegistry
 
         /** 共用的快照同步。 */
-        private val snapshots = GameSnapshotSynchronizer(repository, FakeGameSnapshotRepository(), GameVisibilityPolicyImpl(modules))
+        private val snapshots = GameSnapshotSynchronizer(repository, FakeGameSnapshotRepository(), GameVisibilityPolicyImpl(modules, componentRegistry = registries.componentRegistry))
 
         /** 正式摸牌用例。 */
-        val draw = DrawTileUseCase(repository, modules, snapshots, events, presentation)
+        val draw = DrawTileUseCase(repository, modules, snapshots, events, presentation, componentRegistry = registries.componentRegistry)
 
         /** 正式暗槓與加槓用例。 */
-        val kan = DeclareKanUseCase(repository, modules, snapshots, events, presentation)
+        val kan = DeclareKanUseCase(repository, modules, snapshots, events, presentation, componentRegistry = registries.componentRegistry)
 
         /** 正式宣告移出用例。 */
-        val declareSetAside = DeclareTileSetAsideUseCase(repository, modules, snapshots, events, presentation)
+        val declareSetAside = DeclareTileSetAsideUseCase(repository, modules, snapshots, events, presentation, componentRegistry = registries.componentRegistry)
 
         /** 正式搶和回應用例。 */
         val respondToRobbing = RespondToRobbingUseCase(
@@ -578,7 +624,9 @@ class DrawFollowUpAndActionScoringIntegrationTest {
             presentationPublisher = presentation,
             winPresentationHandoff = WinPresentationHandoff(),
             winCelebrationCueResolverRegistry = bundledWinCelebrationCueResolverRegistry(),
-            winSettlementDetailResolverRegistry = WinSettlementDetailResolverRegistry().apply { freeze() },
+            winSettlementDetailResolverRegistry = WinSettlementDetailResolverRegistry(bundledCoreExtensionRegistries().componentRegistry).apply { freeze() },
+
+            componentRegistry = registries.componentRegistry,
         )
 
         /** 正式捨牌反應用例。 */
@@ -591,8 +639,10 @@ class DrawFollowUpAndActionScoringIntegrationTest {
             presentationPublisher = presentation,
             winPresentationHandoff = WinPresentationHandoff(),
             winCelebrationCueResolverRegistry = bundledWinCelebrationCueResolverRegistry(),
-            winSettlementDetailResolverRegistry = WinSettlementDetailResolverRegistry().apply { freeze() },
+            winSettlementDetailResolverRegistry = WinSettlementDetailResolverRegistry(bundledCoreExtensionRegistries().componentRegistry).apply { freeze() },
             postActionExhaustiveDrawResolverRegistry = PostActionExhaustiveDrawResolverRegistry().apply { freeze() },
+
+            componentRegistry = registries.componentRegistry,
         )
 
         /**
@@ -645,6 +695,10 @@ class DrawFollowUpAndActionScoringIntegrationTest {
         /** @return 牌譜依序記錄的已接受動作。 */
         fun recordedActions(): List<GameAction> = repository.historyDrafts.mapNotNull { (it.fact as? HistoryFact.ActionAccepted)?.action }
 
+        /** @return 真正提交的交易所產生的公開動作事件。 */
+        fun actionEvents(): List<ActionsPerformedEvent> = repository.committedFacts
+            .flatMap(GameEventProjector(modules)::project).filterIsInstance<ActionsPerformedEvent>()
+
         /** @return 摸牌玩家目前可以宣告的暗槓。 */
         suspend fun legalClosedKan(): GameAction.Kan {
             val state = repository.getTableState(gameId)!!
@@ -656,18 +710,11 @@ class DrawFollowUpAndActionScoringIntegrationTest {
     }
 
     /**
-     * 記錄已移出的花牌的測試玩家規則狀態。
-     *
-     * @property flowers 依移出順序排列的花牌。
-     */
-    private data class FlowerState(val flowers: List<IdentifiedTile>) : PlayerRuleState
-
-    /**
-     * 只記錄點數池餘額的測試規則動態狀態。
+     * 只記錄點數池餘額的測試組件值。
      *
      * @property balance 點數池餘額。
      */
-    private data class TestPot(val balance: Int) : DynamicRuleState
+    private data class TestPot(val balance: Int)
 
     /**
      * 測試規則的配置，委派日麻設定。
@@ -685,6 +732,20 @@ class DrawFollowUpAndActionScoringIntegrationTest {
      */
     private class FlowerExtension(private val behavior: TestBehavior) : MahjongExtension {
         override val id: String = "test:flowers"
+
+        override fun registerComponents(registry: ComponentRegistry) {
+            registry.register(testPotComponent)
+            registry.registerLifecycle(
+                ComponentLifecycleDefinition(
+                    component = testPotComponent,
+                    ownerType = BuiltInComponentOwners.TABLE,
+                    appliesTo = { _, config -> config is FlowerRuleConfig },
+                    required = false,
+                    roundTransition = ComponentRoundTransition.RESET,
+                    initialValue = { null },
+                ),
+            )
+        }
 
         override fun registerRuleModules(registry: MahjongModuleRegistry) {
             registry.register(
@@ -731,7 +792,7 @@ class DrawFollowUpAndActionScoringIntegrationTest {
                 wall = remaining
                 replacement ?: return@SupplementalDrawPolicy SupplementalDrawDecision.Rejected(SupplementalDrawReasonIds.WALL_EXHAUSTED)
             }
-            SupplementalDrawDecision.Completed(replacements, wall, candidate.reservedWallTiles, candidate.dynamicRuleState)
+            SupplementalDrawDecision.Completed(replacements, wall, candidate.reservedWallTiles, ComponentPatch())
         }
 
         override fun resolveMultiRonAbortiveDraw(): ExhaustiveDrawReason? = if (behavior.omitsMultiRonAbortiveDrawReason) null else delegate.resolveMultiRonAbortiveDraw()
@@ -755,15 +816,15 @@ class DrawFollowUpAndActionScoringIntegrationTest {
         ): TableState? {
             val actor = tableState.players.first { it.id == actorPlayerId }
             val flower = tileSetAsideBy(actor, action) ?: return null
-            val flowers = (actor.playerRuleState as? FlowerState)?.flowers.orEmpty() + flower
+            val flowers = actor.tileAreas["test:flowers"]?.tiles.orEmpty() + flower
             // 移出規則選出的那張牌，其餘立牌（含摸牌位）都併入立牌。
             val remaining = actor.hand.standingTiles.filterNot { it.id == flower.id }
             val updated = actor.copy(
                 hand = actor.hand.copy(tiles = remaining, lastDrawn = null),
-                playerRuleState = FlowerState(flowers),
+                tileAreas = actor.tileAreas.withArea("test:flowers", flowers),
             ).recordAction(action)
             return tableState.copy(
-                dynamicRuleState = if (behavior.countsFlowersInDynamicState) TestPot(flowers.size) else tableState.dynamicRuleState,
+                components = if (behavior.countsFlowersInTableComponent) tableState.components.with(testPotComponent, TestPot(flowers.size)) else tableState.components,
                 players = tableState.players.map { player ->
                     when {
                         player.id == actorPlayerId -> updated
@@ -774,11 +835,9 @@ class DrawFollowUpAndActionScoringIntegrationTest {
             )
         }
 
-        override fun setAsideTiles(player: MahjongPlayer): List<IdentifiedTile> = (player.playerRuleState as? FlowerState)?.flowers.orEmpty()
+        override fun onPlayerDrew(player: MahjongPlayer): ComponentPatch = if (behavior.hooksSendStalePatch) STALE_PATCH else delegate.onPlayerDrew(player)
 
-        override fun onPlayerDrew(player: MahjongPlayer): MahjongPlayer = if (behavior.hooksChangeScore) player.copy(score = player.score + 1) else delegate.onPlayerDrew(player)
-
-        override fun onMeldClaimed(players: List<MahjongPlayer>): List<MahjongPlayer> = if (behavior.hooksChangeScore) players.map { it.copy(score = it.score + 1) } else delegate.onMeldClaimed(players)
+        override fun onMeldClaimed(players: List<MahjongPlayer>): Map<Uuid, ComponentPatch> = if (behavior.hooksSendStalePatch) players.associate { it.id to STALE_PATCH } else delegate.onMeldClaimed(players)
 
         override fun createLegalActionValidator(): LegalActionValidator {
             val base = delegate.createLegalActionValidator()
@@ -815,6 +874,20 @@ class DrawFollowUpAndActionScoringIntegrationTest {
 
     /** 測試共用的牌面與常數。 */
     private companion object {
+        /** 預期玩家已有永久振聽、實際沒有的過時變更。 */
+        val STALE_PATCH = ComponentPatch(
+            removals = setOf(RiichiPlayerComponents.PERMANENT_FURITEN),
+            expected = ComponentSet.EMPTY.with(RiichiPlayerComponents.PERMANENT_FURITEN, Unit),
+        )
+
+        /** 測試規則獨立保存的點數池。 */
+        val testPotComponent = ComponentType(
+            id = "test:flower_pot",
+            valueClass = TestPot::class,
+            copyValue = { it.copy() },
+            target = BuiltInComponentOwners.TABLE,
+        )
+
         /** 測試規則當作花牌的牌面。 */
         val FLOWER: Tile = Tile.Honor.White
 

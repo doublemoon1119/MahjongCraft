@@ -3,7 +3,7 @@ package com.doublemoon1119.mahjongcraft.flow.server.game.policy
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.Game
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.HandReadinessSnapshot
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
-import com.doublemoon1119.mahjongcraft.logic.table.visibleTiles
+import com.doublemoon1119.mahjongcraft.logic.table.visibleTilesOutsideDrawPool
 import kotlin.uuid.Uuid
 
 /**
@@ -30,7 +30,7 @@ class HandReadinessVisibilityPolicy(
         val analysis = analyzer.analyzeCurrentHand(
             tableState = game.tableState,
             player = player,
-            visibleTiles = visibilityPolicy.snapshotFor(game, observerId).visibleTiles(),
+            visibleTiles = visibilityPolicy.snapshotFor(game, observerId).visibleTilesOutsideDrawPool(module.createTileInterpretationPolicy()),
         ) ?: return null
         return HandReadinessSnapshot(module.id, analysis)
     }

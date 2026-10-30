@@ -28,6 +28,44 @@ fun examplePairingGameConfigPresentation(): GameConfigPresentationDefinition = G
     ),
     fields = listOf(
         GameConfigFieldDefinition(
+            id = ExampleMinecraftPresentationIds.WALL_TILE_VALUES_FIELD,
+            categoryId = ExampleMinecraftPresentationIds.RULE_CATEGORY,
+            nameTranslationKey = ExampleMinecraftMessageKeys.CONFIG_WALL_TILE_VALUES,
+            descriptionTranslationKey = ExampleMinecraftMessageKeys.CONFIG_WALL_TILE_VALUES_DESCRIPTION,
+            editor = GameConfigEditorSpec.MultiChoice(
+                optionIds = ExamplePairingIds.WALL_TILE_VALUE_OPTIONS.map { it.second },
+                minimumCount = 2,
+                optionTranslationKeys = ExamplePairingIds.WALL_TILE_VALUE_OPTIONS.associate { (value, id) ->
+                    id to ExampleMinecraftMessageKeys.WALL_TILE_VALUE_OPTIONS.getValue(value)
+                },
+                optionDescriptionTranslationKeys = ExamplePairingIds.WALL_TILE_VALUE_OPTIONS.associate { (value, id) ->
+                    id to if (value == 1) {
+                        ExampleMinecraftMessageKeys.CONFIG_WALL_ONE_DESCRIPTION
+                    } else {
+                        ExampleMinecraftMessageKeys.CONFIG_WALL_TILE_OPTION_DESCRIPTION
+                    }
+                },
+            ),
+            isEditable = true,
+            read = { config ->
+                val values = (config.ruleConfig as ExamplePairingRuleConfig).wallTileValues
+                GameConfigPresentationValue.MultiChoiceValue(
+                    ExamplePairingIds.WALL_TILE_VALUE_OPTIONS.filter { it.first in values }.map { it.second }.toSet(),
+                )
+            },
+            update = { config, value ->
+                val selected = (value as GameConfigPresentationValue.MultiChoiceValue).optionIds
+                require(selected.all { id -> ExamplePairingIds.WALL_TILE_VALUE_OPTIONS.any { it.second == id } }) {
+                    "Pairing wall selection contains an unknown option"
+                }
+                config.copy(
+                    ruleConfig = (config.ruleConfig as ExamplePairingRuleConfig).copy(
+                        wallTileValues = ExamplePairingIds.WALL_TILE_VALUE_OPTIONS.filter { it.second in selected }.map { it.first }.toSet(),
+                    ),
+                )
+            },
+        ),
+        GameConfigFieldDefinition(
             id = ExampleMinecraftPresentationIds.EXCHANGE_FIELD,
             categoryId = ExampleMinecraftPresentationIds.RULE_CATEGORY,
             nameTranslationKey = ExampleMinecraftMessageKeys.CONFIG_EXCHANGE,
@@ -37,6 +75,18 @@ fun examplePairingGameConfigPresentation(): GameConfigPresentationDefinition = G
             read = { GameConfigPresentationValue.BooleanValue((it.ruleConfig as ExamplePairingRuleConfig).exchangeEnabled) },
             update = { config, value ->
                 config.copy(ruleConfig = (config.ruleConfig as ExamplePairingRuleConfig).copy(exchangeEnabled = (value as GameConfigPresentationValue.BooleanValue).enabled))
+            },
+        ),
+        GameConfigFieldDefinition(
+            id = ExampleMinecraftPresentationIds.PUBLIC_FACES_FIELD,
+            categoryId = ExampleMinecraftPresentationIds.RULE_CATEGORY,
+            nameTranslationKey = ExampleMinecraftMessageKeys.CONFIG_PUBLIC_FACES,
+            descriptionTranslationKey = ExampleMinecraftMessageKeys.CONFIG_PUBLIC_FACES_DESCRIPTION,
+            editor = GameConfigEditorSpec.BooleanToggle,
+            isEditable = true,
+            read = { GameConfigPresentationValue.BooleanValue((it.ruleConfig as ExamplePairingRuleConfig).publicFacesEnabled) },
+            update = { config, value ->
+                config.copy(ruleConfig = (config.ruleConfig as ExamplePairingRuleConfig).copy(publicFacesEnabled = (value as GameConfigPresentationValue.BooleanValue).enabled))
             },
         ),
         GameConfigFieldDefinition(

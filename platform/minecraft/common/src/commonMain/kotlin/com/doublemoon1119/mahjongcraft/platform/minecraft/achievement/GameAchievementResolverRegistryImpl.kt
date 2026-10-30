@@ -1,6 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.achievement
 
-import com.doublemoon1119.mahjongcraft.flow.common.game.history.CommittedGameFacts
+import com.doublemoon1119.mahjongcraft.flow.api.event.CommittedMatchEventBatch
 import com.doublemoon1119.mahjongcraft.logic.base.NamespacedId
 import kotlin.uuid.Uuid
 
@@ -25,7 +25,7 @@ class GameAchievementResolverRegistryImpl : GameAchievementResolverRegistry {
     }
 
     /** 只交給指定規則的判定。 */
-    override fun resolve(ruleModuleId: String, facts: CommittedGameFacts): Map<Uuid, Set<String>> = resolvers[ruleModuleId]?.resolve(facts).orEmpty()
+    override fun resolve(ruleModuleId: String, batch: CommittedMatchEventBatch): Map<Uuid, Set<String>> = resolvers[ruleModuleId]?.resolve(batch).orEmpty()
 
     /** 結束註冊階段。 */
     override fun freeze() {

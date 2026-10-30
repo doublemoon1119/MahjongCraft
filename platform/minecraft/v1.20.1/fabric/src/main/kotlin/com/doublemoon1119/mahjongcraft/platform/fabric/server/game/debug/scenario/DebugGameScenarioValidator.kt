@@ -91,7 +91,7 @@ class DebugGameScenarioValidator(
      * @return 所有手牌、副露、牌河、移出手牌區、牌山與保留區的牌。
      */
     private fun TableState.allTiles(module: MahjongRuleModule<*>): List<IdentifiedTile> = players.flatMap { player ->
-        player.hand.allTiles + player.discardPile.entries.map { entry -> entry.tile } + module.setAsideTiles(player)
+        player.hand.allTiles + player.discardPile.entries.map { entry -> entry.tile } + player.setAsideTiles
     } + tileWall.getAllTiles() + reservedWallTiles
 
     /**

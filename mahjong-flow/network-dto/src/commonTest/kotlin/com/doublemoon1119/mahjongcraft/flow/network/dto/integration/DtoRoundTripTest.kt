@@ -50,6 +50,9 @@ import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
 import com.doublemoon1119.mahjongcraft.logic.base.MeldType
 import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
+import com.doublemoon1119.mahjongcraft.logic.base.toSnapshot
+import com.doublemoon1119.mahjongcraft.logic.component.ComponentSet
+import com.doublemoon1119.mahjongcraft.logic.component.ComponentViewSet
 import com.doublemoon1119.mahjongcraft.logic.config.GameLength
 import com.doublemoon1119.mahjongcraft.logic.config.MahjongRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.config.MultiRonPolicy
@@ -59,26 +62,34 @@ import com.doublemoon1119.mahjongcraft.logic.judgment.WaitingTileAvailabilityIds
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.PaoLiability
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.PaoYaku
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RIICHI_GAME_ACTION
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDiscardEntry
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDeclaration
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDeclarationKind
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDiscardComponents
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDiscardPile
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDynamicState
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiExhaustiveDrawReason
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPendingKanDoraReveal
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPlayerState
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPlayerStateSnapshot
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPlayerComponentViews
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPlayerComponents
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.RiichiTileTypes
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiWallProgress
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.RiichiTileValues
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanDiscardPile
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.tile.TaiwanTileTypes
 import com.doublemoon1119.mahjongcraft.logic.table.DiscardPile
+import com.doublemoon1119.mahjongcraft.logic.table.DiscardPile.DiscardEntry
+import com.doublemoon1119.mahjongcraft.logic.table.PlayerTileAreas
 import com.doublemoon1119.mahjongcraft.logic.table.TileWall
 import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPhysicalLayout
 import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPlacement
 import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPosition
 import com.doublemoon1119.mahjongcraft.logic.table.toSnapshot
+import com.doublemoon1119.mahjongcraft.logic.tile.component.TilePose
+import com.doublemoon1119.mahjongcraft.logic.tile.component.TilePoseState
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.registerBundledNetworkDtos
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeMeldFactory
+import com.doublemoon1119.mahjongcraft.testing.logic.rules.riichi.riichiDeclarationComponents
+import com.doublemoon1119.mahjongcraft.testing.logic.rules.riichi.riichiTableComponents
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
 import kotlinx.serialization.Serializable
@@ -87,8 +98,8 @@ import kotlinx.serialization.encodeToString
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertNull
 import kotlin.uuid.Uuid
-
 /**
  * 驗證 `:mahjong-flow-network-dto` 的 DTO 來回（領域物件 → DTO → JSON → 解碼 → DTO → 領域物件）不失真。
  *
@@ -198,14 +209,15 @@ class DtoRoundTripTest {
     @Test
     fun `test TableStateSnapshot round-trips with a real RiichiRuleConfig`() {
         val riichiPlayer = FakeMahjongPlayerFactory.create(
-            hand = Hand(tiles = listOf(IdentifiedTile(Uuid.random(), RiichiTileTypes.redFive(Tile.Suit.Character)))),
+            hand = Hand(tiles = listOf(redFive(Tile.Suit.Character))),
             discardPile = RiichiDiscardPile(
-                listOf(RiichiDiscardEntry(IdentifiedTile(Uuid.random(), Tile.Honor.East), isRiichi = true)),
+                listOf(DiscardEntry(tile = IdentifiedTile(Uuid.random(), Tile.Honor.East), components = RiichiDiscardComponents.declaration())),
             ),
-            playerRuleState = RiichiPlayerState(
-                riichiTile = IdentifiedTile(Uuid.random(), Tile.Honor.East),
-                isIppatsu = true,
-                paoLiability = PaoLiability(PaoYaku.Daisuushii, RelativeDirection.Across),
+            components = ComponentSet.EMPTY.with(RiichiPlayerComponents.PAO_LIABILITY, PaoLiability(PaoYaku.Daisuushii, RelativeDirection.Across)).merge(
+                riichiDeclarationComponents(
+                    declarationTile = IdentifiedTile(Uuid.random(), Tile.Honor.East),
+                    isIppatsu = true,
+                ),
             ),
         )
         val wallTile = IdentifiedTile(Uuid.random(), Tile.Honor.White)
@@ -216,28 +228,29 @@ class DtoRoundTripTest {
             physicalWallLayout = TileWallPhysicalLayout(
                 mapOf(wallTile.id to TileWallPlacement(TileWallPosition(2, 4, 1))),
             ),
-            dynamicRuleState = RiichiDynamicState(
-                riichiStickCount = 2,
-                completedSupplementalDrawCount = 3,
-                revealedKanDoraCount = 1,
-                pendingKanDoraReveals = listOf(
-                    RiichiPendingKanDoraReveal(riichiPlayer.id, GameAction.KanType.ADDED_KAN, 2),
-                    RiichiPendingKanDoraReveal(riichiPlayer.id, GameAction.KanType.OPEN_KAN, 3),
+            components = riichiTableComponents(
+                potPoints = 2000,
+                wallProgress = RiichiWallProgress(
+                    completedSupplementalDrawCount = 3,
+                    revealedKanDoraCount = 1,
+                    pendingKanDoraReveals = listOf(
+                        RiichiPendingKanDoraReveal(riichiPlayer.id, GameAction.KanType.ADDED_KAN, 2),
+                        RiichiPendingKanDoraReveal(riichiPlayer.id, GameAction.KanType.OPEN_KAN, 3),
+                    ),
                 ),
             ),
         )
         val setAsideTile = IdentifiedTile(Uuid.random(), Tile.Honor.North)
-        val snapshot = tableState.toSnapshot(setOf(riichiPlayer.id), setAsideTiles = { listOf(setAsideTile) })
+        val snapshot = tableState.copy(players = listOf(riichiPlayer.copy(tileAreas = PlayerTileAreas.EMPTY.withArea("test:aside", listOf(setAsideTile))))).toSnapshot(setOf(riichiPlayer.id))
         val snapshotDto = snapshot.toDto(registries)
 
         val encoded = json.encodeToString(TableStateSnapshotDto.serializer(), snapshotDto)
         val decodedDto = json.decodeFromString(TableStateSnapshotDto.serializer(), encoded)
-        // DiscardPile.DiscardEntry/RiichiDiscardEntry 沒有 equals()，改比對來回前後的 DTO
+        // DiscardPile.DiscardEntry/DiscardEntry 沒有 equals()，改比對來回前後的 DTO
         // （DTO 都是 data class，有結構化相等），不比對還原後的領域物件。
         assertEquals(snapshotDto, decodedDto)
-        assertEquals(snapshot.dynamicRuleState, decodedDto.toDomain(registries).dynamicRuleState)
         assertEquals(snapshot.physicalWallLayout, decodedDto.toDomain(registries).physicalWallLayout)
-        assertEquals(listOf(setAsideTile), decodedDto.toDomain(registries).players.single().setAsideTiles)
+        assertEquals(listOf(setAsideTile.toSnapshot(true)), decodedDto.toDomain(registries).players.single().setAsideTiles)
     }
 
     /** 副露的朝下牌張在網路編解碼後保留，暗槓仍是兩端朝下。 */
@@ -249,35 +262,50 @@ class DtoRoundTripTest {
             discardPile = RiichiDiscardPile(emptyList()),
         )
         val snapshot = FakeTableStateFactory.create(players = listOf(player), config = RiichiRuleConfig())
-            .toSnapshot(setOf(player.id), setAsideTiles = { emptyList() })
+            .toSnapshot(setOf(player.id))
         val encoded = json.encodeToString(TableStateSnapshotDto.serializer(), snapshot.toDto(registries))
         val decoded = json.decodeFromString(TableStateSnapshotDto.serializer(), encoded).toDomain(registries)
 
         assertEquals(setOf(kanTiles.first().id, kanTiles.last().id), decoded.players.single().hand.melds.single().faceDownTileIds)
     }
 
-    /** 觀察者快照中的未知私人欄位，在網路編解碼後仍保留為 null。 */
+    /** 公開宣告可經網路往返，未交付的私人組件仍不存在。 */
     @Test
-    fun `test Riichi observer player state snapshot round-trips through network DTOs`() {
-        val snapshot = RiichiPlayerStateSnapshot(
-            riichiTile = IdentifiedTile(Uuid.random(), Tile.Honor.East),
-            isIppatsu = null,
-            isPermanentlyFuriten = null,
-            nukiDoraTiles = listOf(IdentifiedTile(Uuid.random(), Tile.Honor.North)),
-        )
-        val player = FakeMahjongPlayerFactory.create(
-            playerRuleState = snapshot,
-            discardPile = RiichiDiscardPile(emptyList()),
-        )
-        val tableSnapshot = FakeTableStateFactory.create(
+    fun `public declaration views round trip without private furiten`() {
+        val declaration = RiichiDeclaration(RiichiDeclarationKind.RIICHI, Uuid.random(), true)
+        val player = FakeMahjongPlayerFactory.create(discardPile = RiichiDiscardPile(emptyList()))
+        val tableSnapshot = FakeTableStateFactory.create(players = listOf(player), config = RiichiRuleConfig())
+            .toSnapshot(setOf(player.id)).let { snapshot ->
+                snapshot.copy(
+                    players = snapshot.players.map {
+                        it.copy(componentViews = ComponentViewSet.EMPTY.with(RiichiPlayerComponentViews.DECLARATION, declaration))
+                    },
+                )
+            }
+        val encoded = json.encodeToString(TableStateSnapshotDto.serializer(), tableSnapshot.toDto(registries))
+        val decoded = json.decodeFromString(TableStateSnapshotDto.serializer(), encoded).toDomain(registries)
+        assertEquals(declaration, decoded.players.single().componentViews[RiichiPlayerComponentViews.DECLARATION])
+        assertNull(decoded.players.single().componentViews[RiichiPlayerComponentViews.PERMANENT_FURITEN])
+    }
+
+    /** 公開的手牌與平放姿態分別通過網路格式往返，不依動作名稱重建。 */
+    @Test
+    fun `revealed hand tiles and per tile poses round trip independently`() {
+        val tile = IdentifiedTile(Uuid.random(), Tile.Honor.East)
+        val player = FakeMahjongPlayerFactory.create(hand = Hand(tiles = listOf(tile)), discardPile = RiichiDiscardPile(emptyList()))
+        val snapshot = FakeTableStateFactory.create(
             players = listOf(player),
             config = RiichiRuleConfig(),
-        ).toSnapshot(setOf(player.id), setAsideTiles = { emptyList() })
-        val tableSnapshotDto = tableSnapshot.toDto(registries)
-        val encoded = json.encodeToString(TableStateSnapshotDto.serializer(), tableSnapshotDto)
+        ).toSnapshot(emptySet()).copy(
+            publicTileIds = setOf(tile.id),
+            tilePoseStates = listOf(TilePoseState(tile.id, TilePose.FACE_UP)),
+        )
+        val encoded = json.encodeToString(TableStateSnapshotDto.serializer(), snapshot.toDto(registries))
         val decoded = json.decodeFromString(TableStateSnapshotDto.serializer(), encoded).toDomain(registries)
 
-        assertEquals(snapshot, decoded.players.single().playerRuleState)
+        assertEquals(snapshot, decoded)
+        val upright = snapshot.copy(tilePoseStates = emptyList())
+        assertEquals(upright, upright.toDto(registries).toDomain(registries))
     }
 
     @Test
@@ -292,7 +320,7 @@ class DtoRoundTripTest {
             players = listOf(taiwanPlayer),
             config = TaiwanRuleConfig(),
         )
-        val snapshot = tableState.toSnapshot(setOf(taiwanPlayer.id), setAsideTiles = { emptyList() })
+        val snapshot = tableState.toSnapshot(setOf(taiwanPlayer.id))
         val snapshotDto = snapshot.toDto(registries)
 
         val encoded = json.encodeToString(TableStateSnapshotDto.serializer(), snapshotDto)
@@ -347,7 +375,7 @@ class DtoRoundTripTest {
     fun `test GameUpdatePayload and RoomUpdatePayload round-trip`() {
         val player = FakeMahjongPlayerFactory.create(discardPile = RiichiDiscardPile())
         val snapshot = FakeTableStateFactory.create(players = listOf(player), config = RiichiRuleConfig())
-            .toSnapshot(setOf(player.id), setAsideTiles = { emptyList() })
+            .toSnapshot(setOf(player.id))
         val gamePayload = GameUpdatePayloadDto(
             gameId = Uuid.random().toString(),
             actorId = player.id.toString(),
@@ -383,7 +411,7 @@ class DtoRoundTripTest {
     fun `test explicit room and game snapshot sync payloads round-trip`() {
         val player = FakeMahjongPlayerFactory.create(discardPile = RiichiDiscardPile())
         val gameSnapshot = FakeTableStateFactory.create(players = listOf(player), config = RiichiRuleConfig())
-            .toSnapshot(setOf(player.id), setAsideTiles = { emptyList() })
+            .toSnapshot(setOf(player.id))
         val gamePayload = GameSnapshotSyncPayloadDto(
             gameId = gameSnapshot.id.toString(),
             snapshot = gameSnapshot.toDto(registries),
@@ -545,3 +573,11 @@ private fun ThirdPartyRuleConfigDto.toThirdPartyDomain() = ThirdPartyRuleConfig(
     minPlayers = minPlayers,
     maxPlayers = maxPlayers,
 )
+
+/**
+ * 建立帶赤寶牌特性與赤五外觀的牌張。
+ *
+ * @param suit 赤五的花色。
+ * @return 新的赤五牌張。
+ */
+private fun redFive(suit: Tile.Suit): IdentifiedTile = RiichiTileValues.redFive(suit).let { IdentifiedTile(Uuid.random(), it.tile, it.components) }

@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.event
 
+import com.doublemoon1119.mahjongcraft.flow.api.event.CommittedMatchEventBatch
 import com.doublemoon1119.mahjongcraft.flow.api.event.MatchEvent
 import kotlin.uuid.Uuid
 
@@ -22,6 +23,19 @@ interface GameEventDeliveryReporter {
      */
     fun listenerFailed(
         event: MatchEvent,
+        listener: Any,
+        cause: Throwable,
+    )
+
+    /**
+     * 報告交易批次監聽者失敗，不將整批通知誤記為其中某個事件。
+     *
+     * @param batch 交付失敗的完整交易批次。
+     * @param listener 失敗的批次監聽者。
+     * @param cause 監聽者丟出的例外。
+     */
+    fun batchListenerFailed(
+        batch: CommittedMatchEventBatch,
         listener: Any,
         cause: Throwable,
     )

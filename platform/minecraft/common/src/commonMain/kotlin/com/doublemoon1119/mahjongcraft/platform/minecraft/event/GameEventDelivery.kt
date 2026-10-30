@@ -1,18 +1,26 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.event
 
+import com.doublemoon1119.mahjongcraft.flow.api.event.ActionsPerformedEvent
+import com.doublemoon1119.mahjongcraft.flow.api.event.CommittedMatchEventBatch
 import com.doublemoon1119.mahjongcraft.flow.api.event.MatchEndedEvent
 import com.doublemoon1119.mahjongcraft.flow.api.event.MatchEvent
 import com.doublemoon1119.mahjongcraft.flow.api.event.MatchStartedEvent
+import com.doublemoon1119.mahjongcraft.flow.api.event.RoundCompletedEvent
 import com.doublemoon1119.mahjongcraft.flow.api.event.RoundSettledEvent
+import com.doublemoon1119.mahjongcraft.flow.api.event.RuleResultsResolvedEvent
 import com.doublemoon1119.mahjongcraft.flow.common.error.ExtensionFailurePolicy
 import com.doublemoon1119.mahjongcraft.flow.common.game.event.GameEventProjector
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.CommittedGameFacts
+import com.doublemoon1119.mahjongcraft.platform.minecraft.api.event.ActionsPerformedListener
+import com.doublemoon1119.mahjongcraft.platform.minecraft.api.event.EventBatchCommittedListener
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.event.GameEventContext
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.event.MahjongCraftEvent
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.event.MahjongCraftEvents
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.event.MatchEndedListener
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.event.MatchStartedListener
+import com.doublemoon1119.mahjongcraft.platform.minecraft.api.event.RoundCompletedListener
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.event.RoundSettledListener
+import com.doublemoon1119.mahjongcraft.platform.minecraft.api.event.RuleResultsResolvedListener
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.event.TableLocation
 import kotlin.concurrent.atomics.AtomicReference
 import kotlin.concurrent.atomics.ExperimentalAtomicApi
@@ -35,6 +43,10 @@ import kotlin.uuid.Uuid
  * @property roundSettled 一局結算訂閱點。
  * @property matchEnded 對局結束訂閱點。
  * @property failurePolicy 判斷監聽者、排程器或回報器丟出的失敗能否隔離；無法隔離的失敗原樣往外傳。
+ * @property actionsPerformed 已成立動作訂閱點。
+ * @property roundCompleted 本局完成訂閱點。
+ * @property eventBatchCommitted 交易事件批次訂閱點。
+ * @property ruleResultsResolved 已成立規則結果訂閱點。
  */
 @OptIn(ExperimentalAtomicApi::class)
 class GameEventDelivery(
@@ -46,6 +58,10 @@ class GameEventDelivery(
     private val roundSettled: MahjongCraftEvent<RoundSettledListener> = MahjongCraftEvents.ROUND_SETTLED,
     private val matchEnded: MahjongCraftEvent<MatchEndedListener> = MahjongCraftEvents.MATCH_ENDED,
     private val failurePolicy: ExtensionFailurePolicy,
+    private val actionsPerformed: MahjongCraftEvent<ActionsPerformedListener> = MahjongCraftEvents.ACTIONS_PERFORMED,
+    private val roundCompleted: MahjongCraftEvent<RoundCompletedListener> = MahjongCraftEvents.ROUND_COMPLETED,
+    private val eventBatchCommitted: MahjongCraftEvent<EventBatchCommittedListener> = MahjongCraftEvents.EVENT_BATCH_COMMITTED,
+    private val ruleResultsResolved: MahjongCraftEvent<RuleResultsResolvedListener> = MahjongCraftEvents.RULE_RESULTS_RESOLVED,
 ) {
     /** 以不可變快照原子更新的 session、佇列與交付水位。 */
     private val state = AtomicReference(DeliveryState(sessionId = null, releasedSequence = Long.MIN_VALUE))
@@ -59,6 +75,10 @@ class GameEventDelivery(
         matchStarted.lockRegistration()
         roundSettled.lockRegistration()
         matchEnded.lockRegistration()
+        actionsPerformed.lockRegistration()
+        roundCompleted.lockRegistration()
+        eventBatchCommitted.lockRegistration()
+        ruleResultsResolved.lockRegistration()
         val sessionId = Uuid.random()
         state.store(DeliveryState(sessionId = sessionId, releasedSequence = Long.MIN_VALUE))
         return sessionId
@@ -79,24 +99,26 @@ class GameEventDelivery(
      * @param sessionId 接收者建立時擷取的 session。
      * @param sequence store 在交易內配置的遞增提交序號。
      * @param facts 同一交易中單一場地的事實。
+     * @param onBatchDelivered 解鎖後接收同一公開批次的內建處理；可持有服務與 session 檢查，不保留對局或事實。
      */
     fun onCommitted(
         sessionId: Uuid,
         sequence: Long,
         facts: CommittedGameFacts,
+        onBatchDelivered: ((CommittedMatchEventBatch) -> Unit)? = null,
     ) {
         val current = state.load()
         if (current.sessionId != sessionId) return
-        val events = projector.project(facts)
-        if (events.isEmpty()) return
-        val context = contextFor(events.first(), sessionId)
-        val pending = events.map { event ->
-            PendingEvent(
-                sequence = sequence,
-                event = event,
-                context = context,
-            )
-        }
+        val projection = projector.projectBatchResult(facts)
+        val batch = projection.batch ?: return
+        val context = contextFor(batch.events.first(), sessionId)
+        val pending = PendingBatch(
+            sequence = sequence,
+            batch = batch,
+            context = context,
+            sessionId = sessionId,
+            onBatchDelivered = onBatchDelivered.takeIf { !projection.markersFailed },
+        )
         while (true) {
             val loaded = state.load()
             if (loaded.sessionId != sessionId) return
@@ -184,7 +206,7 @@ class GameEventDelivery(
             while (true) {
                 val ready = takeReady(sessionId)
                 if (ready == null) return
-                ready.forEach(::deliverOne)
+                ready.forEach(::deliverBatch)
             }
         } catch (cause: Throwable) {
             // 無法隔離的失敗中斷這次交付；解除排程旗標，避免之後的事件永遠不再排程。
@@ -199,7 +221,7 @@ class GameEventDelivery(
      * @param sessionId 此工作所屬 session。
      * @return 可交付事件；session 失效或沒有可交付事件時為 null。
      */
-    private fun takeReady(sessionId: Uuid): List<PendingEvent>? {
+    private fun takeReady(sessionId: Uuid): List<PendingBatch>? {
         while (true) {
             val current = state.load()
             if (current.sessionId != sessionId) return null
@@ -221,11 +243,56 @@ class GameEventDelivery(
      *
      * @param pending 當次待交付事件。
      */
-    private fun deliverOne(pending: PendingEvent) {
-        when (val event = pending.event) {
-            is MatchStartedEvent -> notify(pending, matchStarted.listenersSnapshot()) { it.onMatchStarted(event, pending.context) }
-            is RoundSettledEvent -> notify(pending, roundSettled.listenersSnapshot()) { it.onRoundSettled(event, pending.context) }
-            is MatchEndedEvent -> notify(pending, matchEnded.listenersSnapshot()) { it.onMatchEnded(event, pending.context) }
+    private fun deliverBatch(pending: PendingBatch) {
+        val batch = pending.batch
+        batch.events.forEach { event -> deliverOne(pending, event) }
+        if (state.load().sessionId != pending.sessionId) return
+        // 內建處理與公開監聽者使用相同的失敗隔離，出錯時不影響監聽者與後續批次。
+        pending.onBatchDelivered?.let { handler -> notify(pending = pending, listeners = listOf(handler), event = null) { it(batch) } }
+        val context = checkNotNull(pending.context)
+        notify(
+            pending = pending,
+            listeners = eventBatchCommitted.listenersSnapshot(),
+            event = null,
+        ) {
+            it.onEventBatchCommitted(batch, context)
+        }
+    }
+
+    /** 交付批次內的單一事件，各類型仍使用各自的訂閱點。 */
+    private fun deliverOne(pending: PendingBatch, event: MatchEvent) {
+        val context = checkNotNull(pending.context)
+        when (event) {
+            is MatchStartedEvent -> notify(
+                pending = pending,
+                listeners = matchStarted.listenersSnapshot(),
+                event = event,
+            ) { it.onMatchStarted(event, context) }
+            is RoundSettledEvent -> notify(
+                pending = pending,
+                listeners = roundSettled.listenersSnapshot(),
+                event = event,
+            ) { it.onRoundSettled(event, context) }
+            is MatchEndedEvent -> notify(
+                pending = pending,
+                listeners = matchEnded.listenersSnapshot(),
+                event = event,
+            ) { it.onMatchEnded(event, context) }
+            is ActionsPerformedEvent -> notify(
+                pending = pending,
+                listeners = actionsPerformed.listenersSnapshot(),
+                event = event,
+            ) { it.onActionsPerformed(event, context) }
+            is RoundCompletedEvent -> notify(
+                pending = pending,
+                listeners = roundCompleted.listenersSnapshot(),
+                event = event,
+            ) { it.onRoundCompleted(event, context) }
+            is RuleResultsResolvedEvent -> notify(
+                pending = pending,
+                listeners = ruleResultsResolved.listenersSnapshot(),
+                event = event,
+            ) { it.onRuleResultsResolved(event, context) }
         }
     }
 
@@ -237,20 +304,28 @@ class GameEventDelivery(
      * @param L 監聽者型別。
      * @param pending 當次事件。
      * @param listeners 訂閱者快照。
+     * @param event 正在交付的個別事件；批次監聽者為 null，改用批次診斷。
      * @param invoke 單一監聽者呼叫。
      */
     private fun <L : Any> notify(
-        pending: PendingEvent,
+        pending: PendingBatch,
         listeners: List<L>,
+        event: MatchEvent?,
         invoke: (L) -> Unit,
     ) {
         for (listener in listeners) {
-            if (state.load().sessionId != pending.context.sessionId) return
+            if (state.load().sessionId != pending.sessionId) return
             try {
                 invoke(listener)
             } catch (cause: Throwable) {
                 if (cause !is CancellationException && !failurePolicy.isIsolatable(cause)) throw cause
-                report { reporter.listenerFailed(pending.event, listener, cause) }
+                report {
+                    if (event == null) {
+                        reporter.batchListenerFailed(checkNotNull(pending.batch), listener, cause)
+                    } else {
+                        reporter.listenerFailed(event, listener, cause)
+                    }
+                }
             }
         }
     }
@@ -269,16 +344,20 @@ class GameEventDelivery(
     }
 
     /**
-     * 提交時擷取的單一通知。
+     * 提交時擷取的事件批次。
      *
      * @property sequence 來源交易序號。
-     * @property event 公開事件。
-     * @property context 提交當下的位置與 session。
+     * @property batch 同一筆提交產生的公開事件批次。
+     * @property context 公開事件提交當下的位置與 session。
+     * @property sessionId 此筆提交所屬 session。
+     * @property onBatchDelivered 與此筆提交一起交付的內建批次接收端，不持有原始對局或事實。
      */
-    private data class PendingEvent(
+    private data class PendingBatch(
         val sequence: Long,
-        val event: MatchEvent,
+        val batch: CommittedMatchEventBatch,
         val context: GameEventContext,
+        val sessionId: Uuid,
+        val onBatchDelivered: ((CommittedMatchEventBatch) -> Unit)?,
     )
 
     /**
@@ -292,7 +371,7 @@ class GameEventDelivery(
     private data class DeliveryState(
         val sessionId: Uuid?,
         val releasedSequence: Long,
-        val events: List<PendingEvent> = emptyList(),
+        val events: List<PendingBatch> = emptyList(),
         val deliveryActive: Boolean = false,
     ) {
         /** 是否至少有一筆事件已通過解鎖水位。 */

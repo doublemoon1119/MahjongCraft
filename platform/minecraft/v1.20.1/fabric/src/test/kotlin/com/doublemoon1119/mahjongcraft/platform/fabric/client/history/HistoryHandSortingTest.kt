@@ -3,6 +3,7 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.client.history
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryReplayPlayerStateDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.model.SuitDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.model.TileDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.model.TileFaceViewDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.model.WindDto
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiTileOrder
 import kotlin.test.Test
@@ -95,5 +96,5 @@ class HistoryHandSortingTest {
      * @param value 牌面數值。
      * @return 測試牌面。
      */
-    private fun tile(value: Int) = TileDto.Numeric(SuitDto.CHARACTER, value)
+    private fun tile(value: Int) = TileFaceViewDto(TileDto.Numeric(SuitDto.CHARACTER, value), emptyList(), null)
 }

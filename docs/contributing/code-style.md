@@ -29,6 +29,10 @@
 - **Test Language**: Test method names and assertion failure messages must be written in **English**, so a
   failing build reads consistently with the framework's own output. Comments and KDoc inside test files still
   follow the Traditional Chinese rule above.
+- **Test expectations**: Use explicit expected outcomes and valid behavior properties. Do not retain copied
+  historical implementations as permanent test oracles or hide them behind a reference helper. Temporary
+  comparisons used during a refactor must leave focused behavior tests rather than a second implementation
+  to maintain.
 
 ### File Organization
 
@@ -70,7 +74,8 @@
 
 ### Logging Conventions
 
-- Fabric code creates loggers with `mahjongCraftLogger(Owner::class)` from the `platform.fabric.logging`
+- Use the owning platform adapter's logger helper. For example, Fabric code creates loggers with
+  `mahjongCraftLogger(Owner::class)` from the `platform.fabric.logging`
   package instead of calling `LoggerFactory.getLogger` directly. The logger is named
   `MahjongCraft/<OwnerClass>`, without dots, so logs that print only the last segment of a logger name still
   show the mod and the class.

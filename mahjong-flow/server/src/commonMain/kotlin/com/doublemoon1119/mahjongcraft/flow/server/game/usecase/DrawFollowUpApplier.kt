@@ -10,6 +10,7 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.recordAbor
 import com.doublemoon1119.mahjongcraft.logic.base.ExhaustiveDrawReason
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
+import com.doublemoon1119.mahjongcraft.logic.component.ComponentRegistry
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
 import com.doublemoon1119.mahjongcraft.logic.table.DrawFollowUpContext
 import com.doublemoon1119.mahjongcraft.logic.table.DrawFollowUpDecision
@@ -154,6 +155,7 @@ internal object DrawFollowUpApplier {
      * @param playerId 摸牌的玩家。
      * @param source 這次摸牌的來源。
      * @param drawnTiles 這次依摸取順序摸到的牌。
+     * @param componentRegistry 正式組件定義與純效果來源。
      * @param module 對局採用的規則模組。
      * @param resumedDraws 搶和視窗暫停前還沒詢問過的牌與它們各自的來源；排在 [drawnTiles] 之前詢問。
      * @return 整串自動處理的結果；規則不處理時沒有任何步驟。
@@ -166,6 +168,7 @@ internal object DrawFollowUpApplier {
         drawnTiles: List<IdentifiedTile>,
         module: MahjongRuleModule<*>,
         resumedDraws: List<Pair<IdentifiedTile, DrawSource>> = emptyList(),
+        componentRegistry: ComponentRegistry,
     ): Result {
         val policy = module.createDrawFollowUpPolicy()
         val steps = mutableListOf<CompletedStep>()
@@ -207,6 +210,7 @@ internal object DrawFollowUpApplier {
                         setAsideTile = setAsideTile,
                         module = module,
                         pendingFollowUpDraws = unchecked.map { (tile, tileSource) -> PendingFollowUpDraw(tile.id, tileSource) },
+                        componentRegistry = componentRegistry,
                     )
                     when (resolution) {
                         is TileSetAsideResolver.Resolution.RobbingWindowOpened -> return Result(

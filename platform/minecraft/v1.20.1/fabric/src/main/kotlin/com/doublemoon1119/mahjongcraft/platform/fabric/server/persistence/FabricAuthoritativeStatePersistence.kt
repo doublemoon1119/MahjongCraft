@@ -58,6 +58,14 @@ class FabricAuthoritativeStatePersistence(
                             conflict.venueIds,
                         )
                     }
+                    restoreResult.snapshotFailures.forEach { failure ->
+                        logger.warn(
+                            "Restored conservative snapshots after rule projection failed gameId={} rule={}; authoritative data was not changed",
+                            failure.gameId,
+                            failure.ruleModuleId,
+                            failure.cause,
+                        )
+                    }
                     store.setDirtyListener(state::update)
                     logger.debug(
                         "Attached authoritative persistence with {} room(s), {} game(s), and {} membership conflict(s)",

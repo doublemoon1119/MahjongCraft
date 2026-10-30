@@ -1,16 +1,14 @@
 package com.doublemoon1119.mahjongcraft.flow.network.dto.rule
 
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.ExtensionGameCommand
+import com.doublemoon1119.mahjongcraft.flow.network.dto.component.ComponentViewNetworkRegistry
 import com.doublemoon1119.mahjongcraft.flow.network.dto.registry.DtoRegistry
 import com.doublemoon1119.mahjongcraft.logic.base.ExhaustiveDrawReason
 import com.doublemoon1119.mahjongcraft.logic.base.ExtensionGameAction
-import com.doublemoon1119.mahjongcraft.logic.config.DynamicRuleState
 import com.doublemoon1119.mahjongcraft.logic.config.GameLength
 import com.doublemoon1119.mahjongcraft.logic.config.MahjongRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.config.ScoreConfig
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
-import com.doublemoon1119.mahjongcraft.logic.table.DiscardPile
-import com.doublemoon1119.mahjongcraft.logic.table.PlayerRuleState
 
 /**
  * 領域層開放介面 ↔ DTO 的註冊表集合。建構時全部是空的，比照 [MahjongModuleRegistryImpl] 的既有精神——
@@ -18,6 +16,9 @@ import com.doublemoon1119.mahjongcraft.logic.table.PlayerRuleState
  * 模組要支援序列化也一樣，不需要修改這個檔案。
  */
 interface NetworkDtoRegistries {
+    /** 已完成授權裁切的組件網路值。 */
+    val componentViews: ComponentViewNetworkRegistry
+
     /** 規則配置 DTO registry。 */
     val ruleConfig: DtoRegistry<MahjongRuleConfig, MahjongRuleConfigDto>
 
@@ -26,15 +27,6 @@ interface NetworkDtoRegistries {
 
     /** 遊戲長度 DTO registry。 */
     val gameLength: DtoRegistry<GameLength, GameLengthDto>
-
-    /** 規則專屬動態對局狀態 DTO registry。 */
-    val dynamicRuleState: DtoRegistry<DynamicRuleState, DynamicRuleStateDto>
-
-    /** 玩家規則狀態 DTO registry。 */
-    val playerRuleState: DtoRegistry<PlayerRuleState, PlayerRuleStateDto>
-
-    /** 牌河 DTO registry。 */
-    val discardPile: DtoRegistry<DiscardPile<*>, DiscardPileDto>
 
     /** 流局原因 DTO registry。 */
     val exhaustiveDrawReason: DtoRegistry<ExhaustiveDrawReason, ExhaustiveDrawReasonDto>

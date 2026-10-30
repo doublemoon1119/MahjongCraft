@@ -1,56 +1,26 @@
 package com.doublemoon1119.mahjongcraft.logic.rules.riichi
 
-import com.doublemoon1119.mahjongcraft.logic.table.TableState
-import com.doublemoon1119.mahjongcraft.logic.table.Wind
-import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
+import com.doublemoon1119.mahjongcraft.testing.logic.rules.riichi.riichiTableComponents
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import kotlin.test.assertTrue
 
-/**
- * 針對日本麻將特有的動態桌況狀態進行單元測試。
- *
- * 驗證 [TableState] 在持有日麻專屬動態狀態時的型別安全性與屬性變動。
- */
+/** 驗證桌況供託的局部更新不會修改來源或本局進度。 */
 class RiichiTableStateTest {
-
-    /**
-     * 驗證日麻特有的立直棒（供託）計數功能。
-     *
-     * 測試透過 copy() 產生新的 [TableState] 時，動態狀態的變更能正確反映在新實例上，
-     * 且不影響原本的 [TableState]。
-     */
+    /** 增加一千點供託時只產生新版本，原桌況與牌山進度保持不變。 */
     @Test
-    fun `test riichi stick count in table state`() {
-        val riichiDynamic = RiichiDynamicState(riichiStickCount = 5)
-
+    fun `pot update preserves wall progress and the original table`() {
+        val progress = RiichiWallProgress(completedSupplementalDrawCount = 1, revealedKanDoraCount = 1)
         val table = FakeTableStateFactory.create(
-            players = listOf(
-                FakeMahjongPlayerFactory.create(Wind.EAST),
-                FakeMahjongPlayerFactory.create(Wind.SOUTH),
-            ),
             config = RiichiRuleConfig(),
-            dynamicRuleState = riichiDynamic,
+            components = riichiTableComponents(potPoints = 5000, wallProgress = progress),
         )
-
-        val state = table.dynamicRuleState
-        assertTrue(state is RiichiDynamicState, "The dynamic state should be an instance of RiichiDynamicState.")
-        assertEquals(5, state.riichiStickCount)
-
-        val updatedTable = table.copy(
-            dynamicRuleState = riichiDynamic.copy(riichiStickCount = riichiDynamic.riichiStickCount + 1),
+        val updated = table.copy(
+            components = table.components.with(RiichiTableComponents.POT_POINTS, table.riichiPotPoints() + RIICHI_STICK_POINTS),
         )
-
-        assertEquals(
-            6,
-            (updatedTable.dynamicRuleState as RiichiDynamicState).riichiStickCount,
-            "The new TableState instance should reflect the updated riichi stick count.",
-        )
-        assertEquals(
-            5,
-            state.riichiStickCount,
-            "The original TableState instance should remain unchanged.",
-        )
+        assertEquals(6000, updated.riichiPotPoints())
+        assertEquals(5000, table.riichiPotPoints())
+        assertEquals(progress, updated.riichiWallProgress())
+        assertEquals(progress, table.riichiWallProgress())
     }
 }

@@ -20,10 +20,12 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.server.network.AutomaticC
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.DisconnectedPlayerPolicy
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftServerConfig
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftServerConfigState
+import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledCoreExtensionRegistries
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.registerBundledRuleModules
 import com.doublemoon1119.mahjongcraft.testing.flow.common.concurrency.TestCoroutineDispatchers
 import com.doublemoon1119.mahjongcraft.testing.flow.common.concurrency.createTestAppCoroutineScope
 import com.doublemoon1119.mahjongcraft.testing.flow.common.game.repository.FakeGameSnapshotRepository
+import com.doublemoon1119.mahjongcraft.testing.flow.common.game.repository.componentValidatedGameRepository
 import com.doublemoon1119.mahjongcraft.testing.flow.common.room.repository.FakeRoomSnapshotRepository
 import com.doublemoon1119.mahjongcraft.testing.flow.common.room.service.FakeRoomEventPublisher
 import com.doublemoon1119.mahjongcraft.testing.logic.config.FakeMahjongRuleConfig
@@ -103,9 +105,8 @@ class PlayerConnectionLifecycleServiceTest {
     }
 
     /**
-     * 客戶端主動請求時應補送一份快照——這是玩家重新登入後手牌會暫時顯示 unknown 的實際回報問題
-     * （見 [PlayerConnectionLifecycleService.onSnapshotRequested] KDoc）。改成客戶端主動請求
-     * （`mahjongcraft:request_snapshot`）觸發，不是連線本身觸發，見該方法 KDoc。
+     * 客戶端主動請求（`mahjongcraft:request_snapshot`）時補送一份快照，讓重新登入的玩家手牌不停在
+     * unknown；觸發來源是請求，不是連線本身，見 [PlayerConnectionLifecycleService.onSnapshotRequested] KDoc。
      */
     @Test
     fun `test snapshot request resyncs waiting room snapshot`() = runTest {
@@ -213,7 +214,7 @@ class PlayerConnectionLifecycleServiceTest {
         val scope = createTestAppCoroutineScope(dispatchers)
         val store = AuthoritativeStateStore()
         val roomRepository = RoomRepositoryImpl(store)
-        val gameRepository = GameRepositoryImpl(store)
+        val gameRepository = componentValidatedGameRepository(store)
         val memberships = PlayerMembershipRepositoryImpl()
         val tableId = Uuid.random()
         val hostId = Uuid.random()
@@ -255,7 +256,7 @@ class PlayerConnectionLifecycleServiceTest {
             gameRepository,
             leaveRoom,
             SyncRoomSnapshotUseCase(roomRepository, roomSnapshotRepository),
-            SyncGameSnapshotUseCase(GameSnapshotSynchronizer(gameRepository, gameSnapshotRepository, GameVisibilityPolicyImpl(MahjongModuleRegistryImpl().apply { registerBundledRuleModules() }))),
+            SyncGameSnapshotUseCase(GameSnapshotSynchronizer(gameRepository, gameSnapshotRepository, GameVisibilityPolicyImpl(MahjongModuleRegistryImpl().apply { registerBundledRuleModules() }, componentRegistry = bundledCoreExtensionRegistries().componentRegistry))),
             automaticControlSnapshots,
             ServerPlayerIdentityStore(FabricServerHolder()),
         )

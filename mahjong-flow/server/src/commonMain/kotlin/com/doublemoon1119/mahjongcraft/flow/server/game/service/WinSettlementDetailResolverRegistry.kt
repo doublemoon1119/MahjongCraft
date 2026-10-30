@@ -3,11 +3,19 @@ package com.doublemoon1119.mahjongcraft.flow.server.game.service
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.ResolvedRoundOutcome
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementDetailField
 import com.doublemoon1119.mahjongcraft.logic.base.NamespacedId
+import com.doublemoon1119.mahjongcraft.logic.base.TileFaceView
+import com.doublemoon1119.mahjongcraft.logic.base.TileValue
+import com.doublemoon1119.mahjongcraft.logic.base.toPublicFaceView
+import com.doublemoon1119.mahjongcraft.logic.component.ComponentRegistry
 import com.doublemoon1119.mahjongcraft.logic.judgment.HandValueResult
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 
-/** 以完整規則模組 ID 登記、bootstrap 後凍結的胡牌詳情解析器。 */
-class WinSettlementDetailResolverRegistry {
+/**
+ * 以完整規則模組 ID 登記、bootstrap 後凍結的胡牌詳情解析器。
+ *
+ * @property componentRegistry 將詳情中的牌值投影為公開牌面。
+ */
+class WinSettlementDetailResolverRegistry(private val componentRegistry: ComponentRegistry) {
     /** 以完整規則模組識別碼索引的詳情解析器。 */
     private val resolvers = linkedMapOf<String, WinSettlementDetailResolver>()
 
@@ -39,7 +47,7 @@ class WinSettlementDetailResolverRegistry {
      * @param handValue 已完成計算的胡牌結果。
      * @return 規則解析器產生的詳情欄位；沒有對應解析器時為空清單。
      */
-    fun resolve(ruleModuleId: String, state: TableState, handValue: HandValueResult): List<WinSettlementDetailField> = resolvers[ruleModuleId]?.resolve(state, handValue)
+    fun resolve(ruleModuleId: String, state: TableState, handValue: HandValueResult): List<WinSettlementDetailField> = resolvers[ruleModuleId]?.resolve(state, handValue, publicFace(ruleModuleId, state))
         ?: emptyList()
 
     /**
@@ -50,8 +58,17 @@ class WinSettlementDetailResolverRegistry {
      * @param outcome 欲解析的特殊回合結果。
      * @return 規則解析器產生的詳情欄位；沒有對應解析器或不支援此結果時為空清單。
      */
-    fun resolveSpecialOutcome(ruleModuleId: String, state: TableState, outcome: ResolvedRoundOutcome): List<WinSettlementDetailField> = resolvers[ruleModuleId]?.resolveSpecialOutcome(state, outcome)
+    fun resolveSpecialOutcome(ruleModuleId: String, state: TableState, outcome: ResolvedRoundOutcome): List<WinSettlementDetailField> = resolvers[ruleModuleId]?.resolveSpecialOutcome(state, outcome, publicFace(ruleModuleId, state))
         ?: emptyList()
+
+    /**
+     * 建立以公共讀取者投影牌值的轉換，不產生局內身分。
+     *
+     * @param ruleModuleId 產生詳情的規則。
+     * @param state 結算時的權威桌況。
+     * @return 牌值到公開牌面的轉換。
+     */
+    private fun publicFace(ruleModuleId: String, state: TableState): (TileValue) -> TileFaceView = { value -> value.toPublicFaceView(ruleModuleId, state, componentRegistry) }
 
     /** 凍結 registry，禁止後續註冊新的解析器。 */
     fun freeze() {

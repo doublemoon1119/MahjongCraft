@@ -3,6 +3,7 @@ package com.doublemoon1119.mahjongcraft.flow.persistence.format.state
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryRecordingState
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.Game
 import com.doublemoon1119.mahjongcraft.flow.common.room.model.Room
+import com.doublemoon1119.mahjongcraft.flow.persistence.format.component.ComponentPersistenceRegistry
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.config.toDomain
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.config.toPersistenceDto
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.core.PersistenceDtoRegistry
@@ -23,10 +24,8 @@ import com.doublemoon1119.mahjongcraft.flow.persistence.format.room.toDomain
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.room.toPersistenceDto
 import com.doublemoon1119.mahjongcraft.logic.base.ExhaustiveDrawReason
 import com.doublemoon1119.mahjongcraft.logic.base.ExtensionGameAction
-import com.doublemoon1119.mahjongcraft.logic.config.DynamicRuleState
 import com.doublemoon1119.mahjongcraft.logic.config.MahjongRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.table.DiscardPile
-import com.doublemoon1119.mahjongcraft.logic.table.PlayerRuleState
 import kotlinx.serialization.json.jsonObject
 import kotlin.uuid.Uuid
 
@@ -35,45 +34,32 @@ import kotlin.uuid.Uuid
  *
  * @param rooms 欲保存的房間集合；房間識別碼不得重複。
  * @param games 欲保存的遊戲集合；遊戲識別碼不得重複。
- * @param ruleConfigRegistry 規則設定的持久化轉換註冊表。
- * @param discardPileRegistry 牌河的持久化轉換註冊表。
- * @param playerRuleStateRegistry 玩家規則狀態的持久化轉換註冊表。
- * @param dynamicRuleStateRegistry 動態規則狀態的持久化轉換註冊表。
- * @param exhaustiveDrawReasonRegistry 流局原因的持久化轉換註冊表。
- * @param extensionGameActionRegistry 擴充遊戲動作的持久化轉換註冊表。
+ * @param registries 可擴充領域型別與組件的持久化註冊表集合。
  * @param historyRecordingState 與房間及遊戲一併保存的歷史記錄狀態。
  * @return 包含房間、桌況、流程設定、執行狀態及歷史待寫資料的權威狀態 DTO。
  */
 fun createAuthoritativeStatePersistenceDto(
     rooms: Collection<Room>,
     games: Collection<Game>,
-    ruleConfigRegistry: PersistenceDtoRegistry<MahjongRuleConfig>,
-    discardPileRegistry: PersistenceDtoRegistry<DiscardPile<*>>,
-    playerRuleStateRegistry: PersistenceDtoRegistry<PlayerRuleState>,
-    dynamicRuleStateRegistry: PersistenceDtoRegistry<DynamicRuleState>,
-    exhaustiveDrawReasonRegistry: PersistenceDtoRegistry<ExhaustiveDrawReason>,
-    extensionGameActionRegistry: PersistenceDtoRegistry<ExtensionGameAction>,
+    registries: PersistenceRegistries,
     historyRecordingState: HistoryRecordingState = HistoryRecordingState(),
 ): AuthoritativeStatePersistenceDto {
     require(rooms.map(Room::id).distinct().size == rooms.size) { "Room IDs must be unique" }
     require(games.map(Game::id).distinct().size == games.size) { "Game IDs must be unique" }
     return AuthoritativeStatePersistenceDto(
-        rooms = rooms.associate { room -> room.id.toString() to room.toPersistenceDto(ruleConfigRegistry) },
+        rooms = rooms.associate { room -> room.id.toString() to room.toPersistenceDto(registries.ruleConfigs) },
         games = games.associate { game ->
             game.id.toString() to game.tableState.toPersistenceDto(
-                ruleConfigRegistry,
-                discardPileRegistry,
-                playerRuleStateRegistry,
-                dynamicRuleStateRegistry,
-                exhaustiveDrawReasonRegistry,
-                extensionGameActionRegistry,
+                registries.ruleConfigs,
+                registries.discardPiles,
+                registries.exhaustiveDrawReasons,
+                registries.extensionGameActions,
+                registries.components,
             )
         },
         gameFlowConfigs = games.associate { game -> game.id.toString() to game.flowConfig.toPersistenceDto() },
         gameRuntimeStates = games.associate { game -> game.id.toString() to game.toRuntimeStatePersistenceDto() },
-        historyRecordingState = HistoryRecordingPersistenceMapper(
-            PersistenceRegistries(ruleConfigRegistry, discardPileRegistry, playerRuleStateRegistry, dynamicRuleStateRegistry, exhaustiveDrawReasonRegistry, extensionGameActionRegistry),
-        ).encode(historyRecordingState),
+        historyRecordingState = HistoryRecordingPersistenceMapper(registries).encode(historyRecordingState),
     )
 }
 
@@ -98,28 +84,25 @@ fun AuthoritativeStatePersistenceDto.toRooms(ruleConfigRegistry: PersistenceDtoR
  *
  * @param ruleConfigRegistry 規則設定的持久化轉換註冊表。
  * @param discardPileRegistry 牌河的持久化轉換註冊表。
- * @param playerRuleStateRegistry 玩家規則狀態的持久化轉換註冊表。
- * @param dynamicRuleStateRegistry 動態規則狀態的持久化轉換註冊表。
  * @param exhaustiveDrawReasonRegistry 流局原因的持久化轉換註冊表。
  * @param extensionGameActionRegistry 擴充遊戲動作的持久化轉換註冊表。
+ * @param componentRegistry 牌張組件的保存轉換。
  * @return 以遊戲識別碼為鍵、包含流程執行狀態的遊戲集合。
  */
 fun AuthoritativeStatePersistenceDto.toGames(
     ruleConfigRegistry: PersistenceDtoRegistry<MahjongRuleConfig>,
     discardPileRegistry: PersistenceDtoRegistry<DiscardPile<*>>,
-    playerRuleStateRegistry: PersistenceDtoRegistry<PlayerRuleState>,
-    dynamicRuleStateRegistry: PersistenceDtoRegistry<DynamicRuleState>,
     exhaustiveDrawReasonRegistry: PersistenceDtoRegistry<ExhaustiveDrawReason>,
     extensionGameActionRegistry: PersistenceDtoRegistry<ExtensionGameAction>,
+    componentRegistry: ComponentPersistenceRegistry,
 ): Map<Uuid, Game> = games.values.associate { game ->
     val id = Uuid.parse(game.id)
     val tableState = game.toDomain(
         ruleConfigRegistry,
         discardPileRegistry,
-        playerRuleStateRegistry,
-        dynamicRuleStateRegistry,
         exhaustiveDrawReasonRegistry,
         extensionGameActionRegistry,
+        componentRegistry,
     )
     val runtimeState = gameRuntimeStates.getValue(id.toString())
     id to Game(

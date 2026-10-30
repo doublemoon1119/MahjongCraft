@@ -53,6 +53,13 @@ object MinecraftRoomScreenKeys {
     const val CONFIG_CHANGES = "mahjongcraft.room.screen.tooltip.changes"
     const val CONFIG_VALUE_CHANGE = "mahjongcraft.room.screen.tooltip.value_change"
     const val RULE = "mahjongcraft.room.screen.tooltip.rule"
+
+    /** 多選欄位目前選取的項目數量。 */
+    const val SELECTED_COUNT = "mahjongcraft.room.screen.selected_count"
+
+    /** 多選畫面的選取數量與允許範圍。 */
+    const val SELECTION_LIMITS = "mahjongcraft.room.screen.selection_limits"
+
     const val NONE = "mahjongcraft.room.config.value.none"
     const val TRUE = "mahjongcraft.room.config.value.true"
     const val FALSE = "mahjongcraft.room.config.value.false"

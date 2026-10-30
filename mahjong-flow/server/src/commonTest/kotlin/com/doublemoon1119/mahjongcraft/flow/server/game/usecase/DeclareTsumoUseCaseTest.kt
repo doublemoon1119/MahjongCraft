@@ -18,18 +18,23 @@ import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.base.Hand
 import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
+import com.doublemoon1119.mahjongcraft.logic.component.ComponentSet
 import com.doublemoon1119.mahjongcraft.logic.module.BuiltInRuleModuleIds
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.PaoLiability
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.PaoYaku
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RIICHI_STICK_POINTS
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDiscardPile
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDynamicState
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPendingKanDoraReveal
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPlayerState
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPlayerComponents
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiWallProgress
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.riichiPotPoints
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.riichiWallProgress
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import com.doublemoon1119.mahjongcraft.logic.table.toSnapshot
+import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledCoreExtensionRegistries
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledWinCelebrationCueResolverRegistry
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.registerBundledRuleModules
 import com.doublemoon1119.mahjongcraft.testing.flow.common.game.repository.FakeGameSnapshotRepository
@@ -37,6 +42,8 @@ import com.doublemoon1119.mahjongcraft.testing.flow.common.game.service.Declared
 import com.doublemoon1119.mahjongcraft.testing.flow.common.game.service.FakeGameEventPublisher
 import com.doublemoon1119.mahjongcraft.testing.flow.common.game.service.FakeGamePresentationPublisher
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeIdentifiedTileFactory
+import com.doublemoon1119.mahjongcraft.testing.logic.rules.riichi.riichiDeclarationComponents
+import com.doublemoon1119.mahjongcraft.testing.logic.rules.riichi.riichiTableComponents
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
 import kotlinx.coroutines.test.runTest
@@ -70,11 +77,11 @@ class DeclareTsumoUseCaseTest {
         val gameRepo = FakeGameRepository()
         val moduleRegistry = MahjongModuleRegistryImpl().apply { registerBundledRuleModules() }
         val snapshotRepo = FakeGameSnapshotRepository()
-        val snapshotSynchronizer = GameSnapshotSynchronizer(gameRepo, snapshotRepo, GameVisibilityPolicyImpl(moduleRegistry))
+        val snapshotSynchronizer = GameSnapshotSynchronizer(gameRepo, snapshotRepo, GameVisibilityPolicyImpl(moduleRegistry, componentRegistry = bundledCoreExtensionRegistries().componentRegistry))
         val eventPublisher = FakeGameEventPublisher()
         val presentationPublisher = FakeGamePresentationPublisher()
         val winPresentationHandoff = WinPresentationHandoff()
-        val winSettlementDetailResolverRegistry = WinSettlementDetailResolverRegistry().apply {
+        val winSettlementDetailResolverRegistry = WinSettlementDetailResolverRegistry(bundledCoreExtensionRegistries().componentRegistry).apply {
             BundledRiichiExtension.registerWinSettlementDetailResolvers(this)
             freeze()
         }
@@ -87,6 +94,8 @@ class DeclareTsumoUseCaseTest {
             winPresentationHandoff,
             winCelebrationCueResolverRegistry = winCelebrationCueResolverRegistry,
             winSettlementDetailResolverRegistry = winSettlementDetailResolverRegistry,
+
+            componentRegistry = bundledCoreExtensionRegistries().componentRegistry,
         )
     }
 
@@ -124,7 +133,7 @@ class DeclareTsumoUseCaseTest {
             initialSeat = Wind.EAST,
             hand = daisangenHand(),
             discardPile = priorDiscardPile(),
-            playerRuleState = RiichiPlayerState(),
+            components = riichiDeclarationComponents(),
         ).copy(score = 25000)
         val south = FakeMahjongPlayerFactory.create(initialSeat = Wind.SOUTH).copy(score = 25000)
         val west = FakeMahjongPlayerFactory.create(initialSeat = Wind.WEST).copy(score = 25000)
@@ -134,11 +143,14 @@ class DeclareTsumoUseCaseTest {
             players = listOf(winner, south, west, north),
             config = RiichiRuleConfig(),
             currentPlayerIndex = 0,
-            dynamicRuleState = RiichiDynamicState(
-                completedSupplementalDrawCount = 1,
-                revealedKanDoraCount = 0,
-                pendingKanDoraReveals = listOf(
-                    RiichiPendingKanDoraReveal(winnerId, GameAction.KanType.ADDED_KAN, 1),
+            components = riichiTableComponents(
+                potPoints = 0,
+                wallProgress = RiichiWallProgress(
+                    completedSupplementalDrawCount = 1,
+                    revealedKanDoraCount = 0,
+                    pendingKanDoraReveals = listOf(
+                        RiichiPendingKanDoraReveal(winnerId, GameAction.KanType.ADDED_KAN, 1),
+                    ),
                 ),
             ),
         )
@@ -152,7 +164,7 @@ class DeclareTsumoUseCaseTest {
         assertEquals(25000 - 16000, newState.players.first { it.id == south.id }.score)
         assertEquals(25000 - 16000, newState.players.first { it.id == west.id }.score)
         assertEquals(25000 - 16000, newState.players.first { it.id == north.id }.score)
-        assertTrue((newState.dynamicRuleState as RiichiDynamicState).pendingKanDoraReveals.isEmpty())
+        assertTrue(newState.riichiWallProgress().pendingKanDoraReveals.isEmpty())
         assertEquals(
             listOf(DeclaredGameActionContext(winnerId, GameAction.Tsumo)),
             fixtures.presentationPublisher.getDeclaredGameActions(gameId),
@@ -175,7 +187,7 @@ class DeclareTsumoUseCaseTest {
             initialSeat = Wind.SOUTH,
             hand = daisangenHand(),
             discardPile = priorDiscardPile(),
-            playerRuleState = RiichiPlayerState(),
+            components = riichiDeclarationComponents(),
         ).copy(score = 25000)
         val west = FakeMahjongPlayerFactory.create(initialSeat = Wind.WEST).copy(score = 25000)
         val north = FakeMahjongPlayerFactory.create(initialSeat = Wind.NORTH).copy(score = 25000)
@@ -209,7 +221,7 @@ class DeclareTsumoUseCaseTest {
             initialSeat = Wind.SOUTH,
             hand = daisangenHand(),
             discardPile = priorDiscardPile(),
-            playerRuleState = RiichiPlayerState(paoLiability = PaoLiability(PaoYaku.Daisangen, RelativeDirection.Left)),
+            components = ComponentSet.EMPTY.with(RiichiPlayerComponents.PAO_LIABILITY, PaoLiability(PaoYaku.Daisangen, RelativeDirection.Left)).merge(riichiDeclarationComponents()),
         ).copy(score = 25000)
         val other1 = FakeMahjongPlayerFactory.create(initialSeat = Wind.WEST).copy(score = 25000)
         val other2 = FakeMahjongPlayerFactory.create(initialSeat = Wind.NORTH).copy(score = 25000)
@@ -243,7 +255,7 @@ class DeclareTsumoUseCaseTest {
             initialSeat = Wind.EAST,
             hand = daisangenHand(),
             discardPile = priorDiscardPile(),
-            playerRuleState = RiichiPlayerState(),
+            components = riichiDeclarationComponents(),
         )
         val table = FakeTableStateFactory.create(
             id = gameId,
@@ -272,7 +284,7 @@ class DeclareTsumoUseCaseTest {
             initialSeat = Wind.SOUTH,
             hand = daisangenHand(),
             discardPile = priorDiscardPile(),
-            playerRuleState = RiichiPlayerState(),
+            components = riichiDeclarationComponents(),
         )
         val west = FakeMahjongPlayerFactory.create(initialSeat = Wind.WEST)
         val north = FakeMahjongPlayerFactory.create(initialSeat = Wind.NORTH)
@@ -280,7 +292,7 @@ class DeclareTsumoUseCaseTest {
             id = gameId,
             players = listOf(dealer, winner, west, north),
             config = RiichiRuleConfig(),
-            dynamicRuleState = RiichiDynamicState(riichiStickCount = 2),
+            components = riichiTableComponents(potPoints = 2000),
             currentPlayerIndex = 1,
         )
         fixtures.gameRepo.setTableState(table)
@@ -291,7 +303,7 @@ class DeclareTsumoUseCaseTest {
         val newState = fixtures.gameRepo.getTableState(gameId)!!
         assertEquals(1, newState.currentPlayerIndex, "currentPlayerIndex should be left untouched by this unit's scope.")
         assertNull(newState.pendingReaction)
-        assertEquals(0, (newState.dynamicRuleState as RiichiDynamicState).riichiStickCount, "The winner should collect all sticks on the table.")
+        assertEquals(0, (newState.riichiPotPoints() / RIICHI_STICK_POINTS), "The winner should collect all sticks on the table.")
         assertEquals(
             32000 + 2000,
             newState.players.first { it.id == winnerId }.score,
@@ -309,7 +321,7 @@ class DeclareTsumoUseCaseTest {
             initialSeat = Wind.SOUTH,
             hand = daisangenHand(),
             discardPile = priorDiscardPile(),
-            playerRuleState = RiichiPlayerState(),
+            components = riichiDeclarationComponents(),
         ).copy(score = 25000)
         val west = FakeMahjongPlayerFactory.create(initialSeat = Wind.WEST).copy(score = 25000)
         val north = FakeMahjongPlayerFactory.create(initialSeat = Wind.NORTH).copy(score = 25000)
@@ -318,7 +330,7 @@ class DeclareTsumoUseCaseTest {
             players = listOf(dealer, winner, west, north),
             config = RiichiRuleConfig(),
             comboCount = 2,
-            dynamicRuleState = RiichiDynamicState(),
+            components = riichiTableComponents(potPoints = 0),
             currentPlayerIndex = 1,
         )
         fixtures.gameRepo.setTableState(table)
@@ -344,7 +356,7 @@ class DeclareTsumoUseCaseTest {
             initialSeat = Wind.EAST,
             hand = daisangenHand(),
             discardPile = priorDiscardPile(),
-            playerRuleState = RiichiPlayerState(),
+            components = riichiDeclarationComponents(),
         )
         val otherPlayerId = Uuid.random()
         val other = FakeMahjongPlayerFactory.create(id = otherPlayerId, initialSeat = Wind.SOUTH)
@@ -355,8 +367,8 @@ class DeclareTsumoUseCaseTest {
             currentPlayerIndex = 0,
         )
         fixtures.gameRepo.setTableState(table)
-        fixtures.snapshotRepo.setSnapshot(winnerId, table.toSnapshot(setOf(winnerId), setAsideTiles = { emptyList() }))
-        fixtures.snapshotRepo.setSnapshot(otherPlayerId, table.toSnapshot(setOf(otherPlayerId), setAsideTiles = { emptyList() }))
+        fixtures.snapshotRepo.setSnapshot(winnerId, table.toSnapshot(setOf(winnerId)))
+        fixtures.snapshotRepo.setSnapshot(otherPlayerId, table.toSnapshot(setOf(otherPlayerId)))
 
         fixtures.useCase(gameId, winnerId)
 
@@ -381,7 +393,7 @@ class DeclareTsumoUseCaseTest {
             initialSeat = Wind.SOUTH,
             hand = daisangenHand(),
             discardPile = priorDiscardPile(),
-            playerRuleState = RiichiPlayerState(),
+            components = riichiDeclarationComponents(),
         )
         val dealer = FakeMahjongPlayerFactory.create(initialSeat = Wind.EAST)
         val table = FakeTableStateFactory.create(
@@ -420,7 +432,7 @@ class DeclareTsumoUseCaseTest {
             initialSeat = Wind.SOUTH,
             hand = daisangenHand(),
             discardPile = priorDiscardPile(),
-            playerRuleState = RiichiPlayerState(),
+            components = riichiDeclarationComponents(),
         )
         val dealer = FakeMahjongPlayerFactory.create(initialSeat = Wind.EAST)
         fixtures.gameRepo.setTableState(

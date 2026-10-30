@@ -4,27 +4,29 @@ import com.doublemoon1119.mahjongcraft.logic.base.Hand
 import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
 import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
+import com.doublemoon1119.mahjongcraft.logic.component.ComponentSet
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.PaoLiability
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.PaoYaku
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RIICHI_GAME_ACTION
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDiscardEntry
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDiscardComponents
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDiscardPile
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiExhaustiveDrawReason
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPlayerState
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.RiichiTileTypes
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPlayerComponents
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.isRiichiDeclaration
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.RiichiTileValues
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanDiscardPile
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.tile.TaiwanTileTypes
 import com.doublemoon1119.mahjongcraft.logic.table.DiscardPile
+import com.doublemoon1119.mahjongcraft.logic.table.DiscardPile.DiscardEntry
 import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayer
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledPersistenceRegistries
+import com.doublemoon1119.mahjongcraft.testing.logic.rules.riichi.riichiDeclarationComponents
 import kotlinx.serialization.json.Json
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
-import kotlin.test.assertNull
 import kotlin.uuid.Uuid
-
 /** 驗證玩家完整權威狀態的 encoded persistence round-trip。 */
 class MahjongPlayerPersistenceTest {
     /** persistence 測試使用的 JSON 編解碼器。 */
@@ -32,9 +34,6 @@ class MahjongPlayerPersistenceTest {
 
     /** 內建牌河的 persistence registry。 */
     private val discardPileRegistry = bundledPersistenceRegistries().discardPiles
-
-    /** 內建玩家規則狀態的 persistence registry。 */
-    private val playerRuleStateRegistry = bundledPersistenceRegistries().playerRuleStates
 
     /** 內建流局原因的 persistence registry。 */
     private val exhaustiveDrawReasonRegistry = bundledPersistenceRegistries().exhaustiveDrawReasons
@@ -45,23 +44,23 @@ class MahjongPlayerPersistenceTest {
     /** 驗證日麻玩家的隱藏狀態、牌河與動作歷史皆能完整還原。 */
     @Test
     fun `riichi player round-trips with all authoritative state`() {
-        val standingTile = identified(RiichiTileTypes.redFive(Tile.Suit.Character))
+        val standingTile = redFive(Tile.Suit.Character)
         val lastDrawn = identified(Tile.Honor.Red)
         val riichiTile = identified(Tile.Numeric(Tile.Suit.Dot, 3))
         val takenDiscard = identified(Tile.Numeric(Tile.Suit.Bamboo, 7))
         val discardPile = RiichiDiscardPile()
-            .discard(RiichiDiscardEntry(riichiTile, isRiichi = true))
-            .discard(RiichiDiscardEntry(takenDiscard, isTaken = true))
+            .discard(DiscardEntry(tile = riichiTile, components = RiichiDiscardComponents.declaration()))
+            .discard(DiscardEntry(tile = takenDiscard, isTaken = true))
         val player = MahjongPlayer(
             id = Uuid.random(),
             initialSeatIndex = Wind.WEST.ordinal,
             hand = Hand(tiles = listOf(standingTile), lastDrawn = lastDrawn),
             discardPile = discardPile,
-            playerRuleState = RiichiPlayerState(
-                riichiTile = riichiTile,
-                isIppatsu = true,
-                paoLiability = PaoLiability(PaoYaku.Daisangen, RelativeDirection.Left),
-                isPermanentlyFuriten = true,
+            components = ComponentSet.EMPTY.with(RiichiPlayerComponents.PAO_LIABILITY, PaoLiability(PaoYaku.Daisangen, RelativeDirection.Left)).with(RiichiPlayerComponents.PERMANENT_FURITEN, Unit).merge(
+                riichiDeclarationComponents(
+                    declarationTile = riichiTile,
+                    isIppatsu = true,
+                ),
             ),
             score = 31_200,
             seatWind = Wind.SOUTH,
@@ -76,16 +75,16 @@ class MahjongPlayerPersistenceTest {
         val restored = encodedRoundTrip(player)
 
         assertPlayerCommonState(player, restored)
-        assertEquals(player.playerRuleState, restored.playerRuleState)
+        assertEquals(player.components, restored.components)
         val restoredEntries = assertIs<RiichiDiscardPile>(restored.discardPile).entries
         assertEquals(listOf(riichiTile, takenDiscard), restoredEntries.map { it.tile })
-        assertEquals(listOf(true, false), restoredEntries.map { it.isRiichi })
+        assertEquals(listOf(true, false), restoredEntries.map { it.isRiichiDeclaration })
         assertEquals(listOf(false, true), restoredEntries.map { it.isTaken })
     }
 
-    /** 驗證沒有玩家規則狀態的台麻玩家仍能完整還原。 */
+    /** 驗證沒有規則組件的台麻玩家仍能完整還原。 */
     @Test
-    fun `taiwan player round-trips without player rule state`() {
+    fun `taiwan player round-trips without rule components`() {
         val discard = identified(Tile.Extension(TaiwanTileTypes.PLUM))
         val player = MahjongPlayer(
             id = Uuid.random(),
@@ -98,7 +97,7 @@ class MahjongPlayerPersistenceTest {
         val restored = encodedRoundTrip(player)
 
         assertPlayerCommonState(player, restored)
-        assertNull(restored.playerRuleState)
+        assertEquals(ComponentSet.EMPTY, restored.components)
         val restoredEntry = assertIs<TaiwanDiscardPile>(restored.discardPile).entries.single()
         assertEquals(discard, restoredEntry.tile)
         assertEquals(true, restoredEntry.isTaken)
@@ -115,16 +114,16 @@ class MahjongPlayerPersistenceTest {
             MahjongPlayerPersistenceDto.serializer(),
             player.toPersistenceDto(
                 discardPileRegistry,
-                playerRuleStateRegistry,
                 exhaustiveDrawReasonRegistry,
                 extensionGameActionRegistry,
+                bundledPersistenceRegistries().components,
             ),
         )
         return json.decodeFromString(MahjongPlayerPersistenceDto.serializer(), encoded).toDomain(
             discardPileRegistry,
-            playerRuleStateRegistry,
             exhaustiveDrawReasonRegistry,
             extensionGameActionRegistry,
+            bundledPersistenceRegistries().components,
         )
     }
 
@@ -152,3 +151,11 @@ class MahjongPlayerPersistenceTest {
      */
     private fun identified(tile: Tile): IdentifiedTile = IdentifiedTile(Uuid.random(), tile)
 }
+
+/**
+ * 建立帶赤寶牌特性與赤五外觀的牌張。
+ *
+ * @param suit 赤五的花色。
+ * @return 新的赤五牌張。
+ */
+private fun redFive(suit: Tile.Suit): IdentifiedTile = RiichiTileValues.redFive(suit).let { IdentifiedTile(Uuid.random(), it.tile, it.components) }

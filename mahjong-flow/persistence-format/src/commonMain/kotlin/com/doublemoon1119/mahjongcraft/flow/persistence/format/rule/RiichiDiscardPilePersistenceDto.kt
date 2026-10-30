@@ -9,4 +9,4 @@ import kotlinx.serialization.Serializable
  * @property entries 依捨牌順序排列的牌河項目。
  */
 @Serializable
-data class RiichiDiscardPilePersistenceDto(val entries: List<RiichiDiscardEntryPersistenceDto>)
+data class RiichiDiscardPilePersistenceDto(val entries: List<DiscardEntryPersistenceDto>)

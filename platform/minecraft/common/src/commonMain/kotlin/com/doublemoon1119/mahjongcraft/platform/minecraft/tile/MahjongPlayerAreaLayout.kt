@@ -2,6 +2,7 @@ package com.doublemoon1119.mahjongcraft.platform.minecraft.tile
 
 import com.doublemoon1119.mahjongcraft.logic.base.MeldType
 import com.doublemoon1119.mahjongcraft.logic.base.PublicHandOrder
+import com.doublemoon1119.mahjongcraft.logic.tile.component.TilePose
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.meldDisplayDirection
 import kotlin.uuid.Uuid
 
@@ -27,10 +28,12 @@ object MahjongPlayerAreaLayout {
         val cornerYieldShift = MahjongTileTableLayout.handCornerYieldShift(
             handSize = input.standingTileIds.size,
             reservedCornerWidth = reservedCornerWidth,
-            hasDrawnTile = input.hasDrawnTile,
+            hasDrawnTile = (input.drawnTileId != null),
         )
-        // 世界實體由所有觀察者共用，立牌只依公開順序擺放。
-        val standing = PublicHandOrder.arrange(input.standingTileIds).mapIndexed { orderIndex, tileId ->
+        // 只有全部立牌已公開平放時才使用玩家牌序；仍有隱藏或直立牌時不洩漏私人排序。
+        val faceUpIds = input.tilePoseStates.filter { it.pose == TilePose.FACE_UP }.mapTo(mutableSetOf()) { it.tileId }
+        val standingOrder = if (input.standingTileIds.all { it in faceUpIds }) input.standingTileIds else PublicHandOrder.arrange(input.standingTileIds)
+        val standing = standingOrder.mapIndexed { orderIndex, tileId ->
             MahjongAreaTilePlacement(
                 tileId = tileId,
                 placement = MahjongTileTableLayout.handPlacement(
@@ -44,7 +47,7 @@ object MahjongPlayerAreaLayout {
                     tileIndex = input.standingTileIds.size - 1 - orderIndex,
                     cornerYieldShift = cornerYieldShift,
                 ),
-                footprint = MahjongTileFootprint.STANDING,
+                footprint = if (input.tilePoseStates.any { it.tileId == tileId && it.pose != TilePose.UPRIGHT }) MahjongTileFootprint.LYING else MahjongTileFootprint.STANDING,
                 alongOffsetFromCorner = null,
             )
         }

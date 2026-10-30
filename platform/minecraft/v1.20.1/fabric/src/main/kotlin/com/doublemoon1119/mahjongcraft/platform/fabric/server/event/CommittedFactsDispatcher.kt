@@ -1,7 +1,9 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.server.event
 
 import com.doublemoon1119.mahjongcraft.flow.common.error.ExtensionFailurePolicy
+import com.doublemoon1119.mahjongcraft.flow.common.game.event.GameEventProjectionReporter
 import com.doublemoon1119.mahjongcraft.flow.common.game.event.GameEventProjector
+import com.doublemoon1119.mahjongcraft.flow.common.game.event.GameEventPublicMarkerResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.CommittedGameFacts
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateStore
 import com.doublemoon1119.mahjongcraft.flow.server.state.CommittedFactsListener
@@ -20,7 +22,9 @@ import kotlin.concurrent.atomics.ExperimentalAtomicApi
 import kotlin.uuid.Uuid
 
 /**
- * 將權威 store 的提交通知分派給原版成果與第三方遊戲事件兩個接收端。
+ * 將權威提交交給事件佇列，解鎖後以同一公開批次判定內建通用成果並通知第三方。
+ *
+ * 事件佇列只攜帶投影後的公開批次，不保留原始事實或對局。
  *
  * @property store 提供權威交易提交與釋放通知的 store。
  * @property achievementService 處理原版成果判定的服務。
@@ -29,6 +33,7 @@ import kotlin.uuid.Uuid
  * @property reporter 回報事件交付失敗的診斷元件。
  * @property exclusions 由 debug 流程共用的場次排除名單。
  * @property failurePolicy 判斷第三方事件監聽者丟出的失敗能否隔離。
+ * @property markerResolvers 與 extension bootstrap 共用的規則公開標記 registry。
  */
 @OptIn(ExperimentalAtomicApi::class)
 class CommittedFactsDispatcher(
@@ -39,6 +44,7 @@ class CommittedFactsDispatcher(
     private val reporter: GameEventDeliveryReporter,
     private val exclusions: GameEventExclusions,
     private val failurePolicy: ExtensionFailurePolicy,
+    private val markerResolvers: GameEventPublicMarkerResolverRegistry,
 ) {
     /** 記錄個別接收端失敗而不阻斷另一端的診斷 logger。 */
     private val logger = mahjongCraftLogger(CommittedFactsDispatcher::class)
@@ -72,7 +78,23 @@ class CommittedFactsDispatcher(
     ) {
         stopSession()
         val delivery = GameEventDelivery(
-            projector = GameEventProjector(moduleRegistry),
+            projector = GameEventProjector(
+                moduleRegistry = moduleRegistry,
+                markerResolvers = markerResolvers,
+                failurePolicy = failurePolicy,
+                projectionReporter = object : GameEventProjectionReporter {
+                    override fun markerFailed(ruleModuleId: String, matchId: Uuid, eventKind: String, winnerId: Uuid?, cause: Throwable) {
+                        logger.warn(
+                            "Public event markers failed rule={} matchId={} kind={} winnerId={}",
+                            ruleModuleId,
+                            matchId,
+                            eventKind,
+                            winnerId,
+                            cause,
+                        )
+                    }
+                },
+            ),
             scheduler = scheduler,
             locations = locations,
             reporter = reporter,
@@ -80,21 +102,26 @@ class CommittedFactsDispatcher(
             roundSettled = subscriptions.roundSettled,
             matchEnded = subscriptions.matchEnded,
             failurePolicy = failurePolicy,
+            actionsPerformed = subscriptions.actionsPerformed,
+            roundCompleted = subscriptions.roundCompleted,
+            eventBatchCommitted = subscriptions.eventBatchCommitted,
+            ruleResultsResolved = subscriptions.ruleResultsResolved,
         )
         val sessionId = delivery.startSession()
         lateinit var session: Session
         val listener = object : CommittedFactsListener {
             override fun onCommitted(sequence: Long, facts: CommittedGameFacts) {
                 if (activeSession.load() !== session || exclusions.contains(facts.matchId)) return
-                runCatching { achievementService.handle(facts) { activeSession.load() === session } }.onFailure { cause ->
-                    logger.warn(
-                        "Dispatching achievements failed for match {} at venue {}",
-                        facts.matchId,
-                        facts.venueId,
-                        cause,
+                runCatching {
+                    delivery.onCommitted(
+                        sessionId = sessionId,
+                        sequence = sequence,
+                        facts = facts,
+                        onBatchDelivered = { batch ->
+                            achievementService.consume(batch) { activeSession.load() === session }
+                        },
                     )
-                }
-                runCatching { delivery.onCommitted(sessionId, sequence, facts) }.onFailure { cause ->
+                }.onFailure { cause ->
                     logger.warn(
                         "Dispatching game events failed for match {} at venue {}",
                         facts.matchId,

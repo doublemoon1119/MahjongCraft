@@ -250,6 +250,15 @@ class MinecraftLanguageFilesTest {
                             )
                             editor.optionTranslationKeys.values.forEach(::add)
                         }
+                        is GameConfigEditorSpec.MultiChoice -> {
+                            assertEquals(
+                                editor.optionIds.toSet(),
+                                editor.optionTranslationKeys.keys,
+                                "Every built-in multi-choice must explicitly provide a translation: ${field.id}",
+                            )
+                            editor.optionTranslationKeys.values.forEach(::add)
+                            editor.optionDescriptionTranslationKeys.values.forEach(::add)
+                        }
                     }
                 }
             }

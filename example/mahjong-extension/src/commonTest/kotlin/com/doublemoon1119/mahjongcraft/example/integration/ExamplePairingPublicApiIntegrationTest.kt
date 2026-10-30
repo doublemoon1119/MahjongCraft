@@ -1,8 +1,10 @@
 package com.doublemoon1119.mahjongcraft.example.integration
 
 import com.doublemoon1119.mahjongcraft.example.ExampleMahjongExtension
-import com.doublemoon1119.mahjongcraft.example.action.ExamplePairingDeclarationAction
-import com.doublemoon1119.mahjongcraft.example.action.ExamplePairingDeclarationCommand
+import com.doublemoon1119.mahjongcraft.example.action.ExamplePairingRevealHandAction
+import com.doublemoon1119.mahjongcraft.example.action.ExamplePairingRevealHandCommand
+import com.doublemoon1119.mahjongcraft.example.pairing.ExamplePairingBonusTiles
+import com.doublemoon1119.mahjongcraft.example.pairing.ExamplePairingComponents
 import com.doublemoon1119.mahjongcraft.example.pairing.ExamplePairingIds
 import com.doublemoon1119.mahjongcraft.example.pairing.ExamplePairingRuleConfig
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryFact
@@ -10,6 +12,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameConfig
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.WinCelebrationCueResolverRegistryImpl
 import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
 import com.doublemoon1119.mahjongcraft.flow.common.room.model.Room
+import com.doublemoon1119.mahjongcraft.flow.common.room.model.RoomError
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.registry.emptyPersistenceRegistries
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.state.AuthoritativeStatePersistenceCodec
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.ExtensionGameCommandContext
@@ -35,8 +38,14 @@ import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateStore
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateUpdate
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
+import com.doublemoon1119.mahjongcraft.logic.component.AuthoritativeComponentValidatorImpl
+import com.doublemoon1119.mahjongcraft.logic.component.BuiltInComponentOwners
+import com.doublemoon1119.mahjongcraft.logic.component.ComponentRegistryImpl
+import com.doublemoon1119.mahjongcraft.logic.component.ComponentSet
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
+import com.doublemoon1119.mahjongcraft.logic.tile.component.BuiltInTileComponents
+import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledCoreExtensionRegistries
 import com.doublemoon1119.mahjongcraft.testing.flow.common.game.repository.FakeGameSnapshotRepository
 import com.doublemoon1119.mahjongcraft.testing.flow.common.game.service.FakeGameEventPublisher
 import com.doublemoon1119.mahjongcraft.testing.flow.common.game.service.FakeGamePresentationPublisher
@@ -50,13 +59,44 @@ import kotlin.test.assertTrue
 import kotlin.uuid.Uuid
 
 /**
- * 以範例擴充自己的 registry 建立一條最小對局流程，確認宣告、摸打、流局、終局與保存資料可串接。
+ * 以範例擴充自己的 registry 建立一條最小對局流程，確認攤牌、摸打、流局、終局與保存資料可串接。
  *
  * 測試不載入任何內建規則，也不建立完整伺服器模擬器；只使用正式的權威 store 與公開 use case。
  */
 class ExamplePairingPublicApiIntegrationTest {
 
-    /** 驗證範例擴充能從開局走到終局，且宣告動作會進入保存資料。 */
+    /** 真實開局用例會依牌山設定限制可加入的完整玩家人數。 */
+    @Test
+    fun `start game rejects a room larger than selected wall capacity`() = runTest {
+        val fixtures = Fixtures()
+        val cases = listOf(
+            Triple(2, setOf(1, 2), true),
+            Triple(3, setOf(1, 2, 3), true),
+            Triple(4, setOf(1, 2, 3, 4), true),
+            Triple(3, setOf(1, 2), false),
+            Triple(4, setOf(1, 2, 3), false),
+        )
+        cases.forEach { (playerCount, selectedValues, mayStart) ->
+            val roomId = fixtures.installRoom(
+                ExamplePairingRuleConfig(wallTileValues = selectedValues),
+                playerCount,
+            )
+            val before = fixtures.store.snapshot()
+            val outcome = fixtures.startGameUseCase(roomId, fixtures.hostId(roomId))
+            if (mayStart) {
+                assertIs<Outcome.Success<*>>(outcome)
+                val table = checkNotNull(fixtures.gameRepository.getGame(roomId)).tableState
+                assertEquals(playerCount, table.players.size)
+                assertEquals(selectedValues.size * 4 - playerCount * 3, table.tileWall.remainingCount)
+                assertTrue(table.players.all { player -> player.hand.standingTiles.size == 3 })
+            } else {
+                assertEquals(Outcome.Error(RoomError.RoomPlayerCountInvalid(roomId)), outcome)
+                assertEquals(before, fixtures.store.snapshot())
+            }
+        }
+    }
+
+    /** 驗證範例擴充能從開局走到終局，且攤牌動作會進入保存資料。 */
     @Test
     fun `example extension completes isolated match and round trips authoritative history`() = runTest {
         val fixtures = Fixtures()
@@ -89,7 +129,7 @@ class ExamplePairingPublicApiIntegrationTest {
         val drawn = fixtures.gameRepository.getGame(roomId)!!.tableState.currentPlayer.hand.lastDrawn
         assertTrue(drawn != null)
         assertIs<Outcome.Success<*>>(
-            fixtures.extensionExecutor.execute(roomId, actor, ExamplePairingDeclarationCommand),
+            fixtures.extensionExecutor.execute(roomId, actor, ExamplePairingRevealHandCommand),
         )
         assertIs<Outcome.Success<*>>(fixtures.discardTileUseCase(roomId, actor, drawn.id))
 
@@ -111,7 +151,7 @@ class ExamplePairingPublicApiIntegrationTest {
         val facts = restored.historyRecordingState.pendingEvents.map { it.fact }
         assertTrue(
             facts.any { fact ->
-                fact is HistoryFact.ActionAccepted && fact.action == GameAction.Extension(ExamplePairingDeclarationAction)
+                fact is HistoryFact.ActionAccepted && fact.action == GameAction.Extension(ExamplePairingRevealHandAction)
             },
         )
         assertTrue(
@@ -168,6 +208,7 @@ class ExamplePairingPublicApiIntegrationTest {
                     players = tableState.players.map { player ->
                         if (player.id == actor) player.copy(hand = preparedHand) else player
                     },
+                    components = ComponentSet.EMPTY.with(ExamplePairingComponents.BONUS_TILES, ExamplePairingBonusTiles(setOf(1))),
                 ),
             ) to Unit
         }
@@ -180,8 +221,8 @@ class ExamplePairingPublicApiIntegrationTest {
         val settledPlayers = fixtures.gameRepository.getGame(roomId)!!.tableState.players
         val settledPlayer = settledPlayers.first { it.id == actor }
         assertTrue(GameAction.Tsumo in settledPlayer.actionHistory)
-        assertEquals(110, settledPlayer.score)
-        assertEquals(90, settledPlayers.first { it.id != actor }.score)
+        assertEquals(111, settledPlayer.score)
+        assertEquals(89, settledPlayers.first { it.id != actor }.score)
     }
 
     /**
@@ -201,14 +242,24 @@ class ExamplePairingPublicApiIntegrationTest {
         /** 啟用歷史記錄的權威狀態儲存區。 */
         val store = AuthoritativeStateStore(historyRecordingEnabled = true, maxPendingHistoryEvents = 10_000)
 
-        /** 連接 [store] 的權威對局 repository。 */
-        val gameRepository = GameRepositoryImpl(store)
-
         /** 只登記範例規則的規則模組 registry。 */
         private val moduleRegistry = MahjongModuleRegistryImpl()
 
         /** 提供範例規則與資料 codec 登記的擴充入口。 */
         private val extension = ExampleMahjongExtension()
+
+        /** 範例測試自己的組件登記，不預載任何內建規則。 */
+        private val componentRegistry = ComponentRegistryImpl().apply {
+            BuiltInComponentOwners.ALL.forEach(::registerOwner)
+            register(BuiltInTileComponents.FACE_ACCESS)
+            register(BuiltInTileComponents.POSE)
+            register(BuiltInTileComponents.APPEARANCE)
+            extension.registerComponents(this)
+            freeze()
+        }
+
+        /** 使用本範例正式組件驗證器的權威對局 repository。 */
+        val gameRepository = GameRepositoryImpl(store, AuthoritativeComponentValidatorImpl(moduleRegistry, componentRegistry))
 
         /** 保存測試觀察者快照的替身。 */
         private val snapshotRepository = FakeGameSnapshotRepository()
@@ -217,7 +268,7 @@ class ExamplePairingPublicApiIntegrationTest {
         private val snapshotSynchronizer = GameSnapshotSynchronizer(
             gameRepository,
             snapshotRepository,
-            GameVisibilityPolicyImpl(moduleRegistry),
+            GameVisibilityPolicyImpl(moduleRegistry, componentRegistry = componentRegistry),
         )
 
         /** 接收測試期間產生的遊戲事件。 */
@@ -257,7 +308,11 @@ class ExamplePairingPublicApiIntegrationTest {
                     postActionResolvers,
                     gameEvents,
                     presentations,
+
+                    componentRegistry = componentRegistry,
                 ),
+
+                componentRegistry = componentRegistry,
             ),
         )
 
@@ -288,11 +343,57 @@ class ExamplePairingPublicApiIntegrationTest {
         /** 編碼與解碼權威狀態保存資料的 codec。 */
         val persistenceCodec: AuthoritativeStatePersistenceCodec
 
+        /** 測試房間與各自房主的對照。 */
+        private val roomHosts = mutableMapOf<Uuid, Uuid>()
+
+        /**
+         * 建立完整準備狀態的測試房間，讓正式開局用例驗證玩家人數限制。
+         *
+         * @param config 本局規則設定。
+         * @param playerCount 實際在房間中的玩家人數。
+         * @return 新建的測試房間 ID。
+         */
+        suspend fun installRoom(config: ExamplePairingRuleConfig, playerCount: Int): Uuid {
+            val roomId = Uuid.random()
+            val playerIds = List(playerCount) { Uuid.random() }
+            val hostId = playerIds.first()
+            roomHosts[roomId] = hostId
+            store.update { state ->
+                AuthoritativeStateUpdate(
+                    state.copy(
+                        rooms = state.rooms + (
+                            roomId to Room(
+                                id = roomId,
+                                hostId = hostId,
+                                gameConfig = GameConfig(config),
+                                playerIds = playerIds,
+                                readyPlayerIds = playerIds.drop(1),
+                                aiPlayerStrategyKeys = emptyMap(),
+                            )
+                            ),
+                    ),
+                    Unit,
+                )
+            }
+            return roomId
+        }
+
+        /** 取得測試房間的房主。 */
+        fun hostId(roomId: Uuid): Uuid = checkNotNull(roomHosts[roomId])
+
         init {
             extension.registerRuleModules(moduleRegistry)
             moduleRegistry.freeze()
-            startGameUseCase = StartGameUseCase(store, moduleRegistry, snapshotSynchronizer, handSort, gameEvents, presentations)
-            drawTileUseCase = DrawTileUseCase(gameRepository, moduleRegistry, snapshotSynchronizer, gameEvents, presentations)
+            startGameUseCase = StartGameUseCase(
+                store,
+                moduleRegistry,
+                snapshotSynchronizer,
+                handSort,
+                gameEvents,
+                presentations,
+                componentRegistry = componentRegistry,
+            )
+            drawTileUseCase = DrawTileUseCase(gameRepository, moduleRegistry, snapshotSynchronizer, gameEvents, presentations, componentRegistry = componentRegistry)
             getLegalActionsUseCase = GetLegalActionsUseCase(gameRepository, moduleRegistry)
             declareTsumoUseCase = DeclareTsumoUseCase(
                 gameRepository = gameRepository,
@@ -302,7 +403,9 @@ class ExamplePairingPublicApiIntegrationTest {
                 presentationPublisher = presentations,
                 winPresentationHandoff = WinPresentationHandoff(),
                 winCelebrationCueResolverRegistry = WinCelebrationCueResolverRegistryImpl().apply { freeze() },
-                winSettlementDetailResolverRegistry = WinSettlementDetailResolverRegistry().apply { freeze() },
+                winSettlementDetailResolverRegistry = WinSettlementDetailResolverRegistry(bundledCoreExtensionRegistries().componentRegistry).apply { freeze() },
+
+                componentRegistry = componentRegistry,
             )
             discardTileUseCase = DiscardTileUseCase(
                 gameRepository,
@@ -312,9 +415,19 @@ class ExamplePairingPublicApiIntegrationTest {
                 postActionResolvers,
                 gameEvents,
                 presentations,
+
+                componentRegistry = componentRegistry,
             )
             declareExhaustiveDrawUseCase = DeclareExhaustiveDrawUseCase(gameRepository, moduleRegistry, snapshotSynchronizer, gameEvents)
-            advanceRoundUseCase = AdvanceRoundUseCase(gameRepository, moduleRegistry, snapshotSynchronizer, handSort, gameEvents, presentations)
+            advanceRoundUseCase = AdvanceRoundUseCase(
+                gameRepository,
+                moduleRegistry,
+                snapshotSynchronizer,
+                handSort,
+                gameEvents,
+                presentations,
+                componentRegistry = componentRegistry,
+            )
             returnToRoomUseCase = ReturnToRoomUseCase(
                 store,
                 FakeRoomSnapshotRepository(),
@@ -324,7 +437,7 @@ class ExamplePairingPublicApiIntegrationTest {
             val persistenceRegistries = emptyPersistenceRegistries()
             extension.registerPersistenceDtos(persistenceRegistries)
             persistenceRegistries.freeze()
-            persistenceCodec = AuthoritativeStatePersistenceCodec(persistenceRegistries)
+            persistenceCodec = AuthoritativeStatePersistenceCodec(persistenceRegistries, componentValidator = AuthoritativeComponentValidatorImpl(moduleRegistry, componentRegistry))
         }
     }
 }

@@ -1,7 +1,10 @@
 package com.doublemoon1119.mahjongcraft.flow.server.game.usecase
 
+import com.doublemoon1119.mahjongcraft.extension.MahjongExtension
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryFact
 import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
+import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkDtoRegistries
+import com.doublemoon1119.mahjongcraft.flow.persistence.format.registry.PersistenceRegistries
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.PostActionExhaustiveDrawResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.RuleContractViolationException
 import com.doublemoon1119.mahjongcraft.flow.server.game.policy.GameVisibilityPolicyImpl
@@ -14,32 +17,44 @@ import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction.Extension
 import com.doublemoon1119.mahjongcraft.logic.base.Hand
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
-import com.doublemoon1119.mahjongcraft.logic.config.DynamicRuleState
+import com.doublemoon1119.mahjongcraft.logic.component.BuiltInComponentOwners
+import com.doublemoon1119.mahjongcraft.logic.component.ComponentLifecycleDefinition
+import com.doublemoon1119.mahjongcraft.logic.component.ComponentOwnerType
+import com.doublemoon1119.mahjongcraft.logic.component.ComponentPatch
+import com.doublemoon1119.mahjongcraft.logic.component.ComponentRegistry
+import com.doublemoon1119.mahjongcraft.logic.component.ComponentRoundTransition
+import com.doublemoon1119.mahjongcraft.logic.component.ComponentSet
+import com.doublemoon1119.mahjongcraft.logic.component.ComponentType
 import com.doublemoon1119.mahjongcraft.logic.judgment.LegalActionContext
 import com.doublemoon1119.mahjongcraft.logic.judgment.LegalActionValidator
 import com.doublemoon1119.mahjongcraft.logic.judgment.TileSelectionRequirement
 import com.doublemoon1119.mahjongcraft.logic.module.DeclarationDiscardEffect
 import com.doublemoon1119.mahjongcraft.logic.module.DeclarationDiscardPolicy
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleDefinition
+import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDiscardEntry
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDiscardPile
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDynamicState
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleModule
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiTableComponents
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.riichiPotPoints
 import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayer
-import com.doublemoon1119.mahjongcraft.logic.table.PlayerRuleState
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
-import com.doublemoon1119.mahjongcraft.logic.table.TileWallRevealable
 import com.doublemoon1119.mahjongcraft.logic.table.WallRevealCheckpoint
 import com.doublemoon1119.mahjongcraft.logic.table.WallRevealDecision
 import com.doublemoon1119.mahjongcraft.logic.table.WallRevealPolicy
 import com.doublemoon1119.mahjongcraft.logic.table.toSnapshot
+import com.doublemoon1119.mahjongcraft.logic.tile.component.BuiltInTileComponents
+import com.doublemoon1119.mahjongcraft.logic.tile.component.TileComponentDescription
+import com.doublemoon1119.mahjongcraft.logic.tile.component.TileFaceAccess
+import com.doublemoon1119.mahjongcraft.logic.tile.component.TilePose
+import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledCoreExtensionRegistries
 import com.doublemoon1119.mahjongcraft.testing.flow.common.game.repository.FakeGameSnapshotRepository
 import com.doublemoon1119.mahjongcraft.testing.flow.common.game.service.FakeGameEventPublisher
 import com.doublemoon1119.mahjongcraft.testing.flow.common.game.service.FakeGamePresentationPublisher
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeIdentifiedTileFactory
+import com.doublemoon1119.mahjongcraft.testing.logic.rules.riichi.riichiTableComponents
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
 import kotlinx.coroutines.test.runTest
@@ -62,13 +77,15 @@ class DeclareAndDiscardUseCaseTest {
     /**
      * 建立可重複使用的第三方宣告測試環境。
      *
-     * @param malicious 是否要求規則產生未授權的分數變更。
+     * @param malicious 是否要求規則把對局組件當成玩家組件交回。
      * @param cost 本次宣告需支付的點數。
      * @param rejectWallReveal 是否讓宣告後的牌牆公開檢查拒絕。
      * @param mustDiscardAfterMeld 是否模擬剛完成自訂鳴牌、等待捨牌的玩家。
      * @param revealWallTile 是否讓宣告後的牌牆公開檢查公開一張牌山牌。
      * @param tsumoAvailable 宣告者是否同時可以自摸。
      * @param hookMode 放棄自摸與打牌後掛勾的測試行為；null 時不覆寫這兩個掛勾。
+     * @param discardComponents 宣告效果寫在新捨牌紀錄上的組件。
+     * @param staleTablePatch 宣告效果是否以過時的供託值作為預期舊值。
      */
     private class Fixture(
         malicious: Boolean = false,
@@ -78,6 +95,8 @@ class DeclareAndDiscardUseCaseTest {
         revealWallTile: Boolean = false,
         tsumoAvailable: Boolean = false,
         hookMode: HookMode? = null,
+        discardComponents: ComponentSet = ComponentSet.EMPTY,
+        staleTablePatch: Boolean = false,
     ) {
         /** 宣告者身分。 */
         val playerId = Uuid.random()
@@ -98,13 +117,13 @@ class DeclareAndDiscardUseCaseTest {
             discardPile = RiichiDiscardPile(),
         ).copy(score = 100, mustDiscardAfterMeld = mustDiscardAfterMeld)
 
-        /** 保有規則動態狀態的宣告前桌況。 */
+        /** 保有對局組件的宣告前桌況。 */
         val table: TableState = FakeTableStateFactory.create(
             id = gameId,
             players = listOf(player),
             config = RiichiRuleConfig(),
             currentPlayerIndex = 0,
-            dynamicRuleState = RiichiDynamicState(riichiStickCount = 2),
+            components = riichiTableComponents(potPoints = 2000),
         )
 
         /** 記錄權威寫入與歷史的測試倉庫。 */
@@ -113,9 +132,9 @@ class DeclareAndDiscardUseCaseTest {
         /** 登記第三方宣告規則的正式模組註冊表。 */
         private val modules = MahjongModuleRegistryImpl().apply {
             register(
-                MahjongModuleDefinition(RiichiRuleConfig::class, "test:declaration") { config, _ ->
+                MahjongModuleDefinition(RiichiRuleConfig::class, DECLARATION_RULE_ID) { config, _ ->
                     DeclarationRule(
-                        delegate = RiichiRuleModule("test:declaration", config),
+                        delegate = RiichiRuleModule(DECLARATION_RULE_ID, config),
                         malicious = malicious,
                         cost = cost,
                         wallRevealCheckpoints = wallRevealCheckpoints,
@@ -123,6 +142,8 @@ class DeclareAndDiscardUseCaseTest {
                         revealWallTile = revealWallTile,
                         tsumoAvailable = tsumoAvailable,
                         hookMode = hookMode,
+                        discardComponents = discardComponents,
+                        staleTablePatch = staleTablePatch,
                     )
                 },
             )
@@ -138,11 +159,14 @@ class DeclareAndDiscardUseCaseTest {
         /** 保存同步快照的替身。 */
         val snapshots = FakeGameSnapshotRepository()
 
+        /** 掛勾與牌牆公開使用同一份組件登記。 */
+        private val componentRegistry = bundledCoreExtensionRegistries(additionalExtensions = listOf(hookExtension)).componentRegistry
+
         /** 使用正式可見性投影的同步服務。 */
         private val snapshotSynchronizer = GameSnapshotSynchronizer(
             repository,
             snapshots,
-            GameVisibilityPolicyImpl(modules),
+            GameVisibilityPolicyImpl(modules, componentRegistry = componentRegistry),
         )
 
         /** 受測的共用宣告用例。 */
@@ -154,6 +178,8 @@ class DeclareAndDiscardUseCaseTest {
             postActionExhaustiveDrawResolverRegistry = PostActionExhaustiveDrawResolverRegistry().apply { freeze() },
             eventPublisher = eventPublisher,
             presentationPublisher = presentationPublisher,
+
+            componentRegistry = componentRegistry,
         )
     }
 
@@ -164,7 +190,7 @@ class DeclareAndDiscardUseCaseTest {
         fixture.repository.setTableState(fixture.table)
         fixture.snapshots.setSnapshot(
             fixture.playerId,
-            fixture.table.toSnapshot(setOf(fixture.playerId), setAsideTiles = { emptyList() }),
+            fixture.table.toSnapshot(setOf(fixture.playerId)),
         )
 
         val result = fixture.repository.runAsSingleWrite(fixture.gameId) {
@@ -181,7 +207,7 @@ class DeclareAndDiscardUseCaseTest {
         assertEquals(listOf(GameAction.Extension(DeclarationAction), GameAction.Discard(fixture.tile.id)), updated.actionHistory)
         assertEquals(listOf(fixture.tile.id), updated.discardPile.entries.map { it.tile.id })
         assertEquals(85, updated.score)
-        assertEquals(fixture.table.dynamicRuleState, fixture.repository.getTableState(fixture.gameId)?.dynamicRuleState)
+        assertEquals(fixture.table.components, fixture.repository.getTableState(fixture.gameId)?.components)
         val actions = fixture.repository.historyDrafts.map { assertIs<HistoryFact.ActionAccepted>(it.fact).action }
         assertEquals(updated.actionHistory, actions)
         assertEquals(actions, fixture.eventPublisher.getNotifiedActions(fixture.gameId, fixture.playerId, fixture.playerId))
@@ -266,14 +292,14 @@ class DeclareAndDiscardUseCaseTest {
 
         assertIs<Outcome.Success<Unit>>(result)
         val player = fixture.repository.getTableState(fixture.gameId)!!.players.single()
-        assertEquals(HookTrail(listOf(DECLINED_WIN_MARK, DISCARDED_MARK, DECLARED_MARK)), player.playerRuleState)
+        assertEquals(HookTrail(listOf(DECLINED_WIN_MARK, DISCARDED_MARK, DECLARED_MARK)), player.components[hookTrailComponent])
         assertEquals(100 - 15, player.score)
     }
 
-    /** 放棄自摸或打牌後的掛勾只能修改規則狀態；改動分數時中止，桌況保持不變。 */
+    /** 放棄自摸或打牌後的掛勾回傳舊值已過時的變更時中止，桌況保持不變。 */
     @Test
-    fun `discard hook that changes the score is rejected atomically`() = runTest {
-        val fixture = Fixture(tsumoAvailable = true, hookMode = HookMode.CHANGE_SCORE)
+    fun `discard hook with a stale component change is rejected atomically`() = runTest {
+        val fixture = Fixture(tsumoAvailable = true, hookMode = HookMode.STALE_PATCH)
         fixture.repository.setTableState(fixture.table)
 
         assertFailsWith<RuleContractViolationException> {
@@ -288,9 +314,9 @@ class DeclareAndDiscardUseCaseTest {
         assertTrue(fixture.repository.historyDrafts.isEmpty())
     }
 
-    /** 第三方 policy 不能藉宣告效果修改未授權的玩家欄位，拒絕時桌況保持不變。 */
+    /** 宣告效果的玩家變更帶著其他對象的組件時中止，桌況保持不變。 */
     @Test
-    fun `unauthorized declaration effect is rejected atomically`() = runTest {
+    fun `declaration effect with a component of another owner is rejected atomically`() = runTest {
         val fixture = Fixture(malicious = true)
         fixture.repository.setTableState(fixture.table)
 
@@ -309,24 +335,114 @@ class DeclareAndDiscardUseCaseTest {
         assertTrue(fixture.presentationPublisher.getDeclaredGameActions(fixture.gameId).isEmpty())
     }
 
+    /** 新捨牌紀錄沒有規則寫入的值時，帶上登記的初值。 */
+    @Test
+    fun `declaration discard record receives registered initial values`() = runTest {
+        val fixture = Fixture()
+        fixture.repository.setTableState(fixture.table)
+
+        val result = fixture.declare()
+
+        assertIs<Outcome.Success<Unit>>(result)
+        val entry = fixture.repository.getTableState(fixture.gameId)!!.players.single().discardPile.entries.single()
+        assertEquals(INITIAL_DISCARD_NOTE, entry.components[discardNoteComponent])
+    }
+
+    /** 宣告打牌與一般打牌相同：打牌後的掛勾看到的新捨牌紀錄已帶登記的初值。 */
+    @Test
+    fun `discard hook sees the initialized declaration discard record`() = runTest {
+        val fixture = Fixture(hookMode = HookMode.RECORD_DISCARD_NOTE)
+        fixture.repository.setTableState(fixture.table)
+
+        val result = fixture.declare()
+
+        assertIs<Outcome.Success<Unit>>(result)
+        val player = fixture.repository.getTableState(fixture.gameId)!!.players.single()
+        assertEquals(HookTrail(listOf("note:$INITIAL_DISCARD_NOTE", DECLARED_MARK)), player.components[hookTrailComponent])
+    }
+
+    /** 規則寫在新捨牌紀錄上的值優先於登記的初值。 */
+    @Test
+    fun `declaration discard record keeps the value written by the rule`() = runTest {
+        val fixture = Fixture(discardComponents = ComponentSet.EMPTY.with(discardNoteComponent, "declared"))
+        fixture.repository.setTableState(fixture.table)
+
+        val result = fixture.declare()
+
+        assertIs<Outcome.Success<Unit>>(result)
+        val entry = fixture.repository.getTableState(fixture.gameId)!!.players.single().discardPile.entries.single()
+        assertEquals("declared", entry.components[discardNoteComponent])
+    }
+
+    /** 新捨牌紀錄帶著不屬於目前規則的資料時中止，桌況保持不變。 */
+    @Test
+    fun `declaration discard record with a component of another rule is rejected atomically`() = runTest {
+        val fixture = Fixture(discardComponents = ComponentSet.EMPTY.with(otherRuleDiscardComponent, true))
+        fixture.repository.setTableState(fixture.table)
+
+        val failure = assertFailsWith<RuleContractViolationException> { fixture.declare() }
+
+        assertTrue(failure.message.orEmpty().contains("declarationDiscardPolicy"))
+        assertEquals(fixture.table, fixture.repository.getTableState(fixture.gameId))
+        assertTrue(fixture.repository.historyDrafts.isEmpty())
+    }
+
+    /** 打牌後掛勾寫入不屬於目前規則的玩家資料時，在掛勾當下就中止。 */
+    @Test
+    fun `discard hook writing a player component of another rule is rejected at the hook`() = runTest {
+        val fixture = Fixture(hookMode = HookMode.WRITE_OTHER_RULE_COMPONENT)
+        fixture.repository.setTableState(fixture.table)
+
+        val failure = assertFailsWith<RuleContractViolationException> { fixture.declare() }
+
+        assertTrue(failure.message.orEmpty().contains("onPlayerDiscarded"))
+        assertEquals(fixture.table, fixture.repository.getTableState(fixture.gameId))
+    }
+
+    /** 宣告效果的對局變更帶著過時的舊值時中止，不覆寫目前的供託。 */
+    @Test
+    fun `stale declaration table patch is rejected atomically`() = runTest {
+        val fixture = Fixture(staleTablePatch = true)
+        fixture.repository.setTableState(fixture.table)
+
+        val failure = assertFailsWith<RuleContractViolationException> { fixture.declare() }
+
+        assertTrue(failure.message.orEmpty().contains("Stale component patch"))
+        assertEquals(fixture.table, fixture.repository.getTableState(fixture.gameId))
+    }
+
     /**
-     * 只記錄已公開牌山牌張的測試動態狀態。
+     * 以測試宣告動作打出選取的牌。
+     *
+     * @return 用例結果。
+     */
+    private suspend fun Fixture.declare(): Outcome<Unit, *> = useCase(
+        gameId = gameId,
+        playerId = playerId,
+        action = Extension(DeclarationAction),
+        tileId = tile.id,
+    )
+
+    /**
+     * 記錄規則額外翻開的牌山牌張。
      *
      * @property revealedTileIds 已公開的牌山牌張 ID。
      */
-    private data class RevealedWallState(val revealedTileIds: Set<Uuid>) :
-        DynamicRuleState,
-        TileWallRevealable {
-        override fun getVisibleTileIds(state: TableState): Set<Uuid> = revealedTileIds
-    }
+    private data class RevealedWallState(val revealedTileIds: Set<Uuid>)
 
     /** 放棄自摸與打牌後掛勾的測試行為。 */
     private enum class HookMode {
         /** 在規則狀態依序記下執行過的掛勾。 */
         RECORD_ORDER,
 
-        /** 違反契約，直接修改分數。 */
-        CHANGE_SCORE,
+        /** 違反契約，回傳舊值已過時的變更。 */
+        STALE_PATCH,
+
+        /** 打牌後寫入只屬於其他規則的玩家資料。 */
+        WRITE_OTHER_RULE_COMPONENT,
+
+        /** 打牌後記下新捨牌紀錄當時帶的標記。 */
+        RECORD_DISCARD_NOTE,
     }
 
     /**
@@ -334,10 +450,108 @@ class DeclareAndDiscardUseCaseTest {
      *
      * @property marks 依執行順序排列的記號。
      */
-    private data class HookTrail(val marks: List<String>) : PlayerRuleState
+    private data class HookTrail(val marks: List<String>)
 
     /** [HookTrail] 使用的記號。 */
     private companion object {
+        /** 記錄規則額外翻開的牌山牌張。 */
+        val wallRevealComponent = ComponentType(
+            id = "test:wall_reveals",
+            valueClass = RevealedWallState::class,
+            copyValue = { it.copy(revealedTileIds = it.revealedTileIds.toSet()) },
+            target = BuiltInComponentOwners.TABLE,
+        )
+
+        /** 掛勾順序的私人測試資料，不投影到觀察者快照。 */
+        val hookTrailComponent = ComponentType(
+            id = "test:hook_trail",
+            valueClass = HookTrail::class,
+            copyValue = { it.copy(marks = it.marks.toList()) },
+            target = BuiltInComponentOwners.PLAYER,
+        )
+
+        /** 新捨牌紀錄的測試資料，有登記初值。 */
+        val discardNoteComponent = ComponentType(
+            id = "test:discard_note",
+            valueClass = String::class,
+            copyValue = { it },
+            target = BuiltInComponentOwners.DISCARD_ENTRY,
+        )
+
+        /** 只適用其他規則的捨牌紀錄資料。 */
+        val otherRuleDiscardComponent = ComponentType(
+            id = "test:other_rule_discard",
+            valueClass = Boolean::class,
+            copyValue = { it },
+            target = BuiltInComponentOwners.DISCARD_ENTRY,
+        )
+
+        /** 只適用其他規則的玩家資料。 */
+        val otherRulePlayerComponent = ComponentType(
+            id = "test:other_rule_player",
+            valueClass = Boolean::class,
+            copyValue = { it },
+            target = BuiltInComponentOwners.PLAYER,
+        )
+
+        /** 新捨牌紀錄的登記初值。 */
+        const val INITIAL_DISCARD_NOTE = "initial"
+
+        /** 受測宣告規則的識別碼。 */
+        const val DECLARATION_RULE_ID = "test:declaration"
+
+        /** 透過正式登記入口加入受測組件與生命週期。 */
+        val hookExtension = object : MahjongExtension {
+            override val id: String = "test:hook_trail_extension"
+            override fun registerRuleModules(registry: MahjongModuleRegistry) = Unit
+            override fun registerNetworkDtos(registries: NetworkDtoRegistries) = Unit
+            override fun registerPersistenceDtos(registries: PersistenceRegistries) = Unit
+            override fun registerComponents(registry: ComponentRegistry) {
+                registry.register(hookTrailComponent)
+                registry.register(wallRevealComponent)
+                registry.register(discardNoteComponent)
+                registry.register(otherRuleDiscardComponent)
+                registry.register(otherRulePlayerComponent)
+                registry.registerLifecycle(lifecycle(hookTrailComponent, BuiltInComponentOwners.PLAYER, appliesToDeclarationRule = true))
+                registry.registerLifecycle(lifecycle(wallRevealComponent, BuiltInComponentOwners.TABLE, appliesToDeclarationRule = true))
+                registry.registerLifecycle(
+                    lifecycle(
+                        component = discardNoteComponent,
+                        ownerType = BuiltInComponentOwners.DISCARD_ENTRY,
+                        appliesToDeclarationRule = true,
+                        initialValue = INITIAL_DISCARD_NOTE,
+                    ),
+                )
+                registry.registerLifecycle(lifecycle(otherRuleDiscardComponent, BuiltInComponentOwners.DISCARD_ENTRY, appliesToDeclarationRule = false))
+                registry.registerLifecycle(lifecycle(otherRulePlayerComponent, BuiltInComponentOwners.PLAYER, appliesToDeclarationRule = false))
+            }
+        }
+
+        /**
+         * 建立只在指定規則適用的選用組件生命週期。
+         *
+         * @param O 對象型別。
+         * @param V 值型別。
+         * @param component 組件定義。
+         * @param ownerType 對象定義。
+         * @param appliesToDeclarationRule 是否適用受測的宣告規則；否則只適用其他規則。
+         * @param initialValue 新對象的初值；null 時不建立。
+         * @return 每局重建的生命週期。
+         */
+        fun <O : Any, V : Any> lifecycle(
+            component: ComponentType<V>,
+            ownerType: ComponentOwnerType<O>,
+            appliesToDeclarationRule: Boolean,
+            initialValue: V? = null,
+        ): ComponentLifecycleDefinition<O, V> = ComponentLifecycleDefinition(
+            component = component,
+            ownerType = ownerType,
+            appliesTo = { ruleModuleId, _ -> (ruleModuleId == DECLARATION_RULE_ID) == appliesToDeclarationRule },
+            required = false,
+            roundTransition = ComponentRoundTransition.RESET,
+            initialValue = { initialValue },
+        )
+
         /** 放棄自摸掛勾的記號。 */
         const val DECLINED_WIN_MARK = "declined_win"
 
@@ -348,25 +562,36 @@ class DeclareAndDiscardUseCaseTest {
         const val DECLARED_MARK = "declared"
 
         /**
-         * 在玩家的 [HookTrail] 後面加上一個記號。
+         * 建立在玩家的 [HookTrail] 後面加上一個記號的變更。
          *
          * @param mark 要加上的記號。
-         * @return 規則狀態加上記號後的玩家。
+         * @return 帶著目前記號作為舊值的變更。
          */
-        fun MahjongPlayer.withMark(mark: String): MahjongPlayer = copy(playerRuleState = HookTrail((playerRuleState as? HookTrail)?.marks.orEmpty() + mark))
+        fun MahjongPlayer.markPatch(mark: String): ComponentPatch = ComponentPatch.basedOn(
+            current = components,
+            values = ComponentSet.EMPTY.with(hookTrailComponent, HookTrail(components[hookTrailComponent]?.marks.orEmpty() + mark)),
+        )
+
+        /** 預期玩家已有記號、實際沒有的過時變更。 */
+        val STALE_MARK_PATCH = ComponentPatch(
+            removals = setOf(hookTrailComponent),
+            expected = ComponentSet.EMPTY.with(hookTrailComponent, HookTrail(listOf("stale"))),
+        )
     }
 
     /**
      * 只覆寫第三方宣告接點，其餘規則行為委派給日麻模組。
      *
      * @property delegate 提供其他純規則能力的模組。
-     * @property malicious 是否故意回傳錯誤分數。
+     * @property malicious 是否故意把對局組件當成玩家組件交回。
      * @property cost 宣告的實際成本。
      * @property wallRevealCheckpoints 記錄共用流程實際執行的牌牆公開檢查點。
      * @property rejectWallReveal 是否由規則拒絕本次牌牆公開檢查。
      * @property revealWallTile 是否在牌牆公開檢查公開牌山第一張牌。
      * @property tsumoAvailable 合法動作是否包含自摸。
      * @property hookMode 放棄自摸與打牌後掛勾的測試行為；null 時沿用日麻掛勾。
+     * @property discardComponents 宣告效果寫在新捨牌紀錄上的組件。
+     * @property staleTablePatch 宣告效果是否以過時的供託值作為預期舊值。
      */
     private class DeclarationRule(
         private val delegate: MahjongRuleModule<RiichiRuleConfig>,
@@ -377,14 +602,24 @@ class DeclareAndDiscardUseCaseTest {
         private val revealWallTile: Boolean,
         private val tsumoAvailable: Boolean,
         private val hookMode: HookMode?,
+        private val discardComponents: ComponentSet,
+        private val staleTablePatch: Boolean,
     ) : MahjongRuleModule<RiichiRuleConfig> by delegate {
+        override fun describeTileComponents(tableState: TableState): List<TileComponentDescription> = delegate.describeTileComponents(tableState) + tableState.components[wallRevealComponent]?.revealedTileIds.orEmpty().map { tileId ->
+            TileComponentDescription(
+                tileId = tileId,
+                components = ComponentSet.EMPTY.with(BuiltInTileComponents.FACE_ACCESS, TileFaceAccess.Public)
+                    .with(BuiltInTileComponents.POSE, TilePose.FACE_UP),
+            )
+        }
+
         override fun createWallRevealPolicy(): WallRevealPolicy = WallRevealPolicy { context ->
             wallRevealCheckpoints += context.checkpoint
             when {
                 rejectWallReveal -> WallRevealDecision.Rejected("test:wall_reveal_rejected")
                 revealWallTile -> context.tableState.tileWall.getAllTiles().first().id.let { revealedId ->
                     WallRevealDecision.Updated(
-                        dynamicRuleState = RevealedWallState(setOf(revealedId)),
+                        tableComponents = ComponentPatch(values = ComponentSet.EMPTY.with(wallRevealComponent, RevealedWallState(setOf(revealedId)))),
                         newlyRevealedTileIds = setOf(revealedId),
                     )
                 }
@@ -392,15 +627,18 @@ class DeclareAndDiscardUseCaseTest {
             }
         }
 
-        override fun onPlayerDeclinedWin(player: MahjongPlayer): MahjongPlayer = when (hookMode) {
-            HookMode.RECORD_ORDER -> player.withMark(DECLINED_WIN_MARK)
-            HookMode.CHANGE_SCORE -> player.copy(score = player.score - 1)
+        override fun onPlayerDeclinedWin(player: MahjongPlayer): ComponentPatch = when (hookMode) {
+            HookMode.RECORD_ORDER -> player.markPatch(DECLINED_WIN_MARK)
+            HookMode.STALE_PATCH -> STALE_MARK_PATCH
+            HookMode.WRITE_OTHER_RULE_COMPONENT, HookMode.RECORD_DISCARD_NOTE -> ComponentPatch()
             null -> delegate.onPlayerDeclinedWin(player)
         }
 
-        override fun onPlayerDiscarded(player: MahjongPlayer): MahjongPlayer = when (hookMode) {
-            HookMode.RECORD_ORDER -> player.withMark(DISCARDED_MARK)
-            HookMode.CHANGE_SCORE -> player
+        override fun onPlayerDiscarded(player: MahjongPlayer): ComponentPatch = when (hookMode) {
+            HookMode.RECORD_ORDER -> player.markPatch(DISCARDED_MARK)
+            HookMode.STALE_PATCH -> ComponentPatch()
+            HookMode.WRITE_OTHER_RULE_COMPONENT -> ComponentPatch(values = ComponentSet.EMPTY.with(otherRulePlayerComponent, true))
+            HookMode.RECORD_DISCARD_NOTE -> player.markPatch("note:${player.discardPile.entries.last().components[discardNoteComponent]}")
             null -> delegate.onPlayerDiscarded(player)
         }
 
@@ -418,16 +656,23 @@ class DeclareAndDiscardUseCaseTest {
             }
         }
 
-        override fun declarationDiscardPolicy(): DeclarationDiscardPolicy = DeclarationDiscardPolicy { state, player, _, discard ->
-            val discardPile = (player.discardPile as RiichiDiscardPile).discard(RiichiDiscardEntry(discard.tile))
+        override fun declarationDiscardPolicy(): DeclarationDiscardPolicy = DeclarationDiscardPolicy { state, player, _, _ ->
             DeclarationDiscardEffect(
-                dynamicRuleState = state.dynamicRuleState,
+                tableComponents = if (staleTablePatch) {
+                    ComponentPatch(
+                        values = ComponentSet.EMPTY.with(RiichiTableComponents.POT_POINTS, 0),
+                        expected = ComponentSet.EMPTY.with(RiichiTableComponents.POT_POINTS, state.riichiPotPoints() + 1000),
+                    )
+                } else {
+                    ComponentPatch()
+                },
                 cost = cost,
-                player = player.copy(
-                    hand = discard.hand,
-                    discardPile = discardPile,
-                    score = if (malicious) player.score + 1 else player.score - cost,
-                ).let { updated -> if (updated.playerRuleState is HookTrail) updated.withMark(DECLARED_MARK) else updated },
+                playerComponents = when {
+                    malicious -> ComponentPatch(values = ComponentSet.EMPTY.with(wallRevealComponent, RevealedWallState(emptySet())))
+                    player.components[hookTrailComponent] != null -> player.markPatch(DECLARED_MARK)
+                    else -> ComponentPatch()
+                },
+                discardComponents = discardComponents,
             )
         }
     }

@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.di
 
+import com.doublemoon1119.mahjongcraft.flow.common.game.event.GameEventPublicMarkerResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.common.game.repository.GameSnapshotRepository
 import com.doublemoon1119.mahjongcraft.flow.common.game.repository.GameSnapshotRepositoryImpl
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.WinCelebrationCueResolverRegistry
@@ -7,6 +8,8 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.service.WinCelebrationCu
 import com.doublemoon1119.mahjongcraft.flow.common.room.repository.RoomSnapshotRepository
 import com.doublemoon1119.mahjongcraft.flow.common.room.repository.RoomSnapshotRepositoryImpl
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.RuleDecisionResolverRegistry
+import com.doublemoon1119.mahjongcraft.logic.component.ComponentRegistry
+import com.doublemoon1119.mahjongcraft.logic.component.ComponentRegistryImpl
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
 import com.doublemoon1119.mahjongcraft.logic.tile.TileTypeRegistry
@@ -25,10 +28,12 @@ import org.koin.plugin.module.dsl.single
 val flowCommonModule = module {
     single<MahjongModuleRegistry> { MahjongModuleRegistryImpl() }
     single<TileTypeRegistry> { TileTypeRegistryImpl() }
+    single<ComponentRegistry> { ComponentRegistryImpl() }
 
     single<GameSnapshotRepositoryImpl>() bind GameSnapshotRepository::class
     single<WinCelebrationCueResolverRegistryImpl>() bind WinCelebrationCueResolverRegistry::class
 
     single<RoomSnapshotRepositoryImpl>() bind RoomSnapshotRepository::class
     single<RuleDecisionResolverRegistry>()
+    single<GameEventPublicMarkerResolverRegistry>()
 }

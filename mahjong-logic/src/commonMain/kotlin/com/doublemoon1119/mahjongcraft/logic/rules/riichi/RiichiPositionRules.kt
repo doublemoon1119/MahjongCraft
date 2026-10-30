@@ -5,17 +5,17 @@ import com.doublemoon1119.mahjongcraft.logic.base.Hand
 import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
 import com.doublemoon1119.mahjongcraft.logic.base.MeldType
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
+import com.doublemoon1119.mahjongcraft.logic.base.TileValue
 import com.doublemoon1119.mahjongcraft.logic.judgment.ShantenResult
 import com.doublemoon1119.mahjongcraft.logic.module.DeclarationEffect
 import com.doublemoon1119.mahjongcraft.logic.module.PositionRules
 import com.doublemoon1119.mahjongcraft.logic.module.PositionView
 import com.doublemoon1119.mahjongcraft.logic.module.RonExclusions
 import com.doublemoon1119.mahjongcraft.logic.module.WinValue
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.RiichiTileInterpretationPolicy
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.riichiCanonical
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.RiichiTileComponentViews
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.RiichiTileComponents
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.dora.getNextDora
 import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayerSnapshot
-import com.doublemoon1119.mahjongcraft.logic.table.PlayerRuleState
 import kotlin.uuid.Uuid
 
 /**
@@ -42,22 +42,22 @@ class RiichiPositionRules(
     override fun winValue(
         view: PositionView,
         hand: Hand,
-        winningTile: Tile,
+        winningTile: TileValue,
         isTsumo: Boolean,
         declarations: Set<GameAction.Extension>,
     ): WinValue {
-        val completed = Hand(tiles = hand.tiles + IdentifiedTile(Uuid.NIL, winningTile), melds = hand.melds)
+        val completed = Hand(tiles = hand.tiles + IdentifiedTile(id = Uuid.NIL, tile = winningTile.tile, components = winningTile.components), melds = hand.melds)
         if (shantenCalculator.calculate(completed) != ShantenResult.Complete) return WinValue.NotWinnable
 
         val self = view.evaluator
-        val riichiState = self.playerRuleState.toRiichiStateForSelf() ?: RiichiPlayerState()
-        val declaresRiichi = !riichiState.isRiichi && declarations.any { it.value == RiichiGameAction.Riichi }
-        if (!isTsumo && isFuriten(self, riichiState, hand)) return WinValue.NotWinnable
+        val declaration = self.riichiDeclaration
+        val declaresRiichi = declaration == null && declarations.any { it.value == RiichiGameAction.Riichi }
+        if (!isTsumo && isFuriten(self, hand)) return WinValue.NotWinnable
 
         val result = handValueCalculator.calculate(
             RiichiHandValueContext.forPlayer(
                 config = config,
-                riichiState = riichiState,
+                declaration = declaration,
                 hand = hand,
                 winningTile = winningTile,
                 isTsumo = isTsumo,
@@ -65,6 +65,8 @@ class RiichiPositionRules(
                 seatWind = self.seatWind,
                 isDealer = view.snapshot.dealerPlayerId == self.id,
                 doraIndicators = visibleDoraIndicators(view),
+                paoLiability = self.componentViews[RiichiPlayerComponentViews.PAO_LIABILITY],
+                nukiDoraTiles = self.tileAreas.firstOrNull { it.id == RiichiPlayerTileAreaIds.NORTH }?.tiles.orEmpty().mapNotNull { it.tile },
             ).let { context -> if (declaresRiichi) context.copy(isRiichi = true) else context },
         )
         if (!result.qualifyingHan().satisfies(config.minimumWinConstraint)) return WinValue.NotWinnable
@@ -82,51 +84,41 @@ class RiichiPositionRules(
     /** 尚未立直、門清（暗槓不算副露）且點數足夠支付立直棒時，聽牌後可以立直。 */
     override fun prospectiveDeclarations(view: PositionView, hand: Hand): Set<GameAction.Extension> {
         val self = view.evaluator
-        val isRiichi = self.playerRuleState.isRiichiForView()
+        val isRiichi = self.riichiDeclaration != null
         val isClosed = hand.melds.all { it.type == MeldType.CLOSED_KAN }
         return if (!isRiichi && isClosed && self.score >= RIICHI_STICK_POINTS) setOf(RIICHI_GAME_ACTION) else emptySet()
     }
 
     override fun ronExclusions(view: PositionView, opponentId: Uuid): RonExclusions {
         val opponent = view.player(opponentId)
-        val ownDiscards = opponent.discardPile.entries.mapTo(mutableSetOf()) { it.tile.tile.riichiCanonical }
-        val declarationIndex = opponent.discardPile.entries.indexOfFirst { (it as? RiichiDiscardEntry)?.isRiichi == true }
-        val isRiichi = opponent.playerRuleState.isRiichiForView()
+        val ownDiscards = opponent.discardPile.entries.mapNotNullTo(mutableSetOf()) { it.tile.tile }
+        val declarationIndex = opponent.discardPile.entries.indexOfFirst { RiichiHistoryDiscardMarkerIds.RIICHI_DECLARED in it.publicMarkerIds }
+        val isRiichi = opponent.riichiDeclaration != null
         if (!isRiichi || declarationIndex < 0) return RonExclusions(ownDiscards = ownDiscards)
         val callCount = view.snapshot.players.sumOf { player -> player.hand.melds.count { it.sourceTile != null } }
         val passed = view.snapshot.players
             .filter { it.id != opponentId }
             .flatMap { player -> player.discardPile.entries.drop(declarationIndex + 1 + 2 * callCount) }
-            .mapTo(mutableSetOf()) { it.tile.tile.riichiCanonical }
+            .mapNotNullTo(mutableSetOf()) { it.tile.tile }
         return RonExclusions(ownDiscards = ownDiscards, passedAfterDeclaration = passed)
     }
 
     /** 已經立直的對手宣告立直時打出的牌。 */
     override fun declarationTile(view: PositionView, opponentId: Uuid): Tile? {
         val opponent = view.player(opponentId)
-        if (!opponent.playerRuleState.isRiichiForView()) return null
+        if (opponent.riichiDeclaration == null) return null
         return opponent.discardPile.entries
-            .firstOrNull { (it as? RiichiDiscardEntry)?.isRiichi == true }
+            .firstOrNull { RiichiHistoryDiscardMarkerIds.RIICHI_DECLARED in it.publicMarkerIds }
             ?.tile
             ?.tile
-            ?.riichiCanonical
     }
 
     /** 移出手牌的牌是拔出的北，另外記進評估者的拔北寶牌。 */
-    override fun afterTileSetAside(view: PositionView, tileId: Uuid): PositionView {
-        val moved = view.withTileSetAside(tileId)
-        val self = moved.evaluator
-        val movedState = when (val state = self.playerRuleState) {
-            is RiichiPlayerState -> state.copy(nukiDoraTiles = state.nukiDoraTiles + self.setAsideTiles.last())
-            is RiichiPlayerStateSnapshot -> state.copy(nukiDoraTiles = state.nukiDoraTiles + self.setAsideTiles.last())
-            else -> RiichiPlayerState(nukiDoraTiles = listOf(self.setAsideTiles.last()))
-        }
-        return moved.withEvaluator(self.copy(playerRuleState = movedState))
-    }
+    override fun afterTileSetAside(view: PositionView, tileId: Uuid): PositionView = view.withTileSetAside(tileId, RiichiPlayerTileAreaIds.NORTH)
 
-    override fun bonusTileCount(view: PositionView, tile: Tile): Int {
+    override fun bonusTileCount(view: PositionView, tile: TileValue): Int {
         val doraTiles = visibleDoraIndicators(view).map { getNextDora(it, config.usesThreePlayerTiles) }
-        return doraTiles.count { it == tile.riichiCanonical } + if (RiichiTileInterpretationPolicy.isRedDora(tile)) 1 else 0
+        return doraTiles.count { it == tile.tile } + if (tile.components[RiichiTileComponents.RED_DORA] != null) 1 else 0
     }
 
     /**
@@ -149,19 +141,17 @@ class RiichiPositionRules(
      * 判定評估者是否因捨牌或永久振聽而無法榮和，不判定同巡振聽。
      *
      * @param self 評估者的公開及自身資料。
-     * @param riichiState 評估者的立直規則狀態。
      * @param hand 尚未加入和牌張的手牌。
      * @return 永久振聽或等待牌含自己捨牌時為 true。
      */
     private fun isFuriten(
         self: MahjongPlayerSnapshot,
-        riichiState: RiichiPlayerState,
         hand: Hand,
     ): Boolean {
-        if (riichiState.isPermanentlyFuriten) return true
+        if (self.componentViews[RiichiPlayerComponentViews.PERMANENT_FURITEN] != null) return true
         val waits = (shantenCalculator.calculate(hand) as? ShantenResult.Tenpai)?.winningTiles ?: return false
-        val furitenTiles = riichiState.getFuritenTiles(self.discardPile, passedTilesInRound = emptySet())
-        return waits.any { it.riichiCanonical in furitenTiles }
+        val furitenTiles = self.discardPile.entries.mapNotNull { it.tile.tile }.toSet()
+        return waits.any { it in furitenTiles }
     }
 
     /**
@@ -170,34 +160,13 @@ class RiichiPositionRules(
      * @param view 目前評估局面。
      * @return 保持快照順序的公開牌種。
      */
-    private fun visibleDoraIndicators(view: PositionView): List<Tile> = view.snapshot.tileWall.tiles.mapNotNull { it.tile }
+    private fun visibleDoraIndicators(view: PositionView): List<Tile> = view.snapshot.tileWall.tiles.filter { it.face?.views?.get(RiichiTileComponentViews.DORA_INDICATOR) != null }.mapNotNull { it.tile }
 
     /**
      * 取得場上尚未被收下的立直棒數。
      *
      * @param view 目前評估局面。
-     * @return 立直棒數；缺少立直動態狀態時為零。
+     * @return 公開供託點數換算的立直棒數。
      */
-    private fun riichiStickCount(view: PositionView): Int = (view.snapshot.dynamicRuleState as? RiichiDynamicState)?.riichiStickCount ?: 0
-
-    /** 從權威狀態或觀察者快照讀取已公開的立直狀態。 */
-    private fun PlayerRuleState?.isRiichiForView(): Boolean = when (this) {
-        is RiichiPlayerState -> isRiichi
-        is RiichiPlayerStateSnapshot -> isRiichi
-        else -> false
-    }
-
-    /** 將本人快照狀態轉成計算器使用的完整日麻狀態。 */
-    private fun PlayerRuleState?.toRiichiStateForSelf(): RiichiPlayerState? = when (this) {
-        is RiichiPlayerState -> this
-        is RiichiPlayerStateSnapshot -> RiichiPlayerState(
-            riichiTile = riichiTile,
-            doubleRiichiTile = doubleRiichiTile,
-            isIppatsu = isIppatsu == true,
-            paoLiability = paoLiability,
-            isPermanentlyFuriten = isPermanentlyFuriten == true,
-            nukiDoraTiles = nukiDoraTiles,
-        )
-        else -> null
-    }
+    private fun riichiStickCount(view: PositionView): Int = requireNotNull(view.snapshot.componentViews[RiichiTableComponentViews.POT_POINTS]) { "Riichi position is missing public pot points" } / RIICHI_STICK_POINTS
 }

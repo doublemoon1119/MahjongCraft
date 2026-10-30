@@ -9,7 +9,6 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.AppliedActionScori
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementPresentationRequest
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
-import com.doublemoon1119.mahjongcraft.logic.table.TileWallRevealable
 import kotlin.uuid.Uuid
 
 /**
@@ -29,8 +28,9 @@ fun acceptedActionHistoryDraft(
     after: TableState,
     affectedTileIds: List<Uuid> = emptyList(),
 ): HistoryEventDraft {
-    val beforeRevealed = (before.dynamicRuleState as? TileWallRevealable)?.getVisibleTileIds(before).orEmpty()
-    val afterRevealed = (after.dynamicRuleState as? TileWallRevealable)?.getVisibleTileIds(after).orEmpty()
+    val beforeRevealed = before.publicTileEvidenceIds
+    val wallTileIds = (after.tileWall.getAllTiles() + after.reservedWallTiles).mapTo(mutableSetOf()) { it.id }
+    val afterRevealed = after.publicTileEvidenceIds.intersect(wallTileIds)
     return HistoryEventDraft(
         actorPlayerId = actorPlayerId,
         fact = HistoryFact.ActionAccepted(

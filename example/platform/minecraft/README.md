@@ -6,12 +6,13 @@ It uses the same compiler, Java and Minecraft version policies as the main proje
 ## Structure
 
 - [Platform-independent extension](../../mahjong-extension/README.md): common Kotlin code.
-- [Minecraft common](common/README.md): shared presentation and resources.
+- [Minecraft common](common/README.md): shared presentation and resources, with a
+  [registration map](common/README.md#registration-map) for extension authors.
 - Version/loader adapters: for example, the currently available
   [Fabric 1.20.1 adapter](v1.20.1/fabric/README.md) supplies native entrypoints and furniture.
 
 The common extension registers the pairing rule, custom tile and Tsumogiri strategy.
-Minecraft presentation adds room settings, declaration and exchange prompts, settlement text,
+Minecraft presentation adds room settings, hand-reveal and exchange prompts, settlement text,
 and the inverted one-character tile's resources in four languages.
 Native furniture demonstrates both block-backed and entity-backed seats. Public game events are
 printed to online administrators' chat so their supplied fields can be inspected in game.
@@ -126,3 +127,39 @@ from a normally completed match. Do not use debug commands for the ordinary even
 The example demonstrates usable seat APIs. The public API ABI check records the seating
 contracts for the adapter being verified; it does not promise compatibility with another version
 or loader, and it does not cover unrelated rule, AI or appearance types.
+
+## Bonus tiles and table props
+
+The pairing rule saves `m - 1` bonus ranks when a round starts, where `m` is the number of ranks
+selected for its wall. Two ranks produce one displayed bonus tile; eight ranks produce seven.
+The win panel shows all of that round's bonus faces, the bonus points earned, and the winner's
+total score. Per-player payment details remain available in history.
+Settlement details store faces directly through `WinSettlementDetailValue.TileFaces`;
+these display tiles do not borrow IDs from the wall or any player's hand. The resolver turns each
+tile value into a public face with the `publicFace` function it receives, so a face keeps only the
+appearance and features every observer may see. History keeps the same faces, including the
+inverted one-man tile.
+These are public display copies: no tile is removed from the wall and none acts as a wildcard.
+Bonus tiles face the current dealer, using the actual standard seat layout, and rotate with the table.
+Each different matching rank in a self-draw adds one point to **each opponent's payment**.
+Two matching copies of the same rank count once. The win panel lists the bonus points separately from the total score.
+
+The shared [prop describer](common/src/commonMain/kotlin/com/doublemoon1119/mahjongcraft/example/minecraft/presentation/ExamplePairingTableProps.kt)
+reads the saved selection. It also requests one custom gold hand-reveal token per revealed player.
+Both kinds use the same central layout. The public tile kind comes from MahjongCraft; the token's
+native kind, entity and renderer belong entirely to the example adapter. For instance, the current
+Fabric adapter registers them in
+[`ExampleFabricMahjongExtension`](v1.20.1/fabric/src/main/kotlin/com/doublemoon1119/mahjongcraft/example/fabric/ExampleFabricMahjongExtension.kt).
+
+After building, check the following in a disposable example world:
+
+1. Start with two selected ranks, then with all eight. Count the displayed bonus tiles.
+2. Check that the bonus tiles face the dealer, including after the next round changes dealers.
+   Reveal several hands and confirm the gold tokens do not overlap tiles or one another.
+3. Watch the multi-roll opening: central props appear after the dice have finished.
+4. Self-draw and compare the displayed bonus ranks with the extra points. Repeated copies count once.
+5. Leave and reopen an active match. Its bonus ranks and scores must stay the same.
+6. Finish a round or remove the table. Its old props must not remain or reappear later.
+
+These are new prop checks; their game acceptance is pending. The previously accepted seating,
+exchange, opening and event checks above remain separate.

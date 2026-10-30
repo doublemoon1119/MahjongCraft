@@ -2,6 +2,7 @@ package com.doublemoon1119.mahjongcraft.testing.logic.base
 
 import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
+import com.doublemoon1119.mahjongcraft.logic.base.TileValue
 import kotlin.uuid.Uuid
 
 /** 建立測試用的 [IdentifiedTile]，可使用指定 UUID 或預設產生隨機 UUID。 */
@@ -17,4 +18,15 @@ object FakeIdentifiedTileFactory {
         tile: Tile,
         id: Uuid = Uuid.random(),
     ): IdentifiedTile = IdentifiedTile(id, tile)
+
+    /**
+     * 建立帶有牌值特性的 [IdentifiedTile]，例如赤五。
+     *
+     * @param value 基本牌面與逐張特性。
+     * @param id 牌的 UUID，預設隨機產生。
+     */
+    fun create(
+        value: TileValue,
+        id: Uuid = Uuid.random(),
+    ): IdentifiedTile = IdentifiedTile(id, value.tile, value.components)
 }

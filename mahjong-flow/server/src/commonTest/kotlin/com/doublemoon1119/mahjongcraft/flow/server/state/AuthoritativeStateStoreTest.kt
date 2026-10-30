@@ -12,11 +12,11 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.Game
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameConfig
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameFlowConfig
 import com.doublemoon1119.mahjongcraft.flow.common.room.model.Room
-import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepositoryImpl
 import com.doublemoon1119.mahjongcraft.flow.server.room.repository.RoomRepositoryImpl
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.logic.module.RevealedHandSettlement
+import com.doublemoon1119.mahjongcraft.testing.flow.common.game.repository.componentValidatedGameRepository
 import com.doublemoon1119.mahjongcraft.testing.logic.config.FakeMahjongRuleConfig
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
@@ -146,7 +146,7 @@ class AuthoritativeStateStoreTest {
     fun `room and game repositories share one store`() = runTest {
         val store = AuthoritativeStateStore()
         val roomRepository = RoomRepositoryImpl(store)
-        val gameRepository = GameRepositoryImpl(store)
+        val gameRepository = componentValidatedGameRepository(store)
         val room = createRoom()
         val game = FakeTableStateFactory.create()
 
@@ -255,7 +255,7 @@ class AuthoritativeStateStoreTest {
         RoomRepositoryImpl(store).setRoom(room)
 
         assertFailsWith<IllegalArgumentException> {
-            GameRepositoryImpl(store).setTableState(FakeTableStateFactory.create(id = room.id))
+            componentValidatedGameRepository(store).setTableState(FakeTableStateFactory.create(id = room.id))
         }
     }
 
@@ -263,7 +263,7 @@ class AuthoritativeStateStoreTest {
     @Test
     fun `game repository updates remaining reserve time atomically`() = runTest {
         val store = AuthoritativeStateStore()
-        val repository = GameRepositoryImpl(store)
+        val repository = componentValidatedGameRepository(store)
         val playerId = Uuid.random()
         val tableState = FakeTableStateFactory.create(
             players = listOf(FakeMahjongPlayerFactory.create(id = playerId)),
@@ -314,7 +314,7 @@ class AuthoritativeStateStoreTest {
     fun `history recording is disabled by default`() = runTest {
         val store = AuthoritativeStateStore()
         val tableState = FakeTableStateFactory.create()
-        GameRepositoryImpl(store).setTableState(tableState)
+        componentValidatedGameRepository(store).setTableState(tableState)
         val game = store.getGame(tableState.id)!!
 
         store.update { state ->
@@ -374,7 +374,7 @@ class AuthoritativeStateStoreTest {
     @Test
     fun `history extractor failure does not block game update`() = runTest {
         val store = AuthoritativeStateStore(historyRecordingEnabled = true)
-        val repository = GameRepositoryImpl(store)
+        val repository = componentValidatedGameRepository(store)
         val game = store.openGame(FakeTableStateFactory.create())
 
         repository.updateGame(
@@ -436,7 +436,7 @@ class AuthoritativeStateStoreTest {
     @Test
     fun `unchanged game update does not invoke history recording`() = runTest {
         val store = AuthoritativeStateStore(historyRecordingEnabled = true)
-        val repository = GameRepositoryImpl(store)
+        val repository = componentValidatedGameRepository(store)
         val tableState = FakeTableStateFactory.create()
         repository.setTableState(tableState)
 
@@ -453,7 +453,7 @@ class AuthoritativeStateStoreTest {
     @Test
     fun `committed facts are published even when history recording is disabled`() = runTest {
         val store = AuthoritativeStateStore(historyRecordingEnabled = false)
-        val repository = GameRepositoryImpl(store)
+        val repository = componentValidatedGameRepository(store)
         val tableState = FakeTableStateFactory.create()
         repository.setTableState(tableState)
         val before = store.getGame(tableState.id)!!
@@ -478,7 +478,7 @@ class AuthoritativeStateStoreTest {
     @Test
     fun `failed transactions publish no committed facts`() = runTest {
         val store = AuthoritativeStateStore(historyRecordingEnabled = true)
-        val repository = GameRepositoryImpl(store)
+        val repository = componentValidatedGameRepository(store)
         val tableState = FakeTableStateFactory.create()
         repository.setTableState(tableState)
         val received = mutableListOf<CommittedGameFacts>()
@@ -499,7 +499,7 @@ class AuthoritativeStateStoreTest {
     @Test
     fun `unchanged game updates publish no committed facts`() = runTest {
         val store = AuthoritativeStateStore()
-        val repository = GameRepositoryImpl(store)
+        val repository = componentValidatedGameRepository(store)
         val tableState = FakeTableStateFactory.create()
         repository.setTableState(tableState)
         val received = mutableListOf<CommittedGameFacts>()
@@ -518,7 +518,7 @@ class AuthoritativeStateStoreTest {
     @Test
     fun `committed facts reach the listener in commit order`() = runTest {
         val store = AuthoritativeStateStore()
-        val repository = GameRepositoryImpl(store)
+        val repository = componentValidatedGameRepository(store)
         val tableState = FakeTableStateFactory.create()
         repository.setTableState(tableState)
         val received = mutableListOf<CommittedGameFacts>()
@@ -572,7 +572,7 @@ class AuthoritativeStateStoreTest {
     fun `release notification can read committed state`() = runTest {
         val store = AuthoritativeStateStore()
         val tableState = FakeTableStateFactory.create()
-        val repository = GameRepositoryImpl(store)
+        val repository = componentValidatedGameRepository(store)
         repository.setTableState(tableState)
         var releasedState: AuthoritativeStateSnapshot? = null
         store.setCommittedFactsListener(
@@ -598,7 +598,7 @@ class AuthoritativeStateStoreTest {
     fun `listener replacement does not split a transaction notification`() = runTest {
         val store = AuthoritativeStateStore()
         val tableState = FakeTableStateFactory.create()
-        val repository = GameRepositoryImpl(store)
+        val repository = componentValidatedGameRepository(store)
         repository.setTableState(tableState)
         val notifications = mutableListOf<String>()
         val replacement = object : CommittedFactsListener {
@@ -640,7 +640,7 @@ class AuthoritativeStateStoreTest {
     fun `committed notifications preserve transaction order`() = runTest {
         val store = AuthoritativeStateStore()
         val tableState = FakeTableStateFactory.create()
-        val repository = GameRepositoryImpl(store)
+        val repository = componentValidatedGameRepository(store)
         repository.setTableState(tableState)
         val events = mutableListOf<String>()
         store.setCommittedFactsListener(
@@ -709,7 +709,7 @@ class AuthoritativeStateStoreTest {
     @Test
     fun `a failing listener does not undo the transaction`() = runTest {
         val store = AuthoritativeStateStore()
-        val repository = GameRepositoryImpl(store)
+        val repository = componentValidatedGameRepository(store)
         val tableState = FakeTableStateFactory.create()
         repository.setTableState(tableState)
         store.setCommittedFactsListener(

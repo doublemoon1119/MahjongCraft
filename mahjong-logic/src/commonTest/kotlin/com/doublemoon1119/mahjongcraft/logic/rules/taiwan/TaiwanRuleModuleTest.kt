@@ -2,6 +2,7 @@ package com.doublemoon1119.mahjongcraft.logic.rules.taiwan
 
 import com.doublemoon1119.mahjongcraft.logic.base.Hand
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
+import com.doublemoon1119.mahjongcraft.logic.base.TileFaceView
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.layout.TaiwanWallLayout
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.opening.TaiwanWallOpeningPolicy
@@ -105,49 +106,33 @@ class TaiwanRuleModuleTest {
     }
 
     /**
-     * 驗證台灣麻將目前沒有動態桌況狀態的需求，回傳 null。
+     * 驗證台灣麻將目前沒有摸牌後需要清除的規則特有狀態，不做任何變更。
      */
     @Test
-    fun `test create initial dynamic state returns null`() {
-        assertNull(module.createInitialDynamicState())
-    }
-
-    /**
-     * 驗證台灣麻將目前沒有玩家規則狀態的需求，回傳 null。
-     */
-    @Test
-    fun `test create initial player rule state returns null`() {
-        assertNull(module.createInitialPlayerRuleState())
-    }
-
-    /**
-     * 驗證台灣麻將目前沒有摸牌後需要清除的規則特有狀態，直接回傳玩家本身。
-     */
-    @Test
-    fun `test onPlayerDrew returns player as-is`() {
+    fun `test onPlayerDrew changes nothing`() {
         val player = FakeMahjongPlayerFactory.create()
 
-        assertSame(player, module.onPlayerDrew(player))
+        assertTrue(module.onPlayerDrew(player).isEmpty)
     }
 
     /**
-     * 驗證台灣麻將目前沒有捨牌後需要清除的規則特有狀態，直接回傳玩家本身。
+     * 驗證台灣麻將目前沒有捨牌後需要清除的規則特有狀態，不做任何變更。
      */
     @Test
-    fun `test onPlayerDiscarded returns player as-is`() {
+    fun `test onPlayerDiscarded changes nothing`() {
         val player = FakeMahjongPlayerFactory.create()
 
-        assertSame(player, module.onPlayerDiscarded(player))
+        assertTrue(module.onPlayerDiscarded(player).isEmpty)
     }
 
     /**
-     * 驗證台灣麻將目前沒有鳴牌後需要清除的規則特有狀態，直接回傳玩家列表本身。
+     * 驗證台灣麻將目前沒有鳴牌後需要清除的規則特有狀態，不做任何變更。
      */
     @Test
-    fun `test onMeldClaimed returns players as-is`() {
+    fun `test onMeldClaimed changes nothing`() {
         val players = listOf(FakeMahjongPlayerFactory.create(), FakeMahjongPlayerFactory.create())
 
-        assertSame(players, module.onMeldClaimed(players))
+        assertTrue(module.onMeldClaimed(players).isEmpty())
     }
 
     /**
@@ -237,6 +222,6 @@ class TaiwanRuleModuleTest {
     fun `test isBonusTile returns false`() {
         val tile = Tile.Numeric(Tile.Suit.Character, 5)
 
-        assertFalse(module.isBonusTile(tile, listOf(Tile.Numeric(Tile.Suit.Character, 4))))
+        assertFalse(module.isBonusTile(TileFaceView(tile), listOf(TileFaceView(Tile.Numeric(Tile.Suit.Character, 4)))))
     }
 }

@@ -11,8 +11,12 @@ import com.doublemoon1119.mahjongcraft.ai.expectation.OpponentModelRegistry
 import com.doublemoon1119.mahjongcraft.extension.MahjongExtension
 import com.doublemoon1119.mahjongcraft.extension.MahjongExtensionRegistrar
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkDtoRegistries
+import com.doublemoon1119.mahjongcraft.flow.persistence.format.component.registerBuiltInComponentPersistence
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.registry.PersistenceRegistries
+import com.doublemoon1119.mahjongcraft.logic.component.BuiltInComponentOwners
+import com.doublemoon1119.mahjongcraft.logic.component.ComponentRegistry
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
+import com.doublemoon1119.mahjongcraft.logic.tile.component.BuiltInTileComponents
 import com.doublemoon1119.mahjongcraft.metadata.MahjongCraftMetadata
 
 /**
@@ -36,7 +40,16 @@ class BuiltInMahjongExtension(
 
     override fun registerNetworkDtos(registries: NetworkDtoRegistries) = Unit
 
-    override fun registerPersistenceDtos(registries: PersistenceRegistries) = Unit
+    override fun registerPersistenceDtos(registries: PersistenceRegistries) {
+        registerBuiltInComponentPersistence(registries.components)
+    }
+
+    override fun registerComponents(registry: ComponentRegistry) {
+        BuiltInComponentOwners.ALL.forEach(registry::registerOwner)
+        registry.register(BuiltInTileComponents.FACE_ACCESS)
+        registry.register(BuiltInTileComponents.POSE)
+        registry.register(BuiltInTileComponents.APPEARANCE)
+    }
 
     /** 依初級、中級、高級、隨機出牌的順序登記；列出策略時依此順序呈現。 */
     override fun registerAiStrategies(registry: MahjongAiStrategyRegistry) {

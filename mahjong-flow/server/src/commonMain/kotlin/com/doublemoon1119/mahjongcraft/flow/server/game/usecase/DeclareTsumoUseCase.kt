@@ -23,6 +23,7 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.service.WinSettlementDet
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.WinSettlementPresentationRequestFactory
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.isOwnTurnWindowOpenFor
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
+import com.doublemoon1119.mahjongcraft.logic.component.ComponentRegistry
 import com.doublemoon1119.mahjongcraft.logic.judgment.LegalActionContext
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
@@ -41,6 +42,7 @@ import kotlin.uuid.Uuid
  * 自摸資格由規則的合法動作判定器決定，付款由 [MahjongRuleModule.declareTsumo] 提供。
  * 已允許自摸卻無法取得結算時，回報規則契約錯誤，不把這次和牌當成零分結果。
  *
+ * @property componentRegistry 正式組件定義與純效果來源。
  * @property gameRepository 權威對局數據倉庫。
  * @property moduleRegistry 麻將規則模組註冊中心，用於解析當前對局的合法動作判定器與點數結算邏輯。
  * @property snapshotSynchronizer 對局快照同步服務。
@@ -59,6 +61,7 @@ class DeclareTsumoUseCase(
     private val winPresentationHandoff: WinPresentationHandoff,
     private val winCelebrationCueResolverRegistry: WinCelebrationCueResolverRegistry,
     private val winSettlementDetailResolverRegistry: WinSettlementDetailResolverRegistry,
+    private val componentRegistry: ComponentRegistry,
 ) {
     /**
      * 執行自摸宣告邏輯。
@@ -124,6 +127,7 @@ class DeclareTsumoUseCase(
                         module = module,
                         actorPlayerId = playerId,
                         sourceAction = GameAction.Tsumo,
+                        componentRegistry = componentRegistry,
                     )
                     if (revealResult is WallRevealDecisionApplier.Result.Rejected) {
                         return@update state to Outcome.Error(
@@ -156,7 +160,7 @@ class DeclareTsumoUseCase(
                     }
                     val newState = stateForSettlement.copy(
                         players = updatedPlayers,
-                        dynamicRuleState = extras.dynamicRuleState,
+                        components = extras.components,
                     )
 
                     val settlement = WinSettlementPresentationRequestFactory.create(

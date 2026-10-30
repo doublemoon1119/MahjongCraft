@@ -19,17 +19,24 @@ import com.doublemoon1119.mahjongcraft.flow.persistence.format.core.PersistenceE
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.core.UnregisteredPersistenceTypeException
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.migration.InvalidPersistenceSchemaVersionException
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.migration.UnsupportedPersistenceSchemaVersionException
+import com.doublemoon1119.mahjongcraft.logic.component.ComponentSet
 import com.doublemoon1119.mahjongcraft.logic.config.MahjongRuleConfig
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDiscardPile
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanDiscardPile
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayer
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.logic.table.TileWall
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
+import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledComponentValidator
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledPersistenceRegistries
+import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.jsonObject
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -80,7 +87,7 @@ class AuthoritativeStatePersistenceCodecTest {
     private val json = Json
 
     /** 使用所有內建 mapper 的待測 codec。 */
-    private val codec = AuthoritativeStatePersistenceCodec(bundledPersistenceRegistries())
+    private val codec = AuthoritativeStatePersistenceCodec(bundledPersistenceRegistries(), componentValidator = bundledComponentValidator())
 
     /** 驗證空狀態能以版本化 envelope 完整 round-trip。 */
     @Test
@@ -189,7 +196,7 @@ class AuthoritativeStatePersistenceCodecTest {
         val registries = bundledPersistenceRegistries().copy(
             ruleConfigs = PersistenceDtoRegistry<MahjongRuleConfig>(),
         )
-        val codecWithoutRules = AuthoritativeStatePersistenceCodec(registries)
+        val codecWithoutRules = AuthoritativeStatePersistenceCodec(registries, componentValidator = bundledComponentValidator())
 
         assertFailsWith<IllegalStateException> { codecWithoutRules.encode(listOf(createRoom()), emptyList()) }
     }
@@ -203,10 +210,38 @@ class AuthoritativeStatePersistenceCodecTest {
         )
 
         val failure = assertFailsWith<UnregisteredPersistenceTypeException> {
-            AuthoritativeStatePersistenceCodec(registries).decode(saved)
+            AuthoritativeStatePersistenceCodec(registries, componentValidator = bundledComponentValidator()).decode(saved)
         }
 
         assertTrue("\"${failure.typeKey}\"" in saved)
+    }
+
+    /** 解碼後仍須檢查必要組件，不能把缺少的供託與牌牆進度當成新局初始化。 */
+    @Test
+    fun `decoded games missing required components are rejected without repair`() {
+        val initial = FakeTableStateFactory.create(config = RiichiRuleConfig())
+        val table = initial.copy(players = initial.players.map { it.copy(discardPile = RiichiDiscardPile()) })
+        val game = Game(tableState = table, flowConfig = GameFlowConfig())
+        val saved = codec.encode(emptyList(), listOf(game))
+        val envelope = json.decodeFromString(PersistenceEnvelopeDto.serializer(), saved)
+        val games = envelope.state.getValue("games").jsonObject
+        val strippedGame = JsonObject(games.getValue(table.id.toString()).jsonObject + ("components" to JsonArray(emptyList())))
+        val strippedState = JsonObject(envelope.state + ("games" to JsonObject(games + (table.id.toString() to strippedGame))))
+        val invalid = json.encodeToString(PersistenceEnvelopeDto.serializer(), envelope.copy(state = strippedState))
+
+        val failure = assertFailsWith<IllegalArgumentException> { codec.decode(invalid) }
+
+        assertTrue(failure.message.orEmpty().contains("Missing required component"))
+        assertEquals(saved, codec.encode(emptyList(), codec.decode(saved).games.values))
+    }
+
+    /** 直接保存不完整的權威對局也要拒絕，避免把缺失寫入檔案。 */
+    @Test
+    fun `encoding refuses missing required components`() {
+        val table = FakeTableStateFactory.create(config = RiichiRuleConfig()).copy(components = ComponentSet.EMPTY)
+        val game = Game(tableState = table, flowConfig = GameFlowConfig())
+
+        assertFailsWith<IllegalArgumentException> { codec.encode(emptyList(), listOf(game)) }
     }
 
     /**

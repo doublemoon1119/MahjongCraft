@@ -59,7 +59,7 @@ class ExampleMinecraftRegistrationTest {
         assertEquals(RoomConfigSubmission.Result.Invalid, RoomConfigSubmission.review(disabled, edited, presentations, modules))
     }
 
-    /** 規則、牌種、AI、宣告、換牌與流局都使用範例自己的翻譯鍵。 */
+    /** 規則、牌種、AI、攤牌、換牌與流局都使用範例自己的翻譯鍵。 */
     @Test
     fun `extension registers names and public interactions`() {
         val extension = ExampleMinecraftMahjongExtension()
@@ -74,12 +74,12 @@ class ExampleMinecraftRegistrationTest {
         assertEquals(ExampleMinecraftMessageKeys.RULE_NAME, rules.find(ExamplePairingIds.RULE_MODULE))
         assertEquals(ExampleMinecraftMessageKeys.TILE_INVERTED_ONE_MAN, tiles.find(ExamplePairingIds.INVERTED_ONE_MAN))
         assertEquals(ExampleMinecraftMessageKeys.AI_NAME, strategies.find(ExampleAiStrategyIds.TSUMOGIRI))
-        val declaration = assertNotNull(actions.find(ExamplePairingIds.RULE_MODULE, ExamplePairingIds.DECLARE_ACTION))
-        assertEquals(ExampleMinecraftMessageKeys.DECLARE, declaration.labelKey)
-        assertEquals(ExampleMinecraftMessageKeys.DECLARE_DESCRIPTION, declaration.descriptionKey)
-        assertEquals(ExampleMinecraftMessageKeys.DECLARE_CARD_BODY, declaration.cardBodyKey)
-        assertEquals(ExampleMinecraftMessageKeys.DECLARE_CARD_HINT, declaration.cardHintKey)
-        assertEquals(ExampleMinecraftMessageKeys.DECLARED, indicators.find(ExamplePairingIds.DECLARATION_INDICATOR)?.translationKey)
+        val revealHand = assertNotNull(actions.find(ExamplePairingIds.RULE_MODULE, ExamplePairingIds.REVEAL_HAND_ACTION))
+        assertEquals(ExampleMinecraftMessageKeys.REVEAL_HAND, revealHand.labelKey)
+        assertEquals(ExampleMinecraftMessageKeys.REVEAL_HAND_DESCRIPTION, revealHand.descriptionKey)
+        assertEquals(ExampleMinecraftMessageKeys.REVEAL_HAND_CARD_BODY, revealHand.cardBodyKey)
+        assertEquals(ExampleMinecraftMessageKeys.REVEAL_HAND_CARD_HINT, revealHand.cardHintKey)
+        assertEquals(ExampleMinecraftMessageKeys.HAND_REVEALED, indicators.find(ExamplePairingIds.HAND_REVEALED_INDICATOR)?.translationKey)
         assertEquals(ExampleMinecraftMessageKeys.EXCHANGE, ruleDecision.find(ExamplePairingIds.EXCHANGE_STEP))
         assertEquals(ExampleMinecraftMessageKeys.EXHAUSTIVE_DRAW, draws.find(ExamplePairingIds.EXHAUSTIVE_DRAW))
     }

@@ -8,6 +8,8 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryRecording
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryRecordingTerminal
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryTableChange
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryTableResult
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryTileAudience
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryTilePresentation
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryWinDetails
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryWinningHand
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameFlowConfig
@@ -19,7 +21,12 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementDetai
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementQuantity
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
+import com.doublemoon1119.mahjongcraft.logic.base.TileFaceView
+import com.doublemoon1119.mahjongcraft.logic.base.TileTypeId
+import com.doublemoon1119.mahjongcraft.logic.component.ComponentViewSet
 import com.doublemoon1119.mahjongcraft.logic.module.RevealedHandSettlement
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.RiichiTileComponentViews
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.RiichiTileValues
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanDiscardPile
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayer
@@ -28,6 +35,7 @@ import com.doublemoon1119.mahjongcraft.logic.table.TileWall
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import com.doublemoon1119.mahjongcraft.logic.table.opening.DiceRollResult
 import com.doublemoon1119.mahjongcraft.logic.table.opening.OpeningDiceRoll
+import com.doublemoon1119.mahjongcraft.logic.tile.component.TilePose
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledPersistenceRegistries
 import kotlinx.serialization.json.Json
 import kotlin.test.Test
@@ -73,7 +81,7 @@ class HistoryRecordingPersistenceDtoTest {
         val matchId = Uuid.random()
         val change = HistoryTableChange(
             changedPlayers = listOf(HistoryPlayerChange(player.copy(score = 100), 0, listOf(GameAction.Draw))),
-            revealedHandTileIds = setOf(Uuid.random()),
+            publicTileEvidenceIds = setOf(Uuid.random()),
             revealedHandSettlements = listOf(
                 RevealedHandSettlement(
                     playerId = player.id,
@@ -167,6 +175,44 @@ class HistoryRecordingPersistenceDtoTest {
                     occurredAtEpochMillis = 1L,
                     actorPlayerId = playerId,
                     fact = HistoryFact.DiceRolled(roll),
+                ),
+            ),
+        )
+        val mapper = HistoryRecordingPersistenceMapper(bundledPersistenceRegistries())
+
+        assertEquals(state, mapper.decode(mapper.encode(state)))
+    }
+
+    /** 牌張呈現變化保留外觀、公開特徵、姿態與知道牌面的讀取者。 */
+    @Test
+    fun `tile presentation fact round trips`() {
+        val matchId = Uuid.random()
+        val owner = Uuid.random()
+        val presentations = mapOf(
+            Uuid.random() to HistoryTilePresentation(
+                appearanceId = RiichiTileValues.RED_FIVE_APPEARANCE_ID,
+                views = ComponentViewSet.EMPTY.with(RiichiTileComponentViews.RED_DORA, Unit),
+                pose = TilePose.UPRIGHT,
+                audience = HistoryTileAudience.Players(setOf(owner)),
+            ),
+            Uuid.random() to HistoryTilePresentation(
+                appearanceId = null,
+                views = ComponentViewSet.EMPTY,
+                pose = TilePose.FACE_DOWN,
+                audience = HistoryTileAudience.Public,
+            ),
+        )
+        val state = HistoryRecordingState(
+            nextSequenceByMatchId = mapOf(matchId to 2L),
+            pendingEvents = listOf(
+                HistoryOutboxEvent(
+                    matchId = matchId,
+                    venueId = Uuid.random(),
+                    roundNumber = 1,
+                    sequence = 1L,
+                    occurredAtEpochMillis = 1L,
+                    actorPlayerId = null,
+                    fact = HistoryFact.TilePresentationChanged(presentations),
                 ),
             ),
         )
@@ -390,7 +436,7 @@ class HistoryRecordingPersistenceDtoTest {
                         ),
                     ),
                 ),
-                WinSettlementDetailField("mahjongcraft:tiles", WinSettlementDetailValue.Tiles(listOf(tile))),
+                WinSettlementDetailField("test:faces", WinSettlementDetailValue.TileFaces(listOf(Tile.Numeric(Tile.Suit.Character, 3), Tile.Extension(TileTypeId.parse("test:bonus_face")), Tile.Honor.North, Tile.Honor.North).map(::TileFaceView))),
             ),
             hand = HistoryWinningHand(standing, tile),
         )

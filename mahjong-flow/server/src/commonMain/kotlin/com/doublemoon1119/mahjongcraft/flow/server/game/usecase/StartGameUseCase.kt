@@ -13,11 +13,13 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.service.HandSortPreferen
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateStore
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateUpdate
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
+import com.doublemoon1119.mahjongcraft.logic.component.ComponentRegistry
+import com.doublemoon1119.mahjongcraft.logic.component.initializeRuleComponents
 import com.doublemoon1119.mahjongcraft.logic.config.dealBatchSizes
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import com.doublemoon1119.mahjongcraft.logic.table.GameInitializationResult
 import com.doublemoon1119.mahjongcraft.logic.table.GameInitializer
-import com.doublemoon1119.mahjongcraft.logic.table.TileWallRevealable
+import com.doublemoon1119.mahjongcraft.logic.tile.component.publicFaceUpWallTileIds
 import kotlin.uuid.Uuid
 
 /**
@@ -32,6 +34,7 @@ import kotlin.uuid.Uuid
  * @property handSortPreferenceStore 查詢玩家是否啟用自動整理手牌，見該類別 KDoc。
  * @property eventPublisher 對局通知服務。
  * @property presentationPublisher 對局 in-process 呈現觸發器。
+ * @property componentRegistry 正式開局與換局使用的組件建立及保留規格。
  * @property beginRuleDecisionUseCase 開局後啟動第一個回合選擇步驟的用例；未提供時不啟動選擇流程。
  */
 class StartGameUseCase(
@@ -41,6 +44,7 @@ class StartGameUseCase(
     private val handSortPreferenceStore: HandSortPreferenceStore,
     private val eventPublisher: GameEventPublisher,
     private val presentationPublisher: GamePresentationPublisher,
+    private val componentRegistry: ComponentRegistry,
     private val beginRuleDecisionUseCase: BeginRuleDecisionUseCase? = null,
 ) {
     /**
@@ -65,6 +69,9 @@ class StartGameUseCase(
                         id = roomId,
                         playerIds = room.playerIds,
                         module = module,
+                    ).initializeRuleComponents(
+                        ruleModuleId = module.id,
+                        registry = componentRegistry,
                     )
                     val dealtState = initializationResult.tableState
                     // 發牌順序（哪張牌在哪一批發出），只提供給呈現使用，不是實際寫回權威狀態
@@ -134,7 +141,7 @@ class StartGameUseCase(
         initializationResult.initialPhysicalWallLayout?.let { layout ->
             val deadWallTileIds = tableState.reservedWallTiles.map { tile -> tile.id }.toSet()
             val openingDiceCounts = tableState.openingDiceRolls.map { it.dice.values.size }
-            val revealedTileIds = (tableState.dynamicRuleState as? TileWallRevealable)?.getVisibleTileIds(tableState) ?: emptySet()
+            val revealedTileIds = moduleRegistry.getModule(tableState.config).publicFaceUpWallTileIds(tableState, componentRegistry)
             presentationPublisher.publishWallStructure(
                 roomId,
                 requireNotNull(initializationResult.wallStructure),

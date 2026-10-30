@@ -8,6 +8,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementWinne
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.roundRanksByPlayer
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.toPresentation
 import com.doublemoon1119.mahjongcraft.logic.base.Hand
+import com.doublemoon1119.mahjongcraft.logic.base.toValue
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
 import com.doublemoon1119.mahjongcraft.logic.module.WinResolutionResult
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
@@ -150,7 +151,7 @@ object WinSettlementPresentationRequestFactory {
      * @return 依規則牌序排列的立牌 ID；不包含副露牌。
      */
     private fun sortedStandingTileIds(hand: Hand, module: MahjongRuleModule<*>): List<Uuid> = hand.standingTiles
-        .sortedWith(compareBy(module.tileOrder) { it.tile })
+        .sortedWith(compareBy(module.tileOrder.valueOrder) { it.toValue() })
         .map { it.id }
 
     /**

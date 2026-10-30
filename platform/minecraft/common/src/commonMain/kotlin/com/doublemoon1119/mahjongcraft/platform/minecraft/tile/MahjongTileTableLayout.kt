@@ -787,6 +787,17 @@ object MahjongTileTableLayout {
     }
 
     /**
+     * 取得標準席位的桌面局部朝向，供面向該玩家的公開牌或標記使用。
+     *
+     * 兩人座位使用相對兩側，不能把座位索引直接乘上九十度。世界中的桌子轉角由呈現時另外加上。
+     *
+     * @param seatLayout 完整玩家人數對應的標準布局。
+     * @param seatIndex 要面向的玩家席位索引。
+     * @return 以角度表示的席位局部朝向。
+     */
+    fun seatYaw(seatLayout: MahjongTableSeatLayout, seatIndex: Int): Float = yawForSide(seatLayout.sideOf(seatIndex))
+
+    /**
      * 把座位錨點加上本地偏移，換算成世界座標與朝向。
      *
      * 錨點與偏移都以「坐在桌子南側的玩家」為基準；這裡依座位所在的桌子側面與桌子朝向旋轉，呼叫端不需要
@@ -1037,7 +1048,7 @@ object MahjongTileTableLayout {
 
     /**
      * 牌牆生成掉落動畫中，同一面牌牆相鄰兩墩（`stack` 差 1）開始掉落的時間差，供 [wallDropAnimationTicks]
-     * 與呼叫端排定每墩延遲使用；遊戲內比對後整體再調快，從原本 2 調到現在的值。
+     * 與呼叫端排定每墩延遲使用；取遊戲內比對過仍看得出波浪感的最小值。
      */
     internal const val WAVE_STEP_TICKS: Int = 1
 

@@ -15,17 +15,19 @@ import com.doublemoon1119.mahjongcraft.logic.base.Meld
 import com.doublemoon1119.mahjongcraft.logic.base.MeldType
 import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
+import com.doublemoon1119.mahjongcraft.logic.base.TileFaceView
+import com.doublemoon1119.mahjongcraft.logic.component.ComponentViewSet
 import com.doublemoon1119.mahjongcraft.logic.module.BuiltInRuleModuleIds
 import com.doublemoon1119.mahjongcraft.logic.module.NeutralPositionRules
 import com.doublemoon1119.mahjongcraft.logic.module.PositionView
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDiscardEntry
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDiscardComponents
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDiscardPile
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDynamicState
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPlayerState
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleModule
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.RiichiTileComponentViews
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.RiichiTileInterpretationPolicy
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.RiichiTileTypes
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.RiichiTileValues
+import com.doublemoon1119.mahjongcraft.logic.table.DiscardPile.DiscardEntry
 import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayer
 import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayerSnapshot
 import com.doublemoon1119.mahjongcraft.logic.table.TileWallSnapshot
@@ -34,6 +36,9 @@ import com.doublemoon1119.mahjongcraft.logic.table.toSnapshot
 import com.doublemoon1119.mahjongcraft.logic.tile.IdentityTileInterpretationPolicy
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeIdentifiedTileFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeMeldFactory
+import com.doublemoon1119.mahjongcraft.testing.logic.rules.riichi.riichiDeclarationComponents
+import com.doublemoon1119.mahjongcraft.testing.logic.rules.riichi.riichiTableComponents
+import com.doublemoon1119.mahjongcraft.testing.logic.rules.riichi.toRiichiSnapshotForTests
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeDiscardPile
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
@@ -102,10 +107,11 @@ class OpponentReadingTest {
         assertEquals(NEAR_OUTSIDE_FACTOR, reading.earlyOutsideFactor(opponent, m(1)))
     }
 
-    /** 牌面先以規則的正規化比較：早打赤五筒與早打五筒效果相同。 */
+    /** 赤五筒的基本牌面就是五筒：早打赤五筒與早打五筒效果相同。 */
     @Test
-    fun `tiles are compared after the rule normalizes them`() {
-        val opponent = snapshotOf(player(discards = listOf(RiichiTileTypes.redFive(Tile.Suit.Dot))))
+    fun `red fives are read by their base face`() {
+        val redDiscard = FakeIdentifiedTileFactory.create(RiichiTileValues.redFive(Tile.Suit.Dot))
+        val opponent = snapshotOf(player(discards = emptyList()).copy(discardPile = FakeDiscardPile().discardTile(redDiscard)))
 
         assertEquals(MIDDLE_NEAR_OUTSIDE_FACTOR, riichiReading.earlyOutsideFactor(opponent, p(4)))
     }
@@ -159,7 +165,7 @@ class OpponentReadingTest {
     @Test
     fun `tiles next to the declaration tile are more dangerous`() {
         val declarer = riichiPlayer(discardsBefore = listOf(Tile.Honor.North), declarationTile = m(5))
-        val quiet = FakeMahjongPlayerFactory.create(initialSeat = Wind.WEST, playerRuleState = RiichiPlayerState())
+        val quiet = FakeMahjongPlayerFactory.create(initialSeat = Wind.WEST, components = riichiDeclarationComponents())
         val view = riichiView(listOf(declarer, quiet))
 
         listOf(m(3), m(4), m(6), m(7)).forEach { tile ->
@@ -199,7 +205,7 @@ class OpponentReadingTest {
     fun `rules without bonus tiles never raise danger`() {
         val self = FakeMahjongPlayerFactory.create(Wind.SOUTH)
         val view = PositionView(
-            snapshot = FakeTableStateFactory.create(players = listOf(self)).toSnapshot(visibleHandPlayerIds = setOf(self.id), setAsideTiles = { emptyList() }),
+            snapshot = FakeTableStateFactory.create(players = listOf(self)).toSnapshot(setOf(self.id)),
             evaluatorId = self.id,
         )
 
@@ -215,7 +221,7 @@ class OpponentReadingTest {
         )
         val self = FakeMahjongPlayerFactory.create(Wind.SOUTH)
         val view = PositionView(
-            snapshot = FakeTableStateFactory.create(players = listOf(opponent, self)).toSnapshot(visibleHandPlayerIds = setOf(self.id), setAsideTiles = { emptyList() }),
+            snapshot = FakeTableStateFactory.create(players = listOf(opponent, self)).toSnapshot(setOf(self.id)),
             evaluatorId = self.id,
         )
 
@@ -246,11 +252,11 @@ class OpponentReadingTest {
         val riichiTile = FakeIdentifiedTileFactory.create(declarationTile)
         val pile = discardsBefore
             .fold(RiichiDiscardPile()) { pile, tile -> pile.discardTile(FakeIdentifiedTileFactory.create(tile)) }
-            .discard(RiichiDiscardEntry(riichiTile, isRiichi = true))
+            .discard(DiscardEntry(tile = riichiTile, components = RiichiDiscardComponents.declaration()))
         return FakeMahjongPlayerFactory.create(
             initialSeat = Wind.EAST,
             discardPile = pile,
-            playerRuleState = RiichiPlayerState(riichiTile = riichiTile),
+            components = riichiDeclarationComponents(declarationTile = riichiTile),
         )
     }
 
@@ -262,16 +268,16 @@ class OpponentReadingTest {
      * @return 以南家為評估者的局面視角。
      */
     private fun riichiView(players: List<MahjongPlayer>, doraIndicators: List<Tile> = emptyList()): PositionView {
-        val self = FakeMahjongPlayerFactory.create(initialSeat = Wind.SOUTH, playerRuleState = RiichiPlayerState())
+        val self = FakeMahjongPlayerFactory.create(initialSeat = Wind.SOUTH, components = riichiDeclarationComponents())
         val snapshot = FakeTableStateFactory.create(
             players = players + self,
             config = RiichiRuleConfig(),
-            dynamicRuleState = RiichiDynamicState(),
-        ).toSnapshot(visibleHandPlayerIds = setOf(self.id), setAsideTiles = { emptyList() })
+            components = riichiTableComponents(potPoints = 0),
+        ).toRiichiSnapshotForTests(self.id)
         val withIndicators = if (doraIndicators.isEmpty()) {
             snapshot
         } else {
-            snapshot.copy(tileWall = TileWallSnapshot(doraIndicators.map { IdentifiedTileSnapshot(id = Uuid.random(), tile = it) }))
+            snapshot.copy(tileWall = TileWallSnapshot(doraIndicators.map { IdentifiedTileSnapshot(id = Uuid.random(), face = TileFaceView(it, views = ComponentViewSet.EMPTY.with(RiichiTileComponentViews.DORA_INDICATOR, Unit))) }))
         }
         return PositionView(snapshot = withIndicators, evaluatorId = self.id)
     }
@@ -285,7 +291,7 @@ class OpponentReadingTest {
     private fun snapshotOf(player: MahjongPlayer): MahjongPlayerSnapshot {
         val self = FakeMahjongPlayerFactory.create(Wind.SOUTH)
         return FakeTableStateFactory.create(players = listOf(player, self))
-            .toSnapshot(visibleHandPlayerIds = setOf(self.id), setAsideTiles = { emptyList() })
+            .toSnapshot(setOf(self.id))
             .players
             .first { it.id == player.id }
     }

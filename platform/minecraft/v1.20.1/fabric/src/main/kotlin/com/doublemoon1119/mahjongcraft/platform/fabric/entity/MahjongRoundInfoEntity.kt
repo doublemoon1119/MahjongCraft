@@ -5,6 +5,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.SpectatorObse
 import com.doublemoon1119.mahjongcraft.platform.minecraft.animation.AnimationStep
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.RoundInfoLine
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.RoundInfoLineCodec
+import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableOverlayVisibility
 import net.minecraft.entity.EntityType
 import net.minecraft.entity.data.DataTracker
 import net.minecraft.entity.data.TrackedData
@@ -81,6 +82,7 @@ class MahjongRoundInfoEntity(
     override fun tick() {
         super.tick()
         if (world.isClient) return
+        applyVisibility()
         if (firstTickWorldTime == Long.MIN_VALUE) firstTickWorldTime = world.time
         if (world.time - firstTickWorldTime >= FALLBACK_DESPAWN_AFTER_TICKS) {
             discard()
@@ -150,40 +152,34 @@ class MahjongRoundInfoEntity(
     }
 
     /**
-     * 隱形到 [gameTime]；重複呼叫只能延長期限，並以單一可持久化動畫序列取代舊期限。
+     * 隱形到 [gameTime]；重複呼叫只能延長期限，期限隨 entity 保存。
      *
      * @param gameTime 隱形 lease 結束的 server game time。
      */
     fun hideUntil(gameTime: Long) {
         check(!world.isClient) { "Round info visibility lease must be changed by the server" }
-        if (gameTime <= hiddenUntilGameTime) return
-        hiddenUntilGameTime = gameTime
-        replaceAnimationQueue(
-            listOf(
-                AnimationStep.SetInvisible(true),
-                AnimationStep.WaitUntil(gameTime),
-                AnimationStep.SetInvisible(false),
-            ),
-        )
+        val extendedUntil = TableOverlayVisibility.extend(hiddenUntilGameTime, gameTime)
+        if (extendedUntil == hiddenUntilGameTime) return
+        hiddenUntilGameTime = extendedUntil
+        applyVisibility()
     }
 
     /**
      * 保持隱形直到管理此顯示的牌局清除 entity。
      *
-     * 終局面板結束後會立即返回房間，不應先恢復局況顯示再清除；此方法以可持久化動畫佇列保存該語意。
+     * 終局面板結束後會立即返回房間，不應先恢復局況顯示再清除；隱藏期限會保存，載入與每次更新時都依期限恢復顯示狀態。
      */
     fun hideUntilRemoved() {
         check(!world.isClient) { "Round info visibility lease must be changed by the server" }
         hiddenUntilGameTime = Long.MAX_VALUE
-        replaceAnimationQueue(listOf(AnimationStep.SetInvisible(true)))
+        applyVisibility()
     }
 
     /** 新局已確定開始時解除所有舊 presentation lease，立即恢復局況顯示。 */
     fun showNow() {
         check(!world.isClient) { "Round info visibility lease must be changed by the server" }
         hiddenUntilGameTime = Long.MIN_VALUE
-        replaceAnimationQueue(emptyList())
-        setInvisible(false)
+        applyVisibility()
     }
 
     /**
@@ -228,11 +224,10 @@ class MahjongRoundInfoEntity(
      */
     override fun readCustomDataFromNbt(nbt: NbtCompound) {
         dataTracker.set(LINES, nbt.getString(NBT_KEY_LINES))
-        managedTableId = nbt.getString(NBT_KEY_MANAGED_TABLE_ID)
-            .takeIf(String::isNotBlank)
-            ?.let { encoded -> runCatching { Uuid.parse(encoded) }.getOrNull() }
-        hiddenUntilGameTime = nbt.getLong(NBT_KEY_HIDDEN_UNTIL_GAME_TIME).takeIf { it > 0L } ?: Long.MIN_VALUE
+        managedTableId = ManagedTableNbt.read(nbt)
+        hiddenUntilGameTime = TableOverlayVisibilityNbt.read(nbt)
         readAnimationQueueFromNbt(nbt)
+        applyVisibility()
     }
 
     /**
@@ -242,9 +237,14 @@ class MahjongRoundInfoEntity(
      */
     override fun writeCustomDataToNbt(nbt: NbtCompound) {
         nbt.putString(NBT_KEY_LINES, dataTracker[LINES])
-        managedTableId?.let { tableId -> nbt.putString(NBT_KEY_MANAGED_TABLE_ID, tableId.toString()) }
-        if (hiddenUntilGameTime != Long.MIN_VALUE) nbt.putLong(NBT_KEY_HIDDEN_UNTIL_GAME_TIME, hiddenUntilGameTime)
+        ManagedTableNbt.write(nbt, managedTableId)
+        TableOverlayVisibilityNbt.write(nbt, hiddenUntilGameTime)
         writeAnimationQueueToNbt(nbt)
+    }
+
+    /** 依已保存的期限設定伺服器隱藏狀態；每個伺服器 tick 與期限變更時套用，是隱藏狀態的唯一來源。 */
+    private fun applyVisibility() {
+        if (!world.isClient) isInvisible = TableOverlayVisibility.isHidden(hiddenUntilGameTime, world.time)
     }
 
     companion object {
@@ -256,12 +256,6 @@ class MahjongRoundInfoEntity(
 
         /** 局況顯示行內容的世界存檔 key。 */
         private const val NBT_KEY_LINES = "Lines"
-
-        /** 正式牌局桌子 UUID 的世界存檔 key。 */
-        private const val NBT_KEY_MANAGED_TABLE_ID = "ManagedTableId"
-
-        /** 隱形 lease 截止遊戲時間的世界存檔 key。 */
-        private const val NBT_KEY_HIDDEN_UNTIL_GAME_TIME = "HiddenUntilGameTime"
 
         /**
          * fallback 自動清除門檻（見 [tick]）——1 小時份的 tick 數，遠大於正常一局遊戲時長，只用來

@@ -1,12 +1,22 @@
 package com.doublemoon1119.mahjongcraft.flow.persistence.format.history
 
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryDetailValueTypeKeys
+import com.doublemoon1119.mahjongcraft.flow.persistence.format.game.TileFaceViewPersistenceDto
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 /** 胡牌詳情值的明確持久化種類。 */
 @Serializable
 sealed interface HistoryWinDetailValuePersistenceDto {
+    /**
+     * 不含局內牌張身分的公開牌面，保存結算當時裁切的外觀與特徵。
+     *
+     * @property faces 保留順序與重複值的牌面。
+     */
+    @Serializable
+    @SerialName(HistoryDetailValueTypeKeys.TILE_FACES)
+    data class TileFaces(val faces: List<TileFaceViewPersistenceDto>) : HistoryWinDetailValuePersistenceDto
+
     /**
      * 有單位的數值。
      *
@@ -16,17 +26,6 @@ sealed interface HistoryWinDetailValuePersistenceDto {
     @SerialName(HistoryDetailValueTypeKeys.QUANTITIES)
     data class Quantities(
         val quantities: List<HistoryWinDetailQuantityPersistenceDto>,
-    ) : HistoryWinDetailValuePersistenceDto
-
-    /**
-     * 局內牌 UUID 清單。
-     *
-     * @property tileIds 局內牌 UUID 字串。
-     */
-    @Serializable
-    @SerialName(HistoryDetailValueTypeKeys.TILES)
-    data class Tiles(
-        val tileIds: List<String>,
     ) : HistoryWinDetailValuePersistenceDto
 
     /**

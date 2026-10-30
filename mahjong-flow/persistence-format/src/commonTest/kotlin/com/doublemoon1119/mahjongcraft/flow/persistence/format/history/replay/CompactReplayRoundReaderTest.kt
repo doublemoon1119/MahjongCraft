@@ -11,8 +11,13 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryRo
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryTileReference
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryTransitionDirective
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionTiming
+import com.doublemoon1119.mahjongcraft.flow.persistence.format.component.ComponentViewPersistenceRegistry
+import com.doublemoon1119.mahjongcraft.flow.persistence.format.core.persistenceJson
+import com.doublemoon1119.mahjongcraft.flow.persistence.format.game.MeldTypePersistenceDto
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
+import com.doublemoon1119.mahjongcraft.logic.base.TileFaceView
 import com.doublemoon1119.mahjongcraft.logic.table.RoundCompletionClassification
+import com.doublemoon1119.mahjongcraft.logic.tile.component.TilePose
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
@@ -35,8 +40,10 @@ class CompactReplayRoundReaderTest {
             identity = identity(),
             roundNumber = 1,
             position = HistoryRoundPosition.Initial,
-            tileCatalog = HistoryRoundTileCatalog(listOf(Tile.Honor.East, Tile.Honor.South, Tile.Honor.West)),
+            tileCatalog = HistoryRoundTileCatalog((listOf(Tile.Honor.East, Tile.Honor.South, Tile.Honor.West)).map(::TileFaceView)),
             budget = ReplayReadBudget(ReplayReadLimits()) {},
+            componentViews = ComponentViewPersistenceRegistry(),
+            poses = emptyMap(),
         )
 
         assertEquals(listOf(HistoryTileReference(0)), state.players.single().handTiles)
@@ -52,8 +59,10 @@ class CompactReplayRoundReaderTest {
                 identity = identity(),
                 roundNumber = 1,
                 position = HistoryRoundPosition.Initial,
-                tileCatalog = HistoryRoundTileCatalog(listOf(Tile.Honor.East, Tile.Honor.South)),
+                tileCatalog = HistoryRoundTileCatalog((listOf(Tile.Honor.East, Tile.Honor.South)).map(::TileFaceView)),
                 budget = ReplayReadBudget(ReplayReadLimits()) {},
+                componentViews = ComponentViewPersistenceRegistry(),
+                poses = emptyMap(),
             )
         }
     }
@@ -67,8 +76,10 @@ class CompactReplayRoundReaderTest {
                 identity = identity(),
                 roundNumber = 1,
                 position = HistoryRoundPosition.Initial,
-                tileCatalog = HistoryRoundTileCatalog(listOf(Tile.Honor.East, Tile.Honor.South)),
+                tileCatalog = HistoryRoundTileCatalog((listOf(Tile.Honor.East, Tile.Honor.South)).map(::TileFaceView)),
                 budget = ReplayReadBudget(ReplayReadLimits()) {},
+                componentViews = ComponentViewPersistenceRegistry(),
+                poses = emptyMap(),
             )
         }
     }
@@ -77,7 +88,7 @@ class CompactReplayRoundReaderTest {
     @Test
     fun `state mapping follows draw and discard transition`() {
         val identity = identity()
-        val catalog = HistoryRoundTileCatalog(listOf(Tile.Honor.East, Tile.Honor.South, Tile.Honor.West))
+        val catalog = HistoryRoundTileCatalog((listOf(Tile.Honor.East, Tile.Honor.South, Tile.Honor.West)).map(::TileFaceView))
         val budget = ReplayReadBudget(ReplayReadLimits()) {}
 
         val afterDraw = HistoryReplayProjectionMapper.mapState(
@@ -87,6 +98,8 @@ class CompactReplayRoundReaderTest {
             HistoryRoundPosition.Initial,
             catalog,
             budget,
+            ComponentViewPersistenceRegistry(),
+            emptyMap(),
         )
         val afterDiscard = HistoryReplayProjectionMapper.mapState(
             playerProjection(standingTiles = listOf(1), lastDrawn = null, wallTiles = listOf(2)),
@@ -95,6 +108,8 @@ class CompactReplayRoundReaderTest {
             HistoryRoundPosition.Initial,
             catalog,
             ReplayReadBudget(ReplayReadLimits()) {},
+            ComponentViewPersistenceRegistry(),
+            emptyMap(),
         )
 
         assertEquals(HistoryTileReference(1), afterDraw.players.single().lastDrawn)
@@ -110,8 +125,10 @@ class CompactReplayRoundReaderTest {
             identity(),
             1,
             HistoryRoundPosition.Initial,
-            HistoryRoundTileCatalog(listOf(Tile.Honor.East, Tile.Honor.South, Tile.Honor.West)),
+            HistoryRoundTileCatalog((listOf(Tile.Honor.East, Tile.Honor.South, Tile.Honor.West)).map(::TileFaceView)),
             ReplayReadBudget(ReplayReadLimits()) {},
+            ComponentViewPersistenceRegistry(),
+            emptyMap(),
         )
 
         assertEquals(listOf(HistoryTileReference(0), HistoryTileReference(1)), state.players.single().handTiles)
@@ -127,8 +144,10 @@ class CompactReplayRoundReaderTest {
                 identity = identity(),
                 roundNumber = 1,
                 position = HistoryRoundPosition.Initial,
-                tileCatalog = HistoryRoundTileCatalog(listOf(Tile.Honor.East, Tile.Honor.South)),
+                tileCatalog = HistoryRoundTileCatalog((listOf(Tile.Honor.East, Tile.Honor.South)).map(::TileFaceView)),
                 budget = ReplayReadBudget(ReplayReadLimits()) {},
+                componentViews = ComponentViewPersistenceRegistry(),
+                poses = emptyMap(),
             )
         }
     }
@@ -152,7 +171,7 @@ class CompactReplayRoundReaderTest {
                 ),
             ),
         )
-        val result = HistoryReplayProjectionMapper.mapFacts(listOf(JsonObject(mapOf(ReplaySourceKeys.TYPE to JsonPrimitive(HistoryFactTypeKeys.ROUND_COMPLETED), ReplaySourceKeys.SUMMARY to summary)), JsonObject(mapOf(ReplaySourceKeys.TYPE to JsonPrimitive(HistoryFactTypeKeys.RULE_EFFECT_RESOLVED), ReplaySourceKeys.REASON_ID to JsonPrimitive("test:effect"), ReplaySourceKeys.ROUND_COMPLETION to summary))), listOf(null, null), identity, 1, HistoryRoundTileCatalog(emptyList()), ReplayReadBudget(ReplayReadLimits()) {})
+        val result = HistoryReplayProjectionMapper.mapFacts(listOf(JsonObject(mapOf(ReplaySourceKeys.TYPE to JsonPrimitive(HistoryFactTypeKeys.ROUND_COMPLETED), ReplaySourceKeys.SUMMARY to summary)), JsonObject(mapOf(ReplaySourceKeys.TYPE to JsonPrimitive(HistoryFactTypeKeys.RULE_EFFECT_RESOLVED), ReplaySourceKeys.REASON_ID to JsonPrimitive("test:effect"), ReplaySourceKeys.ROUND_COMPLETION to summary))), listOf(null, null), identity, 1, HistoryRoundTileCatalog(emptyList()), ReplayReadBudget(ReplayReadLimits()) {}, ComponentViewPersistenceRegistry())
         val completed = assertIs<HistoryReplayFact.Completion>(result[0]).outcome
         assertEquals(RoundCompletionClassification.WIN, completed?.classification)
         assertEquals(listOf(1), completed?.responsibleSeats)
@@ -182,6 +201,7 @@ class CompactReplayRoundReaderTest {
             roundNumber = 1,
             tileCatalog = HistoryRoundTileCatalog(emptyList()),
             budget = ReplayReadBudget(ReplayReadLimits()) {},
+            componentViews = ComponentViewPersistenceRegistry(),
         ).single()
 
         val completion = assertIs<HistoryReplayFact.Completion>(result)
@@ -220,6 +240,7 @@ class CompactReplayRoundReaderTest {
             roundNumber = 1,
             tileCatalog = HistoryRoundTileCatalog(emptyList()),
             budget = ReplayReadBudget(ReplayReadLimits()) {},
+            componentViews = ComponentViewPersistenceRegistry(),
         )
 
         assertEquals(
@@ -259,6 +280,7 @@ class CompactReplayRoundReaderTest {
             roundNumber = 1,
             tileCatalog = HistoryRoundTileCatalog(emptyList()),
             budget = ReplayReadBudget(ReplayReadLimits()) {},
+            componentViews = ComponentViewPersistenceRegistry(),
         ).single()
 
         assertEquals(HistoryReplayFact.DiceRolled(HistoryFactTypeKeys.DICE_ROLLED, 2, 0, listOf(2, 6)), result)
@@ -281,6 +303,7 @@ class CompactReplayRoundReaderTest {
             roundNumber = 1,
             tileCatalog = HistoryRoundTileCatalog(emptyList()),
             budget = ReplayReadBudget(ReplayReadLimits()) {},
+            componentViews = ComponentViewPersistenceRegistry(),
         ).single()
 
         assertEquals(
@@ -320,6 +343,7 @@ class CompactReplayRoundReaderTest {
                 roundNumber = 1,
                 tileCatalog = HistoryRoundTileCatalog(emptyList()),
                 budget = ReplayReadBudget(ReplayReadLimits()) {},
+                componentViews = ComponentViewPersistenceRegistry(),
             )
         }
     }
@@ -337,7 +361,7 @@ class CompactReplayRoundReaderTest {
          * @param value 動作 envelope。
          * @return 公開歷史事實。
          */
-        fun facts(value: JsonObject) = HistoryReplayProjectionMapper.mapFacts(listOf(JsonObject(mapOf(ReplaySourceKeys.TYPE to JsonPrimitive(HistoryFactTypeKeys.ACTION_ACCEPTED), ReplaySourceKeys.ACTION to value))), listOf(0), identity, 1, HistoryRoundTileCatalog(emptyList()), budget)
+        fun facts(value: JsonObject) = HistoryReplayProjectionMapper.mapFacts(listOf(JsonObject(mapOf(ReplaySourceKeys.TYPE to JsonPrimitive(HistoryFactTypeKeys.ACTION_ACCEPTED), ReplaySourceKeys.ACTION to value))), listOf(0), identity, 1, HistoryRoundTileCatalog(emptyList()), budget, ComponentViewPersistenceRegistry())
         assertEquals(HistoryReplayFact.KnownAction(HistoryFactTypeKeys.ACTION_ACCEPTED, 0, HistoryActionTypeKeys.EXTENSION, emptyList(), emptyList(), "test:spell"), facts(action).single())
         assertFailsWith<NoSuchElementException> { facts(JsonObject(mapOf(ReplaySourceKeys.TYPE to JsonPrimitive(HistoryActionTypeKeys.EXTENSION)))) }
     }
@@ -358,8 +382,10 @@ class CompactReplayRoundReaderTest {
             identity = identity(),
             roundNumber = 1,
             position = HistoryRoundPosition.Initial,
-            tileCatalog = HistoryRoundTileCatalog(listOf(Tile.Honor.East, Tile.Honor.South, Tile.Honor.West)),
+            tileCatalog = HistoryRoundTileCatalog((listOf(Tile.Honor.East, Tile.Honor.South, Tile.Honor.West)).map(::TileFaceView)),
             budget = ReplayReadBudget(ReplayReadLimits()) {},
+            componentViews = ComponentViewPersistenceRegistry(),
+            poses = emptyMap(),
         )
 
         assertEquals(
@@ -379,11 +405,38 @@ class CompactReplayRoundReaderTest {
             identity = identity(),
             roundNumber = 1,
             position = HistoryRoundPosition.Initial,
-            tileCatalog = HistoryRoundTileCatalog(listOf(Tile.Honor.East, Tile.Honor.North, Tile.Honor.North)),
+            tileCatalog = HistoryRoundTileCatalog((listOf(Tile.Honor.East, Tile.Honor.North, Tile.Honor.North)).map(::TileFaceView)),
             budget = ReplayReadBudget(ReplayReadLimits()) {},
+            componentViews = ComponentViewPersistenceRegistry(),
+            poses = emptyMap(),
         )
 
         assertEquals(listOf(HistoryTileReference(2), HistoryTileReference(1)), state.players.single().setAsideTiles)
+    }
+
+    /** 副露牌有保存姿態時依姿態決定是否朝下，沒有姿態時沿用副露保存的朝下牌。 */
+    @Test
+    fun `meld face down tiles follow saved poses and fall back to the meld`() {
+        val kan = buildJsonObject {
+            put(ReplaySourceKeys.TYPE, persistenceJson.encodeToJsonElement(MeldTypePersistenceDto.serializer(), MeldTypePersistenceDto.ClosedKan))
+            put(ReplaySourceKeys.MELD_TILES, JsonArray((0..3).map(::JsonPrimitive)))
+            put(ReplaySourceKeys.SOURCE_TILE, JsonNull)
+            put(ReplaySourceKeys.SOURCE_DIRECTION, "SELF")
+            put(ReplaySourceKeys.FACE_DOWN_TILE_IDS, JsonArray(listOf(0, 3).map(::JsonPrimitive)))
+            put(ReplaySourceKeys.PUBLICLY_REVEALED_TILE_IDS, JsonArray(emptyList()))
+        }
+        val state = HistoryReplayProjectionMapper.mapState(
+            projection = playerProjection(standingTiles = emptyList(), lastDrawn = null, wallTiles = emptyList(), melds = listOf(kan)),
+            identity = identity(),
+            roundNumber = 1,
+            position = HistoryRoundPosition.Initial,
+            tileCatalog = HistoryRoundTileCatalog(List(4) { TileFaceView(Tile.Honor.East) }),
+            budget = ReplayReadBudget(ReplayReadLimits()) {},
+            componentViews = ComponentViewPersistenceRegistry(),
+            poses = mapOf(0 to TilePose.UPRIGHT, 1 to TilePose.FACE_DOWN),
+        )
+
+        assertEquals(setOf(HistoryTileReference(1), HistoryTileReference(3)), state.players.single().melds.single().faceDownTileIds)
     }
 
     /** 牌河項目出現未知欄位、明寫未鳴走或參照未宣告的牌時拒絕整份投影。 */
@@ -402,8 +455,10 @@ class CompactReplayRoundReaderTest {
                     identity = identity(),
                     roundNumber = 1,
                     position = HistoryRoundPosition.Initial,
-                    tileCatalog = HistoryRoundTileCatalog(listOf(Tile.Honor.East, Tile.Honor.South)),
+                    tileCatalog = HistoryRoundTileCatalog((listOf(Tile.Honor.East, Tile.Honor.South)).map(::TileFaceView)),
                     budget = ReplayReadBudget(ReplayReadLimits()) {},
+                    componentViews = ComponentViewPersistenceRegistry(),
+                    poses = emptyMap(),
                 )
             }
         }
@@ -412,7 +467,7 @@ class CompactReplayRoundReaderTest {
     /** 受限上下文拒絕超出已宣告範圍的牌與座位索引。 */
     @Test
     fun `projection context rejects out of range references`() {
-        val context = HistoryReplayProjectionContext(ReplayReadBudget(ReplayReadLimits()) {}, 2, 2)
+        val context = HistoryReplayProjectionContext(ReplayReadBudget(ReplayReadLimits()) {}, 2, 2, ComponentViewPersistenceRegistry())
 
         assertEquals(HistoryTileReference(1), context.tile(1))
         assertEquals(1, context.seat(1))
@@ -440,6 +495,7 @@ class CompactReplayRoundReaderTest {
      * @param reservedTiles 保留牌區索引。
      * @param discards 牌河項目。
      * @param setAsideTiles 移出手牌的牌索引。
+     * @param melds 副露投影。
      * @return 可供投影映射器讀取的 JSON 桌況。
      */
     private fun playerProjection(
@@ -449,6 +505,7 @@ class CompactReplayRoundReaderTest {
         reservedTiles: List<Int> = emptyList(),
         discards: List<JsonObject> = emptyList(),
         setAsideTiles: List<Int> = emptyList(),
+        melds: List<JsonObject> = emptyList(),
     ): JsonObject = buildJsonObject {
         put(
             ReplayFormatKeys.PLAYERS,
@@ -460,7 +517,7 @@ class CompactReplayRoundReaderTest {
                             ReplaySourceKeys.HAND,
                             buildJsonObject {
                                 put(ReplaySourceKeys.HAND_TILES, JsonArray(standingTiles.map(::JsonPrimitive)))
-                                put(ReplaySourceKeys.MELDS, JsonArray(emptyList()))
+                                put(ReplaySourceKeys.MELDS, JsonArray(melds))
                                 put(ReplaySourceKeys.LAST_DRAWN, lastDrawn?.let(::JsonPrimitive) ?: JsonNull)
                             },
                         )

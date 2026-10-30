@@ -17,6 +17,7 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.service.isOwnTurnWindowO
 import com.doublemoon1119.mahjongcraft.logic.base.ExhaustiveDrawReason
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
+import com.doublemoon1119.mahjongcraft.logic.component.ComponentRegistry
 import com.doublemoon1119.mahjongcraft.logic.config.MahjongRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.config.RonResolution
 import com.doublemoon1119.mahjongcraft.logic.judgment.LegalActionContext
@@ -52,6 +53,7 @@ import kotlin.uuid.Uuid
  *
  * 明牌（[GameAction.KanType.OPEN_KAN]，反應別人的捨牌）不在本用例範圍內，走 [RespondToDiscardUseCase]。
  *
+ * @property componentRegistry 正式組件定義與純效果來源。
  * @property gameRepository 權威對局數據倉庫。
  * @property moduleRegistry 麻將規則模組註冊中心，用於解析當前對局的合法動作判定器。
  * @property snapshotSynchronizer 對局快照同步服務。
@@ -64,6 +66,7 @@ class DeclareKanUseCase(
     private val snapshotSynchronizer: GameSnapshotSynchronizer,
     private val eventPublisher: GameEventPublisher,
     private val presentationPublisher: GamePresentationPublisher,
+    private val componentRegistry: ComponentRegistry,
 ) {
     /**
      * 執行暗槓/加槓宣告邏輯。
@@ -200,18 +203,18 @@ class DeclareKanUseCase(
                                 declaredTile,
                                 ronWinningPlayerIds,
                             ),
-                            revealedHandTileIds = state.revealedHandTileIds + kanAction.withTiles + kanAction.tileId,
+                            publicTileEvidenceIds = state.publicTileEvidenceIds + kanAction.withTiles + kanAction.tileId,
                         )
                         return@update newState to Outcome.Success(
                             KanResult(
                                 tableState = newState,
                                 kanAction = kanAction,
-                                declaredState = SelfDeclarationApplier.declaredState(state, playerId, kanAction, declaredTile, module),
+                                declaredState = SelfDeclarationApplier.declaredState(state, playerId, kanAction, declaredTile, module, componentRegistry),
                             ),
                         )
                     }
 
-                    val applied = SelfDeclarationApplier.apply(state, playerId, kanAction, declaredTile, module)
+                    val applied = SelfDeclarationApplier.apply(state, playerId, kanAction, declaredTile, module, componentRegistry = componentRegistry)
                     if (applied is SelfDeclarationApplier.Result.Rejected) {
                         val error = if (applied.reasonId == SupplementalDrawReasonIds.WALL_EXHAUSTED) {
                             GameError.WallExhausted(gameId)
@@ -222,7 +225,7 @@ class DeclareKanUseCase(
                     }
                     applied as SelfDeclarationApplier.Result.Applied
                     val followUp = if (applied.drawnTiles.isNotEmpty()) {
-                        DrawFollowUpApplier.run(applied.tableState, playerId, DrawSource.Supplemental(kanAction), applied.drawnTiles, module)
+                        DrawFollowUpApplier.run(applied.tableState, playerId, DrawSource.Supplemental(kanAction), applied.drawnTiles, module, componentRegistry = componentRegistry)
                     } else {
                         null
                     }
@@ -277,7 +280,7 @@ class DeclareKanUseCase(
                 standingTileIds = declarer.hand.tiles.map { it.id },
                 drawnTileId = declarer.hand.lastDrawn?.id,
                 melds = declarer.hand.melds.map { it.toPresentation(declared.config.revealsClosedKanTiles) },
-                setAsideTileIds = module.setAsideTiles(declarer).map { it.id },
+                setAsideTileIds = declarer.setAsideTiles.map { it.id },
                 newlyClaimedMeldTileIds = result.kanAction.newlyClaimedMeldTileIds(),
             )
         }
@@ -314,7 +317,7 @@ class DeclareKanUseCase(
                     standingTileIds = declarer.hand.tiles.map { it.id },
                     drawnTileId = declarer.hand.lastDrawn?.id,
                     melds = declarer.hand.melds.map { it.toPresentation(newState.config.revealsClosedKanTiles) },
-                    setAsideTileIds = module.setAsideTiles(declarer).map { it.id },
+                    setAsideTileIds = declarer.setAsideTiles.map { it.id },
                     newlyClaimedMeldTileIds = claimedTileIds,
                 )
             }

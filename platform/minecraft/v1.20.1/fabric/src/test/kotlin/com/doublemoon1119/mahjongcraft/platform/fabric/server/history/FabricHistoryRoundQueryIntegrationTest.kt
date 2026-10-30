@@ -21,7 +21,6 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftServer
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftServerConfigState
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocationRegistry
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledPersistenceRegistries
-import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledSetAsideTiles
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
 import kotlinx.coroutines.CoroutineDispatcher
@@ -46,7 +45,7 @@ class FabricHistoryRoundQueryIntegrationTest {
             HistoryOutboxEvent(matchId, table.id, 1, 1L, 1L, 1L, null, HistoryFact.MatchStarted(table, GameFlowConfig(), emptyMap())),
             HistoryOutboxEvent(matchId, table.id, 1, 2L, 2L, 2L, null, HistoryFact.MatchCompleted("test:completed", table.players.associate { it.id to it.score })),
         )
-        val payload = CompactReplayCodec.encodeCompact(events, HistoryRecordingPersistenceMapper(registries), registries, bundledSetAsideTiles(events)).toString()
+        val payload = CompactReplayCodec.encodeCompact(events, HistoryRecordingPersistenceMapper(registries), registries).toString()
         val path = createTempDirectory("history-round-integration-").resolve("history.sqlite")
         SqliteHistoryDatabase.open(path)
         DriverManager.getConnection("jdbc:sqlite:$path").use { connection ->

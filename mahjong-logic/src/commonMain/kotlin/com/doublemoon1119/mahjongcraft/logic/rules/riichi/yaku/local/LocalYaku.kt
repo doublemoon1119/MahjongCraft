@@ -5,7 +5,6 @@ import com.doublemoon1119.mahjongcraft.logic.base.MeldType
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.structure.HandStructure
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.structure.Mentsu
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.riichiCanonical
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.YakuResult
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.YakuType
 
@@ -54,7 +53,7 @@ fun calculateShiiaruRaotai(hand: Hand): YakuResult? {
  * @return 2 翻；不成立時為 null。
  */
 fun calculateUumenChii(hand: Hand, winningTile: Tile): YakuResult? {
-    val tiles = hand.allTiles.map { it.tile.riichiCanonical } + winningTile.riichiCanonical
+    val tiles = hand.allTiles.map { it.tile } + winningTile
     val suits = tiles.mapNotNullTo(mutableSetOf()) { (it as? Tile.Numeric)?.suit }
     if (suits.size != Tile.Suit.entries.size) return null
     if (tiles.none { it in WINDS } || tiles.none { it in DRAGONS }) return null
@@ -114,7 +113,7 @@ fun calculateWheelYakuman(
     isMenzen: Boolean,
 ): YakuResult? {
     if (!isMenzen || hand.exposedMelds.isNotEmpty()) return null
-    val tiles = hand.allTiles.map { it.tile.riichiCanonical } + winningTile.riichiCanonical
+    val tiles = hand.allTiles.map { it.tile } + winningTile
     val numeric = tiles.filterIsInstance<Tile.Numeric>()
     if (numeric.size != tiles.size) return null
     val suit = numeric.map { it.suit }.distinct().singleOrNull() ?: return null

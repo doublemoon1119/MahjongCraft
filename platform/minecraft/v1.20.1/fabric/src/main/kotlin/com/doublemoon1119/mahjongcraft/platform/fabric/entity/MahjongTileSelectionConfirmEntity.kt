@@ -174,9 +174,7 @@ class MahjongTileSelectionConfirmEntity(
         holderId = nbt.getString(NBT_KEY_HOLDER_ID)
             .takeIf(String::isNotBlank)
             ?.let { encoded -> runCatching { Uuid.parse(encoded) }.getOrNull() }
-        managedTableId = nbt.getString(NBT_KEY_MANAGED_TABLE_ID)
-            .takeIf(String::isNotBlank)
-            ?.let { encoded -> runCatching { Uuid.parse(encoded) }.getOrNull() }
+        managedTableId = ManagedTableNbt.read(nbt)
         isPrimary = nbt.getBoolean(NBT_KEY_IS_PRIMARY)
         segmentIndex = nbt.getInt(NBT_KEY_SEGMENT_INDEX)
     }
@@ -188,7 +186,7 @@ class MahjongTileSelectionConfirmEntity(
      */
     override fun writeCustomDataToNbt(nbt: NbtCompound) {
         holderId?.let { nbt.putString(NBT_KEY_HOLDER_ID, it.toString()) }
-        managedTableId?.let { nbt.putString(NBT_KEY_MANAGED_TABLE_ID, it.toString()) }
+        ManagedTableNbt.write(nbt, managedTableId)
         nbt.putBoolean(NBT_KEY_IS_PRIMARY, isPrimary)
         nbt.putInt(NBT_KEY_SEGMENT_INDEX, segmentIndex)
     }
@@ -207,9 +205,6 @@ class MahjongTileSelectionConfirmEntity(
 
         /** 面板持有者 UUID 的世界存檔 key。 */
         private const val NBT_KEY_HOLDER_ID = "HolderId"
-
-        /** 所屬麻將桌 UUID 的世界存檔 key。 */
-        private const val NBT_KEY_MANAGED_TABLE_ID = "ManagedTableId"
 
         /** 是否為主要顯示片段的世界存檔 key。 */
         private const val NBT_KEY_IS_PRIMARY = "IsPrimary"
