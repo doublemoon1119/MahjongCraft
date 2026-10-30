@@ -92,8 +92,9 @@ data class TablePropPresentation(
                 for (x in xs) {
                     if (++attempts > MAX_CENTER_CANDIDATES) return TablePropLayoutResult.Invalid("LIMIT_EXCEEDED: ${placement.id}")
                     val candidate = origin.copy(x = x, z = z)
-                    val bounds = TablePropBounds.of(candidate, dimensions)
-                    if (occupied.none { it.overlaps(bounds) }) {
+                    // 中央物件與所有已占用範圍都保持最小間距，不只避免重疊。
+                    val spaced = TablePropBounds.of(candidate, dimensions).expandedHorizontally(CENTER_GAP)
+                    if (occupied.none { it.overlaps(spaced) }) {
                         selected = candidate
                         break@search
                     }
@@ -181,8 +182,8 @@ data class TablePropPresentation(
         /** 從四面牌河第一排內緣推導的中央區域半邊長。 */
         const val CENTER_HALF_EXTENT = MahjongTileTableLayout.DISCARD_ROW_BASE_OFFSET - MahjongTileDimensions.TILE_HEIGHT / 2.0
 
-        /** 中央物件邊緣之間的留白。 */
-        private const val CENTER_GAP = 0.01
+        /** 中央物件與其他物件邊緣之間的最小留白。 */
+        internal const val CENTER_GAP = 0.01
 
         /** 單次呈現處理的物件數保護上限，不代表可放置容量。 */
         private const val MAX_PLACEMENTS = 256

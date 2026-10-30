@@ -161,6 +161,36 @@ class TablePropLayoutTest {
         )
     }
 
+    /** 座位物件剛好貼住桌心位置時，中央物件改用下一個候選位置，與它保持最小間距。 */
+    @Test
+    fun `center allocation keeps a gap from a seat prop touching the table center`() {
+        val definitions = mapOf(
+            "example:blocker" to TablePropKindDefinition("example:blocker", TablePropDimensions(0.3, 0.3, 0.3)),
+            "example:center" to TablePropKindDefinition("example:center", TablePropDimensions(0.3, 0.3, 0.3)),
+        )
+        val origin = seatBlockerLocalBounds(0.0, definitions)
+        val moved = seatBlockerLocalBounds(-0.1, definitions)
+        val alongX = moved.minX != origin.minX
+        val (start, shifted) = if (alongX) origin.minX to moved.minX else origin.minZ to moved.minZ
+        val step = (shifted - start) / -0.1
+        // 讓座位物件靠近桌心那一側的邊緣，剛好貼在桌心候選位置（半邊長 0.15）的邊緣上。
+        val nearEdge = if (start > 0) start else start + 0.3
+        val target = if (start > 0) 0.15 else -0.15
+        val offset = (target - nearEdge) / step
+        val seat = seatBlocker(offset)
+        val touching = seatBlockerLocalBounds(offset, definitions)
+        val atCenter = TablePropBounds.of(TablePropTarget("example:center", "example:rule", "example:center", TablePropContent.CustomVariant("default"), 0.0, 0.0, 0.0, 0f), definitions.getValue("example:center").dimensions)
+        assertFalse(touching.overlaps(atCenter))
+        assertTrue(touching.overlaps(atCenter.expandedHorizontally(TablePropPresentation.CENTER_GAP)))
+
+        val result = assertIs<TablePropLayoutResult.Success>(presentation(seat, placement("example:center", 0)).targets(definitions))
+
+        val center = local(result.targets.single { it.id == "example:center" })
+        val centerBounds = TablePropBounds.of(center, definitions.getValue("example:center").dimensions)
+        assertTrue(center.x != 0.0 || center.z != 0.0)
+        assertFalse(touching.overlaps(centerBounds.expandedHorizontally(TablePropPresentation.CENTER_GAP)))
+    }
+
     /** 垂直分層的物件可上下相接而不重疊。 */
     @Test
     fun `vertically separated seat props do not overlap`() {
@@ -248,6 +278,42 @@ class TablePropLayoutTest {
         content = TablePropContent.CustomVariant("default"),
         location = TablePropLocation.Center(order),
     )
+
+    /**
+     * 建立第一個座位牌河內緣、沿座位方向位移的阻擋物件。
+     *
+     * @param offsetZ 沿座位方向的位移。
+     * @return 座位物件。
+     */
+    private fun seatBlocker(offsetZ: Double) = TablePropPlacement(
+        id = "example:seat-blocker",
+        kind = "example:blocker",
+        content = TablePropContent.CustomVariant("default"),
+        location = TablePropLocation.Seat(seatIndex = 0, anchor = TableSeatAnchor.DISCARD_INNER_EDGE, offset = TableSeatOffset(z = offsetZ)),
+    )
+
+    /**
+     * 取得阻擋物件以桌心為原點的占用範圍。
+     *
+     * @param offsetZ 沿座位方向的位移。
+     * @param definitions 物件種類定義。
+     * @return 桌心座標下的占用盒。
+     */
+    private fun seatBlockerLocalBounds(
+        offsetZ: Double,
+        definitions: Map<String, TablePropKindDefinition>,
+    ): TablePropBounds {
+        val result = assertIs<TablePropLayoutResult.Success>(presentation(seatBlocker(offsetZ)).targets(definitions))
+        return TablePropBounds.of(local(result.targets.single()), definitions.getValue("example:blocker").dimensions)
+    }
+
+    /**
+     * 把南向測試桌上的世界落點轉回以桌心為原點的座標。
+     *
+     * @param target 世界中的落點。
+     * @return 桌心座標下的落點。
+     */
+    private fun local(target: TablePropTarget): TablePropTarget = target.copy(x = -(target.x - 0.5), y = target.y - 65.0, z = -(target.z - 0.5), yaw = target.yaw - 180f)
 
     /**
      * 建立固定座標與四人座位的測試場景。

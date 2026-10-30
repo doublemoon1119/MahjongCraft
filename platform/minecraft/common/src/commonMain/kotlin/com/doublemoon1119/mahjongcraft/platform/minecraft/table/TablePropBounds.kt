@@ -36,6 +36,19 @@ internal data class TablePropBounds(
         minZ < other.maxZ - EPSILON &&
         maxZ > other.minZ + EPSILON
 
+    /**
+     * 水平方向各邊外擴指定留白，用來檢查兩個物件之間是否保有最小間距。
+     *
+     * @param margin 每一邊外擴的距離。
+     * @return 外擴後的占用盒；垂直範圍不變。
+     */
+    fun expandedHorizontally(margin: Double): TablePropBounds = copy(
+        minX = minX - margin,
+        maxX = maxX + margin,
+        minZ = minZ - margin,
+        maxZ = maxZ + margin,
+    )
+
     companion object {
         /** 用來吸收直角旋轉與上下堆疊浮點誤差的容差。 */
         private const val EPSILON = 1.0e-9
