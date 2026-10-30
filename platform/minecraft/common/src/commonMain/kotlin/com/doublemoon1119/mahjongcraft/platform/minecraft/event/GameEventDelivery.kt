@@ -247,7 +247,8 @@ class GameEventDelivery(
         val batch = pending.batch
         batch.events.forEach { event -> deliverOne(pending, event) }
         if (state.load().sessionId != pending.sessionId) return
-        pending.onBatchDelivered?.invoke(batch)
+        // 內建處理與公開監聽者使用相同的失敗隔離，出錯時不影響監聽者與後續批次。
+        pending.onBatchDelivered?.let { handler -> notify(pending = pending, listeners = listOf(handler), event = null) { it(batch) } }
         val context = checkNotNull(pending.context)
         notify(
             pending = pending,

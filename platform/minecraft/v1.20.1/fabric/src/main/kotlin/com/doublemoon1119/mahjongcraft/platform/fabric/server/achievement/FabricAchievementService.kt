@@ -48,7 +48,8 @@ class FabricAchievementService(
         val achievements = try {
             detector.detect(batch)
         } catch (cause: Throwable) {
-            if (cause is CancellationException || !failurePolicy.isIsolatable(cause)) throw cause
+            // 判定在事件交付中同步執行，取消例外不代表交付被取消，與監聽者一樣只略過這一批。
+            if (cause !is CancellationException && !failurePolicy.isIsolatable(cause)) throw cause
             logger.warn("Achievement batch detection failed for match {} at table {}", batch.matchId, batch.venueId, cause)
             return
         }

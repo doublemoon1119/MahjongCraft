@@ -367,6 +367,29 @@ class GameEventDeliveryTest {
         assertEquals(1, calls)
     }
 
+    /** 內建處理丟出取消例外時只記錄失敗，公開批次監聽者與後續批次照常收到。 */
+    @Test
+    fun `built in consumer failure does not block listeners or later batches`() {
+        val scheduler = ManualScheduler()
+        val reporter = RecordingReporter()
+        var received = 0
+        val batches = MahjongCraftEvent.create<EventBatchCommittedListener>().also {
+            it.register(EventBatchCommittedListener { _, _ -> received++ })
+        }
+        val delivery = delivery(scheduler, endpoint { _, _ -> }, reporter = reporter, eventBatchCommitted = batches)
+        val session = delivery.startSession()
+
+        delivery.onCommitted(session, 1, startFacts(), onBatchDelivered = { throw CancellationException("built in consumer failed") })
+        delivery.onReleased(session, 1)
+        scheduler.runNext()
+        delivery.onCommitted(session, 2, startFacts())
+        delivery.onReleased(session, 2)
+        scheduler.runNext()
+
+        assertEquals(2, received)
+        assertEquals(1, reporter.batchFailures.size)
+    }
+
     /** 單一監聽者失敗不會阻止同一事件的其他監聽者。 */
     @Test
     fun `listener failure does not prevent later listeners`() {

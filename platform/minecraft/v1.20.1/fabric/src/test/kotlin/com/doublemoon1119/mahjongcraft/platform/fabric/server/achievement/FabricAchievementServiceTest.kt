@@ -27,6 +27,7 @@ import com.doublemoon1119.mahjongcraft.testing.flow.common.concurrency.TestCorou
 import com.doublemoon1119.mahjongcraft.testing.flow.common.concurrency.createTestAppCoroutineScope
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.runCurrent
@@ -212,9 +213,20 @@ class FabricAchievementServiceTest {
         assertEquals(1, resolverCalls)
     }
 
-    /** 批次判定失敗不授予成果，之後的批次照常處理。 */
+    /** 批次判定失敗（含取消例外）不授予成果，之後的批次照常處理。 */
     @Test
     fun `a failed detection does not stop later facts`() {
+        listOf<() -> Nothing>({ error("resolver failed") }, { throw CancellationException("resolver cancelled") }).forEach { fail ->
+            assertDetectionFailureIsIsolated(fail)
+        }
+    }
+
+    /**
+     * 確認判定器丟出指定失敗時，這一批不授予成果、下一批照常授予。
+     *
+     * @param fail 判定器丟出的失敗。
+     */
+    private fun assertDetectionFailureIsIsolated(fail: () -> Nothing) {
         val gateway = RecordingGateway()
         var failing = true
         val registry = GameAchievementResolverRegistryImpl().apply {
@@ -223,7 +235,7 @@ class FabricAchievementServiceTest {
                 override val ruleModuleId: String = BuiltInRuleModuleIds.RIICHI
 
                 /** 依測試狀態模擬判定失敗或回傳空的成果集合。 */
-                override fun resolve(batch: CommittedMatchEventBatch): Map<Uuid, Set<String>> = if (failing) error("resolver failed") else emptyMap()
+                override fun resolve(batch: CommittedMatchEventBatch): Map<Uuid, Set<String>> = if (failing) fail() else emptyMap()
             })
         }
         val service = service(gateway, registry)
