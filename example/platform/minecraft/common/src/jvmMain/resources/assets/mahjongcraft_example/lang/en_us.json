@@ -71,6 +71,5 @@
   "mahjongcraft_example.settlement.bonus_tiles": "Bonus tiles",
   "mahjongcraft_example.settlement.payment_amount": "Each player pays: %s points",
   "mahjongcraft_example.settlement.payment_per_player": "Payment per player",
-  "mahjongcraft_example.settlement.points": "%s points",
   "mahjongcraft_example.tile.inverted_one_man": "Inverted 1-man"
 }

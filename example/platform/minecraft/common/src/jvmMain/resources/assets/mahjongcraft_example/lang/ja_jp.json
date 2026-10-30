@@ -71,6 +71,5 @@
   "mahjongcraft_example.settlement.bonus_tiles": "加点牌",
   "mahjongcraft_example.settlement.payment_amount": "各プレイヤーの支払い：%s点",
   "mahjongcraft_example.settlement.payment_per_player": "プレイヤーごとの支払い点",
-  "mahjongcraft_example.settlement.points": "%s 点",
   "mahjongcraft_example.tile.inverted_one_man": "反転した一萬"
 }

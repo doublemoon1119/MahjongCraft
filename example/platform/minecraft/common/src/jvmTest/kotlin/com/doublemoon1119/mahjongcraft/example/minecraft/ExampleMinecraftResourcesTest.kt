@@ -75,7 +75,10 @@ class ExampleMinecraftResourcesTest {
         ExampleMinecraftMessageKeys.CATALOGUE_ENTRY,
         ExampleMinecraftMessageKeys.CATALOGUE_ENTRY_DESCRIPTION,
         ExampleMinecraftMessageKeys.PAYMENT_PER_PLAYER,
-        ExampleMinecraftMessageKeys.POINTS,
+        ExampleMinecraftMessageKeys.PAYMENT_AMOUNT,
+        ExampleMinecraftMessageKeys.BONUS_TILE_COUNT,
+        ExampleMinecraftMessageKeys.BONUS_TILE_POINTS,
+        ExampleMinecraftMessageKeys.BONUS_TILES,
     )
 
     /** 確認四份語系包含相同 key，且每個範例訊息都有非空翻譯。 */
