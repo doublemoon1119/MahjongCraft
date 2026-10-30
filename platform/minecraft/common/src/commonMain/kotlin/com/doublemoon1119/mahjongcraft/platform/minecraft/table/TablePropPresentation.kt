@@ -35,11 +35,11 @@ data class TablePropPresentation(
      * @return 完整配置；任一內容、位置或占用無效時為失敗，不回傳部分結果。
      */
     fun targets(definitions: Map<String, TablePropKindDefinition>): TablePropLayoutResult {
-        if (!validId(ruleModuleId)) return TablePropLayoutResult.Invalid(TablePropLayoutFailure.INVALID_PLACEMENT, "Invalid table prop rule: $ruleModuleId")
+        if (!MinecraftResourceIds.isValid(ruleModuleId)) return TablePropLayoutResult.Invalid(TablePropLayoutFailure.INVALID_PLACEMENT, "Invalid table prop rule: $ruleModuleId")
         if (placements.size > MAX_PLACEMENTS) return TablePropLayoutResult.Invalid(TablePropLayoutFailure.LIMIT_EXCEEDED, "Too many table props")
         if (placements.map { it.id }.toSet().size != placements.size) return TablePropLayoutResult.Invalid(TablePropLayoutFailure.INVALID_PLACEMENT, "Duplicate table prop ID")
         placements.forEach { placement ->
-            if (!validId(placement.id) || !validId(placement.kind)) return TablePropLayoutResult.Invalid(TablePropLayoutFailure.INVALID_PLACEMENT, "Invalid table prop ID: ${placement.id}")
+            if (!MinecraftResourceIds.isValid(placement.id) || !MinecraftResourceIds.isValid(placement.kind)) return TablePropLayoutResult.Invalid(TablePropLayoutFailure.INVALID_PLACEMENT, "Invalid table prop ID: ${placement.id}")
             val definition = definitions[placement.kind] ?: return TablePropLayoutResult.Invalid(TablePropLayoutFailure.INVALID_PLACEMENT, "Unknown table prop kind: ${placement.kind}")
             if (definition.id != placement.kind || !definition.accepts(placement.content)) return TablePropLayoutResult.Invalid(TablePropLayoutFailure.INVALID_PLACEMENT, "Unsupported table prop content: ${placement.id}")
         }
@@ -163,19 +163,6 @@ data class TablePropPresentation(
         MahjongTableFacing.EAST -> 90f
         MahjongTableFacing.SOUTH -> 180f
         MahjongTableFacing.WEST -> 270f
-    }
-
-    /**
-     * 檢查完整命名空間 ID。
-     *
-     * @param id 待驗證的識別碼。
-     * @return 格式有效時為 true。
-     */
-    private fun validId(id: String): Boolean = try {
-        MinecraftResourceIds.requireValid(id) { "Invalid table prop ID: $id" }
-        true
-    } catch (_: IllegalArgumentException) {
-        false
     }
 
     companion object {

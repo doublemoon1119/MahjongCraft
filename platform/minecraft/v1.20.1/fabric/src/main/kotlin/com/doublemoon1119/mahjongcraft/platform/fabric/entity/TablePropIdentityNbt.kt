@@ -26,7 +26,7 @@ object TablePropIdentityNbt {
         }
         val placementId = nbt.getString(NBT_KEY_PLACEMENT_ID)
         val ruleModuleId = nbt.getString(NBT_KEY_RULE_MODULE_ID)
-        if (!validId(placementId) || !validId(ruleModuleId)) return null
+        if (!MinecraftResourceIds.isValid(placementId) || !MinecraftResourceIds.isValid(ruleModuleId)) return null
         return TablePropIdentity(placementId, ruleModuleId)
     }
 
@@ -42,25 +42,12 @@ object TablePropIdentityNbt {
         placementId: String,
         ruleModuleId: String,
     ) {
-        if (!validId(placementId) || !validId(ruleModuleId)) {
+        if (!MinecraftResourceIds.isValid(placementId) || !MinecraftResourceIds.isValid(ruleModuleId)) {
             nbt.remove(NBT_KEY_PLACEMENT_ID)
             nbt.remove(NBT_KEY_RULE_MODULE_ID)
             return
         }
         nbt.putString(NBT_KEY_PLACEMENT_ID, placementId)
         nbt.putString(NBT_KEY_RULE_MODULE_ID, ruleModuleId)
-    }
-
-    /**
-     * 檢查完整命名空間 ID，不把未識別的衍生資料視為有效物件。
-     *
-     * @param id 待檢查的字串。
-     * @return 格式有效時為 true。
-     */
-    private fun validId(id: String): Boolean = try {
-        MinecraftResourceIds.requireValid(id) { "Invalid table prop identity: $id" }
-        true
-    } catch (_: IllegalArgumentException) {
-        false
     }
 }
