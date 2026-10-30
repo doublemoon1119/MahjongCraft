@@ -342,12 +342,7 @@ class GameEventProjector(
             venueId = game.id,
             ruleModuleId = module.id,
             roundContext = roundContext(facts, module.id, game.tableState),
-            classification = when (summary.classification) {
-                RoundCompletionClassification.WIN -> RoundCompletionKind.WIN
-                RoundCompletionClassification.EXHAUSTIVE_DRAW -> RoundCompletionKind.EXHAUSTIVE_DRAW
-                RoundCompletionClassification.ABORTIVE_DRAW -> RoundCompletionKind.ABORTIVE_DRAW
-                RoundCompletionClassification.EXTENSION -> RoundCompletionKind.SPECIAL
-            },
+            classification = completionKind(summary.classification),
             outcomeId = summary.outcomeId,
             players = game.tableState.players.filter { it.id in summary.settledScoresByPlayerId }.map {
                 val score = summary.settledScoresByPlayerId.getValue(it.id)
