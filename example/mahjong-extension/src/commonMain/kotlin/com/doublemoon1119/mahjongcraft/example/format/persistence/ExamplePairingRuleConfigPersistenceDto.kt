@@ -9,6 +9,7 @@ import kotlinx.serialization.Serializable
  * @property paymentPerPlayer 每位其他玩家在自摸成立時支付的點數。
  * @property roundCount 整場預定局數。
  * @property wallTileValues 會加入牌山的牌面點數。
+ * @property publicFacesEnabled 是否讓每種點數四張中的三張所有人都看得到牌面。
  */
 @Serializable
 data class ExamplePairingRuleConfigPersistenceDto(
@@ -16,4 +17,5 @@ data class ExamplePairingRuleConfigPersistenceDto(
     val paymentPerPlayer: Int,
     val roundCount: Int,
     val wallTileValues: Set<Int>,
+    val publicFacesEnabled: Boolean,
 )

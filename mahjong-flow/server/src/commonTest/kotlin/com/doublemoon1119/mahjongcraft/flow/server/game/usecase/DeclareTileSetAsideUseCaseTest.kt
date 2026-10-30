@@ -16,19 +16,22 @@ import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.PULL_NORTH_GAME_ACTION
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDynamicState
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPlayerState
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPlayerTileAreaIds
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.riichiWallProgress
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.threeplayer.ThreePlayerRiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.YakuType
 import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayer
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
+import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledCoreExtensionRegistries
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledWinCelebrationCueResolverRegistry
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.registerBundledRuleModules
 import com.doublemoon1119.mahjongcraft.testing.flow.common.game.repository.FakeGameSnapshotRepository
 import com.doublemoon1119.mahjongcraft.testing.flow.common.game.service.FakeGameEventPublisher
 import com.doublemoon1119.mahjongcraft.testing.flow.common.game.service.FakeGamePresentationPublisher
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeIdentifiedTileFactory
+import com.doublemoon1119.mahjongcraft.testing.logic.rules.riichi.riichiDeclarationComponents
+import com.doublemoon1119.mahjongcraft.testing.logic.rules.riichi.riichiTableComponents
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
 import kotlinx.coroutines.test.runTest
@@ -66,11 +69,11 @@ class DeclareTileSetAsideUseCaseTest {
     private class Fixtures {
         val gameRepo = FakeGameRepository()
         val moduleRegistry = MahjongModuleRegistryImpl().apply { registerBundledRuleModules() }
-        val snapshotSynchronizer = GameSnapshotSynchronizer(gameRepo, FakeGameSnapshotRepository(), GameVisibilityPolicyImpl(moduleRegistry))
+        val snapshotSynchronizer = GameSnapshotSynchronizer(gameRepo, FakeGameSnapshotRepository(), GameVisibilityPolicyImpl(moduleRegistry, componentRegistry = bundledCoreExtensionRegistries().componentRegistry))
         val eventPublisher = FakeGameEventPublisher()
         val presentationPublisher = FakeGamePresentationPublisher()
         val winPresentationHandoff = WinPresentationHandoff()
-        val useCase = DeclareTileSetAsideUseCase(gameRepo, moduleRegistry, snapshotSynchronizer, eventPublisher, presentationPublisher)
+        val useCase = DeclareTileSetAsideUseCase(gameRepo, moduleRegistry, snapshotSynchronizer, eventPublisher, presentationPublisher, componentRegistry = bundledCoreExtensionRegistries().componentRegistry)
         val respondToRobbing = RespondToRobbingUseCase(
             gameRepository = gameRepo,
             moduleRegistry = moduleRegistry,
@@ -79,10 +82,12 @@ class DeclareTileSetAsideUseCaseTest {
             presentationPublisher = presentationPublisher,
             winPresentationHandoff = winPresentationHandoff,
             winCelebrationCueResolverRegistry = bundledWinCelebrationCueResolverRegistry(),
-            winSettlementDetailResolverRegistry = WinSettlementDetailResolverRegistry().apply {
+            winSettlementDetailResolverRegistry = WinSettlementDetailResolverRegistry(bundledCoreExtensionRegistries().componentRegistry).apply {
                 BundledRiichiExtension.registerWinSettlementDetailResolvers(this)
                 freeze()
             },
+
+            componentRegistry = bundledCoreExtensionRegistries().componentRegistry,
         )
     }
 
@@ -107,11 +112,11 @@ class DeclareTileSetAsideUseCaseTest {
         assertIs<Outcome.Success<Unit>>(result)
         val state = assertNotNull(fixtures.gameRepo.getTableState(gameId))
         val puller = state.players.first { it.id == pullerId }
-        assertEquals(listOf(north), (puller.playerRuleState as RiichiPlayerState).nukiDoraTiles)
+        assertEquals(listOf(north), puller.tileAreas[RiichiPlayerTileAreaIds.NORTH]?.tiles.orEmpty())
         assertEquals(rinshan, puller.hand.lastDrawn)
         assertTrue(puller.hand.tiles.none { it.id == north.id })
         assertEquals(listOf(PULL_NORTH_GAME_ACTION, GameAction.Draw), puller.actionHistory.takeLast(2))
-        assertEquals(1, (state.dynamicRuleState as RiichiDynamicState).completedNorthDrawCount)
+        assertEquals(1, state.riichiWallProgress().completedNorthDrawCount)
         assertNull(state.pendingRobbingReaction)
         assertEquals(rinshan.id, fixtures.presentationPublisher.getPublishedPlayerTiles(gameId)?.drawnTileId)
         assertEquals(setOf(north.id), fixtures.presentationPublisher.getPublishedPlayerTiles(gameId)?.newlySetAsideTileIds)
@@ -147,8 +152,8 @@ class DeclareTileSetAsideUseCaseTest {
         assertEquals(setOf(waiterId), pending.eligiblePlayerIds)
         val puller = state.players.first { it.id == pullerId }
         assertEquals(north, puller.hand.lastDrawn)
-        assertTrue((puller.playerRuleState as RiichiPlayerState).nukiDoraTiles.isEmpty())
-        assertEquals(setOf(north.id), state.revealedHandTileIds, "The declared north is public while others decide.")
+        assertTrue(puller.tileAreas[RiichiPlayerTileAreaIds.NORTH]?.tiles.orEmpty().isEmpty())
+        assertEquals(setOf(north.id), state.publicTileEvidenceIds, "The declared north is public while others decide.")
         val presented = assertNotNull(fixtures.presentationPublisher.getPublishedPlayerTiles(gameId))
         assertEquals(listOf(north.id), presented.setAsideTileIds)
         assertEquals(setOf(north.id), presented.newlySetAsideTileIds)
@@ -169,7 +174,7 @@ class DeclareTileSetAsideUseCaseTest {
         val state = assertNotNull(fixtures.gameRepo.getTableState(gameId))
         assertNull(state.pendingRobbingReaction)
         val puller = state.players.first { it.id == pullerId }
-        assertEquals(listOf(north), (puller.playerRuleState as RiichiPlayerState).nukiDoraTiles)
+        assertEquals(listOf(north), puller.tileAreas[RiichiPlayerTileAreaIds.NORTH]?.tiles.orEmpty())
         assertEquals(rinshan, puller.hand.lastDrawn)
         assertTrue(Tile.Honor.North in state.players.first { it.id == waiterId }.passedTilesInRound)
         val presented = assertNotNull(fixtures.presentationPublisher.getPublishedPlayerTiles(gameId))
@@ -194,9 +199,9 @@ class DeclareTileSetAsideUseCaseTest {
         val waiter = state.players.first { it.id == waiterId }
         assertTrue(waiter.score > INITIAL_SCORE)
         assertEquals(INITIAL_SCORE - (waiter.score - INITIAL_SCORE), puller.score)
-        assertTrue((puller.playerRuleState as RiichiPlayerState).nukiDoraTiles.isEmpty())
+        assertTrue(puller.tileAreas[RiichiPlayerTileAreaIds.NORTH]?.tiles.orEmpty().isEmpty())
         assertEquals(north, puller.hand.lastDrawn, "The robbed north stays with the puller because the pull never happened.")
-        assertEquals(setOf(north.id), state.revealedHandTileIds, "The robbed north stays public after the win.")
+        assertEquals(setOf(north.id), state.publicTileEvidenceIds, "The robbed north stays public after the win.")
         val presentation = assertNotNull(fixtures.winPresentationHandoff.take(gameId, setOf(waiterId)))
         val winner = presentation.settlement.winners.single()
         assertEquals(pullerId, winner.responsiblePlayerId)
@@ -214,7 +219,7 @@ class DeclareTileSetAsideUseCaseTest {
         id = pullerId,
         initialSeat = Wind.EAST,
         hand = Hand(tiles = listOf(tile(Tile.Numeric(Tile.Suit.Dot, 1)), tile(Tile.Numeric(Tile.Suit.Dot, 5))), lastDrawn = north),
-        playerRuleState = RiichiPlayerState(),
+        components = riichiDeclarationComponents(),
     ).copy(score = INITIAL_SCORE)
 
     /**
@@ -230,7 +235,7 @@ class DeclareTileSetAsideUseCaseTest {
                 (1..3).map { tile(Tile.Numeric(Tile.Suit.Bamboo, it)) } +
                 tile(Tile.Honor.North),
         ),
-        playerRuleState = RiichiPlayerState(),
+        components = riichiDeclarationComponents(),
     ).copy(score = INITIAL_SCORE)
 
     /**
@@ -244,7 +249,7 @@ class DeclareTileSetAsideUseCaseTest {
         id = id,
         initialSeat = seat,
         hand = Hand(tiles = listOf(tile(Tile.Numeric(Tile.Suit.Dot, 9)))),
-        playerRuleState = RiichiPlayerState(),
+        components = riichiDeclarationComponents(),
     ).copy(score = INITIAL_SCORE)
 
     /**
@@ -263,7 +268,7 @@ class DeclareTileSetAsideUseCaseTest {
         config = ThreePlayerRiichiRuleConfig(),
         reservedWallTiles = listOf(rinshan) + List(13) { tile(Tile.Honor.White) },
         currentPlayerIndex = 0,
-        dynamicRuleState = RiichiDynamicState(),
+        components = riichiTableComponents(potPoints = 0),
     )
 
     /**

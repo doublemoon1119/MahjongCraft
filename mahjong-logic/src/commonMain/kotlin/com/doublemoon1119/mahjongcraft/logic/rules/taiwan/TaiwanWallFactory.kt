@@ -1,11 +1,11 @@
 package com.doublemoon1119.mahjongcraft.logic.rules.taiwan
 
-import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
+import com.doublemoon1119.mahjongcraft.logic.base.TileValue
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.tile.TaiwanTileTypes
-import com.doublemoon1119.mahjongcraft.logic.table.TileWall
 import com.doublemoon1119.mahjongcraft.logic.table.TileWallFactory
-import kotlin.uuid.Uuid
+import com.doublemoon1119.mahjongcraft.logic.tile.TileComposition
+import com.doublemoon1119.mahjongcraft.logic.tile.TileCompositionEntry
 
 /**
  * 台灣麻將牌山生成工廠。
@@ -18,24 +18,24 @@ import kotlin.uuid.Uuid
 class TaiwanWallFactory(private val config: TaiwanRuleConfig) : TileWallFactory {
 
     /**
-     * 建立台灣麻將牌山實體。
+     * 取得台灣麻將牌組組成。
      *
      * 生成邏輯包含：
      * 1. 基礎數牌 (萬、筒、條) 各 36 張，固定無赤牌。
      * 2. 字牌 (東南西北、中發白) 各 4 張，總計 28 張。
      * 3. 根據配置 [TaiwanRuleConfig.useFlowerTiles] 決定是否加入 8 張花牌 (春夏秋冬、梅蘭竹菊)。
      *
-     * @return 包含 136 或 144 張麻將牌的 [TileWall]。
+     * @return 包含 136 或 144 張牌值的組成，不產生牌張身分。
      */
-    override fun create(): TileWall {
-        val tiles = mutableListOf<IdentifiedTile>()
+    override fun composition(): TileComposition {
+        val tiles = mutableListOf<TileValue>()
 
         // 1. 生成基礎數牌 (無赤牌)
         Tile.Suit.entries.forEach { suit ->
             for (value in 1..9) {
                 repeat(4) {
                     val tile = Tile.Numeric(suit, value)
-                    tiles.add(IdentifiedTile(Uuid.random(), tile))
+                    tiles.add(TileValue(tile))
                 }
             }
         }
@@ -52,20 +52,17 @@ class TaiwanWallFactory(private val config: TaiwanRuleConfig) : TileWallFactory 
         )
         honors.forEach { honor ->
             repeat(4) {
-                tiles.add(IdentifiedTile(Uuid.random(), honor))
+                tiles.add(TileValue(honor))
             }
         }
 
         // 3. 根據配置決定是否加入花牌
         if (config.useFlowerTiles) {
             TaiwanTileTypes.createAll().forEach { flower ->
-                tiles.add(IdentifiedTile(Uuid.random(), flower))
+                tiles.add(TileValue(flower))
             }
         }
 
-        // 3. 洗牌
-        tiles.shuffle()
-
-        return TileWall(tiles)
+        return TileComposition(tiles.groupingBy { it }.eachCount().map { (value, count) -> TileCompositionEntry(value, count) })
     }
 }

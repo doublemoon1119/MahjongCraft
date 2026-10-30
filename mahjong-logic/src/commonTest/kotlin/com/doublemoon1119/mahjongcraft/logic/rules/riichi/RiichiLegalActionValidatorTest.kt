@@ -5,12 +5,14 @@ import com.doublemoon1119.mahjongcraft.logic.base.Hand
 import com.doublemoon1119.mahjongcraft.logic.base.MeldType
 import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.RiichiTileTypes
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDeclarationKind
 import com.doublemoon1119.mahjongcraft.logic.table.TileWall
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeHandFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeIdentifiedTileFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeMeldFactory
+import com.doublemoon1119.mahjongcraft.testing.logic.rules.riichi.riichiDeclarationComponents
+import com.doublemoon1119.mahjongcraft.testing.logic.rules.riichi.withRedFives
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeDiscardPile
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
@@ -393,7 +395,7 @@ class RiichiLegalActionValidatorTest {
         )
         val player = FakeMahjongPlayerFactory.create(
             hand = playerHand,
-            playerRuleState = RiichiPlayerState(),
+            components = riichiDeclarationComponents(),
         )
         val tableState = FakeTableStateFactory.create(
             players = listOf(player),
@@ -434,7 +436,7 @@ class RiichiLegalActionValidatorTest {
         )
         val player = FakeMahjongPlayerFactory.create(
             hand = playerHand,
-            playerRuleState = RiichiPlayerState(),
+            components = riichiDeclarationComponents(),
         )
         val tableState = FakeTableStateFactory.create(
             players = listOf(player),
@@ -476,7 +478,7 @@ class RiichiLegalActionValidatorTest {
         )
         val player = FakeMahjongPlayerFactory.create(
             hand = playerHand,
-            playerRuleState = RiichiPlayerState(),
+            components = riichiDeclarationComponents(),
         )
         val tableState = FakeTableStateFactory.create(
             players = listOf(player),
@@ -519,7 +521,7 @@ class RiichiLegalActionValidatorTest {
         )
         val player = FakeMahjongPlayerFactory.create(
             hand = playerHand,
-            playerRuleState = RiichiPlayerState(),
+            components = riichiDeclarationComponents(),
         )
         val tableState = FakeTableStateFactory.create(
             players = listOf(player),
@@ -614,7 +616,7 @@ class RiichiLegalActionValidatorTest {
                     isTaken = false,
                 ),
             ),
-            playerRuleState = RiichiPlayerState(),
+            components = riichiDeclarationComponents(),
         )
         val tableState = FakeTableStateFactory.create(
             players = listOf(player),
@@ -649,14 +651,14 @@ class RiichiLegalActionValidatorTest {
                 Tile.Numeric(Tile.Suit.Character, 8),
                 Tile.Numeric(Tile.Suit.Character, 9),
                 Tile.Numeric(Tile.Suit.Dot, 4),
-                RiichiTileTypes.redFive(Tile.Suit.Dot), // 赤5筒，取代普通5筒
+                Tile.Numeric(Tile.Suit.Dot, 5), // 赤5筒，取代普通5筒
                 Tile.Numeric(Tile.Suit.Dot, 6),
                 Tile.Numeric(Tile.Suit.Bamboo, 2),
                 Tile.Numeric(Tile.Suit.Bamboo, 3),
                 Tile.Numeric(Tile.Suit.Bamboo, 4),
                 Tile.Honor.West,
             ),
-        )
+        ).withRedFives(Tile.Suit.Dot)
         val player = FakeMahjongPlayerFactory.create(
             hand = playerHand,
             discardPile = FakeDiscardPile().discard(
@@ -665,7 +667,7 @@ class RiichiLegalActionValidatorTest {
                     isTaken = false,
                 ),
             ),
-            playerRuleState = RiichiPlayerState(),
+            components = riichiDeclarationComponents(),
         )
         val tableState = FakeTableStateFactory.create(
             players = listOf(player),
@@ -705,7 +707,7 @@ class RiichiLegalActionValidatorTest {
         )
         val player = FakeMahjongPlayerFactory.create(
             hand = playerHand,
-            playerRuleState = RiichiPlayerState(),
+            components = riichiDeclarationComponents(),
         )
         val tableState = FakeTableStateFactory.create(
             players = listOf(player),
@@ -749,7 +751,7 @@ class RiichiLegalActionValidatorTest {
         )
         val player = FakeMahjongPlayerFactory.create(
             hand = playerHand,
-            playerRuleState = RiichiPlayerState(),
+            components = riichiDeclarationComponents(),
         )
         val tableState = FakeTableStateFactory.create(
             players = listOf(player),
@@ -929,7 +931,7 @@ class RiichiLegalActionValidatorTest {
             discardPile = FakeDiscardPile().discard(
                 FakeDiscardPile.FakeEntry(FakeIdentifiedTileFactory.create(Tile.Honor.North)),
             ),
-            playerRuleState = RiichiPlayerState(),
+            components = riichiDeclarationComponents(),
         )
         val incomingTile = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Bamboo, 8))
         val fourteenLiveTiles = TileWall(
@@ -1016,7 +1018,7 @@ class RiichiLegalActionValidatorTest {
         )
         val player = FakeMahjongPlayerFactory.create(
             hand = playerHand,
-            playerRuleState = RiichiPlayerState(),
+            components = riichiDeclarationComponents(),
         )
         val tableState = FakeTableStateFactory.create(
             players = listOf(player),
@@ -1062,7 +1064,7 @@ class RiichiLegalActionValidatorTest {
         )
         val player = FakeMahjongPlayerFactory.create(
             hand = playerHand,
-            playerRuleState = RiichiPlayerState(),
+            components = riichiDeclarationComponents(),
         )
         val tableState = FakeTableStateFactory.create(
             players = listOf(player),
@@ -1107,7 +1109,7 @@ class RiichiLegalActionValidatorTest {
         )
         val player = FakeMahjongPlayerFactory.create(
             hand = playerHand,
-            playerRuleState = RiichiPlayerState(),
+            components = riichiDeclarationComponents(),
         )
         val tableState = FakeTableStateFactory.create(
             players = listOf(player),

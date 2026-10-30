@@ -12,13 +12,13 @@ import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RIICHI_GAME_ACTION
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPlayerState
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.table.PendingReaction
 import com.doublemoon1119.mahjongcraft.logic.table.PendingRobbingReaction
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.registerBundledRuleModules
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeIdentifiedTileFactory
+import com.doublemoon1119.mahjongcraft.testing.logic.rules.riichi.riichiDeclarationComponents
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeDiscardPile
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
@@ -69,7 +69,7 @@ class GetLegalActionsUseCaseTest {
             id = playerId,
             initialSeat = Wind.EAST,
             hand = Hand(tiles = standingTiles, lastDrawn = east4),
-            playerRuleState = RiichiPlayerState(),
+            components = riichiDeclarationComponents(),
         ).copy(score = 25000)
         val table = FakeTableStateFactory.create(
             id = gameId,
@@ -157,7 +157,7 @@ class GetLegalActionsUseCaseTest {
                 Tile.Numeric(Tile.Suit.Bamboo, 6), Tile.Numeric(Tile.Suit.Bamboo, 7), Tile.Numeric(Tile.Suit.Bamboo, 8),
             ).map { FakeIdentifiedTileFactory.create(it) } + FakeIdentifiedTileFactory.create(Tile.Honor.White),
         )
-        val robber = FakeMahjongPlayerFactory.create(id = robberId, initialSeat = Wind.SOUTH, hand = robberHand, playerRuleState = RiichiPlayerState())
+        val robber = FakeMahjongPlayerFactory.create(id = robberId, initialSeat = Wind.SOUTH, hand = robberHand, components = riichiDeclarationComponents())
         val table = FakeTableStateFactory.create(
             id = gameId,
             players = listOf(declarer, robber),
@@ -230,7 +230,7 @@ class GetLegalActionsUseCaseTest {
             id = respondentId,
             initialSeat = Wind.SOUTH,
             hand = Hand(tiles = listOf(southTile1, southTile2)),
-            playerRuleState = RiichiPlayerState(),
+            components = riichiDeclarationComponents(),
         )
         val table = FakeTableStateFactory.create(
             id = gameId,

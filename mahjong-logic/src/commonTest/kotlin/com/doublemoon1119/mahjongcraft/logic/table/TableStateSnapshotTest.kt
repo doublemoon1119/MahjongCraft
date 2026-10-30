@@ -5,15 +5,19 @@ import com.doublemoon1119.mahjongcraft.logic.base.Meld
 import com.doublemoon1119.mahjongcraft.logic.base.MeldType
 import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
-import com.doublemoon1119.mahjongcraft.logic.config.DynamicRuleState
+import com.doublemoon1119.mahjongcraft.logic.component.ComponentViewSet
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiTableComponents
+import com.doublemoon1119.mahjongcraft.logic.tile.IdentityTileInterpretationPolicy
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeIdentifiedTileFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.config.FakeMahjongRuleConfig
+import com.doublemoon1119.mahjongcraft.testing.logic.rules.riichi.riichiTableComponents
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeDiscardPile
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
+import kotlin.test.assertTrue
 import kotlin.uuid.Uuid
 
 /**
@@ -49,7 +53,7 @@ class TableStateSnapshotTest {
             players = listOf(observer, other),
         )
 
-        val snapshot = table.toSnapshot(setOf(observerId), setAsideTiles = { emptyList() })
+        val snapshot = table.toSnapshot(setOf(observerId))
 
         val observerSnapshot = snapshot.players.find { it.id == observerId }!!
         val otherSnapshot = snapshot.players.find { it.id == otherId }!!
@@ -73,7 +77,7 @@ class TableStateSnapshotTest {
             currentPlayerIndex = 0,
         )
 
-        val snapshot = table.toSnapshot(setOf(player.id), setAsideTiles = { emptyList() })
+        val snapshot = table.toSnapshot(setOf(player.id))
 
         assertEquals(Wind.SOUTH, snapshot.prevalentWind)
         assertEquals(3, snapshot.roundNumber)
@@ -97,44 +101,25 @@ class TableStateSnapshotTest {
             config = config,
         )
 
-        val snapshot = table.toSnapshot(setOf(player.id), setAsideTiles = { emptyList() })
+        val snapshot = table.toSnapshot(setOf(player.id))
 
         assertEquals(config, snapshot.config)
         assertEquals(16, snapshot.config.initialHandSize)
         assertEquals(0, snapshot.config.minimumWinConstraint)
     }
 
-    /**
-     * 驗證當 dynamicRuleState 為 null 時，快照中的 dynamicRuleState 也應為 null。
-     */
+    /** 低階快照不攜帶權威組件，也不自行建立規則的公開投影。 */
     @Test
-    fun `test snapshot with no dynamic rule state`() {
+    fun `low level snapshot does not copy authoritative rule components`() {
         val player = FakeMahjongPlayerFactory.create(initialSeat = Wind.EAST)
         val table = FakeTableStateFactory.create(
             players = listOf(player),
-            dynamicRuleState = null,
+            components = riichiTableComponents(potPoints = 2000),
         )
+        val snapshot = table.toSnapshot(setOf(player.id))
 
-        val snapshot = table.toSnapshot(setOf(player.id), setAsideTiles = { emptyList() })
-
-        assertNull(snapshot.dynamicRuleState)
-    }
-
-    /**
-     * 驗證桌局快照應保留 dynamicRuleState 的引用。
-     */
-    @Test
-    fun `test snapshot retains dynamicRuleState reference`() {
-        val dynamicState = object : DynamicRuleState {}
-        val player = FakeMahjongPlayerFactory.create(initialSeat = Wind.EAST)
-        val table = FakeTableStateFactory.create(
-            players = listOf(player),
-            dynamicRuleState = dynamicState,
-        )
-
-        val snapshot = table.toSnapshot(setOf(player.id), setAsideTiles = { emptyList() })
-
-        assertEquals(dynamicState, snapshot.dynamicRuleState)
+        assertEquals(ComponentViewSet.EMPTY, snapshot.componentViews)
+        assertEquals(2000, table.components[RiichiTableComponents.POT_POINTS])
     }
 
     /**
@@ -149,7 +134,7 @@ class TableStateSnapshotTest {
             players = listOf(player),
         )
 
-        val snapshot = table.toSnapshot(setOf(player.id), setAsideTiles = { emptyList() })
+        val snapshot = table.toSnapshot(setOf(player.id))
 
         assertEquals(tableId, snapshot.id)
     }
@@ -167,7 +152,7 @@ class TableStateSnapshotTest {
             finishedPlayerIds = setOf(finishedPlayer.id),
         )
 
-        val snapshot = table.toSnapshot(setOf(finishedPlayer.id, activePlayer.id), setAsideTiles = { emptyList() })
+        val snapshot = table.toSnapshot(setOf(finishedPlayer.id, activePlayer.id))
 
         assertEquals(setOf(finishedPlayer.id), snapshot.finishedPlayerIds)
     }
@@ -181,11 +166,11 @@ class TableStateSnapshotTest {
         val declarer = FakeMahjongPlayerFactory.create(hand = Hand(tiles = listOf(hidden), lastDrawn = revealed))
         val observer = FakeMahjongPlayerFactory.create()
         val table = FakeTableStateFactory.create(players = listOf(declarer, observer))
-            .copy(revealedHandTileIds = setOf(revealed.id, alreadyPlaced))
+            .copy(publicTileEvidenceIds = setOf(revealed.id, alreadyPlaced))
 
-        val snapshot = table.toSnapshot(setOf(observer.id), setAsideTiles = { emptyList() })
+        val snapshot = table.toSnapshot(setOf(observer.id))
 
-        assertEquals(listOf(revealed), snapshot.revealedHandTiles)
+        assertTrue(revealed.id in snapshot.publicTileIds)
         assertNull(snapshot.players.first { it.id == declarer.id }.hand.standingTiles.first { it.id == hidden.id }.tile)
     }
 
@@ -193,10 +178,10 @@ class TableStateSnapshotTest {
     @Test
     fun `no revealed hand tiles lists nothing`() {
         val snapshot = FakeTableStateFactory.create(players = listOf(FakeMahjongPlayerFactory.create()))
-            .toSnapshot(emptySet(), setAsideTiles = { emptyList() })
+            .toSnapshot(emptySet())
 
-        assertEquals(emptyList(), snapshot.revealedHandTiles)
-        assertEquals(emptyList(), snapshot.handTileStates)
+        assertTrue(snapshot.publicTileIds.isEmpty())
+        assertEquals(emptyList(), snapshot.tilePoseStates)
     }
 
     /**
@@ -236,22 +221,18 @@ class TableStateSnapshotTest {
                 ),
             ),
         )
-        val revealing = object : DynamicRuleState, TileWallRevealable {
-            override fun getVisibleTileIds(state: TableState) = setOf(revealedWallTile.id)
-        }
         val table = FakeTableStateFactory.create(
-            players = listOf(observer, other),
+            players = listOf(observer, other.copy(tileAreas = PlayerTileAreas.EMPTY.withArea("test:aside", listOf(setAsideTile)))),
             tileWall = TileWall(listOf(revealedWallTile, hiddenWallTile)),
-            dynamicRuleState = revealing,
-        ).copy(revealedHandTileIds = setOf(revealedTile.id))
+        ).copy(publicTileEvidenceIds = setOf(revealedTile.id, revealedWallTile.id))
 
-        val snapshot = table.toSnapshot(setOf(observer.id)) { player -> if (player.id == other.id) listOf(setAsideTile) else emptyList() }
+        val snapshot = table.toSnapshot(setOf(observer.id))
 
         assertEquals(
             (listOf(ownTile, ownDrawn, riverTile, setAsideTile, revealedWallTile, revealedTile) + meldTiles).map { it.id }.toSet(),
-            snapshot.visibleTiles().map { it.id }.toSet(),
+            snapshot.visibleTiles(IdentityTileInterpretationPolicy).map { it.id }.toSet(),
         )
-        assertEquals(snapshot.visibleTiles().size, snapshot.visibleTiles().map { it.id }.distinct().size)
+        assertEquals(snapshot.visibleTiles(IdentityTileInterpretationPolicy).size, snapshot.visibleTiles(IdentityTileInterpretationPolicy).map { it.id }.distinct().size)
     }
 
     /** 玩家手上的牌包含看得到的立牌、剛摸到的牌、副露與移出手牌的牌；看不到牌面的他家立牌不列入。 */
@@ -266,12 +247,12 @@ class TableStateSnapshotTest {
                 melds = listOf(Meld(type = MeldType.PON, tiles = meldTiles, sourceTile = meldTiles.first(), sourceDirection = RelativeDirection.Left, publiclyRevealedTileIds = meldTiles.map { it.id }.toSet(), faceDownTileIds = emptySet())),
             ),
         )
-        val table = FakeTableStateFactory.create(players = listOf(player, FakeMahjongPlayerFactory.create(Wind.SOUTH)))
+        val table = FakeTableStateFactory.create(players = listOf(player.copy(tileAreas = PlayerTileAreas.EMPTY.withArea("test:aside", listOf(setAsideTile))), FakeMahjongPlayerFactory.create(Wind.SOUTH)))
 
-        val ownView = table.toSnapshot(setOf(player.id)) { listOf(setAsideTile) }.players.first { it.id == player.id }
-        val otherView = table.toSnapshot(emptySet()) { listOf(setAsideTile) }.players.first { it.id == player.id }
+        val ownView = table.toSnapshot(setOf(player.id)).players.first { it.id == player.id }
+        val otherView = table.toSnapshot(emptySet()).players.first { it.id == player.id }
 
-        assertEquals((listOf(standing, setAsideTile) + meldTiles).map { it.id }.toSet(), ownView.heldTiles().map { it.id }.toSet())
-        assertEquals((listOf(setAsideTile) + meldTiles).map { it.id }.toSet(), otherView.heldTiles().map { it.id }.toSet())
+        assertEquals((listOf(standing, setAsideTile) + meldTiles).map { it.id }.toSet(), ownView.heldTiles(IdentityTileInterpretationPolicy).map { it.id }.toSet())
+        assertEquals((listOf(setAsideTile) + meldTiles).map { it.id }.toSet(), otherView.heldTiles(IdentityTileInterpretationPolicy).map { it.id }.toSet())
     }
 }

@@ -3,13 +3,15 @@ package com.doublemoon1119.mahjongcraft.flow.server.game.riichi
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.RoundOutcomePresentationClassification
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.riichi.RiichiRoundOutcomeIds
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RIICHI_STICK_POINTS
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDiscardPile
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDynamicState
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleModule
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.riichiPotPoints
 import com.doublemoon1119.mahjongcraft.logic.table.RoundTransitionDirective
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeIdentifiedTileFactory
+import com.doublemoon1119.mahjongcraft.testing.logic.rules.riichi.riichiTableComponents
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
 import kotlin.test.Test
@@ -34,7 +36,7 @@ class RiichiNagashiManganOutcomeResolverTest {
         val table = FakeTableStateFactory.create(
             players = listOf(dealer) + others,
             config = module.config,
-            dynamicRuleState = RiichiDynamicState(riichiStickCount = 2),
+            components = riichiTableComponents(potPoints = 2000),
         )
 
         val outcome = RiichiNagashiManganOutcomeResolver().resolve(table, module)!!
@@ -45,7 +47,7 @@ class RiichiNagashiManganOutcomeResolverTest {
         assertEquals(setOf(dealer.id), outcome.stickPotCollectorPlayerIds)
         assertEquals(14000, outcome.scoreDeltas.getValue(dealer.id))
         others.forEach { assertEquals(-4000, outcome.scoreDeltas.getValue(it.id)) }
-        assertEquals(0, (outcome.settledTableState.dynamicRuleState as RiichiDynamicState).riichiStickCount)
+        assertEquals(0, (outcome.settledTableState.riichiPotPoints() / RIICHI_STICK_POINTS))
     }
 
     /** 驗證流局滿貫比照自摸收取本場：其他每家各付 本場數 × 100，歸成立者所有。 */
@@ -63,7 +65,7 @@ class RiichiNagashiManganOutcomeResolverTest {
             players = listOf(dealer, achiever) + others,
             config = module.config,
             comboCount = 3,
-            dynamicRuleState = RiichiDynamicState(),
+            components = riichiTableComponents(potPoints = 0),
         )
 
         val outcome = RiichiNagashiManganOutcomeResolver().resolve(table, module)!!

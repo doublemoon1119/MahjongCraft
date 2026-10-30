@@ -27,6 +27,7 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.model.MeldTypeDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.model.RelativeDirectionDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.model.SuitDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.model.TileDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.model.TileFaceViewDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.model.WindDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.snapshot.MatchRoundPhaseDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.snapshot.MatchRoundPositionDto
@@ -221,7 +222,7 @@ class HistoryRoundResponseValidatorTest {
     @Test
     fun `test winner detail faces do not need catalog references`() {
         val request = HistoryRoundEventsRequestDto("request", TEST_MATCH_ID, roundNumber = 1, scope = HistoryQueryScopeDto.OWN, startTransactionIndex = 0, limit = 20)
-        val details = listOf(HistoryWinnerDetailsDto(0, listOf(HistoryWinDetailFieldDto("test:tiles", HistoryWinDetailValueDto.TileFaces(listOf(TileDto.Numeric(SuitDto.CHARACTER, 9))))), hand = null))
+        val details = listOf(HistoryWinnerDetailsDto(0, listOf(HistoryWinDetailFieldDto("test:tiles", HistoryWinDetailValueDto.TileFaces(listOf(TileFaceViewDto(TileDto.Numeric(SuitDto.CHARACTER, 9), emptyList(), null))))), hand = null))
         val outcome = HistoryRoundOutcomeDto("test:win", listOf(0), mapOf(0 to 25000), "WIN", emptyList(), null, nextDealerSeat = null, winnerDetails = details, scoreChangesBySeat = emptyMap(), hasEarlierWinSettlement = false)
         val base = events().copy(tileCatalog = emptyList())
         val valid = base.copy(transactions = listOf(base.transactions.single().copy(declaredTileCountAfter = 0, facts = listOf(HistoryReplayFactDto.Completion(HistoryFactTypeKeys.ROUND_COMPLETED, outcome)))))
@@ -230,11 +231,15 @@ class HistoryRoundResponseValidatorTest {
         assertIs<HistoryRoundValidationResult.Success<*>>(result)
     }
 
-    /** 無效的數字牌與擴充 ID 不得作為結算牌面進入歷史畫面。 */
+    /** 無效的數字牌、擴充 ID 與外觀 ID 不得作為結算牌面進入歷史畫面。 */
     @Test
     fun `test malformed settlement faces are rejected`() {
         val request = HistoryRoundEventsRequestDto("request", TEST_MATCH_ID, roundNumber = 1, scope = HistoryQueryScopeDto.OWN, startTransactionIndex = 0, limit = 20)
-        listOf(TileDto.Numeric(SuitDto.CHARACTER, 0), TileDto.Extension("invalid")).forEach { face ->
+        listOf(
+            TileFaceViewDto(TileDto.Numeric(SuitDto.CHARACTER, 0), emptyList(), null),
+            TileFaceViewDto(TileDto.Extension("invalid"), emptyList(), null),
+            TileFaceViewDto(TileDto.Numeric(SuitDto.CHARACTER, 1), emptyList(), "not a namespaced id"),
+        ).forEach { face ->
             val details = listOf(HistoryWinnerDetailsDto(0, listOf(HistoryWinDetailFieldDto("test:faces", HistoryWinDetailValueDto.TileFaces(listOf(face)))), hand = null))
             val outcome = HistoryRoundOutcomeDto("test:win", listOf(0), mapOf(0 to 25000), "WIN", emptyList(), null, nextDealerSeat = null, winnerDetails = details, scoreChangesBySeat = emptyMap(), hasEarlierWinSettlement = false)
             val base = events()
@@ -270,20 +275,20 @@ class HistoryRoundResponseValidatorTest {
                         "test:quantities",
                         HistoryWinDetailValueDto.Quantities(listOf(HistoryWinDetailQuantityDto("test:han", 3), HistoryWinDetailQuantityDto("test:fu", 30))),
                     ),
-                    HistoryWinDetailFieldDto("test:tiles", HistoryWinDetailValueDto.TileFaces(listOf(TileDto.Numeric(SuitDto.CHARACTER, 9)))),
+                    HistoryWinDetailFieldDto("test:tiles", HistoryWinDetailValueDto.TileFaces(listOf(TileFaceViewDto(TileDto.Numeric(SuitDto.CHARACTER, 9), emptyList(), null)))),
                 ),
                 hand = null,
             ),
             HistoryWinnerDetailsDto(
                 1,
-                listOf(HistoryWinDetailFieldDto("test:tiles", HistoryWinDetailValueDto.TileFaces(listOf(TileDto.Extension("test:bonus"))))),
+                listOf(HistoryWinDetailFieldDto("test:tiles", HistoryWinDetailValueDto.TileFaces(listOf(TileFaceViewDto(TileDto.Extension("test:bonus"), emptyList(), null))))),
                 hand = null,
             ),
         )
         val outcome = HistoryRoundOutcomeDto("test:win", listOf(0, 1), mapOf(0 to 25000, 1 to 25000), "WIN", emptyList(), null, nextDealerSeat = null, winnerDetails = details, scoreChangesBySeat = emptyMap(), hasEarlierWinSettlement = false)
         val base = events().copy(
             identity = identity,
-            tileCatalog = listOf(TileDto.Numeric(SuitDto.CHARACTER, 1), TileDto.Numeric(SuitDto.CHARACTER, 2)),
+            tileCatalog = listOf(TileFaceViewDto(TileDto.Numeric(SuitDto.CHARACTER, 1), emptyList(), null), TileFaceViewDto(TileDto.Numeric(SuitDto.CHARACTER, 2), emptyList(), null)),
             transactions = listOf(events().transactions.single().copy(declaredTileCountAfter = 2, facts = listOf(HistoryReplayFactDto.Completion(HistoryFactTypeKeys.ROUND_COMPLETED, outcome)))),
         )
 
@@ -305,14 +310,14 @@ class HistoryRoundResponseValidatorTest {
         )
         val outcome = HistoryRoundOutcomeDto("test:win", listOf(0), mapOf(0 to 25000), "WIN", emptyList(), null, nextDealerSeat = null, winnerDetails = details, scoreChangesBySeat = emptyMap(), hasEarlierWinSettlement = false)
         val base = events().copy(transactions = listOf(events().transactions.single().copy(facts = listOf(HistoryReplayFactDto.Completion(HistoryFactTypeKeys.ROUND_COMPLETED, outcome)))))
-        val catalogInvalid = base.copy(tileCatalog = listOf(TileDto.Numeric(SuitDto.CHARACTER, 1)))
+        val catalogInvalid = base.copy(tileCatalog = listOf(TileFaceViewDto(TileDto.Numeric(SuitDto.CHARACTER, 1), emptyList(), null)))
         assertEquals(
             HistoryRoundValidationError.CONTENT_MISMATCH,
             assertIs<HistoryRoundValidationResult.Invalid>(HistoryRoundResponseValidator.validateEvents(request, HistoryRoundEventsResponseDto("request", TEST_MATCH_ID, 1, 0, catalogInvalid, errorCode = null))).reason,
         )
 
         val declaredInvalid = base.copy(
-            tileCatalog = listOf(TileDto.Numeric(SuitDto.CHARACTER, 1), TileDto.Numeric(SuitDto.CHARACTER, 2)),
+            tileCatalog = listOf(TileFaceViewDto(TileDto.Numeric(SuitDto.CHARACTER, 1), emptyList(), null), TileFaceViewDto(TileDto.Numeric(SuitDto.CHARACTER, 2), emptyList(), null)),
             transactions = listOf(base.transactions.single().copy(declaredTileCountAfter = 1)),
         )
         assertEquals(
@@ -359,7 +364,7 @@ class HistoryRoundResponseValidatorTest {
         val outcome = HistoryRoundOutcomeDto("test:win", listOf(0, 1), mapOf(0 to 25000, 1 to 25000), "WIN", emptyList(), null, nextDealerSeat = null, winnerDetails = details, scoreChangesBySeat = emptyMap(), hasEarlierWinSettlement = false)
         val base = events().copy(
             identity = identity,
-            tileCatalog = listOf(TileDto.Numeric(SuitDto.CHARACTER, 1), TileDto.Numeric(SuitDto.CHARACTER, 2)),
+            tileCatalog = listOf(TileFaceViewDto(TileDto.Numeric(SuitDto.CHARACTER, 1), emptyList(), null), TileFaceViewDto(TileDto.Numeric(SuitDto.CHARACTER, 2), emptyList(), null)),
             transactions = listOf(events().transactions.single().copy(declaredTileCountAfter = 2, facts = listOf(HistoryReplayFactDto.Completion(HistoryFactTypeKeys.ROUND_COMPLETED, outcome)))),
         )
 
@@ -515,7 +520,7 @@ class HistoryRoundResponseValidatorTest {
             TEST_MATCH_ID,
             1,
             HistoryRoundPositionDto.Initial,
-            state = state().copy(players = listOf(player), tileCatalog = List(3) { TileDto.Numeric(SuitDto.CHARACTER, 1) }, wallTiles = emptyList()),
+            state = state().copy(players = listOf(player), tileCatalog = List(3) { TileFaceViewDto(TileDto.Numeric(SuitDto.CHARACTER, 1), emptyList(), null) }, wallTiles = emptyList()),
             errorCode = null,
         )
 
@@ -526,7 +531,7 @@ class HistoryRoundResponseValidatorTest {
     @Test
     fun `test malformed meld membership is rejected`() {
         val request = HistoryRoundStateRequestDto("request", TEST_MATCH_ID, roundNumber = 1, scope = HistoryQueryScopeDto.OWN, position = HistoryRoundPositionDto.Initial)
-        val base = state().copy(tileCatalog = List(4) { TileDto.Numeric(SuitDto.CHARACTER, 1) }, wallTiles = emptyList())
+        val base = state().copy(tileCatalog = List(4) { TileFaceViewDto(TileDto.Numeric(SuitDto.CHARACTER, 1), emptyList(), null) }, wallTiles = emptyList())
         val invalidMelds = listOf(
             HistoryReplayMeldDto(MeldTypeDto.Pon, listOf(0, 0, 1), 0, RelativeDirectionDto.Left, emptySet(), emptySet()),
             HistoryReplayMeldDto(MeldTypeDto.Pon, listOf(0, 1, 2), 3, RelativeDirectionDto.Left, emptySet(), emptySet()),
@@ -579,7 +584,7 @@ class HistoryRoundResponseValidatorTest {
             ),
         ),
         nextTransactionIndex = 1,
-        tileCatalog = listOf(TileDto.Numeric(SuitDto.CHARACTER, 1)),
+        tileCatalog = listOf(TileFaceViewDto(TileDto.Numeric(SuitDto.CHARACTER, 1), emptyList(), null)),
     )
 
     /**
@@ -592,7 +597,7 @@ class HistoryRoundResponseValidatorTest {
         identity = identity(),
         roundNumber = 1,
         position = HistoryRoundPositionDto.Initial,
-        tileCatalog = listOf(TileDto.Numeric(SuitDto.CHARACTER, 1)),
+        tileCatalog = listOf(TileFaceViewDto(TileDto.Numeric(SuitDto.CHARACTER, 1), emptyList(), null)),
         players = listOf(HistoryReplayPlayerStateDto(0, emptyList(), emptyList(), null, emptyList(), 25000, WindDto.EAST, emptyList())),
         wallTiles = listOf(tileIndex),
         reservedTiles = emptyList(),

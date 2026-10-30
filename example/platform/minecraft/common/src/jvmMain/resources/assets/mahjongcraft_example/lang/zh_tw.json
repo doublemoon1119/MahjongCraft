@@ -39,6 +39,8 @@
   "mahjongcraft_example.room.config.category.rule": "配對麻將",
   "mahjongcraft_example.room.config.field.exchange_enabled": "開局前交換牌",
   "mahjongcraft_example.room.config.field.exchange_enabled.description": "開局前讓每位玩家選兩張牌交給下一個座位的玩家，同時收取前一個座位的兩張牌。",
+  "mahjongcraft_example.room.config.field.public_faces_enabled": "公開牌面",
+  "mahjongcraft_example.room.config.field.public_faces_enabled.description": "每種牌 4 張中有 3 張，所有人都看得到牌面，包括牌山中朝下或在別人手中的時候。這些牌的牌身會換成不同顏色。",
   "mahjongcraft_example.room.config.field.payment_per_player": "每位玩家付款點數",
   "mahjongcraft_example.room.config.field.payment_per_player.description": "每位玩家支付給和牌者的點數。",
   "mahjongcraft_example.room.config.field.round_count": "對局局數",

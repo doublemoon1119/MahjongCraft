@@ -1,6 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.tile
 
-import com.doublemoon1119.mahjongcraft.logic.module.HandTileState
+import com.doublemoon1119.mahjongcraft.logic.tile.component.TilePoseState
 import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongTableFacing
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongTableSeatLayout
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocation
@@ -25,7 +25,7 @@ import kotlin.uuid.Uuid
  * 位置索引。
  * @property cornerWidth 這個座位副露角落被規則桌面物件佔用的寬度（見 `TablePropDescriber.cornerWidth`）；
  * 只用來讓手牌／副露正確讓開，這個 presenter 本身不負責那些物件的生成／清除，見 [TablePropPresenter]。
- * @property handTileStates 規則描述的逐張手牌姿態；未列出的牌維持直立，不從牌面可見性推斷姿態。
+ * @property tilePoseStates 規則描述的逐張手牌姿態；未列出的牌維持直立，不從牌面可見性推斷姿態。
  * @property animateDrawnTile [drawnTileId] 非 `null` 時，是否要播放摸牌動畫（牌從牌牆原位面朝下起飛、
  * 短暫隱形傳送到摸牌位、傳送的同一瞬間切換成面向玩家的姿態、解除隱形後再落下）——姿態切換發生在
  * 隱形期間，玩家看不到旋轉過程，不像開局發牌動畫那樣需要落地後另外播放看得見的翻牌動畫。從牌牆摸牌（一般摸牌、
@@ -58,7 +58,7 @@ data class MahjongPlayerAreaPresentation(
     val drawnTileId: Uuid?,
     val melds: List<MahjongMeldTileGroup>,
     val cornerWidth: Double,
-    val handTileStates: List<HandTileState> = emptyList(),
+    val tilePoseStates: List<TilePoseState> = emptyList(),
     val animateDrawnTile: Boolean = false,
     val animatedMeldClaimTileIds: Set<Uuid> = emptySet(),
     val setAsideTileIds: List<Uuid> = emptyList(),

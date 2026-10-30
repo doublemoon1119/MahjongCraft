@@ -1,12 +1,20 @@
 package com.doublemoon1119.mahjongcraft.logic.table
 
-/**
- * 牌山生成工廠介面。
- * 根據特定地區規則定義牌山的組成。
- */
+import com.doublemoon1119.mahjongcraft.logic.tile.TileComposition
+
+/** 同一份規則牌組同時提供純組成與實際建牌。 */
 interface TileWallFactory {
     /**
-     * 建立一個全新的、已經洗牌的 [TileWall]。
+     * 取得牌值與張數，不建立牌、不洗牌或產生 UUID。
+     *
+     * @return 目前設定使用的牌組組成。
      */
-    fun create(): TileWall
+    fun composition(): TileComposition
+
+    /**
+     * 依同一份組成建立並洗好一副牌。
+     *
+     * @return 新的牌山。
+     */
+    fun create(): TileWall = composition().createWall()
 }

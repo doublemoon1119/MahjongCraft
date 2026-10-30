@@ -1,24 +1,24 @@
 package com.doublemoon1119.mahjongcraft.flow.persistence.format.rule
 
-import com.doublemoon1119.mahjongcraft.flow.persistence.format.game.toDomain
-import com.doublemoon1119.mahjongcraft.flow.persistence.format.game.toPersistenceDto
+import com.doublemoon1119.mahjongcraft.flow.persistence.format.component.ComponentPersistenceRegistry
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanDiscardPile
-import com.doublemoon1119.mahjongcraft.logic.table.DiscardPile
 
 /**
- * 將 [TaiwanDiscardPile] 轉換成 persistence DTO。
+ * 保存台麻牌河，保留每次捨牌的紀錄組件。
  *
- * @return 轉換後的台麻牌河 persistence DTO。
+ * @param registry 組件保存轉換。
+ * @return 依捨牌順序排列的保存資料。
  */
-fun TaiwanDiscardPile.toPersistenceDto(): TaiwanDiscardPilePersistenceDto = TaiwanDiscardPilePersistenceDto(
-    entries.map { DiscardEntryPersistenceDto(it.tile.toPersistenceDto(), it.isTaken) },
+fun TaiwanDiscardPile.toPersistenceDto(registry: ComponentPersistenceRegistry): TaiwanDiscardPilePersistenceDto = TaiwanDiscardPilePersistenceDto(
+    entries.map { it.toPersistenceDto(registry) },
 )
 
 /**
- * 將台麻牌河 persistence DTO 還原成 [TaiwanDiscardPile]。
+ * 還原台麻牌河及其紀錄組件。
  *
- * @return 還原後的台麻牌河。
+ * @param registry 組件保存轉換。
+ * @return 還原的牌河。
  */
-fun TaiwanDiscardPilePersistenceDto.toDomain(): TaiwanDiscardPile = entries.fold(TaiwanDiscardPile()) { pile, entry ->
-    pile.discard(DiscardPile.DiscardEntry(entry.tile.toDomain(), entry.isTaken))
+fun TaiwanDiscardPilePersistenceDto.toDomain(registry: ComponentPersistenceRegistry): TaiwanDiscardPile = entries.fold(TaiwanDiscardPile()) { pile, entry ->
+    pile.discard(entry.toDomain(registry))
 }

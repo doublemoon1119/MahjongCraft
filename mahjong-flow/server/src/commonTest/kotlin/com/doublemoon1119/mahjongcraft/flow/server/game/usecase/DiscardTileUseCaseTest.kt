@@ -13,6 +13,7 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.service.HandSortPreferen
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.base.Hand
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
+import com.doublemoon1119.mahjongcraft.logic.component.ComponentPatch
 import com.doublemoon1119.mahjongcraft.logic.config.MultiRonPolicy
 import com.doublemoon1119.mahjongcraft.logic.config.RonResolution
 import com.doublemoon1119.mahjongcraft.logic.judgment.LegalActionContext
@@ -20,14 +21,17 @@ import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleDefinition
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDiscardEntry
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDiscardComponents
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDiscardPile
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDynamicState
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiExhaustiveDrawReason
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPendingKanDoraReveal
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPlayerState
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPlayerComponents
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleModule
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiWallProgress
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.riichiDeclaration
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.riichiWallProgress
+import com.doublemoon1119.mahjongcraft.logic.table.DiscardPile.DiscardEntry
 import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayer
 import com.doublemoon1119.mahjongcraft.logic.table.PendingRobbingReaction
 import com.doublemoon1119.mahjongcraft.logic.table.SidewaysMarkedDiscardPile
@@ -35,11 +39,14 @@ import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.logic.table.TileWall
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import com.doublemoon1119.mahjongcraft.logic.table.toSnapshot
+import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledCoreExtensionRegistries
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.registerBundledRuleModules
 import com.doublemoon1119.mahjongcraft.testing.flow.common.game.repository.FakeGameSnapshotRepository
 import com.doublemoon1119.mahjongcraft.testing.flow.common.game.service.FakeGameEventPublisher
 import com.doublemoon1119.mahjongcraft.testing.flow.common.game.service.FakeGamePresentationPublisher
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeIdentifiedTileFactory
+import com.doublemoon1119.mahjongcraft.testing.logic.rules.riichi.riichiDeclarationComponents
+import com.doublemoon1119.mahjongcraft.testing.logic.rules.riichi.riichiTableComponents
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
 import kotlinx.coroutines.test.runTest
@@ -73,7 +80,7 @@ class DiscardTileUseCaseTest {
     ) {
         val gameRepo = FakeGameRepository()
         val snapshotRepo = FakeGameSnapshotRepository()
-        val snapshotSynchronizer = GameSnapshotSynchronizer(gameRepo, snapshotRepo, GameVisibilityPolicyImpl(moduleRegistry))
+        val snapshotSynchronizer = GameSnapshotSynchronizer(gameRepo, snapshotRepo, GameVisibilityPolicyImpl(moduleRegistry, componentRegistry = bundledCoreExtensionRegistries().componentRegistry))
         val handSortPreferenceStore = HandSortPreferenceStore()
         val postActionExhaustiveDrawResolverRegistry = PostActionExhaustiveDrawResolverRegistry().apply {
             BundledRiichiExtension.registerPostActionExhaustiveDrawResolvers(this)
@@ -89,6 +96,8 @@ class DiscardTileUseCaseTest {
             postActionExhaustiveDrawResolverRegistry,
             eventPublisher,
             presentationPublisher,
+
+            componentRegistry = bundledCoreExtensionRegistries().componentRegistry,
         )
     }
 
@@ -209,7 +218,7 @@ class DiscardTileUseCaseTest {
     fun `test discard tile publishes sideways marked tile from an earlier riichi declaration`() = runTest {
         val fixtures = Fixtures()
         val riichiTile = FakeIdentifiedTileFactory.create(Tile.Honor.South)
-        val alreadyDiscarded = RiichiDiscardPile().discard(RiichiDiscardEntry(riichiTile, isRiichi = true))
+        val alreadyDiscarded = RiichiDiscardPile().discard(DiscardEntry(tile = riichiTile, components = RiichiDiscardComponents.declaration()))
         val currentPlayer = FakeMahjongPlayerFactory.create(
             id = currentPlayerId,
             initialSeat = Wind.EAST,
@@ -273,7 +282,7 @@ class DiscardTileUseCaseTest {
             id = currentPlayerId,
             initialSeat = Wind.EAST,
             hand = Hand(tiles = listOf(handTile), lastDrawn = drawnTile),
-            playerRuleState = RiichiPlayerState(riichiTile = FakeIdentifiedTileFactory.create(Tile.Honor.East)),
+            components = riichiDeclarationComponents(declarationTile = FakeIdentifiedTileFactory.create(Tile.Honor.East)),
         )
         val table = FakeTableStateFactory.create(
             id = gameId,
@@ -300,7 +309,7 @@ class DiscardTileUseCaseTest {
             id = currentPlayerId,
             initialSeat = Wind.EAST,
             hand = Hand(tiles = listOf(handTile), lastDrawn = drawnTile),
-            playerRuleState = RiichiPlayerState(riichiTile = FakeIdentifiedTileFactory.create(Tile.Honor.East)),
+            components = riichiDeclarationComponents(declarationTile = FakeIdentifiedTileFactory.create(Tile.Honor.East)),
         )
         val table = FakeTableStateFactory.create(
             id = gameId,
@@ -326,12 +335,12 @@ class DiscardTileUseCaseTest {
             id = currentPlayerId,
             initialSeat = Wind.EAST,
             hand = Hand(tiles = listOf(handTile), lastDrawn = drawnTile),
-            playerRuleState = RiichiPlayerState(riichiTile = FakeIdentifiedTileFactory.create(Tile.Honor.East), isIppatsu = true),
+            components = riichiDeclarationComponents(declarationTile = FakeIdentifiedTileFactory.create(Tile.Honor.East), isIppatsu = true),
         )
         val otherPlayer = FakeMahjongPlayerFactory.create(
             id = otherPlayerId,
             initialSeat = Wind.SOUTH,
-            playerRuleState = RiichiPlayerState(riichiTile = FakeIdentifiedTileFactory.create(Tile.Honor.South), isIppatsu = true),
+            components = riichiDeclarationComponents(declarationTile = FakeIdentifiedTileFactory.create(Tile.Honor.South), isIppatsu = true),
         )
         val table = FakeTableStateFactory.create(
             id = gameId,
@@ -346,10 +355,10 @@ class DiscardTileUseCaseTest {
 
         assertTrue(result is Outcome.Success, "Expected Success but got $result")
         val players = fixtures.gameRepo.getTableState(gameId)!!.players
-        val currentState = players.first { it.id == currentPlayerId }.playerRuleState as RiichiPlayerState
-        val otherState = players.first { it.id == otherPlayerId }.playerRuleState as RiichiPlayerState
+        val currentState = assertNotNull(players.first { it.id == currentPlayerId }.riichiDeclaration)
+        val otherState = assertNotNull(players.first { it.id == otherPlayerId }.riichiDeclaration)
         assertFalse(currentState.isIppatsu, "Discarding the next tile after riichi ends the ippatsu window.")
-        assertTrue(currentState.isRiichi, "Riichi itself should remain in effect.")
+        assertNotNull(currentState, "Riichi itself should remain in effect.")
         assertTrue(otherState.isIppatsu, "Another player's discard must not end this player's ippatsu window.")
     }
 
@@ -383,7 +392,7 @@ class DiscardTileUseCaseTest {
                 ),
                 lastDrawn = secondWest,
             ),
-            playerRuleState = RiichiPlayerState(riichiTile = FakeIdentifiedTileFactory.create(Tile.Honor.East)),
+            components = riichiDeclarationComponents(declarationTile = FakeIdentifiedTileFactory.create(Tile.Honor.East)),
         )
         val table = FakeTableStateFactory.create(
             id = gameId,
@@ -398,8 +407,7 @@ class DiscardTileUseCaseTest {
 
         assertTrue(result is Outcome.Success, "Expected Success but got $result")
         val updatedPlayer = fixtures.gameRepo.getTableState(gameId)!!.players.first { it.id == currentPlayerId }
-        val riichiState = updatedPlayer.playerRuleState as RiichiPlayerState
-        assertTrue(riichiState.isPermanentlyFuriten, "Declining a legal tsumo while riichi-locked should mark permanent furiten.")
+        assertTrue(updatedPlayer.components[RiichiPlayerComponents.PERMANENT_FURITEN] != null, "Declining a legal tsumo while riichi-locked should mark permanent furiten.")
     }
 
     /** 規則以 [MahjongRuleModule.forcedDiscardTileId] 限定捨牌時，打出其他牌被拒絕、打出指定牌成功。 */
@@ -455,7 +463,7 @@ class DiscardTileUseCaseTest {
         assertTrue(result is Outcome.Success, "Expected Success but got $result")
         val updatedPlayer = fixtures.gameRepo.getTableState(gameId)!!.players.single()
         assertFalse(
-            (updatedPlayer.playerRuleState as? RiichiPlayerState)?.isPermanentlyFuriten == true,
+            updatedPlayer.components[RiichiPlayerComponents.PERMANENT_FURITEN] != null,
             "Declining a tsumo without riichi should not mark permanent furiten.",
         )
     }
@@ -962,8 +970,8 @@ class DiscardTileUseCaseTest {
             currentPlayerIndex = 0,
         )
         fixtures.gameRepo.setTableState(table)
-        fixtures.snapshotRepo.setSnapshot(currentPlayerId, table.toSnapshot(setOf(currentPlayerId), setAsideTiles = { emptyList() }))
-        fixtures.snapshotRepo.setSnapshot(otherPlayerId, table.toSnapshot(setOf(otherPlayerId), setAsideTiles = { emptyList() }))
+        fixtures.snapshotRepo.setSnapshot(currentPlayerId, table.toSnapshot(setOf(currentPlayerId)))
+        fixtures.snapshotRepo.setSnapshot(otherPlayerId, table.toSnapshot(setOf(otherPlayerId)))
 
         fixtures.useCase(gameId, currentPlayerId, drawnTile.id)
 
@@ -1341,11 +1349,14 @@ class DiscardTileUseCaseTest {
             tileWall = TileWall(emptyList()),
             currentPlayerIndex = 0,
             reservedWallTiles = deadWall,
-            dynamicRuleState = RiichiDynamicState(
-                completedSupplementalDrawCount = 1,
-                revealedKanDoraCount = 0,
-                pendingKanDoraReveals = listOf(
-                    RiichiPendingKanDoraReveal(currentPlayerId, GameAction.KanType.OPEN_KAN, 1),
+            components = riichiTableComponents(
+                potPoints = 0,
+                wallProgress = RiichiWallProgress(
+                    completedSupplementalDrawCount = 1,
+                    revealedKanDoraCount = 0,
+                    pendingKanDoraReveals = listOf(
+                        RiichiPendingKanDoraReveal(currentPlayerId, GameAction.KanType.OPEN_KAN, 1),
+                    ),
                 ),
             ),
         )
@@ -1355,12 +1366,12 @@ class DiscardTileUseCaseTest {
 
         assertTrue(result is Outcome.Success, "Expected Success but got $result")
         val newState = assertNotNull(fixtures.gameRepo.getTableState(gameId))
-        val dynamicState = newState.dynamicRuleState as RiichiDynamicState
-        assertEquals(1, dynamicState.revealedKanDoraCount)
-        assertTrue(dynamicState.pendingKanDoraReveals.isEmpty())
+        val wallProgress = newState.riichiWallProgress()
+        assertEquals(1, wallProgress.revealedKanDoraCount)
+        assertTrue(wallProgress.pendingKanDoraReveals.isEmpty())
         assertEquals(
-            dynamicState.getVisibleTileIds(newState) -
-                (table.dynamicRuleState as RiichiDynamicState).getVisibleTileIds(table),
+            wallProgress.getDoraIndicators(newState).first.map { it.id }.toSet() -
+                table.riichiWallProgress().getDoraIndicators(table).first.map { it.id }.toSet(),
             fixtures.presentationPublisher.getPublishedDeadWallReveal(gameId),
         )
     }
@@ -1437,9 +1448,9 @@ class DiscardTileUseCaseTest {
         ) : MahjongRuleModule<RiichiRuleConfig> by delegate {
             override fun forcedDiscardTileId(tableState: TableState, player: MahjongPlayer): Uuid? = probe.forcedTileId
 
-            override fun onPlayerDeclinedWin(player: MahjongPlayer): MahjongPlayer {
+            override fun onPlayerDeclinedWin(player: MahjongPlayer): ComponentPatch {
                 probe.declinedPlayerIds += player.id
-                return player
+                return ComponentPatch()
             }
         }
     }
@@ -1473,7 +1484,7 @@ class DiscardTileUseCaseTest {
                     Tile.Numeric(Tile.Suit.Bamboo, 6),
                 ).map(FakeIdentifiedTileFactory::create),
             ),
-            playerRuleState = RiichiPlayerState(),
+            components = riichiDeclarationComponents(),
         )
         val table = FakeTableStateFactory.create(
             id = gameId,

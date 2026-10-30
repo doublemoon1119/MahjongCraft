@@ -3,18 +3,24 @@ package com.doublemoon1119.mahjongcraft.logic.table
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.base.Hand
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
+import com.doublemoon1119.mahjongcraft.logic.component.initializeRuleComponents
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDiscardPile
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDynamicState
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPlayerState
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleModule
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiWallProgress
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.riichiDeclaration
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.riichiPotPoints
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.riichiWallProgress
 import com.doublemoon1119.mahjongcraft.logic.table.GameInitializer.dealInitialHands
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeIdentifiedTileFactory
+import com.doublemoon1119.mahjongcraft.testing.logic.rules.riichi.riichiComponentRegistryForTests
+import com.doublemoon1119.mahjongcraft.testing.logic.rules.riichi.riichiDeclarationComponents
+import com.doublemoon1119.mahjongcraft.testing.logic.rules.riichi.riichiTableComponents
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
+import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
-import kotlin.test.assertIs
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 import kotlin.uuid.Uuid
@@ -172,80 +178,69 @@ class GameInitializerTest {
         }
     }
 
-    /**
-     * 驗證開局時會透過規則模組建立初始動態桌況狀態，而不是維持預設的 null
-     * （否則寶牌指示器等依賴 dynamicRuleState 的功能會永遠無法顯示）。
-     */
+    /** 正式組件建立後具有零供託與本局初始進度。 */
     @Test
-    fun `test initialize sets dynamic rule state from module`() {
-        val playerIds = List(4) { Uuid.random() }
-        val table = GameInitializer.initialize(Uuid.random(), playerIds, module).tableState
-
-        assertIs<RiichiDynamicState>(table.dynamicRuleState)
+    fun `initialization creates required riichi table components`() {
+        val table = initializeComponents(GameInitializer.initialize(Uuid.random(), List(4) { Uuid.random() }, module))
+        assertEquals(0, table.riichiPotPoints())
+        assertEquals(RiichiWallProgress(), table.riichiWallProgress())
     }
 
     /**
-     * 驗證開局時會透過規則模組為每位玩家建立初始玩家規則狀態，而不是維持預設的 null
-     * （否則立直宣告等需要寫入 playerRuleState 的功能會沒有初始狀態可以 copy）。
+     * 尚未宣告的玩家沒有立直組件，也不需要整包日麻玩家狀態。
      */
     @Test
-    fun `test initialize sets player rule state from module for every player`() {
+    fun `initial riichi players have no declaration or monolithic state`() {
         val playerIds = List(4) { Uuid.random() }
         val table = GameInitializer.initialize(Uuid.random(), playerIds, module).tableState
 
         table.players.forEach { player ->
-            assertIs<RiichiPlayerState>(player.playerRuleState)
+            assertNull(player.riichiDeclaration)
         }
     }
 
-    /**
-     * 驗證 [GameInitializer.startNextRound] 只延續跨局的動態桌況，不把每局狀態帶進新局。
-     *
-     * 日麻的 [RiichiDynamicState] 同時保存跨局的供託棒與每局的槓次、已公開槓寶牌數；整包沿用會讓新局
-     * 一開始就以為已經槓過，除了指示牌翻錯，也會吃掉新局可槓的次數。
-     */
+    /** 換局只保留供託，補牌及指示牌進度重新開始。 */
     @Test
-    fun `test startNextRound keeps only the cross round dynamic state`() {
-        val previous = RiichiDynamicState(
-            riichiStickCount = 2,
-            completedSupplementalDrawCount = 1,
-            revealedKanDoraCount = 1,
-            pendingKanDoraReveals = emptyList(),
+    fun `new round retains pot points and resets wall progress`() {
+        val advancement = roundAdvancement()
+        val previous = FakeTableStateFactory.create(
+            players = advancement.players,
+            config = module.config,
+            components = riichiTableComponents(
+                potPoints = 2000,
+                wallProgress = RiichiWallProgress(completedSupplementalDrawCount = 1, revealedKanDoraCount = 1),
+            ),
         )
-
-        val table = GameInitializer.startNextRound(Uuid.random(), roundAdvancement(), previous, module).tableState
-
-        val dynamicState = assertIs<RiichiDynamicState>(table.dynamicRuleState)
-        assertEquals(2, dynamicState.riichiStickCount, "Expected the stick pot to carry into the next round.")
-        assertEquals(0, dynamicState.completedSupplementalDrawCount, "Expected the kan count to reset for the new round.")
-        assertEquals(0, dynamicState.revealedKanDoraCount, "Expected the revealed kan dora count to reset.")
-        assertEquals(emptyList(), dynamicState.pendingKanDoraReveals, "Expected no kan dora reveal to stay pending.")
+        val table = initializeComponents(
+            GameInitializer.startNextRound(previous.id, advancement, module),
+            previous,
+        )
+        assertEquals(2000, table.riichiPotPoints())
+        assertEquals(RiichiWallProgress(), table.riichiWallProgress())
+        assertEquals(1, previous.riichiWallProgress().completedSupplementalDrawCount)
     }
 
-    /**
-     * 驗證上一局槓過之後，新局翻開的指示牌與從未槓過的新局完全相同。
-     *
-     * 指示牌索引依已完成補牌次數往深處位移，而王牌區每墩固定 `[上層, 下層]`，索引的奇偶決定上下層；
-     * 槓次沒歸零時起始索引奇偶翻轉，整排會改取下層（裏寶牌）那一排，公開張數也會多算。
-     */
+    /** 上一局槓牌不會改變新一局指示牌在保留區中的位置。 */
     @Test
-    fun `test startNextRound reveals the same indicators as a round without any kan`() {
-        val gameId = Uuid.random()
+    fun `new round indicator positions do not depend on previous kan draws`() {
         val advancement = roundAdvancement()
-
-        val afterKan = GameInitializer.startNextRound(
-            gameId,
-            advancement,
-            RiichiDynamicState(completedSupplementalDrawCount = 1, revealedKanDoraCount = 1),
-            module,
-        ).tableState
-        val withoutKan = GameInitializer.startNextRound(gameId, advancement, RiichiDynamicState(), module).tableState
-
-        assertEquals(
-            indicatorPositions(withoutKan),
-            indicatorPositions(afterKan),
-            "Expected a kan in the previous round to leave the new round's indicators untouched.",
+        val previous = FakeTableStateFactory.create(
+            players = advancement.players,
+            config = module.config,
+            components = riichiTableComponents(
+                wallProgress = RiichiWallProgress(completedSupplementalDrawCount = 1, revealedKanDoraCount = 1),
+            ),
         )
+        val afterKan = initializeComponents(
+            GameInitializer.startNextRound(previous.id, advancement, module),
+            previous,
+        )
+        val withoutKan = initializeComponents(
+            GameInitializer.startNextRound(previous.id, advancement, module),
+            previous.copy(components = riichiTableComponents()),
+        )
+        assertEquals(listOf(module.config.rinshanTileCount), indicatorPositions(afterKan))
+        assertEquals(indicatorPositions(withoutKan), indicatorPositions(afterKan))
     }
 
     /**
@@ -255,8 +250,7 @@ class GameInitializerTest {
      * @return 目前公開指示牌在王牌區中的索引。
      */
     private fun indicatorPositions(table: TableState): List<Int> {
-        val dynamicState = assertIs<RiichiDynamicState>(table.dynamicRuleState)
-        val visibleIds = dynamicState.getVisibleTileIds(table)
+        val visibleIds = table.riichiWallProgress().getDoraIndicators(table).first.mapTo(mutableSetOf()) { it.id }
         return table.reservedWallTiles.withIndex().filter { it.value.id in visibleIds }.map { it.index }
     }
 
@@ -293,7 +287,7 @@ class GameInitializerTest {
             prevalentWind = Wind.EAST,
         )
 
-        val table = GameInitializer.startNextRound(Uuid.random(), roundAdvancement, previousDynamicRuleState = null, module).tableState
+        val table = GameInitializer.startNextRound(Uuid.random(), roundAdvancement, module).tableState
 
         assertEquals(32000, table.players.first { it.id == p1.id }.score)
         assertEquals(18000, table.players.first { it.id == p2.id }.score)
@@ -318,7 +312,7 @@ class GameInitializerTest {
             prevalentWind = Wind.EAST,
         )
 
-        val table = GameInitializer.startNextRound(Uuid.random(), roundAdvancement, previousDynamicRuleState = null, module).tableState
+        val table = GameInitializer.startNextRound(Uuid.random(), roundAdvancement, module).tableState
 
         assertEquals(listOf(p1.id, p2.id, p3.id, p4.id), table.players.map { it.id })
     }
@@ -340,7 +334,7 @@ class GameInitializerTest {
             prevalentWind = Wind.SOUTH,
         )
 
-        val table = GameInitializer.startNextRound(Uuid.random(), roundAdvancement, previousDynamicRuleState = null, module).tableState
+        val table = GameInitializer.startNextRound(Uuid.random(), roundAdvancement, module).tableState
 
         assertEquals(3, table.roundNumber)
         assertEquals(1, table.comboCount)
@@ -368,7 +362,7 @@ class GameInitializerTest {
             prevalentWind = Wind.EAST,
         )
 
-        val table = GameInitializer.startNextRound(Uuid.random(), roundAdvancement, previousDynamicRuleState = null, module).tableState
+        val table = GameInitializer.startNextRound(Uuid.random(), roundAdvancement, module).tableState
 
         assertEquals(3, table.currentPlayerIndex, "P4 (index 3) holds East, so they are the new dealer.")
         assertEquals(p4.id, table.currentPlayer.id)
@@ -380,11 +374,12 @@ class GameInitializerTest {
      */
     @Test
     fun `test startNextRound resets per-hand player state`() {
+        val declarationTile = FakeIdentifiedTileFactory.create(Tile.Honor.South)
         val dirtyPlayer = FakeMahjongPlayerFactory.create(
             Wind.EAST,
             hand = Hand(tiles = listOf(FakeIdentifiedTileFactory.create(Tile.Honor.East))),
-            discardPile = RiichiDiscardPile().discardTile(FakeIdentifiedTileFactory.create(Tile.Honor.South)),
-            playerRuleState = RiichiPlayerState(isIppatsu = true),
+            discardPile = RiichiDiscardPile().discardTile(declarationTile),
+            components = riichiDeclarationComponents(declarationTile, isIppatsu = true),
         ).copy(
             passedTilesInRound = setOf(Tile.Honor.West),
             actionHistory = listOf(GameAction.Draw),
@@ -400,34 +395,34 @@ class GameInitializerTest {
             prevalentWind = Wind.EAST,
         )
 
-        val table = GameInitializer.startNextRound(Uuid.random(), roundAdvancement, previousDynamicRuleState = null, module).tableState
+        val previous = FakeTableStateFactory.create(players = roundAdvancement.players, config = module.config)
+        val components = riichiComponentRegistryForTests()
+        val table = GameInitializer.startNextRound(Uuid.random(), roundAdvancement, module)
+            .initializeRuleComponents(module.id, components, previous).tableState
 
         val updated = table.players.first { it.id == dirtyPlayer.id }
         assertEquals(module.config.initialHandSize, updated.hand.tiles.size)
         assertTrue(updated.discardPile.entries.isEmpty())
-        assertEquals(RiichiPlayerState(), updated.playerRuleState)
+        assertNull(updated.riichiDeclaration)
         assertTrue(updated.passedTilesInRound.isEmpty())
         assertTrue(updated.actionHistory.isEmpty())
     }
 
-    /**
-     * 驗證 [GameInitializer.startNextRound] 保留供託；輸入只含跨局資料時，換局後的動態狀態與輸入相等。
-     */
+    /** 供託跨局保留時，不會在新局再次扣除玩家點數。 */
     @Test
-    fun `test startNextRound carries over dynamic rule state unchanged`() {
-        val players = listOf(Wind.EAST, Wind.SOUTH, Wind.WEST, Wind.NORTH).map { FakeMahjongPlayerFactory.create(it) }
-        val roundAdvancement = RoundAdvancementResult(
-            players = players,
-            dealerPlayerId = players.first().id,
-            roundNumber = 1,
-            comboCount = 0,
-            prevalentWind = Wind.EAST,
+    fun `retaining pot points does not charge players again`() {
+        val advancement = roundAdvancement()
+        val previous = FakeTableStateFactory.create(
+            players = advancement.players,
+            config = module.config,
+            components = riichiTableComponents(potPoints = 2000),
         )
-        val carriedOverState = RiichiDynamicState(riichiStickCount = 2)
-
-        val table = GameInitializer.startNextRound(Uuid.random(), roundAdvancement, carriedOverState, module).tableState
-
-        assertEquals(carriedOverState, table.dynamicRuleState)
+        val table = initializeComponents(
+            GameInitializer.startNextRound(previous.id, advancement, module),
+            previous,
+        )
+        assertEquals(2000, table.riichiPotPoints())
+        assertEquals(previous.players.associate { it.id to it.score }, table.players.associate { it.id to it.score })
     }
 
     /**
@@ -444,7 +439,7 @@ class GameInitializerTest {
             prevalentWind = Wind.EAST,
         )
 
-        val table = GameInitializer.startNextRound(Uuid.random(), roundAdvancement, previousDynamicRuleState = null, module).tableState
+        val table = GameInitializer.startNextRound(Uuid.random(), roundAdvancement, module).tableState
 
         assertNull(table.pendingReaction)
     }
@@ -465,7 +460,7 @@ class GameInitializerTest {
         )
         val totalTileCount = module.createWallFactory(module.config.maxPlayers).create().remainingCount
 
-        val table = GameInitializer.startNextRound(Uuid.random(), roundAdvancement, previousDynamicRuleState = null, module).tableState
+        val table = GameInitializer.startNextRound(Uuid.random(), roundAdvancement, module).tableState
 
         val expectedRemaining = totalTileCount - module.config.deadTileCount - players.size * module.config.initialHandSize
         assertEquals(expectedRemaining, table.tileWall.remainingCount)
@@ -486,9 +481,21 @@ class GameInitializerTest {
             prevalentWind = Wind.EAST,
         )
 
-        val table = GameInitializer.startNextRound(Uuid.random(), roundAdvancement, previousDynamicRuleState = null, module).tableState
+        val table = GameInitializer.startNextRound(Uuid.random(), roundAdvancement, module).tableState
 
         assertTrue(table.wallOpening != null, "Riichi supports wall opening, wallOpening should not be null")
         assertEquals(module.config.deadTileCount, table.reservedWallTiles.size)
+    }
+
+    /**
+     * 以正式組件生命週期完成已建立的開局候選資料。
+     *
+     * @param initialization 已建立牌山、座位及手牌的候選結果。
+     * @param previous 上一局的權威桌況；第一局為 null。
+     * @return 已建立或換局轉換組件的桌況。
+     */
+    private fun initializeComponents(initialization: GameInitializationResult, previous: TableState? = null): TableState {
+        val registry = riichiComponentRegistryForTests()
+        return initialization.initializeRuleComponents(module.id, registry, previous).tableState
     }
 }

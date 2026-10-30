@@ -1,7 +1,8 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.rule.riichi
 
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDynamicState
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPlayerState
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RIICHI_STICK_POINTS
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.riichiDeclaration
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.riichiPotPoints
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.platform.minecraft.stick.MahjongScoringStickDimensions
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.BuiltInTablePropKinds
@@ -60,12 +61,12 @@ object RiichiTableProps : TablePropDescriber {
 
     /** 目前立直中的座位。 */
     private fun riichiSeatIndices(tableState: TableState): List<Int> = tableState.players.withIndex()
-        .filter { (_, player) -> (player.playerRuleState as? RiichiPlayerState)?.isRiichi == true }
+        .filter { (_, player) -> player.riichiDeclaration != null }
         .map { (seatIndex, _) -> seatIndex }
 
     /** 延續自前局、尚未被收下的供託支數：場上總供託扣掉這局宣告中的立直棒。 */
     private fun pooledStickCount(tableState: TableState): Int {
-        val stickPotCount = (tableState.dynamicRuleState as? RiichiDynamicState)?.riichiStickCount ?: 0
+        val stickPotCount = tableState.riichiPotPoints() / RIICHI_STICK_POINTS
         return (stickPotCount - riichiSeatIndices(tableState).size).coerceAtLeast(0)
     }
 

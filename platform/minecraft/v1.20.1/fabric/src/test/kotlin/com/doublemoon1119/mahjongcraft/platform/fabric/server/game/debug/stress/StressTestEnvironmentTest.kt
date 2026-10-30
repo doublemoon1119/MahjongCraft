@@ -2,6 +2,7 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.stress
 
 import com.doublemoon1119.mahjongcraft.flow.common.concurrency.CoroutineDispatchers
 import com.doublemoon1119.mahjongcraft.flow.common.error.ExtensionFailurePolicy
+import com.doublemoon1119.mahjongcraft.flow.server.game.history.HistoryTilePresentationResolverImpl
 import com.doublemoon1119.mahjongcraft.flow.server.game.history.generation.HeadlessFlowHistoryRuntime
 import com.doublemoon1119.mahjongcraft.flow.server.game.history.generation.HeadlessHistoryScenario
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.AiDecisionExecutor
@@ -10,6 +11,7 @@ import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.history.HistoryWriterStage
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.history.SqliteHistoryDatabase
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocationRegistry
+import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledCoreExtensionRegistries
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledHeadlessHistoryRegistries
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledPersistenceRegistries
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.registerBundledRuleModules
@@ -170,12 +172,16 @@ class StressTestEnvironmentTest {
     private fun databasePath(): Path = createTempDirectory("mahjongcraft-stress-test-").resolve("stress-test-history.sqlite")
 
     /** @return 使用內建規則、測試排程器與獨立位置索引的環境工廠。 */
-    private fun factory() = StressTestEnvironmentFactory(
-        registries = bundledPersistenceRegistries(),
-        dispatchers = TestDispatchers,
-        moduleRegistry = MahjongModuleRegistryImpl().apply { registerBundledRuleModules() },
-        locations = TableLocationRegistry(),
-    )
+    private fun factory(): StressTestEnvironmentFactory {
+        val moduleRegistry = MahjongModuleRegistryImpl().apply { registerBundledRuleModules() }
+        return StressTestEnvironmentFactory(
+            registries = bundledPersistenceRegistries(),
+            dispatchers = TestDispatchers,
+            moduleRegistry = moduleRegistry,
+            locations = TableLocationRegistry(),
+            tilePresentationResolver = HistoryTilePresentationResolverImpl(moduleRegistry, bundledCoreExtensionRegistries().componentRegistry),
+        )
+    }
 
     /** 測試使用的 dispatcher 集合。 */
     private object TestDispatchers : CoroutineDispatchers {

@@ -2,6 +2,7 @@ package com.doublemoon1119.mahjongcraft.ai.expectation
 
 import com.doublemoon1119.mahjongcraft.logic.base.MeldType
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
+import com.doublemoon1119.mahjongcraft.logic.base.TileValue
 import com.doublemoon1119.mahjongcraft.logic.module.PositionRules
 import com.doublemoon1119.mahjongcraft.logic.module.PositionView
 import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayerSnapshot
@@ -60,7 +61,7 @@ class OpponentReading(
         if (tile !is Tile.Numeric) return 1.0
         return opponent.discardPile.entries
             .take(EARLY_DISCARD_COUNT)
-            .mapNotNull { entry -> interpretation.canonicalize(entry.tile.tile) as? Tile.Numeric }
+            .mapNotNull { entry -> entry.tile.tile?.let(interpretation::canonicalize) as? Tile.Numeric }
             .filter { it.suit == tile.suit }
             .minOfOrNull { early -> outsideFactor(early = early.value, value = tile.value) }
             ?: 1.0
@@ -93,7 +94,7 @@ class OpponentReading(
         if (melds.none { it.type != MeldType.CLOSED_KAN }) return null
         val meldTiles = melds.flatMap { meld -> meld.tiles.mapNotNull { it.tile?.let(interpretation::canonicalize) } }
         val suit = meldTiles.filterIsInstance<Tile.Numeric>().map { it.suit }.distinct().singleOrNull() ?: return null
-        val discards = opponent.discardPile.entries.map { entry -> interpretation.canonicalize(entry.tile.tile) }
+        val discards = opponent.discardPile.entries.mapNotNull { entry -> entry.tile.tile?.let(interpretation::canonicalize) }
         if (discards.size < MIN_FLUSH_DISCARDS) return null
         val suitDiscards = discards.count { it is Tile.Numeric && it.suit == suit }
         if (suitDiscards > discards.size * MAX_FLUSH_SUIT_DISCARD_SHARE) return null
@@ -126,12 +127,12 @@ class OpponentReading(
      * @return 寶牌或其鄰牌跡象所對應的倍率。
      */
     internal fun bonusNeighborFactor(view: PositionView, tile: Tile): Double {
-        if (rules.bonusTileCount(view, tile) > 0) return BONUS_TILE_FACTOR
+        if (rules.bonusTileCount(view, TileValue(tile)) > 0) return BONUS_TILE_FACTOR
         if (tile !is Tile.Numeric) return 1.0
         val hasBonusNeighbor = (1..NEAR_DISTANCE)
             .flatMap { distance -> listOf(tile.value - distance, tile.value + distance) }
             .filter { it in MIN_NUMBER..MAX_NUMBER }
-            .any { value -> rules.bonusTileCount(view, Tile.Numeric(tile.suit, value)) > 0 }
+            .any { value -> rules.bonusTileCount(view, TileValue(Tile.Numeric(tile.suit, value))) > 0 }
         return if (hasBonusNeighbor) BONUS_NEIGHBOR_FACTOR else 1.0
     }
 

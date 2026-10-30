@@ -1,7 +1,7 @@
 package com.doublemoon1119.mahjongcraft.logic.table
 
 import com.doublemoon1119.mahjongcraft.logic.base.NamespacedId
-import com.doublemoon1119.mahjongcraft.logic.config.DynamicRuleState
+import com.doublemoon1119.mahjongcraft.logic.component.ComponentPatch
 import kotlin.uuid.Uuid
 
 /** 規則對牌牆公開狀態的強型別決策。 */
@@ -12,11 +12,11 @@ sealed interface WallRevealDecision {
     /**
      * 公開牌狀態已成功更新。
      *
-     * @property dynamicRuleState 更新後的規則動態狀態。
+     * @property tableComponents 本次明確設定或移除的桌況組件；未指定的組件保持原值。
      * @property newlyRevealedTileIds 本次新成為公開資訊的牌張 ID。
      */
     data class Updated(
-        val dynamicRuleState: DynamicRuleState,
+        val tableComponents: ComponentPatch,
         val newlyRevealedTileIds: Set<Uuid> = emptySet(),
     ) : WallRevealDecision
 

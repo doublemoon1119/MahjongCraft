@@ -184,6 +184,15 @@ sealed interface HistoryFact {
         val result: HistoryTableResult,
     ) : HistoryFact
 
+    /**
+     * 同一權威交易提交後，呈現結果有變化的牌；開局交易列出本局所有牌。
+     *
+     * @property presentations 依牌張識別碼索引的呈現結果。
+     */
+    data class TilePresentationChanged(
+        val presentations: Map<Uuid, HistoryTilePresentation>,
+    ) : HistoryFact
+
     /** 已結束的 Game 被移出權威狀態並返回 Room。 */
     data object ReturnedToRoom : HistoryFact
 }

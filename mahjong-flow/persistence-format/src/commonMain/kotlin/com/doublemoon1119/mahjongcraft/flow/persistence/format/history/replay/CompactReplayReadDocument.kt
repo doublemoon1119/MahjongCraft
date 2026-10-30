@@ -23,6 +23,7 @@ import kotlin.uuid.Uuid
  * @property tileTypes 跨局牌種字典。
  * @property factTypes 語意事實種類字典。
  * @property actionTypes 動作種類字典。
+ * @property presentationTypes 牌張呈現字典，保留保存格式直到實際讀取。
  * @property paths 差異操作路徑。
  * @property startedAtEpochMillis 文件開始時間。
  * @property rounds 保留字典編碼的局資料。
@@ -33,6 +34,7 @@ internal data class CompactReplayReadDocument(
     val tileTypes: List<Tile>,
     val factTypes: List<String>,
     val actionTypes: List<String>,
+    val presentationTypes: List<JsonObject>,
     val paths: List<List<JsonElement>>,
     val startedAtEpochMillis: Long,
     val rounds: List<EncodedReplayRound>,
@@ -56,7 +58,7 @@ internal data class CompactReplayReadDocument(
             require(root.keys == setOf(ReplayFormatKeys.VERSION, ReplayFormatKeys.HEADER, ReplayFormatKeys.ROUNDS)) { "Replay content contains unexpected fields" }
             checkVersion(dictionary.expand(root.getValue(ReplayFormatKeys.VERSION)))
             val header = dictionary.expand(root.getValue(ReplayFormatKeys.HEADER)) as? JsonObject ?: error("Replay header must be an object")
-            require(header.keys == setOf(ReplayFormatKeys.MATCH, ReplayFormatKeys.VENUE, ReplayFormatKeys.PLAYERS, ReplayFormatKeys.RULE, ReplayFormatKeys.FLOW, ReplayFormatKeys.TIME, ReplayFormatKeys.TYPES, ReplayFormatKeys.FACT_TYPES, ReplayFormatKeys.ACTION_TYPES, ReplayFormatKeys.PATCH_PATHS)) { "Replay header contains missing or unexpected fields" }
+            require(header.keys == setOf(ReplayFormatKeys.MATCH, ReplayFormatKeys.VENUE, ReplayFormatKeys.PLAYERS, ReplayFormatKeys.RULE, ReplayFormatKeys.FLOW, ReplayFormatKeys.TIME, ReplayFormatKeys.TYPES, ReplayFormatKeys.FACT_TYPES, ReplayFormatKeys.ACTION_TYPES, ReplayFormatKeys.PRESENTATION_TYPES, ReplayFormatKeys.PATCH_PATHS)) { "Replay header contains missing or unexpected fields" }
             val match = Uuid.parse(string(header.getValue(ReplayFormatKeys.MATCH)))
             require(match == expectedMatchId) { "Replay match ID does not match the request" }
             val playersJson = header.getValue(ReplayFormatKeys.PLAYERS) as? JsonArray ?: error("Replay players must be an array")
@@ -76,6 +78,12 @@ internal data class CompactReplayReadDocument(
             val types = typesJson.map {
                 budget.charge()
                 persistenceJson.decodeFromJsonElement(TilePersistenceDto.serializer(), it).toDomain()
+            }
+            val presentationsJson = header.getValue(ReplayFormatKeys.PRESENTATION_TYPES) as? JsonArray ?: error("Replay presentation dictionary must be an array")
+            if (presentationsJson.size > budget.limits.maxPresentationTypes) throw ReplayReadException(ReplayReadError.LIMIT_EXCEEDED)
+            val presentationTypes = presentationsJson.map {
+                budget.charge()
+                it as? JsonObject ?: error("Replay tile presentation must be an object")
             }
             val pathsJson = header.getValue(ReplayFormatKeys.PATCH_PATHS) as? JsonArray ?: error("Replay patch paths must be an array")
             val paths = pathsJson.map { path ->
@@ -98,7 +106,7 @@ internal data class CompactReplayReadDocument(
             }
             require(rounds.map { it.number }.distinct().size == rounds.size) { "Replay contains duplicate round numbers" }
             val time = (header.getValue(ReplayFormatKeys.TIME) as? JsonPrimitive)?.takeUnless { it.isString }?.longOrNull ?: error("Replay header time must be an integer")
-            return CompactReplayReadDocument(dictionary, identity, types, strings(header.getValue(ReplayFormatKeys.FACT_TYPES)), strings(header.getValue(ReplayFormatKeys.ACTION_TYPES)), paths, time, rounds)
+            return CompactReplayReadDocument(dictionary, identity, types, strings(header.getValue(ReplayFormatKeys.FACT_TYPES)), strings(header.getValue(ReplayFormatKeys.ACTION_TYPES)), presentationTypes, paths, time, rounds)
         }
 
         /**

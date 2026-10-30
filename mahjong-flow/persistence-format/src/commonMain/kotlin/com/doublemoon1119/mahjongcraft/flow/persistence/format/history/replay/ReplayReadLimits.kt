@@ -10,6 +10,7 @@ package com.doublemoon1119.mahjongcraft.flow.persistence.format.history.replay
  * @property maxPlayers 單場允許的最大玩家數。
  * @property maxRounds 單場允許的最大局數。
  * @property maxTiles 單局已宣告的實體牌數上限，同時限制共用牌種字典大小。
+ * @property maxPresentationTypes 牌張呈現字典允許的最大項目數。
  * @property maxTransactionsPerRound 每局允許的最大交易數。
  * @property maxFactsPerTransaction 每筆交易允許的最大事實數。
  * @property maxWorkUnits 讀取作業允許消耗的最大工作單位數。
@@ -23,6 +24,7 @@ data class ReplayReadLimits(
     val maxPlayers: Int = 64,
     val maxRounds: Int = 256,
     val maxTiles: Int = 4096,
+    val maxPresentationTypes: Int = 4096,
     val maxTransactionsPerRound: Int = 8192,
     val maxFactsPerTransaction: Int = 128,
     val maxWorkUnits: Long = 8_000_000L,
@@ -36,6 +38,7 @@ data class ReplayReadLimits(
         require(maxPlayers > 0)
         require(maxRounds > 0)
         require(maxTiles > 0)
+        require(maxPresentationTypes > 0)
         require(maxTransactionsPerRound > 0)
         require(maxFactsPerTransaction > 0)
         require(maxWorkUnits > 0)

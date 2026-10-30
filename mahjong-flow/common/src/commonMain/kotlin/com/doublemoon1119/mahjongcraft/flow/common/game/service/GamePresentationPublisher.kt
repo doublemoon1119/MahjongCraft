@@ -139,7 +139,7 @@ interface GamePresentationPublisher {
      * @param isNewOpening 這次是否剛完成開門；恢復既有桌況時傳 `false`。平台可據此決定是否呈現從 [assemblyStructure] 到
      * [layout] 的開門過程。
      * @param revealedTileIds [deadWallTileIds] 之中，牌牆建立當下就公開的牌 Uuid 子集合（例如日麻開局就翻開的第一張
-     * 寶牌指示牌，由呼叫端以 `TileWallRevealable.getVisibleTileIds` 算出）；不支援此概念的規則傳空集合。動作後才追加
+     * 寶牌指示牌，由呼叫端從組件結果挑出已公開且正面朝上的牌）；不支援此概念的規則傳空集合。動作後才追加
      * 公開的牌屬於 [publishWallTilesRevealed]。
      */
     fun publishWallStructure(
@@ -229,13 +229,13 @@ interface GamePresentationPublisher {
      * @param drawnTileId 這位玩家目前摸到、尚未併入立牌或打出的那張牌 Uuid（`Hand.lastDrawn`）；
      * `null` 代表目前沒有摸牌位。
      * @param melds 這位玩家目前所有副露，依宣告順序排列。
-     * @param setAsideTileIds 這位玩家移出手牌、公開擺在桌上的牌 Uuid（見 `MahjongRuleModule.setAsideTiles`），依移出
+     * @param setAsideTileIds 這位玩家移出手牌、公開擺在桌上的牌 Uuid（見 `MahjongPlayer.setAsideTiles`），依移出
      * 順序排列；沒有時為空清單。
      * @param isNewlyDrawn [drawnTileId] 是否為這次剛從牌牆摸到的牌：一般摸牌與槓、移出手牌後的補牌都傳 `true`，平台可據此
      * 呈現摸牌的過程；其餘呼叫即使摸牌位仍有牌也維持 `false`。
      * @param newlyClaimedMeldTileIds 這次新成立副露、從原本位置移入副露的牌 Uuid：吃／碰／明槓／暗槓為整組，加槓只有
      * 新加入的那一張。空集合（預設值）代表沒有。
-     * @param newlySetAsideTileIds 這次剛移出手牌、公開擺到桌上的牌 Uuid（見 `MahjongRuleModule.setAsideTiles`），例如
+     * @param newlySetAsideTileIds 這次剛移出手牌、公開擺到桌上的牌 Uuid（見 `MahjongPlayer.setAsideTiles`），例如
      * 三人日麻拔出的北。空集合（預設值）代表沒有。不包含 [followUpSteps] 移出的牌。
      * @param followUpSteps 這次摸牌或補牌之後依序完成的自動移出與補牌；空清單（預設值）代表沒有。不為空時，第一步移出的牌是
      * 這次摸到的牌之一，每一步移出的牌在那一步開始時位於摸牌位；[drawnTileId] 是處理結束後留在摸牌位的牌，最後一步因搶和

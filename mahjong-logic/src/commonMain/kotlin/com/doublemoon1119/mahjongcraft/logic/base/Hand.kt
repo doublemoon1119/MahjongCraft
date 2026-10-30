@@ -75,7 +75,7 @@ data class Hand(
      */
     fun organize(order: TileOrder): Hand {
         val mergedTiles = lastDrawn?.let { tiles + it } ?: tiles
-        return copy(tiles = mergedTiles.sortedWith(compareBy(order) { it.tile }), lastDrawn = null)
+        return copy(tiles = mergedTiles.sortedWith(compareBy(order.valueOrder) { it.toValue() }), lastDrawn = null)
     }
 
     /**

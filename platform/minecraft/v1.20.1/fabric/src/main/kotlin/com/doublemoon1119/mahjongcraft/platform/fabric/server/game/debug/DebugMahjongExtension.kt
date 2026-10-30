@@ -158,6 +158,7 @@ internal class DebugMahjongExtension(
 
     override fun registerTileAssets(registry: MinecraftTileAssetRegistry) {
         DEBUG_VARIANT_RULE_MODULE_IDS.forEach { ruleModuleId -> RiichiFamilyMinecraftPresentation.registerTileAppearance(registry, ruleModuleId) }
+        DebugPublicFaceTiles.register(registry)
     }
 
     override fun registerWinSettlementPresentationTemplates(registry: WinSettlementPresentationTemplateRegistry) {

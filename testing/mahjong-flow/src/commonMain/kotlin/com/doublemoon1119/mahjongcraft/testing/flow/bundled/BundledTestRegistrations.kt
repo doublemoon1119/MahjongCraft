@@ -12,13 +12,12 @@ import com.doublemoon1119.mahjongcraft.extension.MahjongExtension
 import com.doublemoon1119.mahjongcraft.extension.MahjongExtensionRegistrar
 import com.doublemoon1119.mahjongcraft.flow.common.error.ExtensionFailurePolicy
 import com.doublemoon1119.mahjongcraft.flow.common.game.event.GameEventPublicMarkerResolverRegistry
-import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryFact
-import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryOutboxEvent
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.WinCelebrationCueResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.WinCelebrationCueResolverRegistryImpl
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.DefaultNetworkDtoRegistries
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkDtoRegistries
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkJson
+import com.doublemoon1119.mahjongcraft.flow.persistence.format.component.registerBuiltInComponentPersistence
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.registry.PersistenceRegistries
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.registry.emptyPersistenceRegistries
 import com.doublemoon1119.mahjongcraft.flow.server.game.history.generation.HeadlessHistoryRegistries
@@ -29,29 +28,14 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.PostReacti
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.RuleDecisionResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.WinRoundContinuationResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.WinSettlementDetailResolverRegistry
-import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
+import com.doublemoon1119.mahjongcraft.logic.component.ComponentRegistryImpl
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
-import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayer
 import com.doublemoon1119.mahjongcraft.logic.tile.TileTypeRegistryImpl
 
 /** 測試用：在單一 registry 登記所有隨 MahjongCraft 發布之規則 extension 的規則模組。 */
 fun MahjongModuleRegistry.registerBundledRuleModules() {
     BundledMahjongExtensions.all.forEach { it.registerRuleModules(this) }
-}
-
-/**
- * 測試用：以對局開局規則對應的內建規則模組，取得編碼牌譜時每位玩家移出手牌的牌。
- *
- * 事件不是以開局事實開頭時回傳空清單，讓測試照常驗證編碼器自己的拒絕條件。
- *
- * @param events 要編碼的單場歷史事實。
- * @return 依開局規則取得移出手牌的牌的函式。
- */
-fun bundledSetAsideTiles(events: List<HistoryOutboxEvent>): (MahjongPlayer) -> List<IdentifiedTile> {
-    val opening = events.firstOrNull()?.fact as? HistoryFact.MatchStarted ?: return { emptyList() }
-    val module = MahjongModuleRegistryImpl().apply { registerBundledRuleModules() }.getModule(opening.tableState.config)
-    return module::setAsideTiles
 }
 
 /** 測試用：登記所有隨 MahjongCraft 發布之規則 extension 的網路 DTO。 */
@@ -64,6 +48,7 @@ fun bundledNetworkJson(): NetworkJson = NetworkJson(DefaultNetworkDtoRegistries(
 
 /** 測試用：建立已登記所有隨 MahjongCraft 發布之規則 extension 存檔 mapper、尚未凍結的 persistence registries。 */
 fun bundledPersistenceRegistries(): PersistenceRegistries = emptyPersistenceRegistries().apply {
+    registerBuiltInComponentPersistence(components)
     BundledMahjongExtensions.all.forEach { it.registerPersistenceDtos(this) }
 }
 
@@ -101,9 +86,11 @@ fun bundledCoreExtensionRegistries(additionalExtensions: List<MahjongExtension> 
     val moduleRegistry = MahjongModuleRegistryImpl()
     val gameActionAiRegistry = ExtensionGameActionAiRegistry(moduleRegistry)
     val opponentModelRegistry = OpponentModelRegistry()
+    val componentRegistry = ComponentRegistryImpl()
     val registries = CoreExtensionRegistries(
         moduleRegistry = moduleRegistry,
         tileTypeRegistry = TileTypeRegistryImpl(),
+        componentRegistry = componentRegistry,
         networkRegistries = DefaultNetworkDtoRegistries(),
         persistenceRegistries = emptyPersistenceRegistries(),
         winCelebrationCueResolverRegistry = WinCelebrationCueResolverRegistryImpl(),
@@ -116,7 +103,7 @@ fun bundledCoreExtensionRegistries(additionalExtensions: List<MahjongExtension> 
         postActionExhaustiveDrawResolverRegistry = PostActionExhaustiveDrawResolverRegistry(),
         ruleDecisionResolverRegistry = RuleDecisionResolverRegistry(),
         winRoundContinuationResolverRegistry = WinRoundContinuationResolverRegistry(),
-        winSettlementDetailResolverRegistry = WinSettlementDetailResolverRegistry(),
+        winSettlementDetailResolverRegistry = WinSettlementDetailResolverRegistry(componentRegistry),
         gameEventPublicMarkerResolverRegistry = GameEventPublicMarkerResolverRegistry(),
     )
     MahjongExtensionRegistrar.registerAndFreeze(
@@ -136,6 +123,7 @@ fun bundledCoreExtensionRegistries(additionalExtensions: List<MahjongExtension> 
 fun bundledHeadlessHistoryRegistries(): HeadlessHistoryRegistries = bundledCoreExtensionRegistries().let { registries ->
     HeadlessHistoryRegistries(
         moduleRegistry = registries.moduleRegistry,
+        componentRegistry = registries.componentRegistry,
         aiStrategyRegistry = registries.aiStrategyRegistry,
         winCelebrationCueResolverRegistry = registries.winCelebrationCueResolverRegistry,
         postActionExhaustiveDrawResolverRegistry = registries.postActionExhaustiveDrawResolverRegistry,

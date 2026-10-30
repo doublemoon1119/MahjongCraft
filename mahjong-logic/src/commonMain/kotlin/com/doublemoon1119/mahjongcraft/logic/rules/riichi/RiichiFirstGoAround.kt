@@ -23,4 +23,4 @@ fun TableState.isFirstGoAround(player: MahjongPlayer): Boolean = players.all { i
  * @receiver 本局待檢查的玩家。
  * @return 玩家本局曾拔北時為 true。
  */
-fun MahjongPlayer.hasPulledNorth(): Boolean = (playerRuleState as? RiichiPlayerState)?.nukiDoraTiles?.isNotEmpty() == true
+fun MahjongPlayer.hasPulledNorth(): Boolean = tileAreas[RiichiPlayerTileAreaIds.NORTH]?.tiles?.isNotEmpty() == true

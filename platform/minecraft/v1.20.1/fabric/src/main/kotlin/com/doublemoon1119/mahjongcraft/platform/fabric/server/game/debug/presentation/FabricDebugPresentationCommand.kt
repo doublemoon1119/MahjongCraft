@@ -22,6 +22,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.service.MeldPresentation
 import com.doublemoon1119.mahjongcraft.logic.base.MeldType
 import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
+import com.doublemoon1119.mahjongcraft.logic.base.TileFaceView
 import com.doublemoon1119.mahjongcraft.logic.module.BuiltInPaymentReasonIds
 import com.doublemoon1119.mahjongcraft.logic.module.BuiltInRuleModuleIds
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiExhaustiveDrawReason
@@ -632,7 +633,12 @@ class FabricDebugPresentationCommand(
             FabricWinCelebrationShowcaseScheduler.Wing(
                 seatIndex = seat,
                 cueIds = listOf(cue),
-                cards = showcaseWingCards(standingTileIds = standing, melds = melds, assetKeyOf = assets::get)
+                cards = showcaseWingCards(
+                    standingTileIds = standing,
+                    melds = melds,
+                    assetKeyOf = assets::get,
+                    backAppearanceOf = tilePreviewSupport::backAppearanceId,
+                )
                     .map { it.copy(tileId = entityIds.getValue(it.tileId)) },
                 standYaw = MahjongTileTableLayout.seatYaw(layout.tableFacing, layout.seatLayout, seat),
             )
@@ -991,8 +997,8 @@ class FabricDebugPresentationCommand(
                             ),
                         )
                     }
-                    add(WinSettlementDetailField(RiichiWinSettlementIds.DORA_FIELD, WinSettlementDetailValue.TileFaces(listOf(Tile.Numeric(Tile.Suit.Character, 1), Tile.Numeric(Tile.Suit.Dot, 5)))))
-                    add(WinSettlementDetailField(RiichiWinSettlementIds.URA_DORA_FIELD, WinSettlementDetailValue.TileFaces(listOf(Tile.Numeric(Tile.Suit.Bamboo, 3)))))
+                    add(WinSettlementDetailField(RiichiWinSettlementIds.DORA_FIELD, WinSettlementDetailValue.TileFaces(listOf(Tile.Numeric(Tile.Suit.Character, 1), Tile.Numeric(Tile.Suit.Dot, 5)).map(::TileFaceView))))
+                    add(WinSettlementDetailField(RiichiWinSettlementIds.URA_DORA_FIELD, WinSettlementDetailValue.TileFaces(listOf(TileFaceView(Tile.Numeric(Tile.Suit.Bamboo, 3))))))
                 },
             )
         }

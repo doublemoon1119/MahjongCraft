@@ -10,6 +10,8 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionSnapsh
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionSubmission
 import com.doublemoon1119.mahjongcraft.flow.server.game.policy.GameVisibilityPolicy
 import com.doublemoon1119.mahjongcraft.flow.server.state.HistoryRecordingObserver
+import com.doublemoon1119.mahjongcraft.logic.base.TileFaceView
+import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.logic.table.TableStateSnapshot
 import kotlin.concurrent.Volatile
 import kotlin.time.Duration
@@ -157,6 +159,10 @@ internal class TimedVisibilityPolicy(
     override fun snapshotFor(game: Game, observerId: Uuid): TableStateSnapshot = measured { delegate.snapshotFor(game, observerId) }
 
     override fun ruleDecisionSnapshotFor(game: Game, observerId: Uuid): RuleDecisionSnapshot? = measured { delegate.ruleDecisionSnapshotFor(game, observerId) }
+
+    override fun tileFacesFor(game: Game, observerId: Uuid, tileIds: Collection<Uuid>): Map<Uuid, TileFaceView> = delegate.tileFacesFor(game, observerId, tileIds)
+
+    override fun publicTileFaces(tableState: TableState, tileIds: Collection<Uuid>): Map<Uuid, TileFaceView> = delegate.publicTileFaces(tableState, tileIds)
 
     /**
      * 執行 [block]，成功返回後回報耗時；拋出例外時不回報。

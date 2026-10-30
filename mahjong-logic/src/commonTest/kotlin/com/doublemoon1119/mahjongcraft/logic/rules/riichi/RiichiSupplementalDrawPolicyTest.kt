@@ -3,6 +3,12 @@ package com.doublemoon1119.mahjongcraft.logic.rules.riichi
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
+import com.doublemoon1119.mahjongcraft.logic.component.BuiltInComponentOwners
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RIICHI_STICK_POINTS
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiTableComponents
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiWallProgress
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.riichiPotPoints
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.riichiWallProgress
 import com.doublemoon1119.mahjongcraft.logic.table.SupplementalDrawContext
 import com.doublemoon1119.mahjongcraft.logic.table.SupplementalDrawDecision
 import com.doublemoon1119.mahjongcraft.logic.table.SupplementalDrawReasonIds
@@ -10,6 +16,7 @@ import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.logic.table.TileWall
 import com.doublemoon1119.mahjongcraft.logic.table.UnsupportedSupplementalDrawPolicy
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeIdentifiedTileFactory
+import com.doublemoon1119.mahjongcraft.testing.logic.rules.riichi.riichiTableComponents
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -32,7 +39,7 @@ class RiichiSupplementalDrawPolicyTest {
             config = RiichiRuleConfig(),
             tileWall = TileWall(liveWall),
             reservedWallTiles = deadWall,
-            dynamicRuleState = RiichiDynamicState(),
+            components = riichiTableComponents(potPoints = 0),
         )
 
         val result = assertIs<SupplementalDrawDecision.Completed>(
@@ -43,9 +50,9 @@ class RiichiSupplementalDrawPolicyTest {
         assertEquals(liveWall.dropLast(1), result.tileWall.getAllTiles())
         assertEquals(deadWall.drop(1) + liveWall.last(), result.reservedWallTiles)
         assertEquals(14, result.reservedWallTiles.size)
-        val dynamicRuleState = result.dynamicRuleState as RiichiDynamicState
-        assertEquals(1, dynamicRuleState.completedSupplementalDrawCount)
-        assertEquals(0, dynamicRuleState.revealedKanDoraCount)
+        val wallProgress = requireNotNull(result.tableComponents.values[RiichiTableComponents.WALL_PROGRESS])
+        assertEquals(1, wallProgress.completedSupplementalDrawCount)
+        assertEquals(0, wallProgress.revealedKanDoraCount)
     }
 
     /** 驗證連續四次補牌依序取走原始嶺上牌，補入死牌區的牌不會被再次摸取。 */
@@ -61,7 +68,7 @@ class RiichiSupplementalDrawPolicyTest {
             config = RiichiRuleConfig(),
             tileWall = TileWall(liveWall),
             reservedWallTiles = deadWall,
-            dynamicRuleState = RiichiDynamicState(),
+            components = riichiTableComponents(potPoints = 0),
         )
         val drawnTiles = mutableListOf<IdentifiedTile>()
 
@@ -73,7 +80,7 @@ class RiichiSupplementalDrawPolicyTest {
             state = state.copy(
                 tileWall = result.tileWall,
                 reservedWallTiles = result.reservedWallTiles,
-                dynamicRuleState = result.dynamicRuleState,
+                components = result.tableComponents.applyTo(state.components, BuiltInComponentOwners.TABLE),
             )
         }
 
@@ -93,7 +100,7 @@ class RiichiSupplementalDrawPolicyTest {
             reservedWallTiles = deadWall.drop(3) + List(3) {
                 FakeIdentifiedTileFactory.create(Tile.Honor.Red)
             },
-            dynamicRuleState = RiichiDynamicState(completedSupplementalDrawCount = 3),
+            components = riichiTableComponents(potPoints = 0, wallProgress = RiichiWallProgress(completedSupplementalDrawCount = 3, revealedKanDoraCount = 3)),
         )
         val fourth = assertIs<SupplementalDrawDecision.Completed>(
             RiichiSupplementalDrawPolicy.resolve(context(state)),
@@ -101,7 +108,7 @@ class RiichiSupplementalDrawPolicyTest {
         assertEquals(deadWall[3], fourth.drawnTiles.single())
 
         val limitState = state.copy(
-            dynamicRuleState = RiichiDynamicState(completedSupplementalDrawCount = 4),
+            components = riichiTableComponents(potPoints = 0, wallProgress = RiichiWallProgress(completedSupplementalDrawCount = 4, revealedKanDoraCount = 4)),
         )
         val rejected = assertIs<SupplementalDrawDecision.Rejected>(
             RiichiSupplementalDrawPolicy.resolve(context(limitState)),
@@ -117,7 +124,7 @@ class RiichiSupplementalDrawPolicyTest {
             config = RiichiRuleConfig(),
             tileWall = TileWall(),
             reservedWallTiles = deadWall,
-            dynamicRuleState = RiichiDynamicState(),
+            components = riichiTableComponents(potPoints = 0),
         )
 
         val result = assertIs<SupplementalDrawDecision.Rejected>(
@@ -132,7 +139,7 @@ class RiichiSupplementalDrawPolicyTest {
     fun `test non kan action does not require supplemental draw`() {
         val state = FakeTableStateFactory.create(
             config = RiichiRuleConfig(),
-            dynamicRuleState = RiichiDynamicState(),
+            components = riichiTableComponents(potPoints = 0),
         )
         val context = SupplementalDrawContext(state, state, state.currentPlayer.id, GameAction.Draw)
 

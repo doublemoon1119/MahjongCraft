@@ -37,5 +37,5 @@ internal fun TableState.revealHandsOf(playerIds: Collection<Uuid>): TableState {
     val revealedTileIds = players
         .filter { it.id in playerIds && it.id !in finishedPlayerIds }
         .flatMap { player -> player.hand.standingTiles.map { it.id } }
-    return if (revealedTileIds.isEmpty()) this else copy(revealedHandTileIds = revealedHandTileIds + revealedTileIds)
+    return if (revealedTileIds.isEmpty()) this else copy(publicTileEvidenceIds = publicTileEvidenceIds + revealedTileIds)
 }

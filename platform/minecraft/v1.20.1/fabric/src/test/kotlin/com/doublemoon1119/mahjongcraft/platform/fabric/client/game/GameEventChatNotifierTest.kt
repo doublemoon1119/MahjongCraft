@@ -261,7 +261,7 @@ class GameEventChatNotifierTest {
                     .copy(score = 25000, seatWind = Wind.SOUTH),
                 FakeMahjongPlayerFactory.create(id = westId, initialSeat = Wind.WEST).copy(score = 20000),
             ),
-        ).toSnapshot(visibleHandPlayerIds = emptySet(), setAsideTiles = { emptyList() })
+        ).toSnapshot(visibleHandPlayerIds = emptySet())
 
         val message = buildMatchResultChatMessage(
             action = GameAction.MatchEnded,
@@ -306,7 +306,7 @@ class GameEventChatNotifierTest {
         players = ids.zip(scores).map { (id, score) ->
             FakeMahjongPlayerFactory.create(id = id).copy(score = score)
         },
-    ).toSnapshot(visibleHandPlayerIds = emptySet(), setAsideTiles = { emptyList() })
+    ).toSnapshot(visibleHandPlayerIds = emptySet())
 
     /** 測試結果識別值。 */
     private companion object {

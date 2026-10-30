@@ -8,7 +8,7 @@ import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.table.MatchRoundPosition
 import com.doublemoon1119.mahjongcraft.logic.table.TableStateSnapshot
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
-import com.doublemoon1119.mahjongcraft.logic.table.toSnapshot
+import com.doublemoon1119.mahjongcraft.testing.logic.rules.riichi.toRiichiSnapshotForTests
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
@@ -71,7 +71,7 @@ class PlacementUtilityTest {
             roundNumber = sequenceIndex + 1,
             roundPosition = MatchRoundPosition(sequenceIndex, Wind.EAST, sequenceIndex + 1),
         )
-        .toSnapshot(setOf(selfId), setAsideTiles = { emptyList() })
+        .toRiichiSnapshotForTests(selfId)
 
     /** 測試常數。 */
     private companion object {

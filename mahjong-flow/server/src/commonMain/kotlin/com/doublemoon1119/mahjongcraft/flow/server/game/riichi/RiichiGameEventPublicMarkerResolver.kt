@@ -6,7 +6,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.event.MatchEndPublicMark
 import com.doublemoon1119.mahjongcraft.flow.common.game.event.RulePublicEventMarker
 import com.doublemoon1119.mahjongcraft.flow.common.game.event.RulePublicEventQuantity
 import com.doublemoon1119.mahjongcraft.flow.common.game.event.WinPublicMarkerContext
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPlayerState
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.riichiDeclaration
 import com.doublemoon1119.mahjongcraft.logic.table.BuiltInMatchEndReasonIds
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 
@@ -17,11 +17,11 @@ object RiichiGameEventPublicMarkerResolver : GameEventPublicMarkerResolver {
     override fun resolveWinMarkers(context: WinPublicMarkerContext): List<RulePublicEventMarker> {
         val state = context.previousState.players
             .firstOrNull { it.id == context.winnerId }
-            ?.playerRuleState as? RiichiPlayerState
+            ?.riichiDeclaration
             ?: return emptyList()
 
         return buildList {
-            if (state.isRiichi) add(RulePublicEventMarker(RiichiGameEventPublicMarkerIds.RIICHI, context.winnerId))
+            add(RulePublicEventMarker(RiichiGameEventPublicMarkerIds.RIICHI, context.winnerId))
             if (state.isIppatsu) add(RulePublicEventMarker(RiichiGameEventPublicMarkerIds.IPPATSU, context.winnerId))
         }
     }

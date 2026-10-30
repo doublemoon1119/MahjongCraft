@@ -16,21 +16,26 @@ import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.logic.config.MultiRonPolicy
 import com.doublemoon1119.mahjongcraft.logic.config.RonResolution
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDynamicState
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiExhaustiveDrawReason
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPlayerState
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPendingKanDoraReveal
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.RiichiTileTypes
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiWallProgress
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.riichiWallProgress
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.RiichiTileValues
 import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayer
 import com.doublemoon1119.mahjongcraft.logic.table.PendingRobbingReaction
 import com.doublemoon1119.mahjongcraft.logic.table.TileWall
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import com.doublemoon1119.mahjongcraft.logic.table.toSnapshot
+import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledCoreExtensionRegistries
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.registerBundledRuleModules
 import com.doublemoon1119.mahjongcraft.testing.flow.common.game.repository.FakeGameSnapshotRepository
 import com.doublemoon1119.mahjongcraft.testing.flow.common.game.service.FakeGameEventPublisher
 import com.doublemoon1119.mahjongcraft.testing.flow.common.game.service.FakeGamePresentationPublisher
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeIdentifiedTileFactory
+import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeMeldFactory
+import com.doublemoon1119.mahjongcraft.testing.logic.rules.riichi.riichiDeclarationComponents
+import com.doublemoon1119.mahjongcraft.testing.logic.rules.riichi.riichiTableComponents
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
 import kotlinx.coroutines.test.runTest
@@ -70,10 +75,10 @@ class DeclareKanUseCaseTest {
         val gameRepo = FakeGameRepository()
         val moduleRegistry = MahjongModuleRegistryImpl().apply { registerBundledRuleModules() }
         val snapshotRepo = FakeGameSnapshotRepository()
-        val snapshotSynchronizer = GameSnapshotSynchronizer(gameRepo, snapshotRepo, GameVisibilityPolicyImpl(moduleRegistry))
+        val snapshotSynchronizer = GameSnapshotSynchronizer(gameRepo, snapshotRepo, GameVisibilityPolicyImpl(moduleRegistry, componentRegistry = bundledCoreExtensionRegistries().componentRegistry))
         val eventPublisher = FakeGameEventPublisher()
         val presentationPublisher = FakeGamePresentationPublisher()
-        val useCase = DeclareKanUseCase(gameRepo, moduleRegistry, snapshotSynchronizer, eventPublisher, presentationPublisher)
+        val useCase = DeclareKanUseCase(gameRepo, moduleRegistry, snapshotSynchronizer, eventPublisher, presentationPublisher, componentRegistry = bundledCoreExtensionRegistries().componentRegistry)
     }
 
     /** 槓牌成立後補摸的實體一筒。 */
@@ -104,7 +109,7 @@ class DeclareKanUseCaseTest {
             config = RiichiRuleConfig(),
             reservedWallTiles = completeDeadWall(rinshanTile),
             currentPlayerIndex = 0,
-            dynamicRuleState = RiichiDynamicState(),
+            components = riichiTableComponents(potPoints = 0),
         ).withFirstKanPhysicalWallLayout()
         fixtures.gameRepo.setTableState(table)
 
@@ -125,7 +130,7 @@ class DeclareKanUseCaseTest {
         )
         assertEquals(table.tileWall.remainingCount - 1, newState.tileWall.remainingCount)
         assertEquals(table.tileWall.getAllTiles().last(), newState.reservedWallTiles.last())
-        assertEquals(1, (newState.dynamicRuleState as RiichiDynamicState).completedSupplementalDrawCount)
+        assertEquals(1, newState.riichiWallProgress().completedSupplementalDrawCount)
         assertEquals(
             newState,
             fixtures.presentationPublisher.getPublishedRoundInfo(gameId),
@@ -147,15 +152,11 @@ class DeclareKanUseCaseTest {
         }
     }
 
-    /**
-     * 驗證暗槓補牌後會將牌牆公開 policy 回傳的新公開王牌（例如槓寶牌）通知平台呈現層；
-     * 已經公開的牌不會混入這次的動畫批次。
-     */
     /** 公開的暗槓依規則牌序排列（赤五排在同數值普通牌之後），整組牌面公開，兩端朝下。 */
     @Test
     fun `test closed kan follows the rule tile order and keeps both ends face down`() = runTest {
         val fixtures = Fixtures()
-        val redFive = FakeIdentifiedTileFactory.create(RiichiTileTypes.redFive(Tile.Suit.Dot))
+        val redFive = FakeIdentifiedTileFactory.create(RiichiTileValues.redFive(Tile.Suit.Dot))
         val five1 = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 5))
         val five2 = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 5))
         val five3 = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 5))
@@ -170,7 +171,7 @@ class DeclareKanUseCaseTest {
             config = RiichiRuleConfig(),
             reservedWallTiles = completeDeadWall(rinshanTile),
             currentPlayerIndex = 0,
-            dynamicRuleState = RiichiDynamicState(),
+            components = riichiTableComponents(potPoints = 0),
         ).withFirstKanPhysicalWallLayout()
         fixtures.gameRepo.setTableState(table)
 
@@ -202,7 +203,7 @@ class DeclareKanUseCaseTest {
             config = RiichiRuleConfig(),
             reservedWallTiles = deadWall,
             currentPlayerIndex = 0,
-            dynamicRuleState = RiichiDynamicState(),
+            components = riichiTableComponents(potPoints = 0),
         )
         fixtures.gameRepo.setTableState(table)
 
@@ -210,13 +211,13 @@ class DeclareKanUseCaseTest {
 
         assertTrue(result is Outcome.Success, "Expected Success but got $result")
         val currentState = fixtures.gameRepo.getTableState(gameId)!!
-        val currentDynamicState = currentState.dynamicRuleState as RiichiDynamicState
-        val previousDynamicState = table.dynamicRuleState as RiichiDynamicState
+        val currentProgress = currentState.riichiWallProgress()
+        val previousProgress = table.riichiWallProgress()
         assertEquals(
-            currentDynamicState.getVisibleTileIds(currentState) - previousDynamicState.getVisibleTileIds(table),
+            currentProgress.getDoraIndicators(currentState).first.map { it.id }.toSet() - previousProgress.getDoraIndicators(table).first.map { it.id }.toSet(),
             assertNotNull(
                 fixtures.presentationPublisher.getPublishedDeadWallReveal(gameId),
-                "A kan-dora reveal should have been published for a rule that implements TileWallRevealable.",
+                "The kan-dora indicator resolved by the rule components must be published.",
             ),
             "Only the newly exposed indicator should be published for animation.",
         )
@@ -252,9 +253,9 @@ class DeclareKanUseCaseTest {
             config = RiichiRuleConfig(),
             reservedWallTiles = deadWall,
             currentPlayerIndex = 0,
-            dynamicRuleState = RiichiDynamicState(completedSupplementalDrawCount = 1),
+            components = riichiTableComponents(potPoints = 0, wallProgress = RiichiWallProgress(completedSupplementalDrawCount = 1, revealedKanDoraCount = 1)),
         )
-        val previouslyVisible = (table.dynamicRuleState as RiichiDynamicState).getVisibleTileIds(table)
+        val previouslyVisible = table.riichiWallProgress().getDoraIndicators(table).first.map { it.id }.toSet()
         fixtures.gameRepo.setTableState(table)
 
         val result = fixtures.useCase(gameId, playerId, GameAction.KanType.CLOSED_KAN, eastTiles.last().id)
@@ -263,10 +264,49 @@ class DeclareKanUseCaseTest {
         val currentState = fixtures.gameRepo.getTableState(gameId)!!
         val published = assertNotNull(fixtures.presentationPublisher.getPublishedDeadWallReveal(gameId))
         assertEquals(
-            (currentState.dynamicRuleState as RiichiDynamicState).getVisibleTileIds(currentState) - previouslyVisible,
+            currentState.riichiWallProgress().getDoraIndicators(currentState).first.map { it.id }.toSet() - previouslyVisible,
             published,
         )
         assertTrue(published.intersect(previouslyVisible).isEmpty(), "Previously revealed indicators must not be republished")
+    }
+
+    /** 明槓待翻的槓寶牌在下一次暗槓補牌前翻開時，翻開的指示牌記入公開證據。 */
+    @Test
+    fun `indicator revealed before the next replacement draw is recorded as public evidence`() = runTest {
+        val fixtures = Fixtures()
+        val openKanTiles = List(4) { FakeIdentifiedTileFactory.create(Tile.Honor.South) }
+        val eastTiles = List(4) { FakeIdentifiedTileFactory.create(Tile.Honor.East) }
+        val declarer = FakeMahjongPlayerFactory.create(
+            id = playerId,
+            initialSeat = Wind.EAST,
+            hand = Hand(
+                tiles = eastTiles.take(3),
+                melds = listOf(FakeMeldFactory.create(type = MeldType.OPEN_KAN, tiles = openKanTiles, sourceTile = openKanTiles.first(), sourceDirection = RelativeDirection.Left)),
+                lastDrawn = eastTiles.last(),
+            ),
+        )
+        val pending = RiichiPendingKanDoraReveal(actorPlayerId = playerId, sourceKanType = GameAction.KanType.OPEN_KAN, supplementalDrawNumber = 1)
+        val table = FakeTableStateFactory.create(
+            id = gameId,
+            players = listOf(declarer),
+            config = RiichiRuleConfig(),
+            reservedWallTiles = List(14) { FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 1)) },
+            currentPlayerIndex = 0,
+            components = riichiTableComponents(
+                potPoints = 0,
+                wallProgress = RiichiWallProgress(completedSupplementalDrawCount = 1, revealedKanDoraCount = 0, pendingKanDoraReveals = listOf(pending)),
+            ),
+        )
+        val previouslyVisible = table.riichiWallProgress().getDoraIndicators(table).first.map { it.id }.toSet()
+        fixtures.gameRepo.setTableState(table)
+
+        val result = fixtures.useCase(gameId, playerId, GameAction.KanType.CLOSED_KAN, eastTiles.last().id)
+
+        assertTrue(result is Outcome.Success, "Expected Success but got $result")
+        val currentState = fixtures.gameRepo.getTableState(gameId)!!
+        val newlyVisible = currentState.riichiWallProgress().getDoraIndicators(currentState).first.map { it.id }.toSet() - previouslyVisible
+        assertTrue(newlyVisible.isNotEmpty())
+        assertTrue(currentState.publicTileEvidenceIds.containsAll(newlyVisible), "$newlyVisible not in ${currentState.publicTileEvidenceIds}")
     }
 
     /**
@@ -292,7 +332,7 @@ class DeclareKanUseCaseTest {
             config = RiichiRuleConfig(),
             reservedWallTiles = completeDeadWall(rinshanTile),
             currentPlayerIndex = 0,
-            dynamicRuleState = RiichiDynamicState(),
+            components = riichiTableComponents(potPoints = 0),
         )
         fixtures.gameRepo.setTableState(table)
 
@@ -329,7 +369,7 @@ class DeclareKanUseCaseTest {
             id = playerId,
             initialSeat = Wind.EAST,
             hand = Hand(tiles = listOf(fifthMan1, fifthMan2, fifthMan3, adjacentTile), lastDrawn = fifthMan4),
-            playerRuleState = RiichiPlayerState(riichiTile = FakeIdentifiedTileFactory.create(Tile.Honor.North)),
+            components = riichiDeclarationComponents(declarationTile = FakeIdentifiedTileFactory.create(Tile.Honor.North)),
         )
         val table = FakeTableStateFactory.create(
             id = gameId,
@@ -370,7 +410,7 @@ class DeclareKanUseCaseTest {
             config = RiichiRuleConfig(),
             reservedWallTiles = completeDeadWall(rinshanTile),
             currentPlayerIndex = 0,
-            dynamicRuleState = RiichiDynamicState(),
+            components = riichiTableComponents(potPoints = 0),
         )
         fixtures.gameRepo.setTableState(table)
 
@@ -427,7 +467,7 @@ class DeclareKanUseCaseTest {
             // （reservedWallTiles，預設空清單）摸盡」是兩回事，tileWall 空的話這次暗槓在走到補摸嶺上牌
             // 之前就會先被 RiichiLegalActionValidator 擋下，這個測試就測不到真正想驗證的情境。
             currentPlayerIndex = 0,
-            dynamicRuleState = RiichiDynamicState(),
+            components = riichiTableComponents(potPoints = 0),
         )
         fixtures.gameRepo.setTableState(table)
 
@@ -539,11 +579,11 @@ class DeclareKanUseCaseTest {
             config = RiichiRuleConfig(),
             reservedWallTiles = completeDeadWall(rinshanTile),
             currentPlayerIndex = 0,
-            dynamicRuleState = RiichiDynamicState(),
+            components = riichiTableComponents(potPoints = 0),
         )
         fixtures.gameRepo.setTableState(table)
-        fixtures.snapshotRepo.setSnapshot(playerId, table.toSnapshot(setOf(playerId), setAsideTiles = { emptyList() }))
-        fixtures.snapshotRepo.setSnapshot(otherId, table.toSnapshot(setOf(otherId), setAsideTiles = { emptyList() }))
+        fixtures.snapshotRepo.setSnapshot(playerId, table.toSnapshot(setOf(playerId)))
+        fixtures.snapshotRepo.setSnapshot(otherId, table.toSnapshot(setOf(otherId)))
 
         fixtures.useCase(gameId, playerId, GameAction.KanType.CLOSED_KAN, east4.id)
 
@@ -588,7 +628,7 @@ class DeclareKanUseCaseTest {
                     Tile.Numeric(Tile.Suit.Bamboo, 6), Tile.Numeric(Tile.Suit.Bamboo, 7), Tile.Numeric(Tile.Suit.Bamboo, 8),
                 ).map { FakeIdentifiedTileFactory.create(it) } + robberTanki,
             ),
-            playerRuleState = RiichiPlayerState(),
+            components = riichiDeclarationComponents(),
         )
         val rinshanTile = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 1))
         val table = FakeTableStateFactory.create(
@@ -615,7 +655,7 @@ class DeclareKanUseCaseTest {
         assertEquals(MeldType.PON, unchangedDeclarer.hand.melds.single().type, "The meld must not be upgraded to ADDED_KAN yet.")
         assertEquals(white4, unchangedDeclarer.hand.lastDrawn, "The declarer's hand should be untouched while the window is open.")
         assertEquals(2, newState.tileWall.remainingCount, "The dead wall should not be drawn from yet.")
-        assertEquals(setOf(white4.id), newState.revealedHandTileIds, "The added tile is public while others decide.")
+        assertEquals(setOf(white4.id), newState.publicTileEvidenceIds, "The added tile is public while others decide.")
 
         val expectedKan = GameAction.Kan(GameAction.KanType.ADDED_KAN, white4.id, emptyList())
         assertEquals(
@@ -657,7 +697,7 @@ class DeclareKanUseCaseTest {
             reservedWallTiles = completeDeadWall(rinshanTile),
             currentPlayerIndex = 0,
             finishedPlayerIds = setOf(finishedRobberId),
-            dynamicRuleState = RiichiDynamicState(),
+            components = riichiTableComponents(potPoints = 0),
         )
         fixtures.gameRepo.setTableState(table)
 
@@ -689,7 +729,7 @@ class DeclareKanUseCaseTest {
                     Tile.Numeric(Tile.Suit.Bamboo, 6), Tile.Numeric(Tile.Suit.Bamboo, 7), Tile.Numeric(Tile.Suit.Bamboo, 8),
                 ).map { FakeIdentifiedTileFactory.create(it) } + tanki,
             ),
-            playerRuleState = RiichiPlayerState(),
+            components = riichiDeclarationComponents(),
         )
     }
 

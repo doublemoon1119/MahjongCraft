@@ -1,7 +1,7 @@
 package com.doublemoon1119.mahjongcraft.flow.network.dto.message
 
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryDetailValueTypeKeys
-import com.doublemoon1119.mahjongcraft.flow.network.dto.model.TileDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.model.TileFaceViewDto
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
@@ -9,13 +9,13 @@ import kotlinx.serialization.Serializable
 @Serializable
 sealed interface HistoryWinDetailValueDto {
     /**
-     * 直接顯示的公開牌面，不是局內牌索引。
+     * 直接顯示的公開牌面，不是局內牌索引；外觀與特徵是結算當時裁切的結果。
      *
      * @property faces 保留規則順序的牌面。
      */
     @Serializable
     @SerialName(HistoryDetailValueTypeKeys.TILE_FACES)
-    data class TileFaces(val faces: List<TileDto>) : HistoryWinDetailValueDto
+    data class TileFaces(val faces: List<TileFaceViewDto>) : HistoryWinDetailValueDto
 
     /**
      * 依規則順序排列、各自附有單位的數值清單。

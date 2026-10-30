@@ -22,7 +22,7 @@ object RiichiDeclarationAiHandler : ExtensionGameActionAiHandler<RiichiGameActio
         context: AiDecisionContext,
         module: MahjongRuleModule<*>,
     ): List<ExtensionCommandCandidate> {
-        val hand = context.snapshot.players.first { it.id == context.selfId }.hand.toOwnHand()
+        val hand = context.snapshot.players.first { it.id == context.selfId }.hand.toOwnHand(module.createTileInterpretationPolicy())
         val calculator = module.createShantenCalculator()
         return hand.tiles
             .filter { candidate ->

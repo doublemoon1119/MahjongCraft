@@ -11,7 +11,6 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.model.LeaveReasonDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkDtoRegistries
 import com.doublemoon1119.mahjongcraft.flow.network.dto.snapshot.toDomain
 import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTileSnapshot
-import com.doublemoon1119.mahjongcraft.logic.base.toSnapshot
 import com.doublemoon1119.mahjongcraft.logic.table.TableStateSnapshot
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.TableOccupancyDto
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.TableOccupancyPayloadDto
@@ -53,11 +52,8 @@ private data class ClientTableState(
 
     private companion object {
         /**
-         * 彙整牌牆、所有玩家手牌、副露、牌河、移出手牌與手牌中已公開的牌張快照，依 entity UUID 建立索引。牌河與移出手牌的牌永遠對
-         * 所有玩家可見（`MahjongPlayerSnapshot.discardPile`／`setAsideTiles` 的 KDoc），因此固定以
-         * `isVisible = true` 轉換——兩者都是 domain 型別，不像手牌／牌牆
-         * 已經是依觀察者可見範圍轉換過的 snapshot 型別，需要在這裡自行呼叫 `toSnapshot`。副露
-         * （`hand.melds`）在建立快照時已依觀察者裁切，看不到的牌面為未知，直接取用即可。
+         * 彙整已按讀取者裁切的各區域牌張，依 UUID 建立索引。
+         * 牌河、副露及移出牌區直接使用收到的快照，不重新授權或強制公開牌面。
          *
          * @param snapshot 對局快照；`null` 時回傳空索引。
          * @return 依牌 entity UUID 索引的管理中牌快照。
@@ -72,14 +68,13 @@ private data class ClientTableState(
                 player.hand.melds.flatMap { meld -> meld.tiles }
             }
             val discardTiles = snapshot.players.flatMap { player ->
-                player.discardPile.entries.map { entry -> entry.tile.toSnapshot(isVisible = true) }
+                player.discardPile.entries.map { entry -> entry.tile }
             }
             val setAsideTiles = snapshot.players.flatMap { player ->
-                player.setAsideTiles.map { tile -> tile.toSnapshot(isVisible = true) }
+                player.setAsideTiles
             }
             // 已公開但仍在手牌中的牌（等待搶和的宣告牌、被搶和胡走的牌）對其他觀察者是隱藏的手牌；排在最後覆蓋成公開牌面。
-            val revealedHandTiles = snapshot.revealedHandTiles.map { tile -> tile.toSnapshot(isVisible = true) }
-            return (wallTiles + handTiles + meldTiles + discardTiles + setAsideTiles + revealedHandTiles).associateBy { it.id }
+            return (wallTiles + handTiles + meldTiles + discardTiles + setAsideTiles).associateBy { it.id }
         }
     }
 }

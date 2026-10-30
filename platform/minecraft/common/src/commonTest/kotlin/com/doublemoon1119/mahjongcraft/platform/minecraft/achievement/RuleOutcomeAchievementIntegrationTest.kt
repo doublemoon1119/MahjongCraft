@@ -13,7 +13,6 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.riichi.RiichiRound
 import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.PostReactionRoundOutcomeResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.policy.GameVisibilityPolicyImpl
-import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepositoryImpl
 import com.doublemoon1119.mahjongcraft.flow.server.game.riichi.RiichiGameEventPublicMarkerResolver
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameSnapshotSynchronizer
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.HandSortPreferenceStore
@@ -34,8 +33,10 @@ import com.doublemoon1119.mahjongcraft.logic.table.RoundTransitionDirective
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.riichi.BundledRiichiMinecraftExtension
 import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.riichi.achievement.RiichiAchievementIds
+import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledCoreExtensionRegistries
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.registerBundledRuleModules
 import com.doublemoon1119.mahjongcraft.testing.flow.common.game.repository.FakeGameSnapshotRepository
+import com.doublemoon1119.mahjongcraft.testing.flow.common.game.repository.componentValidatedGameRepository
 import com.doublemoon1119.mahjongcraft.testing.flow.common.game.service.FakeGameEventPublisher
 import com.doublemoon1119.mahjongcraft.testing.flow.common.game.service.FakeGamePresentationPublisher
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeIdentifiedTileFactory
@@ -55,17 +56,17 @@ class RuleOutcomeAchievementIntegrationTest {
     fun `real nagashi mangan awards only its achiever and increments wins once`() = runTest {
         val modules = MahjongModuleRegistryImpl().apply { registerBundledRuleModules() }
         val store = AuthoritativeStateStore(historyRecordingEnabled = true)
-        val repository = GameRepositoryImpl(store)
+        val repository = componentValidatedGameRepository(store)
         val snapshotSynchronizer = GameSnapshotSynchronizer(
             repository,
             FakeGameSnapshotRepository(),
-            GameVisibilityPolicyImpl(modules),
+            GameVisibilityPolicyImpl(modules, componentRegistry = bundledCoreExtensionRegistries().componentRegistry),
         )
         val outcomeResolvers = PostReactionRoundOutcomeResolverRegistry().apply {
             BundledRiichiExtension.registerPostReactionRoundOutcomeResolvers(this)
             freeze()
         }
-        val detailResolvers = WinSettlementDetailResolverRegistry().apply {
+        val detailResolvers = WinSettlementDetailResolverRegistry(bundledCoreExtensionRegistries().componentRegistry).apply {
             BundledRiichiExtension.registerWinSettlementDetailResolvers(this)
             freeze()
         }
@@ -111,16 +112,17 @@ class RuleOutcomeAchievementIntegrationTest {
             ),
         )
         val store = AuthoritativeStateStore(historyRecordingEnabled = true)
-        val repository = GameRepositoryImpl(store)
+        val repository = componentValidatedGameRepository(store)
         val submitted = captureCommittedFacts(store)
         repository.updateGame(game.id, history = { _, _, _ -> emptyList() }) { game to Unit }
         val useCase = AdvanceRoundUseCase(
             gameRepository = repository,
             moduleRegistry = modules,
-            snapshotSynchronizer = GameSnapshotSynchronizer(repository, FakeGameSnapshotRepository(), GameVisibilityPolicyImpl(modules)),
+            snapshotSynchronizer = GameSnapshotSynchronizer(repository, FakeGameSnapshotRepository(), GameVisibilityPolicyImpl(modules, componentRegistry = bundledCoreExtensionRegistries().componentRegistry)),
             handSortPreferenceStore = HandSortPreferenceStore(),
             eventPublisher = FakeGameEventPublisher(),
             presentationPublisher = FakeGamePresentationPublisher(),
+            componentRegistry = bundledCoreExtensionRegistries().componentRegistry,
         )
         assertTrue(useCase(game.id) is Outcome.Success, "The real progression should end a busted match")
 

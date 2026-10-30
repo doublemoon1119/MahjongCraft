@@ -17,6 +17,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementDetai
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementDetailValue
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
+import com.doublemoon1119.mahjongcraft.logic.base.TileFaceView
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleDefinition
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
@@ -99,7 +100,7 @@ class GameEventCapabilitiesTest {
         val fields = listOf(
             WinSettlementDetailField("example:first", WinSettlementDetailValue.Entries(listOf(WinSettlementDetailEntry("example:mark")))),
             WinSettlementDetailField("other:first", WinSettlementDetailValue.Entries(listOf(WinSettlementDetailEntry("example:mark")))),
-            WinSettlementDetailField("example:tiles", WinSettlementDetailValue.TileFaces(listOf(Tile.Honor.North))),
+            WinSettlementDetailField("example:tiles", WinSettlementDetailValue.TileFaces(listOf(TileFaceView(Tile.Honor.North)))),
         )
         val result = projector().project(facts(HistoryEventDraft(null, HistoryFact.WinSettled("example:win", listOf(HistoryWinDetails(winner, fields))))))
             .filterIsInstance<RoundSettledEvent>().single().winGroups.single().winners.single()

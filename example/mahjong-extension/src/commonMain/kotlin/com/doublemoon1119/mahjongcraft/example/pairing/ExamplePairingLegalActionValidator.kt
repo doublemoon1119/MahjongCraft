@@ -21,12 +21,11 @@ class ExamplePairingLegalActionValidator : LegalActionValidator {
         if (context.incomingTile == null) return emptyList()
         val handWithDrawnTile = context.handWithIncoming
 
-        val ruleState = context.player.playerRuleState as? ExamplePairingPlayerState
         val actions = buildList {
             if (ExamplePairingShantenCalculator().calculate(handWithDrawnTile) is ShantenResult.Complete) {
                 add(GameAction.Tsumo)
             }
-            if (ruleState?.handRevealed != true) {
+            if (context.player.components[ExamplePairingComponents.HAND_REVEALED] == null) {
                 add(GameAction.Extension(ExamplePairingRevealHandAction))
             }
         }

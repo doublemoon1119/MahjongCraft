@@ -150,10 +150,10 @@ object MahjongTileItemRenderer : BuiltinItemRendererRegistry.DynamicItemRenderer
     }
 
     /**
-     * 依牌面 key 與牌組外觀選擇已烘焙或固定幾何 fallback 後繪製牌面。
+     * 依牌面 key 與牌組外觀選擇已烘焙或固定幾何 fallback 後繪製牌面；外觀樣式指定牌身時改用該牌身外觀。
      *
      * @param assetKey 牌面素材 key。
-     * @param appearanceId 牌組外觀識別碼；未指定時使用原生模型。
+     * @param appearanceId 規則的牌組外觀識別碼；未指定且樣式沒有指定牌身時使用原生模型。
      * @param mode Minecraft item 顯示模式。
      * @param matrices 目前的模型矩陣。
      * @param vertexConsumers 頂點緩衝提供者。
@@ -170,7 +170,7 @@ object MahjongTileItemRenderer : BuiltinItemRendererRegistry.DynamicItemRenderer
         overlay: Int,
     ) {
         val registry = GlobalContext.get().get<MinecraftTileAssetRegistry>()
-        val appearance = appearanceId?.let(registry::findAppearance)
+        val appearance = (registry.findBodyAppearance(assetKey) ?: appearanceId?.let(registry::findAppearance))
             ?.let(MahjongTileModelLoadingPlugin::effectiveAppearance)
         val resource = registry.findResources(assetKey)
         val textureId = resource?.textureId?.let(::Identifier)

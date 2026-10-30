@@ -184,32 +184,46 @@ core extension behavior through one adapter. For example, see the Minecraft guid
 
 ## Observer State Projection
 
-- Rule modules define what each observer may know through `projectPlayerRuleState` and
-  `projectDynamicRuleState`. The visibility policy applies these hooks to both network snapshots and AI
-  contexts. Do not send a raw `TableState.toSnapshot` result directly to either consumer.
-- Describe physical standing and drawn tiles through `describeHandTiles(tableState)`. Each
-  `HandTileDescription` has one tile UUID, an additional visibility grant and a shared pose. Use
-  `Default` for no extra access or `Public` for all authorized observers. Neither grants permission
-  to subscribe to a match.
-- Keep visibility independent from pose: a public tile may stay `UPRIGHT`, while `FACE_UP` requires
-  `Public`. A description affects only its named tile, not every matching face or the owner's whole hand.
-  Missing descriptions mean default access and upright pose. Existing owner, spectator and public
-  reveal permissions still apply; descriptions cannot revoke them or expose concealed melds.
-- All consumers use `resolveHandTileDescriptions` to reject duplicate tile UUIDs, tiles outside current
-  hands and nonpublic face-up poses. It captures detached data and omits explicit
-  default/upright entries. Do not add another validator in a platform adapter.
-- Derive descriptions from saved rule state without side effects or an observer-dependent pose.
-  Flow applies visibility before sending faces or building AI contexts. Snapshots carry only the
-  resulting faces and non-default per-tile pose overrides.
-- Re-evaluate the current hand so future draws follow the rule, and reset rule state for a new round.
-  Do not store a second authoritative flag in platform code or infer permission from a texture.
-- The default player projection exposes state only to its owner; the default dynamic projection exposes
-  nothing. A spectator's permission to see tile faces does not grant access to private rule state.
-- Return immutable, explicitly public projections for other observers. Represent hidden fields as unknown,
-  not as false or another invented value. Register a network DTO for any new projection type; never write
-  projected state back into the authoritative game or its persistence format.
-- Projection hooks must not modify state or make game decisions. Authoritative validation and wall reveal
-  rules still read the original state. Test that changing hidden data leaves other observers' output unchanged.
+- Player rule data lives in typed components. Register a separate view and projection for each value
+  that a reader may receive. Unregistered projections expose nothing; permission to see someone's
+  tile faces does not grant access to their private rule data.
+- Describe tiles in any current area through `describeTileComponents(tableState)` or registered pure
+  component effects. Each description identifies one tile UUID. A property of one tile does not
+  apply to every tile with the same face.
+- `resolveTileComponents` combines area defaults, the tile's saved components and rule effects.
+  It rejects duplicate descriptions, references outside current areas, conflicting values and access
+  grants to players outside the match. All consumers use this resolver, including platform adapters.
+- Keep access separate from pose. A readable tile may stay face down or upright; a face-up tile must
+  be public. Neither a texture nor a pose grants permission to observe a match.
+- The visibility policy uses an authenticated player, spectator or public context before building
+  network snapshots and AI input. Do not send a raw `TableState.toSnapshot` result to either
+  consumer. Unknown faces carry no face-specific appearance or component views.
+- Derive effects from the same saved state without changing it. For example, a player's reveal
+  component can affect their current hand and future draws without storing another list of tile IDs.
+  Use the registered round lifecycle to reset, retain or transform each component.
+- Views must be immutable and contain only explicitly authorized data. Register their network
+  codecs; never write views back into authoritative state or use them as the persistence format.
+- Projections do not make game decisions. Test that changing private values leaves unauthorized
+  observers' output unchanged, including spectators and public events.
+
+## Component Lifecycles and Changes
+
+- Register a lifecycle for every player, table, discard-record and meld component. Its `appliesTo`
+  states which rules and configurations use the component; a saved component outside that scope is
+  rejected before any write. Tile components may come from the tile set itself and do not need a
+  lifecycle.
+- To reuse another extension's component in your rule, register a `ComponentLifecycleScope` for it
+  instead of editing the original registration. The original lifecycle's initial value, required
+  check and round transition then also apply to your rule. Register your own projection if your rule
+  should expose it.
+- A discard record or meld created by an action receives its registered initial values right after
+  the action. Values the rule already wrote take precedence. An added kan keeps the meld's ID and
+  components.
+- Every set or removed component in a `ComponentPatch` carries its expected previous value. Build
+  the patch with `ComponentPatch.basedOn` from the state the rule read; a stale value stops the
+  match through the contract-failure path instead of overwriting another committed result.
+- Flow checks components returned by hooks, effects and patches as soon as it receives them, using
+  the same registry checks as the final write.
 
 ## Legal Action Input
 
@@ -246,14 +260,16 @@ core extension behavior through one adapter. For example, see the Minecraft guid
 - Higher reaction priority wins. Higher tie-break priority wins within that priority, followed by the
   nearest seat after the discarder. Do not compare priorities by subtraction. Winning reactions still use
   the shared multi-winner settlement path; a discard can belong to only one claimed meld.
-- A declaration that also discards a tile uses `ExtensionGameCommandContext.declareAndDiscardUseCase`.
-  Its handler supplies the action and discard ID, not a second repository write or its own publications.
-  `declarationDiscardPolicy` returns the complete permitted player and dynamic rule state. Preserve the
-  current dynamic state explicitly when unchanged; null means to clear it, not to skip its update.
-- Flow owns the discard, score validation, action history, reaction window and post-commit notifications.
-  A rule effect may change its own player rule state, dynamic rule state, declared cost and new discard's
-  public markers, but cannot replace hands, seats, identities or existing discard entries. Invalid rule
-  effects stop the match through the contract-failure path instead of becoming a pass or a normal discard.
+- A declaration that also discards a tile uses
+  `ExtensionGameCommandContext.declareAndDiscardUseCase`. Its handler supplies the action and
+  discard ID, not a second repository write or its own publications. `declarationDiscardPolicy`
+  returns a player-component patch, the new discard record's components, a table-component patch and
+  the declared cost. An empty patch keeps the current components; removals must be listed
+  explicitly, and every change carries its expected previous value.
+- Flow owns the discard, score deduction, action history, reaction window and post-commit
+  notifications. A rule effect describes component changes only, so it cannot touch hands, seats,
+  identities, scores or existing discard entries. Invalid rule effects stop the match through the
+  contract-failure path instead of becoming a pass or a normal discard.
 - Keep a meld's information visibility separate from its physical pose. `publiclyRevealedTileIds` says
   which faces other observers may know; `faceDownTileIds` says which tiles lie face down. The called discard
   is already public. Save both sets and the stable display order; do not sort hidden tiles by their faces
@@ -277,10 +293,10 @@ core extension behavior through one adapter. For example, see the Minecraft guid
 - Points that change hands when an action stands come from `createActionScoringPolicy`. Flow asks once
   for each claim, kan and set-aside that stands, before the replacement draw, and not for actions that
   are robbed or cancelled. Player changes plus the pot deposit must add up to zero; keep the pot balance
-  in the rule's dynamic state and pay it out from the rule's settlement.
-- `onPlayerDrew`, `onPlayerDiscarded`, `onPlayerDeclinedWin` and `onMeldClaimed` may only change player
-  rule state. Changing scores, hands or discards in a hook stops the match; use the scoring policy or a
-  declaration cost instead.
+  in a table component and pay it out from the rule's settlement.
+- `onPlayerDrew`, `onPlayerDiscarded`, `onPlayerDeclinedWin`, `beforeDiscardClaimed` and
+  `onMeldClaimed` return player-component patches; `onMeldClaimed` keys them by player ID. A hook
+  cannot change scores, hands or discards; use the scoring policy or a declaration cost instead.
 
 ## Koin Registration
 

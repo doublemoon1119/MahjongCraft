@@ -44,6 +44,12 @@ object ExampleMinecraftMessageKeys {
     /** 換牌開關欄位說明。 */
     const val CONFIG_EXCHANGE_DESCRIPTION = "mahjongcraft_example.room.config.field.exchange_enabled.description"
 
+    /** 公開牌面開關欄位名稱。 */
+    const val CONFIG_PUBLIC_FACES = "mahjongcraft_example.room.config.field.public_faces_enabled"
+
+    /** 公開牌面開關欄位說明。 */
+    const val CONFIG_PUBLIC_FACES_DESCRIPTION = "mahjongcraft_example.room.config.field.public_faces_enabled.description"
+
     /** 每位玩家付款點數欄位名稱。 */
     const val CONFIG_PAYMENT = "mahjongcraft_example.room.config.field.payment_per_player"
 

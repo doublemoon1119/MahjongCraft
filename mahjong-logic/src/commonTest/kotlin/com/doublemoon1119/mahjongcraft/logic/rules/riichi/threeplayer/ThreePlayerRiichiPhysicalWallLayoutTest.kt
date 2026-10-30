@@ -2,8 +2,8 @@ package com.doublemoon1119.mahjongcraft.logic.rules.riichi.threeplayer
 
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
+import com.doublemoon1119.mahjongcraft.logic.component.BuiltInComponentOwners
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.PULL_NORTH_GAME_ACTION
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDynamicState
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiSupplementalDrawPolicy
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.layout.RiichiPhysicalWallLayoutPolicy
 import com.doublemoon1119.mahjongcraft.logic.table.SupplementalDrawContext
@@ -20,6 +20,7 @@ import com.doublemoon1119.mahjongcraft.logic.table.layout.createInitialLayoutVal
 import com.doublemoon1119.mahjongcraft.logic.table.layout.resolveTransitionValidated
 import com.doublemoon1119.mahjongcraft.logic.table.opening.DiceRollResult
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeIdentifiedTileFactory
+import com.doublemoon1119.mahjongcraft.testing.logic.rules.riichi.riichiTableComponents
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
 import kotlin.test.Test
 import kotlin.test.assertIs
@@ -45,7 +46,7 @@ class ThreePlayerRiichiPhysicalWallLayoutTest {
                 config = config,
                 tileWall = TileWall(wallLayout.drawOrder),
                 reservedWallTiles = wallLayout.reservedWallTiles,
-                dynamicRuleState = RiichiDynamicState(),
+                components = riichiTableComponents(potPoints = 0),
             )
             var layout = assertIs<InitialPhysicalWallLayoutDecision.Completed>(
                 RiichiPhysicalWallLayoutPolicy(rinshanTileCount = config.rinshanTileCount).createInitialLayoutValidated(
@@ -69,7 +70,7 @@ class ThreePlayerRiichiPhysicalWallLayoutTest {
                 val updatedState = tableState.copy(
                     tileWall = supplemental.tileWall,
                     reservedWallTiles = supplemental.reservedWallTiles,
-                    dynamicRuleState = supplemental.dynamicRuleState,
+                    components = supplemental.tableComponents.applyTo(tableState.components, BuiltInComponentOwners.TABLE),
                 )
                 layout = assertIs<PhysicalWallLayoutTransitionDecision.Completed>(
                     RiichiPhysicalWallLayoutPolicy(rinshanTileCount = config.rinshanTileCount).resolveTransitionValidated(

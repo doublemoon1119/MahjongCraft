@@ -4,7 +4,7 @@ import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RIICHI_GAME_ACTION
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiExhaustiveDrawReason
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.RiichiTileTypes
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.RiichiTileValues
 import com.doublemoon1119.mahjongcraft.logic.table.DrawSource
 import com.doublemoon1119.mahjongcraft.logic.table.PendingFollowUpDraw
 import com.doublemoon1119.mahjongcraft.logic.table.PendingReaction
@@ -94,7 +94,7 @@ class PendingReactionPersistenceTest {
         val declarerId = Uuid.random()
         val responderA = Uuid.random()
         val responderB = Uuid.random()
-        val robbedTile = IdentifiedTile(Uuid.random(), RiichiTileTypes.redFive(Tile.Suit.Dot))
+        val robbedTile = redFive(Tile.Suit.Dot)
         val kanAction = GameAction.Kan(
             type = GameAction.KanType.CLOSED_KAN,
             tileId = robbedTile.id,
@@ -114,11 +114,19 @@ class PendingReactionPersistenceTest {
 
         val encoded = json.encodeToString(
             PendingRobbingReactionPersistenceDto.serializer(),
-            reaction.toPersistenceDto(exhaustiveDrawReasonRegistry, extensionGameActionRegistry),
+            reaction.toPersistenceDto(exhaustiveDrawReasonRegistry, extensionGameActionRegistry, bundledPersistenceRegistries().components),
         )
         val restored = json.decodeFromString(PendingRobbingReactionPersistenceDto.serializer(), encoded)
-            .toDomain(exhaustiveDrawReasonRegistry, extensionGameActionRegistry)
+            .toDomain(exhaustiveDrawReasonRegistry, extensionGameActionRegistry, bundledPersistenceRegistries().components)
 
         assertEquals(reaction, restored)
     }
 }
+
+/**
+ * 建立帶赤寶牌特性與赤五外觀的牌張。
+ *
+ * @param suit 赤五的花色。
+ * @return 新的赤五牌張。
+ */
+private fun redFive(suit: Tile.Suit): IdentifiedTile = RiichiTileValues.redFive(suit).let { IdentifiedTile(Uuid.random(), it.tile, it.components) }

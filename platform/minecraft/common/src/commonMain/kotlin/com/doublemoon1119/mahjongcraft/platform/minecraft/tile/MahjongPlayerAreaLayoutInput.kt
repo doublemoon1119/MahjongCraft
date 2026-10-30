@@ -1,6 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.tile
 
-import com.doublemoon1119.mahjongcraft.logic.module.HandTileState
+import com.doublemoon1119.mahjongcraft.logic.tile.component.TilePoseState
 import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongTableFacing
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongTableSeatLayout
 import kotlin.uuid.Uuid
@@ -19,7 +19,7 @@ import kotlin.uuid.Uuid
  * @property melds 依宣告順序排列的副露。
  * @property setAsideTileIds 依移出順序排列、接在副露之後的移出牌。
  * @property cornerWidth 桌角物件佔用的寬度。
- * @property handTileStates 逐張手牌姿態，決定每張牌占用的桌面範圍。
+ * @property tilePoseStates 逐張手牌姿態，決定每張牌占用的桌面範圍。
  */
 data class MahjongPlayerAreaLayoutInput(
     val controllerX: Int,
@@ -33,5 +33,5 @@ data class MahjongPlayerAreaLayoutInput(
     val melds: List<MahjongMeldTileGroup>,
     val setAsideTileIds: List<Uuid>,
     val cornerWidth: Double,
-    val handTileStates: List<HandTileState> = emptyList(),
+    val tilePoseStates: List<TilePoseState> = emptyList(),
 )

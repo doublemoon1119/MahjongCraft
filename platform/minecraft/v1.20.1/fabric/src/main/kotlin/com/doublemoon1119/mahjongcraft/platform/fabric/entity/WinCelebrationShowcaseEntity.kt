@@ -349,7 +349,7 @@ class WinCelebrationShowcaseEntity(
                         it.startYaw,
                         it.group,
                         it.standYaw,
-                        it.faceDown,
+                        it.backAppearanceId.orEmpty(),
                     ).joinToString("\u001c")
                 },
             ).joinToString("\u001f")
@@ -381,7 +381,7 @@ class WinCelebrationShowcaseEntity(
                         startYaw = startYaw,
                         group = cardParts.getOrNull(6)?.toIntOrNull() ?: 0,
                         standYaw = cardParts.getOrNull(7)?.toFloatOrNull() ?: startYaw,
-                        faceDown = cardParts.getOrNull(8)?.toBooleanStrictOrNull() ?: false,
+                        backAppearanceId = cardParts.getOrNull(8)?.ifBlank { null },
                     )
                 }.orEmpty()
                 ShowcaseWingSnapshot(seat, cue, cards)

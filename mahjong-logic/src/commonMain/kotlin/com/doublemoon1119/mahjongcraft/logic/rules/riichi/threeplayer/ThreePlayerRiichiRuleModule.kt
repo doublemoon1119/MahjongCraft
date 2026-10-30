@@ -6,21 +6,22 @@ import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
 import com.doublemoon1119.mahjongcraft.logic.base.MeldType
 import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
+import com.doublemoon1119.mahjongcraft.logic.base.TileFaceView
 import com.doublemoon1119.mahjongcraft.logic.base.TileOrder
-import com.doublemoon1119.mahjongcraft.logic.config.DynamicRuleState
+import com.doublemoon1119.mahjongcraft.logic.component.BuiltInComponentOwners
+import com.doublemoon1119.mahjongcraft.logic.component.ComponentPatch
 import com.doublemoon1119.mahjongcraft.logic.module.BuiltInAutomaticControlIds
 import com.doublemoon1119.mahjongcraft.logic.module.ExhaustiveDrawSettlementResult
+import com.doublemoon1119.mahjongcraft.logic.module.PointPotCollection
 import com.doublemoon1119.mahjongcraft.logic.module.PublicPlayerIndicator
 import com.doublemoon1119.mahjongcraft.logic.module.RevealedHandSettlement
 import com.doublemoon1119.mahjongcraft.logic.module.WinResolutionResult
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.NagashiManganResolution
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.PULL_NORTH_GAME_ACTION
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.PaoDetector
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RIICHI_STICK_POINTS
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiAutomaticControlPolicy
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDiscardPile
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDiscardReadinessAnalyzer
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDynamicState
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiExhaustiveDrawReason
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiFamilyRuleModule
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiHandValueCalculator
@@ -28,30 +29,33 @@ import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiHandValueContext
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiHandValueResult
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiLegalActionValidator
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiMatchProgressionPolicy
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPlayerState
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPlayerTileAreaIds
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPositionRules
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleModule
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiShantenCalculator
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiSupplementalDrawPolicy
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiTileOrder
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiWallRevealPolicy
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.collectRiichiPot
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.ippatsuEndPatch
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.layout.RiichiPhysicalWallLayoutPolicy
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.paoLiabilityPatch
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.permanentFuritenPatch
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.riichiAbortiveDrawRevealedHands
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.riichiComboBonusPayments
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.riichiDeclaration
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.riichiExhaustiveDrawSettlement
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.riichiIsBonusTile
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.riichiNagashiMangan
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.riichiPaoPlayerId
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.riichiPotPoints
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.riichiRonResolution
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.riichiSuukanNagare
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.riichiTileComponentDescriptions
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.riichiTsumoResolution
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.RiichiTileInterpretationPolicy
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.riichiCanonical
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.toPublicSnapshot
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.toSnapshot
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.dora.getNextDora
 import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayer
 import com.doublemoon1119.mahjongcraft.logic.table.MatchProgressionPolicy
-import com.doublemoon1119.mahjongcraft.logic.table.PlayerRuleState
 import com.doublemoon1119.mahjongcraft.logic.table.RoundCompletionClassification
 import com.doublemoon1119.mahjongcraft.logic.table.RoundTransitionContext
 import com.doublemoon1119.mahjongcraft.logic.table.RoundTransitionDirective
@@ -60,6 +64,7 @@ import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.logic.table.WallRevealPolicy
 import com.doublemoon1119.mahjongcraft.logic.table.layout.PhysicalWallLayoutPolicy
 import com.doublemoon1119.mahjongcraft.logic.tile.TileInterpretationPolicy
+import com.doublemoon1119.mahjongcraft.logic.tile.component.TileComponentDescription
 import kotlin.uuid.Uuid
 
 /**
@@ -158,39 +163,13 @@ class ThreePlayerRiichiRuleModule(
     /** 帶入三人麻將牌組與拔北寶牌的手牌價值上下文計算。 */
     override fun createHandValueContextCalculator(): RiichiHandValueContextCalculator = RiichiHandValueContextCalculator(config)
 
-    /** 全新的動態桌況狀態。 */
-    override fun createInitialDynamicState(): RiichiDynamicState = RiichiDynamicState()
-
-    /** 只延續尚未被收下的立直棒；槓、拔北與槓寶牌公開進度都只屬於單局。 */
-    override fun createNextRoundDynamicState(previous: DynamicRuleState?): RiichiDynamicState = RiichiDynamicState(riichiStickCount = (previous as? RiichiDynamicState)?.riichiStickCount ?: 0)
-
-    /** 全新的玩家規則狀態（尚未立直、沒有拔北）。 */
-    override fun createInitialPlayerRuleState(): RiichiPlayerState = RiichiPlayerState()
-
-    /** 建立三人日麻玩家狀態的 observer 投影；本人可見完整狀態，其他玩家只收到公開欄位。 */
-    override fun projectPlayerRuleState(
-        tableState: TableState,
-        player: MahjongPlayer,
-        observerId: Uuid,
-    ): PlayerRuleState? {
-        val state = player.playerRuleState as? RiichiPlayerState ?: return null
-        return if (player.id == observerId) state.toSnapshot() else state.toPublicSnapshot()
-    }
-
-    /** 建立三人日麻動態桌況的 observer 投影；尚未公開的槓寶牌項目不送出。 */
-    override fun projectDynamicRuleState(tableState: TableState, observerId: Uuid): DynamicRuleState? {
-        val state = tableState.dynamicRuleState as? RiichiDynamicState ?: return null
-        return state.copy(pendingKanDoraReveals = emptyList())
-    }
-
-    /** 摸牌不改變規則狀態。 */
-    override fun onPlayerDrew(player: MahjongPlayer): MahjongPlayer = player
+    override fun describeTileComponents(tableState: TableState): List<TileComponentDescription> = riichiTileComponentDescriptions(tableState)
 
     /** 立直後的下一次捨牌結束一發期限。 */
-    override fun onPlayerDiscarded(player: MahjongPlayer): MahjongPlayer = player.withoutIppatsu()
+    override fun onPlayerDiscarded(player: MahjongPlayer): ComponentPatch = player.ippatsuEndPatch()
 
     /** 任何一次鳴牌都會讓場上所有玩家的一發資格失效。 */
-    override fun onMeldClaimed(players: List<MahjongPlayer>): List<MahjongPlayer> = players.map { it.withoutIppatsu() }
+    override fun onMeldClaimed(players: List<MahjongPlayer>): Map<Uuid, ComponentPatch> = players.associate { it.id to it.ippatsuEndPatch() }
 
     /** 碰／明槓觸發大三元或大四喜時記錄包牌責任；三人麻將不能吃。 */
     override fun beforeDiscardClaimed(
@@ -198,12 +177,7 @@ class ThreePlayerRiichiRuleModule(
         meldType: MeldType,
         calledTile: IdentifiedTile,
         sourceDirection: RelativeDirection,
-    ): MahjongPlayer {
-        if (meldType != MeldType.PON && meldType != MeldType.OPEN_KAN) return claimingPlayer
-        val riichiState = claimingPlayer.playerRuleState as? RiichiPlayerState ?: return claimingPlayer
-        val liability = PaoDetector.check(claimingPlayer.hand, calledTile.tile, sourceDirection) ?: return claimingPlayer
-        return claimingPlayer.copy(playerRuleState = riichiState.copy(paoLiability = liability))
-    }
+    ): ComponentPatch = claimingPlayer.paoLiabilityPatch(meldType, calledTile, sourceDirection)
 
     /** 自摸結算；少一家支付，贏家收到的點數是兩家付款的總和（自摸損）。 */
     override fun declareTsumo(tableState: TableState, player: MahjongPlayer): WinResolutionResult? {
@@ -243,11 +217,8 @@ class ThreePlayerRiichiRuleModule(
         return riichiRonResolution(tableState, player.id, discarderId, createHandValueCalculator().calculate(context))
     }
 
-    /** 收下場上所有立直棒。 */
-    override fun collectStickPot(tableState: TableState): Pair<DynamicRuleState?, Int>? {
-        val riichiDynamicState = tableState.dynamicRuleState as? RiichiDynamicState ?: return null
-        return riichiDynamicState.copy(riichiStickCount = 0) to riichiDynamicState.riichiStickCount * RIICHI_STICK_POINTS
-    }
+    /** 收下供託點數，只將供託組件歸零。 */
+    override fun collectStickPot(tableState: TableState): PointPotCollection = collectRiichiPot(tableState)
 
     /** 每本場 200 點：榮和由放銃者支付，自摸由另外兩家各付 100。 */
     override fun resolveComboBonusPayments(
@@ -294,32 +265,27 @@ class ThreePlayerRiichiRuleModule(
     /** 四槓散了。 */
     override fun resolveSuukanNagare(tableState: TableState): ExhaustiveDrawReason? = riichiSuukanNagare(tableState)
 
-    /** 加值牌：赤寶牌，或依三人麻將牌組符合任一寶牌指示牌下一張的牌。 */
-    override fun isBonusTile(tile: Tile, revealedWallTiles: List<Tile>): Boolean = RiichiTileInterpretationPolicy.isRedDora(tile) ||
-        revealedWallTiles.any { indicator -> tile.riichiCanonical == getNextDora(indicator, usesThreePlayerTiles = true).riichiCanonical }
+    /** 加值牌：帶赤寶牌特徵的牌，或依三人麻將牌組符合任一生效寶牌指示牌下一張的牌。 */
+    override fun isBonusTile(face: TileFaceView, wallFaces: List<TileFaceView>): Boolean = riichiIsBonusTile(face, wallFaces, usesThreePlayerTiles = true)
 
     /** 這位玩家目前是否立直中。 */
-    fun isPlayerInRiichi(player: MahjongPlayer): Boolean = (player.playerRuleState as? RiichiPlayerState)?.isRiichi ?: false
+    fun isPlayerInRiichi(player: MahjongPlayer): Boolean = player.riichiDeclaration != null
 
     /** 立直後只能摸切。 */
     override fun forcedDiscardTileId(tableState: TableState, player: MahjongPlayer): Uuid? = player.hand.lastDrawn?.id?.takeIf { isPlayerInRiichi(player) }
 
     /** 場上尚未被收下的立直棒支數。 */
-    fun getStickPotCount(tableState: TableState): Int = (tableState.dynamicRuleState as? RiichiDynamicState)?.riichiStickCount ?: 0
+    fun getStickPotCount(tableState: TableState): Int = tableState.riichiPotPoints() / RIICHI_STICK_POINTS
 
     /** 立直中放過和牌會成為永久振聽。 */
-    override fun onPlayerDeclinedWin(player: MahjongPlayer): MahjongPlayer {
-        val riichiState = player.playerRuleState as? RiichiPlayerState ?: return player
-        if (!riichiState.isRiichi) return player
-        return player.copy(playerRuleState = riichiState.copy(isPermanentlyFuriten = true))
-    }
+    override fun onPlayerDeclinedWin(player: MahjongPlayer): ComponentPatch = player.permanentFuritenPatch()
 
     /** 拔北時移出手牌的北：剛摸到的牌是北時優先拔這張，否則拔手中第一張北。 */
     override fun tileSetAsideBy(player: MahjongPlayer, action: GameAction.Extension): IdentifiedTile? {
         if (action != PULL_NORTH_GAME_ACTION) return null
         val hand = player.hand
-        return hand.lastDrawn?.takeIf { it.tile.riichiCanonical == Tile.Honor.North }
-            ?: hand.tiles.firstOrNull { it.tile.riichiCanonical == Tile.Honor.North }
+        return hand.lastDrawn?.takeIf { it.tile == Tile.Honor.North }
+            ?: hand.tiles.firstOrNull { it.tile == Tile.Honor.North }
     }
 
     /**
@@ -332,25 +298,16 @@ class ThreePlayerRiichiRuleModule(
         action: GameAction.Extension,
     ): TableState? {
         val player = tableState.players.firstOrNull { it.id == actorPlayerId } ?: return null
-        val riichiState = player.playerRuleState as? RiichiPlayerState ?: return null
         val north = tileSetAsideBy(player, action) ?: return null
         val hand = player.hand
         val remaining = (hand.tiles + listOfNotNull(hand.lastDrawn)).filterNot { it.id == north.id }
         val puller = player.copy(
             hand = hand.copy(tiles = remaining, lastDrawn = null),
-            playerRuleState = riichiState.copy(nukiDoraTiles = riichiState.nukiDoraTiles + north),
+            tileAreas = player.tileAreas.withArea(RiichiPlayerTileAreaIds.NORTH, player.tileAreas[RiichiPlayerTileAreaIds.NORTH]?.tiles.orEmpty() + north),
         ).recordAction(action)
-        val players = tableState.players.map { if (it.id == actorPlayerId) puller else it }.map { it.withoutIppatsu() }
+        val players = tableState.players.map { if (it.id == actorPlayerId) puller else it }.map { player ->
+            player.copy(components = player.ippatsuEndPatch().applyTo(player.components, BuiltInComponentOwners.PLAYER))
+        }
         return tableState.copy(players = players)
-    }
-
-    /** 本局拔出的北。 */
-    override fun setAsideTiles(player: MahjongPlayer): List<IdentifiedTile> = (player.playerRuleState as? RiichiPlayerState)?.nukiDoraTiles.orEmpty()
-
-    /** 清除一發資格。 */
-    private fun MahjongPlayer.withoutIppatsu(): MahjongPlayer {
-        val riichiState = playerRuleState as? RiichiPlayerState ?: return this
-        if (!riichiState.isIppatsu) return this
-        return copy(playerRuleState = riichiState.copy(isIppatsu = false))
     }
 }

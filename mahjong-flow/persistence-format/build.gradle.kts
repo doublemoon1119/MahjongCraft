@@ -20,6 +20,7 @@ kotlin {
             implementation(kotlin("test"))
             implementation(libs.kotlinx.coroutines.test)
             implementation(project(":testing:testing-mahjong-flow"))
+            implementation(project(":testing:testing-mahjong-logic"))
         }
     }
 }

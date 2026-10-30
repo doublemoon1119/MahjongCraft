@@ -6,7 +6,6 @@ import com.doublemoon1119.mahjongcraft.logic.judgment.HandValueCalculator
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.structure.Fuuro
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.structure.HandStructure
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.structure.Mentsu
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.riichiCanonical
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.YakuResult
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.YakuType
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.dora.calculateAkaDora
@@ -59,17 +58,17 @@ class RiichiHandValueCalculator(
 
     override fun calculate(context: RiichiHandValueContext): RiichiHandValueResult {
         // 嘗試分解手牌（用於需要手牌結構的役種）
-        val handTiles = context.hand.standingTiles.map { it.tile.riichiCanonical }
-        val winningTile = context.winningTile.riichiCanonical
+        val handTiles = context.hand.standingTiles.map { it.tile }
+        val winningTile = context.winningTile
         val fuuro = context.hand.exposedMelds.map { meld ->
             // 將 base.Meld 轉換為 structure.Fuuro
-            val tile = meld.tiles.first().tile.riichiCanonical
+            val tile = meld.tiles.first().tile
             val mentsu = when (meld.type) {
                 MeldType.PON -> Mentsu.Kotsu(tile)
                 // CHI 的 tiles 依鳴牌時呼叫端選牌順序排列（被鳴牌固定最後一張），不保證數值遞增，
                 // Shuntsu 的 headTile 必須是三張裡數值最小的那張，不能直接沿用 tiles.first()。
                 MeldType.CHI -> Mentsu.Shuntsu(
-                    headTile = meld.tiles.minBy { (it.tile.riichiCanonical as Tile.Numeric).value }.tile.riichiCanonical,
+                    headTile = meld.tiles.minBy { (it.tile as Tile.Numeric).value }.tile,
                 )
                 MeldType.OPEN_KAN -> Mentsu.Minkan(tile)
                 MeldType.CLOSED_KAN -> Mentsu.Ankan(tile)
@@ -169,7 +168,7 @@ class RiichiHandValueCalculator(
             // 計算赤寶牌
             val akaDoraResult = calculateAkaDora(
                 hand = context.hand,
-                winningTile = context.winningTile,
+                winningTile = context.winningTileValue,
             )
             if (akaDoraResult.han > 0) {
                 yakuResults.add(akaDoraResult)
@@ -383,12 +382,12 @@ class RiichiHandValueCalculator(
         results: MutableList<YakuResult>,
     ) {
         // 取得所有牌（去除赤寶牌標記）
-        val handTiles = context.hand.standingTiles.map { it.tile.riichiCanonical }
+        val handTiles = context.hand.standingTiles.map { it.tile }
 
         // 計算字牌役
         val honorResults = calculateHonorYaku(
             handTiles = handTiles,
-            winningTile = context.winningTile.riichiCanonical,
+            winningTile = context.winningTile,
             fuuro = fuuro,
             roundWind = context.roundWind,
             seatWind = context.seatWind,
@@ -456,7 +455,7 @@ class RiichiHandValueCalculator(
         handStructure: HandStructure,
         results: MutableList<YakuResult>,
     ) {
-        val winningTile = context.winningTile.riichiCanonical
+        val winningTile = context.winningTile
 
         // 燕返：以其他玩家的立直宣言牌榮和
         if (!context.isTsumo && context.isRiichiDeclarationDiscard) {

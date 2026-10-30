@@ -7,8 +7,8 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryRecording
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryRecordingState
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.Game
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameFlowConfig
-import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepositoryImpl
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
+import com.doublemoon1119.mahjongcraft.testing.flow.common.game.repository.componentValidatedGameRepository
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
 import kotlinx.coroutines.CompletableDeferred
@@ -26,7 +26,7 @@ class HistoryRecordingPolicyTest {
     @Test
     fun `new game records match started history when policy is enabled`() = runTest {
         val store = AuthoritativeStateStore(historyRecordingEnabled = true)
-        val repository = GameRepositoryImpl(store)
+        val repository = componentValidatedGameRepository(store)
         val table = FakeTableStateFactory.create()
 
         repository.updateGame(table.id, history = { _, _, _ -> listOf(matchStarted(table)) }) {
@@ -44,7 +44,7 @@ class HistoryRecordingPolicyTest {
     fun `new game with any AI is excluded when AI matches are disabled`() = runTest {
         val store = AuthoritativeStateStore(historyRecordingEnabled = true)
         store.applyHistoryRecordingPolicy(HistoryRecordingPolicy(enabled = true, includeAiMatches = false))
-        val repository = GameRepositoryImpl(store)
+        val repository = componentValidatedGameRepository(store)
         val table = FakeTableStateFactory.create(
             players = listOf(
                 FakeMahjongPlayerFactory.create(),
@@ -66,7 +66,7 @@ class HistoryRecordingPolicyTest {
     @Test
     fun `disabling and re-enabling policy does not resume an active match`() = runTest {
         val store = AuthoritativeStateStore(historyRecordingEnabled = true)
-        val repository = GameRepositoryImpl(store)
+        val repository = componentValidatedGameRepository(store)
         val table = FakeTableStateFactory.create()
         repository.updateGame(table.id, history = { _, _, _ -> listOf(matchStarted(table)) }) {
             Game(table, GameFlowConfig()) to Unit
@@ -96,7 +96,7 @@ class HistoryRecordingPolicyTest {
     @Test
     fun `changing AI policy does not reclassify an existing match`() = runTest {
         val store = AuthoritativeStateStore(historyRecordingEnabled = true)
-        val repository = GameRepositoryImpl(store)
+        val repository = componentValidatedGameRepository(store)
         val table = FakeTableStateFactory.create(
             players = listOf(
                 FakeMahjongPlayerFactory.create(),
@@ -119,7 +119,7 @@ class HistoryRecordingPolicyTest {
     fun `new match on the same table is evaluated again`() = runTest {
         val store = AuthoritativeStateStore(historyRecordingEnabled = true)
         store.applyHistoryRecordingPolicy(HistoryRecordingPolicy(enabled = true, includeAiMatches = false))
-        val repository = GameRepositoryImpl(store)
+        val repository = componentValidatedGameRepository(store)
         val table = FakeTableStateFactory.create()
         repository.updateGame(table.id, history = { _, _, _ -> listOf(matchStarted(table)) }) {
             Game(table, GameFlowConfig()) to Unit
@@ -165,7 +165,7 @@ class HistoryRecordingPolicyTest {
         val store = AuthoritativeStateStore(historyRecordingEnabled = true)
         store.load(AuthoritativeStateSnapshot(games = mapOf(game.id to game)))
         store.applyHistoryRecordingPolicy(HistoryRecordingPolicy(enabled = true))
-        val repository = GameRepositoryImpl(store)
+        val repository = componentValidatedGameRepository(store)
 
         repository.updateGame(table.id, history = { _, _, _ -> listOf(matchStarted(table)) }) { current ->
             current!!.copy(
@@ -186,7 +186,7 @@ class HistoryRecordingPolicyTest {
     @Test
     fun `history capacity exhaustion leaves a sequence gap`() = runTest {
         val store = AuthoritativeStateStore(historyRecordingEnabled = true, maxPendingHistoryEvents = 0)
-        val repository = GameRepositoryImpl(store)
+        val repository = componentValidatedGameRepository(store)
         val table = FakeTableStateFactory.create()
         repository.updateGame(table.id, history = { _, _, _ -> listOf(matchStarted(table)) }) {
             Game(table, GameFlowConfig()) to Unit
@@ -203,7 +203,7 @@ class HistoryRecordingPolicyTest {
     @Test
     fun `concurrent policy and game updates preserve an atomic decision`() = runTest {
         val store = AuthoritativeStateStore(historyRecordingEnabled = true)
-        val repository = GameRepositoryImpl(store)
+        val repository = componentValidatedGameRepository(store)
         val table = FakeTableStateFactory.create()
         val operations = listOf(
             async {
@@ -260,7 +260,7 @@ class HistoryRecordingPolicyTest {
     @Test
     fun `disabling waits for an in-flight opening transaction`() = runTest {
         val store = AuthoritativeStateStore(historyRecordingEnabled = true)
-        val repository = GameRepositoryImpl(store)
+        val repository = componentValidatedGameRepository(store)
         val table = FakeTableStateFactory.create()
         val entered = CompletableDeferred<Unit>()
         val release = CompletableDeferred<Unit>()

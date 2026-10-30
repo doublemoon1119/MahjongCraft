@@ -2,7 +2,7 @@ package com.doublemoon1119.mahjongcraft.logic.table
 
 import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
 import com.doublemoon1119.mahjongcraft.logic.base.NamespacedId
-import com.doublemoon1119.mahjongcraft.logic.config.DynamicRuleState
+import com.doublemoon1119.mahjongcraft.logic.component.ComponentPatch
 
 /** 規則對動作後補牌的強型別決策。 */
 sealed interface SupplementalDrawDecision {
@@ -15,13 +15,13 @@ sealed interface SupplementalDrawDecision {
      * @property drawnTiles 依摸取順序排列的補牌；最後一張會放入玩家摸牌位置。
      * @property tileWall 更新後仍可供一般摸牌的牌堆。
      * @property reservedWallTiles 更新後的權威規則保留牌；實體擺法由另外的 layout policy 決定。
-     * @property dynamicRuleState 更新後的規則動態狀態。
+     * @property tableComponents 本次明確設定或移除的桌況組件；未指定的組件保持原值。
      */
     data class Completed(
         val drawnTiles: List<IdentifiedTile>,
         val tileWall: TileWall,
         val reservedWallTiles: List<IdentifiedTile>,
-        val dynamicRuleState: DynamicRuleState?,
+        val tableComponents: ComponentPatch,
     ) : SupplementalDrawDecision
 
     /**

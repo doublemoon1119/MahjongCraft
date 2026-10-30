@@ -4,6 +4,7 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.recordAbor
 import com.doublemoon1119.mahjongcraft.logic.base.ExhaustiveDrawReason
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
+import com.doublemoon1119.mahjongcraft.logic.component.ComponentRegistry
 import com.doublemoon1119.mahjongcraft.logic.config.RonResolution
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
 import com.doublemoon1119.mahjongcraft.logic.table.PendingFollowUpDraw
@@ -78,6 +79,7 @@ internal object TileSetAsideResolver {
      * @param playerId 執行動作的玩家。
      * @param action 移出手牌的擴充動作。
      * @param setAsideTile 規則指定要移出的牌。
+     * @param componentRegistry 正式組件定義與純效果來源。
      * @param module 對局採用的規則模組。
      * @param pendingFollowUpDraws 摸牌後自動處理還沒詢問過規則的牌與來源；開啟搶和視窗時保存在視窗中，放過後繼續詢問。
      * @return 這次動作的去向。
@@ -89,6 +91,7 @@ internal object TileSetAsideResolver {
         setAsideTile: IdentifiedTile,
         module: MahjongRuleModule<*>,
         pendingFollowUpDraws: List<PendingFollowUpDraw> = emptyList(),
+        componentRegistry: ComponentRegistry,
     ): Resolution {
         RuleHookResultValidator.requireHeldSetAsideTile(state, playerId, action, setAsideTile)
         val ronEligiblePlayerIds = RobbingEligibility.ronEligiblePlayerIds(
@@ -126,13 +129,13 @@ internal object TileSetAsideResolver {
                         eligiblePlayerIds = ronWinningPlayerIds,
                         pendingFollowUpDraws = pendingFollowUpDraws,
                     ),
-                    revealedHandTileIds = state.revealedHandTileIds + setAsideTile.id,
+                    publicTileEvidenceIds = state.publicTileEvidenceIds + setAsideTile.id,
                 ),
                 setAsideTile = setAsideTile,
-                declaredState = SelfDeclarationApplier.declaredState(state, playerId, action, setAsideTile, module),
+                declaredState = SelfDeclarationApplier.declaredState(state, playerId, action, setAsideTile, module, componentRegistry),
             )
         }
-        return when (val applied = SelfDeclarationApplier.applyTileSetAside(state, playerId, action, module)) {
+        return when (val applied = SelfDeclarationApplier.applyTileSetAside(state, playerId, action, module, componentRegistry = componentRegistry)) {
             is SelfDeclarationApplier.Result.Applied -> Resolution.Applied(applied, setAsideTile)
             is SelfDeclarationApplier.Result.Rejected -> Resolution.Rejected(applied.reasonId, setAsideTile)
         }

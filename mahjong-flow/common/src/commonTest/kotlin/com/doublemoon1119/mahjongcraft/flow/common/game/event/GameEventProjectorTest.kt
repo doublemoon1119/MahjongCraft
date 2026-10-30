@@ -22,6 +22,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementDetai
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.riichi.RiichiRoundOutcomeIds
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
+import com.doublemoon1119.mahjongcraft.logic.base.TileFaceView
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleDefinition
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiExhaustiveDrawReason
@@ -163,7 +164,7 @@ class GameEventProjectorTest {
     fun `rule result snapshots are detached and omit tile fields`() {
         val game = game(scores(25_000, 25_000, 25_000, 25_000))
         val mutableDetails = mutableListOf(
-            WinSettlementDetailField("test:hidden_tiles", WinSettlementDetailValue.TileFaces(listOf(Tile.Honor.North))),
+            WinSettlementDetailField("test:hidden_tiles", WinSettlementDetailValue.TileFaces(listOf(TileFaceView(Tile.Honor.North)))),
         )
         val mutableBeneficiaries = mutableSetOf(east)
         val fact = HistoryFact.RuleEffectResolved(

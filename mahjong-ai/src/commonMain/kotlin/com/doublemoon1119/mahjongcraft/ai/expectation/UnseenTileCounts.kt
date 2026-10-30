@@ -1,28 +1,30 @@
 package com.doublemoon1119.mahjongcraft.ai.expectation
 
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
+import com.doublemoon1119.mahjongcraft.logic.base.TileValue
+import com.doublemoon1119.mahjongcraft.logic.base.toValue
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
 import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayerSnapshot
 import com.doublemoon1119.mahjongcraft.logic.table.TableStateSnapshot
 import com.doublemoon1119.mahjongcraft.logic.table.heldTiles
-import com.doublemoon1119.mahjongcraft.logic.table.visibleTiles
+import com.doublemoon1119.mahjongcraft.logic.table.visibleTilesOutsideDrawPool
 import kotlin.uuid.Uuid
 
 /**
  * 評估者眼中每種牌還沒看到的張數。
  *
- * 牌面一律以規則的 [MahjongRuleModule.createTileInterpretationPolicy] 正規化，例如日麻的赤五與普通五算同一種。
- * 同一種牌若有外觀不同、價值也可能不同的牌面（例如日麻的赤五與普通五），另外記錄每一種牌面的未見張數，
+ * 牌面一律以規則的 [MahjongRuleModule.createTileInterpretationPolicy] 正規化；日麻的赤五基本牌面就是普通五，算同一種。
+ * 同一種牌若有價值不同的牌值（例如日麻的赤五與普通五），另外記錄每一種牌值的未見張數，
  * 讓和牌價值可以依實際摸到或打出的牌面分別計算。
  *
  * @property kinds 規則牌山中存在的每種正規化牌面，依規則牌序排列。
- * @property facesByKind 每種正規化牌面在牌山中出現的實際牌面。
- * @property faceCounts 每一種實際牌面的未見張數。
+ * @property facesByKind 每種正規化牌面在牌山中出現的完整牌值。
+ * @property faceCounts 每一種完整牌值的未見張數。
  */
 internal class UnseenTileCounts private constructor(
     val kinds: List<Tile>,
-    private val facesByKind: Map<Tile, List<Tile>>,
-    private val faceCounts: Map<Tile, Int>,
+    private val facesByKind: Map<Tile, List<TileValue>>,
+    private val faceCounts: Map<TileValue, Int>,
 ) {
     /** 所有未見牌的總張數。 */
     val total: Int = faceCounts.values.sum()
@@ -36,12 +38,12 @@ internal class UnseenTileCounts private constructor(
     operator fun get(kind: Tile): Int = facesByKind[kind].orEmpty().sumOf { faceCounts[it] ?: 0 }
 
     /**
-     * 正規化牌面 [kind] 的每一種實際牌面，以及各自的未見張數；未見張數為 0 的牌面不列出。
+     * 正規化牌面 [kind] 的每一種完整牌值，以及各自的未見張數；未見張數為 0 的牌面不列出。
      *
      * @param kind 規則正規化後的牌面。
      * @return 實際牌面與其未見張數的配對清單。
      */
-    fun faces(kind: Tile): List<Pair<Tile, Int>> = facesByKind[kind].orEmpty()
+    fun faces(kind: Tile): List<Pair<TileValue, Int>> = facesByKind[kind].orEmpty()
         .map { face -> face to (faceCounts[face] ?: 0) }
         .filter { (_, count) -> count > 0 }
 
@@ -51,7 +53,7 @@ internal class UnseenTileCounts private constructor(
      * @param face 假設摸進的實際牌面。
      * @return 其餘未見牌的張數快照。
      */
-    fun without(face: Tile): UnseenTileCounts = UnseenTileCounts(
+    fun without(face: TileValue): UnseenTileCounts = UnseenTileCounts(
         kinds = kinds,
         facesByKind = facesByKind,
         faceCounts = faceCounts + (face to ((faceCounts[face] ?: 0) - 1).coerceAtLeast(0)),
@@ -62,7 +64,7 @@ internal class UnseenTileCounts private constructor(
         /**
          * 由 [selfId] 的視角計算未見張數。
          *
-         * [countsVisibleTiles] 為 `true` 時扣除快照中看得到的每一張牌（見 [TableStateSnapshot.visibleTiles]）；為 `false`
+         * [countsVisibleTiles] 為 `true` 時扣除快照中看得到的每一張牌（見 [TableStateSnapshot.visibleTilesOutsideDrawPool]）；為 `false`
          * 時只扣除自己手上的牌（見 [MahjongPlayerSnapshot.heldTiles]）。看到的牌面不在規則的牌山組成中時，改從它的
          * 正規化牌面扣除。
          *
@@ -79,13 +81,15 @@ internal class UnseenTileCounts private constructor(
             countsVisibleTiles: Boolean,
         ): UnseenTileCounts {
             val interpretation = module.createTileInterpretationPolicy()
-            val composition = module.createWallFactory(snapshot.players.size).create().getAllTiles().groupingBy { it.tile }.eachCount()
-            val seenTiles = if (countsVisibleTiles) snapshot.visibleTiles() else snapshot.players.first { it.id == selfId }.heldTiles()
-            val seen = seenTiles.map { it.tile }
-                .groupingBy { face -> if (face in composition) face else interpretation.canonicalize(face) }
+            val composition = module.createWallFactory(snapshot.players.size).composition().entries()
+                .groupBy { interpretation.valueOf(it.value) }
+                .mapValues { (_, entries) -> entries.sumOf { it.count } }
+            val seenTiles = if (countsVisibleTiles) snapshot.visibleTilesOutsideDrawPool(interpretation) else snapshot.players.first { it.id == selfId }.heldTiles(interpretation)
+            val seen = seenTiles.map { it.toValue() }
+                .groupingBy { face -> if (face in composition) face else face.copy(tile = interpretation.canonicalize(face.tile)) }
                 .eachCount()
 
-            val facesByKind = composition.keys.groupBy { interpretation.canonicalize(it) }
+            val facesByKind = composition.keys.groupBy { interpretation.canonicalize(it.tile) }
             return UnseenTileCounts(
                 kinds = facesByKind.keys.sortedWith(module.tileOrder),
                 facesByKind = facesByKind,
@@ -105,10 +109,10 @@ internal class UnseenTileCounts private constructor(
          * @return 各實際牌面的非負未見張數。
          */
         private fun unseenFaces(
-            faces: List<Tile>,
-            composition: Map<Tile, Int>,
-            seen: Map<Tile, Int>,
-        ): Map<Tile, Int> {
+            faces: List<TileValue>,
+            composition: Map<TileValue, Int>,
+            seen: Map<TileValue, Int>,
+        ): Map<TileValue, Int> {
             val remaining = faces.associateWith { face -> composition.getValue(face) - (seen[face] ?: 0) }
             var overflow = remaining.values.sumOf { (-it).coerceAtLeast(0) }
             return remaining.mapValues { (_, count) ->

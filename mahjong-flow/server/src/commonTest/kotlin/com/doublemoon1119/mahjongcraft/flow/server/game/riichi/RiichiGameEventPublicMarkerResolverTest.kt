@@ -4,11 +4,11 @@ import com.doublemoon1119.mahjongcraft.flow.api.event.MatchCompletion
 import com.doublemoon1119.mahjongcraft.flow.common.game.event.MatchEndPublicMarkerContext
 import com.doublemoon1119.mahjongcraft.flow.common.game.event.WinPublicMarkerContext
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPlayerState
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiScoreConfig
 import com.doublemoon1119.mahjongcraft.logic.table.BuiltInMatchEndReasonIds
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeIdentifiedTileFactory
+import com.doublemoon1119.mahjongcraft.testing.logic.rules.riichi.riichiDeclarationComponents
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
 import kotlin.test.Test
@@ -24,8 +24,8 @@ class RiichiGameEventPublicMarkerResolverTest {
     @Test
     fun `win markers reflect winner state from previous table`() {
         val winner = FakeMahjongPlayerFactory.create(
-            playerRuleState = RiichiPlayerState(
-                riichiTile = FakeIdentifiedTileFactory.create(Tile.Honor.East),
+            components = riichiDeclarationComponents(
+                declarationTile = FakeIdentifiedTileFactory.create(Tile.Honor.East),
                 isIppatsu = true,
             ),
         )
@@ -33,7 +33,7 @@ class RiichiGameEventPublicMarkerResolverTest {
             config = RiichiRuleConfig(),
             players = listOf(winner) + List(3) { FakeMahjongPlayerFactory.create() },
         )
-        val settledState = state.copy(players = state.players.map { it.copy(playerRuleState = RiichiPlayerState()) })
+        val settledState = state.copy(players = state.players.map { it.copy(components = riichiDeclarationComponents()) })
 
         val markers = RiichiGameEventPublicMarkerResolver.resolveWinMarkers(
             WinPublicMarkerContext(

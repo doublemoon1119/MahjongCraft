@@ -230,6 +230,17 @@ sealed interface HistoryFactPersistenceDto {
         val result: HistoryTableResultPersistenceDto,
     ) : HistoryFactPersistenceDto
 
+    /**
+     * 交易提交後呈現改變的牌。
+     *
+     * @property presentations 依牌張識別碼索引的呈現結果。
+     */
+    @Serializable
+    @SerialName(HistoryFactTypeKeys.TILE_PRESENTATION_CHANGED)
+    data class TilePresentationChanged(
+        val presentations: Map<String, HistoryTilePresentationPersistenceDto>,
+    ) : HistoryFactPersistenceDto
+
     /** 對局移除並返回房間。 */
     @Serializable
     @SerialName(HistoryFactTypeKeys.RETURNED_TO_ROOM)

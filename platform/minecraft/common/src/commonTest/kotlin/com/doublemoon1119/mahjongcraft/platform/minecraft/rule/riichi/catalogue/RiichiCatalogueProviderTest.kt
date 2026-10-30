@@ -1,14 +1,18 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.rule.riichi.catalogue
 
+import com.doublemoon1119.mahjongcraft.logic.base.Hand
 import com.doublemoon1119.mahjongcraft.logic.base.Meld
 import com.doublemoon1119.mahjongcraft.logic.base.MeldType
 import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
+import com.doublemoon1119.mahjongcraft.logic.base.Tile
+import com.doublemoon1119.mahjongcraft.logic.base.TileFaceView
+import com.doublemoon1119.mahjongcraft.logic.base.TileValue
 import com.doublemoon1119.mahjongcraft.logic.module.BuiltInRuleModuleIds
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiHandValueCalculator
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.threeplayer.ThreePlayerRiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.threeplayer.ThreePlayerRiichiRuleModule
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.riichiCanonical
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.RiichiTileValues
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.YakuType
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
@@ -25,7 +29,6 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAsse
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.UNKNOWN_TILE_ASSET_KEY
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.allTileAssetKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.toAssetKey
-import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeHandFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeIdentifiedTileFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.rules.riichi.FakeRiichiHandValueContextFactory
 import kotlin.test.Test
@@ -194,9 +197,9 @@ class RiichiCatalogueProviderTest {
 
         catalogue.entries.filter { it.unavailableReasonTranslationKey == null }.forEach { entry ->
             entry.examples.flatMap { it.groups }.forEach { group ->
-                assertTrue(group.tiles.all { it in wallTiles }, "${entry.id} example uses a tile missing from three player mahjong: ${group.tiles}")
+                assertTrue(group.tiles.all { it.tile in wallTiles }, "${entry.id} example uses a tile missing from three player mahjong: ${group.tiles}")
                 assertTrue(
-                    group.role != RuleCatalogueTileGroupRole.OPEN_MELD || group.tiles.distinct().size == 1,
+                    group.role != RuleCatalogueTileGroupRole.OPEN_MELD || group.tiles.map { it.tile }.distinct().size == 1,
                     "${entry.id} example calls chi, which three player mahjong does not allow",
                 )
             }
@@ -212,18 +215,22 @@ class RiichiCatalogueProviderTest {
  * @return 現行日麻計算器的結果。
  */
 private fun evaluateExample(type: YakuType, example: RuleCatalogueExample) = run {
-    val winning = example.groups.single { it.role == RuleCatalogueTileGroupRole.WINNING_TILE }.tiles.single()
+    val winning = exampleValue(example.groups.single { it.role == RuleCatalogueTileGroupRole.WINNING_TILE }.tiles.single())
     val kanCount = example.groups.count { it.role == RuleCatalogueTileGroupRole.OPEN_KAN || it.role == RuleCatalogueTileGroupRole.CLOSED_KAN }
     val allTiles = example.groups.flatMap { it.tiles }
     assertEquals(14 + kanCount, allTiles.size, "Invalid physical tile count for $type")
-    assertTrue(allTiles.groupingBy { it.riichiCanonical }.eachCount().values.all { it <= 4 }, "Too many copies in $type example")
+    assertTrue(allTiles.groupingBy { it.tile }.eachCount().values.all { it <= 4 }, "Too many copies in $type example")
     val meldGroups = example.groups.filter { it.role in meldRoles }
     val melds = meldGroups.map(::exampleMeld)
     val isMenzen = meldGroups.none { it.role != RuleCatalogueTileGroupRole.CLOSED_KAN }
-    val hand = FakeHandFactory.create(example.groups.filter { it.role == RuleCatalogueTileGroupRole.HAND }.flatMap { it.tiles }, melds)
+    val hand = Hand(
+        tiles = example.groups.filter { it.role == RuleCatalogueTileGroupRole.HAND }.flatMap { it.tiles }.map { FakeIdentifiedTileFactory.create(exampleValue(it)) },
+        melds = melds,
+    )
     val context = FakeRiichiHandValueContextFactory.create(
         hand = hand,
-        winningTile = winning,
+        winningTile = winning.tile,
+        winningTileValue = winning,
         isTsumo = type in tsumoTypes,
         isMenzen = isMenzen,
         isDealer = type == YakuType.Tenhou,
@@ -245,6 +252,17 @@ private fun evaluateExample(type: YakuType, example: RuleCatalogueExample) = run
         isDiscardAfterKan = type == YakuType.Kanburi,
     )
     RiichiHandValueCalculator(useLocalYaku = type.isLocal).calculate(context)
+}
+
+/**
+ * 將範例牌面轉成計分用牌值：帶赤五外觀的牌是赤五，其餘是普通牌值。
+ *
+ * @param face 範例牌面。
+ * @return 計分用牌值。
+ */
+private fun exampleValue(face: TileFaceView): TileValue {
+    val five = face.tile as? Tile.Numeric
+    return if (face.appearanceId == RiichiTileValues.RED_FIVE_APPEARANCE_ID && five != null) RiichiTileValues.redFive(five.suit) else TileValue(face.tile)
 }
 
 /** 範例中需轉成副露的牌組角色。 */
@@ -275,9 +293,9 @@ private fun exampleMeld(group: RuleCatalogueTileGroup): Meld {
     val type = when (group.role) {
         RuleCatalogueTileGroupRole.OPEN_KAN -> MeldType.OPEN_KAN
         RuleCatalogueTileGroupRole.CLOSED_KAN -> MeldType.CLOSED_KAN
-        else -> if (group.tiles.distinct().size == 1) MeldType.PON else MeldType.CHI
+        else -> if (group.tiles.map { it.tile }.distinct().size == 1) MeldType.PON else MeldType.CHI
     }
-    val tiles = group.tiles.map { FakeIdentifiedTileFactory.create(it) }
+    val tiles = group.tiles.map { FakeIdentifiedTileFactory.create(exampleValue(it)) }
     return Meld(
         type = type,
         tiles = tiles,

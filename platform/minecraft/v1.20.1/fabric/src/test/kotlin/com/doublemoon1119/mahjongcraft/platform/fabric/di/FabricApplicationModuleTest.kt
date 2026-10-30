@@ -46,7 +46,6 @@ import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDiscardReadinessAnalyzer
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiGameAction
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.RiichiTileTypes
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.tile.TaiwanTileTypes
 import com.doublemoon1119.mahjongcraft.logic.tile.TileTypeRegistry
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.concurrency.ClientCoroutineScope
@@ -373,7 +372,7 @@ class FabricApplicationModuleTest {
         assertTrue(presentationRegistries.ruleCatalogueRegistry.isFrozen)
         assertSame(koin.get<GameAchievementResolverRegistry>(), presentationRegistries.gameAchievementResolverRegistry)
         assertTrue(presentationRegistries.gameAchievementResolverRegistry.isFrozen)
-        assertEquals(RiichiTileTypes.ALL + TaiwanTileTypes.ALL, tileTypeRegistry.getAll().map { it.id })
+        assertEquals(TaiwanTileTypes.ALL, tileTypeRegistry.getAll().map { it.id })
         assertTrue(minecraftTileAssetRegistry.isFrozen)
         assertTrue(aiStrategyDisplayNameRegistry.isFrozen)
         assertTrue(tileDisplayNameRegistry.isFrozen)

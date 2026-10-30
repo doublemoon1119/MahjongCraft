@@ -62,16 +62,16 @@ class MeldAndHistoryPersistenceRegressionTest {
             MahjongPlayerPersistenceDto.serializer(),
             player.toPersistenceDto(
                 registries.discardPiles,
-                registries.playerRuleStates,
                 registries.exhaustiveDrawReasons,
                 registries.extensionGameActions,
+                registries.components,
             ),
         )
         val restored = Json.decodeFromString(MahjongPlayerPersistenceDto.serializer(), encoded).toDomain(
             registries.discardPiles,
-            registries.playerRuleStates,
             registries.exhaustiveDrawReasons,
             registries.extensionGameActions,
+            registries.components,
         )
 
         assertEquals(player, restored)

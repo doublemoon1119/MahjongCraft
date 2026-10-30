@@ -11,7 +11,6 @@ import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.replay.Re
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.replay.ReplayReadResult
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.replay.parseBoundedReplayJson
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledPersistenceRegistries
-import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledSetAsideTiles
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.int
@@ -30,9 +29,9 @@ class CompactReplayRoundReaderCapacityTest {
     @Test
     fun `fixed full matches fit the bounded round read budget`() = runTest {
         val registries = bundledPersistenceRegistries()
-        val reader = CompactReplayRoundReader()
+        val reader = CompactReplayRoundReader(registries.componentViews)
         for (fixture in ReplayCapacityFixtures.all) {
-            val document = CompactReplayCodec.encodeCompact(fixture.events, HistoryRecordingPersistenceMapper(registries), registries, bundledSetAsideTiles(fixture.events))
+            val document = CompactReplayCodec.encodeCompact(fixture.events, HistoryRecordingPersistenceMapper(registries), registries)
             val parsed = assertIs<ReplayReadResult.Success<JsonObject>>(
                 parseBoundedReplayJson(document.toString(), ReplayJsonParseLimits(maximumUtf8Bytes = 8 * 1024 * 1024)),
             ).value

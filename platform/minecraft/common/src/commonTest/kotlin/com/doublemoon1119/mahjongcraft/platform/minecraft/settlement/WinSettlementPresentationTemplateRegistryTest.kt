@@ -67,7 +67,7 @@ class WinSettlementPresentationTemplateRegistryTest {
             responsiblePlayerIsAi = false,
             totalScore = 7_700,
             tileAssetKeys = emptyList(),
-            tileAssetGroups = emptyList(),
+            tileGroups = emptyList(),
             winningTileAssetKey = null,
             extensionFields = listOf(
                 ExtensionPresentationField(doraId, PresentationValue.TileListValue(listOf("man_1", "man_2"))),

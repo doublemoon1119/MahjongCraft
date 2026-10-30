@@ -34,7 +34,7 @@ class ExhaustiveDrawSettlementPresentationRequestFactoryTest {
     fun `normal draw reveals tenpai hands and conceals noten hands`() {
         val state = tableState(4)
         val tenpaiPlayer = state.players.first()
-        val revealedState = state.copy(revealedHandTileIds = tenpaiPlayer.hand.allTiles.map { it.id }.toSet())
+        val revealedState = state.copy(publicTileEvidenceIds = tenpaiPlayer.hand.allTiles.map { it.id }.toSet())
         val request = ExhaustiveDrawSettlementPresentationRequestFactory.create(
             previousState = state,
             currentState = revealedState,
@@ -74,7 +74,7 @@ class ExhaustiveDrawSettlementPresentationRequestFactoryTest {
     fun `abortive proof reveals declarer and conceals other hands`() {
         val state = tableState(4)
         val declarer = state.players[2]
-        val revealedState = state.copy(revealedHandTileIds = declarer.hand.allTiles.map { it.id }.toSet())
+        val revealedState = state.copy(publicTileEvidenceIds = declarer.hand.allTiles.map { it.id }.toSet())
         val request = ExhaustiveDrawSettlementPresentationRequestFactory.create(
             previousState = state,
             currentState = revealedState,
@@ -149,7 +149,7 @@ class ExhaustiveDrawSettlementPresentationRequestFactoryTest {
         }
     }
 
-    /** 公開手牌只使用權威 revealedHandTileIds，不因規則結果而整手外洩。 */
+    /** 公開手牌只使用權威公開證據，不因規則結果而整手外洩。 */
     @Test
     fun `revealed hand ids are intersected with authoritative disclosure`() {
         val state = tableState(4)
@@ -157,7 +157,7 @@ class ExhaustiveDrawSettlementPresentationRequestFactoryTest {
         val firstTileId = player.hand.standingTiles.first().id
         val request = ExhaustiveDrawSettlementPresentationRequestFactory.create(
             previousState = state,
-            currentState = state.copy(revealedHandTileIds = setOf(firstTileId)),
+            currentState = state.copy(publicTileEvidenceIds = setOf(firstTileId)),
             module = module,
             aiPlayerIds = emptySet(),
             reason = RiichiExhaustiveDrawReason.Normal,
@@ -186,7 +186,7 @@ class ExhaustiveDrawSettlementPresentationRequestFactoryTest {
 
         val request = ExhaustiveDrawSettlementPresentationRequestFactory.create(
             previousState = state,
-            currentState = state.copy(revealedHandTileIds = player.hand.allTiles.map { it.id }.toSet()),
+            currentState = state.copy(publicTileEvidenceIds = player.hand.allTiles.map { it.id }.toSet()),
             module = module,
             aiPlayerIds = emptySet(),
             reason = RiichiExhaustiveDrawReason.Normal,
@@ -216,7 +216,7 @@ class ExhaustiveDrawSettlementPresentationRequestFactoryTest {
 
         val request = ExhaustiveDrawSettlementPresentationRequestFactory.create(
             previousState = state,
-            currentState = state.copy(revealedHandTileIds = player.hand.allTiles.map { it.id }.toSet()),
+            currentState = state.copy(publicTileEvidenceIds = player.hand.allTiles.map { it.id }.toSet()),
             module = module,
             aiPlayerIds = emptySet(),
             reason = RiichiExhaustiveDrawReason.Normal,
@@ -237,7 +237,7 @@ class ExhaustiveDrawSettlementPresentationRequestFactoryTest {
         val player = state.players.first()
         val request = ExhaustiveDrawSettlementPresentationRequestFactory.create(
             previousState = state,
-            currentState = state.copy(revealedHandTileIds = player.hand.standingTiles.map { it.id }.toSet()),
+            currentState = state.copy(publicTileEvidenceIds = player.hand.standingTiles.map { it.id }.toSet()),
             module = module,
             aiPlayerIds = emptySet(),
             reason = RiichiExhaustiveDrawReason.Normal,
@@ -299,7 +299,7 @@ class ExhaustiveDrawSettlementPresentationRequestFactoryTest {
         val finished = base.players.last()
         val state = base.copy(
             finishedPlayerIds = setOf(finished.id),
-            revealedHandTileIds = finished.hand.standingTiles.map { it.id }.toSet(),
+            publicTileEvidenceIds = finished.hand.standingTiles.map { it.id }.toSet(),
         )
 
         val request = ExhaustiveDrawSettlementPresentationRequestFactory.create(

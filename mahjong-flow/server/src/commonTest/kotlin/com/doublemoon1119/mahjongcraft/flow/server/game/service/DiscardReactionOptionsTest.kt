@@ -28,6 +28,7 @@ import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayer
 import com.doublemoon1119.mahjongcraft.logic.table.PendingReaction
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
+import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledCoreExtensionRegistries
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledWinCelebrationCueResolverRegistry
 import com.doublemoon1119.mahjongcraft.testing.flow.common.game.repository.FakeGameSnapshotRepository
 import com.doublemoon1119.mahjongcraft.testing.flow.common.game.service.FakeGameEventPublisher
@@ -158,9 +159,9 @@ class DiscardReactionOptionsTest {
         val snapshotSynchronizer = GameSnapshotSynchronizer(
             repository,
             FakeGameSnapshotRepository(),
-            GameVisibilityPolicyImpl(moduleRegistry),
+            GameVisibilityPolicyImpl(moduleRegistry, componentRegistry = bundledCoreExtensionRegistries().componentRegistry),
         )
-        val winDetails = WinSettlementDetailResolverRegistry().apply { freeze() }
+        val winDetails = WinSettlementDetailResolverRegistry(bundledCoreExtensionRegistries().componentRegistry).apply { freeze() }
         val useCase = RespondToDiscardUseCase(
             gameRepository = repository,
             moduleRegistry = moduleRegistry,
@@ -172,6 +173,8 @@ class DiscardReactionOptionsTest {
             winCelebrationCueResolverRegistry = bundledWinCelebrationCueResolverRegistry(),
             winSettlementDetailResolverRegistry = winDetails,
             postActionExhaustiveDrawResolverRegistry = PostActionExhaustiveDrawResolverRegistry().apply { freeze() },
+
+            componentRegistry = bundledCoreExtensionRegistries().componentRegistry,
         )
 
         val result = useCase(

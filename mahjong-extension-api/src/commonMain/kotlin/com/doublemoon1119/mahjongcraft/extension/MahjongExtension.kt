@@ -14,6 +14,7 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.PostReacti
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.RuleDecisionResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.WinRoundContinuationResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.WinSettlementDetailResolverRegistry
+import com.doublemoon1119.mahjongcraft.logic.component.ComponentRegistry
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
 import com.doublemoon1119.mahjongcraft.logic.tile.TileTypeRegistry
@@ -53,6 +54,15 @@ interface MahjongExtension {
      * @param registry 用於登記擴充牌種類型的 registry。
      */
     fun registerTileTypes(registry: TileTypeRegistry) = Unit
+
+    /**
+     * 登記規則使用的型別組件，例如對局、玩家、副露、捨牌紀錄或牌張上的資料，連同生命週期與公開投影。
+     *
+     * 預設不登記任何組件。保存轉換另由 [registerPersistenceDtos] 登記。
+     *
+     * @param registry 組件定義的共用 registry。
+     */
+    fun registerComponents(registry: ComponentRegistry) = Unit
 
     /**
      * 登記此規則模組的胡牌展示提示解析器。

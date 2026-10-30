@@ -3,6 +3,7 @@ package com.doublemoon1119.mahjongcraft.logic.module
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.base.Hand
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
+import com.doublemoon1119.mahjongcraft.logic.base.TileValue
 import kotlin.uuid.Uuid
 
 /**
@@ -17,7 +18,7 @@ interface PositionRules {
      *
      * @param hand 不含和牌張的手牌。
      * @param view 評估者目前可見的局面。
-     * @param winningTile 完成和牌的牌種。
+     * @param winningTile 完成和牌的完整牌值，包含已知計分特性。
      * @param isTsumo 是否為自摸。
      * @param declarations 假設和牌前已經宣告的擴充動作；評估者本人已宣告的動作不需要重複傳入。
      * @return 依目前可見局面與宣告判定的和牌價值。
@@ -25,7 +26,7 @@ interface PositionRules {
     fun winValue(
         view: PositionView,
         hand: Hand,
-        winningTile: Tile,
+        winningTile: TileValue,
         isTsumo: Boolean,
         declarations: Set<GameAction.Extension> = emptySet(),
     ): WinValue
@@ -63,10 +64,10 @@ interface PositionRules {
      * 持有 [tile] 時依規則額外加計的打點單位數，例如日麻的寶牌；規則沒有依牌張加計打點時恆為 0。
      *
      * @param view 評估者目前可見的局面。
-     * @param tile 要查詢的牌種。
+     * @param tile 要查詢的完整牌值，包含已知計分特性。
      * @return 此牌依規則額外增加的打點單位數。
      */
-    fun bonusTileCount(view: PositionView, tile: Tile): Int = 0
+    fun bonusTileCount(view: PositionView, tile: TileValue): Int = 0
 
     /**
      * [opponentId] 宣告聽牌時打出的牌，例如日麻的立直宣告牌，牌面以規則的牌面正規化表示。
@@ -82,12 +83,11 @@ interface PositionRules {
     /**
      * 評估者把手牌中的 [tileId] 移出手牌、公開擺在桌上之後的視角，例如日麻的拔北；不包含之後補進的牌。
      *
-     * 只是假想局面，不改變任何狀態。預設只移動那張牌（見 [PositionView.withTileSetAside]）；玩家狀態另外記錄這些牌的
-     * 規則需覆寫，一併更新玩家狀態。
+     * 只是假想局面，不改變權威狀態。支援移出牌的規則必須明確指定目標牌區，並保留其他區域。
      *
      * @param view 評估者目前可見的局面。
      * @param tileId 要移出手牌的實體牌 ID。
      * @return 移出牌後的新局面。
      */
-    fun afterTileSetAside(view: PositionView, tileId: Uuid): PositionView = view.withTileSetAside(tileId)
+    fun afterTileSetAside(view: PositionView, tileId: Uuid): PositionView = throw UnsupportedOperationException("Rule must define the target area for set-aside analysis")
 }

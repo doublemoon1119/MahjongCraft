@@ -7,18 +7,25 @@ import com.doublemoon1119.mahjongcraft.ai.toOwnHand
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameCommand
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.base.Hand
+import com.doublemoon1119.mahjongcraft.logic.base.HandSnapshot
 import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
+import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTileSnapshot
 import com.doublemoon1119.mahjongcraft.logic.base.Meld
 import com.doublemoon1119.mahjongcraft.logic.base.MeldType
 import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.logic.base.closedKanFaceDownTileIds
 import com.doublemoon1119.mahjongcraft.logic.base.closedKanPubliclyRevealedTileIds
+import com.doublemoon1119.mahjongcraft.logic.base.toKnownTile
 import com.doublemoon1119.mahjongcraft.logic.base.toSnapshot
+import com.doublemoon1119.mahjongcraft.logic.base.toValue
 import com.doublemoon1119.mahjongcraft.logic.module.DeclarationEffect
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
 import com.doublemoon1119.mahjongcraft.logic.module.PositionRules
 import com.doublemoon1119.mahjongcraft.logic.module.PositionView
+import com.doublemoon1119.mahjongcraft.logic.table.DiscardEntrySnapshot
+import com.doublemoon1119.mahjongcraft.logic.table.mapTiles
 import kotlin.math.min
+import kotlin.uuid.Uuid
 
 /**
  * 一次 AI 決策的期望值計算。
@@ -60,8 +67,19 @@ internal class ExpectedValueEvaluator(
     /** 評估者本人。 */
     private val selfId = context.selfId
 
+    /** 本局的牌面解讀方式。 */
+    private val interpretation = module.createTileInterpretationPolicy()
+
     /** 評估者自己的完整手牌。 */
-    private val ownHand: Hand = snapshot.players.first { it.id == selfId }.hand.toOwnHand()
+    private val ownHand: Hand = snapshot.players.first { it.id == selfId }.hand.toOwnHand(interpretation)
+
+    /** 評估者讀得到的牌面，依牌張 ID 索引；假設局面沿用這些牌面，保留赤寶牌等特徵與外觀。 */
+    private val knownFaces: Map<Uuid, IdentifiedTileSnapshot> = buildMap {
+        snapshot.mapTiles { tile ->
+            if (tile.face != null) put(tile.id, tile)
+            tile
+        }
+    }
 
     /** 目前局面的視角。 */
     private val currentView = PositionView(snapshot = snapshot, evaluatorId = selfId)
@@ -97,7 +115,7 @@ internal class ExpectedValueEvaluator(
         rules = rules,
         opponentModel = opponentModel,
         shantenCalculator = module.createShantenCalculator(),
-        interpretation = module.createTileInterpretationPolicy(),
+        interpretation = interpretation,
         tileOrder = module.tileOrder,
         unseen = unseen,
         outlook = outlook,
@@ -259,7 +277,7 @@ internal class ExpectedValueEvaluator(
         return choose(listOf(pass) + claimCandidates()).candidate.command
     }
 
-    /** 一般捨牌：每種牌一個候選，依規則牌序排列；同一種牌優先打出剛摸到的那張。規則強制捨牌時只有指定的牌。 */
+    /** 一般捨牌：每種完整牌值一個候選，依規則牌序排列；同一種牌優先打出剛摸到的那張。規則強制捨牌時只有指定的牌。 */
     private fun discardCandidates(): List<DecisionCandidate> {
         val forced = context.forcedDiscardTileId
         val lastDrawnId = snapshot.players.first { it.id == selfId }.hand.lastDrawn?.id
@@ -267,10 +285,10 @@ internal class ExpectedValueEvaluator(
             ownHand.tiles.filter { it.id == forced }
         } else {
             ownHand.tiles
-                .groupBy { it.tile }
+                .groupBy { it.toValue() }
                 .values
                 .map { group -> group.firstOrNull { it.id == lastDrawnId } ?: group.first() }
-                .sortedWith(compareBy(module.tileOrder) { it.tile })
+                .sortedWith(compareBy(module.tileOrder.valueOrder) { it.toValue() })
         }
         return tiles.map { DecisionCandidate.Discard(tile = it, declaration = null, command = GameCommand.Discard(it.id)) }
     }
@@ -315,7 +333,7 @@ internal class ExpectedValueEvaluator(
         }
 
     /** 吃、碰與明槓。 */
-    private fun claimCandidates(): List<DecisionCandidate> = context.legalActions.mapNotNull { action ->
+    internal fun claimCandidates(): List<DecisionCandidate> = context.legalActions.mapNotNull { action ->
         val (meldType, tileId, withTiles) = when (action) {
             is GameAction.Chi -> Triple(MeldType.CHI, action.tileId, action.withTiles)
             is GameAction.Pon -> Triple(MeldType.PON, action.tileId, action.withTiles)
@@ -333,7 +351,7 @@ internal class ExpectedValueEvaluator(
             ?: return@mapNotNull null
         DecisionCandidate.Claim(
             meldType = meldType,
-            claimedTile = claimedTile,
+            claimedTile = claimedTile.toKnownTile(interpretation) ?: return@mapNotNull null,
             handTileIds = withTiles,
             command = GameCommand.RespondToDiscard(action, checkNotNull(context.discardReactionId), withTiles),
         )
@@ -514,6 +532,29 @@ internal class ExpectedValueEvaluator(
     }
 
     /**
+     * 把假設手牌的牌面換成評估者讀得到的牌面。
+     *
+     * @return 牌面保留特徵與外觀的手牌快照。
+     */
+    private fun HandSnapshot.withKnownFaces(): HandSnapshot = copy(
+        standingTiles = standingTiles.map { knownFaces[it.id] ?: it },
+        lastDrawn = lastDrawn?.let { knownFaces[it.id] ?: it },
+        melds = melds.map { meld ->
+            meld.copy(
+                tiles = meld.tiles.map { knownFaces[it.id] ?: it },
+                sourceTile = meld.sourceTile?.let { knownFaces[it.id] ?: it },
+            )
+        },
+    )
+
+    /**
+     * 取得這張牌在評估者視角下的牌面；讀不到時使用牌值本身。
+     *
+     * @return 牌張快照。
+     */
+    private fun IdentifiedTile.knownSnapshot(): IdentifiedTileSnapshot = knownFaces[id] ?: toSnapshot(true)
+
+    /**
      * 評估者的手牌換成 [hand]、牌河加上 [discarded] 後的視角。
      *
      * @param hand 假設動作完成後的手牌。
@@ -526,8 +567,11 @@ internal class ExpectedValueEvaluator(
                 player
             } else {
                 player.copy(
-                    hand = hand.toSnapshot(isVisible = true, revealsClosedKanTiles = true),
-                    discardPile = discarded?.let { player.discardPile.discardTile(it) } ?: player.discardPile,
+                    hand = hand.toSnapshot(isVisible = true, revealsClosedKanTiles = true).withKnownFaces(),
+                    discardPile = discarded?.let {
+                        val entry = DiscardEntrySnapshot(tile = it.knownSnapshot(), isTaken = false, publicMarkerIds = emptySet())
+                        player.discardPile.copy(entries = player.discardPile.entries + entry)
+                    } ?: player.discardPile,
                 )
             }
         }

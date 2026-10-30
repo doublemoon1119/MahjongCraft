@@ -67,8 +67,8 @@ class PresentationLayoutSolver(
             PresentationNodeSize(tileSequenceWidth(count, layout.tileWidth, layout.spacing), if (count > 0) layout.tileHeight else 0f)
         }
         is PresentationLayout.TileGroups -> {
-            val groups = (resolve(layout, snapshot) as? PresentationValue.TileGroupsValue)?.groups.orEmpty().filter(List<String>::isNotEmpty)
-            val count = groups.sumOf(List<String>::size)
+            val groups = (resolve(layout, snapshot) as? PresentationValue.TileGroupsValue)?.groups.orEmpty().filter(List<PresentationTile>::isNotEmpty)
+            val count = groups.sumOf(List<PresentationTile>::size)
             PresentationNodeSize(
                 tileSequenceWidth(count, layout.tileWidth, layout.tileSpacing) +
                     (groups.size - 1).coerceAtLeast(0) * (layout.groupSpacing - layout.tileSpacing),

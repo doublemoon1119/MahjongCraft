@@ -92,7 +92,7 @@ internal object RonSettlementResolver {
         return Result(
             tableState = state.copy(
                 players = updatedPlayers,
-                dynamicRuleState = extras.dynamicRuleState,
+                components = extras.components,
             ),
             resolutions = settlements,
         )

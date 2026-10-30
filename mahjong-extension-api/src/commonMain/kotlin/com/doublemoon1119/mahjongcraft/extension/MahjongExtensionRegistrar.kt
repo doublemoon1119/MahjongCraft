@@ -63,6 +63,7 @@ object MahjongExtensionRegistrar {
             }
             extension.registerRuleModules(registries.moduleRegistry)
             extension.registerTileTypes(registries.tileTypeRegistry)
+            extension.registerComponents(registries.componentRegistry)
             extension.registerNetworkDtos(registries.networkRegistries)
             extension.registerPersistenceDtos(registries.persistenceRegistries)
             extension.registerWinCelebrationCueResolvers(registries.winCelebrationCueResolverRegistry)

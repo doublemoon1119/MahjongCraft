@@ -1,6 +1,7 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.client.catalogue
 
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
+import com.doublemoon1119.mahjongcraft.logic.base.TileFaceView
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.UNKNOWN_TILE_ASSET_KEY
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.tileTextureResourceId
@@ -28,7 +29,7 @@ internal class TextRendererCatalogueMetrics(private val font: TextRenderer) : Ru
 }
 
 /**
- * 從已載入的資源包找出範例牌面圖案；同一牌種在 [clearCache] 之前只查一次。
+ * 從已載入的資源包找出範例牌面圖案；同一牌面與外觀在 [clearCache] 之前只查一次。
  *
  * @property assets 牌種與素材鍵的對應。
  * @property resources 目前的資源管理器。
@@ -38,11 +39,12 @@ internal class ResourceCatalogueTileArt(
     private val resources: ResourceManager,
 ) : RuleCatalogueTileArt {
     /** 已解析的牌面圖案。 */
-    private val resolved = mutableMapOf<Tile, CatalogueTileArt>()
+    private val resolved = mutableMapOf<TileFaceView, CatalogueTileArt>()
 
-    override fun resolve(tile: Tile): CatalogueTileArt = resolved.getOrPut(tile) {
+    override fun resolve(tile: TileFaceView): CatalogueTileArt = resolved.getOrPut(tile) {
         val assetKey = tile.toAssetKey(assets)
-        val name = if (tile is Tile.Extension) "${tile.typeId.namespace}:${tile.typeId.path}" else assetKey
+        val face = tile.tile
+        val name = if (face is Tile.Extension) "${face.typeId.namespace}:${face.typeId.path}" else assetKey
         val texture = Identifier(tileTextureResourceId(assetKey, assets))
         if (assetKey == UNKNOWN_TILE_ASSET_KEY || resources.getResource(texture).isEmpty) {
             CatalogueTileArt(assetKey = UNKNOWN_TILE_ASSET_KEY, missingName = name)

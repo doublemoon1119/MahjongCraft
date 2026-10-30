@@ -2,7 +2,6 @@ package com.doublemoon1119.mahjongcraft.logic.table
 
 import com.doublemoon1119.mahjongcraft.logic.base.Hand
 import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
-import com.doublemoon1119.mahjongcraft.logic.config.DynamicRuleState
 import com.doublemoon1119.mahjongcraft.logic.config.dealBatchSizes
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
 import com.doublemoon1119.mahjongcraft.logic.table.GameInitializer.buildOpenedWall
@@ -76,7 +75,6 @@ object GameInitializer {
                 seatWind = seatWinds.getValue(playerId),
                 hand = Hand(tiles = handsByPlayerId.getValue(playerId)),
                 discardPile = module.createDiscardPile(),
-                playerRuleState = module.createInitialPlayerRuleState(),
             )
         }
 
@@ -88,7 +86,6 @@ object GameInitializer {
             dealerPlayerId = opening.dealerPlayerId,
             roundPosition = module.createMatchProgressionPolicy().initialPosition(players.size),
             currentPlayerIndex = dealerIndex,
-            dynamicRuleState = module.createInitialDynamicState(),
             wallOpening = openedWall.wallOpening,
             reservedWallTiles = openedWall.reservedWallTiles,
             physicalWallLayout = physicalLayouts?.current,
@@ -107,11 +104,6 @@ object GameInitializer {
      * 重新發手牌，並重置每局狀態（手牌、牌河、規則特有的玩家狀態），但保留跨局狀態（分數、局數/
      * 本場數/場風/各玩家方位，皆直接沿用 [roundAdvancement] 算好的結果）。
      *
-     * 動態桌況狀態交由 [MahjongRuleModule.createNextRoundDynamicState] 由 [previousDynamicRuleState]
-     * 推導，不整包沿用——同一個物件可能同時保存跨局資料（例如尚未被收下的供託）與只屬於單局的資料
-     * （例如本局已完成的槓次），哪些延續只有規則自己知道。供託本身是否歸零仍由胡牌結算階段的
-     * [MahjongRuleModule.collectStickPot] 決定，這裡單純延續、不重新判斷。
-     *
      * 座位順序直接採用 [roundAdvancement] 的 `players` 列表順序（規則要求局間換位時已是新順序），不會重新洗牌，
      * 只有發牌本身、每局狀態會全部重來——跟 [initialize] 開新對局時「連座位順序都重新洗牌、分數歸零」不同。
      * 連莊仍是新的一局，也會重新擲骰開門。
@@ -119,7 +111,6 @@ object GameInitializer {
      * @param gameId 對局 Uuid（延續同一場對局，不是新對局）。
      * @param roundAdvancement 連莊/過莊判定後的結果（見 [TableState.advanceRound]），提供下一局的
      *        玩家列表與局位資料；玩家自風會依規則 policy 重新指派。
-     * @param previousDynamicRuleState 上一局結束時的動態桌況狀態（例如供託／立直棒數量）。
      * @param module 該對局採用的規則模組。
      * @param diceRollSource 權威擲骰來源；正式流程使用隨機六面骰，測試可注入固定來源。
      * @return 已完成重新擲骰開門、重新建牌山、發牌，並套用連莊/過莊結果的新結果，代表下一局的起始
@@ -129,7 +120,6 @@ object GameInitializer {
     fun startNextRound(
         gameId: Uuid,
         roundAdvancement: RoundAdvancementResult,
-        previousDynamicRuleState: DynamicRuleState?,
         module: MahjongRuleModule<*>,
         diceRollSource: DiceRollSource = RandomDiceRollSource,
     ): GameInitializationResult {
@@ -163,10 +153,10 @@ object GameInitializer {
                 seatWind = seatWinds.getValue(player.id),
                 hand = Hand(tiles = handsByPlayerId.getValue(player.id)),
                 discardPile = module.createDiscardPile(),
-                playerRuleState = module.createInitialPlayerRuleState(),
                 passedTilesInRound = emptySet(),
                 actionHistory = emptyList(),
                 mustDiscardAfterMeld = false,
+                tileAreas = PlayerTileAreas.EMPTY,
             )
         }
 
@@ -181,7 +171,6 @@ object GameInitializer {
             roundPosition = roundAdvancement.roundPosition,
             comboCount = roundAdvancement.comboCount,
             currentPlayerIndex = dealerIndex,
-            dynamicRuleState = module.createNextRoundDynamicState(previousDynamicRuleState),
             wallOpening = openedWall.wallOpening,
             reservedWallTiles = openedWall.reservedWallTiles,
             physicalWallLayout = physicalLayouts?.current,

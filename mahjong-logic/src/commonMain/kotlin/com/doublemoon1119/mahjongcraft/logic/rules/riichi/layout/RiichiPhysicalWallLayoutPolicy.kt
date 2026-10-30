@@ -2,7 +2,8 @@ package com.doublemoon1119.mahjongcraft.logic.rules.riichi.layout
 
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.PULL_NORTH_GAME_ACTION
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDynamicState
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiTableComponents
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiWallProgress
 import com.doublemoon1119.mahjongcraft.logic.table.layout.InitialPhysicalWallLayoutContext
 import com.doublemoon1119.mahjongcraft.logic.table.layout.InitialPhysicalWallLayoutDecision
 import com.doublemoon1119.mahjongcraft.logic.table.layout.PhysicalWallLayoutPolicy
@@ -102,9 +103,9 @@ class RiichiPhysicalWallLayoutPolicy(
      */
     override fun resolveTransition(context: PhysicalWallLayoutTransitionContext): PhysicalWallLayoutTransitionDecision {
         if (context.action !is GameAction.Kan && context.action != PULL_NORTH_GAME_ACTION) return unchangedOrRemoveDepartedTiles(context)
-        val beforeState = context.tableStateBeforeAction.dynamicRuleState as? RiichiDynamicState
+        val beforeState = context.tableStateBeforeAction.components[RiichiTableComponents.WALL_PROGRESS]
             ?: return PhysicalWallLayoutTransitionDecision.Rejected(INVALID_STATE_REASON_ID)
-        val afterState = context.tableStateAfterAction.dynamicRuleState as? RiichiDynamicState
+        val afterState = context.tableStateAfterAction.components[RiichiTableComponents.WALL_PROGRESS]
             ?: return PhysicalWallLayoutTransitionDecision.Rejected(INVALID_STATE_REASON_ID)
         val drawNumber = afterState.totalSupplementalDrawCount
         if (drawNumber != beforeState.totalSupplementalDrawCount + 1 || drawNumber !in 1..rinshanTileCount) {
@@ -266,7 +267,7 @@ class RiichiPhysicalWallLayoutPolicy(
     }
 
     /** 本局已完成的補牌次數（槓與拔北合計）。 */
-    private val RiichiDynamicState.totalSupplementalDrawCount: Int
+    private val RiichiWallProgress.totalSupplementalDrawCount: Int
         get() = completedSupplementalDrawCount + completedNorthDrawCount
 
     /**

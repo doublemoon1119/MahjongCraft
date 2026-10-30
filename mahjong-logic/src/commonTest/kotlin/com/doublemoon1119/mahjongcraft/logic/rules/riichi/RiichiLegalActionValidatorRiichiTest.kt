@@ -4,9 +4,11 @@ import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.logic.judgment.LegalActionContext
 import com.doublemoon1119.mahjongcraft.logic.judgment.ShantenResult
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDeclarationKind
 import com.doublemoon1119.mahjongcraft.logic.table.TileWall
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeHandFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeIdentifiedTileFactory
+import com.doublemoon1119.mahjongcraft.testing.logic.rules.riichi.riichiDeclarationComponents
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
 import kotlin.test.Test
@@ -299,7 +301,7 @@ class RiichiLegalActionValidatorRiichiTest {
         val playerHand = FakeHandFactory.create(standingTiles, lastDrawn = Tile.Numeric(Tile.Suit.Character, 9))
         val player = FakeMahjongPlayerFactory.create(
             hand = playerHand,
-            playerRuleState = RiichiPlayerState(),
+            components = riichiDeclarationComponents(),
         ).copy(score = 1000)
         val tableState = FakeTableStateFactory.create(
             players = listOf(player),
@@ -388,8 +390,8 @@ class RiichiLegalActionValidatorRiichiTest {
 
         val player = FakeMahjongPlayerFactory.create(
             hand = playerHand,
-            playerRuleState = RiichiPlayerState(
-                riichiTile = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 9)),
+            components = riichiDeclarationComponents(
+                declarationTile = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 9)),
             ),
         )
 
@@ -440,8 +442,8 @@ class RiichiLegalActionValidatorRiichiTest {
 
         val player = FakeMahjongPlayerFactory.create(
             hand = playerHand,
-            playerRuleState = RiichiPlayerState(
-                riichiTile = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 9)),
+            components = riichiDeclarationComponents(
+                declarationTile = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 9)),
             ),
         )
 

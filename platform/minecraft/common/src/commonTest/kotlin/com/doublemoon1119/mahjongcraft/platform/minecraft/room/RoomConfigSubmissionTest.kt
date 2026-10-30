@@ -25,6 +25,7 @@ import com.doublemoon1119.mahjongcraft.logic.rules.riichi.threeplayer.ThreePlaye
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.platform.minecraft.extension.BundledMinecraftMahjongExtensions
+import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledComponentValidator
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledPersistenceRegistries
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.registerBundledRuleModules
 import kotlin.test.Test
@@ -153,7 +154,7 @@ class RoomConfigSubmissionTest {
             ),
         )
         val room = Room(id = Uuid.random(), hostId = Uuid.random(), gameConfig = accepted.config)
-        val codec = AuthoritativeStatePersistenceCodec(bundledPersistenceRegistries())
+        val codec = AuthoritativeStatePersistenceCodec(bundledPersistenceRegistries(), componentValidator = bundledComponentValidator())
         val decodedRoom = codec.decode(codec.encode(listOf(room), emptyList())).rooms.getValue(room.id)
         assertEquals(accepted.config, decodedRoom.gameConfig)
     }

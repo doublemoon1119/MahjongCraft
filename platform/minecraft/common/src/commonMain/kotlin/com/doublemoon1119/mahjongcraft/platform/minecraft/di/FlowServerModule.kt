@@ -7,6 +7,8 @@ import com.doublemoon1119.mahjongcraft.ai.MahjongAiStrategyRegistryImpl
 import com.doublemoon1119.mahjongcraft.ai.expectation.OpponentModelRegistry
 import com.doublemoon1119.mahjongcraft.flow.common.concurrency.AppCoroutineScope
 import com.doublemoon1119.mahjongcraft.flow.common.concurrency.CoroutineDispatchers
+import com.doublemoon1119.mahjongcraft.flow.server.game.history.HistoryTilePresentationResolver
+import com.doublemoon1119.mahjongcraft.flow.server.game.history.HistoryTilePresentationResolverImpl
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.AiDecisionExecutor
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.AiTurnDriver
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.AutomatedAdvanceManager
@@ -197,6 +199,7 @@ val flowServerModule = module {
     factory<ToggleReadyUseCase>()
     factory<UpdateConfigUseCase>()
 
-    // 使用建構子的預設設定；記錄政策由伺服器啟動流程套用，量測用 observer 只在壓力測試另建的實例傳入。
-    single { AuthoritativeStateStore() }
+    // 使用建構子的預設設定；記錄政策由伺服器啟動流程套用。
+    single<HistoryTilePresentationResolverImpl>() bind HistoryTilePresentationResolver::class
+    single { AuthoritativeStateStore(tilePresentationResolver = get()) }
 }

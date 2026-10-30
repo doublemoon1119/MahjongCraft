@@ -1,6 +1,6 @@
 package com.doublemoon1119.mahjongcraft.example.action
 
-import com.doublemoon1119.mahjongcraft.example.pairing.ExamplePairingPlayerState
+import com.doublemoon1119.mahjongcraft.example.pairing.ExamplePairingComponents
 import com.doublemoon1119.mahjongcraft.example.pairing.ExamplePairingRuleConfig
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameError
 import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
@@ -113,12 +113,7 @@ private class ExamplePairingRevealHandHandler(
                     tableState = state,
                 )
             }
-            val ruleState = player.playerRuleState as? ExamplePairingPlayerState
-                ?: return@updateGame game to RevealHandUpdate(
-                    outcome = Outcome.Error(GameError.UnsupportedAction(gameId, playerId)),
-                    tableState = state,
-                )
-            if (ruleState.handRevealed) {
+            if (player.components[ExamplePairingComponents.HAND_REVEALED] != null) {
                 return@updateGame game to RevealHandUpdate(
                     outcome = Outcome.Error(GameError.UnsupportedAction(gameId, playerId)),
                     tableState = state,
@@ -126,7 +121,7 @@ private class ExamplePairingRevealHandHandler(
             }
             val updatedPlayer = player.copy(
                 actionHistory = player.actionHistory + GameAction.Extension(ExamplePairingRevealHandAction),
-                playerRuleState = ruleState.copy(handRevealed = true),
+                components = player.components.with(ExamplePairingComponents.HAND_REVEALED, Unit),
             )
             val updatedState = state.copy(
                 players = state.players.map { if (it.id == playerId) updatedPlayer else it },

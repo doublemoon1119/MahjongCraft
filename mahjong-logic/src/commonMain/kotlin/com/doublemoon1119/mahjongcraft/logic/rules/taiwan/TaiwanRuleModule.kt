@@ -3,16 +3,15 @@ package com.doublemoon1119.mahjongcraft.logic.rules.taiwan
 import com.doublemoon1119.mahjongcraft.logic.base.ExhaustiveDrawReason
 import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
 import com.doublemoon1119.mahjongcraft.logic.base.TileOrder
-import com.doublemoon1119.mahjongcraft.logic.config.DynamicRuleState
 import com.doublemoon1119.mahjongcraft.logic.judgment.HandValueCalculator
 import com.doublemoon1119.mahjongcraft.logic.judgment.HandValueContextCalculator
 import com.doublemoon1119.mahjongcraft.logic.module.ExhaustiveDrawSettlementResult
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
+import com.doublemoon1119.mahjongcraft.logic.module.PointPotCollection
 import com.doublemoon1119.mahjongcraft.logic.module.WinResolutionResult
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.layout.TaiwanWallLayout
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.opening.TaiwanWallOpeningPolicy
 import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayer
-import com.doublemoon1119.mahjongcraft.logic.table.PlayerRuleState
 import com.doublemoon1119.mahjongcraft.logic.table.RoundCompletionClassification
 import com.doublemoon1119.mahjongcraft.logic.table.RoundTransitionContext
 import com.doublemoon1119.mahjongcraft.logic.table.RoundTransitionDirective
@@ -98,44 +97,6 @@ class TaiwanRuleModule(
     }
 
     /**
-     * 台灣麻將目前沒有動態桌況狀態的需求。
-     *
-     * @return 固定回傳 null。
-     */
-    override fun createInitialDynamicState(): DynamicRuleState? = null
-
-    /** 沒有動態桌況需求，換局同樣沒有要延續的資料。 */
-    override fun createNextRoundDynamicState(previous: DynamicRuleState?): DynamicRuleState? = null
-
-    /**
-     * 台灣麻將目前沒有玩家規則狀態的需求。
-     *
-     * @return 固定回傳 null。
-     */
-    override fun createInitialPlayerRuleState(): PlayerRuleState? = null
-
-    /**
-     * 台灣麻將目前沒有摸牌後需要清除的規則特有狀態。
-     *
-     * @return 固定回傳 [player] 本身。
-     */
-    override fun onPlayerDrew(player: MahjongPlayer): MahjongPlayer = player
-
-    /**
-     * 台灣麻將目前沒有捨牌後需要清除的規則特有狀態。
-     *
-     * @return 固定回傳 [player] 本身。
-     */
-    override fun onPlayerDiscarded(player: MahjongPlayer): MahjongPlayer = player
-
-    /**
-     * 台灣麻將目前沒有鳴牌後需要清除的規則特有狀態。
-     *
-     * @return 固定回傳 [players] 本身。
-     */
-    override fun onMeldClaimed(players: List<MahjongPlayer>): List<MahjongPlayer> = players
-
-    /**
      * 台灣麻將目前沒有自摸結算的實作。
      *
      * @return 固定回傳 null。
@@ -160,7 +121,7 @@ class TaiwanRuleModule(
      *
      * @return 固定回傳 null。
      */
-    override fun collectStickPot(tableState: TableState): Pair<DynamicRuleState?, Int>? = null
+    override fun collectStickPot(tableState: TableState): PointPotCollection? = null
 
     /**
      * 台灣麻將目前沒有流局結算的實作。

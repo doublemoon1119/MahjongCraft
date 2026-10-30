@@ -151,6 +151,7 @@ class GameEventProjector(
                 is HistoryFact.ReactionResolved,
                 is HistoryFact.WinContinuationResolved,
                 is HistoryFact.TableChanged,
+                is HistoryFact.TilePresentationChanged,
                 HistoryFact.ReturnedToRoom,
                 -> Unit
             }

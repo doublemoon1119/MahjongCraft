@@ -27,7 +27,6 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.AiTurnDriv
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.AutomaticGameCommandResolver
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.PostActionExhaustiveDrawResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.policy.GameVisibilityPolicyImpl
-import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepositoryImpl
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.DecisionTimerSynchronizationService
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameDecisionAuthorityResolver
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameDecisionAvailabilityService
@@ -52,25 +51,31 @@ import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.base.Hand
 import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
+import com.doublemoon1119.mahjongcraft.logic.component.initializeRuleComponents
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDiscardEntry
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDiscardPile
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiTableComponents
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.riichiWallProgress
 import com.doublemoon1119.mahjongcraft.logic.table.BuiltInMatchEndReasonIds
+import com.doublemoon1119.mahjongcraft.logic.table.DiscardPile.DiscardEntry
 import com.doublemoon1119.mahjongcraft.logic.table.GameInitializer
 import com.doublemoon1119.mahjongcraft.logic.table.PendingReaction
 import com.doublemoon1119.mahjongcraft.logic.table.PendingRobbingReaction
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
-import com.doublemoon1119.mahjongcraft.logic.table.TileWallRevealable
+import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledComponentValidator
+import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledCoreExtensionRegistries
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledPersistenceRegistries
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledWinCelebrationCueResolverRegistry
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.registerBuiltInAiStrategies
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.registerBundledRuleModules
+import com.doublemoon1119.mahjongcraft.testing.flow.common.game.repository.componentValidatedGameRepository
 import com.doublemoon1119.mahjongcraft.testing.flow.common.game.service.FakeDecisionTimerUpdatePublisher
 import com.doublemoon1119.mahjongcraft.testing.flow.common.game.service.FakeGameEventPublisher
 import com.doublemoon1119.mahjongcraft.testing.flow.common.game.service.FakeGamePresentationBusyGate
 import com.doublemoon1119.mahjongcraft.testing.flow.common.game.service.FakeGamePresentationPublisher
 import com.doublemoon1119.mahjongcraft.testing.flow.common.room.service.FakeRoomEventPublisher
+import com.doublemoon1119.mahjongcraft.testing.logic.rules.riichi.riichiDeclarationComponents
 import kotlinx.coroutines.test.runTest
 import net.minecraft.nbt.NbtCompound
 import kotlin.test.Test
@@ -140,7 +145,7 @@ class AuthoritativeStateRecoveryIntegrationTest {
             ),
         )
         val updatedDiscarder = discarder.copy(
-            discardPile = (discarder.discardPile as RiichiDiscardPile).discard(RiichiDiscardEntry(discardedTile)),
+            discardPile = (discarder.discardPile as RiichiDiscardPile).discard(DiscardEntry(tile = discardedTile)),
         )
         val pendingState = state.copy(
             players = state.players.map { player ->
@@ -360,7 +365,7 @@ class AuthoritativeStateRecoveryIntegrationTest {
             "no live wall tile may become visible after a restart",
         )
         assertEquals(
-            state.dynamicRuleState.let { it as TileWallRevealable }.getVisibleTileIds(state),
+            state.riichiWallProgress().getDoraIndicators(state).first.mapTo(mutableSetOf()) { it.id },
             visibleWallTiles.mapTo(mutableSetOf()) { it.id },
             "only the rule's revealed dead wall indicators may stay visible",
         )
@@ -390,10 +395,39 @@ class AuthoritativeStateRecoveryIntegrationTest {
         assertEquals(BuiltInMatchEndReasonIds.SCHEDULE_COMPLETED, restored.matchEndReasonId)
     }
 
+    /** 經 NBT 保存與恢復、重複恢復後，對局、玩家與牌張的組件值都不重新初始化或重抽。 */
+    @Test
+    fun `components survive repeated NBT restores unchanged`() = runTest {
+        val runtime = RuntimeFixture()
+        val created = runtime.createGame()
+        val declarer = created.players.first()
+        val declarationTile = declarer.hand.tiles.first()
+        val state = created.copy(
+            components = created.components.with(RiichiTableComponents.POT_POINTS, 3000),
+            players = created.players.map { player ->
+                if (player.id == declarer.id) {
+                    player.copy(components = player.components.merge(riichiDeclarationComponents(declarationTile = declarationTile, isIppatsu = true)))
+                } else {
+                    player
+                }
+            },
+        )
+
+        var current = state
+        repeat(2) {
+            runtime.restore(runtime.snapshotWith(current))
+            val restored = assertNotNull(runtime.gameRepository.getTableState(state.id))
+            current = restored
+            assertEquals(state.components, restored.components)
+            assertEquals(state.players.map { it.components }, restored.players.map { it.components })
+            assertEquals(state.tileWall.getAllTiles(), restored.tileWall.getAllTiles())
+        }
+    }
+
     /** 建立跨 persistence 與 server session 邊界的全新 runtime。 */
     private class RuntimeFixture {
         /** 內建 persistence codec。 */
-        private val codec = AuthoritativeStatePersistenceCodec(bundledPersistenceRegistries())
+        private val codec = AuthoritativeStatePersistenceCodec(bundledPersistenceRegistries(), componentValidator = bundledComponentValidator())
 
         /** 日麻規則 registry。 */
         private val moduleRegistry = MahjongModuleRegistryImpl().apply { registerBundledRuleModules() }
@@ -405,7 +439,7 @@ class AuthoritativeStateRecoveryIntegrationTest {
         val roomRepository = RoomRepositoryImpl(store)
 
         /** 恢復後使用的 Game repository。 */
-        val gameRepository = GameRepositoryImpl(store)
+        val gameRepository = componentValidatedGameRepository(store)
 
         /** 恢復後使用的 Room snapshot repository。 */
         val roomSnapshots = RoomSnapshotRepositoryImpl()
@@ -420,7 +454,7 @@ class AuthoritativeStateRecoveryIntegrationTest {
         private val snapshotSynchronizer = GameSnapshotSynchronizer(
             gameRepository,
             gameSnapshots,
-            GameVisibilityPolicyImpl(moduleRegistry),
+            GameVisibilityPolicyImpl(moduleRegistry, componentRegistry = bundledCoreExtensionRegistries().componentRegistry),
         )
 
         /** 恢復後的 timer manager。 */
@@ -438,7 +472,7 @@ class AuthoritativeStateRecoveryIntegrationTest {
             roomSnapshots,
             gameSnapshots,
             memberships,
-            GameVisibilityPolicyImpl(moduleRegistry),
+            GameVisibilityPolicyImpl(moduleRegistry, componentRegistry = bundledCoreExtensionRegistries().componentRegistry),
             timerManager,
             GameDecisionAvailabilityService(
                 FakeGamePresentationBusyGate(),
@@ -449,6 +483,8 @@ class AuthoritativeStateRecoveryIntegrationTest {
                     FakeDecisionTimerUpdatePublisher(),
                 ),
             ),
+            moduleRegistry = moduleRegistry,
+            failurePolicy = ExtensionFailurePolicy.Default,
         )
 
         /** AI 決策解析器。 */
@@ -458,7 +494,7 @@ class AuthoritativeStateRecoveryIntegrationTest {
             MahjongAiStrategyRegistryImpl(RandomAiStrategy.KEY).apply {
                 registerBuiltInAiStrategies(moduleRegistry, ExtensionGameActionAiRegistry(moduleRegistry), OpponentModelRegistry().apply { BundledRiichiExtension.registerOpponentModels(this) })
             },
-            GameVisibilityPolicyImpl(moduleRegistry),
+            GameVisibilityPolicyImpl(moduleRegistry, componentRegistry = bundledCoreExtensionRegistries().componentRegistry),
             moduleRegistry,
             AiDecisionExecutor.direct(failurePolicy = ExtensionFailurePolicy.Default),
             AutomaticGameCommandResolver(moduleRegistry),
@@ -489,7 +525,7 @@ class AuthoritativeStateRecoveryIntegrationTest {
             id = Uuid.random(),
             playerIds = playerIds,
             module = moduleRegistry.getModule(RiichiRuleConfig()),
-        ).tableState
+        ).initializeRuleComponents(moduleRegistry.getModule(RiichiRuleConfig()).id, bundledCoreExtensionRegistries().componentRegistry).tableState
 
         /**
          * 將單一牌桌狀態包裝成權威 snapshot，可選帶上進行中的規則選擇步驟與 AI 玩家。
@@ -529,6 +565,8 @@ class AuthoritativeStateRecoveryIntegrationTest {
             snapshotSynchronizer,
             FakeGameEventPublisher(),
             FakeGamePresentationPublisher(),
+
+            componentRegistry = bundledCoreExtensionRegistries().componentRegistry,
         )(gameId, playerId)
 
         /**
@@ -547,11 +585,13 @@ class AuthoritativeStateRecoveryIntegrationTest {
             FakeGamePresentationPublisher(),
             WinPresentationHandoff(),
             winCelebrationCueResolverRegistry = bundledWinCelebrationCueResolverRegistry(),
-            winSettlementDetailResolverRegistry = WinSettlementDetailResolverRegistry().apply {
+            winSettlementDetailResolverRegistry = WinSettlementDetailResolverRegistry(bundledCoreExtensionRegistries().componentRegistry).apply {
                 BundledRiichiExtension.registerWinSettlementDetailResolvers(this)
                 freeze()
             },
             postActionExhaustiveDrawResolverRegistry = PostActionExhaustiveDrawResolverRegistry().apply { freeze() },
+
+            componentRegistry = bundledCoreExtensionRegistries().componentRegistry,
         )(
             gameId = gameId,
             playerId = playerId,
@@ -574,10 +614,12 @@ class AuthoritativeStateRecoveryIntegrationTest {
             FakeGamePresentationPublisher(),
             WinPresentationHandoff(),
             winCelebrationCueResolverRegistry = bundledWinCelebrationCueResolverRegistry(),
-            winSettlementDetailResolverRegistry = WinSettlementDetailResolverRegistry().apply {
+            winSettlementDetailResolverRegistry = WinSettlementDetailResolverRegistry(bundledCoreExtensionRegistries().componentRegistry).apply {
                 BundledRiichiExtension.registerWinSettlementDetailResolvers(this)
                 freeze()
             },
+
+            componentRegistry = bundledCoreExtensionRegistries().componentRegistry,
         )(gameId, playerId, GameAction.Pass)
     }
 }

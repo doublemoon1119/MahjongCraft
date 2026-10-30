@@ -12,16 +12,14 @@ import com.doublemoon1119.mahjongcraft.flow.common.error.ExtensionFailurePolicy
 import com.doublemoon1119.mahjongcraft.flow.common.game.event.GameEventPublicMarkerResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.ExtensionGameCommand
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.WinCelebrationCueResolverRegistryImpl
+import com.doublemoon1119.mahjongcraft.flow.network.dto.component.ComponentViewNetworkRegistry
 import com.doublemoon1119.mahjongcraft.flow.network.dto.registry.DtoRegistry
-import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.DiscardPileDto
-import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.DynamicRuleStateDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.ExhaustiveDrawReasonDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.ExtensionGameActionDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.ExtensionGameCommandDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.GameLengthDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.MahjongRuleConfigDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkDtoRegistries
-import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.PlayerRuleStateDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.ScoreConfigDto
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.registry.PersistenceRegistries
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.ExtensionGameActionCommandFactoryRegistry
@@ -34,7 +32,8 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.service.WinSettlementDet
 import com.doublemoon1119.mahjongcraft.logic.base.ExhaustiveDrawReason
 import com.doublemoon1119.mahjongcraft.logic.base.ExtensionGameAction
 import com.doublemoon1119.mahjongcraft.logic.base.TileTypeId
-import com.doublemoon1119.mahjongcraft.logic.config.DynamicRuleState
+import com.doublemoon1119.mahjongcraft.logic.component.BuiltInComponentOwners
+import com.doublemoon1119.mahjongcraft.logic.component.ComponentRegistryImpl
 import com.doublemoon1119.mahjongcraft.logic.config.GameLength
 import com.doublemoon1119.mahjongcraft.logic.config.MahjongRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.config.ScoreConfig
@@ -45,11 +44,10 @@ import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleModule
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanRuleModule
-import com.doublemoon1119.mahjongcraft.logic.table.DiscardPile
-import com.doublemoon1119.mahjongcraft.logic.table.PlayerRuleState
 import com.doublemoon1119.mahjongcraft.logic.tile.TileTypeDefinition
 import com.doublemoon1119.mahjongcraft.logic.tile.TileTypeRegistry
 import com.doublemoon1119.mahjongcraft.logic.tile.TileTypeRegistryImpl
+import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledCoreExtensionRegistries
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledPersistenceRegistries
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -362,6 +360,11 @@ private fun testCoreRegistries(
 ): CoreExtensionRegistries = CoreExtensionRegistries(
     moduleRegistry = moduleRegistry,
     tileTypeRegistry = tileTypeRegistry,
+    componentRegistry = ComponentRegistryImpl().apply {
+        BuiltInComponentOwners.ALL.forEach(::registerOwner)
+        persistenceRegistries.components.componentTypes.forEach(::register)
+        persistenceRegistries.componentViews.viewTypes.forEach(::registerView)
+    },
     networkRegistries = networkRegistries,
     persistenceRegistries = persistenceRegistries,
     winCelebrationCueResolverRegistry = WinCelebrationCueResolverRegistryImpl(),
@@ -374,7 +377,7 @@ private fun testCoreRegistries(
     postActionExhaustiveDrawResolverRegistry = PostActionExhaustiveDrawResolverRegistry(),
     ruleDecisionResolverRegistry = RuleDecisionResolverRegistry(),
     winRoundContinuationResolverRegistry = WinRoundContinuationResolverRegistry(),
-    winSettlementDetailResolverRegistry = WinSettlementDetailResolverRegistry(),
+    winSettlementDetailResolverRegistry = WinSettlementDetailResolverRegistry(bundledCoreExtensionRegistries().componentRegistry),
     gameEventPublicMarkerResolverRegistry = GameEventPublicMarkerResolverRegistry(),
 )
 
@@ -471,9 +474,7 @@ private class TestNetworkDtoRegistries : NetworkDtoRegistries {
     override val ruleConfig = DtoRegistry<MahjongRuleConfig, MahjongRuleConfigDto>()
     override val scoreConfig = DtoRegistry<ScoreConfig, ScoreConfigDto>()
     override val gameLength = DtoRegistry<GameLength, GameLengthDto>()
-    override val dynamicRuleState = DtoRegistry<DynamicRuleState, DynamicRuleStateDto>()
-    override val playerRuleState = DtoRegistry<PlayerRuleState, PlayerRuleStateDto>()
-    override val discardPile = DtoRegistry<DiscardPile<*>, DiscardPileDto>()
+    override val componentViews = ComponentViewNetworkRegistry()
     override val exhaustiveDrawReason = DtoRegistry<ExhaustiveDrawReason, ExhaustiveDrawReasonDto>()
     override val extensionGameAction = DtoRegistry<ExtensionGameAction, ExtensionGameActionDto>()
     override val extensionGameCommand = DtoRegistry<ExtensionGameCommand, ExtensionGameCommandDto>()
@@ -482,9 +483,7 @@ private class TestNetworkDtoRegistries : NetworkDtoRegistries {
         ruleConfig.freeze()
         scoreConfig.freeze()
         gameLength.freeze()
-        dynamicRuleState.freeze()
-        playerRuleState.freeze()
-        discardPile.freeze()
+        componentViews.freeze()
         exhaustiveDrawReason.freeze()
         extensionGameAction.freeze()
         extensionGameCommand.freeze()

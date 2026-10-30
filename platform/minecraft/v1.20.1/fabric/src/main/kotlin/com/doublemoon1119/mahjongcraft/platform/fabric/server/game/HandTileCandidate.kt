@@ -1,6 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.server.game
 
-import com.doublemoon1119.mahjongcraft.logic.base.Tile
+import com.doublemoon1119.mahjongcraft.logic.base.TileFaceView
 import kotlin.uuid.Uuid
 
 /**
@@ -8,10 +8,10 @@ import kotlin.uuid.Uuid
  *
  * @property tileId 手牌實體識別碼。
  * @property token 指令使用的選牌代號。
- * @property tile 候選牌的牌種。
+ * @property tile 候選牌的牌面與外觀。
  */
 data class HandTileCandidate(
     val tileId: Uuid,
     val token: String,
-    val tile: Tile,
+    val tile: TileFaceView,
 )

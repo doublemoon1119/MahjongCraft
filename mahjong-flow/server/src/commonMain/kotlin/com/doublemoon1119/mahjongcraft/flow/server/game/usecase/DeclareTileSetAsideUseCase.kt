@@ -15,6 +15,7 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.service.isOwnTurnWindowO
 import com.doublemoon1119.mahjongcraft.logic.base.ExhaustiveDrawReason
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
+import com.doublemoon1119.mahjongcraft.logic.component.ComponentRegistry
 import com.doublemoon1119.mahjongcraft.logic.judgment.LegalActionContext
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
@@ -32,6 +33,7 @@ import kotlin.uuid.Uuid
  * [RespondToRobbingUseCase] 解析；多位玩家同時可以榮和時依一炮多響設定決定開放給誰，判定為途中流局時這次動作視為未成立；
  * 沒人可以榮和時直接套用、收付並依規則補牌，補到的牌再交給 [DrawFollowUpApplier] 依規則自動處理。
  *
+ * @property componentRegistry 正式組件定義與純效果來源。
  * @property gameRepository 權威對局數據倉庫。
  * @property moduleRegistry 麻將規則模組註冊中心。
  * @property snapshotSynchronizer 對局快照同步服務。
@@ -44,6 +46,7 @@ class DeclareTileSetAsideUseCase(
     private val snapshotSynchronizer: GameSnapshotSynchronizer,
     private val eventPublisher: GameEventPublisher,
     private val presentationPublisher: GamePresentationPublisher,
+    private val componentRegistry: ComponentRegistry,
 ) {
     /**
      * 執行宣告。
@@ -128,7 +131,7 @@ class DeclareTileSetAsideUseCase(
                     standingTileIds = declarer.hand.tiles.map { it.id },
                     drawnTileId = declarer.hand.lastDrawn?.id,
                     melds = declarer.hand.melds.map { it.toPresentation(newState.config.revealsClosedKanTiles) },
-                    setAsideTileIds = module.setAsideTiles(declarer).map { it.id },
+                    setAsideTileIds = declarer.setAsideTiles.map { it.id },
                     newlySetAsideTileIds = setOf(result.setAsideTile.id),
                 )
                 presentationPublisher.publishRuleStateUpdated(gameId)
@@ -152,7 +155,7 @@ class DeclareTileSetAsideUseCase(
                 standingTileIds = declarer.hand.tiles.map { it.id },
                 drawnTileId = declarer.hand.lastDrawn?.id,
                 melds = declarer.hand.melds.map { it.toPresentation(declared.config.revealsClosedKanTiles) },
-                setAsideTileIds = module.setAsideTiles(declarer).map { it.id },
+                setAsideTileIds = declarer.setAsideTiles.map { it.id },
                 newlySetAsideTileIds = setOf(result.setAsideTile.id),
             )
         }
@@ -178,7 +181,7 @@ class DeclareTileSetAsideUseCase(
         if (action !in legalActions) return illegal
         val setAsideTile = module.tileSetAsideBy(declarer, action) ?: return illegal
 
-        return when (val resolution = TileSetAsideResolver.resolve(state, playerId, action, setAsideTile, module)) {
+        return when (val resolution = TileSetAsideResolver.resolve(state, playerId, action, setAsideTile, module, componentRegistry = componentRegistry)) {
             is TileSetAsideResolver.Resolution.AbortiveDraw -> resolution.tableState to Outcome.Success(
                 SetAsideResult(
                     tableState = resolution.tableState,
@@ -207,7 +210,7 @@ class DeclareTileSetAsideUseCase(
             is TileSetAsideResolver.Resolution.Applied -> {
                 val applied = resolution.applied
                 val followUp = if (applied.drawnTiles.isNotEmpty()) {
-                    DrawFollowUpApplier.run(applied.tableState, playerId, DrawSource.Supplemental(action), applied.drawnTiles, module)
+                    DrawFollowUpApplier.run(applied.tableState, playerId, DrawSource.Supplemental(action), applied.drawnTiles, module, componentRegistry = componentRegistry)
                 } else {
                     null
                 }

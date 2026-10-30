@@ -39,8 +39,9 @@ This is a deliberately small demonstration rule, not a regional Mahjong rule.
 - A player may reveal their hand once after drawing. It changes a public
   marker and does not change scoring or concealed information.
 
-The rule's settings can change the wall's ranks, payment, round count and the
-optional exchange, with payment from 1–100 points and match length from 1–16 rounds.
+The rule's settings can change the wall's ranks, payment, round count, the
+optional exchange and public tile faces, with payment from 1–100 points and match
+length from 1–16 rounds.
 The selected ranks change wall contents, not which otherwise complete hands may win.
 The example does not replace server
 validation with client controls.
@@ -58,6 +59,16 @@ players therefore exchange with each other. Choices stay private until the
 exchange is resolved, and the resolver supplies a legal automatic submission
 when a player times out.
 
+## Optional public tile faces
+
+Public tile faces are disabled by default. When enabled, the first three copies
+of each rank carry a saved public face component from the moment the deck is
+built; the fourth copy, including the inverted 1-man, stays ordinary. A tile
+effect turns the component into public face access and a public face appearance,
+so every player and spectator can read those tiles even when they lie face down
+in the wall or stand in another player's hand. The component itself is not sent
+to clients. The Minecraft adapter draws those tiles with a different body color.
+
 ## Tsumogiri strategy
 
 Tsumogiri means discarding the tile just drawn. The sample strategy is
@@ -69,22 +80,23 @@ public default submission. It is an integration example, not a competitive AI.
 
 ## Hand disclosure and pose
 
-The example saves one `handRevealed` flag per player. Its rule module implements
-`describeHandTiles(tableState)` and describes every tile currently held by that player as public
-and face up. It reads the current hand each time, so later draws follow the same rule.
-No second list of permanently revealed tile IDs is stored.
+The reveal action adds the optional `HAND_REVEALED` player component. A registered pure tile effect
+reads this component and makes the player's current standing and drawn tiles public and face up.
+Later draws follow the same effect. No second list of revealed tile IDs is stored, and the player
+component is cleared for a new round.
 
-A description identifies one physical tile, not a tile face. Visibility and pose are independent:
-public tiles may remain upright, and only public tiles may be placed face up. This example uses
-the full-hand case. The query describes standing and drawn hand tiles only, not tiles in other areas.
+Access and pose are independent. A public tile may stay upright or face down; placing a tile face up
+requires public access. The shared resolver supports every current tile area. This example's reveal
+effect intentionally applies only to its owner's standing and drawn tiles.
 
-Flow and platform consumers use the same `resolveHandTileDescriptions` validator. Duplicate tile
-IDs, tiles outside current hands and nonpublic face-up descriptions are rejected.
-The default empty description preserves normal play. Player state is reset for the next round.
-See [`ExamplePairingRuleModule.kt`](src/commonMain/kotlin/com/doublemoon1119/mahjongcraft/example/pairing/ExamplePairingRuleModule.kt)
-for the query and
-[`HandTileDescription.kt`](../../mahjong-logic/src/commonMain/kotlin/com/doublemoon1119/mahjongcraft/logic/module/HandTileDescription.kt)
-for the data contract.
+Flow projects the result for each authorized reader before passing it to an AI or platform.
+The client receives cropped faces and pose values, not the raw component collection or access list.
+
+See
+[`ExamplePairingComponentRegistration.kt`](src/commonMain/kotlin/com/doublemoon1119/mahjongcraft/example/pairing/ExamplePairingComponentRegistration.kt)
+for the effect and round lifecycle, and
+[`TileComponentResolver.kt`](../../mahjong-logic/src/commonMain/kotlin/com/doublemoon1119/mahjongcraft/logic/tile/component/TileComponentResolver.kt)
+for shared validation.
 
 ## Public capability map
 
@@ -93,7 +105,7 @@ for the data contract.
 | Rule and wall layout | Pairing rule and fixed two/four-wall layouts |
 | Rule decision | Optional simultaneous two-tile exchange |
 | Extension action and command | Once-per-round hand reveal |
-| Per-tile hand description | Current and future held tiles become public and face up |
+| Typed components and tile effects | Saved bonus tiles, hand reveal and optional public tile faces |
 | AI strategy | Tsumogiri decision context |
 | Network and persistence codecs | Example configuration, state, action and tile data |
 | Settlement and history presentation | Supplied by the Minecraft adapter |

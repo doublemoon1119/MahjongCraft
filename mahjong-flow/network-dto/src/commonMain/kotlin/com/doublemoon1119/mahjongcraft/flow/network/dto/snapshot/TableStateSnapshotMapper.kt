@@ -15,21 +15,22 @@ import kotlin.uuid.Uuid
  */
 fun TableStateSnapshot.toDto(registries: NetworkDtoRegistries): TableStateSnapshotDto = TableStateSnapshotDto(
     id = id.toString(),
+    componentViews = registries.componentViews.encode(componentViews),
     players = players.map { it.toDto(registries) },
     config = config.toDto(registries),
-    tileWall = tileWall.toDto(),
+    tileWall = tileWall.toDto(registries),
     dealerPlayerId = dealerPlayerId.toString(),
     prevalentWind = prevalentWind.toDto(),
     roundNumber = roundNumber,
     roundPosition = roundPosition.toDto(),
     comboCount = comboCount,
     currentPlayerIndex = currentPlayerIndex,
-    dynamicRuleState = dynamicRuleState?.toDto(registries),
     finishedPlayerIds = finishedPlayerIds.map(Uuid::toString).toSet(),
     physicalWallLayout = physicalWallLayout?.toDto(),
     openingDiceRolls = openingDiceRolls.map { it.toDto() },
-    revealedHandTiles = revealedHandTiles.map { it.toDto() },
-    handTileStates = handTileStates.map { it.toDto() },
+    publicTileIds = publicTileIds.map(Uuid::toString).toSet(),
+    publicEvidenceTileIds = publicEvidenceTileIds.map(Uuid::toString).toSet(),
+    tilePoseStates = tilePoseStates.map { it.toDto() },
 )
 
 /**
@@ -40,19 +41,20 @@ fun TableStateSnapshot.toDto(registries: NetworkDtoRegistries): TableStateSnapsh
  */
 fun TableStateSnapshotDto.toDomain(registries: NetworkDtoRegistries): TableStateSnapshot = TableStateSnapshot(
     id = Uuid.parse(id),
+    componentViews = registries.componentViews.decode(componentViews),
     players = players.map { it.toDomain(registries) },
     config = config.toDomain(registries),
-    tileWall = tileWall.toDomain(),
+    tileWall = tileWall.toDomain(registries),
     dealerPlayerId = Uuid.parse(dealerPlayerId),
     prevalentWind = prevalentWind.toDomain(),
     roundNumber = roundNumber,
     roundPosition = roundPosition.toDomain(),
     comboCount = comboCount,
     currentPlayerIndex = currentPlayerIndex,
-    dynamicRuleState = dynamicRuleState?.toDomain(registries),
     finishedPlayerIds = finishedPlayerIds.map(Uuid::parse).toSet(),
     physicalWallLayout = physicalWallLayout?.toDomain(),
     openingDiceRolls = openingDiceRolls.map { it.toDomain() },
-    revealedHandTiles = revealedHandTiles.map { it.toDomain() },
-    handTileStates = handTileStates.map { it.toDomain() },
+    publicTileIds = publicTileIds.map(Uuid::parse).toSet(),
+    publicEvidenceTileIds = publicEvidenceTileIds.map(Uuid::parse).toSet(),
+    tilePoseStates = tilePoseStates.map { it.toDomain() },
 )

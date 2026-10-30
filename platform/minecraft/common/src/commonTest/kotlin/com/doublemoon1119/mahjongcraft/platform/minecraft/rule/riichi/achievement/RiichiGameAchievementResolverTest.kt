@@ -1,8 +1,11 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.rule.riichi.achievement
 
 import com.doublemoon1119.mahjongcraft.flow.common.game.event.GameEventProjector
+import com.doublemoon1119.mahjongcraft.flow.common.game.event.GameEventPublicMarkerResolver
 import com.doublemoon1119.mahjongcraft.flow.common.game.event.GameEventPublicMarkerResolverDefinition
 import com.doublemoon1119.mahjongcraft.flow.common.game.event.GameEventPublicMarkerResolverRegistry
+import com.doublemoon1119.mahjongcraft.flow.common.game.event.RulePublicEventMarker
+import com.doublemoon1119.mahjongcraft.flow.common.game.event.WinPublicMarkerContext
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.CommittedGameFacts
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryEventDraft
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryFact
@@ -15,12 +18,13 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementDetai
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementQuantity
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.riichi.RiichiRoundOutcomeIds
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.riichi.RiichiWinSettlementIds
+import com.doublemoon1119.mahjongcraft.flow.server.game.riichi.RiichiGameEventPublicMarkerIds
 import com.doublemoon1119.mahjongcraft.flow.server.game.riichi.RiichiGameEventPublicMarkerResolver
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
+import com.doublemoon1119.mahjongcraft.logic.component.ComponentSet
 import com.doublemoon1119.mahjongcraft.logic.config.MahjongRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.module.BuiltInRuleModuleIds
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPlayerState
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiScoreConfig
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.threeplayer.ThreePlayerRiichiRuleConfig
@@ -38,6 +42,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.achievement.detect
 import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.riichi.BundledRiichiMinecraftExtension
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.registerBundledRuleModules
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeIdentifiedTileFactory
+import com.doublemoon1119.mahjongcraft.testing.logic.rules.riichi.riichiDeclarationComponents
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
 import kotlin.test.Test
@@ -62,8 +67,8 @@ class RiichiGameAchievementResolverTest {
     /** 立直中和出役滿時，役種列表沒有立直與一發，改依和牌前的立直狀態判定。 */
     @Test
     fun `riichi state credits riichi and ippatsu on a yakuman win`() {
-        val riichiState = RiichiPlayerState(riichiTile = FakeIdentifiedTileFactory.create(Tile.Honor.East), isIppatsu = true)
-        val game = riichiGame(firstPlayerRuleState = riichiState)
+        val riichiState = riichiDeclarationComponents(declarationTile = FakeIdentifiedTileFactory.create(Tile.Honor.East), isIppatsu = true)
+        val game = riichiGame(firstPlayerComponents = riichiState)
         val winner = game.tableState.players.first()
 
         val result = resolve(game, win(winner.id, yakumanFields(YakuType.Suuankou)))
@@ -332,7 +337,7 @@ class RiichiGameAchievementResolverTest {
     /** 自然役滿只有公開的立直與一發標記都存在時才取得一發，不能只看役種名稱。 */
     @Test
     fun `natural yakuman does not infer ippatsu from riichi yaku alone`() {
-        val game = riichiGame(firstPlayerRuleState = RiichiPlayerState(isIppatsu = true))
+        val game = riichiGame()
         val winner = game.tableState.players.first()
 
         val fields = listOf(
@@ -343,7 +348,13 @@ class RiichiGameAchievementResolverTest {
                 ),
             ),
         ) + yakumanFields(YakuType.Suuankou).filter { it.id != RiichiWinSettlementIds.YAKU_FIELD }
-        val result = resolve(game, win(winner.id, fields))
+        val result = resolveFacts(
+            game,
+            win(winner.id, fields),
+            markerResolver = object : GameEventPublicMarkerResolver by RiichiGameEventPublicMarkerResolver {
+                override fun resolveWinMarkers(context: WinPublicMarkerContext): List<RulePublicEventMarker> = listOf(RulePublicEventMarker(RiichiGameEventPublicMarkerIds.IPPATSU, context.winnerId))
+            },
+        )
 
         assertEquals(
             setOf(RiichiAchievementIds.YAKUMAN, checkNotNull(RiichiAchievementIds.yakuman(YakuType.Suuankou)), RiichiAchievementIds.RIICHI_WIN),
@@ -478,11 +489,11 @@ class RiichiGameAchievementResolverTest {
     private fun resolve(game: Game, fact: HistoryFact): Map<Uuid, Set<String>> = resolveFacts(game, fact)
 
     /** 以同一交易的多筆事實建立事件批次並交給日麻成果判定。 */
-    private fun resolveFacts(game: Game, vararg fact: HistoryFact): Map<Uuid, Set<String>> {
+    private fun resolveFacts(game: Game, vararg fact: HistoryFact, markerResolver: GameEventPublicMarkerResolver = RiichiGameEventPublicMarkerResolver): Map<Uuid, Set<String>> {
         val modules = MahjongModuleRegistryImpl().apply { registerBundledRuleModules() }
         val markerResolvers = GameEventPublicMarkerResolverRegistry().apply {
-            register(GameEventPublicMarkerResolverDefinition(BuiltInRuleModuleIds.RIICHI, RiichiGameEventPublicMarkerResolver))
-            register(GameEventPublicMarkerResolverDefinition(BuiltInRuleModuleIds.RIICHI_THREE_PLAYER, RiichiGameEventPublicMarkerResolver))
+            register(GameEventPublicMarkerResolverDefinition(BuiltInRuleModuleIds.RIICHI, markerResolver))
+            register(GameEventPublicMarkerResolverDefinition(BuiltInRuleModuleIds.RIICHI_THREE_PLAYER, markerResolver))
         }
         val committedFacts = CommittedGameFacts(
             venueId = game.id,
@@ -497,20 +508,20 @@ class RiichiGameAchievementResolverTest {
     /**
      * 建立可覆寫牌局進度與莊家狀態的四人日麻測試對局。
      *
-     * @param firstPlayerRuleState 東家規則狀態；未提供時使用預設狀態。
+     * @param firstPlayerComponents 東家規則狀態；未提供時使用預設狀態。
      * @param prevalentWind 場風。
      * @param roundNumber 場風內局數。
      * @param comboCount 本場數。
      * @return 對應設定的測試對局。
      */
     private fun riichiGame(
-        firstPlayerRuleState: RiichiPlayerState? = null,
+        firstPlayerComponents: ComponentSet? = null,
         prevalentWind: Wind = Wind.EAST,
         roundNumber: Int = 1,
         comboCount: Int = 0,
     ): Game = gameOf(
         config = RiichiRuleConfig(),
-        firstPlayerRuleState = firstPlayerRuleState,
+        firstPlayerComponents = firstPlayerComponents,
         prevalentWind = prevalentWind,
         roundNumber = roundNumber,
         comboCount = comboCount,
@@ -520,7 +531,7 @@ class RiichiGameAchievementResolverTest {
      * 以指定規則設定與牌局進度建立四人測試對局。
      *
      * @param config 對局規則設定。
-     * @param firstPlayerRuleState 東家規則狀態；其他玩家使用測試工廠預設值。
+     * @param firstPlayerComponents 東家規則狀態；其他玩家使用測試工廠預設值。
      * @param prevalentWind 場風。
      * @param roundNumber 場風內局數。
      * @param comboCount 本場數。
@@ -528,13 +539,13 @@ class RiichiGameAchievementResolverTest {
      */
     private fun gameOf(
         config: MahjongRuleConfig,
-        firstPlayerRuleState: RiichiPlayerState? = null,
+        firstPlayerComponents: ComponentSet? = null,
         prevalentWind: Wind = Wind.EAST,
         roundNumber: Int = 1,
         comboCount: Int = 0,
     ): Game {
         val players: List<MahjongPlayer> = listOf(Wind.EAST, Wind.SOUTH, Wind.WEST, Wind.NORTH).map { wind ->
-            FakeMahjongPlayerFactory.create(initialSeat = wind, playerRuleState = firstPlayerRuleState.takeIf { wind == Wind.EAST })
+            FakeMahjongPlayerFactory.create(initialSeat = wind, components = firstPlayerComponents?.takeIf { wind == Wind.EAST } ?: ComponentSet.EMPTY)
         }
         val tableState = FakeTableStateFactory.create(
             players = players,

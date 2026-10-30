@@ -4,6 +4,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.AppliedActionScori
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameAbortReasonIds
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.RuleContractViolationException
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
+import com.doublemoon1119.mahjongcraft.logic.component.ComponentRegistry
 import com.doublemoon1119.mahjongcraft.logic.module.ActionScoringContext
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
@@ -31,6 +32,7 @@ internal object ActionScoringApplier {
      * @param action 已確定成立的動作。
      * @param sourcePlayerId 鳴取他家捨牌時被鳴牌的玩家；其他動作為 null。
      * @param module 對局採用的規則模組。
+     * @param componentRegistry 驗證對局組件變更的正式定義。
      * @return 套用後的候選桌況與收付。
      * @throws RuleContractViolationException 規則回傳的收付不合法時。
      */
@@ -41,6 +43,7 @@ internal object ActionScoringApplier {
         action: GameAction,
         sourcePlayerId: Uuid?,
         module: MahjongRuleModule<*>,
+        componentRegistry: ComponentRegistry,
     ): Applied {
         val scoring = module.createActionScoringPolicy().resolve(
             ActionScoringContext(
@@ -70,7 +73,10 @@ internal object ActionScoringApplier {
             player.copy(score = score.toInt())
         }
         return Applied(
-            tableState = after.copy(players = players, dynamicRuleState = scoring.dynamicRuleState),
+            tableState = after.copy(
+                players = players,
+                components = RuleComponentChecker(componentRegistry, module.id).applyTablePatch(after, scoring.tableComponents, "actionScoringPolicy"),
+            ),
             scoring = AppliedActionScoring(
                 actorPlayerId = actorPlayerId,
                 action = action,

@@ -16,7 +16,7 @@ fun interface DeclarationDiscardPolicy {
      * 計算宣告及捨牌的規則效果。
      *
      * @param tableState 宣告前的完整權威桌況。
-     * @param player 宣告玩家在宣告前的狀態。
+     * @param player 宣告玩家在宣告前的狀態，已套用放棄和牌與捨牌掛勾的變更。
      * @param action 要執行的擴充宣告動作。
      * @param discardResult 已依請求選牌完成的捨牌結果；包含未整理的捨牌後手牌。
      * @return 可由 Flow 驗證後套用的效果；此規則不支援該動作時為 null。

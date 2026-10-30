@@ -1,6 +1,7 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.catalogue
 
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
+import com.doublemoon1119.mahjongcraft.logic.base.TileFaceView
 import com.doublemoon1119.mahjongcraft.logic.base.TileTypeId
 import com.doublemoon1119.mahjongcraft.logic.config.MahjongRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
@@ -22,7 +23,7 @@ class RuleCatalogueRegistryTest {
         val result = assertIs<RuleCatalogueResolution.Available>(registry.resolve(RULE_ID))
         assertTrue(result.usesDefaultConfig)
         assertEquals(listOf(RuleCatalogueLabel("example:points")), result.catalogue.entries.first().labels)
-        assertEquals(Tile.Extension(TileTypeId("example", "dragon")), result.catalogue.entries.first().examples.single().groups.single().tiles.single())
+        assertEquals(TileFaceView(Tile.Extension(TileTypeId("example", "dragon"))), result.catalogue.entries.first().examples.single().groups.single().tiles.single())
         assertTrue(result.catalogue.entries.last().examples.isEmpty())
     }
 
@@ -90,7 +91,7 @@ class RuleCatalogueRegistryTest {
     /** 和牌張與局部示意的語意不依牌組位置猜測。 */
     @Test
     fun `examples distinguish winning tiles and partial illustrations`() {
-        val tile = Tile.Extension(TileTypeId("example", "dragon"))
+        val tile = TileFaceView(Tile.Extension(TileTypeId("example", "dragon")))
         assertFailsWith<IllegalArgumentException> { RuleCatalogueTileGroup(RuleCatalogueTileGroupRole.WINNING_TILE, listOf(tile, tile)) }
         assertFailsWith<IllegalArgumentException> { RuleCatalogueExample(false, emptyList()) }
         assertFalse(sampleCatalogue().entries.first().examples.single().completeHand)
@@ -128,7 +129,7 @@ private fun sampleCatalogue(): RuleCatalogue = RuleCatalogue(
             examples = listOf(
                 RuleCatalogueExample(
                     completeHand = false,
-                    groups = listOf(RuleCatalogueTileGroup(RuleCatalogueTileGroupRole.ILLUSTRATION, listOf(Tile.Extension(TileTypeId("example", "dragon"))))),
+                    groups = listOf(RuleCatalogueTileGroup(RuleCatalogueTileGroupRole.ILLUSTRATION, listOf(TileFaceView(Tile.Extension(TileTypeId("example", "dragon")))))),
                 ),
             ),
         ),

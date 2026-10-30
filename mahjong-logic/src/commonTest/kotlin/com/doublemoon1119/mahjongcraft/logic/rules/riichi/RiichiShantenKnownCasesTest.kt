@@ -3,8 +3,8 @@ package com.doublemoon1119.mahjongcraft.logic.rules.riichi
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.logic.judgment.ShantenResult
 import com.doublemoon1119.mahjongcraft.logic.judgment.ShantenTestFixtures.handOf
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.RiichiTileTypes
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeHandFactory
+import com.doublemoon1119.mahjongcraft.testing.logic.rules.riichi.withRedFives
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
@@ -66,15 +66,15 @@ class RiichiShantenKnownCasesTest {
         assertEquals(ShantenResult.Complete, calculator.calculate(kokushi))
     }
 
-    /** 赤五應按普通五計算，13 張聽牌時等待牌仍回報普通牌種。 */
+    /** 赤五按普通五計算，13 張聽牌時等待牌回報普通五。 */
     @Test
-    fun `red five is canonicalized for shanten and waits`() {
+    fun `red five counts as a plain five for shanten and waits`() {
         val hand = FakeHandFactory.create(
             listOf(
                 m(1), m(2), m(3), p(1), p(2), p(3), s(1), s(2), s(3),
-                Tile.Honor.East, Tile.Honor.East, Tile.Honor.East, RiichiTileTypes.redFive(Tile.Suit.Character),
+                Tile.Honor.East, Tile.Honor.East, Tile.Honor.East, Tile.Numeric(Tile.Suit.Character, 5),
             ),
-        )
+        ).withRedFives(Tile.Suit.Character)
         val result = assertIs<ShantenResult.Tenpai>(calculator.calculate(hand))
 
         assertEquals(listOf(m(5)), result.winningTiles)

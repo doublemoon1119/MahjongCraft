@@ -4,6 +4,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.Game
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameFlowConfig
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateStore
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
+import com.doublemoon1119.mahjongcraft.testing.flow.common.game.repository.componentValidatedGameRepository
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
 import kotlinx.coroutines.test.runTest
@@ -17,7 +18,7 @@ import kotlin.uuid.Uuid
 /** [GameRepositoryImpl.withExpectedGame] 的條件式寫入。 */
 class GameRepositoryImplExpectedGameTest {
     /** 使用真實權威儲存區驗證條件式交易的儲存庫。 */
-    private val repository = GameRepositoryImpl(AuthoritativeStateStore())
+    private val repository = componentValidatedGameRepository(AuthoritativeStateStore())
 
     /** 權威遊戲仍是預期的遊戲時，命令的寫入照常提交並回傳命令的結果。 */
     @Test

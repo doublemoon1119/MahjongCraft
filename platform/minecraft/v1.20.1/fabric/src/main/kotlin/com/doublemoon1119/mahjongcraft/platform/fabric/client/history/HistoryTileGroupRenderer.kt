@@ -1,7 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.client.history
 
-import com.doublemoon1119.mahjongcraft.flow.network.dto.model.TileDto
-import com.doublemoon1119.mahjongcraft.flow.network.dto.model.toDomain
+import com.doublemoon1119.mahjongcraft.flow.network.dto.model.TileFaceViewDto
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.MahjongTileFaceRenderer
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.DecisionTileOrientationDto
 import com.doublemoon1119.mahjongcraft.platform.minecraft.history.HistoryDiscardMarkerDisplayRegistry
@@ -10,7 +9,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.BuiltInMinecraftT
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileSetAppearanceDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TILE_BACK_PREVIEW_ASSET_KEY
-import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.toAssetKey
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.backAppearance
 import net.minecraft.client.gui.DrawContext
 import net.minecraft.text.Text
 import net.minecraft.util.Formatting
@@ -46,7 +45,7 @@ internal class HistoryTileGroupRenderer(
     fun render(
         context: DrawContext,
         layout: HistoryTileGroupLayout,
-        catalog: List<TileDto>,
+        catalog: List<TileFaceViewDto>,
         x: Int,
         y: Int,
         mouseX: Int,
@@ -59,7 +58,10 @@ internal class HistoryTileGroupRenderer(
         var tooltip: List<Text>? = null
         layout.placements.forEach { placement ->
             val tile = catalog.getOrNull(placement.tile) ?: return@forEach
-            val asset = if (placement.faceDown) TILE_BACK_PREVIEW_ASSET_KEY else tile.toDomain().toAssetKey(assets)
+            val faceAsset = tile.toHistoryAssetKey(assets)
+            val asset = if (placement.faceDown) TILE_BACK_PREVIEW_ASSET_KEY else faceAsset
+            // 蓋著的牌依牌面樣式指定的牌身畫牌背；看不到牌面時就是規則外觀。
+            val tileAppearance = if (placement.faceDown) assets.backAppearance(faceAsset, appearance) else appearance
             val rotated = placement.orientation != DecisionTileOrientationDto.UPRIGHT
             val nominalWidth = if (rotated) placement.height else placement.width
             val nominalHeight = if (rotated) placement.width else placement.height
@@ -74,7 +76,7 @@ internal class HistoryTileGroupRenderer(
                 context.matrices.push()
                 context.matrices.translate((x + placement.x).toDouble(), (y + placement.y).toDouble(), 0.0)
                 context.matrices.scale(nominalWidth / BASE_WIDTH, nominalHeight / BASE_HEIGHT, 1f)
-                faces.renderGui(context, asset, 0, 0, BASE_WIDTH, BASE_HEIGHT, placement.orientation, appearance)
+                faces.renderGui(context, asset, 0, 0, BASE_WIDTH, BASE_HEIGHT, placement.orientation, tileAppearance)
                 context.matrices.pop()
             }
             if (!markers[placement.tile].isNullOrEmpty()) {

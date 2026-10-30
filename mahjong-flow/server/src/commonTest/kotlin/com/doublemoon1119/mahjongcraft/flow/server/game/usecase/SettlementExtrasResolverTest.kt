@@ -5,11 +5,12 @@ import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
 import com.doublemoon1119.mahjongcraft.logic.module.SettlementExtrasAllocation
 import com.doublemoon1119.mahjongcraft.logic.module.SettlementExtrasContext
 import com.doublemoon1119.mahjongcraft.logic.module.SettlementExtrasOccasion
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDynamicState
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleModule
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiTableComponents
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
+import com.doublemoon1119.mahjongcraft.testing.logic.rules.riichi.riichiTableComponents
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
 import kotlin.test.Test
@@ -22,7 +23,7 @@ class SettlementExtrasResolverTest {
     private val state: TableState = FakeTableStateFactory.create(
         players = listOf(Wind.EAST, Wind.SOUTH, Wind.WEST, Wind.NORTH).map { FakeMahjongPlayerFactory.create(it) },
         config = RiichiRuleConfig(),
-        dynamicRuleState = RiichiDynamicState(riichiStickCount = 2),
+        components = riichiTableComponents(potPoints = 2000),
         comboCount = 1,
     )
 
@@ -39,7 +40,7 @@ class SettlementExtrasResolverTest {
 
         assertEquals(mapOf(winnerIds[0] to 2300, discarderId to -300), result.scoreDeltas)
         assertEquals(setOf(winnerIds[0]), result.stickPotRecipientIds)
-        assertEquals(0, (result.dynamicRuleState as RiichiDynamicState).riichiStickCount)
+        assertEquals(0, result.components[RiichiTableComponents.POT_POINTS])
     }
 
     /** 規則可以平分供託，並讓每位贏家都收本場。 */
@@ -85,7 +86,7 @@ class SettlementExtrasResolverTest {
 
         assertEquals(emptyMap(), result.scoreDeltas)
         assertEquals(emptySet(), result.stickPotRecipientIds)
-        assertEquals(0, (result.dynamicRuleState as RiichiDynamicState).riichiStickCount)
+        assertEquals(0, result.components[RiichiTableComponents.POT_POINTS])
     }
 
     /**

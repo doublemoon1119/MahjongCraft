@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.flow.network.dto.rule
 
+import com.doublemoon1119.mahjongcraft.flow.network.dto.component.ComponentViewDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.registry.DtoRegistry
 import kotlinx.serialization.modules.SerializersModule
 import kotlinx.serialization.modules.SerializersModuleBuilder
@@ -14,12 +15,11 @@ import kotlin.reflect.KClass
  * @return 使用指定註冊表解析多型 DTO 的序列化模組。
  */
 fun buildMahjongDtoSerializersModule(registries: NetworkDtoRegistries): SerializersModule = SerializersModule {
+    polymorphicDefaultSerializer(ComponentViewDto::class) { dto -> registries.componentViews.serializerFor(dto) }
+    polymorphicDefaultDeserializer(ComponentViewDto::class) { name -> name?.let(registries.componentViews::serializerFor) }
     dynamicPolymorphic(MahjongRuleConfigDto::class, registries.ruleConfig)
     dynamicPolymorphic(ScoreConfigDto::class, registries.scoreConfig)
     dynamicPolymorphic(GameLengthDto::class, registries.gameLength)
-    dynamicPolymorphic(DynamicRuleStateDto::class, registries.dynamicRuleState)
-    dynamicPolymorphic(PlayerRuleStateDto::class, registries.playerRuleState)
-    dynamicPolymorphic(DiscardPileDto::class, registries.discardPile)
     dynamicPolymorphic(ExhaustiveDrawReasonDto::class, registries.exhaustiveDrawReason)
     dynamicPolymorphic(ExtensionGameActionDto::class, registries.extensionGameAction)
     dynamicPolymorphic(ExtensionGameCommandDto::class, registries.extensionGameCommand)

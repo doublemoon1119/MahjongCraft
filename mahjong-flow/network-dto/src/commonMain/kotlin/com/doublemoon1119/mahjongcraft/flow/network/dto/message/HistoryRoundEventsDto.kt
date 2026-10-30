@@ -1,6 +1,6 @@
 package com.doublemoon1119.mahjongcraft.flow.network.dto.message
 
-import com.doublemoon1119.mahjongcraft.flow.network.dto.model.TileDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.model.TileFaceViewDto
 import kotlinx.serialization.Serializable
 
 /**
@@ -18,5 +18,5 @@ data class HistoryRoundEventsDto(
     val roundNumber: Int,
     val transactions: List<HistoryReplayTransactionDto>,
     val nextTransactionIndex: Int?,
-    val tileCatalog: List<TileDto>,
+    val tileCatalog: List<TileFaceViewDto>,
 )

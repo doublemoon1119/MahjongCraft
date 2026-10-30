@@ -11,10 +11,13 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.policy.GameVisibilityPol
 import com.doublemoon1119.mahjongcraft.flow.server.game.policy.HandReadinessVisibilityPolicy
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateStore
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateUpdate
+import com.doublemoon1119.mahjongcraft.logic.base.TileFaceView
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
+import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.logic.table.TableStateSnapshot
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
+import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledCoreExtensionRegistries
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.registerBundledRuleModules
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
@@ -72,6 +75,10 @@ class ObserverSnapshotBroadcasterSourceReplacementTest {
         }
 
         override fun ruleDecisionSnapshotFor(game: Game, observerId: Uuid): RuleDecisionSnapshot? = delegate.ruleDecisionSnapshotFor(game, observerId)
+
+        override fun tileFacesFor(game: Game, observerId: Uuid, tileIds: Collection<Uuid>): Map<Uuid, TileFaceView> = delegate.tileFacesFor(game, observerId, tileIds)
+
+        override fun publicTileFaces(tableState: TableState, tileIds: Collection<Uuid>): Map<Uuid, TileFaceView> = delegate.publicTileFaces(tableState, tileIds)
     }
 
     /** 來源在記錄前被替換時不記錄該次內容；下一輪即使內容相同也會送出。 */
@@ -79,7 +86,7 @@ class ObserverSnapshotBroadcasterSourceReplacementTest {
     fun `a snapshot skipped for a replaced source is sent on the next broadcast`() = runTest {
         val store = AuthoritativeStateStore()
         val registry = MahjongModuleRegistryImpl().apply { registerBundledRuleModules() }
-        val visibilityPolicy = ReplacingVisibilityPolicy(store = store, delegate = GameVisibilityPolicyImpl(registry))
+        val visibilityPolicy = ReplacingVisibilityPolicy(store = store, delegate = GameVisibilityPolicyImpl(registry, componentRegistry = bundledCoreExtensionRegistries().componentRegistry))
         val sender = RecordingSender()
         val broadcaster = ObserverSnapshotBroadcaster(
             store = store,
@@ -104,7 +111,7 @@ class ObserverSnapshotBroadcasterSourceReplacementTest {
 
         assertEquals(2, sender.sent.size)
         val delivered = assertIs<ObserverSnapshot.OfGame>(sender.sent.last())
-        assertEquals(GameVisibilityPolicyImpl(registry).snapshotFor(changedGame, observerId), delivered.game)
+        assertEquals(GameVisibilityPolicyImpl(registry, componentRegistry = bundledCoreExtensionRegistries().componentRegistry).snapshotFor(changedGame, observerId), delivered.game)
     }
 
     /**

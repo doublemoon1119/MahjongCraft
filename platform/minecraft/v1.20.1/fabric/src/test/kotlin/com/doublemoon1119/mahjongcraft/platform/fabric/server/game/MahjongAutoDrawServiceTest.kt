@@ -22,7 +22,6 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.PostAction
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.PostReactionRoundOutcomeResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.WinRoundContinuationResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.policy.GameVisibilityPolicyImpl
-import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepositoryImpl
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.DecisionTimerSynchronizationService
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.ExhaustiveDrawSettlementPresentationService
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameAbortEffects
@@ -50,6 +49,7 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.RespondToDiscard
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.RespondToRobbingUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.ReturnToRoomUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateStore
+import com.doublemoon1119.mahjongcraft.logic.component.initializeRuleComponents
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiGameLength
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
@@ -58,10 +58,12 @@ import com.doublemoon1119.mahjongcraft.logic.table.TileWall
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.FabricServerHolder
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.event.TablePresentationBusyTracker
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocationRegistry
+import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledCoreExtensionRegistries
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledWinCelebrationCueResolverRegistry
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.registerBuiltInAiStrategies
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.registerBundledRuleModules
 import com.doublemoon1119.mahjongcraft.testing.flow.common.game.repository.FakeGameSnapshotRepository
+import com.doublemoon1119.mahjongcraft.testing.flow.common.game.repository.componentValidatedGameRepository
 import com.doublemoon1119.mahjongcraft.testing.flow.common.game.service.FakeDecisionTimerUpdatePublisher
 import com.doublemoon1119.mahjongcraft.testing.flow.common.game.service.FakeGameEventPublisher
 import com.doublemoon1119.mahjongcraft.testing.flow.common.game.service.FakeGamePresentationBusyGate
@@ -89,18 +91,18 @@ class MahjongAutoDrawServiceTest {
 
     private class Fixtures {
         val store = AuthoritativeStateStore()
-        val gameRepo = GameRepositoryImpl(store)
+        val gameRepo = componentValidatedGameRepository(store)
         val roomSnapshotRepo = FakeRoomSnapshotRepository()
         val roomEventPublisher = FakeRoomEventPublisher()
         val moduleRegistry = MahjongModuleRegistryImpl().apply { registerBundledRuleModules() }
         val snapshotRepo = FakeGameSnapshotRepository()
-        val snapshotSynchronizer = GameSnapshotSynchronizer(gameRepo, snapshotRepo, GameVisibilityPolicyImpl(moduleRegistry))
+        val snapshotSynchronizer = GameSnapshotSynchronizer(gameRepo, snapshotRepo, GameVisibilityPolicyImpl(moduleRegistry, componentRegistry = bundledCoreExtensionRegistries().componentRegistry))
         val handSortPreferenceStore = HandSortPreferenceStore()
         val postActionExhaustiveDrawResolverRegistry = PostActionExhaustiveDrawResolverRegistry().apply {
             BundledRiichiExtension.registerPostActionExhaustiveDrawResolvers(this)
             freeze()
         }
-        val winSettlementDetailResolverRegistry = WinSettlementDetailResolverRegistry().apply {
+        val winSettlementDetailResolverRegistry = WinSettlementDetailResolverRegistry(bundledCoreExtensionRegistries().componentRegistry).apply {
             BundledRiichiExtension.registerWinSettlementDetailResolvers(this)
             freeze()
         }
@@ -129,11 +131,15 @@ class MahjongAutoDrawServiceTest {
                     postActionExhaustiveDrawResolverRegistry = postActionExhaustiveDrawResolverRegistry,
                     eventPublisher = eventPublisher,
                     presentationPublisher = presentationPublisher,
+
+                    componentRegistry = bundledCoreExtensionRegistries().componentRegistry,
                 ),
+
+                componentRegistry = bundledCoreExtensionRegistries().componentRegistry,
             ),
         )
         val router = GameActionRouter(
-            drawTileUseCase = DrawTileUseCase(gameRepo, moduleRegistry, snapshotSynchronizer, eventPublisher, presentationPublisher),
+            drawTileUseCase = DrawTileUseCase(gameRepo, moduleRegistry, snapshotSynchronizer, eventPublisher, presentationPublisher, componentRegistry = bundledCoreExtensionRegistries().componentRegistry),
             discardTileUseCase = DiscardTileUseCase(
                 gameRepo,
                 moduleRegistry,
@@ -142,6 +148,8 @@ class MahjongAutoDrawServiceTest {
                 postActionExhaustiveDrawResolverRegistry,
                 eventPublisher,
                 presentationPublisher,
+
+                componentRegistry = bundledCoreExtensionRegistries().componentRegistry,
             ),
             declareTsumoUseCase = DeclareTsumoUseCase(
                 gameRepo,
@@ -152,8 +160,10 @@ class MahjongAutoDrawServiceTest {
                 winPresentationHandoff,
                 winCelebrationCueResolverRegistry = bundledWinCelebrationCueResolverRegistry(),
                 winSettlementDetailResolverRegistry = winSettlementDetailResolverRegistry,
+
+                componentRegistry = bundledCoreExtensionRegistries().componentRegistry,
             ),
-            declareKanUseCase = DeclareKanUseCase(gameRepo, moduleRegistry, snapshotSynchronizer, eventPublisher, presentationPublisher),
+            declareKanUseCase = DeclareKanUseCase(gameRepo, moduleRegistry, snapshotSynchronizer, eventPublisher, presentationPublisher, componentRegistry = bundledCoreExtensionRegistries().componentRegistry),
             respondToDiscardUseCase = RespondToDiscardUseCase(
                 gameRepo,
                 moduleRegistry,
@@ -165,6 +175,8 @@ class MahjongAutoDrawServiceTest {
                 winCelebrationCueResolverRegistry = bundledWinCelebrationCueResolverRegistry(),
                 winSettlementDetailResolverRegistry = winSettlementDetailResolverRegistry,
                 postActionExhaustiveDrawResolverRegistry = postActionExhaustiveDrawResolverRegistry,
+
+                componentRegistry = bundledCoreExtensionRegistries().componentRegistry,
             ),
             respondToRobbingUseCase = RespondToRobbingUseCase(
                 gameRepo,
@@ -175,6 +187,8 @@ class MahjongAutoDrawServiceTest {
                 winPresentationHandoff,
                 winCelebrationCueResolverRegistry = bundledWinCelebrationCueResolverRegistry(),
                 winSettlementDetailResolverRegistry = winSettlementDetailResolverRegistry,
+
+                componentRegistry = bundledCoreExtensionRegistries().componentRegistry,
             ),
             declareAbortiveDrawUseCase = DeclareAbortiveDrawUseCase(gameRepo, moduleRegistry, snapshotSynchronizer, eventPublisher),
             extensionCommandExecutor = extensionCommandExecutor,
@@ -187,7 +201,7 @@ class MahjongAutoDrawServiceTest {
             gameRepo,
             getLegalActionsUseCase,
             aiStrategyRegistry,
-            GameVisibilityPolicyImpl(moduleRegistry),
+            GameVisibilityPolicyImpl(moduleRegistry, componentRegistry = bundledCoreExtensionRegistries().componentRegistry),
             moduleRegistry,
             AiDecisionExecutor.direct(failurePolicy = ExtensionFailurePolicy.Default),
             AutomaticGameCommandResolver(moduleRegistry),
@@ -234,6 +248,7 @@ class MahjongAutoDrawServiceTest {
                 handSortPreferenceStore,
                 eventPublisher,
                 presentationPublisher,
+                componentRegistry = bundledCoreExtensionRegistries().componentRegistry,
             ),
             returnToRoomUseCase = ReturnToRoomUseCase(
                 store,
@@ -295,7 +310,7 @@ class MahjongAutoDrawServiceTest {
             playerIds = playerIds,
             module = module,
         )
-        gameRepo.setTableState(result.tableState)
+        gameRepo.setTableState(result.initializeRuleComponents(module.id, bundledCoreExtensionRegistries().componentRegistry).tableState)
         if (dealerIsAi) {
             gameRepo.updateGame(gameId) { game -> game!!.copy(aiPlayerStrategyKeys = playerIds.associateWith { RandomAiStrategy.KEY }) to Unit }
         }
@@ -439,7 +454,8 @@ class MahjongAutoDrawServiceTest {
             module = module,
         )
         val remainingReservedIds = initializationResult.tableState.reservedWallTiles.mapTo(mutableSetOf()) { it.id }
-        val emptyWallState = initializationResult.tableState.copy(
+        val initialized = initializationResult.initializeRuleComponents(module.id, bundledCoreExtensionRegistries().componentRegistry).tableState
+        val emptyWallState = initialized.copy(
             tileWall = TileWall(emptyList()),
             physicalWallLayout = initializationResult.tableState.physicalWallLayout?.retainOnly(remainingReservedIds),
         )

@@ -3,8 +3,8 @@ package com.doublemoon1119.mahjongcraft.platform.minecraft.tile
 import com.doublemoon1119.mahjongcraft.logic.base.MeldType
 import com.doublemoon1119.mahjongcraft.logic.base.PublicHandOrder
 import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
-import com.doublemoon1119.mahjongcraft.logic.module.HandTilePose
-import com.doublemoon1119.mahjongcraft.logic.module.HandTileState
+import com.doublemoon1119.mahjongcraft.logic.tile.component.TilePose
+import com.doublemoon1119.mahjongcraft.logic.tile.component.TilePoseState
 import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongTableFacing
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongTableSeatLayout
 import kotlin.math.abs
@@ -51,7 +51,7 @@ class MahjongPlayerAreaLayoutTest {
     fun `mixed hand poses apply only to the selected physical tiles`() {
         val ids = List(4) { Uuid.random() }
         val input = inputForPose(ids, handIsLaidDown = false).copy(
-            handTileStates = listOf(HandTileState(ids.first(), HandTilePose.FACE_UP)),
+            tilePoseStates = listOf(TilePoseState(ids.first(), TilePose.FACE_UP)),
         )
         val layout = MahjongPlayerAreaLayout.compute(input)
         assertEquals(PublicHandOrder.arrange(ids), layout.standing.map { it.tileId })
@@ -119,7 +119,7 @@ class MahjongPlayerAreaLayoutTest {
                                                 melds = pattern.take(meldCount).map { it.create() },
                                                 setAsideTileIds = List(setAsideCount) { Uuid.random() },
                                                 cornerWidth = cornerWidth,
-                                                handTileStates = if (handIsLaidDown) (ids + listOfNotNull(drawn)).map { HandTileState(it, HandTilePose.FACE_UP) } else emptyList(),
+                                                tilePoseStates = if (handIsLaidDown) (ids + listOfNotNull(drawn)).map { TilePoseState(it, TilePose.FACE_UP) } else emptyList(),
                                             )
                                             check(input, MahjongPlayerAreaLayout.compute(input))
                                         }
@@ -146,7 +146,7 @@ class MahjongPlayerAreaLayoutTest {
         melds = emptyList(),
         setAsideTileIds = emptyList(),
         cornerWidth = 0.0,
-        handTileStates = if (handIsLaidDown) ids.map { HandTileState(it, HandTilePose.FACE_UP) } else emptyList(),
+        tilePoseStates = if (handIsLaidDown) ids.map { TilePoseState(it, TilePose.FACE_UP) } else emptyList(),
     )
 
     /**
@@ -165,7 +165,7 @@ class MahjongPlayerAreaLayoutTest {
                 "drawn slot",
                 slot,
                 MahjongTileDimensions.TILE_WIDTH / 2.0,
-                if (input.handTileStates.any { it.tileId == input.drawnTileId && it.pose == HandTilePose.FACE_UP }) MahjongTileDimensions.TILE_HEIGHT / 2.0 else MahjongTileDimensions.TILE_DEPTH / 2.0,
+                if (input.tilePoseStates.any { it.tileId == input.drawnTileId && it.pose == TilePose.FACE_UP }) MahjongTileDimensions.TILE_HEIGHT / 2.0 else MahjongTileDimensions.TILE_DEPTH / 2.0,
                 alongIsX,
             )
         }

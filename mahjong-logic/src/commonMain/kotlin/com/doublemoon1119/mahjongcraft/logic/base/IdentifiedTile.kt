@@ -1,5 +1,7 @@
 package com.doublemoon1119.mahjongcraft.logic.base
 
+import com.doublemoon1119.mahjongcraft.logic.component.BuiltInComponentOwners
+import com.doublemoon1119.mahjongcraft.logic.component.ComponentSet
 import kotlin.uuid.Uuid
 
 /**
@@ -9,9 +11,15 @@ import kotlin.uuid.Uuid
  * 藉由組合 (Composition) 而非繼承的方式，保持了 Tile 屬性的純粹性。
  *
  * @property id 唯一識別碼，整副牌中不重複。
- * @property tile 該張牌的物理種類與屬性。
+ * @property tile 該張牌的牌面種類，不含逐張特性。
+ * @property components 這張牌的不可變權威組件；搬移時與 UUID、牌面一起保留。
  */
 data class IdentifiedTile(
     val id: Uuid,
     val tile: Tile,
-)
+    val components: ComponentSet = ComponentSet.EMPTY,
+) {
+    init {
+        components.requireTarget(BuiltInComponentOwners.TILE)
+    }
+}

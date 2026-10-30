@@ -11,10 +11,12 @@ import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateStore
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.table.toSnapshot
+import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledCoreExtensionRegistries
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.registerBundledRuleModules
 import com.doublemoon1119.mahjongcraft.testing.flow.common.concurrency.TestCoroutineDispatchers
 import com.doublemoon1119.mahjongcraft.testing.flow.common.concurrency.createTestAppCoroutineScope
 import com.doublemoon1119.mahjongcraft.testing.flow.common.game.repository.FakeGameSnapshotRepository
+import com.doublemoon1119.mahjongcraft.testing.flow.common.game.repository.componentValidatedGameRepository
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -92,7 +94,7 @@ class SpectatorObservationServiceTest {
     fun `test stopped observing keeps seated player snapshot`() = runTest {
         val fixture = createFixture()
         val tableState = checkNotNull(fixture.gameRepository.getGame(fixture.tableId)).tableState
-        fixture.gameSnapshotRepository.setSnapshot(fixture.seatedPlayerId, tableState.toSnapshot(emptySet(), setAsideTiles = { emptyList() }))
+        fixture.gameSnapshotRepository.setSnapshot(fixture.seatedPlayerId, tableState.toSnapshot(emptySet()))
 
         fixture.service.onStoppedObserving(fixture.seatedPlayerId, fixture.tableId)
         advanceUntilIdle()
@@ -105,7 +107,7 @@ class SpectatorObservationServiceTest {
         val dispatcher = StandardTestDispatcher(testScheduler)
         val scope = createTestAppCoroutineScope(TestCoroutineDispatchers(dispatcher, dispatcher, dispatcher))
         val store = AuthoritativeStateStore()
-        val gameRepository = GameRepositoryImpl(store)
+        val gameRepository = componentValidatedGameRepository(store)
         val tableId = Uuid.random()
         val seatedPlayerId = Uuid.random()
         val spectatorId = Uuid.random()
@@ -116,7 +118,7 @@ class SpectatorObservationServiceTest {
         val service = SpectatorObservationService(
             scope,
             gameRepository,
-            SyncGameSnapshotUseCase(GameSnapshotSynchronizer(gameRepository, gameSnapshotRepository, GameVisibilityPolicyImpl(MahjongModuleRegistryImpl().apply { registerBundledRuleModules() }))),
+            SyncGameSnapshotUseCase(GameSnapshotSynchronizer(gameRepository, gameSnapshotRepository, GameVisibilityPolicyImpl(MahjongModuleRegistryImpl().apply { registerBundledRuleModules() }, componentRegistry = bundledCoreExtensionRegistries().componentRegistry))),
             gameSnapshotRepository,
         )
         return Fixture(service, gameRepository, gameSnapshotRepository, tableId, seatedPlayerId, spectatorId)

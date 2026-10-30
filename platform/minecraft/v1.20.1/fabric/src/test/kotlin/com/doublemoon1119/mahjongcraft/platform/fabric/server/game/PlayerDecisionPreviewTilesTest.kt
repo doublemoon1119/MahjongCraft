@@ -4,8 +4,11 @@ import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.base.Hand
 import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
+import com.doublemoon1119.mahjongcraft.logic.base.TileFaceView
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.PULL_NORTH_GAME_ACTION
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiTileOrder
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.RiichiTileValues
+import com.doublemoon1119.mahjongcraft.logic.tile.component.BuiltInTileComponents
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.uuid.Uuid
@@ -18,9 +21,9 @@ class PlayerDecisionPreviewTilesTest {
     /** 移出手牌的動作顯示規則回報要移出的牌，不是剛摸到的牌。 */
     @Test
     fun `set aside action previews the tile it sets aside`() {
-        val preview = PULL_NORTH_GAME_ACTION.preview(Hand(tiles = listOf(north), lastDrawn = drawnFive), setAsideTile = Tile.Honor.North)
+        val preview = PULL_NORTH_GAME_ACTION.preview(Hand(tiles = listOf(north), lastDrawn = drawnFive), setAsideTile = north)
 
-        assertEquals(listOf<Tile>(Tile.Honor.North), preview.tiles)
+        assertEquals(listOf<Tile>(Tile.Honor.North), preview.tiles.map { it.tile })
     }
 
     /** 規則沒有回報要移出的牌時，擴充動作不顯示牌。 */
@@ -28,7 +31,7 @@ class PlayerDecisionPreviewTilesTest {
     fun `extension action without a set aside tile previews nothing`() {
         val preview = PULL_NORTH_GAME_ACTION.preview(Hand(tiles = listOf(north), lastDrawn = drawnFive))
 
-        assertEquals(emptyList(), preview.tiles)
+        assertEquals(emptyList(), preview.tiles.map { it.tile })
     }
 
     /** 暗槓的四張都在手上時，卡片顯示這四張，不混入不屬於這組槓的剛摸到的牌。 */
@@ -39,7 +42,7 @@ class PlayerDecisionPreviewTilesTest {
 
         val preview = kan.preview(Hand(tiles = kanTiles, lastDrawn = north))
 
-        assertEquals(List(4) { ONE_DOT }, preview.tiles)
+        assertEquals(List(4) { ONE_DOT }, preview.tiles.map { it.tile })
     }
 
     /** 明槓的第四張是正在反應的那張捨牌。 */
@@ -51,7 +54,7 @@ class PlayerDecisionPreviewTilesTest {
 
         val preview = kan.preview(Hand(tiles = handTiles), reactedTile = discarded)
 
-        assertEquals(List(4) { ONE_DOT }, preview.tiles)
+        assertEquals(List(4) { ONE_DOT }, preview.tiles.map { it.tile })
     }
 
     /** 碰顯示手上兩張與被碰的捨牌。 */
@@ -63,7 +66,20 @@ class PlayerDecisionPreviewTilesTest {
 
         val preview = pon.preview(Hand(tiles = handTiles + north), reactedTile = discarded)
 
-        assertEquals(List<Tile>(3) { Tile.Honor.Red }, preview.tiles)
+        assertEquals(List<Tile>(3) { Tile.Honor.Red }, preview.tiles.map { it.tile })
+    }
+
+    /** 碰到赤五時，預覽保留該張牌的赤五外觀。 */
+    @Test
+    fun `pon preview keeps the red five appearance`() {
+        val red = RiichiTileValues.redFive(Tile.Suit.Dot).let { IdentifiedTile(Uuid.random(), it.tile, it.components) }
+        val handTiles = listOf(red, tile(Tile.Numeric(Tile.Suit.Dot, 5)))
+        val discarded = tile(Tile.Numeric(Tile.Suit.Dot, 5))
+        val pon = GameAction.Pon(discarded.id, handTiles.map { it.id })
+
+        val preview = pon.preview(Hand(tiles = handTiles), reactedTile = discarded)
+
+        assertEquals(listOf(RiichiTileValues.RED_FIVE_APPEARANCE_ID, null, null), preview.tiles.map { it.appearanceId })
     }
 
     /** 吃依牌序排列，並標出被吃的那張。 */
@@ -76,7 +92,7 @@ class PlayerDecisionPreviewTilesTest {
 
         val preview = chi.preview(Hand(tiles = listOf(two, four)), reactedTile = discarded)
 
-        assertEquals(listOf(two.tile, discarded.tile, four.tile), preview.tiles)
+        assertEquals(listOf(two.tile, discarded.tile, four.tile), preview.tiles.map { it.tile })
         assertEquals(1, preview.claimedTileIndex)
     }
 
@@ -87,7 +103,7 @@ class PlayerDecisionPreviewTilesTest {
 
         val preview = GameAction.Ron(discarded.id).preview(Hand(tiles = listOf(tile(ONE_DOT))), reactedTile = discarded)
 
-        assertEquals(listOf<Tile>(Tile.Honor.North), preview.tiles)
+        assertEquals(listOf<Tile>(Tile.Honor.North), preview.tiles.map { it.tile })
     }
 
     /** 自摸顯示剛摸到的牌。 */
@@ -95,18 +111,28 @@ class PlayerDecisionPreviewTilesTest {
     fun `tsumo previews the drawn tile`() {
         val preview = GameAction.Tsumo.preview(Hand(tiles = listOf(north), lastDrawn = drawnFive))
 
-        assertEquals(listOf(drawnFive.tile), preview.tiles)
+        assertEquals(listOf(drawnFive.tile), preview.tiles.map { it.tile })
     }
 
+    /**
+     * 以本人可讀的手牌與正在回應的牌建立預覽；測試牌張的牌面全部可讀，外觀取自牌張組件。
+     *
+     * @param hand 玩家手牌。
+     * @param reactedTile 正在回應的牌。
+     * @param setAsideTile 規則指定移出的牌。
+     * @return 動作預覽。
+     */
     private fun GameAction.preview(
         hand: Hand,
         reactedTile: IdentifiedTile? = null,
-        setAsideTile: Tile? = null,
+        setAsideTile: IdentifiedTile? = null,
     ): ActionTilePreview = previewTiles(
         hand = hand,
-        reactedTile = reactedTile,
+        faces = (hand.standingTiles + listOfNotNull(reactedTile)).associate { tile ->
+            tile.id to TileFaceView(tile.tile, appearanceId = tile.components[BuiltInTileComponents.APPEARANCE])
+        },
         tileOrder = RiichiTileOrder,
-        setAsideTile = setAsideTile,
+        setAsideTileId = setAsideTile?.id,
     )
 
     private fun tile(tile: Tile): IdentifiedTile = IdentifiedTile(Uuid.random(), tile)

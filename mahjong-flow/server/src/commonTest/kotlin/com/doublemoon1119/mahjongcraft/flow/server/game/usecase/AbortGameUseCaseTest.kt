@@ -10,7 +10,6 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.Game
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameFlowConfig
 import com.doublemoon1119.mahjongcraft.flow.common.room.model.JoinReason
 import com.doublemoon1119.mahjongcraft.flow.server.game.policy.GameVisibilityPolicyImpl
-import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepositoryImpl
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.DecisionTimerSynchronizationService
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameAbortEffects
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameDecisionAuthorityResolver
@@ -24,8 +23,10 @@ import com.doublemoon1119.mahjongcraft.flow.server.state.CommittedFactsListener
 import com.doublemoon1119.mahjongcraft.flow.server.time.MonotonicClockImpl
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
+import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledCoreExtensionRegistries
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.registerBundledRuleModules
 import com.doublemoon1119.mahjongcraft.testing.flow.common.game.repository.FakeGameSnapshotRepository
+import com.doublemoon1119.mahjongcraft.testing.flow.common.game.repository.componentValidatedGameRepository
 import com.doublemoon1119.mahjongcraft.testing.flow.common.game.service.FakeDecisionTimerUpdatePublisher
 import com.doublemoon1119.mahjongcraft.testing.flow.common.game.service.FakeGamePresentationBusyGate
 import com.doublemoon1119.mahjongcraft.testing.flow.common.game.service.FakeGamePresentationPublisher
@@ -166,7 +167,7 @@ class AbortGameUseCaseTest {
         effects: GameAbortEffects = GameAbortEffects.NONE,
     ) {
         val store = AuthoritativeStateStore(historyRecordingEnabled = historyRecordingEnabled, maxPendingHistoryEvents = 10_000)
-        val gameRepo = GameRepositoryImpl(store)
+        val gameRepo = componentValidatedGameRepository(store)
         val gameSnapshots = FakeGameSnapshotRepository()
         private val roomSnapshots = FakeRoomSnapshotRepository()
         val roomEvents = FakeRoomEventPublisher()
@@ -212,7 +213,7 @@ class AbortGameUseCaseTest {
         }
 
         suspend fun seedSnapshots(game: Game) {
-            val visibility = GameVisibilityPolicyImpl(moduleRegistry)
+            val visibility = GameVisibilityPolicyImpl(moduleRegistry, componentRegistry = bundledCoreExtensionRegistries().componentRegistry)
             game.roomPlayerIds.forEach { observerId ->
                 gameSnapshots.setSnapshot(observerId, visibility.snapshotFor(game, observerId))
             }
@@ -234,7 +235,7 @@ class AbortGameUseCaseTest {
         }
 
         private fun availabilityService(): GameDecisionAvailabilityService {
-            val repository = GameRepositoryImpl(store)
+            val repository = componentValidatedGameRepository(store)
             val clock = MonotonicClockImpl()
             val manager = GameDecisionTimerManager(repository, GameDecisionAuthorityResolver(), PlayerDecisionTimerFactory(clock), clock)
             return GameDecisionAvailabilityService(

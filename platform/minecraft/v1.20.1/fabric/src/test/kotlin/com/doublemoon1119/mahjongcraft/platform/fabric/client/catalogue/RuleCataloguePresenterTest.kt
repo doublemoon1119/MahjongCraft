@@ -1,6 +1,7 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.client.catalogue
 
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
+import com.doublemoon1119.mahjongcraft.logic.base.TileFaceView
 import com.doublemoon1119.mahjongcraft.logic.base.TileTypeId
 import com.doublemoon1119.mahjongcraft.logic.config.MahjongRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanRuleConfig
@@ -118,8 +119,8 @@ class RuleCataloguePresenterTest {
     /** 窄 card 的 18 張完整牌例可換列且維持順序。 */
     @Test
     fun `eighteen tile example wraps inside a narrow card`() {
-        val groups = List(4) { RuleCatalogueTileGroup(RuleCatalogueTileGroupRole.CLOSED_KAN, List(4) { Tile.Honor.East }) } +
-            RuleCatalogueTileGroup(RuleCatalogueTileGroupRole.HAND, listOf(Tile.Honor.Red, Tile.Honor.Red))
+        val groups = List(4) { RuleCatalogueTileGroup(RuleCatalogueTileGroupRole.CLOSED_KAN, List(4) { TileFaceView(Tile.Honor.East) }) } +
+            RuleCatalogueTileGroup(RuleCatalogueTileGroupRole.HAND, listOf(Tile.Honor.Red, Tile.Honor.Red).map(::TileFaceView))
         val card = presenter().measure(
             entry = entry(examples = listOf(RuleCatalogueExample(completeHand = true, groups = groups))),
             width = NARROW_CARD_WIDTH,
@@ -151,7 +152,7 @@ class RuleCataloguePresenterTest {
                 examples = listOf(
                     RuleCatalogueExample(
                         completeHand = false,
-                        groups = listOf(RuleCatalogueTileGroup(RuleCatalogueTileGroupRole.ILLUSTRATION, listOf(Tile.Honor.East, custom))),
+                        groups = listOf(RuleCatalogueTileGroup(RuleCatalogueTileGroupRole.ILLUSTRATION, listOf(Tile.Honor.East, custom).map(::TileFaceView))),
                     ),
                 ),
             ),
@@ -172,7 +173,7 @@ class RuleCataloguePresenterTest {
                 examples = listOf(
                     RuleCatalogueExample(
                         completeHand = true,
-                        groups = listOf(RuleCatalogueTileGroup(RuleCatalogueTileGroupRole.WINNING_TILE, listOf(Tile.Honor.North))),
+                        groups = listOf(RuleCatalogueTileGroup(RuleCatalogueTileGroupRole.WINNING_TILE, listOf(TileFaceView(Tile.Honor.North)))),
                     ),
                 ),
             ),
@@ -201,7 +202,7 @@ class RuleCataloguePresenterTest {
                     examples = listOf(
                         RuleCatalogueExample(
                             completeHand = false,
-                            groups = listOf(RuleCatalogueTileGroup(RuleCatalogueTileGroupRole.ILLUSTRATION, listOf(custom))),
+                            groups = listOf(RuleCatalogueTileGroup(RuleCatalogueTileGroupRole.ILLUSTRATION, listOf(TileFaceView(custom)))),
                         ),
                     ),
                 ),
@@ -290,10 +291,10 @@ class RuleCataloguePresenterTest {
             translate = texts::get,
             metrics = FixedWidthMetrics,
             tileArt = { tile ->
-                when (tile) {
-                    is Tile.Extension -> CatalogueTileArt(assetKey = UNKNOWN_TILE_ASSET_KEY, missingName = "${tile.typeId.namespace}:${tile.typeId.path}")
+                when (val face = tile.tile) {
+                    is Tile.Extension -> CatalogueTileArt(assetKey = UNKNOWN_TILE_ASSET_KEY, missingName = "${face.typeId.namespace}:${face.typeId.path}")
                     Tile.Honor.East -> CatalogueTileArt(assetKey = "east")
-                    else -> CatalogueTileArt(assetKey = tile.toString())
+                    else -> CatalogueTileArt(assetKey = face.toString())
                 }
             },
         )
@@ -335,8 +336,8 @@ class RuleCataloguePresenterTest {
     private fun example(complete: Boolean, context: String? = null): RuleCatalogueExample = RuleCatalogueExample(
         completeHand = complete,
         groups = listOf(
-            RuleCatalogueTileGroup(RuleCatalogueTileGroupRole.HAND, (1..9).map { Tile.Numeric(Tile.Suit.Bamboo, it) } + List(4) { Tile.Honor.South }),
-            RuleCatalogueTileGroup(RuleCatalogueTileGroupRole.WINNING_TILE, listOf(Tile.Honor.South)),
+            RuleCatalogueTileGroup(RuleCatalogueTileGroupRole.HAND, ((1..9).map { Tile.Numeric(Tile.Suit.Bamboo, it) } + List(4) { Tile.Honor.South }).map(::TileFaceView)),
+            RuleCatalogueTileGroup(RuleCatalogueTileGroupRole.WINNING_TILE, listOf(TileFaceView(Tile.Honor.South))),
         ),
         descriptionTranslationKey = context,
     )

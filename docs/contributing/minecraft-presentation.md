@@ -67,6 +67,29 @@ local.
   the [Fabric 1.20.1 parameter builder test](../../platform/minecraft/v1.20.1/fabric/src/test/kotlin/com/doublemoon1119/mahjongcraft/platform/fabric/client/render/RoundInfoLineTextBuilderTest.kt)
   and the [example provider test](../../example/platform/minecraft/common/src/commonTest/kotlin/com/doublemoon1119/mahjongcraft/example/minecraft/presentation/ExamplePairingPresentationTest.kt).
 
+## Tile Appearance Styles
+
+- A tile style changes how one tile looks without changing its face or scoring. Riichi red fives are
+  ordinary fives with a red dora component for scoring and the `mahjongcraft:riichi/red_five`
+  appearance component for display.
+- Register the texture with `MinecraftTileStyleAssetDefinition(styleId, tile, assetKey)` and the
+  name with `TileStyleDisplayNameDefinition(styleId, tile, translationKey)`, once per base face the
+  style supports. Emoji and corner labels follow the resulting asset key.
+- A style can also change the tile body. Register a `MinecraftTileSetAppearanceDefinition` with the
+  body texture and pass its ID as `bodyAppearanceId`; give such entries their own asset key even
+  when they reuse the base face's resources. Renderers pick the body from the asset key, so
+  settlement and showcase tiles follow it too. Styles without a body keep the rule's tile set
+  appearance.
+- A face-down tile whose face is known draws its back with the style body; otherwise it uses the
+  rule's tile set appearance. Decide the back where the face is known and pass only the result:
+  settlement templates receive `PresentationTile.Back(appearanceId)` in tile groups, never the
+  hidden face.
+- Resolve visible tiles with `TileFaceView.toAssetKey` and `TileFaceView.toDisplayText`. A style
+  that has no entry for that face falls back to the base face.
+- Get server-side faces from `GameVisibilityPolicy`: `tileFacesFor` for one observer, such as a
+  decision prompt, and `publicTileFaces` for table-wide presentation, such as a win showcase. Never
+  read the appearance component from an authoritative tile directly; rule effects may change it.
+
 ## Tile Corner Labels
 
 - Resolve corner labels by the visible tile's asset key. Keep label lookup separate from translated

@@ -8,7 +8,6 @@ import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
 import com.doublemoon1119.mahjongcraft.flow.common.room.model.Room
 import com.doublemoon1119.mahjongcraft.flow.common.room.model.RoomError
 import com.doublemoon1119.mahjongcraft.flow.server.game.policy.GameVisibilityPolicyImpl
-import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepositoryImpl
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameSnapshotSynchronizer
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.HandSortPreferenceStore
 import com.doublemoon1119.mahjongcraft.flow.server.room.repository.RoomRepositoryImpl
@@ -17,16 +16,24 @@ import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleDefinition
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPlayerComponents
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleModule
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiTableComponents
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiWallProgress
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.opening.RiichiWallOpeningPolicy
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.riichiDeclaration
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.riichiPotPoints
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.riichiWallProgress
 import com.doublemoon1119.mahjongcraft.logic.table.opening.OpeningDiceRollRequest
 import com.doublemoon1119.mahjongcraft.logic.table.opening.RoundOpeningCompletion
 import com.doublemoon1119.mahjongcraft.logic.table.opening.RoundOpeningContext
 import com.doublemoon1119.mahjongcraft.logic.table.opening.RoundOpeningProcedure
 import com.doublemoon1119.mahjongcraft.logic.table.opening.RoundOpeningStep
+import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledCoreExtensionRegistries
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.registerBundledRuleModules
 import com.doublemoon1119.mahjongcraft.testing.flow.common.game.repository.FakeGameSnapshotRepository
+import com.doublemoon1119.mahjongcraft.testing.flow.common.game.repository.componentValidatedGameRepository
 import com.doublemoon1119.mahjongcraft.testing.flow.common.game.service.FakeGameEventPublisher
 import com.doublemoon1119.mahjongcraft.testing.flow.common.game.service.FakeGamePresentationPublisher
 import kotlinx.coroutines.test.runTest
@@ -86,13 +93,13 @@ class StartGameUseCaseTest {
         val roomRepo = RoomRepositoryImpl(store)
 
         /** 測試用對局資料倉庫。 */
-        val gameRepo = GameRepositoryImpl(store)
+        val gameRepo = componentValidatedGameRepository(store)
 
         /** 記錄同步快照的倉庫。 */
         val snapshotRepo = FakeGameSnapshotRepository()
 
         /** 根據觀看政策同步玩家快照的元件。 */
-        val snapshotSynchronizer = GameSnapshotSynchronizer(gameRepo, snapshotRepo, GameVisibilityPolicyImpl(moduleRegistry))
+        val snapshotSynchronizer = GameSnapshotSynchronizer(gameRepo, snapshotRepo, GameVisibilityPolicyImpl(moduleRegistry, componentRegistry = bundledCoreExtensionRegistries().componentRegistry))
 
         /** 測試用手牌排序偏好儲存。 */
         val handSortPreferenceStore = HandSortPreferenceStore()
@@ -111,6 +118,7 @@ class StartGameUseCaseTest {
             handSortPreferenceStore,
             eventPublisher,
             presentationPublisher,
+            componentRegistry = bundledCoreExtensionRegistries().componentRegistry,
         )
     }
 
@@ -223,6 +231,26 @@ class StartGameUseCaseTest {
         assertEquals(setOf(hostId) + guestIds.toSet(), tableState.players.map { it.id }.toSet())
     }
 
+    /** 同一個房間結束一場後再開新一場，規則資料從初值開始，不承接上一場的供託或玩家狀態。 */
+    @Test
+    fun `a new match starts from initial rule components`() = runTest {
+        val fixtures = Fixtures()
+        fixtures.roomRepo.setRoom(readyRoom())
+        fixtures.useCase(roomId, hostId)
+        val first = assertNotNull(fixtures.gameRepo.getTableState(roomId))
+        fixtures.gameRepo.setTableState(first.copy(components = first.components.with(RiichiTableComponents.POT_POINTS, 3000)))
+        fixtures.gameRepo.removeTableState(roomId)
+        fixtures.roomRepo.setRoom(readyRoom())
+
+        fixtures.useCase(roomId, hostId)
+
+        val second = assertNotNull(fixtures.gameRepo.getTableState(roomId))
+        assertEquals(0, second.riichiPotPoints())
+        assertEquals(RiichiWallProgress(), second.riichiWallProgress())
+        assertTrue(second.players.all { it.riichiDeclaration == null && it.components[RiichiPlayerComponents.PERMANENT_FURITEN] == null })
+        assertTrue(second.tileWall.getAllTiles().none { tile -> first.tileWall.getAllTiles().any { it.id == tile.id } })
+    }
+
     /** 驗證開局時依流程設定為所有玩家初始化整場共用的剩餘保留思考時間。 */
     @Test
     fun `test start game initializes reserve time for all players`() = runTest {
@@ -306,7 +334,7 @@ class StartGameUseCaseTest {
 
     /**
      * 驗證開局呈現牌牆結構時，同時帶上開局當下就該公開翻面的王牌 Uuid 集合（日麻的第一張寶牌指示牌）
-     * ——不是空集合，代表 [StartGameUseCase] 真的有透過 `TileWallRevealable` 算出目前該公開的牌。
+     * ——不是空集合，代表 [StartGameUseCase] 依組件結果送出已公開且正面朝上的牌。
      */
     @Test
     fun `test start game publishes the first revealed dead wall tile`() = runTest {

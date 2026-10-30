@@ -15,15 +15,16 @@ import com.doublemoon1119.mahjongcraft.logic.module.BuiltInAutomaticControlIds
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RIICHI_GAME_ACTION
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDiscardPile
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDynamicState
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPlayerState
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.table.PendingReaction
 import com.doublemoon1119.mahjongcraft.logic.table.TileWall
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
+import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledCoreExtensionRegistries
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.registerBundledRuleModules
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeIdentifiedTileFactory
+import com.doublemoon1119.mahjongcraft.testing.logic.rules.riichi.riichiDeclarationComponents
+import com.doublemoon1119.mahjongcraft.testing.logic.rules.riichi.riichiTableComponents
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeDiscardPile
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
@@ -50,7 +51,7 @@ class GetPlayerDecisionOptionsUseCaseTest {
         /** 待測的完整決策查詢 use case。 */
         val useCase = GetPlayerDecisionOptionsUseCase(
             gameRepository,
-            AutomaticDecisionEvaluator(moduleRegistry, GameVisibilityPolicyImpl(moduleRegistry), PlayerActionContextResolver()),
+            AutomaticDecisionEvaluator(moduleRegistry, GameVisibilityPolicyImpl(moduleRegistry, componentRegistry = bundledCoreExtensionRegistries().componentRegistry), PlayerActionContextResolver()),
         )
     }
 
@@ -75,7 +76,7 @@ class GetPlayerDecisionOptionsUseCaseTest {
             initialSeat = Wind.EAST,
             hand = Hand(tiles = characterTiles + bambooTiles + dotTiles + east, lastDrawn = north),
             discardPile = RiichiDiscardPile(),
-            playerRuleState = RiichiPlayerState(),
+            components = riichiDeclarationComponents(),
         ).copy(score = 25000)
         fixtures.gameRepository.setTableState(
             FakeTableStateFactory.create(
@@ -84,7 +85,7 @@ class GetPlayerDecisionOptionsUseCaseTest {
                 config = RiichiRuleConfig(),
                 currentPlayerIndex = 0,
                 tileWall = TileWall(List(3) { FakeIdentifiedTileFactory.create(Tile.Honor.East) }),
-                dynamicRuleState = RiichiDynamicState(),
+                components = riichiTableComponents(potPoints = 0),
             ),
         )
 
@@ -98,7 +99,7 @@ class GetPlayerDecisionOptionsUseCaseTest {
         assertTrue(riichi.discardAnalyses.isNotEmpty())
         assertTrue(riichi.discardAnalyses.all { it.discardTileId in requirement.eligibleTileIds })
         assertTrue(options.discardAnalyses.isNotEmpty())
-        assertEquals(north.tile, options.referenceTile)
+        assertEquals(north, options.referenceTile)
     }
 
     /** 驗證捨牌反應只回傳反應動作與參考牌，不產生自己回合的捨牌分析。 */
@@ -118,7 +119,7 @@ class GetPlayerDecisionOptionsUseCaseTest {
             id = respondentId,
             initialSeat = Wind.SOUTH,
             hand = Hand(tiles = matchingTiles),
-            playerRuleState = RiichiPlayerState(),
+            components = riichiDeclarationComponents(),
         )
         fixtures.gameRepository.setTableState(
             FakeTableStateFactory.create(
@@ -138,7 +139,7 @@ class GetPlayerDecisionOptionsUseCaseTest {
         )
         assertTrue(result.value.discardAnalyses.isEmpty())
         assertTrue(result.value.actions.all { it.discardAnalyses.isEmpty() })
-        assertEquals(discarded.tile, result.value.referenceTile)
+        assertEquals(discarded, result.value.referenceTile)
     }
 
     /** 驗證不吃碰槓設定會在決策選項查詢中隱藏鳴牌動作。 */
@@ -154,7 +155,7 @@ class GetPlayerDecisionOptionsUseCaseTest {
         val respondent = FakeMahjongPlayerFactory.create(
             initialSeat = Wind.SOUTH,
             hand = Hand(tiles = matchingTiles),
-            playerRuleState = RiichiPlayerState(),
+            components = riichiDeclarationComponents(),
         )
         val state = FakeTableStateFactory.create(
             id = gameId,
@@ -203,7 +204,7 @@ class GetPlayerDecisionOptionsUseCaseTest {
         assertTrue(result is Outcome.Success)
         assertTrue(result.value.discardAnalyses.isEmpty())
         assertTrue(result.value.actions.all { it.discardAnalyses.isEmpty() })
-        assertEquals(drawn.tile, result.value.referenceTile)
+        assertEquals(drawn, result.value.referenceTile)
     }
 
     /** 驗證對局不存在時回傳既有的查詢錯誤。 */

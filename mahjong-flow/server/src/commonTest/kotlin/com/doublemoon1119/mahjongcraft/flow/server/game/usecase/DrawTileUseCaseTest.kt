@@ -10,8 +10,8 @@ import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.base.Hand
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPlayerState
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.riichiDeclaration
 import com.doublemoon1119.mahjongcraft.logic.table.PendingReaction
 import com.doublemoon1119.mahjongcraft.logic.table.PendingRobbingReaction
 import com.doublemoon1119.mahjongcraft.logic.table.TileWall
@@ -20,11 +20,13 @@ import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPhysicalLayout
 import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPlacement
 import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPosition
 import com.doublemoon1119.mahjongcraft.logic.table.toSnapshot
+import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledCoreExtensionRegistries
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.registerBundledRuleModules
 import com.doublemoon1119.mahjongcraft.testing.flow.common.game.repository.FakeGameSnapshotRepository
 import com.doublemoon1119.mahjongcraft.testing.flow.common.game.service.FakeGameEventPublisher
 import com.doublemoon1119.mahjongcraft.testing.flow.common.game.service.FakeGamePresentationPublisher
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeIdentifiedTileFactory
+import com.doublemoon1119.mahjongcraft.testing.logic.rules.riichi.riichiDeclarationComponents
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
 import kotlinx.coroutines.test.runTest
@@ -49,10 +51,10 @@ class DrawTileUseCaseTest {
         val gameRepo = FakeGameRepository()
         val moduleRegistry = MahjongModuleRegistryImpl().apply { registerBundledRuleModules() }
         val snapshotRepo = FakeGameSnapshotRepository()
-        val snapshotSynchronizer = GameSnapshotSynchronizer(gameRepo, snapshotRepo, GameVisibilityPolicyImpl(moduleRegistry))
+        val snapshotSynchronizer = GameSnapshotSynchronizer(gameRepo, snapshotRepo, GameVisibilityPolicyImpl(moduleRegistry, componentRegistry = bundledCoreExtensionRegistries().componentRegistry))
         val eventPublisher = FakeGameEventPublisher()
         val presentationPublisher = FakeGamePresentationPublisher()
-        val useCase = DrawTileUseCase(gameRepo, moduleRegistry, snapshotSynchronizer, eventPublisher, presentationPublisher)
+        val useCase = DrawTileUseCase(gameRepo, moduleRegistry, snapshotSynchronizer, eventPublisher, presentationPublisher, componentRegistry = bundledCoreExtensionRegistries().componentRegistry)
     }
 
     private val drawnTile = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 1))
@@ -103,8 +105,8 @@ class DrawTileUseCaseTest {
         val currentPlayer = FakeMahjongPlayerFactory.create(
             id = currentPlayerId,
             initialSeat = Wind.EAST,
-            playerRuleState = RiichiPlayerState(
-                riichiTile = FakeIdentifiedTileFactory.create(Tile.Honor.East),
+            components = riichiDeclarationComponents(
+                declarationTile = FakeIdentifiedTileFactory.create(Tile.Honor.East),
                 isIppatsu = true,
             ),
         )
@@ -121,9 +123,9 @@ class DrawTileUseCaseTest {
 
         assertTrue(result is Outcome.Success, "Expected Success but got $result")
         val updatedPlayer = fixtures.gameRepo.getTableState(gameId)!!.players.first { it.id == currentPlayerId }
-        val riichiState = updatedPlayer.playerRuleState as RiichiPlayerState
+        val riichiState = checkNotNull(updatedPlayer.riichiDeclaration)
         assertEquals(true, riichiState.isIppatsu, "The first draw after riichi is still within the ippatsu window.")
-        assertTrue(riichiState.isRiichi, "Riichi itself should remain in effect.")
+        assertNotNull(riichiState, "Riichi itself should remain in effect.")
     }
 
     /**
@@ -142,8 +144,8 @@ class DrawTileUseCaseTest {
             currentPlayerIndex = 0,
         )
         fixtures.gameRepo.setTableState(table)
-        fixtures.snapshotRepo.setSnapshot(currentPlayerId, table.toSnapshot(setOf(currentPlayerId), setAsideTiles = { emptyList() }))
-        fixtures.snapshotRepo.setSnapshot(otherPlayerId, table.toSnapshot(setOf(otherPlayerId), setAsideTiles = { emptyList() }))
+        fixtures.snapshotRepo.setSnapshot(currentPlayerId, table.toSnapshot(setOf(currentPlayerId)))
+        fixtures.snapshotRepo.setSnapshot(otherPlayerId, table.toSnapshot(setOf(otherPlayerId)))
 
         fixtures.useCase(gameId, currentPlayerId)
 

@@ -14,7 +14,6 @@ import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiGameLength
 import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayer
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledPersistenceRegistries
-import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledSetAsideTiles
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
@@ -126,8 +125,8 @@ class CompactReplayPrototypeTest {
                 measurement.gzipBytes <= 35_000,
                 "Compact Replay gzip exceeds 35 KB: ${measurement.gzipBytes} bytes",
             )
-            val first = CompactReplayCodec.encodeCompact(fixture.events, mapper, registries, bundledSetAsideTiles(fixture.events)).toString()
-            val second = CompactReplayCodec.encodeCompact(fixture.events, mapper, registries, bundledSetAsideTiles(fixture.events)).toString()
+            val first = CompactReplayCodec.encodeCompact(fixture.events, mapper, registries).toString()
+            val second = CompactReplayCodec.encodeCompact(fixture.events, mapper, registries).toString()
             assertEquals(first, second, "Repeated production encoding changed for ${fixture.gameLength}")
         }
     }
@@ -209,7 +208,7 @@ class CompactReplayPrototypeTest {
             },
         )
         assertFalse(UUID_PATTERN.containsMatchIn(roundText))
-        val production = CompactReplayCodec.encodeCompact(events, mapper, registries, bundledSetAsideTiles(events))
+        val production = CompactReplayCodec.encodeCompact(events, mapper, registries)
         val productionText = production.toString()
         val decoded = CompactReplayCodec.decodeCompact(production)
         assertEquals(result.expectedProjections, decoded.map { round -> round.map { it.projection } })
@@ -310,7 +309,7 @@ class CompactReplayPrototypeTest {
         val encodedEvents = priorPrototype.slimActionResults(json.parseToJsonElement(json.encodeToString(encoded)) as JsonArray)
         val pairs = events.zip(encodedEvents.map { it as JsonObject })
         val first = events.first()
-        val setAsideTiles = bundledSetAsideTiles(events)
+        val setAsideTiles: (MahjongPlayer) -> List<IdentifiedTile> = { it.setAsideTiles }
         val typeDictionary = linkedMapOf<String, JsonElement>()
         val rounds = mutableListOf<MutableRound>()
         val players = mutableListOf<JsonElement>()
@@ -585,32 +584,31 @@ class CompactReplayPrototypeTest {
         val dto = state.toPersistenceDto(
             registries.ruleConfigs,
             registries.discardPiles,
-            registries.playerRuleStates,
-            registries.dynamicRuleStates,
             registries.exhaustiveDrawReasons,
             registries.extensionGameActions,
+            registries.components,
         )
         val encoded = json.encodeToJsonElement(dto) as JsonObject
-        val gameplay = encoded.filterKeys { it !in setOf("id", "config", "physicalWallLayout", "dynamicRuleState") }.toMutableMap()
+        val gameplay = encoded.filterKeys { it !in setOf("id", "config", "physicalWallLayout") }.toMutableMap()
         // 即時提交的視窗身分不參與歷史內容投影。
         (gameplay["pendingReaction"] as? JsonObject)?.let { reaction ->
             gameplay["pendingReaction"] = JsonObject(reaction.filterKeys { it != "id" })
         }
         gameplay["players"] = JsonArray(
             (encoded.getValue("players") as JsonArray).zip(state.players) { playerElement, player ->
-                val projected = (playerElement as JsonObject).filterKeys { it !in setOf("id", "actionHistory", "discardPile", "playerRuleState") }.toMutableMap()
+                val projected = (playerElement as JsonObject).filterKeys { it !in setOf("id", "actionHistory", "discardPile") }.toMutableMap()
                 projected["discards"] = JsonArray(
                     player.discardPile.entries.map { entry ->
                         JsonObject(
                             buildMap {
-                                put("tile", JsonPrimitive(entry.tile.id.toString()))
+                                put("tile", json.encodeToJsonElement(entry.tile.toPersistenceDto(registries.components)))
                                 if (entry.isTaken) put("taken", JsonPrimitive(true))
                                 if (entry.publicMarkerIds.isNotEmpty()) put("markers", JsonArray(entry.publicMarkerIds.sorted().map(::JsonPrimitive)))
                             },
                         )
                     },
                 )
-                projected["setAside"] = JsonArray(setAsideTiles(player).map { JsonPrimitive(it.id.toString()) })
+                projected["setAside"] = JsonArray(setAsideTiles(player).map { json.encodeToJsonElement(it.toPersistenceDto(registries.components)) })
                 JsonObject(projected)
             },
         )
@@ -630,9 +628,16 @@ class CompactReplayPrototypeTest {
             val tileId = (element["id"] as? JsonPrimitive)?.content
             if (typeCode >= 0) {
                 JsonPrimitive(typeCode)
-            } else if (tileId != null && element.size == 2 && "tile" in element && tileId in index.tileIds) {
+            } else if (tileId != null && element.keys == setOf("id", "tile", "components") && tileId in index.tileIds) {
                 assertEquals(index.encodedTiles[tileId], element.getValue("tile"))
-                JsonPrimitive(index.tileIds.getValue(tileId))
+                val reference = JsonPrimitive(index.tileIds.getValue(tileId))
+                val components = element.getValue("components") as JsonArray
+                if (components.isEmpty()) {
+                    reference
+                } else {
+                    // 帶特性的牌與正式精簡牌譜相同：保留局內索引，另附當時的特性版本。
+                    JsonObject(mapOf("r" to reference, "c" to components))
+                }
             } else {
                 JsonObject(element.map { (key, value) -> translateKey(key, index) to translate(value, index) }.toMap())
             }

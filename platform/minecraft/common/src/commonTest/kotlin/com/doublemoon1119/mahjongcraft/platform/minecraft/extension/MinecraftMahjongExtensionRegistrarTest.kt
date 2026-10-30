@@ -5,11 +5,12 @@ import com.doublemoon1119.mahjongcraft.ai.RandomAiStrategy
 import com.doublemoon1119.mahjongcraft.flow.api.event.CommittedMatchEventBatch
 import com.doublemoon1119.mahjongcraft.flow.common.error.ExtensionFailurePolicy
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.RuleDecisionResolverRegistry
+import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.logic.base.TileTypeId
 import com.doublemoon1119.mahjongcraft.logic.config.MahjongRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.module.BuiltInRuleModuleIds
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.RiichiTileTypes
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.RiichiTileValues
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.tile.TaiwanTileTypes
 import com.doublemoon1119.mahjongcraft.platform.minecraft.achievement.GameAchievementResolver
 import com.doublemoon1119.mahjongcraft.platform.minecraft.achievement.GameAchievementResolverRegistry
@@ -206,7 +207,7 @@ class MinecraftMahjongExtensionRegistrarTest {
             automaticControlDisplayRegistry = automaticControlDisplayRegistry,
         )
 
-        assertEquals("m5_red", tileAssetRegistry.find(RiichiTileTypes.RED_FIVE_CHARACTER))
+        assertEquals("m5_red", tileAssetRegistry.findStyle(RiichiTileValues.RED_FIVE_APPEARANCE_ID, Tile.Numeric(Tile.Suit.Character, 5)))
         assertEquals("animal_cat", tileAssetRegistry.find(thirdPartyId))
         assertEquals(setOf("animal_cat"), result.registrationKeys("mahjongcraft:tile_asset"))
         assertTrue(tileAssetRegistry.isFrozen)
@@ -231,7 +232,7 @@ class MinecraftMahjongExtensionRegistrarTest {
         )
         assertTrue(automaticControlDisplayRegistry.isFrozen)
 
-        assertTrue(tileDisplayNameRegistry.find(RiichiTileTypes.RED_FIVE_CHARACTER) != null)
+        assertTrue(tileDisplayNameRegistry.findStyle(RiichiTileValues.RED_FIVE_APPEARANCE_ID, Tile.Numeric(Tile.Suit.Character, 5)) != null)
         assertEquals("example.tile.cat", tileDisplayNameRegistry.find(thirdPartyId))
         assertEquals(setOf(thirdPartyId.toString()), result.registrationKeys("mahjongcraft:tile_display_name"))
         assertTrue(tileDisplayNameRegistry.isFrozen)
@@ -302,7 +303,7 @@ class MinecraftMahjongExtensionRegistrarTest {
         assertTrue(aiStrategyDisplayNameRegistry.isFrozen)
         assertNull(aiStrategyDisplayNameRegistry.find("example:unregistered"))
 
-        assertTrue(tileDisplayNameRegistry.find(RiichiTileTypes.RED_FIVE_DOT) != null)
+        assertTrue(tileDisplayNameRegistry.findStyle(RiichiTileValues.RED_FIVE_APPEARANCE_ID, Tile.Numeric(Tile.Suit.Dot, 5)) != null)
         assertTrue(tileDisplayNameRegistry.isFrozen)
         assertNull(tileDisplayNameRegistry.find(TileTypeId.parse("example:unregistered")))
 
@@ -352,7 +353,7 @@ class MinecraftMahjongExtensionRegistrarTest {
         assertTrue(tileLabelRegistry.find("east") != null)
         assertNull(tileEmojiRegistry.find("m5_red"))
         assertNull(tileLabelRegistry.find("flower_spring"))
-        assertNull(tileAssetRegistry.find(RiichiTileTypes.RED_FIVE_CHARACTER))
+        assertNull(tileAssetRegistry.findStyle(RiichiTileValues.RED_FIVE_APPEARANCE_ID, Tile.Numeric(Tile.Suit.Character, 5)))
         assertNull(ruleModuleDisplayNameRegistry.find(BuiltInRuleModuleIds.RIICHI))
     }
 

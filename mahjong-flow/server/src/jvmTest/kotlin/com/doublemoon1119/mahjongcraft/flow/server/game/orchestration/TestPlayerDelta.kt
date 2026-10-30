@@ -4,11 +4,11 @@ import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
 import com.doublemoon1119.mahjongcraft.logic.base.Meld
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDiscardEntry
+import com.doublemoon1119.mahjongcraft.logic.component.ComponentSet
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDiscardPile
 import com.doublemoon1119.mahjongcraft.logic.table.DiscardPile
+import com.doublemoon1119.mahjongcraft.logic.table.DiscardPile.DiscardEntry
 import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayer
-import com.doublemoon1119.mahjongcraft.logic.table.PlayerRuleState
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
 
 /**
@@ -87,7 +87,7 @@ internal sealed interface TestDiscardDelta {
      *
      * @property entries 已變更的日麻牌河紀錄片段。
      */
-    data class Riichi(val entries: TestListSplice<RiichiDiscardEntry>) : TestDiscardDelta {
+    data class Riichi(val entries: TestListSplice<DiscardEntry>) : TestDiscardDelta {
         /** 驗證前一牌河類型並套用紀錄片段。 */
         override fun applyTo(before: DiscardPile<*>): DiscardPile<*> {
             require(before is RiichiDiscardPile)
@@ -114,7 +114,7 @@ internal sealed interface TestDiscardDelta {
  * @property lastDrawn 最後摸入牌的變化。
  * @property discards 牌河變化。
  * @property score 分數變化。
- * @property ruleState 規則專屬玩家狀態變化。
+ * @property components 玩家組件變化。
  * @property passedTiles 同巡放過的牌種變化。
  * @property actions 動作紀錄的中間片段變化。
  * @property seatWind 自風變化。
@@ -125,7 +125,7 @@ internal data class TestPlayerDelta(
     val lastDrawn: TestChanged<IdentifiedTile?>? = null,
     val discards: TestDiscardDelta? = null,
     val score: Int? = null,
-    val ruleState: TestChanged<PlayerRuleState?>? = null,
+    val components: ComponentSet? = null,
     val passedTiles: Set<Tile>? = null,
     val actions: TestListSplice<GameAction>? = null,
     val seatWind: Wind? = null,
@@ -144,7 +144,7 @@ internal data class TestPlayerDelta(
         ),
         discardPile = discards?.applyTo(before.discardPile) ?: before.discardPile,
         score = score ?: before.score,
-        playerRuleState = if (ruleState != null) ruleState.value else before.playerRuleState,
+        components = components ?: before.components,
         passedTilesInRound = passedTiles ?: before.passedTilesInRound,
         actionHistory = actions?.applyTo(before.actionHistory) ?: before.actionHistory,
         seatWind = seatWind ?: before.seatWind,
@@ -179,7 +179,7 @@ internal data class TestPlayerDelta(
                 lastDrawn = if (after.hand.lastDrawn != before.hand.lastDrawn) TestChanged(after.hand.lastDrawn) else null,
                 discards = discards,
                 score = after.score.takeIf { it != before.score },
-                ruleState = if (after.playerRuleState != before.playerRuleState) TestChanged(after.playerRuleState) else null,
+                components = after.components.takeIf { it != before.components },
                 passedTiles = after.passedTilesInRound.takeIf { it != before.passedTilesInRound },
                 actions = TestListSplice.between(before.actionHistory, after.actionHistory),
                 seatWind = after.seatWind.takeIf { it != before.seatWind },

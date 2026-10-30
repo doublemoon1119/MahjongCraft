@@ -2,7 +2,6 @@ package com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.standard
 
 import com.doublemoon1119.mahjongcraft.logic.base.Hand
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.riichiCanonical
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.YakuResult
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.YakuType
 
@@ -23,7 +22,6 @@ fun calculateChinitsu(
     isMenzen: Boolean,
 ): YakuResult? {
     val allTiles = (hand.allTiles.map { it.tile } + winningTile)
-        .map { it.riichiCanonical }
 
     val numericTiles = allTiles.filterIsInstance<Tile.Numeric>()
     val honorTiles = allTiles.filterIsInstance<Tile.Honor>()

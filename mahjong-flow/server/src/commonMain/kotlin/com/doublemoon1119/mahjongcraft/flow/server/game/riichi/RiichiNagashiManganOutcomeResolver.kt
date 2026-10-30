@@ -42,7 +42,7 @@ class RiichiNagashiManganOutcomeResolver(
             players = tableState.players.map { player ->
                 player.copy(score = player.score + finalDeltas.getValue(player.id))
             },
-            dynamicRuleState = extras?.dynamicRuleState ?: tableState.dynamicRuleState,
+            components = extras?.components ?: tableState.components,
         )
         val dealerId = tableState.dealerPlayerId
         return ResolvedRoundOutcome(

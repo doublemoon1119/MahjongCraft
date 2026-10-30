@@ -8,6 +8,9 @@ internal object CoreExtensionRegistrationCategoryIds {
     /** 牌種類型分類。 */
     const val TILE_TYPE: String = "mahjongcraft:tile_type"
 
+    /** 牌張與紀錄組件分類。 */
+    const val COMPONENT: String = "mahjongcraft:component"
+
     /** 網路 DTO 分類。 */
     const val NETWORK_DTO: String = "mahjongcraft:network_dto"
 

@@ -7,12 +7,14 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.PendingGameTransit
 import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.dispatchThenDrive
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
+import com.doublemoon1119.mahjongcraft.logic.component.initializeRuleComponents
 import com.doublemoon1119.mahjongcraft.logic.config.MahjongRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RIICHI_STICK_POINTS
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDynamicState
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPlayerState
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.riichiDeclaration
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.riichiPotPoints
 import com.doublemoon1119.mahjongcraft.logic.table.GameInitializer
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
+import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledCoreExtensionRegistries
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.registerBuiltInAiStrategies
 import kotlin.uuid.Uuid
 
@@ -65,7 +67,7 @@ internal data class SimulationFailure(
             appendLine("Round: ${it.start.roundPosition}, combo ${it.start.comboCount}, reproduced on replay: $reproducedOnReplay")
             appendLine(
                 "Last state: live wall ${it.final.tileWall.getAllTiles().size} tiles, reserved ${it.final.reservedWallTiles.size} tiles, " +
-                    "dynamic state ${it.final.dynamicRuleState}",
+                    "components ${it.final.components}",
             )
         }
         appendLine("Recent decisions (oldest first):")
@@ -128,7 +130,7 @@ internal class MatchSimulator(
             id = gameId,
             playerIds = playerIds,
             module = runtime.moduleRegistry.getModule(config),
-        ).tableState
+        ).initializeRuleComponents(runtime.moduleRegistry.getModule(config).id, bundledCoreExtensionRegistries().componentRegistry).tableState
         runtime.gameRepository.setTableState(initial, strategyKeysByPlayer)
 
         val problem = drive(runtime, gameId, recorder)
@@ -206,7 +208,7 @@ internal class MatchSimulator(
      * @return 總分守恆時為 true。
      */
     private fun isConserved(state: TableState): Boolean {
-        val sticks = (state.dynamicRuleState as? RiichiDynamicState)?.riichiStickCount ?: 0
+        val sticks = (state.riichiPotPoints() / RIICHI_STICK_POINTS)
         return state.players.sumOf { it.score } + sticks * RIICHI_STICK_POINTS == state.players.size * config.scoreConfig.initialScore
     }
 
@@ -220,7 +222,7 @@ internal class MatchSimulator(
     private fun roundResults(round: RecordedRound, strategyKeysByPlayer: Map<Uuid, String>): List<SeatRoundResult> {
         val final = round.final
         val riichiIds = final.players
-            .filter { (it.playerRuleState as? RiichiPlayerState)?.isRiichi == true }
+            .filter { it.riichiDeclaration != null }
             .mapTo(mutableSetOf()) { it.id }
         val winnerIds = final.players
             .filter { player -> player.actionHistory.any { it is GameAction.Ron || it == GameAction.Tsumo } }

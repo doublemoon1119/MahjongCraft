@@ -16,11 +16,12 @@ import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
 import com.doublemoon1119.mahjongcraft.logic.module.SettlementExtrasAllocation
 import com.doublemoon1119.mahjongcraft.logic.module.SettlementExtrasContext
 import com.doublemoon1119.mahjongcraft.logic.module.SettlementExtrasOccasion
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDynamicState
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RIICHI_STICK_POINTS
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiExhaustiveDrawReason
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiGameLength
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleModule
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.riichiPotPoints
 import com.doublemoon1119.mahjongcraft.logic.table.MatchProgressionContext
 import com.doublemoon1119.mahjongcraft.logic.table.MatchProgressionDecision
 import com.doublemoon1119.mahjongcraft.logic.table.MatchProgressionPolicy
@@ -29,10 +30,12 @@ import com.doublemoon1119.mahjongcraft.logic.table.RoundTransitionContext
 import com.doublemoon1119.mahjongcraft.logic.table.RoundTransitionDirective
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
+import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledCoreExtensionRegistries
 import com.doublemoon1119.mahjongcraft.testing.flow.common.game.repository.FakeGameSnapshotRepository
 import com.doublemoon1119.mahjongcraft.testing.flow.common.game.service.FakeGameEventPublisher
 import com.doublemoon1119.mahjongcraft.testing.flow.common.game.service.FakeGamePresentationPublisher
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeIdentifiedTileFactory
+import com.doublemoon1119.mahjongcraft.testing.logic.rules.riichi.riichiTableComponents
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
 import kotlinx.coroutines.test.runTest
@@ -83,7 +86,7 @@ class RoundTransitionFlowTest {
         private val snapshotSynchronizer = GameSnapshotSynchronizer(
             gameRepo,
             snapshotRepo,
-            GameVisibilityPolicyImpl(moduleRegistry),
+            GameVisibilityPolicyImpl(moduleRegistry, componentRegistry = bundledCoreExtensionRegistries().componentRegistry),
         )
         private val eventPublisher = FakeGameEventPublisher()
         val presentationPublisher = FakeGamePresentationPublisher()
@@ -108,6 +111,7 @@ class RoundTransitionFlowTest {
             handSortPreferenceStore,
             eventPublisher,
             presentationPublisher,
+            componentRegistry = bundledCoreExtensionRegistries().componentRegistry,
         )
     }
 
@@ -325,7 +329,7 @@ class RoundTransitionFlowTest {
 
         val settled = assertNotNull(fixtures.gameRepo.getTableState(fixtures.gameId))
         assertEquals(table.players.map { it.score }.let { listOf(it[0], it[1] + 1000, it[2] + 1000, it[3]) }, settled.players.map { it.score })
-        assertEquals(0, (settled.dynamicRuleState as RiichiDynamicState).riichiStickCount)
+        assertEquals(0, (settled.riichiPotPoints() / RIICHI_STICK_POINTS))
     }
 
     /** 整場結束時規則可以不分剩下的供託：沒有人加分，供託仍從桌上收走。 */
@@ -350,7 +354,7 @@ class RoundTransitionFlowTest {
 
         assertEquals(true, result.value.isMatchOver)
         assertEquals(beforeEnd.players.map { it.score }, result.value.tableState.players.map { it.score })
-        assertEquals(0, (result.value.tableState.dynamicRuleState as RiichiDynamicState).riichiStickCount)
+        assertEquals(0, (result.value.tableState.riichiPotPoints() / RIICHI_STICK_POINTS))
     }
 
     /**
@@ -374,6 +378,6 @@ class RoundTransitionFlowTest {
         },
         config = RiichiRuleConfig(gameLength = gameLength),
         currentPlayerIndex = currentPlayerIndex,
-        dynamicRuleState = RiichiDynamicState(riichiStickCount = riichiStickCount),
+        components = riichiTableComponents(potPoints = (riichiStickCount) * RIICHI_STICK_POINTS),
     )
 }

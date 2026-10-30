@@ -11,18 +11,18 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameFlowConfig
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.HistoryOutboxEventPersistenceDto
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.HistoryRecordingPersistenceMapper
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.replay.CompactReplayCodec
-import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepositoryImpl
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateSnapshot
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateStore
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateUpdate
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDiscardPile
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDynamicState
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocationRegistry
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledPersistenceRegistries
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.registerBundledRuleModules
+import com.doublemoon1119.mahjongcraft.testing.flow.common.game.repository.componentValidatedGameRepository
+import com.doublemoon1119.mahjongcraft.testing.logic.rules.riichi.riichiTableComponents
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
 import kotlinx.coroutines.runBlocking
@@ -245,7 +245,7 @@ class HistoryArchiveServiceTest {
                 FakeMahjongPlayerFactory.create(Wind.NORTH, discardPile = RiichiDiscardPile()),
             ),
             config = RiichiRuleConfig(),
-            dynamicRuleState = RiichiDynamicState(riichiStickCount = 1),
+            components = riichiTableComponents(potPoints = 1000),
         )
         val matchId = Uuid.random()
         val opening = HistoryOutboxEvent(
@@ -273,9 +273,9 @@ class HistoryArchiveServiceTest {
             players = table.players.mapIndexed { index, player ->
                 if (index == 0) player.copy(score = player.score + 1_000) else player
             },
-            dynamicRuleState = RiichiDynamicState(riichiStickCount = 0),
+            components = riichiTableComponents(potPoints = 0),
         )
-        GameRepositoryImpl(store).updateGame(
+        componentValidatedGameRepository(store).updateGame(
             table.id,
             history = { _, after, _ ->
                 listOf(

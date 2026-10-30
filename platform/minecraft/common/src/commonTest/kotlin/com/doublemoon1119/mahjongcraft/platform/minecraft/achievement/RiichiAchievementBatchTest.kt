@@ -20,7 +20,6 @@ import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.logic.config.MahjongRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.module.BuiltInRuleModuleIds
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPlayerState
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.threeplayer.ThreePlayerRiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.YakuType
@@ -30,6 +29,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.riichi.BundledRii
 import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.riichi.achievement.RiichiAchievementIds
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.registerBundledRuleModules
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeIdentifiedTileFactory
+import com.doublemoon1119.mahjongcraft.testing.logic.rules.riichi.riichiDeclarationComponents
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
 import kotlin.test.Test
@@ -127,8 +127,8 @@ class RiichiAchievementBatchTest {
     fun `natural yakuman retains riichi and ippatsu from the prior state`() {
         val winner = FakeMahjongPlayerFactory.create(
             initialSeat = Wind.EAST,
-            playerRuleState = RiichiPlayerState(
-                riichiTile = FakeIdentifiedTileFactory.create(Tile.Honor.East),
+            components = riichiDeclarationComponents(
+                declarationTile = FakeIdentifiedTileFactory.create(Tile.Honor.East),
                 isIppatsu = true,
             ),
         )

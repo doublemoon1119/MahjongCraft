@@ -324,7 +324,7 @@ class MahjongCraftModClient : ClientModInitializer {
             ExhaustiveDrawSettlementPresentationEntityRenderer(context, exhaustiveDrawReasonDisplayNames, portraitRenderer, tileFaceRenderer, playerNames, clientConfigStore, tileAppearanceResolver)
         }
         EntityRendererRegistry.register(ModEntities.winSettlementPresentation) { context ->
-            WinSettlementPresentationEntityRenderer(context, winSettlementTemplates, portraitRenderer, tileFaceRenderer, playerNames, clientConfigStore, indicatorTextResolver, tileAppearanceResolver)
+            WinSettlementPresentationEntityRenderer(context, winSettlementTemplates, portraitRenderer, tileFaceRenderer, playerNames, clientConfigStore, indicatorTextResolver, tileAppearanceResolver, tileAssetRegistry)
         }
         EntityRendererRegistry.register(ModEntities.matchSettlementPresentation) { context ->
             MatchSettlementPresentationEntityRenderer(context, matchSettlementTemplates, portraitRenderer, playerNames, clientConfigStore)

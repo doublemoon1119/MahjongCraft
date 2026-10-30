@@ -10,13 +10,21 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.riichi.RiichiRound
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.riichi.RiichiWinSettlementIds
 import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDynamicState
+import com.doublemoon1119.mahjongcraft.logic.base.TileFaceView
+import com.doublemoon1119.mahjongcraft.logic.base.TileValue
+import com.doublemoon1119.mahjongcraft.logic.base.toPublicFaceView
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiHandValueResult
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPointResult
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiWallProgress
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.RiichiTileValues
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.YakuResult
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.YakuType
 import com.doublemoon1119.mahjongcraft.logic.table.RoundTransitionDirective
+import com.doublemoon1119.mahjongcraft.logic.table.TableState
+import com.doublemoon1119.mahjongcraft.testing.logic.rules.riichi.riichiComponentRegistryForTests
+import com.doublemoon1119.mahjongcraft.testing.logic.rules.riichi.riichiRedFiveFace
+import com.doublemoon1119.mahjongcraft.testing.logic.rules.riichi.riichiTableComponents
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
 import kotlin.test.Test
@@ -39,14 +47,14 @@ class RiichiWinSettlementDetailResolverTest {
         val state = FakeTableStateFactory.create(config = config)
         listOf(YakuType.Riichi, YakuType.DoubleRiichi).forEach { yaku ->
             val result = RiichiHandValueResult(listOf(YakuResult.han(yaku, 1)), 1, 30, RiichiPointResult.Ron(1000))
-            val fields = RiichiWinSettlementDetailResolver.riichiDetails(state, result)
+            val fields = RiichiWinSettlementDetailResolver.riichiDetails(state, result, publicFace(state))
             assertTrue(fields.any { it.id == RiichiWinSettlementIds.URA_DORA_FIELD })
         }
         listOf(
             RiichiHandValueResult(listOf(YakuResult.han(YakuType.Tanyao, 1)), 1, 30, RiichiPointResult.Ron(1000)),
             RiichiHandValueResult(listOf(YakuResult.han(YakuType.Riichi, 1)), -1, 0, RiichiPointResult.Ron(32000)),
         ).forEach { result ->
-            val fields = RiichiWinSettlementDetailResolver.riichiDetails(state, result)
+            val fields = RiichiWinSettlementDetailResolver.riichiDetails(state, result, publicFace(state))
             assertTrue(fields.any { it.id == RiichiWinSettlementIds.DORA_FIELD })
             assertFalse(fields.any { it.id == RiichiWinSettlementIds.URA_DORA_FIELD })
         }
@@ -55,12 +63,29 @@ class RiichiWinSettlementDetailResolverTest {
     /** 指示牌詳情保存牌面，包含重複指示牌，不依賴原牌張 UUID。 */
     @Test
     fun `dora and ura details preserve ordered faces without tile references`() {
-        val reserved = List(14) { index -> IdentifiedTile(Uuid.random(), if (index == 6) Tile.Honor.North else Tile.Numeric(Tile.Suit.Dot, 5)) }
-        val state = FakeTableStateFactory.create(config = config).copy(reservedWallTiles = reserved, dynamicRuleState = RiichiDynamicState(revealedKanDoraCount = 1))
+        val reserved = List(14) { index -> IdentifiedTile(Uuid.random(), if (index == 5) Tile.Honor.North else Tile.Numeric(Tile.Suit.Dot, 5)) }
+        val state = FakeTableStateFactory.create(config = config).copy(reservedWallTiles = reserved, components = riichiTableComponents(potPoints = 0, wallProgress = RiichiWallProgress(completedSupplementalDrawCount = 1, revealedKanDoraCount = 1)))
         val result = RiichiHandValueResult(listOf(YakuResult.han(YakuType.Riichi, 1)), 1, 30, RiichiPointResult.Ron(1000))
-        val fields = RiichiWinSettlementDetailResolver.riichiDetails(state, result)
-        assertEquals(WinSettlementDetailValue.TileFaces(listOf(Tile.Numeric(Tile.Suit.Dot, 5), Tile.Honor.North)), fields.value(RiichiWinSettlementIds.DORA_FIELD))
-        assertEquals(WinSettlementDetailValue.TileFaces(listOf(Tile.Numeric(Tile.Suit.Dot, 5), Tile.Numeric(Tile.Suit.Dot, 5))), fields.value(RiichiWinSettlementIds.URA_DORA_FIELD))
+        val fields = RiichiWinSettlementDetailResolver.riichiDetails(state, result, publicFace(state))
+        assertEquals(WinSettlementDetailValue.TileFaces(listOf(Tile.Numeric(Tile.Suit.Dot, 5), Tile.Honor.North).map(::TileFaceView)), fields.value(RiichiWinSettlementIds.DORA_FIELD))
+        assertEquals(WinSettlementDetailValue.TileFaces(listOf(Tile.Numeric(Tile.Suit.Dot, 5), Tile.Numeric(Tile.Suit.Dot, 5)).map(::TileFaceView)), fields.value(RiichiWinSettlementIds.URA_DORA_FIELD))
+    }
+
+    /** 赤五指示牌在結算明細中帶著赤寶牌特徵與赤五外觀，不帶局內身分。 */
+    @Test
+    fun `red five indicators keep their public appearance and feature`() {
+        val redFive = RiichiTileValues.redFive(Tile.Suit.Dot)
+        val reserved = List(14) { index ->
+            if (index == 5) IdentifiedTile(Uuid.random(), Tile.Honor.North) else IdentifiedTile(Uuid.random(), redFive.tile, redFive.components)
+        }
+        val state = FakeTableStateFactory.create(config = config).copy(reservedWallTiles = reserved, components = riichiTableComponents(potPoints = 0, wallProgress = RiichiWallProgress(completedSupplementalDrawCount = 1, revealedKanDoraCount = 1)))
+        val result = RiichiHandValueResult(listOf(YakuResult.han(YakuType.Riichi, 1)), 1, 30, RiichiPointResult.Ron(1000))
+
+        val fields = RiichiWinSettlementDetailResolver.riichiDetails(state, result, publicFace(state))
+
+        val redFace = riichiRedFiveFace(Tile.Suit.Dot)
+        assertEquals(WinSettlementDetailValue.TileFaces(listOf(redFace, TileFaceView(Tile.Honor.North))), fields.value(RiichiWinSettlementIds.DORA_FIELD))
+        assertEquals(WinSettlementDetailValue.TileFaces(listOf(redFace, redFace)), fields.value(RiichiWinSettlementIds.URA_DORA_FIELD))
     }
 
     /** 一般和牌的役種條目依役種結果順序帶出役種 ID 與翻數，翻符欄位帶出總翻數與符數。 */
@@ -74,7 +99,7 @@ class RiichiWinSettlementDetailResolverTest {
             RiichiPointResult.Ron(8000),
         )
 
-        val fields = RiichiWinSettlementDetailResolver.riichiDetails(state, result)
+        val fields = RiichiWinSettlementDetailResolver.riichiDetails(state, result, publicFace(state))
 
         assertEquals(
             WinSettlementDetailValue.Entries(
@@ -106,7 +131,7 @@ class RiichiWinSettlementDetailResolverTest {
             RiichiPointResult.Ron(96000),
         )
 
-        val fields = RiichiWinSettlementDetailResolver.riichiDetails(state, result)
+        val fields = RiichiWinSettlementDetailResolver.riichiDetails(state, result, publicFace(state))
 
         assertEquals(
             WinSettlementDetailValue.Entries(
@@ -157,7 +182,7 @@ class RiichiWinSettlementDetailResolverTest {
             presentationClassification = RoundOutcomePresentationClassification.WIN_EQUIVALENT,
         )
 
-        val fields = RiichiWinSettlementDetailResolver.resolveSpecialOutcome(state, outcome)
+        val fields = RiichiWinSettlementDetailResolver.resolveSpecialOutcome(state, outcome, publicFace(state))
 
         assertEquals(
             listOf(
@@ -184,7 +209,7 @@ class RiichiWinSettlementDetailResolverTest {
             presentationClassification = RoundOutcomePresentationClassification.WIN_EQUIVALENT,
         )
 
-        assertNull(RiichiWinSettlementDetailResolver.resolveSpecialOutcome(state, outcome))
+        assertNull(RiichiWinSettlementDetailResolver.resolveSpecialOutcome(state, outcome, publicFace(state)))
     }
 
     /**
@@ -194,4 +219,12 @@ class RiichiWinSettlementDetailResolverTest {
      * @return 第一個相符欄位的值；不存在時為 null。
      */
     private fun List<WinSettlementDetailField>.value(id: String): WinSettlementDetailValue? = firstOrNull { it.id == id }?.value
+
+    /**
+     * 以日麻測試登記將牌值投影為公開牌面。
+     *
+     * @param state 結算時的桌況。
+     * @return 牌值到公開牌面的轉換。
+     */
+    private fun publicFace(state: TableState): (TileValue) -> TileFaceView = { value -> value.toPublicFaceView("test:riichi", state, riichiComponentRegistryForTests()) }
 }

@@ -3,6 +3,7 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.stress
 import com.doublemoon1119.mahjongcraft.flow.common.concurrency.CoroutineDispatchers
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.HistoryRecordingPersistenceMapper
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.registry.PersistenceRegistries
+import com.doublemoon1119.mahjongcraft.flow.server.game.history.HistoryTilePresentationResolver
 import com.doublemoon1119.mahjongcraft.flow.server.game.history.generation.HeadlessStepTimer
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateStore
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
@@ -36,12 +37,14 @@ import kotlin.time.TimeSource
  * @property dispatchers 背景工作使用的 dispatcher。
  * @property moduleRegistry 封存 Replay 時解析規則用。
  * @property locations 封存 Replay 時解析場地用。
+ * @property tilePresentationResolver 解算牌譜保存的牌張呈現。
  */
 class StressTestEnvironmentFactory(
     private val registries: PersistenceRegistries,
     private val dispatchers: CoroutineDispatchers,
     private val moduleRegistry: MahjongModuleRegistry,
     private val locations: TableLocationRegistry,
+    private val tilePresentationResolver: HistoryTilePresentationResolver,
 ) {
     private val logger = mahjongCraftLogger(StressTestEnvironmentFactory::class)
 
@@ -66,7 +69,11 @@ class StressTestEnvironmentFactory(
     internal suspend fun openAt(path: Path, historyMode: StressHistoryMode): StressTestEnvironment? {
         val historyTimer = HeadlessStepTimer()
         val writerTimer = StressWriterTimer()
-        val store = AuthoritativeStateStore(historyRecordingEnabled = historyMode != StressHistoryMode.OFF, historyRecordingObserver = historyTimer)
+        val store = AuthoritativeStateStore(
+            historyRecordingEnabled = historyMode != StressHistoryMode.OFF,
+            historyRecordingObserver = historyTimer,
+            tilePresentationResolver = tilePresentationResolver,
+        )
         val sink = when (historyMode) {
             StressHistoryMode.WRITE -> openDatabase(store, writerTimer, path) ?: return null
             StressHistoryMode.ENCODE -> startEncoding(store, writerTimer)

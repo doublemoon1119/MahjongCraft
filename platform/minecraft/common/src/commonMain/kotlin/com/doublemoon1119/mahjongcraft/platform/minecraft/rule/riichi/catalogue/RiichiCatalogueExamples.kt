@@ -1,7 +1,8 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.rule.riichi.catalogue
 
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.RiichiTileTypes
+import com.doublemoon1119.mahjongcraft.logic.base.TileFaceView
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.RiichiTileValues
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.YakuType
 import com.doublemoon1119.mahjongcraft.platform.minecraft.catalogue.RuleCatalogueExample
 import com.doublemoon1119.mahjongcraft.platform.minecraft.catalogue.RuleCatalogueTileGroup
@@ -232,8 +233,8 @@ internal fun riichiCatalogueExamples(type: YakuType, usesThreePlayerTiles: Boole
  * @return 明確標記為完整手牌的範例。
  */
 private fun full(
-    vararg tiles: Tile,
-    winning: Tile,
+    vararg tiles: TileFaceView,
+    winning: TileFaceView,
     description: String? = null,
 ): RuleCatalogueExample = RuleCatalogueExample(
     completeHand = true,
@@ -251,7 +252,7 @@ private fun full(
  */
 private fun groupedFull(
     vararg groups: RuleCatalogueTileGroup,
-    winning: Tile,
+    winning: TileFaceView,
     description: String? = null,
 ): RuleCatalogueExample = RuleCatalogueExample(
     completeHand = true,
@@ -266,7 +267,7 @@ private fun groupedFull(
  * @param tiles 牌組內依序顯示的牌。
  * @return 指定語意的牌組。
  */
-private fun group(role: RuleCatalogueTileGroupRole, vararg tiles: Tile): RuleCatalogueTileGroup = RuleCatalogueTileGroup(role, tiles.toList())
+private fun group(role: RuleCatalogueTileGroupRole, vararg tiles: TileFaceView): RuleCatalogueTileGroup = RuleCatalogueTileGroup(role, tiles.toList())
 
 /**
  * 建立不代表完整手牌的局部示意。
@@ -275,7 +276,7 @@ private fun group(role: RuleCatalogueTileGroupRole, vararg tiles: Tile): RuleCat
  * @param description 情境說明鍵。
  * @return 局部示意範例。
  */
-private fun illustration(vararg tiles: Tile, description: String? = null): RuleCatalogueExample = RuleCatalogueExample(
+private fun illustration(vararg tiles: TileFaceView, description: String? = null): RuleCatalogueExample = RuleCatalogueExample(
     completeHand = false,
     groups = listOf(RuleCatalogueTileGroup(RuleCatalogueTileGroupRole.ILLUSTRATION, tiles.toList())),
     descriptionTranslationKey = description,
@@ -287,7 +288,7 @@ private fun illustration(vararg tiles: Tile, description: String? = null): RuleC
  * @param tile 和牌張。
  * @return 明確標記為和牌張的分組。
  */
-private fun winningGroup(tile: Tile): RuleCatalogueTileGroup = RuleCatalogueTileGroup(RuleCatalogueTileGroupRole.WINNING_TILE, listOf(tile))
+private fun winningGroup(tile: TileFaceView): RuleCatalogueTileGroup = RuleCatalogueTileGroup(RuleCatalogueTileGroupRole.WINNING_TILE, listOf(tile))
 
 /**
  * 建立範例用數牌，不登記虛構牌種識別碼。
@@ -296,7 +297,15 @@ private fun winningGroup(tile: Tile): RuleCatalogueTileGroup = RuleCatalogueTile
  * @param value 數值。
  * @return 數牌模型。
  */
-private fun number(suit: Tile.Suit, value: Int): Tile = Tile.Numeric(suit, value)
+private fun number(suit: Tile.Suit, value: Int): TileFaceView = TileFaceView(Tile.Numeric(suit, value))
+
+/**
+ * 建立範例用赤五：普通五加上赤五外觀。
+ *
+ * @param suit 花色。
+ * @return 帶赤五外觀的牌面。
+ */
+private fun redFive(suit: Tile.Suit): TileFaceView = TileFaceView(Tile.Numeric(suit, 5), appearanceId = RiichiTileValues.RED_FIVE_APPEARANCE_ID)
 
 /** 範例用萬1牌。 */
 private val m1 = number(Tile.Suit.Character, 1)
@@ -380,31 +389,31 @@ private val s8 = number(Tile.Suit.Bamboo, 8)
 private val s9 = number(Tile.Suit.Bamboo, 9)
 
 /** 範例用東牌。 */
-private val east: Tile = Tile.Honor.East
+private val east: TileFaceView = TileFaceView(Tile.Honor.East)
 
 /** 範例用南牌。 */
-private val south: Tile = Tile.Honor.South
+private val south: TileFaceView = TileFaceView(Tile.Honor.South)
 
 /** 範例用西牌。 */
-private val west: Tile = Tile.Honor.West
+private val west: TileFaceView = TileFaceView(Tile.Honor.West)
 
 /** 範例用北牌。 */
-private val north: Tile = Tile.Honor.North
+private val north: TileFaceView = TileFaceView(Tile.Honor.North)
 
 /** 範例用中牌。 */
-private val red: Tile = Tile.Honor.Red
+private val red: TileFaceView = TileFaceView(Tile.Honor.Red)
 
 /** 範例用發牌。 */
-private val green: Tile = Tile.Honor.Green
+private val green: TileFaceView = TileFaceView(Tile.Honor.Green)
 
 /** 範例用白牌。 */
-private val white: Tile = Tile.Honor.White
+private val white: TileFaceView = TileFaceView(Tile.Honor.White)
 
 /** 範例用赤五萬牌。 */
-private val m5Red: Tile = Tile.Extension(RiichiTileTypes.RED_FIVE_CHARACTER)
+private val m5Red: TileFaceView = redFive(Tile.Suit.Character)
 
 /** 範例用赤五筒牌。 */
-private val p5Red: Tile = Tile.Extension(RiichiTileTypes.RED_FIVE_DOT)
+private val p5Red: TileFaceView = redFive(Tile.Suit.Dot)
 
 /** 範例用赤五條牌。 */
-private val s5Red: Tile = Tile.Extension(RiichiTileTypes.RED_FIVE_BAMBOO)
+private val s5Red: TileFaceView = redFive(Tile.Suit.Bamboo)

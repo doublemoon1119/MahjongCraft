@@ -5,13 +5,25 @@ import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
 import com.doublemoon1119.mahjongcraft.logic.base.MeldType
 import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
+import com.doublemoon1119.mahjongcraft.logic.base.TileValue
+import com.doublemoon1119.mahjongcraft.logic.component.ComponentSet
 import com.doublemoon1119.mahjongcraft.logic.judgment.WaitingTileAvailability
 import com.doublemoon1119.mahjongcraft.logic.judgment.WaitingTileAvailabilityIds
 import com.doublemoon1119.mahjongcraft.logic.module.BuiltInRuleModuleIds
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RIICHI_STICK_POINTS
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDeclarationKind
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPlayerComponents
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPlayerTileAreaIds
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiTableComponents
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiWallProgress
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.riichiPotPoints
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.riichiWallProgress
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.threeplayer.ThreePlayerRiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.threeplayer.ThreePlayerRiichiRuleModule
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.RiichiTileTypes
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.RiichiTileInterpretationPolicy
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.RiichiTileValues
 import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayer
+import com.doublemoon1119.mahjongcraft.logic.table.PlayerTileAreas
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.logic.table.TileWall
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
@@ -20,6 +32,8 @@ import com.doublemoon1119.mahjongcraft.logic.table.visibleTiles
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeHandFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeIdentifiedTileFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeMeldFactory
+import com.doublemoon1119.mahjongcraft.testing.logic.rules.riichi.riichiDeclarationComponents
+import com.doublemoon1119.mahjongcraft.testing.logic.rules.riichi.riichiTableComponents
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeDiscardPile
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
@@ -199,7 +213,7 @@ class RiichiDiscardReadinessAnalyzerTest {
     }
 
     /**
-     * 驗證赤五與普通五依日麻牌種正規化合併計數。
+     * 驗證赤五與普通五的基本牌面相同，合併計數。
      */
     @Test
     fun `test analyze counts red five as the corresponding regular five`() {
@@ -223,7 +237,7 @@ class RiichiDiscardReadinessAnalyzerTest {
         val player = FakeMahjongPlayerFactory.create(hand = hand)
         val otherPlayer = FakeMahjongPlayerFactory.create(
             discardPile = FakeDiscardPile().discardTile(
-                FakeIdentifiedTileFactory.create(RiichiTileTypes.redFive(Tile.Suit.Dot)),
+                FakeIdentifiedTileFactory.create(RiichiTileValues.redFive(Tile.Suit.Dot)),
             ),
         )
         val tableState = FakeTableStateFactory.create(players = listOf(player, otherPlayer), config = RiichiRuleConfig())
@@ -274,7 +288,7 @@ class RiichiDiscardReadinessAnalyzerTest {
         val hand = FakeHandFactory.create(tenpaiTiles + floatingTile)
         val player = FakeMahjongPlayerFactory.create(
             hand = hand,
-            playerRuleState = RiichiPlayerState(isPermanentlyFuriten = true),
+            components = ComponentSet.EMPTY.with(RiichiPlayerComponents.PERMANENT_FURITEN, Unit).merge(riichiDeclarationComponents()),
         )
         val tableState = FakeTableStateFactory.create(players = listOf(player), config = RiichiRuleConfig())
 
@@ -345,13 +359,13 @@ class RiichiDiscardReadinessAnalyzerTest {
         val player = FakeMahjongPlayerFactory.create(
             hand = hand,
             discardPile = RiichiDiscardPile().discardTile(FakeIdentifiedTileFactory.create(Tile.Honor.North)),
-            playerRuleState = RiichiPlayerState(),
+            components = riichiDeclarationComponents(),
         )
         val tableState = FakeTableStateFactory.create(
             players = listOf(player),
             tileWall = TileWall(List(20) { FakeIdentifiedTileFactory.create(Tile.Honor.White) }),
             config = RiichiRuleConfig(),
-            dynamicRuleState = RiichiDynamicState(),
+            components = riichiTableComponents(potPoints = 0),
         )
         val floatingTileId = hand.standingTiles.single { it.tile == Tile.Honor.East }.id
 
@@ -392,7 +406,7 @@ class RiichiDiscardReadinessAnalyzerTest {
      * @return 等待五筒的測試玩家。
      */
     private fun createNoYakuFiveDotWaitPlayer(
-        fiveDot: Tile,
+        fiveDot: TileValue,
         extraStandingTile: Tile? = null,
     ): MahjongPlayer {
         val melds = listOf(
@@ -412,13 +426,13 @@ class RiichiDiscardReadinessAnalyzerTest {
             ),
         )
         val standingTiles = buildList {
-            addAll(listOf(7, 8, 9).map { value -> Tile.Numeric(Tile.Suit.Character, value) })
+            addAll(listOf(7, 8, 9).map { value -> TileValue(Tile.Numeric(Tile.Suit.Character, value)) })
             add(fiveDot)
-            addAll(listOf(1, 2, 3).map { value -> Tile.Numeric(Tile.Suit.Bamboo, value) })
-            extraStandingTile?.let { add(it) }
+            addAll(listOf(1, 2, 3).map { value -> TileValue(Tile.Numeric(Tile.Suit.Bamboo, value)) })
+            extraStandingTile?.let { add(TileValue(it)) }
         }
-        val hand = FakeHandFactory.create(
-            tiles = standingTiles,
+        val hand = Hand(
+            tiles = standingTiles.map { FakeIdentifiedTileFactory.create(it) },
             melds = melds,
         )
         return FakeMahjongPlayerFactory.create(hand = hand)
@@ -428,8 +442,8 @@ class RiichiDiscardReadinessAnalyzerTest {
     @Test
     fun `test ordinary and red five waits remain no yaku before the last tile`() {
         listOf(
-            Tile.Numeric(Tile.Suit.Dot, 5),
-            RiichiTileTypes.redFive(Tile.Suit.Dot),
+            TileValue(Tile.Numeric(Tile.Suit.Dot, 5)),
+            RiichiTileValues.redFive(Tile.Suit.Dot),
         ).forEach { fiveDot ->
             val player = createNoYakuFiveDotWaitPlayer(fiveDot)
             val tableState = FakeTableStateFactory.create(
@@ -455,8 +469,8 @@ class RiichiDiscardReadinessAnalyzerTest {
     @Test
     fun `test haitei and houtei qualify the no yaku wait after the live wall is exhausted`() {
         listOf(
-            Tile.Numeric(Tile.Suit.Dot, 5),
-            RiichiTileTypes.redFive(Tile.Suit.Dot),
+            TileValue(Tile.Numeric(Tile.Suit.Dot, 5)),
+            RiichiTileValues.redFive(Tile.Suit.Dot),
         ).forEach { fiveDot ->
             val player = createNoYakuFiveDotWaitPlayer(fiveDot)
             val tableState = FakeTableStateFactory.create(
@@ -478,8 +492,8 @@ class RiichiDiscardReadinessAnalyzerTest {
     @Test
     fun `test projected discard keeps ordinary and red five waits as no yaku`() {
         listOf(
-            Tile.Numeric(Tile.Suit.Dot, 5),
-            RiichiTileTypes.redFive(Tile.Suit.Dot),
+            TileValue(Tile.Numeric(Tile.Suit.Dot, 5)),
+            RiichiTileValues.redFive(Tile.Suit.Dot),
         ).forEach { fiveDot ->
             val player = createNoYakuFiveDotWaitPlayer(
                 fiveDot = fiveDot,
@@ -505,8 +519,8 @@ class RiichiDiscardReadinessAnalyzerTest {
     @Test
     fun `test projected discard qualifies ordinary and red five waits after the live wall is exhausted`() {
         listOf(
-            Tile.Numeric(Tile.Suit.Dot, 5),
-            RiichiTileTypes.redFive(Tile.Suit.Dot),
+            TileValue(Tile.Numeric(Tile.Suit.Dot, 5)),
+            RiichiTileValues.redFive(Tile.Suit.Dot),
         ).forEach { fiveDot ->
             val player = createNoYakuFiveDotWaitPlayer(
                 fiveDot = fiveDot,
@@ -539,16 +553,18 @@ class RiichiDiscardReadinessAnalyzerTest {
         val pulledNorths = List(3) { FakeIdentifiedTileFactory.create(Tile.Honor.North) }
         val southPlayer = FakeMahjongPlayerFactory.create(
             initialSeat = Wind.SOUTH,
-            playerRuleState = RiichiPlayerState(nukiDoraTiles = pulledNorths.take(2)),
+            components = riichiDeclarationComponents(),
+            tileAreas = PlayerTileAreas.EMPTY.withArea(RiichiPlayerTileAreaIds.NORTH, pulledNorths.take(2)),
         )
         val westPlayer = FakeMahjongPlayerFactory.create(
             initialSeat = Wind.WEST,
-            playerRuleState = RiichiPlayerState(nukiDoraTiles = pulledNorths.drop(2)),
+            components = riichiDeclarationComponents(),
+            tileAreas = PlayerTileAreas.EMPTY.withArea(RiichiPlayerTileAreaIds.NORTH, pulledNorths.drop(2)),
         )
         val tableState = FakeTableStateFactory.create(
             players = listOf(player, southPlayer, westPlayer),
             config = ThreePlayerRiichiRuleConfig(),
-            dynamicRuleState = RiichiDynamicState(),
+            components = riichiTableComponents(potPoints = 0),
         )
         val analyzer = assertNotNull(module.createDiscardReadinessAnalyzer())
 
@@ -556,7 +572,7 @@ class RiichiDiscardReadinessAnalyzerTest {
             analyzer.analyzeCurrentHand(
                 tableState = tableState,
                 player = player,
-                visibleTiles = visibleTo(tableState = tableState, player = player, setAsideTiles = module::setAsideTiles),
+                visibleTiles = visibleTo(tableState = tableState, player = player, setAsideTiles = { it.setAsideTiles }),
             ),
         )
 
@@ -576,5 +592,5 @@ class RiichiDiscardReadinessAnalyzerTest {
         tableState: TableState,
         player: MahjongPlayer,
         setAsideTiles: (MahjongPlayer) -> List<IdentifiedTile> = { emptyList() },
-    ): List<IdentifiedTile> = tableState.toSnapshot(visibleHandPlayerIds = setOf(player.id), setAsideTiles = setAsideTiles).visibleTiles()
+    ): List<IdentifiedTile> = tableState.toSnapshot(visibleHandPlayerIds = setOf(player.id)).visibleTiles(RiichiTileInterpretationPolicy)
 }

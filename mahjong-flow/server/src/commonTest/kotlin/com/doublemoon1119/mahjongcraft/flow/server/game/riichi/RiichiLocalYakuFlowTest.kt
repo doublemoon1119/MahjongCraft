@@ -15,14 +15,14 @@ import com.doublemoon1119.mahjongcraft.logic.base.Hand
 import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDiscardPile
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDynamicState
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPlayerState
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.YakuType
 import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayer
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeIdentifiedTileFactory
+import com.doublemoon1119.mahjongcraft.testing.logic.rules.riichi.riichiDeclarationComponents
+import com.doublemoon1119.mahjongcraft.testing.logic.rules.riichi.riichiTableComponents
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
 import kotlinx.coroutines.test.runTest
@@ -84,7 +84,7 @@ class RiichiLocalYakuFlowTest {
             config = RiichiRuleConfig(useLocalYaku = useLocalYaku),
             reservedWallTiles = completeRiichiReservedWall(tile(s(2))),
             currentPlayerIndex = 0,
-            dynamicRuleState = RiichiDynamicState(),
+            components = riichiTableComponents(potPoints = 0),
         ).withFirstKanPhysicalWallLayout()
 
         return play(
@@ -110,7 +110,7 @@ class RiichiLocalYakuFlowTest {
             players = listOf(discarder, winner()),
             config = RiichiRuleConfig(useLocalYaku = useLocalYaku),
             currentPlayerIndex = 0,
-            dynamicRuleState = RiichiDynamicState(),
+            components = riichiTableComponents(potPoints = 0),
         )
 
         return play(
@@ -158,7 +158,7 @@ class RiichiLocalYakuFlowTest {
             initialSeat = Wind.EAST,
             hand = hand,
             discardPile = RiichiDiscardPile().discardTile(earlier),
-            playerRuleState = RiichiPlayerState(),
+            components = riichiDeclarationComponents(),
         ).copy(score = STARTING_SCORE).recordAction(GameAction.Draw).recordAction(GameAction.Discard(earlier.id)).recordAction(GameAction.Draw)
     }
 
@@ -185,7 +185,7 @@ class RiichiLocalYakuFlowTest {
             initialSeat = Wind.SOUTH,
             hand = Hand(tiles = tiles.map(::tile)),
             discardPile = RiichiDiscardPile().discardTile(earlier),
-            playerRuleState = RiichiPlayerState(),
+            components = riichiDeclarationComponents(),
         ).copy(score = STARTING_SCORE).recordAction(GameAction.Draw).recordAction(GameAction.Discard(earlier.id))
     }
 

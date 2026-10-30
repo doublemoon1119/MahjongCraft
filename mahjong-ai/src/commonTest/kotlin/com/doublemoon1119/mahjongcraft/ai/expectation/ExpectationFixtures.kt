@@ -11,17 +11,17 @@ import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.logic.module.BuiltInRuleModuleIds
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDiscardPile
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDynamicState
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPlayerState
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleModule
 import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayer
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.logic.table.TileWall
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
-import com.doublemoon1119.mahjongcraft.logic.table.toSnapshot
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.registerBundledRuleModules
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeIdentifiedTileFactory
+import com.doublemoon1119.mahjongcraft.testing.logic.rules.riichi.riichiDeclarationComponents
+import com.doublemoon1119.mahjongcraft.testing.logic.rules.riichi.riichiTableComponents
+import com.doublemoon1119.mahjongcraft.testing.logic.rules.riichi.toRiichiSnapshotForTests
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
 import kotlin.uuid.Uuid
@@ -120,7 +120,7 @@ internal object ExpectationFixtures {
         initialSeat = wind,
         hand = hand,
         discardPile = discards.fold(RiichiDiscardPile()) { pile, tile -> pile.discardTile(FakeIdentifiedTileFactory.create(tile)) },
-        playerRuleState = RiichiPlayerState(riichiTile = if (riichi) FakeIdentifiedTileFactory.create(Tile.Honor.West) else null),
+        components = riichiDeclarationComponents(declarationTile = if (riichi) FakeIdentifiedTileFactory.create(Tile.Honor.West) else null),
     ).copy(score = 25000)
 
     /**
@@ -134,7 +134,7 @@ internal object ExpectationFixtures {
         players = players,
         config = RiichiRuleConfig(),
         tileWall = TileWall(List(liveTiles + RiichiRuleConfig().deadTileCount) { FakeIdentifiedTileFactory.create(p(5)) }),
-        dynamicRuleState = RiichiDynamicState(),
+        components = riichiTableComponents(potPoints = 0),
     )
 
     /**
@@ -152,7 +152,7 @@ internal object ExpectationFixtures {
         phase: AiDecisionPhase = AiDecisionPhase.OwnTurn,
         legalActions: List<GameAction> = emptyList(),
     ): AiDecisionContext = AiDecisionContext(
-        snapshot = table.toSnapshot(visibleHandPlayerIds = setOf(self.id), setAsideTiles = { emptyList() }),
+        snapshot = table.toRiichiSnapshotForTests(self.id),
         selfId = self.id,
         phase = phase,
         legalActions = legalActions,

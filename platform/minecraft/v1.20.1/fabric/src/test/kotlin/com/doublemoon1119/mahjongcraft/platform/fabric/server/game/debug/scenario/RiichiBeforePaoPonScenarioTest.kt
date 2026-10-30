@@ -9,12 +9,13 @@ import com.doublemoon1119.mahjongcraft.logic.judgment.LegalActionContext
 import com.doublemoon1119.mahjongcraft.logic.module.BuiltInRuleModuleIds
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.PaoLiability
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.PaoYaku
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPlayerState
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPlayerComponents
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleModule
 import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayer
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
+import com.doublemoon1119.mahjongcraft.testing.logic.rules.riichi.riichiDeclarationComponents
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
 import kotlin.test.Test
@@ -75,7 +76,7 @@ class RiichiBeforePaoPonScenarioTest {
             listOf(Tile.Honor.Green, Tile.Honor.Red),
             invoking.hand.exposedMelds.map { meld -> meld.tiles.map { it.tile }.distinct().single() },
         )
-        assertEquals(PaoLiability(PaoYaku.Daisangen, direction), (claimed.playerRuleState as RiichiPlayerState).paoLiability)
+        assertEquals(PaoLiability(PaoYaku.Daisangen, direction), claimed.values[RiichiPlayerComponents.PAO_LIABILITY])
     }
 
     /** 活牌最前端交錯排著四萬與一萬，呼叫者輪到時第一張就是和牌張。 */
@@ -123,7 +124,7 @@ class RiichiBeforePaoPonScenarioTest {
      * @return 情境桌況與呼叫者玩家。
      */
     private fun buildScenario(invokingSeat: Int): Pair<TableState, MahjongPlayer> {
-        val players = Wind.entries.map { FakeMahjongPlayerFactory.create(initialSeat = it, playerRuleState = RiichiPlayerState()) }
+        val players = Wind.entries.map { FakeMahjongPlayerFactory.create(initialSeat = it, components = riichiDeclarationComponents()) }
         val game = Game(tableState = FakeTableStateFactory.create(players = players, config = config), flowConfig = GameFlowConfig())
         val scenario = RiichiDebugGameScenarios.all.single { it.id == "mahjongcraft:riichi_before_pao_pon" }
 

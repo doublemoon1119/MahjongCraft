@@ -5,6 +5,8 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryFact
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryFactTypeKeys
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryOutboxEvent
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryTableResult
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryTileAudience
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryTilePresentation
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryWinDetails
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryActionTypeKeys
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryReplayFact
@@ -26,24 +28,34 @@ import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.replay.Re
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.replay.ReplayReadResult
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.base.Hand
+import com.doublemoon1119.mahjongcraft.logic.base.MeldType
+import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
+import com.doublemoon1119.mahjongcraft.logic.base.TileFaceView
 import com.doublemoon1119.mahjongcraft.logic.base.TileTypeId
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDiscardEntry
+import com.doublemoon1119.mahjongcraft.logic.component.ComponentViewSet
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDiscardComponents
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDiscardPile
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiExhaustiveDrawReason
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiHistoryDiscardMarkerIds
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPlayerState
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPlayerTileAreaIds
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.threeplayer.ThreePlayerRiichiRuleConfig
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.RiichiTileComponentViews
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.RiichiTileValues
+import com.doublemoon1119.mahjongcraft.logic.table.DiscardPile.DiscardEntry
 import com.doublemoon1119.mahjongcraft.logic.table.MatchRoundPosition
+import com.doublemoon1119.mahjongcraft.logic.table.PlayerTileAreas
 import com.doublemoon1119.mahjongcraft.logic.table.RoundCompletionClassification
 import com.doublemoon1119.mahjongcraft.logic.table.RoundCompletionSummary
 import com.doublemoon1119.mahjongcraft.logic.table.RoundTransitionDirective
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
+import com.doublemoon1119.mahjongcraft.logic.tile.component.TilePose
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledPersistenceRegistries
-import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledSetAsideTiles
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeIdentifiedTileFactory
+import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeMeldFactory
+import com.doublemoon1119.mahjongcraft.testing.logic.rules.riichi.riichiDeclarationComponents
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
 import kotlinx.coroutines.CoroutineStart
@@ -59,6 +71,7 @@ import kotlinx.serialization.json.jsonObject
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
+import kotlin.test.assertNotEquals
 import kotlin.test.assertTrue
 import kotlin.uuid.Uuid
 
@@ -95,7 +108,7 @@ class CompactReplayRoundReaderGenuineTest {
         assertEquals(ReplayReadError.INVALID_DOCUMENT, assertIs<ReplayReadResult.Failure>(reader().readEvents(changed(1, mapOf("dt" to JsonPrimitive(Long.MAX_VALUE))), fixture.matchId, 1, 0, 20)).error)
     }
 
-    /** 驗證玩家規則狀態中拔出的北，經正式編碼後投影為該玩家移出手牌的牌。 */
+    /** 驗證放在玩家拔北牌區的北，經正式編碼後投影為該玩家移出手牌的牌。 */
     @Test
     fun `reader projects pulled norths as set aside tiles`() = runTest {
         val north = FakeIdentifiedTileFactory.create(Tile.Honor.North)
@@ -105,15 +118,15 @@ class CompactReplayRoundReaderGenuineTest {
                 FakeMahjongPlayerFactory.create(
                     hand = Hand(tiles = listOf(kept, north)),
                     discardPile = RiichiDiscardPile(),
-                    playerRuleState = RiichiPlayerState(),
+                    components = riichiDeclarationComponents(),
                 ),
-                FakeMahjongPlayerFactory.create(discardPile = RiichiDiscardPile(), playerRuleState = RiichiPlayerState()),
+                FakeMahjongPlayerFactory.create(discardPile = RiichiDiscardPile(), components = riichiDeclarationComponents()),
             ),
             config = ThreePlayerRiichiRuleConfig(),
         )
         val pulled = base.copy(
             players = base.players.mapIndexed { index, player ->
-                if (index == 0) player.copy(hand = player.hand.copy(tiles = listOf(kept)), playerRuleState = RiichiPlayerState(nukiDoraTiles = listOf(north))) else player
+                if (index == 0) player.copy(hand = player.hand.copy(tiles = listOf(kept)), components = riichiDeclarationComponents(), tileAreas = PlayerTileAreas.EMPTY.withArea(RiichiPlayerTileAreaIds.NORTH, listOf(north))) else player
             },
         )
         val matchId = Uuid.random()
@@ -138,15 +151,15 @@ class CompactReplayRoundReaderGenuineTest {
             event(matchId, base.id, 4, 100L, HistoryFact.MatchCompleted("test:completed", pulled.players.associate { it.id to it.score })).copy(transactionFirstSequence = 3),
         )
         val registries = bundledPersistenceRegistries()
-        val document = CompactReplayCodec.encodeCompact(events, HistoryRecordingPersistenceMapper(registries), registries, bundledSetAsideTiles(events))
+        val document = CompactReplayCodec.encodeCompact(events, HistoryRecordingPersistenceMapper(registries), registries)
 
         val initial = assertIs<ReplayReadResult.Success<HistoryRoundState>>(reader().readState(document, matchId, 1, HistoryRoundPosition.Initial)).value
         val after = assertIs<ReplayReadResult.Success<HistoryRoundState>>(reader().readState(document, matchId, 1, HistoryRoundPosition.AfterTransaction(1))).value
 
         assertTrue(initial.players.all { it.setAsideTiles.isEmpty() })
         val puller = after.players.single { it.initialSeatIndex == 0 }
-        assertEquals(listOf<Tile>(Tile.Honor.North), puller.setAsideTiles.map { after.tileCatalog.tiles[it.tileIndex] })
-        assertEquals(listOf<Tile>(Tile.Numeric(Tile.Suit.Dot, 1)), puller.handTiles.map { after.tileCatalog.tiles[it.tileIndex] })
+        assertEquals(listOf<Tile>(Tile.Honor.North), puller.setAsideTiles.map { after.tileCatalog.tiles[it.tileIndex].tile })
+        assertEquals(listOf<Tile>(Tile.Numeric(Tile.Suit.Dot, 1)), puller.handTiles.map { after.tileCatalog.tiles[it.tileIndex].tile })
     }
 
     /**
@@ -155,7 +168,107 @@ class CompactReplayRoundReaderGenuineTest {
      * @param limits 本次使用的資源上限。
      * @return 測試讀取器。
      */
-    private fun reader(limits: ReplayReadLimits = ReplayReadLimits()): CompactReplayRoundReader = CompactReplayRoundReader(limits)
+    private fun reader(limits: ReplayReadLimits = ReplayReadLimits()): CompactReplayRoundReader = CompactReplayRoundReader(bundledPersistenceRegistries().componentViews, limits)
+
+    /** 保存的牌張呈現經正式編碼後，牌目錄帶當時外觀與特徵，副露朝下依保存的姿態，不讀副露欄位。 */
+    @Test
+    fun `reader applies recorded tile presentation to the catalog and melds`() = runTest {
+        val redFive = FakeIdentifiedTileFactory.create(RiichiTileValues.redFive(Tile.Suit.Dot))
+        val kanTiles = List(4) { FakeIdentifiedTileFactory.create(Tile.Honor.White) }
+        val closedKan = FakeMeldFactory.create(type = MeldType.CLOSED_KAN, tiles = kanTiles)
+        val base = FakeTableStateFactory.create(
+            players = listOf(
+                FakeMahjongPlayerFactory.create(hand = Hand(tiles = listOf(redFive), melds = listOf(closedKan)), discardPile = RiichiDiscardPile()),
+                FakeMahjongPlayerFactory.create(discardPile = RiichiDiscardPile()),
+            ),
+            config = RiichiRuleConfig(),
+        )
+        val owner = base.players.first().id
+        val redPresentation = HistoryTilePresentation(
+            appearanceId = RiichiTileValues.RED_FIVE_APPEARANCE_ID,
+            views = ComponentViewSet.EMPTY.with(RiichiTileComponentViews.RED_DORA, Unit),
+            pose = TilePose.UPRIGHT,
+            audience = HistoryTileAudience.Players(setOf(owner)),
+        )
+        val opening = mapOf(redFive.id to redPresentation) + kanTiles.mapIndexed { index, tile ->
+            tile.id to HistoryTilePresentation(null, ComponentViewSet.EMPTY, if (index == 1) TilePose.FACE_DOWN else TilePose.FACE_UP, HistoryTileAudience.Public)
+        }
+        val scores = base.players.associate { it.id to it.score }
+        val matchId = Uuid.random()
+        val events = listOf(
+            event(matchId, base.id, 1, 0L, HistoryFact.MatchStarted(base, GameFlowConfig(), emptyMap())),
+            event(matchId, base.id, 2, 0L, HistoryFact.TilePresentationChanged(opening)).copy(transactionFirstSequence = 1),
+            event(matchId, base.id, 3, 250L, HistoryFact.RoundCompleted(RoundCompletionSummary("test:round_completed", RoundCompletionClassification.EXHAUSTIVE_DRAW, emptySet(), transitionDirective = RoundTransitionDirective.PassToNextSeat, settledScoresByPlayerId = scores))),
+            event(matchId, base.id, 4, 250L, HistoryFact.MatchCompleted("test:completed", scores)).copy(transactionFirstSequence = 3),
+            event(matchId, base.id, 5, 250L, HistoryFact.TilePresentationChanged(mapOf(redFive.id to redPresentation.copy(audience = HistoryTileAudience.Public)))).copy(transactionFirstSequence = 3),
+        )
+        val registries = bundledPersistenceRegistries()
+        val document = CompactReplayCodec.encodeCompact(events, HistoryRecordingPersistenceMapper(registries), registries)
+
+        val state = assertIs<ReplayReadResult.Success<HistoryRoundState>>(
+            reader().readState(document, matchId, 1, HistoryRoundPosition.Initial),
+        ).value
+
+        val holder = state.players.single { it.initialSeatIndex == base.players.first().initialSeatIndex }
+        val redFace = state.tileCatalog.tiles[holder.handTiles.single().tileIndex]
+        assertEquals(TileFaceView(redFive.tile, redPresentation.views, RiichiTileValues.RED_FIVE_APPEARANCE_ID), redFace)
+        val meld = holder.melds.single()
+        assertEquals(setOf(meld.tiles[1]), meld.faceDownTileIds)
+    }
+
+    /** 加槓沿用同一組副露身分；前面多出一組新副露、位置改變後，牌譜中原本那組仍保留相同的副露代碼。 */
+    @Test
+    fun `replay keeps a meld identity across an added kan when its position shifts`() = runTest {
+        val ponTiles = List(4) { FakeIdentifiedTileFactory.create(Tile.Honor.White) }
+        val pon = FakeMeldFactory.create(type = MeldType.PON, tiles = ponTiles.take(3), sourceTile = ponTiles.first(), sourceDirection = RelativeDirection.Left)
+        val chi = FakeMeldFactory.create(
+            type = MeldType.CHI,
+            tiles = (1..3).map { FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, it)) },
+            sourceDirection = RelativeDirection.Left,
+        )
+        val base = FakeTableStateFactory.create(
+            players = listOf(
+                FakeMahjongPlayerFactory.create(hand = Hand(tiles = listOf(ponTiles.last()) + chi.tiles, melds = listOf(pon)), discardPile = RiichiDiscardPile()),
+                FakeMahjongPlayerFactory.create(discardPile = RiichiDiscardPile()),
+            ),
+            config = RiichiRuleConfig(),
+        )
+        val upgradedHand = base.players.first().hand.upgradeToAddedKan(ponTiles.last(), 0)
+        val changed = base.copy(
+            players = base.players.mapIndexed { index, player ->
+                if (index == 0) player.copy(hand = upgradedHand.copy(tiles = emptyList(), melds = listOf(chi) + upgradedHand.melds)) else player
+            },
+        )
+        val scores = base.players.associate { it.id to it.score }
+        val matchId = Uuid.random()
+        val events = listOf(
+            event(matchId, base.id, 1, 0L, HistoryFact.MatchStarted(base, GameFlowConfig(), emptyMap())),
+            event(matchId, base.id, 2, 50L, HistoryFact.TableChanged(HistoryTableResult.Checkpoint("test:melds", changed))),
+            event(matchId, base.id, 3, 250L, HistoryFact.RoundCompleted(RoundCompletionSummary("test:round_completed", RoundCompletionClassification.EXHAUSTIVE_DRAW, emptySet(), transitionDirective = RoundTransitionDirective.PassToNextSeat, settledScoresByPlayerId = scores))),
+            event(matchId, base.id, 4, 250L, HistoryFact.MatchCompleted("test:completed", scores)).copy(transactionFirstSequence = 3),
+        )
+        val registries = bundledPersistenceRegistries()
+        val transactions = CompactReplayCodec.decodeCompact(CompactReplayCodec.encodeCompact(events, HistoryRecordingPersistenceMapper(registries), registries)).single()
+
+        val before = transactions.first().projection.melds()
+        val after = transactions[1].projection.melds()
+        val ponId = before.single().getValue("id")
+        val upgraded = after.single { it.getValue("tiles").jsonArray.size == 4 }
+        val added = after.single { it.getValue("tiles").jsonArray.size == 3 }
+        assertEquals(ponId, upgraded.getValue("id"))
+        assertNotEquals(ponId, added.getValue("id"))
+    }
+
+    /**
+     * 找出投影中所有副露。
+     *
+     * @return 帶有來源方向與牌張清單的物件。
+     */
+    private fun JsonElement.melds(): List<JsonObject> = when (this) {
+        is JsonObject -> (if ("sourceDirection" in this && "tiles" in this) listOf(this) else emptyList()) + values.flatMap { it.melds() }
+        is JsonArray -> flatMap { it.melds() }
+        else -> emptyList()
+    }
 
     /** 驗證正式編碼器保存對局識別資料與初始座位。 */
     @Test
@@ -190,8 +303,8 @@ class CompactReplayRoundReaderGenuineTest {
         assertEquals(listOf(1, 0), initial.players.map { it.initialSeatIndex })
         assertEquals(fixture.table.currentPlayer.initialSeatIndex, initial.currentPlayerSeat)
         assertEquals(initial.tileCatalog.tiles.size + 1, after.tileCatalog.tiles.size)
-        assertEquals(fixture.changed.players[0].hand.lastDrawn?.tile, after.players[0].lastDrawn?.let { after.tileCatalog.tiles[it.tileIndex] })
-        assertEquals(fixture.changed.players[0].hand.tiles.map { it.tile }, after.players[0].handTiles.map { after.tileCatalog.tiles[it.tileIndex] })
+        assertEquals(fixture.changed.players[0].hand.lastDrawn?.tile, after.players[0].lastDrawn?.let { after.tileCatalog.tiles[it.tileIndex].tile })
+        assertEquals(fixture.changed.players[0].hand.tiles.map { it.tile }, after.players[0].handTiles.map { after.tileCatalog.tiles[it.tileIndex].tile })
         val finalState = assertIs<ReplayReadResult.Success<HistoryRoundState>>(reader().readState(fixture.document, fixture.matchId, 1, HistoryRoundPosition.AfterTransaction(2))).value
         assertEquals(fixture.settled.players.associate { it.initialSeatIndex to it.score }, finalState.outcome?.scoresBySeat)
         assertEquals("test:round_completed", finalState.outcome?.reasonId)
@@ -317,9 +430,13 @@ class CompactReplayRoundReaderGenuineTest {
         assertEquals(1, win?.winnerDetails?.size)
         assertEquals(3, win?.winnerDetails?.single()?.detailFields?.size)
         val faces = assertIs<HistoryWinDetailValue.TileFaces>(win?.winnerDetails?.single()?.detailFields?.single { it.id == "test:bonus_faces" }?.value)
-        assertEquals(listOf(Tile.Honor.North, Tile.Extension(TileTypeId.parse("test:bonus_face")), Tile.Numeric(Tile.Suit.Character, 9), Tile.Honor.North), faces.faces)
+        assertEquals(
+            listOf(Tile.Honor.North, Tile.Extension(TileTypeId.parse("test:bonus_face")), Tile.Numeric(Tile.Suit.Character, 9), Tile.Honor.North).map(::TileFaceView) +
+                TileFaceView(Tile.Numeric(Tile.Suit.Dot, 5), appearanceId = "test:style"),
+            faces.faces,
+        )
         val tiles = assertIs<HistoryWinDetailValue.TileFaces>(win?.winnerDetails?.single()?.detailFields?.last()?.value)
-        assertEquals(listOf(Tile.Numeric(Tile.Suit.Character, 9)), tiles.faces)
+        assertEquals(listOf(TileFaceView(Tile.Numeric(Tile.Suit.Character, 9))), tiles.faces)
 
         val state = assertIs<ReplayReadResult.Success<HistoryRoundState>>(
             reader().readState(fixture.document, fixture.matchId, 1, HistoryRoundPosition.AfterTransaction(2)),
@@ -390,8 +507,8 @@ class CompactReplayRoundReaderGenuineTest {
                 FakeMahjongPlayerFactory.create(
                     discardPile = RiichiDiscardPile(
                         listOf(
-                            RiichiDiscardEntry(declared, isRiichi = true),
-                            RiichiDiscardEntry(taken, isTaken = true),
+                            DiscardEntry(tile = declared, components = RiichiDiscardComponents.declaration()),
+                            DiscardEntry(tile = taken, isTaken = true),
                         ),
                     ),
                 ),
@@ -421,12 +538,12 @@ class CompactReplayRoundReaderGenuineTest {
             event(matchId, base.id, 3, 100L, HistoryFact.MatchCompleted("test:completed", scores)).copy(transactionFirstSequence = 2),
         )
         val registries = bundledPersistenceRegistries()
-        val document = CompactReplayCodec.encodeCompact(events, HistoryRecordingPersistenceMapper(registries), registries, bundledSetAsideTiles(events))
+        val document = CompactReplayCodec.encodeCompact(events, HistoryRecordingPersistenceMapper(registries), registries)
 
         val state = assertIs<ReplayReadResult.Success<HistoryRoundState>>(reader().readState(document, matchId, 1, HistoryRoundPosition.Initial)).value
         val discards = state.players.single { it.initialSeatIndex == 0 }.discards
 
-        assertEquals(listOf<Tile>(Tile.Numeric(Tile.Suit.Character, 3), Tile.Numeric(Tile.Suit.Character, 4)), discards.map { state.tileCatalog.tiles[it.tile.tileIndex] })
+        assertEquals(listOf<Tile>(Tile.Numeric(Tile.Suit.Character, 3), Tile.Numeric(Tile.Suit.Character, 4)), discards.map { state.tileCatalog.tiles[it.tile.tileIndex].tile })
         assertEquals(listOf(setOf(RiichiHistoryDiscardMarkerIds.RIICHI_DECLARED), emptySet()), discards.map { it.markers })
         assertEquals(listOf(false, true), discards.map { it.isTaken })
     }
@@ -497,7 +614,7 @@ class CompactReplayRoundReaderGenuineTest {
             event(matchId, first.id, 6, 500L, HistoryFact.MatchCompleted("test:completed", next.players.associate { it.id to it.score })),
         )
         val registries = bundledPersistenceRegistries()
-        val document = CompactReplayCodec.encodeCompact(events, HistoryRecordingPersistenceMapper(registries), registries, bundledSetAsideTiles(events))
+        val document = CompactReplayCodec.encodeCompact(events, HistoryRecordingPersistenceMapper(registries), registries)
 
         listOf(25_000, 26_000, 27_000).forEachIndexed { index, score ->
             val roundNumber = index + 1
@@ -533,7 +650,7 @@ class CompactReplayRoundReaderGenuineTest {
             event(matchId, table.id, 5, 250L, HistoryFact.TableChanged(HistoryTableResult.Checkpoint("test:settled", settled))).copy(transactionFirstSequence = 3),
         )
         val registries = bundledPersistenceRegistries()
-        return Fixture(CompactReplayCodec.encodeCompact(events, HistoryRecordingPersistenceMapper(registries), registries, bundledSetAsideTiles(events)), matchId, table, changed, settled)
+        return Fixture(CompactReplayCodec.encodeCompact(events, HistoryRecordingPersistenceMapper(registries), registries), matchId, table, changed, settled)
     }
 
     /**
@@ -604,7 +721,7 @@ class CompactReplayRoundReaderGenuineTest {
             add(event(matchId, table.id, if (intermediate == null) 5 else 6, 300L, HistoryFact.MatchCompleted("test:completed", settledScores)))
         }
         val registries = bundledPersistenceRegistries()
-        return Fixture(CompactReplayCodec.encodeCompact(events, HistoryRecordingPersistenceMapper(registries), registries, bundledSetAsideTiles(events)), matchId, table, settled, settled)
+        return Fixture(CompactReplayCodec.encodeCompact(events, HistoryRecordingPersistenceMapper(registries), registries), matchId, table, settled, settled)
     }
 
     /** 建立語意上對應反應完成後才成立途中流局的正式 Replay 文件。 */
@@ -657,7 +774,7 @@ class CompactReplayRoundReaderGenuineTest {
             event(matchId, table.id, 7, 200L, HistoryFact.MatchCompleted("test:completed", scores)).copy(transactionFirstSequence = 6),
         )
         val registries = bundledPersistenceRegistries()
-        return Fixture(CompactReplayCodec.encodeCompact(events, HistoryRecordingPersistenceMapper(registries), registries, bundledSetAsideTiles(events)), matchId, table, abortiveState, abortiveState)
+        return Fixture(CompactReplayCodec.encodeCompact(events, HistoryRecordingPersistenceMapper(registries), registries), matchId, table, abortiveState, abortiveState)
     }
 
     /**
@@ -681,8 +798,14 @@ class CompactReplayRoundReaderGenuineTest {
                     "mahjongcraft:yaku",
                     WinSettlementDetailValue.Entries(listOf(WinSettlementDetailEntry("mahjongcraft:yaku/test", WinSettlementQuantity("mahjongcraft:han", 1)))),
                 ),
-                WinSettlementDetailField("test:bonus_faces", WinSettlementDetailValue.TileFaces(listOf(Tile.Honor.North, Tile.Extension(TileTypeId.parse("test:bonus_face")), Tile.Numeric(Tile.Suit.Character, 9), Tile.Honor.North))),
-                WinSettlementDetailField("mahjongcraft:dora", WinSettlementDetailValue.TileFaces(listOf(Tile.Numeric(Tile.Suit.Character, 9)))),
+                WinSettlementDetailField(
+                    "test:bonus_faces",
+                    WinSettlementDetailValue.TileFaces(
+                        listOf(Tile.Honor.North, Tile.Extension(TileTypeId.parse("test:bonus_face")), Tile.Numeric(Tile.Suit.Character, 9), Tile.Honor.North).map(::TileFaceView) +
+                            TileFaceView(Tile.Numeric(Tile.Suit.Dot, 5), appearanceId = "test:style"),
+                    ),
+                ),
+                WinSettlementDetailField("mahjongcraft:dora", WinSettlementDetailValue.TileFaces(listOf(TileFaceView(Tile.Numeric(Tile.Suit.Character, 9))))),
             ),
         )
         val matchId = Uuid.random()
@@ -718,7 +841,7 @@ class CompactReplayRoundReaderGenuineTest {
             event(matchId, table.id, 7, 400L, HistoryFact.MatchCompleted("test:completed", continued.players.associate { it.id to it.score })).copy(transactionFirstSequence = 6),
         )
         val registries = bundledPersistenceRegistries()
-        return Fixture(CompactReplayCodec.encodeCompact(events, HistoryRecordingPersistenceMapper(registries), registries, bundledSetAsideTiles(events)), matchId, table, changed, continued)
+        return Fixture(CompactReplayCodec.encodeCompact(events, HistoryRecordingPersistenceMapper(registries), registries), matchId, table, changed, continued)
     }
 
     /**

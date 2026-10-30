@@ -39,6 +39,8 @@
   "mahjongcraft_example.room.config.category.rule": "Pairing Mahjong",
   "mahjongcraft_example.room.config.field.exchange_enabled": "Exchange tiles before the round",
   "mahjongcraft_example.room.config.field.exchange_enabled.description": "Before the round, each player gives two chosen tiles to the next seat and receives two tiles from the previous seat.",
+  "mahjongcraft_example.room.config.field.public_faces_enabled": "Public tile faces",
+  "mahjongcraft_example.room.config.field.public_faces_enabled.description": "Three of the four copies of each tile show their face to everyone, even face down in the wall or in another hand. Those tiles have a different body color.",
   "mahjongcraft_example.room.config.field.payment_per_player": "Payment per player",
   "mahjongcraft_example.room.config.field.payment_per_player.description": "Points paid to each winner.",
   "mahjongcraft_example.room.config.field.round_count": "Number of rounds",

@@ -6,7 +6,9 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryRe
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryReplayPlayerIdentity
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryRoundTileCatalog
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryTileReference
+import com.doublemoon1119.mahjongcraft.flow.persistence.format.component.ComponentViewPersistenceRegistry
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
+import com.doublemoon1119.mahjongcraft.logic.base.TileFaceView
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
@@ -45,6 +47,7 @@ class HistoryWinningHandProjectionTest {
             1,
             catalog(5),
             budget(),
+            ComponentViewPersistenceRegistry(),
         ).single()
         val completion = assertIs<HistoryReplayFact.Completion>(projected)
         val winners = completion.outcome?.winnerDetails.orEmpty()
@@ -68,7 +71,7 @@ class HistoryWinningHandProjectionTest {
         )
         val encoded = CompactFactCodec.encode(fact, linkedMapOf(), linkedMapOf())
         val restored = CompactFactCodec.decode(encoded, listOf(HistoryFactTypeKeys.WIN_SETTLED), emptyList())
-        val projected = HistoryReplayProjectionMapper.mapFacts(listOf(restored), listOf(null), identity(1), 1, catalog(1), budget()).single()
+        val projected = HistoryReplayProjectionMapper.mapFacts(listOf(restored), listOf(null), identity(1), 1, catalog(1), budget(), ComponentViewPersistenceRegistry()).single()
         val completion = assertIs<HistoryReplayFact.Completion>(projected)
 
         assertNull(completion.outcome?.winnerDetails?.single()?.hand)
@@ -80,7 +83,7 @@ class HistoryWinningHandProjectionTest {
      * @param size 牌目錄大小。
      * @return 供投影上下文使用的牌目錄。
      */
-    private fun catalog(size: Int) = HistoryRoundTileCatalog(List(size) { Tile.Numeric(Tile.Suit.Character, (it % 9) + 1) })
+    private fun catalog(size: Int) = HistoryRoundTileCatalog((List(size) { Tile.Numeric(Tile.Suit.Character, (it % 9) + 1) }).map(::TileFaceView))
 
     /**
      * 建立受限投影預算。

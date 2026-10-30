@@ -2,6 +2,7 @@ package com.doublemoon1119.mahjongcraft.logic.judgment
 
 import com.doublemoon1119.mahjongcraft.logic.base.Hand
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
+import com.doublemoon1119.mahjongcraft.logic.base.TileValue
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
 
 /**
@@ -18,9 +19,12 @@ interface HandValueContext {
     val hand: Hand
 
     /**
-     * 胡牌張（放銃或自摸的牌）。
+     * 和牌張的完整牌值，保留計分所需的逐張特性。
      */
-    val winningTile: Tile
+    val winningTileValue: TileValue
+
+    /** 和牌張的基本牌面，直接由完整牌值取得。 */
+    val winningTile: Tile get() = winningTileValue.tile
 
     /**
      * 是否為自摸。

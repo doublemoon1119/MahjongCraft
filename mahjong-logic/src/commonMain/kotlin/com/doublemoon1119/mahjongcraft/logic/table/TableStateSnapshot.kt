@@ -1,17 +1,20 @@
 package com.doublemoon1119.mahjongcraft.logic.table
 
 import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
-import com.doublemoon1119.mahjongcraft.logic.config.DynamicRuleState
+import com.doublemoon1119.mahjongcraft.logic.base.toKnownTile
+import com.doublemoon1119.mahjongcraft.logic.base.toSnapshot
+import com.doublemoon1119.mahjongcraft.logic.component.ComponentViewSet
 import com.doublemoon1119.mahjongcraft.logic.config.MahjongRuleConfig
-import com.doublemoon1119.mahjongcraft.logic.module.HandTileState
-import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
 import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPhysicalLayout
 import com.doublemoon1119.mahjongcraft.logic.table.opening.OpeningDiceRoll
+import com.doublemoon1119.mahjongcraft.logic.tile.TileInterpretationPolicy
+import com.doublemoon1119.mahjongcraft.logic.tile.component.TilePoseState
 import kotlin.uuid.Uuid
 
 /**
  * [TableState] 對指定觀察者的不可變可見快照。
  *
+ * @property componentViews 已按讀取者裁切的規則資料，不含原始權威組件。
  * @property id 桌局的唯一識別碼
  * @property players 所有玩家的快照列表
  * @property config 當前桌局使用的規則配置
@@ -22,12 +25,13 @@ import kotlin.uuid.Uuid
  * @property roundPosition 當前權威局位。
  * @property comboCount 當前連莊次數
  * @property currentPlayerIndex 當前回合玩家的索引
- * @property dynamicRuleState 依觀察者投影的規則特定動態桌況狀態；未公開或規則不支援時為 `null`。
  * @property finishedPlayerIds 本局已完成、不再參與後續回合的玩家 Uuid 集合。
- * @property physicalWallLayout 目前仍在牌牆中的牌張實體位置；規則不支援時為 null。
+ * @property physicalWallLayout 目前仍在牌牆中的牌張抽象位置；規則不支援時為 null。
  * @property openingDiceRolls 本局完整擲骰記錄；規則不使用擲骰時為空清單。
- * @property revealedHandTiles 仍在手牌中、由權威公開紀錄揭露的牌；沒有時為空清單。規則額外授權的牌面直接寫入對應手牌快照。
- * @property handTileStates 規則要求的逐張共同姿態，不攜帶原始授權名單。
+ * @property publicTileIds 所有合法觀察者都可讀取牌面的牌張，不包含私人授權。
+ * @property publicEvidenceTileIds 由對局事件明確公開過的牌張，例如流局攤開的手牌、宣告的暗槓；不包含規則讓所有人都
+ *   讀得到牌面的牌。
+ * @property tilePoseStates 規則要求的逐張共同姿態，不攜帶原始授權名單。
  */
 data class TableStateSnapshot(
     val id: Uuid,
@@ -40,97 +44,96 @@ data class TableStateSnapshot(
     val roundPosition: MatchRoundPosition,
     val comboCount: Int,
     val currentPlayerIndex: Int,
-    val dynamicRuleState: DynamicRuleState?,
     val finishedPlayerIds: Set<Uuid>,
     val physicalWallLayout: TileWallPhysicalLayout?,
     val openingDiceRolls: List<OpeningDiceRoll>,
-    val revealedHandTiles: List<IdentifiedTile>,
-    val handTileStates: List<HandTileState>,
+    val publicTileIds: Set<Uuid>,
+    val publicEvidenceTileIds: Set<Uuid>,
+    val tilePoseStates: List<TilePoseState>,
+    val componentViews: ComponentViewSet = ComponentViewSet.EMPTY,
 )
 
 /**
  * 產生一個相對於指定觀察者可見範圍的 [TableState] 不可變快照。
  *
- * 這個低階函式只處理手牌與牌山牌面的可見性，會保留規則狀態原值；對外同步或 AI 情境必須再經過
+ * 這個低階函式不產生規則組件的公開投影；對外同步或 AI 情境必須再經過
  * flow 的 visibility policy 套用規則專屬投影，不能直接把這個結果當成觀察者快照。
  *
  * @param visibleHandPlayerIds 可以顯示完整手牌的玩家識別碼集合。
- * @param setAsideTiles 取得每位玩家移出手牌、公開擺在桌上的牌，通常是這一局規則模組的
- *   [MahjongRuleModule.setAsideTiles]。
+ * @param revealsClosedKanTiles 是否顯示他家暗槓牌面；預設使用本局規則的公開政策。
  * @return 依據明確可見範圍產生的桌局快照。
  */
 fun TableState.toSnapshot(
     visibleHandPlayerIds: Set<Uuid>,
-    setAsideTiles: (MahjongPlayer) -> List<IdentifiedTile>,
+    revealsClosedKanTiles: Boolean = config.revealsClosedKanTiles,
 ): TableStateSnapshot {
-    // 若規則實作 TileWallRevealable，則計算牌山中應公開可見的牌張 Uuid
-    val visibleTileIds = (dynamicRuleState as? TileWallRevealable)
-        ?.getVisibleTileIds(this)
-        ?: emptySet()
-
+    // 低階快照只讀明確的公共證據；完整規則效果由正式可見性政策裁切。
     return TableStateSnapshot(
         id = this.id,
         players = this.players.map {
-            it.toSnapshot(
-                isVisible = it.id in visibleHandPlayerIds,
-                revealsClosedKanTiles = config.revealsClosedKanTiles,
-                setAsideTiles = setAsideTiles(it),
+            val player = it
+            val snapshot = player.toSnapshot(
+                isVisible = player.id in visibleHandPlayerIds,
+                revealsClosedKanTiles = revealsClosedKanTiles,
+            )
+            val handById = player.hand.standingTiles.associateBy { tile -> tile.id }
+            snapshot.copy(
+                hand = snapshot.hand.copy(
+                    standingTiles = snapshot.hand.standingTiles.map { tile ->
+                        handById.getValue(tile.id).toSnapshot(tile.tile != null || tile.id in publicTileEvidenceIds)
+                    },
+                    lastDrawn = snapshot.hand.lastDrawn?.let { tile ->
+                        handById.getValue(tile.id).toSnapshot(tile.tile != null || tile.id in publicTileEvidenceIds)
+                    },
+                ),
             )
         },
         config = this.config,
-        tileWall = this.tileWall.toSnapshot(visibleTileIds = visibleTileIds, reservedWallTiles = this.reservedWallTiles),
+        tileWall = this.tileWall.toSnapshot(visibleTileIds = publicTileEvidenceIds, reservedWallTiles = this.reservedWallTiles),
         dealerPlayerId = this.dealerPlayerId,
         prevalentWind = this.prevalentWind,
         roundNumber = this.roundNumber,
         roundPosition = this.roundPosition,
         comboCount = this.comboCount,
         currentPlayerIndex = this.currentPlayerIndex,
-        dynamicRuleState = this.dynamicRuleState,
         finishedPlayerIds = this.finishedPlayerIds,
         physicalWallLayout = this.physicalWallLayout,
         openingDiceRolls = this.openingDiceRolls,
-        revealedHandTiles = revealedHandTiles(),
-        handTileStates = emptyList(),
+        publicTileIds = publicTileEvidenceIds,
+        publicEvidenceTileIds = publicTileEvidenceIds,
+        tilePoseStates = emptyList(),
     )
 }
 
 /**
- * 仍在手牌中、且列在 [TableState.revealedHandTileIds] 的牌。
- *
- * @return 目前仍在玩家手牌中的已公開牌張。
- */
-private fun TableState.revealedHandTiles(): List<IdentifiedTile> = players.flatMap { player ->
-    player.hand.standingTiles.filter { it.id in revealedHandTileIds }
-}
-
-/**
- * 這份快照的觀察者看得到牌面的每一張實體牌，依實體 ID 去重。
+ * 這份快照的觀察者看得到牌面的牌張，依牌張 ID 去重。
  *
  * 來源包含：各家手牌與副露中看得到牌面的牌（他家立牌與暗槓是否看得到，由建立快照時的可見範圍決定）、牌河中
  * 未被鳴走的牌、移出手牌公開擺在桌上的牌、牌山中已公開的牌，以及仍在手牌中但已公開的牌。同一張牌可能同時出現在
  * 多個來源，例如被鳴走的捨牌或被搶和的牌，只計一次。
  *
- * @return 依實體牌張 ID 去重的可見牌列表。
+ * @param interpretation 本局規則由已知牌面解讀計算特性的方式。
+ * @return 依牌張 ID 去重的可見牌列表。
  */
-fun TableStateSnapshot.visibleTiles(): List<IdentifiedTile> = buildList {
+fun TableStateSnapshot.visibleTiles(interpretation: TileInterpretationPolicy): List<IdentifiedTile> = buildList {
     players.forEach { player ->
-        addAll(player.heldTiles())
-        player.discardPile.entries.filterNot { it.isTaken }.forEach { add(it.tile) }
+        addAll(player.heldTiles(interpretation))
+        player.discardPile.entries.filterNot { it.isTaken }.forEach { entry -> entry.tile.toKnownTile(interpretation)?.let(::add) }
     }
-    tileWall.tiles.forEach { snapshot -> snapshot.tile?.let { add(IdentifiedTile(snapshot.id, it)) } }
-    addAll(revealedHandTiles)
+    tileWall.tiles.forEach { snapshot -> snapshot.toKnownTile(interpretation)?.let(::add) }
 }.distinctBy { it.id }
 
 /**
- * 這位玩家手上看得到牌面的牌：立牌、剛摸到的牌、副露與移出手牌公開擺在桌上的牌，依實體 ID 去重。
+ * 這位玩家手上看得到牌面的牌：立牌、剛摸到的牌、副露與移出手牌公開擺在桌上的牌，依牌張 ID 去重。
  *
  * 立牌與暗槓是否看得到，由建立快照時的可見範圍決定。
  *
- * @return 這位玩家快照中可見牌面的牌張，依實體 ID 去重。
+ * @param interpretation 本局規則由已知牌面解讀計算特性的方式。
+ * @return 這位玩家快照中可見牌面的牌張，依牌張 ID 去重。
  */
-fun MahjongPlayerSnapshot.heldTiles(): List<IdentifiedTile> = buildList {
+fun MahjongPlayerSnapshot.heldTiles(interpretation: TileInterpretationPolicy): List<IdentifiedTile> = buildList {
     (hand.standingTiles + listOfNotNull(hand.lastDrawn) + hand.melds.flatMap { it.tiles }).forEach { snapshot ->
-        snapshot.tile?.let { add(IdentifiedTile(snapshot.id, it)) }
+        snapshot.toKnownTile(interpretation)?.let(::add)
     }
-    addAll(setAsideTiles)
+    setAsideTiles.forEach { snapshot -> snapshot.toKnownTile(interpretation)?.let(::add) }
 }.distinctBy { it.id }

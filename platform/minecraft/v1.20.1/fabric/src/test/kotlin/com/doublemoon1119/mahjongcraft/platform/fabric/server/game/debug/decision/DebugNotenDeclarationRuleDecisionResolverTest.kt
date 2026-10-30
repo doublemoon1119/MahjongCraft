@@ -7,7 +7,6 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionTiming
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.base.Hand
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPlayerState
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
@@ -15,6 +14,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.rule.De
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.rule.DebugNotenDeclarationRiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.rule.DebugNotenDeclarationRiichiRuleModule
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeIdentifiedTileFactory
+import com.doublemoon1119.mahjongcraft.testing.logic.rules.riichi.riichiDeclarationComponents
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
 import kotlin.test.Test
@@ -104,13 +104,13 @@ class DebugNotenDeclarationRuleDecisionResolverTest {
      */
     private fun state(): TableState = FakeTableStateFactory.create(
         players = listOf(
-            FakeMahjongPlayerFactory.create(Wind.EAST).copy(hand = tenpaiHand(), playerRuleState = RiichiPlayerState()),
+            FakeMahjongPlayerFactory.create(Wind.EAST).copy(hand = tenpaiHand(), components = riichiDeclarationComponents()),
             FakeMahjongPlayerFactory.create(Wind.SOUTH).copy(
                 hand = tenpaiHand(),
-                playerRuleState = RiichiPlayerState(riichiTile = FakeIdentifiedTileFactory.create(Tile.Honor.North)),
+                components = riichiDeclarationComponents(declarationTile = FakeIdentifiedTileFactory.create(Tile.Honor.North)),
             ),
-            FakeMahjongPlayerFactory.create(Wind.WEST).copy(hand = notenHand(), playerRuleState = RiichiPlayerState()),
-            FakeMahjongPlayerFactory.create(Wind.NORTH).copy(hand = notenHand(), playerRuleState = RiichiPlayerState()),
+            FakeMahjongPlayerFactory.create(Wind.WEST).copy(hand = notenHand(), components = riichiDeclarationComponents()),
+            FakeMahjongPlayerFactory.create(Wind.NORTH).copy(hand = notenHand(), components = riichiDeclarationComponents()),
         ),
         config = module.config,
     )

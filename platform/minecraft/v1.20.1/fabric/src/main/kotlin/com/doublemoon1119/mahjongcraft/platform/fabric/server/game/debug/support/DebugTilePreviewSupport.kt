@@ -2,10 +2,12 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.suppor
 
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongTileEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongTilePose
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.BuiltInMinecraftTileAppearances
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileWallPlacement
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.UNKNOWN_TILE_ASSET_KEY
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.allTileAssetKeys
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.backAppearance
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.normalizedTileAssetKey
 import com.mojang.brigadier.arguments.StringArgumentType
 import com.mojang.brigadier.builder.LiteralArgumentBuilder
@@ -32,6 +34,14 @@ import kotlin.uuid.toJavaUuid
  * @property tileAssetRegistry 解析與補全牌面 asset key 的來源，含第三方註冊的 asset key。
  */
 class DebugTilePreviewSupport(private val tileAssetRegistry: MinecraftTileAssetRegistry) {
+    /**
+     * 取得預覽牌蓋著時要畫的牌背外觀；預覽桌沒有規則，沒有指定牌身時使用內建預設外觀。
+     *
+     * @param assetKey 牌面素材 key。
+     * @return 牌背外觀 ID。
+     */
+    fun backAppearanceId(assetKey: String): String = tileAssetRegistry.backAppearance(assetKey, BuiltInMinecraftTileAppearances.DEFAULT).id
+
     /**
      * 幫一個子指令節點同時掛上「不帶 `tile` 引數」與「帶 `tile` 引數」兩種執行路徑——省略引數時
      * [onExecute] 收到的 `tileArg` 為 `null`，由呼叫端自行決定預設牌面，見 [resolveAssetKey]。

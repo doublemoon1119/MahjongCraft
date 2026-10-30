@@ -15,6 +15,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinRoundContinuati
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinRoundDirective
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.WinCelebrationCueResolverRegistryImpl
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.DefaultNetworkDtoRegistries
+import com.doublemoon1119.mahjongcraft.flow.persistence.format.registry.emptyPersistenceRegistries
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.ExtensionGameActionCommandFactoryRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.ExtensionGameCommandExecutorRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.PostActionExhaustiveDrawResolverRegistry
@@ -23,11 +24,12 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.RuleDecisi
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.WinRoundContinuationResolver
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.WinRoundContinuationResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.WinSettlementDetailResolverRegistry
+import com.doublemoon1119.mahjongcraft.logic.component.ComponentRegistryImpl
 import com.doublemoon1119.mahjongcraft.logic.module.BuiltInRuleModuleIds
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
 import com.doublemoon1119.mahjongcraft.logic.tile.TileTypeRegistryImpl
-import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledPersistenceRegistries
+import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledCoreExtensionRegistries
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -140,8 +142,9 @@ class CoreExtensionRegistriesTest {
     private fun registries(): CoreExtensionRegistries = CoreExtensionRegistries(
         moduleRegistry = MahjongModuleRegistryImpl(),
         tileTypeRegistry = TileTypeRegistryImpl(),
+        componentRegistry = ComponentRegistryImpl(),
         networkRegistries = DefaultNetworkDtoRegistries(),
-        persistenceRegistries = bundledPersistenceRegistries(),
+        persistenceRegistries = emptyPersistenceRegistries(),
         winCelebrationCueResolverRegistry = WinCelebrationCueResolverRegistryImpl(),
         gameActionAiRegistry = ExtensionGameActionAiRegistry(MahjongModuleRegistryImpl()),
         aiStrategyRegistry = MahjongAiStrategyRegistryImpl(defaultKey = RandomAiStrategy.KEY),
@@ -152,7 +155,7 @@ class CoreExtensionRegistriesTest {
         postActionExhaustiveDrawResolverRegistry = PostActionExhaustiveDrawResolverRegistry(),
         ruleDecisionResolverRegistry = RuleDecisionResolverRegistry(),
         winRoundContinuationResolverRegistry = WinRoundContinuationResolverRegistry(),
-        winSettlementDetailResolverRegistry = WinSettlementDetailResolverRegistry(),
+        winSettlementDetailResolverRegistry = WinSettlementDetailResolverRegistry(bundledCoreExtensionRegistries().componentRegistry),
         gameEventPublicMarkerResolverRegistry = GameEventPublicMarkerResolverRegistry(),
     )
 }

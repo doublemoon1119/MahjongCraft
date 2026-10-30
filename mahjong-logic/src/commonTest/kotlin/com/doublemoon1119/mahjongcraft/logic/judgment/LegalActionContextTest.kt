@@ -8,7 +8,7 @@ import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDiscardPile
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.RiichiTileTypes
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.RiichiTileValues
 import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayer
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.logic.table.TileWall
@@ -22,10 +22,11 @@ import kotlin.uuid.Uuid
 
 /** 驗證判定資料使用同一份桌況，且來源牌只在指定的手牌形式出現一次。 */
 class LegalActionContextTest {
-    /** 摸牌與原始玩家不被改寫，赤牌保留完整牌種及身分。 */
+    /** 摸牌與原始玩家不被改寫，赤五保留特性及身分。 */
     @Test
     fun `own turn derives both hands without changing the authoritative player`() {
-        val drawn = identified(RiichiTileTypes.redFive(Tile.Suit.Dot))
+        val redFive = RiichiTileValues.redFive(Tile.Suit.Dot)
+        val drawn = IdentifiedTile(Uuid.random(), redFive.tile, redFive.components)
         val table = table(Hand(tiles = listOf(identified(Tile.Honor.East)), lastDrawn = drawn))
         val context = LegalActionContext.ownTurn(table, table.currentPlayer.id)
 

@@ -13,7 +13,7 @@ package com.doublemoon1119.mahjongcraft.platform.minecraft.settlement
  * @property responsiblePlayerIsAi 負責支付者是否為 AI。
  * @property totalScore 總分。
  * @property tileAssetKeys 手牌 asset key。
- * @property tileAssetGroups 手牌群組 asset key。
+ * @property tileGroups 手牌與各組副露；蓋著的牌只帶牌背。
  * @property winningTileAssetKey 和牌張 asset key。
  * @property extensionFields 第三方欄位。
  * @property initialFadeTicks 初始淡入時間。
@@ -32,7 +32,7 @@ data class WinSettlementPresentationFieldSnapshot(
     val responsiblePlayerIsAi: Boolean?,
     val totalScore: Int,
     val tileAssetKeys: List<String>,
-    val tileAssetGroups: List<List<String>>,
+    val tileGroups: List<List<PresentationTile>>,
     val winningTileAssetKey: String?,
     val extensionFields: List<ExtensionPresentationField> = emptyList(),
     val initialFadeTicks: Int = 16,

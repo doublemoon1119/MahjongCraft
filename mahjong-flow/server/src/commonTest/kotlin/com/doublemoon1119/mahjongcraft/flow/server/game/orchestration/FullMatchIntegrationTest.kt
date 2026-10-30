@@ -15,9 +15,11 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryFact
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameCommand
 import com.doublemoon1119.mahjongcraft.flow.server.game.simulation.SimulationRuntime
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
+import com.doublemoon1119.mahjongcraft.logic.component.initializeRuleComponents
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiGameLength
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.table.GameInitializer
+import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledCoreExtensionRegistries
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -55,7 +57,7 @@ class FullMatchIntegrationTest {
             id = gameId,
             playerIds = playerIds,
             module = module,
-        ).tableState
+        ).initializeRuleComponents(module.id, bundledCoreExtensionRegistries().componentRegistry).tableState
         runtime.gameRepository.setTableState(initialState, playerIds.associateWith { FakeAiStrategy.KEY })
 
         runtime.coordinator.driveAutomatedPlayers(gameId)

@@ -14,6 +14,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.animation.AnimationSte
 import com.doublemoon1119.mahjongcraft.platform.minecraft.showcase.WinCelebrationShowcaseRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongMeldTileGroup
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileWallPlacement
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.UNKNOWN_TILE_ASSET_KEY
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.winningHandFaceDownIndices
 import net.minecraft.server.world.ServerWorld
 import net.minecraft.util.math.BlockPos
@@ -58,15 +59,15 @@ class FabricWinCelebrationShowcaseScheduler(
      * 翼中的一張牌。
      *
      * @property tileId 桌上的真實牌。
-     * @property assetKey 牌面素材。
+     * @property assetKey 牌面素材；蓋著的牌為未知牌，不帶牌面。
      * @property group 所屬的組：`0` 為手牌，之後依序為各組副露。
-     * @property faceDown 是否露出牌背，例如暗槓兩端。
+     * @property backAppearanceId 蓋著的牌要畫的牌背外觀，例如暗槓兩端；露出牌面時為 null。
      */
     data class Card(
         val tileId: Uuid,
         val assetKey: String,
         val group: Int = 0,
-        val faceDown: Boolean = false,
+        val backAppearanceId: String? = null,
     )
 
     /**
@@ -157,7 +158,7 @@ class FabricWinCelebrationShowcaseScheduler(
                         startYaw = tile.yaw,
                         group = card.group,
                         standYaw = wing.standYaw,
-                        faceDown = card.faceDown,
+                        backAppearanceId = card.backAppearanceId,
                     )
                 },
             )
@@ -197,12 +198,14 @@ class FabricWinCelebrationShowcaseScheduler(
  * @param standingTileIds 已排好序的手牌，不含和牌張。
  * @param melds 依鳴牌順序的副露，每組的牌已依面板順序排列。
  * @param assetKeyOf 取得牌面素材；取不到的牌不列入。
- * @return 依編隊順序排列的牌。
+ * @param backAppearanceOf 依牌面素材取得蓋著時要畫的牌背外觀 ID。
+ * @return 依編隊順序排列的牌；蓋著的牌只帶牌背，不帶牌面。
  */
 internal fun showcaseWingCards(
     standingTileIds: List<Uuid>,
     melds: List<MahjongMeldTileGroup>,
     assetKeyOf: (Uuid) -> String?,
+    backAppearanceOf: (String) -> String,
 ): List<FabricWinCelebrationShowcaseScheduler.Card> {
     val hand = standingTileIds.mapNotNull { id -> assetKeyOf(id)?.let { FabricWinCelebrationShowcaseScheduler.Card(tileId = id, assetKey = it) } }
     val meldCards = melds.flatMapIndexed { meldIndex, meld ->
@@ -210,12 +213,16 @@ internal fun showcaseWingCards(
         val faceDown = winningHandFaceDownIndices(visibleTiles, meld.faceDownTileIds)
         visibleTiles.mapIndexedNotNull { index, id ->
             assetKeyOf(id)?.let { asset ->
-                FabricWinCelebrationShowcaseScheduler.Card(
-                    tileId = id,
-                    assetKey = asset,
-                    group = meldIndex + 1,
-                    faceDown = index in faceDown,
-                )
+                if (index in faceDown) {
+                    FabricWinCelebrationShowcaseScheduler.Card(
+                        tileId = id,
+                        assetKey = UNKNOWN_TILE_ASSET_KEY,
+                        group = meldIndex + 1,
+                        backAppearanceId = backAppearanceOf(asset),
+                    )
+                } else {
+                    FabricWinCelebrationShowcaseScheduler.Card(tileId = id, assetKey = asset, group = meldIndex + 1)
+                }
             }
         }
     }

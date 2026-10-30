@@ -207,25 +207,29 @@ class CustomDiscardClaimIntegrationTest {
         val useCase = RespondToDiscardUseCase(
             gameRepository = repository,
             moduleRegistry = modules,
-            snapshotSynchronizer = GameSnapshotSynchronizer(repository, FakeGameSnapshotRepository(), GameVisibilityPolicyImpl(modules)),
+            snapshotSynchronizer = GameSnapshotSynchronizer(repository, FakeGameSnapshotRepository(), GameVisibilityPolicyImpl(modules, componentRegistry = bundledCoreExtensionRegistries().componentRegistry)),
             handSortPreferenceStore = HandSortPreferenceStore(),
             eventPublisher = events,
             presentationPublisher = FakeGamePresentationPublisher(),
             winPresentationHandoff = WinPresentationHandoff(),
             winCelebrationCueResolverRegistry = bundledWinCelebrationCueResolverRegistry(),
-            winSettlementDetailResolverRegistry = WinSettlementDetailResolverRegistry().apply { freeze() },
+            winSettlementDetailResolverRegistry = WinSettlementDetailResolverRegistry(bundledCoreExtensionRegistries().componentRegistry).apply { freeze() },
             postActionExhaustiveDrawResolverRegistry = PostActionExhaustiveDrawResolverRegistry().apply { freeze() },
+
+            componentRegistry = bundledCoreExtensionRegistries().componentRegistry,
         )
 
         /** 鳴牌後接續執行的正式捨牌用例。 */
         val discard = DiscardTileUseCase(
             gameRepository = repository,
             moduleRegistry = modules,
-            snapshotSynchronizer = GameSnapshotSynchronizer(repository, FakeGameSnapshotRepository(), GameVisibilityPolicyImpl(modules)),
+            snapshotSynchronizer = GameSnapshotSynchronizer(repository, FakeGameSnapshotRepository(), GameVisibilityPolicyImpl(modules, componentRegistry = bundledCoreExtensionRegistries().componentRegistry)),
             handSortPreferenceStore = HandSortPreferenceStore(),
             postActionExhaustiveDrawResolverRegistry = PostActionExhaustiveDrawResolverRegistry().apply { freeze() },
             eventPublisher = events,
             presentationPublisher = FakeGamePresentationPublisher(),
+
+            componentRegistry = bundledCoreExtensionRegistries().componentRegistry,
         )
 
         /**

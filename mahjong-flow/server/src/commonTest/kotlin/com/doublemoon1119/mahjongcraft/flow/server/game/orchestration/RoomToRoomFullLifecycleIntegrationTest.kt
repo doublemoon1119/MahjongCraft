@@ -12,8 +12,8 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.Game
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameCommand
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameConfig
 import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
+import com.doublemoon1119.mahjongcraft.flow.server.game.history.HistoryTilePresentationResolverImpl
 import com.doublemoon1119.mahjongcraft.flow.server.game.policy.GameVisibilityPolicyImpl
-import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepositoryImpl
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.DecisionTimerSynchronizationService
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.ExhaustiveDrawSettlementPresentationService
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameAbortEffects
@@ -51,9 +51,11 @@ import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiGameLength
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
+import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledCoreExtensionRegistries
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledWinCelebrationCueResolverRegistry
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.registerBundledRuleModules
 import com.doublemoon1119.mahjongcraft.testing.flow.common.game.repository.FakeGameSnapshotRepository
+import com.doublemoon1119.mahjongcraft.testing.flow.common.game.repository.componentValidatedGameRepository
 import com.doublemoon1119.mahjongcraft.testing.flow.common.game.service.FakeDecisionTimerUpdatePublisher
 import com.doublemoon1119.mahjongcraft.testing.flow.common.game.service.FakeGameEventPublisher
 import com.doublemoon1119.mahjongcraft.testing.flow.common.game.service.FakeGamePresentationBusyGate
@@ -110,8 +112,12 @@ class RoomToRoomFullLifecycleIntegrationTest {
      * @property coordinator 推進用例與局間流程的協調器。
      */
     private class Fixtures(historyRecordingEnabled: Boolean = false) {
-        val store = AuthoritativeStateStore(historyRecordingEnabled = historyRecordingEnabled, maxPendingHistoryEvents = 10_000)
-        val gameRepo = GameRepositoryImpl(store)
+        val store = AuthoritativeStateStore(
+            historyRecordingEnabled = historyRecordingEnabled,
+            maxPendingHistoryEvents = 20_000,
+            tilePresentationResolver = bundledCoreExtensionRegistries().let { HistoryTilePresentationResolverImpl(it.moduleRegistry, it.componentRegistry) },
+        )
+        val gameRepo = componentValidatedGameRepository(store)
         val roomRepo = RoomRepositoryImpl(store)
         val membershipRepo = PlayerMembershipRepositoryImpl()
         val roomSnapshotRepo = FakeRoomSnapshotRepository()
@@ -122,7 +128,7 @@ class RoomToRoomFullLifecycleIntegrationTest {
         val winPresentationHandoff = WinPresentationHandoff()
         val presentationBusyGate = FakeGamePresentationBusyGate()
         val moduleRegistry = MahjongModuleRegistryImpl().apply { registerBundledRuleModules() }
-        val snapshotSynchronizer = GameSnapshotSynchronizer(gameRepo, gameSnapshotRepo, GameVisibilityPolicyImpl(moduleRegistry))
+        val snapshotSynchronizer = GameSnapshotSynchronizer(gameRepo, gameSnapshotRepo, GameVisibilityPolicyImpl(moduleRegistry, componentRegistry = bundledCoreExtensionRegistries().componentRegistry))
         val handSortPreferenceStore = HandSortPreferenceStore()
 
         val createRoomUseCase = CreateRoomUseCase(store, membershipRepo, roomSnapshotRepo, roomEventPublisher)
@@ -137,13 +143,14 @@ class RoomToRoomFullLifecycleIntegrationTest {
             handSortPreferenceStore,
             gameEventPublisher,
             presentationPublisher,
+            componentRegistry = bundledCoreExtensionRegistries().componentRegistry,
         )
 
         val postActionExhaustiveDrawResolverRegistry = PostActionExhaustiveDrawResolverRegistry().apply {
             BundledRiichiExtension.registerPostActionExhaustiveDrawResolvers(this)
             freeze()
         }
-        val winSettlementDetailResolverRegistry = WinSettlementDetailResolverRegistry().apply {
+        val winSettlementDetailResolverRegistry = WinSettlementDetailResolverRegistry(bundledCoreExtensionRegistries().componentRegistry).apply {
             BundledRiichiExtension.registerWinSettlementDetailResolvers(this)
             freeze()
         }
@@ -168,12 +175,16 @@ class RoomToRoomFullLifecycleIntegrationTest {
                     postActionExhaustiveDrawResolverRegistry = postActionExhaustiveDrawResolverRegistry,
                     eventPublisher = gameEventPublisher,
                     presentationPublisher = presentationPublisher,
+
+                    componentRegistry = bundledCoreExtensionRegistries().componentRegistry,
                 ),
+
+                componentRegistry = bundledCoreExtensionRegistries().componentRegistry,
             ),
         )
 
         val router = GameActionRouter(
-            drawTileUseCase = DrawTileUseCase(gameRepo, moduleRegistry, snapshotSynchronizer, gameEventPublisher, presentationPublisher),
+            drawTileUseCase = DrawTileUseCase(gameRepo, moduleRegistry, snapshotSynchronizer, gameEventPublisher, presentationPublisher, componentRegistry = bundledCoreExtensionRegistries().componentRegistry),
             discardTileUseCase = DiscardTileUseCase(
                 gameRepo,
                 moduleRegistry,
@@ -182,6 +193,8 @@ class RoomToRoomFullLifecycleIntegrationTest {
                 postActionExhaustiveDrawResolverRegistry,
                 gameEventPublisher,
                 presentationPublisher,
+
+                componentRegistry = bundledCoreExtensionRegistries().componentRegistry,
             ),
             declareTsumoUseCase = DeclareTsumoUseCase(
                 gameRepo,
@@ -192,8 +205,10 @@ class RoomToRoomFullLifecycleIntegrationTest {
                 winPresentationHandoff,
                 winCelebrationCueResolverRegistry = bundledWinCelebrationCueResolverRegistry(),
                 winSettlementDetailResolverRegistry = winSettlementDetailResolverRegistry,
+
+                componentRegistry = bundledCoreExtensionRegistries().componentRegistry,
             ),
-            declareKanUseCase = DeclareKanUseCase(gameRepo, moduleRegistry, snapshotSynchronizer, gameEventPublisher, presentationPublisher),
+            declareKanUseCase = DeclareKanUseCase(gameRepo, moduleRegistry, snapshotSynchronizer, gameEventPublisher, presentationPublisher, componentRegistry = bundledCoreExtensionRegistries().componentRegistry),
             respondToDiscardUseCase = RespondToDiscardUseCase(
                 gameRepo,
                 moduleRegistry,
@@ -205,6 +220,8 @@ class RoomToRoomFullLifecycleIntegrationTest {
                 winCelebrationCueResolverRegistry = bundledWinCelebrationCueResolverRegistry(),
                 winSettlementDetailResolverRegistry = winSettlementDetailResolverRegistry,
                 postActionExhaustiveDrawResolverRegistry = postActionExhaustiveDrawResolverRegistry,
+
+                componentRegistry = bundledCoreExtensionRegistries().componentRegistry,
             ),
             respondToRobbingUseCase = RespondToRobbingUseCase(
                 gameRepo,
@@ -215,6 +232,8 @@ class RoomToRoomFullLifecycleIntegrationTest {
                 winPresentationHandoff,
                 winCelebrationCueResolverRegistry = bundledWinCelebrationCueResolverRegistry(),
                 winSettlementDetailResolverRegistry = winSettlementDetailResolverRegistry,
+
+                componentRegistry = bundledCoreExtensionRegistries().componentRegistry,
             ),
             declareAbortiveDrawUseCase = DeclareAbortiveDrawUseCase(gameRepo, moduleRegistry, snapshotSynchronizer, gameEventPublisher),
             extensionCommandExecutor = extensionCommandExecutor,
@@ -224,7 +243,7 @@ class RoomToRoomFullLifecycleIntegrationTest {
             gameRepo,
             getLegalActionsUseCase,
             aiStrategyRegistry,
-            GameVisibilityPolicyImpl(moduleRegistry),
+            GameVisibilityPolicyImpl(moduleRegistry, componentRegistry = bundledCoreExtensionRegistries().componentRegistry),
             moduleRegistry,
             AiDecisionExecutor.direct(failurePolicy = ExtensionFailurePolicy.Default),
             AutomaticGameCommandResolver(moduleRegistry),
@@ -271,6 +290,7 @@ class RoomToRoomFullLifecycleIntegrationTest {
                 handSortPreferenceStore,
                 gameEventPublisher,
                 presentationPublisher,
+                componentRegistry = bundledCoreExtensionRegistries().componentRegistry,
             ),
             returnToRoomUseCase = ReturnToRoomUseCase(
                 store,
@@ -435,7 +455,7 @@ class RoomToRoomFullLifecycleIntegrationTest {
     private suspend fun Fixtures.driveHostTurn(gameId: Uuid, hostId: Uuid, strategy: MahjongAiStrategy): Boolean {
         val game = gameRepo.getGame(gameId) ?: return false
         val state = game.tableState
-        val visibilityPolicy = GameVisibilityPolicyImpl(moduleRegistry)
+        val visibilityPolicy = GameVisibilityPolicyImpl(moduleRegistry, componentRegistry = bundledCoreExtensionRegistries().componentRegistry)
 
         val pendingRobbingReaction = state.pendingRobbingReaction
         if (pendingRobbingReaction != null && hostId in pendingRobbingReaction.eligiblePlayerIds && hostId !in pendingRobbingReaction.responses) {

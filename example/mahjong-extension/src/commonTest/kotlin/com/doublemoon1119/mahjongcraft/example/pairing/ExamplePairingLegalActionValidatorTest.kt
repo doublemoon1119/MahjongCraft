@@ -5,6 +5,7 @@ import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.base.Hand
 import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
+import com.doublemoon1119.mahjongcraft.logic.component.ComponentSet
 import com.doublemoon1119.mahjongcraft.logic.judgment.LegalActionContext
 import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayer
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
@@ -59,7 +60,7 @@ class ExamplePairingLegalActionValidatorTest {
             initialSeatIndex = 0,
             hand = hand,
             discardPile = ExamplePairingDiscardPile(),
-            playerRuleState = ExamplePairingPlayerState(),
+            components = ComponentSet.EMPTY,
             seatWind = Wind.EAST,
         )
         val table = TableState(

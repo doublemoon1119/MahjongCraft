@@ -119,7 +119,7 @@ internal object ShantenTestFixtures {
     /**
      * 每種牌各四張的牌山。
      *
-     * @param replace 接收每張牌與它是第幾張（0～3），回傳替換後的牌；回傳 null 表示移除，例如換成赤牌或拿掉三人麻將不用的牌。
+     * @param replace 接收每張牌與它是第幾張（0～3），回傳替換後的牌；回傳 null 表示移除，例如拿掉三人麻將不用的牌。
      * @return 依替換函式產生的牌山列表。
      */
     fun fullWall(replace: (Tile, Int) -> Tile? = { tile, _ -> tile }): List<Tile> = TILE_KINDS.flatMap { tile -> (0 until 4).mapNotNull { copy -> replace(tile, copy) } }

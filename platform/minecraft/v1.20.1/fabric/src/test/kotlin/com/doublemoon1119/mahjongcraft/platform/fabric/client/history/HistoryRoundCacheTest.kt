@@ -9,6 +9,7 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryRoundPosi
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryRoundStateDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.model.SuitDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.model.TileDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.model.TileFaceViewDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.model.WindDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.snapshot.MatchRoundPhaseDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.snapshot.MatchRoundPositionDto
@@ -159,7 +160,7 @@ class HistoryRoundCacheTest {
         identity = HistoryReplayIdentityDto(TEST_MATCH_ID, TEST_TABLE_ID, listOf(HistoryReplayPlayerIdentityDto(0, null, "test:ai"))),
         roundNumber = 1,
         position = HistoryRoundPositionDto.Initial,
-        tileCatalog = listOf(TileDto.Numeric(SuitDto.CHARACTER, 1)),
+        tileCatalog = listOf(TileFaceViewDto(TileDto.Numeric(SuitDto.CHARACTER, 1), emptyList(), null)),
         players = listOf(HistoryReplayPlayerStateDto(0, emptyList(), emptyList(), null, emptyList(), 25000, WindDto.EAST, emptyList())),
         wallTiles = emptyList(),
         reservedTiles = emptyList(),

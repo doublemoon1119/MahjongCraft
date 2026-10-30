@@ -3,15 +3,16 @@ package com.doublemoon1119.mahjongcraft.example.minecraft.presentation
 import com.doublemoon1119.mahjongcraft.example.ExamplePairingWinSettlementDetailResolver
 import com.doublemoon1119.mahjongcraft.example.minecraft.room.examplePairingGameConfigPresentation
 import com.doublemoon1119.mahjongcraft.example.minecraft.text.ExampleMinecraftMessageKeys
+import com.doublemoon1119.mahjongcraft.example.pairing.ExamplePairingBonusTiles
+import com.doublemoon1119.mahjongcraft.example.pairing.ExamplePairingComponents
 import com.doublemoon1119.mahjongcraft.example.pairing.ExamplePairingDiscardPile
-import com.doublemoon1119.mahjongcraft.example.pairing.ExamplePairingDynamicState
 import com.doublemoon1119.mahjongcraft.example.pairing.ExamplePairingIds
-import com.doublemoon1119.mahjongcraft.example.pairing.ExamplePairingPlayerState
 import com.doublemoon1119.mahjongcraft.example.pairing.ExamplePairingRuleConfig
 import com.doublemoon1119.mahjongcraft.example.pairing.ExamplePairingTileType
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementQuantity
 import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
+import com.doublemoon1119.mahjongcraft.logic.component.ComponentSet
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.table.DiscardPile
 import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayer
@@ -59,6 +60,7 @@ class ExamplePairingPresentationTest {
             setOf(
                 ExampleMinecraftPresentationIds.WALL_TILE_VALUES_FIELD,
                 ExampleMinecraftPresentationIds.EXCHANGE_FIELD,
+                ExampleMinecraftPresentationIds.PUBLIC_FACES_FIELD,
                 ExampleMinecraftPresentationIds.PAYMENT_FIELD,
                 ExampleMinecraftPresentationIds.ROUND_COUNT_FIELD,
             ),
@@ -209,7 +211,7 @@ class ExamplePairingPresentationTest {
             responsiblePlayerIsAi = null,
             totalScore = 24,
             tileAssetKeys = emptyList(),
-            tileAssetGroups = emptyList(),
+            tileGroups = emptyList(),
             winningTileAssetKey = null,
             extensionFields = listOf(ExtensionPresentationField(bonusId, bonus), ExtensionPresentationField(facesId, faces)),
         )
@@ -248,7 +250,7 @@ class ExamplePairingPresentationTest {
             config = ExamplePairingRuleConfig(wallTileValues = setOf(1, 2, 3)),
             tileWall = TileWall(),
             dealerPlayerId = players.first().id,
-            dynamicRuleState = ExamplePairingDynamicState(setOf(3, 1)),
+            components = ComponentSet.EMPTY.with(ExamplePairingComponents.BONUS_TILES, ExamplePairingBonusTiles(setOf(3, 1))),
         )
 
         val props = ExamplePairingTableProps.describe(table)
@@ -272,7 +274,7 @@ class ExamplePairingPresentationTest {
         val revealedPlayer = MahjongPlayer(
             id = Uuid.random(),
             initialSeatIndex = 0,
-            playerRuleState = ExamplePairingPlayerState(handRevealed = true),
+            components = ComponentSet.EMPTY.with(ExamplePairingComponents.HAND_REVEALED, Unit),
             discardPile = ExamplePairingDiscardPile(),
             seatWind = Wind.EAST,
         )
@@ -290,7 +292,7 @@ class ExamplePairingPresentationTest {
             config = ExamplePairingRuleConfig(wallTileValues = setOf(1, 2)),
             tileWall = TileWall(),
             dealerPlayerId = revealedPlayer.id,
-            dynamicRuleState = ExamplePairingDynamicState(setOf(1)),
+            components = ComponentSet.EMPTY.with(ExamplePairingComponents.BONUS_TILES, ExamplePairingBonusTiles(setOf(1))),
         )
 
         val props = ExamplePairingTableProps.describe(table)
@@ -307,7 +309,7 @@ class ExamplePairingPresentationTest {
             MahjongPlayer(
                 id = Uuid.random(),
                 initialSeatIndex = index,
-                playerRuleState = ExamplePairingPlayerState(handRevealed = true),
+                components = ComponentSet.EMPTY.with(ExamplePairingComponents.HAND_REVEALED, Unit),
                 discardPile = ExamplePairingDiscardPile(),
                 seatWind = Wind.entries[index],
             )
@@ -318,7 +320,7 @@ class ExamplePairingPresentationTest {
             config = ExamplePairingRuleConfig(),
             tileWall = TileWall(),
             dealerPlayerId = players.first().id,
-            dynamicRuleState = ExamplePairingDynamicState((1..7).toSet()),
+            components = ComponentSet.EMPTY.with(ExamplePairingComponents.BONUS_TILES, ExamplePairingBonusTiles((1..7).toSet())),
         )
         val placements = ExamplePairingTableProps.describe(table)
         val presentation = TablePropPresentation(
@@ -349,7 +351,7 @@ class ExamplePairingPresentationTest {
                 MahjongPlayer(
                     id = Uuid.random(),
                     initialSeatIndex = index,
-                    playerRuleState = ExamplePairingPlayerState(handRevealed = true),
+                    components = ComponentSet.EMPTY.with(ExamplePairingComponents.HAND_REVEALED, Unit),
                     discardPile = ExamplePairingDiscardPile(),
                     seatWind = Wind.entries[index],
                 )
@@ -361,7 +363,7 @@ class ExamplePairingPresentationTest {
                     config = ExamplePairingRuleConfig(),
                     tileWall = TileWall(),
                     dealerPlayerId = players[dealer].id,
-                    dynamicRuleState = ExamplePairingDynamicState((1..7).toSet()),
+                    components = ComponentSet.EMPTY.with(ExamplePairingComponents.BONUS_TILES, ExamplePairingBonusTiles((1..7).toSet())),
                 )
                 val props = ExamplePairingTableProps.describe(state)
                 assertTrue(props.filter { it.kind == BuiltInTablePropKinds.FACE_UP_TILE }.all { (it.location as TablePropLocation.Center).yaw == seatYaws[dealer] })

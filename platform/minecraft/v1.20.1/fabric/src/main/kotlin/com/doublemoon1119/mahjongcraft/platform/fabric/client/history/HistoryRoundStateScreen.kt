@@ -5,7 +5,7 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryReplayPla
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryRoundPositionDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryRoundStateDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryWinDetailValueDto
-import com.doublemoon1119.mahjongcraft.flow.network.dto.model.TileDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.model.TileFaceViewDto
 import com.doublemoon1119.mahjongcraft.platform.minecraft.history.MinecraftHistoryScreenKeys
 import net.minecraft.client.gui.DrawContext
 import net.minecraft.client.gui.screen.Screen
@@ -622,7 +622,7 @@ internal class HistoryRoundStateScreen(
             val hint: Text? = null,
             val taken: Set<Int> = emptySet(),
             val markers: Map<Int, Set<String>> = emptyMap(),
-            val faceCatalog: List<TileDto>? = null,
+            val faceCatalog: List<TileFaceViewDto>? = null,
         ) : Row {
             /** 牌組高度與垂直內距。 */
             override val height: Int = ceil(layout.height).toInt() + 8

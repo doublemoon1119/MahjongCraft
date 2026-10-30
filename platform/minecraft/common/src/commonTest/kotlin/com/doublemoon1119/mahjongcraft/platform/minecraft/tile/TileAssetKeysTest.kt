@@ -1,7 +1,8 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.tile
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
+import com.doublemoon1119.mahjongcraft.logic.base.TileFaceView
 import com.doublemoon1119.mahjongcraft.logic.base.TileTypeId
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.RiichiTileTypes
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.RiichiTileValues
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.tile.TaiwanTileTypes
 import com.doublemoon1119.mahjongcraft.platform.minecraft.extension.BuiltInMinecraftMahjongExtension
 import com.doublemoon1119.mahjongcraft.platform.minecraft.extension.BundledMinecraftMahjongExtensions
@@ -25,9 +26,15 @@ class TileAssetKeysTest {
         assertEquals("s5", Tile.Numeric(Tile.Suit.Bamboo, 5).toAssetKey(registry))
     }
 
+    /** 赤五樣式有登記時使用赤五素材；同一樣式套在沒有登記的牌面上，退回基本牌面的素材。 */
     @Test
-    fun `test toAssetKey appends a red suffix for red fives`() {
-        assertEquals("m5_red", RiichiTileTypes.redFive(Tile.Suit.Character).toAssetKey(registry))
+    fun `test face asset key uses a registered style and falls back to the base face`() {
+        val redFive = TileFaceView(Tile.Numeric(Tile.Suit.Character, 5), appearanceId = RiichiTileValues.RED_FIVE_APPEARANCE_ID)
+        val unregistered = TileFaceView(Tile.Numeric(Tile.Suit.Character, 4), appearanceId = RiichiTileValues.RED_FIVE_APPEARANCE_ID)
+
+        assertEquals("m5_red", redFive.toAssetKey(registry))
+        assertEquals("m4", unregistered.toAssetKey(registry))
+        assertEquals("m5", TileFaceView(Tile.Numeric(Tile.Suit.Character, 5)).toAssetKey(registry))
     }
 
     @Test

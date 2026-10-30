@@ -16,6 +16,7 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.RuleDecisi
 import com.doublemoon1119.mahjongcraft.flow.server.room.repository.RoomRepositoryImpl
 import com.doublemoon1119.mahjongcraft.flow.server.room.usecase.UpdateConfigUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateStore
+import com.doublemoon1119.mahjongcraft.logic.component.AuthoritativeComponentValidator
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.GameConfigEditorSpec
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.GameConfigPresentationRegistryImpl
@@ -73,7 +74,7 @@ class ExamplePairingMultiChoiceSubmissionTest {
         val updated = assertNotNull(rooms.getRoom(room.id))
         assertEquals(selectedIds, (field.read(updated.gameConfig) as GameConfigPresentationValue.MultiChoiceValue).optionIds)
         val persistence = emptyPersistenceRegistries().apply(extension::registerPersistenceDtos).apply { freeze() }
-        val codec = AuthoritativeStatePersistenceCodec(persistence)
+        val codec = AuthoritativeStatePersistenceCodec(persistence, componentValidator = AuthoritativeComponentValidator { error("This fixture only saves rooms") })
         val restored = codec.decode(codec.encode(listOf(updated), emptyList())).rooms.values.single()
         assertEquals(updated, restored)
         assertEquals(selectedIds, (field.read(restored.gameConfig) as GameConfigPresentationValue.MultiChoiceValue).optionIds)

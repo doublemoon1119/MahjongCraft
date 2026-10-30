@@ -3,6 +3,7 @@ package com.doublemoon1119.mahjongcraft.logic.rules.riichi
 import com.doublemoon1119.mahjongcraft.logic.base.Hand
 import com.doublemoon1119.mahjongcraft.logic.base.MeldType
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
+import com.doublemoon1119.mahjongcraft.logic.base.TileValue
 import com.doublemoon1119.mahjongcraft.logic.judgment.HandValueContext
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
 
@@ -13,7 +14,7 @@ import com.doublemoon1119.mahjongcraft.logic.table.Wind
  * 規則設定與玩家狀態帶入的欄位因此不會因呼叫端而不同。
  *
  * @property hand 玩家手牌（包含立牌與副露）。
- * @property winningTile 胡牌張（放銃或自摸的牌）。
+ * @property winningTileValue 和牌張的完整牌值，保留逐張計分特性。
  * @property isTsumo 是否為自摸。
  * @property isMenzen 是否有門前清（無副露）。
  * @property roundWind 圈風。
@@ -38,7 +39,7 @@ import com.doublemoon1119.mahjongcraft.logic.table.Wind
  */
 data class RiichiHandValueContext(
     override val hand: Hand,
-    override val winningTile: Tile,
+    override val winningTileValue: TileValue,
     override val isTsumo: Boolean,
     override val isMenzen: Boolean,
     override val roundWind: Wind,
@@ -64,42 +65,46 @@ data class RiichiHandValueContext(
     /** [RiichiHandValueContext] 的建立方式。 */
     companion object {
         /**
-         * 依規則設定 [config] 與和牌者的 [riichiState] 建立手牌價值上下文。
+         * 依規則設定 [config] 與和牌者的 [declaration] 建立手牌價值上下文。
          *
          * 規則設定（食斷、三人牌組）與玩家狀態（立直、兩立直、拔出的北、包牌責任）一律在這裡帶入；只有正式結算才知道的
          * 和牌情境（一發、裏寶牌、海底、河底、搶槓、嶺上、第一巡、燕返、槓振）一律為否或空，由正式結算另外補上。
          *
          * @param config 建立此上下文時使用的日麻規則配置。
-         * @param riichiState 和牌者的立直規則狀態。
+         * @param declaration 已成立的立直宣告；未立直時為 null。
          * @param hand 不含和牌張的手牌；門前清依副露是否全為暗槓判定。
-         * @param winningTile 本次和牌的牌張。
+         * @param winningTile 本次和牌的完整牌值，不借用牌張識別碼。
          * @param isTsumo 是否為自摸。
          * @param roundWind 本局場風。
          * @param seatWind 和牌者自風。
          * @param isDealer 和牌者是否為本局莊家。
          * @param doraIndicators 和牌者看得到的寶牌指示牌。
+         * @param paoLiability 玩家包牌組件的值；沒有時為 null。
+         * @param nukiDoraTiles 玩家北牌區中的牌面。
          * @return 依玩家規則狀態與目前牌況建立的手牌價值上下文。
          */
         fun forPlayer(
             config: RiichiFamilyRuleConfig,
-            riichiState: RiichiPlayerState,
+            declaration: RiichiDeclaration?,
             hand: Hand,
-            winningTile: Tile,
+            winningTile: TileValue,
             isTsumo: Boolean,
             roundWind: Wind,
             seatWind: Wind,
             isDealer: Boolean,
             doraIndicators: List<Tile>,
+            nukiDoraTiles: List<Tile>,
+            paoLiability: PaoLiability?,
         ): RiichiHandValueContext = RiichiHandValueContext(
             hand = hand,
-            winningTile = winningTile,
+            winningTileValue = winningTile,
             isTsumo = isTsumo,
             isMenzen = hand.melds.all { it.type == MeldType.CLOSED_KAN },
             roundWind = roundWind,
             seatWind = seatWind,
             isDealer = isDealer,
-            isRiichi = riichiState.isRiichi,
-            isDoubleRiichi = riichiState.isDoubleRiichi,
+            isRiichi = declaration != null,
+            isDoubleRiichi = declaration?.isDoubleRiichi == true,
             isIppatsu = false,
             allowOpenTanyao = config.allowOpenTanyao,
             doraIndicators = doraIndicators,
@@ -111,8 +116,8 @@ data class RiichiHandValueContext(
             isFirstTurn = false,
             isRiichiDeclarationDiscard = false,
             isDiscardAfterKan = false,
-            paoLiability = riichiState.paoLiability,
-            nukiDoraTiles = riichiState.nukiDoraTiles.map { it.tile },
+            paoLiability = paoLiability,
+            nukiDoraTiles = nukiDoraTiles.toList(),
             usesThreePlayerTiles = config.usesThreePlayerTiles,
         )
     }

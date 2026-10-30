@@ -8,6 +8,7 @@ import com.doublemoon1119.mahjongcraft.flow.persistence.format.core.persistenceJ
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.migration.PersistenceMigrationRegistry
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.migration.buildBuiltInPersistenceMigrationRegistry
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.registry.PersistenceRegistries
+import com.doublemoon1119.mahjongcraft.logic.component.AuthoritativeComponentValidator
 
 /**
  * 不依賴平台 API，負責權威狀態 JSON 編解碼、版本遷移與 DTO 對應。
@@ -15,10 +16,12 @@ import com.doublemoon1119.mahjongcraft.flow.persistence.format.registry.Persiste
  * 版本／loader adapter 只需保存 [encode] 回傳的字串，並將 [decode] 結果載入共用狀態儲存。
  *
  * @property registries 可擴充領域型別的持久化註冊表集合。
+ * @property componentValidator 與正式寫入共用的完整組件驗證，不補建缺少的值。
  * @property migrationRegistry schema 版本遷移註冊表。
  */
 class AuthoritativeStatePersistenceCodec(
     private val registries: PersistenceRegistries,
+    private val componentValidator: AuthoritativeComponentValidator,
     private val migrationRegistry: PersistenceMigrationRegistry = buildBuiltInPersistenceMigrationRegistry(),
 ) {
     /**
@@ -34,15 +37,11 @@ class AuthoritativeStatePersistenceCodec(
         games: Collection<Game>,
         historyRecordingState: HistoryRecordingState = HistoryRecordingState(),
     ): String {
+        games.forEach { componentValidator.validate(it.tableState) }
         val state = createAuthoritativeStatePersistenceDto(
             rooms = rooms,
             games = games,
-            ruleConfigRegistry = registries.ruleConfigs,
-            discardPileRegistry = registries.discardPiles,
-            playerRuleStateRegistry = registries.playerRuleStates,
-            dynamicRuleStateRegistry = registries.dynamicRuleStates,
-            exhaustiveDrawReasonRegistry = registries.exhaustiveDrawReasons,
-            extensionGameActionRegistry = registries.extensionGameActions,
+            registries = registries,
             historyRecordingState = historyRecordingState,
         )
         return persistenceJson.encodeToString(PersistenceEnvelopeDto.serializer(), state.toEnvelope())
@@ -63,11 +62,10 @@ class AuthoritativeStatePersistenceCodec(
             games = state.toGames(
                 ruleConfigRegistry = registries.ruleConfigs,
                 discardPileRegistry = registries.discardPiles,
-                playerRuleStateRegistry = registries.playerRuleStates,
-                dynamicRuleStateRegistry = registries.dynamicRuleStates,
                 exhaustiveDrawReasonRegistry = registries.exhaustiveDrawReasons,
                 extensionGameActionRegistry = registries.extensionGameActions,
-            ),
+                componentRegistry = registries.components,
+            ).also { games -> games.values.forEach { componentValidator.validate(it.tableState) } },
             historyRecordingState = state.toHistoryRecordingState(registries),
         )
     }

@@ -1,6 +1,6 @@
 package com.doublemoon1119.mahjongcraft.flow.common.game.model
 
-import com.doublemoon1119.mahjongcraft.logic.base.Tile
+import com.doublemoon1119.mahjongcraft.logic.base.TileFaceView
 
 /**
  * 規則算出的一個胡牌詳情值；只描述結果本身，顯示文字與排版由平台依欄位與條目 ID 決定。
@@ -27,7 +27,9 @@ sealed interface WinSettlementDetailValue {
     /**
      * 直接描述的公開牌面，不引用牌山或任何玩家持有的特定牌張。
      *
+     * 牌面已經以公共讀取者裁切，只帶允許展示的外觀與特徵，例如日麻的赤五。
+     *
      * @property faces 依規則順序排列的展示牌面，保留重複值。
      */
-    data class TileFaces(val faces: List<Tile>) : WinSettlementDetailValue
+    data class TileFaces(val faces: List<TileFaceView>) : WinSettlementDetailValue
 }

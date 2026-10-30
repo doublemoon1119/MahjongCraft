@@ -8,12 +8,18 @@ import com.doublemoon1119.mahjongcraft.logic.base.Meld
 import com.doublemoon1119.mahjongcraft.logic.base.MeldType
 import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
+import com.doublemoon1119.mahjongcraft.logic.component.ComponentSet
 import com.doublemoon1119.mahjongcraft.logic.config.MultiRonPolicy
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RIICHI_GAME_ACTION
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDiscardEntry
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RIICHI_STICK_POINTS
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDeclaration
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDeclarationKind
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDiscardComponents
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDiscardPile
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDynamicState
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPlayerState
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPlayerComponents
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiTableComponents
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiWallProgress
+import com.doublemoon1119.mahjongcraft.logic.table.DiscardPile.DiscardEntry
 import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayer
 import com.doublemoon1119.mahjongcraft.logic.table.MatchRoundPosition
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
@@ -24,6 +30,7 @@ import com.doublemoon1119.mahjongcraft.logic.table.layout.InitialPhysicalWallLay
 import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallLayoutResult
 import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPhysicalLayout
 import com.doublemoon1119.mahjongcraft.logic.table.layout.createInitialLayoutValidated
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.DebugPublicFaceTiles
 
 /**
  * 一個座位的情境設定。
@@ -76,6 +83,7 @@ internal data class ScenarioPon(
  * @property liveWallIsFrontOnly 為 true 時活牌只剩 [liveWallFront]，其餘的牌當作先前各家打出的牌，從呼叫者開始輪流
  *   接在各家預先捨牌之後，讓牌局在幾次摸牌後流局。
  * @property rule 情境載入後使用的規則模組。
+ * @property publicFaceTiles 這些牌種的每一張都讓所有人看得到牌面並使用 debug 公開牌面樣式。
  */
 internal class SeatSetupScenario(
     override val id: String,
@@ -90,6 +98,7 @@ internal class SeatSetupScenario(
     private val playerCount: Int = PLAYER_COUNT,
     private val liveWallIsFrontOnly: Boolean = false,
     private val rule: DebugScenarioRule = DebugScenarioRule.STANDARD,
+    private val publicFaceTiles: Set<Tile> = emptySet(),
 ) : DebugGameScenario {
     override fun build(context: DebugGameScenarioContext): DebugGameScenarioResult {
         val currentGame = context.currentGame
@@ -112,7 +121,9 @@ internal class SeatSetupScenario(
         val module = riichiFamilyScenarioModule(currentGame, multiRonPolicy, rule)
         val config = module.config
         val opening = DEFAULT_WALL_OPENING
-        val inventory = module.createWallFactory(module.config.maxPlayers).create().getAllTiles().sortedBy { it.tile.stableSortKey() }
+        val inventory = module.createWallFactory(module.config.maxPlayers).create().getAllTiles()
+            .map { tile -> if (tile.tile in publicFaceTiles) DebugPublicFaceTiles.mark(tile) else tile }
+            .sortedBy { it.tile.stableSortKey() }
         val availableTiles = inventory.toMutableList()
 
         val explicitSeats = seatSpecs.map { spec -> spec.takeExplicitTiles(availableTiles) }
@@ -156,7 +167,7 @@ internal class SeatSetupScenario(
                 initialSeatIndex = oldPlayer.initialSeatIndex,
                 hand = Hand(tiles = seat.standingTiles, melds = seat.melds, lastDrawn = seat.drawnTile),
                 discardPile = seat.discardPile(),
-                playerRuleState = RiichiPlayerState(riichiTile = seat.riichiTile),
+                components = seat.riichiTile?.let { ComponentSet.EMPTY.with(RiichiPlayerComponents.DECLARATION, RiichiDeclaration(RiichiDeclarationKind.RIICHI, it.id, false)) } ?: ComponentSet.EMPTY,
                 score = config.scoreConfig.initialScore - if (seat.riichiTile != null) RIICHI_STICK_SCORE else 0,
                 actionHistory = seat.actionHistory(),
                 seatWind = Wind.entries[seatOffset],
@@ -175,7 +186,7 @@ internal class SeatSetupScenario(
             dealerPlayerId = context.invokingPlayerId,
             roundPosition = MatchRoundPosition(sequenceIndex = 0, prevalentWind = Wind.EAST, localRoundNumber = 1),
             currentPlayerIndex = invokingPlayerIndex,
-            dynamicRuleState = RiichiDynamicState(riichiStickCount = seats.count { it.riichiTile != null }),
+            components = ComponentSet.EMPTY.with(RiichiTableComponents.POT_POINTS, seats.count { it.riichiTile != null } * RIICHI_STICK_POINTS).with(RiichiTableComponents.WALL_PROGRESS, RiichiWallProgress()),
             wallOpening = opening,
             reservedWallTiles = initialReservedTiles,
             physicalWallLayout = physicalLayout,
@@ -222,7 +233,7 @@ internal data class SeatTiles(
      */
     fun discardPile(): RiichiDiscardPile {
         val pile = discards.fold(RiichiDiscardPile()) { current, tile -> current.discardTile(tile) }
-        return riichiTile?.let { pile.discard(RiichiDiscardEntry(it, isRiichi = true)) } ?: pile
+        return riichiTile?.let { pile.discard(DiscardEntry(tile = it, components = RiichiDiscardComponents.declaration())) } ?: pile
     }
 
     /**

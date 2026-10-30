@@ -1,6 +1,7 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.client.catalogue
 
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
+import com.doublemoon1119.mahjongcraft.logic.base.TileFaceView
 import com.doublemoon1119.mahjongcraft.logic.base.TileTypeId
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistryImpl
@@ -24,7 +25,7 @@ class ResourceCatalogueTileArtTest {
     fun `picks up textures added after the cache is cleared`() {
         val resources = ToggleResourceManager()
         val art = ResourceCatalogueTileArt(assets = MinecraftTileAssetRegistryImpl(), resources = resources)
-        val tile = Tile.Numeric(Tile.Suit.Character, 1)
+        val tile = TileFaceView(Tile.Numeric(Tile.Suit.Character, 1))
 
         assertEquals(UNKNOWN_TILE_ASSET_KEY, art.resolve(tile).assetKey)
         resources.available = true
@@ -55,7 +56,7 @@ class ResourceCatalogueTileArtTest {
 
         val art = ResourceCatalogueTileArt(assets = assets, resources = resources)
 
-        assertEquals("example_inverted_five_pin", art.resolve(Tile.Extension(typeId)).assetKey)
+        assertEquals("example_inverted_five_pin", art.resolve(TileFaceView(Tile.Extension(typeId))).assetKey)
         assertEquals(
             expected = Identifier("example", "textures/item/mahjong_tile/inverted_five_pin.png"),
             actual = resources.requested.single(),
@@ -64,7 +65,7 @@ class ResourceCatalogueTileArtTest {
         resources.availableIds.clear()
         art.clearCache()
 
-        assertEquals(UNKNOWN_TILE_ASSET_KEY, art.resolve(Tile.Extension(typeId)).assetKey)
+        assertEquals(UNKNOWN_TILE_ASSET_KEY, art.resolve(TileFaceView(Tile.Extension(typeId))).assetKey)
     }
 
     /** 所有貼圖同時存在或同時缺少的測試資源。 */

@@ -27,6 +27,7 @@ import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
+import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledCoreExtensionRegistries
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.registerBundledRuleModules
 import com.doublemoon1119.mahjongcraft.testing.flow.common.game.repository.FakeGameSnapshotRepository
 import com.doublemoon1119.mahjongcraft.testing.flow.common.game.service.FakeGamePresentationPublisher
@@ -63,8 +64,10 @@ class SubmitRuleDecisionUseCaseTest {
             gameRepository = repository,
             moduleRegistry = moduleRegistry,
             resolverRegistry = resolvers,
-            snapshotSynchronizer = GameSnapshotSynchronizer(repository, FakeGameSnapshotRepository(), GameVisibilityPolicyImpl(moduleRegistry)),
+            snapshotSynchronizer = GameSnapshotSynchronizer(repository, FakeGameSnapshotRepository(), GameVisibilityPolicyImpl(moduleRegistry, componentRegistry = bundledCoreExtensionRegistries().componentRegistry)),
             presentationPublisher = presentationPublisher,
+
+            componentRegistry = bundledCoreExtensionRegistries().componentRegistry,
         )
         val table = FakeTableStateFactory.create(
             players = listOf(FakeMahjongPlayerFactory.create(id = playerId)),
@@ -136,7 +139,7 @@ class SubmitRuleDecisionUseCaseTest {
         val snapshotSynchronizer = GameSnapshotSynchronizer(
             repository,
             snapshotRepository,
-            GameVisibilityPolicyImpl(moduleRegistry),
+            GameVisibilityPolicyImpl(moduleRegistry, componentRegistry = bundledCoreExtensionRegistries().componentRegistry),
         )
         snapshotSynchronizer.sync(table.id, firstPlayerId)
         snapshotSynchronizer.sync(table.id, secondPlayerId)
@@ -146,6 +149,8 @@ class SubmitRuleDecisionUseCaseTest {
             resolverRegistry = resolvers,
             snapshotSynchronizer = snapshotSynchronizer,
             presentationPublisher = presentationPublisher,
+
+            componentRegistry = bundledCoreExtensionRegistries().componentRegistry,
         )
 
         val firstResult = useCase(table.id, firstPlayerId, repository.openWindowId(table.id), RuleDecisionSubmission.Tiles(setOf(firstTile.id)))
@@ -239,9 +244,11 @@ class SubmitRuleDecisionUseCaseTest {
             snapshotSynchronizer = GameSnapshotSynchronizer(
                 repository,
                 FakeGameSnapshotRepository(),
-                GameVisibilityPolicyImpl(moduleRegistry),
+                GameVisibilityPolicyImpl(moduleRegistry, componentRegistry = bundledCoreExtensionRegistries().componentRegistry),
             ),
             presentationPublisher = presentationPublisher,
+
+            componentRegistry = bundledCoreExtensionRegistries().componentRegistry,
         )
 
         val result = useCase(table.id, firstPlayerId, repository.openWindowId(table.id), RuleDecisionSubmission.Tiles(setOf(firstTile.id)))
@@ -288,9 +295,11 @@ class SubmitRuleDecisionUseCaseTest {
             snapshotSynchronizer = GameSnapshotSynchronizer(
                 repository,
                 snapshotRepository,
-                GameVisibilityPolicyImpl(moduleRegistry),
+                GameVisibilityPolicyImpl(moduleRegistry, componentRegistry = bundledCoreExtensionRegistries().componentRegistry),
             ),
             presentationPublisher = presentationPublisher,
+
+            componentRegistry = bundledCoreExtensionRegistries().componentRegistry,
         )
         val invalidTileId = Uuid.random()
 
@@ -340,9 +349,11 @@ class SubmitRuleDecisionUseCaseTest {
             snapshotSynchronizer = GameSnapshotSynchronizer(
                 repository,
                 FakeGameSnapshotRepository(),
-                GameVisibilityPolicyImpl(moduleRegistry),
+                GameVisibilityPolicyImpl(moduleRegistry, componentRegistry = bundledCoreExtensionRegistries().componentRegistry),
             ),
             presentationPublisher = FakeGamePresentationPublisher(),
+
+            componentRegistry = bundledCoreExtensionRegistries().componentRegistry,
         )
 
         assertFailsWith<RuleContractViolationException> {
@@ -380,9 +391,11 @@ class SubmitRuleDecisionUseCaseTest {
             snapshotSynchronizer = GameSnapshotSynchronizer(
                 repository,
                 FakeGameSnapshotRepository(),
-                GameVisibilityPolicyImpl(moduleRegistry),
+                GameVisibilityPolicyImpl(moduleRegistry, componentRegistry = bundledCoreExtensionRegistries().componentRegistry),
             ),
             presentationPublisher = FakeGamePresentationPublisher(),
+
+            componentRegistry = bundledCoreExtensionRegistries().componentRegistry,
         )
 
         assertFailsWith<RuleContractViolationException> {
@@ -419,9 +432,11 @@ class SubmitRuleDecisionUseCaseTest {
             snapshotSynchronizer = GameSnapshotSynchronizer(
                 repository,
                 FakeGameSnapshotRepository(),
-                GameVisibilityPolicyImpl(moduleRegistry),
+                GameVisibilityPolicyImpl(moduleRegistry, componentRegistry = bundledCoreExtensionRegistries().componentRegistry),
             ),
             presentationPublisher = FakeGamePresentationPublisher(),
+
+            componentRegistry = bundledCoreExtensionRegistries().componentRegistry,
         )
 
         val result = useCase(table.id, playerId, earlierWindow.id, RuleDecisionSubmission.Confirmed)
@@ -484,8 +499,10 @@ class SubmitRuleDecisionUseCaseTest {
             gameRepository = repository,
             moduleRegistry = moduleRegistry,
             resolverRegistry = RuleDecisionResolverRegistry().apply { register(ScoreChangingResolver) },
-            snapshotSynchronizer = GameSnapshotSynchronizer(repository, FakeGameSnapshotRepository(), GameVisibilityPolicyImpl(moduleRegistry)),
+            snapshotSynchronizer = GameSnapshotSynchronizer(repository, FakeGameSnapshotRepository(), GameVisibilityPolicyImpl(moduleRegistry, componentRegistry = bundledCoreExtensionRegistries().componentRegistry)),
             presentationPublisher = FakeGamePresentationPublisher(),
+
+            componentRegistry = bundledCoreExtensionRegistries().componentRegistry,
         )
         return Triple(repository, useCase, game)
     }

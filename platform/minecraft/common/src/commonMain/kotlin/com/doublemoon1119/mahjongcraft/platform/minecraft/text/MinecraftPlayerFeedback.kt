@@ -1,8 +1,7 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.text
 
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
-import com.doublemoon1119.mahjongcraft.logic.base.Meld
-import com.doublemoon1119.mahjongcraft.logic.base.Tile
+import com.doublemoon1119.mahjongcraft.logic.base.TileFaceView
 import com.doublemoon1119.mahjongcraft.logic.judgment.LegalActionValidator
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocation
 import kotlin.uuid.Uuid
@@ -226,8 +225,8 @@ sealed interface MinecraftPlayerFeedback {
      * 顯示玩家目前的手牌、副露與可執行的特殊動作，供 `/mahjongcraft game hand` 使用。
      *
      * @property ruleModuleId 這局採用的規則模組 ID，決定動作用語。
-     * @property standingTiles 立牌（含剛摸到的牌）。
-     * @property melds 副露列表。
+     * @property standingTiles 立牌（含剛摸到的牌）的牌面與外觀。
+     * @property melds 副露，每組依顯示順序列出本人可讀的牌面。
      * @property turnStatus 目前是否輪到自己／有資格回應／純粹等待，決定 [legalActions] 為空時要顯示
      *   哪一種提示（例如區分「輪到你但沒有特殊動作」與「還沒輪到你」，避免誤導玩家以為隨時都能
      *   `discard`）。
@@ -238,9 +237,9 @@ sealed interface MinecraftPlayerFeedback {
      */
     data class ShowHand(
         val ruleModuleId: String,
-        val standingTiles: List<Tile>,
-        val melds: List<Meld>,
+        val standingTiles: List<TileFaceView>,
+        val melds: List<List<TileFaceView>>,
         val turnStatus: GameTurnStatus,
-        val legalActions: List<Pair<GameAction, Tile?>>,
+        val legalActions: List<Pair<GameAction, TileFaceView?>>,
     ) : MinecraftPlayerFeedback
 }

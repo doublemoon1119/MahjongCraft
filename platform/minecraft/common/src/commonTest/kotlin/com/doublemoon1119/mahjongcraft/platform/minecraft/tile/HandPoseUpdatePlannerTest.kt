@@ -1,7 +1,7 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.tile
 
-import com.doublemoon1119.mahjongcraft.logic.module.HandTilePose
-import com.doublemoon1119.mahjongcraft.logic.module.HandTileState
+import com.doublemoon1119.mahjongcraft.logic.tile.component.TilePose
+import com.doublemoon1119.mahjongcraft.logic.tile.component.TilePoseState
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.uuid.Uuid
@@ -14,8 +14,8 @@ class HandPoseUpdatePlannerTest {
         val planner = HandPoseUpdatePlanner()
         val table = Uuid.random()
         val player = Uuid.random()
-        val first = HandTileState(Uuid.random(), HandTilePose.FACE_UP)
-        val second = HandTileState(Uuid.random(), HandTilePose.FACE_UP)
+        val first = TilePoseState(Uuid.random(), TilePose.FACE_UP)
+        val second = TilePoseState(Uuid.random(), TilePose.FACE_UP)
         val initial = mapOf(player to listOf(first))
         assertEquals(emptySet(), planner.changedPlayers(table, mapOf(player to emptyList())))
         assertEquals(setOf(player), planner.changedPlayers(table, initial))
@@ -34,7 +34,7 @@ class HandPoseUpdatePlannerTest {
         val table = Uuid.random()
         val first = Uuid.random()
         val second = Uuid.random()
-        val state = HandTileState(Uuid.random(), HandTilePose.FACE_UP)
+        val state = TilePoseState(Uuid.random(), TilePose.FACE_UP)
         planner.recordApplied(table, first, listOf(state))
         assertEquals(setOf(second), planner.changedPlayers(table, mapOf(first to listOf(state), second to listOf(state))))
         assertEquals(setOf(first), planner.changedPlayers(table, mapOf(first to emptyList())))
@@ -49,7 +49,7 @@ class HandPoseUpdatePlannerTest {
         val first = Uuid.random()
         val second = Uuid.random()
         val player = Uuid.random()
-        val state = listOf(HandTileState(Uuid.random(), HandTilePose.FACE_UP))
+        val state = listOf(TilePoseState(Uuid.random(), TilePose.FACE_UP))
         planner.recordApplied(first, player, state)
         planner.recordApplied(second, player, state)
         planner.clear(first)

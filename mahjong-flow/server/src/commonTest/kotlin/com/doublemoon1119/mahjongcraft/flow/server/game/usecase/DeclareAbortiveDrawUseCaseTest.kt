@@ -16,6 +16,7 @@ import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiExhaustiveDrawRe
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import com.doublemoon1119.mahjongcraft.logic.table.toSnapshot
+import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledCoreExtensionRegistries
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.registerBundledRuleModules
 import com.doublemoon1119.mahjongcraft.testing.flow.common.game.repository.FakeGameSnapshotRepository
 import com.doublemoon1119.mahjongcraft.testing.flow.common.game.service.FakeGameEventPublisher
@@ -59,7 +60,7 @@ class DeclareAbortiveDrawUseCaseTest {
         val gameRepo = FakeGameRepository()
         val moduleRegistry = MahjongModuleRegistryImpl().apply { registerBundledRuleModules() }
         val snapshotRepo = FakeGameSnapshotRepository()
-        val snapshotSynchronizer = GameSnapshotSynchronizer(gameRepo, snapshotRepo, GameVisibilityPolicyImpl(moduleRegistry))
+        val snapshotSynchronizer = GameSnapshotSynchronizer(gameRepo, snapshotRepo, GameVisibilityPolicyImpl(moduleRegistry, componentRegistry = bundledCoreExtensionRegistries().componentRegistry))
         val eventPublisher = FakeGameEventPublisher()
         val useCase = DeclareAbortiveDrawUseCase(gameRepo, moduleRegistry, snapshotSynchronizer, eventPublisher)
     }
@@ -150,12 +151,12 @@ class DeclareAbortiveDrawUseCaseTest {
             currentPlayerIndex = 0,
         )
         fixtures.gameRepo.setTableState(table)
-        fixtures.snapshotRepo.setSnapshot(other.id, table.toSnapshot(setOf(other.id), setAsideTiles = { emptyList() }))
+        fixtures.snapshotRepo.setSnapshot(other.id, table.toSnapshot(setOf(other.id)))
 
         fixtures.gameRepo.runAsSingleWrite(gameId) { fixtures.useCase(gameId, playerId, RiichiExhaustiveDrawReason.KyuushuKyuuhai) }
 
         val otherView = assertNotNull(fixtures.snapshotRepo.getSnapshot(gameId, other.id))
-        val revealedIds = otherView.revealedHandTiles.map { it.id }.toSet()
+        val revealedIds = otherView.publicTileIds.intersect(otherView.players.flatMap { it.hand.standingTiles }.map { it.id }.toSet())
         assertEquals(declarer.hand.standingTiles.map { it.id }.toSet(), revealedIds)
         assertEquals(14, revealedIds.size)
         assertTrue(ninthYaochuuTile.id in revealedIds, "The drawn ninth terminal is part of the proof.")
@@ -292,8 +293,8 @@ class DeclareAbortiveDrawUseCaseTest {
         val other = FakeMahjongPlayerFactory.create(id = otherId, initialSeat = Wind.SOUTH, discardPile = RiichiDiscardPile())
         val table = FakeTableStateFactory.create(id = gameId, players = listOf(declarer, other), config = RiichiRuleConfig(), currentPlayerIndex = 0)
         fixtures.gameRepo.setTableState(table)
-        fixtures.snapshotRepo.setSnapshot(playerId, table.toSnapshot(setOf(playerId), setAsideTiles = { emptyList() }))
-        fixtures.snapshotRepo.setSnapshot(otherId, table.toSnapshot(setOf(otherId), setAsideTiles = { emptyList() }))
+        fixtures.snapshotRepo.setSnapshot(playerId, table.toSnapshot(setOf(playerId)))
+        fixtures.snapshotRepo.setSnapshot(otherId, table.toSnapshot(setOf(otherId)))
 
         fixtures.useCase(gameId, playerId, RiichiExhaustiveDrawReason.KyuushuKyuuhai)
 

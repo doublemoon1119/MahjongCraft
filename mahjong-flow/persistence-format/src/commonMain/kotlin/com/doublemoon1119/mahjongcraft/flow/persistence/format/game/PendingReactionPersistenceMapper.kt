@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.flow.persistence.format.game
 
+import com.doublemoon1119.mahjongcraft.flow.persistence.format.component.ComponentPersistenceRegistry
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.core.PersistenceDtoRegistry
 import com.doublemoon1119.mahjongcraft.logic.base.ExhaustiveDrawReason
 import com.doublemoon1119.mahjongcraft.logic.base.ExtensionGameAction
@@ -56,15 +57,17 @@ fun PendingReactionPersistenceDto.toDomain(
  *
  * @param exhaustiveDrawReasonRegistry 流局原因的持久化轉換註冊表。
  * @param extensionGameActionRegistry 擴充遊戲動作的持久化轉換註冊表。
+ * @param componentRegistry 搶牌時所引用牌張的組件保存轉換。
  * @return 包含原模型資料的持久化 DTO。
  */
 fun PendingRobbingReaction.toPersistenceDto(
     exhaustiveDrawReasonRegistry: PersistenceDtoRegistry<ExhaustiveDrawReason>,
     extensionGameActionRegistry: PersistenceDtoRegistry<ExtensionGameAction>,
+    componentRegistry: ComponentPersistenceRegistry,
 ): PendingRobbingReactionPersistenceDto = PendingRobbingReactionPersistenceDto(
     declarerId = declarerId.toString(),
     declaredAction = declaredAction.toPersistenceDto(exhaustiveDrawReasonRegistry, extensionGameActionRegistry),
-    robbedTile = robbedTile.toPersistenceDto(),
+    robbedTile = robbedTile.toPersistenceDto(componentRegistry),
     eligiblePlayerIds = eligiblePlayerIds.map(Uuid::toString).toSet(),
     responses = responses.mapKeys { it.key.toString() }.mapValues {
         it.value.toPersistenceDto(exhaustiveDrawReasonRegistry, extensionGameActionRegistry)
@@ -77,15 +80,17 @@ fun PendingRobbingReaction.toPersistenceDto(
  *
  * @param exhaustiveDrawReasonRegistry 流局原因的持久化轉換註冊表。
  * @param extensionGameActionRegistry 擴充遊戲動作的持久化轉換註冊表。
+ * @param componentRegistry 搶牌時所引用牌張的組件保存轉換。
  * @return 還原的領域模型。
  */
 fun PendingRobbingReactionPersistenceDto.toDomain(
     exhaustiveDrawReasonRegistry: PersistenceDtoRegistry<ExhaustiveDrawReason>,
     extensionGameActionRegistry: PersistenceDtoRegistry<ExtensionGameAction>,
+    componentRegistry: ComponentPersistenceRegistry,
 ): PendingRobbingReaction = PendingRobbingReaction(
     declarerId = Uuid.parse(declarerId),
     declaredAction = declaredAction.toDomain(exhaustiveDrawReasonRegistry, extensionGameActionRegistry),
-    robbedTile = robbedTile.toDomain(),
+    robbedTile = robbedTile.toDomain(componentRegistry),
     eligiblePlayerIds = eligiblePlayerIds.map(Uuid::parse).toSet(),
     responses = responses.mapKeys { Uuid.parse(it.key) }.mapValues {
         it.value.toDomain(exhaustiveDrawReasonRegistry, extensionGameActionRegistry)

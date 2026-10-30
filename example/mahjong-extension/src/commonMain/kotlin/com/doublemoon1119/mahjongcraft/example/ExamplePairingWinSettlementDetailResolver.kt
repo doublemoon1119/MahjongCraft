@@ -1,6 +1,6 @@
 package com.doublemoon1119.mahjongcraft.example
 
-import com.doublemoon1119.mahjongcraft.example.pairing.ExamplePairingDynamicState
+import com.doublemoon1119.mahjongcraft.example.pairing.ExamplePairingComponents
 import com.doublemoon1119.mahjongcraft.example.pairing.ExamplePairingHandValueResult
 import com.doublemoon1119.mahjongcraft.example.pairing.ExamplePairingRuleConfig
 import com.doublemoon1119.mahjongcraft.example.pairing.ExamplePairingTileType
@@ -8,6 +8,8 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementDetai
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementDetailValue
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementQuantity
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.WinSettlementDetailResolver
+import com.doublemoon1119.mahjongcraft.logic.base.TileFaceView
+import com.doublemoon1119.mahjongcraft.logic.base.TileValue
 import com.doublemoon1119.mahjongcraft.logic.judgment.HandValueResult
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 
@@ -25,10 +27,14 @@ object ExamplePairingWinSettlementDetailResolver : WinSettlementDetailResolver {
     /** 自摸命中的不同加分牌種類數量欄位。 */
     const val BONUS_TILE_COUNT = "mahjongcraft_example:pairing/bonus_tile_count"
 
-    override fun resolve(state: TableState, handValue: HandValueResult): List<WinSettlementDetailField> {
+    override fun resolve(
+        state: TableState,
+        handValue: HandValueResult,
+        publicFace: (TileValue) -> TileFaceView,
+    ): List<WinSettlementDetailField> {
         val config = state.config as? ExamplePairingRuleConfig ?: return emptyList()
         val bonusTileCount = (handValue as? ExamplePairingHandValueResult)?.bonusTileCount ?: 0
-        val bonusFaces = (state.dynamicRuleState as? ExamplePairingDynamicState)?.bonusTileValues.orEmpty().sorted().map(ExamplePairingTileType::bonusFace)
+        val bonusFaces = requireNotNull(state.components[ExamplePairingComponents.BONUS_TILES]) { "Example pairing bonus tiles are required for settlement details" }.values.sorted().map { publicFace(TileValue(ExamplePairingTileType.bonusFace(it))) }
         return listOf(
             WinSettlementDetailField(BONUS_TILES, WinSettlementDetailValue.TileFaces(bonusFaces)),
             WinSettlementDetailField(

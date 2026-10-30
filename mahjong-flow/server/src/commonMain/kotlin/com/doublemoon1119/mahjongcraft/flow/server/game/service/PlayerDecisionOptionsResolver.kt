@@ -4,7 +4,6 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.model.PlayerDecisionActi
 import com.doublemoon1119.mahjongcraft.flow.server.game.model.PlayerDecisionOptions
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
-import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.logic.judgment.LegalActionContext
 import com.doublemoon1119.mahjongcraft.logic.judgment.LegalActionValidator
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
@@ -140,15 +139,15 @@ internal object PlayerDecisionOptionsResolver {
         state: TableState,
         player: MahjongPlayer,
         context: PlayerActionContext?,
-    ): Tile? = when (context) {
-        is PlayerActionContext.RobbingReaction -> context.pending.robbedTile.tile
+    ): IdentifiedTile? = when (context) {
+        is PlayerActionContext.RobbingReaction -> context.pending.robbedTile
         is PlayerActionContext.DiscardReaction ->
             state.players
                 .first { it.id == context.pending.discarderId }
                 .discardPile.entries
                 .first { it.tile.id == context.pending.tileId }
-                .tile.tile
-        is PlayerActionContext.OwnTurn -> player.hand.lastDrawn?.tile
+                .tile
+        is PlayerActionContext.OwnTurn -> player.hand.lastDrawn
         null -> null
     }
 }

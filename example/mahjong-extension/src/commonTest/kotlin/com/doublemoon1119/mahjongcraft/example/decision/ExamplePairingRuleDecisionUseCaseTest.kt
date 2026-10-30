@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.example.decision
 
+import com.doublemoon1119.mahjongcraft.example.exampleComponentRegistry
 import com.doublemoon1119.mahjongcraft.example.pairing.ExamplePairingIds
 import com.doublemoon1119.mahjongcraft.example.pairing.ExamplePairingRuleConfig
 import com.doublemoon1119.mahjongcraft.example.pairing.ExamplePairingRuleModule
@@ -18,6 +19,8 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.BeginRuleDecisio
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.SubmitRuleDecisionUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateStore
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateUpdate
+import com.doublemoon1119.mahjongcraft.logic.component.AuthoritativeComponentValidatorImpl
+import com.doublemoon1119.mahjongcraft.logic.component.initializeRuleComponents
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleDefinition
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
 import com.doublemoon1119.mahjongcraft.logic.table.GameInitializer
@@ -39,9 +42,10 @@ class ExamplePairingRuleDecisionUseCaseTest {
         val playerIds = List(3) { Uuid.random() }
         val config = ExamplePairingRuleConfig(exchangeEnabled = true)
         val module = ExamplePairingRuleModule(ExamplePairingIds.RULE_MODULE, config)
-        val initialTable = GameInitializer.initialize(Uuid.random(), playerIds, module).tableState
+        val componentRegistry = exampleComponentRegistry()
+        val initialTable = GameInitializer.initialize(Uuid.random(), playerIds, module)
+            .initializeRuleComponents(module.id, componentRegistry).tableState
         val store = AuthoritativeStateStore(historyRecordingEnabled = true, maxPendingHistoryEvents = 100)
-        val repository = GameRepositoryImpl(store)
         val game = Game(
             tableState = initialTable,
             flowConfig = GameFlowConfig(ruleDecision = RuleDecisionConfig(30)),
@@ -59,6 +63,7 @@ class ExamplePairingRuleDecisionUseCaseTest {
             )
             freeze()
         }
+        val repository = GameRepositoryImpl(store, AuthoritativeComponentValidatorImpl(moduleRegistry, componentRegistry))
         val resolverRegistry = RuleDecisionResolverRegistry().apply {
             register(ExamplePairingRuleDecisionResolver())
             freeze()
@@ -67,9 +72,9 @@ class ExamplePairingRuleDecisionUseCaseTest {
         val snapshotSynchronizer = GameSnapshotSynchronizer(
             repository,
             snapshotRepository,
-            GameVisibilityPolicyImpl(moduleRegistry),
+            GameVisibilityPolicyImpl(moduleRegistry, componentRegistry = exampleComponentRegistry()),
         )
-        val visibilityPolicy = GameVisibilityPolicyImpl(moduleRegistry)
+        val visibilityPolicy = GameVisibilityPolicyImpl(moduleRegistry, componentRegistry = exampleComponentRegistry())
         val begin = BeginRuleDecisionUseCase(
             gameRepository = repository,
             moduleRegistry = moduleRegistry,
@@ -83,6 +88,8 @@ class ExamplePairingRuleDecisionUseCaseTest {
             resolverRegistry = resolverRegistry,
             snapshotSynchronizer = snapshotSynchronizer,
             presentationPublisher = FakeGamePresentationPublisher(),
+
+            componentRegistry = componentRegistry,
         )
         val gameId = initialTable.id
         val orderedPlayerIds = initialTable.players.map { it.id }

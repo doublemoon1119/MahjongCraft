@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.tile
 
+import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.logic.base.TileTypeId
 import com.doublemoon1119.mahjongcraft.platform.minecraft.ai.AiStrategyDisplayNameRegistry
 
@@ -24,6 +25,13 @@ interface TileDisplayNameRegistry {
      */
     fun register(definition: TileDisplayNameDefinition)
 
+    /**
+     * 登記外觀樣式套在指定基本牌面時的顯示名稱；凍結後或同一組樣式與牌面重複時拒絕。
+     *
+     * @param definition 外觀樣式、基本牌面與顯示名稱的對應。
+     */
+    fun register(definition: TileStyleDisplayNameDefinition)
+
     /** 凍結 registry；凍結後不得新增顯示名稱。 */
     fun freeze()
 
@@ -34,4 +42,13 @@ interface TileDisplayNameRegistry {
      * @return 顯示名稱翻譯 key；未登記時為 `null`。
      */
     fun find(typeId: TileTypeId): String?
+
+    /**
+     * 查詢外觀樣式套在 [tile] 上的顯示名稱 translation key；未登記時回傳 null，由呼叫端改用基本牌面名稱。
+     *
+     * @param styleId 牌張外觀樣式的完整 ID。
+     * @param tile 基本牌面。
+     * @return 顯示名稱翻譯 key；未登記時為 `null`。
+     */
+    fun findStyle(styleId: String, tile: Tile): String?
 }

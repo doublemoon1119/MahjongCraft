@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.tile
 
+import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.logic.base.TileTypeId
 
 /**
@@ -12,8 +13,17 @@ class MinecraftTileAssetRegistryImpl : MinecraftTileAssetRegistry {
     /** 依穩定 ID 保存 asset key。 */
     private val assetKeysById = mutableMapOf<TileTypeId, String>()
 
+    /** 依外觀樣式與基本牌面保存 asset key。 */
+    private val assetKeysByStyle = mutableMapOf<Pair<String, Tile>, String>()
+
     /** 依 asset key 保存完整資源描述。 */
     private val resourcesByAssetKey = mutableMapOf<String, MinecraftTileResources>()
+
+    /** 依外觀樣式的素材 key 保存其基本牌面。 */
+    private val styleTilesByAssetKey = mutableMapOf<String, Tile>()
+
+    /** 依素材 key 保存外觀樣式指定的牌身外觀 ID。 */
+    private val bodyAppearanceIdsByAssetKey = mutableMapOf<String, String>()
 
     /** 依外觀 ID 保存牌組外觀。 */
     private val appearancesById = mutableMapOf<String, MinecraftTileSetAppearanceDefinition>()
@@ -21,7 +31,7 @@ class MinecraftTileAssetRegistryImpl : MinecraftTileAssetRegistry {
     /** 依規則模組 ID 保存牌組外觀綁定。 */
     private val appearanceIdsByRuleModuleId = mutableMapOf<String, String>()
 
-    override val registrationKeys: Set<String> get() = assetKeysById.values.toSet()
+    override val registrationKeys: Set<String> get() = registeredAssetKeys
 
     override val appearanceRegistrationKeys: Set<String> get() = appearancesById.keys.toSet()
 
@@ -41,11 +51,28 @@ class MinecraftTileAssetRegistryImpl : MinecraftTileAssetRegistry {
             "Tile asset key is reserved for a built-in tile: $assetKey"
         }
         require(typeId !in assetKeysById) { "Tile asset key already registered for ID: $typeId" }
-        require(assetKey !in assetKeysById.values) {
-            "Asset key \"$assetKey\" is already registered to a different tile type"
+        require(assetKey !in resourcesByAssetKey) {
+            "Asset key \"$assetKey\" is already registered to a different tile type or style"
         }
         assetKeysById[typeId] = assetKey
         resourcesByAssetKey[assetKey] = definition.resources
+    }
+
+    override fun register(definition: MinecraftTileStyleAssetDefinition) {
+        val key = definition.styleId to definition.tile
+        val assetKey = definition.assetKey
+        check(!isFrozen) { "Minecraft tile asset registry is frozen" }
+        require(assetKey !in STANDARD_TILE_ASSET_KEYS && assetKey != UNKNOWN_TILE_ASSET_KEY) {
+            "Tile asset key is reserved for a built-in tile: $assetKey"
+        }
+        require(key !in assetKeysByStyle) { "Tile style asset already registered: ${definition.styleId} on ${definition.tile}" }
+        require(assetKey !in resourcesByAssetKey) {
+            "Asset key \"$assetKey\" is already registered to a different tile type or style"
+        }
+        assetKeysByStyle[key] = assetKey
+        resourcesByAssetKey[assetKey] = definition.resources
+        styleTilesByAssetKey[assetKey] = definition.tile
+        definition.bodyAppearanceId?.let { bodyAppearanceIdsByAssetKey[assetKey] = it }
     }
 
     override fun register(definition: MinecraftTileSetAppearanceDefinition) {
@@ -70,12 +97,23 @@ class MinecraftTileAssetRegistryImpl : MinecraftTileAssetRegistry {
                 "Rule tile appearance references an unknown appearance: $ruleModuleId -> $appearanceId"
             }
         }
+        bodyAppearanceIdsByAssetKey.forEach { (assetKey, appearanceId) ->
+            require(appearanceId in appearancesById) {
+                "Tile style body references an unknown appearance: $assetKey -> $appearanceId"
+            }
+        }
         isFrozen = true
     }
 
     override fun find(typeId: TileTypeId): String? = assetKeysById[typeId]
 
+    override fun findStyle(styleId: String, tile: Tile): String? = assetKeysByStyle[styleId to tile]
+
     override fun findResources(assetKey: String): MinecraftTileResources? = resourcesByAssetKey[assetKey]
+
+    override fun baseAssetKey(assetKey: String): String = styleTilesByAssetKey[assetKey]?.toAssetKey(this) ?: assetKey
+
+    override fun findBodyAppearance(assetKey: String): MinecraftTileSetAppearanceDefinition? = bodyAppearanceIdsByAssetKey[assetKey]?.let(appearancesById::get)
 
     override fun findAppearance(appearanceId: String): MinecraftTileSetAppearanceDefinition? = appearancesById[appearanceId]
 
@@ -83,7 +121,7 @@ class MinecraftTileAssetRegistryImpl : MinecraftTileAssetRegistry {
         ?: appearancesById[BuiltInMinecraftTileAppearanceIds.DEFAULT]
         ?: BuiltInMinecraftTileAppearances.DEFAULT
 
-    override fun isRegisteredAssetKey(assetKey: String): Boolean = assetKeysById.containsValue(assetKey)
+    override fun isRegisteredAssetKey(assetKey: String): Boolean = assetKey in resourcesByAssetKey
 
-    override val registeredAssetKeys: Set<String> get() = assetKeysById.values.toSet()
+    override val registeredAssetKeys: Set<String> get() = resourcesByAssetKey.keys.toSet()
 }

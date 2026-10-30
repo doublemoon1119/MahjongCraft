@@ -2,12 +2,13 @@ package com.doublemoon1119.mahjongcraft.platform.minecraft.rule.riichi
 
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.riichi.RiichiRoundOutcomeIds
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.riichi.RiichiWinSettlementIds
+import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.logic.module.BuiltInRuleModuleIds
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiExhaustiveDrawReason
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiHistoryDiscardMarkerIds
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleModule
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.threeplayer.ThreePlayerRiichiRuleConfig
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.RiichiTileTypes
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.RiichiTileValues
 import com.doublemoon1119.mahjongcraft.metadata.MahjongCraftMetadata
 import com.doublemoon1119.mahjongcraft.platform.minecraft.achievement.GameAchievementResolverRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionVocabularyRegistry
@@ -44,14 +45,14 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.table.RoundInfoLineDis
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.RoundInfoLineDisplayRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TablePropDescriberRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftMessageKeys
-import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistry
-import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileDisplayNameDefinition
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileStyleAssetDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileEmojiDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileEmojiRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileLabelDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileLabelRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileStyleDisplayNameDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.blackTextOnRedTile
 
 /**
@@ -66,15 +67,51 @@ object BundledRiichiMinecraftExtension : MinecraftMahjongExtension {
 
     override fun registerTileAssets(registry: MinecraftTileAssetRegistry) {
         RIICHI_FAMILY_RULE_MODULE_IDS.forEach { ruleModuleId -> RiichiFamilyMinecraftPresentation.registerTileAppearance(registry, ruleModuleId) }
-        registry.register(MinecraftTileAssetDefinition(RiichiTileTypes.RED_FIVE_CHARACTER, "m5_red"))
-        registry.register(MinecraftTileAssetDefinition(RiichiTileTypes.RED_FIVE_DOT, "p5_red"))
-        registry.register(MinecraftTileAssetDefinition(RiichiTileTypes.RED_FIVE_BAMBOO, "s5_red"))
+        registry.register(
+            definition = MinecraftTileStyleAssetDefinition(
+                styleId = RiichiTileValues.RED_FIVE_APPEARANCE_ID,
+                tile = Tile.Numeric(Tile.Suit.Character, 5),
+                assetKey = "m5_red",
+            ),
+        )
+        registry.register(
+            definition = MinecraftTileStyleAssetDefinition(
+                styleId = RiichiTileValues.RED_FIVE_APPEARANCE_ID,
+                tile = Tile.Numeric(Tile.Suit.Dot, 5),
+                assetKey = "p5_red",
+            ),
+        )
+        registry.register(
+            definition = MinecraftTileStyleAssetDefinition(
+                styleId = RiichiTileValues.RED_FIVE_APPEARANCE_ID,
+                tile = Tile.Numeric(Tile.Suit.Bamboo, 5),
+                assetKey = "s5_red",
+            ),
+        )
     }
 
     override fun registerTileDisplayNames(registry: TileDisplayNameRegistry) {
-        registry.register(TileDisplayNameDefinition(RiichiTileTypes.RED_FIVE_CHARACTER, MinecraftMessageKeys.TILE_RED_FIVE_CHARACTER))
-        registry.register(TileDisplayNameDefinition(RiichiTileTypes.RED_FIVE_DOT, MinecraftMessageKeys.TILE_RED_FIVE_DOT))
-        registry.register(TileDisplayNameDefinition(RiichiTileTypes.RED_FIVE_BAMBOO, MinecraftMessageKeys.TILE_RED_FIVE_BAMBOO))
+        registry.register(
+            definition = TileStyleDisplayNameDefinition(
+                styleId = RiichiTileValues.RED_FIVE_APPEARANCE_ID,
+                tile = Tile.Numeric(Tile.Suit.Character, 5),
+                translationKey = MinecraftMessageKeys.TILE_RED_FIVE_CHARACTER,
+            ),
+        )
+        registry.register(
+            definition = TileStyleDisplayNameDefinition(
+                styleId = RiichiTileValues.RED_FIVE_APPEARANCE_ID,
+                tile = Tile.Numeric(Tile.Suit.Dot, 5),
+                translationKey = MinecraftMessageKeys.TILE_RED_FIVE_DOT,
+            ),
+        )
+        registry.register(
+            definition = TileStyleDisplayNameDefinition(
+                styleId = RiichiTileValues.RED_FIVE_APPEARANCE_ID,
+                tile = Tile.Numeric(Tile.Suit.Bamboo, 5),
+                translationKey = MinecraftMessageKeys.TILE_RED_FIVE_BAMBOO,
+            ),
+        )
     }
 
     override fun registerRuleModuleDisplayNames(registry: RuleModuleDisplayNameRegistry) {

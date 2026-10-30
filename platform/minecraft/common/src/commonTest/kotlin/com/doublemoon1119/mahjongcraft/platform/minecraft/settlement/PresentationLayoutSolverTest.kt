@@ -390,7 +390,7 @@ class PresentationLayoutSolverTest {
             }
             TILE_LIST_FIELD -> WinSettlementPresentationFieldProvider { PresentationValue.TileListValue(listOf("m1", "m2", "m3")) }
             TILE_GROUPS_FIELD -> WinSettlementPresentationFieldProvider {
-                PresentationValue.TileGroupsValue(listOf(listOf("m1", "m2"), listOf("p1", "p2"), emptyList()))
+                PresentationValue.TileGroupsValue(listOf(listOf(PresentationTile.Face("m1"), PresentationTile.Back("mahjongcraft:default")), listOf(PresentationTile.Face("p1"), PresentationTile.Face("p2")), emptyList()))
             }
             ENTRY_FIELD -> WinSettlementPresentationFieldProvider { PresentationValue.EntryListValue(List(5) { PresentationValue.EntryListValue.Entry("mahjongcraft.entry") }) }
             else -> null
@@ -436,7 +436,7 @@ class PresentationLayoutSolverTest {
             responsiblePlayerIsAi = null,
             totalScore = 8000,
             tileAssetKeys = emptyList(),
-            tileAssetGroups = emptyList(),
+            tileGroups = emptyList(),
             winningTileAssetKey = null,
         )
     }

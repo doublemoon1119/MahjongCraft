@@ -16,24 +16,30 @@ import com.doublemoon1119.mahjongcraft.logic.base.Hand
 import com.doublemoon1119.mahjongcraft.logic.base.MeldType
 import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
+import com.doublemoon1119.mahjongcraft.logic.component.ComponentSet
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RIICHI_GAME_ACTION
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDiscardEntry
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RIICHI_STICK_POINTS
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDeclarationKind
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDiscardPile
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDynamicState
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiExhaustiveDrawReason
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPlayerState
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.isRiichiDeclaration
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.riichiDeclaration
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.riichiPotPoints
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.threeplayer.ThreePlayerRiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayer
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import com.doublemoon1119.mahjongcraft.logic.table.toSnapshot
+import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledCoreExtensionRegistries
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.registerBundledRuleModules
 import com.doublemoon1119.mahjongcraft.testing.flow.common.game.repository.FakeGameSnapshotRepository
 import com.doublemoon1119.mahjongcraft.testing.flow.common.game.service.FakeGameEventPublisher
 import com.doublemoon1119.mahjongcraft.testing.flow.common.game.service.FakeGamePresentationPublisher
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeIdentifiedTileFactory
+import com.doublemoon1119.mahjongcraft.testing.logic.rules.riichi.riichiDeclarationComponents
+import com.doublemoon1119.mahjongcraft.testing.logic.rules.riichi.riichiTableComponents
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
 import kotlinx.coroutines.test.runTest
@@ -78,7 +84,7 @@ class DeclareRiichiUseCaseTest {
         val gameRepo = FakeGameRepository()
         val moduleRegistry = MahjongModuleRegistryImpl().apply { registerBundledRuleModules() }
         val snapshotRepo = FakeGameSnapshotRepository()
-        val snapshotSynchronizer = GameSnapshotSynchronizer(gameRepo, snapshotRepo, GameVisibilityPolicyImpl(moduleRegistry))
+        val snapshotSynchronizer = GameSnapshotSynchronizer(gameRepo, snapshotRepo, GameVisibilityPolicyImpl(moduleRegistry, componentRegistry = bundledCoreExtensionRegistries().componentRegistry))
         val handSortPreferenceStore = HandSortPreferenceStore()
         val postActionExhaustiveDrawResolverRegistry = PostActionExhaustiveDrawResolverRegistry().apply {
             BundledRiichiExtension.registerPostActionExhaustiveDrawResolvers(this)
@@ -94,6 +100,8 @@ class DeclareRiichiUseCaseTest {
             postActionExhaustiveDrawResolverRegistry = postActionExhaustiveDrawResolverRegistry,
             eventPublisher = eventPublisher,
             presentationPublisher = presentationPublisher,
+
+            componentRegistry = bundledCoreExtensionRegistries().componentRegistry,
         )
         val useCase = DeclareRiichiUseCase(
             sharedDeclarationUseCase,
@@ -120,7 +128,7 @@ class DeclareRiichiUseCaseTest {
      * @param id 玩家識別碼。
      * @param hand 宣告前的手牌。
      * @param score 宣告前的分數。
-     * @param playerRuleState 立直、一發等玩家規則狀態。
+     * @param playerComponents 立直、一發等玩家規則狀態。
      * @param discardPile 宣告前的牌河。
      * @return 套用指定狀態的玩家。
      */
@@ -128,14 +136,14 @@ class DeclareRiichiUseCaseTest {
         id: Uuid = currentPlayerId,
         hand: Hand = tenpaiHand(),
         score: Int = 25000,
-        playerRuleState: RiichiPlayerState = RiichiPlayerState(),
+        playerComponents: ComponentSet = riichiDeclarationComponents(),
         discardPile: RiichiDiscardPile = RiichiDiscardPile(),
     ): MahjongPlayer = FakeMahjongPlayerFactory.create(
         id = id,
         initialSeat = Wind.EAST,
         hand = hand,
         discardPile = discardPile,
-        playerRuleState = playerRuleState,
+        components = playerComponents,
     ).copy(score = score)
 
     /**
@@ -156,7 +164,7 @@ class DeclareRiichiUseCaseTest {
             id = gameId,
             players = listOf(currentPlayer, otherPlayer),
             config = RiichiRuleConfig(),
-            dynamicRuleState = RiichiDynamicState(),
+            components = riichiTableComponents(potPoints = 0),
             currentPlayerIndex = 0,
         )
         fixtures.gameRepo.setTableState(table)
@@ -173,21 +181,21 @@ class DeclareRiichiUseCaseTest {
         assertEquals(manTiles, updatedPlayer.hand.tiles)
         // 已經有一張牌（打過一輪）+ 這次立直宣告打出的牌
         assertEquals(2, updatedPlayer.discardPile.entries.size)
-        val riichiEntry = updatedPlayer.discardPile.entries.last() as RiichiDiscardEntry
+        val riichiEntry = updatedPlayer.discardPile.entries.last()
         assertEquals(drawnTile, riichiEntry.tile)
-        assertTrue(riichiEntry.isRiichi)
+        assertTrue(riichiEntry.isRiichiDeclaration)
         assertEquals(25000 - 1000, updatedPlayer.score)
 
-        val riichiState = updatedPlayer.playerRuleState as RiichiPlayerState
-        assertEquals(drawnTile, riichiState.riichiTile)
-        assertNull(
-            riichiState.doubleRiichiTile,
+        val riichiState = checkNotNull(updatedPlayer.riichiDeclaration)
+        assertEquals(drawnTile.id, riichiState.discardTileId)
+        assertEquals(
+            RiichiDeclarationKind.RIICHI,
+            riichiState.kind,
             "This is not the first go-around, so it should not be a double riichi.",
         )
         assertTrue(riichiState.isIppatsu)
 
-        val dynamicState = newState.dynamicRuleState as RiichiDynamicState
-        assertEquals(1, dynamicState.riichiStickCount)
+        assertEquals(1000, newState.riichiPotPoints())
 
         assertEquals(1, newState.currentPlayerIndex, "Turn should advance to the next player.")
         assertEquals(RIICHI_GAME_ACTION, updatedPlayer.actionHistory[updatedPlayer.actionHistory.size - 2])
@@ -209,14 +217,14 @@ class DeclareRiichiUseCaseTest {
             FakeMahjongPlayerFactory.create(
                 initialSeat = seat,
                 discardPile = RiichiDiscardPile().discardTile(FakeIdentifiedTileFactory.create(Tile.Honor.East)),
-                playerRuleState = RiichiPlayerState(),
+                components = riichiDeclarationComponents(),
             )
         }
         val table = FakeTableStateFactory.create(
             id = gameId,
             players = listOf(currentPlayer) + others,
             config = ThreePlayerRiichiRuleConfig(),
-            dynamicRuleState = RiichiDynamicState(),
+            components = riichiTableComponents(potPoints = 0),
             currentPlayerIndex = 0,
         )
         fixtures.gameRepo.setTableState(table)
@@ -226,11 +234,11 @@ class DeclareRiichiUseCaseTest {
         assertTrue(result is Outcome.Success, "Expected Success but got $result")
         val newState = assertNotNull(fixtures.gameRepo.getTableState(gameId))
         val updatedPlayer = newState.players.first { it.id == currentPlayerId }
-        val riichiState = updatedPlayer.playerRuleState as RiichiPlayerState
-        assertEquals(declarationTile, riichiState.riichiTile)
+        val riichiState = checkNotNull(updatedPlayer.riichiDeclaration)
+        assertEquals(declarationTile.id, riichiState.discardTileId)
         assertTrue(riichiState.isIppatsu)
         assertEquals(25000 - 1000, updatedPlayer.score)
-        assertEquals(1, (newState.dynamicRuleState as RiichiDynamicState).riichiStickCount)
+        assertEquals(1, (newState.riichiPotPoints() / RIICHI_STICK_POINTS))
         assertEquals(1, newState.currentPlayerIndex, "Turn should advance to the next player.")
     }
 
@@ -244,13 +252,13 @@ class DeclareRiichiUseCaseTest {
             id = otherPlayerId,
             initialSeat = Wind.SOUTH,
             discardPile = RiichiDiscardPile().discardTile(FakeIdentifiedTileFactory.create(Tile.Honor.East)),
-            playerRuleState = RiichiPlayerState(riichiTile = FakeIdentifiedTileFactory.create(Tile.Honor.South), isIppatsu = true),
+            components = riichiDeclarationComponents(declarationTile = FakeIdentifiedTileFactory.create(Tile.Honor.South), isIppatsu = true),
         )
         val table = FakeTableStateFactory.create(
             id = gameId,
             players = listOf(currentPlayer, otherPlayer),
             config = RiichiRuleConfig(),
-            dynamicRuleState = RiichiDynamicState(),
+            components = riichiTableComponents(potPoints = 0),
             currentPlayerIndex = 0,
         )
         fixtures.gameRepo.setTableState(table)
@@ -258,8 +266,8 @@ class DeclareRiichiUseCaseTest {
         val result = fixtures.useCase(gameId, currentPlayerId, drawnTile.id)
 
         assertTrue(result is Outcome.Success, "Expected Success but got $result")
-        val otherState = fixtures.gameRepo.getTableState(gameId)!!.players.first { it.id == otherPlayerId }.playerRuleState
-        assertTrue((otherState as RiichiPlayerState).isIppatsu, "Another player's riichi must not end this player's ippatsu window.")
+        val otherState = assertNotNull(fixtures.gameRepo.getTableState(gameId)!!.players.first { it.id == otherPlayerId }.riichiDeclaration)
+        assertTrue(otherState.isIppatsu, "Another player's riichi must not end this player's ippatsu window.")
     }
 
     /**
@@ -274,7 +282,7 @@ class DeclareRiichiUseCaseTest {
             id = gameId,
             players = listOf(currentPlayer, otherPlayer),
             config = RiichiRuleConfig(),
-            dynamicRuleState = RiichiDynamicState(),
+            components = riichiTableComponents(potPoints = 0),
             currentPlayerIndex = 0,
         )
         fixtures.gameRepo.setTableState(table)
@@ -283,9 +291,9 @@ class DeclareRiichiUseCaseTest {
 
         assertTrue(result is Outcome.Success, "Expected Success but got $result")
         val updatedPlayer = fixtures.gameRepo.getTableState(gameId)!!.players.first { it.id == currentPlayerId }
-        val riichiState = updatedPlayer.playerRuleState as RiichiPlayerState
-        assertEquals(drawnTile, riichiState.doubleRiichiTile)
-        assertNull(riichiState.riichiTile)
+        val riichiState = checkNotNull(updatedPlayer.riichiDeclaration)
+        assertEquals(drawnTile.id, riichiState.discardTileId)
+        assertEquals(RiichiDeclarationKind.DOUBLE_RIICHI, riichiState.kind)
     }
 
     /**
@@ -301,12 +309,12 @@ class DeclareRiichiUseCaseTest {
             id = gameId,
             players = listOf(currentPlayer, otherPlayer),
             config = RiichiRuleConfig(),
-            dynamicRuleState = RiichiDynamicState(),
+            components = riichiTableComponents(potPoints = 0),
             currentPlayerIndex = 0,
         )
         fixtures.gameRepo.setTableState(table)
-        fixtures.snapshotRepo.setSnapshot(currentPlayerId, table.toSnapshot(setOf(currentPlayerId), setAsideTiles = { emptyList() }))
-        fixtures.snapshotRepo.setSnapshot(otherPlayerId, table.toSnapshot(setOf(otherPlayerId), setAsideTiles = { emptyList() }))
+        fixtures.snapshotRepo.setSnapshot(currentPlayerId, table.toSnapshot(setOf(currentPlayerId)))
+        fixtures.snapshotRepo.setSnapshot(otherPlayerId, table.toSnapshot(setOf(otherPlayerId)))
 
         fixtures.useCase(gameId, currentPlayerId, drawnTile.id)
 
@@ -343,7 +351,7 @@ class DeclareRiichiUseCaseTest {
             id = gameId,
             players = listOf(currentPlayer),
             config = RiichiRuleConfig(),
-            dynamicRuleState = RiichiDynamicState(),
+            components = riichiTableComponents(potPoints = 0),
         )
         fixtures.gameRepo.setTableState(table)
         val strangerId = Uuid.random()
@@ -366,7 +374,7 @@ class DeclareRiichiUseCaseTest {
             id = gameId,
             players = listOf(currentPlayer, otherPlayer),
             config = RiichiRuleConfig(),
-            dynamicRuleState = RiichiDynamicState(),
+            components = riichiTableComponents(potPoints = 0),
             currentPlayerIndex = 0,
         )
         fixtures.gameRepo.setTableState(table)
@@ -388,7 +396,7 @@ class DeclareRiichiUseCaseTest {
             id = gameId,
             players = listOf(currentPlayer),
             config = RiichiRuleConfig(),
-            dynamicRuleState = RiichiDynamicState(),
+            components = riichiTableComponents(potPoints = 0),
         )
         fixtures.gameRepo.setTableState(table)
 
@@ -408,13 +416,13 @@ class DeclareRiichiUseCaseTest {
     fun `test declare riichi fails when already riichi`() = runTest {
         val fixtures = Fixtures()
         val currentPlayer = createRiichiPlayer(
-            playerRuleState = RiichiPlayerState(riichiTile = FakeIdentifiedTileFactory.create(Tile.Honor.East)),
+            playerComponents = riichiDeclarationComponents(declarationTile = FakeIdentifiedTileFactory.create(Tile.Honor.East)),
         )
         val table = FakeTableStateFactory.create(
             id = gameId,
             players = listOf(currentPlayer),
             config = RiichiRuleConfig(),
-            dynamicRuleState = RiichiDynamicState(),
+            components = riichiTableComponents(potPoints = 0),
         )
         fixtures.gameRepo.setTableState(table)
 
@@ -447,7 +455,7 @@ class DeclareRiichiUseCaseTest {
             id = gameId,
             players = listOf(currentPlayer),
             config = RiichiRuleConfig(),
-            dynamicRuleState = RiichiDynamicState(),
+            components = riichiTableComponents(potPoints = 0),
         )
         fixtures.gameRepo.setTableState(table)
 
@@ -471,7 +479,7 @@ class DeclareRiichiUseCaseTest {
             id = gameId,
             players = listOf(currentPlayer),
             config = RiichiRuleConfig(),
-            dynamicRuleState = RiichiDynamicState(),
+            components = riichiTableComponents(potPoints = 0),
         )
         fixtures.gameRepo.setTableState(table)
 
@@ -496,7 +504,7 @@ class DeclareRiichiUseCaseTest {
             id = gameId,
             players = listOf(currentPlayer),
             config = RiichiRuleConfig(),
-            dynamicRuleState = RiichiDynamicState(),
+            components = riichiTableComponents(potPoints = 0),
         )
         fixtures.gameRepo.setTableState(table)
 
@@ -559,7 +567,7 @@ class DeclareRiichiUseCaseTest {
             id = gameId,
             players = listOf(currentPlayer, otherPlayer),
             config = RiichiRuleConfig(),
-            dynamicRuleState = RiichiDynamicState(),
+            components = riichiTableComponents(potPoints = 0),
             currentPlayerIndex = 0,
         )
         fixtures.gameRepo.setTableState(table)
@@ -583,15 +591,15 @@ class DeclareRiichiUseCaseTest {
     fun `test declare riichi triggers SuuchaRiichi when all four players end up riichi`() = runTest {
         val fixtures = Fixtures()
         val currentPlayer = createRiichiPlayer()
-        val alreadyRiichiState = RiichiPlayerState(riichiTile = FakeIdentifiedTileFactory.create(Tile.Honor.East))
-        val south = FakeMahjongPlayerFactory.create(initialSeat = Wind.SOUTH, playerRuleState = alreadyRiichiState)
-        val west = FakeMahjongPlayerFactory.create(initialSeat = Wind.WEST, playerRuleState = alreadyRiichiState)
-        val north = FakeMahjongPlayerFactory.create(initialSeat = Wind.NORTH, playerRuleState = alreadyRiichiState)
+        val alreadyRiichiState = riichiDeclarationComponents(declarationTile = FakeIdentifiedTileFactory.create(Tile.Honor.East))
+        val south = FakeMahjongPlayerFactory.create(initialSeat = Wind.SOUTH, components = alreadyRiichiState)
+        val west = FakeMahjongPlayerFactory.create(initialSeat = Wind.WEST, components = alreadyRiichiState)
+        val north = FakeMahjongPlayerFactory.create(initialSeat = Wind.NORTH, components = alreadyRiichiState)
         val table = FakeTableStateFactory.create(
             id = gameId,
             players = listOf(currentPlayer, south, west, north),
             config = RiichiRuleConfig(),
-            dynamicRuleState = RiichiDynamicState(),
+            components = riichiTableComponents(potPoints = 0),
             currentPlayerIndex = 0,
         )
         fixtures.gameRepo.setTableState(table)
@@ -614,7 +622,7 @@ class DeclareRiichiUseCaseTest {
     fun `test declare riichi does not trigger SuuchaRiichi when someone can ron the declaration tile`() = runTest {
         val fixtures = Fixtures()
         val currentPlayer = createRiichiPlayer()
-        val alreadyRiichiState = RiichiPlayerState(riichiTile = FakeIdentifiedTileFactory.create(Tile.Honor.East))
+        val alreadyRiichiState = riichiDeclarationComponents(declarationTile = FakeIdentifiedTileFactory.create(Tile.Honor.East))
         // 單騎聽北風，可以榮和 drawnTile
         val ronReadyHand = Hand(
             tiles = listOf(
@@ -625,14 +633,14 @@ class DeclareRiichiUseCaseTest {
                 Tile.Honor.North,
             ).map { FakeIdentifiedTileFactory.create(it) },
         )
-        val south = FakeMahjongPlayerFactory.create(initialSeat = Wind.SOUTH, hand = ronReadyHand, playerRuleState = alreadyRiichiState)
-        val west = FakeMahjongPlayerFactory.create(initialSeat = Wind.WEST, playerRuleState = alreadyRiichiState)
-        val north = FakeMahjongPlayerFactory.create(initialSeat = Wind.NORTH, playerRuleState = alreadyRiichiState)
+        val south = FakeMahjongPlayerFactory.create(initialSeat = Wind.SOUTH, hand = ronReadyHand, components = alreadyRiichiState)
+        val west = FakeMahjongPlayerFactory.create(initialSeat = Wind.WEST, components = alreadyRiichiState)
+        val north = FakeMahjongPlayerFactory.create(initialSeat = Wind.NORTH, components = alreadyRiichiState)
         val table = FakeTableStateFactory.create(
             id = gameId,
             players = listOf(currentPlayer, south, west, north),
             config = RiichiRuleConfig(),
-            dynamicRuleState = RiichiDynamicState(),
+            components = riichiTableComponents(potPoints = 0),
             currentPlayerIndex = 0,
         )
         fixtures.gameRepo.setTableState(table)
@@ -653,12 +661,12 @@ class DeclareRiichiUseCaseTest {
     fun `test declare riichi does not trigger SuuchaRiichi when not everyone is riichi yet`() = runTest {
         val fixtures = Fixtures()
         val currentPlayer = createRiichiPlayer()
-        val otherPlayer = FakeMahjongPlayerFactory.create(id = otherPlayerId, initialSeat = Wind.SOUTH, playerRuleState = RiichiPlayerState())
+        val otherPlayer = FakeMahjongPlayerFactory.create(id = otherPlayerId, initialSeat = Wind.SOUTH, components = riichiDeclarationComponents())
         val table = FakeTableStateFactory.create(
             id = gameId,
             players = listOf(currentPlayer, otherPlayer),
             config = RiichiRuleConfig(),
-            dynamicRuleState = RiichiDynamicState(),
+            components = riichiTableComponents(potPoints = 0),
             currentPlayerIndex = 0,
         )
         fixtures.gameRepo.setTableState(table)

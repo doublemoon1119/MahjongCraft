@@ -8,7 +8,6 @@ import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkDtoRegistries
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.registry.PersistenceRegistries
 import com.doublemoon1119.mahjongcraft.flow.server.game.policy.GameVisibilityPolicyImpl
-import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepositoryImpl
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameSnapshotSynchronizer
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DrawTileUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateStore
@@ -17,7 +16,8 @@ import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.base.Hand
 import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
-import com.doublemoon1119.mahjongcraft.logic.config.DynamicRuleState
+import com.doublemoon1119.mahjongcraft.logic.component.ComponentPatch
+import com.doublemoon1119.mahjongcraft.logic.component.ComponentSet
 import com.doublemoon1119.mahjongcraft.logic.module.ActionScoring
 import com.doublemoon1119.mahjongcraft.logic.module.ActionScoringPolicy
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleDefinition
@@ -26,11 +26,12 @@ import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiFamilyRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleModule
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiTableComponents
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.riichiPotPoints
 import com.doublemoon1119.mahjongcraft.logic.table.DrawFollowUpDecision
 import com.doublemoon1119.mahjongcraft.logic.table.DrawFollowUpPolicy
 import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayer
 import com.doublemoon1119.mahjongcraft.logic.table.NoOpWallRevealPolicy
-import com.doublemoon1119.mahjongcraft.logic.table.PlayerRuleState
 import com.doublemoon1119.mahjongcraft.logic.table.SupplementalDrawDecision
 import com.doublemoon1119.mahjongcraft.logic.table.SupplementalDrawPolicy
 import com.doublemoon1119.mahjongcraft.logic.table.SupplementalDrawReasonIds
@@ -40,9 +41,11 @@ import com.doublemoon1119.mahjongcraft.logic.table.WallRevealPolicy
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledCoreExtensionRegistries
 import com.doublemoon1119.mahjongcraft.testing.flow.common.game.repository.FakeGameSnapshotRepository
+import com.doublemoon1119.mahjongcraft.testing.flow.common.game.repository.componentValidatedGameRepository
 import com.doublemoon1119.mahjongcraft.testing.flow.common.game.service.FakeGameEventPublisher
 import com.doublemoon1119.mahjongcraft.testing.flow.common.game.service.FakeGamePresentationPublisher
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeIdentifiedTileFactory
+import com.doublemoon1119.mahjongcraft.testing.logic.rules.riichi.riichiTableComponents
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
 import kotlinx.coroutines.test.runTest
@@ -107,7 +110,7 @@ class TableCornerLayoutFlowTest {
         private val playerIds = List(PLAYER_COUNT) { Uuid.random() }
 
         /** 權威狀態。 */
-        private val repository = GameRepositoryImpl(AuthoritativeStateStore())
+        private val repository = componentValidatedGameRepository(AuthoritativeStateStore())
 
         /** 依序記錄的呈現呼叫。 */
         private val calls = mutableListOf<PresentationCall>()
@@ -119,9 +122,11 @@ class TableCornerLayoutFlowTest {
         private val draw = DrawTileUseCase(
             repository,
             modules,
-            GameSnapshotSynchronizer(repository, FakeGameSnapshotRepository(), GameVisibilityPolicyImpl(modules)),
+            GameSnapshotSynchronizer(repository, FakeGameSnapshotRepository(), GameVisibilityPolicyImpl(modules, componentRegistry = bundledCoreExtensionRegistries().componentRegistry)),
             FakeGameEventPublisher(),
             RecordingPublisher(calls),
+
+            componentRegistry = bundledCoreExtensionRegistries().componentRegistry,
         )
 
         /**
@@ -165,7 +170,7 @@ class TableCornerLayoutFlowTest {
             config = PotRuleConfig(),
             tileWall = TileWall(listOf(tile(FLOWER)) + List(WALL_SIZE) { tile(ORDINARY) }),
             currentPlayerIndex = drawerSeat,
-            dynamicRuleState = Pot(0),
+            components = riichiTableComponents(),
         )
     }
 
@@ -216,23 +221,9 @@ class TableCornerLayoutFlowTest {
 
         override fun cornerWidth(tableState: TableState, seatIndex: Int): Double {
             if (seatIndex != tableState.dealerIndex) return 0.0
-            return ((tableState.dynamicRuleState as? Pot)?.balance ?: 0) / POT_UNIT * STICK_WIDTH
+            return tableState.riichiPotPoints() / POT_UNIT * STICK_WIDTH
         }
     }
-
-    /**
-     * 點數池。
-     *
-     * @property balance 餘額。
-     */
-    private data class Pot(val balance: Int) : DynamicRuleState
-
-    /**
-     * 已移出的花。
-     *
-     * @property flowers 依移出順序排列的花。
-     */
-    private data class Flowers(val flowers: List<IdentifiedTile>) : PlayerRuleState
 
     /**
      * 測試規則的配置，委派日麻設定。
@@ -277,13 +268,13 @@ class TableCornerLayoutFlowTest {
             if (replacement == null) {
                 SupplementalDrawDecision.Rejected(SupplementalDrawReasonIds.WALL_EXHAUSTED)
             } else {
-                SupplementalDrawDecision.Completed(listOf(replacement), wall, candidate.reservedWallTiles, candidate.dynamicRuleState)
+                SupplementalDrawDecision.Completed(listOf(replacement), wall, candidate.reservedWallTiles, ComponentPatch())
             }
         }
 
         override fun createActionScoringPolicy(): ActionScoringPolicy = ActionScoringPolicy { context ->
-            val balance = (context.tableStateAfterAction.dynamicRuleState as Pot).balance
-            ActionScoring(mapOf(context.actorPlayerId to -POT_UNIT), potDeposit = POT_UNIT, dynamicRuleState = Pot(balance + POT_UNIT))
+            val balance = context.tableStateAfterAction.riichiPotPoints()
+            ActionScoring(mapOf(context.actorPlayerId to -POT_UNIT), potDeposit = POT_UNIT, tableComponents = ComponentPatch.basedOn(context.tableStateAfterAction.components, values = ComponentSet.EMPTY.with(RiichiTableComponents.POT_POINTS, balance + POT_UNIT)))
                 .takeIf { context.action == FLOWER_ACTION }
         }
 
@@ -298,12 +289,10 @@ class TableCornerLayoutFlowTest {
             val flower = tileSetAsideBy(actor, action) ?: return null
             val updated = actor.copy(
                 hand = actor.hand.copy(lastDrawn = null),
-                playerRuleState = Flowers((actor.playerRuleState as? Flowers)?.flowers.orEmpty() + flower),
+                tileAreas = actor.tileAreas.withArea("test:flowers", actor.tileAreas["test:flowers"]?.tiles.orEmpty() + flower),
             ).recordAction(action)
             return tableState.copy(players = tableState.players.map { if (it.id == actorPlayerId) updated else it })
         }
-
-        override fun setAsideTiles(player: MahjongPlayer): List<IdentifiedTile> = (player.playerRuleState as? Flowers)?.flowers.orEmpty()
     }
 
     /** 測試規則自動移出花的動作。 */

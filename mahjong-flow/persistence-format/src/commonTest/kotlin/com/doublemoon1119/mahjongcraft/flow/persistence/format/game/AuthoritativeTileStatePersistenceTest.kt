@@ -7,9 +7,10 @@ import com.doublemoon1119.mahjongcraft.logic.base.Meld
 import com.doublemoon1119.mahjongcraft.logic.base.MeldType
 import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.RiichiTileTypes
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.RiichiTileValues
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.tile.TaiwanTileTypes
 import com.doublemoon1119.mahjongcraft.logic.table.TileWall
+import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledPersistenceRegistries
 import kotlinx.serialization.json.Json
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -24,7 +25,7 @@ class AuthoritativeTileStatePersistenceTest {
         val ponTiles = listOf(tile(Tile.Honor.East), tile(Tile.Honor.East), source)
         val hand = Hand(
             tiles = listOf(
-                tile(RiichiTileTypes.redFive(Tile.Suit.Character)),
+                redFive(Tile.Suit.Character),
                 tile(Tile.Extension(TaiwanTileTypes.PLUM)),
             ),
             melds = listOf(
@@ -40,9 +41,9 @@ class AuthoritativeTileStatePersistenceTest {
             lastDrawn = tile(Tile.Numeric(Tile.Suit.Dot, 9)),
         )
 
-        val dto = hand.toPersistenceDto()
+        val dto = hand.toPersistenceDto(bundledPersistenceRegistries().components)
         val encoded = Json.encodeToString(HandPersistenceDto.serializer(), dto)
-        val restored = Json.decodeFromString(HandPersistenceDto.serializer(), encoded).toDomain()
+        val restored = Json.decodeFromString(HandPersistenceDto.serializer(), encoded).toDomain(bundledPersistenceRegistries().components)
 
         assertEquals(hand, restored)
     }
@@ -58,9 +59,9 @@ class AuthoritativeTileStatePersistenceTest {
             ),
         )
 
-        val dto = wall.toPersistenceDto()
+        val dto = wall.toPersistenceDto(bundledPersistenceRegistries().components)
         val encoded = Json.encodeToString(TileWallPersistenceDto.serializer(), dto)
-        val restored = Json.decodeFromString(TileWallPersistenceDto.serializer(), encoded).toDomain()
+        val restored = Json.decodeFromString(TileWallPersistenceDto.serializer(), encoded).toDomain(bundledPersistenceRegistries().components)
 
         assertEquals(wall, restored)
     }
@@ -73,3 +74,11 @@ class AuthoritativeTileStatePersistenceTest {
      */
     private fun tile(tile: Tile): IdentifiedTile = IdentifiedTile(Uuid.random(), tile)
 }
+
+/**
+ * 建立帶赤寶牌特性與赤五外觀的牌張。
+ *
+ * @param suit 赤五的花色。
+ * @return 新的赤五牌張。
+ */
+private fun redFive(suit: Tile.Suit): IdentifiedTile = RiichiTileValues.redFive(suit).let { IdentifiedTile(Uuid.random(), it.tile, it.components) }

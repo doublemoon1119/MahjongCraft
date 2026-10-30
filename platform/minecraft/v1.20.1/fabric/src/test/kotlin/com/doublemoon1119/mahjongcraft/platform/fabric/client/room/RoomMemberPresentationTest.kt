@@ -161,7 +161,7 @@ class RoomMemberPresentationTest {
      */
     private fun snapshot(seatWind: Wind, score: Int = 25000) = FakeMahjongPlayerFactory.create(initialSeat = seatWind)
         .copy(score = score)
-        .toSnapshot(isVisible = true, revealsClosedKanTiles = false, setAsideTiles = emptyList())
+        .toSnapshot(isVisible = true, revealsClosedKanTiles = false)
 
     /** 測試共用的玩家識別碼。 */
     private companion object {

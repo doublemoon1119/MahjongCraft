@@ -6,9 +6,10 @@ import com.doublemoon1119.mahjongcraft.logic.base.Hand
 import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
 import com.doublemoon1119.mahjongcraft.logic.base.MeldType
 import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
-import com.doublemoon1119.mahjongcraft.logic.base.Tile
+import com.doublemoon1119.mahjongcraft.logic.base.TileFaceView
 import com.doublemoon1119.mahjongcraft.logic.base.TileOrder
-import com.doublemoon1119.mahjongcraft.logic.config.DynamicRuleState
+import com.doublemoon1119.mahjongcraft.logic.component.ComponentPatch
+import com.doublemoon1119.mahjongcraft.logic.component.ComponentSet
 import com.doublemoon1119.mahjongcraft.logic.config.MahjongRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.config.RonResolution
 import com.doublemoon1119.mahjongcraft.logic.judgment.DiscardReadinessAnalyzer
@@ -19,13 +20,10 @@ import com.doublemoon1119.mahjongcraft.logic.judgment.ShantenCalculator
 import com.doublemoon1119.mahjongcraft.logic.table.DiscardPile
 import com.doublemoon1119.mahjongcraft.logic.table.DrawFollowUpPolicy
 import com.doublemoon1119.mahjongcraft.logic.table.FixedLengthMatchProgressionPolicy
-import com.doublemoon1119.mahjongcraft.logic.table.GameInitializer
 import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayer
-import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayerSnapshot
 import com.doublemoon1119.mahjongcraft.logic.table.MatchProgressionPolicy
 import com.doublemoon1119.mahjongcraft.logic.table.NoOpDrawFollowUpPolicy
 import com.doublemoon1119.mahjongcraft.logic.table.NoOpWallRevealPolicy
-import com.doublemoon1119.mahjongcraft.logic.table.PlayerRuleState
 import com.doublemoon1119.mahjongcraft.logic.table.RankablePlayer
 import com.doublemoon1119.mahjongcraft.logic.table.RoundTransitionContext
 import com.doublemoon1119.mahjongcraft.logic.table.RoundTransitionDirective
@@ -44,6 +42,9 @@ import com.doublemoon1119.mahjongcraft.logic.table.seat.DealerAnchoredSeatWindAs
 import com.doublemoon1119.mahjongcraft.logic.table.seat.SeatWindAssignmentPolicy
 import com.doublemoon1119.mahjongcraft.logic.tile.IdentityTileInterpretationPolicy
 import com.doublemoon1119.mahjongcraft.logic.tile.TileInterpretationPolicy
+import com.doublemoon1119.mahjongcraft.logic.tile.component.TileAreaEntry
+import com.doublemoon1119.mahjongcraft.logic.tile.component.TileComponentDescription
+import com.doublemoon1119.mahjongcraft.logic.tile.component.defaultTileRegionComponents
 import kotlin.uuid.Uuid
 
 /**
@@ -297,114 +298,56 @@ interface MahjongRuleModule<T : MahjongRuleConfig> {
     fun createHandValueContextCalculator(): HandValueContextCalculator<*, *>
 
     /**
-     * 建立該規則的初始動態桌況狀態。
+     * 依目前桌況描述任一牌區的組件效果，不修改牌張上的固定組件。
      *
-     * 由 [GameInitializer] 在開局時寫入 `TableState.dynamicRuleState`。
-     * 沒有動態狀態需求的規則可回傳 null。
-     *
-     * @return 該規則的初始 [DynamicRuleState]，若無則為 null。
+     * @param tableState 權威桌況；同一輸入必須產生相同結果。
+     * @return 每張目前牌張至多一筆描述，預設不增加效果。
      */
-    fun createInitialDynamicState(): DynamicRuleState?
+    fun describeTileComponents(tableState: TableState): List<TileComponentDescription> = emptyList()
 
     /**
-     * 由上一局結束時的動態桌況狀態，建立下一局起始的動態桌況狀態。
-     *
-     * 由 [GameInitializer] 在換局時寫入 `TableState.dynamicRuleState`。動態桌況同時可能保存跨局資料
-     * （例如尚未被收下的供託棒）與只屬於單局的資料（例如本局已完成的槓次），換局時哪些延續、哪些
-     * 歸零由規則自行決定——呼叫端不得整包沿用 [previous]。
-     *
-     * @param previous 上一局結束時的狀態；該對局的第一局或規則沒有動態狀態需求時為 null。
-     * @return 下一局起始的 [DynamicRuleState]，若無則為 null。
-     */
-    fun createNextRoundDynamicState(previous: DynamicRuleState?): DynamicRuleState?
-
-    /**
-     * 建立該規則的初始玩家規則狀態。
-     *
-     * 由 [GameInitializer] 在開局時寫入每位 `MahjongPlayer.playerRuleState`。
-     * 沒有玩家規則狀態需求的規則可回傳 null。
-     *
-     * @return 該規則的初始 [PlayerRuleState]，若無則為 null。
-     */
-    fun createInitialPlayerRuleState(): PlayerRuleState?
-
-    /**
-     * 建立指定讀取者可取得的玩家規則狀態投影。
-     *
-     * 預設只把本人的完整狀態放入快照；其他玩家的狀態一律隱藏。規則若有必須公開的狀態，
-     * 應回傳不含私有資訊的不可變副本。回傳值只會用於觀察者快照與 AI 情境，不得回寫權威桌況。
+     * 決定目前牌區的標準姿態與讀取權，不能依觀察者改變共同姿態。
      *
      * @param tableState 權威桌況。
-     * @param player 狀態所屬玩家。
-     * @param observerId 讀取快照的玩家或觀察者識別碼。
-     * @return 該讀取者可取得的狀態；沒有可公開內容時為 null。
+     * @param area 目前牌張位置。
+     * @return 這個區域的完整預設組件。
      */
-    fun projectPlayerRuleState(
-        tableState: TableState,
-        player: MahjongPlayer,
-        observerId: Uuid,
-    ): PlayerRuleState? = player.playerRuleState.takeIf { player.id == observerId }
+    fun tileRegionComponents(tableState: TableState, area: TileAreaEntry): ComponentSet = defaultTileRegionComponents(tableState, area)
 
     /**
-     * 建立指定讀取者可取得的動態桌況狀態投影。
+     * 因應「玩家摸牌」事件，回傳這位玩家規則資料的變更。
      *
-     * 預設不公開規則專屬動態狀態。規則若有必須同步的公開欄位，應回傳不含私有資訊的不可變副本；
-     * 原始狀態仍可用於建立牌山可見性，投影結果只會進入觀察者快照。
-     *
-     * @param tableState 權威桌況。
-     * @param observerId 讀取快照的玩家或觀察者識別碼。
-     * @return 該讀取者可取得的狀態；沒有可公開內容時為 null。
-     */
-    fun projectDynamicRuleState(tableState: TableState, observerId: Uuid): DynamicRuleState? = null
-
-    /**
-     * 描述目前手牌逐張的額外可見權限與共同姿態。
-     *
-     * 同一桌況必須回傳相同結果，且不修改狀態或使用外部可變資料。未回報的牌沿用原本權限並保持直立。
-     * 描述只涵蓋立牌與摸牌位；不能藉此公開暗槓、牌山或私有規則狀態。回報後先通過共用驗證，再由可見性政策裁切給各觀察者。
-     *
-     * @param tableState 權威桌況。
-     * @return 每張牌至多一筆描述；不額外公開或改變姿態時為空清單。
-     */
-    fun describeHandTiles(tableState: TableState): List<HandTileDescription> = emptyList()
-
-    /**
-     * 因應「玩家摸牌」事件，套用規則特有的狀態變化。
-     *
-     * 只能修改 [MahjongPlayer.playerRuleState]；改動其他欄位時本局以規則錯誤中止。要收付點數請使用
-     * [createActionScoringPolicy]，要自動移出手牌請使用 [createDrawFollowUpPolicy]。
-     * 沒有對應狀態需求的規則應直接回傳 [player] 本身，不做任何事。
+     * 變更帶著讀到的舊值；舊值不符、對象不符或資料不屬於目前規則時，本局以規則錯誤中止。要收付點數請使用
+     * [createActionScoringPolicy]，要自動移出手牌請使用 [createDrawFollowUpPolicy]。預設不做任何變更。
      *
      * @param player 剛完成摸牌的玩家（已套用摸牌本身造成的變化）。
-     * @return 套用規則特有狀態變化後的新玩家實例。
+     * @return 這位玩家組件的變更。
      */
-    fun onPlayerDrew(player: MahjongPlayer): MahjongPlayer
+    fun onPlayerDrew(player: MahjongPlayer): ComponentPatch = ComponentPatch()
 
     /**
-     * 因應「玩家一般捨牌」事件，套用規則特有的狀態變化。
+     * 因應「玩家捨牌」事件，回傳這位玩家規則資料的變更。
      *
-     * 只在一般捨牌時呼叫；宣告動作附帶打出的牌（例如日麻的立直宣告牌）由該宣告自行處理，不會呼叫。
+     * 一般捨牌與宣告附帶的捨牌都會呼叫，宣告時在套用宣告效果之前。
      * 例如日麻：立直者宣告後再打出下一張牌，代表一發的期限已經結束，需清除玩家的一發資格。
-     * 只能修改 [MahjongPlayer.playerRuleState]；改動其他欄位時本局以規則錯誤中止。
-     * 沒有對應狀態需求的規則應直接回傳 [player] 本身，不做任何事。
+     * 變更帶著讀到的舊值；不符合契約時本局以規則錯誤中止。預設不做任何變更。
      *
      * @param player 剛完成捨牌的玩家（已套用捨牌本身造成的變化）。
-     * @return 套用規則特有狀態變化後的新玩家實例。
+     * @return 這位玩家組件的變更。
      */
-    fun onPlayerDiscarded(player: MahjongPlayer): MahjongPlayer
+    fun onPlayerDiscarded(player: MahjongPlayer): ComponentPatch = ComponentPatch()
 
     /**
-     * 因應「有玩家完成一次鳴牌（吃/碰/槓）」事件，套用規則特有的狀態清除。
+     * 因應「有玩家完成一次鳴牌（吃/碰/槓）」事件，回傳各玩家規則資料的變更。
      *
      * 例如日麻：任何一次鳴牌都會讓場上所有玩家的一發資格失效（不只鳴牌的當事人）。
-     * 只能修改各玩家的 [MahjongPlayer.playerRuleState]，玩家數量與順序不變；改動其他欄位時本局以規則錯誤中止。
-     * 鳴牌當下要收付點數請使用 [createActionScoringPolicy]。
-     * 沒有對應狀態需求的規則應直接回傳 [players] 本身，不做任何事。
+     * 鍵必須是這局的玩家；沒有列出的玩家不變。變更帶著讀到的舊值；不符合契約時本局以規則錯誤中止。
+     * 鳴牌當下要收付點數請使用 [createActionScoringPolicy]。預設不做任何變更。
      *
      * @param players 鳴牌動作套用之後的完整玩家列表。
-     * @return 套用規則特有狀態清除後的新玩家列表。
+     * @return 依玩家 ID 排列的組件變更。
      */
-    fun onMeldClaimed(players: List<MahjongPlayer>): List<MahjongPlayer>
+    fun onMeldClaimed(players: List<MahjongPlayer>): Map<Uuid, ComponentPatch> = emptyMap()
 
     /**
      * 玩家鳴取他家捨牌（吃／碰／明槓）、副露尚未套用到手牌之前，讓規則依這次鳴牌更新該玩家的規則狀態。
@@ -412,20 +355,21 @@ interface MahjongRuleModule<T : MahjongRuleConfig> {
      * 每一次鳴取捨牌都會呼叫，不論鳴牌種類；哪些鳴牌與自己的狀態有關由規則自行判斷（例如日麻只在碰／明槓
      * 湊成大三元、大四喜時記錄包牌責任）。暗槓與加槓不是鳴取他家捨牌，不會呼叫。
      *
-     * 呼叫時 [claimingPlayer] 的手牌仍是鳴牌當下、尚未加入新副露的狀態。預設不做任何事。
+     * 呼叫時 [claimingPlayer] 的手牌仍是鳴牌當下、尚未加入新副露的狀態。變更帶著讀到的舊值；
+     * 不符合契約時本局以規則錯誤中止。預設不做任何變更。
      *
      * @param claimingPlayer 鳴牌的玩家（尚未套用本次鳴牌）。
      * @param meldType 本次鳴牌的種類。
      * @param calledTile 本次鳴取的他家捨牌。
      * @param sourceDirection 本次鳴取的來源相對方位。
-     * @return 更新規則狀態後的玩家實例；沒有變化時回傳 [claimingPlayer] 本身。
+     * @return 鳴牌玩家組件的變更。
      */
     fun beforeDiscardClaimed(
         claimingPlayer: MahjongPlayer,
         meldType: MeldType,
         calledTile: IdentifiedTile,
         sourceDirection: RelativeDirection,
-    ): MahjongPlayer = claimingPlayer
+    ): ComponentPatch = ComponentPatch()
 
     /**
      * 計算一次自摸胡牌（[GameAction.Tsumo]）的點數結算：贏家實際獲得的點數，以及各應付款玩家
@@ -501,7 +445,7 @@ interface MahjongRuleModule<T : MahjongRuleConfig> {
      * @param tableState 目前的桌況（尚未套用本次收供託的變化）。
      * @return 收下供託後應套用的動態桌況狀態，以及收下的總額；若此規則沒有供託機制則為 null。
      */
-    fun collectStickPot(tableState: TableState): Pair<DynamicRuleState?, Int>?
+    fun collectStickPot(tableState: TableState): PointPotCollection?
 
     /**
      * 決定這次結算時場上供託分給誰、各分多少，以及哪些玩家收取連莊點數。
@@ -585,18 +529,17 @@ interface MahjongRuleModule<T : MahjongRuleConfig> {
     fun resolveMultiRonAbortiveDraw(): ExhaustiveDrawReason?
 
     /**
-     * 給定一張牌與目前已公開翻開的牌山牌張（[revealedWallTiles]，一般是各規則自訂的指示牌），判斷這張
-     * 牌目前是否為規則視為加值的牌（例如日麻的寶牌）——純粹牌面比對，不需要完整 [TableState]，
-     * 任何持有牌面資訊的呼叫端都能呼叫。是否以及如何呈現由呼叫端決定；這裡刻意不用任何特定規則的術語命名，
-     * 避免介面綁死成只有日麻會用。
+     * 判斷一張已知牌面目前是否為規則視為加值的牌，例如日麻的寶牌。
      *
-     * 不支援此概念的規則固定回傳 `false`（例如台麻沒有寶牌）。
+     * 只讀呼叫端已獲准知道的牌面與公開特徵，不需要完整 [TableState]。是否以及如何呈現由呼叫端決定。
+     * 牌山牌面可見不代表它有特殊用途；規則須依自己投影的公開特徵判斷，例如日麻只看帶指示牌特徵的牌。
+     * 不支援此概念的規則固定回傳 `false`。
      *
-     * @param tile 欲判斷的牌面。
-     * @param revealedWallTiles 目前已公開翻開的牌山牌張列表。
+     * @param face 要判斷的已知牌面。
+     * @param wallFaces 目前讀取者已知的牌山牌面。
      * @return 這張牌目前是否為加值牌。
      */
-    fun isBonusTile(tile: Tile, revealedWallTiles: List<Tile>): Boolean = false
+    fun isBonusTile(face: TileFaceView, wallFaces: List<TileFaceView>): Boolean = false
 
     /**
      * 取得規則要求玩家本次一般捨牌必須打出的牌；預設不限制。
@@ -647,18 +590,16 @@ interface MahjongRuleModule<T : MahjongRuleConfig> {
     }
 
     /**
-     * 玩家放棄一次原本合法的和牌機會時，套用規則特有的狀態變化。
+     * 玩家放棄一次原本合法的和牌機會時，回傳這位玩家規則資料的變更。
      *
      * 呼叫端在玩家放過合法榮和、或摸牌後可以自摸卻選擇捨牌時呼叫，不預先篩選玩家狀態；是否產生後果完全
      * 由規則決定。例如日麻只對立直中的玩家設定本局永久振聽，未立直的玩家維持不變。
-     * 只能修改 [MahjongPlayer.playerRuleState]；改動其他欄位時本局以規則錯誤中止。
-     *
-     * 沒有對應規則需求的規則直接回傳 [player] 本身。
+     * 變更帶著讀到的舊值；不符合契約時本局以規則錯誤中止。預設不做任何變更。
      *
      * @param player 剛放棄和牌機會的玩家。
-     * @return 套用規則特有狀態變化後的新玩家實例。
+     * @return 這位玩家組件的變更。
      */
-    fun onPlayerDeclinedWin(player: MahjongPlayer): MahjongPlayer = player
+    fun onPlayerDeclinedWin(player: MahjongPlayer): ComponentPatch = ComponentPatch()
 
     /**
      * 玩家宣告 [action] 時會移出手牌的那張牌；[action] 不是本規則會移出手牌的動作、或玩家手中沒有對應的牌時回傳 null。
@@ -677,8 +618,9 @@ interface MahjongRuleModule<T : MahjongRuleConfig> {
      * 套用移出手牌的動作（見 [tileSetAsideBy]）：把那張牌移出 [actorPlayerId] 的手牌、記錄動作，並套用規則狀態變化。
      * 不含補牌；補牌由呼叫端交給 [createSupplementalDrawPolicy]。
      *
-     * 結果只能從執行者的立牌（含摸牌位）移出 [tileSetAsideBy] 指定的那一張牌，並把它接在 [setAsideTiles] 最後；
-     * 執行者另外只能多一筆 [action] 的動作紀錄與規則狀態變化，其他玩家與桌況不變。不符合時本局以規則錯誤中止。
+     * 結果只能從執行者的立牌（含摸牌位）移出 [tileSetAsideBy] 指定的那一張牌，並把它接在執行者一個移出牌區
+     * （[MahjongPlayer.tileAreas]）的最後；執行者另外只能多一筆 [action] 的動作紀錄與規則資料變化，其他玩家只能改
+     * 規則資料，桌況只能改對局組件。不符合時本局以規則錯誤中止。
      *
      * @param tableState 尚未套用這次動作的權威桌況。
      * @param actorPlayerId 宣告動作的玩家。
@@ -690,13 +632,4 @@ interface MahjongRuleModule<T : MahjongRuleConfig> {
         actorPlayerId: Uuid,
         action: GameAction.Extension,
     ): TableState? = null
-
-    /**
-     * [player] 本局已經移出手牌、公開擺在桌上的牌（見 [applyTileSetAsideAction]），依移出順序排列；沒有時為空清單。
-     * 這些牌對所有玩家公開，牌局快照依此帶出（見 [MahjongPlayerSnapshot.setAsideTiles]）。
-     *
-     * @param player 要查詢的玩家。
-     * @return 依移出順序排列的公開牌張。
-     */
-    fun setAsideTiles(player: MahjongPlayer): List<IdentifiedTile> = emptyList()
 }

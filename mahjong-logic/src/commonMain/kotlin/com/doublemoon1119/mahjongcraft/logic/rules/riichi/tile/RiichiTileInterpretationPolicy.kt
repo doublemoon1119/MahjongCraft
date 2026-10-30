@@ -1,26 +1,36 @@
 package com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile
 
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
+import com.doublemoon1119.mahjongcraft.logic.base.TileFaceView
+import com.doublemoon1119.mahjongcraft.logic.base.TileValue
+import com.doublemoon1119.mahjongcraft.logic.component.ComponentSet
 import com.doublemoon1119.mahjongcraft.logic.tile.TileInterpretationPolicy
 
 /**
- * 將日麻赤五解讀為同花色的普通五，其他牌保持原樣。
+ * 日麻的牌面解讀：基本牌面直接比較，赤五的基本牌面就是普通五。
  *
- * 赤寶牌番數與資源外觀仍應使用原始 [Tile.Extension] 判斷；此 policy 只負責一般牌面等價關係。
+ * 計算用牌值只保留赤寶牌特性；外觀、授權與姿態不影響計算與張數分組。
  */
 object RiichiTileInterpretationPolicy : TileInterpretationPolicy {
-    override fun canonicalize(tile: Tile): Tile = when ((tile as? Tile.Extension)?.typeId) {
-        RiichiTileTypes.RED_FIVE_CHARACTER -> Tile.Numeric(Tile.Suit.Character, 5)
-        RiichiTileTypes.RED_FIVE_DOT -> Tile.Numeric(Tile.Suit.Dot, 5)
-        RiichiTileTypes.RED_FIVE_BAMBOO -> Tile.Numeric(Tile.Suit.Bamboo, 5)
-        else -> tile
-    }
+    override fun valueOf(face: TileFaceView): TileValue = TileValue(
+        tile = face.tile,
+        components = if (face.views[RiichiTileComponentViews.RED_DORA] != null) {
+            ComponentSet.EMPTY.with(RiichiTileComponents.RED_DORA, Unit)
+        } else {
+            ComponentSet.EMPTY
+        },
+    )
 
-    /**
-     * 判斷 [tile] 是否為日麻內建赤五。
-     *
-     * @param tile 要檢查的牌。
-     * @return 若牌是三種內建赤五之一則為 true。
-     */
-    fun isRedDora(tile: Tile): Boolean = (tile as? Tile.Extension)?.typeId in RiichiTileTypes.ALL
+    override fun valueOf(value: TileValue): TileValue = TileValue(
+        tile = value.tile,
+        components = if (value.components[RiichiTileComponents.RED_DORA] != null) {
+            ComponentSet.EMPTY.with(RiichiTileComponents.RED_DORA, Unit)
+        } else {
+            ComponentSet.EMPTY
+        },
+    )
+
+    override fun isUnavailableForDraw(face: TileFaceView): Boolean = face.views[RiichiTileComponentViews.DORA_INDICATOR] != null
+
+    override fun canonicalize(tile: Tile): Tile = tile
 }

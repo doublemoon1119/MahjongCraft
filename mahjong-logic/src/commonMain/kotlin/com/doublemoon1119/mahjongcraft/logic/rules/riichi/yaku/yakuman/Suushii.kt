@@ -4,7 +4,6 @@ import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiHandDecomposer
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.structure.HandStructure
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.structure.Mentsu
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.riichiCanonical
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.YakuResult
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.YakuType
 
@@ -58,7 +57,7 @@ fun calculateSuushii(
                 mentsu is Mentsu.Minkan ||
                 mentsu is Mentsu.Kakan
             ) &&
-            mentsu.tiles.all { it.riichiCanonical in windTiles }
+            mentsu.tiles.all { it in windTiles }
     }
 
     // 風牌刻子數量至少要 3 才有可能湊齊四喜
@@ -72,7 +71,7 @@ fun calculateSuushii(
     }
 
     // 三個風牌刻子，且雀頭為風牌是為小四喜
-    if (windKotsuCount == 3 && standard.pair.tile.riichiCanonical in windTiles) {
+    if (windKotsuCount == 3 && standard.pair.tile in windTiles) {
         return YakuResult.yakuman(YakuType.Shousuushi)
     }
 

@@ -10,6 +10,9 @@ object ExampleMinecraftPresentationIds {
     /** 換牌開關設定欄位。 */
     const val EXCHANGE_FIELD = "${ExampleExtensionIds.MOD_ID}:pairing/exchange_enabled"
 
+    /** 公開牌面開關設定欄位。 */
+    const val PUBLIC_FACES_FIELD = "${ExampleExtensionIds.MOD_ID}:pairing/public_faces_enabled"
+
     /** 每位玩家付款點數設定欄位。 */
     const val PAYMENT_FIELD = "${ExampleExtensionIds.MOD_ID}:pairing/payment_per_player"
 

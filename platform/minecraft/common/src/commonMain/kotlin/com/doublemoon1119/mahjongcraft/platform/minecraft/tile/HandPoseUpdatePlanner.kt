@@ -1,7 +1,7 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.tile
 
-import com.doublemoon1119.mahjongcraft.logic.module.HandTilePose
-import com.doublemoon1119.mahjongcraft.logic.module.HandTileState
+import com.doublemoon1119.mahjongcraft.logic.tile.component.TilePose
+import com.doublemoon1119.mahjongcraft.logic.tile.component.TilePoseState
 import kotlin.uuid.Uuid
 
 /**
@@ -12,7 +12,7 @@ import kotlin.uuid.Uuid
  */
 class HandPoseUpdatePlanner {
     /** 各桌、各玩家已成功套用的逐張非預設姿態。 */
-    private val applied = mutableMapOf<Uuid, MutableMap<Uuid, Map<Uuid, HandTilePose>>>()
+    private val applied = mutableMapOf<Uuid, MutableMap<Uuid, Map<Uuid, TilePose>>>()
 
     /**
      * 找出逐張姿態有變化的玩家，不把查詢當成套用成功。
@@ -21,7 +21,7 @@ class HandPoseUpdatePlanner {
      * @param statesByPlayer 每位玩家當前手牌的逐張姿態。
      * @return 需要更新的牌區所屬玩家。
      */
-    fun changedPlayers(tableId: Uuid, statesByPlayer: Map<Uuid, List<HandTileState>>): Set<Uuid> = statesByPlayer.filter { (player, states) -> applied[tableId]?.get(player).orEmpty() != overrides(states) }.keys.toSet()
+    fun changedPlayers(tableId: Uuid, statesByPlayer: Map<Uuid, List<TilePoseState>>): Set<Uuid> = statesByPlayer.filter { (player, states) -> applied[tableId]?.get(player).orEmpty() != overrides(states) }.keys.toSet()
 
     /**
      * 記錄一位玩家已成功呈現的逐張姿態，不修改同桌其他玩家的紀錄。
@@ -30,7 +30,7 @@ class HandPoseUpdatePlanner {
      * @param playerId 已成功更新的玩家。
      * @param states 這位玩家當前手牌中已套用的姿態。
      */
-    fun recordApplied(tableId: Uuid, playerId: Uuid, states: List<HandTileState>) {
+    fun recordApplied(tableId: Uuid, playerId: Uuid, states: List<TilePoseState>) {
         applied.getOrPut(tableId) { mutableMapOf() }[playerId] = overrides(states)
     }
 
@@ -49,6 +49,6 @@ class HandPoseUpdatePlanner {
     }
 
     /** 只保存有別於預設直立姿態的資料，並建立獨立索引。 */
-    private fun overrides(states: List<HandTileState>): Map<Uuid, HandTilePose> = states
-        .filter { it.pose != HandTilePose.UPRIGHT }.associate { it.tileId to it.pose }
+    private fun overrides(states: List<TilePoseState>): Map<Uuid, TilePose> = states
+        .filter { it.pose != TilePose.UPRIGHT }.associate { it.tileId to it.pose }
 }

@@ -1,8 +1,7 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.rule.riichi
 
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDynamicState
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPlayerState
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RIICHI_STICK_POINTS
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongTableFacing
@@ -17,6 +16,8 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileDimens
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileTableLayout
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileWallPlacement
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeIdentifiedTileFactory
+import com.doublemoon1119.mahjongcraft.testing.logic.rules.riichi.riichiDeclarationComponents
+import com.doublemoon1119.mahjongcraft.testing.logic.rules.riichi.riichiTableComponents
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
 import kotlin.math.abs
@@ -44,8 +45,8 @@ class RiichiTablePropsTest {
         val players = Wind.entries.mapIndexed { seatIndex, wind ->
             FakeMahjongPlayerFactory.create(
                 seatWind = wind,
-                playerRuleState = RiichiPlayerState(
-                    riichiTile = FakeIdentifiedTileFactory.create(Tile.Honor.East).takeIf { seatIndex in riichiSeatIndices },
+                components = riichiDeclarationComponents(
+                    declarationTile = FakeIdentifiedTileFactory.create(Tile.Honor.East).takeIf { seatIndex in riichiSeatIndices },
                 ),
             )
         }
@@ -53,7 +54,7 @@ class RiichiTablePropsTest {
             players = players,
             dealerPlayerId = players[dealerSeatIndex].id,
             comboCount = comboCount,
-            dynamicRuleState = RiichiDynamicState(riichiStickCount = stickPotCount),
+            components = riichiTableComponents(potPoints = (stickPotCount) * RIICHI_STICK_POINTS),
         )
     }
 

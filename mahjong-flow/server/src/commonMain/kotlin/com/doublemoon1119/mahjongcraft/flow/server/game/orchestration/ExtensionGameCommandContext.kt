@@ -6,6 +6,7 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepositor
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameSnapshotSynchronizer
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.HandSortPreferenceStore
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DeclareAndDiscardUseCase
+import com.doublemoon1119.mahjongcraft.logic.component.ComponentRegistry
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 
 /**
@@ -15,6 +16,7 @@ import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
  *
  * @property gameRepository 權威對局數據倉庫。
  * @property moduleRegistry 依對局設定取得規則模組。
+ * @property componentRegistry 本環境已凍結的組件與效果來源。
  * @property snapshotSynchronizer 對局快照同步服務。
  * @property handSortPreferenceStore 查詢玩家是否啟用自動整理手牌。
  * @property postActionExhaustiveDrawResolverRegistry 動作完成後主動觸發途中流局的判定 registry。
@@ -31,4 +33,5 @@ class ExtensionGameCommandContext(
     val eventPublisher: GameEventPublisher,
     val presentationPublisher: GamePresentationPublisher,
     val declareAndDiscardUseCase: DeclareAndDiscardUseCase,
+    val componentRegistry: ComponentRegistry,
 )

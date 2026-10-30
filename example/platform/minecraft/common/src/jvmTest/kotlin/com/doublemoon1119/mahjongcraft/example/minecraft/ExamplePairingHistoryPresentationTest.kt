@@ -97,10 +97,9 @@ class ExamplePairingHistoryPresentationTest {
             events = events,
             mapper = HistoryRecordingPersistenceMapper(registries),
             registries = registries,
-            setAsideTiles = { emptyList() },
         )
 
-        val read = CompactReplayRoundReader().readEvents(
+        val read = CompactReplayRoundReader(registries.componentViews).readEvents(
             document = document,
             expectedMatchId = matchId,
             roundNumber = 1,

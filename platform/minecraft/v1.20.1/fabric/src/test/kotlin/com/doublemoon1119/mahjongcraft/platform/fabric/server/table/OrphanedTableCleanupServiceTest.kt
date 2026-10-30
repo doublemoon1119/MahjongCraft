@@ -12,7 +12,6 @@ import com.doublemoon1119.mahjongcraft.flow.common.room.model.RoomSnapshot
 import com.doublemoon1119.mahjongcraft.flow.common.room.model.toSnapshot
 import com.doublemoon1119.mahjongcraft.flow.common.room.repository.RoomSnapshotRepository
 import com.doublemoon1119.mahjongcraft.flow.common.room.repository.RoomSnapshotRepositoryImpl
-import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepositoryImpl
 import com.doublemoon1119.mahjongcraft.flow.server.membership.repository.PlayerMembershipRepositoryImpl
 import com.doublemoon1119.mahjongcraft.flow.server.room.repository.RoomRepositoryImpl
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateStore
@@ -25,6 +24,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.config.OrphanedTablePo
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocationEntry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocationRegistry
+import com.doublemoon1119.mahjongcraft.testing.flow.common.game.repository.componentValidatedGameRepository
 import com.doublemoon1119.mahjongcraft.testing.logic.config.FakeMahjongRuleConfig
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
@@ -82,7 +82,7 @@ class OrphanedTableCleanupServiceTest {
         val game = FakeTableStateFactory.create(id = fixture.tableId, players = listOf(player))
         fixture.gameRepository.setTableState(game)
         fixture.memberships.claim(player.id, fixture.tableId)
-        fixture.gameSnapshots.setSnapshot(player.id, game.toSnapshot(setOf(player.id), setAsideTiles = { emptyList() }))
+        fixture.gameSnapshots.setSnapshot(player.id, game.toSnapshot(setOf(player.id)))
 
         val result = fixture.service.cleanupMissing(fixture.entry)
 
@@ -231,7 +231,7 @@ class OrphanedTableCleanupServiceTest {
         fixture.memberships.claim(player.id, fixture.tableId)
         fixture.gameSnapshots.setSnapshot(
             observerId = cachedGameObserver,
-            snapshot = game.toSnapshot(setOf(cachedGameObserver), setAsideTiles = { emptyList() }),
+            snapshot = game.toSnapshot(setOf(cachedGameObserver)),
         )
         fixture.roomSnapshots.setSnapshot(
             observerId = cachedRoomObserver,
@@ -423,7 +423,7 @@ class OrphanedTableCleanupServiceTest {
         val roomRepository = RoomRepositoryImpl(store)
 
         /** Game repository。 */
-        val gameRepository = GameRepositoryImpl(store)
+        val gameRepository = componentValidatedGameRepository(store)
 
         /** 玩家 membership repository。 */
         val memberships = PlayerMembershipRepositoryImpl()

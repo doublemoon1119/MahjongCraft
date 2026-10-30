@@ -2,9 +2,10 @@ package com.doublemoon1119.mahjongcraft.flow.server.game.service
 
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.GamePresentationPublisher
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.toPresentation
+import com.doublemoon1119.mahjongcraft.logic.component.ComponentRegistry
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
-import com.doublemoon1119.mahjongcraft.logic.table.TileWallRevealable
+import com.doublemoon1119.mahjongcraft.logic.tile.component.publicFaceUpWallTileIds
 
 /**
  * 一次選擇步驟提交前後的呈現差異；只在權威交易成功後交付。
@@ -21,11 +22,12 @@ internal data class RuleDecisionPresentationUpdate(
      *
      * @param publisher 平台呈現出口。
      * @param module 此桌況所屬的規則模組。
+     * @param componentRegistry 正式組件與純效果來源。
      */
-    fun publish(publisher: GamePresentationPublisher, module: MahjongRuleModule<*>) {
+    fun publish(publisher: GamePresentationPublisher, module: MahjongRuleModule<*>, componentRegistry: ComponentRegistry) {
         if (previous == current) return
-        val visibleWallTiles = (current.dynamicRuleState as? TileWallRevealable)?.getVisibleTileIds(current).orEmpty()
-        val previousVisibleWallTiles = (previous.dynamicRuleState as? TileWallRevealable)?.getVisibleTileIds(previous).orEmpty()
+        val visibleWallTiles = module.publicFaceUpWallTileIds(current, componentRegistry)
+        val previousVisibleWallTiles = module.publicFaceUpWallTileIds(previous, componentRegistry)
         current.physicalWallLayout?.let { layout ->
             if (previous.physicalWallLayout != layout || previousVisibleWallTiles != visibleWallTiles) {
                 publisher.publishWallLayoutUpdated(
@@ -38,8 +40,8 @@ internal data class RuleDecisionPresentationUpdate(
         }
         current.players.forEachIndexed { seatIndex, player ->
             val oldPlayer = previous.players.firstOrNull { it.id == player.id }
-            val setAsideTiles = module.setAsideTiles(player)
-            val oldSetAsideTiles = oldPlayer?.let(module::setAsideTiles).orEmpty()
+            val setAsideTiles = player.setAsideTiles
+            val oldSetAsideTiles = oldPlayer?.setAsideTiles.orEmpty()
             if (oldPlayer?.hand != player.hand || oldSetAsideTiles != setAsideTiles) {
                 publisher.publishPlayerTilesUpdated(
                     gameId = current.id,

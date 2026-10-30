@@ -4,7 +4,6 @@ import com.doublemoon1119.mahjongcraft.extension.MahjongExtension
 import com.doublemoon1119.mahjongcraft.flow.network.dto.registry.DtoDefinition
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkDtoRegistries
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.riichi.toDomain
-import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.taiwan.TaiwanDiscardPileDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.taiwan.TaiwanGameLengthDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.taiwan.TaiwanRuleConfigDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.taiwan.TaiwanScoreConfigDto
@@ -103,15 +102,6 @@ object BundledTaiwanExtension : MahjongExtension {
                 toDomain = { TaiwanGameLength.FourWinds },
             ),
         )
-        registries.discardPile.register(
-            definition = DtoDefinition(
-                domainClass = TaiwanDiscardPile::class,
-                dtoClass = TaiwanDiscardPileDto::class,
-                serializer = TaiwanDiscardPileDto.serializer(),
-                toDto = TaiwanDiscardPile::toTaiwanDto,
-                toDomain = TaiwanDiscardPileDto::toDomain,
-            ),
-        )
     }
 
     override fun registerPersistenceDtos(registries: PersistenceRegistries) {
@@ -130,8 +120,8 @@ object BundledTaiwanExtension : MahjongExtension {
                 typeKey = BuiltInDiscardPilePersistenceKeys.TAIWAN,
                 domainClass = TaiwanDiscardPile::class,
                 serializer = TaiwanDiscardPilePersistenceDto.serializer(),
-                toDto = TaiwanDiscardPile::toPersistenceDto,
-                toDomain = TaiwanDiscardPilePersistenceDto::toDomain,
+                toDto = { it.toPersistenceDto(registries.components) },
+                toDomain = { it.toDomain(registries.components) },
                 compactInReplay = true,
             ),
         )

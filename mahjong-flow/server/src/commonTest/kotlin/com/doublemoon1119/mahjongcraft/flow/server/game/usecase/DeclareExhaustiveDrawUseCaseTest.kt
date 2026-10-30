@@ -11,17 +11,20 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameSnapshotSync
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RIICHI_STICK_POINTS
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDiscardPile
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDynamicState
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiExhaustiveDrawReason
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.riichiPotPoints
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import com.doublemoon1119.mahjongcraft.logic.table.toSnapshot
+import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledCoreExtensionRegistries
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.registerBundledRuleModules
 import com.doublemoon1119.mahjongcraft.testing.flow.common.game.repository.FakeGameSnapshotRepository
 import com.doublemoon1119.mahjongcraft.testing.flow.common.game.service.FakeGameEventPublisher
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeHandFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeIdentifiedTileFactory
+import com.doublemoon1119.mahjongcraft.testing.logic.rules.riichi.riichiTableComponents
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
 import kotlinx.coroutines.test.runTest
@@ -58,7 +61,7 @@ class DeclareExhaustiveDrawUseCaseTest {
         val gameRepo = FakeGameRepository()
         val moduleRegistry = MahjongModuleRegistryImpl().apply { registerBundledRuleModules() }
         val snapshotRepo = FakeGameSnapshotRepository()
-        val snapshotSynchronizer = GameSnapshotSynchronizer(gameRepo, snapshotRepo, GameVisibilityPolicyImpl(moduleRegistry))
+        val snapshotSynchronizer = GameSnapshotSynchronizer(gameRepo, snapshotRepo, GameVisibilityPolicyImpl(moduleRegistry, componentRegistry = bundledCoreExtensionRegistries().componentRegistry))
         val eventPublisher = FakeGameEventPublisher()
         val useCase = DeclareExhaustiveDrawUseCase(gameRepo, moduleRegistry, snapshotSynchronizer, eventPublisher)
     }
@@ -175,7 +178,7 @@ class DeclareExhaustiveDrawUseCaseTest {
             id = gameId,
             players = listOf(achiever) + others,
             config = RiichiRuleConfig(),
-            dynamicRuleState = RiichiDynamicState(riichiStickCount = 2),
+            components = riichiTableComponents(potPoints = 2000),
         )
         fixtures.gameRepo.setTableState(table)
 
@@ -187,7 +190,7 @@ class DeclareExhaustiveDrawUseCaseTest {
         others.forEach { player ->
             assertEquals(25000, newState.players.first { it.id == player.id }.score)
         }
-        assertEquals(2, (newState.dynamicRuleState as RiichiDynamicState).riichiStickCount)
+        assertEquals(2, (newState.riichiPotPoints() / RIICHI_STICK_POINTS))
     }
 
     /**
@@ -213,7 +216,7 @@ class DeclareExhaustiveDrawUseCaseTest {
             id = gameId,
             players = listOf(dealerAchiever, otherAchiever, west, north),
             config = RiichiRuleConfig(),
-            dynamicRuleState = RiichiDynamicState(riichiStickCount = 2),
+            components = riichiTableComponents(potPoints = 2000),
         )
         fixtures.gameRepo.setTableState(table)
 
@@ -222,7 +225,7 @@ class DeclareExhaustiveDrawUseCaseTest {
         assertTrue(result is Outcome.Success, "Expected Success but got $result")
         val newState = fixtures.gameRepo.getTableState(gameId)!!
         newState.players.forEach { assertEquals(25000, it.score) }
-        assertEquals(2, (newState.dynamicRuleState as RiichiDynamicState).riichiStickCount)
+        assertEquals(2, (newState.riichiPotPoints() / RIICHI_STICK_POINTS))
     }
 
     /**
@@ -258,8 +261,8 @@ class DeclareExhaustiveDrawUseCaseTest {
         val south = FakeMahjongPlayerFactory.create(id = southId, initialSeat = Wind.SOUTH, hand = notTenpaiHand())
         val table = FakeTableStateFactory.create(id = gameId, players = listOf(dealer, south), config = RiichiRuleConfig())
         fixtures.gameRepo.setTableState(table)
-        fixtures.snapshotRepo.setSnapshot(dealer.id, table.toSnapshot(setOf(dealer.id), setAsideTiles = { emptyList() }))
-        fixtures.snapshotRepo.setSnapshot(southId, table.toSnapshot(setOf(southId), setAsideTiles = { emptyList() }))
+        fixtures.snapshotRepo.setSnapshot(dealer.id, table.toSnapshot(setOf(dealer.id)))
+        fixtures.snapshotRepo.setSnapshot(southId, table.toSnapshot(setOf(southId)))
 
         fixtures.useCase(gameId)
 
@@ -279,17 +282,17 @@ class DeclareExhaustiveDrawUseCaseTest {
         val table = FakeTableStateFactory.create(id = gameId, players = listOf(dealer, south), config = RiichiRuleConfig())
         fixtures.gameRepo.setTableState(table)
         listOf(dealer, south).forEach { player ->
-            fixtures.snapshotRepo.setSnapshot(player.id, table.toSnapshot(setOf(player.id), setAsideTiles = { emptyList() }))
+            fixtures.snapshotRepo.setSnapshot(player.id, table.toSnapshot(setOf(player.id)))
         }
 
         fixtures.useCase(gameId)
 
         val dealerTileIds = dealer.hand.standingTiles.map { it.id }.toSet()
-        assertEquals(dealerTileIds, fixtures.gameRepo.getTableState(gameId)!!.revealedHandTileIds)
+        assertEquals(dealerTileIds, fixtures.gameRepo.getTableState(gameId)!!.publicTileEvidenceIds)
         val southView = assertNotNull(fixtures.snapshotRepo.getSnapshot(gameId, south.id))
-        assertEquals(dealerTileIds, southView.revealedHandTiles.map { it.id }.toSet())
+        assertEquals(dealerTileIds, southView.publicTileIds.intersect(southView.players.flatMap { it.hand.standingTiles }.map { it.id }.toSet()))
         val dealerView = assertNotNull(fixtures.snapshotRepo.getSnapshot(gameId, dealer.id))
-        assertEquals(dealerTileIds, dealerView.revealedHandTiles.map { it.id }.toSet())
+        assertEquals(dealerTileIds, dealerView.publicTileIds.intersect(dealerView.players.flatMap { it.hand.standingTiles }.map { it.id }.toSet()))
     }
 
     /**

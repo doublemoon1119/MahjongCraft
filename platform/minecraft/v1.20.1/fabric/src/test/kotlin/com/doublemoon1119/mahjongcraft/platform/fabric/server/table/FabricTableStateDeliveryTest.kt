@@ -17,6 +17,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftServer
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftServerConfigState
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.OrphanedTablePolicy
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocationRegistry
+import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledCoreExtensionRegistries
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.registerBundledRuleModules
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
@@ -220,10 +221,10 @@ class FabricTableStateDeliveryTest {
         val sender = RecordingObserverSnapshotSender()
         val broadcaster = ObserverSnapshotBroadcaster(
             store = store,
-            visibilityPolicy = GameVisibilityPolicyImpl(registry),
+            visibilityPolicy = GameVisibilityPolicyImpl(registry, componentRegistry = bundledCoreExtensionRegistries().componentRegistry),
             handReadinessVisibilityPolicy = HandReadinessVisibilityPolicy(
                 moduleRegistry = registry,
-                visibilityPolicy = GameVisibilityPolicyImpl(registry),
+                visibilityPolicy = GameVisibilityPolicyImpl(registry, componentRegistry = bundledCoreExtensionRegistries().componentRegistry),
             ),
             audienceSource = audience,
             sender = sender,

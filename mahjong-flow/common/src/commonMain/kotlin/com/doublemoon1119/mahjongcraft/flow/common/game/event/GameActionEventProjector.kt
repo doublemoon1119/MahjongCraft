@@ -65,7 +65,7 @@ internal object GameActionEventProjector {
                         // 反應提交不是裁定；其後的自動移出步驟以實際公開區變化辨識。
                         val isFollowUp = action is GameAction.Extension &&
                             fact.result.affectedTileIds.any { id ->
-                                current.players.firstOrNull { it.id == actor }?.let(module::setAsideTiles)?.any { it.id == id } == true
+                                current.players.firstOrNull { it.id == actor }?.setAsideTiles?.any { it.id == id } == true
                             }
                         if ((!reacting || isFollowUp) && !(privateDecision && action is GameAction.Extension)) {
                             applied(action, actor, previous, current)?.let {

@@ -152,7 +152,7 @@ class FabricHistoryQueryService(
             query = { access, repository ->
                 when (val result = GetHistoryRoundEventsUseCase(repository, ::policy)(access, request.toDomain())) {
                     is HistoryQueryResult.Failure -> HistoryRoundEventsResponseDto(request.requestId, request.matchId, request.roundNumber, request.startTransactionIndex, errorCode = result.error.code.toDto(), events = null)
-                    is HistoryQueryResult.Success -> boundedHistoryRoundEvents(request, result.value, json)
+                    is HistoryQueryResult.Success -> boundedHistoryRoundEvents(request, result.value, json, networkRegistries)
                 }
             },
             hasContent = { it.events != null },
@@ -175,7 +175,7 @@ class FabricHistoryQueryService(
             query = { access, repository ->
                 when (val result = GetHistoryRoundStateUseCase(repository, ::policy)(access, request.toDomain())) {
                     is HistoryQueryResult.Failure -> HistoryRoundStateResponseDto(request.requestId, request.matchId, request.roundNumber, request.position, errorCode = result.error.code.toDto(), state = null)
-                    is HistoryQueryResult.Success -> boundedHistoryRoundState(request, result.value, json)
+                    is HistoryQueryResult.Success -> boundedHistoryRoundState(request, result.value, json, networkRegistries)
                 }
             },
             hasContent = { it.state != null },

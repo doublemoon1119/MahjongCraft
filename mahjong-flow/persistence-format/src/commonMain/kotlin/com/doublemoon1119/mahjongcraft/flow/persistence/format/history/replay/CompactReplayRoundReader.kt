@@ -9,7 +9,9 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryRo
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryRoundPosition
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryRoundState
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryRoundTileCatalog
+import com.doublemoon1119.mahjongcraft.flow.persistence.format.component.ComponentViewPersistenceRegistry
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
+import com.doublemoon1119.mahjongcraft.logic.base.TileFaceView
 import com.doublemoon1119.mahjongcraft.logic.table.RoundCompletionClassification
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.currentCoroutineContext
@@ -30,9 +32,13 @@ import kotlin.uuid.Uuid
  * 輸入須已由外部解析；原始位元組及 JSON parser 的限制由呼叫端負責。
  * 取消例外直接傳播，破損文件不產生部分成功結果。
  *
+ * @property componentViews 牌面特徵的保存轉換。
  * @property limits 每次讀取獨立套用的資源上限。
  */
-class CompactReplayRoundReader(private val limits: ReplayReadLimits = ReplayReadLimits()) {
+class CompactReplayRoundReader(
+    private val componentViews: ComponentViewPersistenceRegistry,
+    private val limits: ReplayReadLimits = ReplayReadLimits(),
+) {
     /**
      * 讀取指定局的一段交易；僅保留要求的交易，不還原其他局的桌況。
      *
@@ -57,7 +63,7 @@ class CompactReplayRoundReader(private val limits: ReplayReadLimits = ReplayRead
             val transaction = advance(source, round, cursor, index, budget)
             val afterScores = scoreSnapshot(cursor.projection, source.identity.players.size, budget)
             val exhaustiveDrawAction = transaction.facts.any(::isExhaustiveDrawAction)
-            val facts = HistoryReplayProjectionMapper.mapFacts(transaction.facts, transaction.actors, source.identity, round.number, catalog(cursor, budget), budget)
+            val facts = HistoryReplayProjectionMapper.mapFacts(transaction.facts, transaction.actors, source.identity, round.number, catalog(cursor, budget), budget, componentViews)
                 .map { fact ->
                     val enriched = fact.withScoreChanges(
                         beforeScores,
@@ -103,7 +109,7 @@ class CompactReplayRoundReader(private val limits: ReplayReadLimits = ReplayRead
             val transaction = advance(source, round, cursor, index, budget)
             val afterScores = scoreSnapshot(cursor.projection, source.identity.players.size, budget)
             val exhaustiveDrawAction = transaction.facts.any(::isExhaustiveDrawAction)
-            val facts = HistoryReplayProjectionMapper.mapFacts(transaction.facts, transaction.actors, source.identity, round.number, catalog(cursor, budget), budget)
+            val facts = HistoryReplayProjectionMapper.mapFacts(transaction.facts, transaction.actors, source.identity, round.number, catalog(cursor, budget), budget, componentViews)
                 .map { fact ->
                     val enriched = fact.withScoreChanges(
                         beforeScores,
@@ -131,7 +137,7 @@ class CompactReplayRoundReader(private val limits: ReplayReadLimits = ReplayRead
                 }
             }.lastOrNull()?.let { cursor.outcome = it }
         }
-        HistoryReplayProjectionMapper.mapState(cursor.projection, source.identity, round.number, position, catalog(cursor, budget), budget).copy(outcome = cursor.outcome)
+        HistoryReplayProjectionMapper.mapState(cursor.projection, source.identity, round.number, position, catalog(cursor, budget), budget, componentViews, cursor.presentations.mapValues { it.value.pose }).copy(outcome = cursor.outcome)
     }
 
     /**
@@ -143,7 +149,11 @@ class CompactReplayRoundReader(private val limits: ReplayReadLimits = ReplayRead
      */
     private fun catalog(cursor: Cursor, budget: ReplayReadBudget): HistoryRoundTileCatalog {
         budget.charge(cursor.tiles.size.toLong())
-        return HistoryRoundTileCatalog(cursor.tiles.toList())
+        return HistoryRoundTileCatalog(
+            cursor.tiles.mapIndexed { index, tile ->
+                cursor.presentations[index]?.let { TileFaceView(tile, it.views, it.appearanceId) } ?: TileFaceView(tile)
+            },
+        )
     }
 
     /**
@@ -291,7 +301,36 @@ class CompactReplayRoundReader(private val limits: ReplayReadLimits = ReplayRead
         appendTiles(source.dictionary.expand(round.tileTypes), source, tiles, budget)
         val projection = source.dictionary.expand(round.initial)
         budget.inspectProjection(projection)
-        return Cursor(projection, tiles, time)
+        val cursor = Cursor(projection, tiles, time)
+        round.transactions.firstOrNull()?.let { encoded ->
+            val opening = source.dictionary.fields(encoded)
+            if (opening[ReplayFormatKeys.ROUND_OPENING]?.let(source.dictionary::expand) == JsonPrimitive(true)) {
+                applyPresentations(CompactReplayCodec.decodeFacts(opening[ReplayFormatKeys.FACTS]?.let(source.dictionary::expand), source.factTypes, source.actionTypes, budget), source, cursor, budget)
+            }
+        }
+        return cursor
+    }
+
+    /**
+     * 套用交易中的牌張呈現變化；開局交易的呈現描述開局狀態本身。
+     *
+     * @param facts 已解碼的交易事實。
+     * @param source 文件檢視。
+     * @param cursor 目前局游標。
+     * @param budget 工作預算。
+     */
+    private fun applyPresentations(
+        facts: List<JsonObject>,
+        source: CompactReplayReadDocument,
+        cursor: Cursor,
+        budget: ReplayReadBudget,
+    ) {
+        facts.filter { (it[ReplaySourceKeys.TYPE] as? JsonPrimitive)?.content == HistoryFactTypeKeys.TILE_PRESENTATION_CHANGED }.forEach { fact ->
+            cursor.presentations += HistoryReplayProjectionMapper.tilePresentations(fact, cursor.tiles.size, budget) { code ->
+                val value = source.presentationTypes.getOrNull(code) ?: throw ReplayReadException(ReplayReadError.INVALID_DOCUMENT)
+                cursor.decodedPresentationTypes.getOrPut(code) { HistoryReplayProjectionMapper.tilePresentation(value, budget, componentViews) }
+            }
+        }
     }
 
     /**
@@ -315,6 +354,8 @@ class CompactReplayRoundReader(private val limits: ReplayReadLimits = ReplayRead
         val opening = expanded(ReplayFormatKeys.ROUND_OPENING)?.let {
             (it as? JsonPrimitive)?.takeUnless { flag -> flag.isString }?.booleanOrNull ?: error("Replay opening flag must be a boolean")
         } ?: false
+        // 開局交易的呈現已在建立游標時套用。
+        if (!(index == 0 && opening)) applyPresentations(facts, source, cursor, budget)
         expanded(ReplayFormatKeys.PATCH)?.takeUnless { it == JsonNull }?.let {
             cursor.projection = FlatPatchCodec.applyBounded(cursor.projection, it as? JsonArray ?: error("Replay patch must be an array"), source.paths, budget)
         }
@@ -391,6 +432,8 @@ class CompactReplayRoundReader(private val limits: ReplayReadLimits = ReplayRead
      * @property projection 目前桌況投影。
      * @property tiles 截至目前位置可識別的牌。
      * @property time 從文件起始時間累加交易時間差後的時間戳。
+     * @property presentations 截至目前交易保存的牌張呈現，依牌索引排列。
+     * @property decodedPresentationTypes 已解碼的牌張呈現字典項目，依字典代碼排列；每個項目只解碼一次。
      * @property outcome 截至目前交易已保存的結算結果。
      * @property hasWinSettlement 是否已遇到較早的胡牌結算交易。
      * @property exhaustiveDrawSettlement 流局動作交易前後的分數快照。
@@ -399,6 +442,8 @@ class CompactReplayRoundReader(private val limits: ReplayReadLimits = ReplayRead
         var projection: JsonElement,
         val tiles: MutableList<Tile>,
         var time: Long,
+        val presentations: MutableMap<Int, ReplayTilePresentation> = mutableMapOf(),
+        val decodedPresentationTypes: MutableMap<Int, ReplayTilePresentation> = mutableMapOf(),
         var outcome: HistoryRoundOutcome? = null,
         var hasWinSettlement: Boolean = false,
         var exhaustiveDrawSettlement: ScoreSnapshot? = null,

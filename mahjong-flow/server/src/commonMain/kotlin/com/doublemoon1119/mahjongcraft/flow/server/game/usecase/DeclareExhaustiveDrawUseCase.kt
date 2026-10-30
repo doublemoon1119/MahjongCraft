@@ -118,7 +118,7 @@ class DeclareExhaustiveDrawUseCase(
                     }
                     val newState = state.copy(
                         players = updatedPlayers,
-                        dynamicRuleState = extras?.dynamicRuleState ?: state.dynamicRuleState,
+                        components = extras?.components ?: state.components,
                         revealedHandSettlements = settlement.revealedHands,
                     ).revealHandsOf(settlement.revealedHands.map { it.playerId })
 

@@ -22,6 +22,7 @@ import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
+import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledCoreExtensionRegistries
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.registerBundledRuleModules
 import com.doublemoon1119.mahjongcraft.testing.flow.common.game.repository.FakeGameSnapshotRepository
 import com.doublemoon1119.mahjongcraft.testing.flow.common.game.service.FakeGamePresentationPublisher
@@ -79,9 +80,11 @@ class AdvanceAutomaticRuleDecisionUseCaseTest {
             snapshotSynchronizer = GameSnapshotSynchronizer(
                 repository,
                 snapshotRepository,
-                GameVisibilityPolicyImpl(moduleRegistry),
+                GameVisibilityPolicyImpl(moduleRegistry, componentRegistry = bundledCoreExtensionRegistries().componentRegistry),
             ),
             presentationPublisher = presentationPublisher,
+
+            componentRegistry = bundledCoreExtensionRegistries().componentRegistry,
         )
         resolverRegistry.register(MultiStepResolver(replacementTile))
 
@@ -121,9 +124,11 @@ class AdvanceAutomaticRuleDecisionUseCaseTest {
             snapshotSynchronizer = GameSnapshotSynchronizer(
                 repository,
                 FakeGameSnapshotRepository(),
-                GameVisibilityPolicyImpl(moduleRegistry),
+                GameVisibilityPolicyImpl(moduleRegistry, componentRegistry = bundledCoreExtensionRegistries().componentRegistry),
             ),
             presentationPublisher = presentationPublisher,
+
+            componentRegistry = bundledCoreExtensionRegistries().componentRegistry,
         )
 
         assertFalse(useCase(table.id))
@@ -156,9 +161,11 @@ class AdvanceAutomaticRuleDecisionUseCaseTest {
             snapshotSynchronizer = GameSnapshotSynchronizer(
                 repository,
                 FakeGameSnapshotRepository(),
-                GameVisibilityPolicyImpl(moduleRegistry),
+                GameVisibilityPolicyImpl(moduleRegistry, componentRegistry = bundledCoreExtensionRegistries().componentRegistry),
             ),
             presentationPublisher = FakeGamePresentationPublisher(),
+
+            componentRegistry = bundledCoreExtensionRegistries().componentRegistry,
         )
 
         assertFailsWith<RuleContractViolationException> { useCase(table.id) }

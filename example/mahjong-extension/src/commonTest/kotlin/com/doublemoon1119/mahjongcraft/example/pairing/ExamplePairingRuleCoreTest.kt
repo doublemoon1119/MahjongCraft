@@ -1,11 +1,15 @@
 package com.doublemoon1119.mahjongcraft.example.pairing
 
+import com.doublemoon1119.mahjongcraft.example.exampleComponentRegistry
 import com.doublemoon1119.mahjongcraft.logic.base.Hand
 import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
+import com.doublemoon1119.mahjongcraft.logic.component.BuiltInComponentOwners
+import com.doublemoon1119.mahjongcraft.logic.component.ComponentProjectionContext
+import com.doublemoon1119.mahjongcraft.logic.component.ComponentReadContext
+import com.doublemoon1119.mahjongcraft.logic.component.ComponentSet
+import com.doublemoon1119.mahjongcraft.logic.component.initializeRuleComponents
 import com.doublemoon1119.mahjongcraft.logic.judgment.ShantenResult
-import com.doublemoon1119.mahjongcraft.logic.module.HandTilePose
-import com.doublemoon1119.mahjongcraft.logic.module.HandTileVisibility
 import com.doublemoon1119.mahjongcraft.logic.table.GameInitializer
 import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayer
 import com.doublemoon1119.mahjongcraft.logic.table.RoundAdvancementResult
@@ -13,14 +17,18 @@ import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.logic.table.TileWall
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import com.doublemoon1119.mahjongcraft.logic.table.opening.WallOpening
+import com.doublemoon1119.mahjongcraft.logic.tile.component.TilePose
+import com.doublemoon1119.mahjongcraft.logic.tile.component.TileReadContext
+import com.doublemoon1119.mahjongcraft.logic.tile.component.TileRegion
+import com.doublemoon1119.mahjongcraft.logic.tile.component.resolveTileComponents
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
+import kotlin.test.assertFalse
 import kotlin.test.assertIs
 import kotlin.test.assertNotNull
-import kotlin.test.assertNotSame
 import kotlin.test.assertTrue
 import kotlin.uuid.Uuid
 
@@ -34,8 +42,8 @@ class ExamplePairingRuleCoreTest {
             id = Uuid.random(),
             playerIds = listOf(Uuid.random(), Uuid.random()),
             module = module,
-        ).tableState
-        val revealedPlayers = initial.players.map { it.copy(playerRuleState = ExamplePairingPlayerState(handRevealed = true)) }
+        ).initializeRuleComponents(module.id, exampleComponentRegistry()).tableState
+        val revealedPlayers = initial.players.map { it.copy(components = it.components.with(ExamplePairingComponents.HAND_REVEALED, Unit)) }
         val next = GameInitializer.startNextRound(
             gameId = initial.id,
             roundAdvancement = RoundAdvancementResult(
@@ -45,12 +53,11 @@ class ExamplePairingRuleCoreTest {
                 comboCount = 0,
                 prevalentWind = initial.prevalentWind,
             ),
-            previousDynamicRuleState = initial.dynamicRuleState,
             module = module,
-        ).tableState
+        ).initializeRuleComponents(module.id, exampleComponentRegistry(), initial.copy(players = revealedPlayers)).tableState
 
-        assertTrue(next.players.all { (it.playerRuleState as ExamplePairingPlayerState).handRevealed.not() })
-        assertTrue(module.describeHandTiles(next).isEmpty())
+        assertTrue(next.players.all { it.components[ExamplePairingComponents.HAND_REVEALED] == null })
+        assertTrue(module.resolveTileComponents(next, exampleComponentRegistry()).filter { it.area.region == TileRegion.HAND || it.area.region == TileRegion.DRAWN }.all { it.pose == TilePose.UPRIGHT && !it.isPublic })
     }
 
     /** 攤牌玩家的現有手牌與摸牌位都公開，未攤牌玩家仍維持隱藏。 */
@@ -67,20 +74,52 @@ class ExamplePairingRuleCoreTest {
                 FakeMahjongPlayerFactory.create(
                     id = revealedId,
                     hand = Hand(tiles = listOf(standing), lastDrawn = drawn),
-                    playerRuleState = ExamplePairingPlayerState(handRevealed = true),
+                    components = ComponentSet.EMPTY.with(ExamplePairingComponents.HAND_REVEALED, Unit),
                 ),
                 FakeMahjongPlayerFactory.create(
                     id = hiddenId,
                     hand = Hand(tiles = listOf(hiddenTile)),
-                    playerRuleState = ExamplePairingPlayerState(),
+                    components = ComponentSet.EMPTY,
                 ),
             ),
         )
         val module = ExamplePairingRuleModule(ExamplePairingIds.RULE_MODULE, ExamplePairingRuleConfig())
 
-        val descriptions = module.describeHandTiles(table)
-        assertEquals(setOf(standing.id, drawn.id), descriptions.map { it.tileId }.toSet())
-        assertTrue(descriptions.all { it.visibility == HandTileVisibility.Public && it.pose == HandTilePose.FACE_UP })
+        val descriptions = module.resolveTileComponents(table, exampleComponentRegistry()).filter { it.isPublic && (it.area.region == TileRegion.HAND || it.area.region == TileRegion.DRAWN) }
+        assertEquals(setOf(standing.id, drawn.id), descriptions.map { it.area.tile.id }.toSet())
+        assertTrue(descriptions.all { it.isPublic && it.pose == TilePose.FACE_UP })
+    }
+
+    /** 公開牌面關閉時沒有標記；開啟時每種點數剛好三張帶標記，第四張與倒置一萬保持普通。 */
+    @Test
+    fun `public faces mark three of four copies only when enabled`() {
+        assertTrue(ExamplePairingWallFactory(2, setOf(1, 2)).create().getAllTiles().none { it.components[ExamplePairingComponents.PUBLIC_FACE] != null })
+
+        val tiles = ExamplePairingWallFactory(2, setOf(1, 2), publicFacesEnabled = true).create().getAllTiles()
+
+        val marked = tiles.filter { it.components[ExamplePairingComponents.PUBLIC_FACE] != null }
+        assertEquals(mapOf<Tile, Int>(Tile.Numeric(Tile.Suit.Character, 1) to 3, Tile.Numeric(Tile.Suit.Character, 2) to 3), marked.groupingBy { it.tile }.eachCount())
+        val invertedOneMan = tiles.single { it.tile is Tile.Extension }
+        assertTrue(invertedOneMan.components[ExamplePairingComponents.PUBLIC_FACE] == null)
+        assertEquals(8, tiles.size)
+    }
+
+    /** 帶公開牌面標記的牌在牌山朝下時，其他玩家與旁觀者也讀得到牌面與公開牌面樣式；普通牌讀不到。 */
+    @Test
+    fun `public face tiles are readable by everyone while face down`() {
+        val marked = IdentifiedTile(Uuid.random(), Tile.Numeric(Tile.Suit.Character, 2), ComponentSet.EMPTY.with(ExamplePairingComponents.PUBLIC_FACE, Unit))
+        val plain = identified(Tile.Numeric(Tile.Suit.Character, 2))
+        val config = ExamplePairingRuleConfig(publicFacesEnabled = true)
+        val table = FakeTableStateFactory.create(config = config, tileWall = TileWall(listOf(marked, plain)))
+        val module = ExamplePairingRuleModule(ExamplePairingIds.RULE_MODULE, config)
+
+        val resolved = module.resolveTileComponents(table, exampleComponentRegistry()).associateBy { it.area.tile.id }
+
+        val publicTile = resolved.getValue(marked.id)
+        assertEquals(TilePose.FACE_DOWN, publicTile.pose)
+        assertTrue(publicTile.canRead(TileReadContext.Public()))
+        assertEquals(ExamplePairingComponentIds.PUBLIC_FACE_APPEARANCE, publicTile.appearanceFor(TileReadContext.Player(table.players.first().id)))
+        assertFalse(resolved.getValue(plain.id).canRead(TileReadContext.Public()))
     }
 
     /** 四同牌可拆成兩對，不成對與非本規則牌面不可胡牌。 */
@@ -217,7 +256,7 @@ class ExamplePairingRuleCoreTest {
             config = ExamplePairingRuleConfig(),
             tileWall = TileWall(),
             dealerPlayerId = winnerId,
-            dynamicRuleState = ExamplePairingDynamicState(setOf(8)),
+            components = ComponentSet.EMPTY.with(ExamplePairingComponents.BONUS_TILES, ExamplePairingBonusTiles(setOf(8))),
         )
 
         val result = ExamplePairingRuleModule(ExamplePairingIds.RULE_MODULE, ExamplePairingRuleConfig())
@@ -228,21 +267,28 @@ class ExamplePairingRuleCoreTest {
         assertEquals(10, result.settlement.paymentsByPlayerId[otherId])
     }
 
-    /** 每局選出牌種數量比牌山少一種，且自摸時每種加分牌只計一次。 */
+    /** 每局選出牌種數量比牌山少一種，自摸時每種加分牌只計一次；加分牌資料不交付觀察者。 */
     @Test
     fun `round bonus tiles are distinct and counted once per kind`() {
         val module = ExamplePairingRuleModule(
             ExamplePairingIds.RULE_MODULE,
             ExamplePairingRuleConfig(wallTileValues = setOf(1, 2, 3, 4)),
         )
-        val randomlySelectedState = assertIs<ExamplePairingDynamicState>(module.createInitialDynamicState())
-        assertEquals(3, randomlySelectedState.bonusTileValues.size)
-        assertTrue(randomlySelectedState.bonusTileValues.all { it in 1..4 })
-        val nextRandomlySelectedState = assertIs<ExamplePairingDynamicState>(module.createNextRoundDynamicState(randomlySelectedState))
-        assertEquals(3, nextRandomlySelectedState.bonusTileValues.size)
-        assertTrue(nextRandomlySelectedState.bonusTileValues.all { it in 1..4 })
+        val initial = GameInitializer.initialize(Uuid.random(), listOf(Uuid.random(), Uuid.random()), module)
+            .initializeRuleComponents(module.id, exampleComponentRegistry()).tableState
+        val randomlySelectedState = assertNotNull(initial.components[ExamplePairingComponents.BONUS_TILES])
+        assertEquals(3, randomlySelectedState.values.size)
+        assertTrue(randomlySelectedState.values.all { it in 1..4 })
+        val next = GameInitializer.startNextRound(
+            gameId = initial.id,
+            roundAdvancement = RoundAdvancementResult(initial.players, initial.dealerPlayerId, 2, 0, initial.prevalentWind),
+            module = module,
+        ).initializeRuleComponents(module.id, exampleComponentRegistry(), initial).tableState
+        val nextRandomlySelectedState = assertNotNull(next.components[ExamplePairingComponents.BONUS_TILES])
+        assertEquals(3, nextRandomlySelectedState.values.size)
+        assertTrue(nextRandomlySelectedState.values.all { it in 1..4 })
 
-        val scoringState = ExamplePairingDynamicState(setOf(1, 2, 3))
+        val scoringState = ExamplePairingBonusTiles(setOf(1, 2, 3))
 
         val winnerId = Uuid.random()
         val otherId = Uuid.random()
@@ -274,15 +320,17 @@ class ExamplePairingRuleCoreTest {
             config = module.config,
             tileWall = TileWall(),
             dealerPlayerId = winnerId,
-            dynamicRuleState = scoringState,
+            components = ComponentSet.EMPTY.with(ExamplePairingComponents.BONUS_TILES, scoringState),
         )
 
         val result = assertNotNull(module.declareTsumo(table, winner))
         assertEquals(2, (result.handValueResult as ExamplePairingHandValueResult).bonusTileCount)
         assertEquals(12, result.settlement.paymentsByPlayerId[otherId])
-        val projectedState = assertIs<ExamplePairingDynamicState>(module.projectDynamicRuleState(table, winnerId))
-        assertEquals(scoringState, projectedState)
-        assertNotSame(scoringState, projectedState)
+        val projected = exampleComponentRegistry().project(
+            ComponentProjectionContext(module.id, table, BuiltInComponentOwners.TABLE, table, ComponentReadContext.Player(winnerId)),
+            table.components,
+        )
+        assertTrue(projected.isEmpty)
     }
 
     /** 只有兩種牌時仍會選出一種加分牌，並可把倒置一萬算作一萬。 */
@@ -292,10 +340,12 @@ class ExamplePairingRuleCoreTest {
             ExamplePairingIds.RULE_MODULE,
             ExamplePairingRuleConfig(wallTileValues = setOf(1, 2)),
         )
-        val randomlySelectedState = assertIs<ExamplePairingDynamicState>(module.createInitialDynamicState())
-        assertEquals(1, randomlySelectedState.bonusTileValues.size)
-        assertTrue(randomlySelectedState.bonusTileValues.all { it in 1..2 })
-        val scoringState = ExamplePairingDynamicState(setOf(1))
+        val initial = GameInitializer.initialize(Uuid.random(), listOf(Uuid.random(), Uuid.random()), module)
+            .initializeRuleComponents(module.id, exampleComponentRegistry()).tableState
+        val randomlySelectedState = assertNotNull(initial.components[ExamplePairingComponents.BONUS_TILES])
+        assertEquals(1, randomlySelectedState.values.size)
+        assertTrue(randomlySelectedState.values.all { it in 1..2 })
+        val scoringState = ExamplePairingBonusTiles(setOf(1))
 
         val winnerId = Uuid.random()
         val otherId = Uuid.random()
@@ -327,7 +377,7 @@ class ExamplePairingRuleCoreTest {
             config = module.config,
             tileWall = TileWall(),
             dealerPlayerId = winnerId,
-            dynamicRuleState = scoringState,
+            components = ComponentSet.EMPTY.with(ExamplePairingComponents.BONUS_TILES, scoringState),
         )
 
         val result = assertNotNull(module.declareTsumo(table, winner))

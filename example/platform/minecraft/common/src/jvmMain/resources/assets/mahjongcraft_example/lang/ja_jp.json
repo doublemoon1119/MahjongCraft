@@ -39,6 +39,8 @@
   "mahjongcraft_example.room.config.category.rule": "ペア麻雀",
   "mahjongcraft_example.room.config.field.exchange_enabled": "局前の牌交換",
   "mahjongcraft_example.room.config.field.exchange_enabled.description": "局の開始前に、各プレイヤーが選んだ2枚を次の席へ渡し、前の席から2枚受け取ります。",
+  "mahjongcraft_example.room.config.field.public_faces_enabled": "公開牌面",
+  "mahjongcraft_example.room.config.field.public_faces_enabled.description": "各牌4枚のうち3枚は、牌山で伏せていても他家の手牌にあっても、全員に牌面が見えます。これらの牌は牌の本体の色が変わります。",
   "mahjongcraft_example.room.config.field.payment_per_player": "プレイヤーごとの支払い点",
   "mahjongcraft_example.room.config.field.payment_per_player.description": "各プレイヤーが和了者に支払う点数です。",
   "mahjongcraft_example.room.config.field.round_count": "局数",

@@ -1,6 +1,7 @@
 package com.doublemoon1119.mahjongcraft.logic.rules.riichi
 
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
+import com.doublemoon1119.mahjongcraft.logic.table.DiscardPile.DiscardEntry
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeIdentifiedTileFactory
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -24,12 +25,12 @@ class RiichiDiscardPileTest {
         val tile = FakeIdentifiedTileFactory.create(Tile.Honor.East)
 
         // 建立並放入立直捨牌紀錄
-        val entry = RiichiDiscardEntry(tile, isRiichi = true)
+        val entry = DiscardEntry(tile = tile, components = RiichiDiscardComponents.declaration())
         pile = pile.discard(entry)
 
         assertEquals(1, pile.entries.size)
-        // 驗證泛型是否允許直接存取 RiichiDiscardEntry 特有屬性
-        assertTrue(pile.entries.first().isRiichi)
+        // 驗證泛型是否允許直接存取 DiscardEntry 特有屬性
+        assertTrue(pile.entries.first().isRiichiDeclaration)
         assertFalse(pile.entries.first().isTaken)
     }
 
@@ -42,8 +43,8 @@ class RiichiDiscardPileTest {
         val tile1 = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 1))
         val tile2 = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 2))
 
-        pile = pile.discard(RiichiDiscardEntry(tile1))
-        pile = pile.discard(RiichiDiscardEntry(tile2))
+        pile = pile.discard(DiscardEntry(tile = tile1))
+        pile = pile.discard(DiscardEntry(tile = tile2))
 
         // 模擬第二張牌被鳴走
         pile = pile.takeLast()
@@ -56,7 +57,7 @@ class RiichiDiscardPileTest {
     @Test
     fun `sidewaysMarkedTileId returns null when no riichi declared`() {
         var pile = RiichiDiscardPile()
-        pile = pile.discard(RiichiDiscardEntry(FakeIdentifiedTileFactory.create(Tile.Honor.East)))
+        pile = pile.discard(DiscardEntry(tile = FakeIdentifiedTileFactory.create(Tile.Honor.East)))
 
         assertEquals(null, pile.sidewaysMarkedTileId())
     }
@@ -66,8 +67,8 @@ class RiichiDiscardPileTest {
     fun `sidewaysMarkedTileId returns the declared riichi tile id when it is still in the river`() {
         val riichiTile = FakeIdentifiedTileFactory.create(Tile.Honor.East)
         var pile = RiichiDiscardPile()
-        pile = pile.discard(RiichiDiscardEntry(FakeIdentifiedTileFactory.create(Tile.Honor.South)))
-        pile = pile.discard(RiichiDiscardEntry(riichiTile, isRiichi = true))
+        pile = pile.discard(DiscardEntry(tile = FakeIdentifiedTileFactory.create(Tile.Honor.South)))
+        pile = pile.discard(DiscardEntry(tile = riichiTile, components = RiichiDiscardComponents.declaration()))
 
         assertEquals(riichiTile.id, pile.sidewaysMarkedTileId())
     }
@@ -77,9 +78,9 @@ class RiichiDiscardPileTest {
     fun `sidewaysMarkedTileId shifts to the next not-taken entry after the riichi tile is taken`() {
         val nextTile = FakeIdentifiedTileFactory.create(Tile.Honor.South)
         var pile = RiichiDiscardPile()
-        pile = pile.discard(RiichiDiscardEntry(FakeIdentifiedTileFactory.create(Tile.Honor.East), isRiichi = true))
+        pile = pile.discard(DiscardEntry(tile = FakeIdentifiedTileFactory.create(Tile.Honor.East), components = RiichiDiscardComponents.declaration()))
         pile = pile.takeLast()
-        pile = pile.discard(RiichiDiscardEntry(nextTile))
+        pile = pile.discard(DiscardEntry(tile = nextTile))
 
         assertEquals(nextTile.id, pile.sidewaysMarkedTileId())
     }
@@ -88,7 +89,7 @@ class RiichiDiscardPileTest {
     @Test
     fun `sidewaysMarkedTileId returns null when the riichi tile is taken and no later discard exists`() {
         var pile = RiichiDiscardPile()
-        pile = pile.discard(RiichiDiscardEntry(FakeIdentifiedTileFactory.create(Tile.Honor.East), isRiichi = true))
+        pile = pile.discard(DiscardEntry(tile = FakeIdentifiedTileFactory.create(Tile.Honor.East), components = RiichiDiscardComponents.declaration()))
         pile = pile.takeLast()
 
         assertEquals(null, pile.sidewaysMarkedTileId())
@@ -99,11 +100,11 @@ class RiichiDiscardPileTest {
     fun `sidewaysMarkedTileId skips multiple consecutive taken entries after the riichi tile`() {
         val survivingTile = FakeIdentifiedTileFactory.create(Tile.Honor.West)
         var pile = RiichiDiscardPile()
-        pile = pile.discard(RiichiDiscardEntry(FakeIdentifiedTileFactory.create(Tile.Honor.East), isRiichi = true))
+        pile = pile.discard(DiscardEntry(tile = FakeIdentifiedTileFactory.create(Tile.Honor.East), components = RiichiDiscardComponents.declaration()))
         pile = pile.takeLast()
-        pile = pile.discard(RiichiDiscardEntry(FakeIdentifiedTileFactory.create(Tile.Honor.South)))
+        pile = pile.discard(DiscardEntry(tile = FakeIdentifiedTileFactory.create(Tile.Honor.South)))
         pile = pile.takeLast()
-        pile = pile.discard(RiichiDiscardEntry(survivingTile))
+        pile = pile.discard(DiscardEntry(tile = survivingTile))
 
         assertEquals(survivingTile.id, pile.sidewaysMarkedTileId())
     }

@@ -13,6 +13,7 @@ import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateUpdat
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
+import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledCoreExtensionRegistries
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.registerBundledRuleModules
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
@@ -190,9 +191,9 @@ class ObserverSnapshotBroadcasterTest {
         sender: RecordingSender,
     ) = ObserverSnapshotBroadcaster(
         store = store,
-        visibilityPolicy = GameVisibilityPolicyImpl(MahjongModuleRegistryImpl().apply { registerBundledRuleModules() }),
+        visibilityPolicy = GameVisibilityPolicyImpl(MahjongModuleRegistryImpl().apply { registerBundledRuleModules() }, componentRegistry = bundledCoreExtensionRegistries().componentRegistry),
         handReadinessVisibilityPolicy = MahjongModuleRegistryImpl().apply { registerBundledRuleModules() }.let { registry ->
-            HandReadinessVisibilityPolicy(moduleRegistry = registry, visibilityPolicy = GameVisibilityPolicyImpl(registry))
+            HandReadinessVisibilityPolicy(moduleRegistry = registry, visibilityPolicy = GameVisibilityPolicyImpl(registry, componentRegistry = bundledCoreExtensionRegistries().componentRegistry))
         },
         audienceSource = audience,
         sender = sender,

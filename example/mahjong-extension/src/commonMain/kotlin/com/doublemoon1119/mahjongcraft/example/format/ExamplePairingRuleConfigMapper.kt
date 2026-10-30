@@ -14,6 +14,7 @@ fun ExamplePairingRuleConfig.toNetworkDto(): ExamplePairingRuleConfigDto = Examp
     paymentPerPlayer = paymentPerPlayer,
     roundCount = roundCount,
     wallTileValues = wallTileValues,
+    publicFacesEnabled = publicFacesEnabled,
 )
 
 /**
@@ -26,6 +27,7 @@ fun ExamplePairingRuleConfigDto.toDomain(): ExamplePairingRuleConfig = ExamplePa
     paymentPerPlayer = paymentPerPlayer,
     roundCount = roundCount,
     wallTileValues = wallTileValues,
+    publicFacesEnabled = publicFacesEnabled,
 )
 
 /**
@@ -38,6 +40,7 @@ fun ExamplePairingRuleConfig.toPersistenceDto(): ExamplePairingRuleConfigPersist
     paymentPerPlayer = paymentPerPlayer,
     roundCount = roundCount,
     wallTileValues = wallTileValues,
+    publicFacesEnabled = publicFacesEnabled,
 )
 
 /**
@@ -50,4 +53,5 @@ fun ExamplePairingRuleConfigPersistenceDto.toDomain(): ExamplePairingRuleConfig 
     paymentPerPlayer = paymentPerPlayer,
     roundCount = roundCount,
     wallTileValues = wallTileValues,
+    publicFacesEnabled = publicFacesEnabled,
 )

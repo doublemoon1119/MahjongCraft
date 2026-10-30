@@ -2,11 +2,12 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.scenar
 
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.GamePresentationPublisher
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.toPresentation
+import com.doublemoon1119.mahjongcraft.logic.component.ComponentRegistry
 import com.doublemoon1119.mahjongcraft.logic.config.dealBatchSizes
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import com.doublemoon1119.mahjongcraft.logic.table.SidewaysMarkedDiscardPile
-import com.doublemoon1119.mahjongcraft.logic.table.TileWallRevealable
 import com.doublemoon1119.mahjongcraft.logic.table.opening.OpeningDiceRoll
+import com.doublemoon1119.mahjongcraft.logic.tile.component.publicFaceUpWallTileIds
 import kotlin.uuid.Uuid
 
 /**
@@ -14,10 +15,12 @@ import kotlin.uuid.Uuid
  *
  * @property publisher 發布桌面物件與局況的正式呈現介面。
  * @property moduleRegistry 查詢牌張排序與移出手牌區等規則能力。
+ * @property componentRegistry 正式組件與共同姿態效果。
  */
 class DebugGameScenarioPresentationPublisher(
     private val publisher: GamePresentationPublisher,
     private val moduleRegistry: MahjongModuleRegistry,
+    private val componentRegistry: ComponentRegistry,
 ) {
     /**
      * 依情境指定的呈現方式發布完整桌況。
@@ -27,7 +30,7 @@ class DebugGameScenarioPresentationPublisher(
     fun publish(result: DebugGameScenarioResult) {
         val game = result.game
         val state = game.tableState
-        val revealedTileIds = (state.dynamicRuleState as? TileWallRevealable)?.getVisibleTileIds(state).orEmpty()
+        val revealedTileIds = moduleRegistry.getModule(state.config).publicFaceUpWallTileIds(state, componentRegistry)
         publisher.clearPlayerTiles(game.id)
         when (val presentation = result.presentation) {
             DebugGameScenarioPresentation.StaticWall -> publishStaticTable(result, revealedTileIds)
@@ -88,7 +91,7 @@ class DebugGameScenarioPresentationPublisher(
                 standingTileIds = player.hand.tiles.map { tile -> tile.id },
                 drawnTileId = player.hand.lastDrawn?.id,
                 melds = player.hand.melds.map { meld -> meld.toPresentation(state.config.revealsClosedKanTiles) },
-                setAsideTileIds = module.setAsideTiles(player).map { tile -> tile.id },
+                setAsideTileIds = player.setAsideTiles.map { tile -> tile.id },
             )
             publisher.publishDiscardPileUpdated(
                 gameId = game.id,

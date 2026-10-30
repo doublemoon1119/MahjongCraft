@@ -14,6 +14,7 @@ import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateStore
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateUpdate
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.concurrency.FabricServerStopRunner.StopStep
+import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledCoreExtensionRegistries
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.registerBundledRuleModules
 import com.doublemoon1119.mahjongcraft.testing.logic.config.FakeMahjongRuleConfig
 import kotlinx.coroutines.CompletableDeferred
@@ -98,10 +99,10 @@ class FabricServerStopRunnerTest {
         val registry = MahjongModuleRegistryImpl().apply { registerBundledRuleModules() }
         val broadcaster = ObserverSnapshotBroadcaster(
             store = store,
-            visibilityPolicy = GameVisibilityPolicyImpl(registry),
+            visibilityPolicy = GameVisibilityPolicyImpl(registry, componentRegistry = bundledCoreExtensionRegistries().componentRegistry),
             handReadinessVisibilityPolicy = HandReadinessVisibilityPolicy(
                 moduleRegistry = registry,
-                visibilityPolicy = GameVisibilityPolicyImpl(registry),
+                visibilityPolicy = GameVisibilityPolicyImpl(registry, componentRegistry = bundledCoreExtensionRegistries().componentRegistry),
             ),
             audienceSource = object : ObserverAudienceSource {
                 override suspend fun observersById(): Map<Uuid, Set<Uuid>> = mapOf(id to setOf(hostId))

@@ -1,12 +1,9 @@
 package com.doublemoon1119.mahjongcraft.flow.network.dto.rule.taiwan
 import com.doublemoon1119.mahjongcraft.flow.network.dto.model.toDomain
-import com.doublemoon1119.mahjongcraft.flow.network.dto.model.toDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkDtoRegistries
-import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanDiscardPile
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanGameLength
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanScoreConfig
-import com.doublemoon1119.mahjongcraft.logic.table.DiscardPile
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.toDomain as toRuleDomain
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.toDto as toRuleDto
 
@@ -65,22 +62,4 @@ fun TaiwanScoreConfigDto.toDomain(): TaiwanScoreConfig = TaiwanScoreConfig(
     pointPerTai = pointPerTai,
     initialScore = initialScore,
     bustThreshold = bustThreshold,
-)
-
-/**
- * 將台灣麻將牌河轉為網路 DTO。
- *
- * @return 轉換後的資料。
- */
-fun TaiwanDiscardPile.toTaiwanDto(): TaiwanDiscardPileDto = TaiwanDiscardPileDto(
-    entries = entries.map { DiscardEntryDto(it.tile.toDto(), it.isTaken) },
-)
-
-/**
- * 將台灣麻將牌河 DTO 還原為領域資料。
- *
- * @return 轉換後的資料。
- */
-fun TaiwanDiscardPileDto.toDomain(): TaiwanDiscardPile = TaiwanDiscardPile(
-    entries.map { DiscardPile.DiscardEntry(it.tile.toDomain(), it.isTaken) },
 )

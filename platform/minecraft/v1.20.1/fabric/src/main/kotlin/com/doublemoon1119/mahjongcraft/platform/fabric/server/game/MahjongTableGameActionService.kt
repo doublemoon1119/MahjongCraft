@@ -12,6 +12,7 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkJson
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.AutomatedAdvanceManager
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.GameActionCommandMapper
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.GameFlowCoordinator
+import com.doublemoon1119.mahjongcraft.flow.server.game.policy.GameVisibilityPolicy
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepository
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.PlayerActionContext
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.PlayerActionContextResolver
@@ -66,6 +67,7 @@ import kotlin.uuid.toKotlinUuid
  * @property json 決策提交回覆使用的序列化設定。
  * @property failurePolicy 判斷命令執行中丟出的失敗能否記錄後回覆拒絕；協程取消與無法隔離的失敗原樣往外傳。
  * @property dataStatus 麻將資料無法讀取時拒絕操作並提示玩家。
+ * @property visibilityPolicy 依本人的讀取權裁切手牌與副露牌面。
  */
 class MahjongTableGameActionService(
     private val scope: AppCoroutineScope,
@@ -84,6 +86,7 @@ class MahjongTableGameActionService(
     private val json: NetworkJson,
     private val failurePolicy: ExtensionFailurePolicy,
     private val dataStatus: FabricMahjongDataStatus,
+    private val visibilityPolicy: GameVisibilityPolicy,
 ) {
     /** 對局命令與自動銜接失敗時的專用 logger。 */
     private val logger = mahjongCraftLogger(MahjongTableGameActionService::class)
@@ -366,23 +369,26 @@ class MahjongTableGameActionService(
         val playerId = player.uuid.toKotlinUuid()
         scope.launch {
             val gameId = resolveGameId(playerId) ?: return@launch
-            val state = gameRepository.getTableState(gameId)
-            if (state == null) {
+            val game = gameRepository.getGame(gameId)
+            if (game == null) {
                 feedbackPublisher.publish(playerId, MinecraftPlayerFeedback.PlayerNotInGame)
                 return@launch
             }
+            val state = game.tableState
             val playerState = state.players.firstOrNull { it.id == playerId }
             if (playerState == null) {
                 feedbackPublisher.publish(playerId, MinecraftPlayerFeedback.PlayerNotInGame)
                 return@launch
             }
             val legalActions = candidateResolver.listActionCandidates(playerId).map { it.action to it.referenceTile }
+            val meldTiles = playerState.hand.exposedMelds.map { it.tiles }
+            val faces = visibilityPolicy.tileFacesFor(game, playerId, playerState.hand.standingTiles.map { it.id } + meldTiles.flatten().map { it.id })
             feedbackPublisher.publish(
                 playerId,
                 MinecraftPlayerFeedback.ShowHand(
                     ruleModuleId = moduleRegistry.getModule(state.config).id,
-                    standingTiles = playerState.hand.standingTiles.map { it.tile },
-                    melds = playerState.hand.exposedMelds,
+                    standingTiles = playerState.hand.standingTiles.map { faces.getValue(it.id) },
+                    melds = meldTiles.map { tiles -> tiles.map { faces.getValue(it.id) } },
                     turnStatus = actionContextResolver.resolveFor(state, playerId).toTurnStatus(),
                     legalActions = legalActions,
                 ),

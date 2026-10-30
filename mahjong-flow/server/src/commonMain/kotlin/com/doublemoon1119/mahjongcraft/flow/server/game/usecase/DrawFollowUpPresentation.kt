@@ -39,7 +39,7 @@ internal fun GamePresentationPublisher.publishPlayerAreaAfterDraw(
         standingTileIds = player.hand.tiles.map { it.id },
         drawnTileId = player.hand.lastDrawn?.id,
         melds = player.hand.melds.map { it.toPresentation(presentedState.config.revealsClosedKanTiles) },
-        setAsideTileIds = module.setAsideTiles(player).map { it.id },
+        setAsideTileIds = player.setAsideTiles.map { it.id },
         isNewlyDrawn = true,
         newlyClaimedMeldTileIds = newlyClaimedMeldTileIds,
         newlySetAsideTileIds = newlySetAsideTileIds,

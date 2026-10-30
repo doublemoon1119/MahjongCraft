@@ -2,7 +2,10 @@ package com.doublemoon1119.mahjongcraft.logic.table
 
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.base.Hand
+import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
+import com.doublemoon1119.mahjongcraft.logic.component.BuiltInComponentOwners
+import com.doublemoon1119.mahjongcraft.logic.component.ComponentSet
 import kotlin.uuid.Uuid
 
 /**
@@ -13,12 +16,12 @@ import kotlin.uuid.Uuid
  * 本類別為不可變值物件：所有會改變玩家狀態的操作皆不會修改原實例，
  * 而是回傳一個反映變更後狀態的新 [MahjongPlayer] 實例。
  *
+ * @property tileAreas 規則建立的移出牌區；牌張仍由玩家持有，但不屬於手牌或牌河。
+ * @property components 此對象攜帶的規則組件。
  * @property id 玩家的唯一識別碼。
  * @property initialSeatIndex 整場固定的起家座位順位，從 `0` 起算。
  * @property hand 該玩家的手牌實體。
  * @property discardPile 該玩家的牌河實體，其具體類型由遊戲規則決定。
- * @property playerRuleState 用於儲存規則特有的玩家狀態（如立直、振聽等）。
- * 具體類型由各規則決定，例如日麻的 `RiichiPlayerState`。
  * @property score 玩家目前的總分（持點）。其初始值通常由 [TableState] 根據規則配置進行初始化。
  * @property seatWind 玩家本局由規則指派的自風／門風；不得用來反推莊家。
  * @property passedTilesInRound 玩家上次取牌（摸牌或鳴牌）後，交給玩家、但玩家沒有榮和的牌：他家每一張沒有被
@@ -32,16 +35,21 @@ data class MahjongPlayer(
     override val initialSeatIndex: Int,
     val hand: Hand = Hand(),
     val discardPile: DiscardPile<*>,
-    val playerRuleState: PlayerRuleState? = null,
     override val score: Int = 0,
     override val seatWind: Wind,
     val passedTilesInRound: Set<Tile> = emptySet(),
     val actionHistory: List<GameAction> = emptyList(),
     val mustDiscardAfterMeld: Boolean = false,
+    val components: ComponentSet = ComponentSet.EMPTY,
+    val tileAreas: PlayerTileAreas = PlayerTileAreas.EMPTY,
 ) : RankablePlayer {
     init {
+        components.requireTarget(BuiltInComponentOwners.PLAYER)
         require(initialSeatIndex >= 0) { "initialSeatIndex must not be negative" }
     }
+
+    /** 所有移出牌區的當前牌張，依區域與區域內順序排列。 */
+    val setAsideTiles: List<IdentifiedTile> get() = tileAreas.allTiles
 
     /**
      * 是否剛完成不補牌的鳴牌，尚未捨牌。

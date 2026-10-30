@@ -17,6 +17,7 @@ want to run the example in a game.
 | Multi-roll opening | Temporary dealer, final dealer and wall opening | [opening tests](mahjong-extension/src/commonTest/kotlin/com/doublemoon1119/mahjongcraft/example/pairing/ExamplePairingRoundOpeningProcedureTest.kt) | Automated |
 | Optional rule decision | Two-tile exchange | [rule decision tests](mahjong-extension/src/commonTest/kotlin/com/doublemoon1119/mahjongcraft/example/decision) | Automated and game-tested |
 | Extension action and command | Once-per-round hand reveal | [action tests](mahjong-extension/src/commonTest/kotlin/com/doublemoon1119/mahjongcraft/example/action) | Automated |
+| Tile component and style body | Optional public tile faces | [pairing tests](mahjong-extension/src/commonTest/kotlin/com/doublemoon1119/mahjongcraft/example/pairing/ExamplePairingRuleCoreTest.kt) | Automated; game check pending |
 | AI strategy | Tsumogiri strategy | [AI test](mahjong-extension/src/commonTest/kotlin/com/doublemoon1119/mahjongcraft/example/ai/ExampleTsumogiriAiStrategyTest.kt) | Automated |
 | Network and persistence registration | Example-owned DTOs and mappings | [round-trip test](mahjong-extension/src/commonTest/kotlin/com/doublemoon1119/mahjongcraft/example/ExampleFormatRoundTripTest.kt) | Automated |
 | Minecraft presentation | Names, settings, history text and tile assets | [common adapter](platform/minecraft/common/README.md) | Automated and game-tested |
@@ -32,7 +33,7 @@ A successful compile is not evidence that every extension point works.
 
 The pairing example also demonstrates rule-owned public table props. At the start of each
 round it selects one fewer bonus kind than the number of kinds in the configured wall. The
-selection is saved in the round's dynamic rule state, so the centre display and self-draw
+selection is saved in a table component, so the centre display and self-draw
 settlement use the same values. Repeated copies of one kind count once; the inverted 1-man
 is treated as the 1-man kind for this example. Each opponent pays the configured base plus that
 number of matching kinds. Players who reveal their hand also add custom gold tokens to the same central layout.

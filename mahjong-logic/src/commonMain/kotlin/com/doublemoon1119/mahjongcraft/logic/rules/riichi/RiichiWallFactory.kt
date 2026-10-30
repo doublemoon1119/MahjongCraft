@@ -1,11 +1,11 @@
 package com.doublemoon1119.mahjongcraft.logic.rules.riichi
 
-import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.RiichiTileTypes
-import com.doublemoon1119.mahjongcraft.logic.table.TileWall
+import com.doublemoon1119.mahjongcraft.logic.base.TileValue
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.RiichiTileValues
 import com.doublemoon1119.mahjongcraft.logic.table.TileWallFactory
-import kotlin.uuid.Uuid
+import com.doublemoon1119.mahjongcraft.logic.tile.TileComposition
+import com.doublemoon1119.mahjongcraft.logic.tile.TileCompositionEntry
 
 /**
  * 日本麻將牌山生成工廠。
@@ -18,12 +18,12 @@ import kotlin.uuid.Uuid
 class RiichiWallFactory(private val config: RiichiRuleConfig) : TileWallFactory {
 
     /**
-     * 建立日本麻將牌山實體。
+     * 取得日本麻將牌組組成。
      *
-     * @return 包含 136 張已賦予唯一識別碼之麻將牌的 [TileWall]。
+     * @return 包含 136 張牌值及張數的組成，不產生牌張身分。
      */
-    override fun create(): TileWall {
-        val tiles = mutableListOf<IdentifiedTile>()
+    override fun composition(): TileComposition {
+        val tiles = mutableListOf<TileValue>()
 
         // 1. 生成數牌：萬、筒、條 (各花色 1~9 號各 4 張)
         Tile.Suit.entries.forEach { suit ->
@@ -39,11 +39,11 @@ class RiichiWallFactory(private val config: RiichiRuleConfig) : TileWallFactory 
                 repeat(4) { count ->
                     // 僅有 5 號牌可能是赤牌
                     val tile = if (value == 5 && count < redInThisSuit) {
-                        RiichiTileTypes.redFive(suit)
+                        RiichiTileValues.redFive(suit)
                     } else {
-                        Tile.Numeric(suit, value)
+                        TileValue(Tile.Numeric(suit, value))
                     }
-                    tiles.add(IdentifiedTile(Uuid.random(), tile))
+                    tiles.add(tile)
                 }
             }
         }
@@ -60,13 +60,10 @@ class RiichiWallFactory(private val config: RiichiRuleConfig) : TileWallFactory 
         )
         honors.forEach { honor ->
             repeat(4) {
-                tiles.add(IdentifiedTile(Uuid.random(), honor))
+                tiles.add(TileValue(honor))
             }
         }
 
-        // 3. 洗牌
-        tiles.shuffle()
-
-        return TileWall(tiles)
+        return TileComposition(tiles.groupingBy { it }.eachCount().map { (value, count) -> TileCompositionEntry(value, count) })
     }
 }

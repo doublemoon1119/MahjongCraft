@@ -29,11 +29,7 @@ class AuthoritativeStatePersistenceDtoTest {
     /** 內建牌河的 persistence registry。 */
     private val discardPileRegistry = bundledPersistenceRegistries().discardPiles
 
-    /** 內建玩家規則狀態的 persistence registry。 */
-    private val playerRuleStateRegistry = bundledPersistenceRegistries().playerRuleStates
-
     /** 內建動態牌桌狀態的 persistence registry。 */
-    private val dynamicRuleStateRegistry = bundledPersistenceRegistries().dynamicRuleStates
 
     /** 內建流局原因的 persistence registry。 */
     private val exhaustiveDrawReasonRegistry = bundledPersistenceRegistries().exhaustiveDrawReasons
@@ -189,21 +185,15 @@ class AuthoritativeStatePersistenceDtoTest {
         val state = createAuthoritativeStatePersistenceDto(
             rooms = emptyList(),
             games = listOf(game),
-            ruleConfigRegistry = ruleConfigRegistry,
-            discardPileRegistry = discardPileRegistry,
-            playerRuleStateRegistry = playerRuleStateRegistry,
-            dynamicRuleStateRegistry = dynamicRuleStateRegistry,
-            exhaustiveDrawReasonRegistry = exhaustiveDrawReasonRegistry,
-            extensionGameActionRegistry = extensionGameActionRegistry,
+            registries = bundledPersistenceRegistries(),
         )
 
         val restored = state.toGames(
             ruleConfigRegistry,
             discardPileRegistry,
-            playerRuleStateRegistry,
-            dynamicRuleStateRegistry,
             exhaustiveDrawReasonRegistry,
             extensionGameActionRegistry,
+            bundledPersistenceRegistries().components,
         ).getValue(game.id)
 
         assertEquals(setOf(playerId), restored.forcedAutoPlayPlayerIds)
@@ -222,21 +212,15 @@ class AuthoritativeStatePersistenceDtoTest {
         val state = createAuthoritativeStatePersistenceDto(
             rooms = emptyList(),
             games = listOf(game),
-            ruleConfigRegistry = ruleConfigRegistry,
-            discardPileRegistry = discardPileRegistry,
-            playerRuleStateRegistry = playerRuleStateRegistry,
-            dynamicRuleStateRegistry = dynamicRuleStateRegistry,
-            exhaustiveDrawReasonRegistry = exhaustiveDrawReasonRegistry,
-            extensionGameActionRegistry = extensionGameActionRegistry,
+            registries = bundledPersistenceRegistries(),
         )
 
         val restored = state.toGames(
             ruleConfigRegistry,
             discardPileRegistry,
-            playerRuleStateRegistry,
-            dynamicRuleStateRegistry,
             exhaustiveDrawReasonRegistry,
             extensionGameActionRegistry,
+            bundledPersistenceRegistries().components,
         ).getValue(game.id)
 
         assertEquals(mapOf(playerId to "example:strategy"), restored.aiPlayerStrategyKeys)
@@ -256,21 +240,15 @@ class AuthoritativeStatePersistenceDtoTest {
         val state = createAuthoritativeStatePersistenceDto(
             rooms = emptyList(),
             games = listOf(game),
-            ruleConfigRegistry = ruleConfigRegistry,
-            discardPileRegistry = discardPileRegistry,
-            playerRuleStateRegistry = playerRuleStateRegistry,
-            dynamicRuleStateRegistry = dynamicRuleStateRegistry,
-            exhaustiveDrawReasonRegistry = exhaustiveDrawReasonRegistry,
-            extensionGameActionRegistry = extensionGameActionRegistry,
+            registries = bundledPersistenceRegistries(),
         )
 
         val restored = state.toGames(
             ruleConfigRegistry,
             discardPileRegistry,
-            playerRuleStateRegistry,
-            dynamicRuleStateRegistry,
             exhaustiveDrawReasonRegistry,
             extensionGameActionRegistry,
+            bundledPersistenceRegistries().components,
         ).getValue(game.id)
 
         assertEquals(
@@ -293,21 +271,15 @@ class AuthoritativeStatePersistenceDtoTest {
         val state = createAuthoritativeStatePersistenceDto(
             rooms = emptyList(),
             games = listOf(game),
-            ruleConfigRegistry = ruleConfigRegistry,
-            discardPileRegistry = discardPileRegistry,
-            playerRuleStateRegistry = playerRuleStateRegistry,
-            dynamicRuleStateRegistry = dynamicRuleStateRegistry,
-            exhaustiveDrawReasonRegistry = exhaustiveDrawReasonRegistry,
-            extensionGameActionRegistry = extensionGameActionRegistry,
+            registries = bundledPersistenceRegistries(),
         )
 
         val restored = state.toGames(
             ruleConfigRegistry,
             discardPileRegistry,
-            playerRuleStateRegistry,
-            dynamicRuleStateRegistry,
             exhaustiveDrawReasonRegistry,
             extensionGameActionRegistry,
+            bundledPersistenceRegistries().components,
         ).getValue(game.id)
 
         assertEquals(mapOf(playerId to 3_500L), restored.interruptedBaseMillisByPlayerId)
@@ -390,23 +362,17 @@ class AuthoritativeStatePersistenceDtoTest {
         rooms: Collection<Room>,
         games: Collection<TableState>,
     ): AuthoritativeStatePersistenceDto = createAuthoritativeStatePersistenceDto(
-        rooms,
-        games.map { Game(it, GameFlowConfig()) },
-        ruleConfigRegistry,
-        discardPileRegistry,
-        playerRuleStateRegistry,
-        dynamicRuleStateRegistry,
-        exhaustiveDrawReasonRegistry,
-        extensionGameActionRegistry,
+        rooms = rooms,
+        games = games.map { Game(it, GameFlowConfig()) },
+        registries = bundledPersistenceRegistries(),
     )
 
     /** 使用所有內建註冊表還原遊戲，再取出以遊戲 ID 索引的桌況。 */
     private fun AuthoritativeStatePersistenceDto.toGames(): Map<Uuid, TableState> = toGames(
         ruleConfigRegistry,
         discardPileRegistry,
-        playerRuleStateRegistry,
-        dynamicRuleStateRegistry,
         exhaustiveDrawReasonRegistry,
         extensionGameActionRegistry,
+        bundledPersistenceRegistries().components,
     ).mapValues { it.value.tableState }
 }

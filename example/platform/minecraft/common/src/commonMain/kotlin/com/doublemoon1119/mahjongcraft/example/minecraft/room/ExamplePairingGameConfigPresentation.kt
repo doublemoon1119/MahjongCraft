@@ -78,6 +78,18 @@ fun examplePairingGameConfigPresentation(): GameConfigPresentationDefinition = G
             },
         ),
         GameConfigFieldDefinition(
+            id = ExampleMinecraftPresentationIds.PUBLIC_FACES_FIELD,
+            categoryId = ExampleMinecraftPresentationIds.RULE_CATEGORY,
+            nameTranslationKey = ExampleMinecraftMessageKeys.CONFIG_PUBLIC_FACES,
+            descriptionTranslationKey = ExampleMinecraftMessageKeys.CONFIG_PUBLIC_FACES_DESCRIPTION,
+            editor = GameConfigEditorSpec.BooleanToggle,
+            isEditable = true,
+            read = { GameConfigPresentationValue.BooleanValue((it.ruleConfig as ExamplePairingRuleConfig).publicFacesEnabled) },
+            update = { config, value ->
+                config.copy(ruleConfig = (config.ruleConfig as ExamplePairingRuleConfig).copy(publicFacesEnabled = (value as GameConfigPresentationValue.BooleanValue).enabled))
+            },
+        ),
+        GameConfigFieldDefinition(
             id = ExampleMinecraftPresentationIds.PAYMENT_FIELD,
             categoryId = ExampleMinecraftPresentationIds.RULE_CATEGORY,
             nameTranslationKey = ExampleMinecraftMessageKeys.CONFIG_PAYMENT,

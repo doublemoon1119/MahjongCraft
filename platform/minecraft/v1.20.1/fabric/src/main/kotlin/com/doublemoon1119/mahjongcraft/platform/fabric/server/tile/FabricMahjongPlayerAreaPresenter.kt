@@ -2,9 +2,9 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.server.tile
 
 import com.doublemoon1119.mahjongcraft.logic.base.MeldType
 import com.doublemoon1119.mahjongcraft.logic.base.PublicHandOrder
-import com.doublemoon1119.mahjongcraft.logic.module.HandTilePose
-import com.doublemoon1119.mahjongcraft.logic.module.HandTileState
 import com.doublemoon1119.mahjongcraft.logic.table.GameInitializer
+import com.doublemoon1119.mahjongcraft.logic.tile.component.TilePose
+import com.doublemoon1119.mahjongcraft.logic.tile.component.TilePoseState
 import com.doublemoon1119.mahjongcraft.platform.fabric.block.MahjongTableBlock
 import com.doublemoon1119.mahjongcraft.platform.fabric.block.MahjongTablePart
 import com.doublemoon1119.mahjongcraft.platform.fabric.block.entity.MahjongTableBlockEntity
@@ -123,7 +123,7 @@ class FabricMahjongPlayerAreaPresenter(
                 melds = presentation.melds,
                 setAsideTileIds = presentation.setAsideTileIds,
                 cornerWidth = presentation.cornerWidth,
-                handTileStates = presentation.handTileStates,
+                tilePoseStates = presentation.tilePoseStates,
             ),
         )
 
@@ -138,7 +138,7 @@ class FabricMahjongPlayerAreaPresenter(
             placeExisting(
                 tile,
                 standing.placement,
-                poseFor(standing.tileId, presentation.handTileStates),
+                poseFor(standing.tileId, presentation.tilePoseStates),
             )
         }
 
@@ -165,7 +165,7 @@ class FabricMahjongPlayerAreaPresenter(
                     tile = tile,
                     finalPlacement = standingPlacements[tileId] ?: drawnSlotPlacement,
                     startDelayTicks = startDelayTicks,
-                    endPose = poseFor(tileId, presentation.handTileStates),
+                    endPose = poseFor(tileId, presentation.tilePoseStates),
                 )
             }
         } else {
@@ -181,13 +181,13 @@ class FabricMahjongPlayerAreaPresenter(
                             tile = tile,
                             finalPlacement = drawnSlotPlacement,
                             startDelayTicks = DrawFollowUpTimeline.initialDrawDelayTicks(claimsTiles),
-                            endPose = poseFor(drawnTileId, presentation.handTileStates),
+                            endPose = poseFor(drawnTileId, presentation.tilePoseStates),
                         )
                     } else {
                         placeExisting(
                             tile,
                             drawnSlotPlacement,
-                            poseFor(drawnTileId, presentation.handTileStates),
+                            poseFor(drawnTileId, presentation.tilePoseStates),
                         )
                     }
                 }
@@ -538,7 +538,7 @@ class FabricMahjongPlayerAreaPresenter(
                         flipAbsoluteGameTime,
                         playDealSound = !dealSoundScheduled,
                         playFlipSound = seatIndex !in flipSoundSeatIndices,
-                        endPose = poseFor(tileId, presentation.handTileStates),
+                        endPose = poseFor(tileId, presentation.tilePoseStates),
                     )
                     dealSoundScheduled = true
                     flipSoundSeatIndices += seatIndex
@@ -646,10 +646,11 @@ class FabricMahjongPlayerAreaPresenter(
     }
 
     /** 依逐張共同姿態轉成原生姿態；未指定的牌保持直立。 */
-    private fun poseFor(tileId: Uuid, states: List<HandTileState>): MahjongTilePose = when (
-        states.firstOrNull { it.tileId == tileId }?.pose ?: HandTilePose.UPRIGHT
+    private fun poseFor(tileId: Uuid, states: List<TilePoseState>): MahjongTilePose = when (
+        states.firstOrNull { it.tileId == tileId }?.pose ?: TilePose.UPRIGHT
     ) {
-        HandTilePose.UPRIGHT -> MahjongTilePose.STANDING
-        HandTilePose.FACE_UP -> MahjongTilePose.FACE_UP
+        TilePose.UPRIGHT -> MahjongTilePose.STANDING
+        TilePose.FACE_UP -> MahjongTilePose.FACE_UP
+        TilePose.FACE_DOWN -> MahjongTilePose.FACE_DOWN
     }
 }

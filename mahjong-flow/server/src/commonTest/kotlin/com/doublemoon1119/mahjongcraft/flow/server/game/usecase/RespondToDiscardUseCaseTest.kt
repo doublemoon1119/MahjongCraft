@@ -21,6 +21,7 @@ import com.doublemoon1119.mahjongcraft.logic.base.Hand
 import com.doublemoon1119.mahjongcraft.logic.base.MeldType
 import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
+import com.doublemoon1119.mahjongcraft.logic.component.ComponentSet
 import com.doublemoon1119.mahjongcraft.logic.config.MultiRonPolicy
 import com.doublemoon1119.mahjongcraft.logic.config.RonResolution
 import com.doublemoon1119.mahjongcraft.logic.module.BuiltInRuleModuleIds
@@ -29,16 +30,21 @@ import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.PaoLiability
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.PaoYaku
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RIICHI_GAME_ACTION
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RIICHI_STICK_POINTS
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDiscardPile
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDynamicState
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiExhaustiveDrawReason
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPlayerState
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPlayerComponents
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.RiichiTileTypes
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.riichiDeclaration
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.riichiPotPoints
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.riichiWallProgress
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.RiichiTileInterpretationPolicy
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.RiichiTileValues
 import com.doublemoon1119.mahjongcraft.logic.table.PendingReaction
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import com.doublemoon1119.mahjongcraft.logic.table.toSnapshot
 import com.doublemoon1119.mahjongcraft.logic.table.visibleTiles
+import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledCoreExtensionRegistries
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledWinCelebrationCueResolverRegistry
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.registerBundledRuleModules
 import com.doublemoon1119.mahjongcraft.testing.flow.common.game.repository.FakeGameSnapshotRepository
@@ -46,6 +52,8 @@ import com.doublemoon1119.mahjongcraft.testing.flow.common.game.service.FakeGame
 import com.doublemoon1119.mahjongcraft.testing.flow.common.game.service.FakeGamePresentationPublisher
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeIdentifiedTileFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeMeldFactory
+import com.doublemoon1119.mahjongcraft.testing.logic.rules.riichi.riichiDeclarationComponents
+import com.doublemoon1119.mahjongcraft.testing.logic.rules.riichi.riichiTableComponents
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeDiscardPile
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
@@ -94,7 +102,7 @@ class RespondToDiscardUseCaseTest {
         val snapshotRepo = FakeGameSnapshotRepository()
 
         /** 依觀看政策同步對局快照的元件。 */
-        val snapshotSynchronizer = GameSnapshotSynchronizer(gameRepo, snapshotRepo, GameVisibilityPolicyImpl(moduleRegistry))
+        val snapshotSynchronizer = GameSnapshotSynchronizer(gameRepo, snapshotRepo, GameVisibilityPolicyImpl(moduleRegistry, componentRegistry = bundledCoreExtensionRegistries().componentRegistry))
 
         /** 保存手牌排序偏好的元件。 */
         val handSortPreferenceStore = HandSortPreferenceStore()
@@ -109,7 +117,7 @@ class RespondToDiscardUseCaseTest {
         val winPresentationHandoff = WinPresentationHandoff()
 
         /** 和牌明細的解析器註冊中心。 */
-        val winSettlementDetailResolverRegistry = WinSettlementDetailResolverRegistry().apply {
+        val winSettlementDetailResolverRegistry = WinSettlementDetailResolverRegistry(bundledCoreExtensionRegistries().componentRegistry).apply {
             BundledRiichiExtension.registerWinSettlementDetailResolvers(this)
             freeze()
         }
@@ -126,6 +134,8 @@ class RespondToDiscardUseCaseTest {
             winCelebrationCueResolverRegistry = bundledWinCelebrationCueResolverRegistry(),
             winSettlementDetailResolverRegistry = winSettlementDetailResolverRegistry,
             postActionExhaustiveDrawResolverRegistry = postActionExhaustiveDrawResolverRegistry,
+
+            componentRegistry = bundledCoreExtensionRegistries().componentRegistry,
         )
 
         /** 以目前權威反應視窗的識別碼提交測試反應。 */
@@ -304,7 +314,7 @@ class RespondToDiscardUseCaseTest {
                 } else {
                     Hand()
                 },
-                playerRuleState = RiichiPlayerState(riichiTile = discardedTile),
+                components = riichiDeclarationComponents(declarationTile = discardedTile),
             ).let { player ->
                 if (index == 0) player.copy(actionHistory = listOf(RIICHI_GAME_ACTION, GameAction.Discard(discardedTile.id))) else player
             }
@@ -514,7 +524,7 @@ class RespondToDiscardUseCaseTest {
         )
         val plainFive1 = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 5))
         val plainFive2 = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 5))
-        val redFive = FakeIdentifiedTileFactory.create(RiichiTileTypes.redFive(Tile.Suit.Character))
+        val redFive = FakeIdentifiedTileFactory.create(RiichiTileValues.redFive(Tile.Suit.Character))
         val responder = FakeMahjongPlayerFactory.create(
             id = responderId,
             initialSeat = Wind.SOUTH,
@@ -607,7 +617,7 @@ class RespondToDiscardUseCaseTest {
             reservedWallTiles = completeRiichiReservedWall(rinshanTile),
             currentPlayerIndex = 0,
             pendingReaction = PendingReaction(discarderId, discardedTile.id, setOf(responderId), ronPlayerIds = setOf(responderId), id = Uuid.random()),
-            dynamicRuleState = RiichiDynamicState(),
+            components = riichiTableComponents(potPoints = 0),
         ).withFirstKanPhysicalWallLayout()
         fixtures.gameRepo.setTableState(table)
 
@@ -620,7 +630,7 @@ class RespondToDiscardUseCaseTest {
         assertEquals(1, newState.currentPlayerIndex, "Turn should move to the player who claimed the meld.")
         assertEquals(table.tileWall.remainingCount - 1, newState.tileWall.remainingCount)
         assertEquals(table.tileWall.getAllTiles().last(), newState.reservedWallTiles.last())
-        assertEquals(1, (newState.dynamicRuleState as RiichiDynamicState).completedSupplementalDrawCount)
+        assertEquals(1, newState.riichiWallProgress().completedSupplementalDrawCount)
         assertEquals(
             newState,
             fixtures.presentationPublisher.getPublishedRoundInfo(gameId),
@@ -680,7 +690,7 @@ class RespondToDiscardUseCaseTest {
             reservedWallTiles = listOf(rinshanTile),
             currentPlayerIndex = 0,
             pendingReaction = PendingReaction(discarderId, discardedTile.id, setOf(responderId), ronPlayerIds = setOf(responderId), id = Uuid.random()),
-            dynamicRuleState = RiichiDynamicState(),
+            components = riichiTableComponents(potPoints = 0),
         )
         fixtures.gameRepo.setTableState(table)
 
@@ -722,7 +732,7 @@ class RespondToDiscardUseCaseTest {
             // 之前就會先被 RiichiLegalActionValidator 擋下，這個測試就測不到真正想驗證的情境。
             currentPlayerIndex = 0,
             pendingReaction = PendingReaction(discarderId, discardedTile.id, setOf(responderId), ronPlayerIds = setOf(responderId), id = Uuid.random()),
-            dynamicRuleState = RiichiDynamicState(),
+            components = riichiTableComponents(potPoints = 0),
         )
         fixtures.gameRepo.setTableState(table)
 
@@ -845,7 +855,7 @@ class RespondToDiscardUseCaseTest {
             id = responderId,
             initialSeat = Wind.SOUTH,
             hand = Hand(tiles = handTiles, melds = dragonMelds),
-            playerRuleState = RiichiPlayerState(),
+            components = riichiDeclarationComponents(),
         )
         val table = FakeTableStateFactory.create(
             id = gameId,
@@ -861,11 +871,52 @@ class RespondToDiscardUseCaseTest {
         assertTrue(result is Outcome.Success, "Expected Success but got $result")
         val newState = fixtures.gameRepo.getTableState(gameId)!!
         val winner = newState.players.first { it.id == responderId }
-        val riichiState = winner.playerRuleState as RiichiPlayerState
         assertEquals(
             PaoLiability(PaoYaku.Daisangen, newState.relativeDirectionOf(responderId, discarderId)),
-            riichiState.paoLiability,
+            winner.components[RiichiPlayerComponents.PAO_LIABILITY],
         )
+    }
+
+    /** 已碰出三組風牌、再明槓第四種風牌時，同樣寫入大四喜的包牌責任。 */
+    @Test
+    fun `test open kan of the fourth wind triggers pao liability`() = runTest {
+        val fixtures = Fixtures()
+        val discardedTile = FakeIdentifiedTileFactory.create(Tile.Honor.North)
+        val discarder = FakeMahjongPlayerFactory.create(
+            id = discarderId,
+            initialSeat = Wind.EAST,
+            discardPile = FakeDiscardPile().discardTile(discardedTile),
+        )
+        val handTiles = List(3) { FakeIdentifiedTileFactory.create(Tile.Honor.North) }
+        val windMelds = listOf(Tile.Honor.East, Tile.Honor.South, Tile.Honor.West).map { tile ->
+            FakeMeldFactory.create(
+                type = MeldType.PON,
+                tiles = List(3) { FakeIdentifiedTileFactory.create(tile) },
+                sourceDirection = RelativeDirection.Across,
+            )
+        }
+        val responder = FakeMahjongPlayerFactory.create(
+            id = responderId,
+            initialSeat = Wind.SOUTH,
+            hand = Hand(tiles = handTiles + FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 1)), melds = windMelds),
+            components = riichiDeclarationComponents(),
+        )
+        val table = FakeTableStateFactory.create(
+            id = gameId,
+            players = listOf(discarder, responder),
+            config = RiichiRuleConfig(),
+            currentPlayerIndex = 0,
+            pendingReaction = PendingReaction(discarderId, discardedTile.id, setOf(responderId), ronPlayerIds = emptySet(), id = Uuid.random()),
+            reservedWallTiles = completeRiichiReservedWall(FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 9))),
+            components = riichiTableComponents(potPoints = 0),
+        ).withFirstKanPhysicalWallLayout()
+        fixtures.gameRepo.setTableState(table)
+
+        val result = fixtures.useCase(gameId, responderId, GameAction.Kan(GameAction.KanType.OPEN_KAN, discardedTile.id, handTiles.map { it.id }))
+
+        assertTrue(result is Outcome.Success, "Expected Success but got $result")
+        val claimer = fixtures.gameRepo.getTableState(gameId)!!.players.first { it.id == responderId }
+        assertEquals(PaoYaku.Daisuushii, claimer.components[RiichiPlayerComponents.PAO_LIABILITY]?.yaku)
     }
 
     /**
@@ -879,8 +930,8 @@ class RespondToDiscardUseCaseTest {
             id = discarderId,
             initialSeat = Wind.EAST,
             discardPile = FakeDiscardPile().discardTile(discardedTile),
-            playerRuleState = RiichiPlayerState(
-                riichiTile = FakeIdentifiedTileFactory.create(Tile.Honor.East),
+            components = riichiDeclarationComponents(
+                declarationTile = FakeIdentifiedTileFactory.create(Tile.Honor.East),
                 isIppatsu = true,
             ),
         )
@@ -895,8 +946,8 @@ class RespondToDiscardUseCaseTest {
         val bystander = FakeMahjongPlayerFactory.create(
             id = bystanderId,
             initialSeat = Wind.WEST,
-            playerRuleState = RiichiPlayerState(
-                riichiTile = FakeIdentifiedTileFactory.create(Tile.Honor.South),
+            components = riichiDeclarationComponents(
+                declarationTile = FakeIdentifiedTileFactory.create(Tile.Honor.South),
                 isIppatsu = true,
             ),
         )
@@ -915,8 +966,8 @@ class RespondToDiscardUseCaseTest {
         val newState = fixtures.gameRepo.getTableState(gameId)!!
         val newDiscarder = newState.players.first { it.id == discarderId }
         val newBystander = newState.players.first { it.id == bystanderId }
-        assertEquals(false, (newDiscarder.playerRuleState as RiichiPlayerState).isIppatsu)
-        assertEquals(false, (newBystander.playerRuleState as RiichiPlayerState).isIppatsu)
+        assertEquals(false, newDiscarder.riichiDeclaration?.isIppatsu == true)
+        assertEquals(false, newBystander.riichiDeclaration?.isIppatsu == true)
     }
 
     /**
@@ -954,7 +1005,7 @@ class RespondToDiscardUseCaseTest {
             hand = Hand(tiles = daisangenTiles().map { FakeIdentifiedTileFactory.create(it) }),
             // 已經打過一輪牌，確保不是第一巡，避免誤觸天和/地和/人和疊加成雙倍役滿
             discardPile = RiichiDiscardPile().discardTile(FakeIdentifiedTileFactory.create(Tile.Honor.South)),
-            playerRuleState = RiichiPlayerState(),
+            components = riichiDeclarationComponents(),
         )
         val table = FakeTableStateFactory.create(
             id = gameId,
@@ -1053,7 +1104,7 @@ class RespondToDiscardUseCaseTest {
             ),
             // 已經打過一輪牌，確保不是第一巡，避免誤觸人和
             discardPile = RiichiDiscardPile().discardTile(FakeIdentifiedTileFactory.create(Tile.Honor.North)),
-            playerRuleState = RiichiPlayerState(),
+            components = riichiDeclarationComponents(),
         )
         val table = FakeTableStateFactory.create(
             id = gameId,
@@ -1106,7 +1157,7 @@ class RespondToDiscardUseCaseTest {
             hand = Hand(tiles = daisangenTiles().map { FakeIdentifiedTileFactory.create(it) }),
             // 已經打過一輪牌，確保不是第一巡，避免誤觸天和/地和/人和疊加成雙倍役滿
             discardPile = RiichiDiscardPile().discardTile(FakeIdentifiedTileFactory.create(Tile.Honor.South)),
-            playerRuleState = RiichiPlayerState(paoLiability = PaoLiability(PaoYaku.Daisangen, RelativeDirection.Left)),
+            components = ComponentSet.EMPTY.with(RiichiPlayerComponents.PAO_LIABILITY, PaoLiability(PaoYaku.Daisangen, RelativeDirection.Left)).merge(riichiDeclarationComponents()),
         )
         val discarder = FakeMahjongPlayerFactory.create(
             id = discarderId,
@@ -1154,14 +1205,14 @@ class RespondToDiscardUseCaseTest {
             hand = Hand(tiles = daisangenTiles().map { FakeIdentifiedTileFactory.create(it) }),
             // 已經打過一輪牌，確保不是第一巡，避免誤觸天和/地和/人和疊加成雙倍役滿
             discardPile = RiichiDiscardPile().discardTile(FakeIdentifiedTileFactory.create(Tile.Honor.South)),
-            playerRuleState = RiichiPlayerState(),
+            components = riichiDeclarationComponents(),
         )
         val nonDealerWinner = FakeMahjongPlayerFactory.create(
             id = responderId,
             initialSeat = Wind.SOUTH,
             hand = Hand(tiles = daisangenTiles().map { FakeIdentifiedTileFactory.create(it) }),
             discardPile = RiichiDiscardPile().discardTile(FakeIdentifiedTileFactory.create(Tile.Honor.South)),
-            playerRuleState = RiichiPlayerState(),
+            components = riichiDeclarationComponents(),
         )
         val table = FakeTableStateFactory.create(
             id = gameId,
@@ -1232,14 +1283,14 @@ class RespondToDiscardUseCaseTest {
             initialSeat = Wind.EAST,
             hand = Hand(tiles = daisangenTiles().map { FakeIdentifiedTileFactory.create(it) }),
             discardPile = RiichiDiscardPile().discardTile(FakeIdentifiedTileFactory.create(Tile.Honor.South)),
-            playerRuleState = RiichiPlayerState(),
+            components = riichiDeclarationComponents(),
         )
         val nonDealerWinner1 = FakeMahjongPlayerFactory.create(
             id = responderId,
             initialSeat = Wind.SOUTH,
             hand = Hand(tiles = daisangenTiles().map { FakeIdentifiedTileFactory.create(it) }),
             discardPile = RiichiDiscardPile().discardTile(FakeIdentifiedTileFactory.create(Tile.Honor.South)),
-            playerRuleState = RiichiPlayerState(),
+            components = riichiDeclarationComponents(),
         )
         val nonDealerWinner2Id = Uuid.random()
         val nonDealerWinner2 = FakeMahjongPlayerFactory.create(
@@ -1247,7 +1298,7 @@ class RespondToDiscardUseCaseTest {
             initialSeat = Wind.WEST,
             hand = Hand(tiles = daisangenTiles().map { FakeIdentifiedTileFactory.create(it) }),
             discardPile = RiichiDiscardPile().discardTile(FakeIdentifiedTileFactory.create(Tile.Honor.South)),
-            playerRuleState = RiichiPlayerState(),
+            components = riichiDeclarationComponents(),
         )
         val table = FakeTableStateFactory.create(
             id = gameId,
@@ -1303,13 +1354,13 @@ class RespondToDiscardUseCaseTest {
             initialSeat = Wind.SOUTH,
             hand = Hand(tiles = daisangenTiles().map { FakeIdentifiedTileFactory.create(it) }),
             discardPile = RiichiDiscardPile().discardTile(FakeIdentifiedTileFactory.create(Tile.Honor.South)),
-            playerRuleState = RiichiPlayerState(),
+            components = riichiDeclarationComponents(),
         )
         val table = FakeTableStateFactory.create(
             id = gameId,
             players = listOf(discarder, winner),
             config = RiichiRuleConfig(),
-            dynamicRuleState = RiichiDynamicState(riichiStickCount = 3),
+            components = riichiTableComponents(potPoints = 3000),
             currentPlayerIndex = 0,
             pendingReaction = PendingReaction(discarderId, discardedTile.id, setOf(responderId), ronPlayerIds = setOf(responderId), id = Uuid.random()),
         )
@@ -1324,7 +1375,7 @@ class RespondToDiscardUseCaseTest {
             newState.players.first { it.id == responderId }.score,
             "Winner's score should include both the Ron total and the 3 sticks (1000 each).",
         )
-        assertEquals(0, (newState.dynamicRuleState as RiichiDynamicState).riichiStickCount)
+        assertEquals(0, (newState.riichiPotPoints() / RIICHI_STICK_POINTS))
     }
 
     /**
@@ -1345,14 +1396,14 @@ class RespondToDiscardUseCaseTest {
             initialSeat = Wind.EAST,
             hand = Hand(tiles = daisangenTiles().map { FakeIdentifiedTileFactory.create(it) }),
             discardPile = RiichiDiscardPile().discardTile(FakeIdentifiedTileFactory.create(Tile.Honor.South)),
-            playerRuleState = RiichiPlayerState(),
+            components = riichiDeclarationComponents(),
         )
         val nonDealerWinner = FakeMahjongPlayerFactory.create(
             id = responderId,
             initialSeat = Wind.SOUTH,
             hand = Hand(tiles = daisangenTiles().map { FakeIdentifiedTileFactory.create(it) }),
             discardPile = RiichiDiscardPile().discardTile(FakeIdentifiedTileFactory.create(Tile.Honor.South)),
-            playerRuleState = RiichiPlayerState(),
+            components = riichiDeclarationComponents(),
         )
         // players 順序：discarder → dealerWinner → nonDealerWinner，故 dealerWinner 是離放銃者
         // 最近的下家（頭跳順位最前）
@@ -1361,7 +1412,7 @@ class RespondToDiscardUseCaseTest {
             players = listOf(discarder, dealerWinner, nonDealerWinner),
             dealerPlayerId = dealerWinnerId,
             config = RiichiRuleConfig(),
-            dynamicRuleState = RiichiDynamicState(riichiStickCount = 2),
+            components = riichiTableComponents(potPoints = 2000),
             currentPlayerIndex = 0,
             pendingReaction = PendingReaction(discarderId, discardedTile.id, setOf(dealerWinnerId, responderId), ronPlayerIds = setOf(dealerWinnerId, responderId), id = Uuid.random()),
         )
@@ -1382,7 +1433,7 @@ class RespondToDiscardUseCaseTest {
             finalState.players.first { it.id == responderId }.score,
             "The farther winner should not receive any of the stick pot.",
         )
-        assertEquals(0, (finalState.dynamicRuleState as RiichiDynamicState).riichiStickCount)
+        assertEquals(0, (finalState.riichiPotPoints() / RIICHI_STICK_POINTS))
     }
 
     /**
@@ -1402,7 +1453,7 @@ class RespondToDiscardUseCaseTest {
             initialSeat = Wind.SOUTH,
             hand = Hand(tiles = daisangenTiles().map { FakeIdentifiedTileFactory.create(it) }),
             discardPile = RiichiDiscardPile().discardTile(FakeIdentifiedTileFactory.create(Tile.Honor.South)),
-            playerRuleState = RiichiPlayerState(),
+            components = riichiDeclarationComponents(),
         ).copy(score = 25000)
         val others = listOf(Wind.WEST, Wind.NORTH).map { FakeMahjongPlayerFactory.create(initialSeat = it).copy(score = 25000) }
         val table = FakeTableStateFactory.create(
@@ -1410,7 +1461,7 @@ class RespondToDiscardUseCaseTest {
             players = listOf(discarder, winner) + others,
             config = RiichiRuleConfig(),
             comboCount = 2,
-            dynamicRuleState = RiichiDynamicState(),
+            components = riichiTableComponents(potPoints = 0),
             currentPlayerIndex = 0,
             pendingReaction = PendingReaction(discarderId, discardedTile.id, setOf(responderId), ronPlayerIds = setOf(responderId), id = Uuid.random()),
         )
@@ -1443,14 +1494,14 @@ class RespondToDiscardUseCaseTest {
             initialSeat = Wind.EAST,
             hand = Hand(tiles = daisangenTiles().map { FakeIdentifiedTileFactory.create(it) }),
             discardPile = RiichiDiscardPile().discardTile(FakeIdentifiedTileFactory.create(Tile.Honor.South)),
-            playerRuleState = RiichiPlayerState(),
+            components = riichiDeclarationComponents(),
         ).copy(score = 25000)
         val nonDealerWinner = FakeMahjongPlayerFactory.create(
             id = responderId,
             initialSeat = Wind.SOUTH,
             hand = Hand(tiles = daisangenTiles().map { FakeIdentifiedTileFactory.create(it) }),
             discardPile = RiichiDiscardPile().discardTile(FakeIdentifiedTileFactory.create(Tile.Honor.South)),
-            playerRuleState = RiichiPlayerState(),
+            components = riichiDeclarationComponents(),
         ).copy(score = 25000)
         // players 順序：discarder → dealerWinner → nonDealerWinner，故 dealerWinner 是離放銃者
         // 最近的下家（頭跳順位最前）
@@ -1460,7 +1511,7 @@ class RespondToDiscardUseCaseTest {
             dealerPlayerId = dealerWinnerId,
             config = RiichiRuleConfig(),
             comboCount = 2,
-            dynamicRuleState = RiichiDynamicState(),
+            components = riichiTableComponents(potPoints = 0),
             currentPlayerIndex = 0,
             pendingReaction = PendingReaction(discarderId, discardedTile.id, setOf(dealerWinnerId, responderId), ronPlayerIds = setOf(dealerWinnerId, responderId), id = Uuid.random()),
         )
@@ -1501,7 +1552,7 @@ class RespondToDiscardUseCaseTest {
                     Tile.Honor.Red,
                 ).map { FakeIdentifiedTileFactory.create(it) },
             ),
-            playerRuleState = RiichiPlayerState(),
+            components = riichiDeclarationComponents(),
         )
         val table = FakeTableStateFactory.create(
             id = gameId,
@@ -1528,7 +1579,7 @@ class RespondToDiscardUseCaseTest {
      * 驗證立直中的玩家放過原本可以榮和的牌時，額外標記永久振聽（見
      * [MahjongRuleModule.onPlayerDeclinedWin] KDoc）——手牌結構跟
      * `test pass on lone ron-eligible player records passed tile for furiten` 相同，只是
-     * `playerRuleState` 改成已立直。
+     * 玩家宣告組件改成已立直。
      */
     @Test
     fun `test pass on lone ron-eligible riichi player marks permanent furiten`() = runTest {
@@ -1551,7 +1602,7 @@ class RespondToDiscardUseCaseTest {
                     Tile.Honor.Red,
                 ).map { FakeIdentifiedTileFactory.create(it) },
             ),
-            playerRuleState = RiichiPlayerState(riichiTile = FakeIdentifiedTileFactory.create(Tile.Honor.East)),
+            components = riichiDeclarationComponents(declarationTile = FakeIdentifiedTileFactory.create(Tile.Honor.East)),
         )
         val table = FakeTableStateFactory.create(
             id = gameId,
@@ -1566,9 +1617,8 @@ class RespondToDiscardUseCaseTest {
 
         assertTrue(result is Outcome.Success, "Expected Success but got $result")
         val updatedResponder = fixtures.gameRepo.getTableState(gameId)!!.players.first { it.id == responderId }
-        val riichiState = updatedResponder.playerRuleState as RiichiPlayerState
         assertTrue(
-            riichiState.isPermanentlyFuriten,
+            updatedResponder.components[RiichiPlayerComponents.PERMANENT_FURITEN] != null,
             "Passing on an available Ron while riichi-locked should mark permanent furiten.",
         )
     }
@@ -1599,7 +1649,7 @@ class RespondToDiscardUseCaseTest {
                     Tile.Honor.Red,
                 ).map { FakeIdentifiedTileFactory.create(it) },
             ),
-            playerRuleState = RiichiPlayerState(riichiTile = FakeIdentifiedTileFactory.create(Tile.Honor.East)),
+            components = riichiDeclarationComponents(declarationTile = FakeIdentifiedTileFactory.create(Tile.Honor.East)),
         )
         val ponTile1 = FakeIdentifiedTileFactory.create(Tile.Honor.Red)
         val ponTile2 = FakeIdentifiedTileFactory.create(Tile.Honor.Red)
@@ -1625,8 +1675,7 @@ class RespondToDiscardUseCaseTest {
         val newState = fixtures.gameRepo.getTableState(gameId)!!
         assertNull(newState.pendingReaction)
         assertEquals(MeldType.PON, newState.players.first { it.id == ponPlayerId }.hand.melds.single().type)
-        val riichiState = newState.players.first { it.id == responderId }.playerRuleState as RiichiPlayerState
-        assertTrue(riichiState.isPermanentlyFuriten, "The riichi player who passed on Ron stays permanently furiten.")
+        assertTrue(newState.players.first { it.id == responderId }.components[RiichiPlayerComponents.PERMANENT_FURITEN] != null, "The riichi player who passed on Ron stays permanently furiten.")
     }
 
     /**
@@ -1655,7 +1704,7 @@ class RespondToDiscardUseCaseTest {
                 ).map { FakeIdentifiedTileFactory.create(it) },
             ),
             discardPile = RiichiDiscardPile().discardTile(FakeIdentifiedTileFactory.create(Tile.Honor.Red)),
-            playerRuleState = RiichiPlayerState(),
+            components = riichiDeclarationComponents(),
         )
         val table = FakeTableStateFactory.create(
             id = gameId,
@@ -1990,7 +2039,7 @@ class RespondToDiscardUseCaseTest {
                     id = responderId,
                     initialSeat = Wind.SOUTH,
                     hand = Hand(tiles = ponTiles + remainingTiles + nineCharacter),
-                    playerRuleState = RiichiPlayerState(),
+                    components = riichiDeclarationComponents(),
                 ).addPassedTile(Tile.Honor.North),
             ),
             config = RiichiRuleConfig(),
@@ -2005,7 +2054,7 @@ class RespondToDiscardUseCaseTest {
         val newState = fixtures.gameRepo.getTableState(gameId)!!
         val claimer = newState.players.first { it.id == responderId }
         val analyzer = assertNotNull(fixtures.moduleRegistry.getModule(newState.config).createDiscardReadinessAnalyzer())
-        val visibleTiles = newState.toSnapshot(setOf(claimer.id)) { emptyList() }.visibleTiles()
+        val visibleTiles = newState.toSnapshot(setOf(claimer.id)).visibleTiles(RiichiTileInterpretationPolicy)
         val analysis = analyzer.analyze(tableState = newState, player = claimer, visibleTiles = visibleTiles).single { it.discardTileId == nineCharacter.id }
         assertEquals(listOf(Tile.Honor.North), analysis.waitingTiles.map { it.tile })
         assertNull(analysis.statusIndicatorId, "Passes before the claim should not show as temporary furiten after it.")

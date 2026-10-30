@@ -1,20 +1,23 @@
 package com.doublemoon1119.mahjongcraft.logic.module
 
-import com.doublemoon1119.mahjongcraft.logic.config.DynamicRuleState
-import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayer
+import com.doublemoon1119.mahjongcraft.logic.component.ComponentPatch
+import com.doublemoon1119.mahjongcraft.logic.component.ComponentSet
 
 /**
- * 一次宣告及捨牌允許改動的規則資料。
+ * 一次宣告及捨牌的規則效果。
  *
- * Flow 仍會檢查結果只改動本次宣告授權的欄位，以及牌張和分數沒有違反規則；回傳物件不代表已經寫入。
+ * Flow 自行打出捨牌、扣除點數並記錄動作；規則只描述資料變更，碰不到手牌、牌河或分數。
+ * 回傳物件不代表已經寫入，Flow 會檢查舊值、對象與適用規則。
  *
- * @property player 宣告及捨牌後的玩家狀態。
- * @property dynamicRuleState 宣告後完整的規則動態狀態；維持原狀時傳入原值，null 明確表示清除，不代表省略更新。
+ * @property playerComponents 宣告玩家組件的變更。
+ * @property discardComponents 新捨牌紀錄寫入的組件，例如日麻的立直宣告標記。
+ * @property tableComponents 對局組件的變更；未指定的組件保持原值。
  * @property cost 本次宣告應支付的點數，必須為非負值。
  */
 data class DeclarationDiscardEffect(
-    val player: MahjongPlayer,
-    val dynamicRuleState: DynamicRuleState?,
+    val playerComponents: ComponentPatch,
+    val discardComponents: ComponentSet,
+    val tableComponents: ComponentPatch,
     val cost: Int = 0,
 ) {
     init {

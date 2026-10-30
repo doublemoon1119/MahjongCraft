@@ -15,6 +15,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementDetai
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementDetailField
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementDetailValue
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementQuantity
+import com.doublemoon1119.mahjongcraft.flow.persistence.format.component.ComponentViewPersistenceRegistry
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.config.toDomain
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.config.toPersistenceDto
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.game.TableStatePersistenceDto
@@ -199,7 +200,7 @@ class HistoryRecordingPersistenceMapper(
         )
         is HistoryFact.WinSettled -> HistoryFactPersistenceDto.WinSettled(
             fact.outcomeId,
-            fact.winDetails.map(HistoryWinDetails::toPersistenceDto),
+            fact.winDetails.map { it.toPersistenceDto(registries.componentViews) },
             fact.responsiblePlayerIds.map(Uuid::toString),
         )
         is HistoryFact.MatchCompleted -> HistoryFactPersistenceDto.MatchCompleted(
@@ -213,11 +214,16 @@ class HistoryRecordingPersistenceMapper(
         is HistoryFact.RuleEffectResolved -> HistoryFactPersistenceDto.RuleEffectResolved(
             fact.reasonId,
             fact.roundCompletion?.toPersistenceDto(),
-            fact.winDetails.map(HistoryWinDetails::toPersistenceDto),
+            fact.winDetails.map { it.toPersistenceDto(registries.componentViews) },
         )
         HistoryFact.ReturnedToRoom -> HistoryFactPersistenceDto.ReturnedToRoom
         is HistoryFact.TableChanged -> HistoryFactPersistenceDto.TableChanged(
             HistoryTableChangeMapper(registries).encode(fact.result),
+        )
+        is HistoryFact.TilePresentationChanged -> HistoryFactPersistenceDto.TilePresentationChanged(
+            fact.presentations.entries.sortedBy { it.key.toString() }.associate { (tileId, presentation) ->
+                tileId.toString() to presentation.toPersistenceDto(registries.componentViews)
+            },
         )
     }
 
@@ -267,7 +273,7 @@ class HistoryRecordingPersistenceMapper(
         )
         is HistoryFactPersistenceDto.WinSettled -> HistoryFact.WinSettled(
             dto.outcomeId,
-            dto.winDetails.map(HistoryWinDetailsPersistenceDto::toDomain),
+            dto.winDetails.map { it.toDomain(registries.componentViews) },
             dto.responsiblePlayerIds.map(Uuid::parse),
         )
         is HistoryFactPersistenceDto.MatchCompleted -> HistoryFact.MatchCompleted(
@@ -281,11 +287,14 @@ class HistoryRecordingPersistenceMapper(
         is HistoryFactPersistenceDto.RuleEffectResolved -> HistoryFact.RuleEffectResolved(
             dto.reasonId,
             dto.roundCompletion?.toDomain(),
-            dto.winDetails.map(HistoryWinDetailsPersistenceDto::toDomain),
+            dto.winDetails.map { it.toDomain(registries.componentViews) },
         )
         HistoryFactPersistenceDto.ReturnedToRoom -> HistoryFact.ReturnedToRoom
         is HistoryFactPersistenceDto.TableChanged -> HistoryFact.TableChanged(
             HistoryTableChangeMapper(registries).decode(dto.result),
+        )
+        is HistoryFactPersistenceDto.TilePresentationChanged -> HistoryFact.TilePresentationChanged(
+            dto.presentations.entries.associate { (tileId, presentation) -> Uuid.parse(tileId) to presentation.toDomain(registries.componentViews) },
         )
     }
 
@@ -298,10 +307,9 @@ class HistoryRecordingPersistenceMapper(
     private fun encodeTable(state: TableState) = state.toPersistenceDto(
         registries.ruleConfigs,
         registries.discardPiles,
-        registries.playerRuleStates,
-        registries.dynamicRuleStates,
         registries.exhaustiveDrawReasons,
         registries.extensionGameActions,
+        registries.components,
     )
 
     /**
@@ -313,22 +321,22 @@ class HistoryRecordingPersistenceMapper(
     private fun decodeTable(dto: TableStatePersistenceDto) = dto.toDomain(
         registries.ruleConfigs,
         registries.discardPiles,
-        registries.playerRuleStates,
-        registries.dynamicRuleStates,
         registries.exhaustiveDrawReasons,
         registries.extensionGameActions,
+        registries.components,
     )
 }
 
 /**
  * 將已確定的和牌明細映射為保存格式。
  *
+ * @param componentViews 牌面特徵的保存轉換。
  * @return 不含任意規則領域物件的明確 DTO。
  */
-private fun HistoryWinDetails.toPersistenceDto() = HistoryWinDetailsPersistenceDto(
+private fun HistoryWinDetails.toPersistenceDto(componentViews: ComponentViewPersistenceRegistry) = HistoryWinDetailsPersistenceDto(
     playerId = playerId.toString(),
     detailFields = detailFields.map { field ->
-        HistoryWinDetailFieldPersistenceDto(field.id, field.value.toPersistenceDto())
+        HistoryWinDetailFieldPersistenceDto(field.id, field.value.toPersistenceDto(componentViews))
     },
     hand = hand?.let { HistoryWinningHandPersistenceDto(it.standingTileIds.map(Uuid::toString), it.winningTileId?.toString()) },
 )
@@ -336,12 +344,13 @@ private fun HistoryWinDetails.toPersistenceDto() = HistoryWinDetailsPersistenceD
 /**
  * 將保存的和牌明細還原為記錄契約。
  *
+ * @param componentViews 牌面特徵的保存轉換。
  * @return 已解析玩家 UUID 與明細值的記錄。
  */
-private fun HistoryWinDetailsPersistenceDto.toDomain() = HistoryWinDetails(
+private fun HistoryWinDetailsPersistenceDto.toDomain(componentViews: ComponentViewPersistenceRegistry) = HistoryWinDetails(
     playerId = Uuid.parse(playerId),
     detailFields = detailFields.map { field ->
-        WinSettlementDetailField(field.id, field.value.toDomain())
+        WinSettlementDetailField(field.id, field.value.toDomain(componentViews))
     },
     hand = hand?.let { HistoryWinningHand(it.standingTileIds.map(Uuid::parse), it.winningTileId?.let(Uuid::parse)) },
 )
@@ -349,11 +358,12 @@ private fun HistoryWinDetailsPersistenceDto.toDomain() = HistoryWinDetails(
 /**
  * 將規則中立明細值映射為明確保存種類。
  *
- * @return 數值、牌 UUID 或條目 DTO。
+ * @param componentViews 牌面特徵的保存轉換。
+ * @return 數值、已裁切牌面或條目 DTO。
  */
-private fun WinSettlementDetailValue.toPersistenceDto(): HistoryWinDetailValuePersistenceDto = when (this) {
+private fun WinSettlementDetailValue.toPersistenceDto(componentViews: ComponentViewPersistenceRegistry): HistoryWinDetailValuePersistenceDto = when (this) {
     is WinSettlementDetailValue.Quantities -> HistoryWinDetailValuePersistenceDto.Quantities(quantities.map { it.toPersistenceDto() })
-    is WinSettlementDetailValue.TileFaces -> HistoryWinDetailValuePersistenceDto.TileFaces(faces.map { it.toPersistenceDto() })
+    is WinSettlementDetailValue.TileFaces -> HistoryWinDetailValuePersistenceDto.TileFaces(faces.map { it.toPersistenceDto(componentViews) })
     is WinSettlementDetailValue.Entries -> HistoryWinDetailValuePersistenceDto.Entries(
         entries.map { entry -> HistoryWinDetailValuePersistenceDto.Entries.Entry(entry.id, entry.quantity?.toPersistenceDto()) },
     )
@@ -362,11 +372,12 @@ private fun WinSettlementDetailValue.toPersistenceDto(): HistoryWinDetailValuePe
 /**
  * 將保存的明細值還原，不執行規則計算。
  *
+ * @param componentViews 牌面特徵的保存轉換。
  * @return 原有順序的明細值。
  */
-private fun HistoryWinDetailValuePersistenceDto.toDomain(): WinSettlementDetailValue = when (this) {
+private fun HistoryWinDetailValuePersistenceDto.toDomain(componentViews: ComponentViewPersistenceRegistry): WinSettlementDetailValue = when (this) {
     is HistoryWinDetailValuePersistenceDto.Quantities -> WinSettlementDetailValue.Quantities(quantities.map { it.toDomain() })
-    is HistoryWinDetailValuePersistenceDto.TileFaces -> WinSettlementDetailValue.TileFaces(faces.map { it.toDomain() })
+    is HistoryWinDetailValuePersistenceDto.TileFaces -> WinSettlementDetailValue.TileFaces(faces.map { it.toDomain(componentViews) })
     is HistoryWinDetailValuePersistenceDto.Entries -> WinSettlementDetailValue.Entries(
         entries.map { entry -> WinSettlementDetailEntry(entry.id, entry.quantity?.toDomain()) },
     )

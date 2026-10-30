@@ -2,7 +2,7 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.scenar
 
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionTiming
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPlayerState
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.riichiDeclaration
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.decision.DebugNotenDeclarationRuleDecisionResolver
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.rule.DebugNotenDeclarationRiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.rule.DebugNotenDeclarationRiichiRuleModule
@@ -10,7 +10,6 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
 import kotlin.test.assertNotNull
-import kotlin.test.assertTrue
 
 /** 驗證可宣告不聽情境的排列。 */
 class RiichiRuleDecisionDebugGameScenariosTest {
@@ -23,7 +22,7 @@ class RiichiRuleDecisionDebugGameScenariosTest {
 
         assertEquals(Tile.Honor.West, state.currentPlayer.hand.lastDrawn?.tile)
         assertEquals(listOf(Tile.Honor.East, Tile.Honor.East, Tile.Honor.East), state.liveWallFront(state.tileWall.remainingCount))
-        assertTrue((state.seat(2).playerRuleState as RiichiPlayerState).isRiichi)
+        assertNotNull(state.seat(2).riichiDeclaration)
 
         val afterDiscard = state.copy(
             players = state.players.map { player -> player.copy(hand = player.hand.copy(lastDrawn = null)) },

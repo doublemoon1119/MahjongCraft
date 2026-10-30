@@ -7,14 +7,19 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.ScoreRankingPlayer
 import com.doublemoon1119.mahjongcraft.logic.base.Hand
 import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
+import com.doublemoon1119.mahjongcraft.logic.base.TileFaceView
 import com.doublemoon1119.mahjongcraft.logic.base.TileTypeId
+import com.doublemoon1119.mahjongcraft.logic.table.PlayerTileAreas
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.logic.table.TileWall
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileTableLayout
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftRuleTileAppearanceDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileResources
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileSetAppearanceDefinition
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileStyleAssetDefinition
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeIdentifiedTileFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
@@ -59,27 +64,15 @@ class SettlementStageInputsTest {
         assertNull(stateWith().findTile(Uuid.random()))
     }
 
-    /** 牌張資產依 ID 對應，順序與重複都不影響結果。 */
+    /** 已裁切的牌面依 ID 轉成資產。 */
     @Test
-    fun `maps every requested tile to its asset`() {
+    fun `maps every face to its asset`() {
         val first = tileOf(Tile.Numeric(Tile.Suit.Character, 1))
         val second = tileOf(Tile.Honor.East)
-        val state = stateWith(handTiles = listOf(first, second))
 
-        val assets = state.tileAssetKeysById(listOf(second.id, first.id, first.id), FakeTileAssetRegistry)
+        val assets = tileAssetKeysById(mapOf(second.id to TileFaceView(second.tile), first.id to TileFaceView(first.tile)), FakeTileAssetRegistry)
 
         assertEquals(mapOf(first.id to "m1", second.id to "east"), assets)
-    }
-
-    /** 找不到的牌張直接略過，不佔一個沒有資產的項目。 */
-    @Test
-    fun `skips a tile that is no longer on the table`() {
-        val tile = tileOf(Tile.Numeric(Tile.Suit.Dot, 5))
-        val state = stateWith(handTiles = listOf(tile))
-
-        val assets = state.tileAssetKeysById(listOf(tile.id, Uuid.random()), FakeTileAssetRegistry)
-
-        assertEquals(setOf(tile.id), assets.keys)
     }
 
     /** 聽牌資產依座位對應，並保留請求中的等待牌順序。 */
@@ -90,7 +83,7 @@ class SettlementStageInputsTest {
             playerPresentation(seatIndex = 1, waitingTiles = listOf(Tile.Numeric(Tile.Suit.Bamboo, 2))),
         )
 
-        val inputs = exhaustiveDrawSettlementStageInputs(request, stateWith(), emptyMap(), { emptyList() }, FakeTileAssetRegistry)
+        val inputs = exhaustiveDrawSettlementStageInputs(request, stateWith(), emptyMap(), emptyMap(), FakeTileAssetRegistry)
 
         assertEquals(
             mapOf(0 to listOf("east", "p9"), 1 to listOf("s2")),
@@ -98,19 +91,19 @@ class SettlementStageInputsTest {
         )
     }
 
-    /** 公開手牌的資產由權威桌況查出。 */
+    /** 公開手牌的資產由已裁切的牌面取得。 */
     @Test
     fun `resolves the revealed hand assets from the table`() {
         val revealed = tileOf(Tile.Numeric(Tile.Suit.Character, 5))
         val state = stateWith(handTiles = listOf(revealed))
         val request = requestOf(playerPresentation(seatIndex = 0, revealedHandTileIds = listOf(revealed.id)))
 
-        val inputs = exhaustiveDrawSettlementStageInputs(request, state, emptyMap(), { emptyList() }, FakeTileAssetRegistry)
+        val inputs = exhaustiveDrawSettlementStageInputs(request, state, emptyMap(), mapOf(revealed.id to TileFaceView(revealed.tile)), FakeTileAssetRegistry)
 
         assertEquals(mapOf(revealed.id to "m5"), inputs.revealedTileAssetsById)
     }
 
-    /** 桌況已不存在時仍算得出聽牌資產，另外兩份為空。 */
+    /** 桌況已不存在時仍算得出聽牌資產，沒有公開牌面與角落寬度。 */
     @Test
     fun `still resolves the waiting assets without a table state`() {
         val request = requestOf(
@@ -121,7 +114,7 @@ class SettlementStageInputsTest {
             request = request,
             tableState = null,
             cornerWidthsBySeat = emptyMap(),
-            setAsideTiles = { emptyList() },
+            revealedTileFaces = emptyMap(),
             tileAssetRegistry = FakeTileAssetRegistry,
         )
 
@@ -134,14 +127,18 @@ class SettlementStageInputsTest {
     @Test
     fun `reserves corner width for set aside tiles`() {
         val north = tileOf(Tile.Honor.North)
-        val state = stateWith()
-        val dealerId = state.players.first().id
+        val initial = stateWith()
+        val state = initial.copy(
+            players = initial.players.mapIndexed { index, player ->
+                if (index == 0) player.copy(tileAreas = PlayerTileAreas.EMPTY.withArea("test:aside", listOf(north))) else player
+            },
+        )
 
         val inputs = exhaustiveDrawSettlementStageInputs(
             request = requestOf(playerPresentation(seatIndex = 0)),
             tableState = state,
             cornerWidthsBySeat = emptyMap(),
-            setAsideTiles = { player -> if (player.id == dealerId) listOf(north) else emptyList() },
+            revealedTileFaces = emptyMap(),
             tileAssetRegistry = FakeTileAssetRegistry,
         )
 
@@ -159,7 +156,7 @@ class SettlementStageInputsTest {
             request = requestOf(playerPresentation(seatIndex = 0)),
             tableState = stateWith(),
             cornerWidthsBySeat = emptyMap(),
-            setAsideTiles = { emptyList() },
+            revealedTileFaces = emptyMap(),
             tileAssetRegistry = FakeTileAssetRegistry,
         )
 
@@ -187,7 +184,7 @@ class SettlementStageInputsTest {
         request = requestOf(playerPresentation(seatIndex = 0)),
         tableState = stateWith(),
         cornerWidthsBySeat = cornerWidthsBySeat,
-        setAsideTiles = { emptyList() },
+        revealedTileFaces = emptyMap(),
         tileAssetRegistry = FakeTileAssetRegistry,
     ).reservedCornerWidthsBySeat
 
@@ -277,7 +274,25 @@ class SettlementStageInputsTest {
 
         override fun register(definition: MinecraftTileAssetDefinition) = error("Unexpected registration")
 
+        override fun register(definition: MinecraftTileStyleAssetDefinition) = error("Unexpected registration")
+
+        override fun register(definition: MinecraftTileSetAppearanceDefinition) = error("Unexpected registration")
+
+        override fun register(definition: MinecraftRuleTileAppearanceDefinition) = error("Unexpected registration")
+
         override fun find(typeId: TileTypeId): String? = null
+
+        override fun findStyle(styleId: String, tile: Tile): String? = null
+
+        override fun findResources(assetKey: String): MinecraftTileResources? = null
+
+        override fun baseAssetKey(assetKey: String): String = assetKey
+
+        override fun findBodyAppearance(assetKey: String): MinecraftTileSetAppearanceDefinition? = null
+
+        override fun findAppearance(appearanceId: String): MinecraftTileSetAppearanceDefinition? = null
+
+        override fun findAppearanceForRule(ruleModuleId: String): MinecraftTileSetAppearanceDefinition? = null
 
         override fun isRegisteredAssetKey(assetKey: String): Boolean = false
 

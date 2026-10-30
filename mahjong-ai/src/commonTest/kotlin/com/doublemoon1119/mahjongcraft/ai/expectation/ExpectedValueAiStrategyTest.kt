@@ -15,17 +15,21 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameCommand
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.riichi.RiichiGameCommand
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
+import com.doublemoon1119.mahjongcraft.logic.base.TileValue
 import com.doublemoon1119.mahjongcraft.logic.module.BuiltInRuleModuleIds
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RIICHI_GAME_ACTION
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDynamicState
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDiscardPile
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiExhaustiveDrawReason
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.threeplayer.ThreePlayerRiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.threeplayer.ThreePlayerRiichiRuleModule
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.RiichiTileTypes
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.RiichiTileComponents
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.RiichiTileValues
 import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayer
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
-import com.doublemoon1119.mahjongcraft.logic.table.toSnapshot
+import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeIdentifiedTileFactory
+import com.doublemoon1119.mahjongcraft.testing.logic.rules.riichi.riichiTableComponents
+import com.doublemoon1119.mahjongcraft.testing.logic.rules.riichi.toRiichiSnapshotForTests
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
@@ -234,10 +238,10 @@ class ExpectedValueAiStrategyTest {
         val table = FakeTableStateFactory.create(
             players = listOf(player(Wind.EAST), self, player(Wind.WEST)),
             config = ThreePlayerRiichiRuleConfig(),
-            dynamicRuleState = RiichiDynamicState(),
+            components = riichiTableComponents(potPoints = 0),
         )
         val context = AiDecisionContext(
-            snapshot = table.toSnapshot(visibleHandPlayerIds = setOf(self.id), setAsideTiles = module::setAsideTiles),
+            snapshot = table.toRiichiSnapshotForTests(self.id),
             selfId = self.id,
             phase = AiDecisionPhase.OwnTurn,
             legalActions = emptyList(),
@@ -305,7 +309,7 @@ class ExpectedValueAiStrategyTest {
          * @param visibleFive 桌上可見的普通五筒或赤五筒。
          * @return 單一捨牌候選的期望值。
          */
-        fun expectedValue(visibleFive: Tile): Double {
+        fun expectedValue(visibleFive: TileValue): Double {
             val self = player(
                 Wind.SOUTH,
                 hand = hand(
@@ -313,7 +317,8 @@ class ExpectedValueAiStrategyTest {
                     drawn = Tile.Honor.North,
                 ),
             )
-            val table = table(listOf(player(Wind.EAST, discards = listOf(visibleFive)), self, player(Wind.WEST), player(Wind.NORTH)))
+            val discarder = player(Wind.EAST).copy(discardPile = RiichiDiscardPile().discardTile(FakeIdentifiedTileFactory.create(visibleFive)))
+            val table = table(listOf(discarder, self, player(Wind.WEST), player(Wind.NORTH)))
             val context = context(table, self)
             val north = checkNotNull(self.hand.lastDrawn)
             val discard = DecisionCandidate.Discard(tile = north, declaration = null, command = GameCommand.Discard(north.id))
@@ -324,10 +329,45 @@ class ExpectedValueAiStrategyTest {
                 .expectedValue
         }
 
-        val redStillUnseen = expectedValue(visibleFive = p(5))
-        val redAlreadyDiscarded = expectedValue(visibleFive = RiichiTileTypes.redFive(Tile.Suit.Dot))
+        val redStillUnseen = expectedValue(visibleFive = TileValue(p(5)))
+        val redAlreadyDiscarded = expectedValue(visibleFive = RiichiTileValues.redFive(Tile.Suit.Dot))
 
         assertTrue(redStillUnseen > redAlreadyDiscarded, "red unseen $redStillUnseen, red discarded $redAlreadyDiscarded")
+    }
+
+    /** 鳴取他家打出的赤五時保留赤寶牌特徵，碰赤五的期望值高於碰普通五。 */
+    @Test
+    fun `a pon of a red five keeps its red dora value`() {
+        /**
+         * 計算碰下指定五筒的候選與期望值。
+         *
+         * @param discardedFive 西家打出的五筒。
+         * @return 碰牌候選與其期望值。
+         */
+        fun pon(discardedFive: TileValue): Pair<DecisionCandidate.Claim, Double> {
+            val self = player(Wind.SOUTH, hand = hand(listOf(m(2), m(3), m(4), p(2), p(3), p(4), s(2), s(3), s(4), s(6), s(7), p(5), p(5))))
+            val west = player(Wind.WEST).copy(discardPile = RiichiDiscardPile().discardTile(FakeIdentifiedTileFactory.create(discardedFive)))
+            val table = table(listOf(player(Wind.EAST), self, west, player(Wind.NORTH)))
+            val seatedSelf = table.players.first { it.id == self.id }
+            val claimed = table.players.first { it.id == west.id }.discardPile.entries.last().tile
+            val action = GameAction.Pon(tileId = claimed.id, withTiles = seatedSelf.hand.tiles.filter { it.tile == p(5) }.take(2).map { it.id })
+            val level = InformationLevel.ADVANCED
+            val evaluator = ExpectedValueEvaluator(
+                level,
+                ExpectationParameters.DEFAULT,
+                ExpectationFixtures.module,
+                ExpectationFixtures.opponentModel(level),
+                context(table, seatedSelf, phase = AiDecisionPhase.RespondingToDiscard, legalActions = listOf(action)),
+            )
+            val claim = assertIs<DecisionCandidate.Claim>(evaluator.claimCandidates().single())
+            return claim to evaluator.scoreAll(listOf(claim)).single().expectedValue
+        }
+
+        val (redClaim, redValue) = pon(RiichiTileValues.redFive(Tile.Suit.Dot))
+        val (_, plainValue) = pon(TileValue(p(5)))
+
+        assertEquals(Unit, redClaim.claimedTile.components[RiichiTileComponents.RED_DORA])
+        assertTrue(redValue > plainValue, "red $redValue, plain $plainValue")
     }
 
     /** 打點看得多仔細只能介於 0 到 1。 */

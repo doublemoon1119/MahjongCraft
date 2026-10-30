@@ -7,10 +7,14 @@ import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.logic.judgment.LegalActionContext
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.PULL_NORTH_GAME_ACTION
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPlayerState
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPlayerTileAreaIds
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.riichiDeclaration
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.threeplayer.ThreePlayerRiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
+import com.doublemoon1119.mahjongcraft.logic.tile.component.BuiltInTileComponents
+import com.doublemoon1119.mahjongcraft.logic.tile.component.TileFaceAccess
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.DebugPublicFaceTiles
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.rule.DebugAutoNorthRiichiRuleConfig
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -83,8 +87,7 @@ class ThreePlayerRiichiDebugGameScenariosTest {
         assertTrue(PULL_NORTH_GAME_ACTION in afterFirstPull.currentOwnTurnActions())
         val afterSecondPull = afterFirstPull.pullNorthThenDraw(state.reservedWallTiles[1])
 
-        val playerState = assertIs<RiichiPlayerState>(afterSecondPull.currentPlayer.playerRuleState)
-        assertEquals(2, playerState.nukiDoraTiles.size)
+        assertEquals(2, afterSecondPull.currentPlayer.tileAreas[RiichiPlayerTileAreaIds.NORTH]?.tiles?.size)
         assertTrue(GameAction.Tsumo in afterSecondPull.currentOwnTurnActions())
     }
 
@@ -94,7 +97,7 @@ class ThreePlayerRiichiDebugGameScenariosTest {
         val state = build("riichi_three_player_pull_north_in_riichi")
         val invoker = state.currentPlayer
 
-        assertNotNull(assertIs<RiichiPlayerState>(invoker.playerRuleState).riichiTile)
+        assertNotNull(invoker.riichiDeclaration)
         assertTrue(PULL_NORTH_GAME_ACTION in state.currentOwnTurnActions())
         assertEquals(invoker.hand.lastDrawn, state.module().tileSetAsideBy(invoker, PULL_NORTH_GAME_ACTION))
         assertEquals(FOUR_BAMBOO, state.reservedWallTiles[0].tile)
@@ -139,6 +142,29 @@ class ThreePlayerRiichiDebugGameScenariosTest {
         assertEquals(1, state.currentPlayer.hand.standingTiles.count { it.tile == NINE_BAMBOO })
     }
 
+    /** 公開牌面情境中，排定牌種的每一張都公開並使用 debug 樣式，且分布在副露、牌河、王牌與手牌；其他牌不受影響。 */
+    @Test
+    fun `public faces scenario marks the chosen tiles in every region`() {
+        val state = build("riichi_three_player_public_faces")
+        val publicFaces = setOf(ONE_DOT, Tile.Honor.White, Tile.Honor.North, Tile.Honor.South, NINE_BAMBOO)
+        val allTiles = state.tileWall.getAllTiles() + state.reservedWallTiles + state.players.flatMap { player ->
+            player.hand.allTiles + player.hand.melds.flatMap { it.tiles } + player.discardPile.entries.map { it.tile }
+        }
+
+        allTiles.forEach { tile ->
+            val marked = tile.components[BuiltInTileComponents.APPEARANCE] == DebugPublicFaceTiles.APPEARANCE_ID
+            assertEquals(tile.tile in publicFaces, marked, tile.toString())
+            assertEquals(tile.tile in publicFaces, tile.components[BuiltInTileComponents.FACE_ACCESS] == TileFaceAccess.Public, tile.toString())
+        }
+        val invoker = state.currentPlayer
+        assertEquals(Tile.Honor.White, invoker.hand.melds.single().tiles.first().tile)
+        assertEquals(Tile.Honor.South, invoker.discardPile.entries.first().tile.tile)
+        assertEquals(listOf(NINE_BAMBOO, NINE_BAMBOO), state.reservedWallTiles.take(2).map { it.tile })
+        val actions = state.currentOwnTurnActions()
+        assertTrue(PULL_NORTH_GAME_ACTION in actions)
+        assertTrue(actions.filterIsInstance<GameAction.Kan>().isNotEmpty())
+    }
+
     /**
      * 白從上家、發從下家碰出；連拔三次北依序補到七筒、八筒、四筒，第三次補牌可以自摸。活牌只剩排定的四張，
      * 其餘的牌依序分進三家牌河。
@@ -170,7 +196,7 @@ class ThreePlayerRiichiDebugGameScenariosTest {
         assertTrue(PULL_NORTH_GAME_ACTION in afterSecondPull.currentOwnTurnActions())
         val afterThirdPull = afterSecondPull.pullNorthThenDraw(four)
 
-        assertEquals(3, assertIs<RiichiPlayerState>(afterThirdPull.currentPlayer.playerRuleState).nukiDoraTiles.size)
+        assertEquals(3, afterThirdPull.currentPlayer.tileAreas[RiichiPlayerTileAreaIds.NORTH]?.tiles?.size)
         assertTrue(GameAction.Tsumo in afterThirdPull.currentOwnTurnActions())
     }
 

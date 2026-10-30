@@ -11,6 +11,7 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryRoundOutc
 import com.doublemoon1119.mahjongcraft.flow.network.dto.model.RuleDecisionTimingDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.model.SuitDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.model.TileDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.model.TileFaceViewDto
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiExhaustiveDrawReason
 import com.doublemoon1119.mahjongcraft.logic.table.BuiltInMatchEndReasonIds
 import com.doublemoon1119.mahjongcraft.logic.table.RoundCompletionClassification
@@ -73,7 +74,7 @@ class HistoryRoundEventPresentationTest {
     @Test
     fun `known actions resolve wording and preserve tile references`() {
         val presenter = presenter()
-        val tile = TileDto.Numeric(SuitDto.CHARACTER, 5)
+        val tile = TileFaceViewDto(TileDto.Numeric(SuitDto.CHARACTER, 5), emptyList(), null)
         val events = events(
             HistoryReplayFactDto.KnownAction(
                 typeKey = HistoryFactTypeKeys.ACTION_ACCEPTED,
@@ -83,7 +84,7 @@ class HistoryRoundEventPresentationTest {
                 revealedTiles = listOf(1),
                 extensionTypeId = null,
             ),
-            tileCatalog = listOf(tile, TileDto.Honor.Red),
+            tileCatalog = listOf(tile, TileFaceViewDto(TileDto.Honor.Red, emptyList(), null)),
         )
 
         val fact = presenter.present(events, "example:rule").transactions.single().facts.single()
@@ -91,7 +92,7 @@ class HistoryRoundEventPresentationTest {
         assertEquals("test.discard", fact.text.string)
         assertEquals(2, fact.actorSeat)
         assertEquals(listOf(tile, tile), fact.directTiles)
-        assertEquals(listOf(TileDto.Honor.Red), fact.revealedTiles)
+        assertEquals(listOf(TileFaceViewDto(TileDto.Honor.Red, emptyList(), null)), fact.revealedTiles)
     }
 
     /** 未知動作使用通用文字，但識別碼保留供 tooltip 查閱。 */
@@ -458,7 +459,7 @@ class HistoryRoundEventPresentationTest {
     private fun events(
         fact: HistoryReplayFactDto? = null,
         facts: List<HistoryReplayFactDto> = listOfNotNull(fact),
-        tileCatalog: List<TileDto> = emptyList(),
+        tileCatalog: List<TileFaceViewDto> = emptyList(),
     ): HistoryRoundEventsDto = HistoryRoundEventsDto(
         identity = HistoryReplayIdentityDto(
             matchId = "match",

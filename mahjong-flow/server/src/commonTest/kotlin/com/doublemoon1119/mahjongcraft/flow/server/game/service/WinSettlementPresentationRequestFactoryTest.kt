@@ -13,6 +13,8 @@ import com.doublemoon1119.mahjongcraft.logic.base.Meld
 import com.doublemoon1119.mahjongcraft.logic.base.MeldType
 import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
+import com.doublemoon1119.mahjongcraft.logic.base.TileFaceView
+import com.doublemoon1119.mahjongcraft.logic.base.TileValue
 import com.doublemoon1119.mahjongcraft.logic.base.closedKanFaceDownTileIds
 import com.doublemoon1119.mahjongcraft.logic.base.closedKanPubliclyRevealedTileIds
 import com.doublemoon1119.mahjongcraft.logic.judgment.HandValueResult
@@ -24,6 +26,7 @@ import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.table.RoundTransitionDirective
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
+import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledCoreExtensionRegistries
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeIdentifiedTileFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
@@ -41,7 +44,7 @@ class WinSettlementPresentationRequestFactoryTest {
     private val module = RiichiRuleModule("mahjongcraft:riichi", config)
 
     /** 未額外註冊規則明細的解析器集合。 */
-    private val detailResolverRegistry = WinSettlementDetailResolverRegistry()
+    private val detailResolverRegistry = WinSettlementDetailResolverRegistry(bundledCoreExtensionRegistries().componentRegistry)
 
     /**
      * 驗證副露牌只出現在 [WinSettlementWinnerPresentation.melds]，
@@ -97,16 +100,21 @@ class WinSettlementPresentationRequestFactoryTest {
             transitionDirective = RoundTransitionDirective.PassToNextSeat,
             presentationClassification = RoundOutcomePresentationClassification.WIN_EQUIVALENT,
         )
-        val registry = WinSettlementDetailResolverRegistry().apply {
+        val registry = WinSettlementDetailResolverRegistry(bundledCoreExtensionRegistries().componentRegistry).apply {
             register(
                 WinSettlementDetailResolverDefinition(
                     ruleModuleId = module.id,
                     resolver = object : WinSettlementDetailResolver {
-                        override fun resolve(state: TableState, handValue: HandValueResult): List<WinSettlementDetailField> = emptyList()
+                        override fun resolve(
+                            state: TableState,
+                            handValue: HandValueResult,
+                            publicFace: (TileValue) -> TileFaceView,
+                        ): List<WinSettlementDetailField> = emptyList()
 
                         override fun resolveSpecialOutcome(
                             state: TableState,
                             outcome: ResolvedRoundOutcome,
+                            publicFace: (TileValue) -> TileFaceView,
                         ): List<WinSettlementDetailField>? = null
                     },
                 ),
@@ -238,7 +246,7 @@ class WinSettlementPresentationRequestFactoryTest {
     /** 驗證流局滿貫透過 [WinSettlementDetailResolverRegistry] 取得日麻規則 ID 與役種欄位。 */
     @Test
     fun `dispatches nagashi mangan special outcome through the registry`() {
-        val registry = WinSettlementDetailResolverRegistry().apply { BundledRiichiExtension.registerWinSettlementDetailResolvers(this) }
+        val registry = WinSettlementDetailResolverRegistry(bundledCoreExtensionRegistries().componentRegistry).apply { BundledRiichiExtension.registerWinSettlementDetailResolvers(this) }
         val winner = FakeMahjongPlayerFactory.create()
         val state = FakeTableStateFactory.create(
             players = listOf(winner) + List(3) { FakeMahjongPlayerFactory.create() },

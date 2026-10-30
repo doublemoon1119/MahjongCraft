@@ -1,9 +1,10 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.rule.riichi
 
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RIICHI_STICK_POINTS
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDiscardReadinessAnalyzer
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDynamicState
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiExhaustiveDrawReason
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiGameAction
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.riichiPotPoints
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionVocabulary
 import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionVocabularyDefinition
@@ -35,7 +36,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAsse
  * 動作用語、決策狀態與桌面物件。
  *
  * 這裡只登記綁定到規則模組的項目；它們引用的共用內容，例如日麻結算模板、局況行文字與赤五貼圖，由
- * [BundledRiichiMinecraftExtension] 登記一次。規則模組的動態狀態必須是 [RiichiDynamicState]，局況資訊才會顯示供託。
+ * [BundledRiichiMinecraftExtension] 登記一次。供託由桌況的日麻供託組件提供。
  */
 object RiichiFamilyMinecraftPresentation {
     /**
@@ -173,7 +174,7 @@ object RiichiFamilyMinecraftPresentation {
 
 /** 依目前桌況建立日麻局況行；供託為零時省略供託行。 */
 private fun buildRiichiRoundInfoLines(tableState: TableState): List<RoundInfoLine> {
-    val stickPotCount = (tableState.dynamicRuleState as? RiichiDynamicState)?.riichiStickCount ?: 0
+    val stickPotCount = tableState.riichiPotPoints() / RIICHI_STICK_POINTS
     return listOfNotNull(
         RoundInfoLine(
             RIICHI_TITLE_KEY,

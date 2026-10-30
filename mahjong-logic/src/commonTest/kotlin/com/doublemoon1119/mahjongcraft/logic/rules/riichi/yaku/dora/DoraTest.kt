@@ -3,13 +3,14 @@ import com.doublemoon1119.mahjongcraft.logic.base.MeldType
 import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiHandValueCalculator
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.RiichiTileTypes
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.RiichiTileValues
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.RiichiHandValueCalculatorTestBase
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.YakuType
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeHandFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeIdentifiedTileFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeMeldFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.rules.riichi.FakeRiichiHandValueContextFactory
+import com.doublemoon1119.mahjongcraft.testing.logic.rules.riichi.withRedFives
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
@@ -26,7 +27,7 @@ class DoraTest : RiichiHandValueCalculatorTestBase() {
         Tile.Suit.entries.forEach { suit ->
             assertEquals(
                 Tile.Numeric(suit, 6),
-                getNextDora(RiichiTileTypes.redFive(suit)),
+                getNextDora(RiichiTileValues.redFive(suit).tile),
                 "Red five indicator should resolve to six of the same suit",
             )
         }
@@ -88,7 +89,7 @@ class DoraTest : RiichiHandValueCalculatorTestBase() {
             ),
         )
         val winningTile = Tile.Numeric(Tile.Suit.Bamboo, 6)
-        val doraIndicators = listOf(RiichiTileTypes.redFive(Tile.Suit.Bamboo))
+        val doraIndicators = listOf(RiichiTileValues.redFive(Tile.Suit.Bamboo).tile)
 
         val context =
             FakeRiichiHandValueContextFactory.create(hand, winningTile, isTsumo = true, doraIndicators = doraIndicators)
@@ -219,7 +220,7 @@ class DoraTest : RiichiHandValueCalculatorTestBase() {
                 Tile.Numeric(Tile.Suit.Character, 2),
                 Tile.Numeric(Tile.Suit.Character, 3),
                 Tile.Numeric(Tile.Suit.Character, 4),
-                RiichiTileTypes.redFive(Tile.Suit.Character),
+                Tile.Numeric(Tile.Suit.Character, 5),
                 Tile.Numeric(Tile.Suit.Character, 6),
                 Tile.Numeric(Tile.Suit.Character, 7),
                 Tile.Numeric(Tile.Suit.Character, 9),
@@ -229,7 +230,7 @@ class DoraTest : RiichiHandValueCalculatorTestBase() {
                 Tile.Numeric(Tile.Suit.Dot, 1),
                 Tile.Numeric(Tile.Suit.Dot, 1),
             ),
-        )
+        ).withRedFives(Tile.Suit.Character)
         val winningTile = Tile.Numeric(Tile.Suit.Character, 1)
 
         val context = FakeRiichiHandValueContextFactory.create(hand, winningTile, isTsumo = true)
@@ -263,9 +264,9 @@ class DoraTest : RiichiHandValueCalculatorTestBase() {
                 Tile.Numeric(Tile.Suit.Dot, 4),
             ),
         )
-        val winningTile = RiichiTileTypes.redFive(Tile.Suit.Dot)
+        val winningTile = RiichiTileValues.redFive(Tile.Suit.Dot)
 
-        val context = FakeRiichiHandValueContextFactory.create(hand, winningTile, isTsumo = true)
+        val context = FakeRiichiHandValueContextFactory.create(hand, winningTile.tile, winningTileValue = winningTile, isTsumo = true)
         val result = calculator.calculate(context)
 
         val akaDoraResult = result.yakuResults.find { it.yaku == YakuType.AkaDora }
@@ -378,9 +379,9 @@ class DoraTest : RiichiHandValueCalculatorTestBase() {
                 FakeMeldFactory.create(
                     type = MeldType.PON,
                     tiles = listOf(
-                        FakeIdentifiedTileFactory.create(RiichiTileTypes.redFive(Tile.Suit.Dot)),
-                        FakeIdentifiedTileFactory.create(RiichiTileTypes.redFive(Tile.Suit.Dot)),
-                        FakeIdentifiedTileFactory.create(RiichiTileTypes.redFive(Tile.Suit.Dot)),
+                        FakeIdentifiedTileFactory.create(RiichiTileValues.redFive(Tile.Suit.Dot)),
+                        FakeIdentifiedTileFactory.create(RiichiTileValues.redFive(Tile.Suit.Dot)),
+                        FakeIdentifiedTileFactory.create(RiichiTileValues.redFive(Tile.Suit.Dot)),
                     ),
                     sourceDirection = RelativeDirection.Left,
                 ),
@@ -407,8 +408,8 @@ class DoraTest : RiichiHandValueCalculatorTestBase() {
                 Tile.Numeric(Tile.Suit.Character, 1),
                 Tile.Numeric(Tile.Suit.Character, 2),
                 Tile.Numeric(Tile.Suit.Character, 3),
-                RiichiTileTypes.redFive(Tile.Suit.Dot),
-                RiichiTileTypes.redFive(Tile.Suit.Dot),
+                Tile.Numeric(Tile.Suit.Dot, 5),
+                Tile.Numeric(Tile.Suit.Dot, 5),
                 Tile.Numeric(Tile.Suit.Dot, 7),
                 Tile.Numeric(Tile.Suit.Dot, 8),
                 Tile.Numeric(Tile.Suit.Dot, 9),
@@ -419,17 +420,17 @@ class DoraTest : RiichiHandValueCalculatorTestBase() {
                 FakeMeldFactory.create(
                     type = MeldType.PON,
                     tiles = listOf(
-                        FakeIdentifiedTileFactory.create(RiichiTileTypes.redFive(Tile.Suit.Character)),
-                        FakeIdentifiedTileFactory.create(RiichiTileTypes.redFive(Tile.Suit.Character)),
-                        FakeIdentifiedTileFactory.create(RiichiTileTypes.redFive(Tile.Suit.Character)),
+                        FakeIdentifiedTileFactory.create(RiichiTileValues.redFive(Tile.Suit.Character)),
+                        FakeIdentifiedTileFactory.create(RiichiTileValues.redFive(Tile.Suit.Character)),
+                        FakeIdentifiedTileFactory.create(RiichiTileValues.redFive(Tile.Suit.Character)),
                     ),
                     sourceDirection = RelativeDirection.Left,
                 ),
             ),
-        )
-        val winningTile = RiichiTileTypes.redFive(Tile.Suit.Bamboo)
+        ).withRedFives(Tile.Suit.Dot, 2)
+        val winningTile = RiichiTileValues.redFive(Tile.Suit.Bamboo)
 
-        val context = FakeRiichiHandValueContextFactory.create(hand, winningTile, isTsumo = true)
+        val context = FakeRiichiHandValueContextFactory.create(hand, winningTile.tile, winningTileValue = winningTile, isTsumo = true)
         val result = calculator.calculate(context)
 
         val akaDoraResult = result.yakuResults.find { it.yaku == YakuType.AkaDora }

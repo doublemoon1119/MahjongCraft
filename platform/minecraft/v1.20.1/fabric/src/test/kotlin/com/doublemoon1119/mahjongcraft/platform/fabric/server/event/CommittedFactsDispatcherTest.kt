@@ -9,7 +9,6 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryWinDetail
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.BuiltInRoundOutcomeIds
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.Game
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameFlowConfig
-import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepositoryImpl
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateStore
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
@@ -34,6 +33,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocationReg
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.registerBundledRuleModules
 import com.doublemoon1119.mahjongcraft.testing.flow.common.concurrency.TestCoroutineDispatchers
 import com.doublemoon1119.mahjongcraft.testing.flow.common.concurrency.createTestAppCoroutineScope
+import com.doublemoon1119.mahjongcraft.testing.flow.common.game.repository.componentValidatedGameRepository
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
 import kotlinx.coroutines.runBlocking
@@ -68,7 +68,7 @@ class CommittedFactsDispatcherTest {
     /** 建立獨立訂閱點並驗證完整橋接流程；離開時關閉 session 與背景執行器。 */
     private fun verifyBridgeSession() = runBlocking {
         val store = AuthoritativeStateStore()
-        val repository = GameRepositoryImpl(store)
+        val repository = componentValidatedGameRepository(store)
         val scheduler = QueueScheduler()
         val subscriptions = GameEventSubscriptions()
         val activeGame = game()

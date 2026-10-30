@@ -1,6 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.client.catalogue
 
-import com.doublemoon1119.mahjongcraft.logic.base.Tile
+import com.doublemoon1119.mahjongcraft.logic.base.TileFaceView
 import com.doublemoon1119.mahjongcraft.platform.minecraft.catalogue.MinecraftRuleCatalogueScreenKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.catalogue.RuleCatalogueBrowseStatus
 import com.doublemoon1119.mahjongcraft.platform.minecraft.catalogue.RuleCatalogueConfigSource
@@ -53,10 +53,10 @@ internal fun interface RuleCatalogueTileArt {
     /**
      * 解析牌面圖案。
      *
-     * @param tile 牌種。
+     * @param tile 牌面與外觀樣式。
      * @return 繪製用素材鍵與缺圖提示。
      */
-    fun resolve(tile: Tile): CatalogueTileArt
+    fun resolve(tile: TileFaceView): CatalogueTileArt
 
     /** 丟棄已解析的結果，下次 [resolve] 重新查詢；沒有快取的來源不需要處理。 */
     fun clearCache() = Unit

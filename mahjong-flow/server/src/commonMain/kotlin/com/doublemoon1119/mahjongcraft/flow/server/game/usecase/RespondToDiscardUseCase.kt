@@ -32,6 +32,8 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.service.WinSettlementPre
 import com.doublemoon1119.mahjongcraft.logic.base.ExhaustiveDrawReason
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
+import com.doublemoon1119.mahjongcraft.logic.base.toValue
+import com.doublemoon1119.mahjongcraft.logic.component.ComponentRegistry
 import com.doublemoon1119.mahjongcraft.logic.module.DiscardReactionCandidate
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
@@ -54,10 +56,11 @@ import kotlin.uuid.Uuid
  * 吃、碰、明槓與擴充副露使用同一條裁定流程；榮和沿用開啟視窗時決定的多家和牌資格。
  * 所有人都選擇過牌時，回合交給下一位玩家。
  *
- * 榮和結算後手牌即結束：本用例刻意只改動分數、贏家的 `actionHistory`，以及供託相關的動態規則狀態，
+ * 榮和結算後手牌即結束：本用例刻意只改動分數、贏家的 `actionHistory`，以及供託相關的對局組件，
  * `currentPlayerIndex` 維持原樣不動（不像碰/吃/槓那樣把回合交給得標玩家），連莊/過莊/開下一局等
  * 後續流程由對局協調器銜接。
  *
+ * @property componentRegistry 正式組件定義與純效果來源。
  * @property gameRepository 權威對局數據倉庫。
  * @property moduleRegistry 麻將規則模組註冊中心，用於解析當前對局的合法動作判定器與規則特有邏輯。
  * @property snapshotSynchronizer 對局快照同步服務。
@@ -80,6 +83,7 @@ class RespondToDiscardUseCase(
     private val winCelebrationCueResolverRegistry: WinCelebrationCueResolverRegistry,
     private val winSettlementDetailResolverRegistry: WinSettlementDetailResolverRegistry,
     private val postActionExhaustiveDrawResolverRegistry: PostActionExhaustiveDrawResolverRegistry,
+    private val componentRegistry: ComponentRegistry,
 ) {
     /**
      * 執行捨牌反應回應邏輯。
@@ -221,10 +225,11 @@ class RespondToDiscardUseCase(
                     // 放過原本合法的榮和：後果交給規則決定，見 MahjongRuleModule.onPlayerDeclinedWin。
                     // 這張牌記入放過清單的時機是反應視窗結束且沒有人榮和時，見 resolvePendingReaction。
                     val updatedResponder = if (action == GameAction.Pass && candidates.any { it.action is GameAction.Ron }) {
-                        RuleHookResultValidator.requireRuleStateOnly(
-                            before = responder,
-                            after = module.onPlayerDeclinedWin(responder),
-                            hookName = "onPlayerDeclinedWin",
+                        RuleComponentChecker(componentRegistry, module.id).applyPlayerPatch(
+                            tableState = state,
+                            player = responder,
+                            patch = module.onPlayerDeclinedWin(responder),
+                            source = "onPlayerDeclinedWin",
                         )
                     } else {
                         responder
@@ -366,7 +371,7 @@ class RespondToDiscardUseCase(
                     standingTileIds = winner.hand.tiles.map { it.id },
                     drawnTileId = winner.hand.lastDrawn?.id,
                     melds = winner.hand.melds.map { it.toPresentation(newState.config.revealsClosedKanTiles) },
-                    setAsideTileIds = module.setAsideTiles(winner).map { it.id },
+                    setAsideTileIds = winner.setAsideTiles.map { it.id },
                     newlyClaimedMeldTileIds = claimedTileIds,
                 )
             }
@@ -598,10 +603,16 @@ class RespondToDiscardUseCase(
         val meldType = effect.meldType
         val handTilesUsed = effect.handTileIds.map { id -> winner.hand.standingTiles.first { it.id == id } }
 
-        val claimingWinner = module.beforeDiscardClaimed(winner, meldType, discardedTile, winnerDirection)
+        val ruleComponents = RuleComponentChecker(componentRegistry, module.id)
+        val claimingWinner = ruleComponents.applyPlayerPatch(
+            tableState = state,
+            player = winner,
+            patch = module.beforeDiscardClaimed(winner, meldType, discardedTile, winnerDirection),
+            source = "beforeDiscardClaimed",
+        )
         val meldTiles = handTilesUsed + discardedTile
         val displayTiles = if (effect.publiclyRevealedTileIds.containsAll(meldTiles.map { it.id })) {
-            meldTiles.sortedWith(compareBy(module.tileOrder) { it.tile })
+            meldTiles.sortedWith(compareBy(module.tileOrder.valueOrder) { it.toValue() })
         } else {
             meldTiles.sortedBy { it.id.toString() }
         }
@@ -632,10 +643,16 @@ class RespondToDiscardUseCase(
                 else -> player
             }
         }
-        val playersAfterMeldClaimed = RuleHookResultValidator.requireRuleStateOnly(
-            before = playersAfterMeld,
-            after = module.onMeldClaimed(playersAfterMeld),
-            hookName = "onMeldClaimed",
+        val stateAfterMeld = ruleComponents.initializeCreatedRecords(
+            before = state.copy(players = players),
+            after = state.copy(players = playersAfterMeld),
+            source = "Meld claim",
+        )
+        val playersAfterMeldClaimed = ruleComponents.applyPlayerPatches(
+            tableState = stateAfterMeld,
+            players = stateAfterMeld.players,
+            patches = module.onMeldClaimed(stateAfterMeld.players),
+            source = "onMeldClaimed",
         )
         val winnerIndex = playersAfterMeldClaimed.indexOfFirst { it.id == winnerId }
         val originalState = state.copy(players = players)
@@ -650,6 +667,7 @@ class RespondToDiscardUseCase(
             action = winnerAction,
             sourcePlayerId = pendingReaction.discarderId,
             module = module,
+            componentRegistry = componentRegistry,
         )
 
         if (!effect.requiresSupplementalDraw) {
@@ -677,11 +695,12 @@ class RespondToDiscardUseCase(
 
         return when (
             val applied = SelfDeclarationApplier.applySupplementalDraw(
-                originalState.copy(dynamicRuleState = reactionReveal.tableState.dynamicRuleState),
-                reactionReveal.tableState,
-                winnerId,
-                winnerAction,
-                module,
+                originalState = originalState.copy(components = reactionReveal.tableState.components),
+                candidateState = reactionReveal.tableState,
+                actorPlayerId = winnerId,
+                action = winnerAction,
+                module = module,
+                componentRegistry = componentRegistry,
             )
         ) {
             is SelfDeclarationApplier.Result.Rejected -> {
@@ -707,6 +726,7 @@ class RespondToDiscardUseCase(
                     source = DrawSource.Supplemental(winnerAction),
                     drawnTiles = applied.drawnTiles,
                     module = module,
+                    componentRegistry = componentRegistry,
                 )
                 RespondResult(
                     tableState = followUp.tableState,
@@ -736,6 +756,7 @@ class RespondToDiscardUseCase(
             module = module,
             actorPlayerId = actorPlayerId,
             sourceAction = sourceAction,
+            componentRegistry = componentRegistry,
         )
     ) {
         is WallRevealDecisionApplier.Result.Applied -> copy(

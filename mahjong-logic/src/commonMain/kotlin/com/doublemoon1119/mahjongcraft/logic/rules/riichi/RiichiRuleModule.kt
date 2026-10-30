@@ -4,12 +4,13 @@ import com.doublemoon1119.mahjongcraft.logic.base.ExhaustiveDrawReason
 import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
 import com.doublemoon1119.mahjongcraft.logic.base.MeldType
 import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
-import com.doublemoon1119.mahjongcraft.logic.base.Tile
+import com.doublemoon1119.mahjongcraft.logic.base.TileFaceView
 import com.doublemoon1119.mahjongcraft.logic.base.TileOrder
-import com.doublemoon1119.mahjongcraft.logic.config.DynamicRuleState
+import com.doublemoon1119.mahjongcraft.logic.component.ComponentPatch
 import com.doublemoon1119.mahjongcraft.logic.judgment.ShantenResult
 import com.doublemoon1119.mahjongcraft.logic.module.BuiltInAutomaticControlIds
 import com.doublemoon1119.mahjongcraft.logic.module.ExhaustiveDrawSettlementResult
+import com.doublemoon1119.mahjongcraft.logic.module.PointPotCollection
 import com.doublemoon1119.mahjongcraft.logic.module.PublicPlayerIndicator
 import com.doublemoon1119.mahjongcraft.logic.module.RevealedHandSettlement
 import com.doublemoon1119.mahjongcraft.logic.module.WinResolutionResult
@@ -17,11 +18,8 @@ import com.doublemoon1119.mahjongcraft.logic.rules.riichi.layout.RiichiPhysicalW
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.layout.RiichiWallLayout
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.opening.RiichiWallOpeningPolicy
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.RiichiTileInterpretationPolicy
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.riichiCanonical
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.dora.getNextDora
 import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayer
 import com.doublemoon1119.mahjongcraft.logic.table.MatchProgressionPolicy
-import com.doublemoon1119.mahjongcraft.logic.table.PlayerRuleState
 import com.doublemoon1119.mahjongcraft.logic.table.RoundCompletionClassification
 import com.doublemoon1119.mahjongcraft.logic.table.RoundTransitionContext
 import com.doublemoon1119.mahjongcraft.logic.table.RoundTransitionDirective
@@ -30,6 +28,7 @@ import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.logic.table.WallRevealPolicy
 import com.doublemoon1119.mahjongcraft.logic.table.layout.PhysicalWallLayoutPolicy
 import com.doublemoon1119.mahjongcraft.logic.tile.TileInterpretationPolicy
+import com.doublemoon1119.mahjongcraft.logic.tile.component.TileComponentDescription
 import com.doublemoon1119.mahjongcraft.logic.util.isWind
 import kotlin.uuid.Uuid
 
@@ -157,87 +156,30 @@ class RiichiRuleModule(
      */
     override fun createHandValueContextCalculator(): RiichiHandValueContextCalculator = RiichiHandValueContextCalculator(config)
 
-    /**
-     * 建立日本麻將的初始動態桌況狀態。
-     *
-     * @return 全新的 [RiichiDynamicState]（立直棒數量為 0）。
-     */
-    override fun createInitialDynamicState(): RiichiDynamicState = RiichiDynamicState()
-
-    /**
-     * 只延續尚未被收下的供託／立直棒；槓次與槓寶牌公開進度都只屬於單局，換局一律歸零。
-     *
-     * 這些每局欄位若跨局殘留，新局會以為已經槓過：指示牌索引往深處位移、公開張數多算，而且會吃掉
-     * 新局本來可槓的次數。
-     */
-    override fun createNextRoundDynamicState(previous: DynamicRuleState?): RiichiDynamicState = RiichiDynamicState(riichiStickCount = (previous as? RiichiDynamicState)?.riichiStickCount ?: 0)
-
-    /**
-     * 建立日本麻將的初始玩家規則狀態。
-     *
-     * @return 全新的 [RiichiPlayerState]（尚未立直、無包牌責任）。
-     */
-    override fun createInitialPlayerRuleState(): RiichiPlayerState = RiichiPlayerState()
-
-    /** 建立日麻玩家規則狀態的 observer 投影；振聽與一發資格只向本人公開。 */
-    override fun projectPlayerRuleState(
-        tableState: TableState,
-        player: MahjongPlayer,
-        observerId: Uuid,
-    ): PlayerRuleState? {
-        val state = player.playerRuleState as? RiichiPlayerState ?: return null
-        return if (player.id == observerId) state.toSnapshot() else state.toPublicSnapshot()
-    }
-
-    /** 建立日麻動態桌況的 observer 投影；尚未公開的槓寶牌項目不送出。 */
-    override fun projectDynamicRuleState(tableState: TableState, observerId: Uuid): DynamicRuleState? {
-        val state = tableState.dynamicRuleState as? RiichiDynamicState ?: return null
-        return state.copy(pendingKanDoraReveals = emptyList())
-    }
-
-    /**
-     * 日本麻將沒有摸牌後需要變更的規則特有狀態；立直後的下一次摸牌仍在一發期限內，可以自摸一發。
-     *
-     * @return 固定回傳 [player] 本身。
-     */
-    override fun onPlayerDrew(player: MahjongPlayer): MahjongPlayer = player
+    /** 目前正式公開的寶牌指示牌可被所有合法讀取者辨識，並正面朝上擺放。 */
+    override fun describeTileComponents(tableState: TableState): List<TileComponentDescription> = riichiTileComponentDescriptions(tableState)
 
     /**
      * 若玩家已立直且仍有一發資格，這次捨牌代表一發的期限已經結束（立直後一巡內未能胡牌），故清除一發資格。
      */
-    override fun onPlayerDiscarded(player: MahjongPlayer): MahjongPlayer {
-        val riichiState = player.playerRuleState as? RiichiPlayerState ?: return player
-        if (!riichiState.isIppatsu) return player
-        return player.copy(playerRuleState = riichiState.copy(isIppatsu = false))
-    }
+    override fun onPlayerDiscarded(player: MahjongPlayer): ComponentPatch = player.ippatsuEndPatch()
 
     /**
      * 任何一次鳴牌都會讓場上所有玩家的一發資格失效。
      */
-    override fun onMeldClaimed(players: List<MahjongPlayer>): List<MahjongPlayer> {
-        return players.map { player ->
-            val riichiState = player.playerRuleState as? RiichiPlayerState ?: return@map player
-            if (!riichiState.isIppatsu) return@map player
-            player.copy(playerRuleState = riichiState.copy(isIppatsu = false))
-        }
-    }
+    override fun onMeldClaimed(players: List<MahjongPlayer>): Map<Uuid, ComponentPatch> = players.associate { it.id to it.ippatsuEndPatch() }
 
     /**
-     * 檢查本次碰／明槓是否觸發大三元／大四喜的包牌責任，若觸發則寫入 [claimingPlayer] 的 [RiichiPlayerState]。
+     * 檢查本次碰／明槓是否觸發大三元／大四喜的包牌責任，若觸發則寫入 [claimingPlayer] 的包牌組件。
      *
-     * 吃不構成包牌，直接回傳 [claimingPlayer]。
+     * 吃不構成包牌，不做任何變更。
      */
     override fun beforeDiscardClaimed(
         claimingPlayer: MahjongPlayer,
         meldType: MeldType,
         calledTile: IdentifiedTile,
         sourceDirection: RelativeDirection,
-    ): MahjongPlayer {
-        if (meldType != MeldType.PON && meldType != MeldType.OPEN_KAN) return claimingPlayer
-        val riichiState = claimingPlayer.playerRuleState as? RiichiPlayerState ?: return claimingPlayer
-        val liability = PaoDetector.check(claimingPlayer.hand, calledTile.tile, sourceDirection) ?: return claimingPlayer
-        return claimingPlayer.copy(playerRuleState = riichiState.copy(paoLiability = liability))
-    }
+    ): ComponentPatch = claimingPlayer.paoLiabilityPatch(meldType, calledTile, sourceDirection)
 
     /**
      * 計算日本麻將自摸的點數結算：透過 [RiichiHandValueContextCalculator] 與 [RiichiHandValueCalculator]
@@ -295,16 +237,8 @@ class RiichiRuleModule(
         return riichiRonResolution(tableState, player.id, discarderId, result)
     }
 
-    /**
-     * 收下場上所有立直棒：贏家獲得「立直棒數量 × [RIICHI_STICK_POINTS]」點，收下後立直棒數量歸零。
-     *
-     * @return 若 [tableState] 的動態桌況狀態並非 [RiichiDynamicState]（理論上不會發生，僅作防呆），
-     *         則回傳 null。
-     */
-    override fun collectStickPot(tableState: TableState): Pair<DynamicRuleState?, Int>? {
-        val riichiDynamicState = tableState.dynamicRuleState as? RiichiDynamicState ?: return null
-        return riichiDynamicState.copy(riichiStickCount = 0) to riichiDynamicState.riichiStickCount * RIICHI_STICK_POINTS
-    }
+    /** 收下供託點數，只將供託組件歸零。 */
+    override fun collectStickPot(tableState: TableState): PointPotCollection = collectRiichiPot(tableState)
 
     /**
      * 依 [riichiComboBonusPayments] 分攤本場點數；[resolution] 成立包牌時由包牌責任者承擔對應部分。
@@ -394,7 +328,7 @@ class RiichiRuleModule(
      * @return 所有玩家都已立直時的四家立直原因，否則為 null。
      */
     fun resolveSuuchaRiichi(tableStateAfterDeclaration: TableState): ExhaustiveDrawReason? {
-        val allRiichi = tableStateAfterDeclaration.players.all { (it.playerRuleState as? RiichiPlayerState)?.isRiichi == true }
+        val allRiichi = tableStateAfterDeclaration.players.all { it.riichiDeclaration != null }
         return if (allRiichi) RiichiExhaustiveDrawReason.SuuchaRiichi else null
     }
 
@@ -405,13 +339,8 @@ class RiichiRuleModule(
      */
     override fun resolveSuukanNagare(tableState: TableState): ExhaustiveDrawReason? = riichiSuukanNagare(tableState)
 
-    /**
-     * 日本麻將的加值牌是寶牌：赤寶牌（[RiichiTileInterpretationPolicy.isRedDora]，跟指示牌
-     * 無關的獨立判斷）或符合任一 [revealedWallTiles]（寶牌指示牌）下一張的牌（[getNextDora]，兩張牌
-     * 需先各自轉成 [riichiCanonical] 再比較，理由同 [createTileInterpretationPolicy] 的既有慣例）。
-     */
-    override fun isBonusTile(tile: Tile, revealedWallTiles: List<Tile>): Boolean = RiichiTileInterpretationPolicy.isRedDora(tile) ||
-        revealedWallTiles.any { indicator -> tile.riichiCanonical == getNextDora(indicator).riichiCanonical }
+    /** 加值牌：帶赤寶牌特徵的牌，或任一生效寶牌指示牌的下一張。 */
+    override fun isBonusTile(face: TileFaceView, wallFaces: List<TileFaceView>): Boolean = riichiIsBonusTile(face, wallFaces, usesThreePlayerTiles = false)
 
     /**
      * 判定玩家是否已宣告立直或雙立直。
@@ -419,7 +348,7 @@ class RiichiRuleModule(
      * @param player 待判定玩家。
      * @return 具有立直狀態時為 true；不是立直玩家狀態時為 false。
      */
-    fun isPlayerInRiichi(player: MahjongPlayer): Boolean = (player.playerRuleState as? RiichiPlayerState)?.isRiichi ?: false
+    fun isPlayerInRiichi(player: MahjongPlayer): Boolean = player.riichiDeclaration != null
 
     /**
      * 立直後只能摸切，因此回傳玩家剛摸入的牌；未立直或尚未摸牌時不額外限制。
@@ -430,19 +359,13 @@ class RiichiRuleModule(
      * 讀取尚未被收下的立直棒數，不修改供託。
      *
      * @param tableState 目前桌況。
-     * @return 立直棒數；不是立直動態狀態時為零。
+     * @return 立直棒數。
+     * @throws IllegalArgumentException 桌況缺少日麻供託組件時。
      */
-    fun getStickPotCount(tableState: TableState): Int = (tableState.dynamicRuleState as? RiichiDynamicState)?.riichiStickCount ?: 0
+    fun getStickPotCount(tableState: TableState): Int = tableState.riichiPotPoints() / RIICHI_STICK_POINTS
 
-    /**
-     * 只有立直中的玩家才需要記錄永久振聽——未立直時放過和牌只構成一般同巡振聽，不需要這個永久旗標，
-     * 轉型手法同 [isPlayerInRiichi]。
-     */
-    override fun onPlayerDeclinedWin(player: MahjongPlayer): MahjongPlayer {
-        val riichiState = player.playerRuleState as? RiichiPlayerState ?: return player
-        if (!riichiState.isRiichi) return player
-        return player.copy(playerRuleState = riichiState.copy(isPermanentlyFuriten = true))
-    }
+    /** 立直中的玩家放過和牌時記錄本局永久振聽；未立直時放過和牌只構成同巡振聽，不做任何變更。 */
+    override fun onPlayerDeclinedWin(player: MahjongPlayer): ComponentPatch = player.permanentFuritenPatch()
 
     /** 公開狀態的註冊識別碼。 */
     companion object {

@@ -8,20 +8,26 @@ import com.doublemoon1119.mahjongcraft.logic.base.Meld
 import com.doublemoon1119.mahjongcraft.logic.base.MeldType
 import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
+import com.doublemoon1119.mahjongcraft.logic.component.ComponentSet
 import com.doublemoon1119.mahjongcraft.logic.config.MahjongRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.config.MultiRonPolicy
 import com.doublemoon1119.mahjongcraft.logic.config.dealBatchSizes
 import com.doublemoon1119.mahjongcraft.logic.module.BuiltInRuleModuleIds
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RIICHI_GAME_ACTION
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDiscardEntry
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RIICHI_STICK_POINTS
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDeclaration
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDeclarationKind
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDiscardComponents
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDiscardPile
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDynamicState
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiFamilyRuleModule
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPlayerState
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPlayerComponents
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleModule
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiTableComponents
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiWallProgress
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.threeplayer.ThreePlayerRiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.threeplayer.ThreePlayerRiichiRuleModule
+import com.doublemoon1119.mahjongcraft.logic.table.DiscardPile.DiscardEntry
 import com.doublemoon1119.mahjongcraft.logic.table.GameInitializer
 import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayer
 import com.doublemoon1119.mahjongcraft.logic.table.MatchRoundPosition
@@ -140,7 +146,7 @@ private object RiichiBeforeSuuchaRiichiScenario : DebugGameScenario {
                     initialSeatIndex = oldPlayer.initialSeatIndex,
                     hand = Hand(tiles = invokingStandingTiles, lastDrawn = invokingDrawnTile),
                     discardPile = RiichiDiscardPile(),
-                    playerRuleState = RiichiPlayerState(),
+                    components = ComponentSet.EMPTY,
                     score = config.scoreConfig.initialScore,
                     seatWind = Wind.entries[(index - invokingPlayerIndex + PLAYER_COUNT) % PLAYER_COUNT],
                 )
@@ -151,8 +157,8 @@ private object RiichiBeforeSuuchaRiichiScenario : DebugGameScenario {
                     id = oldPlayer.id,
                     initialSeatIndex = oldPlayer.initialSeatIndex,
                     hand = Hand(tiles = opponentHands[opponentIndex]),
-                    discardPile = RiichiDiscardPile().discard(RiichiDiscardEntry(riichiTile, isRiichi = true)),
-                    playerRuleState = RiichiPlayerState(riichiTile = riichiTile),
+                    discardPile = RiichiDiscardPile().discard(DiscardEntry(tile = riichiTile, components = RiichiDiscardComponents.declaration())),
+                    components = ComponentSet.EMPTY.with(RiichiPlayerComponents.DECLARATION, RiichiDeclaration(RiichiDeclarationKind.RIICHI, riichiTile.id, false)),
                     score = config.scoreConfig.initialScore - RIICHI_STICK_SCORE,
                     actionHistory = listOf(RIICHI_GAME_ACTION, discardAction),
                     seatWind = Wind.entries[(index - invokingPlayerIndex + PLAYER_COUNT) % PLAYER_COUNT],
@@ -167,7 +173,7 @@ private object RiichiBeforeSuuchaRiichiScenario : DebugGameScenario {
             dealerPlayerId = context.invokingPlayerId,
             roundPosition = MatchRoundPosition(sequenceIndex = 0, prevalentWind = Wind.EAST, localRoundNumber = 1),
             currentPlayerIndex = invokingPlayerIndex,
-            dynamicRuleState = RiichiDynamicState(riichiStickCount = PLAYER_COUNT - 1),
+            components = ComponentSet.EMPTY.with(RiichiTableComponents.POT_POINTS, (PLAYER_COUNT - 1) * RIICHI_STICK_POINTS).with(RiichiTableComponents.WALL_PROGRESS, RiichiWallProgress()),
             wallOpening = opening,
             reservedWallTiles = initialReservedTiles,
             physicalWallLayout = physicalLayout,
@@ -259,7 +265,7 @@ private object RiichiBeforePaoPonScenario : DebugGameScenario {
                     initialSeatIndex = oldPlayer.initialSeatIndex,
                     hand = Hand(tiles = invokingStandingTiles, melds = invokingMelds),
                     discardPile = RiichiDiscardPile(),
-                    playerRuleState = RiichiPlayerState(),
+                    components = ComponentSet.EMPTY,
                     score = config.scoreConfig.initialScore,
                     seatWind = seatWind,
                 )
@@ -270,7 +276,7 @@ private object RiichiBeforePaoPonScenario : DebugGameScenario {
                     initialSeatIndex = oldPlayer.initialSeatIndex,
                     hand = Hand(tiles = opponentHands[opponentIndex]),
                     discardPile = if (discards) RiichiDiscardPile().discardTile(calledTile) else RiichiDiscardPile(),
-                    playerRuleState = RiichiPlayerState(),
+                    components = ComponentSet.EMPTY,
                     score = config.scoreConfig.initialScore,
                     actionHistory = if (discards) listOf(GameAction.Discard(calledTile.id)) else emptyList(),
                     seatWind = seatWind,
@@ -285,7 +291,7 @@ private object RiichiBeforePaoPonScenario : DebugGameScenario {
             dealerPlayerId = context.invokingPlayerId,
             roundPosition = MatchRoundPosition(sequenceIndex = 0, prevalentWind = Wind.EAST, localRoundNumber = 1),
             currentPlayerIndex = discarderIndex,
-            dynamicRuleState = RiichiDynamicState(riichiStickCount = 0),
+            components = ComponentSet.EMPTY.with(RiichiTableComponents.POT_POINTS, 0).with(RiichiTableComponents.WALL_PROGRESS, RiichiWallProgress()),
             pendingReaction = PendingReaction(
                 discarderId = players[discarderIndex].id,
                 tileId = calledTile.id,
@@ -459,7 +465,6 @@ private class RiichiBeforeAnkanScenario(
                 initialSeatIndex = oldPlayer.initialSeatIndex,
                 hand = Hand(tiles = tiles, melds = melds, lastDrawn = dealerDraw.takeIf { index == dealerIndex }),
                 discardPile = discardPile,
-                playerRuleState = module.createInitialPlayerRuleState(),
                 score = config.scoreConfig.initialScore,
                 seatWind = Wind.entries[(index - dealerIndex + PLAYER_COUNT) % PLAYER_COUNT],
             )
@@ -472,7 +477,7 @@ private class RiichiBeforeAnkanScenario(
             dealerPlayerId = context.invokingPlayerId,
             roundPosition = MatchRoundPosition(sequenceIndex = 0, prevalentWind = Wind.EAST, localRoundNumber = 1),
             currentPlayerIndex = dealerIndex,
-            dynamicRuleState = RiichiDynamicState(completedSupplementalDrawCount = completedKanCount),
+            components = ComponentSet.EMPTY.with(RiichiTableComponents.POT_POINTS, 0).with(RiichiTableComponents.WALL_PROGRESS, RiichiWallProgress(completedSupplementalDrawCount = completedKanCount, revealedKanDoraCount = completedKanCount)),
             wallOpening = opening,
             reservedWallTiles = reservedTiles,
         )
@@ -521,13 +526,13 @@ private class RiichiBeforeAnkanScenario(
             val beforeState = stateTemplate.copy(
                 tileWall = TileWall(beforeStage.liveTiles),
                 reservedWallTiles = beforeStage.reservedTiles,
-                dynamicRuleState = RiichiDynamicState(completedSupplementalDrawCount = index),
+                components = stateTemplate.components.with(RiichiTableComponents.WALL_PROGRESS, RiichiWallProgress(completedSupplementalDrawCount = index, revealedKanDoraCount = index)),
                 physicalWallLayout = currentLayout,
             )
             val afterState = stateTemplate.copy(
                 tileWall = TileWall(afterStage.liveTiles),
                 reservedWallTiles = afterStage.reservedTiles,
-                dynamicRuleState = RiichiDynamicState(completedSupplementalDrawCount = index + 1),
+                components = stateTemplate.components.with(RiichiTableComponents.WALL_PROGRESS, RiichiWallProgress(completedSupplementalDrawCount = index + 1, revealedKanDoraCount = index + 1)),
             )
             val markerTile = beforeStage.reservedTiles.first()
             val decision = module.createPhysicalWallLayoutPolicy().resolveTransitionValidated(

@@ -6,14 +6,12 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryReplayIde
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryRoundEventsDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryRoundPositionDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryWinDetailValueDto
-import com.doublemoon1119.mahjongcraft.flow.network.dto.model.TileDto
-import com.doublemoon1119.mahjongcraft.flow.network.dto.model.toDomain
+import com.doublemoon1119.mahjongcraft.flow.network.dto.model.TileFaceViewDto
 import com.doublemoon1119.mahjongcraft.logic.table.RoundCompletionClassification
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.MahjongTileFaceRenderer
 import com.doublemoon1119.mahjongcraft.platform.minecraft.history.MinecraftHistoryScreenKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.WinSettlementPresentationTemplateRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistry
-import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.toAssetKey
 import net.minecraft.client.gui.DrawContext
 import net.minecraft.client.gui.screen.Screen
 import net.minecraft.client.gui.tooltip.Tooltip
@@ -223,7 +221,7 @@ internal class HistoryRoundEventsScreen(
              * @param tiles 原始順序牌張。
              * @param labelKey 牌列用途 key。
              */
-            fun addTiles(tiles: List<TileDto>, labelKey: String) {
+            fun addTiles(tiles: List<TileFaceViewDto>, labelKey: String) {
                 if (tiles.isEmpty()) return
                 addText(Text.translatable(labelKey), MUTED_COLOR, 16)
                 tiles.chunked(layout.tilesPerRow()).forEach { rows += Row.Tiles(it) }
@@ -354,7 +352,7 @@ internal class HistoryRoundEventsScreen(
                             if (hovered && mouseY >= y && mouseY < y + row.height) tooltip = row.tooltip
                         }
                         is Row.Tiles -> row.tiles.forEachIndexed { index, tile ->
-                            val asset = tile.toDomain().toAssetKey(tileAssetRegistry)
+                            val asset = tile.toHistoryAssetKey(tileAssetRegistry)
                             val x = layout.left + row.indent + index * TILE_STEP
                             tileFaceRenderer.renderGui(context, asset, x, y, TILE_WIDTH, TILE_HEIGHT, appearance = session.tileAppearance())
                             if (hovered && mouseX >= x && mouseX < x + TILE_WIDTH && mouseY >= y && mouseY < y + TILE_HEIGHT) tooltip = listOf(Text.literal(asset))
@@ -624,7 +622,7 @@ internal class HistoryRoundEventsScreen(
          * @property indent 相對卡片左側的牌面縮排。
          */
         data class Tiles(
-            val tiles: List<TileDto>,
+            val tiles: List<TileFaceViewDto>,
             val indent: Int = 16,
         ) : Row {
             /** 牌面及下方間距。 */
@@ -665,7 +663,7 @@ internal class HistoryRoundEventsScreen(
          */
         data class Hand(
             val layout: HistoryTileGroupLayout,
-            val catalog: List<TileDto>,
+            val catalog: List<TileFaceViewDto>,
         ) : Row {
             /** 牌組完整高度與段落間距。 */
             override val height: Int = ceil(layout.height).toInt() + 8

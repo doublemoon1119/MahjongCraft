@@ -12,12 +12,14 @@ import com.doublemoon1119.mahjongcraft.logic.config.validate
  * @property paymentPerPlayer 自摸時每位其他玩家支付的點數，範圍為 1～100。
  * @property roundCount 整場對局的局數，範圍為 1～16。
  * @property wallTileValues 會加入牌山的一萬至八萬點數；每種點數固定加入四張，至少選兩種。
+ * @property publicFacesEnabled 是否讓每種點數四張中的三張帶公開牌面標記，所有人都看得到牌面。
  */
 data class ExamplePairingRuleConfig(
     val exchangeEnabled: Boolean = false,
     val paymentPerPlayer: Int = 10,
     val roundCount: Int = 4,
     val wallTileValues: Set<Int> = (1..8).toSet(),
+    val publicFacesEnabled: Boolean = false,
 ) : MahjongRuleConfig {
     override val scoreConfig: ExamplePairingScoreConfig = ExamplePairingScoreConfig()
     override val gameLength: ExamplePairingGameLength = ExamplePairingGameLength(roundCount)

@@ -1,6 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.client.catalogue
 
-import com.doublemoon1119.mahjongcraft.logic.base.Tile
+import com.doublemoon1119.mahjongcraft.logic.base.TileFaceView
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.ScrollbarLayout
 import com.doublemoon1119.mahjongcraft.platform.minecraft.catalogue.RuleCatalogueTileGroup
 import com.doublemoon1119.mahjongcraft.platform.minecraft.catalogue.RuleCatalogueTileGroupRole
@@ -268,7 +268,7 @@ internal data class RuleCatalogueScreenLayout(
  * @property height 高度。
  */
 internal data class RuleCatalogueTilePlacement(
-    val tile: Tile,
+    val tile: TileFaceView,
     val x: Int,
     val y: Int,
     val width: Int,
@@ -371,7 +371,7 @@ internal object RuleCatalogueTileLayout {
         private val headings = mutableListOf<RuleCatalogueTileHeading>()
 
         /** 目前列的牌面水平位置。 */
-        private val rowTiles = mutableListOf<Pair<Tile, Int>>()
+        private val rowTiles = mutableListOf<Pair<TileFaceView, Int>>()
 
         /** 目前列的標題水平位置與可用寬度。 */
         private val rowHeadings = mutableListOf<Triple<RuleCatalogueTileGroupRole, Int, Int>>()

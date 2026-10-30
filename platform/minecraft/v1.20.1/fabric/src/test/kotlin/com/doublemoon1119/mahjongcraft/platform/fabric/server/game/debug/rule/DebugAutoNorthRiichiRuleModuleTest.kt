@@ -6,11 +6,11 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkJson
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
-import com.doublemoon1119.mahjongcraft.logic.module.ActionScoring
+import com.doublemoon1119.mahjongcraft.logic.component.BuiltInComponentOwners
 import com.doublemoon1119.mahjongcraft.logic.module.ActionScoringContext
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.PULL_NORTH_GAME_ACTION
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDynamicState
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiExhaustiveDrawReason
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiTableComponents
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.threeplayer.ThreePlayerRiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.table.DrawFollowUpContext
 import com.doublemoon1119.mahjongcraft.logic.table.DrawFollowUpDecision
@@ -24,10 +24,12 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.scenari
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.scenario.seat
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledPersistenceRegistries
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.registerBundledNetworkDtos
+import com.doublemoon1119.mahjongcraft.testing.logic.rules.riichi.riichiTableComponents
 import kotlinx.serialization.PolymorphicSerializer
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
+import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertSame
 import kotlin.uuid.Uuid
@@ -77,13 +79,16 @@ class DebugAutoNorthRiichiRuleModuleTest {
     /** 拔北的玩家付一根立直棒的點數進供託，桌上的立直棒多一根。 */
     @Test
     fun `pulling north pays into the riichi stick pot`() {
-        val state = scenarioState("auto_north_riichi_chain").copy(dynamicRuleState = RiichiDynamicState(riichiStickCount = 1))
+        val state = scenarioState("auto_north_riichi_chain").copy(components = riichiTableComponents(potPoints = 1000))
         val actorId = state.currentPlayer.id
 
-        assertEquals(
-            ActionScoring(mapOf(actorId to -1000), potDeposit = 1000, dynamicRuleState = RiichiDynamicState(riichiStickCount = 2)),
+        val scoring = assertNotNull(
             DebugAutoNorthActionScoringPolicy.resolve(state.scoringContext(actorId, PULL_NORTH_GAME_ACTION, sourcePlayerId = null)),
         )
+        assertEquals(mapOf(actorId to -1000), scoring.scoreDeltas)
+        assertEquals(1000, scoring.potDeposit)
+        assertEquals(2000, scoring.tableComponents.applyTo(state.components, BuiltInComponentOwners.TABLE)[RiichiTableComponents.POT_POINTS])
+        assertEquals(1000, state.components[RiichiTableComponents.POT_POINTS])
     }
 
     /** 明槓由放槓者付 1000 點，暗槓與加槓由另外兩家各付 500 點；碰不收付。 */

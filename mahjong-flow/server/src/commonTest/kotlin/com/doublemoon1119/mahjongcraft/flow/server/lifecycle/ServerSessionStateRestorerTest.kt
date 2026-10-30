@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.flow.server.lifecycle
 
+import com.doublemoon1119.mahjongcraft.flow.common.error.ExtensionFailurePolicy
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.Game
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameConfig
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameFlowConfig
@@ -7,7 +8,6 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.repository.GameSnapshotR
 import com.doublemoon1119.mahjongcraft.flow.common.room.model.Room
 import com.doublemoon1119.mahjongcraft.flow.common.room.repository.RoomSnapshotRepositoryImpl
 import com.doublemoon1119.mahjongcraft.flow.server.game.policy.GameVisibilityPolicyImpl
-import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepositoryImpl
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.DecisionTimerSynchronizationService
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameDecisionAuthorityResolver
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameDecisionAvailabilityService
@@ -20,7 +20,9 @@ import com.doublemoon1119.mahjongcraft.flow.server.time.MonotonicClockImpl
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
+import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledCoreExtensionRegistries
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.registerBundledRuleModules
+import com.doublemoon1119.mahjongcraft.testing.flow.common.game.repository.componentValidatedGameRepository
 import com.doublemoon1119.mahjongcraft.testing.flow.common.game.service.FakeDecisionTimerUpdatePublisher
 import com.doublemoon1119.mahjongcraft.testing.flow.common.game.service.FakeGamePresentationBusyGate
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeHandFactory
@@ -43,7 +45,7 @@ class ServerSessionStateRestorerTest {
         val gameSnapshots = GameSnapshotRepositoryImpl()
         val memberships = PlayerMembershipRepositoryImpl()
         val store = AuthoritativeStateStore()
-        val gameRepository = GameRepositoryImpl(store)
+        val gameRepository = componentValidatedGameRepository(store)
         val clock = MonotonicClockImpl()
         val decisionTimerManager = GameDecisionTimerManager(
             gameRepository,
@@ -55,7 +57,7 @@ class ServerSessionStateRestorerTest {
             roomSnapshots,
             gameSnapshots,
             memberships,
-            GameVisibilityPolicyImpl(MahjongModuleRegistryImpl().apply { registerBundledRuleModules() }),
+            GameVisibilityPolicyImpl(MahjongModuleRegistryImpl().apply { registerBundledRuleModules() }, componentRegistry = bundledCoreExtensionRegistries().componentRegistry),
             decisionTimerManager,
             GameDecisionAvailabilityService(
                 FakeGamePresentationBusyGate(),
@@ -66,6 +68,8 @@ class ServerSessionStateRestorerTest {
                     FakeDecisionTimerUpdatePublisher(),
                 ),
             ),
+            moduleRegistry = MahjongModuleRegistryImpl().apply { registerBundledRuleModules() },
+            failurePolicy = ExtensionFailurePolicy.Default,
         )
         val roomPlayerId = Uuid.random()
         val gamePlayerId = Uuid.random()
@@ -115,7 +119,7 @@ class ServerSessionStateRestorerTest {
         val gameSnapshots = GameSnapshotRepositoryImpl()
         val memberships = PlayerMembershipRepositoryImpl()
         val store = AuthoritativeStateStore()
-        val gameRepository = GameRepositoryImpl(store)
+        val gameRepository = componentValidatedGameRepository(store)
         val clock = MonotonicClockImpl()
         val decisionTimerManager = GameDecisionTimerManager(
             gameRepository,
@@ -127,7 +131,7 @@ class ServerSessionStateRestorerTest {
             roomSnapshots,
             gameSnapshots,
             memberships,
-            GameVisibilityPolicyImpl(MahjongModuleRegistryImpl().apply { registerBundledRuleModules() }),
+            GameVisibilityPolicyImpl(MahjongModuleRegistryImpl().apply { registerBundledRuleModules() }, componentRegistry = bundledCoreExtensionRegistries().componentRegistry),
             decisionTimerManager,
             GameDecisionAvailabilityService(
                 FakeGamePresentationBusyGate(),
@@ -138,6 +142,8 @@ class ServerSessionStateRestorerTest {
                     FakeDecisionTimerUpdatePublisher(),
                 ),
             ),
+            moduleRegistry = MahjongModuleRegistryImpl().apply { registerBundledRuleModules() },
+            failurePolicy = ExtensionFailurePolicy.Default,
         )
         val playerId = Uuid.random()
         val existingVenueId = Uuid.random()

@@ -15,12 +15,12 @@ import kotlin.uuid.Uuid
  */
 fun MahjongPlayerSnapshot.toDto(registries: NetworkDtoRegistries): MahjongPlayerSnapshotDto = MahjongPlayerSnapshotDto(
     id = id.toString(),
+    componentViews = registries.componentViews.encode(componentViews),
     initialSeatIndex = initialSeatIndex,
     seatWind = seatWind.toDto(),
-    hand = hand.toDto(),
+    hand = hand.toDto(registries),
     discardPile = discardPile.toDto(registries),
-    setAsideTiles = setAsideTiles.map { it.toDto() },
-    playerRuleState = playerRuleState?.toDto(registries),
+    tileAreas = tileAreas.map { it.toDto(registries) },
     score = score,
 )
 
@@ -32,11 +32,11 @@ fun MahjongPlayerSnapshot.toDto(registries: NetworkDtoRegistries): MahjongPlayer
  */
 fun MahjongPlayerSnapshotDto.toDomain(registries: NetworkDtoRegistries): MahjongPlayerSnapshot = MahjongPlayerSnapshot(
     id = Uuid.parse(id),
+    componentViews = registries.componentViews.decode(componentViews),
     initialSeatIndex = initialSeatIndex,
     seatWind = seatWind.toDomain(),
-    hand = hand.toDomain(),
+    hand = hand.toDomain(registries),
     discardPile = discardPile.toDomain(registries),
-    setAsideTiles = setAsideTiles.map { it.toDomain() },
-    playerRuleState = playerRuleState?.toDomain(registries),
+    tileAreas = tileAreas.map { it.toDomain(registries) },
     score = score,
 )

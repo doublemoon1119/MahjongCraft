@@ -9,6 +9,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.entity.WinSettlementDetai
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.WinSettlementPresentationEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.WinSettlementRankingSnapshot
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.WinSettlementWinnerSnapshot
+import com.doublemoon1119.mahjongcraft.platform.fabric.entity.winSettlementTileGroups
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.BuiltInWinSettlementTemplateKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.ExtensionPresentationField
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.PresentationAlignment
@@ -24,13 +25,17 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.Presentatio
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.PresentationLayoutSolver.Companion.unweighted
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.PresentationNodeSize
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.PresentationTextMeasurer
+import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.PresentationTile
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.PresentationTimelineAnchor
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.PresentationValue
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.ScoreRankingAnimation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.WinSettlementPresentationFieldSnapshot
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.WinSettlementPresentationTemplateRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.WinSettlementTextKeys
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileSetAppearanceDefinition
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TILE_BACK_PREVIEW_ASSET_KEY
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.backAppearance
 import net.minecraft.client.font.TextRenderer
 import net.minecraft.client.render.LightmapTextureManager
 import net.minecraft.client.render.VertexConsumerProvider
@@ -54,6 +59,7 @@ import kotlin.uuid.Uuid
  * @param configStore 提供胡牌結算面板可見性設定。
  * @param indicatorTextResolver 解析排名中的付款原因指示器文字與顏色。
  * @param tileAppearanceResolver 依桌子目前公開規則解析牌組外觀。
+ * @param tileAssets 查詢牌面樣式指定的牌身與牌背外觀。
  */
 class WinSettlementPresentationEntityRenderer(
     context: EntityRendererFactory.Context,
@@ -64,6 +70,7 @@ class WinSettlementPresentationEntityRenderer(
     private val configStore: MahjongClientConfigStore,
     private val indicatorTextResolver: PublicPlayerIndicatorTextResolver,
     private val tileAppearanceResolver: ClientTileAppearanceResolver,
+    private val tileAssets: MinecraftTileAssetRegistry,
 ) : EntityRenderer<WinSettlementPresentationEntity>(context) {
     private val textRenderer = context.textRenderer
 
@@ -159,7 +166,7 @@ class WinSettlementPresentationEntityRenderer(
         consumers: VertexConsumerProvider,
         appearance: MinecraftTileSetAppearanceDefinition,
     ) {
-        val snapshot = winner.toFieldSnapshot(entity)
+        val snapshot = winner.toFieldSnapshot(entity, appearance)
         val size = layoutSolver.measure(root, snapshot)
         val scale = minOf(1f, PresentationLayoutSolver.MAX_WIDTH / size.width.coerceAtLeast(1f), PresentationLayoutSolver.MAX_HEIGHT / size.height.coerceAtLeast(1f))
         matrices.push()
@@ -169,12 +176,16 @@ class WinSettlementPresentationEntityRenderer(
     }
 
     /**
-     * 將贏家與結算 entity 的同步資料轉成模板解析用欄位快照。
+     * 將贏家與結算 entity 的同步資料轉成模板解析用欄位快照；蓋著的牌在這裡換成牌背，不把牌面交給模板。
      *
      * @param entity 提供結果類型、排名與揭曉時序的結算 entity。
+     * @param appearance 本次結算使用的公開牌組外觀。
      * @return 對應此贏家的模板欄位與擴充欄位快照。
      */
-    private fun WinSettlementWinnerSnapshot.toFieldSnapshot(entity: WinSettlementPresentationEntity): WinSettlementPresentationFieldSnapshot {
+    private fun WinSettlementWinnerSnapshot.toFieldSnapshot(
+        entity: WinSettlementPresentationEntity,
+        appearance: MinecraftTileSetAppearanceDefinition,
+    ): WinSettlementPresentationFieldSnapshot {
         val fields = details.mapNotNull { detail ->
             val id = runCatching { PresentationFieldId(detail.id) }.getOrNull() ?: return@mapNotNull null
             val value = when (detail.type) {
@@ -208,14 +219,7 @@ class WinSettlementPresentationEntityRenderer(
             responsiblePlayerIsAi = responsiblePlayerId?.let { id -> entity.rankings.firstOrNull { it.playerId == id }?.isAi ?: false },
             totalScore = totalScore,
             tileAssetKeys = handAssetKeys + melds.flatMap { it.assetKeys },
-            tileAssetGroups = buildList {
-                add(handAssetKeys)
-                addAll(
-                    melds.map { meld ->
-                        meld.assetKeys.mapIndexed { index, asset -> if (index in meld.faceDownIndices) TILE_BACK_ASSET_KEY else asset }
-                    },
-                )
-            }.filter(List<String>::isNotEmpty),
+            tileGroups = winSettlementTileGroups(handAssetKeys, melds) { asset -> tileAssets.backAppearance(asset, appearance).id },
             winningTileAssetKey = winningTileAssetKey,
             extensionFields = fields,
             initialFadeTicks = entity.revealTiming.initialFadeTicks,
@@ -302,10 +306,23 @@ class WinSettlementPresentationEntityRenderer(
             }
             is PresentationLayout.TileGroups -> {
                 var tileX = x + layout.tileWidth / 2f
-                val groups = (layoutSolver.resolve(layout, snapshot) as? PresentationValue.TileGroupsValue)?.groups.orEmpty().filter(List<String>::isNotEmpty)
+                val groups = (layoutSolver.resolve(layout, snapshot) as? PresentationValue.TileGroupsValue)?.groups.orEmpty().filter(List<PresentationTile>::isNotEmpty)
                 groups.forEachIndexed { groupIndex, group ->
-                    group.forEach { asset ->
-                        renderTile(asset, tileX, y + layout.tileHeight / 2f, layout.tileWidth, layout.tileHeight, alpha, matrices, consumers, appearance)
+                    group.forEach { tile ->
+                        when (tile) {
+                            is PresentationTile.Face -> renderTile(tile.assetKey, tileX, y + layout.tileHeight / 2f, layout.tileWidth, layout.tileHeight, alpha, matrices, consumers, appearance)
+                            is PresentationTile.Back -> renderTile(
+                                asset = TILE_BACK_PREVIEW_ASSET_KEY,
+                                cx = tileX,
+                                cy = y + layout.tileHeight / 2f,
+                                width = layout.tileWidth,
+                                height = layout.tileHeight,
+                                alpha = alpha,
+                                matrices = matrices,
+                                consumers = consumers,
+                                appearance = tileAssets.findAppearance(tile.appearanceId) ?: appearance,
+                            )
+                        }
                         tileX += layout.tileWidth + layout.tileSpacing
                     }
                     if (groupIndex != groups.lastIndex) tileX += layout.groupSpacing - layout.tileSpacing
@@ -942,7 +959,6 @@ class WinSettlementPresentationEntityRenderer(
     private companion object {
         const val SCALE = 0.02f
         const val PANEL_PADDING = 12f
-        const val TILE_BACK_ASSET_KEY = "back"
         const val MIN_VISIBLE_ALPHA = 0.02f
         const val RANKING_SWEEP_HALF_WIDTH = 18f
         const val RANKING_HIGHLIGHT_Z = 0.25f

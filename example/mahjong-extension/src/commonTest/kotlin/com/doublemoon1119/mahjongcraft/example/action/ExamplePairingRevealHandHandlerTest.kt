@@ -1,7 +1,8 @@
 package com.doublemoon1119.mahjongcraft.example.action
 
 import com.doublemoon1119.mahjongcraft.example.ExampleMahjongExtension
-import com.doublemoon1119.mahjongcraft.example.pairing.ExamplePairingPlayerState
+import com.doublemoon1119.mahjongcraft.example.exampleComponentRegistry
+import com.doublemoon1119.mahjongcraft.example.pairing.ExamplePairingIds
 import com.doublemoon1119.mahjongcraft.example.pairing.ExamplePairingRuleConfig
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryTableChange
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.Game
@@ -21,7 +22,11 @@ import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateStore
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateUpdate
 import com.doublemoon1119.mahjongcraft.logic.base.Hand
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
+import com.doublemoon1119.mahjongcraft.logic.component.AuthoritativeComponentValidatorImpl
+import com.doublemoon1119.mahjongcraft.logic.component.ComponentSet
+import com.doublemoon1119.mahjongcraft.logic.component.initializeRuleComponents
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
+import com.doublemoon1119.mahjongcraft.logic.table.GameInitializationResult
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.testing.flow.common.game.repository.FakeGameSnapshotRepository
 import com.doublemoon1119.mahjongcraft.testing.flow.common.game.service.FakeGameEventPublisher
@@ -111,13 +116,13 @@ class ExamplePairingRevealHandHandlerTest {
         val firstDrawn = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 2))
         fixtures.replaceHand(playerId, Hand(tiles = listOf(firstStanding), lastDrawn = firstDrawn))
         val firstSnapshot = fixtures.snapshotFor(observerId)
-        assertEquals(setOf(firstStanding.id, firstDrawn.id), firstSnapshot.handTileStates.map { it.tileId }.toSet())
+        assertEquals(setOf(firstStanding.id, firstDrawn.id), firstSnapshot.tilePoseStates.map { it.tileId }.toSet())
 
         val secondStanding = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 3))
         val secondDrawn = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 3))
         fixtures.replaceHand(playerId, Hand(tiles = listOf(secondStanding), lastDrawn = secondDrawn))
         val secondSnapshot = fixtures.snapshotFor(observerId)
-        assertEquals(setOf(secondStanding.id, secondDrawn.id), secondSnapshot.handTileStates.map { it.tileId }.toSet())
+        assertEquals(setOf(secondStanding.id, secondDrawn.id), secondSnapshot.tilePoseStates.map { it.tileId }.toSet())
     }
 
     /**
@@ -132,14 +137,16 @@ class ExamplePairingRevealHandHandlerTest {
         val lastDrawn = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 1))
         val player = FakeMahjongPlayerFactory.create(
             id = playerId,
-            playerRuleState = ExamplePairingPlayerState(),
+            components = ComponentSet.EMPTY,
             hand = Hand(tiles = listOf(standing), lastDrawn = lastDrawn.takeIf { drawn }),
         )
         val other = FakeMahjongPlayerFactory.create()
-        return FakeTableStateFactory.create(
+        val table = FakeTableStateFactory.create(
             config = ExamplePairingRuleConfig(),
             players = listOf(player, other),
         )
+        return GameInitializationResult(table, null, null)
+            .initializeRuleComponents(ExamplePairingIds.RULE_MODULE, exampleComponentRegistry()).tableState
     }
 
     /**
@@ -153,11 +160,14 @@ class ExamplePairingRevealHandHandlerTest {
         /** 測試用的權威狀態儲存。 */
         val store = AuthoritativeStateStore(historyRecordingEnabled = true, maxPendingHistoryEvents = 100)
 
-        /** 連接測試權威狀態儲存的遊戲 repository。 */
-        private val repository = GameRepositoryImpl(store)
-
         /** 測試使用的麻將規則模組 registry。 */
         private val moduleRegistry = MahjongModuleRegistryImpl()
+
+        /** 本測試的正式組件登記。 */
+        private val componentRegistry = exampleComponentRegistry()
+
+        /** 使用本範例正式組件驗證器的權威對局 repository。 */
+        private val repository = GameRepositoryImpl(store, AuthoritativeComponentValidatorImpl(moduleRegistry, componentRegistry))
 
         /** 提供規則與命令註冊的範例擴充。 */
         private val extension = ExampleMahjongExtension()
@@ -177,7 +187,7 @@ class ExamplePairingRevealHandHandlerTest {
             snapshotSynchronizer = GameSnapshotSynchronizer(
                 repository,
                 snapshotRepository,
-                GameVisibilityPolicyImpl(moduleRegistry),
+                GameVisibilityPolicyImpl(moduleRegistry, componentRegistry = componentRegistry),
             )
             val handlers = ExtensionGameCommandExecutorRegistry().also {
                 extension.registerGameCommandHandlers(it)
@@ -205,7 +215,11 @@ class ExamplePairingRevealHandHandlerTest {
                         postActionResolvers,
                         events,
                         presentations,
+
+                        componentRegistry = componentRegistry,
                     ),
+
+                    componentRegistry = componentRegistry,
                 ),
             )
         }
