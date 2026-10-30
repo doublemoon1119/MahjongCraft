@@ -34,6 +34,7 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.DefaultNetworkDtoRe
 import com.doublemoon1119.mahjongcraft.flow.network.dto.snapshot.MatchRoundPhaseDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.snapshot.MatchRoundPositionDto
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
+import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledNetworkJson
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.registerBundledNetworkDtos
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.delay
@@ -380,7 +381,7 @@ class HistoryBrowseControllerTest {
     @Test
     fun `summary waits for query coordination before sending`() = runTest {
         val transport = FakeHistoryQueryTransport()
-        val controller = HistoryBrowseController(transport, backgroundScope, now = { testScheduler.currentTime.milliseconds }, beforeDetailQuery = { delay(500.milliseconds) })
+        val controller = HistoryBrowseController(transport, backgroundScope, json = bundledNetworkJson(), now = { testScheduler.currentTime.milliseconds }, beforeDetailQuery = { delay(500.milliseconds) })
         controller.open()
         runCurrent()
         transport.respondList(entries = listOf(summary("match")))
@@ -398,7 +399,7 @@ class HistoryBrowseControllerTest {
     @Test
     fun `return during summary coordination cancels queued query`() = runTest {
         val transport = FakeHistoryQueryTransport()
-        val controller = HistoryBrowseController(transport, backgroundScope, now = { testScheduler.currentTime.milliseconds }, beforeDetailQuery = { delay(500.milliseconds) })
+        val controller = HistoryBrowseController(transport, backgroundScope, json = bundledNetworkJson(), now = { testScheduler.currentTime.milliseconds }, beforeDetailQuery = { delay(500.milliseconds) })
         controller.open()
         runCurrent()
         transport.respondList(entries = listOf(summary("match")))
@@ -772,7 +773,7 @@ class HistoryBrowseControllerTest {
      * @param transport 模擬查詢傳輸。
      * @return 綁定目前測試作用域的歷史瀏覽控制器。
      */
-    private fun TestScope.controller(transport: FakeHistoryQueryTransport): HistoryBrowseController = HistoryBrowseController(transport, backgroundScope, now = { testScheduler.currentTime.milliseconds })
+    private fun TestScope.controller(transport: FakeHistoryQueryTransport): HistoryBrowseController = HistoryBrowseController(transport, backgroundScope, json = bundledNetworkJson(), now = { testScheduler.currentTime.milliseconds })
 
     /**
      * 建立最小可用的歷史摘要。

@@ -7,6 +7,7 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryReplayPla
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryRoundPositionDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryRoundStateDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkDtoRegistries
+import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkJson
 import com.doublemoon1119.mahjongcraft.logic.base.TileOrder
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.catalogue.RuleCatalogueScreenController
@@ -84,7 +85,7 @@ internal class HistoryBrowseSession(
     val archiveStatusController = HistoryArchiveStatusController(archiveStatus, scope, requestGate = requestGate)
 
     /** 列表、摘要、規則設定與單局內容共用的權威查詢結果。 */
-    val controller = HistoryBrowseController(transport, scope, requestGate = requestGate, beforeDetailQuery = {
+    val controller = HistoryBrowseController(transport, scope, json = NetworkJson(networkRegistries), requestGate = requestGate, beforeDetailQuery = {
         archiveMonitoringPaused = true
         archiveStatusController.pause()
     })

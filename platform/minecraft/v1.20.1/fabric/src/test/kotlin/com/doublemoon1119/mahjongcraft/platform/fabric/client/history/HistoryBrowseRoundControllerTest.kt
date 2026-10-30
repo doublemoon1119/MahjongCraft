@@ -24,9 +24,14 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryRoundSumm
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryRuleSettingsRequestDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistorySummaryRequestDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistorySummaryResponseDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.model.SuitDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.model.TileDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.model.TileFaceViewDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.model.WindDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.riichi.RiichiRedDoraViewDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.snapshot.MatchRoundPhaseDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.snapshot.MatchRoundPositionDto
+import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledNetworkJson
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -104,7 +109,7 @@ class HistoryBrowseRoundControllerTest {
         transport: FakeRoundHistoryTransport,
         roundNumber: Int = 1,
     ): HistoryBrowseController {
-        val controller = HistoryBrowseController(transport, backgroundScope, now = { testScheduler.currentTime.milliseconds })
+        val controller = HistoryBrowseController(transport, backgroundScope, json = bundledNetworkJson(), now = { testScheduler.currentTime.milliseconds })
         controller.open()
         runCurrent()
         transport.respondList(listOf(summary(MATCH_ID)))
@@ -118,6 +123,19 @@ class HistoryBrowseRoundControllerTest {
         advanceTimeBy(250)
         runCurrent()
         return controller
+    }
+
+    /** 牌面帶有規則特徵的事件頁可以存入快取並顯示。 */
+    @Test
+    fun `test round events with rule tile views are accepted`() = runTest {
+        val transport = FakeRoundHistoryTransport()
+        val controller = openRound(transport)
+        val redFive = TileFaceViewDto(TileDto.Numeric(SuitDto.DOT, 5), listOf(RiichiRedDoraViewDto), "mahjongcraft:riichi/red_five")
+
+        transport.respondEvents(roundNumber = 1, start = 0, tileCatalog = listOf(redFive))
+        runCurrent()
+
+        assertEquals(HistoryBrowseStatus.Ready, controller.state.value.rounds.getValue(1).eventsStatus)
     }
 
     /** 最新局選擇的世代會使先前局的回應失效。 */
@@ -465,14 +483,20 @@ class HistoryBrowseRoundControllerTest {
      * @param roundNumber 局序號。
      * @param indexes 此頁交易索引。
      * @param next 下一頁起始交易索引。
+     * @param tileCatalog 本頁的牌面目錄；每筆交易都宣告到目錄的全部牌。
      * @return 事件頁 DTO。
      */
-    private fun events(roundNumber: Int, indexes: List<Int>, next: Int?) = HistoryRoundEventsDto(
+    private fun events(
+        roundNumber: Int,
+        indexes: List<Int>,
+        next: Int?,
+        tileCatalog: List<TileFaceViewDto> = emptyList(),
+    ) = HistoryRoundEventsDto(
         identity = HistoryReplayIdentityDto(MATCH_ID, TABLE_ID, listOf(HistoryReplayPlayerIdentityDto(0, PLAYER_ID, null))),
         roundNumber = roundNumber,
-        transactions = indexes.map { HistoryReplayTransactionDto(it, it.toLong(), it == 0, 0, emptyList()) },
+        transactions = indexes.map { HistoryReplayTransactionDto(it, it.toLong(), it == 0, tileCatalog.size, emptyList()) },
         nextTransactionIndex = next,
-        tileCatalog = emptyList(),
+        tileCatalog = tileCatalog,
     )
 
     /**
@@ -615,10 +639,11 @@ class HistoryBrowseRoundControllerTest {
             start: Int,
             next: Int? = null,
             transactionIndexes: List<Int>? = null,
+            tileCatalog: List<TileFaceViewDto> = emptyList(),
         ) {
             val indexes = transactionIndexes ?: if (next == null) listOf(start) else (start until next).toList()
             mutableState.value = ClientHistoryQueryState.RoundEventsResult(
-                HistoryRoundEventsResponseDto(requestId, MATCH_ID, roundNumber, start, events(roundNumber, indexes, next), errorCode = null),
+                HistoryRoundEventsResponseDto(requestId, MATCH_ID, roundNumber, start, events(roundNumber, indexes, next, tileCatalog), errorCode = null),
             )
         }
 
