@@ -63,7 +63,7 @@ class TablePropLayoutTest {
             ),
         )
 
-        assertIs<TablePropLayoutResult.Invalid>(result)
+        assertEquals(TablePropLayoutFailure.INVALID_PLACEMENT, assertIs<TablePropLayoutResult.Invalid>(result).reason)
     }
 
     /** 完整尺寸超出中央區域時拒絕配置。 */
@@ -86,7 +86,7 @@ class TablePropLayoutTest {
             ),
         )
 
-        assertIs<TablePropLayoutResult.Invalid>(result)
+        assertEquals(TablePropLayoutFailure.NO_SPACE, assertIs<TablePropLayoutResult.Invalid>(result).reason)
     }
 
     /** 不同尺寸可混排，輸入順序不改變配置。 */
@@ -216,7 +216,7 @@ class TablePropLayoutTest {
             ),
         ).targets(mapOf("example:tile" to TablePropKindDefinition("example:tile", TablePropDimensions(0.1, 0.1, 0.1))))
 
-        assertIs<TablePropLayoutResult.Invalid>(result)
+        assertEquals(TablePropLayoutFailure.INVALID_PLACEMENT, assertIs<TablePropLayoutResult.Invalid>(result).reason)
     }
 
     /** 同樣的物件不因規則身分得到不同的中央保留區。 */
@@ -262,7 +262,7 @@ class TablePropLayoutTest {
 
         val wide = mapOf("example:tile" to TablePropKindDefinition("example:tile", TablePropDimensions(0.78, 0.05, 0.78)))
         assertIs<TablePropLayoutResult.Success>(presentation(placement).targets(wide))
-        assertIs<TablePropLayoutResult.Invalid>(scene.targets(wide))
+        assertEquals(TablePropLayoutFailure.NO_SPACE, assertIs<TablePropLayoutResult.Invalid>(scene.targets(wide)).reason)
     }
 
     /**

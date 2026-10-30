@@ -35,13 +35,13 @@ data class TablePropPresentation(
      * @return 完整配置；任一內容、位置或占用無效時為失敗，不回傳部分結果。
      */
     fun targets(definitions: Map<String, TablePropKindDefinition>): TablePropLayoutResult {
-        if (!validId(ruleModuleId)) return TablePropLayoutResult.Invalid("Invalid table prop rule: $ruleModuleId")
-        if (placements.size > MAX_PLACEMENTS) return TablePropLayoutResult.Invalid("LIMIT_EXCEEDED: too many table props")
-        if (placements.map { it.id }.toSet().size != placements.size) return TablePropLayoutResult.Invalid("Duplicate table prop ID")
+        if (!validId(ruleModuleId)) return TablePropLayoutResult.Invalid(TablePropLayoutFailure.INVALID_PLACEMENT, "Invalid table prop rule: $ruleModuleId")
+        if (placements.size > MAX_PLACEMENTS) return TablePropLayoutResult.Invalid(TablePropLayoutFailure.LIMIT_EXCEEDED, "Too many table props")
+        if (placements.map { it.id }.toSet().size != placements.size) return TablePropLayoutResult.Invalid(TablePropLayoutFailure.INVALID_PLACEMENT, "Duplicate table prop ID")
         placements.forEach { placement ->
-            if (!validId(placement.id) || !validId(placement.kind)) return TablePropLayoutResult.Invalid("Invalid table prop ID: ${placement.id}")
-            val definition = definitions[placement.kind] ?: return TablePropLayoutResult.Invalid("Unknown table prop kind: ${placement.kind}")
-            if (definition.id != placement.kind || !definition.accepts(placement.content)) return TablePropLayoutResult.Invalid("Unsupported table prop content: ${placement.id}")
+            if (!validId(placement.id) || !validId(placement.kind)) return TablePropLayoutResult.Invalid(TablePropLayoutFailure.INVALID_PLACEMENT, "Invalid table prop ID: ${placement.id}")
+            val definition = definitions[placement.kind] ?: return TablePropLayoutResult.Invalid(TablePropLayoutFailure.INVALID_PLACEMENT, "Unknown table prop kind: ${placement.kind}")
+            if (definition.id != placement.kind || !definition.accepts(placement.content)) return TablePropLayoutResult.Invalid(TablePropLayoutFailure.INVALID_PLACEMENT, "Unsupported table prop content: ${placement.id}")
         }
         val placed = mutableListOf<TablePropTarget>()
         val occupied = mutableListOf<TablePropBounds>()
@@ -53,7 +53,7 @@ data class TablePropPresentation(
                 !location.offset.y.isFinite() ||
                 !location.offset.z.isFinite()
             ) {
-                return TablePropLayoutResult.Invalid("Invalid seat placement: ${placement.id}")
+                return TablePropLayoutResult.Invalid(TablePropLayoutFailure.INVALID_PLACEMENT, "Invalid seat placement: ${placement.id}")
             }
             val world = MahjongTileTableLayout.seatAnchorPlacement(
                 controllerX = tableLocation.x,
@@ -68,7 +68,7 @@ data class TablePropPresentation(
             )
             val target = TablePropTarget(placement.id, ruleModuleId, placement.kind, placement.content, world.x, world.y, world.z, world.yaw)
             val bounds = TablePropBounds.of(toLocal(target), definitions.getValue(placement.kind).dimensions)
-            if (occupied.any { it.overlaps(bounds) }) return TablePropLayoutResult.Invalid("Overlapping seat props: ${placement.id}")
+            if (occupied.any { it.overlaps(bounds) }) return TablePropLayoutResult.Invalid(TablePropLayoutFailure.INVALID_PLACEMENT, "Overlapping seat props: ${placement.id}")
             placed += target
             occupied += bounds
         }
@@ -77,20 +77,20 @@ data class TablePropPresentation(
             .sortedWith(compareBy<TablePropPlacement> { (it.location as TablePropLocation.Center).order }.thenBy { it.id })
         ) {
             val location = placement.location as TablePropLocation.Center
-            if (!location.yaw.isFinite()) return TablePropLayoutResult.Invalid("Invalid center angle: ${placement.id}")
+            if (!location.yaw.isFinite()) return TablePropLayoutResult.Invalid(TablePropLayoutFailure.INVALID_PLACEMENT, "Invalid center angle: ${placement.id}")
             val dimensions = definitions.getValue(placement.kind).dimensions
             val origin = TablePropTarget(placement.id, ruleModuleId, placement.kind, placement.content, 0.0, 0.0, 0.0, location.yaw)
             val size = TablePropBounds.of(origin, dimensions)
             val halfX = size.maxX
             val halfZ = size.maxZ
-            if (halfX > CENTER_HALF_EXTENT || halfZ > CENTER_HALF_EXTENT) return TablePropLayoutResult.Invalid("NO_SPACE: ${placement.id}")
+            if (halfX > CENTER_HALF_EXTENT || halfZ > CENTER_HALF_EXTENT) return TablePropLayoutResult.Invalid(TablePropLayoutFailure.NO_SPACE, "No center space for ${placement.id}")
             val xs = candidates(halfX, occupied.flatMap { listOf(it.minX - CENTER_GAP - halfX, it.maxX + CENTER_GAP + halfX) })
             val zs = candidates(halfZ, occupied.flatMap { listOf(it.minZ - CENTER_GAP - halfZ, it.maxZ + CENTER_GAP + halfZ) })
             var attempts = 0
             var selected: TablePropTarget? = null
             search@ for (z in zs) {
                 for (x in xs) {
-                    if (++attempts > MAX_CENTER_CANDIDATES) return TablePropLayoutResult.Invalid("LIMIT_EXCEEDED: ${placement.id}")
+                    if (++attempts > MAX_CENTER_CANDIDATES) return TablePropLayoutResult.Invalid(TablePropLayoutFailure.LIMIT_EXCEEDED, "Too many center candidates for ${placement.id}")
                     val candidate = origin.copy(x = x, z = z)
                     // 中央物件與所有已占用範圍都保持最小間距，不只避免重疊。
                     val spaced = TablePropBounds.of(candidate, dimensions).expandedHorizontally(CENTER_GAP)
@@ -100,7 +100,7 @@ data class TablePropPresentation(
                     }
                 }
             }
-            val target = selected ?: return TablePropLayoutResult.Invalid("NO_SPACE: ${placement.id}")
+            val target = selected ?: return TablePropLayoutResult.Invalid(TablePropLayoutFailure.NO_SPACE, "No center space for ${placement.id}")
             occupied += TablePropBounds.of(target, dimensions)
             placed += toWorld(target)
         }

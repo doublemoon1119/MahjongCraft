@@ -14,7 +14,11 @@ sealed interface TablePropLayoutResult {
     /**
      * 配置失敗，平台不得套用部分結果。
      *
-     * @property diagnostic 可供記錄與本地化提示使用的診斷資訊。
+     * @property reason 失敗原因。
+     * @property diagnostic 只供記錄使用的診斷文字。
      */
-    data class Invalid(val diagnostic: String) : TablePropLayoutResult
+    data class Invalid(
+        val reason: TablePropLayoutFailure,
+        val diagnostic: String,
+    ) : TablePropLayoutResult
 }

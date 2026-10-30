@@ -109,7 +109,7 @@ class FabricTablePropPresenter(
             scenes[presentation.tableId] = presentation
             val layout = presentation.targets(kindRegistry.definitions)
             if (layout is TablePropLayoutResult.Invalid) {
-                return fail(presentation, world, existing, spawned, layout.diagnostic)
+                return fail(presentation, world, existing, spawned, "${layout.reason}: ${layout.diagnostic}")
             }
             val plannedTargets = (layout as TablePropLayoutResult.Success).targets
             if (plannedTargets.any { !FabricTablePropSearchArea.contains(controllerPos, it.x, it.y, it.z) }) {
