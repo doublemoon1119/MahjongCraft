@@ -56,8 +56,9 @@ such as `common`.
 
 Public extension registration layer.
 
-- **Purpose**: Exposes typed bootstrap and registrar contracts for rule modules, commands, DTO codecs, AI
-  strategies, and server handlers.
+- **Purpose**: Exposes the extension entrypoint and bootstrap for rule modules, commands, DTO codecs, AI
+  strategies, and server handlers. Callbacks receive register-only registrars that each feature module
+  provides.
 - **Package**: `com.doublemoon1119.mahjongcraft.extension.*`
 - **Dependencies**: Provides a facade over selected APIs from `:mahjong-logic`, `:mahjong-ai`, and the Flow
   common, server, network DTO, and persistence format modules.

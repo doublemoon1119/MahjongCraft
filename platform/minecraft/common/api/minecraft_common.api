@@ -61,6 +61,168 @@ public final class com/doublemoon1119/mahjongcraft/platform/minecraft/api/event/
 	public final fun getZ ()I
 }
 
+public abstract interface class com/doublemoon1119/mahjongcraft/platform/minecraft/api/registration/AiStrategyDisplayNameRegistrar {
+	public abstract fun getRegistrationKeys ()Ljava/util/Set;
+	public abstract fun isFrozen ()Z
+	public abstract fun register (Lcom/doublemoon1119/mahjongcraft/platform/minecraft/ai/AiStrategyDisplayNameDefinition;)V
+}
+
+public abstract interface class com/doublemoon1119/mahjongcraft/platform/minecraft/api/registration/AutomaticControlDisplayRegistrar {
+	public abstract fun getRegistrationKeys ()Ljava/util/Set;
+	public abstract fun isFrozen ()Z
+	public abstract fun register (Lcom/doublemoon1119/mahjongcraft/platform/minecraft/automatic/AutomaticControlDisplayDefinition;)V
+}
+
+public abstract interface class com/doublemoon1119/mahjongcraft/platform/minecraft/api/registration/DecisionStatusDisplayNameRegistrar {
+	public abstract fun getRegistrationKeys ()Ljava/util/Set;
+	public abstract fun isFrozen ()Z
+	public abstract fun register (Lcom/doublemoon1119/mahjongcraft/platform/minecraft/decision/DecisionStatusDisplayNameDefaultDefinition;)V
+	public abstract fun register (Lcom/doublemoon1119/mahjongcraft/platform/minecraft/decision/DecisionStatusDisplayNameDefinition;)V
+}
+
+public abstract interface class com/doublemoon1119/mahjongcraft/platform/minecraft/api/registration/ExhaustiveDrawReasonDisplayNameRegistrar {
+	public abstract fun getRegistrationKeys ()Ljava/util/Set;
+	public abstract fun isFrozen ()Z
+	public abstract fun register (Lcom/doublemoon1119/mahjongcraft/platform/minecraft/settlement/ExhaustiveDrawReasonDisplayNameDefinition;)V
+	public abstract fun register (Lcom/doublemoon1119/mahjongcraft/platform/minecraft/settlement/ExhaustiveDrawSettlementStatusLabelsDefinition;)V
+}
+
+public abstract interface class com/doublemoon1119/mahjongcraft/platform/minecraft/api/registration/GameAchievementResolverRegistrar {
+	public abstract fun getRegistrationKeys ()Ljava/util/Set;
+	public abstract fun isFrozen ()Z
+	public abstract fun register (Lcom/doublemoon1119/mahjongcraft/platform/minecraft/achievement/GameAchievementResolver;)V
+}
+
+public abstract interface class com/doublemoon1119/mahjongcraft/platform/minecraft/api/registration/GameActionSoundPresentationRegistrar {
+	public abstract fun getRegistrationKeys ()Ljava/util/Set;
+	public abstract fun isFrozen ()Z
+	public abstract fun register (Lcom/doublemoon1119/mahjongcraft/platform/minecraft/sound/GameActionSoundDefinition;)V
+}
+
+public abstract interface class com/doublemoon1119/mahjongcraft/platform/minecraft/api/registration/GameActionVocabularyRegistrar {
+	public abstract fun getRegistrationKeys ()Ljava/util/Set;
+	public abstract fun isFrozen ()Z
+	public abstract fun register (Lcom/doublemoon1119/mahjongcraft/platform/minecraft/action/GameActionVocabularyDefaultDefinition;)V
+	public abstract fun register (Lcom/doublemoon1119/mahjongcraft/platform/minecraft/action/GameActionVocabularyDefinition;)V
+}
+
+public abstract interface class com/doublemoon1119/mahjongcraft/platform/minecraft/api/registration/GameConfigPresentationRegistrar {
+	public abstract fun getRegistrationKeys ()Ljava/util/Set;
+	public abstract fun isFrozen ()Z
+	public abstract fun register (Lcom/doublemoon1119/mahjongcraft/platform/minecraft/room/GameConfigPresentationDefinition;)V
+}
+
+public abstract interface class com/doublemoon1119/mahjongcraft/platform/minecraft/api/registration/HistoryDiscardMarkerDisplayRegistrar {
+	public abstract fun getRegistrationKeys ()Ljava/util/Set;
+	public abstract fun isFrozen ()Z
+	public abstract fun register (Lcom/doublemoon1119/mahjongcraft/platform/minecraft/history/HistoryDiscardMarkerDisplayDefinition;)V
+}
+
+public abstract interface class com/doublemoon1119/mahjongcraft/platform/minecraft/api/registration/MatchSettlementPresentationTemplateRegistrar {
+	public abstract fun getRegistrationKeys ()Ljava/util/Set;
+	public abstract fun register (Lcom/doublemoon1119/mahjongcraft/platform/minecraft/settlement/MatchSettlementPresentationTemplate;)V
+	public abstract fun register (Lcom/doublemoon1119/mahjongcraft/platform/minecraft/settlement/MatchSettlementRuleTemplateBindingDefinition;)V
+}
+
+public abstract interface class com/doublemoon1119/mahjongcraft/platform/minecraft/api/registration/MinecraftTileAssetRegistrar {
+	public abstract fun getRegistrationKeys ()Ljava/util/Set;
+	public abstract fun isFrozen ()Z
+	public abstract fun register (Lcom/doublemoon1119/mahjongcraft/platform/minecraft/tile/MinecraftRuleTileAppearanceDefinition;)V
+	public abstract fun register (Lcom/doublemoon1119/mahjongcraft/platform/minecraft/tile/MinecraftTileAssetDefinition;)V
+	public abstract fun register (Lcom/doublemoon1119/mahjongcraft/platform/minecraft/tile/MinecraftTileSetAppearanceDefinition;)V
+	public abstract fun register (Lcom/doublemoon1119/mahjongcraft/platform/minecraft/tile/MinecraftTileStyleAssetDefinition;)V
+}
+
+public abstract interface class com/doublemoon1119/mahjongcraft/platform/minecraft/api/registration/PlayerPortraitSourceRegistrar {
+	public abstract fun getRegistrationKeys ()Ljava/util/Set;
+	public abstract fun isFrozen ()Z
+	public abstract fun register (Lcom/doublemoon1119/mahjongcraft/platform/minecraft/player/PlayerPortraitSourceDefinition;)V
+}
+
+public abstract interface class com/doublemoon1119/mahjongcraft/platform/minecraft/api/registration/PublicPlayerIndicatorDisplayRegistrar {
+	public abstract fun getRegistrationKeys ()Ljava/util/Set;
+	public abstract fun isFrozen ()Z
+	public abstract fun register (Lcom/doublemoon1119/mahjongcraft/platform/minecraft/player/PublicPlayerIndicatorDisplayDefinition;)V
+}
+
+public abstract interface class com/doublemoon1119/mahjongcraft/platform/minecraft/api/registration/RoomMemberAppearanceSourceRegistrar {
+	public abstract fun getRegistrationKeys ()Ljava/util/Set;
+	public abstract fun isFrozen ()Z
+	public abstract fun register (Lcom/doublemoon1119/mahjongcraft/platform/minecraft/room/RoomMemberAppearanceSourceDefinition;)V
+}
+
+public abstract interface class com/doublemoon1119/mahjongcraft/platform/minecraft/api/registration/RoundInfoLineDisplayRegistrar {
+	public abstract fun getRegistrationKeys ()Ljava/util/Set;
+	public abstract fun isFrozen ()Z
+	public abstract fun register (Lcom/doublemoon1119/mahjongcraft/platform/minecraft/table/RoundInfoLineDisplayDefinition;)V
+	public abstract fun register (Lcom/doublemoon1119/mahjongcraft/platform/minecraft/table/RoundInfoLineProviderDefinition;)V
+	public abstract fun register (Lcom/doublemoon1119/mahjongcraft/platform/minecraft/table/RoundInfoMessageDefinition;)V
+}
+
+public abstract interface class com/doublemoon1119/mahjongcraft/platform/minecraft/api/registration/RoundOutcomeDisplayNameRegistrar {
+	public abstract fun getRegistrationKeys ()Ljava/util/Set;
+	public abstract fun isFrozen ()Z
+	public abstract fun register (Lcom/doublemoon1119/mahjongcraft/platform/minecraft/settlement/RoundOutcomeDisplayNameDefinition;)V
+}
+
+public abstract interface class com/doublemoon1119/mahjongcraft/platform/minecraft/api/registration/RuleCatalogueRegistrar {
+	public abstract fun getRegistrationKeys ()Ljava/util/Set;
+	public abstract fun isFrozen ()Z
+	public abstract fun register (Lcom/doublemoon1119/mahjongcraft/platform/minecraft/catalogue/RuleCatalogueProvider;)V
+}
+
+public abstract interface class com/doublemoon1119/mahjongcraft/platform/minecraft/api/registration/RuleDecisionDisplayNameRegistrar {
+	public abstract fun getRegistrationKeys ()Ljava/util/Set;
+	public abstract fun isFrozen ()Z
+	public abstract fun register (Lcom/doublemoon1119/mahjongcraft/platform/minecraft/decision/RuleDecisionDisplayNameDefinition;)V
+}
+
+public abstract interface class com/doublemoon1119/mahjongcraft/platform/minecraft/api/registration/RuleModuleDisplayNameRegistrar {
+	public abstract fun getRegistrationKeys ()Ljava/util/Set;
+	public abstract fun isFrozen ()Z
+	public abstract fun register (Lcom/doublemoon1119/mahjongcraft/platform/minecraft/rule/RuleModuleDisplayNameDefinition;)V
+}
+
+public abstract interface class com/doublemoon1119/mahjongcraft/platform/minecraft/api/registration/TablePropDescriberRegistrar {
+	public abstract fun getRegistrationKeys ()Ljava/util/Set;
+	public abstract fun isFrozen ()Z
+	public abstract fun register (Lcom/doublemoon1119/mahjongcraft/platform/minecraft/table/TablePropDescriberDefinition;)V
+}
+
+public abstract interface class com/doublemoon1119/mahjongcraft/platform/minecraft/api/registration/TileDisplayNameRegistrar {
+	public abstract fun getRegistrationKeys ()Ljava/util/Set;
+	public abstract fun isFrozen ()Z
+	public abstract fun register (Lcom/doublemoon1119/mahjongcraft/platform/minecraft/tile/TileDisplayNameDefinition;)V
+	public abstract fun register (Lcom/doublemoon1119/mahjongcraft/platform/minecraft/tile/TileStyleDisplayNameDefinition;)V
+}
+
+public abstract interface class com/doublemoon1119/mahjongcraft/platform/minecraft/api/registration/TileEmojiRegistrar {
+	public abstract fun getRegistrationKeys ()Ljava/util/Set;
+	public abstract fun isFrozen ()Z
+	public abstract fun register (Lcom/doublemoon1119/mahjongcraft/platform/minecraft/tile/TileEmojiDefinition;)V
+}
+
+public abstract interface class com/doublemoon1119/mahjongcraft/platform/minecraft/api/registration/TileLabelRegistrar {
+	public abstract fun getRegistrationKeys ()Ljava/util/Set;
+	public abstract fun isFrozen ()Z
+	public abstract fun register (Lcom/doublemoon1119/mahjongcraft/platform/minecraft/tile/TileLabelDefinition;)V
+}
+
+public abstract interface class com/doublemoon1119/mahjongcraft/platform/minecraft/api/registration/WinCelebrationShowcaseRegistrar {
+	public abstract fun getRegistrationKeys ()Ljava/util/Set;
+	public abstract fun isFrozen ()Z
+	public abstract fun register (Lcom/doublemoon1119/mahjongcraft/platform/minecraft/showcase/WinCelebrationShowcaseDefinition;)V
+}
+
+public abstract interface class com/doublemoon1119/mahjongcraft/platform/minecraft/api/registration/WinSettlementPresentationTemplateRegistrar {
+	public abstract fun getRegistrationKeys ()Ljava/util/Set;
+	public abstract fun isFrozen ()Z
+	public abstract fun register (Lcom/doublemoon1119/mahjongcraft/platform/minecraft/settlement/WinSettlementDetailTextFormatterDefinition;)V
+	public abstract fun register (Lcom/doublemoon1119/mahjongcraft/platform/minecraft/settlement/WinSettlementPresentationFieldProviderDefinition;)V
+	public abstract fun register (Lcom/doublemoon1119/mahjongcraft/platform/minecraft/settlement/WinSettlementPresentationTemplate;)V
+	public abstract fun register (Lcom/doublemoon1119/mahjongcraft/platform/minecraft/settlement/WinSettlementRuleTemplateBindingDefinition;)V
+}
+
 public final class com/doublemoon1119/mahjongcraft/platform/minecraft/api/seating/RegisteredSeatProvider {
 	public fun <init> (Ljava/lang/String;Lcom/doublemoon1119/mahjongcraft/platform/minecraft/api/seating/SeatProvider;I)V
 	public synthetic fun <init> (Ljava/lang/String;Lcom/doublemoon1119/mahjongcraft/platform/minecraft/api/seating/SeatProvider;IILkotlin/jvm/internal/DefaultConstructorMarker;)V
@@ -150,5 +312,34 @@ public final class com/doublemoon1119/mahjongcraft/platform/minecraft/api/table/
 	public static fun getEntries ()Lkotlin/enums/EnumEntries;
 	public static fun valueOf (Ljava/lang/String;)Lcom/doublemoon1119/mahjongcraft/platform/minecraft/api/table/MahjongTableFacing;
 	public static fun values ()[Lcom/doublemoon1119/mahjongcraft/platform/minecraft/api/table/MahjongTableFacing;
+}
+
+public abstract interface class com/doublemoon1119/mahjongcraft/platform/minecraft/extension/MinecraftMahjongExtension {
+	public abstract fun getId ()Ljava/lang/String;
+	public fun registerAiStrategyDisplayNames (Lcom/doublemoon1119/mahjongcraft/platform/minecraft/api/registration/AiStrategyDisplayNameRegistrar;)V
+	public fun registerAutomaticControlDisplays (Lcom/doublemoon1119/mahjongcraft/platform/minecraft/api/registration/AutomaticControlDisplayRegistrar;)V
+	public fun registerDecisionStatusDisplayNames (Lcom/doublemoon1119/mahjongcraft/platform/minecraft/api/registration/DecisionStatusDisplayNameRegistrar;)V
+	public fun registerExhaustiveDrawReasonDisplayNames (Lcom/doublemoon1119/mahjongcraft/platform/minecraft/api/registration/ExhaustiveDrawReasonDisplayNameRegistrar;)V
+	public fun registerGameAchievementResolvers (Lcom/doublemoon1119/mahjongcraft/platform/minecraft/api/registration/GameAchievementResolverRegistrar;)V
+	public fun registerGameActionSounds (Lcom/doublemoon1119/mahjongcraft/platform/minecraft/api/registration/GameActionSoundPresentationRegistrar;)V
+	public fun registerGameActionVocabulary (Lcom/doublemoon1119/mahjongcraft/platform/minecraft/api/registration/GameActionVocabularyRegistrar;)V
+	public fun registerGameConfigPresentations (Lcom/doublemoon1119/mahjongcraft/platform/minecraft/api/registration/GameConfigPresentationRegistrar;)V
+	public fun registerHistoryDiscardMarkerDisplays (Lcom/doublemoon1119/mahjongcraft/platform/minecraft/api/registration/HistoryDiscardMarkerDisplayRegistrar;)V
+	public fun registerMatchSettlementPresentationTemplates (Lcom/doublemoon1119/mahjongcraft/platform/minecraft/api/registration/MatchSettlementPresentationTemplateRegistrar;)V
+	public fun registerPlayerPortraitSources (Lcom/doublemoon1119/mahjongcraft/platform/minecraft/api/registration/PlayerPortraitSourceRegistrar;)V
+	public fun registerPublicPlayerIndicatorDisplays (Lcom/doublemoon1119/mahjongcraft/platform/minecraft/api/registration/PublicPlayerIndicatorDisplayRegistrar;)V
+	public fun registerRoomMemberAppearanceSources (Lcom/doublemoon1119/mahjongcraft/platform/minecraft/api/registration/RoomMemberAppearanceSourceRegistrar;)V
+	public fun registerRoundInfoPresentations (Lcom/doublemoon1119/mahjongcraft/platform/minecraft/api/registration/RoundInfoLineDisplayRegistrar;)V
+	public fun registerRoundOutcomeDisplayNames (Lcom/doublemoon1119/mahjongcraft/platform/minecraft/api/registration/RoundOutcomeDisplayNameRegistrar;)V
+	public fun registerRuleCatalogues (Lcom/doublemoon1119/mahjongcraft/platform/minecraft/api/registration/RuleCatalogueRegistrar;)V
+	public fun registerRuleDecisionDisplayNames (Lcom/doublemoon1119/mahjongcraft/platform/minecraft/api/registration/RuleDecisionDisplayNameRegistrar;)V
+	public fun registerRuleModuleDisplayNames (Lcom/doublemoon1119/mahjongcraft/platform/minecraft/api/registration/RuleModuleDisplayNameRegistrar;)V
+	public fun registerTablePropDescribers (Lcom/doublemoon1119/mahjongcraft/platform/minecraft/api/registration/TablePropDescriberRegistrar;)V
+	public fun registerTileAssets (Lcom/doublemoon1119/mahjongcraft/platform/minecraft/api/registration/MinecraftTileAssetRegistrar;)V
+	public fun registerTileDisplayNames (Lcom/doublemoon1119/mahjongcraft/platform/minecraft/api/registration/TileDisplayNameRegistrar;)V
+	public fun registerTileEmojis (Lcom/doublemoon1119/mahjongcraft/platform/minecraft/api/registration/TileEmojiRegistrar;)V
+	public fun registerTileLabels (Lcom/doublemoon1119/mahjongcraft/platform/minecraft/api/registration/TileLabelRegistrar;)V
+	public fun registerWinCelebrationShowcases (Lcom/doublemoon1119/mahjongcraft/platform/minecraft/api/registration/WinCelebrationShowcaseRegistrar;)V
+	public fun registerWinSettlementPresentationTemplates (Lcom/doublemoon1119/mahjongcraft/platform/minecraft/api/registration/WinSettlementPresentationTemplateRegistrar;)V
 }
 

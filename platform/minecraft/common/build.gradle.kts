@@ -11,6 +11,8 @@ publicApiAbi {
         "com.doublemoon1119.mahjongcraft.platform.minecraft.api.seating.**",
         "com.doublemoon1119.mahjongcraft.platform.minecraft.api.table.**",
         "com.doublemoon1119.mahjongcraft.platform.minecraft.api.MahjongCraftInternalApi",
+        "com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.**",
+        "com.doublemoon1119.mahjongcraft.platform.minecraft.extension.MinecraftMahjongExtension",
     )
 }
 

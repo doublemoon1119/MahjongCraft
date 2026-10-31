@@ -32,7 +32,7 @@ import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
  * Minecraft 使用 `com.doublemoon1119.mahjongcraft.platform.minecraft.extension.MinecraftMahjongExtension`。
  * 這讓 `mahjong-extension-api` 不必依賴特定平台，同一份規則邏輯也能在不同平台重複使用。
  *
- * loader adapter 負責發現實作並交給 [MahjongExtensionRegistrar]；extension 不應自行取得 Koin 或依賴
+ * loader adapter 負責發現實作並交給 [MahjongExtensionBootstrap]；extension 不應自行取得 Koin 或依賴
  * MahjongCraft 的初始化順序。
  */
 interface MahjongExtension {

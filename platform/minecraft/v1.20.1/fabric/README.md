@@ -69,12 +69,12 @@ first.
 ## Extension bootstrap
 
 Discovery materializes the extension entrypoints once and composes Core, Minecraft common,
-and Fabric registration in that order. Each registrar runs built-in callbacks first, records
+and Fabric registration in that order. Each bootstrap runs built-in callbacks first, records
 each extension's additions, and freezes its registry aggregate only after that layer succeeds.
 Extension IDs must be namespaced and unique within the layer.
 
 Fabric's aggregate holds the same registry instances used by gameplay services.
-Built-in registrations belong to `BuiltInFabricMahjongExtension`; the registrar does not
+Built-in registrations belong to `BuiltInFabricMahjongExtension`; the bootstrap does not
 construct replacement registries or provide a reduced initialization path for tests.
 Failure aborts startup without rolling back completed layers or retrying partial registration.
 
@@ -90,7 +90,8 @@ For a focused test run from the repository root:
 ```
 
 Use the [complete Minecraft target checks](../../README.md) before committing.
-The public API signature check covers this module's `api.event`, `api.seating` and `api.table` surfaces,
+The public API signature check covers this module's `api.event`, `api.registration`, `api.seating`,
+`api.table` and `api.tableprop` surfaces,
 plus the exact `FabricMahjongExtension` registration interface;
 it does not guarantee compatibility with a different Minecraft version or loader.
 

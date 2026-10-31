@@ -1,0 +1,14 @@
+public abstract interface class com/doublemoon1119/mahjongcraft/ai/api/registration/ExtensionGameActionAiRegistrar {
+	public abstract fun getRegistrationKeys ()Ljava/util/Set;
+	public abstract fun register (Lcom/doublemoon1119/mahjongcraft/ai/ExtensionGameActionAiDefinition;)V
+}
+
+public abstract interface class com/doublemoon1119/mahjongcraft/ai/api/registration/MahjongAiStrategyRegistrar {
+	public abstract fun register (Lcom/doublemoon1119/mahjongcraft/ai/MahjongAiStrategyDefinition;)V
+}
+
+public abstract interface class com/doublemoon1119/mahjongcraft/ai/api/registration/OpponentModelRegistrar {
+	public abstract fun getRegistrationKeys ()Ljava/util/Set;
+	public abstract fun register (Lcom/doublemoon1119/mahjongcraft/ai/expectation/OpponentModelDefinition;)V
+}
+

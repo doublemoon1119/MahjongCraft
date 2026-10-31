@@ -63,7 +63,7 @@ import kotlin.test.assertIs
 import kotlin.test.assertTrue
 
 /** 驗證 extension 的統一註冊順序、依來源分組的登記結果、錯誤診斷與 registry freeze。 */
-class MahjongExtensionRegistrarTest {
+class MahjongExtensionBootstrapTest {
     /** 驗證三個註冊階段都會執行，完成後禁止新增規則模組。 */
     @Test
     fun `extension registers all integrations before registries freeze`() {
@@ -76,7 +76,7 @@ class MahjongExtensionRegistrarTest {
         val calls = mutableListOf<String>()
         val extension = RecordingExtension(calls)
 
-        val sources = MahjongExtensionRegistrar.registerAndFreeze(
+        val sources = MahjongExtensionBootstrap.registerAndFreeze(
             extensions = listOf(extension),
             registries = testCoreRegistries(
                 moduleRegistry = moduleRegistry,
@@ -131,7 +131,7 @@ class MahjongExtensionRegistrarTest {
             register(OpponentModelDefinition("example:built_in_rule") { _, depth -> NeutralOpponentModel(depth) })
         }
 
-        val sources = MahjongExtensionRegistrar.registerAndFreeze(
+        val sources = MahjongExtensionBootstrap.registerAndFreeze(
             extensions = listOf(
                 RecordingExtension(mutableListOf()),
                 StrategyExtension("example:strategy_only"),
@@ -173,7 +173,7 @@ class MahjongExtensionRegistrarTest {
         }
 
         val error = assertFailsWith<MahjongExtensionRegistrationException> {
-            MahjongExtensionRegistrar.registerAndFreeze(
+            MahjongExtensionBootstrap.registerAndFreeze(
                 extensions = listOf(extension),
                 registries = testCoreRegistries(),
                 failurePolicy = ExtensionFailurePolicy.Default,
@@ -198,7 +198,7 @@ class MahjongExtensionRegistrarTest {
         }
 
         val wrapped = assertFailsWith<MahjongExtensionRegistrationException> {
-            MahjongExtensionRegistrar.registerAndFreeze(
+            MahjongExtensionBootstrap.registerAndFreeze(
                 extensions = listOf(failing(IsolatableTestError())),
                 registries = testCoreRegistries(),
                 failurePolicy = policy,
@@ -206,7 +206,7 @@ class MahjongExtensionRegistrarTest {
         }
         assertTrue(wrapped.message.orEmpty().contains("example:error"))
         assertFailsWith<FatalTestError> {
-            MahjongExtensionRegistrar.registerAndFreeze(
+            MahjongExtensionBootstrap.registerAndFreeze(
                 extensions = listOf(failing(FatalTestError())),
                 registries = testCoreRegistries(),
                 failurePolicy = policy,
@@ -214,7 +214,7 @@ class MahjongExtensionRegistrarTest {
         }
     }
 
-    /** 驗證回呼失敗時已完成的登記保留，且 registrar 不會凍結任何 registry。 */
+    /** 驗證回呼失敗時已完成的登記保留，且啟動流程不會凍結任何 registry。 */
     @Test
     fun `registration failure leaves partial registrations and registries unfrozen`() {
         val moduleRegistry = MahjongModuleRegistryImpl()
@@ -245,7 +245,7 @@ class MahjongExtensionRegistrarTest {
         }
 
         assertFailsWith<MahjongExtensionRegistrationException> {
-            MahjongExtensionRegistrar.registerAndFreeze(listOf(extension), registries, failurePolicy = ExtensionFailurePolicy.Default)
+            MahjongExtensionBootstrap.registerAndFreeze(listOf(extension), registries, failurePolicy = ExtensionFailurePolicy.Default)
         }
 
         assertTrue(moduleRegistry.getModule(RiichiRuleConfig()) is RiichiRuleModule)
@@ -273,7 +273,7 @@ class MahjongExtensionRegistrarTest {
         val extension = RecordingExtension(mutableListOf())
 
         val error = assertFailsWith<MahjongExtensionRegistrationException> {
-            MahjongExtensionRegistrar.registerAndFreeze(
+            MahjongExtensionBootstrap.registerAndFreeze(
                 extensions = listOf(extension, extension),
                 registries = testCoreRegistries(),
                 failurePolicy = ExtensionFailurePolicy.Default,
@@ -289,7 +289,7 @@ class MahjongExtensionRegistrarTest {
     fun `built in extension id cannot be reused by an extension`() {
         val builtIn = EmptyExtension("example:built_in")
         val error = assertFailsWith<MahjongExtensionRegistrationException> {
-            MahjongExtensionRegistrar.registerAndFreeze(
+            MahjongExtensionBootstrap.registerAndFreeze(
                 extensions = listOf(EmptyExtension(builtIn.id)),
                 builtIn = builtIn,
                 registries = testCoreRegistries(),
@@ -306,7 +306,7 @@ class MahjongExtensionRegistrarTest {
     fun `invalid extension ids fail with contextual errors`() {
         listOf("", " ", "invalid").forEach { invalidId ->
             val error = assertFailsWith<MahjongExtensionRegistrationException> {
-                MahjongExtensionRegistrar.registerAndFreeze(
+                MahjongExtensionBootstrap.registerAndFreeze(
                     extensions = listOf(EmptyExtension(invalidId)),
                     registries = testCoreRegistries(),
                     failurePolicy = ExtensionFailurePolicy.Default,
@@ -317,7 +317,7 @@ class MahjongExtensionRegistrarTest {
         }
 
         val error = assertFailsWith<MahjongExtensionRegistrationException> {
-            MahjongExtensionRegistrar.registerAndFreeze(
+            MahjongExtensionBootstrap.registerAndFreeze(
                 extensions = emptyList(),
                 builtIn = EmptyExtension("builtin"),
                 registries = testCoreRegistries(),
@@ -333,7 +333,7 @@ class MahjongExtensionRegistrarTest {
     fun `duplicate ai strategy key identifies registering extension`() {
         val registries = testCoreRegistries()
         val error = assertFailsWith<MahjongExtensionRegistrationException> {
-            MahjongExtensionRegistrar.registerAndFreeze(
+            MahjongExtensionBootstrap.registerAndFreeze(
                 extensions = listOf(StrategyExtension("example:first"), StrategyExtension("example:second")),
                 registries = registries,
                 failurePolicy = ExtensionFailurePolicy.Default,
@@ -347,7 +347,7 @@ class MahjongExtensionRegistrarTest {
 }
 
 /**
- * 建立 registrar 測試使用的獨立 core registry 集合。
+ * 建立啟動流程測試使用的獨立 core registry 集合。
  *
  * @param moduleRegistry 規則模組 registry，預設建立新的實作。
  * @param tileTypeRegistry 牌種類型 registry，預設建立新的實作。
@@ -389,7 +389,7 @@ private fun testCoreRegistries(
 )
 
 /**
- * 記錄 registrar 呼叫順序並登記一個可解析規則的測試 extension。
+ * 記錄啟動流程呼叫順序並登記一個可解析規則的測試 extension。
  *
  * @property calls 接收每個登記回呼名稱的可變清單。
  */
@@ -476,7 +476,7 @@ private class StrategyExtension(override val id: String) : MahjongExtension {
     }
 }
 
-/** 提供 registrar 測試使用的獨立 network DTO registry 集合。 */
+/** 提供啟動流程測試使用的獨立 network DTO registry 集合。 */
 private class TestNetworkDtoRegistries : NetworkDtoRegistries {
     override val ruleConfig = DtoRegistry<MahjongRuleConfig, MahjongRuleConfigDto> { this }
     override val scoreConfig = DtoRegistry<ScoreConfig, ScoreConfigDto> { this }

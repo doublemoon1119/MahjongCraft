@@ -1,5 +1,12 @@
 plugins {
     alias(libs.plugins.mahjongcraft.kotlin.multiplatform)
+    alias(libs.plugins.mahjongcraft.public.api.abi)
+}
+
+publicApiAbi {
+    includedNames.addAll(
+        "com.doublemoon1119.mahjongcraft.extension.MahjongExtension",
+    )
 }
 
 version = libs.versions.extension.api.version.get()

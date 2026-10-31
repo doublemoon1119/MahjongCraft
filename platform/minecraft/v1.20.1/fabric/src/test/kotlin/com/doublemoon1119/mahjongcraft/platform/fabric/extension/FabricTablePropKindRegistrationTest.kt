@@ -31,13 +31,13 @@ import kotlin.uuid.Uuid
 
 /** 驗證 Fabric 規則桌面物件種類的登記順序、凍結與錯誤診斷。 */
 class FabricTablePropKindRegistrationTest {
-    /** 與桌面物件 registry 一起傳入 registrar 的空座位 provider。 */
+    /** 與桌面物件 registry 一起傳入啟動流程的空座位 provider。 */
     private class FakeProvider : SeatProvider<ServerWorld, Entity> {
         override fun resolve(world: ServerWorld, request: SeatRequest): List<SeatTarget<ServerWorld, Entity>> = emptyList()
     }
 
     /**
-     * 使用同一個 registrar 執行兩個 Fabric registry 的 bootstrap。
+     * 使用同一個啟動流程執行兩個 Fabric registry 的登記。
      *
      * @param extensions 依序登記的 Fabric extensions。
      * @param tablePropKindRegistry 要登記桌面物件種類的 registry。
@@ -48,7 +48,7 @@ class FabricTablePropKindRegistrationTest {
         extensions: Iterable<FabricMahjongExtension>,
         tablePropKindRegistry: FabricTablePropKindRegistry = FabricTablePropKindRegistryImpl(),
         seatProviderRegistry: FabricSeatProviderRegistryImpl = FabricSeatProviderRegistryImpl(),
-    ) = FabricMahjongExtensionRegistrar.registerAndFreeze(
+    ) = FabricMahjongExtensionBootstrap.registerAndFreeze(
         extensions = extensions,
         registries = FabricExtensionRegistries(tablePropKindRegistry, seatProviderRegistry),
         builtIn = BuiltInFabricMahjongExtension(FakeProvider(), MinecraftTileAssetRegistryImpl()),
@@ -152,7 +152,7 @@ class FabricTablePropKindRegistrationTest {
             }
         }
 
-        val sources = FabricMahjongExtensionRegistrar.registerAndFreeze(
+        val sources = FabricMahjongExtensionBootstrap.registerAndFreeze(
             extensions = listOf(
                 extension("example:first", "example:first-kind", "example:first-seat"),
                 extension("example:second", "example:second-kind", "example:second-seat"),

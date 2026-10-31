@@ -79,9 +79,9 @@ import kotlin.test.assertTrue
 import kotlin.uuid.Uuid
 
 /** 驗證第三方 Minecraft extension 的統一註冊順序、錯誤診斷與 registry freeze。 */
-class MinecraftMahjongExtensionRegistrarTest {
+class MinecraftMahjongExtensionBootstrapTest {
     /**
-     * 以明確的獨立 registry graph 執行 registrar，供隔離的單元測試使用。
+     * 以明確的獨立 registry graph 執行啟動流程，供隔離的單元測試使用。
      *
      * @param extensions 要依序執行註冊的 extension。
      * @param tileAssetRegistry 麻將牌資產 registry。
@@ -106,7 +106,7 @@ class MinecraftMahjongExtensionRegistrarTest {
         automaticControlDisplayRegistry: AutomaticControlDisplayRegistry = AutomaticControlDisplayRegistryImpl(),
         ruleCatalogueRegistry: RuleCatalogueRegistryImpl = RuleCatalogueRegistryImpl(),
         gameAchievementResolverRegistry: GameAchievementResolverRegistryImpl = GameAchievementResolverRegistryImpl(),
-    ): MinecraftMahjongExtensionRegistrationResult = MinecraftMahjongExtensionRegistrar.registerAndFreeze(
+    ): MinecraftMahjongExtensionRegistrationResult = MinecraftMahjongExtensionBootstrap.registerAndFreeze(
         extensions = extensions,
         registries = MinecraftPresentationRegistries(
             tileAssetRegistry = tileAssetRegistry,
@@ -337,7 +337,7 @@ class MinecraftMahjongExtensionRegistrarTest {
 
     /** 不帶任何 extension 時只登記規則中立的映射，日麻與台麻的映射都不存在。 */
     @Test
-    fun `registrar alone registers only rule-neutral mappings`() {
+    fun `bootstrap alone registers only rule-neutral mappings`() {
         val tileAssetRegistry = MinecraftTileAssetRegistryImpl()
         val aiStrategyDisplayNameRegistry = AiStrategyDisplayNameRegistryImpl()
         val ruleModuleDisplayNameRegistry = RuleModuleDisplayNameRegistryImpl()

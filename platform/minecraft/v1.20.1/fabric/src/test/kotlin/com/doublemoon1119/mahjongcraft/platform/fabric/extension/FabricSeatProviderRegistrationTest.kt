@@ -26,7 +26,7 @@ class FabricSeatProviderRegistrationTest {
     }
 
     /**
-     * 與座位 provider registry 一起傳入 registrar 的空桌面物件種類 registry。
+     * 與座位 provider registry 一起傳入啟動流程的空桌面物件種類 registry。
      *
      * @param extensions 依序登記的 Fabric extensions。
      * @param seatProviderRegistry 要登記座位 provider 的 registry。
@@ -35,7 +35,7 @@ class FabricSeatProviderRegistrationTest {
     private fun register(
         extensions: Iterable<FabricMahjongExtension>,
         seatProviderRegistry: FabricSeatProviderRegistryImpl = FabricSeatProviderRegistryImpl(),
-    ) = FabricMahjongExtensionRegistrar.registerAndFreeze(
+    ) = FabricMahjongExtensionBootstrap.registerAndFreeze(
         extensions = extensions,
         registries = FabricExtensionRegistries(FabricTablePropKindRegistryImpl(), seatProviderRegistry),
         builtIn = BuiltInFabricMahjongExtension(FakeProvider(), MinecraftTileAssetRegistryImpl()),
@@ -146,7 +146,7 @@ class FabricSeatProviderRegistrationTest {
             override val id: String = "invalid"
         }
         assertFailsWith<FabricMahjongExtensionRegistrationException> {
-            FabricMahjongExtensionRegistrar.registerAndFreeze(
+            FabricMahjongExtensionBootstrap.registerAndFreeze(
                 extensions = emptyList(),
                 registries = FabricExtensionRegistries(
                     tablePropKindRegistry = FabricTablePropKindRegistryImpl(),
@@ -203,7 +203,7 @@ class FabricSeatProviderRegistrationTest {
         }
 
         assertFailsWith<FabricMahjongExtensionRegistrationException> {
-            FabricMahjongExtensionRegistrar.registerAndFreeze(
+            FabricMahjongExtensionBootstrap.registerAndFreeze(
                 extensions = listOf(extension),
                 registries = FabricExtensionRegistries(tablePropRegistry, seatRegistry),
                 builtIn = BuiltInFabricMahjongExtension(FakeProvider(), MinecraftTileAssetRegistryImpl()),

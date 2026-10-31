@@ -49,7 +49,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.redText
 /**
  * MahjongCraft 不屬於任何規則的內建 Minecraft 呈現；所有規則中立的內建登記都寫在這裡。
  *
- * [MinecraftMahjongExtensionRegistrar] 在所有 extension 之前登記它，啟動報告將它的登記列為內建來源。
+ * [MinecraftMahjongExtensionBootstrap] 在所有 extension 之前登記它，啟動報告將它的登記列為內建來源。
  * 登記方式與其他 extension 相同，不具有覆寫或繞過重複 key 驗證的特權。
  */
 object BuiltInMinecraftMahjongExtension : MinecraftMahjongExtension {
