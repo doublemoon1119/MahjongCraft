@@ -7,11 +7,17 @@ import kotlin.test.assertEquals
 
 /** 檢查分頁填入物品時使用的同一份家具清單；原生註冊由遊戲執行環境驗證。 */
 class ExampleCreativeTabTest {
-    /** 分頁只列出椅子與坐墊，不提供暫時座位物品或生怪蛋。 */
+    /** 分頁依序列出椅子、坐墊與三種麻將桌，不提供暫時座位物品或生怪蛋。 */
     @Test
-    fun `creative tab contents contain only chair and cushion in order`() {
+    fun `creative tab contents contain the furniture and tables in order`() {
         assertEquals(
-            listOf(ExampleFurnitureIds.CHAIR, ExampleFurnitureIds.CUSHION),
+            listOf(
+                ExampleFurnitureIds.CHAIR,
+                ExampleFurnitureIds.CUSHION,
+                ExampleFurnitureIds.ONE_BLOCK_TABLE,
+                ExampleFurnitureIds.LOW_TABLE,
+                ExampleFurnitureIds.ROUND_TABLE,
+            ),
             ExampleItemGroups.furnitureItemIds(),
         )
     }

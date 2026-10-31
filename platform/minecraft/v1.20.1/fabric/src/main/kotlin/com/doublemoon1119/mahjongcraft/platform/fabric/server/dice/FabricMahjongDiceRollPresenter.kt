@@ -1,8 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.server.dice
 
-import com.doublemoon1119.mahjongcraft.platform.fabric.block.MahjongTableBlock
-import com.doublemoon1119.mahjongcraft.platform.fabric.block.MahjongTablePart
-import com.doublemoon1119.mahjongcraft.platform.fabric.block.entity.MahjongTableBlockEntity
+import com.doublemoon1119.mahjongcraft.platform.fabric.block.MahjongTableLookup
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.DiceRollPresentationEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongDiceEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongDicePoint
@@ -14,11 +12,9 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongDiceRollPr
 import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongDiceRollPresenter
 import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongDiceTableLayout
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocation
-import net.minecraft.block.BlockState
 import net.minecraft.registry.RegistryKey
 import net.minecraft.registry.RegistryKeys
 import net.minecraft.server.world.ServerWorld
-import net.minecraft.state.property.Properties
 import net.minecraft.util.Identifier
 import net.minecraft.util.math.BlockPos
 import net.minecraft.util.math.Box
@@ -43,10 +39,9 @@ class FabricMahjongDiceRollPresenter(
     override fun present(presentation: MahjongDiceRollPresentation): MahjongDiceRollPresentationResult {
         val world = resolveWorld(presentation.tableLocation) ?: return MahjongDiceRollPresentationResult.TABLE_NOT_FOUND
         val controllerPos = presentation.tableLocation.toBlockPos()
-        val state = world.getBlockState(controllerPos)
-        val table = resolveTable(world, controllerPos, state, presentation.tableId)
+        val table = MahjongTableLookup.find(world, controllerPos, presentation.tableId)
             ?: return MahjongDiceRollPresentationResult.TABLE_NOT_FOUND
-        if (state.get(Properties.HORIZONTAL_FACING).toMahjongTableFacing() != presentation.tableFacing) {
+        if (table.facing != presentation.tableFacing) {
             return MahjongDiceRollPresentationResult.TABLE_NOT_FOUND
         }
         val placements = MahjongDiceTableLayout.placements(
@@ -112,7 +107,7 @@ class FabricMahjongDiceRollPresenter(
         }
         oldDice.forEach(MahjongDiceEntity::discard)
         oldStages.forEach(DiceRollPresentationEntity::discard)
-        table.markDirty()
+        table.blockEntity.markDirty()
         return MahjongDiceRollPresentationResult.PRESENTED
     }
 
@@ -142,30 +137,6 @@ class FabricMahjongDiceRollPresenter(
         val identifier = Identifier.tryParse(location.dimensionId) ?: return null
         val worldKey = RegistryKey.of(RegistryKeys.WORLD, identifier)
         return serverHolder.current()?.getWorld(worldKey)
-    }
-
-    /**
-     * 驗證指定位置是身分相符且具水平朝向資料的桌子控制方塊。
-     *
-     * @param world 桌子所在世界。
-     * @param controllerPos 控制方塊座標。
-     * @param state 該位置目前的方塊狀態。
-     * @param tableId 預期的麻將桌 UUID。
-     * @return 相符的桌子方塊實體；結構、朝向欄位或身分不符時為 null。
-     */
-    private fun resolveTable(
-        world: ServerWorld,
-        controllerPos: BlockPos,
-        state: BlockState,
-        tableId: Uuid,
-    ): MahjongTableBlockEntity? {
-        if (state.block !is MahjongTableBlock || state.get(MahjongTableBlock.PART) != MahjongTablePart.BOTTOM_CENTER) {
-            return null
-        }
-        if (!state.contains(Properties.HORIZONTAL_FACING)) return null
-        return (world.getBlockEntity(controllerPos) as? MahjongTableBlockEntity)?.takeIf { table ->
-            table.tableId == tableId
-        }
     }
 
     /**

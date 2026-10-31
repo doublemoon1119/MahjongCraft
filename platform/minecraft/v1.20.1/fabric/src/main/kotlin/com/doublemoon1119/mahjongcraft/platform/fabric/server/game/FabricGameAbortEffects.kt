@@ -8,7 +8,7 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkJson
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameAbortEffects
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateStore
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
-import com.doublemoon1119.mahjongcraft.platform.fabric.block.entity.MahjongTableBlockEntity
+import com.doublemoon1119.mahjongcraft.platform.fabric.block.MahjongTableLookup
 import com.doublemoon1119.mahjongcraft.platform.fabric.logging.mahjongCraftLogger
 import com.doublemoon1119.mahjongcraft.platform.fabric.network.MahjongChannels
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.FabricServerHolder
@@ -147,8 +147,8 @@ class FabricGameAbortEffects(
             return
         }
         val controllerPos = BlockPos(location.x, location.y, location.z)
-        val table = world.getBlockEntity(controllerPos)
-        if (table is MahjongTableBlockEntity && table.tableId != tableId) {
+        val table = MahjongTableLookup.find(world, controllerPos)
+        if (table != null && table.tableId != tableId) {
             logger.debug("Skipped aborted game entity cleanup gameId={}: controller no longer belongs to game", tableId)
             return
         }

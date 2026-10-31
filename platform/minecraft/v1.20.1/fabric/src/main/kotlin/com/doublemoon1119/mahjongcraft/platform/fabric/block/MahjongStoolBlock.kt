@@ -4,7 +4,9 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.server.seating.MahjongSto
 import net.minecraft.block.Block
 import net.minecraft.block.BlockState
 import net.minecraft.block.ShapeContext
+import net.minecraft.block.Waterloggable
 import net.minecraft.entity.player.PlayerEntity
+import net.minecraft.fluid.FluidState
 import net.minecraft.item.ItemPlacementContext
 import net.minecraft.server.world.ServerWorld
 import net.minecraft.state.StateManager
@@ -19,11 +21,13 @@ import net.minecraft.util.math.Direction
 import net.minecraft.util.shape.VoxelShape
 import net.minecraft.world.BlockView
 import net.minecraft.world.World
+import net.minecraft.world.WorldAccess
 
 /**
  * 使用 [design] 固定款式、水平朝向及其碰撞幾何的單方塊麻將凳。
  *
  * 右鍵即可坐下，不論手上拿著什麼；蹲下或正在騎乘時不坐下。凳子本身不保存牌局或座位狀態。
+ * 與原版可含水方塊相同，放在水源中會含水。
  *
  * @param settings Minecraft 方塊設定。
  * @property design 此方塊 registry ID 對應的固定凳子款式。
@@ -33,16 +37,36 @@ class MahjongStoolBlock(
     settings: Settings,
     val design: MahjongStoolDesign,
     private val seatService: MahjongStoolSeatService,
-) : Block(settings) {
+) : Block(settings),
+    Waterloggable {
     init {
-        defaultState = stateManager.defaultState.with(Properties.HORIZONTAL_FACING, Direction.NORTH)
+        defaultState = stateManager.defaultState
+            .with(Properties.HORIZONTAL_FACING, Direction.NORTH)
+            .with(Properties.WATERLOGGED, false)
     }
 
-    /** 放置時讓凳子的正面開口朝向玩家。 */
-    override fun getPlacementState(context: ItemPlacementContext): BlockState = defaultState.with(
-        Properties.HORIZONTAL_FACING,
-        context.horizontalPlayerFacing.opposite,
-    )
+    /** 放置時讓凳子的正面開口朝向玩家，放在水源中時含水。 */
+    override fun getPlacementState(context: ItemPlacementContext): BlockState = defaultState
+        .with(Properties.HORIZONTAL_FACING, context.horizontalPlayerFacing.opposite)
+        .waterloggedAt(context.world, context.blockPos)
+
+    /** 含水時回報水源的流體狀態。 */
+    @Suppress("OVERRIDE_DEPRECATION")
+    override fun getFluidState(state: BlockState): FluidState = state.waterloggedFluidState()
+
+    /** 含水時排程水流更新，讓周圍的水照常流動。 */
+    @Suppress("DEPRECATION", "OVERRIDE_DEPRECATION")
+    override fun getStateForNeighborUpdate(
+        state: BlockState,
+        direction: Direction,
+        neighborState: BlockState,
+        world: WorldAccess,
+        pos: BlockPos,
+        neighborPos: BlockPos,
+    ): BlockState {
+        state.scheduleWaterTickIfWaterlogged(world, pos)
+        return super.getStateForNeighborUpdate(state, direction, neighborState, world, pos, neighborPos)
+    }
 
     /**
      * 讓右鍵的玩家坐上凳子。
@@ -94,8 +118,8 @@ class MahjongStoolBlock(
         mirror.getRotation(state.get(Properties.HORIZONTAL_FACING)),
     )
 
-    /** 宣告所有麻將凳皆保存水平朝向。 */
+    /** 宣告所有麻將凳皆保存水平朝向與含水狀態。 */
     override fun appendProperties(builder: StateManager.Builder<Block, BlockState>) {
-        builder.add(Properties.HORIZONTAL_FACING)
+        builder.add(Properties.HORIZONTAL_FACING, Properties.WATERLOGGED)
     }
 }

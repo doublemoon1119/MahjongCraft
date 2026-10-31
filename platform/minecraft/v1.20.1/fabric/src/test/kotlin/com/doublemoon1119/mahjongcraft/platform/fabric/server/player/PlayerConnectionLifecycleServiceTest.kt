@@ -42,6 +42,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
+import kotlin.time.Duration
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
 import kotlin.uuid.Uuid
@@ -76,7 +77,7 @@ class PlayerConnectionLifecycleServiceTest {
     /** `LEAVE_AFTER_TIMEOUT` 只在完整寬限時間到期後移除玩家。 */
     @Test
     fun `test timeout policy removes player after grace period`() = runTest {
-        val fixture = createFixture(DisconnectedPlayerPolicy.LEAVE_AFTER_TIMEOUT, timeoutSeconds = 5)
+        val fixture = createFixture(DisconnectedPlayerPolicy.LEAVE_AFTER_TIMEOUT, timeout = 5.seconds)
 
         fixture.service.onDisconnected(fixture.playerId)
         runCurrent()
@@ -92,7 +93,7 @@ class PlayerConnectionLifecycleServiceTest {
     /** 玩家在寬限時間內重連時應取消逾時離開。 */
     @Test
     fun `test reconnect cancels pending timeout leave`() = runTest {
-        val fixture = createFixture(DisconnectedPlayerPolicy.LEAVE_AFTER_TIMEOUT, timeoutSeconds = 5)
+        val fixture = createFixture(DisconnectedPlayerPolicy.LEAVE_AFTER_TIMEOUT, timeout = 5.seconds)
 
         fixture.service.onDisconnected(fixture.playerId)
         runCurrent()
@@ -182,13 +183,13 @@ class PlayerConnectionLifecycleServiceTest {
     /** 已排程工作應保留斷線當下的 timeout，不受後續設定替換影響。 */
     @Test
     fun `test pending timeout keeps scheduling config snapshot`() = runTest {
-        val fixture = createFixture(DisconnectedPlayerPolicy.LEAVE_AFTER_TIMEOUT, timeoutSeconds = 5)
+        val fixture = createFixture(DisconnectedPlayerPolicy.LEAVE_AFTER_TIMEOUT, timeout = 5.seconds)
         fixture.service.onDisconnected(fixture.playerId)
         runCurrent()
         fixture.configState.replace(
             MinecraftServerConfig(
                 disconnectedPlayerPolicy = DisconnectedPlayerPolicy.KEEP_SEAT,
-                disconnectedPlayerTimeoutSeconds = 300,
+                disconnectedPlayerTimeout = 300.seconds,
             ),
         )
 
@@ -202,12 +203,12 @@ class PlayerConnectionLifecycleServiceTest {
      * 建立使用目前測試 scheduler 的斷線政策測試資料。
      *
      * @param policy 本次測試套用的斷線政策。
-     * @param timeoutSeconds 逾時離開的寬限秒數。
+     * @param timeout 逾時離開的寬限時間。
      * @return 包含受測服務與測試 repository 的 fixture。
      */
     private suspend fun TestScope.createFixture(
         policy: DisconnectedPlayerPolicy,
-        timeoutSeconds: Long = 300,
+        timeout: Duration = 300.seconds,
     ): Fixture {
         val dispatcher = StandardTestDispatcher(testScheduler)
         val dispatchers = TestCoroutineDispatchers(dispatcher, dispatcher, dispatcher)
@@ -243,7 +244,7 @@ class PlayerConnectionLifecycleServiceTest {
         val configState = MinecraftServerConfigState(
             MinecraftServerConfig(
                 disconnectedPlayerPolicy = policy,
-                disconnectedPlayerTimeoutSeconds = timeoutSeconds,
+                disconnectedPlayerTimeout = timeout,
             ),
         )
         val automaticControlSnapshots = RecordingAutomaticControlSnapshotSender()

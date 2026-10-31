@@ -1,5 +1,7 @@
 package com.doublemoon1119.mahjongcraft.flow.common.game.model
 
+import kotlin.time.Duration
+
 /**
  * 玩家一次決策在指定時間點的權威思考時間計時結果。
  *
@@ -8,12 +10,12 @@ package com.doublemoon1119.mahjongcraft.flow.common.game.model
  * `com.doublemoon1119.mahjongcraft.flow.server.game.service.ActivePlayerDecisionStatus` 組合玩家、階段與此狀態。
  * 本型別不直接寫入 persistence 或作為網路 DTO。
  *
- * @property baseRemainingMillis 尚未使用的基本思考時間毫秒數。
- * @property reserveRemainingMillis 玩家整場共用的剩餘保留思考時間毫秒數。
+ * @property baseRemaining 尚未使用的基本思考時間。
+ * @property reserveRemaining 玩家整場共用的剩餘保留思考時間。
  * @property isTimedOut 基本思考時間與保留思考時間是否都已耗盡。
  */
 data class DecisionTimeStatus(
-    val baseRemainingMillis: Long,
-    val reserveRemainingMillis: Long,
+    val baseRemaining: Duration,
+    val reserveRemaining: Duration,
     val isTimedOut: Boolean,
 )

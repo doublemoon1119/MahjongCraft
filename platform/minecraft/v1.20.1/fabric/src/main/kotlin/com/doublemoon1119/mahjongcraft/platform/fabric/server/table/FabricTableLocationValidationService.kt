@@ -1,7 +1,7 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.server.table
 
 import com.doublemoon1119.mahjongcraft.platform.fabric.block.MahjongTableBlock
-import com.doublemoon1119.mahjongcraft.platform.fabric.block.entity.MahjongTableBlockEntity
+import com.doublemoon1119.mahjongcraft.platform.fabric.block.MahjongTableLookup
 import com.doublemoon1119.mahjongcraft.platform.fabric.logging.mahjongCraftLogger
 import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongDiceRollPresenter
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.DimensionChunkKey
@@ -63,7 +63,7 @@ class FabricTableLocationValidationService(
     /** 註冊 Fabric BlockEntity、chunk 與 server tick 事件。 */
     fun registerEvents() {
         ServerBlockEntityEvents.BLOCK_ENTITY_LOAD.register { blockEntity, world ->
-            if (blockEntity is MahjongTableBlockEntity) nextTableLoads.add(PendingTableLoad(world, blockEntity.pos))
+            if (MahjongTableLookup.of(blockEntity) != null) nextTableLoads.add(PendingTableLoad(world, blockEntity.pos))
         }
         ServerChunkEvents.CHUNK_LOAD.register { world, chunk ->
             validationQueue.enqueueChunk(world, chunk.pos.x, chunk.pos.z)
@@ -119,7 +119,7 @@ class FabricTableLocationValidationService(
      */
     private fun processTableLoad(request: PendingTableLoad) {
         if (!isUsable(request.world, request.pos.x shr 4, request.pos.z shr 4)) return
-        val table = request.world.getBlockEntity(request.pos) as? MahjongTableBlockEntity ?: return
+        val table = MahjongTableLookup.find(request.world, request.pos) ?: return
         val location = request.world.toTableLocation(request.pos)
         val previous = locations.get(table.tableId)
         val current = locations.put(table.tableId, location)
@@ -198,18 +198,18 @@ class FabricTableLocationValidationService(
         world.chunkManager.isChunkLoaded(chunkX, chunkZ)
 
     /**
-     * 定點確認 BlockEntity 類型與 UUID 都符合索引。
+     * 定點確認位置上是 UUID 符合索引的麻將桌控制點；內建桌另外確認整個結構完整。
      *
      * @param world 預期桌子所在世界。
      * @param entry 位置索引中的桌子 UUID 與座標。
-     * @return 指定方塊為完整且 UUID 相符的麻將桌時為 true。
+     * @return 指定位置為 UUID 相符的麻將桌，且內建桌結構完整時為 true。
      */
     private fun matchesExpectedTable(world: ServerWorld, entry: TableLocationEntry): Boolean {
         val location: TableLocation = entry.location
-        val table = world.getBlockEntity(BlockPos(location.x, location.y, location.z)) as? MahjongTableBlockEntity
-        if (table?.tableId != entry.tableId) return false
-        val block = table.cachedState.block as? MahjongTableBlock ?: return false
-        val complete = block.isComplete(world, table.pos, table.cachedState)
+        val table = MahjongTableLookup.find(world, BlockPos(location.x, location.y, location.z), entry.tableId) ?: return false
+        val controllerState = table.blockEntity.cachedState
+        val builtInBlock = controllerState.block as? MahjongTableBlock ?: return true
+        val complete = builtInBlock.isComplete(world, table.pos, controllerState)
         if (!complete) logger.warn("Found incomplete Mahjong table {} at {}", table.tableId, entry.location)
         return complete
     }

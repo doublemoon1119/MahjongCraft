@@ -18,6 +18,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertTrue
+import kotlin.time.Duration.Companion.milliseconds
 import kotlin.uuid.Uuid
 
 /** 驗證 Room 與 Game 同批保存的伺服器權威狀態。 */
@@ -149,7 +150,7 @@ class AuthoritativeStatePersistenceDtoTest {
         val state = createState(emptyList(), listOf(createGame()))
         val gameId = state.games.keys.single()
         val invalidRuntimeState = state.gameRuntimeStates.getValue(gameId).copy(
-            remainingReserveMillisByPlayerId = mapOf(Uuid.random().toString() to 1L),
+            remainingReserveByPlayerId = mapOf(Uuid.random().toString() to 1.milliseconds),
         )
 
         assertFailsWith<IllegalArgumentException> {
@@ -164,7 +165,7 @@ class AuthoritativeStatePersistenceDtoTest {
         val gameId = state.games.keys.single()
         val playerId = state.games.getValue(gameId).players.single().id
         val invalidRuntimeState = state.gameRuntimeStates.getValue(gameId).copy(
-            remainingReserveMillisByPlayerId = mapOf(playerId to -1L),
+            remainingReserveByPlayerId = mapOf(playerId to (-1).milliseconds),
         )
 
         assertFailsWith<IllegalArgumentException> {
@@ -266,7 +267,7 @@ class AuthoritativeStatePersistenceDtoTest {
         val game = Game(
             tableState = tableState,
             flowConfig = GameFlowConfig(),
-            interruptedBaseMillisByPlayerId = mapOf(playerId to 3_500L),
+            interruptedBaseByPlayerId = mapOf(playerId to 3_500.milliseconds),
         )
         val state = createAuthoritativeStatePersistenceDto(
             rooms = emptyList(),
@@ -282,7 +283,7 @@ class AuthoritativeStatePersistenceDtoTest {
             bundledPersistenceRegistries().components,
         ).getValue(game.id)
 
-        assertEquals(mapOf(playerId to 3_500L), restored.interruptedBaseMillisByPlayerId)
+        assertEquals(mapOf(playerId to 3_500.milliseconds), restored.interruptedBaseByPlayerId)
     }
 
     /** 驗證強制自動操作索引不得包含遊戲以外的玩家。 */

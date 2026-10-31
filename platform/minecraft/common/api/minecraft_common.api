@@ -1,3 +1,6 @@
+public abstract interface annotation class com/doublemoon1119/mahjongcraft/platform/minecraft/api/MahjongCraftInternalApi : java/lang/annotation/Annotation {
+}
+
 public abstract interface class com/doublemoon1119/mahjongcraft/platform/minecraft/api/event/ActionsPerformedListener {
 	public abstract fun onActionsPerformed (Lcom/doublemoon1119/mahjongcraft/flow/api/event/ActionsPerformedEvent;Lcom/doublemoon1119/mahjongcraft/platform/minecraft/api/event/GameEventContext;)V
 }
@@ -120,5 +123,37 @@ public abstract interface class com/doublemoon1119/mahjongcraft/platform/minecra
 	public abstract fun getIdentity ()Lcom/doublemoon1119/mahjongcraft/platform/minecraft/api/seating/SeatIdentity;
 	public abstract fun inspect (Ljava/lang/Object;Ljava/lang/Object;)Lcom/doublemoon1119/mahjongcraft/platform/minecraft/api/seating/SeatState;
 	public abstract fun trySit (Ljava/lang/Object;Ljava/lang/Object;)Lcom/doublemoon1119/mahjongcraft/platform/minecraft/api/seating/SeatState;
+}
+
+public abstract interface class com/doublemoon1119/mahjongcraft/platform/minecraft/api/table/MahjongTableController {
+	public abstract fun getMahjongTableFacing ()Lcom/doublemoon1119/mahjongcraft/platform/minecraft/api/table/MahjongTableFacing;
+	public abstract fun getMahjongTableState ()Lcom/doublemoon1119/mahjongcraft/platform/minecraft/api/table/MahjongTableControllerState;
+}
+
+public final class com/doublemoon1119/mahjongcraft/platform/minecraft/api/table/MahjongTableControllerState {
+	public fun <init> (Lkotlin/jvm/functions/Function0;)V
+	public final fun extendContinuingWinPresentationUntil (J)V
+	public final fun extendPresentationUntil (J)V
+	public final fun getContinuingWinPresentationBusyUntilGameTime ()J
+	public final fun getPresentationBusyUntilGameTime ()J
+	public final fun getTableId ()Lkotlin/uuid/Uuid;
+	public final fun isPresenting (J)Z
+	public final fun isPresentingContinuingWin (J)Z
+	public final fun restore (Lkotlin/uuid/Uuid;JJ)V
+}
+
+public final class com/doublemoon1119/mahjongcraft/platform/minecraft/api/table/MahjongTableFacing : java/lang/Enum {
+	public static final field Companion Lcom/doublemoon1119/mahjongcraft/platform/minecraft/api/table/MahjongTableFacing$Companion;
+	public static final field EAST Lcom/doublemoon1119/mahjongcraft/platform/minecraft/api/table/MahjongTableFacing;
+	public static final field NORTH Lcom/doublemoon1119/mahjongcraft/platform/minecraft/api/table/MahjongTableFacing;
+	public static final field SOUTH Lcom/doublemoon1119/mahjongcraft/platform/minecraft/api/table/MahjongTableFacing;
+	public static final field WEST Lcom/doublemoon1119/mahjongcraft/platform/minecraft/api/table/MahjongTableFacing;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
+	public static fun valueOf (Ljava/lang/String;)Lcom/doublemoon1119/mahjongcraft/platform/minecraft/api/table/MahjongTableFacing;
+	public static fun values ()[Lcom/doublemoon1119/mahjongcraft/platform/minecraft/api/table/MahjongTableFacing;
+}
+
+public final class com/doublemoon1119/mahjongcraft/platform/minecraft/api/table/MahjongTableFacing$Companion {
+	public final fun fromNameOrDefault (Ljava/lang/String;)Lcom/doublemoon1119/mahjongcraft/platform/minecraft/api/table/MahjongTableFacing;
 }
 

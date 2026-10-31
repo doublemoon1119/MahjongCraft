@@ -12,6 +12,9 @@ import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.milliseconds
+import kotlin.time.Duration.Companion.seconds
 import kotlin.uuid.Uuid
 
 /** [PlayerDecisionTimerFactory] 的單元測試。 */
@@ -31,26 +34,26 @@ class PlayerDecisionTimerFactoryTest {
                 players = players,
             ),
             flowConfig = GameFlowConfig(
-                timeControl = ActionTimeControl.Custom(baseSeconds = 7, reserveSeconds = 30),
+                timeControl = ActionTimeControl.Custom(base = 7.seconds, reserve = 30.seconds),
             ),
-            remainingReserveMillisByPlayerId = players.associate { player ->
-                player.id to if (player.id == playerId) 12_345L else 30_000L
+            remainingReserveByPlayerId = players.associate { player ->
+                player.id to if (player.id == playerId) 12_345.milliseconds else 30_000.milliseconds
             },
         )
-        val factory = PlayerDecisionTimerFactory(FakeMonotonicClock(nowMillis = 98_765L))
+        val factory = PlayerDecisionTimerFactory(FakeMonotonicClock(now = 98_765.milliseconds))
 
         val timer = factory.create(game, playerId, phase = PlayerDecisionPhase.OWN_TURN)
 
         assertEquals(playerId, timer.playerId)
-        assertEquals(98_765L, timer.startedAtMillis)
-        assertEquals(7_000L, timer.baseDurationMillis)
-        assertEquals(12_345L, timer.reserveAtStartMillis)
+        assertEquals(98_765.milliseconds, timer.startedAt)
+        assertEquals(7_000.milliseconds, timer.baseDuration)
+        assertEquals(12_345.milliseconds, timer.reserveAtStart)
     }
 
     /**
      * 驗證 [PlayerDecisionPhase.RULE_DECISION] 的基本思考秒數採用規則選擇設定
      * 而非一般 [GameFlowConfig.timeControl]，且完全不動用共用保留思考時間池——即使玩家池子裡還有剩，
-     * 這個階段建立的計時器 [PlayerDecisionTimer.reserveAtStartMillis] 也固定是 0，用完基本思考時間就
+     * 這個階段建立的計時器 [PlayerDecisionTimer.reserveAtStart] 也固定是 0，用完基本思考時間就
      * 直接逾時。
      */
     @Test
@@ -67,17 +70,17 @@ class PlayerDecisionTimerFactoryTest {
                 players = players,
             ),
             flowConfig = GameFlowConfig(
-                timeControl = ActionTimeControl.Custom(baseSeconds = 7, reserveSeconds = 30),
-                ruleDecision = RuleDecisionConfig(45),
+                timeControl = ActionTimeControl.Custom(base = 7.seconds, reserve = 30.seconds),
+                ruleDecision = RuleDecisionConfig(45.seconds),
             ),
-            remainingReserveMillisByPlayerId = players.associate { player -> player.id to 12_000L },
+            remainingReserveByPlayerId = players.associate { player -> player.id to 12_000.milliseconds },
         )
-        val factory = PlayerDecisionTimerFactory(FakeMonotonicClock(nowMillis = 98_765L))
+        val factory = PlayerDecisionTimerFactory(FakeMonotonicClock(now = 98_765.milliseconds))
 
         val timer = factory.create(game, playerId, phase = PlayerDecisionPhase.RULE_DECISION)
 
-        assertEquals(45_000L, timer.baseDurationMillis)
-        assertEquals(0L, timer.reserveAtStartMillis)
+        assertEquals(45_000.milliseconds, timer.baseDuration)
+        assertEquals(0.milliseconds, timer.reserveAtStart)
     }
 
     @Test
@@ -87,11 +90,11 @@ class PlayerDecisionTimerFactoryTest {
         val game = Game(
             tableState = FakeTableStateFactory.create(players = listOf(player)),
             flowConfig = GameFlowConfig(),
-            remainingReserveMillisByPlayerId = mapOf(playerId to 12_000L),
+            remainingReserveByPlayerId = mapOf(playerId to 12_000.milliseconds),
         )
 
         assertFailsWith<IllegalArgumentException> {
-            PlayerDecisionTimerFactory(FakeMonotonicClock(nowMillis = 0L)).create(
+            PlayerDecisionTimerFactory(FakeMonotonicClock(now = Duration.ZERO)).create(
                 game,
                 playerId,
                 phase = PlayerDecisionPhase.RULE_DECISION,
@@ -103,11 +106,11 @@ class PlayerDecisionTimerFactoryTest {
 /**
  * 測試用固定單調時間來源。
  *
- * @property nowMillis 回傳的固定毫秒數。
+ * @property now 回傳的固定毫秒數。
  */
 private class FakeMonotonicClock(
-    private val nowMillis: Long,
+    private val now: Duration,
 ) : MonotonicClock {
     /** 回傳測試指定的固定時間。 */
-    override fun nowMillis(): Long = nowMillis
+    override fun now(): Duration = now
 }

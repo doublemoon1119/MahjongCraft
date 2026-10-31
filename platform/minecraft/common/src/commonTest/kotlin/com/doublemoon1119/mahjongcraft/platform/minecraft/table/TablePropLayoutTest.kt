@@ -1,6 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.table
 
-import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongTableFacing
+import com.doublemoon1119.mahjongcraft.platform.minecraft.api.table.MahjongTableFacing
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse

@@ -13,6 +13,8 @@ import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.milliseconds
 import kotlin.uuid.Uuid
 
 /** [DecisionTimerSynchronizationService] 的目標玩家與停止同步測試。 */
@@ -46,8 +48,8 @@ class DecisionTimerSynchronizationServiceTest {
                 humanId to DecisionTimerUpdate.Active(
                     game.id,
                     PlayerDecisionPhase.OWN_TURN,
-                    4_000L,
-                    20_000L,
+                    4_000.milliseconds,
+                    20_000.milliseconds,
                 ),
             ),
             fixtures.publisher.updates,
@@ -111,7 +113,7 @@ class DecisionTimerSynchronizationServiceTest {
         fun status(playerId: Uuid) = ActivePlayerDecisionStatus(
             playerId,
             PlayerDecisionPhase.OWN_TURN,
-            DecisionTimeStatus(4_000L, 20_000L, false),
+            DecisionTimeStatus(4_000.milliseconds, 20_000.milliseconds, false),
         )
     }
 }
@@ -119,5 +121,5 @@ class DecisionTimerSynchronizationServiceTest {
 /** 同步服務測試不需推進的固定單調時間。 */
 private class FixedSynchronizationClock : MonotonicClock {
     /** 永遠回傳 session 起點。 */
-    override fun nowMillis(): Long = 0L
+    override fun now(): Duration = Duration.ZERO
 }

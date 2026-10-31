@@ -66,9 +66,10 @@ class GameConfigPresentationRegistryImpl(
         current: GameFlowConfig,
     ): GameFlowConfig {
         val defaultRuleDecision = ruleDecisionResolvers.findDefaultConfig(ruleModuleId, ruleConfig)
+        val currentRuleDecision = current.ruleDecision
         val ruleDecision = when {
             defaultRuleDecision == null -> null
-            current.ruleDecision?.baseSeconds in SharedGameFlowConfigPresentation.ruleDecisionTimeRange -> current.ruleDecision
+            currentRuleDecision != null && currentRuleDecision.base in SharedGameFlowConfigPresentation.ruleDecisionTimeRange -> currentRuleDecision
             else -> defaultRuleDecision
         }
         return current.copy(ruleDecision = ruleDecision)

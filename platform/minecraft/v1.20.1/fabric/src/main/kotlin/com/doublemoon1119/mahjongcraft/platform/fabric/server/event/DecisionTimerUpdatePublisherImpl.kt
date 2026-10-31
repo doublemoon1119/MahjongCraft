@@ -31,8 +31,8 @@ class DecisionTimerUpdatePublisherImpl(
                 gameId = update.gameId.toString(),
                 status = DecisionTimerStatusDto(
                     phase = update.phase.toDto(),
-                    baseRemainingMillis = update.baseRemainingMillis,
-                    reserveRemainingMillis = update.reserveRemainingMillis,
+                    baseRemaining = update.baseRemaining,
+                    reserveRemaining = update.reserveRemaining,
                     prompt = promptFactory.create(update.gameId, targetPlayerId, update.phase),
                 ),
             )

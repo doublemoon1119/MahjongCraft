@@ -130,6 +130,8 @@ class FabricPlayerFeedbackPublisher(
                     player.sendMessage(Text.translatable(MinecraftMessageKeys.TABLE_NOT_REACHABLE), true)
                 is MinecraftPlayerFeedback.StartBlockedByPlayers ->
                     player.sendMessage(startBlockedByPlayersMessage(feedback), true)
+                MinecraftPlayerFeedback.StartBlockedByTableSpace ->
+                    player.sendMessage(Text.translatable(MinecraftMessageKeys.START_BLOCKED_TABLE_SPACE).formatted(Formatting.RED))
                 is MinecraftPlayerFeedback.AiAdded ->
                     player.sendMessage(aiAddedMessage(feedback.strategyKey))
                 MinecraftPlayerFeedback.AddAiFailed ->

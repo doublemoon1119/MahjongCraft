@@ -1,6 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.server.dice
 
-import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongTableFacing
+import com.doublemoon1119.mahjongcraft.platform.minecraft.api.table.MahjongTableFacing
 import net.minecraft.util.math.Direction
 
 /**

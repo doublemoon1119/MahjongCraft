@@ -7,11 +7,11 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionConfig
  *
  * @return 還原後的規則選擇設定。
  */
-fun RuleDecisionConfigDto.toDomain(): RuleDecisionConfig = RuleDecisionConfig(baseSeconds)
+fun RuleDecisionConfigDto.toDomain(): RuleDecisionConfig = RuleDecisionConfig(base)
 
 /**
  * 將規則選擇設定轉換成網路 DTO。
  *
  * @return 規則選擇設定的網路 DTO。
  */
-fun RuleDecisionConfig.toDto(): RuleDecisionConfigDto = RuleDecisionConfigDto(baseSeconds)
+fun RuleDecisionConfig.toDto(): RuleDecisionConfigDto = RuleDecisionConfigDto(base)

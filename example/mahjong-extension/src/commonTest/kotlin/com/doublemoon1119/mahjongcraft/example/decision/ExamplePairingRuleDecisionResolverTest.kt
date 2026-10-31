@@ -16,6 +16,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
+import kotlin.time.Duration.Companion.seconds
 import kotlin.uuid.Uuid
 
 /** [ExamplePairingRuleDecisionResolver] 的最小行為測試。 */
@@ -65,7 +66,7 @@ class ExamplePairingRuleDecisionResolverTest {
             ),
         )
 
-        assertEquals(30, resolver.ruleDecisionConfig(config)?.baseSeconds)
+        assertEquals(30.seconds, resolver.ruleDecisionConfig(config)?.base)
         assertFalse(
             resolver.accepts(
                 tableState,

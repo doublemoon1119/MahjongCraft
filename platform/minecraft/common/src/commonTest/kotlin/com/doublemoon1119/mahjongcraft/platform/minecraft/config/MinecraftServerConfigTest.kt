@@ -2,6 +2,7 @@ package com.doublemoon1119.mahjongcraft.platform.minecraft.config
 
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.time.Duration.Companion.seconds
 
 /** [MinecraftServerConfig] 預設生命週期政策的單元測試。 */
 class MinecraftServerConfigTest {
@@ -13,13 +14,13 @@ class MinecraftServerConfigTest {
         assertEquals(DisconnectedPlayerPolicy.LEAVE_IMMEDIATELY, config.disconnectedPlayerPolicy)
         assertEquals(TableBreakPolicy.DENY_WHILE_OCCUPIED, config.tableBreakPolicy)
         assertEquals(OrphanedTablePolicy.REMOVE_ALL, config.orphanedTablePolicy)
-        assertEquals(30, config.disconnectedPlayerTimeoutSeconds)
+        assertEquals(30.seconds, config.disconnectedPlayerTimeout)
         assertEquals(true, config.mahjongTilePhysicalCollisionEnabled)
         assertEquals(MinecraftHistoryConfig.DEFAULT_ENABLED, config.history.enabled)
         assertEquals(MinecraftHistoryConfig.DEFAULT_INCLUDE_AI_MATCHES, config.history.includeAiMatches)
         assertEquals(MinecraftHistoryConfig.DEFAULT_INCLUDE_INTERRUPTED_MATCHES, config.history.includeInterruptedMatches)
         assertEquals(MinecraftHistoryConfig.DEFAULT_MAX_MATCHES, config.history.maxMatches)
-        assertEquals(MinecraftHistoryConfig.DEFAULT_RETENTION_DAYS, config.history.retentionDays)
+        assertEquals(MinecraftHistoryConfig.DEFAULT_RETENTION, config.history.retention)
         assertEquals(MinecraftHistoryConfig.DEFAULT_MAX_DISK_MIB, config.history.maxDiskMiB)
     }
 

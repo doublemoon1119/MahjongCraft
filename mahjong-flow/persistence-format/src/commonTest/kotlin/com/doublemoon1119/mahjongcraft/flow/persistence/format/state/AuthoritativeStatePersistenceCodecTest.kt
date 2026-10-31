@@ -41,6 +41,8 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertTrue
+import kotlin.time.Duration.Companion.milliseconds
+import kotlin.time.Duration.Companion.seconds
 import kotlin.uuid.Uuid
 
 /** 驗證平台無關的伺服器權威狀態 persistence codec。 */
@@ -104,8 +106,8 @@ class AuthoritativeStatePersistenceCodecTest {
         val rooms = listOf(createRoom(), createRoom())
         val games = listOf(Game(createGame(), GameFlowConfig()), Game(createGame(), GameFlowConfig())).mapIndexed { index, game ->
             game.copy(
-                remainingReserveMillisByPlayerId = game.tableState.players.associate { player ->
-                    player.id to 12_345L
+                remainingReserveByPlayerId = game.tableState.players.associate { player ->
+                    player.id to 12_345.milliseconds
                 },
                 pendingTransition = if (index == 0) {
                     PendingGameTransition.AdvanceRound
@@ -124,7 +126,7 @@ class AuthoritativeStatePersistenceCodecTest {
     /** 驗證規則選擇視窗的身分、時間點、提交與排定的一般流局結算都能 round-trip。 */
     @Test
     fun `rule decision window and scheduled exhaustive draw round-trip through codec`() {
-        val base = Game(createGame(), GameFlowConfig(ruleDecision = RuleDecisionConfig(15)))
+        val base = Game(createGame(), GameFlowConfig(ruleDecision = RuleDecisionConfig(15.seconds)))
         val participantId = base.tableState.players.first().id
         val window = PendingRuleDecision.open(
             step = RuleDecisionStep(

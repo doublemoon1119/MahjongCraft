@@ -32,6 +32,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertIs
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
+import kotlin.time.Duration.Companion.seconds
 import kotlin.uuid.Uuid
 
 /** 以實際規則選擇用例驗證簡易配對規則的換牌流程。 */
@@ -48,7 +49,7 @@ class ExamplePairingRuleDecisionUseCaseTest {
         val store = AuthoritativeStateStore(historyRecordingEnabled = true, maxPendingHistoryEvents = 100)
         val game = Game(
             tableState = initialTable,
-            flowConfig = GameFlowConfig(ruleDecision = RuleDecisionConfig(30)),
+            flowConfig = GameFlowConfig(ruleDecision = RuleDecisionConfig(30.seconds)),
         )
         store.update { state ->
             AuthoritativeStateUpdate(state.copy(games = state.games + (initialTable.id to game)), Unit)

@@ -79,6 +79,7 @@ import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
+import kotlin.time.Duration
 import kotlin.uuid.Uuid
 
 /**
@@ -297,7 +298,7 @@ class MahjongAutoDrawServiceTest {
 
     /** 提供固定時間的假時鐘，避免測試依賴真實系統時間。 */
     private class MutableMonotonicClock : MonotonicClock {
-        override fun nowMillis(): Long = 0L
+        override fun now(): Duration = Duration.ZERO
     }
 
     /** 建立一場已開局、尚未有任何玩家摸牌的真局；莊家（東家）維持真人。 */

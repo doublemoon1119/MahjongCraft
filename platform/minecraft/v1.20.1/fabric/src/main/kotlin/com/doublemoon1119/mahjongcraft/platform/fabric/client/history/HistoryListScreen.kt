@@ -465,7 +465,7 @@ internal class HistoryListScreen(
      * @return 已按目前可用寬度排列的資訊文字行。
      */
     private fun metadataLines(entry: HistoryMatchSummaryDto): List<OrderedText> {
-        val status = Text.literal(HistoryScreenText.duration(entry.durationMillis)).append(" • ")
+        val status = Text.literal(HistoryScreenText.duration(entry.duration)).append(" • ")
             .append(HistoryScreenText.outcome(entry.outcome))
         if (entry.integrity == HistoryIntegrityFilterDto.INCOMPLETE) {
             status.append(" • ").append(Text.translatable(MinecraftHistoryScreenKeys.INTEGRITY_INCOMPLETE).formatted(Formatting.YELLOW))

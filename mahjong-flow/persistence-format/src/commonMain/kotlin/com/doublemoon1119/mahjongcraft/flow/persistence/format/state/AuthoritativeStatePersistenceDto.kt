@@ -33,11 +33,11 @@ data class AuthoritativeStatePersistenceDto(
         require(games.keys == gameRuntimeStates.keys) { "Every game must have exactly one runtime state" }
         games.forEach { (gameId, game) ->
             val playerIds = game.players.mapTo(mutableSetOf()) { it.id }
-            require(gameRuntimeStates.getValue(gameId).remainingReserveMillisByPlayerId.keys == playerIds) {
+            require(gameRuntimeStates.getValue(gameId).remainingReserveByPlayerId.keys == playerIds) {
                 "Game runtime state must contain exactly the game players"
             }
-            require(gameRuntimeStates.getValue(gameId).remainingReserveMillisByPlayerId.values.all { it >= 0L }) {
-                "Remaining reserve time must not be negative"
+            require(gameRuntimeStates.getValue(gameId).remainingReserveByPlayerId.values.all { it.isFinite() && !it.isNegative() }) {
+                "Remaining reserve time must be finite and not negative"
             }
             require(gameRuntimeStates.getValue(gameId).forcedAutoPlayPlayerIds.all { it in playerIds }) {
                 "Forced auto-play players must belong to the game"

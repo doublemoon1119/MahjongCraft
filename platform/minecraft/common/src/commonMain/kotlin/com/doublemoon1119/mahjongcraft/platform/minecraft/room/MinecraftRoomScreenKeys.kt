@@ -18,6 +18,9 @@ object MinecraftRoomScreenKeys {
     const val READY = "mahjongcraft.room.screen.ready"
     const val CANCEL_READY = "mahjongcraft.room.screen.cancel_ready"
     const val START = "mahjongcraft.room.screen.start"
+
+    /** 桌面上方有方塊擋住時，開始按鈕的提示。 */
+    const val START_BLOCKED_TABLE_SPACE = "mahjongcraft.room.screen.start.blocked_table_space"
     const val LEAVE = "mahjongcraft.room.screen.leave"
     const val DISBAND = "mahjongcraft.room.screen.disband"
     const val ADD_AI = "mahjongcraft.room.screen.add_ai"

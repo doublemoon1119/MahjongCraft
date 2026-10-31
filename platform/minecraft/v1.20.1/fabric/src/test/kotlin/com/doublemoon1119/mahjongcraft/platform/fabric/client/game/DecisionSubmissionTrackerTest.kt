@@ -8,18 +8,21 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.milliseconds
+import kotlin.time.Duration.Companion.seconds
 
 /** 最終決策提交鎖、亂序 ACK 與等不到 ACK 時的單元測試。 */
 class DecisionSubmissionTrackerTest {
     /** 測試控制的客戶端時間，單位為毫秒。 */
-    private var now = 0L
+    private var now = Duration.ZERO
 
     /** 測試用的權威決策更新序號。 */
     private var updateSequence = 0L
 
     /** 回傳 [now] 的測試時鐘。 */
     private val clock = object : MonotonicClock {
-        override fun nowMillis(): Long = now
+        override fun now(): Duration = now
     }
 
     /** 受測的提交追蹤器。 */
@@ -91,9 +94,9 @@ class DecisionSubmissionTrackerTest {
     fun `test dropped submission unlocks after the timeout while the decision is still offered`() {
         tracker.begin("game", "decision", "submission")
 
-        runHeartbeats(untilMillis = DecisionSubmissionTracker.CONFIRMATION_TIMEOUT.inWholeMilliseconds - 1)
+        runHeartbeats(until = DecisionSubmissionTracker.CONFIRMATION_TIMEOUT - 1.milliseconds)
         assertEquals(TimeoutEffect.NONE, tracker.checkTimeout())
-        runHeartbeats(untilMillis = DecisionSubmissionTracker.CONFIRMATION_TIMEOUT.inWholeMilliseconds)
+        runHeartbeats(until = DecisionSubmissionTracker.CONFIRMATION_TIMEOUT)
 
         assertEquals(TimeoutEffect.UNLOCKED, tracker.checkTimeout())
         assertFalse(tracker.isPending())
@@ -106,7 +109,7 @@ class DecisionSubmissionTrackerTest {
         tracker.begin("game", "decision", "submission")
         tracker.acknowledge(ack(PlayerDecisionSubmissionResultKindDto.ACCEPTED))
 
-        runHeartbeats(untilMillis = LONG_WAIT_MILLIS)
+        runHeartbeats(until = LONG_WAIT)
 
         assertEquals(TimeoutEffect.NONE, tracker.checkTimeout())
         assertTrue(tracker.isPending("decision"))
@@ -139,12 +142,12 @@ class DecisionSubmissionTrackerTest {
     fun `test silent server reports resyncing once and then unlocks within the limit`() {
         tracker.begin("game", "decision", "submission")
 
-        now = DecisionSubmissionTracker.CONFIRMATION_TIMEOUT.inWholeMilliseconds
+        now = DecisionSubmissionTracker.CONFIRMATION_TIMEOUT
         assertEquals(TimeoutEffect.RESYNCING, tracker.checkTimeout())
         assertEquals(TimeoutEffect.NONE, tracker.checkTimeout())
-        now += DecisionSubmissionTracker.RESYNC_LIMIT.inWholeMilliseconds - 1
+        now += DecisionSubmissionTracker.RESYNC_LIMIT - 1.milliseconds
         assertEquals(TimeoutEffect.NONE, tracker.checkTimeout())
-        now += 1
+        now += 1.milliseconds
 
         assertEquals(TimeoutEffect.UNLOCKED, tracker.checkTimeout())
         assertFalse(tracker.isPending())
@@ -155,11 +158,11 @@ class DecisionSubmissionTrackerTest {
     fun `test only a recent update proves the server is still waiting`() {
         tracker.begin("game", "decision", "submission")
         tracker.applyAuthoritativeDecision("decision", updateSequence)
-        now = HEARTBEAT_MILLIS
+        now = HEARTBEAT
         updateSequence += 1
         tracker.applyAuthoritativeDecision("decision", updateSequence)
 
-        now = DecisionSubmissionTracker.CONFIRMATION_TIMEOUT.inWholeMilliseconds
+        now = DecisionSubmissionTracker.CONFIRMATION_TIMEOUT
 
         assertEquals(TimeoutEffect.RESYNCING, tracker.checkTimeout())
         assertTrue(tracker.isPending())
@@ -169,13 +172,13 @@ class DecisionSubmissionTrackerTest {
     @Test
     fun `test late acknowledgement of a timed out submission does not affect the retry`() {
         tracker.begin("game", "decision", "submission")
-        runHeartbeats(untilMillis = DecisionSubmissionTracker.CONFIRMATION_TIMEOUT.inWholeMilliseconds)
+        runHeartbeats(until = DecisionSubmissionTracker.CONFIRMATION_TIMEOUT)
         assertEquals(TimeoutEffect.UNLOCKED, tracker.checkTimeout())
         tracker.begin("game", "decision", "retry")
         val retryStartedAt = now
 
         assertEquals(AcknowledgementEffect.IGNORED, tracker.acknowledge(ack(PlayerDecisionSubmissionResultKindDto.REJECTED)))
-        runHeartbeats(untilMillis = retryStartedAt + DecisionSubmissionTracker.CONFIRMATION_TIMEOUT.inWholeMilliseconds - 1)
+        runHeartbeats(until = retryStartedAt + DecisionSubmissionTracker.CONFIRMATION_TIMEOUT - 1.milliseconds)
 
         assertEquals(TimeoutEffect.NONE, tracker.checkTimeout())
         assertTrue(tracker.isPending("decision"))
@@ -186,13 +189,13 @@ class DecisionSubmissionTrackerTest {
     fun `test pausing the game never times out a submission`() {
         val clock = PauseAwareClientMonotonicClock()
         val pausedTracker = DecisionSubmissionTracker(clock)
-        clock.onTick(paused = false, nowNanos = 0L)
+        clock.onTick(paused = false, now = Duration.ZERO)
         pausedTracker.begin("game", "decision", "submission")
 
-        var nanos = 0L
-        repeat(LONG_WAIT_MILLIS.toInt() / TICK_MILLIS.toInt()) {
-            nanos += TICK_MILLIS * NANOS_PER_MILLI
-            clock.onTick(paused = true, nowNanos = nanos)
+        var tickTime = Duration.ZERO
+        repeat((LONG_WAIT / TICK).toInt()) {
+            tickTime += TICK
+            clock.onTick(paused = true, now = tickTime)
             assertEquals(TimeoutEffect.NONE, pausedTracker.checkTimeout())
         }
 
@@ -202,12 +205,12 @@ class DecisionSubmissionTrackerTest {
     /**
      * 模擬伺服器每秒重送同一決策，客戶端每個 tick 核對一次，直到指定時間。
      *
-     * @param untilMillis 模擬結束的客戶端時間。
+     * @param until 模擬結束的客戶端時間。
      */
-    private fun runHeartbeats(untilMillis: Long) {
-        while (now < untilMillis) {
-            now = minOf(now + TICK_MILLIS, untilMillis)
-            if (now % HEARTBEAT_MILLIS == 0L) updateSequence += 1
+    private fun runHeartbeats(until: Duration) {
+        while (now < until) {
+            now = minOf(now + TICK, until)
+            if ((now / HEARTBEAT) % 1.0 == 0.0) updateSequence += 1
             tracker.applyAuthoritativeDecision("decision", updateSequence)
         }
     }
@@ -233,15 +236,12 @@ class DecisionSubmissionTrackerTest {
 
     private companion object {
         /** 客戶端 tick 間隔。 */
-        const val TICK_MILLIS = 50L
+        val TICK: Duration = 50.milliseconds
 
         /** 伺服器重送決策的間隔。 */
-        const val HEARTBEAT_MILLIS = 1_000L
+        val HEARTBEAT: Duration = 1.seconds
 
         /** 遠超過逾時與重新同步期限的等待時間。 */
-        const val LONG_WAIT_MILLIS = 60_000L
-
-        /** 每毫秒的奈秒數。 */
-        const val NANOS_PER_MILLI = 1_000_000L
+        val LONG_WAIT: Duration = 60.seconds
     }
 }

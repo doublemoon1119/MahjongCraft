@@ -33,7 +33,6 @@ import net.minecraft.text.Text
 import net.minecraft.util.ActionResult
 import net.minecraft.util.hit.EntityHitResult
 import net.minecraft.util.hit.HitResult
-import kotlin.math.ceil
 import kotlin.uuid.Uuid
 import kotlin.uuid.toKotlinUuid
 
@@ -624,8 +623,8 @@ class PlayerDecisionHudController(
     private fun currentTimerParts(): List<DecisionTimerPart>? {
         val reading = timerDisplay.reading() ?: return null
         return decisionTimerParts(
-            baseSeconds = ceil(reading.baseRemainingMillis / 1_000.0).toInt(),
-            reserveSeconds = ceil(reading.reserveRemainingMillis / 1_000.0).toInt(),
+            base = reading.baseRemaining,
+            reserve = reading.reserveRemaining,
         )
     }
 

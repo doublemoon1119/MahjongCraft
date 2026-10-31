@@ -5,9 +5,12 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.server.concurrency.Server
 import kotlinx.coroutines.DisposableHandle
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents
 import java.util.*
+import kotlin.math.ceil
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.milliseconds
 
 /**
- * [MonotonicClock] 的 Fabric 實作，以 server tick 計數換算毫秒數，而不是真實系統時間。
+ * [MonotonicClock] 的 Fabric 實作，以 server tick 計數換算經過時間，而不是真實系統時間。
  *
  * Minecraft 單機版按 ESC 開啟暫停選單時，`ServerTickEvents.END_SERVER_TICK` 不會觸發，這裡的計數
  * 因此自然停止前進——這正是玩家決策計時器需要的語意：暫停期間不該算進思考時間。專用伺服器沒有
@@ -32,17 +35,17 @@ class FabricTickMonotonicClock : MonotonicClock {
         }
     }
 
-    override fun nowMillis(): Long = elapsedTicks * MILLIS_PER_TICK
+    override fun now(): Duration = TICK_DURATION * elapsedTicks.toDouble()
 
     /**
-     * 排定 [block] 在 [delayMillis] 之後（依 tick 無條件進位）於下個到期 tick 執行；回傳可取消的 handle。
+     * 排定 [block] 在 [delay] 之後（依 tick 無條件進位）於下個到期 tick 執行；回傳可取消的 handle。
      *
-     * @param delayMillis 延遲毫秒數；換算成 tick 時向上取整。
+     * @param delay 延遲時間；換算成 tick 時向上取整，不足一個 tick 的正值等到下一個 tick。
      * @param block 到期時於 server tick 回呼的工作。
      * @return 可移除尚未執行工作的取消 handle。
      */
-    fun scheduleAfter(delayMillis: Long, block: Runnable): DisposableHandle {
-        val delayTicks = (delayMillis + MILLIS_PER_TICK - 1) / MILLIS_PER_TICK
+    fun scheduleAfter(delay: Duration, block: Runnable): DisposableHandle {
+        val delayTicks = ceil(delay.coerceAtLeast(Duration.ZERO) / TICK_DURATION).toLong()
         val task = ScheduledTask(elapsedTicks + delayTicks, block)
         synchronized(pendingTasksLock) { pendingTasks.add(task) }
         return DisposableHandle { synchronized(pendingTasksLock) { pendingTasks.remove(task) } }
@@ -71,7 +74,7 @@ class FabricTickMonotonicClock : MonotonicClock {
     )
 
     private companion object {
-        /** Minecraft 正常運行時每個 tick 對應的毫秒數（20 TPS）。 */
-        const val MILLIS_PER_TICK: Long = 50L
+        /** Minecraft 正常運行時一個 tick 對應的時間（20 TPS）。 */
+        val TICK_DURATION: Duration = 50.milliseconds
     }
 }

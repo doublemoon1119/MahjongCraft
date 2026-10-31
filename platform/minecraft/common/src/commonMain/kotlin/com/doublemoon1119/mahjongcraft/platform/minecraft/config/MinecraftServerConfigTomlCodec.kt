@@ -6,6 +6,9 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
+import kotlin.time.Duration.Companion.days
+import kotlin.time.Duration.Companion.milliseconds
+import kotlin.time.Duration.Companion.seconds
 
 /** 在不同 Minecraft loader 間共用的嚴格 server config TOML codec。 */
 class MinecraftServerConfigTomlCodec {
@@ -79,15 +82,14 @@ private data class MinecraftServerConfigTomlDto(
             values = DisconnectedPlayerPolicy.entries,
             configValue = DisconnectedPlayerPolicy::configValue,
         ),
-        disconnectedPlayerTimeoutSeconds = playerDisconnection.timeoutSeconds.also { timeout ->
-            val allowedRange = LongRange(
-                MinecraftServerConfig.MIN_DISCONNECTED_PLAYER_TIMEOUT_SECONDS,
-                MinecraftServerConfig.MAX_DISCONNECTED_PLAYER_TIMEOUT_SECONDS,
-            )
-            requireConfig(timeout in allowedRange) {
+        disconnectedPlayerTimeout = playerDisconnection.timeoutSeconds.seconds.also { timeout ->
+            requireConfig(
+                timeout in MinecraftServerConfig.MIN_DISCONNECTED_PLAYER_TIMEOUT..MinecraftServerConfig.MAX_DISCONNECTED_PLAYER_TIMEOUT,
+            ) {
                 "player-disconnection.timeout-seconds must be between " +
-                    "${MinecraftServerConfig.MIN_DISCONNECTED_PLAYER_TIMEOUT_SECONDS} and " +
-                    "${MinecraftServerConfig.MAX_DISCONNECTED_PLAYER_TIMEOUT_SECONDS}, but was $timeout"
+                    "${MinecraftServerConfig.MIN_DISCONNECTED_PLAYER_TIMEOUT.inWholeSeconds} and " +
+                    "${MinecraftServerConfig.MAX_DISCONNECTED_PLAYER_TIMEOUT.inWholeSeconds}, " +
+                    "but was ${playerDisconnection.timeoutSeconds}"
             }
         },
         tableBreakPolicy = enumValue(
@@ -117,7 +119,7 @@ private data class MinecraftServerConfigTomlDto(
         fun fromConfig(config: MinecraftServerConfig): MinecraftServerConfigTomlDto = MinecraftServerConfigTomlDto(
             playerDisconnection = PlayerDisconnectionTomlDto(
                 policy = config.disconnectedPlayerPolicy.configValue,
-                timeoutSeconds = config.disconnectedPlayerTimeoutSeconds,
+                timeoutSeconds = config.disconnectedPlayerTimeout.inWholeSeconds,
             ),
             table = TablePolicyTomlDto(
                 breakPolicy = config.tableBreakPolicy.configValue,
@@ -141,7 +143,7 @@ private data class MinecraftServerConfigTomlDto(
 private data class PlayerDisconnectionTomlDto(
     val policy: String = DisconnectedPlayerPolicy.LEAVE_IMMEDIATELY.configValue,
     @SerialName("timeout-seconds")
-    val timeoutSeconds: Long = MinecraftServerConfig.DEFAULT_DISCONNECTED_PLAYER_TIMEOUT_SECONDS,
+    val timeoutSeconds: Long = MinecraftServerConfig.DEFAULT_DISCONNECTED_PLAYER_TIMEOUT.inWholeSeconds,
 )
 
 /**
@@ -192,14 +194,14 @@ private data class HistoryTomlDto(
     @SerialName("query-enabled") val queryEnabled: Boolean = MinecraftHistoryConfig.DEFAULT_QUERY_ENABLED,
     @SerialName("allow-admin-query") val allowAdminQuery: Boolean = MinecraftHistoryConfig.DEFAULT_ALLOW_ADMIN_QUERY,
     @SerialName("query-minimum-interval-ms")
-    val queryMinimumIntervalMilliseconds: Long = MinecraftHistoryConfig.DEFAULT_QUERY_MINIMUM_INTERVAL_MILLISECONDS,
+    val queryMinimumIntervalMilliseconds: Long = MinecraftHistoryConfig.DEFAULT_QUERY_MINIMUM_INTERVAL.inWholeMilliseconds,
     @SerialName("query-max-outstanding")
     val queryMaxOutstanding: Int = MinecraftHistoryConfig.DEFAULT_QUERY_MAX_OUTSTANDING,
     @SerialName("query-rejection-reply-interval-ms")
     val queryRejectionReplyIntervalMilliseconds: Long =
-        MinecraftHistoryConfig.DEFAULT_QUERY_REJECTION_REPLY_INTERVAL_MILLISECONDS,
+        MinecraftHistoryConfig.DEFAULT_QUERY_REJECTION_REPLY_INTERVAL.inWholeMilliseconds,
     @SerialName("max-matches") val maxMatches: Int = MinecraftHistoryConfig.DEFAULT_MAX_MATCHES,
-    @SerialName("retention-days") val retentionDays: Int = MinecraftHistoryConfig.DEFAULT_RETENTION_DAYS,
+    @SerialName("retention-days") val retentionDays: Int = MinecraftHistoryConfig.DEFAULT_RETENTION.inWholeDays.toInt(),
     @SerialName("max-disk-mib") val maxDiskMiB: Long = MinecraftHistoryConfig.DEFAULT_MAX_DISK_MIB,
 ) {
     /**
@@ -215,11 +217,11 @@ private data class HistoryTomlDto(
             includeInterruptedMatches = includeInterruptedMatches,
             queryEnabled = queryEnabled,
             allowAdminQuery = allowAdminQuery,
-            queryMinimumIntervalMilliseconds = queryMinimumIntervalMilliseconds,
+            queryMinimumInterval = queryMinimumIntervalMilliseconds.milliseconds,
             queryMaxOutstanding = queryMaxOutstanding,
-            queryRejectionReplyIntervalMilliseconds = queryRejectionReplyIntervalMilliseconds,
+            queryRejectionReplyInterval = queryRejectionReplyIntervalMilliseconds.milliseconds,
             maxMatches = maxMatches,
-            retentionDays = retentionDays,
+            retention = retentionDays.days,
             maxDiskMiB = maxDiskMiB,
         )
     } catch (exception: IllegalArgumentException) {
@@ -240,11 +242,11 @@ private data class HistoryTomlDto(
             includeInterruptedMatches = config.includeInterruptedMatches,
             queryEnabled = config.queryEnabled,
             allowAdminQuery = config.allowAdminQuery,
-            queryMinimumIntervalMilliseconds = config.queryMinimumIntervalMilliseconds,
+            queryMinimumIntervalMilliseconds = config.queryMinimumInterval.inWholeMilliseconds,
             queryMaxOutstanding = config.queryMaxOutstanding,
-            queryRejectionReplyIntervalMilliseconds = config.queryRejectionReplyIntervalMilliseconds,
+            queryRejectionReplyIntervalMilliseconds = config.queryRejectionReplyInterval.inWholeMilliseconds,
             maxMatches = config.maxMatches,
-            retentionDays = config.retentionDays,
+            retentionDays = config.retention.inWholeDays.toInt(),
             maxDiskMiB = config.maxDiskMiB,
         )
     }

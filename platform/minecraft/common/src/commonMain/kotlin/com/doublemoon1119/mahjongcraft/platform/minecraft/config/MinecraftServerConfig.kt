@@ -1,5 +1,9 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.config
 
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.hours
+import kotlin.time.Duration.Companion.seconds
+
 /** 將斷線政策轉成 server config 使用的穩定值。 */
 val DisconnectedPlayerPolicy.configValue: String
     get() = name.lowercase()
@@ -31,7 +35,7 @@ val OrphanedTablePolicy.configValue: String
  * @property disconnectedPlayerPolicy 玩家斷線時採用的座位保留政策。
  * @property tableBreakPolicy 麻將桌被破壞時採用的政策。
  * @property orphanedTablePolicy 已確認桌子缺失時採用的資料清理政策。
- * @property disconnectedPlayerTimeoutSeconds `LEAVE_AFTER_TIMEOUT` 使用的離線寬限秒數。
+ * @property disconnectedPlayerTimeout `LEAVE_AFTER_TIMEOUT` 使用的離線寬限時間。
  * @property mahjongTilePhysicalCollisionEnabled 麻將牌是否阻擋玩家及其他非麻將牌 entity。
  * @property history 歷史資料記錄與封存設定。
  */
@@ -39,19 +43,19 @@ data class MinecraftServerConfig(
     val disconnectedPlayerPolicy: DisconnectedPlayerPolicy = DisconnectedPlayerPolicy.LEAVE_IMMEDIATELY,
     val tableBreakPolicy: TableBreakPolicy = TableBreakPolicy.DENY_WHILE_OCCUPIED,
     val orphanedTablePolicy: OrphanedTablePolicy = OrphanedTablePolicy.REMOVE_ALL,
-    val disconnectedPlayerTimeoutSeconds: Long = DEFAULT_DISCONNECTED_PLAYER_TIMEOUT_SECONDS,
+    val disconnectedPlayerTimeout: Duration = DEFAULT_DISCONNECTED_PLAYER_TIMEOUT,
     val mahjongTilePhysicalCollisionEnabled: Boolean = true,
     val history: MinecraftHistoryConfig = MinecraftHistoryConfig(),
 ) {
     /** Server config 數值邊界與預設值。 */
     companion object {
-        /** 斷線逾時允許的最小秒數。 */
-        const val MIN_DISCONNECTED_PLAYER_TIMEOUT_SECONDS: Long = 1
+        /** 斷線逾時允許的最小值。 */
+        val MIN_DISCONNECTED_PLAYER_TIMEOUT: Duration = 1.seconds
 
-        /** 斷線逾時允許的最大秒數，等同一小時。 */
-        const val MAX_DISCONNECTED_PLAYER_TIMEOUT_SECONDS: Long = 3_600
+        /** 斷線逾時允許的最大值。 */
+        val MAX_DISCONNECTED_PLAYER_TIMEOUT: Duration = 1.hours
 
-        /** 預設斷線逾時秒數。 */
-        const val DEFAULT_DISCONNECTED_PLAYER_TIMEOUT_SECONDS: Long = 30
+        /** 預設斷線逾時。 */
+        val DEFAULT_DISCONNECTED_PLAYER_TIMEOUT: Duration = 30.seconds
     }
 }

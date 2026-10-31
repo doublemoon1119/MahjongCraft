@@ -14,6 +14,8 @@ import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertSame
 import kotlin.test.assertTrue
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.milliseconds
 import kotlin.uuid.Uuid
 
 /** [ClientAutomaticControlUpdateCoordinator] 的送出、配對與生命週期測試。 */
@@ -386,16 +388,16 @@ class ClientAutomaticControlUpdateCoordinatorTest {
          * @param millis 前進的毫秒數。
          */
         fun advance(millis: Long) {
-            clock.now += millis
+            clock.now += millis.milliseconds
         }
     }
 
     /** 測試控制的客戶端時間。 */
     private class MutableClock : MonotonicClock {
-        /** 目前時間，單位為毫秒。 */
-        var now = 0L
+        /** 目前時間。 */
+        var now = Duration.ZERO
 
-        override fun nowMillis(): Long = now
+        override fun now(): Duration = now
     }
 
     /**

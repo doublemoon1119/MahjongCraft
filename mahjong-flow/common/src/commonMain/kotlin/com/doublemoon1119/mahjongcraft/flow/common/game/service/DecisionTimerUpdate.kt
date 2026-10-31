@@ -1,6 +1,7 @@
 package com.doublemoon1119.mahjongcraft.flow.common.game.service
 
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.PlayerDecisionPhase
+import kotlin.time.Duration
 import kotlin.uuid.Uuid
 
 /** 伺服器送給單一真人玩家的權威決策計時更新。 */
@@ -10,14 +11,14 @@ sealed interface DecisionTimerUpdate {
      *
      * @property gameId 計時所屬遊戲。
      * @property phase 玩家目前的決策階段。
-     * @property baseRemainingMillis 尚未使用的基本思考時間。
-     * @property reserveRemainingMillis 尚未使用的保留思考時間。
+     * @property baseRemaining 尚未使用的基本思考時間。
+     * @property reserveRemaining 尚未使用的保留思考時間。
      */
     data class Active(
         val gameId: Uuid,
         val phase: PlayerDecisionPhase,
-        val baseRemainingMillis: Long,
-        val reserveRemainingMillis: Long,
+        val baseRemaining: Duration,
+        val reserveRemaining: Duration,
     ) : DecisionTimerUpdate
 
     /**

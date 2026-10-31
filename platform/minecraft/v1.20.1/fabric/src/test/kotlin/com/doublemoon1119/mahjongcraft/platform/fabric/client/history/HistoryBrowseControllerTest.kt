@@ -792,7 +792,7 @@ class HistoryBrowseControllerTest {
         roundCount = 0,
         resultsAvailable = false,
         integrityDiagnostic = null,
-        durationMillis = null,
+        duration = null,
         results = emptyList(),
     )
 

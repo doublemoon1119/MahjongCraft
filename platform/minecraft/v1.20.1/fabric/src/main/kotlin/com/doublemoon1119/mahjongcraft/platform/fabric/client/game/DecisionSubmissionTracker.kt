@@ -3,6 +3,7 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.client.game
 import com.doublemoon1119.mahjongcraft.flow.common.time.MonotonicClock
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.PlayerDecisionSubmissionResultDto
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.PlayerDecisionSubmissionResultKindDto
+import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 
 /**
@@ -30,7 +31,7 @@ internal class DecisionSubmissionTracker(
      */
     fun begin(gameId: String, decisionKey: String, submissionId: String): Boolean {
         if (pending != null) return false
-        pending = PendingSubmission(gameId, decisionKey, submissionId, submittedAtMillis = clock.nowMillis())
+        pending = PendingSubmission(gameId, decisionKey, submissionId, submittedAt = clock.now())
         return true
     }
 
@@ -76,7 +77,7 @@ internal class DecisionSubmissionTracker(
             return
         }
         if (current.lastSeenUpdateSequence != null && current.lastSeenUpdateSequence != updateSequence) {
-            current.lastUpdateReceivedAtMillis = clock.nowMillis()
+            current.lastUpdateReceivedAt = clock.now()
         }
         current.lastSeenUpdateSequence = updateSequence
     }
@@ -92,12 +93,12 @@ internal class DecisionSubmissionTracker(
     fun checkTimeout(): TimeoutEffect {
         val current = pending ?: return TimeoutEffect.NONE
         if (current.acknowledged) return TimeoutEffect.NONE
-        val now = clock.nowMillis()
-        val waited = now - current.submittedAtMillis
-        if (waited < CONFIRMATION_TIMEOUT.inWholeMilliseconds) return TimeoutEffect.NONE
-        val serverStillWaiting = current.lastUpdateReceivedAtMillis
-            ?.let { now - it <= RECENT_UPDATE_WINDOW.inWholeMilliseconds } == true
-        if (serverStillWaiting || waited >= (CONFIRMATION_TIMEOUT + RESYNC_LIMIT).inWholeMilliseconds) {
+        val now = clock.now()
+        val waited = now - current.submittedAt
+        if (waited < CONFIRMATION_TIMEOUT) return TimeoutEffect.NONE
+        val serverStillWaiting = current.lastUpdateReceivedAt
+            ?.let { now - it <= RECENT_UPDATE_WINDOW } == true
+        if (serverStillWaiting || waited >= CONFIRMATION_TIMEOUT + RESYNC_LIMIT) {
             pending = null
             return TimeoutEffect.UNLOCKED
         }
@@ -128,20 +129,20 @@ internal class DecisionSubmissionTracker(
      * @property gameId 提交所屬的遊戲識別碼。
      * @property decisionKey 權威決策的配對鍵。
      * @property submissionId 本次提交的識別碼。
-     * @property submittedAtMillis 送出時的客戶端時間。
+     * @property submittedAt 送出時的客戶端時間。
      * @property acknowledged 是否已收到接受或過期的 ACK。
      * @property lastSeenUpdateSequence 最近看到的權威決策更新序號；尚未看到時為 null。
-     * @property lastUpdateReceivedAtMillis 送出後最近一次收到同一決策更新的時間；尚未收到時為 null。
+     * @property lastUpdateReceivedAt 送出後最近一次收到同一決策更新的時間；尚未收到時為 null。
      * @property resyncReported 是否已回報正在重新同步。
      */
     private class PendingSubmission(
         val gameId: String,
         val decisionKey: String,
         val submissionId: String,
-        val submittedAtMillis: Long,
+        val submittedAt: Duration,
         var acknowledged: Boolean = false,
         var lastSeenUpdateSequence: Long? = null,
-        var lastUpdateReceivedAtMillis: Long? = null,
+        var lastUpdateReceivedAt: Duration? = null,
         var resyncReported: Boolean = false,
     )
 

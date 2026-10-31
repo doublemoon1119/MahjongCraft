@@ -14,9 +14,9 @@ import com.doublemoon1119.mahjongcraft.flow.persistence.format.game.toAiPlayerSt
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.game.toDomain
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.game.toEnabledAutomaticControlIdsByPlayerId
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.game.toForcedAutoPlayPlayerIds
-import com.doublemoon1119.mahjongcraft.flow.persistence.format.game.toInterruptedBaseMillisByPlayerId
+import com.doublemoon1119.mahjongcraft.flow.persistence.format.game.toInterruptedBaseByPlayerId
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.game.toPersistenceDto
-import com.doublemoon1119.mahjongcraft.flow.persistence.format.game.toRemainingReserveMillisByPlayerId
+import com.doublemoon1119.mahjongcraft.flow.persistence.format.game.toRemainingReserveByPlayerId
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.game.toRuntimeStatePersistenceDto
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.HistoryRecordingPersistenceMapper
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.registry.PersistenceRegistries
@@ -108,7 +108,7 @@ fun AuthoritativeStatePersistenceDto.toGames(
     id to Game(
         tableState = tableState,
         flowConfig = gameFlowConfigs.getValue(id.toString()).toDomain(),
-        remainingReserveMillisByPlayerId = runtimeState.toRemainingReserveMillisByPlayerId(),
+        remainingReserveByPlayerId = runtimeState.toRemainingReserveByPlayerId(),
         forcedAutoPlayPlayerIds = runtimeState.toForcedAutoPlayPlayerIds(),
         enabledAutomaticControlIdsByPlayerId = runtimeState.toEnabledAutomaticControlIdsByPlayerId(),
         automaticControlRevision = runtimeState.automaticControlRevision,
@@ -119,7 +119,7 @@ fun AuthoritativeStatePersistenceDto.toGames(
         pendingRuleDecision = runtimeState.pendingRuleDecision?.toDomain(),
         hostId = Uuid.parse(runtimeState.hostId), roomPlayerIds = runtimeState.roomPlayerIds.map(Uuid::parse),
         aiPlayerStrategyKeys = runtimeState.toAiPlayerStrategyKeys(),
-        interruptedBaseMillisByPlayerId = runtimeState.toInterruptedBaseMillisByPlayerId(),
+        interruptedBaseByPlayerId = runtimeState.toInterruptedBaseByPlayerId(),
         matchId = Uuid.parse(runtimeState.matchId),
     )
 }

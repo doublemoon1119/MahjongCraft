@@ -3,7 +3,7 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.suppor
 import com.doublemoon1119.mahjongcraft.logic.base.MeldType
 import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPosition
-import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongTableFacing
+import com.doublemoon1119.mahjongcraft.platform.minecraft.api.table.MahjongTableFacing
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongTableSeatLayout
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.meldDisplayDirection
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongMeldTileGroup

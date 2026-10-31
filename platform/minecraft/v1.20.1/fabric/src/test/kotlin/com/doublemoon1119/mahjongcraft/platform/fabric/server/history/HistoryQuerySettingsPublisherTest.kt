@@ -10,6 +10,8 @@ import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.milliseconds
 
 /** 驗證查詢設定 publisher 隨 session 重建且不重複收集設定更新。 */
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -19,27 +21,27 @@ class HistoryQuerySettingsPublisherTest {
     fun `publisher restarts with session without duplicate collectors`() = runTest {
         val dispatcher = StandardTestDispatcher(testScheduler)
         val scope = createTestAppCoroutineScope(TestDispatchers(dispatcher))
-        val updates = MutableStateFlow(100L)
+        val updates = MutableStateFlow(100.milliseconds)
         val publisher = HistoryQuerySettingsPublisher(scope, TestDispatchers(dispatcher), updates)
-        val published = mutableListOf<Long>()
+        val published = mutableListOf<Duration>()
 
         publisher.start { published += it }
         runCurrent()
-        updates.value = 200L
+        updates.value = 200.milliseconds
         runCurrent()
         publisher.stop()
-        updates.value = 300L
+        updates.value = 300.milliseconds
         runCurrent()
         publisher.start { published += it }
         runCurrent()
         publisher.start { published += it }
         runCurrent()
-        updates.value = 400L
+        updates.value = 400.milliseconds
         runCurrent()
         publisher.stop()
 
         // 每次 start 重新發布目前值，但下一次設定更新仍只能由一個 collector 發布。
-        assertEquals(listOf(100L, 200L, 300L, 300L, 400L), published)
+        assertEquals(listOf(100, 200, 300, 300, 400).map { it.milliseconds }, published)
     }
 
     /**

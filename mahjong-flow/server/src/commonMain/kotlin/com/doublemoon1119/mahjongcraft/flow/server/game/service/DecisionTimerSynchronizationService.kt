@@ -55,8 +55,8 @@ class DecisionTimerSynchronizationService(
                 DecisionTimerUpdate.Active(
                     gameId = gameId,
                     phase = status.phase,
-                    baseRemainingMillis = status.time.baseRemainingMillis,
-                    reserveRemainingMillis = status.time.reserveRemainingMillis,
+                    baseRemaining = status.time.baseRemaining,
+                    reserveRemaining = status.time.reserveRemaining,
                 ),
             )
         }

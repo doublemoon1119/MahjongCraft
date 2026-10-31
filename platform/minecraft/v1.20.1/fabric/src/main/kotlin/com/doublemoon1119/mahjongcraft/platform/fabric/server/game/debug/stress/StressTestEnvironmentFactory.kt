@@ -28,6 +28,7 @@ import kotlinx.coroutines.launch
 import net.minecraft.server.MinecraftServer
 import java.nio.file.Path
 import java.util.concurrent.atomic.AtomicBoolean
+import kotlin.time.Duration
 import kotlin.time.TimeSource
 
 /**
@@ -156,7 +157,7 @@ class StressTestEnvironmentFactory(
             enabled = true,
             includeAiMatches = true,
             maxMatches = 0,
-            retentionDays = 0,
+            retention = Duration.ZERO,
             maxDiskMiB = MinecraftHistoryConfig.MAX_MAX_DISK_MIB,
         )
     }

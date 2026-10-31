@@ -16,6 +16,7 @@ import kotlin.test.assertFalse
 import kotlin.test.assertIs
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
+import kotlin.time.Duration.Companion.seconds
 
 /** 驗證房間設定草稿的狀態轉換與按鈕可用性判定。 */
 class RoomSettingsDraftTest {
@@ -69,7 +70,7 @@ class RoomSettingsDraftTest {
 
         draft.beginIfAbsent(AUTHORITATIVE)
 
-        assertEquals(45, draft.config?.flowConfig?.ruleDecision?.baseSeconds)
+        assertEquals(45.seconds, draft.config?.flowConfig?.ruleDecision?.base)
     }
 
     /** 編輯欄位後 Apply 與 Undo 開啟，改回與權威相同時再次關閉。 */
@@ -132,7 +133,7 @@ class RoomSettingsDraftTest {
         assertTrue(draft.isFieldInvalid(REJECTING_FIELD_ID))
         assertTrue(draft.hasInvalidFields)
         assertFalse(draft.canDone(FULL_ROOM), "Expected done to be blocked while a field is invalid.")
-        assertEquals(45, draft.config?.flowConfig?.ruleDecision?.baseSeconds, "Expected an edit to a valid field to still reach the draft.")
+        assertEquals(45.seconds, draft.config?.flowConfig?.ruleDecision?.base, "Expected an edit to a valid field to still reach the draft.")
     }
 
     /** 第一段驗證擋下超出範圍的輸入，且不改動草稿。 */
@@ -161,7 +162,7 @@ class RoomSettingsDraftTest {
         draft.applyNumericInput(field, "45")
 
         assertFalse(draft.isFieldInvalid(field.id))
-        assertEquals(45, draft.config?.flowConfig?.ruleDecision?.baseSeconds)
+        assertEquals(45.seconds, draft.config?.flowConfig?.ruleDecision?.base)
         assertTrue(draft.canApply(AUTHORITATIVE, FULL_ROOM))
     }
 
@@ -263,7 +264,7 @@ class RoomSettingsDraftTest {
         assertIs<RoomSettingsDraft.Outcome.BecameStale>(outcome)
         assertTrue(draft.isStale)
         assertFalse(draft.isReturningToRoomAfterApply)
-        assertEquals(45, draft.config?.flowConfig?.ruleDecision?.baseSeconds, "Expected the draft contents to survive becoming stale.")
+        assertEquals(45.seconds, draft.config?.flowConfig?.ruleDecision?.base, "Expected the draft contents to survive becoming stale.")
     }
 
     /** 過期後只剩 Undo 可用。 */
@@ -364,7 +365,7 @@ class RoomSettingsDraftTest {
          * @return 僅更新規則選擇秒數的權威設定。
          */
         fun withRuleDecisionSeconds(seconds: Int): GameConfig = AUTHORITATIVE.copy(
-            flowConfig = AUTHORITATIVE.flowConfig.copy(ruleDecision = RuleDecisionConfig(seconds)),
+            flowConfig = AUTHORITATIVE.flowConfig.copy(ruleDecision = RuleDecisionConfig(seconds.seconds)),
         )
 
         /**
@@ -379,11 +380,11 @@ class RoomSettingsDraftTest {
             descriptionTranslationKey = "test.description",
             editor = GameConfigEditorSpec.IntegerInput(minimum = 10, maximum = 60),
             isEditable = true,
-            read = { GameConfigPresentationValue.IntegerValue(it.flowConfig.ruleDecision?.baseSeconds) },
+            read = { GameConfigPresentationValue.IntegerValue(it.flowConfig.ruleDecision?.base?.inWholeSeconds?.toInt()) },
             update = { config, value ->
                 val seconds = (value as GameConfigPresentationValue.IntegerValue).number ?: error("missing number")
                 config.copy(
-                    flowConfig = config.flowConfig.copy(ruleDecision = RuleDecisionConfig(seconds)),
+                    flowConfig = config.flowConfig.copy(ruleDecision = RuleDecisionConfig(seconds.seconds)),
                 )
             },
         )

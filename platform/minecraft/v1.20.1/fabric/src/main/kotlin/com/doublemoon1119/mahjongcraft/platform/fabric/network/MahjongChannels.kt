@@ -29,6 +29,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.player.PlayerIdentityP
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.TableOccupancyPayloadDto
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.RoundResultPayloadDto
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableRemovedPayloadDto
+import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableSpaceObstructionPayloadDto
 import kotlinx.serialization.builtins.nullable
 import kotlinx.serialization.builtins.serializer
 
@@ -202,6 +203,9 @@ object MahjongChannels {
      * 這個頻道不會開啟任何畫面，收到時只更新已保存的狀態。
      */
     val snapshotCleared = S2CChannel("snapshot_cleared", SnapshotClearedPayloadDto.serializer())
+
+    /** 等待開局的桌子被擋住的擺牌格，送給該房間的成員；格子為空時清除該桌的標示。 */
+    val tableSpaceObstruction = S2CChannel("table_space_obstruction", TableSpaceObstructionPayloadDto.serializer())
 
     /** 桌子確實移除後清除整個桌級狀態，不等同普通快照清除。 */
     val tableRemoved = S2CChannel("table_removed", TableRemovedPayloadDto.serializer())

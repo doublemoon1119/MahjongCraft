@@ -7,6 +7,8 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.SpectatorHandVisib
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.BuiltInGameConfigFields.choiceField
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.BuiltInGameConfigFields.intField
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.BuiltInGameConfigFields.translationKey
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.seconds
 
 /**
  * 各規則共用的出牌時間、觀戰設定，以及由規則選擇流程提供的選用規則選擇時間。
@@ -18,8 +20,8 @@ internal object SharedGameFlowConfigPresentation {
     /** 共用流程設定分類。 */
     const val FLOW = "mahjongcraft:flow"
 
-    /** 玩家規則選擇時間的可設定秒數範圍，供欄位與既有設定檢查共用。 */
-    val ruleDecisionTimeRange: IntRange = 1..3600
+    /** 玩家規則選擇時間的可設定範圍，供欄位與既有設定檢查共用。 */
+    val ruleDecisionTimeRange: ClosedRange<Duration> = 1.seconds..3600.seconds
 
     /**
      * 將保留的流程分類與欄位附加到規則呈現定義。
@@ -32,7 +34,7 @@ internal object SharedGameFlowConfigPresentation {
         definition: GameConfigPresentationDefinition,
         ruleDecisionConfig: RuleDecisionConfig?,
     ): GameConfigPresentationDefinition {
-        require(ruleDecisionConfig == null || ruleDecisionConfig.baseSeconds in ruleDecisionTimeRange) {
+        require(ruleDecisionConfig == null || ruleDecisionConfig.base in ruleDecisionTimeRange) {
             "Rule decision base time for ${definition.ruleModuleId} must be between 1 and 3600 seconds"
         }
         require(definition.categories.none { it.id == FLOW }) {
@@ -65,8 +67,8 @@ internal object SharedGameFlowConfigPresentation {
         FLOW,
         0,
         3600,
-        read = { it.flowConfig.timeControl.baseSeconds },
-        update = { config, number -> config.copy(flowConfig = config.flowConfig.copy(timeControl = ActionTimeControl.from(number, config.flowConfig.timeControl.reserveSeconds))) },
+        read = { it.flowConfig.timeControl.base.inWholeSeconds.toInt() },
+        update = { config, number -> config.copy(flowConfig = config.flowConfig.copy(timeControl = ActionTimeControl.from(number.seconds, config.flowConfig.timeControl.reserve))) },
     )
 
     /** @return 保留思考時間欄位定義。 */
@@ -75,8 +77,8 @@ internal object SharedGameFlowConfigPresentation {
         FLOW,
         0,
         3600,
-        read = { it.flowConfig.timeControl.reserveSeconds },
-        update = { config, number -> config.copy(flowConfig = config.flowConfig.copy(timeControl = ActionTimeControl.from(config.flowConfig.timeControl.baseSeconds, number))) },
+        read = { it.flowConfig.timeControl.reserve.inWholeSeconds.toInt() },
+        update = { config, number -> config.copy(flowConfig = config.flowConfig.copy(timeControl = ActionTimeControl.from(config.flowConfig.timeControl.base, number.seconds))) },
     )
 
     /**
@@ -88,13 +90,13 @@ internal object SharedGameFlowConfigPresentation {
     private fun ruleDecisionBaseSecondsField(config: RuleDecisionConfig): GameConfigFieldDefinition = intField(
         "rule_decision_base_seconds",
         FLOW,
-        ruleDecisionTimeRange.first,
-        ruleDecisionTimeRange.last,
-        read = { it.flowConfig.ruleDecision?.baseSeconds ?: config.baseSeconds },
+        ruleDecisionTimeRange.start.inWholeSeconds.toInt(),
+        ruleDecisionTimeRange.endInclusive.inWholeSeconds.toInt(),
+        read = { (it.flowConfig.ruleDecision?.base ?: config.base).inWholeSeconds.toInt() },
         update = { gameConfig, number ->
             gameConfig.copy(
                 flowConfig = gameConfig.flowConfig.copy(
-                    ruleDecision = RuleDecisionConfig(number),
+                    ruleDecision = RuleDecisionConfig(number.seconds),
                 ),
             )
         },

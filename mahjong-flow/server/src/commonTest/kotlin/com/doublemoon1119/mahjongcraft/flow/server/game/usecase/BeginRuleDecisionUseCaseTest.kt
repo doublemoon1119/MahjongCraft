@@ -32,6 +32,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertIs
 import kotlin.test.assertNull
+import kotlin.time.Duration.Companion.seconds
 import kotlin.uuid.Uuid
 
 /** [BeginRuleDecisionUseCase] 的規則選擇設定與契約測試。 */
@@ -101,7 +102,7 @@ class BeginRuleDecisionUseCaseTest {
     @Test
     fun `player rule decision with timing configuration starts successfully`() = runTest {
         val repository = FakeGameRepository()
-        val game = game(flowConfig = GameFlowConfig(ruleDecision = RuleDecisionConfig(30)))
+        val game = game(flowConfig = GameFlowConfig(ruleDecision = RuleDecisionConfig(30.seconds)))
         repository.setGame(game)
         val resolvers = RuleDecisionResolverRegistry().apply { register(PlayerResolver) }
 
@@ -119,7 +120,7 @@ class BeginRuleDecisionUseCaseTest {
                 id = testGameId,
                 config = RiichiRuleConfig(redDoraCount = 0),
             ),
-            flowConfig = GameFlowConfig(ruleDecision = RuleDecisionConfig(30)),
+            flowConfig = GameFlowConfig(ruleDecision = RuleDecisionConfig(30.seconds)),
         )
         repository.setGame(game)
         val resolvers = RuleDecisionResolverRegistry().apply { register(PlayerResolver) }
@@ -187,7 +188,7 @@ class BeginRuleDecisionUseCaseTest {
         object PlayerResolver : RuleDecisionResolver {
             override val ruleModuleId: String = BuiltInRuleModuleIds.RIICHI
 
-            override fun ruleDecisionConfig(ruleConfig: MahjongRuleConfig): RuleDecisionConfig? = if ((ruleConfig as? RiichiRuleConfig)?.redDoraCount == 3) RuleDecisionConfig(30) else null
+            override fun ruleDecisionConfig(ruleConfig: MahjongRuleConfig): RuleDecisionConfig? = if ((ruleConfig as? RiichiRuleConfig)?.redDoraCount == 3) RuleDecisionConfig(30.seconds) else null
 
             override fun begin(timing: RuleDecisionTiming, tableState: TableState, ruleModule: MahjongRuleModule<*>) = RuleDecisionStep(
                 stepId = "test:player",

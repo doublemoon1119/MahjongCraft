@@ -122,6 +122,9 @@ object MinecraftMessageKeys {
     /** 部分成員距離桌子太遠導致無法開始對局，帶一個成員名單參數（一個 `%s`，已用語系慣例的分隔符號串接）。 */
     const val START_BLOCKED_DISTANT_PLAYERS = PREFIX + "start_blocked_distant_players"
 
+    /** 桌面上方有方塊擋住擺牌，無法開始對局。 */
+    const val START_BLOCKED_TABLE_SPACE = PREFIX + "start_blocked_table_space"
+
     /** 已新增 AI 玩家，帶策略顯示名稱參數（`%s`），措辭比照 [KICK_CANDIDATE_AI_LABEL] 的稱呼方式。 */
     const val AI_ADDED = PREFIX + "ai_added"
 
@@ -615,6 +618,7 @@ object MinecraftMessageKeys {
         TABLE_NOT_REACHABLE,
         START_BLOCKED_OFFLINE_PLAYERS,
         START_BLOCKED_DISTANT_PLAYERS,
+        START_BLOCKED_TABLE_SPACE,
         AI_ADDED,
         ADD_AI_FAILED,
         GAME_FULL,

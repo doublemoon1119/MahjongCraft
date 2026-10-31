@@ -8,6 +8,8 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.milliseconds
 import kotlin.uuid.Uuid
 
 /** [DecisionTimerDisplay] 的本地倒數與凍結測試。 */
@@ -18,13 +20,13 @@ class DecisionTimerDisplayTest {
         val clock = MutableClock()
         val store = ClientDecisionTimerStateStore(clock)
         val display = DecisionTimerDisplay(store, clock)
-        store.apply(Uuid.random(), PlayerDecisionPhase.OWN_TURN, 1_000L, 5_000L)
-        clock.nowMillis = 1_200L
+        store.apply(Uuid.random(), PlayerDecisionPhase.OWN_TURN, 1_000.milliseconds, 5_000.milliseconds)
+        clock.now = 1_200.milliseconds
 
         val reading = display.reading()!!
 
-        assertEquals(0L, reading.baseRemainingMillis)
-        assertEquals(4_800L, reading.reserveRemainingMillis)
+        assertEquals(0.milliseconds, reading.baseRemaining)
+        assertEquals(4_800.milliseconds, reading.reserveRemaining)
         assertFalse(reading.isSynchronizationStale)
     }
 
@@ -34,13 +36,13 @@ class DecisionTimerDisplayTest {
         val clock = MutableClock()
         val store = ClientDecisionTimerStateStore(clock)
         val display = DecisionTimerDisplay(store, clock)
-        store.apply(Uuid.random(), PlayerDecisionPhase.DISCARD_REACTION, 1_000L, 5_000L)
-        clock.nowMillis = 3_000L
+        store.apply(Uuid.random(), PlayerDecisionPhase.DISCARD_REACTION, 1_000.milliseconds, 5_000.milliseconds)
+        clock.now = 3_000.milliseconds
 
         val reading = display.reading()!!
 
-        assertEquals(0L, reading.baseRemainingMillis)
-        assertEquals(6_000L - DecisionTimerDisplay.STALE_AFTER_MILLIS, reading.reserveRemainingMillis)
+        assertEquals(0.milliseconds, reading.baseRemaining)
+        assertEquals(6_000.milliseconds - DecisionTimerDisplay.STALE_AFTER, reading.reserveRemaining)
         assertTrue(reading.isSynchronizationStale)
     }
 
@@ -54,9 +56,9 @@ class DecisionTimerDisplayTest {
     /** 可控的單調時間。 */
     private class MutableClock : MonotonicClock {
         /** 目前測試時間。 */
-        var nowMillis: Long = 0L
+        var now: Duration = Duration.ZERO
 
         /** 回傳可由測試直接控制的單調時間。 */
-        override fun nowMillis(): Long = nowMillis
+        override fun now(): Duration = now
     }
 }

@@ -17,6 +17,8 @@ import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.metadata.MahjongCraftMetadata
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.rule.DebugDeclareNotenAction
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.rule.DebugNotenDeclarationRiichiRuleModule
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.seconds
 
 /**
  * [DebugNotenDeclarationRiichiRuleModule] 的規則選擇：一般流局結算前讓聽牌玩家選擇公開聽牌或宣告不聽，本局結算後
@@ -28,7 +30,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.rule.De
 internal class DebugNotenDeclarationRuleDecisionResolver : RuleDecisionResolver {
     override val ruleModuleId: String = DebugNotenDeclarationRiichiRuleModule.ID
 
-    override fun ruleDecisionConfig(ruleConfig: MahjongRuleConfig): RuleDecisionConfig = RuleDecisionConfig(DECISION_SECONDS)
+    override fun ruleDecisionConfig(ruleConfig: MahjongRuleConfig): RuleDecisionConfig = RuleDecisionConfig(DECISION_TIME)
 
     override fun begin(
         timing: RuleDecisionTiming,
@@ -90,7 +92,7 @@ internal class DebugNotenDeclarationRuleDecisionResolver : RuleDecisionResolver 
         /** 宣告不聽的選項 ID，與記錄下來的動作共用同一個 ID 與用語。 */
         val DECLARE_NOTEN_OPTION: String = DebugDeclareNotenAction.id
 
-        /** 每位玩家的選擇秒數。 */
-        private const val DECISION_SECONDS = 15
+        /** 每位玩家的選擇時間。 */
+        private val DECISION_TIME: Duration = 15.seconds
     }
 }

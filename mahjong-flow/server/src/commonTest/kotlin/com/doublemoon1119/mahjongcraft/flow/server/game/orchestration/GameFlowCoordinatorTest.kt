@@ -120,6 +120,9 @@ import kotlin.test.assertNotEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.milliseconds
+import kotlin.time.Duration.Companion.seconds
 import kotlin.uuid.Uuid
 
 /**
@@ -628,7 +631,7 @@ class GameFlowCoordinatorTest {
             tileWall = TileWall(emptyList()),
             currentPlayerIndex = 0,
         )
-        fixtures.gameRepo.setGame(Game(tableState = table, flowConfig = GameFlowConfig(ruleDecision = RuleDecisionConfig(30))))
+        fixtures.gameRepo.setGame(Game(tableState = table, flowConfig = GameFlowConfig(ruleDecision = RuleDecisionConfig(30.seconds))))
 
         val result = fixtures.coordinator.dispatchThenDrive(gameId, playerId, GameCommand.Draw)
 
@@ -675,7 +678,7 @@ class GameFlowCoordinatorTest {
             ruleDecisionResolvers = RuleDecisionResolverRegistry().apply { register(TimedConfirmationResolver(setOf(RuleDecisionTiming.BEFORE_EXHAUSTIVE_DRAW, RuleDecisionTiming.ROUND_END))) },
         )
         val playerId = Uuid.random()
-        fixtures.gameRepo.setGame(Game(tableState = exhaustedWallTable(playerId), flowConfig = GameFlowConfig(ruleDecision = RuleDecisionConfig(30))))
+        fixtures.gameRepo.setGame(Game(tableState = exhaustedWallTable(playerId), flowConfig = GameFlowConfig(ruleDecision = RuleDecisionConfig(30.seconds))))
         fixtures.coordinator.dispatch(gameId, playerId, GameCommand.Draw)
         val drawWindow = assertNotNull(fixtures.gameRepo.getGame(gameId)?.pendingRuleDecision)
         fixtures.coordinator.dispatch(gameId, playerId, GameCommand.SubmitRuleDecision(drawWindow.id, RuleDecisionSubmission.Confirmed))
@@ -701,11 +704,11 @@ class GameFlowCoordinatorTest {
             ruleDecisionResolvers = RuleDecisionResolverRegistry().apply { register(TimedConfirmationResolver(setOf(RuleDecisionTiming.BEFORE_EXHAUSTIVE_DRAW))) },
         )
         val playerId = Uuid.random()
-        fixtures.gameRepo.setGame(Game(tableState = exhaustedWallTable(playerId), flowConfig = GameFlowConfig(ruleDecision = RuleDecisionConfig(30))))
+        fixtures.gameRepo.setGame(Game(tableState = exhaustedWallTable(playerId), flowConfig = GameFlowConfig(ruleDecision = RuleDecisionConfig(30.seconds))))
         fixtures.coordinator.dispatch(gameId, playerId, GameCommand.Draw)
         assertNotNull(fixtures.gameRepo.getGame(gameId)?.pendingRuleDecision)
         fixtures.coordinator.driveAutomatedPlayers(gameId)
-        fixtures.clock.nowMillis += 31_000L
+        fixtures.clock.now += 31_000.milliseconds
         assertEquals(listOf(playerId), fixtures.decisionTimerManager.claimTimedOutDecisions().map { it.playerId })
         fixtures.coordinator.driveAutomatedPlayers(gameId)
         val submitted = assertNotNull(fixtures.gameRepo.getGame(gameId))
@@ -756,7 +759,7 @@ class GameFlowCoordinatorTest {
             tileWall = TileWall(emptyList()),
             currentPlayerIndex = 0,
         )
-        fixtures.gameRepo.setGame(Game(tableState = table, flowConfig = GameFlowConfig(ruleDecision = RuleDecisionConfig(30))))
+        fixtures.gameRepo.setGame(Game(tableState = table, flowConfig = GameFlowConfig(ruleDecision = RuleDecisionConfig(30.seconds))))
 
         fixtures.coordinator.dispatchThenDrive(gameId, playerId, GameCommand.Draw)
 
@@ -1297,7 +1300,7 @@ class GameFlowCoordinatorTest {
             config = RiichiRuleConfig(gameLength = RiichiGameLength.East),
             currentPlayerIndex = 0,
         )
-        fixtures.gameRepo.setGame(Game(tableState = table, flowConfig = GameFlowConfig(ruleDecision = RuleDecisionConfig(30))))
+        fixtures.gameRepo.setGame(Game(tableState = table, flowConfig = GameFlowConfig(ruleDecision = RuleDecisionConfig(30.seconds))))
 
         val result = fixtures.coordinator.dispatchThenDrive(gameId, winnerId, GameCommand.Tsumo)
         assertTrue(result is Outcome.Success, "Expected Success but got $result")
@@ -1799,14 +1802,14 @@ class GameFlowCoordinatorTest {
             ),
         )
         fixtures.decisionTimerManager.reconcile(gameId)
-        fixtures.clock.nowMillis = 2_000L
+        fixtures.clock.now = 2_000.milliseconds
 
         val result = fixtures.coordinator.dispatchThenDrive(gameId, otherPlayerId, GameCommand.Draw)
 
         assertTrue(result is Outcome.Error)
         assertEquals(
-            3_000L,
-            fixtures.decisionTimerManager.getStatuses(gameId).getValue(currentPlayerId).time.baseRemainingMillis,
+            3_000.milliseconds,
+            fixtures.decisionTimerManager.getStatuses(gameId).getValue(currentPlayerId).time.baseRemaining,
         )
     }
 
@@ -2024,7 +2027,7 @@ class GameFlowCoordinatorTest {
             Game(
                 tableState = table,
                 aiPlayerStrategyKeys = mapOf(aiId to CHANGING_STRATEGY_KEY),
-                flowConfig = GameFlowConfig(ruleDecision = RuleDecisionConfig(30)),
+                flowConfig = GameFlowConfig(ruleDecision = RuleDecisionConfig(30.seconds)),
                 pendingRuleDecision = PendingRuleDecision.open(
                     step = RuleDecisionStep(
                         stepId = "test:confirm",
@@ -2066,7 +2069,7 @@ class GameFlowCoordinatorTest {
             Game(
                 tableState = table,
                 aiPlayerStrategyKeys = mapOf(aiId to FIXED_RULE_DECISION_STRATEGY_KEY),
-                flowConfig = GameFlowConfig(ruleDecision = RuleDecisionConfig(30)),
+                flowConfig = GameFlowConfig(ruleDecision = RuleDecisionConfig(30.seconds)),
                 pendingRuleDecision = PendingRuleDecision.open(
                     step = RuleDecisionStep(
                         stepId = "test:confirm",
@@ -2174,7 +2177,7 @@ class GameFlowCoordinatorTest {
             Game(
                 tableState = table,
                 aiPlayerStrategyKeys = mapOf(aiId to HANGING_STRATEGY_KEY),
-                flowConfig = GameFlowConfig(ruleDecision = RuleDecisionConfig(30)),
+                flowConfig = GameFlowConfig(ruleDecision = RuleDecisionConfig(30.seconds)),
                 pendingRuleDecision = PendingRuleDecision.open(
                     step = RuleDecisionStep(
                         stepId = "test:confirm",
@@ -2274,7 +2277,7 @@ class GameFlowCoordinatorTest {
     private object ConfirmationResolver : RuleDecisionResolver {
         override val ruleModuleId: String = BuiltInRuleModuleIds.RIICHI
 
-        override fun ruleDecisionConfig(ruleConfig: MahjongRuleConfig): RuleDecisionConfig = RuleDecisionConfig(30)
+        override fun ruleDecisionConfig(ruleConfig: MahjongRuleConfig): RuleDecisionConfig = RuleDecisionConfig(30.seconds)
 
         override fun begin(timing: RuleDecisionTiming, tableState: TableState, ruleModule: MahjongRuleModule<*>): RuleDecisionStep? = null
 
@@ -2296,7 +2299,7 @@ class GameFlowCoordinatorTest {
         override val ruleModuleId: String = BuiltInRuleModuleIds.RIICHI,
     ) : RuleDecisionResolver {
 
-        override fun ruleDecisionConfig(ruleConfig: MahjongRuleConfig): RuleDecisionConfig = RuleDecisionConfig(30)
+        override fun ruleDecisionConfig(ruleConfig: MahjongRuleConfig): RuleDecisionConfig = RuleDecisionConfig(30.seconds)
 
         override fun begin(timing: RuleDecisionTiming, tableState: TableState, ruleModule: MahjongRuleModule<*>): RuleDecisionStep? = RuleDecisionStep(
             stepId = "test:confirm_${timing.name.lowercase()}",
@@ -2330,8 +2333,8 @@ class GameFlowCoordinatorTest {
 /** coordinator 計時整合測試使用的可控單調時間來源。 */
 private class MutableMonotonicClock : MonotonicClock {
     /** 目前回傳的單調時間毫秒數。 */
-    var nowMillis: Long = 0L
+    var now: Duration = Duration.ZERO
 
     /** 回傳測試指定的單調時間。 */
-    override fun nowMillis(): Long = nowMillis
+    override fun now(): Duration = now
 }

@@ -35,7 +35,7 @@ fun GameConfigDto.toDomain(registries: NetworkDtoRegistries): GameConfig = GameC
  * @return 轉換後的資料。
  */
 private fun GameFlowConfig.toDto(): GameFlowConfigDto = GameFlowConfigDto(
-    timeControl = ActionTimeControlDto(timeControl.baseSeconds, timeControl.reserveSeconds),
+    timeControl = ActionTimeControlDto(timeControl.base, timeControl.reserve),
     ruleDecision = ruleDecision?.toDto(),
     decisionTimeoutPolicy = decisionTimeoutPolicy,
     spectatingPolicy = spectatingPolicy,
@@ -48,7 +48,7 @@ private fun GameFlowConfig.toDto(): GameFlowConfigDto = GameFlowConfigDto(
  * @return 轉換後的資料。
  */
 private fun GameFlowConfigDto.toDomain(): GameFlowConfig = GameFlowConfig(
-    timeControl = ActionTimeControl.from(timeControl.baseSeconds, timeControl.reserveSeconds),
+    timeControl = ActionTimeControl.from(timeControl.base, timeControl.reserve),
     ruleDecision = ruleDecision?.toDomain(),
     decisionTimeoutPolicy = decisionTimeoutPolicy,
     spectatingPolicy = spectatingPolicy,

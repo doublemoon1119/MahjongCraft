@@ -5,9 +5,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.block.MahjongStoolDesign
 import com.doublemoon1119.mahjongcraft.platform.fabric.block.MahjongTableBlock
 import com.doublemoon1119.mahjongcraft.platform.fabric.block.MahjongTableDesign
 import com.doublemoon1119.mahjongcraft.platform.fabric.block.entity.MahjongTableBlockEntity
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.room.MahjongTableRoomService
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.seating.MahjongStoolSeatService
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.FabricTableLifecycleService
 import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModMetadata
 import net.fabricmc.fabric.api.`object`.builder.v1.block.entity.FabricBlockEntityTypeBuilder
 import net.minecraft.block.AbstractBlock
@@ -48,28 +46,20 @@ object ModBlocks {
     /**
      * 註冊麻將桌與麻將凳方塊、對應物品與方塊實體型別。
      *
-     * @param roomService 桌子建立、互動所用的房間服務。
-     * @param tableLifecycleService 桌子生命週期與方塊實體操作服務。
+     * 桌子與凳子都強制視為實心：細長或沒有碰撞的部件依形狀推算會被判定為不實心，水流會沖掉不實心的方塊。
+     *
      * @param seatService 麻將凳乘坐服務。
      */
-    fun register(
-        roomService: MahjongTableRoomService,
-        tableLifecycleService: FabricTableLifecycleService,
-        seatService: MahjongStoolSeatService,
-    ) {
+    fun register(seatService: MahjongStoolSeatService) {
         woodenMahjongTable = registerTable(
             path = "wooden_mahjong_table",
             design = MahjongTableDesign.FOUR_LEG,
             baseBlock = Blocks.OAK_PLANKS,
-            roomService = roomService,
-            tableLifecycleService = tableLifecycleService,
         )
         concreteMahjongTable = registerTable(
             path = "concrete_mahjong_table",
             design = MahjongTableDesign.PEDESTAL,
             baseBlock = Blocks.GRAY_CONCRETE,
-            roomService = roomService,
-            tableLifecycleService = tableLifecycleService,
         )
         woodenMahjongStool = registerStool(
             path = "wooden_mahjong_stool",
@@ -77,7 +67,8 @@ object ModBlocks {
             settings = AbstractBlock.Settings.create()
                 .mapColor(MapColor.OAK_TAN)
                 .strength(0.0f)
-                .sounds(BlockSoundGroup.WOOD),
+                .sounds(BlockSoundGroup.WOOD)
+                .solid(),
             seatService = seatService,
         )
         plasticMahjongStool = registerStool(
@@ -86,7 +77,8 @@ object ModBlocks {
             settings = AbstractBlock.Settings.create()
                 .mapColor(MapColor.BRIGHT_RED)
                 .strength(0.0f)
-                .sounds(BlockSoundGroup.SCAFFOLDING),
+                .sounds(BlockSoundGroup.SCAFFOLDING)
+                .solid(),
             seatService = seatService,
         )
         val blockEntityId = Identifier(MinecraftModMetadata.MOD_ID, "mahjong_table")
@@ -107,15 +99,11 @@ object ModBlocks {
      * @param path 方塊 registry 路徑。
      * @param design 桌面外觀與碰撞設計。
      * @param baseBlock 提供材質設定基礎的原版方塊。
-     * @param roomService 桌子互動所用的房間服務。
-     * @param tableLifecycleService 桌子生命週期服務。
      */
     private fun registerTable(
         path: String,
         design: MahjongTableDesign,
         baseBlock: Block,
-        roomService: MahjongTableRoomService,
-        tableLifecycleService: FabricTableLifecycleService,
     ): Block {
         val id = Identifier(MinecraftModMetadata.MOD_ID, path)
         val block = Registry.register(
@@ -124,10 +112,9 @@ object ModBlocks {
             MahjongTableBlock(
                 settings = AbstractBlock.Settings.copy(baseBlock)
                     .strength(2.5f)
-                    .pistonBehavior(PistonBehavior.BLOCK),
+                    .pistonBehavior(PistonBehavior.BLOCK)
+                    .solid(),
                 design = design,
-                roomService = roomService,
-                tableLifecycleService = tableLifecycleService,
             ),
         )
         Registry.register(Registries.ITEM, id, BlockItem(block, Item.Settings()))

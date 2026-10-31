@@ -18,12 +18,12 @@ class ClientHistoryQuerySettingsTest {
     @Test
     fun `test apply accepts valid value and ignores invalid values`() {
         val settings = ClientHistoryQuerySettings()
-        settings.apply(HistoryQuerySettingsPayload(500))
+        settings.apply(HistoryQuerySettingsPayload(500.milliseconds))
         assertEquals(500.milliseconds, settings.minimumInterval.value)
 
-        settings.apply(HistoryQuerySettingsPayload(MinecraftHistoryConfig.MIN_QUERY_MINIMUM_INTERVAL_MILLISECONDS - 1))
+        settings.apply(HistoryQuerySettingsPayload(MinecraftHistoryConfig.MIN_QUERY_MINIMUM_INTERVAL - 1.milliseconds))
         assertEquals(500.milliseconds, settings.minimumInterval.value)
-        settings.apply(HistoryQuerySettingsPayload(MinecraftHistoryConfig.MAX_QUERY_MINIMUM_INTERVAL_MILLISECONDS + 1))
+        settings.apply(HistoryQuerySettingsPayload(MinecraftHistoryConfig.MAX_QUERY_MINIMUM_INTERVAL + 1.milliseconds))
         assertEquals(500.milliseconds, settings.minimumInterval.value)
     }
 
@@ -31,11 +31,11 @@ class ClientHistoryQuerySettingsTest {
     @Test
     fun `test reset restores default interval`() {
         val settings = ClientHistoryQuerySettings()
-        settings.apply(HistoryQuerySettingsPayload(500))
+        settings.apply(HistoryQuerySettingsPayload(500.milliseconds))
         settings.reset()
 
         assertEquals(
-            MinecraftHistoryConfig.DEFAULT_QUERY_MINIMUM_INTERVAL_MILLISECONDS.milliseconds,
+            MinecraftHistoryConfig.DEFAULT_QUERY_MINIMUM_INTERVAL,
             settings.minimumInterval.value,
         )
     }
@@ -44,7 +44,7 @@ class ClientHistoryQuerySettingsTest {
     @Test
     fun `test coordinator clear resets settings`() {
         val settings = ClientHistoryQuerySettings()
-        settings.apply(HistoryQuerySettingsPayload(500))
+        settings.apply(HistoryQuerySettingsPayload(500.milliseconds))
         val coordinator = ClientHistoryQueryCoordinator(
             sender = object : HistoryQuerySender {
                 /** 設定清理測試不送出清單查詢。 */
@@ -77,7 +77,7 @@ class ClientHistoryQuerySettingsTest {
 
         assertIs<ClientHistoryQueryState.Idle>(coordinator.state.value)
         assertEquals(
-            MinecraftHistoryConfig.DEFAULT_QUERY_MINIMUM_INTERVAL_MILLISECONDS.milliseconds,
+            MinecraftHistoryConfig.DEFAULT_QUERY_MINIMUM_INTERVAL,
             settings.minimumInterval.value,
         )
     }

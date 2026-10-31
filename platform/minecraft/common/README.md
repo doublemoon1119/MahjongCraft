@@ -157,6 +157,25 @@ modules expose their own registration facade and implement world lookup, collisi
 teleportation, and the native riding mechanism. The contract does not promise integration with
 every furniture mod; a third-party integration must provide its own adapter and ownership rules.
 
+## Table contract
+
+The `api.table` package defines the cross-loader contract for a Mahjong table. A table is any block
+whose block entity implements `MahjongTableController`; there is no registration step. The
+controller exposes a `MahjongTableControllerState`, which the block entity creates once with its
+own `markDirty`, and a `MahjongTableFacing`.
+
+MahjongCraft fixes the play space, not the block structure: the controller block is the layout
+origin, the tabletop is one block above it, and the 3×3 layer centred above the controller holds
+tiles, the wall, dice, table props and selection confirmation. The integration decides how many
+blocks make up the table, its model and its collision. Its own blocks may reach into the play
+layer, such as a table rim, even when waterlogged, but must not cover where tiles are placed. Any other
+block or fluid in the play layer blocks a waiting room from starting.
+
+The state keeps the table ID and two presentation timelines that only ever extend. Integrations
+read it but never change it: extending and restoring are marked `MahjongCraftInternalApi`, and the
+loader adapter provides the save and load functions. Loader modules also provide the block-side
+contract, interaction and removal hooks, because they need native world types.
+
 ## Boundaries
 
 This module avoids loader APIs and version-specific recipe formats.

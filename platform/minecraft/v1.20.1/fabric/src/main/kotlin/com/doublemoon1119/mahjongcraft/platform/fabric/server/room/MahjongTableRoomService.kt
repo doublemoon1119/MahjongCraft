@@ -34,12 +34,13 @@ import com.doublemoon1119.mahjongcraft.flow.server.room.usecase.UpdateConfigUseC
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateStore
 import com.doublemoon1119.mahjongcraft.logic.config.MahjongRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
-import com.doublemoon1119.mahjongcraft.platform.fabric.block.entity.MahjongTableBlockEntity
+import com.doublemoon1119.mahjongcraft.platform.fabric.block.LocatedMahjongTable
 import com.doublemoon1119.mahjongcraft.platform.fabric.network.MahjongChannels
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.FabricServerHolder
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.persistence.FabricMahjongDataStatus
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.FabricTableStateDelivery
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.FabricTableStateTicket
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.TableSpaceObstructionScanner
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.GameConfigPresentationRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.RoomConfigSubmission
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.RulePresentationRequirements
@@ -51,7 +52,10 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftPlayerFe
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.encodeToString
+import net.minecraft.registry.RegistryKey
+import net.minecraft.registry.RegistryKeys
 import net.minecraft.server.network.ServerPlayerEntity
+import net.minecraft.util.Identifier
 import net.minecraft.util.math.BlockPos
 import kotlin.uuid.Uuid
 import kotlin.uuid.toKotlinUuid
@@ -227,10 +231,10 @@ class MahjongTableRoomService(
     /**
      * 只送出桌子目前的公開佔用狀態並開啟 RoomScreen，不建立、加入或離開房間。
      *
-     * @param table 要顯示的麻將桌方塊實體。
+     * @param table 要顯示的麻將桌。
      * @param player 接收桌子狀態的玩家。
      */
-    fun openRoomScreen(table: MahjongTableBlockEntity, player: ServerPlayerEntity) {
+    internal fun openRoomScreen(table: LocatedMahjongTable, player: ServerPlayerEntity) {
         if (dataStatus.rejectIfUnavailable(player)) return
         val tableId = table.tableId
         val ticket = tableStateDelivery.capture(tableId) ?: return
@@ -370,7 +374,7 @@ class MahjongTableRoomService(
      * @param table 玩家互動的麻將桌。
      * @param player 發起互動的玩家。
      */
-    fun interact(table: MahjongTableBlockEntity, player: ServerPlayerEntity) {
+    internal fun interact(table: LocatedMahjongTable, player: ServerPlayerEntity) {
         if (dataStatus.rejectIfUnavailable(player)) return
         val tableId = table.tableId
         val playerId = player.uuid.toKotlinUuid()
@@ -427,7 +431,7 @@ class MahjongTableRoomService(
      * @param table 玩家互動的麻將桌。
      * @param player 發起離開操作的玩家。
      */
-    fun leave(table: MahjongTableBlockEntity, player: ServerPlayerEntity) {
+    internal fun leave(table: LocatedMahjongTable, player: ServerPlayerEntity) {
         if (dataStatus.rejectIfUnavailable(player)) return
         val tableId = table.tableId
         val playerId = player.uuid.toKotlinUuid()
@@ -542,6 +546,10 @@ class MahjongTableRoomService(
                     feedbackPublisher.publish(playerId, MinecraftPlayerFeedback.StartBlockedByPlayers(offlinePlayerIds, distantPlayerIds))
                     return@launch
                 }
+                if (withContext(dispatchers.main) { isTableSpaceObstructed(tableId) }) {
+                    feedbackPublisher.publish(playerId, MinecraftPlayerFeedback.StartBlockedByTableSpace)
+                    return@launch
+                }
             }
             when (val result = startGame(tableId, playerId)) {
                 is Outcome.Success -> {
@@ -551,6 +559,22 @@ class MahjongTableRoomService(
                 is Outcome.Error -> feedbackPublisher.publish(playerId, MinecraftRoomFeedbackResolver.startError(result.error))
             }
         }
+    }
+
+    /**
+     * 桌子的擺牌層目前是否被擋住；查不到桌子位置、世界或區塊未載入時視為沒有擋住，由開局後的呈現自行處理。
+     *
+     * 只能在伺服器主執行緒呼叫。
+     *
+     * @param tableId 桌子 UUID。
+     * @return 擺牌層有任何一格被擋住時為 true。
+     */
+    private fun isTableSpaceObstructed(tableId: Uuid): Boolean {
+        val location = tableLocationRegistry.get(tableId)?.location ?: return false
+        val dimension = Identifier.tryParse(location.dimensionId) ?: return false
+        val world = serverHolder.current()?.getWorld(RegistryKey.of(RegistryKeys.WORLD, dimension)) ?: return false
+        val cells = TableSpaceObstructionScanner.obstructedCells(world, BlockPos(location.x, location.y, location.z))
+        return !cells.isNullOrEmpty()
     }
 
     /**

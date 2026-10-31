@@ -5,7 +5,7 @@ import net.minecraft.client.gui.DrawContext
 import net.minecraft.client.gui.tooltip.TooltipPositioner
 import net.minecraft.client.gui.widget.ButtonWidget
 import net.minecraft.text.Text
-import net.minecraft.util.Util
+import kotlin.time.Duration
 
 /**
  * 文字過寬時捲動，並在游標每次重新進入後從頭播放的按鈕。
@@ -30,14 +30,14 @@ internal class RestartableMarqueeButtonWidget private constructor(
     /** 上一幀游標是否位於按鈕上，用於偵測重新進入。 */
     private var hoveredLastFrame = false
 
-    /** 本次游標進入按鈕的單調時鐘毫秒數。 */
-    private var hoverStartedAt = 0L
+    /** 本次游標進入按鈕的單調時鐘時間。 */
+    private var hoverStartedAt = Duration.ZERO
 
     /** 上一幀是否處於選取狀態，用於偵測重新取得焦點。 */
     private var selectedLastFrame = false
 
-    /** 本次提示框播放起點的單調時鐘毫秒數。 */
-    private var tooltipStartedAt = 0L
+    /** 本次提示框播放起點的單調時鐘時間。 */
+    private var tooltipStartedAt = Duration.ZERO
 
     override fun renderButton(context: DrawContext, mouseX: Int, mouseY: Int, delta: Float) {
         val originalMessage = message
@@ -50,8 +50,8 @@ internal class RestartableMarqueeButtonWidget private constructor(
 
         val hoveredNow = isHovered
         val selectedNow = isSelected
-        if (hoveredNow && !hoveredLastFrame) hoverStartedAt = Util.getMeasuringTimeMs()
-        if ((hoveredNow && !hoveredLastFrame) || (selectedNow && !selectedLastFrame)) tooltipStartedAt = Util.getMeasuringTimeMs()
+        if (hoveredNow && !hoveredLastFrame) hoverStartedAt = measuringTimeNow()
+        if ((hoveredNow && !hoveredLastFrame) || (selectedNow && !selectedLastFrame)) tooltipStartedAt = measuringTimeNow()
         hoveredLastFrame = hoveredNow
         selectedLastFrame = selectedNow
         renderMessage(context, originalMessage, hoveredNow)
@@ -76,7 +76,7 @@ internal class RestartableMarqueeButtonWidget private constructor(
         }
 
         val overflow = textWidth - availableWidth
-        val elapsed = if (hovered) (Util.getMeasuringTimeMs() - hoverStartedAt).coerceAtLeast(0L) else 0L
+        val elapsed = if (hovered) (measuringTimeNow() - hoverStartedAt).coerceAtLeast(Duration.ZERO) else Duration.ZERO
         val scrollX = MarqueeTiming.offset(elapsed, overflow)
         context.enableScissor(x + HORIZONTAL_PADDING, y, x + width - HORIZONTAL_PADDING, y + height)
         context.drawTextWithShadow(textRenderer, text, x + HORIZONTAL_PADDING - scrollX, textY, color)
@@ -85,7 +85,7 @@ internal class RestartableMarqueeButtonWidget private constructor(
 
     override fun getTooltipPositioner(): TooltipPositioner = ScreenFittingTooltipPositioner(
         base = super.getTooltipPositioner(),
-        shownSinceMillis = tooltipStartedAt,
+        shownSince = tooltipStartedAt,
     )
 
     /**

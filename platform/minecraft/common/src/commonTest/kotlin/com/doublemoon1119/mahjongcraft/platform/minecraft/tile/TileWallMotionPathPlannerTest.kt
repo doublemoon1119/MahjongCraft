@@ -5,7 +5,7 @@ import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPlacementOffse
 import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPosition
 import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallSideArrangement
 import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallSideReference
-import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongTableFacing
+import com.doublemoon1119.mahjongcraft.platform.minecraft.api.table.MahjongTableFacing
 import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongTableSide
 import kotlin.math.hypot
 import kotlin.math.sqrt

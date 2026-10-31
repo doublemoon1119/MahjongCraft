@@ -354,7 +354,8 @@ core extension behavior through one adapter. For example, see the Minecraft guid
   live in each module's `api/` directory and must be committed. `check` (and therefore `build`) checks them
   automatically; do not regenerate the references as part of normal builds.
 - The current stable surfaces are `api.event` in Flow common, Minecraft common and each loader adapter, plus
-  `api.seating` in Minecraft common and its loader adapters. The current Fabric adapter also protects the exact
+  `api.seating` and `api.table` in Minecraft common and its loader adapters, and the `MahjongCraftInternalApi`
+  annotation in Minecraft common. The current Fabric adapter also protects the exact
   `FabricMahjongExtension` entrypoint because third-party mods use it to register seats. This does not make every
   table-prop type referenced by that interface stable as a separate API surface. In particular,
   `registerTablePropKinds` is recorded as a method signature, but the methods of its
@@ -362,6 +363,11 @@ core extension behavior through one adapter. For example, see the Minecraft guid
 - Seat constructors and internal request factories keep their existing visibility. A third-party provider creates
   the public identity and geometry definitions; MahjongCraft creates its own internal request objects. This change
   records the existing shape and does not redesign the seating API.
+- A public declaration that only MahjongCraft's own platform modules may call, because it must cross module
+  boundaries, is marked with `MahjongCraftInternalApi`. The annotation is a `RequiresOptIn` at error level, so an
+  integration fails to compile unless it opts in explicitly. MahjongCraft opts in at the file that calls it, not
+  for a whole module; example integrations never opt in. The signature stays in the ABI reference, but its
+  behavior is not part of the compatibility promise.
 - Run `./gradlew checkKotlinAbi` with the intended platform target to inspect signature changes. The core
   target checks Flow; a Minecraft target also checks its common and loader public surfaces. Verify every
   supported target when changing shared APIs. New loader adapters exposing protected public APIs must apply the

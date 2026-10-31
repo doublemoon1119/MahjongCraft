@@ -223,7 +223,7 @@ class HistoryQueryDtosTest {
                     roundCount = 8,
                     resultsAvailable = true,
                     integrityDiagnostic = null,
-                    durationMillis = null,
+                    duration = null,
                     results = emptyList(),
                 ),
             ),

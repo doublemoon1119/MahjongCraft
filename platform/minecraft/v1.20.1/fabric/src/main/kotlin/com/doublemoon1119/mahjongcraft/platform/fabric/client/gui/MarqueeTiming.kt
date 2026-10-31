@@ -1,35 +1,37 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.client.gui
 
 import kotlin.math.roundToInt
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.milliseconds
+import kotlin.time.Duration.Companion.nanoseconds
 
 /** 跑馬燈的共用節奏：開頭停頓後移到底，停頓後移回開頭，再停頓並循環。 */
 internal object MarqueeTiming {
     /** 開始顯示後第一次移動前的停頓。 */
-    internal const val START_PAUSE_MILLIS = 350L
+    internal val START_PAUSE: Duration = 350.milliseconds
 
     /** 移到任一端後的停頓。 */
-    internal const val END_PAUSE_MILLIS = 450L
+    internal val END_PAUSE: Duration = 450.milliseconds
 
     /** 每移動一像素花費的時間。 */
-    internal const val MILLIS_PER_PIXEL = 35L
+    internal val TIME_PER_PIXEL: Duration = 35.milliseconds
 
     /**
      * 取得目前的位移。
      *
-     * @param elapsedMillis 從開始顯示起經過的毫秒數。
+     * @param elapsed 從開始顯示起經過的時間。
      * @param overflow 超出可視範圍的像素數；不大於 0 時不移動。
      * @return 超出寬度為正時，回傳介於 0 與 [overflow] 之間的位移；否則為 0。
      */
-    fun offset(elapsedMillis: Long, overflow: Int): Int {
-        if (overflow <= 0 || elapsedMillis <= START_PAUSE_MILLIS) return 0
-        val travelMillis = (overflow * MILLIS_PER_PIXEL).coerceAtLeast(1L)
-        val cycleMillis = travelMillis * 2 + END_PAUSE_MILLIS * 2
-        val cyclePosition = (elapsedMillis - START_PAUSE_MILLIS) % cycleMillis
+    fun offset(elapsed: Duration, overflow: Int): Int {
+        if (overflow <= 0 || elapsed <= START_PAUSE) return 0
+        val travel = TIME_PER_PIXEL * overflow
+        val cycle = travel * 2 + END_PAUSE * 2
+        val position = ((elapsed - START_PAUSE).inWholeNanoseconds % cycle.inWholeNanoseconds).nanoseconds
         return when {
-            cyclePosition < travelMillis -> (cyclePosition.toDouble() / travelMillis * overflow).roundToInt()
-            cyclePosition < travelMillis + END_PAUSE_MILLIS -> overflow
-            cyclePosition < travelMillis * 2 + END_PAUSE_MILLIS ->
-                (overflow - (cyclePosition - travelMillis - END_PAUSE_MILLIS).toDouble() / travelMillis * overflow).roundToInt()
+            position < travel -> (position / travel * overflow).roundToInt()
+            position < travel + END_PAUSE -> overflow
+            position < travel * 2 + END_PAUSE -> (overflow - (position - travel - END_PAUSE) / travel * overflow).roundToInt()
             else -> 0
         }
     }

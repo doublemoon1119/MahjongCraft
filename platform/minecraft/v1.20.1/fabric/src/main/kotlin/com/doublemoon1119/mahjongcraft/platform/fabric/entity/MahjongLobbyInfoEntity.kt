@@ -1,6 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.entity
 
-import com.doublemoon1119.mahjongcraft.platform.fabric.block.entity.MahjongTableBlockEntity
+import com.doublemoon1119.mahjongcraft.platform.fabric.block.MahjongTableLookup
 import com.doublemoon1119.mahjongcraft.platform.fabric.registry.ModEntities
 import com.doublemoon1119.mahjongcraft.platform.minecraft.animation.AnimationStep
 import net.minecraft.entity.EntityType
@@ -62,8 +62,8 @@ class MahjongLobbyInfoEntity(
         if (world.isClient) return
         if (age % ORPHAN_CHECK_INTERVAL_TICKS != 0) return
         val expectedTableId = managedTableId ?: return discard()
-        val table = controllerPos?.let { world.getBlockEntity(it) as? MahjongTableBlockEntity }
-        if (table?.tableId != expectedTableId) return discard()
+        val pos = controllerPos ?: return discard()
+        MahjongTableLookup.find(world, pos, expectedTableId) ?: return discard()
     }
 
     override fun isCollidable(): Boolean = false

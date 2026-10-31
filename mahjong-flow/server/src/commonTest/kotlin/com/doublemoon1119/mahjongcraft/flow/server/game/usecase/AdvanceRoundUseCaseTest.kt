@@ -38,6 +38,8 @@ import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.milliseconds
 import kotlin.uuid.Uuid
 
 /**
@@ -84,12 +86,12 @@ class AdvanceRoundUseCaseTest {
          * 依測試桌況的動作紀錄建立本局摘要，再寫入測試倉庫；不重新計算和牌或流局結算。
          *
          * @param tableState 含有本局結算動作的桌況。
-         * @param remainingReserveMillisByPlayerId 要保留的玩家思考時間；null 時沿用預設值。
+         * @param remainingReserveByPlayerId 要保留的玩家思考時間；null 時沿用預設值。
          * @param enabledAutomaticControlIdsByPlayerId 玩家目前啟用的自動控制項目。
          */
         suspend fun setCompletedState(
             tableState: TableState,
-            remainingReserveMillisByPlayerId: Map<Uuid, Long>? = null,
+            remainingReserveByPlayerId: Map<Uuid, Duration>? = null,
             enabledAutomaticControlIdsByPlayerId: Map<Uuid, Set<String>> = emptyMap(),
         ) {
             val winners = tableState.players.filter { player ->
@@ -126,8 +128,8 @@ class AdvanceRoundUseCaseTest {
                 Game(
                     tableState = tableState,
                     flowConfig = GameFlowConfig(),
-                    remainingReserveMillisByPlayerId = remainingReserveMillisByPlayerId
-                        ?: tableState.players.associate { it.id to GameFlowConfig().timeControl.reserveSeconds * 1_000L },
+                    remainingReserveByPlayerId = remainingReserveByPlayerId
+                        ?: tableState.players.associate { it.id to GameFlowConfig().timeControl.reserve },
                     enabledAutomaticControlIdsByPlayerId = enabledAutomaticControlIdsByPlayerId,
                     roundCompletion = completion,
                 ),
@@ -159,10 +161,10 @@ class AdvanceRoundUseCaseTest {
             comboCount = 0,
             prevalentWind = Wind.EAST,
         )
-        val remainingReserveMillisByPlayerId = players.associate { it.id to 12_345L }
+        val remainingReserveByPlayerId = players.associate { it.id to 12_345.milliseconds }
         fixtures.setCompletedState(
             table,
-            remainingReserveMillisByPlayerId,
+            remainingReserveByPlayerId,
             enabledAutomaticControlIdsByPlayerId = mapOf(dealerId to setOf("example:auto_action")),
         )
 
@@ -185,8 +187,8 @@ class AdvanceRoundUseCaseTest {
         assertEquals(1, newState.roundNumber)
         assertEquals(Wind.EAST, newState.prevalentWind)
         assertEquals(
-            remainingReserveMillisByPlayerId,
-            fixtures.gameRepo.getGame(gameId)?.remainingReserveMillisByPlayerId,
+            remainingReserveByPlayerId,
+            fixtures.gameRepo.getGame(gameId)?.remainingReserveByPlayerId,
         )
         assertTrue(fixtures.gameRepo.getGame(gameId)?.enabledAutomaticControlIdsByPlayerId.isNullOrEmpty())
         assertEquals(1L, fixtures.gameRepo.getGame(gameId)?.automaticControlRevision)

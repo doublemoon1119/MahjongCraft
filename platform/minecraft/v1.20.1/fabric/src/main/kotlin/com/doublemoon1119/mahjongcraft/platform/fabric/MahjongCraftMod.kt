@@ -10,6 +10,7 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.HandSortPreferen
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.SetHandSortPreferenceUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.lifecycle.ServerSessionStateCleaner
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateStore
+import com.doublemoon1119.mahjongcraft.platform.fabric.api.table.MahjongTables
 import com.doublemoon1119.mahjongcraft.platform.fabric.di.fabricClientModule
 import com.doublemoon1119.mahjongcraft.platform.fabric.di.fabricServerModule
 import com.doublemoon1119.mahjongcraft.platform.fabric.extension.FabricExtensionRegistries
@@ -67,6 +68,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.server.seating.MahjongSto
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.FabricTableLifecycleService
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.FabricTableLocationValidationService
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.FabricTablePropRefreshScheduler
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.FabricTableSpaceObstructionService
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.time.FabricTickMonotonicClock
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.time.FabricWorldTickWaiter
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftServerConfig
@@ -112,15 +114,17 @@ class MahjongCraftMod : ModInitializer {
         val tableLifecycleService = koin.get<FabricTableLifecycleService>()
         val tableLocationValidation = koin.get<FabricTableLocationValidationService>()
         val tablePropRefreshScheduler = koin.get<FabricTablePropRefreshScheduler>()
-        ModBlocks.register(
+        val tableSpaceObstruction = koin.get<FabricTableSpaceObstructionService>()
+        MahjongTables.install(
             roomService = koin.get<MahjongTableRoomService>(),
             tableLifecycleService = tableLifecycleService,
-            seatService = koin.get<MahjongStoolSeatService>(),
         )
+        ModBlocks.register(seatService = koin.get<MahjongStoolSeatService>())
         ModItemGroups.register()
         tableLifecycleService.registerEvents()
         tableLocationValidation.registerEvents()
         tablePropRefreshScheduler.registerEvents()
+        tableSpaceObstruction.registerEvents()
         val lobbyInfoLifecycle = koin.get<FabricMahjongLobbyInfoLifecycleService>()
         lobbyInfoLifecycle.registerEvents()
         koin.get<FabricDecisionTimerScheduler>().registerEvents()
@@ -188,6 +192,7 @@ class MahjongCraftMod : ModInitializer {
             }
             if (mahjongAvailable) tableLocationValidation.startSession(server)
             if (mahjongAvailable) tablePropRefreshScheduler.startSession(server)
+            if (mahjongAvailable) tableSpaceObstruction.startSession(server)
             if (mahjongAvailable) gamePresentationPublisher.startTablePropSession()
             serverHolder.set(server)
             playerIdentityStore.refresh()
@@ -203,6 +208,7 @@ class MahjongCraftMod : ModInitializer {
         ServerLifecycleEvents.SERVER_STOPPING.register {
             tableLocationValidation.stopSession()
             tablePropRefreshScheduler.stopSession()
+            tableSpaceObstruction.stopSession()
             // 不再開始新的自動推進，並直接捨棄不需要等待的背景工作（狀態訂閱、呈現、斷線倒數、歷史查詢）。
             advanceManager.stopSession()
             backgroundScope.cancel()

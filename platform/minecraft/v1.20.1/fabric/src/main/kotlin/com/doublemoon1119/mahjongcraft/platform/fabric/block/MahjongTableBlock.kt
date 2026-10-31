@@ -1,20 +1,21 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.block
 
+import com.doublemoon1119.mahjongcraft.platform.fabric.api.table.MahjongTableStructureBlock
+import com.doublemoon1119.mahjongcraft.platform.fabric.api.table.MahjongTables
 import com.doublemoon1119.mahjongcraft.platform.fabric.block.entity.MahjongTableBlockEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.logging.mahjongCraftLogger
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.room.MahjongTableRoomService
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.FabricTableLifecycleService
 import net.minecraft.block.Block
 import net.minecraft.block.BlockRenderType
 import net.minecraft.block.BlockState
 import net.minecraft.block.BlockWithEntity
 import net.minecraft.block.ShapeContext
+import net.minecraft.block.Waterloggable
 import net.minecraft.block.entity.BlockEntity
 import net.minecraft.entity.LivingEntity
 import net.minecraft.entity.player.PlayerEntity
+import net.minecraft.fluid.FluidState
 import net.minecraft.item.ItemPlacementContext
 import net.minecraft.item.ItemStack
-import net.minecraft.server.network.ServerPlayerEntity
 import net.minecraft.server.world.ServerWorld
 import net.minecraft.state.StateManager
 import net.minecraft.state.property.EnumProperty
@@ -34,19 +35,17 @@ import net.minecraft.world.WorldAccess
  *
  * 所有 parts 共用同一個方塊 registry ID，透過 [PART] 與 [Properties.HORIZONTAL_FACING] 保存結構位置。
  * 只有 [MahjongTablePart.BOTTOM_CENTER] 建立 [MahjongTableBlockEntity]；其餘 parts 的互動與生命週期皆
- * 先反查 controller。
+ * 先反查 controller。每個 part 與原版可含水方塊相同，放置時原位置是水源就含水。
  *
  * @param settings Minecraft 方塊設定。
  * @property design 此方塊 registry ID 對應的固定桌型。
- * @property roomService 開啟麻將桌房間介面的伺服器服務。
- * @property tableLifecycleService 清理桌子替換及其遊戲生命週期的服務。
  */
 class MahjongTableBlock(
     settings: Settings,
     internal val design: MahjongTableDesign,
-    private val roomService: MahjongTableRoomService,
-    private val tableLifecycleService: FabricTableLifecycleService,
-) : BlockWithEntity(settings) {
+) : BlockWithEntity(settings),
+    MahjongTableStructureBlock,
+    Waterloggable {
     /** 記錄結構放置失敗或缺少 controller 等異常狀態。 */
     private val logger = mahjongCraftLogger(MahjongTableBlock::class)
 
@@ -58,6 +57,7 @@ class MahjongTableBlock(
         defaultState = stateManager.defaultState
             .with(PART, MahjongTablePart.BOTTOM_CENTER)
             .with(Properties.HORIZONTAL_FACING, Direction.NORTH)
+            .with(Properties.WATERLOGGED, false)
     }
 
     /** 只為 controller part 建立保存穩定 UUID 的方塊實體。 */
@@ -84,9 +84,27 @@ class MahjongTableBlock(
         context: ShapeContext,
     ): VoxelShape = design.outlineShape(state.get(PART), state.get(Properties.HORIZONTAL_FACING))
 
-    /** 註冊結構 part 與水平朝向 blockstate properties。 */
+    /** 註冊結構 part、水平朝向與含水 blockstate properties。 */
     override fun appendProperties(builder: StateManager.Builder<Block, BlockState>) {
-        builder.add(PART, Properties.HORIZONTAL_FACING)
+        builder.add(PART, Properties.HORIZONTAL_FACING, Properties.WATERLOGGED)
+    }
+
+    /** 含水時回報水源的流體狀態。 */
+    @Suppress("OVERRIDE_DEPRECATION")
+    override fun getFluidState(state: BlockState): FluidState = state.waterloggedFluidState()
+
+    /** 含水時排程水流更新，讓周圍的水照常流動。 */
+    @Suppress("DEPRECATION", "OVERRIDE_DEPRECATION")
+    override fun getStateForNeighborUpdate(
+        state: BlockState,
+        direction: Direction,
+        neighborState: BlockState,
+        world: WorldAccess,
+        pos: BlockPos,
+        neighborPos: BlockPos,
+    ): BlockState {
+        state.scheduleWaterTickIfWaterlogged(world, pos)
+        return super.getStateForNeighborUpdate(state, direction, neighborState, world, pos, neighborPos)
     }
 
     /**
@@ -107,12 +125,13 @@ class MahjongTableBlock(
             defaultState
                 .with(PART, MahjongTablePart.BOTTOM_CENTER)
                 .with(Properties.HORIZONTAL_FACING, facing)
+                .waterloggedAt(context.world, controllerPos)
         } else {
             null
         }
     }
 
-    /** controller 放置後建立其餘 17 個 parts；中途失敗時回滾本次結構。 */
+    /** controller 放置後建立其餘 17 個 parts，各自依原位置決定是否含水；中途失敗時回滾本次結構。 */
     override fun onPlaced(
         world: World,
         pos: BlockPos,
@@ -130,7 +149,7 @@ class MahjongTableBlock(
             .all { (part, partPos) ->
                 world.setBlockState(
                     partPos,
-                    defaultState.with(PART, part).with(Properties.HORIZONTAL_FACING, facing),
+                    defaultState.with(PART, part).with(Properties.HORIZONTAL_FACING, facing).waterloggedAt(world, partPos),
                     NOTIFY_ALL,
                 ).also { placed -> if (placed) placedParts.add(partPos) }
             }
@@ -165,34 +184,30 @@ class MahjongTableBlock(
         hit: BlockHitResult,
     ): ActionResult {
         if (!world.isClient) {
-            val table = resolveController(world, pos, state) ?: return ActionResult.FAIL
-            if (!isComplete(world, table.pos, table.cachedState)) {
-                logger.warn("Rejected interaction with incomplete Mahjong table {} at {}", table.tableId, table.pos)
+            val controllerPos = mahjongTableControllerPos(world, pos, state) ?: return ActionResult.FAIL
+            if (!isComplete(world, controllerPos, world.getBlockState(controllerPos))) {
+                logger.warn("Rejected interaction with incomplete Mahjong table at {}", controllerPos)
                 return ActionResult.FAIL
             }
-            val serverPlayer = player as ServerPlayerEntity
-            roomService.openRoomScreen(table, serverPlayer)
         }
-        return ActionResult.SUCCESS
+        return MahjongTables.interact(world, pos, state, player)
     }
 
     /**
-     * 由任意 part 的狀態與座標取得 controller 方塊實體。
+     * 由任意 part 的狀態與座標換算 controller 位置。
      *
-     * @param world 查詢方塊實體的世界存取介面。
+     * @param world 方塊所在世界。
      * @param pos 任意結構 part 的座標。
      * @param state 該座標目前的方塊狀態。
-     * @return 屬於此桌的 controller 方塊實體；結構不完整或方塊不符時為 null。
+     * @return 依 part 與朝向換算的 controller 位置；方塊不是此桌時為 null。
      */
-    internal fun resolveController(world: WorldAccess, pos: BlockPos, state: BlockState): MahjongTableBlockEntity? {
+    override fun mahjongTableControllerPos(
+        world: BlockView,
+        pos: BlockPos,
+        state: BlockState,
+    ): BlockPos? {
         if (state.block !== this) return null
-        val controllerPos = MahjongTableStructure.controllerPosition(
-            pos,
-            state.get(PART),
-            state.get(Properties.HORIZONTAL_FACING),
-        )
-        val table = world.getBlockEntity(controllerPos) as? MahjongTableBlockEntity ?: return null
-        return table.takeIf { controller -> controller.cachedState.block === this }
+        return MahjongTableStructure.controllerPosition(pos, state.get(PART), state.get(Properties.HORIZONTAL_FACING))
     }
 
     /**
@@ -227,12 +242,7 @@ class MahjongTableBlock(
         if (!removingControllers.add(controllerPos)) return
 
         try {
-            val table = world.getBlockEntity(controllerPos) as? MahjongTableBlockEntity
-            if (table == null) {
-                logger.warn("Removed incomplete Mahjong table part at {} without controller at {}", pos, controllerPos)
-            } else {
-                tableLifecycleService.onBlockReplaced(world, table)
-            }
+            MahjongTables.onControllerRemoved(world, controllerPos)
             MahjongTableStructure.placements(controllerPos, facing).values.forEach { partPos ->
                 if (partPos != pos && world.getBlockState(partPos).block === this) world.removeBlock(partPos, false)
             }

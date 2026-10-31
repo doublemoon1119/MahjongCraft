@@ -1,8 +1,9 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.server.room
 
-import com.doublemoon1119.mahjongcraft.platform.fabric.block.MahjongTablePart
-import com.doublemoon1119.mahjongcraft.platform.fabric.block.entity.MahjongTableBlockEntity
+import com.doublemoon1119.mahjongcraft.platform.fabric.block.LocatedMahjongTable
+import com.doublemoon1119.mahjongcraft.platform.fabric.block.MahjongTableLookup
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.DimensionChunkKey
+import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongTableSpace
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocationRegistry
 import net.minecraft.server.network.ServerPlayerEntity
@@ -32,7 +33,7 @@ class ReachableMahjongTableResolver(
      * @param player 要列出桌子候選的玩家。
      * @return 玩家可互動且已載入的麻將桌。
      */
-    fun findReachable(player: ServerPlayerEntity): List<MahjongTableBlockEntity> {
+    internal fun findReachable(player: ServerPlayerEntity): List<LocatedMahjongTable> {
         val world = player.serverWorld
         val dimensionId = world.registryKey.value.toString()
         val chunkX = player.blockX shr CHUNK_COORDINATE_SHIFT
@@ -44,7 +45,7 @@ class ReachableMahjongTableResolver(
             .flatMap { key -> tableLocationRegistry.getByChunk(key).asSequence() }
             .mapNotNull { entry ->
                 val pos = BlockPos(entry.location.x, entry.location.y, entry.location.z)
-                val table = world.getBlockEntity(pos) as? MahjongTableBlockEntity ?: return@mapNotNull null
+                val table = MahjongTableLookup.find(world, pos) ?: return@mapNotNull null
                 table.takeIf { distanceTo(player, pos) <= reachDistance }
             }
             .toList()
@@ -57,8 +58,8 @@ class ReachableMahjongTableResolver(
      * @param pos 指定的 controller 方塊座標。
      * @return 符合位置與距離條件的桌子；否則為 null。
      */
-    fun resolve(player: ServerPlayerEntity, pos: BlockPos): MahjongTableBlockEntity? {
-        val table = player.serverWorld.getBlockEntity(pos) as? MahjongTableBlockEntity ?: return null
+    internal fun resolve(player: ServerPlayerEntity, pos: BlockPos): LocatedMahjongTable? {
+        val table = MahjongTableLookup.find(player.serverWorld, pos) ?: return null
         return table.takeIf { distanceTo(player, pos) <= reachDistanceFor(player) }
     }
 
@@ -75,22 +76,20 @@ class ReachableMahjongTableResolver(
     }
 
     /**
-     * 玩家座標到麻將桌整個 3×3×2 結構（不是單一 controller 方塊）世界座標範圍最近點的直線距離。
-     * [pos] 是 controller 方塊座標，實際佔用範圍由 [MahjongTablePart] 的固定相對位移換算——水平朝向
-     * 不影響這個範圍：結構本身以 controller 為中心水平對稱，任何朝向的旋轉都只是把同一組相對座標互相
-     * 對應，不會改變整體占用的方塊集合，因此不需要另外讀取朝向。
+     * 玩家座標到麻將桌固定範圍（[MahjongTableSpace] 的控制層與擺牌層，不是單一控制方塊）最近點的直線距離。
+     * 範圍以控制方塊為中心對稱，桌子朝向不影響結果，也不依賴桌子實際由哪些方塊組成。
      *
      * @param player 量測距離的玩家。
-     * @param pos 桌子 controller 方塊座標。
-     * @return 玩家到桌子結構最近點的直線距離。
+     * @param pos 桌子控制方塊座標。
+     * @return 玩家到桌子範圍最近點的直線距離。
      */
     private fun distanceTo(player: ServerPlayerEntity, pos: BlockPos): Double {
-        val minX = pos.x + MahjongTablePart.entries.minOf { it.localX }
-        val maxX = pos.x + MahjongTablePart.entries.maxOf { it.localX } + 1
-        val minY = pos.y + MahjongTablePart.entries.minOf { it.localY }
-        val maxY = pos.y + MahjongTablePart.entries.maxOf { it.localY } + 1
-        val minZ = pos.z + MahjongTablePart.entries.minOf { it.localZ }
-        val maxZ = pos.z + MahjongTablePart.entries.maxOf { it.localZ } + 1
+        val minX = pos.x - MahjongTableSpace.HALF_WIDTH
+        val maxX = pos.x + MahjongTableSpace.HALF_WIDTH + 1
+        val minY = pos.y
+        val maxY = pos.y + MahjongTableSpace.PLAY_SPACE_OFFSET_Y + 1
+        val minZ = pos.z - MahjongTableSpace.HALF_WIDTH
+        val maxZ = pos.z + MahjongTableSpace.HALF_WIDTH + 1
         val playerPos = player.pos
         val dx = playerPos.x.coerceIn(minX.toDouble(), maxX.toDouble()) - playerPos.x
         val dy = playerPos.y.coerceIn(minY.toDouble(), maxY.toDouble()) - playerPos.y

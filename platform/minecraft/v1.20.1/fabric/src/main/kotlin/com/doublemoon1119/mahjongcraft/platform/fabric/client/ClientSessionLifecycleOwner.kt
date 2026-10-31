@@ -18,6 +18,7 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.client
  * @property clearDecisionHud 清除決策 HUD 的暫態呈現。
  * @property clearTileAppearance 清除桌級牌組外觀快取。
  * @property clearHandTileLayout 清除本地手牌 render 位移。
+ * @property clearTableSpaceObstruction 清除等待開局桌子被擋住的擺牌格標示。
  */
 internal class ClientSessionLifecycleOwner(
     private val clearHistoryQueries: () -> Unit,
@@ -31,6 +32,7 @@ internal class ClientSessionLifecycleOwner(
     private val clearDecisionHud: () -> Unit,
     private val clearTileAppearance: () -> Unit,
     private val clearHandTileLayout: () -> Unit,
+    private val clearTableSpaceObstruction: () -> Unit,
 ) {
     /** 開始新連線時清除上一個連線的全部暫態資料。 */
     fun beginSession() = clearTransientState()
@@ -51,5 +53,6 @@ internal class ClientSessionLifecycleOwner(
         clearDecisionHud()
         clearTileAppearance()
         clearHandTileLayout()
+        clearTableSpaceObstruction()
     }
 }

@@ -1,5 +1,8 @@
 {
   "block.mahjongcraft_example.chair": "Example Chair",
+  "block.mahjongcraft_example.one_block_table": "Example One-Block Table",
+  "block.mahjongcraft_example.low_table": "Example Low Table",
+  "block.mahjongcraft_example.round_table": "Example Round Table",
   "entity.mahjongcraft_example.cushion": "Example Cushion",
   "item.mahjongcraft_example.cushion": "Example Cushion",
   "mahjongcraft_example.action.reveal_hand": "Reveal hand",

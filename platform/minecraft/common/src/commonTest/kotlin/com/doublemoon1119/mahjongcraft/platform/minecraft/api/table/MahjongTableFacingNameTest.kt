@@ -1,4 +1,4 @@
-package com.doublemoon1119.mahjongcraft.platform.minecraft.dice
+package com.doublemoon1119.mahjongcraft.platform.minecraft.api.table
 
 import kotlin.test.Test
 import kotlin.test.assertEquals

@@ -17,6 +17,8 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertIs
 import kotlin.test.assertTrue
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.milliseconds
 import kotlin.uuid.Uuid
 
 /** [GameDecisionAvailabilityService] 的呈現忙碌暫停與恢復測試。 */
@@ -53,25 +55,25 @@ class GameDecisionAvailabilityServiceTest {
             DecisionTimerSynchronizationService(timerManager, repository, publisher),
         )
         assertTrue(service.reconcile(game.id))
-        clock.nowMillis = 2_000L
+        clock.now = 2_000.milliseconds
         busyGate.setBusy(game.id, true)
 
         assertFalse(service.reconcile(game.id))
         assertIs<DecisionTimerUpdate.Stopped>(publisher.updates.last().second)
 
-        clock.nowMillis = 12_000L
+        clock.now = 12_000.milliseconds
         busyGate.setBusy(game.id, false)
         assertTrue(service.reconcile(game.id))
         val active = assertIs<DecisionTimerUpdate.Active>(publisher.updates.last().second)
-        assertEquals(3_000L, active.baseRemainingMillis)
+        assertEquals(3_000.milliseconds, active.baseRemaining)
     }
 }
 
 /** 可由 availability 測試直接推進的單調時間來源。 */
 private class MutableAvailabilityClock : MonotonicClock {
     /** 目前回傳的單調時間毫秒數。 */
-    var nowMillis: Long = 0L
+    var now: Duration = Duration.ZERO
 
     /** 回傳目前測試指定的單調時間。 */
-    override fun nowMillis(): Long = nowMillis
+    override fun now(): Duration = now
 }

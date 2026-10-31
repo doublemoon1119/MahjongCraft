@@ -125,6 +125,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.FabricTableL
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.FabricTablePresentationCleaner
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.FabricTablePropRefreshScheduler
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.FabricTableRemovalNotifier
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.FabricTableSpaceObstructionService
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.FabricTableStateDelivery
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.FabricTableStateDeliveryEnvironment
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.OrphanedTableCleanupService
@@ -302,6 +303,7 @@ val fabricServerModule = module {
     single<FabricTableLifecycleService>()
     single<FabricTableLocationValidationService>()
     single<FabricTablePropRefreshScheduler>()
+    single<FabricTableSpaceObstructionService>()
     single<FabricTablePresentationCleaner>()
     single<FabricTableRemovalNotifier>() bind TableRemovalNotifier::class
     single<FabricTableStateDelivery>()

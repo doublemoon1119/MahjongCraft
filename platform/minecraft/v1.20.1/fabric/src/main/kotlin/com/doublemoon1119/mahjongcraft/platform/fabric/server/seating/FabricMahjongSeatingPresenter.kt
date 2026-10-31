@@ -1,9 +1,9 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.server.seating
 
 import com.doublemoon1119.mahjongcraft.flow.common.error.ExtensionFailurePolicy
+import com.doublemoon1119.mahjongcraft.platform.fabric.block.MahjongTableLookup
 import com.doublemoon1119.mahjongcraft.platform.fabric.logging.mahjongCraftLogger
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.FabricServerHolder
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.dice.toMahjongTableFacing
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.seating.SeatRequest
 import com.doublemoon1119.mahjongcraft.platform.minecraft.seating.MahjongSeatingPresenter
 import com.doublemoon1119.mahjongcraft.platform.minecraft.seating.MahjongSeatingTableLayout
@@ -18,7 +18,6 @@ import net.minecraft.registry.RegistryKey
 import net.minecraft.registry.RegistryKeys
 import net.minecraft.server.network.ServerPlayerEntity
 import net.minecraft.server.world.ServerWorld
-import net.minecraft.state.property.Properties
 import net.minecraft.text.Text
 import net.minecraft.util.Formatting
 import net.minecraft.util.Identifier
@@ -73,9 +72,7 @@ internal class FabricMahjongSeatingPresenter(
         check(world.server.isOnThread) { "Automatic seating must run on the server thread" }
         val controllerPos = BlockPos(location.x, location.y, location.z)
         if (!world.chunkManager.isChunkLoaded(controllerPos.x shr 4, controllerPos.z shr 4)) return null
-        val state = world.getBlockState(controllerPos)
-        if (!state.contains(Properties.HORIZONTAL_FACING)) return null
-        val tableFacing = state.get(Properties.HORIZONTAL_FACING).toMahjongTableFacing()
+        val tableFacing = MahjongTableLookup.find(world, controllerPos, tableId)?.facing ?: return null
         val requests = MahjongSeatingTableLayout.seatRequests(
             layout = MahjongTableSeatLayout.forPlayerCount(seatedPlayerIds.size),
             tableId = tableId,

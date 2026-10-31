@@ -1,95 +1,95 @@
 package com.doublemoon1119.mahjongcraft.flow.common.game.model
 
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.seconds
+
 /**
  * 玩家每次動作使用的基本思考時間與保留思考時間設定。
  *
- * 基本思考時間會在每次動作重新取得；用完後才消耗該玩家整場共用的保留思考時間。
+ * 基本思考時間會在每次動作重新取得；用完後才消耗該玩家整場共用的保留思考時間。兩者都必須是整數秒。
  *
  * 內建組合沿用既有遊戲提供的五種選項；不符合內建組合的設定使用 [Custom]。
  */
 sealed interface ActionTimeControl {
-    /** 每次動作重新取得的基本思考秒數。 */
-    val baseSeconds: Int
+    /** 每次動作重新取得的基本思考時間。 */
+    val base: Duration
 
-    /** 每位玩家開局時取得的共用保留秒數。 */
-    val reserveSeconds: Int
+    /** 每位玩家開局時取得的共用保留思考時間。 */
+    val reserve: Duration
 
     /** 三秒基本思考時間與五秒保留思考時間的內建組合。 */
     data object VeryShort : ActionTimeControl {
-        override val baseSeconds: Int = 3
-        override val reserveSeconds: Int = 5
+        override val base: Duration = 3.seconds
+        override val reserve: Duration = 5.seconds
     }
 
     /** 五秒基本思考時間與十秒保留思考時間的內建組合。 */
     data object Short : ActionTimeControl {
-        override val baseSeconds: Int = 5
-        override val reserveSeconds: Int = 10
+        override val base: Duration = 5.seconds
+        override val reserve: Duration = 10.seconds
     }
 
     /** 五秒基本思考時間與二十秒保留思考時間的預設組合。 */
     data object Normal : ActionTimeControl {
-        override val baseSeconds: Int = 5
-        override val reserveSeconds: Int = 20
+        override val base: Duration = 5.seconds
+        override val reserve: Duration = 20.seconds
     }
 
     /** 六十秒基本思考時間且不提供保留思考時間的內建組合。 */
     data object Long : ActionTimeControl {
-        override val baseSeconds: Int = 60
-        override val reserveSeconds: Int = 0
+        override val base: Duration = 60.seconds
+        override val reserve: Duration = Duration.ZERO
     }
 
     /** 三百秒基本思考時間且不提供保留思考時間的內建組合。 */
     data object VeryLong : ActionTimeControl {
-        override val baseSeconds: Int = 300
-        override val reserveSeconds: Int = 0
+        override val base: Duration = 300.seconds
+        override val reserve: Duration = Duration.ZERO
     }
 
     /**
      * 不符合內建組合的自訂基本思考時間與保留思考時間設定。
      *
-     * @property baseSeconds 每次動作重新取得的基本思考秒數。
-     * @property reserveSeconds 每位玩家開局時取得的共用保留秒數。
+     * @property base 每次動作重新取得的基本思考時間。
+     * @property reserve 每位玩家開局時取得的共用保留思考時間。
      */
     data class Custom(
-        override val baseSeconds: Int,
-        override val reserveSeconds: Int,
+        override val base: Duration,
+        override val reserve: Duration,
     ) : ActionTimeControl {
         init {
-            validate(baseSeconds, reserveSeconds)
+            validate(base, reserve)
         }
     }
 
     /** 建立與正規化 [ActionTimeControl] 的集中入口。 */
     companion object {
         /**
-         * 將基本思考秒數與保留思考秒數正規化成內建組合或 [Custom]。
+         * 將基本思考時間與保留思考時間正規化成內建組合或 [Custom]。
          *
-         * @param baseSeconds 每次動作重新取得的基本思考秒數。
-         * @param reserveSeconds 每位玩家開局時取得的共用保留秒數。
+         * @param base 每次動作重新取得的基本思考時間。
+         * @param reserve 每位玩家開局時取得的共用保留思考時間。
          * @return 數值符合內建組合時回傳對應 singleton，否則回傳 [Custom]。
          */
-        fun from(baseSeconds: Int, reserveSeconds: Int): ActionTimeControl {
-            validate(baseSeconds, reserveSeconds)
-            return when (baseSeconds to reserveSeconds) {
-                VeryShort.baseSeconds to VeryShort.reserveSeconds -> VeryShort
-                Short.baseSeconds to Short.reserveSeconds -> Short
-                Normal.baseSeconds to Normal.reserveSeconds -> Normal
-                Long.baseSeconds to Long.reserveSeconds -> Long
-                VeryLong.baseSeconds to VeryLong.reserveSeconds -> VeryLong
-                else -> Custom(baseSeconds, reserveSeconds)
-            }
+        fun from(base: Duration, reserve: Duration): ActionTimeControl {
+            validate(base, reserve)
+            return listOf(VeryShort, Short, Normal, Long, VeryLong)
+                .firstOrNull { it.base == base && it.reserve == reserve }
+                ?: Custom(base, reserve)
         }
 
         /**
-         * 驗證基本思考秒數與保留思考秒數可用於決策計時。
+         * 驗證基本思考時間與保留思考時間可用於決策計時。
          *
-         * @param baseSeconds 每次動作重新取得的基本思考秒數。
-         * @param reserveSeconds 玩家整場共用的保留思考秒數。
+         * @param base 每次動作重新取得的基本思考時間。
+         * @param reserve 玩家整場共用的保留思考時間。
          */
-        private fun validate(baseSeconds: Int, reserveSeconds: Int) {
-            require(baseSeconds >= 0) { "Base time must not be negative" }
-            require(reserveSeconds >= 0) { "Reserve time must not be negative" }
-            require(baseSeconds > 0 || reserveSeconds > 0) { "Base and reserve time must not both be zero" }
+        private fun validate(base: Duration, reserve: Duration) {
+            require(base.isNonNegativeWholeSeconds()) { "Base time must be a non-negative whole number of seconds" }
+            require(reserve.isNonNegativeWholeSeconds()) {
+                "Reserve time must be a non-negative whole number of seconds"
+            }
+            require(base.isPositive() || reserve.isPositive()) { "Base and reserve time must not both be zero" }
         }
     }
 }

@@ -2,9 +2,7 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.server.room
 
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameConfig
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
-import com.doublemoon1119.mahjongcraft.platform.fabric.block.MahjongTableBlock
-import com.doublemoon1119.mahjongcraft.platform.fabric.block.MahjongTablePart
-import com.doublemoon1119.mahjongcraft.platform.fabric.block.entity.MahjongTableBlockEntity
+import com.doublemoon1119.mahjongcraft.platform.fabric.block.MahjongTableLookup
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongLobbyInfoEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.FabricServerHolder
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.entity.FabricEntitySpawnGateway
@@ -45,13 +43,7 @@ class FabricMahjongLobbyInfoPresenter(
         val location = locations.get(tableId)?.location ?: return false
         val world = resolveWorld(location) ?: return false
         val controllerPos = BlockPos(location.x, location.y, location.z)
-        val table = world.getBlockEntity(controllerPos) as? MahjongTableBlockEntity ?: return false
-        if (table.tableId != tableId ||
-            table.cachedState.block !is MahjongTableBlock ||
-            table.cachedState.get(MahjongTableBlock.PART) != MahjongTablePart.BOTTOM_CENTER
-        ) {
-            return false
-        }
+        MahjongTableLookup.find(world, controllerPos, tableId) ?: return false
         val placement = MahjongTileTableLayout.roundInfoDisplayPlacement(controllerPos.x, controllerPos.y, controllerPos.z)
         val existingEntities = findAll(world, tableId, controllerPos)
         val entity = existingEntities.firstOrNull() ?: MahjongLobbyInfoEntity(world = world).also {

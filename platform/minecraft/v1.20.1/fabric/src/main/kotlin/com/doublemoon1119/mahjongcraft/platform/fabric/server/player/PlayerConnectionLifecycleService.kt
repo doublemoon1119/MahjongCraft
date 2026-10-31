@@ -18,7 +18,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.UNKNOWN_TILE_ASSE
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import kotlin.time.Duration.Companion.seconds
+import kotlin.time.Duration
 import kotlin.uuid.Uuid
 
 /**
@@ -154,21 +154,21 @@ class PlayerConnectionLifecycleService(
             DisconnectedPlayerPolicy.LEAVE_IMMEDIATELY -> scope.launch { leaveWaitingRoom(playerId) }
             DisconnectedPlayerPolicy.LEAVE_AFTER_TIMEOUT -> scheduleTimeout(
                 playerId,
-                config.disconnectedPlayerTimeoutSeconds,
+                config.disconnectedPlayerTimeout,
             )
         }
     }
 
     /**
-     * 依設定秒數安排離開工作，完成或取消後移除工作索引。
+     * 依設定時間安排離開工作，完成或取消後移除工作索引。
      *
      * @param playerId 逾時後要離開等待室的玩家 UUID。
-     * @param timeoutSeconds 延遲離開的秒數。
+     * @param timeout 延遲離開的時間。
      */
-    private fun scheduleTimeout(playerId: Uuid, timeoutSeconds: Long) {
-        logger.debug("Scheduled disconnected-player timeout of {} second(s) for player {}", timeoutSeconds, playerId)
+    private fun scheduleTimeout(playerId: Uuid, timeout: Duration) {
+        logger.debug("Scheduled disconnected-player timeout of {} for player {}", timeout, playerId)
         val job = timeoutScope.launch {
-            delay(timeoutSeconds.seconds)
+            delay(timeout)
             logger.debug("Disconnected-player timeout expired for player {}", playerId)
             leaveWaitingRoom(playerId)
         }

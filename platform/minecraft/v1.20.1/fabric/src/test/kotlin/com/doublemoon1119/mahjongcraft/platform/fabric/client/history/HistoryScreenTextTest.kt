@@ -20,7 +20,7 @@ class HistoryScreenTextTest {
                 outcome = null, integrity = HistoryIntegrityFilterDto.INCOMPLETE, roundCount = null, resultsAvailable = false,
                 participants = participants, results = emptyList(),
                 integrityDiagnostic = null,
-                durationMillis = null,
+                duration = null,
             )
             assertEquals((0 until count).map { "player-$it" }, HistoryScreenText.rankedParticipants(entry).map { it.playerId })
             assertEquals(null to null, HistoryScreenText.ownResult(entry, "player-0"))
@@ -53,7 +53,7 @@ class HistoryScreenTextTest {
             participants = listOf(HistoryParticipantSummaryDto(0, "unknown", aiStrategyId = null), HistoryParticipantSummaryDto(1, "second", aiStrategyId = null), HistoryParticipantSummaryDto(2, "first", aiStrategyId = null), HistoryParticipantSummaryDto(3, "tie", aiStrategyId = null)),
             results = listOf(HistoryResultSummaryDto("unknown", 99999, null), HistoryResultSummaryDto("first", 100, 1), HistoryResultSummaryDto("second", 200, 2), HistoryResultSummaryDto("tie", 300, 2)),
             integrityDiagnostic = null,
-            durationMillis = null,
+            duration = null,
         )
         assertEquals(listOf("first", "second", "tie", "unknown"), HistoryScreenText.rankedParticipants(entry).map { it.playerId })
     }
