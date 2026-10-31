@@ -18,7 +18,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileLabelRegistry
  * 版本與 loader 無關；loader adapter 只負責發現 extension 並呼叫此物件，不自行實作註冊順序或凍結
  * 時機。
  */
-object MinecraftMahjongExtensionRegistrar {
+object MinecraftMahjongExtensionBootstrap {
     /**
      * 先登記 [BuiltInMinecraftMahjongExtension] 的規則中立映射，再依 [extensions] 順序登記各 extension 的映射，全部成功後凍結所有 registry。
      *

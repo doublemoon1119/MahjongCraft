@@ -8,7 +8,7 @@ import com.doublemoon1119.mahjongcraft.extension.ExtensionRegistrationReport
 import com.doublemoon1119.mahjongcraft.extension.ExtensionRegistrationReportFormatter
 import com.doublemoon1119.mahjongcraft.extension.ExtensionRegistrationSource
 import com.doublemoon1119.mahjongcraft.extension.MahjongExtension
-import com.doublemoon1119.mahjongcraft.extension.MahjongExtensionRegistrar
+import com.doublemoon1119.mahjongcraft.extension.MahjongExtensionBootstrap
 import com.doublemoon1119.mahjongcraft.extension.mergeRegistrationSources
 import com.doublemoon1119.mahjongcraft.flow.common.error.ExtensionFailurePolicy
 import com.doublemoon1119.mahjongcraft.platform.fabric.logging.mahjongCraftLogger
@@ -18,7 +18,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.server.seating.MahjongSto
 import com.doublemoon1119.mahjongcraft.platform.minecraft.environment.MinecraftEnvironment
 import com.doublemoon1119.mahjongcraft.platform.minecraft.extension.BundledMinecraftMahjongExtensions
 import com.doublemoon1119.mahjongcraft.platform.minecraft.extension.MinecraftMahjongExtension
-import com.doublemoon1119.mahjongcraft.platform.minecraft.extension.MinecraftMahjongExtensionRegistrar
+import com.doublemoon1119.mahjongcraft.platform.minecraft.extension.MinecraftMahjongExtensionBootstrap
 import com.doublemoon1119.mahjongcraft.platform.minecraft.extension.MinecraftPresentationRegistries
 import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModMetadata
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.RulePresentationRequirements
@@ -31,7 +31,7 @@ const val MAHJONG_EXTENSION_ENTRYPOINT: String = "${MinecraftModMetadata.MOD_ID}
  * 發現並註冊 Fabric 環境中的第三方 [MahjongExtension]。
  *
  * 規則中立的 [BuiltInMahjongExtension] 先完成登記；接著 [BundledMahjongExtensions] 與第三方 extension 依序經由同一組回呼登記，
- * 取得 runtime 實際使用的同一批 registry；全部成功後由 [MahjongExtensionRegistrar] 凍結 registry。
+ * 取得 runtime 實際使用的同一批 registry；全部成功後由 [MahjongExtensionBootstrap] 凍結 registry。
  * 啟動 log 依來源列出所有啟用的登記：INFO 只列每個來源的筆數，DEBUG 另外列出完整內容。
  */
 internal object FabricMahjongExtensions {
@@ -86,7 +86,7 @@ internal object FabricMahjongExtensions {
      * 使用明確提供的 [extensions] 初始化，供平台測試驗證組裝順序。
      *
      * 所有相依都必須由呼叫端明確提供，測試與正式啟動共用相同的註冊路徑。
-     * 各層 registrar 成功後各自凍結；後續層失敗時中止啟動，不回滾先前層的登記或重試。
+     * 各層啟動流程成功後各自凍結；後續層失敗時中止啟動，不回滾先前層的登記或重試。
      * Minecraft 呈現登記完成後，檢查每個可選規則都能在麻將桌上呈現（[RulePresentationRequirements]），不符合時中止啟動。
      *
      * @return Core、Minecraft presentation 與 Fabric 依來源合併後的所有登記。
@@ -116,7 +116,7 @@ internal object FabricMahjongExtensions {
         } else {
             emptyList()
         }
-        val coreSources = MahjongExtensionRegistrar.registerAndFreeze(
+        val coreSources = MahjongExtensionBootstrap.registerAndFreeze(
             extensions = BundledMahjongExtensions.all + debugExtensions + discoveredExtensions,
             registries = coreRegistries,
             builtIn = BuiltInMahjongExtension(
@@ -129,7 +129,7 @@ internal object FabricMahjongExtensions {
 
         // 同一個第三方類別可同時實作 MahjongExtension 與 MinecraftMahjongExtension，
         // 不需要在 fabric.mod.json 額外宣告第二個 entrypoint。
-        val minecraftResult = MinecraftMahjongExtensionRegistrar.registerAndFreeze(
+        val minecraftResult = MinecraftMahjongExtensionBootstrap.registerAndFreeze(
             extensions = BundledMinecraftMahjongExtensions.all + debugExtensions +
                 discoveredExtensions.filterIsInstance<MinecraftMahjongExtension>(),
             registries = presentationRegistries,
@@ -147,7 +147,7 @@ internal object FabricMahjongExtensions {
                 },
             )
         }
-        val fabricSources = FabricMahjongExtensionRegistrar.registerAndFreeze(
+        val fabricSources = FabricMahjongExtensionBootstrap.registerAndFreeze(
             extensions = discoveredExtensions.filterIsInstance<FabricMahjongExtension>(),
             registries = fabricRegistries,
             builtIn = BuiltInFabricMahjongExtension(mahjongStoolSeatProvider, presentationRegistries.tileAssetRegistry),

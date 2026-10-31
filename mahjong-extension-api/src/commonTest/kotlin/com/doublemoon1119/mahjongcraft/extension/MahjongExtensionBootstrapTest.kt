@@ -5,13 +5,17 @@ import com.doublemoon1119.mahjongcraft.ai.MahjongAiStrategyDefinition
 import com.doublemoon1119.mahjongcraft.ai.MahjongAiStrategyRegistry
 import com.doublemoon1119.mahjongcraft.ai.MahjongAiStrategyRegistryImpl
 import com.doublemoon1119.mahjongcraft.ai.RandomAiStrategy
+import com.doublemoon1119.mahjongcraft.ai.api.registration.MahjongAiStrategyRegistrar
+import com.doublemoon1119.mahjongcraft.ai.api.registration.OpponentModelRegistrar
 import com.doublemoon1119.mahjongcraft.ai.expectation.NeutralOpponentModel
 import com.doublemoon1119.mahjongcraft.ai.expectation.OpponentModelDefinition
 import com.doublemoon1119.mahjongcraft.ai.expectation.OpponentModelRegistry
+import com.doublemoon1119.mahjongcraft.flow.api.registration.GameEventPublicMarkerResolverRegistrar
 import com.doublemoon1119.mahjongcraft.flow.common.error.ExtensionFailurePolicy
 import com.doublemoon1119.mahjongcraft.flow.common.game.event.GameEventPublicMarkerResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.ExtensionGameCommand
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.WinCelebrationCueResolverRegistryImpl
+import com.doublemoon1119.mahjongcraft.flow.network.dto.api.registration.NetworkDtoRegistrars
 import com.doublemoon1119.mahjongcraft.flow.network.dto.component.ComponentViewNetworkRegistry
 import com.doublemoon1119.mahjongcraft.flow.network.dto.registry.DtoRegistry
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.ExhaustiveDrawReasonDto
@@ -21,6 +25,7 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.GameLengthDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.MahjongRuleConfigDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkDtoRegistries
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.ScoreConfigDto
+import com.doublemoon1119.mahjongcraft.flow.persistence.format.api.registration.PersistenceRegistrars
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.registry.PersistenceRegistries
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.ExtensionGameActionCommandFactoryRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.ExtensionGameCommandExecutorRegistry
@@ -29,6 +34,8 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.PostReacti
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.RuleDecisionResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.WinRoundContinuationResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.WinSettlementDetailResolverRegistry
+import com.doublemoon1119.mahjongcraft.logic.api.registration.MahjongModuleRegistrar
+import com.doublemoon1119.mahjongcraft.logic.api.registration.TileTypeRegistrar
 import com.doublemoon1119.mahjongcraft.logic.base.ExhaustiveDrawReason
 import com.doublemoon1119.mahjongcraft.logic.base.ExtensionGameAction
 import com.doublemoon1119.mahjongcraft.logic.base.TileTypeId
@@ -56,7 +63,7 @@ import kotlin.test.assertIs
 import kotlin.test.assertTrue
 
 /** 驗證 extension 的統一註冊順序、依來源分組的登記結果、錯誤診斷與 registry freeze。 */
-class MahjongExtensionRegistrarTest {
+class MahjongExtensionBootstrapTest {
     /** 驗證三個註冊階段都會執行，完成後禁止新增規則模組。 */
     @Test
     fun `extension registers all integrations before registries freeze`() {
@@ -69,7 +76,7 @@ class MahjongExtensionRegistrarTest {
         val calls = mutableListOf<String>()
         val extension = RecordingExtension(calls)
 
-        val sources = MahjongExtensionRegistrar.registerAndFreeze(
+        val sources = MahjongExtensionBootstrap.registerAndFreeze(
             extensions = listOf(extension),
             registries = testCoreRegistries(
                 moduleRegistry = moduleRegistry,
@@ -124,7 +131,7 @@ class MahjongExtensionRegistrarTest {
             register(OpponentModelDefinition("example:built_in_rule") { _, depth -> NeutralOpponentModel(depth) })
         }
 
-        val sources = MahjongExtensionRegistrar.registerAndFreeze(
+        val sources = MahjongExtensionBootstrap.registerAndFreeze(
             extensions = listOf(
                 RecordingExtension(mutableListOf()),
                 StrategyExtension("example:strategy_only"),
@@ -156,17 +163,17 @@ class MahjongExtensionRegistrarTest {
         val extension = object : MahjongExtension {
             override val id: String = "example:broken"
 
-            override fun registerRuleModules(registry: MahjongModuleRegistry) {
+            override fun registerRuleModules(registry: MahjongModuleRegistrar) {
                 error("broken")
             }
 
-            override fun registerNetworkDtos(registries: NetworkDtoRegistries) = Unit
+            override fun registerNetworkDtos(registries: NetworkDtoRegistrars) = Unit
 
-            override fun registerPersistenceDtos(registries: PersistenceRegistries) = Unit
+            override fun registerPersistenceDtos(registries: PersistenceRegistrars) = Unit
         }
 
         val error = assertFailsWith<MahjongExtensionRegistrationException> {
-            MahjongExtensionRegistrar.registerAndFreeze(
+            MahjongExtensionBootstrap.registerAndFreeze(
                 extensions = listOf(extension),
                 registries = testCoreRegistries(),
                 failurePolicy = ExtensionFailurePolicy.Default,
@@ -183,15 +190,15 @@ class MahjongExtensionRegistrarTest {
         fun failing(failure: Throwable) = object : MahjongExtension {
             override val id: String = "example:error"
 
-            override fun registerRuleModules(registry: MahjongModuleRegistry): Unit = throw failure
+            override fun registerRuleModules(registry: MahjongModuleRegistrar): Unit = throw failure
 
-            override fun registerNetworkDtos(registries: NetworkDtoRegistries) = Unit
+            override fun registerNetworkDtos(registries: NetworkDtoRegistrars) = Unit
 
-            override fun registerPersistenceDtos(registries: PersistenceRegistries) = Unit
+            override fun registerPersistenceDtos(registries: PersistenceRegistrars) = Unit
         }
 
         val wrapped = assertFailsWith<MahjongExtensionRegistrationException> {
-            MahjongExtensionRegistrar.registerAndFreeze(
+            MahjongExtensionBootstrap.registerAndFreeze(
                 extensions = listOf(failing(IsolatableTestError())),
                 registries = testCoreRegistries(),
                 failurePolicy = policy,
@@ -199,7 +206,7 @@ class MahjongExtensionRegistrarTest {
         }
         assertTrue(wrapped.message.orEmpty().contains("example:error"))
         assertFailsWith<FatalTestError> {
-            MahjongExtensionRegistrar.registerAndFreeze(
+            MahjongExtensionBootstrap.registerAndFreeze(
                 extensions = listOf(failing(FatalTestError())),
                 registries = testCoreRegistries(),
                 failurePolicy = policy,
@@ -207,7 +214,7 @@ class MahjongExtensionRegistrarTest {
         }
     }
 
-    /** 驗證回呼失敗時已完成的登記保留，且 registrar 不會凍結任何 registry。 */
+    /** 驗證回呼失敗時已完成的登記保留，且啟動流程不會凍結任何 registry。 */
     @Test
     fun `registration failure leaves partial registrations and registries unfrozen`() {
         val moduleRegistry = MahjongModuleRegistryImpl()
@@ -219,7 +226,7 @@ class MahjongExtensionRegistrarTest {
         val extension = object : MahjongExtension {
             override val id: String = "example:partial_failure"
 
-            override fun registerRuleModules(registry: MahjongModuleRegistry) {
+            override fun registerRuleModules(registry: MahjongModuleRegistrar) {
                 registry.register(
                     definition = MahjongModuleDefinition(RiichiRuleConfig::class, "example:partial_rule") { config, id ->
                         RiichiRuleModule(id, config)
@@ -227,18 +234,18 @@ class MahjongExtensionRegistrarTest {
                 )
             }
 
-            override fun registerTileTypes(registry: TileTypeRegistry) {
+            override fun registerTileTypes(registry: TileTypeRegistrar) {
                 registry.register(TileTypeDefinition(TileTypeId.parse("example:partial_tile")))
                 error("broken after partial registration")
             }
 
-            override fun registerNetworkDtos(registries: NetworkDtoRegistries) = Unit
+            override fun registerNetworkDtos(registries: NetworkDtoRegistrars) = Unit
 
-            override fun registerPersistenceDtos(registries: PersistenceRegistries) = Unit
+            override fun registerPersistenceDtos(registries: PersistenceRegistrars) = Unit
         }
 
         assertFailsWith<MahjongExtensionRegistrationException> {
-            MahjongExtensionRegistrar.registerAndFreeze(listOf(extension), registries, failurePolicy = ExtensionFailurePolicy.Default)
+            MahjongExtensionBootstrap.registerAndFreeze(listOf(extension), registries, failurePolicy = ExtensionFailurePolicy.Default)
         }
 
         assertTrue(moduleRegistry.getModule(RiichiRuleConfig()) is RiichiRuleModule)
@@ -266,7 +273,7 @@ class MahjongExtensionRegistrarTest {
         val extension = RecordingExtension(mutableListOf())
 
         val error = assertFailsWith<MahjongExtensionRegistrationException> {
-            MahjongExtensionRegistrar.registerAndFreeze(
+            MahjongExtensionBootstrap.registerAndFreeze(
                 extensions = listOf(extension, extension),
                 registries = testCoreRegistries(),
                 failurePolicy = ExtensionFailurePolicy.Default,
@@ -282,7 +289,7 @@ class MahjongExtensionRegistrarTest {
     fun `built in extension id cannot be reused by an extension`() {
         val builtIn = EmptyExtension("example:built_in")
         val error = assertFailsWith<MahjongExtensionRegistrationException> {
-            MahjongExtensionRegistrar.registerAndFreeze(
+            MahjongExtensionBootstrap.registerAndFreeze(
                 extensions = listOf(EmptyExtension(builtIn.id)),
                 builtIn = builtIn,
                 registries = testCoreRegistries(),
@@ -299,7 +306,7 @@ class MahjongExtensionRegistrarTest {
     fun `invalid extension ids fail with contextual errors`() {
         listOf("", " ", "invalid").forEach { invalidId ->
             val error = assertFailsWith<MahjongExtensionRegistrationException> {
-                MahjongExtensionRegistrar.registerAndFreeze(
+                MahjongExtensionBootstrap.registerAndFreeze(
                     extensions = listOf(EmptyExtension(invalidId)),
                     registries = testCoreRegistries(),
                     failurePolicy = ExtensionFailurePolicy.Default,
@@ -310,7 +317,7 @@ class MahjongExtensionRegistrarTest {
         }
 
         val error = assertFailsWith<MahjongExtensionRegistrationException> {
-            MahjongExtensionRegistrar.registerAndFreeze(
+            MahjongExtensionBootstrap.registerAndFreeze(
                 extensions = emptyList(),
                 builtIn = EmptyExtension("builtin"),
                 registries = testCoreRegistries(),
@@ -326,7 +333,7 @@ class MahjongExtensionRegistrarTest {
     fun `duplicate ai strategy key identifies registering extension`() {
         val registries = testCoreRegistries()
         val error = assertFailsWith<MahjongExtensionRegistrationException> {
-            MahjongExtensionRegistrar.registerAndFreeze(
+            MahjongExtensionBootstrap.registerAndFreeze(
                 extensions = listOf(StrategyExtension("example:first"), StrategyExtension("example:second")),
                 registries = registries,
                 failurePolicy = ExtensionFailurePolicy.Default,
@@ -340,7 +347,7 @@ class MahjongExtensionRegistrarTest {
 }
 
 /**
- * 建立 registrar 測試使用的獨立 core registry 集合。
+ * 建立啟動流程測試使用的獨立 core registry 集合。
  *
  * @param moduleRegistry 規則模組 registry，預設建立新的實作。
  * @param tileTypeRegistry 牌種類型 registry，預設建立新的實作。
@@ -382,7 +389,7 @@ private fun testCoreRegistries(
 )
 
 /**
- * 記錄 registrar 呼叫順序並登記一個可解析規則的測試 extension。
+ * 記錄啟動流程呼叫順序並登記一個可解析規則的測試 extension。
  *
  * @property calls 接收每個登記回呼名稱的可變清單。
  */
@@ -391,35 +398,35 @@ private class RecordingExtension(
 ) : MahjongExtension {
     override val id: String = "example:recording"
 
-    override fun registerRuleModules(registry: MahjongModuleRegistry) {
+    override fun registerRuleModules(registry: MahjongModuleRegistrar) {
         calls += "rule"
         registry.register(MahjongModuleDefinition(RiichiRuleConfig::class, RULE_MODULE_ID) { config, id -> RiichiRuleModule(id, config) })
     }
 
-    override fun registerTileTypes(registry: TileTypeRegistry) {
+    override fun registerTileTypes(registry: TileTypeRegistrar) {
         calls += "tile"
         registry.register(TileTypeDefinition(TileTypeId.parse("example:flower/spring")))
     }
 
-    override fun registerNetworkDtos(registries: NetworkDtoRegistries) {
+    override fun registerNetworkDtos(registries: NetworkDtoRegistrars) {
         calls += "network"
     }
 
-    override fun registerPersistenceDtos(registries: PersistenceRegistries) {
+    override fun registerPersistenceDtos(registries: PersistenceRegistrars) {
         calls += "persistence"
     }
 
-    override fun registerAiStrategies(registry: MahjongAiStrategyRegistry) {
+    override fun registerAiStrategies(registry: MahjongAiStrategyRegistrar) {
         calls += "strategy"
         registry.register(MahjongAiStrategyDefinition(STRATEGY_KEY) { RandomAiStrategy(ExtensionGameActionAiRegistry(MahjongModuleRegistryImpl())) })
     }
 
-    override fun registerOpponentModels(registry: OpponentModelRegistry) {
+    override fun registerOpponentModels(registry: OpponentModelRegistrar) {
         calls += "opponent"
         registry.register(OpponentModelDefinition(RULE_MODULE_ID) { _, depth -> NeutralOpponentModel(depth) })
     }
 
-    override fun registerGameEventPublicMarkerResolvers(registry: GameEventPublicMarkerResolverRegistry) {
+    override fun registerGameEventPublicMarkerResolvers(registry: GameEventPublicMarkerResolverRegistrar) {
         calls += "public_marker"
     }
 
@@ -439,11 +446,11 @@ private class RecordingExtension(
  * @property id 此測試 extension 的識別字串。
  */
 private class EmptyExtension(override val id: String) : MahjongExtension {
-    override fun registerRuleModules(registry: MahjongModuleRegistry) = Unit
+    override fun registerRuleModules(registry: MahjongModuleRegistrar) = Unit
 
-    override fun registerNetworkDtos(registries: NetworkDtoRegistries) = Unit
+    override fun registerNetworkDtos(registries: NetworkDtoRegistrars) = Unit
 
-    override fun registerPersistenceDtos(registries: PersistenceRegistries) = Unit
+    override fun registerPersistenceDtos(registries: PersistenceRegistrars) = Unit
 }
 
 /**
@@ -452,13 +459,13 @@ private class EmptyExtension(override val id: String) : MahjongExtension {
  * @property id 此測試 extension 的識別字串。
  */
 private class StrategyExtension(override val id: String) : MahjongExtension {
-    override fun registerRuleModules(registry: MahjongModuleRegistry) = Unit
+    override fun registerRuleModules(registry: MahjongModuleRegistrar) = Unit
 
-    override fun registerNetworkDtos(registries: NetworkDtoRegistries) = Unit
+    override fun registerNetworkDtos(registries: NetworkDtoRegistrars) = Unit
 
-    override fun registerPersistenceDtos(registries: PersistenceRegistries) = Unit
+    override fun registerPersistenceDtos(registries: PersistenceRegistrars) = Unit
 
-    override fun registerAiStrategies(registry: MahjongAiStrategyRegistry) {
+    override fun registerAiStrategies(registry: MahjongAiStrategyRegistrar) {
         registry.register(MahjongAiStrategyDefinition(STRATEGY_KEY) { RandomAiStrategy(ExtensionGameActionAiRegistry(MahjongModuleRegistryImpl())) })
     }
 
@@ -469,15 +476,15 @@ private class StrategyExtension(override val id: String) : MahjongExtension {
     }
 }
 
-/** 提供 registrar 測試使用的獨立 network DTO registry 集合。 */
+/** 提供啟動流程測試使用的獨立 network DTO registry 集合。 */
 private class TestNetworkDtoRegistries : NetworkDtoRegistries {
-    override val ruleConfig = DtoRegistry<MahjongRuleConfig, MahjongRuleConfigDto>()
-    override val scoreConfig = DtoRegistry<ScoreConfig, ScoreConfigDto>()
-    override val gameLength = DtoRegistry<GameLength, GameLengthDto>()
+    override val ruleConfig = DtoRegistry<MahjongRuleConfig, MahjongRuleConfigDto> { this }
+    override val scoreConfig = DtoRegistry<ScoreConfig, ScoreConfigDto> { this }
+    override val gameLength = DtoRegistry<GameLength, GameLengthDto> { this }
     override val componentViews = ComponentViewNetworkRegistry()
-    override val exhaustiveDrawReason = DtoRegistry<ExhaustiveDrawReason, ExhaustiveDrawReasonDto>()
-    override val extensionGameAction = DtoRegistry<ExtensionGameAction, ExtensionGameActionDto>()
-    override val extensionGameCommand = DtoRegistry<ExtensionGameCommand, ExtensionGameCommandDto>()
+    override val exhaustiveDrawReason = DtoRegistry<ExhaustiveDrawReason, ExhaustiveDrawReasonDto> { this }
+    override val extensionGameAction = DtoRegistry<ExtensionGameAction, ExtensionGameActionDto> { this }
+    override val extensionGameCommand = DtoRegistry<ExtensionGameCommand, ExtensionGameCommandDto> { this }
 
     override fun freeze() {
         ruleConfig.freeze()

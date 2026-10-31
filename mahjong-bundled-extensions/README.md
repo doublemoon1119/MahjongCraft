@@ -19,7 +19,7 @@ integration.
   lists everything the rule registers; other modules only provide the things
   being registered.
 - Register rule-neutral built-ins, such as the built-in AI strategies, through
-  `BuiltInMahjongExtension`, which the platform passes to the registrar as its
+  `BuiltInMahjongExtension`, which the platform passes to the extension bootstrap as its
   built-in source.
 
 ## Boundaries
@@ -35,7 +35,7 @@ which exposes the logic, AI, and Flow registration contracts it uses.
 
 ## Testing
 
-Tests verify that each bundled extension registers its rule integrations through the extension registrar.
+Tests verify that each bundled extension registers its rule integrations through the extension bootstrap.
 
 From the repository root, run
 `./gradlew :mahjong-bundled-extensions:check "-PmahjongcraftTarget=core"`.

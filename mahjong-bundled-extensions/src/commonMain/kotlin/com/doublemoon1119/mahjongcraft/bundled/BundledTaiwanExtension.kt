@@ -1,26 +1,27 @@
 package com.doublemoon1119.mahjongcraft.bundled
 
 import com.doublemoon1119.mahjongcraft.extension.MahjongExtension
+import com.doublemoon1119.mahjongcraft.flow.network.dto.api.registration.NetworkDtoRegistrars
 import com.doublemoon1119.mahjongcraft.flow.network.dto.registry.DtoDefinition
-import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkDtoRegistries
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.riichi.toDomain
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.taiwan.TaiwanGameLengthDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.taiwan.TaiwanRuleConfigDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.taiwan.TaiwanScoreConfigDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.taiwan.toDomain
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.taiwan.toTaiwanDto
+import com.doublemoon1119.mahjongcraft.flow.persistence.format.api.registration.PersistenceRegistrars
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.core.PersistenceDtoDefinition
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.game.toDomain
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.game.toPersistenceDto
-import com.doublemoon1119.mahjongcraft.flow.persistence.format.registry.PersistenceRegistries
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.rule.BuiltInDiscardPilePersistenceKeys
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.rule.TaiwanDiscardPilePersistenceDto
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.rule.TaiwanRuleConfigPersistenceDto
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.rule.toDomain
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.rule.toPersistenceDto
+import com.doublemoon1119.mahjongcraft.logic.api.registration.MahjongModuleRegistrar
+import com.doublemoon1119.mahjongcraft.logic.api.registration.TileTypeRegistrar
 import com.doublemoon1119.mahjongcraft.logic.module.BuiltInRuleModuleIds
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleDefinition
-import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanDiscardPile
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanGameLength
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanRuleConfig
@@ -28,7 +29,6 @@ import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanRuleModule
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanScoreConfig
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.tile.TaiwanTileTypes
 import com.doublemoon1119.mahjongcraft.logic.tile.TileTypeDefinition
-import com.doublemoon1119.mahjongcraft.logic.tile.TileTypeRegistry
 import com.doublemoon1119.mahjongcraft.metadata.MahjongCraftMetadata
 
 /**
@@ -39,22 +39,22 @@ import com.doublemoon1119.mahjongcraft.metadata.MahjongCraftMetadata
 object BundledTaiwanExtension : MahjongExtension {
     override val id: String = MahjongCraftMetadata.id("taiwan")
 
-    override fun registerRuleModules(registry: MahjongModuleRegistry) {
+    override fun registerRuleModules(registry: MahjongModuleRegistrar) {
         registry.register(MahjongModuleDefinition(TaiwanRuleConfig::class, BuiltInRuleModuleIds.TAIWAN) { config, id -> TaiwanRuleModule(id, config) })
     }
 
-    override fun registerTileTypes(registry: TileTypeRegistry) {
+    override fun registerTileTypes(registry: TileTypeRegistrar) {
         TaiwanTileTypes.ALL.forEach { id -> registry.register(TileTypeDefinition(id)) }
     }
 
-    override fun registerNetworkDtos(registries: NetworkDtoRegistries) {
+    override fun registerNetworkDtos(registries: NetworkDtoRegistrars) {
         registries.ruleConfig.register(
             definition = DtoDefinition(
                 domainClass = TaiwanRuleConfig::class,
                 dtoClass = TaiwanRuleConfigDto::class,
                 serializer = TaiwanRuleConfigDto.serializer(),
-                toDto = { it.toTaiwanDto(registries) },
-                toDomain = { it.toDomain(registries) },
+                toDto = { value, converter -> value.toTaiwanDto(converter) },
+                toDomain = { dto, converter -> dto.toDomain(converter) },
             ),
         )
         registries.scoreConfig.register(
@@ -104,7 +104,7 @@ object BundledTaiwanExtension : MahjongExtension {
         )
     }
 
-    override fun registerPersistenceDtos(registries: PersistenceRegistries) {
+    override fun registerPersistenceDtos(registries: PersistenceRegistrars) {
         registries.ruleConfigs.register(
             definition = PersistenceDtoDefinition(
                 typeKey = "mahjongcraft:taiwan/rule_config",
@@ -120,8 +120,8 @@ object BundledTaiwanExtension : MahjongExtension {
                 typeKey = BuiltInDiscardPilePersistenceKeys.TAIWAN,
                 domainClass = TaiwanDiscardPile::class,
                 serializer = TaiwanDiscardPilePersistenceDto.serializer(),
-                toDto = { it.toPersistenceDto(registries.components) },
-                toDomain = { it.toDomain(registries.components) },
+                toDto = { value, converter -> value.toPersistenceDto(converter.components) },
+                toDomain = { dto, converter -> dto.toDomain(converter.components) },
                 compactInReplay = true,
             ),
         )

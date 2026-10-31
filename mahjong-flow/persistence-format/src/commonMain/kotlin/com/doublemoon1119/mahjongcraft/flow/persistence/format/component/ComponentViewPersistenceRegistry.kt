@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.flow.persistence.format.component
 
+import com.doublemoon1119.mahjongcraft.flow.persistence.format.api.registration.ComponentViewPersistenceRegistrar
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.core.TypedPersistenceDto
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.core.UnregisteredPersistenceTypeException
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.core.persistenceJson
@@ -7,8 +8,10 @@ import com.doublemoon1119.mahjongcraft.logic.component.ComponentViewSet
 import com.doublemoon1119.mahjongcraft.logic.component.ComponentViewType
 import kotlinx.serialization.json.JsonObject
 
-/** 保存提交時已裁切的投影；解碼只還原投影集合，不建立權威組件。 */
-class ComponentViewPersistenceRegistry {
+/** 保存提交時已裁切的投影；解碼只還原投影集合，不建立權威組件；擴充只透過 [ComponentViewPersistenceRegistrar] 登記。 */
+class ComponentViewPersistenceRegistry :
+    ComponentViewPersistenceRegistrar,
+    ComponentViewPersistenceConverter {
     /**
      * 捕捉一項轉換的具體型別，避免對外暴露未檢查的值轉型。
      *
@@ -50,7 +53,7 @@ class ComponentViewPersistenceRegistry {
     private var frozen = false
 
     /** 已登記 ID 的獨立集合。 */
-    val registrationKeys: Set<String> get() = entries.keys.toSet()
+    override val registrationKeys: Set<String> get() = entries.keys.toSet()
 
     /** 所有轉換所使用的投影定義，用於啟動時核對同一份 runtime registry。 */
     val viewTypes: List<ComponentViewType<*>> get() = entries.values.map { it.definition.viewType }
@@ -62,7 +65,7 @@ class ComponentViewPersistenceRegistry {
      * @param D 保存 DTO 型別。
      * @param definition 投影及雙向保存轉換。
      */
-    fun <V : Any, D : Any> register(definition: ComponentViewPersistenceDefinition<V, D>) {
+    override fun <V : Any, D : Any> register(definition: ComponentViewPersistenceDefinition<V, D>) {
         check(!frozen) { "Component view persistence registry is frozen" }
         require(definition.viewType.id !in entries) { "Duplicate component view persistence ID: ${definition.viewType.id}" }
         entries[definition.viewType.id] = Entry(definition)
@@ -79,7 +82,7 @@ class ComponentViewPersistenceRegistry {
      * @param views 已裁切的不可變投影。
      * @return 保存資料清單。
      */
-    fun encode(views: ComponentViewSet): List<TypedPersistenceDto> = views.types.map { type ->
+    override fun encode(views: ComponentViewSet): List<TypedPersistenceDto> = views.types.map { type ->
         val entry = entries[type.id] ?: throw UnregisteredPersistenceTypeException(type.id)
         entry.encode(views)
     }
@@ -90,7 +93,7 @@ class ComponentViewPersistenceRegistry {
      * @param values 保存資料。
      * @return 經定義驗證的投影集合。
      */
-    fun decode(values: List<TypedPersistenceDto>): ComponentViewSet {
+    override fun decode(values: List<TypedPersistenceDto>): ComponentViewSet {
         require(values.map { it.typeKey }.distinct().size == values.size) { "Duplicate saved component view ID" }
         return values.fold(ComponentViewSet.EMPTY) { result, dto ->
             val entry = entries[dto.typeKey] ?: throw UnregisteredPersistenceTypeException(dto.typeKey)

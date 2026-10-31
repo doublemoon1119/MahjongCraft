@@ -13,7 +13,8 @@ import kotlin.uuid.Uuid
  *
  * 實作者只建立這份狀態並在存讀檔時轉交給 MahjongCraft；修改與還原由 MahjongCraft 進行。
  *
- * @param markDirty 狀態改變時通知所屬方塊實體需要存檔的動作，通常是方塊實體的 `markDirty`。
+ * @param markDirty 狀態改變時通知所屬方塊實體需要存檔的動作，通常是方塊實體標記需要存檔的方法，
+ *   例如 Fabric（Yarn 名稱）的 `markDirty`。
  */
 class MahjongTableControllerState(
     private val markDirty: () -> Unit,

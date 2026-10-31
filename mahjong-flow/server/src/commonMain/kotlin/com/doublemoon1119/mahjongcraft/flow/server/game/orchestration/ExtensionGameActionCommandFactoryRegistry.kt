@@ -1,12 +1,13 @@
 package com.doublemoon1119.mahjongcraft.flow.server.game.orchestration
 
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.ExtensionGameCommand
+import com.doublemoon1119.mahjongcraft.flow.server.api.registration.ExtensionGameActionCommandFactoryRegistrar
 import com.doublemoon1119.mahjongcraft.logic.base.ExtensionGameAction
 import kotlin.reflect.KClass
 import kotlin.uuid.Uuid
 
-/** 管理規則擴充動作命令 factory 的可凍結註冊表。 */
-class ExtensionGameActionCommandFactoryRegistry {
+/** 管理規則擴充動作命令 factory 的可凍結註冊表；擴充只透過 [ExtensionGameActionCommandFactoryRegistrar] 登記。 */
+class ExtensionGameActionCommandFactoryRegistry : ExtensionGameActionCommandFactoryRegistrar {
     /**
      * 保留具體動作型別的命令建立方式，避免放入註冊表時遺失泛型資訊。
      *
@@ -22,7 +23,7 @@ class ExtensionGameActionCommandFactoryRegistry {
     private var frozen = false
 
     /** 目前已登記動作型別的穩定類別名稱快照。 */
-    val registrationKeys: Set<String> get() = entries.keys.mapTo(mutableSetOf()) { it.qualifiedName ?: it.toString() }
+    override val registrationKeys: Set<String> get() = entries.keys.mapTo(mutableSetOf()) { it.qualifiedName ?: it.toString() }
 
     /**
      * 註冊一種擴充動作的命令 factory；註冊表凍結後或同一動作型別已登記時會失敗。
@@ -30,7 +31,7 @@ class ExtensionGameActionCommandFactoryRegistry {
      * @param A 動作型別。
      * @param definition 動作類別與命令 factory。
      */
-    fun <A : ExtensionGameAction> register(definition: ExtensionGameActionCommandFactoryDefinition<A>) {
+    override fun <A : ExtensionGameAction> register(definition: ExtensionGameActionCommandFactoryDefinition<A>) {
         check(!frozen) { "Extension game action command factory registry is frozen" }
         require(definition.actionClass !in entries) { "Command factory already registered for ${definition.actionClass}" }
         entries[definition.actionClass] = Entry(definition.factory)

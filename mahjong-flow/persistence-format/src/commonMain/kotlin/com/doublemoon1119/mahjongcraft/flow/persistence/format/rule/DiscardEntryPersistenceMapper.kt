@@ -1,6 +1,6 @@
 package com.doublemoon1119.mahjongcraft.flow.persistence.format.rule
 
-import com.doublemoon1119.mahjongcraft.flow.persistence.format.component.ComponentPersistenceRegistry
+import com.doublemoon1119.mahjongcraft.flow.persistence.format.component.ComponentPersistenceConverter
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.game.toDomain
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.game.toPersistenceDto
 import com.doublemoon1119.mahjongcraft.logic.table.DiscardPile.DiscardEntry
@@ -11,7 +11,7 @@ import com.doublemoon1119.mahjongcraft.logic.table.DiscardPile.DiscardEntry
  * @param registry 組件保存轉換。
  * @return 完整的捨牌紀錄。
  */
-fun DiscardEntry.toPersistenceDto(registry: ComponentPersistenceRegistry): DiscardEntryPersistenceDto = DiscardEntryPersistenceDto(
+fun DiscardEntry.toPersistenceDto(registry: ComponentPersistenceConverter): DiscardEntryPersistenceDto = DiscardEntryPersistenceDto(
     tile = tile.toPersistenceDto(registry),
     isTaken = isTaken,
     components = registry.encode(components),
@@ -23,7 +23,7 @@ fun DiscardEntry.toPersistenceDto(registry: ComponentPersistenceRegistry): Disca
  * @param registry 組件保存轉換。
  * @return 經目標種類檢查的捨牌紀錄。
  */
-fun DiscardEntryPersistenceDto.toDomain(registry: ComponentPersistenceRegistry): DiscardEntry = DiscardEntry(
+fun DiscardEntryPersistenceDto.toDomain(registry: ComponentPersistenceConverter): DiscardEntry = DiscardEntry(
     tile = tile.toDomain(registry),
     isTaken = isTaken,
     components = registry.decode(components),

@@ -4,7 +4,10 @@ plugins {
 }
 
 publicApiAbi {
-    includedNames.add("com.doublemoon1119.mahjongcraft.flow.api.event.**")
+    includedNames.addAll(
+        "com.doublemoon1119.mahjongcraft.flow.api.event.**",
+        "com.doublemoon1119.mahjongcraft.flow.api.registration.**",
+    )
 }
 
 version = libs.versions.flow.version.get()

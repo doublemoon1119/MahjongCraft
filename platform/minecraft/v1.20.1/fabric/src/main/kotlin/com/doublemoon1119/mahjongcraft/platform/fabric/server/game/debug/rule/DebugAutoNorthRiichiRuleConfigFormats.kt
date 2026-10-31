@@ -1,13 +1,13 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.rule
 
+import com.doublemoon1119.mahjongcraft.flow.network.dto.api.registration.NetworkDtoRegistrars
 import com.doublemoon1119.mahjongcraft.flow.network.dto.registry.DtoDefinition
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.MahjongRuleConfigDto
-import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkDtoRegistries
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.riichi.ThreePlayerRiichiRuleConfigDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.riichi.toDomain
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.riichi.toThreePlayerRiichiDto
+import com.doublemoon1119.mahjongcraft.flow.persistence.format.api.registration.PersistenceRegistrars
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.core.PersistenceDtoDefinition
-import com.doublemoon1119.mahjongcraft.flow.persistence.format.registry.PersistenceRegistries
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.rule.ThreePlayerRiichiRuleConfigPersistenceDto
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.rule.toDomain
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.rule.toPersistenceDto
@@ -41,14 +41,14 @@ internal data class DebugAutoNorthRiichiRuleConfigPersistenceDto(
  *
  * @param registries 網路 DTO registry 集合。
  */
-internal fun registerDebugAutoNorthRiichiNetworkDtos(registries: NetworkDtoRegistries) {
+internal fun registerDebugAutoNorthRiichiNetworkDtos(registries: NetworkDtoRegistrars) {
     registries.ruleConfig.register(
         definition = DtoDefinition(
             domainClass = DebugAutoNorthRiichiRuleConfig::class,
             dtoClass = DebugAutoNorthRiichiRuleConfigDto::class,
             serializer = DebugAutoNorthRiichiRuleConfigDto.serializer(),
-            toDto = { DebugAutoNorthRiichiRuleConfigDto(it.base.toThreePlayerRiichiDto(registries)) },
-            toDomain = { DebugAutoNorthRiichiRuleConfig(it.base.toDomain(registries)) },
+            toDto = { value, converter -> DebugAutoNorthRiichiRuleConfigDto(value.base.toThreePlayerRiichiDto(converter)) },
+            toDomain = { dto, converter -> DebugAutoNorthRiichiRuleConfig(dto.base.toDomain(converter)) },
         ),
     )
 }
@@ -58,7 +58,7 @@ internal fun registerDebugAutoNorthRiichiNetworkDtos(registries: NetworkDtoRegis
  *
  * @param registries persistence registry 集合。
  */
-internal fun registerDebugAutoNorthRiichiPersistenceDtos(registries: PersistenceRegistries) {
+internal fun registerDebugAutoNorthRiichiPersistenceDtos(registries: PersistenceRegistrars) {
     registries.ruleConfigs.register(
         definition = PersistenceDtoDefinition(
             typeKey = MahjongCraftMetadata.id("debug/auto_north_riichi_rule_config"),

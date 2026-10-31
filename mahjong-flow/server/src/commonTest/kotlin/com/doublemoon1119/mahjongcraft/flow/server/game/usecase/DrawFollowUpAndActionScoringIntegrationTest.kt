@@ -6,8 +6,8 @@ import com.doublemoon1119.mahjongcraft.flow.api.event.PerformedActionKind
 import com.doublemoon1119.mahjongcraft.flow.common.game.event.GameEventProjector
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryFact
 import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
-import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkDtoRegistries
-import com.doublemoon1119.mahjongcraft.flow.persistence.format.registry.PersistenceRegistries
+import com.doublemoon1119.mahjongcraft.flow.network.dto.api.registration.NetworkDtoRegistrars
+import com.doublemoon1119.mahjongcraft.flow.persistence.format.api.registration.PersistenceRegistrars
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.PostActionExhaustiveDrawResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.RuleContractViolationException
 import com.doublemoon1119.mahjongcraft.flow.server.game.policy.GameVisibilityPolicyImpl
@@ -17,6 +17,8 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameSnapshotSync
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.HandSortPreferenceStore
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.WinPresentationHandoff
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.WinSettlementDetailResolverRegistry
+import com.doublemoon1119.mahjongcraft.logic.api.registration.ComponentRegistrar
+import com.doublemoon1119.mahjongcraft.logic.api.registration.MahjongModuleRegistrar
 import com.doublemoon1119.mahjongcraft.logic.base.ExhaustiveDrawReason
 import com.doublemoon1119.mahjongcraft.logic.base.ExtensionGameAction
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
@@ -26,7 +28,6 @@ import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.logic.component.BuiltInComponentOwners
 import com.doublemoon1119.mahjongcraft.logic.component.ComponentLifecycleDefinition
 import com.doublemoon1119.mahjongcraft.logic.component.ComponentPatch
-import com.doublemoon1119.mahjongcraft.logic.component.ComponentRegistry
 import com.doublemoon1119.mahjongcraft.logic.component.ComponentRoundTransition
 import com.doublemoon1119.mahjongcraft.logic.component.ComponentSet
 import com.doublemoon1119.mahjongcraft.logic.component.ComponentType
@@ -39,7 +40,6 @@ import com.doublemoon1119.mahjongcraft.logic.module.ActionScoring
 import com.doublemoon1119.mahjongcraft.logic.module.ActionScoringContext
 import com.doublemoon1119.mahjongcraft.logic.module.ActionScoringPolicy
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleDefinition
-import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
 import com.doublemoon1119.mahjongcraft.logic.module.NoOpActionScoringPolicy
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiFamilyRuleConfig
@@ -733,7 +733,7 @@ class DrawFollowUpAndActionScoringIntegrationTest {
     private class FlowerExtension(private val behavior: TestBehavior) : MahjongExtension {
         override val id: String = "test:flowers"
 
-        override fun registerComponents(registry: ComponentRegistry) {
+        override fun registerComponents(registry: ComponentRegistrar) {
             registry.register(testPotComponent)
             registry.registerLifecycle(
                 ComponentLifecycleDefinition(
@@ -747,7 +747,7 @@ class DrawFollowUpAndActionScoringIntegrationTest {
             )
         }
 
-        override fun registerRuleModules(registry: MahjongModuleRegistry) {
+        override fun registerRuleModules(registry: MahjongModuleRegistrar) {
             registry.register(
                 MahjongModuleDefinition(FlowerRuleConfig::class, id) { config, moduleId ->
                     FlowerRule(RiichiRuleModule(moduleId, config.delegate), behavior)
@@ -755,9 +755,9 @@ class DrawFollowUpAndActionScoringIntegrationTest {
             )
         }
 
-        override fun registerNetworkDtos(registries: NetworkDtoRegistries) = Unit
+        override fun registerNetworkDtos(registries: NetworkDtoRegistrars) = Unit
 
-        override fun registerPersistenceDtos(registries: PersistenceRegistries) = Unit
+        override fun registerPersistenceDtos(registries: PersistenceRegistrars) = Unit
     }
 
     /**

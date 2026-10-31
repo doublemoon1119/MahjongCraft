@@ -1,23 +1,15 @@
 package com.doublemoon1119.mahjongcraft.logic.module
 
+import com.doublemoon1119.mahjongcraft.logic.api.registration.MahjongModuleRegistrar
 import com.doublemoon1119.mahjongcraft.logic.config.MahjongRuleConfig
 import kotlin.reflect.KClass
 
 /**
  * 麻將規則模組註冊中心介面。
  * 負責管理不同麻將規則配置 (Config) 與其對應模組 (Module) 的映射關係。
+ * 擴充只透過 [MahjongModuleRegistrar] 登記；查詢與凍結由 MahjongCraft 使用。
  */
-interface MahjongModuleRegistry {
-
-    /**
-     * 註冊一個新的規則模組。
-     *
-     * @param T 對應的規則配置型別。
-     * @param definition 配置型別、規則模組 ID 與延遲工廠。
-     * @throws IllegalArgumentException 模組 ID 不符合命名空間格式，或配置類別／模組 ID 已重複註冊。
-     * @throws IllegalStateException 註冊中心已凍結時拋出。
-     */
-    fun <T : MahjongRuleConfig> register(definition: MahjongModuleDefinition<T>)
+interface MahjongModuleRegistry : MahjongModuleRegistrar {
 
     /** 凍結註冊表；凍結後不得再新增或覆寫規則模組。 */
     fun freeze()

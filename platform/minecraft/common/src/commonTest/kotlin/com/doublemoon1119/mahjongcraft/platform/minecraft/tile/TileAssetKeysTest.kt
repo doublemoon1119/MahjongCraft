@@ -26,6 +26,21 @@ class TileAssetKeysTest {
         assertEquals("s5", Tile.Numeric(Tile.Suit.Bamboo, 5).toAssetKey(registry))
     }
 
+    /** 內建牌面不經過 registry 的素材 key，與經過 registry 的結果相同，可在登記期間使用。 */
+    @Test
+    fun `test standard asset keys match registry lookups for numeric and honor tiles`() {
+        Tile.Suit.entries.forEach { suit ->
+            (1..9).forEach { value ->
+                val tile = Tile.Numeric(suit, value)
+                assertEquals(tile.toAssetKey(registry), tile.standardAssetKey())
+            }
+        }
+        listOf(Tile.Honor.East, Tile.Honor.South, Tile.Honor.West, Tile.Honor.North, Tile.Honor.Red, Tile.Honor.Green, Tile.Honor.White).forEach { honor ->
+            assertEquals(honor.toAssetKey(registry), honor.standardAssetKey())
+        }
+        assertEquals("white_dragon", Tile.Honor.White.standardAssetKey())
+    }
+
     /** 赤五樣式有登記時使用赤五素材；同一樣式套在沒有登記的牌面上，退回基本牌面的素材。 */
     @Test
     fun `test face asset key uses a registered style and falls back to the base face`() {

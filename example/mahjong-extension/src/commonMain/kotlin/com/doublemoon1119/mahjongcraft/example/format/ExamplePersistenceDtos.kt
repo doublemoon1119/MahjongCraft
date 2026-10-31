@@ -9,15 +9,15 @@ import com.doublemoon1119.mahjongcraft.example.pairing.ExamplePairingDiscardPile
 import com.doublemoon1119.mahjongcraft.example.pairing.ExamplePairingExhaustiveDrawReason
 import com.doublemoon1119.mahjongcraft.example.pairing.ExamplePairingIds
 import com.doublemoon1119.mahjongcraft.example.pairing.ExamplePairingRuleConfig
+import com.doublemoon1119.mahjongcraft.flow.persistence.format.api.registration.PersistenceRegistrars
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.core.PersistenceDtoDefinition
-import com.doublemoon1119.mahjongcraft.flow.persistence.format.registry.PersistenceRegistries
 
 /**
  * 登記範例自己的保存型別；網路 DTO 不作為存檔格式使用。
  *
  * @param registries 啟動期間尚未凍結的保存註冊表。
  */
-fun registerExamplePersistenceDtos(registries: PersistenceRegistries) {
+fun registerExamplePersistenceDtos(registries: PersistenceRegistrars) {
     registerExampleComponentPersistenceDtos(registries)
     registries.ruleConfigs.register(
         definition = PersistenceDtoDefinition(
@@ -34,8 +34,8 @@ fun registerExamplePersistenceDtos(registries: PersistenceRegistries) {
             typeKey = ExampleFormatIds.DISCARD_PILE,
             domainClass = ExamplePairingDiscardPile::class,
             serializer = ExamplePairingDiscardPilePersistenceDto.serializer(),
-            toDto = { it.toPersistenceDto(registries.components) },
-            toDomain = { it.toDomain(registries.components) },
+            toDto = { value, converter -> value.toPersistenceDto(converter.components) },
+            toDomain = { dto, converter -> dto.toDomain(converter.components) },
             compactInReplay = true,
         ),
     )

@@ -6,7 +6,7 @@ import com.doublemoon1119.mahjongcraft.ai.RandomAiStrategy
 import com.doublemoon1119.mahjongcraft.ai.expectation.OpponentModelRegistry
 import com.doublemoon1119.mahjongcraft.extension.CoreExtensionRegistries
 import com.doublemoon1119.mahjongcraft.extension.ExtensionRegistrationSource
-import com.doublemoon1119.mahjongcraft.extension.MahjongExtensionRegistrar
+import com.doublemoon1119.mahjongcraft.extension.MahjongExtensionBootstrap
 import com.doublemoon1119.mahjongcraft.flow.common.error.ExtensionFailurePolicy
 import com.doublemoon1119.mahjongcraft.flow.common.game.event.GameEventPublicMarkerResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.WinCelebrationCueResolverRegistryImpl
@@ -35,14 +35,14 @@ import kotlin.test.assertEquals
 import kotlin.test.assertIs
 import kotlin.test.assertTrue
 
-/** 驗證內建規則 extension 經由正式 registrar 登記各自的平台無關整合。 */
+/** 驗證內建規則 extension 經由正式啟動流程登記各自的平台無關整合。 */
 class BundledMahjongExtensionsTest {
     /** 日麻與台麻依序登記，各自的規則模組與牌種歸在自己名下，空的 registry 不會預先帶有任何規則。 */
     @Test
     fun `bundled extensions register each rule under its own source`() {
         val registries = registries()
 
-        val sources = MahjongExtensionRegistrar.registerAndFreeze(BundledMahjongExtensions.all, registries, builtIn = builtIn(registries), failurePolicy = ExtensionFailurePolicy.Default)
+        val sources = MahjongExtensionBootstrap.registerAndFreeze(BundledMahjongExtensions.all, registries, builtIn = builtIn(registries), failurePolicy = ExtensionFailurePolicy.Default)
 
         assertEquals(listOf(null, BundledRiichiExtension.id, BundledTaiwanExtension.id), sources.map { it.extensionId })
         assertTrue(sources.first().ids("mahjongcraft:rule_module").isEmpty(), "Core registrations must not carry any bundled rule")
@@ -59,7 +59,7 @@ class BundledMahjongExtensionsTest {
     @Test
     fun `riichi integrations stay with riichi and taiwan registers only its own formats`() {
         val registries = registries()
-        val sources = MahjongExtensionRegistrar.registerAndFreeze(BundledMahjongExtensions.all, registries, builtIn = builtIn(registries), failurePolicy = ExtensionFailurePolicy.Default)
+        val sources = MahjongExtensionBootstrap.registerAndFreeze(BundledMahjongExtensions.all, registries, builtIn = builtIn(registries), failurePolicy = ExtensionFailurePolicy.Default)
         val riichi = sources[1]
         val taiwan = sources[2]
 

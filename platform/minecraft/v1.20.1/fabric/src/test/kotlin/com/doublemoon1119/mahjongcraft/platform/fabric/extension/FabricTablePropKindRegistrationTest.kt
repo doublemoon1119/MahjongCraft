@@ -1,9 +1,10 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.extension
 
 import com.doublemoon1119.mahjongcraft.flow.common.error.ExtensionFailurePolicy
-import com.doublemoon1119.mahjongcraft.platform.fabric.api.seating.FabricSeatProviderRegistry
+import com.doublemoon1119.mahjongcraft.platform.fabric.api.registration.FabricSeatProviderRegistrar
+import com.doublemoon1119.mahjongcraft.platform.fabric.api.registration.FabricTablePropKindRegistrar
+import com.doublemoon1119.mahjongcraft.platform.fabric.api.tableprop.FabricTablePropKind
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.seating.FabricSeatProviderRegistryImpl
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.prop.FabricTablePropKind
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.prop.FabricTablePropKindRegistry
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.prop.FabricTablePropKindRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.prop.ScoringStickTablePropKind
@@ -30,13 +31,13 @@ import kotlin.uuid.Uuid
 
 /** 驗證 Fabric 規則桌面物件種類的登記順序、凍結與錯誤診斷。 */
 class FabricTablePropKindRegistrationTest {
-    /** 與桌面物件 registry 一起傳入 registrar 的空座位 provider。 */
+    /** 與桌面物件 registry 一起傳入啟動流程的空座位 provider。 */
     private class FakeProvider : SeatProvider<ServerWorld, Entity> {
         override fun resolve(world: ServerWorld, request: SeatRequest): List<SeatTarget<ServerWorld, Entity>> = emptyList()
     }
 
     /**
-     * 使用同一個 registrar 執行兩個 Fabric registry 的 bootstrap。
+     * 使用同一個啟動流程執行兩個 Fabric registry 的登記。
      *
      * @param extensions 依序登記的 Fabric extensions。
      * @param tablePropKindRegistry 要登記桌面物件種類的 registry。
@@ -47,7 +48,7 @@ class FabricTablePropKindRegistrationTest {
         extensions: Iterable<FabricMahjongExtension>,
         tablePropKindRegistry: FabricTablePropKindRegistry = FabricTablePropKindRegistryImpl(),
         seatProviderRegistry: FabricSeatProviderRegistryImpl = FabricSeatProviderRegistryImpl(),
-    ) = FabricMahjongExtensionRegistrar.registerAndFreeze(
+    ) = FabricMahjongExtensionBootstrap.registerAndFreeze(
         extensions = extensions,
         registries = FabricExtensionRegistries(tablePropKindRegistry, seatProviderRegistry),
         builtIn = BuiltInFabricMahjongExtension(FakeProvider(), MinecraftTileAssetRegistryImpl()),
@@ -82,7 +83,7 @@ class FabricTablePropKindRegistrationTest {
         override val id: String,
         private val kinds: List<FabricTablePropKind>,
     ) : FabricMahjongExtension {
-        override fun registerTablePropKinds(registry: FabricTablePropKindRegistry) = kinds.forEach(registry::register)
+        override fun registerTablePropKinds(registry: FabricTablePropKindRegistrar) = kinds.forEach(registry::register)
     }
 
     /** 內建點棒種類先登記，第三方種類接在後面，完成後凍結；回傳值依來源分組。 */
@@ -130,7 +131,7 @@ class FabricTablePropKindRegistrationTest {
         ) = object : FabricMahjongExtension {
             override val id: String = id
 
-            override fun registerTablePropKinds(registry: FabricTablePropKindRegistry) {
+            override fun registerTablePropKinds(registry: FabricTablePropKindRegistrar) {
                 callbacks += "$id:table"
                 builtInsVisible +=
                     BuiltInTablePropKinds.SCORING_STICK in registry.registrationKeys &&
@@ -140,7 +141,7 @@ class FabricTablePropKindRegistrationTest {
                 registry.register(FakeKind(kindId))
             }
 
-            override fun registerSeatProviders(registry: FabricSeatProviderRegistry) {
+            override fun registerSeatProviders(registry: FabricSeatProviderRegistrar) {
                 callbacks += "$id:seat"
                 builtInsVisible +=
                     BuiltInTablePropKinds.SCORING_STICK in tablePropRegistry.registrationKeys &&
@@ -151,7 +152,7 @@ class FabricTablePropKindRegistrationTest {
             }
         }
 
-        val sources = FabricMahjongExtensionRegistrar.registerAndFreeze(
+        val sources = FabricMahjongExtensionBootstrap.registerAndFreeze(
             extensions = listOf(
                 extension("example:first", "example:first-kind", "example:first-seat"),
                 extension("example:second", "example:second-kind", "example:second-seat"),

@@ -5,6 +5,7 @@ import com.doublemoon1119.mahjongcraft.ai.ExtensionGameActionAiRegistry
 import com.doublemoon1119.mahjongcraft.ai.MahjongAiStrategyDefinition
 import com.doublemoon1119.mahjongcraft.ai.MahjongAiStrategyRegistry
 import com.doublemoon1119.mahjongcraft.ai.RandomAiStrategy
+import com.doublemoon1119.mahjongcraft.ai.api.registration.MahjongAiStrategyRegistrar
 import com.doublemoon1119.mahjongcraft.ai.expectation.NeutralOpponentModel
 import com.doublemoon1119.mahjongcraft.ai.expectation.OpponentModelDefinition
 import com.doublemoon1119.mahjongcraft.ai.expectation.OpponentModelRegistry
@@ -22,7 +23,9 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.service.DefaultGameConfi
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.GameEventPublisher
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.WinCelebrationCueResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.common.room.service.RoomEventPublisher
+import com.doublemoon1119.mahjongcraft.flow.network.dto.api.registration.NetworkDtoRegistrars
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkDtoRegistries
+import com.doublemoon1119.mahjongcraft.flow.persistence.format.api.registration.PersistenceRegistrars
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.registry.PersistenceRegistries
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.state.AuthoritativeStatePersistenceCodec
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.AiDecisionExecutor
@@ -40,6 +43,7 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.GetPlayerDecisio
 import com.doublemoon1119.mahjongcraft.flow.server.lifecycle.ServerSessionStateCleaner
 import com.doublemoon1119.mahjongcraft.flow.server.lifecycle.ServerSessionStateRestorer
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateStore
+import com.doublemoon1119.mahjongcraft.logic.api.registration.MahjongModuleRegistrar
 import com.doublemoon1119.mahjongcraft.logic.judgment.WaitingTileAvailabilityIds
 import com.doublemoon1119.mahjongcraft.logic.module.BuiltInRuleModuleIds
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
@@ -97,6 +101,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionVocab
 import com.doublemoon1119.mahjongcraft.platform.minecraft.ai.AiStrategyDisplayNameDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.ai.AiStrategyDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.ai.AiStrategyDisplayNameRegistryImpl
+import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.AiStrategyDisplayNameRegistrar
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.seating.RegisteredSeatProvider
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.seating.SeatProvider
 import com.doublemoon1119.mahjongcraft.platform.minecraft.automatic.AutomaticControlDisplayRegistry
@@ -177,28 +182,28 @@ class FabricApplicationModuleTest {
              *
              * @param registry 規則模組登記表。
              */
-            override fun registerRuleModules(registry: MahjongModuleRegistry) = Unit
+            override fun registerRuleModules(registry: MahjongModuleRegistrar) = Unit
 
             /**
              * 此測試不登記網路 DTO。
              *
              * @param registries 網路 DTO 登記集合。
              */
-            override fun registerNetworkDtos(registries: NetworkDtoRegistries) = Unit
+            override fun registerNetworkDtos(registries: NetworkDtoRegistrars) = Unit
 
             /**
              * 此測試不登記持久化 DTO。
              *
              * @param registries 持久化 DTO 登記集合。
              */
-            override fun registerPersistenceDtos(registries: PersistenceRegistries) = Unit
+            override fun registerPersistenceDtos(registries: PersistenceRegistrars) = Unit
 
             /**
              * 登記測試用 AI 策略。
              *
              * @param registry AI 策略登記表。
              */
-            override fun registerAiStrategies(registry: MahjongAiStrategyRegistry) {
+            override fun registerAiStrategies(registry: MahjongAiStrategyRegistrar) {
                 registry.register(
                     definition = MahjongAiStrategyDefinition("example:custom_strategy") {
                         RandomAiStrategy(koin.get<ExtensionGameActionAiRegistry>())
@@ -211,7 +216,7 @@ class FabricApplicationModuleTest {
              *
              * @param registry AI 策略顯示名稱登記表。
              */
-            override fun registerAiStrategyDisplayNames(registry: AiStrategyDisplayNameRegistry) {
+            override fun registerAiStrategyDisplayNames(registry: AiStrategyDisplayNameRegistrar) {
                 registry.register(AiStrategyDisplayNameDefinition("example:custom_strategy", "example.ai.custom_strategy"))
             }
         }

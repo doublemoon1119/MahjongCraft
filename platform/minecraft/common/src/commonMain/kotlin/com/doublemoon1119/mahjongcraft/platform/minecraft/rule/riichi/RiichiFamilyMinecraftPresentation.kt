@@ -8,28 +8,28 @@ import com.doublemoon1119.mahjongcraft.logic.rules.riichi.riichiPotPoints
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionVocabulary
 import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionVocabularyDefinition
-import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionVocabularyRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.DecisionStatusDisplayNameRegistrar
+import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.GameActionSoundPresentationRegistrar
+import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.GameActionVocabularyRegistrar
+import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.MinecraftTileAssetRegistrar
+import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.RoundInfoLineDisplayRegistrar
+import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.TablePropDescriberRegistrar
+import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.WinSettlementPresentationTemplateRegistrar
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.DecisionStatusDisplayNameDefinition
-import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.DecisionStatusDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModMetadata
-import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.WinSettlementPresentationTemplateRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.WinSettlementRuleTemplateBindingDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.sound.BuiltInGameActionSoundIds
 import com.doublemoon1119.mahjongcraft.platform.minecraft.sound.BuiltInGameActionVoiceSoundIds
 import com.doublemoon1119.mahjongcraft.platform.minecraft.sound.GameActionSoundDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.sound.GameActionSoundPresentation
-import com.doublemoon1119.mahjongcraft.platform.minecraft.sound.GameActionSoundPresentationRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.RoundInfoArgument
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.RoundInfoLine
-import com.doublemoon1119.mahjongcraft.platform.minecraft.table.RoundInfoLineDisplayRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.RoundInfoLineProvider
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.RoundInfoLineProviderDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TablePropDescriberDefinition
-import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TablePropDescriberRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftMessageKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.BuiltInMinecraftTileAppearanceIds
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftRuleTileAppearanceDefinition
-import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistry
 
 /**
  * 依規則模組 ID 登記的日麻 Minecraft 呈現，讓使用日麻規則元件的規則模組沿用日麻的牌面、結算版面、語音、局況資訊、
@@ -45,7 +45,7 @@ object RiichiFamilyMinecraftPresentation {
      * @param registry 牌面資源 registry。
      * @param ruleModuleId 要登記的規則模組 ID。
      */
-    fun registerTileAppearance(registry: MinecraftTileAssetRegistry, ruleModuleId: String) {
+    fun registerTileAppearance(registry: MinecraftTileAssetRegistrar, ruleModuleId: String) {
         registry.register(MinecraftRuleTileAppearanceDefinition(ruleModuleId, BuiltInMinecraftTileAppearanceIds.DEFAULT))
     }
 
@@ -55,7 +55,7 @@ object RiichiFamilyMinecraftPresentation {
      * @param registry 和牌結算呈現 registry。
      * @param ruleModuleId 要綁定的規則模組 ID。
      */
-    fun registerWinSettlementTemplate(registry: WinSettlementPresentationTemplateRegistry, ruleModuleId: String) {
+    fun registerWinSettlementTemplate(registry: WinSettlementPresentationTemplateRegistrar, ruleModuleId: String) {
         registry.register(WinSettlementRuleTemplateBindingDefinition(ruleModuleId, RiichiWinSettlementTemplates.RIICHI_KEY))
     }
 
@@ -65,7 +65,7 @@ object RiichiFamilyMinecraftPresentation {
      * @param registry 動作語音 registry。
      * @param ruleModuleId 要登記的規則模組 ID。
      */
-    fun registerGameActionSounds(registry: GameActionSoundPresentationRegistry, ruleModuleId: String) {
+    fun registerGameActionSounds(registry: GameActionSoundPresentationRegistrar, ruleModuleId: String) {
         listOf(
             BuiltInGameActionSoundIds.CHII to BuiltInGameActionVoiceSoundIds.CHII,
             BuiltInGameActionSoundIds.PON to BuiltInGameActionVoiceSoundIds.PON,
@@ -90,7 +90,7 @@ object RiichiFamilyMinecraftPresentation {
      * @param registry 局況資訊 registry。
      * @param ruleModuleId 要登記的規則模組 ID。
      */
-    fun registerRoundInfo(registry: RoundInfoLineDisplayRegistry, ruleModuleId: String) {
+    fun registerRoundInfo(registry: RoundInfoLineDisplayRegistrar, ruleModuleId: String) {
         registry.register(RoundInfoLineProviderDefinition(ruleModuleId, RoundInfoLineProvider(::buildRiichiRoundInfoLines)))
     }
 
@@ -102,7 +102,7 @@ object RiichiFamilyMinecraftPresentation {
      * @param includesPullNorth 規則是否可以拔北。
      */
     fun registerGameActionVocabulary(
-        registry: GameActionVocabularyRegistry,
+        registry: GameActionVocabularyRegistrar,
         ruleModuleId: String,
         includesPullNorth: Boolean,
     ) {
@@ -148,7 +148,7 @@ object RiichiFamilyMinecraftPresentation {
      * @param registry 決策狀態名稱 registry。
      * @param ruleModuleId 要登記的規則模組 ID。
      */
-    fun registerDecisionStatusDisplayNames(registry: DecisionStatusDisplayNameRegistry, ruleModuleId: String) {
+    fun registerDecisionStatusDisplayNames(registry: DecisionStatusDisplayNameRegistrar, ruleModuleId: String) {
         listOf(
             RiichiDiscardReadinessAnalyzer.StatusIds.DISCARD_FURITEN to HUD_FURITEN_DISCARD,
             RiichiDiscardReadinessAnalyzer.StatusIds.TEMPORARY_FURITEN to HUD_FURITEN_TEMPORARY,
@@ -167,7 +167,7 @@ object RiichiFamilyMinecraftPresentation {
      * @param registry 桌面物件說明 registry。
      * @param ruleModuleId 要登記的規則模組 ID。
      */
-    fun registerTableProps(registry: TablePropDescriberRegistry, ruleModuleId: String) {
+    fun registerTableProps(registry: TablePropDescriberRegistrar, ruleModuleId: String) {
         registry.register(TablePropDescriberDefinition(ruleModuleId, RiichiTableProps))
     }
 }

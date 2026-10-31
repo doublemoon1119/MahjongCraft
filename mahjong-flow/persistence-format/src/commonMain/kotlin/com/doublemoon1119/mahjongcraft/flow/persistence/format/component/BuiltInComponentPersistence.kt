@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.flow.persistence.format.component
 
+import com.doublemoon1119.mahjongcraft.flow.persistence.format.api.registration.ComponentPersistenceRegistrar
 import com.doublemoon1119.mahjongcraft.logic.tile.component.BuiltInTileComponents
 import com.doublemoon1119.mahjongcraft.logic.tile.component.TileFaceAccess
 import com.doublemoon1119.mahjongcraft.logic.tile.component.TilePose
@@ -10,7 +11,7 @@ import kotlin.uuid.Uuid
  *
  * @param registry 要登記的保存 registry。
  */
-fun registerBuiltInComponentPersistence(registry: ComponentPersistenceRegistry) {
+fun registerBuiltInComponentPersistence(registry: ComponentPersistenceRegistrar) {
     registry.register(
         ComponentPersistenceDefinition(
             component = BuiltInTileComponents.FACE_ACCESS,

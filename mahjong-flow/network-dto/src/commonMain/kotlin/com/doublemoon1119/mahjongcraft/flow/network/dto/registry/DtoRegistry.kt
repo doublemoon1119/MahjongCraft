@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.flow.network.dto.registry
 
+import com.doublemoon1119.mahjongcraft.flow.network.dto.api.registration.DtoRegistrar
 import com.doublemoon1119.mahjongcraft.logic.config.MahjongRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
 import kotlinx.serialization.KSerializer
@@ -16,10 +17,16 @@ import kotlin.reflect.KClass
  * 動態 polymorphic provider 在每次編解碼時查詢 registry，而不是使用編譯期窮舉或在
  * `SerializersModule` 建立時複製一份靜態清單。
  *
+ * 擴充只透過 [DtoRegistrar] 登記；轉換時把 [converter] 提供的唯讀轉換交給已登記的轉換函式。
+ *
  * @param Domain 領域層的開放介面型別。
  * @param Dto 對應的 DTO 開放介面型別。
+ * @property converter 取得交給轉換函式的唯讀轉換，通常是所屬的整組網路 DTO registry。
  */
-class DtoRegistry<Domain : Any, Dto : Any> {
+class DtoRegistry<Domain : Any, Dto : Any>(
+    private val converter: () -> NetworkDtoConverter,
+) : DtoRegistrar<Domain, Dto>,
+    DtoConverter<Domain, Dto> {
 
     /**
      * 將具體 DTO serializer 與雙向 mapper 綁在同一筆註冊資料。
@@ -32,8 +39,8 @@ class DtoRegistry<Domain : Any, Dto : Any> {
      */
     private inner class Entry<D : Domain, T : Dto>(
         val serializer: KSerializer<T>,
-        val toDto: (D) -> T,
-        val toDomain: (T) -> D,
+        val toDto: (D, NetworkDtoConverter) -> T,
+        val toDomain: (T, NetworkDtoConverter) -> D,
     )
 
     /** 以領域具體型別查找註冊項目的索引。 */
@@ -49,7 +56,7 @@ class DtoRegistry<Domain : Any, Dto : Any> {
     private var frozen = false
 
     /** 目前已登記 DTO 的穩定序列化名稱快照。 */
-    val registrationKeys: Set<String> get() = bySerialName.keys.toSet()
+    override val registrationKeys: Set<String> get() = bySerialName.keys.toSet()
 
     /**
      * 註冊一組領域型別 ↔ DTO 的對應關係。
@@ -58,7 +65,7 @@ class DtoRegistry<Domain : Any, Dto : Any> {
      * @param T 對應的 DTO 型別。
      * @param definition 領域型別、DTO 型別、serializer 與雙向 mapper 的完整定義。
      */
-    fun <D : Domain, T : Dto> register(definition: DtoDefinition<D, T>) {
+    override fun <D : Domain, T : Dto> register(definition: DtoDefinition<D, T>) {
         check(!frozen) { "Network DTO registry is frozen" }
         require(definition.domainClass !in byDomainClass) { "Network DTO already registered for ${definition.domainClass}" }
         require(definition.dtoClass !in byDtoClass) { "Network domain mapping already registered for ${definition.dtoClass}" }
@@ -83,10 +90,10 @@ class DtoRegistry<Domain : Any, Dto : Any> {
      * @throws IllegalStateException 若 [domain] 的具體類別尚未透過 [register] 註冊過。
      */
     @Suppress("UNCHECKED_CAST")
-    fun toDto(domain: Domain): Dto {
+    override fun toDto(domain: Domain): Dto {
         val entry = byDomainClass[domain::class] as? Entry<Domain, Dto>
             ?: error("No DTO registered for ${domain::class}")
-        return entry.toDto(domain)
+        return entry.toDto(domain, converter())
     }
 
     /**
@@ -97,10 +104,10 @@ class DtoRegistry<Domain : Any, Dto : Any> {
      * @throws IllegalStateException 若 [dto] 的具體類別尚未透過 [register] 註冊過。
      */
     @Suppress("UNCHECKED_CAST")
-    fun toDomain(dto: Dto): Domain {
+    override fun toDomain(dto: Dto): Domain {
         val entry = byDtoClass[dto::class] as? Entry<Domain, Dto>
             ?: error("No domain mapping registered for ${dto::class}")
-        return entry.toDomain(dto)
+        return entry.toDomain(dto, converter())
     }
 
     /**

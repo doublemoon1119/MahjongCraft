@@ -21,7 +21,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.history.query.HistorySor
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.query.HistorySortValue
 import com.doublemoon1119.mahjongcraft.flow.network.dto.config.GameConfigDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.config.toDto
-import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkDtoRegistries
+import com.doublemoon1119.mahjongcraft.flow.network.dto.registry.NetworkDtoConverter
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkJson
 import kotlin.uuid.Uuid
 
@@ -325,7 +325,7 @@ fun HistoryMatchDetail.toDto(): HistoryMatchDetailDto = HistoryMatchDetailDto(
  * @param registries 網路規則 DTO registry，用於支援已註冊的第三方規則。
  * @return 可序列化的完整遊戲設定 DTO。
  */
-fun HistoryRuleSettings.toDto(registries: NetworkDtoRegistries): GameConfigDto = config.toDto(registries)
+fun HistoryRuleSettings.toDto(registries: NetworkDtoConverter): GameConfigDto = config.toDto(registries)
 
 /**
  * 將規則設定查詢回覆 DTO 編碼為傳輸字串。

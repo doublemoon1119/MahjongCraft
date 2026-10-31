@@ -1,7 +1,7 @@
 package com.doublemoon1119.mahjongcraft.flow.network.dto.rule.riichi
 import com.doublemoon1119.mahjongcraft.flow.network.dto.model.toDomain
 import com.doublemoon1119.mahjongcraft.flow.network.dto.model.toDto
-import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkDtoRegistries
+import com.doublemoon1119.mahjongcraft.flow.network.dto.registry.NetworkDtoConverter
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.PaoLiability
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.PaoYaku
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiGameLength
@@ -16,7 +16,7 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.toDto as toRuleDto
  * @param registries 網路 DTO 的動態註冊表集合。
  * @return 轉換後的資料。
  */
-fun RiichiRuleConfig.toRiichiDto(registries: NetworkDtoRegistries): RiichiRuleConfigDto = RiichiRuleConfigDto(
+fun RiichiRuleConfig.toRiichiDto(registries: NetworkDtoConverter): RiichiRuleConfigDto = RiichiRuleConfigDto(
     initialHandSize = initialHandSize,
     deadTileCount = deadTileCount,
     scoreConfig = scoreConfig.toRiichiDto(),
@@ -37,7 +37,7 @@ fun RiichiRuleConfig.toRiichiDto(registries: NetworkDtoRegistries): RiichiRuleCo
  * @param registries 網路 DTO 的動態註冊表集合。
  * @return 轉換後的資料。
  */
-fun RiichiRuleConfigDto.toDomain(registries: NetworkDtoRegistries): RiichiRuleConfig = RiichiRuleConfig(
+fun RiichiRuleConfigDto.toDomain(registries: NetworkDtoConverter): RiichiRuleConfig = RiichiRuleConfig(
     redDoraCount = redDoraCount,
     allowOpenTanyao = allowOpenTanyao,
     useLocalYaku = useLocalYaku,
@@ -53,7 +53,7 @@ fun RiichiRuleConfigDto.toDomain(registries: NetworkDtoRegistries): RiichiRuleCo
  * @param registries 網路 DTO 的動態註冊表集合。
  * @return 轉換後的資料。
  */
-fun ThreePlayerRiichiRuleConfig.toThreePlayerRiichiDto(registries: NetworkDtoRegistries): ThreePlayerRiichiRuleConfigDto = ThreePlayerRiichiRuleConfigDto(
+fun ThreePlayerRiichiRuleConfig.toThreePlayerRiichiDto(registries: NetworkDtoConverter): ThreePlayerRiichiRuleConfigDto = ThreePlayerRiichiRuleConfigDto(
     initialHandSize = initialHandSize,
     deadTileCount = deadTileCount,
     scoreConfig = scoreConfig.toRiichiDto(),
@@ -74,7 +74,7 @@ fun ThreePlayerRiichiRuleConfig.toThreePlayerRiichiDto(registries: NetworkDtoReg
  * @param registries 網路 DTO 的動態註冊表集合。
  * @return 轉換後的資料。
  */
-fun ThreePlayerRiichiRuleConfigDto.toDomain(registries: NetworkDtoRegistries): ThreePlayerRiichiRuleConfig = ThreePlayerRiichiRuleConfig(
+fun ThreePlayerRiichiRuleConfigDto.toDomain(registries: NetworkDtoConverter): ThreePlayerRiichiRuleConfig = ThreePlayerRiichiRuleConfig(
     redDoraCount = redDoraCount,
     allowOpenTanyao = allowOpenTanyao,
     useLocalYaku = useLocalYaku,

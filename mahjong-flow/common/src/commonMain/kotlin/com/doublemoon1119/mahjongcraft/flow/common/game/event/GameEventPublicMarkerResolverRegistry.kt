@@ -1,17 +1,18 @@
 package com.doublemoon1119.mahjongcraft.flow.common.game.event
 
+import com.doublemoon1119.mahjongcraft.flow.api.registration.GameEventPublicMarkerResolverRegistrar
 import com.doublemoon1119.mahjongcraft.logic.base.NamespacedId
 
-/** 以規則模組 ID 登記、bootstrap 後凍結的公開事件標記解析器。 */
-class GameEventPublicMarkerResolverRegistry {
+/** 以規則模組 ID 登記、bootstrap 後凍結的公開事件標記解析器；擴充只透過 [GameEventPublicMarkerResolverRegistrar] 登記。 */
+class GameEventPublicMarkerResolverRegistry : GameEventPublicMarkerResolverRegistrar {
     /** 初始化時依規則 ID 登記的標記提供者。 */
     private val resolvers = linkedMapOf<String, GameEventPublicMarkerResolver>()
 
     /** 目前已登記規則模組 ID 的快照。 */
-    val registrationKeys: Set<String> get() = resolvers.keys.toSet()
+    override val registrationKeys: Set<String> get() = resolvers.keys.toSet()
 
     /** 是否已禁止後續註冊。 */
-    var isFrozen: Boolean = false
+    override var isFrozen: Boolean = false
         private set
 
     /**
@@ -21,7 +22,7 @@ class GameEventPublicMarkerResolverRegistry {
      * @throws IllegalStateException registry 已凍結時拋出。
      * @throws IllegalArgumentException 識別碼無效或已登記時拋出。
      */
-    fun register(definition: GameEventPublicMarkerResolverDefinition) {
+    override fun register(definition: GameEventPublicMarkerResolverDefinition) {
         check(!isFrozen) { "Game event public marker resolver registry is frozen" }
         NamespacedId.requireValid(definition.ruleModuleId) {
             "Rule module ID must be namespaced: ${definition.ruleModuleId}"

@@ -5,12 +5,13 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.DrawFollowUpPresen
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.GamePresentationPublisher
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.MeldPresentation
 import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
-import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkDtoRegistries
-import com.doublemoon1119.mahjongcraft.flow.persistence.format.registry.PersistenceRegistries
+import com.doublemoon1119.mahjongcraft.flow.network.dto.api.registration.NetworkDtoRegistrars
+import com.doublemoon1119.mahjongcraft.flow.persistence.format.api.registration.PersistenceRegistrars
 import com.doublemoon1119.mahjongcraft.flow.server.game.policy.GameVisibilityPolicyImpl
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameSnapshotSynchronizer
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DrawTileUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateStore
+import com.doublemoon1119.mahjongcraft.logic.api.registration.MahjongModuleRegistrar
 import com.doublemoon1119.mahjongcraft.logic.base.ExtensionGameAction
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.base.Hand
@@ -21,7 +22,6 @@ import com.doublemoon1119.mahjongcraft.logic.component.ComponentSet
 import com.doublemoon1119.mahjongcraft.logic.module.ActionScoring
 import com.doublemoon1119.mahjongcraft.logic.module.ActionScoringPolicy
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleDefinition
-import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiFamilyRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
@@ -236,13 +236,13 @@ class TableCornerLayoutFlowTest {
     private object PotExtension : MahjongExtension {
         override val id: String = "test:pot"
 
-        override fun registerRuleModules(registry: MahjongModuleRegistry) {
+        override fun registerRuleModules(registry: MahjongModuleRegistrar) {
             registry.register(MahjongModuleDefinition(PotRuleConfig::class, id) { config, moduleId -> PotRule(RiichiRuleModule(moduleId, config.delegate)) })
         }
 
-        override fun registerNetworkDtos(registries: NetworkDtoRegistries) = Unit
+        override fun registerNetworkDtos(registries: NetworkDtoRegistrars) = Unit
 
-        override fun registerPersistenceDtos(registries: PersistenceRegistries) = Unit
+        override fun registerPersistenceDtos(registries: PersistenceRegistrars) = Unit
     }
 
     /**

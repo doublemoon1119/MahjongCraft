@@ -1,7 +1,7 @@
 package com.doublemoon1119.mahjongcraft.flow.network.dto.snapshot
 import com.doublemoon1119.mahjongcraft.flow.network.dto.model.toDomain
 import com.doublemoon1119.mahjongcraft.flow.network.dto.model.toDto
-import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkDtoRegistries
+import com.doublemoon1119.mahjongcraft.flow.network.dto.registry.NetworkDtoConverter
 import com.doublemoon1119.mahjongcraft.logic.base.HandSnapshot
 
 /**
@@ -10,7 +10,7 @@ import com.doublemoon1119.mahjongcraft.logic.base.HandSnapshot
  * @param registries 已登記的公開組件格式。
  * @return 轉換後的資料。
  */
-fun HandSnapshot.toDto(registries: NetworkDtoRegistries): HandSnapshotDto = HandSnapshotDto(
+fun HandSnapshot.toDto(registries: NetworkDtoConverter): HandSnapshotDto = HandSnapshotDto(
     standingTiles = standingTiles.map { it.toDto(registries) },
     lastDrawn = lastDrawn?.toDto(registries),
     melds = melds.map { it.toDto(registries) },
@@ -22,7 +22,7 @@ fun HandSnapshot.toDto(registries: NetworkDtoRegistries): HandSnapshotDto = Hand
  * @param registries 已登記的公開組件格式。
  * @return 轉換後的資料。
  */
-fun HandSnapshotDto.toDomain(registries: NetworkDtoRegistries): HandSnapshot = HandSnapshot(
+fun HandSnapshotDto.toDomain(registries: NetworkDtoConverter): HandSnapshot = HandSnapshot(
     standingTiles = standingTiles.map { it.toDomain(registries) },
     lastDrawn = lastDrawn?.toDomain(registries),
     melds = melds.map { it.toDomain(registries) },

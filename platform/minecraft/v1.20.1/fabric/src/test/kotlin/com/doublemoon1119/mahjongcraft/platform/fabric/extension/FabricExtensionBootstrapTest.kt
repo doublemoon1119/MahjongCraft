@@ -4,23 +4,23 @@ import com.doublemoon1119.mahjongcraft.ai.MahjongAiStrategyDefinition
 import com.doublemoon1119.mahjongcraft.extension.CoreExtensionRegistries
 import com.doublemoon1119.mahjongcraft.extension.MahjongExtension
 import com.doublemoon1119.mahjongcraft.flow.common.error.ExtensionFailurePolicy
-import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkDtoRegistries
-import com.doublemoon1119.mahjongcraft.flow.persistence.format.registry.PersistenceRegistries
-import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
+import com.doublemoon1119.mahjongcraft.flow.network.dto.api.registration.NetworkDtoRegistrars
+import com.doublemoon1119.mahjongcraft.flow.persistence.format.api.registration.PersistenceRegistrars
+import com.doublemoon1119.mahjongcraft.logic.api.registration.MahjongModuleRegistrar
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanRuleConfig
-import com.doublemoon1119.mahjongcraft.platform.fabric.api.seating.FabricSeatProviderRegistry
+import com.doublemoon1119.mahjongcraft.platform.fabric.api.registration.FabricSeatProviderRegistrar
+import com.doublemoon1119.mahjongcraft.platform.fabric.api.registration.FabricTablePropKindRegistrar
 import com.doublemoon1119.mahjongcraft.platform.fabric.di.fabricServerModule
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.decision.DebugDecisionActionIds
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.presentation.DebugWinRoundContinuationState
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.seating.MahjongStoolSeatProvider
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.prop.FabricTablePropKindRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionVocabularyRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.GameConfigPresentationRegistrar
+import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.MinecraftTileAssetRegistrar
 import com.doublemoon1119.mahjongcraft.platform.minecraft.environment.MinecraftEnvironment
 import com.doublemoon1119.mahjongcraft.platform.minecraft.extension.MinecraftMahjongExtension
 import com.doublemoon1119.mahjongcraft.platform.minecraft.extension.MinecraftPresentationRegistries
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.GameConfigPresentationDefinition
-import com.doublemoon1119.mahjongcraft.platform.minecraft.room.GameConfigPresentationRegistry
-import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistry
 import org.koin.core.Koin
 import org.koin.core.context.startKoin
 import org.koin.core.context.stopKoin
@@ -154,23 +154,23 @@ class FabricExtensionBootstrapTest {
         FabricMahjongExtension {
         override val id: String = "example:recording"
 
-        override fun registerRuleModules(registry: MahjongModuleRegistry) {
+        override fun registerRuleModules(registry: MahjongModuleRegistrar) {
             calls += "core"
         }
 
-        override fun registerNetworkDtos(registries: NetworkDtoRegistries) = Unit
+        override fun registerNetworkDtos(registries: NetworkDtoRegistrars) = Unit
 
-        override fun registerPersistenceDtos(registries: PersistenceRegistries) = Unit
+        override fun registerPersistenceDtos(registries: PersistenceRegistrars) = Unit
 
-        override fun registerTileAssets(registry: MinecraftTileAssetRegistry) {
+        override fun registerTileAssets(registry: MinecraftTileAssetRegistrar) {
             calls += "minecraft"
         }
 
-        override fun registerTablePropKinds(registry: FabricTablePropKindRegistry) {
+        override fun registerTablePropKinds(registry: FabricTablePropKindRegistrar) {
             calls += "fabric_table"
         }
 
-        override fun registerSeatProviders(registry: FabricSeatProviderRegistry) {
+        override fun registerSeatProviders(registry: FabricSeatProviderRegistrar) {
             calls += "fabric_seat"
             seatFailure?.let { throw it }
         }
@@ -182,13 +182,13 @@ class FabricExtensionBootstrapTest {
         MinecraftMahjongExtension {
         override val id: String = RULE_ID
 
-        override fun registerRuleModules(registry: MahjongModuleRegistry) = Unit
+        override fun registerRuleModules(registry: MahjongModuleRegistrar) = Unit
 
-        override fun registerNetworkDtos(registries: NetworkDtoRegistries) = Unit
+        override fun registerNetworkDtos(registries: NetworkDtoRegistrars) = Unit
 
-        override fun registerPersistenceDtos(registries: PersistenceRegistries) = Unit
+        override fun registerPersistenceDtos(registries: PersistenceRegistrars) = Unit
 
-        override fun registerGameConfigPresentations(registry: GameConfigPresentationRegistry) {
+        override fun registerGameConfigPresentations(registry: GameConfigPresentationRegistrar) {
             registry.register(
                 GameConfigPresentationDefinition(
                     ruleModuleId = RULE_ID,

@@ -5,6 +5,7 @@ import com.doublemoon1119.mahjongcraft.example.minecraft.text.ExampleMinecraftMe
 import com.doublemoon1119.mahjongcraft.example.pairing.ExamplePairingIds
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementDetailEntry
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementQuantity
+import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.WinSettlementPresentationTemplateRegistrar
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.BuiltInWinSettlementFieldIds
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.FallbackWinSettlementDetailTextFormatter
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.PresentationContainerStyle
@@ -15,7 +16,6 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.WinSettleme
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.WinSettlementDetailTextFormatterDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.WinSettlementPresentationFieldProviderDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.WinSettlementPresentationTemplate
-import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.WinSettlementPresentationTemplateRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.WinSettlementRuleTemplateBindingDefinition
 
 /**
@@ -23,7 +23,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.WinSettleme
  *
  * @param registry 要寫入結算模板與格式器的 registry。
  */
-fun registerExamplePairingSettlementTemplates(registry: WinSettlementPresentationTemplateRegistry) {
+fun registerExamplePairingSettlementTemplates(registry: WinSettlementPresentationTemplateRegistrar) {
     listOf(
         ExamplePairingWinSettlementDetailResolver.BONUS_TILE_COUNT,
         ExamplePairingWinSettlementDetailResolver.BONUS_TILES,

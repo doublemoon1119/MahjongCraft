@@ -3,18 +3,19 @@ package com.doublemoon1119.mahjongcraft.bundled
 import com.doublemoon1119.mahjongcraft.ai.BuiltInAiStrategyKeys
 import com.doublemoon1119.mahjongcraft.ai.ExtensionGameActionAiRegistry
 import com.doublemoon1119.mahjongcraft.ai.MahjongAiStrategyDefinition
-import com.doublemoon1119.mahjongcraft.ai.MahjongAiStrategyRegistry
 import com.doublemoon1119.mahjongcraft.ai.RandomAiStrategy
+import com.doublemoon1119.mahjongcraft.ai.api.registration.MahjongAiStrategyRegistrar
 import com.doublemoon1119.mahjongcraft.ai.expectation.ExpectedValueAiStrategy
 import com.doublemoon1119.mahjongcraft.ai.expectation.InformationLevel
 import com.doublemoon1119.mahjongcraft.ai.expectation.OpponentModelRegistry
 import com.doublemoon1119.mahjongcraft.extension.MahjongExtension
-import com.doublemoon1119.mahjongcraft.extension.MahjongExtensionRegistrar
-import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkDtoRegistries
+import com.doublemoon1119.mahjongcraft.extension.MahjongExtensionBootstrap
+import com.doublemoon1119.mahjongcraft.flow.network.dto.api.registration.NetworkDtoRegistrars
+import com.doublemoon1119.mahjongcraft.flow.persistence.format.api.registration.PersistenceRegistrars
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.component.registerBuiltInComponentPersistence
-import com.doublemoon1119.mahjongcraft.flow.persistence.format.registry.PersistenceRegistries
+import com.doublemoon1119.mahjongcraft.logic.api.registration.ComponentRegistrar
+import com.doublemoon1119.mahjongcraft.logic.api.registration.MahjongModuleRegistrar
 import com.doublemoon1119.mahjongcraft.logic.component.BuiltInComponentOwners
-import com.doublemoon1119.mahjongcraft.logic.component.ComponentRegistry
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import com.doublemoon1119.mahjongcraft.logic.tile.component.BuiltInTileComponents
 import com.doublemoon1119.mahjongcraft.metadata.MahjongCraftMetadata
@@ -22,7 +23,7 @@ import com.doublemoon1119.mahjongcraft.metadata.MahjongCraftMetadata
 /**
  * MahjongCraft 不屬於任何規則的內建整合；所有規則中立的內建登記都寫在這裡。
  *
- * 平台把它交給 [MahjongExtensionRegistrar.registerAndFreeze] 的 `builtIn`，啟動報告將它的登記列為內建來源。
+ * 平台把它交給 [MahjongExtensionBootstrap.registerAndFreeze] 的 `builtIn`，啟動報告將它的登記列為內建來源。
  * 登記方式與其他 extension 相同，不具有覆寫或繞過重複 key 驗證的特權。
  *
  * @property moduleRegistry 期望值策略依對局設定取得規則模組。
@@ -36,15 +37,15 @@ class BuiltInMahjongExtension(
 ) : MahjongExtension {
     override val id: String = MahjongCraftMetadata.id("builtin")
 
-    override fun registerRuleModules(registry: MahjongModuleRegistry) = Unit
+    override fun registerRuleModules(registry: MahjongModuleRegistrar) = Unit
 
-    override fun registerNetworkDtos(registries: NetworkDtoRegistries) = Unit
+    override fun registerNetworkDtos(registries: NetworkDtoRegistrars) = Unit
 
-    override fun registerPersistenceDtos(registries: PersistenceRegistries) {
+    override fun registerPersistenceDtos(registries: PersistenceRegistrars) {
         registerBuiltInComponentPersistence(registries.components)
     }
 
-    override fun registerComponents(registry: ComponentRegistry) {
+    override fun registerComponents(registry: ComponentRegistrar) {
         BuiltInComponentOwners.ALL.forEach(registry::registerOwner)
         registry.register(BuiltInTileComponents.FACE_ACCESS)
         registry.register(BuiltInTileComponents.POSE)
@@ -52,7 +53,7 @@ class BuiltInMahjongExtension(
     }
 
     /** 依初級、中級、高級、隨機出牌的順序登記；列出策略時依此順序呈現。 */
-    override fun registerAiStrategies(registry: MahjongAiStrategyRegistry) {
+    override fun registerAiStrategies(registry: MahjongAiStrategyRegistrar) {
         mapOf(
             BuiltInAiStrategyKeys.BEGINNER to InformationLevel.BEGINNER,
             BuiltInAiStrategyKeys.INTERMEDIATE to InformationLevel.INTERMEDIATE,

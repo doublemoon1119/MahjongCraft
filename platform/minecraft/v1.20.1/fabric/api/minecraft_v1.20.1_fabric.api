@@ -3,10 +3,16 @@ public final class com/doublemoon1119/mahjongcraft/platform/fabric/api/event/Fab
 	public static final fun server (Lcom/doublemoon1119/mahjongcraft/platform/minecraft/api/event/GameEventContext;)Lnet/minecraft/server/MinecraftServer;
 }
 
-public abstract interface class com/doublemoon1119/mahjongcraft/platform/fabric/api/seating/FabricSeatProviderRegistry {
+public abstract interface class com/doublemoon1119/mahjongcraft/platform/fabric/api/registration/FabricSeatProviderRegistrar {
 	public abstract fun getRegistrationKeys ()Ljava/util/Set;
 	public abstract fun isFrozen ()Z
 	public abstract fun register (Lcom/doublemoon1119/mahjongcraft/platform/minecraft/api/seating/RegisteredSeatProvider;)V
+}
+
+public abstract interface class com/doublemoon1119/mahjongcraft/platform/fabric/api/registration/FabricTablePropKindRegistrar {
+	public abstract fun getRegistrationKeys ()Ljava/util/Set;
+	public abstract fun isFrozen ()Z
+	public abstract fun register (Lcom/doublemoon1119/mahjongcraft/platform/fabric/api/tableprop/FabricTablePropKind;)V
 }
 
 public final class com/doublemoon1119/mahjongcraft/platform/fabric/api/table/MahjongTableControllerStateNbtKt {
@@ -25,9 +31,20 @@ public final class com/doublemoon1119/mahjongcraft/platform/fabric/api/table/Mah
 	public final fun playSpaceCells (Lnet/minecraft/util/math/BlockPos;)Ljava/util/List;
 }
 
+public abstract interface class com/doublemoon1119/mahjongcraft/platform/fabric/api/tableprop/FabricTablePropKind {
+	public abstract fun contentOf (Lnet/minecraft/entity/Entity;)Lcom/doublemoon1119/mahjongcraft/platform/minecraft/table/TablePropContent;
+	public abstract fun create (Lnet/minecraft/server/world/ServerWorld;Lkotlin/uuid/Uuid;Lcom/doublemoon1119/mahjongcraft/platform/minecraft/table/TablePropTarget;)Lnet/minecraft/entity/Entity;
+	public abstract fun findManaged (Lnet/minecraft/server/world/ServerWorld;Lkotlin/uuid/Uuid;Lnet/minecraft/util/math/Box;)Ljava/util/List;
+	public abstract fun getDefinition ()Lcom/doublemoon1119/mahjongcraft/platform/minecraft/table/TablePropKindDefinition;
+	public fun getId ()Ljava/lang/String;
+	public fun onSpawned (Lnet/minecraft/entity/Entity;)V
+	public abstract fun placementIdOf (Lnet/minecraft/entity/Entity;)Ljava/lang/String;
+	public abstract fun ruleModuleIdOf (Lnet/minecraft/entity/Entity;)Ljava/lang/String;
+}
+
 public abstract interface class com/doublemoon1119/mahjongcraft/platform/fabric/extension/FabricMahjongExtension {
 	public abstract fun getId ()Ljava/lang/String;
-	public fun registerSeatProviders (Lcom/doublemoon1119/mahjongcraft/platform/fabric/api/seating/FabricSeatProviderRegistry;)V
-	public fun registerTablePropKinds (Lcom/doublemoon1119/mahjongcraft/platform/fabric/server/table/prop/FabricTablePropKindRegistry;)V
+	public fun registerSeatProviders (Lcom/doublemoon1119/mahjongcraft/platform/fabric/api/registration/FabricSeatProviderRegistrar;)V
+	public fun registerTablePropKinds (Lcom/doublemoon1119/mahjongcraft/platform/fabric/api/registration/FabricTablePropKindRegistrar;)V
 }
 

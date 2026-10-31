@@ -16,7 +16,7 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.AiDecision
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.AutomatedAdvanceFailureReporter
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.AutomatedAdvanceFollowUp
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameAbortEffects
-import com.doublemoon1119.mahjongcraft.platform.fabric.api.seating.FabricSeatProviderRegistry
+import com.doublemoon1119.mahjongcraft.platform.fabric.api.registration.FabricSeatProviderRegistrar
 import com.doublemoon1119.mahjongcraft.platform.fabric.extension.FabricExtensionRegistries
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.FabricServerHolder
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.achievement.AchievementGrantGateway
@@ -293,7 +293,7 @@ val fabricServerModule = module {
     single<RoomMemberCandidateResolver>()
 
     single<FabricMahjongSeatingPresenter>() bind MahjongSeatingPresenter::class
-    single<FabricSeatProviderRegistryImpl>() bind FabricSeatProviderRegistry::class
+    single<FabricSeatProviderRegistryImpl>() bind FabricSeatProviderRegistrar::class
     single<MahjongStoolSeatProvider>() bind SeatProvider::class
     single<MahjongStoolSeatService>()
 

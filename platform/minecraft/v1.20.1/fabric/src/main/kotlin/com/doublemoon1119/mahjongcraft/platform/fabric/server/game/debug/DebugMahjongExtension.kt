@@ -1,31 +1,31 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug
 
 import com.doublemoon1119.mahjongcraft.ai.MahjongAiStrategyDefinition
-import com.doublemoon1119.mahjongcraft.ai.MahjongAiStrategyRegistry
+import com.doublemoon1119.mahjongcraft.ai.api.registration.MahjongAiStrategyRegistrar
+import com.doublemoon1119.mahjongcraft.ai.api.registration.OpponentModelRegistrar
 import com.doublemoon1119.mahjongcraft.ai.expectation.OpponentModelDefinition
-import com.doublemoon1119.mahjongcraft.ai.expectation.OpponentModelRegistry
 import com.doublemoon1119.mahjongcraft.ai.riichi.RiichiOpponentModel
 import com.doublemoon1119.mahjongcraft.extension.MahjongExtension
+import com.doublemoon1119.mahjongcraft.flow.api.registration.GameEventPublicMarkerResolverRegistrar
+import com.doublemoon1119.mahjongcraft.flow.api.registration.WinCelebrationCueResolverRegistrar
 import com.doublemoon1119.mahjongcraft.flow.common.game.event.GameEventPublicMarkerResolverDefinition
-import com.doublemoon1119.mahjongcraft.flow.common.game.event.GameEventPublicMarkerResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.common.game.riichi.RiichiWinCelebrationCueResolver
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.WinCelebrationCueResolverDefinition
-import com.doublemoon1119.mahjongcraft.flow.common.game.service.WinCelebrationCueResolverRegistry
-import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkDtoRegistries
-import com.doublemoon1119.mahjongcraft.flow.persistence.format.registry.PersistenceRegistries
-import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.PostActionExhaustiveDrawResolverRegistry
-import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.PostReactionRoundOutcomeResolverRegistry
-import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.RuleDecisionResolverRegistry
-import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.WinRoundContinuationResolverRegistry
+import com.doublemoon1119.mahjongcraft.flow.network.dto.api.registration.NetworkDtoRegistrars
+import com.doublemoon1119.mahjongcraft.flow.persistence.format.api.registration.PersistenceRegistrars
+import com.doublemoon1119.mahjongcraft.flow.server.api.registration.PostActionExhaustiveDrawResolverRegistrar
+import com.doublemoon1119.mahjongcraft.flow.server.api.registration.PostReactionRoundOutcomeResolverRegistrar
+import com.doublemoon1119.mahjongcraft.flow.server.api.registration.RuleDecisionResolverRegistrar
+import com.doublemoon1119.mahjongcraft.flow.server.api.registration.WinRoundContinuationResolverRegistrar
+import com.doublemoon1119.mahjongcraft.flow.server.api.registration.WinSettlementDetailResolverRegistrar
 import com.doublemoon1119.mahjongcraft.flow.server.game.riichi.RiichiGameEventPublicMarkerResolver
 import com.doublemoon1119.mahjongcraft.flow.server.game.riichi.RiichiNagashiManganOutcomeResolver
 import com.doublemoon1119.mahjongcraft.flow.server.game.riichi.RiichiSuukanNagareResolver
 import com.doublemoon1119.mahjongcraft.flow.server.game.riichi.RiichiWinSettlementDetailResolver
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.WinSettlementDetailResolverDefinition
-import com.doublemoon1119.mahjongcraft.flow.server.game.service.WinSettlementDetailResolverRegistry
+import com.doublemoon1119.mahjongcraft.logic.api.registration.MahjongModuleRegistrar
 import com.doublemoon1119.mahjongcraft.logic.module.BuiltInRuleModuleIds
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleDefinition
-import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import com.doublemoon1119.mahjongcraft.metadata.MahjongCraftMetadata
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.decision.DebugDecisionActionIds
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.decision.DebugNotenDeclarationRuleDecisionResolver
@@ -48,18 +48,18 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.scenari
 import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionVocabulary
 import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionVocabularyDefaultDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionVocabularyDefinition
-import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionVocabularyRegistry
-import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.DecisionStatusDisplayNameRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.DecisionStatusDisplayNameRegistrar
+import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.GameActionSoundPresentationRegistrar
+import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.GameActionVocabularyRegistrar
+import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.MinecraftTileAssetRegistrar
+import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.RoundInfoLineDisplayRegistrar
+import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.RuleModuleDisplayNameRegistrar
+import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.TablePropDescriberRegistrar
+import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.WinSettlementPresentationTemplateRegistrar
 import com.doublemoon1119.mahjongcraft.platform.minecraft.extension.MinecraftMahjongExtension
 import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.RuleModuleDisplayNameDefinition
-import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.RuleModuleDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.riichi.RiichiFamilyMinecraftPresentation
-import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.WinSettlementPresentationTemplateRegistry
-import com.doublemoon1119.mahjongcraft.platform.minecraft.sound.GameActionSoundPresentationRegistry
-import com.doublemoon1119.mahjongcraft.platform.minecraft.table.RoundInfoLineDisplayRegistry
-import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TablePropDescriberRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftMessageKeys
-import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistry
 
 /**
  * 只在開發環境登記的 debug 整合，讓 debug 指令與情境需要的流程能在遊戲內驗證。
@@ -79,7 +79,7 @@ internal class DebugMahjongExtension(
     MinecraftMahjongExtension {
     override val id: String = MahjongCraftMetadata.id("debug")
 
-    override fun registerRuleModules(registry: MahjongModuleRegistry) {
+    override fun registerRuleModules(registry: MahjongModuleRegistrar) {
         registry.register(
             definition = MahjongModuleDefinition(DebugAutoNorthRiichiRuleConfig::class, DebugAutoNorthRiichiRuleModule.ID) { config, id ->
                 DebugAutoNorthRiichiRuleModule(id, config)
@@ -97,25 +97,25 @@ internal class DebugMahjongExtension(
         )
     }
 
-    override fun registerNetworkDtos(registries: NetworkDtoRegistries) {
+    override fun registerNetworkDtos(registries: NetworkDtoRegistrars) {
         registerDebugAutoNorthRiichiNetworkDtos(registries)
         registerDebugWinnerDealerRiichiNetworkDtos(registries)
         registerDebugNotenDeclarationRiichiNetworkDtos(registries)
     }
 
-    override fun registerPersistenceDtos(registries: PersistenceRegistries) {
+    override fun registerPersistenceDtos(registries: PersistenceRegistrars) {
         registerDebugAutoNorthRiichiPersistenceDtos(registries)
         registerDebugWinnerDealerRiichiPersistenceDtos(registries)
         registerDebugNotenDeclarationRiichiPersistenceDtos(registries)
     }
 
-    override fun registerWinCelebrationCueResolvers(registry: WinCelebrationCueResolverRegistry) {
+    override fun registerWinCelebrationCueResolvers(registry: WinCelebrationCueResolverRegistrar) {
         DEBUG_VARIANT_RULE_MODULE_IDS.forEach { ruleModuleId ->
             registry.register(WinCelebrationCueResolverDefinition(ruleModuleId, RiichiWinCelebrationCueResolver))
         }
     }
 
-    override fun registerOpponentModels(registry: OpponentModelRegistry) {
+    override fun registerOpponentModels(registry: OpponentModelRegistrar) {
         DEBUG_VARIANT_RULE_MODULE_IDS.forEach { ruleModuleId ->
             registry.register(
                 definition = OpponentModelDefinition(ruleModuleId) { module, depth ->
@@ -125,27 +125,27 @@ internal class DebugMahjongExtension(
         }
     }
 
-    override fun registerPostReactionRoundOutcomeResolvers(registry: PostReactionRoundOutcomeResolverRegistry) {
+    override fun registerPostReactionRoundOutcomeResolvers(registry: PostReactionRoundOutcomeResolverRegistrar) {
         DEBUG_VARIANT_RULE_MODULE_IDS.forEach { ruleModuleId -> registry.register(RiichiNagashiManganOutcomeResolver(ruleModuleId)) }
     }
 
-    override fun registerPostActionExhaustiveDrawResolvers(registry: PostActionExhaustiveDrawResolverRegistry) {
+    override fun registerPostActionExhaustiveDrawResolvers(registry: PostActionExhaustiveDrawResolverRegistrar) {
         DEBUG_VARIANT_RULE_MODULE_IDS.forEach { ruleModuleId -> registry.register(RiichiSuukanNagareResolver(ruleModuleId)) }
     }
 
-    override fun registerWinSettlementDetailResolvers(registry: WinSettlementDetailResolverRegistry) {
+    override fun registerWinSettlementDetailResolvers(registry: WinSettlementDetailResolverRegistrar) {
         DEBUG_VARIANT_RULE_MODULE_IDS.forEach { ruleModuleId ->
             registry.register(WinSettlementDetailResolverDefinition(ruleModuleId, RiichiWinSettlementDetailResolver))
         }
     }
 
-    override fun registerGameEventPublicMarkerResolvers(registry: GameEventPublicMarkerResolverRegistry) {
+    override fun registerGameEventPublicMarkerResolvers(registry: GameEventPublicMarkerResolverRegistrar) {
         DEBUG_VARIANT_RULE_MODULE_IDS.forEach { ruleModuleId ->
             registry.register(GameEventPublicMarkerResolverDefinition(ruleModuleId, RiichiGameEventPublicMarkerResolver))
         }
     }
 
-    override fun registerRuleModuleDisplayNames(registry: RuleModuleDisplayNameRegistry) {
+    override fun registerRuleModuleDisplayNames(registry: RuleModuleDisplayNameRegistrar) {
         registry.register(RuleModuleDisplayNameDefinition(DebugAutoNorthRiichiRuleModule.ID, MinecraftMessageKeys.DEBUG_RULE_MODULE_AUTO_NORTH_RIICHI))
         registry.register(RuleModuleDisplayNameDefinition(DebugWinnerDealerRiichiRuleModule.ID, MinecraftMessageKeys.DEBUG_RULE_MODULE_WINNER_DEALER_RIICHI))
         registry.register(
@@ -156,32 +156,32 @@ internal class DebugMahjongExtension(
         )
     }
 
-    override fun registerTileAssets(registry: MinecraftTileAssetRegistry) {
+    override fun registerTileAssets(registry: MinecraftTileAssetRegistrar) {
         DEBUG_VARIANT_RULE_MODULE_IDS.forEach { ruleModuleId -> RiichiFamilyMinecraftPresentation.registerTileAppearance(registry, ruleModuleId) }
         DebugPublicFaceTiles.register(registry)
     }
 
-    override fun registerWinSettlementPresentationTemplates(registry: WinSettlementPresentationTemplateRegistry) {
+    override fun registerWinSettlementPresentationTemplates(registry: WinSettlementPresentationTemplateRegistrar) {
         DEBUG_VARIANT_RULE_MODULE_IDS.forEach { ruleModuleId -> RiichiFamilyMinecraftPresentation.registerWinSettlementTemplate(registry, ruleModuleId) }
     }
 
-    override fun registerGameActionSounds(registry: GameActionSoundPresentationRegistry) {
+    override fun registerGameActionSounds(registry: GameActionSoundPresentationRegistrar) {
         DEBUG_VARIANT_RULE_MODULE_IDS.forEach { ruleModuleId -> RiichiFamilyMinecraftPresentation.registerGameActionSounds(registry, ruleModuleId) }
     }
 
-    override fun registerRoundInfoPresentations(registry: RoundInfoLineDisplayRegistry) {
+    override fun registerRoundInfoPresentations(registry: RoundInfoLineDisplayRegistrar) {
         DEBUG_VARIANT_RULE_MODULE_IDS.forEach { ruleModuleId -> RiichiFamilyMinecraftPresentation.registerRoundInfo(registry, ruleModuleId) }
     }
 
-    override fun registerDecisionStatusDisplayNames(registry: DecisionStatusDisplayNameRegistry) {
+    override fun registerDecisionStatusDisplayNames(registry: DecisionStatusDisplayNameRegistrar) {
         DEBUG_VARIANT_RULE_MODULE_IDS.forEach { ruleModuleId -> RiichiFamilyMinecraftPresentation.registerDecisionStatusDisplayNames(registry, ruleModuleId) }
     }
 
-    override fun registerTablePropDescribers(registry: TablePropDescriberRegistry) {
+    override fun registerTablePropDescribers(registry: TablePropDescriberRegistrar) {
         DEBUG_VARIANT_RULE_MODULE_IDS.forEach { ruleModuleId -> RiichiFamilyMinecraftPresentation.registerTableProps(registry, ruleModuleId) }
     }
 
-    override fun registerGameActionVocabulary(registry: GameActionVocabularyRegistry) {
+    override fun registerGameActionVocabulary(registry: GameActionVocabularyRegistrar) {
         registry.register(
             GameActionVocabularyDefaultDefinition(
                 actionId = DebugDecisionActionIds.TEXT_CARD,
@@ -218,7 +218,7 @@ internal class DebugMahjongExtension(
         )
     }
 
-    override fun registerAiStrategies(registry: MahjongAiStrategyRegistry) {
+    override fun registerAiStrategies(registry: MahjongAiStrategyRegistrar) {
         registry.register(MahjongAiStrategyDefinition(DebugScriptedAiStrategy.TSUMOGIRI_KEY) { DebugScriptedAiStrategy(declaresKanFirst = false) })
         registry.register(MahjongAiStrategyDefinition(DebugScriptedAiStrategy.KAN_FIRST_KEY) { DebugScriptedAiStrategy(declaresKanFirst = true) })
         registry.register(
@@ -229,14 +229,14 @@ internal class DebugMahjongExtension(
         registry.register(MahjongAiStrategyDefinition(DebugScriptedAiStrategy.WIN_FIRST_KEY) { DebugScriptedAiStrategy(declaresKanFirst = false, winsFirst = true) })
     }
 
-    override fun registerRuleDecisionResolvers(registry: RuleDecisionResolverRegistry) {
+    override fun registerRuleDecisionResolvers(registry: RuleDecisionResolverRegistrar) {
         registry.register(DebugNotenDeclarationRuleDecisionResolver())
         DEBUG_RULE_MODULE_IDS.forEach { ruleModuleId ->
-            if (registry.find(ruleModuleId) == null) registry.register(DebugRuleDecisionResolver(ruleModuleId))
+            if (ruleModuleId !in registry.registrationKeys) registry.register(DebugRuleDecisionResolver(ruleModuleId))
         }
     }
 
-    override fun registerWinRoundContinuationResolvers(registry: WinRoundContinuationResolverRegistry) {
+    override fun registerWinRoundContinuationResolvers(registry: WinRoundContinuationResolverRegistrar) {
         DEBUG_RULE_MODULE_IDS.forEach { ruleModuleId ->
             registry.register(DebugWinRoundContinuationResolver(ruleModuleId = ruleModuleId, state = winRoundContinuationState))
         }

@@ -3,7 +3,7 @@ package com.doublemoon1119.mahjongcraft.flow.network.dto.config
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.ActionTimeControl
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameConfig
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameFlowConfig
-import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkDtoRegistries
+import com.doublemoon1119.mahjongcraft.flow.network.dto.registry.NetworkDtoConverter
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.toDomain
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.toDto
 
@@ -13,7 +13,7 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.toDto
  * @param registries 網路 DTO 的動態註冊表集合。
  * @return 轉換後的資料。
  */
-fun GameConfig.toDto(registries: NetworkDtoRegistries): GameConfigDto = GameConfigDto(
+fun GameConfig.toDto(registries: NetworkDtoConverter): GameConfigDto = GameConfigDto(
     ruleConfig = ruleConfig.toDto(registries),
     flowConfig = flowConfig.toDto(),
 )
@@ -24,7 +24,7 @@ fun GameConfig.toDto(registries: NetworkDtoRegistries): GameConfigDto = GameConf
  * @param registries 網路 DTO 的動態註冊表集合。
  * @return 轉換後的資料。
  */
-fun GameConfigDto.toDomain(registries: NetworkDtoRegistries): GameConfig = GameConfig(
+fun GameConfigDto.toDomain(registries: NetworkDtoConverter): GameConfig = GameConfig(
     ruleConfig = ruleConfig.toDomain(registries),
     flowConfig = flowConfig.toDomain(),
 )

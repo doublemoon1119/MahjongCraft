@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.flow.persistence.format.core
 
+import com.doublemoon1119.mahjongcraft.flow.persistence.format.api.registration.PersistenceDtoRegistrar
 import com.doublemoon1119.mahjongcraft.logic.base.NamespacedId
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.json.JsonObject
@@ -9,8 +10,15 @@ import kotlin.reflect.KClass
  * 開放領域介面與 persistence DTO 之間的 type key 註冊表。
  *
  * @param Domain 可由內建或第三方規則模組提供具體實作的領域介面。
+ *
+ * 擴充只透過 [PersistenceDtoRegistrar] 登記；轉換時把 [converter] 提供的唯讀轉換交給已登記的轉換函式。
+ *
+ * @property converter 取得交給轉換函式的唯讀轉換，通常是所屬的整組保存格式 registry。
  */
-class PersistenceDtoRegistry<Domain : Any> {
+class PersistenceDtoRegistry<Domain : Any>(
+    private val converter: () -> PersistenceConverter,
+) : PersistenceDtoRegistrar<Domain>,
+    PersistenceDtoConverter<Domain> {
     /**
      * 保存單一具體領域型別與存檔 DTO 的雙向轉換。
      *
@@ -22,8 +30,8 @@ class PersistenceDtoRegistry<Domain : Any> {
      */
     private inner class Entry<D : Domain, T : Any>(
         val serializer: KSerializer<T>,
-        val toDto: (D) -> T,
-        val toDomain: (T) -> D,
+        val toDto: (D, PersistenceConverter) -> T,
+        val toDomain: (T, PersistenceConverter) -> D,
     ) {
         /**
          * 將領域物件轉成 JSON 物件。
@@ -32,7 +40,7 @@ class PersistenceDtoRegistry<Domain : Any> {
          * @return 編碼後的 DTO 內容。
          * @throws IllegalStateException DTO 編碼結果不是 JSON 物件時拋出。
          */
-        fun encode(domain: D): JsonObject = persistenceJson.encodeToJsonElement(serializer, toDto(domain)) as? JsonObject
+        fun encode(domain: D): JsonObject = persistenceJson.encodeToJsonElement(serializer, toDto(domain, converter())) as? JsonObject
             ?: error("Persistence DTO must encode to a JSON object")
 
         /**
@@ -41,7 +49,7 @@ class PersistenceDtoRegistry<Domain : Any> {
          * @param payload 已保存的 DTO 內容。
          * @return 還原後的領域物件。
          */
-        fun decode(payload: JsonObject): D = toDomain(persistenceJson.decodeFromJsonElement(serializer, payload))
+        fun decode(payload: JsonObject): D = toDomain(persistenceJson.decodeFromJsonElement(serializer, payload), converter())
     }
 
     /** 以領域具體類別索引的註冊項目。 */
@@ -51,7 +59,7 @@ class PersistenceDtoRegistry<Domain : Any> {
     private val byTypeKey = mutableMapOf<String, Entry<*, *>>()
 
     /** 目前已登記 persistence mapper 的穩定 type key 快照。 */
-    val registrationKeys: Set<String> get() = byTypeKey.keys.toSet()
+    override val registrationKeys: Set<String> get() = byTypeKey.keys.toSet()
 
     /** 登記時宣告可在精簡牌譜中壓縮的 type key。 */
     private val compactTypeKeys = mutableSetOf<String>()
@@ -71,7 +79,7 @@ class PersistenceDtoRegistry<Domain : Any> {
      * @throws IllegalArgumentException 若 definition 的 type key 不是 namespaced ID，或領域類別／type key 已被註冊。
      * @throws IllegalStateException 註冊表已凍結時拋出。
      */
-    fun <D : Domain, T : Any> register(definition: PersistenceDtoDefinition<D, T>) {
+    override fun <D : Domain, T : Any> register(definition: PersistenceDtoDefinition<D, T>) {
         check(!frozen) { "Persistence DTO registry is frozen" }
         NamespacedId.requireValid(definition.typeKey) { "Persistence type key must be a namespaced ID: ${definition.typeKey}" }
         require(definition.domainClass !in byDomainClass) { "Persistence DTO already registered for ${definition.domainClass}" }
@@ -96,7 +104,7 @@ class PersistenceDtoRegistry<Domain : Any> {
      * @throws IllegalStateException 領域型別尚未註冊，或 DTO 編碼結果不是 JSON 物件時拋出。
      */
     @Suppress("UNCHECKED_CAST")
-    fun encode(domain: Domain): TypedPersistenceDto {
+    override fun encode(domain: Domain): TypedPersistenceDto {
         val (typeKey, rawEntry) = byDomainClass[domain::class]
             ?: error("No persistence DTO registered for ${domain::class}")
         val entry = rawEntry as Entry<Domain, Any>
@@ -111,7 +119,7 @@ class PersistenceDtoRegistry<Domain : Any> {
      * @throws UnregisteredPersistenceTypeException 型別識別碼尚未註冊時拋出。
      */
     @Suppress("UNCHECKED_CAST")
-    fun decode(dto: TypedPersistenceDto): Domain {
+    override fun decode(dto: TypedPersistenceDto): Domain {
         val entry = byTypeKey[dto.typeKey] as? Entry<Domain, Any>
             ?: throw UnregisteredPersistenceTypeException(dto.typeKey)
         return entry.decode(dto.payload)

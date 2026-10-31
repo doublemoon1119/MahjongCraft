@@ -2,7 +2,7 @@ package com.doublemoon1119.mahjongcraft.flow.network.dto.command
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameCommand
 import com.doublemoon1119.mahjongcraft.flow.network.dto.model.toDomain
 import com.doublemoon1119.mahjongcraft.flow.network.dto.model.toDto
-import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkDtoRegistries
+import com.doublemoon1119.mahjongcraft.flow.network.dto.registry.NetworkDtoConverter
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.toDomain
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.toDto
 import kotlin.uuid.Uuid
@@ -13,7 +13,7 @@ import kotlin.uuid.Uuid
  * @param registries 網路 DTO 的動態註冊表集合。
  * @return 轉換後的資料。
  */
-fun GameCommand.toDto(registries: NetworkDtoRegistries): GameCommandDto = when (this) {
+fun GameCommand.toDto(registries: NetworkDtoConverter): GameCommandDto = when (this) {
     is GameCommand.SubmitRuleDecision -> GameCommandDto.SubmitRuleDecision(windowId.toString(), submission.toDto())
     is GameCommand.Extension -> GameCommandDto.Extension(value.toDto(registries))
     GameCommand.Draw -> GameCommandDto.Draw
@@ -35,7 +35,7 @@ fun GameCommand.toDto(registries: NetworkDtoRegistries): GameCommandDto = when (
  * @param registries 網路 DTO 的動態註冊表集合。
  * @return 轉換後的資料。
  */
-fun GameCommandDto.toDomain(registries: NetworkDtoRegistries): GameCommand = when (this) {
+fun GameCommandDto.toDomain(registries: NetworkDtoConverter): GameCommand = when (this) {
     is GameCommandDto.SubmitRuleDecision -> GameCommand.SubmitRuleDecision(Uuid.parse(windowId), submission.toDomain())
     is GameCommandDto.Extension -> GameCommand.Extension(value.toDomain(registries))
     GameCommandDto.Draw -> GameCommand.Draw

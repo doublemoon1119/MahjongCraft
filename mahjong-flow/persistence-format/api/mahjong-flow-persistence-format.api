@@ -1,0 +1,24 @@
+public abstract interface class com/doublemoon1119/mahjongcraft/flow/persistence/format/api/registration/ComponentPersistenceRegistrar {
+	public abstract fun getRegistrationKeys ()Ljava/util/Set;
+	public abstract fun register (Lcom/doublemoon1119/mahjongcraft/flow/persistence/format/component/ComponentPersistenceDefinition;)V
+}
+
+public abstract interface class com/doublemoon1119/mahjongcraft/flow/persistence/format/api/registration/ComponentViewPersistenceRegistrar {
+	public abstract fun getRegistrationKeys ()Ljava/util/Set;
+	public abstract fun register (Lcom/doublemoon1119/mahjongcraft/flow/persistence/format/component/ComponentViewPersistenceDefinition;)V
+}
+
+public abstract interface class com/doublemoon1119/mahjongcraft/flow/persistence/format/api/registration/PersistenceDtoRegistrar {
+	public abstract fun getRegistrationKeys ()Ljava/util/Set;
+	public abstract fun register (Lcom/doublemoon1119/mahjongcraft/flow/persistence/format/core/PersistenceDtoDefinition;)V
+}
+
+public abstract interface class com/doublemoon1119/mahjongcraft/flow/persistence/format/api/registration/PersistenceRegistrars {
+	public abstract fun getComponentViews ()Lcom/doublemoon1119/mahjongcraft/flow/persistence/format/api/registration/ComponentViewPersistenceRegistrar;
+	public abstract fun getComponents ()Lcom/doublemoon1119/mahjongcraft/flow/persistence/format/api/registration/ComponentPersistenceRegistrar;
+	public abstract fun getDiscardPiles ()Lcom/doublemoon1119/mahjongcraft/flow/persistence/format/api/registration/PersistenceDtoRegistrar;
+	public abstract fun getExhaustiveDrawReasons ()Lcom/doublemoon1119/mahjongcraft/flow/persistence/format/api/registration/PersistenceDtoRegistrar;
+	public abstract fun getExtensionGameActions ()Lcom/doublemoon1119/mahjongcraft/flow/persistence/format/api/registration/PersistenceDtoRegistrar;
+	public abstract fun getRuleConfigs ()Lcom/doublemoon1119/mahjongcraft/flow/persistence/format/api/registration/PersistenceDtoRegistrar;
+}
+

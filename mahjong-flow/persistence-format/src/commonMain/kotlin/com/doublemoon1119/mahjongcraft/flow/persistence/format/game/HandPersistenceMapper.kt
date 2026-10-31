@@ -1,6 +1,6 @@
 package com.doublemoon1119.mahjongcraft.flow.persistence.format.game
 
-import com.doublemoon1119.mahjongcraft.flow.persistence.format.component.ComponentPersistenceRegistry
+import com.doublemoon1119.mahjongcraft.flow.persistence.format.component.ComponentPersistenceConverter
 import com.doublemoon1119.mahjongcraft.logic.base.Hand
 import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
 import com.doublemoon1119.mahjongcraft.logic.base.Meld
@@ -14,7 +14,7 @@ import kotlin.uuid.Uuid
  * @param componentRegistry 牌張組件的保存轉換。
  * @return 包含原模型資料的持久化 DTO。
  */
-fun IdentifiedTile.toPersistenceDto(componentRegistry: ComponentPersistenceRegistry): IdentifiedTilePersistenceDto = IdentifiedTilePersistenceDto(id.toString(), tile.toPersistenceDto(), componentRegistry.encode(components))
+fun IdentifiedTile.toPersistenceDto(componentRegistry: ComponentPersistenceConverter): IdentifiedTilePersistenceDto = IdentifiedTilePersistenceDto(id.toString(), tile.toPersistenceDto(), componentRegistry.encode(components))
 
 /**
  * 將 [IdentifiedTilePersistenceDto] 還原成對應的領域模型。
@@ -22,7 +22,7 @@ fun IdentifiedTile.toPersistenceDto(componentRegistry: ComponentPersistenceRegis
  * @param componentRegistry 牌張組件的保存轉換。
  * @return 還原的領域模型。
  */
-fun IdentifiedTilePersistenceDto.toDomain(componentRegistry: ComponentPersistenceRegistry): IdentifiedTile = IdentifiedTile(Uuid.parse(id), tile.toDomain(), componentRegistry.decode(components))
+fun IdentifiedTilePersistenceDto.toDomain(componentRegistry: ComponentPersistenceConverter): IdentifiedTile = IdentifiedTile(Uuid.parse(id), tile.toDomain(), componentRegistry.decode(components))
 
 /**
  * 將 [Meld] 轉換成持久化 DTO。
@@ -30,7 +30,7 @@ fun IdentifiedTilePersistenceDto.toDomain(componentRegistry: ComponentPersistenc
  * @param componentRegistry 牌張組件的保存轉換。
  * @return 包含原模型資料的持久化 DTO。
  */
-fun Meld.toPersistenceDto(componentRegistry: ComponentPersistenceRegistry): MeldPersistenceDto = MeldPersistenceDto(
+fun Meld.toPersistenceDto(componentRegistry: ComponentPersistenceConverter): MeldPersistenceDto = MeldPersistenceDto(
     id = id.toString(),
     components = componentRegistry.encode(components),
     type = type.toPersistenceDto(),
@@ -47,7 +47,7 @@ fun Meld.toPersistenceDto(componentRegistry: ComponentPersistenceRegistry): Meld
  * @param componentRegistry 牌張組件的保存轉換。
  * @return 還原的領域模型。
  */
-fun MeldPersistenceDto.toDomain(componentRegistry: ComponentPersistenceRegistry): Meld = Meld(
+fun MeldPersistenceDto.toDomain(componentRegistry: ComponentPersistenceConverter): Meld = Meld(
     id = Uuid.parse(id),
     components = componentRegistry.decode(components),
     type = type.toDomain(),
@@ -84,7 +84,7 @@ private fun MeldTypePersistenceDto.toDomain(): MeldType = when (this) {
  * @param componentRegistry 牌張組件的保存轉換。
  * @return 包含原模型資料的持久化 DTO。
  */
-fun Hand.toPersistenceDto(componentRegistry: ComponentPersistenceRegistry): HandPersistenceDto = HandPersistenceDto(
+fun Hand.toPersistenceDto(componentRegistry: ComponentPersistenceConverter): HandPersistenceDto = HandPersistenceDto(
     tiles = tiles.map { it.toPersistenceDto(componentRegistry) },
     melds = melds.map { it.toPersistenceDto(componentRegistry) },
     lastDrawn = lastDrawn?.toPersistenceDto(componentRegistry),
@@ -96,7 +96,7 @@ fun Hand.toPersistenceDto(componentRegistry: ComponentPersistenceRegistry): Hand
  * @param componentRegistry 牌張組件的保存轉換。
  * @return 還原的領域模型。
  */
-fun HandPersistenceDto.toDomain(componentRegistry: ComponentPersistenceRegistry): Hand = Hand(
+fun HandPersistenceDto.toDomain(componentRegistry: ComponentPersistenceConverter): Hand = Hand(
     tiles = tiles.map { it.toDomain(componentRegistry) },
     melds = melds.map { it.toDomain(componentRegistry) },
     lastDrawn = lastDrawn?.toDomain(componentRegistry),

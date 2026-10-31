@@ -1,8 +1,8 @@
 package com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile
 
+import com.doublemoon1119.mahjongcraft.logic.api.registration.ComponentRegistrar
 import com.doublemoon1119.mahjongcraft.logic.component.BuiltInComponentOwners
 import com.doublemoon1119.mahjongcraft.logic.component.ComponentProjectionDefinition
-import com.doublemoon1119.mahjongcraft.logic.component.ComponentRegistry
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiFamilyRuleConfig
 
 /**
@@ -12,7 +12,7 @@ import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiFamilyRuleConfig
  *
  * @param registry 本次執行尚未凍結的組件登記。
  */
-fun registerRiichiTileComponents(registry: ComponentRegistry) {
+fun registerRiichiTileComponents(registry: ComponentRegistrar) {
     registry.register(RiichiTileComponents.DORA_INDICATOR)
     registry.registerView(RiichiTileComponentViews.DORA_INDICATOR)
     registry.registerProjection(

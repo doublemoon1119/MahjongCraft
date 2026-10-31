@@ -328,7 +328,7 @@ core extension behavior through one adapter. For example, see the Minecraft guid
 
 ## Extension Bootstrap
 
-- Registrars in the core and platform adapters follow the same workflow: register built-ins through extension
+- Bootstraps in the core and platform adapters follow the same workflow: register built-ins through extension
   callbacks, capture their snapshot, register each extension in order, report its additions, and freeze that
   layer only after all callbacks succeed. Validate namespaced extension IDs and duplicates with
   source context.
@@ -353,13 +353,25 @@ core extension behavior through one adapter. For example, see the Minecraft guid
 - Modules use `mahjongcraft.public-api-abi`, which uses Kotlin's built-in ABI validation. Reference signatures
   live in each module's `api/` directory and must be committed. `check` (and therefore `build`) checks them
   automatically; do not regenerate the references as part of normal builds.
-- The current stable surfaces are `api.event` in Flow common, Minecraft common and each loader adapter, plus
-  `api.seating` and `api.table` in Minecraft common and its loader adapters, and the `MahjongCraftInternalApi`
-  annotation in Minecraft common. The current Fabric adapter also protects the exact
-  `FabricMahjongExtension` entrypoint because third-party mods use it to register seats. This does not make every
-  table-prop type referenced by that interface stable as a separate API surface. In particular,
-  `registerTablePropKinds` is recorded as a method signature, but the methods of its
-  `FabricTablePropKindRegistry` parameter are not covered by this compatibility promise.
+- The current stable surfaces are:
+  - `api.event` in Flow common, Minecraft common and each loader adapter;
+  - `api.seating` and `api.table` in Minecraft common and its loader adapters, and `api.tableprop` in each loader
+    adapter;
+  - `api.registration` in every module that provides registrars: logic, AI, Flow common and server, network DTO,
+    persistence format, Minecraft common and each loader adapter;
+  - the exact extension entrypoints `MahjongExtension`, `MinecraftMahjongExtension` and `FabricMahjongExtension`,
+    and the `MahjongCraftInternalApi` annotation in Minecraft common.
+- These signatures do not make the types they reference stable as separate API surfaces. Rule modules, table
+  states, definitions and other types that an extension registers remain outside the compatibility promise.
+- Extension callbacks receive a `Registrar` in `api.registration`, never the full registry. A Registrar is the
+  window an extension registers through: it holds only the registration methods and read-only registration state
+  such as `registrationKeys` and `isFrozen`. MahjongCraft provides it; extensions never implement it. The
+  internal `Registry` extends it with freezing and lookups, which stay MahjongCraft's. A module that adds a
+  registry adds its Registrar to `api.registration` and passes that type to the callback.
+- An extension mapper that converts nested extensible types receives a read-only converter when MahjongCraft
+  calls it, such as `NetworkDtoConverter` for `DtoDefinition` and `PersistenceConverter` for
+  `PersistenceDtoDefinition`, in both conversion directions. Mappers must not capture a Registrar or registry for
+  later conversion; definitions that need no nested conversion use the value-only constructor.
 - Seat constructors and internal request factories keep their existing visibility. A third-party provider creates
   the public identity and geometry definitions; MahjongCraft creates its own internal request objects. This change
   records the existing shape and does not redesign the seating API.

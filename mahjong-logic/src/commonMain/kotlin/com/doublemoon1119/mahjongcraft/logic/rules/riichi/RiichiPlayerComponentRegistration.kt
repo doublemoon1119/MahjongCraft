@@ -1,10 +1,10 @@
 package com.doublemoon1119.mahjongcraft.logic.rules.riichi
 
+import com.doublemoon1119.mahjongcraft.logic.api.registration.ComponentRegistrar
 import com.doublemoon1119.mahjongcraft.logic.component.BuiltInComponentOwners
 import com.doublemoon1119.mahjongcraft.logic.component.ComponentLifecycleDefinition
 import com.doublemoon1119.mahjongcraft.logic.component.ComponentProjectionDefinition
 import com.doublemoon1119.mahjongcraft.logic.component.ComponentReadContext
-import com.doublemoon1119.mahjongcraft.logic.component.ComponentRegistry
 import com.doublemoon1119.mahjongcraft.logic.component.ComponentRoundTransition
 
 /**
@@ -12,7 +12,7 @@ import com.doublemoon1119.mahjongcraft.logic.component.ComponentRoundTransition
  *
  * @param registry 本次執行尚未凍結的組件登記。
  */
-fun registerRiichiPlayerComponents(registry: ComponentRegistry) {
+fun registerRiichiPlayerComponents(registry: ComponentRegistrar) {
     registry.register(RiichiPlayerComponents.DECLARATION)
     registry.registerView(RiichiPlayerComponentViews.DECLARATION)
     registry.registerLifecycle(

@@ -6,7 +6,7 @@ import com.doublemoon1119.mahjongcraft.logic.base.NamespacedId
 /**
  * 將 extension 登記至 runtime 實際使用的 registry，完成後凍結所有 registry。
  */
-object MahjongExtensionRegistrar {
+object MahjongExtensionBootstrap {
     /**
      * 先登記 [builtIn]，再依 [extensions] 順序登記，全部成功後凍結 registry。
      *

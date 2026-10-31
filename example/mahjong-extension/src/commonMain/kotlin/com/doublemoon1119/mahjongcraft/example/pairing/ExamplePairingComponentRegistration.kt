@@ -1,9 +1,9 @@
 package com.doublemoon1119.mahjongcraft.example.pairing
 
+import com.doublemoon1119.mahjongcraft.logic.api.registration.ComponentRegistrar
 import com.doublemoon1119.mahjongcraft.logic.component.BuiltInComponentOwners
 import com.doublemoon1119.mahjongcraft.logic.component.ComponentEffectDefinition
 import com.doublemoon1119.mahjongcraft.logic.component.ComponentLifecycleDefinition
-import com.doublemoon1119.mahjongcraft.logic.component.ComponentRegistry
 import com.doublemoon1119.mahjongcraft.logic.component.ComponentRoundTransition
 import com.doublemoon1119.mahjongcraft.logic.component.ComponentSet
 import com.doublemoon1119.mahjongcraft.logic.tile.component.BuiltInTileComponents
@@ -16,7 +16,7 @@ import kotlin.random.Random
  *
  * @param registry 本次執行尚未凍結的組件登記。
  */
-fun registerExamplePairingComponents(registry: ComponentRegistry) {
+fun registerExamplePairingComponents(registry: ComponentRegistrar) {
     registry.register(ExamplePairingComponents.BONUS_TILES)
     registry.register(ExamplePairingComponents.HAND_REVEALED)
     registry.register(ExamplePairingComponents.PUBLIC_FACE)

@@ -1,6 +1,7 @@
 package com.doublemoon1119.mahjongcraft.flow.network.dto.rule
 
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.ExtensionGameCommand
+import com.doublemoon1119.mahjongcraft.flow.network.dto.registry.NetworkDtoConverter
 
 /**
  * 將 [ExtensionGameCommand] 轉換成已註冊的網路 DTO。
@@ -8,7 +9,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.ExtensionGameComma
  * @param registries 網路 DTO 的動態註冊表集合。
  * @return 轉換後的資料。
  */
-fun ExtensionGameCommand.toDto(registries: NetworkDtoRegistries): ExtensionGameCommandDto = registries.extensionGameCommand.toDto(this)
+fun ExtensionGameCommand.toDto(registries: NetworkDtoConverter): ExtensionGameCommandDto = registries.extensionGameCommand.toDto(this)
 
 /**
  * 將已註冊的 [ExtensionGameCommandDto] 還原成領域遊戲命令。
@@ -16,4 +17,4 @@ fun ExtensionGameCommand.toDto(registries: NetworkDtoRegistries): ExtensionGameC
  * @param registries 網路 DTO 的動態註冊表集合。
  * @return 轉換後的資料。
  */
-fun ExtensionGameCommandDto.toDomain(registries: NetworkDtoRegistries): ExtensionGameCommand = registries.extensionGameCommand.toDomain(this)
+fun ExtensionGameCommandDto.toDomain(registries: NetworkDtoConverter): ExtensionGameCommand = registries.extensionGameCommand.toDomain(this)

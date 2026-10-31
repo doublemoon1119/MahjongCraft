@@ -1,9 +1,9 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.extension
 
 import com.doublemoon1119.mahjongcraft.metadata.MahjongCraftMetadata
-import com.doublemoon1119.mahjongcraft.platform.fabric.api.seating.FabricSeatProviderRegistry
+import com.doublemoon1119.mahjongcraft.platform.fabric.api.registration.FabricSeatProviderRegistrar
+import com.doublemoon1119.mahjongcraft.platform.fabric.api.registration.FabricTablePropKindRegistrar
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.seating.BuiltInFabricSeatProviderIds
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.prop.FabricTablePropKindRegistry
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.prop.FaceUpTileTablePropKind
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.prop.ScoringStickTablePropKind
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.seating.RegisteredSeatProvider
@@ -26,11 +26,11 @@ internal class BuiltInFabricMahjongExtension(
     override val id: String = MahjongCraftMetadata.id("builtin")
 
     /** 登記點棒與公開展示牌，兩者共用桌面物件規劃流程。 */
-    override fun registerTablePropKinds(registry: FabricTablePropKindRegistry) {
+    override fun registerTablePropKinds(registry: FabricTablePropKindRegistrar) {
         registry.register(ScoringStickTablePropKind)
         registry.register(FaceUpTileTablePropKind(tileAssets))
     }
 
     /** 登記內建麻將凳座位 provider。 */
-    override fun registerSeatProviders(registry: FabricSeatProviderRegistry) = registry.register(RegisteredSeatProvider(BuiltInFabricSeatProviderIds.MAHJONG_STOOL, seatProvider))
+    override fun registerSeatProviders(registry: FabricSeatProviderRegistrar) = registry.register(RegisteredSeatProvider(BuiltInFabricSeatProviderIds.MAHJONG_STOOL, seatProvider))
 }

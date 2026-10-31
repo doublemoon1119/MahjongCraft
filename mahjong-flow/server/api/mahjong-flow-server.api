@@ -1,0 +1,36 @@
+public abstract interface class com/doublemoon1119/mahjongcraft/flow/server/api/registration/ExtensionGameActionCommandFactoryRegistrar {
+	public abstract fun getRegistrationKeys ()Ljava/util/Set;
+	public abstract fun register (Lcom/doublemoon1119/mahjongcraft/flow/server/game/orchestration/ExtensionGameActionCommandFactoryDefinition;)V
+}
+
+public abstract interface class com/doublemoon1119/mahjongcraft/flow/server/api/registration/ExtensionGameCommandExecutorRegistrar {
+	public abstract fun getRegistrationKeys ()Ljava/util/Set;
+	public abstract fun register (Lcom/doublemoon1119/mahjongcraft/flow/server/game/orchestration/ExtensionGameCommandHandlerDefinition;)V
+}
+
+public abstract interface class com/doublemoon1119/mahjongcraft/flow/server/api/registration/PostActionExhaustiveDrawResolverRegistrar {
+	public abstract fun getRegistrationKeys ()Ljava/util/Set;
+	public abstract fun register (Lcom/doublemoon1119/mahjongcraft/flow/server/game/orchestration/PostActionExhaustiveDrawResolver;)V
+}
+
+public abstract interface class com/doublemoon1119/mahjongcraft/flow/server/api/registration/PostReactionRoundOutcomeResolverRegistrar {
+	public abstract fun getRegistrationKeys ()Ljava/util/Set;
+	public abstract fun register (Lcom/doublemoon1119/mahjongcraft/flow/server/game/orchestration/PostReactionRoundOutcomeResolver;)V
+}
+
+public abstract interface class com/doublemoon1119/mahjongcraft/flow/server/api/registration/RuleDecisionResolverRegistrar {
+	public abstract fun getRegistrationKeys ()Ljava/util/Set;
+	public abstract fun register (Lcom/doublemoon1119/mahjongcraft/flow/server/game/orchestration/RuleDecisionResolver;)V
+}
+
+public abstract interface class com/doublemoon1119/mahjongcraft/flow/server/api/registration/WinRoundContinuationResolverRegistrar {
+	public abstract fun getRegistrationKeys ()Ljava/util/Set;
+	public abstract fun register (Lcom/doublemoon1119/mahjongcraft/flow/server/game/orchestration/WinRoundContinuationResolver;)V
+}
+
+public abstract interface class com/doublemoon1119/mahjongcraft/flow/server/api/registration/WinSettlementDetailResolverRegistrar {
+	public abstract fun getRegistrationKeys ()Ljava/util/Set;
+	public abstract fun isFrozen ()Z
+	public abstract fun register (Lcom/doublemoon1119/mahjongcraft/flow/server/game/service/WinSettlementDetailResolverDefinition;)V
+}
+

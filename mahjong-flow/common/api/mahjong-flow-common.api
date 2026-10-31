@@ -217,3 +217,14 @@ public final class com/doublemoon1119/mahjongcraft/flow/api/event/WinMethod : ja
 	public static fun values ()[Lcom/doublemoon1119/mahjongcraft/flow/api/event/WinMethod;
 }
 
+public abstract interface class com/doublemoon1119/mahjongcraft/flow/api/registration/GameEventPublicMarkerResolverRegistrar {
+	public abstract fun getRegistrationKeys ()Ljava/util/Set;
+	public abstract fun isFrozen ()Z
+	public abstract fun register (Lcom/doublemoon1119/mahjongcraft/flow/common/game/event/GameEventPublicMarkerResolverDefinition;)V
+}
+
+public abstract interface class com/doublemoon1119/mahjongcraft/flow/api/registration/WinCelebrationCueResolverRegistrar {
+	public abstract fun getRegistrationKeys ()Ljava/util/Set;
+	public abstract fun register (Lcom/doublemoon1119/mahjongcraft/flow/common/game/service/WinCelebrationCueResolverDefinition;)V
+}
+

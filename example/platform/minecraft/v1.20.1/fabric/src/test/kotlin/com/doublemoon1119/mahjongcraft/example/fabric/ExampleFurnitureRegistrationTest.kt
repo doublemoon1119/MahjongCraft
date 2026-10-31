@@ -1,7 +1,7 @@
 package com.doublemoon1119.mahjongcraft.example.fabric
 
 import com.doublemoon1119.mahjongcraft.example.fabric.furniture.ExampleFurnitureIds
-import com.doublemoon1119.mahjongcraft.platform.fabric.api.seating.FabricSeatProviderRegistry
+import com.doublemoon1119.mahjongcraft.platform.fabric.api.registration.FabricSeatProviderRegistrar
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.seating.RegisteredSeatProvider
 import net.minecraft.entity.Entity
 import net.minecraft.server.world.ServerWorld
@@ -30,7 +30,7 @@ class ExampleFurnitureRegistrationTest {
     }
 
     /** 只收集正式 extension 回呼的登記結果，不執行原生家具初始化。 */
-    private class CapturingRegistry : FabricSeatProviderRegistry {
+    private class CapturingRegistry : FabricSeatProviderRegistrar {
         /** 本次回呼登記的完整 provider 描述。 */
         val definitions = mutableListOf<RegisteredSeatProvider<ServerWorld, Entity>>()
 

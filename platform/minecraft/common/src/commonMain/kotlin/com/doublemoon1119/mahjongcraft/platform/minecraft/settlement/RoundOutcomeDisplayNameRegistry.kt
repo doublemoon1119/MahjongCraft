@@ -1,19 +1,9 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.settlement
 
-/** 將規則特殊本局結果 ID（例如日麻的流局滿貫）映射至 Minecraft translation key。 */
-interface RoundOutcomeDisplayNameRegistry {
-    /** 目前已登記結果 ID 的快照。 */
-    val registrationKeys: Set<String>
+import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.RoundOutcomeDisplayNameRegistrar
 
-    /** registry 是否已凍結。 */
-    val isFrozen: Boolean
-
-    /**
-     * 登記完整描述；凍結後或身分重複時拒絕，不提前呼叫來源。
-     *
-     * @param definition 集中保存登記身分與內容的描述。
-     */
-    fun register(definition: RoundOutcomeDisplayNameDefinition)
+/** 將規則特殊本局結果 ID（例如日麻的流局滿貫）映射至 Minecraft translation key；擴充只透過 [RoundOutcomeDisplayNameRegistrar] 登記。 */
+interface RoundOutcomeDisplayNameRegistry : RoundOutcomeDisplayNameRegistrar {
 
     /**
      * 查詢特殊結果的本地化名稱。

@@ -196,7 +196,7 @@ class AuthoritativeStatePersistenceCodecTest {
     @Test
     fun `unregistered persistence type is rejected`() {
         val registries = bundledPersistenceRegistries().copy(
-            ruleConfigs = PersistenceDtoRegistry<MahjongRuleConfig>(),
+            ruleConfigs = PersistenceDtoRegistry<MahjongRuleConfig> { error("No rule config mapper is registered in this test") },
         )
         val codecWithoutRules = AuthoritativeStatePersistenceCodec(registries, componentValidator = bundledComponentValidator())
 
@@ -208,7 +208,7 @@ class AuthoritativeStatePersistenceCodecTest {
     fun `saved type without a registered mapper reports its type key`() {
         val saved = codec.encode(listOf(createRoom()), emptyList())
         val registries = bundledPersistenceRegistries().copy(
-            ruleConfigs = PersistenceDtoRegistry<MahjongRuleConfig>(),
+            ruleConfigs = PersistenceDtoRegistry<MahjongRuleConfig> { error("No rule config mapper is registered in this test") },
         )
 
         val failure = assertFailsWith<UnregisteredPersistenceTypeException> {

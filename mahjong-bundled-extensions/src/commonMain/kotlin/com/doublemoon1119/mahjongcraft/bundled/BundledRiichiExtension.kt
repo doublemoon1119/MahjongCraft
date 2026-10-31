@@ -1,25 +1,25 @@
 package com.doublemoon1119.mahjongcraft.bundled
 
 import com.doublemoon1119.mahjongcraft.ai.ExtensionGameActionAiDefinition
-import com.doublemoon1119.mahjongcraft.ai.ExtensionGameActionAiRegistry
+import com.doublemoon1119.mahjongcraft.ai.api.registration.ExtensionGameActionAiRegistrar
+import com.doublemoon1119.mahjongcraft.ai.api.registration.OpponentModelRegistrar
 import com.doublemoon1119.mahjongcraft.ai.expectation.OpponentModelDefinition
-import com.doublemoon1119.mahjongcraft.ai.expectation.OpponentModelRegistry
 import com.doublemoon1119.mahjongcraft.ai.riichi.RiichiDeclarationAiHandler
 import com.doublemoon1119.mahjongcraft.ai.riichi.RiichiOpponentModel
 import com.doublemoon1119.mahjongcraft.ai.riichi.RiichiPullNorthAiHandler
 import com.doublemoon1119.mahjongcraft.extension.MahjongExtension
+import com.doublemoon1119.mahjongcraft.flow.api.registration.GameEventPublicMarkerResolverRegistrar
+import com.doublemoon1119.mahjongcraft.flow.api.registration.WinCelebrationCueResolverRegistrar
 import com.doublemoon1119.mahjongcraft.flow.common.game.event.GameEventPublicMarkerResolverDefinition
-import com.doublemoon1119.mahjongcraft.flow.common.game.event.GameEventPublicMarkerResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameError
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.riichi.RiichiGameCommand
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.riichi.RiichiPullNorthCommand
 import com.doublemoon1119.mahjongcraft.flow.common.game.riichi.RiichiWinCelebrationCueResolver
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.WinCelebrationCueResolverDefinition
-import com.doublemoon1119.mahjongcraft.flow.common.game.service.WinCelebrationCueResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
+import com.doublemoon1119.mahjongcraft.flow.network.dto.api.registration.NetworkDtoRegistrars
 import com.doublemoon1119.mahjongcraft.flow.network.dto.component.ComponentViewNetworkDefinition
 import com.doublemoon1119.mahjongcraft.flow.network.dto.registry.DtoDefinition
-import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkDtoRegistries
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.riichi.RiichiDeclarationViewDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.riichi.RiichiDoraIndicatorViewDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.riichi.RiichiExhaustiveDrawReasonDto
@@ -40,6 +40,7 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.riichi.toDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.riichi.toRiichiDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.riichi.toThreePlayerRiichiDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.taiwan.toDomain
+import com.doublemoon1119.mahjongcraft.flow.persistence.format.api.registration.PersistenceRegistrars
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.component.ComponentIntPersistenceDto
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.component.ComponentPersistenceDefinition
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.component.ComponentUnitPersistenceDto
@@ -47,7 +48,6 @@ import com.doublemoon1119.mahjongcraft.flow.persistence.format.component.Compone
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.core.PersistenceDtoDefinition
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.game.toDomain
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.game.toPersistenceDto
-import com.doublemoon1119.mahjongcraft.flow.persistence.format.registry.PersistenceRegistries
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.rule.BuiltInDiscardPilePersistenceKeys
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.rule.PaoLiabilityPersistenceDto
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.rule.RiichiDeclarationPersistenceDto
@@ -61,13 +61,14 @@ import com.doublemoon1119.mahjongcraft.flow.persistence.format.rule.RiichiWallPr
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.rule.ThreePlayerRiichiRuleConfigPersistenceDto
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.rule.toDomain
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.rule.toPersistenceDto
+import com.doublemoon1119.mahjongcraft.flow.server.api.registration.ExtensionGameActionCommandFactoryRegistrar
+import com.doublemoon1119.mahjongcraft.flow.server.api.registration.ExtensionGameCommandExecutorRegistrar
+import com.doublemoon1119.mahjongcraft.flow.server.api.registration.PostActionExhaustiveDrawResolverRegistrar
+import com.doublemoon1119.mahjongcraft.flow.server.api.registration.PostReactionRoundOutcomeResolverRegistrar
+import com.doublemoon1119.mahjongcraft.flow.server.api.registration.WinSettlementDetailResolverRegistrar
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.ExtensionGameActionCommandFactoryDefinition
-import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.ExtensionGameActionCommandFactoryRegistry
-import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.ExtensionGameCommandExecutorRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.ExtensionGameCommandHandler
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.ExtensionGameCommandHandlerDefinition
-import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.PostActionExhaustiveDrawResolverRegistry
-import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.PostReactionRoundOutcomeResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.riichi.DeclareRiichiUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.riichi.RiichiGameEventPublicMarkerResolver
 import com.doublemoon1119.mahjongcraft.flow.server.game.riichi.RiichiNagashiManganOutcomeResolver
@@ -76,12 +77,11 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.riichi.RiichiSuufonRenda
 import com.doublemoon1119.mahjongcraft.flow.server.game.riichi.RiichiSuukanNagareResolver
 import com.doublemoon1119.mahjongcraft.flow.server.game.riichi.RiichiWinSettlementDetailResolver
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.WinSettlementDetailResolverDefinition
-import com.doublemoon1119.mahjongcraft.flow.server.game.service.WinSettlementDetailResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DeclareTileSetAsideUseCase
-import com.doublemoon1119.mahjongcraft.logic.component.ComponentRegistry
+import com.doublemoon1119.mahjongcraft.logic.api.registration.ComponentRegistrar
+import com.doublemoon1119.mahjongcraft.logic.api.registration.MahjongModuleRegistrar
 import com.doublemoon1119.mahjongcraft.logic.module.BuiltInRuleModuleIds
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleDefinition
-import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.PULL_NORTH_GAME_ACTION
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDiscardComponents
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDiscardPile
@@ -115,7 +115,7 @@ import kotlin.uuid.Uuid
 object BundledRiichiExtension : MahjongExtension {
     override val id: String = MahjongCraftMetadata.id("riichi")
 
-    override fun registerRuleModules(registry: MahjongModuleRegistry) {
+    override fun registerRuleModules(registry: MahjongModuleRegistrar) {
         registry.register(MahjongModuleDefinition(RiichiRuleConfig::class, BuiltInRuleModuleIds.RIICHI) { config, id -> RiichiRuleModule(id, config) })
         registry.register(
             definition = MahjongModuleDefinition(ThreePlayerRiichiRuleConfig::class, BuiltInRuleModuleIds.RIICHI_THREE_PLAYER) { config, id ->
@@ -124,12 +124,12 @@ object BundledRiichiExtension : MahjongExtension {
         )
     }
 
-    override fun registerWinCelebrationCueResolvers(registry: WinCelebrationCueResolverRegistry) {
+    override fun registerWinCelebrationCueResolvers(registry: WinCelebrationCueResolverRegistrar) {
         registry.register(WinCelebrationCueResolverDefinition(BuiltInRuleModuleIds.RIICHI, RiichiWinCelebrationCueResolver))
         registry.register(WinCelebrationCueResolverDefinition(BuiltInRuleModuleIds.RIICHI_THREE_PLAYER, RiichiWinCelebrationCueResolver))
     }
 
-    override fun registerNetworkDtos(registries: NetworkDtoRegistries) {
+    override fun registerNetworkDtos(registries: NetworkDtoRegistrars) {
         registries.componentViews.register(
             ComponentViewNetworkDefinition(
                 viewType = RiichiTileComponentViews.DORA_INDICATOR,
@@ -189,8 +189,8 @@ object BundledRiichiExtension : MahjongExtension {
                 domainClass = RiichiRuleConfig::class,
                 dtoClass = RiichiRuleConfigDto::class,
                 serializer = RiichiRuleConfigDto.serializer(),
-                toDto = { it.toRiichiDto(registries) },
-                toDomain = { it.toDomain(registries) },
+                toDto = { value, converter -> value.toRiichiDto(converter) },
+                toDomain = { dto, converter -> dto.toDomain(converter) },
             ),
         )
         registries.ruleConfig.register(
@@ -198,8 +198,8 @@ object BundledRiichiExtension : MahjongExtension {
                 domainClass = ThreePlayerRiichiRuleConfig::class,
                 dtoClass = ThreePlayerRiichiRuleConfigDto::class,
                 serializer = ThreePlayerRiichiRuleConfigDto.serializer(),
-                toDto = { it.toThreePlayerRiichiDto(registries) },
-                toDomain = { it.toDomain(registries) },
+                toDto = { value, converter -> value.toThreePlayerRiichiDto(converter) },
+                toDomain = { dto, converter -> dto.toDomain(converter) },
             ),
         )
         registries.scoreConfig.register(
@@ -330,14 +330,14 @@ object BundledRiichiExtension : MahjongExtension {
         )
     }
 
-    override fun registerComponents(registry: ComponentRegistry) {
+    override fun registerComponents(registry: ComponentRegistrar) {
         registerRiichiPlayerComponents(registry)
         registerRiichiTableComponents(registry)
         registerRiichiTileComponents(registry)
         registerRiichiDiscardComponents(registry)
     }
 
-    override fun registerPersistenceDtos(registries: PersistenceRegistries) {
+    override fun registerPersistenceDtos(registries: PersistenceRegistrars) {
         registries.componentViews.register(
             ComponentViewPersistenceDefinition(
                 viewType = RiichiTileComponentViews.DORA_INDICATOR,
@@ -443,8 +443,8 @@ object BundledRiichiExtension : MahjongExtension {
                 typeKey = BuiltInDiscardPilePersistenceKeys.RIICHI,
                 domainClass = RiichiDiscardPile::class,
                 serializer = RiichiDiscardPilePersistenceDto.serializer(),
-                toDto = { it.toPersistenceDto(registries.components) },
-                toDomain = { it.toDomain(registries.components) },
+                toDto = { value, converter -> value.toPersistenceDto(converter.components) },
+                toDomain = { dto, converter -> dto.toDomain(converter.components) },
                 compactInReplay = true,
             ),
         )
@@ -522,12 +522,12 @@ object BundledRiichiExtension : MahjongExtension {
         )
     }
 
-    override fun registerGameActionAiHandlers(registry: ExtensionGameActionAiRegistry) {
+    override fun registerGameActionAiHandlers(registry: ExtensionGameActionAiRegistrar) {
         registry.register(ExtensionGameActionAiDefinition(RiichiGameAction.Riichi::class, RiichiDeclarationAiHandler))
         registry.register(ExtensionGameActionAiDefinition(RiichiGameAction.PullNorth::class, RiichiPullNorthAiHandler))
     }
 
-    override fun registerOpponentModels(registry: OpponentModelRegistry) {
+    override fun registerOpponentModels(registry: OpponentModelRegistrar) {
         registry.register(OpponentModelDefinition(BuiltInRuleModuleIds.RIICHI) { module, depth -> RiichiOpponentModel(rules = module.createPositionRules(), readingDepth = depth) })
         registry.register(
             definition = OpponentModelDefinition(BuiltInRuleModuleIds.RIICHI_THREE_PLAYER) { module, depth ->
@@ -536,7 +536,7 @@ object BundledRiichiExtension : MahjongExtension {
         )
     }
 
-    override fun registerGameActionCommandFactories(registry: ExtensionGameActionCommandFactoryRegistry) {
+    override fun registerGameActionCommandFactories(registry: ExtensionGameActionCommandFactoryRegistrar) {
         registry.register(
             definition = ExtensionGameActionCommandFactoryDefinition(RiichiGameAction.Riichi::class) { _, selectedTileIds ->
                 selectedTileIds.singleOrNull()?.let(::RiichiGameCommand)
@@ -546,7 +546,7 @@ object BundledRiichiExtension : MahjongExtension {
     }
 
     /** 每個執行環境以自己的流程服務建立 [DeclareRiichiUseCase] 與拔北用的 [DeclareTileSetAsideUseCase]。 */
-    override fun registerGameCommandHandlers(registry: ExtensionGameCommandExecutorRegistry) {
+    override fun registerGameCommandHandlers(registry: ExtensionGameCommandExecutorRegistrar) {
         registry.register(
             definition = ExtensionGameCommandHandlerDefinition(RiichiGameCommand::class) { context ->
                 val declareRiichiUseCase = DeclareRiichiUseCase(
@@ -582,25 +582,25 @@ object BundledRiichiExtension : MahjongExtension {
         )
     }
 
-    override fun registerPostReactionRoundOutcomeResolvers(registry: PostReactionRoundOutcomeResolverRegistry) {
+    override fun registerPostReactionRoundOutcomeResolvers(registry: PostReactionRoundOutcomeResolverRegistrar) {
         registry.register(RiichiNagashiManganOutcomeResolver())
         registry.register(RiichiNagashiManganOutcomeResolver(BuiltInRuleModuleIds.RIICHI_THREE_PLAYER))
     }
 
     /** 主動觸發的途中流局：四風連打、四家立直、四槓散了；三人日麻只有四槓散了。 */
-    override fun registerPostActionExhaustiveDrawResolvers(registry: PostActionExhaustiveDrawResolverRegistry) {
+    override fun registerPostActionExhaustiveDrawResolvers(registry: PostActionExhaustiveDrawResolverRegistrar) {
         registry.register(RiichiSuufonRendaResolver())
         registry.register(RiichiSuuchaRiichiResolver())
         registry.register(RiichiSuukanNagareResolver())
         registry.register(RiichiSuukanNagareResolver(BuiltInRuleModuleIds.RIICHI_THREE_PLAYER))
     }
 
-    override fun registerWinSettlementDetailResolvers(registry: WinSettlementDetailResolverRegistry) {
+    override fun registerWinSettlementDetailResolvers(registry: WinSettlementDetailResolverRegistrar) {
         registry.register(WinSettlementDetailResolverDefinition(BuiltInRuleModuleIds.RIICHI, RiichiWinSettlementDetailResolver))
         registry.register(WinSettlementDetailResolverDefinition(BuiltInRuleModuleIds.RIICHI_THREE_PLAYER, RiichiWinSettlementDetailResolver))
     }
 
-    override fun registerGameEventPublicMarkerResolvers(registry: GameEventPublicMarkerResolverRegistry) {
+    override fun registerGameEventPublicMarkerResolvers(registry: GameEventPublicMarkerResolverRegistrar) {
         registry.register(GameEventPublicMarkerResolverDefinition(BuiltInRuleModuleIds.RIICHI, RiichiGameEventPublicMarkerResolver))
         registry.register(GameEventPublicMarkerResolverDefinition(BuiltInRuleModuleIds.RIICHI_THREE_PLAYER, RiichiGameEventPublicMarkerResolver))
     }

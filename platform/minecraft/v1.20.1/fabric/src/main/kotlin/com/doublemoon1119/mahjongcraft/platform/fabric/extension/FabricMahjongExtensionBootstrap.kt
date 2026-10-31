@@ -5,7 +5,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.error.ExtensionFailurePolicy
 import com.doublemoon1119.mahjongcraft.logic.base.NamespacedId
 
 /** 將內建項目與第三方 Fabric extension 登記至 runtime registry，完成後統一凍結。 */
-internal object FabricMahjongExtensionRegistrar {
+internal object FabricMahjongExtensionBootstrap {
     /**
      * 依固定順序執行內建 extension 與第三方 extension 的回呼，全部成功後凍結 registry。
      *

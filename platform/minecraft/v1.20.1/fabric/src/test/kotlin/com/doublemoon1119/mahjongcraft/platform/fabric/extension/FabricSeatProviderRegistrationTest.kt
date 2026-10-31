@@ -1,9 +1,9 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.extension
 
 import com.doublemoon1119.mahjongcraft.flow.common.error.ExtensionFailurePolicy
-import com.doublemoon1119.mahjongcraft.platform.fabric.api.seating.FabricSeatProviderRegistry
+import com.doublemoon1119.mahjongcraft.platform.fabric.api.registration.FabricSeatProviderRegistrar
+import com.doublemoon1119.mahjongcraft.platform.fabric.api.registration.FabricTablePropKindRegistrar
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.seating.FabricSeatProviderRegistryImpl
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.prop.FabricTablePropKindRegistry
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.prop.FabricTablePropKindRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.seating.RegisteredSeatProvider
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.seating.SeatProvider
@@ -26,7 +26,7 @@ class FabricSeatProviderRegistrationTest {
     }
 
     /**
-     * 與座位 provider registry 一起傳入 registrar 的空桌面物件種類 registry。
+     * 與座位 provider registry 一起傳入啟動流程的空桌面物件種類 registry。
      *
      * @param extensions 依序登記的 Fabric extensions。
      * @param seatProviderRegistry 要登記座位 provider 的 registry。
@@ -35,7 +35,7 @@ class FabricSeatProviderRegistrationTest {
     private fun register(
         extensions: Iterable<FabricMahjongExtension>,
         seatProviderRegistry: FabricSeatProviderRegistryImpl = FabricSeatProviderRegistryImpl(),
-    ) = FabricMahjongExtensionRegistrar.registerAndFreeze(
+    ) = FabricMahjongExtensionBootstrap.registerAndFreeze(
         extensions = extensions,
         registries = FabricExtensionRegistries(FabricTablePropKindRegistryImpl(), seatProviderRegistry),
         builtIn = BuiltInFabricMahjongExtension(FakeProvider(), MinecraftTileAssetRegistryImpl()),
@@ -52,7 +52,7 @@ class FabricSeatProviderRegistrationTest {
         override val id: String,
         private val registrations: List<Triple<String, SeatProvider<ServerWorld, Entity>, Int>>,
     ) : FabricMahjongExtension {
-        override fun registerSeatProviders(registry: FabricSeatProviderRegistry) {
+        override fun registerSeatProviders(registry: FabricSeatProviderRegistrar) {
             registrations.forEach { (id, provider, priority) -> registry.register(RegisteredSeatProvider(id, provider, priority)) }
         }
     }
@@ -95,7 +95,7 @@ class FabricSeatProviderRegistrationTest {
     /** 擴充取得的 registry 只能登記與查看狀態，不能凍結或讀取其他擴充登記的 provider。 */
     @Test
     fun `public registry exposes registration only`() {
-        val methods = FabricSeatProviderRegistry::class.java.methods.map { it.name }
+        val methods = FabricSeatProviderRegistrar::class.java.methods.map { it.name }
 
         assertTrue("register" in methods)
         assertTrue(methods.none { it == "freeze" || it == "entries" }, "Unexpected methods: $methods")
@@ -146,7 +146,7 @@ class FabricSeatProviderRegistrationTest {
             override val id: String = "invalid"
         }
         assertFailsWith<FabricMahjongExtensionRegistrationException> {
-            FabricMahjongExtensionRegistrar.registerAndFreeze(
+            FabricMahjongExtensionBootstrap.registerAndFreeze(
                 extensions = emptyList(),
                 registries = FabricExtensionRegistries(
                     tablePropKindRegistry = FabricTablePropKindRegistryImpl(),
@@ -192,18 +192,18 @@ class FabricSeatProviderRegistrationTest {
         val extension = object : FabricMahjongExtension {
             override val id: String = "example:failing"
 
-            override fun registerTablePropKinds(registry: FabricTablePropKindRegistry) {
+            override fun registerTablePropKinds(registry: FabricTablePropKindRegistrar) {
                 callbacks += "table"
             }
 
-            override fun registerSeatProviders(registry: FabricSeatProviderRegistry) {
+            override fun registerSeatProviders(registry: FabricSeatProviderRegistrar) {
                 callbacks += "seat"
                 error("seat failure")
             }
         }
 
         assertFailsWith<FabricMahjongExtensionRegistrationException> {
-            FabricMahjongExtensionRegistrar.registerAndFreeze(
+            FabricMahjongExtensionBootstrap.registerAndFreeze(
                 extensions = listOf(extension),
                 registries = FabricExtensionRegistries(tablePropRegistry, seatRegistry),
                 builtIn = BuiltInFabricMahjongExtension(FakeProvider(), MinecraftTileAssetRegistryImpl()),

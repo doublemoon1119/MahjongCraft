@@ -9,36 +9,37 @@ import com.doublemoon1119.mahjongcraft.metadata.MahjongCraftMetadata
 import com.doublemoon1119.mahjongcraft.platform.minecraft.action.BuiltInGameActionIds
 import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionVocabulary
 import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionVocabularyDefaultDefinition
-import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionVocabularyRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.action.HUD_ACTION_PREFIX
 import com.doublemoon1119.mahjongcraft.platform.minecraft.action.MinecraftKanActionTokenKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.ai.AiStrategyDisplayNameDefinition
-import com.doublemoon1119.mahjongcraft.platform.minecraft.ai.AiStrategyDisplayNameRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.AiStrategyDisplayNameRegistrar
+import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.AutomaticControlDisplayRegistrar
+import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.DecisionStatusDisplayNameRegistrar
+import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.GameActionVocabularyRegistrar
+import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.MatchSettlementPresentationTemplateRegistrar
+import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.MinecraftTileAssetRegistrar
+import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.PublicPlayerIndicatorDisplayRegistrar
+import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.TileEmojiRegistrar
+import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.TileLabelRegistrar
+import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.WinSettlementPresentationTemplateRegistrar
 import com.doublemoon1119.mahjongcraft.platform.minecraft.automatic.AutomaticControlDisplay
 import com.doublemoon1119.mahjongcraft.platform.minecraft.automatic.AutomaticControlDisplayDefinition
-import com.doublemoon1119.mahjongcraft.platform.minecraft.automatic.AutomaticControlDisplayRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.automatic.BuiltInMinecraftAutomaticControlIds
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftClientConfigScreenKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.DecisionStatusDisplayNameDefaultDefinition
-import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.DecisionStatusDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.HUD_STATUS_PREFIX
 import com.doublemoon1119.mahjongcraft.platform.minecraft.player.PublicPlayerIndicatorDisplay
 import com.doublemoon1119.mahjongcraft.platform.minecraft.player.PublicPlayerIndicatorDisplayDefinition
-import com.doublemoon1119.mahjongcraft.platform.minecraft.player.PublicPlayerIndicatorDisplayRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.BUILT_IN_MATCH_SETTLEMENT_TEMPLATE_KEY
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.BuiltInWinSettlementFieldIds
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.BuiltInWinSettlementTemplates
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.MatchSettlementPresentationTemplate
-import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.MatchSettlementPresentationTemplateRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.PresentationValue
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.WinSettlementPresentationFieldProviderDefinition
-import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.WinSettlementPresentationTemplateRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.WinSettlementTextKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftMessageKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.BuiltInMinecraftTileAppearances
-import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileEmojiDefinition
-import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileEmojiRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileLabelDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileLabelRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.UNKNOWN_TILE_ASSET_KEY
@@ -48,24 +49,24 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.redText
 /**
  * MahjongCraft 不屬於任何規則的內建 Minecraft 呈現；所有規則中立的內建登記都寫在這裡。
  *
- * [MinecraftMahjongExtensionRegistrar] 在所有 extension 之前登記它，啟動報告將它的登記列為內建來源。
+ * [MinecraftMahjongExtensionBootstrap] 在所有 extension 之前登記它，啟動報告將它的登記列為內建來源。
  * 登記方式與其他 extension 相同，不具有覆寫或繞過重複 key 驗證的特權。
  */
 object BuiltInMinecraftMahjongExtension : MinecraftMahjongExtension {
     override val id: String = MahjongCraftMetadata.id("builtin")
 
-    override fun registerTileAssets(registry: MinecraftTileAssetRegistry) {
+    override fun registerTileAssets(registry: MinecraftTileAssetRegistrar) {
         registry.register(BuiltInMinecraftTileAppearances.DEFAULT)
     }
 
-    override fun registerAiStrategyDisplayNames(registry: AiStrategyDisplayNameRegistry) {
+    override fun registerAiStrategyDisplayNames(registry: AiStrategyDisplayNameRegistrar) {
         registry.register(AiStrategyDisplayNameDefinition(RandomAiStrategy.KEY, MinecraftMessageKeys.AI_STRATEGY_RANDOM))
         registry.register(AiStrategyDisplayNameDefinition(BuiltInAiStrategyKeys.BEGINNER, MinecraftMessageKeys.AI_STRATEGY_BEGINNER))
         registry.register(AiStrategyDisplayNameDefinition(BuiltInAiStrategyKeys.INTERMEDIATE, MinecraftMessageKeys.AI_STRATEGY_INTERMEDIATE))
         registry.register(AiStrategyDisplayNameDefinition(BuiltInAiStrategyKeys.ADVANCED, MinecraftMessageKeys.AI_STRATEGY_ADVANCED))
     }
 
-    override fun registerAutomaticControlDisplays(registry: AutomaticControlDisplayRegistry) {
+    override fun registerAutomaticControlDisplays(registry: AutomaticControlDisplayRegistrar) {
         registry.register(
             definition = AutomaticControlDisplayDefinition(
                 controlId = BuiltInMinecraftAutomaticControlIds.AUTO_SORT_HAND,
@@ -86,7 +87,7 @@ object BuiltInMinecraftMahjongExtension : MinecraftMahjongExtension {
      * `assets/minecraft/font/default.json`（見 `platform/minecraft/common/src/jvmMain/resources`）註冊成自訂 bitmap 字型，
      * 讓文字內容直接顯示成牌面貼圖；規則專屬牌（例如日麻的赤五）由該規則的 extension 登記同一區塊的字元。
      */
-    override fun registerTileEmojis(registry: TileEmojiRegistry) {
+    override fun registerTileEmojis(registry: TileEmojiRegistrar) {
         registry.register(TileEmojiDefinition("east", "🀀"))
         registry.register(TileEmojiDefinition("south", "🀁"))
         registry.register(TileEmojiDefinition("west", "🀂"))
@@ -138,7 +139,7 @@ object BuiltInMinecraftMahjongExtension : MinecraftMahjongExtension {
      * 字牌用單一或兩個字母縮寫（東南西北＝E/S/W/N，紅中＝R，發＝G，白＝Wh——避免跟西風的 `W` 混淆特地用
      * 兩個字母）。
      */
-    override fun registerTileLabels(registry: TileLabelRegistry) {
+    override fun registerTileLabels(registry: TileLabelRegistrar) {
         // 萬子
         registry.register(TileLabelDefinition("m1", redText("1")))
         registry.register(TileLabelDefinition("m2", redText("2")))
@@ -185,7 +186,7 @@ object BuiltInMinecraftMahjongExtension : MinecraftMahjongExtension {
     }
 
     /** 通用 fallback 模板與共用欄位。 */
-    override fun registerWinSettlementPresentationTemplates(registry: WinSettlementPresentationTemplateRegistry) {
+    override fun registerWinSettlementPresentationTemplates(registry: WinSettlementPresentationTemplateRegistrar) {
         registry.register(BuiltInWinSettlementTemplates.GENERIC)
         registry.register(
             definition = WinSettlementPresentationFieldProviderDefinition(BuiltInWinSettlementFieldIds.COMPLETE_HAND) { snapshot ->
@@ -258,7 +259,7 @@ object BuiltInMinecraftMahjongExtension : MinecraftMahjongExtension {
         )
     }
 
-    override fun registerMatchSettlementPresentationTemplates(registry: MatchSettlementPresentationTemplateRegistry) {
+    override fun registerMatchSettlementPresentationTemplates(registry: MatchSettlementPresentationTemplateRegistrar) {
         registry.register(
             template = MatchSettlementPresentationTemplate(
                 key = BUILT_IN_MATCH_SETTLEMENT_TEMPLATE_KEY,
@@ -267,7 +268,7 @@ object BuiltInMinecraftMahjongExtension : MinecraftMahjongExtension {
         )
     }
 
-    override fun registerPublicPlayerIndicatorDisplays(registry: PublicPlayerIndicatorDisplayRegistry) {
+    override fun registerPublicPlayerIndicatorDisplays(registry: PublicPlayerIndicatorDisplayRegistrar) {
         registry.register(
             definition = PublicPlayerIndicatorDisplayDefinition(
                 id = BuiltInPaymentReasonIds.PAO,
@@ -277,7 +278,7 @@ object BuiltInMinecraftMahjongExtension : MinecraftMahjongExtension {
     }
 
     /** 核心動作的中立預設用語與操作卡順序；說法不同的規則登記同一個動作 ID 即可覆寫，不需要改動呈現程式。 */
-    override fun registerGameActionVocabulary(registry: GameActionVocabularyRegistry) {
+    override fun registerGameActionVocabulary(registry: GameActionVocabularyRegistrar) {
         registry.register(
             definition = GameActionVocabularyDefaultDefinition(
                 actionId = BuiltInGameActionIds.CHI,
@@ -335,7 +336,7 @@ object BuiltInMinecraftMahjongExtension : MinecraftMahjongExtension {
     }
 
     /** 中立預設：和牌資格沒有特殊限制。 */
-    override fun registerDecisionStatusDisplayNames(registry: DecisionStatusDisplayNameRegistry) {
+    override fun registerDecisionStatusDisplayNames(registry: DecisionStatusDisplayNameRegistrar) {
         registry.register(DecisionStatusDisplayNameDefaultDefinition(WaitingTileAvailabilityIds.WIN_AVAILABLE, HUD_STATUS_PREFIX + "win_availability.available"))
     }
 }

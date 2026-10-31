@@ -1,18 +1,10 @@
 package com.doublemoon1119.mahjongcraft.flow.common.game.service
 
+import com.doublemoon1119.mahjongcraft.flow.api.registration.WinCelebrationCueResolverRegistrar
 import com.doublemoon1119.mahjongcraft.logic.judgment.HandValueResult
 
-/** 規則模組 ID 與 [WinCelebrationCueResolver] 的註冊中心。 */
-interface WinCelebrationCueResolverRegistry {
-    /** 目前已登記規則模組 ID 的快照。 */
-    val registrationKeys: Set<String>
-
-    /**
-     * 註冊指定規則模組的 resolver；規則模組 ID 必須符合命名空間格式且不得重複，凍結後不可註冊。
-     *
-     * @param definition 完整的規則模組 ID 與 resolver 定義。
-     */
-    fun register(definition: WinCelebrationCueResolverDefinition)
+/** 規則模組 ID 與 [WinCelebrationCueResolver] 的註冊中心；擴充只透過 [WinCelebrationCueResolverRegistrar] 登記。 */
+interface WinCelebrationCueResolverRegistry : WinCelebrationCueResolverRegistrar {
 
     /** 凍結後不得再註冊。 */
     fun freeze()

@@ -1,0 +1,21 @@
+public abstract interface class com/doublemoon1119/mahjongcraft/extension/MahjongExtension {
+	public abstract fun getId ()Ljava/lang/String;
+	public fun registerAiStrategies (Lcom/doublemoon1119/mahjongcraft/ai/api/registration/MahjongAiStrategyRegistrar;)V
+	public fun registerComponents (Lcom/doublemoon1119/mahjongcraft/logic/api/registration/ComponentRegistrar;)V
+	public fun registerGameActionAiHandlers (Lcom/doublemoon1119/mahjongcraft/ai/api/registration/ExtensionGameActionAiRegistrar;)V
+	public fun registerGameActionCommandFactories (Lcom/doublemoon1119/mahjongcraft/flow/server/api/registration/ExtensionGameActionCommandFactoryRegistrar;)V
+	public fun registerGameCommandHandlers (Lcom/doublemoon1119/mahjongcraft/flow/server/api/registration/ExtensionGameCommandExecutorRegistrar;)V
+	public fun registerGameEventPublicMarkerResolvers (Lcom/doublemoon1119/mahjongcraft/flow/api/registration/GameEventPublicMarkerResolverRegistrar;)V
+	public abstract fun registerNetworkDtos (Lcom/doublemoon1119/mahjongcraft/flow/network/dto/api/registration/NetworkDtoRegistrars;)V
+	public fun registerOpponentModels (Lcom/doublemoon1119/mahjongcraft/ai/api/registration/OpponentModelRegistrar;)V
+	public abstract fun registerPersistenceDtos (Lcom/doublemoon1119/mahjongcraft/flow/persistence/format/api/registration/PersistenceRegistrars;)V
+	public fun registerPostActionExhaustiveDrawResolvers (Lcom/doublemoon1119/mahjongcraft/flow/server/api/registration/PostActionExhaustiveDrawResolverRegistrar;)V
+	public fun registerPostReactionRoundOutcomeResolvers (Lcom/doublemoon1119/mahjongcraft/flow/server/api/registration/PostReactionRoundOutcomeResolverRegistrar;)V
+	public fun registerRuleDecisionResolvers (Lcom/doublemoon1119/mahjongcraft/flow/server/api/registration/RuleDecisionResolverRegistrar;)V
+	public abstract fun registerRuleModules (Lcom/doublemoon1119/mahjongcraft/logic/api/registration/MahjongModuleRegistrar;)V
+	public fun registerTileTypes (Lcom/doublemoon1119/mahjongcraft/logic/api/registration/TileTypeRegistrar;)V
+	public fun registerWinCelebrationCueResolvers (Lcom/doublemoon1119/mahjongcraft/flow/api/registration/WinCelebrationCueResolverRegistrar;)V
+	public fun registerWinRoundContinuationResolvers (Lcom/doublemoon1119/mahjongcraft/flow/server/api/registration/WinRoundContinuationResolverRegistrar;)V
+	public fun registerWinSettlementDetailResolvers (Lcom/doublemoon1119/mahjongcraft/flow/server/api/registration/WinSettlementDetailResolverRegistrar;)V
+}
+

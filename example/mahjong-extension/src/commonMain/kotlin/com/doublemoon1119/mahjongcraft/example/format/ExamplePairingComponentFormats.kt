@@ -5,15 +5,15 @@ import com.doublemoon1119.mahjongcraft.example.format.persistence.ExamplePairing
 import com.doublemoon1119.mahjongcraft.example.format.persistence.ExamplePairingPublicFacePersistenceDto
 import com.doublemoon1119.mahjongcraft.example.pairing.ExamplePairingBonusTiles
 import com.doublemoon1119.mahjongcraft.example.pairing.ExamplePairingComponents
+import com.doublemoon1119.mahjongcraft.flow.persistence.format.api.registration.PersistenceRegistrars
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.component.ComponentPersistenceDefinition
-import com.doublemoon1119.mahjongcraft.flow.persistence.format.registry.PersistenceRegistries
 
 /**
  * 登記權威組件保存格式，與公開網路型別分開。
  *
  * @param registries 本次執行尚未凍結的保存登記。
  */
-fun registerExampleComponentPersistenceDtos(registries: PersistenceRegistries) {
+fun registerExampleComponentPersistenceDtos(registries: PersistenceRegistrars) {
     registries.components.register(
         ComponentPersistenceDefinition(
             component = ExamplePairingComponents.BONUS_TILES,

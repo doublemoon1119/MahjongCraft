@@ -2,16 +2,17 @@ package com.doublemoon1119.mahjongcraft.flow.server.game.orchestration
 
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinRoundContinuationContext
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinRoundDirective
+import com.doublemoon1119.mahjongcraft.flow.server.api.registration.WinRoundContinuationResolverRegistrar
 import com.doublemoon1119.mahjongcraft.logic.base.NamespacedId
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
 
 /**
- * 可於 bootstrap 登記、完成後凍結的 win round continuation resolver registry。
+ * 可於 bootstrap 登記、完成後凍結的 win round continuation resolver registry；擴充只透過 [WinRoundContinuationResolverRegistrar] 登記。
  *
  * 未替某規則模組登記任何 resolver 時，[resolve] 固定回傳 [WinRoundDirective.EndRound]：沒有登記
  * resolver 的規則，胡牌後一律立即結束本局。
  */
-class WinRoundContinuationResolverRegistry {
+class WinRoundContinuationResolverRegistry : WinRoundContinuationResolverRegistrar {
     /** 尚未凍結的 resolver 集合。 */
     private val resolvers = mutableListOf<WinRoundContinuationResolver>()
 
@@ -19,7 +20,7 @@ class WinRoundContinuationResolverRegistry {
     private var frozen = false
 
     /** 目前已登記 resolver 的完整身分快照，格式為 `ruleModuleId/resolverId`。 */
-    val registrationKeys: Set<String> get() = resolvers.mapTo(mutableSetOf()) { registrationKey(it.ruleModuleId, it.id) }
+    override val registrationKeys: Set<String> get() = resolvers.mapTo(mutableSetOf()) { registrationKey(it.ruleModuleId, it.id) }
 
     /**
      * 登記 resolver；同一規則模組內的 resolver ID 不得重複，不同規則模組可使用相同 ID。
@@ -27,7 +28,7 @@ class WinRoundContinuationResolverRegistry {
      *
      * @param resolver 要登記的胡牌後續判定器。
      */
-    fun register(resolver: WinRoundContinuationResolver) {
+    override fun register(resolver: WinRoundContinuationResolver) {
         check(!frozen) { "Win round continuation resolver registry is frozen" }
         NamespacedId.requireValid(resolver.ruleModuleId) { "Rule module ID must be namespaced: ${resolver.ruleModuleId}" }
         NamespacedId.requireValid(resolver.id) { "Resolver ID must be namespaced: ${resolver.id}" }

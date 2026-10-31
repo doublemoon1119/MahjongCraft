@@ -2,6 +2,7 @@ package com.doublemoon1119.mahjongcraft.flow.server.game.service
 
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.ResolvedRoundOutcome
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementDetailField
+import com.doublemoon1119.mahjongcraft.flow.server.api.registration.WinSettlementDetailResolverRegistrar
 import com.doublemoon1119.mahjongcraft.logic.base.NamespacedId
 import com.doublemoon1119.mahjongcraft.logic.base.TileFaceView
 import com.doublemoon1119.mahjongcraft.logic.base.TileValue
@@ -11,19 +12,19 @@ import com.doublemoon1119.mahjongcraft.logic.judgment.HandValueResult
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 
 /**
- * 以完整規則模組 ID 登記、bootstrap 後凍結的胡牌詳情解析器。
+ * 以完整規則模組 ID 登記、bootstrap 後凍結的胡牌詳情解析器；擴充只透過 [WinSettlementDetailResolverRegistrar] 登記。
  *
  * @property componentRegistry 將詳情中的牌值投影為公開牌面。
  */
-class WinSettlementDetailResolverRegistry(private val componentRegistry: ComponentRegistry) {
+class WinSettlementDetailResolverRegistry(private val componentRegistry: ComponentRegistry) : WinSettlementDetailResolverRegistrar {
     /** 以完整規則模組識別碼索引的詳情解析器。 */
     private val resolvers = linkedMapOf<String, WinSettlementDetailResolver>()
 
     /** 目前已登記規則模組 ID 的快照。 */
-    val registrationKeys: Set<String> get() = resolvers.keys.toSet()
+    override val registrationKeys: Set<String> get() = resolvers.keys.toSet()
 
     /** 是否已禁止後續註冊。 */
-    var isFrozen: Boolean = false
+    override var isFrozen: Boolean = false
         private set
 
     /**
@@ -33,7 +34,7 @@ class WinSettlementDetailResolverRegistry(private val componentRegistry: Compone
      * @throws IllegalStateException registry 已凍結時拋出。
      * @throws IllegalArgumentException 識別碼格式無效或識別碼已被登記時拋出。
      */
-    fun register(definition: WinSettlementDetailResolverDefinition) {
+    override fun register(definition: WinSettlementDetailResolverDefinition) {
         check(!isFrozen) { "Win settlement detail resolver registry is frozen" }
         NamespacedId.requireValid(definition.ruleModuleId) { "Rule module ID must be namespaced: ${definition.ruleModuleId}" }
         require(resolvers.putIfAbsent(definition.ruleModuleId, definition.resolver) == null) { "Duplicate win settlement detail resolver: ${definition.ruleModuleId}" }

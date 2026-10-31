@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.server.table.prop
 
+import com.doublemoon1119.mahjongcraft.platform.fabric.api.tableprop.FabricTablePropKind
 import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftResourceIds
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TablePropKindDefinition
 

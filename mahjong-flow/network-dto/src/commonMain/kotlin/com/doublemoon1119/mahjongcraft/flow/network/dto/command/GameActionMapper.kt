@@ -1,5 +1,5 @@
 package com.doublemoon1119.mahjongcraft.flow.network.dto.command
-import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkDtoRegistries
+import com.doublemoon1119.mahjongcraft.flow.network.dto.registry.NetworkDtoConverter
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.toDomain
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.toDto
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
@@ -13,7 +13,7 @@ import kotlin.uuid.Uuid
  * @param registries 網路 DTO 的動態註冊表集合。
  * @return 轉換後的資料。
  */
-fun GameAction.toDto(registries: NetworkDtoRegistries): GameActionDto = when (this) {
+fun GameAction.toDto(registries: NetworkDtoConverter): GameActionDto = when (this) {
     GameAction.GameStarted -> GameActionDto.GameStarted
     GameAction.RoundStarted -> GameActionDto.RoundStarted
     GameAction.MatchEnded -> GameActionDto.MatchEnded
@@ -36,7 +36,7 @@ fun GameAction.toDto(registries: NetworkDtoRegistries): GameActionDto = when (th
  * @param registries 網路 DTO 的動態註冊表集合。
  * @return 轉換後的資料。
  */
-fun GameActionDto.toDomain(registries: NetworkDtoRegistries): GameAction = when (this) {
+fun GameActionDto.toDomain(registries: NetworkDtoConverter): GameAction = when (this) {
     GameActionDto.GameStarted -> GameAction.GameStarted
     GameActionDto.RoundStarted -> GameAction.RoundStarted
     GameActionDto.MatchEnded -> GameAction.MatchEnded

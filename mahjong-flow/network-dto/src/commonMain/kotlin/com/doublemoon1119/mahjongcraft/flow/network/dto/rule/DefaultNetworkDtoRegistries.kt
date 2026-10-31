@@ -12,12 +12,12 @@ import com.doublemoon1119.mahjongcraft.logic.config.ScoreConfig
 /** MahjongCraft runtime 目前使用的 network DTO registry 集合。 */
 class DefaultNetworkDtoRegistries : NetworkDtoRegistries {
     override val componentViews = ComponentViewNetworkRegistry()
-    override val ruleConfig = DtoRegistry<MahjongRuleConfig, MahjongRuleConfigDto>()
-    override val scoreConfig = DtoRegistry<ScoreConfig, ScoreConfigDto>()
-    override val gameLength = DtoRegistry<GameLength, GameLengthDto>()
-    override val exhaustiveDrawReason = DtoRegistry<ExhaustiveDrawReason, ExhaustiveDrawReasonDto>()
-    override val extensionGameAction = DtoRegistry<ExtensionGameAction, ExtensionGameActionDto>()
-    override val extensionGameCommand = DtoRegistry<ExtensionGameCommand, ExtensionGameCommandDto>()
+    override val ruleConfig = DtoRegistry<MahjongRuleConfig, MahjongRuleConfigDto> { this }
+    override val scoreConfig = DtoRegistry<ScoreConfig, ScoreConfigDto> { this }
+    override val gameLength = DtoRegistry<GameLength, GameLengthDto> { this }
+    override val exhaustiveDrawReason = DtoRegistry<ExhaustiveDrawReason, ExhaustiveDrawReasonDto> { this }
+    override val extensionGameAction = DtoRegistry<ExtensionGameAction, ExtensionGameActionDto> { this }
+    override val extensionGameCommand = DtoRegistry<ExtensionGameCommand, ExtensionGameCommandDto> { this }
 
     override fun freeze() {
         componentViews.freeze()
