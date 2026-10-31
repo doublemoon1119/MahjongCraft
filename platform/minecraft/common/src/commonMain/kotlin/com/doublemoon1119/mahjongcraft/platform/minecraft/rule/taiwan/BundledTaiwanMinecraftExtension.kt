@@ -4,6 +4,11 @@ import com.doublemoon1119.mahjongcraft.logic.module.BuiltInRuleModuleIds
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.tile.TaiwanTileTypes
 import com.doublemoon1119.mahjongcraft.metadata.MahjongCraftMetadata
+import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.GameConfigPresentationRegistrar
+import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.MinecraftTileAssetRegistrar
+import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.RuleModuleDisplayNameRegistrar
+import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.TileEmojiRegistrar
+import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.TileLabelRegistrar
 import com.doublemoon1119.mahjongcraft.platform.minecraft.extension.MinecraftMahjongExtension
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.BuiltInGameConfigFields.RULE
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.BuiltInGameConfigFields.SCORE
@@ -12,20 +17,15 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.room.BuiltInGameConfig
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.BuiltInGameConfigFields.readOnlyInt
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.BuiltInGameConfigFields.translationKey
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.GameConfigPresentationDefinition
-import com.doublemoon1119.mahjongcraft.platform.minecraft.room.GameConfigPresentationRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.RuleModuleDisplayNameDefinition
-import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.RuleModuleDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftMessageKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.BuiltInMinecraftTileAppearanceIds
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftRuleTileAppearanceDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetDefinition
-import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileEmojiDefinition
-import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileEmojiRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileLabel
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileLabelColor
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileLabelDefinition
-import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileLabelRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileLabelText
 
 /**
@@ -36,7 +36,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileLabelText
 object BundledTaiwanMinecraftExtension : MinecraftMahjongExtension {
     override val id: String = MahjongCraftMetadata.id("taiwan")
 
-    override fun registerTileAssets(registry: MinecraftTileAssetRegistry) {
+    override fun registerTileAssets(registry: MinecraftTileAssetRegistrar) {
         registry.register(MinecraftRuleTileAppearanceDefinition(BuiltInRuleModuleIds.TAIWAN, BuiltInMinecraftTileAppearanceIds.DEFAULT))
         registry.register(MinecraftTileAssetDefinition(TaiwanTileTypes.SPRING, "flower_spring"))
         registry.register(MinecraftTileAssetDefinition(TaiwanTileTypes.SUMMER, "flower_summer"))
@@ -48,11 +48,11 @@ object BundledTaiwanMinecraftExtension : MinecraftMahjongExtension {
         registry.register(MinecraftTileAssetDefinition(TaiwanTileTypes.CHRYSANTHEMUM, "flower_chrysanthemum"))
     }
 
-    override fun registerRuleModuleDisplayNames(registry: RuleModuleDisplayNameRegistry) {
+    override fun registerRuleModuleDisplayNames(registry: RuleModuleDisplayNameRegistrar) {
         registry.register(RuleModuleDisplayNameDefinition(BuiltInRuleModuleIds.TAIWAN, MinecraftMessageKeys.RULE_MODULE_TAIWAN))
     }
 
-    override fun registerTileEmojis(registry: TileEmojiRegistry) {
+    override fun registerTileEmojis(registry: TileEmojiRegistrar) {
         registry.register(TileEmojiDefinition("flower_plum", "🀣"))
         registry.register(TileEmojiDefinition("flower_orchid", "🀤"))
         registry.register(TileEmojiDefinition("flower_bamboo", "🀥"))
@@ -71,7 +71,7 @@ object BundledTaiwanMinecraftExtension : MinecraftMahjongExtension {
      * `mahjong_tile_flower_*.png`），彼此外觀相近、單靠材質不容易一眼分辨花色與順序，標籤本身兼有辨識
      * 功能，不只是給非中文圈玩家看的輔助資訊，因此無視玩家本機開關、永遠顯示。
      */
-    override fun registerTileLabels(registry: TileLabelRegistry) {
+    override fun registerTileLabels(registry: TileLabelRegistrar) {
         // 四季花牌：右上紅色中文字、左上黑色數字，依春夏秋冬排序
         registry.register(TileLabelDefinition("flower_spring", seasonalFlower(chinese = "春", order = "1")))
         registry.register(TileLabelDefinition("flower_summer", seasonalFlower(chinese = "夏", order = "2")))
@@ -85,7 +85,7 @@ object BundledTaiwanMinecraftExtension : MinecraftMahjongExtension {
         registry.register(TileLabelDefinition("flower_bamboo", plantFlower(chinese = "竹", order = "4")))
     }
 
-    override fun registerGameConfigPresentations(registry: GameConfigPresentationRegistry) {
+    override fun registerGameConfigPresentations(registry: GameConfigPresentationRegistrar) {
         registry.register(taiwanGameConfigPresentation())
     }
 }

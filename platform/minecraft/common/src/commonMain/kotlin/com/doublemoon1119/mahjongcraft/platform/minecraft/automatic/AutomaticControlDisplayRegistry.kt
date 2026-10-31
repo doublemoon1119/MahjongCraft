@@ -1,19 +1,9 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.automatic
 
-/** 管理自動操作 Minecraft 顯示資料的凍結式 registry。 */
-interface AutomaticControlDisplayRegistry {
-    /** 目前已登記 control ID 的穩定快照。 */
-    val registrationKeys: Set<String>
+import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.AutomaticControlDisplayRegistrar
 
-    /** registry 是否已凍結。 */
-    val isFrozen: Boolean
-
-    /**
-     * 登記完整描述；凍結後或身分重複時拒絕，不提前呼叫來源。
-     *
-     * @param definition 集中保存登記身分與內容的描述。
-     */
-    fun register(definition: AutomaticControlDisplayDefinition)
+/** 管理自動操作 Minecraft 顯示資料的凍結式 registry；擴充只透過 [AutomaticControlDisplayRegistrar] 登記。 */
+interface AutomaticControlDisplayRegistry : AutomaticControlDisplayRegistrar {
 
     /**
      * 查詢指定 control ID 的顯示資料；未登記時回傳 `null`。

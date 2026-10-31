@@ -3,11 +3,11 @@ package com.doublemoon1119.mahjongcraft.example.minecraft.presentation
 import com.doublemoon1119.mahjongcraft.example.minecraft.text.ExampleMinecraftMessageKeys
 import com.doublemoon1119.mahjongcraft.example.pairing.ExamplePairingIds
 import com.doublemoon1119.mahjongcraft.example.pairing.ExamplePairingRuleConfig
+import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.RoundInfoLineDisplayRegistrar
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.RoundInfoArgument
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.RoundInfoLine
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.RoundInfoLineDisplay
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.RoundInfoLineDisplayDefinition
-import com.doublemoon1119.mahjongcraft.platform.minecraft.table.RoundInfoLineDisplayRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.RoundInfoLineProvider
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.RoundInfoLineProviderDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.RoundInfoMessageDefinition
@@ -17,7 +17,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.table.RoundInfoMessage
  *
  * @param registry 要寫入局況顯示定義的 registry。
  */
-fun registerExamplePairingRoundInfo(registry: RoundInfoLineDisplayRegistry) {
+fun registerExamplePairingRoundInfo(registry: RoundInfoLineDisplayRegistrar) {
     registry.register(
         RoundInfoLineDisplayDefinition(
             key = ExampleMinecraftPresentationIds.WALL_REMAINING_INFO,

@@ -3,34 +3,16 @@ package com.doublemoon1119.mahjongcraft.platform.minecraft.tile
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.logic.base.TileTypeId
 import com.doublemoon1119.mahjongcraft.platform.minecraft.ai.AiStrategyDisplayNameRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.TileDisplayNameRegistrar
 
 /**
- * 開放註冊的牌種顯示名稱對照表。
+ * 開放註冊的牌種顯示名稱對照表；擴充只透過 [TileDisplayNameRegistrar] 登記。
  *
  * 比照 [AiStrategyDisplayNameRegistry] 的既有設計：
  * 可擴充識別碼（這裡是 [TileTypeId]，例如日麻赤五）需要顯示名稱對照時，複製這個檔案改型別，
  * 不把所有概念塞進同一個通用 registry。
  */
-interface TileDisplayNameRegistry {
-    /** 目前已登記牌種 ID 的快照。 */
-    val registrationKeys: Set<String>
-
-    /** 是否已禁止後續註冊。 */
-    val isFrozen: Boolean
-
-    /**
-     * 登記完整描述；凍結後或身分重複時拒絕，不提前呼叫來源。
-     *
-     * @param definition 集中保存登記身分與內容的描述。
-     */
-    fun register(definition: TileDisplayNameDefinition)
-
-    /**
-     * 登記外觀樣式套在指定基本牌面時的顯示名稱；凍結後或同一組樣式與牌面重複時拒絕。
-     *
-     * @param definition 外觀樣式、基本牌面與顯示名稱的對應。
-     */
-    fun register(definition: TileStyleDisplayNameDefinition)
+interface TileDisplayNameRegistry : TileDisplayNameRegistrar {
 
     /** 凍結 registry；凍結後不得新增顯示名稱。 */
     fun freeze()

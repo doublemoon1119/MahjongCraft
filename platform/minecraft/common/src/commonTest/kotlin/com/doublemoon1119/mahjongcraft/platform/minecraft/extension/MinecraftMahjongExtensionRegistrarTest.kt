@@ -13,19 +13,26 @@ import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.RiichiTileValues
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.tile.TaiwanTileTypes
 import com.doublemoon1119.mahjongcraft.platform.minecraft.achievement.GameAchievementResolver
-import com.doublemoon1119.mahjongcraft.platform.minecraft.achievement.GameAchievementResolverRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.achievement.GameAchievementResolverRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionVocabularyRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.ai.AiStrategyDisplayNameDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.ai.AiStrategyDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.ai.AiStrategyDisplayNameRegistryImpl
+import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.AiStrategyDisplayNameRegistrar
+import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.AutomaticControlDisplayRegistrar
+import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.GameAchievementResolverRegistrar
+import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.MinecraftTileAssetRegistrar
+import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.RuleCatalogueRegistrar
+import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.RuleModuleDisplayNameRegistrar
+import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.TileDisplayNameRegistrar
+import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.TileEmojiRegistrar
+import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.TileLabelRegistrar
 import com.doublemoon1119.mahjongcraft.platform.minecraft.automatic.AutomaticControlDisplay
 import com.doublemoon1119.mahjongcraft.platform.minecraft.automatic.AutomaticControlDisplayDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.automatic.AutomaticControlDisplayRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.automatic.AutomaticControlDisplayRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.catalogue.RuleCatalogue
 import com.doublemoon1119.mahjongcraft.platform.minecraft.catalogue.RuleCatalogueProvider
-import com.doublemoon1119.mahjongcraft.platform.minecraft.catalogue.RuleCatalogueRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.catalogue.RuleCatalogueRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.DecisionStatusDisplayNameRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.RuleDecisionDisplayNameRegistryImpl
@@ -148,15 +155,15 @@ class MinecraftMahjongExtensionRegistrarTest {
         val extension = object : MinecraftMahjongExtension {
             override val id: String = "example:recording"
 
-            override fun registerTileAssets(registry: MinecraftTileAssetRegistry) {
+            override fun registerTileAssets(registry: MinecraftTileAssetRegistrar) {
                 registry.register(MinecraftTileAssetDefinition(thirdPartyId, "animal_cat"))
             }
 
-            override fun registerAiStrategyDisplayNames(registry: AiStrategyDisplayNameRegistry) {
+            override fun registerAiStrategyDisplayNames(registry: AiStrategyDisplayNameRegistrar) {
                 registry.register(AiStrategyDisplayNameDefinition("example:aggressive", "example.ai_strategy.aggressive"))
             }
 
-            override fun registerAutomaticControlDisplays(registry: AutomaticControlDisplayRegistry) {
+            override fun registerAutomaticControlDisplays(registry: AutomaticControlDisplayRegistrar) {
                 registry.register(
                     definition = AutomaticControlDisplayDefinition(
                         controlId = "example:auto_flower",
@@ -165,24 +172,24 @@ class MinecraftMahjongExtensionRegistrarTest {
                 )
             }
 
-            override fun registerTileDisplayNames(registry: TileDisplayNameRegistry) {
+            override fun registerTileDisplayNames(registry: TileDisplayNameRegistrar) {
                 registry.register(TileDisplayNameDefinition(thirdPartyId, "example.tile.cat"))
             }
 
-            override fun registerRuleModuleDisplayNames(registry: RuleModuleDisplayNameRegistry) {
+            override fun registerRuleModuleDisplayNames(registry: RuleModuleDisplayNameRegistrar) {
                 registry.register(RuleModuleDisplayNameDefinition("example:my_rule", "example.rule_module.my_rule"))
             }
 
-            override fun registerTileEmojis(registry: TileEmojiRegistry) {
+            override fun registerTileEmojis(registry: TileEmojiRegistrar) {
                 registry.register(TileEmojiDefinition("animal_cat", "🐱"))
             }
 
-            override fun registerTileLabels(registry: TileLabelRegistry) {
+            override fun registerTileLabels(registry: TileLabelRegistrar) {
                 registry.register(TileLabelDefinition("animal_cat", exampleLabel))
             }
 
             /** 登記第三方目錄來源，驗證共用 bootstrap 可發現新 hook。 */
-            override fun registerRuleCatalogues(registry: RuleCatalogueRegistry) {
+            override fun registerRuleCatalogues(registry: RuleCatalogueRegistrar) {
                 registry.register(object : RuleCatalogueProvider {
                     /** 第三方規則識別碼。 */
                     override val ruleModuleId: String = "example:my_rule"
@@ -364,7 +371,7 @@ class MinecraftMahjongExtensionRegistrarTest {
         val extension = object : MinecraftMahjongExtension {
             override val id: String = "example:broken"
 
-            override fun registerTileAssets(registry: MinecraftTileAssetRegistry) {
+            override fun registerTileAssets(registry: MinecraftTileAssetRegistrar) {
                 error("broken")
             }
         }
@@ -392,7 +399,7 @@ class MinecraftMahjongExtensionRegistrarTest {
         val extension = object : MinecraftMahjongExtension {
             override val id: String = "example:achievements"
 
-            override fun registerGameAchievementResolvers(registry: GameAchievementResolverRegistry) {
+            override fun registerGameAchievementResolvers(registry: GameAchievementResolverRegistrar) {
                 registry.register(object : GameAchievementResolver {
                     /** 第三方規則識別碼。 */
                     override val ruleModuleId: String = "example:my_rule"

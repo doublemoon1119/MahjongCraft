@@ -1,22 +1,14 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.showcase
 
-/** 宣告式胡牌展示定義註冊中心；展示理由選不出已登記的定義時，該位贏家不播放展示。 */
-interface WinCelebrationShowcaseRegistry {
-    /** 目前已登記 cue key 的快照。 */
-    val registrationKeys: Set<String> get() = cueKeys.toSet()
+import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.WinCelebrationShowcaseRegistrar
 
-    /** registry 是否已凍結。 */
-    val isFrozen: Boolean
+/** 宣告式胡牌展示定義註冊中心；展示理由選不出已登記的定義時，該位贏家不播放展示；擴充只透過 [WinCelebrationShowcaseRegistrar] 登記。 */
+interface WinCelebrationShowcaseRegistry : WinCelebrationShowcaseRegistrar {
+    /** 由已登記內容推得的登記識別碼。 */
+    override val registrationKeys: Set<String> get() = cueKeys.toSet()
 
     /** 目前已註冊 cue key 的唯讀快照。 */
     val cueKeys: Set<String>
-
-    /**
-     * 登記一個胡牌展示定義；重複 cue key 會失敗。
-     *
-     * @param definition 胡牌展示的完整註冊定義。
-     */
-    fun register(definition: WinCelebrationShowcaseDefinition)
 
     /** 凍結後禁止註冊。 */
     fun freeze()

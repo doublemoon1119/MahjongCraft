@@ -15,12 +15,12 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.present
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.seating.MahjongStoolSeatProvider
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.prop.FabricTablePropKindRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionVocabularyRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.GameConfigPresentationRegistrar
+import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.MinecraftTileAssetRegistrar
 import com.doublemoon1119.mahjongcraft.platform.minecraft.environment.MinecraftEnvironment
 import com.doublemoon1119.mahjongcraft.platform.minecraft.extension.MinecraftMahjongExtension
 import com.doublemoon1119.mahjongcraft.platform.minecraft.extension.MinecraftPresentationRegistries
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.GameConfigPresentationDefinition
-import com.doublemoon1119.mahjongcraft.platform.minecraft.room.GameConfigPresentationRegistry
-import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistry
 import org.koin.core.Koin
 import org.koin.core.context.startKoin
 import org.koin.core.context.stopKoin
@@ -162,7 +162,7 @@ class FabricExtensionBootstrapTest {
 
         override fun registerPersistenceDtos(registries: PersistenceRegistrars) = Unit
 
-        override fun registerTileAssets(registry: MinecraftTileAssetRegistry) {
+        override fun registerTileAssets(registry: MinecraftTileAssetRegistrar) {
             calls += "minecraft"
         }
 
@@ -188,7 +188,7 @@ class FabricExtensionBootstrapTest {
 
         override fun registerPersistenceDtos(registries: PersistenceRegistrars) = Unit
 
-        override fun registerGameConfigPresentations(registry: GameConfigPresentationRegistry) {
+        override fun registerGameConfigPresentations(registry: GameConfigPresentationRegistrar) {
             registry.register(
                 GameConfigPresentationDefinition(
                     ruleModuleId = RULE_ID,

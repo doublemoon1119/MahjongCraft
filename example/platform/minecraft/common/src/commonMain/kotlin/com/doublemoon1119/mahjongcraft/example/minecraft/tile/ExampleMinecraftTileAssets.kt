@@ -4,20 +4,20 @@ import com.doublemoon1119.mahjongcraft.example.ExampleExtensionIds
 import com.doublemoon1119.mahjongcraft.example.pairing.ExamplePairingComponentIds
 import com.doublemoon1119.mahjongcraft.example.pairing.ExamplePairingIds
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
+import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.MinecraftTileAssetRegistrar
+import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.TileEmojiRegistrar
+import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.TileLabelRegistrar
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftRuleTileAppearanceDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetDefinition
-import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileResources
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileSetAppearanceDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileStyleAssetDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileEmojiDefinition
-import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileEmojiRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileLabel
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileLabelColor
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileLabelDefinition
-import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileLabelRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileLabelText
-import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.toAssetKey
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.standardAssetKey
 
 /**
  * 登記範例牌組的共用外觀、簡易配對麻將使用的倒置一萬牌面，以及公開牌面使用的不同顏色牌身。
@@ -26,7 +26,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.toAssetKey
  *
  * @param registry 保存牌面資產與牌組外觀的 registry。
  */
-fun registerExampleTileAssets(registry: MinecraftTileAssetRegistry) {
+fun registerExampleTileAssets(registry: MinecraftTileAssetRegistrar) {
     registry.register(
         MinecraftTileSetAppearanceDefinition(
             id = EXAMPLE_TILE_SET_APPEARANCE_ID,
@@ -54,7 +54,7 @@ fun registerExampleTileAssets(registry: MinecraftTileAssetRegistry) {
                 styleId = ExamplePairingComponentIds.PUBLIC_FACE_APPEARANCE,
                 tile = tile,
                 assetKey = "$EXAMPLE_ASSET_NAMESPACE:public_face_m$value",
-                resources = MinecraftTileResources.builtIn(tile.toAssetKey(registry)),
+                resources = MinecraftTileResources.builtIn(tile.standardAssetKey()),
                 bodyAppearanceId = PUBLIC_FACE_BODY_APPEARANCE_ID,
             ),
         )
@@ -76,7 +76,7 @@ fun registerExampleTileAssets(registry: MinecraftTileAssetRegistry) {
  *
  * @param registry 保存牌面角落標籤的 registry。
  */
-fun registerExampleTileLabels(registry: TileLabelRegistry) {
+fun registerExampleTileLabels(registry: TileLabelRegistrar) {
     registry.register(
         TileLabelDefinition(
             assetKey = INVERTED_ONE_MAN_ASSET_KEY,
@@ -90,7 +90,7 @@ fun registerExampleTileLabels(registry: TileLabelRegistry) {
  *
  * @param registry 保存牌面 emoji 對照的 registry。
  */
-fun registerExampleTileEmojis(registry: TileEmojiRegistry) {
+fun registerExampleTileEmojis(registry: TileEmojiRegistrar) {
     registry.register(TileEmojiDefinition(INVERTED_ONE_MAN_ASSET_KEY, "\uDB82\uDE00"))
 }
 

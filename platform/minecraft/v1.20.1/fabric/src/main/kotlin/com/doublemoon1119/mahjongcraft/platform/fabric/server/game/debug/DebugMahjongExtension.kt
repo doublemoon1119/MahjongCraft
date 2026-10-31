@@ -48,18 +48,18 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.scenari
 import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionVocabulary
 import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionVocabularyDefaultDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionVocabularyDefinition
-import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionVocabularyRegistry
-import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.DecisionStatusDisplayNameRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.DecisionStatusDisplayNameRegistrar
+import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.GameActionSoundPresentationRegistrar
+import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.GameActionVocabularyRegistrar
+import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.MinecraftTileAssetRegistrar
+import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.RoundInfoLineDisplayRegistrar
+import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.RuleModuleDisplayNameRegistrar
+import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.TablePropDescriberRegistrar
+import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.WinSettlementPresentationTemplateRegistrar
 import com.doublemoon1119.mahjongcraft.platform.minecraft.extension.MinecraftMahjongExtension
 import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.RuleModuleDisplayNameDefinition
-import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.RuleModuleDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.riichi.RiichiFamilyMinecraftPresentation
-import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.WinSettlementPresentationTemplateRegistry
-import com.doublemoon1119.mahjongcraft.platform.minecraft.sound.GameActionSoundPresentationRegistry
-import com.doublemoon1119.mahjongcraft.platform.minecraft.table.RoundInfoLineDisplayRegistry
-import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TablePropDescriberRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftMessageKeys
-import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistry
 
 /**
  * 只在開發環境登記的 debug 整合，讓 debug 指令與情境需要的流程能在遊戲內驗證。
@@ -145,7 +145,7 @@ internal class DebugMahjongExtension(
         }
     }
 
-    override fun registerRuleModuleDisplayNames(registry: RuleModuleDisplayNameRegistry) {
+    override fun registerRuleModuleDisplayNames(registry: RuleModuleDisplayNameRegistrar) {
         registry.register(RuleModuleDisplayNameDefinition(DebugAutoNorthRiichiRuleModule.ID, MinecraftMessageKeys.DEBUG_RULE_MODULE_AUTO_NORTH_RIICHI))
         registry.register(RuleModuleDisplayNameDefinition(DebugWinnerDealerRiichiRuleModule.ID, MinecraftMessageKeys.DEBUG_RULE_MODULE_WINNER_DEALER_RIICHI))
         registry.register(
@@ -156,32 +156,32 @@ internal class DebugMahjongExtension(
         )
     }
 
-    override fun registerTileAssets(registry: MinecraftTileAssetRegistry) {
+    override fun registerTileAssets(registry: MinecraftTileAssetRegistrar) {
         DEBUG_VARIANT_RULE_MODULE_IDS.forEach { ruleModuleId -> RiichiFamilyMinecraftPresentation.registerTileAppearance(registry, ruleModuleId) }
         DebugPublicFaceTiles.register(registry)
     }
 
-    override fun registerWinSettlementPresentationTemplates(registry: WinSettlementPresentationTemplateRegistry) {
+    override fun registerWinSettlementPresentationTemplates(registry: WinSettlementPresentationTemplateRegistrar) {
         DEBUG_VARIANT_RULE_MODULE_IDS.forEach { ruleModuleId -> RiichiFamilyMinecraftPresentation.registerWinSettlementTemplate(registry, ruleModuleId) }
     }
 
-    override fun registerGameActionSounds(registry: GameActionSoundPresentationRegistry) {
+    override fun registerGameActionSounds(registry: GameActionSoundPresentationRegistrar) {
         DEBUG_VARIANT_RULE_MODULE_IDS.forEach { ruleModuleId -> RiichiFamilyMinecraftPresentation.registerGameActionSounds(registry, ruleModuleId) }
     }
 
-    override fun registerRoundInfoPresentations(registry: RoundInfoLineDisplayRegistry) {
+    override fun registerRoundInfoPresentations(registry: RoundInfoLineDisplayRegistrar) {
         DEBUG_VARIANT_RULE_MODULE_IDS.forEach { ruleModuleId -> RiichiFamilyMinecraftPresentation.registerRoundInfo(registry, ruleModuleId) }
     }
 
-    override fun registerDecisionStatusDisplayNames(registry: DecisionStatusDisplayNameRegistry) {
+    override fun registerDecisionStatusDisplayNames(registry: DecisionStatusDisplayNameRegistrar) {
         DEBUG_VARIANT_RULE_MODULE_IDS.forEach { ruleModuleId -> RiichiFamilyMinecraftPresentation.registerDecisionStatusDisplayNames(registry, ruleModuleId) }
     }
 
-    override fun registerTablePropDescribers(registry: TablePropDescriberRegistry) {
+    override fun registerTablePropDescribers(registry: TablePropDescriberRegistrar) {
         DEBUG_VARIANT_RULE_MODULE_IDS.forEach { ruleModuleId -> RiichiFamilyMinecraftPresentation.registerTableProps(registry, ruleModuleId) }
     }
 
-    override fun registerGameActionVocabulary(registry: GameActionVocabularyRegistry) {
+    override fun registerGameActionVocabulary(registry: GameActionVocabularyRegistrar) {
         registry.register(
             GameActionVocabularyDefaultDefinition(
                 actionId = DebugDecisionActionIds.TEXT_CARD,

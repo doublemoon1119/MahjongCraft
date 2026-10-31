@@ -1,22 +1,11 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.achievement
 
 import com.doublemoon1119.mahjongcraft.flow.api.event.CommittedMatchEventBatch
+import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.GameAchievementResolverRegistrar
 import kotlin.uuid.Uuid
 
-/** 供內建與第三方規則登記成果判定的凍結式 registry。 */
-interface GameAchievementResolverRegistry {
-    /** 目前已登記規則 ID 的快照，供註冊統計使用。 */
-    val registrationKeys: Set<String>
-
-    /** 是否禁止後續註冊。 */
-    val isFrozen: Boolean
-
-    /**
-     * 登記判定；拒絕重複規則 ID 與凍結後的變更。
-     *
-     * @param resolver 規則專屬成果判定。
-     */
-    fun register(resolver: GameAchievementResolver)
+/** 供內建與第三方規則登記成果判定的凍結式 registry；擴充只透過 [GameAchievementResolverRegistrar] 登記。 */
+interface GameAchievementResolverRegistry : GameAchievementResolverRegistrar {
 
     /**
      * 只以 [ruleModuleId] 登記的判定處理 [batch]；沒有登記的規則不產生規則專屬成果。

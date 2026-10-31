@@ -10,48 +10,48 @@ import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleModule
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.threeplayer.ThreePlayerRiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.RiichiTileValues
 import com.doublemoon1119.mahjongcraft.metadata.MahjongCraftMetadata
-import com.doublemoon1119.mahjongcraft.platform.minecraft.achievement.GameAchievementResolverRegistry
-import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionVocabularyRegistry
-import com.doublemoon1119.mahjongcraft.platform.minecraft.catalogue.RuleCatalogueRegistry
-import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.DecisionStatusDisplayNameRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.DecisionStatusDisplayNameRegistrar
+import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.ExhaustiveDrawReasonDisplayNameRegistrar
+import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.GameAchievementResolverRegistrar
+import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.GameActionSoundPresentationRegistrar
+import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.GameActionVocabularyRegistrar
+import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.GameConfigPresentationRegistrar
+import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.HistoryDiscardMarkerDisplayRegistrar
+import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.MinecraftTileAssetRegistrar
+import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.PublicPlayerIndicatorDisplayRegistrar
+import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.RoundInfoLineDisplayRegistrar
+import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.RoundOutcomeDisplayNameRegistrar
+import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.RuleCatalogueRegistrar
+import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.RuleModuleDisplayNameRegistrar
+import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.TablePropDescriberRegistrar
+import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.TileDisplayNameRegistrar
+import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.TileEmojiRegistrar
+import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.TileLabelRegistrar
+import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.WinCelebrationShowcaseRegistrar
+import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.WinSettlementPresentationTemplateRegistrar
 import com.doublemoon1119.mahjongcraft.platform.minecraft.extension.MinecraftMahjongExtension
 import com.doublemoon1119.mahjongcraft.platform.minecraft.history.HistoryDiscardMarkerDisplay
 import com.doublemoon1119.mahjongcraft.platform.minecraft.history.HistoryDiscardMarkerDisplayDefinition
-import com.doublemoon1119.mahjongcraft.platform.minecraft.history.HistoryDiscardMarkerDisplayRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.history.MinecraftHistoryScreenKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.player.PublicPlayerIndicatorDisplay
 import com.doublemoon1119.mahjongcraft.platform.minecraft.player.PublicPlayerIndicatorDisplayDefinition
-import com.doublemoon1119.mahjongcraft.platform.minecraft.player.PublicPlayerIndicatorDisplayRegistry
-import com.doublemoon1119.mahjongcraft.platform.minecraft.room.GameConfigPresentationRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.RuleModuleDisplayNameDefinition
-import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.RuleModuleDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.riichi.achievement.RiichiGameAchievementResolver
 import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.riichi.catalogue.RiichiCatalogueProvider
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.ExhaustiveDrawReasonDisplayNameDefinition
-import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.ExhaustiveDrawReasonDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.ExhaustiveDrawSettlementStatusLabels
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.ExhaustiveDrawSettlementStatusLabelsDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.PresentationValue
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.RoundOutcomeDisplayNameDefinition
-import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.RoundOutcomeDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.WinSettlementDetailTextFormatterDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.WinSettlementPresentationFieldProviderDefinition
-import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.WinSettlementPresentationTemplateRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.WinSettlementTextKeys
-import com.doublemoon1119.mahjongcraft.platform.minecraft.showcase.WinCelebrationShowcaseRegistry
-import com.doublemoon1119.mahjongcraft.platform.minecraft.sound.GameActionSoundPresentationRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.RoundInfoLineDisplay
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.RoundInfoLineDisplayDefinition
-import com.doublemoon1119.mahjongcraft.platform.minecraft.table.RoundInfoLineDisplayRegistry
-import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TablePropDescriberRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftMessageKeys
-import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileStyleAssetDefinition
-import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileEmojiDefinition
-import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileEmojiRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileLabelDefinition
-import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileLabelRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileStyleDisplayNameDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.blackTextOnRedTile
 
@@ -65,7 +65,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.blackTextOnRedTil
 object BundledRiichiMinecraftExtension : MinecraftMahjongExtension {
     override val id: String = MahjongCraftMetadata.id("riichi")
 
-    override fun registerTileAssets(registry: MinecraftTileAssetRegistry) {
+    override fun registerTileAssets(registry: MinecraftTileAssetRegistrar) {
         RIICHI_FAMILY_RULE_MODULE_IDS.forEach { ruleModuleId -> RiichiFamilyMinecraftPresentation.registerTileAppearance(registry, ruleModuleId) }
         registry.register(
             definition = MinecraftTileStyleAssetDefinition(
@@ -90,7 +90,7 @@ object BundledRiichiMinecraftExtension : MinecraftMahjongExtension {
         )
     }
 
-    override fun registerTileDisplayNames(registry: TileDisplayNameRegistry) {
+    override fun registerTileDisplayNames(registry: TileDisplayNameRegistrar) {
         registry.register(
             definition = TileStyleDisplayNameDefinition(
                 styleId = RiichiTileValues.RED_FIVE_APPEARANCE_ID,
@@ -114,25 +114,25 @@ object BundledRiichiMinecraftExtension : MinecraftMahjongExtension {
         )
     }
 
-    override fun registerRuleModuleDisplayNames(registry: RuleModuleDisplayNameRegistry) {
+    override fun registerRuleModuleDisplayNames(registry: RuleModuleDisplayNameRegistrar) {
         registry.register(RuleModuleDisplayNameDefinition(BuiltInRuleModuleIds.RIICHI, MinecraftMessageKeys.RULE_MODULE_RIICHI))
         registry.register(RuleModuleDisplayNameDefinition(BuiltInRuleModuleIds.RIICHI_THREE_PLAYER, MinecraftMessageKeys.RULE_MODULE_RIICHI_THREE_PLAYER))
     }
 
-    override fun registerTileEmojis(registry: TileEmojiRegistry) {
+    override fun registerTileEmojis(registry: TileEmojiRegistrar) {
         registry.register(TileEmojiDefinition("m5_red", "🀬"))
         registry.register(TileEmojiDefinition("s5_red", "🀭"))
         registry.register(TileEmojiDefinition("p5_red", "🀮"))
     }
 
     /** 赤五牌面印刷成紅色，角落文字用黑色。 */
-    override fun registerTileLabels(registry: TileLabelRegistry) {
+    override fun registerTileLabels(registry: TileLabelRegistrar) {
         registry.register(TileLabelDefinition("m5_red", blackTextOnRedTile("5")))
         registry.register(TileLabelDefinition("s5_red", blackTextOnRedTile("5")))
         registry.register(TileLabelDefinition("p5_red", blackTextOnRedTile("5")))
     }
 
-    override fun registerRuleCatalogues(registry: RuleCatalogueRegistry) {
+    override fun registerRuleCatalogues(registry: RuleCatalogueRegistrar) {
         registry.register(RiichiCatalogueProvider())
         registry.register(
             RiichiCatalogueProvider(
@@ -143,15 +143,15 @@ object BundledRiichiMinecraftExtension : MinecraftMahjongExtension {
         )
     }
 
-    override fun registerGameAchievementResolvers(registry: GameAchievementResolverRegistry) {
+    override fun registerGameAchievementResolvers(registry: GameAchievementResolverRegistrar) {
         RIICHI_FAMILY_RULE_MODULE_IDS.forEach { ruleModuleId -> registry.register(RiichiGameAchievementResolver(ruleModuleId)) }
     }
 
-    override fun registerWinCelebrationShowcases(registry: WinCelebrationShowcaseRegistry) {
+    override fun registerWinCelebrationShowcases(registry: WinCelebrationShowcaseRegistrar) {
         riichiWinCelebrationShowcases().forEach(registry::register)
     }
 
-    override fun registerExhaustiveDrawReasonDisplayNames(registry: ExhaustiveDrawReasonDisplayNameRegistry) {
+    override fun registerExhaustiveDrawReasonDisplayNames(registry: ExhaustiveDrawReasonDisplayNameRegistrar) {
         registry.register(ExhaustiveDrawReasonDisplayNameDefinition(RiichiExhaustiveDrawReason.Normal.id, MinecraftMessageKeys.EXHAUSTIVE_DRAW_REASON_NORMAL))
         registry.register(ExhaustiveDrawReasonDisplayNameDefinition(RiichiExhaustiveDrawReason.KyuushuKyuuhai.id, MinecraftMessageKeys.GAME_ACTION_KYUUSHU_KYUUHAI))
         registry.register(ExhaustiveDrawReasonDisplayNameDefinition(RiichiExhaustiveDrawReason.SuufonRenda.id, MinecraftMessageKeys.GAME_ACTION_SUUFON_RENDA))
@@ -169,12 +169,12 @@ object BundledRiichiMinecraftExtension : MinecraftMahjongExtension {
         )
     }
 
-    override fun registerRoundOutcomeDisplayNames(registry: RoundOutcomeDisplayNameRegistry) {
+    override fun registerRoundOutcomeDisplayNames(registry: RoundOutcomeDisplayNameRegistrar) {
         registry.register(RoundOutcomeDisplayNameDefinition(RiichiRoundOutcomeIds.NAGASHI_MANGAN, MinecraftHistoryScreenKeys.ROUND_OUTCOME_NAGASHI_MANGAN))
     }
 
     /** 立直宣告的牌在歷史牌河上橫擺，提示顯示「立直」。 */
-    override fun registerHistoryDiscardMarkerDisplays(registry: HistoryDiscardMarkerDisplayRegistry) {
+    override fun registerHistoryDiscardMarkerDisplays(registry: HistoryDiscardMarkerDisplayRegistrar) {
         registry.register(
             definition = HistoryDiscardMarkerDisplayDefinition(
                 markerId = RiichiHistoryDiscardMarkerIds.RIICHI_DECLARED,
@@ -184,7 +184,7 @@ object BundledRiichiMinecraftExtension : MinecraftMahjongExtension {
     }
 
     /** 日麻完整模板綁定日麻規則；標題與胡牌者摘要涵蓋流局滿貫，役種、翻符與役滿倍數直接顯示規則提供的內容，寶牌與裏寶牌指示牌固定顯示五個位置。 */
-    override fun registerWinSettlementPresentationTemplates(registry: WinSettlementPresentationTemplateRegistry) {
+    override fun registerWinSettlementPresentationTemplates(registry: WinSettlementPresentationTemplateRegistrar) {
         registry.register(RiichiWinSettlementTemplates.RIICHI)
         RIICHI_FAMILY_RULE_MODULE_IDS.forEach { ruleModuleId -> RiichiFamilyMinecraftPresentation.registerWinSettlementTemplate(registry, ruleModuleId) }
         registry.register(
@@ -221,21 +221,21 @@ object BundledRiichiMinecraftExtension : MinecraftMahjongExtension {
         }
     }
 
-    override fun registerPublicPlayerIndicatorDisplays(registry: PublicPlayerIndicatorDisplayRegistry) {
+    override fun registerPublicPlayerIndicatorDisplays(registry: PublicPlayerIndicatorDisplayRegistrar) {
         registry.register(PublicPlayerIndicatorDisplayDefinition(RiichiRuleModule.RIICHI_INDICATOR_ID, PublicPlayerIndicatorDisplay(MinecraftMessageKeys.PLAYER_INDICATOR_RIICHI)))
     }
 
-    override fun registerGameConfigPresentations(registry: GameConfigPresentationRegistry) {
+    override fun registerGameConfigPresentations(registry: GameConfigPresentationRegistrar) {
         registry.register(riichiGameConfigPresentation())
         registry.register(threePlayerRiichiGameConfigPresentation())
     }
 
     /** 六種暫用宣告語音，依動作 ID 對應；三人日麻沿用同一組。 */
-    override fun registerGameActionSounds(registry: GameActionSoundPresentationRegistry) {
+    override fun registerGameActionSounds(registry: GameActionSoundPresentationRegistrar) {
         RIICHI_FAMILY_RULE_MODULE_IDS.forEach { ruleModuleId -> RiichiFamilyMinecraftPresentation.registerGameActionSounds(registry, ruleModuleId) }
     }
 
-    override fun registerRoundInfoPresentations(registry: RoundInfoLineDisplayRegistry) {
+    override fun registerRoundInfoPresentations(registry: RoundInfoLineDisplayRegistrar) {
         registry.register(RoundInfoLineDisplayDefinition(RIICHI_TITLE_KEY, RoundInfoLineDisplay(MinecraftMessageKeys.ROUND_INFO_TITLE)))
         registry.register(RoundInfoLineDisplayDefinition(RIICHI_WALL_REMAINING_KEY, RoundInfoLineDisplay(MinecraftMessageKeys.ROUND_INFO_WALL_REMAINING)))
         registry.register(RoundInfoLineDisplayDefinition(RIICHI_STICK_POT_KEY, RoundInfoLineDisplay(MinecraftMessageKeys.ROUND_INFO_STICK_POT)))
@@ -243,16 +243,16 @@ object BundledRiichiMinecraftExtension : MinecraftMahjongExtension {
     }
 
     /** 立直與九種九牌接在核心動作（自摸為 4）之後；三人日麻另有拔北。 */
-    override fun registerGameActionVocabulary(registry: GameActionVocabularyRegistry) {
+    override fun registerGameActionVocabulary(registry: GameActionVocabularyRegistrar) {
         RiichiFamilyMinecraftPresentation.registerGameActionVocabulary(registry, BuiltInRuleModuleIds.RIICHI, includesPullNorth = false)
         RiichiFamilyMinecraftPresentation.registerGameActionVocabulary(registry, BuiltInRuleModuleIds.RIICHI_THREE_PLAYER, includesPullNorth = true)
     }
 
-    override fun registerDecisionStatusDisplayNames(registry: DecisionStatusDisplayNameRegistry) {
+    override fun registerDecisionStatusDisplayNames(registry: DecisionStatusDisplayNameRegistrar) {
         RIICHI_FAMILY_RULE_MODULE_IDS.forEach { ruleModuleId -> RiichiFamilyMinecraftPresentation.registerDecisionStatusDisplayNames(registry, ruleModuleId) }
     }
 
-    override fun registerTablePropDescribers(registry: TablePropDescriberRegistry) {
+    override fun registerTablePropDescribers(registry: TablePropDescriberRegistrar) {
         RIICHI_FAMILY_RULE_MODULE_IDS.forEach { ruleModuleId -> RiichiFamilyMinecraftPresentation.registerTableProps(registry, ruleModuleId) }
     }
 }

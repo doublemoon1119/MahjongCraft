@@ -1,28 +1,17 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.tile
 
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
+import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.TileLabelRegistrar
 
 /**
- * 管理 asset key（見 [Tile.toAssetKey]）對應牌面角落標籤（[TileLabel]）的 runtime registry。
+ * 管理 asset key（見 [Tile.toAssetKey]）對應牌面角落標籤（[TileLabel]）的 runtime registry；擴充只透過 [TileLabelRegistrar] 登記。
  *
  * 比照 [TileEmojiRegistry] 的開放註冊表設計：內建與第三方牌種共用同一套 [register] 流程，不具特權。
  * 這是給非中文圈玩家看的可切換輔助標籤（例如九筒右上角顯示 `9`），不影響牌面本身的材質；沒有註冊
  * 標籤的 asset key（例如尚未提供標籤的第三方牌種）[find] 回傳 `null`，呈現端應視為不顯示任何標籤，
  * 而不是報錯或顯示佔位符。
  */
-interface TileLabelRegistry {
-    /** 目前已登記 asset key 的快照。 */
-    val registrationKeys: Set<String>
-
-    /** registry 是否已禁止後續註冊。 */
-    val isFrozen: Boolean
-
-    /**
-     * 登記完整描述；凍結後或身分重複時拒絕，不提前呼叫來源。
-     *
-     * @param definition 集中保存登記身分與內容的描述。
-     */
-    fun register(definition: TileLabelDefinition)
+interface TileLabelRegistry : TileLabelRegistrar {
 
     /** 凍結 registry；後續呼叫 [register] 將失敗。 */
     fun freeze()

@@ -1,19 +1,9 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.player
 
-/** 玩家相關公開標記（indicator、option、付款原因）完整 namespaced ID 的凍結式 Minecraft 顯示 registry。 */
-interface PublicPlayerIndicatorDisplayRegistry {
-    /** 目前已登記 indicator ID 的快照。 */
-    val registrationKeys: Set<String>
+import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.PublicPlayerIndicatorDisplayRegistrar
 
-    /** registry 是否已凍結。 */
-    val isFrozen: Boolean
-
-    /**
-     * 登記完整描述；凍結後或身分重複時拒絕，不提前呼叫來源。
-     *
-     * @param definition 集中保存登記身分與內容的描述。
-     */
-    fun register(definition: PublicPlayerIndicatorDisplayDefinition)
+/** 玩家相關公開標記（indicator、option、付款原因）完整 namespaced ID 的凍結式 Minecraft 顯示 registry；擴充只透過 [PublicPlayerIndicatorDisplayRegistrar] 登記。 */
+interface PublicPlayerIndicatorDisplayRegistry : PublicPlayerIndicatorDisplayRegistrar {
 
     /**
      * 查詢指定標記的顯示資料；未登記時回傳 null。

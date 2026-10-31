@@ -2,9 +2,10 @@ package com.doublemoon1119.mahjongcraft.platform.minecraft.room
 
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameFlowConfig
 import com.doublemoon1119.mahjongcraft.logic.config.MahjongRuleConfig
+import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.GameConfigPresentationRegistrar
 
 /**
- * 供內建與第三方規則登記設定呈現定義的凍結式 registry。
+ * 供內建與第三方規則登記設定呈現定義的凍結式 registry；擴充只透過 [GameConfigPresentationRegistrar] 登記。
  *
  * 查詢時依規則設定附加共用流程分類與欄位；規則不得重複宣告分類 `mahjongcraft:flow`，或欄位
  * `mahjongcraft:base_seconds`、`mahjongcraft:reserve_seconds`、
@@ -13,23 +14,12 @@ import com.doublemoon1119.mahjongcraft.logic.config.MahjongRuleConfig
  * 目前設定不需要玩家選擇時，不會有這個欄位，也不能透過它修改設定。
  * 查詢得到的定義包含這些共用欄位，房間操作、設定摘要、牌譜與伺服器驗證共用同一份內容。
  */
-interface GameConfigPresentationRegistry {
-    /** 目前已登記規則模組 ID 的快照。 */
-    val registrationKeys: Set<String> get() = ruleModuleIds.toSet()
-
-    /** registry 是否已凍結。 */
-    val isFrozen: Boolean
+interface GameConfigPresentationRegistry : GameConfigPresentationRegistrar {
+    /** 由已登記內容推得的登記識別碼。 */
+    override val registrationKeys: Set<String> get() = ruleModuleIds.toSet()
 
     /** 目前已登記的規則模組 ID。 */
     val ruleModuleIds: Set<String>
-
-    /**
-     * 登記設定呈現定義。
-     *
-     * @param definition 要登記的規則設定呈現定義。
-     * @throws IllegalArgumentException 規則重複登記，或提供了保留的共用流程分類、欄位 ID。
-     */
-    fun register(definition: GameConfigPresentationDefinition)
 
     /**
      * 依規則的預設設定查詢呈現定義；已有完整規則設定時，應使用帶有設定參數的查詢。

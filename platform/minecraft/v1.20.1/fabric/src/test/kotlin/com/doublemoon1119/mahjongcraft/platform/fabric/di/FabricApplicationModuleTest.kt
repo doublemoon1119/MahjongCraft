@@ -101,6 +101,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionVocab
 import com.doublemoon1119.mahjongcraft.platform.minecraft.ai.AiStrategyDisplayNameDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.ai.AiStrategyDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.ai.AiStrategyDisplayNameRegistryImpl
+import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.AiStrategyDisplayNameRegistrar
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.seating.RegisteredSeatProvider
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.seating.SeatProvider
 import com.doublemoon1119.mahjongcraft.platform.minecraft.automatic.AutomaticControlDisplayRegistry
@@ -215,7 +216,7 @@ class FabricApplicationModuleTest {
              *
              * @param registry AI 策略顯示名稱登記表。
              */
-            override fun registerAiStrategyDisplayNames(registry: AiStrategyDisplayNameRegistry) {
+            override fun registerAiStrategyDisplayNames(registry: AiStrategyDisplayNameRegistrar) {
                 registry.register(AiStrategyDisplayNameDefinition("example:custom_strategy", "example.ai.custom_strategy"))
             }
         }

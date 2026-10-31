@@ -1,22 +1,14 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.player
 
-/** 依 priority 與穩定 provider ID 解析玩家 portrait 的凍結式 registry。 */
-interface PlayerPortraitSourceRegistry {
-    /** 目前已登記 provider ID 的快照。 */
-    val registrationKeys: Set<String> get() = providerIds.toSet()
+import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.PlayerPortraitSourceRegistrar
 
-    /** registry 是否已凍結。 */
-    val isFrozen: Boolean
+/** 依 priority 與穩定 provider ID 解析玩家 portrait 的凍結式 registry；擴充只透過 [PlayerPortraitSourceRegistrar] 登記。 */
+interface PlayerPortraitSourceRegistry : PlayerPortraitSourceRegistrar {
+    /** 由已登記內容推得的登記識別碼。 */
+    override val registrationKeys: Set<String> get() = providerIds.toSet()
 
     /** 目前已登記 provider ID 的集合。 */
     val providerIds: Set<String>
-
-    /**
-     * 登記完整描述；凍結後或身分重複時拒絕，不提前呼叫來源。
-     *
-     * @param definition 集中保存登記身分與內容的描述。
-     */
-    fun register(definition: PlayerPortraitSourceDefinition)
 
     /**
      * 依 provider 優先順序解析玩家 portrait；無 provider 能提供來源時回傳 null。

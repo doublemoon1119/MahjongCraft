@@ -20,7 +20,24 @@ const val UNKNOWN_TILE_ASSET_KEY = "unknown"
  * @return 對應的 Minecraft 素材 key。
  */
 fun Tile.toAssetKey(registry: MinecraftTileAssetRegistry): String = when (this) {
-    is Tile.Numeric -> "${suit.assetPrefix}$value"
+    is Tile.Numeric -> standardAssetKey()
+    is Tile.Honor -> standardAssetKey()
+    is Tile.Extension -> registry.find(typeId) ?: UNKNOWN_TILE_ASSET_KEY
+}
+
+/**
+ * 數牌固定使用的素材 key，格式為 `{花色字母}{數值}`；不需要 registry，可在登記期間使用。
+ *
+ * @return 對應的 Minecraft 素材 key。
+ */
+fun Tile.Numeric.standardAssetKey(): String = "${suit.assetPrefix}$value"
+
+/**
+ * 字牌固定使用的素材 key，例如 `east`、`white_dragon`；不需要 registry，可在登記期間使用。
+ *
+ * @return 對應的 Minecraft 素材 key。
+ */
+fun Tile.Honor.standardAssetKey(): String = when (this) {
     Tile.Honor.East -> "east"
     Tile.Honor.South -> "south"
     Tile.Honor.West -> "west"
@@ -28,7 +45,6 @@ fun Tile.toAssetKey(registry: MinecraftTileAssetRegistry): String = when (this) 
     Tile.Honor.Red -> "red_dragon"
     Tile.Honor.Green -> "green_dragon"
     Tile.Honor.White -> "white_dragon"
-    is Tile.Extension -> registry.find(typeId) ?: UNKNOWN_TILE_ASSET_KEY
 }
 
 /**
