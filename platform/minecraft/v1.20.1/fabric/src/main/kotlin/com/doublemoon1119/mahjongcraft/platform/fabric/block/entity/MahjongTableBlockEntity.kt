@@ -1,19 +1,20 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.block.entity
 
+import com.doublemoon1119.mahjongcraft.platform.fabric.api.table.readNbt
+import com.doublemoon1119.mahjongcraft.platform.fabric.api.table.writeNbt
 import com.doublemoon1119.mahjongcraft.platform.fabric.registry.ModBlocks
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.dice.toMahjongTableFacing
+import com.doublemoon1119.mahjongcraft.platform.minecraft.api.table.MahjongTableController
+import com.doublemoon1119.mahjongcraft.platform.minecraft.api.table.MahjongTableControllerState
+import com.doublemoon1119.mahjongcraft.platform.minecraft.api.table.MahjongTableFacing
 import net.minecraft.block.BlockState
 import net.minecraft.block.entity.BlockEntity
 import net.minecraft.nbt.NbtCompound
+import net.minecraft.state.property.Properties
 import net.minecraft.util.math.BlockPos
-import kotlin.uuid.Uuid
 
 /**
- * 麻將桌 controller 的持久化狀態。
- *
- * 除穩定 [tableId] 外，也作為整桌呈現時間軸的擁有者：[presentationBusyUntilGameTime] 保存目前
- * 所有已排定呈現的最晚結束絕對 game time。它不需要 block entity ticker；即使 chunk 曾被卸載，
- * 下次查詢時直接與世界時間比較即可正確收斂。未來 GUI／HUD 或役種演出可在同一個呈現狀態
- * 上擴充具名 cue，但這裡不執行任何權威遊戲流程。
+ * 內建麻將桌的控制方塊實體，位於結構底層中央。
  *
  * @param pos 此方塊實體所在位置。
  * @param state 建立時的方塊狀態。
@@ -21,99 +22,32 @@ import kotlin.uuid.Uuid
 class MahjongTableBlockEntity(
     pos: BlockPos,
     state: BlockState,
-) : BlockEntity(ModBlocks.mahjongTableBlockEntity, pos, state) {
-    /** 同時作為等待階段 `Room.id` 與開局後 `TableState.id` 的穩定識別碼。 */
-    var tableId: Uuid = Uuid.random()
-        private set
+) : BlockEntity(ModBlocks.mahjongTableBlockEntity, pos, state),
+    MahjongTableController {
+    /** 桌子 ID 與呈現時間軸，隨此方塊實體存讀檔。 */
+    override val mahjongTableState: MahjongTableControllerState = MahjongTableControllerState(::markDirty)
 
-    /** 整桌呈現保持忙碌的最晚絕對 game time；`0` 代表沒有額外桌級呈現等待。 */
-    var presentationBusyUntilGameTime: Long = 0L
-        private set
-
-    /**
-     * 將整桌呈現時間軸延長到 [endGameTime]，已有更晚結束時間時保留原值。
-     *
-     * @param endGameTime 新的絕對遊戲時間期限。
-     */
-    fun extendPresentationUntil(endGameTime: Long) {
-        if (endGameTime <= presentationBusyUntilGameTime) return
-        presentationBusyUntilGameTime = endGameTime
-        markDirty()
-    }
+    /** 由控制方塊狀態的水平朝向決定。 */
+    override val mahjongTableFacing: MahjongTableFacing
+        get() = cachedState.get(Properties.HORIZONTAL_FACING).toMahjongTableFacing()
 
     /**
-     * 以 [currentGameTime] 判斷整桌呈現時間軸是否尚未結束。
-     *
-     * @param currentGameTime 目前絕對遊戲時間。
-     * @return 目前時間早於已排定期限時為 `true`。
-     */
-    fun isPresenting(currentGameTime: Long): Boolean = currentGameTime < presentationBusyUntilGameTime
-
-    /**
-     * 中途胡牌演出專用的第二條呈現時間軸，語意與 [presentationBusyUntilGameTime] 完全相同，只是**刻意
-     * 不列入整桌忙碌判定**：已完成本局的玩家在播結算演出時，其他仍在本局中的玩家必須能照常摸打。
-     *
-     * 兩條時間軸各自單調遞增，因此同一條上的多筆演出天然依序播放，不需要另外維護佇列——這正是既有
-     * 那條的運作方式（見各 scheduler 的 `earliestStartGameTime`）。
-     */
-    var continuingWinPresentationBusyUntilGameTime: Long = 0L
-        private set
-
-    /**
-     * 將中途胡牌呈現時間軸延長到 [endGameTime]，已有更晚結束時間時保留原值。
-     *
-     * @param endGameTime 新的絕對遊戲時間期限。
-     */
-    fun extendContinuingWinPresentationUntil(endGameTime: Long) {
-        if (endGameTime <= continuingWinPresentationBusyUntilGameTime) return
-        continuingWinPresentationBusyUntilGameTime = endGameTime
-        markDirty()
-    }
-
-    /**
-     * 以 [currentGameTime] 判斷中途胡牌呈現時間軸是否尚未結束。
-     *
-     * @param currentGameTime 目前絕對遊戲時間。
-     * @return 目前時間早於已排定期限時為 `true`。
-     */
-    fun isPresentingContinuingWin(currentGameTime: Long): Boolean = currentGameTime < continuingWinPresentationBusyUntilGameTime
-
-    /**
-     * 從方塊實體 NBT 還原穩定 UUID；損壞或缺失時保留新生成的 UUID。
+     * 從方塊實體 NBT 還原麻將桌狀態。
      *
      * @param nbt 要讀取的 NBT 欄位。
      */
     override fun readNbt(nbt: NbtCompound) {
         super.readNbt(nbt)
-        nbt.getString(NBT_KEY_TABLE_ID)
-            .takeIf(String::isNotBlank)
-            ?.let { encoded -> runCatching { Uuid.parse(encoded) }.getOrNull() }
-            ?.let { restored -> tableId = restored }
-        presentationBusyUntilGameTime = nbt.getLong(NBT_KEY_PRESENTATION_BUSY_UNTIL_GAME_TIME)
-        continuingWinPresentationBusyUntilGameTime = nbt.getLong(NBT_KEY_CONTINUING_WIN_PRESENTATION_BUSY_UNTIL_GAME_TIME)
+        mahjongTableState.readNbt(nbt)
     }
 
     /**
-     * 把穩定 UUID 與呈現期限寫入方塊實體 NBT。
+     * 把麻將桌狀態寫入方塊實體 NBT。
      *
      * @param nbt 接收序列化欄位的 NBT。
      */
     override fun writeNbt(nbt: NbtCompound) {
         super.writeNbt(nbt)
-        nbt.putString(NBT_KEY_TABLE_ID, tableId.toString())
-        nbt.putLong(NBT_KEY_PRESENTATION_BUSY_UNTIL_GAME_TIME, presentationBusyUntilGameTime)
-        nbt.putLong(NBT_KEY_CONTINUING_WIN_PRESENTATION_BUSY_UNTIL_GAME_TIME, continuingWinPresentationBusyUntilGameTime)
-    }
-
-    /** 麻將桌方塊實體 NBT 欄位名稱。 */
-    private companion object {
-        /** 穩定桌子 UUID 的 NBT 欄位名稱。 */
-        const val NBT_KEY_TABLE_ID: String = "TableId"
-
-        /** 整桌呈現忙碌期限的 NBT 欄位名稱。 */
-        const val NBT_KEY_PRESENTATION_BUSY_UNTIL_GAME_TIME: String = "PresentationBusyUntilGameTime"
-
-        /** 中途胡牌呈現忙碌期限的 NBT 欄位名稱。 */
-        const val NBT_KEY_CONTINUING_WIN_PRESENTATION_BUSY_UNTIL_GAME_TIME: String = "ContinuingWinPresentationBusyUntilGameTime"
+        mahjongTableState.writeNbt(nbt)
     }
 }

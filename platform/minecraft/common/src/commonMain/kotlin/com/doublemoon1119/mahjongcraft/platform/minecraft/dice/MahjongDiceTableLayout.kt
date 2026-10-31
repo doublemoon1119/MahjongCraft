@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.dice
 
+import com.doublemoon1119.mahjongcraft.platform.minecraft.api.table.MahjongTableFacing
 import kotlin.uuid.Uuid
 
 /** 兩款 3×3 麻將桌共用的兩顆／三顆正式骰子位置計算。 */

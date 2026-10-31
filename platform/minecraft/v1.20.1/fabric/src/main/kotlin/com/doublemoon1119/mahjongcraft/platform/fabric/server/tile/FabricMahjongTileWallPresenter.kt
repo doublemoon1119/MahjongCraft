@@ -4,16 +4,13 @@ import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
 import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPhysicalLayout
 import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPlacement
 import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPosition
-import com.doublemoon1119.mahjongcraft.platform.fabric.block.MahjongTableBlock
-import com.doublemoon1119.mahjongcraft.platform.fabric.block.MahjongTablePart
-import com.doublemoon1119.mahjongcraft.platform.fabric.block.entity.MahjongTableBlockEntity
+import com.doublemoon1119.mahjongcraft.platform.fabric.block.MahjongTableLookup
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.AnimatedMahjongEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongAnimationSounds
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongTileEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongTilePose
 import com.doublemoon1119.mahjongcraft.platform.fabric.logging.mahjongCraftLogger
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.FabricServerHolder
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.dice.toMahjongTableFacing
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.entity.FabricEntitySpawnGateway
 import com.doublemoon1119.mahjongcraft.platform.minecraft.animation.AnimationStep
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocation
@@ -28,11 +25,9 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileWallTr
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileMotionAnimationSpec
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileWallTransitionMotionDecision
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileWallTransitionMotionPlanner
-import net.minecraft.block.BlockState
 import net.minecraft.registry.RegistryKey
 import net.minecraft.registry.RegistryKeys
 import net.minecraft.server.world.ServerWorld
-import net.minecraft.state.property.Properties
 import net.minecraft.util.Identifier
 import net.minecraft.util.math.BlockPos
 import net.minecraft.util.math.Box
@@ -79,10 +74,9 @@ class FabricMahjongTileWallPresenter(
     override fun present(presentation: MahjongTileWallPresentation): MahjongTileWallPresentationResult {
         val world = resolveWorld(presentation.tableLocation) ?: return MahjongTileWallPresentationResult.TABLE_NOT_FOUND
         val controllerPos = presentation.tableLocation.toBlockPos()
-        val state = world.getBlockState(controllerPos)
-        val table = resolveTable(world, controllerPos, state, presentation.tableId)
+        val table = MahjongTableLookup.find(world, controllerPos, presentation.tableId)
             ?: return MahjongTileWallPresentationResult.TABLE_NOT_FOUND
-        if (state.get(Properties.HORIZONTAL_FACING).toMahjongTableFacing() != presentation.tableFacing) {
+        if (table.facing != presentation.tableFacing) {
             return MahjongTileWallPresentationResult.TABLE_NOT_FOUND
         }
 
@@ -128,7 +122,7 @@ class FabricMahjongTileWallPresenter(
             spawnedTiles += tile
         }
         oldTiles.forEach(MahjongTileEntity::discard)
-        table.markDirty()
+        table.blockEntity.markDirty()
         if (newTiles.isNotEmpty()) {
             startWallDropAnimations(world, newTiles)
         }
@@ -147,10 +141,9 @@ class FabricMahjongTileWallPresenter(
         val request = presentation.wallPresentation
         val world = resolveWorld(request.tableLocation) ?: return MahjongTileWallPresentationResult.TABLE_NOT_FOUND
         val controllerPos = request.tableLocation.toBlockPos()
-        val state = world.getBlockState(controllerPos)
-        resolveTable(world, controllerPos, state, request.tableId)
+        val table = MahjongTableLookup.find(world, controllerPos, request.tableId)
             ?: return MahjongTileWallPresentationResult.TABLE_NOT_FOUND
-        if (state.get(Properties.HORIZONTAL_FACING).toMahjongTableFacing() != request.tableFacing) {
+        if (table.facing != request.tableFacing) {
             return MahjongTileWallPresentationResult.TABLE_NOT_FOUND
         }
         val decision = TileWallTransitionMotionPlanner.planOpening(
@@ -210,10 +203,9 @@ class FabricMahjongTileWallPresenter(
     ): MahjongTileWallTransitionResult {
         val world = resolveWorld(presentation.tableLocation) ?: return MahjongTileWallTransitionResult.TABLE_NOT_FOUND
         val controllerPos = presentation.tableLocation.toBlockPos()
-        val state = world.getBlockState(controllerPos)
-        resolveTable(world, controllerPos, state, presentation.tableId)
+        val table = MahjongTableLookup.find(world, controllerPos, presentation.tableId)
             ?: return MahjongTileWallTransitionResult.TABLE_NOT_FOUND
-        if (state.get(Properties.HORIZONTAL_FACING).toMahjongTableFacing() != presentation.tableFacing) {
+        if (table.facing != presentation.tableFacing) {
             return MahjongTileWallTransitionResult.TABLE_NOT_FOUND
         }
         val context = presentation.projectionContext(controllerPos)
@@ -253,10 +245,9 @@ class FabricMahjongTileWallPresenter(
     ): MahjongTileWallPresentationResult {
         val world = resolveWorld(tableLocation) ?: return MahjongTileWallPresentationResult.TABLE_NOT_FOUND
         val controllerPos = tableLocation.toBlockPos()
-        val state = world.getBlockState(controllerPos)
-        resolveTable(world, controllerPos, state, tableId)
+        val table = MahjongTableLookup.find(world, controllerPos, tableId)
             ?: return MahjongTileWallPresentationResult.TABLE_NOT_FOUND
-        if (state.get(Properties.HORIZONTAL_FACING).toMahjongTableFacing() != context.tableFacing) {
+        if (table.facing != context.tableFacing) {
             return MahjongTileWallPresentationResult.TABLE_NOT_FOUND
         }
 
@@ -514,30 +505,6 @@ class FabricMahjongTileWallPresenter(
         val identifier = Identifier.tryParse(location.dimensionId) ?: return null
         val worldKey = RegistryKey.of(RegistryKeys.WORLD, identifier)
         return serverHolder.current()?.getWorld(worldKey)
-    }
-
-    /**
-     * 驗證指定位置確實是 UUID 與朝向資料可用的 controller。
-     *
-     * @param world 桌子所在的伺服器世界。
-     * @param controllerPos 要驗證的桌子 controller 座標。
-     * @param state 該位置目前的方塊狀態。
-     * @param tableId 預期的桌子 UUID。
-     * @return UUID 相符的桌子 block entity；驗證失敗時為 null。
-     */
-    private fun resolveTable(
-        world: ServerWorld,
-        controllerPos: BlockPos,
-        state: BlockState,
-        tableId: Uuid,
-    ): MahjongTableBlockEntity? {
-        if (state.block !is MahjongTableBlock || state.get(MahjongTableBlock.PART) != MahjongTablePart.BOTTOM_CENTER) {
-            return null
-        }
-        if (!state.contains(Properties.HORIZONTAL_FACING)) return null
-        return (world.getBlockEntity(controllerPos) as? MahjongTableBlockEntity)?.takeIf { table ->
-            table.tableId == tableId
-        }
     }
 
     /**

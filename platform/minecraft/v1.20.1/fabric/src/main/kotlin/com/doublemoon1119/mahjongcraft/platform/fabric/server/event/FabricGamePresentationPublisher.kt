@@ -1,3 +1,5 @@
+@file:OptIn(MahjongCraftInternalApi::class)
+
 package com.doublemoon1119.mahjongcraft.platform.fabric.server.event
 
 import com.doublemoon1119.mahjongcraft.flow.common.concurrency.CoroutineDispatchers
@@ -25,13 +27,12 @@ import com.doublemoon1119.mahjongcraft.logic.table.opening.OpeningDiceRoll
 import com.doublemoon1119.mahjongcraft.logic.tile.component.TilePoseState
 import com.doublemoon1119.mahjongcraft.logic.tile.component.TileRegion
 import com.doublemoon1119.mahjongcraft.logic.tile.component.resolveTileComponents
-import com.doublemoon1119.mahjongcraft.platform.fabric.block.entity.MahjongTableBlockEntity
+import com.doublemoon1119.mahjongcraft.platform.fabric.block.MahjongTableLookup
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongSoundTimelineEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongTileEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.logging.mahjongCraftLogger
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.FabricServerHolder
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.concurrency.FabricSessionBackgroundScope
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.dice.toMahjongTableFacing
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.entity.FabricEntitySpawnGateway
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.FabricExhaustiveDrawSettlementPresentationScheduler
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.FabricMatchSettlementPresentationScheduler
@@ -49,12 +50,14 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.server.tile.TileAnimation
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.time.FabricWorldTickWaiter
 import com.doublemoon1119.mahjongcraft.platform.minecraft.animation.AnimationStep
 import com.doublemoon1119.mahjongcraft.platform.minecraft.animation.WinPresentationCleanupPlan
+import com.doublemoon1119.mahjongcraft.platform.minecraft.api.MahjongCraftInternalApi
+import com.doublemoon1119.mahjongcraft.platform.minecraft.api.table.MahjongTableControllerState
+import com.doublemoon1119.mahjongcraft.platform.minecraft.api.table.MahjongTableFacing
 import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongDicePresentation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongDiceRollPresentation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongDiceRollPresentationResult
 import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongDiceRollPresenter
 import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongDiceRollTimeline
-import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongTableFacing
 import com.doublemoon1119.mahjongcraft.platform.minecraft.player.aiPlayerDisplayName
 import com.doublemoon1119.mahjongcraft.platform.minecraft.seating.MahjongSeatingPresenter
 import com.doublemoon1119.mahjongcraft.platform.minecraft.showcase.WinCelebrationShowcaseDefinition
@@ -112,7 +115,6 @@ import kotlinx.coroutines.launch
 import net.minecraft.registry.RegistryKey
 import net.minecraft.registry.RegistryKeys
 import net.minecraft.server.world.ServerWorld
-import net.minecraft.state.property.Properties
 import net.minecraft.util.Identifier
 import net.minecraft.util.math.BlockPos
 import java.util.concurrent.atomic.AtomicBoolean
@@ -364,7 +366,7 @@ class FabricGamePresentationPublisher(
             if (endGameTime == null) {
                 logger.warn("publishExhaustiveDrawSettlement gameId={} skipped: stage spawn failed", gameId)
             } else {
-                resolved.table.extendPresentationUntil(endGameTime)
+                resolved.tableState.extendPresentationUntil(endGameTime)
                 logger.debug("Exhaustive draw settlement presentation created gameId={} endGameTime={}", gameId, endGameTime)
             }
         }
@@ -398,10 +400,10 @@ class FabricGamePresentationPublisher(
                     tableId = gameId,
                     controllerPos = BlockPos(resolved.location.x, resolved.location.y, resolved.location.z),
                     placement = MahjongTileTableLayout.showcaseStagePlacement(resolved.location.x, resolved.location.y, resolved.location.z),
-                    earliestStartGameTime = resolved.table.presentationBusyUntilGameTime,
+                    earliestStartGameTime = resolved.tableState.presentationBusyUntilGameTime,
                     request = request,
                 )
-                if (end != null) resolved.table.extendPresentationUntil(end)
+                if (end != null) resolved.tableState.extendPresentationUntil(end)
             } catch (cause: Exception) {
                 logger.warn("Failed to publish match settlement for gameId={}", gameId, cause)
             }
@@ -1156,7 +1158,7 @@ class FabricGamePresentationPublisher(
     override fun publishWinCelebration(gameId: Uuid, request: WinCelebrationRequest) {
         publish(gameId, "publishWinCelebration", blocksTable = true) { resolved, state, startAt ->
             runCelebration(gameId, resolved, state, request, startAt)?.endGameTime
-                ?.also { resolved.table.extendPresentationUntil(it) }
+                ?.also { resolved.tableState.extendPresentationUntil(it) }
         }
     }
 
@@ -1164,7 +1166,7 @@ class FabricGamePresentationPublisher(
     override fun publishWinSettlement(gameId: Uuid, request: WinSettlementPresentationRequest) {
         roundResultSender.sendWin(gameId, request, roundContinues = false)
         publish(gameId, "publishWinSettlement", blocksTable = true) { resolved, state, startAt ->
-            runSettlement(gameId, resolved, state, request, startAt)?.also { resolved.table.extendPresentationUntil(it) }
+            runSettlement(gameId, resolved, state, request, startAt)?.also { resolved.tableState.extendPresentationUntil(it) }
         }
     }
 
@@ -1198,14 +1200,14 @@ class FabricGamePresentationPublisher(
 
             if (effectiveRequest.roundContinues) {
                 // 只有要求等待的 showcase 才擋住全桌；其餘（含結算面板）走不阻塞的那條時間軸。
-                if (pausesContinuingRound) celebration?.showcaseEndGameTime?.let { resolved.table.extendPresentationUntil(it) }
-                resolved.table.extendContinuingWinPresentationUntil(cursor)
+                if (pausesContinuingRound) celebration?.showcaseEndGameTime?.let { resolved.tableState.extendPresentationUntil(it) }
+                resolved.tableState.extendContinuingWinPresentationUntil(cursor)
                 // 這一步同時替所有牽涉到的真實牌建立「動畫不阻塞全桌」lease。lease 涵蓋整段演出（含前面
                 // 已經排好的理牌／倒牌動畫），在這裡才套用是安全的：整個 block 在伺服器主執行緒上一次
                 // 跑完，而 isBusy 的呼叫端（輸入分派、心跳）也都在同一條執行緒，觀察不到中間狀態。
                 restoreAndConcealWinnerHands(resolved, state, effectiveRequest, celebration, cursor)
             } else if (celebration != null || settlementEnd != null) {
-                resolved.table.extendPresentationUntil(cursor)
+                resolved.tableState.extendPresentationUntil(cursor)
             }
             cursor
         }
@@ -1240,8 +1242,8 @@ class FabricGamePresentationPublisher(
                     val state = gameRepository.getTableState(gameId) ?: return@presentation
                     val startAt = maxOf(
                         resolved.world.time,
-                        resolved.table.presentationBusyUntilGameTime,
-                        resolved.table.continuingWinPresentationBusyUntilGameTime,
+                        resolved.tableState.presentationBusyUntilGameTime,
+                        resolved.tableState.continuingWinPresentationBusyUntilGameTime,
                     )
                     block(resolved, state, startAt)
                 } catch (cause: Exception) {
@@ -1630,23 +1632,12 @@ class FabricGamePresentationPublisher(
             return null
         }
         val controllerPos = BlockPos(location.x, location.y, location.z)
-        val state = world.getBlockState(controllerPos)
-        if (!state.contains(Properties.HORIZONTAL_FACING)) {
-            logger.warn(
-                "$methodName gameId={} skipped: block at {} has no HORIZONTAL_FACING (state={})",
-                gameId,
-                controllerPos,
-                state,
-            )
+        val table = MahjongTableLookup.find(world, controllerPos, gameId)
+        if (table == null) {
+            logger.warn("$methodName gameId={} skipped: controller at {} is missing or belongs to another table", gameId, controllerPos)
             return null
         }
-        val table = world.getBlockEntity(controllerPos) as? MahjongTableBlockEntity
-        if (table?.tableId != gameId) {
-            logger.warn("$methodName gameId={} skipped: controller block entity is missing or belongs to another table", gameId)
-            return null
-        }
-        val facing = state.get(Properties.HORIZONTAL_FACING).toMahjongTableFacing()
-        return ResolvedTableContext(world, location, facing, table)
+        return ResolvedTableContext(world, location, table.facing, table.state)
     }
 
     /**
@@ -1655,13 +1646,13 @@ class FabricGamePresentationPublisher(
      * @property world 桌子所在世界。
      * @property location 索引中記錄的桌子位置。
      * @property facing 桌子的水平朝向。
-     * @property table 身分與請求識別碼相符的麻將桌方塊實體。
+     * @property tableState 身分與請求識別碼相符的麻將桌狀態。
      */
     private data class ResolvedTableContext(
         val world: ServerWorld,
         val location: TableLocation,
         val facing: MahjongTableFacing,
-        val table: MahjongTableBlockEntity,
+        val tableState: MahjongTableControllerState,
     )
 
     /** 桌角寬度改變時整區平移的固定參數。 */

@@ -1,13 +1,10 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.server.table
 
-import com.doublemoon1119.mahjongcraft.platform.fabric.block.MahjongTableBlock
-import com.doublemoon1119.mahjongcraft.platform.fabric.block.MahjongTablePart
-import com.doublemoon1119.mahjongcraft.platform.fabric.block.entity.MahjongTableBlockEntity
+import com.doublemoon1119.mahjongcraft.platform.fabric.block.MahjongTableLookup
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongPlayerInfoEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.FabricServerHolder
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.dice.toMahjongTableFacing
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.entity.FabricEntitySpawnGateway
-import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongTableFacing
+import com.doublemoon1119.mahjongcraft.platform.minecraft.api.table.MahjongTableFacing
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongPlayerInfoPresentation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongPlayerInfoPresentationResult
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongPlayerInfoPresenter
@@ -16,7 +13,6 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocation
 import net.minecraft.registry.RegistryKey
 import net.minecraft.registry.RegistryKeys
 import net.minecraft.server.world.ServerWorld
-import net.minecraft.state.property.Properties
 import net.minecraft.util.Identifier
 import net.minecraft.util.math.BlockPos
 import net.minecraft.util.math.Box
@@ -36,13 +32,9 @@ class FabricMahjongPlayerInfoPresenter(private val serverHolder: FabricServerHol
     ): MahjongPlayerInfoPresentationResult {
         val world = resolveWorld(tableLocation) ?: return MahjongPlayerInfoPresentationResult.TABLE_NOT_FOUND
         val controllerPos = tableLocation.toBlockPos()
-        val state = world.getBlockState(controllerPos)
-        val table = (world.getBlockEntity(controllerPos) as? MahjongTableBlockEntity)?.takeIf {
-            state.block is MahjongTableBlock &&
-                state.get(MahjongTableBlock.PART) == MahjongTablePart.BOTTOM_CENTER &&
-                it.tableId == presentation.tableId &&
-                state.get(Properties.HORIZONTAL_FACING).toMahjongTableFacing() == tableFacing
-        } ?: return MahjongPlayerInfoPresentationResult.TABLE_NOT_FOUND
+        val table = MahjongTableLookup.find(world, controllerPos, presentation.tableId)
+            ?.takeIf { it.facing == tableFacing }
+            ?: return MahjongPlayerInfoPresentationResult.TABLE_NOT_FOUND
 
         val entity = find(world, presentation.tableId, controllerPos) ?: MahjongPlayerInfoEntity(world = world).apply {
             refreshPositionAndAngles(controllerPos.x + 0.5, controllerPos.y.toDouble(), controllerPos.z + 0.5, 0f, 0f)
@@ -52,7 +44,7 @@ class FabricMahjongPlayerInfoPresenter(private val serverHolder: FabricServerHol
         entity.players = presentation.players
         entity.dealerPlayerId = presentation.dealerPlayerId
         entity.tableFacing = tableFacing
-        table.markDirty()
+        table.blockEntity.markDirty()
         return MahjongPlayerInfoPresentationResult.PRESENTED
     }
 

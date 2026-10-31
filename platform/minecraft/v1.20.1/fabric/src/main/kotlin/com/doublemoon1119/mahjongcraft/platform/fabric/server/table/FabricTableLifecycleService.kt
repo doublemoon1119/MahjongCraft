@@ -1,8 +1,9 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.server.table
 
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateStore
-import com.doublemoon1119.mahjongcraft.platform.fabric.block.MahjongTableBlock
-import com.doublemoon1119.mahjongcraft.platform.fabric.block.entity.MahjongTableBlockEntity
+import com.doublemoon1119.mahjongcraft.platform.fabric.api.table.MahjongTableStructureBlock
+import com.doublemoon1119.mahjongcraft.platform.fabric.block.LocatedMahjongTable
+import com.doublemoon1119.mahjongcraft.platform.fabric.block.MahjongTableLookup
 import com.doublemoon1119.mahjongcraft.platform.fabric.logging.mahjongCraftLogger
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.presentation.DebugWinRoundContinuationState
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.presentation.DebugWinShowcaseOverride
@@ -84,13 +85,13 @@ class FabricTableLifecycleService(
     fun registerEvents() {
         PlayerBlockBreakEvents.BEFORE.register { world, player, pos, state, _ ->
             val serverPlayer = player as? ServerPlayerEntity
-            if (state.block is MahjongTableBlock && serverPlayer != null && dataStatus.rejectIfUnavailable(serverPlayer)) {
+            if (state.block is MahjongTableStructureBlock && serverPlayer != null && dataStatus.rejectIfUnavailable(serverPlayer)) {
                 return@register false
             }
             canBreak(world, pos, state)
         }
         PlayerBlockBreakEvents.AFTER.register { _, _, _, _, blockEntity ->
-            val table = blockEntity as? MahjongTableBlockEntity ?: return@register
+            val table = blockEntity?.let(MahjongTableLookup::of) ?: return@register
             onPlayerBroken(table.tableId)
         }
     }
@@ -120,9 +121,9 @@ class FabricTableLifecycleService(
      * 麻將資料無法讀取時不清理也不登記位置：已保存的房間或對局留待下一次 session，由位置驗證發現桌子已不存在後處理。
      *
      * @param world 被替換方塊所在世界。
-     * @param table 被替換的桌子 controller block entity。
+     * @param table 被替換的桌子控制點。
      */
-    fun onBlockReplaced(world: ServerWorld, table: MahjongTableBlockEntity) {
+    internal fun onBlockReplaced(world: ServerWorld, table: LocatedMahjongTable) {
         val tableId = table.tableId
         if (!dataStatus.isMahjongAvailable) {
             logger.warn("Mahjong table {} was removed while mahjong data is unavailable; its saved state is left for the next session", tableId)
@@ -162,16 +163,16 @@ class FabricTableLifecycleService(
     }
 
     /**
-     * 由任意麻將桌 part 判斷玩家破壞是否可依目前政策執行。
+     * 由組成麻將桌的任一方塊判斷玩家破壞是否可依目前政策執行。
      *
      * @param world 方塊所在世界。
-     * @param pos 正在破壞的桌子部件座標。
+     * @param pos 正在破壞的方塊座標。
      * @param state 該位置的方塊狀態。
      * @return 目前破壞政策允許時為 true。
      */
     internal fun canBreak(world: WorldAccess, pos: BlockPos, state: BlockState): Boolean {
-        val block = state.block as? MahjongTableBlock ?: return true
-        val table = block.resolveController(world, pos, state)
+        val block = state.block as? MahjongTableStructureBlock ?: return true
+        val table = block.mahjongTableControllerPos(world, pos, state)?.let { MahjongTableLookup.find(world, it) }
         if (table == null) {
             logger.warn("Allowed removal of incomplete Mahjong table part at {} because its controller is missing", pos)
             return true

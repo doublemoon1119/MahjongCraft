@@ -3,12 +3,12 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.entity
 import com.doublemoon1119.mahjongcraft.logic.module.PublicPlayerIndicator
 import com.doublemoon1119.mahjongcraft.logic.module.PublicPlayerIndicatorValue
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
-import com.doublemoon1119.mahjongcraft.platform.fabric.block.entity.MahjongTableBlockEntity
+import com.doublemoon1119.mahjongcraft.platform.fabric.block.MahjongTableLookup
 import com.doublemoon1119.mahjongcraft.platform.fabric.logging.DistinctFailureGate
 import com.doublemoon1119.mahjongcraft.platform.fabric.logging.mahjongCraftLogger
 import com.doublemoon1119.mahjongcraft.platform.fabric.registry.ModEntities
 import com.doublemoon1119.mahjongcraft.platform.minecraft.animation.AnimationStep
-import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongTableFacing
+import com.doublemoon1119.mahjongcraft.platform.minecraft.api.table.MahjongTableFacing
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongPlayerInfoEntry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongPlayerScoreChange
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableOverlayVisibility
@@ -131,8 +131,8 @@ class MahjongPlayerInfoEntity(
         applyVisibility()
         if (age % ORPHAN_CHECK_INTERVAL_TICKS != 0) return
         val expectedId = managedTableId ?: return discard()
-        val table = controllerPos?.let { world.getBlockEntity(it) as? MahjongTableBlockEntity }
-        if (table?.tableId != expectedId) discard()
+        val pos = controllerPos ?: return discard()
+        if (MahjongTableLookup.find(world, pos, expectedId) == null) discard()
     }
 
     override fun isCollidable(): Boolean = false

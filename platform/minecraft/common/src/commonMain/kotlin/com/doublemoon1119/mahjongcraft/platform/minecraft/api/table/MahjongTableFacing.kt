@@ -1,6 +1,6 @@
-package com.doublemoon1119.mahjongcraft.platform.minecraft.dice
+package com.doublemoon1119.mahjongcraft.platform.minecraft.api.table
 
-/** 麻將桌 controller 的世界水平朝向；避免共用 layout 依賴特定 Minecraft 版本的 Direction。 */
+/** 麻將桌控制點的世界水平朝向；以共用型別表示，避免依賴特定 loader 或 Minecraft 版本的方向型別。 */
 enum class MahjongTableFacing {
     /** 朝向世界北方。 */
     NORTH,

@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.block
 
+import com.doublemoon1119.mahjongcraft.platform.fabric.api.table.MahjongTableStructureBlock
 import com.doublemoon1119.mahjongcraft.platform.fabric.block.entity.MahjongTableBlockEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.logging.mahjongCraftLogger
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.room.MahjongTableRoomService
@@ -46,7 +47,8 @@ class MahjongTableBlock(
     internal val design: MahjongTableDesign,
     private val roomService: MahjongTableRoomService,
     private val tableLifecycleService: FabricTableLifecycleService,
-) : BlockWithEntity(settings) {
+) : BlockWithEntity(settings),
+    MahjongTableStructureBlock {
     /** 記錄結構放置失敗或缺少 controller 等異常狀態。 */
     private val logger = mahjongCraftLogger(MahjongTableBlock::class)
 
@@ -165,8 +167,11 @@ class MahjongTableBlock(
         hit: BlockHitResult,
     ): ActionResult {
         if (!world.isClient) {
-            val table = resolveController(world, pos, state) ?: return ActionResult.FAIL
-            if (!isComplete(world, table.pos, table.cachedState)) {
+            val table = mahjongTableControllerPos(world, pos, state)
+                ?.let { MahjongTableLookup.find(world, it) }
+                ?.takeIf { it.blockEntity.cachedState.block === this }
+                ?: return ActionResult.FAIL
+            if (!isComplete(world, table.pos, table.blockEntity.cachedState)) {
                 logger.warn("Rejected interaction with incomplete Mahjong table {} at {}", table.tableId, table.pos)
                 return ActionResult.FAIL
             }
@@ -177,22 +182,20 @@ class MahjongTableBlock(
     }
 
     /**
-     * 由任意 part 的狀態與座標取得 controller 方塊實體。
+     * 由任意 part 的狀態與座標換算 controller 位置。
      *
-     * @param world 查詢方塊實體的世界存取介面。
+     * @param world 方塊所在世界。
      * @param pos 任意結構 part 的座標。
      * @param state 該座標目前的方塊狀態。
-     * @return 屬於此桌的 controller 方塊實體；結構不完整或方塊不符時為 null。
+     * @return 依 part 與朝向換算的 controller 位置；方塊不是此桌時為 null。
      */
-    internal fun resolveController(world: WorldAccess, pos: BlockPos, state: BlockState): MahjongTableBlockEntity? {
+    override fun mahjongTableControllerPos(
+        world: BlockView,
+        pos: BlockPos,
+        state: BlockState,
+    ): BlockPos? {
         if (state.block !== this) return null
-        val controllerPos = MahjongTableStructure.controllerPosition(
-            pos,
-            state.get(PART),
-            state.get(Properties.HORIZONTAL_FACING),
-        )
-        val table = world.getBlockEntity(controllerPos) as? MahjongTableBlockEntity ?: return null
-        return table.takeIf { controller -> controller.cachedState.block === this }
+        return MahjongTableStructure.controllerPosition(pos, state.get(PART), state.get(Properties.HORIZONTAL_FACING))
     }
 
     /**
@@ -227,7 +230,7 @@ class MahjongTableBlock(
         if (!removingControllers.add(controllerPos)) return
 
         try {
-            val table = world.getBlockEntity(controllerPos) as? MahjongTableBlockEntity
+            val table = MahjongTableLookup.find(world, controllerPos)
             if (table == null) {
                 logger.warn("Removed incomplete Mahjong table part at {} without controller at {}", pos, controllerPos)
             } else {

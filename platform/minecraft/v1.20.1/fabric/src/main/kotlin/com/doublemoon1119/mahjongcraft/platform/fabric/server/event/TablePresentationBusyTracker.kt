@@ -1,10 +1,11 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.server.event
 
-import com.doublemoon1119.mahjongcraft.platform.fabric.block.entity.MahjongTableBlockEntity
+import com.doublemoon1119.mahjongcraft.platform.fabric.block.MahjongTableLookup
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.DiceRollPresentationEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongDiceEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongTileEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.FabricServerHolder
+import com.doublemoon1119.mahjongcraft.platform.minecraft.api.table.MahjongTableControllerState
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocationRegistry
 import net.minecraft.registry.RegistryKey
@@ -97,8 +98,7 @@ class TablePresentationBusyTracker(
         val location = tableLocationRegistry.get(tableId)?.location ?: return false
         val world = resolveWorld(location) ?: return false
         val controllerPos = BlockPos(location.x, location.y, location.z)
-        val table = world.getBlockEntity(controllerPos) as? MahjongTableBlockEntity
-        if (table?.tableId == tableId && table.isPresenting(world.time)) return true
+        if (MahjongTableLookup.find(world, controllerPos, tableId)?.state?.isPresenting(world.time) == true) return true
         val searchBox = Box(controllerPos).expand(TABLE_SEARCH_HORIZONTAL, TABLE_SEARCH_VERTICAL, TABLE_SEARCH_HORIZONTAL)
         // 用 blocksTableBusy 而不是直接看 isAnimating：中途胡牌會在已完成玩家的真實牌上排入理牌、
         // 倒牌、隱形、恢復顯示與蓋牌動畫，那些動畫持有「不阻塞全桌」的 lease，不該擋住其他仍在本局
@@ -120,7 +120,7 @@ class TablePresentationBusyTracker(
     /**
      * [tableId] 是否仍在播放中途胡牌演出。
      *
-     * 刻意只看 [MahjongTableBlockEntity.continuingWinPresentationBusyUntilGameTime] 這條獨立時間軸，
+     * 刻意只看 [MahjongTableControllerState.continuingWinPresentationBusyUntilGameTime] 這條獨立時間軸，
      * 完全不看 [isBusy] 會看的實體動畫與整桌時間軸——中途胡牌演出的用意就是「不擋其他人繼續打」，
      * 只用來讓本局延後換局。
      *
@@ -130,8 +130,8 @@ class TablePresentationBusyTracker(
     fun isPresentingContinuingWin(tableId: Uuid): Boolean {
         val location = tableLocationRegistry.get(tableId)?.location ?: return false
         val world = resolveWorld(location) ?: return false
-        val table = world.getBlockEntity(BlockPos(location.x, location.y, location.z)) as? MahjongTableBlockEntity
-        return table?.tableId == tableId && table.isPresentingContinuingWin(world.time)
+        val table = MahjongTableLookup.find(world, BlockPos(location.x, location.y, location.z), tableId)
+        return table?.state?.isPresentingContinuingWin(world.time) == true
     }
 
     /**

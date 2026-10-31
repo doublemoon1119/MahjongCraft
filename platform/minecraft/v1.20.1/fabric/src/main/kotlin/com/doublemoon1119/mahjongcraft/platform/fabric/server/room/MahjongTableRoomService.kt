@@ -34,7 +34,7 @@ import com.doublemoon1119.mahjongcraft.flow.server.room.usecase.UpdateConfigUseC
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateStore
 import com.doublemoon1119.mahjongcraft.logic.config.MahjongRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
-import com.doublemoon1119.mahjongcraft.platform.fabric.block.entity.MahjongTableBlockEntity
+import com.doublemoon1119.mahjongcraft.platform.fabric.block.LocatedMahjongTable
 import com.doublemoon1119.mahjongcraft.platform.fabric.network.MahjongChannels
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.FabricServerHolder
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.persistence.FabricMahjongDataStatus
@@ -227,10 +227,10 @@ class MahjongTableRoomService(
     /**
      * 只送出桌子目前的公開佔用狀態並開啟 RoomScreen，不建立、加入或離開房間。
      *
-     * @param table 要顯示的麻將桌方塊實體。
+     * @param table 要顯示的麻將桌。
      * @param player 接收桌子狀態的玩家。
      */
-    fun openRoomScreen(table: MahjongTableBlockEntity, player: ServerPlayerEntity) {
+    internal fun openRoomScreen(table: LocatedMahjongTable, player: ServerPlayerEntity) {
         if (dataStatus.rejectIfUnavailable(player)) return
         val tableId = table.tableId
         val ticket = tableStateDelivery.capture(tableId) ?: return
@@ -370,7 +370,7 @@ class MahjongTableRoomService(
      * @param table 玩家互動的麻將桌。
      * @param player 發起互動的玩家。
      */
-    fun interact(table: MahjongTableBlockEntity, player: ServerPlayerEntity) {
+    internal fun interact(table: LocatedMahjongTable, player: ServerPlayerEntity) {
         if (dataStatus.rejectIfUnavailable(player)) return
         val tableId = table.tableId
         val playerId = player.uuid.toKotlinUuid()
@@ -427,7 +427,7 @@ class MahjongTableRoomService(
      * @param table 玩家互動的麻將桌。
      * @param player 發起離開操作的玩家。
      */
-    fun leave(table: MahjongTableBlockEntity, player: ServerPlayerEntity) {
+    internal fun leave(table: LocatedMahjongTable, player: ServerPlayerEntity) {
         if (dataStatus.rejectIfUnavailable(player)) return
         val tableId = table.tableId
         val playerId = player.uuid.toKotlinUuid()

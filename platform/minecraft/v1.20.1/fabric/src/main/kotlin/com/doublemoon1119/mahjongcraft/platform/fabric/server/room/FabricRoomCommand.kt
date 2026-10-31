@@ -2,7 +2,7 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.server.room
 
 import com.doublemoon1119.mahjongcraft.ai.MahjongAiStrategyRegistry
 import com.doublemoon1119.mahjongcraft.flow.common.concurrency.AppCoroutineScope
-import com.doublemoon1119.mahjongcraft.platform.fabric.block.entity.MahjongTableBlockEntity
+import com.doublemoon1119.mahjongcraft.platform.fabric.block.LocatedMahjongTable
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.room.FabricRoomConfigScreenCommand
 import com.doublemoon1119.mahjongcraft.platform.minecraft.ai.AiStrategyDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModMetadata
@@ -237,7 +237,7 @@ class FabricRoomCommand(
      */
     private fun withResolvedTable(
         context: CommandContext<ServerCommandSource>,
-        action: (ServerPlayerEntity, MahjongTableBlockEntity) -> Unit,
+        action: (ServerPlayerEntity, LocatedMahjongTable) -> Unit,
     ): Int = withPlayer(context.source) { player ->
         val pos = TableCoordinateArgument.parse(StringArgumentType.getString(context, TABLE_ARGUMENT))
         val table = pos?.let { tableResolver.resolve(player, it) }
