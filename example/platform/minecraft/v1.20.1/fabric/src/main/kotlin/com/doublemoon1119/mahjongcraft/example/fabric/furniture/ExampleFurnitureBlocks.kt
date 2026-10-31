@@ -19,13 +19,13 @@ object ExampleFurnitureBlocks {
     /** 確認範例椅子方塊是否已完成原生註冊。 */
     fun isRegistered(): Boolean = ::chair.isInitialized
 
-    /** 註冊範例椅子方塊與 BlockItem。 */
+    /** 註冊範例椅子方塊與 BlockItem；椅子強制視為實心，避免依形狀被判定為不實心而遭水流沖掉。 */
     fun register() {
         chair = Registry.register(
             Registries.BLOCK,
             Identifier(ExampleFurnitureIds.CHAIR),
             ExampleChairBlock(
-                AbstractBlock.Settings.copy(Blocks.OAK_PLANKS).strength(1.5f),
+                AbstractBlock.Settings.copy(Blocks.OAK_PLANKS).strength(1.5f).solid(),
             ),
         )
         Registry.register(

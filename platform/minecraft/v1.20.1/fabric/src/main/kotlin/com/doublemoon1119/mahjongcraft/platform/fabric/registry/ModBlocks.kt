@@ -46,6 +46,8 @@ object ModBlocks {
     /**
      * 註冊麻將桌與麻將凳方塊、對應物品與方塊實體型別。
      *
+     * 桌子與凳子都強制視為實心：細長或沒有碰撞的部件依形狀推算會被判定為不實心，水流會沖掉不實心的方塊。
+     *
      * @param seatService 麻將凳乘坐服務。
      */
     fun register(seatService: MahjongStoolSeatService) {
@@ -65,7 +67,8 @@ object ModBlocks {
             settings = AbstractBlock.Settings.create()
                 .mapColor(MapColor.OAK_TAN)
                 .strength(0.0f)
-                .sounds(BlockSoundGroup.WOOD),
+                .sounds(BlockSoundGroup.WOOD)
+                .solid(),
             seatService = seatService,
         )
         plasticMahjongStool = registerStool(
@@ -74,7 +77,8 @@ object ModBlocks {
             settings = AbstractBlock.Settings.create()
                 .mapColor(MapColor.BRIGHT_RED)
                 .strength(0.0f)
-                .sounds(BlockSoundGroup.SCAFFOLDING),
+                .sounds(BlockSoundGroup.SCAFFOLDING)
+                .solid(),
             seatService = seatService,
         )
         val blockEntityId = Identifier(MinecraftModMetadata.MOD_ID, "mahjong_table")
@@ -108,7 +112,8 @@ object ModBlocks {
             MahjongTableBlock(
                 settings = AbstractBlock.Settings.copy(baseBlock)
                     .strength(2.5f)
-                    .pistonBehavior(PistonBehavior.BLOCK),
+                    .pistonBehavior(PistonBehavior.BLOCK)
+                    .solid(),
                 design = design,
             ),
         )
