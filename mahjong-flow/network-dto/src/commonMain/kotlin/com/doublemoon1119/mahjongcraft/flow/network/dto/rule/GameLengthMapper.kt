@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.flow.network.dto.rule
 
+import com.doublemoon1119.mahjongcraft.flow.network.dto.registry.NetworkDtoConverter
 import com.doublemoon1119.mahjongcraft.logic.config.GameLength
 
 /**
@@ -8,7 +9,7 @@ import com.doublemoon1119.mahjongcraft.logic.config.GameLength
  * @param registries 網路 DTO 的動態註冊表集合。
  * @return 轉換後的資料。
  */
-fun GameLength.toDto(registries: NetworkDtoRegistries): GameLengthDto = registries.gameLength.toDto(this)
+fun GameLength.toDto(registries: NetworkDtoConverter): GameLengthDto = registries.gameLength.toDto(this)
 
 /**
  * 將已註冊的 [GameLengthDto] 還原成領域對局長度。
@@ -16,4 +17,4 @@ fun GameLength.toDto(registries: NetworkDtoRegistries): GameLengthDto = registri
  * @param registries 網路 DTO 的動態註冊表集合。
  * @return 轉換後的資料。
  */
-fun GameLengthDto.toDomain(registries: NetworkDtoRegistries): GameLength = registries.gameLength.toDomain(this)
+fun GameLengthDto.toDomain(registries: NetworkDtoConverter): GameLength = registries.gameLength.toDomain(this)

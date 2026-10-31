@@ -5,8 +5,8 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.DrawFollowUpPresen
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.GamePresentationPublisher
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.MeldPresentation
 import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
-import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkDtoRegistries
-import com.doublemoon1119.mahjongcraft.flow.persistence.format.registry.PersistenceRegistries
+import com.doublemoon1119.mahjongcraft.flow.network.dto.api.registration.NetworkDtoRegistrars
+import com.doublemoon1119.mahjongcraft.flow.persistence.format.api.registration.PersistenceRegistrars
 import com.doublemoon1119.mahjongcraft.flow.server.game.policy.GameVisibilityPolicyImpl
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameSnapshotSynchronizer
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DrawTileUseCase
@@ -240,9 +240,9 @@ class TableCornerLayoutFlowTest {
             registry.register(MahjongModuleDefinition(PotRuleConfig::class, id) { config, moduleId -> PotRule(RiichiRuleModule(moduleId, config.delegate)) })
         }
 
-        override fun registerNetworkDtos(registries: NetworkDtoRegistries) = Unit
+        override fun registerNetworkDtos(registries: NetworkDtoRegistrars) = Unit
 
-        override fun registerPersistenceDtos(registries: PersistenceRegistries) = Unit
+        override fun registerPersistenceDtos(registries: PersistenceRegistrars) = Unit
     }
 
     /**

@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.flow.network.dto.rule
 
+import com.doublemoon1119.mahjongcraft.flow.network.dto.registry.NetworkDtoConverter
 import com.doublemoon1119.mahjongcraft.logic.base.ExhaustiveDrawReason
 
 /**
@@ -8,7 +9,7 @@ import com.doublemoon1119.mahjongcraft.logic.base.ExhaustiveDrawReason
  * @param registries 網路 DTO 的動態註冊表集合。
  * @return 轉換後的資料。
  */
-fun ExhaustiveDrawReason.toDto(registries: NetworkDtoRegistries): ExhaustiveDrawReasonDto = registries.exhaustiveDrawReason.toDto(this)
+fun ExhaustiveDrawReason.toDto(registries: NetworkDtoConverter): ExhaustiveDrawReasonDto = registries.exhaustiveDrawReason.toDto(this)
 
 /**
  * 將已註冊的 [ExhaustiveDrawReasonDto] 還原成領域流局原因。
@@ -16,4 +17,4 @@ fun ExhaustiveDrawReason.toDto(registries: NetworkDtoRegistries): ExhaustiveDraw
  * @param registries 網路 DTO 的動態註冊表集合。
  * @return 轉換後的資料。
  */
-fun ExhaustiveDrawReasonDto.toDomain(registries: NetworkDtoRegistries): ExhaustiveDrawReason = registries.exhaustiveDrawReason.toDomain(this)
+fun ExhaustiveDrawReasonDto.toDomain(registries: NetworkDtoConverter): ExhaustiveDrawReason = registries.exhaustiveDrawReason.toDomain(this)

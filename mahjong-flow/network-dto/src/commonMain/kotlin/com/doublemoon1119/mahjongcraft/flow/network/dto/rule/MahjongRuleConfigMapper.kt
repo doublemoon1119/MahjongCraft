@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.flow.network.dto.rule
 
+import com.doublemoon1119.mahjongcraft.flow.network.dto.registry.NetworkDtoConverter
 import com.doublemoon1119.mahjongcraft.logic.config.MahjongRuleConfig
 
 /**
@@ -8,7 +9,7 @@ import com.doublemoon1119.mahjongcraft.logic.config.MahjongRuleConfig
  * @param registries 網路 DTO 的動態註冊表集合。
  * @return 轉換後的資料。
  */
-fun MahjongRuleConfig.toDto(registries: NetworkDtoRegistries): MahjongRuleConfigDto = registries.ruleConfig.toDto(this)
+fun MahjongRuleConfig.toDto(registries: NetworkDtoConverter): MahjongRuleConfigDto = registries.ruleConfig.toDto(this)
 
 /**
  * 將已註冊的 [MahjongRuleConfigDto] 還原成領域規則設定。
@@ -16,4 +17,4 @@ fun MahjongRuleConfig.toDto(registries: NetworkDtoRegistries): MahjongRuleConfig
  * @param registries 網路 DTO 的動態註冊表集合。
  * @return 轉換後的資料。
  */
-fun MahjongRuleConfigDto.toDomain(registries: NetworkDtoRegistries): MahjongRuleConfig = registries.ruleConfig.toDomain(this)
+fun MahjongRuleConfigDto.toDomain(registries: NetworkDtoConverter): MahjongRuleConfig = registries.ruleConfig.toDomain(this)

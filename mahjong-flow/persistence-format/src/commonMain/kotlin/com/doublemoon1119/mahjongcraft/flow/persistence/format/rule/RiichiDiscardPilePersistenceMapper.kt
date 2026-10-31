@@ -1,6 +1,6 @@
 package com.doublemoon1119.mahjongcraft.flow.persistence.format.rule
 
-import com.doublemoon1119.mahjongcraft.flow.persistence.format.component.ComponentPersistenceRegistry
+import com.doublemoon1119.mahjongcraft.flow.persistence.format.component.ComponentPersistenceConverter
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDiscardPile
 
 /**
@@ -9,7 +9,7 @@ import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDiscardPile
  * @param registry 組件保存轉換。
  * @return 依捨牌順序排列的保存資料。
  */
-fun RiichiDiscardPile.toPersistenceDto(registry: ComponentPersistenceRegistry): RiichiDiscardPilePersistenceDto = RiichiDiscardPilePersistenceDto(
+fun RiichiDiscardPile.toPersistenceDto(registry: ComponentPersistenceConverter): RiichiDiscardPilePersistenceDto = RiichiDiscardPilePersistenceDto(
     entries.map { it.toPersistenceDto(registry) },
 )
 
@@ -19,6 +19,6 @@ fun RiichiDiscardPile.toPersistenceDto(registry: ComponentPersistenceRegistry): 
  * @param registry 組件保存轉換。
  * @return 還原的牌河。
  */
-fun RiichiDiscardPilePersistenceDto.toDomain(registry: ComponentPersistenceRegistry): RiichiDiscardPile = entries.fold(RiichiDiscardPile()) { pile, entry ->
+fun RiichiDiscardPilePersistenceDto.toDomain(registry: ComponentPersistenceConverter): RiichiDiscardPile = entries.fold(RiichiDiscardPile()) { pile, entry ->
     pile.discard(entry.toDomain(registry))
 }

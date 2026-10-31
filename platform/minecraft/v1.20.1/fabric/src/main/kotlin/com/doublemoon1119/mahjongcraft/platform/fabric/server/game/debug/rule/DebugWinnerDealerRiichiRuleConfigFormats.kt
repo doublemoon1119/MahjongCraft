@@ -1,13 +1,13 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.rule
 
+import com.doublemoon1119.mahjongcraft.flow.network.dto.api.registration.NetworkDtoRegistrars
 import com.doublemoon1119.mahjongcraft.flow.network.dto.registry.DtoDefinition
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.MahjongRuleConfigDto
-import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkDtoRegistries
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.riichi.RiichiRuleConfigDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.riichi.toDomain
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.riichi.toRiichiDto
+import com.doublemoon1119.mahjongcraft.flow.persistence.format.api.registration.PersistenceRegistrars
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.core.PersistenceDtoDefinition
-import com.doublemoon1119.mahjongcraft.flow.persistence.format.registry.PersistenceRegistries
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.rule.RiichiRuleConfigPersistenceDto
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.rule.toDomain
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.rule.toPersistenceDto
@@ -41,14 +41,14 @@ internal data class DebugWinnerDealerRiichiRuleConfigPersistenceDto(
  *
  * @param registries 網路 DTO registry 集合。
  */
-internal fun registerDebugWinnerDealerRiichiNetworkDtos(registries: NetworkDtoRegistries) {
+internal fun registerDebugWinnerDealerRiichiNetworkDtos(registries: NetworkDtoRegistrars) {
     registries.ruleConfig.register(
         definition = DtoDefinition(
             domainClass = DebugWinnerDealerRiichiRuleConfig::class,
             dtoClass = DebugWinnerDealerRiichiRuleConfigDto::class,
             serializer = DebugWinnerDealerRiichiRuleConfigDto.serializer(),
-            toDto = { DebugWinnerDealerRiichiRuleConfigDto(it.base.toRiichiDto(registries)) },
-            toDomain = { DebugWinnerDealerRiichiRuleConfig(it.base.toDomain(registries)) },
+            toDto = { value, converter -> DebugWinnerDealerRiichiRuleConfigDto(value.base.toRiichiDto(converter)) },
+            toDomain = { dto, converter -> DebugWinnerDealerRiichiRuleConfig(dto.base.toDomain(converter)) },
         ),
     )
 }
@@ -58,7 +58,7 @@ internal fun registerDebugWinnerDealerRiichiNetworkDtos(registries: NetworkDtoRe
  *
  * @param registries persistence registry 集合。
  */
-internal fun registerDebugWinnerDealerRiichiPersistenceDtos(registries: PersistenceRegistries) {
+internal fun registerDebugWinnerDealerRiichiPersistenceDtos(registries: PersistenceRegistrars) {
     registries.ruleConfigs.register(
         definition = PersistenceDtoDefinition(
             typeKey = MahjongCraftMetadata.id("debug/winner_dealer_riichi_rule_config"),

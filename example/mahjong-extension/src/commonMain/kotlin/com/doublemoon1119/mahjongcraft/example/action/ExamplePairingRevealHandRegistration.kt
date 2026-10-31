@@ -4,11 +4,11 @@ import com.doublemoon1119.mahjongcraft.example.pairing.ExamplePairingComponents
 import com.doublemoon1119.mahjongcraft.example.pairing.ExamplePairingRuleConfig
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameError
 import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
+import com.doublemoon1119.mahjongcraft.flow.server.api.registration.ExtensionGameActionCommandFactoryRegistrar
+import com.doublemoon1119.mahjongcraft.flow.server.api.registration.ExtensionGameCommandExecutorRegistrar
 import com.doublemoon1119.mahjongcraft.flow.server.game.history.acceptedActionHistoryDraft
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.ExtensionGameActionCommandFactoryDefinition
-import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.ExtensionGameActionCommandFactoryRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.ExtensionGameCommandContext
-import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.ExtensionGameCommandExecutorRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.ExtensionGameCommandHandler
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.ExtensionGameCommandHandlerDefinition
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.isOwnTurnWindowOpenFor
@@ -21,7 +21,7 @@ import kotlin.uuid.Uuid
  *
  * @param registry 要接收攤牌動作工廠的 registry。
  */
-fun registerExamplePairingRevealHandFactory(registry: ExtensionGameActionCommandFactoryRegistry) {
+fun registerExamplePairingRevealHandFactory(registry: ExtensionGameActionCommandFactoryRegistrar) {
     registry.register(
         ExtensionGameActionCommandFactoryDefinition(ExamplePairingRevealHandAction::class) { _, selectedTileIds ->
             ExamplePairingRevealHandCommand.takeIf { selectedTileIds.isEmpty() }
@@ -34,7 +34,7 @@ fun registerExamplePairingRevealHandFactory(registry: ExtensionGameActionCommand
  *
  * @param registry 要接收攤牌命令 handler 的 registry。
  */
-fun registerExamplePairingRevealHandHandler(registry: ExtensionGameCommandExecutorRegistry) {
+fun registerExamplePairingRevealHandHandler(registry: ExtensionGameCommandExecutorRegistrar) {
     registry.register(
         ExtensionGameCommandHandlerDefinition(ExamplePairingRevealHandCommand::class) { context ->
             ExamplePairingRevealHandHandler(context)

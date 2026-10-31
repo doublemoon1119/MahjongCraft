@@ -1,11 +1,12 @@
 package com.doublemoon1119.mahjongcraft.flow.server.game.orchestration
 
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionConfig
+import com.doublemoon1119.mahjongcraft.flow.server.api.registration.RuleDecisionResolverRegistrar
 import com.doublemoon1119.mahjongcraft.logic.base.NamespacedId
 import com.doublemoon1119.mahjongcraft.logic.config.MahjongRuleConfig
 
-/** 規則選擇解析器的可凍結註冊表。 */
-class RuleDecisionResolverRegistry {
+/** 規則選擇解析器的可凍結註冊表；擴充只透過 [RuleDecisionResolverRegistrar] 登記。 */
+class RuleDecisionResolverRegistry : RuleDecisionResolverRegistrar {
     /** 依規則模組 ID 索引的解析器。 */
     private val resolvers = mutableMapOf<String, RuleDecisionResolver>()
 
@@ -13,14 +14,14 @@ class RuleDecisionResolverRegistry {
     private var frozen = false
 
     /** 目前已登記規則模組 ID 的快照。 */
-    val registrationKeys: Set<String> get() = resolvers.keys.toSet()
+    override val registrationKeys: Set<String> get() = resolvers.keys.toSet()
 
     /**
      * 登記一個規則模組的解析器；ID 格式錯誤、重複或註冊表凍結時會失敗。
      *
      * @param resolver 要登記的選擇流程解析器。
      */
-    fun register(resolver: RuleDecisionResolver) {
+    override fun register(resolver: RuleDecisionResolver) {
         check(!frozen) { "Rule decision resolver registry is frozen" }
         NamespacedId.requireValid(resolver.ruleModuleId) {
             "Rule decision rule module ID must be namespaced: ${resolver.ruleModuleId}"

@@ -3,17 +3,17 @@ package com.doublemoon1119.mahjongcraft.extension
 import com.doublemoon1119.mahjongcraft.ai.api.registration.ExtensionGameActionAiRegistrar
 import com.doublemoon1119.mahjongcraft.ai.api.registration.MahjongAiStrategyRegistrar
 import com.doublemoon1119.mahjongcraft.ai.api.registration.OpponentModelRegistrar
-import com.doublemoon1119.mahjongcraft.flow.common.game.event.GameEventPublicMarkerResolverRegistry
-import com.doublemoon1119.mahjongcraft.flow.common.game.service.WinCelebrationCueResolverRegistry
-import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkDtoRegistries
-import com.doublemoon1119.mahjongcraft.flow.persistence.format.registry.PersistenceRegistries
-import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.ExtensionGameActionCommandFactoryRegistry
-import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.ExtensionGameCommandExecutorRegistry
-import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.PostActionExhaustiveDrawResolverRegistry
-import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.PostReactionRoundOutcomeResolverRegistry
-import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.RuleDecisionResolverRegistry
-import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.WinRoundContinuationResolverRegistry
-import com.doublemoon1119.mahjongcraft.flow.server.game.service.WinSettlementDetailResolverRegistry
+import com.doublemoon1119.mahjongcraft.flow.api.registration.GameEventPublicMarkerResolverRegistrar
+import com.doublemoon1119.mahjongcraft.flow.api.registration.WinCelebrationCueResolverRegistrar
+import com.doublemoon1119.mahjongcraft.flow.network.dto.api.registration.NetworkDtoRegistrars
+import com.doublemoon1119.mahjongcraft.flow.persistence.format.api.registration.PersistenceRegistrars
+import com.doublemoon1119.mahjongcraft.flow.server.api.registration.ExtensionGameActionCommandFactoryRegistrar
+import com.doublemoon1119.mahjongcraft.flow.server.api.registration.ExtensionGameCommandExecutorRegistrar
+import com.doublemoon1119.mahjongcraft.flow.server.api.registration.PostActionExhaustiveDrawResolverRegistrar
+import com.doublemoon1119.mahjongcraft.flow.server.api.registration.PostReactionRoundOutcomeResolverRegistrar
+import com.doublemoon1119.mahjongcraft.flow.server.api.registration.RuleDecisionResolverRegistrar
+import com.doublemoon1119.mahjongcraft.flow.server.api.registration.WinRoundContinuationResolverRegistrar
+import com.doublemoon1119.mahjongcraft.flow.server.api.registration.WinSettlementDetailResolverRegistrar
 import com.doublemoon1119.mahjongcraft.logic.api.registration.ComponentRegistrar
 import com.doublemoon1119.mahjongcraft.logic.api.registration.MahjongModuleRegistrar
 import com.doublemoon1119.mahjongcraft.logic.api.registration.TileTypeRegistrar
@@ -69,21 +69,21 @@ interface MahjongExtension {
      *
      * @param registry 用於登記胡牌展示提示解析器的 registry。
      */
-    fun registerWinCelebrationCueResolvers(registry: WinCelebrationCueResolverRegistry) = Unit
+    fun registerWinCelebrationCueResolvers(registry: WinCelebrationCueResolverRegistrar) = Unit
 
     /**
      * 登記所有第三方規則需要的 network DTO mapper。
      *
      * @param registries 提供各 network DTO 類型 mapper 登記入口的 registry 集合。
      */
-    fun registerNetworkDtos(registries: NetworkDtoRegistries)
+    fun registerNetworkDtos(registries: NetworkDtoRegistrars)
 
     /**
      * 登記所有第三方規則需要的 persistence DTO mapper。
      *
      * @param registries 提供各 persistence DTO 類型 mapper 登記入口的 registry 集合。
      */
-    fun registerPersistenceDtos(registries: PersistenceRegistries)
+    fun registerPersistenceDtos(registries: PersistenceRegistrars)
 
     /**
      * 登記規則擴充動作供 AI 建立命令的 handler；handler 被呼叫時會拿到這一局的規則模組。
@@ -111,54 +111,54 @@ interface MahjongExtension {
      *
      * @param registry 用於登記擴充動作命令 factory 的 registry。
      */
-    fun registerGameActionCommandFactories(registry: ExtensionGameActionCommandFactoryRegistry) = Unit
+    fun registerGameActionCommandFactories(registry: ExtensionGameActionCommandFactoryRegistrar) = Unit
 
     /**
      * 登記規則擴充命令的 handler 建立方式；每個執行環境以自己的對局流程服務建立 handler。
      *
      * @param registry 用於登記擴充命令 executor factory 的 registry。
      */
-    fun registerGameCommandHandlers(registry: ExtensionGameCommandExecutorRegistry) = Unit
+    fun registerGameCommandHandlers(registry: ExtensionGameCommandExecutorRegistrar) = Unit
 
     /**
      * 登記最後捨牌反應結束後才判定的特殊 round outcome resolver。
      *
      * @param registry 用於登記反應階段結束後局結果 resolver 的 registry。
      */
-    fun registerPostReactionRoundOutcomeResolvers(registry: PostReactionRoundOutcomeResolverRegistry) = Unit
+    fun registerPostReactionRoundOutcomeResolvers(registry: PostReactionRoundOutcomeResolverRegistrar) = Unit
 
     /**
      * 登記由特定玩家動作主動觸發（而非最後捨牌反應結束後被動判定）的途中流局 resolver。
      *
      * @param registry 用於登記動作觸發途中流局 resolver 的 registry。
      */
-    fun registerPostActionExhaustiveDrawResolvers(registry: PostActionExhaustiveDrawResolverRegistry) = Unit
+    fun registerPostActionExhaustiveDrawResolvers(registry: PostActionExhaustiveDrawResolverRegistrar) = Unit
 
     /**
      * 登記發牌後、正常摸打前的規則選擇流程。
      *
      * @param registry 用於登記規則選擇 resolver 的 registry。
      */
-    fun registerRuleDecisionResolvers(registry: RuleDecisionResolverRegistry) = Unit
+    fun registerRuleDecisionResolvers(registry: RuleDecisionResolverRegistrar) = Unit
 
     /**
      * 登記胡牌即時結算完成後、判斷本局是否結束的 resolver。
      *
      * @param registry 用於登記胡牌後局況延續 resolver 的 registry。
      */
-    fun registerWinRoundContinuationResolvers(registry: WinRoundContinuationResolverRegistry) = Unit
+    fun registerWinRoundContinuationResolvers(registry: WinRoundContinuationResolverRegistrar) = Unit
 
     /**
      * 登記規則專屬胡牌詳情欄位的解析器；欄位只含語意資料，顯示方式由平台決定。
      *
      * @param registry 用於登記胡牌結算詳情解析器的 registry。
      */
-    fun registerWinSettlementDetailResolvers(registry: WinSettlementDetailResolverRegistry) = Unit
+    fun registerWinSettlementDetailResolvers(registry: WinSettlementDetailResolverRegistrar) = Unit
 
     /**
      * 登記規則在公開遊戲事件中提供的中立標記解析器。
      *
      * @param registry 用於登記公開事件標記解析器的 registry。
      */
-    fun registerGameEventPublicMarkerResolvers(registry: GameEventPublicMarkerResolverRegistry) = Unit
+    fun registerGameEventPublicMarkerResolvers(registry: GameEventPublicMarkerResolverRegistrar) = Unit
 }

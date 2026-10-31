@@ -4,8 +4,8 @@ import com.doublemoon1119.mahjongcraft.ai.MahjongAiStrategyDefinition
 import com.doublemoon1119.mahjongcraft.extension.CoreExtensionRegistries
 import com.doublemoon1119.mahjongcraft.extension.MahjongExtension
 import com.doublemoon1119.mahjongcraft.flow.common.error.ExtensionFailurePolicy
-import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkDtoRegistries
-import com.doublemoon1119.mahjongcraft.flow.persistence.format.registry.PersistenceRegistries
+import com.doublemoon1119.mahjongcraft.flow.network.dto.api.registration.NetworkDtoRegistrars
+import com.doublemoon1119.mahjongcraft.flow.persistence.format.api.registration.PersistenceRegistrars
 import com.doublemoon1119.mahjongcraft.logic.api.registration.MahjongModuleRegistrar
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanRuleConfig
 import com.doublemoon1119.mahjongcraft.platform.fabric.api.seating.FabricSeatProviderRegistry
@@ -158,9 +158,9 @@ class FabricExtensionBootstrapTest {
             calls += "core"
         }
 
-        override fun registerNetworkDtos(registries: NetworkDtoRegistries) = Unit
+        override fun registerNetworkDtos(registries: NetworkDtoRegistrars) = Unit
 
-        override fun registerPersistenceDtos(registries: PersistenceRegistries) = Unit
+        override fun registerPersistenceDtos(registries: PersistenceRegistrars) = Unit
 
         override fun registerTileAssets(registry: MinecraftTileAssetRegistry) {
             calls += "minecraft"
@@ -184,9 +184,9 @@ class FabricExtensionBootstrapTest {
 
         override fun registerRuleModules(registry: MahjongModuleRegistrar) = Unit
 
-        override fun registerNetworkDtos(registries: NetworkDtoRegistries) = Unit
+        override fun registerNetworkDtos(registries: NetworkDtoRegistrars) = Unit
 
-        override fun registerPersistenceDtos(registries: PersistenceRegistries) = Unit
+        override fun registerPersistenceDtos(registries: PersistenceRegistrars) = Unit
 
         override fun registerGameConfigPresentations(registry: GameConfigPresentationRegistry) {
             registry.register(

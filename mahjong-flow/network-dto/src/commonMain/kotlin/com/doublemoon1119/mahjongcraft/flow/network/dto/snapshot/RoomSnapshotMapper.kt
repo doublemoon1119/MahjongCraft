@@ -2,7 +2,7 @@ package com.doublemoon1119.mahjongcraft.flow.network.dto.snapshot
 import com.doublemoon1119.mahjongcraft.flow.common.room.model.RoomSnapshot
 import com.doublemoon1119.mahjongcraft.flow.network.dto.config.toDomain
 import com.doublemoon1119.mahjongcraft.flow.network.dto.config.toDto
-import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkDtoRegistries
+import com.doublemoon1119.mahjongcraft.flow.network.dto.registry.NetworkDtoConverter
 import kotlin.uuid.Uuid
 
 /**
@@ -11,7 +11,7 @@ import kotlin.uuid.Uuid
  * @param registries 網路 DTO 的動態註冊表集合。
  * @return 轉換後的資料。
  */
-fun RoomSnapshot.toDto(registries: NetworkDtoRegistries): RoomSnapshotDto = RoomSnapshotDto(
+fun RoomSnapshot.toDto(registries: NetworkDtoConverter): RoomSnapshotDto = RoomSnapshotDto(
     id = id.toString(),
     hostId = hostId.toString(),
     gameConfig = gameConfig.toDto(registries),
@@ -30,7 +30,7 @@ fun RoomSnapshot.toDto(registries: NetworkDtoRegistries): RoomSnapshotDto = Room
  * @param registries 網路 DTO 的動態註冊表集合。
  * @return 轉換後的資料。
  */
-fun RoomSnapshotDto.toDomain(registries: NetworkDtoRegistries): RoomSnapshot = RoomSnapshot(
+fun RoomSnapshotDto.toDomain(registries: NetworkDtoConverter): RoomSnapshot = RoomSnapshot(
     id = Uuid.parse(id),
     hostId = Uuid.parse(hostId),
     gameConfig = gameConfig.toDomain(registries),

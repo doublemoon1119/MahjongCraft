@@ -23,7 +23,9 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.service.DefaultGameConfi
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.GameEventPublisher
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.WinCelebrationCueResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.common.room.service.RoomEventPublisher
+import com.doublemoon1119.mahjongcraft.flow.network.dto.api.registration.NetworkDtoRegistrars
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkDtoRegistries
+import com.doublemoon1119.mahjongcraft.flow.persistence.format.api.registration.PersistenceRegistrars
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.registry.PersistenceRegistries
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.state.AuthoritativeStatePersistenceCodec
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.AiDecisionExecutor
@@ -186,14 +188,14 @@ class FabricApplicationModuleTest {
              *
              * @param registries 網路 DTO 登記集合。
              */
-            override fun registerNetworkDtos(registries: NetworkDtoRegistries) = Unit
+            override fun registerNetworkDtos(registries: NetworkDtoRegistrars) = Unit
 
             /**
              * 此測試不登記持久化 DTO。
              *
              * @param registries 持久化 DTO 登記集合。
              */
-            override fun registerPersistenceDtos(registries: PersistenceRegistries) = Unit
+            override fun registerPersistenceDtos(registries: PersistenceRegistrars) = Unit
 
             /**
              * 登記測試用 AI 策略。

@@ -4,8 +4,8 @@ import com.doublemoon1119.mahjongcraft.extension.MahjongExtension
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.ExtensionGameCommand
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameCommand
 import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
-import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkDtoRegistries
-import com.doublemoon1119.mahjongcraft.flow.persistence.format.registry.PersistenceRegistries
+import com.doublemoon1119.mahjongcraft.flow.network.dto.api.registration.NetworkDtoRegistrars
+import com.doublemoon1119.mahjongcraft.flow.persistence.format.api.registration.PersistenceRegistrars
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.ExtensionGameActionCommandFactoryDefinition
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.ExtensionGameActionCommandFactoryRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.GameActionCommandMapper
@@ -270,9 +270,9 @@ class CustomDiscardClaimIntegrationTest {
             )
         }
 
-        override fun registerNetworkDtos(registries: NetworkDtoRegistries) = Unit
+        override fun registerNetworkDtos(registries: NetworkDtoRegistrars) = Unit
 
-        override fun registerPersistenceDtos(registries: PersistenceRegistries) = Unit
+        override fun registerPersistenceDtos(registries: PersistenceRegistrars) = Unit
     }
 
     /**

@@ -19,7 +19,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryWi
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementQuantity
 import com.doublemoon1119.mahjongcraft.flow.network.dto.model.RuleDecisionTimingDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.model.toDto
-import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkDtoRegistries
+import com.doublemoon1119.mahjongcraft.flow.network.dto.registry.NetworkDtoConverter
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkJson
 import com.doublemoon1119.mahjongcraft.flow.network.dto.snapshot.toDto
 
@@ -74,7 +74,7 @@ fun HistoryRoundPosition.toDto(): HistoryRoundPositionDto = when (this) {
  * @param registries 已登記的公開特徵轉換。
  * @return 可公開傳輸的事件 DTO。
  */
-fun HistoryRoundEvents.toDto(registries: NetworkDtoRegistries): HistoryRoundEventsDto = HistoryRoundEventsDto(
+fun HistoryRoundEvents.toDto(registries: NetworkDtoConverter): HistoryRoundEventsDto = HistoryRoundEventsDto(
     identity = identity.toDto(),
     roundNumber = roundNumber,
     transactions = transactions.map { it.toDto(registries) },
@@ -99,7 +99,7 @@ private fun HistoryReplayIdentity.toDto(): HistoryReplayIdentityDto = HistoryRep
  * @param registries 已登記的公開特徵轉換。
  * @return 可序列化的交易 DTO。
  */
-private fun HistoryReplayTransaction.toDto(registries: NetworkDtoRegistries): HistoryReplayTransactionDto = HistoryReplayTransactionDto(
+private fun HistoryReplayTransaction.toDto(registries: NetworkDtoConverter): HistoryReplayTransactionDto = HistoryReplayTransactionDto(
     index = index,
     occurredAtEpochMillis = occurredAtEpochMillis,
     isOpening = isOpening,
@@ -113,7 +113,7 @@ private fun HistoryReplayTransaction.toDto(registries: NetworkDtoRegistries): Hi
  * @param registries 已登記的公開特徵轉換。
  * @return 可公開傳輸的事實 DTO。
  */
-private fun HistoryReplayFact.toDto(registries: NetworkDtoRegistries): HistoryReplayFactDto = when (this) {
+private fun HistoryReplayFact.toDto(registries: NetworkDtoConverter): HistoryReplayFactDto = when (this) {
     is HistoryReplayFact.KnownAction -> HistoryReplayFactDto.KnownAction(typeKey, actorSeat, actionType, directTiles.map { it.tileIndex }, revealedTiles.map { it.tileIndex }, extensionTypeId)
     is HistoryReplayFact.ActionScored -> HistoryReplayFactDto.ActionScored(
         typeKey,
@@ -137,7 +137,7 @@ private fun HistoryReplayFact.toDto(registries: NetworkDtoRegistries): HistoryRe
  * @param registries 已登記的公開特徵轉換。
  * @return 可公開傳輸的結算 DTO。
  */
-private fun HistoryRoundOutcome.toDto(registries: NetworkDtoRegistries): HistoryRoundOutcomeDto = HistoryRoundOutcomeDto(
+private fun HistoryRoundOutcome.toDto(registries: NetworkDtoConverter): HistoryRoundOutcomeDto = HistoryRoundOutcomeDto(
     reasonId = reasonId,
     beneficiarySeats = beneficiarySeats,
     scoresBySeat = scoresBySeat,
@@ -156,7 +156,7 @@ private fun HistoryRoundOutcome.toDto(registries: NetworkDtoRegistries): History
  * @param registries 已登記的公開特徵轉換。
  * @return 可公開傳輸的贏家詳情。
  */
-private fun HistoryWinnerDetails.toDto(registries: NetworkDtoRegistries): HistoryWinnerDetailsDto = HistoryWinnerDetailsDto(
+private fun HistoryWinnerDetails.toDto(registries: NetworkDtoConverter): HistoryWinnerDetailsDto = HistoryWinnerDetailsDto(
     seatIndex = seatIndex,
     detailFields = detailFields.map { it.toDto(registries) },
     hand = hand?.toDto(),
@@ -178,7 +178,7 @@ private fun HistoryReplayWinningHand.toDto(): HistoryReplayWinningHandDto = Hist
  * @param registries 已登記的公開特徵轉換。
  * @return 可公開傳輸的詳情欄位。
  */
-private fun HistoryWinDetailField.toDto(registries: NetworkDtoRegistries): HistoryWinDetailFieldDto = HistoryWinDetailFieldDto(id, value.toDto(registries))
+private fun HistoryWinDetailField.toDto(registries: NetworkDtoConverter): HistoryWinDetailFieldDto = HistoryWinDetailFieldDto(id, value.toDto(registries))
 
 /**
  * 將歷史胡牌詳情值映射為網路 DTO。
@@ -186,7 +186,7 @@ private fun HistoryWinDetailField.toDto(registries: NetworkDtoRegistries): Histo
  * @param registries 已登記的公開特徵轉換。
  * @return 可公開傳輸的詳情值。
  */
-private fun HistoryWinDetailValue.toDto(registries: NetworkDtoRegistries): HistoryWinDetailValueDto = when (this) {
+private fun HistoryWinDetailValue.toDto(registries: NetworkDtoConverter): HistoryWinDetailValueDto = when (this) {
     is HistoryWinDetailValue.Quantities -> HistoryWinDetailValueDto.Quantities(quantities.map { it.toDto() })
     is HistoryWinDetailValue.Entries -> HistoryWinDetailValueDto.Entries(
         entries.map { HistoryWinDetailValueDto.Entries.EntryDto(it.id, it.quantity?.toDto()) },
@@ -207,7 +207,7 @@ private fun WinSettlementQuantity.toDto(): HistoryWinDetailQuantityDto = History
  * @param registries 已登記的公開特徵轉換。
  * @return 可公開傳輸的桌況 DTO。
  */
-fun HistoryRoundState.toDto(registries: NetworkDtoRegistries): HistoryRoundStateDto = HistoryRoundStateDto(
+fun HistoryRoundState.toDto(registries: NetworkDtoConverter): HistoryRoundStateDto = HistoryRoundStateDto(
     identity = identity.toDto(),
     roundNumber = roundNumber,
     position = position.toDto(),

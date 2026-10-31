@@ -131,7 +131,7 @@ class MahjongAuthoritativePersistentStateTest {
         val room = createRoom()
         val encoded = codec.encode(listOf(room), emptyList())
         val registriesWithoutRules = bundledPersistenceRegistries().copy(
-            ruleConfigs = PersistenceDtoRegistry<MahjongRuleConfig>(),
+            ruleConfigs = PersistenceDtoRegistry<MahjongRuleConfig> { error("No rule config mapper is registered in this test") },
         )
         val codecWithoutRules = AuthoritativeStatePersistenceCodec(registriesWithoutRules, componentValidator = bundledComponentValidator())
         val nbt = NbtCompound().apply { putByteArray(MahjongAuthoritativePersistentState.NBT_KEY_STATE, encoded.encodeToByteArray()) }

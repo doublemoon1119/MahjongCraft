@@ -1,7 +1,7 @@
 package com.doublemoon1119.mahjongcraft.flow.network.dto.snapshot
 import com.doublemoon1119.mahjongcraft.flow.network.dto.model.toDomain
 import com.doublemoon1119.mahjongcraft.flow.network.dto.model.toDto
-import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkDtoRegistries
+import com.doublemoon1119.mahjongcraft.flow.network.dto.registry.NetworkDtoConverter
 import com.doublemoon1119.mahjongcraft.logic.base.MeldSnapshot
 import kotlin.uuid.Uuid
 
@@ -11,7 +11,7 @@ import kotlin.uuid.Uuid
  * @param registries 已登記的公開組件格式。
  * @return 轉換後的資料。
  */
-fun MeldSnapshot.toDto(registries: NetworkDtoRegistries): MeldSnapshotDto = MeldSnapshotDto(
+fun MeldSnapshot.toDto(registries: NetworkDtoConverter): MeldSnapshotDto = MeldSnapshotDto(
     id = id.toString(),
     componentViews = registries.componentViews.encode(componentViews),
     type = type.toDto(),
@@ -27,7 +27,7 @@ fun MeldSnapshot.toDto(registries: NetworkDtoRegistries): MeldSnapshotDto = Meld
  * @param registries 已登記的公開組件格式。
  * @return 轉換後的資料。
  */
-fun MeldSnapshotDto.toDomain(registries: NetworkDtoRegistries): MeldSnapshot = MeldSnapshot(
+fun MeldSnapshotDto.toDomain(registries: NetworkDtoConverter): MeldSnapshot = MeldSnapshot(
     id = Uuid.parse(id),
     componentViews = registries.componentViews.decode(componentViews),
     type = type.toDomain(),

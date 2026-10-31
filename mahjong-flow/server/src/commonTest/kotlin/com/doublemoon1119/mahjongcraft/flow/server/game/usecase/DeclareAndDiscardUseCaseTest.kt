@@ -3,8 +3,8 @@ package com.doublemoon1119.mahjongcraft.flow.server.game.usecase
 import com.doublemoon1119.mahjongcraft.extension.MahjongExtension
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryFact
 import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
-import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkDtoRegistries
-import com.doublemoon1119.mahjongcraft.flow.persistence.format.registry.PersistenceRegistries
+import com.doublemoon1119.mahjongcraft.flow.network.dto.api.registration.NetworkDtoRegistrars
+import com.doublemoon1119.mahjongcraft.flow.persistence.format.api.registration.PersistenceRegistrars
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.PostActionExhaustiveDrawResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.RuleContractViolationException
 import com.doublemoon1119.mahjongcraft.flow.server.game.policy.GameVisibilityPolicyImpl
@@ -504,8 +504,8 @@ class DeclareAndDiscardUseCaseTest {
         val hookExtension = object : MahjongExtension {
             override val id: String = "test:hook_trail_extension"
             override fun registerRuleModules(registry: MahjongModuleRegistrar) = Unit
-            override fun registerNetworkDtos(registries: NetworkDtoRegistries) = Unit
-            override fun registerPersistenceDtos(registries: PersistenceRegistries) = Unit
+            override fun registerNetworkDtos(registries: NetworkDtoRegistrars) = Unit
+            override fun registerPersistenceDtos(registries: PersistenceRegistrars) = Unit
             override fun registerComponents(registry: ComponentRegistrar) {
                 registry.register(hookTrailComponent)
                 registry.register(wallRevealComponent)

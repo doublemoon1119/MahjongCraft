@@ -1,7 +1,7 @@
 package com.doublemoon1119.mahjongcraft.flow.network.dto.snapshot
 import com.doublemoon1119.mahjongcraft.flow.network.dto.model.toDomain
 import com.doublemoon1119.mahjongcraft.flow.network.dto.model.toDto
-import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkDtoRegistries
+import com.doublemoon1119.mahjongcraft.flow.network.dto.registry.NetworkDtoConverter
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.toDomain
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.toDto
 import com.doublemoon1119.mahjongcraft.logic.table.TableStateSnapshot
@@ -13,7 +13,7 @@ import kotlin.uuid.Uuid
  * @param registries 網路 DTO 的動態註冊表集合。
  * @return 轉換後的資料。
  */
-fun TableStateSnapshot.toDto(registries: NetworkDtoRegistries): TableStateSnapshotDto = TableStateSnapshotDto(
+fun TableStateSnapshot.toDto(registries: NetworkDtoConverter): TableStateSnapshotDto = TableStateSnapshotDto(
     id = id.toString(),
     componentViews = registries.componentViews.encode(componentViews),
     players = players.map { it.toDto(registries) },
@@ -39,7 +39,7 @@ fun TableStateSnapshot.toDto(registries: NetworkDtoRegistries): TableStateSnapsh
  * @param registries 網路 DTO 的動態註冊表集合。
  * @return 轉換後的資料。
  */
-fun TableStateSnapshotDto.toDomain(registries: NetworkDtoRegistries): TableStateSnapshot = TableStateSnapshot(
+fun TableStateSnapshotDto.toDomain(registries: NetworkDtoConverter): TableStateSnapshot = TableStateSnapshot(
     id = Uuid.parse(id),
     componentViews = registries.componentViews.decode(componentViews),
     players = players.map { it.toDomain(registries) },

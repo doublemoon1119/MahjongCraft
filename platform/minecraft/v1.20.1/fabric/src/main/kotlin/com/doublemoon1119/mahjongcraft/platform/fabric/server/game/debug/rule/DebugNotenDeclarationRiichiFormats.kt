@@ -1,14 +1,14 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.rule
 
+import com.doublemoon1119.mahjongcraft.flow.network.dto.api.registration.NetworkDtoRegistrars
 import com.doublemoon1119.mahjongcraft.flow.network.dto.registry.DtoDefinition
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.ExtensionGameActionDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.MahjongRuleConfigDto
-import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkDtoRegistries
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.riichi.RiichiRuleConfigDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.riichi.toDomain
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.riichi.toRiichiDto
+import com.doublemoon1119.mahjongcraft.flow.persistence.format.api.registration.PersistenceRegistrars
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.core.PersistenceDtoDefinition
-import com.doublemoon1119.mahjongcraft.flow.persistence.format.registry.PersistenceRegistries
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.rule.RiichiRuleConfigPersistenceDto
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.rule.toDomain
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.rule.toPersistenceDto
@@ -51,14 +51,14 @@ internal data object DebugDeclareNotenActionPersistenceDto
  *
  * @param registries 網路 DTO registry 集合。
  */
-internal fun registerDebugNotenDeclarationRiichiNetworkDtos(registries: NetworkDtoRegistries) {
+internal fun registerDebugNotenDeclarationRiichiNetworkDtos(registries: NetworkDtoRegistrars) {
     registries.ruleConfig.register(
         definition = DtoDefinition(
             domainClass = DebugNotenDeclarationRiichiRuleConfig::class,
             dtoClass = DebugNotenDeclarationRiichiRuleConfigDto::class,
             serializer = DebugNotenDeclarationRiichiRuleConfigDto.serializer(),
-            toDto = { DebugNotenDeclarationRiichiRuleConfigDto(it.base.toRiichiDto(registries)) },
-            toDomain = { DebugNotenDeclarationRiichiRuleConfig(it.base.toDomain(registries)) },
+            toDto = { value, converter -> DebugNotenDeclarationRiichiRuleConfigDto(value.base.toRiichiDto(converter)) },
+            toDomain = { dto, converter -> DebugNotenDeclarationRiichiRuleConfig(dto.base.toDomain(converter)) },
         ),
     )
     registries.extensionGameAction.register(
@@ -77,7 +77,7 @@ internal fun registerDebugNotenDeclarationRiichiNetworkDtos(registries: NetworkD
  *
  * @param registries persistence registry 集合。
  */
-internal fun registerDebugNotenDeclarationRiichiPersistenceDtos(registries: PersistenceRegistries) {
+internal fun registerDebugNotenDeclarationRiichiPersistenceDtos(registries: PersistenceRegistrars) {
     registries.ruleConfigs.register(
         definition = PersistenceDtoDefinition(
             typeKey = MahjongCraftMetadata.id("debug/noten_declaration_riichi_rule_config"),

@@ -1,8 +1,8 @@
 package com.doublemoon1119.mahjongcraft.flow.server.game.usecase
 
 import com.doublemoon1119.mahjongcraft.extension.MahjongExtension
-import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkDtoRegistries
-import com.doublemoon1119.mahjongcraft.flow.persistence.format.registry.PersistenceRegistries
+import com.doublemoon1119.mahjongcraft.flow.network.dto.api.registration.NetworkDtoRegistrars
+import com.doublemoon1119.mahjongcraft.flow.persistence.format.api.registration.PersistenceRegistrars
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.RuleContractViolationException
 import com.doublemoon1119.mahjongcraft.logic.api.registration.ComponentRegistrar
 import com.doublemoon1119.mahjongcraft.logic.api.registration.MahjongModuleRegistrar
@@ -88,8 +88,8 @@ class RuleComponentCheckerTest {
                 object : MahjongExtension {
                     override val id: String = "test:other_extension"
                     override fun registerRuleModules(registry: MahjongModuleRegistrar) = Unit
-                    override fun registerNetworkDtos(registries: NetworkDtoRegistries) = Unit
-                    override fun registerPersistenceDtos(registries: PersistenceRegistries) = Unit
+                    override fun registerNetworkDtos(registries: NetworkDtoRegistrars) = Unit
+                    override fun registerPersistenceDtos(registries: PersistenceRegistrars) = Unit
                     override fun registerComponents(registry: ComponentRegistrar) {
                         registry.register(otherNote)
                         registry.registerLifecycle(

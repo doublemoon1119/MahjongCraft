@@ -10,9 +10,9 @@ import com.doublemoon1119.mahjongcraft.ai.expectation.InformationLevel
 import com.doublemoon1119.mahjongcraft.ai.expectation.OpponentModelRegistry
 import com.doublemoon1119.mahjongcraft.extension.MahjongExtension
 import com.doublemoon1119.mahjongcraft.extension.MahjongExtensionRegistrar
-import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkDtoRegistries
+import com.doublemoon1119.mahjongcraft.flow.network.dto.api.registration.NetworkDtoRegistrars
+import com.doublemoon1119.mahjongcraft.flow.persistence.format.api.registration.PersistenceRegistrars
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.component.registerBuiltInComponentPersistence
-import com.doublemoon1119.mahjongcraft.flow.persistence.format.registry.PersistenceRegistries
 import com.doublemoon1119.mahjongcraft.logic.api.registration.ComponentRegistrar
 import com.doublemoon1119.mahjongcraft.logic.api.registration.MahjongModuleRegistrar
 import com.doublemoon1119.mahjongcraft.logic.component.BuiltInComponentOwners
@@ -39,9 +39,9 @@ class BuiltInMahjongExtension(
 
     override fun registerRuleModules(registry: MahjongModuleRegistrar) = Unit
 
-    override fun registerNetworkDtos(registries: NetworkDtoRegistries) = Unit
+    override fun registerNetworkDtos(registries: NetworkDtoRegistrars) = Unit
 
-    override fun registerPersistenceDtos(registries: PersistenceRegistries) {
+    override fun registerPersistenceDtos(registries: PersistenceRegistrars) {
         registerBuiltInComponentPersistence(registries.components)
     }
 

@@ -12,15 +12,15 @@ import com.doublemoon1119.mahjongcraft.example.pairing.ExamplePairingExhaustiveD
 import com.doublemoon1119.mahjongcraft.example.pairing.ExamplePairingGameLength
 import com.doublemoon1119.mahjongcraft.example.pairing.ExamplePairingRuleConfig
 import com.doublemoon1119.mahjongcraft.example.pairing.ExamplePairingScoreConfig
+import com.doublemoon1119.mahjongcraft.flow.network.dto.api.registration.NetworkDtoRegistrars
 import com.doublemoon1119.mahjongcraft.flow.network.dto.registry.DtoDefinition
-import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkDtoRegistries
 
 /**
  * 登記範例自己使用的網路型別，不修改本體的序列化清單。
  *
  * @param registries 啟動期間尚未凍結的網路註冊表。
  */
-fun registerExampleNetworkDtos(registries: NetworkDtoRegistries) {
+fun registerExampleNetworkDtos(registries: NetworkDtoRegistrars) {
     registries.ruleConfig.register(
         definition = DtoDefinition(
             domainClass = ExamplePairingRuleConfig::class,

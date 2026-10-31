@@ -1,10 +1,11 @@
 package com.doublemoon1119.mahjongcraft.flow.server.game.orchestration
 
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.ExtensionGameCommand
+import com.doublemoon1119.mahjongcraft.flow.server.api.registration.ExtensionGameCommandExecutorRegistrar
 import kotlin.reflect.KClass
 
-/** 管理擴充命令與其 handler 建立方式的可凍結註冊表。 */
-class ExtensionGameCommandExecutorRegistry {
+/** 管理擴充命令與其 handler 建立方式的可凍結註冊表；擴充只透過 [ExtensionGameCommandExecutorRegistrar] 登記。 */
+class ExtensionGameCommandExecutorRegistry : ExtensionGameCommandExecutorRegistrar {
     /**
      * 保留具體命令型別的 handler 建立方式，避免放入註冊表時遺失泛型資訊。
      *
@@ -20,7 +21,7 @@ class ExtensionGameCommandExecutorRegistry {
     private var frozen = false
 
     /** 目前已登記命令型別的穩定類別名稱快照。 */
-    val registrationKeys: Set<String> get() = entries.keys.mapTo(mutableSetOf()) { it.qualifiedName ?: it.toString() }
+    override val registrationKeys: Set<String> get() = entries.keys.mapTo(mutableSetOf()) { it.qualifiedName ?: it.toString() }
 
     /**
      * 註冊一種擴充命令的 handler 建立方式；註冊表凍結後或同一命令型別已登記時會失敗。
@@ -28,7 +29,7 @@ class ExtensionGameCommandExecutorRegistry {
      * @param C 命令型別。
      * @param definition 命令類別與 handler factory。
      */
-    fun <C : ExtensionGameCommand> register(definition: ExtensionGameCommandHandlerDefinition<C>) {
+    override fun <C : ExtensionGameCommand> register(definition: ExtensionGameCommandHandlerDefinition<C>) {
         check(!frozen) { "Extension game command registry is frozen" }
         require(definition.commandClass !in entries) { "Command handler already registered for ${definition.commandClass}" }
         entries[definition.commandClass] = Entry(definition.factory)

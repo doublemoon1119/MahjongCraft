@@ -1,12 +1,15 @@
 package com.doublemoon1119.mahjongcraft.flow.network.dto.component
 
+import com.doublemoon1119.mahjongcraft.flow.network.dto.api.registration.ComponentViewNetworkRegistrar
 import com.doublemoon1119.mahjongcraft.logic.component.ComponentViewSet
 import com.doublemoon1119.mahjongcraft.logic.component.ComponentViewType
 import kotlinx.serialization.KSerializer
 import kotlin.reflect.KClass
 
-/** 登記已裁切組件的網路格式，不保存權威組件的轉換。 */
-class ComponentViewNetworkRegistry {
+/** 登記已裁切組件的網路格式，不保存權威組件的轉換；擴充只透過 [ComponentViewNetworkRegistrar] 登記。 */
+class ComponentViewNetworkRegistry :
+    ComponentViewNetworkRegistrar,
+    ComponentViewNetworkConverter {
     /** 依輸出 ID 查找轉換。 */
     private val byViewId = linkedMapOf<String, Entry<*, *>>()
 
@@ -20,7 +23,7 @@ class ComponentViewNetworkRegistry {
     private var frozen = false
 
     /** 網路序列化名稱的獨立快照。 */
-    val registrationKeys: Set<String> get() = bySerialName.keys.toSet()
+    override val registrationKeys: Set<String> get() = bySerialName.keys.toSet()
 
     /** 已登記的輸出定義，供啟動時核對同一份定義。 */
     val viewTypes: List<ComponentViewType<*>> get() = byViewId.values.map { it.definition.viewType }
@@ -32,7 +35,7 @@ class ComponentViewNetworkRegistry {
      * @param D 網路型別。
      * @param definition 轉換定義。
      */
-    fun <V : Any, D : ComponentViewDto> register(definition: ComponentViewNetworkDefinition<V, D>) {
+    override fun <V : Any, D : ComponentViewDto> register(definition: ComponentViewNetworkDefinition<V, D>) {
         check(!frozen) { "Component view network registry is frozen" }
         val serialName = definition.serializer.descriptor.serialName
         require(definition.viewType.id !in byViewId) { "Duplicate component view network ID: ${definition.viewType.id}" }
@@ -55,7 +58,7 @@ class ComponentViewNetworkRegistry {
      * @param views 已裁切的輸出。
      * @return 可由網路格式序列化的資料。
      */
-    fun encode(views: ComponentViewSet): List<ComponentViewDto> = views.types.map { type ->
+    override fun encode(views: ComponentViewSet): List<ComponentViewDto> = views.types.map { type ->
         val entry = byViewId[type.id] ?: error("No network DTO for component view ${type.id}")
         entry.encode(views)
     }
@@ -66,7 +69,7 @@ class ComponentViewNetworkRegistry {
      * @param dtos 網路資料。
      * @return 已裁切的組件輸出。
      */
-    fun decode(dtos: List<ComponentViewDto>): ComponentViewSet {
+    override fun decode(dtos: List<ComponentViewDto>): ComponentViewSet {
         val seen = mutableSetOf<String>()
         return dtos.fold(ComponentViewSet.EMPTY) { result, dto ->
             val entry = byDtoClass[dto::class] ?: error("No component view mapping for ${dto::class}")

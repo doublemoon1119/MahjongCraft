@@ -2,7 +2,7 @@ package com.doublemoon1119.mahjongcraft.flow.network.dto.snapshot
 
 import com.doublemoon1119.mahjongcraft.flow.network.dto.model.toDomain
 import com.doublemoon1119.mahjongcraft.flow.network.dto.model.toDto
-import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkDtoRegistries
+import com.doublemoon1119.mahjongcraft.flow.network.dto.registry.NetworkDtoConverter
 import com.doublemoon1119.mahjongcraft.logic.table.DiscardEntrySnapshot
 import com.doublemoon1119.mahjongcraft.logic.table.DiscardPileSnapshot
 import kotlin.uuid.Uuid
@@ -13,7 +13,7 @@ import kotlin.uuid.Uuid
  * @param registries 已登記的公開特徵格式。
  * @return 不含權威組件的網路快照。
  */
-fun DiscardPileSnapshot.toDto(registries: NetworkDtoRegistries): DiscardPileSnapshotDto = DiscardPileSnapshotDto(
+fun DiscardPileSnapshot.toDto(registries: NetworkDtoConverter): DiscardPileSnapshotDto = DiscardPileSnapshotDto(
     entries = entries.map { DiscardEntrySnapshotDto(it.tile.toDto(registries), it.isTaken, it.publicMarkerIds.toSet()) },
     sidewaysTileId = sidewaysTileId?.toString(),
 )
@@ -24,7 +24,7 @@ fun DiscardPileSnapshot.toDto(registries: NetworkDtoRegistries): DiscardPileSnap
  * @param registries 已登記的公開特徵格式。
  * @return 已裁切的牌河快照。
  */
-fun DiscardPileSnapshotDto.toDomain(registries: NetworkDtoRegistries): DiscardPileSnapshot = DiscardPileSnapshot(
+fun DiscardPileSnapshotDto.toDomain(registries: NetworkDtoConverter): DiscardPileSnapshot = DiscardPileSnapshot(
     entries = entries.map { DiscardEntrySnapshot(it.tile.toDomain(registries), it.isTaken, it.publicMarkerIds.toSet()) },
     sidewaysTileId = sidewaysTileId?.let(Uuid::parse),
 )

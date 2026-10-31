@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.flow.persistence.format.component
 
+import com.doublemoon1119.mahjongcraft.flow.persistence.format.api.registration.ComponentPersistenceRegistrar
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.core.TypedPersistenceDto
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.core.UnregisteredPersistenceTypeException
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.core.persistenceJson
@@ -7,8 +8,10 @@ import com.doublemoon1119.mahjongcraft.logic.component.ComponentSet
 import com.doublemoon1119.mahjongcraft.logic.component.ComponentType
 import kotlinx.serialization.json.JsonObject
 
-/** 登記組件的保存轉換；找不到定義時拒絕讀寫，不當成空值。 */
-class ComponentPersistenceRegistry {
+/** 登記組件的保存轉換；找不到定義時拒絕讀寫，不當成空值；擴充只透過 [ComponentPersistenceRegistrar] 登記。 */
+class ComponentPersistenceRegistry :
+    ComponentPersistenceRegistrar,
+    ComponentPersistenceConverter {
     /**
      * 捕捉一項轉換的具體型別，避免對外暴露未檢查的值轉型。
      *
@@ -50,7 +53,7 @@ class ComponentPersistenceRegistry {
     private var frozen = false
 
     /** 已登記 ID 的獨立集合。 */
-    val registrationKeys: Set<String> get() = entries.keys.toSet()
+    override val registrationKeys: Set<String> get() = entries.keys.toSet()
 
     /** 所有轉換所使用的組件定義，用於啟動時核對同一份 runtime registry。 */
     val componentTypes: List<ComponentType<*>> get() = entries.values.map { it.definition.component }
@@ -62,7 +65,7 @@ class ComponentPersistenceRegistry {
      * @param D 保存 DTO 型別。
      * @param definition 組件及雙向保存轉換。
      */
-    fun <V : Any, D : Any> register(definition: ComponentPersistenceDefinition<V, D>) {
+    override fun <V : Any, D : Any> register(definition: ComponentPersistenceDefinition<V, D>) {
         check(!frozen) { "Component persistence registry is frozen" }
         require(definition.component.id !in entries) { "Duplicate component persistence ID: ${definition.component.id}" }
         entries[definition.component.id] = Entry(definition)
@@ -79,7 +82,7 @@ class ComponentPersistenceRegistry {
      * @param components 權威不可變組件。
      * @return 保存資料清單。
      */
-    fun encode(components: ComponentSet): List<TypedPersistenceDto> = components.types.map { type ->
+    override fun encode(components: ComponentSet): List<TypedPersistenceDto> = components.types.map { type ->
         val entry = entries[type.id] ?: throw UnregisteredPersistenceTypeException(type.id)
         entry.encode(components)
     }
@@ -90,7 +93,7 @@ class ComponentPersistenceRegistry {
      * @param values 保存資料。
      * @return 經定義驗證的組件集合。
      */
-    fun decode(values: List<TypedPersistenceDto>): ComponentSet {
+    override fun decode(values: List<TypedPersistenceDto>): ComponentSet {
         require(values.map { it.typeKey }.distinct().size == values.size) { "Duplicate saved component ID" }
         return values.fold(ComponentSet.EMPTY) { result, dto ->
             val entry = entries[dto.typeKey] ?: throw UnregisteredPersistenceTypeException(dto.typeKey)

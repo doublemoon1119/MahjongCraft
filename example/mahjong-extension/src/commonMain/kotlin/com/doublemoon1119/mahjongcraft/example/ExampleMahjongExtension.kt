@@ -14,13 +14,13 @@ import com.doublemoon1119.mahjongcraft.example.pairing.ExamplePairingRuleConfig
 import com.doublemoon1119.mahjongcraft.example.pairing.ExamplePairingRuleModule
 import com.doublemoon1119.mahjongcraft.example.pairing.registerExamplePairingComponents
 import com.doublemoon1119.mahjongcraft.extension.MahjongExtension
-import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkDtoRegistries
-import com.doublemoon1119.mahjongcraft.flow.persistence.format.registry.PersistenceRegistries
-import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.ExtensionGameActionCommandFactoryRegistry
-import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.ExtensionGameCommandExecutorRegistry
-import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.RuleDecisionResolverRegistry
+import com.doublemoon1119.mahjongcraft.flow.network.dto.api.registration.NetworkDtoRegistrars
+import com.doublemoon1119.mahjongcraft.flow.persistence.format.api.registration.PersistenceRegistrars
+import com.doublemoon1119.mahjongcraft.flow.server.api.registration.ExtensionGameActionCommandFactoryRegistrar
+import com.doublemoon1119.mahjongcraft.flow.server.api.registration.ExtensionGameCommandExecutorRegistrar
+import com.doublemoon1119.mahjongcraft.flow.server.api.registration.RuleDecisionResolverRegistrar
+import com.doublemoon1119.mahjongcraft.flow.server.api.registration.WinSettlementDetailResolverRegistrar
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.WinSettlementDetailResolverDefinition
-import com.doublemoon1119.mahjongcraft.flow.server.game.service.WinSettlementDetailResolverRegistry
 import com.doublemoon1119.mahjongcraft.logic.api.registration.ComponentRegistrar
 import com.doublemoon1119.mahjongcraft.logic.api.registration.MahjongModuleRegistrar
 import com.doublemoon1119.mahjongcraft.logic.api.registration.TileTypeRegistrar
@@ -51,10 +51,10 @@ open class ExampleMahjongExtension : MahjongExtension {
     override fun registerComponents(registry: ComponentRegistrar) = registerExamplePairingComponents(registry)
 
     /** 登記範例的規則、計分與局數設定，以及流局原因、擴充動作與指令的網路格式。 */
-    override fun registerNetworkDtos(registries: NetworkDtoRegistries) = registerExampleNetworkDtos(registries)
+    override fun registerNetworkDtos(registries: NetworkDtoRegistrars) = registerExampleNetworkDtos(registries)
 
     /** 登記獨立的保存格式，供權威存檔與歷史沿用。 */
-    override fun registerPersistenceDtos(registries: PersistenceRegistries) = registerExamplePersistenceDtos(registries)
+    override fun registerPersistenceDtos(registries: PersistenceRegistrars) = registerExamplePersistenceDtos(registries)
 
     /** 登記不重新計算規則的摸切策略。 */
     override fun registerAiStrategies(registry: MahjongAiStrategyRegistrar) {
@@ -62,18 +62,18 @@ open class ExampleMahjongExtension : MahjongExtension {
     }
 
     /** 登記攤牌動作的命令建立方式。 */
-    override fun registerGameActionCommandFactories(registry: ExtensionGameActionCommandFactoryRegistry) = registerExamplePairingRevealHandFactory(registry)
+    override fun registerGameActionCommandFactories(registry: ExtensionGameActionCommandFactoryRegistrar) = registerExamplePairingRevealHandFactory(registry)
 
     /** 登記攤牌動作的權威處理器。 */
-    override fun registerGameCommandHandlers(registry: ExtensionGameCommandExecutorRegistry) = registerExamplePairingRevealHandHandler(registry)
+    override fun registerGameCommandHandlers(registry: ExtensionGameCommandExecutorRegistrar) = registerExamplePairingRevealHandHandler(registry)
 
     /** 登記依換牌選項決定是否啟用的規則選擇。 */
-    override fun registerRuleDecisionResolvers(registry: RuleDecisionResolverRegistry) {
+    override fun registerRuleDecisionResolvers(registry: RuleDecisionResolverRegistrar) {
         registry.register(ExamplePairingRuleDecisionResolver())
     }
 
     /** 登記只描述實際付款點數的結算詳情。 */
-    override fun registerWinSettlementDetailResolvers(registry: WinSettlementDetailResolverRegistry) {
+    override fun registerWinSettlementDetailResolvers(registry: WinSettlementDetailResolverRegistrar) {
         registry.register(
             definition = WinSettlementDetailResolverDefinition(
                 ruleModuleId = ExamplePairingIds.RULE_MODULE,
