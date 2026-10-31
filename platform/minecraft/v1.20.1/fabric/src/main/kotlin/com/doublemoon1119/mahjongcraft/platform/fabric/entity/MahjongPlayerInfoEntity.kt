@@ -12,6 +12,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.api.table.MahjongTable
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongPlayerInfoEntry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongPlayerScoreChange
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableOverlayVisibility
+import com.doublemoon1119.mahjongcraft.platform.minecraft.table.mahjongTableFacingFromNameOrDefault
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
@@ -68,7 +69,7 @@ class MahjongPlayerInfoEntity(
 
     /** 觀看此桌時的座位方向；未知值使用北向預設。 */
     var tableFacing: MahjongTableFacing
-        get() = MahjongTableFacing.fromNameOrDefault(dataTracker[TABLE_FACING])
+        get() = mahjongTableFacingFromNameOrDefault(dataTracker[TABLE_FACING])
         set(value) = dataTracker.set(TABLE_FACING, value.name)
 
     /** 所屬麻將桌；尚未指派或資料損壞時為 `null`。 */
@@ -154,7 +155,7 @@ class MahjongPlayerInfoEntity(
     override fun readCustomDataFromNbt(nbt: NbtCompound) {
         dataTracker.set(PLAYERS, nbt.getString(NBT_PLAYERS).ifBlank { "[]" })
         dealerPlayerId = nbt.getString(NBT_DEALER).takeIf(String::isNotBlank)?.let { Uuid.parse(it) }
-        dataTracker.set(TABLE_FACING, MahjongTableFacing.fromNameOrDefault(nbt.getString(NBT_FACING)).name)
+        dataTracker.set(TABLE_FACING, mahjongTableFacingFromNameOrDefault(nbt.getString(NBT_FACING)).name)
         managedTableId = ManagedTableNbt.read(nbt)
         if (nbt.contains(NBT_CONTROLLER_X)) {
             controllerPos = BlockPos(nbt.getInt(NBT_CONTROLLER_X), nbt.getInt(NBT_CONTROLLER_Y), nbt.getInt(NBT_CONTROLLER_Z))
