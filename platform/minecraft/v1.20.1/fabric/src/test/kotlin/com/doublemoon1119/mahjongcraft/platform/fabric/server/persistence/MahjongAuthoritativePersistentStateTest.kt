@@ -33,11 +33,11 @@ class MahjongAuthoritativePersistentStateTest {
     /** 既有 NBT 缺少 payload 時不得偽裝成新世界，空狀態只能由 create 建立。 */
     @Test
     fun `missing payload is rejected instead of creating empty state`() {
-        assertFailsWith<IllegalArgumentException> { MahjongAuthoritativePersistentState.fromNbt(NbtCompound(), codec) }
+        assertFailsWith<IllegalArgumentException> { MahjongAuthoritativePersistentState.fromNbt(NbtCompound(), codec, testCharacterRegistry()) }
         assertFailsWith<IllegalArgumentException> {
-            MahjongAuthoritativePersistentState.fromNbt(NbtCompound().apply { putString(MahjongAuthoritativePersistentState.NBT_KEY_STATE, "invalid") }, codec)
+            MahjongAuthoritativePersistentState.fromNbt(NbtCompound().apply { putString(MahjongAuthoritativePersistentState.NBT_KEY_STATE, "invalid") }, codec, testCharacterRegistry())
         }
-        val created = MahjongAuthoritativePersistentState.create(codec)
+        val created = MahjongAuthoritativePersistentState.create(codec, testCharacterRegistry())
         assertEquals(AuthoritativeStateSnapshot(), created.snapshot)
         assertFalse(created.isDirty)
     }
@@ -47,10 +47,10 @@ class MahjongAuthoritativePersistentStateTest {
     fun `updated snapshot round-trips through NBT`() {
         val room = createRoom()
         val expected = AuthoritativeStateSnapshot(rooms = mapOf(room.id to room))
-        val state = MahjongAuthoritativePersistentState.create(codec)
+        val state = MahjongAuthoritativePersistentState.create(codec, testCharacterRegistry())
 
         state.update(expected)
-        val restored = MahjongAuthoritativePersistentState.fromNbt(state.writeNbt(NbtCompound()), codec)
+        val restored = MahjongAuthoritativePersistentState.fromNbt(state.writeNbt(NbtCompound()), codec, testCharacterRegistry())
 
         assertTrue(state.isDirty)
         assertEquals(expected, restored.snapshot)
@@ -60,13 +60,13 @@ class MahjongAuthoritativePersistentStateTest {
     @Test
     fun `separate NBT containers retain separate world states`() {
         val room = createRoom()
-        val first = MahjongAuthoritativePersistentState.create(codec).apply {
+        val first = MahjongAuthoritativePersistentState.create(codec, testCharacterRegistry()).apply {
             update(AuthoritativeStateSnapshot(rooms = mapOf(room.id to room)))
         }
-        val second = MahjongAuthoritativePersistentState.create(codec)
+        val second = MahjongAuthoritativePersistentState.create(codec, testCharacterRegistry())
 
-        val restoredFirst = MahjongAuthoritativePersistentState.fromNbt(first.writeNbt(NbtCompound()), codec)
-        val restoredSecond = MahjongAuthoritativePersistentState.fromNbt(second.writeNbt(NbtCompound()), codec)
+        val restoredFirst = MahjongAuthoritativePersistentState.fromNbt(first.writeNbt(NbtCompound()), codec, testCharacterRegistry())
+        val restoredSecond = MahjongAuthoritativePersistentState.fromNbt(second.writeNbt(NbtCompound()), codec, testCharacterRegistry())
 
         assertEquals(setOf(room.id), restoredFirst.snapshot.rooms.keys)
         assertTrue(restoredSecond.snapshot.rooms.isEmpty())
@@ -77,13 +77,13 @@ class MahjongAuthoritativePersistentStateTest {
     fun `state larger than NBT string limit round-trips through compressed NBT`() {
         val rooms = List(LARGE_ROOM_COUNT) { createRoom() }.associateBy { it.id }
         val expected = AuthoritativeStateSnapshot(rooms = rooms)
-        val state = MahjongAuthoritativePersistentState.create(codec).apply { update(expected) }
+        val state = MahjongAuthoritativePersistentState.create(codec, testCharacterRegistry()).apply { update(expected) }
         assertTrue(codec.encode(rooms.values, emptyList()).encodeToByteArray().size > NBT_STRING_LIMIT_BYTES)
 
         val output = ByteArrayOutputStream()
         NbtIo.writeCompressed(state.writeNbt(NbtCompound()), output)
         val nbt = NbtIo.readCompressed(ByteArrayInputStream(output.toByteArray()))
-        val restored = MahjongAuthoritativePersistentState.fromNbt(nbt, codec)
+        val restored = MahjongAuthoritativePersistentState.fromNbt(nbt, codec, testCharacterRegistry())
 
         assertEquals(expected, restored.snapshot)
     }
@@ -91,9 +91,10 @@ class MahjongAuthoritativePersistentStateTest {
     /** 驗證狀態以位元組陣列欄位寫入。 */
     @Test
     fun `state is written as a byte array`() {
-        val nbt = MahjongAuthoritativePersistentState.create(codec).writeNbt(NbtCompound())
+        val nbt = MahjongAuthoritativePersistentState.create(codec, testCharacterRegistry()).writeNbt(NbtCompound())
 
-        assertEquals(setOf(MahjongAuthoritativePersistentState.NBT_KEY_STATE), nbt.keys)
+        assertEquals(setOf(MahjongAuthoritativePersistentState.NBT_KEY_STATE, MahjongAuthoritativePersistentState.NBT_KEY_CHARACTERS), nbt.keys)
+        assertEquals(NbtElement.BYTE_ARRAY_TYPE, nbt.getType(MahjongAuthoritativePersistentState.NBT_KEY_CHARACTERS))
         assertEquals(NbtElement.BYTE_ARRAY_TYPE, nbt.getType(MahjongAuthoritativePersistentState.NBT_KEY_STATE))
     }
 
@@ -103,7 +104,7 @@ class MahjongAuthoritativePersistentStateTest {
         val nbt = NbtCompound().apply { putByteArray(MahjongAuthoritativePersistentState.NBT_KEY_STATE, "{not-json".encodeToByteArray()) }
 
         assertFailsWith<SerializationException> {
-            MahjongAuthoritativePersistentState.fromNbt(nbt, codec)
+            MahjongAuthoritativePersistentState.fromNbt(nbt, codec, testCharacterRegistry())
         }
     }
 
@@ -121,7 +122,7 @@ class MahjongAuthoritativePersistentStateTest {
         }
 
         assertFailsWith<UnsupportedPersistenceSchemaVersionException> {
-            MahjongAuthoritativePersistentState.fromNbt(nbt, codec)
+            MahjongAuthoritativePersistentState.fromNbt(nbt, codec, testCharacterRegistry())
         }
     }
 
@@ -137,7 +138,7 @@ class MahjongAuthoritativePersistentStateTest {
         val nbt = NbtCompound().apply { putByteArray(MahjongAuthoritativePersistentState.NBT_KEY_STATE, encoded.encodeToByteArray()) }
 
         assertFailsWith<IllegalStateException> {
-            MahjongAuthoritativePersistentState.fromNbt(nbt, codecWithoutRules)
+            MahjongAuthoritativePersistentState.fromNbt(nbt, codecWithoutRules, testCharacterRegistry())
         }
     }
 

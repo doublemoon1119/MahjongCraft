@@ -91,6 +91,7 @@ object MinecraftMahjongExtensionBootstrap {
         extension: MinecraftMahjongExtension,
         registries: MinecraftPresentationRegistries,
     ) {
+        extension.registerAiCharacters(registries.aiCharacterRegistry)
         extension.registerTileAssets(registries.tileAssetRegistry)
         extension.registerAiStrategyDisplayNames(registries.aiStrategyDisplayNameRegistry)
         extension.registerAutomaticControlDisplays(registries.automaticControlDisplayRegistry)

@@ -4,11 +4,16 @@ import com.doublemoon1119.mahjongcraft.flow.persistence.format.state.Authoritati
 import com.doublemoon1119.mahjongcraft.flow.server.lifecycle.ServerSessionStateCleaner
 import com.doublemoon1119.mahjongcraft.flow.server.lifecycle.ServerSessionStateRestorer
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateStore
+import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateUpdate
 import com.doublemoon1119.mahjongcraft.platform.fabric.logging.mahjongCraftLogger
+import com.doublemoon1119.mahjongcraft.platform.minecraft.character.AiCharacterRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.character.AiCharacterSelectionResult
+import com.doublemoon1119.mahjongcraft.platform.minecraft.character.AiCharacterStateSnapshot
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.withContext
 import net.minecraft.server.MinecraftServer
+import kotlin.uuid.Uuid
 
 /**
  * 將單次 Minecraft server session 與其 overworld [MahjongAuthoritativePersistentState] 接起來。
@@ -17,13 +22,15 @@ import net.minecraft.server.MinecraftServer
  * @property store 目前的權威狀態儲存庫。
  * @property stateRestorer 將持久化快照還原到領域儲存庫。
  * @property stateCleaner 初始化失敗時清除本次 session 的衍生與權威記憶體，不寫回存檔。
- * @property dataStatus 回報無法讀取的權威狀態。
+ * @property characterRegistry 已凍結的角色描述登記表。
+ * @property dataStatus 回報牌局或角色區段的讀取失敗。
  */
 class FabricAuthoritativeStatePersistence(
     private val codec: AuthoritativeStatePersistenceCodec,
     private val store: AuthoritativeStateStore,
     private val stateRestorer: ServerSessionStateRestorer,
     private val stateCleaner: ServerSessionStateCleaner,
+    private val characterRegistry: AiCharacterRegistry,
     private val dataStatus: FabricMahjongDataStatus,
 ) {
     private val logger = mahjongCraftLogger(FabricAuthoritativeStatePersistence::class)
@@ -44,8 +51,8 @@ class FabricAuthoritativeStatePersistence(
                     loadPersistentStateStrict(
                         server = server,
                         key = MahjongAuthoritativePersistentState.STORAGE_KEY,
-                        decode = { nbt -> MahjongAuthoritativePersistentState.fromNbt(nbt, codec) },
-                        create = { MahjongAuthoritativePersistentState.create(codec) },
+                        decode = { nbt -> MahjongAuthoritativePersistentState.fromNbt(nbt, codec, characterRegistry) },
+                        create = { MahjongAuthoritativePersistentState.create(codec, characterRegistry) },
                     )
                 },
                 initialize = { state ->
@@ -84,12 +91,38 @@ class FabricAuthoritativeStatePersistence(
                 },
             )
             persistentState = state
+            state.characterDataFailure?.let { cause ->
+                logger.warn("AI character data could not be read; its original section is preserved and character changes are disabled", cause)
+                dataStatus.report(MahjongDataProblem(MahjongDataSource.AI_CHARACTERS, persistentStateDisplayPath(MahjongAuthoritativePersistentState.STORAGE_KEY), classifyDataLoadFailure(cause)))
+            }
         } catch (cancelled: CancellationException) {
             throw cancelled
         } catch (exception: Exception) {
             logger.error("Failed to attach authoritative persistence for the current server session", exception)
             throw exception
         }
+    }
+
+    /** 取得同一版本的牌局與角色快照；沒有有效 session 時為 null。 */
+    fun characterSnapshot(): AiCharacterStateSnapshot? = persistentState?.characterSnapshot()
+
+    /**
+     * 以與開局相同的交易邊界處理角色切換；不提供原生實體或 NBT 選項。
+     *
+     * @param tableId 等待中的房間。
+     * @param playerId 房間內的 AI。
+     * @param operatorId 發起選擇的玩家。
+     * @param characterId 已登記的角色 ID。
+     * @return 驗證與套用結果。
+     */
+    suspend fun selectCharacter(
+        tableId: Uuid,
+        playerId: Uuid,
+        operatorId: Uuid,
+        characterId: String,
+    ): AiCharacterSelectionResult = store.update { current ->
+        val result = persistentState?.selectCharacter(current, tableId, playerId, operatorId, characterId) ?: AiCharacterSelectionResult.DATA_UNAVAILABLE
+        AuthoritativeStateUpdate(current, result)
     }
 
     /** 停止 dirty 轉送；Minecraft 仍持有 state，會在既有世界保存流程中寫入磁碟。 */

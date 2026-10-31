@@ -12,6 +12,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionVocab
 import com.doublemoon1119.mahjongcraft.platform.minecraft.action.HUD_ACTION_PREFIX
 import com.doublemoon1119.mahjongcraft.platform.minecraft.action.MinecraftKanActionTokenKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.ai.AiStrategyDisplayNameDefinition
+import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.AiCharacterRegistrar
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.AiStrategyDisplayNameRegistrar
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.AutomaticControlDisplayRegistrar
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.DecisionStatusDisplayNameRegistrar
@@ -25,6 +26,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.WinSe
 import com.doublemoon1119.mahjongcraft.platform.minecraft.automatic.AutomaticControlDisplay
 import com.doublemoon1119.mahjongcraft.platform.minecraft.automatic.AutomaticControlDisplayDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.automatic.BuiltInMinecraftAutomaticControlIds
+import com.doublemoon1119.mahjongcraft.platform.minecraft.character.BuiltInAiCharacters
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftClientConfigScreenKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.DecisionStatusDisplayNameDefaultDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.HUD_STATUS_PREFIX
@@ -54,6 +56,10 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.redText
  */
 object BuiltInMinecraftMahjongExtension : MinecraftMahjongExtension {
     override val id: String = MahjongCraftMetadata.id("builtin")
+
+    override fun registerAiCharacters(registry: AiCharacterRegistrar) {
+        registry.register(BuiltInAiCharacters.TILE_MASCOT)
+    }
 
     override fun registerTileAssets(registry: MinecraftTileAssetRegistrar) {
         registry.register(BuiltInMinecraftTileAppearances.DEFAULT)

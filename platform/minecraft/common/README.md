@@ -176,6 +176,31 @@ read it but never change it: extending and restoring are marked `MahjongCraftInt
 loader adapter provides the save and load functions. Loader modules also provide the block-side
 contract, interaction and removal hooks, because they need native world types.
 
+## AI character descriptions
+
+Register a character through `MinecraftMahjongExtension.registerAiCharacters` and the register-only
+`AiCharacterRegistrar`. The same bootstrap registers built-in and third-party characters, reports their
+IDs, rejects duplicates, and freezes the registry. Discovery still uses the core `MahjongExtension`
+entrypoint; defining a Minecraft extension alone does not make it discoverable.
+
+`AiCharacterDefinition` describes a role independently of its strategy. It contains a namespaced ID,
+a name translation key, an optional `AiCharacterFace`, an optional world capability ID, and an optional
+`AiCharacterPreview`. A preview has its own capability ID and a bounded string map whose keys are
+namespaced IDs. Descriptions never carry entities, arbitrary NBT, downloads, or render callbacks.
+
+A character may supply only a face. Supported face descriptions are a registered tile asset or a
+normalized texture region. World and preview capability IDs describe optional integrations; registering
+an ID does not execute a factory or imply that the native capability is installed.
+
+The platform persistence adapter saves the current choices and a fixed appearance snapshot for each
+match alongside the authoritative state. Switching a role for a later match does not change an earlier
+snapshot. Missing providers keep their original IDs. An unreadable character section disables role
+changes and is preserved verbatim, while valid match data can still be saved.
+
+The role description, storage and session/version contracts are available. World actors, room selection
+controls, native previews and history portraits are separate integration work; these contracts alone do
+not spawn a character or change the current room UI.
+
 ## Boundaries
 
 This module avoids loader APIs and version-specific recipe formats.

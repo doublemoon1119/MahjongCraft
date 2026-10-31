@@ -348,50 +348,51 @@ core extension behavior through one adapter. For example, see the Minecraft guid
 
 ## Public API Compatibility
 
-- ABI protection is opt-in and exact. Modules list the packages or individual entrypoint types they promise to
-  keep stable; public classes outside those lists are not covered automatically.
-- Modules use `mahjongcraft.public-api-abi`, which uses Kotlin's built-in ABI validation. Reference signatures
-  live in each module's `api/` directory and must be committed. `check` (and therefore `build`) checks them
-  automatically; do not regenerate the references as part of normal builds.
-- The current stable surfaces are:
-  - `api.event` in Flow common, Minecraft common and each loader adapter;
-  - `api.seating` in Minecraft common, `api.table` in Minecraft common and its loader adapters, and
-    `api.tableprop` in each loader adapter;
-  - `api.registration` in every module that provides registrars: logic, AI, Flow common and server, network DTO,
-    persistence format, Minecraft common and each loader adapter;
-  - the exact extension entrypoints `MahjongExtension`, `MinecraftMahjongExtension` and `FabricMahjongExtension`,
-    and the `MahjongCraftInternalApi` annotation in Minecraft common.
-- These signatures do not make the types they reference stable as separate API surfaces. Rule modules, table
-  states, definitions and other types that an extension registers remain outside the compatibility promise.
-- Extension callbacks receive a `Registrar` in `api.registration`, never the full registry. A Registrar is the
-  window an extension registers through: it holds only the registration methods and read-only registration state
-  such as `registrationKeys` and `isFrozen`. MahjongCraft provides it; extensions never implement it. The
-  internal `Registry` extends it with freezing and lookups, which stay MahjongCraft's. A module that adds a
-  registry adds its Registrar to `api.registration` and passes that type to the callback.
-- An extension mapper that converts nested extensible types receives a read-only converter when MahjongCraft
-  calls it, such as `NetworkDtoConverter` for `DtoDefinition` and `PersistenceConverter` for
-  `PersistenceDtoDefinition`, in both conversion directions. Mappers must not capture a Registrar or registry for
-  later conversion; definitions that need no nested conversion use the value-only constructor.
-- Seat constructors and internal request factories keep their existing visibility. A third-party provider creates
-  the public identity and geometry definitions; MahjongCraft creates its own internal request objects. This change
-  records the existing shape and does not redesign the seating API.
-- A public declaration that only MahjongCraft's own platform modules may call, because it must cross module
-  boundaries, is marked with `MahjongCraftInternalApi`. The annotation is a `RequiresOptIn` at error level, so an
-  integration fails to compile unless it opts in explicitly. MahjongCraft opts in at the file that calls it, not
-  for a whole module; example integrations never opt in. The signature stays in the ABI reference, but its
-  behavior is not part of the compatibility promise.
-- Run `./gradlew checkKotlinAbi` with the intended platform target to inspect signature changes. The core
-  target checks Flow; a Minecraft target also checks its common and loader public surfaces. Verify every
-  supported target when changing shared APIs. New loader adapters exposing protected public APIs must apply the
-  convention and add their own reference signatures. KMP validation follows the module's declared targets;
-  checking JVM does not validate a Native binary, and unsupported-target inference is not a substitute for
+### What is protected
+
+ABI protection is opt-in and exact. Each module lists the packages or individual types it promises to
+keep stable in `publicApiAbi.includedNames`. Public declarations outside those lists are not protected
+automatically. A type referenced by a protected signature needs its own matching entry to be protected
+as a separate API surface.
+
+The core modules protect `api.event` in Flow common, `api.registration` in the modules that provide
+registrars, and the exact `MahjongExtension` entrypoint. Platform adapters document their additional
+contracts in their own guides. For example, see the
+[Minecraft API scope](minecraft-presentation.md#public-api-compatibility). A new platform records its scope
+in its own guide rather than extending this shared policy with platform-specific type lists.
+
+### Registration and internal access
+
+- Extension callbacks receive a `Registrar` in `api.registration`, never the full registry. It provides
+  registration methods and read-only state such as `registrationKeys` and `isFrozen`. MahjongCraft
+  provides it; extensions do not implement it. Internal registries add lookups and freezing.
+- A module adding a registry also adds its Registrar to `api.registration` and passes that type to the
+  extension callback.
+- Mappers for nested extensible types receive a read-only converter when MahjongCraft calls them, in
+  both directions. Examples are `NetworkDtoConverter` for `DtoDefinition` and `PersistenceConverter`
+  for `PersistenceDtoDefinition`. Do not capture a Registrar or registry for later conversion.
+  Definitions without nested conversions use the value-only constructor.
+- A platform may need public declarations for calls between its own modules. Mark such declarations
+  with an error-level opt-in annotation, and opt in at the calling file rather than for a whole module.
+  Their signatures may be recorded without promising their internal behavior to extensions. Example
+  integrations use public extension contracts instead of opting into internal ones.
+
+### Checking a change
+
+- Modules use `mahjongcraft.public-api-abi`, backed by Kotlin's built-in ABI validation. Commit the
+  reference signatures in each module's `api/` directory. `check`, and therefore `build`, checks them
+  automatically; normal builds must not regenerate them.
+- Run `./gradlew checkKotlinAbi` with the intended platform target. The core target checks the loaded
+  core modules; a platform target also checks its adapter's protected surfaces. New adapters exposing
+  protected APIs must apply the convention and add reference signatures.
+- Verify every supported target affected by shared API changes. KMP checks follow the module's declared
+  targets: a JVM check does not validate a Native binary, and target inference does not replace
   validation on a suitable host.
-- Only after reviewing a deliberate API change, run `./gradlew updateKotlinAbi` for the intended target,
-  inspect the signature diff, and commit it with the implementation. Updating the reference acknowledges a
-  change; it does not prove compatibility. Preserve existing names, types and listener methods; prefer
-  additive read-only properties, and retain deprecated declarations when removing a released API would
-  break consumers.
-- Signature checks do not guarantee event or seating behavior, constant values, nullability, or generic type
-  contracts erased by the JVM. Keep behavior, visibility and contract tests alongside the ABI baselines. They
-  also do not guarantee compatibility across Minecraft versions or loader adapters whose own APIs differ. For
-  example, a Fabric 1.20.1 baseline does not promise that another loader can use Fabric-native types.
+- After reviewing an intentional API change, run `./gradlew updateKotlinAbi` for the intended target,
+  inspect the diff, and commit it with the implementation. Updating the reference acknowledges a change;
+  it does not prove compatibility.
+- Preserve existing names, types and listener methods. Prefer additive read-only properties, and retain
+  deprecated declarations when removing a released API would break consumers.
+- Signature checks do not guarantee runtime behavior, constant values, nullability or generic contracts
+  erased by the runtime. Keep behavior, visibility and contract tests alongside the baselines. Protection
+  for one platform, version or adapter does not imply compatibility with another adapter's native types.

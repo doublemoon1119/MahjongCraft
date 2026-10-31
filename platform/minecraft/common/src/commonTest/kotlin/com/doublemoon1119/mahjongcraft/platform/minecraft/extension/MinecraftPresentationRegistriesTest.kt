@@ -7,6 +7,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionVocab
 import com.doublemoon1119.mahjongcraft.platform.minecraft.ai.AiStrategyDisplayNameRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.automatic.AutomaticControlDisplayRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.catalogue.RuleCatalogueRegistryImpl
+import com.doublemoon1119.mahjongcraft.platform.minecraft.character.AiCharacterRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.DecisionStatusDisplayNameRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.RuleDecisionDisplayNameRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.history.HistoryDiscardMarkerDisplayRegistryImpl
@@ -44,6 +45,7 @@ class MinecraftPresentationRegistriesTest {
 
         registries.freezeAll()
 
+        assertTrue(registries.aiCharacterRegistry.isFrozen)
         assertTrue(registries.tileAssetRegistry.isFrozen)
         assertTrue(registries.tileDisplayNameRegistry.isFrozen)
         assertTrue(registries.tileEmojiRegistry.isFrozen)
@@ -128,6 +130,7 @@ class MinecraftPresentationRegistriesTest {
         matchSettlementTemplateRegistry = MatchSettlementPresentationTemplateRegistryImpl(),
         aiStrategyDisplayNameRegistry = AiStrategyDisplayNameRegistryImpl(),
         ruleModuleDisplayNameRegistry = RuleModuleDisplayNameRegistryImpl(),
+        aiCharacterRegistry = AiCharacterRegistryImpl(),
         playerPortraitSourceRegistry = PlayerPortraitSourceRegistryImpl(failurePolicy = ExtensionFailurePolicy.Default),
         publicPlayerIndicatorDisplayRegistry = PublicPlayerIndicatorDisplayRegistryImpl(),
         roomMemberAppearanceSourceRegistry = RoomMemberAppearanceSourceRegistryImpl(failurePolicy = ExtensionFailurePolicy.Default),

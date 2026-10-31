@@ -2,6 +2,9 @@ package com.doublemoon1119.mahjongcraft.platform.minecraft.extension
 
 /** Minecraft 呈現 registry 診斷分類使用的穩定識別碼。 */
 internal object MinecraftExtensionRegistrationCategoryIds {
+    /** AI 角色描述分類。 */
+    const val AI_CHARACTER = "mahjongcraft:ai_character"
+
     /** 牌種 asset 分類。 */
     const val TILE_ASSET = "mahjongcraft:tile_asset"
 

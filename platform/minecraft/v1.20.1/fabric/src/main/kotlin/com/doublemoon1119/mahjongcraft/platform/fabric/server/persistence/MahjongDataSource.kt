@@ -10,4 +10,7 @@ enum class MahjongDataSource {
 
     /** 牌譜資料庫；無法開啟時暫停牌譜寫入與查閱，對局照常進行。 */
     HISTORY_DATABASE,
+
+    /** 角色選擇與開局外觀；無法讀取時保留區段並停用角色修改，牌局仍可繼續。 */
+    AI_CHARACTERS,
 }

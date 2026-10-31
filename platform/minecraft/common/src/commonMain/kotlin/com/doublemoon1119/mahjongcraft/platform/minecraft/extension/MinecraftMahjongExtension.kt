@@ -1,6 +1,7 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.extension
 
 import com.doublemoon1119.mahjongcraft.platform.minecraft.ai.AiStrategyDisplayNameRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.AiCharacterRegistrar
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.AiStrategyDisplayNameRegistrar
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.AutomaticControlDisplayRegistrar
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.DecisionStatusDisplayNameRegistrar
@@ -45,6 +46,13 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAsse
 interface MinecraftMahjongExtension {
     /** 第三方 extension 的穩定識別字串，用於診斷註冊錯誤。 */
     val id: String
+
+    /**
+     * 登記角色外觀與可選能力，不建立實體。
+     *
+     * @param registry 只可登記角色的介面。
+     */
+    fun registerAiCharacters(registry: AiCharacterRegistrar) = Unit
 
     /**
      * 登記第三方規則的自訂說明目錄來源。

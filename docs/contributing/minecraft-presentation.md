@@ -1,8 +1,7 @@
 # Minecraft Presentation
 
-These rules apply when changing how tiles, melds, set-aside tiles and table props are placed or animated on the
-Minecraft table. They come from collisions that only showed up in game, so check them even when a change looks
-local.
+This guide covers Minecraft presentation and its public integration contracts. The placement and animation
+rules come from collisions that only showed up in game, so check them even when a change looks local.
 
 ## Positions
 
@@ -130,3 +129,30 @@ local.
   timeline, then request a scene from current state. Old sessions and opening generations cannot
   release a new reservation or restore an obsolete scene. Reload refreshes wait for the search
   area's entity chunks without forcing chunks to load.
+
+## Public API Compatibility
+
+The [shared compatibility policy](extensions-and-registries.md#public-api-compatibility) defines how to
+check and maintain public APIs. This section lists the Minecraft contracts; each module's
+`publicApiAbi.includedNames` and committed `api/` signatures determine its exact protected surface.
+
+- Minecraft common protects `api.event`, `api.character`, `api.seating`, `api.table` and
+  `api.registration`, plus the exact `MinecraftMahjongExtension` entrypoint and
+  `MahjongCraftInternalApi` annotation.
+- Loader adapters protect their declared event, table, table-prop and registration contracts. For
+  example, the Fabric 1.20.1 adapter protects `api.event`, `api.table`, `api.tableprop` and
+  `api.registration`, plus the exact `FabricMahjongExtension` entrypoint.
+- A new loader or version adapter declares its own protected scope and baseline. An existing adapter's
+  baseline does not establish binary compatibility with another Minecraft version or loader.
+
+Third-party seat providers create public identity and geometry values. MahjongCraft creates seat
+requests through its internal factories. Preserve those constructor and factory boundaries when
+extending the seating API.
+
+`MahjongCraftInternalApi` marks public declarations needed only between MahjongCraft's own modules.
+It requires explicit opt-in at error level. Opt in at the calling file, not across a whole module;
+example integrations do not opt in. The signature remains in the ABI reference, but its internal
+behavior is outside the compatibility promise.
+
+Check shared changes against every affected Minecraft target. For example, a Fabric 1.20.1 check covers
+its loaded common modules and Fabric adapter; it does not verify another loader's native types.

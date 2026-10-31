@@ -10,6 +10,8 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.automatic.AutomaticCon
 import com.doublemoon1119.mahjongcraft.platform.minecraft.automatic.AutomaticControlDisplayRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.catalogue.RuleCatalogueRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.catalogue.RuleCatalogueRegistryImpl
+import com.doublemoon1119.mahjongcraft.platform.minecraft.character.AiCharacterRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.character.AiCharacterRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.DecisionStatusDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.DecisionStatusDisplayNameRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.RuleDecisionDisplayNameRegistry
@@ -65,6 +67,7 @@ import org.koin.plugin.module.dsl.single
  */
 val minecraftCommonModule = module {
     single<MinecraftPresentationRegistries>()
+    single<AiCharacterRegistryImpl>() bind AiCharacterRegistry::class
 
     single<GameAchievementResolverRegistryImpl>() bind GameAchievementResolverRegistry::class
 

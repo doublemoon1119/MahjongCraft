@@ -533,6 +533,9 @@ object MinecraftMessageKeys {
     /** 牌譜資料庫無法開啟，已暫停牌譜寫入與查閱。 */
     const val DATA_PROBLEM_HISTORY_DATABASE = PREFIX + "data_problem_history_database"
 
+    /** 角色資料無法讀取，已保留原區段並停用角色修改。 */
+    const val DATA_PROBLEM_AI_CHARACTERS = PREFIX + "data_problem_ai_characters"
+
     /** 可能缺少提供某型別的擴充；參數為擴充的命名空間。 */
     const val DATA_CAUSE_MISSING_EXTENSION = PREFIX + "data_cause_missing_extension"
 
@@ -577,6 +580,7 @@ object MinecraftMessageKeys {
         DATA_PROBLEM_AUTHORITATIVE_STATE,
         DATA_PROBLEM_TABLE_LOCATIONS,
         DATA_PROBLEM_HISTORY_DATABASE,
+        DATA_PROBLEM_AI_CHARACTERS,
         DATA_CAUSE_MISSING_EXTENSION,
         DATA_CAUSE_NEWER_FORMAT,
         DATA_CAUSE_UNREADABLE,

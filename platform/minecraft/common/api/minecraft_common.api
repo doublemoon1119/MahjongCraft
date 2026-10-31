@@ -1,6 +1,55 @@
 public abstract interface annotation class com/doublemoon1119/mahjongcraft/platform/minecraft/api/MahjongCraftInternalApi : java/lang/annotation/Annotation {
 }
 
+public final class com/doublemoon1119/mahjongcraft/platform/minecraft/api/character/AiCharacterDefinition {
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;Lcom/doublemoon1119/mahjongcraft/platform/minecraft/api/character/AiCharacterFace;Ljava/lang/String;Lcom/doublemoon1119/mahjongcraft/platform/minecraft/api/character/AiCharacterPreview;)V
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getFace ()Lcom/doublemoon1119/mahjongcraft/platform/minecraft/api/character/AiCharacterFace;
+	public final fun getId ()Ljava/lang/String;
+	public final fun getNameKey ()Ljava/lang/String;
+	public final fun getPreview ()Lcom/doublemoon1119/mahjongcraft/platform/minecraft/api/character/AiCharacterPreview;
+	public final fun getWorldCapabilityId ()Ljava/lang/String;
+	public fun hashCode ()I
+}
+
+public abstract interface class com/doublemoon1119/mahjongcraft/platform/minecraft/api/character/AiCharacterFace {
+}
+
+public final class com/doublemoon1119/mahjongcraft/platform/minecraft/api/character/AiCharacterFace$TextureRegion : com/doublemoon1119/mahjongcraft/platform/minecraft/api/character/AiCharacterFace {
+	public fun <init> (Ljava/lang/String;FFFF)V
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getResourceId ()Ljava/lang/String;
+	public final fun getU0 ()F
+	public final fun getU1 ()F
+	public final fun getV0 ()F
+	public final fun getV1 ()F
+	public fun hashCode ()I
+}
+
+public final class com/doublemoon1119/mahjongcraft/platform/minecraft/api/character/AiCharacterFace$Tile : com/doublemoon1119/mahjongcraft/platform/minecraft/api/character/AiCharacterFace {
+	public fun <init> (Ljava/lang/String;)V
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getAssetKey ()Ljava/lang/String;
+	public fun hashCode ()I
+}
+
+public final class com/doublemoon1119/mahjongcraft/platform/minecraft/api/character/AiCharacterLimits {
+	public static final field INSTANCE Lcom/doublemoon1119/mahjongcraft/platform/minecraft/api/character/AiCharacterLimits;
+	public static final field MAX_CATALOGUE_SIZE I
+	public static final field MAX_ID_LENGTH I
+	public static final field MAX_PARAMETER_LENGTH I
+	public static final field MAX_PREVIEW_PARAMETERS I
+	public static final field MAX_SYNC_PLAYERS I
+}
+
+public final class com/doublemoon1119/mahjongcraft/platform/minecraft/api/character/AiCharacterPreview {
+	public fun <init> (Ljava/lang/String;Ljava/util/Map;)V
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getCapabilityId ()Ljava/lang/String;
+	public final fun getParameters ()Ljava/util/Map;
+	public fun hashCode ()I
+}
+
 public abstract interface class com/doublemoon1119/mahjongcraft/platform/minecraft/api/event/ActionsPerformedListener {
 	public abstract fun onActionsPerformed (Lcom/doublemoon1119/mahjongcraft/flow/api/event/ActionsPerformedEvent;Lcom/doublemoon1119/mahjongcraft/platform/minecraft/api/event/GameEventContext;)V
 }
@@ -59,6 +108,12 @@ public final class com/doublemoon1119/mahjongcraft/platform/minecraft/api/event/
 	public final fun getX ()I
 	public final fun getY ()I
 	public final fun getZ ()I
+}
+
+public abstract interface class com/doublemoon1119/mahjongcraft/platform/minecraft/api/registration/AiCharacterRegistrar {
+	public abstract fun getRegistrationKeys ()Ljava/util/Set;
+	public abstract fun isFrozen ()Z
+	public abstract fun register (Lcom/doublemoon1119/mahjongcraft/platform/minecraft/api/character/AiCharacterDefinition;)V
 }
 
 public abstract interface class com/doublemoon1119/mahjongcraft/platform/minecraft/api/registration/AiStrategyDisplayNameRegistrar {
@@ -316,6 +371,7 @@ public final class com/doublemoon1119/mahjongcraft/platform/minecraft/api/table/
 
 public abstract interface class com/doublemoon1119/mahjongcraft/platform/minecraft/extension/MinecraftMahjongExtension {
 	public abstract fun getId ()Ljava/lang/String;
+	public fun registerAiCharacters (Lcom/doublemoon1119/mahjongcraft/platform/minecraft/api/registration/AiCharacterRegistrar;)V
 	public fun registerAiStrategyDisplayNames (Lcom/doublemoon1119/mahjongcraft/platform/minecraft/api/registration/AiStrategyDisplayNameRegistrar;)V
 	public fun registerAutomaticControlDisplays (Lcom/doublemoon1119/mahjongcraft/platform/minecraft/api/registration/AutomaticControlDisplayRegistrar;)V
 	public fun registerDecisionStatusDisplayNames (Lcom/doublemoon1119/mahjongcraft/platform/minecraft/api/registration/DecisionStatusDisplayNameRegistrar;)V

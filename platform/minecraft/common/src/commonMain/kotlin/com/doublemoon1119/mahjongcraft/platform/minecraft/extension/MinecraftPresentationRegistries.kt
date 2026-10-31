@@ -5,6 +5,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionVocab
 import com.doublemoon1119.mahjongcraft.platform.minecraft.ai.AiStrategyDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.automatic.AutomaticControlDisplayRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.catalogue.RuleCatalogueRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.character.AiCharacterRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.DecisionStatusDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.RuleDecisionDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.history.HistoryDiscardMarkerDisplayRegistry
@@ -52,6 +53,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileLabelRegistry
  * @property matchSettlementTemplateRegistry 終局結算模板 registry。
  * @property aiStrategyDisplayNameRegistry AI 策略顯示名稱 registry。
  * @property ruleModuleDisplayNameRegistry 規則模組顯示名稱 registry。
+ * @property aiCharacterRegistry 角色外觀描述 registry。
  * @property playerPortraitSourceRegistry 玩家頭像來源 registry。
  * @property publicPlayerIndicatorDisplayRegistry 公開玩家 indicator 顯示 registry。
  * @property roomMemberAppearanceSourceRegistry 房間成員外觀來源 registry。
@@ -83,6 +85,7 @@ class MinecraftPresentationRegistries(
     // 玩家與房間呈現
     val aiStrategyDisplayNameRegistry: AiStrategyDisplayNameRegistry,
     val ruleModuleDisplayNameRegistry: RuleModuleDisplayNameRegistry,
+    val aiCharacterRegistry: AiCharacterRegistry,
     val playerPortraitSourceRegistry: PlayerPortraitSourceRegistry,
     val publicPlayerIndicatorDisplayRegistry: PublicPlayerIndicatorDisplayRegistry,
     val roomMemberAppearanceSourceRegistry: RoomMemberAppearanceSourceRegistry,
@@ -97,6 +100,7 @@ class MinecraftPresentationRegistries(
      */
     fun registrationSnapshot(): MinecraftPresentationRegistrationSnapshot = MinecraftPresentationRegistrationSnapshot(
         listOf(
+            snapshotCategory(MinecraftExtensionRegistrationCategoryIds.AI_CHARACTER, "AI Character", aiCharacterRegistry.registrationKeys),
             snapshotCategory(MinecraftExtensionRegistrationCategoryIds.TILE_ASSET, "Tile Asset", tileAssetRegistry.registrationKeys),
             snapshotCategory(MinecraftExtensionRegistrationCategoryIds.TILE_SET_APPEARANCE, "Tile Set Appearance", tileAssetRegistry.appearanceRegistrationKeys),
             snapshotCategory(MinecraftExtensionRegistrationCategoryIds.RULE_TILE_APPEARANCE, "Rule Tile Appearance", tileAssetRegistry.ruleAppearanceBindingKeys),
@@ -130,6 +134,7 @@ class MinecraftPresentationRegistries(
 
     /** 依固定分類順序凍結集合內所有 registry。 */
     fun freezeAll() {
+        aiCharacterRegistry.freeze()
         tileAssetRegistry.freeze()
         tileDisplayNameRegistry.freeze()
         tileEmojiRegistry.freeze()

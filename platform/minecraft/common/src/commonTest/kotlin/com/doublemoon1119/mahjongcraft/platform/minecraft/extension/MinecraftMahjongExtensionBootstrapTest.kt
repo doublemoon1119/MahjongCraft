@@ -18,6 +18,8 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionVocab
 import com.doublemoon1119.mahjongcraft.platform.minecraft.ai.AiStrategyDisplayNameDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.ai.AiStrategyDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.ai.AiStrategyDisplayNameRegistryImpl
+import com.doublemoon1119.mahjongcraft.platform.minecraft.api.character.AiCharacterDefinition
+import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.AiCharacterRegistrar
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.AiStrategyDisplayNameRegistrar
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.AutomaticControlDisplayRegistrar
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.GameAchievementResolverRegistrar
@@ -34,6 +36,9 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.automatic.AutomaticCon
 import com.doublemoon1119.mahjongcraft.platform.minecraft.catalogue.RuleCatalogue
 import com.doublemoon1119.mahjongcraft.platform.minecraft.catalogue.RuleCatalogueProvider
 import com.doublemoon1119.mahjongcraft.platform.minecraft.catalogue.RuleCatalogueRegistryImpl
+import com.doublemoon1119.mahjongcraft.platform.minecraft.character.AiCharacterRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.character.AiCharacterRegistryImpl
+import com.doublemoon1119.mahjongcraft.platform.minecraft.character.BuiltInAiCharacters
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.DecisionStatusDisplayNameRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.RuleDecisionDisplayNameRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.history.HistoryDiscardMarkerDisplayRegistryImpl
@@ -80,9 +85,39 @@ import kotlin.uuid.Uuid
 
 /** 驗證第三方 Minecraft extension 的統一註冊順序、錯誤診斷與 registry freeze。 */
 class MinecraftMahjongExtensionBootstrapTest {
+    /** 新角色回呼與其他登記共用來源報告與凍結；重複 ID 以 extension 身分回報。 */
+    @Test
+    fun `character registration uses the shared bootstrap diagnostics and freeze`() {
+        val characters = AiCharacterRegistryImpl()
+        val extension = object : MinecraftMahjongExtension {
+            override val id: String = "example:characters"
+
+            /** 在內建角色之後登記第三方描述，不建立原生物件。 */
+            override fun registerAiCharacters(registry: AiCharacterRegistrar) {
+                assertTrue(BuiltInAiCharacters.TILE_MASCOT_ID in registry.registrationKeys)
+                assertFalse(registry.isFrozen)
+                registry.register(AiCharacterDefinition("example:mascot", "example.mascot", null, null, null))
+            }
+        }
+        val result = registerAndFreeze(
+            extensions = listOf(extension),
+            tileAssetRegistry = MinecraftTileAssetRegistryImpl(),
+            aiStrategyDisplayNameRegistry = AiStrategyDisplayNameRegistryImpl(),
+            tileDisplayNameRegistry = TileDisplayNameRegistryImpl(),
+            ruleModuleDisplayNameRegistry = RuleModuleDisplayNameRegistryImpl(),
+            tileEmojiRegistry = TileEmojiRegistryImpl(),
+            tileLabelRegistry = TileLabelRegistryImpl(),
+            characterRegistry = characters,
+        )
+        assertTrue(characters.isFrozen)
+        val source = result.sources.single { it.extensionId == extension.id }
+        assertEquals(listOf("example:mascot"), source.categories.single { it.id == MinecraftExtensionRegistrationCategoryIds.AI_CHARACTER }.registrationIds)
+    }
+
     /**
      * 以明確的獨立 registry graph 執行啟動流程，供隔離的單元測試使用。
      *
+     * @param characterRegistry 角色描述登記表。
      * @param extensions 要依序執行註冊的 extension。
      * @param tileAssetRegistry 麻將牌資產 registry。
      * @param aiStrategyDisplayNameRegistry AI 策略名稱 registry。
@@ -106,6 +141,7 @@ class MinecraftMahjongExtensionBootstrapTest {
         automaticControlDisplayRegistry: AutomaticControlDisplayRegistry = AutomaticControlDisplayRegistryImpl(),
         ruleCatalogueRegistry: RuleCatalogueRegistryImpl = RuleCatalogueRegistryImpl(),
         gameAchievementResolverRegistry: GameAchievementResolverRegistryImpl = GameAchievementResolverRegistryImpl(),
+        characterRegistry: AiCharacterRegistry = AiCharacterRegistryImpl(),
     ): MinecraftMahjongExtensionRegistrationResult = MinecraftMahjongExtensionBootstrap.registerAndFreeze(
         extensions = extensions,
         registries = MinecraftPresentationRegistries(
@@ -129,6 +165,7 @@ class MinecraftMahjongExtensionBootstrapTest {
             matchSettlementTemplateRegistry = MatchSettlementPresentationTemplateRegistryImpl(),
             aiStrategyDisplayNameRegistry = aiStrategyDisplayNameRegistry,
             ruleModuleDisplayNameRegistry = ruleModuleDisplayNameRegistry,
+            aiCharacterRegistry = characterRegistry,
             playerPortraitSourceRegistry = PlayerPortraitSourceRegistryImpl(failurePolicy = ExtensionFailurePolicy.Default),
             publicPlayerIndicatorDisplayRegistry = PublicPlayerIndicatorDisplayRegistryImpl(),
             roomMemberAppearanceSourceRegistry = RoomMemberAppearanceSourceRegistryImpl(failurePolicy = ExtensionFailurePolicy.Default),

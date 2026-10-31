@@ -85,7 +85,7 @@ internal fun receivesDetailedNotice(hasAdminPermission: Boolean, isHost: Boolean
  * 依序建立詳細資訊：標題，以及每份資料的影響、檔案、原因與恢復建議。
  *
  * 每行只說明一件事；檔案路徑可點擊複製，錯誤摘要等細節放在指向 `[詳情]` 時顯示，避免長字串使訊息換行。
- * 只有房間、對局與待寫牌譜附上移走檔案的最後手段；其餘來源會自行重建或只影響牌譜。
+ * 只有房間、對局與待寫牌譜附上移走檔案的最後手段；其他來源使用各自的降級說明，不建議移走整份權威存檔。
  *
  * @param problems 無法讀取的資料。
  * @return 由客戶端依語系組字的訊息行。
@@ -111,6 +111,7 @@ private fun problemKey(source: MahjongDataSource): String = when (source) {
     MahjongDataSource.AUTHORITATIVE_STATE -> MinecraftMessageKeys.DATA_PROBLEM_AUTHORITATIVE_STATE
     MahjongDataSource.TABLE_LOCATIONS -> MinecraftMessageKeys.DATA_PROBLEM_TABLE_LOCATIONS
     MahjongDataSource.HISTORY_DATABASE -> MinecraftMessageKeys.DATA_PROBLEM_HISTORY_DATABASE
+    MahjongDataSource.AI_CHARACTERS -> MinecraftMessageKeys.DATA_PROBLEM_AI_CHARACTERS
 }
 
 /**

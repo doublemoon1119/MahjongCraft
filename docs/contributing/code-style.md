@@ -56,7 +56,8 @@
   visibility merely to split them. Keep serializer-module construction separate from model conversion.
   Review and explicitly approve JVM facade changes when reorganizing existing conversion functions.
 - Compare the public declarations before and after each split, including source-set placement. Public API ABI
-  checks cover only the explicitly listed event and seating surfaces, not every public type in the repository.
+  checks cover only the surfaces listed in the [compatibility policy](extensions-and-registries.md#public-api-compatibility),
+  not every public type in the repository.
   Move existing KDoc with its declaration; do not expand a file-organization change into an unrelated
   documentation rewrite.
 

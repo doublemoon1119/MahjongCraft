@@ -507,9 +507,9 @@ class AuthoritativeStateRecoveryIntegrationTest {
          * @param source 要序列化並恢復的權威狀態快照。
          */
         suspend fun restore(source: AuthoritativeStateSnapshot) {
-            val savedState = MahjongAuthoritativePersistentState.create(codec).apply { update(source) }
+            val savedState = MahjongAuthoritativePersistentState.create(codec, testCharacterRegistry()).apply { update(source) }
             val nbt = savedState.writeNbt(NbtCompound())
-            val restored = MahjongAuthoritativePersistentState.fromNbt(nbt, codec).snapshot
+            val restored = MahjongAuthoritativePersistentState.fromNbt(nbt, codec, testCharacterRegistry()).snapshot
             store.load(restored)
             restorer.restore(restored)
         }
