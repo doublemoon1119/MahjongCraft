@@ -5,8 +5,8 @@ object TableSpaceObstruction {
     /**
      * 判斷一格是否擋住擺牌。
      *
-     * 本桌自己的方塊可以進入擺牌層（例如桌緣），其他東西都算擋住，包括流體、另一張桌子的方塊、
-     * 以及火把、地毯這類沒有碰撞的方塊。
+     * 本桌自己的方塊可以進入擺牌層（例如桌緣），含水時也一樣；其他東西都算擋住，包括流進桌面的水、
+     * 另一張桌子的方塊，以及火把、地毯這類沒有碰撞的方塊。
      *
      * @param P 方塊位置型別。
      * @param isAir 該格是否為空氣。
@@ -20,5 +20,5 @@ object TableSpaceObstruction {
         hasFluid: Boolean,
         owningController: P?,
         controller: P,
-    ): Boolean = hasFluid || (!isAir && owningController != controller)
+    ): Boolean = owningController != controller && (hasFluid || !isAir)
 }

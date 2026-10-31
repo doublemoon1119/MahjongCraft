@@ -30,10 +30,22 @@ class TableSpaceObstructionTest {
         assertTrue(TableSpaceObstruction.isObstructing(isAir = false, hasFluid = false, owningController = OTHER_CONTROLLER, controller = CONTROLLER))
     }
 
-    /** 流體一律擋住，即使所在方塊屬於本桌。 */
+    /** 本桌自己的方塊含水時不擋住。 */
     @Test
-    fun `fluid obstructs even inside own table block`() {
-        assertTrue(TableSpaceObstruction.isObstructing(isAir = false, hasFluid = true, owningController = CONTROLLER, controller = CONTROLLER))
+    fun `waterlogged own table block does not obstruct`() {
+        assertFalse(TableSpaceObstruction.isObstructing(isAir = false, hasFluid = true, owningController = CONTROLLER, controller = CONTROLLER))
+    }
+
+    /** 流進桌面的水會擋住。 */
+    @Test
+    fun `foreign water obstructs`() {
+        assertTrue(TableSpaceObstruction.isObstructing(isAir = false, hasFluid = true, owningController = null, controller = CONTROLLER))
+    }
+
+    /** 另一張桌子含水的方塊也會擋住。 */
+    @Test
+    fun `waterlogged block of another table obstructs`() {
+        assertTrue(TableSpaceObstruction.isObstructing(isAir = false, hasFluid = true, owningController = OTHER_CONTROLLER, controller = CONTROLLER))
     }
 
     /** 測試用的控制方塊位置。 */

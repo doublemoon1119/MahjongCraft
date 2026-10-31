@@ -9,9 +9,11 @@ import net.minecraft.block.BlockRenderType
 import net.minecraft.block.BlockState
 import net.minecraft.block.BlockWithEntity
 import net.minecraft.block.ShapeContext
+import net.minecraft.block.Waterloggable
 import net.minecraft.block.entity.BlockEntity
 import net.minecraft.entity.LivingEntity
 import net.minecraft.entity.player.PlayerEntity
+import net.minecraft.fluid.FluidState
 import net.minecraft.item.ItemPlacementContext
 import net.minecraft.item.ItemStack
 import net.minecraft.server.world.ServerWorld
@@ -33,7 +35,7 @@ import net.minecraft.world.WorldAccess
  *
  * 所有 parts 共用同一個方塊 registry ID，透過 [PART] 與 [Properties.HORIZONTAL_FACING] 保存結構位置。
  * 只有 [MahjongTablePart.BOTTOM_CENTER] 建立 [MahjongTableBlockEntity]；其餘 parts 的互動與生命週期皆
- * 先反查 controller。
+ * 先反查 controller。每個 part 與原版可含水方塊相同，放置時原位置是水源就含水。
  *
  * @param settings Minecraft 方塊設定。
  * @property design 此方塊 registry ID 對應的固定桌型。
@@ -42,7 +44,8 @@ class MahjongTableBlock(
     settings: Settings,
     internal val design: MahjongTableDesign,
 ) : BlockWithEntity(settings),
-    MahjongTableStructureBlock {
+    MahjongTableStructureBlock,
+    Waterloggable {
     /** 記錄結構放置失敗或缺少 controller 等異常狀態。 */
     private val logger = mahjongCraftLogger(MahjongTableBlock::class)
 
@@ -54,6 +57,7 @@ class MahjongTableBlock(
         defaultState = stateManager.defaultState
             .with(PART, MahjongTablePart.BOTTOM_CENTER)
             .with(Properties.HORIZONTAL_FACING, Direction.NORTH)
+            .with(Properties.WATERLOGGED, false)
     }
 
     /** 只為 controller part 建立保存穩定 UUID 的方塊實體。 */
@@ -80,9 +84,27 @@ class MahjongTableBlock(
         context: ShapeContext,
     ): VoxelShape = design.outlineShape(state.get(PART), state.get(Properties.HORIZONTAL_FACING))
 
-    /** 註冊結構 part 與水平朝向 blockstate properties。 */
+    /** 註冊結構 part、水平朝向與含水 blockstate properties。 */
     override fun appendProperties(builder: StateManager.Builder<Block, BlockState>) {
-        builder.add(PART, Properties.HORIZONTAL_FACING)
+        builder.add(PART, Properties.HORIZONTAL_FACING, Properties.WATERLOGGED)
+    }
+
+    /** 含水時回報水源的流體狀態。 */
+    @Suppress("OVERRIDE_DEPRECATION")
+    override fun getFluidState(state: BlockState): FluidState = state.waterloggedFluidState()
+
+    /** 含水時排程水流更新，讓周圍的水照常流動。 */
+    @Suppress("DEPRECATION", "OVERRIDE_DEPRECATION")
+    override fun getStateForNeighborUpdate(
+        state: BlockState,
+        direction: Direction,
+        neighborState: BlockState,
+        world: WorldAccess,
+        pos: BlockPos,
+        neighborPos: BlockPos,
+    ): BlockState {
+        state.scheduleWaterTickIfWaterlogged(world, pos)
+        return super.getStateForNeighborUpdate(state, direction, neighborState, world, pos, neighborPos)
     }
 
     /**
@@ -103,12 +125,13 @@ class MahjongTableBlock(
             defaultState
                 .with(PART, MahjongTablePart.BOTTOM_CENTER)
                 .with(Properties.HORIZONTAL_FACING, facing)
+                .waterloggedAt(context.world, controllerPos)
         } else {
             null
         }
     }
 
-    /** controller 放置後建立其餘 17 個 parts；中途失敗時回滾本次結構。 */
+    /** controller 放置後建立其餘 17 個 parts，各自依原位置決定是否含水；中途失敗時回滾本次結構。 */
     override fun onPlaced(
         world: World,
         pos: BlockPos,
@@ -126,7 +149,7 @@ class MahjongTableBlock(
             .all { (part, partPos) ->
                 world.setBlockState(
                     partPos,
-                    defaultState.with(PART, part).with(Properties.HORIZONTAL_FACING, facing),
+                    defaultState.with(PART, part).with(Properties.HORIZONTAL_FACING, facing).waterloggedAt(world, partPos),
                     NOTIFY_ALL,
                 ).also { placed -> if (placed) placedParts.add(partPos) }
             }

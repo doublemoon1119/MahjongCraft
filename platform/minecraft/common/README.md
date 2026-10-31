@@ -168,7 +168,8 @@ MahjongCraft fixes the play space, not the block structure: the controller block
 origin, the tabletop is one block above it, and the 3×3 layer centred above the controller holds
 tiles, the wall, dice, table props and selection confirmation. The integration decides how many
 blocks make up the table, its model and its collision. Its own blocks may reach into the play
-layer, such as a table rim, but must not cover where tiles are placed.
+layer, such as a table rim, even when waterlogged, but must not cover where tiles are placed. Any other
+block or fluid in the play layer blocks a waiting room from starting.
 
 The state keeps the table ID and two presentation timelines that only ever extend. Integrations
 read it but never change it: extending and restoring are marked `MahjongCraftInternalApi`, and the
