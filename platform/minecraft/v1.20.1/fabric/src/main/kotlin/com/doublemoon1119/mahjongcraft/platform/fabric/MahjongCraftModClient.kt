@@ -58,6 +58,8 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.client.room.RoomScreen
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.room.isShowingRoom
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.room.isShowingRoomForTable
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.state.ClientMahjongStateStore
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.table.ClientTableSpaceObstructionStore
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.table.TableSpaceObstructionRenderer
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.tile.ClientHandTileLayoutBridge
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.tile.ClientHandTileLayoutController
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.tile.FabricHandSortCommand
@@ -146,6 +148,8 @@ class MahjongCraftModClient : ClientModInitializer {
         MahjongChannels.historyArchiveStatusResponse.registerClientReceiver(json, historyArchiveStatus::apply)
         val networkRegistries = koin.get<NetworkDtoRegistries>()
         val stateStore = koin.get<ClientMahjongStateStore>()
+        val tableSpaceObstructions = koin.get<ClientTableSpaceObstructionStore>()
+        koin.get<TableSpaceObstructionRenderer>().registerEvents()
         val handTileLayoutController = koin.get<ClientHandTileLayoutController>()
         ClientHandTileLayoutBridge.activate(handTileLayoutController)
         val automaticControlUpdateCoordinator = koin.get<ClientAutomaticControlUpdateCoordinator>()
@@ -188,6 +192,7 @@ class MahjongCraftModClient : ClientModInitializer {
             clearDecisionHud = decisionHudController::clear,
             clearTileAppearance = tileAppearanceResolver::clear,
             clearHandTileLayout = ClientHandTileLayoutBridge::clear,
+            clearTableSpaceObstruction = tableSpaceObstructions::clear,
         )
         MahjongChannels.playerIdentity.registerClientReceiver(json) { payload ->
             if (payload.entries.size > PlayerIdentityPayload.MAX_ENTRIES) return@registerClientReceiver
@@ -253,6 +258,7 @@ class MahjongCraftModClient : ClientModInitializer {
                         networkRegistries = networkRegistries,
                         profileResolver = profileResolver,
                         ruleCatalogue = ruleCatalogueController,
+                        tableSpaceObstructions = tableSpaceObstructions,
                     ),
                 )
             }
@@ -262,9 +268,11 @@ class MahjongCraftModClient : ClientModInitializer {
             stateStore.applySnapshotCleared(tableId)
             automaticControlUpdateCoordinator.clearTable(tableId)
         }
+        MahjongChannels.tableSpaceObstruction.registerClientReceiver(json, tableSpaceObstructions::apply)
         MahjongChannels.tableRemoved.registerClientReceiver(json) { payload ->
             val tableId = Uuid.parse(payload.tableId)
             stateStore.removeTable(tableId)
+            tableSpaceObstructions.clearTable(tableId)
             tileAppearanceResolver.clear(tableId)
             automaticControlUpdateCoordinator.clearTable(tableId)
             val client = MinecraftClient.getInstance()

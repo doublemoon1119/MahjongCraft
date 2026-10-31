@@ -10,6 +10,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.client.player.ClientPlaye
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.PlayerPortraitRenderer
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.PublicPlayerIndicatorTextResolver
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.state.ClientMahjongStateStore
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.table.ClientTableSpaceObstructionStore
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.notification.FabricPlayerFeedbackPublisher
 import com.doublemoon1119.mahjongcraft.platform.minecraft.ai.AiStrategyDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.GameConfigPresentationRegistry
@@ -57,6 +58,7 @@ import kotlin.uuid.toKotlinUuid
  * @property networkRegistries 設定與網路 DTO 轉換所需的登錄表。
  * @property profileResolver 玩家名稱與外觀資料解析器。
  * @property ruleCatalogue 從房間設定開啟規則一覽的控制器。
+ * @property tableSpaceObstructions 等待開局桌子被擋住的擺牌格。
  */
 class FabricRoomConfigScreenCommand(
     private val stateStore: ClientMahjongStateStore,
@@ -72,6 +74,7 @@ class FabricRoomConfigScreenCommand(
     private val networkRegistries: NetworkDtoRegistries,
     private val profileResolver: ClientPlayerProfileResolver,
     private val ruleCatalogue: RuleCatalogueScreenController,
+    private val tableSpaceObstructions: ClientTableSpaceObstructionStore,
 ) {
     /** 已收到開啟指令，等待下一次客戶端週期處理。 */
     private var pendingOpen = false
@@ -124,6 +127,7 @@ class FabricRoomConfigScreenCommand(
                 networkRegistries = networkRegistries,
                 profileResolver = profileResolver,
                 ruleCatalogue = ruleCatalogue,
+                tableSpaceObstructions = tableSpaceObstructions,
                 openSettings = true,
             ),
         )

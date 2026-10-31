@@ -24,6 +24,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.OfflinePlay
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.PlayerPortraitRenderer
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.PublicPlayerIndicatorTextResolver
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.state.ClientMahjongStateStore
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.table.ClientTableSpaceObstructionStore
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongPlayerInfoEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.logging.mahjongCraftLogger
 import com.doublemoon1119.mahjongcraft.platform.fabric.network.MahjongChannels
@@ -74,6 +75,7 @@ import kotlin.uuid.toJavaUuid
  * @property networkRegistries 設定與網路 DTO 的轉換登錄表。
  * @property profileResolver 玩家名稱與外觀資料解析器。
  * @property ruleCatalogue 開啟規則一覽的控制器。
+ * @property tableSpaceObstructions 等待開局桌子被擋住的擺牌格。
  * @param appearanceSources 成員外觀來源登錄表。
  * @param indicatorTextResolver 規則公開指標的文字解析器。
  * @param openSettings 是否直接進入設定頁。
@@ -93,10 +95,14 @@ class RoomScreen(
     private val networkRegistries: NetworkDtoRegistries,
     private val profileResolver: ClientPlayerProfileResolver,
     private val ruleCatalogue: RuleCatalogueScreenController,
+    private val tableSpaceObstructions: ClientTableSpaceObstructionStore,
     openSettings: Boolean = false,
 ) : Screen(Text.translatable(MinecraftRoomScreenKeys.TITLE)) {
     /** 外觀解析與呈現降級的診斷記錄。 */
     private val logger = mahjongCraftLogger(RoomScreen::class)
+
+    /** 上一次建立畫面時這張桌子是否被擋住，改變時重建開始按鈕。 */
+    private var lastSpaceObstructed: Boolean = tableSpaceObstructions.isObstructed(tableId)
 
     /** 目前顯示的房間或設定頁。 */
     private var page = if (openSettings) Page.SETTINGS else Page.ROOM
@@ -211,14 +217,26 @@ class RoomScreen(
                  * @param key 按鈕文字翻譯鍵。
                  * @param action 點擊後傳送的房間操作。
                  * @param active 按鈕是否可點擊。
+                 * @param tooltipKey 按鈕提示的翻譯鍵；null 時不顯示提示。
                  * @return 清單加入結果。
                  */
-                fun button(key: String, action: RoomActionDto, active: Boolean = true) = actions.add(ActionButton(key, action, active))
+                fun button(
+                    key: String,
+                    action: RoomActionDto,
+                    active: Boolean = true,
+                    tooltipKey: String? = null,
+                ) = actions.add(ActionButton(key, action, active, tooltipKey))
                 if (!room.isInRoom) {
                     button(MinecraftRoomScreenKeys.JOIN, RoomActionDto.Join(table.tableId), room.playerIds.size < room.gameConfig.ruleConfig.maxPlayers)
                 } else if (room.isHost) {
                     button(MinecraftRoomScreenKeys.ADD_AI, RoomActionDto.AddAi(table.tableId), room.playerIds.size < room.gameConfig.ruleConfig.maxPlayers)
-                    button(MinecraftRoomScreenKeys.START, RoomActionDto.Start(table.tableId), room.canStart)
+                    val spaceObstructed = tableSpaceObstructions.isObstructed(tableId)
+                    button(
+                        key = MinecraftRoomScreenKeys.START,
+                        action = RoomActionDto.Start(table.tableId),
+                        active = room.canStart && !spaceObstructed,
+                        tooltipKey = MinecraftRoomScreenKeys.START_BLOCKED_TABLE_SPACE.takeIf { spaceObstructed },
+                    )
                     button(MinecraftRoomScreenKeys.DISBAND, RoomActionDto.Disband(table.tableId))
                 } else {
                     val selfId = client?.player?.uuid?.let(UUID::toString)
@@ -799,7 +817,7 @@ class RoomScreen(
         val totalWidth = buttonCount * buttonWidth + (buttonCount - 1) * gap
         var x = width / 2 - totalWidth / 2
         actions.forEach { action ->
-            addActionButton(x, y, buttonWidth, action.key, action.action, action.active)
+            addActionButton(x, y, buttonWidth, action)
             x += buttonWidth + gap
         }
         addDrawableChild(
@@ -949,11 +967,14 @@ class RoomScreen(
      * @param action 點擊後傳送的房間操作。
      * @param active 是否可點擊。
      */
-    private fun addActionButton(x: Int, y: Int, width: Int, key: String, action: RoomActionDto, active: Boolean = true) {
+    private fun addActionButton(x: Int, y: Int, width: Int, button: ActionButton) {
         addDrawableChild(
-            RestartableMarqueeButtonWidget.builder(Text.translatable(key)) {
-                send(action)
-            }.dimensions(x, y, width, 20).build().also { it.active = active },
+            RestartableMarqueeButtonWidget.builder(Text.translatable(button.key)) {
+                send(button.action)
+            }.dimensions(x, y, width, 20).build().also { widget ->
+                widget.active = button.active
+                button.tooltipKey?.let { widget.tooltip = Tooltip.of(Text.translatable(it)) }
+            },
         )
     }
 
@@ -1063,6 +1084,11 @@ class RoomScreen(
         }
         if (!isTableStillAvailable()) {
             closeEntireScreen()
+            return
+        }
+        if (tableSpaceObstructions.isObstructed(tableId) != lastSpaceObstructed) {
+            lastSpaceObstructed = tableSpaceObstructions.isObstructed(tableId)
+            clearAndInit()
             return
         }
         if (stateStore.tableOccupancy(tableId) != lastTable || stateStore.roomSnapshot(tableId) != lastRoomSnapshot) {
@@ -1680,11 +1706,13 @@ class RoomScreen(
      * @property key 名稱翻譯鍵。
      * @property action 點擊後傳送的房間操作。
      * @property active 是否可點擊。
+     * @property tooltipKey 按鈕提示的翻譯鍵；null 時不顯示提示。
      */
     private data class ActionButton(
         val key: String,
         val action: RoomActionDto,
         val active: Boolean,
+        val tooltipKey: String? = null,
     )
 
     /** 成員卡片下方要呈現的房間狀態。 */

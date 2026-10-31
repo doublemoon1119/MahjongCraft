@@ -124,6 +124,9 @@ sealed interface MinecraftPlayerFeedback {
         val distantPlayerIds: List<Uuid>,
     ) : MinecraftPlayerFeedback
 
+    /** 桌面上方第一層有方塊擋住牌、牌牆或骰子，無法開始對局。 */
+    data object StartBlockedByTableSpace : MinecraftPlayerFeedback
+
     /**
      * 已新增 AI 玩家。
      *
