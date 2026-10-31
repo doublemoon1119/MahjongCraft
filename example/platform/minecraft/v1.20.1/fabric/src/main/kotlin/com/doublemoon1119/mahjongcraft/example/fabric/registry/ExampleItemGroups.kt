@@ -12,8 +12,14 @@ import net.minecraft.util.Identifier
 
 /** 範例專屬的創造模式分頁，不更改本體的物品分類。 */
 object ExampleItemGroups {
-    /** 依取得順序列出椅子與坐墊，不包含臨時支撐或生怪蛋。 */
-    internal fun furnitureItemIds(): List<String> = listOf(ExampleFurnitureIds.CHAIR, ExampleFurnitureIds.CUSHION)
+    /** 依取得順序列出椅子、坐墊與三種麻將桌，不包含臨時支撐或生怪蛋。 */
+    internal fun furnitureItemIds(): List<String> = listOf(
+        ExampleFurnitureIds.CHAIR,
+        ExampleFurnitureIds.CUSHION,
+        ExampleFurnitureIds.ONE_BLOCK_TABLE,
+        ExampleFurnitureIds.LOW_TABLE,
+        ExampleFurnitureIds.ROUND_TABLE,
+    )
 
     /** 原生家具註冊完成後，註冊以椅子為圖示的家具分頁。 */
     fun register() {

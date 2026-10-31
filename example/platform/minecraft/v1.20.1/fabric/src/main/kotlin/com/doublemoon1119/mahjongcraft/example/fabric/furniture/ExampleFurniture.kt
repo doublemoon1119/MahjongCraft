@@ -1,6 +1,7 @@
 package com.doublemoon1119.mahjongcraft.example.fabric.furniture
 
 import com.doublemoon1119.mahjongcraft.example.fabric.furniture.seating.ExampleFurnitureSeatProviders
+import com.doublemoon1119.mahjongcraft.example.fabric.furniture.table.ExampleTables
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.seating.RegisteredSeatProvider
 import net.minecraft.entity.Entity
 import net.minecraft.item.Item
@@ -23,6 +24,7 @@ object ExampleFurniture {
         ExampleFurnitureEntities.register()
         ExampleFurnitureBlocks.register()
         ExampleFurnitureItems.register()
+        ExampleTables.register()
     }
 
     /** 建立不接觸原生世界的座位 provider 描述，供 extension bootstrap 登記。 */

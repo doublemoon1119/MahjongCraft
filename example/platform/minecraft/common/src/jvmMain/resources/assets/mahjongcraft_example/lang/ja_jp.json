@@ -1,5 +1,8 @@
 {
   "block.mahjongcraft_example.chair": "サンプルの椅子",
+  "block.mahjongcraft_example.one_block_table": "サンプルの1ブロック卓",
+  "block.mahjongcraft_example.low_table": "サンプルの低い卓",
+  "block.mahjongcraft_example.round_table": "サンプルの丸卓",
   "entity.mahjongcraft_example.cushion": "サンプルの座布団",
   "item.mahjongcraft_example.cushion": "サンプルの座布団",
   "mahjongcraft_example.action.reveal_hand": "手牌を公開",

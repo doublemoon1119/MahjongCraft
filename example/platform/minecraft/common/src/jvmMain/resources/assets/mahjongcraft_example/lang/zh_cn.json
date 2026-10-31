@@ -1,5 +1,8 @@
 {
   "block.mahjongcraft_example.chair": "示例椅子",
+  "block.mahjongcraft_example.one_block_table": "示例单格桌",
+  "block.mahjongcraft_example.low_table": "示例矮桌",
+  "block.mahjongcraft_example.round_table": "示例圆桌",
   "entity.mahjongcraft_example.cushion": "示例坐垫",
   "item.mahjongcraft_example.cushion": "示例坐垫",
   "mahjongcraft_example.action.reveal_hand": "摊牌",
