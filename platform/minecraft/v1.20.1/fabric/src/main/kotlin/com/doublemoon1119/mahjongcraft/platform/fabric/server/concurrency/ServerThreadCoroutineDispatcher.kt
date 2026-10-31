@@ -11,6 +11,7 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.InternalCoroutinesApi
 import kotlin.coroutines.CoroutineContext
 import kotlin.time.Duration
+import kotlin.time.Duration.Companion.milliseconds
 
 /**
  * 將協程工作交給 Minecraft 伺服器主執行緒。
@@ -60,7 +61,7 @@ class ServerThreadCoroutineDispatcher(
     }
 
     override fun scheduleResumeAfterDelay(timeMillis: Long, continuation: CancellableContinuation<Unit>) {
-        val handle = tickClock.scheduleAfter(timeMillis) {
+        val handle = tickClock.scheduleAfter(timeMillis.milliseconds) {
             dispatch(continuation.context) {
                 with(continuation) { resumeUndispatched(Unit) }
             }
@@ -68,7 +69,7 @@ class ServerThreadCoroutineDispatcher(
         continuation.invokeOnCancellation { handle.dispose() }
     }
 
-    override fun invokeOnTimeout(timeMillis: Long, block: Runnable, context: CoroutineContext): DisposableHandle = tickClock.scheduleAfter(timeMillis) { dispatch(context, block) }
+    override fun invokeOnTimeout(timeMillis: Long, block: Runnable, context: CoroutineContext): DisposableHandle = tickClock.scheduleAfter(timeMillis.milliseconds) { dispatch(context, block) }
 
     override fun drainUntil(isDone: () -> Boolean, timeout: Duration): Boolean {
         val server = serverHolder.current()

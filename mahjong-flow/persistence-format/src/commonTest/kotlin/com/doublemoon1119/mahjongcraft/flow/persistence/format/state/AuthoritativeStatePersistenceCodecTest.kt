@@ -41,6 +41,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertTrue
+import kotlin.time.Duration.Companion.milliseconds
 import kotlin.uuid.Uuid
 
 /** 驗證平台無關的伺服器權威狀態 persistence codec。 */
@@ -104,8 +105,8 @@ class AuthoritativeStatePersistenceCodecTest {
         val rooms = listOf(createRoom(), createRoom())
         val games = listOf(Game(createGame(), GameFlowConfig()), Game(createGame(), GameFlowConfig())).mapIndexed { index, game ->
             game.copy(
-                remainingReserveMillisByPlayerId = game.tableState.players.associate { player ->
-                    player.id to 12_345L
+                remainingReserveByPlayerId = game.tableState.players.associate { player ->
+                    player.id to 12_345.milliseconds
                 },
                 pendingTransition = if (index == 0) {
                     PendingGameTransition.AdvanceRound

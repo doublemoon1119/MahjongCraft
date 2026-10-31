@@ -7,6 +7,7 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.model.TileDto
 import kotlinx.serialization.json.Json
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.time.Duration.Companion.milliseconds
 import kotlin.uuid.Uuid
 
 /** [DecisionTimerUpdatePayloadDto] 的 JSON 契約測試。 */
@@ -20,8 +21,8 @@ class DecisionTimerUpdatePayloadDtoTest {
                 gameId,
                 DecisionTimerStatusDto(
                     PlayerDecisionPhaseDto.OWN_TURN,
-                    4_000L,
-                    20_000L,
+                    4_000.milliseconds,
+                    20_000.milliseconds,
                     PlayerDecisionPromptDto(
                         decisionKey = "game:player:own-turn:tile",
                         actions = listOf(
@@ -98,8 +99,8 @@ class DecisionTimerUpdatePayloadDtoTest {
             "game",
             DecisionTimerStatusDto(
                 PlayerDecisionPhaseDto.OWN_TURN,
-                1_000L,
-                2_000L,
+                1_000.milliseconds,
+                2_000.milliseconds,
                 PlayerDecisionPromptDto(
                     decisionKey = "key",
                     actions = listOf(PlayerDecisionActionDto(token = "pass", actionId = "mahjongcraft:pass", referenceTileAssetKey = null, previewTileAssetKeys = emptyList(), claimedTileIndex = null, tileSelection = null)),
@@ -116,7 +117,7 @@ class DecisionTimerUpdatePayloadDtoTest {
         )
 
         assertEquals(
-            """{"gameId":"game","status":{"phase":"OWN_TURN","baseRemainingMillis":1000,"reserveRemainingMillis":2000,""" +
+            """{"gameId":"game","status":{"phase":"OWN_TURN","baseRemaining":"PT1S","reserveRemaining":"PT2S",""" +
                 """"prompt":{"decisionKey":"key","ruleModuleId":null,""" +
                 """"actions":[{"token":"pass","actionId":"mahjongcraft:pass","referenceTileAssetKey":null,"previewTileAssetKeys":[],""" +
                 """"claimedTileIndex":null,"tileSelection":null}],""" +

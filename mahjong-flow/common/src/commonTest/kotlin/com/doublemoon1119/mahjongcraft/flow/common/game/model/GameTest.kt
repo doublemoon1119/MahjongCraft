@@ -6,6 +6,8 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertTrue
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.milliseconds
 import kotlin.uuid.Uuid
 
 /** [Game] 的流程 runtime 狀態測試。 */
@@ -21,7 +23,7 @@ class GameTest {
             flowConfig = GameFlowConfig(timeControl = ActionTimeControl.Custom(baseSeconds = 5, reserveSeconds = 37)),
         )
 
-        assertEquals(playerIds.associateWith { 37_000L }, game.remainingReserveMillisByPlayerId)
+        assertEquals(playerIds.associateWith { 37_000.milliseconds }, game.remainingReserveByPlayerId)
     }
 
     /** 剩餘保留思考時間必須完整對應目前遊戲的玩家集合。 */
@@ -33,7 +35,23 @@ class GameTest {
         )
 
         assertFailsWith<IllegalArgumentException> {
-            Game(tableState, GameFlowConfig(), remainingReserveMillisByPlayerId = emptyMap())
+            Game(tableState, GameFlowConfig(), remainingReserveByPlayerId = emptyMap())
+        }
+    }
+
+    /** 剩餘保留思考時間與中斷的基本思考時間不得是無限長。 */
+    @Test
+    fun `game rejects infinite decision time`() {
+        val playerId = Uuid.random()
+        val tableState = FakeTableStateFactory.create(
+            players = listOf(FakeMahjongPlayerFactory.create(id = playerId)),
+        )
+
+        assertFailsWith<IllegalArgumentException> {
+            Game(tableState, GameFlowConfig(), remainingReserveByPlayerId = mapOf(playerId to Duration.INFINITE))
+        }
+        assertFailsWith<IllegalArgumentException> {
+            Game(tableState, GameFlowConfig(), interruptedBaseByPlayerId = mapOf(playerId to Duration.INFINITE))
         }
     }
 
@@ -46,7 +64,7 @@ class GameTest {
         )
 
         assertFailsWith<IllegalArgumentException> {
-            Game(tableState, GameFlowConfig(), remainingReserveMillisByPlayerId = mapOf(playerId to -1L))
+            Game(tableState, GameFlowConfig(), remainingReserveByPlayerId = mapOf(playerId to (-1).milliseconds))
         }
     }
 

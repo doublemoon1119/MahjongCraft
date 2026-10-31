@@ -26,6 +26,7 @@ import kotlin.test.Test
 import kotlin.test.assertFalse
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
+import kotlin.time.Duration
 import kotlin.uuid.Uuid
 
 /** [ServerSessionStateCleaner] 清除權威狀態、membership 與 observer snapshot 的整合測試。 */
@@ -93,5 +94,5 @@ class ServerSessionStateCleanerTest {
 /** session cleanup 測試使用的固定單調時間來源。 */
 private class FixedMonotonicClock : MonotonicClock {
     /** 固定回傳 session 起點。 */
-    override fun nowMillis(): Long = 0L
+    override fun now(): Duration = Duration.ZERO
 }

@@ -5,7 +5,7 @@ package com.doublemoon1119.mahjongcraft.flow.common.game.model
  *
  * @property timeControl 一般回合／反應決策（[PlayerDecisionPhase.OWN_TURN]、[PlayerDecisionPhase.DISCARD_REACTION]、
  *   [PlayerDecisionPhase.ROBBING_REACTION]）採用的基本思考時間；[ActionTimeControl.reserveSeconds] 是
- *   玩家整場遊戲共用的保留思考時間資源池，開局時依這個值建立（見 [Game.remainingReserveMillisByPlayerId]），
+ *   玩家整場遊戲共用的保留思考時間資源池，開局時依這個值建立（見 [Game.remainingReserveByPlayerId]），
  *   一般回合與反應決策共用同一份；規則選擇階段不使用這個保留時間池。
  * @property ruleDecision 規則選擇設定；不需要玩家進行規則選擇的規則為 null。
  * @property decisionTimeoutPolicy 玩家耗盡全部思考時間後採用的流程政策。

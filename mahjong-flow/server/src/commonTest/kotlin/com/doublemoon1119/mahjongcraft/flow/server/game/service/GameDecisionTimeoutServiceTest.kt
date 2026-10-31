@@ -16,6 +16,8 @@ import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.milliseconds
 import kotlin.uuid.Uuid
 
 /** [GameDecisionTimeoutService] 只認領逾時並請求推進，不等待推進完成。 */
@@ -49,7 +51,7 @@ class GameDecisionTimeoutServiceTest {
         )
         repository.setGame(game)
         timers.reconcile(game.id)
-        clock.nowMillis = 25_000L
+        clock.now = 25_000.milliseconds
 
         val scheduled = GameDecisionTimeoutService(timers, advances).processExpiredDecisions()
 
@@ -64,8 +66,8 @@ class GameDecisionTimeoutServiceTest {
     /** 可手動調整的單調時間來源。 */
     private class ManualClock : MonotonicClock {
         /** 目前由測試指定的單調時間，單位為毫秒。 */
-        var nowMillis: Long = 0L
+        var now: Duration = Duration.ZERO
 
-        override fun nowMillis(): Long = nowMillis
+        override fun now(): Duration = now
     }
 }

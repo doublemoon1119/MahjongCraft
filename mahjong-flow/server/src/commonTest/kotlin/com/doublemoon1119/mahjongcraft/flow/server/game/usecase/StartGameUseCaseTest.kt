@@ -43,6 +43,7 @@ import kotlin.test.assertFailsWith
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
+import kotlin.time.Duration.Companion.milliseconds
 import kotlin.uuid.Uuid
 
 /**
@@ -269,7 +270,7 @@ class StartGameUseCaseTest {
         assertTrue(fixtures.useCase(roomId, hostId) is Outcome.Success)
 
         val game = assertNotNull(fixtures.gameRepo.getGame(roomId))
-        assertEquals(game.tableState.players.associate { it.id to 37_000L }, game.remainingReserveMillisByPlayerId)
+        assertEquals(game.tableState.players.associate { it.id to 37_000.milliseconds }, game.remainingReserveByPlayerId)
     }
 
     /** 驗證開局時房間登記的 AI 玩家與策略會帶進 Game。 */

@@ -30,6 +30,7 @@ import kotlin.test.assertFalse
 import kotlin.test.assertIs
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
+import kotlin.time.Duration.Companion.milliseconds
 import kotlin.uuid.Uuid
 
 /** 驗證 Room 與 Game 共用狀態儲存的交易與 dirty tracking。 */
@@ -271,10 +272,10 @@ class AuthoritativeStateStoreTest {
         repository.setTableState(tableState)
 
         repository.updateGame(tableState.id) { game ->
-            game?.copy(remainingReserveMillisByPlayerId = mapOf(playerId to 12_345L)) to Unit
+            game?.copy(remainingReserveByPlayerId = mapOf(playerId to 12_345.milliseconds)) to Unit
         }
 
-        assertEquals(12_345L, repository.getGame(tableState.id)?.remainingReserveMillisByPlayerId?.get(playerId))
+        assertEquals(12_345.milliseconds, repository.getGame(tableState.id)?.remainingReserveByPlayerId?.get(playerId))
     }
 
     /** 驗證歷史 outbox 與遊戲狀態在同一筆 store 交易中一起提交。 */
@@ -285,8 +286,8 @@ class AuthoritativeStateStoreTest {
 
         store.update { state ->
             val nextGame = game.copy(
-                remainingReserveMillisByPlayerId = game.tableState.players.associate { player ->
-                    player.id to 1_000L
+                remainingReserveByPlayerId = game.tableState.players.associate { player ->
+                    player.id to 1_000.milliseconds
                 },
             )
             AuthoritativeStateUpdate(
@@ -300,8 +301,8 @@ class AuthoritativeStateStoreTest {
 
         val snapshot = store.snapshot()
         assertEquals(
-            setOf(1_000L),
-            snapshot.games.getValue(game.id).remainingReserveMillisByPlayerId.values.toSet(),
+            setOf(1_000.milliseconds),
+            snapshot.games.getValue(game.id).remainingReserveByPlayerId.values.toSet(),
         )
         val event = snapshot.historyRecordingState.pendingEvents.last()
         assertEquals(2L, event.sequence)
@@ -322,8 +323,8 @@ class AuthoritativeStateStoreTest {
                 state = state.copy(
                     games = state.games + (
                         game.id to game.copy(
-                            remainingReserveMillisByPlayerId = game.tableState.players.associate { player ->
-                                player.id to 1_000L
+                            remainingReserveByPlayerId = game.tableState.players.associate { player ->
+                                player.id to 1_000.milliseconds
                             },
                         )
                         ),
@@ -353,8 +354,8 @@ class AuthoritativeStateStoreTest {
                 state = state.copy(
                     games = state.games + (
                         game.id to game.copy(
-                            remainingReserveMillisByPlayerId = game.tableState.players.associate { player ->
-                                player.id to 1_000L
+                            remainingReserveByPlayerId = game.tableState.players.associate { player ->
+                                player.id to 1_000.milliseconds
                             },
                         )
                         ),
@@ -382,12 +383,12 @@ class AuthoritativeStateStoreTest {
             history = { _, _, _ -> error("history recording failed") },
         ) { current ->
             current!!.copy(
-                remainingReserveMillisByPlayerId = current.tableState.players.associate { it.id to 1_000L },
+                remainingReserveByPlayerId = current.tableState.players.associate { it.id to 1_000.milliseconds },
             ) to Unit
         }
 
         val snapshot = store.snapshot()
-        assertEquals(setOf(1_000L), snapshot.games.getValue(game.id).remainingReserveMillisByPlayerId.values.toSet())
+        assertEquals(setOf(1_000.milliseconds), snapshot.games.getValue(game.id).remainingReserveByPlayerId.values.toSet())
         assertEquals(listOf(1L), snapshot.historyRecordingState.pendingEvents.map { it.sequence })
         assertEquals(2L, snapshot.historyRecordingState.firstMissingSequenceByMatchId.getValue(game.matchId))
         assertEquals(3L, snapshot.historyRecordingState.nextSequenceByMatchId.getValue(game.matchId))

@@ -1,5 +1,7 @@
 package com.doublemoon1119.mahjongcraft.flow.common.time
 
+import kotlin.time.Duration
+
 /**
  * 提供不受系統日期與時區調整影響的遞增時間。
  *
@@ -11,6 +13,6 @@ package com.doublemoon1119.mahjongcraft.flow.common.time
  * 暫停時自然停止前進。
  */
 interface MonotonicClock {
-    /** 取得目前單調時間軸上的毫秒數。 */
-    fun nowMillis(): Long
+    /** 取得目前在單調時間軸上自起點經過的時間。 */
+    fun now(): Duration
 }

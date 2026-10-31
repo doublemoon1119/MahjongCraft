@@ -355,8 +355,8 @@ class MahjongCraftModClient : ClientModInitializer {
                 decisionTimerStore.apply(
                     gameId = gameId,
                     phase = status.phase.toDomain(),
-                    baseRemainingMillis = status.baseRemainingMillis,
-                    reserveRemainingMillis = status.reserveRemainingMillis,
+                    baseRemaining = status.baseRemaining,
+                    reserveRemaining = status.reserveRemaining,
                 )
                 decisionPromptStore.apply(gameId, status.prompt)
             }

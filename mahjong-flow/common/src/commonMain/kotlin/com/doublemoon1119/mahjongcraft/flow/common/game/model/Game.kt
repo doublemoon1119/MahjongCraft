@@ -3,6 +3,8 @@ package com.doublemoon1119.mahjongcraft.flow.common.game.model
 import com.doublemoon1119.mahjongcraft.logic.module.requireValidAutomaticControlIds
 import com.doublemoon1119.mahjongcraft.logic.table.RoundCompletionSummary
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.seconds
 import kotlin.uuid.Uuid
 
 /**
@@ -14,7 +16,7 @@ import kotlin.uuid.Uuid
  * @property tableState 麻將規則運算使用的完整桌況。
  * @property matchId 整場對局的穩定識別碼；與場地本身的 [tableState.id] 分離，讓同一場地可承載多場對局歷史。
  * @property flowConfig 不影響麻將規則的流程與觀看設定。
- * @property remainingReserveMillisByPlayerId 每位玩家在整場遊戲中尚未使用的保留思考時間毫秒數。
+ * @property remainingReserveByPlayerId 每位玩家在整場遊戲中尚未使用的保留思考時間。
  * @property forcedAutoPlayPlayerIds 已耗盡思考時間、目前這一次決策必須由伺服器自動操作的玩家。只鎖住
  *   逾時當下那一次決策——`com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.GameFlowCoordinator`
  *   每次替這裡的玩家送出自動命令後就會立即移除，玩家的下一次決策仍會拿到自己完整的
@@ -38,16 +40,16 @@ import kotlin.uuid.Uuid
  * @property roomPlayerIds 開局前房間成員的固定顯示順序；開局的座位洗牌不得覆寫此順序。
  * @property aiPlayerStrategyKeys 由 AI 操控的玩家 Uuid 對應到其 AI 策略 key；開局時取自房間，對局結束轉回房間時還原。
  *   不在其中的玩家由真人操控。
- * @property interruptedBaseMillisByPlayerId 因 server session 結束或 blocking presentation 而暫停的那一次
- *   決策，其尚未使用的基本思考時間毫秒數，以玩家 Uuid 索引。`PlayerDecisionTimer.startedAtMillis` 屬於
+ * @property interruptedBaseByPlayerId 因 server session 結束或 blocking presentation 而暫停的那一次
+ *   決策，其尚未使用的基本思考時間，以玩家 Uuid 索引。`PlayerDecisionTimer.startedAt` 屬於
  *   runtime 單調時間、不得持久化，因此只寫回剩餘量；沒有這筆資料的玩家下一次取得決策權時重新取得
  *   完整基本思考時間。決策完成、階段改變或計時器重建後即清除，確保一次中斷只被接續一次。
  */
 data class Game(
     val tableState: TableState,
     val flowConfig: GameFlowConfig,
-    val remainingReserveMillisByPlayerId: Map<Uuid, Long> = tableState.players.associate {
-        it.id to flowConfig.timeControl.reserveSeconds * 1_000L
+    val remainingReserveByPlayerId: Map<Uuid, Duration> = tableState.players.associate {
+        it.id to flowConfig.timeControl.reserveSeconds.seconds
     },
     val forcedAutoPlayPlayerIds: Set<Uuid> = emptySet(),
     val enabledAutomaticControlIdsByPlayerId: Map<Uuid, Set<String>> = emptyMap(),
@@ -60,16 +62,16 @@ data class Game(
     val hostId: Uuid = tableState.players.firstOrNull()?.id ?: Uuid.random(),
     val roomPlayerIds: List<Uuid> = tableState.players.map { it.id },
     val aiPlayerStrategyKeys: Map<Uuid, String> = emptyMap(),
-    val interruptedBaseMillisByPlayerId: Map<Uuid, Long> = emptyMap(),
+    val interruptedBaseByPlayerId: Map<Uuid, Duration> = emptyMap(),
     val matchId: Uuid = Uuid.random(),
 ) {
     init {
         val playerIds = tableState.players.mapTo(mutableSetOf()) { it.id }
-        require(remainingReserveMillisByPlayerId.keys == playerIds) {
+        require(remainingReserveByPlayerId.keys == playerIds) {
             "Remaining reserve time must contain exactly the game players"
         }
-        require(remainingReserveMillisByPlayerId.values.all { it >= 0L }) {
-            "Remaining reserve time must not be negative"
+        require(remainingReserveByPlayerId.values.all { it.isFinite() && !it.isNegative() }) {
+            "Remaining reserve time must be finite and not negative"
         }
         require(forcedAutoPlayPlayerIds.all { it in playerIds }) {
             "Forced auto-play players must belong to the game"
@@ -97,11 +99,11 @@ data class Game(
         require(roundCompletion?.settledScoresByPlayerId?.keys?.let { it == playerIds } != false) {
             "Round completion scores must contain exactly the game players"
         }
-        require(interruptedBaseMillisByPlayerId.keys.all { it in playerIds }) {
+        require(interruptedBaseByPlayerId.keys.all { it in playerIds }) {
             "Interrupted base time must only contain game players"
         }
-        require(interruptedBaseMillisByPlayerId.values.all { it >= 0L }) {
-            "Interrupted base time must not be negative"
+        require(interruptedBaseByPlayerId.values.all { it.isFinite() && !it.isNegative() }) {
+            "Interrupted base time must be finite and not negative"
         }
     }
 

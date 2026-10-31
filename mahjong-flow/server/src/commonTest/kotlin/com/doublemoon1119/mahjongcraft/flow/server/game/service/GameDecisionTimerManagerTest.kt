@@ -20,6 +20,9 @@ import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.milliseconds
+import kotlin.time.Duration.Companion.seconds
 import kotlin.uuid.Uuid
 
 /** [GameDecisionTimerManager] 的決策保留與剩餘思考時間結算測試。 */
@@ -33,7 +36,7 @@ class GameDecisionTimerManagerTest {
         val game = fixtures.reactionGame(firstId, secondId)
         fixtures.repository.setGame(game)
         fixtures.manager.reconcile(game.id)
-        fixtures.clock.nowMillis = 8_000L
+        fixtures.clock.now = 8_000.milliseconds
         fixtures.repository.updateGame(game.id) { current ->
             val pending = current!!.tableState.pendingReaction!!
             current.copy(
@@ -47,11 +50,11 @@ class GameDecisionTimerManagerTest {
 
         assertEquals(setOf(secondId), statuses.keys)
         assertEquals(PlayerDecisionPhase.DISCARD_REACTION, statuses.getValue(secondId).phase)
-        assertEquals(0L, statuses.getValue(secondId).time.baseRemainingMillis)
-        assertEquals(17_000L, statuses.getValue(secondId).time.reserveRemainingMillis)
+        assertEquals(0.milliseconds, statuses.getValue(secondId).time.baseRemaining)
+        assertEquals(17_000.milliseconds, statuses.getValue(secondId).time.reserveRemaining)
         val updatedGame = fixtures.repository.getGame(game.id)!!
-        assertEquals(17_000L, updatedGame.remainingReserveMillisByPlayerId.getValue(firstId))
-        assertEquals(20_000L, updatedGame.remainingReserveMillisByPlayerId.getValue(secondId))
+        assertEquals(17_000.milliseconds, updatedGame.remainingReserveByPlayerId.getValue(firstId))
+        assertEquals(20_000.milliseconds, updatedGame.remainingReserveByPlayerId.getValue(secondId))
     }
 
     /** 驗證失去決策權的 timer 會結算保留思考時間 並從 runtime 索引移除。 */
@@ -62,7 +65,7 @@ class GameDecisionTimerManagerTest {
         val game = fixtures.reactionGame(playerId)
         fixtures.repository.setGame(game)
         fixtures.manager.reconcile(game.id)
-        fixtures.clock.nowMillis = 8_000L
+        fixtures.clock.now = 8_000.milliseconds
         fixtures.repository.updateGame(game.id) { current ->
             current!!.copy(tableState = current.tableState.copy(pendingReaction = null)) to Unit
         }
@@ -71,8 +74,8 @@ class GameDecisionTimerManagerTest {
 
         assertTrue(statuses.isEmpty())
         assertEquals(
-            17_000L,
-            fixtures.repository.getGame(game.id)!!.remainingReserveMillisByPlayerId.getValue(playerId),
+            17_000.milliseconds,
+            fixtures.repository.getGame(game.id)!!.remainingReserveByPlayerId.getValue(playerId),
         )
     }
 
@@ -84,7 +87,7 @@ class GameDecisionTimerManagerTest {
         val game = fixtures.reactionGame(playerId)
         fixtures.repository.setGame(game)
         fixtures.manager.reconcile(game.id)
-        fixtures.clock.nowMillis = 8_000L
+        fixtures.clock.now = 8_000.milliseconds
         fixtures.repository.updateGame(game.id) { current ->
             val currentPlayer = current!!.tableState.currentPlayer
             current.copy(
@@ -104,11 +107,11 @@ class GameDecisionTimerManagerTest {
         val status = fixtures.manager.reconcile(game.id, completedPlayerId = playerId).getValue(playerId)
 
         assertEquals(PlayerDecisionPhase.OWN_TURN, status.phase)
-        assertEquals(5_000L, status.time.baseRemainingMillis)
-        assertEquals(17_000L, status.time.reserveRemainingMillis)
+        assertEquals(5_000.milliseconds, status.time.baseRemaining)
+        assertEquals(17_000.milliseconds, status.time.reserveRemaining)
         assertEquals(
-            17_000L,
-            fixtures.repository.getGame(game.id)!!.remainingReserveMillisByPlayerId.getValue(playerId),
+            17_000.milliseconds,
+            fixtures.repository.getGame(game.id)!!.remainingReserveByPlayerId.getValue(playerId),
         )
     }
 
@@ -120,13 +123,13 @@ class GameDecisionTimerManagerTest {
         val game = fixtures.ownTurnGame(playerId)
         fixtures.repository.setGame(game)
         fixtures.manager.reconcile(game.id)
-        fixtures.clock.nowMillis = 1_500L
+        fixtures.clock.now = 1_500.milliseconds
 
         fixtures.manager.settleAll()
 
         val settledGame = fixtures.repository.getGame(game.id)!!
-        assertEquals(3_500L, settledGame.interruptedBaseMillisByPlayerId.getValue(playerId))
-        assertEquals(20_000L, settledGame.remainingReserveMillisByPlayerId.getValue(playerId))
+        assertEquals(3_500.milliseconds, settledGame.interruptedBaseByPlayerId.getValue(playerId))
+        assertEquals(20_000.milliseconds, settledGame.remainingReserveByPlayerId.getValue(playerId))
         assertTrue(settledGame.forcedAutoPlayPlayerIds.isEmpty())
 
         // 比照全新 session：共用同一 repository 與 clock，但是全新的 manager 實例，不繼承任何既有 runtime timer。
@@ -139,10 +142,10 @@ class GameDecisionTimerManagerTest {
 
         val status = restartedManager.reconcile(game.id).getValue(playerId)
 
-        assertEquals(3_500L, status.time.baseRemainingMillis)
-        assertEquals(20_000L, status.time.reserveRemainingMillis)
+        assertEquals(3_500.milliseconds, status.time.baseRemaining)
+        assertEquals(20_000.milliseconds, status.time.reserveRemaining)
         assertTrue(
-            fixtures.repository.getGame(game.id)!!.interruptedBaseMillisByPlayerId.isEmpty(),
+            fixtures.repository.getGame(game.id)!!.interruptedBaseByPlayerId.isEmpty(),
             "the interrupted base time must be consumed once resumed, not left around for reuse",
         )
     }
@@ -155,13 +158,13 @@ class GameDecisionTimerManagerTest {
         val game = fixtures.ownTurnGame(playerId)
         fixtures.repository.setGame(game)
         fixtures.manager.reconcile(game.id)
-        fixtures.clock.nowMillis = 26_000L
+        fixtures.clock.now = 26_000.milliseconds
 
         fixtures.manager.settleAll()
 
         val settledGame = fixtures.repository.getGame(game.id)!!
-        assertTrue(settledGame.interruptedBaseMillisByPlayerId.isEmpty())
-        assertEquals(0L, settledGame.remainingReserveMillisByPlayerId.getValue(playerId))
+        assertTrue(settledGame.interruptedBaseByPlayerId.isEmpty())
+        assertEquals(0.milliseconds, settledGame.remainingReserveByPlayerId.getValue(playerId))
         assertEquals(setOf(playerId), settledGame.forcedAutoPlayPlayerIds)
     }
 
@@ -173,7 +176,7 @@ class GameDecisionTimerManagerTest {
         val game = fixtures.ownTurnGame(playerId)
         fixtures.repository.setGame(game)
         fixtures.manager.reconcile(game.id)
-        fixtures.clock.nowMillis = 1_500L
+        fixtures.clock.now = 1_500.milliseconds
         fixtures.manager.settleAll()
 
         val firstRestart = GameDecisionTimerManager(
@@ -183,12 +186,12 @@ class GameDecisionTimerManagerTest {
             clock = fixtures.clock,
         )
         firstRestart.reconcile(game.id)
-        fixtures.clock.nowMillis = 2_500L
+        fixtures.clock.now = 2_500.milliseconds
         firstRestart.settleAll()
 
         val reSettledGame = fixtures.repository.getGame(game.id)!!
         // 第一次重連後已接續過一次（剩 3_500ms），這次又過 1_000ms，應留 2_500ms、不是回到原始 3_500ms。
-        assertEquals(2_500L, reSettledGame.interruptedBaseMillisByPlayerId.getValue(playerId))
+        assertEquals(2_500.milliseconds, reSettledGame.interruptedBaseByPlayerId.getValue(playerId))
 
         val secondRestart = GameDecisionTimerManager(
             gameRepository = fixtures.repository,
@@ -198,7 +201,7 @@ class GameDecisionTimerManagerTest {
         )
         val status = secondRestart.reconcile(game.id).getValue(playerId)
 
-        assertEquals(2_500L, status.time.baseRemainingMillis)
+        assertEquals(2_500.milliseconds, status.time.baseRemaining)
     }
 
     /** 驗證 session 停止時一次結算所有有效 timer 並清除 runtime 狀態。 */
@@ -210,13 +213,13 @@ class GameDecisionTimerManagerTest {
         val game = fixtures.reactionGame(firstId, secondId)
         fixtures.repository.setGame(game)
         fixtures.manager.reconcile(game.id)
-        fixtures.clock.nowMillis = 8_000L
+        fixtures.clock.now = 8_000.milliseconds
 
         fixtures.manager.settleAll()
 
         val updatedGame = fixtures.repository.getGame(game.id)!!
-        assertEquals(17_000L, updatedGame.remainingReserveMillisByPlayerId.getValue(firstId))
-        assertEquals(17_000L, updatedGame.remainingReserveMillisByPlayerId.getValue(secondId))
+        assertEquals(17_000.milliseconds, updatedGame.remainingReserveByPlayerId.getValue(firstId))
+        assertEquals(17_000.milliseconds, updatedGame.remainingReserveByPlayerId.getValue(secondId))
         assertTrue(fixtures.manager.getStatuses(game.id).isEmpty())
     }
 
@@ -228,7 +231,7 @@ class GameDecisionTimerManagerTest {
         val game = fixtures.reactionGame(playerId)
         fixtures.repository.setGame(game)
         fixtures.manager.reconcile(game.id)
-        fixtures.clock.nowMillis = 25_000L
+        fixtures.clock.now = 25_000.milliseconds
 
         val claimed = fixtures.manager.claimTimedOutDecisions()
 
@@ -237,7 +240,7 @@ class GameDecisionTimerManagerTest {
             claimed,
         )
         val updatedGame = fixtures.repository.getGame(game.id)!!
-        assertEquals(0L, updatedGame.remainingReserveMillisByPlayerId.getValue(playerId))
+        assertEquals(0.milliseconds, updatedGame.remainingReserveByPlayerId.getValue(playerId))
         assertEquals(setOf(playerId), updatedGame.forcedAutoPlayPlayerIds)
         assertTrue(fixtures.manager.claimTimedOutDecisions().isEmpty())
     }
@@ -254,7 +257,7 @@ class GameDecisionTimerManagerTest {
         val game = fixtures.ruleDecisionGame(playerId)
         fixtures.repository.setGame(game)
         fixtures.manager.reconcile(game.id)
-        fixtures.clock.nowMillis = game.flowConfig.ruleDecision!!.baseSeconds * 1_000L + 1_000L
+        fixtures.clock.now = game.flowConfig.ruleDecision!!.baseSeconds.seconds + 1_000.milliseconds
 
         val claimed = fixtures.manager.claimTimedOutDecisions()
 
@@ -263,7 +266,7 @@ class GameDecisionTimerManagerTest {
             claimed,
         )
         val updatedGame = fixtures.repository.getGame(game.id)!!
-        assertEquals(20_000L, updatedGame.remainingReserveMillisByPlayerId.getValue(playerId))
+        assertEquals(20_000.milliseconds, updatedGame.remainingReserveByPlayerId.getValue(playerId))
         assertEquals(setOf(playerId), updatedGame.forcedAutoPlayPlayerIds)
     }
 
@@ -275,7 +278,7 @@ class GameDecisionTimerManagerTest {
         val game = fixtures.ruleDecisionGame(playerId)
         fixtures.repository.setGame(game)
         fixtures.manager.reconcile(game.id)
-        fixtures.clock.nowMillis = 5_000L
+        fixtures.clock.now = 5_000.milliseconds
         fixtures.repository.updateGame(game.id) { current ->
             current!!.copy(pendingRuleDecision = null) to Unit
         }
@@ -284,8 +287,8 @@ class GameDecisionTimerManagerTest {
 
         assertTrue(statuses.isEmpty())
         assertEquals(
-            20_000L,
-            fixtures.repository.getGame(game.id)!!.remainingReserveMillisByPlayerId.getValue(playerId),
+            20_000.milliseconds,
+            fixtures.repository.getGame(game.id)!!.remainingReserveByPlayerId.getValue(playerId),
         )
     }
 
@@ -297,22 +300,22 @@ class GameDecisionTimerManagerTest {
         val game = fixtures.ownTurnGame(playerId)
         fixtures.repository.setGame(game)
         fixtures.manager.reconcile(game.id)
-        fixtures.clock.nowMillis = 1_500L
+        fixtures.clock.now = 1_500.milliseconds
 
         fixtures.manager.pause(game.id)
 
         assertTrue(fixtures.manager.getStatuses(game.id).isEmpty())
         val pausedGame = fixtures.repository.getGame(game.id)!!
-        assertEquals(3_500L, pausedGame.interruptedBaseMillisByPlayerId.getValue(playerId))
-        assertEquals(20_000L, pausedGame.remainingReserveMillisByPlayerId.getValue(playerId))
+        assertEquals(3_500.milliseconds, pausedGame.interruptedBaseByPlayerId.getValue(playerId))
+        assertEquals(20_000.milliseconds, pausedGame.remainingReserveByPlayerId.getValue(playerId))
 
-        fixtures.clock.nowMillis = 11_500L
+        fixtures.clock.now = 11_500.milliseconds
         val resumed = fixtures.manager.reconcile(game.id).getValue(playerId)
-        assertEquals(3_500L, resumed.time.baseRemainingMillis)
-        assertEquals(20_000L, resumed.time.reserveRemainingMillis)
+        assertEquals(3_500.milliseconds, resumed.time.baseRemaining)
+        assertEquals(20_000.milliseconds, resumed.time.reserveRemaining)
 
-        fixtures.clock.nowMillis = 12_500L
-        assertEquals(2_500L, fixtures.manager.getStatuses(game.id).getValue(playerId).time.baseRemainingMillis)
+        fixtures.clock.now = 12_500.milliseconds
+        assertEquals(2_500.milliseconds, fixtures.manager.getStatuses(game.id).getValue(playerId).time.baseRemaining)
     }
 
     /** 驗證暫停時已完成決策的玩家，不會把舊決策的基本時間帶進下一次決策。 */
@@ -323,13 +326,13 @@ class GameDecisionTimerManagerTest {
         val game = fixtures.ownTurnGame(playerId)
         fixtures.repository.setGame(game)
         fixtures.manager.reconcile(game.id)
-        fixtures.clock.nowMillis = 1_500L
+        fixtures.clock.now = 1_500.milliseconds
 
         fixtures.manager.pause(game.id, completedPlayerId = playerId)
 
-        assertTrue(fixtures.repository.getGame(game.id)!!.interruptedBaseMillisByPlayerId.isEmpty())
+        assertTrue(fixtures.repository.getGame(game.id)!!.interruptedBaseByPlayerId.isEmpty())
         val resumed = fixtures.manager.reconcile(game.id).getValue(playerId)
-        assertEquals(5_000L, resumed.time.baseRemainingMillis)
+        assertEquals(5_000.milliseconds, resumed.time.baseRemaining)
     }
 
     /** 驗證規則選擇暫停只保存基本時間，不會覆寫玩家共用的保留思考時間池。 */
@@ -340,15 +343,15 @@ class GameDecisionTimerManagerTest {
         val game = fixtures.ruleDecisionGame(playerId)
         fixtures.repository.setGame(game)
         fixtures.manager.reconcile(game.id)
-        fixtures.clock.nowMillis = 5_000L
+        fixtures.clock.now = 5_000.milliseconds
 
         fixtures.manager.pause(game.id)
 
         val pausedGame = fixtures.repository.getGame(game.id)!!
-        assertEquals(20_000L, pausedGame.remainingReserveMillisByPlayerId.getValue(playerId))
+        assertEquals(20_000.milliseconds, pausedGame.remainingReserveByPlayerId.getValue(playerId))
         assertEquals(
-            game.flowConfig.ruleDecision!!.baseSeconds * 1_000L - 5_000L,
-            pausedGame.interruptedBaseMillisByPlayerId.getValue(playerId),
+            game.flowConfig.ruleDecision!!.baseSeconds.seconds - 5_000.milliseconds,
+            pausedGame.interruptedBaseByPlayerId.getValue(playerId),
         )
     }
 
@@ -435,8 +438,8 @@ class GameDecisionTimerManagerTest {
 /** 可由測試直接推進的單調時間來源。 */
 private class MutableMonotonicClock : MonotonicClock {
     /** 目前回傳的單調時間毫秒數。 */
-    var nowMillis: Long = 0L
+    var now: Duration = Duration.ZERO
 
     /** 回傳目前測試指定的單調時間。 */
-    override fun nowMillis(): Long = nowMillis
+    override fun now(): Duration = now
 }

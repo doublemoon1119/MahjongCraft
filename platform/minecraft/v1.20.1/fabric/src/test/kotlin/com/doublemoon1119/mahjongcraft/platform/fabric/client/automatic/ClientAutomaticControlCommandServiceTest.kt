@@ -18,6 +18,7 @@ import kotlin.test.assertFalse
 import kotlin.test.assertIs
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
+import kotlin.time.Duration
 
 /** [ClientAutomaticControlCommandService] 的控制路由、集合替換與 ACK 配對測試。 */
 class ClientAutomaticControlCommandServiceTest {
@@ -170,7 +171,7 @@ class ClientAutomaticControlCommandServiceTest {
                 stateStore = ClientAutomaticControlStateStore(),
                 requestSender = roundSender,
                 clock = object : MonotonicClock {
-                    override fun nowMillis(): Long = 0L
+                    override fun now(): Duration = Duration.ZERO
                 },
             )
             block(

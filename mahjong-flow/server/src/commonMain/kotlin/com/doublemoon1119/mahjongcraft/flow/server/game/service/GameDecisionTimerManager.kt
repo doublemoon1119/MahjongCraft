@@ -8,6 +8,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.time.MonotonicClock
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepository
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlin.time.Duration
 import kotlin.uuid.Uuid
 
 /**
@@ -39,7 +40,7 @@ class GameDecisionTimerManager(
      * 暫停指定遊戲目前仍有效的決策計時器，並將剩餘基本與保留時間寫回權威狀態。
      *
      * [completedPlayerId] 已完成的舊決策不會留下可恢復基本時間；階段已改變或失去決策權的 timer 也只會
-     * 結算保留時間。只有目前仍維持相同決策階段的 timer 會寫入 `interruptedBaseMillisByPlayerId`，供下一次
+     * 結算保留時間。只有目前仍維持相同決策階段的 timer 會寫入 `interruptedBaseByPlayerId`，供下一次
      * [reconcile] 接續一次。重複暫停沒有 runtime timer 時不會改寫既有中斷資料。
      *
      * @param gameId 欲暫停計時器的遊戲識別碼。
@@ -48,28 +49,28 @@ class GameDecisionTimerManager(
     suspend fun pause(gameId: Uuid, completedPlayerId: Uuid? = null) = mutex.withLock {
         val previousTimers = activeTimers[gameId].orEmpty()
         if (previousTimers.isEmpty()) return@withLock
-        val pausedAtMillis = clock.nowMillis()
+        val pausedAt = clock.now()
         gameRepository.updateGame(gameId) { currentGame ->
             if (currentGame == null) return@updateGame null to Unit
 
             val targets = authorityResolver.resolve(currentGame)
-            val remainingReserveMillisByPlayerId = currentGame.remainingReserveMillisByPlayerId.toMutableMap()
-            val interruptedBaseMillisByPlayerId = currentGame.interruptedBaseMillisByPlayerId.toMutableMap()
+            val remainingReserveByPlayerId = currentGame.remainingReserveByPlayerId.toMutableMap()
+            val interruptedBaseByPlayerId = currentGame.interruptedBaseByPlayerId.toMutableMap()
             previousTimers.forEach { (playerId, activeTimer) ->
-                val status = activeTimer.timer.statusAt(pausedAtMillis)
+                val status = activeTimer.timer.statusAt(pausedAt)
                 if (activeTimer.phase != PlayerDecisionPhase.RULE_DECISION) {
-                    remainingReserveMillisByPlayerId[playerId] = status.reserveRemainingMillis
+                    remainingReserveByPlayerId[playerId] = status.reserveRemaining
                 }
                 val remainsSameDecision = playerId != completedPlayerId && targets[playerId] == activeTimer.phase
                 if (remainsSameDecision) {
-                    interruptedBaseMillisByPlayerId[playerId] = status.baseRemainingMillis
+                    interruptedBaseByPlayerId[playerId] = status.baseRemaining
                 } else {
-                    interruptedBaseMillisByPlayerId -= playerId
+                    interruptedBaseByPlayerId -= playerId
                 }
             }
             currentGame.copy(
-                remainingReserveMillisByPlayerId = remainingReserveMillisByPlayerId,
-                interruptedBaseMillisByPlayerId = interruptedBaseMillisByPlayerId,
+                remainingReserveByPlayerId = remainingReserveByPlayerId,
+                interruptedBaseByPlayerId = interruptedBaseByPlayerId,
             ) to Unit
         }
         activeTimers.remove(gameId)
@@ -88,7 +89,7 @@ class GameDecisionTimerManager(
      */
     suspend fun reconcile(gameId: Uuid, completedPlayerId: Uuid? = null): Map<Uuid, ActivePlayerDecisionStatus> = mutex.withLock {
         val previousTimers = activeTimers[gameId].orEmpty()
-        val settledAtMillis = clock.nowMillis()
+        val settledAt = clock.now()
         val reconciliation = gameRepository.updateGame(gameId) { currentGame ->
             if (currentGame == null) return@updateGame null to null
 
@@ -96,28 +97,28 @@ class GameDecisionTimerManager(
             val timersToSettle = previousTimers.filter { (playerId, activeTimer) ->
                 playerId == completedPlayerId || targets[playerId] != activeTimer.phase
             }
-            val remainingReserveMillisByPlayerId = currentGame.remainingReserveMillisByPlayerId.toMutableMap()
+            val remainingReserveByPlayerId = currentGame.remainingReserveByPlayerId.toMutableMap()
             timersToSettle.forEach { (playerId, activeTimer) ->
                 // RULE_DECISION 從不動用共用保留思考時間池（見 PlayerDecisionTimerFactory.create KDoc），
                 // 結算時也不寫回，避免用這個階段自己「假裝 0 保留」算出的結果覆蓋掉玩家真正存下的保留時間。
                 if (activeTimer.phase == PlayerDecisionPhase.RULE_DECISION) return@forEach
-                remainingReserveMillisByPlayerId[playerId] = activeTimer.timer
-                    .statusAt(settledAtMillis)
-                    .reserveRemainingMillis
+                remainingReserveByPlayerId[playerId] = activeTimer.timer
+                    .statusAt(settledAt)
+                    .reserveRemaining
             }
             // 保留上一個 session 中斷的基本思考時間供下方建立計時器使用，但權威狀態本身直接消耗掉：
             // 已結算的決策不再接續，而重建過的計時器也只能接續一次，否則下一次 reconcile 會重複套用。
             val keptPlayerIds = previousTimers.filterKeys { playerId ->
                 playerId != completedPlayerId && targets[playerId] == previousTimers.getValue(playerId).phase
             }.keys
-            val resumeBaseMillisByPlayerId = currentGame.interruptedBaseMillisByPlayerId
+            val resumeBaseByPlayerId = currentGame.interruptedBaseByPlayerId
                 .filterKeys { it in targets.keys && it !in keptPlayerIds }
             val updatedGame = currentGame.copy(
-                remainingReserveMillisByPlayerId = remainingReserveMillisByPlayerId,
-                interruptedBaseMillisByPlayerId = currentGame.interruptedBaseMillisByPlayerId -
-                    resumeBaseMillisByPlayerId.keys - timersToSettle.keys,
+                remainingReserveByPlayerId = remainingReserveByPlayerId,
+                interruptedBaseByPlayerId = currentGame.interruptedBaseByPlayerId -
+                    resumeBaseByPlayerId.keys - timersToSettle.keys,
             )
-            updatedGame to Reconciliation(updatedGame, targets, resumeBaseMillisByPlayerId)
+            updatedGame to Reconciliation(updatedGame, targets, resumeBaseByPlayerId)
         }
 
         if (reconciliation == null) {
@@ -134,7 +135,7 @@ class GameDecisionTimerManager(
                         game = reconciliation.game,
                         playerId = playerId,
                         phase = phase,
-                        resumedBaseMillis = reconciliation.resumeBaseMillisByPlayerId[playerId],
+                        resumedBase = reconciliation.resumeBaseByPlayerId[playerId],
                     ),
                 )
         }
@@ -143,7 +144,7 @@ class GameDecisionTimerManager(
         } else {
             activeTimers[gameId] = nextTimers
         }
-        statusesAt(nextTimers, clock.nowMillis())
+        statusesAt(nextTimers, clock.now())
     }
 
     /**
@@ -153,13 +154,13 @@ class GameDecisionTimerManager(
      * @return 以玩家識別碼索引的時間狀態；尚未建立計時器時為空 map。
      */
     suspend fun getStatuses(gameId: Uuid): Map<Uuid, ActivePlayerDecisionStatus> = mutex.withLock {
-        statusesAt(activeTimers[gameId].orEmpty(), clock.nowMillis())
+        statusesAt(activeTimers[gameId].orEmpty(), clock.now())
     }
 
     /** 取得目前所有遊戲及決策者的權威時間狀態。 */
     suspend fun getAllStatuses(): Map<Uuid, Map<Uuid, ActivePlayerDecisionStatus>> = mutex.withLock {
-        val nowMillis = clock.nowMillis()
-        activeTimers.mapValues { (_, timers) -> statusesAt(timers, nowMillis) }
+        val now = clock.now()
+        activeTimers.mapValues { (_, timers) -> statusesAt(timers, now) }
     }
 
     /**
@@ -171,25 +172,25 @@ class GameDecisionTimerManager(
      * @return 本次取得處理權的完整逾時決策。
      */
     suspend fun claimTimedOutDecisions(): List<TimedOutPlayerDecision> = mutex.withLock {
-        val nowMillis = clock.nowMillis()
+        val now = clock.now()
         val claimed = mutableListOf<TimedOutPlayerDecision>()
         activeTimers.toMap().forEach { (gameId, timers) ->
-            val timedOut = timers.filterValues { it.timer.statusAt(nowMillis).isTimedOut }
+            val timedOut = timers.filterValues { it.timer.statusAt(now).isTimedOut }
             if (timedOut.isEmpty()) return@forEach
 
             gameRepository.updateGame(gameId) { currentGame ->
                 if (currentGame == null) return@updateGame null to Unit
-                val timedOutPlayerIds = timedOut.keys.intersect(currentGame.remainingReserveMillisByPlayerId.keys)
-                val remainingReserveMillisByPlayerId = currentGame.remainingReserveMillisByPlayerId.toMutableMap()
+                val timedOutPlayerIds = timedOut.keys.intersect(currentGame.remainingReserveByPlayerId.keys)
+                val remainingReserveByPlayerId = currentGame.remainingReserveByPlayerId.toMutableMap()
                 timedOutPlayerIds.forEach { playerId ->
                     // RULE_DECISION 逾時本來就沒有動用共用保留思考時間池（理由同 reconcile），
                     // 不能在這裡清空，否則會誤把玩家在其他階段存下的保留時間也一起歸零。
                     if (timedOut.getValue(playerId).phase != PlayerDecisionPhase.RULE_DECISION) {
-                        remainingReserveMillisByPlayerId[playerId] = 0L
+                        remainingReserveByPlayerId[playerId] = Duration.ZERO
                     }
                 }
                 currentGame.copy(
-                    remainingReserveMillisByPlayerId = remainingReserveMillisByPlayerId,
+                    remainingReserveByPlayerId = remainingReserveByPlayerId,
                     forcedAutoPlayPlayerIds = currentGame.forcedAutoPlayPlayerIds + timedOutPlayerIds,
                 ) to Unit
             }
@@ -213,32 +214,32 @@ class GameDecisionTimerManager(
      * 停止接受新工作、等現有工作自然跑完，而不是直接 `cancel()` 把還在等鎖、卡在中途的協程攔腰砍斷。
      */
     suspend fun settleAll() = mutex.withLock {
-        val settledAtMillis = clock.nowMillis()
+        val settledAt = clock.now()
         activeTimers.forEach { (gameId, timers) ->
             gameRepository.updateGame(gameId) { currentGame ->
                 if (currentGame == null) return@updateGame null to Unit
-                val remainingReserveMillisByPlayerId = currentGame.remainingReserveMillisByPlayerId.toMutableMap()
-                val interruptedBaseMillisByPlayerId = currentGame.interruptedBaseMillisByPlayerId.toMutableMap()
+                val remainingReserveByPlayerId = currentGame.remainingReserveByPlayerId.toMutableMap()
+                val interruptedBaseByPlayerId = currentGame.interruptedBaseByPlayerId.toMutableMap()
                 val exhaustedPlayerIds = mutableSetOf<Uuid>()
                 timers.forEach { (playerId, activeTimer) ->
-                    val status = activeTimer.timer.statusAt(settledAtMillis)
+                    val status = activeTimer.timer.statusAt(settledAt)
                     // RULE_DECISION 從不動用共用保留思考時間池，理由同 reconcile。
                     if (activeTimer.phase != PlayerDecisionPhase.RULE_DECISION) {
-                        remainingReserveMillisByPlayerId[playerId] = status.reserveRemainingMillis
+                        remainingReserveByPlayerId[playerId] = status.reserveRemaining
                     }
                     if (status.isTimedOut) {
                         // 已耗盡全部思考時間卻還沒被 scheduler 取走的決策，直接比照 claimTimedOutDecisions
                         // 進入強制自動操作；不寫入中斷的基本思考時間，下一個 session 也不會再為它建計時器。
                         exhaustedPlayerIds += playerId
-                        interruptedBaseMillisByPlayerId -= playerId
+                        interruptedBaseByPlayerId -= playerId
                     } else {
-                        interruptedBaseMillisByPlayerId[playerId] = status.baseRemainingMillis
+                        interruptedBaseByPlayerId[playerId] = status.baseRemaining
                     }
                 }
                 currentGame.copy(
-                    remainingReserveMillisByPlayerId = remainingReserveMillisByPlayerId,
+                    remainingReserveByPlayerId = remainingReserveByPlayerId,
                     forcedAutoPlayPlayerIds = currentGame.forcedAutoPlayPlayerIds + exhaustedPlayerIds,
-                    interruptedBaseMillisByPlayerId = interruptedBaseMillisByPlayerId,
+                    interruptedBaseByPlayerId = interruptedBaseByPlayerId,
                 ) to Unit
             }
         }
@@ -254,14 +255,14 @@ class GameDecisionTimerManager(
      * 將指定時間點的 runtime timers 轉成對外 read model。
      *
      * @param timers 欲轉換的玩家計時器。
-     * @param nowMillis 計算剩餘時間時使用的單調時間點。
+     * @param now 計算剩餘時間時使用的單調時間點。
      * @return 以玩家識別碼索引的時間狀態。
      */
     private fun statusesAt(
         timers: Map<Uuid, ActiveDecisionTimer>,
-        nowMillis: Long,
+        now: Duration,
     ): Map<Uuid, ActivePlayerDecisionStatus> = timers.mapValues { (playerId, activeTimer) ->
-        val status = activeTimer.timer.statusAt(nowMillis)
+        val status = activeTimer.timer.statusAt(now)
         ActivePlayerDecisionStatus(
             playerId = playerId,
             phase = activeTimer.phase,
@@ -274,12 +275,12 @@ class GameDecisionTimerManager(
      *
      * @property game 已結算失效 timer 所消耗保留思考時間的權威遊戲狀態。
      * @property targets 目前仍需要計時的玩家與階段。
-     * @property resumeBaseMillisByPlayerId 本次重建計時器時該接續的剩餘基本思考時間；已從 [game] 消耗。
+     * @property resumeBaseByPlayerId 本次重建計時器時該接續的剩餘基本思考時間；已從 [game] 消耗。
      */
     private data class Reconciliation(
         val game: Game,
         val targets: Map<Uuid, PlayerDecisionPhase>,
-        val resumeBaseMillisByPlayerId: Map<Uuid, Long>,
+        val resumeBaseByPlayerId: Map<Uuid, Duration>,
     )
 
     /**

@@ -6,6 +6,7 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.message.AutomaticControl
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.AutomaticControlUpdateResultDto
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.state.ClientAutomaticControlStateStore
 import com.doublemoon1119.mahjongcraft.platform.fabric.logging.mahjongCraftLogger
+import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 import kotlin.uuid.Uuid
 
@@ -49,7 +50,7 @@ class ClientAutomaticControlUpdateCoordinator(
      * @param requestId 要查詢的請求識別碼。
      * @return 該請求仍待處理且已要求重新同步時為 true。
      */
-    fun isResyncing(requestId: String): Boolean = currentWait()?.takeIf { it.requestId == requestId }?.resyncRequestedAtMillis != null
+    fun isResyncing(requestId: String): Boolean = currentWait()?.takeIf { it.requestId == requestId }?.resyncRequestedAt != null
 
     /**
      * 以 [enabledControlIds] 完整替換本人本局控制集合。
@@ -84,7 +85,7 @@ class ClientAutomaticControlUpdateCoordinator(
             )
             return ClientAutomaticControlSubmitResult.SendFailed(exception)
         }
-        wait = PendingWait(request.requestId, submittedAtMillis = clock.nowMillis())
+        wait = PendingWait(request.requestId, submittedAt = clock.now())
         return ClientAutomaticControlSubmitResult.Submitted(request)
     }
 
@@ -102,7 +103,7 @@ class ClientAutomaticControlUpdateCoordinator(
         val pending = stateStore.pendingRequest()
         val known = stateStore.snapshot()
         val resyncResponse = pending != null &&
-            currentWait()?.resyncRequestedAtMillis != null &&
+            currentWait()?.resyncRequestedAt != null &&
             pending.gameId == snapshot.gameId &&
             (known?.gameId != snapshot.gameId || snapshot.revision >= known.revision)
         val accepted = stateStore.applySnapshot(snapshot)
@@ -142,11 +143,11 @@ class ClientAutomaticControlUpdateCoordinator(
     fun checkTimeout() {
         val pending = stateStore.pendingRequest() ?: return
         val current = currentWait() ?: return
-        val now = clock.nowMillis()
-        val resyncRequestedAt = current.resyncRequestedAtMillis
+        val now = clock.now()
+        val resyncRequestedAt = current.resyncRequestedAt
         if (resyncRequestedAt == null) {
-            if (now - current.submittedAtMillis < CONFIRMATION_TIMEOUT.inWholeMilliseconds) return
-            current.resyncRequestedAtMillis = now
+            if (now - current.submittedAt < CONFIRMATION_TIMEOUT) return
+            current.resyncRequestedAt = now
             try {
                 requestSender.requestSnapshot()
             } catch (exception: RuntimeException) {
@@ -154,7 +155,7 @@ class ClientAutomaticControlUpdateCoordinator(
             }
             return
         }
-        if (now - resyncRequestedAt < RESYNC_LIMIT.inWholeMilliseconds) return
+        if (now - resyncRequestedAt < RESYNC_LIMIT) return
         complete(pending, ClientAutomaticControlResultKind.UNCONFIRMED)
     }
 
@@ -223,13 +224,13 @@ class ClientAutomaticControlUpdateCoordinator(
      * 一筆待處理請求的等待時間。
      *
      * @property requestId 等待中的請求識別碼。
-     * @property submittedAtMillis 送出時的客戶端時間。
-     * @property resyncRequestedAtMillis 要求重新同步時的客戶端時間；尚未要求時為 null。
+     * @property submittedAt 送出時的客戶端時間。
+     * @property resyncRequestedAt 要求重新同步時的客戶端時間；尚未要求時為 null。
      */
     private class PendingWait(
         val requestId: String,
-        val submittedAtMillis: Long,
-        var resyncRequestedAtMillis: Long? = null,
+        val submittedAt: Duration,
+        var resyncRequestedAt: Duration? = null,
     )
 
     internal companion object {

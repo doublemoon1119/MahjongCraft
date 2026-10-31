@@ -2,6 +2,7 @@ package com.doublemoon1119.mahjongcraft.flow.client.game
 
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.PlayerDecisionPhase
 import com.doublemoon1119.mahjongcraft.flow.common.time.MonotonicClock
+import kotlin.time.Duration
 import kotlin.uuid.Uuid
 
 /**
@@ -21,24 +22,24 @@ class ClientDecisionTimerStateStore(
      *
      * @param gameId 計時所屬遊戲。
      * @param phase 同步時的決策階段。
-     * @param baseRemainingMillis 剩餘基本思考時間，單位為毫秒。
-     * @param reserveRemainingMillis 剩餘保留思考時間，單位為毫秒。
-     * @throws IllegalArgumentException 任一剩餘時間為負數時拋出。
+     * @param baseRemaining 剩餘基本思考時間。
+     * @param reserveRemaining 剩餘保留思考時間。
+     * @throws IllegalArgumentException 任一剩餘時間為負數或無限長時拋出。
      */
     fun apply(
         gameId: Uuid,
         phase: PlayerDecisionPhase,
-        baseRemainingMillis: Long,
-        reserveRemainingMillis: Long,
+        baseRemaining: Duration,
+        reserveRemaining: Duration,
     ) {
-        require(baseRemainingMillis >= 0L) { "Base remaining time must not be negative" }
-        require(reserveRemainingMillis >= 0L) { "Reserve remaining time must not be negative" }
+        require(baseRemaining.isFinite() && !baseRemaining.isNegative()) { "Base remaining time must be finite and not negative" }
+        require(reserveRemaining.isFinite() && !reserveRemaining.isNegative()) { "Reserve remaining time must be finite and not negative" }
         state = ClientDecisionTimerState(
             gameId = gameId,
             phase = phase,
-            baseRemainingAtSyncMillis = baseRemainingMillis,
-            reserveRemainingAtSyncMillis = reserveRemainingMillis,
-            receivedAtMillis = clock.nowMillis(),
+            baseRemainingAtSync = baseRemaining,
+            reserveRemainingAtSync = reserveRemaining,
+            receivedAt = clock.now(),
         )
     }
 

@@ -53,6 +53,7 @@ import net.minecraft.server.command.ServerCommandSource
 import net.minecraft.text.Text
 import java.util.UUID
 import java.util.concurrent.CompletableFuture
+import kotlin.time.Duration.Companion.seconds
 import kotlin.uuid.Uuid
 import kotlin.uuid.toJavaUuid
 import kotlin.uuid.toKotlinUuid
@@ -139,8 +140,8 @@ class FabricDebugDecisionCommand(
                 gameId,
                 DecisionTimerStatusDto(
                     phase = preview.phase,
-                    baseRemainingMillis = 8_000,
-                    reserveRemainingMillis = 15_000,
+                    baseRemaining = 8.seconds,
+                    reserveRemaining = 15.seconds,
                     prompt = preview.prompt("debug:$gameId", analysisTileId),
                 ),
             ),

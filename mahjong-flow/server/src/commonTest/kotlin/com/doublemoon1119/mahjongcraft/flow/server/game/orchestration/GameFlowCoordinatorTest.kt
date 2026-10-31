@@ -120,6 +120,8 @@ import kotlin.test.assertNotEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.milliseconds
 import kotlin.uuid.Uuid
 
 /**
@@ -705,7 +707,7 @@ class GameFlowCoordinatorTest {
         fixtures.coordinator.dispatch(gameId, playerId, GameCommand.Draw)
         assertNotNull(fixtures.gameRepo.getGame(gameId)?.pendingRuleDecision)
         fixtures.coordinator.driveAutomatedPlayers(gameId)
-        fixtures.clock.nowMillis += 31_000L
+        fixtures.clock.now += 31_000.milliseconds
         assertEquals(listOf(playerId), fixtures.decisionTimerManager.claimTimedOutDecisions().map { it.playerId })
         fixtures.coordinator.driveAutomatedPlayers(gameId)
         val submitted = assertNotNull(fixtures.gameRepo.getGame(gameId))
@@ -1799,14 +1801,14 @@ class GameFlowCoordinatorTest {
             ),
         )
         fixtures.decisionTimerManager.reconcile(gameId)
-        fixtures.clock.nowMillis = 2_000L
+        fixtures.clock.now = 2_000.milliseconds
 
         val result = fixtures.coordinator.dispatchThenDrive(gameId, otherPlayerId, GameCommand.Draw)
 
         assertTrue(result is Outcome.Error)
         assertEquals(
-            3_000L,
-            fixtures.decisionTimerManager.getStatuses(gameId).getValue(currentPlayerId).time.baseRemainingMillis,
+            3_000.milliseconds,
+            fixtures.decisionTimerManager.getStatuses(gameId).getValue(currentPlayerId).time.baseRemaining,
         )
     }
 
@@ -2330,8 +2332,8 @@ class GameFlowCoordinatorTest {
 /** coordinator 計時整合測試使用的可控單調時間來源。 */
 private class MutableMonotonicClock : MonotonicClock {
     /** 目前回傳的單調時間毫秒數。 */
-    var nowMillis: Long = 0L
+    var now: Duration = Duration.ZERO
 
     /** 回傳測試指定的單調時間。 */
-    override fun nowMillis(): Long = nowMillis
+    override fun now(): Duration = now
 }

@@ -15,6 +15,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertTrue
+import kotlin.time.Duration.Companion.milliseconds
 import kotlin.uuid.Uuid
 
 /** 驗證歷史 metadata 清理與 tombstone 證明的範圍。 */
@@ -186,7 +187,7 @@ class AuthoritativeHistoryRetentionTest {
         val game = store.openGame(FakeTableStateFactory.create())
 
         store.applyHistoryStorageAvailability(false)
-        val changed = game.copy(remainingReserveMillisByPlayerId = game.remainingReserveMillisByPlayerId.mapValues { 1_000L })
+        val changed = game.copy(remainingReserveByPlayerId = game.remainingReserveByPlayerId.mapValues { 1_000.milliseconds })
         store.update { state ->
             AuthoritativeStateUpdate(
                 state.copy(games = state.games + (game.id to changed)),
