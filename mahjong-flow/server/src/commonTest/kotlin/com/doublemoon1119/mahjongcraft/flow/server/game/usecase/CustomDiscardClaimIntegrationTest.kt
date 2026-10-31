@@ -20,6 +20,7 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.service.WinPresentationH
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.WinSettlementDetailResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.isDrawWindowOpenFor
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.isOwnTurnWindowOpenFor
+import com.doublemoon1119.mahjongcraft.logic.api.registration.MahjongModuleRegistrar
 import com.doublemoon1119.mahjongcraft.logic.base.ExtensionGameAction
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.base.Hand
@@ -33,7 +34,6 @@ import com.doublemoon1119.mahjongcraft.logic.judgment.TileSelectionRequirement
 import com.doublemoon1119.mahjongcraft.logic.module.DiscardReactionCandidate
 import com.doublemoon1119.mahjongcraft.logic.module.DiscardReactionPolicy
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleDefinition
-import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
 import com.doublemoon1119.mahjongcraft.logic.module.MeldClaimEffect
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiFamilyRuleConfig
@@ -262,7 +262,7 @@ class CustomDiscardClaimIntegrationTest {
     ) : MahjongExtension {
         override val id: String = "test:claims"
 
-        override fun registerRuleModules(registry: MahjongModuleRegistry) {
+        override fun registerRuleModules(registry: MahjongModuleRegistrar) {
             registry.register(
                 MahjongModuleDefinition(ClaimRuleConfig::class, id) { config, moduleId ->
                     ClaimRule(RiichiRuleModule(moduleId, config.delegate), count, priorities)

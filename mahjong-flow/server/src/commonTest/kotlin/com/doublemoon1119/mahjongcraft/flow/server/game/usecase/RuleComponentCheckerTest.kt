@@ -4,15 +4,15 @@ import com.doublemoon1119.mahjongcraft.extension.MahjongExtension
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkDtoRegistries
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.registry.PersistenceRegistries
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.RuleContractViolationException
+import com.doublemoon1119.mahjongcraft.logic.api.registration.ComponentRegistrar
+import com.doublemoon1119.mahjongcraft.logic.api.registration.MahjongModuleRegistrar
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.logic.component.BuiltInComponentOwners
 import com.doublemoon1119.mahjongcraft.logic.component.ComponentLifecycleDefinition
 import com.doublemoon1119.mahjongcraft.logic.component.ComponentPatch
-import com.doublemoon1119.mahjongcraft.logic.component.ComponentRegistry
 import com.doublemoon1119.mahjongcraft.logic.component.ComponentRoundTransition
 import com.doublemoon1119.mahjongcraft.logic.component.ComponentSet
 import com.doublemoon1119.mahjongcraft.logic.component.ComponentType
-import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiFamilyRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPlayerComponents
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
@@ -87,10 +87,10 @@ class RuleComponentCheckerTest {
             additionalExtensions = listOf(
                 object : MahjongExtension {
                     override val id: String = "test:other_extension"
-                    override fun registerRuleModules(registry: MahjongModuleRegistry) = Unit
+                    override fun registerRuleModules(registry: MahjongModuleRegistrar) = Unit
                     override fun registerNetworkDtos(registries: NetworkDtoRegistries) = Unit
                     override fun registerPersistenceDtos(registries: PersistenceRegistries) = Unit
-                    override fun registerComponents(registry: ComponentRegistry) {
+                    override fun registerComponents(registry: ComponentRegistrar) {
                         registry.register(otherNote)
                         registry.registerLifecycle(
                             ComponentLifecycleDefinition(

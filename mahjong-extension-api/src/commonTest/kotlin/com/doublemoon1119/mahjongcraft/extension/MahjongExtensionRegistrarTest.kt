@@ -29,6 +29,8 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.PostReacti
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.RuleDecisionResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.WinRoundContinuationResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.WinSettlementDetailResolverRegistry
+import com.doublemoon1119.mahjongcraft.logic.api.registration.MahjongModuleRegistrar
+import com.doublemoon1119.mahjongcraft.logic.api.registration.TileTypeRegistrar
 import com.doublemoon1119.mahjongcraft.logic.base.ExhaustiveDrawReason
 import com.doublemoon1119.mahjongcraft.logic.base.ExtensionGameAction
 import com.doublemoon1119.mahjongcraft.logic.base.TileTypeId
@@ -156,7 +158,7 @@ class MahjongExtensionRegistrarTest {
         val extension = object : MahjongExtension {
             override val id: String = "example:broken"
 
-            override fun registerRuleModules(registry: MahjongModuleRegistry) {
+            override fun registerRuleModules(registry: MahjongModuleRegistrar) {
                 error("broken")
             }
 
@@ -183,7 +185,7 @@ class MahjongExtensionRegistrarTest {
         fun failing(failure: Throwable) = object : MahjongExtension {
             override val id: String = "example:error"
 
-            override fun registerRuleModules(registry: MahjongModuleRegistry): Unit = throw failure
+            override fun registerRuleModules(registry: MahjongModuleRegistrar): Unit = throw failure
 
             override fun registerNetworkDtos(registries: NetworkDtoRegistries) = Unit
 
@@ -219,7 +221,7 @@ class MahjongExtensionRegistrarTest {
         val extension = object : MahjongExtension {
             override val id: String = "example:partial_failure"
 
-            override fun registerRuleModules(registry: MahjongModuleRegistry) {
+            override fun registerRuleModules(registry: MahjongModuleRegistrar) {
                 registry.register(
                     definition = MahjongModuleDefinition(RiichiRuleConfig::class, "example:partial_rule") { config, id ->
                         RiichiRuleModule(id, config)
@@ -227,7 +229,7 @@ class MahjongExtensionRegistrarTest {
                 )
             }
 
-            override fun registerTileTypes(registry: TileTypeRegistry) {
+            override fun registerTileTypes(registry: TileTypeRegistrar) {
                 registry.register(TileTypeDefinition(TileTypeId.parse("example:partial_tile")))
                 error("broken after partial registration")
             }
@@ -391,12 +393,12 @@ private class RecordingExtension(
 ) : MahjongExtension {
     override val id: String = "example:recording"
 
-    override fun registerRuleModules(registry: MahjongModuleRegistry) {
+    override fun registerRuleModules(registry: MahjongModuleRegistrar) {
         calls += "rule"
         registry.register(MahjongModuleDefinition(RiichiRuleConfig::class, RULE_MODULE_ID) { config, id -> RiichiRuleModule(id, config) })
     }
 
-    override fun registerTileTypes(registry: TileTypeRegistry) {
+    override fun registerTileTypes(registry: TileTypeRegistrar) {
         calls += "tile"
         registry.register(TileTypeDefinition(TileTypeId.parse("example:flower/spring")))
     }
@@ -439,7 +441,7 @@ private class RecordingExtension(
  * @property id 此測試 extension 的識別字串。
  */
 private class EmptyExtension(override val id: String) : MahjongExtension {
-    override fun registerRuleModules(registry: MahjongModuleRegistry) = Unit
+    override fun registerRuleModules(registry: MahjongModuleRegistrar) = Unit
 
     override fun registerNetworkDtos(registries: NetworkDtoRegistries) = Unit
 
@@ -452,7 +454,7 @@ private class EmptyExtension(override val id: String) : MahjongExtension {
  * @property id 此測試 extension 的識別字串。
  */
 private class StrategyExtension(override val id: String) : MahjongExtension {
-    override fun registerRuleModules(registry: MahjongModuleRegistry) = Unit
+    override fun registerRuleModules(registry: MahjongModuleRegistrar) = Unit
 
     override fun registerNetworkDtos(registries: NetworkDtoRegistries) = Unit
 

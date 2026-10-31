@@ -18,9 +18,10 @@ import com.doublemoon1119.mahjongcraft.flow.persistence.format.rule.TaiwanDiscar
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.rule.TaiwanRuleConfigPersistenceDto
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.rule.toDomain
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.rule.toPersistenceDto
+import com.doublemoon1119.mahjongcraft.logic.api.registration.MahjongModuleRegistrar
+import com.doublemoon1119.mahjongcraft.logic.api.registration.TileTypeRegistrar
 import com.doublemoon1119.mahjongcraft.logic.module.BuiltInRuleModuleIds
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleDefinition
-import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanDiscardPile
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanGameLength
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanRuleConfig
@@ -28,7 +29,6 @@ import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanRuleModule
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanScoreConfig
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.tile.TaiwanTileTypes
 import com.doublemoon1119.mahjongcraft.logic.tile.TileTypeDefinition
-import com.doublemoon1119.mahjongcraft.logic.tile.TileTypeRegistry
 import com.doublemoon1119.mahjongcraft.metadata.MahjongCraftMetadata
 
 /**
@@ -39,11 +39,11 @@ import com.doublemoon1119.mahjongcraft.metadata.MahjongCraftMetadata
 object BundledTaiwanExtension : MahjongExtension {
     override val id: String = MahjongCraftMetadata.id("taiwan")
 
-    override fun registerRuleModules(registry: MahjongModuleRegistry) {
+    override fun registerRuleModules(registry: MahjongModuleRegistrar) {
         registry.register(MahjongModuleDefinition(TaiwanRuleConfig::class, BuiltInRuleModuleIds.TAIWAN) { config, id -> TaiwanRuleModule(id, config) })
     }
 
-    override fun registerTileTypes(registry: TileTypeRegistry) {
+    override fun registerTileTypes(registry: TileTypeRegistrar) {
         TaiwanTileTypes.ALL.forEach { id -> registry.register(TileTypeDefinition(id)) }
     }
 

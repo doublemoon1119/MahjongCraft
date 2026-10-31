@@ -40,6 +40,7 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.GetPlayerDecisio
 import com.doublemoon1119.mahjongcraft.flow.server.lifecycle.ServerSessionStateCleaner
 import com.doublemoon1119.mahjongcraft.flow.server.lifecycle.ServerSessionStateRestorer
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateStore
+import com.doublemoon1119.mahjongcraft.logic.api.registration.MahjongModuleRegistrar
 import com.doublemoon1119.mahjongcraft.logic.judgment.WaitingTileAvailabilityIds
 import com.doublemoon1119.mahjongcraft.logic.module.BuiltInRuleModuleIds
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
@@ -177,7 +178,7 @@ class FabricApplicationModuleTest {
              *
              * @param registry 規則模組登記表。
              */
-            override fun registerRuleModules(registry: MahjongModuleRegistry) = Unit
+            override fun registerRuleModules(registry: MahjongModuleRegistrar) = Unit
 
             /**
              * 此測試不登記網路 DTO。

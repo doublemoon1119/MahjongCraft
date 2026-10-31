@@ -1,19 +1,10 @@
 package com.doublemoon1119.mahjongcraft.logic.tile
 
+import com.doublemoon1119.mahjongcraft.logic.api.registration.TileTypeRegistrar
 import com.doublemoon1119.mahjongcraft.logic.base.TileTypeId
 
-/** 管理內建與第三方擴充牌種定義的 runtime registry。 */
-interface TileTypeRegistry {
-    /** registry 是否已禁止後續註冊。 */
-    val isFrozen: Boolean
-
-    /**
-     * 註冊一種新的擴充牌。
-     *
-     * @throws IllegalStateException 當 registry 已凍結時拋出。
-     * @throws IllegalArgumentException 當 [definition] 的 ID 已存在時拋出。
-     */
-    fun register(definition: TileTypeDefinition)
+/** 管理內建與第三方擴充牌種定義的 runtime registry；擴充只透過 [TileTypeRegistrar] 登記，查詢與凍結由 MahjongCraft 使用。 */
+interface TileTypeRegistry : TileTypeRegistrar {
 
     /** 凍結 registry；後續呼叫 [register] 將失敗。 */
     fun freeze()

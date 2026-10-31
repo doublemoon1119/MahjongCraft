@@ -6,7 +6,7 @@ import com.doublemoon1119.mahjongcraft.extension.MahjongExtension
 import com.doublemoon1119.mahjongcraft.flow.common.error.ExtensionFailurePolicy
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkDtoRegistries
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.registry.PersistenceRegistries
-import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
+import com.doublemoon1119.mahjongcraft.logic.api.registration.MahjongModuleRegistrar
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanRuleConfig
 import com.doublemoon1119.mahjongcraft.platform.fabric.api.seating.FabricSeatProviderRegistry
 import com.doublemoon1119.mahjongcraft.platform.fabric.di.fabricServerModule
@@ -154,7 +154,7 @@ class FabricExtensionBootstrapTest {
         FabricMahjongExtension {
         override val id: String = "example:recording"
 
-        override fun registerRuleModules(registry: MahjongModuleRegistry) {
+        override fun registerRuleModules(registry: MahjongModuleRegistrar) {
             calls += "core"
         }
 
@@ -182,7 +182,7 @@ class FabricExtensionBootstrapTest {
         MinecraftMahjongExtension {
         override val id: String = RULE_ID
 
-        override fun registerRuleModules(registry: MahjongModuleRegistry) = Unit
+        override fun registerRuleModules(registry: MahjongModuleRegistrar) = Unit
 
         override fun registerNetworkDtos(registries: NetworkDtoRegistries) = Unit
 

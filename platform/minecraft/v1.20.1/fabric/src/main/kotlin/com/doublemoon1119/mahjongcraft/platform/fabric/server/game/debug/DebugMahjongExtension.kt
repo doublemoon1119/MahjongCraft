@@ -23,9 +23,9 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.riichi.RiichiSuukanNagar
 import com.doublemoon1119.mahjongcraft.flow.server.game.riichi.RiichiWinSettlementDetailResolver
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.WinSettlementDetailResolverDefinition
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.WinSettlementDetailResolverRegistry
+import com.doublemoon1119.mahjongcraft.logic.api.registration.MahjongModuleRegistrar
 import com.doublemoon1119.mahjongcraft.logic.module.BuiltInRuleModuleIds
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleDefinition
-import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import com.doublemoon1119.mahjongcraft.metadata.MahjongCraftMetadata
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.decision.DebugDecisionActionIds
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.decision.DebugNotenDeclarationRuleDecisionResolver
@@ -79,7 +79,7 @@ internal class DebugMahjongExtension(
     MinecraftMahjongExtension {
     override val id: String = MahjongCraftMetadata.id("debug")
 
-    override fun registerRuleModules(registry: MahjongModuleRegistry) {
+    override fun registerRuleModules(registry: MahjongModuleRegistrar) {
         registry.register(
             definition = MahjongModuleDefinition(DebugAutoNorthRiichiRuleConfig::class, DebugAutoNorthRiichiRuleModule.ID) { config, id ->
                 DebugAutoNorthRiichiRuleModule(id, config)

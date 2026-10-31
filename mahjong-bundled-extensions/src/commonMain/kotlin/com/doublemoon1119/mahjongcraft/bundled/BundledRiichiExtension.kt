@@ -78,10 +78,10 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.riichi.RiichiWinSettleme
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.WinSettlementDetailResolverDefinition
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.WinSettlementDetailResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DeclareTileSetAsideUseCase
-import com.doublemoon1119.mahjongcraft.logic.component.ComponentRegistry
+import com.doublemoon1119.mahjongcraft.logic.api.registration.ComponentRegistrar
+import com.doublemoon1119.mahjongcraft.logic.api.registration.MahjongModuleRegistrar
 import com.doublemoon1119.mahjongcraft.logic.module.BuiltInRuleModuleIds
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleDefinition
-import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.PULL_NORTH_GAME_ACTION
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDiscardComponents
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDiscardPile
@@ -115,7 +115,7 @@ import kotlin.uuid.Uuid
 object BundledRiichiExtension : MahjongExtension {
     override val id: String = MahjongCraftMetadata.id("riichi")
 
-    override fun registerRuleModules(registry: MahjongModuleRegistry) {
+    override fun registerRuleModules(registry: MahjongModuleRegistrar) {
         registry.register(MahjongModuleDefinition(RiichiRuleConfig::class, BuiltInRuleModuleIds.RIICHI) { config, id -> RiichiRuleModule(id, config) })
         registry.register(
             definition = MahjongModuleDefinition(ThreePlayerRiichiRuleConfig::class, BuiltInRuleModuleIds.RIICHI_THREE_PLAYER) { config, id ->
@@ -330,7 +330,7 @@ object BundledRiichiExtension : MahjongExtension {
         )
     }
 
-    override fun registerComponents(registry: ComponentRegistry) {
+    override fun registerComponents(registry: ComponentRegistrar) {
         registerRiichiPlayerComponents(registry)
         registerRiichiTableComponents(registry)
         registerRiichiTileComponents(registry)

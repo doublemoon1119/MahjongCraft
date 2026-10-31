@@ -13,8 +13,9 @@ import com.doublemoon1119.mahjongcraft.extension.MahjongExtensionRegistrar
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkDtoRegistries
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.component.registerBuiltInComponentPersistence
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.registry.PersistenceRegistries
+import com.doublemoon1119.mahjongcraft.logic.api.registration.ComponentRegistrar
+import com.doublemoon1119.mahjongcraft.logic.api.registration.MahjongModuleRegistrar
 import com.doublemoon1119.mahjongcraft.logic.component.BuiltInComponentOwners
-import com.doublemoon1119.mahjongcraft.logic.component.ComponentRegistry
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import com.doublemoon1119.mahjongcraft.logic.tile.component.BuiltInTileComponents
 import com.doublemoon1119.mahjongcraft.metadata.MahjongCraftMetadata
@@ -36,7 +37,7 @@ class BuiltInMahjongExtension(
 ) : MahjongExtension {
     override val id: String = MahjongCraftMetadata.id("builtin")
 
-    override fun registerRuleModules(registry: MahjongModuleRegistry) = Unit
+    override fun registerRuleModules(registry: MahjongModuleRegistrar) = Unit
 
     override fun registerNetworkDtos(registries: NetworkDtoRegistries) = Unit
 
@@ -44,7 +45,7 @@ class BuiltInMahjongExtension(
         registerBuiltInComponentPersistence(registries.components)
     }
 
-    override fun registerComponents(registry: ComponentRegistry) {
+    override fun registerComponents(registry: ComponentRegistrar) {
         BuiltInComponentOwners.ALL.forEach(registry::registerOwner)
         registry.register(BuiltInTileComponents.FACE_ACCESS)
         registry.register(BuiltInTileComponents.POSE)

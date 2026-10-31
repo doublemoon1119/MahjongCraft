@@ -21,18 +21,18 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.ExtensionG
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.RuleDecisionResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.WinSettlementDetailResolverDefinition
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.WinSettlementDetailResolverRegistry
-import com.doublemoon1119.mahjongcraft.logic.component.ComponentRegistry
+import com.doublemoon1119.mahjongcraft.logic.api.registration.ComponentRegistrar
+import com.doublemoon1119.mahjongcraft.logic.api.registration.MahjongModuleRegistrar
+import com.doublemoon1119.mahjongcraft.logic.api.registration.TileTypeRegistrar
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleDefinition
-import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import com.doublemoon1119.mahjongcraft.logic.tile.TileTypeDefinition
-import com.doublemoon1119.mahjongcraft.logic.tile.TileTypeRegistry
 
 /** 平台無關的範例擴充入口；平台轉接層可繼承並補上自己的呈現與原生整合。 */
 open class ExampleMahjongExtension : MahjongExtension {
     override val id: String = ExampleExtensionIds.EXTENSION
 
     /** 透過公開工廠登記簡易配對規則，不依賴任何內建規則模組。 */
-    override fun registerRuleModules(registry: MahjongModuleRegistry) {
+    override fun registerRuleModules(registry: MahjongModuleRegistrar) {
         registry.register(
             definition = MahjongModuleDefinition(
                 configClass = ExamplePairingRuleConfig::class,
@@ -43,12 +43,12 @@ open class ExampleMahjongExtension : MahjongExtension {
     }
 
     /** 登記倒置一萬的獨立牌種身分。 */
-    override fun registerTileTypes(registry: TileTypeRegistry) {
+    override fun registerTileTypes(registry: TileTypeRegistrar) {
         registry.register(TileTypeDefinition(id = ExamplePairingIds.INVERTED_ONE_MAN))
     }
 
     /** 登記加分牌、攤牌狀態與公開牌面標記，以及前兩者的生命週期。 */
-    override fun registerComponents(registry: ComponentRegistry) = registerExamplePairingComponents(registry)
+    override fun registerComponents(registry: ComponentRegistrar) = registerExamplePairingComponents(registry)
 
     /** 登記範例的規則、計分與局數設定，以及流局原因、擴充動作與指令的網路格式。 */
     override fun registerNetworkDtos(registries: NetworkDtoRegistries) = registerExampleNetworkDtos(registries)
