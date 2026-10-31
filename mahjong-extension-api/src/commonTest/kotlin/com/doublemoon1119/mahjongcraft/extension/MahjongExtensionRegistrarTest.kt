@@ -5,6 +5,8 @@ import com.doublemoon1119.mahjongcraft.ai.MahjongAiStrategyDefinition
 import com.doublemoon1119.mahjongcraft.ai.MahjongAiStrategyRegistry
 import com.doublemoon1119.mahjongcraft.ai.MahjongAiStrategyRegistryImpl
 import com.doublemoon1119.mahjongcraft.ai.RandomAiStrategy
+import com.doublemoon1119.mahjongcraft.ai.api.registration.MahjongAiStrategyRegistrar
+import com.doublemoon1119.mahjongcraft.ai.api.registration.OpponentModelRegistrar
 import com.doublemoon1119.mahjongcraft.ai.expectation.NeutralOpponentModel
 import com.doublemoon1119.mahjongcraft.ai.expectation.OpponentModelDefinition
 import com.doublemoon1119.mahjongcraft.ai.expectation.OpponentModelRegistry
@@ -411,12 +413,12 @@ private class RecordingExtension(
         calls += "persistence"
     }
 
-    override fun registerAiStrategies(registry: MahjongAiStrategyRegistry) {
+    override fun registerAiStrategies(registry: MahjongAiStrategyRegistrar) {
         calls += "strategy"
         registry.register(MahjongAiStrategyDefinition(STRATEGY_KEY) { RandomAiStrategy(ExtensionGameActionAiRegistry(MahjongModuleRegistryImpl())) })
     }
 
-    override fun registerOpponentModels(registry: OpponentModelRegistry) {
+    override fun registerOpponentModels(registry: OpponentModelRegistrar) {
         calls += "opponent"
         registry.register(OpponentModelDefinition(RULE_MODULE_ID) { _, depth -> NeutralOpponentModel(depth) })
     }
@@ -460,7 +462,7 @@ private class StrategyExtension(override val id: String) : MahjongExtension {
 
     override fun registerPersistenceDtos(registries: PersistenceRegistries) = Unit
 
-    override fun registerAiStrategies(registry: MahjongAiStrategyRegistry) {
+    override fun registerAiStrategies(registry: MahjongAiStrategyRegistrar) {
         registry.register(MahjongAiStrategyDefinition(STRATEGY_KEY) { RandomAiStrategy(ExtensionGameActionAiRegistry(MahjongModuleRegistryImpl())) })
     }
 

@@ -1,23 +1,15 @@
 package com.doublemoon1119.mahjongcraft.ai
 
+import com.doublemoon1119.mahjongcraft.ai.api.registration.MahjongAiStrategyRegistrar
+
 /**
  * AI 策略登記中心介面，管理策略 key 與其建構方式的對照關係。
  *
  * 設計刻意比照 `MahjongModuleRegistry`：開放註冊，
  * 內建策略與第三方策略使用相同的登記流程。策略所需的網址、提示內容或憑證等設定，
- * 由建構函式的閉包持有，不放入對局狀態或快照。
+ * 由建構函式的閉包持有，不放入對局狀態或快照。擴充只透過 [MahjongAiStrategyRegistrar] 登記，解析與凍結由 MahjongCraft 使用。
  */
-interface MahjongAiStrategyRegistry {
-    /**
-     * 登記策略描述；每次解析時呼叫其中的建立函式，讓各策略實例獨立保存自己的狀態。
-     *
-     * 凍結後或識別碼重複時拒絕登記，不覆寫先前擴充提供的策略。
-     *
-     * @param definition 策略 key 與每次解析時建立策略的延遲工廠。
-     * @throws IllegalStateException 登記中心已凍結。
-     * @throws IllegalArgumentException [definition] 的 key 已被使用或不是 namespaced ID。
-     */
-    fun register(definition: MahjongAiStrategyDefinition)
+interface MahjongAiStrategyRegistry : MahjongAiStrategyRegistrar {
 
     /** 禁止後續註冊；由啟動流程在所有內建與第三方登記完成後呼叫。 */
     fun freeze()

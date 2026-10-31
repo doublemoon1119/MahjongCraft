@@ -1,9 +1,9 @@
 package com.doublemoon1119.mahjongcraft.bundled
 
 import com.doublemoon1119.mahjongcraft.ai.ExtensionGameActionAiDefinition
-import com.doublemoon1119.mahjongcraft.ai.ExtensionGameActionAiRegistry
+import com.doublemoon1119.mahjongcraft.ai.api.registration.ExtensionGameActionAiRegistrar
+import com.doublemoon1119.mahjongcraft.ai.api.registration.OpponentModelRegistrar
 import com.doublemoon1119.mahjongcraft.ai.expectation.OpponentModelDefinition
-import com.doublemoon1119.mahjongcraft.ai.expectation.OpponentModelRegistry
 import com.doublemoon1119.mahjongcraft.ai.riichi.RiichiDeclarationAiHandler
 import com.doublemoon1119.mahjongcraft.ai.riichi.RiichiOpponentModel
 import com.doublemoon1119.mahjongcraft.ai.riichi.RiichiPullNorthAiHandler
@@ -522,12 +522,12 @@ object BundledRiichiExtension : MahjongExtension {
         )
     }
 
-    override fun registerGameActionAiHandlers(registry: ExtensionGameActionAiRegistry) {
+    override fun registerGameActionAiHandlers(registry: ExtensionGameActionAiRegistrar) {
         registry.register(ExtensionGameActionAiDefinition(RiichiGameAction.Riichi::class, RiichiDeclarationAiHandler))
         registry.register(ExtensionGameActionAiDefinition(RiichiGameAction.PullNorth::class, RiichiPullNorthAiHandler))
     }
 
-    override fun registerOpponentModels(registry: OpponentModelRegistry) {
+    override fun registerOpponentModels(registry: OpponentModelRegistrar) {
         registry.register(OpponentModelDefinition(BuiltInRuleModuleIds.RIICHI) { module, depth -> RiichiOpponentModel(rules = module.createPositionRules(), readingDepth = depth) })
         registry.register(
             definition = OpponentModelDefinition(BuiltInRuleModuleIds.RIICHI_THREE_PLAYER) { module, depth ->

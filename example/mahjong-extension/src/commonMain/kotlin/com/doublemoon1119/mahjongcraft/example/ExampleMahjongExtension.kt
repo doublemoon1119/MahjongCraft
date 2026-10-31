@@ -1,7 +1,7 @@
 package com.doublemoon1119.mahjongcraft.example
 
 import com.doublemoon1119.mahjongcraft.ai.MahjongAiStrategyDefinition
-import com.doublemoon1119.mahjongcraft.ai.MahjongAiStrategyRegistry
+import com.doublemoon1119.mahjongcraft.ai.api.registration.MahjongAiStrategyRegistrar
 import com.doublemoon1119.mahjongcraft.example.action.registerExamplePairingRevealHandFactory
 import com.doublemoon1119.mahjongcraft.example.action.registerExamplePairingRevealHandHandler
 import com.doublemoon1119.mahjongcraft.example.ai.ExampleAiStrategyIds
@@ -57,7 +57,7 @@ open class ExampleMahjongExtension : MahjongExtension {
     override fun registerPersistenceDtos(registries: PersistenceRegistries) = registerExamplePersistenceDtos(registries)
 
     /** 登記不重新計算規則的摸切策略。 */
-    override fun registerAiStrategies(registry: MahjongAiStrategyRegistry) {
+    override fun registerAiStrategies(registry: MahjongAiStrategyRegistrar) {
         registry.register(MahjongAiStrategyDefinition(key = ExampleAiStrategyIds.TSUMOGIRI) { ExampleTsumogiriAiStrategy() })
     }
 

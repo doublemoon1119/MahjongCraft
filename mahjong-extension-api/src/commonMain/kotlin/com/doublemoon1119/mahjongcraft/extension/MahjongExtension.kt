@@ -1,8 +1,8 @@
 package com.doublemoon1119.mahjongcraft.extension
 
-import com.doublemoon1119.mahjongcraft.ai.ExtensionGameActionAiRegistry
-import com.doublemoon1119.mahjongcraft.ai.MahjongAiStrategyRegistry
-import com.doublemoon1119.mahjongcraft.ai.expectation.OpponentModelRegistry
+import com.doublemoon1119.mahjongcraft.ai.api.registration.ExtensionGameActionAiRegistrar
+import com.doublemoon1119.mahjongcraft.ai.api.registration.MahjongAiStrategyRegistrar
+import com.doublemoon1119.mahjongcraft.ai.api.registration.OpponentModelRegistrar
 import com.doublemoon1119.mahjongcraft.flow.common.game.event.GameEventPublicMarkerResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.WinCelebrationCueResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkDtoRegistries
@@ -90,21 +90,21 @@ interface MahjongExtension {
      *
      * @param registry 用於登記擴充動作 AI handler 的 registry。
      */
-    fun registerGameActionAiHandlers(registry: ExtensionGameActionAiRegistry) = Unit
+    fun registerGameActionAiHandlers(registry: ExtensionGameActionAiRegistrar) = Unit
 
     /**
      * 登記平台無關的 AI 策略；策略顯示名稱由各平台的呈現 extension 另行登記。
      *
      * @param registry 用於登記 AI 策略的 registry。
      */
-    fun registerAiStrategies(registry: MahjongAiStrategyRegistry) = Unit
+    fun registerAiStrategies(registry: MahjongAiStrategyRegistrar) = Unit
 
     /**
      * 登記規則專屬的 AI 對手模型；沒有登記的規則，AI 改用規則中立的對手模型估計對手。
      *
      * @param registry 用於登記規則專屬對手模型的 registry。
      */
-    fun registerOpponentModels(registry: OpponentModelRegistry) = Unit
+    fun registerOpponentModels(registry: OpponentModelRegistrar) = Unit
 
     /**
      * 登記需要額外選牌的規則擴充動作如何建立伺服器命令。

@@ -3,8 +3,8 @@ package com.doublemoon1119.mahjongcraft.bundled
 import com.doublemoon1119.mahjongcraft.ai.BuiltInAiStrategyKeys
 import com.doublemoon1119.mahjongcraft.ai.ExtensionGameActionAiRegistry
 import com.doublemoon1119.mahjongcraft.ai.MahjongAiStrategyDefinition
-import com.doublemoon1119.mahjongcraft.ai.MahjongAiStrategyRegistry
 import com.doublemoon1119.mahjongcraft.ai.RandomAiStrategy
+import com.doublemoon1119.mahjongcraft.ai.api.registration.MahjongAiStrategyRegistrar
 import com.doublemoon1119.mahjongcraft.ai.expectation.ExpectedValueAiStrategy
 import com.doublemoon1119.mahjongcraft.ai.expectation.InformationLevel
 import com.doublemoon1119.mahjongcraft.ai.expectation.OpponentModelRegistry
@@ -53,7 +53,7 @@ class BuiltInMahjongExtension(
     }
 
     /** 依初級、中級、高級、隨機出牌的順序登記；列出策略時依此順序呈現。 */
-    override fun registerAiStrategies(registry: MahjongAiStrategyRegistry) {
+    override fun registerAiStrategies(registry: MahjongAiStrategyRegistrar) {
         mapOf(
             BuiltInAiStrategyKeys.BEGINNER to InformationLevel.BEGINNER,
             BuiltInAiStrategyKeys.INTERMEDIATE to InformationLevel.INTERMEDIATE,

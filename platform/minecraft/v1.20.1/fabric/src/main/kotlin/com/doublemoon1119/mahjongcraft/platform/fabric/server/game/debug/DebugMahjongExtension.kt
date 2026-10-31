@@ -1,9 +1,9 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug
 
 import com.doublemoon1119.mahjongcraft.ai.MahjongAiStrategyDefinition
-import com.doublemoon1119.mahjongcraft.ai.MahjongAiStrategyRegistry
+import com.doublemoon1119.mahjongcraft.ai.api.registration.MahjongAiStrategyRegistrar
+import com.doublemoon1119.mahjongcraft.ai.api.registration.OpponentModelRegistrar
 import com.doublemoon1119.mahjongcraft.ai.expectation.OpponentModelDefinition
-import com.doublemoon1119.mahjongcraft.ai.expectation.OpponentModelRegistry
 import com.doublemoon1119.mahjongcraft.ai.riichi.RiichiOpponentModel
 import com.doublemoon1119.mahjongcraft.extension.MahjongExtension
 import com.doublemoon1119.mahjongcraft.flow.common.game.event.GameEventPublicMarkerResolverDefinition
@@ -115,7 +115,7 @@ internal class DebugMahjongExtension(
         }
     }
 
-    override fun registerOpponentModels(registry: OpponentModelRegistry) {
+    override fun registerOpponentModels(registry: OpponentModelRegistrar) {
         DEBUG_VARIANT_RULE_MODULE_IDS.forEach { ruleModuleId ->
             registry.register(
                 definition = OpponentModelDefinition(ruleModuleId) { module, depth ->
@@ -218,7 +218,7 @@ internal class DebugMahjongExtension(
         )
     }
 
-    override fun registerAiStrategies(registry: MahjongAiStrategyRegistry) {
+    override fun registerAiStrategies(registry: MahjongAiStrategyRegistrar) {
         registry.register(MahjongAiStrategyDefinition(DebugScriptedAiStrategy.TSUMOGIRI_KEY) { DebugScriptedAiStrategy(declaresKanFirst = false) })
         registry.register(MahjongAiStrategyDefinition(DebugScriptedAiStrategy.KAN_FIRST_KEY) { DebugScriptedAiStrategy(declaresKanFirst = true) })
         registry.register(

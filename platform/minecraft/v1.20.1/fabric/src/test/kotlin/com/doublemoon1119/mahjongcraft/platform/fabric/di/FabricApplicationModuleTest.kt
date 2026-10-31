@@ -5,6 +5,7 @@ import com.doublemoon1119.mahjongcraft.ai.ExtensionGameActionAiRegistry
 import com.doublemoon1119.mahjongcraft.ai.MahjongAiStrategyDefinition
 import com.doublemoon1119.mahjongcraft.ai.MahjongAiStrategyRegistry
 import com.doublemoon1119.mahjongcraft.ai.RandomAiStrategy
+import com.doublemoon1119.mahjongcraft.ai.api.registration.MahjongAiStrategyRegistrar
 import com.doublemoon1119.mahjongcraft.ai.expectation.NeutralOpponentModel
 import com.doublemoon1119.mahjongcraft.ai.expectation.OpponentModelDefinition
 import com.doublemoon1119.mahjongcraft.ai.expectation.OpponentModelRegistry
@@ -199,7 +200,7 @@ class FabricApplicationModuleTest {
              *
              * @param registry AI 策略登記表。
              */
-            override fun registerAiStrategies(registry: MahjongAiStrategyRegistry) {
+            override fun registerAiStrategies(registry: MahjongAiStrategyRegistrar) {
                 registry.register(
                     definition = MahjongAiStrategyDefinition("example:custom_strategy") {
                         RandomAiStrategy(koin.get<ExtensionGameActionAiRegistry>())

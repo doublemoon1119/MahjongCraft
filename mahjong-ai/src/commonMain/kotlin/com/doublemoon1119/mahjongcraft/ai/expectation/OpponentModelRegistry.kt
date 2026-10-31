@@ -1,16 +1,17 @@
 package com.doublemoon1119.mahjongcraft.ai.expectation
 
+import com.doublemoon1119.mahjongcraft.ai.api.registration.OpponentModelRegistrar
 import com.doublemoon1119.mahjongcraft.logic.base.NamespacedId
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
 
 /**
- * 依規則模組 ID 管理對手模型的可凍結登記表。
+ * 依規則模組 ID 管理對手模型的可凍結登記表；擴充只透過 [OpponentModelRegistrar] 登記。
  *
  * 沒有登記的規則使用 [NeutralOpponentModel]。內建與第三方規則以同一個 [register] 登記，不具特權。
  * 以進階深度建立時，登記的模型外面一律再套用所有規則共用的讀牌（[ReadingOpponentModel]），
  * 規則自己的模型只需要負責規則專屬的估計。
  */
-class OpponentModelRegistry {
+class OpponentModelRegistry : OpponentModelRegistrar {
     /** 依規則模組 ID 索引的對手模型建立方式。 */
     private val factoriesByRuleModuleId = linkedMapOf<String, (MahjongRuleModule<*>, ReadingDepth) -> OpponentModel>()
 
@@ -18,7 +19,7 @@ class OpponentModelRegistry {
     private var frozen = false
 
     /** 目前已登記的規則模組 ID，依登記順序排列。 */
-    val registrationKeys: Set<String> get() = factoriesByRuleModuleId.keys.toSet()
+    override val registrationKeys: Set<String> get() = factoriesByRuleModuleId.keys.toSet()
 
     /**
      * 登記 definition 指定的對手模型；每次建立模型時，以該局的規則模組與決策者的讀牌深度呼叫其 factory 一次。
@@ -27,7 +28,7 @@ class OpponentModelRegistry {
      *
      * @param definition 規則模組識別碼與對手模型延遲工廠。
      */
-    fun register(definition: OpponentModelDefinition) {
+    override fun register(definition: OpponentModelDefinition) {
         check(!frozen) { "Opponent model registry is frozen" }
         NamespacedId.requireValid(definition.ruleModuleId) { "Rule module ID must be namespaced: ${definition.ruleModuleId}" }
         require(definition.ruleModuleId !in factoriesByRuleModuleId) { "Opponent model already registered for ${definition.ruleModuleId}" }
