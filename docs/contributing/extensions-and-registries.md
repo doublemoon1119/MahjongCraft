@@ -355,8 +355,8 @@ core extension behavior through one adapter. For example, see the Minecraft guid
   automatically; do not regenerate the references as part of normal builds.
 - The current stable surfaces are:
   - `api.event` in Flow common, Minecraft common and each loader adapter;
-  - `api.seating` and `api.table` in Minecraft common and its loader adapters, and `api.tableprop` in each loader
-    adapter;
+  - `api.seating` in Minecraft common, `api.table` in Minecraft common and its loader adapters, and
+    `api.tableprop` in each loader adapter;
   - `api.registration` in every module that provides registrars: logic, AI, Flow common and server, network DTO,
     persistence format, Minecraft common and each loader adapter;
   - the exact extension entrypoints `MahjongExtension`, `MinecraftMahjongExtension` and `FabricMahjongExtension`,

@@ -12,7 +12,6 @@ publicApiAbi {
     includedNames.addAll(
         "com.doublemoon1119.mahjongcraft.platform.fabric.api.event.**",
         "com.doublemoon1119.mahjongcraft.platform.fabric.api.registration.**",
-        "com.doublemoon1119.mahjongcraft.platform.fabric.api.seating.**",
         "com.doublemoon1119.mahjongcraft.platform.fabric.api.table.**",
         "com.doublemoon1119.mahjongcraft.platform.fabric.api.tableprop.**",
         "com.doublemoon1119.mahjongcraft.platform.fabric.extension.FabricMahjongExtension",
