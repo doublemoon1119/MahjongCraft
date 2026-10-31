@@ -9,6 +9,8 @@ publicApiAbi {
     includedNames.addAll(
         "com.doublemoon1119.mahjongcraft.platform.minecraft.api.event.**",
         "com.doublemoon1119.mahjongcraft.platform.minecraft.api.seating.**",
+        "com.doublemoon1119.mahjongcraft.platform.minecraft.api.table.**",
+        "com.doublemoon1119.mahjongcraft.platform.minecraft.api.MahjongCraftInternalApi",
     )
 }
 

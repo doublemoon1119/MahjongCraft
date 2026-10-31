@@ -10,6 +10,7 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.HandSortPreferen
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.SetHandSortPreferenceUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.lifecycle.ServerSessionStateCleaner
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateStore
+import com.doublemoon1119.mahjongcraft.platform.fabric.api.table.MahjongTables
 import com.doublemoon1119.mahjongcraft.platform.fabric.di.fabricClientModule
 import com.doublemoon1119.mahjongcraft.platform.fabric.di.fabricServerModule
 import com.doublemoon1119.mahjongcraft.platform.fabric.extension.FabricExtensionRegistries
@@ -112,11 +113,11 @@ class MahjongCraftMod : ModInitializer {
         val tableLifecycleService = koin.get<FabricTableLifecycleService>()
         val tableLocationValidation = koin.get<FabricTableLocationValidationService>()
         val tablePropRefreshScheduler = koin.get<FabricTablePropRefreshScheduler>()
-        ModBlocks.register(
+        MahjongTables.install(
             roomService = koin.get<MahjongTableRoomService>(),
             tableLifecycleService = tableLifecycleService,
-            seatService = koin.get<MahjongStoolSeatService>(),
         )
+        ModBlocks.register(seatService = koin.get<MahjongStoolSeatService>())
         ModItemGroups.register()
         tableLifecycleService.registerEvents()
         tableLocationValidation.registerEvents()

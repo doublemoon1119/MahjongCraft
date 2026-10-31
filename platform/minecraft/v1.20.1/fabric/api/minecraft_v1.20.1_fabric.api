@@ -9,6 +9,22 @@ public abstract interface class com/doublemoon1119/mahjongcraft/platform/fabric/
 	public abstract fun register (Lcom/doublemoon1119/mahjongcraft/platform/minecraft/api/seating/RegisteredSeatProvider;)V
 }
 
+public final class com/doublemoon1119/mahjongcraft/platform/fabric/api/table/MahjongTableControllerStateNbtKt {
+	public static final fun readNbt (Lcom/doublemoon1119/mahjongcraft/platform/minecraft/api/table/MahjongTableControllerState;Lnet/minecraft/nbt/NbtCompound;)V
+	public static final fun writeNbt (Lcom/doublemoon1119/mahjongcraft/platform/minecraft/api/table/MahjongTableControllerState;Lnet/minecraft/nbt/NbtCompound;)V
+}
+
+public abstract interface class com/doublemoon1119/mahjongcraft/platform/fabric/api/table/MahjongTableStructureBlock {
+	public abstract fun mahjongTableControllerPos (Lnet/minecraft/world/BlockView;Lnet/minecraft/util/math/BlockPos;Lnet/minecraft/block/BlockState;)Lnet/minecraft/util/math/BlockPos;
+}
+
+public final class com/doublemoon1119/mahjongcraft/platform/fabric/api/table/MahjongTables {
+	public static final field INSTANCE Lcom/doublemoon1119/mahjongcraft/platform/fabric/api/table/MahjongTables;
+	public final fun interact (Lnet/minecraft/world/World;Lnet/minecraft/util/math/BlockPos;Lnet/minecraft/block/BlockState;Lnet/minecraft/entity/player/PlayerEntity;)Lnet/minecraft/util/ActionResult;
+	public final fun onControllerRemoved (Lnet/minecraft/world/World;Lnet/minecraft/util/math/BlockPos;)V
+	public final fun playSpaceCells (Lnet/minecraft/util/math/BlockPos;)Ljava/util/List;
+}
+
 public abstract interface class com/doublemoon1119/mahjongcraft/platform/fabric/extension/FabricMahjongExtension {
 	public abstract fun getId ()Ljava/lang/String;
 	public fun registerSeatProviders (Lcom/doublemoon1119/mahjongcraft/platform/fabric/api/seating/FabricSeatProviderRegistry;)V

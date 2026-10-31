@@ -90,9 +90,34 @@ For a focused test run from the repository root:
 ```
 
 Use the [complete Minecraft target checks](../../README.md) before committing.
-The public API signature check covers this module's `api.event` and `api.seating` surfaces,
+The public API signature check covers this module's `api.event`, `api.seating` and `api.table` surfaces,
 plus the exact `FabricMahjongExtension` registration interface;
 it does not guarantee compatibility with a different Minecraft version or loader.
+
+## Mahjong tables
+
+A Fabric table implements the [common table contract](../../common/README.md#table-contract) on its
+controller block entity and `MahjongTableStructureBlock` on every block of the table, including the
+controller, which returns its own position. MahjongCraft uses the structure block to find the table
+when any of its blocks is broken; the break policy then applies to the whole table.
+
+The table's own callbacks call `MahjongTables`; no built-in table class needs to be extended:
+
+```kotlin
+override fun onUse(/* ... */): ActionResult = MahjongTables.interact(world, pos, state, player)
+
+// In the controller block; pos is the controller position.
+override fun onStateReplaced(state: BlockState, world: World, pos: BlockPos, newState: BlockState, moved: Boolean) {
+    if (!state.isOf(newState.block)) MahjongTables.onControllerRemoved(world, pos)
+    super.onStateReplaced(state, world, pos, newState, moved)
+}
+```
+
+Call `onControllerRemoved` once per removal, while the controller block entity still exists.
+The block entity forwards the state to `readNbt` and `writeNbt` from its own save and load methods;
+MahjongCraft chooses the NBT keys. `MahjongTables.playSpaceCells` lists the play layer for checking
+a model during design. These functions are specific to Fabric 1.20.1; another loader or version
+provides its own.
 
 ## Seat providers
 

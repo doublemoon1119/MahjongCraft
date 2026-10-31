@@ -1,10 +1,9 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.block
 
 import com.doublemoon1119.mahjongcraft.platform.fabric.api.table.MahjongTableStructureBlock
+import com.doublemoon1119.mahjongcraft.platform.fabric.api.table.MahjongTables
 import com.doublemoon1119.mahjongcraft.platform.fabric.block.entity.MahjongTableBlockEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.logging.mahjongCraftLogger
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.room.MahjongTableRoomService
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.FabricTableLifecycleService
 import net.minecraft.block.Block
 import net.minecraft.block.BlockRenderType
 import net.minecraft.block.BlockState
@@ -15,7 +14,6 @@ import net.minecraft.entity.LivingEntity
 import net.minecraft.entity.player.PlayerEntity
 import net.minecraft.item.ItemPlacementContext
 import net.minecraft.item.ItemStack
-import net.minecraft.server.network.ServerPlayerEntity
 import net.minecraft.server.world.ServerWorld
 import net.minecraft.state.StateManager
 import net.minecraft.state.property.EnumProperty
@@ -39,14 +37,10 @@ import net.minecraft.world.WorldAccess
  *
  * @param settings Minecraft 方塊設定。
  * @property design 此方塊 registry ID 對應的固定桌型。
- * @property roomService 開啟麻將桌房間介面的伺服器服務。
- * @property tableLifecycleService 清理桌子替換及其遊戲生命週期的服務。
  */
 class MahjongTableBlock(
     settings: Settings,
     internal val design: MahjongTableDesign,
-    private val roomService: MahjongTableRoomService,
-    private val tableLifecycleService: FabricTableLifecycleService,
 ) : BlockWithEntity(settings),
     MahjongTableStructureBlock {
     /** 記錄結構放置失敗或缺少 controller 等異常狀態。 */
@@ -167,18 +161,13 @@ class MahjongTableBlock(
         hit: BlockHitResult,
     ): ActionResult {
         if (!world.isClient) {
-            val table = mahjongTableControllerPos(world, pos, state)
-                ?.let { MahjongTableLookup.find(world, it) }
-                ?.takeIf { it.blockEntity.cachedState.block === this }
-                ?: return ActionResult.FAIL
-            if (!isComplete(world, table.pos, table.blockEntity.cachedState)) {
-                logger.warn("Rejected interaction with incomplete Mahjong table {} at {}", table.tableId, table.pos)
+            val controllerPos = mahjongTableControllerPos(world, pos, state) ?: return ActionResult.FAIL
+            if (!isComplete(world, controllerPos, world.getBlockState(controllerPos))) {
+                logger.warn("Rejected interaction with incomplete Mahjong table at {}", controllerPos)
                 return ActionResult.FAIL
             }
-            val serverPlayer = player as ServerPlayerEntity
-            roomService.openRoomScreen(table, serverPlayer)
         }
-        return ActionResult.SUCCESS
+        return MahjongTables.interact(world, pos, state, player)
     }
 
     /**
@@ -230,12 +219,7 @@ class MahjongTableBlock(
         if (!removingControllers.add(controllerPos)) return
 
         try {
-            val table = MahjongTableLookup.find(world, controllerPos)
-            if (table == null) {
-                logger.warn("Removed incomplete Mahjong table part at {} without controller at {}", pos, controllerPos)
-            } else {
-                tableLifecycleService.onBlockReplaced(world, table)
-            }
+            MahjongTables.onControllerRemoved(world, controllerPos)
             MahjongTableStructure.placements(controllerPos, facing).values.forEach { partPos ->
                 if (partPos != pos && world.getBlockState(partPos).block === this) world.removeBlock(partPos, false)
             }
