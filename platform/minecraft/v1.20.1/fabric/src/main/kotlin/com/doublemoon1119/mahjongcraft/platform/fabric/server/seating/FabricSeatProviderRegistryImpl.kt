@@ -1,13 +1,13 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.server.seating
 
-import com.doublemoon1119.mahjongcraft.platform.fabric.api.seating.FabricSeatProviderRegistry
+import com.doublemoon1119.mahjongcraft.platform.fabric.api.registration.FabricSeatProviderRegistrar
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.seating.RegisteredSeatProvider
 import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftResourceIds
 import net.minecraft.entity.Entity
 import net.minecraft.server.world.ServerWorld
 
-/** [FabricSeatProviderRegistry] 的記憶體實作。 */
-internal class FabricSeatProviderRegistryImpl : FabricSeatProviderRegistry {
+/** [FabricSeatProviderRegistrar] 的記憶體實作。 */
+internal class FabricSeatProviderRegistryImpl : FabricSeatProviderRegistrar {
     /** 依 provider 識別碼保存登記資料。 */
     private val providersById = linkedMapOf<String, RegisteredSeatProvider<ServerWorld, Entity>>()
 

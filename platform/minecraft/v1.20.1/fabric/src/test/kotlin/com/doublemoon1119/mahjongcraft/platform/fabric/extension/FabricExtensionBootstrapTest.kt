@@ -8,12 +8,12 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.api.registration.Network
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.api.registration.PersistenceRegistrars
 import com.doublemoon1119.mahjongcraft.logic.api.registration.MahjongModuleRegistrar
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanRuleConfig
-import com.doublemoon1119.mahjongcraft.platform.fabric.api.seating.FabricSeatProviderRegistry
+import com.doublemoon1119.mahjongcraft.platform.fabric.api.registration.FabricSeatProviderRegistrar
+import com.doublemoon1119.mahjongcraft.platform.fabric.api.registration.FabricTablePropKindRegistrar
 import com.doublemoon1119.mahjongcraft.platform.fabric.di.fabricServerModule
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.decision.DebugDecisionActionIds
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.presentation.DebugWinRoundContinuationState
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.seating.MahjongStoolSeatProvider
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.prop.FabricTablePropKindRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionVocabularyRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.GameConfigPresentationRegistrar
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.MinecraftTileAssetRegistrar
@@ -166,11 +166,11 @@ class FabricExtensionBootstrapTest {
             calls += "minecraft"
         }
 
-        override fun registerTablePropKinds(registry: FabricTablePropKindRegistry) {
+        override fun registerTablePropKinds(registry: FabricTablePropKindRegistrar) {
             calls += "fabric_table"
         }
 
-        override fun registerSeatProviders(registry: FabricSeatProviderRegistry) {
+        override fun registerSeatProviders(registry: FabricSeatProviderRegistrar) {
             calls += "fabric_seat"
             seatFailure?.let { throw it }
         }

@@ -1,7 +1,7 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.extension
 
-import com.doublemoon1119.mahjongcraft.platform.fabric.api.seating.FabricSeatProviderRegistry
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.prop.FabricTablePropKindRegistry
+import com.doublemoon1119.mahjongcraft.platform.fabric.api.registration.FabricSeatProviderRegistrar
+import com.doublemoon1119.mahjongcraft.platform.fabric.api.registration.FabricTablePropKindRegistrar
 
 /**
  * 第三方 mod 登記 Fabric 1.20.1 專屬整合的契約，例如需要自己的 entity 才能呈現的規則桌面物件種類。
@@ -20,7 +20,7 @@ interface FabricMahjongExtension {
      *
      * @param registry Fabric 桌面物件種類 registry。
      */
-    fun registerTablePropKinds(registry: FabricTablePropKindRegistry) = Unit
+    fun registerTablePropKinds(registry: FabricTablePropKindRegistrar) = Unit
 
     /**
      * 登記此 Fabric 版本可解析的座位 provider。
@@ -29,5 +29,5 @@ interface FabricMahjongExtension {
      *
      * @param registry Fabric 座位 provider registry。
      */
-    fun registerSeatProviders(registry: FabricSeatProviderRegistry) = Unit
+    fun registerSeatProviders(registry: FabricSeatProviderRegistrar) = Unit
 }

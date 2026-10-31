@@ -1,4 +1,4 @@
-package com.doublemoon1119.mahjongcraft.platform.fabric.server.table.prop
+package com.doublemoon1119.mahjongcraft.platform.fabric.api.tableprop
 
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TablePropContent
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TablePropKindDefinition

@@ -122,7 +122,7 @@ provides its own.
 ## Seat providers
 
 Fabric integrations can register a fixed-seat provider through
-`FabricSeatProviderRegistry`. Register an ID in the integration's namespace during extension
+`FabricSeatProviderRegistrar`. Register an ID in the integration's namespace during extension
 initialization; MahjongCraft freezes the registry once every extension has registered:
 
 ```kotlin

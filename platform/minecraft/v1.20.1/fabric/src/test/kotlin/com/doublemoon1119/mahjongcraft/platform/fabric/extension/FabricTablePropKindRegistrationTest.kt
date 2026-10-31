@@ -1,9 +1,10 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.extension
 
 import com.doublemoon1119.mahjongcraft.flow.common.error.ExtensionFailurePolicy
-import com.doublemoon1119.mahjongcraft.platform.fabric.api.seating.FabricSeatProviderRegistry
+import com.doublemoon1119.mahjongcraft.platform.fabric.api.registration.FabricSeatProviderRegistrar
+import com.doublemoon1119.mahjongcraft.platform.fabric.api.registration.FabricTablePropKindRegistrar
+import com.doublemoon1119.mahjongcraft.platform.fabric.api.tableprop.FabricTablePropKind
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.seating.FabricSeatProviderRegistryImpl
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.prop.FabricTablePropKind
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.prop.FabricTablePropKindRegistry
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.prop.FabricTablePropKindRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.prop.ScoringStickTablePropKind
@@ -82,7 +83,7 @@ class FabricTablePropKindRegistrationTest {
         override val id: String,
         private val kinds: List<FabricTablePropKind>,
     ) : FabricMahjongExtension {
-        override fun registerTablePropKinds(registry: FabricTablePropKindRegistry) = kinds.forEach(registry::register)
+        override fun registerTablePropKinds(registry: FabricTablePropKindRegistrar) = kinds.forEach(registry::register)
     }
 
     /** 內建點棒種類先登記，第三方種類接在後面，完成後凍結；回傳值依來源分組。 */
@@ -130,7 +131,7 @@ class FabricTablePropKindRegistrationTest {
         ) = object : FabricMahjongExtension {
             override val id: String = id
 
-            override fun registerTablePropKinds(registry: FabricTablePropKindRegistry) {
+            override fun registerTablePropKinds(registry: FabricTablePropKindRegistrar) {
                 callbacks += "$id:table"
                 builtInsVisible +=
                     BuiltInTablePropKinds.SCORING_STICK in registry.registrationKeys &&
@@ -140,7 +141,7 @@ class FabricTablePropKindRegistrationTest {
                 registry.register(FakeKind(kindId))
             }
 
-            override fun registerSeatProviders(registry: FabricSeatProviderRegistry) {
+            override fun registerSeatProviders(registry: FabricSeatProviderRegistrar) {
                 callbacks += "$id:seat"
                 builtInsVisible +=
                     BuiltInTablePropKinds.SCORING_STICK in tablePropRegistry.registrationKeys &&

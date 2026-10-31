@@ -1,27 +1,17 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.server.table.prop
 
+import com.doublemoon1119.mahjongcraft.platform.fabric.api.registration.FabricTablePropKindRegistrar
+import com.doublemoon1119.mahjongcraft.platform.fabric.api.tableprop.FabricTablePropKind
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TablePropKindDefinition
 
-/** 依 [FabricTablePropKind.id] 登記 Fabric 端的規則桌面物件種類。 */
-interface FabricTablePropKindRegistry {
-    /** 目前已登記的種類識別碼快照。 */
-    val registrationKeys: Set<String>
-
-    /** registry 是否已凍結。 */
-    val isFrozen: Boolean
+/** 依 [FabricTablePropKind.id] 登記 Fabric 端的規則桌面物件種類；擴充只透過 [FabricTablePropKindRegistrar] 登記。 */
+interface FabricTablePropKindRegistry : FabricTablePropKindRegistrar {
 
     /** 登記當下擷取的共用種類定義快照。 */
     val definitions: Map<String, TablePropKindDefinition>
 
     /** 目前已登記的全部種類，依登記順序排列。 */
     val kinds: List<FabricTablePropKind>
-
-    /**
-     * 登記一個種類。
-     *
-     * @param kind 要登記的 Fabric 桌面物件種類。
-     */
-    fun register(kind: FabricTablePropKind)
 
     /**
      * 查詢指定種類；未登記時回傳 null。
