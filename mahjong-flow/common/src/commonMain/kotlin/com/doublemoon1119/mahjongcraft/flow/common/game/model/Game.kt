@@ -4,7 +4,6 @@ import com.doublemoon1119.mahjongcraft.logic.module.requireValidAutomaticControl
 import com.doublemoon1119.mahjongcraft.logic.table.RoundCompletionSummary
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import kotlin.time.Duration
-import kotlin.time.Duration.Companion.seconds
 import kotlin.uuid.Uuid
 
 /**
@@ -20,7 +19,7 @@ import kotlin.uuid.Uuid
  * @property forcedAutoPlayPlayerIds 已耗盡思考時間、目前這一次決策必須由伺服器自動操作的玩家。只鎖住
  *   逾時當下那一次決策——`com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.GameFlowCoordinator`
  *   每次替這裡的玩家送出自動命令後就會立即移除，玩家的下一次決策仍會拿到自己完整的
- *   `baseSeconds`，不會被永久接管。
+ *   基本思考時間，不會被永久接管。
  * @property enabledAutomaticControlIdsByPlayerId 每位玩家在目前這一局啟用的自動操作控制 ID。沒有出現在
  *   map 中的玩家視為未啟用任何控制；本狀態與逾時用的 [forcedAutoPlayPlayerIds] 無關，並在換局時清空。
  * @property automaticControlRevision 本局自動操作集合的單調 revision；接受實際變更或進入下一局時遞增，
@@ -49,7 +48,7 @@ data class Game(
     val tableState: TableState,
     val flowConfig: GameFlowConfig,
     val remainingReserveByPlayerId: Map<Uuid, Duration> = tableState.players.associate {
-        it.id to flowConfig.timeControl.reserveSeconds.seconds
+        it.id to flowConfig.timeControl.reserve
     },
     val forcedAutoPlayPlayerIds: Set<Uuid> = emptySet(),
     val enabledAutomaticControlIdsByPlayerId: Map<Uuid, Set<String>> = emptyMap(),

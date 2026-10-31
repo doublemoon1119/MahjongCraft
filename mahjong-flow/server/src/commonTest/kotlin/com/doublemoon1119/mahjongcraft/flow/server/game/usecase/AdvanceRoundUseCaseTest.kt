@@ -40,7 +40,6 @@ import kotlin.test.assertNull
 import kotlin.test.assertTrue
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.milliseconds
-import kotlin.time.Duration.Companion.seconds
 import kotlin.uuid.Uuid
 
 /**
@@ -130,7 +129,7 @@ class AdvanceRoundUseCaseTest {
                     tableState = tableState,
                     flowConfig = GameFlowConfig(),
                     remainingReserveByPlayerId = remainingReserveByPlayerId
-                        ?: tableState.players.associate { it.id to GameFlowConfig().timeControl.reserveSeconds.seconds },
+                        ?: tableState.players.associate { it.id to GameFlowConfig().timeControl.reserve },
                     enabledAutomaticControlIdsByPlayerId = enabledAutomaticControlIdsByPlayerId,
                     roundCompletion = completion,
                 ),

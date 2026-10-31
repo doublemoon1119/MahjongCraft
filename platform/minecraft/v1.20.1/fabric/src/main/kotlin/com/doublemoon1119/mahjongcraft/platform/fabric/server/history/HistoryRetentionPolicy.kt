@@ -80,7 +80,7 @@ internal data class HistoryCleanupPlan(
 internal fun MinecraftHistoryConfig.retentionPolicy(): HistoryRetentionPolicy = HistoryRetentionPolicy(
     includeInterruptedMatches,
     maxMatches,
-    retentionDuration,
+    retention,
     maxDiskBytes,
 )
 

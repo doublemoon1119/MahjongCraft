@@ -7,6 +7,7 @@ import kotlin.test.assertTrue
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.days
 import kotlin.time.Duration.Companion.milliseconds
+import kotlin.time.Duration.Companion.seconds
 
 /** [MinecraftServerConfigTomlCodec] 的嚴格解碼、驗證與標準輸出測試。 */
 class MinecraftServerConfigTomlCodecTest {
@@ -45,7 +46,7 @@ class MinecraftServerConfigTomlCodecTest {
         )
 
         assertEquals(DisconnectedPlayerPolicy.LEAVE_AFTER_TIMEOUT, config.disconnectedPlayerPolicy)
-        assertEquals(45, config.disconnectedPlayerTimeoutSeconds)
+        assertEquals(45.seconds, config.disconnectedPlayerTimeout)
         assertEquals(TableBreakPolicy.ALLOW_WAITING_ROOM_ONLY, config.tableBreakPolicy)
         assertEquals(OrphanedTablePolicy.KEEP_AND_WARN, config.orphanedTablePolicy)
         assertEquals(false, config.mahjongTilePhysicalCollisionEnabled)
@@ -54,11 +55,11 @@ class MinecraftServerConfigTomlCodecTest {
         assertEquals(true, config.history.includeInterruptedMatches)
         assertEquals(false, config.history.queryEnabled)
         assertEquals(false, config.history.allowAdminQuery)
-        assertEquals(500, config.history.queryMinimumIntervalMilliseconds)
+        assertEquals(500.milliseconds, config.history.queryMinimumInterval)
         assertEquals(12, config.history.queryMaxOutstanding)
-        assertEquals(2000, config.history.queryRejectionReplyIntervalMilliseconds)
+        assertEquals(2000.milliseconds, config.history.queryRejectionReplyInterval)
         assertEquals(250, config.history.maxMatches)
-        assertEquals(120, config.history.retentionDays)
+        assertEquals(120.days, config.history.retention)
         assertEquals(512, config.history.maxDiskMiB)
     }
 
@@ -73,7 +74,7 @@ class MinecraftServerConfigTomlCodecTest {
         )
 
         assertEquals(DisconnectedPlayerPolicy.LEAVE_IMMEDIATELY, config.disconnectedPlayerPolicy)
-        assertEquals(MinecraftServerConfig.DEFAULT_DISCONNECTED_PLAYER_TIMEOUT_SECONDS, config.disconnectedPlayerTimeoutSeconds)
+        assertEquals(MinecraftServerConfig.DEFAULT_DISCONNECTED_PLAYER_TIMEOUT, config.disconnectedPlayerTimeout)
         assertEquals(TableBreakPolicy.DENY_WHILE_OCCUPIED, config.tableBreakPolicy)
         assertEquals(OrphanedTablePolicy.REMOVE_ALL, config.orphanedTablePolicy)
         assertEquals(true, config.mahjongTilePhysicalCollisionEnabled)
@@ -155,12 +156,12 @@ class MinecraftServerConfigTomlCodecTest {
         }
     }
 
-    /** 歷史資料保留天數應轉換為對應的 Kotlin duration。 */
+    /** 歷史資料設定的時間預設值與位元組換算。 */
     @Test
-    fun `test history retention converts days to duration`() {
-        val config = MinecraftHistoryConfig(retentionDays = 3)
+    fun `test history defaults use expected durations`() {
+        val config = MinecraftHistoryConfig()
 
-        assertEquals(3.days, config.retentionDuration)
+        assertEquals(90.days, config.retention)
         assertEquals(250.milliseconds, config.queryMinimumInterval)
         assertEquals(1_000.milliseconds, config.queryRejectionReplyInterval)
         assertEquals(256L * MinecraftHistoryConfig.BYTES_PER_MIB, config.maxDiskBytes)
@@ -169,11 +170,10 @@ class MinecraftServerConfigTomlCodecTest {
     /** 零值應代表牌局數量與保留天數不限制。 */
     @Test
     fun `test history zero limits are accepted`() {
-        val config = MinecraftHistoryConfig(maxMatches = 0, retentionDays = 0)
+        val config = MinecraftHistoryConfig(maxMatches = 0, retention = Duration.ZERO)
 
         assertEquals(0, config.maxMatches)
-        assertEquals(0, config.retentionDays)
-        assertEquals(Duration.ZERO, config.retentionDuration)
+        assertEquals(Duration.ZERO, config.retention)
     }
 
     /** TOML 錯誤型別與未知歷史設定欄位均不得靜默忽略。 */
@@ -220,10 +220,10 @@ class MinecraftServerConfigTomlCodecTest {
     fun `test largest safe history limits remain finite`() {
         val config = MinecraftHistoryConfig(
             maxMatches = Int.MAX_VALUE,
-            retentionDays = Int.MAX_VALUE,
+            retention = MinecraftHistoryConfig.MAX_RETENTION,
             maxDiskMiB = MinecraftHistoryConfig.MAX_MAX_DISK_MIB,
         )
-        assertTrue(config.retentionDuration.isFinite(), "Maximum retention must remain finite")
+        assertTrue(config.retention.isFinite(), "Maximum retention must remain finite")
         assertTrue(config.maxDiskBytes > 0L, "Maximum disk byte count must not overflow")
         assertEquals(config, codec.decode(codec.encode(MinecraftServerConfig(history = config))).history)
     }
@@ -233,7 +233,7 @@ class MinecraftServerConfigTomlCodecTest {
     fun `test canonical toml round trips config`() {
         val expected = MinecraftServerConfig(
             disconnectedPlayerPolicy = DisconnectedPlayerPolicy.LEAVE_AFTER_TIMEOUT,
-            disconnectedPlayerTimeoutSeconds = 90,
+            disconnectedPlayerTimeout = 90.seconds,
             tableBreakPolicy = TableBreakPolicy.ALLOW_AND_TERMINATE,
             orphanedTablePolicy = OrphanedTablePolicy.REMOVE_WAITING_ROOM,
             mahjongTilePhysicalCollisionEnabled = false,

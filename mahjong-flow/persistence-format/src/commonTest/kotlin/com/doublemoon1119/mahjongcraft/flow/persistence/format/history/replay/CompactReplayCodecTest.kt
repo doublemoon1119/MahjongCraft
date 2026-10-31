@@ -43,6 +43,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertIs
 import kotlin.test.assertTrue
+import kotlin.time.Duration.Companion.seconds
 import kotlin.uuid.Uuid
 
 /** 驗證精簡 Replay 文件的 envelope 與損壞輸入防護。 */
@@ -316,8 +317,8 @@ class CompactReplayCodecTest {
         val matchId = Uuid.random()
         val rule = RiichiRuleConfig(redDoraCount = 0, allowOpenTanyao = false, useLocalYaku = true, minimumWinConstraint = 2)
         val flow = GameFlowConfig(
-            timeControl = ActionTimeControl.from(17, 41),
-            ruleDecision = RuleDecisionConfig(43),
+            timeControl = ActionTimeControl.from(17.seconds, 41.seconds),
+            ruleDecision = RuleDecisionConfig(43.seconds),
             spectatingPolicy = SpectatingPolicy.DISABLED,
         )
         val document = settingsDocument(matchId, registries.ruleConfigs.encode(rule), flowConfig = flow)

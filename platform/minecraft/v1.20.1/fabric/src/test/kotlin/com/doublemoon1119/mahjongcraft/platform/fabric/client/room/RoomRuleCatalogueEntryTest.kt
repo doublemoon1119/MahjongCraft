@@ -7,6 +7,7 @@ import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.platform.minecraft.catalogue.RuleCatalogueConfigSource
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.time.Duration.Companion.seconds
 
 /** 驗證從房間設定頁開啟規則一覽時的規則與設定來源。 */
 class RoomRuleCatalogueEntryTest {
@@ -38,7 +39,7 @@ class RoomRuleCatalogueEntryTest {
     @Test
     fun `flow only changes still count as a draft`() {
         val authoritative = GameConfig(RiichiRuleConfig())
-        val draft = authoritative.copy(flowConfig = GameFlowConfig(ruleDecision = RuleDecisionConfig(60)))
+        val draft = authoritative.copy(flowConfig = GameFlowConfig(ruleDecision = RuleDecisionConfig(60.seconds)))
 
         val context = roomRuleCatalogueContext(ruleModuleId = RULE_ID, displayed = draft, authoritative = authoritative)
 

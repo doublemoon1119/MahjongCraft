@@ -28,6 +28,7 @@ import net.minecraft.client.MinecraftClient
 import net.minecraft.client.gui.DrawContext
 import net.minecraft.client.gui.widget.ButtonWidget
 import net.minecraft.text.Text
+import kotlin.time.Duration.Companion.seconds
 
 /**
  * 以範例內容畫出 HUD 位置編輯器中的真實 HUD 預覽，並量測它們的實際尺寸。
@@ -277,7 +278,7 @@ class MahjongHudPreviewRenderer(
         const val NO_POINTER = -1
 
         /** 範例倒數：基本 5 秒加保留 20 秒。 */
-        val PREVIEW_TIMER_PARTS = decisionTimerParts(baseSeconds = 5, reserveSeconds = 20)
+        val PREVIEW_TIMER_PARTS = decisionTimerParts(base = 5.seconds, reserve = 20.seconds)
 
         /** 精簡提示的範例：操作介面收起後的重新開啟提醒。 */
         val COMPACT_PREVIEW_CONTENT: CompactDecisionHudContent = CompactDecisionHudContent.ReopenReminder

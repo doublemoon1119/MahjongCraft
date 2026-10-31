@@ -13,6 +13,8 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.RuleDecisi
 import com.doublemoon1119.mahjongcraft.logic.config.MahjongRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.seconds
 import kotlin.uuid.Uuid
 
 /**
@@ -24,7 +26,7 @@ import kotlin.uuid.Uuid
 class ExamplePairingRuleDecisionResolver : RuleDecisionResolver {
     override val ruleModuleId: String = ExamplePairingIds.RULE_MODULE
 
-    override fun ruleDecisionConfig(ruleConfig: MahjongRuleConfig): RuleDecisionConfig? = RuleDecisionConfig(EXCHANGE_SECONDS).takeIf { isExchangeEnabled(ruleConfig) }
+    override fun ruleDecisionConfig(ruleConfig: MahjongRuleConfig): RuleDecisionConfig? = RuleDecisionConfig(EXCHANGE_TIME).takeIf { isExchangeEnabled(ruleConfig) }
 
     override fun begin(timing: RuleDecisionTiming, tableState: TableState, ruleModule: MahjongRuleModule<*>): RuleDecisionStep? {
         if (timing != RuleDecisionTiming.ROUND_START || !isExchangeEnabled(ruleModule.config)) return null
@@ -94,8 +96,8 @@ class ExamplePairingRuleDecisionResolver : RuleDecisionResolver {
     }
 
     private companion object {
-        /** 換牌步驟的倒數秒數。 */
-        const val EXCHANGE_SECONDS = 30
+        /** 換牌步驟的倒數時間。 */
+        val EXCHANGE_TIME: Duration = 30.seconds
 
         /** 每位玩家本步驟必須選出的牌張數。 */
         const val EXCHANGE_TILE_COUNT = 2

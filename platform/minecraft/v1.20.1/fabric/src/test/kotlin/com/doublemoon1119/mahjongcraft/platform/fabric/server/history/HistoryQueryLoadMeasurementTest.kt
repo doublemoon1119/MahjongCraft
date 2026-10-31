@@ -296,7 +296,7 @@ class HistoryQueryLoadMeasurementTest {
         endedAtEpochMillis = endedAtEpochMillis,
         outcome = outcome.toDto(),
         integrity = state.toDto(),
-        durationMillis = durationMillis,
+        duration = durationMillis?.milliseconds,
         participants = participants.map { HistoryParticipantSummaryDto(it.seatIndex, it.playerId, it.aiStrategyId) },
         roundCount = rounds.size.takeIf { state == HistoryStoredMatchState.COMPLETED },
         resultsAvailable = state == HistoryStoredMatchState.COMPLETED,

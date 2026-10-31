@@ -28,6 +28,7 @@ import kotlin.test.assertNotEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
+import kotlin.time.Duration
 import kotlin.uuid.Uuid
 
 /** 驗證管理入口的唯讀預覽、部分結果與 session 工作隔離。 */
@@ -47,7 +48,7 @@ class HistoryManagementTest {
             val id = Uuid.random().toString()
             database.recordTerminals(listOf(HistoryTerminalRecord(id, Uuid.random().toString(), 100L, false)))
             database.appendPending(PendingHistoryRecord(id, 1L, 1, 100L, 1, "龍"))
-            coordinator.apply(MinecraftHistoryConfig(includeInterruptedMatches = false, retentionDays = 0).retentionPolicy())
+            coordinator.apply(MinecraftHistoryConfig(includeInterruptedMatches = false, retention = Duration.ZERO).retentionPolicy())
             val before = database.measureDiskUsage()
             val preview = assertIs<HistoryManagementResult.Success<HistoryCleanupPreview>>(writer.previewCleanup()).value
             assertEquals(1L, preview.countsByReason[HistoryCleanupReason.INTERRUPTED_EXCLUDED])
@@ -84,7 +85,7 @@ class HistoryManagementTest {
             DriverManager.getConnection("jdbc:sqlite:$path").use { connection ->
                 connection.createStatement().use { it.executeUpdate("INSERT INTO history_tombstone VALUES ('invalid-id', 1, 'test')") }
             }
-            coordinator.apply(MinecraftHistoryConfig(includeInterruptedMatches = false, retentionDays = 0).retentionPolicy())
+            coordinator.apply(MinecraftHistoryConfig(includeInterruptedMatches = false, retention = Duration.ZERO).retentionPolicy())
             val result = assertIs<HistoryManagementResult.Failed>(writer.runCleanup())
             val report = assertNotNull(result.cleanup)
             assertEquals(1L, report.removedMatches)
@@ -166,7 +167,7 @@ class HistoryManagementTest {
         registries = bundledPersistenceRegistries(),
         moduleRegistry = MahjongModuleRegistryImpl(),
         locations = TableLocationRegistry(),
-        configState = MinecraftServerConfigState(MinecraftServerConfig(history = MinecraftHistoryConfig(includeInterruptedMatches = true, retentionDays = 0))),
+        configState = MinecraftServerConfigState(MinecraftServerConfig(history = MinecraftHistoryConfig(includeInterruptedMatches = true, retention = Duration.ZERO))),
         retentionCoordinator = coordinator,
         dispatchers = object : CoroutineDispatchers {
             override val default = dispatcher

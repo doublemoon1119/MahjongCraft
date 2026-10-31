@@ -463,7 +463,7 @@ class HistoryBrowseRoundControllerTest {
         roundCount = 2,
         resultsAvailable = true,
         integrityDiagnostic = null,
-        durationMillis = null,
+        duration = null,
         results = emptyList(),
     )
 

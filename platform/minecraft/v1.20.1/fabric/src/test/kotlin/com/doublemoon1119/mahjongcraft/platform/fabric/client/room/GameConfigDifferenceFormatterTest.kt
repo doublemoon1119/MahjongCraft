@@ -26,6 +26,7 @@ import net.minecraft.text.TranslatableTextContent
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
+import kotlin.time.Duration.Companion.seconds
 
 /** 驗證房間變更摘要會使用 registry 自動加入的共用流程欄位。 */
 class GameConfigDifferenceFormatterTest {
@@ -34,7 +35,7 @@ class GameConfigDifferenceFormatterTest {
     fun `rule decision time is absent from summaries when the rule does not opt in`() {
         val before = GameConfig(RiichiRuleConfig())
         val after = before.copy(
-            flowConfig = before.flowConfig.copy(ruleDecision = RuleDecisionConfig(45)),
+            flowConfig = before.flowConfig.copy(ruleDecision = RuleDecisionConfig(45.seconds)),
         )
 
         val text = gameConfigDifferenceText(
@@ -51,11 +52,11 @@ class GameConfigDifferenceFormatterTest {
     @Test
     fun `third party base time changes appear in the shared difference formatter`() {
         val before = GameConfig(RiichiRuleConfig())
-        val beforeBaseSeconds = before.flowConfig.timeControl.baseSeconds
+        val beforeBaseSeconds = before.flowConfig.timeControl.base.inWholeSeconds
         val afterBaseSeconds = beforeBaseSeconds + 15
         val after = before.copy(
             flowConfig = before.flowConfig.copy(
-                timeControl = ActionTimeControl.from(afterBaseSeconds, before.flowConfig.timeControl.reserveSeconds),
+                timeControl = ActionTimeControl.from(afterBaseSeconds.seconds, before.flowConfig.timeControl.reserve),
             ),
         )
 
@@ -82,13 +83,13 @@ class GameConfigDifferenceFormatterTest {
         val before = GameConfig(
             ruleConfig = RiichiRuleConfig(),
             flowConfig = GameFlowConfig(
-                ruleDecision = RuleDecisionConfig(30),
+                ruleDecision = RuleDecisionConfig(30.seconds),
             ),
         )
-        val beforeRuleDecisionSeconds = before.flowConfig.ruleDecision?.baseSeconds ?: error("missing rule decision config")
+        val beforeRuleDecisionSeconds = before.flowConfig.ruleDecision?.base?.inWholeSeconds ?: error("missing rule decision config")
         val afterRuleDecisionSeconds = beforeRuleDecisionSeconds + 15
         val after = before.copy(
-            flowConfig = before.flowConfig.copy(ruleDecision = RuleDecisionConfig(afterRuleDecisionSeconds)),
+            flowConfig = before.flowConfig.copy(ruleDecision = RuleDecisionConfig(afterRuleDecisionSeconds.seconds)),
         )
 
         val text = gameConfigDifferenceText(
@@ -142,7 +143,7 @@ class GameConfigDifferenceFormatterTest {
 
     private object TestRuleDecisionResolver : RuleDecisionResolver {
         override val ruleModuleId: String = "example:rule"
-        override fun ruleDecisionConfig(ruleConfig: MahjongRuleConfig): RuleDecisionConfig = RuleDecisionConfig(30)
+        override fun ruleDecisionConfig(ruleConfig: MahjongRuleConfig): RuleDecisionConfig = RuleDecisionConfig(30.seconds)
 
         override fun begin(timing: RuleDecisionTiming, tableState: TableState, ruleModule: MahjongRuleModule<*>) = error("not used")
 

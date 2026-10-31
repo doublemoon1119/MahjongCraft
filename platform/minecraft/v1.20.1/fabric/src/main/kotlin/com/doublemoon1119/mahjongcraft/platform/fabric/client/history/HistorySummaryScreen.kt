@@ -278,7 +278,7 @@ internal class HistorySummaryScreen(
         add(Text.translatable(MinecraftHistoryScreenKeys.SUMMARY_RULE).copy().append(": ").append(HistoryScreenText.rule(summary.ruleId, session.ruleNames)), tooltip = Text.translatable(MinecraftHistoryScreenKeys.RULE_SETTINGS_OPEN_HINT).formatted(Formatting.AQUA), openRuleSettings = true)
         add(Text.translatable(MinecraftHistoryScreenKeys.SUMMARY_STARTED_AT).append(": ").append(HistoryScreenText.endedAt(summary.startedAtEpochMillis)))
         add(Text.translatable(MinecraftHistoryScreenKeys.SUMMARY_ENDED_AT).append(": ").append(HistoryScreenText.endedAt(summary.endedAtEpochMillis)))
-        add(Text.translatable(MinecraftHistoryScreenKeys.SUMMARY_DURATION).append(": ").append(HistoryScreenText.duration(summary.durationMillis)))
+        add(Text.translatable(MinecraftHistoryScreenKeys.SUMMARY_DURATION).append(": ").append(HistoryScreenText.duration(summary.duration)))
         add(Text.translatable(MinecraftHistoryScreenKeys.SUMMARY_OUTCOME).copy().append(": ").append(HistoryScreenText.outcome(summary.outcome)))
         val integrityKey = if (summary.integrity == HistoryIntegrityFilterDto.COMPLETE) MinecraftHistoryScreenKeys.INTEGRITY_COMPLETE else MinecraftHistoryScreenKeys.INTEGRITY_INCOMPLETE
         add(Text.translatable(MinecraftHistoryScreenKeys.SUMMARY_INTEGRITY).copy().append(": ").append(Text.translatable(integrityKey)), tooltip = Text.translatable(MinecraftHistoryScreenKeys.SUMMARY_INTEGRITY_TOOLTIP, Text.translatable(integrityKey)))

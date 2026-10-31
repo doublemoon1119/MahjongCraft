@@ -8,6 +8,7 @@ import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlin.time.Duration
 
 /**
  * 隨 server session 管理查詢設定發布 collector，避免重開 session 後沿用已取消的工作。
@@ -19,7 +20,7 @@ import kotlinx.coroutines.withContext
 internal class HistoryQuerySettingsPublisher(
     private val scope: CoroutineScope,
     private val dispatchers: CoroutineDispatchers,
-    updates: Flow<Long>,
+    updates: Flow<Duration>,
 ) {
     /** 設定來源只保留查詢間隔，避免將管理政策交給客戶端。 */
     private val intervalUpdates = updates.distinctUntilChanged()
@@ -32,7 +33,7 @@ internal class HistoryQuerySettingsPublisher(
      *
      * @param publish 發布單一查詢間隔的動作。
      */
-    fun start(publish: suspend (Long) -> Unit) {
+    fun start(publish: suspend (Duration) -> Unit) {
         stop()
         job = scope.launch {
             intervalUpdates.collect { interval ->

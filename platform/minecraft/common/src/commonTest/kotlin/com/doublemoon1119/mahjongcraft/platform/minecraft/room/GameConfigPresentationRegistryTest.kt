@@ -19,6 +19,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
+import kotlin.time.Duration.Companion.seconds
 
 /** 驗證遊戲設定呈現 schema 的可編輯性、欄位契約與 registry 凍結。 */
 class GameConfigPresentationRegistryTest {
@@ -56,7 +57,7 @@ class GameConfigPresentationRegistryTest {
         assertEquals(3600, editor.maximum)
         val config = GameConfig(RiichiRuleConfig())
         val configWithRuleDecision = config.copy(
-            flowConfig = config.flowConfig.copy(ruleDecision = RuleDecisionConfig(47)),
+            flowConfig = config.flowConfig.copy(ruleDecision = RuleDecisionConfig(47.seconds)),
         )
         assertEquals(
             47,
@@ -81,9 +82,9 @@ class GameConfigPresentationRegistryTest {
         val retained = registry.normalizeFlowConfig(
             ruleModuleId = "test:rule",
             ruleConfig = RiichiRuleConfig(redDoraCount = 3),
-            current = GameFlowConfig(ruleDecision = RuleDecisionConfig(47)),
+            current = GameFlowConfig(ruleDecision = RuleDecisionConfig(47.seconds)),
         )
-        assertEquals(47, retained.ruleDecision?.baseSeconds)
+        assertEquals(47.seconds, retained.ruleDecision?.base)
         assertEquals(
             null,
             registry.normalizeFlowConfig(
@@ -350,7 +351,7 @@ class GameConfigPresentationRegistryTest {
         private val defaultSeconds: Int,
     ) : RuleDecisionResolver {
         override val ruleModuleId: String = "test:rule"
-        override fun ruleDecisionConfig(ruleConfig: MahjongRuleConfig): RuleDecisionConfig = RuleDecisionConfig(defaultSeconds)
+        override fun ruleDecisionConfig(ruleConfig: MahjongRuleConfig): RuleDecisionConfig = RuleDecisionConfig(defaultSeconds.seconds)
 
         override fun begin(
             timing: RuleDecisionTiming,
@@ -368,7 +369,7 @@ class GameConfigPresentationRegistryTest {
     private object ConfigAwareRuleDecisionResolver : RuleDecisionResolver {
         override val ruleModuleId: String = "test:rule"
 
-        override fun ruleDecisionConfig(ruleConfig: MahjongRuleConfig): RuleDecisionConfig? = if ((ruleConfig as? RiichiRuleConfig)?.redDoraCount == 3) RuleDecisionConfig(30) else null
+        override fun ruleDecisionConfig(ruleConfig: MahjongRuleConfig): RuleDecisionConfig? = if ((ruleConfig as? RiichiRuleConfig)?.redDoraCount == 3) RuleDecisionConfig(30.seconds) else null
 
         override fun begin(
             timing: RuleDecisionTiming,

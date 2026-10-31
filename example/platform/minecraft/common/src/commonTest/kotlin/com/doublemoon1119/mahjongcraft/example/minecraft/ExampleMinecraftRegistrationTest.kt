@@ -23,6 +23,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
+import kotlin.time.Duration.Companion.seconds
 
 /** 檢查第三方入口將既有範例功能接到平台文字登記，不依賴原生世界。 */
 class ExampleMinecraftRegistrationTest {
@@ -43,11 +44,11 @@ class ExampleMinecraftRegistrationTest {
         )
         val after = assertNotNull(presentations.find(ExamplePairingIds.RULE_MODULE, enabled.ruleConfig))
         assertEquals(before.fields.size + 1, after.fields.size)
-        assertEquals(RuleDecisionConfig(30), enabled.flowConfig.ruleDecision)
+        assertEquals(RuleDecisionConfig(30.seconds), enabled.flowConfig.ruleDecision)
         assertEquals(RoomConfigSubmission.Result.Accepted(enabled), RoomConfigSubmission.review(enabled, current, presentations, modules))
         val edited = enabled.copy(
             ruleConfig = (enabled.ruleConfig as ExamplePairingRuleConfig).copy(paymentPerPlayer = 75, roundCount = 8),
-            flowConfig = enabled.flowConfig.copy(ruleDecision = RuleDecisionConfig(45)),
+            flowConfig = enabled.flowConfig.copy(ruleDecision = RuleDecisionConfig(45.seconds)),
         )
         assertEquals(RoomConfigSubmission.Result.Accepted(edited), RoomConfigSubmission.review(edited, enabled, presentations, modules))
         val disabled = edited.copy(ruleConfig = (edited.ruleConfig as ExamplePairingRuleConfig).copy(exchangeEnabled = false))

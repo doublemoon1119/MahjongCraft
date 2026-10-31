@@ -14,6 +14,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.milliseconds
+import kotlin.time.Duration.Companion.seconds
 import kotlin.uuid.Uuid
 
 /** [PlayerDecisionTimerFactory] 的單元測試。 */
@@ -33,7 +34,7 @@ class PlayerDecisionTimerFactoryTest {
                 players = players,
             ),
             flowConfig = GameFlowConfig(
-                timeControl = ActionTimeControl.Custom(baseSeconds = 7, reserveSeconds = 30),
+                timeControl = ActionTimeControl.Custom(base = 7.seconds, reserve = 30.seconds),
             ),
             remainingReserveByPlayerId = players.associate { player ->
                 player.id to if (player.id == playerId) 12_345.milliseconds else 30_000.milliseconds
@@ -69,8 +70,8 @@ class PlayerDecisionTimerFactoryTest {
                 players = players,
             ),
             flowConfig = GameFlowConfig(
-                timeControl = ActionTimeControl.Custom(baseSeconds = 7, reserveSeconds = 30),
-                ruleDecision = RuleDecisionConfig(45),
+                timeControl = ActionTimeControl.Custom(base = 7.seconds, reserve = 30.seconds),
+                ruleDecision = RuleDecisionConfig(45.seconds),
             ),
             remainingReserveByPlayerId = players.associate { player -> player.id to 12_000.milliseconds },
         )

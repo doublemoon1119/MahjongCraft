@@ -7,11 +7,11 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionConfig
  *
  * @return 還原後的規則選擇設定。
  */
-fun RuleDecisionConfigPersistenceDto.toDomain(): RuleDecisionConfig = RuleDecisionConfig(baseSeconds)
+fun RuleDecisionConfigPersistenceDto.toDomain(): RuleDecisionConfig = RuleDecisionConfig(base)
 
 /**
  * 將規則選擇設定轉換成保存資料。
  *
  * @return 可保存的規則選擇設定。
  */
-fun RuleDecisionConfig.toPersistenceDto(): RuleDecisionConfigPersistenceDto = RuleDecisionConfigPersistenceDto(baseSeconds)
+fun RuleDecisionConfig.toPersistenceDto(): RuleDecisionConfigPersistenceDto = RuleDecisionConfigPersistenceDto(base)

@@ -7,10 +7,11 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryParticipa
 import com.doublemoon1119.mahjongcraft.platform.minecraft.history.MinecraftHistoryScreenKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.RuleModuleDisplayNameRegistry
 import net.minecraft.text.Text
-import java.time.Duration
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.milliseconds
 
 /** 歷史列表的安全文字格式化工具；未知值一律保留為未知，不補造資料。 */
 internal object HistoryScreenText {
@@ -49,17 +50,16 @@ internal object HistoryScreenText {
      * @param end 結束時間的 epoch milliseconds。
      * @return 分秒文字或未知佔位。
      */
-    fun intervalDuration(start: Long?, end: Long?): String = if (start != null && end != null && start >= 0 && end >= start) duration(end - start) else duration(null)
+    fun intervalDuration(start: Long?, end: Long?): String = if (start != null && end != null && start >= 0 && end >= start) duration((end - start).milliseconds) else duration(null)
 
     /**
-     * 將毫秒時長格式化為分秒。
+     * 將時長格式化為分秒。
      *
-     * @param value 毫秒時長；負值或 null 表示未知。
+     * @param value 時長；負值、無限或 null 表示未知。
      * @return 格式化後的分秒文字。
      */
-    fun duration(value: Long?): String = value?.takeIf { it >= 0 }?.let {
-        val duration = Duration.ofMillis(it)
-        "%dm %02ds".format(duration.toMinutes(), duration.toSecondsPart())
+    fun duration(value: Duration?): String = value?.takeIf { it.isFinite() && !it.isNegative() }?.let {
+        "%dm %02ds".format(it.inWholeMinutes, it.inWholeSeconds % 60)
     } ?: "—"
 
     /**

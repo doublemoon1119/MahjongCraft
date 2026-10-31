@@ -84,6 +84,7 @@ import kotlin.test.assertIs
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
+import kotlin.time.Duration.Companion.seconds
 import kotlin.uuid.Uuid
 
 /** 由 Minecraft NBT 建立全新 server session 後繼續執行 Room／Game 流程的整合測試。 */
@@ -264,10 +265,10 @@ class AuthoritativeStateRecoveryIntegrationTest {
             runtime.snapshotWith(
                 state = state,
                 pendingRuleDecision = ruleDecision,
-                flowConfig = GameFlowConfig(ruleDecision = RuleDecisionConfig(47)),
+                flowConfig = GameFlowConfig(ruleDecision = RuleDecisionConfig(47.seconds)),
             ),
         )
-        assertEquals(47, runtime.gameRepository.getGame(state.id)?.flowConfig?.ruleDecision?.baseSeconds)
+        assertEquals(47.seconds, runtime.gameRepository.getGame(state.id)?.flowConfig?.ruleDecision?.base)
 
         val confirmingSnapshot = assertNotNull(
             runtime.gameSnapshots.getRuleDecisionSnapshot(state.id, confirming.id),

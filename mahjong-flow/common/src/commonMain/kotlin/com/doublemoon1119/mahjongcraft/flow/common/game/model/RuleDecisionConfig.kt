@@ -1,14 +1,18 @@
 package com.doublemoon1119.mahjongcraft.flow.common.game.model
 
+import kotlin.time.Duration
+
 /**
  * 規則選擇操作的設定。
  *
- * @property baseSeconds 每次玩家規則選擇可使用的基本秒數。
+ * @property base 每次玩家規則選擇可使用的基本時間，必須是正的整數秒。
  */
 data class RuleDecisionConfig(
-    val baseSeconds: Int,
+    val base: Duration,
 ) {
     init {
-        require(baseSeconds > 0) { "Rule decision base time must be positive" }
+        require(base.isPositive() && base.isNonNegativeWholeSeconds()) {
+            "Rule decision base time must be a positive whole number of seconds"
+        }
     }
 }

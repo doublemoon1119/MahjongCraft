@@ -257,7 +257,7 @@ class GameDecisionTimerManagerTest {
         val game = fixtures.ruleDecisionGame(playerId)
         fixtures.repository.setGame(game)
         fixtures.manager.reconcile(game.id)
-        fixtures.clock.now = game.flowConfig.ruleDecision!!.baseSeconds.seconds + 1_000.milliseconds
+        fixtures.clock.now = game.flowConfig.ruleDecision!!.base + 1_000.milliseconds
 
         val claimed = fixtures.manager.claimTimedOutDecisions()
 
@@ -350,7 +350,7 @@ class GameDecisionTimerManagerTest {
         val pausedGame = fixtures.repository.getGame(game.id)!!
         assertEquals(20_000.milliseconds, pausedGame.remainingReserveByPlayerId.getValue(playerId))
         assertEquals(
-            game.flowConfig.ruleDecision!!.baseSeconds.seconds - 5_000.milliseconds,
+            game.flowConfig.ruleDecision!!.base - 5_000.milliseconds,
             pausedGame.interruptedBaseByPlayerId.getValue(playerId),
         )
     }
@@ -421,7 +421,7 @@ class GameDecisionTimerManagerTest {
             val player = FakeMahjongPlayerFactory.create(id = playerId)
             return Game(
                 tableState = FakeTableStateFactory.create(players = listOf(player)),
-                flowConfig = GameFlowConfig(ruleDecision = RuleDecisionConfig(30)),
+                flowConfig = GameFlowConfig(ruleDecision = RuleDecisionConfig(30.seconds)),
                 pendingRuleDecision = PendingRuleDecision.open(
                     step = RuleDecisionStep(
                         stepId = "test:step",

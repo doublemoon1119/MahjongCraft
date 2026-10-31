@@ -3,6 +3,7 @@ package com.doublemoon1119.mahjongcraft.platform.minecraft.config
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.days
 import kotlin.time.Duration.Companion.milliseconds
+import kotlin.time.Duration.Companion.seconds
 
 /**
  * 麻將歷史資料記錄與封存設定。
@@ -12,11 +13,11 @@ import kotlin.time.Duration.Companion.milliseconds
  * @property includeInterruptedMatches 是否保留已確認無法接續的中止或部分紀錄；正常關服後可接續的對局不算中止。
  * @property queryEnabled 是否允許玩家與管理員查詢已保存的歷史資料；停用時所有查詢都會被拒絕，但不影響記錄政策。
  * @property allowAdminQuery 是否允許具備管理員權限的使用者查詢全部已保存歷史；停用時管理員仍可查詢自己的對局。
- * @property queryMinimumIntervalMilliseconds 同一玩家接受兩次歷史查詢之間的最短間隔；重新載入只影響新查詢，不會取消已接受的查詢，且不得設為零以停用防護。
+ * @property queryMinimumInterval 同一玩家接受兩次歷史查詢之間的最短間隔；重新載入只影響新查詢，不會取消已接受的查詢，且不得設為零以停用防護。
  * @property queryMaxOutstanding 全伺服器已接受但尚未完成回覆的歷史查詢工作上限，並非資料庫並行數；達到上限時新查詢會被拒絕，降低上限不取消已接受工作，且不得設為零以停用防護。
- * @property queryRejectionReplyIntervalMilliseconds 同一玩家收到准入限速或工作額滿拒絕回覆之間的最短間隔；不限制已接受工作的查詢結果，重新載入只影響後續拒絕回覆，且不得設為零以停用防護。
+ * @property queryRejectionReplyInterval 同一玩家收到准入限速或工作額滿拒絕回覆之間的最短間隔；不限制已接受工作的查詢結果，重新載入只影響後續拒絕回覆，且不得設為零以停用防護。
  * @property maxMatches 最多保留的已結束對局數；新對局先保存，再清除最舊的已結束對局，0 表示不限制場數，進行中對局不計入。
- * @property retentionDays 已結束對局自結束 UTC 時間起的保留天數；獨立於場數限制，到期即清理，0 表示不按天數清理。
+ * @property retention 已結束對局自結束 UTC 時間起的保留期限；獨立於場數限制，到期即清理，零表示不按天數清理，不代表立即到期。
  * @property maxDiskMiB 資料庫主檔及 WAL／SHM 附屬檔的磁碟上限，必須為正 MiB；容量不足時停止新增並標記缺口，不阻擋對局。
  */
 data class MinecraftHistoryConfig(
@@ -25,35 +26,34 @@ data class MinecraftHistoryConfig(
     val includeInterruptedMatches: Boolean = DEFAULT_INCLUDE_INTERRUPTED_MATCHES,
     val queryEnabled: Boolean = DEFAULT_QUERY_ENABLED,
     val allowAdminQuery: Boolean = DEFAULT_ALLOW_ADMIN_QUERY,
-    val queryMinimumIntervalMilliseconds: Long = DEFAULT_QUERY_MINIMUM_INTERVAL_MILLISECONDS,
+    val queryMinimumInterval: Duration = DEFAULT_QUERY_MINIMUM_INTERVAL,
     val queryMaxOutstanding: Int = DEFAULT_QUERY_MAX_OUTSTANDING,
-    val queryRejectionReplyIntervalMilliseconds: Long = DEFAULT_QUERY_REJECTION_REPLY_INTERVAL_MILLISECONDS,
+    val queryRejectionReplyInterval: Duration = DEFAULT_QUERY_REJECTION_REPLY_INTERVAL,
     val maxMatches: Int = DEFAULT_MAX_MATCHES,
-    val retentionDays: Int = DEFAULT_RETENTION_DAYS,
+    val retention: Duration = DEFAULT_RETENTION,
     val maxDiskMiB: Long = DEFAULT_MAX_DISK_MIB,
 ) {
     init {
         require(maxMatches in MIN_MAX_MATCHES..MAX_MAX_MATCHES) {
             "history.max-matches must be between $MIN_MAX_MATCHES and $MAX_MAX_MATCHES, but was $maxMatches"
         }
-        require(queryMinimumIntervalMilliseconds in MIN_QUERY_MINIMUM_INTERVAL_MILLISECONDS..MAX_QUERY_MINIMUM_INTERVAL_MILLISECONDS) {
-            "history.query-minimum-interval-ms must be between $MIN_QUERY_MINIMUM_INTERVAL_MILLISECONDS and " +
-                "$MAX_QUERY_MINIMUM_INTERVAL_MILLISECONDS, but was $queryMinimumIntervalMilliseconds"
+        require(queryMinimumInterval in MIN_QUERY_MINIMUM_INTERVAL..MAX_QUERY_MINIMUM_INTERVAL) {
+            "history.query-minimum-interval-ms must be between ${MIN_QUERY_MINIMUM_INTERVAL.inWholeMilliseconds} and " +
+                "${MAX_QUERY_MINIMUM_INTERVAL.inWholeMilliseconds}, but was ${queryMinimumInterval.inWholeMilliseconds}"
         }
         require(queryMaxOutstanding in MIN_QUERY_MAX_OUTSTANDING..MAX_QUERY_MAX_OUTSTANDING) {
             "history.query-max-outstanding must be between $MIN_QUERY_MAX_OUTSTANDING and " +
                 "$MAX_QUERY_MAX_OUTSTANDING, but was $queryMaxOutstanding"
         }
-        require(
-            queryRejectionReplyIntervalMilliseconds in
-                MIN_QUERY_REJECTION_REPLY_INTERVAL_MILLISECONDS..MAX_QUERY_REJECTION_REPLY_INTERVAL_MILLISECONDS,
-        ) {
+        require(queryRejectionReplyInterval in MIN_QUERY_REJECTION_REPLY_INTERVAL..MAX_QUERY_REJECTION_REPLY_INTERVAL) {
             "history.query-rejection-reply-interval-ms must be between " +
-                "$MIN_QUERY_REJECTION_REPLY_INTERVAL_MILLISECONDS and " +
-                "$MAX_QUERY_REJECTION_REPLY_INTERVAL_MILLISECONDS, but was $queryRejectionReplyIntervalMilliseconds"
+                "${MIN_QUERY_REJECTION_REPLY_INTERVAL.inWholeMilliseconds} and " +
+                "${MAX_QUERY_REJECTION_REPLY_INTERVAL.inWholeMilliseconds}, " +
+                "but was ${queryRejectionReplyInterval.inWholeMilliseconds}"
         }
-        require(retentionDays in MIN_RETENTION_DAYS..MAX_RETENTION_DAYS) {
-            "history.retention-days must be between $MIN_RETENTION_DAYS and $MAX_RETENTION_DAYS, but was $retentionDays"
+        require(retention in MIN_RETENTION..MAX_RETENTION) {
+            "history.retention-days must be between ${MIN_RETENTION.inWholeDays} and ${MAX_RETENTION.inWholeDays}, " +
+                "but was ${retention.inWholeDays}"
         }
         require(maxDiskMiB in MIN_MAX_DISK_MIB..MAX_MAX_DISK_MIB) {
             "history.max-disk-mib must be between $MIN_MAX_DISK_MIB and $MAX_MAX_DISK_MIB, but was $maxDiskMiB"
@@ -62,18 +62,6 @@ data class MinecraftHistoryConfig(
             "history.max-disk-mib overflows the disk byte limit: $maxDiskMiB"
         }
     }
-
-    /** 以 Duration 表示的保留期限；0 表示不按天數清理，不代表立即到期。 */
-    val retentionDuration: Duration
-        get() = retentionDays.days
-
-    /** 以 Duration 表示的單一玩家歷史查詢間隔。 */
-    val queryMinimumInterval: Duration
-        get() = queryMinimumIntervalMilliseconds.milliseconds
-
-    /** 以 Duration 表示的同一玩家拒絕回覆間隔。 */
-    val queryRejectionReplyInterval: Duration
-        get() = queryRejectionReplyIntervalMilliseconds.milliseconds
 
     /** 以位元組表示的歷史資料磁碟空間上限。 */
     val maxDiskBytes: Long
@@ -99,20 +87,20 @@ data class MinecraftHistoryConfig(
         /** 是否允許管理員查詢全部歷史的預設值。 */
         const val DEFAULT_ALLOW_ADMIN_QUERY: Boolean = true
 
-        /** 玩家歷史查詢最短間隔的預設毫秒數。 */
-        const val DEFAULT_QUERY_MINIMUM_INTERVAL_MILLISECONDS: Long = 250
+        /** 玩家歷史查詢最短間隔的預設值。 */
+        val DEFAULT_QUERY_MINIMUM_INTERVAL: Duration = 250.milliseconds
 
         /** 全伺服器歷史查詢工作上限的預設值。 */
         const val DEFAULT_QUERY_MAX_OUTSTANDING: Int = 32
 
-        /** 玩家收到歷史查詢拒絕回覆的最短間隔預設毫秒數。 */
-        const val DEFAULT_QUERY_REJECTION_REPLY_INTERVAL_MILLISECONDS: Long = 1_000
+        /** 玩家收到歷史查詢拒絕回覆的最短間隔預設值。 */
+        val DEFAULT_QUERY_REJECTION_REPLY_INTERVAL: Duration = 1.seconds
 
         /** 最多保留牌局數量的預設值。 */
         const val DEFAULT_MAX_MATCHES: Int = 100
 
-        /** 歷史資料保留天數的預設值。 */
-        const val DEFAULT_RETENTION_DAYS: Int = 90
+        /** 歷史資料保留期限的預設值。 */
+        val DEFAULT_RETENTION: Duration = 90.days
 
         /** 歷史資料磁碟空間上限的預設值。 */
         const val DEFAULT_MAX_DISK_MIB: Long = 256
@@ -123,11 +111,11 @@ data class MinecraftHistoryConfig(
         /** 整數設定允許的最大牌局數量。 */
         const val MAX_MAX_MATCHES: Int = Int.MAX_VALUE
 
-        /** 歷史查詢最短間隔允許的最小毫秒數。 */
-        const val MIN_QUERY_MINIMUM_INTERVAL_MILLISECONDS: Long = 50
+        /** 歷史查詢最短間隔允許的最小值。 */
+        val MIN_QUERY_MINIMUM_INTERVAL: Duration = 50.milliseconds
 
-        /** 歷史查詢最短間隔允許的最大毫秒數。 */
-        const val MAX_QUERY_MINIMUM_INTERVAL_MILLISECONDS: Long = 10_000
+        /** 歷史查詢最短間隔允許的最大值。 */
+        val MAX_QUERY_MINIMUM_INTERVAL: Duration = 10.seconds
 
         /** 全伺服器歷史查詢工作上限允許的最小值。 */
         const val MIN_QUERY_MAX_OUTSTANDING: Int = 1
@@ -135,17 +123,17 @@ data class MinecraftHistoryConfig(
         /** 全伺服器歷史查詢工作上限允許的最大值。 */
         const val MAX_QUERY_MAX_OUTSTANDING: Int = 64
 
-        /** 歷史查詢拒絕回覆間隔允許的最小毫秒數。 */
-        const val MIN_QUERY_REJECTION_REPLY_INTERVAL_MILLISECONDS: Long = 250
+        /** 歷史查詢拒絕回覆間隔允許的最小值。 */
+        val MIN_QUERY_REJECTION_REPLY_INTERVAL: Duration = 250.milliseconds
 
-        /** 歷史查詢拒絕回覆間隔允許的最大毫秒數。 */
-        const val MAX_QUERY_REJECTION_REPLY_INTERVAL_MILLISECONDS: Long = 10_000
+        /** 歷史查詢拒絕回覆間隔允許的最大值。 */
+        val MAX_QUERY_REJECTION_REPLY_INTERVAL: Duration = 10.seconds
 
-        /** 整數設定允許的最小保留天數。 */
-        const val MIN_RETENTION_DAYS: Int = 0
+        /** 保留期限允許的最小值；零表示不按天數清理。 */
+        val MIN_RETENTION: Duration = Duration.ZERO
 
-        /** 整數設定允許的最大保留天數。 */
-        const val MAX_RETENTION_DAYS: Int = Int.MAX_VALUE
+        /** 保留期限允許的最大值，對應設定檔整數天數的上限。 */
+        val MAX_RETENTION: Duration = Int.MAX_VALUE.days
 
         /** 磁碟空間設定允許的最小 MiB 數量。 */
         const val MIN_MAX_DISK_MIB: Long = 1

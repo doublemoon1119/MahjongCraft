@@ -3,6 +3,8 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.client.game
 import net.minecraft.client.font.TextRenderer
 import net.minecraft.client.gui.DrawContext
 import kotlin.math.ceil
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.seconds
 
 /**
  * 決策倒數的一段文字。
@@ -16,15 +18,17 @@ internal data class DecisionTimerPart(
 )
 
 /**
- * 基本時間、加號與較低對比的保留時間；保留時間開始消耗後依剩餘秒數轉為橘色與紅色。
+ * 基本時間、加號與較低對比的保留時間；保留時間開始消耗後依剩餘時間轉為橘色與紅色。
  *
- * 兩段時間都已用完時為空清單。
+ * 剩餘時間無條件進位成整數秒顯示；兩段時間都已用完時為空清單。
  *
- * @param baseSeconds 基本時間的剩餘秒數。
- * @param reserveSeconds 保留時間的剩餘秒數。
+ * @param base 基本時間的剩餘時間。
+ * @param reserve 保留時間的剩餘時間。
  * @return 依顯示順序排列的文字與顏色。
  */
-internal fun decisionTimerParts(baseSeconds: Int, reserveSeconds: Int): List<DecisionTimerPart> {
+internal fun decisionTimerParts(base: Duration, reserve: Duration): List<DecisionTimerPart> {
+    val baseSeconds = base.displayedSeconds()
+    val reserveSeconds = reserve.displayedSeconds()
     val consumingReserve = baseSeconds <= 0 && reserveSeconds > 0
     return buildList {
         if (baseSeconds > 0) add(DecisionTimerPart(baseSeconds.toString(), BASE_COLOR))
@@ -32,13 +36,16 @@ internal fun decisionTimerParts(baseSeconds: Int, reserveSeconds: Int): List<Dec
         if (reserveSeconds > 0) {
             val reserveColor = when {
                 !consumingReserve -> RESERVE_COLOR
-                reserveSeconds <= RESERVE_CRITICAL_SECONDS -> RESERVE_CRITICAL_COLOR
+                reserve <= RESERVE_CRITICAL_TIME -> RESERVE_CRITICAL_COLOR
                 else -> RESERVE_CONSUMING_COLOR
             }
             add(DecisionTimerPart(reserveSeconds.toString(), reserveColor))
         }
     }
 }
+
+/** @return 無條件進位後要顯示的整數秒數。 */
+private fun Duration.displayedSeconds(): Int = ceil(this / 1.seconds).toInt()
 
 /**
  * 計算倒數文字縮放後的畫面寬度。
@@ -93,5 +100,5 @@ private const val RESERVE_CONSUMING_COLOR = 0xE69A45
 /** 保留時間進入警戒範圍時的顏色。 */
 private const val RESERVE_CRITICAL_COLOR = 0xE05252
 
-/** 保留時間切換至警戒顏色的剩餘秒數上限。 */
-private const val RESERVE_CRITICAL_SECONDS = 5
+/** 保留時間切換至警戒顏色的剩餘時間上限。 */
+private val RESERVE_CRITICAL_TIME: Duration = 5.seconds

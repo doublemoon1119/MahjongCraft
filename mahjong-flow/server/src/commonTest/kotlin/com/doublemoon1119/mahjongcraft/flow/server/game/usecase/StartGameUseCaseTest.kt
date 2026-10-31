@@ -44,6 +44,7 @@ import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 import kotlin.time.Duration.Companion.milliseconds
+import kotlin.time.Duration.Companion.seconds
 import kotlin.uuid.Uuid
 
 /**
@@ -261,7 +262,7 @@ class StartGameUseCaseTest {
                 GameConfig(
                     RiichiRuleConfig(),
                     GameFlowConfig(
-                        timeControl = ActionTimeControl.Custom(baseSeconds = 5, reserveSeconds = 37),
+                        timeControl = ActionTimeControl.Custom(base = 5.seconds, reserve = 37.seconds),
                     ),
                 ),
             ),

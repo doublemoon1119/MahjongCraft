@@ -88,7 +88,7 @@ fun serverConfigSections(config: MinecraftServerConfig): List<ConfigPresentation
             ),
             ConfigPresentationEntry(
                 Text.translatable(MinecraftConfigCommandKeys.DISCONNECTED_PLAYER_TIMEOUT),
-                Text.literal(config.disconnectedPlayerTimeoutSeconds.toString()),
+                Text.literal(config.disconnectedPlayerTimeout.inWholeSeconds.toString()),
             ),
         ),
     ),
@@ -139,7 +139,7 @@ fun serverConfigSections(config: MinecraftServerConfig): List<ConfigPresentation
             ),
             ConfigPresentationEntry(
                 Text.translatable(MinecraftConfigCommandKeys.HISTORY_QUERY_MINIMUM_INTERVAL),
-                Text.literal("${config.history.queryMinimumIntervalMilliseconds} ms"),
+                Text.literal("${config.history.queryMinimumInterval.inWholeMilliseconds} ms"),
             ),
             ConfigPresentationEntry(
                 Text.translatable(MinecraftConfigCommandKeys.HISTORY_QUERY_MAX_OUTSTANDING),
@@ -147,7 +147,7 @@ fun serverConfigSections(config: MinecraftServerConfig): List<ConfigPresentation
             ),
             ConfigPresentationEntry(
                 Text.translatable(MinecraftConfigCommandKeys.HISTORY_QUERY_REJECTION_REPLY_INTERVAL),
-                Text.literal("${config.history.queryRejectionReplyIntervalMilliseconds} ms"),
+                Text.literal("${config.history.queryRejectionReplyInterval.inWholeMilliseconds} ms"),
             ),
             ConfigPresentationEntry(
                 Text.translatable(MinecraftConfigCommandKeys.HISTORY_MAX_MATCHES),
@@ -155,7 +155,7 @@ fun serverConfigSections(config: MinecraftServerConfig): List<ConfigPresentation
             ),
             ConfigPresentationEntry(
                 Text.translatable(MinecraftConfigCommandKeys.HISTORY_RETENTION_DAYS),
-                Text.literal(config.history.retentionDays.toString()),
+                Text.literal(config.history.retention.inWholeDays.toString()),
             ),
             ConfigPresentationEntry(
                 Text.translatable(MinecraftConfigCommandKeys.HISTORY_MAX_DISK_MIB),

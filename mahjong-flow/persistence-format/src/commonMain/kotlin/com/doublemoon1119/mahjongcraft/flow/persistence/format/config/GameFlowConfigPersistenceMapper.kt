@@ -9,8 +9,8 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameFlowConfig
  * @return 轉換後的 persistence DTO。
  */
 fun GameFlowConfig.toPersistenceDto(): GameFlowConfigPersistenceDto = GameFlowConfigPersistenceDto(
-    baseSeconds = timeControl.baseSeconds,
-    reserveSeconds = timeControl.reserveSeconds,
+    base = timeControl.base,
+    reserve = timeControl.reserve,
     ruleDecision = ruleDecision?.toPersistenceDto(),
     decisionTimeoutPolicy = decisionTimeoutPolicy,
     spectatingPolicy = spectatingPolicy,
@@ -23,7 +23,7 @@ fun GameFlowConfig.toPersistenceDto(): GameFlowConfigPersistenceDto = GameFlowCo
  * @return 還原後的流程設定。
  */
 fun GameFlowConfigPersistenceDto.toDomain(): GameFlowConfig = GameFlowConfig(
-    timeControl = ActionTimeControl.from(baseSeconds, reserveSeconds),
+    timeControl = ActionTimeControl.from(base, reserve),
     ruleDecision = ruleDecision?.toDomain(),
     decisionTimeoutPolicy = decisionTimeoutPolicy,
     spectatingPolicy = spectatingPolicy,

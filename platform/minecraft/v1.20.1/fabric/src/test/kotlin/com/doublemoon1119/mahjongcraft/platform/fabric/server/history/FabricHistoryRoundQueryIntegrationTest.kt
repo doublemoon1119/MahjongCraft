@@ -31,6 +31,7 @@ import kotlin.io.path.createTempDirectory
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
+import kotlin.time.Duration
 import kotlin.uuid.Uuid
 
 /** 以正式 encoder、SQLite、writer 與 reader 驗證單局查詢接線及 session 失效。 */
@@ -74,7 +75,7 @@ class FabricHistoryRoundQueryIntegrationTest {
             dispatchers = QueryTestDispatchers,
             moduleRegistry = MahjongModuleRegistryImpl(),
             locations = TableLocationRegistry(),
-            configState = MinecraftServerConfigState(MinecraftServerConfig(history = MinecraftHistoryConfig(retentionDays = 0, includeAiMatches = true))),
+            configState = MinecraftServerConfigState(MinecraftServerConfig(history = MinecraftHistoryConfig(retention = Duration.ZERO, includeAiMatches = true))),
             retentionCoordinator = HistoryRetentionCoordinator(),
         )
         try {

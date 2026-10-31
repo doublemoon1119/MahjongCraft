@@ -42,6 +42,7 @@ import kotlin.test.assertIs
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
+import kotlin.time.Duration.Companion.seconds
 import kotlin.uuid.Uuid
 
 /** [SubmitRuleDecisionUseCase] 的單元測試。 */
@@ -76,7 +77,7 @@ class SubmitRuleDecisionUseCaseTest {
         repository.setGame(
             Game(
                 tableState = table,
-                flowConfig = GameFlowConfig(ruleDecision = RuleDecisionConfig(30)),
+                flowConfig = GameFlowConfig(ruleDecision = RuleDecisionConfig(30.seconds)),
                 pendingRuleDecision = PendingRuleDecision.open(
                     step = RuleDecisionStep(
                         stepId = "test:confirm",
@@ -122,7 +123,7 @@ class SubmitRuleDecisionUseCaseTest {
         )
         val game = Game(
             tableState = table,
-            flowConfig = GameFlowConfig(ruleDecision = RuleDecisionConfig(30)),
+            flowConfig = GameFlowConfig(ruleDecision = RuleDecisionConfig(30.seconds)),
             pendingRuleDecision = PendingRuleDecision.open(
                 step = RuleDecisionStep(
                     stepId = "test:exchange",
@@ -223,7 +224,7 @@ class SubmitRuleDecisionUseCaseTest {
         repository.setGame(
             Game(
                 tableState = table,
-                flowConfig = GameFlowConfig(ruleDecision = RuleDecisionConfig(30)),
+                flowConfig = GameFlowConfig(ruleDecision = RuleDecisionConfig(30.seconds)),
                 pendingRuleDecision = PendingRuleDecision.open(
                     step = RuleDecisionStep(
                         stepId = "test:exchange",
@@ -275,7 +276,7 @@ class SubmitRuleDecisionUseCaseTest {
         )
         val game = Game(
             tableState = table,
-            flowConfig = GameFlowConfig(ruleDecision = RuleDecisionConfig(30)),
+            flowConfig = GameFlowConfig(ruleDecision = RuleDecisionConfig(30.seconds)),
             pendingRuleDecision = PendingRuleDecision.open(
                 step = RuleDecisionStep(
                     stepId = "test:exchange",
@@ -372,7 +373,7 @@ class SubmitRuleDecisionUseCaseTest {
         )
         val game = Game(
             tableState = table,
-            flowConfig = GameFlowConfig(ruleDecision = RuleDecisionConfig(30)),
+            flowConfig = GameFlowConfig(ruleDecision = RuleDecisionConfig(30.seconds)),
             pendingRuleDecision = PendingRuleDecision.open(
                 step = RuleDecisionStep(
                     stepId = "test:confirm",
@@ -421,7 +422,7 @@ class SubmitRuleDecisionUseCaseTest {
         val earlierWindow = PendingRuleDecision.open(step = step, timing = RuleDecisionTiming.ROUND_END)
         val game = Game(
             tableState = table,
-            flowConfig = GameFlowConfig(ruleDecision = RuleDecisionConfig(30)),
+            flowConfig = GameFlowConfig(ruleDecision = RuleDecisionConfig(30.seconds)),
             pendingRuleDecision = PendingRuleDecision.open(step = step, timing = RuleDecisionTiming.ROUND_END),
         )
         repository.setGame(game)
@@ -484,7 +485,7 @@ class SubmitRuleDecisionUseCaseTest {
         )
         val game = Game(
             tableState = table,
-            flowConfig = GameFlowConfig(ruleDecision = RuleDecisionConfig(30)),
+            flowConfig = GameFlowConfig(ruleDecision = RuleDecisionConfig(30.seconds)),
             pendingRuleDecision = PendingRuleDecision.open(
                 step = RuleDecisionStep(
                     stepId = "test:confirm",
@@ -511,7 +512,7 @@ class SubmitRuleDecisionUseCaseTest {
     private object ScoreChangingResolver : RuleDecisionResolver {
         override val ruleModuleId: String = BuiltInRuleModuleIds.RIICHI
 
-        override fun ruleDecisionConfig(ruleConfig: MahjongRuleConfig): RuleDecisionConfig = RuleDecisionConfig(30)
+        override fun ruleDecisionConfig(ruleConfig: MahjongRuleConfig): RuleDecisionConfig = RuleDecisionConfig(30.seconds)
 
         override fun begin(timing: RuleDecisionTiming, tableState: TableState, ruleModule: MahjongRuleModule<*>): RuleDecisionStep? = null
 
@@ -535,7 +536,7 @@ class SubmitRuleDecisionUseCaseTest {
     private object ConfirmationResolver : RuleDecisionResolver {
         override val ruleModuleId: String = BuiltInRuleModuleIds.RIICHI
 
-        override fun ruleDecisionConfig(ruleConfig: MahjongRuleConfig): RuleDecisionConfig = RuleDecisionConfig(30)
+        override fun ruleDecisionConfig(ruleConfig: MahjongRuleConfig): RuleDecisionConfig = RuleDecisionConfig(30.seconds)
 
         override fun begin(timing: RuleDecisionTiming, tableState: TableState, ruleModule: MahjongRuleModule<*>): RuleDecisionStep? = null
 
@@ -550,7 +551,7 @@ class SubmitRuleDecisionUseCaseTest {
     private object PlayerNextResolver : RuleDecisionResolver {
         override val ruleModuleId: String = BuiltInRuleModuleIds.RIICHI
 
-        override fun ruleDecisionConfig(ruleConfig: MahjongRuleConfig): RuleDecisionConfig? = if ((ruleConfig as? RiichiRuleConfig)?.redDoraCount == 3) RuleDecisionConfig(30) else null
+        override fun ruleDecisionConfig(ruleConfig: MahjongRuleConfig): RuleDecisionConfig? = if ((ruleConfig as? RiichiRuleConfig)?.redDoraCount == 3) RuleDecisionConfig(30.seconds) else null
 
         override fun begin(timing: RuleDecisionTiming, tableState: TableState, ruleModule: MahjongRuleModule<*>): RuleDecisionStep? = null
 
@@ -572,7 +573,7 @@ class SubmitRuleDecisionUseCaseTest {
     private object TileExchangeResolver : RuleDecisionResolver {
         override val ruleModuleId: String = BuiltInRuleModuleIds.RIICHI
 
-        override fun ruleDecisionConfig(ruleConfig: MahjongRuleConfig): RuleDecisionConfig = RuleDecisionConfig(30)
+        override fun ruleDecisionConfig(ruleConfig: MahjongRuleConfig): RuleDecisionConfig = RuleDecisionConfig(30.seconds)
 
         override fun begin(timing: RuleDecisionTiming, tableState: TableState, ruleModule: MahjongRuleModule<*>): RuleDecisionStep? = null
 

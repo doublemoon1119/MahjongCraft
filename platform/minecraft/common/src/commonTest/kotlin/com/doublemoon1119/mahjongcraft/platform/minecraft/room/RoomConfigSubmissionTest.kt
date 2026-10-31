@@ -31,6 +31,7 @@ import com.doublemoon1119.mahjongcraft.testing.flow.bundled.registerBundledRuleM
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
+import kotlin.time.Duration.Companion.seconds
 import kotlin.uuid.Uuid
 
 /** 驗證伺服器依設定呈現重建房間設定：只接受房間畫面能做到的修改。 */
@@ -61,7 +62,7 @@ class RoomConfigSubmissionTest {
     @Test
     fun `changes to fields without an editor are rejected`() {
         listOf(45, Int.MAX_VALUE).forEach { seconds ->
-            val ruleDecision = current.copy(flowConfig = current.flowConfig.copy(ruleDecision = RuleDecisionConfig(seconds)))
+            val ruleDecision = current.copy(flowConfig = current.flowConfig.copy(ruleDecision = RuleDecisionConfig(seconds.seconds)))
             assertEquals(RoomConfigSubmission.Result.Invalid, review(ruleDecision))
             assertEquals(
                 RoomConfigSubmission.Result.Invalid,
@@ -75,7 +76,7 @@ class RoomConfigSubmissionTest {
     fun `switching to another selectable rule starts from its default settings`() {
         val currentWithFlow = current.copy(
             flowConfig = current.flowConfig.copy(
-                timeControl = ActionTimeControl.from(12, 90),
+                timeControl = ActionTimeControl.from(12.seconds, 90.seconds),
                 spectatorHandVisibility = SpectatorHandVisibility.HIDDEN,
             ),
         )
@@ -112,7 +113,7 @@ class RoomConfigSubmissionTest {
         val submitted = customCurrent.copy(
             ruleConfig = RiichiRuleConfig(scoreConfig = RiichiScoreConfig(initialScore = 30_000)),
             flowConfig = customCurrent.flowConfig.copy(
-                timeControl = ActionTimeControl.from(12, 90),
+                timeControl = ActionTimeControl.from(12.seconds, 90.seconds),
                 spectatingPolicy = SpectatingPolicy.DISABLED,
             ),
         )
@@ -129,7 +130,7 @@ class RoomConfigSubmissionTest {
         val customCurrent = GameConfig(RiichiRuleConfig())
         listOf(1, 3600).forEach { seconds ->
             val submitted = customCurrent.copy(
-                flowConfig = customCurrent.flowConfig.copy(ruleDecision = RuleDecisionConfig(seconds)),
+                flowConfig = customCurrent.flowConfig.copy(ruleDecision = RuleDecisionConfig(seconds.seconds)),
             )
             assertEquals(
                 RoomConfigSubmission.Result.Accepted(submitted),
@@ -138,7 +139,7 @@ class RoomConfigSubmissionTest {
         }
 
         val overflow = customCurrent.copy(
-            flowConfig = customCurrent.flowConfig.copy(ruleDecision = RuleDecisionConfig(3601)),
+            flowConfig = customCurrent.flowConfig.copy(ruleDecision = RuleDecisionConfig(3601.seconds)),
         )
         assertEquals(
             RoomConfigSubmission.Result.Invalid,
@@ -147,7 +148,7 @@ class RoomConfigSubmissionTest {
 
         val accepted = assertIs<RoomConfigSubmission.Result.Accepted>(
             review(
-                customCurrent.copy(flowConfig = customCurrent.flowConfig.copy(ruleDecision = RuleDecisionConfig(47))),
+                customCurrent.copy(flowConfig = customCurrent.flowConfig.copy(ruleDecision = RuleDecisionConfig(47.seconds))),
                 customCurrent,
                 customRuleDecisionPresentations,
                 customModules,
@@ -163,7 +164,7 @@ class RoomConfigSubmissionTest {
     @Test
     fun `switching to a rule without rule decision clears rule decision time`() {
         val currentWithRuleDecision = GameConfig(RiichiRuleConfig()).copy(
-            flowConfig = current.flowConfig.copy(ruleDecision = RuleDecisionConfig(45)),
+            flowConfig = current.flowConfig.copy(ruleDecision = RuleDecisionConfig(45.seconds)),
         )
         val switched = currentWithRuleDecision.copy(
             ruleConfig = ThreePlayerRiichiRuleConfig(),
@@ -175,7 +176,7 @@ class RoomConfigSubmissionTest {
         )
 
         val changedAfterSwitch = switched.copy(
-            flowConfig = switched.flowConfig.copy(ruleDecision = RuleDecisionConfig(46)),
+            flowConfig = switched.flowConfig.copy(ruleDecision = RuleDecisionConfig(46.seconds)),
         )
         assertEquals(
             RoomConfigSubmission.Result.Invalid,
@@ -189,13 +190,13 @@ class RoomConfigSubmissionTest {
         val source = GameConfig(
             ruleConfig = ThreePlayerRiichiRuleConfig(),
             flowConfig = current.flowConfig.copy(
-                timeControl = ActionTimeControl.from(12, 90),
+                timeControl = ActionTimeControl.from(12.seconds, 90.seconds),
                 spectatorHandVisibility = SpectatorHandVisibility.HIDDEN,
             ),
         )
         val submitted = GameConfig(
             ruleConfig = RiichiRuleConfig(),
-            flowConfig = source.flowConfig.copy(ruleDecision = RuleDecisionConfig(30)),
+            flowConfig = source.flowConfig.copy(ruleDecision = RuleDecisionConfig(30.seconds)),
         )
 
         assertEquals(
@@ -222,12 +223,12 @@ class RoomConfigSubmissionTest {
         val off = GameConfig(RiichiRuleConfig())
         val on = off.copy(
             ruleConfig = RiichiRuleConfig(scoreConfig = RiichiScoreConfig(initialScore = 30_000)),
-            flowConfig = off.flowConfig.copy(ruleDecision = RuleDecisionConfig(47)),
+            flowConfig = off.flowConfig.copy(ruleDecision = RuleDecisionConfig(47.seconds)),
         )
         val enabled = assertIs<RoomConfigSubmission.Result.Accepted>(
             review(on, off, configAwareRuleDecisionPresentations, customModules),
         )
-        assertEquals(47, enabled.config.flowConfig.ruleDecision?.baseSeconds)
+        assertEquals(47.seconds, enabled.config.flowConfig.ruleDecision?.base)
         assertEquals(
             RoomConfigSubmission.Result.Accepted(off),
             review(off, enabled.config, configAwareRuleDecisionPresentations, customModules),
@@ -235,7 +236,7 @@ class RoomConfigSubmissionTest {
         assertEquals(
             RoomConfigSubmission.Result.Invalid,
             review(
-                off.copy(flowConfig = off.flowConfig.copy(ruleDecision = RuleDecisionConfig(47))),
+                off.copy(flowConfig = off.flowConfig.copy(ruleDecision = RuleDecisionConfig(47.seconds))),
                 enabled.config,
                 configAwareRuleDecisionPresentations,
                 customModules,
@@ -407,7 +408,7 @@ class RoomConfigSubmissionTest {
             register(object : RuleDecisionResolver {
                 override val ruleModuleId: String = "example:pairing"
                 override fun ruleDecisionConfig(ruleConfig: MahjongRuleConfig): RuleDecisionConfig? = if (!configAware || (ruleConfig as? RiichiRuleConfig)?.scoreConfig?.initialScore == 30_000) {
-                    RuleDecisionConfig(30)
+                    RuleDecisionConfig(30.seconds)
                 } else {
                     null
                 }

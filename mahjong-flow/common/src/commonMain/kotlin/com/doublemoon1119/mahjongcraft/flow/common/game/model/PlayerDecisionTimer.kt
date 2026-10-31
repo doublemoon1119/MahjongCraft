@@ -1,7 +1,6 @@
 package com.doublemoon1119.mahjongcraft.flow.common.game.model
 
 import kotlin.time.Duration
-import kotlin.time.Duration.Companion.seconds
 import kotlin.uuid.Uuid
 
 /**
@@ -54,12 +53,12 @@ data class PlayerDecisionTimer(
 }
 
 /**
- * 以指定的基本思考秒數及玩家目前剩餘保留思考時間建立一次決策計時器。
+ * 以指定的基本思考時間及玩家目前剩餘保留思考時間建立一次決策計時器。
  *
  * 呼叫端會依決策階段提供基本時間和保留時間。一般回合與反應階段可使用玩家共用的保留時間池；
  * 規則選擇階段固定以零保留時間計時。
  *
- * @param baseSeconds 此次決策重新取得的基本思考秒數。
+ * @param base 此次決策重新取得的基本思考時間。
  * @param playerId 目前具有決策權的玩家。
  * @param remainingReserve 玩家在決策開始時剩餘的保留思考時間。
  * @param startedAt 此次決策開始時的單調時間。
@@ -68,7 +67,7 @@ data class PlayerDecisionTimer(
  * @return 新建立的 [PlayerDecisionTimer]。
  */
 fun startDecisionTimer(
-    baseSeconds: Int,
+    base: Duration,
     playerId: Uuid,
     remainingReserve: Duration,
     startedAt: Duration,
@@ -76,12 +75,12 @@ fun startDecisionTimer(
 ): PlayerDecisionTimer = PlayerDecisionTimer(
     playerId = playerId,
     startedAt = startedAt,
-    baseDuration = resumedBase ?: baseSeconds.seconds,
+    baseDuration = resumedBase ?: base,
     reserveAtStart = remainingReserve,
 )
 
 /**
- * 以此設定的 [ActionTimeControl.baseSeconds] 及玩家目前剩餘保留思考時間建立一次決策計時器。
+ * 以此設定的 [ActionTimeControl.base] 及玩家目前剩餘保留思考時間建立一次決策計時器。
  *
  * @param playerId 目前具有決策權的玩家。
  * @param remainingReserve 玩家在決策開始時剩餘的保留思考時間。
@@ -96,7 +95,7 @@ fun ActionTimeControl.startDecisionTimer(
     startedAt: Duration,
     resumedBase: Duration? = null,
 ): PlayerDecisionTimer = startDecisionTimer(
-    baseSeconds = baseSeconds,
+    base = base,
     playerId = playerId,
     remainingReserve = remainingReserve,
     startedAt = startedAt,

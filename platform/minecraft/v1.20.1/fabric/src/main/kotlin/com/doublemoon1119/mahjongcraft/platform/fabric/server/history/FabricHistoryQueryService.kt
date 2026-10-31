@@ -98,7 +98,7 @@ class FabricHistoryQueryService(
     private val settingsPublisher = HistoryQuerySettingsPublisher(
         scope = scope,
         dispatchers = dispatchers,
-        updates = configState.updates.map { it.history.queryMinimumIntervalMilliseconds }.distinctUntilChanged(),
+        updates = configState.updates.map { it.history.queryMinimumInterval }.distinctUntilChanged(),
     )
 
     /** 註冊有界要求與斷線清理，不提供歷史寫入操作。 */
@@ -135,7 +135,7 @@ class FabricHistoryQueryService(
      * @param player 已建立連線的玩家。
      */
     private fun sendQuerySettings(player: ServerPlayerEntity) {
-        MahjongChannels.historyQuerySettings.sendTo(player, json, HistoryQuerySettingsPayload(configState.current.history.queryMinimumIntervalMilliseconds))
+        MahjongChannels.historyQuerySettings.sendTo(player, json, HistoryQuerySettingsPayload(configState.current.history.queryMinimumInterval))
     }
 
     /**

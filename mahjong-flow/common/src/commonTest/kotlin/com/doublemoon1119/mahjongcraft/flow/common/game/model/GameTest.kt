@@ -8,6 +8,7 @@ import kotlin.test.assertFailsWith
 import kotlin.test.assertTrue
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.milliseconds
+import kotlin.time.Duration.Companion.seconds
 import kotlin.uuid.Uuid
 
 /** [Game] 的流程 runtime 狀態測試。 */
@@ -20,7 +21,7 @@ class GameTest {
             tableState = FakeTableStateFactory.create(
                 players = playerIds.map { FakeMahjongPlayerFactory.create(id = it) },
             ),
-            flowConfig = GameFlowConfig(timeControl = ActionTimeControl.Custom(baseSeconds = 5, reserveSeconds = 37)),
+            flowConfig = GameFlowConfig(timeControl = ActionTimeControl.Custom(base = 5.seconds, reserve = 37.seconds)),
         )
 
         assertEquals(playerIds.associateWith { 37_000.milliseconds }, game.remainingReserveByPlayerId)

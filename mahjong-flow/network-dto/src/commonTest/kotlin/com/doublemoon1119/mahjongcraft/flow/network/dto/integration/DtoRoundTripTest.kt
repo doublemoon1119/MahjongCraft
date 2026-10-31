@@ -99,6 +99,7 @@ import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
+import kotlin.time.Duration.Companion.seconds
 import kotlin.uuid.Uuid
 /**
  * 驗證 `:mahjong-flow-network-dto` 的 DTO 來回（領域物件 → DTO → JSON → 解碼 → DTO → 領域物件）不失真。
@@ -484,7 +485,7 @@ class DtoRoundTripTest {
             ),
             GameConfig(
                 ruleConfig = RiichiRuleConfig(),
-                flowConfig = GameFlowConfig(ruleDecision = RuleDecisionConfig(47)),
+                flowConfig = GameFlowConfig(ruleDecision = RuleDecisionConfig(47.seconds)),
             ),
         )
 

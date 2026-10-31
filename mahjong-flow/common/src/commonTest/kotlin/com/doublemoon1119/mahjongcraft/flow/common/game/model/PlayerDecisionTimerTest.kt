@@ -6,6 +6,7 @@ import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 import kotlin.time.Duration.Companion.milliseconds
+import kotlin.time.Duration.Companion.seconds
 import kotlin.uuid.Uuid
 
 /** [PlayerDecisionTimer] 的單元測試。 */
@@ -55,7 +56,7 @@ class PlayerDecisionTimerTest {
     /** 驗證零基本思考時間設定會從決策開始立即消耗保留思考時間。 */
     @Test
     fun `test zero action time immediately consumes reserve time`() {
-        val timer = ActionTimeControl.Custom(baseSeconds = 0, reserveSeconds = 20).startDecisionTimer(
+        val timer = ActionTimeControl.Custom(base = 0.seconds, reserve = 20.seconds).startDecisionTimer(
             playerId = Uuid.random(),
             remainingReserve = 20_000.milliseconds,
             startedAt = 1_000.milliseconds,
@@ -87,11 +88,11 @@ class PlayerDecisionTimerTest {
      * 驗證供 [ActionTimeControl.startDecisionTimer] 接續中斷決策的 `resumedBase`、使用中斷時剩餘的基本思考時間，而不是重新取得完整基本思考時間。
      *
      * 這是重連不會免費重置思考倒數的直接依據：新計時器的 `baseDuration` 必須是接續剩餘量，不能回到
-     * [ActionTimeControl.baseSeconds] 定義的完整值。
+     * [ActionTimeControl.base] 定義的完整值。
      */
     @Test
     fun `test resumed base millis is used instead of a fresh base duration`() {
-        val timer = ActionTimeControl.Custom(baseSeconds = 5, reserveSeconds = 20).startDecisionTimer(
+        val timer = ActionTimeControl.Custom(base = 5.seconds, reserve = 20.seconds).startDecisionTimer(
             playerId = Uuid.random(),
             remainingReserve = 20_000.milliseconds,
             startedAt = 1_000.milliseconds,
@@ -105,10 +106,10 @@ class PlayerDecisionTimerTest {
         )
     }
 
-    /** 驗證未指定 `resumedBase` 時仍取得 [ActionTimeControl.baseSeconds] 定義的完整基本思考時間。 */
+    /** 驗證未指定 `resumedBase` 時仍取得 [ActionTimeControl.base] 定義的完整基本思考時間。 */
     @Test
     fun `test omitted resumed base millis grants a fresh base duration`() {
-        val timer = ActionTimeControl.Custom(baseSeconds = 5, reserveSeconds = 20).startDecisionTimer(
+        val timer = ActionTimeControl.Custom(base = 5.seconds, reserve = 20.seconds).startDecisionTimer(
             playerId = Uuid.random(),
             remainingReserve = 20_000.milliseconds,
             startedAt = 1_000.milliseconds,
@@ -140,8 +141,8 @@ class PlayerDecisionTimerTest {
      * @return 使用指定開始時間建立的測試計時器。
      */
     private fun timer(startedAt: Long): PlayerDecisionTimer = ActionTimeControl.Custom(
-        baseSeconds = 5,
-        reserveSeconds = 20,
+        base = 5.seconds,
+        reserve = 20.seconds,
     ).startDecisionTimer(
         playerId = Uuid.random(),
         remainingReserve = 20_000.milliseconds,

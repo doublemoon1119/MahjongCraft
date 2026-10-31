@@ -6,12 +6,11 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlin.time.Duration
-import kotlin.time.Duration.Companion.milliseconds
 
 /** 保存目前伺服器公布的歷史查詢間隔；斷線後不沿用上一個伺服器的設定。 */
 class ClientHistoryQuerySettings {
     /** 主執行緒更新的有效查詢間隔。 */
-    private val mutableMinimumInterval = MutableStateFlow(MinecraftHistoryConfig.DEFAULT_QUERY_MINIMUM_INTERVAL_MILLISECONDS.milliseconds)
+    private val mutableMinimumInterval = MutableStateFlow(MinecraftHistoryConfig.DEFAULT_QUERY_MINIMUM_INTERVAL)
 
     /** 供排程及查詢控制項觀察的唯讀間隔。 */
     val minimumInterval: StateFlow<Duration> = mutableMinimumInterval.asStateFlow()
@@ -22,16 +21,16 @@ class ClientHistoryQuerySettings {
      * @param payload 目前連線伺服器公布的查詢設定。
      */
     fun apply(payload: HistoryQuerySettingsPayload) {
-        if (payload.minimumIntervalMilliseconds !in
-            MinecraftHistoryConfig.MIN_QUERY_MINIMUM_INTERVAL_MILLISECONDS..MinecraftHistoryConfig.MAX_QUERY_MINIMUM_INTERVAL_MILLISECONDS
+        if (payload.minimumInterval !in
+            MinecraftHistoryConfig.MIN_QUERY_MINIMUM_INTERVAL..MinecraftHistoryConfig.MAX_QUERY_MINIMUM_INTERVAL
         ) {
             return
         }
-        mutableMinimumInterval.value = payload.minimumIntervalMilliseconds.milliseconds
+        mutableMinimumInterval.value = payload.minimumInterval
     }
 
     /** 連線或世界切換時恢復預設值，等待新伺服器公布設定。 */
     fun reset() {
-        mutableMinimumInterval.value = MinecraftHistoryConfig.DEFAULT_QUERY_MINIMUM_INTERVAL_MILLISECONDS.milliseconds
+        mutableMinimumInterval.value = MinecraftHistoryConfig.DEFAULT_QUERY_MINIMUM_INTERVAL
     }
 }

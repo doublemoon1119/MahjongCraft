@@ -38,19 +38,19 @@ class PlayerDecisionTimerFactory(
         phase: PlayerDecisionPhase,
         resumedBase: Duration? = null,
     ): PlayerDecisionTimer {
-        val baseSeconds: Int
+        val base: Duration
         val remainingReserve: Duration
         if (phase == PlayerDecisionPhase.RULE_DECISION) {
-            baseSeconds = requireNotNull(game.flowConfig.ruleDecision) {
+            base = requireNotNull(game.flowConfig.ruleDecision) {
                 "Rule decision requires a ruleDecision time configuration"
-            }.baseSeconds
+            }.base
             remainingReserve = Duration.ZERO
         } else {
-            baseSeconds = game.flowConfig.timeControl.baseSeconds
+            base = game.flowConfig.timeControl.base
             remainingReserve = game.remainingReserveByPlayerId.getValue(playerId)
         }
         return startDecisionTimer(
-            baseSeconds = baseSeconds,
+            base = base,
             playerId = playerId,
             remainingReserve = remainingReserve,
             startedAt = clock.now(),
