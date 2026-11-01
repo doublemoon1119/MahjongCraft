@@ -37,6 +37,20 @@ interface SeatEnvironment<W, R, S> {
     fun hasVehicle(rider: R): Boolean
 
     /**
+     * 不移動乘坐者，檢查固定席位是否可安全站立。
+     *
+     * @param world 目標世界。
+     * @param rider 乘坐者。
+     * @param request 固定席位。
+     * @return 能保證站立安全時為 true；未提供預檢的平台回傳 false。
+     */
+    fun canStand(
+        world: W,
+        rider: R,
+        request: SeatRequest,
+    ): Boolean = false
+
+    /**
      * 嘗試安全站到固定席位，檢查支撐、身體、實體及區塊；失敗不移動。
      *
      * @param world 目標世界。

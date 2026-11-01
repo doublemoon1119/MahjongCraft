@@ -4,6 +4,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.error.ExtensionFailurePolicy
 import com.doublemoon1119.mahjongcraft.platform.fabric.api.registration.FabricSeatProviderRegistrar
 import com.doublemoon1119.mahjongcraft.platform.fabric.api.registration.FabricTablePropKindRegistrar
 import com.doublemoon1119.mahjongcraft.platform.fabric.api.tableprop.FabricTablePropKind
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.character.FabricAiCharacterCapabilityRegistry
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.seating.FabricSeatProviderRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.prop.FabricTablePropKindRegistry
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.prop.FabricTablePropKindRegistryImpl
@@ -50,7 +51,11 @@ class FabricTablePropKindRegistrationTest {
         seatProviderRegistry: FabricSeatProviderRegistryImpl = FabricSeatProviderRegistryImpl(),
     ) = FabricMahjongExtensionBootstrap.registerAndFreeze(
         extensions = extensions,
-        registries = FabricExtensionRegistries(tablePropKindRegistry, seatProviderRegistry),
+        registries = FabricExtensionRegistries(
+            tablePropKindRegistry = tablePropKindRegistry,
+            seatProviderRegistry = seatProviderRegistry,
+            characterCapabilityRegistry = FabricAiCharacterCapabilityRegistry(),
+        ),
         builtIn = BuiltInFabricMahjongExtension(FakeProvider(), MinecraftTileAssetRegistryImpl()),
         failurePolicy = ExtensionFailurePolicy.Default,
     )
@@ -157,7 +162,11 @@ class FabricTablePropKindRegistrationTest {
                 extension("example:first", "example:first-kind", "example:first-seat"),
                 extension("example:second", "example:second-kind", "example:second-seat"),
             ),
-            registries = FabricExtensionRegistries(tablePropRegistry, seatProviderRegistry),
+            registries = FabricExtensionRegistries(
+                tablePropKindRegistry = tablePropRegistry,
+                seatProviderRegistry = seatProviderRegistry,
+                characterCapabilityRegistry = FabricAiCharacterCapabilityRegistry(),
+            ),
             builtIn = BuiltInFabricMahjongExtension(FakeProvider(), MinecraftTileAssetRegistryImpl()),
             failurePolicy = ExtensionFailurePolicy.Default,
         )
@@ -179,6 +188,7 @@ class FabricTablePropKindRegistrationTest {
                 null to listOf(
                     "mahjongcraft:table_prop_kind" to listOf("mahjongcraft:face_up_tile", BuiltInTablePropKinds.SCORING_STICK),
                     "mahjongcraft:seat_provider" to listOf("mahjongcraft:mahjong_stool"),
+                    "mahjongcraft:ai_character_capability" to listOf("mahjongcraft:tile_mascot"),
                 ),
                 "example:first" to listOf(
                     "mahjongcraft:table_prop_kind" to listOf("example:first-kind"),

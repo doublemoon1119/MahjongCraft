@@ -6,6 +6,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.api.seating.SeatGeomet
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.seating.SeatIdentity
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.seating.SeatRequest
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.seating.SeatState
+import com.doublemoon1119.mahjongcraft.platform.minecraft.api.seating.SeatTarget
 import kotlin.coroutines.cancellation.CancellationException
 import kotlin.math.abs
 
@@ -46,20 +47,7 @@ class SeatAssignmentCoordinator<W, R, S>(
         val original = environment.snapshot(rider)
         var providerId = "unresolved"
         try {
-            val candidates = providers.flatMap { registered ->
-                providerId = registered.id
-                registered.provider.resolve(world, request).map { registered.id to it }
-            }
-            val inspected = candidates.map { (id, target) ->
-                providerId = id
-                Triple(id, target, target.inspect(world, rider))
-            }
-            if (!environment.unchanged(rider, original)) error("Seat provider changed rider during resolution")
-            val relevant = inspected.filter { (id, target, _) ->
-                providerId = id
-                target.identity.dimensionId == request.dimensionId && matches(target.geometry(world, rider), request)
-            }
-            if (!environment.unchanged(rider, original)) error("Seat provider changed rider during geometry lookup")
+            val relevant = inspectTargets(world, rider, request, original) { providerId = it }
             if (relevant.any { (_, target, state) -> state == SeatState.OCCUPIED || target.identity in claimed }) {
                 return SeatAssignmentResult.OCCUPIED
             }
@@ -104,6 +92,81 @@ class SeatAssignmentCoordinator<W, R, S>(
             environment.recover(rider, original)
             return SeatAssignmentResult.FAILED
         }
+    }
+
+    /**
+     * 不入座、不移動，只回報目前可用的腳底位置。
+     *
+     * 與正式入座共用來源、占用及幾何檢查；執行時仍須重新驗證，不能把預檢當作座位預約。
+     *
+     * @param world 目標世界。
+     * @param rider 乘坐者，可為尚未加入世界的自有角色。
+     * @param request 固定席位。
+     * @return 已確認可入座或安全站立的位置，無法保證時為 null。
+     */
+    fun preview(
+        world: W,
+        rider: R,
+        request: SeatRequest,
+    ): SeatGeometry? {
+        val original = environment.snapshot(rider)
+        var providerId = "unresolved"
+        try {
+            val relevant = inspectTargets(world, rider, request, original) { providerId = it }
+            if (relevant.any { (_, target, state) -> state == SeatState.OCCUPIED || target.identity in claimed }) return null
+            val seated = relevant.firstOrNull { it.third == SeatState.SEATED }
+            if (seated != null) {
+                val geometry = seated.second.geometry(world, rider)
+                check(environment.unchanged(rider, original)) { "Seat provider changed rider during preview" }
+                return geometry.takeIf { matches(it, request) && environment.hasVehicle(rider) && environment.positioned(world, rider, it) }
+            }
+            if (environment.hasVehicle(rider) || relevant.any { it.third == SeatState.FAILED }) return null
+            val geometry = relevant.firstOrNull { it.third == SeatState.AVAILABLE }?.second?.geometry(world, rider)
+                ?: request.seat.takeIf { environment.canStand(world, rider, request) }
+            check(environment.unchanged(rider, original)) { "Seat provider changed rider during preview" }
+            return geometry?.takeIf { matches(it, request) }
+        } catch (cause: CancellationException) {
+            throw cause
+        } catch (cause: Throwable) {
+            if (!failurePolicy.isIsolatable(cause)) throw cause
+            report(providerId, rider, cause)
+            environment.recover(rider, original)
+            return null
+        }
+    }
+
+    /**
+     * 查詢來源並確認查詢沒有移動乘坐者。
+     *
+     * @param world 目標世界。
+     * @param rider 乘坐者。
+     * @param request 固定席位。
+     * @param original 查詢前的位置快照。
+     * @param onProvider 保存目前來源供診斷。
+     * @return 位置符合標準席位的來源與狀態。
+     */
+    private fun inspectTargets(
+        world: W,
+        rider: R,
+        request: SeatRequest,
+        original: S,
+        onProvider: (String) -> Unit,
+    ): List<Triple<String, SeatTarget<W, R>, SeatState>> {
+        val candidates = providers.flatMap { registered ->
+            onProvider(registered.id)
+            registered.provider.resolve(world, request).map { registered.id to it }
+        }
+        val inspected = candidates.map { (id, target) ->
+            onProvider(id)
+            Triple(id, target, target.inspect(world, rider))
+        }
+        if (!environment.unchanged(rider, original)) error("Seat provider changed rider during resolution")
+        val relevant = inspected.filter { (id, target, _) ->
+            onProvider(id)
+            target.identity.dimensionId == request.dimensionId && matches(target.geometry(world, rider), request)
+        }
+        if (!environment.unchanged(rider, original)) error("Seat provider changed rider during geometry lookup")
+        return relevant
     }
 
     /**

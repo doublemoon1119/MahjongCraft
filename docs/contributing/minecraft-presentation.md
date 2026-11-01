@@ -130,6 +130,73 @@ rules come from collisions that only showed up in game, so check them even when 
   release a new reservation or restore an obsolete scene. Reload refreshes wait for the search
   area's entity chunks without forcing chunks to load.
 
+## AI World Characters
+
+Character appearance and mahjong strategy are separate. A character can have a portrait without a
+world entity. Save the chosen description when the match starts; do not replace it with a newer
+registry definition during a round change or reload. The built-in bot chooses a cosmetic face from
+standard tiles when each match starts. Save that face in the match description; do not sample an
+actual wall tile or reroll it when creating a world entity.
+
+### Providing a world character
+
+For example, a Fabric adapter registers a `FabricAiCharacterCapabilityDefinition` through
+`FabricMahjongExtension.registerAiCharacterCapabilities`. Its ID matches the character definition's
+`worldCapabilityId`. The built-in Mahjong Bot uses the same registration and seating path.
+Third-party integrations do not need access to MahjongCraft's dependency injection.
+
+| Handle ownership | Factory result | On release |
+| --- | --- | --- |
+| `OWNED` | A new entity of an unsaved type, not yet added to the world | Restore temporary control and remove the entity |
+| `BORROWED` | An existing, loaded entity in the requested world | Restore temporary control; never delete or respawn it |
+
+The factory only obtains a handle. It must not move or spawn the entity, create seat supports, or
+pause native AI. Owned entity types must disable saving; otherwise a chunk reload could restore an
+extra entity independently of the character manager. MahjongCraft claims its UUID before calling `prepare`. A player entity cannot act
+as an AI proxy, and one entity cannot represent two AI participants at once.
+
+The handle pauses and restores its own walking, combat, following and animation behavior. Do not
+assume that enabling AI on release restores its previous state. If paused behavior is saved by the
+other mod, its adapter must also recover stale control after unloading or restarting. Refuse the
+borrow if that recovery cannot be guaranteed. `release` must tolerate partial preparation and an
+already removed entity.
+
+### Seating and lifetime
+
+- Use the complete match roster to calculate seats, including offline players and AI without a
+  world character. Never compress the list to the entities that happen to be available.
+- New owned characters pass the shared seat preview before spawning. Actual seating rechecks the
+  providers and occupancy. An occupied or blocked seat does not justify forcing a spawn or moving
+  another occupant.
+- A declared opening or seat-order change can arrange both humans and characters. Routine character
+  recovery only arranges AI; it must not teleport humans back to their seats.
+- Reconcile from authoritative matches and loaded tables. Do not wait for a repeated start event or
+  force chunks to load. Keep the actor through round changes and release it when the match leaves
+  the table, the table becomes unavailable, or the server stops.
+- The built-in bot is a temporary, unsaved entity. It is recreated from the saved character choice,
+  rather than restored independently from a second entity save.
+- Missing capabilities and isolated callback failures may leave an AI without a world character.
+  Its mahjong strategy continues, and its saved choice remains unchanged. Retry at a bounded rate;
+  avoid repeating the same diagnostic on every retry.
+
+### Cosmetic feedback
+
+A successful discard can request `AiCharacterActionIds.DISCARD`. Unknown visual action IDs may be
+ignored. These callbacks never submit a game command, change legal actions, or delay match progress.
+`seatAssigned` reports a successful seat placement so the adapter can update its resting direction.
+
+Adapters that support gaze mostly look at the fixed centre of their own hand area. This anchor does not use the actual
+hand's faces, size or order. Give each bot a different timing cycle for briefly looking at a public
+discard destination or the current participant's loaded world position; do not turn the whole table
+towards one shared target. Idle arm motion is client-only, small and out of phase between bots. Never use a flying tile's private hand origin, hidden
+tile faces, AI analysis or unresolved reactions to select a target. Send a new target only when it
+changes, and clear it when it is no longer valid. The adapter may turn smoothly or ignore the request.
+The built-in tile-bodied bot ignores gaze requests: it stays upright and faces its seat's table
+anchor. Its chunky arms and short legs provide the character shape; idle arm movement and the
+discard gesture provide motion without turning or tilting the whole body. Other adapters can still
+implement gaze through the same handle.
+All world-character callbacks run on the server thread; rendering stays in client initialization.
+
 ## Public API Compatibility
 
 The [shared compatibility policy](extensions-and-registries.md#public-api-compatibility) defines how to
@@ -139,8 +206,8 @@ check and maintain public APIs. This section lists the Minecraft contracts; each
 - Minecraft common protects `api.event`, `api.character`, `api.seating`, `api.table` and
   `api.registration`, plus the exact `MinecraftMahjongExtension` entrypoint and
   `MahjongCraftInternalApi` annotation.
-- Loader adapters protect their declared event, table, table-prop and registration contracts. For
-  example, the Fabric 1.20.1 adapter protects `api.event`, `api.table`, `api.tableprop` and
+- Loader adapters protect their declared event, character, table, table-prop and registration contracts. For
+  example, the Fabric 1.20.1 adapter protects `api.event`, `api.character`, `api.table`, `api.tableprop` and
   `api.registration`, plus the exact `FabricMahjongExtension` entrypoint.
 - A new loader or version adapter declares its own protected scope and baseline. An existing adapter's
   baseline does not establish binary compatibility with another Minecraft version or loader.

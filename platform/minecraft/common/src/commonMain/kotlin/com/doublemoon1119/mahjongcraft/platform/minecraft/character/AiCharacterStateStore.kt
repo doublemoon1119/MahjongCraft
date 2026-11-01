@@ -164,7 +164,14 @@ class AiCharacterStateStore(
             if (game.matchId !in matches) {
                 matches[game.matchId] = game.aiPlayerStrategyKeys.keys.associateWith { playerId ->
                     val id = selections[game.id]?.get(playerId) ?: BuiltInAiCharacters.TILE_MASCOT_ID
-                    AiCharacterSnapshot(id, registry.find(id))
+                    AiCharacterSnapshot(
+                        characterId = id,
+                        definition = AiCharacterMatchAppearance.capture(
+                            definition = registry.find(id),
+                            matchId = game.matchId,
+                            playerId = playerId,
+                        ),
+                    )
                 }
             }
         }

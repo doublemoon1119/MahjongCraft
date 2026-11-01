@@ -26,6 +26,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.registry.ModItemGroups
 import com.doublemoon1119.mahjongcraft.platform.fabric.registry.ModItems
 import com.doublemoon1119.mahjongcraft.platform.fabric.registry.ModSounds
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.FabricServerHolder
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.character.FabricAiCharacterManager
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.concurrency.FabricAppCoroutineScope
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.concurrency.FabricCoroutineDispatchers
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.concurrency.FabricServerStopRunner
@@ -111,6 +112,8 @@ class MahjongCraftMod : ModInitializer {
         ModSounds.register()
         ModEntities.register()
         ModAchievements.register()
+        val aiCharacters = koin.get<FabricAiCharacterManager>()
+        aiCharacters.registerEvents()
         val tableLifecycleService = koin.get<FabricTableLifecycleService>()
         val tableLocationValidation = koin.get<FabricTableLocationValidationService>()
         val tablePropRefreshScheduler = koin.get<FabricTablePropRefreshScheduler>()
@@ -203,9 +206,11 @@ class MahjongCraftMod : ModInitializer {
                 observerBroadcast.startSession()
                 committedFactsDispatcher.startSession(server)
                 lobbyInfoLifecycle.startSession()
+                aiCharacters.startSession(server)
             }
         }
         ServerLifecycleEvents.SERVER_STOPPING.register {
+            aiCharacters.stopSession()
             tableLocationValidation.stopSession()
             tablePropRefreshScheduler.stopSession()
             tableSpaceObstruction.stopSession()

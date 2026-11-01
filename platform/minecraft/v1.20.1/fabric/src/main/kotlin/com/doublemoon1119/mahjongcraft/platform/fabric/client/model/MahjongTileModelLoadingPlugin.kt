@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.client.model
 
+import com.doublemoon1119.mahjongcraft.platform.minecraft.character.BuiltInAiCharacters
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.BuiltInMinecraftTileAppearances
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileSetAppearanceDefinition
@@ -14,7 +15,7 @@ import java.util.concurrent.CompletableFuture
 import java.util.concurrent.Executor
 
 /**
- * 載入麻將牌固定模型與牌組外觀變體。
+ * 載入麻將牌與內建角色模型，並準備牌組外觀變體。
  *
  * 所有變體都經由同一個 Fabric preparable plugin 登記；資源重載會重新建立快照，
  * 不會與上一輪烘焙結果共用衍生資料。
@@ -38,7 +39,7 @@ object MahjongTileModelLoadingPlugin : PreparableModelLoadingPlugin<FixedMahjong
         pluginContext.addModels(
             registry.allTileAssetKeys().map { assetKey ->
                 Identifier(tileModelResourceId(assetKey, registry))
-            } + data.variants.map { it.modelId },
+            } + data.variants.map { it.modelId } + Identifier(BuiltInAiCharacters.TILE_MASCOT_LIMB_MODEL_ID),
         )
         pluginContext.resolveModel().register(FixedMahjongTileModelVariantResolver(data.variants))
     }

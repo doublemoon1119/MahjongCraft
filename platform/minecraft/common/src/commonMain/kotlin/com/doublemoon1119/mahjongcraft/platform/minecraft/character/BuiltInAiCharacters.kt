@@ -13,10 +13,13 @@ object BuiltInAiCharacters {
     /** 世界代理及預覽共用的內建能力 ID。 */
     const val TILE_MASCOT_CAPABILITY_ID: String = "mahjongcraft:tile_mascot"
 
+    /** 內建牌體角色的四肢模型，沿用標準牌體圖集。 */
+    const val TILE_MASCOT_LIMB_MODEL_ID: String = "mahjongcraft:entity/mahjong_bot_limb"
+
     /** 角色名稱的翻譯鍵。 */
     const val TILE_MASCOT_NAME_KEY: String = "mahjongcraft.character.tile_mascot"
 
-    /** 內建角色的純資料描述；不會在存讀檔時建立實體。 */
+    /** 內建角色的預設描述；新場次的具體造型由開局快照固定，沒有場次時使用未知牌面。 */
     val TILE_MASCOT: AiCharacterDefinition = AiCharacterDefinition(
         id = TILE_MASCOT_ID,
         nameKey = TILE_MASCOT_NAME_KEY,

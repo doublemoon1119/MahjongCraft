@@ -5,6 +5,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongTileEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongTilePose
 import com.doublemoon1119.mahjongcraft.platform.fabric.logging.mahjongCraftLogger
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.FabricServerHolder
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.character.FabricAiCharacterManager
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.table.MahjongTableFacing
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongTableSeatLayout
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocation
@@ -18,6 +19,7 @@ import net.minecraft.server.world.ServerWorld
 import net.minecraft.util.Identifier
 import net.minecraft.util.math.BlockPos
 import net.minecraft.util.math.Box
+import net.minecraft.util.math.Vec3d
 import kotlin.math.abs
 import kotlin.uuid.Uuid
 import kotlin.uuid.toJavaUuid
@@ -26,9 +28,11 @@ import kotlin.uuid.toJavaUuid
  * 使用 Fabric 1.20.1 entity 呈現正式牌河：把牌牆管理中的既有 entity 領走並移動，不重新生成。
  *
  * @property serverHolder 取得目前伺服器世界。
+ * @property characters 已成立捨牌的角色回饋入口。
  */
 class FabricMahjongDiscardPresenter(
     private val serverHolder: FabricServerHolder,
+    private val characters: FabricAiCharacterManager,
 ) : MahjongDiscardPresenter {
     private val logger = mahjongCraftLogger(FabricMahjongDiscardPresenter::class)
 
@@ -102,6 +106,12 @@ class FabricMahjongDiscardPresenter(
                 // 不要在這裡先改成 FACE_UP——姿態要等 TileAnimationSteps.scheduleDiscardFlight 隱形傳送那一刻才
                 // 切換，見該方法 KDoc。
                 TileAnimationSteps.scheduleDiscardFlight(tile, placement)
+                characters.onDiscard(
+                    tableId = presentation.tableId,
+                    seatIndex = presentation.seatIndex,
+                    tileId = tileId,
+                    target = Vec3d(placement.x, placement.y, placement.z),
+                )
             } else {
                 tile.tilePose = MahjongTilePose.FACE_UP
                 tile.teleportExistingManagedTile(placement)

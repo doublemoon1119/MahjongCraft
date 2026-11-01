@@ -1,6 +1,45 @@
+public final class com/doublemoon1119/mahjongcraft/platform/fabric/api/character/FabricAiCharacterCapabilityDefinition {
+	public fun <init> (Ljava/lang/String;Lcom/doublemoon1119/mahjongcraft/platform/fabric/api/character/FabricAiCharacterProvider;)V
+	public final fun getId ()Ljava/lang/String;
+	public final fun getProvider ()Lcom/doublemoon1119/mahjongcraft/platform/fabric/api/character/FabricAiCharacterProvider;
+}
+
+public final class com/doublemoon1119/mahjongcraft/platform/fabric/api/character/FabricAiCharacterContext {
+	public static final field Companion Lcom/doublemoon1119/mahjongcraft/platform/fabric/api/character/FabricAiCharacterContext$Companion;
+	public final fun getCharacter ()Lcom/doublemoon1119/mahjongcraft/platform/minecraft/api/character/AiCharacterDefinition;
+	public final fun getMatchId ()Lkotlin/uuid/Uuid;
+	public final fun getPlayerId ()Lkotlin/uuid/Uuid;
+	public final fun getSeat ()Lcom/doublemoon1119/mahjongcraft/platform/minecraft/api/seating/SeatRequest;
+	public final fun getTableId ()Lkotlin/uuid/Uuid;
+	public final fun getWorld ()Lnet/minecraft/server/world/ServerWorld;
+}
+
+public final class com/doublemoon1119/mahjongcraft/platform/fabric/api/character/FabricAiCharacterContext$Companion {
+}
+
+public abstract interface class com/doublemoon1119/mahjongcraft/platform/fabric/api/character/FabricAiCharacterHandle {
+	public fun animate (Ljava/lang/String;)V
+	public abstract fun getEntity ()Lnet/minecraft/entity/Entity;
+	public abstract fun getOwnership ()Lcom/doublemoon1119/mahjongcraft/platform/minecraft/api/character/AiCharacterOwnership;
+	public fun lookAt (Lnet/minecraft/util/math/Vec3d;)V
+	public abstract fun prepare ()Z
+	public abstract fun release ()V
+	public fun seatAssigned (Lcom/doublemoon1119/mahjongcraft/platform/minecraft/api/seating/SeatRequest;)V
+}
+
+public abstract interface class com/doublemoon1119/mahjongcraft/platform/fabric/api/character/FabricAiCharacterProvider {
+	public abstract fun acquire (Lcom/doublemoon1119/mahjongcraft/platform/fabric/api/character/FabricAiCharacterContext;)Lcom/doublemoon1119/mahjongcraft/platform/fabric/api/character/FabricAiCharacterHandle;
+}
+
 public final class com/doublemoon1119/mahjongcraft/platform/fabric/api/event/FabricGameEventContexts {
 	public static final field INSTANCE Lcom/doublemoon1119/mahjongcraft/platform/fabric/api/event/FabricGameEventContexts;
 	public static final fun server (Lcom/doublemoon1119/mahjongcraft/platform/minecraft/api/event/GameEventContext;)Lnet/minecraft/server/MinecraftServer;
+}
+
+public abstract interface class com/doublemoon1119/mahjongcraft/platform/fabric/api/registration/FabricAiCharacterCapabilityRegistrar {
+	public abstract fun getRegistrationKeys ()Ljava/util/Set;
+	public abstract fun isFrozen ()Z
+	public abstract fun register (Lcom/doublemoon1119/mahjongcraft/platform/fabric/api/character/FabricAiCharacterCapabilityDefinition;)V
 }
 
 public abstract interface class com/doublemoon1119/mahjongcraft/platform/fabric/api/registration/FabricSeatProviderRegistrar {
@@ -44,6 +83,7 @@ public abstract interface class com/doublemoon1119/mahjongcraft/platform/fabric/
 
 public abstract interface class com/doublemoon1119/mahjongcraft/platform/fabric/extension/FabricMahjongExtension {
 	public abstract fun getId ()Ljava/lang/String;
+	public fun registerAiCharacterCapabilities (Lcom/doublemoon1119/mahjongcraft/platform/fabric/api/registration/FabricAiCharacterCapabilityRegistrar;)V
 	public fun registerSeatProviders (Lcom/doublemoon1119/mahjongcraft/platform/fabric/api/registration/FabricSeatProviderRegistrar;)V
 	public fun registerTablePropKinds (Lcom/doublemoon1119/mahjongcraft/platform/fabric/api/registration/FabricTablePropKindRegistrar;)V
 }

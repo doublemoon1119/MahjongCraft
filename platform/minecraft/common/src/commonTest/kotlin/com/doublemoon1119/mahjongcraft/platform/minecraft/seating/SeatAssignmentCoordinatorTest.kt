@@ -12,6 +12,8 @@ import kotlin.coroutines.cancellation.CancellationException
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
+import kotlin.test.assertNotNull
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 import kotlin.uuid.Uuid
 
@@ -19,6 +21,65 @@ import kotlin.uuid.Uuid
 class SeatAssignmentCoordinatorTest {
     /** 測試用固定世界實例。 */
     private val world = FakeWorld()
+
+    /** 預檢取得可入座位置，但不移動乘坐者，也不建立座位支撐。 */
+    @Test
+    fun `preview validates an available seat without seating the rider`() {
+        val rider = FakeRider()
+        val target = FakeTarget("seat")
+        val environment = FakeEnvironment()
+        assertNotNull(coordinator(target, environment).preview(world, rider, request()))
+        assertEquals(0, target.trySitCalls)
+        assertEquals(0, environment.standCalls)
+        assertEquals(0, rider.position)
+        assertEquals(false, rider.seated)
+    }
+
+    /** 占用席位不能因存在安全站立點而被預檢放行。 */
+    @Test
+    fun `preview refuses an occupied seat even when standing would be safe`() {
+        val rider = FakeRider()
+        val target = FakeTarget("seat", state = SeatState.OCCUPIED)
+        val environment = FakeEnvironment(canStand = true)
+        assertNull(coordinator(target, environment).preview(world, rider, request()))
+        assertEquals(0, target.trySitCalls)
+        assertEquals(0, environment.standCalls)
+    }
+
+    /** 沒有來源且站立空間堵塞時不能給角色生成位置。 */
+    @Test
+    fun `preview refuses blocked standing space without moving rider`() {
+        val rider = FakeRider()
+        val target = FakeTarget("seat", state = SeatState.BLOCKED)
+        val environment = FakeEnvironment()
+        assertNull(coordinator(target, environment).preview(world, rider, request()))
+        assertEquals(0, rider.position)
+    }
+
+    /** 無可用椅子但可安全站立時，預檢只回報固定站立點。 */
+    @Test
+    fun `preview can return safe standing without moving rider`() {
+        val rider = FakeRider()
+        val target = FakeTarget("seat", state = SeatState.BLOCKED)
+        val environment = FakeEnvironment(canStand = true)
+        val geometry = coordinator(target, environment).preview(world, rider, request())
+        assertNotNull(geometry)
+        assertEquals(64.0, geometry.y)
+        assertEquals(0, environment.standCalls)
+        assertEquals(0, rider.position)
+    }
+
+    /** 預檢不是預約，執行前變成占用時不得強行入座。 */
+    @Test
+    fun `assignment revalidates occupancy after successful preview`() {
+        val rider = FakeRider()
+        val target = FakeTarget("seat", occupyOnSecondInspection = true)
+        val environment = FakeEnvironment()
+        val coordinator = coordinator(target, environment)
+        assertNotNull(coordinator.preview(world, rider, request()))
+        assertEquals(SeatAssignmentResult.OCCUPIED, coordinator.assign(world, rider, request()))
+        assertEquals(0, target.trySitCalls)
+    }
 
     /** 空位可被一般非玩家乘坐者安全使用。 */
     @Test
@@ -403,6 +464,12 @@ class SeatAssignmentCoordinatorTest {
         override fun unchanged(rider: FakeRider, snapshot: Snapshot): Boolean = rider.position == snapshot.position && rider.seated == snapshot.seated
 
         override fun hasVehicle(rider: FakeRider): Boolean = rider.vehicle || rider.seated
+
+        override fun canStand(
+            world: FakeWorld,
+            rider: FakeRider,
+            request: SeatRequest,
+        ): Boolean = canStand
 
         override fun stand(
             world: FakeWorld,

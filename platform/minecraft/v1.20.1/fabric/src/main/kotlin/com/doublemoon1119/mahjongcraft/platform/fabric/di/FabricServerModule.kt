@@ -16,12 +16,16 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.AiDecision
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.AutomatedAdvanceFailureReporter
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.AutomatedAdvanceFollowUp
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameAbortEffects
+import com.doublemoon1119.mahjongcraft.platform.fabric.api.registration.FabricAiCharacterCapabilityRegistrar
 import com.doublemoon1119.mahjongcraft.platform.fabric.api.registration.FabricSeatProviderRegistrar
 import com.doublemoon1119.mahjongcraft.platform.fabric.extension.FabricExtensionRegistries
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.FabricServerHolder
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.achievement.AchievementGrantGateway
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.achievement.FabricAchievementGrantGateway
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.achievement.FabricAchievementService
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.character.FabricAiCharacterBindings
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.character.FabricAiCharacterCapabilityRegistry
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.character.FabricAiCharacterManager
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.concurrency.FabricAppCoroutineScope
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.concurrency.FabricCoroutineDispatchers
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.concurrency.FabricSessionBackgroundScope
@@ -115,6 +119,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.server.room.ReachableMahj
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.room.RoomMemberCandidateResolver
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.seating.FabricMahjongSeatingPresenter
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.seating.FabricSeatProviderRegistryImpl
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.seating.FabricSeatingSessionFactory
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.seating.MahjongStoolSeatProvider
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.seating.MahjongStoolSeatService
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.FabricMahjongPlayerInfoPresenter
@@ -172,6 +177,7 @@ import org.koin.plugin.module.dsl.single
 val fabricServerModule = module {
     includes(flowServerModule, minecraftServerModule, fabricCommonModule)
 
+    single<FabricAiCharacterCapabilityRegistry>() bind FabricAiCharacterCapabilityRegistrar::class
     single<FabricExtensionRegistries>()
     single<CoreExtensionRegistries>()
 
@@ -292,6 +298,9 @@ val fabricServerModule = module {
     single<ReachableMahjongTableResolver>()
     single<RoomMemberCandidateResolver>()
 
+    single<FabricAiCharacterBindings>()
+    single<FabricAiCharacterManager>()
+    single<FabricSeatingSessionFactory>()
     single<FabricMahjongSeatingPresenter>() bind MahjongSeatingPresenter::class
     single<FabricSeatProviderRegistryImpl>() bind FabricSeatProviderRegistrar::class
     single<MahjongStoolSeatProvider>() bind SeatProvider::class

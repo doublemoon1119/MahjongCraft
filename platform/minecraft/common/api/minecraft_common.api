@@ -1,6 +1,11 @@
 public abstract interface annotation class com/doublemoon1119/mahjongcraft/platform/minecraft/api/MahjongCraftInternalApi : java/lang/annotation/Annotation {
 }
 
+public final class com/doublemoon1119/mahjongcraft/platform/minecraft/api/character/AiCharacterActionIds {
+	public static final field DISCARD Ljava/lang/String;
+	public static final field INSTANCE Lcom/doublemoon1119/mahjongcraft/platform/minecraft/api/character/AiCharacterActionIds;
+}
+
 public final class com/doublemoon1119/mahjongcraft/platform/minecraft/api/character/AiCharacterDefinition {
 	public fun <init> (Ljava/lang/String;Ljava/lang/String;Lcom/doublemoon1119/mahjongcraft/platform/minecraft/api/character/AiCharacterFace;Ljava/lang/String;Lcom/doublemoon1119/mahjongcraft/platform/minecraft/api/character/AiCharacterPreview;)V
 	public fun equals (Ljava/lang/Object;)Z
@@ -40,6 +45,14 @@ public final class com/doublemoon1119/mahjongcraft/platform/minecraft/api/charac
 	public static final field MAX_PARAMETER_LENGTH I
 	public static final field MAX_PREVIEW_PARAMETERS I
 	public static final field MAX_SYNC_PLAYERS I
+}
+
+public final class com/doublemoon1119/mahjongcraft/platform/minecraft/api/character/AiCharacterOwnership : java/lang/Enum {
+	public static final field BORROWED Lcom/doublemoon1119/mahjongcraft/platform/minecraft/api/character/AiCharacterOwnership;
+	public static final field OWNED Lcom/doublemoon1119/mahjongcraft/platform/minecraft/api/character/AiCharacterOwnership;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
+	public static fun valueOf (Ljava/lang/String;)Lcom/doublemoon1119/mahjongcraft/platform/minecraft/api/character/AiCharacterOwnership;
+	public static fun values ()[Lcom/doublemoon1119/mahjongcraft/platform/minecraft/api/character/AiCharacterOwnership;
 }
 
 public final class com/doublemoon1119/mahjongcraft/platform/minecraft/api/character/AiCharacterPreview {

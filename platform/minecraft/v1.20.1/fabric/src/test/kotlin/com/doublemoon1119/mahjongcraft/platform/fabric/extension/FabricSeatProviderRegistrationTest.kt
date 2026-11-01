@@ -3,6 +3,7 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.extension
 import com.doublemoon1119.mahjongcraft.flow.common.error.ExtensionFailurePolicy
 import com.doublemoon1119.mahjongcraft.platform.fabric.api.registration.FabricSeatProviderRegistrar
 import com.doublemoon1119.mahjongcraft.platform.fabric.api.registration.FabricTablePropKindRegistrar
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.character.FabricAiCharacterCapabilityRegistry
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.seating.FabricSeatProviderRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.prop.FabricTablePropKindRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.seating.RegisteredSeatProvider
@@ -37,7 +38,11 @@ class FabricSeatProviderRegistrationTest {
         seatProviderRegistry: FabricSeatProviderRegistryImpl = FabricSeatProviderRegistryImpl(),
     ) = FabricMahjongExtensionBootstrap.registerAndFreeze(
         extensions = extensions,
-        registries = FabricExtensionRegistries(FabricTablePropKindRegistryImpl(), seatProviderRegistry),
+        registries = FabricExtensionRegistries(
+            tablePropKindRegistry = FabricTablePropKindRegistryImpl(),
+            seatProviderRegistry = seatProviderRegistry,
+            characterCapabilityRegistry = FabricAiCharacterCapabilityRegistry(),
+        ),
         builtIn = BuiltInFabricMahjongExtension(FakeProvider(), MinecraftTileAssetRegistryImpl()),
         failurePolicy = ExtensionFailurePolicy.Default,
     )
@@ -151,6 +156,7 @@ class FabricSeatProviderRegistrationTest {
                 registries = FabricExtensionRegistries(
                     tablePropKindRegistry = FabricTablePropKindRegistryImpl(),
                     seatProviderRegistry = FabricSeatProviderRegistryImpl(),
+                    characterCapabilityRegistry = FabricAiCharacterCapabilityRegistry(),
                 ),
                 builtIn = invalidBuiltIn,
                 failurePolicy = ExtensionFailurePolicy.Default,
@@ -205,7 +211,11 @@ class FabricSeatProviderRegistrationTest {
         assertFailsWith<FabricMahjongExtensionRegistrationException> {
             FabricMahjongExtensionBootstrap.registerAndFreeze(
                 extensions = listOf(extension),
-                registries = FabricExtensionRegistries(tablePropRegistry, seatRegistry),
+                registries = FabricExtensionRegistries(
+                    tablePropKindRegistry = tablePropRegistry,
+                    seatProviderRegistry = seatRegistry,
+                    characterCapabilityRegistry = FabricAiCharacterCapabilityRegistry(),
+                ),
                 builtIn = BuiltInFabricMahjongExtension(FakeProvider(), MinecraftTileAssetRegistryImpl()),
                 failurePolicy = ExtensionFailurePolicy.Default,
             )

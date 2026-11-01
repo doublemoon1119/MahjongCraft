@@ -56,6 +56,13 @@ internal class FabricSeatEnvironment : SeatEnvironment<ServerWorld, Entity, Fabr
     /** 判斷是否已有不能由自動入座強制卸除的載具。 */
     override fun hasVehicle(rider: Entity): Boolean = rider.hasVehicle()
 
+    /** 重用站立入口的身體、支撐及區塊檢查，不移動乘坐者。 */
+    override fun canStand(
+        world: ServerWorld,
+        rider: Entity,
+        request: SeatRequest,
+    ): Boolean = !rider.hasVehicle() && safeStanding(world, rider, request.seat.x, request.seat.y, request.seat.z)
+
     /** 固定站立點安全且乘坐者沒有載具時才移動。 */
     override fun stand(
         world: ServerWorld,

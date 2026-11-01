@@ -15,8 +15,10 @@ import com.doublemoon1119.mahjongcraft.flow.server.state.CommittedFactsListener
 import com.doublemoon1119.mahjongcraft.logic.component.initializeRuleComponents
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.table.GameInitializer
+import com.doublemoon1119.mahjongcraft.platform.minecraft.api.character.AiCharacterFace
 import com.doublemoon1119.mahjongcraft.platform.minecraft.character.AiCharacterSelectionResult
 import com.doublemoon1119.mahjongcraft.platform.minecraft.character.BuiltInAiCharacters
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.STANDARD_TILE_ASSET_KEYS
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledComponentValidator
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledCoreExtensionRegistries
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledPersistenceRegistries
@@ -57,7 +59,8 @@ class AiCharacterPersistenceIntegrationTest {
             override fun onCommitted(sequence: Long, facts: CommittedGameFacts) {
                 val opening = saved.characterSnapshot().characters!!.matches[game.matchId]
                 assertEquals(room.aiPlayerStrategyKeys.keys, opening?.keys)
-                assertEquals(BuiltInAiCharacters.TILE_MASCOT, opening?.get(players[1])?.definition)
+                assertEquals(BuiltInAiCharacters.TILE_MASCOT_ID, opening?.get(players[1])?.characterId)
+                assertTrue((opening?.get(players[1])?.definition?.face as? AiCharacterFace.Tile)?.assetKey in STANDARD_TILE_ASSET_KEYS)
                 observed = true
             }
 

@@ -32,6 +32,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongSoundTimeli
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongTileEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.logging.mahjongCraftLogger
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.FabricServerHolder
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.character.FabricAiCharacterManager
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.concurrency.FabricSessionBackgroundScope
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.entity.FabricEntitySpawnGateway
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.FabricExhaustiveDrawSettlementPresentationScheduler
@@ -127,6 +128,7 @@ import kotlin.uuid.toJavaUuid
 /**
  * 將對局呈現請求交給 Fabric 呈現元件；世界與實體操作在伺服器主執行緒執行。
  *
+ * @property characters 世界角色的名冊收斂入口。
  * @property seatingPresenter 開局座位傳送的實際呈現邏輯。
  * @property diceRollPresenter 正式擲骰的實際呈現邏輯。
  * @property tileWallPresenter 正式牌牆的實際呈現邏輯。
@@ -166,6 +168,7 @@ import kotlin.uuid.toJavaUuid
  * @property visibilityPolicy 以公共讀取者裁切全桌共用演出的牌面與外觀。
  */
 class FabricGamePresentationPublisher(
+    private val characters: FabricAiCharacterManager,
     private val seatingPresenter: MahjongSeatingPresenter,
     private val diceRollPresenter: MahjongDiceRollPresenter,
     private val tileWallPresenter: MahjongTileWallPresenter,
@@ -1098,13 +1101,19 @@ class FabricGamePresentationPublisher(
     /** 跟 [publishOpeningRolls] 同理，座位傳送也需要碰觸世界／entity，一併丟回伺服器主執行緒執行。 */
     override fun publishGameStarted(gameId: Uuid, seatedPlayerIds: List<Uuid>) {
         if (serverHolder.current() == null) return
-        scope.launch(dispatchers.main) { seatingPresenter.present(gameId, seatedPlayerIds) }
+        scope.launch(dispatchers.main) {
+            characters.reconcile(gameId)
+            seatingPresenter.present(gameId, seatedPlayerIds)
+        }
     }
 
     /** 局間換位同樣要移動玩家實體，丟回伺服器主執行緒執行。 */
     override fun publishSeatOrderChanged(gameId: Uuid, seatedPlayerIds: List<Uuid>) {
         if (serverHolder.current() == null) return
-        scope.launch(dispatchers.main) { seatingPresenter.present(gameId, seatedPlayerIds) }
+        scope.launch(dispatchers.main) {
+            characters.reconcile(gameId)
+            seatingPresenter.present(gameId, seatedPlayerIds)
+        }
     }
 
     /**

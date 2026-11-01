@@ -8,6 +8,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.room.model.Room
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateSnapshot
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.character.AiCharacterDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.character.AiCharacterFace
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.STANDARD_TILE_ASSET_KEYS
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -67,7 +68,9 @@ class AiCharacterStateStoreTest {
         assertEquals(alternate, store.snapshot().characters?.matches?.get(game.matchId)?.get(bot)?.definition)
         val next = game.copy(matchId = Uuid.random())
         store.update(AuthoritativeStateSnapshot(games = mapOf(next.id to next), historyRecordingState = history))
-        assertEquals(BuiltInAiCharacters.TILE_MASCOT, store.snapshot().characters?.matches?.get(next.matchId)?.get(bot)?.definition)
+        val newAppearance = store.snapshot().characters?.matches?.get(next.matchId)?.get(bot)?.definition
+        assertEquals(BuiltInAiCharacters.TILE_MASCOT_ID, newAppearance?.id)
+        assertTrue((newAppearance?.face as? AiCharacterFace.Tile)?.assetKey in STANDARD_TILE_ASSET_KEYS)
         assertEquals(alternate, store.snapshot().characters?.matches?.get(game.matchId)?.get(bot)?.definition)
         store.update(AuthoritativeStateSnapshot())
         assertTrue(store.snapshot().characters!!.matches.isEmpty())
@@ -117,6 +120,24 @@ class AiCharacterStateStoreTest {
         val before = store.snapshot().characters
         store.update(AuthoritativeStateSnapshot(games = mapOf(game.id to game.copy(forcedAutoPlayPlayerIds = setOf(bot)))))
         assertSame(before, store.snapshot().characters)
+    }
+
+    /** 開局已選定的牌面在桌況更新及讀檔後都保持相同。 */
+    @Test
+    fun `chosen mascot face is saved once and remains stable across updates and reload`() {
+        val store = store()
+        val game = Game(table, GameFlowConfig(), aiPlayerStrategyKeys = room.aiPlayerStrategyKeys)
+        store.update(AuthoritativeStateSnapshot(games = mapOf(game.id to game)))
+        val captured = store.snapshot().characters!!.matches[game.matchId]!![bot]!!
+        assertTrue((captured.definition?.face as? AiCharacterFace.Tile)?.assetKey in STANDARD_TILE_ASSET_KEYS)
+        val updated = game.copy(tableState = table.copy(comboCount = table.comboCount + 1))
+        val authoritative = AuthoritativeStateSnapshot(games = mapOf(updated.id to updated))
+        store.update(authoritative)
+        assertEquals(captured, store.syncSnapshot(game.id).players[bot])
+        val restored = AiCharacterStateStore(registry, {})
+        restored.restore(authoritative, AiCharacterMetadataCodec().decode(AiCharacterMetadataCodec().encode(store.snapshot().characters!!)))
+        restored.update(authoritative)
+        assertEquals(captured, restored.syncSnapshot(game.id).players[bot])
     }
 
     /** 不可用的角色區段保持不可用，牌局仍能更新，沒有偽造選擇。 */

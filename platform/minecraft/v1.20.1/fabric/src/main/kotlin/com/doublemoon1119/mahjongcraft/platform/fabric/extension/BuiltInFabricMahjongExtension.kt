@@ -1,13 +1,17 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.extension
 
 import com.doublemoon1119.mahjongcraft.metadata.MahjongCraftMetadata
+import com.doublemoon1119.mahjongcraft.platform.fabric.api.character.FabricAiCharacterCapabilityDefinition
+import com.doublemoon1119.mahjongcraft.platform.fabric.api.registration.FabricAiCharacterCapabilityRegistrar
 import com.doublemoon1119.mahjongcraft.platform.fabric.api.registration.FabricSeatProviderRegistrar
 import com.doublemoon1119.mahjongcraft.platform.fabric.api.registration.FabricTablePropKindRegistrar
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.character.TileMascotCharacterProvider
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.seating.BuiltInFabricSeatProviderIds
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.prop.FaceUpTileTablePropKind
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.prop.ScoringStickTablePropKind
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.seating.RegisteredSeatProvider
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.seating.SeatProvider
+import com.doublemoon1119.mahjongcraft.platform.minecraft.character.BuiltInAiCharacters
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistry
 import net.minecraft.entity.Entity
 import net.minecraft.server.world.ServerWorld
@@ -33,4 +37,9 @@ internal class BuiltInFabricMahjongExtension(
 
     /** 登記內建麻將凳座位 provider。 */
     override fun registerSeatProviders(registry: FabricSeatProviderRegistrar) = registry.register(RegisteredSeatProvider(BuiltInFabricSeatProviderIds.MAHJONG_STOOL, seatProvider))
+
+    /** 內建牌體角色與第三方共用世界能力登記流程。 */
+    override fun registerAiCharacterCapabilities(registry: FabricAiCharacterCapabilityRegistrar) {
+        registry.register(FabricAiCharacterCapabilityDefinition(BuiltInAiCharacters.TILE_MASCOT_CAPABILITY_ID, TileMascotCharacterProvider))
+    }
 }

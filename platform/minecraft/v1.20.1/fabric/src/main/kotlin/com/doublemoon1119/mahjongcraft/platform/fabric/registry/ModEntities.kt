@@ -2,6 +2,7 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.registry
 
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.DiceRollPresentationEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.ExhaustiveDrawSettlementPresentationEntity
+import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongBotEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongDiceEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongLobbyInfoEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongPlayerInfoEntity
@@ -93,8 +94,23 @@ object ModEntities {
     lateinit var mahjongStoolSeat: EntityType<MahjongStoolSeatEntity>
         private set
 
+    /** 不寫入區塊存檔的麻將機器人；由角色生命週期恢復。 */
+    lateinit var mahjongBot: EntityType<MahjongBotEntity>
+        private set
+
     /** 註冊骰子、牌張、點棒、座位與各種呈現實體的類型；皆不自然生成。 */
     fun register() {
+        mahjongBot = Registry.register(
+            Registries.ENTITY_TYPE,
+            Identifier(MinecraftModMetadata.MOD_ID, "mahjong_bot"),
+            FabricEntityTypeBuilder.create(SpawnGroup.MISC, ::MahjongBotEntity)
+                .dimensions(EntityDimensions.fixed(MahjongBotEntity.WIDTH, MahjongBotEntity.HEIGHT))
+                .trackRangeBlocks(32)
+                .trackedUpdateRate(1)
+                .disableSaving()
+                .fireImmune()
+                .build(),
+        )
         mahjongSoundTimeline = Registry.register(
             Registries.ENTITY_TYPE,
             Identifier(MinecraftModMetadata.MOD_ID, "mahjong_sound_timeline"),

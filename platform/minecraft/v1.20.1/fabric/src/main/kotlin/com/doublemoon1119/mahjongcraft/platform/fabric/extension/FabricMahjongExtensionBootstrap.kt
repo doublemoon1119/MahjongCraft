@@ -37,7 +37,7 @@ internal object FabricMahjongExtensionBootstrap {
     }
 
     /**
-     * 驗證 extension 識別碼、拒絕重複後依固定順序執行兩個 Fabric 登記回呼。
+     * 驗證 extension 識別碼、拒絕重複後依固定順序執行Fabric 登記回呼。
      *
      * @param extension 要執行登記回呼的 extension。
      * @param registries 提供給 extension 回呼使用的 Fabric registry 集合。
@@ -57,6 +57,7 @@ internal object FabricMahjongExtensionBootstrap {
             }
             extension.registerTablePropKinds(registries.tablePropKindRegistry)
             extension.registerSeatProviders(registries.seatProviderRegistry)
+            extension.registerAiCharacterCapabilities(registries.characterCapabilityRegistry)
         } catch (cause: Throwable) {
             if (!failurePolicy.isIsolatable(cause)) throw cause
             throw FabricMahjongExtensionRegistrationException(extension.id, cause)

@@ -35,6 +35,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.client.player.ClientPlaye
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.ClientTileAppearanceResolver
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.DiceRollPresentationEntityRenderer
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.ExhaustiveDrawSettlementPresentationEntityRenderer
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.MahjongBotEntityRenderer
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.MahjongDiceEntityRenderer
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.MahjongLobbyInfoEntityRenderer
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.MahjongPlayerInfoEntityRenderer
@@ -302,6 +303,7 @@ class MahjongCraftModClient : ClientModInitializer {
         )
         koin.get<PauseAwareClientMonotonicClock>().registerEvents()
         ClientTickEvents.END_CLIENT_TICK.register { automaticControlUpdateCoordinator.checkTimeout() }
+        EntityRendererRegistry.register(ModEntities.mahjongBot, ::MahjongBotEntityRenderer)
         EntityRendererRegistry.register(ModEntities.mahjongDice, ::MahjongDiceEntityRenderer)
         EntityRendererRegistry.register(ModEntities.mahjongSoundTimeline, ::MahjongSoundTimelineEntityRenderer)
         EntityRendererRegistry.register(ModEntities.mahjongStoolSeat, ::MahjongStoolSeatEntityRenderer)
