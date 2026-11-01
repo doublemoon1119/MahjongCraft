@@ -1,5 +1,10 @@
 package com.doublemoon1119.mahjongcraft.example.fabric.furniture.seating
 
+import com.doublemoon1119.mahjongcraft.example.fabric.furniture.ExampleFurnitureEntities
+import com.doublemoon1119.mahjongcraft.example.fabric.furniture.entity.ExampleCushionEntity
+import net.minecraft.entity.Entity
+import net.minecraft.item.ItemStack
+import net.minecraft.server.network.ServerPlayerEntity
 import net.minecraft.server.world.ServerWorld
 import net.minecraft.util.math.BlockPos
 import net.minecraft.util.math.Box
@@ -11,6 +16,38 @@ import kotlin.math.floor
 internal object ExampleCushionPlacement {
     /** 判斷兩個表面相接時容許的浮點誤差。 */
     private const val SURFACE_EPSILON = 0.00001
+
+    /**
+     * 檢查支撐及占用後生成坐墊，成功才依玩家模式消耗物品。
+     *
+     * @param world 放置世界。
+     * @param player 真正放置的玩家。
+     * @param stack 當次手持物品。
+     * @param position 坐墊底面位置。
+     * @param yaw 放置朝向。
+     * @param ignoredActor 本次將入座的角色，不當成坐墊的阻擋者。
+     * @return 坐墊已成功生成時為 true。
+     */
+    fun place(
+        world: ServerWorld,
+        player: ServerPlayerEntity,
+        stack: ItemStack,
+        position: Vec3d,
+        yaw: Float,
+        ignoredActor: Entity? = null,
+    ): Boolean {
+        if (stack.isEmpty || !player.abilities.allowModifyWorld || player.isSpectator) return false
+        val pos = BlockPos.ofFloored(position)
+        if (!world.canPlayerModifyAt(player, pos) || !player.canModifyAt(world, pos)) return false
+        val entity = ExampleCushionEntity(ExampleFurnitureEntities.cushion, world).apply {
+            refreshPositionAndAngles(position.x, position.y, position.z, snapYaw(yaw), 0.0f)
+        }
+        if (hasSupport(world, entity.boundingBox) != true) return false
+        if (!ExampleFurnitureSpace.isClear(world, ignoredActor ?: entity, entity.boundingBox)) return false
+        if (!world.spawnEntity(entity)) return false
+        if (!player.abilities.creativeMode) stack.decrement(1)
+        return true
+    }
 
     /**
      * 將坐墊放在命中方塊的水平中央，保留實際命中頂面的高度。

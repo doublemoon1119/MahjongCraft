@@ -3,6 +3,7 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.extension
 import com.doublemoon1119.mahjongcraft.extension.ExtensionRegistrationSnapshot
 import com.doublemoon1119.mahjongcraft.extension.ExtensionRegistrationSnapshotCategory
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.character.FabricAiCharacterCapabilityRegistry
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.seating.FabricSeatPlacementRegistry
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.seating.FabricSeatProviderRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.prop.FabricTablePropKindRegistry
 
@@ -12,11 +13,13 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.prop.FabricT
  * @property tablePropKindRegistry 規則桌面物件種類 registry。
  * @property seatProviderRegistry 座位 provider registry。
  * @property characterCapabilityRegistry 原生角色能力 registry。
+ * @property seatPlacementRegistry 座位物品放置 registry。
  */
 internal class FabricExtensionRegistries(
     val tablePropKindRegistry: FabricTablePropKindRegistry,
     val seatProviderRegistry: FabricSeatProviderRegistryImpl,
     val characterCapabilityRegistry: FabricAiCharacterCapabilityRegistry,
+    val seatPlacementRegistry: FabricSeatPlacementRegistry,
 ) {
     /**
      * 取得Fabric 登記類別的不可變診斷快照。
@@ -25,9 +28,26 @@ internal class FabricExtensionRegistries(
      */
     fun registrationSnapshot(): ExtensionRegistrationSnapshot = ExtensionRegistrationSnapshot(
         listOf(
-            ExtensionRegistrationSnapshotCategory(FabricExtensionRegistrationCategoryIds.TABLE_PROP_KIND, "Table Prop Kind", tablePropKindRegistry.registrationKeys),
-            ExtensionRegistrationSnapshotCategory(FabricExtensionRegistrationCategoryIds.SEAT_PROVIDER, "Seat Provider", seatProviderRegistry.registrationKeys),
-            ExtensionRegistrationSnapshotCategory(FabricExtensionRegistrationCategoryIds.AI_CHARACTER_CAPABILITY, "AI Character Capability", characterCapabilityRegistry.registrationKeys),
+            ExtensionRegistrationSnapshotCategory(
+                FabricExtensionRegistrationCategoryIds.TABLE_PROP_KIND,
+                "Table Prop Kind",
+                tablePropKindRegistry.registrationKeys,
+            ),
+            ExtensionRegistrationSnapshotCategory(
+                FabricExtensionRegistrationCategoryIds.SEAT_PROVIDER,
+                "Seat Provider",
+                seatProviderRegistry.registrationKeys,
+            ),
+            ExtensionRegistrationSnapshotCategory(
+                FabricExtensionRegistrationCategoryIds.AI_CHARACTER_CAPABILITY,
+                "AI Character Capability",
+                characterCapabilityRegistry.registrationKeys,
+            ),
+            ExtensionRegistrationSnapshotCategory(
+                FabricExtensionRegistrationCategoryIds.SEAT_PLACEMENT,
+                "Seat Placement",
+                seatPlacementRegistry.registrationKeys,
+            ),
         ),
     )
 
@@ -36,5 +56,6 @@ internal class FabricExtensionRegistries(
         tablePropKindRegistry.freeze()
         seatProviderRegistry.freeze()
         characterCapabilityRegistry.freeze()
+        seatPlacementRegistry.freeze()
     }
 }

@@ -22,6 +22,30 @@ class SeatAssignmentCoordinatorTest {
     /** 測試用固定世界實例。 */
     private val world = FakeWorld()
 
+    /** 已有座位即使空著也不能被另一件座位物品覆蓋。 */
+    @Test
+    fun `existing available or occupied furniture is not a vacant placement slot`() {
+        listOf(SeatState.AVAILABLE, SeatState.OCCUPIED, SeatState.BLOCKED, SeatState.FAILED).forEach { state ->
+            val rider = FakeRider()
+            val target = FakeTarget("seat", state = state)
+            val environment = FakeEnvironment(canStand = true)
+            assertEquals(false, coordinator(target, environment).isVacant(world, rider, request()))
+            assertEquals(0, target.trySitCalls)
+            assertEquals(0, environment.standCalls)
+        }
+    }
+
+    /** 已消失的座位不阻擋重新放置，查詢本身沒有移動副作用。 */
+    @Test
+    fun `missing furniture permits placement without moving the rider`() {
+        val rider = FakeRider()
+        val target = FakeTarget("seat", state = SeatState.INVALID)
+        val environment = FakeEnvironment(canStand = true)
+        assertTrue(coordinator(target, environment).isVacant(world, rider, request()))
+        assertEquals(0, target.trySitCalls)
+        assertEquals(0, environment.standCalls)
+    }
+
     /** 預檢取得可入座位置，但不移動乘坐者，也不建立座位支撐。 */
     @Test
     fun `preview validates an available seat without seating the rider`() {

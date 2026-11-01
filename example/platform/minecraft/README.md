@@ -128,6 +128,20 @@ The example demonstrates usable seat APIs. The public API ABI check records the 
 contracts for the adapter being verified; it does not promise compatibility with another version
 or loader, and it does not cover unrelated rule, AI or appearance types.
 
+### Place a seat for a standing bot
+
+Hold an example chair or cushion and right-click a standing Mahjong Bot. The item is placed at that
+bot's assigned seat, then the bot sits down. The built-in stools use the same mechanism.
+
+- Survival placement consumes one item; creative placement does not.
+- Blocked, occupied or protected positions reject placement without consuming the item.
+- If the seat was placed but the bot could not sit, the seat remains and a message explains the result.
+- Other entities and unrelated items retain their normal interaction. Sneaking skips this shortcut.
+
+`ExampleSeatPlacements` demonstrates `FabricSeatPlacementProvider` for both a BlockItem and an entity
+item. The cushion shares its normal placement function with this shortcut. Its existing-seat provider
+is registered separately and remains responsible for validating the actual sitting position.
+
 ## Bonus tiles and table props
 
 The pairing rule saves `m - 1` bonus ranks when a round starts, where `m` is the number of ranks

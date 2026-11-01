@@ -5,7 +5,9 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.logging.mahjongCraftLogge
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.persistence.FabricAuthoritativeStatePersistence
 import com.doublemoon1119.mahjongcraft.platform.minecraft.character.AiCharacterBindingKey
 import com.doublemoon1119.mahjongcraft.platform.minecraft.character.AiCharacterLeaseCoordinator
+import net.minecraft.entity.Entity
 import kotlin.uuid.Uuid
+import kotlin.uuid.toKotlinUuid
 
 /**
  * 共用入座與生命週期查詢同一份角色綁定，不維護第二份實體名冊。
@@ -68,5 +70,17 @@ internal class FabricAiCharacterBindings(
         val game = persistence.characterSnapshot()?.authoritative?.games?.get(tableId) ?: return null
         if (playerId !in game.aiPlayerIds) return null
         return coordinator.find(AiCharacterBindingKey(tableId, game.matchId, playerId))
+    }
+
+    /**
+     * 由被點擊的原生實體查詢本場接管，不接受客戶端提供桌子或玩家身分。
+     *
+     * @param entity 被點擊的實體。
+     * @return 本場有效的接管及角色，否則為 null。
+     */
+    fun findEntity(entity: Entity): Pair<AiCharacterBindingKey, FabricAiCharacterActor>? {
+        val key = coordinator.keyFor(entity.uuid.toKotlinUuid()) ?: return null
+        val actor = find(key.tableId, key.playerId)?.takeIf { it.entity === entity } ?: return null
+        return key to actor
     }
 }

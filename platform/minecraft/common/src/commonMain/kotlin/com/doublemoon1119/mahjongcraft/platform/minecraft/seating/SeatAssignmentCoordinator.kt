@@ -136,6 +136,36 @@ class SeatAssignmentCoordinator<W, R, S>(
     }
 
     /**
+     * 確認固定席位沒有已存在的座位，不讓新放置覆蓋空坐墊或其他家具。
+     *
+     * 與入座共用來源及幾何檢查，不移動乘坐者或預約席位。來源失敗時保守拒絕放置。
+     *
+     * @param world 目標世界。
+     * @param rider 準備入座的角色。
+     * @param request 固定席位。
+     * @return 沒有有效座位目標時為 true。
+     */
+    fun isVacant(
+        world: W,
+        rider: R,
+        request: SeatRequest,
+    ): Boolean {
+        val original = environment.snapshot(rider)
+        var providerId = "unresolved"
+        try {
+            val relevant = inspectTargets(world, rider, request, original) { providerId = it }
+            return relevant.all { it.third == SeatState.INVALID }
+        } catch (cause: CancellationException) {
+            throw cause
+        } catch (cause: Throwable) {
+            if (!failurePolicy.isIsolatable(cause)) throw cause
+            report(providerId, rider, cause)
+            environment.recover(rider, original)
+            return false
+        }
+    }
+
+    /**
      * 查詢來源並確認查詢沒有移動乘坐者。
      *
      * @param world 目標世界。

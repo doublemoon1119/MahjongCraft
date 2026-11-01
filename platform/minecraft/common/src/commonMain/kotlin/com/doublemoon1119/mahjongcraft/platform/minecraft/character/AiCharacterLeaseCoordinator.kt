@@ -68,6 +68,14 @@ class AiCharacterLeaseCoordinator<R>(
     fun keys(): Set<AiCharacterBindingKey> = leases.keys.toSet()
 
     /**
+     * 由已認領的角色身分查詢仍有效的接管，不掃描其他角色。
+     *
+     * @param entityId 提供者回報的固定身分。
+     * @return 目前有效的接管，否則為 null。
+     */
+    fun keyFor(entityId: Uuid): AiCharacterBindingKey? = claimed[entityId]?.takeIf { find(it) != null }
+
+    /**
      * 找回仍有效的角色；失效時解除綁定。
      *
      * @param key 要查詢的場次與 AI。

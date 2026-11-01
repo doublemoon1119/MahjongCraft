@@ -80,6 +80,9 @@ class MahjongBotEntity(
     /** 不接受傷害，不讓攻擊改變角色接管或權威對局。 */
     override fun damage(source: DamageSource, amount: Float): Boolean = false
 
+    /** 可被滑鼠射線命中，供座位物品互動使用；受擊仍不造成傷害。 */
+    override fun canHit(): Boolean = true
+
     /** 不讓推擠改變固定席位。 */
     override fun isPushable(): Boolean = false
 

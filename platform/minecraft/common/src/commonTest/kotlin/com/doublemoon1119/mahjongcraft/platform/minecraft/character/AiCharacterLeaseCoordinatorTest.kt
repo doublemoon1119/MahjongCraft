@@ -23,6 +23,23 @@ class AiCharacterLeaseCoordinatorTest {
         coordinator.startSession()
     }
 
+    /** 索引只回傳目前有效的接管；失效與停止都不保留舊身分。 */
+    @Test
+    fun `entity index rejects invalid and stopped leases`() {
+        val key = key()
+        val lease = FakeLease()
+        assertNull(coordinator.keyFor(lease.entityId))
+        coordinator.ensure(key, { lease }) { true }
+        assertEquals(key, coordinator.keyFor(lease.entityId))
+        lease.valid = false
+        assertNull(coordinator.keyFor(lease.entityId))
+        val next = FakeLease()
+        coordinator.ensure(key, { next }) { true }
+        assertEquals(key, coordinator.keyFor(next.entityId))
+        coordinator.stopSession()
+        assertNull(coordinator.keyFor(next.entityId))
+    }
+
     /** 自有代理只建立一次，停止後恢復並移除。 */
     @Test
     fun `owned character is prepared once and discarded on stop`() {

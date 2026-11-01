@@ -5,6 +5,9 @@ fun interface FabricAiCharacterProvider {
     /**
      * 取得自有新角色或借用既有角色。
      *
+     * 若要支援持座位物品右鍵互動，角色必須可被原生滑鼠射線命中（Entity.canHit）。
+     * 框架不改寫第三方角色的命中能力。
+     *
      * @param context 本場公開角色資料及固定席位。
      * @return 可嘗試接管的角色；暫時無法提供時為 null。
      */

@@ -2,6 +2,7 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.server.seating
 
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.seating.SeatGeometry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.seating.SeatRequest
+import com.doublemoon1119.mahjongcraft.platform.minecraft.seating.SeatCollisionPolicy
 import com.doublemoon1119.mahjongcraft.platform.minecraft.seating.SeatEnvironment
 import net.minecraft.entity.Entity
 import net.minecraft.entity.LivingEntity
@@ -124,7 +125,16 @@ internal class FabricSeatEnvironment : SeatEnvironment<ServerWorld, Entity, Fabr
             }
         }
         if (!world.isSpaceEmpty(rider, body)) return false
-        if (world.getOtherEntities(rider, body) { !it.isRemoved && !it.isSpectator && (it is LivingEntity || it.isCollidable) }.isNotEmpty()) return false
+        if (world.getOtherEntities(rider, body) {
+                SeatCollisionPolicy.blocks(
+                    removed = it.isRemoved,
+                    spectator = it.isSpectator,
+                    physical = it is LivingEntity || it.isCollidable,
+                )
+            }.isNotEmpty()
+        ) {
+            return false
+        }
         if (!world.getFluidState(BlockPos.ofFloored(x, y, z)).isEmpty) return false
         return world.getBlockCollisions(rider, body.offset(0.0, -SUPPORT_DEPTH, 0.0)).iterator().hasNext()
     }

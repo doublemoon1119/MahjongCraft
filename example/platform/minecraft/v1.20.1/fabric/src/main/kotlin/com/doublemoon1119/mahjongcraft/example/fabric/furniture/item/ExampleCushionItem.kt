@@ -1,11 +1,9 @@
 package com.doublemoon1119.mahjongcraft.example.fabric.furniture.item
 
-import com.doublemoon1119.mahjongcraft.example.fabric.furniture.ExampleFurnitureEntities
-import com.doublemoon1119.mahjongcraft.example.fabric.furniture.entity.ExampleCushionEntity
 import com.doublemoon1119.mahjongcraft.example.fabric.furniture.seating.ExampleCushionPlacement
-import com.doublemoon1119.mahjongcraft.example.fabric.furniture.seating.ExampleFurnitureSpace
 import net.minecraft.item.Item
 import net.minecraft.item.ItemUsageContext
+import net.minecraft.server.network.ServerPlayerEntity
 import net.minecraft.server.world.ServerWorld
 import net.minecraft.util.ActionResult
 import net.minecraft.util.math.BlockPos
@@ -30,13 +28,18 @@ class ExampleCushionItem(
         if (!world.chunkManager.isChunkLoaded(pos.x shr 4, pos.z shr 4)) return ActionResult.FAIL
         if (!world.canPlayerModifyAt(player, context.blockPos) || !world.canPlayerModifyAt(player, pos)) return ActionResult.FAIL
         if (!player.canModifyAt(world, pos)) return ActionResult.FAIL
-        val entity = ExampleCushionEntity(ExampleFurnitureEntities.cushion, world).apply {
-            refreshPositionAndAngles(position.x, position.y, position.z, ExampleCushionPlacement.snapYaw(context.playerYaw), 0.0f)
+        return if (
+            ExampleCushionPlacement.place(
+                world = world,
+                player = player as ServerPlayerEntity,
+                stack = context.stack,
+                position = position,
+                yaw = context.playerYaw,
+            )
+        ) {
+            ActionResult.CONSUME
+        } else {
+            ActionResult.FAIL
         }
-        if (ExampleCushionPlacement.hasSupport(world, entity.boundingBox) != true) return ActionResult.FAIL
-        if (!ExampleFurnitureSpace.isClear(world, entity, entity.boundingBox)) return ActionResult.FAIL
-        if (!world.spawnEntity(entity)) return ActionResult.FAIL
-        if (!player.abilities.creativeMode) context.stack.decrement(1)
-        return ActionResult.CONSUME
     }
 }

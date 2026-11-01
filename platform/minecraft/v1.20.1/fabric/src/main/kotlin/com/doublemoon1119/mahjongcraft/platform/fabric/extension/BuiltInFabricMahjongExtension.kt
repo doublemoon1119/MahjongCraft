@@ -3,10 +3,13 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.extension
 import com.doublemoon1119.mahjongcraft.metadata.MahjongCraftMetadata
 import com.doublemoon1119.mahjongcraft.platform.fabric.api.character.FabricAiCharacterCapabilityDefinition
 import com.doublemoon1119.mahjongcraft.platform.fabric.api.registration.FabricAiCharacterCapabilityRegistrar
+import com.doublemoon1119.mahjongcraft.platform.fabric.api.registration.FabricSeatPlacementRegistrar
 import com.doublemoon1119.mahjongcraft.platform.fabric.api.registration.FabricSeatProviderRegistrar
 import com.doublemoon1119.mahjongcraft.platform.fabric.api.registration.FabricTablePropKindRegistrar
+import com.doublemoon1119.mahjongcraft.platform.fabric.api.seating.FabricSeatPlacementDefinition
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.character.TileMascotCharacterProvider
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.seating.BuiltInFabricSeatProviderIds
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.seating.MahjongStoolPlacementProvider
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.prop.FaceUpTileTablePropKind
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.prop.ScoringStickTablePropKind
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.seating.RegisteredSeatProvider
@@ -41,5 +44,10 @@ internal class BuiltInFabricMahjongExtension(
     /** 內建牌體角色與第三方共用世界能力登記流程。 */
     override fun registerAiCharacterCapabilities(registry: FabricAiCharacterCapabilityRegistrar) {
         registry.register(FabricAiCharacterCapabilityDefinition(BuiltInAiCharacters.TILE_MASCOT_CAPABILITY_ID, TileMascotCharacterProvider))
+    }
+
+    /** 內建凳子沿用物品放置能力，不直接寫入方塊。 */
+    override fun registerSeatPlacements(registry: FabricSeatPlacementRegistrar) {
+        registry.register(FabricSeatPlacementDefinition(BuiltInFabricSeatProviderIds.MAHJONG_STOOL, MahjongStoolPlacementProvider))
     }
 }

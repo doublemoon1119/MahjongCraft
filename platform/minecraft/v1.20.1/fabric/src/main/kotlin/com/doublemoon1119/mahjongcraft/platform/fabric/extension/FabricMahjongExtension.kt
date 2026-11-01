@@ -1,6 +1,7 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.extension
 
 import com.doublemoon1119.mahjongcraft.platform.fabric.api.registration.FabricAiCharacterCapabilityRegistrar
+import com.doublemoon1119.mahjongcraft.platform.fabric.api.registration.FabricSeatPlacementRegistrar
 import com.doublemoon1119.mahjongcraft.platform.fabric.api.registration.FabricSeatProviderRegistrar
 import com.doublemoon1119.mahjongcraft.platform.fabric.api.registration.FabricTablePropKindRegistrar
 
@@ -38,4 +39,11 @@ interface FabricMahjongExtension {
      * @param registry 初始化期間可寫入的角色能力登記入口。
      */
     fun registerAiCharacterCapabilities(registry: FabricAiCharacterCapabilityRegistrar) = Unit
+
+    /**
+     * 登記物品如何在 AI 的固定席位放置座位；不代替已有座位的解析。
+     *
+     * @param registry 初始化期間的座位放置能力登記入口。
+     */
+    fun registerSeatPlacements(registry: FabricSeatPlacementRegistrar) = Unit
 }

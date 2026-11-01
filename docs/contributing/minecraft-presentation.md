@@ -197,6 +197,39 @@ discard gesture provide motion without turning or tilting the whole body. Other 
 implement gaze through the same handle.
 All world-character callbacks run on the server thread; rendering stays in client initialization.
 
+## Placing a seat for an AI character
+
+A seat provider finds a seat that already exists. A seat placement provider explains how an item
+creates one. Register the two capabilities separately; do not infer block or entity placement from
+an existing-seat provider.
+
+For example, a Fabric extension registers a `FabricSeatPlacementDefinition` through
+`registerSeatPlacements`. Its provider matches the held item on either side without changing it,
+then places it only on the server thread. Higher priority wins; ties use the complete ID. A failed
+attempt does not fall through to another provider.
+
+- The target is the clicked character's current match and assigned seat. Never accept a client-supplied
+  table, participant or placement position. Reject stale bindings, occupied riders, excessive distance,
+  missing chunks, blocked space and missing modification permissions.
+- Use the actual player and interaction hand. `FabricSeatPlacementContext.placeBlockItem` preserves
+  the BlockItem placement callbacks, block-use veto and normal creative/survival consumption. Its yaw
+  parameter is the placement view, not necessarily the resulting block facing; the provider owns that
+  conversion. Entity seats implement their own normal placement path and check their full footprint.
+- Only the intended rider is excluded from placement obstruction, within the synchronous callback.
+  Its placement-obstruction flag is restored even if the callback throws. Other physical entities, blocks,
+  protection rules and world boundaries still apply. Never move a borrowed actor out of the way.
+- Return true only after placement and normal item consumption have succeeded. MahjongCraft then
+  rechecks the binding and seats only that actor. If seating fails, the seat stays and consumption is
+  retained; do not delete another mod's placement or refund an item that was successfully placed.
+- Nonphysical display entities do not occupy the placement space merely because their bounding boxes
+  overlap it. Existing seats are checked separately through seat providers, including noncolliding
+  entity seats such as cushions; never place another seat over one.
+- Failed placement consumes no item. A throwing provider may have partially changed the world, so
+  log the failure and do not retry another provider or guess how to undo its effects.
+- Client input is intercepted only for supported items and publicly tracked AI actors. Tracking markers
+  contain no game data and confer no authority. They are cleared on entity unload or disconnect;
+  queued messages from a previous connection are ignored.
+
 ## Public API Compatibility
 
 The [shared compatibility policy](extensions-and-registries.md#public-api-compatibility) defines how to
@@ -206,8 +239,8 @@ check and maintain public APIs. This section lists the Minecraft contracts; each
 - Minecraft common protects `api.event`, `api.character`, `api.seating`, `api.table` and
   `api.registration`, plus the exact `MinecraftMahjongExtension` entrypoint and
   `MahjongCraftInternalApi` annotation.
-- Loader adapters protect their declared event, character, table, table-prop and registration contracts. For
-  example, the Fabric 1.20.1 adapter protects `api.event`, `api.character`, `api.table`, `api.tableprop` and
+- Loader adapters protect their declared event, character, seating, table, table-prop and registration contracts. For
+  example, the Fabric 1.20.1 adapter protects `api.event`, `api.character`, `api.seating`, `api.table`, `api.tableprop` and
   `api.registration`, plus the exact `FabricMahjongExtension` entrypoint.
 - A new loader or version adapter declares its own protected scope and baseline. An existing adapter's
   baseline does not establish binary compatibility with another Minecraft version or loader.

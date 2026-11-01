@@ -5,6 +5,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.api.registration.FabricSe
 import com.doublemoon1119.mahjongcraft.platform.fabric.api.registration.FabricTablePropKindRegistrar
 import com.doublemoon1119.mahjongcraft.platform.fabric.api.tableprop.FabricTablePropKind
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.character.FabricAiCharacterCapabilityRegistry
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.seating.FabricSeatPlacementRegistry
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.seating.FabricSeatProviderRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.prop.FabricTablePropKindRegistry
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.prop.FabricTablePropKindRegistryImpl
@@ -55,6 +56,7 @@ class FabricTablePropKindRegistrationTest {
             tablePropKindRegistry = tablePropKindRegistry,
             seatProviderRegistry = seatProviderRegistry,
             characterCapabilityRegistry = FabricAiCharacterCapabilityRegistry(),
+            seatPlacementRegistry = FabricSeatPlacementRegistry(),
         ),
         builtIn = BuiltInFabricMahjongExtension(FakeProvider(), MinecraftTileAssetRegistryImpl()),
         failurePolicy = ExtensionFailurePolicy.Default,
@@ -166,6 +168,7 @@ class FabricTablePropKindRegistrationTest {
                 tablePropKindRegistry = tablePropRegistry,
                 seatProviderRegistry = seatProviderRegistry,
                 characterCapabilityRegistry = FabricAiCharacterCapabilityRegistry(),
+                seatPlacementRegistry = FabricSeatPlacementRegistry(),
             ),
             builtIn = BuiltInFabricMahjongExtension(FakeProvider(), MinecraftTileAssetRegistryImpl()),
             failurePolicy = ExtensionFailurePolicy.Default,
@@ -189,6 +192,7 @@ class FabricTablePropKindRegistrationTest {
                     "mahjongcraft:table_prop_kind" to listOf("mahjongcraft:face_up_tile", BuiltInTablePropKinds.SCORING_STICK),
                     "mahjongcraft:seat_provider" to listOf("mahjongcraft:mahjong_stool"),
                     "mahjongcraft:ai_character_capability" to listOf("mahjongcraft:tile_mascot"),
+                    "mahjongcraft:seat_placement" to listOf("mahjongcraft:mahjong_stool"),
                 ),
                 "example:first" to listOf(
                     "mahjongcraft:table_prop_kind" to listOf("example:first-kind"),

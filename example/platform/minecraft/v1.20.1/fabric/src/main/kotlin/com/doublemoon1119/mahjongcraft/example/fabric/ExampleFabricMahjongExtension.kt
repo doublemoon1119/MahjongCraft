@@ -1,8 +1,10 @@
 package com.doublemoon1119.mahjongcraft.example.fabric
 
 import com.doublemoon1119.mahjongcraft.example.fabric.furniture.ExampleFurniture
+import com.doublemoon1119.mahjongcraft.example.fabric.furniture.seating.ExampleSeatPlacements
 import com.doublemoon1119.mahjongcraft.example.fabric.table.ExampleHandRevealChipTablePropKind
 import com.doublemoon1119.mahjongcraft.example.minecraft.ExampleMinecraftMahjongExtension
+import com.doublemoon1119.mahjongcraft.platform.fabric.api.registration.FabricSeatPlacementRegistrar
 import com.doublemoon1119.mahjongcraft.platform.fabric.api.registration.FabricSeatProviderRegistrar
 import com.doublemoon1119.mahjongcraft.platform.fabric.api.registration.FabricTablePropKindRegistrar
 import com.doublemoon1119.mahjongcraft.platform.fabric.extension.FabricMahjongExtension
@@ -23,5 +25,10 @@ class ExampleFabricMahjongExtension :
     /** 登記範例攤牌籌碼的桌面物件種類。 */
     override fun registerTablePropKinds(registry: FabricTablePropKindRegistrar) {
         registry.register(ExampleHandRevealChipTablePropKind)
+    }
+
+    /** 方塊椅子與實體坐墊皆可由手持物品放置在 AI 席位。 */
+    override fun registerSeatPlacements(registry: FabricSeatPlacementRegistrar) {
+        ExampleSeatPlacements.definitions().forEach(registry::register)
     }
 }

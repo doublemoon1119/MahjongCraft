@@ -10,6 +10,9 @@ import kotlin.time.Duration.Companion.seconds
  * 牌譜查詢依伺服器設定自行准入，不使用這裡的限制。
  */
 internal object C2SRateLimits {
+    /** 座位物品互動與一般房間修改使用相同的限流尺度。 */
+    val seatPlacement = C2SRateLimit.PerPlayer(burst = 10, refillInterval = 250.milliseconds)
+
     /** 操作面板送出的決策選擇。 */
     val decisionSelection = C2SRateLimit.PerPlayer(burst = 10, refillInterval = 200.milliseconds)
 

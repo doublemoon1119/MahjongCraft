@@ -64,6 +64,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.server.player.ServerPlaye
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.room.FabricMahjongLobbyInfoLifecycleService
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.room.FabricRoomCommand
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.room.MahjongTableRoomService
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.seating.FabricAiSeatPlacementService
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.seating.MahjongStoolSeatProvider
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.seating.MahjongStoolSeatService
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.FabricTableLifecycleService
@@ -114,6 +115,7 @@ class MahjongCraftMod : ModInitializer {
         ModAchievements.register()
         val aiCharacters = koin.get<FabricAiCharacterManager>()
         aiCharacters.registerEvents()
+        koin.get<FabricAiSeatPlacementService>().registerEvents()
         val tableLifecycleService = koin.get<FabricTableLifecycleService>()
         val tableLocationValidation = koin.get<FabricTableLocationValidationService>()
         val tablePropRefreshScheduler = koin.get<FabricTablePropRefreshScheduler>()

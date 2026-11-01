@@ -15,6 +15,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.client.automatic.ClientAu
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.automatic.FabricAutomaticControlCommand
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.catalogue.FabricRuleCatalogueScreenCommand
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.catalogue.RuleCatalogueScreenController
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.character.ClientAiSeatInteraction
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.config.FabricClientConfigCommand
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.config.MahjongClientConfigScreenController
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.config.MahjongClientConfigStore
@@ -112,6 +113,11 @@ class MahjongCraftModClient : ClientModInitializer {
 
     override fun onInitializeClient() {
         val koin = GlobalContext.get()
+        ClientAiSeatInteraction.register(
+            registry = koin.get(),
+            failures = koin.get(),
+            json = koin.get(),
+        )
 
         PreparableModelLoadingPlugin.register(MahjongTileModelLoadingPlugin.DATA_LOADER, MahjongTileModelLoadingPlugin)
         BuiltinItemRendererRegistry.INSTANCE.register(ModItems.MAHJONG_TILE, MahjongTileItemRenderer)

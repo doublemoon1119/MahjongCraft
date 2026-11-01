@@ -63,7 +63,8 @@ class MahjongBotEntityRenderer(
         if (entity.isInvisible) return
         val seated = entity.hasVehicle()
         val hipY = if (seated) MahjongStoolSeatGeometry.SEATED_BOTTOM_HEIGHT.toFloat() else LEG_LENGTH
-        val swing = MahjongBotArmAnimation.swingDegrees(entity.swingProgress(tickDelta))
+        val swingProgress = entity.swingProgress(tickDelta)
+        val swing = MahjongBotArmAnimation.swingDegrees(swingProgress)
         val phase = (entity.uuid.hashCode().toLong() and IDLE_PHASE_MASK).toDouble() / IDLE_PHASE_MASK * (2.0 * PI)
         val idleTime = (entity.age + tickDelta).toDouble() * IDLE_SPEED + phase
         val idleLeft = sin(idleTime).toFloat() * IDLE_SWING_ANGLE
@@ -75,7 +76,17 @@ class MahjongBotEntityRenderer(
         matrices.push()
         matrices.translate(0f, hipY, 0f)
         renderLimb(arm, -ARM_OFFSET, SHOULDER_HEIGHT, idleLeft, matrices, vertexConsumers, light)
-        renderLimb(arm, ARM_OFFSET, SHOULDER_HEIGHT, swing + idleRight, matrices, vertexConsumers, light)
+        renderLimb(
+            dimensions = arm,
+            x = ARM_OFFSET,
+            y = SHOULDER_HEIGHT,
+            angle = swing + idleRight,
+            matrices = matrices,
+            consumers = vertexConsumers,
+            light = light,
+            yaw = MahjongBotArmAnimation.yawDegrees(swingProgress),
+            roll = MahjongBotArmAnimation.rollDegrees(swingProgress),
+        )
         matrices.translate(0f, BODY_HEIGHT / 2f, 0f)
         matrices.scale(BODY_SCALE, BODY_SCALE, BODY_SCALE)
         MahjongTileItemRenderer.renderWithAppearance(
@@ -129,6 +140,8 @@ class MahjongBotEntityRenderer(
      * @param matrices 目前模型矩陣。
      * @param consumers 頂點緩衝。
      * @param light 世界光照。
+     * @param yaw 手臂的水平旋轉角度。
+     * @param roll 手臂向身體內側的旋轉角度。
      */
     private fun renderLimb(
         dimensions: LimbDimensions,
@@ -138,9 +151,13 @@ class MahjongBotEntityRenderer(
         matrices: MatrixStack,
         consumers: VertexConsumerProvider,
         light: Int,
+        yaw: Float = 0f,
+        roll: Float = 0f,
     ) {
         matrices.push()
         matrices.translate(x, y, 0f)
+        matrices.multiply(RotationAxis.POSITIVE_Z.rotationDegrees(roll))
+        matrices.multiply(RotationAxis.POSITIVE_Y.rotationDegrees(yaw))
         matrices.multiply(RotationAxis.POSITIVE_X.rotationDegrees(angle))
         matrices.scale(dimensions.width, dimensions.length, dimensions.depth)
         matrices.translate(-0.5, -1.0, -0.5)

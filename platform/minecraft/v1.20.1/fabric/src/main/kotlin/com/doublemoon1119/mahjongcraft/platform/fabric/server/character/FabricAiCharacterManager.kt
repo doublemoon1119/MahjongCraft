@@ -25,6 +25,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocationReg
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileTableLayout
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerChunkEvents
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents
+import net.fabricmc.fabric.api.networking.v1.EntityTrackingEvents
 import net.minecraft.entity.Entity
 import net.minecraft.server.MinecraftServer
 import net.minecraft.server.network.ServerPlayerEntity
@@ -43,6 +44,7 @@ import kotlin.uuid.Uuid
  * @property spawnGateway 自有角色加入世界的唯一入口。
  * @property tableLocations 不載入世界的位置索引。
  * @property failurePolicy 擴充失敗隔離政策。
+ * @property tracking 公開角色接管標記。
  */
 class FabricAiCharacterManager internal constructor(
     private val persistence: FabricAuthoritativeStatePersistence,
@@ -53,6 +55,7 @@ class FabricAiCharacterManager internal constructor(
     private val spawnGateway: FabricEntitySpawnGateway,
     private val tableLocations: TableLocationRegistry,
     private val failurePolicy: ExtensionFailurePolicy,
+    private val tracking: FabricAiCharacterTracking,
 ) {
     /** 角色能力及公開回饋的診斷。 */
     private val logger = mahjongCraftLogger(FabricAiCharacterManager::class)
@@ -77,6 +80,9 @@ class FabricAiCharacterManager internal constructor(
 
     /** 登記 tick 及卸載回呼；只執行目前 session 的工作。 */
     fun registerEvents() {
+        EntityTrackingEvents.START_TRACKING.register { entity, player ->
+            if (bindings.findEntity(entity) != null) tracking.send(entity, player, true)
+        }
         ServerTickEvents.END_SERVER_TICK.register { server ->
             if (activeServer === server) {
                 ticks++
@@ -226,13 +232,40 @@ class FabricAiCharacterManager internal constructor(
                     ),
                     world = seating.world,
                     ownership = ownership,
+                    tracking = tracking,
                 )
             },
             activate = { lease ->
                 val current = persistence.characterSnapshot()?.authoritative?.games?.get(key.tableId)
                 current?.matchId == key.matchId && key.playerId in current.aiPlayerIds && activate(lease, seating, index, key.tableId)
             },
-        )
+        ).also { actor ->
+            if (actor != null) tracking.broadcast(actor.entity, true)
+        }
+    }
+
+    /**
+     * 在已成功放置座位後只安排指定角色，不移動其他玩家或 AI。
+     *
+     * @param key 發起互動時的接管身分。
+     * @param actor 當時的原生角色。
+     * @return 此角色已在同一場次入座時為 true。
+     */
+    internal fun seatAfterPlacement(key: AiCharacterBindingKey, actor: FabricAiCharacterActor): Boolean {
+        if (activeServer == null || bindings.find(key.tableId, key.playerId) !== actor || actor.entity.hasVehicle()) return false
+        val game = persistence.characterSnapshot()?.authoritative?.games?.get(key.tableId) ?: return false
+        if (game.matchId != key.matchId) return false
+        val roster = game.tableState.players.map { it.id }
+        val index = roster.indexOf(key.playerId)
+        if (index < 0) return false
+        val seating = sessions.prepare(key.tableId, roster) ?: return false
+        val actors = roster.map { if (it == key.playerId) actor.entity else null }
+        val result = seating.coordinator.seatAll(seating.world, actors, seating.requests)[index]
+        actor.assignedVehicle = actor.entity.vehicle
+        actor.expectedPosition = actor.entity.pos
+        if (result != SeatAssignmentResult.SEATED) return false
+        callback(actor, SEAT_CALLBACK) { actor.handle.seatAssigned(seating.requests[index]) }
+        return true
     }
 
     /**

@@ -6,6 +6,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.api.character.FabricAiCha
 import com.doublemoon1119.mahjongcraft.platform.fabric.api.character.FabricAiCharacterProvider
 import com.doublemoon1119.mahjongcraft.platform.fabric.api.registration.FabricAiCharacterCapabilityRegistrar
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.character.FabricAiCharacterCapabilityRegistry
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.seating.FabricSeatPlacementRegistry
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.seating.FabricSeatProviderRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.prop.FabricTablePropKindRegistryImpl
 import java.lang.reflect.Modifier
@@ -116,5 +117,6 @@ class FabricAiCharacterCapabilityRegistrationTest {
         tablePropKindRegistry = FabricTablePropKindRegistryImpl(),
         seatProviderRegistry = FabricSeatProviderRegistryImpl(),
         characterCapabilityRegistry = FabricAiCharacterCapabilityRegistry(),
+        seatPlacementRegistry = FabricSeatPlacementRegistry(),
     )
 }

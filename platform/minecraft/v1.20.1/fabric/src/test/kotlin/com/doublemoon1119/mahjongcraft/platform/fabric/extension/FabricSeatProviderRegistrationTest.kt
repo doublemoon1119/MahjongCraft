@@ -4,6 +4,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.error.ExtensionFailurePolicy
 import com.doublemoon1119.mahjongcraft.platform.fabric.api.registration.FabricSeatProviderRegistrar
 import com.doublemoon1119.mahjongcraft.platform.fabric.api.registration.FabricTablePropKindRegistrar
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.character.FabricAiCharacterCapabilityRegistry
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.seating.FabricSeatPlacementRegistry
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.seating.FabricSeatProviderRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.prop.FabricTablePropKindRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.seating.RegisteredSeatProvider
@@ -42,6 +43,7 @@ class FabricSeatProviderRegistrationTest {
             tablePropKindRegistry = FabricTablePropKindRegistryImpl(),
             seatProviderRegistry = seatProviderRegistry,
             characterCapabilityRegistry = FabricAiCharacterCapabilityRegistry(),
+            seatPlacementRegistry = FabricSeatPlacementRegistry(),
         ),
         builtIn = BuiltInFabricMahjongExtension(FakeProvider(), MinecraftTileAssetRegistryImpl()),
         failurePolicy = ExtensionFailurePolicy.Default,
@@ -157,6 +159,7 @@ class FabricSeatProviderRegistrationTest {
                     tablePropKindRegistry = FabricTablePropKindRegistryImpl(),
                     seatProviderRegistry = FabricSeatProviderRegistryImpl(),
                     characterCapabilityRegistry = FabricAiCharacterCapabilityRegistry(),
+                    seatPlacementRegistry = FabricSeatPlacementRegistry(),
                 ),
                 builtIn = invalidBuiltIn,
                 failurePolicy = ExtensionFailurePolicy.Default,
@@ -215,6 +218,7 @@ class FabricSeatProviderRegistrationTest {
                     tablePropKindRegistry = tablePropRegistry,
                     seatProviderRegistry = seatRegistry,
                     characterCapabilityRegistry = FabricAiCharacterCapabilityRegistry(),
+                    seatPlacementRegistry = FabricSeatPlacementRegistry(),
                 ),
                 builtIn = BuiltInFabricMahjongExtension(FakeProvider(), MinecraftTileAssetRegistryImpl()),
                 failurePolicy = ExtensionFailurePolicy.Default,

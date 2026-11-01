@@ -10,4 +10,7 @@ internal object FabricExtensionRegistrationCategoryIds {
 
     /** 世界角色的原生能力。 */
     const val AI_CHARACTER_CAPABILITY: String = "mahjongcraft:ai_character_capability"
+
+    /** 座位物品放置能力的登記類別。 */
+    const val SEAT_PLACEMENT: String = "mahjongcraft:seat_placement"
 }

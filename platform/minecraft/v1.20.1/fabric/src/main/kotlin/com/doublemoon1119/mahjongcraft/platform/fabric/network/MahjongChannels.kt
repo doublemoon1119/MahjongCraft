@@ -21,6 +21,7 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.message.RoomActionDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.RoomSnapshotSyncPayloadDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.RoomUpdatePayloadDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.SnapshotClearedPayloadDto
+import com.doublemoon1119.mahjongcraft.platform.minecraft.character.AiCharacterTargetPayload
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.DecisionTimerUpdatePayloadDto
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.PlayerDecisionSelectionDto
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.PlayerDecisionSubmissionResultDto
@@ -35,6 +36,13 @@ import kotlinx.serialization.builtins.serializer
 
 /** `mahjongcraft:` 命名空間下實際使用的命令、事件更新與主動快照同步頻道。 */
 object MahjongChannels {
+    /** 只向追蹤者同步公開角色標記，限制為小型回應。 */
+    val aiCharacterTarget = S2CChannel(
+        id = "ai_character_target",
+        serializer = AiCharacterTargetPayload.serializer(),
+        maxPayloadBytes = 128,
+    )
+
     /** 已公開單局事件的有界查詢要求。 */
     val historyRoundEventsRequest = C2SChannel(
         id = "history_round_events_request",

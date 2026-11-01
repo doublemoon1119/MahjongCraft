@@ -4,6 +4,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.block.MahjongStoolBlock
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongStoolSeatEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongStoolSeatGeometry
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.entity.FabricEntitySpawnGateway
+import com.doublemoon1119.mahjongcraft.platform.minecraft.seating.SeatCollisionPolicy
 import net.minecraft.entity.Entity
 import net.minecraft.entity.LivingEntity
 import net.minecraft.server.network.ServerPlayerEntity
@@ -150,7 +151,13 @@ class MahjongStoolSeatService(
             }
         }
         return world.isSpaceEmpty(entity, body) &&
-            world.getOtherEntities(entity, body) { !it.isRemoved && !it.isSpectator && (it is LivingEntity || it.isCollidable) }.isEmpty()
+            world.getOtherEntities(entity, body) {
+                SeatCollisionPolicy.blocks(
+                    removed = it.isRemoved,
+                    spectator = it.isSpectator,
+                    physical = it is LivingEntity || it.isCollidable,
+                )
+            }.isEmpty()
     }
 
     /** [MahjongStoolSeatService] 的常數。 */
