@@ -11,7 +11,6 @@ import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeIdentifiedTileFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
-import kotlin.test.Ignore
 import kotlin.test.Test
 import kotlin.test.assertFalse
 import kotlin.test.assertNull
@@ -88,21 +87,17 @@ class TaiwanRuleModuleTest {
     /**
      * 驗證建立的手牌價值計算機是否為台灣麻將實作。
      */
-    @Ignore("TaiwanRuleModule.createHandValueCalculator is not yet implemented")
     @Test
     fun `test create hand value calculator returns taiwan implementation`() {
-        // val discardPile = module.createHandValueCalculator()
-        // TODO: assertTrue(discardPile is TaiwanHandValueCalculator)
+        assertTrue(module.createHandValueCalculator() is TaiwanHandValueCalculator)
     }
 
     /**
      * 驗證建立的手牌價值上下文計算機是否為台灣麻將實作。
      */
-    @Ignore("TaiwanRuleModule.createHandValueContextCalculator is not yet implemented")
     @Test
     fun `test create hand value context calculator returns taiwan implementation`() {
-        // val discardPile = module.createHandValueContextCalculator()
-        // TODO: assertTrue(discardPile is TaiwanHandValueContextCalculator)
+        assertTrue(module.createHandValueContextCalculator() is TaiwanHandValueContextCalculator)
     }
 
     /**

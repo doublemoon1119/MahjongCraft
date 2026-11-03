@@ -3,8 +3,6 @@ package com.doublemoon1119.mahjongcraft.logic.rules.taiwan
 import com.doublemoon1119.mahjongcraft.logic.base.ExhaustiveDrawReason
 import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
 import com.doublemoon1119.mahjongcraft.logic.base.TileOrder
-import com.doublemoon1119.mahjongcraft.logic.judgment.HandValueCalculator
-import com.doublemoon1119.mahjongcraft.logic.judgment.HandValueContextCalculator
 import com.doublemoon1119.mahjongcraft.logic.module.ExhaustiveDrawSettlementResult
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
 import com.doublemoon1119.mahjongcraft.logic.module.PointPotCollection
@@ -19,9 +17,10 @@ import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import kotlin.uuid.Uuid
 
 /**
- * 台灣麻將規則模組實作。
+ * 台灣麻將的規則與計算元件。
  *
- * 負責串接台灣麻將特有的組件，包含 [TaiwanWallFactory] 與 [TaiwanDiscardPile]...等等。
+ * @property id 規則模組的完整識別碼。
+ * @property config 台灣麻將規則設定。
  */
 class TaiwanRuleModule(
     override val id: String,
@@ -76,25 +75,11 @@ class TaiwanRuleModule(
      */
     override fun createLegalActionValidator(): TaiwanLegalActionValidator = TaiwanLegalActionValidator()
 
-    /**
-     * 建立台灣麻將的手牌役種計算機。
-     *
-     * @return [HandValueCalculator] 實體。
-     * @throws NotImplementedError 目前尚未實作 TaiwanHandValueCalculator。
-     */
-    override fun createHandValueCalculator(): HandValueCalculator<*, *> {
-        TODO("TaiwanHandValueCalculator is not yet implemented")
-    }
+    /** 建立台灣麻將的台數計算器。 */
+    override fun createHandValueCalculator(): TaiwanHandValueCalculator = TaiwanHandValueCalculator(config)
 
-    /**
-     * 建立台灣麻將的手牌役種上下文計算機。
-     *
-     * @return [HandValueContextCalculator] 實體。
-     * @throws NotImplementedError 目前尚未實作 TaiwanHandValueContextCalculator。
-     */
-    override fun createHandValueContextCalculator(): HandValueContextCalculator<*, *> {
-        TODO("TaiwanHandValueContextCalculator is not yet implemented")
-    }
+    /** 建立台灣麻將的計台上下文計算器。 */
+    override fun createHandValueContextCalculator(): TaiwanHandValueContextCalculator = TaiwanHandValueContextCalculator()
 
     /**
      * 台灣麻將目前沒有自摸結算的實作。
