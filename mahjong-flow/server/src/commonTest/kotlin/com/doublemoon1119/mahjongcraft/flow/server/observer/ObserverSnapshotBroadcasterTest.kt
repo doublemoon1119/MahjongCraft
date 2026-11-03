@@ -199,6 +199,31 @@ class ObserverSnapshotBroadcasterTest {
         sender = sender,
     )
 
+    /** 純附加資料刷新沿原授權交付，重複要求合併，也不送出場地失效。 */
+    @Test
+    fun `supplemental refresh resends only current observers without invalidation`() = runTest {
+        val store = AuthoritativeStateStore()
+        store.setRoom(room())
+        val audience = MutableAudienceSource().apply { observers = mapOf(id to setOf(hostId)) }
+        val sender = RecordingSender()
+        val broadcaster = broadcaster(store, audience, sender)
+        broadcaster.broadcast()
+        broadcaster.broadcast()
+        assertEquals(1, sender.sent.size)
+        broadcaster.requestRefresh(id)
+        broadcaster.requestRefresh(id)
+        broadcaster.broadcast()
+        assertEquals(2, sender.sent.size)
+        assertTrue(sender.sent.all { it.second == hostId && it.third is ObserverSnapshot.OfRoom })
+        assertTrue(sender.invalidated.isEmpty())
+        broadcaster.broadcast()
+        assertEquals(2, sender.sent.size)
+        audience.observers = emptyMap()
+        broadcaster.requestRefresh(id)
+        broadcaster.broadcast()
+        assertEquals(2, sender.sent.size)
+    }
+
     /** 新觀察者沒有任何送出紀錄，第一次推送就會收到完整內容。 */
     @Test
     fun `a new observer receives the current snapshot`() = runTest {

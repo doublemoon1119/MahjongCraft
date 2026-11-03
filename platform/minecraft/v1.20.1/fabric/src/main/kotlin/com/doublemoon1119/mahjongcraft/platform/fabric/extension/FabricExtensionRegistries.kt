@@ -3,6 +3,7 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.extension
 import com.doublemoon1119.mahjongcraft.extension.ExtensionRegistrationSnapshot
 import com.doublemoon1119.mahjongcraft.extension.ExtensionRegistrationSnapshotCategory
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.character.FabricAiCharacterCapabilityRegistry
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.character.FabricRoomParticipantRegistry
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.seating.FabricSeatPlacementRegistry
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.seating.FabricSeatProviderRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.prop.FabricTablePropKindRegistry
@@ -14,12 +15,14 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.prop.FabricT
  * @property seatProviderRegistry 座位 provider registry。
  * @property characterCapabilityRegistry 原生角色能力 registry。
  * @property seatPlacementRegistry 座位物品放置 registry。
+ * @property roomParticipantRegistry 既有實體參加能力。
  */
 internal class FabricExtensionRegistries(
     val tablePropKindRegistry: FabricTablePropKindRegistry,
     val seatProviderRegistry: FabricSeatProviderRegistryImpl,
     val characterCapabilityRegistry: FabricAiCharacterCapabilityRegistry,
     val seatPlacementRegistry: FabricSeatPlacementRegistry,
+    val roomParticipantRegistry: FabricRoomParticipantRegistry,
 ) {
     /**
      * 取得Fabric 登記類別的不可變診斷快照。
@@ -28,6 +31,7 @@ internal class FabricExtensionRegistries(
      */
     fun registrationSnapshot(): ExtensionRegistrationSnapshot = ExtensionRegistrationSnapshot(
         listOf(
+            ExtensionRegistrationSnapshotCategory(FabricExtensionRegistrationCategoryIds.ROOM_PARTICIPANT, "Room Participant", roomParticipantRegistry.registrationKeys),
             ExtensionRegistrationSnapshotCategory(
                 FabricExtensionRegistrationCategoryIds.TABLE_PROP_KIND,
                 "Table Prop Kind",
@@ -57,5 +61,6 @@ internal class FabricExtensionRegistries(
         seatProviderRegistry.freeze()
         characterCapabilityRegistry.freeze()
         seatPlacementRegistry.freeze()
+        roomParticipantRegistry.freeze()
     }
 }

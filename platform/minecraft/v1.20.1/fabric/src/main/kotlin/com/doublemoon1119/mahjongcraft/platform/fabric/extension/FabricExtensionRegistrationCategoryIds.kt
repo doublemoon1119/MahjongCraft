@@ -2,6 +2,12 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.extension
 
 /** Fabric extension 登記報告使用的分類識別碼。 */
 internal object FabricExtensionRegistrationCategoryIds {
+    /** 客戶端獨立角色預覽分類。 */
+    const val AI_CHARACTER_PREVIEW: String = "mahjongcraft:ai_character_preview"
+
+    /** 既有實體參加能力分類。 */
+    const val ROOM_PARTICIPANT: String = "mahjongcraft:room_participant"
+
     /** 規則桌面物件種類分類。 */
     const val TABLE_PROP_KIND: String = "mahjongcraft:table_prop_kind"
 

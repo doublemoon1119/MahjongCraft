@@ -6,13 +6,16 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkJson
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.CLIENT_COMMAND_ROOT
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.catalogue.RuleCatalogueScreenController
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.config.FabricClientConfigCommand
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.player.ClientPlayerDisplayNameResolver
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.player.ClientPlayerProfileResolver
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.PlayerPortraitRenderer
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.PublicPlayerIndicatorTextResolver
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.state.ClientMahjongStateStore
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.table.ClientTableSpaceObstructionStore
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.time.PauseAwareClientMonotonicClock
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.notification.FabricPlayerFeedbackPublisher
 import com.doublemoon1119.mahjongcraft.platform.minecraft.ai.AiStrategyDisplayNameRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.character.AiCharacterClientStateStore
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.GameConfigPresentationRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.GameConfigPresentationResolver
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.RoomMemberAppearanceSourceRegistry
@@ -46,6 +49,7 @@ import kotlin.uuid.toKotlinUuid
  * 根節點用共用的 [CLIENT_COMMAND_ROOT]，理由見該常數 KDoc。
  *
  * @property stateStore 查詢本地玩家座位與房間快照。
+ * @property characters 此連線已授權的角色描述。
  * @property configPresentations 已登記的設定欄位與規則呈現定義。
  * @property configResolver 將遊戲設定解析為欄位值。
  * @property ruleNames 規則模組顯示名稱登錄表。
@@ -57,11 +61,14 @@ import kotlin.uuid.toKotlinUuid
  * @property json 編碼設定更新使用的 JSON 格式。
  * @property networkRegistries 設定與網路 DTO 轉換所需的登錄表。
  * @property profileResolver 玩家名稱與外觀資料解析器。
+ * @property displayNames 共用的成員名稱解析器。
+ * @property clock 共用的客戶端回覆等待時鐘。
  * @property ruleCatalogue 從房間設定開啟規則一覽的控制器。
  * @property tableSpaceObstructions 等待開局桌子被擋住的擺牌格。
  */
 class FabricRoomConfigScreenCommand(
     private val stateStore: ClientMahjongStateStore,
+    private val characters: AiCharacterClientStateStore,
     private val configPresentations: GameConfigPresentationRegistry,
     private val configResolver: GameConfigPresentationResolver,
     private val ruleNames: RuleModuleDisplayNameRegistry,
@@ -73,6 +80,8 @@ class FabricRoomConfigScreenCommand(
     private val json: NetworkJson,
     private val networkRegistries: NetworkDtoRegistries,
     private val profileResolver: ClientPlayerProfileResolver,
+    private val displayNames: ClientPlayerDisplayNameResolver,
+    private val clock: PauseAwareClientMonotonicClock,
     private val ruleCatalogue: RuleCatalogueScreenController,
     private val tableSpaceObstructions: ClientTableSpaceObstructionStore,
 ) {
@@ -114,6 +123,9 @@ class FabricRoomConfigScreenCommand(
         client.setScreen(
             RoomScreen(
                 stateStore = stateStore,
+                characters = characters,
+                displayNames = displayNames,
+                clock = clock,
                 tableId = tableId,
                 configPresentations = configPresentations,
                 configResolver = configResolver,

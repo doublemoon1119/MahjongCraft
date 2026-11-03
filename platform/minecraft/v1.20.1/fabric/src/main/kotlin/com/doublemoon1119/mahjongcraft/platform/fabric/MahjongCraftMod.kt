@@ -27,6 +27,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.registry.ModItems
 import com.doublemoon1119.mahjongcraft.platform.fabric.registry.ModSounds
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.FabricServerHolder
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.character.FabricAiCharacterManager
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.character.FabricSeatedParticipantService
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.concurrency.FabricAppCoroutineScope
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.concurrency.FabricCoroutineDispatchers
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.concurrency.FabricServerStopRunner
@@ -51,6 +52,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.server.history.FabricHist
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.history.FabricHistoryDatabasePath
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.history.FabricHistoryOutboxWriter
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.history.FabricHistoryQueryService
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.network.AiCharacterSnapshotSender
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.observer.FabricObserverSnapshotBroadcastService
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.persistence.FabricAuthoritativeStatePersistence
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.persistence.FabricMahjongDataStatus
@@ -113,8 +115,12 @@ class MahjongCraftMod : ModInitializer {
         ModSounds.register()
         ModEntities.register()
         ModAchievements.register()
+        val characterSnapshots = koin.get<AiCharacterSnapshotSender>()
+        characterSnapshots.registerEvents()
         val aiCharacters = koin.get<FabricAiCharacterManager>()
         aiCharacters.registerEvents()
+        val seatedParticipants = koin.get<FabricSeatedParticipantService>()
+        seatedParticipants.registerEvents()
         koin.get<FabricAiSeatPlacementService>().registerEvents()
         val tableLifecycleService = koin.get<FabricTableLifecycleService>()
         val tableLocationValidation = koin.get<FabricTableLocationValidationService>()
@@ -209,9 +215,12 @@ class MahjongCraftMod : ModInitializer {
                 committedFactsDispatcher.startSession(server)
                 lobbyInfoLifecycle.startSession()
                 aiCharacters.startSession(server)
+                seatedParticipants.startSession(server)
             }
         }
         ServerLifecycleEvents.SERVER_STOPPING.register {
+            characterSnapshots.clear()
+            seatedParticipants.stopSession()
             aiCharacters.stopSession()
             tableLocationValidation.stopSession()
             tablePropRefreshScheduler.stopSession()

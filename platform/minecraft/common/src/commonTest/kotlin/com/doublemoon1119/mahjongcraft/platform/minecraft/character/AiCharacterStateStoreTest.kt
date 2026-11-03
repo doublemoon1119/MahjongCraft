@@ -5,6 +5,8 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.Game
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameConfig
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameFlowConfig
 import com.doublemoon1119.mahjongcraft.flow.common.room.model.Room
+import com.doublemoon1119.mahjongcraft.flow.common.room.model.RoomAdmissionState
+import com.doublemoon1119.mahjongcraft.flow.common.room.model.RoomParticipantIdentity
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateSnapshot
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.character.AiCharacterDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.character.AiCharacterFace
@@ -51,6 +53,91 @@ class AiCharacterStateStoreTest {
     private fun store(): AiCharacterStateStore = AiCharacterStateStore(registry, {}).apply {
         restore(AuthoritativeStateSnapshot(), AiCharacterMetadata(emptyMap(), emptyMap()))
         update(AuthoritativeStateSnapshot(rooms = mapOf(room.id to room)))
+    }
+
+    /** 排除後保留辨識資料，只有房主可讀；解除後清理，不公開模型能力。 */
+    @Test
+    fun `excluded appearance survives saving and is visible only to the host`() {
+        val state = store()
+        val identity = RoomParticipantIdentity(SeatedParticipantSources.WORLD_ENTITY, Uuid.random())
+        val waiting = room.copy(admission = RoomAdmissionState(memberIdentities = mapOf(bot to identity)))
+        val appearance = AiCharacterSnapshot(alternate.id, alternate, "Actor")
+        state.prepareParticipant(AiCharacterParticipantCapture(waiting.admission.instanceId, bot, identity, appearance))
+        state.update(AuthoritativeStateSnapshot(rooms = mapOf(waiting.id to waiting)))
+        state.releaseParticipant(bot)
+        val excluded = waiting.copy(playerIds = listOf(host), aiPlayerStrategyKeys = emptyMap(), admission = waiting.admission.exclude(bot))
+        state.update(AuthoritativeStateSnapshot(rooms = mapOf(excluded.id to excluded)))
+        val metadata = AiCharacterMetadataCodec().decode(AiCharacterMetadataCodec().encode(state.snapshot().characters!!))
+        val restored = AiCharacterStateStore(registry, {})
+        restored.restore(state.snapshot().authoritative, metadata)
+        val projected = restored.snapshot().excludedAppearancesFor(excluded.id, host)
+        assertEquals("Actor", projected[bot]?.displayName)
+        assertNull(projected[bot]?.definition?.preview)
+        assertNull(projected[bot]?.definition?.worldCapabilityId)
+        assertTrue(restored.snapshot().excludedAppearancesFor(excluded.id, Uuid.random()).isEmpty())
+        val cleared = excluded.copy(admission = excluded.admission.copy(excludedParticipants = emptyMap()))
+        restored.update(AuthoritativeStateSnapshot(rooms = mapOf(cleared.id to cleared)))
+        assertNull(restored.snapshot().characters!!.participant(bot))
+    }
+
+    /** 外部描述只隨成功成員提交保存，開局後不再讀登記預設。 */
+    @Test
+    fun `external participant capture requires matching room and identity and survives restart`() {
+        val store = store()
+        val identity = RoomParticipantIdentity(SeatedParticipantSources.WORLD_ENTITY, Uuid.random())
+        val waiting = room.copy(admission = RoomAdmissionState(memberIdentities = mapOf(bot to identity)))
+        val custom = AiCharacterDefinition(alternate.id, alternate.nameKey, AiCharacterFace.Tile("south"), null, null)
+        val capture = AiCharacterParticipantCapture(waiting.admission.instanceId, bot, identity, AiCharacterSnapshot(custom.id, custom))
+        store.prepareParticipant(capture)
+        assertTrue(store.snapshot().characters!!.participants.isEmpty())
+        store.update(AuthoritativeStateSnapshot(rooms = mapOf(waiting.id to waiting)))
+        store.releaseParticipant(bot)
+        assertEquals(custom, store.syncSnapshot(waiting.id).players[bot]?.definition)
+        val game = Game(table, GameFlowConfig(), aiPlayerStrategyKeys = waiting.aiPlayerStrategyKeys, roomAdmission = waiting.admission)
+        store.update(AuthoritativeStateSnapshot(games = mapOf(game.id to game)))
+        val metadata = AiCharacterMetadataCodec().decode(AiCharacterMetadataCodec().encode(store.snapshot().characters!!))
+        val restored = AiCharacterStateStore(registry, {})
+        restored.restore(store.snapshot().authoritative, metadata)
+        assertEquals(custom, restored.snapshot().characters!!.matches[game.matchId]?.get(bot)?.definition)
+        assertEquals(identity, restored.snapshot().authoritative.games[game.id]?.roomAdmission?.memberIdentities?.get(bot))
+    }
+
+    /** 等待時可刷新造型與普通名稱，場次一旦建立就不隨後續刷新改變。 */
+    @Test
+    fun `waiting capture refreshes without roster changes and match stays frozen`() {
+        val store = store()
+        val identity = RoomParticipantIdentity(SeatedParticipantSources.WORLD_ENTITY, Uuid.random())
+        val waiting = room.copy(admission = RoomAdmissionState(memberIdentities = mapOf(bot to identity)))
+        val first = AiCharacterSnapshot(alternate.id, alternate, "First")
+        val second = first.copy(displayName = "Second")
+        val capture = AiCharacterParticipantCapture(waiting.admission.instanceId, bot, identity, first)
+        store.prepareParticipant(capture)
+        val authoritative = AuthoritativeStateSnapshot(rooms = mapOf(waiting.id to waiting))
+        store.update(authoritative)
+        store.releaseParticipant(bot)
+        store.prepareParticipant(capture.copy(appearance = second))
+        store.update(authoritative)
+        store.releaseParticipant(bot)
+        assertEquals(second, store.syncSnapshot(waiting.id).players[bot])
+        val game = Game(table, GameFlowConfig(), aiPlayerStrategyKeys = waiting.aiPlayerStrategyKeys, roomAdmission = waiting.admission)
+        store.update(AuthoritativeStateSnapshot(games = mapOf(game.id to game)))
+        store.prepareParticipant(capture)
+        store.update(store.snapshot().authoritative)
+        store.releaseParticipant(bot)
+        assertEquals(second, store.snapshot().characters!!.matchPlayers(game.matchId)[bot])
+    }
+
+    /** 解散重建不能套用舊房間預檢的描述。 */
+    @Test
+    fun `staged appearance cannot cross room lifetime or failed admission`() {
+        val store = store()
+        val identity = RoomParticipantIdentity(SeatedParticipantSources.WORLD_ENTITY, Uuid.random())
+        val capture = AiCharacterParticipantCapture(room.admission.instanceId, bot, identity, AiCharacterSnapshot(alternate.id, alternate))
+        store.prepareParticipant(capture)
+        val other = room.copy(admission = RoomAdmissionState(memberIdentities = mapOf(bot to identity)))
+        store.update(AuthoritativeStateSnapshot(rooms = mapOf(other.id to other)))
+        store.releaseParticipant(bot)
+        assertTrue(store.snapshot().characters!!.participants.isEmpty())
     }
 
     /** 開局快照不隨後來的角色、策略或回房間改變，歷史確認後才回收。 */
@@ -151,5 +238,69 @@ class AiCharacterStateStoreTest {
         assertEquals(AiCharacterSelectionResult.DATA_UNAVAILABLE, store.select(snapshot, room.id, bot, host, alternate.id))
         assertFalse(store.syncSnapshot(room.id).isAvailable)
         assertTrue(store.syncSnapshot(room.id).players.isEmpty())
+    }
+
+    /** 外部角色的外觀跟隨原實體，不讓房主把它改成另一個生成角色。 */
+    @Test
+    fun `external participant appearance cannot be selected in the room`() {
+        val store = store()
+        val identity = RoomParticipantIdentity(SeatedParticipantSources.WORLD_ENTITY, Uuid.random())
+        val waiting = room.copy(admission = RoomAdmissionState(memberIdentities = mapOf(bot to identity)))
+        val authoritative = AuthoritativeStateSnapshot(rooms = mapOf(waiting.id to waiting))
+        store.update(authoritative)
+        val before = store.snapshot()
+        assertEquals(AiCharacterSelectionResult.SOURCE_MANAGED, store.select(authoritative, waiting.id, bot, host, alternate.id))
+        assertEquals(before, store.snapshot())
+    }
+
+    /** 舊桌房間移除後釋放來源認領；新桌房間不繼承舊房間的身分或排除名單。 */
+    @Test
+    fun `removing a room releases participant claims before another room is created`() {
+        val store = store()
+        val identity = RoomParticipantIdentity(SeatedParticipantSources.WORLD_ENTITY, Uuid.random())
+        val waiting = room.copy(admission = RoomAdmissionState(memberIdentities = mapOf(bot to identity)))
+        store.update(AuthoritativeStateSnapshot(rooms = mapOf(waiting.id to waiting)))
+        assertEquals(waiting.id, store.snapshot().claimedParticipants[identity])
+        store.update(AuthoritativeStateSnapshot())
+        assertFalse(identity in store.snapshot().claimedParticipants)
+        val replacement = room.copy(id = Uuid.random(), admission = RoomAdmissionState())
+        store.update(AuthoritativeStateSnapshot(rooms = mapOf(replacement.id to replacement)))
+        assertTrue(store.snapshot().claimedParticipants.isEmpty())
+        val joined = replacement.copy(admission = replacement.admission.copy(memberIdentities = mapOf(bot to identity)))
+        store.update(AuthoritativeStateSnapshot(rooms = mapOf(joined.id to joined)))
+        assertEquals(joined.id, store.snapshot().claimedParticipants[identity])
+    }
+
+    /** 名稱更新沿用排除者的來源與最後外觀，不恢復成員資格或覆寫既有場次。 */
+    @Test
+    fun `authorized excluded participant name updates preserve exclusion and appearance`() {
+        val store = store()
+        val identity = RoomParticipantIdentity(SeatedParticipantSources.WORLD_ENTITY, Uuid.random())
+        val waiting = room.copy(admission = RoomAdmissionState(memberIdentities = mapOf(bot to identity)))
+        val original = AiCharacterSnapshot(alternate.id, alternate, "Before")
+        val capture = AiCharacterParticipantCapture(waiting.admission.instanceId, bot, identity, original)
+        store.prepareParticipant(capture)
+        store.update(AuthoritativeStateSnapshot(rooms = mapOf(waiting.id to waiting)))
+        store.releaseParticipant(bot)
+        val excluded = waiting.copy(
+            playerIds = waiting.playerIds - bot,
+            readyPlayerIds = waiting.readyPlayerIds - bot,
+            aiPlayerStrategyKeys = waiting.aiPlayerStrategyKeys - bot,
+            admission = waiting.admission.exclude(bot),
+        )
+        val state = AuthoritativeStateSnapshot(rooms = mapOf(excluded.id to excluded))
+        store.update(state)
+        val renamed = original.copy(displayName = "After")
+        store.prepareParticipant(capture.copy(appearance = renamed))
+        store.update(state)
+        store.releaseParticipant(bot)
+        assertEquals(renamed, store.snapshot().excludedAppearancesFor(excluded.id, host)[bot])
+        assertTrue(store.snapshot().excludedAppearancesFor(excluded.id, Uuid.random()).isEmpty())
+        assertEquals(mapOf(identity to bot), store.snapshot().authoritative.rooms.getValue(excluded.id).admission.excludedParticipants)
+        assertFalse(bot in store.snapshot().authoritative.rooms.getValue(excluded.id).playerIds)
+        store.prepareParticipant(capture.copy(roomInstanceId = Uuid.random(), appearance = original))
+        store.update(state)
+        store.releaseParticipant(bot)
+        assertEquals(renamed, store.snapshot().excludedAppearancesFor(excluded.id, host)[bot])
     }
 }

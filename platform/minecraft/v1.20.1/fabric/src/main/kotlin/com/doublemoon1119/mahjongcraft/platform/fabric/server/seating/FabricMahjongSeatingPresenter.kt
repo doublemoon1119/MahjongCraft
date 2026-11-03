@@ -29,7 +29,10 @@ internal class FabricMahjongSeatingPresenter(
             player = serverHolder::findPlayer,
             character = { playerId -> characters.find(tableId, playerId)?.entity },
         )
-        session.coordinator.seatAll(session.world, riders, session.requests).forEachIndexed { index, result ->
+        val tableRequests = sessions.prepareTable(tableId)?.requests ?: return
+        SeatCollisionScope.with(riders, session.requests) {
+            session.coordinator.seatAll(session.world, riders, session.requests, tableRequests)
+        }.forEachIndexed { index, result ->
             val player = riders[index] as? ServerPlayerEntity ?: return@forEachIndexed
             if (result != null) session.notify(player, result)
         }

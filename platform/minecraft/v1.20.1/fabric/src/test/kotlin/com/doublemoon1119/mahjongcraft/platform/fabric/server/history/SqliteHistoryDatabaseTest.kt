@@ -12,6 +12,36 @@ import kotlin.uuid.Uuid
 
 /** 每存檔路徑、schema v1 與暫存事件去重測試。 */
 class SqliteHistoryDatabaseTest {
+    /** 角色外觀隨同封存保存，重開後仍只屬於原場次。 */
+    @Test
+    fun `archived character appearance survives reopening without live actors`() {
+        val path = createTempDirectory("mahjongcraft-history-character-").resolve("history.sqlite")
+        val database = SqliteHistoryDatabase.open(path)
+        val match = Uuid.random().toString()
+        val encoded = "{\"saved_face\":\"example:original\"}"
+        database.archive(archive(match).copy(participants = listOf(HistoryParticipantRecord(0, "actor", "example:strategy", encoded))))
+        val reopened = SqliteHistoryDatabase.open(path)
+        assertEquals(mapOf("actor" to encoded), reopened.readCharacterAppearances(match))
+        assertTrue(reopened.readCharacterAppearances(Uuid.random().toString()).isEmpty())
+    }
+
+    /** 超大外觀在 SQL 投影就被略過，不先把整份文字載入記憶體。 */
+    @Test
+    fun `oversized character column does not prevent other appearances from loading`() {
+        val path = createTempDirectory("mahjongcraft-history-character-limit-").resolve("history.sqlite")
+        val database = SqliteHistoryDatabase.open(path)
+        val match = Uuid.random().toString()
+        database.archive(
+            archive(match).copy(
+                participants = listOf(
+                    HistoryParticipantRecord(0, "large", "example:strategy", "x".repeat(400_000)),
+                    HistoryParticipantRecord(1, "valid", "example:strategy", "{}"),
+                ),
+            ),
+        )
+        assertEquals(mapOf("valid" to "{}"), database.readCharacterAppearances(match))
+    }
+
     /** 同一存檔不論遊戲維度，都只使用存檔根目錄下的資料庫。 */
     @Test
     fun `test database path belongs to save root`() {

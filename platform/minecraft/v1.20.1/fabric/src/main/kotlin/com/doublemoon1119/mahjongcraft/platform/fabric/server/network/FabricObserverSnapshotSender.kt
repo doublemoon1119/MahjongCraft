@@ -12,6 +12,7 @@ import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateStore
 import com.doublemoon1119.mahjongcraft.platform.fabric.network.MahjongChannels
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.FabricServerHolder
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.ReadinessAnalysisDtoMapper
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.network.AiCharacterSnapshotDelivery
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.FabricTableStateDelivery
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableRemovedPayloadDto
 import net.minecraft.server.network.ServerPlayerEntity
@@ -33,6 +34,7 @@ import kotlin.uuid.Uuid
  * @property analysisDtoMapper 規則中立的手牌分析線路轉換器。
  * @property playerIdentities 已授權快照涉及的真人名稱同步器。
  * @property json 封包序列化設定。
+ * @property characterSnapshots 已授權桌子角色的公開同步。
  * @property networkRegistries 規則擴充資料的線路轉換註冊表。
  */
 class FabricObserverSnapshotSender(
@@ -43,6 +45,7 @@ class FabricObserverSnapshotSender(
     private val analysisDtoMapper: ReadinessAnalysisDtoMapper,
     private val playerIdentities: PlayerIdentitySender,
     private val json: NetworkJson,
+    private val characterSnapshots: AiCharacterSnapshotDelivery,
     private val networkRegistries: NetworkDtoRegistries,
 ) : ObserverSnapshotSender {
     override suspend fun send(id: Uuid, observerId: Uuid, snapshot: ObserverSnapshot?) {
@@ -54,7 +57,7 @@ class FabricObserverSnapshotSender(
                 when (snapshot) {
                     is ObserverSnapshot.OfRoom -> {
                         if (authoritativeStateStore.getRoom(id) == null) return@prepareAndSend null
-                        playerIdentities.send(observerId, snapshot.room.playerIds.filterNot { it in snapshot.room.aiPlayerIds })
+                        playerIdentities.send(observerId, (snapshot.room.playerIds.filterNot { it in snapshot.room.aiPlayerIds } + snapshot.room.excludedPlayerIds.filterNot { it in snapshot.room.excludedAiPlayerIds }))
                         PreparedSnapshot.Room(
                             player = player,
                             payload = RoomSnapshotSyncPayloadDto(id.toString(), snapshot.room.toDto(networkRegistries)),
@@ -66,6 +69,7 @@ class FabricObserverSnapshotSender(
                         playerIdentities.send(observerId, snapshot.game.players.map { it.id }.filterNot { it in snapshot.aiPlayerIds })
                         PreparedSnapshot.Game(
                             player = player,
+                            matchId = authoritativeStateStore.getGame(id)?.matchId ?: return@prepareAndSend null,
                             payload = GameSnapshotSyncPayloadDto(
                                 gameId = id.toString(),
                                 snapshot = snapshot.game.toDto(networkRegistries),
@@ -90,8 +94,14 @@ class FabricObserverSnapshotSender(
             },
             send = { prepared ->
                 when (prepared) {
-                    is PreparedSnapshot.Room -> MahjongChannels.roomSnapshot.sendTo(prepared.player, json, prepared.payload)
-                    is PreparedSnapshot.Game -> MahjongChannels.gameSnapshot.sendTo(prepared.player, json, prepared.payload)
+                    is PreparedSnapshot.Room -> {
+                        characterSnapshots.sendAuthorized(prepared.player, id, null, prepared.payload.snapshot.playerIds.map(Uuid::parse).toSet())
+                        MahjongChannels.roomSnapshot.sendTo(prepared.player, json, prepared.payload)
+                    }
+                    is PreparedSnapshot.Game -> {
+                        characterSnapshots.sendAuthorized(prepared.player, id, prepared.matchId, prepared.payload.snapshot.players.map { Uuid.parse(it.id) }.toSet())
+                        MahjongChannels.gameSnapshot.sendTo(prepared.player, json, prepared.payload)
+                    }
                     is PreparedSnapshot.Cleared -> {
                         val state = authoritativeStateStore.state.value
                         if (id !in state.rooms && id !in state.games) {
@@ -138,10 +148,12 @@ class FabricObserverSnapshotSender(
          * 對局快照與其收件玩家。
          *
          * @property player 已驗證仍在線的收件玩家。
+         * @property matchId 同一準備點的場次。
          * @property payload 已序列化的對局快照 payload。
          */
         data class Game(
             override val player: ServerPlayerEntity,
+            val matchId: Uuid,
             val payload: GameSnapshotSyncPayloadDto,
         ) : PreparedSnapshot
 

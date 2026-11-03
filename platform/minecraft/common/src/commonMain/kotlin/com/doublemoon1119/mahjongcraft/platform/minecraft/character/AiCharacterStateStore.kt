@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.character
 
+import com.doublemoon1119.mahjongcraft.flow.common.room.model.RoomParticipantIdentity
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateSnapshot
 import kotlin.concurrent.atomics.AtomicReference
 import kotlin.concurrent.atomics.ExperimentalAtomicApi
@@ -22,6 +23,34 @@ class AiCharacterStateStore(
     /** 目前完整保存封套；新實例尚未載入任何世界。 */
     private val state = AtomicReference(AiCharacterStateSnapshot(AuthoritativeStateSnapshot(), null, Uuid.random(), 0L))
 
+    /** 加入前擷取的暫態描述，不會單獨保存或公開。 */
+    private val preparedParticipants = AtomicReference<Map<Uuid, AiCharacterParticipantCapture>>(emptyMap())
+
+    /**
+     * 為即將提交的成員準備外觀，未加入的描述不進入保存快照。
+     *
+     * @param capture 脫離世界物件的預檢結果。
+     */
+    fun prepareParticipant(capture: AiCharacterParticipantCapture) {
+        while (true) {
+            val before = preparedParticipants.load()
+            check(capture.playerId !in before) { "Participant capture already prepared" }
+            if (preparedParticipants.compareAndSet(before, before + (capture.playerId to capture))) return
+        }
+    }
+
+    /**
+     * 提交或取消後釋放暫態擷取，不能留下可供下一次加入誤用的資料。
+     *
+     * @param playerId 該次分配的成員編號。
+     */
+    fun releaseParticipant(playerId: Uuid) {
+        while (true) {
+            val before = preparedParticipants.load()
+            if (preparedParticipants.compareAndSet(before, before - playerId)) return
+        }
+    }
+
     /** 讀取一次即取得彼此對應的牌局與角色資料。 */
     fun snapshot(): AiCharacterStateSnapshot = state.load()
 
@@ -40,11 +69,11 @@ class AiCharacterStateStore(
         val players = if (metadata == null) {
             emptyMap()
         } else if (game != null) {
-            metadata.matches[game.matchId].orEmpty()
+            metadata.matchPlayers(game.matchId)
         } else {
-            metadata.selections[tableId].orEmpty().mapValues { (_, id) -> AiCharacterSnapshot(id, registry.find(id)) }
+            metadata.selectedPlayers(tableId).mapValues { (player, id) -> metadata.participant(player) ?: AiCharacterSnapshot(id, registry.find(id)) }
         }
-        return AiCharacterSyncSnapshot(current.sessionId, current.revision, tableId, metadata != null, registry.definitions(), players)
+        return AiCharacterSyncSnapshot(current.sessionId, current.revision, tableId, metadata != null, registry.definitions(), players, game?.matchId)
     }
 
     /**
@@ -54,7 +83,8 @@ class AiCharacterStateStore(
      * @param characters 已解碼的角色；null 代表不可用，保留原始保存資料。
      */
     fun restore(authoritative: AuthoritativeStateSnapshot, characters: AiCharacterMetadata?) {
-        state.store(AiCharacterStateSnapshot(authoritative, characters, Uuid.random(), 0L))
+        preparedParticipants.store(emptyMap())
+        state.store(AiCharacterStateSnapshot(authoritative, characters, Uuid.random(), 0L, claimedParticipants(authoritative)))
     }
 
     /**
@@ -65,10 +95,16 @@ class AiCharacterStateStore(
     fun update(authoritative: AuthoritativeStateSnapshot) {
         while (true) {
             val before = state.load()
+            val reconcileNeeded = preparedParticipants.load().isNotEmpty() || needsReconcile(before.authoritative, authoritative)
             val metadata = before.characters?.let {
-                if (needsReconcile(before.authoritative, authoritative)) reconcile(it, authoritative) else it
+                if (reconcileNeeded) reconcile(it, authoritative) else it
             }
-            val after = before.copy(authoritative = authoritative, characters = metadata, revision = nextRevision(before))
+            val after = before.copy(
+                authoritative = authoritative,
+                characters = metadata,
+                revision = nextRevision(before),
+                claimedParticipants = if (reconcileNeeded) claimedParticipants(authoritative) else before.claimedParticipants,
+            )
             if (state.compareAndSet(before, after)) {
                 changed()
                 return
@@ -102,12 +138,14 @@ class AiCharacterStateStore(
             val room = authoritative.rooms[tableId] ?: return AiCharacterSelectionResult.ROOM_NOT_FOUND
             if (room.hostId != operatorId) return AiCharacterSelectionResult.NOT_HOST
             if (aiPlayerId !in room.aiPlayerStrategyKeys) return AiCharacterSelectionResult.NOT_AI_MEMBER
+            if (aiPlayerId in room.admission.memberIdentities) return AiCharacterSelectionResult.SOURCE_MANAGED
             if (registry.find(characterId) == null) return AiCharacterSelectionResult.UNKNOWN_CHARACTER
             val selected = metadata.selections
             if (selected[tableId]?.get(aiPlayerId) == characterId) return AiCharacterSelectionResult.ACCEPTED
             val updated = AiCharacterMetadata(
                 selections = selected + (tableId to (selected[tableId].orEmpty() + (aiPlayerId to characterId))),
                 matches = metadata.matches,
+                participants = metadata.participants,
             )
             if (state.compareAndSet(before, before.copy(characters = updated, revision = nextRevision(before)))) {
                 changed()
@@ -125,7 +163,7 @@ class AiCharacterStateStore(
      */
     private fun needsReconcile(before: AuthoritativeStateSnapshot, after: AuthoritativeStateSnapshot): Boolean {
         if (before.rooms.keys != after.rooms.keys || before.games.keys != after.games.keys) return true
-        if (after.rooms.any { (id, room) -> before.rooms[id]?.aiPlayerStrategyKeys?.keys != room.aiPlayerStrategyKeys.keys }) return true
+        if (after.rooms.any { (id, room) -> before.rooms[id]?.aiPlayerStrategyKeys?.keys != room.aiPlayerStrategyKeys.keys || before.rooms[id]?.admission != room.admission }) return true
         if (after.games.any { (id, game) ->
                 val previous = before.games[id]
                 previous == null || previous.matchId != game.matchId || previous.aiPlayerStrategyKeys.keys != game.aiPlayerStrategyKeys.keys
@@ -150,11 +188,23 @@ class AiCharacterStateStore(
      * @return 維持相同歷史來源的角色資料。
      */
     private fun reconcile(metadata: AiCharacterMetadata, authoritative: AuthoritativeStateSnapshot): AiCharacterMetadata {
+        val activeAdmissions = authoritative.rooms.values.map { it.admission } + authoritative.games.values.map { it.roomAdmission }
+        val activeIdentities = activeAdmissions.flatMap { it.memberIdentities.keys + it.excludedParticipants.values }.toSet()
+        val participants = metadata.participants.filterKeys { it in activeIdentities }.toMutableMap()
+        val prepared = preparedParticipants.load()
+        activeAdmissions.forEach { admission ->
+            (admission.memberIdentities + admission.excludedParticipants.entries.associate { (identity, player) -> player to identity }).forEach { (player, identity) ->
+                val capture = prepared[player]
+                if (capture != null && capture.roomInstanceId == admission.instanceId && capture.identity == identity) {
+                    participants[player] = capture.appearance
+                }
+            }
+        }
         val previousSelections = metadata.selections
         val rosters = authoritative.rooms.mapValues { (_, room) -> room.aiPlayerStrategyKeys.keys } +
             authoritative.games.mapValues { (_, game) -> game.aiPlayerStrategyKeys.keys }
         val selections = rosters.mapValues { (tableId, players) ->
-            players.associateWith { playerId -> previousSelections[tableId]?.get(playerId) ?: BuiltInAiCharacters.TILE_MASCOT_ID }
+            players.associateWith { playerId -> participants[playerId]?.characterId ?: previousSelections[tableId]?.get(playerId) ?: BuiltInAiCharacters.TILE_MASCOT_ID }
         }
         val history = authoritative.historyRecordingState
         val retained = authoritative.games.values.map { it.matchId }.toSet() + history.nextSequenceByMatchId.keys +
@@ -165,9 +215,10 @@ class AiCharacterStateStore(
                 matches[game.matchId] = game.aiPlayerStrategyKeys.keys.associateWith { playerId ->
                     val id = selections[game.id]?.get(playerId) ?: BuiltInAiCharacters.TILE_MASCOT_ID
                     AiCharacterSnapshot(
+                        displayName = participants[playerId]?.displayName,
                         characterId = id,
                         definition = AiCharacterMatchAppearance.capture(
-                            definition = registry.find(id),
+                            definition = participants[playerId]?.definition ?: registry.find(id),
                             matchId = game.matchId,
                             playerId = playerId,
                         ),
@@ -175,8 +226,19 @@ class AiCharacterStateStore(
                 }
             }
         }
-        return AiCharacterMetadata(selections, matches)
+        return AiCharacterMetadata(selections, matches, participants)
     }
+
+    /**
+     * 在名冊變更時建立來源索引，空席查詢不再逐局掃描。
+     *
+     * @param authoritative 同一次提交的權威名冊。
+     * @return 來源身分對應到已認領的場地。
+     */
+    private fun claimedParticipants(authoritative: AuthoritativeStateSnapshot): Map<RoomParticipantIdentity, Uuid> = (
+        authoritative.rooms.values.flatMap { room -> room.admission.memberIdentities.values.map { it to room.id } } +
+            authoritative.games.values.flatMap { game -> game.roomAdmission.memberIdentities.values.map { it to game.id } }
+        ).toMap()
 
     /**
      * 取得嚴格遞增的版本，避免溢位後誤收舊同步。

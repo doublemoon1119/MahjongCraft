@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.flow.common.game.model
 
+import com.doublemoon1119.mahjongcraft.flow.common.room.model.RoomAdmissionState
 import com.doublemoon1119.mahjongcraft.logic.module.requireValidAutomaticControlIds
 import com.doublemoon1119.mahjongcraft.logic.table.RoundCompletionSummary
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
@@ -13,7 +14,6 @@ import kotlin.uuid.Uuid
  * 不得直接作為網路傳輸模型。對外資料必須先依讀取者身分投影為快照。
  *
  * @property tableState 麻將規則運算使用的完整桌況。
- * @property matchId 整場對局的穩定識別碼；與場地本身的 [tableState.id] 分離，讓同一場地可承載多場對局歷史。
  * @property flowConfig 不影響麻將規則的流程與觀看設定。
  * @property remainingReserveByPlayerId 每位玩家在整場遊戲中尚未使用的保留思考時間。
  * @property forcedAutoPlayPlayerIds 已耗盡思考時間、目前這一次決策必須由伺服器自動操作的玩家。只鎖住
@@ -43,6 +43,8 @@ import kotlin.uuid.Uuid
  *   決策，其尚未使用的基本思考時間，以玩家 Uuid 索引。`PlayerDecisionTimer.startedAt` 屬於
  *   runtime 單調時間、不得持久化，因此只寫回剩餘量；沒有這筆資料的玩家下一次取得決策權時重新取得
  *   完整基本思考時間。決策完成、階段改變或計時器重建後即清除，確保一次中斷只被接續一次。
+ * @property matchId 整場對局的穩定識別碼；與場地本身的 [tableState.id] 分離，讓同一場地可承載多場對局歷史。
+ * @property roomAdmission 開局前房間的加入限制，回房時原樣還原。
  */
 data class Game(
     val tableState: TableState,
@@ -63,6 +65,7 @@ data class Game(
     val aiPlayerStrategyKeys: Map<Uuid, String> = emptyMap(),
     val interruptedBaseByPlayerId: Map<Uuid, Duration> = emptyMap(),
     val matchId: Uuid = Uuid.random(),
+    val roomAdmission: RoomAdmissionState = RoomAdmissionState(),
 ) {
     init {
         val playerIds = tableState.players.mapTo(mutableSetOf()) { it.id }

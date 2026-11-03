@@ -24,6 +24,7 @@ fun Room.toPersistenceDto(
     playerIds = playerIds.map(Uuid::toString),
     readyPlayerIds = readyPlayerIds.map(Uuid::toString),
     aiPlayerStrategyKeys = aiPlayerStrategyKeys.mapKeys { it.key.toString() },
+    admission = admission.toPersistenceDto(),
 )
 
 /**
@@ -44,4 +45,5 @@ fun RoomPersistenceDto.toDomain(
     playerIds = playerIds.map(Uuid::parse),
     readyPlayerIds = readyPlayerIds.map(Uuid::parse),
     aiPlayerStrategyKeys = aiPlayerStrategyKeys.mapKeys { Uuid.parse(it.key) },
+    admission = admission.toDomain(),
 )

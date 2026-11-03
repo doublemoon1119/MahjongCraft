@@ -4,12 +4,12 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.block.LocatedMahjongTable
 import com.doublemoon1119.mahjongcraft.platform.fabric.block.MahjongTableLookup
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.DimensionChunkKey
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongTableSpace
+import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableInteractionReach
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocationRegistry
 import net.minecraft.server.network.ServerPlayerEntity
 import net.minecraft.util.math.BlockPos
 import net.minecraft.world.GameMode
-import kotlin.math.sqrt
 
 /**
  * 依玩家目前實際可互動範圍，從 [TableLocationRegistry] 找出可選的麻將桌。
@@ -83,28 +83,16 @@ class ReachableMahjongTableResolver(
      * @param pos 桌子控制方塊座標。
      * @return 玩家到桌子範圍最近點的直線距離。
      */
-    private fun distanceTo(player: ServerPlayerEntity, pos: BlockPos): Double {
-        val minX = pos.x - MahjongTableSpace.HALF_WIDTH
-        val maxX = pos.x + MahjongTableSpace.HALF_WIDTH + 1
-        val minY = pos.y
-        val maxY = pos.y + MahjongTableSpace.PLAY_SPACE_OFFSET_Y + 1
-        val minZ = pos.z - MahjongTableSpace.HALF_WIDTH
-        val maxZ = pos.z + MahjongTableSpace.HALF_WIDTH + 1
-        val playerPos = player.pos
-        val dx = playerPos.x.coerceIn(minX.toDouble(), maxX.toDouble()) - playerPos.x
-        val dy = playerPos.y.coerceIn(minY.toDouble(), maxY.toDouble()) - playerPos.y
-        val dz = playerPos.z.coerceIn(minZ.toDouble(), maxZ.toDouble()) - playerPos.z
-        return sqrt(dx * dx + dy * dy + dz * dz)
-    }
+    private fun distanceTo(player: ServerPlayerEntity, pos: BlockPos): Double = TableInteractionReach.distance(player.x, player.y, player.z, pos.x, pos.y, pos.z)
 
     private companion object {
         /** 方塊座標轉換為 16×16 chunk 座標的位移量，與 [TableLocation] 一致。 */
         const val CHUNK_COORDINATE_SHIFT: Int = 4
 
         /** 原版創造模式的可觸距離（方塊數）。 */
-        const val CREATIVE_REACH_DISTANCE: Double = 5.0
+        const val CREATIVE_REACH_DISTANCE: Double = TableInteractionReach.CREATIVE
 
         /** 原版生存／冒險模式的可觸距離（方塊數）。 */
-        const val SURVIVAL_REACH_DISTANCE: Double = 4.5
+        const val SURVIVAL_REACH_DISTANCE: Double = TableInteractionReach.SURVIVAL
     }
 }

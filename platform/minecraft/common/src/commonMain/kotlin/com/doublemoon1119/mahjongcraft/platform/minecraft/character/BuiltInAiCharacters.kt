@@ -7,6 +7,12 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.UNKNOWN_TILE_ASSE
 
 /** 不依賴外部服務的內建角色描述；原生能力由對應平台實作。 */
 object BuiltInAiCharacters {
+    /** 角色 FACE 的低優先序內建來源。 */
+    const val PORTRAIT_SOURCE_ID: String = "mahjongcraft:character_portrait"
+
+    /** 房間角色模型的低優先序內建來源。 */
+    const val ROOM_MODEL_SOURCE_ID: String = "mahjongcraft:character_model"
+
     /** 麻將牌吉祥物的穩定角色 ID。 */
     const val TILE_MASCOT_ID: String = "mahjongcraft:tile_mascot"
 

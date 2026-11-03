@@ -33,6 +33,18 @@ class ClientHistoryQueryCoordinator(
     /** 只接受目前連線最新要求的回應。 */
     private val correlation = HistoryQueryCorrelation()
 
+    /** 已接受清單／摘要與角色資料的配對鍵，不由角色封包自行宣稱授權。 */
+    private val characterRequests = linkedMapOf<String, Set<String>>()
+
+    /**
+     * 檢查附帶外觀確實屬於這個連線已接受的清單或摘要。
+     *
+     * @param requestId 清單或摘要配對鍵。
+     * @param matchId 已授權場次。
+     * @return 配對一致時為 true。
+     */
+    fun acceptsCharacterAppearance(requestId: String, matchId: String): Boolean = matchId in characterRequests[requestId].orEmpty()
+
     /** 目前單局事件要求的內容選擇器，用於拒絕同 request ID 的錯誤回覆。 */
     private var pendingRoundEvents: HistoryRoundEventsRequestDto? = null
 
@@ -120,6 +132,8 @@ class ClientHistoryQueryCoordinator(
      */
     fun applyList(response: HistoryListResponseDto) {
         if (correlation.complete(response.requestId, HistoryQueryKind.LIST)) {
+            if (characterRequests.size >= 16) characterRequests.remove(characterRequests.keys.first())
+            characterRequests[response.requestId] = response.entries.map { it.matchId }.toSet()
             mutableState.value = ClientHistoryQueryState.ListResult(response)
         }
     }
@@ -131,6 +145,10 @@ class ClientHistoryQueryCoordinator(
      */
     fun applySummary(response: HistorySummaryResponseDto) {
         if (correlation.complete(response.requestId, HistoryQueryKind.SUMMARY)) {
+            response.detail?.summary?.matchId?.let { matchId ->
+                if (characterRequests.size >= 16) characterRequests.remove(characterRequests.keys.first())
+                characterRequests[response.requestId] = setOf(matchId)
+            }
             mutableState.value = ClientHistoryQueryState.SummaryResult(response)
         }
     }
@@ -201,6 +219,7 @@ class ClientHistoryQueryCoordinator(
     /** 世界或連線切換時清除配對與資料，不接受原連線的回應。 */
     fun clear() {
         settings.reset()
+        characterRequests.clear()
         correlation.clear()
         pendingRoundEvents = null
         pendingRoundState = null

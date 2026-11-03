@@ -27,6 +27,12 @@ import com.doublemoon1119.mahjongcraft.logic.api.registration.MahjongModuleRegis
 import com.doublemoon1119.mahjongcraft.logic.module.BuiltInRuleModuleIds
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleDefinition
 import com.doublemoon1119.mahjongcraft.metadata.MahjongCraftMetadata
+import com.doublemoon1119.mahjongcraft.platform.fabric.api.character.FabricAiCharacterCapabilityDefinition
+import com.doublemoon1119.mahjongcraft.platform.fabric.api.character.FabricRoomParticipantDefinition
+import com.doublemoon1119.mahjongcraft.platform.fabric.api.registration.FabricAiCharacterCapabilityRegistrar
+import com.doublemoon1119.mahjongcraft.platform.fabric.api.registration.FabricRoomParticipantRegistrar
+import com.doublemoon1119.mahjongcraft.platform.fabric.extension.FabricMahjongExtension
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.character.DebugSeatedParticipantAdapter
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.decision.DebugDecisionActionIds
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.decision.DebugNotenDeclarationRuleDecisionResolver
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.decision.DebugRuleDecisionResolver
@@ -48,6 +54,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.scenari
 import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionVocabulary
 import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionVocabularyDefaultDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionVocabularyDefinition
+import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.AiCharacterRegistrar
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.DecisionStatusDisplayNameRegistrar
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.GameActionSoundPresentationRegistrar
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.GameActionVocabularyRegistrar
@@ -76,8 +83,21 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftMessageK
 internal class DebugMahjongExtension(
     private val winRoundContinuationState: DebugWinRoundContinuationState,
 ) : MahjongExtension,
-    MinecraftMahjongExtension {
+    MinecraftMahjongExtension,
+    FabricMahjongExtension {
     override val id: String = MahjongCraftMetadata.id("debug")
+
+    override fun registerAiCharacters(registry: AiCharacterRegistrar) {
+        registry.register(DebugSeatedParticipantAdapter.CHARACTER)
+    }
+
+    override fun registerAiCharacterCapabilities(registry: FabricAiCharacterCapabilityRegistrar) {
+        registry.register(FabricAiCharacterCapabilityDefinition(DebugSeatedParticipantAdapter.ID, DebugSeatedParticipantAdapter.WORLD))
+    }
+
+    override fun registerRoomParticipants(registry: FabricRoomParticipantRegistrar) {
+        registry.register(FabricRoomParticipantDefinition(DebugSeatedParticipantAdapter.ID, DebugSeatedParticipantAdapter.PARTICIPANT))
+    }
 
     override fun registerRuleModules(registry: MahjongModuleRegistrar) {
         registry.register(

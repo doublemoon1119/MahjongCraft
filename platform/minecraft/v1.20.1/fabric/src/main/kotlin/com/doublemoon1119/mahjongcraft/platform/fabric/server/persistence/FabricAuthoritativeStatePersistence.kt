@@ -1,11 +1,14 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.server.persistence
 
+import com.doublemoon1119.mahjongcraft.flow.common.room.model.Room
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.state.AuthoritativeStatePersistenceCodec
 import com.doublemoon1119.mahjongcraft.flow.server.lifecycle.ServerSessionStateCleaner
 import com.doublemoon1119.mahjongcraft.flow.server.lifecycle.ServerSessionStateRestorer
+import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateBusyException
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateStore
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateUpdate
 import com.doublemoon1119.mahjongcraft.platform.fabric.logging.mahjongCraftLogger
+import com.doublemoon1119.mahjongcraft.platform.minecraft.character.AiCharacterParticipantCapture
 import com.doublemoon1119.mahjongcraft.platform.minecraft.character.AiCharacterRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.character.AiCharacterSelectionResult
 import com.doublemoon1119.mahjongcraft.platform.minecraft.character.AiCharacterStateSnapshot
@@ -105,6 +108,70 @@ class FabricAuthoritativeStatePersistence(
 
     /** 取得同一版本的牌局與角色快照；沒有有效 session 時為 null。 */
     fun characterSnapshot(): AiCharacterStateSnapshot? = persistentState?.characterSnapshot()
+
+    /**
+     * 在目前 session 的保存封套內提交外部實體成員。
+     *
+     * @param capture 預檢已擷取的描述。
+     * @param validate 取得執行權後立即重新驗證來源、席位與公開描述。
+     * @param rejected 預檢失效的結果。
+     * @param action 不等待權威鎖的加入操作。
+     * @return 加入操作的結果；沒有保存 session 時拒絕。
+     */
+    internal suspend fun <T> withParticipant(
+        capture: AiCharacterParticipantCapture,
+        validate: () -> Boolean,
+        rejected: () -> T,
+        action: suspend () -> T,
+    ): T {
+        val saved = persistentState ?: return rejected()
+        return saved.withParticipant(capture, { persistentState === saved && validate() }, rejected, action)
+    }
+
+    /**
+     * 讓開局交易使用同一次預檢的全部角色，不在交易內呼叫原生工廠。
+     *
+     * @param captures 本次開局的外觀。
+     * @param validate 取得執行權後立即重新驗證來源、席位與公開描述。
+     * @param rejected 預檢失效的結果。
+     * @param action 不等待權威鎖的開局操作。
+     * @return 開局操作的結果。
+     */
+    internal suspend fun <T> withParticipants(
+        captures: List<AiCharacterParticipantCapture>,
+        validate: () -> Boolean,
+        rejected: () -> T,
+        action: suspend () -> T,
+    ): T {
+        if (captures.isEmpty()) return action()
+        val saved = persistentState ?: return rejected()
+        return saved.withParticipants(captures, { persistentState === saved && validate() }, rejected, action)
+    }
+
+    /**
+     * 只在原 session 與房間仍相同時刷新等待角色，不讓世界回呼進入鎖內。
+     *
+     * @param expected 等待房間的預檢狀態。
+     * @param sessionId 預檢所屬的保存 session。
+     * @param capture 已脫離原生物件的外觀。
+     * @return 完成更新或本來即相同時為 true。
+     */
+    internal suspend fun refreshParticipant(expected: Room, sessionId: Uuid, capture: AiCharacterParticipantCapture): Boolean = try {
+        store.update(waitForLock = false) { current ->
+            val saved = persistentState
+            val metadata = saved?.characterSnapshot()
+            val accepted = current.rooms[expected.id] == expected &&
+                metadata?.sessionId == sessionId &&
+                expected.admission.instanceId == capture.roomInstanceId &&
+                (expected.admission.memberIdentities[capture.playerId] == capture.identity || expected.admission.excludedParticipants[capture.identity] == capture.playerId) &&
+                metadata.characters != null
+            if (!accepted) return@update AuthoritativeStateUpdate(current, false)
+            val refreshed = metadata.characters?.participant(capture.playerId) == capture.appearance || saved.refreshParticipant(current, capture)
+            AuthoritativeStateUpdate(current, refreshed)
+        }
+    } catch (_: AuthoritativeStateBusyException) {
+        false
+    }
 
     /**
      * 以與開局相同的交易邊界處理角色切換；不提供原生實體或 NBT 選項。

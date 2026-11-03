@@ -138,6 +138,156 @@ registry definition during a round change or reload. The built-in bot chooses a 
 standard tiles when each match starts. Save that face in the match description; do not sample an
 actual wall tile or reroll it when creating a world entity.
 
+### Joining with an existing seated actor
+
+An integration can let an entity that already lives in the world join a waiting room. For example,
+a Fabric adapter implements `FabricMahjongExtension.registerRoomParticipants` and registers a
+`FabricRoomParticipantDefinition` through the supplied registrar.
+
+| Step | Integration responsibility | MahjongCraft responsibility |
+| --- | --- | --- |
+| Recognize | `describe` identifies a supported actor and supplies its current character description and default strategy | Validate the registered character, world capability and strategy |
+| Authorize | `canJoin` checks the actor owner's permission and whether its current work allows mahjong | Check room admission, exclusions, capacity, its actual seat and unique room/game ownership |
+| Start | The world provider borrows exactly `FabricAiCharacterContext.participant` | Recheck the seat and freeze the match description |
+| Release | Restore any temporarily changed native behavior | Release the binding; never delete, replace or forcibly dismount a borrowed participant |
+
+Waiting positions and match seats are separate. An eligible actor can join while seated at any of
+this table's four standard sides. Changing the room roster does not move the actor or require its
+waiting side to match its eventual seat index. Unknown data is not a confirmed departure.
+
+For a start with borrowed actors, compute the rule's final order and initial state once before
+committing. Under the same-room capture scope, arrange the existing members with the normal seating
+coordinator, then recheck their identity, appearance and final positions. Borrowed actors use the
+same safe-standing fallback as players. An occupied or unsafe destination rejects the start and
+leaves the room intact; restore this attempt's moves if no start was committed. After a successful
+commit, do not undo positions because a later notification failed. Returning to the room restores
+the original lobby roster for every control source; it does not save a second physical seat order.
+
+Admission and start preflight run on the server thread after acquiring any same-room capture scope;
+if the authoritative write cannot begin immediately, reject the old preflight and try again later.
+Never run native world queries or integration callbacks under the authoritative store lock.
+
+Both recognition callbacks are read-only, bounded server-thread work. Do not move the entity,
+create a mount, pause its AI or perform blocking I/O in them. Register the character through
+`MinecraftMahjongExtension.registerAiCharacters` and its world capability through
+`registerAiCharacterCapabilities`. Registration never calls a factory to discover its ID.
+There can be at most 64 room-participant providers; registration rejects an excess rather than
+silently ignoring later providers.
+
+The actor must actually be riding furniture at the assigned standard seat. Standing nearby or
+riding something elsewhere is insufficient. A failed provider or an unloaded area does not prove
+that it left. A confirmed departure removes its waiting-room association. An ongoing match keeps
+its participant roster even if its world actor disappears. Restoring its visual binding requires
+the same actor still at this table; recovery must not teleport an actor back from elsewhere.
+
+Room changes do not pin external participants to their current physical side or disable the rule's
+normal opening order. Only normal room permissions and admission rules constrain those changes.
+During a synchronous batch move, exclude only fellow movers with separate destination bounds from
+intermediate collision checks. Other occupants and overlapping destinations remain blockers. Clean
+up empty built-in seat helpers immediately when leaving them, without deleting furniture blocks.
+
+Kicking a human or external participant records a room-local exclusion. Reseating, reconnecting,
+changing strategy or restarting does not clear it. Only the host can see the exclusion list and
+allow rejoining. Allowing does not directly join anyone: humans use normal room admission, and an
+eligible actor still in its seat can be found by the next scan. Dissolving the room clears its
+exclusions. Removing a generated, unbound AI does not create a meaningless rejoin entry.
+
+### Finding a vacant seat
+
+For example, server-side Fabric integration code can call `FabricMahjongRooms.findVacancies` with
+its actual loaded entity. The entity's position and authorization are verified by the server.
+There is no client request for arbitrary coordinates, entity UUIDs or a global room directory.
+
+- Searches stay in the entity's dimension, inspect only loaded nearby tables, and use the normal
+  survival interaction distance to the table volume, currently 4.5 blocks. A caller can ask for a
+  smaller distance, never a larger one. Searching does not load chunks.
+- The actor must be recognized and authorized for each room. A loaded table alone is not permission
+  to reveal its location. Rejected rooms do not return a more detailed reason.
+- Work and output are bounded: currently one query per actor per 20 ticks, 16 queries per server tick,
+  32 table candidates and eight results per query. These are runtime limits, not reserved capacity.
+- A `FabricRoomVacancy` is a hint, not a reservation. Results describe verified furniture at waiting sides, not final member indices. Moving, sitting down
+  and starting must still pass the current checks. Do not forward discovery results to a client
+  without a separate reason that client may see them.
+
+Names in the host-only exclusion list may refresh from the known, loaded entity only while the
+host tracks it in the room's dimension and its provider still authorizes participation. Otherwise
+keep the last known name. Do not load chunks or expand discovery for name refreshes, and do not
+rewrite match or history appearance snapshots.
+
+### Client models and portraits
+
+Room model and portrait choices go through the existing appearance registries. Bundled character
+sources have low priority, so a third-party source can still explicitly choose a portrait or another
+supported appearance. The selected character's `AiCharacterFace` supplies its small portrait; if it
+cannot be drawn, its registered model can supply one before the unknown-tile fallback.
+A room `ActorPreview` must match the captured character's preview capability and uses that character's
+actual parameters. A capability ID is not a character ID or a translation key.
+
+Names use the shared player-name resolver. Human players keep the existing authorized profile-name
+sync. Capture only an actor's literal custom name; otherwise translate its registered character name
+on the client. Live UI uses live descriptions; history uses that match's fixed description.
+The host-only exclusion screen uses face cards, search and the shared scrollbar behavior, without
+model previews. Only the host receives excluded actors' names and faces; ordinary observers receive
+neither. The list is bounded, and reaching its limit rejects a new exclusion instead of dropping an
+old one. Allow-all is one host-authorized transaction and does not join or move anyone.
+
+For example, a Fabric integration supplies a separate `FabricMahjongClientExtension` through the
+`mahjongcraft:client_extension` entrypoint. It registers `FabricAiCharacterPreviewDefinition` values
+through `FabricAiCharacterPreviewRegistrar`. Keep this entrypoint and all native client types out of
+the server extension. Third-party integrations do not need MahjongCraft's dependency injection.
+
+Room model cards draw entities directly. Human players and other characters use the same whole-model
+cursor rotation. Prefer the participant's loaded world entity, identified by a reference from the
+current authorized character snapshot. Do not guess by name or proximity, load chunks, or use a
+current entity when displaying history. A higher-priority explicit portrait choice still wins.
+Live references are transient: send only entities already tracked by that recipient, refresh through
+the existing observer path when tracking changes, and never put these references in saved appearance
+parameters or history. Supplemental delivery revisions increase even if the game itself is unchanged.
+
+When the original is unavailable, a preview factory creates an independent entity from the captured
+`AiCharacterDefinition`. The optional bounded string map contains only the appearance parameters
+chosen by its provider. The provider interprets them and owns its default appearance; the framework
+does not save arbitrary entity NBT or require a complete reconstruction of equipment or clothing.
+A factory must not return a live world entity, spawn anything, load chunks or run native AI.
+
+Create fallback models outside UI drawing, at most one queued model per client tick. Keep at most 64
+models and release their handles on eviction, world changes, disconnect or resource reload. A live
+world entity is never owned by this cache or passed to a factory's `close`. Living previews use the
+vanilla inventory entrypoint with the room's original placement and scale.
+That entrypoint temporarily changes display angles; restore those angles even if rendering fails.
+Other entities use the same coordinate handedness and baseline. Never change the original
+entity's position, vehicle or animation state.
+The usual F3+B setting may apply to these previews, consistently with player previews.
+Keep the caller's GUI model-view transform intact; reset the origin only for offscreen capture
+using its own projection. Restore graphics and dispatcher settings even when an external renderer
+fails. Isolatable failures
+fall back with bounded retries; cancellation and fatal errors propagate.
+
+Small portraits may still use a captured model image when an explicit FACE is unavailable. These
+images have their own bounded 64-entry, 128-by-128 cache; a portrait request does not turn a room model
+card into a still image. A working explicit FACE needs no model capture. The factory may supply a
+normalized portrait region. Capture-only handles are closed immediately after the image is made.
+
+### Historical appearance
+
+Save the actor's ordinary display name and character description when the match starts. Archive that
+same description with the participant record, before releasing its retained match metadata. History
+never looks up today's world entity or substitutes today's registry default for the old description.
+This saves resource IDs and parameters, not copies of texture files; missing resources use fallback.
+
+Character attachments follow the existing authorized snapshot, history-list and history-summary
+paths. Recheck the table's match and roster before live delivery. Historical attachments must match
+an accepted request and its returned match IDs. The list's extra appearance data has a shared size
+budget; when that budget is exhausted, a missing list portrait uses fallback, and opening its summary
+can request the full description. An invalid or oversized appearance does not make an otherwise
+readable replay unusable. The client keeps historical descriptions separate from live table state.
+
+For local development, `/mahjongcraft debug seated_participant` creates an ordinary armor stand at
+an available furniture seat that keeps existing occupants in place in the command user's waiting room. It does not insert a room member:
+normal discovery must do that. This command and its borrowed-actor adapter are registered only in a
+development environment and require operator permission. They are a small contract check, not a
+replacement for testing another mod's ownership, behavior restoration and furniture integration.
+
 ### Providing a world character
 
 For example, a Fabric adapter registers a `FabricAiCharacterCapabilityDefinition` through
@@ -241,7 +391,7 @@ check and maintain public APIs. This section lists the Minecraft contracts; each
   `MahjongCraftInternalApi` annotation.
 - Loader adapters protect their declared event, character, seating, table, table-prop and registration contracts. For
   example, the Fabric 1.20.1 adapter protects `api.event`, `api.character`, `api.seating`, `api.table`, `api.tableprop` and
-  `api.registration`, plus the exact `FabricMahjongExtension` entrypoint.
+  `api.registration`, plus the exact `FabricMahjongExtension` and `FabricMahjongClientExtension` entrypoints.
 - A new loader or version adapter declares its own protected scope and baseline. An existing adapter's
   baseline does not establish binary compatibility with another Minecraft version or loader.
 

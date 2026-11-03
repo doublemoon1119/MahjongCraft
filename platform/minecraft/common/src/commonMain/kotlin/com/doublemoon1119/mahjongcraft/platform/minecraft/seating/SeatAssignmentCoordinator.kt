@@ -136,6 +136,60 @@ class SeatAssignmentCoordinator<W, R, S>(
     }
 
     /**
+     * 只查詢真正的家具座位，不以安全站立位置代替。
+     *
+     * @param world 目標世界。
+     * @param rider 要驗證的乘坐者。
+     * @param request 固定席位。
+     * @return 可用或已由本人乘坐的座位幾何；未知、占用或失敗時為 null。
+     */
+    fun previewSeat(
+        world: W,
+        rider: R,
+        request: SeatRequest,
+    ): SeatGeometry? = inspectSeat(world, rider, request).geometry
+
+    /**
+     * 唯讀檢查家具座位，保留「無法確認」與「確定沒有坐下」的差別。
+     *
+     * @param world 目標世界。
+     * @param rider 要檢查的乘坐者。
+     * @param request 固定席位。
+     * @return 本次狀態；來源違約或拋錯時為 FAILED，不能據此移除既有參與者。
+     */
+    fun inspectSeat(
+        world: W,
+        rider: R,
+        request: SeatRequest,
+    ): SeatInspection {
+        val original = environment.snapshot(rider)
+        var providerId = "unresolved"
+        try {
+            val relevant = inspectTargets(world, rider, request, original) { providerId = it }
+            if (relevant.any { it.third == SeatState.FAILED }) return SeatInspection(SeatState.FAILED, null)
+            if (relevant.any { it.third == SeatState.OCCUPIED || it.second.identity in claimed }) return SeatInspection(SeatState.OCCUPIED, null)
+            val seated = relevant.firstOrNull { it.third == SeatState.SEATED }
+            val target = seated?.second ?: relevant.firstOrNull { it.third == SeatState.AVAILABLE }?.second
+                ?: return SeatInspection(SeatState.INVALID, null)
+            val geometry = target.geometry(world, rider)
+            check(environment.unchanged(rider, original)) { "Seat provider changed rider during seat inspection" }
+            if (!matches(geometry, request)) return SeatInspection(SeatState.INVALID, null)
+            if (seated != null) {
+                check(environment.hasVehicle(rider) && environment.positioned(world, rider, geometry)) { "Seat provider reported false seated state" }
+                return SeatInspection(SeatState.SEATED, geometry)
+            }
+            return if (environment.hasVehicle(rider)) SeatInspection(SeatState.INVALID, null) else SeatInspection(SeatState.AVAILABLE, geometry)
+        } catch (cause: CancellationException) {
+            throw cause
+        } catch (cause: Throwable) {
+            if (!failurePolicy.isIsolatable(cause)) throw cause
+            report(providerId, rider, cause)
+            environment.recover(rider, original)
+            return SeatInspection(SeatState.FAILED, null)
+        }
+    }
+
+    /**
      * 確認固定席位沒有已存在的座位，不讓新放置覆蓋空坐墊或其他家具。
      *
      * 與入座共用來源及幾何檢查，不移動乘坐者或預約席位。來源失敗時保守拒絕放置。
@@ -208,37 +262,39 @@ class SeatAssignmentCoordinator<W, R, S>(
      * @param world 目標世界。
      * @param riders 依座位 index 排列的乘坐者；沒有可移動的實體（例如 AI 或離線玩家）時為 null。
      * @param requests 本桌所有固定席位，依座位 index 排列，數量與 [riders] 相同。
+     * @param tableRequests 本桌所有等待席位，用來辨識可離開的本桌載具；預設為正式席位。
      * @return 依座位 index 排列的入座結果；沒有乘坐者的座位為 null。
      */
     fun seatAll(
         world: W,
         riders: List<R?>,
         requests: List<SeatRequest>,
+        tableRequests: List<SeatRequest> = requests,
     ): List<SeatAssignmentResult?> {
         require(riders.size == requests.size) { "Every seat needs exactly one rider entry" }
-        riders.forEachIndexed { seatIndex, rider -> rider?.let { leaveOtherTableSeat(world, it, requests, seatIndex) } }
+        riders.forEachIndexed { seatIndex, rider -> rider?.let { leaveOtherTableSeat(world, it, tableRequests, requests[seatIndex]) } }
         return riders.mapIndexed { seatIndex, rider -> rider?.let { assign(world, it, requests[seatIndex]) } }
     }
 
     /**
-     * 乘坐者正坐在本桌 [keepSeatIndex] 以外的席位上時讓他站起來；查不到或坐在其他東西上時不動。
+     * 乘坐者正坐在本桌 [keepRequest] 以外的席位上時讓他站起來；查不到或坐在其他東西上時不動。
      *
      * @param world 目標世界。
      * @param rider 乘坐者。
      * @param requests 本桌所有固定席位，依座位 index 排列。
-     * @param keepSeatIndex 乘坐者這次要坐的座位。
+     * @param keepRequest 乘坐者這次要坐的正式座位。
      */
     private fun leaveOtherTableSeat(
         world: W,
         rider: R,
         requests: List<SeatRequest>,
-        keepSeatIndex: Int,
+        keepRequest: SeatRequest,
     ) {
         val original = environment.snapshot(rider)
         var providerId = "unresolved"
         try {
-            val seatedElsewhere = requests.withIndex().any { (seatIndex, request) ->
-                seatIndex != keepSeatIndex &&
+            val seatedElsewhere = requests.any { request ->
+                request.seat != keepRequest.seat &&
                     providers.any { registered ->
                         providerId = registered.id
                         registered.provider.resolve(world, request).any { target ->

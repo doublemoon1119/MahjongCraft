@@ -74,11 +74,14 @@ import com.doublemoon1119.mahjongcraft.flow.server.lifecycle.ServerSessionStateR
 import com.doublemoon1119.mahjongcraft.flow.server.membership.repository.PlayerMembershipRepository
 import com.doublemoon1119.mahjongcraft.flow.server.membership.repository.PlayerMembershipRepositoryImpl
 import com.doublemoon1119.mahjongcraft.flow.server.observer.ObserverSnapshotBroadcaster
+import com.doublemoon1119.mahjongcraft.flow.server.room.RoomRosterChangePolicy
 import com.doublemoon1119.mahjongcraft.flow.server.room.repository.RoomRepository
 import com.doublemoon1119.mahjongcraft.flow.server.room.repository.RoomRepositoryImpl
 import com.doublemoon1119.mahjongcraft.flow.server.room.usecase.AddAiPlayerUseCase
+import com.doublemoon1119.mahjongcraft.flow.server.room.usecase.AllowRoomParticipantUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.room.usecase.ChangeAiStrategyUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.room.usecase.CreateRoomUseCase
+import com.doublemoon1119.mahjongcraft.flow.server.room.usecase.JoinExternalRoomParticipantUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.room.usecase.JoinRoomUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.room.usecase.KickPlayerUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.room.usecase.LeaveRoomUseCase
@@ -189,6 +192,9 @@ val flowServerModule = module {
     single<ObserverSnapshotBroadcaster>()
 
     single<RoomRepositoryImpl>() bind RoomRepository::class
+    single<RoomRosterChangePolicy> { RoomRosterChangePolicy.UNRESTRICTED }
+    factory<JoinExternalRoomParticipantUseCase>()
+    factory<AllowRoomParticipantUseCase>()
     factory<AddAiPlayerUseCase>()
     factory<ChangeAiStrategyUseCase>()
     factory<CreateRoomUseCase>()

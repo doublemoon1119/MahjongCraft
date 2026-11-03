@@ -7,8 +7,10 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.logging.mahjongCraftLogge
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.FabricServerHolder
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.entity.FabricEntitySpawnGateway
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.persistence.FabricAuthoritativeStatePersistence
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.seating.FabricSeatEnvironment
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.seating.FabricSeatingSession
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.seating.FabricSeatingSessionFactory
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.seating.SeatCollisionScope
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.character.AiCharacterActionIds
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.character.AiCharacterDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.character.AiCharacterOwnership
@@ -19,6 +21,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.character.AiCharacterL
 import com.doublemoon1119.mahjongcraft.platform.minecraft.character.AiCharacterSeatActivation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.character.AiCharacterSeatRiders
 import com.doublemoon1119.mahjongcraft.platform.minecraft.character.AiCharacterSnapshot
+import com.doublemoon1119.mahjongcraft.platform.minecraft.character.SeatedParticipantSources
 import com.doublemoon1119.mahjongcraft.platform.minecraft.seating.SeatAssignmentResult
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongTableSeatLayout
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocationRegistry
@@ -32,6 +35,7 @@ import net.minecraft.server.network.ServerPlayerEntity
 import net.minecraft.util.math.Vec3d
 import kotlin.coroutines.cancellation.CancellationException
 import kotlin.uuid.Uuid
+import kotlin.uuid.toJavaUuid
 
 /**
  * 依權威名冊及已載入桌子恢復世界角色，不依賴開局事件補發，也不寫入遊戲狀態。
@@ -180,6 +184,21 @@ class FabricAiCharacterManager internal constructor(
     }
 
     /**
+     * 借用角色只在本桌等待點或正式站立點恢復控制，不從遠處拉回離開的實體。
+     *
+     * @param tableId 已授權的本桌。
+     * @param entity 目前已載入的同一實體。
+     * @return 本桌有可確認的安全位置且實體仍在該位置時為 true。
+     */
+    private fun isAtTable(tableId: Uuid, entity: Entity): Boolean {
+        val table = sessions.prepareTable(tableId) ?: return false
+        return table.requests.any { request ->
+            val geometry = table.coordinator.preview(table.world, entity, request) ?: return@any false
+            FabricSeatEnvironment().positioned(table.world, entity, geometry)
+        }
+    }
+
+    /**
      * 查詢能力並透過唯一接管核心建立角色。
      *
      * @param key 本場代理身分。
@@ -200,6 +219,13 @@ class FabricAiCharacterManager internal constructor(
             if (unavailable.add(capabilityId)) logger.warn("AI character capability is unavailable capabilityId={}", capabilityId)
             return null
         }
+        val game = persistence.characterSnapshot()?.authoritative?.games?.get(key.tableId) ?: return null
+        val identity = game.roomAdmission.memberIdentities[key.playerId]
+        val participant = if (identity?.sourceId == SeatedParticipantSources.WORLD_ENTITY) {
+            seating.world.getEntity(identity.subjectId.toJavaUuid())?.takeIf { it.isAlive && isAtTable(key.tableId, it) } ?: return null
+        } else {
+            null
+        }
         val context = FabricAiCharacterContext.create(
             world = seating.world,
             tableId = key.tableId,
@@ -207,6 +233,7 @@ class FabricAiCharacterManager internal constructor(
             playerId = key.playerId,
             character = definition,
             seat = seating.requests[index],
+            participant = participant,
         )
         return bindings.coordinator.ensure(
             key = key,
@@ -216,6 +243,7 @@ class FabricAiCharacterManager internal constructor(
                 check(entity !is ServerPlayerEntity && entity.isAlive && entity.world === seating.world) { "Character must be a non-player entity in the requested world: $capabilityId" }
                 val present = seating.world.getEntity(entity.uuid)
                 val ownership = handle.ownership
+                check(participant == null || (entity === participant && ownership == AiCharacterOwnership.BORROWED)) { "Room participant must borrow its exact bound entity" }
                 check(ownership != AiCharacterOwnership.OWNED || !entity.type.isSaveable) { "Owned character entity type must disable saving: $capabilityId" }
                 val registered = if (ownership == AiCharacterOwnership.OWNED) {
                     present == null
@@ -233,6 +261,7 @@ class FabricAiCharacterManager internal constructor(
                     world = seating.world,
                     ownership = ownership,
                     tracking = tracking,
+                    preserveSeatOnRelease = participant != null,
                 )
             },
             activate = { lease ->
@@ -280,9 +309,20 @@ class FabricAiCharacterManager internal constructor(
             roster = roster,
             includePlayers = false,
             player = serverHolder::findPlayer,
-            character = { playerId -> bindings.find(game.id, playerId)?.entity },
+            character = { playerId ->
+                val actor = bindings.find(game.id, playerId)
+                if (actor != null && game.roomAdmission.memberIdentities[playerId]?.sourceId == SeatedParticipantSources.WORLD_ENTITY && !isAtTable(game.id, actor.entity)) {
+                    bindings.coordinator.remove(AiCharacterBindingKey(game.id, game.matchId, playerId))
+                    null
+                } else {
+                    actor?.entity
+                }
+            },
         )
-        seating.coordinator.seatAll(seating.world, actors, seating.requests).forEachIndexed { index, result ->
+        val tableRequests = sessions.prepareTable(game.id)?.requests ?: return
+        SeatCollisionScope.with(actors, seating.requests) {
+            seating.coordinator.seatAll(seating.world, actors, seating.requests, tableRequests)
+        }.forEachIndexed { index, result ->
             bindings.find(game.id, roster[index])?.let { it.assignedVehicle = actors[index]?.vehicle }
             if (result == SeatAssignmentResult.SEATED || result == SeatAssignmentResult.STANDING) {
                 bindings.find(game.id, roster[index])?.let { actor ->
@@ -353,7 +393,7 @@ class FabricAiCharacterManager internal constructor(
      * @param seating 本次標準席位。
      * @param index 此 AI 的完整名冊索引。
      * @param tableId 診斷桌子。
-     * @return 已安全生成且完成入座或站立時為 true。
+     * @return 已完成安全入座或站立時為 true。
      */
     private fun activate(
         lease: AiCharacterLease<FabricAiCharacterActor>,

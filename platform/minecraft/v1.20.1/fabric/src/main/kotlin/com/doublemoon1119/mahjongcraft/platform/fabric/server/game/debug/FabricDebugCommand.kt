@@ -1,6 +1,7 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug
 
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.animation.FabricDebugAnimationCommand
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.character.FabricDebugSeatedParticipantCommand
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.decision.FabricDebugDecisionCommand
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.history.FabricDebugHistoryCommand
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.presentation.FabricDebugPresentationCommand
@@ -53,8 +54,9 @@ import net.minecraft.server.command.ServerCommandSource
  * @property stressCommand 建立壓力測試子指令樹。
  * @property stressController 壓力測試的 tick 推進與伺服器關閉時的清理。
  * @property entityLifecycle 保管並驅動臨時 entity 的到期清除。
+ * @property seatedParticipantCommand 建立已入座外部角色的驗證情境。
  */
-class FabricDebugCommand(
+class FabricDebugCommand internal constructor(
     private val minecraftEnvironment: MinecraftEnvironment,
     private val scenarioCommand: FabricDebugScenarioCommand,
     private val animationCommand: FabricDebugAnimationCommand,
@@ -67,6 +69,7 @@ class FabricDebugCommand(
     private val stressCommand: FabricDebugStressCommand,
     private val stressController: StressTestController,
     private val entityLifecycle: DebugPreviewEntityLifecycle,
+    private val seatedParticipantCommand: FabricDebugSeatedParticipantCommand,
 ) {
     /** 註冊整組 debug 指令樹；只有開發環境才真的呼叫 `dispatcher.register`，見類別 KDoc。 */
     fun register() {
@@ -101,7 +104,8 @@ class FabricDebugCommand(
             .then(decisionCommand.buildRuleDecisionCommand())
             .then(roundCommand.buildRoundCommand())
             .then(historyCommand.build())
-            .then(stressCommand.build()),
+            .then(stressCommand.build())
+            .then(seatedParticipantCommand.build()),
     )
 
     private companion object {

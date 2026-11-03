@@ -12,6 +12,9 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.client.automatic.FabricCl
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.automatic.FabricClientAutomaticControlRequestSender
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.catalogue.FabricRuleCatalogueScreenCommand
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.catalogue.RuleCatalogueScreenController
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.character.ClientAiCharacterPreviewRegistry
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.character.ClientAiCharacterPreviews
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.character.NativeCharacterPreviewRenderer
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.concurrency.ClientCoroutineScope
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.concurrency.ClientThreadCoroutineDispatcher
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.config.FabricClientConfigCommand
@@ -51,6 +54,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.client.tile.FabricHandSor
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.tile.FabricTileLabelCommand
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.tile.MatchingTileHighlightController
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.time.PauseAwareClientMonotonicClock
+import com.doublemoon1119.mahjongcraft.platform.minecraft.character.AiCharacterClientStateStore
 import com.doublemoon1119.mahjongcraft.platform.minecraft.di.flowClientModule
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
@@ -112,6 +116,9 @@ val fabricClientModule = module {
 
     single<ClientTileAppearanceResolver>()
     single<MahjongTileFaceRenderer>()
+    single<ClientAiCharacterPreviewRegistry>()
+    single<NativeCharacterPreviewRenderer>()
+    single<ClientAiCharacterPreviews>()
     single<PlayerPortraitRenderer>()
     single<PublicPlayerIndicatorTextResolver>()
 
@@ -119,6 +126,7 @@ val fabricClientModule = module {
 
     single<ClientAutomaticControlStateStore>()
     single<PauseAwareClientMonotonicClock>()
+    single<AiCharacterClientStateStore>()
     single<ClientMahjongStateStore>()
     single<ClientTableSpaceObstructionStore>()
     single<TableSpaceObstructionRenderer>()

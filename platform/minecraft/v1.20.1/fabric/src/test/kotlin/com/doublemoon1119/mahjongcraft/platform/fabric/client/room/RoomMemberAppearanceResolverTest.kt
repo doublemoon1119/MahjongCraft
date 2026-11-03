@@ -15,6 +15,34 @@ import kotlin.uuid.Uuid
 
 /** 驗證成員外觀的降級決策與一次性警告。 */
 class RoomMemberAppearanceResolverTest {
+    /** 已載入本人不要求第三方另外提供備援工廠。 */
+    @Test
+    fun `loaded world models do not require a fallback factory`() {
+        val registry = object : FakeRegistry() {
+            /**
+             * 以明確來源選擇本人模型。
+             *
+             * @param context 成員的公開預覽資訊。
+             * @return 本人模型來源。
+             */
+            override fun resolve(context: RoomMemberAppearanceContext): RoomMemberAppearanceSource = RoomMemberAppearanceSource.WorldEntityModel
+        }
+        assertEquals(RoomMemberAppearanceResolver.Appearance.WorldEntityModel, RoomMemberAppearanceResolver(registry).resolve(PLAYER_ID, isAi = true).appearance)
+    }
+
+    /** 已登記工廠時使用同一預覽路徑，不再一律回報缺少工廠。 */
+    @Test
+    fun `registered actor preview is selected without warning`() {
+        val registry = object : FakeRegistry() {
+            override fun resolve(context: RoomMemberAppearanceContext): RoomMemberAppearanceSource = RoomMemberAppearanceSource.ActorPreview("example:model")
+        }
+        val resolver = RoomMemberAppearanceResolver(registry) { it == "example:model" }
+        val result = resolver.resolve(PLAYER_ID, isAi = true)
+        assertEquals(RoomMemberAppearanceResolver.Appearance.ActorPreview, result.appearance)
+        assertEquals("example:model", result.actorKey)
+        assertNull(result.warning)
+    }
+
     /** registry 回傳的來源直接對應呈現方式。 */
     @Test
     fun `passes through the resolved appearance`() {

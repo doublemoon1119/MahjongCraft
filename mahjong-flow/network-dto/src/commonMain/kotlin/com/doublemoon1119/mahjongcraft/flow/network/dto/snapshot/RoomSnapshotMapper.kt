@@ -1,4 +1,5 @@
 package com.doublemoon1119.mahjongcraft.flow.network.dto.snapshot
+import com.doublemoon1119.mahjongcraft.flow.common.room.model.RoomParticipantIdentity
 import com.doublemoon1119.mahjongcraft.flow.common.room.model.RoomSnapshot
 import com.doublemoon1119.mahjongcraft.flow.network.dto.config.toDomain
 import com.doublemoon1119.mahjongcraft.flow.network.dto.config.toDto
@@ -22,6 +23,11 @@ fun RoomSnapshot.toDto(registries: NetworkDtoConverter): RoomSnapshotDto = RoomS
     canStart = canStart,
     isHost = isHost,
     isInRoom = isInRoom,
+    excludedPlayerIds = excludedPlayerIds.map(Uuid::toString),
+    excludedAiPlayerIds = excludedAiPlayerIds.map(Uuid::toString),
+    excludedParticipantIdentities = excludedParticipantIdentities.entries.associate { (member, identity) ->
+        member.toString() to RoomParticipantIdentityDto(identity.sourceId, identity.subjectId.toString())
+    },
 )
 
 /**
@@ -41,4 +47,9 @@ fun RoomSnapshotDto.toDomain(registries: NetworkDtoConverter): RoomSnapshot = Ro
     canStart = canStart,
     isHost = isHost,
     isInRoom = isInRoom,
+    excludedPlayerIds = excludedPlayerIds.map(Uuid::parse),
+    excludedAiPlayerIds = excludedAiPlayerIds.map(Uuid::parse),
+    excludedParticipantIdentities = excludedParticipantIdentities.entries.associate { (member, identity) ->
+        Uuid.parse(member) to RoomParticipantIdentity(identity.sourceId, Uuid.parse(identity.subjectId))
+    },
 )

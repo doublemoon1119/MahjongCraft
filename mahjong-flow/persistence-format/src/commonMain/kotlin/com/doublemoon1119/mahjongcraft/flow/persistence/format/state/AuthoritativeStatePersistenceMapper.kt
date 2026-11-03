@@ -121,6 +121,7 @@ fun AuthoritativeStatePersistenceDto.toGames(
         aiPlayerStrategyKeys = runtimeState.toAiPlayerStrategyKeys(),
         interruptedBaseByPlayerId = runtimeState.toInterruptedBaseByPlayerId(),
         matchId = Uuid.parse(runtimeState.matchId),
+        roomAdmission = runtimeState.roomAdmission.toDomain(),
     )
 }
 

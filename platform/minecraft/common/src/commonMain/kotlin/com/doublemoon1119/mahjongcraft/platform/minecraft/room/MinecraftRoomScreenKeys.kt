@@ -2,6 +2,33 @@ package com.doublemoon1119.mahjongcraft.platform.minecraft.room
 
 /** RoomScreen 與本地化設定呈現使用的 translation keys。 */
 object MinecraftRoomScreenKeys {
+    /** 排除卡片顯示的 UUID。 */
+    const val EXCLUDED_UUID = "mahjongcraft.room.screen.excluded_uuid"
+
+    /** 暫時排除名單（%s 人） */
+    const val EXCLUDED_COUNT = "mahjongcraft.room.screen.excluded_count"
+
+    /** 搜尋名稱… */
+    const val EXCLUDED_SEARCH = "mahjongcraft.room.screen.excluded_search"
+
+    /** 目前沒有被暫時排除的參與者。 */
+    const val EXCLUDED_EMPTY = "mahjongcraft.room.screen.excluded_empty"
+
+    /** 找不到符合名稱的參與者。 */
+    const val EXCLUDED_NO_RESULTS = "mahjongcraft.room.screen.excluded_no_results"
+
+    /** 解除全部排除 */
+    const val ALLOW_ALL_REJOINING = "mahjongcraft.room.screen.allow_all_rejoining"
+
+    /** 要解除整份暫時排除名單嗎？搜尋未顯示的參與者也會一併解除。這不會直接讓他們加入房間。 */
+    const val ALLOW_ALL_CONFIRMATION = "mahjongcraft.room.screen.allow_all_confirmation"
+
+    /** 房主專屬的暫時排除名單。 */
+    const val EXCLUDED_PARTICIPANTS = "mahjongcraft.room.screen.excluded_participants"
+
+    /** 解除排除但不強制加入。 */
+    const val ALLOW_REJOINING = "mahjongcraft.room.screen.allow_rejoining"
+
     const val TITLE = "mahjongcraft.room.screen.title"
     const val PAGE_ROOM = "mahjongcraft.room.screen.page.room"
     const val PAGE_SETTINGS = "mahjongcraft.room.screen.page.settings"

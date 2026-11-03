@@ -415,9 +415,9 @@ internal class HistoryListScreen(
                     val rowY = participantTop + index * 14
                     val result = results[participant.playerId]
                     context.drawTextWithShadow(textRenderer, Text.literal(result?.finalRank?.toString() ?: "—"), 16, rowY + 1, 0xcccccc)
-                    session.participants.render(participant, context, faceX, rowY, 10)
+                    session.participants.render(participant, context, faceX, rowY, 10, matchId = entry.matchId)
                     val nameWidth = (scoreRight - scoreWidth - 12 - nameX).coerceAtLeast(1)
-                    val name = HistoryScreenText.trim(session.participants.name(participant, entry.participants).string, nameWidth, textRenderer::getWidth)
+                    val name = HistoryScreenText.trim(session.participants.name(participant, entry.participants, entry.matchId).string, nameWidth, textRenderer::getWidth)
                     context.drawTextWithShadow(textRenderer, Text.literal(name), nameX, rowY + 1, if (participant.playerId == ownId) 0x8ed5df else 0xffffff)
                     val score = result?.finalScore?.toString() ?: "—"
                     context.drawTextWithShadow(textRenderer, Text.literal(score), scoreRight - textRenderer.getWidth(score), rowY + 1, 0xdddddd)

@@ -450,6 +450,7 @@ class FabricApplicationModuleTest {
         val debugNode = debugRoot.children.single()
         assertEquals(
             setOf(
+                "seated_participant",
                 "scenario",
                 "history",
                 "stress",

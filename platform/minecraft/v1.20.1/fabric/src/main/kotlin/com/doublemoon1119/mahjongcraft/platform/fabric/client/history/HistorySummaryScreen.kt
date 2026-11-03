@@ -221,7 +221,7 @@ internal class HistorySummaryScreen(
             val y = line.y - offset
             if (y + 10 >= layout.contentTop && y <= layout.contentBottom) {
                 line.participant?.let { row ->
-                    session.participants.render(row.participant, context, faceX, y - 1, 10)
+                    session.participants.render(row.participant, context, faceX, y - 1, 10, matchId = session.controller.state.value.summary?.detail?.summary?.matchId)
                     context.drawTextWithShadow(textRenderer, row.rank, layout.left + 8, y, 0xcccccc)
                     val scoreRight = layout.right - 14
                     val nameWidth = (scoreRight - textRenderer.getWidth(row.score) - 12 - nameX).coerceAtLeast(1)
@@ -298,7 +298,7 @@ internal class HistorySummaryScreen(
         val ownId = MinecraftClient.getInstance().player?.uuid?.toString()
         HistoryScreenText.rankedParticipants(summary).forEach { participant ->
             val result = results[participant.playerId]
-            val name = session.participants.name(participant, summary.participants)
+            val name = session.participants.name(participant, summary.participants, summary.matchId)
             val rank = Text.literal(result?.finalRank?.toString() ?: "—")
             val score = Text.literal(result?.finalScore?.toString() ?: "—")
             lines += Line(layout.left, y, Text.empty().asOrderedText(), 0xffffff, ParticipantRow(participant, rank, name, score, if (participant.playerId == ownId) 0x8ed5df else 0xffffff))

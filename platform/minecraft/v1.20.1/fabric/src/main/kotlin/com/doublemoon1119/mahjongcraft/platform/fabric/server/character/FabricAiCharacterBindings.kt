@@ -29,7 +29,7 @@ internal class FabricAiCharacterBindings(
     val coordinator = AiCharacterLeaseCoordinator<FabricAiCharacterActor>(failurePolicy) { key, cause ->
         val signature = "${cause::class.qualifiedName}:${cause.message}"
         if (reported.put(key, signature) != signature) {
-            val capabilityId = persistence.characterSnapshot()?.characters?.matches?.get(key.matchId)?.get(key.playerId)?.definition?.worldCapabilityId
+            val capabilityId = persistence.characterSnapshot()?.characters?.matchPlayers(key.matchId)?.get(key.playerId)?.definition?.worldCapabilityId
             logger.warn("AI character failed tableId={} matchId={} playerId={} capabilityId={}", key.tableId, key.matchId, key.playerId, capabilityId, cause)
         }
     }

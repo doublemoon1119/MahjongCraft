@@ -32,6 +32,9 @@ internal object HistoryParticipantTable : Table("history_participant") {
     val seatIndex = integer("seat_index")
     val playerId = varchar("player_id", 36)
     val aiStrategyId = varchar("ai_strategy_id", 255).nullable()
+
+    /** 當場角色的獨立保存描述，沒有時為 null。 */
+    val characterAppearance = text("character_appearance").nullable()
     override val primaryKey = PrimaryKey(matchId, seatIndex)
 
     init {

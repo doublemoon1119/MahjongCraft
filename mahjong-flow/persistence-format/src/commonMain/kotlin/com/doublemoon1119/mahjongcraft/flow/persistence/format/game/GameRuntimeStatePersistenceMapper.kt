@@ -1,6 +1,7 @@
 package com.doublemoon1119.mahjongcraft.flow.persistence.format.game
 
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.Game
+import com.doublemoon1119.mahjongcraft.flow.persistence.format.room.toPersistenceDto
 import kotlin.time.Duration
 import kotlin.uuid.Uuid
 
@@ -23,6 +24,7 @@ fun Game.toRuntimeStatePersistenceDto(): GameRuntimeStatePersistenceDto = GameRu
     pendingRuleDecision = pendingRuleDecision?.toPersistenceDto(),
     hostId = hostId.toString(),
     roomPlayerIds = roomPlayerIds.map(Uuid::toString),
+    roomAdmission = roomAdmission.toPersistenceDto(),
     interruptedBaseByPlayerId = interruptedBaseByPlayerId.mapKeys { (playerId, _) -> playerId.toString() },
     matchId = matchId.toString(),
     aiPlayerStrategyKeys = aiPlayerStrategyKeys.mapKeys { (playerId, _) -> playerId.toString() },

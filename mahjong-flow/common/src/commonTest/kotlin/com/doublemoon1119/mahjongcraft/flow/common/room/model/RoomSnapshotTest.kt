@@ -4,6 +4,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameConfig
 import com.doublemoon1119.mahjongcraft.testing.logic.config.FakeMahjongRuleConfig
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 import kotlin.uuid.Uuid
@@ -90,5 +91,30 @@ class RoomSnapshotTest {
 
         assertEquals(room.aiPlayerIds, snapshot.aiPlayerIds, "Snapshot should contain the same AI player IDs.")
         assertTrue(snapshot.aiPlayerIds.contains(aiId), "AI player should be present in snapshot.")
+    }
+
+    /** 來源身分只給房主，且用原成員編號索引實際來源的 UUID。 */
+    @Test
+    fun `excluded source identities are visible only to the host`() {
+        val host = Uuid.random()
+        val member = Uuid.random()
+        val excluded = Uuid.random()
+        val identity = RoomParticipantIdentity("test:world_entity", Uuid.random())
+        val room = Room(
+            id = Uuid.random(),
+            hostId = host,
+            gameConfig = GameConfig(FakeMahjongRuleConfig()),
+            playerIds = listOf(host, member),
+            admission = RoomAdmissionState(excludedParticipants = mapOf(identity to excluded)),
+        )
+        val hostView = room.toSnapshot(host)
+        assertEquals(mapOf(excluded to identity), hostView.excludedParticipantIdentities)
+        assertEquals(listOf(excluded), hostView.excludedPlayerIds)
+        for (observer in listOf(member, Uuid.random())) {
+            assertEquals(emptyMap(), room.toSnapshot(observer).excludedParticipantIdentities)
+            assertEquals(emptyList(), room.toSnapshot(observer).excludedPlayerIds)
+        }
+        assertFailsWith<IllegalArgumentException> { hostView.copy(isHost = false) }
+        assertFailsWith<IllegalArgumentException> { hostView.copy(excludedPlayerIds = emptyList()) }
     }
 }

@@ -15,12 +15,14 @@ import kotlin.uuid.toKotlinUuid
  * @property world 接管時的世界，不跨世界追蹤或重新生成借用角色。
  * @property ownership 接管時固定的所有權。
  * @property tracking 解除接管時清除公開互動標記。
+ * @property preserveSeatOnRelease 既有房間成員解除接管時保留座位。
  */
 internal class FabricAiCharacterLease(
     override val rider: FabricAiCharacterActor,
     private val world: ServerWorld,
     override val ownership: AiCharacterOwnership,
     private val tracking: FabricAiCharacterTracking,
+    private val preserveSeatOnRelease: Boolean,
 ) : AiCharacterLease<FabricAiCharacterActor> {
     override val entityId: Uuid = rider.entity.uuid.toKotlinUuid()
 
@@ -45,7 +47,7 @@ internal class FabricAiCharacterLease(
     override fun release() {
         tracking.broadcast(rider.entity, false)
         val vehicle = rider.entity.vehicle
-        if (AiCharacterMountOwnership.shouldDetach(originalVehicle, rider.assignedVehicle, vehicle)) {
+        if (AiCharacterMountOwnership.shouldDetach(originalVehicle, rider.assignedVehicle, vehicle, preserveSeatOnRelease)) {
             rider.entity.stopRiding()
             if (vehicle is MahjongStoolSeatEntity && !vehicle.hasPassengers()) vehicle.discard()
         }

@@ -11,6 +11,44 @@ import kotlin.test.assertIs
 
 /** 驗證頭像呈現邊界只收斂一般例外。 */
 class PlayerPortraitRendererTest {
+    /** 正常 FACE 不得為了小頭像啟動模型備援。 */
+    @Test
+    fun `working face never requests a model image`() {
+        val face = PlayerPortraitSource.TileFace("face")
+        val result = renderPortraitWithFallback(
+            resolved = Result.success(ResolvedPlayerPortraitSource("test:face", face)),
+            fallbackSource = PlayerPortraitSource.TileFace("unknown"),
+            onResolutionFailure = { _, _ -> error("Unexpected resolution failure") },
+            onDrawFailure = { _, _ -> error("Unexpected draw failure") },
+            modelFallback = { error("A valid face must not request a model") },
+            draw = { it },
+        )
+        assertEquals(face, result)
+    }
+
+    /** FACE 繪製失敗先試模型，模型也失敗才使用內建未知頭像。 */
+    @Test
+    fun `failed face and model fall back in order`() {
+        val face = PlayerPortraitSource.TileFace("face")
+        val model = PlayerPortraitSource.TileFace("model")
+        val unknown = PlayerPortraitSource.TileFace("unknown")
+        val calls = mutableListOf<PlayerPortraitSource>()
+        val result = renderPortraitWithFallback(
+            resolved = Result.success(ResolvedPlayerPortraitSource("test:face", face)),
+            fallbackSource = unknown,
+            onResolutionFailure = { _, _ -> },
+            onDrawFailure = { _, _ -> },
+            modelFallback = { model },
+            draw = { source ->
+                calls += source
+                if (source != unknown) error("Resource unavailable")
+                source
+            },
+        )
+        assertEquals(listOf<PlayerPortraitSource>(face, model, unknown), calls)
+        assertEquals(unknown, result)
+    }
+
     /** 一般例外會回傳失敗結果，供實際 renderer 選擇 fallback。 */
     @Test
     fun `returns recoverable presentation failures`() {

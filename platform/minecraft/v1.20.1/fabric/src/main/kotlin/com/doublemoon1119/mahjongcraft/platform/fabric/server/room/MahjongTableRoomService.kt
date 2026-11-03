@@ -23,6 +23,7 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.SyncGameSnapshot
 import com.doublemoon1119.mahjongcraft.flow.server.membership.repository.PlayerMembershipRepository
 import com.doublemoon1119.mahjongcraft.flow.server.room.repository.RoomRepository
 import com.doublemoon1119.mahjongcraft.flow.server.room.usecase.AddAiPlayerUseCase
+import com.doublemoon1119.mahjongcraft.flow.server.room.usecase.AllowRoomParticipantUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.room.usecase.ChangeAiStrategyUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.room.usecase.CreateRoomUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.room.usecase.JoinRoomUseCase
@@ -37,6 +38,8 @@ import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import com.doublemoon1119.mahjongcraft.platform.fabric.block.LocatedMahjongTable
 import com.doublemoon1119.mahjongcraft.platform.fabric.network.MahjongChannels
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.FabricServerHolder
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.character.FabricSeatedParticipantService
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.persistence.FabricAuthoritativeStatePersistence
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.persistence.FabricMahjongDataStatus
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.FabricTableStateDelivery
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.FabricTableStateTicket
@@ -68,6 +71,7 @@ import kotlin.uuid.toKotlinUuid
  * 本身不需要更動。
  *
  * @property scope 執行房間與遊戲操作的協程作用域。
+ * @property persistence 讓已預檢角色與開局共用保存交易。
  * @property roomRepository 查詢等待室狀態。
  * @property roomSnapshotRepository 管理等待室快照。
  * @property gameRepository 查詢對局狀態。
@@ -98,9 +102,12 @@ import kotlin.uuid.toKotlinUuid
  * @property dataStatus 麻將資料無法讀取時拒絕操作並提示玩家。
  * @property presentations 判斷房間設定的規則是否可選。
  * @property moduleRegistry 建立房間設定使用的規則模組，檢查能否在麻將桌上呈現。
+ * @property seatedParticipants 外部實體的開局前席位複核。
+ * @property allowParticipant 房主解除排除的權威操作。
  */
-class MahjongTableRoomService(
+class MahjongTableRoomService internal constructor(
     private val scope: AppCoroutineScope,
+    private val persistence: FabricAuthoritativeStatePersistence,
     private val roomRepository: RoomRepository,
     private val roomSnapshotRepository: RoomSnapshotRepository,
     private val gameRepository: GameRepository,
@@ -131,6 +138,8 @@ class MahjongTableRoomService(
     private val dataStatus: FabricMahjongDataStatus,
     private val presentations: GameConfigPresentationRegistry,
     private val moduleRegistry: MahjongModuleRegistry,
+    private val seatedParticipants: FabricSeatedParticipantService,
+    private val allowParticipant: AllowRoomParticipantUseCase,
 ) {
     /**
      * 將 RoomScreen 的強型別操作路由到既有權威 use case；封包中的玩家身分一律忽略。
@@ -153,6 +162,11 @@ class MahjongTableRoomService(
             is RoomActionDto.ChangeAiStrategy -> withMatchingMembership(player, tableId) {
                 val targetId = runCatching { Uuid.parse(action.targetPlayerId) }.getOrNull() ?: return@withMatchingMembership
                 changeAiStrategy(it, targetId, action.strategyKey)
+            }
+            is RoomActionDto.AllowAllParticipants -> withMatchingMembership(player, tableId) { allowRejoining(it, null) }
+            is RoomActionDto.AllowParticipant -> withMatchingMembership(player, tableId) {
+                val targetId = runCatching { Uuid.parse(action.targetPlayerId) }.getOrNull() ?: return@withMatchingMembership
+                allowRejoining(it, targetId)
             }
             is RoomActionDto.Kick -> withMatchingMembership(player, tableId) {
                 val targetId = runCatching { Uuid.parse(action.targetPlayerId) }.getOrNull() ?: return@withMatchingMembership
@@ -551,7 +565,46 @@ class MahjongTableRoomService(
                     return@launch
                 }
             }
-            when (val result = startGame(tableId, playerId)) {
+            val participants = if (room == null) emptyList() else withContext(dispatchers.main) { seatedParticipants.prepareStart(room) }
+            if (participants == null) {
+                feedbackPublisher.publish(playerId, MinecraftPlayerFeedback.SeatedParticipantUnavailable)
+                return@launch
+            }
+            val startResult = withContext(dispatchers.main) {
+                persistence.withParticipants(
+                    captures = participants,
+                    validate = { room == null || seatedParticipants.prepareStart(room) == participants },
+                    rejected = { Outcome.Error(RoomError.RoomLayoutConflict(tableId)) },
+                ) {
+                    val prepared = if (room != null && participants.isNotEmpty()) {
+                        when (val result = startGame.prepare(room, playerId)) {
+                            is Outcome.Success -> result.value
+                            is Outcome.Error -> return@withParticipants Outcome.Error(result.error)
+                        }
+                    } else {
+                        null
+                    }
+                    val seating = prepared?.let { seatedParticipants.startSeating(it.room, it.playerIds) }
+                    if (prepared != null && seating == null) return@withParticipants Outcome.Error(RoomError.RoomLayoutConflict(tableId))
+                    try {
+                        if (seating != null && !seating.arrange()) return@withParticipants Outcome.Error(RoomError.RoomLayoutConflict(tableId))
+                        if (prepared != null && !seatedParticipants.startSeatsMatch(prepared.room, prepared.playerIds, participants)) {
+                            return@withParticipants Outcome.Error(RoomError.RoomLayoutConflict(tableId))
+                        }
+                        startGame(
+                            roomId = tableId,
+                            operatorId = playerId,
+                            expectedRoom = room,
+                            requireImmediateCommit = participants.isNotEmpty(),
+                            preparedStart = prepared,
+                        )
+                    } finally {
+                        // 已提交的對局不能因後續通知失敗而按舊房間恢復位置。
+                        if (room != null && persistence.characterSnapshot()?.authoritative?.rooms?.get(room.id) == room) seating?.rollback()
+                    }
+                }
+            }
+            when (val result = startResult) {
                 is Outcome.Success -> {
                     val gameId = result.value
                     advanceManager.request(gameId)
@@ -658,6 +711,24 @@ class MahjongTableRoomService(
                     if (target != null) sendCurrentOccupancy(ticket, target)
                 }
                 is Outcome.Error -> feedbackPublisher.publish(playerId, MinecraftRoomFeedbackResolver.kickError(result.error))
+            }
+        }
+    }
+
+    /**
+     * 解除房主指定的排除記錄；不把對方直接加入房間。
+     *
+     * @param player 操作者，權限由權威用例重驗。
+     * @param previousPlayerId 被排除者上次的成員編號；null 表示解除全部。
+     */
+    fun allowRejoining(player: ServerPlayerEntity, previousPlayerId: Uuid?) {
+        if (dataStatus.rejectIfUnavailable(player)) return
+        val playerId = player.uuid.toKotlinUuid()
+        scope.launch(dispatchers.main) {
+            val tableId = membershipRepository.getVenueId(playerId) ?: return@launch
+            when (val result = allowParticipant(tableId, playerId, previousPlayerId)) {
+                is Outcome.Success -> Unit
+                is Outcome.Error -> publishRoomError(playerId, result.error)
             }
         }
     }

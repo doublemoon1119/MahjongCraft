@@ -18,6 +18,9 @@ import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDiscardPile
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
+import com.doublemoon1119.mahjongcraft.platform.minecraft.character.AiCharacterSnapshot
+import com.doublemoon1119.mahjongcraft.platform.minecraft.character.AiCharacterSnapshotCodec
+import com.doublemoon1119.mahjongcraft.platform.minecraft.character.BuiltInAiCharacters
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocationRegistry
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledPersistenceRegistries
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.registerBundledRuleModules
@@ -43,6 +46,25 @@ import kotlin.uuid.Uuid
 
 /** 驗證完整返回房間後才刪除原始事件並保存可重啟的 Replay。 */
 class HistoryArchiveServiceTest {
+    /** 封存擷取指定場次的資料，即使外部描述來源之後消失仍可讀取。 */
+    @Test
+    fun `archive stores the exact match appearance before its source is released`() {
+        val captured = mutableMapOf<Pair<Uuid, Uuid>, AiCharacterSnapshot>()
+        val fixture = ArchiveFixture("mahjongcraft-history-role-", appearanceFor = { match, player -> captured[match to player] })
+        val events = fixture.matchEvents()
+        val opening = events.first().fact as HistoryFact.MatchStarted
+        val actor = opening.tableState.players.first().id
+        val role = AiCharacterSnapshot(BuiltInAiCharacters.TILE_MASCOT_ID, BuiltInAiCharacters.TILE_MASCOT, "Original actor")
+        captured[fixture.matchId to actor] = role
+        val withAi = events.mapIndexed { index, event -> if (index == 0) event.copy(fact = opening.copy(aiPlayerStrategyKeys = mapOf(actor to "mahjongcraft:random"))) else event }
+        fixture.database.appendPendingBatch(withAi.map(fixture::record))
+        assertEquals(1, fixture.service.archiveReady(fixture.database, AuthoritativeStateSnapshot(), scanAllPending = true))
+        captured.clear()
+        val stored = fixture.database.readCharacterAppearances(fixture.matchId.toString())
+        assertEquals(setOf(actor.toString()), stored.keys)
+        assertEquals(role, AiCharacterSnapshotCodec().decode(stored.getValue(actor.toString())))
+    }
+
     /** 中途終止事實與終端證據保留為部分紀錄，不封存或刪除待寫事件。 */
     @Test
     fun `aborted history remains partial and never archives as a completed replay`() {
@@ -521,8 +543,9 @@ class HistoryArchiveServiceTest {
      * 一場可封存對局的資料庫與對帳服務。
      *
      * @param prefix 暫存資料夾名稱前綴。
+     * @param appearanceFor 已保存場次的角色來源，不讀取現場實體。
      */
-    private class ArchiveFixture(prefix: String) {
+    private class ArchiveFixture(prefix: String, appearanceFor: (Uuid, Uuid) -> AiCharacterSnapshot? = { _, _ -> null }) {
         val tableId: Uuid = Uuid.random()
         val matchId: Uuid = Uuid.random()
         val path = createTempDirectory(prefix).resolve("history.sqlite")
@@ -534,6 +557,7 @@ class HistoryArchiveServiceTest {
             registries,
             MahjongModuleRegistryImpl().apply { registerBundledRuleModules() },
             TableLocationRegistry(),
+            appearanceFor = appearanceFor,
         )
 
         /**

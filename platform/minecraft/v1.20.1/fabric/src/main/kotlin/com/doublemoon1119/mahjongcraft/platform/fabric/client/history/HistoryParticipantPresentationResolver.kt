@@ -1,10 +1,9 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.client.history
 
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryParticipantSummaryDto
-import com.doublemoon1119.mahjongcraft.platform.fabric.client.player.ClientPlayerProfileResolver
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.player.ClientPlayerDisplayNameResolver
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.PlayerPortraitRenderer
 import com.doublemoon1119.mahjongcraft.platform.minecraft.history.MinecraftHistoryScreenKeys
-import com.doublemoon1119.mahjongcraft.platform.minecraft.player.aiPlayerDisplayName
 import net.minecraft.client.gui.DrawContext
 import net.minecraft.text.Text
 import kotlin.uuid.Uuid
@@ -12,11 +11,11 @@ import kotlin.uuid.Uuid
 /**
  * 歷史對局參與者的名稱與頭像呈現。
  *
- * @property profiles 已知玩家 profile 的客戶端快取與材質解析器。
+ * @property names 目前與歷史共用的名稱解析器。
  * @property portraits 既有 portrait source 的 GUI 繪製器。
  */
 class HistoryParticipantPresentationResolver(
-    private val profiles: ClientPlayerProfileResolver,
+    private val names: ClientPlayerDisplayNameResolver,
     private val portraits: PlayerPortraitRenderer,
 ) {
     /**
@@ -24,21 +23,13 @@ class HistoryParticipantPresentationResolver(
      *
      * @param participant 欲顯示的參與者。
      * @param participants 該場參與者，用於依座位計算 AI 名稱。
+     * @param matchId 歷史場次，沒有時不查目前角色。
      * @return 原生玩家名稱、AI 名稱或未知玩家文字。
      */
-    fun name(participant: HistoryParticipantSummaryDto, participants: List<HistoryParticipantSummaryDto>): Text {
-        if (participant.aiStrategyId != null) {
-            val aiIds = participants.asSequence()
-                .filter { it.aiStrategyId != null }
-                .sortedBy { it.seatIndex }
-                .mapNotNull { parseUuid(it.playerId) }
-                .toList()
-            val id = parseUuid(participant.playerId)
-            return if (id != null) Text.literal(aiPlayerDisplayName(id, aiIds)) else Text.translatable(UNKNOWN_PLAYER_KEY)
-        }
+    fun name(participant: HistoryParticipantSummaryDto, participants: List<HistoryParticipantSummaryDto>, matchId: String? = null): Text {
         val id = parseUuid(participant.playerId) ?: return Text.translatable(UNKNOWN_PLAYER_KEY)
-        val profile = profiles.onlineProfile(id) ?: profiles.resolvedProfile(id)
-        return if (profile != null && profile.name.isNotBlank()) Text.literal(profile.name) else Text.translatable(UNKNOWN_PLAYER_KEY)
+        val aiIds = participants.filter { it.aiStrategyId != null }.sortedBy { it.seatIndex }.mapNotNull { parseUuid(it.playerId) }
+        return Text.literal(names.historical(id, matchId?.let(::parseUuid), participant.aiStrategyId != null, aiIds))
     }
 
     /**
@@ -49,12 +40,14 @@ class HistoryParticipantPresentationResolver(
      * @param x 左上角水平座標。
      * @param y 左上角垂直座標。
      * @param size 頭像邊長。
+     * @param matchId 歷史場次。
      */
-    fun render(participant: HistoryParticipantSummaryDto, context: DrawContext, x: Int, y: Int, size: Int) {
+    fun render(participant: HistoryParticipantSummaryDto, context: DrawContext, x: Int, y: Int, size: Int, matchId: String? = null) {
         val parsedId = parseUuid(participant.playerId)
         val id = parsedId ?: FALLBACK_UUID
         val isAi = participant.aiStrategyId != null
-        portraits.renderGui(
+        portraits.renderHistoryGui(
+            matchId = matchId?.let(::parseUuid) ?: FALLBACK_UUID,
             playerId = id,
             isAi = parsedId != null && isAi,
             context = context,

@@ -324,7 +324,7 @@ internal class HistoryRoundEventsScreen(
      * @return 玩家名稱或從 1 開始的座位名稱。
      */
     private fun actorText(identity: HistoryReplayIdentityDto, seat: Int): Text = participant(identity, seat)?.let {
-        session.participants.name(it, session.controller.state.value.summary?.detail?.summary?.participants.orEmpty())
+        session.participants.name(it, session.controller.state.value.summary?.detail?.summary?.participants.orEmpty(), session.controller.state.value.summary?.detail?.summary?.matchId)
     } ?: Text.translatable(MinecraftHistoryScreenKeys.ROUND_SEAT, seat + 1)
 
     /**
@@ -347,7 +347,7 @@ internal class HistoryRoundEventsScreen(
                 card.rows.forEach { row ->
                     when (row) {
                         is Row.TextLine -> {
-                            row.participant?.let { session.participants.render(it, context, layout.left + row.portraitIndent, y - 1, 10) }
+                            row.participant?.let { session.participants.render(it, context, layout.left + row.portraitIndent, y - 1, 10, matchId = session.controller.state.value.summary?.detail?.summary?.matchId) }
                             context.drawTextWithShadow(textRenderer, row.text, layout.left + row.indent, y, row.color)
                             if (hovered && mouseY >= y && mouseY < y + row.height) tooltip = row.tooltip
                         }

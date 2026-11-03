@@ -31,4 +31,13 @@ class AiCharacterMountOwnershipTest {
         assertFalse(AiCharacterMountOwnership.shouldDetach(null, assigned, null))
         assertFalse(AiCharacterMountOwnership.shouldDetach(null, null, external))
     }
+
+    /** 固定實體在局間改坐另一張椅子後，回房仍保留當下乘坐關係。 */
+    @Test
+    fun `existing participant keeps its seat after a declared seat change`() {
+        val original = Any()
+        val assigned = Any()
+        assertFalse(AiCharacterMountOwnership.shouldDetach(original, assigned, assigned, preserveSeat = true))
+        assertTrue(AiCharacterMountOwnership.shouldDetach(original, assigned, assigned))
+    }
 }

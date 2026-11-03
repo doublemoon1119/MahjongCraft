@@ -59,6 +59,7 @@ internal object FabricMahjongExtensionBootstrap {
             extension.registerSeatProviders(registries.seatProviderRegistry)
             extension.registerAiCharacterCapabilities(registries.characterCapabilityRegistry)
             extension.registerSeatPlacements(registries.seatPlacementRegistry)
+            extension.registerRoomParticipants(registries.roomParticipantRegistry)
         } catch (cause: Throwable) {
             if (!failurePolicy.isIsolatable(cause)) throw cause
             throw FabricMahjongExtensionRegistrationException(extension.id, cause)

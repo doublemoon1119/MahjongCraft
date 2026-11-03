@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.server.seating
 
+import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongStoolSeatEntity
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.seating.SeatGeometry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.seating.SeatRequest
 import com.doublemoon1119.mahjongcraft.platform.minecraft.seating.SeatCollisionPolicy
@@ -84,7 +85,9 @@ internal class FabricSeatEnvironment : SeatEnvironment<ServerWorld, Entity, Fabr
 
     /** 從本桌的座位上起身；乘坐者已確認坐在本桌某個座位上。 */
     override fun leaveSeat(rider: Entity) {
+        val vehicle = rider.vehicle
         rider.stopRiding()
+        if (vehicle is MahjongStoolSeatEntity && !vehicle.hasPassengers()) vehicle.discard()
     }
 
     /** 不干預載具；僅在目前位置不安全且原位置仍安全時嘗試回復。 */
@@ -124,13 +127,14 @@ internal class FabricSeatEnvironment : SeatEnvironment<ServerWorld, Entity, Fabr
                 if (!world.chunkManager.isChunkLoaded(chunkX, chunkZ)) return false
             }
         }
-        if (!world.isSpaceEmpty(rider, body)) return false
+        if (world.getBlockCollisions(rider, body).iterator().hasNext()) return false
         if (world.getOtherEntities(rider, body) {
                 SeatCollisionPolicy.blocks(
                     removed = it.isRemoved,
                     spectator = it.isSpectator,
                     physical = it is LivingEntity || it.isCollidable,
-                )
+                ) &&
+                    !SeatCollisionScope.ignores(rider, it)
             }.isNotEmpty()
         ) {
             return false

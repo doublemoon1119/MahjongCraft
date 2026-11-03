@@ -126,6 +126,13 @@ class FabricPlayerFeedbackPublisher(
                     player.sendMessage(Text.translatable(MinecraftMessageKeys.GAME_CONFIG_INVALID), true)
                 MinecraftPlayerFeedback.AiStrategyNotFound ->
                     player.sendMessage(Text.translatable(MinecraftMessageKeys.AI_STRATEGY_NOT_FOUND), true)
+                MinecraftPlayerFeedback.RoomExclusionListFull -> player.sendMessage(Text.translatable(MinecraftMessageKeys.ROOM_EXCLUSION_LIST_FULL), true)
+                MinecraftPlayerFeedback.RoomParticipantExcluded ->
+                    player.sendMessage(Text.translatable(MinecraftMessageKeys.ROOM_PARTICIPANT_EXCLUDED), true)
+                MinecraftPlayerFeedback.RoomLayoutConflict ->
+                    player.sendMessage(Text.translatable(MinecraftMessageKeys.ROOM_LAYOUT_CONFLICT), true)
+                MinecraftPlayerFeedback.SeatedParticipantUnavailable ->
+                    player.sendMessage(Text.translatable(MinecraftMessageKeys.SEATED_PARTICIPANT_UNAVAILABLE), true)
                 MinecraftPlayerFeedback.TableNotReachable ->
                     player.sendMessage(Text.translatable(MinecraftMessageKeys.TABLE_NOT_REACHABLE), true)
                 is MinecraftPlayerFeedback.StartBlockedByPlayers ->

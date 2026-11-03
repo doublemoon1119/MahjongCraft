@@ -8,6 +8,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.room.model.RoomError
 import com.doublemoon1119.mahjongcraft.flow.common.room.model.toSnapshot
 import com.doublemoon1119.mahjongcraft.flow.common.room.repository.RoomSnapshotRepository
 import com.doublemoon1119.mahjongcraft.flow.common.room.service.RoomEventPublisher
+import com.doublemoon1119.mahjongcraft.flow.server.room.RoomRosterChangePolicy
 import com.doublemoon1119.mahjongcraft.flow.server.room.repository.RoomRepository
 import kotlin.uuid.Uuid
 
@@ -19,11 +20,13 @@ import kotlin.uuid.Uuid
  * @property roomRepository 權威房間數據倉庫。
  * @property snapshotRepository 房間快照數據倉庫。
  * @property eventPublisher 房間通知服務。
+ * @property rosterPolicy 不讀取外部狀態的名冊位置限制。
  */
 class UpdateConfigUseCase(
     private val roomRepository: RoomRepository,
     private val snapshotRepository: RoomSnapshotRepository,
     private val eventPublisher: RoomEventPublisher,
+    private val rosterPolicy: RoomRosterChangePolicy = RoomRosterChangePolicy.UNRESTRICTED,
 ) {
     /**
      * 更新房間完整遊戲設定。
@@ -61,6 +64,9 @@ class UpdateConfigUseCase(
                             gameConfig = normalizedConfig,
                             readyPlayerIds = room.aiPlayerIds,
                         )
+                    }
+                    if (!rosterPolicy.allows(room, updatedRoom)) {
+                        return@update room to Outcome.Error(RoomError.RoomLayoutConflict(roomId))
                     }
                     updatedRoom to Outcome.Success(updatedRoom)
                 }

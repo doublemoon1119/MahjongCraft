@@ -7,6 +7,9 @@ sealed interface RoomMemberAppearanceSource {
     /** 使用玩家模型。 */
     data object PlayerModel : RoomMemberAppearanceSource
 
+    /** 優先繪製已載入的本人，缺少時由角色工廠或頭像備援。 */
+    data object WorldEntityModel : RoomMemberAppearanceSource
+
     /** 使用玩家頭像。 */
     data object Portrait : RoomMemberAppearanceSource
 

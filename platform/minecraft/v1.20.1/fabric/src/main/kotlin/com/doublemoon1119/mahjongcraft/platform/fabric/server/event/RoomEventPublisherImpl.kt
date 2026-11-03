@@ -15,6 +15,7 @@ import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateStore
 import com.doublemoon1119.mahjongcraft.logic.config.MahjongRuleConfig
 import com.doublemoon1119.mahjongcraft.platform.fabric.network.MahjongChannels
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.FabricServerHolder
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.network.AiCharacterSnapshotDelivery
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.network.PlayerIdentitySender
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.FabricTableStateDelivery
 import net.minecraft.server.network.ServerPlayerEntity
@@ -29,6 +30,7 @@ import kotlin.uuid.Uuid
  * @property serverHolder 目前伺服器與有效收件玩家。
  * @property playerIdentities 房間真人參與者的普通名稱同步器。
  * @property json 封包序列化設定。
+ * @property characterSnapshots 已授權桌子角色的公開同步。
  * @property networkRegistries 規則擴充資料的線路轉換註冊表。
  */
 class RoomEventPublisherImpl(
@@ -38,6 +40,7 @@ class RoomEventPublisherImpl(
     private val serverHolder: FabricServerHolder,
     private val playerIdentities: PlayerIdentitySender,
     private val json: NetworkJson,
+    private val characterSnapshots: AiCharacterSnapshotDelivery,
     private val networkRegistries: NetworkDtoRegistries,
 ) : RoomEventPublisher {
     override suspend fun publishJoin(roomId: Uuid, targetPlayerId: Uuid, joinedPlayerId: Uuid, reason: JoinReason) {
@@ -71,7 +74,7 @@ class RoomEventPublisherImpl(
                 authoritativeStateStore.getRoom(roomId) ?: return@prepareAndSend null
                 val snapshot = roomSnapshotRepository.getSnapshot(roomId, targetPlayerId) ?: return@prepareAndSend null
                 val player = serverHolder.findPlayer(targetPlayerId) ?: return@prepareAndSend null
-                playerIdentities.send(targetPlayerId, snapshot.playerIds.filterNot { it in snapshot.aiPlayerIds })
+                playerIdentities.send(targetPlayerId, (snapshot.playerIds.filterNot { it in snapshot.aiPlayerIds } + snapshot.excludedPlayerIds.filterNot { it in snapshot.excludedAiPlayerIds }))
                 PreparedRoomUpdate(
                     player = player,
                     payload = RoomUpdatePayloadDto(
@@ -81,7 +84,10 @@ class RoomEventPublisherImpl(
                     ),
                 )
             },
-            send = { prepared -> MahjongChannels.roomUpdate.sendTo(prepared.player, json, prepared.payload) },
+            send = { prepared ->
+                characterSnapshots.sendAuthorized(prepared.player, roomId, null, prepared.payload.snapshot.playerIds.map(Uuid::parse).toSet())
+                MahjongChannels.roomUpdate.sendTo(prepared.player, json, prepared.payload)
+            },
         )
     }
 

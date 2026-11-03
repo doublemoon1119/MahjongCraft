@@ -5,8 +5,26 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModM
 
 /** Minecraft 玩家可見訊息使用的 translation key 單一來源。 */
 object MinecraftMessageKeys {
+    /** 暫時排除名單達到容量上限。 */
+    const val ROOM_EXCLUSION_LIST_FULL = "mahjongcraft.room.exclusion_list_full"
+
     /** 所有 MahjongCraft 玩家訊息 key 的共用前綴。 */
     private const val PREFIX = MinecraftModMetadata.MOD_ID + ".message."
+
+    /** 已入座測試角色已建立，由正式掃描加入。 */
+    const val DEBUG_SEATED_PARTICIPANT_CREATED = PREFIX + "debug.seated_participant.created"
+
+    /** 測試需要房主等待室與可用家具座位。 */
+    const val DEBUG_SEATED_PARTICIPANT_UNAVAILABLE = PREFIX + "debug.seated_participant.unavailable"
+
+    /** 暫時排除尚未解除。 */
+    const val ROOM_PARTICIPANT_EXCLUDED = PREFIX + "room_participant_excluded"
+
+    /** 房間或固定席位不允許本次操作。 */
+    const val ROOM_LAYOUT_CONFLICT = PREFIX + "room_layout_conflict"
+
+    /** 開局時無法確認外部角色已正確入座。 */
+    const val SEATED_PARTICIPANT_UNAVAILABLE = PREFIX + "seated_participant_unavailable"
 
     /** 加分牌、籌碼或點棒等規則附加物件無法完整呈現。 */
     const val TABLE_RULE_PROPS_UNAVAILABLE = PREFIX + "table_rule_props_unavailable"
@@ -568,6 +586,11 @@ object MinecraftMessageKeys {
 
     /** Minecraft 語系資源必須提供的全部玩家回饋 key。 */
     val ALL: Set<String> = setOf(
+        DEBUG_SEATED_PARTICIPANT_CREATED,
+        DEBUG_SEATED_PARTICIPANT_UNAVAILABLE,
+        ROOM_PARTICIPANT_EXCLUDED,
+        ROOM_LAYOUT_CONFLICT,
+        SEATED_PARTICIPANT_UNAVAILABLE,
         TABLE_RULE_PROPS_UNAVAILABLE,
         DATA_FILE,
         DATA_FILE_UNCHANGED,

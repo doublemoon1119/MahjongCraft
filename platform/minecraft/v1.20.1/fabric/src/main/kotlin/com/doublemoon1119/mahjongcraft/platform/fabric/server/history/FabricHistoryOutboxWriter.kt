@@ -30,6 +30,8 @@ import com.doublemoon1119.mahjongcraft.flow.persistence.format.registry.Persiste
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateStore
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import com.doublemoon1119.mahjongcraft.platform.fabric.logging.mahjongCraftLogger
+import com.doublemoon1119.mahjongcraft.platform.minecraft.character.AiCharacterSnapshot
+import com.doublemoon1119.mahjongcraft.platform.minecraft.character.AiCharacterSnapshotCodec
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftServerConfigState
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocationRegistry
 import kotlinx.coroutines.CancellationException
@@ -67,6 +69,7 @@ import kotlin.uuid.Uuid
  * @property configState 目前有效的不可變設定，供 session 初始化使用。
  * @property retentionCoordinator 將清理與有效政策更新排序的協調邊界。
  * @property observer 接收背景工作各環節耗時與寫入事件數；null 時不量測。
+ * @param characterAppearance 從同場保存快照讀取角色描述；未提供的平台沒有角色外觀資料。
  */
 class FabricHistoryOutboxWriter(
     private val store: AuthoritativeStateStore,
@@ -77,6 +80,7 @@ class FabricHistoryOutboxWriter(
     private val configState: MinecraftServerConfigState,
     private val retentionCoordinator: HistoryRetentionCoordinator,
     private val observer: HistoryWriterObserver? = null,
+    characterAppearance: (Uuid, Uuid) -> AiCharacterSnapshot? = { _, _ -> null },
 ) {
     /** 記錄歷史寫入與對帳錯誤的 logger。 */
     private val logger = mahjongCraftLogger(FabricHistoryOutboxWriter::class)
@@ -88,7 +92,7 @@ class FabricHistoryOutboxWriter(
     private val replayRegistries: PersistenceRegistries = registries
 
     /** 對帳待寫事件並建立完整 Replay 的服務。 */
-    private val archiveService = HistoryArchiveService(mapper, registries, moduleRegistry, locations)
+    private val archiveService = HistoryArchiveService(mapper, registries, moduleRegistry, locations, characterAppearance)
 
     /** 共用唯讀 preview 與清理政策的 I/O 維護服務。 */
     private val retentionService = HistoryRetentionService(store)
@@ -387,6 +391,33 @@ class FabricHistoryOutboxWriter(
             HistoryListRequest(scope = request.scope, pageSize = 1)
                 .toSqliteQuery(access, excludedHistoryMatches()).copy(matchId = request.matchId.toString()),
         )
+    }
+
+    /**
+     * 用同一歷史查詢條件重驗場次，取得平台自己的固定角色描述。
+     *
+     * @param access 可信連線身分。
+     * @param request 已驗證摘要要求。
+     * @param sessionId 收到要求時的保存 session。
+     * @return 未授權、未公開或外觀缺失時為空，不影響正常歷史內容。
+     */
+    internal suspend fun characterAppearances(
+        access: HistoryQueryAccess,
+        request: HistorySummaryRequest,
+        sessionId: Uuid?,
+    ): HistoryManagementResult<Map<String, AiCharacterSnapshot>> = manage(sessionId) { activeDatabase, _ ->
+        val query = HistoryListRequest(scope = request.scope, pageSize = 1).toSqliteQuery(access, excludedHistoryMatches()).copy(matchId = request.matchId.toString())
+        if (activeDatabase.readHistoryQueryPage(query).entries.none { it.matchId == request.matchId.toString() }) return@manage emptyMap()
+        activeDatabase.readCharacterAppearances(request.matchId.toString()).mapNotNull { (player, encoded) ->
+            try {
+                player to AiCharacterSnapshotCodec().decode(encoded)
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (cause: Exception) {
+                logger.warn("Historical character appearance is unavailable matchId={} playerId={}", request.matchId, player, cause)
+                null
+            }
+        }.toMap()
     }
 
     /**

@@ -12,6 +12,7 @@ import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.platform.fabric.network.MahjongChannels
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.FabricServerHolder
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.history.FabricHistoryOutboxWriter
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.network.AiCharacterSnapshotDelivery
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.network.PlayerIdentitySender
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.FabricTableStateDelivery
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.FabricTableStateTicket
@@ -31,6 +32,7 @@ import kotlin.uuid.Uuid
  * @property playerIdentities 已授權快照參與者的普通名稱同步器。
  * @property historyWriter 最近結束場次的保存狀態授權索引。
  * @property json 封包序列化設定。
+ * @property characterSnapshots 已授權桌子角色的公開同步。
  * @property networkRegistries 規則擴充資料的線路轉換註冊表。
  */
 class GameEventPublisherImpl(
@@ -41,6 +43,7 @@ class GameEventPublisherImpl(
     private val playerIdentities: PlayerIdentitySender,
     private val historyWriter: FabricHistoryOutboxWriter,
     private val json: NetworkJson,
+    private val characterSnapshots: AiCharacterSnapshotDelivery,
     private val networkRegistries: NetworkDtoRegistries,
 ) : GameEventPublisher {
     override suspend fun publish(gameId: Uuid, targetPlayerId: Uuid, actorId: Uuid, action: GameAction) {
@@ -85,6 +88,7 @@ class GameEventPublisherImpl(
                 playerIdentities.send(targetPlayerId, snapshot.players.map { it.id }.filterNot { it in aiPlayerIds })
                 PreparedGameUpdate(
                     player = player,
+                    matchId = game.matchId,
                     payload = GameUpdatePayloadDto(
                         gameId = gameId.toString(),
                         actorId = actorId.toString(),
@@ -95,7 +99,10 @@ class GameEventPublisherImpl(
                     ),
                 )
             },
-            send = { prepared -> MahjongChannels.gameUpdate.sendTo(prepared.player, json, prepared.payload) },
+            send = { prepared ->
+                characterSnapshots.sendAuthorized(prepared.player, gameId, prepared.matchId, prepared.payload.snapshot.players.map { Uuid.parse(it.id) }.toSet())
+                MahjongChannels.gameUpdate.sendTo(prepared.player, json, prepared.payload)
+            },
         )
     }
 
@@ -111,10 +118,12 @@ class GameEventPublisherImpl(
      * 已在主執行緒準備完成、可在最後檢查後立即送出的對局更新。
      *
      * @property player 已驗證仍在線的收件玩家。
+     * @property matchId 準備快照時的權威場次。
      * @property payload 已序列化所需內容的對局更新 payload。
      */
     private data class PreparedGameUpdate(
         val player: ServerPlayerEntity,
+        val matchId: Uuid,
         val payload: GameUpdatePayloadDto,
     )
 }

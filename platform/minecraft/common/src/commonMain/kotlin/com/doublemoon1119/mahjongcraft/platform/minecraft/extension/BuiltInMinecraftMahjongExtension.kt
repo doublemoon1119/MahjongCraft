@@ -12,6 +12,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionVocab
 import com.doublemoon1119.mahjongcraft.platform.minecraft.action.HUD_ACTION_PREFIX
 import com.doublemoon1119.mahjongcraft.platform.minecraft.action.MinecraftKanActionTokenKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.ai.AiStrategyDisplayNameDefinition
+import com.doublemoon1119.mahjongcraft.platform.minecraft.api.character.AiCharacterFace
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.AiCharacterRegistrar
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.AiStrategyDisplayNameRegistrar
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.AutomaticControlDisplayRegistrar
@@ -19,7 +20,9 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.Decis
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.GameActionVocabularyRegistrar
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.MatchSettlementPresentationTemplateRegistrar
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.MinecraftTileAssetRegistrar
+import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.PlayerPortraitSourceRegistrar
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.PublicPlayerIndicatorDisplayRegistrar
+import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.RoomMemberAppearanceSourceRegistrar
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.TileEmojiRegistrar
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.TileLabelRegistrar
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.WinSettlementPresentationTemplateRegistrar
@@ -30,8 +33,12 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.character.BuiltInAiCha
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftClientConfigScreenKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.DecisionStatusDisplayNameDefaultDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.HUD_STATUS_PREFIX
+import com.doublemoon1119.mahjongcraft.platform.minecraft.player.PlayerPortraitSource
+import com.doublemoon1119.mahjongcraft.platform.minecraft.player.PlayerPortraitSourceDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.player.PublicPlayerIndicatorDisplay
 import com.doublemoon1119.mahjongcraft.platform.minecraft.player.PublicPlayerIndicatorDisplayDefinition
+import com.doublemoon1119.mahjongcraft.platform.minecraft.room.RoomMemberAppearanceSource
+import com.doublemoon1119.mahjongcraft.platform.minecraft.room.RoomMemberAppearanceSourceDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.BUILT_IN_MATCH_SETTLEMENT_TEMPLATE_KEY
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.BuiltInWinSettlementFieldIds
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.BuiltInWinSettlementTemplates
@@ -59,6 +66,38 @@ object BuiltInMinecraftMahjongExtension : MinecraftMahjongExtension {
 
     override fun registerAiCharacters(registry: AiCharacterRegistrar) {
         registry.register(BuiltInAiCharacters.TILE_MASCOT)
+    }
+
+    override fun registerRoomMemberAppearanceSources(registry: RoomMemberAppearanceSourceRegistrar) {
+        registry.register(
+            RoomMemberAppearanceSourceDefinition(
+                providerId = BuiltInAiCharacters.ROOM_MODEL_SOURCE_ID,
+                priority = -100,
+                provider = { context ->
+                    if (context.isAi && context.hasLiveModel) {
+                        RoomMemberAppearanceSource.WorldEntityModel
+                    } else {
+                        context.character?.preview?.let { RoomMemberAppearanceSource.ActorPreview(it.capabilityId) }
+                    }
+                },
+            ),
+        )
+    }
+
+    override fun registerPlayerPortraitSources(registry: PlayerPortraitSourceRegistrar) {
+        registry.register(
+            PlayerPortraitSourceDefinition(
+                providerId = BuiltInAiCharacters.PORTRAIT_SOURCE_ID,
+                priority = -100,
+                provider = { context ->
+                    when (val face = context.character?.face) {
+                        is AiCharacterFace.Tile -> PlayerPortraitSource.TileFace(face.assetKey)
+                        is AiCharacterFace.TextureRegion -> PlayerPortraitSource.TextureRegion(face.resourceId, face.u0, face.v0, face.u1, face.v1)
+                        null -> null
+                    }
+                },
+            ),
+        )
     }
 
     override fun registerTileAssets(registry: MinecraftTileAssetRegistrar) {

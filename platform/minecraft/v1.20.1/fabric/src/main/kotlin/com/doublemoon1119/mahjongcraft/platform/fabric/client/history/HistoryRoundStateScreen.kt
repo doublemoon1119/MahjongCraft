@@ -167,7 +167,7 @@ internal class HistoryRoundStateScreen(
                     val hover = !dragging && layout.containsCard(mouseX.toDouble(), mouseY.toDouble(), y, row.height)
                     when (row) {
                         is Row.Line -> {
-                            row.participant?.let { session.participants.render(it, context, layout.left + 8, y, 10) }
+                            row.participant?.let { session.participants.render(it, context, layout.left + 8, y, 10, matchId = session.controller.state.value.summary?.detail?.summary?.matchId) }
                             context.drawTextWithShadow(textRenderer, row.text, layout.left + row.indent, y, row.color)
                             if (hover) tooltip = listOf(row.fullText)
                         }
@@ -184,7 +184,7 @@ internal class HistoryRoundStateScreen(
                                 val nestedHover = !dragging && layout.containsCard(mouseX.toDouble(), mouseY.toDouble(), nestedY, nested.height)
                                 when (nested) {
                                     is Row.Line -> {
-                                        nested.participant?.let { session.participants.render(it, context, layout.left + 16, nestedY, 10) }
+                                        nested.participant?.let { session.participants.render(it, context, layout.left + 16, nestedY, 10, matchId = session.controller.state.value.summary?.detail?.summary?.matchId) }
                                         context.drawTextWithShadow(textRenderer, nested.text, layout.left + nested.indent + 8, nestedY, nested.color)
                                         if (nestedHover) tooltip = listOf(nested.fullText)
                                     }
@@ -466,7 +466,7 @@ internal class HistoryRoundStateScreen(
      * @return 玩家名稱。
      */
     private fun name(state: HistoryRoundStateDto, seat: Int): Text = participant(state, seat)?.let {
-        session.participants.name(it, session.controller.state.value.summary?.detail?.summary?.participants.orEmpty())
+        session.participants.name(it, session.controller.state.value.summary?.detail?.summary?.participants.orEmpty(), session.controller.state.value.summary?.detail?.summary?.matchId)
     } ?: Text.translatable(MinecraftHistoryScreenKeys.ROUND_SEAT, seat + 1)
 
     /** 目前選取的局。 */

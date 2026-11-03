@@ -17,6 +17,9 @@ import kotlinx.serialization.Serializable
  * @property canStart 房間目前是否可開始對局。
  * @property isHost 目前 observer 是否為房主。
  * @property isInRoom 目前 observer 是否位於房間中。
+ * @property excludedPlayerIds 只提供房主的暫時排除名單。
+ * @property excludedAiPlayerIds 只有房主可讀的被排除 AI 成員編號。
+ * @property excludedParticipantIdentities 只有房主可讀的原成員編號與來源身分。
  */
 @Serializable
 data class RoomSnapshotDto(
@@ -30,4 +33,7 @@ data class RoomSnapshotDto(
     val canStart: Boolean,
     val isHost: Boolean,
     val isInRoom: Boolean,
+    val excludedPlayerIds: List<String>,
+    val excludedAiPlayerIds: List<String>,
+    val excludedParticipantIdentities: Map<String, RoomParticipantIdentityDto>,
 )

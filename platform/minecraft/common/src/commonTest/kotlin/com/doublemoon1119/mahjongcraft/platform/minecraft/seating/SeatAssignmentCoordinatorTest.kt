@@ -22,6 +22,58 @@ class SeatAssignmentCoordinatorTest {
     /** 測試用固定世界實例。 */
     private val world = FakeWorld()
 
+    /** 不可靠檢查與確定無效不可混為一談，也不觸發入座。 */
+    @Test
+    fun `seat inspection distinguishes provider failure from confirmed absence`() {
+        val rider = FakeRider(seated = true)
+        val environment = FakeEnvironment()
+        val failed = FakeTarget("failed", state = SeatState.FAILED)
+        val absent = FakeTarget("absent", state = SeatState.INVALID)
+        assertEquals(SeatState.FAILED, coordinator(failed, environment).inspectSeat(world, rider, request()).state)
+        assertEquals(SeatState.INVALID, coordinator(absent, environment).inspectSeat(world, rider, request()).state)
+        assertTrue(rider.seated)
+        assertEquals(0, environment.standCalls)
+        assertEquals(0, failed.trySitCalls)
+    }
+
+    /** 擴充拋出錯誤時保留未知狀態，不能被當成已確認的離座。 */
+    @Test
+    fun `throwing seat provider yields unknown inspection`() {
+        val rider = FakeRider(seated = true)
+        val coordinator = SeatAssignmentCoordinator(
+            providers = listOf(provider("broken") { _, _ -> error("temporarily unavailable") }),
+            environment = FakeEnvironment(),
+            failurePolicy = ExtensionFailurePolicy.Default,
+        ) { _, _, _ -> }
+        assertEquals(SeatState.FAILED, coordinator.inspectSeat(world, rider, request()).state)
+        assertTrue(rider.seated)
+    }
+
+    /** 只有安全站立點不能作為實體已坐好的證據。 */
+    @Test
+    fun `seat only preview never substitutes safe standing`() {
+        val rider = FakeRider()
+        val target = FakeTarget("seat", state = SeatState.INVALID)
+        val environment = FakeEnvironment(canStand = true)
+        val coordinator = coordinator(target, environment)
+        assertNotNull(coordinator.preview(world, rider, request()))
+        assertNull(coordinator.previewSeat(world, rider, request()))
+        assertEquals(0, environment.standCalls)
+        assertEquals(0, target.trySitCalls)
+    }
+
+    /** 提供者聲稱坐下但沒有乘坐關係時不承認；真實乘坐則可唯讀確認。 */
+    @Test
+    fun `seat only preview requires actual mounted state`() {
+        val target = FakeTarget("seat", state = SeatState.SEATED)
+        val rider = FakeRider()
+        val coordinator = coordinator(target, FakeEnvironment(canStand = true))
+        assertNull(coordinator.previewSeat(world, rider, request()))
+        rider.seated = true
+        assertNotNull(coordinator.previewSeat(world, rider, request()))
+        assertEquals(0, target.trySitCalls)
+    }
+
     /** 已有座位即使空著也不能被另一件座位物品覆蓋。 */
     @Test
     fun `existing available or occupied furniture is not a vacant placement slot`() {
@@ -418,6 +470,30 @@ class SeatAssignmentCoordinatorTest {
             ) { id, _, _ -> reports += id }.assign(world, rider, request())
         }
         assertEquals(listOf("test:isolated"), reports)
+    }
+
+    /** 正式兩人布局以外的等待席位也必須先離開，才能按正式排位入座。 */
+    @Test
+    fun `batch seating leaves a waiting seat outside the final layout`() {
+        val rider = FakeRider(position = 2, seated = true)
+        val finalRequest = request()
+        val waitingRequest = SeatRequest.create(finalRequest.tableId, 1, finalRequest.dimensionId, SeatGeometry(2.0, 64.0, 0.0, 0.0f))
+        val provider = provider("waiting") { _, request ->
+            val position = if (request.seat.x == 2.0) 2 else 0
+            listOf(object : SeatTarget<FakeWorld, FakeRider> {
+                override val identity = SeatIdentity("minecraft:overworld", "test:seat", position.toString(), "main")
+                override fun geometry(world: FakeWorld, rider: FakeRider): SeatGeometry = request.seat
+                override fun inspect(world: FakeWorld, rider: FakeRider): SeatState = if (rider.seated && rider.position == position) SeatState.SEATED else SeatState.AVAILABLE
+                override fun trySit(world: FakeWorld, rider: FakeRider): SeatState {
+                    rider.position = position
+                    rider.seated = true
+                    return SeatState.SEATED
+                }
+            })
+        }
+        val coordinator = SeatAssignmentCoordinator(listOf(provider), FakeEnvironment(), ExtensionFailurePolicy.Default) { _, _, _ -> }
+        assertEquals(listOf(SeatAssignmentResult.SEATED), coordinator.seatAll(world, listOf(rider), listOf(finalRequest), listOf(finalRequest, waitingRequest)))
+        assertEquals(0, rider.position)
     }
 
     /** 建立通用的固定席位請求。 */

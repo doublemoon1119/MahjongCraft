@@ -1,7 +1,12 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.client.render
 
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.character.ClientAiCharacterPreviews
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.player.ClientPlayerProfileResolver
 import com.doublemoon1119.mahjongcraft.platform.fabric.logging.mahjongCraftLogger
+import com.doublemoon1119.mahjongcraft.platform.minecraft.api.character.AiCharacterFace
+import com.doublemoon1119.mahjongcraft.platform.minecraft.character.AiCharacterClientStateStore
+import com.doublemoon1119.mahjongcraft.platform.minecraft.character.AiCharacterSnapshot
+import com.doublemoon1119.mahjongcraft.platform.minecraft.character.BuiltInAiCharacters
 import com.doublemoon1119.mahjongcraft.platform.minecraft.player.PlayerPortraitSource
 import com.doublemoon1119.mahjongcraft.platform.minecraft.player.PlayerPortraitSourceContext
 import com.doublemoon1119.mahjongcraft.platform.minecraft.player.PlayerPortraitSourceProviderException
@@ -30,11 +35,15 @@ import kotlin.uuid.toJavaUuid
  * @property sources 規則與第三方提供的宣告式頭像來源。
  * @property tileAssetRegistry 提供 AI 牌面頭像使用的完整 namespace 與路徑映射。
  * @property profiles 真人普通名稱與原生皮膚材質的共用解析器。
+ * @property characters 此連線已授權的角色外觀，不查詢世界實體。
+ * @property previews 直接模型與頭像備援；明確 FACE 可用時不額外截圖。
  */
-class PlayerPortraitRenderer(
+class PlayerPortraitRenderer internal constructor(
     private val sources: PlayerPortraitSourceRegistry,
     private val tileAssetRegistry: MinecraftTileAssetRegistry,
     private val profiles: ClientPlayerProfileResolver,
+    private val characters: AiCharacterClientStateStore,
+    private val previews: ClientAiCharacterPreviews,
 ) {
     /** 記錄外觀來源或繪製失敗，並遵守相同來源只警告一次的策略。 */
     private val logger = mahjongCraftLogger(PlayerPortraitRenderer::class)
@@ -44,6 +53,98 @@ class PlayerPortraitRenderer(
 
     /** 已解析的牌面貼圖快取，避免每次繪製都查詢資源管理器。 */
     private val tileTextures = mutableMapOf<String, Identifier>()
+
+    /** 資源重載或斷線時清除材質解析與診斷，讓已恢復資源能重新使用。 */
+    fun clearResources() {
+        tileTextures.clear()
+        warnedProviderIds.clear()
+    }
+
+    /**
+     * 將角色公開頭像轉成既有繪製來源，不另建一套 FACE renderer。
+     *
+     * @param snapshot 已授權的當場描述。
+     * @return 已擷取頭像；缺少時由既有來源與未知牌備援。
+     */
+    private fun characterPortrait(snapshot: AiCharacterSnapshot?): ResolvedPlayerPortraitSource? {
+        snapshot ?: return null
+        val face = snapshot.definition?.face ?: return previews.portrait(snapshot)?.let { ResolvedPlayerPortraitSource(snapshot.characterId, it) }
+        if (face is AiCharacterFace.Tile && !tileAssetRegistry.isRegisteredAssetKey(face.assetKey)) {
+            return ResolvedPlayerPortraitSource(snapshot.characterId, previews.portrait(snapshot) ?: fallbackSource(true))
+        }
+        val source = when (face) {
+            is AiCharacterFace.Tile -> PlayerPortraitSource.TileFace(face.assetKey)
+            is AiCharacterFace.TextureRegion -> PlayerPortraitSource.TextureRegion(face.resourceId, face.u0, face.v0, face.u1, face.v1)
+        }
+        val resource = when (face) {
+            is AiCharacterFace.Tile -> Identifier(tileTextureResourceId(face.assetKey, tileAssetRegistry))
+            is AiCharacterFace.TextureRegion -> Identifier(face.resourceId)
+        }
+        if (!MinecraftClient.getInstance().resourceManager.getResource(resource).isPresent) {
+            if (warnedProviderIds.add("${snapshot.characterId}/$resource")) logger.warn("Character portrait resource is unavailable characterId={} resourceId={}", snapshot.characterId, resource)
+            val fallback = previews.portrait(snapshot) ?: fallbackSource(true)
+            return ResolvedPlayerPortraitSource(snapshot.characterId, fallback)
+        }
+        return ResolvedPlayerPortraitSource(snapshot.characterId, source)
+    }
+
+    /**
+     * 先遵守既有 registry 的優先序，再對內建角色來源檢查材質與模型備援。
+     *
+     * @param playerId 頭像所屬成員。
+     * @param isAi 是否由 AI 操控。
+     * @param snapshot 已授權的角色描述，歷史使用指定場次。
+     * @return 登記來源或角色備援，皆無資料時為 null。
+     */
+    private fun resolvePortrait(playerId: Uuid, isAi: Boolean, snapshot: AiCharacterSnapshot?): ResolvedPlayerPortraitSource? {
+        val supplied = sources.resolve(PlayerPortraitSourceContext(playerId, isAi, snapshot?.definition))
+        val resolved = if (isAi && supplied?.source == PlayerPortraitSource.PlayerSkinFace) {
+            if (warnedProviderIds.add(supplied.providerId)) logger.warn("Player skin portrait cannot use a logical AI identity providerId={}; using character fallback", supplied.providerId)
+            null
+        } else {
+            supplied
+        }
+        return if (resolved == null || resolved.providerId == BuiltInAiCharacters.PORTRAIT_SOURCE_ID) characterPortrait(snapshot) ?: resolved else resolved
+    }
+
+    /**
+     * 供既有房間外觀解析器確認預覽能力，不執行工廠。
+     *
+     * @param id 完整能力識別碼。
+     * @return 已登記時為 true。
+     */
+    fun hasCharacterPreview(id: String): Boolean = previews.hasFactory(id)
+
+    /**
+     * 以實際角色描述繪製選定的房間預覽；能力與描述不符時由頭像備援。
+     *
+     * @param snapshot 已授權的完整角色描述。
+     * @param id 選定的備援能力；優先使用本人時可為 null。
+     * @param context GUI 繪製來源。
+     * @param x 卡片左界。
+     * @param y 卡片頂端。
+     * @param size 卡片寬度。
+     * @param mouseX 游標水平座標。
+     * @param mouseY 游標垂直座標。
+     * @param worldEntityId 同一授權快照中的即時實體 UUID。
+     * @return 已直接畫出模型時為 true。
+     */
+    fun renderActorModel(snapshot: AiCharacterSnapshot?, id: String?, context: DrawContext, x: Int, y: Int, size: Int, mouseX: Int, mouseY: Int, worldEntityId: Uuid?): Boolean {
+        if (id != null && snapshot?.definition?.preview?.capabilityId != id) return false
+        return previews.renderModel(snapshot, context, x, y, size, mouseX, mouseY, worldEntityId)
+    }
+
+    /**
+     * 依保存描述直接繪製獨立模型，沒有模型時由原頭像流程備援。
+     *
+     * @param snapshot 當場已授權的外觀。
+     * @param context GUI 繪製來源。
+     * @param x 卡片左界。
+     * @param y 卡片頂端。
+     * @param size 卡片寬度。
+     * @return 已畫出模型時為 true。
+     */
+    fun renderCharacterModel(snapshot: AiCharacterSnapshot?, context: DrawContext, x: Int, y: Int, size: Int): Boolean = previews.renderModel(snapshot, context, x, y, size, x + size / 2, y + size / 2)
 
     /**
      * 將宣告式頭像來源繪製於世界空間的正方形 slot；牌面保持 3:4 比例並水平置中。
@@ -71,8 +172,9 @@ class PlayerPortraitRenderer(
         consumers: VertexConsumerProvider,
     ) {
         renderPortraitWithFallback(
-            resolved = runPresentationAttempt { sources.resolve(PlayerPortraitSourceContext(playerId, isAi)) },
+            resolved = runPresentationAttempt { resolvePortrait(playerId, isAi, characters.findPlayer(playerId)) },
             fallbackSource = fallbackSource(isAi),
+            modelFallback = { previews.portrait(characters.findPlayer(playerId)) },
             onResolutionFailure = { cause, providerId ->
                 if (warnedProviderIds.add(providerId)) logger.warn("Failed to resolve player portrait provider {}", providerId, cause)
             },
@@ -105,8 +207,68 @@ class PlayerPortraitRenderer(
         skinTexture: Identifier? = null,
     ) {
         renderPortraitWithFallback(
-            resolved = runPresentationAttempt { sources.resolve(PlayerPortraitSourceContext(playerId, isAi)) },
+            resolved = runPresentationAttempt { resolvePortrait(playerId, isAi, characters.findPlayer(playerId)) },
             fallbackSource = fallbackSource(isAi),
+            modelFallback = { previews.portrait(characters.findPlayer(playerId)) },
+            onResolutionFailure = { cause, providerId ->
+                if (warnedProviderIds.add(providerId)) logger.warn("Failed to resolve player portrait provider {}", providerId, cause)
+            },
+            onDrawFailure = { cause, providerId ->
+                if (warnedProviderIds.add(providerId)) logger.warn("Failed to render player portrait provider {}", providerId, cause)
+            },
+            draw = { source -> renderGuiSource(source, playerId, context, x, y, size, skinTexture) },
+        )
+    }
+
+    /**
+     * 繪製房主可讀的排除者頭像；缺少角色資料時使用原有備援，不建立模型。
+     *
+     * @param tableId 已授權的等待房間。
+     * @param playerId 被排除者上次的成員編號。
+     * @param isAi 是否由 AI 操控，不以 AI UUID 查詢真人皮膚。
+     * @param context GUI 繪製來源。
+     * @param x 左上角水平位置。
+     * @param y 左上角垂直位置。
+     * @param size 頭像邊長。
+     */
+    fun renderExcludedGui(tableId: Uuid, playerId: Uuid, isAi: Boolean, context: DrawContext, x: Int, y: Int, size: Int) {
+        val snapshot = characters.find(tableId)?.excludedPlayers?.get(playerId)
+        renderPortraitWithFallback(
+            resolved = runPresentationAttempt { resolvePortrait(playerId, isAi, snapshot) },
+            fallbackSource = fallbackSource(isAi),
+            modelFallback = { null },
+            onResolutionFailure = { cause, provider -> if (warnedProviderIds.add(provider)) logger.warn("Failed to resolve excluded portrait provider {}", provider, cause) },
+            onDrawFailure = { cause, provider -> if (warnedProviderIds.add(provider)) logger.warn("Failed to draw excluded portrait provider {}", provider, cause) },
+            draw = { source -> renderGuiSource(source, playerId, context, x, y, size, null) },
+        )
+    }
+
+    /**
+     * 使用指定歷史場次的頭像，不以目前世界中的角色外觀代替缺失資料。
+     *
+     * @param playerId 該場成員。
+     * @param matchId 已授權歷史場次。
+     * @param isAi 是否為 AI。
+     * @param context 畫面繪製來源。
+     * @param x 左上角 X。
+     * @param y 左上角 Y。
+     * @param size 正方形區域邊長。
+     * @param skinTexture 已知真人皮膚，沒有時使用既有備援。
+     */
+    fun renderHistoryGui(
+        playerId: Uuid,
+        matchId: Uuid,
+        isAi: Boolean,
+        context: DrawContext,
+        x: Int,
+        y: Int,
+        size: Int,
+        skinTexture: Identifier? = null,
+    ) {
+        renderPortraitWithFallback(
+            resolved = runPresentationAttempt { resolvePortrait(playerId, isAi, characters.history(matchId, playerId)) },
+            fallbackSource = fallbackSource(isAi),
+            modelFallback = { previews.portrait(characters.history(matchId, playerId)) },
             onResolutionFailure = { cause, providerId ->
                 if (warnedProviderIds.add(providerId)) logger.warn("Failed to resolve player portrait provider {}", providerId, cause)
             },
@@ -333,6 +495,7 @@ internal inline fun <T> runPresentationAttempt(operation: () -> T): Result<T> = 
  * @param fallbackSource 解析或繪製失敗時使用的內建來源。
  * @param onResolutionFailure 回報一般解析失敗的函式。
  * @param onDrawFailure 回報一般繪製失敗的函式。
+ * @param modelFallback 只有來源不可用時才查詢的模型圖片；沒有模型時仍使用內建備援。
  * @param draw 使用指定來源進行繪製的函式。
  * @return 首次繪製或 fallback 繪製的結果；首次繪製失敗且沒有第三方來源時為 `null`。
  */
@@ -341,6 +504,7 @@ internal inline fun <T> renderPortraitWithFallback(
     fallbackSource: PlayerPortraitSource,
     onResolutionFailure: (cause: Throwable, providerId: String) -> Unit,
     onDrawFailure: (cause: Throwable, providerId: String) -> Unit,
+    noinline modelFallback: (() -> PlayerPortraitSource?)? = null,
     draw: (source: PlayerPortraitSource) -> T,
 ): T? {
     val resolutionFailure = resolved.exceptionOrNull()
@@ -349,13 +513,21 @@ internal inline fun <T> renderPortraitWithFallback(
         onResolutionFailure(resolutionFailure, providerId)
     }
     val resolvedSource = resolved.getOrNull()
-    val firstAttempt = runPresentationAttempt { draw(resolvedSource?.source ?: fallbackSource) }
+    val initialModel = if (resolvedSource == null) modelFallback?.invoke() else null
+    val firstSource = resolvedSource?.source ?: initialModel ?: fallbackSource
+    val firstAttempt = runPresentationAttempt { draw(firstSource) }
     val drawFailure = firstAttempt.exceptionOrNull()
     if (drawFailure != null) {
         onDrawFailure(drawFailure, resolvedSource?.providerId ?: "built-in-fallback")
     }
-    if (firstAttempt.isSuccess || resolvedSource == null) {
+    if (firstAttempt.isSuccess || (resolvedSource == null && initialModel == null)) {
         return firstAttempt.getOrNull()
+    }
+    val alternate = if (resolvedSource != null) modelFallback?.invoke() else null
+    if (alternate != null && alternate != firstSource) {
+        val attempt = runPresentationAttempt { draw(alternate) }
+        if (attempt.isSuccess) return attempt.getOrThrow()
+        onDrawFailure(requireNotNull(attempt.exceptionOrNull()), "model-preview")
     }
     return draw(fallbackSource)
 }

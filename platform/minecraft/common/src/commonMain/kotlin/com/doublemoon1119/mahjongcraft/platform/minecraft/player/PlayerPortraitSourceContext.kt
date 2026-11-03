@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.player
 
+import com.doublemoon1119.mahjongcraft.platform.minecraft.api.character.AiCharacterDefinition
 import kotlin.uuid.Uuid
 
 /**
@@ -7,8 +8,10 @@ import kotlin.uuid.Uuid
  *
  * @property playerId 玩家的 UUID。
  * @property isAi 玩家是否由 AI 操控。
+ * @property character 已授權的角色描述，未提供時沿用既有來源。
  */
 data class PlayerPortraitSourceContext(
     val playerId: Uuid,
     val isAi: Boolean,
+    val character: AiCharacterDefinition? = null,
 )

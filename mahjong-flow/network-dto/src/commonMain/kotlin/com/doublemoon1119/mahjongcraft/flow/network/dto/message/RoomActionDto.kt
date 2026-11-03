@@ -85,6 +85,21 @@ sealed interface RoomActionDto {
     @Serializable data class Kick(override val venueId: String, val targetPlayerId: String) : RoomActionDto
 
     /**
+     * 房主允許指定被排除者重新加入，不接受來源身分或位置。
+     *
+     * @property venueId 目前房間。
+     * @property targetPlayerId 上次的成員編號，仍由伺服器驗證。
+     */
+    @Serializable data class AllowParticipant(override val venueId: String, val targetPlayerId: String) : RoomActionDto
+
+    /**
+     * 房主解除同一房間的全部暫時排除，伺服器仍驗證房主身分。
+     *
+     * @property venueId 目前房間。
+     */
+    @Serializable data class AllowAllParticipants(override val venueId: String) : RoomActionDto
+
+    /**
      * UpdateConfig 網路 DTO。
      *
      * @property venueId 房間或場地識別碼。

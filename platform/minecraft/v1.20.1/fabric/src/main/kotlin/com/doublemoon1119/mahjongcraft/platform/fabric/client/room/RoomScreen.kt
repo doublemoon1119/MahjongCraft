@@ -3,6 +3,7 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.client.room
 import com.doublemoon1119.mahjongcraft.ai.MahjongAiStrategyRegistry
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameConfig
 import com.doublemoon1119.mahjongcraft.flow.common.room.model.RoomSnapshot
+import com.doublemoon1119.mahjongcraft.flow.common.time.MonotonicClock
 import com.doublemoon1119.mahjongcraft.flow.network.dto.config.toDomain
 import com.doublemoon1119.mahjongcraft.flow.network.dto.config.toDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.RoomActionDto
@@ -10,6 +11,7 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkDtoRegistrie
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkJson
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.catalogue.RuleCatalogueScreenController
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.character.GuiEntityModelRenderer
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.config.MahjongClientConfigScreen
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.config.MahjongHudLayoutEditorScreen
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.fitClientText
@@ -18,6 +20,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.RestartableMar
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.ScrollState
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.SettingsFooterLayout
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.UnsavedChangesConfirmationScreen
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.player.ClientPlayerDisplayNameResolver
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.player.ClientPlayerProfileResolver
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.player.resolvedPlayerNameText
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.OfflinePlayerPreviewEntity
@@ -31,7 +34,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.network.MahjongChannels
 import com.doublemoon1119.mahjongcraft.platform.fabric.text.gameConfigPresentationText
 import com.doublemoon1119.mahjongcraft.platform.minecraft.ai.AiStrategyDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.table.MahjongTableController
-import com.doublemoon1119.mahjongcraft.platform.minecraft.player.aiPlayerDisplayName
+import com.doublemoon1119.mahjongcraft.platform.minecraft.character.AiCharacterClientStateStore
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.GameConfigEditorSpec
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.GameConfigFieldDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.GameConfigPresentationDefinition
@@ -47,7 +50,6 @@ import com.mojang.authlib.GameProfile
 import net.minecraft.client.MinecraftClient
 import net.minecraft.client.gui.DrawContext
 import net.minecraft.client.gui.screen.Screen
-import net.minecraft.client.gui.screen.ingame.InventoryScreen
 import net.minecraft.client.gui.tooltip.Tooltip
 import net.minecraft.client.gui.widget.ButtonWidget
 import net.minecraft.client.network.OtherClientPlayerEntity
@@ -64,6 +66,7 @@ import kotlin.uuid.toJavaUuid
  * 空桌、等待房間與進行中對局共用的桌級畫面。
  *
  * @property stateStore 目前客戶端持有的房間、對局與牌桌快照。
+ * @property characters 此連線已授權的角色描述。
  * @property tableId 本畫面對應的牌桌識別碼。
  * @property configPresentations 規則設定的呈現定義登錄表。
  * @property configResolver 將設定解析成欄位定義與值的解析器。
@@ -71,17 +74,20 @@ import kotlin.uuid.toJavaUuid
  * @property portraitRenderer 成員頭像繪製器。
  * @property aiStrategies 可選 AI 策略登錄表。
  * @property aiStrategyNames AI 策略名稱登錄表。
+ * @param appearanceSources 成員外觀來源登錄表。
+ * @param indicatorTextResolver 規則公開指標的文字解析器。
  * @property json 傳送房間操作使用的 JSON 格式。
  * @property networkRegistries 設定與網路 DTO 的轉換登錄表。
  * @property profileResolver 玩家名稱與外觀資料解析器。
+ * @property displayNames 既有真人與角色名稱的共用解析器。
+ * @property clock 共用的客戶端回覆等待時鐘。
  * @property ruleCatalogue 開啟規則一覽的控制器。
  * @property tableSpaceObstructions 等待開局桌子被擋住的擺牌格。
- * @param appearanceSources 成員外觀來源登錄表。
- * @param indicatorTextResolver 規則公開指標的文字解析器。
  * @param openSettings 是否直接進入設定頁。
  */
 class RoomScreen(
     private val stateStore: ClientMahjongStateStore,
+    private val characters: AiCharacterClientStateStore,
     private val tableId: Uuid,
     private val configPresentations: GameConfigPresentationRegistry,
     private val configResolver: GameConfigPresentationResolver,
@@ -94,6 +100,8 @@ class RoomScreen(
     private val json: NetworkJson,
     private val networkRegistries: NetworkDtoRegistries,
     private val profileResolver: ClientPlayerProfileResolver,
+    private val displayNames: ClientPlayerDisplayNameResolver,
+    private val clock: MonotonicClock,
     private val ruleCatalogue: RuleCatalogueScreenController,
     private val tableSpaceObstructions: ClientTableSpaceObstructionStore,
     openSettings: Boolean = false,
@@ -158,7 +166,7 @@ class RoomScreen(
     private val profilePreviews = mutableMapOf<Uuid, OtherClientPlayerEntity>()
 
     /** 決定各成員的模型或頭像呈現方式。 */
-    private val appearanceResolver = RoomMemberAppearanceResolver(appearanceSources)
+    private val appearanceResolver = RoomMemberAppearanceResolver(appearanceSources, portraitRenderer::hasCharacterPreview)
 
     /** 組成成員自風、分數與公開指標文字。 */
     private val memberPresentation = RoomMemberPresentation(indicatorTextResolver)
@@ -177,6 +185,28 @@ class RoomScreen(
                 it.active = currentConfig() != null && page != Page.SETTINGS
             },
         )
+        if (stateStore.roomSnapshot(tableId)?.isHost == true) {
+            addDrawableChild(
+                RoomExcludedParticipantsButton(
+                    x = width / 2 + 106,
+                    y = 24,
+                    count = { stateStore.roomSnapshot(tableId)?.excludedPlayerIds?.size ?: 0 },
+                    open = {
+                        client?.setScreen(
+                            RoomExcludedParticipantsScreen(
+                                parent = this,
+                                readRoom = { stateStore.roomSnapshot(tableId) },
+                                name = { id -> Text.literal(displayNames.resolve(tableId, id.toString(), id in stateStore.roomSnapshot(tableId)?.excludedAiPlayerIds.orEmpty())) },
+                                face = { context, id, x, y, size -> portraitRenderer.renderExcludedGui(tableId, id, id in stateStore.roomSnapshot(tableId)?.excludedAiPlayerIds.orEmpty(), context, x, y, size) },
+                                allow = { id -> send(RoomActionDto.AllowParticipant(tableId.toString(), id.toString())) },
+                                allowAll = { send(RoomActionDto.AllowAllParticipants(tableId.toString())) },
+                                clock = clock,
+                            ),
+                        )
+                    },
+                ),
+            )
+        }
         when (page) {
             Page.ROOM -> initRoomPage()
             Page.SETTINGS -> initSettingsPage()
@@ -963,9 +993,7 @@ class RoomScreen(
      * @param x 按鈕左界。
      * @param y 按鈕頂端。
      * @param width 按鈕寬度。
-     * @param key 按鈕名稱翻譯鍵。
-     * @param action 點擊後傳送的房間操作。
-     * @param active 是否可點擊。
+     * @param button 包含名稱、操作、啟用狀態與提示的按鈕設定。
      */
     private fun addActionButton(x: Int, y: Int, width: Int, button: ActionButton) {
         addDrawableChild(
@@ -1289,7 +1317,7 @@ class RoomScreen(
             renderMemberAppearance(context, playerId, ai, x, y, grid.cardWidth, mouseX, mouseY)
             context.drawCenteredTextWithShadow(
                 textRenderer,
-                fitClientText(textRenderer, memberName(playerId, ai, playerIds.filter(aiIds::contains)), grid.cardWidth - 12),
+                fitClientText(textRenderer, memberName(playerId, ai), grid.cardWidth - 12),
                 x + grid.cardWidth / 2,
                 y + MEMBER_NAME_OFFSET,
                 0xFFFFFF,
@@ -1333,7 +1361,14 @@ class RoomScreen(
         mouseX: Int,
         mouseY: Int,
     ) {
-        val resolution = appearanceResolver.resolve(playerId, ai)
+        val character = characters.find(tableId)?.players?.get(playerId)
+        val worldEntityId = characters.find(tableId)?.worldEntityIds?.get(playerId)
+        val liveAvailable = if (ai) {
+            worldEntityId != null && client?.world?.entities?.any { it.uuid == worldEntityId.toJavaUuid() && !it.isRemoved } == true
+        } else {
+            client?.world?.getPlayerByUuid(playerId.toJavaUuid()) != null
+        }
+        val resolution = appearanceResolver.resolve(playerId, ai, character?.definition, liveAvailable)
         when (val warning = resolution.warning) {
             null -> Unit
             is RoomMemberAppearanceResolver.Warning.ProviderFailed ->
@@ -1341,9 +1376,22 @@ class RoomScreen(
             is RoomMemberAppearanceResolver.Warning.MissingActorPreviewFactory ->
                 logger.warn("No room actor preview factory is registered for {}; using portrait fallback", warning.actorKey)
         }
-        // 玩家離線時找不到可預覽的 entity——沒有真人模型可畫，退回畫像，不能什麼都不畫，
-        // 讓那一格看起來像沒東西。
-        val entity = if (resolution.appearance == RoomMemberAppearanceResolver.Appearance.PlayerModel) {
+        if (resolution.actorKey != null || (ai && resolution.appearance == RoomMemberAppearanceResolver.Appearance.WorldEntityModel)) {
+            val rendered = portraitRenderer.renderActorModel(
+                snapshot = character,
+                id = resolution.actorKey,
+                context = context,
+                x = x,
+                y = y,
+                size = cardWidth,
+                mouseX = mouseX,
+                mouseY = mouseY,
+                worldEntityId = worldEntityId,
+            )
+            if (rendered) return
+        }
+        // 真人未載入時沿用玩家預覽，模型不可用時由頭像備援。
+        val entity = if (!ai && (resolution.appearance == RoomMemberAppearanceResolver.Appearance.PlayerModel || resolution.appearance == RoomMemberAppearanceResolver.Appearance.WorldEntityModel)) {
             resolvePlayerPreview(playerId)
         } else {
             null
@@ -1352,14 +1400,14 @@ class RoomScreen(
             renderPortrait(context, playerId, ai, x, y, cardWidth)
             return
         }
-        InventoryScreen.drawEntity(
-            context,
-            x + cardWidth / 2,
-            y + 84,
-            (cardWidth / 3).coerceIn(24, 36),
-            x + cardWidth / 2 - mouseX.toFloat(),
-            y + 42 - mouseY.toFloat(),
-            entity,
+        GuiEntityModelRenderer.render(
+            entity = entity,
+            context = context,
+            x = x,
+            y = y,
+            size = cardWidth,
+            mouseX = mouseX,
+            mouseY = mouseY,
         )
     }
 
@@ -1517,13 +1565,9 @@ class RoomScreen(
      *
      * @param playerId 成員識別碼。
      * @param ai 是否由 AI 操控。
-     * @param orderedAiPlayerIds 用於分配 AI 顯示編號的順序。
      * @return 名稱或尚未解析完成的替代文字。
      */
-    private fun memberName(playerId: Uuid, ai: Boolean, orderedAiPlayerIds: List<Uuid>): Text {
-        if (ai) return Text.literal(aiPlayerDisplayName(playerId, orderedAiPlayerIds))
-        return resolvedPlayerNameText(resolveLocalPlayerName(playerId))
-    }
+    private fun memberName(playerId: Uuid, ai: Boolean): Text = Text.literal(displayNames.resolve(tableId, playerId.toString(), ai))
 
     /**
      * 優先使用玩家列表或已解析的名稱；未知時要求解析器載入，依解析器的帳號政策決定是否外部查詢。

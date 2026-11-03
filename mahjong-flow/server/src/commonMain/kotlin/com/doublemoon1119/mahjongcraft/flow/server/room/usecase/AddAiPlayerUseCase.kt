@@ -8,6 +8,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.room.model.RoomError
 import com.doublemoon1119.mahjongcraft.flow.common.room.model.toSnapshot
 import com.doublemoon1119.mahjongcraft.flow.common.room.repository.RoomSnapshotRepository
 import com.doublemoon1119.mahjongcraft.flow.common.room.service.RoomEventPublisher
+import com.doublemoon1119.mahjongcraft.flow.server.room.RoomRosterChangePolicy
 import com.doublemoon1119.mahjongcraft.flow.server.room.repository.RoomRepository
 import kotlin.uuid.Uuid
 
@@ -21,12 +22,14 @@ import kotlin.uuid.Uuid
  * @property snapshotRepository 房間快照數據倉庫。
  * @property eventPublisher 房間通知服務。
  * @property strategyRegistry 確認 AI 策略已登記；未登記的 key 不會寫入房間。
+ * @property rosterPolicy 不讀取外部狀態的名冊位置限制。
  */
 class AddAiPlayerUseCase(
     private val roomRepository: RoomRepository,
     private val snapshotRepository: RoomSnapshotRepository,
     private val eventPublisher: RoomEventPublisher,
     private val strategyRegistry: MahjongAiStrategyRegistry,
+    private val rosterPolicy: RoomRosterChangePolicy = RoomRosterChangePolicy.UNRESTRICTED,
 ) {
     /**
      * 執行新增 AI 玩家邏輯。
@@ -60,6 +63,9 @@ class AddAiPlayerUseCase(
                         aiPlayerStrategyKeys = room.aiPlayerStrategyKeys + (aiId to resolvedStrategyKey),
                         readyPlayerIds = room.readyPlayerIds + aiId, // AI 會直接進入準備就緒狀態
                     )
+                    if (!rosterPolicy.allows(room, updatedRoom)) {
+                        return@update room to Outcome.Error(RoomError.RoomLayoutConflict(roomId))
+                    }
                     updatedRoom to Outcome.Success(aiId to updatedRoom)
                 }
             }

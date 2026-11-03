@@ -12,6 +12,8 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.history.HistoryResultPro
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateSnapshot
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import com.doublemoon1119.mahjongcraft.platform.fabric.logging.mahjongCraftLogger
+import com.doublemoon1119.mahjongcraft.platform.minecraft.character.AiCharacterSnapshot
+import com.doublemoon1119.mahjongcraft.platform.minecraft.character.AiCharacterSnapshotCodec
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocationRegistry
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.JsonObject
@@ -24,12 +26,14 @@ import kotlin.uuid.Uuid
  * @property registries 規則擴充的持久化登記表。
  * @property moduleRegistry 從開局規則設定解析規則 ID。
  * @property locations 可讀取不可變位置快照的牌桌位置登記表。
+ * @property appearanceFor 從當場保存快照取得外觀，不查詢目前世界實體。
  */
 internal class HistoryArchiveService(
     private val mapper: HistoryRecordingPersistenceMapper,
     private val registries: PersistenceRegistries,
     private val moduleRegistry: MahjongModuleRegistry,
     private val locations: TableLocationRegistry,
+    private val appearanceFor: (Uuid, Uuid) -> AiCharacterSnapshot? = { _, _ -> null },
 ) {
     /** 記錄封存與對帳診斷的 logger。 */
     private val logger = mahjongCraftLogger(HistoryArchiveService::class)
@@ -297,7 +301,12 @@ internal class HistoryArchiveService(
             }
         }
         val players = opening.tableState.players.sortedBy { it.initialSeatIndex }.map {
-            HistoryParticipantRecord(it.initialSeatIndex, it.id.toString(), opening.aiPlayerStrategyKeys[it.id])
+            HistoryParticipantRecord(
+                seatIndex = it.initialSeatIndex,
+                playerId = it.id.toString(),
+                aiStrategyId = opening.aiPlayerStrategyKeys[it.id],
+                characterAppearance = appearanceFor(start.matchId, it.id)?.let(AiCharacterSnapshotCodec()::encode),
+            )
         }
         val projectedResults = HistoryResultProjector.project(events, moduleRegistry).associateBy { it.playerId.toString() }
         val participantResults = players.map { participant ->

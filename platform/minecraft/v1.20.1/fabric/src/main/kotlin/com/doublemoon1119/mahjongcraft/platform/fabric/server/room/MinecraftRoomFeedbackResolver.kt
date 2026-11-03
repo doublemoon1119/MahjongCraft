@@ -12,6 +12,8 @@ internal object MinecraftRoomFeedbackResolver {
      * @return 對應的玩家回饋。
      */
     fun joinError(error: RoomError): MinecraftPlayerFeedback = when (error) {
+        is RoomError.RoomLayoutConflict -> MinecraftPlayerFeedback.RoomLayoutConflict
+        is RoomError.ParticipantExcluded -> MinecraftPlayerFeedback.RoomParticipantExcluded
         is RoomError.PlayerAlreadyInAnotherGame -> MinecraftPlayerFeedback.PlayerAlreadyInGame
         else -> MinecraftPlayerFeedback.GameJoinFailed
     }
@@ -46,6 +48,7 @@ internal object MinecraftRoomFeedbackResolver {
      * @return 對應的玩家回饋。
      */
     fun startError(error: RoomError): MinecraftPlayerFeedback = when (error) {
+        is RoomError.RoomLayoutConflict -> MinecraftPlayerFeedback.RoomLayoutConflict
         is RoomError.NotHost -> MinecraftPlayerFeedback.NotGameHost
         is RoomError.RoomPlayerCountInvalid -> MinecraftPlayerFeedback.InvalidPlayerCount
         is RoomError.RoomNotReadyToStart -> MinecraftPlayerFeedback.NotAllPlayersReady
@@ -59,6 +62,7 @@ internal object MinecraftRoomFeedbackResolver {
      * @return 對應的玩家回饋。
      */
     fun addAiError(error: RoomError): MinecraftPlayerFeedback = when (error) {
+        is RoomError.RoomLayoutConflict -> MinecraftPlayerFeedback.RoomLayoutConflict
         is RoomError.NotHost -> MinecraftPlayerFeedback.NotGameHost
         is RoomError.RoomIsFull -> MinecraftPlayerFeedback.GameFull
         is RoomError.UnknownAiStrategy -> MinecraftPlayerFeedback.AiStrategyNotFound
@@ -72,6 +76,8 @@ internal object MinecraftRoomFeedbackResolver {
      * @return 對應的玩家回饋。
      */
     fun kickError(error: RoomError): MinecraftPlayerFeedback = when (error) {
+        is RoomError.ExclusionListFull -> MinecraftPlayerFeedback.RoomExclusionListFull
+        is RoomError.RoomLayoutConflict -> MinecraftPlayerFeedback.RoomLayoutConflict
         is RoomError.NotHost -> MinecraftPlayerFeedback.NotGameHost
         is RoomError.PlayerNotInRoom -> MinecraftPlayerFeedback.PlayerNotInGame
         is RoomError.HostCannotKickSelf -> MinecraftPlayerFeedback.CannotKickSelf
@@ -99,6 +105,7 @@ internal object MinecraftRoomFeedbackResolver {
      * @return 對應的玩家回饋。
      */
     fun updateConfigError(error: RoomError): MinecraftPlayerFeedback = when (error) {
+        is RoomError.RoomLayoutConflict -> MinecraftPlayerFeedback.RoomLayoutConflict
         is RoomError.NotHost -> MinecraftPlayerFeedback.NotGameHost
         else -> MinecraftPlayerFeedback.ChangeGameConfigFailed
     }

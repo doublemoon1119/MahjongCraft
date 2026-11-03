@@ -14,11 +14,14 @@ import kotlin.uuid.Uuid
  * @property gameConfig 該房間開局時採用的完整遊戲設定。
  * @property playerIds 目前房間內所有玩家（含房主與 AI）的 Uuid，依加入房間的順序排列。
  * @property readyPlayerIds 已標記為「準備完成」的玩家 Uuid。
- * @property aiPlayerIds 由房主新增的 AI 玩家 Uuid，依加入房間的順序排列。
+ * @property aiPlayerIds 由 AI 操控的玩家 Uuid，依加入房間的順序排列。
  * @property aiPlayerStrategyKeys AI 玩家與目前策略 key 的公開映射。
  * @property canStart 房間是否符合開局條件。
  * @property isHost 此快照的觀察者是否為房主。
  * @property isInRoom 此快照的觀察者目前是否身處該房間內。
+ * @property excludedPlayerIds 被暫時排除者上次的成員編號，只有房主可讀。
+ * @property excludedAiPlayerIds 被排除者中由 AI 操控的成員，只有房主可讀。
+ * @property excludedParticipantIdentities 只有房主可讀的排除來源身分，鍵為原成員編號。
  */
 data class RoomSnapshot(
     val id: Uuid,
@@ -31,7 +34,16 @@ data class RoomSnapshot(
     val canStart: Boolean,
     val isHost: Boolean,
     val isInRoom: Boolean,
-)
+    val excludedPlayerIds: List<Uuid> = emptyList(),
+    val excludedAiPlayerIds: List<Uuid> = emptyList(),
+    val excludedParticipantIdentities: Map<Uuid, RoomParticipantIdentity> = emptyMap(),
+) {
+    init {
+        require(excludedParticipantIdentities.size <= RoomAdmissionState.MAX_EXCLUDED_PARTICIPANTS) { "Excluded identities exceed the room limit" }
+        require(isHost || excludedParticipantIdentities.isEmpty()) { "Excluded identities are host-only" }
+        require(excludedParticipantIdentities.keys.all { it in excludedPlayerIds }) { "Excluded identities must belong to the exclusion list" }
+    }
+}
 
 /**
  * 依據觀察者身分，將權威領域模型 [Room] 轉換為對應的 [RoomSnapshot]。
@@ -50,4 +62,11 @@ fun Room.toSnapshot(observerId: Uuid): RoomSnapshot = RoomSnapshot(
     canStart = canStart,
     isHost = observerId == hostId,
     isInRoom = playerIds.contains(observerId),
+    excludedAiPlayerIds = if (observerId == hostId) admission.excludedParticipants.filterKeys { it.sourceId != RoomParticipantIdentity.PLAYER_SOURCE }.values.toList() else emptyList(),
+    excludedPlayerIds = if (observerId == hostId) admission.excludedParticipants.values.toList() else emptyList(),
+    excludedParticipantIdentities = if (observerId == hostId) {
+        admission.excludedParticipants.entries.associate { (identity, member) -> member to identity }
+    } else {
+        emptyMap()
+    },
 )

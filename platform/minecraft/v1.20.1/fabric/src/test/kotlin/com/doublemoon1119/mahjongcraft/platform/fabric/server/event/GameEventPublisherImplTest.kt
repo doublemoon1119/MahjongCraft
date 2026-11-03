@@ -12,6 +12,7 @@ import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.FabricServerHolder
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.history.FabricHistoryOutboxWriter
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.history.HistoryRetentionCoordinator
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.network.AiCharacterSnapshotDelivery
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.network.PlayerIdentitySender
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.player.ServerPlayerIdentityStore
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.FabricTableStateDelivery
@@ -90,6 +91,7 @@ class GameEventPublisherImplTest {
                 json = bundledNetworkJson(),
             ),
             historyWriter = historyWriter,
+            characterSnapshots = AiCharacterSnapshotDelivery { _, _, _, _ -> error("Rejected delivery must not send character data") },
             json = bundledNetworkJson(),
             networkRegistries = DefaultNetworkDtoRegistries(),
         )

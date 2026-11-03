@@ -40,8 +40,10 @@ import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
+import kotlin.test.assertIs
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
+import kotlin.test.assertSame
 import kotlin.test.assertTrue
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
@@ -481,5 +483,46 @@ class StartGameUseCaseTest {
         assertTrue(secondResult is Outcome.Error)
         assertEquals(RoomError.RoomNotFound(roomId), secondResult.error)
         assertEquals(firstTableState, fixtures.gameRepo.getTableState(roomId), "The existing game should be untouched.")
+    }
+
+    /** 預檢後名冊或設定已變更時，不產生牌局或開局歷史。 */
+    @Test
+    fun `changed room after preflight cannot start a game`() = runTest {
+        val fixtures = Fixtures(historyRecordingEnabled = true)
+        val expected = readyRoom()
+        val changed = expected.copy(readyPlayerIds = emptyList())
+        fixtures.roomRepo.setRoom(changed)
+        val result = fixtures.useCase(roomId, hostId, expected)
+        assertEquals(RoomError.RoomLayoutConflict(roomId), (result as Outcome.Error).error)
+        assertEquals(changed, fixtures.roomRepo.getRoom(roomId))
+        assertNull(fixtures.gameRepo.getGame(roomId))
+    }
+
+    /** 預檢不提交，正式提交使用同一份排位與發牌結果，不重新初始化。 */
+    @Test
+    fun `prepared start commits the exact prepared state without early side effects`() = runTest {
+        val fixtures = Fixtures()
+        val room = readyRoom()
+        fixtures.roomRepo.setRoom(room)
+        val prepared = assertIs<Outcome.Success<PreparedGameStart>>(fixtures.useCase.prepare(room, hostId)).value
+        assertEquals(room, fixtures.roomRepo.getRoom(roomId))
+        assertNull(fixtures.gameRepo.getGame(roomId))
+        assertIs<Outcome.Success<Uuid>>(fixtures.useCase(roomId, hostId, room, preparedStart = prepared))
+        assertSame(prepared.initializationResult.tableState, fixtures.gameRepo.getTableState(roomId))
+    }
+
+    /** 入座預檢後房間變動或操作者不是房主，都不能使用舊的正式排位。 */
+    @Test
+    fun `prepared start rejects stale rooms and unauthorized preparation`() = runTest {
+        val fixtures = Fixtures()
+        val room = readyRoom()
+        fixtures.roomRepo.setRoom(room)
+        assertIs<Outcome.Error<RoomError>>(fixtures.useCase.prepare(room, Uuid.random()))
+        val prepared = assertIs<Outcome.Success<PreparedGameStart>>(fixtures.useCase.prepare(room, hostId)).value
+        val changed = room.copy(playerIds = room.playerIds.reversed())
+        fixtures.roomRepo.setRoom(changed)
+        assertIs<Outcome.Error<RoomError>>(fixtures.useCase(roomId, hostId, preparedStart = prepared))
+        assertEquals(changed, fixtures.roomRepo.getRoom(roomId))
+        assertNull(fixtures.gameRepo.getGame(roomId))
     }
 }

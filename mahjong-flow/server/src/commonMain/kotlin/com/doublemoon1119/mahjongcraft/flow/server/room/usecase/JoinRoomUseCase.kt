@@ -3,10 +3,12 @@ package com.doublemoon1119.mahjongcraft.flow.server.room.usecase
 import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
 import com.doublemoon1119.mahjongcraft.flow.common.room.model.JoinReason
 import com.doublemoon1119.mahjongcraft.flow.common.room.model.RoomError
+import com.doublemoon1119.mahjongcraft.flow.common.room.model.RoomParticipantIdentity
 import com.doublemoon1119.mahjongcraft.flow.common.room.model.toSnapshot
 import com.doublemoon1119.mahjongcraft.flow.common.room.repository.RoomSnapshotRepository
 import com.doublemoon1119.mahjongcraft.flow.common.room.service.RoomEventPublisher
 import com.doublemoon1119.mahjongcraft.flow.server.membership.repository.PlayerMembershipRepository
+import com.doublemoon1119.mahjongcraft.flow.server.room.RoomRosterChangePolicy
 import com.doublemoon1119.mahjongcraft.flow.server.room.repository.RoomRepository
 import kotlin.uuid.Uuid
 
@@ -19,12 +21,14 @@ import kotlin.uuid.Uuid
  * @property membershipRepository 玩家唯一場地歸屬倉庫。
  * @property snapshotRepository 房間快照數據倉庫。
  * @property eventPublisher 房間通知服務。
+ * @property rosterPolicy 不讀取外部狀態的名冊位置限制。
  */
 class JoinRoomUseCase(
     private val roomRepository: RoomRepository,
     private val membershipRepository: PlayerMembershipRepository,
     private val snapshotRepository: RoomSnapshotRepository,
     private val eventPublisher: RoomEventPublisher,
+    private val rosterPolicy: RoomRosterChangePolicy = RoomRosterChangePolicy.UNRESTRICTED,
 ) {
     /**
      * 執行加入房間邏輯。
@@ -51,9 +55,13 @@ class JoinRoomUseCase(
             when {
                 room == null -> room to Outcome.Error(RoomError.RoomNotFound(roomId))
                 room.playerIds.contains(playerId) -> room to Outcome.Error(RoomError.PlayerAlreadyInRoom(playerId, roomId))
+                RoomParticipantIdentity.player(playerId) in room.admission.excludedParticipants -> room to Outcome.Error(RoomError.ParticipantExcluded(roomId))
                 room.isFull -> room to Outcome.Error(RoomError.RoomIsFull(roomId))
                 else -> {
                     val updatedRoom = room.copy(playerIds = room.playerIds + playerId)
+                    if (!rosterPolicy.allows(room, updatedRoom)) {
+                        return@update room to Outcome.Error(RoomError.RoomLayoutConflict(roomId))
+                    }
                     updatedRoom to Outcome.Success(updatedRoom)
                 }
             }

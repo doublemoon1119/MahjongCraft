@@ -110,6 +110,18 @@ sealed interface MinecraftPlayerFeedback {
     /** 指定的 AI 策略沒有登記。 */
     data object AiStrategyNotFound : MinecraftPlayerFeedback
 
+    /** 房主尚未解除此房間的暫時排除。 */
+    data object RoomParticipantExcluded : MinecraftPlayerFeedback
+
+    /** 暫時排除名單已滿，必須先解除部分排除。 */
+    data object RoomExclusionListFull : MinecraftPlayerFeedback
+
+    /** 房間已變更，或這次操作無法保留既有外部成員的實際席位。 */
+    data object RoomLayoutConflict : MinecraftPlayerFeedback
+
+    /** 開局前不能確認已綁定角色仍在指定席位或仍可參加。 */
+    data object SeatedParticipantUnavailable : MinecraftPlayerFeedback
+
     /** 指定的麻將桌不存在，或已超出目前可互動的範圍。 */
     data object TableNotReachable : MinecraftPlayerFeedback
 

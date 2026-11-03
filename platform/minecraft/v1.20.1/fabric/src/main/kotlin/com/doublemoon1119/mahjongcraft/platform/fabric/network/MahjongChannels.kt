@@ -21,6 +21,8 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.message.RoomActionDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.RoomSnapshotSyncPayloadDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.RoomUpdatePayloadDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.SnapshotClearedPayloadDto
+import com.doublemoon1119.mahjongcraft.platform.minecraft.character.AiCharacterHistoryPayload
+import com.doublemoon1119.mahjongcraft.platform.minecraft.character.AiCharacterSyncPayload
 import com.doublemoon1119.mahjongcraft.platform.minecraft.character.AiCharacterTargetPayload
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.DecisionTimerUpdatePayloadDto
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.PlayerDecisionSelectionDto
@@ -36,6 +38,12 @@ import kotlinx.serialization.builtins.serializer
 
 /** `mahjongcraft:` 命名空間下實際使用的命令、事件更新與主動快照同步頻道。 */
 object MahjongChannels {
+    /** 只附在已授權摘要回覆旁的當場角色資料。 */
+    val aiCharacterHistory = S2CChannel("ai_character_history", AiCharacterHistoryPayload.serializer(), AiCharacterSyncPayload.MAX_BYTES)
+
+    /** 只與已授權桌況一起送出的有界角色外觀。 */
+    val aiCharacterSnapshot = S2CChannel("ai_character_snapshot", AiCharacterSyncPayload.serializer(), AiCharacterSyncPayload.MAX_BYTES)
+
     /** 只向追蹤者同步公開角色標記，限制為小型回應。 */
     val aiCharacterTarget = S2CChannel(
         id = "ai_character_target",

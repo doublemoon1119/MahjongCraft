@@ -13,6 +13,26 @@ import kotlin.uuid.Uuid
  * 方便呼叫端進行細緻的錯誤處理或使用者提示。
  */
 sealed interface RoomError : ApplicationError {
+    /**
+     * 暫時排除名單已滿，須先解除部分排除才可加入新記錄。
+     *
+     * @property roomId 欲更新的房間。
+     */
+    data class ExclusionListFull(val roomId: Uuid) : RoomError
+
+    /**
+     * 變更後的名冊無法維持既有成員的固定位置。
+     *
+     * @property roomId 正在操作的房間。
+     */
+    data class RoomLayoutConflict(val roomId: Uuid) : RoomError
+
+    /**
+     * 參與者被房主暫時排除，須先允許重新加入。
+     *
+     * @property roomId 欲加入的房間。
+     */
+    data class ParticipantExcluded(val roomId: Uuid) : RoomError
 
     /**
      * 找不到指定的房間。

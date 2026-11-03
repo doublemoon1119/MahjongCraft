@@ -80,6 +80,21 @@ class ObserverSnapshotBroadcaster(
     /** 不等待 broadcaster mutex 的待交付失效請求。 */
     private val pendingInvalidations = AtomicReference<Map<Uuid, PendingInvalidation>>(emptyMap())
 
+    /** 尚未交付的非破壞性刷新；外部公開資料變更不需要假造房間變更。 */
+    private val pendingRefreshes = AtomicReference<Set<Uuid>>(emptySet())
+
+    /**
+     * 要求同一授權交付流程重新同步此場地，重複要求合併，不清除畫面或名冊。
+     *
+     * @param id 公開附加資料已改變的場地。
+     */
+    fun requestRefresh(id: Uuid) {
+        while (true) {
+            val before = pendingRefreshes.load()
+            if (pendingRefreshes.compareAndSet(before, before + id)) return
+        }
+    }
+
     /** 訂閱權威狀態，於每次狀態變更後推送；這個函式只在呼叫端的協程被取消時結束。 */
     suspend fun observeState() {
         store.state.collect { broadcast() }
@@ -124,9 +139,13 @@ class ObserverSnapshotBroadcaster(
         recordsById.keys.retainAll(observersById.keys + pending.keys)
         publishRecordObserversSnapshot()
         val latestState = store.state.value
+        var refreshes: Set<Uuid>
+        do {
+            refreshes = pendingRefreshes.load()
+        } while (!pendingRefreshes.compareAndSet(refreshes, emptySet()))
         val pendingIds = pending.keys
         observersById.forEach { (id, observerIds) ->
-            if (id !in pendingIds) broadcastTo(id, observerIds, latestState)
+            if (id !in pendingIds) broadcastTo(id, observerIds, latestState, force = id in refreshes)
         }
         pending.forEach { (id, request) ->
             val delivered = deliverInvalidation(id, request, observersById[id].orEmpty())
@@ -175,10 +194,11 @@ class ObserverSnapshotBroadcaster(
         id: Uuid,
         observerIds: Set<Uuid>,
         state: AuthoritativeStateSnapshot,
+        force: Boolean = false,
     ) {
         val source: Any? = state.games[id] ?: state.rooms[id]
         val record = recordsById[id]
-        if (record != null && record.source === source && record.snapshots.keys == observerIds) return
+        if (!force && record != null && record.source === source && record.snapshots.keys == observerIds) return
 
         val target = record ?: BroadcastRecord(source, mutableMapOf()).also { recordsById[id] = it }
         target.source = source
@@ -186,7 +206,7 @@ class ObserverSnapshotBroadcaster(
         publishRecordObserversSnapshot()
         observerIds.forEach { observerId ->
             val snapshot = snapshotFor(id, observerId, state)
-            if (target.snapshots.containsKey(observerId) && target.snapshots[observerId] == snapshot) return@forEach
+            if (!force && target.snapshots.containsKey(observerId) && target.snapshots[observerId] == snapshot) return@forEach
             // 來源已被取代時不送出也不記錄，否則下一輪內容相同就會被當成已送過而略過。
             val sourceBeforeSend = store.state.value.games[id] ?: store.state.value.rooms[id]
             if (sourceBeforeSend !== source) return@forEach
@@ -216,5 +236,6 @@ class ObserverSnapshotBroadcaster(
         recordsById.clear()
         recordObserversSnapshot.store(emptyMap())
         pendingInvalidations.store(emptyMap())
+        pendingRefreshes.store(emptySet())
     }
 }

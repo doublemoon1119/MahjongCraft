@@ -36,6 +36,18 @@ class TableLocationRegistry {
         .orEmpty()
         .mapNotNull(entriesByTableId::get)
 
+    /**
+     * 從 chunk 索引只擷取有界數量，不先複製整個 chunk 的清單。
+     *
+     * @param key 同維度的 chunk。
+     * @param limit 最多讀取的位置筆數。
+     * @return 數量不超過上限的位置快照。
+     */
+    fun getByChunk(key: DimensionChunkKey, limit: Int): List<TableLocationEntry> {
+        require(limit >= 0) { "Table lookup limit must not be negative" }
+        return tableIdsByChunk[key].orEmpty().asSequence().take(limit).mapNotNull(entriesByTableId::get).toList()
+    }
+
     /** 取得目前所有位置資料的不可變快照。 */
     fun snapshot(): Map<Uuid, TableLocationEntry> = entriesByTableId.toMap()
 

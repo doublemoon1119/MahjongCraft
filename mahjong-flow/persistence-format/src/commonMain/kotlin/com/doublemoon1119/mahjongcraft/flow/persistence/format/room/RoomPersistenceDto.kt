@@ -14,6 +14,7 @@ import kotlinx.serialization.Serializable
  * @property playerIds Room 內所有人類與 AI 玩家 UUID，依加入順序排列。
  * @property readyPlayerIds 已準備玩家 UUID。
  * @property aiPlayerStrategyKeys AI 玩家 UUID 與策略登記 key。
+ * @property admission 房間加入限制及生命週期。
  */
 @Serializable
 data class RoomPersistenceDto(
@@ -24,4 +25,5 @@ data class RoomPersistenceDto(
     val playerIds: List<String>,
     val readyPlayerIds: List<String>,
     val aiPlayerStrategyKeys: Map<String, String>,
+    val admission: RoomAdmissionPersistenceDto,
 )

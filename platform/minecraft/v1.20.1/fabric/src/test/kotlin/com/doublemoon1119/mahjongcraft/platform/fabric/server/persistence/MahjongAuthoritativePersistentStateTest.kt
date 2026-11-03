@@ -2,6 +2,7 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.server.persistence
 
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameConfig
 import com.doublemoon1119.mahjongcraft.flow.common.room.model.Room
+import com.doublemoon1119.mahjongcraft.flow.common.room.model.RoomParticipantIdentity
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.core.PersistenceDtoRegistry
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.core.PersistenceEnvelopeDto
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.migration.UnsupportedPersistenceSchemaVersionException
@@ -9,8 +10,16 @@ import com.doublemoon1119.mahjongcraft.flow.persistence.format.state.Authoritati
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateSnapshot
 import com.doublemoon1119.mahjongcraft.logic.config.MahjongRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
+import com.doublemoon1119.mahjongcraft.platform.minecraft.character.AiCharacterParticipantCapture
+import com.doublemoon1119.mahjongcraft.platform.minecraft.character.AiCharacterSnapshot
+import com.doublemoon1119.mahjongcraft.platform.minecraft.character.BuiltInAiCharacters
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledComponentValidator
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledPersistenceRegistries
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.CoroutineStart
+import kotlinx.coroutines.async
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.Json
 import net.minecraft.nbt.NbtCompound
@@ -29,6 +38,31 @@ import kotlin.uuid.Uuid
 class MahjongAuthoritativePersistentStateTest {
     /** 使用所有內建 mapper 的待測 codec。 */
     private val codec = AuthoritativeStatePersistenceCodec(bundledPersistenceRegistries(), componentValidator = bundledComponentValidator())
+
+    /** 前次擷取結束前已離座者，等待結束後必須拒絕，不執行加入操作。 */
+    @Test
+    fun `capture scope revalidates after waiting before any admission action`() = runTest {
+        val state = MahjongAuthoritativePersistentState.create(codec, testCharacterRegistry())
+        val room = createRoom()
+        val capture = AiCharacterParticipantCapture(room.admission.instanceId, Uuid.random(), RoomParticipantIdentity("example:actors", Uuid.random()), AiCharacterSnapshot(BuiltInAiCharacters.TILE_MASCOT_ID, BuiltInAiCharacters.TILE_MASCOT))
+        val release = CompletableDeferred<Unit>()
+        var seated = true
+        var applied = false
+        val holder = launch(start = CoroutineStart.UNDISPATCHED) {
+            state.withParticipants(listOf(capture), { true }, { error("Holder must enter") }) { release.await() }
+        }
+        val waiting = async(start = CoroutineStart.UNDISPATCHED) {
+            state.withParticipants(listOf(capture), { seated }, { false }) {
+                applied = true
+                true
+            }
+        }
+        seated = false
+        release.complete(Unit)
+        holder.join()
+        assertFalse(waiting.await())
+        assertFalse(applied)
+    }
 
     /** 既有 NBT 缺少 payload 時不得偽裝成新世界，空狀態只能由 create 建立。 */
     @Test

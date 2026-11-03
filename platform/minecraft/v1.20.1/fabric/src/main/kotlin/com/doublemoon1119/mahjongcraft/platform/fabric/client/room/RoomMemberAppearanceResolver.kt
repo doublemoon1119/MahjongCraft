@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.client.room
 
+import com.doublemoon1119.mahjongcraft.platform.minecraft.api.character.AiCharacterDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.RoomMemberAppearanceContext
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.RoomMemberAppearanceSource
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.RoomMemberAppearanceSourceProviderException
@@ -17,8 +18,12 @@ import kotlin.uuid.Uuid
  * （改用畫像）。玩家模型在玩家離線時還會再降級一次，但那需要查詢世界中的 entity，由呼叫端處理。
  *
  * @property sources 解析成員外觀來源的 registry。
+ * @property hasActorPreviewFactory 唯讀確認客戶端是否登記對應工廠，不建立模型。
  */
-internal class RoomMemberAppearanceResolver(private val sources: RoomMemberAppearanceSourceRegistry) {
+internal class RoomMemberAppearanceResolver(
+    private val sources: RoomMemberAppearanceSourceRegistry,
+    private val hasActorPreviewFactory: (String) -> Boolean = { false },
+) {
     /** 已警告過的 actor key，避免每一幀重複記錄。 */
     private val warnedActorKeys = mutableSetOf<String>()
 
@@ -31,11 +36,13 @@ internal class RoomMemberAppearanceResolver(private val sources: RoomMemberAppea
      *
      * @param playerId 成員的玩家識別碼。
      * @param isAi 成員是否由 AI 操控。
+     * @param character 已授權的角色描述。
+     * @param hasLiveModel 是否有目前已授權且載入的本人。
      * @return 外觀方式與本次尚未回報的降級警告。
      */
-    fun resolve(playerId: Uuid, isAi: Boolean): Resolution {
+    fun resolve(playerId: Uuid, isAi: Boolean, character: AiCharacterDefinition? = null, hasLiveModel: Boolean = false): Resolution {
         val source = try {
-            sources.resolve(RoomMemberAppearanceContext(playerId, isAi))
+            sources.resolve(RoomMemberAppearanceContext(playerId, isAi, character, hasLiveModel))
         } catch (cancelled: CancellationException) {
             throw cancelled
         } catch (cause: Exception) {
@@ -44,12 +51,14 @@ internal class RoomMemberAppearanceResolver(private val sources: RoomMemberAppea
             return Resolution(if (isAi) Appearance.Portrait else Appearance.PlayerModel, warning)
         }
         return when (source) {
+            RoomMemberAppearanceSource.WorldEntityModel -> Resolution(Appearance.WorldEntityModel, null)
             RoomMemberAppearanceSource.PlayerModel -> Resolution(Appearance.PlayerModel, null)
             RoomMemberAppearanceSource.Portrait -> Resolution(Appearance.Portrait, null)
-            is RoomMemberAppearanceSource.ActorPreview -> Resolution(
-                Appearance.Portrait,
-                Warning.MissingActorPreviewFactory(source.actorKey).takeIf { warnedActorKeys.add(source.actorKey) },
-            )
+            is RoomMemberAppearanceSource.ActorPreview -> if (hasActorPreviewFactory(source.actorKey)) {
+                Resolution(Appearance.ActorPreview, null, source.actorKey)
+            } else {
+                Resolution(Appearance.Portrait, Warning.MissingActorPreviewFactory(source.actorKey).takeIf { warnedActorKeys.add(source.actorKey) })
+            }
         }
     }
 
@@ -58,16 +67,24 @@ internal class RoomMemberAppearanceResolver(private val sources: RoomMemberAppea
      *
      * @property appearance 要使用的呈現方式。
      * @property warning 本次需要記錄的警告；相同來源已警告過時為 null。
+     * @property actorKey 已登記預覽能力，只有模型預覽結果才提供。
      */
     data class Resolution(
         val appearance: Appearance,
         val warning: Warning?,
+        val actorKey: String? = null,
     )
 
     /** 卡片可用的呈現方式。 */
     enum class Appearance {
+        /** 繪製已載入的本人，缺少時使用角色備援。 */
+        WorldEntityModel,
+
         /** 繪製玩家模型；玩家離線時由呼叫端再降級為畫像。 */
         PlayerModel,
+
+        /** 使用已登記工廠的獨立預覽模型，尚未準備好時由呼叫端顯示畫像。 */
+        ActorPreview,
 
         /** 繪製畫像。 */
         Portrait,

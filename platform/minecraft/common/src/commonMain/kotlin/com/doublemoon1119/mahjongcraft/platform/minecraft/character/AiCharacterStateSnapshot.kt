@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.character
 
+import com.doublemoon1119.mahjongcraft.flow.common.room.model.RoomParticipantIdentity
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateSnapshot
 import kotlin.uuid.Uuid
 
@@ -10,10 +11,12 @@ import kotlin.uuid.Uuid
  * @property characters 同一次擷取的角色資料；無法讀取時為 null，禁止修改選擇。
  * @property sessionId 這次載入的 session 身分。
  * @property revision 這次 session 內單調增加的版本。
+ * @property claimedParticipants 由同一份名冊重建的來源反向索引，不另外保存。
  */
 data class AiCharacterStateSnapshot(
     val authoritative: AuthoritativeStateSnapshot,
     val characters: AiCharacterMetadata?,
     val sessionId: Uuid,
     val revision: Long,
+    val claimedParticipants: Map<RoomParticipantIdentity, Uuid> = emptyMap(),
 )

@@ -150,13 +150,14 @@ class MahjongStoolSeatService(
                 if (!world.chunkManager.isChunkLoaded(chunkX, chunkZ)) return false
             }
         }
-        return world.isSpaceEmpty(entity, body) &&
+        return !world.getBlockCollisions(entity, body).iterator().hasNext() &&
             world.getOtherEntities(entity, body) {
                 SeatCollisionPolicy.blocks(
                     removed = it.isRemoved,
                     spectator = it.isSpectator,
                     physical = it is LivingEntity || it.isCollidable,
-                )
+                ) &&
+                    !SeatCollisionScope.ignores(entity, it)
             }.isEmpty()
     }
 

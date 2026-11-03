@@ -1,7 +1,10 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.client.history
 
+import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryIntegrityFilterDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryListRequestDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryListResponseDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryMatchDetailDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryMatchSummaryDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryQueryFiltersDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryQueryScopeDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryRoundEventsRequestDto
@@ -23,6 +26,30 @@ import kotlin.test.assertTrue
 
 /** 驗證客戶端歷史查詢傳輸邊界與工作階段生命週期。 */
 class ClientHistoryQueryCoordinatorTest {
+    /** 外觀封包必須配對已接受的清單或摘要，不能自行宣稱場次授權。 */
+    @Test
+    fun `character attachments require accepted request and match and reset on disconnect`() {
+        val coordinator = ClientHistoryQueryCoordinator(FakeHistoryQuerySender(), ClientHistoryQuerySettings())
+        val entry = HistoryMatchSummaryDto(
+            matchId = "first", ruleId = null, startedAtEpochMillis = null, endedAtEpochMillis = null,
+            outcome = null, integrity = HistoryIntegrityFilterDto.COMPLETE, integrityDiagnostic = null,
+            duration = null, participants = emptyList(), roundCount = null, resultsAvailable = false, results = emptyList(),
+        )
+        val request = coordinator.queryList(HistoryListRequestDto("caller", HistoryQueryScopeDto.OWN, HistorySortFieldDto.ENDED_AT, HistorySortDirectionDto.DESC, HistoryQueryFiltersDto.NONE, 20, null))
+        assertFalse(coordinator.acceptsCharacterAppearance(request, "first"))
+        coordinator.applyList(HistoryListResponseDto(request, listOf(entry), null, null, false, false))
+        assertTrue(coordinator.acceptsCharacterAppearance(request, "first"))
+        assertFalse(coordinator.acceptsCharacterAppearance(request, "unlisted"))
+        assertFalse(coordinator.acceptsCharacterAppearance("stale", "first"))
+        val summaryRequest = coordinator.querySummary(HistorySummaryRequestDto("caller", "second", HistoryQueryScopeDto.OWN))
+        coordinator.applySummary(HistorySummaryResponseDto(summaryRequest, HistoryMatchDetailDto(entry.copy(matchId = "second"), emptyList()), null))
+        assertTrue(coordinator.acceptsCharacterAppearance(summaryRequest, "second"))
+        assertFalse(coordinator.acceptsCharacterAppearance(summaryRequest, "first"))
+        coordinator.clear()
+        assertFalse(coordinator.acceptsCharacterAppearance(request, "first"))
+        assertFalse(coordinator.acceptsCharacterAppearance(summaryRequest, "second"))
+    }
+
     /** 清單要求會產生識別碼、進入載入狀態並交給傳送器。 */
     @Test
     fun `test list query sends request and accepts response`() {

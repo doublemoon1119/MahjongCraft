@@ -25,6 +25,7 @@ internal object GameRoomRestoration {
         playerIds = game.roomPlayerIds,
         readyPlayerIds = game.aiPlayerIds.toList() - game.hostId,
         aiPlayerStrategyKeys = game.aiPlayerStrategyKeys,
+        admission = game.roomAdmission,
     )
 
     /**

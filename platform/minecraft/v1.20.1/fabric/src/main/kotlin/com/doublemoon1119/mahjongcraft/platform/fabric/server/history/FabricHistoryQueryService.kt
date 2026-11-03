@@ -40,11 +40,16 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.network.MahjongChannels
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.concurrency.FabricSessionBackgroundScope
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.network.PlayerIdentitySender
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.player.ServerPlayerIdentityStore
+import com.doublemoon1119.mahjongcraft.platform.minecraft.character.AiCharacterHistoryPayload
+import com.doublemoon1119.mahjongcraft.platform.minecraft.character.AiCharacterSnapshot
+import com.doublemoon1119.mahjongcraft.platform.minecraft.character.AiCharacterSyncPayload
+import com.doublemoon1119.mahjongcraft.platform.minecraft.character.toNetworkDto
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftServerConfigState
 import com.doublemoon1119.mahjongcraft.platform.minecraft.environment.MinecraftEnvironment
 import com.doublemoon1119.mahjongcraft.platform.minecraft.history.HistoryQuerySettingsPayload
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
+import kotlinx.serialization.encodeToString
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents
 import net.minecraft.server.MinecraftServer
@@ -62,8 +67,8 @@ import kotlin.uuid.toKotlinUuid
  * @param dispatchers 確保資料讀取及回覆分別使用 I/O 與伺服器主執行緒。
  * @property json 線路序列化設定。
  * @property networkRegistries 將已保存的規則設定映射為網路 DTO 的正式註冊表。
- * @property identityStore 伺服器已知的玩家名稱索引。
  * @property playerIdentities 向已授權玩家同步參與者名稱及外觀身分。
+ * @property identityStore 伺服器已知的玩家名稱索引。
  * @property stressTestHistory 壓力測試範圍讀取的壓力測試資料庫。
  * @property minecraftEnvironment 只在開發環境開放壓力測試範圍。
  */
@@ -366,7 +371,7 @@ class FabricHistoryQueryService(
             token = accepted.token,
             canStart = { sameConnection(server, player, source, sessionId) },
             query = {
-                try {
+                val response = try {
                     require((request.cursor?.length ?: 0) <= HistoryQueryLimits.CURSOR_LENGTH) { "History cursor exceeds its length limit" }
                     val domain = request.toDomain { it?.decodeHistoryCursor(json) }
                     val repository = FabricHistoryQueryRepository(source.writer, sessionId, identityStore)
@@ -377,15 +382,33 @@ class FabricHistoryQueryService(
                 } catch (_: IllegalArgumentException) {
                     HistoryListResponseDto(request.requestId, emptyList(), nextCursor = null, errorCode = HistoryQueryErrorCodeDto.INVALID_REQUEST, allowAll = false, allowStressTest = false)
                 }
+                val appearances = linkedMapOf<String, AiCharacterHistoryPayload>()
+                var remainingBytes = AiCharacterSyncPayload.MAX_BYTES
+                for (entry in response.entries) {
+                    val domain = HistorySummaryRequest(Uuid.parse(entry.matchId), request.scope.toDomain())
+                    val result = source.writer.characterAppearances(access, domain, sessionId)
+                    val snapshots = when (result) {
+                        is HistoryManagementResult.Success -> result.value
+                        else -> emptyMap()
+                    }
+                    val allowed = entry.participants.map { it.playerId }.toSet()
+                    val payload = AiCharacterHistoryPayload(request.requestId, entry.matchId, snapshots.filterKeys { it in allowed }.map { (id, appearance) -> appearance.toNetworkDto(id) })
+                    val bytes = json.encodeToString(payload).encodeToByteArray().size
+                    if (bytes <= remainingBytes) {
+                        appearances[entry.matchId] = payload
+                        remainingBytes -= bytes
+                    }
+                }
+                PreparedCharacterList(response, appearances)
             },
-            timeoutResponse = { HistoryListResponseDto(request.requestId, emptyList(), nextCursor = null, errorCode = HistoryQueryErrorCodeDto.TIMEOUT, allowAll = false, allowStressTest = false) },
+            timeoutResponse = { PreparedCharacterList(HistoryListResponseDto(request.requestId, emptyList(), nextCursor = null, errorCode = HistoryQueryErrorCodeDto.TIMEOUT, allowAll = false, allowStressTest = false), emptyMap()) },
             failureResponse = { error ->
                 logger.error("History list query failed", error)
-                HistoryListResponseDto(request.requestId, emptyList(), nextCursor = null, errorCode = HistoryQueryErrorCodeDto.NOT_AVAILABLE, allowAll = canQueryAll(player.queryAccess(), policy()), allowStressTest = canQueryStressTest(player.queryAccess(), policy()))
+                PreparedCharacterList(HistoryListResponseDto(request.requestId, emptyList(), nextCursor = null, errorCode = HistoryQueryErrorCodeDto.NOT_AVAILABLE, allowAll = canQueryAll(player.queryAccess(), policy()), allowStressTest = canQueryStressTest(player.queryAccess(), policy())), emptyMap())
             },
             isCurrentSession = { sameConnection(server, player, source, sessionId) },
             send = { initialResponse ->
-                var response = initialResponse
+                var response = initialResponse.response
                 val invalid = replyError(player.queryAccess(), policy(), request.scope.toDomain())
                 if (invalid != null) response = HistoryListResponseDto(request.requestId, emptyList(), nextCursor = null, errorCode = invalid, allowAll = false, allowStressTest = false)
                 val active = activeMatches(source)
@@ -396,9 +419,34 @@ class FabricHistoryQueryService(
                 )
                 sendIdentities(player, response.entries.flatMap { entry -> entry.participants.filter { it.aiStrategyId == null }.map { it.playerId } })
                 MahjongChannels.historyListResponse.sendTo(player, json, response)
+                response.entries.forEach { entry ->
+                    initialResponse.appearances[entry.matchId]?.let { MahjongChannels.aiCharacterHistory.sendTo(player, json, it) }
+                }
             },
         )
     }
+
+    /**
+     * 已授權清單與同頁外觀，附帶資料另有整頁位元組預算。
+     *
+     * @property response 原清單回覆。
+     * @property appearances 依場次配對的外觀，不包含清單以外的對局。
+     */
+    private data class PreparedCharacterList(
+        val response: HistoryListResponseDto,
+        val appearances: Map<String, AiCharacterHistoryPayload>,
+    )
+
+    /**
+     * 摘要與平台外觀共同完成查詢，失敗回覆不攜帶外觀。
+     *
+     * @property response 既有摘要線路結果。
+     * @property appearances 同次查詢驗證可讀的固定角色描述。
+     */
+    private data class PreparedCharacterSummary(
+        val response: HistorySummaryResponseDto,
+        val appearances: Map<String, AiCharacterSnapshot>,
+    )
 
     /**
      * 接收單場要求，不因任意 match ID 揭露存在與否。
@@ -428,7 +476,7 @@ class FabricHistoryQueryService(
             token = accepted.token,
             canStart = { sameConnection(server, player, source, sessionId) },
             query = {
-                try {
+                val response = try {
                     val domain = HistorySummaryRequest(Uuid.parse(request.matchId), request.scope.toDomain())
                     val repository = FabricHistoryQueryRepository(source.writer, sessionId, identityStore)
                     when (val result = GetHistorySummaryUseCase(repository, ::policy)(access, domain)) {
@@ -438,15 +486,25 @@ class FabricHistoryQueryService(
                 } catch (_: IllegalArgumentException) {
                     HistorySummaryResponseDto(request.requestId, errorCode = HistoryQueryErrorCodeDto.INVALID_REQUEST, detail = null)
                 }
+                val appearances = if (response.detail != null) {
+                    val domain = HistorySummaryRequest(Uuid.parse(request.matchId), request.scope.toDomain())
+                    when (val appearanceResult = source.writer.characterAppearances(access, domain, sessionId)) {
+                        is HistoryManagementResult.Success -> appearanceResult.value
+                        else -> emptyMap()
+                    }
+                } else {
+                    emptyMap()
+                }
+                PreparedCharacterSummary(response, appearances)
             },
-            timeoutResponse = { HistorySummaryResponseDto(request.requestId, errorCode = HistoryQueryErrorCodeDto.TIMEOUT, detail = null) },
+            timeoutResponse = { PreparedCharacterSummary(HistorySummaryResponseDto(request.requestId, errorCode = HistoryQueryErrorCodeDto.TIMEOUT, detail = null), emptyMap()) },
             failureResponse = { error ->
                 logger.error("History summary query failed", error)
-                HistorySummaryResponseDto(request.requestId, errorCode = HistoryQueryErrorCodeDto.NOT_AVAILABLE, detail = null)
+                PreparedCharacterSummary(HistorySummaryResponseDto(request.requestId, errorCode = HistoryQueryErrorCodeDto.NOT_AVAILABLE, detail = null), emptyMap())
             },
             isCurrentSession = { sameConnection(server, player, source, sessionId) },
             send = { initialResponse ->
-                var response = boundedHistorySummary(request.requestId, initialResponse, json)
+                var response = boundedHistorySummary(request.requestId, initialResponse.response, json)
                 val invalid = replyError(player.queryAccess(), policy(), request.scope.toDomain())
                 if (invalid != null) response = HistorySummaryResponseDto(request.requestId, errorCode = invalid, detail = null)
                 if (response.detail?.summary?.matchId in activeMatches(source)) response = HistorySummaryResponseDto(request.requestId, errorCode = HistoryQueryErrorCodeDto.NOT_AVAILABLE, detail = null)
@@ -454,6 +512,11 @@ class FabricHistoryQueryService(
                     sendIdentities(player, detail.summary.participants.filter { it.aiStrategyId == null }.map { it.playerId })
                 }
                 MahjongChannels.historySummaryResponse.sendTo(player, json, response)
+                response.detail?.let { detail ->
+                    val allowed = detail.summary.participants.mapTo(mutableSetOf()) { it.playerId }
+                    val payload = AiCharacterHistoryPayload(request.requestId, detail.summary.matchId, initialResponse.appearances.filterKeys { it in allowed }.map { (id, snapshot) -> snapshot.toNetworkDto(id) })
+                    MahjongChannels.aiCharacterHistory.sendTo(player, json, payload)
+                }
             },
         )
     }

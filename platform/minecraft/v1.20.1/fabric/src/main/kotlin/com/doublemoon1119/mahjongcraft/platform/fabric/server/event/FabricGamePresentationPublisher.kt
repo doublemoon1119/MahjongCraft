@@ -1102,8 +1102,8 @@ class FabricGamePresentationPublisher(
     override fun publishGameStarted(gameId: Uuid, seatedPlayerIds: List<Uuid>) {
         if (serverHolder.current() == null) return
         scope.launch(dispatchers.main) {
-            characters.reconcile(gameId)
             seatingPresenter.present(gameId, seatedPlayerIds)
+            characters.reconcile(gameId)
         }
     }
 
@@ -1111,8 +1111,8 @@ class FabricGamePresentationPublisher(
     override fun publishSeatOrderChanged(gameId: Uuid, seatedPlayerIds: List<Uuid>) {
         if (serverHolder.current() == null) return
         scope.launch(dispatchers.main) {
-            characters.reconcile(gameId)
             seatingPresenter.present(gameId, seatedPlayerIds)
+            characters.reconcile(gameId)
         }
     }
 

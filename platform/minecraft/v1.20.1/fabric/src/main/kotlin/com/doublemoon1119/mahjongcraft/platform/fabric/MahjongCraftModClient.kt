@@ -1,6 +1,8 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric
 
 import com.doublemoon1119.mahjongcraft.ai.MahjongAiStrategyRegistry
+import com.doublemoon1119.mahjongcraft.extension.ExtensionRegistrationReport
+import com.doublemoon1119.mahjongcraft.extension.ExtensionRegistrationReportFormatter
 import com.doublemoon1119.mahjongcraft.flow.client.game.ClientDecisionTimerStateStore
 import com.doublemoon1119.mahjongcraft.flow.network.dto.command.toDomain
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.toDomain
@@ -15,6 +17,8 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.client.automatic.ClientAu
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.automatic.FabricAutomaticControlCommand
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.catalogue.FabricRuleCatalogueScreenCommand
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.catalogue.RuleCatalogueScreenController
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.character.ClientAiCharacterPreviewRegistry
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.character.ClientAiCharacterPreviews
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.character.ClientAiSeatInteraction
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.config.FabricClientConfigCommand
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.config.MahjongClientConfigScreenController
@@ -68,6 +72,10 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.client.tile.FabricHandSor
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.tile.FabricTileLabelCommand
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.tile.MatchingTileHighlightController
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.time.PauseAwareClientMonotonicClock
+import com.doublemoon1119.mahjongcraft.platform.fabric.extension.BuiltInFabricMahjongClientExtension
+import com.doublemoon1119.mahjongcraft.platform.fabric.extension.DebugFabricMahjongClientExtension
+import com.doublemoon1119.mahjongcraft.platform.fabric.extension.FabricMahjongClientExtension
+import com.doublemoon1119.mahjongcraft.platform.fabric.extension.FabricMahjongClientExtensionBootstrap
 import com.doublemoon1119.mahjongcraft.platform.fabric.item.MahjongScoringStickItem
 import com.doublemoon1119.mahjongcraft.platform.fabric.item.toModelPredicateValue
 import com.doublemoon1119.mahjongcraft.platform.fabric.logging.mahjongCraftLogger
@@ -76,6 +84,10 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.registry.ModEntities
 import com.doublemoon1119.mahjongcraft.platform.fabric.registry.ModItems
 import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionVocabularyRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.ai.AiStrategyDisplayNameRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.character.AiCharacterClientStateStore
+import com.doublemoon1119.mahjongcraft.platform.minecraft.character.AiCharacterSyncPayload
+import com.doublemoon1119.mahjongcraft.platform.minecraft.character.toCharacterSnapshot
+import com.doublemoon1119.mahjongcraft.platform.minecraft.character.toSnapshot
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.toDomain
 import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModMetadata
 import com.doublemoon1119.mahjongcraft.platform.minecraft.player.PlayerIdentityPayload
@@ -99,8 +111,13 @@ import net.fabricmc.fabric.api.client.model.loading.v1.PreparableModelLoadingPlu
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents
 import net.fabricmc.fabric.api.client.rendering.v1.BuiltinItemRendererRegistry
 import net.fabricmc.fabric.api.client.rendering.v1.EntityRendererRegistry
+import net.fabricmc.fabric.api.resource.ResourceManagerHelper
+import net.fabricmc.fabric.api.resource.SimpleSynchronousResourceReloadListener
+import net.fabricmc.loader.api.FabricLoader
 import net.minecraft.client.MinecraftClient
 import net.minecraft.client.item.ModelPredicateProviderRegistry
+import net.minecraft.resource.ResourceManager
+import net.minecraft.resource.ResourceType
 import net.minecraft.util.Identifier
 import org.koin.core.context.GlobalContext
 import kotlin.uuid.Uuid
@@ -113,6 +130,27 @@ class MahjongCraftModClient : ClientModInitializer {
 
     override fun onInitializeClient() {
         val koin = GlobalContext.get()
+        val previewExtensions = (if (FabricLoader.getInstance().isDevelopmentEnvironment) listOf(DebugFabricMahjongClientExtension) else emptyList()) +
+            FabricLoader.getInstance().getEntrypoints(FabricMahjongClientExtensionBootstrap.ENTRYPOINT, FabricMahjongClientExtension::class.java).toList()
+        val previewSources = FabricMahjongClientExtensionBootstrap.registerAndFreeze(
+            extensions = previewExtensions,
+            registry = koin.get<ClientAiCharacterPreviewRegistry>(),
+            builtIn = BuiltInFabricMahjongClientExtension,
+            failurePolicy = koin.get(),
+        )
+        val previewReport = ExtensionRegistrationReport(previewSources)
+        logger.info(ExtensionRegistrationReportFormatter.formatSummary(previewReport))
+        if (logger.isDebugEnabled) logger.debug(ExtensionRegistrationReportFormatter.formatDetails(previewReport))
+        val characterPreviews = koin.get<ClientAiCharacterPreviews>()
+        characterPreviews.initialize()
+        val portraits = koin.get<PlayerPortraitRenderer>()
+        ResourceManagerHelper.get(ResourceType.CLIENT_RESOURCES).registerReloadListener(object : SimpleSynchronousResourceReloadListener {
+            override fun getFabricId(): Identifier = Identifier("mahjongcraft", "character_portrait_resources")
+
+            override fun reload(manager: ResourceManager) {
+                MinecraftClient.getInstance().execute { portraits.clearResources() }
+            }
+        })
         ClientAiSeatInteraction.register(
             registry = koin.get(),
             failures = koin.get(),
@@ -149,12 +187,23 @@ class MahjongCraftModClient : ClientModInitializer {
         val historyChatEntries = koin.get<ClientHistoryChatEntryStore>()
         MahjongChannels.historyListResponse.registerClientReceiver(json, historyQueries::applyList)
         MahjongChannels.historySummaryResponse.registerClientReceiver(json, historyQueries::applySummary)
+        MahjongChannels.aiCharacterHistory.registerClientReceiver(json) { payload ->
+            if (!historyQueries.acceptsCharacterAppearance(payload.requestId, payload.matchId) || payload.players.size > AiCharacterSyncPayload.MAX_PLAYERS) return@registerClientReceiver
+            try {
+                val players = payload.players.map { Uuid.parse(it.playerId) to it.toCharacterSnapshot() }
+                require(players.distinctBy { it.first }.size == players.size) { "Duplicate historical character player" }
+                koin.get<AiCharacterClientStateStore>().rememberHistory(Uuid.parse(payload.matchId), players.toMap())
+            } catch (cause: IllegalArgumentException) {
+                logger.warn("Rejected invalid historical character appearance", cause)
+            }
+        }
         MahjongChannels.historyRuleSettingsResponse.registerClientReceiver(json, historyQueries::applyRuleSettings)
         MahjongChannels.historyRoundEventsResponse.registerClientReceiver(json, historyQueries::applyRoundEvents)
         MahjongChannels.historyRoundStateResponse.registerClientReceiver(json, historyQueries::applyRoundState)
         MahjongChannels.historyArchiveStatusResponse.registerClientReceiver(json, historyArchiveStatus::apply)
         val networkRegistries = koin.get<NetworkDtoRegistries>()
         val stateStore = koin.get<ClientMahjongStateStore>()
+        val characterState = koin.get<AiCharacterClientStateStore>()
         val tableSpaceObstructions = koin.get<ClientTableSpaceObstructionStore>()
         koin.get<TableSpaceObstructionRenderer>().registerEvents()
         val handTileLayoutController = koin.get<ClientHandTileLayoutController>()
@@ -192,7 +241,12 @@ class MahjongCraftModClient : ClientModInitializer {
             clearHistoryArchiveStatus = historyArchiveStatus::clear,
             clearProfiles = profileResolver::clearSession,
             clearHistoryChatEntries = historyChatEntries::clear,
-            clearGameState = stateStore::clear,
+            clearGameState = {
+                stateStore.clear()
+                characterState.clear()
+                characterPreviews.clear()
+                portraits.clearResources()
+            },
             clearAutomaticControl = automaticControlUpdateCoordinator::clear,
             clearDecisionTimer = decisionTimerStore::clear,
             clearDecisionPrompt = decisionPromptStore::clear,
@@ -201,6 +255,13 @@ class MahjongCraftModClient : ClientModInitializer {
             clearHandTileLayout = ClientHandTileLayoutBridge::clear,
             clearTableSpaceObstruction = tableSpaceObstructions::clear,
         )
+        MahjongChannels.aiCharacterSnapshot.registerClientReceiver(json) { payload ->
+            try {
+                characterState.receive(payload.toSnapshot())
+            } catch (cause: IllegalArgumentException) {
+                logger.warn("Rejected invalid public character snapshot", cause)
+            }
+        }
         MahjongChannels.playerIdentity.registerClientReceiver(json) { payload ->
             if (payload.entries.size > PlayerIdentityPayload.MAX_ENTRIES) return@registerClientReceiver
             payload.entries.forEach { entry ->
@@ -252,6 +313,9 @@ class MahjongCraftModClient : ClientModInitializer {
                 client.setScreen(
                     RoomScreen(
                         stateStore = stateStore,
+                        characters = characterState,
+                        displayNames = koin.get(),
+                        clock = koin.get<PauseAwareClientMonotonicClock>(),
                         tableId = Uuid.parse(payload.tableId),
                         configPresentations = configPresentations,
                         configResolver = configResolver,
@@ -271,12 +335,14 @@ class MahjongCraftModClient : ClientModInitializer {
             }
         }
         MahjongChannels.snapshotCleared.registerClientReceiver(json) { payload ->
+            characterState.remove(Uuid.parse(payload.id))
             val tableId = Uuid.parse(payload.id)
             stateStore.applySnapshotCleared(tableId)
             automaticControlUpdateCoordinator.clearTable(tableId)
         }
         MahjongChannels.tableSpaceObstruction.registerClientReceiver(json, tableSpaceObstructions::apply)
         MahjongChannels.tableRemoved.registerClientReceiver(json) { payload ->
+            characterState.remove(Uuid.parse(payload.tableId))
             val tableId = Uuid.parse(payload.tableId)
             stateStore.removeTable(tableId)
             tableSpaceObstructions.clearTable(tableId)

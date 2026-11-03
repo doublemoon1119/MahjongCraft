@@ -479,16 +479,19 @@ class AuthoritativeStateStore(
      * 開局事實的新場次一律為 [HistoryRecordingDecision.EXCLUDED_NO_OPENING]，不從中途建立歷史。
      *
      * @param T 交易回傳結果的型別。
+     * @param waitForLock 是否等待其他交易；false 時忙碌即拒絕，避免沿用等待前的外部預檢。
      * @param block 在交易鎖內根據目前狀態產生新狀態、事實與結果。
      * @return [block] 產生的交易結果。
+     * @throws AuthoritativeStateBusyException 不允許等待且已有其他交易時拋出，尚未執行本次修改。
      * @throws AuthoritativeStateUnavailableException 已呼叫 [markUnavailable] 且尚未重新 [load] 時拋出。
      */
     suspend fun <T> update(
+        waitForLock: Boolean = true,
         block: suspend (AuthoritativeStateSnapshot) -> AuthoritativeStateUpdate<T>,
     ): T {
         var notification: CommittedFactsNotification? = null
         return try {
-            mutex.withLock {
+            withWriteLock(waitForLock) {
                 if (!isAvailable) throw AuthoritativeStateUnavailableException()
                 val update = block(currentState)
                 var recording = restoreDecisions(update.state)
@@ -610,6 +613,23 @@ class AuthoritativeStateStore(
             notification?.let { pending ->
                 runCatching { pending.listener.onReleased(pending.sequence) }
             }
+        }
+    }
+
+    /**
+     * 取得寫入鎖；外部預檢需要立即提交時，不在此掛起等待。
+     *
+     * @param waitForLock 是否允許等待。
+     * @param block 已取得執行權的交易。
+     * @return 交易結果。
+     */
+    private suspend fun <T> withWriteLock(waitForLock: Boolean, block: suspend () -> T): T {
+        if (waitForLock) return mutex.withLock { block() }
+        if (!mutex.tryLock()) throw AuthoritativeStateBusyException()
+        return try {
+            block()
+        } finally {
+            mutex.unlock()
         }
     }
 

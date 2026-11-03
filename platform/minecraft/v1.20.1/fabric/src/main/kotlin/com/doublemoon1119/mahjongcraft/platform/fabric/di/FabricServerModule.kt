@@ -17,6 +17,7 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.AutomatedA
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.AutomatedAdvanceFollowUp
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameAbortEffects
 import com.doublemoon1119.mahjongcraft.platform.fabric.api.registration.FabricAiCharacterCapabilityRegistrar
+import com.doublemoon1119.mahjongcraft.platform.fabric.api.registration.FabricRoomParticipantRegistrar
 import com.doublemoon1119.mahjongcraft.platform.fabric.api.registration.FabricSeatPlacementRegistrar
 import com.doublemoon1119.mahjongcraft.platform.fabric.api.registration.FabricSeatProviderRegistrar
 import com.doublemoon1119.mahjongcraft.platform.fabric.extension.FabricExtensionRegistries
@@ -28,6 +29,8 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.server.character.FabricAi
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.character.FabricAiCharacterCapabilityRegistry
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.character.FabricAiCharacterManager
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.character.FabricAiCharacterTracking
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.character.FabricRoomParticipantRegistry
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.character.FabricSeatedParticipantService
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.concurrency.FabricAppCoroutineScope
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.concurrency.FabricCoroutineDispatchers
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.concurrency.FabricSessionBackgroundScope
@@ -69,6 +72,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.ReadinessAnal
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.SpectatorObservationService
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.FabricDebugCommand
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.animation.FabricDebugAnimationCommand
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.character.FabricDebugSeatedParticipantCommand
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.decision.FabricDebugDecisionCommand
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.history.FabricDebugHistoryCommand
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.history.FabricHistoryGenerationRuntimeFactory
@@ -98,6 +102,8 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.server.history.FabricHist
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.history.FabricHistoryQueryService
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.history.HistoryRetentionCoordinator
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.history.StressTestHistorySource
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.network.AiCharacterSnapshotDelivery
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.network.AiCharacterSnapshotSender
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.network.AutomaticControlSnapshotSender
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.network.FabricAutomaticControlSnapshotSender
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.network.FabricObserverSnapshotSender
@@ -181,6 +187,7 @@ import org.koin.plugin.module.dsl.single
 val fabricServerModule = module {
     includes(flowServerModule, minecraftServerModule, fabricCommonModule)
 
+    single<FabricRoomParticipantRegistry>() bind FabricRoomParticipantRegistrar::class
     single<FabricAiCharacterCapabilityRegistry>() bind FabricAiCharacterCapabilityRegistrar::class
     single<FabricSeatPlacementRegistry>() bind FabricSeatPlacementRegistrar::class
     single<FabricAiSeatPlacementService>()
@@ -235,6 +242,7 @@ val fabricServerModule = module {
     single<PlayerDecisionPromptFactory>()
     single<ReadinessAnalysisDtoMapper>()
     single<SpectatorObservationService>()
+    single<FabricDebugSeatedParticipantCommand>()
     single<FabricDebugCommand>()
     single<FabricDebugAnimationCommand>()
     single<FabricDebugDecisionCommand>()
@@ -272,6 +280,7 @@ val fabricServerModule = module {
             locations = get(),
             configState = get(),
             retentionCoordinator = get(),
+            characterAppearance = { matchId, playerId -> get<FabricAuthoritativeStatePersistence>().characterSnapshot()?.characters?.matchPlayers(matchId)?.get(playerId) },
         )
     }
     single<FabricHistoryQueryService>()
@@ -304,8 +313,10 @@ val fabricServerModule = module {
     single<ReachableMahjongTableResolver>()
     single<RoomMemberCandidateResolver>()
 
+    single<AiCharacterSnapshotSender>() bind AiCharacterSnapshotDelivery::class
     single<FabricAiCharacterTracking>()
     single<FabricAiCharacterBindings>()
+    single<FabricSeatedParticipantService>()
     single<FabricAiCharacterManager>()
     single<FabricSeatingSessionFactory>()
     single<FabricMahjongSeatingPresenter>() bind MahjongSeatingPresenter::class

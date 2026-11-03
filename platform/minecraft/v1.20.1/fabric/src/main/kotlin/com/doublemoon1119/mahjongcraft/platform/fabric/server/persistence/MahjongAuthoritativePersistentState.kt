@@ -5,11 +5,14 @@ import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateSnaps
 import com.doublemoon1119.mahjongcraft.platform.fabric.logging.mahjongCraftLogger
 import com.doublemoon1119.mahjongcraft.platform.minecraft.character.AiCharacterMetadata
 import com.doublemoon1119.mahjongcraft.platform.minecraft.character.AiCharacterMetadataCodec
+import com.doublemoon1119.mahjongcraft.platform.minecraft.character.AiCharacterParticipantCapture
 import com.doublemoon1119.mahjongcraft.platform.minecraft.character.AiCharacterRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.character.AiCharacterSelectionResult
 import com.doublemoon1119.mahjongcraft.platform.minecraft.character.AiCharacterStateSnapshot
 import com.doublemoon1119.mahjongcraft.platform.minecraft.character.AiCharacterStateStore
 import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModMetadata
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
 import net.minecraft.nbt.NbtCompound
 import net.minecraft.nbt.NbtElement
 import net.minecraft.world.PersistentState
@@ -42,6 +45,9 @@ class MahjongAuthoritativePersistentState private constructor(
     /** 不受網路序列化設定影響的角色 codec。 */
     private val characterCodec = AiCharacterMetadataCodec()
 
+    /** 同一房間的加入、開局與刷新不共用同一份暫態擷取。 */
+    private val participantCaptureScopes = ParticipantCaptureScopes()
+
     /** 同時保存權威與角色資料的單一來源。 */
     private val characterState = AiCharacterStateStore(registry, ::markDirty).apply { restore(initialSnapshot, characters) }
 
@@ -50,6 +56,73 @@ class MahjongAuthoritativePersistentState private constructor(
 
     /** 讀取一次完整保存封套，供歷史與角色同步取得同一版本。 */
     fun characterSnapshot(): AiCharacterStateSnapshot = characterState.snapshot()
+
+    /**
+     * 讓加入交易擷取預先驗證的外觀，結束後一律清除暫態資料。
+     *
+     * @param capture 交易外擷取的描述。
+     * @param validate 取得同桌執行權後重新確認資格與描述，不得掛起或修改世界。
+     * @param rejected 預檢過期時的拒絕結果。
+     * @param action 會立即嘗試權威交易的加入操作。
+     * @return 加入操作的結果。
+     */
+    internal suspend fun <T> withParticipant(
+        capture: AiCharacterParticipantCapture,
+        validate: () -> Boolean,
+        rejected: () -> T,
+        action: suspend () -> T,
+    ): T = withParticipants(listOf(capture), validate, rejected, action)
+
+    /**
+     * 以同一個開局交易凍結全部已預檢的角色，結束後清除暫態描述。
+     *
+     * @param captures 同一次預檢的角色描述；沒有外部成員時可為空。
+     * @param validate 取得同桌執行權後重新確認資格與描述，不得掛起或修改世界。
+     * @param rejected 預檢過期時的拒絕結果。
+     * @param action 會立即嘗試權威交易的開局操作。
+     * @return 開局操作的結果。
+     */
+    internal suspend fun <T> withParticipants(
+        captures: List<AiCharacterParticipantCapture>,
+        validate: () -> Boolean,
+        rejected: () -> T,
+        action: suspend () -> T,
+    ): T {
+        if (captures.isEmpty()) return action()
+        require(captures.map { it.roomInstanceId }.distinct().size == 1) { "Captures must belong to one room" }
+        require(captures.map { it.playerId }.distinct().size == captures.size) { "Duplicate participant capture" }
+        return participantCaptureScopes.withScope(captures.first().roomInstanceId) {
+            currentCoroutineContext().ensureActive()
+            if (!validate() || characterSnapshot().characters == null) return@withScope rejected()
+            val prepared = mutableListOf<Uuid>()
+            try {
+                captures.forEach { capture ->
+                    characterState.prepareParticipant(capture)
+                    prepared += capture.playerId
+                }
+                action()
+            } finally {
+                prepared.forEach(characterState::releaseParticipant)
+            }
+        }
+    }
+
+    /**
+     * 在已持有權威交易時更新等待成員的公開外觀，不改寫已開始場次。
+     *
+     * @param authoritative 同一交易目前的完整狀態。
+     * @param capture 已在世界執行緒驗證的描述。
+     * @return 已刷新時為 true；同一房間已有擷取時為 false，下輪再試。
+     */
+    internal fun refreshParticipant(authoritative: AuthoritativeStateSnapshot, capture: AiCharacterParticipantCapture): Boolean = participantCaptureScopes.tryWithScope(capture.roomInstanceId) {
+        characterState.prepareParticipant(capture)
+        try {
+            characterState.update(authoritative)
+            true
+        } finally {
+            characterState.releaseParticipant(capture.playerId)
+        }
+    } ?: false
 
     /**
      * 更新牌局並擷取新場次的角色，不呼叫世界或第三方工廠。

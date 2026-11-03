@@ -5,6 +5,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.api.registration.FabricSe
 import com.doublemoon1119.mahjongcraft.platform.fabric.api.registration.FabricTablePropKindRegistrar
 import com.doublemoon1119.mahjongcraft.platform.fabric.api.tableprop.FabricTablePropKind
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.character.FabricAiCharacterCapabilityRegistry
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.character.FabricRoomParticipantRegistry
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.seating.FabricSeatPlacementRegistry
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.seating.FabricSeatProviderRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.prop.FabricTablePropKindRegistry
@@ -57,6 +58,7 @@ class FabricTablePropKindRegistrationTest {
             seatProviderRegistry = seatProviderRegistry,
             characterCapabilityRegistry = FabricAiCharacterCapabilityRegistry(),
             seatPlacementRegistry = FabricSeatPlacementRegistry(),
+            roomParticipantRegistry = FabricRoomParticipantRegistry(),
         ),
         builtIn = BuiltInFabricMahjongExtension(FakeProvider(), MinecraftTileAssetRegistryImpl()),
         failurePolicy = ExtensionFailurePolicy.Default,
@@ -169,6 +171,7 @@ class FabricTablePropKindRegistrationTest {
                 seatProviderRegistry = seatProviderRegistry,
                 characterCapabilityRegistry = FabricAiCharacterCapabilityRegistry(),
                 seatPlacementRegistry = FabricSeatPlacementRegistry(),
+                roomParticipantRegistry = FabricRoomParticipantRegistry(),
             ),
             builtIn = BuiltInFabricMahjongExtension(FakeProvider(), MinecraftTileAssetRegistryImpl()),
             failurePolicy = ExtensionFailurePolicy.Default,

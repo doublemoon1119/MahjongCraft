@@ -19,4 +19,7 @@ enum class AiCharacterSelectionResult {
 
     /** 沒有登記這個角色。 */
     UNKNOWN_CHARACTER,
+
+    /** 外部成員使用提供者擷取的描述，不接受房間角色切換。 */
+    SOURCE_MANAGED,
 }

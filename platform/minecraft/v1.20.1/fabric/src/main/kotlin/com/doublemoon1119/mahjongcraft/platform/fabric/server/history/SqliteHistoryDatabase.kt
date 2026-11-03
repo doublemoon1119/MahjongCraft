@@ -1,6 +1,7 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.server.history
 
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryPruningConfirmation
+import com.doublemoon1119.mahjongcraft.platform.minecraft.character.AiCharacterSnapshotCodec
 import org.jetbrains.exposed.v1.core.ColumnType
 import org.jetbrains.exposed.v1.core.IntegerColumnType
 import org.jetbrains.exposed.v1.core.LongColumnType
@@ -110,8 +111,14 @@ internal data class HistoryParticipantResultRecord(
  * @property seatIndex 開局座位。
  * @property playerId 玩家 ID。
  * @property aiStrategyId AI 策略 key；真人玩家為 null。
+ * @property characterAppearance 當場固定的角色保存描述；沒有角色時為 null。
  */
-internal data class HistoryParticipantRecord(val seatIndex: Int, val playerId: String, val aiStrategyId: String?)
+internal data class HistoryParticipantRecord(
+    val seatIndex: Int,
+    val playerId: String,
+    val aiStrategyId: String?,
+    val characterAppearance: String? = null,
+)
 
 /**
  * 每局的起訖時間摘要。
@@ -500,6 +507,7 @@ internal class SqliteHistoryDatabase private constructor(
                 it[seatIndex] = participant.seatIndex
                 it[playerId] = participant.playerId
                 it[aiStrategyId] = participant.aiStrategyId
+                it[characterAppearance] = participant.characterAppearance
             }
         }
         HistoryResultProjectionTable.insert {
@@ -925,6 +933,29 @@ internal class SqliteHistoryDatabase private constructor(
     }
 
     /**
+     * 只讀已授權歷史內容涉及場次的角色描述，供平台回覆附帶外觀。
+     *
+     * 呼叫端必須先通過同場歷史查詢；此方法不是公開 UUID／場次探查入口。
+     *
+     * @param matchId 已授權的封存場次。
+     * @return 最多四位參與者的固定外觀保存文字。
+     */
+    fun readCharacterAppearances(matchId: String): Map<String, String> = transaction(database) {
+        TransactionManager.current().exec(
+            "SELECT player_id, CASE WHEN length(CAST(character_appearance AS BLOB)) <= ? THEN character_appearance ELSE NULL END " +
+                "FROM history_participant WHERE match_id = ? AND character_appearance IS NOT NULL LIMIT 4",
+            listOf(IntegerColumnType() to (AiCharacterSnapshotCodec.MAX_CHARACTERS * 3), VarCharColumnType() to matchId),
+        ) { rows ->
+            buildMap {
+                while (rows.next()) {
+                    val encoded = rows.getString(2)
+                    if (encoded != null) put(rows.getString(1), encoded)
+                }
+            }
+        }.orEmpty()
+    }
+
+    /**
      * 在目前交易中讀取單一對局的參與者摘要。
      *
      * @param matchId 已通過查詢範圍與公開條件的對局 ID。
@@ -950,7 +981,7 @@ internal class SqliteHistoryDatabase private constructor(
      * 以 SQLite UTF-8 BLOB 長度計算指定對局的邏輯 payload 大小。
      *
      * @param matchIds 要計算的對局 ID 集合。
-     * @return 指定對局的 Replay 與暫存事件 payload UTF-8 位元組總數。
+     * @return 指定對局的 Replay、暫存事件及角色外觀 UTF-8 位元組總數。
      */
     fun logicalPayloadBytes(matchIds: Collection<String>): Long = transaction(database) {
         logicalPayloadBytesInTransaction(matchIds)
@@ -1025,7 +1056,7 @@ internal class SqliteHistoryDatabase private constructor(
      * 在目前 SQLite 交易中計算 payload 的 UTF-8 位元組數，不載入文字內容。
      *
      * @param matchIds 要計算的場次，同一 ID 只計一次。
-     * @return Replay 與 SQL 暫存事件的邏輯大小。
+     * @return Replay、SQL 暫存事件與角色外觀的邏輯大小。
      */
     private fun logicalPayloadBytesInTransaction(matchIds: Collection<String>): Long {
         if (matchIds.isEmpty()) return 0L
@@ -1037,6 +1068,9 @@ internal class SqliteHistoryDatabase private constructor(
                 if (result.next()) total = Math.addExact(total, result.getLong(1))
             }
             TransactionManager.current().exec("SELECT COALESCE(SUM(length(CAST(payload AS BLOB))), 0) FROM history_pending_event WHERE match_id IN ($ids)", arguments) { result ->
+                if (result.next()) total = Math.addExact(total, result.getLong(1))
+            }
+            TransactionManager.current().exec("SELECT COALESCE(SUM(length(CAST(character_appearance AS BLOB))), 0) FROM history_participant WHERE match_id IN ($ids)", arguments) { result ->
                 if (result.next()) total = Math.addExact(total, result.getLong(1))
             }
         }

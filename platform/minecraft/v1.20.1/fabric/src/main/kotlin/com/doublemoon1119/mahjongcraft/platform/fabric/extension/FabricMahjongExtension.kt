@@ -1,6 +1,7 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.extension
 
 import com.doublemoon1119.mahjongcraft.platform.fabric.api.registration.FabricAiCharacterCapabilityRegistrar
+import com.doublemoon1119.mahjongcraft.platform.fabric.api.registration.FabricRoomParticipantRegistrar
 import com.doublemoon1119.mahjongcraft.platform.fabric.api.registration.FabricSeatPlacementRegistrar
 import com.doublemoon1119.mahjongcraft.platform.fabric.api.registration.FabricSeatProviderRegistrar
 import com.doublemoon1119.mahjongcraft.platform.fabric.api.registration.FabricTablePropKindRegistrar
@@ -12,6 +13,13 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.api.registration.FabricTa
  * loader 從 `MahjongExtension` entrypoint 的掃描結果中篩選出有實作這個介面的部分。
  */
 interface FabricMahjongExtension {
+    /**
+     * 登記哪些既有實體可以坐在固定席位後自動參加房間。
+     *
+     * @param registry 初始化期間的唯寫登記入口。
+     */
+    fun registerRoomParticipants(registry: FabricRoomParticipantRegistrar) = Unit
+
     /** 第三方 extension 的穩定識別字串，用於診斷註冊錯誤。 */
     val id: String
 
