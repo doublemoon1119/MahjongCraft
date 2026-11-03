@@ -20,11 +20,16 @@ fun aiPlayerDisplayName(
     characters: Map<Uuid, AiCharacterSnapshot> = emptyMap(),
 ): String {
     characters[playerId]?.displayName?.let { return it }
-    val numberedPlayers = orderedAiPlayerIds.filter { id ->
-        val character = characters[id]
-        character?.displayName == null &&
-            (character?.definition == null || character.characterId == BuiltInAiCharacters.TILE_MASCOT_ID)
-    }
+    val numberedPlayers = orderedAiPlayerIds.filter { id -> characters[id].usesNumberedAiName() }
     val ordinal = numberedPlayers.indexOf(playerId)
     return if (ordinal >= 0) "AI ${ordinal + 1}" else "AI-${playerId.toString().take(6)}"
 }
+
+/**
+ * 判斷角色是否使用預設 AI 序號，與用戶端是否已載入翻譯無關。
+ *
+ * @receiver 這個房間或場次的公開角色描述；沒有描述時為 null。
+ * @return 沒有普通名稱或第三方角色名稱時為 true。
+ */
+fun AiCharacterSnapshot?.usesNumberedAiName(): Boolean = this?.displayName == null &&
+    (this?.definition == null || characterId == BuiltInAiCharacters.TILE_MASCOT_ID)

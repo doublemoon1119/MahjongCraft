@@ -1,9 +1,15 @@
 package com.doublemoon1119.mahjongcraft.example.fabric
 
+import com.doublemoon1119.mahjongcraft.example.fabric.character.ExampleActorProviders
 import com.doublemoon1119.mahjongcraft.example.fabric.furniture.ExampleFurniture
 import com.doublemoon1119.mahjongcraft.example.fabric.furniture.seating.ExampleSeatPlacements
 import com.doublemoon1119.mahjongcraft.example.fabric.table.ExampleHandRevealChipTablePropKind
 import com.doublemoon1119.mahjongcraft.example.minecraft.ExampleMinecraftMahjongExtension
+import com.doublemoon1119.mahjongcraft.example.minecraft.character.ExampleCharacterIds
+import com.doublemoon1119.mahjongcraft.platform.fabric.api.character.FabricAiCharacterCapabilityDefinition
+import com.doublemoon1119.mahjongcraft.platform.fabric.api.character.FabricRoomParticipantDefinition
+import com.doublemoon1119.mahjongcraft.platform.fabric.api.registration.FabricAiCharacterCapabilityRegistrar
+import com.doublemoon1119.mahjongcraft.platform.fabric.api.registration.FabricRoomParticipantRegistrar
 import com.doublemoon1119.mahjongcraft.platform.fabric.api.registration.FabricSeatPlacementRegistrar
 import com.doublemoon1119.mahjongcraft.platform.fabric.api.registration.FabricSeatProviderRegistrar
 import com.doublemoon1119.mahjongcraft.platform.fabric.api.registration.FabricTablePropKindRegistrar
@@ -30,5 +36,16 @@ class ExampleFabricMahjongExtension :
     /** 方塊椅子與實體坐墊皆可由手持物品放置在 AI 席位。 */
     override fun registerSeatPlacements(registry: FabricSeatPlacementRegistrar) {
         ExampleSeatPlacements.definitions().forEach(registry::register)
+    }
+
+    /** 只登記範例自己的人偶資格，不將其他原版或第三方生物納入。 */
+    override fun registerRoomParticipants(registry: FabricRoomParticipantRegistrar) {
+        registry.register(FabricRoomParticipantDefinition(ExampleCharacterIds.ACTOR, ExampleActorProviders.PARTICIPANT))
+    }
+
+    /** 借用與自有能力分開登記，不在初始化時生成實體。 */
+    override fun registerAiCharacterCapabilities(registry: FabricAiCharacterCapabilityRegistrar) {
+        registry.register(FabricAiCharacterCapabilityDefinition(ExampleCharacterIds.ACTOR, ExampleActorProviders.BORROWED))
+        registry.register(FabricAiCharacterCapabilityDefinition(ExampleCharacterIds.OWNED_ACTOR, ExampleActorProviders.OWNED))
     }
 }

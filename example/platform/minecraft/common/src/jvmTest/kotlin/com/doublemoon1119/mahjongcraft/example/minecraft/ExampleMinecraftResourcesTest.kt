@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.example.minecraft
 
+import com.doublemoon1119.mahjongcraft.example.minecraft.text.ExampleCharacterMessageKeys
 import com.doublemoon1119.mahjongcraft.example.minecraft.text.ExampleEventMessageKeys
 import com.doublemoon1119.mahjongcraft.example.minecraft.text.ExampleFurnitureMessageKeys
 import com.doublemoon1119.mahjongcraft.example.minecraft.text.ExampleMinecraftMessageKeys
@@ -42,6 +43,12 @@ class ExampleMinecraftResourcesTest {
         ExampleEventMessageKeys.COMPLETION,
         ExampleEventMessageKeys.REASON_ID,
         ExampleEventMessageKeys.STANDING,
+        ExampleCharacterMessageKeys.ACTOR,
+        ExampleCharacterMessageKeys.PROXY,
+        ExampleCharacterMessageKeys.ITEM,
+        ExampleCharacterMessageKeys.ITEM_HINT,
+        ExampleCharacterMessageKeys.OWNER_HINT,
+        ExampleFurnitureMessageKeys.BENCH,
         ExampleFurnitureMessageKeys.CHAIR,
         ExampleFurnitureMessageKeys.ONE_BLOCK_TABLE,
         ExampleFurnitureMessageKeys.LOW_TABLE,

@@ -37,6 +37,9 @@ class ExampleModPackagingTest {
                 "com/doublemoon1119/mahjongcraft/example/fabric/ExampleFabricMahjongExtension.class",
                 "com/doublemoon1119/mahjongcraft/example/fabric/ExampleMod.class",
                 "com/doublemoon1119/mahjongcraft/example/fabric/ExampleModClient.class",
+                "com/doublemoon1119/mahjongcraft/example/fabric/ExampleFabricMahjongClientExtension.class",
+                "com/doublemoon1119/mahjongcraft/example/fabric/character/ExampleActorEntity.class",
+                "com/doublemoon1119/mahjongcraft/example/fabric/furniture/block/ExampleBenchBlock.class",
                 "fabric.mod.json",
                 "assets/mahjongcraft_example/icon.png",
                 "assets/mahjongcraft_example/lang/en_us.json",
@@ -49,6 +52,14 @@ class ExampleModPackagingTest {
                 "assets/mahjongcraft_example/textures/item/mahjong_tile/mahjong_tile_unknown.png",
                 "assets/mahjongcraft_example/textures/font/tile_emoji.png",
                 "assets/minecraft/font/default.json",
+                "assets/mahjongcraft_example/blockstates/bench.json",
+                "assets/mahjongcraft_example/models/block/bench.json",
+                "assets/mahjongcraft_example/models/block/bench_left.json",
+                "assets/mahjongcraft_example/models/block/bench_right.json",
+                "assets/mahjongcraft_example/models/block/bench_single.json",
+                "assets/mahjongcraft_example/models/item/bench.json",
+                "assets/mahjongcraft_example/models/item/actor.json",
+                "data/mahjongcraft_example/loot_tables/blocks/bench.json",
                 "assets/mahjongcraft_example/blockstates/chair.json",
                 "assets/mahjongcraft_example/models/block/chair.json",
                 "assets/mahjongcraft_example/models/item/chair.json",
@@ -106,5 +117,19 @@ class ExampleModPackagingTest {
             dependencies.values.any { it.jsonPrimitive.content.contains("\${") },
             dependencies.toString(),
         )
+    }
+
+    /** 預覽只由 client extension 發現，不放入共用或 main 入口。 */
+    @Test
+    fun `actor preview extension is listed only under the client extension entrypoint`() {
+        ZipFile(System.getProperty("mahjongcraft.exampleJar")).use { jar ->
+            val metadata = Json.parseToJsonElement(jar.getInputStream(jar.getEntry("fabric.mod.json")).bufferedReader().readText()).jsonObject
+            val entries = metadata.getValue("entrypoints").jsonObject
+            val clientClass = "com.doublemoon1119.mahjongcraft.example.fabric.ExampleFabricMahjongClientExtension"
+            assertEquals(listOf(clientClass), entries.getValue("mahjongcraft:client_extension").jsonArray.map { it.jsonPrimitive.content })
+            listOf("main", "mahjongcraft:extension").forEach { key ->
+                assertFalse(entries.getValue(key).jsonArray.any { it.jsonPrimitive.content == clientClass })
+            }
+        }
     }
 }

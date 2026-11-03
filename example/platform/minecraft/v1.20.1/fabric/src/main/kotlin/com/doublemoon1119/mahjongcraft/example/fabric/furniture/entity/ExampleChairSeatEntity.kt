@@ -15,7 +15,7 @@ import net.minecraft.util.math.Vec3d
 import net.minecraft.world.World
 
 /**
- * 範例椅子使用的隱形暫時座位 entity；不保存，無乘客或椅子失效時移除。
+ * 範例椅子與長凳共用的隱形支撐；有乘客時由原版保存，無乘客或家具失效時移除。
  *
  * @param type Minecraft entity 類型。
  * @param world 實體所屬世界。
@@ -38,12 +38,13 @@ class ExampleChairSeatEntity(
         needsOccupancyCheck = false
     }
 
+    /** 載入後核對乘客、家具與重複支撐；失效時只釋放本席。 */
     override fun tick() {
         super.tick()
         if (world.isClient) return
         val duplicate = needsOccupancyCheck && seatsAt(world, blockPos).any { it !== this }
         needsOccupancyCheck = false
-        if (!hasPassengers() || !ExampleFurnitureBlocks.isRegistered() || world.getBlockState(blockPos).block !== ExampleFurnitureBlocks.chair || duplicate) {
+        if (!hasPassengers() || !ExampleFurnitureBlocks.isRegistered() || !ExampleFurnitureBlocks.isSeat(world.getBlockState(blockPos)) || duplicate) {
             removeAllPassengers()
             discard()
         }
@@ -67,10 +68,10 @@ class ExampleChairSeatEntity(
     /** 隱形座位不接受傷害。 */
     override fun damage(source: DamageSource, amount: Float): Boolean = false
 
-    /** 隱形座位不保存額外資料。 */
+    /** 方塊位置與乘客由原版保存，沒有額外欄位。 */
     override fun readCustomDataFromNbt(nbt: NbtCompound) = Unit
 
-    /** 隱形座位不保存額外資料。 */
+    /** 方塊位置與乘客由原版保存，沒有額外欄位。 */
     override fun writeCustomDataToNbt(nbt: NbtCompound) = Unit
 
     /** entity 不需要資料追蹤欄位。 */

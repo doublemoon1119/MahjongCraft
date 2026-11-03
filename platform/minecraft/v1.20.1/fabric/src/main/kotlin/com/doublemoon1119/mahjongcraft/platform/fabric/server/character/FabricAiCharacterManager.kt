@@ -7,7 +7,6 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.logging.mahjongCraftLogge
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.FabricServerHolder
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.entity.FabricEntitySpawnGateway
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.persistence.FabricAuthoritativeStatePersistence
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.seating.FabricSeatEnvironment
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.seating.FabricSeatingSession
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.seating.FabricSeatingSessionFactory
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.seating.SeatCollisionScope
@@ -24,6 +23,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.character.AiCharacterS
 import com.doublemoon1119.mahjongcraft.platform.minecraft.character.SeatedParticipantSources
 import com.doublemoon1119.mahjongcraft.platform.minecraft.seating.SeatAssignmentResult
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongTableSeatLayout
+import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableInteractionReach
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocationRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileTableLayout
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerChunkEvents
@@ -129,7 +129,7 @@ class FabricAiCharacterManager internal constructor(
     }
 
     /**
-     * 開局或換位呈現前立即對齊名冊；一般恢復只重新安排 AI，不移動真人。
+     * 開局或換位呈現前立即對齊名冊；自有代理共用入座，借用角色只接收指定席位，不自動拉回。
      *
      * @param tableId 只對齊指定桌子；null 表示所有權威桌子。
      */
@@ -170,7 +170,11 @@ class FabricAiCharacterManager internal constructor(
             val key = AiCharacterBindingKey(game.id, game.matchId, playerId)
             val current = bindings.coordinator.find(key)
             if (current != null) {
-                if (current.expectedPosition?.squaredDistanceTo(current.entity.pos)?.let { it > POSITION_TOLERANCE_SQUARED } == true) changed = true
+                if (game.roomAdmission.memberIdentities[playerId]?.sourceId == SeatedParticipantSources.WORLD_ENTITY && !isNearby(seating, current.entity)) {
+                    bindings.coordinator.remove(key)
+                    return@forEach
+                }
+                if (current.handle.ownership == AiCharacterOwnership.OWNED && current.expectedPosition?.squaredDistanceTo(current.entity.pos)?.let { it > POSITION_TOLERANCE_SQUARED } == true) changed = true
                 return@forEach
             }
             if (ticks < retryAfter.getOrElse(key) { 0L }) return@forEach
@@ -184,19 +188,21 @@ class FabricAiCharacterManager internal constructor(
     }
 
     /**
-     * 借用角色只在本桌等待點或正式站立點恢復控制，不從遠處拉回離開的實體。
+     * 以一般桌邊互動範圍區分附近離座與已離場，不要求站在精確席位上。
      *
-     * @param tableId 已授權的本桌。
-     * @param entity 目前已載入的同一實體。
-     * @return 本桌有可確認的安全位置且實體仍在該位置時為 true。
+     * @param seating 已載入桌子的世界與位置。
+     * @param entity 原世界參與者。
+     * @return 原實體仍在同一桌邊範圍內時為 true。
      */
-    private fun isAtTable(tableId: Uuid, entity: Entity): Boolean {
-        val table = sessions.prepareTable(tableId) ?: return false
-        return table.requests.any { request ->
-            val geometry = table.coordinator.preview(table.world, entity, request) ?: return@any false
-            FabricSeatEnvironment().positioned(table.world, entity, geometry)
-        }
-    }
+    private fun isNearby(seating: FabricSeatingSession, entity: Entity): Boolean = entity.world === seating.world &&
+        TableInteractionReach.distance(
+            entity.x,
+            entity.y,
+            entity.z,
+            seating.location.x,
+            seating.location.y,
+            seating.location.z,
+        ) <= TableInteractionReach.SURVIVAL
 
     /**
      * 查詢能力並透過唯一接管核心建立角色。
@@ -222,7 +228,7 @@ class FabricAiCharacterManager internal constructor(
         val game = persistence.characterSnapshot()?.authoritative?.games?.get(key.tableId) ?: return null
         val identity = game.roomAdmission.memberIdentities[key.playerId]
         val participant = if (identity?.sourceId == SeatedParticipantSources.WORLD_ENTITY) {
-            seating.world.getEntity(identity.subjectId.toJavaUuid())?.takeIf { it.isAlive && isAtTable(key.tableId, it) } ?: return null
+            seating.world.getEntity(identity.subjectId.toJavaUuid())?.takeIf { it.isAlive && isNearby(seating, it) } ?: return null
         } else {
             null
         }
@@ -298,7 +304,7 @@ class FabricAiCharacterManager internal constructor(
     }
 
     /**
-     * 局間換位或恢復代理時只重新安排 AI，真人位置不變。
+     * 局間換位或恢復時只安排自有代理；借用角色接收新席位後自行處理，真人位置不變。
      *
      * @param game 目前權威對局。
      * @param roster 完整席位名冊。
@@ -310,20 +316,19 @@ class FabricAiCharacterManager internal constructor(
             includePlayers = false,
             player = serverHolder::findPlayer,
             character = { playerId ->
-                val actor = bindings.find(game.id, playerId)
-                if (actor != null && game.roomAdmission.memberIdentities[playerId]?.sourceId == SeatedParticipantSources.WORLD_ENTITY && !isAtTable(game.id, actor.entity)) {
-                    bindings.coordinator.remove(AiCharacterBindingKey(game.id, game.matchId, playerId))
-                    null
-                } else {
-                    actor?.entity
-                }
+                bindings.find(game.id, playerId)?.takeIf { it.handle.ownership == AiCharacterOwnership.OWNED }?.entity
             },
         )
         val tableRequests = sessions.prepareTable(game.id)?.requests ?: return
         SeatCollisionScope.with(actors, seating.requests) {
             seating.coordinator.seatAll(seating.world, actors, seating.requests, tableRequests)
         }.forEachIndexed { index, result ->
-            bindings.find(game.id, roster[index])?.let { it.assignedVehicle = actors[index]?.vehicle }
+            val current = bindings.find(game.id, roster[index])
+            if (current?.handle?.ownership == AiCharacterOwnership.BORROWED) {
+                callback(current, SEAT_CALLBACK) { current.handle.seatAssigned(seating.requests[index]) }
+                return@forEachIndexed
+            }
+            current?.let { it.assignedVehicle = actors[index]?.vehicle }
             if (result == SeatAssignmentResult.SEATED || result == SeatAssignmentResult.STANDING) {
                 bindings.find(game.id, roster[index])?.let { actor ->
                     callback(actor, SEAT_CALLBACK) { actor.handle.seatAssigned(seating.requests[index]) }
@@ -393,7 +398,7 @@ class FabricAiCharacterManager internal constructor(
      * @param seating 本次標準席位。
      * @param index 此 AI 的完整名冊索引。
      * @param tableId 診斷桌子。
-     * @return 已完成安全入座或站立時為 true。
+     * @return 自有代理已完成安全入座，或借用角色已收到指定席位時為 true。
      */
     private fun activate(
         lease: AiCharacterLease<FabricAiCharacterActor>,
@@ -405,16 +410,24 @@ class FabricAiCharacterManager internal constructor(
         val request = seating.requests[index]
         val activated = AiCharacterSeatActivation.activate(
             ownership = lease.ownership,
-            preview = { seating.coordinator.preview(seating.world, actor.entity, request) },
+            preview = {
+                seating.coordinator.preview(seating.world, actor.entity, request).also { target ->
+                    if (target == null) logger.debug("AI character activation deferred before spawn tableId={} seatIndex={} entityId={}", tableId, index, actor.entity.uuid)
+                }
+            },
             position = { geometry -> actor.entity.refreshPositionAndAngles(geometry.x, geometry.y, geometry.z, geometry.yaw, 0f) },
             spawn = { spawnGateway.spawn(seating.world, actor.entity, SPAWN_SOURCE, tableId) },
             seat = {
                 val result = seating.coordinator.assign(seating.world, actor.entity, request)
                 actor.assignedVehicle = actor.entity.vehicle
+                if (result != SeatAssignmentResult.SEATED && result != SeatAssignmentResult.STANDING) {
+                    logger.debug("AI character activation deferred after spawn tableId={} seatIndex={} entityId={} result={}", tableId, index, actor.entity.uuid, result)
+                }
                 result == SeatAssignmentResult.SEATED || result == SeatAssignmentResult.STANDING
             },
         )
         if (!activated) return false
+        actor.assignedVehicle = actor.entity.vehicle
         actor.handle.seatAssigned(request)
         actor.expectedPosition = actor.entity.pos
         return true

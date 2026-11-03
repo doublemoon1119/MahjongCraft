@@ -22,7 +22,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.SettingsFooter
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.UnsavedChangesConfirmationScreen
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.player.ClientPlayerDisplayNameResolver
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.player.ClientPlayerProfileResolver
-import com.doublemoon1119.mahjongcraft.platform.fabric.client.player.resolvedPlayerNameText
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.player.playerInfoDisplayName
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.OfflinePlayerPreviewEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.PlayerPortraitRenderer
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.PublicPlayerIndicatorTextResolver
@@ -1241,7 +1241,7 @@ class RoomScreen(
             renderMemberAppearance(context, player.playerId, player.isAi, x, y, grid.cardWidth, mouseX, mouseY)
             context.drawCenteredTextWithShadow(
                 textRenderer,
-                fitClientText(textRenderer, resolvedPlayerNameText(player.playerName), grid.cardWidth - 12),
+                fitClientText(textRenderer, Text.literal(playerInfoDisplayName(player) { id -> displayNames.resolve(tableId, id.toString(), true) }), grid.cardWidth - 12),
                 x + grid.cardWidth / 2,
                 y + MEMBER_NAME_OFFSET,
                 0xFFFFFF,

@@ -99,6 +99,7 @@ public abstract interface class com/doublemoon1119/mahjongcraft/platform/minecra
 }
 
 public final class com/doublemoon1119/mahjongcraft/platform/minecraft/api/event/MinecraftMatchAbortReasonIds {
+	public static final field AI_PLAYER_MISSING Ljava/lang/String;
 	public static final field INSTANCE Lcom/doublemoon1119/mahjongcraft/platform/minecraft/api/event/MinecraftMatchAbortReasonIds;
 	public static final field TABLE_BROKEN_BY_PLAYER Ljava/lang/String;
 	public static final field TABLE_MISSING Ljava/lang/String;

@@ -174,11 +174,23 @@ create a mount, pause its AI or perform blocking I/O in them. Register the chara
 There can be at most 64 room-participant providers; registration rejects an excess rather than
 silently ignoring later providers.
 
-The actor must actually be riding furniture at the assigned standard seat. Standing nearby or
-riding something elsewhere is insufficient. A failed provider or an unloaded area does not prove
-that it left. A confirmed departure removes its waiting-room association. An ongoing match keeps
-its participant roster even if its world actor disappears. Restoring its visual binding requires
-the same actor still at this table; recovery must not teleport an actor back from elsewhere.
+Admission requires the actor to be riding furniture at one of the table's standard sides. Once the
+match starts, getting off a chair nearby does not remove its binding or authorize MahjongCraft to
+move it back. The world factory receives its assigned position through `context.seat`, and
+`seatAssigned` updates that request when the match roster changes. A borrowed adapter decides
+whether to return and how; it may use its own navigation or seating service. Explicit game-start
+seating and a player's seat-item interaction still use MahjongCraft's normal safe seating checks.
+
+Existing world participants can disappear because their integration removes, kills or moves them;
+for example, an NPC mod may resume its own behavior. A missing actor leaves a waiting room when its
+loaded table can confirm the absence. For ongoing
+matches, `[ai-player].missing-policy` selects `abort_match` (default) or `continue_match`.
+The latter preserves the AI participant without creating a replacement entity. The former uses the
+ordinary aborted-match flow and reports `MinecraftMatchAbortReasonIds.AI_PLAYER_MISSING`.
+A missing actor is dead, removed, not loaded in the table's world, or outside the normal nearby table
+interaction range. Being off its exact seat is not absence. Shutdown and unloaded tables do not
+trigger this check. These options apply to existing world participants, not ordinary owned proxies
+or FACE-only characters, and do not share player-disconnection timers.
 
 Room changes do not pin external participants to their current physical side or disable the rule's
 normal opening order. Only normal room permissions and admission rules constrain those changes.
@@ -333,7 +345,10 @@ already removed entity.
 
 A successful discard can request `AiCharacterActionIds.DISCARD`. Unknown visual action IDs may be
 ignored. These callbacks never submit a game command, change legal actions, or delay match progress.
-`seatAssigned` reports a successful seat placement so the adapter can update its resting direction.
+`seatAssigned` supplies the current assigned seat and facing, including after a roster change.
+A borrowed adapter decides how to react or return; MahjongCraft does not force a nearby dismounted
+actor back into position. The callback must return promptly, so navigation belongs in the adapter's
+own updates rather than a blocking callback.
 
 Adapters that support gaze mostly look at the fixed centre of their own hand area. This anchor does not use the actual
 hand's faces, size or order. Give each bot a different timing cycle for briefly looking at a public

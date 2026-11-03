@@ -3,7 +3,7 @@
 This library adds Minecraft presentation to the platform-independent extension.
 It contains no native Block or Entity implementations and no loader entrypoint.
 It registers the pairing rule's settings, names, rule guide, hand-reveal and exchange prompts,
-settlement text and tile appearance through MahjongCraft's public extension callbacks.
+settlement text, tile appearance and character descriptions through public extension callbacks.
 
 Translations are provided in Traditional Chinese, Simplified Chinese, English and Japanese.
 Shared resources also provide the furniture models, names, creative-tab title and event-chat labels.
@@ -21,6 +21,7 @@ These shared registrations do not depend on a particular Minecraft version or lo
 
 | What to add | Callback | Example implementation |
 | --- | --- | --- |
+| Character descriptions and FACE | `registerAiCharacters` | [Character descriptions](src/commonMain/kotlin/com/doublemoon1119/mahjongcraft/example/minecraft/character/ExampleCharacters.kt) |
 | Rule-specific room controls | `registerGameConfigPresentations` | [Room settings](src/commonMain/kotlin/com/doublemoon1119/mahjongcraft/example/minecraft/room/ExamplePairingGameConfigPresentation.kt) |
 | Rule guide | `registerRuleCatalogues` | [Rule catalogue](src/commonMain/kotlin/com/doublemoon1119/mahjongcraft/example/minecraft/presentation/ExamplePairingCatalogue.kt) |
 | Action labels and explanation cards | `registerGameActionVocabulary` | The extension entrypoint above |

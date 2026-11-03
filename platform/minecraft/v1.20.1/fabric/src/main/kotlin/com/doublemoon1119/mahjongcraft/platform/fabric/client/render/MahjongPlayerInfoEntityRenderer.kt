@@ -2,7 +2,8 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.client.render
 
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.config.MahjongClientConfigStore
-import com.doublemoon1119.mahjongcraft.platform.fabric.client.player.resolvedPlayerNameText
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.player.ClientPlayerDisplayNameResolver
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.player.playerInfoDisplayName
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongPlayerInfoEntity
 import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongTableSide
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongPlayerInfoEntry
@@ -23,15 +24,17 @@ import kotlin.uuid.Uuid
  * 從單一桌級 entity 在各固定座位頭頂後方繪製雙面公開資訊。
  *
  * @param context Minecraft renderer factory 提供的 client context。
- * @param portraits 繪製各玩家頭像的共用 renderer。
- * @param indicatorTextResolver 將公開指示器轉成文字與顏色。
- * @param configStore 提供玩家資訊面板可見性設定。
+ * @property portraits 繪製各玩家頭像的共用 renderer。
+ * @property indicatorTextResolver 將公開指示器轉成文字與顏色。
+ * @property configStore 提供玩家資訊面板可見性設定。
+ * @property displayNames 依已授權描述解析需本地翻譯的角色名稱。
  */
 class MahjongPlayerInfoEntityRenderer(
     context: EntityRendererFactory.Context,
     private val portraits: PlayerPortraitRenderer,
     private val indicatorTextResolver: PublicPlayerIndicatorTextResolver,
     private val configStore: MahjongClientConfigStore,
+    private val displayNames: ClientPlayerDisplayNameResolver,
 ) : EntityRenderer<MahjongPlayerInfoEntity>(context) {
     private val textRenderer = context.textRenderer
 
@@ -49,7 +52,20 @@ class MahjongPlayerInfoEntityRenderer(
         val players = entity.players.sortedBy { it.seatIndex }
         if (players.isEmpty()) return
         val seatLayout = MahjongTableSeatLayout.forPlayerCount(players.size)
-        val width = measureSharedWidth(players, entity.dealerPlayerId)
+        val names = players.associate { player ->
+            player.playerId to playerInfoDisplayName(player) { id ->
+                displayNames.resolve(
+                    entity.managedTableId,
+                    id.toString(),
+                    true,
+                )
+            }
+        }
+        val width = measureSharedWidth(
+            players,
+            entity.dealerPlayerId,
+            names,
+        )
         val scoreChanges = entity.scoreChanges
         val gameTime = entity.world.time
         players.forEach { player ->
@@ -60,11 +76,29 @@ class MahjongPlayerInfoEntityRenderer(
             matrices.translate(offset.first, PANEL_HEIGHT, offset.second)
             matrices.multiply(RotationAxis.POSITIVE_Y.rotationDegrees(sideYaw(side)))
             matrices.scale(-TEXT_SCALE, -TEXT_SCALE, TEXT_SCALE)
-            renderFace(player, entity.dealerPlayerId == player.playerId, shownDelta, width, light, matrices, vertexConsumers)
+            renderFace(
+                player,
+                entity.dealerPlayerId == player.playerId,
+                shownDelta,
+                width,
+                light,
+                matrices,
+                vertexConsumers,
+                names,
+            )
             matrices.push()
             matrices.translate(0.0, 0.0, BACK_FACE_OFFSET.toDouble())
             matrices.multiply(RotationAxis.POSITIVE_Y.rotationDegrees(180f))
-            renderFace(player, entity.dealerPlayerId == player.playerId, shownDelta, width, light, matrices, vertexConsumers)
+            renderFace(
+                player,
+                entity.dealerPlayerId == player.playerId,
+                shownDelta,
+                width,
+                light,
+                matrices,
+                vertexConsumers,
+                names,
+            )
             matrices.pop()
             matrices.pop()
         }
@@ -80,6 +114,7 @@ class MahjongPlayerInfoEntityRenderer(
      * @param light 世界光照值。
      * @param matrices 目前的模型矩陣。
      * @param consumers 提供面板與文字頂點緩衝。
+     * @param names 同一次繪製已解析的本地名稱。
      */
     private fun renderFace(
         player: MahjongPlayerInfoEntry,
@@ -89,6 +124,7 @@ class MahjongPlayerInfoEntityRenderer(
         light: Int,
         matrices: MatrixStack,
         consumers: VertexConsumerProvider,
+        names: Map<Uuid, String>,
     ) {
         val indicators = player.indicators.map(indicatorTextResolver::resolve)
         val height = PANEL_PADDING * 2 + FIRST_ROW_HEIGHT + SCORE_ROW_HEIGHT + indicators.size * INDICATOR_ROW_HEIGHT
@@ -99,7 +135,7 @@ class MahjongPlayerInfoEntityRenderer(
         val nameX = left + PANEL_PADDING + PORTRAIT_SIZE + PORTRAIT_GAP
         val suffixWidth = textRenderer.getWidth(windText(player.seatWind)).toFloat() +
             if (isDealer) textRenderer.getWidth(DEALER_MARK) + COLUMN_GAP else 0f
-        val displayName = resolvedPlayerNameText(player.playerName).string
+        val displayName = names.getValue(player.playerId)
         val fitted = WorldPanelRenderer.fitText(textRenderer, displayName, (left + width - PANEL_PADDING - nameX - suffixWidth).toInt())
         WorldPanelRenderer.drawText(textRenderer, Text.literal(fitted), nameX, top + 1f, NAME_COLOR, TEXT_Z, light, matrices, consumers)
         var right = left + width - PANEL_PADDING
@@ -136,15 +172,17 @@ class MahjongPlayerInfoEntityRenderer(
      *
      * @param players 本桌公開的玩家資訊。
      * @param dealerPlayerId 莊家玩家 ID；若與某位玩家相符，量測時預留莊家標記空間。
+     * @param names 同一次繪製已解析的本地名稱。
      * @return 介於最小與最大寬度之間的共用面板寬度。
      */
     private fun measureSharedWidth(
         players: List<MahjongPlayerInfoEntry>,
         dealerPlayerId: Uuid?,
+        names: Map<Uuid, String>,
     ): Float {
         var width = MIN_PANEL_WIDTH
         players.forEach { player ->
-            val displayName = resolvedPlayerNameText(player.playerName).string
+            val displayName = names.getValue(player.playerId)
             val header = PANEL_PADDING * 2 + PORTRAIT_SIZE + PORTRAIT_GAP +
                 textRenderer.getWidth(displayName.take(MAX_NAME_CHARACTERS)) + COLUMN_GAP + textRenderer.getWidth(windText(player.seatWind)) +
                 if (player.playerId == dealerPlayerId) textRenderer.getWidth(DEALER_MARK) + COLUMN_GAP else 0f

@@ -1,0 +1,36 @@
+{
+  "parent": "minecraft:block/block",
+  "textures": {
+    "particle": "minecraft:block/oak_planks",
+    "wood": "minecraft:block/oak_planks",
+    "seat": "minecraft:block/blue_wool"
+  },
+  "elements": [
+    {
+      "from": [
+        14,
+        9,
+        0
+      ],
+      "to": [
+        16,
+        13,
+        13
+      ],
+      "faces": {
+        "up": {
+          "texture": "#wood"
+        },
+        "north": {
+          "texture": "#wood"
+        },
+        "west": {
+          "texture": "#wood"
+        },
+        "east": {
+          "texture": "#wood"
+        }
+      }
+    }
+  ]
+}

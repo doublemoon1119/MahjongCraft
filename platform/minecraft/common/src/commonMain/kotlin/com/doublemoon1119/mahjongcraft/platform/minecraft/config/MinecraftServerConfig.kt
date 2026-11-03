@@ -38,6 +38,7 @@ val OrphanedTablePolicy.configValue: String
  * @property disconnectedPlayerTimeout `LEAVE_AFTER_TIMEOUT` 使用的離線寬限時間。
  * @property mahjongTilePhysicalCollisionEnabled 麻將牌是否阻擋玩家及其他非麻將牌 entity。
  * @property history 歷史資料記錄與封存設定。
+ * @property missingAiPlayerPolicy 找不到參與遊戲的 AI 玩家時，中止或繼續對局。
  */
 data class MinecraftServerConfig(
     val disconnectedPlayerPolicy: DisconnectedPlayerPolicy = DisconnectedPlayerPolicy.LEAVE_IMMEDIATELY,
@@ -46,6 +47,7 @@ data class MinecraftServerConfig(
     val disconnectedPlayerTimeout: Duration = DEFAULT_DISCONNECTED_PLAYER_TIMEOUT,
     val mahjongTilePhysicalCollisionEnabled: Boolean = true,
     val history: MinecraftHistoryConfig = MinecraftHistoryConfig(),
+    val missingAiPlayerPolicy: MissingAiPlayerPolicy = MissingAiPlayerPolicy.ABORT_MATCH,
 ) {
     /** Server config 數值邊界與預設值。 */
     companion object {

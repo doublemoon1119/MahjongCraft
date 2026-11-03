@@ -32,6 +32,7 @@ class MinecraftAbortReasonTextTest {
     @Test
     fun `rule and automatic failures have specific localized wording`() {
         val expected = mapOf(
+            MinecraftMatchAbortReasonIds.AI_PLAYER_MISSING to MinecraftMessageKeys.GAME_ABORT_REASON_AI_PLAYER,
             GameAbortReasonIds.MISSING_WIN_SETTLEMENT to MinecraftMessageKeys.GAME_ABORT_REASON_SETTLEMENT,
             GameAbortReasonIds.MISSING_DRAW_SETTLEMENT to MinecraftMessageKeys.GAME_ABORT_REASON_SETTLEMENT,
             GameAbortReasonIds.INVALID_PROGRESSION to MinecraftMessageKeys.GAME_ABORT_REASON_PROGRESSION,

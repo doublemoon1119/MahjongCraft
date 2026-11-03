@@ -5,6 +5,9 @@ object ExampleFurnitureMessageKeys {
     /** 方塊椅子的名稱。 */
     const val CHAIR = "block.mahjongcraft_example.chair"
 
+    /** 可延長長凳的名稱。 */
+    const val BENCH = "block.mahjongcraft_example.bench"
+
     /** 只占一格的範例麻將桌名稱。 */
     const val ONE_BLOCK_TABLE = "block.mahjongcraft_example.one_block_table"
 

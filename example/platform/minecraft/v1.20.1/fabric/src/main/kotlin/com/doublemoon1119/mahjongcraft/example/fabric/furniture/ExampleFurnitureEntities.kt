@@ -12,7 +12,7 @@ import net.minecraft.util.Identifier
 
 /** 範例家具 entity type 的集中註冊點。 */
 object ExampleFurnitureEntities {
-    /** 椅子使用的隱形暫時座位；由 [register] 初始化。 */
+    /** 方塊座位共用的隱形支撐；有乘客時隨原生資料保存，空座自行清理。 */
     lateinit var chairSeat: EntityType<ExampleChairSeatEntity>
         private set
 
@@ -32,7 +32,6 @@ object ExampleFurnitureEntities {
                 .dimensions(EntityDimensions.fixed(0.25f, 0.25f))
                 .trackRangeChunks(10)
                 .trackedUpdateRate(10)
-                .disableSaving()
                 .fireImmune()
                 .build(),
         )

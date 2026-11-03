@@ -393,7 +393,7 @@ class MahjongCraftModClient : ClientModInitializer {
             )
         }
         EntityRendererRegistry.register(ModEntities.mahjongPlayerInfo) { context ->
-            MahjongPlayerInfoEntityRenderer(context, portraitRenderer, indicatorTextResolver, clientConfigStore)
+            MahjongPlayerInfoEntityRenderer(context, portraitRenderer, indicatorTextResolver, clientConfigStore, playerNames)
         }
         EntityRendererRegistry.register(ModEntities.mahjongLobbyInfo) { context ->
             MahjongLobbyInfoEntityRenderer(context, ruleNames, clientConfigStore)

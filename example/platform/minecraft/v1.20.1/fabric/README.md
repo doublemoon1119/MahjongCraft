@@ -5,9 +5,10 @@ It depends on MahjongCraft and combines the two example libraries into its own J
 It does not bundle MahjongCraft, its dependencies or another copy of Kotlin.
 
 The entrypoints load the platform-independent pairing rule and its shared Minecraft presentation.
-The main initializer registers the chair, cushion, three Mahjong tables, creative tab and public
+The main initializer registers the chair, bench, cushion, actor, three Mahjong tables, creative tab and public
 game-event listeners.
-The client initializer registers furniture renderers only; the dedicated server does not load them.
+The client initializer registers furniture and actor renderers; a separate client extension registers
+preview factories. The dedicated server does not load either client entrypoint.
 Seat providers are registered through the extension callback without reading native content during
 construction. World lookup and seating occur only when the provider is used.
 
@@ -46,3 +47,30 @@ Furniture and seating behavior is covered by focused tests such as
 and [`ExampleGameEventChatTest.kt`](src/test/kotlin/com/doublemoon1119/mahjongcraft/example/fabric/event/ExampleGameEventChatTest.kt).
 These tests exercise decision and geometry seams. Native world rendering still needs the manual checks
 in the parent guide; packaged dedicated-server startup has already passed its smoke check.
+
+## World actors and seat integration
+
+[`ExampleFabricMahjongExtension.kt`](src/main/kotlin/com/doublemoon1119/mahjongcraft/example/fabric/ExampleFabricMahjongExtension.kt)
+registers participant eligibility and borrowed/owned factories through the public registrars.
+The provider recognizes only `ExampleActorEntity`; `canJoin` checks the placer against the room host.
+Acquiring a borrowed handle uses exactly `context.participant`, without spawning or replacing it.
+`prepare` captures posture before changing it; `release` restores only its own token and never
+removes a borrowed actor. Minecraft saves the original posture while the actor is controlled.
+`seatAssigned` saves the public seat request. `ExampleActorReturnToSeat` implements this example's
+own return behavior within six blocks through its furniture services. Without a seat, it safely
+teleports to the assigned position and stands only when the space is clear and the ground supports it.
+It waits when blocked or when an existing seat cannot be used. The framework does not pull borrowed
+actors back; other integrations decide how to move their own actors.
+
+[`ExampleFabricMahjongClientExtension.kt`](src/main/kotlin/com/doublemoon1119/mahjongcraft/example/fabric/ExampleFabricMahjongClientExtension.kt)
+is declared under `mahjongcraft:client_extension`. Its factory creates an independent entity without
+adding it to the world. Preview disposal discards only that independent object. The public appearance
+descriptor stores capability IDs, not native objects or arbitrary NBT.
+
+The bench reuses the chair's support and mount service. Cushions use the same mount service from
+manual interaction, actor placement and their provider. No example reaches into MahjongCraft's DI,
+internal room repository or private seating implementation.
+
+Focused checks include actor authorization, token-scoped cleanup, original-pose NBT, bench connection
+geometry, appearance persistence, client entrypoint isolation and actual remapped-JAR resources.
+Use the [parent guide](../../README.md#example-actors-and-benches) for in-game steps and coverage limits.

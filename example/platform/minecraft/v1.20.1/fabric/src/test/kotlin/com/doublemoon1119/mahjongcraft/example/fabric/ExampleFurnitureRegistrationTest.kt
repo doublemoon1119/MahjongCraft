@@ -22,11 +22,12 @@ class ExampleFurnitureRegistrationTest {
         val second = secondRegistry.definitions
 
         assertEquals(
-            listOf(ExampleFurnitureIds.CHAIR, ExampleFurnitureIds.CUSHION),
+            listOf(ExampleFurnitureIds.CHAIR, ExampleFurnitureIds.BENCH, ExampleFurnitureIds.CUSHION),
             first.map { it.id },
         )
         assertNotSame(first[0].provider, second[0].provider)
         assertNotSame(first[1].provider, second[1].provider)
+        assertNotSame(first[2].provider, second[2].provider)
     }
 
     /** 只收集正式 extension 回呼的登記結果，不執行原生家具初始化。 */

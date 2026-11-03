@@ -2,8 +2,8 @@ package com.doublemoon1119.mahjongcraft.example.fabric.furniture.entity
 
 import com.doublemoon1119.mahjongcraft.example.fabric.furniture.ExampleFurnitureItems
 import com.doublemoon1119.mahjongcraft.example.fabric.furniture.seating.ExampleCushionPlacement
+import com.doublemoon1119.mahjongcraft.example.fabric.furniture.seating.ExampleCushionSeatService
 import com.doublemoon1119.mahjongcraft.example.fabric.furniture.seating.ExampleFurnitureSeatRules
-import com.doublemoon1119.mahjongcraft.example.fabric.furniture.seating.ExampleFurnitureSpace
 import net.minecraft.entity.Entity
 import net.minecraft.entity.EntityType
 import net.minecraft.entity.damage.DamageSource
@@ -13,7 +13,6 @@ import net.minecraft.nbt.NbtCompound
 import net.minecraft.server.world.ServerWorld
 import net.minecraft.util.ActionResult
 import net.minecraft.util.Hand
-import net.minecraft.util.math.Box
 import net.minecraft.world.GameRules
 import net.minecraft.world.World
 
@@ -46,18 +45,7 @@ class ExampleCushionEntity(
         if (world.isClient) return ActionResult.SUCCESS
         val serverWorld = world as? ServerWorld ?: return ActionResult.FAIL
         if (isRemoved || !serverWorld.chunkManager.isChunkLoaded(blockX shr 4, blockZ shr 4)) return ActionResult.FAIL
-        if (player.hasVehicle() || hasPassengers()) return ActionResult.CONSUME
-        val feetY = ExampleSeatGeometry.cushionFeetY(y)
-        val body = Box(
-            x - player.width / 2.0,
-            y + 0.2,
-            z - player.width / 2.0,
-            x + player.width / 2.0,
-            feetY + player.height,
-            z + player.width / 2.0,
-        )
-        if (!ExampleFurnitureSpace.isClear(serverWorld, player, body, this)) return ActionResult.CONSUME
-        return if (player.startRiding(this, true)) ActionResult.CONSUME else ActionResult.FAIL
+        return if (ExampleCushionSeatService.sit(serverWorld, this, player, player.yaw)) ActionResult.CONSUME else ActionResult.FAIL
     }
 
     /**

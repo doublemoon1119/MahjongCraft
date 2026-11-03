@@ -56,6 +56,7 @@ class MinecraftServerConfigTomlCodec {
  * TOML 根節點，只負責穩定的設定檔結構。
  *
  * @property playerDisconnection 尚未開始的遊戲之玩家斷線設定。
+ * @property aiPlayer 找不到 AI 玩家時的處理設定。
  * @property table 麻將桌破壞與缺失資料設定。
  * @property mahjongTile 麻將牌世界呈現設定。
  * @property history 歷史資料記錄與封存設定。
@@ -64,6 +65,8 @@ class MinecraftServerConfigTomlCodec {
 private data class MinecraftServerConfigTomlDto(
     @SerialName("player-disconnection")
     val playerDisconnection: PlayerDisconnectionTomlDto = PlayerDisconnectionTomlDto(),
+    @SerialName("ai-player")
+    val aiPlayer: AiPlayerTomlDto = AiPlayerTomlDto(),
     val table: TablePolicyTomlDto = TablePolicyTomlDto(),
     @SerialName("mahjong-tile")
     val mahjongTile: MahjongTileTomlDto = MahjongTileTomlDto(),
@@ -104,6 +107,12 @@ private data class MinecraftServerConfigTomlDto(
             values = OrphanedTablePolicy.entries,
             configValue = OrphanedTablePolicy::configValue,
         ),
+        missingAiPlayerPolicy = enumValue(
+            field = "ai-player.missing-policy",
+            value = aiPlayer.missingPolicy,
+            values = MissingAiPlayerPolicy.entries,
+            configValue = MissingAiPlayerPolicy::configValue,
+        ),
         mahjongTilePhysicalCollisionEnabled = mahjongTile.physicalCollisionEnabled,
         history = history.toConfig(),
     )
@@ -121,6 +130,7 @@ private data class MinecraftServerConfigTomlDto(
                 policy = config.disconnectedPlayerPolicy.configValue,
                 timeoutSeconds = config.disconnectedPlayerTimeout.inWholeSeconds,
             ),
+            aiPlayer = AiPlayerTomlDto(config.missingAiPlayerPolicy.configValue),
             table = TablePolicyTomlDto(
                 breakPolicy = config.tableBreakPolicy.configValue,
                 orphanedPolicy = config.orphanedTablePolicy.configValue,
@@ -144,6 +154,16 @@ private data class PlayerDisconnectionTomlDto(
     val policy: String = DisconnectedPlayerPolicy.LEAVE_IMMEDIATELY.configValue,
     @SerialName("timeout-seconds")
     val timeoutSeconds: Long = MinecraftServerConfig.DEFAULT_DISCONNECTED_PLAYER_TIMEOUT.inWholeSeconds,
+)
+
+/**
+ * 設定已開局的對局找不到 AI 玩家時，要中止還是繼續。
+ *
+ * @property missingPolicy 找不到 AI 玩家時採用的處理方式。
+ */
+@Serializable
+private data class AiPlayerTomlDto(
+    @SerialName("missing-policy") val missingPolicy: String = MissingAiPlayerPolicy.ABORT_MATCH.configValue,
 )
 
 /**

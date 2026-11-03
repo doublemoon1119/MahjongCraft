@@ -11,6 +11,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.history.MinecraftHisto
  * @return 訊息與歷史呈現共用的翻譯 key。
  */
 fun minecraftAbortReasonTranslationKey(reasonId: String): String = when (reasonId) {
+    MinecraftMatchAbortReasonIds.AI_PLAYER_MISSING -> MinecraftMessageKeys.GAME_ABORT_REASON_AI_PLAYER
     MinecraftMatchAbortReasonIds.TABLE_MISSING -> MinecraftHistoryScreenKeys.ROUND_ABORT_REASON_TABLE_MISSING
     MinecraftMatchAbortReasonIds.TABLE_BROKEN_BY_PLAYER -> MinecraftHistoryScreenKeys.ROUND_ABORT_REASON_TABLE_BROKEN_BY_PLAYER
     GameAbortReasonIds.MISSING_WIN_SETTLEMENT, GameAbortReasonIds.MISSING_DRAW_SETTLEMENT -> MinecraftMessageKeys.GAME_ABORT_REASON_SETTLEMENT

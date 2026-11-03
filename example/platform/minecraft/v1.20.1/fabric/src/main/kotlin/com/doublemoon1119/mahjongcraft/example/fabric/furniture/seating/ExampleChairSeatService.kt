@@ -11,7 +11,7 @@ import net.minecraft.server.world.ServerWorld
 import net.minecraft.util.math.BlockPos
 import net.minecraft.util.math.Box
 
-/** 範例椅子手動右鍵與座位 provider 共用的入座服務。 */
+/** 範例椅子與長凳手動右鍵、建立人偶及座位 provider 共用的入座服務。 */
 class ExampleChairSeatService {
     /** 生成暫時支撐並入座；失敗時清理本次支撐，已上座者則還原位置與面向。 */
     fun sit(world: ServerWorld, pos: BlockPos, rider: Entity, yaw: Float): Boolean {
@@ -57,7 +57,7 @@ class ExampleChairSeatService {
     fun canSit(world: ServerWorld, pos: BlockPos, rider: Entity): Boolean {
         if (!ExampleFurnitureEntities.isRegistered()) return false
         if (!world.chunkManager.isChunkLoaded(pos.x shr 4, pos.z shr 4)) return false
-        if (world.getBlockState(pos).block !== ExampleFurnitureBlocks.chair) return false
+        if (!ExampleFurnitureBlocks.isSeat(world.getBlockState(pos))) return false
         if (rider.world !== world) return false
         if (ExampleFurnitureSeatRules.occupancyState(
                 hasVehicle = rider.hasVehicle(),

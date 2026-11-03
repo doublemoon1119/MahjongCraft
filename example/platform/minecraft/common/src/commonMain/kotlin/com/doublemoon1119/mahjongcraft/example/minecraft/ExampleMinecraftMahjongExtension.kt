@@ -2,6 +2,7 @@ package com.doublemoon1119.mahjongcraft.example.minecraft
 
 import com.doublemoon1119.mahjongcraft.example.ExampleMahjongExtension
 import com.doublemoon1119.mahjongcraft.example.ai.ExampleAiStrategyIds
+import com.doublemoon1119.mahjongcraft.example.minecraft.character.ExampleCharacters
 import com.doublemoon1119.mahjongcraft.example.minecraft.presentation.ExamplePairingTableProps
 import com.doublemoon1119.mahjongcraft.example.minecraft.presentation.examplePairingCatalogue
 import com.doublemoon1119.mahjongcraft.example.minecraft.presentation.registerExamplePairingRoundInfo
@@ -15,6 +16,7 @@ import com.doublemoon1119.mahjongcraft.example.pairing.ExamplePairingIds
 import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionVocabulary
 import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionVocabularyDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.ai.AiStrategyDisplayNameDefinition
+import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.AiCharacterRegistrar
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.AiStrategyDisplayNameRegistrar
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.ExhaustiveDrawReasonDisplayNameRegistrar
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.GameActionVocabularyRegistrar
@@ -43,6 +45,11 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileDisplayNameDe
 open class ExampleMinecraftMahjongExtension :
     ExampleMahjongExtension(),
     MinecraftMahjongExtension {
+    /** 登記描述，不要求原生實體、世界或 client 類別已初始化。 */
+    override fun registerAiCharacters(registry: AiCharacterRegistrar) {
+        ExampleCharacters.definitions().forEach(registry::register)
+    }
+
     override fun registerGameConfigPresentations(registry: GameConfigPresentationRegistrar) {
         registry.register(examplePairingGameConfigPresentation())
     }

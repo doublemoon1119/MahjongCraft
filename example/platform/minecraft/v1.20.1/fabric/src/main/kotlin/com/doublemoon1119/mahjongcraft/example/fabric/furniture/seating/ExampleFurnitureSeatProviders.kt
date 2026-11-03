@@ -14,18 +14,23 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.api.seating.SeatReques
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.seating.SeatState
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.seating.SeatTarget
 import net.minecraft.entity.Entity
-import net.minecraft.server.network.ServerPlayerEntity
 import net.minecraft.server.world.ServerWorld
+import net.minecraft.state.property.Properties
 import net.minecraft.util.math.BlockPos
 import net.minecraft.util.math.Box
 
-/** 建立範例椅子與坐墊座位 provider 的入口；建立時不讀取原生世界。 */
+/** 建立椅子、長凳與坐墊的座位 provider；登記時不讀取原生世界。 */
 object ExampleFurnitureSeatProviders {
-    /** 產生兩個可由 Fabric extension 登記的 provider 描述。 */
+    /** 建立三種家具的 provider 描述。 */
     fun definitions(): List<RegisteredSeatProvider<ServerWorld, Entity>> = listOf(
         RegisteredSeatProvider(
             id = ExampleFurnitureIds.CHAIR,
-            provider = ExampleChairSeatProvider(ExampleChairSeatService()),
+            provider = ExampleChairSeatProvider(ExampleChairSeatService(), ExampleFurnitureIds.CHAIR),
+            priority = 0,
+        ),
+        RegisteredSeatProvider(
+            id = ExampleFurnitureIds.BENCH,
+            provider = ExampleChairSeatProvider(ExampleChairSeatService(), ExampleFurnitureIds.BENCH),
             priority = 0,
         ),
         RegisteredSeatProvider(
@@ -37,12 +42,14 @@ object ExampleFurnitureSeatProviders {
 }
 
 /**
- * 只解析指定標準席位方塊的範例椅子 provider。
+ * 只解析指定標準席位方塊的椅子或長凳。
  *
  * @property service 手動右鍵與自動入座共用的椅子服務。
+ * @property furnitureId 本 provider 辨識的單格家具。
  */
 private class ExampleChairSeatProvider(
     private val service: ExampleChairSeatService,
+    private val furnitureId: String,
 ) : SeatProvider<ServerWorld, Entity> {
     /** 建立指定位置的單一椅子座位目標。 */
     override fun resolve(world: ServerWorld, request: SeatRequest): List<SeatTarget<ServerWorld, Entity>> {
@@ -51,7 +58,8 @@ private class ExampleChairSeatProvider(
         if (!ExampleFurnitureBlocks.isRegistered()) return emptyList()
         val pos = BlockPos.ofFloored(request.seat.x, request.seat.y, request.seat.z)
         if (!world.chunkManager.isChunkLoaded(pos.x shr 4, pos.z shr 4)) return emptyList()
-        if (world.getBlockState(pos).block !== ExampleFurnitureBlocks.chair) return emptyList()
+        val expected = if (furnitureId == ExampleFurnitureIds.BENCH) ExampleFurnitureBlocks.bench else ExampleFurnitureBlocks.chair
+        if (world.getBlockState(pos).block !== expected) return emptyList()
         return listOf(ExampleChairSeatTarget(world, pos, request, service))
     }
 }
@@ -81,13 +89,13 @@ private class ExampleChairSeatTarget(
         pos.x + 0.5,
         ExampleSeatGeometry.passengerFeetY(ExampleSeatGeometry.chairSeatY(pos.y)),
         pos.z + 0.5,
-        request.seat.yaw,
+        if (world.getBlockState(pos).isOf(ExampleFurnitureBlocks.bench)) world.getBlockState(pos).get(Properties.HORIZONTAL_FACING).asRotation() else request.seat.yaw,
     )
 
     /** 查詢椅子是否有效、占用或可用。 */
     override fun inspect(world: ServerWorld, rider: Entity): SeatState {
         if (world !== this.world || rider.world !== world || !world.chunkManager.isChunkLoaded(pos.x shr 4, pos.z shr 4)) return SeatState.INVALID
-        if (world.getBlockState(pos).block !== ExampleFurnitureBlocks.chair) return SeatState.INVALID
+        if (!ExampleFurnitureBlocks.isSeat(world.getBlockState(pos))) return SeatState.INVALID
         val own = rider.vehicle as? ExampleChairSeatEntity
         if (own != null && own.world === world && own.blockPos == pos) return SeatState.SEATED
         if (ExampleChairSeatEntity.seatsAt(world, pos).isNotEmpty()) return SeatState.OCCUPIED
@@ -99,7 +107,7 @@ private class ExampleChairSeatTarget(
     override fun trySit(world: ServerWorld, rider: Entity): SeatState {
         val current = inspect(world, rider)
         return when (current) {
-            SeatState.AVAILABLE -> if (service.sit(world, pos, rider, request.seat.yaw)) SeatState.SEATED else SeatState.FAILED
+            SeatState.AVAILABLE -> if (service.sit(world, pos, rider, geometry(world, rider).yaw)) SeatState.SEATED else SeatState.FAILED
             else -> current
         }
     }
@@ -143,60 +151,13 @@ private class ExampleCushionSeatTarget(
         request.seat.yaw,
     )
 
-    /** 查詢坐墊是否仍存在、占用或可用。 */
-    override fun inspect(world: ServerWorld, rider: Entity): SeatState {
-        if (world !== this.world || rider.world !== world || cushion.world !== world || cushion.isRemoved || !ExampleFurnitureEntities.isRegistered()) return SeatState.INVALID
-        if (!world.chunkManager.isChunkLoaded(cushion.blockX shr 4, cushion.blockZ shr 4)) return SeatState.INVALID
-        if (rider.vehicle === cushion) return SeatState.SEATED
-        val occupancy = ExampleFurnitureSeatRules.occupancyState(
-            hasVehicle = rider.hasVehicle(),
-            occupied = cushion.hasPassengers(),
-        )
-        if (occupancy != SeatState.AVAILABLE) return occupancy
-        val geometry = geometry(world, rider)
-        val body = Box(
-            geometry.x - rider.width / 2.0,
-            cushion.y + 0.2,
-            geometry.z - rider.width / 2.0,
-            geometry.x + rider.width / 2.0,
-            geometry.y + rider.height,
-            geometry.z + rider.width / 2.0,
-        )
-        return if (ExampleFurnitureSpace.isClear(world, rider, body, cushion)) SeatState.AVAILABLE else SeatState.BLOCKED
-    }
+    /** 查詢與其他入口相同的占用與碰撞規則。 */
+    override fun inspect(world: ServerWorld, rider: Entity): SeatState = if (world !== this.world) SeatState.INVALID else ExampleCushionSeatService.inspect(world, cushion, rider)
 
-    /** 重新檢查後讓乘坐者坐上坐墊，不移動坐墊本身。 */
+    /** 與真人及人偶建立共用同一個掛載、定位及失敗還原流程。 */
     override fun trySit(world: ServerWorld, rider: Entity): SeatState {
         val current = inspect(world, rider)
         if (current != SeatState.AVAILABLE) return current
-        val originalX = rider.x
-        val originalY = rider.y
-        val originalZ = rider.z
-        val originalYaw = rider.yaw
-        val pitch = rider.pitch
-        val seated = ExampleSeatAttempt.run(
-            create = { cushion },
-            spawn = { true },
-            mount = { rider.startRiding(it, true) },
-            finish = {
-                it.updatePassengerPosition(rider)
-                if (rider is ServerPlayerEntity) {
-                    rider.networkHandler.requestTeleport(rider.x, rider.y, rider.z, request.seat.yaw, pitch)
-                } else {
-                    rider.refreshPositionAndAngles(rider.x, rider.y, rider.z, request.seat.yaw, pitch)
-                }
-                rider.vehicle === it
-            },
-            restore = {
-                if (rider.vehicle === cushion) rider.stopRiding()
-                if (rider is ServerPlayerEntity) {
-                    rider.networkHandler.requestTeleport(originalX, originalY, originalZ, originalYaw, pitch)
-                } else {
-                    rider.refreshPositionAndAngles(originalX, originalY, originalZ, originalYaw, pitch)
-                }
-            },
-            discard = {},
-        )
-        return if (seated) SeatState.SEATED else SeatState.FAILED
+        return if (ExampleCushionSeatService.sit(world, cushion, rider, request.seat.yaw)) SeatState.SEATED else SeatState.FAILED
     }
 }

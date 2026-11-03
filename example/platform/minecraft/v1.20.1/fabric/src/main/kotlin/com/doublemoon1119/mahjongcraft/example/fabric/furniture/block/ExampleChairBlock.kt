@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.example.fabric.furniture.block
 
+import com.doublemoon1119.mahjongcraft.example.fabric.character.ExampleActors
 import com.doublemoon1119.mahjongcraft.example.fabric.furniture.seating.ExampleChairSeatService
 import net.minecraft.block.Block
 import net.minecraft.block.BlockState
@@ -52,7 +53,7 @@ class ExampleChairBlock(
         hand: Hand,
         hit: BlockHitResult,
     ): ActionResult {
-        if (player.isSneaking || player.hasVehicle()) return ActionResult.PASS
+        if (player.isSneaking || player.hasVehicle() || player.getStackInHand(hand).isOf(ExampleActors.item)) return ActionResult.PASS
         if (world is ServerWorld) seatService.sit(world, pos, player, player.yaw)
         return ActionResult.success(world.isClient)
     }

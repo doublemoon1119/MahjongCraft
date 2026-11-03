@@ -4,14 +4,25 @@
   "version": "${version}",
   "name": "${name}",
   "description": "${description}",
-  "authors": ["${author}"],
+  "authors": [
+    "${author}"
+  ],
   "license": "${license}",
   "icon": "assets/${id}/icon.png",
   "environment": "*",
   "entrypoints": {
-    "main": ["com.doublemoon1119.mahjongcraft.example.fabric.ExampleMod"],
-    "client": ["com.doublemoon1119.mahjongcraft.example.fabric.ExampleModClient"],
-    "mahjongcraft:extension": ["com.doublemoon1119.mahjongcraft.example.fabric.ExampleFabricMahjongExtension"]
+    "main": [
+      "com.doublemoon1119.mahjongcraft.example.fabric.ExampleMod"
+    ],
+    "client": [
+      "com.doublemoon1119.mahjongcraft.example.fabric.ExampleModClient"
+    ],
+    "mahjongcraft:extension": [
+      "com.doublemoon1119.mahjongcraft.example.fabric.ExampleFabricMahjongExtension"
+    ],
+    "mahjongcraft:client_extension": [
+      "com.doublemoon1119.mahjongcraft.example.fabric.ExampleFabricMahjongClientExtension"
+    ]
   },
   "depends": {
     "mahjongcraft": "${version}",

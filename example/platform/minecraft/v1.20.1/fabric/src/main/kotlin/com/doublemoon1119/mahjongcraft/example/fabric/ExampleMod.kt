@@ -1,6 +1,7 @@
 package com.doublemoon1119.mahjongcraft.example.fabric
 
 import com.doublemoon1119.mahjongcraft.example.ExampleExtensionIds
+import com.doublemoon1119.mahjongcraft.example.fabric.character.ExampleActors
 import com.doublemoon1119.mahjongcraft.example.fabric.event.ExampleGameEventChat
 import com.doublemoon1119.mahjongcraft.example.fabric.furniture.ExampleFurniture
 import com.doublemoon1119.mahjongcraft.example.fabric.registry.ExampleItemGroups
@@ -13,9 +14,10 @@ class ExampleMod : ModInitializer {
     /** 記錄範例 mod 的啟動狀態。 */
     private val logger = mahjongCraftLogger(ExampleMod::class)
 
-    /** 先完成原生家具與分頁註冊，再訂閱此程序的遊戲事件。 */
+    /** 先註冊家具、人偶與共用分頁，再訂閱遊戲事件。 */
     override fun onInitialize() {
         ExampleFurniture.register()
+        ExampleActors.register()
         ExampleHandRevealChipEntities.register()
         ExampleItemGroups.register()
         ExampleGameEventChat.register()

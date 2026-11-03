@@ -58,7 +58,7 @@ class AiCharacterSeatActivationTest {
         assertEquals(listOf("preview", "position", "spawn", "seat"), events)
     }
 
-    /** 借用角色不重新生成、不直接傳送，仍由共用座位入口處理。 */
+    /** 借用角色不檢查目的地或執行入座，讓提供者自行決定如何回座。 */
     @Test
     fun `borrowed actor is never spawned or directly moved`() {
         val events = mutableListOf<String>()
@@ -66,18 +66,16 @@ class AiCharacterSeatActivationTest {
             AiCharacterSeatActivation.activate(
                 ownership = AiCharacterOwnership.BORROWED,
                 preview = {
-                    events += "preview"
-                    SeatGeometry(1.0, 64.0, 2.0, 90f)
+                    error("Borrowed actor does not require a seat preview")
                 },
                 position = { error("Borrowed actor must not be directly moved") },
                 spawn = { error("Borrowed actor must not be spawned") },
                 seat = {
-                    events += "seat"
-                    true
+                    error("Borrowed actor must not be automatically seated")
                 },
             ),
         )
-        assertEquals(listOf("preview", "seat"), events)
+        assertEquals(emptyList(), events)
     }
 
     /** 生成被世界拒絕後不繼續建立座位支撐。 */

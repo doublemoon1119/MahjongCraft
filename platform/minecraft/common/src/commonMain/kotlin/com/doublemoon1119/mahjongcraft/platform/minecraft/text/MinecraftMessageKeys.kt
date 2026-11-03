@@ -421,7 +421,10 @@ object MinecraftMessageKeys {
     /** 規則執行失敗。 */
     const val GAME_ABORT_REASON_RULE = PREFIX + "game_abort_reason_rule"
 
-    /** 沒有已知翻譯的終止原因。 */
+    /** 找不到參與遊戲的 AI 玩家時顯示的中止原因。 */
+    const val GAME_ABORT_REASON_AI_PLAYER = PREFIX + "game_abort_reason_ai_player"
+
+    /** 未知中止原因的通用訊息。 */
     const val GAME_ABORT_REASON_UNKNOWN = PREFIX + "game_abort_reason_unknown"
 
     // ── 手牌查詢指令（`/mahjongcraft game hand`） ──────────────────────────
@@ -732,6 +735,7 @@ object MinecraftMessageKeys {
         GAME_ABORT_REASON_PROGRESSION,
         GAME_ABORT_REASON_AUTOMATIC,
         GAME_ABORT_REASON_RULE,
+        GAME_ABORT_REASON_AI_PLAYER,
         GAME_ABORT_REASON_UNKNOWN,
         HAND_TITLE,
         HAND_MELDS_TITLE,

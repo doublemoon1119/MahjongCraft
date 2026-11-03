@@ -1,0 +1,132 @@
+{
+  "multipart": [
+    {
+      "when": {
+        "facing": "north"
+      },
+      "apply": {
+        "model": "mahjongcraft_example:block/bench",
+        "y": 0,
+        "uvlock": true
+      }
+    },
+    {
+      "when": {
+        "facing": "north",
+        "left": "false"
+      },
+      "apply": {
+        "model": "mahjongcraft_example:block/bench_left",
+        "y": 0,
+        "uvlock": true
+      }
+    },
+    {
+      "when": {
+        "facing": "north",
+        "right": "false"
+      },
+      "apply": {
+        "model": "mahjongcraft_example:block/bench_right",
+        "y": 0,
+        "uvlock": true
+      }
+    },
+    {
+      "when": {
+        "facing": "east"
+      },
+      "apply": {
+        "model": "mahjongcraft_example:block/bench",
+        "y": 90,
+        "uvlock": true
+      }
+    },
+    {
+      "when": {
+        "facing": "east",
+        "left": "false"
+      },
+      "apply": {
+        "model": "mahjongcraft_example:block/bench_left",
+        "y": 90,
+        "uvlock": true
+      }
+    },
+    {
+      "when": {
+        "facing": "east",
+        "right": "false"
+      },
+      "apply": {
+        "model": "mahjongcraft_example:block/bench_right",
+        "y": 90,
+        "uvlock": true
+      }
+    },
+    {
+      "when": {
+        "facing": "south"
+      },
+      "apply": {
+        "model": "mahjongcraft_example:block/bench",
+        "y": 180,
+        "uvlock": true
+      }
+    },
+    {
+      "when": {
+        "facing": "south",
+        "left": "false"
+      },
+      "apply": {
+        "model": "mahjongcraft_example:block/bench_left",
+        "y": 180,
+        "uvlock": true
+      }
+    },
+    {
+      "when": {
+        "facing": "south",
+        "right": "false"
+      },
+      "apply": {
+        "model": "mahjongcraft_example:block/bench_right",
+        "y": 180,
+        "uvlock": true
+      }
+    },
+    {
+      "when": {
+        "facing": "west"
+      },
+      "apply": {
+        "model": "mahjongcraft_example:block/bench",
+        "y": 270,
+        "uvlock": true
+      }
+    },
+    {
+      "when": {
+        "facing": "west",
+        "left": "false"
+      },
+      "apply": {
+        "model": "mahjongcraft_example:block/bench_left",
+        "y": 270,
+        "uvlock": true
+      }
+    },
+    {
+      "when": {
+        "facing": "west",
+        "right": "false"
+      },
+      "apply": {
+        "model": "mahjongcraft_example:block/bench_right",
+        "y": 270,
+        "uvlock": true
+      }
+    }
+  ]
+}

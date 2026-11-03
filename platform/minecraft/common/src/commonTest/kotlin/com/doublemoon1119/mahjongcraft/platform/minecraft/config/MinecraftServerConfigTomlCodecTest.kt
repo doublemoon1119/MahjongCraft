@@ -245,4 +245,18 @@ class MinecraftServerConfigTomlCodecTest {
         assertTrue(encoded.startsWith("[player-disconnection]"))
         assertTrue("#" !in encoded)
     }
+
+    /** 缺席政策只有繼續與中止，預設中止，不沿用真人斷線選項。 */
+    @Test
+    fun `world participant policy defaults to abort and round trips both choices`() {
+        assertEquals(MissingAiPlayerPolicy.ABORT_MATCH, codec.decode("[ai-player]").missingAiPlayerPolicy)
+        MissingAiPlayerPolicy.entries.forEach { policy ->
+            val config = MinecraftServerConfig(missingAiPlayerPolicy = policy)
+            assertEquals(config, codec.decode(codec.encode(config)))
+        }
+        val failure = assertFailsWith<InvalidMinecraftServerConfigException> {
+            codec.decode("[ai-player]\nmissing-policy = \"keep_seat\"")
+        }
+        assertTrue(failure.message.orEmpty().contains("allowed values"))
+    }
 }

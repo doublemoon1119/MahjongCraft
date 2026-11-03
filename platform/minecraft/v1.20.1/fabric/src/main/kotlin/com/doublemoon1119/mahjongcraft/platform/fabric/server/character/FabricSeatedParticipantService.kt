@@ -298,7 +298,11 @@ internal class FabricSeatedParticipantService(
         val tableSeats = sessions.prepareTable(expected.id) ?: return
         for ((playerId, identity) in expected.admission.memberIdentities) {
             if (identity.sourceId != SeatedParticipantSources.WORLD_ENTITY) continue
-            val entity = tableSeats.world.getEntity(identity.subjectId.toJavaUuid()) ?: continue
+            val entity = tableSeats.world.getEntity(identity.subjectId.toJavaUuid())
+            if (entity == null || !entity.isAlive) {
+                if (server === current) leave(expected.id, playerId, expectedRoom = expected)
+                return
+            }
             if (bindings.coordinator.keyFor(entity.uuid.toKotlinUuid()) != null) continue
             val checks = tableSeats.requests.map { tableSeats.coordinator.inspectSeat(tableSeats.world, entity, it).state }
             val participant = describe(entity, expected.hostId)

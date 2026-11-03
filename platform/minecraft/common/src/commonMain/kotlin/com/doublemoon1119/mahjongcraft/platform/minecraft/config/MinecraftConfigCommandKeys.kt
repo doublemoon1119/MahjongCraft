@@ -11,6 +11,18 @@ object MinecraftConfigCommandKeys {
     /** 斷線玩家設定區段的顯示名稱。 */
     const val SERVER_CONFIG_SECTION_PLAYER_DISCONNECTION: String = "mahjongcraft.config.section.player_disconnection"
 
+    /** AI 玩家設定分類。 */
+    const val SERVER_CONFIG_SECTION_AI_PLAYER: String = "mahjongcraft.config.section.ai_player"
+
+    /** 找不到 AI 玩家時的處理方式。 */
+    const val MISSING_AI_PLAYER_POLICY: String = "mahjongcraft.server_config.missing_ai_player_policy"
+
+    /** 中止對局選項。 */
+    const val ABORT_MATCH: String = "mahjongcraft.server_config.option.abort_match"
+
+    /** 繼續對局選項。 */
+    const val CONTINUE_MATCH: String = "mahjongcraft.server_config.option.continue_match"
+
     /** 麻將桌設定區段的顯示名稱。 */
     const val SERVER_CONFIG_SECTION_TABLE: String = "mahjongcraft.config.section.table"
 

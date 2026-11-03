@@ -8,6 +8,9 @@ object ExampleFurnitureIds {
     /** 範例椅子方塊與物品共用的識別碼。 */
     const val CHAIR = "mahjongcraft_example:chair"
 
+    /** 每格一席的可延長長凳。 */
+    const val BENCH = "mahjongcraft_example:bench"
+
     /** 範例椅子暫時座位 entity 的完整識別碼。 */
     const val CHAIR_SEAT = "mahjongcraft_example:chair_seat"
 

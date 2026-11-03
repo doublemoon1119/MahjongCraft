@@ -5,6 +5,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.config.DisconnectedPla
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftClientConfigScreenKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftConfigCommandKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftServerConfig
+import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MissingAiPlayerPolicy
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.OrphanedTablePolicy
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.TableBreakPolicy
 import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModMetadata
@@ -89,6 +90,15 @@ fun serverConfigSections(config: MinecraftServerConfig): List<ConfigPresentation
             ConfigPresentationEntry(
                 Text.translatable(MinecraftConfigCommandKeys.DISCONNECTED_PLAYER_TIMEOUT),
                 Text.literal(config.disconnectedPlayerTimeout.inWholeSeconds.toString()),
+            ),
+        ),
+    ),
+    ConfigPresentationSection(
+        Text.translatable(MinecraftConfigCommandKeys.SERVER_CONFIG_SECTION_AI_PLAYER),
+        listOf(
+            ConfigPresentationEntry(
+                Text.translatable(MinecraftConfigCommandKeys.MISSING_AI_PLAYER_POLICY),
+                Text.translatable(config.missingAiPlayerPolicy.translationKey),
             ),
         ),
     ),
@@ -335,4 +345,11 @@ private val OrphanedTablePolicy.translationKey: String
         OrphanedTablePolicy.KEEP_AND_WARN -> MinecraftConfigCommandKeys.KEEP_AND_WARN
         OrphanedTablePolicy.REMOVE_WAITING_ROOM -> MinecraftConfigCommandKeys.REMOVE_WAITING_ROOM
         OrphanedTablePolicy.REMOVE_ALL -> MinecraftConfigCommandKeys.REMOVE_ALL
+    }
+
+/** 找不到 AI 玩家時採用政策的本地化選項。 */
+private val MissingAiPlayerPolicy.translationKey: String
+    get() = when (this) {
+        MissingAiPlayerPolicy.ABORT_MATCH -> MinecraftConfigCommandKeys.ABORT_MATCH
+        MissingAiPlayerPolicy.CONTINUE_MATCH -> MinecraftConfigCommandKeys.CONTINUE_MATCH
     }

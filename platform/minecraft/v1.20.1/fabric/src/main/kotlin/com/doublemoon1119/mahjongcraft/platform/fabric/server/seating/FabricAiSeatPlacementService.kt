@@ -109,6 +109,8 @@ internal class FabricAiSeatPlacementService(
                         player.world === world &&
                         seating.world === world &&
                         player.squaredDistanceTo(entity) <= MAXIMUM_DISTANCE_SQUARED &&
+                        player.squaredDistanceTo(context.request.seat.x, context.request.seat.y, context.request.seat.z) <= MAXIMUM_DISTANCE_SQUARED &&
+                        entity.squaredDistanceTo(context.request.seat.x, context.request.seat.y, context.request.seat.z) <= MAXIMUM_DISTANCE_SQUARED &&
                         !entity.hasVehicle() &&
                         !entity.hasPassengers() &&
                         persistence.characterSnapshot()?.authoritative?.games?.get(key.tableId) == game &&

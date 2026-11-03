@@ -31,6 +31,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.server.character.FabricAi
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.character.FabricAiCharacterTracking
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.character.FabricRoomParticipantRegistry
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.character.FabricSeatedParticipantService
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.character.FabricWorldParticipantPresenceService
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.concurrency.FabricAppCoroutineScope
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.concurrency.FabricCoroutineDispatchers
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.concurrency.FabricSessionBackgroundScope
@@ -325,6 +326,7 @@ val fabricServerModule = module {
     single<FabricAiCharacterBindings>()
     single<FabricSeatedParticipantService>()
     single<FabricAiCharacterManager>()
+    single<FabricWorldParticipantPresenceService>()
     single<FabricSeatingSessionFactory>()
     single<FabricMahjongSeatingPresenter>() bind MahjongSeatingPresenter::class
     single<FabricSeatProviderRegistryImpl>() bind FabricSeatProviderRegistrar::class

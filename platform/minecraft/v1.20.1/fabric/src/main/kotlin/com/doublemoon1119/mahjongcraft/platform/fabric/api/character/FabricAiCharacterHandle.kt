@@ -32,9 +32,9 @@ interface FabricAiCharacterHandle {
     fun release()
 
     /**
-     * 已完成入座或安全站立，通知目前固定席位；換位後會再次呼叫。
+     * 通知目前指定席位及朝向，換位後會再次呼叫。借用實體自行決定是否及如何返回；本體不因附近離座自動拉回。
      *
-     * @param request 本次成功安排的席位，只可用於角色姿態及朝向。
+     * @param request 目前的指定席位，可用於姿態、朝向及 adapter 自行處理的回座，不得修改權威名冊或桌子幾何。
      */
     fun seatAssigned(request: SeatRequest) = Unit
 

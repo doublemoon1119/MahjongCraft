@@ -3,11 +3,13 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.server.player
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.Game
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameFlowConfig
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
+import com.doublemoon1119.mahjongcraft.platform.minecraft.api.character.AiCharacterDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.character.AiCharacterSnapshot
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertNull
 import kotlin.uuid.Uuid
 
 /** 伺服器名稱依當場快照與原房間順序產生，不在初始化時讀取保存狀態。 */
@@ -55,5 +57,16 @@ class ServerAiPlayerDisplayNameResolverTest {
 
         assertEquals("AI 1", names.resolve(game, bot))
         assertEquals("AI 2", names.resolve(game.copy(matchId = Uuid.random()), bot))
+    }
+
+    /** 有角色翻譯鍵而沒有普通名稱時，伺服器留給客戶端本地化，不先送短 UUID。 */
+    @Test
+    fun `translated character names remain unresolved on the server`() {
+        val table = FakeTableStateFactory.create()
+        val actor = table.players[0].id
+        val game = Game(tableState = table, flowConfig = GameFlowConfig(), aiPlayerStrategyKeys = mapOf(actor to "example:strategy"))
+        val definition = AiCharacterDefinition("example:actor", "example.character.actor", null, null, null)
+        val names = ServerAiPlayerDisplayNameResolver { mapOf(actor to AiCharacterSnapshot(definition.id, definition)) }
+        assertNull(names.resolve(game, actor))
     }
 }

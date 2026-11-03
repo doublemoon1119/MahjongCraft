@@ -23,6 +23,19 @@ policy = "leave_immediately"
 # Allowed range: 1 to 3600 (1 hour).
 timeout-seconds = 30
 
+[ai-player]
+
+# For existing world entities registered by integrations, such as NPCs from a third-party mod.
+# Their own mod may let them die, remove them, or move them away from the table.
+# This does not apply to MahjongCraft's own spawned bots; MahjongCraft manages their recreation.
+# A missing actor leaves a waiting room immediately; there is no reconnect timer.
+# During a match, check only while its table is loaded and the server session is active.
+# Missing means dead, removed, not loaded in that world, or outside the nearby table area.
+# Leaving a chair nearby is not missing. Shutdown and table unloading do not trigger this policy.
+# - "abort_match": Abort the match and return its participants to the room.
+# - "continue_match": Keep the AI playing without its world actor. Never create a replacement.
+missing-policy = "abort_match"
+
 [table]
 
 # Controls what happens when a player attempts to break a mahjong table.

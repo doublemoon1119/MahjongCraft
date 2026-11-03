@@ -99,8 +99,8 @@ It is not a reason to repeat these accepted gameplay checks.
 The behavior below describes the current Fabric 1.20.1 implementation. Use it as a reference when
 adding another version/loader adapter, and verify that adapter separately.
 
-The **MahjongCraft Example** creative tab contains the chair and placeable cushion, in that order.
-Place either at a standard table seat. Right-click to sit; game-start seating uses the public seat
+The **MahjongCraft Example** creative tab contains the chair, placeable cushion, bench, actor item and three tables.
+Place a chair, bench or cushion at a standard table seat. Right-click to sit; game-start seating uses the public seat
 provider API. An occupied seat never ejects its rider. Leaving a chair removes its temporary invisible
 support; leaving a cushion keeps the cushion in the world. Left-click an empty cushion to remove it.
 Survival drops one item; creative mode does not add another item. Modification permissions and the
@@ -130,7 +130,7 @@ or loader, and it does not cover unrelated rule, AI or appearance types.
 
 ### Place a seat for a standing bot
 
-Hold an example chair or cushion and right-click a standing Mahjong Bot. The item is placed at that
+Hold an example chair, bench or cushion and right-click a standing Mahjong Bot. The item is placed at that
 bot's assigned seat, then the bot sits down. The built-in stools use the same mechanism.
 
 - Survival placement consumes one item; creative placement does not.
@@ -138,9 +138,72 @@ bot's assigned seat, then the bot sits down. The built-in stools use the same me
 - If the seat was placed but the bot could not sit, the seat remains and a message explains the result.
 - Other entities and unrelated items retain their normal interaction. Sneaking skips this shortcut.
 
-`ExampleSeatPlacements` demonstrates `FabricSeatPlacementProvider` for both a BlockItem and an entity
+`ExampleSeatPlacements` demonstrates `FabricSeatPlacementProvider` for block furniture and an entity
 item. The cushion shares its normal placement function with this shortcut. Its existing-seat provider
 is registered separately and remains responsible for validating the actual sitting position.
+
+## Example Actors and Benches
+
+The current Fabric 1.20.1 adapter demonstrates a mod-owned actor using the vanilla armor-stand model.
+It does not turn ordinary armor stands into Mahjong players or use the product's debug adapter.
+Other version/loader adapters need their own native registration and checks.
+
+1. Take **Example Actor** and a chair, bench or cushion from the example creative tab.
+2. Create a room at a table. Use the actor item on an empty example seat at any standard table side.
+   Using it on ordinary ground creates a standing actor; it must sit at a table to join.
+3. The seated actor joins automatically. Only rooms hosted by the player who placed it are allowed.
+   This is the example's permission policy, not a restriction on all third-party integrations.
+4. Add other players or bots and start. MahjongCraft assigns the final seats; the actor is the same
+   world entity, not a replacement spawned for the match. A name tag changes its name, not its UUID
+   or placement ownership. Ordinary bots still start at AI 1.
+5. Kicking it uses the room's temporary exclusions. Remaining seated or reconnecting does not clear
+   an exclusion; the host must allow it again. Releasing an actor does not delete it.
+
+The placer can left-click an actor to collect it when it is not under match control. Protection,
+creative mode and entity-drop rules apply. Equipment editing is disabled in this small example;
+it is not a general NPC or pathfinding system.
+
+Each bench block provides one seat. Same-height neighbors connect only along the same facing's left
+and right sides. Extending the row or removing another block keeps the seated member's identity.
+Breaking their own block releases only that seat. Unloaded neighbors are never force-loaded; a local
+scheduled check refreshes each block's two connections when chunks become available again.
+The invisible support follows vanilla passenger saving, so an actor is not lost with an unsaved mount.
+
+Breaking a seat keeps the ordinary safe dismount. During a match, the actor keeps the seat request
+received through the public `seatAssigned` callback. This example checks once per second and returns
+to an empty, correctly facing example chair, bench or cushion within six blocks. If there is no seat,
+it teleports to the assigned position and stands, but only when its full body has room and a block
+supports its feet. Occupied, blocked or incorrectly facing seats do not fall back to standing.
+A changed seat request releases its previous example furniture before trying the new seat;
+repeating an unchanged request does not unseat it. This is the example's own simple behavior, not
+movement imposed on other integrations. Other integrations can walk back, teleport or stay put.
+Holding a seat item and right-clicking a controlled actor is a separate, explicit placement-and-seating
+interaction; use it to place a seat when the standing actor occupies the placement space.
+
+For an existing actor registered by an integration, such as a third-party NPC,
+`[ai-player].missing-policy` in the server configuration defaults to
+`abort_match`; `continue_match` keeps the same AI playing without a replacement world actor.
+An actor standing nearby is still present. A dead, removed, unloaded or distant actor is missing
+only while the table is active; shutdown and table unloading do not trigger the policy.
+Before a match starts, missing actors leave the waiting room without a reconnect timeout.
+MahjongCraft's own spawned bots are recreated by its character manager and do not use this policy.
+
+### Coverage and limits
+
+| Capability | What this example checks |
+| --- | --- |
+| Existing world participant | Dedicated actor type, placer authorization and borrowed handle |
+| World and room appearance | Authorized live entity, otherwise an independent client preview |
+| FACE and history | Preview-generated portrait, explicit FACE-only description, saved appearance round trip |
+| Owned proxy | Registered unsaved proxy factory and ownership adapter; no room skin picker |
+| Seat variety | Block chair, local-connection bench and persistent cushion |
+| Cleanup | Token-scoped restoration, repeated release and partial preparation failure |
+
+Registration and focused tests are automated. Native interaction, appearance, exclusions and reloads
+still need the in-game checks for the adapter being tested. Registering the owned and FACE-only test
+descriptions does not make them selectable in a normal room or prove their full in-game lifecycle.
+Removing the example mod can remove its native actors and furniture; reinstalling it does not restore
+native content that Minecraft already discarded. Use a disposable world for missing-mod checks.
 
 ## Bonus tiles and table props
 

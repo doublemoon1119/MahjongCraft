@@ -3,6 +3,7 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.server.player
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.Game
 import com.doublemoon1119.mahjongcraft.platform.minecraft.character.AiCharacterSnapshot
 import com.doublemoon1119.mahjongcraft.platform.minecraft.player.aiPlayerDisplayName
+import com.doublemoon1119.mahjongcraft.platform.minecraft.player.usesNumberedAiName
 import kotlin.uuid.Uuid
 
 /**
@@ -18,11 +19,16 @@ class ServerAiPlayerDisplayNameResolver(
      *
      * @param game 名稱所屬對局。
      * @param playerId 需要名稱的 AI 成員。
-     * @return 普通自訂名稱、AI 編號或短 UUID 備援名稱。
+     * @return 普通自訂名稱、AI 編號或短 UUID 備援；需由客戶端翻譯的角色回傳 null。
      */
-    fun resolve(game: Game, playerId: Uuid): String = aiPlayerDisplayName(
-        playerId = playerId,
-        orderedAiPlayerIds = game.roomPlayerIds.filter(game::isAi),
-        characters = charactersForMatch(game.matchId),
-    )
+    fun resolve(game: Game, playerId: Uuid): String? {
+        val characters = charactersForMatch(game.matchId)
+        val character = characters[playerId]
+        if (character?.displayName == null && !character.usesNumberedAiName()) return null
+        return aiPlayerDisplayName(
+            playerId = playerId,
+            orderedAiPlayerIds = game.roomPlayerIds.filter(game::isAi),
+            characters = characters,
+        )
+    }
 }

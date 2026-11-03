@@ -1,8 +1,10 @@
 package com.doublemoon1119.mahjongcraft.example.fabric.furniture
 
+import com.doublemoon1119.mahjongcraft.example.fabric.furniture.block.ExampleBenchBlock
 import com.doublemoon1119.mahjongcraft.example.fabric.furniture.block.ExampleChairBlock
 import net.minecraft.block.AbstractBlock
 import net.minecraft.block.Block
+import net.minecraft.block.BlockState
 import net.minecraft.block.Blocks
 import net.minecraft.item.BlockItem
 import net.minecraft.item.Item
@@ -16,10 +18,17 @@ object ExampleFurnitureBlocks {
     lateinit var chair: Block
         private set
 
-    /** 確認範例椅子方塊是否已完成原生註冊。 */
-    fun isRegistered(): Boolean = ::chair.isInitialized
+    /** 每格一席的可延長長凳。 */
+    lateinit var bench: Block
+        private set
 
-    /** 註冊範例椅子方塊與 BlockItem；椅子強制視為實心，避免依形狀被判定為不實心而遭水流沖掉。 */
+    /** 判斷方塊是否使用範例的方塊座位服務。 */
+    fun isSeat(state: BlockState): Boolean = isRegistered() && (state.isOf(chair) || state.isOf(bench))
+
+    /** 確認方塊座位是否已完成原生註冊。 */
+    fun isRegistered(): Boolean = ::chair.isInitialized && ::bench.isInitialized
+
+    /** 註冊椅子、長凳與對應物品；座位保持實心，不被水流沖走。 */
     fun register() {
         chair = Registry.register(
             Registries.BLOCK,
@@ -33,5 +42,11 @@ object ExampleFurnitureBlocks {
             Identifier(ExampleFurnitureIds.CHAIR),
             BlockItem(chair, Item.Settings()),
         )
+        bench = Registry.register(
+            Registries.BLOCK,
+            Identifier(ExampleFurnitureIds.BENCH),
+            ExampleBenchBlock(AbstractBlock.Settings.copy(Blocks.OAK_PLANKS).strength(1.5f).solid()),
+        )
+        Registry.register(Registries.ITEM, Identifier(ExampleFurnitureIds.BENCH), BlockItem(bench, Item.Settings()))
     }
 }
