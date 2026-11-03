@@ -12,7 +12,9 @@ preview factories. The dedicated server does not load either client entrypoint.
 Seat providers are registered through the extension callback without reading native content during
 construction. World lookup and seating occur only when the provider is used.
 
-The block chair creates a temporary invisible support only when seating succeeds. The cushion is
+The block chair uses a temporary invisible support. Empty leftover supports do not occupy a seat:
+queries leave them alone, and the seating service cleans its own empty supports before creating one.
+Supports with passengers are preserved. The cushion is
 the seat entity itself and retains its UUID when the world is saved and loaded. Both use the public
 seat contracts rather than MahjongCraft's internal stool implementation or dependency container.
 See the [example guide](../../README.md) for commands and development-world isolation.

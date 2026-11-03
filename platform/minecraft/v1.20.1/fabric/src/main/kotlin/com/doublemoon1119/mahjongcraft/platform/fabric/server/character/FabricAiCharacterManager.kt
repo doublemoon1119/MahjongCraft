@@ -412,7 +412,15 @@ class FabricAiCharacterManager internal constructor(
             ownership = lease.ownership,
             preview = {
                 seating.coordinator.preview(seating.world, actor.entity, request).also { target ->
-                    if (target == null) logger.debug("AI character activation deferred before spawn tableId={} seatIndex={} entityId={}", tableId, index, actor.entity.uuid)
+                    if (target == null) {
+                        logger.debug("AI character activation deferred before spawn tableId={} seatIndex={} entityId={}", tableId, index, actor.entity.uuid)
+                        FabricAiCharacterActivationDiagnostics.beforeSpawn(
+                            seating.world,
+                            actor.entity,
+                            request,
+                            index,
+                        )
+                    }
                 }
             },
             position = { geometry -> actor.entity.refreshPositionAndAngles(geometry.x, geometry.y, geometry.z, geometry.yaw, 0f) },

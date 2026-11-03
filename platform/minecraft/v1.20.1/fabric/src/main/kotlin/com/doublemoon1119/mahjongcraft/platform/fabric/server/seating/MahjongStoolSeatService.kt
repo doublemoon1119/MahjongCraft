@@ -25,7 +25,7 @@ class MahjongStoolSeatService(
     /**
      * 讓 [entity] 坐上位於 [stoolPos] 的麻將凳，座位朝向設為 [entity] 目前的朝向。
      *
-     * 該位置不是麻將凳、凳子已經有座位、[entity] 正在騎乘、不在 [world] 中，或坐下後會卡進上方方塊時不坐下。
+     * 該位置不是麻將凳、凳子已有乘客、[entity] 正在騎乘、不在 [world] 中，或坐下後會卡進上方方塊時不坐下。
      *
      * @param world 麻將凳所在的伺服器世界。
      * @param stoolPos 要坐上的凳子方塊座標。
@@ -41,7 +41,22 @@ class MahjongStoolSeatService(
     ): Boolean {
         if (!world.chunkManager.isChunkLoaded(stoolPos.x shr 4, stoolPos.z shr 4)) return false
         val stool = world.getBlockState(stoolPos).block as? MahjongStoolBlock ?: return false
-        if (!canSit(world, stoolPos, entity)) return false
+        if (!canSit(
+                world,
+                stoolPos,
+                entity,
+            )
+        ) {
+            return false
+        }
+        if (!SeatSupportCleanup.clearEmpty(
+                supports = MahjongStoolSeatEntity.seatsAt(world, stoolPos),
+                hasPassengers = Entity::hasPassengers,
+                discard = Entity::discard,
+            )
+        ) {
+            return false
+        }
 
         val seatTopY = stoolPos.y + stool.design.seatHeight
         val seat = MahjongStoolSeatEntity(world = world).apply {
@@ -56,8 +71,26 @@ class MahjongStoolSeatService(
         }
         var seated = false
         return try {
-            if (!hasRoomAbove(world, entity, seat.x, seat.y, seat.z, seatTopY)) return false
-            if (!spawnGateway.spawn(world, seat, source = SPAWN_SOURCE, tableId = null)) return false
+            if (!hasRoomAbove(
+                    world,
+                    entity,
+                    seat.x,
+                    seat.y,
+                    seat.z,
+                    seatTopY,
+                )
+            ) {
+                return false
+            }
+            if (!spawnGateway.spawn(
+                    world,
+                    seat,
+                    source = SPAWN_SOURCE,
+                    tableId = null,
+                )
+            ) {
+                return false
+            }
             if (!entity.startRiding(seat, true)) return false
             seat.updatePassengerPosition(entity)
             synchronizeSeatedFacing(entity, seatYaw)
@@ -79,9 +112,21 @@ class MahjongStoolSeatService(
      */
     private fun synchronizeSeatedFacing(entity: Entity, seatYaw: Float) {
         if (entity is ServerPlayerEntity) {
-            entity.networkHandler.requestTeleport(entity.x, entity.y, entity.z, seatYaw, entity.pitch)
+            entity.networkHandler.requestTeleport(
+                entity.x,
+                entity.y,
+                entity.z,
+                seatYaw,
+                entity.pitch,
+            )
         } else {
-            entity.refreshPositionAndAngles(entity.x, entity.y, entity.z, seatYaw, entity.pitch)
+            entity.refreshPositionAndAngles(
+                entity.x,
+                entity.y,
+                entity.z,
+                seatYaw,
+                entity.pitch,
+            )
         }
     }
 
@@ -101,12 +146,19 @@ class MahjongStoolSeatService(
         if (!world.chunkManager.isChunkLoaded(stoolPos.x shr 4, stoolPos.z shr 4)) return false
         val stool = world.getBlockState(stoolPos).block as? MahjongStoolBlock ?: return false
         if (entity.world !== world || entity.hasVehicle()) return false
-        if (MahjongStoolSeatEntity.seatsAt(world, stoolPos).isNotEmpty()) return false
+        if (SeatSupportCleanup.isOccupied(MahjongStoolSeatEntity.seatsAt(world, stoolPos), Entity::hasPassengers)) return false
         val seatTopY = stoolPos.y + stool.design.seatHeight
         val seatX = stoolPos.x + HALF_BLOCK
         val seatZ = stoolPos.z + HALF_BLOCK
         val seatY = MahjongStoolSeatGeometry.seatY(seatTopY)
-        return hasRoomAbove(world, entity, seatX, seatY, seatZ, seatTopY)
+        return hasRoomAbove(
+            world,
+            entity,
+            seatX,
+            seatY,
+            seatZ,
+            seatTopY,
+        )
     }
 
     /**
@@ -141,9 +193,24 @@ class MahjongStoolSeatService(
     ): Boolean {
         val halfWidth = entity.width / 2.0
         val headY = MahjongStoolSeatGeometry.passengerFeetY(seatY) + entity.height
-        val body = Box(seatX - halfWidth, seatTopY, seatZ - halfWidth, seatX + halfWidth, headY, seatZ + halfWidth)
-        val minimum = BlockPos.ofFloored(body.minX - COLLISION_MARGIN, body.minY, body.minZ - COLLISION_MARGIN)
-        val maximum = BlockPos.ofFloored(body.maxX + COLLISION_MARGIN, body.maxY, body.maxZ + COLLISION_MARGIN)
+        val body = Box(
+            seatX - halfWidth,
+            seatTopY,
+            seatZ - halfWidth,
+            seatX + halfWidth,
+            headY,
+            seatZ + halfWidth,
+        )
+        val minimum = BlockPos.ofFloored(
+            body.minX - COLLISION_MARGIN,
+            body.minY,
+            body.minZ - COLLISION_MARGIN,
+        )
+        val maximum = BlockPos.ofFloored(
+            body.maxX + COLLISION_MARGIN,
+            body.maxY,
+            body.maxZ + COLLISION_MARGIN,
+        )
         if (minimum.y < world.bottomY || maximum.y >= world.topY || !world.worldBorder.contains(body)) return false
         for (chunkX in (minimum.x shr 4)..(maximum.x shr 4)) {
             for (chunkZ in (minimum.z shr 4)..(maximum.z shr 4)) {

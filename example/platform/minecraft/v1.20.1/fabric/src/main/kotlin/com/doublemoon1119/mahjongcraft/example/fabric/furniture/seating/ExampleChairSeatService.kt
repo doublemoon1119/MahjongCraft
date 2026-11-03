@@ -13,10 +13,38 @@ import net.minecraft.util.math.Box
 
 /** 範例椅子與長凳手動右鍵、建立人偶及座位 provider 共用的入座服務。 */
 class ExampleChairSeatService {
-    /** 生成暫時支撐並入座；失敗時清理本次支撐，已上座者則還原位置與面向。 */
-    fun sit(world: ServerWorld, pos: BlockPos, rider: Entity, yaw: Float): Boolean {
+    /**
+     * 清理自家空支撐後建立新支撐並入座；已有乘客時拒絕，入座失敗則恢復乘坐者。
+     *
+     * @param world 椅子所在的伺服器世界。
+     * @param pos 範例椅子或長凳的方塊位置。
+     * @param rider 要入座的乘坐者。
+     * @param yaw 入座後的水平朝向。
+     * @return 入座與定位皆完成時為 true。
+     */
+    fun sit(
+        world: ServerWorld,
+        pos: BlockPos,
+        rider: Entity,
+        yaw: Float,
+    ): Boolean {
         if (!ExampleFurnitureEntities.isRegistered()) return false
-        if (!canSit(world, pos, rider)) return false
+        if (!canSit(
+                world,
+                pos,
+                rider,
+            )
+        ) {
+            return false
+        }
+        if (!ExampleSeatSupportCleanup.clearEmpty(
+                supports = ExampleChairSeatEntity.seatsAt(world, pos),
+                hasPassengers = Entity::hasPassengers,
+                discard = Entity::discard,
+            )
+        ) {
+            return false
+        }
         val originalX = rider.x
         val originalY = rider.y
         val originalZ = rider.z
@@ -44,24 +72,47 @@ class ExampleChairSeatService {
             restore = {
                 if (rider.vehicle === seat) rider.stopRiding()
                 if (rider is ServerPlayerEntity) {
-                    rider.networkHandler.requestTeleport(originalX, originalY, originalZ, originalYaw, originalPitch)
+                    rider.networkHandler.requestTeleport(
+                        originalX,
+                        originalY,
+                        originalZ,
+                        originalYaw,
+                        originalPitch,
+                    )
                 } else {
-                    rider.refreshPositionAndAngles(originalX, originalY, originalZ, originalYaw, originalPitch)
+                    rider.refreshPositionAndAngles(
+                        originalX,
+                        originalY,
+                        originalZ,
+                        originalYaw,
+                        originalPitch,
+                    )
                 }
             },
             discard = { it.discard() },
         )
     }
 
-    /** 檢查椅子存在、沒有其他座位、玩家沒有載具且身體空間可用。 */
-    fun canSit(world: ServerWorld, pos: BlockPos, rider: Entity): Boolean {
+    /**
+     * 唯讀檢查椅子、乘客與身體空間，沒有乘客的殘留支撐不占位。
+     *
+     * @param world 椅子所在的伺服器世界。
+     * @param pos 要檢查的方塊位置。
+     * @param rider 預計入座的乘坐者。
+     * @return 椅子可安全使用時為 true。
+     */
+    fun canSit(
+        world: ServerWorld,
+        pos: BlockPos,
+        rider: Entity,
+    ): Boolean {
         if (!ExampleFurnitureEntities.isRegistered()) return false
         if (!world.chunkManager.isChunkLoaded(pos.x shr 4, pos.z shr 4)) return false
         if (!ExampleFurnitureBlocks.isSeat(world.getBlockState(pos))) return false
         if (rider.world !== world) return false
         if (ExampleFurnitureSeatRules.occupancyState(
                 hasVehicle = rider.hasVehicle(),
-                occupied = ExampleChairSeatEntity.seatsAt(world, pos).isNotEmpty(),
+                occupied = ExampleSeatSupportCleanup.isOccupied(ExampleChairSeatEntity.seatsAt(world, pos), Entity::hasPassengers),
             ) != SeatState.AVAILABLE
         ) {
             return false
@@ -76,15 +127,31 @@ class ExampleChairSeatService {
             feetY + rider.height,
             pos.z + 0.5 + rider.width / 2.0,
         )
-        return ExampleFurnitureSpace.isClear(world, rider, body)
+        return ExampleFurnitureSpace.isClear(
+            world,
+            rider,
+            body,
+        )
     }
 
     /** 將成功入座者面向標準座位要求，保留原本仰角。 */
     private fun faceTable(rider: Entity, yaw: Float) {
         if (rider is ServerPlayerEntity) {
-            rider.networkHandler.requestTeleport(rider.x, rider.y, rider.z, yaw, rider.pitch)
+            rider.networkHandler.requestTeleport(
+                rider.x,
+                rider.y,
+                rider.z,
+                yaw,
+                rider.pitch,
+            )
         } else {
-            rider.refreshPositionAndAngles(rider.x, rider.y, rider.z, yaw, rider.pitch)
+            rider.refreshPositionAndAngles(
+                rider.x,
+                rider.y,
+                rider.z,
+                yaw,
+                rider.pitch,
+            )
         }
     }
 }

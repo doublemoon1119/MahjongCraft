@@ -197,6 +197,9 @@ normal opening order. Only normal room permissions and admission rules constrain
 During a synchronous batch move, exclude only fellow movers with separate destination bounds from
 intermediate collision checks. Other occupants and overlapping destinations remain blockers. Clean
 up empty built-in seat helpers immediately when leaving them, without deleting furniture blocks.
+For bundled and example seats, a leftover temporary mount without passengers does not occupy the
+seat. Previews remain read-only; the seating operation cleans only its own empty mounts before
+creating a replacement. Preserve occupied mounts and permanent furniture entities such as cushions.
 
 Kicking a human or external participant records a room-local exclusion. Reseating, reconnecting,
 changing strategy or restarting does not clear it. Only the host can see the exclusion list and
