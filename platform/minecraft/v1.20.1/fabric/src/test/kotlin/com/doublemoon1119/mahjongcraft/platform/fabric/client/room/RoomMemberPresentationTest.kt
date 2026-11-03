@@ -92,7 +92,7 @@ class RoomMemberPresentationTest {
         val entries = roomMemberEntriesFrom(
             players = listOf(snapshot(Wind.EAST, score = 30000), snapshot(Wind.SOUTH, score = 20000)),
             aiPlayerIds = emptySet(),
-            resolveHumanName = { "Player" },
+            resolvePlayerName = { _, _ -> "Player" },
         )
 
         assertEquals(listOf(0, 1), entries.map { it.seatIndex })
@@ -103,29 +103,46 @@ class RoomMemberPresentationTest {
     /** 真人玩家的名稱交由呼叫端解析，解析不到時保留 null。 */
     @Test
     fun `leaves an unresolved human name null`() {
-        val entries = roomMemberEntriesFrom(listOf(snapshot(Wind.EAST)), aiPlayerIds = emptySet(), resolveHumanName = { null })
+        val entries = roomMemberEntriesFrom(listOf(snapshot(Wind.EAST)), aiPlayerIds = emptySet(), resolvePlayerName = { _, _ -> null })
 
         assertNull(entries.single().playerName)
     }
 
-    /** AI 玩家不經過真人名稱解析，並取得依序產生的顯示名稱。 */
+    /** 缺少 AI 名稱時才使用快照順序的備援編號。 */
     @Test
-    fun `names ai players without the human resolver`() {
+    fun `uses fallback bot names when shared resolver has no name`() {
         val players = listOf(snapshot(Wind.EAST), snapshot(Wind.SOUTH))
         val entries = roomMemberEntriesFrom(
             players = players,
             aiPlayerIds = players.map { it.id }.toSet(),
-            resolveHumanName = { error("AI players must not use the human name resolver") },
+            resolvePlayerName = { _, isAi ->
+                assertEquals(true, isAi)
+                null
+            },
         )
 
         assertEquals(2, entries.count { it.isAi })
         assertEquals(2, entries.mapNotNull { it.playerName }.toSet().size, "Expected the two AI players to get different display names.")
     }
 
+    /** 已解析的具名角色與機器人編號不被快照備援名稱覆蓋。 */
+    @Test
+    fun `fallback roster retains names from the shared resolver`() {
+        val players = listOf(snapshot(Wind.EAST), snapshot(Wind.SOUTH))
+        val names = mapOf(players[0].id to "Actor", players[1].id to "AI 1")
+        val entries = roomMemberEntriesFrom(
+            players = players,
+            aiPlayerIds = players.map { it.id }.toSet(),
+            resolvePlayerName = { id, _ -> names[id] },
+        )
+
+        assertEquals(listOf("Actor", "AI 1"), entries.map { it.playerName })
+    }
+
     /** 降級清單不含規則公開指示器。 */
     @Test
     fun `carries no indicators in the fallback roster`() {
-        val entries = roomMemberEntriesFrom(listOf(snapshot(Wind.EAST)), aiPlayerIds = emptySet(), resolveHumanName = { "Player" })
+        val entries = roomMemberEntriesFrom(listOf(snapshot(Wind.EAST)), aiPlayerIds = emptySet(), resolvePlayerName = { _, _ -> "Player" })
 
         assertEquals(emptyList(), entries.single().indicators)
     }

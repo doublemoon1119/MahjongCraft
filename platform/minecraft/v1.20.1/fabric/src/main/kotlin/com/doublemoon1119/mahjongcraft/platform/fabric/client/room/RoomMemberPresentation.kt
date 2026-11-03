@@ -70,24 +70,25 @@ internal class RoomMemberPresentation(private val indicatorTextResolver: PublicP
 /**
  * Player Info entity 尚未同步時，由遊戲快照組出可顯示的玩家清單。
  *
- * [aiPlayerIds] 中的 AI 依 [players] 內的排列順序產生顯示名稱，真人交由 [resolveHumanName] 解析；解析不到時保留 `null`，由呈現層決定
- * 顯示什麼。這份降級資料不含規則公開 indicator。
+ * 成員名稱交由 [resolvePlayerName] 共用名稱解析器取得；缺少名稱時 AI 依快照順序備援編號，真人保留 `null`。
+ * 這份降級資料不含規則公開 indicator。
  *
  * @param players 依座位順序排列的玩家快照。
  * @param aiPlayerIds 由 AI 操控的玩家識別碼。
- * @param resolveHumanName 依真人玩家識別碼取得名稱；未知時回傳 null。
+ * @param resolvePlayerName 依成員識別碼與 AI 身分取得名稱；未知時回傳 null。
  * @return 保留輸入座位順序的玩家公開資訊。
  */
 internal fun roomMemberEntriesFrom(
     players: List<MahjongPlayerSnapshot>,
     aiPlayerIds: Set<Uuid>,
-    resolveHumanName: (Uuid) -> String?,
+    resolvePlayerName: (Uuid, Boolean) -> String?,
 ): List<MahjongPlayerInfoEntry> {
     val orderedAiPlayerIds = players.filter { it.id in aiPlayerIds }.map { it.id }
     return players.mapIndexed { index, player ->
         MahjongPlayerInfoEntry(
             playerId = player.id,
-            playerName = if (player.id in aiPlayerIds) aiPlayerDisplayName(player.id, orderedAiPlayerIds) else resolveHumanName(player.id),
+            playerName = resolvePlayerName(player.id, player.id in aiPlayerIds)
+                ?: if (player.id in aiPlayerIds) aiPlayerDisplayName(player.id, orderedAiPlayerIds) else null,
             isAi = player.id in aiPlayerIds,
             seatIndex = index,
             seatWind = player.seatWind,

@@ -1265,7 +1265,9 @@ class RoomScreen(
     private fun resolvePlayingPlayerInfo(): List<MahjongPlayerInfoEntry> {
         resolvePlayerInfoEntity()?.players?.takeIf { it.isNotEmpty() }?.let { return it }
         val snapshot = stateStore.gameSnapshot(tableId) ?: return emptyList()
-        return roomMemberEntriesFrom(snapshot.players, stateStore.gameAiPlayerIds(tableId), ::resolveLocalPlayerName)
+        return roomMemberEntriesFrom(snapshot.players, stateStore.gameAiPlayerIds(tableId)) { id, isAi ->
+            if (isAi) displayNames.resolve(tableId, id.toString(), true) else resolveLocalPlayerName(id)
+        }
     }
 
     /**

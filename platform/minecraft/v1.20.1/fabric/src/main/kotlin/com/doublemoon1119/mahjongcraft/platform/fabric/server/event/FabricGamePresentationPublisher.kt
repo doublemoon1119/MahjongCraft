@@ -44,6 +44,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.present
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.presentation.DebugWinShowcaseOverride
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.showcaseWingCards
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.network.RoundResultSender
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.player.ServerAiPlayerDisplayNameResolver
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.player.ServerPlayerIdentityStore
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.FabricTableLifecycleService
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.PersistentTableOverlayCoordinator
@@ -59,7 +60,6 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongDiceRollPr
 import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongDiceRollPresentationResult
 import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongDiceRollPresenter
 import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongDiceRollTimeline
-import com.doublemoon1119.mahjongcraft.platform.minecraft.player.aiPlayerDisplayName
 import com.doublemoon1119.mahjongcraft.platform.minecraft.seating.MahjongSeatingPresenter
 import com.doublemoon1119.mahjongcraft.platform.minecraft.showcase.WinCelebrationShowcaseDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.sound.GameActionSoundPresentationRegistry
@@ -129,6 +129,7 @@ import kotlin.uuid.toJavaUuid
  * 將對局呈現請求交給 Fabric 呈現元件；世界與實體操作在伺服器主執行緒執行。
  *
  * @property characters 世界角色的名冊收斂入口。
+ * @property aiDisplayNames 以當場角色描述及房間順序解析 AI 名稱。
  * @property seatingPresenter 開局座位傳送的實際呈現邏輯。
  * @property diceRollPresenter 正式擲骰的實際呈現邏輯。
  * @property tileWallPresenter 正式牌牆的實際呈現邏輯。
@@ -169,6 +170,7 @@ import kotlin.uuid.toJavaUuid
  */
 class FabricGamePresentationPublisher(
     private val characters: FabricAiCharacterManager,
+    private val aiDisplayNames: ServerAiPlayerDisplayNameResolver,
     private val seatingPresenter: MahjongSeatingPresenter,
     private val diceRollPresenter: MahjongDiceRollPresenter,
     private val tileWallPresenter: MahjongTileWallPresenter,
@@ -880,9 +882,8 @@ class FabricGamePresentationPublisher(
         )
         val game = gameRepository.getGame(gameId) ?: return
         val module = moduleRegistry.getModule(game.tableState.config)
-        val orderedAiPlayerIds = game.roomPlayerIds.filter(game::isAi)
         val playerInfo = MahjongPlayerInfoPresentationFactory.create(game.tableState, module, game.aiPlayerIds) { player ->
-            if (game.isAi(player.id)) aiPlayerDisplayName(player.id, orderedAiPlayerIds) else playerIdentities.resolveKnownName(player.id)
+            if (game.isAi(player.id)) aiDisplayNames.resolve(game, player.id) else playerIdentities.resolveKnownName(player.id)
         }
         playerInfoPresenter.present(playerInfo, resolved.location, resolved.facing)
     }

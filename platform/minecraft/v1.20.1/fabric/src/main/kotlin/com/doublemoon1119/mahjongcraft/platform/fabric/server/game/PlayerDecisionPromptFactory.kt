@@ -12,6 +12,7 @@ import com.doublemoon1119.mahjongcraft.logic.base.TileFaceView
 import com.doublemoon1119.mahjongcraft.logic.base.TileOrder
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.player.ServerAiPlayerDisplayNameResolver
 import com.doublemoon1119.mahjongcraft.platform.minecraft.action.BuiltInGameActionIds
 import com.doublemoon1119.mahjongcraft.platform.minecraft.action.vocabularyActionId
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.DecisionPlayerRelationDto
@@ -19,7 +20,6 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.PlayerDecisio
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.PlayerDecisionActionTileSelectionDto
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.PlayerDecisionPromptDto
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.RuleDecisionPromptDto
-import com.doublemoon1119.mahjongcraft.platform.minecraft.player.aiPlayerDisplayName
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.toAssetKey
 import java.security.MessageDigest
@@ -33,6 +33,7 @@ import kotlin.uuid.Uuid
  * @property moduleRegistry 解析規則模組與牌序。
  * @property tileAssetRegistry 將牌面轉成素材 key。
  * @property analysisDtoMapper 將捨牌分析轉成同步 DTO。
+ * @property aiDisplayNames 以當場角色描述及房間順序解析 AI 名稱。
  * @property visibilityPolicy 依接收玩家的讀取權裁切牌面與外觀。
  */
 class PlayerDecisionPromptFactory(
@@ -41,6 +42,7 @@ class PlayerDecisionPromptFactory(
     private val moduleRegistry: MahjongModuleRegistry,
     private val tileAssetRegistry: MinecraftTileAssetRegistry,
     private val analysisDtoMapper: ReadinessAnalysisDtoMapper,
+    private val aiDisplayNames: ServerAiPlayerDisplayNameResolver,
     private val visibilityPolicy: GameVisibilityPolicy,
 ) {
     /**
@@ -74,7 +76,6 @@ class PlayerDecisionPromptFactory(
             emptyList()
         }
         val trigger = state.triggerContext(playerId)
-        val orderedAiPlayerIds = game.roomPlayerIds.filter(game::isAi)
         return PlayerDecisionPromptDto(
             ruleModuleId = resolvedCandidates.ruleModuleId,
             decisionKey = buildPlayerDecisionKey(
@@ -134,7 +135,7 @@ class PlayerDecisionPromptFactory(
             },
             triggerPlayerId = trigger?.playerId?.toString(),
             triggerPlayerName = trigger?.playerId?.let { sourceId ->
-                if (game.isAi(sourceId)) aiPlayerDisplayName(sourceId, orderedAiPlayerIds) else null
+                if (game.isAi(sourceId)) aiDisplayNames.resolve(game, sourceId) else null
             },
             triggerPlayerRelation = trigger?.relation,
             triggerActionId = trigger?.actionId,

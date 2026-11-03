@@ -117,6 +117,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.server.persistence.Fabric
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.persistence.FabricMahjongDataStatus
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.persistence.FabricTableLocationPersistence
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.player.PlayerConnectionLifecycleService
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.player.ServerAiPlayerDisplayNameResolver
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.player.ServerPlayerIdentityStore
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.room.BuiltInDefaultGameConfigProvider
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.room.FabricMahjongLobbyInfoLifecycleService
@@ -239,6 +240,12 @@ val fabricServerModule = module {
     single<GameActionCandidateResolver>()
     single<MahjongAutoDrawService>()
     single<MahjongTableGameActionService>()
+    // 呼叫時才取角色快照，讓讀檔還原期間也能建立操作提示，而不形成保存服務的依賴循環。
+    single {
+        ServerAiPlayerDisplayNameResolver { matchId ->
+            get<FabricAuthoritativeStatePersistence>().characterSnapshot()?.characters?.matchPlayers(matchId).orEmpty()
+        }
+    }
     single<PlayerDecisionPromptFactory>()
     single<ReadinessAnalysisDtoMapper>()
     single<SpectatorObservationService>()

@@ -64,4 +64,63 @@ class ClientPlayerDisplayNameResolverTest {
         assertNull(profiles.resolvedProfile(actor))
         assertNull(profiles.resolvedProfile(excluded))
     }
+
+    /** 房間排除具名實體的序號，歷史只使用自己場次的描述。 */
+    @Test
+    fun `live and historical bot ordinals exclude only names in their own roster`() {
+        val table = Uuid.random()
+        val host = Uuid.random()
+        val actor = Uuid.random()
+        val firstBot = Uuid.random()
+        val secondBot = Uuid.random()
+        val match = Uuid.random()
+        val state = ClientMahjongStateStore(DefaultNetworkDtoRegistries())
+        val order = listOf(actor, firstBot, secondBot)
+        state.applyRoomSnapshot(
+            table,
+            RoomSnapshot(
+                id = table,
+                hostId = host,
+                gameConfig = GameConfig(FakeMahjongRuleConfig()),
+                playerIds = listOf(host) + order,
+                readyPlayerIds = order,
+                aiPlayerIds = order,
+                canStart = true,
+                isHost = true,
+                isInRoom = true,
+            ),
+        )
+        val characters = AiCharacterClientStateStore()
+        val session = Uuid.random()
+        characters.beginSession(session)
+        characters.apply(
+            AiCharacterSyncSnapshot(
+                sessionId = session,
+                revision = 1,
+                tableId = table,
+                isAvailable = true,
+                catalogue = emptyList(),
+                players = mapOf(actor to AiCharacterSnapshot("example:actor", null, "Current actor")),
+            ),
+        )
+        // 歷史中第一台機器人當時有名字，與目前房間不同，必須依當場描述計數。
+        characters.rememberHistory(
+            match,
+            mapOf(
+                actor to AiCharacterSnapshot("example:actor", null, "Archived actor"),
+                firstBot to AiCharacterSnapshot("example:actor", null, "Archived robot"),
+            ),
+        )
+        val profiles = ClientPlayerProfileResolver()
+        val names = ClientPlayerDisplayNameResolver(state, profiles, characters)
+
+        assertEquals("Current actor", names.resolve(table, actor.toString(), true))
+        assertEquals("AI 1", names.resolve(table, firstBot.toString(), true))
+        assertEquals("AI 2", names.resolve(table, secondBot.toString(), true))
+        assertEquals("Archived actor", names.historical(actor, match, true, order))
+        assertEquals("Archived robot", names.historical(firstBot, match, true, order))
+        assertEquals("AI 1", names.historical(secondBot, match, true, order))
+        assertEquals("AI 3", names.historical(secondBot, Uuid.random(), true, order))
+        assertNull(profiles.resolvedProfile(actor))
+    }
 }

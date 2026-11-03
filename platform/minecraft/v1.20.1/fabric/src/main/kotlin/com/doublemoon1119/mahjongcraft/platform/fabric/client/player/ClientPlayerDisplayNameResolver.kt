@@ -36,7 +36,14 @@ class ClientPlayerDisplayNameResolver(
         val room = tableId?.let(stateStore::roomSnapshot)
         val character = if (tableId == null) characters.findPlayer(id) else characters.find(tableId)?.let { it.players[id] ?: it.excludedPlayers[id] }
         val isAi = isAiHint ?: (character != null || (tableId != null && (id in stateStore.gameAiPlayerIds(tableId) || id in room?.aiPlayerIds.orEmpty())))
-        if (isAi) return characterName(character) ?: aiPlayerDisplayName(id, orderedAiPlayerIds(tableId))
+        if (isAi) {
+            val order = orderedAiPlayerIds(tableId)
+            val appearances = order.mapNotNull { memberId ->
+                val appearance = if (tableId == null) characters.findPlayer(memberId) else characters.find(tableId)?.players?.get(memberId)
+                appearance?.let { memberId to it }
+            }.toMap()
+            return characterName(character) ?: aiPlayerDisplayName(id, order, appearances)
+        }
         return profiles.knownProfile(id)?.name?.takeIf(String::isNotBlank) ?: unknownName()
     }
 
@@ -50,7 +57,10 @@ class ClientPlayerDisplayNameResolver(
      * @return 當場角色名稱、AI 編號或真人已知名稱。
      */
     fun historical(playerId: Uuid, matchId: Uuid?, isAi: Boolean, aiOrder: List<Uuid>): String {
-        if (isAi) return characterName(matchId?.let { characters.history(it, playerId) }) ?: aiPlayerDisplayName(playerId, aiOrder)
+        if (isAi) {
+            val appearances = aiOrder.mapNotNull { id -> matchId?.let { characters.history(it, id) }?.let { id to it } }.toMap()
+            return characterName(matchId?.let { characters.history(it, playerId) }) ?: aiPlayerDisplayName(playerId, aiOrder, appearances)
+        }
         return profiles.knownProfile(playerId)?.name?.takeIf(String::isNotBlank) ?: unknownName()
     }
 
