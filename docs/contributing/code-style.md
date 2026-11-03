@@ -13,6 +13,9 @@
   in the class KDoc. Do not place a separate KDoc immediately above each constructor property unless that
   placement is necessary to explain a declaration-specific constraint that cannot be expressed clearly in the
   class KDoc. Use `@param` for constructor parameters that are not properties.
+- **KDoc tag order**: List constructor `@param` and `@property` tags together in the order their
+  parameters appear in the constructor. For functions, list `@param` tags in the order their parameters
+  appear in the signature. Place `@return` after the parameter tags.
 - **Layer vocabulary**: Comments and KDoc in `:mahjong-logic`, `:mahjong-flow`, `:mahjong-ai` and
   `:mahjong-extension-api` must describe a contract in that layer's own vocabulary. Do not define what
   something is, or what it is for, in terms of a presentation surface or platform that only some
