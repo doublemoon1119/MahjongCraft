@@ -84,6 +84,9 @@ enum class TaiwanTaiType(private val path: String, val tai: Int) {
     /** 字一色。 */
     ALL_HONORS("all_honors", 16),
 
+    /** 宣告聽牌後胡牌。 */
+    DECLARED_READY("declared_ready", 1),
+
     /** 莊家第一打後已聽牌的資格。 */
     HEAVENLY_READY("heavenly_ready", 16),
 

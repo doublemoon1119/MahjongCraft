@@ -10,6 +10,7 @@ import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.component.initializeRuleComponents
 import com.doublemoon1119.mahjongcraft.logic.config.MahjongRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RIICHI_STICK_POINTS
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiFamilyRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.riichiDeclaration
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.riichiPotPoints
 import com.doublemoon1119.mahjongcraft.logic.table.GameInitializer
@@ -196,20 +197,20 @@ internal class MatchSimulator(
             val rejection = recorder.recent.lastOrNull()?.let { last ->
                 (runtime.coordinator.dispatchThenDrive(gameId, last.playerId, last.command) as? Outcome.Error)?.error
             }
-            return "the match stopped before it ended; last command rejected with: $rejection" to null
+            return "the match stopped before it ended; last command rejected with: $rejection; abort: ${runtime.abortDiagnostic}" to null
         }
         return null
     }
 
     /**
-     * 所有玩家的分數加上場上立直棒的點數是否等於開局總分。
+     * 所有玩家的分數加上場上供託（日麻的立直棒）的點數是否等於開局總分。
      *
      * @param state 要檢查的桌況。
      * @return 總分守恆時為 true。
      */
     private fun isConserved(state: TableState): Boolean {
-        val sticks = (state.riichiPotPoints() / RIICHI_STICK_POINTS)
-        return state.players.sumOf { it.score } + sticks * RIICHI_STICK_POINTS == state.players.size * config.scoreConfig.initialScore
+        val pot = if (config is RiichiFamilyRuleConfig) state.riichiPotPoints() / RIICHI_STICK_POINTS * RIICHI_STICK_POINTS else 0
+        return state.players.sumOf { it.score } + pot == state.players.size * config.scoreConfig.initialScore
     }
 
     /**

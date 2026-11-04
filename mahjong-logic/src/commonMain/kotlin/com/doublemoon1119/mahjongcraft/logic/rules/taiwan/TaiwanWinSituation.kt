@@ -7,7 +7,7 @@ package com.doublemoon1119.mahjongcraft.logic.rules.taiwan
  * @property isReplacementWin 是否為允許胡牌的補牌自摸。
  * @property isLastDraw 是否為最後可摸牌的自摸。
  * @property openingWin 本次成立的天胡、地胡或人胡；一般胡牌為null。
- * @property readyQualification 尚有效的天聽或地聽；沒有資格為null。
+ * @property readyQualification 尚有效的宣告聽牌計台項目：一般宣告聽牌、天聽或地聽；沒有宣告為null。
  */
 data class TaiwanWinSituation(
     val isRobbingKong: Boolean = false,
@@ -20,8 +20,8 @@ data class TaiwanWinSituation(
         require(openingWin == null || openingWin in setOf(TaiwanTaiType.HEAVENLY_WIN, TaiwanTaiType.EARTHLY_WIN, TaiwanTaiType.HUMAN_WIN)) {
             "Opening win must be a heavenly, earthly or human win"
         }
-        require(readyQualification == null || readyQualification in setOf(TaiwanTaiType.HEAVENLY_READY, TaiwanTaiType.EARTHLY_READY)) {
-            "Ready qualification must be heavenly or earthly ready"
+        require(readyQualification == null || readyQualification in TaiwanReadyKind.entries.map { it.taiType }) {
+            "Ready qualification must be a declared, heavenly or earthly ready"
         }
     }
 }

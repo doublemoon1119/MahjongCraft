@@ -1,82 +1,176 @@
 package com.doublemoon1119.mahjongcraft.logic.rules.taiwan
 
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
+import com.doublemoon1119.mahjongcraft.logic.base.Hand
+import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
+import com.doublemoon1119.mahjongcraft.logic.base.MeldType
+import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
+import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.logic.judgment.LegalActionContext
 import com.doublemoon1119.mahjongcraft.logic.judgment.LegalActionValidator
+import com.doublemoon1119.mahjongcraft.logic.judgment.ShantenResult
+import com.doublemoon1119.mahjongcraft.logic.judgment.TileSelectionRequirement
 import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayer
+import com.doublemoon1119.mahjongcraft.logic.table.TableState
+import kotlin.uuid.Uuid
 
 /**
- * TODO: 實作台灣麻將的合法動作判定器。
+ * 台灣麻將的合法動作判定器，只列出鳴牌、槓、胡與宣告聽牌等額外動作；一般捨牌由呼叫端依手牌建立。
  *
- * 台灣麻將規則的合法動作判定器。
+ * - 過水期間不能胡也不能自摸。
+ * - 宣告聽牌後不能吃、碰、明槓或暗槓，只能用剛摸進來的牌加槓。
+ * - 不能槓上家打出的牌；只能搶加槓，不能搶暗槓；別人移出手牌的牌不能胡或鳴。
+ * - 最後一張可打出的牌只能胡；槓需要至少還有一張活牌。
  *
- * 負責根據台灣麻將的規則（包含過水、補花、槓牌等）分析玩家的合法動作。
- *
- * 過水碰：台灣麻將**不允許**放過碰之後，在自己下次取牌前碰同一種牌，實作時以
- * [MahjongPlayer.passedTilesInRound] 判斷（該清單記錄自己上次取牌後放過的牌，摸牌或鳴牌時清空）。
- * 日本麻將沒有這項限制，見 `RiichiLegalActionValidator`。
- *
- * ## 牌型 (Pattern) 結構規劃
- *
- * 台灣麻將的牌型計算與日本麻將類似，但使用「台」而非「番」作為單位。
- * 未來實作時請參考以下結構：
- *
- * ```
- * domain/.../rules/taiwan/
- * ├── TaiwanHandValueCalculator.kt  # 主計算機
- * └── pattern/
- *     ├── TaiwanPatternContext.kt    # 牌型計算上下文
- *     ├── HandPatternType.kt         # 牌型識別列舉
- *     ├── HandPatternResult.kt        # 計算結果
- *     ├── standard/                  # 一般牌型 (1-3 台)
- *     │   ├── Eye.kt                 # 眼睛 (1 台)
- *     │   ├── Pong.kt                # 碰牌 (1 台)
- *     │   ├── Chow.kt                # 吃牌 (1 台)
- *     │   ├── ConcealedKong.kt       # 暗槓 (2 台)
- *     │   ├── ExposedKong.kt         # 明槓 (1 台)
- *     │   ├── MixedSuit.kt           # 混一色 (4 台)
- *     │   ├── PureSuit.kt            # 清一色 (8 台)
- *     │   ├── AllHonors.kt           # 字一色 (8 台)
- *     │   ├── AllSimples.kt          # 斷么九 (2 台)
- *     │   ├── OneSuitOneTerm.kt      # 一台 (1 台)
- *     │   └── TwoSuitOneTerm.kt      # 兩台 (2 台)
- *     ├── special/                  # 特殊牌型
- *     │   ├── NoMeld.kt              # 門清 (2 台)
- *     │   ├── SelfDraw.kt            # 自摸 (1 台)
- *     │   ├── RobbingKong.kt         # 搶槓 (1 台)
- *     │   ├── KongOnKong.kt          # 槓上花 (1 台)
- *     │   ├── LastTileDraw.kt        # 海底撈月 (1 台)
- *     │   └── LastTileDiscard.kt     # 河底撈魚 (1 台)
- *     ├── triples/                  # 對對胡系列
- *     │   ├── ThreeOfAKind.kt        # 對對胡 (4 台)
- *     │   ├── FourOfAKind.kt         # 槓槓 (8 台)
- *     │   └── PureThreeOfAKind.kt    # 對對胡清一色 (16 台)
- *     ├── dragons/                  # 三元牌系列
- *     │   ├── WhiteDragon.kt         # 白 (1 台)
- *     │   ├── GreenDragon.kt         # 發 (1 台)
- *     │   ├── RedDragon.kt           # 中 (1 台)
- *     │   ├── TwoDragons.kt          # 兩台 (2 台)
- *     │   └── BigThreeDragons.kt     # 大三元 (8 台)
- *     ├── winds/                    # 風牌系列
- *     │   ├── SeatWind.kt            # 門風 (1 台)
- *     │   ├── RoundWind.kt           # 圈風 (1 台)
- *     │   ├── TwoWinds.kt            # 兩台 (2 台)
- *     │   └── BigFourWinds.kt        # 大四喜 (8 台)
- *     └── big/                      # 大牌型 (8+ 台)
- *         ├── HeavenHand.kt          # 天胡 (不計台)
- *         ├── EarthHand.kt           # 地胡 (不計台)
- *         └── PersonHand.kt          # 人胡 (不計台)
- * ```
+ * @param config 規則設定。
  */
-class TaiwanLegalActionValidator : LegalActionValidator {
-    /**
-     * 判斷在當前遊戲狀態下，指定玩家可以執行的合法動作列表。
-     *
-     * @param context 從同一份桌況建立的判定情境。
-     * @return 該玩家可以執行的合法動作列表。
-     */
+class TaiwanLegalActionValidator(config: TaiwanRuleConfig) : LegalActionValidator {
+    private val shantenCalculator = TaiwanShantenCalculator()
+    private val winEvaluation = TaiwanWinEvaluation(config)
+
     override fun getLegalActions(context: LegalActionContext): List<GameAction> {
-        // TODO: 實作台灣麻將的合法動作判定邏輯
-        return emptyList()
+        val tableState = context.tableState
+        val player = context.player.copy(hand = context.handBeforeIncoming)
+        val incomingTile = context.incomingTile
+        val isDeclared = player.components[TaiwanPlayerComponents.READY_DECLARATION] != null
+        val canWin = player.components[TaiwanPlayerComponents.PASSED_WIN] == null
+        val wallHasMoreTiles = tableState.tileWall.remainingCount > 0
+        val legalActions = mutableListOf<GameAction>()
+
+        if (context.sourceDirection == RelativeDirection.Self) {
+            if (!isDeclared && wallHasMoreTiles && readyDiscardTileIds(context.player).isNotEmpty()) {
+                legalActions += TAIWAN_DECLARE_READY_ACTION
+            }
+            if (incomingTile != null) {
+                if (canWin &&
+                    isWinning(context.handWithIncoming) &&
+                    winEvaluation.evaluate(tableState, player, incomingTile, isTsumo = true, isRobbingKong = false).isWinningHand
+                ) {
+                    legalActions += GameAction.Tsumo
+                }
+                if (wallHasMoreTiles) {
+                    if (player.hand.exposedMelds.any { it.type == MeldType.PON && it.tiles.first().tile == incomingTile.tile }) {
+                        legalActions += GameAction.Kan(GameAction.KanType.ADDED_KAN, incomingTile.id, emptyList())
+                    }
+                    if (!isDeclared) legalActions += closedKanActions(context.handWithIncoming, incomingTile)
+                }
+            }
+        } else if (incomingTile != null && context.sourceAction !is GameAction.Extension) {
+            val sourceAction = context.sourceAction
+            val isRobbing = sourceAction is GameAction.Kan
+            val isRobbingAddedKan = sourceAction is GameAction.Kan && sourceAction.type == GameAction.KanType.ADDED_KAN
+            if (canWin &&
+                (!isRobbing || isRobbingAddedKan) &&
+                isWinning(context.handWithIncoming) &&
+                winEvaluation.evaluate(tableState, player, incomingTile, isTsumo = false, isRobbingKong = isRobbingAddedKan).isWinningHand
+            ) {
+                legalActions += GameAction.Ron(incomingTile.id)
+            }
+            if (!isRobbing && !isDeclared && wallHasMoreTiles) {
+                legalActions += claimActions(player, incomingTile, context.sourceDirection)
+            }
+        }
+        if (legalActions.isNotEmpty()) legalActions += GameAction.Pass
+        return legalActions
+    }
+
+    /** 宣告聽牌需要另外指定打出的牌：打出後仍聽牌、且規則允許打出的立牌。 */
+    override fun tileSelectionRequirement(
+        tableState: TableState,
+        player: MahjongPlayer,
+        action: GameAction,
+    ): TileSelectionRequirement? {
+        if (action != TAIWAN_DECLARE_READY_ACTION) return null
+        return TileSelectionRequirement(readyDiscardTileIds(player))
+    }
+
+    /**
+     * 列出打出後仍聽牌、且規則允許打出的立牌。
+     *
+     * @param player 即將打牌的玩家，手牌含剛摸入的牌。
+     * @return 可以用來宣告聽牌的捨牌。
+     */
+    internal fun readyDiscardTileIds(player: MahjongPlayer): Set<Uuid> {
+        val discardable = TaiwanDiscardRestriction.discardableTileIds(player)
+        return player.hand.standingTiles
+            .filter { candidate -> discardable == null || candidate.id in discardable }
+            .filter { candidate ->
+                val discardResult = player.hand.discardById(candidate.id) ?: return@filter false
+                waits(discardResult.hand).isNotEmpty()
+            }
+            .mapTo(mutableSetOf()) { it.id }
+    }
+
+    /**
+     * 列出手牌聽的牌。
+     *
+     * @param hand 不含胡牌張的手牌。
+     * @return 聽的牌；沒有聽牌時為空集合。
+     */
+    internal fun waits(hand: Hand): Set<Tile> = (shantenCalculator.calculate(Hand(tiles = hand.standingTiles, melds = hand.melds)) as? ShantenResult.Tenpai)
+        ?.winningTiles
+        ?.toSet()
+        .orEmpty()
+
+    /**
+     * 判斷含胡牌張的手牌是否已成和牌形。
+     *
+     * @param handWithIncoming 含胡牌張的手牌。
+     * @return 已成和牌形時為 true。
+     */
+    private fun isWinning(handWithIncoming: Hand): Boolean = shantenCalculator.calculate(handWithIncoming) is ShantenResult.Complete
+
+    /**
+     * 列出手中四張相同牌組成的暗槓。
+     *
+     * @param handWithIncoming 含剛摸入牌的手牌。
+     * @param incomingTile 剛摸入的牌；組成暗槓時優先作為宣告牌。
+     * @return 暗槓動作。
+     */
+    private fun closedKanActions(handWithIncoming: Hand, incomingTile: IdentifiedTile): List<GameAction> = handWithIncoming.standingTiles
+        .groupBy { it.tile }
+        .values
+        .filter { it.size == 4 }
+        .map { candidate ->
+            val trigger = candidate.firstOrNull { it.id == incomingTile.id } ?: candidate.first()
+            GameAction.Kan(GameAction.KanType.CLOSED_KAN, trigger.id, candidate.filterNot { it.id == trigger.id }.map { it.id })
+        }
+
+    /**
+     * 列出別人打出的牌可以吃、碰或明槓的組合。
+     *
+     * @param player 手牌不含來源牌的玩家。
+     * @param incomingTile 別人打出的牌。
+     * @param sourceDirection 打出者相對於玩家的方向。
+     * @return 鳴牌動作。
+     */
+    private fun claimActions(
+        player: MahjongPlayer,
+        incomingTile: IdentifiedTile,
+        sourceDirection: RelativeDirection,
+    ): List<GameAction> {
+        val standing = player.hand.standingTiles
+        val matching = standing.filter { it.tile == incomingTile.tile }
+        val actions = mutableListOf<GameAction>()
+        if (matching.size >= 2) actions += GameAction.Pon(incomingTile.id, matching.take(2).map { it.id })
+        val numeric = incomingTile.tile as? Tile.Numeric
+        if (sourceDirection == RelativeDirection.Left && numeric != null) {
+            CHI_OFFSETS.forEach { (first, second) ->
+                if (numeric.value + first !in 1..9 || numeric.value + second !in 1..9) return@forEach
+                val firstId = standing.firstOrNull { it.tile == Tile.Numeric(numeric.suit, numeric.value + first) }?.id
+                val secondId = standing.firstOrNull { it.tile == Tile.Numeric(numeric.suit, numeric.value + second) }?.id
+                if (firstId != null && secondId != null) actions += GameAction.Chi(incomingTile.id, listOf(firstId, secondId))
+            }
+        }
+        if (matching.size == 3 && sourceDirection != RelativeDirection.Left) {
+            actions += GameAction.Kan(GameAction.KanType.OPEN_KAN, incomingTile.id, matching.map { it.id })
+        }
+        return actions
+    }
+
+    /** 吃牌時手中兩張牌相對於來源牌的點數差。 */
+    private companion object {
+        /** 低兩張、夾中間與高兩張的組合。 */
+        val CHI_OFFSETS: List<Pair<Int, Int>> = listOf(-2 to -1, -1 to 1, 1 to 2)
     }
 }

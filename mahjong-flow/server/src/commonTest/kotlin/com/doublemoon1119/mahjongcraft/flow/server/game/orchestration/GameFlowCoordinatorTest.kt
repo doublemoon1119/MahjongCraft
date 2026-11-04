@@ -75,6 +75,7 @@ import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.logic.config.MahjongRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.module.BuiltInRuleModuleIds
+import com.doublemoon1119.mahjongcraft.logic.module.ExhaustiveDrawSettlementResult
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleDefinition
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
@@ -82,7 +83,6 @@ import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiExhaustiveDrawRe
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiGameLength
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleModule
-import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayer
 import com.doublemoon1119.mahjongcraft.logic.table.PendingReaction
 import com.doublemoon1119.mahjongcraft.logic.table.PendingRobbingReaction
@@ -417,6 +417,18 @@ class GameFlowCoordinatorTest {
                 )
             },
         )
+    }
+
+    /**
+     * 保留其餘日麻行為，刻意讓一般流局結算失敗。
+     *
+     * @property delegate 提供其餘正常日麻行為的規則模組。
+     */
+    private class MissingExhaustiveDrawSettlementRuleModule(
+        private val delegate: RiichiRuleModule,
+    ) : MahjongRuleModule<RiichiRuleConfig> by delegate {
+        /** 模擬牌牆摸完卻無法結算一般流局。 */
+        override fun declareExhaustiveDraw(tableState: TableState): ExhaustiveDrawSettlementResult? = null
     }
 
     /**
@@ -773,13 +785,13 @@ class GameFlowCoordinatorTest {
     /** 驗證規則不支援一般流局結算時，會以明確原因中止對局，不偽造流局或換局結果。 */
     @Test
     fun `test wall exhausted does not chain advance round when exhaustive draw is unsupported`() = runTest {
-        val fixtures = Fixtures()
+        val fixtures = Fixtures(ruleModuleDecorator = ::MissingExhaustiveDrawSettlementRuleModule)
         val playerId = Uuid.random()
         val player = FakeMahjongPlayerFactory.create(id = playerId, initialSeat = Wind.EAST)
         val table = FakeTableStateFactory.create(
             id = gameId,
             players = listOf(player),
-            config = TaiwanRuleConfig(),
+            config = RiichiRuleConfig(),
             tileWall = TileWall(emptyList()),
             currentPlayerIndex = 0,
         )

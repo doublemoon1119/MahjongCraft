@@ -1,10 +1,18 @@
 package com.doublemoon1119.mahjongcraft.bundled
 
+import com.doublemoon1119.mahjongcraft.ai.ExtensionGameActionAiDefinition
+import com.doublemoon1119.mahjongcraft.ai.api.registration.ExtensionGameActionAiRegistrar
+import com.doublemoon1119.mahjongcraft.ai.taiwan.TaiwanReadyDeclarationAiHandler
 import com.doublemoon1119.mahjongcraft.extension.MahjongExtension
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameError
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.taiwan.TaiwanDeclareReadyCommand
+import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
 import com.doublemoon1119.mahjongcraft.flow.network.dto.api.registration.NetworkDtoRegistrars
 import com.doublemoon1119.mahjongcraft.flow.network.dto.registry.DtoDefinition
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.riichi.toDomain
+import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.taiwan.TaiwanDeclareReadyCommandDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.taiwan.TaiwanExhaustiveDrawReasonDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.taiwan.TaiwanGameActionDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.taiwan.TaiwanGameLengthDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.taiwan.TaiwanRuleConfigDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.taiwan.TaiwanScoreConfigDto
@@ -12,6 +20,7 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.taiwan.toDomain
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.taiwan.toTaiwanDto
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.api.registration.PersistenceRegistrars
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.component.ComponentPersistenceDefinition
+import com.doublemoon1119.mahjongcraft.flow.persistence.format.component.ComponentUnitPersistenceDto
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.core.PersistenceDtoDefinition
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.game.toDomain
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.game.toPersistenceDto
@@ -19,13 +28,20 @@ import com.doublemoon1119.mahjongcraft.flow.persistence.format.rule.BuiltInDisca
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.rule.TaiwanDiscardPilePersistenceDto
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.rule.TaiwanExhaustiveDrawReasonPersistenceDto
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.rule.TaiwanExhaustiveDrawReasonPersistenceValue
+import com.doublemoon1119.mahjongcraft.flow.persistence.format.rule.TaiwanGameActionPersistenceDto
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.rule.TaiwanPendingFlowerFollowUpPersistenceDto
+import com.doublemoon1119.mahjongcraft.flow.persistence.format.rule.TaiwanReadyDeclarationPersistenceDto
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.rule.TaiwanRuleConfigPersistenceDto
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.rule.toDomain
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.rule.toPersistenceDto
+import com.doublemoon1119.mahjongcraft.flow.server.api.registration.ExtensionGameActionCommandFactoryRegistrar
+import com.doublemoon1119.mahjongcraft.flow.server.api.registration.ExtensionGameCommandExecutorRegistrar
 import com.doublemoon1119.mahjongcraft.flow.server.api.registration.PostActionExhaustiveDrawResolverRegistrar
 import com.doublemoon1119.mahjongcraft.flow.server.api.registration.RuleDecisionResolverRegistrar
 import com.doublemoon1119.mahjongcraft.flow.server.api.registration.WinSettlementDetailResolverRegistrar
+import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.ExtensionGameActionCommandFactoryDefinition
+import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.ExtensionGameCommandHandler
+import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.ExtensionGameCommandHandlerDefinition
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.WinSettlementDetailResolverDefinition
 import com.doublemoon1119.mahjongcraft.flow.server.game.taiwan.TaiwanFourKansResolver
 import com.doublemoon1119.mahjongcraft.flow.server.game.taiwan.TaiwanFourWindsResolver
@@ -34,16 +50,22 @@ import com.doublemoon1119.mahjongcraft.logic.api.registration.MahjongModuleRegis
 import com.doublemoon1119.mahjongcraft.logic.api.registration.TileTypeRegistrar
 import com.doublemoon1119.mahjongcraft.logic.module.BuiltInRuleModuleIds
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleDefinition
+import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TAIWAN_DECLARE_READY_ACTION
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanDiscardPile
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanExhaustiveDrawReason
+import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanGameAction
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanGameLength
+import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanPlayerComponents
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanRuleModule
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanScoreConfig
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanTableComponents
+import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.registerTaiwanPlayerComponents
+import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.registerTaiwanTableComponents
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.tile.TaiwanTileTypes
 import com.doublemoon1119.mahjongcraft.logic.tile.TileTypeDefinition
 import com.doublemoon1119.mahjongcraft.metadata.MahjongCraftMetadata
+import kotlin.uuid.Uuid
 
 /**
  * 隨 MahjongCraft 發布的台麻 extension；台麻在平台無關層的所有登記都寫在這裡，透過與第三方相同的 [MahjongExtension] 回呼登記。
@@ -62,7 +84,40 @@ object BundledTaiwanExtension : MahjongExtension {
     }
 
     override fun registerComponents(registry: ComponentRegistrar) {
-        registry.register(TaiwanTableComponents.PENDING_FLOWER_FOLLOW_UP)
+        registerTaiwanTableComponents(registry)
+        registerTaiwanPlayerComponents(registry)
+    }
+
+    override fun registerGameActionAiHandlers(registry: ExtensionGameActionAiRegistrar) {
+        registry.register(ExtensionGameActionAiDefinition(TaiwanGameAction.DeclareReady::class, TaiwanReadyDeclarationAiHandler))
+    }
+
+    override fun registerGameActionCommandFactories(registry: ExtensionGameActionCommandFactoryRegistrar) {
+        registry.register(
+            definition = ExtensionGameActionCommandFactoryDefinition(TaiwanGameAction.DeclareReady::class) { _, selectedTileIds ->
+                selectedTileIds.singleOrNull()?.let(::TaiwanDeclareReadyCommand)
+            },
+        )
+    }
+
+    /** 宣告聽牌由共用的宣告並打牌流程處理。 */
+    override fun registerGameCommandHandlers(registry: ExtensionGameCommandExecutorRegistrar) {
+        registry.register(
+            definition = ExtensionGameCommandHandlerDefinition(TaiwanDeclareReadyCommand::class) { context ->
+                object : ExtensionGameCommandHandler<TaiwanDeclareReadyCommand> {
+                    override suspend fun execute(
+                        gameId: Uuid,
+                        playerId: Uuid,
+                        command: TaiwanDeclareReadyCommand,
+                    ): Outcome<Unit, GameError> = context.declareAndDiscardUseCase(
+                        gameId = gameId,
+                        playerId = playerId,
+                        action = TAIWAN_DECLARE_READY_ACTION,
+                        tileId = command.tileId,
+                    )
+                }
+            },
+        )
     }
 
     override fun registerRuleDecisionResolvers(registry: RuleDecisionResolverRegistrar) {
@@ -80,6 +135,33 @@ object BundledTaiwanExtension : MahjongExtension {
     }
 
     override fun registerNetworkDtos(registries: NetworkDtoRegistrars) {
+        registries.extensionGameAction.register(
+            definition = DtoDefinition(
+                domainClass = TaiwanGameAction.RevealFlower::class,
+                dtoClass = TaiwanGameActionDto.RevealFlower::class,
+                serializer = TaiwanGameActionDto.RevealFlower.serializer(),
+                toDto = { TaiwanGameActionDto.RevealFlower },
+                toDomain = { TaiwanGameAction.RevealFlower },
+            ),
+        )
+        registries.extensionGameAction.register(
+            definition = DtoDefinition(
+                domainClass = TaiwanGameAction.DeclareReady::class,
+                dtoClass = TaiwanGameActionDto.DeclareReady::class,
+                serializer = TaiwanGameActionDto.DeclareReady.serializer(),
+                toDto = { TaiwanGameActionDto.DeclareReady },
+                toDomain = { TaiwanGameAction.DeclareReady },
+            ),
+        )
+        registries.extensionGameCommand.register(
+            definition = DtoDefinition(
+                domainClass = TaiwanDeclareReadyCommand::class,
+                dtoClass = TaiwanDeclareReadyCommandDto::class,
+                serializer = TaiwanDeclareReadyCommandDto.serializer(),
+                toDto = { TaiwanDeclareReadyCommandDto(it.tileId.toString()) },
+                toDomain = { TaiwanDeclareReadyCommand(Uuid.parse(it.tileId)) },
+            ),
+        )
         registries.ruleConfig.register(
             definition = DtoDefinition(
                 domainClass = TaiwanRuleConfig::class,
@@ -173,6 +255,40 @@ object BundledTaiwanExtension : MahjongExtension {
     }
 
     override fun registerPersistenceDtos(registries: PersistenceRegistrars) {
+        registries.components.register(
+            ComponentPersistenceDefinition(
+                component = TaiwanPlayerComponents.READY_DECLARATION,
+                serializer = TaiwanReadyDeclarationPersistenceDto.serializer(),
+                toDto = { it.toPersistenceDto() },
+                toDomain = { it.toDomain() },
+            ),
+        )
+        registries.components.register(
+            ComponentPersistenceDefinition(
+                component = TaiwanPlayerComponents.PASSED_WIN,
+                serializer = ComponentUnitPersistenceDto.serializer(),
+                toDto = { ComponentUnitPersistenceDto },
+                toDomain = {},
+            ),
+        )
+        registries.extensionGameActions.register(
+            definition = PersistenceDtoDefinition(
+                typeKey = TaiwanGameAction.RevealFlower.id,
+                domainClass = TaiwanGameAction.RevealFlower::class,
+                serializer = TaiwanGameActionPersistenceDto.RevealFlower.serializer(),
+                toDto = { TaiwanGameActionPersistenceDto.RevealFlower },
+                toDomain = { TaiwanGameAction.RevealFlower },
+            ),
+        )
+        registries.extensionGameActions.register(
+            definition = PersistenceDtoDefinition(
+                typeKey = TaiwanGameAction.DeclareReady.id,
+                domainClass = TaiwanGameAction.DeclareReady::class,
+                serializer = TaiwanGameActionPersistenceDto.DeclareReady.serializer(),
+                toDto = { TaiwanGameActionPersistenceDto.DeclareReady },
+                toDomain = { TaiwanGameAction.DeclareReady },
+            ),
+        )
         registries.components.register(
             ComponentPersistenceDefinition(
                 component = TaiwanTableComponents.PENDING_FLOWER_FOLLOW_UP,

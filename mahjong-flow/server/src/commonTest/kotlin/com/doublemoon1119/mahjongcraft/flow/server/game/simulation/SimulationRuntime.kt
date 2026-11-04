@@ -4,6 +4,7 @@ import com.doublemoon1119.mahjongcraft.ai.ExtensionGameActionAiRegistry
 import com.doublemoon1119.mahjongcraft.ai.MahjongAiStrategyRegistryImpl
 import com.doublemoon1119.mahjongcraft.ai.expectation.OpponentModelRegistry
 import com.doublemoon1119.mahjongcraft.bundled.BundledRiichiExtension
+import com.doublemoon1119.mahjongcraft.bundled.BundledTaiwanExtension
 import com.doublemoon1119.mahjongcraft.flow.common.error.ExtensionFailurePolicy
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.AiDecisionExecutor
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.AiTurnDriver
@@ -77,13 +78,20 @@ internal class SimulationRuntime(defaultStrategyKey: String) {
     val gameRepository = RoundRecordingGameRepository()
 
     /** 登記日麻立直 handler 的擴充動作 AI registry。 */
-    val extensionActionRegistry = ExtensionGameActionAiRegistry(moduleRegistry).apply { BundledRiichiExtension.registerGameActionAiHandlers(this) }
+    val extensionActionRegistry = ExtensionGameActionAiRegistry(moduleRegistry).apply {
+        BundledRiichiExtension.registerGameActionAiHandlers(this)
+        BundledTaiwanExtension.registerGameActionAiHandlers(this)
+    }
 
     /** 登記日麻對手模型的 registry。 */
     val opponentModelRegistry = OpponentModelRegistry().apply { BundledRiichiExtension.registerOpponentModels(this) }
 
     /** 由呼叫端登記策略的 AI 策略 registry。 */
     val aiStrategyRegistry = MahjongAiStrategyRegistryImpl(defaultKey = defaultStrategyKey)
+
+    /** 最近一次中止對局的原因與診斷；沒有中止時為 null。 */
+    var abortDiagnostic: String? = null
+        private set
 
     /** 捨牌後的途中流局判定。 */
     private val postActionExhaustiveDrawResolverRegistry = PostActionExhaustiveDrawResolverRegistry().apply {
@@ -276,10 +284,11 @@ internal class SimulationRuntime(defaultStrategyKey: String) {
         exhaustiveDrawSettlementPresentationService = ExhaustiveDrawSettlementPresentationService(presentationPublisher),
         winPresentationHandoff = winPresentationHandoff,
         presentationPublisher = presentationPublisher,
-        abortGameUseCase = GameAbortHandler { expectedGame, _, _ ->
+        abortGameUseCase = GameAbortHandler { expectedGame, reasonId, diagnostic ->
             if (gameRepository.getGame(expectedGame.id) != expectedGame) {
                 false
             } else {
+                abortDiagnostic = "$reasonId: $diagnostic"
                 gameRepository.removeTableState(expectedGame.id)
                 true
             }

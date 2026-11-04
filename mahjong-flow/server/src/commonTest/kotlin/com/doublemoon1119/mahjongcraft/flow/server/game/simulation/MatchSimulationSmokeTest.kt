@@ -13,6 +13,8 @@ import com.doublemoon1119.mahjongcraft.logic.rules.riichi.PULL_NORTH_GAME_ACTION
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiGameLength
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.threeplayer.ThreePlayerRiichiRuleConfig
+import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanGameLength
+import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanRuleConfig
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -68,6 +70,26 @@ class MatchSimulationSmokeTest {
             assertTrue(pullNorthChances.any { it.command == GameCommand.Extension(RiichiPullNorthCommand) }, "Expectation strategies never pulled north")
         }
         assertEquals(setOf(1, 2, 3), result.placementsByPlayer.values.toSet(), diagnostic)
+        result.rounds.forEach { seats ->
+            assertEquals(seats.any { it.wonByRon }, seats.any { it.dealtIn }, "ron and deal-in must match: $seats")
+        }
+    }
+
+    /**
+     * 四個內建策略以台灣麻將打完一場一將：沒有不合法命令、流程沒有卡住、點數守恆，名次為一到四位；
+     * 每一局的榮和與放槍互相對應。
+     */
+    @Test
+    fun `built-in strategies play a full taiwan match`() = runTest(timeout = SMOKE_TIMEOUT) {
+        val lineup = listOf(BuiltInAiStrategyKeys.BEGINNER, BuiltInAiStrategyKeys.INTERMEDIATE, BuiltInAiStrategyKeys.ADVANCED, RandomAiStrategy.KEY)
+
+        val result = MatchSimulator(TaiwanRuleConfig(gameLength = TaiwanGameLength.East)).play(lineup)
+        val diagnostic = "rounds played: ${result.rounds.size}; end reason: ${result.matchEndReasonId}; final scores: ${result.finalScoresByPlayer}"
+
+        assertNull(result.failure, result.failure?.describe())
+        assertTrue(result.rounds.size >= TaiwanGameLength.East.totalRounds, diagnostic)
+        assertEquals(0, result.finalScoresByPlayer.values.sum(), diagnostic)
+        assertEquals(setOf(1, 2, 3, 4), result.placementsByPlayer.values.toSet(), diagnostic)
         result.rounds.forEach { seats ->
             assertEquals(seats.any { it.wonByRon }, seats.any { it.dealtIn }, "ron and deal-in must match: $seats")
         }
