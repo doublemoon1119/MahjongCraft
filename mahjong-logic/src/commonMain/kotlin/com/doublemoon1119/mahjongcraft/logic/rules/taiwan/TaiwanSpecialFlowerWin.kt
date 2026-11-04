@@ -13,15 +13,13 @@ object TaiwanSpecialFlowerWin {
      * @property type 八仙過海或七搶一。
      * @property winnerId 可以選擇花胡的玩家。
      * @property payerId 七搶一的被搶花玩家；八仙過海由三家付款，因此為 null。
-     * @property claimedFlower 七搶一要轉給贏家的花牌；八仙過海為 null。
-     * @property replacementPlayerId 接受花胡後取得補牌的玩家。
+     * @property claimedFlower 七搶一中被搶的花牌；八仙過海為 null。
      */
     data class Opportunity(
         val type: TaiwanTaiType,
         val winnerId: Uuid,
         val payerId: Uuid?,
         val claimedFlower: IdentifiedTile?,
-        val replacementPlayerId: Uuid,
     )
 
     /**
@@ -48,7 +46,6 @@ object TaiwanSpecialFlowerWin {
                 winnerId = revealer.id,
                 payerId = null,
                 claimedFlower = null,
-                replacementPlayerId = revealer.id,
             )
         }
         tableState.players.firstOrNull { player ->
@@ -59,7 +56,6 @@ object TaiwanSpecialFlowerWin {
                 winnerId = winner.id,
                 payerId = revealer.id,
                 claimedFlower = revealedFlower,
-                replacementPlayerId = winner.id,
             )
         }
         if (revealerFlowers.size != 7) return null
@@ -71,7 +67,6 @@ object TaiwanSpecialFlowerWin {
             winnerId = revealer.id,
             payerId = payer.id,
             claimedFlower = flowersOf(payer.id, tableState).single(),
-            replacementPlayerId = revealer.id,
         )
     }
 

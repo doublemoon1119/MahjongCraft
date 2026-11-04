@@ -70,8 +70,6 @@ object TaiwanFlowerFlow {
             val opportunity: TaiwanSpecialFlowerWin.Opportunity,
             val settlement: WinSettlementResult,
             val winningFlower: IdentifiedTile,
-            val replacementTile: IdentifiedTile?,
-            val steps: List<Step>,
         ) : Result
     }
 
@@ -208,7 +206,7 @@ object TaiwanFlowerFlow {
         is Result.Completed -> copy(steps = listOf(step) + steps)
         is Result.Exhausted -> copy(steps = listOf(step) + steps)
         is Result.AwaitingDecision -> copy(steps = listOf(step) + steps)
-        is Result.Won -> copy(steps = listOf(step) + steps)
+        is Result.Won -> error("A flower replacement chain does not complete a special flower win")
     }
 
     /**
@@ -233,68 +231,11 @@ object TaiwanFlowerFlow {
             val drawn = Step.ReplacementDrawn(pending.revealingPlayerId, supplemented.replacementTile)
             return process(supplemented.tableState, pending.playerOrderIds, pending.playerOrderIndex).withLeadingStep(drawn)
         }
-        var acceptedState = pending.tableState
-        pending.opportunity.claimedFlower?.let { claimed ->
-            acceptedState = transferFlower(
-                tableState = acceptedState,
-                flower = claimed,
-                fromPlayerId = pending.opportunity.payerId ?: error("Claimed flower requires a payer"),
-                toPlayerId = pending.opportunity.winnerId,
-            )
-        }
-        val replacement = if (pending.replacementCompleted) {
-            null
-        } else {
-            TaiwanFlowerReplacement.supplement(acceptedState, pending.opportunity.replacementPlayerId)
-                ?: return Result.Exhausted(
-                    acceptedState,
-                    pending.revealingPlayerId,
-                    pending.revealedFlower,
-                    emptyList(),
-                )
-        }
-        val finalState = replacement?.tableState ?: acceptedState
         return Result.Won(
-            tableState = finalState,
+            tableState = pending.tableState,
             opportunity = pending.opportunity,
-            settlement = TaiwanSpecialFlowerWin.settle(finalState, pending.opportunity),
+            settlement = TaiwanSpecialFlowerWin.settle(pending.tableState, pending.opportunity),
             winningFlower = pending.opportunity.claimedFlower ?: pending.revealedFlower,
-            replacementTile = replacement?.replacementTile,
-            steps = listOfNotNull(
-                replacement?.let { Step.ReplacementDrawn(pending.opportunity.replacementPlayerId, it.replacementTile) },
-            ),
-        )
-    }
-
-    /** 將已公開花牌從付款者的花區移交給花胡玩家。 */
-    private fun transferFlower(
-        tableState: TableState,
-        flower: IdentifiedTile,
-        fromPlayerId: Uuid,
-        toPlayerId: Uuid,
-    ): TableState {
-        val from = tableState.players.first { it.id == fromPlayerId }
-        val to = tableState.players.first { it.id == toPlayerId }
-        val fromFlowers = from.tileAreas[TaiwanPlayerTileAreaIds.FLOWERS]?.tiles.orEmpty()
-        require(fromFlowers.any { it.id == flower.id }) { "Claimed flower must belong to the paying player" }
-        val toFlowers = to.tileAreas[TaiwanPlayerTileAreaIds.FLOWERS]?.tiles.orEmpty()
-        return tableState.copy(
-            players = tableState.players.map { player ->
-                when (player.id) {
-                    fromPlayerId -> player.copy(
-                        tileAreas = player.tileAreas.withArea(
-                            TaiwanPlayerTileAreaIds.FLOWERS,
-                            fromFlowers.filterNot { it.id == flower.id },
-                        ),
-                    )
-
-                    toPlayerId -> player.copy(
-                        tileAreas = player.tileAreas.withArea(TaiwanPlayerTileAreaIds.FLOWERS, toFlowers + flower),
-                    )
-
-                    else -> player
-                }
-            },
         )
     }
 }

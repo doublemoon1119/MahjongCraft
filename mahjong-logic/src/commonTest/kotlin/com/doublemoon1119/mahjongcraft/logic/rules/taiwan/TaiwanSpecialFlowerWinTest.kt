@@ -47,7 +47,6 @@ class TaiwanSpecialFlowerWinTest {
         assertEquals(winner.id, opportunity.winnerId)
         assertEquals(revealer.id, opportunity.payerId)
         assertEquals(revealed, opportunity.claimedFlower)
-        assertEquals(winner.id, opportunity.replacementPlayerId)
     }
 
     /** 公開第七花的玩家可以搶走另一家先前公開的唯一花牌。 */
@@ -65,7 +64,6 @@ class TaiwanSpecialFlowerWinTest {
         assertEquals(revealer.id, opportunity.winnerId)
         assertEquals(payer.id, opportunity.payerId)
         assertEquals(claimed, opportunity.claimedFlower)
-        assertEquals(revealer.id, opportunity.replacementPlayerId)
     }
 
     /** 不足七張花時不建立特殊花胡資格。 */

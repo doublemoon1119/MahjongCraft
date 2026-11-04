@@ -159,7 +159,6 @@ object TaiwanFlowerRuleDecisionResolver : RuleDecisionResolver {
             RuleDecisionResolution(
                 tableState = scored.withoutPendingFlower(),
                 nextStep = null,
-                playerAreaPresentationSteps = result.steps.toPresentationSteps(),
                 win = RuleDecisionWin(
                     outcome = RuleDecisionWinOutcome(
                         outcomeId = when (result.opportunity.type) {

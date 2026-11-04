@@ -10,19 +10,6 @@ import kotlin.uuid.Uuid
 /** 台灣麻將公開花牌與從保留區補牌的純狀態操作。 */
 object TaiwanFlowerReplacement {
     /**
-     * 一次已完成的補花。
-     *
-     * @property tableState 花牌已公開、補牌已加入指定玩家手牌的桌況。
-     * @property revealedFlower 本次公開的花牌。
-     * @property replacementTile 本次從保留區取得的補牌。
-     */
-    data class Completed(
-        val tableState: TableState,
-        val revealedFlower: IdentifiedTile,
-        val replacementTile: IdentifiedTile,
-    )
-
-    /**
      * 一次只取得補牌、不再公開花牌的結果。
      *
      * @property tableState 補牌已加入指定玩家手牌的桌況。
@@ -62,26 +49,6 @@ object TaiwanFlowerReplacement {
             players = tableState.players.toMutableList().apply { this[index] = updated },
             publicTileEvidenceIds = tableState.publicTileEvidenceIds + flower.id,
         )
-    }
-
-    /**
-     * 公開花牌並從保留區缺口側補一張牌，活牌尾端同時補入保留區。
-     *
-     * @param tableState 補花前的桌況。
-     * @param revealingPlayerId 公開花牌的玩家。
-     * @param flower 要公開的花牌。
-     * @param replacementPlayerId 接收補牌的玩家；七搶一成立時可以不同於亮花者。
-     * @return 完成結果；花牌無效或已無合法補牌時為 null。
-     */
-    fun replace(
-        tableState: TableState,
-        revealingPlayerId: Uuid,
-        flower: IdentifiedTile,
-        replacementPlayerId: Uuid = revealingPlayerId,
-    ): Completed? {
-        val revealed = reveal(tableState, revealingPlayerId, flower) ?: return null
-        val supplemented = supplement(revealed, replacementPlayerId) ?: return null
-        return Completed(supplemented.tableState, flower, supplemented.replacementTile)
     }
 
     /**

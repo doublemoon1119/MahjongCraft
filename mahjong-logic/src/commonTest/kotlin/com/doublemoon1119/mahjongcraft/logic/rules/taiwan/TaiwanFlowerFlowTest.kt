@@ -124,9 +124,9 @@ class TaiwanFlowerFlowTest {
         assertEquals(listOf(TaiwanFlowerFlow.Step.ReplacementDrawn(table.players[1].id, replacement)), result.steps)
     }
 
-    /** 七花玩家接受時取得被搶花並由自己補牌，只有亮花者付款；補牌回報為呈現步驟。 */
+    /** 七花玩家接受時被搶的花留在亮花者花區、不另外補牌，只有亮花者付款。 */
     @Test
-    fun `accepting seven flowers transfers the flower and replacement`() {
+    fun `accepting seven flowers keeps the claimed flower in place without a replacement`() {
         val flowers = flowerTiles()
         val replacement = ordinary(Tile.Honor.East)
         val table = table(
@@ -141,11 +141,28 @@ class TaiwanFlowerFlowTest {
 
         val result = assertIs<TaiwanFlowerFlow.Result.Won>(TaiwanFlowerFlow.resolve(awaiting.pending, accepted = true))
 
-        assertEquals(8, result.tableState.players[0].tileAreas[TaiwanPlayerTileAreaIds.FLOWERS]?.tiles?.size)
-        assertEquals(0, result.tableState.players[1].tileAreas[TaiwanPlayerTileAreaIds.FLOWERS]?.tiles?.size)
-        assertEquals(replacement, result.tableState.players[0].hand.lastDrawn)
+        assertEquals(7, result.tableState.players[0].tileAreas[TaiwanPlayerTileAreaIds.FLOWERS]?.tiles?.size)
+        assertEquals(listOf(flowers.last()), result.tableState.players[1].tileAreas[TaiwanPlayerTileAreaIds.FLOWERS]?.tiles)
+        assertEquals(flowers.last(), result.winningFlower)
+        assertEquals(awaiting.pending.tableState.tileWall, result.tableState.tileWall)
+        assertEquals(awaiting.pending.tableState.reservedWallTiles, result.tableState.reservedWallTiles)
         assertEquals(setOf(table.players[1].id), result.settlement.paymentsByPlayerId.keys)
-        assertEquals(listOf(TaiwanFlowerFlow.Step.ReplacementDrawn(table.players[0].id, replacement)), result.steps)
+    }
+
+    /** 已沒有合法補牌時，別家亮出最後一花只會公開並流局，不開放七搶一。 */
+    @Test
+    fun `seven flowers is not offered when no replacement remains`() {
+        val flowers = flowerTiles()
+        val table = table(
+            hands = listOf(emptyList(), listOf(flowers.last()), emptyList(), emptyList()),
+            liveTiles = emptyList(),
+            publicFlowers = listOf(flowers.take(7), emptyList(), emptyList(), emptyList()),
+        )
+
+        val result = assertIs<TaiwanFlowerFlow.Result.Exhausted>(TaiwanFlowerFlow.process(table, listOf(table.players[1].id)))
+
+        assertEquals(flowers.last(), result.revealedFlower)
+        assertEquals(table.players[1].id, result.revealingPlayerId)
     }
 
     /** 建立具有固定保留區與指定手牌、活牌的四人桌況。 */
