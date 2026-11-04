@@ -44,6 +44,7 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameSnapshotSync
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.HandSortPreferenceStore
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.PlayerActionContextResolver
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.PlayerDecisionTimerFactory
+import com.doublemoon1119.mahjongcraft.flow.server.game.service.RuleDecisionWinPresentationStager
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.WinPresentationHandoff
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.WinSettlementDetailResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.AbortGameUseCase
@@ -162,6 +163,7 @@ val flowServerModule = module {
     factory<PlayerDecisionTimerFactory>()
     single<WinPresentationHandoff>()
     single<WinSettlementDetailResolverRegistry>()
+    single<RuleDecisionWinPresentationStager>()
     factory<AdvanceAutomaticRuleDecisionUseCase>()
     factory<AdvanceRoundUseCase>()
     factory<BeginRuleDecisionUseCase>()

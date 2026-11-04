@@ -25,6 +25,8 @@ import com.doublemoon1119.mahjongcraft.flow.persistence.format.rule.toDomain
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.rule.toPersistenceDto
 import com.doublemoon1119.mahjongcraft.flow.server.api.registration.PostActionExhaustiveDrawResolverRegistrar
 import com.doublemoon1119.mahjongcraft.flow.server.api.registration.RuleDecisionResolverRegistrar
+import com.doublemoon1119.mahjongcraft.flow.server.api.registration.WinSettlementDetailResolverRegistrar
+import com.doublemoon1119.mahjongcraft.flow.server.game.service.WinSettlementDetailResolverDefinition
 import com.doublemoon1119.mahjongcraft.flow.server.game.taiwan.TaiwanFourKansResolver
 import com.doublemoon1119.mahjongcraft.flow.server.game.taiwan.TaiwanFourWindsResolver
 import com.doublemoon1119.mahjongcraft.logic.api.registration.ComponentRegistrar
@@ -65,6 +67,10 @@ object BundledTaiwanExtension : MahjongExtension {
 
     override fun registerRuleDecisionResolvers(registry: RuleDecisionResolverRegistrar) {
         registry.register(TaiwanFlowerRuleDecisionResolver)
+    }
+
+    override fun registerWinSettlementDetailResolvers(registry: WinSettlementDetailResolverRegistrar) {
+        registry.register(WinSettlementDetailResolverDefinition(BuiltInRuleModuleIds.TAIWAN, TaiwanWinSettlementDetailResolver))
     }
 
     /** 登記固定的四槓流局與可選的四風連打判定。 */

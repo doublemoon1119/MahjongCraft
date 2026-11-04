@@ -5,6 +5,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryFact
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.BuiltInRoundOutcomeIds
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameError
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionTiming
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionWinOutcome
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinRoundContinuationContext
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinRoundDirective
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.applyTo
@@ -90,14 +91,21 @@ class ResolveWinRoundContinuationUseCase(
         ) { game ->
             if (game == null) return@updateGame game to Outcome.Error(GameError.GameNotFound(gameId))
             val settledTableState = game.tableState
+            val ruleDecisionWin = game.ruleDecisionWin
+            check(ruleDecisionWin == null || ruleDecisionWin.winnerPlayerIds == winnerPlayerIds) {
+                "Rule decision win winners must match the recorded winners"
+            }
             val module = moduleRegistry.getModule(settledTableState.config)
-            val context = buildContext(previousTableState, settledTableState, winnerPlayerIds)
+            val context = buildContext(previousTableState, settledTableState, winnerPlayerIds, ruleDecisionWin)
             val directive = resolverRegistry.resolve(context, module)
             when (directive) {
                 WinRoundDirective.EndRound -> {
-                    val responsiblePlayerId = previousTableState.pendingReaction?.discarderId
-                        ?: previousTableState.pendingRobbingReaction?.declarerId
-                    val outcomeId = if (responsiblePlayerId == null) {
+                    val resolvedResponsiblePlayerIds = ruleDecisionWin?.responsiblePlayerIds
+                        ?: (previousTableState.pendingReaction?.discarderId ?: previousTableState.pendingRobbingReaction?.declarerId)
+                            ?.takeIf { id -> settledTableState.players.any { it.id == id } }
+                            ?.let(::setOf)
+                            .orEmpty()
+                    val outcomeId = ruleDecisionWin?.outcomeId ?: if (resolvedResponsiblePlayerIds.isEmpty()) {
                         BuiltInRoundOutcomeIds.TSUMO
                     } else {
                         BuiltInRoundOutcomeIds.RON
@@ -108,10 +116,7 @@ class ResolveWinRoundContinuationUseCase(
                             outcomeId = outcomeId,
                             classification = RoundCompletionClassification.WIN,
                             beneficiaryPlayerIds = winnerPlayerIds,
-                            responsiblePlayerIds = responsiblePlayerId
-                                ?.takeIf { id -> settledTableState.players.any { it.id == id } }
-                                ?.let(::setOf)
-                                ?: emptySet(),
+                            responsiblePlayerIds = resolvedResponsiblePlayerIds,
                         ),
                     )
                     game.copy(
@@ -119,18 +124,16 @@ class ResolveWinRoundContinuationUseCase(
                             outcomeId = outcomeId,
                             classification = RoundCompletionClassification.WIN,
                             beneficiaryPlayerIds = winnerPlayerIds,
-                            responsiblePlayerIds = responsiblePlayerId
-                                ?.takeIf { id -> settledTableState.players.any { it.id == id } }
-                                ?.let(::setOf)
-                                ?: emptySet(),
+                            responsiblePlayerIds = resolvedResponsiblePlayerIds,
                             transitionDirective = transitionDirective,
                             settledScoresByPlayerId = settledTableState.players.associate { it.id to it.score },
                         ),
+                        ruleDecisionWin = null,
                     ) to Outcome.Success(directive)
                 }
 
                 is WinRoundDirective.ContinueRound -> {
-                    val continued = game.copy(tableState = directive.applyTo(settledTableState))
+                    val continued = game.copy(tableState = directive.applyTo(settledTableState), ruleDecisionWin = null)
                     val withDecision = ruleDecisionResolverRegistry
                         ?.takeIf { continued.pendingRuleDecision == null }
                         ?.let { registry -> RuleDecisionWindows.open(continued, RuleDecisionTiming.WIN_CONTINUES, module, registry).game }
@@ -149,27 +152,34 @@ class ResolveWinRoundContinuationUseCase(
      * 從結算前後的桌況重建 [WinRoundContinuationContext]——放銃者／搶槓宣告者身分要從
      * [previousTableState] 尚未清除的 `pendingReaction`／`pendingRobbingReaction` 還原（自摸時兩者皆為
      * null）；胡牌張則優先取任一贏家剛記錄的 [GameAction.Ron.tileId]，自摸時改用贏家的 `lastDrawn`
-     * （[DeclareTsumoUseCase] 不會清除它）。
+     * （[DeclareTsumoUseCase] 不會清除它）。規則選擇流程直接成立的和牌沒有放銃者，胡牌張取自該和牌結果。
      *
      * @param previousTableState 胡牌指令送出前的桌況。
      * @param settledTableState 胡牌結算後的桌況。
      * @param winnerPlayerIds 本次胡牌的贏家識別碼集合。
+     * @param ruleDecisionWin 規則選擇流程直接成立的和牌；一般自摸與榮和時為 null。
      * @return 提供給後續決策解析器的胡牌情境。
      */
     private fun buildContext(
         previousTableState: TableState,
         settledTableState: TableState,
         winnerPlayerIds: Set<Uuid>,
+        ruleDecisionWin: RuleDecisionWinOutcome?,
     ): WinRoundContinuationContext {
         val anyWinner = settledTableState.players.first { it.id in winnerPlayerIds }
         val ronAction = anyWinner.actionHistory.lastOrNull { it is GameAction.Ron } as? GameAction.Ron
-        val winningTileId = ronAction?.tileId
+        val winningTileId = ruleDecisionWin?.winningTileId
+            ?: ronAction?.tileId
             ?: checkNotNull(anyWinner.hand.lastDrawn?.id) { "Tsumo winner must still hold the winning tile as lastDrawn" }
         return WinRoundContinuationContext(
             previousTableState = previousTableState,
             settledTableState = settledTableState,
             winnerPlayerIds = winnerPlayerIds,
-            ronDiscarderId = previousTableState.pendingReaction?.discarderId ?: previousTableState.pendingRobbingReaction?.declarerId,
+            ronDiscarderId = if (ruleDecisionWin == null) {
+                previousTableState.pendingReaction?.discarderId ?: previousTableState.pendingRobbingReaction?.declarerId
+            } else {
+                null
+            },
             winningTileId = winningTileId,
         )
     }

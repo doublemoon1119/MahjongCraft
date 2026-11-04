@@ -22,6 +22,7 @@ fun Game.toRuntimeStatePersistenceDto(): GameRuntimeStatePersistenceDto = GameRu
     roundCompletion = roundCompletion?.toPersistenceDto(),
     matchEndReasonId = matchEndReasonId,
     pendingRuleDecision = pendingRuleDecision?.toPersistenceDto(),
+    ruleDecisionWin = ruleDecisionWin?.toPersistenceDto(),
     hostId = hostId.toString(),
     roomPlayerIds = roomPlayerIds.map(Uuid::toString),
     roomAdmission = roomAdmission.toPersistenceDto(),

@@ -1,5 +1,7 @@
 package com.doublemoon1119.mahjongcraft.flow.server.game.service
 
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.DrawFollowUpPresentationStep
+import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.RuleDecisionPlayerAreaPresentationStep
 import com.doublemoon1119.mahjongcraft.logic.base.Hand
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPlayerTileAreaIds
@@ -7,6 +9,7 @@ import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleModule
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.threeplayer.ThreePlayerRiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.threeplayer.ThreePlayerRiichiRuleModule
+import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TAIWAN_REVEAL_FLOWER_ACTION
 import com.doublemoon1119.mahjongcraft.logic.table.PlayerTileAreas
 import com.doublemoon1119.mahjongcraft.logic.table.TileWall
 import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPhysicalLayout
@@ -20,6 +23,7 @@ import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFact
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
@@ -98,12 +102,92 @@ class RuleDecisionPresentationUpdateTest {
         )
         val publisher = FakeGamePresentationPublisher()
 
-        RuleDecisionPresentationUpdate(previous, current).publish(publisher, threePlayerModule, componentRegistry = bundledCoreExtensionRegistries().componentRegistry)
+        val followUpStep = DrawFollowUpPresentationStep(
+            action = TAIWAN_REVEAL_FLOWER_ACTION,
+            setAsideTileId = north.id,
+            drawnTileIds = listOf(replacement.id),
+            physicalWallTransitionPhases = emptyList(),
+            scoring = null,
+        )
+        RuleDecisionPresentationUpdate(
+            previous = previous,
+            current = current,
+            playerAreaSteps = listOf(RuleDecisionPlayerAreaPresentationStep.FollowUp(current.players.single().id, followUpStep)),
+        ).publish(publisher, threePlayerModule, componentRegistry = bundledCoreExtensionRegistries().componentRegistry)
 
         val update = publisher.getPublishedPlayerTiles(current.id, 0)
         assertEquals(listOf(replacement.id), update?.standingTileIds)
         assertEquals(listOf(north.id), update?.setAsideTileIds)
+        assertEquals(listOf(followUpStep), update?.followUpSteps)
         assertEquals(listOf(current.physicalWallLayout), publisher.getPublishedWallLayoutUpdates(current.id))
+    }
+
+    /** 選擇完成後才補入摸牌位的牌，應以一般摸牌呈現，並排在同一玩家後續的移出補牌之前。 */
+    @Test
+    fun `draw step presents the replacement as newly drawn before follow-up steps`() {
+        val flower = FakeIdentifiedTileFactory.create(Tile.Honor.North)
+        val drawn = FakeIdentifiedTileFactory.create(Tile.Honor.White)
+        val replacement = FakeIdentifiedTileFactory.create(Tile.Honor.Red)
+        val previous = FakeTableStateFactory.create(config = module.config, tileWall = TileWall(listOf(drawn, replacement)))
+        val playerId = previous.players.first().id
+        val current = previous.copy(
+            players = previous.players.mapIndexed { index, player ->
+                if (index == 0) player.copy(hand = player.hand.copy(lastDrawn = replacement)) else player
+            },
+            tileWall = TileWall(emptyList()),
+        )
+        val followUpStep = DrawFollowUpPresentationStep(
+            action = TAIWAN_REVEAL_FLOWER_ACTION,
+            setAsideTileId = flower.id,
+            drawnTileIds = listOf(replacement.id),
+            physicalWallTransitionPhases = emptyList(),
+            scoring = null,
+        )
+        val publisher = FakeGamePresentationPublisher()
+
+        RuleDecisionPresentationUpdate(
+            previous = previous,
+            current = current,
+            playerAreaSteps = listOf(
+                RuleDecisionPlayerAreaPresentationStep.Draw(playerId, drawn.id),
+                RuleDecisionPlayerAreaPresentationStep.FollowUp(playerId, followUpStep),
+            ),
+        ).publish(publisher, module, componentRegistry = bundledCoreExtensionRegistries().componentRegistry)
+
+        val update = publisher.getPublishedPlayerTiles(current.id, 0)
+        assertEquals(true, update?.isNewlyDrawn)
+        assertEquals(listOf(followUpStep), update?.followUpSteps)
+    }
+
+    /** 補入摸牌位的步驟排在同一玩家其他牌區變化之後時，無法以一般摸牌呈現，應拒絕。 */
+    @Test
+    fun `draw step after a follow-up step is rejected`() {
+        val drawn = FakeIdentifiedTileFactory.create(Tile.Honor.White)
+        val previous = FakeTableStateFactory.create(config = module.config)
+        val playerId = previous.players.first().id
+        val current = previous.copy(
+            players = previous.players.mapIndexed { index, player ->
+                if (index == 0) player.copy(hand = player.hand.copy(lastDrawn = drawn)) else player
+            },
+        )
+        val followUpStep = DrawFollowUpPresentationStep(
+            action = TAIWAN_REVEAL_FLOWER_ACTION,
+            setAsideTileId = FakeIdentifiedTileFactory.create(Tile.Honor.North).id,
+            drawnTileIds = emptyList(),
+            physicalWallTransitionPhases = emptyList(),
+            scoring = null,
+        )
+
+        assertFailsWith<IllegalStateException> {
+            RuleDecisionPresentationUpdate(
+                previous = previous,
+                current = current,
+                playerAreaSteps = listOf(
+                    RuleDecisionPlayerAreaPresentationStep.FollowUp(playerId, followUpStep),
+                    RuleDecisionPlayerAreaPresentationStep.Draw(playerId, drawn.id),
+                ),
+            ).publish(FakeGamePresentationPublisher(), module, componentRegistry = bundledCoreExtensionRegistries().componentRegistry)
+        }
     }
 
     /** 僅改變移出區而未改動手牌時，仍須更新該玩家的牌區。 */

@@ -2,6 +2,7 @@ package com.doublemoon1119.mahjongcraft.flow.server.game.service
 
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.GamePresentationPublisher
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.toPresentation
+import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.RuleDecisionPlayerAreaPresentationStep
 import com.doublemoon1119.mahjongcraft.logic.component.ComponentRegistry
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
@@ -12,10 +13,12 @@ import com.doublemoon1119.mahjongcraft.logic.tile.component.publicFaceUpWallTile
  *
  * @property previous 規則選擇結果套用前的桌況。
  * @property current 此次交易提交的最終桌況。
+ * @property playerAreaSteps 此次交易中依序成立的玩家牌區變化。
  */
 internal data class RuleDecisionPresentationUpdate(
     val previous: TableState,
     val current: TableState,
+    val playerAreaSteps: List<RuleDecisionPlayerAreaPresentationStep> = emptyList(),
 ) {
     /**
      * 更新變動的牌區及局況，不重播初次發牌。
@@ -28,6 +31,7 @@ internal data class RuleDecisionPresentationUpdate(
         if (previous == current) return
         val visibleWallTiles = module.publicFaceUpWallTileIds(current, componentRegistry)
         val previousVisibleWallTiles = module.publicFaceUpWallTileIds(previous, componentRegistry)
+        val stepsByPlayerId = playerAreaSteps.groupBy(RuleDecisionPlayerAreaPresentationStep::playerId)
         current.physicalWallLayout?.let { layout ->
             if (previous.physicalWallLayout != layout || previousVisibleWallTiles != visibleWallTiles) {
                 publisher.publishWallLayoutUpdated(
@@ -42,7 +46,13 @@ internal data class RuleDecisionPresentationUpdate(
             val oldPlayer = previous.players.firstOrNull { it.id == player.id }
             val setAsideTiles = player.setAsideTiles
             val oldSetAsideTiles = oldPlayer?.setAsideTiles.orEmpty()
-            if (oldPlayer?.hand != player.hand || oldSetAsideTiles != setAsideTiles) {
+            val steps = stepsByPlayerId[player.id].orEmpty()
+            val draw = steps.firstOrNull() as? RuleDecisionPlayerAreaPresentationStep.Draw
+            val followUpSteps = steps.drop(if (draw == null) 0 else 1).map { step ->
+                check(step is RuleDecisionPlayerAreaPresentationStep.FollowUp) { "A rule decision draw must precede the player's other steps" }
+                step.followUpStep
+            }
+            if (oldPlayer?.hand != player.hand || oldSetAsideTiles != setAsideTiles || steps.isNotEmpty()) {
                 publisher.publishPlayerTilesUpdated(
                     gameId = current.id,
                     seatIndex = seatIndex,
@@ -50,6 +60,8 @@ internal data class RuleDecisionPresentationUpdate(
                     drawnTileId = player.hand.lastDrawn?.id,
                     melds = player.hand.melds.map { it.toPresentation(current.config.revealsClosedKanTiles) },
                     setAsideTileIds = setAsideTiles.map { it.id },
+                    isNewlyDrawn = draw != null,
+                    followUpSteps = followUpSteps,
                 )
             }
         }

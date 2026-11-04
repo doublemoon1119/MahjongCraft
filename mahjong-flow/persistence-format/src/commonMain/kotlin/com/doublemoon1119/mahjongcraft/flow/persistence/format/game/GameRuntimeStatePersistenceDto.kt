@@ -17,6 +17,7 @@ import kotlin.time.Duration
  * @property roundCompletion 最近一次本局結算的權威摘要。
  * @property matchEndReasonId 整場終局的完整 namespaced 原因；尚未終局時為 null。
  * @property pendingRuleDecision 尚未完成的規則選擇流程；沒有時為 null。
+ * @property ruleDecisionWin 規則選擇流程剛成立、尚待結束本局流程取用的和牌結果；沒有時為 null。
  * @property hostId 開局時的房主 UUID 字串，見 [Game.hostId]。
  * @property roomPlayerIds 開局前房間成員的固定顯示順序。
  * @property interruptedBaseByPlayerId 因 server session 結束而中斷的那一次決策，其尚未使用的
@@ -36,6 +37,7 @@ data class GameRuntimeStatePersistenceDto(
     val roundCompletion: RoundCompletionSummaryPersistenceDto?,
     val matchEndReasonId: String?,
     val pendingRuleDecision: PendingRuleDecisionPersistenceDto?,
+    val ruleDecisionWin: RuleDecisionWinOutcomePersistenceDto?,
     val hostId: String,
     val roomPlayerIds: List<String>,
     val interruptedBaseByPlayerId: Map<String, Duration>,

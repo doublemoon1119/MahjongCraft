@@ -4,6 +4,8 @@ import com.doublemoon1119.mahjongcraft.ai.BuiltInAiStrategyKeys
 import com.doublemoon1119.mahjongcraft.ai.RandomAiStrategy
 import com.doublemoon1119.mahjongcraft.flow.api.event.CommittedMatchEventBatch
 import com.doublemoon1119.mahjongcraft.flow.common.error.ExtensionFailurePolicy
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.taiwan.TaiwanRoundOutcomeIds
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.taiwan.TaiwanWinSettlementIds
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.RuleDecisionResolverRegistry
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.logic.base.TileTypeId
@@ -11,9 +13,12 @@ import com.doublemoon1119.mahjongcraft.logic.config.MahjongRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.module.BuiltInRuleModuleIds
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.RiichiTileValues
+import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanFlowerRuleDecisionIds
+import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanGameAction
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.tile.TaiwanTileTypes
 import com.doublemoon1119.mahjongcraft.platform.minecraft.achievement.GameAchievementResolver
 import com.doublemoon1119.mahjongcraft.platform.minecraft.achievement.GameAchievementResolverRegistryImpl
+import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionVocabularyRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionVocabularyRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.ai.AiStrategyDisplayNameDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.ai.AiStrategyDisplayNameRegistry
@@ -40,6 +45,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.character.AiCharacterR
 import com.doublemoon1119.mahjongcraft.platform.minecraft.character.AiCharacterRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.character.BuiltInAiCharacters
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.DecisionStatusDisplayNameRegistryImpl
+import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.RuleDecisionDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.RuleDecisionDisplayNameRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.history.HistoryDiscardMarkerDisplayRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.player.PlayerPortraitSourceRegistryImpl
@@ -51,9 +57,12 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.RuleModuleDisplay
 import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.RuleModuleDisplayNameRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.riichi.BundledRiichiMinecraftExtension
 import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.taiwan.BundledTaiwanMinecraftExtension
+import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.taiwan.TaiwanWinSettlementPresentation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.ExhaustiveDrawReasonDisplayNameRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.MatchSettlementPresentationTemplateRegistryImpl
+import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.RoundOutcomeDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.RoundOutcomeDisplayNameRegistryImpl
+import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.WinSettlementPresentationTemplateRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.WinSettlementPresentationTemplateRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.showcase.WinCelebrationShowcaseRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.sound.GameActionSoundPresentationRegistryImpl
@@ -117,7 +126,6 @@ class MinecraftMahjongExtensionBootstrapTest {
     /**
      * 以明確的獨立 registry graph 執行啟動流程，供隔離的單元測試使用。
      *
-     * @param characterRegistry 角色描述登記表。
      * @param extensions 要依序執行註冊的 extension。
      * @param tileAssetRegistry 麻將牌資產 registry。
      * @param aiStrategyDisplayNameRegistry AI 策略名稱 registry。
@@ -128,6 +136,11 @@ class MinecraftMahjongExtensionBootstrapTest {
      * @param automaticControlDisplayRegistry 自動控制顯示 registry。
      * @param ruleCatalogueRegistry 規則目錄 registry。
      * @param gameAchievementResolverRegistry 成果判定 registry。
+     * @param characterRegistry 角色描述登記表。
+     * @param gameActionVocabularyRegistry 遊戲動作用語 registry。
+     * @param ruleDecisionDisplayNameRegistry 規則選擇名稱 registry。
+     * @param roundOutcomeDisplayNameRegistry 本局結果名稱 registry。
+     * @param winSettlementTemplateRegistry 胡牌結算模板 registry。
      * @return 註冊來源與分類 key 的結果快照。
      */
     private fun registerAndFreeze(
@@ -142,6 +155,10 @@ class MinecraftMahjongExtensionBootstrapTest {
         ruleCatalogueRegistry: RuleCatalogueRegistryImpl = RuleCatalogueRegistryImpl(),
         gameAchievementResolverRegistry: GameAchievementResolverRegistryImpl = GameAchievementResolverRegistryImpl(),
         characterRegistry: AiCharacterRegistry = AiCharacterRegistryImpl(),
+        gameActionVocabularyRegistry: GameActionVocabularyRegistry = GameActionVocabularyRegistryImpl(),
+        ruleDecisionDisplayNameRegistry: RuleDecisionDisplayNameRegistry = RuleDecisionDisplayNameRegistryImpl(),
+        roundOutcomeDisplayNameRegistry: RoundOutcomeDisplayNameRegistry = RoundOutcomeDisplayNameRegistryImpl(),
+        winSettlementTemplateRegistry: WinSettlementPresentationTemplateRegistry = WinSettlementPresentationTemplateRegistryImpl(),
     ): MinecraftMahjongExtensionRegistrationResult = MinecraftMahjongExtensionBootstrap.registerAndFreeze(
         extensions = extensions,
         registries = MinecraftPresentationRegistries(
@@ -150,18 +167,18 @@ class MinecraftMahjongExtensionBootstrapTest {
             tileEmojiRegistry = tileEmojiRegistry,
             tileLabelRegistry = tileLabelRegistry,
             ruleCatalogueRegistry = ruleCatalogueRegistry,
-            gameActionVocabularyRegistry = GameActionVocabularyRegistryImpl(),
+            gameActionVocabularyRegistry = gameActionVocabularyRegistry,
             automaticControlDisplayRegistry = automaticControlDisplayRegistry,
             decisionStatusDisplayNameRegistry = DecisionStatusDisplayNameRegistryImpl(),
             gameActionSoundPresentationRegistry = GameActionSoundPresentationRegistryImpl(),
             exhaustiveDrawReasonDisplayNameRegistry = ExhaustiveDrawReasonDisplayNameRegistryImpl(),
-            roundOutcomeDisplayNameRegistry = RoundOutcomeDisplayNameRegistryImpl(),
+            roundOutcomeDisplayNameRegistry = roundOutcomeDisplayNameRegistry,
             historyDiscardMarkerDisplayRegistry = HistoryDiscardMarkerDisplayRegistryImpl(),
-            ruleDecisionDisplayNameRegistry = RuleDecisionDisplayNameRegistryImpl(),
+            ruleDecisionDisplayNameRegistry = ruleDecisionDisplayNameRegistry,
             roundInfoLineDisplayRegistry = RoundInfoLineDisplayRegistryImpl(),
             tablePropDescriberRegistry = TablePropDescriberRegistryImpl(),
             winCelebrationShowcaseRegistry = WinCelebrationShowcaseRegistryImpl(),
-            winSettlementTemplateRegistry = WinSettlementPresentationTemplateRegistryImpl(),
+            winSettlementTemplateRegistry = winSettlementTemplateRegistry,
             matchSettlementTemplateRegistry = MatchSettlementPresentationTemplateRegistryImpl(),
             aiStrategyDisplayNameRegistry = aiStrategyDisplayNameRegistry,
             ruleModuleDisplayNameRegistry = ruleModuleDisplayNameRegistry,
@@ -324,6 +341,10 @@ class MinecraftMahjongExtensionBootstrapTest {
         val tileEmojiRegistry = TileEmojiRegistryImpl()
         val tileLabelRegistry = TileLabelRegistryImpl()
         val ruleCatalogueRegistry = RuleCatalogueRegistryImpl()
+        val gameActionVocabularyRegistry = GameActionVocabularyRegistryImpl()
+        val ruleDecisionDisplayNameRegistry = RuleDecisionDisplayNameRegistryImpl()
+        val roundOutcomeDisplayNameRegistry = RoundOutcomeDisplayNameRegistryImpl()
+        val winSettlementTemplateRegistry = WinSettlementPresentationTemplateRegistryImpl()
 
         val result = registerAndFreeze(
             extensions = BundledMinecraftMahjongExtensions.all,
@@ -334,6 +355,10 @@ class MinecraftMahjongExtensionBootstrapTest {
             tileEmojiRegistry = tileEmojiRegistry,
             tileLabelRegistry = tileLabelRegistry,
             ruleCatalogueRegistry = ruleCatalogueRegistry,
+            gameActionVocabularyRegistry = gameActionVocabularyRegistry,
+            ruleDecisionDisplayNameRegistry = ruleDecisionDisplayNameRegistry,
+            roundOutcomeDisplayNameRegistry = roundOutcomeDisplayNameRegistry,
+            winSettlementTemplateRegistry = winSettlementTemplateRegistry,
         )
 
         assertEquals("flower_spring", tileAssetRegistry.find(TaiwanTileTypes.SPRING))
@@ -365,6 +390,19 @@ class MinecraftMahjongExtensionBootstrapTest {
         assertNull(tileLabelRegistry.find("example_unregistered"))
         assertTrue(ruleCatalogueRegistry.isFrozen)
         assertEquals(setOf(BuiltInRuleModuleIds.RIICHI, BuiltInRuleModuleIds.RIICHI_THREE_PLAYER), ruleCatalogueRegistry.registrationKeys)
+        assertEquals(
+            MinecraftMessageKeys.GAME_ACTION_REVEAL_FLOWER,
+            gameActionVocabularyRegistry.find(BuiltInRuleModuleIds.TAIWAN, TaiwanGameAction.RevealFlower.id)?.labelKey,
+        )
+        assertTrue(TaiwanFlowerRuleDecisionIds.PROCESS_FLOWERS.let(ruleDecisionDisplayNameRegistry::find) != null)
+        assertTrue(TaiwanFlowerRuleDecisionIds.SPECIAL_FLOWER_WIN.let(ruleDecisionDisplayNameRegistry::find) != null)
+        assertTrue(TaiwanRoundOutcomeIds.EIGHT_FLOWERS.let(roundOutcomeDisplayNameRegistry::find) != null)
+        assertTrue(TaiwanRoundOutcomeIds.SEVEN_FLOWERS.let(roundOutcomeDisplayNameRegistry::find) != null)
+        assertEquals(
+            TaiwanWinSettlementPresentation.TEMPLATE_KEY,
+            winSettlementTemplateRegistry.findTemplateForRule(BuiltInRuleModuleIds.TAIWAN)?.key,
+        )
+        assertTrue(winSettlementTemplateRegistry.findDetailTextFormatter(TaiwanWinSettlementIds.TAI_FIELD) != null)
         assertEquals(listOf(null, BundledRiichiMinecraftExtension.id, BundledTaiwanMinecraftExtension.id), result.sources.map { it.extensionId })
         assertEquals(
             setOf(BuiltInRuleModuleIds.RIICHI, BuiltInRuleModuleIds.RIICHI_THREE_PLAYER),

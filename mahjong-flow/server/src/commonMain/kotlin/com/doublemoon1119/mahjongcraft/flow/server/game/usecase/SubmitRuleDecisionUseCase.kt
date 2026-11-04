@@ -9,10 +9,13 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.accepts
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.GamePresentationPublisher
 import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.RuleContractViolationException
+import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.RuleDecisionResolution
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.RuleDecisionResolverRegistry
+import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.RuleDecisionWin
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepository
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameSnapshotSynchronizer
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.RuleDecisionPresentationUpdate
+import com.doublemoon1119.mahjongcraft.flow.server.game.service.RuleDecisionWinPresentationStager
 import com.doublemoon1119.mahjongcraft.logic.component.ComponentRegistry
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import kotlin.uuid.Uuid
@@ -26,6 +29,7 @@ import kotlin.uuid.Uuid
  * @property resolverRegistry 規則選擇步驟解析器註冊中心。
  * @property snapshotSynchronizer 對局快照同步服務。
  * @property presentationPublisher 更新規則選擇結果改變的牌區與局況。
+ * @property winPresentationStager 將規則選擇步驟直接成立的和牌交給共用胡牌演出與結算呈現。
  */
 class SubmitRuleDecisionUseCase(
     private val gameRepository: GameRepository,
@@ -34,6 +38,7 @@ class SubmitRuleDecisionUseCase(
     private val snapshotSynchronizer: GameSnapshotSynchronizer,
     private val presentationPublisher: GamePresentationPublisher,
     private val componentRegistry: ComponentRegistry,
+    private val winPresentationStager: RuleDecisionWinPresentationStager,
 ) {
     /**
      * 對指定對局提交一次規則選擇。
@@ -99,8 +104,10 @@ class SubmitRuleDecisionUseCase(
                 submissionsByPlayerId = ruleDecision.submissionsByPlayerId + (playerId to submission),
             )
             var updated = game.copy(pendingRuleDecision = submitted)
+            var completedResolution: RuleDecisionResolution? = null
             if (submitted.isComplete) {
                 val resolution = resolver.resolve(game.tableState, submitted, module)
+                completedResolution = resolution
                 updated = RuleDecisionWindows.advance(game, submitted, resolution, module, resolverRegistry)
             }
             updated to RuleDecisionSubmissionUpdate(
@@ -116,16 +123,32 @@ class SubmitRuleDecisionUseCase(
                     ),
                 ),
                 presentationUpdate = if (submitted.isComplete) {
-                    RuleDecisionPresentationUpdate(game.tableState, updated.tableState)
+                    RuleDecisionPresentationUpdate(
+                        previous = game.tableState,
+                        current = updated.tableState,
+                        playerAreaSteps = completedResolution?.playerAreaPresentationSteps.orEmpty(),
+                    )
                 } else {
                     null
                 },
+                win = completedResolution?.win,
             )
         }
         val outcome = result.outcome
         if (outcome is Outcome.Success) {
             result.presentationUpdate?.let { update ->
-                update.publish(presentationPublisher, moduleRegistry.getModule(update.current.config), componentRegistry)
+                val module = moduleRegistry.getModule(update.current.config)
+                update.publish(presentationPublisher, module, componentRegistry)
+                result.win?.let { win ->
+                    winPresentationStager.stage(
+                        gameId = gameId,
+                        previousState = update.previous,
+                        currentState = update.current,
+                        module = module,
+                        aiPlayerIds = gameRepository.getGame(gameId)?.aiPlayerIds.orEmpty(),
+                        win = win,
+                    )
+                }
             }
             snapshotSynchronizer.syncAll(gameId)
         }
@@ -138,10 +161,12 @@ class SubmitRuleDecisionUseCase(
      * @property outcome 對外回傳的提交結果。
      * @property historyDraft 本次成功提交的歷史事件；失敗時為 null。
      * @property presentationUpdate 已完成步驟的桌況差異；尚未收齊或提交失敗時為 null。
+     * @property win 已完成步驟直接成立的和牌；沒有時為 null。
      */
     private data class RuleDecisionSubmissionUpdate(
         val outcome: Outcome<Unit, GameError>,
         val historyDraft: HistoryEventDraft?,
         val presentationUpdate: RuleDecisionPresentationUpdate? = null,
+        val win: RuleDecisionWin? = null,
     )
 }

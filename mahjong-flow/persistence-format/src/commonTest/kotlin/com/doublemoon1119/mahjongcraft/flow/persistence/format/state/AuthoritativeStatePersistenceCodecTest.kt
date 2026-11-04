@@ -13,6 +13,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionInputS
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionStep
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionSubmission
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionTiming
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionWinOutcome
 import com.doublemoon1119.mahjongcraft.flow.common.room.model.Room
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.core.PersistenceDtoRegistry
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.core.PersistenceEnvelopeDto
@@ -146,6 +147,25 @@ class AuthoritativeStatePersistenceCodecTest {
         val decoded = codec.decode(codec.encode(emptyList(), games))
 
         assertEquals(games.associateBy(Game::id), decoded.games)
+    }
+
+    /** 驗證規則選擇流程剛成立、尚待結束本局流程取用的和牌結果能 round-trip。 */
+    @Test
+    fun `rule decision win round-trips through codec`() {
+        val base = Game(createGame(), GameFlowConfig())
+        val winner = base.tableState.players.single()
+        val game = base.copy(
+            ruleDecisionWin = RuleDecisionWinOutcome(
+                outcomeId = "mahjongcraft:test_special_win",
+                winnerPlayerIds = setOf(winner.id),
+                responsiblePlayerIds = emptySet(),
+                winningTileId = Uuid.random(),
+            ),
+        )
+
+        val decoded = codec.decode(codec.encode(emptyList(), listOf(game)))
+
+        assertEquals(mapOf(game.id to game), decoded.games)
     }
 
     /** 驗證 Room → Game 後的 payload 只包含同 ID Game。 */

@@ -1,19 +1,27 @@
 package com.doublemoon1119.mahjongcraft.bundled
 
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.DrawFollowUpPresentationStep
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.PendingRuleDecision
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionConfig
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionInputSpec
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionStep
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionSubmission
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionTiming
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionWinOutcome
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.taiwan.TaiwanRoundOutcomeIds
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.taiwan.TaiwanSpecialFlowerWinDetail
+import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.RuleDecisionPlayerAreaPresentationStep
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.RuleDecisionResolution
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.RuleDecisionResolver
+import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.RuleDecisionWin
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.config.MahjongRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.module.BuiltInRuleModuleIds
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
+import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TAIWAN_REVEAL_FLOWER_ACTION
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanExhaustiveDrawReason
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanFlowerFlow
+import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanFlowerRuleDecisionIds
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanPendingFlowerFollowUp
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanPlayerTileAreaIds
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanRuleConfig
@@ -60,7 +68,10 @@ object TaiwanFlowerRuleDecisionResolver : RuleDecisionResolver {
         submission: RuleDecisionSubmission,
         ruleModule: MahjongRuleModule<*>,
     ): Boolean = submission is RuleDecisionSubmission.Choice &&
-        submission.optionId in setOf(ACCEPT_OPTION, PASS_OPTION) &&
+        submission.optionId in setOf(
+            TaiwanFlowerRuleDecisionIds.ACCEPT_FLOWER_WIN,
+            TaiwanFlowerRuleDecisionIds.PASS_FLOWER_WIN,
+        ) &&
         playerId in decision.participantPlayerIds
 
     /** 逾時一律放棄花胡並繼續補花。 */
@@ -69,7 +80,7 @@ object TaiwanFlowerRuleDecisionResolver : RuleDecisionResolver {
         decision: PendingRuleDecision,
         playerId: Uuid,
         ruleModule: MahjongRuleModule<*>,
-    ): RuleDecisionSubmission = RuleDecisionSubmission.Choice(PASS_OPTION)
+    ): RuleDecisionSubmission = RuleDecisionSubmission.Choice(TaiwanFlowerRuleDecisionIds.PASS_FLOWER_WIN)
 
     /** 套用自動補花或玩家的花胡選擇。 */
     override fun resolve(
@@ -79,8 +90,8 @@ object TaiwanFlowerRuleDecisionResolver : RuleDecisionResolver {
     ): RuleDecisionResolution {
         require(ruleModule.config is TaiwanRuleConfig) { "Taiwan flower flow requires Taiwan config" }
         val result = when (decision.stepId) {
-            PROCESS_STEP -> TaiwanFlowerFlow.process(tableState, openingOrder(tableState))
-            PROCESS_DRAW_FOLLOW_UP_STEP -> {
+            TaiwanFlowerRuleDecisionIds.PROCESS_FLOWERS -> TaiwanFlowerFlow.process(tableState, openingOrder(tableState))
+            TaiwanFlowerRuleDecisionIds.PROCESS_DRAW_FOLLOW_UP -> {
                 val pending = requireNotNull(tableState.components[TaiwanTableComponents.PENDING_FLOWER_FOLLOW_UP]) {
                     "Taiwan draw follow-up is missing its pending flower"
                 }
@@ -92,10 +103,13 @@ object TaiwanFlowerRuleDecisionResolver : RuleDecisionResolver {
                     ?: error("Taiwan draw follow-up flower is missing")
                 TaiwanFlowerFlow.processRevealed(tableState, pending.playerId, flower)
             }
-            FLOWER_WIN_STEP -> {
+            TaiwanFlowerRuleDecisionIds.SPECIAL_FLOWER_WIN -> {
                 val winnerId = decision.participantPlayerIds.single()
                 val submission = decision.submissionsByPlayerId.getValue(winnerId) as RuleDecisionSubmission.Choice
-                TaiwanFlowerFlow.resolve(reconstructPending(tableState, winnerId, decision.timing), submission.optionId == ACCEPT_OPTION)
+                TaiwanFlowerFlow.resolve(
+                    reconstructPending(tableState, winnerId, decision.timing),
+                    submission.optionId == TaiwanFlowerRuleDecisionIds.ACCEPT_FLOWER_WIN,
+                )
             }
 
             else -> error("Unknown Taiwan flower step: ${decision.stepId}")
@@ -105,14 +119,19 @@ object TaiwanFlowerRuleDecisionResolver : RuleDecisionResolver {
 
     /** 將純規則結果轉成規則選擇流程結果。 */
     private fun resolution(result: TaiwanFlowerFlow.Result, stepIndex: Int): RuleDecisionResolution = when (result) {
-        is TaiwanFlowerFlow.Result.Completed -> RuleDecisionResolution(result.tableState.withoutPendingFlower(), null)
+        is TaiwanFlowerFlow.Result.Completed -> RuleDecisionResolution(
+            tableState = result.tableState.withoutPendingFlower(),
+            nextStep = null,
+            playerAreaPresentationSteps = result.steps.toPresentationSteps(),
+        )
         is TaiwanFlowerFlow.Result.Exhausted -> RuleDecisionResolution(
             result.tableState.withoutPendingFlower().copy(
                 players = result.tableState.players.map { player ->
                     player.recordAction(GameAction.ExhaustiveDraw(TaiwanExhaustiveDrawReason.NoSupplementalTile))
                 },
             ),
-            null,
+            nextStep = null,
+            playerAreaPresentationSteps = result.steps.toPresentationSteps(),
         )
 
         is TaiwanFlowerFlow.Result.AwaitingDecision -> RuleDecisionResolution(
@@ -120,7 +139,8 @@ object TaiwanFlowerRuleDecisionResolver : RuleDecisionResolver {
                 result.pending.revealingPlayerId,
                 result.pending.revealedFlower.id,
             ),
-            flowerWinStep(result.pending.opportunity.winnerId, stepIndex + 1),
+            nextStep = flowerWinStep(result.pending.opportunity.winnerId, stepIndex + 1),
+            playerAreaPresentationSteps = result.steps.toPresentationSteps(),
         )
 
         is TaiwanFlowerFlow.Result.Won -> {
@@ -136,7 +156,31 @@ object TaiwanFlowerRuleDecisionResolver : RuleDecisionResolver {
                     if (player.id == winnerId) updated.recordAction(GameAction.Tsumo) else updated
                 },
             )
-            RuleDecisionResolution(scored.withoutPendingFlower(), null)
+            RuleDecisionResolution(
+                tableState = scored.withoutPendingFlower(),
+                nextStep = null,
+                playerAreaPresentationSteps = result.steps.toPresentationSteps(),
+                win = RuleDecisionWin(
+                    outcome = RuleDecisionWinOutcome(
+                        outcomeId = when (result.opportunity.type) {
+                            TaiwanTaiType.EIGHT_FLOWERS -> TaiwanRoundOutcomeIds.EIGHT_FLOWERS
+                            TaiwanTaiType.SEVEN_FLOWERS -> TaiwanRoundOutcomeIds.SEVEN_FLOWERS
+                            else -> error("Unsupported Taiwan special flower win: ${result.opportunity.type}")
+                        },
+                        winnerPlayerIds = setOf(winnerId),
+                        responsiblePlayerIds = setOfNotNull(result.opportunity.payerId),
+                        winningTileId = result.winningFlower.id,
+                    ),
+                    scoreDeltas = scored.players.associate { player ->
+                        val previousScore = result.tableState.players.first { it.id == player.id }.score
+                        player.id to (player.score - previousScore)
+                    },
+                    extensionDetail = TaiwanSpecialFlowerWinDetail(
+                        taiTypeId = result.opportunity.type.id,
+                        tai = result.opportunity.type.tai,
+                    ),
+                ),
+            )
         }
     }
 
@@ -189,23 +233,41 @@ object TaiwanFlowerRuleDecisionResolver : RuleDecisionResolver {
     }
 
     /** 建立自動補花步驟。 */
-    private fun processStep(index: Int) = RuleDecisionStep(PROCESS_STEP, index, emptyMap())
+    private fun processStep(index: Int) = RuleDecisionStep(TaiwanFlowerRuleDecisionIds.PROCESS_FLOWERS, index, emptyMap())
 
     /** 建立摸牌後自動續跑的步驟。 */
-    private fun processDrawFollowUpStep(index: Int) = RuleDecisionStep(PROCESS_DRAW_FOLLOW_UP_STEP, index, emptyMap())
+    private fun processDrawFollowUpStep(index: Int) = RuleDecisionStep(TaiwanFlowerRuleDecisionIds.PROCESS_DRAW_FOLLOW_UP, index, emptyMap())
 
     /** 建立花胡接受／放棄步驟。 */
     private fun flowerWinStep(winnerId: Uuid, index: Int) = RuleDecisionStep(
-        FLOWER_WIN_STEP,
+        TaiwanFlowerRuleDecisionIds.SPECIAL_FLOWER_WIN,
         index,
-        mapOf(winnerId to RuleDecisionInputSpec.SingleChoice(listOf(ACCEPT_OPTION, PASS_OPTION))),
+        mapOf(
+            winnerId to RuleDecisionInputSpec.SingleChoice(
+                listOf(TaiwanFlowerRuleDecisionIds.ACCEPT_FLOWER_WIN, TaiwanFlowerRuleDecisionIds.PASS_FLOWER_WIN),
+            ),
+        ),
     )
+}
 
-    private const val PROCESS_STEP = "mahjongcraft:taiwan/process_flowers"
-    private const val PROCESS_DRAW_FOLLOW_UP_STEP = "mahjongcraft:taiwan/process_draw_follow_up"
-    private const val FLOWER_WIN_STEP = "mahjongcraft:taiwan/special_flower_win"
-    private const val ACCEPT_OPTION = "mahjongcraft:taiwan/accept_flower_win"
-    private const val PASS_OPTION = "mahjongcraft:taiwan/pass_flower_win"
+/** 將規則層補花步驟轉成規則選擇結果使用的共用牌區呈現資料。 */
+private fun List<TaiwanFlowerFlow.Step>.toPresentationSteps(): List<RuleDecisionPlayerAreaPresentationStep> = map { step ->
+    when (step) {
+        is TaiwanFlowerFlow.Step.FlowerRevealed -> RuleDecisionPlayerAreaPresentationStep.FollowUp(
+            playerId = step.playerId,
+            followUpStep = DrawFollowUpPresentationStep(
+                action = TAIWAN_REVEAL_FLOWER_ACTION,
+                setAsideTileId = step.flower.id,
+                drawnTileIds = listOfNotNull(step.replacementTile?.id),
+                physicalWallTransitionPhases = emptyList(),
+                scoring = null,
+            ),
+        )
+        is TaiwanFlowerFlow.Step.ReplacementDrawn -> RuleDecisionPlayerAreaPresentationStep.Draw(
+            playerId = step.playerId,
+            tileId = step.replacementTile.id,
+        )
+    }
 }
 
 /** 清除已完成的摸牌後花牌處理標記。 */

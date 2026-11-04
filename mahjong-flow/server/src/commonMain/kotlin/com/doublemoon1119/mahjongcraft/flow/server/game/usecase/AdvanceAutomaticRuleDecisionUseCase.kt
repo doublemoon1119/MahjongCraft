@@ -3,10 +3,13 @@ package com.doublemoon1119.mahjongcraft.flow.server.game.usecase
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryEventDraft
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryFact
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.GamePresentationPublisher
+import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.RuleDecisionPlayerAreaPresentationStep
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.RuleDecisionResolverRegistry
+import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.RuleDecisionWin
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepository
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameSnapshotSynchronizer
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.RuleDecisionPresentationUpdate
+import com.doublemoon1119.mahjongcraft.flow.server.game.service.RuleDecisionWinPresentationStager
 import com.doublemoon1119.mahjongcraft.logic.component.ComponentRegistry
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import kotlin.uuid.Uuid
@@ -20,6 +23,7 @@ import kotlin.uuid.Uuid
  * @property resolverRegistry 取得規則提供的選擇流程解析器。
  * @property snapshotSynchronizer 更新選擇流程變更後的觀看者快照。
  * @property presentationPublisher 更新規則選擇結果改變的牌區與局況。
+ * @property winPresentationStager 將規則選擇步驟直接成立的和牌交給共用胡牌演出與結算呈現。
  */
 class AdvanceAutomaticRuleDecisionUseCase(
     private val gameRepository: GameRepository,
@@ -28,6 +32,7 @@ class AdvanceAutomaticRuleDecisionUseCase(
     private val snapshotSynchronizer: GameSnapshotSynchronizer,
     private val presentationPublisher: GamePresentationPublisher,
     private val componentRegistry: ComponentRegistry,
+    private val winPresentationStager: RuleDecisionWinPresentationStager,
 ) {
     /**
      * 收斂目前連續的自動步驟。
@@ -51,12 +56,16 @@ class AdvanceAutomaticRuleDecisionUseCase(
             val resolver = resolverRegistry.find(module.id)
                 ?: return@updateGame currentGame to AutomaticRuleDecisionUpdate(emptyList())
             var updated = currentGame
+            val playerAreaPresentationSteps = mutableListOf<RuleDecisionPlayerAreaPresentationStep>()
+            val wins = mutableListOf<RuleDecisionWin>()
             val drafts = buildList {
                 repeat(MAX_AUTOMATIC_RULE_DECISION_STEPS) {
                     val currentRuleDecision = updated.pendingRuleDecision
                         ?: return@repeat
                     if (currentRuleDecision.participantPlayerIds.isNotEmpty()) return@repeat
                     val resolution = resolver.resolve(updated.tableState, currentRuleDecision, module)
+                    playerAreaPresentationSteps += resolution.playerAreaPresentationSteps
+                    resolution.win?.let(wins::add)
                     updated = RuleDecisionWindows.advance(updated, currentRuleDecision, resolution, module, resolverRegistry)
                     add(
                         HistoryEventDraft(
@@ -74,14 +83,31 @@ class AdvanceAutomaticRuleDecisionUseCase(
             if (updated.pendingRuleDecision?.participantPlayerIds?.isEmpty() == true) {
                 error("Rule decision did not converge after $MAX_AUTOMATIC_RULE_DECISION_STEPS automatic steps")
             }
+            check(wins.size <= 1) { "Automatic rule decision produced more than one win" }
             updated to AutomaticRuleDecisionUpdate(
                 historyDrafts = drafts,
-                presentationUpdate = RuleDecisionPresentationUpdate(currentGame.tableState, updated.tableState),
+                presentationUpdate = RuleDecisionPresentationUpdate(
+                    previous = currentGame.tableState,
+                    current = updated.tableState,
+                    playerAreaSteps = playerAreaPresentationSteps,
+                ),
+                win = wins.singleOrNull(),
             )
         }
         if (update.changed) {
             update.presentationUpdate?.let { presentation ->
-                presentation.publish(presentationPublisher, moduleRegistry.getModule(presentation.current.config), componentRegistry)
+                val module = moduleRegistry.getModule(presentation.current.config)
+                presentation.publish(presentationPublisher, module, componentRegistry)
+                update.win?.let { win ->
+                    winPresentationStager.stage(
+                        gameId = gameId,
+                        previousState = presentation.previous,
+                        currentState = presentation.current,
+                        module = module,
+                        aiPlayerIds = gameRepository.getGame(gameId)?.aiPlayerIds.orEmpty(),
+                        win = win,
+                    )
+                }
             }
             snapshotSynchronizer.syncAll(gameId)
         }
@@ -93,10 +119,12 @@ class AdvanceAutomaticRuleDecisionUseCase(
      *
      * @property historyDrafts 此次收斂需要記錄的自動步驟事實。
      * @property presentationUpdate 此次收斂的桌況差異；沒有待處理步驟時為 null。
+     * @property win 自動步驟直接成立的和牌；沒有時為 null。
      */
     private data class AutomaticRuleDecisionUpdate(
         val historyDrafts: List<HistoryEventDraft>,
         val presentationUpdate: RuleDecisionPresentationUpdate? = null,
+        val win: RuleDecisionWin? = null,
     ) {
         /** 是否至少完成一個選擇步驟。 */
         val changed: Boolean get() = historyDrafts.isNotEmpty()

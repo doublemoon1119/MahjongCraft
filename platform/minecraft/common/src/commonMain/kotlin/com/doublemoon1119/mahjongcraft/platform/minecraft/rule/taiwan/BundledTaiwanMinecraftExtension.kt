@@ -1,14 +1,25 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.rule.taiwan
 
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.taiwan.TaiwanRoundOutcomeIds
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.taiwan.TaiwanWinSettlementIds
 import com.doublemoon1119.mahjongcraft.logic.module.BuiltInRuleModuleIds
+import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanFlowerRuleDecisionIds
+import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanGameAction
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.tile.TaiwanTileTypes
 import com.doublemoon1119.mahjongcraft.metadata.MahjongCraftMetadata
+import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionVocabulary
+import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionVocabularyDefinition
+import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.GameActionVocabularyRegistrar
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.GameConfigPresentationRegistrar
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.MinecraftTileAssetRegistrar
+import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.RoundOutcomeDisplayNameRegistrar
+import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.RuleDecisionDisplayNameRegistrar
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.RuleModuleDisplayNameRegistrar
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.TileEmojiRegistrar
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.TileLabelRegistrar
+import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.WinSettlementPresentationTemplateRegistrar
+import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.RuleDecisionDisplayNameDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.extension.MinecraftMahjongExtension
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.BuiltInGameConfigFields.RULE
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.BuiltInGameConfigFields.SCORE
@@ -18,6 +29,11 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.room.BuiltInGameConfig
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.BuiltInGameConfigFields.translationKey
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.GameConfigPresentationDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.RuleModuleDisplayNameDefinition
+import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.PresentationValue
+import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.RoundOutcomeDisplayNameDefinition
+import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.WinSettlementDetailTextFormatterDefinition
+import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.WinSettlementPresentationFieldProviderDefinition
+import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.WinSettlementRuleTemplateBindingDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftMessageKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.BuiltInMinecraftTileAppearanceIds
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftRuleTileAppearanceDefinition
@@ -50,6 +66,53 @@ object BundledTaiwanMinecraftExtension : MinecraftMahjongExtension {
 
     override fun registerRuleModuleDisplayNames(registry: RuleModuleDisplayNameRegistrar) {
         registry.register(RuleModuleDisplayNameDefinition(BuiltInRuleModuleIds.TAIWAN, MinecraftMessageKeys.RULE_MODULE_TAIWAN))
+    }
+
+    override fun registerGameActionVocabulary(registry: GameActionVocabularyRegistrar) {
+        registry.register(
+            GameActionVocabularyDefinition(
+                ruleModuleId = BuiltInRuleModuleIds.TAIWAN,
+                actionId = TaiwanGameAction.RevealFlower.id,
+                vocabulary = GameActionVocabulary(
+                    labelKey = MinecraftMessageKeys.GAME_ACTION_REVEAL_FLOWER,
+                    order = REVEAL_FLOWER_ACTION_ORDER,
+                    descriptionKey = GAME_ACTION_REVEAL_FLOWER_DESCRIPTION,
+                ),
+            ),
+        )
+    }
+
+    override fun registerRuleDecisionDisplayNames(registry: RuleDecisionDisplayNameRegistrar) {
+        listOf(
+            TaiwanFlowerRuleDecisionIds.PROCESS_FLOWERS to RULE_DECISION_PROCESS_FLOWERS,
+            TaiwanFlowerRuleDecisionIds.PROCESS_DRAW_FOLLOW_UP to RULE_DECISION_PROCESS_DRAW_FOLLOW_UP,
+            TaiwanFlowerRuleDecisionIds.SPECIAL_FLOWER_WIN to RULE_DECISION_SPECIAL_FLOWER_WIN,
+            TaiwanFlowerRuleDecisionIds.ACCEPT_FLOWER_WIN to RULE_DECISION_ACCEPT_FLOWER_WIN,
+            TaiwanFlowerRuleDecisionIds.PASS_FLOWER_WIN to RULE_DECISION_PASS_FLOWER_WIN,
+        ).forEach { (id, translationKey) ->
+            registry.register(RuleDecisionDisplayNameDefinition(id, translationKey))
+        }
+    }
+
+    override fun registerRoundOutcomeDisplayNames(registry: RoundOutcomeDisplayNameRegistrar) {
+        registry.register(RoundOutcomeDisplayNameDefinition(TaiwanRoundOutcomeIds.EIGHT_FLOWERS, TaiwanWinSettlementPresentation.EIGHT_FLOWERS))
+        registry.register(RoundOutcomeDisplayNameDefinition(TaiwanRoundOutcomeIds.SEVEN_FLOWERS, TaiwanWinSettlementPresentation.SEVEN_FLOWERS))
+    }
+
+    override fun registerWinSettlementPresentationTemplates(registry: WinSettlementPresentationTemplateRegistrar) {
+        registry.register(TaiwanWinSettlementPresentation.TEMPLATE)
+        registry.register(WinSettlementRuleTemplateBindingDefinition(BuiltInRuleModuleIds.TAIWAN, TaiwanWinSettlementPresentation.TEMPLATE_KEY))
+        registry.register(
+            WinSettlementPresentationFieldProviderDefinition(TaiwanWinSettlementPresentation.OUTCOME_TITLE) { snapshot ->
+                TaiwanWinSettlementPresentation.outcomeTranslationKey(snapshot.outcomeId)?.let(PresentationValue::TextValue)
+            },
+        )
+        registry.register(
+            WinSettlementDetailTextFormatterDefinition(
+                TaiwanWinSettlementIds.TAI_FIELD,
+                TaiwanWinSettlementPresentation.taiText,
+            ),
+        )
     }
 
     override fun registerTileEmojis(registry: TileEmojiRegistrar) {
@@ -134,3 +197,24 @@ private fun plantFlower(chinese: String, order: String): TileLabel = TileLabel(
     topRight = TileLabelText(order, TileLabelColor.RED),
     forced = true,
 )
+
+/** 公開花牌動作在操作說明中的文字。 */
+private const val GAME_ACTION_REVEAL_FLOWER_DESCRIPTION: String = "mahjongcraft.hud.action.reveal_flower.description"
+
+/** 局前自動補花步驟的顯示文字。 */
+private const val RULE_DECISION_PROCESS_FLOWERS: String = "mahjongcraft.rule_decision.taiwan.process_flowers"
+
+/** 摸牌後接續補花步驟的顯示文字。 */
+private const val RULE_DECISION_PROCESS_DRAW_FOLLOW_UP: String = "mahjongcraft.rule_decision.taiwan.process_draw_follow_up"
+
+/** 特殊花牌和牌選擇的顯示文字。 */
+private const val RULE_DECISION_SPECIAL_FLOWER_WIN: String = "mahjongcraft.rule_decision.taiwan.special_flower_win"
+
+/** 接受特殊花牌和牌選項的顯示文字。 */
+private const val RULE_DECISION_ACCEPT_FLOWER_WIN: String = "mahjongcraft.rule_decision.taiwan.accept_flower_win"
+
+/** 放棄特殊花牌和牌選項的顯示文字。 */
+private const val RULE_DECISION_PASS_FLOWER_WIN: String = "mahjongcraft.rule_decision.taiwan.pass_flower_win"
+
+/** 公開花牌在操作卡中的順序。 */
+private const val REVEAL_FLOWER_ACTION_ORDER: Int = 8

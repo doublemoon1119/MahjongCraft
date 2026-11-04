@@ -225,6 +225,10 @@ class GameFlowCoordinator(
             return stepBefore != gameRepository.getGame(gameId)
         }
         if (advanceAutomaticRuleDecisionUseCase?.invoke(gameId) == true) {
+            handleHandConclusionIfPresent(
+                gameId = gameId,
+                previousState = stepBefore.tableState,
+            )
             return stepBefore != gameRepository.getGame(gameId)
         }
 
@@ -553,7 +557,6 @@ class GameFlowCoordinator(
             if ((opened as? Outcome.Success)?.value == true) return result
             handleHandConclusionIfPresent(
                 gameId = gameId,
-                playerId = playerId,
                 previousState = previousState,
             )
         }
@@ -663,12 +666,10 @@ class GameFlowCoordinator(
      * [WinRoundDirective.ContinueRound] 的桌況變化已經由該用例原子套用完畢，這裡不需要再做任何事。
      *
      * @param gameId 對局識別碼。
-     * @param playerId 本次命令的玩家識別碼。
      * @param previousState 執行命令前的桌況。
      */
     private suspend fun handleHandConclusionIfPresent(
         gameId: Uuid,
-        playerId: Uuid,
         previousState: TableState,
     ) {
         val currentState = gameRepository.getTableState(gameId) ?: return

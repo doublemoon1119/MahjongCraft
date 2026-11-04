@@ -11,6 +11,8 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionTiming
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.RuleContractViolationException
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.RuleDecisionResolution
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.RuleDecisionResolverRegistry
+import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.RuleDecisionWin
+import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import kotlin.uuid.Uuid
@@ -60,6 +62,7 @@ internal object RuleDecisionWindows {
      *
      * [RuleDecisionTiming.BEFORE_EXHAUSTIVE_DRAW] 的視窗關閉時排定一般流局結算；其他時間點的接續已由開窗前的流程排定，
      * 或直接回到一般摸打。[RuleDecisionTiming.ROUND_END] 時本局已結算，規則的處理結果不能改變任何玩家的分數。
+     * 處理結果直接成立和牌時，和牌結果寫入 [Game.ruleDecisionWin]，由結束本局的流程取用。
      *
      * @param game 開著 [decision] 的對局。
      * @param decision 剛收齊或沒有參與者的視窗。
@@ -67,7 +70,8 @@ internal object RuleDecisionWindows {
      * @param module 對局採用的規則模組。
      * @param resolverRegistry 規則提供的選擇流程。
      * @return 推進或關閉視窗後的對局。
-     * @throws RuleContractViolationException 下一步需要玩家選擇卻沒有時間設定時，或本局結算後的選擇改變了分數時。
+     * @throws RuleContractViolationException 下一步需要玩家選擇卻沒有時間設定時、本局結算後的選擇改變了分數時，
+     * 或直接成立的和牌不符合 [RuleDecisionResolution.win] 的條件時。
      */
     fun advance(
         game: Game,
@@ -82,6 +86,7 @@ internal object RuleDecisionWindows {
                 "Rule decisions after the round is settled cannot change scores",
             )
         }
+        resolution.win?.let { win -> requireValidWin(game, decision, resolution, win) }
         val next = resolution.nextStep?.let { step ->
             requireTimeConfiguration(game, step, module, resolverRegistry)
             PendingRuleDecision.open(step, decision.timing)
@@ -91,7 +96,42 @@ internal object RuleDecisionWindows {
             tableState = resolution.tableState,
             pendingRuleDecision = next,
             pendingTransition = if (settlesDraw) PendingGameTransition.SettleExhaustiveDraw else game.pendingTransition,
+            ruleDecisionWin = resolution.win?.outcome ?: game.ruleDecisionWin,
         )
+    }
+
+    /**
+     * 直接成立的和牌必須結束選擇流程、發生在本局結算前、與分數變動一致，且贏家已記錄和牌動作，
+     * 結束本局的流程才能據此收尾。
+     *
+     * @param game 開著 [decision] 的對局。
+     * @param decision 剛收齊或沒有參與者的視窗。
+     * @param resolution 規則的處理結果。
+     * @param win 規則回報的和牌。
+     * @throws RuleContractViolationException 任一條件不成立時。
+     */
+    private fun requireValidWin(
+        game: Game,
+        decision: PendingRuleDecision,
+        resolution: RuleDecisionResolution,
+        win: RuleDecisionWin,
+    ) {
+        val previousScores = scoresOf(game.tableState)
+        val players = resolution.tableState.players
+        val valid = game.ruleDecisionWin == null &&
+            resolution.nextStep == null &&
+            decision.timing != RuleDecisionTiming.ROUND_END &&
+            win.scoreDeltas == players.associate { player -> player.id to (player.score - previousScores.getValue(player.id)) } &&
+            win.outcome.winnerPlayerIds.all { winnerId ->
+                val lastAction = players.firstOrNull { it.id == winnerId }?.actionHistory?.lastOrNull()
+                lastAction is GameAction.Tsumo || lastAction is GameAction.Ron
+            }
+        if (!valid) {
+            throw RuleContractViolationException(
+                GameAbortReasonIds.RULE_EXECUTION_FAILED,
+                "Rule decision win must close the decision before round end, match its score changes and record the winners' win action",
+            )
+        }
     }
 
     /**

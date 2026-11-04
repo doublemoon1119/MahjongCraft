@@ -1,6 +1,7 @@
 package com.doublemoon1119.mahjongcraft.flow.server.game.usecase
 
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.ContinuingWinSettlementDetail
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionWinOutcome
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinRoundContinuationContext
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinRoundDirective
 import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
@@ -26,6 +27,7 @@ import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 import kotlin.uuid.Uuid
 
@@ -108,6 +110,70 @@ class ResolveWinRoundContinuationUseCaseTest {
 
         assertEquals(discarderId, observedContext.ronDiscarderId)
         assertEquals(winningTile.id, observedContext.winningTileId)
+    }
+
+    /** 規則選擇流程直接成立和牌時，應使用對局保存的結果、成立牌與責任玩家，不從一般自摸與榮和狀態猜測，並在用完後清除。 */
+    @Test
+    fun `invoke uses and clears the rule decision win recorded on the game`() = runTest {
+        val winningTileId = Uuid.random()
+        val winner = FakeMahjongPlayerFactory.create()
+        val responsible = FakeMahjongPlayerFactory.create()
+        val previousState = FakeTableStateFactory.create(
+            id = gameId,
+            players = listOf(winner, responsible),
+            config = RiichiRuleConfig(),
+        )
+        val settledState = FakeTableStateFactory.create(
+            id = gameId,
+            players = listOf(winner.recordAction(GameAction.Tsumo), responsible),
+            config = RiichiRuleConfig(),
+        )
+        gameRepo.setTableState(settledState)
+        gameRepo.setGame(
+            checkNotNull(gameRepo.getGame(gameId)).copy(
+                ruleDecisionWin = RuleDecisionWinOutcome(
+                    outcomeId = "test:special_flower_win",
+                    winnerPlayerIds = setOf(winner.id),
+                    responsiblePlayerIds = setOf(responsible.id),
+                    winningTileId = winningTileId,
+                ),
+            ),
+        )
+        var observedWinningTileId: Uuid? = null
+        var observedDiscarderId: Uuid? = Uuid.random()
+        val registry = WinRoundContinuationResolverRegistry().apply {
+            register(
+                object : WinRoundContinuationResolver {
+                    override val id: String = "test:special"
+                    override val ruleModuleId: String = this@ResolveWinRoundContinuationUseCaseTest.ruleModuleId
+                    override val priority: Int = 0
+
+                    override fun resolve(context: WinRoundContinuationContext, ruleModule: MahjongRuleModule<*>): WinRoundDirective {
+                        observedWinningTileId = context.winningTileId
+                        observedDiscarderId = context.ronDiscarderId
+                        return WinRoundDirective.EndRound
+                    }
+                },
+            )
+            freeze()
+        }
+        val useCase = ResolveWinRoundContinuationUseCase(gameRepo, moduleRegistry, registry, snapshotSynchronizer)
+
+        val result = useCase(
+            gameId = gameId,
+            previousTableState = previousState,
+            winnerPlayerIds = setOf(winner.id),
+        )
+
+        assertTrue(result is Outcome.Success)
+        assertEquals(winningTileId, observedWinningTileId)
+        assertNull(observedDiscarderId)
+        val game = checkNotNull(gameRepo.getGame(gameId))
+        assertNull(game.ruleDecisionWin)
+        val completion = checkNotNull(game.roundCompletion)
+        assertEquals("test:special_flower_win", completion.outcomeId)
+        assertEquals(setOf(winner.id), completion.beneficiaryPlayerIds)
+        assertEquals(setOf(responsible.id), completion.responsiblePlayerIds)
     }
 
     /** [WinRoundDirective.ContinueRound] 應被原子套用到權威 [TableState]。 */

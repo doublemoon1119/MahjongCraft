@@ -117,6 +117,7 @@ fun AuthoritativeStatePersistenceDto.toGames(
         roundCompletion = runtimeState.roundCompletion?.toDomain(),
         matchEndReasonId = runtimeState.matchEndReasonId,
         pendingRuleDecision = runtimeState.pendingRuleDecision?.toDomain(),
+        ruleDecisionWin = runtimeState.ruleDecisionWin?.toDomain(),
         hostId = Uuid.parse(runtimeState.hostId), roomPlayerIds = runtimeState.roomPlayerIds.map(Uuid::parse),
         aiPlayerStrategyKeys = runtimeState.toAiPlayerStrategyKeys(),
         interruptedBaseByPlayerId = runtimeState.toInterruptedBaseByPlayerId(),

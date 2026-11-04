@@ -19,6 +19,9 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.policy.GameVisibilityPol
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.FakeGameRepository
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.runAsSingleWrite
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameSnapshotSynchronizer
+import com.doublemoon1119.mahjongcraft.flow.server.game.service.RuleDecisionWinPresentationStager
+import com.doublemoon1119.mahjongcraft.flow.server.game.service.WinPresentationHandoff
+import com.doublemoon1119.mahjongcraft.flow.server.game.service.WinSettlementDetailResolverRegistry
 import com.doublemoon1119.mahjongcraft.logic.base.Hand
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.logic.config.MahjongRuleConfig
@@ -67,8 +70,8 @@ class SubmitRuleDecisionUseCaseTest {
             resolverRegistry = resolvers,
             snapshotSynchronizer = GameSnapshotSynchronizer(repository, FakeGameSnapshotRepository(), GameVisibilityPolicyImpl(moduleRegistry, componentRegistry = bundledCoreExtensionRegistries().componentRegistry)),
             presentationPublisher = presentationPublisher,
-
             componentRegistry = bundledCoreExtensionRegistries().componentRegistry,
+            winPresentationStager = RuleDecisionWinPresentationStager(WinPresentationHandoff(), WinSettlementDetailResolverRegistry(bundledCoreExtensionRegistries().componentRegistry)),
         )
         val table = FakeTableStateFactory.create(
             players = listOf(FakeMahjongPlayerFactory.create(id = playerId)),
@@ -150,8 +153,8 @@ class SubmitRuleDecisionUseCaseTest {
             resolverRegistry = resolvers,
             snapshotSynchronizer = snapshotSynchronizer,
             presentationPublisher = presentationPublisher,
-
             componentRegistry = bundledCoreExtensionRegistries().componentRegistry,
+            winPresentationStager = RuleDecisionWinPresentationStager(WinPresentationHandoff(), WinSettlementDetailResolverRegistry(bundledCoreExtensionRegistries().componentRegistry)),
         )
 
         val firstResult = useCase(table.id, firstPlayerId, repository.openWindowId(table.id), RuleDecisionSubmission.Tiles(setOf(firstTile.id)))
@@ -248,8 +251,8 @@ class SubmitRuleDecisionUseCaseTest {
                 GameVisibilityPolicyImpl(moduleRegistry, componentRegistry = bundledCoreExtensionRegistries().componentRegistry),
             ),
             presentationPublisher = presentationPublisher,
-
             componentRegistry = bundledCoreExtensionRegistries().componentRegistry,
+            winPresentationStager = RuleDecisionWinPresentationStager(WinPresentationHandoff(), WinSettlementDetailResolverRegistry(bundledCoreExtensionRegistries().componentRegistry)),
         )
 
         val result = useCase(table.id, firstPlayerId, repository.openWindowId(table.id), RuleDecisionSubmission.Tiles(setOf(firstTile.id)))
@@ -299,8 +302,8 @@ class SubmitRuleDecisionUseCaseTest {
                 GameVisibilityPolicyImpl(moduleRegistry, componentRegistry = bundledCoreExtensionRegistries().componentRegistry),
             ),
             presentationPublisher = presentationPublisher,
-
             componentRegistry = bundledCoreExtensionRegistries().componentRegistry,
+            winPresentationStager = RuleDecisionWinPresentationStager(WinPresentationHandoff(), WinSettlementDetailResolverRegistry(bundledCoreExtensionRegistries().componentRegistry)),
         )
         val invalidTileId = Uuid.random()
 
@@ -353,8 +356,8 @@ class SubmitRuleDecisionUseCaseTest {
                 GameVisibilityPolicyImpl(moduleRegistry, componentRegistry = bundledCoreExtensionRegistries().componentRegistry),
             ),
             presentationPublisher = FakeGamePresentationPublisher(),
-
             componentRegistry = bundledCoreExtensionRegistries().componentRegistry,
+            winPresentationStager = RuleDecisionWinPresentationStager(WinPresentationHandoff(), WinSettlementDetailResolverRegistry(bundledCoreExtensionRegistries().componentRegistry)),
         )
 
         assertFailsWith<RuleContractViolationException> {
@@ -395,8 +398,8 @@ class SubmitRuleDecisionUseCaseTest {
                 GameVisibilityPolicyImpl(moduleRegistry, componentRegistry = bundledCoreExtensionRegistries().componentRegistry),
             ),
             presentationPublisher = FakeGamePresentationPublisher(),
-
             componentRegistry = bundledCoreExtensionRegistries().componentRegistry,
+            winPresentationStager = RuleDecisionWinPresentationStager(WinPresentationHandoff(), WinSettlementDetailResolverRegistry(bundledCoreExtensionRegistries().componentRegistry)),
         )
 
         assertFailsWith<RuleContractViolationException> {
@@ -436,8 +439,8 @@ class SubmitRuleDecisionUseCaseTest {
                 GameVisibilityPolicyImpl(moduleRegistry, componentRegistry = bundledCoreExtensionRegistries().componentRegistry),
             ),
             presentationPublisher = FakeGamePresentationPublisher(),
-
             componentRegistry = bundledCoreExtensionRegistries().componentRegistry,
+            winPresentationStager = RuleDecisionWinPresentationStager(WinPresentationHandoff(), WinSettlementDetailResolverRegistry(bundledCoreExtensionRegistries().componentRegistry)),
         )
 
         val result = useCase(table.id, playerId, earlierWindow.id, RuleDecisionSubmission.Confirmed)
@@ -502,8 +505,8 @@ class SubmitRuleDecisionUseCaseTest {
             resolverRegistry = RuleDecisionResolverRegistry().apply { register(ScoreChangingResolver) },
             snapshotSynchronizer = GameSnapshotSynchronizer(repository, FakeGameSnapshotRepository(), GameVisibilityPolicyImpl(moduleRegistry, componentRegistry = bundledCoreExtensionRegistries().componentRegistry)),
             presentationPublisher = FakeGamePresentationPublisher(),
-
             componentRegistry = bundledCoreExtensionRegistries().componentRegistry,
+            winPresentationStager = RuleDecisionWinPresentationStager(WinPresentationHandoff(), WinSettlementDetailResolverRegistry(bundledCoreExtensionRegistries().componentRegistry)),
         )
         return Triple(repository, useCase, game)
     }

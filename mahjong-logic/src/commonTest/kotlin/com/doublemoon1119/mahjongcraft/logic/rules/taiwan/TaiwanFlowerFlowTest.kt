@@ -70,6 +70,15 @@ class TaiwanFlowerFlowTest {
         assertEquals(listOf(nextPlayerFlower), result.tableState.players[1].tileAreas[TaiwanPlayerTileAreaIds.FLOWERS]?.tiles)
         assertEquals(thirdReplacement, result.tableState.players[0].hand.lastDrawn)
         assertEquals(fourthReplacement, result.tableState.players[1].hand.lastDrawn)
+        assertEquals(
+            listOf(
+                Triple(table.players[0].id, firstFlower, firstReplacement),
+                Triple(table.players[0].id, secondFlower, secondReplacement),
+                Triple(table.players[0].id, firstReplacement, thirdReplacement),
+                Triple(table.players[1].id, nextPlayerFlower, fourthReplacement),
+            ),
+            result.steps.map { step -> step as TaiwanFlowerFlow.Step.FlowerRevealed }.map { step -> Triple(step.playerId, step.flower, step.replacementTile) },
+        )
     }
 
     /** 最後一張活牌仍可補一次，再次遇到花時公開花牌並流局。 */
@@ -92,7 +101,7 @@ class TaiwanFlowerFlowTest {
         assertEquals(16, result.tableState.reservedWallTiles.size)
     }
 
-    /** 七花玩家放過別家最後一花時，由亮花者照常取得補牌。 */
+    /** 七花玩家放過別家最後一花時，由亮花者照常取得補牌，並把這次補牌回報為呈現步驟。 */
     @Test
     fun `passing seven flowers resumes replacement for the revealer`() {
         val flowers = flowerTiles()
@@ -112,9 +121,10 @@ class TaiwanFlowerFlowTest {
         assertEquals(replacement, result.tableState.players[1].hand.lastDrawn)
         assertEquals(7, result.tableState.players[0].tileAreas[TaiwanPlayerTileAreaIds.FLOWERS]?.tiles?.size)
         assertEquals(1, result.tableState.players[1].tileAreas[TaiwanPlayerTileAreaIds.FLOWERS]?.tiles?.size)
+        assertEquals(listOf(TaiwanFlowerFlow.Step.ReplacementDrawn(table.players[1].id, replacement)), result.steps)
     }
 
-    /** 七花玩家接受時取得被搶花並由自己補牌，只有亮花者付款。 */
+    /** 七花玩家接受時取得被搶花並由自己補牌，只有亮花者付款；補牌回報為呈現步驟。 */
     @Test
     fun `accepting seven flowers transfers the flower and replacement`() {
         val flowers = flowerTiles()
@@ -135,6 +145,7 @@ class TaiwanFlowerFlowTest {
         assertEquals(0, result.tableState.players[1].tileAreas[TaiwanPlayerTileAreaIds.FLOWERS]?.tiles?.size)
         assertEquals(replacement, result.tableState.players[0].hand.lastDrawn)
         assertEquals(setOf(table.players[1].id), result.settlement.paymentsByPlayerId.keys)
+        assertEquals(listOf(TaiwanFlowerFlow.Step.ReplacementDrawn(table.players[0].id, replacement)), result.steps)
     }
 
     /** 建立具有固定保留區與指定手牌、活牌的四人桌況。 */

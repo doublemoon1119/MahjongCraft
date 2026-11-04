@@ -12,27 +12,66 @@ import kotlin.uuid.Uuid
  * 本物件不保存可變狀態；[Pending] 帶齊恢復流程所需的身分，重新載入後可以用同一份資料繼續。
  */
 object TaiwanFlowerFlow {
+    /** 一次已成立、需要依序呈現的牌區變化。 */
+    sealed interface Step {
+        /** 接收牌區變化的玩家。 */
+        val playerId: Uuid
+
+        /**
+         * 從手牌公開一張花牌，並在可以補牌時接著補牌。
+         *
+         * @property playerId 公開花牌並接收補牌的玩家。
+         * @property flower 公開到花牌區的牌。
+         * @property replacementTile 從保留區補入手牌的牌；尚待花胡選擇或牌源耗盡時為 null。
+         */
+        data class FlowerRevealed(
+            override val playerId: Uuid,
+            val flower: IdentifiedTile,
+            val replacementTile: IdentifiedTile?,
+        ) : Step
+
+        /**
+         * 補入先前公開花牌時暫停的補牌，例如花胡放過或接受之後。
+         *
+         * @property playerId 接收補牌的玩家。
+         * @property replacementTile 從保留區補入摸牌位的牌。
+         */
+        data class ReplacementDrawn(
+            override val playerId: Uuid,
+            val replacementTile: IdentifiedTile,
+        ) : Step
+    }
+
     /** 一次補花流程的結果。 */
     sealed interface Result {
         /** 所有指定玩家都已沒有待補花牌。 */
-        data class Completed(val tableState: TableState) : Result
+        data class Completed(
+            val tableState: TableState,
+            val steps: List<Step>,
+        ) : Result
 
         /** 已公開最後一張花，但牌牆已無合法補牌，本局應流局。 */
         data class Exhausted(
             val tableState: TableState,
             val revealingPlayerId: Uuid,
             val revealedFlower: IdentifiedTile,
+            val steps: List<Step>,
         ) : Result
 
         /** 特殊花胡成立，必須等待資格玩家接受或放棄。 */
-        data class AwaitingDecision(val pending: Pending) : Result
+        data class AwaitingDecision(
+            val pending: Pending,
+            val steps: List<Step>,
+        ) : Result
 
         /** 玩家接受特殊花胡，呼叫端應套用付款並結束本局。 */
         data class Won(
             val tableState: TableState,
             val opportunity: TaiwanSpecialFlowerWin.Opportunity,
             val settlement: WinSettlementResult,
+            val winningFlower: IdentifiedTile,
             val replacementTile: IdentifiedTile?,
+            val steps: List<Step>,
         ) : Result
     }
 
@@ -76,6 +115,7 @@ object TaiwanFlowerFlow {
         }
         var state = tableState
         var index = playerOrderIndex
+        val steps = mutableListOf<Step>()
         while (index < playerOrderIds.size) {
             val playerId = playerOrderIds[index]
             val flower = state.players.first { it.id == playerId }.hand.standingTiles
@@ -87,25 +127,34 @@ object TaiwanFlowerFlow {
             val revealed = TaiwanFlowerReplacement.reveal(state, playerId, flower)
                 ?: error("Selected flower could not be revealed")
             if (state.tileWall.remainingCount == 0) {
-                return Result.Exhausted(revealed, playerId, flower)
+                steps += Step.FlowerRevealed(playerId, flower, replacementTile = null)
+                return Result.Exhausted(revealed, playerId, flower, steps)
             }
             val beforeReplacement = TaiwanSpecialFlowerWin.findOpportunity(revealed, playerId, flower)
             if (beforeReplacement?.type == TaiwanTaiType.SEVEN_FLOWERS) {
                 return Result.AwaitingDecision(
                     Pending(revealed, beforeReplacement, playerOrderIds, index, playerId, flower, replacementCompleted = false),
+                    steps + Step.FlowerRevealed(playerId, flower, replacementTile = null),
                 )
             }
             val supplemented = TaiwanFlowerReplacement.supplement(revealed, playerId)
-                ?: return Result.Exhausted(revealed, playerId, flower)
+                ?: return Result.Exhausted(
+                    revealed,
+                    playerId,
+                    flower,
+                    steps + Step.FlowerRevealed(playerId, flower, replacementTile = null),
+                )
+            steps += Step.FlowerRevealed(playerId, flower, supplemented.replacementTile)
             state = supplemented.tableState
             val afterReplacement = TaiwanSpecialFlowerWin.findOpportunity(state, playerId, flower)
             if (afterReplacement?.type == TaiwanTaiType.EIGHT_FLOWERS) {
                 return Result.AwaitingDecision(
                     Pending(state, afterReplacement, playerOrderIds, index, playerId, flower, replacementCompleted = true),
+                    steps,
                 )
             }
         }
-        return Result.Completed(state)
+        return Result.Completed(state, steps)
     }
 
     /**
@@ -125,10 +174,17 @@ object TaiwanFlowerFlow {
         if (opportunity?.type == TaiwanTaiType.SEVEN_FLOWERS) {
             return Result.AwaitingDecision(
                 Pending(tableState, opportunity, listOf(playerId), 0, playerId, flower, replacementCompleted = false),
+                listOf(Step.FlowerRevealed(playerId, flower, replacementTile = null)),
             )
         }
         val supplemented = TaiwanFlowerReplacement.supplement(tableState, playerId)
-            ?: return Result.Exhausted(tableState, playerId, flower)
+            ?: return Result.Exhausted(
+                tableState,
+                playerId,
+                flower,
+                listOf(Step.FlowerRevealed(playerId, flower, replacementTile = null)),
+            )
+        val completedStep = Step.FlowerRevealed(playerId, flower, supplemented.replacementTile)
         val afterReplacement = TaiwanSpecialFlowerWin.findOpportunity(supplemented.tableState, playerId, flower)
         if (afterReplacement?.type == TaiwanTaiType.EIGHT_FLOWERS) {
             return Result.AwaitingDecision(
@@ -141,9 +197,18 @@ object TaiwanFlowerFlow {
                     flower,
                     replacementCompleted = true,
                 ),
+                listOf(completedStep),
             )
         }
-        return process(supplemented.tableState, listOf(playerId))
+        return process(supplemented.tableState, listOf(playerId)).withLeadingStep(completedStep)
+    }
+
+    /** 在接續流程的結果前補上先成立的牌區變化。 */
+    private fun Result.withLeadingStep(step: Step): Result = when (this) {
+        is Result.Completed -> copy(steps = listOf(step) + steps)
+        is Result.Exhausted -> copy(steps = listOf(step) + steps)
+        is Result.AwaitingDecision -> copy(steps = listOf(step) + steps)
+        is Result.Won -> copy(steps = listOf(step) + steps)
     }
 
     /**
@@ -155,13 +220,18 @@ object TaiwanFlowerFlow {
      */
     fun resolve(pending: Pending, accepted: Boolean): Result {
         if (!accepted) {
-            val resumed = if (pending.replacementCompleted) {
-                pending.tableState
-            } else {
-                TaiwanFlowerReplacement.supplement(pending.tableState, pending.revealingPlayerId)?.tableState
-                    ?: return Result.Exhausted(pending.tableState, pending.revealingPlayerId, pending.revealedFlower)
+            if (pending.replacementCompleted) {
+                return process(pending.tableState, pending.playerOrderIds, pending.playerOrderIndex)
             }
-            return process(resumed, pending.playerOrderIds, pending.playerOrderIndex)
+            val supplemented = TaiwanFlowerReplacement.supplement(pending.tableState, pending.revealingPlayerId)
+                ?: return Result.Exhausted(
+                    pending.tableState,
+                    pending.revealingPlayerId,
+                    pending.revealedFlower,
+                    emptyList(),
+                )
+            val drawn = Step.ReplacementDrawn(pending.revealingPlayerId, supplemented.replacementTile)
+            return process(supplemented.tableState, pending.playerOrderIds, pending.playerOrderIndex).withLeadingStep(drawn)
         }
         var acceptedState = pending.tableState
         pending.opportunity.claimedFlower?.let { claimed ->
@@ -176,14 +246,23 @@ object TaiwanFlowerFlow {
             null
         } else {
             TaiwanFlowerReplacement.supplement(acceptedState, pending.opportunity.replacementPlayerId)
-                ?: return Result.Exhausted(acceptedState, pending.revealingPlayerId, pending.revealedFlower)
+                ?: return Result.Exhausted(
+                    acceptedState,
+                    pending.revealingPlayerId,
+                    pending.revealedFlower,
+                    emptyList(),
+                )
         }
         val finalState = replacement?.tableState ?: acceptedState
         return Result.Won(
             tableState = finalState,
             opportunity = pending.opportunity,
             settlement = TaiwanSpecialFlowerWin.settle(finalState, pending.opportunity),
+            winningFlower = pending.opportunity.claimedFlower ?: pending.revealedFlower,
             replacementTile = replacement?.replacementTile,
+            steps = listOfNotNull(
+                replacement?.let { Step.ReplacementDrawn(pending.opportunity.replacementPlayerId, it.replacementTile) },
+            ),
         )
     }
 

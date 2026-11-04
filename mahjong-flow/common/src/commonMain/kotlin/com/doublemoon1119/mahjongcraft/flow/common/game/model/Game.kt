@@ -32,6 +32,7 @@ import kotlin.uuid.Uuid
  * @property roundCompletion 最近一次本局結算的權威摘要；進入下一局後清除。
  * @property matchEndReasonId 整場終局的完整 namespaced 原因；尚未終局時為 null。
  * @property pendingRuleDecision 尚待完成的規則選擇視窗；開著時一般摸打、自動操作與換局都暫停。沒有視窗時為 null。
+ * @property ruleDecisionWin 規則選擇流程剛成立、尚待結束本局流程取用的和牌結果；沒有時為 null。
  * @property hostId 開局時的房主 Uuid，取自原本 `Room.hostId`——`com.doublemoon1119.mahjongcraft.flow.server.game.usecase.StartGameUseCase`
  *   把 Room 轉換成 Game 後，房主身分不再能從 `Room` 讀出，保留在這裡讓對局結束轉回 Room
  *   （見 `ReturnToRoomUseCase`）時能還原同一位房主，預設值取第一位玩家僅供未指定房主的測試情境使用；
@@ -60,6 +61,7 @@ data class Game(
     val roundCompletion: RoundCompletionSummary? = null,
     val matchEndReasonId: String? = null,
     val pendingRuleDecision: PendingRuleDecision? = null,
+    val ruleDecisionWin: RuleDecisionWinOutcome? = null,
     val hostId: Uuid = tableState.players.firstOrNull()?.id ?: Uuid.random(),
     val roomPlayerIds: List<Uuid> = tableState.players.map { it.id },
     val aiPlayerStrategyKeys: Map<Uuid, String> = emptyMap(),
@@ -85,6 +87,9 @@ data class Game(
         require(automaticControlRevision >= 0L) { "Automatic control revision must not be negative" }
         require(pendingRuleDecision?.participantPlayerIds?.all { it in playerIds } != false) {
             "Rule decision participants must belong to the game"
+        }
+        require(ruleDecisionWin?.let { win -> win.winnerPlayerIds.all { it in playerIds } && win.responsiblePlayerIds.all { it in playerIds } } != false) {
+            "Rule decision win players must belong to the game"
         }
         require(playerIds.isEmpty() || hostId in playerIds) {
             "Host must belong to the game"

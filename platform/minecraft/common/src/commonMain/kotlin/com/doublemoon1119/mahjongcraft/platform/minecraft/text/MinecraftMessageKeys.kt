@@ -309,6 +309,9 @@ object MinecraftMessageKeys {
     /** 拔北，不帶參數。 */
     const val GAME_ACTION_PULL_NORTH = PREFIX + "game_action_pull_north"
 
+    /** 補花，不帶參數。 */
+    const val GAME_ACTION_REVEAL_FLOWER = PREFIX + "game_action_reveal_flower"
+
     /** 其他規則專屬流局原因的通用 fallback 顯示文字，不帶參數。 */
     const val GAME_ACTION_EXHAUSTIVE_DRAW = PREFIX + "game_action_exhaustive_draw"
 
@@ -700,6 +703,7 @@ object MinecraftMessageKeys {
         GAME_ACTION_PASS,
         GAME_ACTION_KYUUSHU_KYUUHAI,
         GAME_ACTION_PULL_NORTH,
+        GAME_ACTION_REVEAL_FLOWER,
         GAME_ACTION_EXHAUSTIVE_DRAW,
         EXHAUSTIVE_DRAW_REASON_NORMAL,
         ROUND_RESULT_DETAILS_LABEL,
