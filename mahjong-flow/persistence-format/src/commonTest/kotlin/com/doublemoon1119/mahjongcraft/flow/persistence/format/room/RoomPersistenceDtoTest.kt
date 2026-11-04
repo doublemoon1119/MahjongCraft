@@ -47,6 +47,7 @@ class RoomPersistenceDtoTest {
     fun `taiwan room round-trips through encoded persistence DTO`() {
         val config = TaiwanRuleConfig(
             useFlowerTiles = false,
+            fourWindsAbortiveDraw = true,
             minimumWinConstraint = 3,
             scoreConfig = TaiwanScoreConfig(100, 20, 1000, -1),
             gameLength = TaiwanGameLength.FourWinds,

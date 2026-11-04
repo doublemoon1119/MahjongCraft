@@ -29,6 +29,12 @@ import kotlin.uuid.Uuid
  * [MahjongRuleModule.createSupplementalDrawPolicy] 決定。
  */
 internal object SelfDeclarationApplier {
+    /** 已套用移出手牌動作及其收付、尚未補牌的結果。 */
+    data class SetAsideDeclaration(
+        val tableState: TableState,
+        val scoring: AppliedActionScoring?,
+    )
+
     /** 自己回合宣告的動作與補牌的套用結果。 */
     sealed interface Result {
         /**
@@ -236,8 +242,36 @@ internal object SelfDeclarationApplier {
         module: MahjongRuleModule<*>,
         componentRegistry: ComponentRegistry,
     ): Result {
-        val candidateState = setAsideCandidateState(state, declarerId, action, module, componentRegistry)
+        val declaration = applyTileSetAsideDeclaration(state, declarerId, action, module, componentRegistry)
             ?: return Result.Rejected(SupplementalDrawReasonIds.INVALID_RESULT)
+        return applySupplementalDraw(
+            originalState = state,
+            candidateState = declaration.tableState,
+            actorPlayerId = declarerId,
+            action = action,
+            module = module,
+            componentRegistry = componentRegistry,
+        ).withScoring(declaration.scoring)
+    }
+
+    /**
+     * 套用移出手牌動作與其點數收付，但不執行補牌。
+     *
+     * @param state 動作前的權威桌況。
+     * @param declarerId 執行動作的玩家。
+     * @param action 要套用的擴充動作。
+     * @param module 對局採用的規則模組。
+     * @param componentRegistry 解析及驗證組件的正式定義。
+     * @return 動作成立後、補牌前的結果；規則不接受動作時為 null。
+     */
+    fun applyTileSetAsideDeclaration(
+        state: TableState,
+        declarerId: Uuid,
+        action: GameAction.Extension,
+        module: MahjongRuleModule<*>,
+        componentRegistry: ComponentRegistry,
+    ): SetAsideDeclaration? {
+        val candidateState = setAsideCandidateState(state, declarerId, action, module, componentRegistry) ?: return null
         val scored = ActionScoringApplier.apply(
             before = state,
             after = candidateState,
@@ -247,14 +281,7 @@ internal object SelfDeclarationApplier {
             module = module,
             componentRegistry = componentRegistry,
         )
-        return applySupplementalDraw(
-            originalState = state,
-            candidateState = scored.tableState,
-            actorPlayerId = declarerId,
-            action = action,
-            module = module,
-            componentRegistry = componentRegistry,
-        ).withScoring(scored.scoring)
+        return SetAsideDeclaration(scored.tableState, scored.scoring)
     }
 
     /** 成功套用時附上動作的點數收付；拒絕結果維持原樣。 */

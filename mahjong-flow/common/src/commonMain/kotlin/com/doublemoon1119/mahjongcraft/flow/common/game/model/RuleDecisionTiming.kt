@@ -9,6 +9,9 @@ enum class RuleDecisionTiming {
     /** 發牌後、一般摸打前；選完後開始一般摸打。 */
     ROUND_START,
 
+    /** 摸牌後的規則動作已套用、一般摸打尚未恢復；選完後由規則完成這串後續處理。 */
+    DRAW_FOLLOW_UP,
+
     /** 牌山摸完、沒有其他特殊結果成立，一般流局結算前；選完後進行一般流局結算。 */
     BEFORE_EXHAUSTIVE_DRAW,
 

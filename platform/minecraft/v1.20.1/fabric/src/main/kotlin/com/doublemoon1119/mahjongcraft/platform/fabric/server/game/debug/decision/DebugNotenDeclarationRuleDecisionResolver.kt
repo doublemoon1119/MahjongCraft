@@ -43,7 +43,10 @@ internal class DebugNotenDeclarationRuleDecisionResolver : RuleDecisionResolver 
             stepIndex = 0,
             inputSpecsByPlayerId = tableState.players.associate { it.id to RuleDecisionInputSpec.Confirmation },
         )
-        RuleDecisionTiming.ROUND_START, RuleDecisionTiming.WIN_CONTINUES -> null
+        RuleDecisionTiming.ROUND_START,
+        RuleDecisionTiming.DRAW_FOLLOW_UP,
+        RuleDecisionTiming.WIN_CONTINUES,
+        -> null
     }
 
     override fun resolve(

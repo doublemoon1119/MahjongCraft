@@ -83,6 +83,7 @@ fun ThreePlayerRiichiRuleConfigPersistenceDto.toDomain(): ThreePlayerRiichiRuleC
  */
 fun TaiwanRuleConfig.toPersistenceDto(): TaiwanRuleConfigPersistenceDto = TaiwanRuleConfigPersistenceDto(
     useFlowerTiles = useFlowerTiles,
+    fourWindsAbortiveDraw = fourWindsAbortiveDraw,
     minimumWinConstraint = minimumWinConstraint,
     baseScore = scoreConfig.baseScore,
     pointPerTai = scoreConfig.pointPerTai,
@@ -99,6 +100,7 @@ fun TaiwanRuleConfig.toPersistenceDto(): TaiwanRuleConfigPersistenceDto = Taiwan
  */
 fun TaiwanRuleConfigPersistenceDto.toDomain(): TaiwanRuleConfig = TaiwanRuleConfig(
     useFlowerTiles = useFlowerTiles,
+    fourWindsAbortiveDraw = fourWindsAbortiveDraw,
     minimumWinConstraint = minimumWinConstraint,
     scoreConfig = TaiwanScoreConfig(baseScore, pointPerTai, initialScore, bustThreshold),
     gameLength = gameLength.toDomain(),

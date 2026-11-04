@@ -11,6 +11,7 @@ import com.doublemoon1119.mahjongcraft.logic.config.validate
  * 繼承自 [MahjongRuleConfig] 並增加與台灣麻將補花機制相關的開關。
  *
  * @property useFlowerTiles 指定是否使用花牌。
+ * @property fourWindsAbortiveDraw 是否在第一巡四位玩家依序打出相同風牌時流局。
  * @property initialHandSize 初始手牌張數，預設為 16。
  * @property deadTileCount 王牌（死牌）張數，預設為 16。
  * @property minimumWinConstraint 起胡番數限制，預設為 0。
@@ -24,6 +25,7 @@ import com.doublemoon1119.mahjongcraft.logic.config.validate
  */
 data class TaiwanRuleConfig(
     val useFlowerTiles: Boolean = true,
+    val fourWindsAbortiveDraw: Boolean = false,
     override val minimumWinConstraint: Int = 0,
     override val scoreConfig: TaiwanScoreConfig = TaiwanScoreConfig(),
     override val gameLength: TaiwanGameLength = TaiwanGameLength.OneGame,

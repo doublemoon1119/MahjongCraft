@@ -493,6 +493,19 @@ class DrawFollowUpAndActionScoringIntegrationTest {
         assertEquals(table, fixture.repository.getTableState(fixture.gameId))
     }
 
+    /** 一次補入多張牌時，規則不能在仍有牌尚未處理前暫停，避免後面的牌被遺失。 */
+    @Test
+    fun `a rule decision cannot pause before the remaining drawn tiles are handled`() = runTest {
+        val fixture = Fixture(TestBehavior(replacementCount = 2, ignoresEmptyWall = true, pausesAfterSetAside = true))
+        val table = fixture.table(wall = listOf(tile(FLOWER), tile(ORDINARY), tile(FLOWER)))
+        fixture.repository.setTableState(table)
+
+        val failure = assertFailsWith<RuleContractViolationException> { fixture.draw(fixture.gameId, fixture.drawerId) }
+
+        assertTrue("cannot pause a draw batch" in failure.message.orEmpty(), failure.message)
+        assertEquals(table, fixture.repository.getTableState(fixture.gameId))
+    }
+
     /** 規則指定移出的牌與手上同一張牌的牌面不同時視為規則錯誤，桌況不改變。 */
     @Test
     fun `a set aside tile with a different face is rejected`() = runTest {
@@ -552,6 +565,7 @@ class DrawFollowUpAndActionScoringIntegrationTest {
      * @property changesSetAsideFace 是否違規把要移出的牌換成另一種牌面。
      * @property askedSources 依詢問順序記錄的牌與來源。
      * @property declaresFlowers 摸牌位上是花時，玩家是否可以自己宣告移出。
+     * @property pausesAfterSetAside 完成至少一步後，下一張花是否要求先進入規則選擇。
      */
     private class TestBehavior(
         val scoring: ((ActionScoringContext) -> ActionScoring?)? = null,
@@ -568,6 +582,7 @@ class DrawFollowUpAndActionScoringIntegrationTest {
         val changesSetAsideFace: Boolean = false,
         val askedSources: MutableList<Pair<Uuid, DrawSource>> = mutableListOf(),
         val declaresFlowers: Boolean = false,
+        val pausesAfterSetAside: Boolean = false,
     )
 
     /**
@@ -780,6 +795,7 @@ class DrawFollowUpAndActionScoringIntegrationTest {
             when {
                 context.drawnTile.tile != FLOWER -> DrawFollowUpDecision.None
                 context.tableState.tileWall.remainingCount == 0 && !behavior.ignoresEmptyWall -> DrawFollowUpDecision.EndRound(NoReplacementReason)
+                behavior.pausesAfterSetAside && context.completedStepCount > 0 -> DrawFollowUpDecision.SetAsideThenDecide(FLOWER_ACTION)
                 else -> DrawFollowUpDecision.SetAside(FLOWER_ACTION)
             }
         }

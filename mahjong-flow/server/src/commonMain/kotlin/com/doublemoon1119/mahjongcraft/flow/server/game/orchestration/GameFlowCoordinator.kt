@@ -221,6 +221,9 @@ class GameFlowCoordinator(
         if (resumePendingGameTransition(gameId)) {
             return stepBefore != gameRepository.getGame(gameId)
         }
+        if ((beginRuleDecisionUseCase?.invoke(gameId, RuleDecisionTiming.DRAW_FOLLOW_UP) as? Outcome.Success)?.value == true) {
+            return stepBefore != gameRepository.getGame(gameId)
+        }
         if (advanceAutomaticRuleDecisionUseCase?.invoke(gameId) == true) {
             return stepBefore != gameRepository.getGame(gameId)
         }
@@ -546,6 +549,8 @@ class GameFlowCoordinator(
         }
 
         if (result is Outcome.Success) {
+            val opened = beginRuleDecisionUseCase?.invoke(gameId, RuleDecisionTiming.DRAW_FOLLOW_UP)
+            if ((opened as? Outcome.Success)?.value == true) return result
             handleHandConclusionIfPresent(
                 gameId = gameId,
                 playerId = playerId,

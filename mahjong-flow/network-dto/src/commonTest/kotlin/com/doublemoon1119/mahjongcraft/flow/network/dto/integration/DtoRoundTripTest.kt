@@ -74,6 +74,7 @@ import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiWallProgress
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.RiichiTileValues
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanDiscardPile
+import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanExhaustiveDrawReason
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.tile.TaiwanTileTypes
 import com.doublemoon1119.mahjongcraft.logic.table.DiscardPile
@@ -198,6 +199,10 @@ class DtoRoundTripTest {
             GameAction.ExhaustiveDraw(RiichiExhaustiveDrawReason.SuukanNagare),
             GameAction.ExhaustiveDraw(RiichiExhaustiveDrawReason.SuuchaRiichi),
             GameAction.ExhaustiveDraw(RiichiExhaustiveDrawReason.SanchaHou),
+            GameAction.ExhaustiveDraw(TaiwanExhaustiveDrawReason.Normal),
+            GameAction.ExhaustiveDraw(TaiwanExhaustiveDrawReason.NoSupplementalTile),
+            GameAction.ExhaustiveDraw(TaiwanExhaustiveDrawReason.FourKans),
+            GameAction.ExhaustiveDraw(TaiwanExhaustiveDrawReason.FourWinds),
         )
 
         actions.forEach { action ->

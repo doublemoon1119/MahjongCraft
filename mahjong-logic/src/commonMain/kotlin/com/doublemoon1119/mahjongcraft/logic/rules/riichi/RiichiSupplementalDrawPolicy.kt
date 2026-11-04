@@ -5,6 +5,7 @@ import com.doublemoon1119.mahjongcraft.logic.table.SupplementalDrawContext
 import com.doublemoon1119.mahjongcraft.logic.table.SupplementalDrawDecision
 import com.doublemoon1119.mahjongcraft.logic.table.SupplementalDrawPolicy
 import com.doublemoon1119.mahjongcraft.logic.table.SupplementalDrawReasonIds
+import com.doublemoon1119.mahjongcraft.logic.table.drawFromReservedWall
 
 /** 日本麻將槓後（與三人麻將拔北後）嶺上補牌與死牌區補充 policy。 */
 object RiichiSupplementalDrawPolicy : SupplementalDrawPolicy {
@@ -25,22 +26,15 @@ object RiichiSupplementalDrawPolicy : SupplementalDrawPolicy {
             return SupplementalDrawDecision.Rejected(LIMIT_REACHED_REASON_ID)
         }
 
-        val drawnTile = context.tableStateAfterAction.reservedWallTiles.firstOrNull()
+        val draw = drawFromReservedWall(context.tableStateAfterAction)
             ?: return SupplementalDrawDecision.Rejected(SupplementalDrawReasonIds.WALL_EXHAUSTED)
-        val replenishment = context.tableStateAfterAction.tileWall.drawLast()
-        val replenishmentTile = replenishment.tile
-            ?: return SupplementalDrawDecision.Rejected(SupplementalDrawReasonIds.WALL_EXHAUSTED)
-        val updatedDeadWall = context.tableStateAfterAction.reservedWallTiles.drop(1) + replenishmentTile
         val updatedProgress = if (isPullNorth) {
             wallProgress.copy(completedNorthDrawCount = drawIndex + 1)
         } else {
             wallProgress.copy(completedSupplementalDrawCount = drawIndex + 1)
         }
 
-        return SupplementalDrawDecision.Completed(
-            drawnTiles = listOf(drawnTile),
-            tileWall = replenishment.wall,
-            reservedWallTiles = updatedDeadWall,
+        return draw.copy(
             tableComponents = updatedProgress.toTableComponentPatch(wallProgress),
         )
     }

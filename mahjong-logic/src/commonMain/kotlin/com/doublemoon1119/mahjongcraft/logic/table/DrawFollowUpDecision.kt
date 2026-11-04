@@ -19,6 +19,15 @@ sealed interface DrawFollowUpDecision {
     data class SetAside(val action: GameAction.Extension) : DrawFollowUpDecision
 
     /**
+     * 自動執行規則的移出手牌動作，但先不補牌，改由規則選擇流程決定後續處理。
+     *
+     * 共用流程只負責在動作成立後暫停；選擇內容、是否補牌及如何恢復皆由規則解析器決定。
+     *
+     * @property action 要自動執行的移出手牌動作。
+     */
+    data class SetAsideThenDecide(val action: GameAction.Extension) : DrawFollowUpDecision
+
+    /**
      * 以流局結束本局，例如需要移出手牌卻已經沒有牌可以補。
      *
      * @property reason 規則提供的流局原因。

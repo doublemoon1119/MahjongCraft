@@ -8,6 +8,9 @@ enum class RuleDecisionTimingPersistenceDto {
     /** 發牌後、一般摸打前。 */
     ROUND_START,
 
+    /** 摸牌後的規則動作已套用、一般摸打尚未恢復。 */
+    DRAW_FOLLOW_UP,
+
     /** 一般流局結算前。 */
     BEFORE_EXHAUSTIVE_DRAW,
 

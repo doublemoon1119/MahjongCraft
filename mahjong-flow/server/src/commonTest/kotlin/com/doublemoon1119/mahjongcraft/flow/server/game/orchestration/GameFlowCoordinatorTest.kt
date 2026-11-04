@@ -2046,6 +2046,35 @@ class GameFlowCoordinatorTest {
         assertNull(fixtures.abortedGame)
     }
 
+    /** 重啟後尚未開窗的摸牌後規則流程，會在自動推進時重新開啟。 */
+    @Test
+    fun `test draw follow-up rule decision is recovered before normal automation`() = runTest {
+        val resolvers = RuleDecisionResolverRegistry().apply {
+            register(TimedConfirmationResolver(setOf(RuleDecisionTiming.DRAW_FOLLOW_UP)))
+        }
+        val fixtures = Fixtures(ruleDecisionResolvers = resolvers)
+        val table = FakeTableStateFactory.create(
+            id = gameId,
+            players = listOf(
+                FakeMahjongPlayerFactory.create(initialSeat = Wind.EAST),
+                FakeMahjongPlayerFactory.create(initialSeat = Wind.SOUTH),
+            ),
+            config = RiichiRuleConfig(),
+        )
+        fixtures.gameRepo.setGame(
+            Game(
+                tableState = table,
+                flowConfig = GameFlowConfig(ruleDecision = RuleDecisionConfig(30.seconds)),
+            ),
+        )
+
+        assertTrue(fixtures.coordinator.advanceAutomatedPlayerStep(gameId))
+
+        val decision = assertNotNull(fixtures.gameRepo.getGame(gameId)?.pendingRuleDecision)
+        assertEquals(RuleDecisionTiming.DRAW_FOLLOW_UP, decision.timing)
+        assertEquals("test:confirm_draw_follow_up", decision.stepId)
+    }
+
     /** 驗證 AI 先完成規則選擇、真人尚未提交時，協調器會等待而不會誤送摸牌並中止對局。 */
     @Test
     fun `test an ai rule decision waits for a human submission`() = runTest {

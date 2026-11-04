@@ -18,6 +18,7 @@ import kotlinx.serialization.Serializable
  * @property maxPlayers 最多玩家數量。
  * @property multiRonPolicy 多家榮和處理政策。
  * @property useFlowerTiles 是否使用花牌。
+ * @property fourWindsAbortiveDraw 是否啟用四風連打流局。
  * @property revealsClosedKanTiles 暗槓時是否揭示牌面。
  */
 @Serializable
@@ -31,5 +32,6 @@ data class TaiwanRuleConfigDto(
     val maxPlayers: Int,
     val multiRonPolicy: MultiRonPolicyDto,
     val useFlowerTiles: Boolean,
+    val fourWindsAbortiveDraw: Boolean,
     val revealsClosedKanTiles: Boolean,
 ) : MahjongRuleConfigDto

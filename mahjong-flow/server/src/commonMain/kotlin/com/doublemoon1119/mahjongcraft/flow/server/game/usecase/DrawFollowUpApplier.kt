@@ -1,6 +1,7 @@
 package com.doublemoon1119.mahjongcraft.flow.server.game.usecase
 
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryEventDraft
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.AppliedActionScoring
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.DrawFollowUpPresentationStep
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameAbortReasonIds
 import com.doublemoon1119.mahjongcraft.flow.server.game.history.acceptedActionHistoryDraft
@@ -58,6 +59,19 @@ internal object DrawFollowUpApplier {
         ) : Ending
 
         /**
+         * 規則動作已成立，但後續處理必須先完成規則選擇。
+         *
+         * @property action 已套用的動作。
+         * @property setAsideTile 已移出手牌的牌。
+         * @property scoring 這個動作已完成的點數收付。
+         */
+        data class RuleDecisionRequired(
+            val action: GameAction.Extension,
+            val setAsideTile: IdentifiedTile,
+            val scoring: AppliedActionScoring?,
+        ) : Ending
+
+        /**
          * 本局以流局結束：規則決定結束，或搶和時依一炮多響設定判定流局。
          *
          * @property reason 流局原因。
@@ -92,6 +106,7 @@ internal object DrawFollowUpApplier {
             get() = steps.flatMap { step -> listOf(step.action, GameAction.Draw) } + when (val end = ending) {
                 Ending.PlayerTurn -> emptyList()
                 is Ending.RobbingWindowOpened -> listOf(end.action)
+                is Ending.RuleDecisionRequired -> listOf(end.action)
                 is Ending.RoundEnded -> listOfNotNull(end.interruptedAction) + GameAction.ExhaustiveDraw(end.reason)
             }
 
@@ -113,6 +128,10 @@ internal object DrawFollowUpApplier {
                 Ending.PlayerTurn -> Unit
                 is Ending.RobbingWindowOpened ->
                     add(acceptedActionHistoryDraft(playerId, end.action, before, after, listOf(end.setAsideTile.id)))
+                is Ending.RuleDecisionRequired -> {
+                    add(acceptedActionHistoryDraft(playerId, end.action, before, after, listOf(end.setAsideTile.id)))
+                    end.scoring?.let { add(actionScoredHistoryDraft(it)) }
+                }
                 is Ending.RoundEnded -> {
                     if (end.interruptedAction != null && end.interruptedTile != null) {
                         add(acceptedActionHistoryDraft(playerId, end.interruptedAction, before, after, listOf(end.interruptedTile.id)))
@@ -140,6 +159,15 @@ internal object DrawFollowUpApplier {
                         drawnTileIds = emptyList(),
                         physicalWallTransitionPhases = emptyList(),
                         scoring = null,
+                    )
+                },
+                (ending as? Ending.RuleDecisionRequired)?.let { pending ->
+                    DrawFollowUpPresentationStep(
+                        action = pending.action,
+                        setAsideTileId = pending.setAsideTile.id,
+                        drawnTileIds = emptyList(),
+                        physicalWallTransitionPhases = emptyList(),
+                        scoring = pending.scoring,
                     )
                 },
             )
@@ -240,6 +268,30 @@ internal object DrawFollowUpApplier {
                             applied.drawnTiles.forEach { tile -> unchecked.addLast(tile to DrawSource.Supplemental(action)) }
                         }
                     }
+                }
+
+                is DrawFollowUpDecision.SetAsideThenDecide -> {
+                    if (unchecked.isNotEmpty()) {
+                        violation("a rule decision cannot pause a draw batch before every drawn tile has been handled")
+                    }
+                    val action = decision.action
+                    val setAsideTile = module.tileSetAsideBy(player, action)
+                        ?: violation("set-aside action ${action.value.id} has no tile to remove")
+                    if (setAsideTile.id != drawnTile.id) {
+                        violation("set-aside action ${action.value.id} must remove the drawn tile ${drawnTile.id}, not ${setAsideTile.id}")
+                    }
+                    val declaration = SelfDeclarationApplier.applyTileSetAsideDeclaration(
+                        state = current,
+                        declarerId = playerId,
+                        action = action,
+                        module = module,
+                        componentRegistry = componentRegistry,
+                    ) ?: violation("set-aside action ${action.value.id} could not be completed")
+                    return Result(
+                        tableState = declaration.tableState,
+                        steps = steps,
+                        ending = Ending.RuleDecisionRequired(action, setAsideTile, declaration.scoring),
+                    )
                 }
             }
         }
