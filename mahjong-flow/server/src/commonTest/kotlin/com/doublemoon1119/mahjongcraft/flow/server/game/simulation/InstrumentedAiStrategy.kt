@@ -212,7 +212,7 @@ internal class InstrumentedAiStrategy(
                 val ownTileIds = context.snapshot.players.first { it.id == context.selfId }.hand.standingTiles.map { it.id }
                 when {
                     command.tileId !in ownTileIds -> "tile ${command.tileId} is not in hand"
-                    context.forcedDiscardTileId != null && command.tileId != context.forcedDiscardTileId -> "must discard ${context.forcedDiscardTileId}"
+                    context.discardableTileIds?.contains(command.tileId) == false -> "must discard one of ${context.discardableTileIds}"
                     else -> null
                 }
             }

@@ -35,7 +35,7 @@ import kotlin.uuid.Uuid
  * 決定實際開放給誰、[RonResolution.ABORTIVE_DRAW] 是否直接觸發流局，這些邏輯與其他會打出一張牌的宣告
  * 用例共用，交給 [DiscardReactionResolver] 處理，詳見其 KDoc。
  *
- * 規則可透過 [MahjongRuleModule.forcedDiscardTileId] 限定這次只能打出的牌；玩家摸牌後原本可以自摸卻選擇
+ * 規則可透過 [MahjongRuleModule.discardableTileIds] 限定這次可以打出的牌；玩家摸牌後原本可以自摸卻選擇
  * 捨牌時，一律呼叫 [MahjongRuleModule.onPlayerDeclinedWin]，由規則決定是否產生後果。捨牌套用後再呼叫
  * [MahjongRuleModule.onPlayerDiscarded]，讓規則更新捨牌造成的規則狀態。
  *
@@ -104,9 +104,9 @@ class DiscardTileUseCase(
                         val ruleComponents = RuleComponentChecker(componentRegistry, module.id)
                         val lastDrawn = state.currentPlayer.hand.lastDrawn
 
-                        // 規則可以限定這次只能打出哪一張牌。
-                        val forcedTileId = module.forcedDiscardTileId(state, state.currentPlayer)
-                        if (forcedTileId != null && forcedTileId != tileId) {
+                        // 規則可以限定這次可以打出哪些牌。
+                        val discardable = module.discardableTileIds(state, state.currentPlayer)
+                        if (discardable != null && tileId !in discardable) {
                             return@update state to Outcome.Error(GameError.IllegalAction(playerId, gameId, GameAction.Discard(tileId)))
                         }
 

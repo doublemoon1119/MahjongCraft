@@ -353,7 +353,7 @@ class RiichiRuleModule(
     /**
      * 立直後只能摸切，因此回傳玩家剛摸入的牌；未立直或尚未摸牌時不額外限制。
      */
-    override fun forcedDiscardTileId(tableState: TableState, player: MahjongPlayer): Uuid? = player.hand.lastDrawn?.id?.takeIf { isPlayerInRiichi(player) }
+    override fun discardableTileIds(tableState: TableState, player: MahjongPlayer): Set<Uuid>? = player.hand.lastDrawn?.id?.takeIf { isPlayerInRiichi(player) }?.let(::setOf)
 
     /**
      * 讀取尚未被收下的立直棒數，不修改供託。

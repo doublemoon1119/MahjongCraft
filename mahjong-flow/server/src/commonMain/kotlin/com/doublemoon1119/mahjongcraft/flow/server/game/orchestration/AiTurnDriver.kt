@@ -108,7 +108,7 @@ class AiTurnDriver(
             selfId = aiId,
             phase = phase,
             legalActions = legalActions,
-            forcedDiscardTileId = moduleRegistry.getModule(state.config).forcedDiscardTileId(state, player),
+            discardableTileIds = moduleRegistry.getModule(state.config).discardableTileIds(state, player),
             discardReactionId = state.pendingReaction?.id.takeIf { phase == AiDecisionPhase.RespondingToDiscard },
             discardReactionCommands = if (phase == AiDecisionPhase.RespondingToDiscard) {
                 val pending = state.pendingReaction

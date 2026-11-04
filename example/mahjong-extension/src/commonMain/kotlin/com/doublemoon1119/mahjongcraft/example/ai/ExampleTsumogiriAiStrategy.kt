@@ -24,7 +24,7 @@ class ExampleTsumogiriAiStrategy : MahjongAiStrategy {
     }
 
     /**
-     * 自己回合優先選擇合法自摸，否則依序套用強制捨牌、剛摸入牌及立牌清單。
+     * 自己回合優先選擇合法自摸，否則依序從剛摸入牌及立牌清單中選出規則允許打出的第一張。
      *
      * @param context 本次決策可見的桌況、合法動作與捨牌限制。
      * @return 要提交的自己回合命令。
@@ -32,14 +32,12 @@ class ExampleTsumogiriAiStrategy : MahjongAiStrategy {
      */
     private fun decideOwnTurn(context: AiDecisionContext): GameCommand {
         if (GameAction.Tsumo in context.legalActions) return GameCommand.Tsumo
-        context.forcedDiscardTileId?.let { return GameCommand.Discard(it) }
-
         val hand = context.snapshot.players.firstOrNull { it.id == context.selfId }?.hand
             ?: error("AI player is missing from the decision snapshot")
-        hand.lastDrawn?.let { return GameCommand.Discard(it.id) }
-        val standingTile = hand.standingTiles.firstOrNull()
+        val discardable = context.discardableTileIds
+        val tile = (listOfNotNull(hand.lastDrawn) + hand.standingTiles).firstOrNull { discardable == null || it.id in discardable }
             ?: error("AI has no tile available for a discard")
-        return GameCommand.Discard(standingTile.id)
+        return GameCommand.Discard(tile.id)
     }
 
     /**

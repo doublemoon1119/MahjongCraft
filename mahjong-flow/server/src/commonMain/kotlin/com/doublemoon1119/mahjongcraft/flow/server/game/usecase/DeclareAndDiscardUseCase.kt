@@ -102,8 +102,8 @@ class DeclareAndDiscardUseCase(
             ) {
                 return@update state to Outcome.Error(GameError.IllegalAction(playerId, gameId, action))
             }
-            val forcedTileId = module.forcedDiscardTileId(state, player)
-            if (forcedTileId != null && forcedTileId != tileId) {
+            val discardable = module.discardableTileIds(state, player)
+            if (discardable != null && tileId !in discardable) {
                 return@update state to Outcome.Error(GameError.IllegalAction(playerId, gameId, GameAction.Discard(tileId)))
             }
             val discard = player.hand.discardById(tileId)

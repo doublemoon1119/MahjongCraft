@@ -51,9 +51,9 @@ class DebugScriptedAiStrategy(
                 return GameCommand.Kan(kan.type, kan.tileId)
             }
         }
-        context.forcedDiscardTileId?.let { return GameCommand.Discard(it) }
         val hand = context.snapshot.players.first { it.id == context.selfId }.hand
-        val tileId = hand.lastDrawn?.id ?: hand.standingTiles.first().id
+        val discardable = context.discardableTileIds
+        val tileId = (listOfNotNull(hand.lastDrawn) + hand.standingTiles).map { it.id }.first { discardable == null || it in discardable }
         return GameCommand.Discard(tileId)
     }
 

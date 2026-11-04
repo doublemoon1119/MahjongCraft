@@ -906,7 +906,7 @@ class GameFlowCoordinatorTest {
             ruleModuleDecorator = { delegate ->
                 object : MahjongRuleModule<RiichiRuleConfig> by delegate {
                     /** 強制捨出立牌，確保後備不會直接摸切。 */
-                    override fun forcedDiscardTileId(tableState: TableState, player: MahjongPlayer): Uuid = required.id
+                    override fun discardableTileIds(tableState: TableState, player: MahjongPlayer): Set<Uuid> = setOf(required.id)
                 }
             },
         )

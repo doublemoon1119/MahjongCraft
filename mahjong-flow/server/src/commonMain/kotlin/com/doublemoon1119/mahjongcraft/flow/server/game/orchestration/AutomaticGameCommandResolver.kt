@@ -63,15 +63,13 @@ class AutomaticGameCommandResolver(
         return GameAction.Pass.takeIf { it in legalActions }?.let(wrap)
     }
 
-    /** 依強制捨牌限制或手牌中的穩定順序選出一張捨牌。 */
+    /** 優先打出剛摸入的牌，其次依手牌中的穩定順序，選出規則允許的一張捨牌。 */
     private fun resolveDiscard(state: TableState, playerId: Uuid): GameCommand? {
         val player = state.players.firstOrNull { it.id == playerId } ?: return null
-        val forcedTileId = moduleRegistry.getModule(state.config).forcedDiscardTileId(state, player)
-        val tileId = if (forcedTileId != null) {
-            forcedTileId.takeIf { candidate -> player.hand.standingTiles.any { it.id == candidate } }
-        } else {
-            player.hand.lastDrawn?.id ?: player.hand.tiles.firstOrNull()?.id
-        }
+        val discardable = moduleRegistry.getModule(state.config).discardableTileIds(state, player)
+        val tileId = (listOfNotNull(player.hand.lastDrawn) + player.hand.tiles)
+            .map { it.id }
+            .firstOrNull { candidate -> discardable == null || candidate in discardable }
         return tileId?.let(GameCommand::Discard)
     }
 }

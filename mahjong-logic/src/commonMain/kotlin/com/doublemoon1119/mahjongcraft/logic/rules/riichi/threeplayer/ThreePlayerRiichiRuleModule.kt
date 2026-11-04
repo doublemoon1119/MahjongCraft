@@ -272,7 +272,7 @@ class ThreePlayerRiichiRuleModule(
     fun isPlayerInRiichi(player: MahjongPlayer): Boolean = player.riichiDeclaration != null
 
     /** 立直後只能摸切。 */
-    override fun forcedDiscardTileId(tableState: TableState, player: MahjongPlayer): Uuid? = player.hand.lastDrawn?.id?.takeIf { isPlayerInRiichi(player) }
+    override fun discardableTileIds(tableState: TableState, player: MahjongPlayer): Set<Uuid>? = player.hand.lastDrawn?.id?.takeIf { isPlayerInRiichi(player) }?.let(::setOf)
 
     /** 場上尚未被收下的立直棒支數。 */
     fun getStickPotCount(tableState: TableState): Int = tableState.riichiPotPoints() / RIICHI_STICK_POINTS

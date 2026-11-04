@@ -30,14 +30,14 @@ class ExampleTsumogiriAiStrategyTest {
      * @param hand 測試玩家的手牌。
      * @param phase AI 所處的決策階段。
      * @param legalActions 呼叫端提供的合法動作。
-     * @param forcedDiscardTileId 規則指定的捨牌識別碼。
+     * @param discardableTileIds 規則允許打出的牌；null 表示未限制。
      * @return 可供策略使用的決策情境。
      */
     private fun context(
         hand: Hand,
         phase: AiDecisionPhase = AiDecisionPhase.OwnTurn,
         legalActions: List<GameAction> = emptyList(),
-        forcedDiscardTileId: Uuid? = null,
+        discardableTileIds: Set<Uuid>? = null,
         discardReactionId: Uuid? = null,
     ): AiDecisionContext {
         val player = FakeMahjongPlayerFactory.create(id = selfId, hand = hand)
@@ -47,7 +47,7 @@ class ExampleTsumogiriAiStrategyTest {
             selfId = selfId,
             phase = phase,
             legalActions = legalActions,
-            forcedDiscardTileId = forcedDiscardTileId,
+            discardableTileIds = discardableTileIds,
             discardReactionId = discardReactionId,
         )
     }
@@ -60,20 +60,20 @@ class ExampleTsumogiriAiStrategyTest {
         assertEquals(GameCommand.Tsumo, command)
     }
 
-    /** 驗證規則指定捨牌時優先遵守指定牌張。 */
+    /** 驗證規則限制可打的牌時，不打出剛摸入但不允許打出的牌。 */
     @Test
-    fun `own turn obeys forced discard`() = runTest {
+    fun `own turn obeys discardable tiles`() = runTest {
         val standing = FakeIdentifiedTileFactory.create(Tile.Honor.East)
-        val forced = FakeIdentifiedTileFactory.create(Tile.Honor.South)
+        val drawn = FakeIdentifiedTileFactory.create(Tile.Honor.South)
 
         val command = strategy.decideGameCommand(
             context(
-                hand = Hand(tiles = listOf(standing), lastDrawn = forced),
-                forcedDiscardTileId = forced.id,
+                hand = Hand(tiles = listOf(standing), lastDrawn = drawn),
+                discardableTileIds = setOf(standing.id),
             ),
         )
 
-        assertEquals(GameCommand.Discard(forced.id), command)
+        assertEquals(GameCommand.Discard(standing.id), command)
     }
 
     /** 驗證沒有強制限制時會捨出剛摸入的牌。 */

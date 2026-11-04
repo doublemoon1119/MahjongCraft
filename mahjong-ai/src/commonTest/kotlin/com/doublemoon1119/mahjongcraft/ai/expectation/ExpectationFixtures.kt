@@ -156,7 +156,7 @@ internal object ExpectationFixtures {
         selfId = self.id,
         phase = phase,
         legalActions = legalActions,
-        forcedDiscardTileId = module.forcedDiscardTileId(table, table.players.first { it.id == self.id }),
+        discardableTileIds = module.discardableTileIds(table, table.players.first { it.id == self.id }),
         discardReactionId = discardReactionId.takeIf { phase == AiDecisionPhase.RespondingToDiscard },
     )
 

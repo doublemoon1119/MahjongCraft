@@ -245,7 +245,7 @@ class ExpectedValueAiStrategyTest {
             selfId = self.id,
             phase = AiDecisionPhase.OwnTurn,
             legalActions = emptyList(),
-            forcedDiscardTileId = null,
+            discardableTileIds = null,
         )
         val north = checkNotNull(self.hand.lastDrawn)
         val discard = DecisionCandidate.Discard(tile = north, declaration = null, command = GameCommand.Discard(north.id))

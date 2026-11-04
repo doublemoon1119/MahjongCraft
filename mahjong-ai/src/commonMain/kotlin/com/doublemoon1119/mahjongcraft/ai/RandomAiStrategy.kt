@@ -82,14 +82,14 @@ class RandomAiStrategy(
     }
 
     /**
-     * 優先捨棄規則指定的牌，未指定時從自己的立牌清單隨機挑一張；清單已包含剛摸到的牌。
+     * 從自己的立牌中隨機挑一張規則允許打出的牌；立牌清單已包含剛摸到的牌。
      *
      * @param context 本次決策的手牌快照與指定捨牌限制。
      * @return 捨棄所選牌張的命令。
      */
     private fun discardRandomTile(context: AiDecisionContext): GameCommand {
-        context.forcedDiscardTileId?.let { return GameCommand.Discard(it) }
         val hand = context.snapshot.players.first { it.id == context.selfId }.hand
-        return GameCommand.Discard(hand.standingTiles.map { it.id }.random(random))
+        val discardable = context.discardableTileIds
+        return GameCommand.Discard(hand.standingTiles.map { it.id }.filter { discardable == null || it in discardable }.random(random))
     }
 }

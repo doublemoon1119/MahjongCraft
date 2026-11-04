@@ -49,14 +49,14 @@ class RandomAiStrategyTest {
      * @param hand 測試玩家的手牌。
      * @param phase AI 所處的決策階段。
      * @param legalActions 該階段提供的合法動作。
-     * @param forcedDiscardTileId 強制捨牌的牌識別碼；null 表示未強制指定。
+     * @param discardableTileIds 規則允許打出的牌；null 表示未限制。
      * @return 對應輸入的 AI 決策情境。
      */
     private fun contextWithHand(
         hand: Hand,
         phase: AiDecisionPhase,
         legalActions: List<GameAction>,
-        forcedDiscardTileId: Uuid? = null,
+        discardableTileIds: Set<Uuid>? = null,
         discardReactionId: Uuid? = null,
         discardReactionCommands: List<GameCommand.RespondToDiscard> = emptyList(),
     ): AiDecisionContext {
@@ -67,7 +67,7 @@ class RandomAiStrategyTest {
             selfId = selfId,
             phase = phase,
             legalActions = legalActions,
-            forcedDiscardTileId = forcedDiscardTileId,
+            discardableTileIds = discardableTileIds,
             discardReactionId = discardReactionId,
             discardReactionCommands = discardReactionCommands,
         )
@@ -204,21 +204,21 @@ class RandomAiStrategyTest {
      * 驗證規則指定強制捨牌時，隨機策略不會從其他手牌中選牌。
      */
     @Test
-    fun `test own turn obeys forced discard tile`() = runTest {
+    fun `test own turn obeys discardable tiles`() = runTest {
         val strategy = RandomAiStrategy(extensionActionRegistry, Random(1))
         val standingTile = FakeIdentifiedTileFactory.create(Tile.Honor.East)
-        val forcedTile = FakeIdentifiedTileFactory.create(Tile.Honor.South)
-        val hand = Hand(tiles = listOf(standingTile), lastDrawn = forcedTile)
+        val allowedTile = FakeIdentifiedTileFactory.create(Tile.Honor.South)
+        val hand = Hand(tiles = listOf(standingTile), lastDrawn = allowedTile)
         val context = contextWithHand(
             hand = hand,
             phase = AiDecisionPhase.OwnTurn,
             legalActions = emptyList(),
-            forcedDiscardTileId = forcedTile.id,
+            discardableTileIds = setOf(allowedTile.id),
         )
 
         val result = strategy.decideGameCommand(context)
 
-        assertEquals(GameCommand.Discard(forcedTile.id), result)
+        assertEquals(GameCommand.Discard(allowedTile.id), result)
     }
 
     /**

@@ -542,15 +542,16 @@ interface MahjongRuleModule<T : MahjongRuleConfig> {
     fun isBonusTile(face: TileFaceView, wallFaces: List<TileFaceView>): Boolean = false
 
     /**
-     * 取得規則要求玩家本次一般捨牌必須打出的牌；預設不限制。
+     * 取得玩家本次一般捨牌可以打出的牌；預設不限制。
      *
-     * 正式捨牌用例以此拒絕打出其他牌；AI 與其他自動決策者也以此避免送出違反規則狀態的捨牌命令。
+     * 例如宣告後只能打出剛摸入的牌，或鳴牌後不能打出特定的牌。正式捨牌用例以此拒絕打出其他牌；
+     * AI 與其他自動決策者也以此避免送出違反規則狀態的捨牌命令。回傳的牌必須是玩家目前持有的立牌，且不能為空集合。
      *
      * @param tableState 目前的權威桌況。
      * @param player 即將捨牌的玩家。
-     * @return 必須捨棄的牌 ID；`null` 表示規則未限制。
+     * @return 可以捨棄的牌 ID；`null` 表示規則未限制。
      */
-    fun forcedDiscardTileId(tableState: TableState, player: MahjongPlayer): Uuid? = null
+    fun discardableTileIds(tableState: TableState, player: MahjongPlayer): Set<Uuid>? = null
 
     /**
      * 取得可公開給全桌與旁觀者的玩家狀態；預設不公開任何 indicator。

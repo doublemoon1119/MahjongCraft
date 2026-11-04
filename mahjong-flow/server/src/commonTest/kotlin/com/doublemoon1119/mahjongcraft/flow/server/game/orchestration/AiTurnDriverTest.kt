@@ -378,7 +378,7 @@ class AiTurnDriverTest {
         assertEquals(aiId to strategyCommand, result?.let { it.playerId to it.command })
         assertEquals(AiDecisionPhase.OwnTurn, fixtures.strategy.lastContext?.phase)
         assertEquals(aiId, fixtures.strategy.lastContext?.selfId)
-        assertNull(fixtures.strategy.lastContext?.forcedDiscardTileId)
+        assertNull(fixtures.strategy.lastContext?.discardableTileIds)
     }
 
     /** AI 的決策情境與真人一樣經可見性政策：看得到自己的牌面與赤五特徵，看不到他家的牌面與外觀。 */
@@ -427,7 +427,7 @@ class AiTurnDriverTest {
 
         fixtures.driver.resolveNextAction(gameId)
 
-        assertEquals(lastDrawn.id, fixtures.strategy.lastContext?.forcedDiscardTileId)
+        assertEquals(setOf(lastDrawn.id), fixtures.strategy.lastContext?.discardableTileIds)
     }
 
     /**

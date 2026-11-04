@@ -277,19 +277,16 @@ internal class ExpectedValueEvaluator(
         return choose(listOf(pass) + claimCandidates()).candidate.command
     }
 
-    /** 一般捨牌：每種完整牌值一個候選，依規則牌序排列；同一種牌優先打出剛摸到的那張。規則強制捨牌時只有指定的牌。 */
+    /** 一般捨牌：規則允許打出的牌中，每種完整牌值一個候選，依規則牌序排列；同一種牌優先打出剛摸到的那張。 */
     private fun discardCandidates(): List<DecisionCandidate> {
-        val forced = context.forcedDiscardTileId
+        val discardable = context.discardableTileIds
         val lastDrawnId = snapshot.players.first { it.id == selfId }.hand.lastDrawn?.id
-        val tiles = if (forced != null) {
-            ownHand.tiles.filter { it.id == forced }
-        } else {
-            ownHand.tiles
-                .groupBy { it.toValue() }
-                .values
-                .map { group -> group.firstOrNull { it.id == lastDrawnId } ?: group.first() }
-                .sortedWith(compareBy(module.tileOrder.valueOrder) { it.toValue() })
-        }
+        val tiles = ownHand.tiles
+            .filter { discardable == null || it.id in discardable }
+            .groupBy { it.toValue() }
+            .values
+            .map { group -> group.firstOrNull { it.id == lastDrawnId } ?: group.first() }
+            .sortedWith(compareBy(module.tileOrder.valueOrder) { it.toValue() })
         return tiles.map { DecisionCandidate.Discard(tile = it, declaration = null, command = GameCommand.Discard(it.id)) }
     }
 
@@ -304,7 +301,7 @@ internal class ExpectedValueEvaluator(
         .flatMap { extensionRegistry.createCandidates(it.value, context) }
         .mapNotNull { candidate ->
             val tileId = candidate.discardTileId ?: return@mapNotNull null
-            if (context.forcedDiscardTileId != null && context.forcedDiscardTileId != tileId) return@mapNotNull null
+            if (context.discardableTileIds?.contains(tileId) == false) return@mapNotNull null
             val tile = ownHand.tiles.firstOrNull { it.id == tileId } ?: return@mapNotNull null
             DecisionCandidate.Discard(tile = tile, declaration = candidate.declaration, command = candidate.command)
         }

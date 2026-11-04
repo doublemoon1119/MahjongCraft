@@ -25,9 +25,9 @@ import kotlin.uuid.Uuid
 
 /** [AutomaticGameCommandResolver] 的安全代操作測試。 */
 class AutomaticGameCommandResolverTest {
-    /** 驗證規則指定的立牌不是摸入牌時，解析器仍會遵守指定牌。 */
+    /** 驗證規則允許的立牌不是摸入牌時，解析器只會打出允許的牌。 */
     @Test
-    fun `forced discard selects required standing tile`() {
+    fun `discard restriction selects an allowed standing tile`() {
         val required = FakeIdentifiedTileFactory.create(Tile.Honor.Red)
         val other = FakeIdentifiedTileFactory.create(Tile.Honor.White)
         val playerId = Uuid.random()
@@ -40,13 +40,13 @@ class AutomaticGameCommandResolverTest {
 
         assertEquals(
             GameCommand.Discard(required.id),
-            resolver(required.id).resolve(state, playerId),
+            resolver(setOf(required.id)).resolve(state, playerId),
         )
     }
 
-    /** 驗證規則指定不存在於手牌的牌時，解析器不會改打其他牌。 */
+    /** 驗證規則允許的牌都不在手牌時，解析器不會改打其他牌。 */
     @Test
-    fun `missing forced discard returns no command`() {
+    fun `missing allowed discard returns no command`() {
         val playerId = Uuid.random()
         val state = ownTurnState(
             FakeMahjongPlayerFactory.create(
@@ -55,7 +55,7 @@ class AutomaticGameCommandResolverTest {
             ).recordAction(GameAction.Pon(Uuid.random(), listOf(Uuid.random(), Uuid.random()))),
         )
 
-        assertNull(resolver(Uuid.random()).resolve(state, playerId))
+        assertNull(resolver(setOf(Uuid.random())).resolve(state, playerId))
     }
 
     /** 驗證不在反應視窗資格內的玩家不會被代送 Pass。 */
@@ -106,7 +106,7 @@ class AutomaticGameCommandResolverTest {
             ),
         )
 
-        assertNull(resolver(forcedTileId = null, rejectPass = true).resolve(state, eligible))
+        assertNull(resolver(discardableTileIds = null, rejectPass = true).resolve(state, eligible))
     }
 
     /** 建立剛鳴牌後、需要直接捨牌的測試桌況。 */
@@ -116,15 +116,15 @@ class AutomaticGameCommandResolverTest {
         currentPlayerIndex = 0,
     )
 
-    /** 建立可覆寫強制捨牌與反應跳過資格的測試解析器。 */
+    /** 建立可覆寫捨牌限制與反應跳過資格的測試解析器。 */
     private fun resolver(
-        forcedTileId: Uuid?,
+        discardableTileIds: Set<Uuid>?,
         rejectPass: Boolean = false,
     ): AutomaticGameCommandResolver {
         val registry = MahjongModuleRegistryImpl().apply {
             register(
-                MahjongModuleDefinition(RiichiRuleConfig::class, "test:forced_discard") { config, id ->
-                    ForcedDiscardRuleModule(RiichiRuleModule(id, config), forcedTileId, rejectPass)
+                MahjongModuleDefinition(RiichiRuleConfig::class, "test:discard_restriction") { config, id ->
+                    DiscardRestrictionRuleModule(RiichiRuleModule(id, config), discardableTileIds, rejectPass)
                 },
             )
         }
@@ -132,19 +132,19 @@ class AutomaticGameCommandResolverTest {
     }
 
     /**
-     * 只替測試覆寫強制捨牌牌張與 Pass 合法性的日麻規則包裝器。
+     * 只替測試覆寫捨牌限制與 Pass 合法性的日麻規則包裝器。
      *
      * @property delegate 正式日麻規則模組，提供其餘規則行為。
-     * @property forcedTileId 測試要求規則優先捨出的牌張識別碼。
+     * @property discardableTileIds 測試要求規則允許打出的牌；null 表示不限制。
      * @property rejectPass 是否讓測試 validator 移除 Pass 動作。
      */
-    private class ForcedDiscardRuleModule(
+    private class DiscardRestrictionRuleModule(
         private val delegate: RiichiRuleModule,
-        private val forcedTileId: Uuid?,
+        private val discardableTileIds: Set<Uuid>?,
         private val rejectPass: Boolean,
     ) : MahjongRuleModule<RiichiRuleConfig> by delegate {
-        /** 回傳測試指定的強制捨牌限制。 */
-        override fun forcedDiscardTileId(tableState: TableState, player: MahjongPlayer): Uuid? = forcedTileId
+        /** 回傳測試指定的捨牌限制。 */
+        override fun discardableTileIds(tableState: TableState, player: MahjongPlayer): Set<Uuid>? = discardableTileIds
 
         /** 保留原判定，並依測試情境移除跳過選項。 */
         override fun createLegalActionValidator(): LegalActionValidator {

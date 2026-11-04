@@ -410,10 +410,10 @@ class DiscardTileUseCaseTest {
         assertTrue(updatedPlayer.components[RiichiPlayerComponents.PERMANENT_FURITEN] != null, "Declining a legal tsumo while riichi-locked should mark permanent furiten.")
     }
 
-    /** 規則以 [MahjongRuleModule.forcedDiscardTileId] 限定捨牌時，打出其他牌被拒絕、打出指定牌成功。 */
+    /** 規則以 [MahjongRuleModule.discardableTileIds] 限定捨牌時，打出其他牌被拒絕、打出允許的牌成功。 */
     @Test
-    fun `forced discard tile from the rule module rejects any other tile`() = runTest {
-        val probe = HookProbe(forcedTileId = drawnTile.id)
+    fun `discard restriction from the rule module rejects any other tile`() = runTest {
+        val probe = HookProbe(discardableTileIds = setOf(drawnTile.id))
         val fixtures = Fixtures(probe.registry())
         fixtures.gameRepo.setTableState(singlePlayerTable(Hand(tiles = listOf(handTile), lastDrawn = drawnTile)))
 
@@ -1417,9 +1417,9 @@ class DiscardTileUseCaseTest {
     /**
      * 以日麻模組為基礎、只替換捨牌相關 hook 並記錄呼叫的測試規則。
      *
-     * @property forcedTileId 強制捨牌牌張識別碼；為 null 時不額外限制。
+     * @property discardableTileIds 規則允許打出的牌；為 null 時不額外限制。
      */
-    private class HookProbe(private val forcedTileId: Uuid? = null) {
+    private class HookProbe(private val discardableTileIds: Set<Uuid>? = null) {
         /** 依 hook 呼叫順序收集拒絕和牌的玩家識別碼。 */
         val declinedPlayerIds = mutableListOf<Uuid>()
 
@@ -1446,7 +1446,7 @@ class DiscardTileUseCaseTest {
             delegate: RiichiRuleModule,
             private val probe: HookProbe,
         ) : MahjongRuleModule<RiichiRuleConfig> by delegate {
-            override fun forcedDiscardTileId(tableState: TableState, player: MahjongPlayer): Uuid? = probe.forcedTileId
+            override fun discardableTileIds(tableState: TableState, player: MahjongPlayer): Set<Uuid>? = probe.discardableTileIds
 
             override fun onPlayerDeclinedWin(player: MahjongPlayer): ComponentPatch {
                 probe.declinedPlayerIds += player.id
