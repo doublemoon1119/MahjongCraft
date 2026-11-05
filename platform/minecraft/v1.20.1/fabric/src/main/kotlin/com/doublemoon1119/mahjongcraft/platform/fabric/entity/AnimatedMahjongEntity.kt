@@ -132,6 +132,25 @@ abstract class AnimatedMahjongEntity<C>(
     }
 
     /**
+     * 用戶端收到新位置時直接停在新位置，不在上一個 tick 的位置與新位置之間做畫面補間。
+     *
+     * 這類實體只會因伺服器排定的傳送而改變位置，看得到的移動都由自己的動畫繪製；
+     * 保留補間會讓單純的傳送在一個 tick 內閃過一段平移。
+     */
+    override fun updateTrackedPositionAndAngles(
+        x: Double,
+        y: Double,
+        z: Double,
+        yaw: Float,
+        pitch: Float,
+        interpolationSteps: Int,
+        interpolate: Boolean,
+    ) {
+        super.updateTrackedPositionAndAngles(x, y, z, yaw, pitch, interpolationSteps, interpolate)
+        resetPosition()
+    }
+
+    /**
      * 到期／推進的判斷邏輯本身（哪些 step 該套用、佇列該推進到哪裡）委派給不依賴 Minecraft API 的
      * [AnimationQueueDriver]，這裡只負責依判斷結果執行真正的副作用（改座標／改隱形／改姿態／同步
      * render 用欄位）並寫回佇列狀態——讓佇列的到期／推進邏輯可以脫離 `Entity`／`World` 獨立測試，見

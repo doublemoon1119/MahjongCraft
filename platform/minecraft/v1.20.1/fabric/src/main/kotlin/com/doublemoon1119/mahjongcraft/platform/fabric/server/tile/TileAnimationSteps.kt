@@ -40,12 +40,13 @@ internal object TileAnimationSteps {
      *
      * 起飛播完的那一刻，隱形與瞬間重新排列到手牌列上空是同一個瞬間發生；接著額外維持
      * [MahjongTileTableLayout.DEAL_SNAP_GAP_TICKS] 的隱形，讓「重新排成一列」感覺像是刻意的一個轉場
-     * 動作，不是無縫瞬移。翻牌後在觀看緩衝（[DEAL_VIEWING_BUFFER_TICKS]）播完那一刻，才傳送到
-     * [postFlipPlacement]（可能與 [finalPlacement] 不同格，見 `MahjongInitialDealPresentation` KDoc）。
+     * 動作，不是無縫瞬移。翻牌那一刻牌背仍朝上，先瞬間換到 [postFlipPlacement]（可能與 [finalPlacement] 不同格，見
+     * `MahjongInitialDealPresentation` KDoc）再原地翻起：背面朝上的牌外觀相同，換位看不出來，翻起時已在整理後的格位。
+     * 翻牌後保留觀看緩衝（[DEAL_VIEWING_BUFFER_TICKS]）。
      *
      * @param tile 要排定發牌動畫的牌 entity。
      * @param finalPlacement 翻牌前落下的位置。
-     * @param postFlipPlacement 觀看緩衝結束後的位置。
+     * @param postFlipPlacement 翻牌時與之後所在的位置。
      * @param liftAbsoluteGameTime 這批牌共用的起飛絕對 tick。
      * @param flipAbsoluteGameTime 這批牌共用的翻牌絕對 tick。
      * @param playDealSound 是否為此牌播放發牌聲。
@@ -107,6 +108,12 @@ internal object TileAnimationSteps {
                 if (playFlipSound) add(handTurnSound(flipAbsoluteGameTime))
                 addAll(
                     listOf(
+                        AnimationStep.Teleport(
+                            postFlipPlacement.x,
+                            postFlipPlacement.y,
+                            postFlipPlacement.z,
+                            postFlipPlacement.yaw,
+                        ),
                         AnimationStep.Custom(endPose),
                         AnimationStep.PlayMotion(
                             durationTicks = MahjongTileTableLayout.DEAL_FLIP_DURATION_TICKS,
@@ -118,12 +125,6 @@ internal object TileAnimationSteps {
                             endPoseRotationDegrees = endPose.rotationDegrees,
                         ),
                         AnimationStep.WaitUntil(viewingEndGameTime),
-                        AnimationStep.Teleport(
-                            postFlipPlacement.x,
-                            postFlipPlacement.y,
-                            postFlipPlacement.z,
-                            postFlipPlacement.yaw,
-                        ),
                     ),
                 )
             },

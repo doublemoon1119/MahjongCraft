@@ -41,6 +41,9 @@ class PrivateHandLayout {
     /** 依本人順序換位時會越過其他牌、下次換到新格位時要以弧線越過的牌。 */
     private val crossingIds = mutableSetOf<Uuid>()
 
+    /** 只是重新排序（立牌組成不變）時，下次換到新格位要直接到位的牌。 */
+    private val snappingIds = mutableSetOf<Uuid>()
+
     /** 本人立牌順序改變、還在等共享呈現開始讓位的時間；不在等待時為 null。 */
     private var orderChangedAt: Double? = null
 
@@ -83,6 +86,12 @@ class PrivateHandLayout {
         if (standingOrder != lastStandingOrder) {
             crossingIds.clear()
             crossingIds += crossingTiles(lastStandingOrder, standingOrder, lastDrawnId)
+            // 整副重新排序（例如切換自動理牌）不是牌的實際移動，直接到位。
+            snappingIds.clear()
+            if (lastStandingOrder.isNotEmpty() && standingOrder.toSet() == lastStandingOrder.toSet() && drawnId == lastDrawnId) {
+                snappingIds += standingOrder
+                crossingIds.clear()
+            }
             // 有牌離開手牌（打出或鳴走）時，共享呈現先讓那張牌落地才讓位；只是重新排序時沒有要等的動作。
             if (lastStandingOrder.any { it !in privateIds }) {
                 orderChangedAt = now
@@ -140,7 +149,17 @@ class PrivateHandLayout {
                     input = input,
                     lastAvailable = now,
                 )
-                if (input.motion != null || id in seen) {
+                val motionSpec = input.motion?.spec
+                if (motionSpec != null && motionSpec.startPoseRotationDegrees != motionSpec.endPoseRotationDegrees && id !in seen) {
+                    // 第一次接手時正在翻牌（例如開局發完牌翻起）：牌背還朝上，直接放到本人格位，翻牌在新位置原地播放。
+                    entry.move(
+                        from = shared.copy(position = target.position, yawDegrees = target.yawDegrees),
+                        to = target,
+                        now = now,
+                        ticks = duration(input, now),
+                        spec = motionSpec.copy(arcHeight = 0.0, liftCarryLower = false, leanDegrees = 0.0f),
+                    )
+                } else if (input.motion != null || id in seen) {
                     entry.move(
                         from = shared,
                         to = target,
@@ -157,6 +176,8 @@ class PrivateHandLayout {
                     entry.waitingSince = null
                     if (entry.isPrivate && entry.target != target && waitingForShared) {
                         // 還在等共享呈現開始讓位，先停在原本的位置。
+                    } else if (entry.isPrivate && entry.target != target && snappingIds.remove(id)) {
+                        entry.snap(target)
                     } else if (!entry.isPrivate || entry.target != target) {
                         // 依本人順序會越過其他牌的牌從上方以弧線越過，其餘一起平移，不會互相穿過。
                         val crosses = entry.isPrivate && crossingIds.remove(id)
@@ -215,6 +236,7 @@ class PrivateHandLayout {
         lastStandingOrder = emptyList()
         lastDrawnId = null
         crossingIds.clear()
+        snappingIds.clear()
         orderChangedAt = null
         lastFrameTargets = emptyMap()
         targetsAtOrderChange = emptyMap()
@@ -397,6 +419,17 @@ class PrivateHandLayout {
                 liftCarryLower = spec?.liftCarryLower ?: false,
                 leanDegrees = spec?.leanDegrees ?: 0.0f,
             )
+        }
+
+        /**
+         * 不播放過渡，直接停在新終點。
+         *
+         * @param to 新的顯示終點。
+         */
+        fun snap(to: TileDisplayTransform) {
+            start = to
+            target = to
+            spec = null
         }
 
         /**

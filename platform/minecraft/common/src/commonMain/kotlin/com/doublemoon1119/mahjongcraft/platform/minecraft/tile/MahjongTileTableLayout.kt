@@ -1067,7 +1067,7 @@ object MahjongTileTableLayout {
 
     /**
      * 開局發牌動畫中，起飛完成、瞬間重新排列到手牌列上空那一刻起，到真正解除隱形開始落下之間的短暫
-     * 間隔——這段期間牌是隱形的（見 `FabricMahjongPlayerAreaPresenter.scheduleDealBatchAnimation`），
+     * 間隔——這段期間牌是隱形的（見 `TileAnimationSteps.scheduleDealBatch`），
      * 讓「重新排成一列」感覺像是刻意的一個轉場動作，不是無縫瞬移；公開理由同 [DEAL_LIFT_DURATION_TICKS]。
      */
     const val DEAL_SNAP_GAP_TICKS: Int = 2
