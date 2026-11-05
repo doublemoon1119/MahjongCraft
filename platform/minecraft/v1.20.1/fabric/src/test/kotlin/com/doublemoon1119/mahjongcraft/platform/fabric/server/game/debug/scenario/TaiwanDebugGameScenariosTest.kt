@@ -45,7 +45,7 @@ class TaiwanDebugGameScenariosTest {
     fun `seven flowers scenario offers the invoker a seven-flower win`() {
         val (state, invokerId) = build("mahjongcraft:taiwan_seven_flowers")
 
-        val pending = assertIs<TaiwanFlowerFlow.Result.AwaitingDecision>(TaiwanFlowerFlow.process(state, openingOrder(state))).pending
+        val pending = assertIs<TaiwanFlowerFlow.Result.AwaitingDecision>(processOpening(state)).pending
 
         assertEquals(TaiwanTaiType.SEVEN_FLOWERS, pending.opportunity.type)
         assertEquals(invokerId, pending.opportunity.winnerId)
@@ -56,7 +56,7 @@ class TaiwanDebugGameScenariosTest {
     fun `eight flowers scenario offers the invoker an eight-flower win`() {
         val (state, invokerId) = build("mahjongcraft:taiwan_eight_flowers")
 
-        val pending = assertIs<TaiwanFlowerFlow.Result.AwaitingDecision>(TaiwanFlowerFlow.process(state, openingOrder(state))).pending
+        val pending = assertIs<TaiwanFlowerFlow.Result.AwaitingDecision>(processOpening(state)).pending
 
         assertEquals(TaiwanTaiType.EIGHT_FLOWERS, pending.opportunity.type)
         assertEquals(invokerId, pending.opportunity.winnerId)
@@ -107,6 +107,18 @@ class TaiwanDebugGameScenariosTest {
         validator.validate(context, result)
         assertIs<TaiwanRuleConfig>(result.game.tableState.config)
         return result.game.tableState to context.invokingPlayerId
+    }
+
+    /**
+     * 照開局流程讓莊家先摸開門牌，再由莊家開始逐輪補花。
+     *
+     * @param state 開局桌況。
+     * @return 局首補花的結果。
+     */
+    private fun processOpening(state: TableState): TaiwanFlowerFlow.Result {
+        val module = TaiwanRuleModule(BuiltInRuleModuleIds.TAIWAN, state.config as TaiwanRuleConfig)
+        val drawn = assertNotNull(state.drawDealerOpeningTile(module))
+        return TaiwanFlowerFlow.process(drawn.tableState, openingOrder(state))
     }
 
     /**
