@@ -132,7 +132,7 @@ internal class MatchSimulator(
             playerIds = playerIds,
             module = runtime.moduleRegistry.getModule(config),
         ).initializeRuleComponents(runtime.moduleRegistry.getModule(config).id, bundledCoreExtensionRegistries().componentRegistry).tableState
-        runtime.gameRepository.setTableState(initial, strategyKeysByPlayer)
+        runtime.start(initial, strategyKeysByPlayer)
 
         val problem = drive(runtime, gameId, recorder)
         val recordedRounds = runtime.gameRepository.rounds(gameId)
@@ -167,7 +167,7 @@ internal class MatchSimulator(
     private suspend fun replayFails(start: TableState, aiPlayerStrategyKeys: Map<Uuid, String>): Boolean {
         val recorder = DecisionRecorder()
         val runtime = runtime(recorder)
-        runtime.gameRepository.setTableState(start, aiPlayerStrategyKeys)
+        runtime.start(start, aiPlayerStrategyKeys)
         return drive(runtime, start.id, recorder) != null
     }
 

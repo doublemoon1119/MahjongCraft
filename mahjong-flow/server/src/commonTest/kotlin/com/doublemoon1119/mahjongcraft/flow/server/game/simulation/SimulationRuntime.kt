@@ -6,6 +6,8 @@ import com.doublemoon1119.mahjongcraft.ai.expectation.OpponentModelRegistry
 import com.doublemoon1119.mahjongcraft.bundled.BundledRiichiExtension
 import com.doublemoon1119.mahjongcraft.bundled.BundledTaiwanExtension
 import com.doublemoon1119.mahjongcraft.flow.common.error.ExtensionFailurePolicy
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionConfig
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionTiming
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.AiDecisionExecutor
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.AiTurnDriver
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.AutomaticGameCommandResolver
@@ -17,6 +19,8 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.GameAction
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.GameFlowCoordinator
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.PostActionExhaustiveDrawResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.PostReactionRoundOutcomeResolverRegistry
+import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.RuleDecisionAiDriver
+import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.RuleDecisionResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.WinRoundContinuationResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.policy.GameVisibilityPolicyImpl
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.DecisionTimerSynchronizationService
@@ -28,9 +32,12 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameDecisionTime
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameSnapshotSynchronizer
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.HandSortPreferenceStore
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.PlayerDecisionTimerFactory
+import com.doublemoon1119.mahjongcraft.flow.server.game.service.RuleDecisionWinPresentationStager
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.WinPresentationHandoff
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.WinSettlementDetailResolverRegistry
+import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.AdvanceAutomaticRuleDecisionUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.AdvanceRoundUseCase
+import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.BeginRuleDecisionUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DeclareAbortiveDrawUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DeclareAndDiscardUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DeclareExhaustiveDrawUseCase
@@ -44,9 +51,11 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.ResolveWinRoundC
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.RespondToDiscardUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.RespondToRobbingUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.ReturnToRoomUseCase
+import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.SubmitRuleDecisionUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateStore
 import com.doublemoon1119.mahjongcraft.flow.server.time.MonotonicClockImpl
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
+import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledCoreExtensionRegistries
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledWinCelebrationCueResolverRegistry
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.registerBundledRuleModules
@@ -57,6 +66,8 @@ import com.doublemoon1119.mahjongcraft.testing.flow.common.game.service.FakeGame
 import com.doublemoon1119.mahjongcraft.testing.flow.common.game.service.FakeGamePresentationPublisher
 import com.doublemoon1119.mahjongcraft.testing.flow.common.room.repository.FakeRoomSnapshotRepository
 import com.doublemoon1119.mahjongcraft.testing.flow.common.room.service.FakeRoomEventPublisher
+import kotlin.time.Duration.Companion.seconds
+import kotlin.uuid.Uuid
 
 /**
  * 以正式規則模組與遊戲流程組裝、不經過任何平台層的對局環境，供整場對局測試與 AI 對局模擬共用。
@@ -96,13 +107,33 @@ internal class SimulationRuntime(defaultStrategyKey: String) {
     /** 捨牌後的途中流局判定。 */
     private val postActionExhaustiveDrawResolverRegistry = PostActionExhaustiveDrawResolverRegistry().apply {
         BundledRiichiExtension.registerPostActionExhaustiveDrawResolvers(this)
+        BundledTaiwanExtension.registerPostActionExhaustiveDrawResolvers(this)
         freeze()
     }
 
     /** 胡牌詳情。 */
     private val winSettlementDetailResolverRegistry = WinSettlementDetailResolverRegistry(bundledCoreExtensionRegistries().componentRegistry).apply {
         BundledRiichiExtension.registerWinSettlementDetailResolvers(this)
+        BundledTaiwanExtension.registerWinSettlementDetailResolvers(this)
         freeze()
+    }
+
+    /** 規則選擇流程，例如台灣麻將的補花與花胡選擇。 */
+    private val ruleDecisionResolverRegistry = RuleDecisionResolverRegistry().apply {
+        BundledRiichiExtension.registerRuleDecisionResolvers(this)
+        BundledTaiwanExtension.registerRuleDecisionResolvers(this)
+        freeze()
+    }
+
+    /** 中止對局時記錄原因並移除對局。 */
+    private val abortHandler = GameAbortHandler { expectedGame, reasonId, diagnostic ->
+        if (gameRepository.getGame(expectedGame.id) != expectedGame) {
+            false
+        } else {
+            abortDiagnostic = "$reasonId: $diagnostic"
+            gameRepository.removeTableState(expectedGame.id)
+            true
+        }
     }
 
     /** 最終捨牌後的特殊結果，例如流局滿貫。 */
@@ -133,6 +164,7 @@ internal class SimulationRuntime(defaultStrategyKey: String) {
     private val extensionCommandExecutor = ExtensionGameCommandExecutor(
         registry = ExtensionGameCommandExecutorRegistry().apply {
             BundledRiichiExtension.registerGameCommandHandlers(this)
+            BundledTaiwanExtension.registerGameCommandHandlers(this)
             freeze()
         },
         context = ExtensionGameCommandContext(
@@ -214,7 +246,19 @@ internal class SimulationRuntime(defaultStrategyKey: String) {
         ),
         declareAbortiveDrawUseCase = DeclareAbortiveDrawUseCase(gameRepository, moduleRegistry, snapshotSynchronizer, eventPublisher),
         extensionCommandExecutor = extensionCommandExecutor,
+        submitRuleDecisionUseCase = SubmitRuleDecisionUseCase(
+            gameRepository = gameRepository,
+            moduleRegistry = moduleRegistry,
+            resolverRegistry = ruleDecisionResolverRegistry,
+            snapshotSynchronizer = snapshotSynchronizer,
+            presentationPublisher = presentationPublisher,
+            componentRegistry = bundledCoreExtensionRegistries().componentRegistry,
+            winPresentationStager = RuleDecisionWinPresentationStager(winPresentationHandoff, winSettlementDetailResolverRegistry),
+        ),
     )
+
+    /** 在指定時間點開啟規則選擇視窗。 */
+    val beginRuleDecisionUseCase = BeginRuleDecisionUseCase(gameRepository, moduleRegistry, ruleDecisionResolverRegistry, snapshotSynchronizer, abortHandler)
 
     /** 決策計時使用的時鐘。 */
     private val clock = MonotonicClockImpl()
@@ -246,6 +290,7 @@ internal class SimulationRuntime(defaultStrategyKey: String) {
             moduleRegistry,
             WinRoundContinuationResolverRegistry().apply { freeze() },
             snapshotSynchronizer,
+            ruleDecisionResolverRegistry = ruleDecisionResolverRegistry,
         ),
         advanceRoundUseCase = AdvanceRoundUseCase(
             gameRepository,
@@ -255,6 +300,7 @@ internal class SimulationRuntime(defaultStrategyKey: String) {
             eventPublisher,
             presentationPublisher,
             componentRegistry = bundledCoreExtensionRegistries().componentRegistry,
+            beginRuleDecisionUseCase = beginRuleDecisionUseCase,
         ),
         returnToRoomUseCase = ReturnToRoomUseCase(
             AuthoritativeStateStore(),
@@ -284,15 +330,45 @@ internal class SimulationRuntime(defaultStrategyKey: String) {
         exhaustiveDrawSettlementPresentationService = ExhaustiveDrawSettlementPresentationService(presentationPublisher),
         winPresentationHandoff = winPresentationHandoff,
         presentationPublisher = presentationPublisher,
-        abortGameUseCase = GameAbortHandler { expectedGame, reasonId, diagnostic ->
-            if (gameRepository.getGame(expectedGame.id) != expectedGame) {
-                false
-            } else {
-                abortDiagnostic = "$reasonId: $diagnostic"
-                gameRepository.removeTableState(expectedGame.id)
-                true
-            }
-        },
+        abortGameUseCase = abortHandler,
         automaticCommandResolver = AutomaticGameCommandResolver(moduleRegistry),
+        ruleDecisionAiDriver = RuleDecisionAiDriver(
+            gameRepository,
+            moduleRegistry,
+            ruleDecisionResolverRegistry,
+            aiStrategyRegistry,
+            GameVisibilityPolicyImpl(moduleRegistry, componentRegistry = bundledCoreExtensionRegistries().componentRegistry),
+            AiDecisionExecutor.direct(failurePolicy = ExtensionFailurePolicy.Default),
+        ),
+        advanceAutomaticRuleDecisionUseCase = AdvanceAutomaticRuleDecisionUseCase(
+            gameRepository = gameRepository,
+            moduleRegistry = moduleRegistry,
+            resolverRegistry = ruleDecisionResolverRegistry,
+            snapshotSynchronizer = snapshotSynchronizer,
+            presentationPublisher = presentationPublisher,
+            componentRegistry = bundledCoreExtensionRegistries().componentRegistry,
+            winPresentationStager = RuleDecisionWinPresentationStager(winPresentationHandoff, winSettlementDetailResolverRegistry),
+        ),
+        beginRuleDecisionUseCase = beginRuleDecisionUseCase,
     )
+
+    /**
+     * 寫入開局桌況與 AI 玩家，給規則選擇一般時間設定，並在局首開啟規則選擇視窗，與正式開局流程相同。
+     *
+     * @param state 開局桌況。
+     * @param aiPlayerStrategyKeys 玩家與策略 key 的對應。
+     */
+    suspend fun start(state: TableState, aiPlayerStrategyKeys: Map<Uuid, String>) {
+        gameRepository.setTableState(state, aiPlayerStrategyKeys)
+        gameRepository.updateGame(state.id) { game ->
+            checkNotNull(game).copy(flowConfig = game.flowConfig.copy(ruleDecision = RuleDecisionConfig(RULE_DECISION_TIME))) to Unit
+        }
+        beginRuleDecisionUseCase(state.id, RuleDecisionTiming.ROUND_START)
+    }
+
+    /** 測試常數。 */
+    private companion object {
+        /** 規則選擇的一般時間設定。 */
+        val RULE_DECISION_TIME = 30.seconds
+    }
 }
