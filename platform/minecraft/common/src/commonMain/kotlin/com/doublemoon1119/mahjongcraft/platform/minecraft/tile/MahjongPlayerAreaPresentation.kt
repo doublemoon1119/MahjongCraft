@@ -45,6 +45,9 @@ import kotlin.uuid.Uuid
  * @property followUpSteps 這次摸牌之後依序自動移出與補牌的步驟，依 [DrawFollowUpTimeline] 逐步播放；各步移出的牌也包含在
  * [setAsideTileIds]，第一步移出的是這次摸到的牌之一，每一步移出的牌在那一步開始時位於摸牌位，[drawnTileId] 是處理結束後
  * 留在摸牌位的牌。空清單（預設值）代表沒有。
+ * @property sequenceSteps 這位玩家依序完成的牌區變化，開始時刻已與其他玩家的步驟一起排定；不為空時移出的牌從手中目前位置
+ *   飛到移出區，摸入的牌從牌牆飛到最終位置，之後還要再移出的牌先落在摸牌位；其餘立牌在這位玩家第一步開始時才移到最終位置。
+ *   各步移出的牌也包含在 [setAsideTileIds]。
  * @property slideTicks 大於 0 時，不播放其他動畫的立牌、摸牌位、副露與移出的牌從目前位置以這個時長一起平移到新位置，
  * 例如桌角物件變寬而整區讓開時；0（預設值）時瞬間移動。
  */
@@ -64,5 +67,6 @@ data class MahjongPlayerAreaPresentation(
     val setAsideTileIds: List<Uuid> = emptyList(),
     val animatedSetAsideTileIds: Set<Uuid> = emptySet(),
     val followUpSteps: List<DrawFollowUpAnimationStep> = emptyList(),
+    val sequenceSteps: List<SequencedAreaAnimationStep> = emptyList(),
     val slideTicks: Int = 0,
 )

@@ -256,6 +256,23 @@ interface GamePresentationPublisher {
     )
 
     /**
+     * 通知平台多位玩家依序完成的牌區變化，例如開局時各家依序補花。
+     *
+     * 平台應依 [steps] 的順序逐步呈現：前一步的牌落地後才開始下一步，跨玩家也一樣；同一位玩家可以出現在多步。
+     * [areas] 是所有步驟完成後各相關玩家的牌區，未參與任何一步的牌直接擺到最終位置。每一步移出的牌也包含在該玩家的
+     * [PlayerAreaPresentationState.setAsideTileIds]，摸入的牌最後在立牌或摸牌位。
+     *
+     * @param gameId 對局 Uuid。
+     * @param areas 完成後各相關玩家的牌區，每位玩家一筆。
+     * @param steps 依呈現順序排列的牌區變化，涉及的座位都必須在 [areas] 中。
+     */
+    fun publishPlayerAreaSequence(
+        gameId: Uuid,
+        areas: List<PlayerAreaPresentationState>,
+        steps: List<PlayerAreaSequenceStep>,
+    )
+
+    /**
      * 通知平台本局開局（或換局）的初次發牌。
      *
      * 一次帶齊所有座位的最終手牌，讓平台能讓各座位同一批的發牌同時進行；發牌完成後的手牌變化一律改用

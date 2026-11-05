@@ -14,6 +14,7 @@ import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
 import com.doublemoon1119.mahjongcraft.logic.component.ComponentRegistry
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import com.doublemoon1119.mahjongcraft.logic.table.DrawSource
+import com.doublemoon1119.mahjongcraft.logic.table.drawFromLiveWall
 import kotlin.uuid.Uuid
 
 /**
@@ -66,32 +67,22 @@ class DrawTileUseCase(
                 !state.isDrawWindowOpenFor(playerId) ->
                     state to Outcome.Error(GameError.IllegalAction(playerId, gameId, GameAction.Draw))
                 else -> {
-                    val (tile, newWall) = state.tileWall.draw()
-                    if (tile == null) {
+                    val draw = state.drawFromLiveWall(playerId)
+                    if (draw == null) {
                         state to Outcome.Error(GameError.WallExhausted(gameId))
                     } else {
                         val module = moduleRegistry.getModule(state.config)
-                        val drawnPlayer = state.currentPlayer
-                            .copy(hand = state.currentPlayer.hand.copy(lastDrawn = tile))
-                            .clearPassedTiles()
-                            .recordAction(GameAction.Draw)
+                        val drawnPlayer = draw.tableState.currentPlayer
                         val updatedPlayer = RuleComponentChecker(componentRegistry, module.id).applyPlayerPatch(
                             tableState = state,
                             player = drawnPlayer,
                             patch = module.onPlayerDrew(drawnPlayer),
                             source = "onPlayerDrew",
                         )
-                        val updatedPlayers = state.players.map { if (it.id == playerId) updatedPlayer else it }
-                        val remainingWallTileIds = (newWall.getAllTiles() + state.reservedWallTiles)
-                            .mapTo(mutableSetOf()) { it.id }
-                        val drawnState = state.copy(
-                            tileWall = newWall,
-                            players = updatedPlayers,
-                            physicalWallLayout = state.physicalWallLayout?.retainOnly(remainingWallTileIds),
-                        )
-                        val followUp = DrawFollowUpApplier.run(drawnState, playerId, DrawSource.LiveWall, listOf(tile), module, componentRegistry = componentRegistry)
+                        val drawnState = draw.tableState.copy(players = draw.tableState.players.map { if (it.id == playerId) updatedPlayer else it })
+                        val followUp = DrawFollowUpApplier.run(drawnState, playerId, DrawSource.LiveWall, listOf(draw.tile), module, componentRegistry = componentRegistry)
 
-                        followUp.tableState to Outcome.Success(DrawResult(tile, followUp))
+                        followUp.tableState to Outcome.Success(DrawResult(draw.tile, followUp))
                     }
                 }
             }

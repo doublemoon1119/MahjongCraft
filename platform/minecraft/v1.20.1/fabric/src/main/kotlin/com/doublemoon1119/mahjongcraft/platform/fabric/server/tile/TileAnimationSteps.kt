@@ -292,6 +292,28 @@ internal object TileAnimationSteps {
     }
 
     /**
+     * 等到 [startGameTime] 才從當時的位置平移到 [finalPlacement]，沒有拋物線，姿態改為 [pose]。
+     *
+     * 呼叫時牌必須已經靜止，起點使用 entity 目前的位置；用於依序呈現的牌區變化，讓立牌等這位玩家輪到時才重新排列。
+     *
+     * @param tile 要平移的牌 entity。
+     * @param finalPlacement 新的座標與朝向。
+     * @param pose 平移後的牌姿態。
+     * @param durationTicks 平移時長。
+     * @param startGameTime 開始平移的遊戲時間。
+     */
+    fun scheduleSlideAt(
+        tile: MahjongTileEntity,
+        finalPlacement: MahjongTileWallPlacement,
+        pose: MahjongTilePose,
+        durationTicks: Int,
+        startGameTime: Long,
+    ) {
+        tile.enqueueAll(listOf(AnimationStep.WaitUntil(startGameTime)))
+        scheduleSlide(tile, finalPlacement, pose, durationTicks)
+    }
+
+    /**
      * 摸牌後自動移出的動畫：等到 [startGameTime]，這張牌從摸牌位以可見的拋物線飛到移出區最終格位。
      *
      * 呼叫時這張牌通常還在牌牆上，摸牌動畫已先排入同一個動畫佇列，因此起點直接使用摸牌位 [from]，

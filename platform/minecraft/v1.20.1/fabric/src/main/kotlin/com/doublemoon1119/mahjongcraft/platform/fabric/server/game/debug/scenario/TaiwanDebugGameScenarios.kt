@@ -27,8 +27,9 @@ import kotlin.uuid.Uuid
 internal object TaiwanDebugGameScenarios {
     /** 所有台灣麻將驗收情境。 */
     val all: List<DebugGameScenario> = listOf(
-        // 局首補花與途中連續補花：莊家起手兩張花、下家一張、上家一張，對家沒有花。莊家的第一張補牌又是花，連補一次。
-        // 開局後第一次從活牌摸到的牌是花，補到的牌又是花，再連補一次。第八張花在活牌中段。
+        // 局首逐輪補花與途中連續補花：莊家先摸開門的第一張，再從莊家開始補花。莊家起手兩張花、下家一張、上家一張，
+        // 對家沒有花；莊家第一輪補到的第一張又是花，等這一輪結束後的下一輪再補。莊家打出第一張牌後，下家摸到的牌是花，
+        // 補到的牌又是花，當場再補一次。第八張花在活牌中段。
         TaiwanOpeningScenario(id = "mahjongcraft:taiwan_flower_replacement") { dealt, _ ->
             val dealer = dealt.dealerIndex
             val supplementalOrder = dealt.reservedWallTiles
@@ -37,7 +38,7 @@ internal object TaiwanDebugGameScenarios {
                     dealt.handTilesOf(dealer + 1).take(1) +
                     dealt.handTilesOf(dealer + 3).take(1) +
                     supplementalOrder[0] +
-                    dealt.tileWall.getAllTiles().first() +
+                    dealt.tileWall.getAllTiles()[DOWNSTREAM_FIRST_DRAW] +
                     supplementalOrder[FIRST_MID_GAME_SUPPLEMENT] +
                     dealt.tileWall.getAllTiles()[dealt.tileWall.remainingCount / 2],
             )
@@ -279,5 +280,8 @@ private const val ALL_FLOWERS: Int = 8
 /** 七搶一需要的花牌張數。 */
 private const val SEVEN_FLOWERS: Int = 7
 
-/** 途中第一次補花時，保留區最前端是開局後的第幾張補牌：莊家連補三張、下家與上家各一張之後。 */
+/** 下家第一次摸牌摸到的是第幾張活牌：莊家先摸走開門的第一張。 */
+private const val DOWNSTREAM_FIRST_DRAW: Int = 1
+
+/** 途中第一次補花時，保留區最前端是開局後的第幾張補牌：莊家兩輪共補三張、下家與上家各一張之後。 */
 private const val FIRST_MID_GAME_SUPPLEMENT: Int = 5

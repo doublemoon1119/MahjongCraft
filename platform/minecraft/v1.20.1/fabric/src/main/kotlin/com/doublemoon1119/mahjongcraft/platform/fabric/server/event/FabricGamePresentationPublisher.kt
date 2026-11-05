@@ -11,6 +11,8 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinCelebrationRequ
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementPresentationRequest
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.GamePresentationPublisher
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.MeldPresentation
+import com.doublemoon1119.mahjongcraft.flow.common.game.service.PlayerAreaPresentationState
+import com.doublemoon1119.mahjongcraft.flow.common.game.service.PlayerAreaSequenceStep
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.WinPresentationRequest
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.toPresentation
 import com.doublemoon1119.mahjongcraft.flow.server.game.policy.GameVisibilityPolicy
@@ -105,6 +107,8 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileWallTr
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileWallTransitionResult
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongWinCelebrationPresentation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.PlayerAreaSequenceTimeline
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.SequencedAreaAnimationStep
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileMotionAnimationSpec
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.UNKNOWN_TILE_ASSET_KEY
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.backAppearance
@@ -920,6 +924,50 @@ class FabricGamePresentationPublisher(
             newlySetAsideTileIds = newlySetAsideTileIds,
             followUpSteps = followUpSteps,
         )
+    }
+
+    /**
+     * 依 [PlayerAreaSequenceTimeline] 排定每一步的開始時刻，再把各座位自己的步驟連同最終牌區交給 [playerAreaPresenter]；
+     * 所有座位共用同一個開始時刻，因此後面的步驟會等前面的步驟落地，跨玩家也一樣。
+     */
+    override fun publishPlayerAreaSequence(
+        gameId: Uuid,
+        areas: List<PlayerAreaPresentationState>,
+        steps: List<PlayerAreaSequenceStep>,
+    ) {
+        if (serverHolder.current() == null) {
+            logger.warn("publishPlayerAreaSequence gameId={} skipped: no active server", gameId)
+            return
+        }
+        val stepStarts = PlayerAreaSequenceTimeline.stepStartTicks(steps.map { it.setAsideTileIds.size to it.drawnTileIds.size })
+        val sequencedBySeat = steps.zip(stepStarts).groupBy({ (step, _) -> step.seatIndex }) { (step, startTicks) ->
+            SequencedAreaAnimationStep(step.setAsideTileIds, step.drawnTileIds, startTicks)
+        }
+        launchPendingPresentation(gameId, "publishPlayerAreaSequence") {
+            val resolved = resolveTableContext(gameId, "publishPlayerAreaSequence") ?: return@launchPendingPresentation
+            val tableState = gameRepository.getTableState(gameId) ?: return@launchPendingPresentation
+            val module = moduleRegistry.getModule(tableState.config)
+            val desiredHandStates = tilePoseStates(tableState, module)
+            val cornerWidths = describerFor(tableState).cornerWidthsBySeat(tableState)
+            areas.forEach { area ->
+                playerAreaPresenter.present(
+                    MahjongPlayerAreaPresentation(
+                        tableId = gameId,
+                        tableLocation = resolved.location,
+                        tableFacing = resolved.facing,
+                        seatLayout = MahjongTableSeatLayout.forPlayerCount(tableState.players.size),
+                        seatIndex = area.seatIndex,
+                        standingTileIds = area.standingTileIds,
+                        drawnTileId = area.drawnTileId,
+                        melds = area.melds.map { it.toTileGroup() },
+                        cornerWidth = cornerLayout.widthForPlayerArea(gameId, tableState, area.seatIndex, cornerWidths),
+                        setAsideTileIds = area.setAsideTileIds,
+                        sequenceSteps = sequencedBySeat[area.seatIndex].orEmpty(),
+                        tilePoseStates = desiredHandStates,
+                    ),
+                )
+            }
+        }
     }
 
     /**

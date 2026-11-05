@@ -15,6 +15,8 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.service.GameEventPublish
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.GamePresentationBusyGate
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.GamePresentationPublisher
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.MeldPresentation
+import com.doublemoon1119.mahjongcraft.flow.common.game.service.PlayerAreaPresentationState
+import com.doublemoon1119.mahjongcraft.flow.common.game.service.PlayerAreaSequenceStep
 import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
 import com.doublemoon1119.mahjongcraft.flow.common.room.model.JoinReason
 import com.doublemoon1119.mahjongcraft.flow.common.room.model.LeaveReason
@@ -433,6 +435,9 @@ private class NoOpPresentation : GamePresentationPublisher {
 
     /** 丟棄玩家區域通知。 */
     override fun publishPlayerTilesUpdated(gameId: Uuid, seatIndex: Int, standingTileIds: List<Uuid>, drawnTileId: Uuid?, melds: List<MeldPresentation>, setAsideTileIds: List<Uuid>, isNewlyDrawn: Boolean, newlyClaimedMeldTileIds: Set<Uuid>, newlySetAsideTileIds: Set<Uuid>, followUpSteps: List<DrawFollowUpPresentationStep>) = Unit
+
+    /** 丟棄依序牌區變化通知。 */
+    override fun publishPlayerAreaSequence(gameId: Uuid, areas: List<PlayerAreaPresentationState>, steps: List<PlayerAreaSequenceStep>) = Unit
 
     /** 丟棄初始發牌通知。 */
     override fun publishInitialDeal(gameId: Uuid, handTileIdsBySeatIndex: Map<Int, List<Uuid>>, postFlipHandTileIdsBySeatIndex: Map<Int, List<Uuid>>, dealerSeatIndex: Int, dealBatchSizes: List<Int>, openingDiceCounts: List<Int>) = Unit

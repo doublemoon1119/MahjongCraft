@@ -30,6 +30,8 @@ import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanTableComponents
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanTaiType
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.tile.TaiwanTileTypes
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
+import com.doublemoon1119.mahjongcraft.logic.table.TileReplacementRounds
+import com.doublemoon1119.mahjongcraft.logic.table.drawDealerOpeningTile
 import kotlin.time.Duration.Companion.seconds
 import kotlin.uuid.Uuid
 
@@ -89,8 +91,9 @@ object TaiwanFlowerRuleDecisionResolver : RuleDecisionResolver {
         ruleModule: MahjongRuleModule<*>,
     ): RuleDecisionResolution {
         require(ruleModule.config is TaiwanRuleConfig) { "Taiwan flower flow requires Taiwan config" }
+        val openingDraw = if (decision.stepId == TaiwanFlowerRuleDecisionIds.PROCESS_FLOWERS) tableState.drawDealerOpeningTile(ruleModule) else null
         val result = when (decision.stepId) {
-            TaiwanFlowerRuleDecisionIds.PROCESS_FLOWERS -> TaiwanFlowerFlow.process(tableState, openingOrder(tableState))
+            TaiwanFlowerRuleDecisionIds.PROCESS_FLOWERS -> TaiwanFlowerFlow.process(openingDraw?.tableState ?: tableState, openingOrder(tableState))
             TaiwanFlowerRuleDecisionIds.PROCESS_DRAW_FOLLOW_UP -> {
                 val pending = requireNotNull(tableState.components[TaiwanTableComponents.PENDING_FLOWER_FOLLOW_UP]) {
                     "Taiwan draw follow-up is missing its pending flower"
@@ -114,16 +117,29 @@ object TaiwanFlowerRuleDecisionResolver : RuleDecisionResolver {
 
             else -> error("Unknown Taiwan flower step: ${decision.stepId}")
         }
-        val settled = if (decision.timing == RuleDecisionTiming.ROUND_START) result.withOpeningReplacementsStanding() else result
-        return resolution(settled, decision.stepIndex)
+        val isOpening = decision.timing == RuleDecisionTiming.ROUND_START
+        val settled = if (isOpening) result.withOpeningReplacementsStanding() else result
+        val openingDrawStep = openingDraw?.let { listOf(RuleDecisionPlayerAreaPresentationStep.Draw(tableState.dealerPlayerId, it.tile.id)) }.orEmpty()
+        return resolution(settled, decision.stepIndex) { steps -> openingDrawStep + steps.toPresentationSteps(isOpening) }
     }
 
-    /** 將純規則結果轉成規則選擇流程結果。 */
-    private fun resolution(result: TaiwanFlowerFlow.Result, stepIndex: Int): RuleDecisionResolution = when (result) {
+    /**
+     * 將純規則結果轉成規則選擇流程結果。
+     *
+     * @param result 補花流程的結果。
+     * @param stepIndex 目前的選擇步驟序號。
+     * @param presentationSteps 把補花的牌區變化轉成呈現步驟。
+     * @return 規則選擇流程結果。
+     */
+    private fun resolution(
+        result: TaiwanFlowerFlow.Result,
+        stepIndex: Int,
+        presentationSteps: (List<TileReplacementRounds.Step>) -> List<RuleDecisionPlayerAreaPresentationStep>,
+    ): RuleDecisionResolution = when (result) {
         is TaiwanFlowerFlow.Result.Completed -> RuleDecisionResolution(
             tableState = result.tableState.withoutPendingFlower(),
             nextStep = null,
-            playerAreaPresentationSteps = result.steps.toPresentationSteps(),
+            playerAreaPresentationSteps = presentationSteps(result.steps),
         )
         is TaiwanFlowerFlow.Result.Exhausted -> RuleDecisionResolution(
             result.tableState.withoutPendingFlower().copy(
@@ -132,16 +148,17 @@ object TaiwanFlowerRuleDecisionResolver : RuleDecisionResolver {
                 },
             ),
             nextStep = null,
-            playerAreaPresentationSteps = result.steps.toPresentationSteps(),
+            playerAreaPresentationSteps = presentationSteps(result.steps),
         )
 
         is TaiwanFlowerFlow.Result.AwaitingDecision -> RuleDecisionResolution(
             result.pending.tableState.withPendingFlower(
                 result.pending.revealingPlayerId,
                 result.pending.revealedFlower.id,
+                result.pending.position.replacementsDue,
             ),
             nextStep = flowerWinStep(result.pending.opportunity.winnerId, stepIndex + 1),
-            playerAreaPresentationSteps = result.steps.toPresentationSteps(),
+            playerAreaPresentationSteps = presentationSteps(result.steps),
         )
 
         is TaiwanFlowerFlow.Result.Won -> {
@@ -203,14 +220,19 @@ object TaiwanFlowerRuleDecisionResolver : RuleDecisionResolver {
         }
         require(opportunity.winnerId == winnerId) { "Taiwan special flower win belongs to another player" }
         val order = if (timing == RuleDecisionTiming.ROUND_START) openingOrder(tableState) else listOf(pending.playerId)
+        val revealerIndex = order.indexOf(pending.playerId)
+        val position = if (pending.replacementsDue > 0) {
+            TileReplacementRounds.Position(revealerIndex, pending.replacementsDue)
+        } else {
+            TileReplacementRounds.Position(playerOrderIndex = (revealerIndex + 1) % order.size, replacementsDue = 0)
+        }
         return TaiwanFlowerFlow.Pending(
             tableState = tableState,
             opportunity = opportunity,
             playerOrderIds = order,
-            playerOrderIndex = order.indexOf(pending.playerId),
+            position = position,
             revealingPlayerId = pending.playerId,
             revealedFlower = flower,
-            replacementCompleted = opportunity.type == TaiwanTaiType.EIGHT_FLOWERS,
         )
     }
 
@@ -237,24 +259,46 @@ object TaiwanFlowerRuleDecisionResolver : RuleDecisionResolver {
     )
 }
 
-/** 將規則層補花步驟轉成規則選擇結果使用的共用牌區呈現資料。 */
-private fun List<TaiwanFlowerFlow.Step>.toPresentationSteps(): List<RuleDecisionPlayerAreaPresentationStep> = map { step ->
-    when (step) {
-        is TaiwanFlowerFlow.Step.FlowerRevealed -> RuleDecisionPlayerAreaPresentationStep.FollowUp(
-            playerId = step.playerId,
-            followUpStep = DrawFollowUpPresentationStep(
-                action = TAIWAN_REVEAL_FLOWER_ACTION,
-                setAsideTileId = step.flower.id,
-                drawnTileIds = listOfNotNull(step.replacementTile?.id),
-                physicalWallTransitionPhases = emptyList(),
-                scoring = null,
-            ),
-        )
-        is TaiwanFlowerFlow.Step.ReplacementDrawn -> RuleDecisionPlayerAreaPresentationStep.Draw(
-            playerId = step.playerId,
-            tileId = step.replacementTile.id,
-        )
+/**
+ * 將補花的牌區變化轉成共用的呈現步驟；同一位玩家緊接著的公開與補牌合成一步。
+ *
+ * 局首補花的花可能在立牌中，以「從手牌移出並補牌」依序呈現。牌局中摸到的花在摸牌時已經呈現，這裡從它的補牌開始：
+ * 補到的牌又是花時，以「摸到後從摸牌位移出並補牌」呈現，不另外呈現摸到它；最後留下的補牌以一般摸牌呈現。
+ *
+ * @param isOpening 是否為局首補花。
+ * @return 依原順序排列的呈現步驟。
+ */
+private fun List<TileReplacementRounds.Step>.toPresentationSteps(isOpening: Boolean): List<RuleDecisionPlayerAreaPresentationStep> {
+    val steps = mutableListOf<RuleDecisionPlayerAreaPresentationStep>()
+    var index = 0
+    while (index < size) {
+        val step = this[index]
+        val setAsideNext = (getOrNull(index + 1) as? TileReplacementRounds.Step.SetAside)?.tiles.orEmpty()
+        if (!isOpening && step is TileReplacementRounds.Step.Replaced && step.tiles.any { it in setAsideNext }) {
+            index++
+            continue
+        }
+        val replaced = (getOrNull(index + 1) as? TileReplacementRounds.Step.Replaced)
+            ?.takeIf { step is TileReplacementRounds.Step.SetAside && it.playerId == step.playerId }
+        val setAside = (step as? TileReplacementRounds.Step.SetAside)?.tiles.orEmpty()
+        val drawn = replaced?.tiles ?: (step as? TileReplacementRounds.Step.Replaced)?.tiles.orEmpty()
+        steps += when {
+            isOpening -> RuleDecisionPlayerAreaPresentationStep.Replacement(step.playerId, setAside.map { it.id }, drawn.map { it.id })
+            setAside.isEmpty() -> RuleDecisionPlayerAreaPresentationStep.Draw(step.playerId, drawn.single().id)
+            else -> RuleDecisionPlayerAreaPresentationStep.FollowUp(
+                playerId = step.playerId,
+                followUpStep = DrawFollowUpPresentationStep(
+                    action = TAIWAN_REVEAL_FLOWER_ACTION,
+                    setAsideTileId = setAside.single().id,
+                    drawnTileIds = drawn.map { it.id },
+                    physicalWallTransitionPhases = emptyList(),
+                    scoring = null,
+                ),
+            )
+        }
+        index += if (replaced != null) 2 else 1
     }
+    return steps
 }
 
 /** 局首補花時，閒家補到的牌併入立牌；莊家保留首次行動所需的摸牌位。 */
@@ -277,10 +321,10 @@ private fun TableState.withoutPendingFlower(): TableState = copy(
     components = components.without(TaiwanTableComponents.PENDING_FLOWER_FOLLOW_UP),
 )
 
-/** 更新尚待玩家選擇的花牌身分。 */
-private fun TableState.withPendingFlower(playerId: Uuid, tileId: Uuid): TableState = copy(
+/** 更新尚待玩家選擇的花牌身分與亮花者尚未補的張數。 */
+private fun TableState.withPendingFlower(playerId: Uuid, tileId: Uuid, replacementsDue: Int): TableState = copy(
     components = components.with(
         TaiwanTableComponents.PENDING_FLOWER_FOLLOW_UP,
-        TaiwanPendingFlowerFollowUp(playerId, tileId),
+        TaiwanPendingFlowerFollowUp(playerId, tileId, replacementsDue),
     ),
 )

@@ -5,6 +5,7 @@ import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.tile.TaiwanTileTypes
 import com.doublemoon1119.mahjongcraft.logic.table.PlayerTileAreas
+import com.doublemoon1119.mahjongcraft.logic.table.TileReplacementRounds
 import com.doublemoon1119.mahjongcraft.logic.table.TileWall
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeIdentifiedTileFactory
@@ -37,9 +38,9 @@ class TaiwanFlowerFlowTest {
         assertEquals(finalReplacement, result.tableState.players[0].hand.lastDrawn)
     }
 
-    /** 局前從莊家開始，必須補完同一家的連續花才輪到下一家。 */
+    /** 局前逐輪補花：從莊家開始，每一家一次公開手上所有的花、補同樣張數；補到的花等下一輪再補。 */
     @Test
-    fun `opening flowers finish one player before the next`() {
+    fun `opening flowers go round by round`() {
         val firstFlower = flower(0)
         val secondFlower = flower(1)
         val nextPlayerFlower = flower(2)
@@ -58,6 +59,8 @@ class TaiwanFlowerFlowTest {
             reservedTiles = listOf(firstReplacement, secondReplacement, thirdReplacement, fourthReplacement) +
                 List(12) { ordinary(Tile.Numeric(Tile.Suit.Dot, 9)) },
         )
+        val dealer = table.players[0].id
+        val next = table.players[1].id
 
         val result = assertIs<TaiwanFlowerFlow.Result.Completed>(
             TaiwanFlowerFlow.process(table, table.players.map { it.id }),
@@ -68,16 +71,18 @@ class TaiwanFlowerFlowTest {
             result.tableState.players[0].tileAreas[TaiwanPlayerTileAreaIds.FLOWERS]?.tiles,
         )
         assertEquals(listOf(nextPlayerFlower), result.tableState.players[1].tileAreas[TaiwanPlayerTileAreaIds.FLOWERS]?.tiles)
-        assertEquals(thirdReplacement, result.tableState.players[0].hand.lastDrawn)
-        assertEquals(fourthReplacement, result.tableState.players[1].hand.lastDrawn)
+        assertEquals(fourthReplacement, result.tableState.players[0].hand.lastDrawn)
+        assertEquals(thirdReplacement, result.tableState.players[1].hand.lastDrawn)
         assertEquals(
             listOf(
-                Triple(table.players[0].id, firstFlower, firstReplacement),
-                Triple(table.players[0].id, secondFlower, secondReplacement),
-                Triple(table.players[0].id, firstReplacement, thirdReplacement),
-                Triple(table.players[1].id, nextPlayerFlower, fourthReplacement),
+                TileReplacementRounds.Step.SetAside(dealer, listOf(firstFlower, secondFlower)),
+                TileReplacementRounds.Step.Replaced(dealer, listOf(firstReplacement, secondReplacement)),
+                TileReplacementRounds.Step.SetAside(next, listOf(nextPlayerFlower)),
+                TileReplacementRounds.Step.Replaced(next, listOf(thirdReplacement)),
+                TileReplacementRounds.Step.SetAside(dealer, listOf(firstReplacement)),
+                TileReplacementRounds.Step.Replaced(dealer, listOf(fourthReplacement)),
             ),
-            result.steps.map { step -> step as TaiwanFlowerFlow.Step.FlowerRevealed }.map { step -> Triple(step.playerId, step.flower, step.replacementTile) },
+            result.steps,
         )
     }
 
@@ -96,7 +101,7 @@ class TaiwanFlowerFlowTest {
             TaiwanFlowerFlow.process(table, listOf(table.players[0].id)),
         )
 
-        assertEquals(replacement, result.revealedFlower)
+        assertEquals(table.players[0].id, result.playerId)
         assertEquals(listOf(first, replacement), result.tableState.players[0].tileAreas[TaiwanPlayerTileAreaIds.FLOWERS]?.tiles)
         assertEquals(16, result.tableState.reservedWallTiles.size)
     }
@@ -121,7 +126,7 @@ class TaiwanFlowerFlowTest {
         assertEquals(replacement, result.tableState.players[1].hand.lastDrawn)
         assertEquals(7, result.tableState.players[0].tileAreas[TaiwanPlayerTileAreaIds.FLOWERS]?.tiles?.size)
         assertEquals(1, result.tableState.players[1].tileAreas[TaiwanPlayerTileAreaIds.FLOWERS]?.tiles?.size)
-        assertEquals(listOf(TaiwanFlowerFlow.Step.ReplacementDrawn(table.players[1].id, replacement)), result.steps)
+        assertEquals(listOf(TileReplacementRounds.Step.Replaced(table.players[1].id, listOf(replacement))), result.steps)
     }
 
     /** 七花玩家接受時被搶的花留在亮花者花區、不另外補牌，只有亮花者付款。 */
@@ -161,8 +166,8 @@ class TaiwanFlowerFlowTest {
 
         val result = assertIs<TaiwanFlowerFlow.Result.Exhausted>(TaiwanFlowerFlow.process(table, listOf(table.players[1].id)))
 
-        assertEquals(flowers.last(), result.revealedFlower)
-        assertEquals(table.players[1].id, result.revealingPlayerId)
+        assertEquals(table.players[1].id, result.playerId)
+        assertEquals(listOf(flowers.last()), result.tableState.players[1].tileAreas[TaiwanPlayerTileAreaIds.FLOWERS]?.tiles)
     }
 
     /** 建立具有固定保留區與指定手牌、活牌的四人桌況。 */

@@ -8,6 +8,8 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinCelebrationRequ
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementPresentationRequest
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.GamePresentationPublisher
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.MeldPresentation
+import com.doublemoon1119.mahjongcraft.flow.common.game.service.PlayerAreaPresentationState
+import com.doublemoon1119.mahjongcraft.flow.common.game.service.PlayerAreaSequenceStep
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.WinPresentationRequest
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
@@ -70,6 +72,9 @@ class FakeGamePresentationPublisher : GamePresentationPublisher {
 
     /** 依對局保留各座位牌區更新的完整呼叫順序。 */
     private val playerTilesUpdates = mutableMapOf<Uuid, MutableList<PlayerTilesContext>>()
+
+    /** 依對局保留依序牌區變化的完整呼叫順序。 */
+    private val playerAreaSequences = mutableMapOf<Uuid, MutableList<PlayerAreaSequence>>()
 
     /** 依對局保留不重建牌牆的布局更新。 */
     private val wallLayoutUpdates = mutableMapOf<Uuid, MutableList<TileWallPhysicalLayout>>()
@@ -188,6 +193,14 @@ class FakeGamePresentationPublisher : GamePresentationPublisher {
         playerTilesUpdates.getOrPut(gameId, ::mutableListOf).add(playerTiles.getValue(gameId))
     }
 
+    override fun publishPlayerAreaSequence(
+        gameId: Uuid,
+        areas: List<PlayerAreaPresentationState>,
+        steps: List<PlayerAreaSequenceStep>,
+    ) {
+        playerAreaSequences.getOrPut(gameId, ::mutableListOf).add(PlayerAreaSequence(areas, steps))
+    }
+
     override fun publishInitialDeal(
         gameId: Uuid,
         handTileIdsBySeatIndex: Map<Int, List<Uuid>>,
@@ -279,6 +292,14 @@ class FakeGamePresentationPublisher : GamePresentationPublisher {
 
     /** 取得指定對局的牌區更新呼叫順序，不提供內部可變列表。 */
     fun getPublishedPlayerTilesUpdates(gameId: Uuid): List<PlayerTilesContext> = playerTilesUpdates[gameId].orEmpty().toList()
+
+    /**
+     * 取得指定對局依序牌區變化的完整呼叫順序。
+     *
+     * @param gameId 對局識別碼。
+     * @return 依呼叫順序排列的依序牌區變化。
+     */
+    fun getPublishedPlayerAreaSequences(gameId: Uuid): List<PlayerAreaSequence> = playerAreaSequences[gameId].orEmpty().toList()
 
     /** 取得指定對局的增量牌牆更新，不提供內部可變列表。 */
     fun getPublishedWallLayoutUpdates(gameId: Uuid): List<TileWallPhysicalLayout> = wallLayoutUpdates[gameId].orEmpty().toList()

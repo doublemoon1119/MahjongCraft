@@ -18,6 +18,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongAreaTilePl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongInitialDealPresentation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongPlayerAreaLayout
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongPlayerAreaLayoutInput
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongPlayerAreaLayoutResult
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongPlayerAreaPresentation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongPlayerAreaPresentationResult
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongPlayerAreaPresenter
@@ -124,16 +125,20 @@ class FabricMahjongPlayerAreaPresenter(
         // 摸牌後自動處理補到、最後留在立牌的牌由下方依時間軸摸進立牌，不在這裡直接擺好。
         val followUpDrawnTileIds = presentation.followUpSteps.flatMapTo(mutableSetOf()) { step -> step.drawnTileIds }
         val standingPlacements = layout.standing.associate { it.tileId to it.placement }
+        // 依序呈現的牌由下方逐步排定；其餘立牌等這位玩家第一步開始時才移到最終位置，避免先填進還沒移出的牌所在的格位。
+        val sequenceStartGameTime = presentation.sequenceSteps.minOfOrNull { it.startTicks }?.let { world.time + it }
+        val sequencedTileIds = presentation.sequenceSteps.flatMapTo(mutableSetOf()) { step -> step.setAsideTileIds + step.drawnTileIds }
 
         layout.standing.forEach { standing ->
-            if (standing.tileId in followUpDrawnTileIds) return@forEach
+            if (standing.tileId in followUpDrawnTileIds || standing.tileId in sequencedTileIds) return@forEach
             val tile = claimTile(standing.tileId) ?: return@forEach
             tile.assignToTable(presentation.tableId)
-            placeExisting(
-                tile,
-                standing.placement,
-                poseFor(standing.tileId, presentation.tilePoseStates),
-            )
+            val pose = poseFor(standing.tileId, presentation.tilePoseStates)
+            if (sequenceStartGameTime != null) {
+                TileAnimationSteps.scheduleSlideAt(tile, standing.placement, pose, SEQUENCE_SLIDE_TICKS, sequenceStartGameTime)
+            } else {
+                placeExisting(tile, standing.placement, pose)
+            }
         }
 
         val drawnSlotPlacement = layout.drawnSlot
@@ -163,7 +168,7 @@ class FabricMahjongPlayerAreaPresenter(
                 )
             }
         } else {
-            presentation.drawnTileId?.let { drawnTileId ->
+            presentation.drawnTileId?.takeUnless { it in sequencedTileIds }?.let { drawnTileId ->
                 val tile = claimTile(drawnTileId)
                 if (tile != null) {
                     tile.assignToTable(presentation.tableId)
@@ -226,8 +231,11 @@ class FabricMahjongPlayerAreaPresenter(
             }
         }
 
+        presentSequenceSteps(presentation, layout, standingPlacements, drawnSlotPlacement, ::claimTile)
+
         var setAsidePopupAnchor: MahjongTileEntity? = null
         layout.setAside.forEach { placed ->
+            if (placed.tileId in sequencedTileIds) return@forEach
             val followUpStartGameTime = followUpStartBySetAsideTileId[placed.tileId]
             val tile = if (followUpStartGameTime != null) {
                 claimTile(placed.tileId)?.also { followUpTile ->
@@ -602,12 +610,98 @@ class FabricMahjongPlayerAreaPresenter(
 
     /** 正式手牌／副露建立與查詢使用的固定參數。 */
     private companion object {
+        /** 依序呈現時，其餘立牌移到最終位置的平移時長。 */
+        const val SEQUENCE_SLIDE_TICKS: Int = MahjongTileTableLayout.DISCARD_FLIGHT_DURATION_TICKS
+
         /** controller 周圍查詢正式手牌／副露的水平半徑。 */
         const val TILE_SEARCH_HORIZONTAL: Double = 2.0
 
         /** controller 周圍查詢正式手牌／副露的垂直半徑。 */
         const val TILE_SEARCH_VERTICAL: Double = 2.0
     }
+
+    /**
+     * 排定依序呈現的牌區變化。
+     *
+     * 移出的牌從手中目前位置飛到移出區。摸入的牌一律先落在摸牌位，同一步摸入好幾張時沿著手牌方向在摸牌位之後依序排開；
+     * 這一步的牌全部落地後，才移到最終位置併入手牌，不直接插進立牌。之後還要再移出的牌留在落下的位置，輪到它的那一步再
+     * 從那裡飛到移出區。
+     *
+     * @param presentation 這位玩家的牌區呈現。
+     * @param layout 依最終牌區算出的位置。
+     * @param standingPlacements 最終立牌位置。
+     * @param drawnSlotPlacement 摸牌位位置。
+     * @param claimTile 取得既有的牌 entity；找不到時記錄並回傳 null。
+     */
+    private fun presentSequenceSteps(
+        presentation: MahjongPlayerAreaPresentation,
+        layout: MahjongPlayerAreaLayoutResult,
+        standingPlacements: Map<Uuid, MahjongTileWallPlacement>,
+        drawnSlotPlacement: MahjongTileWallPlacement,
+        claimTile: (Uuid) -> MahjongTileEntity?,
+    ) {
+        if (presentation.sequenceSteps.isEmpty()) return
+        val setAsidePlacements = layout.setAside.associate { it.tileId to it.placement }
+        val setAsideStepByTileId = presentation.sequenceSteps.withIndex()
+            .flatMap { (index, step) -> step.setAsideTileIds.map { it to index } }
+            .toMap()
+        val handStep = handDirectionStep(layout)
+        val landingByTileId = mutableMapOf<Uuid, MahjongTileWallPlacement>()
+        presentation.sequenceSteps.forEachIndexed { stepIndex, step ->
+            step.setAsideTileIds.forEach { tileId ->
+                val tile = claimTile(tileId) ?: return@forEach
+                tile.assignToTable(presentation.tableId)
+                TileAnimationSteps.scheduleSetAsideFromDrawnSlot(
+                    tile = tile,
+                    from = landingByTileId[tileId] ?: MahjongTileWallPlacement(tile.x, tile.y, tile.z, tile.yaw),
+                    finalPlacement = setAsidePlacements.getValue(tileId),
+                    endPose = MahjongTilePose.FACE_UP,
+                    startGameTime = tile.world.time + step.startTicks,
+                )
+            }
+            val landedTicks = step.drawStartTicks(step.drawnTileIds.size)
+            step.drawnTileIds.forEachIndexed { drawIndex, tileId ->
+                val tile = claimTile(tileId) ?: return@forEachIndexed
+                tile.assignToTable(presentation.tableId)
+                val pose = poseFor(tileId, presentation.tilePoseStates)
+                val landing = drawnSlotPlacement.shiftedBy(handStep, drawIndex)
+                TileAnimationSteps.scheduleDrawnTile(
+                    tile = tile,
+                    finalPlacement = landing,
+                    startDelayTicks = step.drawStartTicks(drawIndex),
+                    endPose = pose,
+                )
+                if ((setAsideStepByTileId[tileId] ?: -1) > stepIndex) {
+                    landingByTileId[tileId] = landing
+                } else {
+                    val finalPlacement = standingPlacements[tileId] ?: drawnSlotPlacement
+                    if (finalPlacement != landing) {
+                        TileAnimationSteps.scheduleSlideAt(tile, finalPlacement, pose, SEQUENCE_SLIDE_TICKS, tile.world.time + landedTicks)
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * 相鄰兩張立牌之間的位移，用來在摸牌位之後依序排開同一步摸入的牌；立牌不足兩張時沒有位移。
+     *
+     * @param layout 依最終牌區算出的位置。
+     * @return 沿手牌方向的一張牌位移。
+     */
+    private fun handDirectionStep(layout: MahjongPlayerAreaLayoutResult): Triple<Double, Double, Double> {
+        val (first, second) = layout.standing.take(2).map { it.placement }.takeIf { it.size == 2 } ?: return Triple(0.0, 0.0, 0.0)
+        return Triple(second.x - first.x, second.y - first.y, second.z - first.z)
+    }
+
+    /**
+     * 沿 [step] 位移 [count] 次後的位置，朝向不變。
+     *
+     * @param step 一次位移。
+     * @param count 位移次數。
+     * @return 位移後的位置。
+     */
+    private fun MahjongTileWallPlacement.shiftedBy(step: Triple<Double, Double, Double>, count: Int): MahjongTileWallPlacement = copy(x = x + step.first * count, y = y + step.second * count, z = z + step.third * count)
 
     /** 依逐張共同姿態轉成原生姿態；未指定的牌保持直立。 */
     private fun poseFor(tileId: Uuid, states: List<TilePoseState>): MahjongTilePose = when (
