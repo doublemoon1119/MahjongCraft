@@ -30,8 +30,10 @@ import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleModule
 import com.doublemoon1119.mahjongcraft.logic.table.RoundCompletionClassification
 import com.doublemoon1119.mahjongcraft.logic.table.RoundCompletionSummary
+import com.doublemoon1119.mahjongcraft.logic.table.RoundConclusion
 import com.doublemoon1119.mahjongcraft.logic.table.RoundTransitionDirective
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
+import com.doublemoon1119.mahjongcraft.logic.table.TurnPhase
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
@@ -475,15 +477,31 @@ class GameEventProjectorTest {
     )
 
     /**
-     * 由指定玩家記錄一次動作後的對局。
+     * 由指定玩家記錄一次動作後的對局；胡牌或流局時同時以對應方式結束本局，與正式流程一致。
+     *
+     * 流局由全部玩家記錄時為途中流局，否則為荒牌流局，記錄的玩家為聽牌者。
      *
      * @param action 要記錄的遊戲動作。
      * @param playerIds 要記錄該動作的玩家 UUID。
      * @return 指定玩家新增該動作後的對局副本。
      */
-    private fun Game.recording(action: GameAction, vararg playerIds: Uuid): Game = copy(
-        tableState = tableState.copy(players = tableState.players.map { if (it.id in playerIds) it.recordAction(action) else it }),
-    )
+    private fun Game.recording(action: GameAction, vararg playerIds: Uuid): Game {
+        val conclusion = when (action) {
+            is GameAction.Tsumo, is GameAction.Ron -> RoundConclusion.Win(playerIds.toSet())
+            is GameAction.ExhaustiveDraw -> if (playerIds.size == tableState.playerCount) {
+                RoundConclusion.AbortiveDraw(action.reason)
+            } else {
+                RoundConclusion.ExhaustiveDraw(action.reason, playerIds.toSet())
+            }
+            else -> null
+        }
+        return copy(
+            tableState = tableState.copy(
+                players = tableState.players.map { if (it.id in playerIds) it.recordAction(action) else it },
+                turnPhase = conclusion?.let(TurnPhase::RoundOver) ?: tableState.turnPhase,
+            ),
+        )
+    }
 
     /**
      * 依玩家順序指定本局風位後的桌況。

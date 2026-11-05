@@ -9,6 +9,8 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.extension.BundledMinec
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
+import kotlin.test.assertFalse
+import kotlin.test.assertTrue
 
 class TileAssetKeysTest {
 
@@ -115,6 +117,16 @@ class TileAssetKeysTest {
         }
 
         assertEquals("animal_cat", Tile.Extension(thirdPartyId).toAssetKey(thirdPartyRegistry))
+    }
+
+    /** 基本牌、未知佔位牌與已登記的擴充牌種都有牌面資源；沒有登記的 key 不算。 */
+    @Test
+    fun `known asset keys include standard, unknown and registered keys only`() {
+        STANDARD_TILE_ASSET_KEYS.forEach { assertTrue(registry.isKnownTileAssetKey(it), it) }
+        assertTrue(registry.isKnownTileAssetKey(UNKNOWN_TILE_ASSET_KEY))
+        assertTrue(registry.isKnownTileAssetKey("m5_red"))
+        assertTrue(registry.isKnownTileAssetKey("flower_spring"))
+        assertFalse(registry.isKnownTileAssetKey("example:missing"))
     }
 
     /** 驗證合法 key 保持不變，缺失及非法 key 回退至 unknown。 */

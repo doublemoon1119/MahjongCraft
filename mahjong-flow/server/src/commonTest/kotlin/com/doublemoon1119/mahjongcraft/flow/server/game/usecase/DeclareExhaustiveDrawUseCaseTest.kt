@@ -16,6 +16,8 @@ import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDiscardPile
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiExhaustiveDrawReason
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.riichiPotPoints
+import com.doublemoon1119.mahjongcraft.logic.table.RoundConclusion
+import com.doublemoon1119.mahjongcraft.logic.table.TurnPhase
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import com.doublemoon1119.mahjongcraft.logic.table.toSnapshot
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledCoreExtensionRegistries
@@ -150,6 +152,10 @@ class DeclareExhaustiveDrawUseCaseTest {
         assertTrue(result is Outcome.Success, "Expected Success but got $result")
         assertEquals(RiichiExhaustiveDrawReason.Normal, assertIs<Outcome.Success<DeclaredExhaustiveDraw>>(result).value.settlement.reason)
         val newState = fixtures.gameRepo.getTableState(gameId)!!
+        assertEquals(
+            TurnPhase.RoundOver(RoundConclusion.ExhaustiveDraw(RiichiExhaustiveDrawReason.Normal, setOf(tenpaiPlayer.id))),
+            newState.turnPhase,
+        )
         assertEquals(25000 + 3000, newState.players.first { it.id == tenpaiPlayer.id }.score)
         notenPlayers.forEach { player ->
             assertEquals(25000 - 1000, newState.players.first { it.id == player.id }.score)

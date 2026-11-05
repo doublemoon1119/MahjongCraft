@@ -3,11 +3,13 @@ package com.doublemoon1119.mahjongcraft.flow.server.game.orchestration
 import com.doublemoon1119.mahjongcraft.bundled.TaiwanFlowerRuleDecisionResolver
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.PendingRuleDecision
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionTiming
+import com.doublemoon1119.mahjongcraft.flow.common.game.service.TableStepEvent
 import com.doublemoon1119.mahjongcraft.logic.base.Hand
 import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.logic.component.ComponentSet
 import com.doublemoon1119.mahjongcraft.logic.module.BuiltInRuleModuleIds
+import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TAIWAN_REVEAL_FLOWER_ACTION
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanDiscardPile
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanPendingFlowerFollowUp
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanPlayerTileAreaIds
@@ -15,15 +17,20 @@ import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanRuleModule
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanTableComponents
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.tile.TaiwanTileTypes
+import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.logic.table.TileWall
+import com.doublemoon1119.mahjongcraft.logic.table.TurnPhase
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
+import com.doublemoon1119.mahjongcraft.logic.tile.component.TileRegion
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeIdentifiedTileFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
+import com.doublemoon1119.mahjongcraft.testing.logic.table.tileArea
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import kotlin.test.assertIs
 import kotlin.test.assertNotNull
+import kotlin.test.assertTrue
+import kotlin.uuid.Uuid
 
 /** 驗證台灣麻將局首補花：莊家先摸開門牌，再從莊家開始逐輪補花，並依處理順序回報呈現步驟。 */
 class TaiwanOpeningFlowerResolutionTest {
@@ -54,23 +61,27 @@ class TaiwanOpeningFlowerResolutionTest {
         val resolution = TaiwanFlowerRuleDecisionResolver.resolve(table, PendingRuleDecision.open(step, RuleDecisionTiming.ROUND_START), module)
 
         val (dealer, downstream) = players.map { it.id }
-        assertEquals(
-            listOf(
-                RuleDecisionPlayerAreaPresentationStep.Draw(dealer, openingTile.id),
-                RuleDecisionPlayerAreaPresentationStep.Replacement(dealer, listOf(flowers[0].id, flowers[1].id), listOf(replacements[0].id, replacements[1].id)),
-                RuleDecisionPlayerAreaPresentationStep.Replacement(downstream, listOf(flowers[2].id), listOf(replacements[2].id)),
-                RuleDecisionPlayerAreaPresentationStep.Replacement(dealer, listOf(flowers[3].id), listOf(replacements[3].id)),
-            ),
-            resolution.playerAreaPresentationSteps,
-        )
+        // 莊家摸牌，之後每一家的亮花與補牌各一步；同一家一次亮出的花與一次補到的牌在同一步。
+        val steps = resolution.steps
+        assertEquals(7, steps.size)
+        assertEquals(TileArea(TileRegion.DRAWN, dealer), steps[0].tableState.areaOf(openingTile))
+        listOf(flowers[0], flowers[1]).forEach { assertEquals(TileArea(TileRegion.SET_ASIDE, dealer), steps[1].tableState.areaOf(it)) }
+        listOf(replacements[0], replacements[1]).forEach { assertEquals(dealer, steps[2].tableState.tileArea(it.id)?.ownerId) }
+        assertEquals(TileArea(TileRegion.SET_ASIDE, downstream), steps[3].tableState.areaOf(flowers[2]))
+        assertEquals(TileArea(TileRegion.HAND, downstream), steps[4].tableState.areaOf(replacements[2]), "Non-dealer replacements join the hand.")
+        assertEquals(TileArea(TileRegion.SET_ASIDE, dealer), steps[5].tableState.areaOf(flowers[3]))
+        assertEquals(TileArea(TileRegion.DRAWN, dealer), steps[6].tableState.areaOf(replacements[3]))
+        assertTrue(steps.all { it.events.isEmpty() }, "Opening replacements are not declarations.")
         val after = resolution.tableState
         assertEquals(replacements[3], after.players[0].hand.lastDrawn)
         assertEquals(17, after.players[0].hand.standingTiles.size)
         assertEquals(null, after.players[1].hand.lastDrawn)
         assertEquals(16, after.players[1].hand.standingTiles.size)
+        assertEquals(0, after.currentPlayerIndex, "Replacing other players' flowers must not pass the turn.")
+        assertEquals(TurnPhase.AwaitingAction, after.turnPhase, "The dealer already drew and must not draw again.")
     }
 
-    /** 牌局中摸到的花已在摸牌時呈現；補到的牌又是花時以「摸到後從摸牌位移出並補牌」呈現，不再重複呈現第一張花。 */
+    /** 牌局中摸到的花已經亮出；補到的牌又是花時依序呈現補牌、亮花與再補牌，第一張花不再移動也不再宣告。 */
     @Test
     fun `a mid-game chain does not present the drawn flower again`() {
         val flowers = TaiwanTileTypes.ALL.map { FakeIdentifiedTileFactory.create(Tile.Extension(it)) }
@@ -89,14 +100,19 @@ class TaiwanOpeningFlowerResolutionTest {
             tileWall = TileWall(List(LIVE_TILES) { ordinary() }),
             reservedWallTiles = listOf(chainedFlower, finalReplacement) + List(RESERVED_TILES - 2) { ordinary() },
             components = ComponentSet.EMPTY.with(TaiwanTableComponents.PENDING_FLOWER_FOLLOW_UP, TaiwanPendingFlowerFollowUp(players[0].id, drawnFlower.id, replacementsDue = 1)),
+            turnPhase = TurnPhase.AwaitingAction,
         )
         val step = assertNotNull(TaiwanFlowerRuleDecisionResolver.begin(RuleDecisionTiming.DRAW_FOLLOW_UP, table, module))
 
         val resolution = TaiwanFlowerRuleDecisionResolver.resolve(table, PendingRuleDecision.open(step, RuleDecisionTiming.DRAW_FOLLOW_UP), module)
 
-        val followUp = assertIs<RuleDecisionPlayerAreaPresentationStep.FollowUp>(resolution.playerAreaPresentationSteps.single())
-        assertEquals(chainedFlower.id, followUp.followUpStep.setAsideTileId)
-        assertEquals(listOf(finalReplacement.id), followUp.followUpStep.drawnTileIds)
+        val steps = resolution.steps
+        val revealer = players[0].id
+        assertTrue(steps.all { it.tableState.areaOf(drawnFlower) == TileArea(TileRegion.SET_ASIDE, revealer) })
+        val declaration = steps.single { step -> step.events.isNotEmpty() }
+        assertEquals(listOf<TableStepEvent>(TableStepEvent.ActionDeclared(revealer, TAIWAN_REVEAL_FLOWER_ACTION)), declaration.events)
+        assertEquals(TileArea(TileRegion.SET_ASIDE, revealer), declaration.tableState.areaOf(chainedFlower))
+        assertEquals(TileArea(TileRegion.DRAWN, revealer), steps.last().tableState.areaOf(finalReplacement))
         assertEquals(finalReplacement, resolution.tableState.players[0].hand.lastDrawn)
     }
 
@@ -115,4 +131,15 @@ class TaiwanOpeningFlowerResolutionTest {
         /** 保留區張數。 */
         const val RESERVED_TILES = 16
     }
+
+    /**
+     * 牌的區域與所屬玩家。
+     *
+     * @property region 區域種類。
+     * @property ownerId 所屬玩家。
+     */
+    private data class TileArea(val region: TileRegion, val ownerId: Uuid?)
+
+    /** [tile] 在這份桌況的區域與所屬玩家。 */
+    private fun TableState.areaOf(tile: IdentifiedTile): TileArea? = tileArea(tile.id)?.let { TileArea(it.region, it.ownerId) }
 }

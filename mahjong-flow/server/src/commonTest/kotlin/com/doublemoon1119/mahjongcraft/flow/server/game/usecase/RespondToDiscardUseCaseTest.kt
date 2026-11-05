@@ -3,6 +3,7 @@ package com.doublemoon1119.mahjongcraft.flow.server.game.usecase
 import com.doublemoon1119.mahjongcraft.bundled.BundledRiichiExtension
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryFact
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameError
+import com.doublemoon1119.mahjongcraft.flow.common.game.service.TableStepEvent
 import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.CompletedGameActionContext
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.PostActionExhaustiveDrawResolver
@@ -41,9 +42,12 @@ import com.doublemoon1119.mahjongcraft.logic.rules.riichi.riichiWallProgress
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.RiichiTileInterpretationPolicy
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.RiichiTileValues
 import com.doublemoon1119.mahjongcraft.logic.table.PendingReaction
+import com.doublemoon1119.mahjongcraft.logic.table.RoundConclusion
+import com.doublemoon1119.mahjongcraft.logic.table.TurnPhase
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import com.doublemoon1119.mahjongcraft.logic.table.toSnapshot
 import com.doublemoon1119.mahjongcraft.logic.table.visibleTiles
+import com.doublemoon1119.mahjongcraft.logic.tile.component.TileRegion
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledCoreExtensionRegistries
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledWinCelebrationCueResolverRegistry
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.registerBundledRuleModules
@@ -57,6 +61,8 @@ import com.doublemoon1119.mahjongcraft.testing.logic.rules.riichi.riichiTableCom
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeDiscardPile
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
+import com.doublemoon1119.mahjongcraft.testing.logic.table.tileArea
+import com.doublemoon1119.mahjongcraft.testing.logic.table.tileRegion
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -230,6 +236,7 @@ class RespondToDiscardUseCaseTest {
             "An ordinary pass must not record an exhaustive draw action.",
         )
         assertEquals(1, newState.currentPlayerIndex, "No one acted, so turn should advance like the normal discard flow.")
+        assertEquals(TurnPhase.AwaitingDraw, newState.turnPhase)
         val updatedResponder = newState.players.first { it.id == responderId }
         assertTrue(
             Tile.Honor.White in updatedResponder.passedTilesInRound,
@@ -336,6 +343,7 @@ class RespondToDiscardUseCaseTest {
         assertEquals(discarderId, draft.actorPlayerId)
         val state = assertNotNull(fixtures.gameRepo.getTableState(gameId))
         assertNull(state.pendingReaction)
+        assertEquals(TurnPhase.RoundOver(RoundConclusion.AbortiveDraw(RiichiExhaustiveDrawReason.SuuchaRiichi)), state.turnPhase)
         assertTrue(state.players.all { player -> player.actionHistory.count { it == expected } == 1 })
         assertEquals(players.map { it.score }, state.players.map { it.score })
     }
@@ -412,6 +420,7 @@ class RespondToDiscardUseCaseTest {
         val newState = fixtures.gameRepo.getTableState(gameId)!!
         assertNull(newState.pendingReaction)
         assertEquals(1, newState.currentPlayerIndex, "Turn should move to the player who claimed the meld.")
+        assertEquals(TurnPhase.AwaitingDiscard, newState.turnPhase, "A claimed pon must be followed by a discard, not a draw.")
 
         val winner = newState.players.first { it.id == responderId }
         assertTrue(winner.hand.tiles.isEmpty(), "Both matching hand tiles should be consumed into the meld.")
@@ -424,10 +433,10 @@ class RespondToDiscardUseCaseTest {
     }
 
     /**
-     * 驗證碰牌後會發布捨牌者牌河的呈現要求；被鳴走的牌不再列入牌河，可能改變側身標記位置。
+     * 驗證碰牌成立時送出一步：捨牌與兩張手牌同時移入得標玩家的副露，並宣告碰。
      */
     @Test
-    fun `test pon success publishes discarder's discard pile presentation`() = runTest {
+    fun `test pon success presents one step moving the claimed tiles into the meld`() = runTest {
         val fixtures = Fixtures()
         val discardedTile = FakeIdentifiedTileFactory.create(Tile.Honor.White)
         val discarder = FakeMahjongPlayerFactory.create(
@@ -451,61 +460,17 @@ class RespondToDiscardUseCaseTest {
         )
         fixtures.gameRepo.setTableState(table)
 
-        fixtures.useCase(gameId, responderId, GameAction.Pon(discardedTile.id, listOf(handTile1.id, handTile2.id)))
+        val pon = GameAction.Pon(discardedTile.id, listOf(handTile1.id, handTile2.id))
+        fixtures.useCase(gameId, responderId, pon)
 
-        val publishedDiscardPile = fixtures.presentationPublisher.getPublishedDiscardPile(gameId)
-        assertNotNull(publishedDiscardPile)
-        assertEquals(0, publishedDiscardPile.seatIndex)
-        assertEquals(
-            emptyList(),
-            publishedDiscardPile.discardTileIds,
-            "The claimed tile is now taken and moves to the meld area, so it's excluded from the river presentation.",
-        )
-        assertEquals(null, publishedDiscardPile.sidewaysMarkedTileId, "FakeDiscardPile has no riichi concept, so no tile should be marked sideways.")
-    }
-
-    /**
-     * 驗證碰牌後會發布得標玩家完整副露列表的呈現要求。
-     */
-    @Test
-    fun `test pon success publishes winner's melds presentation`() = runTest {
-        val fixtures = Fixtures()
-        val discardedTile = FakeIdentifiedTileFactory.create(Tile.Honor.White)
-        val discarder = FakeMahjongPlayerFactory.create(
-            id = discarderId,
-            initialSeat = Wind.EAST,
-            discardPile = FakeDiscardPile().discardTile(discardedTile),
-        )
-        val handTile1 = FakeIdentifiedTileFactory.create(Tile.Honor.White)
-        val handTile2 = FakeIdentifiedTileFactory.create(Tile.Honor.White)
-        val responder = FakeMahjongPlayerFactory.create(
-            id = responderId,
-            initialSeat = Wind.SOUTH,
-            hand = Hand(tiles = listOf(handTile1, handTile2)),
-        )
-        val table = FakeTableStateFactory.create(
-            id = gameId,
-            players = listOf(discarder, responder),
-            config = RiichiRuleConfig(),
-            currentPlayerIndex = 0,
-            pendingReaction = PendingReaction(discarderId, discardedTile.id, setOf(responderId), ronPlayerIds = setOf(responderId), id = Uuid.random()),
-        )
-        fixtures.gameRepo.setTableState(table)
-
-        fixtures.useCase(gameId, responderId, GameAction.Pon(discardedTile.id, listOf(handTile1.id, handTile2.id)))
-
-        val publishedMelds = fixtures.presentationPublisher.getPublishedPlayerTiles(gameId)
-        assertNotNull(publishedMelds)
-        assertEquals(1, publishedMelds.seatIndex, "The winner (responder) sits at seat index 1.")
-        val meld = publishedMelds.melds.single()
-        assertEquals(MeldType.PON, meld.type)
-        assertEquals(setOf(handTile1.id, handTile2.id, discardedTile.id), meld.tileIds.toSet())
-        assertEquals(discardedTile.id, meld.calledTileId)
-        assertEquals(
-            setOf(handTile1.id, handTile2.id, discardedTile.id),
-            publishedMelds.newlyClaimedMeldTileIds,
-            "All tiles in a newly claimed pon should trigger the meld-claim flight animation.",
-        )
+        val step = fixtures.presentationPublisher.getPublishedTableStepBatches(gameId).single().single()
+        assertEquals(fixtures.gameRepo.getTableState(gameId), step.tableState)
+        assertEquals(listOf<TableStepEvent>(TableStepEvent.ActionDeclared(responderId, pon)), step.events)
+        listOf(handTile1, handTile2, discardedTile).forEach { tile ->
+            val area = assertNotNull(step.tableState.tileArea(tile.id))
+            assertEquals(TileRegion.MELD, area.region)
+            assertEquals(responderId, area.ownerId)
+        }
     }
 
     /**
@@ -628,14 +593,10 @@ class RespondToDiscardUseCaseTest {
         val newState = fixtures.gameRepo.getTableState(gameId)!!
         assertNull(newState.pendingReaction)
         assertEquals(1, newState.currentPlayerIndex, "Turn should move to the player who claimed the meld.")
+        assertEquals(TurnPhase.AwaitingAction, newState.turnPhase, "After the replacement draw the claimer acts as after a normal draw.")
         assertEquals(table.tileWall.remainingCount - 1, newState.tileWall.remainingCount)
         assertEquals(table.tileWall.getAllTiles().last(), newState.reservedWallTiles.last())
         assertEquals(1, newState.riichiWallProgress().completedSupplementalDrawCount)
-        assertEquals(
-            newState,
-            fixtures.presentationPublisher.getPublishedRoundInfo(gameId),
-            "An open kan supplemental draw should immediately refresh round information.",
-        )
 
         val winner = newState.players.first { it.id == responderId }
         val meld = winner.hand.melds.single()
@@ -650,14 +611,15 @@ class RespondToDiscardUseCaseTest {
 
         val newDiscarder = newState.players.first { it.id == discarderId }
         assertTrue(newDiscarder.discardPile.entries.last().isTaken, "The claimed discard should be marked as taken.")
-        assertEquals(
-            rinshanTile.id,
-            fixtures.presentationPublisher.getPublishedPlayerTiles(gameId)?.drawnTileId,
-            "The rinshan tile should be presented as a drawn tile (moved to the draw slot), same as a normal draw.",
-        )
-        val publishedTransitions = fixtures.presentationPublisher.getPublishedWallLayoutTransitions(gameId)
-        assertEquals(1, publishedTransitions.size)
-        publishedTransitions.single().flatMap { it.moves }.forEach { move ->
+        // 先呈現明槓成立（牌從牌河與手上移入副露），再呈現補牌與牌牆重排。
+        val (claimed, drawn) = fixtures.presentationPublisher.getPublishedTableStepBatches(gameId).single()
+        assertEquals(TileRegion.MELD, claimed.tableState.tileRegion(discardedTile.id))
+        assertEquals(TileRegion.RESERVED, claimed.tableState.tileRegion(rinshanTile.id))
+        assertEquals(TableStepEvent.ActionDeclared(responderId, kanAction), claimed.events.first())
+        assertEquals(newState, drawn.tableState)
+        assertEquals(TileRegion.DRAWN, drawn.tableState.tileRegion(rinshanTile.id))
+        val rearranged = drawn.events.filterIsInstance<TableStepEvent.WallRearranged>().single()
+        rearranged.phases.flatMap { it.moves }.forEach { move ->
             assertEquals(newState.physicalWallLayout?.placements?.get(move.tileId), move.destination)
         }
     }
@@ -747,8 +709,7 @@ class RespondToDiscardUseCaseTest {
         assertTrue(newState.players.first { it.id == discarderId }.discardPile.entries.last().isTaken.not())
         assertEquals(0, newState.reservedWallTiles.size, "The rinshan reserve (reservedWallTiles) is what's actually exhausted here.")
         assertTrue(fixtures.eventPublisher.getNotifiedActions(gameId, responderId, responderId).isEmpty())
-        assertTrue(fixtures.presentationPublisher.getPublishedWallLayoutTransitions(gameId).isEmpty())
-        assertNull(fixtures.presentationPublisher.getPublishedRoundInfo(gameId))
+        assertTrue(fixtures.presentationPublisher.getPublishedTableStepBatches(gameId).isEmpty())
     }
 
     /**
@@ -1028,6 +989,7 @@ class RespondToDiscardUseCaseTest {
         assertEquals(GameAction.Ron(discardedTile.id), newWinner.actionHistory.last())
 
         val newDiscarder = newState.players.first { it.id == discarderId }
+        assertEquals(TurnPhase.RoundOver(RoundConclusion.Win(setOf(responderId))), newState.turnPhase)
         assertEquals(-32000, newDiscarder.score, "The sole discarder should pay the full amount.")
         assertTrue(
             newState.players.none { player -> player.actionHistory.any { it is GameAction.ExhaustiveDraw } },
@@ -1038,10 +1000,9 @@ class RespondToDiscardUseCaseTest {
             "A winning reaction must not record an exhaustive draw action.",
         )
 
-        assertNull(
-            fixtures.presentationPublisher.getPublishedPlayerTiles(gameId),
-            "Ron doesn't claim a meld, so it should never trigger the meld-claim presentation/animation.",
-        )
+        val ronStep = fixtures.presentationPublisher.getPublishedTableStepBatches(gameId).single().single()
+        assertEquals(listOf<TableStepEvent>(TableStepEvent.ActionDeclared(responderId, GameAction.Ron(discardedTile.id))), ronStep.events)
+        assertEquals(TileRegion.DISCARD, ronStep.tableState.tileRegion(discardedTile.id), "Ron leaves the winning tile in the river.")
         val settled = fixtures.gameRepo.historyDrafts.map { it.fact }.filterIsInstance<HistoryFact.WinSettled>().single()
         assertEquals(setOf(responderId), settled.winDetails.map { it.playerId }.toSet())
 

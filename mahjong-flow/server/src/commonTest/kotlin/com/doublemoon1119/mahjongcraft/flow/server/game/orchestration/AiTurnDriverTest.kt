@@ -26,6 +26,7 @@ import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.RiichiTileCompone
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.RiichiTileValues
 import com.doublemoon1119.mahjongcraft.logic.table.PendingReaction
 import com.doublemoon1119.mahjongcraft.logic.table.PendingRobbingReaction
+import com.doublemoon1119.mahjongcraft.logic.table.TurnPhase
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledCoreExtensionRegistries
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.registerBundledRuleModules
@@ -442,7 +443,7 @@ class AiTurnDriverTest {
         val remainingTile = FakeIdentifiedTileFactory.create(Tile.Honor.East)
         val ai = FakeMahjongPlayerFactory.create(id = aiId, initialSeat = Wind.EAST, hand = Hand(tiles = listOf(remainingTile)))
             .recordAction(GameAction.Pon(Uuid.random(), emptyList()))
-        val table = FakeTableStateFactory.create(id = gameId, players = listOf(ai), config = RiichiRuleConfig(), currentPlayerIndex = 0)
+        val table = FakeTableStateFactory.create(id = gameId, players = listOf(ai), config = RiichiRuleConfig(), currentPlayerIndex = 0, turnPhase = TurnPhase.AwaitingDiscard)
         fixtures.gameRepo.setTableState(table, mapOf(aiId to strategyKey))
 
         val result = fixtures.driver.resolveNextAction(gameId)

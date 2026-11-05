@@ -450,7 +450,7 @@ class FabricMahjongTileWallPresenter(
      * [revealFlipAnimationSteps]），公開成正面朝上；找不到對應 entity（例如桌子已被拆掉、或這局已經
      * 結束）的牌直接跳過，回傳結果只用來讓呼叫端記 log，不影響已成功排定的牌。牌目前的實際座標
      * （`tile.x`／`tile.y`／`tile.z`／`tile.yaw`）就是動畫的起訖點，不需要重新查詢牌牆結構座標——這張
-     * 牌本來就已經在開門後的正確位置，手法同 `FabricMahjongPlayerAreaPresenter.scheduleDrawnTileAnimation`
+     * 牌本來就已經在開門後的正確位置，手法同開局發牌動畫（`TileAnimationSteps.scheduleDealBatch`）
      * 讀取 entity 自身座標的既有慣例。同一次呼叫裡的牌全部立刻起飛，不需要額外的共用等待時刻：這裡
      * 是同步方法、一個 tick 內跑完整個迴圈，[net.minecraft.server.world.ServerWorld.getTime] 對每張牌
      * 而言都是同一個值，天然同步。
@@ -541,7 +541,7 @@ class FabricMahjongTileWallPresenter(
         /** controller 周圍查詢正式牌牆用牌的垂直半徑。 */
         const val TILE_SEARCH_VERTICAL: Double = 2.0
 
-        /** 牌牆生成掉落動畫的半空起點高度，相對掉落終點的世界 Y 偏移；遊戲內驗證後從 1.5 調低。 */
+        /** 牌牆生成掉落動畫的半空起點高度，相對掉落終點的世界 Y 偏移。 */
         const val WALL_DROP_HEIGHT: Double = 0.8
 
         /** 每墩負責播放落桌聲音的牌牆層數。 */

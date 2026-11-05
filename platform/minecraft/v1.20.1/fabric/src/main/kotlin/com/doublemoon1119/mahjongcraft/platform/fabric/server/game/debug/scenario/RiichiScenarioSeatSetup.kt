@@ -24,6 +24,7 @@ import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayer
 import com.doublemoon1119.mahjongcraft.logic.table.MatchRoundPosition
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.logic.table.TileWall
+import com.doublemoon1119.mahjongcraft.logic.table.TurnPhase
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import com.doublemoon1119.mahjongcraft.logic.table.layout.InitialPhysicalWallLayoutContext
 import com.doublemoon1119.mahjongcraft.logic.table.layout.InitialPhysicalWallLayoutDecision
@@ -186,6 +187,7 @@ internal class SeatSetupScenario(
             dealerPlayerId = context.invokingPlayerId,
             roundPosition = MatchRoundPosition(sequenceIndex = 0, prevalentWind = Wind.EAST, localRoundNumber = 1),
             currentPlayerIndex = invokingPlayerIndex,
+            turnPhase = if (seats[0].drawnTile != null) TurnPhase.AwaitingAction else TurnPhase.AwaitingDraw,
             components = ComponentSet.EMPTY.with(RiichiTableComponents.POT_POINTS, seats.count { it.riichiTile != null } * RIICHI_STICK_POINTS).with(RiichiTableComponents.WALL_PROGRESS, RiichiWallProgress()),
             wallOpening = opening,
             reservedWallTiles = initialReservedTiles,

@@ -90,6 +90,8 @@ class ClientHandTileLayoutController(
                                 startPoseRotationDegrees = it.animationStartPoseRotationDegrees,
                                 endPoseRotationDegrees = it.animationEndPoseRotationDegrees,
                                 easeRotation = it.animationEaseRotation,
+                                liftCarryLower = it.animationLiftCarryLower,
+                                leanDegrees = it.animationLeanDegrees,
                             ),
                             startOffset = it.animationStartOffset,
                             startYawOffset = it.animationStartYawOffsetDegrees,

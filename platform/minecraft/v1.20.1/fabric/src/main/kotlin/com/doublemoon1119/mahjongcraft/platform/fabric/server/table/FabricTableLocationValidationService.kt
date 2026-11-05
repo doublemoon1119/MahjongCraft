@@ -5,12 +5,10 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.block.MahjongTableLookup
 import com.doublemoon1119.mahjongcraft.platform.fabric.logging.mahjongCraftLogger
 import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongDiceRollPresenter
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.DimensionChunkKey
-import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableCornerWidthTracker
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocationEntry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocationRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TablePropPresenter
-import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongDiscardPresenter
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongPlayerAreaPresenter
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileWallPresenter
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerBlockEntityEvents
@@ -28,10 +26,8 @@ import net.minecraft.util.math.BlockPos
  * @property cleanupQueue 依序執行權威清理，不讓主執行緒等待。
  * @property diceRollPresenter 清理骰子呈現。
  * @property tileWallPresenter 清理牌牆呈現。
- * @property playerAreaPresenter 清理手牌與副露呈現。
+ * @property playerAreaPresenter 清理所有正式管理中的牌，包含手牌、副露與牌河。
  * @property tablePropPresenter 清理桌面規則物件。
- * @property tableCornerWidths 清理桌面角落寬度追蹤。
- * @property discardPresenter 清理牌河呈現。
  */
 class FabricTableLocationValidationService(
     private val locations: TableLocationRegistry,
@@ -42,8 +38,6 @@ class FabricTableLocationValidationService(
     private val playerAreaPresenter: MahjongPlayerAreaPresenter,
     private val tablePropPresenter: TablePropPresenter,
     private val tablePropRefreshQueue: TablePropRefreshQueue,
-    private val tableCornerWidths: TableCornerWidthTracker,
-    private val discardPresenter: MahjongDiscardPresenter,
 ) {
     /** 回報相同 UUID 移動與位置驗證結果。 */
     private val logger = mahjongCraftLogger(FabricTableLocationValidationService::class)
@@ -170,15 +164,12 @@ class FabricTableLocationValidationService(
         val removedWallTileCount = tileWallPresenter.clear(entry.tableId, entry.location)
         val removedPlayerAreaTileCount = playerAreaPresenter.clear(entry.tableId, entry.location)
         val removedTablePropCount = tablePropPresenter.clear(entry.tableId, entry.location)
-        tableCornerWidths.clear(entry.tableId)
-        val removedDiscardTileCount = discardPresenter.clear(entry.tableId, entry.location)
         logger.debug(
-            "Removed {} managed dice, {} managed wall tiles, {} managed player area tiles, {} managed table props and {} managed discard tiles for missing Mahjong table {}",
+            "Removed {} managed dice, {} managed wall tiles, {} managed player area tiles and {} managed table props for missing Mahjong table {}",
             removedDiceCount,
             removedWallTileCount,
             removedPlayerAreaTileCount,
             removedTablePropCount,
-            removedDiscardTileCount,
             entry.tableId,
         )
         cleanupQueue.submit(description = "missing table ${entry.tableId}") {

@@ -11,6 +11,7 @@ import com.doublemoon1119.mahjongcraft.logic.config.RonResolution
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
 import com.doublemoon1119.mahjongcraft.logic.table.PendingReaction
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
+import com.doublemoon1119.mahjongcraft.logic.table.TurnPhase
 import kotlin.uuid.Uuid
 
 /**
@@ -98,19 +99,24 @@ internal object DiscardReactionResolver {
                 // 沒有人能反應：這張牌已經交給每位其他玩家而沒有人榮和。
                 val nextPlayer = stateAfterDiscard.nextActivePlayerAfter(discarderId)
                 PassedTileRecorder.record(
-                    tableState = stateAfterDiscard.copy(currentPlayerIndex = stateAfterDiscard.players.indexOf(nextPlayer)),
+                    tableState = stateAfterDiscard.copy(
+                        currentPlayerIndex = stateAfterDiscard.players.indexOf(nextPlayer),
+                        turnPhase = TurnPhase.AwaitingDraw,
+                    ),
                     tile = discardedTile,
                     playerIds = legalActionsByOtherPlayer.keys,
                     module = module,
                 )
             } else {
                 stateAfterDiscard.copy(
-                    pendingReaction = PendingReaction(
-                        discarderId = discarderId,
-                        tileId = discardedTile.id,
-                        eligiblePlayerIds = eligiblePlayerIds,
-                        ronPlayerIds = ronWinningPlayerIds,
-                        id = Uuid.random(),
+                    turnPhase = TurnPhase.AwaitingDiscardReaction(
+                        PendingReaction(
+                            discarderId = discarderId,
+                            tileId = discardedTile.id,
+                            eligiblePlayerIds = eligiblePlayerIds,
+                            ronPlayerIds = ronWinningPlayerIds,
+                            id = Uuid.random(),
+                        ),
                     ),
                 )
             }

@@ -15,11 +15,13 @@ import com.doublemoon1119.mahjongcraft.logic.rules.riichi.riichiDeclaration
 import com.doublemoon1119.mahjongcraft.logic.table.PendingReaction
 import com.doublemoon1119.mahjongcraft.logic.table.PendingRobbingReaction
 import com.doublemoon1119.mahjongcraft.logic.table.TileWall
+import com.doublemoon1119.mahjongcraft.logic.table.TurnPhase
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPhysicalLayout
 import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPlacement
 import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPosition
 import com.doublemoon1119.mahjongcraft.logic.table.toSnapshot
+import com.doublemoon1119.mahjongcraft.logic.tile.component.TileRegion
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledCoreExtensionRegistries
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.registerBundledRuleModules
 import com.doublemoon1119.mahjongcraft.testing.flow.common.game.repository.FakeGameSnapshotRepository
@@ -29,6 +31,7 @@ import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeIdentifiedTileFact
 import com.doublemoon1119.mahjongcraft.testing.logic.rules.riichi.riichiDeclarationComponents
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
+import com.doublemoon1119.mahjongcraft.testing.logic.table.tileRegion
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -92,6 +95,7 @@ class DrawTileUseCaseTest {
         assertEquals(drawnTile, updatedPlayer.hand.lastDrawn)
         assertEquals(emptySet(), updatedPlayer.passedTilesInRound, "Passed tiles should be cleared on draw.")
         assertTrue(updatedPlayer.actionHistory.last() is GameAction.Draw)
+        assertEquals(TurnPhase.AwaitingAction, newState.turnPhase)
         assertEquals(0, newState.tileWall.remainingCount)
         assertEquals(emptyMap(), newState.physicalWallLayout?.placements)
     }
@@ -178,12 +182,10 @@ class DrawTileUseCaseTest {
 
         fixtures.useCase(gameId, currentPlayerId)
 
-        val published = fixtures.presentationPublisher.getPublishedPlayerTiles(gameId)
-        assertNotNull(published)
-        assertEquals(0, published.seatIndex)
-        assertEquals(1, published.standingTileIds.size)
-        assertEquals(drawnTile.id, published.drawnTileId)
-        assertTrue(published.isNewlyDrawn)
+        val step = fixtures.presentationPublisher.getPublishedTableStepBatches(gameId).single().single()
+        assertEquals(fixtures.gameRepo.getTableState(gameId), step.tableState)
+        assertEquals(TileRegion.WALL, table.tileRegion(drawnTile.id))
+        assertEquals(TileRegion.DRAWN, step.tableState.tileRegion(drawnTile.id))
     }
 
     /**
@@ -285,16 +287,18 @@ class DrawTileUseCaseTest {
         )
         val discarded = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 9))
         val states = listOf(
-            base.copy(pendingReaction = PendingReaction(currentPlayerId, discarded.id, setOf(otherPlayerId), ronPlayerIds = setOf(otherPlayerId), id = Uuid.random())),
+            base.copy(turnPhase = TurnPhase.AwaitingDiscardReaction(PendingReaction(currentPlayerId, discarded.id, setOf(otherPlayerId), ronPlayerIds = setOf(otherPlayerId), id = Uuid.random()))),
             base.copy(
-                pendingRobbingReaction = PendingRobbingReaction(
-                    declarerId = otherPlayerId,
-                    declaredAction = GameAction.Kan(GameAction.KanType.ADDED_KAN, discarded.id, emptyList()),
-                    robbedTile = discarded,
-                    eligiblePlayerIds = setOf(currentPlayerId),
+                turnPhase = TurnPhase.AwaitingRobbingReaction(
+                    PendingRobbingReaction(
+                        declarerId = otherPlayerId,
+                        declaredAction = GameAction.Kan(GameAction.KanType.ADDED_KAN, discarded.id, emptyList()),
+                        robbedTile = discarded,
+                        eligiblePlayerIds = setOf(currentPlayerId),
+                    ),
                 ),
             ),
-            base.copy(players = listOf(currentPlayer.recordAction(GameAction.Pon(discarded.id, emptyList())), otherPlayer)),
+            base.copy(players = listOf(currentPlayer.recordAction(GameAction.Pon(discarded.id, emptyList())), otherPlayer), turnPhase = TurnPhase.AwaitingDiscard),
         )
 
         states.forEach { state ->

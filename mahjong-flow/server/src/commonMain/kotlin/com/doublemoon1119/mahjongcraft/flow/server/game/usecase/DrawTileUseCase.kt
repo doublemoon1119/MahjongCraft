@@ -14,6 +14,7 @@ import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
 import com.doublemoon1119.mahjongcraft.logic.component.ComponentRegistry
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import com.doublemoon1119.mahjongcraft.logic.table.DrawSource
+import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.logic.table.drawFromLiveWall
 import kotlin.uuid.Uuid
 
@@ -82,7 +83,7 @@ class DrawTileUseCase(
                         val drawnState = draw.tableState.copy(players = draw.tableState.players.map { if (it.id == playerId) updatedPlayer else it })
                         val followUp = DrawFollowUpApplier.run(drawnState, playerId, DrawSource.LiveWall, listOf(draw.tile), module, componentRegistry = componentRegistry)
 
-                        followUp.tableState to Outcome.Success(DrawResult(draw.tile, followUp))
+                        followUp.tableState to Outcome.Success(DrawResult(draw.tile, drawnState, followUp))
                     }
                 }
             }
@@ -101,14 +102,8 @@ class DrawTileUseCase(
             eventPublisher.publishToAllObservers(gameId, seatedPlayerIds, playerId, action)
         }
 
-        // 4. 觸發平台呈現層：把摸到的牌從牌牆移到摸牌位（副露/積棒不受摸牌影響，仍要一併帶上讓手牌
-        // 讓開偏移量算得準）；這是真正的摸牌，isNewlyDrawn 傳 true，見
-        // GamePresentationPublisher.publishPlayerTilesUpdated 的同名參數 KDoc。
-        val module = moduleRegistry.getModule(newState.config)
-        presentationPublisher.publishPlayerAreaAfterDraw(gameId, playerId, result.followUp, module)
-        // 牌山剩餘張數每次摸牌都會變，局況資訊要跟著更新——這份呈現是「找到既有的就地更新」
-        // 模式，沒帶上完整內容就會把之前顯示的內容覆蓋回空清單。
-        presentationPublisher.publishRoundInfoUpdated(gameId, newState)
+        // 4. 依序呈現摸牌與摸牌後的自動處理
+        presentationPublisher.publishTableSteps(gameId, result.followUp.tableSteps(playerId, result.drawnState))
 
         return Outcome.Success(Unit)
     }
@@ -117,10 +112,12 @@ class DrawTileUseCase(
      * `update` 區塊內部使用的中繼結果。
      *
      * @property drawnTile 這次從活牌摸到的牌。
+     * @property drawnState 摸牌之後、自動處理之前的桌況。
      * @property followUp 摸牌之後的自動處理；它的桌況是這次交易提交的權威桌況。
      */
     private data class DrawResult(
         val drawnTile: IdentifiedTile,
+        val drawnState: TableState,
         val followUp: DrawFollowUpApplier.Result,
     )
 }

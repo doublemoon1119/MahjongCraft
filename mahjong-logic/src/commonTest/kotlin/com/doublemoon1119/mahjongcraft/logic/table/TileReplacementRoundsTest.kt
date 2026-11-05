@@ -28,16 +28,20 @@ class TileReplacementRoundsTest {
 
         assertEquals(
             listOf(
-                TileReplacementRounds.Step.SetAside(p0, listOf(first, second)),
-                TileReplacementRounds.Step.Replaced(p0, listOf(chained, plainA)),
-                TileReplacementRounds.Step.SetAside(p2, listOf(third)),
-                TileReplacementRounds.Step.Replaced(p2, listOf(plainB)),
-                TileReplacementRounds.Step.SetAside(p0, listOf(chained)),
-                TileReplacementRounds.Step.Replaced(p0, listOf(plainC)),
+                setAside(p0, listOf(first, second)),
+                replaced(p0, listOf(chained, plainA)),
+                setAside(p2, listOf(third)),
+                replaced(p2, listOf(plainB)),
+                setAside(p0, listOf(chained)),
+                replaced(p0, listOf(plainC)),
             ),
-            outcome.steps,
+            outcome.steps.map { it.summary() },
         )
         assertEquals(listOf(first, second, chained), outcome.tableState.setAsideOf(p0))
+        // 每一步帶著當下的桌況：第一輪移出後只有前兩張在移出區，第二輪才移出補到的那張。
+        assertEquals(listOf(first, second), outcome.steps[0].tableState.setAsideOf(p0))
+        assertEquals(listOf(first, second), outcome.steps[3].tableState.setAsideOf(p0))
+        assertEquals(listOf(first, second, chained), outcome.steps[4].tableState.setAsideOf(p0))
     }
 
     /** 移出後暫停的位置帶著尚未補的張數，從那裡繼續時先補牌，再接著處理下一位玩家。 */
@@ -57,11 +61,11 @@ class TileReplacementRoundsTest {
         assertEquals(TileReplacementRounds.Position(playerOrderIndex = 0, replacementsDue = 2), paused.position)
         assertEquals(
             listOf(
-                TileReplacementRounds.Step.Replaced(p0, listOf(plainA, plainB)),
-                TileReplacementRounds.Step.SetAside(p1, listOf(third)),
-                TileReplacementRounds.Step.Replaced(p1, listOf(plainC)),
+                replaced(p0, listOf(plainA, plainB)),
+                setAside(p1, listOf(third)),
+                replaced(p1, listOf(plainC)),
             ),
-            resumed.steps,
+            resumed.steps.map { it.summary() },
         )
     }
 
@@ -91,8 +95,8 @@ class TileReplacementRoundsTest {
 
         assertEquals(p0, exhausted.playerId)
         assertEquals(
-            listOf(TileReplacementRounds.Step.SetAside(p0, listOf(first, second)), TileReplacementRounds.Step.Replaced(p0, listOf(only))),
-            exhausted.steps,
+            listOf(setAside(p0, listOf(first, second)), replaced(p0, listOf(only))),
+            exhausted.steps.map { it.summary() },
         )
     }
 
@@ -180,4 +184,13 @@ class TileReplacementRoundsTest {
         /** 移出區識別碼。 */
         const val AREA = "test:set_aside"
     }
+
+    /** 只比較步驟的種類、玩家與牌，不比較每一步的桌況。 */
+    private fun TileReplacementRounds.Step.summary(): Triple<String, Uuid, List<IdentifiedTile>> = Triple(if (this is TileReplacementRounds.Step.SetAside) "set-aside" else "replaced", playerId, tiles)
+
+    /** 移出步驟的摘要。 */
+    private fun setAside(playerId: Uuid, tiles: List<IdentifiedTile>) = Triple("set-aside", playerId, tiles)
+
+    /** 補牌步驟的摘要。 */
+    private fun replaced(playerId: Uuid, tiles: List<IdentifiedTile>) = Triple("replaced", playerId, tiles)
 }

@@ -3,6 +3,8 @@ package com.doublemoon1119.mahjongcraft.example.action
 import com.doublemoon1119.mahjongcraft.example.pairing.ExamplePairingComponents
 import com.doublemoon1119.mahjongcraft.example.pairing.ExamplePairingRuleConfig
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameError
+import com.doublemoon1119.mahjongcraft.flow.common.game.service.TableStep
+import com.doublemoon1119.mahjongcraft.flow.common.game.service.TableStepEvent
 import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
 import com.doublemoon1119.mahjongcraft.flow.server.api.registration.ExtensionGameActionCommandFactoryRegistrar
 import com.doublemoon1119.mahjongcraft.flow.server.api.registration.ExtensionGameCommandExecutorRegistrar
@@ -143,8 +145,10 @@ private class ExamplePairingRevealHandHandler(
             playerId,
             action,
         )
-        context.presentationPublisher.publishGameActionDeclared(gameId, playerId, action)
-        context.presentationPublisher.publishRuleStateUpdated(gameId)
+        context.presentationPublisher.publishTableSteps(
+            gameId,
+            listOf(TableStep(tableState, listOf(TableStepEvent.ActionDeclared(playerId, action)))),
+        )
         return Outcome.Success(Unit)
     }
 }

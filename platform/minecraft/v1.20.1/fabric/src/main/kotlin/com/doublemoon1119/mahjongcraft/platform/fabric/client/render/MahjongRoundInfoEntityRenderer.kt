@@ -105,7 +105,7 @@ class MahjongRoundInfoEntityRenderer(
     override fun getTexture(entity: MahjongRoundInfoEntity): Identifier? = null
 
     companion object {
-        /** 文字縮放，起始估算值，預期進遊戲後用截圖比對調整。 */
+        /** 文字縮放。 */
         private const val TEXT_SCALE: Float = 0.025f
 
         /** 相鄰兩行文字之間的額外間距（像素，縮放前）。 */

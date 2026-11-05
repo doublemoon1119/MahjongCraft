@@ -14,6 +14,7 @@ import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.tile.TaiwanTileTypes
 import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayer
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.logic.table.TileWall
+import com.doublemoon1119.mahjongcraft.logic.table.TurnPhase
 import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPhysicalLayout
 import kotlin.uuid.Uuid
 
@@ -155,7 +156,7 @@ private object TaiwanLastTileFlowerScenario : DebugGameScenario {
 }
 
 /**
- * 讓 [invokerId] 從活牌最前端摸一張牌，成為輪到行動的玩家。
+ * 讓 [invokerId] 從活牌最前端摸一張牌，成為輪到行動的玩家，階段為等行動。
  *
  * @param invokerId 呼叫者。
  * @return 輪到呼叫者行動的桌況。
@@ -171,6 +172,7 @@ private fun TableState.withInvokerToAct(invokerId: Uuid): TableState {
         tileWall = draw.wall,
         physicalWallLayout = physicalWallLayout?.retainOnly((draw.wall.getAllTiles() + reservedWallTiles).mapTo(mutableSetOf()) { it.id }),
         currentPlayerIndex = invokerIndex,
+        turnPhase = TurnPhase.AwaitingAction,
     )
 }
 

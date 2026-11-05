@@ -12,8 +12,9 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinCelebrationWinn
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementPresentationRequest
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.GameEventPublisher
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.GamePresentationPublisher
+import com.doublemoon1119.mahjongcraft.flow.common.game.service.TableStep
+import com.doublemoon1119.mahjongcraft.flow.common.game.service.TableStepEvent
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.WinCelebrationCueResolverRegistry
-import com.doublemoon1119.mahjongcraft.flow.common.game.service.toPresentation
 import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
 import com.doublemoon1119.mahjongcraft.flow.server.game.history.acceptedActionHistoryDraft
 import com.doublemoon1119.mahjongcraft.flow.server.game.history.actionScoredHistoryDraft
@@ -41,11 +42,10 @@ import com.doublemoon1119.mahjongcraft.logic.module.WinResolutionResult
 import com.doublemoon1119.mahjongcraft.logic.table.DrawSource
 import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayer
 import com.doublemoon1119.mahjongcraft.logic.table.PendingReaction
-import com.doublemoon1119.mahjongcraft.logic.table.SidewaysMarkedDiscardPile
 import com.doublemoon1119.mahjongcraft.logic.table.SupplementalDrawReasonIds
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
+import com.doublemoon1119.mahjongcraft.logic.table.TurnPhase
 import com.doublemoon1119.mahjongcraft.logic.table.WallRevealCheckpoint
-import com.doublemoon1119.mahjongcraft.logic.table.layout.PhysicalWallLayoutTransitionPhase
 import kotlin.uuid.Uuid
 
 /**
@@ -242,7 +242,7 @@ class RespondToDiscardUseCase(
                         )
 
                     val result = if (!newPendingReaction.isComplete) {
-                        RespondResult(state.copy(players = playersAfterResponse, pendingReaction = newPendingReaction))
+                        RespondResult(state.copy(players = playersAfterResponse, turnPhase = TurnPhase.AwaitingDiscardReaction(newPendingReaction)))
                     } else {
                         resolvePendingReaction(state, playersAfterResponse, newPendingReaction, discardedTile, module)
                     }
@@ -320,78 +320,27 @@ class RespondToDiscardUseCase(
             followUp.publishedActions.forEach { followUpAction ->
                 eventPublisher.publishToAllObservers(gameId, seatedPlayerIds, winnerId, followUpAction)
             }
-            presentationPublisher.publishRoundInfoUpdated(gameId, newState)
         }
 
-        // 觸發平台呈現層：碰/吃/明槓得標時，丟牌者的 discardPile 被 takeLast() 標記，即使沒有新增
-        // 捨牌，側身標記也可能因此位移，需要重新呈現這位丟牌者的牌河
-        result.discarderId?.let { discarderId ->
-            val discarderSeatIndex = newState.players.indexOfFirst { it.id == discarderId }
-            val discarder = newState.players[discarderSeatIndex]
-            presentationPublisher.publishDiscardPileUpdated(
-                gameId,
-                discarderSeatIndex,
-                discarder.discardPile.entries.filterNot { it.isTaken }.map { it.tile.id },
-                (discarder.discardPile as? SidewaysMarkedDiscardPile)?.sidewaysMarkedTileId(),
-            )
-        }
-
-        // 碰/吃/明槓得標時，得標玩家的副露多了一組、手牌也少了對應張數，重新呈現整份手牌/摸牌位/
-        // 副露；規則另外補牌時（[RespondResult.followUp]）摸牌位自然帶著呈現，不需要
-        // 額外判斷——合併呼叫後也順便補上先前缺漏的手牌重新呈現（吃/碰/明槓後手牌張數變少，先前完全
-        // 沒有重新呈現手牌列）。
-        result.winnerId?.let { winnerId ->
-            result.resolvedAction?.let { resolvedAction ->
-                presentationPublisher.publishGameActionDeclared(gameId, winnerId, resolvedAction)
-            }
-            result.scoring?.let { scoring ->
-                presentationPublisher.publishActionScored(gameId, scoring)
-                // 沒有補牌時不會更新局況；收付改變了分數，玩家資訊要跟著更新。
-                if (result.followUp == null) presentationPublisher.publishRoundInfoUpdated(gameId, newState)
-            }
-            val winnerSeatIndex = newState.players.indexOfFirst { it.id == winnerId }
-            val winner = newState.players[winnerSeatIndex]
-            val module = moduleRegistry.getModule(newState.config)
-            // 吃/碰/明槓永遠整組一次成立新副露（附加到 exposedMelds 尾端，不是原地修改既有組），
-            // 最後一組必定就是這次剛成立的那組，組內全部牌都是新移入副露的牌。
-            val claimedTileIds = winner.hand.melds.last().tiles.map { it.id }.toSet()
-            val followUp = result.followUp
-            if (followUp != null) {
-                presentationPublisher.publishPlayerAreaAfterDraw(
-                    gameId = gameId,
-                    playerId = winnerId,
-                    followUp = followUp,
-                    module = module,
-                    newlyClaimedMeldTileIds = claimedTileIds,
-                )
-            } else {
-                presentationPublisher.publishPlayerTilesUpdated(
-                    gameId = gameId,
-                    seatIndex = winnerSeatIndex,
-                    standingTileIds = winner.hand.tiles.map { it.id },
-                    drawnTileId = winner.hand.lastDrawn?.id,
-                    melds = winner.hand.melds.map { it.toPresentation(newState.config.revealsClosedKanTiles) },
-                    setAsideTileIds = winner.setAsideTiles.map { it.id },
-                    newlyClaimedMeldTileIds = claimedTileIds,
-                )
-            }
-        }
-
-        // 依 checkpoint 順序發布新公開的牌牆資訊；除了本次明槓，先前延後的公開也可能在全員跳過、
-        // 吃或碰確定無人榮和時於此完成，因此不能綁在 winnerId 的呈現區塊內。
-        result.wallRevealBatches.forEach { revealedTileIds ->
-            presentationPublisher.publishWallTilesRevealed(gameId, revealedTileIds)
-        }
-        if (result.physicalWallTransitionPhases.isNotEmpty()) {
-            presentationPublisher.publishWallLayoutTransition(gameId, result.physicalWallTransitionPhases)
-        }
+        // 呈現回應的結果：鳴牌時牌從牌河移入副露，明槓再接著補牌與補牌後的自動處理；榮和時宣告和牌。
+        val steps = result.steps ?: listOf(
+            TableStep(
+                newState,
+                buildList {
+                    result.ronWinningTileId?.let { tileId ->
+                        result.ronWinnerIds.forEach { winnerId -> add(TableStepEvent.ActionDeclared(winnerId, GameAction.Ron(tileId))) }
+                    }
+                    val winnerId = result.winnerId
+                    if (winnerId != null && resolvedAction != null) add(TableStepEvent.ActionDeclared(winnerId, resolvedAction))
+                    result.scoring?.let { add(TableStepEvent.ActionScored(it)) }
+                },
+            ),
+        )
+        presentationPublisher.publishTableSteps(gameId, steps)
 
         // 建構胡牌演出內容並寫進交接槽——一炮多響時 result.ronWinnerIds 可能不只一人，打包成同一筆；
         // winningTileId 對每位贏家來說都是同一張放銃的捨牌。刻意不直接發布，理由同 DeclareTsumoUseCase。
         result.ronWinningTileId?.let { winningTileId ->
-            result.ronWinnerIds.forEach { winnerId ->
-                presentationPublisher.publishGameActionDeclared(gameId, winnerId, GameAction.Ron(winningTileId))
-            }
             val presentation = SettledWinPresentation(
                 winnerPlayerIds = result.ronWinnerIds,
                 celebration = WinCelebrationRequest(
@@ -451,8 +400,7 @@ class RespondToDiscardUseCase(
      * @property previousTableState 榮和結算前、仍保留反應視窗資訊的桌況。
      * @property ronDiscarderId 榮和結算中的放銃者識別碼。
      * @property settlement 同一榮和交易建立的胡牌呈現詳情。
-     * @property wallRevealBatches 依 checkpoint 順序新增公開的牌張 ID 批次。
-     * @property physicalWallTransitionPhases 已驗證的實體牌牆移動階段。
+     * @property steps 需要分步呈現時依序的步驟，例如明槓成立後補牌；只有一步時為 null，由呼叫端以提交的桌況呈現。
      * @property rejectionReasonId 規則拒絕或結果驗證失敗時的原因 ID。
      * @property abortiveDrawReason 本次結算觸發的途中流局原因。
      * @property abortiveDrawActorId 記錄途中流局動作的玩家識別碼。
@@ -472,8 +420,7 @@ class RespondToDiscardUseCase(
         val previousTableState: TableState? = null,
         val ronDiscarderId: Uuid? = null,
         val settlement: WinSettlementPresentationRequest? = null,
-        val wallRevealBatches: List<Set<Uuid>> = emptyList(),
-        val physicalWallTransitionPhases: List<PhysicalWallLayoutTransitionPhase> = emptyList(),
+        val steps: List<TableStep>? = null,
         val rejectionReasonId: String? = null,
         val abortiveDrawReason: ExhaustiveDrawReason? = null,
         val abortiveDrawActorId: Uuid? = null,
@@ -531,7 +478,7 @@ class RespondToDiscardUseCase(
                 winnerIds = ronWinnerIds,
             )
             val result = RespondResult(
-                tableState = resolved.tableState.copy(pendingReaction = null),
+                tableState = resolved.tableState,
                 ronWinnerIds = ronWinnerIds,
                 ronWinningTileId = discardedTile.id,
                 ronResolutions = resolved.resolutions,
@@ -554,7 +501,7 @@ class RespondToDiscardUseCase(
                 .mapTo(mutableSetOf()) { it.id },
             module = module,
         ).players
-        val stateAfterResponses = state.copy(players = players, pendingReaction = null)
+        val stateAfterResponses = state.copy(players = players, turnPhase = TurnPhase.AwaitingDraw)
         val completedDiscard = GameAction.Discard(pendingReaction.tileId)
         val abortiveDrawReason = postActionExhaustiveDrawResolverRegistry.resolve(
             CompletedGameActionContext(
@@ -581,7 +528,7 @@ class RespondToDiscardUseCase(
             return RespondResult(
                 stateWithPlayers.copy(
                     currentPlayerIndex = players.indexOf(nextPlayer),
-                    pendingReaction = null,
+                    turnPhase = TurnPhase.AwaitingDraw,
                 ),
             ).applyWallReveal(
                 checkpoint = WallRevealCheckpoint.AFTER_DISCARD_REACTIONS,
@@ -631,10 +578,7 @@ class RespondToDiscardUseCase(
         } else {
             calledHand
         }
-        val winnerAfterMeld = claimingWinner.copy(
-            hand = organizedHand,
-            mustDiscardAfterMeld = !effect.requiresSupplementalDraw,
-        ).clearPassedTiles().recordAction(winnerAction)
+        val winnerAfterMeld = claimingWinner.copy(hand = organizedHand).clearPassedTiles().recordAction(winnerAction)
 
         val playersAfterMeld = players.map { player ->
             when (player.id) {
@@ -661,7 +605,8 @@ class RespondToDiscardUseCase(
             after = state.copy(
                 players = playersAfterMeldClaimed,
                 currentPlayerIndex = winnerIndex,
-                pendingReaction = null,
+                // 需要補牌的鳴牌在補牌後進入等行動；不補牌的鳴牌只能打牌。
+                turnPhase = if (effect.requiresSupplementalDraw) TurnPhase.AwaitingAction else TurnPhase.AwaitingDiscard,
             ),
             actorPlayerId = winnerId,
             action = winnerAction,
@@ -736,8 +681,7 @@ class RespondToDiscardUseCase(
                     discarderId = pendingReaction.discarderId,
                     winnerId = winnerId,
                     resolvedAction = winnerAction,
-                    wallRevealBatches = reactionReveal.wallRevealBatches + applied.wallRevealBatches,
-                    physicalWallTransitionPhases = applied.physicalWallTransitionPhases,
+                    steps = applied.copy(scoring = scored.scoring).tableSteps(winnerId, winnerAction, followUp),
                 )
             }
         }
@@ -759,11 +703,7 @@ class RespondToDiscardUseCase(
             componentRegistry = componentRegistry,
         )
     ) {
-        is WallRevealDecisionApplier.Result.Applied -> copy(
-            tableState = applied.tableState,
-            wallRevealBatches = wallRevealBatches +
-                listOf(applied.newlyRevealedTileIds).filterNot { it.isEmpty() },
-        )
+        is WallRevealDecisionApplier.Result.Applied -> copy(tableState = applied.tableState)
 
         is WallRevealDecisionApplier.Result.Rejected -> copy(rejectionReasonId = applied.reasonId)
     }

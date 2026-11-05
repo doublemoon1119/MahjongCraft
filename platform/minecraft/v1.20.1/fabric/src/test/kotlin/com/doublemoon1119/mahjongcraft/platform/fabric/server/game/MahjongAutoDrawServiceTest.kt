@@ -398,7 +398,7 @@ class MahjongAutoDrawServiceTest {
     }
 
     /**
-     * 迴歸測試：驗證玩家進入強制自動操作後，即使沒有任何逾時事件（沒有計時器可等），單純請求一次自動推進
+     * 驗證玩家進入強制自動操作後，即使沒有任何逾時事件（沒有計時器可等），單純請求一次自動推進
      * 仍然能幫他完成當下卡住的那次捨牌，不會卡住。
      *
      * 對應 `FabricDecisionTimerScheduler` 每秒巡邏所有進行中對局並請求推進的設計——這裡驗證的正是這個心跳背後依賴的
@@ -427,7 +427,7 @@ class MahjongAutoDrawServiceTest {
     }
 
     /**
-     * 迴歸測試：驗證對局結束後先停在可持久化的終局呈現邊界，之後桌子真的從 Game
+     * 驗證對局結束後先停在可持久化的終局呈現邊界，之後桌子真的從 Game
      * 轉回 Room（不是只標記 [Game.isMatchOver]）——
      * 兩者共用同一個 [AuthoritativeStateStore]，用來驗證 `ReturnToRoomUseCase` 真的接得到
      * `GameFlowCoordinator` 銜接的呼叫，而不是像 `GameFlowCoordinatorTest` 那樣用互不相通的
@@ -436,7 +436,7 @@ class MahjongAutoDrawServiceTest {
      * 四位玩家都設成 AI（含房主本人）——這裡只驗證 `Game.hostId` 能不能正確往返、Room 能不能正確
      * 重建，不需要真人玩家；若房主是唯一的真人玩家，`GameInitializer.initialize` 內部洗牌座位是
      * 隨機的，房主可能剛好被排到莊家（東家）座位，自動推進不會替真人行動，測試會在
-     * 空牌山的第一次摸牌前卡住、變成間歇性失敗——曾經在這裡踩過一次。
+     * 空牌山的第一次摸牌前卡住、變成間歇性失敗。
      */
     @Test
     fun `test match ending moves the table from Game back to Room`() = runTest {

@@ -6,6 +6,7 @@ import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.logic.judgment.LegalActionContext
 import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayer
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
+import com.doublemoon1119.mahjongcraft.logic.table.TurnPhase
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
 import kotlin.uuid.Uuid
@@ -46,6 +47,7 @@ internal object LegalActionTestContexts {
             players = tableState.players.map { current ->
                 if (current.id == player.id) playerWithDraw else current
             },
+            turnPhase = TurnPhase.AwaitingAction,
         )
         return LegalActionContext.ownTurn(tableWithDraw, player.id)
     }

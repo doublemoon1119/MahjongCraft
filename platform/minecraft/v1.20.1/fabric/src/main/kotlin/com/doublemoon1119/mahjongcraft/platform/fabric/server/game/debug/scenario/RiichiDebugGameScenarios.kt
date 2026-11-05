@@ -33,6 +33,7 @@ import com.doublemoon1119.mahjongcraft.logic.table.MatchRoundPosition
 import com.doublemoon1119.mahjongcraft.logic.table.PendingReaction
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.logic.table.TileWall
+import com.doublemoon1119.mahjongcraft.logic.table.TurnPhase
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import com.doublemoon1119.mahjongcraft.logic.table.layout.InitialPhysicalWallLayoutContext
 import com.doublemoon1119.mahjongcraft.logic.table.layout.InitialPhysicalWallLayoutDecision
@@ -172,6 +173,7 @@ private object RiichiBeforeSuuchaRiichiScenario : DebugGameScenario {
             dealerPlayerId = context.invokingPlayerId,
             roundPosition = MatchRoundPosition(sequenceIndex = 0, prevalentWind = Wind.EAST, localRoundNumber = 1),
             currentPlayerIndex = invokingPlayerIndex,
+            turnPhase = TurnPhase.AwaitingAction,
             components = ComponentSet.EMPTY.with(RiichiTableComponents.POT_POINTS, (PLAYER_COUNT - 1) * RIICHI_STICK_POINTS).with(RiichiTableComponents.WALL_PROGRESS, RiichiWallProgress()),
             wallOpening = opening,
             reservedWallTiles = initialReservedTiles,
@@ -291,12 +293,14 @@ private object RiichiBeforePaoPonScenario : DebugGameScenario {
             roundPosition = MatchRoundPosition(sequenceIndex = 0, prevalentWind = Wind.EAST, localRoundNumber = 1),
             currentPlayerIndex = discarderIndex,
             components = ComponentSet.EMPTY.with(RiichiTableComponents.POT_POINTS, 0).with(RiichiTableComponents.WALL_PROGRESS, RiichiWallProgress()),
-            pendingReaction = PendingReaction(
-                discarderId = players[discarderIndex].id,
-                tileId = calledTile.id,
-                eligiblePlayerIds = setOf(context.invokingPlayerId),
-                ronPlayerIds = setOf(context.invokingPlayerId),
-                id = Uuid.random(),
+            turnPhase = TurnPhase.AwaitingDiscardReaction(
+                PendingReaction(
+                    discarderId = players[discarderIndex].id,
+                    tileId = calledTile.id,
+                    eligiblePlayerIds = setOf(context.invokingPlayerId),
+                    ronPlayerIds = setOf(context.invokingPlayerId),
+                    id = Uuid.random(),
+                ),
             ),
             wallOpening = opening,
             reservedWallTiles = initialReservedTiles,
@@ -471,6 +475,7 @@ private class RiichiBeforeAnkanScenario(
             dealerPlayerId = context.invokingPlayerId,
             roundPosition = MatchRoundPosition(sequenceIndex = 0, prevalentWind = Wind.EAST, localRoundNumber = 1),
             currentPlayerIndex = dealerIndex,
+            turnPhase = TurnPhase.AwaitingAction,
             components = ComponentSet.EMPTY.with(RiichiTableComponents.POT_POINTS, 0).with(RiichiTableComponents.WALL_PROGRESS, RiichiWallProgress(completedSupplementalDrawCount = completedKanCount, revealedKanDoraCount = completedKanCount)),
             wallOpening = opening,
             reservedWallTiles = reservedTiles,
@@ -686,12 +691,14 @@ private class RiichiBeforeMinkanScenario(
         val tableState = state.copy(
             players = players,
             currentPlayerIndex = discarderIndex,
-            pendingReaction = PendingReaction(
-                discarderId = players[discarderIndex].id,
-                tileId = discardedTile.id,
-                eligiblePlayerIds = setOf(context.invokingPlayerId),
-                ronPlayerIds = setOf(context.invokingPlayerId),
-                id = Uuid.random(),
+            turnPhase = TurnPhase.AwaitingDiscardReaction(
+                PendingReaction(
+                    discarderId = players[discarderIndex].id,
+                    tileId = discardedTile.id,
+                    eligiblePlayerIds = setOf(context.invokingPlayerId),
+                    ronPlayerIds = setOf(context.invokingPlayerId),
+                    id = Uuid.random(),
+                ),
             ),
         )
         return base.copy(game = base.game.copy(tableState = tableState))

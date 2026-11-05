@@ -268,6 +268,14 @@ class MahjongTileEntity(
     val animationEaseRotation: Boolean
         get() = dataTracker[ANIMATION_EASE_ROTATION]
 
+    /** 動畫是否走「提起、橫移、放下」的路線，見 [AnimationStep.PlayMotion.liftCarryLower]。 */
+    val animationLiftCarryLower: Boolean
+        get() = dataTracker[ANIMATION_LIFT_CARRY_LOWER]
+
+    /** 動畫途中往前進方向傾斜的角度，見 [AnimationStep.PlayMotion.leanDegrees]。 */
+    val animationLeanDegrees: Float
+        get() = dataTracker[ANIMATION_LEAN]
+
     /** 這個 entity 是否已經做過一次 [validateStillManagedByActiveGame] 檢查；只需要做一次。 */
     private var hasValidatedManagedState = false
 
@@ -287,6 +295,8 @@ class MahjongTileEntity(
         dataTracker.set(ANIMATION_END_POSE_ROTATION, step.endPoseRotationDegrees)
         dataTracker.set(ANIMATION_EASE_ROTATION, step.easeRotation)
         dataTracker.set(ANIMATION_START_YAW_OFFSET, step.startYawOffsetDegrees)
+        dataTracker.set(ANIMATION_LIFT_CARRY_LOWER, step.liftCarryLower)
+        dataTracker.set(ANIMATION_LEAN, step.leanDegrees)
         animating = true
     }
 
@@ -325,7 +335,7 @@ class MahjongTileEntity(
      *
      * 這是崩潰恢復的安全網，補足「某條清除路徑忘記清 3D entity」這類漏洞（已知一例：
      * `FabricTableLocationValidationService.cleanupMissing`），不是取代既有的明確清除呼叫
-     * （`MahjongTileWallPresenter.clear()`／`MahjongHandTilesPresenter.clear()` 等）——那些呼叫仍是
+     * （`MahjongTileWallPresenter.clear()`／`MahjongPlayerAreaPresenter.clear()` 等）——那些呼叫仍是
      * 正常流程下的清除方式，這裡只在「不知道為什麼漏清了」的情況下才會真的觸發。
      *
      * 只查「這個 tableId 是否還有對局」，不逐一比對這張牌的 UUID 是否還在牌牆／手牌／牌河／副露的
@@ -497,6 +507,8 @@ class MahjongTileEntity(
         dataTracker.startTracking(ANIMATION_END_POSE_ROTATION, 0.0f)
         dataTracker.startTracking(ANIMATION_EASE_ROTATION, false)
         dataTracker.startTracking(ANIMATION_START_YAW_OFFSET, 0.0f)
+        dataTracker.startTracking(ANIMATION_LIFT_CARRY_LOWER, false)
+        dataTracker.startTracking(ANIMATION_LEAN, 0.0f)
         dataTracker.startTracking(ACTION_POPUP_KIND, TileActionPopupKind.NONE.name)
         dataTracker.startTracking(ACTION_POPUP_START_GAME_TIME, 0L)
         dataTracker.startTracking(ACTION_POPUP_END_GAME_TIME, 0L)
@@ -505,7 +517,7 @@ class MahjongTileEntity(
 
     /**
      * 從世界存檔還原牌面、姿態、管理狀態與動畫佇列，非法值使用安全預設。動畫佇列一併還原
-     * （[readAnimationQueueFromNbt]）是修正「動畫播放中離開世界，牌卡在半空」這個 bug 的關鍵——佇列裡
+     * （[readAnimationQueueFromNbt]），動畫播放中離開世界時牌才不會卡在半空——佇列裡
      * 還沒播完的 step 會在世界重新載入、entity 開始被 tick 之後自動接續播放，不需要另外觸發。
      */
     override fun readCustomDataFromNbt(nbt: NbtCompound) {
@@ -641,6 +653,14 @@ class MahjongTileEntity(
 
         /** 同步動畫起點相對真實終點 yaw 的角差。 */
         private val ANIMATION_START_YAW_OFFSET: TrackedData<Float> =
+            DataTracker.registerData(MahjongTileEntity::class.java, TrackedDataHandlerRegistry.FLOAT)
+
+        /** 同步動畫是否走「提起、橫移、放下」的路線。 */
+        private val ANIMATION_LIFT_CARRY_LOWER: TrackedData<Boolean> =
+            DataTracker.registerData(MahjongTileEntity::class.java, TrackedDataHandlerRegistry.BOOLEAN)
+
+        /** 同步動畫途中往前進方向傾斜的角度。 */
+        private val ANIMATION_LEAN: TrackedData<Float> =
             DataTracker.registerData(MahjongTileEntity::class.java, TrackedDataHandlerRegistry.FLOAT)
     }
 }

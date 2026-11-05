@@ -123,10 +123,9 @@ class PinfuTest : RiichiHandValueCalculatorTestBase() {
     )
 
     /**
-     * 迴歸測試：即使呼叫端把 `isMenzen` 蓋成 `true`（`FuCalculator.isFuuroPinfuRon` 借用
+     * 即使呼叫端把 `isMenzen` 蓋成 `true`（`FuCalculator.isFuuroPinfuRon` 借用
      * [calculatePinfu] 檢查「若門前清是否為平和形」時就是這樣做），只要副露（`fuuro`）裡混有
-     * 非順子的面子（例如碰），依然不應該判定為平和——修正前只檢查 `mentsus`，完全沒檢查
-     * `fuuro`，會讓這種情況誤判成平和。
+     * 非順子的面子（例如碰），依然不應該判定為平和——除了 `mentsus` 也必須檢查 `fuuro`。
      */
     @Test
     fun `test pinfu returns null when fuuro contains a non-shuntsu meld even with isMenzen forced true`() {
@@ -140,8 +139,8 @@ class PinfuTest : RiichiHandValueCalculatorTestBase() {
     }
 
     /**
-     * 迴歸測試：暗槓（[Mentsu.Ankan]）不會破壞門前清狀態（`isMenzen` 為 `true`），但平和要求
-     * 完全零副露（連暗槓都不行）。修正前 `mentsus` 迴圈抓不到放在 `fuuro` 裡的暗槓，會誤判成平和。
+     * 暗槓（[Mentsu.Ankan]）不會破壞門前清狀態（`isMenzen` 為 `true`），但平和要求
+     * 完全零副露（連暗槓都不行），放在 `fuuro` 裡的暗槓也要算進去。
      */
     @Test
     fun `test pinfu returns null when fuuro contains a closed kan even though isMenzen is true`() {

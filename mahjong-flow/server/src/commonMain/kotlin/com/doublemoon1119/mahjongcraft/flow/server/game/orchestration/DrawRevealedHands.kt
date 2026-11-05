@@ -3,7 +3,9 @@ package com.doublemoon1119.mahjongcraft.flow.server.game.orchestration
 import com.doublemoon1119.mahjongcraft.logic.base.ExhaustiveDrawReason
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
+import com.doublemoon1119.mahjongcraft.logic.table.RoundConclusion
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
+import com.doublemoon1119.mahjongcraft.logic.table.TurnPhase
 import kotlin.uuid.Uuid
 
 /**
@@ -20,7 +22,10 @@ internal fun TableState.recordAbortiveDraw(
     declarerId: Uuid?,
     module: MahjongRuleModule<*>,
 ): TableState {
-    val recorded = copy(players = players.map { player -> player.recordAction(GameAction.ExhaustiveDraw(reason)) })
+    val recorded = copy(
+        players = players.map { player -> player.recordAction(GameAction.ExhaustiveDraw(reason)) },
+        turnPhase = TurnPhase.RoundOver(RoundConclusion.AbortiveDraw(reason)),
+    )
     val revealedHands = module.resolveAbortiveDrawRevealedHands(recorded, declarerId, reason)
     return recorded
         .revealHandsOf(revealedHands.map { it.playerId })

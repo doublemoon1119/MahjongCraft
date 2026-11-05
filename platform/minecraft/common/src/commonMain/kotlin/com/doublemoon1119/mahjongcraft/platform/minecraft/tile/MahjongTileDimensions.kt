@@ -3,10 +3,8 @@ package com.doublemoon1119.mahjongcraft.platform.minecraft.tile
 /**
  * 麻將牌世界呈現共用尺寸常數。
  *
- * 沿用重構前 main 分支 `mahjong_tile_base.json`／`MahjongTileEntity`／`MahjongBoard` 已經過實際遊戲
- * 呈現驗證的初始比例（12×16×8 模型單位、`0.15` runtime 縮放），供 Fabric-only 的
- * `MahjongTileEntity` 與純 Kotlin common 座標
- * 計算（[MahjongTileTableLayout]）共用同一組數值，避免兩處各自定義後跑掉。
+ * 牌的模型是 12×16×8 模型單位、runtime 縮放 `0.15`。Fabric 的 `MahjongTileEntity` 與 common 的座標計算
+ * （[MahjongTileTableLayout]）共用同一組數值，避免兩處各自定義而不一致。
  */
 object MahjongTileDimensions {
     /** 麻將牌世界縮放係數。 */

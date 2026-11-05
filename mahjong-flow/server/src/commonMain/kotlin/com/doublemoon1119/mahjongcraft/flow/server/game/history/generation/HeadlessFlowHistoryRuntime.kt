@@ -1,7 +1,6 @@
 package com.doublemoon1119.mahjongcraft.flow.server.game.history.generation
 
 import com.doublemoon1119.mahjongcraft.ai.BuiltInAiStrategyKeys
-import com.doublemoon1119.mahjongcraft.flow.common.game.model.DrawFollowUpPresentationStep
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.ExhaustiveDrawSettlementPresentationRequest
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.Game
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameConfig
@@ -14,9 +13,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.service.DecisionTimerUpd
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.GameEventPublisher
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.GamePresentationBusyGate
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.GamePresentationPublisher
-import com.doublemoon1119.mahjongcraft.flow.common.game.service.MeldPresentation
-import com.doublemoon1119.mahjongcraft.flow.common.game.service.PlayerAreaPresentationState
-import com.doublemoon1119.mahjongcraft.flow.common.game.service.PlayerAreaSequenceStep
+import com.doublemoon1119.mahjongcraft.flow.common.game.service.TableStep
 import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
 import com.doublemoon1119.mahjongcraft.flow.common.room.model.JoinReason
 import com.doublemoon1119.mahjongcraft.flow.common.room.model.LeaveReason
@@ -74,7 +71,6 @@ import com.doublemoon1119.mahjongcraft.logic.component.AuthoritativeComponentVal
 import com.doublemoon1119.mahjongcraft.logic.config.MahjongRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.logic.table.TableStateSnapshot
-import com.doublemoon1119.mahjongcraft.logic.table.layout.PhysicalWallLayoutTransitionPhase
 import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPhysicalLayout
 import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPosition
 import com.doublemoon1119.mahjongcraft.logic.table.opening.OpeningDiceRoll
@@ -421,26 +417,11 @@ private class NoOpPresentation : GamePresentationPublisher {
     /** 丟棄牌牆呈現。 */
     override fun publishWallStructure(gameId: Uuid, assemblyStructure: Map<Uuid, TileWallPosition>, layout: TileWallPhysicalLayout, dealerSeatIndex: Int, deadWallTileIds: Set<Uuid>, openingDiceCounts: List<Int>, isNewOpening: Boolean, revealedTileIds: Set<Uuid>) = Unit
 
-    /** 丟棄牌牆轉場。 */
-    override fun publishWallLayoutTransition(gameId: Uuid, phases: List<PhysicalWallLayoutTransitionPhase>) = Unit
-
-    /** 丟棄翻牌通知。 */
-    override fun publishWallTilesRevealed(gameId: Uuid, revealedTileIds: Set<Uuid>) = Unit
-
-    /** 丟棄規則狀態通知。 */
-    override fun publishRuleStateUpdated(gameId: Uuid) = Unit
-
-    /** 丟棄局況通知。 */
-    override fun publishRoundInfoUpdated(gameId: Uuid, tableState: TableState) = Unit
-
-    /** 丟棄玩家區域通知。 */
-    override fun publishPlayerTilesUpdated(gameId: Uuid, seatIndex: Int, standingTileIds: List<Uuid>, drawnTileId: Uuid?, melds: List<MeldPresentation>, setAsideTileIds: List<Uuid>, isNewlyDrawn: Boolean, newlyClaimedMeldTileIds: Set<Uuid>, newlySetAsideTileIds: Set<Uuid>, followUpSteps: List<DrawFollowUpPresentationStep>) = Unit
-
-    /** 丟棄依序牌區變化通知。 */
-    override fun publishPlayerAreaSequence(gameId: Uuid, areas: List<PlayerAreaPresentationState>, steps: List<PlayerAreaSequenceStep>) = Unit
+    /** 丟棄桌況步驟。 */
+    override fun publishTableSteps(gameId: Uuid, steps: List<TableStep>) = Unit
 
     /** 丟棄初始發牌通知。 */
-    override fun publishInitialDeal(gameId: Uuid, handTileIdsBySeatIndex: Map<Int, List<Uuid>>, postFlipHandTileIdsBySeatIndex: Map<Int, List<Uuid>>, dealerSeatIndex: Int, dealBatchSizes: List<Int>, openingDiceCounts: List<Int>) = Unit
+    override fun publishInitialDeal(gameId: Uuid, tableState: TableState, handTileIdsBySeatIndex: Map<Int, List<Uuid>>, dealBatchSizes: List<Int>, openingDiceCounts: List<Int>) = Unit
 
     /** 丟棄清除玩家區域呈現的要求。 */
     override fun clearPlayerTiles(gameId: Uuid) = Unit
@@ -450,9 +431,6 @@ private class NoOpPresentation : GamePresentationPublisher {
 
     /** 丟棄局間換位通知。 */
     override fun publishSeatOrderChanged(gameId: Uuid, seatedPlayerIds: List<Uuid>) = Unit
-
-    /** 丟棄牌河通知。 */
-    override fun publishDiscardPileUpdated(gameId: Uuid, seatIndex: Int, discardTileIds: List<Uuid>, sidewaysMarkedTileId: Uuid?, newlyDiscardedTileId: Uuid?) = Unit
 
     /** 丟棄胡牌慶祝通知。 */
     override fun publishWinCelebration(gameId: Uuid, request: WinCelebrationRequest) = Unit

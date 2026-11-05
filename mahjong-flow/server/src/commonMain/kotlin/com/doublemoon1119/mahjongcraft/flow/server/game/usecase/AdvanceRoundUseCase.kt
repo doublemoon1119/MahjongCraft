@@ -285,20 +285,11 @@ class AdvanceRoundUseCase(
                 eventPublisher.publishToAllObservers(gameId, seatedPlayerIds, roll.playerId, GameAction.DiceRolled(roll))
             }
         }
-        // 規則狀態的呈現跟牌牆同時更新，緊接在 publishWallStructure 之後呼叫。
-        presentationPublisher.publishRuleStateUpdated(gameId)
-        val module = moduleRegistry.getModule(newState.config)
-        presentationPublisher.publishRoundInfoUpdated(gameId, newState)
-        // 發牌完成後的最終牌序——newState 此時已經是整理過的順序，與發牌順序
-        // advanceOutcome.dealOrderHandTileIdsBySeatIndex 分開，見 GamePresentationPublisher.publishInitialDeal KDoc。
-        val postFlipHandTileIdsBySeatIndex = newState.players.withIndex().associate { (seatIndex, player) ->
-            seatIndex to player.hand.tiles.map { tile -> tile.id }
-        }
+        // newState 的立牌已是整理後的最終牌序，與發牌順序 advanceOutcome.dealOrderHandTileIdsBySeatIndex 分開。
         presentationPublisher.publishInitialDeal(
             gameId,
+            newState,
             advanceOutcome.dealOrderHandTileIdsBySeatIndex,
-            postFlipHandTileIdsBySeatIndex,
-            dealerSeatIndex,
             dealBatchSizes = newState.config.dealBatchSizes(),
             openingDiceCounts = newState.openingDiceRolls.map { it.dice.values.size },
         )

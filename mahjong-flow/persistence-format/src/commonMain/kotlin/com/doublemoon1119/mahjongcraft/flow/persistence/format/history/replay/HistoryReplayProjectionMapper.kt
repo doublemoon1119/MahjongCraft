@@ -28,6 +28,7 @@ import com.doublemoon1119.mahjongcraft.flow.persistence.format.game.MatchRoundPo
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.game.MeldTypePersistenceDto
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.game.RelativeDirectionPersistenceDto
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.game.TileFaceViewPersistenceDto
+import com.doublemoon1119.mahjongcraft.flow.persistence.format.game.TurnPhaseSerialNames
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.game.toDomain
 import com.doublemoon1119.mahjongcraft.logic.base.MeldType
 import com.doublemoon1119.mahjongcraft.logic.base.MeldTypeId
@@ -85,11 +86,12 @@ internal object HistoryReplayProjectionMapper {
             player.handTiles + listOfNotNull(player.lastDrawn) + player.melds.flatMap { it.tiles } + player.discards.filterNot { it.isTaken }.map { it.tile }
         }
         require(held.map { it.tileIndex }.distinct().size == held.size) { "Replay tile appears in multiple holding areas" }
+        val phaseType = string(obj(root.getValue(ReplaySourceKeys.TURN_PHASE)).getValue(ReplaySourceKeys.TYPE))
         return HistoryRoundState(
             identity, roundNumber, position, tileCatalog, players, wall, reserved,
             players.getOrNull(current)?.initialSeatIndex ?: invalid(), dealer, wind, roundPosition,
             integer(root.getValue(ReplaySourceKeys.COMBO_COUNT)), root[ReplaySourceKeys.FINISHED_PLAYER_IDS]?.let { array(it).map { value -> context.seat(integer(value)) }.toSet() } ?: emptySet(),
-            root.getValue(ReplaySourceKeys.PENDING_REACTION) != JsonNull, root.getValue(ReplaySourceKeys.PENDING_ROBBING_REACTION) != JsonNull, null,
+            phaseType == TurnPhaseSerialNames.AWAITING_DISCARD_REACTION, phaseType == TurnPhaseSerialNames.AWAITING_ROBBING_REACTION, null,
         )
     }
 

@@ -7,7 +7,7 @@ import kotlin.test.assertTrue
 
 /** 驗證捲動 index 在滾輪、拖曳與版面重建時都收斂在合法範圍內。 */
 class ScrollStateTest {
-    /** 滾輪往下捲動到底部後，繼續往下捲不得超出上限（重現曾經一瞬間超出又復原的問題）。 */
+    /** 滾輪往下捲動到底部後，繼續往下捲不得超出上限，連一瞬間都不行。 */
     @Test
     fun `scrolling past the bottom stays clamped at the maximum`() {
         val state = ScrollState()

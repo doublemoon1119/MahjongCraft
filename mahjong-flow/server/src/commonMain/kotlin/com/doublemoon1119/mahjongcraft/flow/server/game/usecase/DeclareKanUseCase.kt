@@ -5,7 +5,8 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.AppliedActionScori
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameError
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.GameEventPublisher
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.GamePresentationPublisher
-import com.doublemoon1119.mahjongcraft.flow.common.game.service.toPresentation
+import com.doublemoon1119.mahjongcraft.flow.common.game.service.TableStep
+import com.doublemoon1119.mahjongcraft.flow.common.game.service.TableStepEvent
 import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
 import com.doublemoon1119.mahjongcraft.flow.server.game.history.acceptedActionHistoryDraft
 import com.doublemoon1119.mahjongcraft.flow.server.game.history.actionScoredHistoryDraft
@@ -27,7 +28,7 @@ import com.doublemoon1119.mahjongcraft.logic.table.DrawSource
 import com.doublemoon1119.mahjongcraft.logic.table.PendingRobbingReaction
 import com.doublemoon1119.mahjongcraft.logic.table.SupplementalDrawReasonIds
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
-import com.doublemoon1119.mahjongcraft.logic.table.layout.PhysicalWallLayoutTransitionPhase
+import com.doublemoon1119.mahjongcraft.logic.table.TurnPhase
 import kotlin.uuid.Uuid
 
 /**
@@ -191,25 +192,30 @@ class DeclareKanUseCase(
                                 newState,
                                 kanAction,
                                 abortiveDrawReason = abortiveDrawReason,
+                                steps = listOf(TableStep(newState, listOf(TableStepEvent.ActionDeclared(playerId, kanAction)))),
                             ),
                         )
                     }
 
                     if (ronWinningPlayerIds.isNotEmpty()) {
                         val newState = state.copy(
-                            pendingRobbingReaction = PendingRobbingReaction(
-                                playerId,
-                                kanAction,
-                                declaredTile,
-                                ronWinningPlayerIds,
+                            turnPhase = TurnPhase.AwaitingRobbingReaction(
+                                PendingRobbingReaction(
+                                    playerId,
+                                    kanAction,
+                                    declaredTile,
+                                    ronWinningPlayerIds,
+                                ),
                             ),
                             publicTileEvidenceIds = state.publicTileEvidenceIds + kanAction.withTiles + kanAction.tileId,
                         )
+                        // 先呈現槓完成的樣子（牌移入副露、尚未補牌），其他玩家看到後才決定要不要搶；權威桌況要等反應結束才套用。
+                        val declaredState = SelfDeclarationApplier.declaredState(state, playerId, kanAction, declaredTile, module, componentRegistry)
                         return@update newState to Outcome.Success(
                             KanResult(
                                 tableState = newState,
                                 kanAction = kanAction,
-                                declaredState = SelfDeclarationApplier.declaredState(state, playerId, kanAction, declaredTile, module, componentRegistry),
+                                steps = listOf(TableStep(declaredState ?: newState, listOf(TableStepEvent.ActionDeclared(playerId, kanAction)))),
                             ),
                         )
                     }
@@ -238,8 +244,7 @@ class DeclareKanUseCase(
                             drawnTiles = applied.drawnTiles,
                             scoring = applied.scoring,
                             followUp = followUp,
-                            wallRevealBatches = applied.wallRevealBatches,
-                            physicalWallTransitionPhases = applied.physicalWallTransitionPhases,
+                            steps = applied.tableSteps(playerId, kanAction, followUp),
                         ),
                     )
                 }
@@ -263,71 +268,12 @@ class DeclareKanUseCase(
                 eventPublisher.publishToAllObservers(gameId, seatedPlayerIds, playerId, followUpAction)
             }
         }
-        if (result.applied) presentationPublisher.publishRoundInfoUpdated(gameId, newState)
         result.abortiveDrawReason?.let { reason ->
             eventPublisher.publishToAllObservers(gameId, seatedPlayerIds, playerId, GameAction.ExhaustiveDraw(reason))
         }
 
-        // 開啟搶和反應視窗時，先呈現槓完成的樣子（牌移入副露、尚未補牌），其他玩家等動畫播完才決定要不要搶；
-        // 權威桌況要等反應結束才套用，全員放過後只會再呈現補牌。
-        result.declaredState?.let { declared ->
-            val declarerSeatIndex = declared.players.indexOfFirst { it.id == playerId }
-            val declarer = declared.players[declarerSeatIndex]
-            val module = moduleRegistry.getModule(declared.config)
-            presentationPublisher.publishPlayerTilesUpdated(
-                gameId = gameId,
-                seatIndex = declarerSeatIndex,
-                standingTileIds = declarer.hand.tiles.map { it.id },
-                drawnTileId = declarer.hand.lastDrawn?.id,
-                melds = declarer.hand.melds.map { it.toPresentation(declared.config.revealsClosedKanTiles) },
-                setAsideTileIds = declarer.setAsideTiles.map { it.id },
-                newlyClaimedMeldTileIds = result.kanAction.newlyClaimedMeldTileIds(),
-            )
-        }
-
-        // 副露成立時（無人搶槓、也未判定為途中流局），重新呈現宣告者的整份手牌/摸牌位/副露——把補到
-        // 的嶺上牌移到摸牌位，跟一般摸牌同一套呈現慣例（見 DrawTileUseCase），先前遺漏這一步會讓
-        // 補到的嶺上牌在玩家端看起來像是憑空消失，只看到副露成立、看不到補牌動作。
-        if (result.applied) {
-            if (result.physicalWallTransitionPhases.isNotEmpty()) {
-                presentationPublisher.publishWallLayoutTransition(gameId, result.physicalWallTransitionPhases)
-            }
-            result.scoring?.let { presentationPublisher.publishActionScored(gameId, it) }
-            val module = moduleRegistry.getModule(newState.config)
-            // 暗槓是整組一次成立的新副露（附加到 exposedMelds 尾端），組內全部牌都是新移入副露的牌；
-            // 加槓是把新牌插進一組既有副露（Hand.upgradeToAddedKan 原地修改，不是加到尾端），只有新
-            // 插入的那一張是新移入的，既有三張碰的牌本來就在副露裡——見
-            // GamePresentationPublisher.publishPlayerTilesUpdated 的 newlyClaimedMeldTileIds KDoc。
-            val claimedTileIds = result.kanAction.newlyClaimedMeldTileIds()
-            val followUp = result.followUp
-            if (followUp != null) {
-                presentationPublisher.publishPlayerAreaAfterDraw(
-                    gameId = gameId,
-                    playerId = playerId,
-                    followUp = followUp,
-                    module = module,
-                    newlyClaimedMeldTileIds = claimedTileIds,
-                )
-            } else {
-                val declarerSeatIndex = newState.players.indexOfFirst { it.id == playerId }
-                val declarer = newState.players[declarerSeatIndex]
-                presentationPublisher.publishPlayerTilesUpdated(
-                    gameId = gameId,
-                    seatIndex = declarerSeatIndex,
-                    standingTileIds = declarer.hand.tiles.map { it.id },
-                    drawnTileId = declarer.hand.lastDrawn?.id,
-                    melds = declarer.hand.melds.map { it.toPresentation(newState.config.revealsClosedKanTiles) },
-                    setAsideTileIds = declarer.setAsideTiles.map { it.id },
-                    newlyClaimedMeldTileIds = claimedTileIds,
-                )
-            }
-            // 依規則 checkpoint 順序發布這次新公開的牌牆資訊（例如日麻暗槓後立即翻槓寶牌）。
-            result.wallRevealBatches.forEach { revealedTileIds ->
-                presentationPublisher.publishWallTilesRevealed(gameId, revealedTileIds)
-            }
-        }
-
-        presentationPublisher.publishGameActionDeclared(gameId, playerId, result.kanAction)
+        // 4. 依序呈現槓的成立、補牌與補牌後的自動處理
+        presentationPublisher.publishTableSteps(gameId, result.steps)
         return Outcome.Success(Unit)
     }
 
@@ -336,7 +282,7 @@ class DeclareKanUseCase(
      * [tableState] 一起帶出 `gameRepository.update` 的作用域，供廣播事件時使用。[applied] 為
      * false 代表這次宣告開啟了搶槓反應視窗、或搶槓多響判定為流局，副露與嶺上摸牌皆尚未套用，不應
      * 廣播 [GameAction.Draw]。[abortiveDrawReason] 非 null 代表搶槓多響依規則設定判定為流局，這次
-     * 加槓視為未成立。[declaredState] 只在開啟搶槓反應視窗時有值，是槓已移入副露、尚未補牌的候選桌況，供呈現使用。
+     * 加槓視為未成立。
      *
      * @property tableState 此次原子更新後的權威桌況。
      * @property kanAction 規則判定成立的槓動作。
@@ -345,9 +291,7 @@ class DeclareKanUseCase(
      * @property scoring 槓成立當下的點數收付；沒有成立或不收付時為 null。
      * @property followUp 補牌之後的自動處理；沒有補牌時為 null。
      * @property abortiveDrawReason 搶槓多響成立的途中流局原因；未發生時為 null。
-     * @property declaredState 搶槓反應視窗使用的候選桌況；沒有開啟視窗時為 null。
-     * @property wallRevealBatches 補摸過程中依序公開的牌牆牌組。
-     * @property physicalWallTransitionPhases 補摸造成的實體牌牆排列轉換階段。
+     * @property steps 依序呈現的步驟；開啟搶槓反應視窗時只有槓已移入副露、尚未補牌的候選桌況。
      */
     private data class KanResult(
         val tableState: TableState,
@@ -357,18 +301,6 @@ class DeclareKanUseCase(
         val scoring: AppliedActionScoring? = null,
         val followUp: DrawFollowUpApplier.Result? = null,
         val abortiveDrawReason: ExhaustiveDrawReason? = null,
-        val declaredState: TableState? = null,
-        val wallRevealBatches: List<Set<Uuid>> = emptyList(),
-        val physicalWallTransitionPhases: List<PhysicalWallLayoutTransitionPhase> = emptyList(),
+        val steps: List<TableStep>,
     )
-}
-
-/**
- * 這次槓成立後新移入副露的牌：暗槓與明槓為整組，加槓只有新加入的那一張。
- *
- * @return 此次新移入副露的牌識別碼。
- */
-internal fun GameAction.Kan.newlyClaimedMeldTileIds(): Set<Uuid> = when (type) {
-    GameAction.KanType.ADDED_KAN -> setOf(tileId)
-    GameAction.KanType.CLOSED_KAN, GameAction.KanType.OPEN_KAN -> (withTiles + tileId).toSet()
 }

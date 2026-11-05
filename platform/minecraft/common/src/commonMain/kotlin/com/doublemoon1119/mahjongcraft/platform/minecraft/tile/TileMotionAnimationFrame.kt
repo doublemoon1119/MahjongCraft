@@ -10,6 +10,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.DiceAnimationVect
  * @property yawOffsetDegrees 畫面目前相對 entity 真實終點 yaw 的角差。
  * @property progress 限制在 `0～1` 的動畫進度。
  * @property completed 動畫是否已完成。
+ * @property lean 往前進方向的傾斜；沒有傾斜時為 [TileLean.NONE]。
  */
 data class TileMotionAnimationFrame(
     val offset: DiceAnimationVector,
@@ -17,4 +18,5 @@ data class TileMotionAnimationFrame(
     val yawOffsetDegrees: Float,
     val progress: Double,
     val completed: Boolean,
+    val lean: TileLean = TileLean.NONE,
 )

@@ -91,6 +91,7 @@ import com.doublemoon1119.mahjongcraft.logic.table.RoundCompletionSummary
 import com.doublemoon1119.mahjongcraft.logic.table.RoundTransitionDirective
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.logic.table.TileWall
+import com.doublemoon1119.mahjongcraft.logic.table.TurnPhase
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledCoreExtensionRegistries
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledWinCelebrationCueResolverRegistry
@@ -300,7 +301,6 @@ class GameFlowCoordinatorTest {
                     resolverRegistry = it,
                     snapshotSynchronizer = snapshotSynchronizer,
                     presentationPublisher = presentationPublisher,
-                    componentRegistry = bundledCoreExtensionRegistries().componentRegistry,
                     winPresentationStager = RuleDecisionWinPresentationStager(winPresentationHandoff, winSettlementDetailResolverRegistry),
                 )
             },
@@ -480,10 +480,10 @@ class GameFlowCoordinatorTest {
     }
 
     /**
-     * 迴歸測試：驗證強制自動操作只鎖住逾時當下那一次決策——[GameFlowCoordinator.driveAutomatedPlayers]
+     * 驗證強制自動操作只鎖住逾時當下那一次決策——[GameFlowCoordinator.driveAutomatedPlayers]
      * 替強制自動操作玩家送出一次自動捨牌後，該玩家必須立刻從
-     * [Game.forcedAutoPlayPlayerIds] 移除，而不是被永久鎖住到對局結束（曾經的設計缺陷：一旦逾時，
-     * 玩家之後每一次決策都會被伺服器代打，完全拿不回操作權）。
+     * [Game.forcedAutoPlayPlayerIds] 移除，而不是被永久鎖住到對局結束；否則一旦逾時，
+     * 玩家之後每一次決策都會被伺服器代打，完全拿不回操作權。
      */
     @Test
     fun `test forced auto play only locks the single timed out decision`() = runTest {
@@ -1236,7 +1236,7 @@ class GameFlowCoordinatorTest {
                     player
                 }
             }
-            game.copy(tableState = state.copy(players = updated)) to Unit
+            game.copy(tableState = state.copy(players = updated, turnPhase = TurnPhase.AwaitingAction)) to Unit
         }
 
         fixtures.coordinator.dispatchThenDrive(gameId, secondWinnerId, GameCommand.Tsumo)
@@ -1943,10 +1943,9 @@ class GameFlowCoordinatorTest {
     }
 
     /**
-     * 迴歸測試：驗證對局結束後（[Game.isMatchOver] 成立）再次呼叫 [GameFlowCoordinator.driveAutomatedPlayers]
-     * 不會重複觸發流局結算——[Game.isMatchOver] 加入前，`AiTurnDriver`／`ForcedAutoPlayDriver` 不知道
-     * 對局已經結束，會不斷嘗試對已空的牌山摸牌、不斷重新觸發 `DeclareExhaustiveDrawUseCase`，導致
-     * 流局點數被重複套用；這支測試模擬「心跳每個 tick 都呼叫一次」的情境，驗證第二次呼叫之後分數
+     * 驗證對局結束後（[Game.isMatchOver] 成立）再次呼叫 [GameFlowCoordinator.driveAutomatedPlayers]
+     * 不會重複觸發流局結算——自動推進必須認得對局已經結束，否則會不斷嘗試對已空的牌山摸牌、不斷重新觸發
+     * `DeclareExhaustiveDrawUseCase`，導致流局點數被重複套用；這支測試模擬「心跳每個 tick 都呼叫一次」的情境，驗證第二次呼叫之後分數
      * 不會再變動。
      */
     @Test

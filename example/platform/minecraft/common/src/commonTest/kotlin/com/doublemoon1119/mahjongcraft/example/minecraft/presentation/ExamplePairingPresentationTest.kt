@@ -18,6 +18,7 @@ import com.doublemoon1119.mahjongcraft.logic.table.DiscardPile
 import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayer
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.logic.table.TileWall
+import com.doublemoon1119.mahjongcraft.logic.table.TurnPhase
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.table.MahjongTableFacing
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.GameConfigEditorSpec
@@ -122,6 +123,7 @@ class ExamplePairingPresentationTest {
             tileWall = TileWall(),
             dealerPlayerId = players.first().id,
             roundNumber = 3,
+            turnPhase = TurnPhase.AwaitingDraw,
         )
         val lines = registry.buildLines(ExamplePairingIds.RULE_MODULE, table)
         assertEquals(listOf(RoundInfoArgument.Number(0)), lines.single { it.key == ExampleMinecraftPresentationIds.WALL_REMAINING_INFO }.args)
@@ -163,6 +165,7 @@ class ExamplePairingPresentationTest {
             config = ExamplePairingRuleConfig(),
             tileWall = TileWall(),
             dealerPlayerId = players.first().id,
+            turnPhase = TurnPhase.AwaitingDraw,
         )
 
         assertEquals(
@@ -251,6 +254,7 @@ class ExamplePairingPresentationTest {
             tileWall = TileWall(),
             dealerPlayerId = players.first().id,
             components = ComponentSet.EMPTY.with(ExamplePairingComponents.BONUS_TILES, ExamplePairingBonusTiles(setOf(3, 1))),
+            turnPhase = TurnPhase.AwaitingDraw,
         )
 
         val props = ExamplePairingTableProps.describe(table)
@@ -293,6 +297,7 @@ class ExamplePairingPresentationTest {
             tileWall = TileWall(),
             dealerPlayerId = revealedPlayer.id,
             components = ComponentSet.EMPTY.with(ExamplePairingComponents.BONUS_TILES, ExamplePairingBonusTiles(setOf(1))),
+            turnPhase = TurnPhase.AwaitingDraw,
         )
 
         val props = ExamplePairingTableProps.describe(table)
@@ -321,6 +326,7 @@ class ExamplePairingPresentationTest {
             tileWall = TileWall(),
             dealerPlayerId = players.first().id,
             components = ComponentSet.EMPTY.with(ExamplePairingComponents.BONUS_TILES, ExamplePairingBonusTiles((1..7).toSet())),
+            turnPhase = TurnPhase.AwaitingDraw,
         )
         val placements = ExamplePairingTableProps.describe(table)
         val presentation = TablePropPresentation(
@@ -364,6 +370,7 @@ class ExamplePairingPresentationTest {
                     tileWall = TileWall(),
                     dealerPlayerId = players[dealer].id,
                     components = ComponentSet.EMPTY.with(ExamplePairingComponents.BONUS_TILES, ExamplePairingBonusTiles((1..7).toSet())),
+                    turnPhase = TurnPhase.AwaitingDraw,
                 )
                 val props = ExamplePairingTableProps.describe(state)
                 assertTrue(props.filter { it.kind == BuiltInTablePropKinds.FACE_UP_TILE }.all { (it.location as TablePropLocation.Center).yaw == seatYaws[dealer] })

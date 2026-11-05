@@ -32,6 +32,8 @@ import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiWallProgress
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.riichiPotPoints
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.riichiWallProgress
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanRuleConfig
+import com.doublemoon1119.mahjongcraft.logic.table.RoundConclusion
+import com.doublemoon1119.mahjongcraft.logic.table.TurnPhase
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import com.doublemoon1119.mahjongcraft.logic.table.toSnapshot
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledCoreExtensionRegistries
@@ -303,6 +305,7 @@ class DeclareTsumoUseCaseTest {
         val newState = fixtures.gameRepo.getTableState(gameId)!!
         assertEquals(1, newState.currentPlayerIndex, "currentPlayerIndex should be left untouched by this unit's scope.")
         assertNull(newState.pendingReaction)
+        assertEquals(TurnPhase.RoundOver(RoundConclusion.Win(setOf(winnerId))), newState.turnPhase)
         assertEquals(0, (newState.riichiPotPoints() / RIICHI_STICK_POINTS), "The winner should collect all sticks on the table.")
         assertEquals(
             32000 + 2000,
@@ -379,7 +382,7 @@ class DeclareTsumoUseCaseTest {
     }
 
     /**
-     * 驗證自摸成功後把胡牌演出寫進 `Game.pendingWinPresentation` 交接槽（而不是直接發布），帶上正確的
+     * 驗證自摸成功後把胡牌演出寫進 `WinPresentationHandoff` 交接點（而不是直接發布），帶上正確的
      * 贏家座位、胡牌張 Uuid，且 `isTsumo` 為 `true`。
      *
      * 刻意不直接發布：本局是否就此結束要等 `ResolveWinRoundContinuationUseCase` 詢問過規則模組才知道，

@@ -3,21 +3,19 @@ package com.doublemoon1119.mahjongcraft.flow.server.game.usecase
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryEventDraft
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryFact
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.GamePresentationPublisher
-import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.RuleDecisionPlayerAreaPresentationStep
+import com.doublemoon1119.mahjongcraft.flow.common.game.service.TableStep
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.RuleDecisionResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.RuleDecisionWin
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepository
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameSnapshotSynchronizer
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.RuleDecisionPresentationUpdate
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.RuleDecisionWinPresentationStager
-import com.doublemoon1119.mahjongcraft.logic.component.ComponentRegistry
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import kotlin.uuid.Uuid
 
 /**
  * 在呈現閒置後，收斂不需要玩家輸入的規則選擇步驟。
  *
- * @property componentRegistry 正式組件定義與純效果來源。
  * @property gameRepository 讀取與更新權威遊戲。
  * @property moduleRegistry 依桌況設定取得規則模組。
  * @property resolverRegistry 取得規則提供的選擇流程解析器。
@@ -31,7 +29,6 @@ class AdvanceAutomaticRuleDecisionUseCase(
     private val resolverRegistry: RuleDecisionResolverRegistry,
     private val snapshotSynchronizer: GameSnapshotSynchronizer,
     private val presentationPublisher: GamePresentationPublisher,
-    private val componentRegistry: ComponentRegistry,
     private val winPresentationStager: RuleDecisionWinPresentationStager,
 ) {
     /**
@@ -56,7 +53,7 @@ class AdvanceAutomaticRuleDecisionUseCase(
             val resolver = resolverRegistry.find(module.id)
                 ?: return@updateGame currentGame to AutomaticRuleDecisionUpdate(emptyList())
             var updated = currentGame
-            val playerAreaPresentationSteps = mutableListOf<RuleDecisionPlayerAreaPresentationStep>()
+            val presentationSteps = mutableListOf<TableStep>()
             val wins = mutableListOf<RuleDecisionWin>()
             val drafts = buildList {
                 repeat(MAX_AUTOMATIC_RULE_DECISION_STEPS) {
@@ -64,9 +61,9 @@ class AdvanceAutomaticRuleDecisionUseCase(
                         ?: return@repeat
                     if (currentRuleDecision.participantPlayerIds.isNotEmpty()) return@repeat
                     val resolution = resolver.resolve(updated.tableState, currentRuleDecision, module)
-                    playerAreaPresentationSteps += resolution.playerAreaPresentationSteps
                     resolution.win?.let(wins::add)
                     updated = RuleDecisionWindows.advance(updated, currentRuleDecision, resolution, module, resolverRegistry)
+                    presentationSteps += resolution.steps + TableStep(updated.tableState, emptyList())
                     add(
                         HistoryEventDraft(
                             actorPlayerId = null,
@@ -89,7 +86,7 @@ class AdvanceAutomaticRuleDecisionUseCase(
                 presentationUpdate = RuleDecisionPresentationUpdate(
                     previous = currentGame.tableState,
                     current = updated.tableState,
-                    playerAreaSteps = playerAreaPresentationSteps,
+                    steps = presentationSteps,
                 ),
                 win = wins.singleOrNull(),
             )
@@ -97,7 +94,7 @@ class AdvanceAutomaticRuleDecisionUseCase(
         if (update.changed) {
             update.presentationUpdate?.let { presentation ->
                 val module = moduleRegistry.getModule(presentation.current.config)
-                presentation.publish(presentationPublisher, module, componentRegistry)
+                presentation.publish(presentationPublisher)
                 update.win?.let { win ->
                     winPresentationStager.stage(
                         gameId = gameId,

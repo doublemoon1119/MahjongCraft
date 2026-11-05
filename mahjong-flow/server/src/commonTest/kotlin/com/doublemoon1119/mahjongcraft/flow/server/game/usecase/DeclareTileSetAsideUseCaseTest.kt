@@ -3,6 +3,7 @@ package com.doublemoon1119.mahjongcraft.flow.server.game.usecase
 import com.doublemoon1119.mahjongcraft.bundled.BundledRiichiExtension
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameError
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.riichi.RiichiWinSettlementIds
+import com.doublemoon1119.mahjongcraft.flow.common.game.service.TableStepEvent
 import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
 import com.doublemoon1119.mahjongcraft.flow.server.game.policy.GameVisibilityPolicyImpl
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.FakeGameRepository
@@ -23,6 +24,7 @@ import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.YakuType
 import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayer
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
+import com.doublemoon1119.mahjongcraft.logic.tile.component.TileRegion
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledCoreExtensionRegistries
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledWinCelebrationCueResolverRegistry
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.registerBundledRuleModules
@@ -34,6 +36,7 @@ import com.doublemoon1119.mahjongcraft.testing.logic.rules.riichi.riichiDeclarat
 import com.doublemoon1119.mahjongcraft.testing.logic.rules.riichi.riichiTableComponents
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
+import com.doublemoon1119.mahjongcraft.testing.logic.table.tileRegion
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -98,7 +101,7 @@ class DeclareTileSetAsideUseCaseTest {
     private val rinshan = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Bamboo, 9))
 
     /**
-     * 驗證沒有人能榮和時，北移到拔北區、補一張嶺上牌，依序記錄拔北與摸牌，且呈現要求包含新拔出的北。
+     * 驗證沒有人能榮和時，北移到拔北區、補一張嶺上牌，依序記錄拔北與摸牌，並依序呈現拔北與補牌。
      *
      * 以目前的遊戲為預期遊戲執行，確認命令只寫入這一局一次（AI 命令的條件式提交契約）。
      */
@@ -118,10 +121,12 @@ class DeclareTileSetAsideUseCaseTest {
         assertEquals(listOf(PULL_NORTH_GAME_ACTION, GameAction.Draw), puller.actionHistory.takeLast(2))
         assertEquals(1, state.riichiWallProgress().completedNorthDrawCount)
         assertNull(state.pendingRobbingReaction)
-        assertEquals(rinshan.id, fixtures.presentationPublisher.getPublishedPlayerTiles(gameId)?.drawnTileId)
-        assertEquals(setOf(north.id), fixtures.presentationPublisher.getPublishedPlayerTiles(gameId)?.newlySetAsideTileIds)
-        assertTrue(fixtures.presentationPublisher.getPublishedPlayerTiles(gameId)?.isNewlyDrawn == true)
-        assertEquals(1, fixtures.presentationPublisher.getRuleStateUpdateCount(gameId))
+        // 先呈現北移到拔北區，再呈現補牌到摸牌位。
+        val (pulled, drawn) = fixtures.presentationPublisher.getPublishedTableStepBatches(gameId).single()
+        assertEquals(TableStepEvent.ActionDeclared(pullerId, PULL_NORTH_GAME_ACTION), pulled.events.first())
+        assertEquals(TileRegion.SET_ASIDE, pulled.tableState.tileRegion(north.id))
+        assertEquals(TileRegion.DRAWN, drawn.tableState.tileRegion(rinshan.id))
+        assertEquals(state, drawn.tableState)
     }
 
     /** 驗證手中沒有北時拒絕拔北。 */
@@ -136,7 +141,7 @@ class DeclareTileSetAsideUseCaseTest {
         assertEquals(Outcome.Error(GameError.IllegalAction(pullerId, gameId, PULL_NORTH_GAME_ACTION)), result)
     }
 
-    /** 驗證等待北牌的玩家取得搶和機會，拔北與補牌暫緩套用，呈現要求先包含北牌、不包含補牌。 */
+    /** 驗證等待北牌的玩家取得搶和機會，拔北與補牌暫緩套用，先呈現北已拔出、尚未補牌的樣子。 */
     @Test
     fun `a player waiting on north opens a robbing window`() = runTest {
         val fixtures = Fixtures()
@@ -154,14 +159,14 @@ class DeclareTileSetAsideUseCaseTest {
         assertEquals(north, puller.hand.lastDrawn)
         assertTrue(puller.tileAreas[RiichiPlayerTileAreaIds.NORTH]?.tiles.orEmpty().isEmpty())
         assertEquals(setOf(north.id), state.publicTileEvidenceIds, "The declared north is public while others decide.")
-        val presented = assertNotNull(fixtures.presentationPublisher.getPublishedPlayerTiles(gameId))
-        assertEquals(listOf(north.id), presented.setAsideTileIds)
-        assertEquals(setOf(north.id), presented.newlySetAsideTileIds)
-        assertNull(presented.drawnTileId)
-        assertTrue(north.id !in presented.standingTileIds)
+        // 先呈現北已移到拔北區、尚未補牌的候選桌況。
+        val presented = fixtures.presentationPublisher.getPublishedTableStepBatches(gameId).single().single()
+        assertEquals(listOf<TableStepEvent>(TableStepEvent.ActionDeclared(pullerId, PULL_NORTH_GAME_ACTION)), presented.events)
+        assertEquals(TileRegion.SET_ASIDE, presented.tableState.tileRegion(north.id))
+        assertNull(presented.tableState.players.first { it.id == pullerId }.hand.lastDrawn)
     }
 
-    /** 驗證全員放過後拔北成立並補牌，放過者記入同巡放過的牌，後續要求不再把北標為新拔出的牌。 */
+    /** 驗證全員放過後拔北成立並補牌，放過者記入同巡放過的牌，接續的呈現不再宣告一次拔北。 */
     @Test
     fun `passing the robbing window completes the pull`() = runTest {
         val fixtures = Fixtures()
@@ -177,11 +182,11 @@ class DeclareTileSetAsideUseCaseTest {
         assertEquals(listOf(north), puller.tileAreas[RiichiPlayerTileAreaIds.NORTH]?.tiles.orEmpty())
         assertEquals(rinshan, puller.hand.lastDrawn)
         assertTrue(Tile.Honor.North in state.players.first { it.id == waiterId }.passedTilesInRound)
-        val presented = assertNotNull(fixtures.presentationPublisher.getPublishedPlayerTiles(gameId))
-        assertEquals(listOf(north.id), presented.setAsideTileIds)
-        assertTrue(presented.newlySetAsideTileIds.isEmpty())
-        assertEquals(rinshan.id, presented.drawnTileId)
-        assertTrue(presented.isNewlyDrawn)
+        // 拔北在開啟視窗時已經呈現，這裡只接續補牌，不再宣告一次。
+        val resumed = fixtures.presentationPublisher.getPublishedTableStepBatches(gameId).last()
+        assertTrue(resumed.flatMap { it.events }.none { it is TableStepEvent.ActionDeclared })
+        assertEquals(TileRegion.SET_ASIDE, resumed.first().tableState.tileRegion(north.id))
+        assertEquals(TileRegion.DRAWN, resumed.last().tableState.tileRegion(rinshan.id))
     }
 
     /** 驗證搶北榮和由拔北的玩家支付，拔北不成立，且不算搶槓；被搶的北留在拔北玩家手上但仍公開。 */

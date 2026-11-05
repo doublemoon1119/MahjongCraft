@@ -5,6 +5,7 @@ import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPlacement
 import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPlacementOrientation
 import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPosition
+import com.doublemoon1119.mahjongcraft.platform.minecraft.animation.AnimationStep
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.table.MahjongTableFacing
 import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongDiceTableLayout
 import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongTableSide
@@ -17,9 +18,11 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileTableL
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileTableLayout.localWallVector
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileTableLayout.rotateForFacing
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileTableLayout.rotateForSide
+import kotlin.math.PI
 import kotlin.math.abs
 import kotlin.math.floor
 import kotlin.math.hypot
+import kotlin.math.sin
 import kotlin.math.sqrt
 
 /** 局部水平向量；沿用 [MahjongTableSide]／[MahjongTableFacing] 兩段式旋轉合成，Y 軸不受水平旋轉影響。 */
@@ -1020,7 +1023,7 @@ object MahjongTileTableLayout {
 
     /**
      * 桌面中央局況顯示（[roundInfoDisplayPlacement]）懸浮高度，明顯高於牌牆／骰子等其他桌面機關的
-     * 最高點，避免文字被擋住，起始估算值，預期進遊戲後調整。
+     * 最高點，避免文字被擋住。
      */
     private const val ROUND_INFO_HEIGHT_ABOVE_TABLE: Double = 2.25
 
@@ -1054,9 +1057,8 @@ object MahjongTileTableLayout {
 
     /**
      * 開局發牌動畫中，牌從牌山位置小幅起飛的動畫時長，供 [dealBatchStartDelayTicks]／[dealAnimationTicks]
-     * 使用；公開（非 `internal`）讓版本層的動畫實作能直接引用同一個值當作
-     * `MahjongTileEntity.startMotionAnimation` 的 `durationTicks` 參數，不需要另外複製一份可能忘記
-     * 同步的數字。
+     * 使用；公開（非 `internal`）讓版本層的動畫實作能直接引用同一個值當作 [AnimationStep.PlayMotion] 的
+     * `durationTicks`，不需要另外複製一份可能忘記同步的數字。
      */
     const val DEAL_LIFT_DURATION_TICKS: Int = 4
 
@@ -1065,7 +1067,7 @@ object MahjongTileTableLayout {
 
     /**
      * 開局發牌動畫中，起飛完成、瞬間重新排列到手牌列上空那一刻起，到真正解除隱形開始落下之間的短暫
-     * 間隔——這段期間牌是隱形的（見 `FabricMahjongPlayerAreaPresenter.scheduleDealBatchAnimation`），
+     * 間隔——這段期間牌是隱形的（見 `TileAnimationSteps.scheduleDealBatch`），
      * 讓「重新排成一列」感覺像是刻意的一個轉場動作，不是無縫瞬移；公開理由同 [DEAL_LIFT_DURATION_TICKS]。
      */
     const val DEAL_SNAP_GAP_TICKS: Int = 2
@@ -1095,10 +1097,8 @@ object MahjongTileTableLayout {
 
     /**
      * 摸牌動畫起飛階段的相對高度，跟開局發牌動畫共用同一套「起飛→隱形傳送→落下」節奏（見
-     * `FabricMahjongPlayerAreaPresenter.scheduleDrawnTileAnimation`），差別只在摸牌全程姿態固定直立、
-     * 不需要額外的翻牌步驟——摸牌是單張、高頻的動作，直接面向玩家出現比蓋牌後再翻更符合直覺，見
-     * `GamePresentationPublisher.publishPlayerTilesUpdated` 的 `isNewlyDrawn` 參數 KDoc。起始估算值，
-     * 預期進遊戲後調整。
+     * `TileAnimationSteps.schedulePlannedMotion` 的 [TileMotionKind.DRAW]），差別只在摸牌落下時直接是目的地的姿態、
+     * 不需要額外的翻牌步驟——摸牌是單張、高頻的動作，直接面向玩家出現比蓋牌後再翻更符合直覺。
      */
     const val DRAW_LIFT_HEIGHT: Double = 0.4
 
@@ -1115,17 +1115,28 @@ object MahjongTileTableLayout {
      * 捨牌動畫是一次連續可見的拋物線飛行（不隱形、不傳送），從手牌位置直接飛到牌河位置，途中姿態從
      * 面向玩家的直立牌連續轉成攤平面朝上——跟摸牌／發牌刻意不同：丟牌是玩家自己主動觸發、全場最高頻
      * 的即時操作，玩家丟牌當下早就知道牌面內容，不需要摸牌／發牌那種「隱形揭曉」的儀式感，反而應該
-     * 像現實丟牌一樣是一個連續、看得見、俐落的動作，見
-     * `GamePresentationPublisher.publishDiscardPileUpdated` 的 `newlyDiscardedTileId` 參數 KDoc。
-     * 側身旋轉（立直宣告牌）不連續內插，直接在動畫一開始就用最終 yaw 起飛——理由見
-     * `FabricMahjongDiscardPresenter.scheduleDiscardTileAnimation` KDoc。
+     * 像現實丟牌一樣是一個連續、看得見、俐落的動作。
+     * 側身旋轉（立直宣告牌）不連續內插，直接在動畫一開始就用最終 yaw 起飛。
      *
-     * 這個拋物線頂點額外高度，起始估算值，預期進遊戲後調整。
+     * 這個值是拋物線頂點的額外高度。
      */
     const val DISCARD_ARC_HEIGHT: Double = 0.3
 
     /** 捨牌動畫的動畫總時長，理由同 [DISCARD_ARC_HEIGHT]。 */
     const val DISCARD_FLIGHT_DURATION_TICKS: Int = 5
+
+    /** 同一排內越過其他牌時往前進方向傾斜的角度。 */
+    const val ROW_ARC_LEAN_DEGREES: Float = 15.0f
+
+    /**
+     * 同一排內越過其他牌時的提起高度：牌往前進方向傾斜後，後方較低的那個角剛好貼著直立牌的上緣滑過。牌繞底部中心傾斜，
+     * 後角比底部中心低半個牌寬乘上傾斜角的正弦。
+     */
+    val ROW_ARC_HEIGHT: Double = MahjongTileDimensions.TILE_HEIGHT +
+        MahjongTileDimensions.TILE_WIDTH / 2.0 * sin(ROW_ARC_LEAN_DEGREES * PI / 180.0)
+
+    /** 同一排內越過其他牌的時長：提起、沿上緣滑行、落下插入。 */
+    const val ROW_ARC_DURATION_TICKS: Int = 12
 
     /**
      * 胡牌展示中，手牌瞬間整理到位後、開始倒牌流程前的短暫等待。
@@ -1135,7 +1146,6 @@ object MahjongTileTableLayout {
     /**
      * 胡牌慶祝演出中，牌姿態從立牌轉平放（牌面朝上）「倒下」的動畫時長，供自摸牌單獨倒下與其餘手牌
      * 一起倒下這兩個步驟共用；位置不變，只有姿態旋轉角內插，手法比照 [DEAL_FLIP_DURATION_TICKS]。
-     * 起始估算值，預期進遊戲後調整。
      */
     const val WIN_LAYDOWN_DURATION_TICKS: Int = 4
 
@@ -1182,7 +1192,7 @@ object MahjongTileTableLayout {
     internal const val HAND_EDGE_OFFSET: Double =
         46.0 / 16.0 / 2.0 - MahjongTileDimensions.TILE_DEPTH / 2.0 - HAND_EDGE_MARGIN
 
-    /** 摸牌位跟立牌列尾端之間的縫隙相對 [MahjongTileDimensions.TILE_WIDTH] 的比例，起始估算值，預期進遊戲後用截圖比對調整。 */
+    /** 摸牌位跟立牌列尾端之間的縫隙相對 [MahjongTileDimensions.TILE_WIDTH] 的比例。 */
     internal const val DRAWN_TILE_GAP_RATIO: Double = 0.5
 
     /** 牌河固定每排張數，超過往下一排堆疊。 */
@@ -1215,10 +1225,8 @@ object MahjongTileTableLayout {
     /**
      * 牌河第一排垂直於側面、離桌子中心的起始距離——用「[DISCARD_WALL_NEAR_EDGE] 扣掉 [DISCARD_SAFE_ROWS]
      * 排乘每排間距」算出來的：可以離桌子中心最遠、又保證 [DISCARD_SAFE_ROWS] 排都不會撞進牌牆的偏移
-     * 值。遊戲內先後驗證過「太靠近中心」（初版估算值 0.3）、「太靠近牌牆」（手動加大到 0.6）、「第四排
-     * 撞進牌牆」（拿全部排數去扣，沒有預留餘裕）三種錯誤，這個公式與 [localDiscardVector] 的「超過
-     * [DISCARD_SAFE_ROWS] 排就停在最後一排延伸」設計一起解決，之後如果 [DISCARD_SAFE_ROWS] 或牌牆
-     * 墩數估計改變，這裡會自動跟著調整，不需要再手動猜一次。
+     * 值。超過 [DISCARD_SAFE_ROWS] 排的牌由 [localDiscardVector] 停在最後一排往旁延伸，所以牌河既不會
+     * 太靠近桌子中心，也不會撞進牌牆；[DISCARD_SAFE_ROWS] 或牌牆大小改變時，這個值會自動跟著調整。
      */
     internal const val DISCARD_ROW_BASE_OFFSET: Double =
         DISCARD_WALL_NEAR_EDGE - DISCARD_SAFE_ROWS * (MahjongTileDimensions.TILE_HEIGHT + MahjongTileDimensions.TILE_SMALL_PADDING)
@@ -1285,9 +1293,8 @@ object MahjongTileTableLayout {
 
     /**
      * 手牌／摸牌位讓開角落區時，額外多留的縫隙——避免 [handCornerYieldShift] 算出來的偏移
-     * 只是讓兩者剛好貼齊、外觀上完全不留空隙。使用起始估算值，跟 [MELD_GROUP_GAP] 同一數量級但
-     * 不共用同一個值，因為這裡是手牌區跟角落區兩個不同子系統之間的縫隙，不是同一副露內部的
-     * 組間縫隙，兩者觀感上不必然要一致；預期進遊戲後用截圖比對調整。
+     * 只是讓兩者剛好貼齊、外觀上完全不留空隙。跟 [MELD_GROUP_GAP] 同一數量級但不共用同一個值，
+     * 因為這裡是手牌區跟角落區兩個不同區域之間的縫隙，不是同一副露內部的組間縫隙，兩者觀感上不必然要一致。
      */
     internal const val HAND_CORNER_GAP: Double = MahjongTileDimensions.TILE_WIDTH * 0.2
 }

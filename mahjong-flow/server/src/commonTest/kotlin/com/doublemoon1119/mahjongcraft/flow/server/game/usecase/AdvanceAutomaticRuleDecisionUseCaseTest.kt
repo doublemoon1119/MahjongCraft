@@ -86,18 +86,17 @@ class AdvanceAutomaticRuleDecisionUseCaseTest {
                 GameVisibilityPolicyImpl(moduleRegistry, componentRegistry = bundledCoreExtensionRegistries().componentRegistry),
             ),
             presentationPublisher = presentationPublisher,
-            componentRegistry = bundledCoreExtensionRegistries().componentRegistry,
             winPresentationStager = RuleDecisionWinPresentationStager(WinPresentationHandoff(), WinSettlementDetailResolverRegistry(bundledCoreExtensionRegistries().componentRegistry)),
         )
         resolverRegistry.register(MultiStepResolver(replacementTile))
 
         assertTrue(useCase(table.id))
 
-        val updates = presentationPublisher.getPublishedPlayerTilesUpdates(table.id)
-        assertEquals(setOf(0, 1), updates.map { it.seatIndex }.toSet())
-        assertTrue(updates.groupingBy { it.seatIndex }.eachCount().values.all { it == 1 })
-        assertEquals(listOf(secondTile.id), presentationPublisher.getPublishedPlayerTiles(table.id, 0)?.standingTileIds)
-        assertEquals(listOf(replacementTile.id), presentationPublisher.getPublishedPlayerTiles(table.id, 1)?.standingTileIds)
+        // 自動完成的多個選擇步驟在同一次呈現中依序送出，最後是提交的桌況。
+        val batch = presentationPublisher.getPublishedTableStepBatches(table.id).single()
+        val presented = batch.last().tableState
+        assertEquals(listOf(secondTile.id), presented.players[0].hand.tiles.map { it.id })
+        assertEquals(listOf(replacementTile.id), presented.players[1].hand.tiles.map { it.id })
         assertTrue(presentationPublisher.getPublishedInitialDeal(table.id) == null)
         assertEquals(
             listOf(RuleDecisionTiming.WIN_CONTINUES, RuleDecisionTiming.WIN_CONTINUES),
@@ -130,12 +129,11 @@ class AdvanceAutomaticRuleDecisionUseCaseTest {
                 GameVisibilityPolicyImpl(moduleRegistry, componentRegistry = bundledCoreExtensionRegistries().componentRegistry),
             ),
             presentationPublisher = presentationPublisher,
-            componentRegistry = bundledCoreExtensionRegistries().componentRegistry,
             winPresentationStager = RuleDecisionWinPresentationStager(WinPresentationHandoff(), WinSettlementDetailResolverRegistry(bundledCoreExtensionRegistries().componentRegistry)),
         )
 
         assertFalse(useCase(table.id))
-        assertTrue(presentationPublisher.getPublishedPlayerTilesUpdates(table.id).isEmpty())
+        assertTrue(presentationPublisher.getPublishedTableStepBatches(table.id).isEmpty())
     }
 
     @Test
@@ -167,7 +165,6 @@ class AdvanceAutomaticRuleDecisionUseCaseTest {
                 GameVisibilityPolicyImpl(moduleRegistry, componentRegistry = bundledCoreExtensionRegistries().componentRegistry),
             ),
             presentationPublisher = FakeGamePresentationPublisher(),
-            componentRegistry = bundledCoreExtensionRegistries().componentRegistry,
             winPresentationStager = RuleDecisionWinPresentationStager(WinPresentationHandoff(), WinSettlementDetailResolverRegistry(bundledCoreExtensionRegistries().componentRegistry)),
         )
 

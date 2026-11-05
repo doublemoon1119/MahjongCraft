@@ -16,11 +16,9 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongDiceRollPr
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongPlayerInfoPresenter
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongRoundInfoPresenter
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongTileSelectionConfirmPresenter
-import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableCornerWidthTracker
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocationEntry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocationRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TablePropPresenter
-import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongDiscardPresenter
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongPlayerAreaPresenter
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileWallPresenter
 import net.fabricmc.fabric.api.event.player.PlayerBlockBreakEvents
@@ -46,10 +44,8 @@ import kotlin.uuid.Uuid
  * @property configState 讀取目前破壞政策。
  * @property diceRollPresenter 清理桌子的骰子呈現。
  * @property tileWallPresenter 清理桌子的牌牆。
- * @property playerAreaPresenter 清理桌子的手牌與副露。
+ * @property playerAreaPresenter 清理桌子所有正式管理中的牌，包含手牌、副露與牌河。
  * @property tablePropPresenter 清理桌面規則物件。
- * @property tableCornerWidths 清除桌面角落寬度追蹤。
- * @property discardPresenter 清理桌子的牌河。
  * @property roundInfoPresenter 清理局況 overlay。
  * @property playerInfoPresenter 清理玩家資訊 overlay。
  * @property lobbyInfoPresenter 清理等待室提示。
@@ -69,8 +65,6 @@ class FabricTableLifecycleService(
     private val tileWallPresenter: MahjongTileWallPresenter,
     private val playerAreaPresenter: MahjongPlayerAreaPresenter,
     private val tablePropPresenter: TablePropPresenter,
-    private val tableCornerWidths: TableCornerWidthTracker,
-    private val discardPresenter: MahjongDiscardPresenter,
     private val roundInfoPresenter: MahjongRoundInfoPresenter,
     private val playerInfoPresenter: MahjongPlayerInfoPresenter,
     private val lobbyInfoPresenter: FabricMahjongLobbyInfoPresenter,
@@ -134,8 +128,6 @@ class FabricTableLifecycleService(
         val removedWallTileCount = tileWallPresenter.clear(tableId, tableLocation)
         val removedPlayerAreaTileCount = playerAreaPresenter.clear(tableId, tableLocation)
         val removedTablePropCount = tablePropPresenter.clear(tableId, tableLocation)
-        tableCornerWidths.clear(tableId)
-        val removedDiscardTileCount = discardPresenter.clear(tableId, tableLocation)
         val removedRoundInfoCount = roundInfoPresenter.clear(tableId, tableLocation)
         val removedPlayerInfoCount = playerInfoPresenter.clear(tableId, tableLocation)
         val removedLobbyInfoCount = lobbyInfoPresenter.clear(tableId)
@@ -147,13 +139,12 @@ class FabricTableLifecycleService(
             logger.debug("Handled replaced Mahjong table {} with cleanup result {}", tableId, result)
         }
         logger.debug(
-            "Cleared replaced Mahjong table {} presentation: removed {} managed dice, {} managed wall tiles, {} managed player area tiles, {} managed table props, {} managed discard tiles, {} managed round info displays, {} managed player info displays, {} managed lobby info displays, {} managed tile selection confirm panels and {} transient presentations",
+            "Cleared replaced Mahjong table {} presentation: removed {} managed dice, {} managed wall tiles, {} managed player area tiles, {} managed table props, {} managed round info displays, {} managed player info displays, {} managed lobby info displays, {} managed tile selection confirm panels and {} transient presentations",
             tableId,
             removedDiceCount,
             removedWallTileCount,
             removedPlayerAreaTileCount,
             removedTablePropCount,
-            removedDiscardTileCount,
             removedRoundInfoCount,
             removedPlayerInfoCount,
             removedLobbyInfoCount,

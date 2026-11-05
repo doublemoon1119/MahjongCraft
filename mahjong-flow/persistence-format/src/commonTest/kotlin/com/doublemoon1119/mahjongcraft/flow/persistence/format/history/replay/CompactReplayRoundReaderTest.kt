@@ -14,6 +14,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionTiming
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.component.ComponentViewPersistenceRegistry
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.core.persistenceJson
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.game.MeldTypePersistenceDto
+import com.doublemoon1119.mahjongcraft.flow.persistence.format.game.TurnPhaseSerialNames
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.logic.base.TileFaceView
 import com.doublemoon1119.mahjongcraft.logic.table.RoundCompletionClassification
@@ -545,8 +546,7 @@ class CompactReplayRoundReaderTest {
         put(ReplaySourceKeys.PREVALENT_WIND, "EAST")
         put(ReplaySourceKeys.COMBO_COUNT, 0)
         put(ReplaySourceKeys.FINISHED_PLAYER_IDS, JsonArray(emptyList()))
-        put(ReplaySourceKeys.PENDING_REACTION, JsonNull)
-        put(ReplaySourceKeys.PENDING_ROBBING_REACTION, JsonNull)
+        put(ReplaySourceKeys.TURN_PHASE, buildJsonObject { put(ReplaySourceKeys.TYPE, TurnPhaseSerialNames.AWAITING_DRAW) })
     }
 
     /**

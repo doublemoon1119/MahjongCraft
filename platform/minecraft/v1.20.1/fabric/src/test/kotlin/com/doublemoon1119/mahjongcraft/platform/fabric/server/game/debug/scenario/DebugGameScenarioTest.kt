@@ -152,8 +152,7 @@ class DebugGameScenarioTest {
         assertEquals(presentation.diceRoll, publisher.getPublishedOpeningRolls(gameId).single().dice)
         assertEquals(presentation.dealOrderHandTileIdsBySeatIndex, initialDeal.handTileIdsBySeatIndex)
         assertEquals(presentation.postFlipHandTileIdsBySeatIndex, initialDeal.postFlipHandTileIdsBySeatIndex)
-        assertNull(publisher.getPublishedPlayerTiles(gameId))
-        assertNull(publisher.getPublishedDiscardPile(gameId))
+        assertTrue(publisher.getPublishedTableStepBatches(gameId).isEmpty(), "The opening is presented by the initial deal.")
     }
 
     /** 可操作情境應維持靜態牌牆與玩家區同步，不得重播骰子或初次發牌。 */
@@ -169,8 +168,7 @@ class DebugGameScenarioTest {
         val wallContext = assertNotNull(publisher.getPublishedWallStructureContext(gameId))
         assertFalse(wallContext.isNewOpening)
         assertEquals(emptyList(), wallContext.openingDiceCounts)
-        assertNotNull(publisher.getPublishedPlayerTiles(gameId))
-        assertNotNull(publisher.getPublishedDiscardPile(gameId))
+        assertEquals(result.game.tableState, publisher.getPublishedTableStepBatches(gameId).single().single().tableState)
         assertTrue(publisher.getPublishedOpeningRolls(gameId).isEmpty())
         assertNull(publisher.getPublishedInitialDeal(gameId))
     }

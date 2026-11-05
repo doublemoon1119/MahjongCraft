@@ -10,6 +10,7 @@ import com.doublemoon1119.mahjongcraft.logic.judgment.LegalActionContext
 import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayer
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.logic.table.TileWall
+import com.doublemoon1119.mahjongcraft.logic.table.TurnPhase
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -69,6 +70,7 @@ class ExamplePairingLegalActionValidatorTest {
             config = ExamplePairingRuleConfig(),
             tileWall = TileWall(),
             dealerPlayerId = player.id,
+            turnPhase = TurnPhase.AwaitingAction,
         )
         return ExamplePairingLegalActionValidator().getLegalActions(
             LegalActionContext.ownTurn(table, player.id),

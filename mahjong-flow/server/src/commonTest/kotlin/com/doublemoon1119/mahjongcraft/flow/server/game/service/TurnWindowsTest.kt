@@ -5,7 +5,9 @@ import com.doublemoon1119.mahjongcraft.logic.base.Hand
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.logic.table.PendingReaction
 import com.doublemoon1119.mahjongcraft.logic.table.PendingRobbingReaction
+import com.doublemoon1119.mahjongcraft.logic.table.RoundConclusion
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
+import com.doublemoon1119.mahjongcraft.logic.table.TurnPhase
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeIdentifiedTileFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
@@ -41,6 +43,15 @@ class TurnWindowsTest {
         }
     }
 
+    /** 本局已結束時，任何人都不能摸牌，也不處於自己回合的決策。 */
+    @Test
+    fun `a concluded round closes both windows`() {
+        val state = table(hand = Hand(lastDrawn = drawn)).copy(turnPhase = TurnPhase.RoundOver(RoundConclusion.Win(setOf(currentId))))
+
+        assertFalse(state.isDrawWindowOpenFor(currentId))
+        assertFalse(state.isOwnTurnWindowOpenFor(currentId))
+    }
+
     /** 有人正在決定是否回應捨牌或搶和時，任何人都不能摸牌，也不處於自己回合的決策。 */
     @Test
     fun `pending reactions close both windows`() {
@@ -52,8 +63,8 @@ class TurnWindowsTest {
             eligiblePlayerIds = setOf(otherId),
         )
         listOf(
-            table().copy(pendingReaction = pendingDiscard),
-            table(hand = Hand(lastDrawn = drawn)).copy(pendingRobbingReaction = pendingRobbing),
+            table().copy(turnPhase = TurnPhase.AwaitingDiscardReaction(pendingDiscard)),
+            table(hand = Hand(lastDrawn = drawn)).copy(turnPhase = TurnPhase.AwaitingRobbingReaction(pendingRobbing)),
         ).forEach { state ->
             assertTrue(state.hasPendingReaction)
             assertFalse(state.isDrawWindowOpenFor(currentId))
@@ -72,6 +83,10 @@ class TurnWindowsTest {
         val current = FakeMahjongPlayerFactory.create(id = currentId, initialSeat = Wind.EAST, hand = hand)
             .let { if (justCalled) it.recordAction(GameAction.Pon(drawn.id, emptyList())) else it }
         val other = FakeMahjongPlayerFactory.create(id = otherId, initialSeat = Wind.SOUTH)
-        return FakeTableStateFactory.create(players = listOf(current, other), currentPlayerIndex = 0)
+        return FakeTableStateFactory.create(
+            players = listOf(current, other),
+            currentPlayerIndex = 0,
+            turnPhase = if (justCalled) TurnPhase.AwaitingDiscard else null,
+        )
     }
 }

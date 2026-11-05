@@ -23,6 +23,7 @@ import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleModule
 import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayer
 import com.doublemoon1119.mahjongcraft.logic.table.PendingReaction
 import com.doublemoon1119.mahjongcraft.logic.table.PendingRobbingReaction
+import com.doublemoon1119.mahjongcraft.logic.table.TurnPhase
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeDiscardPile
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
@@ -96,12 +97,14 @@ class GameActionEventProjectorTest {
         val base = game()
         val before = base.copy(
             tableState = base.tableState.copy(
-                pendingReaction = PendingReaction(
-                    discarderId = otherPlayerId,
-                    tileId = discarded.id,
-                    eligiblePlayerIds = setOf(actorId),
-                    ronPlayerIds = emptySet(),
-                    id = Uuid.random(),
+                turnPhase = TurnPhase.AwaitingDiscardReaction(
+                    PendingReaction(
+                        discarderId = otherPlayerId,
+                        tileId = discarded.id,
+                        eligiblePlayerIds = setOf(actorId),
+                        ronPlayerIds = emptySet(),
+                        id = Uuid.random(),
+                    ),
                 ),
             ),
         )
@@ -164,11 +167,13 @@ class GameActionEventProjectorTest {
         val action = GameAction.Kan(GameAction.KanType.ADDED_KAN, Uuid.random(), emptyList())
         val after = before.copy(
             tableState = before.tableState.copy(
-                pendingRobbingReaction = PendingRobbingReaction(
-                    declarerId = actorId,
-                    declaredAction = action,
-                    robbedTile = tile(Tile.Numeric(Tile.Suit.Dot, 5)),
-                    eligiblePlayerIds = setOf(otherPlayerId),
+                turnPhase = TurnPhase.AwaitingRobbingReaction(
+                    PendingRobbingReaction(
+                        declarerId = actorId,
+                        declaredAction = action,
+                        robbedTile = tile(Tile.Numeric(Tile.Suit.Dot, 5)),
+                        eligiblePlayerIds = setOf(otherPlayerId),
+                    ),
                 ),
             ),
         )

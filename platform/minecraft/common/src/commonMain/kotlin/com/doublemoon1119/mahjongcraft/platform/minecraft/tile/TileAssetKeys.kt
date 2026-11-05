@@ -94,14 +94,23 @@ fun MinecraftTileAssetRegistry.allTileAssetKeys(): List<String> {
 }
 
 /**
- * 將外部讀取的素材 key 正規化；基本牌 key（[STANDARD_TILE_ASSET_KEYS]）或 [registry] 已註冊的擴充牌種 key
- * 保持不變，其餘一律回退至 [UNKNOWN_TILE_ASSET_KEY]。
+ * 判斷素材 key 是否有牌面資源：基本牌 key（[STANDARD_TILE_ASSET_KEYS]）、[UNKNOWN_TILE_ASSET_KEY] 佔位牌，
+ * 或這個 registry 已登記的擴充牌種 key。
+ *
+ * @param assetKey 要確認的素材 key。
+ * @return 認得這個 key 時為 true。
+ */
+fun MinecraftTileAssetRegistry.isKnownTileAssetKey(assetKey: String): Boolean = assetKey in STANDARD_TILE_ASSET_KEYS || assetKey == UNKNOWN_TILE_ASSET_KEY || isRegisteredAssetKey(assetKey)
+
+/**
+ * 將外部讀取的素材 key 正規化；[MinecraftTileAssetRegistry.isKnownTileAssetKey] 認得的 key 保持不變，
+ * 其餘一律回退至 [UNKNOWN_TILE_ASSET_KEY]。
  *
  * @param registry 用來確認擴充 key 是否已登記的 registry。
  * @return 可識別的原 key，或未知牌 key。
  */
 fun String?.normalizedTileAssetKey(registry: MinecraftTileAssetRegistry): String = this
-    ?.takeIf { it in STANDARD_TILE_ASSET_KEYS || registry.isRegisteredAssetKey(it) }
+    ?.takeIf { registry.isKnownTileAssetKey(it) }
     ?: UNKNOWN_TILE_ASSET_KEY
 
 /**

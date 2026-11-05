@@ -63,6 +63,7 @@ import com.doublemoon1119.mahjongcraft.logic.table.GameInitializer
 import com.doublemoon1119.mahjongcraft.logic.table.PendingReaction
 import com.doublemoon1119.mahjongcraft.logic.table.PendingRobbingReaction
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
+import com.doublemoon1119.mahjongcraft.logic.table.TurnPhase
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledComponentValidator
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledCoreExtensionRegistries
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledPersistenceRegistries
@@ -156,12 +157,14 @@ class AuthoritativeStateRecoveryIntegrationTest {
                     else -> player
                 }
             },
-            pendingReaction = PendingReaction(
-                discarderId = discarder.id,
-                tileId = discardedTile.id,
-                eligiblePlayerIds = setOf(firstResponder.id, secondResponder.id),
-                ronPlayerIds = setOf(firstResponder.id, secondResponder.id),
-                id = Uuid.random(),
+            turnPhase = TurnPhase.AwaitingDiscardReaction(
+                PendingReaction(
+                    discarderId = discarder.id,
+                    tileId = discardedTile.id,
+                    eligiblePlayerIds = setOf(firstResponder.id, secondResponder.id),
+                    ronPlayerIds = setOf(firstResponder.id, secondResponder.id),
+                    id = Uuid.random(),
+                ),
             ),
         )
         runtime.restore(runtime.snapshotWith(pendingState))
@@ -199,15 +202,17 @@ class AuthoritativeStateRecoveryIntegrationTest {
             players = state.players.map { player ->
                 if (player.id == firstResponder.id) player.copy(hand = readyHand) else player
             },
-            pendingRobbingReaction = PendingRobbingReaction(
-                declarerId = declarer.id,
-                declaredAction = GameAction.Kan(
-                    type = GameAction.KanType.ADDED_KAN,
-                    tileId = robbedTile.id,
-                    withTiles = List(3) { Uuid.random() },
+            turnPhase = TurnPhase.AwaitingRobbingReaction(
+                PendingRobbingReaction(
+                    declarerId = declarer.id,
+                    declaredAction = GameAction.Kan(
+                        type = GameAction.KanType.ADDED_KAN,
+                        tileId = robbedTile.id,
+                        withTiles = List(3) { Uuid.random() },
+                    ),
+                    robbedTile = robbedTile,
+                    eligiblePlayerIds = setOf(firstResponder.id, secondResponder.id),
                 ),
-                robbedTile = robbedTile,
-                eligiblePlayerIds = setOf(firstResponder.id, secondResponder.id),
             ),
         )
         runtime.restore(runtime.snapshotWith(pendingState))

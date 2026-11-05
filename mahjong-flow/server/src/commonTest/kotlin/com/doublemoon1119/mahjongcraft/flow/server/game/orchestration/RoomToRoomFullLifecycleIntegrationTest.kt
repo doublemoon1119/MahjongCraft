@@ -51,6 +51,7 @@ import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiGameLength
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
+import com.doublemoon1119.mahjongcraft.logic.table.TurnPhase
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledCoreExtensionRegistries
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledWinCelebrationCueResolverRegistry
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.registerBundledRuleModules
@@ -473,7 +474,7 @@ class RoomToRoomFullLifecycleIntegrationTest {
 
         if (pendingRobbingReaction == null && pendingReaction == null && state.currentPlayer.id == hostId) {
             val current = state.currentPlayer
-            val command = if (current.hand.lastDrawn == null && !current.justClaimedMeld) {
+            val command = if (state.turnPhase == TurnPhase.AwaitingDraw) {
                 GameCommand.Draw
             } else {
                 decideFor(gameId, game, hostId, AiDecisionPhase.OwnTurn, strategy, visibilityPolicy)

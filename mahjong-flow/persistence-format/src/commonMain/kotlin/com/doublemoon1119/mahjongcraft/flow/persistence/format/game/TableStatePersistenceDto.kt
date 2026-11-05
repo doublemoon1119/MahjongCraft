@@ -18,8 +18,7 @@ import kotlinx.serialization.Serializable
  * @property roundPosition 當前權威局位。
  * @property comboCount 當前連莊次數。
  * @property currentPlayerIndex 目前行動玩家的索引。
- * @property pendingReaction 尚未完成的捨牌反應視窗。
- * @property pendingRobbingReaction 尚未完成的搶和反應視窗。
+ * @property turnPhase 一局目前所處的階段。
  * @property wallOpening 本局權威擲骰決定的牌牆開門位置；沒有時為 null。
  * @property openingDiceRolls 本局開局程序已完成的逐輪擲骰結果。
  * @property reservedWallTiles 目前規則保留的牌張。
@@ -41,8 +40,7 @@ data class TableStatePersistenceDto(
     val roundPosition: MatchRoundPositionPersistenceDto,
     val comboCount: Int,
     val currentPlayerIndex: Int,
-    val pendingReaction: PendingReactionPersistenceDto?,
-    val pendingRobbingReaction: PendingRobbingReactionPersistenceDto?,
+    val turnPhase: TurnPhasePersistenceDto,
     val wallOpening: WallOpeningPersistenceDto?,
     val openingDiceRolls: List<OpeningDiceRollPersistenceDto>,
     val reservedWallTiles: List<IdentifiedTilePersistenceDto>,

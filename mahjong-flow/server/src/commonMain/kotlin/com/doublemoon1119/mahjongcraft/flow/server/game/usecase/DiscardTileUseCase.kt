@@ -4,7 +4,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryEventDraf
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameError
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.GameEventPublisher
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.GamePresentationPublisher
-import com.doublemoon1119.mahjongcraft.flow.common.game.service.toPresentation
+import com.doublemoon1119.mahjongcraft.flow.common.game.service.TableStep
 import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
 import com.doublemoon1119.mahjongcraft.flow.server.game.history.acceptedActionHistoryDraft
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.CompletedGameActionContext
@@ -21,7 +21,6 @@ import com.doublemoon1119.mahjongcraft.logic.config.RonResolution
 import com.doublemoon1119.mahjongcraft.logic.judgment.LegalActionContext
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
-import com.doublemoon1119.mahjongcraft.logic.table.SidewaysMarkedDiscardPile
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.logic.table.WallRevealCheckpoint
 import kotlin.uuid.Uuid
@@ -213,7 +212,7 @@ class DiscardTileUseCase(
                         }
 
                         finalResult.tableState to Outcome.Success(
-                            DiscardResult(finalResult, revealResult.newlyRevealedTileIds),
+                            DiscardResult(finalResult),
                         )
                     }
                 }
@@ -234,42 +233,19 @@ class DiscardTileUseCase(
             eventPublisher.publishToAllObservers(gameId, seatedPlayerIds, playerId, GameAction.ExhaustiveDraw(reason))
         }
 
-        // 4. 觸發平台呈現層：重新排列立牌列（涵蓋摸切、或打手牌併入摸到的牌兩種情況；副露本身雖然
-        // 沒變，仍要一併帶上讓手牌讓開偏移量算得準），並把捨棄的牌移到牌河
-        val seatIndex = newState.players.indexOfFirst { it.id == playerId }
-        val discarder = newState.players[seatIndex]
-        val module = moduleRegistry.getModule(newState.config)
-        presentationPublisher.publishPlayerTilesUpdated(
-            gameId,
-            seatIndex,
-            discarder.hand.tiles.map { it.id },
-            null,
-            discarder.hand.melds.map { it.toPresentation(newState.config.revealsClosedKanTiles) },
-            setAsideTileIds = discarder.setAsideTiles.map { it.id },
-        )
-        presentationPublisher.publishDiscardPileUpdated(
-            gameId,
-            seatIndex,
-            discarder.discardPile.entries.filterNot { it.isTaken }.map { it.tile.id },
-            (discarder.discardPile as? SidewaysMarkedDiscardPile)?.sidewaysMarkedTileId(),
-            newlyDiscardedTileId = tileId,
-        )
-        if (result.newlyRevealedTileIds.isNotEmpty()) {
-            presentationPublisher.publishWallTilesRevealed(gameId, result.newlyRevealedTileIds)
-        }
+        // 4. 呈現捨牌：捨出的牌移到牌河，摸牌位的牌併入立牌
+        presentationPublisher.publishTableSteps(gameId, listOf(TableStep(newState, emptyList())))
 
         return Outcome.Success(Unit)
     }
 
     /**
-     * 將捨牌反應結果與該 checkpoint 新公開的牌張一起帶出原子更新區塊。
+     * 將捨牌反應結果帶出原子更新區塊。
      *
      * @property resolution 捨牌後的反應裁定結果。
-     * @property newlyRevealedTileIds 該 checkpoint 新公開的牌張 ID。
      */
     private data class DiscardResult(
         val resolution: DiscardReactionResolver.Result,
-        val newlyRevealedTileIds: Set<Uuid> = emptySet(),
     ) {
         /** 更新後的權威桌況。 */
         val tableState: TableState get() = resolution.tableState

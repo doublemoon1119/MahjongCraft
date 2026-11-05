@@ -15,6 +15,7 @@ import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayer
 import com.doublemoon1119.mahjongcraft.logic.table.RoundAdvancementResult
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.logic.table.TileWall
+import com.doublemoon1119.mahjongcraft.logic.table.TurnPhase
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import com.doublemoon1119.mahjongcraft.logic.table.opening.WallOpening
 import com.doublemoon1119.mahjongcraft.logic.tile.component.TilePose
@@ -257,6 +258,7 @@ class ExamplePairingRuleCoreTest {
             tileWall = TileWall(),
             dealerPlayerId = winnerId,
             components = ComponentSet.EMPTY.with(ExamplePairingComponents.BONUS_TILES, ExamplePairingBonusTiles(setOf(8))),
+            turnPhase = TurnPhase.AwaitingAction,
         )
 
         val result = ExamplePairingRuleModule(ExamplePairingIds.RULE_MODULE, ExamplePairingRuleConfig())
@@ -321,6 +323,7 @@ class ExamplePairingRuleCoreTest {
             tileWall = TileWall(),
             dealerPlayerId = winnerId,
             components = ComponentSet.EMPTY.with(ExamplePairingComponents.BONUS_TILES, scoringState),
+            turnPhase = TurnPhase.AwaitingAction,
         )
 
         val result = assertNotNull(module.declareTsumo(table, winner))
@@ -378,6 +381,7 @@ class ExamplePairingRuleCoreTest {
             tileWall = TileWall(),
             dealerPlayerId = winnerId,
             components = ComponentSet.EMPTY.with(ExamplePairingComponents.BONUS_TILES, scoringState),
+            turnPhase = TurnPhase.AwaitingAction,
         )
 
         val result = assertNotNull(module.declareTsumo(table, winner))

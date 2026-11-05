@@ -159,7 +159,7 @@ class MahjongTileSelectionConfirmEntityRenderer(
     override fun getTexture(entity: MahjongTileSelectionConfirmEntity): Identifier? = null
 
     private companion object {
-        /** 文字縮放，起始估算值，預期進遊戲後用截圖比對調整。 */
+        /** 文字縮放。 */
         const val TEXT_SCALE: Float = 0.025f
 
         /** 單一背景四周的像素 padding。 */

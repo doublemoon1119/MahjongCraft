@@ -130,4 +130,30 @@ class TileMotionAnimationTest {
         /** 浮點姿態角比較使用的絕對誤差容許值。 */
         const val ABSOLUTE_TOLERANCE_FLOAT: Float = 1e-4f
     }
+
+    /** 「提起、橫移、放下」先往上提再橫移，最後放下；途中往前進方向傾斜，結束時回正。 */
+    @Test
+    fun `lift carry lower rises before moving sideways and leans toward the travel direction`() {
+        val spec = TileMotionAnimationSpec(
+            durationTicks = 100,
+            arcHeight = 0.5,
+            startPoseRotationDegrees = 0.0f,
+            endPoseRotationDegrees = 0.0f,
+            liftCarryLower = true,
+            leanDegrees = 15.0f,
+        )
+        val animation = TileMotionAnimation(spec)
+        // 起點在終點的 -X 方向，所以往 +X 前進。
+        val start = DiceAnimationVector(-1.0, 0.0, 0.0)
+
+        val early = animation.frame(5.0, start)
+        val middle = animation.frame(50.0, start)
+        val end = animation.frame(100.0, start)
+
+        assertTrue(early.offset.y > 0.0 && early.offset.x < -0.99, "The tile lifts before it moves sideways.")
+        assertEquals(0.5, middle.offset.y, 1e-9)
+        assertEquals(TileLean(axisX = 0.0, axisZ = -1.0, degrees = 15.0f), middle.lean)
+        assertTrue(animation.frame(90.0, start).lean.degrees < 0.0f, "The leading corner dips while the tile is lowered.")
+        assertEquals(TileLean.NONE, end.lean)
+    }
 }

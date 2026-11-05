@@ -1,6 +1,5 @@
 package com.doublemoon1119.mahjongcraft.flow.persistence.format.history
 
-import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryChangedValue
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryPlayerChange
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryTableChange
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryTableResult
@@ -93,16 +92,7 @@ internal class HistoryTableChangeMapper(
             )
         },
         currentPlayerIndex = change.currentPlayerIndex,
-        pendingReaction = change.pendingReaction?.let { changeValue ->
-            HistoryChangedValuePersistenceDto(
-                changeValue.value?.toPersistenceDto(registries.exhaustiveDrawReasons, registries.extensionGameActions),
-            )
-        },
-        pendingRobbingReaction = change.pendingRobbingReaction?.let { changeValue ->
-            HistoryChangedValuePersistenceDto(
-                changeValue.value?.toPersistenceDto(registries.exhaustiveDrawReasons, registries.extensionGameActions, registries.components),
-            )
-        },
+        turnPhase = change.turnPhase?.toPersistenceDto(registries.exhaustiveDrawReasons, registries.extensionGameActions, registries.components),
         reservedWallTiles = change.reservedWallTiles?.map { it.toPersistenceDto(registries.components) },
         physicalWallLayout = change.physicalWallLayout?.let { layout ->
             HistoryWallLayoutChangePersistenceDto(
@@ -151,16 +141,7 @@ internal class HistoryTableChangeMapper(
             )
         },
         currentPlayerIndex = dto.currentPlayerIndex,
-        pendingReaction = dto.pendingReaction?.let { changeValue ->
-            HistoryChangedValue(
-                changeValue.value?.toDomain(registries.exhaustiveDrawReasons, registries.extensionGameActions),
-            )
-        },
-        pendingRobbingReaction = dto.pendingRobbingReaction?.let { changeValue ->
-            HistoryChangedValue(
-                changeValue.value?.toDomain(registries.exhaustiveDrawReasons, registries.extensionGameActions, registries.components),
-            )
-        },
+        turnPhase = dto.turnPhase?.toDomain(registries.exhaustiveDrawReasons, registries.extensionGameActions, registries.components),
         reservedWallTiles = dto.reservedWallTiles?.map { it.toDomain(registries.components) },
         physicalWallLayout = dto.physicalWallLayout?.let { layout ->
             HistoryWallLayoutChange(

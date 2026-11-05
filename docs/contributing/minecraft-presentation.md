@@ -15,16 +15,22 @@ rules come from collisions that only showed up in game, so check them even when 
 
 ## Moving objects that are already on the table
 
-- When the layout of an area changes in the middle of a round, everything that moves goes together: the hand,
-  the drawn tile, melds and set-aside tiles slide for the same duration, start together and end together.
-  With the same start and end, the gap between neighbours only changes smoothly, so they never pass through
-  each other on the way.
-- When a new object takes space that tiles occupy now, move the tiles first and place the object after they
-  finish. When an object goes away, remove it first and then move the tiles into the freed space.
-- Use the same duration as the local player's own hand when the local hand moves with other objects, so the
-  two views stay in step.
-- Decide which seats move and when objects appear with `TableCornerLayoutPlanner`, not in the publisher, and
-  cover the decision with a test that follows the real Flow call order.
+- Flow publishes each transaction as an ordered list of `TableStep`s: the table state after the step plus
+  what happened in it. When a tile passes through an intermediate area, such as a replacement tile that is
+  drawn and then set aside, Flow adds a step for that state. Do not reconstruct missing moves on the platform.
+- The platform arranges every tile for each step's state with `TableTileArrangement` and compares it with the
+  last presented arrangement. `TableStepMotionPlanner` turns the differences into tile motions. Add a new kind
+  of tile movement there, not as a bespoke animation in the publisher.
+- Motions within a step play in three phases: tiles leaving their row first, then the rows making room, then
+  tiles drawn from the wall. A discard lands before the hand closes the gap, and a drawn tile drops in only
+  after its slot is free.
+- Within a row, the largest group of tiles that keeps its order slides. Tiles that would cross another tile
+  lift and arc over the row, so tiles never pass through each other.
+- Each table has one presentation timeline. A step starts after the previous step's motions finish. Table
+  props such as point sticks are placed from the step's state when the step starts, and round and player
+  information updates when it ends.
+- Reordering a whole hand is not a physical move. Make it instant, and do it while the tiles are face down
+  when possible, so that only real tile moves animate.
 
 ## The local player's own hand
 
@@ -32,6 +38,10 @@ rules come from collisions that only showed up in game, so check them even when 
   any order and a few ticks apart. Waiting for consistent data is fine, but a wait must only block the case it
   protects. A tile that is still in the wall or in flight cannot have merged into the hand, so it must not hold
   the hand back.
+- The local hand uses the same row rule as the shared view: tiles that keep their order slide, crossing tiles
+  and the drawn tile joining the hand arc over the row, and a re-sort that keeps the same tiles snaps. When a
+  tile leaves the hand, the local hand waits until the shared tiles start making room, so both views move
+  together.
 - Test the local layout with the packet orders that happen in game: snapshot first, positions first, and a
   replacement tile that lands several ticks after the hand has moved.
 

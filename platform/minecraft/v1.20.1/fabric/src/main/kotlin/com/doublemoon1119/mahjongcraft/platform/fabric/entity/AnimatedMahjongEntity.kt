@@ -18,7 +18,7 @@ import net.minecraft.world.World
 /**
  * 動畫佇列共用的驅動基底：把動畫播放任務（含期間的等待）持久化掛在 entity 自己身上，透過既有的
  * `tick()` 自行繼續播放，而不是靠純記憶體的 JVM closure 串接多階段延遲——後者在 server 關閉時會遺失
- * 「接下來該做什麼」的資訊，這正是「動畫播放中離開世界，牌卡在半空」這個 bug 的根因。
+ * 「接下來該做什麼」的資訊，動畫播放中離開世界後，牌會卡在半空。
  *
  * 「這個 entity 是否正在播動畫」＝[isAnimating]＝「佇列是否還有東西」，不需要另外一個獨立旗標；
  * 子類別（[MahjongTileEntity]／[MahjongDiceEntity]）的 `tick()` 只需要呼叫 `super.tick()`，佇列的
@@ -132,6 +132,25 @@ abstract class AnimatedMahjongEntity<C>(
     }
 
     /**
+     * 用戶端收到新位置時直接停在新位置，不在上一個 tick 的位置與新位置之間做畫面補間。
+     *
+     * 這類實體只會因伺服器排定的傳送而改變位置，看得到的移動都由自己的動畫繪製；
+     * 保留補間會讓單純的傳送在一個 tick 內閃過一段平移。
+     */
+    override fun updateTrackedPositionAndAngles(
+        x: Double,
+        y: Double,
+        z: Double,
+        yaw: Float,
+        pitch: Float,
+        interpolationSteps: Int,
+        interpolate: Boolean,
+    ) {
+        super.updateTrackedPositionAndAngles(x, y, z, yaw, pitch, interpolationSteps, interpolate)
+        resetPosition()
+    }
+
+    /**
      * 到期／推進的判斷邏輯本身（哪些 step 該套用、佇列該推進到哪裡）委派給不依賴 Minecraft API 的
      * [AnimationQueueDriver]，這裡只負責依判斷結果執行真正的副作用（改座標／改隱形／改姿態／同步
      * render 用欄位）並寫回佇列狀態——讓佇列的到期／推進邏輯可以脫離 `Entity`／`World` 獨立測試，見
@@ -180,8 +199,7 @@ abstract class AnimatedMahjongEntity<C>(
      * 追蹤這個 entity（最典型的情境：世界剛重新載入、佇列一恢復就立刻執行 `Teleport`，幾乎與新玩家
      * 開始追蹤同時發生），該 client 會先透過 spawn packet 拿到正確座標，但下一次基準追上時算出的
      * 「相對位移」會疊加在這個已經正確的座標上，讓畫面（含 hitbox）永久停在一個偏移過的錯誤位置，
-     * 直到重新連線重新收到一次 spawn packet 為止——這正是「動畫播放中重進世界，牌偶爾卡在半空」這個
-     * 已修 bug 修好後，仍會極少數重現的殘留幽靈 entity 問題的根因。
+     * 直到重新連線重新收到一次 spawn packet 為止，看起來就像牌卡在半空。
      *
      * 延遲（[TRACKER_RESYNC_DELAY_TICKS]，需大於 entity type 註冊的 `trackedUpdateRate`）是為了確保
      * `EntityTrackerEntry` 自己的基準已經追上這次 `Teleport` 之後，再主動廣播一次完整定位封包
@@ -280,6 +298,8 @@ abstract class AnimatedMahjongEntity<C>(
                 stepNbt.putFloat(NBT_KEY_END_POSE_ROTATION, step.endPoseRotationDegrees)
                 stepNbt.putBoolean(NBT_KEY_EASE_ROTATION, step.easeRotation)
                 stepNbt.putFloat(NBT_KEY_START_YAW_OFFSET, step.startYawOffsetDegrees)
+                stepNbt.putBoolean(NBT_KEY_LIFT_CARRY_LOWER, step.liftCarryLower)
+                stepNbt.putFloat(NBT_KEY_LEAN, step.leanDegrees)
             }
 
             is AnimationStep.Custom -> {
@@ -325,6 +345,8 @@ abstract class AnimatedMahjongEntity<C>(
             endPoseRotationDegrees = stepNbt.getFloat(NBT_KEY_END_POSE_ROTATION),
             easeRotation = stepNbt.getBoolean(NBT_KEY_EASE_ROTATION),
             startYawOffsetDegrees = stepNbt.getFloat(NBT_KEY_START_YAW_OFFSET),
+            liftCarryLower = stepNbt.getBoolean(NBT_KEY_LIFT_CARRY_LOWER),
+            leanDegrees = stepNbt.getFloat(NBT_KEY_LEAN),
         )
 
         TYPE_CUSTOM -> AnimationStep.Custom(deserializeCustomStep(stepNbt))
@@ -367,6 +389,8 @@ abstract class AnimatedMahjongEntity<C>(
         const val NBT_KEY_START_POSE_ROTATION = "StartPoseRotation"
         const val NBT_KEY_END_POSE_ROTATION = "EndPoseRotation"
         const val NBT_KEY_EASE_ROTATION = "EaseRotation"
+        const val NBT_KEY_LIFT_CARRY_LOWER = "LiftCarryLower"
+        const val NBT_KEY_LEAN = "Lean"
 
         /** 無效聲音 ID 的去重警告集合。 */
         private val unknownSoundIds = mutableSetOf<String>()

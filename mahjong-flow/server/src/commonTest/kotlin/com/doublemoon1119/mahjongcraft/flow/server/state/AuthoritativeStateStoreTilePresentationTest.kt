@@ -10,6 +10,7 @@ import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.logic.component.ComponentViewSet
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.logic.table.TileWall
+import com.doublemoon1119.mahjongcraft.logic.table.TurnPhase
 import com.doublemoon1119.mahjongcraft.logic.tile.component.TilePose
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeIdentifiedTileFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
@@ -36,6 +37,7 @@ class AuthoritativeStateStoreTilePresentationTest {
         val after = before.copy(
             tileWall = drawn.wall,
             players = before.players.map { it.copy(hand = Hand(lastDrawn = drawnTile)) },
+            turnPhase = TurnPhase.AwaitingAction,
         )
         val game = store.openGame(before)
 

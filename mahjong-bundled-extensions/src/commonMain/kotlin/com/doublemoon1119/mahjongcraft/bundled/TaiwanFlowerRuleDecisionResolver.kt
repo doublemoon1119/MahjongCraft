@@ -1,6 +1,5 @@
 package com.doublemoon1119.mahjongcraft.bundled
 
-import com.doublemoon1119.mahjongcraft.flow.common.game.model.DrawFollowUpPresentationStep
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.PendingRuleDecision
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionConfig
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionInputSpec
@@ -10,7 +9,8 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionTiming
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionWinOutcome
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.taiwan.TaiwanRoundOutcomeIds
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.taiwan.TaiwanSpecialFlowerWinDetail
-import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.RuleDecisionPlayerAreaPresentationStep
+import com.doublemoon1119.mahjongcraft.flow.common.game.service.TableStep
+import com.doublemoon1119.mahjongcraft.flow.common.game.service.TableStepEvent
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.RuleDecisionResolution
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.RuleDecisionResolver
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.RuleDecisionWin
@@ -29,8 +29,10 @@ import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanSpecialFlowerWin
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanTableComponents
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanTaiType
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.tile.TaiwanTileTypes
+import com.doublemoon1119.mahjongcraft.logic.table.RoundConclusion
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.logic.table.TileReplacementRounds
+import com.doublemoon1119.mahjongcraft.logic.table.TurnPhase
 import com.doublemoon1119.mahjongcraft.logic.table.drawDealerOpeningTile
 import kotlin.time.Duration.Companion.seconds
 import kotlin.uuid.Uuid
@@ -119,8 +121,8 @@ object TaiwanFlowerRuleDecisionResolver : RuleDecisionResolver {
         }
         val isOpening = decision.timing == RuleDecisionTiming.ROUND_START
         val settled = if (isOpening) result.withOpeningReplacementsStanding() else result
-        val openingDrawStep = openingDraw?.let { listOf(RuleDecisionPlayerAreaPresentationStep.Draw(tableState.dealerPlayerId, it.tile.id)) }.orEmpty()
-        return resolution(settled, decision.stepIndex) { steps -> openingDrawStep + steps.toPresentationSteps(isOpening) }
+        val openingDrawStep = openingDraw?.let { listOf(TableStep(it.tableState, emptyList())) }.orEmpty()
+        return resolution(settled, decision.stepIndex) { steps -> openingDrawStep + steps.toTableSteps(isOpening) }
     }
 
     /**
@@ -128,27 +130,28 @@ object TaiwanFlowerRuleDecisionResolver : RuleDecisionResolver {
      *
      * @param result 補花流程的結果。
      * @param stepIndex 目前的選擇步驟序號。
-     * @param presentationSteps 把補花的牌區變化轉成呈現步驟。
+     * @param presentationSteps 把補花的牌區變化轉成依序的中間步驟。
      * @return 規則選擇流程結果。
      */
     private fun resolution(
         result: TaiwanFlowerFlow.Result,
         stepIndex: Int,
-        presentationSteps: (List<TileReplacementRounds.Step>) -> List<RuleDecisionPlayerAreaPresentationStep>,
+        presentationSteps: (List<TileReplacementRounds.Step>) -> List<TableStep>,
     ): RuleDecisionResolution = when (result) {
         is TaiwanFlowerFlow.Result.Completed -> RuleDecisionResolution(
             tableState = result.tableState.withoutPendingFlower(),
             nextStep = null,
-            playerAreaPresentationSteps = presentationSteps(result.steps),
+            steps = presentationSteps(result.steps),
         )
         is TaiwanFlowerFlow.Result.Exhausted -> RuleDecisionResolution(
             result.tableState.withoutPendingFlower().copy(
                 players = result.tableState.players.map { player ->
                     player.recordAction(GameAction.ExhaustiveDraw(TaiwanExhaustiveDrawReason.NoSupplementalTile))
                 },
+                turnPhase = TurnPhase.RoundOver(RoundConclusion.AbortiveDraw(TaiwanExhaustiveDrawReason.NoSupplementalTile)),
             ),
             nextStep = null,
-            playerAreaPresentationSteps = presentationSteps(result.steps),
+            steps = presentationSteps(result.steps),
         )
 
         is TaiwanFlowerFlow.Result.AwaitingDecision -> RuleDecisionResolution(
@@ -158,7 +161,7 @@ object TaiwanFlowerRuleDecisionResolver : RuleDecisionResolver {
                 result.pending.position.replacementsDue,
             ),
             nextStep = flowerWinStep(result.pending.opportunity.winnerId, stepIndex + 1),
-            playerAreaPresentationSteps = presentationSteps(result.steps),
+            steps = presentationSteps(result.steps),
         )
 
         is TaiwanFlowerFlow.Result.Won -> {
@@ -173,6 +176,7 @@ object TaiwanFlowerRuleDecisionResolver : RuleDecisionResolver {
                     val updated = if (delta == 0) player else player.copy(score = player.score + delta)
                     if (player.id == winnerId) updated.recordAction(GameAction.Tsumo) else updated
                 },
+                turnPhase = TurnPhase.RoundOver(RoundConclusion.Win(setOf(winnerId))),
             )
             RuleDecisionResolution(
                 tableState = scored.withoutPendingFlower(),
@@ -260,45 +264,21 @@ object TaiwanFlowerRuleDecisionResolver : RuleDecisionResolver {
 }
 
 /**
- * 將補花的牌區變化轉成共用的呈現步驟；同一位玩家緊接著的公開與補牌合成一步。
+ * 將補花的牌區變化依序轉成中間步驟，每一次移出或補牌是一步。
  *
- * 局首補花的花可能在立牌中，以「從手牌移出並補牌」依序呈現。牌局中摸到的花在摸牌時已經呈現，這裡從它的補牌開始：
- * 補到的牌又是花時，以「摸到後從摸牌位移出並補牌」呈現，不另外呈現摸到它；最後留下的補牌以一般摸牌呈現。
+ * 局首補花時閒家補到的牌直接併入立牌，與最後結果的擺法一致。牌局中亮出的花以移出手牌的動作呈現。
  *
  * @param isOpening 是否為局首補花。
- * @return 依原順序排列的呈現步驟。
+ * @return 依原順序排列的中間步驟。
  */
-private fun List<TileReplacementRounds.Step>.toPresentationSteps(isOpening: Boolean): List<RuleDecisionPlayerAreaPresentationStep> {
-    val steps = mutableListOf<RuleDecisionPlayerAreaPresentationStep>()
-    var index = 0
-    while (index < size) {
-        val step = this[index]
-        val setAsideNext = (getOrNull(index + 1) as? TileReplacementRounds.Step.SetAside)?.tiles.orEmpty()
-        if (!isOpening && step is TileReplacementRounds.Step.Replaced && step.tiles.any { it in setAsideNext }) {
-            index++
-            continue
-        }
-        val replaced = (getOrNull(index + 1) as? TileReplacementRounds.Step.Replaced)
-            ?.takeIf { step is TileReplacementRounds.Step.SetAside && it.playerId == step.playerId }
-        val setAside = (step as? TileReplacementRounds.Step.SetAside)?.tiles.orEmpty()
-        val drawn = replaced?.tiles ?: (step as? TileReplacementRounds.Step.Replaced)?.tiles.orEmpty()
-        steps += when {
-            isOpening -> RuleDecisionPlayerAreaPresentationStep.Replacement(step.playerId, setAside.map { it.id }, drawn.map { it.id })
-            setAside.isEmpty() -> RuleDecisionPlayerAreaPresentationStep.Draw(step.playerId, drawn.single().id)
-            else -> RuleDecisionPlayerAreaPresentationStep.FollowUp(
-                playerId = step.playerId,
-                followUpStep = DrawFollowUpPresentationStep(
-                    action = TAIWAN_REVEAL_FLOWER_ACTION,
-                    setAsideTileId = setAside.single().id,
-                    drawnTileIds = drawn.map { it.id },
-                    physicalWallTransitionPhases = emptyList(),
-                    scoring = null,
-                ),
-            )
-        }
-        index += if (replaced != null) 2 else 1
+private fun List<TileReplacementRounds.Step>.toTableSteps(isOpening: Boolean): List<TableStep> = map { step ->
+    val state = if (isOpening) step.tableState.withOpeningReplacementsStanding() else step.tableState
+    val events = if (!isOpening && step is TileReplacementRounds.Step.SetAside) {
+        listOf(TableStepEvent.ActionDeclared(step.playerId, TAIWAN_REVEAL_FLOWER_ACTION))
+    } else {
+        emptyList()
     }
-    return steps
+    TableStep(state, events)
 }
 
 /** 局首補花時，閒家補到的牌併入立牌；莊家保留首次行動所需的摸牌位。 */

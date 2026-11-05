@@ -2,6 +2,7 @@ package com.doublemoon1119.mahjongcraft.flow.server.game.riichi
 
 import com.doublemoon1119.mahjongcraft.bundled.BundledRiichiExtension
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameError
+import com.doublemoon1119.mahjongcraft.flow.common.game.service.TableStepEvent
 import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.PostActionExhaustiveDrawResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.policy.GameVisibilityPolicyImpl
@@ -324,7 +325,10 @@ class DeclareRiichiUseCaseTest {
             listOf(RIICHI_GAME_ACTION, GameAction.Discard(drawnTile.id)),
             fixtures.eventPublisher.getNotifiedActions(gameId, otherPlayerId, currentPlayerId),
         )
-        assertEquals(1, fixtures.presentationPublisher.getRuleStateUpdateCount(gameId))
+        assertEquals(
+            listOf<TableStepEvent>(TableStepEvent.ActionDeclared(currentPlayerId, RIICHI_GAME_ACTION)),
+            fixtures.presentationPublisher.getPublishedTableStepBatches(gameId).single().single().events,
+        )
     }
 
     /**

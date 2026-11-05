@@ -18,9 +18,11 @@ import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
 import com.doublemoon1119.mahjongcraft.logic.module.SettlementExtrasOccasion
 import com.doublemoon1119.mahjongcraft.logic.table.RoundCompletionClassification
 import com.doublemoon1119.mahjongcraft.logic.table.RoundCompletionSummary
+import com.doublemoon1119.mahjongcraft.logic.table.RoundConclusion
 import com.doublemoon1119.mahjongcraft.logic.table.RoundTransitionContext
 import com.doublemoon1119.mahjongcraft.logic.table.RoundTransitionDirective
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
+import com.doublemoon1119.mahjongcraft.logic.table.TurnPhase
 import kotlin.uuid.Uuid
 
 /**
@@ -120,6 +122,7 @@ class DeclareExhaustiveDrawUseCase(
                         players = updatedPlayers,
                         components = extras?.components ?: state.components,
                         revealedHandSettlements = settlement.revealedHands,
+                        turnPhase = TurnPhase.RoundOver(RoundConclusion.ExhaustiveDraw(settlement.reason, settlement.tenpaiPlayerIds.toSet())),
                     ).revealHandsOf(settlement.revealedHands.map { it.playerId })
 
                     val transitionDirective = module.resolveRoundTransition(

@@ -29,8 +29,7 @@ import kotlin.uuid.Uuid
  * @property roundPosition 整場對局中的權威局位；既有場風與絕對局數欄位必須與它一致。
  * @property comboCount 連莊次數（日麻：本場數；台麻：連幾）。
  * @property currentPlayerIndex 目前輪到執行動作的玩家索引。
- * @property pendingReaction 目前尚待其他玩家回應（吃/碰/槓/過）的捨牌反應視窗，若無則為 null。
- * @property pendingRobbingReaction 目前尚待其他玩家回應（搶和/過）的暗槓/加槓或移出手牌動作反應視窗，若無則為 null。
+ * @property turnPhase 一局目前所處的階段；流程依它判斷玩家可以做什麼。
  * @property wallOpening 本局權威擲骰決定的牌牆開門位置；規則尚未支援開門流程時為 null。
  * @property openingDiceRolls 本局完整擲骰記錄；規則不使用擲骰時為空清單。
  * @property reservedWallTiles 目前不由一般 [tileWall] 摸牌流程取得、改由規則解讀用途與順序的保留牌。日麻將它
@@ -60,8 +59,7 @@ data class TableState(
     ),
     val comboCount: Int = 0,
     val currentPlayerIndex: Int = 0,
-    val pendingReaction: PendingReaction? = null,
-    val pendingRobbingReaction: PendingRobbingReaction? = null,
+    val turnPhase: TurnPhase,
     val wallOpening: WallOpening? = null,
     val openingDiceRolls: List<OpeningDiceRoll> = emptyList(),
     val reservedWallTiles: List<IdentifiedTile> = emptyList(),
@@ -73,6 +71,9 @@ data class TableState(
 ) {
     init {
         components.requireTarget(BuiltInComponentOwners.TABLE)
+        if (turnPhase == TurnPhase.AwaitingDraw || turnPhase == TurnPhase.AwaitingDiscard) {
+            require(players[currentPlayerIndex].hand.lastDrawn == null) { "$turnPhase requires the current player to hold no drawn tile" }
+        }
         require(players.map { it.id }.distinct().size == players.size) { "Table players must have unique IDs" }
         require(players.any { it.id == dealerPlayerId }) { "dealerPlayerId must belong to this table" }
         require(players.map { it.initialSeatIndex }.sorted() == players.indices.toList()) {
@@ -104,6 +105,12 @@ data class TableState(
 
     /** 獲取參與遊戲的總人數。 */
     val playerCount: Int get() = players.size
+
+    /** 目前尚待其他玩家回應（吃／碰／槓／過）的捨牌反應；不在這個階段時為 null。 */
+    val pendingReaction: PendingReaction? get() = (turnPhase as? TurnPhase.AwaitingDiscardReaction)?.reaction
+
+    /** 目前尚待其他玩家回應（搶和／過）的槓或移出手牌反應；不在這個階段時為 null。 */
+    val pendingRobbingReaction: PendingRobbingReaction? get() = (turnPhase as? TurnPhase.AwaitingRobbingReaction)?.reaction
 
     /** 獲取目前輪到執行動作的玩家。 */
     val currentPlayer: MahjongPlayer get() = players[currentPlayerIndex]

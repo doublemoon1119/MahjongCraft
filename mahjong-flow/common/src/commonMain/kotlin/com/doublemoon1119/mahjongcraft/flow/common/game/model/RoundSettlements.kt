@@ -1,9 +1,10 @@
 package com.doublemoon1119.mahjongcraft.flow.common.game.model
 
-import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
 import com.doublemoon1119.mahjongcraft.logic.table.RoundCompletionClassification
+import com.doublemoon1119.mahjongcraft.logic.table.RoundConclusion
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
+import com.doublemoon1119.mahjongcraft.logic.table.TurnPhase
 import kotlin.uuid.Uuid
 
 /**
@@ -19,40 +20,15 @@ fun roundRanksByPlayer(state: TableState, module: MahjongRuleModule<*>): Map<Uui
     .associate { (index, player) -> player.id to index + 1 }
 
 /**
- * 每位玩家在 [current] 中、相對 [previous] 新增到 `actionHistory` 的動作；[previous] 中沒有的玩家視為全部新增。
+ * 這一局以流局結束時的純結果資料，取自「本局已結束」階段記錄的結束方式；不是流局或本局尚未結束時為 null。
  *
- * 進入新的一局時 `actionHistory` 從頭記錄，沒有新增的動作。
+ * 荒牌流局的得利者是流局時聽牌的玩家；途中流局沒有得利者。
  *
- * @param previous 交易或命令之前的桌況。
- * @param current 交易或命令之後的桌況。
- * @return 以玩家 UUID 索引的新增動作，依記錄順序排列。
+ * @receiver 本局結束後的桌況。
+ * @return 流局的純結果資料。
  */
-fun newlyRecordedActionsByPlayerId(previous: TableState, current: TableState): Map<Uuid, List<GameAction>> = current.players.associate { player ->
-    val previousActionCount = previous.players.firstOrNull { it.id == player.id }?.actionHistory?.size ?: 0
-    player.id to player.actionHistory.drop(previousActionCount)
-}
-
-/**
- * 由新增的流局記錄建立純結果資料，供規則沒有在流局交易中寫入摘要時使用。
- *
- * 所有玩家都記錄流局時為途中流局：沒有得利者。否則為荒牌流局：記錄流局的玩家為得利者。
- *
- * @param state 記錄流局之後的桌況。
- * @param newActionsByPlayerId 這次新增的動作，見 [newlyRecordedActionsByPlayerId]。
- * @return 新增流局記錄還原出的純結果；沒有新增流局記錄時為 null。
- */
-fun recordedDrawOutcome(state: TableState, newActionsByPlayerId: Map<Uuid, List<GameAction>>): RecordedDrawOutcome? {
-    val reason = newActionsByPlayerId.values.asSequence()
-        .flatten()
-        .filterIsInstance<GameAction.ExhaustiveDraw>()
-        .firstOrNull()
-        ?.reason
-        ?: return null
-    val affectedPlayerIds = newActionsByPlayerId.filterValues { actions -> actions.any { it is GameAction.ExhaustiveDraw } }.keys
-    val isAbortive = affectedPlayerIds.size == state.playerCount
-    return RecordedDrawOutcome(
-        reason = reason,
-        classification = if (isAbortive) RoundCompletionClassification.ABORTIVE_DRAW else RoundCompletionClassification.EXHAUSTIVE_DRAW,
-        beneficiaryPlayerIds = if (isAbortive) emptySet() else affectedPlayerIds,
-    )
+fun TableState.concludedDrawOutcome(): RecordedDrawOutcome? = when (val conclusion = (turnPhase as? TurnPhase.RoundOver)?.conclusion) {
+    is RoundConclusion.ExhaustiveDraw -> RecordedDrawOutcome(conclusion.reason, RoundCompletionClassification.EXHAUSTIVE_DRAW, conclusion.tenpaiPlayerIds)
+    is RoundConclusion.AbortiveDraw -> RecordedDrawOutcome(conclusion.reason, RoundCompletionClassification.ABORTIVE_DRAW, emptySet())
+    is RoundConclusion.Win, null -> null
 }

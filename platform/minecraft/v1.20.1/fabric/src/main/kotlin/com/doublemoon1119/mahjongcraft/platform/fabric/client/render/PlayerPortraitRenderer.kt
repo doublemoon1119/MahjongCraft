@@ -14,6 +14,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.player.PlayerPortraitS
 import com.doublemoon1119.mahjongcraft.platform.minecraft.player.ResolvedPlayerPortraitSource
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.UNKNOWN_TILE_ASSET_KEY
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.isKnownTileAssetKey
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.tileTextureResourceId
 import kotlinx.coroutines.CancellationException
 import net.minecraft.client.MinecraftClient
@@ -69,7 +70,7 @@ class PlayerPortraitRenderer internal constructor(
     private fun characterPortrait(snapshot: AiCharacterSnapshot?): ResolvedPlayerPortraitSource? {
         snapshot ?: return null
         val face = snapshot.definition?.face ?: return previews.portrait(snapshot)?.let { ResolvedPlayerPortraitSource(snapshot.characterId, it) }
-        if (face is AiCharacterFace.Tile && !tileAssetRegistry.isRegisteredAssetKey(face.assetKey)) {
+        if (face is AiCharacterFace.Tile && !tileAssetRegistry.isKnownTileAssetKey(face.assetKey)) {
             return ResolvedPlayerPortraitSource(snapshot.characterId, previews.portrait(snapshot) ?: fallbackSource(true))
         }
         val source = when (face) {

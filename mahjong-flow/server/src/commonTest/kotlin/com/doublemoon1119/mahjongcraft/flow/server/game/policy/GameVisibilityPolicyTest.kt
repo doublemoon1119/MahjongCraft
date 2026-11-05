@@ -766,7 +766,7 @@ class GameVisibilityPolicyTest {
         return GameVisibilityPolicyImpl(registry, componentRegistry = bundledCoreExtensionRegistries().componentRegistry)
     }
 
-    /** 建立台灣規則政策，供暗槓預設不公開的回歸測試使用。 */
+    /** 建立台灣規則政策，供暗槓預設不公開的測試使用。 */
     private fun taiwanPolicyFor(descriptions: List<TileComponentDescription>): GameVisibilityPolicyImpl {
         val registry = MahjongModuleRegistryImpl().apply {
             register(

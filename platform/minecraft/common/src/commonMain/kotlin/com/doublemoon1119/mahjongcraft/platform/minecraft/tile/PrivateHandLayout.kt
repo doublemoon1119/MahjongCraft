@@ -32,6 +32,27 @@ class PrivateHandLayout {
     /** 已經顯示過的本人牌張，重新接管時不能當成首次進場瞬間定位。 */
     private val seen = mutableSetOf<Uuid>()
 
+    /** 上一次的本人立牌順序，用來判斷換位時哪些牌會越過其他牌。 */
+    private var lastStandingOrder = emptyList<Uuid>()
+
+    /** 上一次在本人摸牌位上的牌；它加入立牌時以插入動作越過其他牌。 */
+    private var lastDrawnId: Uuid? = null
+
+    /** 依本人順序換位時會越過其他牌、下次換到新格位時要以弧線越過的牌。 */
+    private val crossingIds = mutableSetOf<Uuid>()
+
+    /** 只是重新排序（立牌組成不變）時，下次換到新格位要直接到位的牌。 */
+    private val snappingIds = mutableSetOf<Uuid>()
+
+    /** 本人立牌順序改變、還在等共享呈現開始讓位的時間；不在等待時為 null。 */
+    private var orderChangedAt: Double? = null
+
+    /** 上一幀的共享終點，用來判斷順序改變之後共享的牌是否已經移到新位置。 */
+    private var lastFrameTargets = emptyMap<Uuid, TileDisplayTransform>()
+
+    /** 順序改變前一幀的共享終點；共享的牌離開這些位置，代表共享呈現已經開始讓位。 */
+    private var targetsAtOrderChange = emptyMap<Uuid, TileDisplayTransform>()
+
     /**
      * 更新本人布局，不因某張牌動畫中或資料缺少而取消其他牌的排序。
      *
@@ -62,6 +83,34 @@ class PrivateHandLayout {
             return emptyMap()
         }
         val privateIds = (standingOrder + listOfNotNull(drawnId)).toSet()
+        if (standingOrder != lastStandingOrder) {
+            crossingIds.clear()
+            crossingIds += crossingTiles(lastStandingOrder, standingOrder, lastDrawnId)
+            // 整副重新排序（例如切換自動理牌）不是牌的實際移動，直接到位。
+            snappingIds.clear()
+            if (lastStandingOrder.isNotEmpty() && standingOrder.toSet() == lastStandingOrder.toSet() && drawnId == lastDrawnId) {
+                snappingIds += standingOrder
+                crossingIds.clear()
+            }
+            // 有牌離開手牌（打出或鳴走）時，共享呈現先讓那張牌落地才讓位；只是重新排序時沒有要等的動作。
+            if (lastStandingOrder.any { it !in privateIds }) {
+                orderChangedAt = now
+                targetsAtOrderChange = lastFrameTargets
+            }
+            lastStandingOrder = standingOrder
+        }
+        // 共享呈現在同一步中先讓離開的牌落地，再讓位與插入；本人換位等到共享的牌開始移動才跟著開始，時機與其他人看到的一致。
+        orderChangedAt?.let { changedAt ->
+            val sharedStarted = privateIds.any { id ->
+                val input = inputs[id]
+                input?.motion?.let { it.startedAt >= changedAt - MOTION_START_TOLERANCE_TICKS } == true ||
+                    (input != null && targetsAtOrderChange[id]?.let { it != input.target } == true)
+            }
+            if (sharedStarted || now - changedAt >= ORDER_SYNC_TIMEOUT_TICKS) orderChangedAt = null
+        }
+        val waitingForShared = orderChangedAt != null
+        lastDrawnId = drawnId
+        lastFrameTargets = inputs.mapValues { (_, input) -> input.target }
         val publicOrder = PublicHandOrder.arrange(standingOrder)
         updateRow(
             publicOrder = publicOrder,
@@ -100,14 +149,23 @@ class PrivateHandLayout {
                     input = input,
                     lastAvailable = now,
                 )
-                if (input.motion != null || id in seen) {
+                val motionSpec = input.motion?.spec
+                if (motionSpec != null && motionSpec.startPoseRotationDegrees != motionSpec.endPoseRotationDegrees && id !in seen) {
+                    // 第一次接手時正在翻牌（例如開局發完牌翻起）：牌背還朝上，直接放到本人格位，翻牌在新位置原地播放。
+                    entry.move(
+                        from = shared.copy(position = target.position, yawDegrees = target.yawDegrees),
+                        to = target,
+                        now = now,
+                        ticks = duration(input, now),
+                        spec = motionSpec.copy(arcHeight = 0.0, liftCarryLower = false, leanDegrees = 0.0f),
+                    )
+                } else if (input.motion != null || id in seen) {
                     entry.move(
                         from = shared,
                         to = target,
                         now = now,
                         ticks = duration(input, now),
-                        arcHeight = input.motion?.spec?.arcHeight ?: 0.0,
-                        easeRotation = input.motion?.spec?.easeRotation ?: false,
+                        spec = input.motion?.spec,
                     )
                 }
                 entries[id] = entry
@@ -116,13 +174,19 @@ class PrivateHandLayout {
                 val current = entry.sample(now)
                 if (target != null) {
                     entry.waitingSince = null
-                    if (!entry.isPrivate || entry.target != target) {
+                    if (entry.isPrivate && entry.target != target && waitingForShared) {
+                        // 還在等共享呈現開始讓位，先停在原本的位置。
+                    } else if (entry.isPrivate && entry.target != target && snappingIds.remove(id)) {
+                        entry.snap(target)
+                    } else if (!entry.isPrivate || entry.target != target) {
+                        // 依本人順序會越過其他牌的牌從上方以弧線越過，其餘一起平移，不會互相穿過。
+                        val crosses = entry.isPrivate && crossingIds.remove(id)
                         entry.move(
                             from = current,
                             to = target,
                             now = now,
-                            ticks = REORDER_TICKS,
-                            arcHeight = 0.0,
+                            ticks = if (crosses) MahjongTileTableLayout.ROW_ARC_DURATION_TICKS else REORDER_TICKS,
+                            spec = if (crosses) ROW_ARC_SPEC else null,
                         )
                     }
                     entry.isPrivate = true
@@ -140,8 +204,7 @@ class PrivateHandLayout {
                             to = input.target,
                             now = now,
                             ticks = duration(input, now),
-                            arcHeight = input.motion?.spec?.arcHeight ?: 0.0,
-                            easeRotation = input.motion?.spec?.easeRotation ?: false,
+                            spec = input.motion?.spec,
                         )
                         entry.isPrivate = false
                     } else if (!entry.isPrivate && (endpointChanged || motionChanged)) {
@@ -150,8 +213,7 @@ class PrivateHandLayout {
                             to = input.target,
                             now = now,
                             ticks = duration(input, now),
-                            arcHeight = input.motion?.spec?.arcHeight ?: 0.0,
-                            easeRotation = input.motion?.spec?.easeRotation ?: false,
+                            spec = input.motion?.spec,
                         )
                     }
                     if (!entry.isPrivate && entry.finished(now) && input.sample(now) == entry.target) {
@@ -171,6 +233,13 @@ class PrivateHandLayout {
     fun clear() {
         entries.clear()
         seen.clear()
+        lastStandingOrder = emptyList()
+        lastDrawnId = null
+        crossingIds.clear()
+        snappingIds.clear()
+        orderChangedAt = null
+        lastFrameTargets = emptyMap()
+        targetsAtOrderChange = emptyMap()
         row = null
         previousTargets = emptyMap()
         lastTime = Double.NEGATIVE_INFINITY
@@ -267,6 +336,24 @@ class PrivateHandLayout {
     }
 
     /**
+     * 依本人順序換位時會越過其他牌的牌：兩次順序都有的牌中，能維持原本前後順序的最多一組之外的牌，以及從摸牌位插入立牌的牌。
+     * 第一次出現在立牌的牌（例如開局發完牌）不算插入。
+     *
+     * @param previous 上一次的本人立牌順序。
+     * @param current 這一次的本人立牌順序。
+     * @param previousDrawnId 上一次在摸牌位上的牌；沒有時為 null。
+     * @return 會越過其他牌的牌。
+     */
+    private fun crossingTiles(previous: List<Uuid>, current: List<Uuid>, previousDrawnId: Uuid?): Set<Uuid> {
+        val previousIndex = previous.withIndex().associate { (index, id) -> id to index }
+        val currentIndex = current.withIndex().associate { (index, id) -> id to index }
+        val stayed = current.filter { it in previousIndex }.sortedBy { previousIndex.getValue(it) }
+        val kept = TableStepMotionPlanner.longestIncreasingSubsequence(stayed.map { currentIndex.getValue(it) }).mapTo(mutableSetOf()) { stayed[it] }
+        val inserted = setOfNotNull(previousDrawnId?.takeIf { it in currentIndex })
+        return stayed.toSet() - kept + inserted
+    }
+
+    /**
      * 已開始的世界動畫只銜接剩餘時間；沒有可用動畫時使用短補位時間。
      *
      * @param input 該牌的共享動畫資料。
@@ -311,27 +398,38 @@ class PrivateHandLayout {
          * @param to 新的顯示終點。
          * @param now 本次過渡開始時間。
          * @param ticks 過渡時長。
-         * @param arcHeight 飛行弧線高度；一般補位為零。
-         * @param easeRotation 是否沿用共享動畫的旋轉緩出效果。
+         * @param spec 沿用的路線、弧線高度、傾斜與旋轉曲線；為 null 時沒有弧線，直接平移。
          */
         fun move(
             from: TileDisplayTransform,
             to: TileDisplayTransform,
             now: Double,
             ticks: Int,
-            arcHeight: Double,
-            easeRotation: Boolean = false,
+            spec: TileMotionAnimationSpec?,
         ) {
             start = from
             target = to
             startedAt = now
-            spec = TileMotionAnimationSpec(
+            this.spec = TileMotionAnimationSpec(
                 durationTicks = ticks,
-                arcHeight = arcHeight,
+                arcHeight = spec?.arcHeight ?: 0.0,
                 startPoseRotationDegrees = from.poseDegrees,
                 endPoseRotationDegrees = to.poseDegrees,
-                easeRotation = easeRotation,
+                easeRotation = spec?.easeRotation ?: false,
+                liftCarryLower = spec?.liftCarryLower ?: false,
+                leanDegrees = spec?.leanDegrees ?: 0.0f,
             )
+        }
+
+        /**
+         * 不播放過渡，直接停在新終點。
+         *
+         * @param to 新的顯示終點。
+         */
+        fun snap(to: TileDisplayTransform) {
+            start = to
+            target = to
+            spec = null
         }
 
         /**
@@ -357,6 +455,7 @@ class PrivateHandLayout {
                 ),
                 yawDegrees = target.yawDegrees + motion.yawOffsetDegrees,
                 poseDegrees = motion.poseRotationDegrees,
+                lean = motion.lean,
             )
         }
 
@@ -373,6 +472,22 @@ class PrivateHandLayout {
     private companion object {
         /** 一般理牌與補位時間，沿用牌張預設動畫長度。 */
         const val REORDER_TICKS = TileMotionAnimationSpec.DEFAULT_DURATION_TICKS
+
+        /** 本人立牌越過其他牌時的路線與傾斜，與共享呈現的同排弧線相同；時長與起訖姿態由每次移動決定。 */
+        val ROW_ARC_SPEC = TileMotionAnimationSpec(
+            durationTicks = MahjongTileTableLayout.ROW_ARC_DURATION_TICKS,
+            arcHeight = MahjongTileTableLayout.ROW_ARC_HEIGHT,
+            startPoseRotationDegrees = 0.0f,
+            endPoseRotationDegrees = 0.0f,
+            liftCarryLower = true,
+            leanDegrees = MahjongTileTableLayout.ROW_ARC_LEAN_DEGREES,
+        )
+
+        /** 立牌順序改變後最多等共享呈現開始讓位的時間，避免共享的牌沒有移動時永久停在舊位置。 */
+        const val ORDER_SYNC_TIMEOUT_TICKS = 10.0
+
+        /** 判斷共享動畫是不是這次換位之後才開始時，容許的時間誤差。 */
+        const val MOTION_START_TOLERANCE_TICKS = 1.0
 
         /** 等待快照與原生資料對齊的最長時間，避免永久停在舊位置。 */
         const val HANDOFF_GRACE_TICKS = 3.0

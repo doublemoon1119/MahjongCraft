@@ -1,17 +1,21 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.server.tile
 
+import com.doublemoon1119.mahjongcraft.logic.tile.component.TilePose
+import com.doublemoon1119.mahjongcraft.logic.tile.component.TileRegion
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.AnimatedMahjongEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongAnimationSounds
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongTileEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongTilePose
-import com.doublemoon1119.mahjongcraft.platform.fabric.entity.TileActionPopupKind
 import com.doublemoon1119.mahjongcraft.platform.minecraft.animation.AnimationStep
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileTableLayout
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileWallPlacement
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.PlannedTileMotion
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TableStepMotionPlanner
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileMotionKind
 
 /**
  * 麻將牌各種既有動畫（開局發牌、摸牌、捨牌、鳴牌、胡牌慶祝演出的強制理牌重排／倒牌）的單張牌排程
- * 邏輯，由正式桌子綁定的 presenter（[FabricMahjongPlayerAreaPresenter]／[FabricMahjongDiscardPresenter]）
+ * 邏輯，由正式桌子的呈現（[FabricMahjongPlayerAreaPresenter] 與依步驟呈現的發布器）
  * 與 debug 動畫指令共用；不帶任何實例狀態。這些函式只吃 `tile`／位置／絕對時刻這幾個純粹的參數，
  * 不涉及桌子座標系、`TableLocation` 或任何對局概念。
  *
@@ -36,12 +40,13 @@ internal object TileAnimationSteps {
      *
      * 起飛播完的那一刻，隱形與瞬間重新排列到手牌列上空是同一個瞬間發生；接著額外維持
      * [MahjongTileTableLayout.DEAL_SNAP_GAP_TICKS] 的隱形，讓「重新排成一列」感覺像是刻意的一個轉場
-     * 動作，不是無縫瞬移。翻牌後在觀看緩衝（[DEAL_VIEWING_BUFFER_TICKS]）播完那一刻，才傳送到
-     * [postFlipPlacement]（可能與 [finalPlacement] 不同格，見 `MahjongInitialDealPresentation` KDoc）。
+     * 動作，不是無縫瞬移。翻牌那一刻牌背仍朝上，先瞬間換到 [postFlipPlacement]（可能與 [finalPlacement] 不同格，見
+     * `MahjongInitialDealPresentation` KDoc）再原地翻起：背面朝上的牌外觀相同，換位看不出來，翻起時已在整理後的格位。
+     * 翻牌後保留觀看緩衝（[DEAL_VIEWING_BUFFER_TICKS]）。
      *
      * @param tile 要排定發牌動畫的牌 entity。
      * @param finalPlacement 翻牌前落下的位置。
-     * @param postFlipPlacement 觀看緩衝結束後的位置。
+     * @param postFlipPlacement 翻牌時與之後所在的位置。
      * @param liftAbsoluteGameTime 這批牌共用的起飛絕對 tick。
      * @param flipAbsoluteGameTime 這批牌共用的翻牌絕對 tick。
      * @param playDealSound 是否為此牌播放發牌聲。
@@ -103,6 +108,12 @@ internal object TileAnimationSteps {
                 if (playFlipSound) add(handTurnSound(flipAbsoluteGameTime))
                 addAll(
                     listOf(
+                        AnimationStep.Teleport(
+                            postFlipPlacement.x,
+                            postFlipPlacement.y,
+                            postFlipPlacement.z,
+                            postFlipPlacement.yaw,
+                        ),
                         AnimationStep.Custom(endPose),
                         AnimationStep.PlayMotion(
                             durationTicks = MahjongTileTableLayout.DEAL_FLIP_DURATION_TICKS,
@@ -114,12 +125,6 @@ internal object TileAnimationSteps {
                             endPoseRotationDegrees = endPose.rotationDegrees,
                         ),
                         AnimationStep.WaitUntil(viewingEndGameTime),
-                        AnimationStep.Teleport(
-                            postFlipPlacement.x,
-                            postFlipPlacement.y,
-                            postFlipPlacement.z,
-                            postFlipPlacement.yaw,
-                        ),
                     ),
                 )
             },
@@ -127,228 +132,119 @@ internal object TileAnimationSteps {
     }
 
     /**
-     * 摸牌動畫：跟開局發牌動畫共用同一套「起飛→隱形傳送→落下」節奏（手法同 [scheduleDealBatch]），
-     * 完整順序是：面朝下起飛→隱形→傳送到摸牌位→（同一瞬間）姿態換成面向玩家→解除隱形→落下。翻面不是
-     * 落地後另外播放的旋轉動畫，而是在隱形傳送那一刻直接切換姿態——因為切換當下牌本身是隱形的，玩家
-     * 看不到姿態瞬間跳變。只有這一張牌，不需要像開局發牌那樣排定跨座位／跨批次的延遲；[startDelayTicks] 為 0 時起飛立刻
-     * 開始，槓或移出手牌後的補牌則等宣告的牌落地後才起飛。
+     * 在 [startGameTime] 播放一步之中規劃好的動作；起點使用規劃的位置與姿態，不讀 entity 目前的位置，所以前面還有
+     * 動畫在排隊時也會從那些動畫結束的位置接著動。
      *
-     * @param tile 要排定摸牌動畫的牌 entity。
-     * @param finalPlacement 摸牌動畫的落定位置。
-     * @param startDelayTicks 起飛前等待的 tick 數；0 時立即開始。
-     * @param endPose 動畫結束後的姿態；一般摸牌為直立，已攤牌的手牌為平放正面朝上。
+     * 摸牌抬起後隱形移到新位置再落下；拋物線與弧線是一段連續可見的飛行；平移沒有弧線；翻面只轉姿態。落地時依目的區域播放
+     * 對應的落桌聲：牌河為捨牌聲，副露與移出區為副露聲，從牌牆摸到立牌或摸牌位為摸牌聲。
+     *
+     * @param tile 要播放動作的牌 entity。
+     * @param motion 規劃好的動作。
+     * @param startGameTime 動作開始的絕對遊戲 tick。
+     * @param playLandingSound 是否播放落地聲；同一組一起落地的牌只需要其中一張播放。
      */
-    fun scheduleDrawnTile(
-        tile: MahjongTileEntity,
-        finalPlacement: MahjongTileWallPlacement,
-        startDelayTicks: Long = 0L,
-        endPose: MahjongTilePose = MahjongTilePose.STANDING,
-    ) {
-        val wallX = tile.x
-        val wallY = tile.y
-        val wallZ = tile.z
-        val wallYaw = tile.yaw
-        val peakY = wallY + MahjongTileTableLayout.DRAW_LIFT_HEIGHT
-        val liftStartGameTime = tile.world.time + startDelayTicks
-        val snapGapEndGameTime = liftStartGameTime + MahjongTileTableLayout.DRAW_LIFT_DURATION_TICKS +
-            MahjongTileTableLayout.DRAW_SNAP_GAP_TICKS
-        tile.enqueueAll(
-            listOfNotNull(
-                AnimationStep.WaitUntil(liftStartGameTime).takeIf { startDelayTicks > 0L },
-                AnimationStep.Teleport(wallX, peakY, wallZ, wallYaw),
-                AnimationStep.PlayMotion(
+    fun schedulePlannedMotion(tile: MahjongTileEntity, motion: PlannedTileMotion, startGameTime: Long, playLandingSound: Boolean = true) {
+        val to = motion.to
+        val toPose = motion.toPose.toTilePose()
+        val from = motion.from
+        val fromPose = motion.fromPose?.toTilePose() ?: toPose
+        val steps = mutableListOf<AnimationStep<MahjongTilePose>>(AnimationStep.WaitUntil(startGameTime))
+        val endGameTime = startGameTime + TableStepMotionPlanner.durationTicks(motion.kind)
+        when (motion.kind) {
+            TileMotionKind.PLACE -> {
+                steps += AnimationStep.Teleport(to.x, to.y, to.z, to.yaw)
+                steps += AnimationStep.Custom(toPose)
+            }
+            TileMotionKind.DRAW -> {
+                val origin = checkNotNull(from)
+                val peakY = origin.y + MahjongTileTableLayout.DRAW_LIFT_HEIGHT
+                steps += AnimationStep.Teleport(origin.x, peakY, origin.z, origin.yaw)
+                steps += AnimationStep.Custom(fromPose)
+                steps += AnimationStep.PlayMotion(
                     durationTicks = MahjongTileTableLayout.DRAW_LIFT_DURATION_TICKS,
                     arcHeight = 0.0,
                     startOffsetX = 0.0,
-                    startOffsetY = wallY - peakY,
+                    startOffsetY = origin.y - peakY,
                     startOffsetZ = 0.0,
-                    startPoseRotationDegrees = MahjongTilePose.FACE_DOWN.rotationDegrees,
-                    endPoseRotationDegrees = MahjongTilePose.FACE_DOWN.rotationDegrees,
-                ),
-                AnimationStep.SetInvisible(true),
-                AnimationStep.Teleport(finalPlacement.x, finalPlacement.y, finalPlacement.z, finalPlacement.yaw),
-                AnimationStep.Custom(endPose),
-                AnimationStep.WaitUntil(snapGapEndGameTime),
-                AnimationStep.SetInvisible(false),
-                AnimationStep.PlayMotion(
+                    startPoseRotationDegrees = fromPose.rotationDegrees,
+                    endPoseRotationDegrees = fromPose.rotationDegrees,
+                )
+                steps += AnimationStep.SetInvisible(true)
+                steps += AnimationStep.Teleport(to.x, to.y, to.z, to.yaw)
+                steps += AnimationStep.Custom(toPose)
+                steps += AnimationStep.WaitUntil(
+                    startGameTime + MahjongTileTableLayout.DRAW_LIFT_DURATION_TICKS + MahjongTileTableLayout.DRAW_SNAP_GAP_TICKS,
+                )
+                steps += AnimationStep.SetInvisible(false)
+                steps += AnimationStep.PlayMotion(
                     durationTicks = MahjongTileTableLayout.DRAW_DROP_DURATION_TICKS,
                     arcHeight = 0.0,
                     startOffsetX = 0.0,
-                    startOffsetY = peakY - finalPlacement.y,
+                    startOffsetY = peakY - to.y,
                     startOffsetZ = 0.0,
-                    startPoseRotationDegrees = endPose.rotationDegrees,
-                    endPoseRotationDegrees = endPose.rotationDegrees,
-                ),
-                drawnTileLandingSound(snapGapEndGameTime + MahjongTileTableLayout.DRAW_DROP_DURATION_TICKS),
-            ),
-        )
-    }
-
-    /**
-     * 捨牌動畫：一次連續可見的拋物線飛行，從手牌現在的實際位置直接飛到牌河位置，不像摸牌／發牌動畫
-     * 那樣中途隱形傳送——理由見 [MahjongTileTableLayout.DISCARD_ARC_HEIGHT] KDoc。姿態
-     * （[MahjongTilePose.STANDING] 轉 [MahjongTilePose.FACE_UP]）跟位移用同一段動畫連續內插。側身旋轉
-     * 不連續內插——[finalPlacement] 的 yaw 本身已經是算好的最終朝向，起飛那一刻就以最終朝向飛過去。
-     *
-     * @param tile 要飛往牌河位置的牌 entity。
-     * @param finalPlacement 牌河中的最終座標與朝向。
-     */
-    fun scheduleDiscardFlight(tile: MahjongTileEntity, finalPlacement: MahjongTileWallPlacement) {
-        val startX = tile.x
-        val startY = tile.y
-        val startZ = tile.z
-        tile.enqueueAll(
-            listOf(
-                AnimationStep.Teleport(finalPlacement.x, finalPlacement.y, finalPlacement.z, finalPlacement.yaw),
-                AnimationStep.Custom(MahjongTilePose.FACE_UP),
-                AnimationStep.PlayMotion(
-                    durationTicks = MahjongTileTableLayout.DISCARD_FLIGHT_DURATION_TICKS,
-                    arcHeight = MahjongTileTableLayout.DISCARD_ARC_HEIGHT,
-                    startOffsetX = startX - finalPlacement.x,
-                    startOffsetY = startY - finalPlacement.y,
-                    startOffsetZ = startZ - finalPlacement.z,
-                    startPoseRotationDegrees = MahjongTilePose.STANDING.rotationDegrees,
-                    endPoseRotationDegrees = MahjongTilePose.FACE_UP.rotationDegrees,
-                ),
-                discardLandingSound(tile.world.time + MahjongTileTableLayout.DISCARD_FLIGHT_DURATION_TICKS),
-            ),
-        )
-        val landingTime = tile.world.time + MahjongTileTableLayout.DISCARD_FLIGHT_DURATION_TICKS
-        tile.showActionPopup(TileActionPopupKind.DISCARD, landingTime, landingTime + ACTION_POPUP_DURATION_TICKS)
-    }
-
-    /**
-     * 鳴牌/槓牌動畫：一次連續可見的拋物線飛行，從這張牌現在的實際位置直接飛到副露區最終格位，起始
-     * 姿態改讀 entity 自己目前的 [MahjongTileEntity.tilePose]，不是寫死 [MahjongTilePose.STANDING]：
-     * 吃/碰/明槓被鳴取的那張、暗槓全部牌都來自手牌或牌河，姿態各不相同，這個函式同時服務所有情況，
-     * 起訖姿態相同時就不會多插入一個沒有效果的 [AnimationStep.Custom]。側身旋轉（被鳴取的那張若落在
-     * 側身格）跟捨牌動畫同一個既有簡化：[finalPlacement] 的 yaw 本身已經是算好的最終朝向，起飛那一刻
-     * 就用最終 yaw 傳送，不連續內插旋轉角。
-     *
-     * @param tile 要移入副露區的牌 entity。
-     * @param finalPlacement 副露區的最終座標與朝向。
-     * @param endPose 動畫結束後使用的牌姿態。
-     * @param playLandingSound 是否播放副露落桌聲。
-     */
-    fun scheduleMeldClaim(
-        tile: MahjongTileEntity,
-        finalPlacement: MahjongTileWallPlacement,
-        endPose: MahjongTilePose,
-        playLandingSound: Boolean = false,
-    ) {
-        val startX = tile.x
-        val startY = tile.y
-        val startZ = tile.z
-        val startPose = tile.tilePose
-        val steps = mutableListOf<AnimationStep<MahjongTilePose>>()
-        steps += AnimationStep.Teleport(finalPlacement.x, finalPlacement.y, finalPlacement.z, finalPlacement.yaw)
-        if (startPose != endPose) steps += AnimationStep.Custom(endPose)
-        steps += AnimationStep.PlayMotion(
-            durationTicks = MahjongTileTableLayout.DISCARD_FLIGHT_DURATION_TICKS,
-            arcHeight = MahjongTileTableLayout.DISCARD_ARC_HEIGHT,
-            startOffsetX = startX - finalPlacement.x,
-            startOffsetY = startY - finalPlacement.y,
-            startOffsetZ = startZ - finalPlacement.z,
-            startPoseRotationDegrees = startPose.rotationDegrees,
-            endPoseRotationDegrees = endPose.rotationDegrees,
-        )
-        if (playLandingSound) {
-            steps += meldLandingSound(tile.world.time + MahjongTileTableLayout.DISCARD_FLIGHT_DURATION_TICKS)
+                    startPoseRotationDegrees = toPose.rotationDegrees,
+                    endPoseRotationDegrees = toPose.rotationDegrees,
+                )
+            }
+            TileMotionKind.FLIGHT, TileMotionKind.SLIDE, TileMotionKind.ARC -> {
+                val origin = checkNotNull(from)
+                steps += AnimationStep.Teleport(to.x, to.y, to.z, to.yaw)
+                steps += AnimationStep.Custom(toPose)
+                steps += AnimationStep.PlayMotion(
+                    durationTicks = TableStepMotionPlanner.durationTicks(motion.kind),
+                    arcHeight = when (motion.kind) {
+                        TileMotionKind.FLIGHT -> MahjongTileTableLayout.DISCARD_ARC_HEIGHT
+                        TileMotionKind.ARC -> MahjongTileTableLayout.ROW_ARC_HEIGHT
+                        else -> 0.0
+                    },
+                    startOffsetX = origin.x - to.x,
+                    startOffsetY = origin.y - to.y,
+                    startOffsetZ = origin.z - to.z,
+                    startPoseRotationDegrees = fromPose.rotationDegrees,
+                    endPoseRotationDegrees = toPose.rotationDegrees,
+                    liftCarryLower = motion.kind == TileMotionKind.ARC,
+                    leanDegrees = if (motion.kind == TileMotionKind.ARC && toPose == MahjongTilePose.STANDING) {
+                        MahjongTileTableLayout.ROW_ARC_LEAN_DEGREES
+                    } else {
+                        0.0f
+                    },
+                )
+            }
+            TileMotionKind.TURN -> {
+                steps += AnimationStep.Custom(toPose)
+                steps += AnimationStep.PlayMotion(
+                    durationTicks = TableStepMotionPlanner.durationTicks(motion.kind),
+                    arcHeight = 0.0,
+                    startOffsetX = 0.0,
+                    startOffsetY = 0.0,
+                    startOffsetZ = 0.0,
+                    startPoseRotationDegrees = fromPose.rotationDegrees,
+                    endPoseRotationDegrees = toPose.rotationDegrees,
+                )
+            }
         }
+        if (playLandingSound) landingSound(motion, endGameTime)?.let(steps::add)
         tile.enqueueAll(steps)
     }
 
     /**
-     * 已擺在桌上的牌從目前位置平移到 [finalPlacement]，沒有拋物線，姿態改為 [pose]。
+     * 依動作與目的區域選擇落地聲；同一排內的平移、弧線、翻面與直接擺放沒有落地聲。
      *
-     * 同一次重新擺放的牌使用相同的 [durationTicks] 一起開始、一起結束，彼此的間隔只會平順地變化，移動途中不會互相穿過。
-     *
-     * @param tile 要平移的牌 entity。
-     * @param finalPlacement 新的座標與朝向。
-     * @param pose 平移後的牌姿態。
-     * @param durationTicks 平移時長。
+     * @param motion 規劃好的動作。
+     * @param gameTime 落地的絕對遊戲 tick。
+     * @return 落地聲；不需要時為 null。
      */
-    fun scheduleSlide(
-        tile: MahjongTileEntity,
-        finalPlacement: MahjongTileWallPlacement,
-        pose: MahjongTilePose,
-        durationTicks: Int,
-    ) {
-        val startPose = tile.tilePose
-        val steps = mutableListOf<AnimationStep<MahjongTilePose>>(
-            AnimationStep.Teleport(finalPlacement.x, finalPlacement.y, finalPlacement.z, finalPlacement.yaw),
-        )
-        if (startPose != pose) steps += AnimationStep.Custom(pose)
-        steps += AnimationStep.PlayMotion(
-            durationTicks = durationTicks,
-            arcHeight = 0.0,
-            startOffsetX = tile.x - finalPlacement.x,
-            startOffsetY = tile.y - finalPlacement.y,
-            startOffsetZ = tile.z - finalPlacement.z,
-            startPoseRotationDegrees = startPose.rotationDegrees,
-            endPoseRotationDegrees = pose.rotationDegrees,
-        )
-        tile.enqueueAll(steps)
+    private fun landingSound(motion: PlannedTileMotion, gameTime: Long): AnimationStep.PlaySound? = when (motion.kind) {
+        TileMotionKind.DRAW -> drawnTileLandingSound(gameTime)
+        TileMotionKind.FLIGHT -> if (motion.toRow.region == TileRegion.DISCARD) discardLandingSound(gameTime) else meldLandingSound(gameTime)
+        TileMotionKind.PLACE, TileMotionKind.SLIDE, TileMotionKind.ARC, TileMotionKind.TURN -> null
     }
 
-    /**
-     * 等到 [startGameTime] 才從當時的位置平移到 [finalPlacement]，沒有拋物線，姿態改為 [pose]。
-     *
-     * 呼叫時牌必須已經靜止，起點使用 entity 目前的位置；用於依序呈現的牌區變化，讓立牌等這位玩家輪到時才重新排列。
-     *
-     * @param tile 要平移的牌 entity。
-     * @param finalPlacement 新的座標與朝向。
-     * @param pose 平移後的牌姿態。
-     * @param durationTicks 平移時長。
-     * @param startGameTime 開始平移的遊戲時間。
-     */
-    fun scheduleSlideAt(
-        tile: MahjongTileEntity,
-        finalPlacement: MahjongTileWallPlacement,
-        pose: MahjongTilePose,
-        durationTicks: Int,
-        startGameTime: Long,
-    ) {
-        tile.enqueueAll(listOf(AnimationStep.WaitUntil(startGameTime)))
-        scheduleSlide(tile, finalPlacement, pose, durationTicks)
-    }
-
-    /**
-     * 摸牌後自動移出的動畫：等到 [startGameTime]，這張牌從摸牌位以可見的拋物線飛到移出區最終格位。
-     *
-     * 呼叫時這張牌通常還在牌牆上，摸牌動畫已先排入同一個動畫佇列，因此起點直接使用摸牌位 [from]，
-     * 不讀 entity 目前的位置。
-     *
-     * @param tile 要移出的牌 entity。
-     * @param from 摸牌位的座標與朝向。
-     * @param finalPlacement 移出區的最終座標與朝向。
-     * @param endPose 落地後使用的牌姿態。
-     * @param startGameTime 開始飛行的遊戲時間。
-     */
-    fun scheduleSetAsideFromDrawnSlot(
-        tile: MahjongTileEntity,
-        from: MahjongTileWallPlacement,
-        finalPlacement: MahjongTileWallPlacement,
-        endPose: MahjongTilePose,
-        startGameTime: Long,
-    ) {
-        tile.enqueueAll(
-            listOf(
-                AnimationStep.WaitUntil(startGameTime),
-                AnimationStep.Teleport(finalPlacement.x, finalPlacement.y, finalPlacement.z, finalPlacement.yaw),
-                AnimationStep.Custom(endPose),
-                AnimationStep.PlayMotion(
-                    durationTicks = MahjongTileTableLayout.DISCARD_FLIGHT_DURATION_TICKS,
-                    arcHeight = MahjongTileTableLayout.DISCARD_ARC_HEIGHT,
-                    startOffsetX = from.x - finalPlacement.x,
-                    startOffsetY = from.y - finalPlacement.y,
-                    startOffsetZ = from.z - finalPlacement.z,
-                    startPoseRotationDegrees = MahjongTilePose.STANDING.rotationDegrees,
-                    endPoseRotationDegrees = endPose.rotationDegrees,
-                ),
-                meldLandingSound(startGameTime + MahjongTileTableLayout.DISCARD_FLIGHT_DURATION_TICKS),
-            ),
-        )
+    /** 把共用的牌姿態轉成實體使用的姿態。 */
+    private fun TilePose.toTilePose(): MahjongTilePose = when (this) {
+        TilePose.UPRIGHT -> MahjongTilePose.STANDING
+        TilePose.FACE_UP -> MahjongTilePose.FACE_UP
+        TilePose.FACE_DOWN -> MahjongTilePose.FACE_DOWN
     }
 
     /** 捨牌與鳴牌落地牌面提示的總顯示時間。 */
@@ -493,7 +389,7 @@ internal object TileAnimationSteps {
         )
     }
 
-    /** 開局發牌動畫起飛階段的相對高度，理由同 `FabricMahjongTileWallPresenter.WALL_DROP_HEIGHT`——起始估算值。 */
+    /** 開局發牌動畫起飛階段的相對高度，比照 `FabricMahjongTileWallPresenter.WALL_DROP_HEIGHT`。 */
     private const val DEAL_LIFT_HEIGHT: Double = 0.4
 
     /**

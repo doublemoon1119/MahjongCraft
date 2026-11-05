@@ -2,8 +2,9 @@ package com.doublemoon1119.mahjongcraft.flow.server.game.usecase
 
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryEventDraft
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.AppliedActionScoring
-import com.doublemoon1119.mahjongcraft.flow.common.game.model.DrawFollowUpPresentationStep
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameAbortReasonIds
+import com.doublemoon1119.mahjongcraft.flow.common.game.service.TableStep
+import com.doublemoon1119.mahjongcraft.flow.common.game.service.TableStepEvent
 import com.doublemoon1119.mahjongcraft.flow.server.game.history.acceptedActionHistoryDraft
 import com.doublemoon1119.mahjongcraft.flow.server.game.history.actionScoredHistoryDraft
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.RuleContractViolationException
@@ -141,36 +142,43 @@ internal object DrawFollowUpApplier {
             }
         }
 
-        /** 依序交給平台呈現的步驟；暫停在搶和視窗時，最後一步只有移出、沒有補牌。 */
-        val presentationSteps: List<DrawFollowUpPresentationStep>
-            get() = steps.map { step ->
-                DrawFollowUpPresentationStep(
-                    action = step.action,
-                    setAsideTileId = step.setAsideTile.id,
-                    drawnTileIds = step.applied.drawnTiles.map { it.id },
-                    physicalWallTransitionPhases = step.applied.physicalWallTransitionPhases,
-                    scoring = step.applied.scoring,
+        /**
+         * 摸牌之後依序呈現的步驟：從 [drawnState] 開始，每一步的移出（含收付）與補牌各一步，最後是這串處理的結果。
+         * 暫停在搶和視窗時，最後一步是牌已移出、尚未補牌的候選桌況。
+         *
+         * @param playerId 摸牌的玩家。
+         * @param drawnState 摸牌之後、自動處理之前的桌況。
+         * @param drawEvents 摸牌那一步發生的事，例如槓或移出手牌之後的補牌沒有額外事件時為空清單。
+         * @return 依序排列的步驟。
+         */
+        fun tableSteps(playerId: Uuid, drawnState: TableState, drawEvents: List<TableStepEvent> = emptyList()): List<TableStep> {
+            val result = mutableListOf(TableStep(drawnState, drawEvents))
+            steps.forEach { step ->
+                result += TableStep(
+                    step.applied.declaredState,
+                    listOfNotNull(
+                        TableStepEvent.ActionDeclared(playerId, step.action),
+                        step.applied.scoring?.let(TableStepEvent::ActionScored),
+                    ),
                 )
-            } + listOfNotNull(
-                (ending as? Ending.RobbingWindowOpened)?.let { pending ->
-                    DrawFollowUpPresentationStep(
-                        action = pending.action,
-                        setAsideTileId = pending.setAsideTile.id,
-                        drawnTileIds = emptyList(),
-                        physicalWallTransitionPhases = emptyList(),
-                        scoring = null,
-                    )
-                },
-                (ending as? Ending.RuleDecisionRequired)?.let { pending ->
-                    DrawFollowUpPresentationStep(
-                        action = pending.action,
-                        setAsideTileId = pending.setAsideTile.id,
-                        drawnTileIds = emptyList(),
-                        physicalWallTransitionPhases = emptyList(),
-                        scoring = pending.scoring,
-                    )
-                },
-            )
+                result += TableStep(
+                    step.applied.tableState,
+                    listOfNotNull(step.applied.physicalWallTransitionPhases.takeIf { it.isNotEmpty() }?.let(TableStepEvent::WallRearranged)),
+                )
+            }
+            when (val end = ending) {
+                is Ending.RobbingWindowOpened -> result += TableStep(
+                    end.declaredState ?: tableState,
+                    listOf(TableStepEvent.ActionDeclared(playerId, end.action)),
+                )
+                is Ending.RuleDecisionRequired -> result += TableStep(
+                    tableState,
+                    listOfNotNull(TableStepEvent.ActionDeclared(playerId, end.action), end.scoring?.let(TableStepEvent::ActionScored)),
+                )
+                Ending.PlayerTurn, is Ending.RoundEnded -> if (result.last().tableState != tableState) result += TableStep(tableState, emptyList())
+            }
+            return result
+        }
     }
 
     /**

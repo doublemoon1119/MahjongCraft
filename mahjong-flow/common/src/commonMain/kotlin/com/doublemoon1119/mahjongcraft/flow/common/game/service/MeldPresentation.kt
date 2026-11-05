@@ -6,7 +6,7 @@ import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
 import kotlin.uuid.Uuid
 
 /**
- * 供 [GamePresentationPublisher.publishPlayerTilesUpdated] 使用的單一副露資料。
+ * 呈現用的單一副露資料，例如胡牌結算列出贏家的副露。
  *
  * 只帶擺放副露需要的資訊（種類、牌 ID、鳴取的牌與來源方位、逐牌朝向），不帶 [Meld] 的牌面；牌面由各玩家的可見性快照決定。
  *

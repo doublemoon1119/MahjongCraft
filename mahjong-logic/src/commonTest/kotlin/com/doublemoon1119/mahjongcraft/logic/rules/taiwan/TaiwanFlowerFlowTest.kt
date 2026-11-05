@@ -7,6 +7,7 @@ import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.tile.TaiwanTileTypes
 import com.doublemoon1119.mahjongcraft.logic.table.PlayerTileAreas
 import com.doublemoon1119.mahjongcraft.logic.table.TileReplacementRounds
 import com.doublemoon1119.mahjongcraft.logic.table.TileWall
+import com.doublemoon1119.mahjongcraft.logic.table.TurnPhase
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeIdentifiedTileFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
@@ -14,6 +15,7 @@ import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
+import kotlin.uuid.Uuid
 
 /** 局前與途中補花、尾牌及特殊花胡續跑測試。 */
 class TaiwanFlowerFlowTest {
@@ -75,14 +77,14 @@ class TaiwanFlowerFlowTest {
         assertEquals(thirdReplacement, result.tableState.players[1].hand.lastDrawn)
         assertEquals(
             listOf(
-                TileReplacementRounds.Step.SetAside(dealer, listOf(firstFlower, secondFlower)),
-                TileReplacementRounds.Step.Replaced(dealer, listOf(firstReplacement, secondReplacement)),
-                TileReplacementRounds.Step.SetAside(next, listOf(nextPlayerFlower)),
-                TileReplacementRounds.Step.Replaced(next, listOf(thirdReplacement)),
-                TileReplacementRounds.Step.SetAside(dealer, listOf(firstReplacement)),
-                TileReplacementRounds.Step.Replaced(dealer, listOf(fourthReplacement)),
+                setAside(dealer, listOf(firstFlower, secondFlower)),
+                replaced(dealer, listOf(firstReplacement, secondReplacement)),
+                setAside(next, listOf(nextPlayerFlower)),
+                replaced(next, listOf(thirdReplacement)),
+                setAside(dealer, listOf(firstReplacement)),
+                replaced(dealer, listOf(fourthReplacement)),
             ),
-            result.steps,
+            result.steps.map { it.summary() },
         )
     }
 
@@ -126,7 +128,7 @@ class TaiwanFlowerFlowTest {
         assertEquals(replacement, result.tableState.players[1].hand.lastDrawn)
         assertEquals(7, result.tableState.players[0].tileAreas[TaiwanPlayerTileAreaIds.FLOWERS]?.tiles?.size)
         assertEquals(1, result.tableState.players[1].tileAreas[TaiwanPlayerTileAreaIds.FLOWERS]?.tiles?.size)
-        assertEquals(listOf(TileReplacementRounds.Step.Replaced(table.players[1].id, listOf(replacement))), result.steps)
+        assertEquals(listOf(replaced(table.players[1].id, listOf(replacement))), result.steps.map { it.summary() })
     }
 
     /** 七花玩家接受時被搶的花留在亮花者花區、不另外補牌，只有亮花者付款。 */
@@ -186,6 +188,7 @@ class TaiwanFlowerFlowTest {
         config = TaiwanRuleConfig(),
         tileWall = TileWall(liveTiles),
         reservedWallTiles = reservedTiles,
+        turnPhase = TurnPhase.AwaitingAction,
     )
 
     /** 依固定索引建立一張花牌。 */
@@ -196,4 +199,13 @@ class TaiwanFlowerFlowTest {
 
     /** 建立一張指定牌面的牌。 */
     private fun ordinary(tile: Tile): IdentifiedTile = FakeIdentifiedTileFactory.create(tile)
+
+    /** 只比較步驟的種類、玩家與牌，不比較每一步的桌況。 */
+    private fun TileReplacementRounds.Step.summary(): Triple<String, Uuid, List<IdentifiedTile>> = Triple(if (this is TileReplacementRounds.Step.SetAside) "set-aside" else "replaced", playerId, tiles)
+
+    /** 移出步驟的摘要。 */
+    private fun setAside(playerId: Uuid, tiles: List<IdentifiedTile>) = Triple("set-aside", playerId, tiles)
+
+    /** 補牌步驟的摘要。 */
+    private fun replaced(playerId: Uuid, tiles: List<IdentifiedTile>) = Triple("replaced", playerId, tiles)
 }

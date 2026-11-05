@@ -2,6 +2,7 @@ package com.doublemoon1119.mahjongcraft.flow.server.game.usecase
 
 import com.doublemoon1119.mahjongcraft.extension.MahjongExtension
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryFact
+import com.doublemoon1119.mahjongcraft.flow.common.game.service.TableStepEvent
 import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
 import com.doublemoon1119.mahjongcraft.flow.network.dto.api.registration.NetworkDtoRegistrars
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.api.registration.PersistenceRegistrars
@@ -80,7 +81,6 @@ class DeclareAndDiscardUseCaseTest {
      * @param malicious 是否要求規則把對局組件當成玩家組件交回。
      * @param cost 本次宣告需支付的點數。
      * @param rejectWallReveal 是否讓宣告後的牌牆公開檢查拒絕。
-     * @param mustDiscardAfterMeld 是否模擬剛完成自訂鳴牌、等待捨牌的玩家。
      * @param revealWallTile 是否讓宣告後的牌牆公開檢查公開一張牌山牌。
      * @param tsumoAvailable 宣告者是否同時可以自摸。
      * @param hookMode 放棄自摸與打牌後掛勾的測試行為；null 時不覆寫這兩個掛勾。
@@ -91,7 +91,6 @@ class DeclareAndDiscardUseCaseTest {
         malicious: Boolean = false,
         cost: Int = 0,
         rejectWallReveal: Boolean = false,
-        mustDiscardAfterMeld: Boolean = false,
         revealWallTile: Boolean = false,
         tsumoAvailable: Boolean = false,
         hookMode: HookMode? = null,
@@ -115,7 +114,7 @@ class DeclareAndDiscardUseCaseTest {
             id = playerId,
             hand = Hand(lastDrawn = tile),
             discardPile = RiichiDiscardPile(),
-        ).copy(score = 100, mustDiscardAfterMeld = mustDiscardAfterMeld)
+        ).copy(score = 100)
 
         /** 保有對局組件的宣告前桌況。 */
         val table: TableState = FakeTableStateFactory.create(
@@ -212,9 +211,9 @@ class DeclareAndDiscardUseCaseTest {
         assertEquals(updated.actionHistory, actions)
         assertEquals(actions, fixture.eventPublisher.getNotifiedActions(fixture.gameId, fixture.playerId, fixture.playerId))
         assertNotNull(fixture.snapshots.getSnapshot(fixture.gameId, fixture.playerId))
-        assertEquals(1, fixture.presentationPublisher.getRuleStateUpdateCount(fixture.gameId))
-        assertNotNull(fixture.presentationPublisher.getPublishedPlayerTiles(fixture.gameId))
-        assertNotNull(fixture.presentationPublisher.getPublishedRoundInfo(fixture.gameId))
+        val step = fixture.presentationPublisher.getPublishedTableStepBatches(fixture.gameId).single().single()
+        assertEquals(fixture.repository.getTableState(fixture.gameId), step.tableState)
+        assertEquals(listOf<TableStepEvent>(TableStepEvent.ActionDeclared(fixture.playerId, GameAction.Extension(DeclarationAction))), step.events)
         assertEquals(listOf(WallRevealCheckpoint.AFTER_DISCARD_REACTIONS), fixture.wallRevealCheckpoints)
     }
 
@@ -240,23 +239,6 @@ class DeclareAndDiscardUseCaseTest {
         assertTrue(fixture.presentationPublisher.getDeclaredGameActions(fixture.gameId).isEmpty())
     }
 
-    /** 宣告後的捨牌會清除自訂鳴牌留下的必須直接捨牌狀態。 */
-    @Test
-    fun `declaration discard clears must discard after meld`() = runTest {
-        val fixture = Fixture(mustDiscardAfterMeld = true)
-        fixture.repository.setTableState(fixture.table)
-
-        val result = fixture.useCase(
-            gameId = fixture.gameId,
-            playerId = fixture.playerId,
-            action = Extension(DeclarationAction),
-            tileId = fixture.tile.id,
-        )
-
-        assertIs<Outcome.Success<Unit>>(result)
-        assertEquals(false, fixture.repository.getTableState(fixture.gameId)!!.players.single().mustDiscardAfterMeld)
-    }
-
     /** 宣告後的牌牆公開檢查公開新牌時，與一般捨牌一樣通知桌面呈現。 */
     @Test
     fun `wall tiles revealed after the declaration discard are published`() = runTest {
@@ -273,8 +255,9 @@ class DeclareAndDiscardUseCaseTest {
         assertIs<Outcome.Success<Unit>>(result)
         assertEquals(
             setOf(fixture.table.tileWall.getAllTiles().first().id),
-            fixture.presentationPublisher.getPublishedDeadWallReveal(fixture.gameId),
+            fixture.repository.getTableState(fixture.gameId)!!.publicTileEvidenceIds - fixture.table.publicTileEvidenceIds - fixture.tile.id,
         )
+        assertEquals(fixture.repository.getTableState(fixture.gameId), fixture.presentationPublisher.getLastPresentedTableState(fixture.gameId))
     }
 
     /** 宣告附帶的捨牌與一般捨牌相同：先套用放棄自摸與打牌後的規則掛勾，再套用宣告效果。 */

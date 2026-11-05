@@ -3,10 +3,8 @@ package com.doublemoon1119.mahjongcraft.platform.minecraft.stick
 /**
  * 麻將點棒世界呈現共用尺寸常數。
  *
- * 沿用重構前 main 分支 `mahjong_scoring_stick_base.json`／`MahjongScoringStickEntity` 已經過實際遊戲
- * 呈現驗證的初始比例（16×0.5×2.5 模型單位、`0.4` runtime 縮放），供 Fabric-only 的
- * `MahjongScoringStickEntity` 與純 Kotlin
- * common 座標計算共用同一組數值，避免兩處各自定義後跑掉。
+ * 點棒的模型是 16×0.5×2.5 模型單位、runtime 縮放 `0.4`。Fabric 的 `MahjongScoringStickEntity` 與 common 的
+ * 座標計算共用同一組數值，避免兩處各自定義而不一致。
  */
 object MahjongScoringStickDimensions {
     /** 點棒世界縮放係數。 */

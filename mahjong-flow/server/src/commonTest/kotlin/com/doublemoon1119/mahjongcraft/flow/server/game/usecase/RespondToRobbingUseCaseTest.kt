@@ -3,6 +3,7 @@ package com.doublemoon1119.mahjongcraft.flow.server.game.usecase
 import com.doublemoon1119.mahjongcraft.bundled.BundledRiichiExtension
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryFact
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameError
+import com.doublemoon1119.mahjongcraft.flow.common.game.service.TableStepEvent
 import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
 import com.doublemoon1119.mahjongcraft.flow.server.game.policy.GameVisibilityPolicyImpl
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.FakeGameRepository
@@ -22,9 +23,12 @@ import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPlayerComponents
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.table.PendingRobbingReaction
+import com.doublemoon1119.mahjongcraft.logic.table.RoundConclusion
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.logic.table.TileWall
+import com.doublemoon1119.mahjongcraft.logic.table.TurnPhase
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
+import com.doublemoon1119.mahjongcraft.logic.tile.component.TileRegion
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledCoreExtensionRegistries
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledWinCelebrationCueResolverRegistry
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.registerBundledRuleModules
@@ -36,6 +40,7 @@ import com.doublemoon1119.mahjongcraft.testing.logic.rules.riichi.riichiDeclarat
 import com.doublemoon1119.mahjongcraft.testing.logic.rules.riichi.riichiTableComponents
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
+import com.doublemoon1119.mahjongcraft.testing.logic.table.tileRegion
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -202,6 +207,7 @@ class RespondToRobbingUseCaseTest {
         assertTrue(result is Outcome.Success, "Expected Success but got $result")
         val newState = fixtures.gameRepo.getTableState(gameId)!!
         assertNull(newState.pendingRobbingReaction)
+        assertEquals(TurnPhase.RoundOver(RoundConclusion.Win(setOf(robberId))), newState.turnPhase)
 
         val winner = newState.players.first { it.id == robberId }
         assertTrue(winner.score > 0, "Winner should have gained points.")
@@ -217,11 +223,10 @@ class RespondToRobbingUseCaseTest {
             fixtures.eventPublisher.getNotifiedActions(gameId, declarerId, robberId),
             "Only the Ron response should be broadcast; no rinshan draw happened.",
         )
-        assertNull(
-            fixtures.presentationPublisher.getPublishedPlayerTiles(gameId),
-            "Robbing the kan is a Ron, not a completed kan — no rinshan tile was drawn, so nothing should be presented as drawn.",
-        )
-        assertNull(fixtures.presentationPublisher.getPublishedRoundInfo(gameId))
+        // 搶槓成立只宣告和牌，槓沒有成立，也沒有補牌。
+        val ronStep = fixtures.presentationPublisher.getPublishedTableStepBatches(gameId).single().single()
+        assertEquals(listOf<TableStepEvent>(TableStepEvent.ActionDeclared(robberId, GameAction.Ron(robbedWhiteTile.id))), ronStep.events)
+        assertEquals(TileRegion.DRAWN, ronStep.tableState.tileRegion(robbedWhiteTile.id))
         val settled = fixtures.gameRepo.historyDrafts.map { it.fact }.filterIsInstance<HistoryFact.WinSettled>().single()
         assertEquals(setOf(robberId), settled.winDetails.map { it.playerId }.toSet())
 
@@ -250,8 +255,10 @@ class RespondToRobbingUseCaseTest {
                     initialSeat = Wind.WEST,
                     hand = robberHand(),
                 ),
-                pendingRobbingReaction = requireNotNull(base.pendingRobbingReaction).copy(
-                    eligiblePlayerIds = setOf(robberId, otherEligibleId),
+                turnPhase = TurnPhase.AwaitingRobbingReaction(
+                    requireNotNull(base.pendingRobbingReaction).copy(
+                        eligiblePlayerIds = setOf(robberId, otherEligibleId),
+                    ),
                 ),
             ),
         )
@@ -291,23 +298,19 @@ class RespondToRobbingUseCaseTest {
         assertEquals(setOf(whiteTile1, whiteTile2, whiteTile3, robbedWhiteTile), meld.tiles.toSet())
         assertEquals(rinshanTile, declarer.hand.lastDrawn)
         assertEquals(listOf(kanAction, GameAction.Draw), declarer.actionHistory.takeLast(2))
-        assertEquals(
-            newState,
-            fixtures.presentationPublisher.getPublishedRoundInfo(gameId),
-            "Passing the robbing-kan window should refresh round information after the supplemental draw completes.",
-        )
+        assertEquals(TurnPhase.AwaitingAction, newState.turnPhase)
 
         assertEquals(
             listOf(GameAction.Draw),
             fixtures.eventPublisher.getNotifiedActions(gameId, robberId, declarerId),
         )
-        assertEquals(
-            rinshanTile.id,
-            fixtures.presentationPublisher.getPublishedPlayerTiles(gameId)?.drawnTileId,
-            "The rinshan tile drawn once the kan actually goes through should be presented as a drawn tile.",
-        )
-        assertTrue(fixtures.presentationPublisher.getPublishedPlayerTiles(gameId)?.newlyClaimedMeldTileIds.orEmpty().isEmpty())
-        assertTrue(fixtures.presentationPublisher.getPublishedPlayerTiles(gameId)?.isNewlyDrawn == true)
+        // 加槓在開啟視窗時已經呈現，這裡接續加槓成立與補牌，不再宣告一次。
+        val (declared, drawn) = fixtures.presentationPublisher.getPublishedTableStepBatches(gameId).single()
+        assertTrue(declared.events.none { it is TableStepEvent.ActionDeclared })
+        assertEquals(TileRegion.MELD, declared.tableState.tileRegion(robbedWhiteTile.id))
+        assertEquals(TileRegion.RESERVED, declared.tableState.tileRegion(rinshanTile.id))
+        assertEquals(newState, drawn.tableState)
+        assertEquals(TileRegion.DRAWN, drawn.tableState.tileRegion(rinshanTile.id))
         assertTrue(
             fixtures.presentationPublisher.getPublishedWinCelebrations(gameId).isEmpty(),
             "A completed kan (not robbed) should never trigger a win celebration.",
@@ -316,9 +319,7 @@ class RespondToRobbingUseCaseTest {
             fixtures.winPresentationHandoff.take(gameId, setOf(robberId)),
             "A completed kan (not robbed) should never stage a win presentation either.",
         )
-        val publishedTransitions = fixtures.presentationPublisher.getPublishedWallLayoutTransitions(gameId)
-        assertEquals(1, publishedTransitions.size)
-        publishedTransitions.single().flatMap { it.moves }.forEach { move ->
+        drawn.events.filterIsInstance<TableStepEvent.WallRearranged>().single().phases.flatMap { it.moves }.forEach { move ->
             assertEquals(newState.physicalWallLayout?.placements?.get(move.tileId), move.destination)
         }
     }
@@ -340,8 +341,7 @@ class RespondToRobbingUseCaseTest {
         val unchangedDeclarer = unchangedState.players.first { it.id == declarerId }
         assertEquals(MeldType.PON, unchangedDeclarer.hand.melds.single().type, "The meld should not be applied.")
         assertEquals(robbedWhiteTile, unchangedDeclarer.hand.lastDrawn)
-        assertTrue(fixtures.presentationPublisher.getPublishedWallLayoutTransitions(gameId).isEmpty())
-        assertNull(fixtures.presentationPublisher.getPublishedRoundInfo(gameId))
+        assertTrue(fixtures.presentationPublisher.getPublishedTableStepBatches(gameId).isEmpty())
     }
 
     /**
@@ -393,7 +393,7 @@ class RespondToRobbingUseCaseTest {
     @Test
     fun `test respond fails when there is no pending chankan`() = runTest {
         val fixtures = Fixtures()
-        val table = setUpTable().copy(pendingRobbingReaction = null)
+        val table = setUpTable().copy(turnPhase = TurnPhase.AwaitingAction)
         fixtures.gameRepo.setTableState(table)
 
         val result = fixtures.useCase(gameId, robberId, GameAction.Pass)

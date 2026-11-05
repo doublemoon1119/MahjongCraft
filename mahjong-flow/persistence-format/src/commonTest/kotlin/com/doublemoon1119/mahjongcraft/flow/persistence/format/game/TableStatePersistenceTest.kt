@@ -8,6 +8,7 @@ import com.doublemoon1119.mahjongcraft.logic.module.RevealedHandSettlement
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RIICHI_GAME_ACTION
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDiscardComponents
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDiscardPile
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiExhaustiveDrawReason
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPendingKanDoraReveal
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiWallProgress
@@ -16,8 +17,10 @@ import com.doublemoon1119.mahjongcraft.logic.table.DiscardPile.DiscardEntry
 import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayer
 import com.doublemoon1119.mahjongcraft.logic.table.PendingReaction
 import com.doublemoon1119.mahjongcraft.logic.table.PendingRobbingReaction
+import com.doublemoon1119.mahjongcraft.logic.table.RoundConclusion
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.logic.table.TileWall
+import com.doublemoon1119.mahjongcraft.logic.table.TurnPhase
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPhysicalLayout
 import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPlacement
@@ -72,6 +75,36 @@ class TableStatePersistenceTest {
         )
     }
 
+    /** 驗證沒有附帶資料的回合階段都能原樣保存。 */
+    @Test
+    fun `turn phases without reactions round-trip in complete game state`() {
+        val state = createTableState()
+        val withoutDrawn = state.copy(
+            players = state.players.map { it.copy(hand = it.hand.copy(lastDrawn = null)) },
+            turnPhase = TurnPhase.AwaitingDraw,
+        )
+
+        assertEncodedRoundTrip(withoutDrawn)
+        assertEncodedRoundTrip(withoutDrawn.copy(turnPhase = TurnPhase.AwaitingDiscard))
+        assertEncodedRoundTrip(state.copy(turnPhase = TurnPhase.AwaitingAction))
+    }
+
+    /** 驗證本局已結束時保留結束方式：贏家、荒牌流局的原因與聽牌玩家、途中流局的原因。 */
+    @Test
+    fun `round over conclusions round-trip in complete game state`() {
+        val state = createTableState()
+        val (human, ai) = state.players.map { it.id }
+
+        listOf(
+            RoundConclusion.Win(setOf(human, ai)),
+            RoundConclusion.ExhaustiveDraw(RiichiExhaustiveDrawReason.Normal, setOf(ai)),
+            RoundConclusion.ExhaustiveDraw(RiichiExhaustiveDrawReason.Normal, emptySet()),
+            RoundConclusion.AbortiveDraw(RiichiExhaustiveDrawReason.SuuchaRiichi),
+        ).forEach { conclusion ->
+            assertEncodedRoundTrip(state.copy(turnPhase = TurnPhase.RoundOver(conclusion)))
+        }
+    }
+
     /** 驗證等待捨牌反應時保留資格玩家與已提交回應。 */
     @Test
     fun `pending discard reaction round-trips in complete game state`() {
@@ -82,13 +115,15 @@ class TableStatePersistenceTest {
 
         assertEncodedRoundTrip(
             state.copy(
-                pendingReaction = PendingReaction(
-                    discarderId = discarderId,
-                    tileId = tileId,
-                    eligiblePlayerIds = setOf(responderId),
-                    responses = mapOf(responderId to GameAction.Pon(tileId, emptyList())),
-                    ronPlayerIds = setOf(responderId),
-                    id = Uuid.random(),
+                turnPhase = TurnPhase.AwaitingDiscardReaction(
+                    PendingReaction(
+                        discarderId = discarderId,
+                        tileId = tileId,
+                        eligiblePlayerIds = setOf(responderId),
+                        responses = mapOf(responderId to GameAction.Pon(tileId, emptyList())),
+                        ronPlayerIds = setOf(responderId),
+                        id = Uuid.random(),
+                    ),
                 ),
             ),
         )
@@ -109,12 +144,14 @@ class TableStatePersistenceTest {
 
         assertEncodedRoundTrip(
             state.copy(
-                pendingRobbingReaction = PendingRobbingReaction(
-                    declarerId = declarerId,
-                    declaredAction = kanAction,
-                    robbedTile = robbedTile,
-                    eligiblePlayerIds = setOf(responderId),
-                    responses = mapOf(responderId to GameAction.Pass),
+                turnPhase = TurnPhase.AwaitingRobbingReaction(
+                    PendingRobbingReaction(
+                        declarerId = declarerId,
+                        declaredAction = kanAction,
+                        robbedTile = robbedTile,
+                        eligiblePlayerIds = setOf(responderId),
+                        responses = mapOf(responderId to GameAction.Pass),
+                    ),
                 ),
             ),
         )
@@ -251,6 +288,7 @@ class TableStatePersistenceTest {
                     ),
                 ),
             ),
+            turnPhase = TurnPhase.AwaitingDraw,
         )
     }
 
@@ -269,6 +307,7 @@ class TableStatePersistenceTest {
         assertEquals(state.tileWall.getAllTiles(), restored.tileWall.getAllTiles())
         assertEquals(state.pendingReaction, restored.pendingReaction)
         assertEquals(state.pendingRobbingReaction, restored.pendingRobbingReaction)
+        assertEquals(state.turnPhase, restored.turnPhase)
     }
 
     /** 使用所有內建 registry 將 [TableState] 轉換成 persistence DTO。 */
