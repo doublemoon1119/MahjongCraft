@@ -206,7 +206,7 @@ class MahjongDiceEntity(
      * [DiceRollAnimationSpec.EXTRA_VIEWING_TICKS] 觀看緩衝）就自我 [discard]，直接用
      * [AnimatedMahjongEntity.isAnimating]（佇列是否還有東西）判斷，不需要另外自己計算「該存在多久」。
      *
-     * 骰子立刻生成，「等牌牆掉落動畫播完」這段等待是佇列最前面的 `AnimationStep.Wait` step（見
+     * 骰子立刻生成，「等牌牆掉落動畫播完」這段等待是佇列最前面的 `AnimationStep.WaitUntil` step（見
      * [startRoll]），所以生成時間點不等於動畫開始播放的時間點；不能從生成那一刻起算固定 tick 數，否則
      * 等待會被算進存在時間，動畫（含尾端觀看緩衝）還沒播完就消失。以佇列是否還有東西判斷沒有這個落差，
      * 也沿用佇列跨世界重新載入的持久化，不必另外處理重新載入時一次補跑大量 tick 的情況。

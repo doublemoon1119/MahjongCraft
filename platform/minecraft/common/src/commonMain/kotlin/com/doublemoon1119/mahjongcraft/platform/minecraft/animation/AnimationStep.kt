@@ -71,8 +71,7 @@ sealed interface AnimationStep<out C> {
     }
 
     /**
-     * 播放一段既有的運動動畫（起飛／落下等視覺位移，對應各平台既有 `startMotionAnimation` 的參數
-     * 語意）：真實座標不受影響，只驅動 render 端的位移／姿態內插；[durationTicks] 到期前這個 step
+     * 播放一段既有的運動動畫（起飛／落下等視覺位移）：真實座標不受影響，只驅動 render 端的位移／姿態內插；[durationTicks] 到期前這個 step
      * 會讓佇列停在原地，不處理後續 step。
      *
      * [easeRotation] 為 false 時姿態旋轉採線性內插；為 true 時採用與位移相同的漸慢曲線。

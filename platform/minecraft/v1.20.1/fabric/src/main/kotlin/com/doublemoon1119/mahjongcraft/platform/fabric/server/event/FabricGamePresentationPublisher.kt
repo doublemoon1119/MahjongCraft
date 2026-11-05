@@ -828,8 +828,7 @@ class FabricGamePresentationPublisher(
     private fun serverWorldOf(gameId: Uuid): ServerWorld? = tableLocationRegistry.get(gameId)?.location?.let(::resolveWorld)
 
     /**
-     * 委派給 [tileSelectionConfirmPresenter]，比照 [publishRoundInfoUpdated] 的「建 Presentation、丟給
-     * 專屬 presenter」分工——桌子被移除時的清除走 [FabricTableLifecycleService.onBlockReplaced] 直接呼叫
+     * 委派給 [tileSelectionConfirmPresenter]，採「建 Presentation、丟給專屬 presenter」的分工——桌子被移除時的清除走 [FabricTableLifecycleService.onBlockReplaced] 直接呼叫
      * 同一個 presenter 的 `clear()`，不經過這裡。
      */
     override fun publishTileSelectionStarted(gameId: Uuid, playerId: Uuid) {

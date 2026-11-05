@@ -389,7 +389,7 @@ internal object TileAnimationSteps {
         )
     }
 
-    /** 開局發牌動畫起飛階段的相對高度，理由同 `FabricMahjongTileWallPresenter.WALL_DROP_HEIGHT`——起始估算值。 */
+    /** 開局發牌動畫起飛階段的相對高度，比照 `FabricMahjongTileWallPresenter.WALL_DROP_HEIGHT`。 */
     private const val DEAL_LIFT_HEIGHT: Double = 0.4
 
     /**

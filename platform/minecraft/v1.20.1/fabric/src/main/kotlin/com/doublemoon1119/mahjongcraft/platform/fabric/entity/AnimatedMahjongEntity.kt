@@ -18,7 +18,7 @@ import net.minecraft.world.World
 /**
  * 動畫佇列共用的驅動基底：把動畫播放任務（含期間的等待）持久化掛在 entity 自己身上，透過既有的
  * `tick()` 自行繼續播放，而不是靠純記憶體的 JVM closure 串接多階段延遲——後者在 server 關閉時會遺失
- * 「接下來該做什麼」的資訊，這正是「動畫播放中離開世界，牌卡在半空」這個 bug 的根因。
+ * 「接下來該做什麼」的資訊，動畫播放中離開世界後，牌會卡在半空。
  *
  * 「這個 entity 是否正在播動畫」＝[isAnimating]＝「佇列是否還有東西」，不需要另外一個獨立旗標；
  * 子類別（[MahjongTileEntity]／[MahjongDiceEntity]）的 `tick()` 只需要呼叫 `super.tick()`，佇列的
@@ -199,8 +199,7 @@ abstract class AnimatedMahjongEntity<C>(
      * 追蹤這個 entity（最典型的情境：世界剛重新載入、佇列一恢復就立刻執行 `Teleport`，幾乎與新玩家
      * 開始追蹤同時發生），該 client 會先透過 spawn packet 拿到正確座標，但下一次基準追上時算出的
      * 「相對位移」會疊加在這個已經正確的座標上，讓畫面（含 hitbox）永久停在一個偏移過的錯誤位置，
-     * 直到重新連線重新收到一次 spawn packet 為止——這正是「動畫播放中重進世界，牌偶爾卡在半空」這個
-     * 已修 bug 修好後，仍會極少數重現的殘留幽靈 entity 問題的根因。
+     * 直到重新連線重新收到一次 spawn packet 為止，看起來就像牌卡在半空。
      *
      * 延遲（[TRACKER_RESYNC_DELAY_TICKS]，需大於 entity type 註冊的 `trackedUpdateRate`）是為了確保
      * `EntityTrackerEntry` 自己的基準已經追上這次 `Teleport` 之後，再主動廣播一次完整定位封包

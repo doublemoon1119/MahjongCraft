@@ -243,7 +243,7 @@ class RiichiLegalActionValidatorFuritenTest {
 
     /**
      * 測試立直後永久振聽：即使 `passedTilesInRound` 已經被清空（模擬下一次摸牌後的狀態）、且這張進來
-     * 的牌也不在牌河裡（單靠既有的 [ComponentSet.getFuritenTiles] 判斷不會視為振聽），只要
+     * 的牌也不在牌河裡（單靠牌河與同巡見逃的牌（`MahjongPlayer.riichiFuritenTiles`）判斷不會視為振聽），只要
      * 玩家的永久振聽組件已成立，該局就應該一路不能榮和。
      */
     @Test

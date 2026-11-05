@@ -386,7 +386,7 @@ class StartGameUseCaseTest {
     /**
      * 驗證開局呈現初次發牌動畫時，每個座位都帶上完整的最終手牌，且批次大小依日麻規則模組固定為
      * `[4, 4, 4, 1]`（總和等於 13 張初始手牌）——確認 [StartGameUseCase] 真的呼叫
-     * `publishInitialDeal`（而不是逐座位呼叫 `publishPlayerTilesUpdated`）。
+     * `publishInitialDeal`（而不是用一般的 `publishTableSteps` 呈現開局手牌）。
      */
     @Test
     fun `test start game publishes initial deal animation with batched hands`() = runTest {

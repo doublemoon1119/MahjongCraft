@@ -54,8 +54,8 @@ class FabricMahjongPlayerAreaPresenter(
      *    倒下播完、再等 [MahjongTileTableLayout.WIN_PRE_HAND_LAYDOWN_DELAY_TICKS]；榮和／搶槓省略自摸牌
      *    那一步，直接在整理到位及短暫停頓後等待同一個常數。
      *
-     * 找不到對應 UUID 的既有 entity 時該筆直接跳過並記警告 log，不中斷其餘牌的呈現，比照 [present]
-     * 既有的 best-effort 慣例；[MahjongWinCelebrationPresentation.winningTileId] 找不到既有 entity 時，
+     * 找不到對應 UUID 的既有 entity 時該筆直接跳過並記警告 log，不中斷其餘牌的呈現，比照
+     * [presentInitialDeal] 的 best-effort 慣例；[MahjongWinCelebrationPresentation.winningTileId] 找不到既有 entity 時，
      * 沒有任何一張牌可以當作降臨特效的目標，[MahjongWinCelebrationResult.handLaydownEndGameTime] 回傳
      * `null`，呼叫端不應接續排定特效。
      *
@@ -195,12 +195,12 @@ class FabricMahjongPlayerAreaPresenter(
      * 餵給 [MahjongTileTableLayout.dealBatchStartDelayTicks]，讓每一次抓取（不論哪個座位）都完整
      * 播完才輪到下一次，理由同 [MahjongPlayerAreaPresenter.presentInitialDeal] KDoc。
      * 批次內每張牌各自的世界起點就是牌牆生成時留下的既有位置（不重新查詢牌山結構座標，直接讀 entity
-     * 目前的實際座標），批次終點是 [MahjongTileTableLayout.handPlacement] 算出的最終手牌格位——跟
-     * [present] 一樣不建立新 entity，也一樣把 [MahjongInitialDealPresentation.handTileIdsBySeatIndex]
-     * 各座位清單內的順序（時間軸，非畫面左右順序）反過來對應 `tileIndex`，見 [present] KDoc。
+     * 目前的實際座標），批次終點是 [MahjongTileTableLayout.handPlacement] 算出的最終手牌格位——不建立新 entity；
+     * [MahjongInitialDealPresentation.handTileIdsBySeatIndex] 各座位清單內的順序是加入手牌的時間軸，不是畫面左右順序，
+     * 反過來對應 `tileIndex`。
      *
      * 全部座位的最後一次抓取都落地後，額外統一排定一次翻牌動畫——所有
-     * 已成功領走的牌（不論哪一批、哪個座位）同一時間一起原地翻起，觸發時機由
+     * 已成功領走的牌（不論哪一批、哪個座位）先趁牌背朝上瞬間換到整理後的格位，再同一時間一起原地翻起，觸發時機由
      * [MahjongTileTableLayout.dealFlipStartDelayTicks] 依總抓取次數算出。
      *
      * @param presentation 莊家、各座位發牌批次與最終手牌順序。

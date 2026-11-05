@@ -335,7 +335,7 @@ class MahjongTileEntity(
      *
      * 這是崩潰恢復的安全網，補足「某條清除路徑忘記清 3D entity」這類漏洞（已知一例：
      * `FabricTableLocationValidationService.cleanupMissing`），不是取代既有的明確清除呼叫
-     * （`MahjongTileWallPresenter.clear()`／`MahjongHandTilesPresenter.clear()` 等）——那些呼叫仍是
+     * （`MahjongTileWallPresenter.clear()`／`MahjongPlayerAreaPresenter.clear()` 等）——那些呼叫仍是
      * 正常流程下的清除方式，這裡只在「不知道為什麼漏清了」的情況下才會真的觸發。
      *
      * 只查「這個 tableId 是否還有對局」，不逐一比對這張牌的 UUID 是否還在牌牆／手牌／牌河／副露的
@@ -517,7 +517,7 @@ class MahjongTileEntity(
 
     /**
      * 從世界存檔還原牌面、姿態、管理狀態與動畫佇列，非法值使用安全預設。動畫佇列一併還原
-     * （[readAnimationQueueFromNbt]）是修正「動畫播放中離開世界，牌卡在半空」這個 bug 的關鍵——佇列裡
+     * （[readAnimationQueueFromNbt]），動畫播放中離開世界時牌才不會卡在半空——佇列裡
      * 還沒播完的 step 會在世界重新載入、entity 開始被 tick 之後自動接續播放，不需要另外觸發。
      */
     override fun readCustomDataFromNbt(nbt: NbtCompound) {

@@ -161,7 +161,7 @@ class MahjongTileEntityRenderer(
             consumers = consumers,
         )
         if (highlighted) {
-            // 遊戲內驗證時發現單層光暈疊圖不夠明顯，額外疊一次「只有光暈、不含正常牌面」的
+            // 單層光暈疊圖不夠明顯，額外疊一次「只有光暈、不含正常牌面」的
             // pass，讓同一個模型的光暈幾何再疊加一次（GLINT_TRANSPARENCY 是相加混合，疊兩次亮度會
             // 明顯提升），比單純換 solid 參數（改變的是光暈貼圖本身的縮放／滾動速度，不是強度）更
             // 直接有效，且不影響正常牌面只畫一次、不會有額外的不透明面覆寫。
@@ -514,9 +514,9 @@ class MahjongTileEntityRenderer(
      * 額外要求這張牌目前姿態不是 [MahjongTilePose.FACE_DOWN]、且沒有動畫正在播放中
      * （`!entity.animating`）——伺服器端一算出手牌內容就會同步進快照，這張牌實際被玩家摸到、翻開之前
      * entity 在畫面上都還蓋牌躺在牌山／發牌動畫途中，如果單純依快照是否解析出牌面就顯示光暈，玩家會在
-     * 開局發牌動畫翻牌之前就先看到寶牌發光，等於還沒翻牌就洩漏是不是寶牌——這是遊戲內實際發現的問題。
-     * 開局發牌動畫翻牌（`FabricMahjongPlayerAreaPresenter.scheduleDealFlipAnimation`）／未來摸牌動畫
-     * 播完後 `tilePose` 會變成 [MahjongTilePose.STANDING] 且 `animating` 歸零，光暈才會顯示；副露／牌河
+     * 開局發牌動畫翻牌之前就先看到寶牌發光，等於還沒翻牌就洩漏是不是寶牌。
+     * 開局發牌動畫翻牌（`TileAnimationSteps.scheduleDealBatch`）／摸牌動畫播完後 `tilePose` 會變成
+     * [MahjongTilePose.STANDING] 且 `animating` 歸零，光暈才會顯示；副露／牌河
      * 攤開的 [MahjongTilePose.FACE_UP] 牌不受影響，本來就該一貫顯示光暈。
      */
     private fun MahjongTileEntity.isHighlighted(): Boolean {

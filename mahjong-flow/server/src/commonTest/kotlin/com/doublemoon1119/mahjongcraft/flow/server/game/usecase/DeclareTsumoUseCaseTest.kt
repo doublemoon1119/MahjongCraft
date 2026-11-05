@@ -382,7 +382,7 @@ class DeclareTsumoUseCaseTest {
     }
 
     /**
-     * 驗證自摸成功後把胡牌演出寫進 `Game.pendingWinPresentation` 交接槽（而不是直接發布），帶上正確的
+     * 驗證自摸成功後把胡牌演出寫進 `WinPresentationHandoff` 交接點（而不是直接發布），帶上正確的
      * 贏家座位、胡牌張 Uuid，且 `isTsumo` 為 `true`。
      *
      * 刻意不直接發布：本局是否就此結束要等 `ResolveWinRoundContinuationUseCase` 詢問過規則模組才知道，
