@@ -155,6 +155,9 @@ class TaiwanRuleModule(
     /** 宣告聽牌後公開標示宣告的種類。 */
     override fun getPublicPlayerIndicators(tableState: TableState, player: MahjongPlayer): List<PublicPlayerIndicator> = player.components[TaiwanPlayerComponents.READY_DECLARATION]?.let { listOf(PublicPlayerIndicator(it.indicatorId)) }.orEmpty()
 
+    /** 建立與正式結算共用計台與付款計算的台灣麻將規則查詢。 */
+    override fun createPositionRules(): TaiwanPositionRules = TaiwanPositionRules(config)
+
     /** 建立台灣麻將的台數計算器。 */
     override fun createHandValueCalculator(): TaiwanHandValueCalculator = TaiwanHandValueCalculator(config)
 

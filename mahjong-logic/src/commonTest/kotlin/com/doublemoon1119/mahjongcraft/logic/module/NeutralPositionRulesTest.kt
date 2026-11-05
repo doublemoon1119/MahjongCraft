@@ -8,6 +8,7 @@ import com.doublemoon1119.mahjongcraft.logic.base.TileValue
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPositionRules
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleModule
+import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanPositionRules
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanRuleModule
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
@@ -20,7 +21,6 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
 import kotlin.test.assertNull
-import kotlin.test.assertSame
 
 /** 驗證沒有規則知識的規則查詢不回報任何規則事實，以及規則模組如何提供規則查詢。 */
 class NeutralPositionRulesTest {
@@ -55,10 +55,10 @@ class NeutralPositionRulesTest {
         assertNull(NeutralPositionRules.declarationTile(view, opponent.id))
     }
 
-    /** 沒有專屬規則查詢的規則使用規則中立的查詢，日麻使用自己的查詢。 */
+    /** 內建規則都提供自己的規則查詢。 */
     @Test
-    fun `rule modules provide their own position rules or the neutral one`() {
-        assertSame(NeutralPositionRules, TaiwanRuleModule(BuiltInRuleModuleIds.TAIWAN, TaiwanRuleConfig()).createPositionRules())
+    fun `built-in rule modules provide their own position rules`() {
+        assertIs<TaiwanPositionRules>(TaiwanRuleModule(BuiltInRuleModuleIds.TAIWAN, TaiwanRuleConfig()).createPositionRules())
         assertIs<RiichiPositionRules>(RiichiRuleModule(BuiltInRuleModuleIds.RIICHI, RiichiRuleConfig()).createPositionRules())
     }
 

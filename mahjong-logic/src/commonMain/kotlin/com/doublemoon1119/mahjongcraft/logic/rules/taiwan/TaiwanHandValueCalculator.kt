@@ -132,12 +132,8 @@ class TaiwanHandValueCalculator(private val config: TaiwanRuleConfig) : HandValu
             if (winds[context.roundWind.ordinal] in triplets) add(TaiwanTaiType.ROUND_WIND)
         }
         if (!littleDragons && !bigDragons) add(TaiwanTaiType.DRAGON, dragonCount)
-        val flowers = context.flowers.filterIsInstance<Tile.Extension>().map { it.typeId }.toSet()
-        val seasons = listOf(TaiwanTileTypes.SPRING, TaiwanTileTypes.SUMMER, TaiwanTileTypes.AUTUMN, TaiwanTileTypes.WINTER)
-        val plants = listOf(TaiwanTileTypes.PLUM, TaiwanTileTypes.ORCHID, TaiwanTileTypes.CHRYSANTHEMUM, TaiwanTileTypes.BAMBOO)
-        val seat = context.seatWind.ordinal
-        add(TaiwanTaiType.SEAT_FLOWER, listOf(seasons[seat], plants[seat]).count { it in flowers })
-        add(TaiwanTaiType.FLOWER_SET, listOf(seasons, plants).count { flowers.containsAll(it) })
+        add(TaiwanTaiType.SEAT_FLOWER, TaiwanFlowerTai.seatFlowerCount(context.flowers, context.seatWind))
+        add(TaiwanTaiType.FLOWER_SET, TaiwanFlowerTai.completeSetCount(context.flowers))
         val winningGroup = decomposition.winningGroupIndex?.let(decomposition.groups::get)
         val singleShape = when (winningGroup) {
             null -> true
@@ -158,7 +154,7 @@ class TaiwanHandValueCalculator(private val config: TaiwanRuleConfig) : HandValu
         val allSequences = decomposition.groups.all { it is StandardHandGroup.Sequence } && exposed.all { it.type == MeldType.CHI }
         if (allSequences &&
             allFaces.all { it is Tile.Numeric } &&
-            flowers.isEmpty() &&
+            context.flowers.isEmpty() &&
             !context.isTsumo &&
             winningGroup is StandardHandGroup.Sequence &&
             !singleShape

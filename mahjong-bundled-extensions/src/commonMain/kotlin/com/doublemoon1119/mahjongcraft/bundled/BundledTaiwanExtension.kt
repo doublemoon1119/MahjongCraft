@@ -2,21 +2,28 @@ package com.doublemoon1119.mahjongcraft.bundled
 
 import com.doublemoon1119.mahjongcraft.ai.ExtensionGameActionAiDefinition
 import com.doublemoon1119.mahjongcraft.ai.api.registration.ExtensionGameActionAiRegistrar
+import com.doublemoon1119.mahjongcraft.ai.api.registration.OpponentModelRegistrar
+import com.doublemoon1119.mahjongcraft.ai.expectation.OpponentModelDefinition
+import com.doublemoon1119.mahjongcraft.ai.taiwan.TaiwanOpponentModel
 import com.doublemoon1119.mahjongcraft.ai.taiwan.TaiwanReadyDeclarationAiHandler
 import com.doublemoon1119.mahjongcraft.extension.MahjongExtension
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameError
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.taiwan.TaiwanDeclareReadyCommand
 import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
 import com.doublemoon1119.mahjongcraft.flow.network.dto.api.registration.NetworkDtoRegistrars
+import com.doublemoon1119.mahjongcraft.flow.network.dto.component.ComponentViewNetworkDefinition
 import com.doublemoon1119.mahjongcraft.flow.network.dto.registry.DtoDefinition
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.riichi.toDomain
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.taiwan.TaiwanDeclareReadyCommandDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.taiwan.TaiwanExhaustiveDrawReasonDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.taiwan.TaiwanGameActionDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.taiwan.TaiwanGameLengthDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.taiwan.TaiwanPassedWinViewDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.taiwan.TaiwanReadyDeclarationViewDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.taiwan.TaiwanRuleConfigDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.taiwan.TaiwanScoreConfigDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.taiwan.toDomain
+import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.taiwan.toDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.taiwan.toTaiwanDto
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.api.registration.PersistenceRegistrars
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.component.ComponentPersistenceDefinition
@@ -55,6 +62,7 @@ import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanDiscardPile
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanExhaustiveDrawReason
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanGameAction
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanGameLength
+import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanPlayerComponentViews
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanPlayerComponents
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanRuleModule
@@ -90,6 +98,14 @@ object BundledTaiwanExtension : MahjongExtension {
 
     override fun registerGameActionAiHandlers(registry: ExtensionGameActionAiRegistrar) {
         registry.register(ExtensionGameActionAiDefinition(TaiwanGameAction.DeclareReady::class, TaiwanReadyDeclarationAiHandler))
+    }
+
+    override fun registerOpponentModels(registry: OpponentModelRegistrar) {
+        registry.register(
+            definition = OpponentModelDefinition(BuiltInRuleModuleIds.TAIWAN) { module, depth ->
+                TaiwanOpponentModel(scoreConfig = (module.config as TaiwanRuleConfig).scoreConfig, readingDepth = depth)
+            },
+        )
     }
 
     override fun registerGameActionCommandFactories(registry: ExtensionGameActionCommandFactoryRegistrar) {
@@ -135,6 +151,24 @@ object BundledTaiwanExtension : MahjongExtension {
     }
 
     override fun registerNetworkDtos(registries: NetworkDtoRegistrars) {
+        registries.componentViews.register(
+            ComponentViewNetworkDefinition(
+                viewType = TaiwanPlayerComponentViews.READY_DECLARATION,
+                dtoClass = TaiwanReadyDeclarationViewDto::class,
+                serializer = TaiwanReadyDeclarationViewDto.serializer(),
+                toDto = { it.toDto() },
+                toValue = { it.toDomain() },
+            ),
+        )
+        registries.componentViews.register(
+            ComponentViewNetworkDefinition(
+                viewType = TaiwanPlayerComponentViews.PASSED_WIN,
+                dtoClass = TaiwanPassedWinViewDto::class,
+                serializer = TaiwanPassedWinViewDto.serializer(),
+                toDto = { TaiwanPassedWinViewDto },
+                toValue = {},
+            ),
+        )
         registries.extensionGameAction.register(
             definition = DtoDefinition(
                 domainClass = TaiwanGameAction.RevealFlower::class,

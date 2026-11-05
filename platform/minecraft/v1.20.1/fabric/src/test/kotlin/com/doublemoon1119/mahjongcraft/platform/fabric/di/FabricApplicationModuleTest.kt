@@ -386,7 +386,7 @@ class FabricApplicationModuleTest {
         assertTrue(tileLabelRegistry.isFrozen)
         assertTrue(gameActionAiRegistry.isRegistered(RiichiGameAction.Riichi::class))
         assertTrue(gameActionAiRegistry.isRegistered(RiichiGameAction.PullNorth::class))
-        assertEquals(setOf(BuiltInRuleModuleIds.RIICHI, BuiltInRuleModuleIds.RIICHI_THREE_PLAYER), opponentModelRegistry.registrationKeys)
+        assertEquals(setOf(BuiltInRuleModuleIds.RIICHI, BuiltInRuleModuleIds.RIICHI_THREE_PLAYER, BuiltInRuleModuleIds.TAIWAN), opponentModelRegistry.registrationKeys)
         assertEquals(listOf(null, "mahjongcraft:riichi", "mahjongcraft:taiwan"), result.sources.map { it.extensionId })
         assertTrue(result.sources[0].categories.none { it.id == "mahjongcraft:rule_module" }, "Rule modules must come from their bundled extensions")
         assertTrue(result.sources[0].categories.any { it.id == "mahjongcraft:ai_strategy" })
