@@ -1,6 +1,7 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.scenario
 
 import com.doublemoon1119.mahjongcraft.logic.module.BuiltInAutomaticControlIds
+import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledCoreExtensionRegistries
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -23,7 +24,7 @@ class DebugScenarioAutomaticControlsTest {
         val scenario = registry.get("mahjongcraft:automatic_auto_win_tsumo")!!
 
         val loaded = scenario
-            .build(DebugGameScenarioContext(currentGame, playerId))
+            .build(DebugGameScenarioContext(currentGame, playerId, bundledCoreExtensionRegistries().componentRegistry))
             .continueAutomaticControls(currentGame)
 
         assertEquals(mapOf(playerId to enabled), loaded.game.enabledAutomaticControlIdsByPlayerId)
@@ -38,7 +39,7 @@ class DebugScenarioAutomaticControlsTest {
         val scenario = registry.get("mahjongcraft:automatic_tsumogiri_plain_draw")!!
 
         val loaded = scenario
-            .build(DebugGameScenarioContext(currentGame, context.invokingPlayerId))
+            .build(DebugGameScenarioContext(currentGame, context.invokingPlayerId, bundledCoreExtensionRegistries().componentRegistry))
             .continueAutomaticControls(currentGame)
 
         assertTrue(loaded.game.enabledAutomaticControlIdsByPlayerId.isEmpty())
@@ -52,7 +53,7 @@ class DebugScenarioAutomaticControlsTest {
         val currentGame = context.currentGame.copy(automaticControlRevision = 7L)
         val scenario = registry.get("mahjongcraft:automatic_auto_win_ron")!!
 
-        val built = scenario.build(DebugGameScenarioContext(currentGame, context.invokingPlayerId))
+        val built = scenario.build(DebugGameScenarioContext(currentGame, context.invokingPlayerId, bundledCoreExtensionRegistries().componentRegistry))
 
         assertEquals(0L, built.game.automaticControlRevision)
     }

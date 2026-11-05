@@ -15,6 +15,7 @@ import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleModule
 import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayer
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
+import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledCoreExtensionRegistries
 import com.doublemoon1119.mahjongcraft.testing.logic.rules.riichi.riichiDeclarationComponents
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
@@ -128,7 +129,7 @@ class RiichiBeforePaoPonScenarioTest {
         val game = Game(tableState = FakeTableStateFactory.create(players = players, config = config), flowConfig = GameFlowConfig())
         val scenario = RiichiDebugGameScenarios.all.single { it.id == "mahjongcraft:riichi_before_pao_pon" }
 
-        val state = scenario.build(DebugGameScenarioContext(game, players[invokingSeat].id)).game.tableState
+        val state = scenario.build(DebugGameScenarioContext(game, players[invokingSeat].id, bundledCoreExtensionRegistries().componentRegistry)).game.tableState
 
         return state to state.players[invokingSeat]
     }

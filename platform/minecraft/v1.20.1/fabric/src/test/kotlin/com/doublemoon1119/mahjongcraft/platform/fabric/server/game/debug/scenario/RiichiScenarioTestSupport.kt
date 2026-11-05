@@ -21,6 +21,7 @@ import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayer
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.DebugMahjongExtension
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.presentation.DebugWinRoundContinuationState
+import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledCoreExtensionRegistries
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.registerBundledRuleModules
 import kotlin.uuid.Uuid
 
@@ -89,7 +90,7 @@ private fun createScenarioContext(
         roomPlayerIds = playerIds,
         aiPlayerStrategyKeys = playerIds.drop(1).take(aiOpponentCount).associateWith { "mahjongcraft:random" },
     )
-    return DebugGameScenarioContext(game, playerIds.first())
+    return DebugGameScenarioContext(game, playerIds.first(), bundledCoreExtensionRegistries().componentRegistry)
 }
 
 /**

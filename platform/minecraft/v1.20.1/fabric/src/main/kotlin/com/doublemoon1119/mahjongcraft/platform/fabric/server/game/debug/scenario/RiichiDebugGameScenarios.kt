@@ -28,7 +28,6 @@ import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiWallProgress
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.threeplayer.ThreePlayerRiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.threeplayer.ThreePlayerRiichiRuleModule
 import com.doublemoon1119.mahjongcraft.logic.table.DiscardPile.DiscardEntry
-import com.doublemoon1119.mahjongcraft.logic.table.GameInitializer
 import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayer
 import com.doublemoon1119.mahjongcraft.logic.table.MatchRoundPosition
 import com.doublemoon1119.mahjongcraft.logic.table.PendingReaction
@@ -325,12 +324,7 @@ private object RiichiWallOpeningScenario : DebugGameScenario {
     override fun build(context: DebugGameScenarioContext): DebugGameScenarioResult {
         val currentGame = context.currentGame
         val module = riichiFamilyScenarioModule(currentGame)
-        val playerIds = currentGame.tableState.players.map { player -> player.id }
-        val initialization = GameInitializer.initialize(
-            id = currentGame.id,
-            playerIds = playerIds,
-            module = module,
-        )
+        val initialization = formalFirstRoundKeepingSeats(context, module)
         val dealtState = initialization.tableState
         val dealOrderHandTileIdsBySeatIndex = dealtState.players.withIndex().associate { (seatIndex, player) ->
             seatIndex to player.hand.tiles.map { tile -> tile.id }

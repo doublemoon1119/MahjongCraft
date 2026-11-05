@@ -67,6 +67,24 @@ class DebugGameScenarioTest {
         }
     }
 
+    /** 開局情境保留這一桌的座位順序與莊家，分數為規則初始分數，規則組件已初始化。 */
+    @Test
+    fun `test opening scenarios keep seats and dealer and initialize the round`() {
+        val registry = DebugGameScenarioRegistry()
+
+        INITIAL_ROUND_IDS.forEach { id ->
+            val context = createFixture().context
+            val before = context.currentGame.tableState
+            val state = registry.get(id)!!.build(context).game.tableState
+
+            assertEquals(before.players.map { it.id }, state.players.map { it.id }, id)
+            assertEquals(before.dealerPlayerId, state.dealerPlayerId, id)
+            assertTrue(state.players.all { it.score == state.config.scoreConfig.initialScore }, id)
+        }
+        val riichi = registry.get("mahjongcraft:riichi_wall_opening")!!.build(createFixture().context).game.tableState
+        assertEquals(0, riichi.riichiPotPoints())
+    }
+
     /** 所有內建情境都應沿用目前場次，讓場次層級的進度排除與歷史停止作用在同一場。 */
     @Test
     fun `test built in scenarios preserve the current match id`() {
@@ -415,7 +433,7 @@ class DebugGameScenarioTest {
             registerBundledRuleModules()
             freeze()
         }
-        val context = DebugGameScenarioContext(game, playerIds.first())
+        val context = DebugGameScenarioContext(game, playerIds.first(), bundledCoreExtensionRegistries().componentRegistry)
         return Fixture(context, moduleRegistry, DebugGameScenarioValidator(moduleRegistry))
     }
 

@@ -8,6 +8,7 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameSnapshotSync
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.BeginRuleDecisionUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.membership.repository.PlayerMembershipRepository
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateStore
+import com.doublemoon1119.mahjongcraft.logic.component.ComponentRegistry
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.event.GameEventExclusions
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.event.TablePresentationBusyTracker
@@ -42,6 +43,7 @@ import kotlin.uuid.Uuid
  * @property moduleRegistry 取得情境載入後使用的規則模組。
  * @property gameConfigPresentationRegistry 依情境載入後的規則整理流程設定，例如規則選擇時間。
  * @property beginRuleDecisionUseCase 完整開局情境呈現後開啟局首的規則選擇。
+ * @property componentRegistry 交給情境初始化規則組件。
  */
 class DebugGameScenarioLoader(
     private val minecraftEnvironment: MinecraftEnvironment,
@@ -59,6 +61,7 @@ class DebugGameScenarioLoader(
     private val moduleRegistry: MahjongModuleRegistry,
     private val gameConfigPresentationRegistry: GameConfigPresentationRegistry,
     private val beginRuleDecisionUseCase: BeginRuleDecisionUseCase,
+    private val componentRegistry: ComponentRegistry,
 ) {
     /**
      * 將情境套用到玩家目前所在的進行中遊戲。
@@ -108,7 +111,7 @@ class DebugGameScenarioLoader(
                 require(!currentGame.isMatchOver) { "The game has already ended" }
                 require(currentGame.pendingTransition == null) { "The game has a pending transition" }
                 exclusions.exclude(currentGame.matchId)
-                val context = DebugGameScenarioContext(currentGame, playerId)
+                val context = DebugGameScenarioContext(currentGame, playerId, componentRegistry)
                 val result = scenario.build(context).continueAutomaticControls(currentGame).withRuleFlowConfig()
                 validator.validate(context, result)
                 result.game to result

@@ -11,7 +11,6 @@ import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanPlayerTileAreaId
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanRuleModule
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.tile.TaiwanTileTypes
-import com.doublemoon1119.mahjongcraft.logic.table.GameInitializer
 import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayer
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.logic.table.TileWall
@@ -22,8 +21,8 @@ import kotlin.uuid.Uuid
  * 台灣麻將的驗收情境，四人桌適用。
  *
  * 所有情境都以正式初始化流程發牌，再交換指定牌張的牌面，讓花牌或指定的牌落在需要的位置；牌張識別碼、牌牆結構與
- * 實體座標都沿用正式初始化的結果。座位以這一桌目前的座位為準，莊家由正式初始化決定。載入後改用台灣麻將；這一桌原本
- * 是台灣麻將時沿用它的設定。
+ * 實體座標都沿用正式初始化的結果。座位與莊家沿用這一桌目前的座位與莊家。載入後改用台灣麻將；這一桌原本是台灣麻將時
+ * 沿用它的設定。
  */
 internal object TaiwanDebugGameScenarios {
     /** 所有台灣麻將驗收情境。 */
@@ -74,11 +73,7 @@ private class TaiwanOpeningScenario(
     override fun build(context: DebugGameScenarioContext): DebugGameScenarioResult {
         val currentGame = context.currentGame
         val module = taiwanScenarioModule(currentGame)
-        val initialization = GameInitializer.initialize(
-            id = currentGame.id,
-            playerIds = currentGame.tableState.players.map { it.id },
-            module = module,
-        )
+        val initialization = formalFirstRoundKeepingSeats(context, module)
         val dealt = initialization.tableState.withFaces(faces(initialization.tableState, initialization.tableState.seatOf(context.invokingPlayerId)))
         val dealOrderHandTileIdsBySeatIndex = dealt.players.withIndex().associate { (seatIndex, player) ->
             seatIndex to player.hand.tiles.map { tile -> tile.id }
@@ -115,11 +110,7 @@ private object TaiwanLastTileFlowerScenario : DebugGameScenario {
     override fun build(context: DebugGameScenarioContext): DebugGameScenarioResult {
         val currentGame = context.currentGame
         val module = taiwanScenarioModule(currentGame)
-        val initialization = GameInitializer.initialize(
-            id = currentGame.id,
-            playerIds = currentGame.tableState.players.map { it.id },
-            module = module,
-        )
+        val initialization = formalFirstRoundKeepingSeats(context, module)
         val initial = initialization.tableState.withInvokerToAct(context.invokingPlayerId)
         val liveTiles = initial.tileWall.getAllTiles()
         val lastLiveTile = liveTiles.first()
