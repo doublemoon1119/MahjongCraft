@@ -5,10 +5,10 @@ import com.doublemoon1119.mahjongcraft.logic.base.NamespacedId
 /** 保存 MahjongCraft 內建 development-only 權威對局情境的凍結式 registry。 */
 class DebugGameScenarioRegistry {
     /** 依 ID 排序的不可變情境索引。 */
-    private val scenariosById: Map<String, DebugGameScenario> = RiichiDebugGameScenarios.all
+    private val scenariosById: Map<String, DebugGameScenario> = ALL_SCENARIOS
         .onEach { scenario -> NamespacedId.requireValid(scenario.id) { "Invalid debug scenario ID: ${scenario.id}" } }
         .associateBy(DebugGameScenario::id)
-        .also { indexed -> require(indexed.size == RiichiDebugGameScenarios.all.size) { "Duplicate debug scenario ID" } }
+        .also { indexed -> require(indexed.size == ALL_SCENARIOS.size) { "Duplicate debug scenario ID" } }
         .toSortedMap()
 
     /**
@@ -26,3 +26,6 @@ class DebugGameScenarioRegistry {
      */
     fun getAll(): List<DebugGameScenario> = scenariosById.values.toList()
 }
+
+/** 依規則分組登記的全部情境。 */
+private val ALL_SCENARIOS: List<DebugGameScenario> = RiichiDebugGameScenarios.all + TaiwanDebugGameScenarios.all

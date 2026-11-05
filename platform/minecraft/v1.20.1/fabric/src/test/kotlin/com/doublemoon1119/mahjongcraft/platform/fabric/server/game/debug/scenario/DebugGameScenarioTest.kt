@@ -50,14 +50,15 @@ class DebugGameScenarioTest {
         assertEquals(null, registry.get("mahjongcraft:unknown"))
     }
 
-    /** 只有開門情境應攜帶完整初局呈現，其餘可操作牌局維持靜態同步。 */
+    /** 只有開局情境攜帶完整初局呈現，其餘可操作牌局維持靜態同步。 */
     @Test
-    fun `test only wall opening scenario provides initial round presentation`() {
+    fun `test only opening scenarios provide initial round presentation`() {
         val registry = DebugGameScenarioRegistry()
 
-        val opening = registry.get("mahjongcraft:riichi_wall_opening")!!.build(createFixture().context)
-        assertIs<DebugGameScenarioPresentation.InitialRound>(opening.presentation)
-        EXPECTED_IDS.filterNot { it == "mahjongcraft:riichi_wall_opening" }.forEach { id ->
+        INITIAL_ROUND_IDS.forEach { id ->
+            assertIs<DebugGameScenarioPresentation.InitialRound>(registry.get(id)!!.build(createFixture().context).presentation, id)
+        }
+        EXPECTED_IDS.filterNot { it in INITIAL_ROUND_IDS }.forEach { id ->
             assertEquals(
                 DebugGameScenarioPresentation.StaticWall,
                 registry.get(id)!!.build(contextFor(id)).presentation,
@@ -529,7 +530,21 @@ class DebugGameScenarioTest {
             "mahjongcraft:riichi_three_player_pull_north_with_melds",
             "mahjongcraft:riichi_three_player_rob_north",
             "mahjongcraft:riichi_wall_opening",
+            "mahjongcraft:taiwan_eight_flowers",
+            "mahjongcraft:taiwan_flower_replacement",
+            "mahjongcraft:taiwan_last_tile_flower",
+            "mahjongcraft:taiwan_ready_declaration",
+            "mahjongcraft:taiwan_seven_flowers",
             "mahjongcraft:winner_dealer_seat_rotation",
+        )
+
+        /** 以正式開局呈現的情境。 */
+        val INITIAL_ROUND_IDS: Set<String> = setOf(
+            "mahjongcraft:riichi_wall_opening",
+            "mahjongcraft:taiwan_eight_flowers",
+            "mahjongcraft:taiwan_flower_replacement",
+            "mahjongcraft:taiwan_ready_declaration",
+            "mahjongcraft:taiwan_seven_flowers",
         )
 
         /** 只能在三人日麻的桌子載入的情境。 */

@@ -1,9 +1,11 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.scenario
 
 import com.doublemoon1119.mahjongcraft.flow.common.concurrency.CoroutineDispatchers
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionTiming
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepository
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameDecisionAvailabilityService
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameSnapshotSynchronizer
+import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.BeginRuleDecisionUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.membership.repository.PlayerMembershipRepository
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateStore
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
@@ -22,6 +24,9 @@ import kotlin.uuid.Uuid
 /**
  * 驗證、原子替換並同步 development-only 權威對局情境；載入情境的場次不再產生進度、統計、事件掛勾與歷史紀錄。
  *
+ * 以完整開局呈現的情境（[DebugGameScenarioPresentation.InitialRound]）與正式開局相同，發牌呈現後開啟局首的規則選擇，
+ * 例如台灣麻將的補花。
+ *
  * @property minecraftEnvironment 判斷是否允許使用開發情境。
  * @property registry 查詢可載入的情境。
  * @property validator 驗證情境產生的權威狀態。
@@ -36,6 +41,7 @@ import kotlin.uuid.Uuid
  * @property dispatchers 提供平台呈現使用的執行緒。
  * @property moduleRegistry 取得情境載入後使用的規則模組。
  * @property gameConfigPresentationRegistry 依情境載入後的規則整理流程設定，例如規則選擇時間。
+ * @property beginRuleDecisionUseCase 完整開局情境呈現後開啟局首的規則選擇。
  */
 class DebugGameScenarioLoader(
     private val minecraftEnvironment: MinecraftEnvironment,
@@ -52,6 +58,7 @@ class DebugGameScenarioLoader(
     private val dispatchers: CoroutineDispatchers,
     private val moduleRegistry: MahjongModuleRegistry,
     private val gameConfigPresentationRegistry: GameConfigPresentationRegistry,
+    private val beginRuleDecisionUseCase: BeginRuleDecisionUseCase,
 ) {
     /**
      * 將情境套用到玩家目前所在的進行中遊戲。
@@ -115,6 +122,9 @@ class DebugGameScenarioLoader(
                 withContext(dispatchers.main) { presentationSynchronizer.synchronize(loaded) }
             }
             if (presentationCount > 1) awaitPresentationAvailable(tableId)
+            if (loaded.presentation is DebugGameScenarioPresentation.InitialRound) {
+                beginRuleDecisionUseCase(tableId, RuleDecisionTiming.ROUND_START)
+            }
         }.getOrElse { error ->
             return DebugGameScenarioLoadResult.Rejected(error.message ?: "Scenario presentation failed")
         }
