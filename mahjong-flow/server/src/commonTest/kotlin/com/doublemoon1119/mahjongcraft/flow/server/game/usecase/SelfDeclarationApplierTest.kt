@@ -59,7 +59,6 @@ class SelfDeclarationApplierTest {
         assertEquals(drawnTile, result.tableState.currentPlayer.hand.lastDrawn)
         assertEquals(listOf(remainingTile), result.tableState.tileWall.getAllTiles())
         assertEquals(listOf(reservedTile), result.tableState.reservedWallTiles)
-        assertEquals(emptyList(), result.wallRevealBatches)
     }
 
     /** 驗證 policy 遺失牌張或重複使用同一 UUID 時，Flow 不會留下半完成桌況。 */

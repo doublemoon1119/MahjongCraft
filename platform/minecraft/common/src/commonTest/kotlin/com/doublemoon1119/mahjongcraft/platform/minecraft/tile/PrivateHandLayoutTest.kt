@@ -131,7 +131,7 @@ class PrivateHandLayoutTest {
             releaseHand = false,
         )
         val endpoint = layout.update(
-            time = 5.0,
+            time = MahjongTileTableLayout.ROW_ARC_DURATION_TICKS.toDouble(),
             standingOrder = listOf(secondId, firstId),
             drawnId = null,
             inputs = inputs,
@@ -140,6 +140,63 @@ class PrivateHandLayoutTest {
 
         assertEquals(transform(1.0), endpoint.getValue(firstId))
         assertEquals(transform(0.0), endpoint.getValue(secondId))
+    }
+
+    /** 依本人順序換位時，越過另一張的牌從上方越過並往前進方向傾斜，另一張留在桌面高度平移。 */
+    @Test
+    fun `reorder arcs the crossing tile and slides the other`() {
+        val layout = PrivateHandLayout()
+        val inputs = transforms(firstId to transform(0.0), secondId to transform(1.0))
+        layout.update(time = 0.0, standingOrder = listOf(firstId, secondId), drawnId = null, inputs = inputs, releaseHand = false)
+        layout.update(time = 0.0, standingOrder = listOf(secondId, firstId), drawnId = null, inputs = inputs, releaseHand = false)
+
+        val middle = layout.update(time = 2.0, standingOrder = listOf(secondId, firstId), drawnId = null, inputs = inputs, releaseHand = false)
+
+        val heights = middle.mapValues { (_, transform) -> transform.position.y }
+        assertEquals(1, heights.values.count { it > 0.0 }, "Exactly one tile lifts over the other.")
+        assertEquals(1, heights.values.count { it == 0.0 }, "The other tile slides at table height.")
+        assertTrue(middle.values.any { it.lean.degrees != 0.0f }, "The lifted tile leans toward where it is going.")
+    }
+
+    /** 打出立牌中的牌後，本人手牌先停在原位，等共享的牌開始讓位才補位；摸到的牌以弧線插入並往前進方向傾斜。 */
+    @Test
+    fun `discarding waits for the shared hand to make room before inserting the drawn tile`() {
+        val layout = PrivateHandLayout()
+        val drawnId = Uuid.parse("00000000-0000-0000-0000-000000000004")
+        val before = transforms(firstId to transform(-1.0), secondId to transform(0.0), thirdId to transform(1.0), drawnId to transform(2.5))
+        val held = layout.update(time = 0.0, standingOrder = listOf(firstId, secondId, thirdId), drawnId = drawnId, inputs = before, releaseHand = false)
+        val discarded = transform(8.0).copy(poseDegrees = 90.0f)
+        // 打出第二張，摸到的牌在本人順序中插到第一張之後；共享的牌還沒開始讓位。
+        val stillFlying = transforms(firstId to transform(-1.0), secondId to discarded, thirdId to transform(1.0), drawnId to transform(2.5))
+        val order = listOf(firstId, drawnId, thirdId)
+
+        val waiting = layout.update(time = 1.0, standingOrder = order, drawnId = null, inputs = stillFlying, releaseHand = false)
+        val stillWaiting = layout.update(time = 4.0, standingOrder = order, drawnId = null, inputs = stillFlying, releaseHand = false)
+
+        assertEquals(held.getValue(firstId), waiting.getValue(firstId))
+        assertEquals(held.getValue(drawnId), stillWaiting.getValue(drawnId))
+        val madeRoom = transforms(firstId to transform(-1.0), secondId to discarded, thirdId to transform(0.0), drawnId to transform(1.0))
+        layout.update(time = 5.0, standingOrder = order, drawnId = null, inputs = madeRoom, releaseHand = false)
+        val inserting = layout.update(time = 8.0, standingOrder = order, drawnId = null, inputs = madeRoom, releaseHand = false)
+
+        assertTrue(inserting.getValue(drawnId).position.y > 0.0, "The drawn tile is carried over the hand.")
+        assertTrue(inserting.getValue(drawnId).lean.degrees != 0.0f, "The drawn tile leans toward its slot.")
+    }
+
+    /** 手牌第一次出現在立牌（例如發完牌翻起）後再理牌時，不是插入：維持前後順序的牌平移，不會整副原地提起。 */
+    @Test
+    fun `first appearance of the hand is not treated as an insertion`() {
+        val layout = PrivateHandLayout()
+        val inputs = transforms(firstId to transform(-1.0), secondId to transform(0.0), thirdId to transform(1.0))
+        layout.update(time = 0.0, standingOrder = listOf(firstId, secondId, thirdId), drawnId = null, inputs = inputs, releaseHand = false)
+        // 理牌後第三張移到最前面，其餘兩張維持前後順序。
+        layout.update(time = 1.0, standingOrder = listOf(thirdId, firstId, secondId), drawnId = null, inputs = inputs, releaseHand = false)
+
+        val middle = layout.update(time = 3.0, standingOrder = listOf(thirdId, firstId, secondId), drawnId = null, inputs = inputs, releaseHand = false)
+
+        assertEquals(0.0, middle.getValue(firstId).position.y)
+        assertEquals(0.0, middle.getValue(secondId).position.y)
+        assertTrue(middle.getValue(thirdId).position.y > 0.0, "Only the tile crossing the others is lifted.")
     }
 
     /** 立牌數量變少但原生資料尚未更新時，沿用原生舊中心，不自行壓縮牌列。 */
@@ -513,8 +570,9 @@ class PrivateHandLayoutTest {
             inputs = aligned,
             releaseHand = false,
         )
+        // 剛加入立牌的牌以弧線插入，要等插入動畫播完。
         val finished = layout.update(
-            time = 6.0,
+            time = 2.0 + MahjongTileTableLayout.ROW_ARC_DURATION_TICKS,
             standingOrder = listOf(firstId, secondId),
             drawnId = null,
             inputs = aligned,
@@ -641,8 +699,16 @@ class PrivateHandLayoutTest {
             inputs = old,
             releaseHand = false,
         )
-        val settled = layout.update(
+        // 有牌離開手牌時先等共享呈現讓位；共享位置一直沒到時，等候逾時後才依本人順序補位。
+        layout.update(
             time = 20.0,
+            standingOrder = listOf(firstId, secondId),
+            drawnId = null,
+            inputs = old,
+            releaseHand = false,
+        )
+        val settled = layout.update(
+            time = 40.0,
             standingOrder = listOf(firstId, secondId),
             drawnId = null,
             inputs = old,

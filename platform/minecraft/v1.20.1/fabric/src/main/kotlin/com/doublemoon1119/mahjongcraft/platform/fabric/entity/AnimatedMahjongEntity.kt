@@ -280,6 +280,8 @@ abstract class AnimatedMahjongEntity<C>(
                 stepNbt.putFloat(NBT_KEY_END_POSE_ROTATION, step.endPoseRotationDegrees)
                 stepNbt.putBoolean(NBT_KEY_EASE_ROTATION, step.easeRotation)
                 stepNbt.putFloat(NBT_KEY_START_YAW_OFFSET, step.startYawOffsetDegrees)
+                stepNbt.putBoolean(NBT_KEY_LIFT_CARRY_LOWER, step.liftCarryLower)
+                stepNbt.putFloat(NBT_KEY_LEAN, step.leanDegrees)
             }
 
             is AnimationStep.Custom -> {
@@ -325,6 +327,8 @@ abstract class AnimatedMahjongEntity<C>(
             endPoseRotationDegrees = stepNbt.getFloat(NBT_KEY_END_POSE_ROTATION),
             easeRotation = stepNbt.getBoolean(NBT_KEY_EASE_ROTATION),
             startYawOffsetDegrees = stepNbt.getFloat(NBT_KEY_START_YAW_OFFSET),
+            liftCarryLower = stepNbt.getBoolean(NBT_KEY_LIFT_CARRY_LOWER),
+            leanDegrees = stepNbt.getFloat(NBT_KEY_LEAN),
         )
 
         TYPE_CUSTOM -> AnimationStep.Custom(deserializeCustomStep(stepNbt))
@@ -367,6 +371,8 @@ abstract class AnimatedMahjongEntity<C>(
         const val NBT_KEY_START_POSE_ROTATION = "StartPoseRotation"
         const val NBT_KEY_END_POSE_ROTATION = "EndPoseRotation"
         const val NBT_KEY_EASE_ROTATION = "EaseRotation"
+        const val NBT_KEY_LIFT_CARRY_LOWER = "LiftCarryLower"
+        const val NBT_KEY_LEAN = "Lean"
 
         /** 無效聲音 ID 的去重警告集合。 */
         private val unknownSoundIds = mutableSetOf<String>()

@@ -70,7 +70,6 @@ class SubmitRuleDecisionUseCaseTest {
             resolverRegistry = resolvers,
             snapshotSynchronizer = GameSnapshotSynchronizer(repository, FakeGameSnapshotRepository(), GameVisibilityPolicyImpl(moduleRegistry, componentRegistry = bundledCoreExtensionRegistries().componentRegistry)),
             presentationPublisher = presentationPublisher,
-            componentRegistry = bundledCoreExtensionRegistries().componentRegistry,
             winPresentationStager = RuleDecisionWinPresentationStager(WinPresentationHandoff(), WinSettlementDetailResolverRegistry(bundledCoreExtensionRegistries().componentRegistry)),
         )
         val table = FakeTableStateFactory.create(
@@ -153,14 +152,13 @@ class SubmitRuleDecisionUseCaseTest {
             resolverRegistry = resolvers,
             snapshotSynchronizer = snapshotSynchronizer,
             presentationPublisher = presentationPublisher,
-            componentRegistry = bundledCoreExtensionRegistries().componentRegistry,
             winPresentationStager = RuleDecisionWinPresentationStager(WinPresentationHandoff(), WinSettlementDetailResolverRegistry(bundledCoreExtensionRegistries().componentRegistry)),
         )
 
         val firstResult = useCase(table.id, firstPlayerId, repository.openWindowId(table.id), RuleDecisionSubmission.Tiles(setOf(firstTile.id)))
 
         assertIs<Outcome.Success<Unit>>(firstResult)
-        assertTrue(presentationPublisher.getPublishedPlayerTilesUpdates(table.id).isEmpty())
+        assertTrue(presentationPublisher.getPublishedTableStepBatches(table.id).isEmpty())
         assertEquals(1, repository.historyDrafts.size)
 
         val secondResult = useCase(table.id, secondPlayerId, repository.openWindowId(table.id), RuleDecisionSubmission.Tiles(setOf(secondTile.id)))
@@ -168,16 +166,16 @@ class SubmitRuleDecisionUseCaseTest {
         assertIs<Outcome.Success<Unit>>(secondResult)
         assertEquals(2, repository.historyDrafts.size)
         assertEquals(
-            setOf(0, 1),
-            presentationPublisher.getPublishedPlayerTilesUpdates(table.id).map { it.seatIndex }.toSet(),
+            1,
+            presentationPublisher.getPublishedTableStepBatches(table.id).size,
         )
         assertEquals(
             secondTile.id,
-            presentationPublisher.getPublishedPlayerTiles(table.id, 0)?.standingTileIds?.single(),
+            presentationPublisher.getLastPresentedTableState(table.id)?.players?.get(0)?.hand?.tiles?.single()?.id,
         )
         assertEquals(
             firstTile.id,
-            presentationPublisher.getPublishedPlayerTiles(table.id, 1)?.standingTileIds?.single(),
+            presentationPublisher.getLastPresentedTableState(table.id)?.players?.get(1)?.hand?.tiles?.single()?.id,
         )
         assertNull(presentationPublisher.getPublishedInitialDeal(table.id))
         val firstObserverSnapshot = snapshotRepository.getSnapshot(table.id, firstPlayerId)!!
@@ -251,14 +249,13 @@ class SubmitRuleDecisionUseCaseTest {
                 GameVisibilityPolicyImpl(moduleRegistry, componentRegistry = bundledCoreExtensionRegistries().componentRegistry),
             ),
             presentationPublisher = presentationPublisher,
-            componentRegistry = bundledCoreExtensionRegistries().componentRegistry,
             winPresentationStager = RuleDecisionWinPresentationStager(WinPresentationHandoff(), WinSettlementDetailResolverRegistry(bundledCoreExtensionRegistries().componentRegistry)),
         )
 
         val result = useCase(table.id, firstPlayerId, repository.openWindowId(table.id), RuleDecisionSubmission.Tiles(setOf(firstTile.id)))
 
         assertIs<Outcome.Success<Unit>>(result)
-        assertTrue(presentationPublisher.getPublishedPlayerTilesUpdates(table.id).isEmpty())
+        assertTrue(presentationPublisher.getPublishedTableStepBatches(table.id).isEmpty())
         assertNull(presentationPublisher.getPublishedInitialDeal(table.id))
     }
 
@@ -302,7 +299,6 @@ class SubmitRuleDecisionUseCaseTest {
                 GameVisibilityPolicyImpl(moduleRegistry, componentRegistry = bundledCoreExtensionRegistries().componentRegistry),
             ),
             presentationPublisher = presentationPublisher,
-            componentRegistry = bundledCoreExtensionRegistries().componentRegistry,
             winPresentationStager = RuleDecisionWinPresentationStager(WinPresentationHandoff(), WinSettlementDetailResolverRegistry(bundledCoreExtensionRegistries().componentRegistry)),
         )
         val invalidTileId = Uuid.random()
@@ -320,7 +316,7 @@ class SubmitRuleDecisionUseCaseTest {
         )
         assertEquals(game, repository.getGame(table.id))
         assertTrue(repository.historyDrafts.isEmpty())
-        assertTrue(presentationPublisher.getPublishedPlayerTilesUpdates(table.id).isEmpty())
+        assertTrue(presentationPublisher.getPublishedTableStepBatches(table.id).isEmpty())
         assertNull(presentationPublisher.getPublishedInitialDeal(table.id))
     }
 
@@ -356,7 +352,6 @@ class SubmitRuleDecisionUseCaseTest {
                 GameVisibilityPolicyImpl(moduleRegistry, componentRegistry = bundledCoreExtensionRegistries().componentRegistry),
             ),
             presentationPublisher = FakeGamePresentationPublisher(),
-            componentRegistry = bundledCoreExtensionRegistries().componentRegistry,
             winPresentationStager = RuleDecisionWinPresentationStager(WinPresentationHandoff(), WinSettlementDetailResolverRegistry(bundledCoreExtensionRegistries().componentRegistry)),
         )
 
@@ -398,7 +393,6 @@ class SubmitRuleDecisionUseCaseTest {
                 GameVisibilityPolicyImpl(moduleRegistry, componentRegistry = bundledCoreExtensionRegistries().componentRegistry),
             ),
             presentationPublisher = FakeGamePresentationPublisher(),
-            componentRegistry = bundledCoreExtensionRegistries().componentRegistry,
             winPresentationStager = RuleDecisionWinPresentationStager(WinPresentationHandoff(), WinSettlementDetailResolverRegistry(bundledCoreExtensionRegistries().componentRegistry)),
         )
 
@@ -439,7 +433,6 @@ class SubmitRuleDecisionUseCaseTest {
                 GameVisibilityPolicyImpl(moduleRegistry, componentRegistry = bundledCoreExtensionRegistries().componentRegistry),
             ),
             presentationPublisher = FakeGamePresentationPublisher(),
-            componentRegistry = bundledCoreExtensionRegistries().componentRegistry,
             winPresentationStager = RuleDecisionWinPresentationStager(WinPresentationHandoff(), WinSettlementDetailResolverRegistry(bundledCoreExtensionRegistries().componentRegistry)),
         )
 
@@ -505,7 +498,6 @@ class SubmitRuleDecisionUseCaseTest {
             resolverRegistry = RuleDecisionResolverRegistry().apply { register(ScoreChangingResolver) },
             snapshotSynchronizer = GameSnapshotSynchronizer(repository, FakeGameSnapshotRepository(), GameVisibilityPolicyImpl(moduleRegistry, componentRegistry = bundledCoreExtensionRegistries().componentRegistry)),
             presentationPublisher = FakeGamePresentationPublisher(),
-            componentRegistry = bundledCoreExtensionRegistries().componentRegistry,
             winPresentationStager = RuleDecisionWinPresentationStager(WinPresentationHandoff(), WinSettlementDetailResolverRegistry(bundledCoreExtensionRegistries().componentRegistry)),
         )
         return Triple(repository, useCase, game)

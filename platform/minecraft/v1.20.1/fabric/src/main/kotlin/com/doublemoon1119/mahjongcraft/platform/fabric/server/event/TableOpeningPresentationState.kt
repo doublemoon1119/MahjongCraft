@@ -1,6 +1,5 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.server.event
 
-import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileWallPresentation
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
@@ -31,9 +30,6 @@ internal class TableOpeningPresentationState {
     /** 等待初次發牌與各座位翻牌完成後使用的本局開門資料。 */
     private val pendingWallOpeningByTable = ConcurrentHashMap<Uuid, MahjongTileWallPresentation>()
 
-    /** 擲骰揭示完成前暫存的局況資料；揭示完成後由初次發牌階段交付。 */
-    private val pendingRoundInfoByTable = ConcurrentHashMap<Uuid, TableState>()
-
     /** 提供每次新開局呈現使用的單調序號，避免平台自行猜測局數或本場數的上限。 */
     private val nextOpeningSequence = AtomicLong()
 
@@ -62,7 +58,6 @@ internal class TableOpeningPresentationState {
         isNewOpening: Boolean = true,
     ) {
         pendingWallOpeningByTable.remove(gameId)
-        pendingRoundInfoByTable.remove(gameId)
         wallDropTicksByTable[gameId] = wallDropTicks
         wallStacksPerSideByTable[gameId] = stacksPerSide
         wallSideCountByTable[gameId] = sideCount
@@ -113,14 +108,6 @@ internal class TableOpeningPresentationState {
      */
     fun consumeOpening(gameId: Uuid): MahjongTileWallPresentation? = pendingWallOpeningByTable.remove(gameId)
 
-    /** 暫存開局期間的局況資料，避免在擲骰結果揭示前先顯示莊家與局況。 */
-    fun deferRoundInfo(gameId: Uuid, tableState: TableState) {
-        pendingRoundInfoByTable[gameId] = tableState
-    }
-
-    /** 取出並消費等待擲骰揭示後交付的局況資料。 */
-    fun consumeRoundInfo(gameId: Uuid): TableState? = pendingRoundInfoByTable.remove(gameId)
-
     /**
      * 牌牆生成掉落動畫的總時長（ticks），供擲骰與發牌把自己的動畫延後到牌牆完全落地。
      *
@@ -165,7 +152,6 @@ internal class TableOpeningPresentationState {
      */
     fun clear(gameId: Uuid) {
         pendingWallOpeningByTable.remove(gameId)
-        pendingRoundInfoByTable.remove(gameId)
         wallDropTicksByTable.remove(gameId)
         wallStacksPerSideByTable.remove(gameId)
         wallSideCountByTable.remove(gameId)
@@ -176,7 +162,6 @@ internal class TableOpeningPresentationState {
     /** 清除伺服器停止時所有桌子的開局暫存資料。 */
     fun clearAll() {
         pendingWallOpeningByTable.clear()
-        pendingRoundInfoByTable.clear()
         wallDropTicksByTable.clear()
         wallStacksPerSideByTable.clear()
         wallSideCountByTable.clear()

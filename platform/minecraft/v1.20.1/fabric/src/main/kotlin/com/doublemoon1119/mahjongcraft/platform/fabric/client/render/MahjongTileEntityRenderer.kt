@@ -31,6 +31,7 @@ import net.minecraft.client.world.ClientWorld
 import net.minecraft.util.Identifier
 import net.minecraft.util.math.MathHelper
 import net.minecraft.util.math.RotationAxis
+import org.joml.Quaternionf
 import kotlin.uuid.toJavaUuid
 import kotlin.uuid.toKotlinUuid
 
@@ -105,6 +106,8 @@ class MahjongTileEntityRenderer(
                     startPoseRotationDegrees = entity.animationStartPoseRotationDegrees,
                     endPoseRotationDegrees = entity.animationEndPoseRotationDegrees,
                     easeRotation = entity.animationEaseRotation,
+                    liftCarryLower = entity.animationLiftCarryLower,
+                    leanDegrees = entity.animationLeanDegrees,
                 ),
             ).frame(
                 elapsedTicks = elapsedAnimationTicks,
@@ -124,6 +127,11 @@ class MahjongTileEntityRenderer(
             )
         }
         if (animationFrame != null) matrices.translate(animationFrame.offset.x, animationFrame.offset.y, animationFrame.offset.z)
+        // 往前進方向的傾斜繞底部中心、以世界水平軸旋轉，在座位朝向之前套用。
+        val lean = localDisplay?.lean ?: animationFrame?.lean
+        if (lean != null && lean.degrees != 0.0f) {
+            matrices.multiply(Quaternionf().rotateAxis(Math.toRadians(lean.degrees.toDouble()).toFloat(), lean.axisX.toFloat(), 0.0f, lean.axisZ.toFloat()))
+        }
         matrices.multiply(
             RotationAxis.POSITIVE_Y.rotationDegrees(
                 -(localDisplay?.yawDegrees ?: entity.yaw) + 180.0f - (animationFrame?.yawOffsetDegrees ?: 0.0f),

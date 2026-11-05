@@ -88,6 +88,10 @@ sealed interface AnimationStep<out C> {
      * @property endPoseRotationDegrees 結束姿態旋轉角度。
      * @property easeRotation 是否讓姿態旋轉套用 ease-out；預設為 false。
      * @property startYawOffsetDegrees 起始畫面朝向相對實體終點朝向的角差。
+     * @property liftCarryLower 是否走「提起、橫移、放下」的路線：先往上提到 [arcHeight]，平著橫移，再放下；為 false 時走
+     * 對稱拋物線。
+     * @property leanDegrees 「提起、橫移、放下」途中往前進方向傾斜的角度：提起時倒向前進方向，橫移時維持，放下時先轉成
+     * 前角朝下再回正；預設不傾斜。
      */
     data class PlayMotion(
         val durationTicks: Int,
@@ -99,6 +103,8 @@ sealed interface AnimationStep<out C> {
         val endPoseRotationDegrees: Float,
         val easeRotation: Boolean = false,
         val startYawOffsetDegrees: Float = 0.0f,
+        val liftCarryLower: Boolean = false,
+        val leanDegrees: Float = 0.0f,
     ) : AnimationStep<Nothing>
 
     /**

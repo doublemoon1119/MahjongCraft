@@ -268,6 +268,14 @@ class MahjongTileEntity(
     val animationEaseRotation: Boolean
         get() = dataTracker[ANIMATION_EASE_ROTATION]
 
+    /** 動畫是否走「提起、橫移、放下」的路線，見 [AnimationStep.PlayMotion.liftCarryLower]。 */
+    val animationLiftCarryLower: Boolean
+        get() = dataTracker[ANIMATION_LIFT_CARRY_LOWER]
+
+    /** 動畫途中往前進方向傾斜的角度，見 [AnimationStep.PlayMotion.leanDegrees]。 */
+    val animationLeanDegrees: Float
+        get() = dataTracker[ANIMATION_LEAN]
+
     /** 這個 entity 是否已經做過一次 [validateStillManagedByActiveGame] 檢查；只需要做一次。 */
     private var hasValidatedManagedState = false
 
@@ -287,6 +295,8 @@ class MahjongTileEntity(
         dataTracker.set(ANIMATION_END_POSE_ROTATION, step.endPoseRotationDegrees)
         dataTracker.set(ANIMATION_EASE_ROTATION, step.easeRotation)
         dataTracker.set(ANIMATION_START_YAW_OFFSET, step.startYawOffsetDegrees)
+        dataTracker.set(ANIMATION_LIFT_CARRY_LOWER, step.liftCarryLower)
+        dataTracker.set(ANIMATION_LEAN, step.leanDegrees)
         animating = true
     }
 
@@ -497,6 +507,8 @@ class MahjongTileEntity(
         dataTracker.startTracking(ANIMATION_END_POSE_ROTATION, 0.0f)
         dataTracker.startTracking(ANIMATION_EASE_ROTATION, false)
         dataTracker.startTracking(ANIMATION_START_YAW_OFFSET, 0.0f)
+        dataTracker.startTracking(ANIMATION_LIFT_CARRY_LOWER, false)
+        dataTracker.startTracking(ANIMATION_LEAN, 0.0f)
         dataTracker.startTracking(ACTION_POPUP_KIND, TileActionPopupKind.NONE.name)
         dataTracker.startTracking(ACTION_POPUP_START_GAME_TIME, 0L)
         dataTracker.startTracking(ACTION_POPUP_END_GAME_TIME, 0L)
@@ -641,6 +653,14 @@ class MahjongTileEntity(
 
         /** 同步動畫起點相對真實終點 yaw 的角差。 */
         private val ANIMATION_START_YAW_OFFSET: TrackedData<Float> =
+            DataTracker.registerData(MahjongTileEntity::class.java, TrackedDataHandlerRegistry.FLOAT)
+
+        /** 同步動畫是否走「提起、橫移、放下」的路線。 */
+        private val ANIMATION_LIFT_CARRY_LOWER: TrackedData<Boolean> =
+            DataTracker.registerData(MahjongTileEntity::class.java, TrackedDataHandlerRegistry.BOOLEAN)
+
+        /** 同步動畫途中往前進方向傾斜的角度。 */
+        private val ANIMATION_LEAN: TrackedData<Float> =
             DataTracker.registerData(MahjongTileEntity::class.java, TrackedDataHandlerRegistry.FLOAT)
     }
 }

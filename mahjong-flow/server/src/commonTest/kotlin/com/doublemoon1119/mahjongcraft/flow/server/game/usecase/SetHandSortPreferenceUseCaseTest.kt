@@ -18,7 +18,6 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
-import kotlin.test.assertNull
 import kotlin.test.assertTrue
 import kotlin.uuid.Uuid
 
@@ -85,7 +84,7 @@ class SetHandSortPreferenceUseCaseTest {
 
         assertTrue(fixtures.preferenceStore.isEnabled(playerId))
         assertEquals(unsortedTiles, fixtures.gameRepo.getTableState(gameId)?.players?.single()?.hand?.tiles)
-        assertNull(fixtures.presentationPublisher.getPublishedPlayerTiles(gameId))
+        assertTrue(fixtures.presentationPublisher.getPublishedTableStepBatches(gameId).isEmpty())
     }
 
     /** 停用時只更新偏好本身，不觸碰手牌，也不重新呈現。 */
@@ -97,7 +96,7 @@ class SetHandSortPreferenceUseCaseTest {
         fixtures.useCase(playerId, false, HandSortPreferenceUpdateMode.USER_CHANGE)
 
         assertFalse(fixtures.preferenceStore.isEnabled(playerId))
-        assertNull(fixtures.presentationPublisher.getPublishedPlayerTiles(gameId))
+        assertTrue(fixtures.presentationPublisher.getPublishedTableStepBatches(gameId).isEmpty())
     }
 
     /** 啟用且玩家目前沒有還沒決定的摸牌時，立即整理手牌並重新呈現這個座位。 */
@@ -125,7 +124,7 @@ class SetHandSortPreferenceUseCaseTest {
         val organizedTiles = newState.players.first { it.id == playerId }.hand.tiles
         val expectedTiles = listOf(unsortedTiles[1], unsortedTiles[0], unsortedTiles[2])
         assertEquals(expectedTiles, organizedTiles)
-        assertEquals(expectedTiles.map { it.id }, fixtures.presentationPublisher.getPublishedPlayerTiles(gameId)?.standingTileIds)
+        assertEquals(expectedTiles, fixtures.presentationPublisher.getLastPresentedTableState(gameId)?.players?.single()?.hand?.tiles)
     }
 
     /** 關閉自動整理不會將已有手牌改成另一種順序。 */
@@ -148,7 +147,7 @@ class SetHandSortPreferenceUseCaseTest {
         fixtures.useCase(playerId, false, HandSortPreferenceUpdateMode.USER_CHANGE)
         assertFalse(fixtures.preferenceStore.isEnabled(playerId))
         assertEquals(unsortedTiles, fixtures.gameRepo.getTableState(gameId)?.players?.single()?.hand?.tiles)
-        assertNull(fixtures.presentationPublisher.getPublishedPlayerTiles(gameId))
+        assertTrue(fixtures.presentationPublisher.getPublishedTableStepBatches(gameId).isEmpty())
     }
 
     /** 啟用但玩家手上還有一張尚未決定的摸牌時，這次先不整理，不打斷還沒做的決定。 */
@@ -176,6 +175,6 @@ class SetHandSortPreferenceUseCaseTest {
         val unchangedPlayer = newState.players.first { it.id == playerId }
         assertEquals(unsortedTiles, unchangedPlayer.hand.tiles)
         assertEquals(sortedLastTile, unchangedPlayer.hand.lastDrawn)
-        assertNull(fixtures.presentationPublisher.getPublishedPlayerTiles(gameId))
+        assertTrue(fixtures.presentationPublisher.getPublishedTableStepBatches(gameId).isEmpty())
     }
 }

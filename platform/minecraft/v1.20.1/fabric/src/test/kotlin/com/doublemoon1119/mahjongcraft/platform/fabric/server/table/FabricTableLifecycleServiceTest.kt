@@ -35,17 +35,12 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongRoundInfo
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongTileSelectionConfirmPresentation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongTileSelectionConfirmPresentationResult
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongTileSelectionConfirmPresenter
-import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableCornerWidthTracker
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocationRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TablePropPresentation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TablePropPresentationResult
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TablePropPresenter
-import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongDiscardPresentation
-import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongDiscardPresentationResult
-import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongDiscardPresenter
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongInitialDealPresentation
-import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongPlayerAreaPresentation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongPlayerAreaPresentationResult
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongPlayerAreaPresenter
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileWallOpeningPresentation
@@ -205,7 +200,6 @@ class FabricTableLifecycleServiceTest {
         private val tablePropPresenter = RecordingTablePropPresenter()
 
         /** 記錄清理呼叫的牌河 presenter fake。 */
-        private val discardPresenter = RecordingDiscardPresenter()
 
         /** 記錄清理呼叫的桌面局況顯示 presenter fake。 */
         private val roundInfoPresenter = RecordingRoundInfoPresenter()
@@ -235,8 +229,6 @@ class FabricTableLifecycleServiceTest {
             tileWallPresenter = tileWallPresenter,
             playerAreaPresenter = playerAreaPresenter,
             tablePropPresenter = tablePropPresenter,
-            tableCornerWidths = TableCornerWidthTracker(),
-            discardPresenter = discardPresenter,
             roundInfoPresenter = roundInfoPresenter,
             playerInfoPresenter = playerInfoPresenter,
             lobbyInfoPresenter = FabricMahjongLobbyInfoPresenter(FabricServerHolder(), locations, FabricEntitySpawnGateway(), MahjongModuleRegistryImpl()),
@@ -308,9 +300,6 @@ class FabricTableLifecycleServiceTest {
 
     /** 只記錄正式桌角區域（手牌/摸牌位/副露）清理參數的測試 presenter。 */
     private class RecordingPlayerAreaPresenter : MahjongPlayerAreaPresenter {
-        /** 此測試不使用正式桌角區域呈現。 */
-        override fun present(presentation: MahjongPlayerAreaPresentation): MahjongPlayerAreaPresentationResult = MahjongPlayerAreaPresentationResult.PRESENTED
-
         /** 此測試不使用正式開局發牌動畫呈現。 */
         override fun presentInitialDeal(presentation: MahjongInitialDealPresentation): MahjongPlayerAreaPresentationResult = MahjongPlayerAreaPresentationResult.PRESENTED
 
@@ -327,15 +316,6 @@ class FabricTableLifecycleServiceTest {
         override fun present(presentation: TablePropPresentation): TablePropPresentationResult = TablePropPresentationResult.PRESENTED
 
         /** 記錄清理請求並回報沒有已載入的規則桌面物件。 */
-        override fun clear(tableId: Uuid, tableLocation: TableLocation): Int = 0
-    }
-
-    /** 只記錄正式牌河清理參數的測試 presenter。 */
-    private class RecordingDiscardPresenter : MahjongDiscardPresenter {
-        /** 此測試不使用正式牌河呈現。 */
-        override fun present(presentation: MahjongDiscardPresentation): MahjongDiscardPresentationResult = MahjongDiscardPresentationResult.PRESENTED
-
-        /** 記錄清理請求並回報沒有已載入牌河。 */
         override fun clear(tableId: Uuid, tableLocation: TableLocation): Int = 0
     }
 

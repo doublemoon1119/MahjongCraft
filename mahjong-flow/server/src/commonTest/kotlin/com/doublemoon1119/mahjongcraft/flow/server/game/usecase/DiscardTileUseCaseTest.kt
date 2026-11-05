@@ -41,6 +41,7 @@ import com.doublemoon1119.mahjongcraft.logic.table.TileWall
 import com.doublemoon1119.mahjongcraft.logic.table.TurnPhase
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import com.doublemoon1119.mahjongcraft.logic.table.toSnapshot
+import com.doublemoon1119.mahjongcraft.logic.tile.component.TileRegion
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledCoreExtensionRegistries
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.registerBundledRuleModules
 import com.doublemoon1119.mahjongcraft.testing.flow.common.game.repository.FakeGameSnapshotRepository
@@ -51,6 +52,7 @@ import com.doublemoon1119.mahjongcraft.testing.logic.rules.riichi.riichiDeclarat
 import com.doublemoon1119.mahjongcraft.testing.logic.rules.riichi.riichiTableComponents
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
+import com.doublemoon1119.mahjongcraft.testing.logic.table.tileRegion
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -183,10 +185,10 @@ class DiscardTileUseCaseTest {
     }
 
     /**
-     * 驗證捨牌後會觸發平台呈現層，重新排列立牌列並更新牌河，且沒有立直宣告牌時側身標記為 null。
+     * 驗證捨牌後送出一步：捨出的牌移到牌河，立牌維持原樣，沒有宣告事件。
      */
     @Test
-    fun `test discard tile publishes hand and discard pile presentation`() = runTest {
+    fun `test discard tile presents one step with the tile in the discard pile`() = runTest {
         val fixtures = Fixtures()
         val currentPlayer = FakeMahjongPlayerFactory.create(
             id = currentPlayerId,
@@ -205,22 +207,20 @@ class DiscardTileUseCaseTest {
 
         fixtures.useCase(gameId, currentPlayerId, drawnTile.id)
 
-        assertEquals(listOf(handTile.id), fixtures.presentationPublisher.getPublishedPlayerTiles(gameId)?.standingTileIds)
-        val publishedDiscardPile = fixtures.presentationPublisher.getPublishedDiscardPile(gameId)
-        assertNotNull(publishedDiscardPile)
-        assertEquals(0, publishedDiscardPile.seatIndex)
-        assertEquals(listOf(drawnTile.id), publishedDiscardPile.discardTileIds)
-        assertEquals(null, publishedDiscardPile.sidewaysMarkedTileId)
-        assertEquals(drawnTile.id, publishedDiscardPile.newlyDiscardedTileId)
+        val step = fixtures.presentationPublisher.getPublishedTableStepBatches(gameId).single().single()
+        assertEquals(fixtures.gameRepo.getTableState(gameId), step.tableState)
+        assertTrue(step.events.isEmpty())
+        assertEquals(TileRegion.DISCARD, step.tableState.tileRegion(drawnTile.id))
+        assertEquals(TileRegion.HAND, step.tableState.tileRegion(handTile.id))
     }
 
     /**
-     * 驗證已宣告立直的玩家後續再捨牌時，牌河更新呈現的側身標記仍正確指向較早的立直宣告牌
+     * 驗證已宣告立直的玩家後續再捨牌時，呈現的桌況中牌河的側身標記仍指向較早的立直宣告牌
      * （[SidewaysMarkedDiscardPile.sidewaysMarkedTileId]
      * 掃描整個牌河推導，不受這次捨牌影響）。
      */
     @Test
-    fun `test discard tile publishes sideways marked tile from an earlier riichi declaration`() = runTest {
+    fun `test discard tile keeps the sideways marked tile from an earlier riichi declaration`() = runTest {
         val fixtures = Fixtures()
         val riichiTile = FakeIdentifiedTileFactory.create(Tile.Honor.South)
         val alreadyDiscarded = RiichiDiscardPile().discard(DiscardEntry(tile = riichiTile, components = RiichiDiscardComponents.declaration()))
@@ -241,10 +241,9 @@ class DiscardTileUseCaseTest {
 
         fixtures.useCase(gameId, currentPlayerId, drawnTile.id)
 
-        val publishedDiscardPile = fixtures.presentationPublisher.getPublishedDiscardPile(gameId)
-        assertNotNull(publishedDiscardPile)
-        assertEquals(listOf(riichiTile.id, drawnTile.id), publishedDiscardPile.discardTileIds)
-        assertEquals(riichiTile.id, publishedDiscardPile.sidewaysMarkedTileId)
+        val presented = fixtures.presentationPublisher.getLastPresentedTableState(gameId)!!.players.single().discardPile
+        assertEquals(listOf(riichiTile.id, drawnTile.id), presented.entries.map { it.tile.id })
+        assertEquals(riichiTile.id, (presented as SidewaysMarkedDiscardPile).sidewaysMarkedTileId())
     }
 
     /**
@@ -1377,11 +1376,7 @@ class DiscardTileUseCaseTest {
         val wallProgress = newState.riichiWallProgress()
         assertEquals(1, wallProgress.revealedKanDoraCount)
         assertTrue(wallProgress.pendingKanDoraReveals.isEmpty())
-        assertEquals(
-            wallProgress.getDoraIndicators(newState).first.map { it.id }.toSet() -
-                table.riichiWallProgress().getDoraIndicators(table).first.map { it.id }.toSet(),
-            fixtures.presentationPublisher.getPublishedDeadWallReveal(gameId),
-        )
+        assertEquals(newState, fixtures.presentationPublisher.getLastPresentedTableState(gameId), "The revealed indicator is part of the presented state.")
     }
 
     /**

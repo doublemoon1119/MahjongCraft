@@ -1,7 +1,7 @@
 package com.doublemoon1119.mahjongcraft.flow.server.game.usecase
 
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.GamePresentationPublisher
-import com.doublemoon1119.mahjongcraft.flow.common.game.service.toPresentation
+import com.doublemoon1119.mahjongcraft.flow.common.game.service.TableStep
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepository
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.HandSortPreferenceStore
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
@@ -61,16 +61,6 @@ class SetHandSortPreferenceUseCase(
             }
         } ?: return
 
-        val seatIndex = newState.players.indexOfFirst { it.id == playerId }
-        val player = newState.players[seatIndex]
-        val module = moduleRegistry.getModule(newState.config)
-        presentationPublisher.publishPlayerTilesUpdated(
-            gameId,
-            seatIndex,
-            player.hand.tiles.map { it.id },
-            player.hand.lastDrawn?.id,
-            player.hand.melds.map { it.toPresentation(newState.config.revealsClosedKanTiles) },
-            setAsideTileIds = player.setAsideTiles.map { it.id },
-        )
+        presentationPublisher.publishTableSteps(gameId, listOf(TableStep(newState, emptyList())))
     }
 }

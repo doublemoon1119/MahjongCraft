@@ -11,6 +11,8 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinCelebrationWinn
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementPresentationRequest
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.GameEventPublisher
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.GamePresentationPublisher
+import com.doublemoon1119.mahjongcraft.flow.common.game.service.TableStep
+import com.doublemoon1119.mahjongcraft.flow.common.game.service.TableStepEvent
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.WinCelebrationCueResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
 import com.doublemoon1119.mahjongcraft.flow.server.game.history.acceptedActionHistoryDraft
@@ -185,7 +187,6 @@ class DeclareTsumoUseCase(
                             resolution = tsumoResult,
                             ruleModuleId = module.id,
                             settlement = settlement,
-                            newlyRevealedTileIds = revealResult.newlyRevealedTileIds,
                         ),
                     )
                 }
@@ -201,9 +202,10 @@ class DeclareTsumoUseCase(
 
         // 3. 通知在場玩家與旁觀者：廣播自摸事件
         eventPublisher.publishToAllObservers(gameId, newState.players.map { it.id }, playerId, GameAction.Tsumo)
-        if (result.newlyRevealedTileIds.isNotEmpty()) {
-            presentationPublisher.publishWallTilesRevealed(gameId, result.newlyRevealedTileIds)
-        }
+        presentationPublisher.publishTableSteps(
+            gameId,
+            listOf(TableStep(newState, listOf(TableStepEvent.ActionDeclared(playerId, GameAction.Tsumo)))),
+        )
 
         // 4. 建構胡牌演出內容並寫進交接槽——手牌不受這個 use case 影響（只改分數與 actionHistory），
         // 贏家的 lastDrawn 此時仍是自摸那張牌。刻意不直接發布：本局是否就此結束，要等
@@ -227,7 +229,6 @@ class DeclareTsumoUseCase(
             winPresentationHandoff.stage(gameId, presentation)
         }
 
-        presentationPublisher.publishGameActionDeclared(gameId, playerId, GameAction.Tsumo)
         return Outcome.Success(Unit)
     }
 
@@ -238,14 +239,12 @@ class DeclareTsumoUseCase(
      * @property resolution 自摸宣告產生的完整算役結果。
      * @property ruleModuleId 執行自摸結算的規則模組識別碼。
      * @property settlement 同一交易建立的胡牌呈現詳情。
-     * @property newlyRevealedTileIds 本次結算新公開的牌張 ID。
      */
     private data class TsumoResult(
         val tableState: TableState,
         val resolution: WinResolutionResult,
         val ruleModuleId: String,
         val settlement: WinSettlementPresentationRequest,
-        val newlyRevealedTileIds: Set<Uuid> = emptySet(),
     ) {
         val handValueResult get() = resolution.handValueResult
     }

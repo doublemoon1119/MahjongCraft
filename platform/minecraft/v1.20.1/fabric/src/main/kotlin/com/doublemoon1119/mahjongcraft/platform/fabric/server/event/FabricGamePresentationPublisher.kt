@@ -4,34 +4,38 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.server.event
 
 import com.doublemoon1119.mahjongcraft.flow.common.concurrency.CoroutineDispatchers
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.AppliedActionScoring
-import com.doublemoon1119.mahjongcraft.flow.common.game.model.DrawFollowUpPresentationStep
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.ExhaustiveDrawSettlementPresentationRequest
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.MatchSettlementPresentationRequest
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinCelebrationRequest
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementPresentationRequest
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.GamePresentationPublisher
-import com.doublemoon1119.mahjongcraft.flow.common.game.service.MeldPresentation
-import com.doublemoon1119.mahjongcraft.flow.common.game.service.PlayerAreaPresentationState
-import com.doublemoon1119.mahjongcraft.flow.common.game.service.PlayerAreaSequenceStep
+import com.doublemoon1119.mahjongcraft.flow.common.game.service.TableStep
+import com.doublemoon1119.mahjongcraft.flow.common.game.service.TableStepEvent
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.WinPresentationRequest
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.toPresentation
 import com.doublemoon1119.mahjongcraft.flow.server.game.policy.GameVisibilityPolicy
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepository
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
+import com.doublemoon1119.mahjongcraft.logic.base.MeldType
 import com.doublemoon1119.mahjongcraft.logic.component.ComponentRegistry
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
+import com.doublemoon1119.mahjongcraft.logic.table.RoundConclusion
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
+import com.doublemoon1119.mahjongcraft.logic.table.TurnPhase
 import com.doublemoon1119.mahjongcraft.logic.table.layout.PhysicalWallLayoutTransitionPhase
 import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPhysicalLayout
 import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPosition
 import com.doublemoon1119.mahjongcraft.logic.table.opening.OpeningDiceRoll
 import com.doublemoon1119.mahjongcraft.logic.tile.component.TilePoseState
 import com.doublemoon1119.mahjongcraft.logic.tile.component.TileRegion
+import com.doublemoon1119.mahjongcraft.logic.tile.component.publicFaceUpWallTileIds
 import com.doublemoon1119.mahjongcraft.logic.tile.component.resolveTileComponents
 import com.doublemoon1119.mahjongcraft.platform.fabric.block.MahjongTableLookup
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongSoundTimelineEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongTileEntity
+import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MeldActionPopupTile
+import com.doublemoon1119.mahjongcraft.platform.fabric.entity.TileActionPopupKind
 import com.doublemoon1119.mahjongcraft.platform.fabric.logging.mahjongCraftLogger
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.FabricServerHolder
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.character.FabricAiCharacterManager
@@ -74,7 +78,6 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongTableSeat
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongTileSelectionConfirmPresentation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongTileSelectionConfirmPresenter
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.RoundInfoLineDisplayRegistry
-import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableCornerLayoutPlanner
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocationRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TablePropDescriber
@@ -85,15 +88,10 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.table.cornerWidthsBySe
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.exhaustiveDrawSettlementStageInputs
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.findTile
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.tileAssetKeysById
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.ArrangedTile
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.BuiltInMinecraftTileAppearances
-import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.DrawFollowUpAnimationStep
-import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.DrawFollowUpTimeline
-import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.HandPoseUpdatePlanner
-import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongDiscardPresentation
-import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongDiscardPresenter
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongInitialDealPresentation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongMeldTileGroup
-import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongPlayerAreaPresentation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongPlayerAreaPresentationResult
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongPlayerAreaPresenter
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileTableLayout
@@ -107,25 +105,29 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileWallTr
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileWallTransitionResult
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongWinCelebrationPresentation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistry
-import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.PlayerAreaSequenceTimeline
-import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.SequencedAreaAnimationStep
-import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileMotionAnimationSpec
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.PlannedTileMotion
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TableStepMotionPlanner
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TableTileArrangement
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TableTileArrangementInput
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileMotionKind
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileMotionPhase
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileWallTransitionMotionDecision
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileWallTransitionMotionPlanner
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.UNKNOWN_TILE_ASSET_KEY
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.backAppearance
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.toAssetKey
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import net.minecraft.registry.RegistryKey
 import net.minecraft.registry.RegistryKeys
 import net.minecraft.server.world.ServerWorld
 import net.minecraft.util.Identifier
 import net.minecraft.util.math.BlockPos
+import net.minecraft.util.math.Vec3d
+import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.random.Random
-import kotlin.time.Duration
-import kotlin.time.Duration.Companion.milliseconds
 import kotlin.uuid.Uuid
 import kotlin.uuid.toJavaUuid
 
@@ -138,10 +140,8 @@ import kotlin.uuid.toJavaUuid
  * @property diceRollPresenter 正式擲骰的實際呈現邏輯。
  * @property tileWallPresenter 正式牌牆的實際呈現邏輯。
  * @property playerAreaPresenter 手牌、摸牌位、副露與另置牌的呈現元件。
- * @property discardPresenter 正式牌河的實際呈現邏輯。
  * @property tablePropPresenter 規則桌面物件（例如點棒）的差量同步邏輯。
  * @property tablePropDescriberRegistry 依規則模組查詢桌上應擺哪些物件的描述。
- * @property cornerLayout 依桌上物件佔用的角落寬度，決定手牌、胡牌演出與結算舞台怎麼讓開角落。
  * @property roundInfoPresenter 桌面中央局況顯示的實際呈現邏輯。
  * @property roundInfoLineDisplayRegistry 依規則模組建立局況行並查詢其翻譯資訊。
  * @property playerInfoPresenter 座位玩家資訊的呈現邏輯。
@@ -179,10 +179,8 @@ class FabricGamePresentationPublisher(
     private val diceRollPresenter: MahjongDiceRollPresenter,
     private val tileWallPresenter: MahjongTileWallPresenter,
     private val playerAreaPresenter: MahjongPlayerAreaPresenter,
-    private val discardPresenter: MahjongDiscardPresenter,
     private val tablePropPresenter: TablePropPresenter,
     private val tablePropDescriberRegistry: TablePropDescriberRegistry,
-    private val cornerLayout: TableCornerLayoutPlanner,
     private val roundInfoPresenter: MahjongRoundInfoPresenter,
     private val roundInfoLineDisplayRegistry: RoundInfoLineDisplayRegistry,
     private val playerInfoPresenter: MahjongPlayerInfoPresenter,
@@ -215,8 +213,11 @@ class FabricGamePresentationPublisher(
     /** 呈現略過、生成失敗與排程狀態的診斷記錄。 */
     private val logger = mahjongCraftLogger(FabricGamePresentationPublisher::class)
 
-    /** 各牌區已成功套用的逐張姿態；避免普通狀態刷新重播既有牌區動畫。 */
-    private val handPoseUpdates = HandPoseUpdatePlanner()
+    /** 各桌最後一次呈現的桌況與擺放；之後的步驟與它比較。開局發牌時同步記錄起點，擺放在主執行緒算出。 */
+    private val presentedTables = ConcurrentHashMap<Uuid, PresentedTable>()
+
+    /** 各桌尚在排定的初次發牌；之後的步驟等它排定後才開始，才能接在發牌動畫之後。 */
+    private val initialDealJobs = ConcurrentHashMap<Uuid, Job>()
 
     /** 依共用契約驗證逐張描述，再取得不含授權名單的姿態。 */
     private fun tilePoseStates(tableState: TableState, module: MahjongRuleModule<*>): List<TilePoseState> = module.resolveTileComponents(tableState, componentRegistry).filter { it.area.region == TileRegion.HAND || it.area.region == TileRegion.DRAWN }.map { TilePoseState(it.area.tile.id, it.pose) }
@@ -233,27 +234,14 @@ class FabricGamePresentationPublisher(
     /** 伺服器 session 結束時清除尚未完成的開局呈現暫存資料。 */
     fun clearOpeningSession() {
         openingState.clearAll()
-        synchronized(handPoseUpdates) { handPoseUpdates.reset() }
+        presentedTables.clear()
+        initialDealJobs.clear()
         tablePropPresenter.resetSession()
     }
 
     /** 清除新伺服器 session 不應沿用的桌面物件 reservation。 */
     fun startTablePropSession() {
         tablePropPresenter.resetSession()
-    }
-
-    override fun publishGameActionDeclared(gameId: Uuid, actorId: Uuid, action: GameAction) {
-        publish(gameId, "publishGameActionDeclared", blocksTable = false) { resolved, state, _ ->
-            spawnActionSound(gameId, resolved, state, actorId, action, resolved.world.time)
-            null
-        }
-    }
-
-    override fun publishActionScored(gameId: Uuid, scoring: AppliedActionScoring) {
-        publish(gameId, "publishActionScored", blocksTable = false) { resolved, state, _ ->
-            showScoreChanges(gameId, resolved, state, scoring, resolved.world.time)
-            null
-        }
     }
 
     /**
@@ -432,7 +420,7 @@ class FabricGamePresentationPublisher(
         if (rolls.isEmpty()) {
             openingOperation?.let { ticket ->
                 scope.launch(dispatchers.main) {
-                    if (tablePropPresenter.releaseCenter(gameId, ticket.generation)) publishRuleStateUpdated(gameId)
+                    if (tablePropPresenter.releaseCenter(gameId, ticket.generation)) refreshTableProps(gameId)
                 }
             }
             return
@@ -450,7 +438,7 @@ class FabricGamePresentationPublisher(
             val ticket = openingOperation ?: return
             if (released.compareAndSet(false, true)) {
                 scope.launch(dispatchers.main) {
-                    if (tablePropPresenter.releaseCenter(gameId, ticket.generation)) publishRuleStateUpdated(gameId)
+                    if (tablePropPresenter.releaseCenter(gameId, ticket.generation)) refreshTableProps(gameId)
                 }
             }
         }
@@ -519,7 +507,6 @@ class FabricGamePresentationPublisher(
             logger.warn("publishWallStructure gameId={} skipped: no active server", gameId)
             return
         }
-        if (isNewOpening) synchronized(handPoseUpdates) { handPoseUpdates.clear(gameId) }
         if (assemblyStructure.isEmpty() && layout.placements.isEmpty()) {
             openingState.clear(gameId)
             openingOperations.invalidate(gameId)
@@ -574,23 +561,15 @@ class FabricGamePresentationPublisher(
         }
     }
 
-    /** 將規則提供的牌牆布局 transition 排入既有牌張的持久化動畫佇列。 */
-    override fun publishWallLayoutTransition(gameId: Uuid, phases: List<PhysicalWallLayoutTransitionPhase>) {
-        if (phases.isEmpty()) return
-        publish(gameId, "publishWallLayoutTransition", blocksTable = true) { resolved, state, startAt ->
-            presentWallTransition(gameId, resolved, state, phases, startAt)
-            null
-        }
-    }
-
     /**
-     * 排定一次實體牌牆移動。
+     * 依規則決定的階段，從 [startGameTime] 開始重排實體牌牆中的牌。
      *
-     * @param gameId 對局識別碼。
-     * @param resolved 已解析的桌子位置與世界。
-     * @param state 目前的權威桌況。
-     * @param phases 已驗證的牌牆移動階段。
-     * @param startGameTime 開始移動的遊戲時間。
+     * @param gameId 桌子識別碼。
+     * @param resolved 已解析的桌子與世界。
+     * @param state 重排後的桌況，提供牌牆的桌邊對應。
+     * @param phases 依序完成的移動階段。
+     * @param startGameTime 開始重排的遊戲時間。
+     * @return 重排完成的遊戲時間；牌牆尺寸未知或排程失敗時為 null。
      */
     private fun presentWallTransition(
         gameId: Uuid,
@@ -598,220 +577,255 @@ class FabricGamePresentationPublisher(
         state: TableState,
         phases: List<PhysicalWallLayoutTransitionPhase>,
         startGameTime: Long,
-    ) {
+    ): Long? {
         val stacksPerSide = openingState.wallStacksPerSide(gameId)
-        val sideCount = openingState.wallSideCount(gameId)
-        if (stacksPerSide == null || sideCount == null) {
-            logger.warn("publishWallLayoutTransition gameId={} skipped: wall stack count is unavailable", gameId)
-            return
+        if (stacksPerSide == null) {
+            logger.warn("Wall rearrangement gameId={} skipped: wall stack count is unavailable", gameId)
+            return null
         }
+        val sideLayout = wallSideLayout(state, state.dealerIndex)
         val result = tileWallPresenter.presentTransition(
             MahjongTileWallTransitionPresentation(
                 tableId = gameId,
                 tableLocation = resolved.location,
                 tableFacing = resolved.facing,
-                sideLayout = wallSideLayout(state, state.dealerIndex),
+                sideLayout = sideLayout,
                 stacksPerSide = stacksPerSide,
                 phases = phases,
                 startGameTime = startGameTime,
             ),
         )
         if (result != MahjongTileWallTransitionResult.PRESENTED) {
-            logger.warn("publishWallLayoutTransition gameId={} failed: result={}", gameId, result)
+            logger.warn("Wall rearrangement gameId={} failed: result={}", gameId, result)
+            return null
         }
-    }
-
-    /** 更新既有牌牆位置與公開姿態，不建立新牌或重播開局。 */
-    override fun publishWallLayoutUpdated(
-        gameId: Uuid,
-        layout: TileWallPhysicalLayout,
-        dealerSeatIndex: Int,
-        revealedTileIds: Set<Uuid>,
-    ) {
-        if (serverHolder.current() == null) {
-            logger.warn("publishWallLayoutUpdated gameId={} skipped: no active server", gameId)
-            return
-        }
-        launchPendingPresentation(gameId, "publishWallLayoutUpdated") {
-            val resolved = resolveTableContext(gameId, "publishWallLayoutUpdated") ?: return@launchPendingPresentation
-            val state = gameRepository.getTableState(gameId) ?: return@launchPendingPresentation
-            val stacksPerSide = openingState.wallStacksPerSide(gameId)
-            val sideCount = openingState.wallSideCount(gameId)
-            if (stacksPerSide == null || sideCount == null) {
-                logger.warn("publishWallLayoutUpdated gameId={} skipped: wall dimensions are unavailable", gameId)
-                return@launchPendingPresentation
-            }
-            val result = tileWallPresenter.synchronizeLayout(
-                tableId = gameId,
-                tableLocation = resolved.location,
-                context = MahjongTileWallProjectionContext(
-                    controllerX = resolved.location.x,
-                    controllerY = resolved.location.y,
-                    controllerZ = resolved.location.z,
-                    tableFacing = resolved.facing,
-                    sideLayout = wallSideLayout(state, dealerSeatIndex),
-                    stacksPerSide = stacksPerSide,
-                ),
-                layout = layout,
-                revealedTileIds = revealedTileIds,
-            )
-            if (result != MahjongTileWallPresentationResult.PRESENTED) {
-                logger.warn("publishWallLayoutUpdated gameId={} failed: result={}", gameId, result)
-            }
-        }
+        val context = MahjongTileWallProjectionContext(
+            controllerX = resolved.location.x,
+            controllerY = resolved.location.y,
+            controllerZ = resolved.location.z,
+            tableFacing = resolved.facing,
+            sideLayout = sideLayout,
+            stacksPerSide = stacksPerSide,
+        )
+        val plan = (TileWallTransitionMotionPlanner.plan(context, phases) as? TileWallTransitionMotionDecision.Completed)?.plan ?: return null
+        return startGameTime + plan.durationTicks
     }
 
     /**
-     * 在主執行緒更新指定牌牆牌張的可見面，不取得整桌忙碌標記。
-     */
-    override fun publishWallTilesRevealed(gameId: Uuid, revealedTileIds: Set<Uuid>) {
-        if (serverHolder.current() == null) {
-            logger.warn("publishWallTilesRevealed gameId={} skipped: no active server", gameId)
-            return
-        }
-        scope.launch(dispatchers.main) {
-            val location = tableLocationRegistry.get(gameId)?.location
-            if (location == null) {
-                logger.warn("publishWallTilesRevealed gameId={} skipped: no known table location", gameId)
-                return@launch
-            }
-            tileWallPresenter.revealDeadWallTiles(gameId, location, revealedTileIds)
-        }
-    }
-
-    /**
-     * 呼叫端在開局／換局緊接 [publishWallStructure] 之後、以及規則狀態改變桌上物件之後呼叫；依對局規則在
-     * [tablePropDescriberRegistry] 登記的描述算出桌上應有的物件，交給 [tablePropPresenter] 差量同步，並把
-     * 同一份桌況算出的角落寬度交給 [cornerLayout]。規則沒有登記描述時，同步為空清單、寬度皆為 `0.0`。
-     * 世界／entity 存取丟回伺服器主執行緒執行。
+     * 依序呈現一次交易的步驟，排在這張桌子的呈現時間軸之後；開局發牌還在排定時，等它排完再開始。
      *
-     * 同一局內某些座位的角落寬度改變時（例如供託在局中增加），那些座位的手牌、摸牌位、副露與移出的牌一起平移到新位置。
-     * 角落變寬時等桌上的牌全部停下才擺上新的物件，變窄時先收走物件再平移，移動途中不會壓到角落物件；平移途中再來的更新
-     * 也等平移結束。剛由 [publishPlayerTilesUpdated] 依新寬度擺好的座位不會再移動一次。
+     * 每一步與上一次呈現的擺放比較，規劃每張牌的動作並同時開始；桌上物件在這一步開始時依這一步的桌況擺放，宣告音效與點數
+     * 提示在這一步開始時播放，局況與玩家資訊在這一步結束時更新。下一步等這一步的動作都完成才開始。
      */
-    override fun publishRuleStateUpdated(gameId: Uuid) {
+    override fun publishTableSteps(gameId: Uuid, steps: List<TableStep>) {
+        if (steps.isEmpty()) return
         if (serverHolder.current() == null) {
-            logger.warn("publishRuleStateUpdated gameId={} skipped: no active server", gameId)
+            logger.warn("publishTableSteps gameId={} skipped: no active server", gameId)
             return
         }
-        val openingOperation = openingOperations.getRegisteringTicket(gameId)
-        launchOpeningStage(gameId, "table-props", openingOperation) {
-            val resolved = resolveTableContext(gameId, "publishRuleStateUpdated") ?: return@launchOpeningStage
-            val tableState = gameRepository.getTableState(gameId) ?: run {
-                tablePropPresenter.clear(gameId, resolved.location)
-                return@launchOpeningStage
-            }
-            val module = moduleRegistry.getModule(tableState.config)
-            val desiredHandStates = tilePoseStates(tableState, module)
-            val poseChangedPlayers = synchronized(handPoseUpdates) {
-                handPoseUpdates.changedPlayers(
-                    gameId,
-                    tableState.players.associate { player ->
-                        val ids = player.hand.standingTiles.mapTo(mutableSetOf()) { it.id }
-                        player.id to desiredHandStates.filter { it.tileId in ids }
-                    },
-                )
-            }
-            // 只有姿態真的改變時才重新發布牌區，避免普通規則刷新取消正在播放的摸牌／移牌動畫。
-            tableState.players.forEachIndexed { seatIndex, player ->
-                if (player.id !in poseChangedPlayers) return@forEachIndexed
-                presentPlayerArea(
-                    gameId = gameId,
-                    seatIndex = seatIndex,
-                    standingTileIds = player.hand.tiles.map { it.id },
-                    drawnTileId = player.hand.lastDrawn?.id,
-                    melds = player.hand.melds.map { it.toPresentation(tableState.config.revealsClosedKanTiles) },
-                    setAsideTileIds = player.setAsideTiles.map { it.id },
-                    isNewlyDrawn = false,
-                    newlyClaimedMeldTileIds = emptySet(),
-                    newlySetAsideTileIds = emptySet(),
-                )
-            }
-            val describer = describerFor(tableState)
-            val plan = cornerLayout.planRuleStateUpdate(gameId, tableState, describer.cornerWidthsBySeat(tableState))
-            val propsPresentation = TablePropPresentation(
-                tableId = gameId,
-                ruleModuleId = moduleRegistry.getModule(tableState.config).id,
-                tableLocation = resolved.location,
-                tableFacing = resolved.facing,
-                seatLayout = MahjongTableSeatLayout.forPlayerCount(tableState.players.size),
-                placements = describer?.describe(tableState).orEmpty(),
+        val pendingDeal = initialDealJobs[gameId]
+        launchPendingPresentation(gameId, "publishTableSteps") {
+            pendingDeal?.join()
+            val resolved = resolveTableContext(gameId, "publishTableSteps") ?: return@launchPendingPresentation
+            var cursor = maxOf(
+                resolved.world.time,
+                resolved.tableState.presentationBusyUntilGameTime,
+                resolved.tableState.continuingWinPresentationBusyUntilGameTime,
             )
-            if (!plan.presentsPropsAfterSlide) tablePropPresenter.present(propsPresentation)
-            plan.slidingSeatWidths.forEach { (seatIndex, width) -> slidePlayerArea(gameId, resolved, tableState, seatIndex, width) }
-            val slideId = plan.slideId ?: return@launchOpeningStage
-            val ownsSlide = cornerLayout.awaitSlideEnd(
-                tableId = gameId,
-                slideId = slideId,
-                areTilesMoving = { arePlayerAreasMoving(gameId, resolved) },
-                waitOneTick = { delay(TICK_DURATION) },
-                onSlowSlide = {
-                    logger.warn(
-                        "Player areas still moving after {} ticks, still waiting before presenting corner props: gameId={}",
-                        TableCornerLayoutPlanner.SLOW_SLIDE_WARNING_TICKS,
-                        gameId,
-                    )
-                },
-            )
-            if (ownsSlide && plan.presentsPropsAfterSlide) tablePropPresenter.present(propsPresentation)
+            steps.forEach { step -> cursor = presentStep(gameId, resolved, step, cursor) }
+            resolved.tableState.extendPresentationUntil(cursor)
         }
     }
 
     /**
-     * 各座位牌區（手牌、摸牌位、副露與移出的牌）是否還有牌在動。
-     *
-     * 平移排在牌原本還沒播完的動畫之後，例如補牌落下後才開始平移，所以看牌實際停下的時間，不只看平移的時長。不阻塞全桌的
-     * 動畫（例如中途胡牌在已完成玩家牌上的演出）不算在內。
+     * 呈現一步，從 [startGameTime] 開始。
      *
      * @param gameId 桌子識別碼。
      * @param resolved 已解析的桌子與世界。
-     * @return 還有牌在動時為 true；對局已不存在時為 null。
+     * @param step 要呈現的步驟。
+     * @param startGameTime 這一步開始的遊戲時間。
+     * @return 這一步結束的遊戲時間。
      */
-    private suspend fun arePlayerAreasMoving(gameId: Uuid, resolved: ResolvedTableContext): Boolean? {
-        val tableState = gameRepository.getTableState(gameId) ?: return null
-        val module = moduleRegistry.getModule(tableState.config)
-        return tableState.players.any { player ->
-            (player.hand.allTiles + player.setAsideTiles).any { tile ->
-                resolved.findTile(tile.id)?.blocksTableBusy(resolved.world.time) == true
+    private fun presentStep(gameId: Uuid, resolved: ResolvedTableContext, step: TableStep, startGameTime: Long): Long {
+        val state = step.tableState
+        val arrangement = arrange(gameId, resolved, state)
+        val previous = presentedTables[gameId]?.let { presented -> presented.arrangement ?: arrange(gameId, resolved, presented.tableState) }
+        val rearrangements = step.events.filterIsInstance<TableStepEvent.WallRearranged>()
+        val rearrangedTileIds = rearrangements.flatMapTo(mutableSetOf()) { event -> event.phases.flatMap { phase -> phase.moves.map { it.tileId } } }
+        val motions = TableStepMotionPlanner.plan(previous, arrangement, rearrangedTileIds)
+        // 一起落到同一排的牌只播一次落地聲。
+        val soundTileIds = motions.groupBy { it.kind to it.toRow }.values.mapTo(mutableSetOf()) { group -> group.first().tileId }
+        // 先離開、再讓位、最後從牌牆摸進來；後一段等前一段完成。
+        val phaseStarts = TableStepMotionPlanner.phaseStartTicks(motions)
+        motions.forEach { motion ->
+            val tile = resolved.findTile(motion.tileId) ?: return@forEach
+            tile.assignToTable(gameId)
+            val motionStart = startGameTime + phaseStarts.getValue(TableStepMotionPlanner.phaseOf(motion.kind))
+            TileAnimationSteps.schedulePlannedMotion(tile, motion, motionStart, playLandingSound = motion.tileId in soundTileIds)
+        }
+        var endGameTime = startGameTime + TableStepMotionPlanner.stepDurationTicks(motions)
+        // 牌牆依規則重排與摸牌同一段開始，例如補牌後把牌補回王牌區。
+        val arrivalStart = startGameTime + phaseStarts.getValue(TileMotionPhase.ARRIVE)
+        rearrangements.forEach { event ->
+            presentWallTransition(gameId, resolved, state, event.phases, arrivalStart)?.let { end -> endGameTime = maxOf(endGameTime, end) }
+        }
+        presentLandings(gameId, state, motions, startGameTime)
+        step.events.forEach { event ->
+            when (event) {
+                is TableStepEvent.ActionDeclared -> spawnActionSound(gameId, resolved, state, event.actorId, event.action, startGameTime)
+                is TableStepEvent.ActionScored -> showScoreChanges(gameId, resolved, state, event.scoring, startGameTime)
+                is TableStepEvent.WallRearranged -> Unit
             }
         }
+        presentedTables[gameId] = PresentedTable(state, arrangement)
+        presentAt(resolved.world, startGameTime) { presentTableProps(gameId, state) }
+        // 胡牌那一步的分數由胡牌演出與結算呈現；局況與玩家資訊等下一局開局時更新。
+        if ((state.turnPhase as? TurnPhase.RoundOver)?.conclusion !is RoundConclusion.Win) {
+            presentAt(resolved.world, endGameTime) {
+                resolveTableContext(gameId, "publishTableSteps")?.let { current -> presentRoundAndPlayerInfo(gameId, current, state) }
+            }
+        }
+        return endGameTime
     }
 
     /**
-     * 依權威桌況把一個座位的手牌、摸牌位、副露與移出的牌一起平移到 [cornerWidth] 對應的新位置。
+     * 落地時的牌面提示與角色反應：捨出的牌顯示捨牌提示並讓座位上的角色看向它，移入副露或移出區的牌比照決策卡片顯示整組。
+     *
+     * @param gameId 桌子識別碼。
+     * @param state 這一步的桌況。
+     * @param motions 這一步的動作。
+     * @param startGameTime 這一步開始的遊戲時間。
+     */
+    private fun presentLandings(gameId: Uuid, state: TableState, motions: List<PlannedTileMotion>, startGameTime: Long) {
+        val world = serverWorldOf(gameId) ?: return
+        val landingTime = startGameTime + MahjongTileTableLayout.DISCARD_FLIGHT_DURATION_TICKS
+        val flights = motions.filter { it.kind == TileMotionKind.FLIGHT }
+        flights.filter { it.toRow.region == TileRegion.DISCARD }.forEach { motion ->
+            val tile = world.getEntity(motion.tileId.toJavaUuid()) as? MahjongTileEntity ?: return@forEach
+            tile.showActionPopup(TileActionPopupKind.DISCARD, landingTime, landingTime + TileAnimationSteps.ACTION_POPUP_DURATION_TICKS)
+            val seatIndex = state.players.indexOfFirst { it.id == motion.toRow.ownerId }
+            if (seatIndex >= 0) {
+                characters.onDiscard(tableId = gameId, seatIndex = seatIndex, tileId = motion.tileId, target = Vec3d(motion.to.x, motion.to.y, motion.to.z))
+            }
+        }
+        flights.filter { it.toRow.region == TileRegion.MELD || it.toRow.region == TileRegion.SET_ASIDE }
+            .groupBy { it.toRow }
+            .forEach { (row, landed) ->
+                val owner = state.players.firstOrNull { it.id == row.ownerId } ?: return@forEach
+                val landedIds = landed.mapTo(mutableSetOf()) { it.tileId }
+                val popupTiles = when (row.region) {
+                    TileRegion.MELD -> {
+                        val meld = owner.hand.melds.firstOrNull { meld -> meld.tiles.any { it.id in landedIds } } ?: return@forEach
+                        // 比照決策卡片：依牌序排成一列，只有吃標出鳴取的那張。
+                        val markedTileId = meld.sourceTile?.id?.takeIf { meld.type == MeldType.CHI }
+                        meld.tiles.map { MeldActionPopupTile(tileId = it.id, claimed = it.id == markedTileId) }
+                    }
+                    else -> landed.map { MeldActionPopupTile(tileId = it.tileId, claimed = false) }
+                }
+                val anchor = world.getEntity(landed.first().tileId.toJavaUuid()) as? MahjongTileEntity ?: return@forEach
+                anchor.showMeldActionPopup(popupTiles, landingTime, landingTime + TileAnimationSteps.ACTION_POPUP_DURATION_TICKS)
+            }
+    }
+
+    /**
+     * 依桌況算出整桌每張牌的擺放。
      *
      * @param gameId 桌子識別碼。
      * @param resolved 已解析的桌子與世界。
-     * @param tableState 權威桌況。
-     * @param seatIndex 要重新擺放的座位。
-     * @param cornerWidth 這個座位新的角落寬度。
+     * @param state 要擺放的桌況。
+     * @return 依牌識別碼索引的擺放。
      */
-    private fun slidePlayerArea(
-        gameId: Uuid,
-        resolved: ResolvedTableContext,
-        tableState: TableState,
-        seatIndex: Int,
-        cornerWidth: Double,
-    ) {
-        val player = tableState.players.getOrNull(seatIndex) ?: return
-        val module = moduleRegistry.getModule(tableState.config)
-        playerAreaPresenter.present(
-            MahjongPlayerAreaPresentation(
-                tableId = gameId,
-                tableLocation = resolved.location,
+    private fun arrange(gameId: Uuid, resolved: ResolvedTableContext, state: TableState): Map<Uuid, ArrangedTile> {
+        val module = moduleRegistry.getModule(state.config)
+        val stacksPerSide = openingState.wallStacksPerSide(gameId)
+        val projection = stacksPerSide?.let {
+            MahjongTileWallProjectionContext(
+                controllerX = resolved.location.x,
+                controllerY = resolved.location.y,
+                controllerZ = resolved.location.z,
                 tableFacing = resolved.facing,
-                seatLayout = MahjongTableSeatLayout.forPlayerCount(tableState.players.size),
-                seatIndex = seatIndex,
-                standingTileIds = player.hand.tiles.map { it.id },
-                drawnTileId = player.hand.lastDrawn?.id,
-                melds = player.hand.melds.map { it.toPresentation(tableState.config.revealsClosedKanTiles).toTileGroup() },
-                cornerWidth = cornerWidth,
-                tilePoseStates = tilePoseStates(tableState, module),
-                setAsideTileIds = player.setAsideTiles.map { it.id },
-                slideTicks = CORNER_SLIDE_TICKS,
+                sideLayout = wallSideLayout(state, state.dealerIndex),
+                stacksPerSide = it,
+            )
+        }
+        return TableTileArrangement.arrange(
+            TableTileArrangementInput(
+                controllerX = resolved.location.x,
+                controllerY = resolved.location.y,
+                controllerZ = resolved.location.z,
+                tableFacing = resolved.facing,
+                seatLayout = MahjongTableSeatLayout.forPlayerCount(state.players.size),
+                tableState = state,
+                cornerWidthBySeat = describerFor(state).cornerWidthsBySeat(state),
+                handPoseStates = tilePoseStates(state, module),
+                wallProjection = projection,
+                faceUpWallTileIds = module.publicFaceUpWallTileIds(state, componentRegistry),
             ),
         )
     }
+
+    /**
+     * 依桌況擺放規則的桌上物件，例如點棒。
+     *
+     * @param gameId 桌子識別碼。
+     * @param state 決定擺放內容的桌況。
+     */
+    private fun presentTableProps(gameId: Uuid, state: TableState) {
+        val resolved = resolveTableContext(gameId, "presentTableProps") ?: return
+        tablePropPresenter.present(
+            TablePropPresentation(
+                tableId = gameId,
+                ruleModuleId = moduleRegistry.getModule(state.config).id,
+                tableLocation = resolved.location,
+                tableFacing = resolved.facing,
+                seatLayout = MahjongTableSeatLayout.forPlayerCount(state.players.size),
+                placements = describerFor(state)?.describe(state).orEmpty(),
+            ),
+        )
+    }
+
+    /**
+     * 依最後呈現的桌況重新擺放桌上物件；沒有呈現過時使用目前的權威桌況。供桌子環境改變或桌面中央空出時重新整理使用。
+     *
+     * @param gameId 桌子識別碼。
+     */
+    fun refreshTableProps(gameId: Uuid) {
+        if (serverHolder.current() == null) return
+        scope.launch(dispatchers.main) {
+            val state = presentedTables[gameId]?.tableState ?: gameRepository.getTableState(gameId)
+            if (state == null) {
+                resolveTableContext(gameId, "refreshTableProps")?.let { resolved -> tablePropPresenter.clear(gameId, resolved.location) }
+                return@launch
+            }
+            presentTableProps(gameId, state)
+        }
+    }
+
+    /**
+     * 在 [gameTime] 執行 [block]；時間已到時立即執行。
+     *
+     * @param world 計時使用的世界。
+     * @param gameTime 執行的遊戲時間。
+     * @param block 要在主執行緒執行的工作。
+     */
+    private fun presentAt(world: ServerWorld, gameTime: Long, block: suspend () -> Unit) {
+        if (gameTime <= world.time) {
+            scope.launch(dispatchers.main) { block() }
+            return
+        }
+        scope.launch(dispatchers.main) {
+            worldTickWaiter.await(world, gameTime)
+            block()
+        }
+    }
+
+    /**
+     * 桌子目前所在的世界；桌子位置未知時為 null。
+     *
+     * @param gameId 桌子識別碼。
+     * @return 桌子所在的伺服器世界。
+     */
+    private fun serverWorldOf(gameId: Uuid): ServerWorld? = tableLocationRegistry.get(gameId)?.location?.let(::resolveWorld)
 
     /**
      * 委派給 [tileSelectionConfirmPresenter]，比照 [publishRoundInfoUpdated] 的「建 Presentation、丟給
@@ -851,27 +865,6 @@ class FabricGamePresentationPublisher(
         }
     }
 
-    /**
-     * 開局/換局（跟 [publishWallStructure] 同一批呼叫）跟每次摸牌都會觸發，不需要 [busyTracker] 或
-     * 延遲——純文字更新是瞬間的；跟 [publishOpeningRolls] 同理，世界／entity 存取一併丟回伺服器主執行緒
-     * 執行。
-     */
-    override fun publishRoundInfoUpdated(gameId: Uuid, tableState: TableState) {
-        if (serverHolder.current() == null) {
-            logger.warn("publishRoundInfoUpdated gameId={} skipped: no active server", gameId)
-            return
-        }
-        val openingOperation = openingOperations.getRegisteringTicket(gameId)
-        if (openingOperation != null) {
-            openingState.deferRoundInfo(gameId, tableState)
-            return
-        }
-        launchOpeningStage(gameId, "round-info", openingOperation) {
-            val resolved = resolveTableContext(gameId, "publishRoundInfoUpdated") ?: return@launchOpeningStage
-            presentRoundAndPlayerInfo(gameId, resolved, tableState)
-        }
-    }
-
     /** 交付局況與玩家資訊；開局擲骰揭示完成後也會使用這個共用路徑。 */
     private suspend fun presentRoundAndPlayerInfo(gameId: Uuid, resolved: ResolvedTableContext, tableState: TableState) {
         val ruleModuleId = moduleRegistry.getModule(tableState.config).id
@@ -893,93 +886,14 @@ class FabricGamePresentationPublisher(
     }
 
     /**
-     * 將玩家牌區更新排到主執行緒，並在排程至完成之間取得整桌忙碌標記。
-     * 摸牌、副露與另置牌的動畫由牌區呈現元件處理；初次發牌另走 [publishInitialDeal]。
-     */
-    override fun publishPlayerTilesUpdated(
-        gameId: Uuid,
-        seatIndex: Int,
-        standingTileIds: List<Uuid>,
-        drawnTileId: Uuid?,
-        melds: List<MeldPresentation>,
-        setAsideTileIds: List<Uuid>,
-        isNewlyDrawn: Boolean,
-        newlyClaimedMeldTileIds: Set<Uuid>,
-        newlySetAsideTileIds: Set<Uuid>,
-        followUpSteps: List<DrawFollowUpPresentationStep>,
-    ) {
-        if (serverHolder.current() == null) {
-            logger.warn("publishPlayerTilesUpdated gameId={} skipped: no active server", gameId)
-            return
-        }
-        presentPlayerArea(
-            gameId = gameId,
-            seatIndex = seatIndex,
-            standingTileIds = standingTileIds,
-            drawnTileId = drawnTileId,
-            melds = melds,
-            setAsideTileIds = setAsideTileIds,
-            isNewlyDrawn = isNewlyDrawn,
-            newlyClaimedMeldTileIds = newlyClaimedMeldTileIds,
-            newlySetAsideTileIds = newlySetAsideTileIds,
-            followUpSteps = followUpSteps,
-        )
-    }
-
-    /**
-     * 依 [PlayerAreaSequenceTimeline] 排定每一步的開始時刻，再把各座位自己的步驟連同最終牌區交給 [playerAreaPresenter]；
-     * 所有座位共用同一個開始時刻，因此後面的步驟會等前面的步驟落地，跨玩家也一樣。
-     */
-    override fun publishPlayerAreaSequence(
-        gameId: Uuid,
-        areas: List<PlayerAreaPresentationState>,
-        steps: List<PlayerAreaSequenceStep>,
-    ) {
-        if (serverHolder.current() == null) {
-            logger.warn("publishPlayerAreaSequence gameId={} skipped: no active server", gameId)
-            return
-        }
-        val stepStarts = PlayerAreaSequenceTimeline.stepStartTicks(steps.map { it.setAsideTileIds.size to it.drawnTileIds.size })
-        val sequencedBySeat = steps.zip(stepStarts).groupBy({ (step, _) -> step.seatIndex }) { (step, startTicks) ->
-            SequencedAreaAnimationStep(step.setAsideTileIds, step.drawnTileIds, startTicks)
-        }
-        launchPendingPresentation(gameId, "publishPlayerAreaSequence") {
-            val resolved = resolveTableContext(gameId, "publishPlayerAreaSequence") ?: return@launchPendingPresentation
-            val tableState = gameRepository.getTableState(gameId) ?: return@launchPendingPresentation
-            val module = moduleRegistry.getModule(tableState.config)
-            val desiredHandStates = tilePoseStates(tableState, module)
-            val cornerWidths = describerFor(tableState).cornerWidthsBySeat(tableState)
-            areas.forEach { area ->
-                playerAreaPresenter.present(
-                    MahjongPlayerAreaPresentation(
-                        tableId = gameId,
-                        tableLocation = resolved.location,
-                        tableFacing = resolved.facing,
-                        seatLayout = MahjongTableSeatLayout.forPlayerCount(tableState.players.size),
-                        seatIndex = area.seatIndex,
-                        standingTileIds = area.standingTileIds,
-                        drawnTileId = area.drawnTileId,
-                        melds = area.melds.map { it.toTileGroup() },
-                        cornerWidth = cornerLayout.widthForPlayerArea(gameId, tableState, area.seatIndex, cornerWidths),
-                        setAsideTileIds = area.setAsideTileIds,
-                        sequenceSteps = sequencedBySeat[area.seatIndex].orEmpty(),
-                        tilePoseStates = desiredHandStates,
-                    ),
-                )
-            }
-        }
-    }
-
-    /**
-     * 立刻排定初次發牌，將牌牆落地與擲骰的等待時間寫入每張牌的動畫佇列。
-     * 依發牌完成時間銜接牌牆開門，並結束這一批開局工作的登記。
-     * 實體動畫與待執行的呈現工作共同決定桌子是否忙碌。
+     * 立刻排定初次發牌，將牌牆落地與擲骰的等待時間寫入每張牌的動畫佇列，並把桌子的呈現時間軸延到翻牌結束。
+     * 依發牌完成時間銜接牌牆開門，並結束這一批開局工作的登記。桌上物件依 [tableState] 擺放，局況與玩家資訊在擲骰結束時
+     * 更新；之後的步驟從 [tableState] 接續比較，並等這次發牌排定後才開始。
      */
     override fun publishInitialDeal(
         gameId: Uuid,
+        tableState: TableState,
         handTileIdsBySeatIndex: Map<Int, List<Uuid>>,
-        postFlipHandTileIdsBySeatIndex: Map<Int, List<Uuid>>,
-        dealerSeatIndex: Int,
         dealBatchSizes: List<Int>,
         openingDiceCounts: List<Int>,
     ) {
@@ -987,40 +901,35 @@ class FabricGamePresentationPublisher(
             logger.warn("publishInitialDeal gameId={} skipped: no active server", gameId)
             return
         }
+        presentedTables[gameId] = PresentedTable(tableState, arrangement = null)
         val wallDropTicks = openingState.wallDropTicks(gameId)
         val openingOperation = openingOperations.getRegisteringTicket(gameId)
-        launchOpeningStage(gameId, "initial-deal", openingOperation, pendingOperation = "publishInitialDeal") {
+        val job = launchOpeningStage(gameId, "initial-deal", openingOperation, pendingOperation = "publishInitialDeal") {
             val resolved = resolveTableContext(gameId, "publishInitialDeal") ?: return@launchOpeningStage
-            val state = gameRepository.getTableState(gameId) ?: return@launchOpeningStage
             val timelineAnchor = openingState.awaitWallStartGameTime(gameId) ?: resolved.world.time
             if (!openingOperations.mayRun(openingOperation)) return@launchOpeningStage
             val openingEndGameTime = timelineAnchor + MahjongDiceRollTimeline.totalTicks(openingDiceCounts, wallDropTicks)
-            // 開局發牌與這一局的桌上物件更新讀的是同一份新局桌況；直接由它算出寬度並記錄，不依賴兩個呈現
-            // 工作在主執行緒上的先後順序。
-            val cornerWidthBySeatIndex = gameRepository.getTableState(gameId)
-                ?.let { tableState -> describerFor(tableState).cornerWidthsBySeat(tableState) }
-                ?.also { widths -> cornerLayout.recordRound(gameId, state, widths) }
-                .orEmpty()
-
             val presentation = MahjongInitialDealPresentation(
                 tableId = gameId,
                 tableLocation = resolved.location,
                 tableFacing = resolved.facing,
-                seatLayout = MahjongTableSeatLayout.forPlayerCount(state.players.size),
+                seatLayout = MahjongTableSeatLayout.forPlayerCount(tableState.players.size),
                 handTileIdsBySeatIndex = handTileIdsBySeatIndex,
-                postFlipHandTileIdsBySeatIndex = postFlipHandTileIdsBySeatIndex,
-                dealerSeatIndex = dealerSeatIndex,
-                cornerWidthBySeatIndex = cornerWidthBySeatIndex,
-                tilePoseStates = tilePoseStates(state, moduleRegistry.getModule(state.config)),
+                postFlipHandTileIdsBySeatIndex = tableState.players.withIndex().associate { (seatIndex, player) ->
+                    seatIndex to player.hand.tiles.map { it.id }
+                },
+                dealerSeatIndex = tableState.dealerIndex,
+                cornerWidthBySeatIndex = describerFor(tableState).cornerWidthsBySeat(tableState),
+                tilePoseStates = tilePoseStates(tableState, moduleRegistry.getModule(tableState.config)),
                 dealBatchSizes = dealBatchSizes,
                 extraLeadDelayTicks = (openingEndGameTime - resolved.world.time).coerceAtLeast(0L).coerceAtMost(Int.MAX_VALUE.toLong()).toInt(),
             )
             val result = playerAreaPresenter.presentInitialDeal(presentation)
+            val totalTurnCount = dealBatchSizes.size * tableState.players.size
+            val handFlipEndGameTime = resolved.world.time + presentation.extraLeadDelayTicks +
+                MahjongTileTableLayout.dealAnimationTicks(totalTurnCount)
             val opening = openingState.consumeOpening(gameId)
             if (opening != null && result != MahjongPlayerAreaPresentationResult.TABLE_NOT_FOUND) {
-                val totalTurnCount = dealBatchSizes.size * state.players.size
-                val handFlipEndGameTime = resolved.world.time + presentation.extraLeadDelayTicks +
-                    MahjongTileTableLayout.dealAnimationTicks(totalTurnCount)
                 val openingResult = tileWallPresenter.presentOpening(
                     MahjongTileWallOpeningPresentation(opening, handFlipEndGameTime),
                 )
@@ -1028,97 +937,22 @@ class FabricGamePresentationPublisher(
                     logger.warn("Initial wall opening gameId={} failed: result={}", gameId, openingResult)
                 }
             }
+            resolved.tableState.extendPresentationUntil(handFlipEndGameTime)
+            presentTableProps(gameId, tableState)
             tableOverlayCoordinator.showNow(
                 resolved.world,
                 gameId,
                 BlockPos(resolved.location.x, resolved.location.y, resolved.location.z),
             )
-            openingState.consumeRoundInfo(gameId)?.let { deferredTableState ->
-                worldTickWaiter.await(resolved.world, openingEndGameTime)
-                if (!openingOperations.mayRun(openingOperation)) return@launchOpeningStage
-                val current = resolveTableContext(gameId, "publishRoundInfoUpdated") ?: return@launchOpeningStage
-                presentRoundAndPlayerInfo(gameId, current, deferredTableState)
+            presentAt(resolved.world, openingEndGameTime) {
+                if (!openingOperations.mayRun(openingOperation)) return@presentAt
+                val current = resolveTableContext(gameId, "publishInitialDeal") ?: return@presentAt
+                presentRoundAndPlayerInfo(gameId, current, tableState)
             }
         }
+        initialDealJobs[gameId] = job
+        job.invokeOnCompletion { initialDealJobs.remove(gameId, job) }
         if (openingOperation != null) openingOperations.finishRegistration(openingOperation)
-    }
-
-    /**
-     * 在主執行緒更新指定玩家的牌區，排程至完成期間維持整桌忙碌標記。
-     *
-     * @param gameId 桌子識別碼。
-     * @param seatIndex 要更新的玩家座位。
-     * @param standingTileIds 立牌顯示順序。
-     * @param drawnTileId 獨立摸牌位的牌；沒有時為 null。
-     * @param melds 副露牌組與方向資訊。
-     * @param setAsideTileIds 規則要求另置的牌。
-     * @param isNewlyDrawn 是否播放這次摸牌的動畫。
-     * @param newlyClaimedMeldTileIds 這次新取得、需要播放副露移動動畫的牌。
-     * @param newlySetAsideTileIds 這次新另置、需要播放移動動畫的牌。
-     * @param followUpSteps 摸牌後依序自動移出與補牌的步驟；各步的牌牆移動、動作音效與分數提示依同一份時間軸排定。
-     */
-    private fun presentPlayerArea(
-        gameId: Uuid,
-        seatIndex: Int,
-        standingTileIds: List<Uuid>,
-        drawnTileId: Uuid?,
-        melds: List<MeldPresentation>,
-        setAsideTileIds: List<Uuid>,
-        isNewlyDrawn: Boolean,
-        newlyClaimedMeldTileIds: Set<Uuid>,
-        newlySetAsideTileIds: Set<Uuid>,
-        followUpSteps: List<DrawFollowUpPresentationStep> = emptyList(),
-    ) {
-        launchPendingPresentation(gameId, "publishPlayerTilesUpdated") {
-            val resolved = resolveTableContext(gameId, "publishPlayerTilesUpdated") ?: return@launchPendingPresentation
-            val tableState = gameRepository.getTableState(gameId) ?: return@launchPendingPresentation
-            val module = moduleRegistry.getModule(tableState.config)
-            val desiredHandStates = tilePoseStates(tableState, module)
-            val cornerWidth = cornerLayout.widthForPlayerArea(gameId, tableState, seatIndex, describerFor(tableState).cornerWidthsBySeat(tableState))
-            val presentation = MahjongPlayerAreaPresentation(
-                tableId = gameId,
-                tableLocation = resolved.location,
-                tableFacing = resolved.facing,
-                seatLayout = MahjongTableSeatLayout.forPlayerCount(tableState.players.size),
-                seatIndex = seatIndex,
-                standingTileIds = standingTileIds,
-                drawnTileId = drawnTileId,
-                melds = melds.map { it.toTileGroup() },
-                cornerWidth = cornerWidth,
-                animateDrawnTile = isNewlyDrawn,
-                animatedMeldClaimTileIds = newlyClaimedMeldTileIds,
-                setAsideTileIds = setAsideTileIds,
-                animatedSetAsideTileIds = newlySetAsideTileIds,
-                followUpSteps = followUpSteps.map { DrawFollowUpAnimationStep(it.setAsideTileId, it.drawnTileIds) },
-                tilePoseStates = desiredHandStates,
-            )
-            val result = playerAreaPresenter.present(presentation)
-            if (result == MahjongPlayerAreaPresentationResult.PRESENTED) {
-                val playerId = tableState.players.getOrNull(seatIndex)?.id
-                if (playerId != null) {
-                    synchronized(handPoseUpdates) {
-                        val ids = tableState.players.get(seatIndex).hand.standingTiles.mapTo(mutableSetOf()) { it.id }
-                        handPoseUpdates.recordApplied(gameId, playerId, desiredHandStates.filter { it.tileId in ids })
-                    }
-                }
-            }
-            if (followUpSteps.isNotEmpty()) {
-                val actorId = tableState.players.getOrNull(seatIndex)?.id ?: return@launchPendingPresentation
-                val presentationStart = resolved.world.time
-                val stepStarts = DrawFollowUpTimeline.stepStartTicks(
-                    stepCount = followUpSteps.size,
-                    hasClaimAnimation = newlyClaimedMeldTileIds.isNotEmpty() || newlySetAsideTileIds.isNotEmpty(),
-                )
-                followUpSteps.zip(stepStarts).forEach { (step, startTicks) ->
-                    val stepTime = presentationStart + startTicks
-                    spawnActionSound(gameId, resolved, tableState, actorId, step.action, stepTime)
-                    step.scoring?.let { showScoreChanges(gameId, resolved, tableState, it, stepTime) }
-                    if (step.physicalWallTransitionPhases.isNotEmpty()) {
-                        presentWallTransition(gameId, resolved, tableState, step.physicalWallTransitionPhases, stepTime)
-                    }
-                }
-            }
-        }
     }
 
     /**
@@ -1139,9 +973,8 @@ class FabricGamePresentationPublisher(
                 return@launch
             }
             playerAreaPresenter.clear(gameId, location)
-            synchronized(handPoseUpdates) { handPoseUpdates.clear(gameId) }
+            presentedTables.remove(gameId)
             tablePropPresenter.clear(gameId, location)
-            cornerLayout.clear(gameId)
             roundInfoPresenter.clear(gameId, location)
             playerInfoPresenter.clear(gameId, location)
         }
@@ -1162,42 +995,6 @@ class FabricGamePresentationPublisher(
         scope.launch(dispatchers.main) {
             seatingPresenter.present(gameId, seatedPlayerIds)
             characters.reconcile(gameId)
-        }
-    }
-
-    /**
-     * 一般回合動作，即使 [newlyDiscardedTileId] 非 `null` 觸發捨牌動畫，那段動畫本身的排程完全交給
-     * `FabricMahjongDiscardPresenter` 內部處理，理由同 [publishPlayerTilesUpdated] 的 `isNewlyDrawn`
-     * 同款設計；但這裡的 entity 操作仍是丟回伺服器主執行緒非同步執行，一樣需要
-     * [busyTracker.beginPending] 的 lease 覆蓋「已排定呈現、entity 還沒真正生成/
-     * 移動」那段窗口，理由同 [presentPlayerArea]。
-     */
-    override fun publishDiscardPileUpdated(
-        gameId: Uuid,
-        seatIndex: Int,
-        discardTileIds: List<Uuid>,
-        sidewaysMarkedTileId: Uuid?,
-        newlyDiscardedTileId: Uuid?,
-    ) {
-        if (serverHolder.current() == null) {
-            logger.warn("publishDiscardPileUpdated gameId={} skipped: no active server", gameId)
-            return
-        }
-        launchPendingPresentation(gameId, "publishDiscardPileUpdated") {
-            val resolved = resolveTableContext(gameId, "publishDiscardPileUpdated") ?: return@launchPendingPresentation
-            val state = gameRepository.getTableState(gameId) ?: return@launchPendingPresentation
-
-            val presentation = MahjongDiscardPresentation(
-                tableId = gameId,
-                tableLocation = resolved.location,
-                tableFacing = resolved.facing,
-                seatLayout = MahjongTableSeatLayout.forPlayerCount(state.players.size),
-                seatIndex = seatIndex,
-                discardTileIds = discardTileIds,
-                sidewaysMarkedTileId = sidewaysMarkedTileId,
-                newlyDiscardedTileId = newlyDiscardedTileId,
-            )
-            discardPresenter.present(presentation)
         }
     }
 
@@ -1646,13 +1443,13 @@ class FabricGamePresentationPublisher(
     private fun describerFor(tableState: TableState): TablePropDescriber? = tablePropDescriberRegistry.find(moduleRegistry.getModule(tableState.config).id)
 
     /**
-     * 取得目前桌面物件占用的座位角落寬度，優先使用已記錄的實際擺放結果。
+     * 取得目前桌面物件占用的座位角落寬度，優先使用最後呈現的桌況。
      *
      * @param gameId 桌子識別碼。
      * @param tableState 沒有寬度紀錄時，用來查詢規則描述的桌況。
      * @return 以座位為鍵的寬度；沒有紀錄且沒有桌況時為空集合。
      */
-    private fun cornerWidthsBySeat(gameId: Uuid, tableState: TableState?): Map<Int, Double> = cornerLayout.widthsOnTable(gameId) ?: tableState?.let { state -> describerFor(state).cornerWidthsBySeat(state) }.orEmpty()
+    private fun cornerWidthsBySeat(gameId: Uuid, tableState: TableState?): Map<Int, Double> = (presentedTables[gameId]?.tableState ?: tableState)?.let { state -> describerFor(state).cornerWidthsBySeat(state) }.orEmpty()
 
     /**
      * 從同一份規則配置與完整玩家名單重建牌牆的桌邊對應。
@@ -1713,22 +1510,14 @@ class FabricGamePresentationPublisher(
         val tableState: MahjongTableControllerState,
     )
 
-    /** 桌角寬度改變時整區平移的固定參數。 */
-    private companion object {
-        /** 桌角寬度改變時整區平移的時長；與本人視角手牌補位的時長相同，兩者一起開始、一起結束。 */
-        const val CORNER_SLIDE_TICKS: Int = TileMotionAnimationSpec.DEFAULT_DURATION_TICKS
-
-        /** 一個 server tick 的時長。 */
-        val TICK_DURATION: Duration = 50.milliseconds
-    }
+    /**
+     * 一張桌子最後一次呈現的結果。
+     *
+     * @property tableState 呈現的桌況。
+     * @property arrangement 依 [tableState] 算出的擺放；還沒有在主執行緒算出時為 null。
+     */
+    private data class PresentedTable(
+        val tableState: TableState,
+        val arrangement: Map<Uuid, ArrangedTile>?,
+    )
 }
-
-/** 把 Flow 的副露呈現資料轉成牌區擺放使用的副露牌組。 */
-private fun MeldPresentation.toTileGroup(): MahjongMeldTileGroup = MahjongMeldTileGroup(
-    type,
-    tileIds,
-    calledTileId,
-    sourceDirection,
-    allTilesFaceDown,
-    faceDownTileIds,
-)

@@ -2,6 +2,7 @@ package com.doublemoon1119.mahjongcraft.flow.server.game.usecase
 
 import com.doublemoon1119.mahjongcraft.extension.MahjongExtension
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryFact
+import com.doublemoon1119.mahjongcraft.flow.common.game.service.TableStepEvent
 import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
 import com.doublemoon1119.mahjongcraft.flow.network.dto.api.registration.NetworkDtoRegistrars
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.api.registration.PersistenceRegistrars
@@ -210,9 +211,9 @@ class DeclareAndDiscardUseCaseTest {
         assertEquals(updated.actionHistory, actions)
         assertEquals(actions, fixture.eventPublisher.getNotifiedActions(fixture.gameId, fixture.playerId, fixture.playerId))
         assertNotNull(fixture.snapshots.getSnapshot(fixture.gameId, fixture.playerId))
-        assertEquals(1, fixture.presentationPublisher.getRuleStateUpdateCount(fixture.gameId))
-        assertNotNull(fixture.presentationPublisher.getPublishedPlayerTiles(fixture.gameId))
-        assertNotNull(fixture.presentationPublisher.getPublishedRoundInfo(fixture.gameId))
+        val step = fixture.presentationPublisher.getPublishedTableStepBatches(fixture.gameId).single().single()
+        assertEquals(fixture.repository.getTableState(fixture.gameId), step.tableState)
+        assertEquals(listOf<TableStepEvent>(TableStepEvent.ActionDeclared(fixture.playerId, GameAction.Extension(DeclarationAction))), step.events)
         assertEquals(listOf(WallRevealCheckpoint.AFTER_DISCARD_REACTIONS), fixture.wallRevealCheckpoints)
     }
 
@@ -254,8 +255,9 @@ class DeclareAndDiscardUseCaseTest {
         assertIs<Outcome.Success<Unit>>(result)
         assertEquals(
             setOf(fixture.table.tileWall.getAllTiles().first().id),
-            fixture.presentationPublisher.getPublishedDeadWallReveal(fixture.gameId),
+            fixture.repository.getTableState(fixture.gameId)!!.publicTileEvidenceIds - fixture.table.publicTileEvidenceIds - fixture.tile.id,
         )
+        assertEquals(fixture.repository.getTableState(fixture.gameId), fixture.presentationPublisher.getLastPresentedTableState(fixture.gameId))
     }
 
     /** 宣告附帶的捨牌與一般捨牌相同：先套用放棄自摸與打牌後的規則掛勾，再套用宣告效果。 */

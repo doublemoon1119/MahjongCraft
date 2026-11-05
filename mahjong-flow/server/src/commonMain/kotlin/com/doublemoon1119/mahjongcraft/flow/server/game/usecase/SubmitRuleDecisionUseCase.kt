@@ -16,14 +16,12 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepositor
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameSnapshotSynchronizer
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.RuleDecisionPresentationUpdate
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.RuleDecisionWinPresentationStager
-import com.doublemoon1119.mahjongcraft.logic.component.ComponentRegistry
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import kotlin.uuid.Uuid
 
 /**
  * 驗證並提交一位玩家的規則選擇。
  *
- * @property componentRegistry 正式組件定義與純效果來源。
  * @property gameRepository 權威對局資料倉庫。
  * @property moduleRegistry 麻將規則模組註冊中心。
  * @property resolverRegistry 規則選擇步驟解析器註冊中心。
@@ -37,7 +35,6 @@ class SubmitRuleDecisionUseCase(
     private val resolverRegistry: RuleDecisionResolverRegistry,
     private val snapshotSynchronizer: GameSnapshotSynchronizer,
     private val presentationPublisher: GamePresentationPublisher,
-    private val componentRegistry: ComponentRegistry,
     private val winPresentationStager: RuleDecisionWinPresentationStager,
 ) {
     /**
@@ -126,7 +123,7 @@ class SubmitRuleDecisionUseCase(
                     RuleDecisionPresentationUpdate(
                         previous = game.tableState,
                         current = updated.tableState,
-                        playerAreaSteps = completedResolution?.playerAreaPresentationSteps.orEmpty(),
+                        steps = completedResolution?.steps.orEmpty(),
                     )
                 } else {
                     null
@@ -138,7 +135,7 @@ class SubmitRuleDecisionUseCase(
         if (outcome is Outcome.Success) {
             result.presentationUpdate?.let { update ->
                 val module = moduleRegistry.getModule(update.current.config)
-                update.publish(presentationPublisher, module, componentRegistry)
+                update.publish(presentationPublisher)
                 result.win?.let { win ->
                     winPresentationStager.stage(
                         gameId = gameId,

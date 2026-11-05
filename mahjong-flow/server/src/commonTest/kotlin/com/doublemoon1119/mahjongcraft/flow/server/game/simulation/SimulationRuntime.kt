@@ -252,7 +252,6 @@ internal class SimulationRuntime(defaultStrategyKey: String) {
             resolverRegistry = ruleDecisionResolverRegistry,
             snapshotSynchronizer = snapshotSynchronizer,
             presentationPublisher = presentationPublisher,
-            componentRegistry = bundledCoreExtensionRegistries().componentRegistry,
             winPresentationStager = RuleDecisionWinPresentationStager(winPresentationHandoff, winSettlementDetailResolverRegistry),
         ),
     )
@@ -346,7 +345,6 @@ internal class SimulationRuntime(defaultStrategyKey: String) {
             resolverRegistry = ruleDecisionResolverRegistry,
             snapshotSynchronizer = snapshotSynchronizer,
             presentationPublisher = presentationPublisher,
-            componentRegistry = bundledCoreExtensionRegistries().componentRegistry,
             winPresentationStager = RuleDecisionWinPresentationStager(winPresentationHandoff, winSettlementDetailResolverRegistry),
         ),
         beginRuleDecisionUseCase = beginRuleDecisionUseCase,

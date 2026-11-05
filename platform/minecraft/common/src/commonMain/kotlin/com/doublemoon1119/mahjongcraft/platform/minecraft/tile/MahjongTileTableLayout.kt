@@ -17,9 +17,11 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileTableL
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileTableLayout.localWallVector
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileTableLayout.rotateForFacing
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileTableLayout.rotateForSide
+import kotlin.math.PI
 import kotlin.math.abs
 import kotlin.math.floor
 import kotlin.math.hypot
+import kotlin.math.sin
 import kotlin.math.sqrt
 
 /** 局部水平向量；沿用 [MahjongTableSide]／[MahjongTableFacing] 兩段式旋轉合成，Y 軸不受水平旋轉影響。 */
@@ -1115,10 +1117,8 @@ object MahjongTileTableLayout {
      * 捨牌動畫是一次連續可見的拋物線飛行（不隱形、不傳送），從手牌位置直接飛到牌河位置，途中姿態從
      * 面向玩家的直立牌連續轉成攤平面朝上——跟摸牌／發牌刻意不同：丟牌是玩家自己主動觸發、全場最高頻
      * 的即時操作，玩家丟牌當下早就知道牌面內容，不需要摸牌／發牌那種「隱形揭曉」的儀式感，反而應該
-     * 像現實丟牌一樣是一個連續、看得見、俐落的動作，見
-     * `GamePresentationPublisher.publishDiscardPileUpdated` 的 `newlyDiscardedTileId` 參數 KDoc。
-     * 側身旋轉（立直宣告牌）不連續內插，直接在動畫一開始就用最終 yaw 起飛——理由見
-     * `FabricMahjongDiscardPresenter.scheduleDiscardTileAnimation` KDoc。
+     * 像現實丟牌一樣是一個連續、看得見、俐落的動作。
+     * 側身旋轉（立直宣告牌）不連續內插，直接在動畫一開始就用最終 yaw 起飛。
      *
      * 這個拋物線頂點額外高度，起始估算值，預期進遊戲後調整。
      */
@@ -1126,6 +1126,19 @@ object MahjongTileTableLayout {
 
     /** 捨牌動畫的動畫總時長，理由同 [DISCARD_ARC_HEIGHT]。 */
     const val DISCARD_FLIGHT_DURATION_TICKS: Int = 5
+
+    /** 同一排內越過其他牌時往前進方向傾斜的角度。 */
+    const val ROW_ARC_LEAN_DEGREES: Float = 15.0f
+
+    /**
+     * 同一排內越過其他牌時的提起高度：牌往前進方向傾斜後，後方較低的那個角剛好貼著直立牌的上緣滑過。牌繞底部中心傾斜，
+     * 後角比底部中心低半個牌寬乘上傾斜角的正弦。
+     */
+    val ROW_ARC_HEIGHT: Double = MahjongTileDimensions.TILE_HEIGHT +
+        MahjongTileDimensions.TILE_WIDTH / 2.0 * sin(ROW_ARC_LEAN_DEGREES * PI / 180.0)
+
+    /** 同一排內越過其他牌的時長：提起、沿上緣滑行、落下插入。 */
+    const val ROW_ARC_DURATION_TICKS: Int = 12
 
     /**
      * 胡牌展示中，手牌瞬間整理到位後、開始倒牌流程前的短暫等待。

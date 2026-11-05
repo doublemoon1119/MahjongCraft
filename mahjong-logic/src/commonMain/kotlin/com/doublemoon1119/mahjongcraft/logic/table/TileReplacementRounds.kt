@@ -35,20 +35,28 @@ object TileReplacementRounds {
         }
     }
 
-    /** 一次已成立、需要依序呈現的牌區變化。 */
+    /** 一次已成立的牌區變化，依發生順序排列。 */
     sealed interface Step {
         /** 牌區變化所屬的玩家。 */
         val playerId: Uuid
+
+        /** 這次變化之後的桌況。 */
+        val tableState: TableState
+
+        /** 這次移出或補到的牌，依發生順序排列。 */
+        val tiles: List<IdentifiedTile>
 
         /**
          * 玩家把手上的指定牌一次移出。
          *
          * @property playerId 移出牌的玩家。
          * @property tiles 移出的牌，依移出順序排列。
+         * @property tableState 移出之後的桌況。
          */
         data class SetAside(
             override val playerId: Uuid,
-            val tiles: List<IdentifiedTile>,
+            override val tiles: List<IdentifiedTile>,
+            override val tableState: TableState,
         ) : Step
 
         /**
@@ -56,10 +64,12 @@ object TileReplacementRounds {
          *
          * @property playerId 補牌的玩家。
          * @property tiles 補到的牌，依補牌順序排列。
+         * @property tableState 補牌之後的桌況。
          */
         data class Replaced(
             override val playerId: Uuid,
-            val tiles: List<IdentifiedTile>,
+            override val tiles: List<IdentifiedTile>,
+            override val tableState: TableState,
         ) : Step
     }
 
@@ -69,7 +79,7 @@ object TileReplacementRounds {
      * @param P 規則暫停時附帶的資料型別。
      */
     sealed interface Outcome<out P : Any> {
-        /** 已成立、需要依序呈現的牌區變化。 */
+        /** 這次處理依序成立的牌區變化。 */
         val steps: List<Step>
 
         /**
@@ -195,7 +205,7 @@ object TileReplacementRounds {
                     val tiles = state.players.first { it.id == playerId }.hand.standingTiles.filter(rules::isSetAside)
                     if (tiles.isNotEmpty()) {
                         tiles.forEach { tile -> state = rules.setAside(state, playerId, tile) }
-                        steps += Step.SetAside(playerId, tiles)
+                        steps += Step.SetAside(playerId, tiles, state)
                         due = tiles.size
                         rules.pauseAfterSetAside(state, playerId, tiles)?.let { reason ->
                             return Outcome.Paused(state, Position(position.playerOrderIndex, due), reason, steps.toList())
@@ -207,13 +217,13 @@ object TileReplacementRounds {
                     repeat(due) {
                         val replaced = rules.replace(state, playerId)
                         if (replaced == null) {
-                            if (replacements.isNotEmpty()) steps += Step.Replaced(playerId, replacements.toList())
+                            if (replacements.isNotEmpty()) steps += Step.Replaced(playerId, replacements.toList(), state)
                             return Outcome.Exhausted(state, playerId, steps.toList())
                         }
                         state = replaced.tableState
                         replacements += replaced.tile
                     }
-                    steps += Step.Replaced(playerId, replacements.toList())
+                    steps += Step.Replaced(playerId, replacements.toList(), state)
                     rules.pauseAfterReplacement(state, playerId)?.let { reason ->
                         return Outcome.Paused(state, Position(position.playerOrderIndex + 1, 0).wrapped(playerOrderIds.size), reason, steps.toList())
                     }

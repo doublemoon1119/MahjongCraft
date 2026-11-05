@@ -1,17 +1,14 @@
 package com.doublemoon1119.mahjongcraft.testing.flow.common.game.service
 
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.AppliedActionScoring
-import com.doublemoon1119.mahjongcraft.flow.common.game.model.DrawFollowUpPresentationStep
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.ExhaustiveDrawSettlementPresentationRequest
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.MatchSettlementPresentationRequest
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinCelebrationRequest
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementPresentationRequest
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.GamePresentationPublisher
-import com.doublemoon1119.mahjongcraft.flow.common.game.service.MeldPresentation
-import com.doublemoon1119.mahjongcraft.flow.common.game.service.PlayerAreaPresentationState
-import com.doublemoon1119.mahjongcraft.flow.common.game.service.PlayerAreaSequenceStep
+import com.doublemoon1119.mahjongcraft.flow.common.game.service.TableStep
+import com.doublemoon1119.mahjongcraft.flow.common.game.service.TableStepEvent
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.WinPresentationRequest
-import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.logic.table.layout.PhysicalWallLayoutTransitionPhase
 import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPhysicalLayout
@@ -22,22 +19,15 @@ import kotlin.uuid.Uuid
 /**
  * 供測試使用的 [GamePresentationPublisher] 模擬實作。
  *
- * 紀錄每個對局最後一次收到的擲骰結果、牌牆結構與開局座位安排，以便在單元測試中驗證業務邏輯是否
+ * 紀錄每個對局收到的桌況步驟、擲骰結果、牌牆結構與開局座位安排，以便在單元測試中驗證業務邏輯是否
  * 正確觸發呈現。
  */
 class FakeGamePresentationPublisher : GamePresentationPublisher {
-    /** 依對局 Uuid 紀錄所有已成立的動作語音請求。 */
-    private val declaredGameActions = mutableMapOf<Uuid, MutableList<DeclaredGameActionContext>>()
+    /** 依對局 Uuid 依序紀錄每次收到的桌況步驟。 */
+    private val tableStepBatches = mutableMapOf<Uuid, MutableList<List<TableStep>>>()
 
-    override fun publishGameActionDeclared(gameId: Uuid, actorId: Uuid, action: GameAction) {
-        declaredGameActions.getOrPut(gameId, ::mutableListOf).add(DeclaredGameActionContext(actorId, action))
-    }
-
-    /** 依對局 Uuid 紀錄所有已套用的動作即時收付。 */
-    private val actionScorings = mutableMapOf<Uuid, MutableList<AppliedActionScoring>>()
-
-    override fun publishActionScored(gameId: Uuid, scoring: AppliedActionScoring) {
-        actionScorings.getOrPut(gameId, ::mutableListOf).add(scoring)
+    override fun publishTableSteps(gameId: Uuid, steps: List<TableStep>) {
+        tableStepBatches.getOrPut(gameId, ::mutableListOf).add(steps.toList())
     }
 
     /** 依對局 Uuid 紀錄最後一次終局結算呈現。 */
@@ -55,29 +45,8 @@ class FakeGamePresentationPublisher : GamePresentationPublisher {
     /** 依對局 Uuid 紀錄最後一次收到的牌牆組裝格位。 */
     private val wallAssemblyStructures = mutableMapOf<Uuid, Map<Uuid, TileWallPosition>>()
 
-    /** 依對局 Uuid 紀錄所有收到的實體牌牆 transition。 */
-    private val wallLayoutTransitions = mutableMapOf<Uuid, MutableList<List<PhysicalWallLayoutTransitionPhase>>>()
-
     /** 依對局 Uuid 紀錄最後一次收到的牌牆結構隨附桌況資料。 */
     private val wallStructureContexts = mutableMapOf<Uuid, WallStructureContext>()
-
-    /** 依對局 Uuid 紀錄收到規則狀態更新通知的次數。 */
-    private val ruleStateUpdateCounts = mutableMapOf<Uuid, Int>()
-
-    /** 依對局 Uuid 紀錄最後一次收到的局況更新快照。 */
-    private val roundInfos = mutableMapOf<Uuid, TableState>()
-
-    /** 依對局 Uuid 紀錄最後一次收到的桌角區域（手牌/摸牌位/副露）呈現資料。 */
-    private val playerTiles = mutableMapOf<Uuid, PlayerTilesContext>()
-
-    /** 依對局保留各座位牌區更新的完整呼叫順序。 */
-    private val playerTilesUpdates = mutableMapOf<Uuid, MutableList<PlayerTilesContext>>()
-
-    /** 依對局保留依序牌區變化的完整呼叫順序。 */
-    private val playerAreaSequences = mutableMapOf<Uuid, MutableList<PlayerAreaSequence>>()
-
-    /** 依對局保留不重建牌牆的布局更新。 */
-    private val wallLayoutUpdates = mutableMapOf<Uuid, MutableList<TileWallPhysicalLayout>>()
 
     /** 依對局 Uuid 紀錄最後一次收到的開局發牌動畫資料。 */
     private val initialDeals = mutableMapOf<Uuid, InitialDealContext>()
@@ -90,12 +59,6 @@ class FakeGamePresentationPublisher : GamePresentationPublisher {
 
     /** 依對局 Uuid 依序紀錄收到的局間換位座位順序。 */
     private val seatOrderChanges = mutableMapOf<Uuid, MutableList<List<Uuid>>>()
-
-    /** 依對局 Uuid 紀錄最後一次收到的牌河更新資料。 */
-    private val discardPiles = mutableMapOf<Uuid, DiscardPileContext>()
-
-    /** 依對局 Uuid 紀錄最後一次收到的王牌追加公開集合。 */
-    private val deadWallReveals = mutableMapOf<Uuid, Set<Uuid>>()
 
     /** 依對局 Uuid 依序紀錄單獨慶祝呼叫及完整呈現請求所含的慶祝內容；一炮多響可能同一局收到多筆。 */
     private val winCelebrations = mutableMapOf<Uuid, MutableList<WinCelebrationContext>>()
@@ -142,77 +105,17 @@ class FakeGamePresentationPublisher : GamePresentationPublisher {
         )
     }
 
-    override fun publishWallLayoutTransition(gameId: Uuid, phases: List<PhysicalWallLayoutTransitionPhase>) {
-        wallLayoutTransitions.getOrPut(gameId, ::mutableListOf).add(phases)
-    }
-
-    override fun publishWallLayoutUpdated(
-        gameId: Uuid,
-        layout: TileWallPhysicalLayout,
-        dealerSeatIndex: Int,
-        revealedTileIds: Set<Uuid>,
-    ) {
-        wallLayoutUpdates.getOrPut(gameId, ::mutableListOf).add(layout)
-    }
-
-    override fun publishWallTilesRevealed(gameId: Uuid, revealedTileIds: Set<Uuid>) {
-        deadWallReveals[gameId] = revealedTileIds
-    }
-
-    override fun publishRuleStateUpdated(gameId: Uuid) {
-        ruleStateUpdateCounts[gameId] = getRuleStateUpdateCount(gameId) + 1
-    }
-
-    override fun publishRoundInfoUpdated(gameId: Uuid, tableState: TableState) {
-        roundInfos[gameId] = tableState
-    }
-
-    override fun publishPlayerTilesUpdated(
-        gameId: Uuid,
-        seatIndex: Int,
-        standingTileIds: List<Uuid>,
-        drawnTileId: Uuid?,
-        melds: List<MeldPresentation>,
-        setAsideTileIds: List<Uuid>,
-        isNewlyDrawn: Boolean,
-        newlyClaimedMeldTileIds: Set<Uuid>,
-        newlySetAsideTileIds: Set<Uuid>,
-        followUpSteps: List<DrawFollowUpPresentationStep>,
-    ) {
-        playerTiles[gameId] = PlayerTilesContext(
-            seatIndex = seatIndex,
-            standingTileIds = standingTileIds,
-            drawnTileId = drawnTileId,
-            melds = melds,
-            setAsideTileIds = setAsideTileIds,
-            isNewlyDrawn = isNewlyDrawn,
-            newlyClaimedMeldTileIds = newlyClaimedMeldTileIds,
-            newlySetAsideTileIds = newlySetAsideTileIds,
-            followUpSteps = followUpSteps,
-        )
-        playerTilesUpdates.getOrPut(gameId, ::mutableListOf).add(playerTiles.getValue(gameId))
-    }
-
-    override fun publishPlayerAreaSequence(
-        gameId: Uuid,
-        areas: List<PlayerAreaPresentationState>,
-        steps: List<PlayerAreaSequenceStep>,
-    ) {
-        playerAreaSequences.getOrPut(gameId, ::mutableListOf).add(PlayerAreaSequence(areas, steps))
-    }
-
     override fun publishInitialDeal(
         gameId: Uuid,
+        tableState: TableState,
         handTileIdsBySeatIndex: Map<Int, List<Uuid>>,
-        postFlipHandTileIdsBySeatIndex: Map<Int, List<Uuid>>,
-        dealerSeatIndex: Int,
         dealBatchSizes: List<Int>,
         openingDiceCounts: List<Int>,
     ) {
         initialDeals[gameId] = InitialDealContext(
             handTileIdsBySeatIndex,
-            postFlipHandTileIdsBySeatIndex,
-            dealerSeatIndex,
+            tableState.players.withIndex().associate { (seatIndex, player) -> seatIndex to player.hand.tiles.map { it.id } },
+            tableState.dealerIndex,
             dealBatchSizes,
             openingDiceCounts,
         )
@@ -228,16 +131,6 @@ class FakeGamePresentationPublisher : GamePresentationPublisher {
 
     override fun publishSeatOrderChanged(gameId: Uuid, seatedPlayerIds: List<Uuid>) {
         seatOrderChanges.getOrPut(gameId) { mutableListOf() } += seatedPlayerIds
-    }
-
-    override fun publishDiscardPileUpdated(
-        gameId: Uuid,
-        seatIndex: Int,
-        discardTileIds: List<Uuid>,
-        sidewaysMarkedTileId: Uuid?,
-        newlyDiscardedTileId: Uuid?,
-    ) {
-        discardPiles[gameId] = DiscardPileContext(seatIndex, discardTileIds, sidewaysMarkedTileId, newlyDiscardedTileId)
     }
 
     override fun publishWinCelebration(gameId: Uuid, request: WinCelebrationRequest) {
@@ -257,14 +150,35 @@ class FakeGamePresentationPublisher : GamePresentationPublisher {
         publishOrder.getOrPut(gameId) { mutableListOf() }.add(segments)
     }
 
+    /** 讀取每次收到的桌況步驟，依收到順序排列。 */
+    fun getPublishedTableStepBatches(gameId: Uuid): List<List<TableStep>> = tableStepBatches[gameId].orEmpty().toList()
+
+    /** 讀取所有收到的桌況步驟，依收到順序攤平。 */
+    fun getPublishedTableSteps(gameId: Uuid): List<TableStep> = tableStepBatches[gameId].orEmpty().flatten()
+
+    /** 讀取最後一次收到的步驟中最後一步的桌況；沒有收到時為 null。 */
+    fun getLastPresentedTableState(gameId: Uuid): TableState? = getPublishedTableSteps(gameId).lastOrNull()?.tableState
+
+    /** 讀取所有步驟中宣告成立的動作，依發生順序排列。 */
+    fun getDeclaredGameActions(gameId: Uuid): List<DeclaredGameActionContext> = getPublishedTableSteps(gameId)
+        .flatMap { it.events }
+        .filterIsInstance<TableStepEvent.ActionDeclared>()
+        .map { DeclaredGameActionContext(it.actorId, it.action) }
+
+    /** 讀取所有步驟中的即時收付，依發生順序排列。 */
+    fun getPublishedActionScorings(gameId: Uuid): List<AppliedActionScoring> = getPublishedTableSteps(gameId)
+        .flatMap { it.events }
+        .filterIsInstance<TableStepEvent.ActionScored>()
+        .map { it.scoring }
+
+    /** 讀取所有步驟中依序完成的實體牌牆重排。 */
+    fun getPublishedWallRearrangements(gameId: Uuid): List<List<PhysicalWallLayoutTransitionPhase>> = getPublishedTableSteps(gameId)
+        .flatMap { it.events }
+        .filterIsInstance<TableStepEvent.WallRearranged>()
+        .map { it.phases }
+
     /** 讀取本局全部擲骰呈現記錄。 */
     fun getPublishedOpeningRolls(gameId: Uuid): List<OpeningDiceRoll> = diceRolls[gameId].orEmpty()
-
-    /** 取得指定對局依序收到的動作即時收付。 */
-    fun getPublishedActionScorings(gameId: Uuid): List<AppliedActionScoring> = actionScorings[gameId].orEmpty().toList()
-
-    /** 取得指定對局依序收到的已成立動作語音請求。 */
-    fun getDeclaredGameActions(gameId: Uuid): List<DeclaredGameActionContext> = declaredGameActions[gameId].orEmpty()
 
     /** 取得指定對局最後一次收到的牌牆結構座標；若無紀錄則回傳 null。 */
     fun getPublishedWallStructure(gameId: Uuid): TileWallPhysicalLayout? = wallStructures[gameId]
@@ -272,37 +186,8 @@ class FakeGamePresentationPublisher : GamePresentationPublisher {
     /** 取得指定對局最後一次收到的牌牆組裝格位；若無紀錄則回傳 null。 */
     fun getPublishedWallAssemblyStructure(gameId: Uuid): Map<Uuid, TileWallPosition>? = wallAssemblyStructures[gameId]
 
-    /** 取得指定對局依序收到的實體牌牆 transition。 */
-    fun getPublishedWallLayoutTransitions(gameId: Uuid): List<List<PhysicalWallLayoutTransitionPhase>> = wallLayoutTransitions[gameId].orEmpty()
-
     /** 取得指定對局最後一次收到的牌牆結構隨附桌況資料；若無紀錄則回傳 null。 */
     fun getPublishedWallStructureContext(gameId: Uuid): WallStructureContext? = wallStructureContexts[gameId]
-
-    /** 取得指定對局收到規則狀態更新通知的次數；沒有收到過則為 0。 */
-    fun getRuleStateUpdateCount(gameId: Uuid): Int = ruleStateUpdateCounts[gameId] ?: 0
-
-    /** 取得指定對局最後一次收到的局況更新快照；若無紀錄則回傳 null。 */
-    fun getPublishedRoundInfo(gameId: Uuid): TableState? = roundInfos[gameId]
-
-    /** 取得指定對局最後一次收到的桌角區域（手牌/摸牌位/副露）呈現資料；若無紀錄則回傳 null。 */
-    fun getPublishedPlayerTiles(gameId: Uuid): PlayerTilesContext? = playerTiles[gameId]
-
-    /** 取得指定對局與座位最後一次收到的牌區更新；未更新時為 null。 */
-    fun getPublishedPlayerTiles(gameId: Uuid, seatIndex: Int): PlayerTilesContext? = playerTilesUpdates[gameId]?.lastOrNull { it.seatIndex == seatIndex }
-
-    /** 取得指定對局的牌區更新呼叫順序，不提供內部可變列表。 */
-    fun getPublishedPlayerTilesUpdates(gameId: Uuid): List<PlayerTilesContext> = playerTilesUpdates[gameId].orEmpty().toList()
-
-    /**
-     * 取得指定對局依序牌區變化的完整呼叫順序。
-     *
-     * @param gameId 對局識別碼。
-     * @return 依呼叫順序排列的依序牌區變化。
-     */
-    fun getPublishedPlayerAreaSequences(gameId: Uuid): List<PlayerAreaSequence> = playerAreaSequences[gameId].orEmpty().toList()
-
-    /** 取得指定對局的增量牌牆更新，不提供內部可變列表。 */
-    fun getPublishedWallLayoutUpdates(gameId: Uuid): List<TileWallPhysicalLayout> = wallLayoutUpdates[gameId].orEmpty().toList()
 
     /** 取得指定對局最後一次收到的開局發牌動畫資料；若無紀錄則回傳 null。 */
     fun getPublishedInitialDeal(gameId: Uuid): InitialDealContext? = initialDeals[gameId]
@@ -315,12 +200,6 @@ class FakeGamePresentationPublisher : GamePresentationPublisher {
 
     /** 取得指定對局依序收到的局間換位座位順序；沒有換位時為空清單。 */
     fun getPublishedSeatOrderChanges(gameId: Uuid): List<List<Uuid>> = seatOrderChanges[gameId].orEmpty().toList()
-
-    /** 取得指定對局最後一次收到的牌河更新資料；若無紀錄則回傳 null。 */
-    fun getPublishedDiscardPile(gameId: Uuid): DiscardPileContext? = discardPiles[gameId]
-
-    /** 取得指定對局最後一次收到的王牌追加公開集合；若無紀錄則回傳 null。 */
-    fun getPublishedDeadWallReveal(gameId: Uuid): Set<Uuid>? = deadWallReveals[gameId]
 
     /** 取得指定對局收到的全部胡牌慶祝演出呼叫，依呼叫順序排列；若無紀錄則回傳空清單。 */
     fun getPublishedWinCelebrations(gameId: Uuid): List<WinCelebrationContext> = winCelebrations[gameId].orEmpty()

@@ -10,6 +10,8 @@ package com.doublemoon1119.mahjongcraft.platform.minecraft.tile
  * @property startPoseRotationDegrees 起始姿態的局部 X 軸旋轉角，取代靜態的 `tilePose.rotationDegrees`。
  * @property endPoseRotationDegrees 結束姿態的局部 X 軸旋轉角。
  * @property easeRotation 姿態旋轉角是否也套用跟位移相同的 ease-out 曲線。
+ * @property liftCarryLower 是否走「提起、橫移、放下」的路線，而不是對稱拋物線。
+ * @property leanDegrees 「提起、橫移、放下」途中往前進方向傾斜的角度。
  */
 data class TileMotionAnimationSpec(
     val durationTicks: Int = DEFAULT_DURATION_TICKS,
@@ -17,6 +19,8 @@ data class TileMotionAnimationSpec(
     val startPoseRotationDegrees: Float,
     val endPoseRotationDegrees: Float,
     val easeRotation: Boolean = false,
+    val liftCarryLower: Boolean = false,
+    val leanDegrees: Float = 0.0f,
 ) {
     init {
         require(durationTicks > 0) { "durationTicks must be positive" }

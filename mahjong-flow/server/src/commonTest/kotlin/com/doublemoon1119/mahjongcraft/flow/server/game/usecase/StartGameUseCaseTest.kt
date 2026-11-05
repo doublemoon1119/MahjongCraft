@@ -354,15 +354,16 @@ class StartGameUseCaseTest {
         assertTrue(wallContext.isNewOpening)
     }
 
-    /** 驗證開局時只發布一次規則狀態更新要求。 */
+    /** 驗證開局的牌、桌上物件與局況都由初次發牌呈現，不另外送出桌況步驟。 */
     @Test
-    fun `test start game publishes table props update once`() = runTest {
+    fun `test start game presents the opening through the initial deal`() = runTest {
         val fixtures = Fixtures()
         fixtures.roomRepo.setRoom(readyRoom())
 
         fixtures.useCase(roomId, hostId)
 
-        assertEquals(1, fixtures.presentationPublisher.getRuleStateUpdateCount(roomId))
+        assertNotNull(fixtures.presentationPublisher.getPublishedInitialDeal(roomId))
+        assertTrue(fixtures.presentationPublisher.getPublishedTableStepBatches(roomId).isEmpty())
     }
 
     /** 驗證開局發布完整 136 張初始布局，而不是已排除發牌張的目前牌牆布局。 */

@@ -154,7 +154,6 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.TableStateDe
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.prop.FabricTablePropKindRegistry
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.prop.FabricTablePropKindRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.prop.FabricTablePropPresenter
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.tile.FabricMahjongDiscardPresenter
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.tile.FabricMahjongPlayerAreaPresenter
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.tile.FabricMahjongTileWallPresenter
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.time.FabricTickMonotonicClock
@@ -171,7 +170,6 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongRoundInfo
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongTileSelectionConfirmPresenter
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TablePropPresenter
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftPlayerFeedbackPublisher
-import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongDiscardPresenter
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongPlayerAreaPresenter
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileWallPresenter
 import org.koin.dsl.bind
@@ -351,7 +349,6 @@ val fabricServerModule = module {
     single<FabricTablePropKindRegistryImpl>() bind FabricTablePropKindRegistry::class
     single<FabricTablePropPresenter>() bind TablePropPresenter::class
 
-    single<FabricMahjongDiscardPresenter>() bind MahjongDiscardPresenter::class
     single<FabricMahjongPlayerAreaPresenter>() bind MahjongPlayerAreaPresenter::class
     single<FabricMahjongTileWallPresenter>() bind MahjongTileWallPresenter::class
 

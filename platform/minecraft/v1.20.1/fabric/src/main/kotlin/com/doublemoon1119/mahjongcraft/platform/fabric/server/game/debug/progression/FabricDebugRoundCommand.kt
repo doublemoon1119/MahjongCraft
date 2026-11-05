@@ -2,6 +2,7 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.progre
 
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.PendingGameTransition
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.GamePresentationPublisher
+import com.doublemoon1119.mahjongcraft.flow.common.game.service.TableStep
 import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepository
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameSnapshotSynchronizer
@@ -99,8 +100,7 @@ class FabricDebugRoundCommand(
      * @param state 本場數已更新的權威桌況。
      */
     private suspend fun publishStickPresentation(tableId: Uuid, state: TableState) {
-        presentationPublisher.publishRuleStateUpdated(tableId)
-        presentationPublisher.publishRoundInfoUpdated(tableId, state)
+        presentationPublisher.publishTableSteps(tableId, listOf(TableStep(state, emptyList())))
     }
 
     /** 換局開發指令的節點名稱與本場數範圍。 */

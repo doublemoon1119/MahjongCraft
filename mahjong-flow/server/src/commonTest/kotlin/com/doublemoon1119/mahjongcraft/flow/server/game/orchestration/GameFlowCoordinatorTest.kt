@@ -301,7 +301,6 @@ class GameFlowCoordinatorTest {
                     resolverRegistry = it,
                     snapshotSynchronizer = snapshotSynchronizer,
                     presentationPublisher = presentationPublisher,
-                    componentRegistry = bundledCoreExtensionRegistries().componentRegistry,
                     winPresentationStager = RuleDecisionWinPresentationStager(winPresentationHandoff, winSettlementDetailResolverRegistry),
                 )
             },

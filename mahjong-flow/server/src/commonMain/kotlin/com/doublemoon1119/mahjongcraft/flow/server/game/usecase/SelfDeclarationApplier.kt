@@ -41,16 +41,15 @@ internal object SelfDeclarationApplier {
          * 完整動作已成功套用。
          *
          * @property tableState 更新後桌況。
+         * @property declaredState 動作已成立、補牌之前的桌況，包含動作的收付與補牌前公開的牌；呈現補牌前的那一步使用。
          * @property drawnTiles 規則實際補到的牌張。
-         * @property wallRevealBatches 依 checkpoint 順序排列的新公開牌批次。
-         * @property physicalWallTransitionPhases 已通過規則驗證的實體牌牆移動階段；本切片只隨結果保留，
-         * 尚不負責發布 presentation。
+         * @property physicalWallTransitionPhases 已通過規則驗證的實體牌牆移動階段，在補牌那一步依序完成。
          * @property scoring 動作成立當下的點數收付；不收付時為 null。
          */
         data class Applied(
             val tableState: TableState,
+            val declaredState: TableState,
             val drawnTiles: List<IdentifiedTile>,
-            val wallRevealBatches: List<Set<Uuid>> = emptyList(),
             val physicalWallTransitionPhases: List<PhysicalWallLayoutTransitionPhase> = emptyList(),
             val scoring: AppliedActionScoring? = null,
         ) : Result
@@ -332,8 +331,8 @@ internal object SelfDeclarationApplier {
         return when (decision) {
             SupplementalDrawDecision.NotRequired -> Result.Applied(
                 candidateAfterBeforeReveal,
+                candidateAfterBeforeReveal,
                 emptyList(),
-                listOf(beforeReveal.newlyRevealedTileIds).filterNot { it.isEmpty() },
             )
             is SupplementalDrawDecision.Rejected -> Result.Rejected(decision.reasonId)
             is SupplementalDrawDecision.Completed -> applyCompletedDecision(
@@ -344,16 +343,15 @@ internal object SelfDeclarationApplier {
                 action,
                 module,
                 componentRegistry,
-            ).completeWallReveal(module, actorPlayerId, action, beforeReveal.newlyRevealedTileIds, componentRegistry)
+            ).completeWallReveal(module, actorPlayerId, action, componentRegistry)
         }
     }
 
-    /** 補牌成功後呼叫公開 policy，並保留補牌前／後兩批呈現順序。 */
+    /** 補牌成功後呼叫公開 policy。 */
     private fun Result.completeWallReveal(
         module: MahjongRuleModule<*>,
         actorPlayerId: Uuid,
         action: GameAction,
-        revealedBeforeDraw: Set<Uuid>,
         componentRegistry: ComponentRegistry,
     ): Result {
         if (this is Result.Rejected) return this
@@ -368,11 +366,7 @@ internal object SelfDeclarationApplier {
         )
         return when (afterReveal) {
             is WallRevealDecisionApplier.Result.Rejected -> Result.Rejected(afterReveal.reasonId)
-            is WallRevealDecisionApplier.Result.Applied -> copy(
-                tableState = afterReveal.tableState,
-                wallRevealBatches = listOf(revealedBeforeDraw, afterReveal.newlyRevealedTileIds)
-                    .filterNot { it.isEmpty() },
-            )
+            is WallRevealDecisionApplier.Result.Applied -> copy(tableState = afterReveal.tableState)
         }
     }
 
@@ -411,7 +405,7 @@ internal object SelfDeclarationApplier {
             physicalWallLayout = null,
         )
         val currentPhysicalLayout = originalState.physicalWallLayout
-            ?: return Result.Applied(stateWithoutResolvedPhysicalLayout, decision.drawnTiles)
+            ?: return Result.Applied(stateWithoutResolvedPhysicalLayout, candidateState, decision.drawnTiles)
         val physicalDecision = module.createPhysicalWallLayoutPolicy().resolveTransitionValidated(
             PhysicalWallLayoutTransitionContext(
                 tableStateBeforeAction = originalState,
@@ -427,6 +421,6 @@ internal object SelfDeclarationApplier {
             is PhysicalWallLayoutTransitionDecision.Rejected -> return Result.Rejected(physicalDecision.reasonId)
         }
         val updatedState = stateWithoutResolvedPhysicalLayout.copy(physicalWallLayout = updatedPhysicalLayout)
-        return Result.Applied(updatedState, decision.drawnTiles, physicalWallTransitionPhases = phases)
+        return Result.Applied(updatedState, candidateState, decision.drawnTiles, physicalWallTransitionPhases = phases)
     }
 }

@@ -154,21 +154,11 @@ class StartGameUseCase(
                 eventPublisher.publishToAllObservers(roomId, seatedPlayerIds, roll.playerId, GameAction.DiceRolled(roll))
             }
         }
-        // 規則狀態的呈現跟牌牆同時更新，緊接在 publishWallStructure 之後呼叫；開局時也要呼叫，
-        // 確保上一場殘留的物件被清乾淨。
-        presentationPublisher.publishRuleStateUpdated(roomId)
-        presentationPublisher.publishRoundInfoUpdated(roomId, tableState)
-        // 發牌完成後的最終牌序——tableState 此時已經是整理過的順序（見上方 organizedState），
-        // 與發牌順序 startOutcome.dealOrderHandTileIdsBySeatIndex 分開，見
-        // GamePresentationPublisher.publishInitialDeal KDoc。
-        val postFlipHandTileIdsBySeatIndex = tableState.players.withIndex().associate { (seatIndex, player) ->
-            seatIndex to player.hand.tiles.map { tile -> tile.id }
-        }
+        // tableState 的立牌已是整理後的最終牌序，與發牌順序 startOutcome.dealOrderHandTileIdsBySeatIndex 分開。
         presentationPublisher.publishInitialDeal(
             roomId,
+            tableState,
             startOutcome.dealOrderHandTileIdsBySeatIndex,
-            postFlipHandTileIdsBySeatIndex,
-            dealerSeatIndex,
             dealBatchSizes = tableState.config.dealBatchSizes(),
             openingDiceCounts = tableState.openingDiceRolls.map { it.dice.values.size },
         )

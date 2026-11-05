@@ -5,6 +5,8 @@ import com.doublemoon1119.mahjongcraft.flow.api.event.ActionsPerformedEvent
 import com.doublemoon1119.mahjongcraft.flow.api.event.PerformedActionKind
 import com.doublemoon1119.mahjongcraft.flow.common.game.event.GameEventProjector
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryFact
+import com.doublemoon1119.mahjongcraft.flow.common.game.service.TableStep
+import com.doublemoon1119.mahjongcraft.flow.common.game.service.TableStepEvent
 import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
 import com.doublemoon1119.mahjongcraft.flow.network.dto.api.registration.NetworkDtoRegistrars
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.api.registration.PersistenceRegistrars
@@ -59,6 +61,8 @@ import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.logic.table.TileWall
 import com.doublemoon1119.mahjongcraft.logic.table.WallRevealPolicy
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
+import com.doublemoon1119.mahjongcraft.logic.tile.component.TileRegion
+import com.doublemoon1119.mahjongcraft.logic.tile.component.resolveTileAreas
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledCoreExtensionRegistries
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledWinCelebrationCueResolverRegistry
 import com.doublemoon1119.mahjongcraft.testing.flow.common.game.repository.FakeGameSnapshotRepository
@@ -68,6 +72,7 @@ import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeIdentifiedTileFact
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeDiscardPile
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
+import com.doublemoon1119.mahjongcraft.testing.logic.table.tileRegion
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -92,7 +97,7 @@ class DrawFollowUpAndActionScoringIntegrationTest {
         val drawer = fixture.drawer()
         assertEquals(ordinary, drawer.hand.lastDrawn)
         assertEquals(listOf(GameAction.Draw), fixture.recordedActions())
-        assertTrue(fixture.presentation.getPublishedPlayerTiles(fixture.gameId)!!.followUpSteps.isEmpty())
+        assertTrue(followUps(fixture.presentation.getPublishedTableStepBatches(fixture.gameId).last()).isEmpty())
     }
 
     /** 連續摸到花時在同一筆寫入內依序移出並補牌，直到補到一般牌。 */
@@ -115,14 +120,14 @@ class DrawFollowUpAndActionScoringIntegrationTest {
             listOf(GameAction.Draw, FLOWER_ACTION, GameAction.Draw, FLOWER_ACTION, GameAction.Draw),
             fixture.events.getNotifiedActions(fixture.gameId, fixture.drawerId, fixture.drawerId),
         )
-        val published = assertNotNull(fixture.presentation.getPublishedPlayerTiles(fixture.gameId))
-        assertEquals(ordinary.id, published.drawnTileId)
+        // 摸牌一步，之後每朵花的移出與補牌各一步；最後留在摸牌位的是補到的一般牌。
+        val steps = fixture.presentation.getPublishedTableStepBatches(fixture.gameId).single()
+        assertEquals(TileRegion.DRAWN, steps.first().tableState.tileRegion(firstFlower.id))
         assertEquals(
-            listOf(firstFlower.id to listOf(secondFlower.id), secondFlower.id to listOf(ordinary.id)),
-            published.followUpSteps.map { it.setAsideTileId to it.drawnTileIds },
+            listOf(firstFlower.id to setOf(secondFlower.id), secondFlower.id to setOf(ordinary.id)),
+            followUps(steps),
         )
-        assertEquals(listOf(firstFlower.id, secondFlower.id), published.setAsideTileIds)
-        assertTrue(published.isNewlyDrawn)
+        assertEquals(TileRegion.DRAWN, steps.last().tableState.tileRegion(ordinary.id))
         val publicActions = fixture.actionEvents().single().actions
         assertEquals(
             listOf(PerformedActionKind.DECLARATION, PerformedActionKind.SUPPLEMENTAL_DRAW, PerformedActionKind.DECLARATION, PerformedActionKind.SUPPLEMENTAL_DRAW),
@@ -201,9 +206,8 @@ class DrawFollowUpAndActionScoringIntegrationTest {
         assertEquals(setOf(fixture.southId), pending.eligiblePlayerIds)
         assertEquals(flower, paused.players.first { it.id == fixture.drawerId }.hand.lastDrawn)
         assertEquals(listOf(GameAction.Draw, FLOWER_ACTION), fixture.recordedActions())
-        val pausedStep = fixture.presentation.getPublishedPlayerTiles(fixture.gameId)!!.followUpSteps.single()
-        assertEquals(flower.id, pausedStep.setAsideTileId)
-        assertTrue(pausedStep.drawnTileIds.isEmpty())
+        // 等待搶和時最後一步是花已移出、尚未補牌的樣子。
+        assertEquals(listOf(flower.id to emptySet<Uuid>()), followUps(fixture.presentation.getPublishedTableStepBatches(fixture.gameId).single()))
         assertTrue(fixture.actionEvents().isEmpty())
 
         assertIs<Outcome.Success<Unit>>(fixture.respondToRobbing(fixture.gameId, fixture.southId, GameAction.Pass))
@@ -393,8 +397,8 @@ class DrawFollowUpAndActionScoringIntegrationTest {
         assertTrue(drawer.hand.tiles.containsAll(listOf(b, c)))
         assertTrue(drawer.hand.standingTiles.none { it.tile == FLOWER })
         assertEquals(
-            listOf(first.id to listOf(second.id, c.id), second.id to listOf(b.id, a.id)),
-            fixture.presentation.getPublishedPlayerTiles(fixture.gameId)!!.followUpSteps.map { it.setAsideTileId to it.drawnTileIds },
+            listOf(first.id to setOf(second.id, c.id), second.id to setOf(b.id, a.id)),
+            followUps(fixture.presentation.getPublishedTableStepBatches(fixture.gameId).single()),
         )
     }
 
@@ -445,26 +449,28 @@ class DrawFollowUpAndActionScoringIntegrationTest {
         assertIs<GameAction.Kan>(assertIs<DrawSource.Supplemental>(keptSource).action)
     }
 
-    /** 宣告移出後自動處理又移出補到的牌時，規則狀態的變化只通知平台一次。 */
+    /** 宣告移出後自動處理又移出補到的牌時，宣告與自動移出依序各自一步。 */
     @Test
-    fun `a declared set aside followed by automatic ones updates the rule state once`() = runTest {
+    fun `a declared set aside followed by automatic ones presents each set aside in order`() = runTest {
         val fixture = Fixture(TestBehavior(declaresFlowers = true))
         val declared = tile(FLOWER)
         val replacement = tile(FLOWER)
         val ordinary = tile(ORDINARY)
         val hand = Hand(tiles = fillers(13), lastDrawn = declared)
-        fixture.repository.setTableState(fixture.table(drawerHand = hand, wall = listOf(ordinary, replacement)))
+        val before = fixture.table(drawerHand = hand, wall = listOf(ordinary, replacement))
+        fixture.repository.setTableState(before)
 
         assertIs<Outcome.Success<Unit>>(fixture.declareSetAside(fixture.gameId, fixture.drawerId, FLOWER_ACTION))
 
         assertEquals(listOf(declared, replacement), fixture.drawer().tileAreas["test:flowers"]?.tiles.orEmpty())
-        assertEquals(1, fixture.presentation.getPublishedPlayerTiles(fixture.gameId)!!.followUpSteps.size)
-        assertEquals(1, fixture.presentation.getRuleStateUpdateCount(fixture.gameId))
+        val steps = fixture.presentation.getPublishedTableStepBatches(fixture.gameId).single()
+        assertEquals(TileRegion.SET_ASIDE, steps.first().tableState.tileRegion(declared.id))
+        assertEquals(listOf(declared.id to setOf(replacement.id), replacement.id to setOf(ordinary.id)), followUps(steps, before = before))
     }
 
-    /** 全員放過後繼續的自動處理又移出牌時，這次回應的規則狀態變化只通知平台一次。 */
+    /** 全員放過後，接續補牌與之後的自動移出，不再重複呈現已宣告的移出。 */
     @Test
-    fun `resuming automatic set asides after a robbing pause updates the rule state once`() = runTest {
+    fun `resuming automatic set asides after a robbing pause continues from the replacement`() = runTest {
         val behavior = TestBehavior(replacementCount = 2)
         val fixture = Fixture(behavior)
         val (first, second, third) = Triple(tile(FLOWER), tile(FLOWER), tile(FLOWER))
@@ -472,12 +478,12 @@ class DrawFollowUpAndActionScoringIntegrationTest {
         behavior.robbableTileIds += second.id
         fixture.repository.setTableState(fixture.table(wall = listOf(first) + List(4) { tile(ORDINARY) } + listOf(third, second)))
         assertIs<Outcome.Success<Unit>>(fixture.draw(fixture.gameId, fixture.drawerId))
-        val pausedCount = fixture.presentation.getRuleStateUpdateCount(fixture.gameId)
 
         assertIs<Outcome.Success<Unit>>(fixture.respondToRobbing(fixture.gameId, fixture.southId, GameAction.Pass))
 
-        assertEquals(1, fixture.presentation.getPublishedPlayerTiles(fixture.gameId)!!.followUpSteps.size)
-        assertEquals(pausedCount + 1, fixture.presentation.getRuleStateUpdateCount(fixture.gameId))
+        val resumed = fixture.presentation.getPublishedTableStepBatches(fixture.gameId).last()
+        assertEquals(listOf(third.id), followUps(resumed).map { it.first })
+        assertEquals(1, resumed.flatMap { it.events }.count { it is TableStepEvent.ActionDeclared }, "The paused set aside was already presented.")
     }
 
     /** 規則要移出的不是這次詢問的牌時視為規則錯誤，桌況不改變。 */
@@ -547,6 +553,32 @@ class DrawFollowUpAndActionScoringIntegrationTest {
 
         assertEquals(table, fixture.repository.getTableState(fixture.gameId))
     }
+
+    /**
+     * 從依序的步驟找出每次移出花與緊接著補到的牌：宣告花的那一步移入移出區的牌，以及下一步從牌牆或保留區移出的牌。
+     *
+     * @param steps 一次交易送出的步驟。
+     * @param before 交易之前的桌況，供第一步就是宣告時比較；第一步不是宣告時可省略。
+     * @return 依序排列的（移出的花, 補到的牌）。
+     */
+    private fun followUps(steps: List<TableStep>, before: TableState? = null): List<Pair<Uuid, Set<Uuid>>> = steps.withIndex()
+        .filter { (index, step) -> (index > 0 || before != null) && step.events.any { it is TableStepEvent.ActionDeclared && it.action == FLOWER_ACTION } }
+        .map { (index, step) ->
+            val previous = if (index == 0) checkNotNull(before) else steps[index - 1].tableState
+            val setAside = movedTiles(previous, step.tableState) { it == TileRegion.SET_ASIDE }.single()
+            val next = steps.getOrNull(index + 1)?.takeUnless { candidate -> candidate.events.any { it is TableStepEvent.ActionDeclared } }
+            val drawn = next?.let { movedTiles(step.tableState, it.tableState) { region -> region == TileRegion.HAND || region == TileRegion.DRAWN } }
+                ?.filter { tileId -> step.tableState.tileRegion(tileId) == TileRegion.WALL || step.tableState.tileRegion(tileId) == TileRegion.RESERVED }
+                .orEmpty()
+            setAside to drawn.toSet()
+        }
+
+    /**
+     * 從 [before] 到 [after] 移入符合 [into] 區域的牌。
+     *
+     * @return 區域改變且新區域符合條件的牌。
+     */
+    private fun movedTiles(before: TableState, after: TableState, into: (TileRegion) -> Boolean): List<Uuid> = after.resolveTileAreas().filter { entry -> into(entry.region) && before.tileRegion(entry.tile.id) != entry.region }.map { it.tile.id }
 
     /**
      * 測試規則的可調整行為。

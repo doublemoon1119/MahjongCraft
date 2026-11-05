@@ -2,12 +2,15 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.animat
 
 import com.doublemoon1119.mahjongcraft.logic.base.MeldType
 import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
+import com.doublemoon1119.mahjongcraft.logic.tile.component.TilePose
+import com.doublemoon1119.mahjongcraft.logic.tile.component.TileRegion
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.DiceRollPresentationEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongDiceEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongDicePoint
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongTileEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongTilePose
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MeldActionPopupTile
+import com.doublemoon1119.mahjongcraft.platform.fabric.entity.TileActionPopupKind
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.claimedTileOrientation
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.dice.toMahjongTableFacing
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.support.DebugPreviewDefaults
@@ -21,6 +24,10 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongDiceTableL
 import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongTableSide
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongTableSeatLayout
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileTableLayout
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileWallPlacement
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.PlannedTileMotion
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileMotionKind
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileRowKey
 import com.mojang.brigadier.builder.LiteralArgumentBuilder
 import net.minecraft.server.command.CommandManager.literal
 import net.minecraft.server.command.ServerCommandSource
@@ -240,7 +247,7 @@ class FabricDebugAnimationCommand(
         val sourcePlacement = layout.wallPlacement(tileIndex = 0)
         val finalPlacement = layout.drawnTilePlacement(standingTileCount = DebugPreviewDefaults.RULE_CONFIG.initialHandSize)
         val tile = tilePreviewSupport.spawnFreeTile(world, sourcePlacement, MahjongTilePose.FACE_DOWN, assetKey)
-        TileAnimationSteps.scheduleDrawnTile(tile, finalPlacement)
+        TileAnimationSteps.schedulePlannedMotion(tile, previewMotion(tile, TileMotionKind.DRAW, TileRegion.WALL, TileRegion.DRAWN, sourcePlacement, finalPlacement, TilePose.FACE_DOWN, TilePose.UPRIGHT), world.time)
         val endGameTime = world.time +
             MahjongTileTableLayout.DRAW_LIFT_DURATION_TICKS +
             MahjongTileTableLayout.DRAW_SNAP_GAP_TICKS +
@@ -272,7 +279,9 @@ class FabricDebugAnimationCommand(
         val sourcePlacement = layout.handPlacement(handSize = DebugPreviewDefaults.RULE_CONFIG.initialHandSize, tileIndex = 0)
         val finalPlacement = layout.discardPlacement(discardIndex = 0)
         val tile = tilePreviewSupport.spawnFreeTile(world, sourcePlacement, MahjongTilePose.STANDING, assetKey)
-        TileAnimationSteps.scheduleDiscardFlight(tile, finalPlacement)
+        TileAnimationSteps.schedulePlannedMotion(tile, previewMotion(tile, TileMotionKind.FLIGHT, TileRegion.HAND, TileRegion.DISCARD, sourcePlacement, finalPlacement, TilePose.UPRIGHT, TilePose.FACE_UP), world.time)
+        val landingTime = world.time + MahjongTileTableLayout.DISCARD_FLIGHT_DURATION_TICKS
+        tile.showActionPopup(TileActionPopupKind.DISCARD, landingTime, landingTime + TileAnimationSteps.ACTION_POPUP_DURATION_TICKS)
         val endGameTime = world.time + MahjongTileTableLayout.DISCARD_FLIGHT_DURATION_TICKS + PREVIEW_VIEWING_BUFFER_TICKS
         entityLifecycle.schedule(world, endGameTime, listOf(tile))
         return COMMAND_SUCCESS
@@ -309,10 +318,10 @@ class FabricDebugAnimationCommand(
         val finalPlacements = layout.meldPlacements(type = type, tileCount = tileCount)
         val tiles = sourcePlacements.map { placement -> tilePreviewSupport.spawnFreeTile(world, placement, MahjongTilePose.STANDING, assetKey) }
         tiles.forEachIndexed { index, tile ->
-            TileAnimationSteps.scheduleMeldClaim(
-                tile,
-                finalPlacements[index],
-                MahjongTilePose.FACE_UP,
+            TileAnimationSteps.schedulePlannedMotion(
+                tile = tile,
+                motion = previewMotion(tile, TileMotionKind.FLIGHT, TileRegion.HAND, TileRegion.MELD, sourcePlacements[index], finalPlacements[index], TilePose.UPRIGHT, TilePose.FACE_UP),
+                startGameTime = world.time,
                 playLandingSound = index == 0,
             )
         }
@@ -329,6 +338,39 @@ class FabricDebugAnimationCommand(
         entityLifecycle.schedule(world, endGameTime, tiles)
         return COMMAND_SUCCESS
     }
+
+    /**
+     * 預覽用的單張牌動作，使用與正式對局相同的動作種類與時長。
+     *
+     * @param tile 要播放的牌。
+     * @param kind 動作種類。
+     * @param fromRegion 起點所在的區域種類。
+     * @param toRegion 終點所在的區域種類。
+     * @param from 起點位置。
+     * @param to 終點位置。
+     * @param fromPose 起點姿態。
+     * @param toPose 終點姿態。
+     * @return 規劃好的動作。
+     */
+    private fun previewMotion(
+        tile: MahjongTileEntity,
+        kind: TileMotionKind,
+        fromRegion: TileRegion,
+        toRegion: TileRegion,
+        from: MahjongTileWallPlacement,
+        to: MahjongTileWallPlacement,
+        fromPose: TilePose,
+        toPose: TilePose,
+    ): PlannedTileMotion = PlannedTileMotion(
+        tileId = tile.uuid.toKotlinUuid(),
+        kind = kind,
+        fromRow = TileRowKey(fromRegion, PREVIEW_OWNER_ID.takeUnless { fromRegion == TileRegion.WALL }, null),
+        toRow = TileRowKey(toRegion, PREVIEW_OWNER_ID, null),
+        from = from,
+        to = to,
+        fromPose = fromPose,
+        toPose = toPose,
+    )
 
     /**
      * `meld added_kan`：臨時生成一組碰（3 張）加上第 4 張加槓牌，重播鳴牌動畫飛到模擬副露區位置，並在
@@ -361,10 +403,10 @@ class FabricDebugAnimationCommand(
 
         val tiles = sourcePlacements.map { placement -> tilePreviewSupport.spawnFreeTile(world, placement, MahjongTilePose.STANDING, assetKey) }
         tiles.forEachIndexed { index, tile ->
-            TileAnimationSteps.scheduleMeldClaim(
-                tile,
-                finalPlacements[index],
-                MahjongTilePose.FACE_UP,
+            TileAnimationSteps.schedulePlannedMotion(
+                tile = tile,
+                motion = previewMotion(tile, TileMotionKind.FLIGHT, TileRegion.HAND, TileRegion.MELD, sourcePlacements[index], finalPlacements[index], TilePose.UPRIGHT, TilePose.FACE_UP),
+                startGameTime = world.time,
                 playLandingSound = index == 0,
             )
         }
@@ -382,6 +424,9 @@ class FabricDebugAnimationCommand(
     }
 
     companion object {
+        /** 預覽動作中代表座位玩家的固定識別碼。 */
+        val PREVIEW_OWNER_ID: Uuid = Uuid.parse("00000000-0000-0000-0000-000000000001")
+
         /** `dice` 子指令 literal。 */
         const val DICE_SUBCOMMAND: String = "dice"
 

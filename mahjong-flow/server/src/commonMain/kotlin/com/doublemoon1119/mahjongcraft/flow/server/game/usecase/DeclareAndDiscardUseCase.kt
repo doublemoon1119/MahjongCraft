@@ -5,7 +5,8 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameAbortReasonIds
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameError
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.GameEventPublisher
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.GamePresentationPublisher
-import com.doublemoon1119.mahjongcraft.flow.common.game.service.toPresentation
+import com.doublemoon1119.mahjongcraft.flow.common.game.service.TableStep
+import com.doublemoon1119.mahjongcraft.flow.common.game.service.TableStepEvent
 import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
 import com.doublemoon1119.mahjongcraft.flow.server.game.history.acceptedActionHistoryDraft
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.CompletedGameActionContext
@@ -21,7 +22,6 @@ import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.component.ComponentRegistry
 import com.doublemoon1119.mahjongcraft.logic.judgment.LegalActionContext
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
-import com.doublemoon1119.mahjongcraft.logic.table.SidewaysMarkedDiscardPile
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.logic.table.WallRevealCheckpoint
 import kotlin.uuid.Uuid
@@ -209,7 +209,6 @@ class DeclareAndDiscardUseCase(
                 InvocationResult(
                     tableState = finalState,
                     abortiveDrawReason = resolved.abortiveDrawReason ?: abortive,
-                    newlyRevealedTileIds = revealResult.newlyRevealedTileIds,
                 ),
             )
         }
@@ -219,32 +218,10 @@ class DeclareAndDiscardUseCase(
         eventPublisher.publishToAllObservers(gameId, result.tableState.players.map { it.id }, playerId, action)
         eventPublisher.publishToAllObservers(gameId, result.tableState.players.map { it.id }, playerId, GameAction.Discard(tileId))
         result.abortiveDrawReason?.let { eventPublisher.publishToAllObservers(gameId, result.tableState.players.map { it.id }, playerId, GameAction.ExhaustiveDraw(it)) }
-        val module = moduleRegistry.getModule(result.tableState.config)
-        val index = result.tableState.players.indexOfFirst { it.id == playerId }
-        if (index >= 0) {
-            val updated = result.tableState.players[index]
-            presentationPublisher.publishPlayerTilesUpdated(
-                gameId,
-                index,
-                updated.hand.tiles.map { it.id },
-                null,
-                updated.hand.melds.map { it.toPresentation(result.tableState.config.revealsClosedKanTiles) },
-                setAsideTileIds = updated.setAsideTiles.map { it.id },
-            )
-            presentationPublisher.publishDiscardPileUpdated(
-                gameId,
-                index,
-                updated.discardPile.entries.filterNot { it.isTaken }.map { it.tile.id },
-                (updated.discardPile as? SidewaysMarkedDiscardPile)?.sidewaysMarkedTileId(),
-                tileId,
-            )
-        }
-        presentationPublisher.publishRuleStateUpdated(gameId)
-        presentationPublisher.publishRoundInfoUpdated(gameId, result.tableState)
-        presentationPublisher.publishGameActionDeclared(gameId, playerId, action)
-        if (result.newlyRevealedTileIds.isNotEmpty()) {
-            presentationPublisher.publishWallTilesRevealed(gameId, result.newlyRevealedTileIds)
-        }
+        presentationPublisher.publishTableSteps(
+            gameId,
+            listOf(TableStep(result.tableState, listOf(TableStepEvent.ActionDeclared(playerId, action)))),
+        )
         return Outcome.Success(Unit)
     }
 
@@ -253,11 +230,9 @@ class DeclareAndDiscardUseCase(
      *
      * @property tableState 寫入後的權威桌況。
      * @property abortiveDrawReason 本次宣告流程產生的途中流局原因；沒有流局時為 null。
-     * @property newlyRevealedTileIds 捨牌反應結束後新公開的牌山牌張 ID。
      */
     private data class InvocationResult(
         val tableState: TableState,
         val abortiveDrawReason: ExhaustiveDrawReason?,
-        val newlyRevealedTileIds: Set<Uuid>,
     )
 }

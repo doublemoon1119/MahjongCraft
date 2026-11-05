@@ -3,8 +3,6 @@ package com.doublemoon1119.mahjongcraft.platform.minecraft.di
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftServerConfig
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftServerConfigState
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftServerConfigTomlCodec
-import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableCornerLayoutPlanner
-import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableCornerWidthTracker
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocationRegistry
 import org.koin.dsl.module
 import org.koin.plugin.module.dsl.single
@@ -19,6 +17,4 @@ val minecraftServerModule = module {
     single { MinecraftServerConfigState(MinecraftServerConfig()) }
     single<MinecraftServerConfigTomlCodec>()
     single<TableLocationRegistry>()
-    single<TableCornerWidthTracker>()
-    single<TableCornerLayoutPlanner>()
 }

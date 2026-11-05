@@ -92,7 +92,6 @@ class ExamplePairingRuleDecisionUseCaseTest {
             resolverRegistry = resolverRegistry,
             snapshotSynchronizer = snapshotSynchronizer,
             presentationPublisher = FakeGamePresentationPublisher(),
-            componentRegistry = componentRegistry,
             winPresentationStager = RuleDecisionWinPresentationStager(WinPresentationHandoff(), WinSettlementDetailResolverRegistry(componentRegistry)),
         )
         val gameId = initialTable.id

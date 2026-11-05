@@ -21,6 +21,7 @@ import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPhysicalLayout
 import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPlacement
 import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPosition
 import com.doublemoon1119.mahjongcraft.logic.table.toSnapshot
+import com.doublemoon1119.mahjongcraft.logic.tile.component.TileRegion
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledCoreExtensionRegistries
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.registerBundledRuleModules
 import com.doublemoon1119.mahjongcraft.testing.flow.common.game.repository.FakeGameSnapshotRepository
@@ -30,6 +31,7 @@ import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeIdentifiedTileFact
 import com.doublemoon1119.mahjongcraft.testing.logic.rules.riichi.riichiDeclarationComponents
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
+import com.doublemoon1119.mahjongcraft.testing.logic.table.tileRegion
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -180,12 +182,10 @@ class DrawTileUseCaseTest {
 
         fixtures.useCase(gameId, currentPlayerId)
 
-        val published = fixtures.presentationPublisher.getPublishedPlayerTiles(gameId)
-        assertNotNull(published)
-        assertEquals(0, published.seatIndex)
-        assertEquals(1, published.standingTileIds.size)
-        assertEquals(drawnTile.id, published.drawnTileId)
-        assertTrue(published.isNewlyDrawn)
+        val step = fixtures.presentationPublisher.getPublishedTableStepBatches(gameId).single().single()
+        assertEquals(fixtures.gameRepo.getTableState(gameId), step.tableState)
+        assertEquals(TileRegion.WALL, table.tileRegion(drawnTile.id))
+        assertEquals(TileRegion.DRAWN, step.tableState.tileRegion(drawnTile.id))
     }
 
     /**

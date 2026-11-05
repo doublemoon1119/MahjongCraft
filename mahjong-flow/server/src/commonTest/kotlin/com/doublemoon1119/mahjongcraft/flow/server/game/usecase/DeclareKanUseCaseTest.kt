@@ -1,6 +1,7 @@
 package com.doublemoon1119.mahjongcraft.flow.server.game.usecase
 
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameError
+import com.doublemoon1119.mahjongcraft.flow.common.game.service.TableStepEvent
 import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
 import com.doublemoon1119.mahjongcraft.flow.server.game.policy.GameVisibilityPolicyImpl
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.FakeGameRepository
@@ -24,10 +25,12 @@ import com.doublemoon1119.mahjongcraft.logic.rules.riichi.riichiWallProgress
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.RiichiTileValues
 import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayer
 import com.doublemoon1119.mahjongcraft.logic.table.PendingRobbingReaction
+import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.logic.table.TileWall
 import com.doublemoon1119.mahjongcraft.logic.table.TurnPhase
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import com.doublemoon1119.mahjongcraft.logic.table.toSnapshot
+import com.doublemoon1119.mahjongcraft.logic.tile.component.TileRegion
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledCoreExtensionRegistries
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.registerBundledRuleModules
 import com.doublemoon1119.mahjongcraft.testing.flow.common.game.repository.FakeGameSnapshotRepository
@@ -39,6 +42,7 @@ import com.doublemoon1119.mahjongcraft.testing.logic.rules.riichi.riichiDeclarat
 import com.doublemoon1119.mahjongcraft.testing.logic.rules.riichi.riichiTableComponents
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
+import com.doublemoon1119.mahjongcraft.testing.logic.table.tileRegion
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -133,23 +137,14 @@ class DeclareKanUseCaseTest {
         assertEquals(TurnPhase.AwaitingAction, newState.turnPhase)
         assertEquals(table.tileWall.getAllTiles().last(), newState.reservedWallTiles.last())
         assertEquals(1, newState.riichiWallProgress().completedSupplementalDrawCount)
-        assertEquals(
-            newState,
-            fixtures.presentationPublisher.getPublishedRoundInfo(gameId),
-            "A completed supplemental draw should immediately refresh round information from the updated state.",
-        )
-        assertEquals(
-            rinshanTile.id,
-            fixtures.presentationPublisher.getPublishedPlayerTiles(gameId)?.drawnTileId,
-            "The rinshan tile should be presented as a drawn tile (moved to the draw slot), same as a normal draw.",
-        )
-        assertTrue(
-            fixtures.presentationPublisher.getPublishedPlayerTiles(gameId)?.isNewlyDrawn == true,
-            "The rinshan draw should be presented with the same draw motion as a normal draw.",
-        )
-        val publishedTransitions = fixtures.presentationPublisher.getPublishedWallLayoutTransitions(gameId)
-        assertEquals(1, publishedTransitions.size)
-        publishedTransitions.single().flatMap { it.moves }.forEach { move ->
+        // 先呈現暗槓成立（四張移入副露），再呈現補牌到摸牌位與牌牆重排。
+        val (declared, drawn) = fixtures.presentationPublisher.getPublishedTableStepBatches(gameId).single()
+        listOf(east1, east2, east3, east4).forEach { assertEquals(TileRegion.MELD, declared.tableState.tileRegion(it.id)) }
+        assertEquals(TileRegion.RESERVED, declared.tableState.tileRegion(rinshanTile.id))
+        assertEquals(TableStepEvent.ActionDeclared(playerId, GameAction.Kan(GameAction.KanType.CLOSED_KAN, east4.id, listOf(east1.id, east2.id, east3.id))), declared.events.first())
+        assertEquals(newState, drawn.tableState)
+        assertEquals(TileRegion.DRAWN, drawn.tableState.tileRegion(rinshanTile.id))
+        drawn.events.filterIsInstance<TableStepEvent.WallRearranged>().single().phases.flatMap { it.moves }.forEach { move ->
             assertEquals(newState.physicalWallLayout?.placements?.get(move.tileId), move.destination)
         }
     }
@@ -186,8 +181,9 @@ class DeclareKanUseCaseTest {
         assertEquals(setOf(five1.id, redFive.id), meld.faceDownTileIds)
     }
 
+    /** 日麻暗槓的新指示牌在補牌那一步翻開，槓成立那一步還沒有翻開。 */
     @Test
-    fun `test closed kan success publishes newly revealed dead wall tiles`() = runTest {
+    fun `test closed kan reveals the new indicator in the replacement draw step`() = runTest {
         val fixtures = Fixtures()
         val east1 = FakeIdentifiedTileFactory.create(Tile.Honor.East)
         val east2 = FakeIdentifiedTileFactory.create(Tile.Honor.East)
@@ -213,21 +209,16 @@ class DeclareKanUseCaseTest {
 
         assertTrue(result is Outcome.Success, "Expected Success but got $result")
         val currentState = fixtures.gameRepo.getTableState(gameId)!!
-        val currentProgress = currentState.riichiWallProgress()
-        val previousProgress = table.riichiWallProgress()
-        assertEquals(
-            currentProgress.getDoraIndicators(currentState).first.map { it.id }.toSet() - previousProgress.getDoraIndicators(table).first.map { it.id }.toSet(),
-            assertNotNull(
-                fixtures.presentationPublisher.getPublishedDeadWallReveal(gameId),
-                "The kan-dora indicator resolved by the rule components must be published.",
-            ),
-            "Only the newly exposed indicator should be published for animation.",
-        )
+        val (kanStep, drawStep) = fixtures.presentationPublisher.getPublishedTableStepBatches(gameId).single()
+        assertEquals(table.doraIndicatorIds(), kanStep.tableState.doraIndicatorIds())
+        val revealedAtDraw = drawStep.tableState.doraIndicatorIds() - table.doraIndicatorIds()
+        assertEquals(currentState.doraIndicatorIds() - table.doraIndicatorIds(), revealedAtDraw)
+        assertEquals(1, revealedAtDraw.size, "Exactly one new indicator is revealed by the kan.")
     }
 
-    /** 驗證第二次槓只發布第二次新增的指示牌，不讓第一張已公開指示牌重播動畫。 */
+    /** 第二次槓補牌那一步保留第一張已公開的指示牌，並多翻開一張。 */
     @Test
-    fun `test second kan does not republish the first revealed indicator`() = runTest {
+    fun `test second kan keeps the first indicator and reveals one more`() = runTest {
         val fixtures = Fixtures()
         val previousKanTiles = List(4) { FakeIdentifiedTileFactory.create(Tile.Honor.South) }
         val eastTiles = List(4) { FakeIdentifiedTileFactory.create(Tile.Honor.East) }
@@ -263,14 +254,14 @@ class DeclareKanUseCaseTest {
         val result = fixtures.useCase(gameId, playerId, GameAction.KanType.CLOSED_KAN, eastTiles.last().id)
 
         assertTrue(result is Outcome.Success, "Expected Success but got $result")
-        val currentState = fixtures.gameRepo.getTableState(gameId)!!
-        val published = assertNotNull(fixtures.presentationPublisher.getPublishedDeadWallReveal(gameId))
-        assertEquals(
-            currentState.riichiWallProgress().getDoraIndicators(currentState).first.map { it.id }.toSet() - previouslyVisible,
-            published,
-        )
-        assertTrue(published.intersect(previouslyVisible).isEmpty(), "Previously revealed indicators must not be republished")
+        val drawStep = fixtures.presentationPublisher.getPublishedTableStepBatches(gameId).single().last()
+        val visibleAtDraw = drawStep.tableState.doraIndicatorIds()
+        assertTrue(visibleAtDraw.containsAll(previouslyVisible))
+        assertEquals(1, (visibleAtDraw - previouslyVisible).size)
     }
+
+    /** 這份桌況目前翻開的寶牌指示牌。 */
+    private fun TableState.doraIndicatorIds(): Set<Uuid> = riichiWallProgress().getDoraIndicators(this).first.map { it.id }.toSet()
 
     /** 明槓待翻的槓寶牌在下一次暗槓補牌前翻開時，翻開的指示牌記入公開證據。 */
     @Test
@@ -482,8 +473,7 @@ class DeclareKanUseCaseTest {
         assertTrue(unchangedPlayer.hand.melds.isEmpty(), "The meld should not be applied when the replacement draw fails.")
         assertEquals(east4, unchangedPlayer.hand.lastDrawn, "The player's hand should remain exactly as it was before the declaration.")
         assertEquals(0, unchangedState.reservedWallTiles.size, "The rinshan reserve (reservedWallTiles) is what's actually exhausted here.")
-        assertTrue(fixtures.presentationPublisher.getPublishedWallLayoutTransitions(gameId).isEmpty())
-        assertNull(fixtures.presentationPublisher.getPublishedRoundInfo(gameId))
+        assertTrue(fixtures.presentationPublisher.getPublishedTableStepBatches(gameId).isEmpty())
     }
 
     /**
@@ -666,11 +656,14 @@ class DeclareKanUseCaseTest {
             fixtures.eventPublisher.getNotifiedActions(gameId, robberId, playerId),
             "Only the Kan declaration should be broadcast; Draw hasn't happened yet.",
         )
-        val presented = assertNotNull(fixtures.presentationPublisher.getPublishedPlayerTiles(gameId))
-        assertEquals(MeldType.ADDED_KAN, presented.melds.single().type)
-        assertEquals(setOf(white4.id), presented.newlyClaimedMeldTileIds)
-        assertNull(presented.drawnTileId)
-        assertTrue(presented.standingTileIds.isEmpty())
+        // 先呈現加槓完成的候選桌況，權威桌況等反應結束才套用。
+        val presented = fixtures.presentationPublisher.getPublishedTableStepBatches(gameId).single().single()
+        assertEquals(listOf<TableStepEvent>(TableStepEvent.ActionDeclared(playerId, expectedKan)), presented.events)
+        val presentedDeclarer = presented.tableState.players.first { it.id == playerId }
+        assertEquals(MeldType.ADDED_KAN, presentedDeclarer.hand.melds.single().type)
+        assertEquals(TileRegion.MELD, presented.tableState.tileRegion(white4.id))
+        assertNull(presentedDeclarer.hand.lastDrawn)
+        assertTrue(presentedDeclarer.hand.tiles.isEmpty())
     }
 
     /**

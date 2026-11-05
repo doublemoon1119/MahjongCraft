@@ -62,7 +62,7 @@ class FabricTablePropRefreshScheduler(
                 queue.enqueue(server, tableId)
                 return@forEach
             }
-            publisher.publishRuleStateUpdated(tableId)
+            publisher.refreshTableProps(tableId)
         }
     }
 
