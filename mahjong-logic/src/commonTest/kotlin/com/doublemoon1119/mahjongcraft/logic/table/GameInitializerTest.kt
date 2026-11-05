@@ -199,6 +199,24 @@ class GameInitializerTest {
         }
     }
 
+    /** 開局與換局後都從莊家等摸牌開始，不留上一局的階段。 */
+    @Test
+    fun `initialize and next round start awaiting the dealer draw`() {
+        val opened = GameInitializer.initialize(Uuid.random(), List(4) { Uuid.random() }, module).tableState
+        assertEquals(TurnPhase.AwaitingDraw, opened.turnPhase)
+        assertEquals(opened.dealerIndex, opened.currentPlayerIndex)
+
+        val advancement = roundAdvancement()
+        val previous = FakeTableStateFactory.create(
+            players = advancement.players,
+            config = module.config,
+            turnPhase = TurnPhase.RoundOver(RoundConclusion.Win(setOf(advancement.players.first().id))),
+        )
+        val next = GameInitializer.startNextRound(previous.id, advancement, module).tableState
+        assertEquals(TurnPhase.AwaitingDraw, next.turnPhase)
+        assertEquals(next.dealerIndex, next.currentPlayerIndex)
+    }
+
     /** 換局只保留供託，補牌及指示牌進度重新開始。 */
     @Test
     fun `new round retains pot points and resets wall progress`() {

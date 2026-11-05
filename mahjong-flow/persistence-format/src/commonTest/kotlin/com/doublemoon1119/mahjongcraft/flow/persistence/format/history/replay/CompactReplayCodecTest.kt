@@ -25,6 +25,7 @@ import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleModule
 import com.doublemoon1119.mahjongcraft.logic.table.GameInitializer
 import com.doublemoon1119.mahjongcraft.logic.table.PendingReaction
+import com.doublemoon1119.mahjongcraft.logic.table.TurnPhase
 import com.doublemoon1119.mahjongcraft.logic.table.opening.DiceRollResult
 import com.doublemoon1119.mahjongcraft.logic.table.opening.DiceRollSource
 import com.doublemoon1119.mahjongcraft.logic.table.opening.OpeningDiceRoll
@@ -119,14 +120,16 @@ class CompactReplayCodecTest {
         val discarder = base.players[0]
         val responder = base.players[1]
         val state = base.copy(
-            pendingReaction = PendingReaction(
-                discarderId = discarder.id,
-                tileId = discarder.hand.tiles.first().id,
-                eligiblePlayerIds = setOf(responder.id),
-                ronPlayerIds = setOf(responder.id),
-                id = Uuid.random(),
-                responses = mapOf(responder.id to GameAction.Pass),
-                selectedTileIds = mapOf(responder.id to emptyList()),
+            turnPhase = TurnPhase.AwaitingDiscardReaction(
+                PendingReaction(
+                    discarderId = discarder.id,
+                    tileId = discarder.hand.tiles.first().id,
+                    eligiblePlayerIds = setOf(responder.id),
+                    ronPlayerIds = setOf(responder.id),
+                    id = Uuid.random(),
+                    responses = mapOf(responder.id to GameAction.Pass),
+                    selectedTileIds = mapOf(responder.id to emptyList()),
+                ),
             ),
         )
         val matchId = Uuid.random()

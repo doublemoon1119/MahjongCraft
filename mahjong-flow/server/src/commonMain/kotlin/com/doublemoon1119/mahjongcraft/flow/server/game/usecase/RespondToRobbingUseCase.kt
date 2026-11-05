@@ -31,6 +31,7 @@ import com.doublemoon1119.mahjongcraft.logic.module.WinResolutionResult
 import com.doublemoon1119.mahjongcraft.logic.table.DrawSource
 import com.doublemoon1119.mahjongcraft.logic.table.SupplementalDrawReasonIds
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
+import com.doublemoon1119.mahjongcraft.logic.table.TurnPhase
 import com.doublemoon1119.mahjongcraft.logic.table.WallRevealCheckpoint
 import com.doublemoon1119.mahjongcraft.logic.table.layout.PhysicalWallLayoutTransitionPhase
 import kotlin.uuid.Uuid
@@ -193,7 +194,7 @@ class RespondToRobbingUseCase(
                     }
                     val newPending = pending.copy(responses = pending.responses + (playerId to action))
                     if (!newPending.isComplete) {
-                        val newState = stateAfterResponse.copy(pendingRobbingReaction = newPending)
+                        val newState = stateAfterResponse.copy(turnPhase = TurnPhase.AwaitingRobbingReaction(newPending))
                         return@update newState to Outcome.Success(RobbingResult(newState))
                     }
 
@@ -209,7 +210,7 @@ class RespondToRobbingUseCase(
                             winnerIds = ronWinnerIds,
                             isRobbingKan = (pending.declaredAction as? GameAction.Kan)?.type == GameAction.KanType.ADDED_KAN,
                         )
-                        val settledState = resolved.tableState.copy(pendingRobbingReaction = null)
+                        val settledState = resolved.tableState
                         val revealResult = WallRevealDecisionApplier.apply(
                             tableState = settledState,
                             checkpoint = WallRevealCheckpoint.WIN_CONFIRMED,
@@ -292,7 +293,7 @@ class RespondToRobbingUseCase(
                             return@update state to Outcome.Error(error)
                         }
                         applied as SelfDeclarationApplier.Result.Applied
-                        val appliedState = applied.tableState.copy(pendingRobbingReaction = null)
+                        val appliedState = applied.tableState.copy(turnPhase = TurnPhase.AwaitingAction)
                         val followUp = if (applied.drawnTiles.isNotEmpty()) {
                             // 暫停前還沒詢問過的牌照原本的來源排在這次補到的牌之前。
                             val heldTiles = appliedState.players.first { it.id == pending.declarerId }.hand.standingTiles.associateBy { it.id }

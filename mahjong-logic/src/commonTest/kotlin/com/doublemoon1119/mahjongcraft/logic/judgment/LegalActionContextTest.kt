@@ -12,6 +12,7 @@ import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.RiichiTileValues
 import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayer
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.logic.table.TileWall
+import com.doublemoon1119.mahjongcraft.logic.table.TurnPhase
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -154,6 +155,7 @@ class LegalActionContextTest {
             config = RiichiRuleConfig(),
             tileWall = TileWall(),
             dealerPlayerId = players.first().id,
+            turnPhase = if (hand.lastDrawn != null) TurnPhase.AwaitingAction else TurnPhase.AwaitingDraw,
         )
     }
 

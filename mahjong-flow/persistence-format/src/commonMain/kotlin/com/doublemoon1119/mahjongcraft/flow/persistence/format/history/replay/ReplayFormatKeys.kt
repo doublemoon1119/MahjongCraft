@@ -244,11 +244,11 @@ internal object ReplaySourceKeys {
 
     /** 規則的動態桌況。 */
 
-    /** 目前等待中的一般反應。 */
-    const val PENDING_REACTION = "pendingReaction"
+    /** 一局目前所處的階段。 */
+    const val TURN_PHASE = "turnPhase"
 
-    /** 目前等待中的搶和反應（暗槓、加槓或移出手牌的動作）。 */
-    const val PENDING_ROBBING_REACTION = "pendingRobbingReaction"
+    /** 等待反應階段攜帶的反應資料。 */
+    const val TURN_PHASE_REACTION = "reaction"
 
     /** 動作使用的牌。 */
     const val TILE_ID = "tileId"

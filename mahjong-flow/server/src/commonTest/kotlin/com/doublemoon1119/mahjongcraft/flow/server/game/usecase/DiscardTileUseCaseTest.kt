@@ -34,9 +34,11 @@ import com.doublemoon1119.mahjongcraft.logic.rules.riichi.riichiWallProgress
 import com.doublemoon1119.mahjongcraft.logic.table.DiscardPile.DiscardEntry
 import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayer
 import com.doublemoon1119.mahjongcraft.logic.table.PendingRobbingReaction
+import com.doublemoon1119.mahjongcraft.logic.table.RoundConclusion
 import com.doublemoon1119.mahjongcraft.logic.table.SidewaysMarkedDiscardPile
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.logic.table.TileWall
+import com.doublemoon1119.mahjongcraft.logic.table.TurnPhase
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import com.doublemoon1119.mahjongcraft.logic.table.toSnapshot
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledCoreExtensionRegistries
@@ -123,11 +125,13 @@ class DiscardTileUseCaseTest {
             tileWall = TileWall(emptyList()),
             currentPlayerIndex = 0,
         ).copy(
-            pendingRobbingReaction = PendingRobbingReaction(
-                declarerId = currentPlayerId,
-                declaredAction = GameAction.Kan(GameAction.KanType.ADDED_KAN, handTile.id, emptyList()),
-                robbedTile = handTile,
-                eligiblePlayerIds = setOf(otherPlayerId),
+            turnPhase = TurnPhase.AwaitingRobbingReaction(
+                PendingRobbingReaction(
+                    declarerId = currentPlayerId,
+                    declaredAction = GameAction.Kan(GameAction.KanType.ADDED_KAN, handTile.id, emptyList()),
+                    robbedTile = handTile,
+                    eligiblePlayerIds = setOf(otherPlayerId),
+                ),
             ),
         )
         fixtures.gameRepo.setTableState(table)
@@ -174,6 +178,7 @@ class DiscardTileUseCaseTest {
         assertEquals(drawnTile, updatedPlayer.discardPile.entries.first().tile)
         assertTrue(updatedPlayer.actionHistory.last() is GameAction.Discard)
         assertEquals(1, newState.currentPlayerIndex, "Turn should advance to the next player.")
+        assertEquals(TurnPhase.AwaitingDraw, newState.turnPhase)
         assertNull(newState.pendingReaction, "No one is eligible to react, so no reaction window should open.")
     }
 
@@ -511,6 +516,7 @@ class DiscardTileUseCaseTest {
         assertEquals(currentPlayerId, pendingReaction.discarderId)
         assertEquals(discardedTile.id, pendingReaction.tileId)
         assertEquals(setOf(otherPlayerId), pendingReaction.eligiblePlayerIds)
+        assertEquals(TurnPhase.AwaitingDiscardReaction(pendingReaction), newState.turnPhase)
     }
 
     /**
@@ -635,6 +641,7 @@ class DiscardTileUseCaseTest {
             "The hand already ended via the abortive draw; no reaction window should open, not even for ponPlayer.",
         )
         assertEquals(0, newState.currentPlayerIndex, "Turn advancement is left to AdvanceRoundUseCase.")
+        assertEquals(TurnPhase.RoundOver(RoundConclusion.AbortiveDraw(RiichiExhaustiveDrawReason.SanchaHou)), newState.turnPhase)
         val expectedAction = GameAction.ExhaustiveDraw(RiichiExhaustiveDrawReason.SanchaHou)
         newState.players.forEach { player ->
             assertEquals(
@@ -1089,6 +1096,7 @@ class DiscardTileUseCaseTest {
             hand = Hand(tiles = listOf(handTile)),
         ).recordAction(GameAction.Pon(tileId = Uuid.random(), withTiles = emptyList()))
         val table = FakeTableStateFactory.create(
+            turnPhase = TurnPhase.AwaitingDiscard,
             id = gameId,
             players = listOf(currentPlayer),
             config = RiichiRuleConfig(),

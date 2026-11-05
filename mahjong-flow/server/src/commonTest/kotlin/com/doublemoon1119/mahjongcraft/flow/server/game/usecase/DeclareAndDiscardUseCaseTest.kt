@@ -80,7 +80,6 @@ class DeclareAndDiscardUseCaseTest {
      * @param malicious 是否要求規則把對局組件當成玩家組件交回。
      * @param cost 本次宣告需支付的點數。
      * @param rejectWallReveal 是否讓宣告後的牌牆公開檢查拒絕。
-     * @param mustDiscardAfterMeld 是否模擬剛完成自訂鳴牌、等待捨牌的玩家。
      * @param revealWallTile 是否讓宣告後的牌牆公開檢查公開一張牌山牌。
      * @param tsumoAvailable 宣告者是否同時可以自摸。
      * @param hookMode 放棄自摸與打牌後掛勾的測試行為；null 時不覆寫這兩個掛勾。
@@ -91,7 +90,6 @@ class DeclareAndDiscardUseCaseTest {
         malicious: Boolean = false,
         cost: Int = 0,
         rejectWallReveal: Boolean = false,
-        mustDiscardAfterMeld: Boolean = false,
         revealWallTile: Boolean = false,
         tsumoAvailable: Boolean = false,
         hookMode: HookMode? = null,
@@ -115,7 +113,7 @@ class DeclareAndDiscardUseCaseTest {
             id = playerId,
             hand = Hand(lastDrawn = tile),
             discardPile = RiichiDiscardPile(),
-        ).copy(score = 100, mustDiscardAfterMeld = mustDiscardAfterMeld)
+        ).copy(score = 100)
 
         /** 保有對局組件的宣告前桌況。 */
         val table: TableState = FakeTableStateFactory.create(
@@ -238,23 +236,6 @@ class DeclareAndDiscardUseCaseTest {
         assertTrue(fixture.eventPublisher.getNotifiedActions(fixture.gameId, fixture.playerId, fixture.playerId).isEmpty())
         assertNull(fixture.snapshots.getSnapshot(fixture.gameId, fixture.playerId))
         assertTrue(fixture.presentationPublisher.getDeclaredGameActions(fixture.gameId).isEmpty())
-    }
-
-    /** 宣告後的捨牌會清除自訂鳴牌留下的必須直接捨牌狀態。 */
-    @Test
-    fun `declaration discard clears must discard after meld`() = runTest {
-        val fixture = Fixture(mustDiscardAfterMeld = true)
-        fixture.repository.setTableState(fixture.table)
-
-        val result = fixture.useCase(
-            gameId = fixture.gameId,
-            playerId = fixture.playerId,
-            action = Extension(DeclarationAction),
-            tileId = fixture.tile.id,
-        )
-
-        assertIs<Outcome.Success<Unit>>(result)
-        assertEquals(false, fixture.repository.getTableState(fixture.gameId)!!.players.single().mustDiscardAfterMeld)
     }
 
     /** 宣告後的牌牆公開檢查公開新牌時，與一般捨牌一樣通知桌面呈現。 */

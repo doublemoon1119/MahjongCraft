@@ -20,6 +20,7 @@ import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayer
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.logic.table.TileWall
+import com.doublemoon1119.mahjongcraft.logic.table.TurnPhase
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledPersistenceRegistries
 import kotlinx.serialization.json.Json
@@ -55,7 +56,6 @@ class MeldAndHistoryPersistenceRegressionTest {
             hand = Hand(melds = listOf(meld)),
             discardPile = TaiwanDiscardPile(),
             seatWind = Wind.EAST,
-            mustDiscardAfterMeld = true,
         )
 
         val encoded = Json.encodeToString(
@@ -78,7 +78,6 @@ class MeldAndHistoryPersistenceRegressionTest {
         assertEquals(tiles, restored.hand.melds.single().tiles)
         assertEquals(setOf(tiles[0].id, tiles[2].id), restored.hand.melds.single().publiclyRevealedTileIds)
         assertEquals(setOf(tiles[1].id), restored.hand.melds.single().faceDownTileIds)
-        assertEquals(true, restored.mustDiscardAfterMeld)
     }
 
     /** 只有副露可見性或牌面朝向改變時，歷史差異仍須可序列化並重建桌況。 */
@@ -148,6 +147,7 @@ class MeldAndHistoryPersistenceRegressionTest {
             config = TaiwanRuleConfig(),
             tileWall = TileWall(emptyList()),
             dealerPlayerId = player.id,
+            turnPhase = TurnPhase.AwaitingDraw,
         )
     }
 

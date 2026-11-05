@@ -15,6 +15,7 @@ import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.table.PendingReaction
+import com.doublemoon1119.mahjongcraft.logic.table.TurnPhase
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.registerBundledRuleModules
 import com.doublemoon1119.mahjongcraft.testing.logic.rules.riichi.riichiDeclarationComponents
@@ -167,12 +168,14 @@ class ForcedAutoPlayDriverTest {
         )
         val discardedTile = players.first().discardPile.entries.single().tile
         val reaction = ownTurn.copy(
-            pendingReaction = PendingReaction(
-                discarderId = currentId,
-                tileId = discardedTile.id,
-                eligiblePlayerIds = setOf(reactorId),
-                ronPlayerIds = setOf(reactorId),
-                id = Uuid.random(),
+            turnPhase = TurnPhase.AwaitingDiscardReaction(
+                PendingReaction(
+                    discarderId = currentId,
+                    tileId = discardedTile.id,
+                    eligiblePlayerIds = setOf(reactorId),
+                    ronPlayerIds = setOf(reactorId),
+                    id = Uuid.random(),
+                ),
             ),
         )
         listOf(ownTurn, reaction).forEach { state ->

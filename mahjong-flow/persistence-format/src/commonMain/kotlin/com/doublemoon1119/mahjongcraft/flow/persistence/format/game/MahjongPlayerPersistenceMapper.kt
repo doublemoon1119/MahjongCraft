@@ -41,7 +41,6 @@ fun MahjongPlayer.toPersistenceDto(
     seatWind = WindPersistenceDto.valueOf(seatWind.name),
     passedTilesInRound = passedTilesInRound.map { it.toPersistenceDto() },
     actionHistory = actionHistory.map { it.toPersistenceDto(exhaustiveDrawReasonRegistry, extensionGameActionRegistry) },
-    mustDiscardAfterMeld = mustDiscardAfterMeld,
 )
 
 /**
@@ -76,5 +75,4 @@ fun MahjongPlayerPersistenceDto.toDomain(
     seatWind = Wind.valueOf(seatWind.name),
     passedTilesInRound = passedTilesInRound.mapTo(mutableSetOf()) { it.toDomain() },
     actionHistory = actionHistory.map { it.toDomain(exhaustiveDrawReasonRegistry, extensionGameActionRegistry) },
-    mustDiscardAfterMeld = mustDiscardAfterMeld,
 )

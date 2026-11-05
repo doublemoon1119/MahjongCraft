@@ -86,6 +86,7 @@ object GameInitializer {
             dealerPlayerId = opening.dealerPlayerId,
             roundPosition = module.createMatchProgressionPolicy().initialPosition(players.size),
             currentPlayerIndex = dealerIndex,
+            turnPhase = TurnPhase.AwaitingDraw,
             wallOpening = openedWall.wallOpening,
             reservedWallTiles = openedWall.reservedWallTiles,
             physicalWallLayout = physicalLayouts?.current,
@@ -155,7 +156,6 @@ object GameInitializer {
                 discardPile = module.createDiscardPile(),
                 passedTilesInRound = emptySet(),
                 actionHistory = emptyList(),
-                mustDiscardAfterMeld = false,
                 tileAreas = PlayerTileAreas.EMPTY,
             )
         }
@@ -171,6 +171,7 @@ object GameInitializer {
             roundPosition = roundAdvancement.roundPosition,
             comboCount = roundAdvancement.comboCount,
             currentPlayerIndex = dealerIndex,
+            turnPhase = TurnPhase.AwaitingDraw,
             wallOpening = openedWall.wallOpening,
             reservedWallTiles = openedWall.reservedWallTiles,
             physicalWallLayout = physicalLayouts?.current,

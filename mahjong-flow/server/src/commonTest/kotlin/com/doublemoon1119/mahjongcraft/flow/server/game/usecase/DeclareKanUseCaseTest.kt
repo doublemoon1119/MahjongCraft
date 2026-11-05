@@ -25,6 +25,7 @@ import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.RiichiTileValues
 import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayer
 import com.doublemoon1119.mahjongcraft.logic.table.PendingRobbingReaction
 import com.doublemoon1119.mahjongcraft.logic.table.TileWall
+import com.doublemoon1119.mahjongcraft.logic.table.TurnPhase
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import com.doublemoon1119.mahjongcraft.logic.table.toSnapshot
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledCoreExtensionRegistries
@@ -129,6 +130,7 @@ class DeclareKanUseCaseTest {
             "Kan must be recorded before Draw for rinshan kaihou detection to work.",
         )
         assertEquals(table.tileWall.remainingCount - 1, newState.tileWall.remainingCount)
+        assertEquals(TurnPhase.AwaitingAction, newState.turnPhase)
         assertEquals(table.tileWall.getAllTiles().last(), newState.reservedWallTiles.last())
         assertEquals(1, newState.riichiWallProgress().completedSupplementalDrawCount)
         assertEquals(
@@ -650,6 +652,7 @@ class DeclareKanUseCaseTest {
         assertEquals(GameAction.Kan(GameAction.KanType.ADDED_KAN, white4.id, emptyList()), pending.declaredAction)
         assertEquals(white4, pending.robbedTile)
         assertEquals(setOf(robberId), pending.eligiblePlayerIds)
+        assertEquals(TurnPhase.AwaitingRobbingReaction(pending), newState.turnPhase)
 
         val unchangedDeclarer = newState.players.first { it.id == playerId }
         assertEquals(MeldType.PON, unchangedDeclarer.hand.melds.single().type, "The meld must not be upgraded to ADDED_KAN yet.")
@@ -891,7 +894,7 @@ class DeclareKanUseCaseTest {
             eligiblePlayerIds = setOf(Uuid.random()),
         )
         val table = FakeTableStateFactory.create(id = gameId, players = listOf(declarer), config = RiichiRuleConfig(), currentPlayerIndex = 0)
-            .copy(pendingRobbingReaction = existingPending)
+            .copy(turnPhase = TurnPhase.AwaitingRobbingReaction(existingPending))
         fixtures.gameRepo.setTableState(table)
 
         val result = fixtures.useCase(gameId, playerId, GameAction.KanType.CLOSED_KAN, lastDrawn.id)

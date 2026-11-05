@@ -11,6 +11,7 @@ import com.doublemoon1119.mahjongcraft.logic.table.PendingReaction
 import com.doublemoon1119.mahjongcraft.logic.table.PendingRobbingReaction
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.logic.table.TileWall
+import com.doublemoon1119.mahjongcraft.logic.table.TurnPhase
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPhysicalLayout
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeIdentifiedTileFactory
@@ -39,8 +40,9 @@ object FakeTableStateFactory {
      * @param roundNumber 局數，預設為 1。
      * @param comboCount 連莊／本場數，預設為 0。
      * @param currentPlayerIndex 目前行動玩家在清單中的索引，預設為 0。
-     * @param pendingReaction 尚待處理的鳴牌反應，預設為 null。
-     * @param pendingRobbingReaction 尚待處理的搶槓反應，預設為 null。
+     * @param pendingReaction 尚待處理的鳴牌反應；不為 null 時階段為等捨牌反應。
+     * @param pendingRobbingReaction 尚待處理的搶槓反應；不為 null 時階段為等搶和反應。
+     * @param turnPhase 明確指定的回合階段；為 null 時依反應參數決定，沒有反應時目前玩家有剛摸到的牌為等行動，否則為等摸牌。
      * @param reservedWallTiles 從牌山預留的牌，預設為空清單。
      * @param physicalWallLayout 實體牌牆配置，預設為 null。
      * @param finishedPlayerIds 已完成本局的玩家識別碼，預設為空集合。
@@ -61,6 +63,7 @@ object FakeTableStateFactory {
         currentPlayerIndex: Int = 0,
         pendingReaction: PendingReaction? = null,
         pendingRobbingReaction: PendingRobbingReaction? = null,
+        turnPhase: TurnPhase? = null,
         reservedWallTiles: List<IdentifiedTile> = emptyList(),
         physicalWallLayout: TileWallPhysicalLayout? = null,
         finishedPlayerIds: Set<Uuid> = emptySet(),
@@ -83,8 +86,12 @@ object FakeTableStateFactory {
             roundNumber = roundNumber,
             comboCount = comboCount,
             currentPlayerIndex = currentPlayerIndex,
-            pendingReaction = pendingReaction,
-            pendingRobbingReaction = pendingRobbingReaction,
+            turnPhase = turnPhase ?: when {
+                pendingReaction != null -> TurnPhase.AwaitingDiscardReaction(pendingReaction)
+                pendingRobbingReaction != null -> TurnPhase.AwaitingRobbingReaction(pendingRobbingReaction)
+                normalizedPlayers.getOrNull(currentPlayerIndex)?.hand?.lastDrawn != null -> TurnPhase.AwaitingAction
+                else -> TurnPhase.AwaitingDraw
+            },
             reservedWallTiles = reservedWallTiles,
             physicalWallLayout = physicalWallLayout,
             finishedPlayerIds = finishedPlayerIds,

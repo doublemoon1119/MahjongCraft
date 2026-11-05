@@ -16,15 +16,15 @@ data class PlayerDraw(
 )
 
 /**
- * 讓 [playerId] 從活牌最前端摸一張牌到摸牌位並記錄摸牌，清除他本巡放過的牌；不套用摸牌後的規則反應。
+ * 讓 [playerId] 從活牌最前端摸一張牌到摸牌位並記錄摸牌，清除他本巡放過的牌，階段改為等行動；不套用摸牌後的規則反應。
  *
- * @param playerId 摸牌的玩家，必須在桌上且摸牌位是空的。
+ * @param playerId 摸牌的玩家，必須是目前玩家且在等摸牌階段。
  * @return 摸牌結果；活牌已經摸完時為 null。
- * @throws IllegalArgumentException 玩家不在桌上或摸牌位已有牌時拋出。
+ * @throws IllegalArgumentException 不是輪到這位玩家摸牌時拋出。
  */
 fun TableState.drawFromLiveWall(playerId: Uuid): PlayerDraw? {
-    val drawer = requireNotNull(players.firstOrNull { it.id == playerId }) { "Drawing player must belong to the table" }
-    require(drawer.hand.lastDrawn == null) { "Drawing player already holds a drawn tile" }
+    require(currentPlayer.id == playerId && turnPhase == TurnPhase.AwaitingDraw) { "Drawing player must be the current player awaiting a draw" }
+    val drawer = currentPlayer
     val (tile, wall) = tileWall.draw()
     if (tile == null) return null
     val remainingWallTileIds = (wall.getAllTiles() + reservedWallTiles).mapTo(mutableSetOf()) { it.id }
@@ -34,6 +34,7 @@ fun TableState.drawFromLiveWall(playerId: Uuid): PlayerDraw? {
             players = players.map { if (it.id == playerId) drawn else it },
             tileWall = wall,
             physicalWallLayout = physicalWallLayout?.retainOnly(remainingWallTileIds),
+            turnPhase = TurnPhase.AwaitingAction,
         ),
         tile = tile,
     )

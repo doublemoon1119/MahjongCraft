@@ -22,8 +22,10 @@ import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPlayerComponents
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.table.PendingRobbingReaction
+import com.doublemoon1119.mahjongcraft.logic.table.RoundConclusion
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.logic.table.TileWall
+import com.doublemoon1119.mahjongcraft.logic.table.TurnPhase
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledCoreExtensionRegistries
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledWinCelebrationCueResolverRegistry
@@ -202,6 +204,7 @@ class RespondToRobbingUseCaseTest {
         assertTrue(result is Outcome.Success, "Expected Success but got $result")
         val newState = fixtures.gameRepo.getTableState(gameId)!!
         assertNull(newState.pendingRobbingReaction)
+        assertEquals(TurnPhase.RoundOver(RoundConclusion.Win(setOf(robberId))), newState.turnPhase)
 
         val winner = newState.players.first { it.id == robberId }
         assertTrue(winner.score > 0, "Winner should have gained points.")
@@ -250,8 +253,10 @@ class RespondToRobbingUseCaseTest {
                     initialSeat = Wind.WEST,
                     hand = robberHand(),
                 ),
-                pendingRobbingReaction = requireNotNull(base.pendingRobbingReaction).copy(
-                    eligiblePlayerIds = setOf(robberId, otherEligibleId),
+                turnPhase = TurnPhase.AwaitingRobbingReaction(
+                    requireNotNull(base.pendingRobbingReaction).copy(
+                        eligiblePlayerIds = setOf(robberId, otherEligibleId),
+                    ),
                 ),
             ),
         )
@@ -291,6 +296,7 @@ class RespondToRobbingUseCaseTest {
         assertEquals(setOf(whiteTile1, whiteTile2, whiteTile3, robbedWhiteTile), meld.tiles.toSet())
         assertEquals(rinshanTile, declarer.hand.lastDrawn)
         assertEquals(listOf(kanAction, GameAction.Draw), declarer.actionHistory.takeLast(2))
+        assertEquals(TurnPhase.AwaitingAction, newState.turnPhase)
         assertEquals(
             newState,
             fixtures.presentationPublisher.getPublishedRoundInfo(gameId),
@@ -393,7 +399,7 @@ class RespondToRobbingUseCaseTest {
     @Test
     fun `test respond fails when there is no pending chankan`() = runTest {
         val fixtures = Fixtures()
-        val table = setUpTable().copy(pendingRobbingReaction = null)
+        val table = setUpTable().copy(turnPhase = TurnPhase.AwaitingAction)
         fixtures.gameRepo.setTableState(table)
 
         val result = fixtures.useCase(gameId, robberId, GameAction.Pass)

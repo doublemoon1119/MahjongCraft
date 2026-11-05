@@ -27,6 +27,7 @@ import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleModule
 import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayer
 import com.doublemoon1119.mahjongcraft.logic.table.PendingReaction
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
+import com.doublemoon1119.mahjongcraft.logic.table.TurnPhase
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledCoreExtensionRegistries
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledWinCelebrationCueResolverRegistry
@@ -69,8 +70,8 @@ class DiscardReactionOptionsTest {
         val fixture = createFixture()
 
         val result = DiscardReactionResolver.resolve(
-            stateBeforeDiscard = fixture.table.copy(pendingReaction = null),
-            stateAfterDiscard = fixture.table.copy(pendingReaction = null),
+            stateBeforeDiscard = fixture.table.copy(turnPhase = TurnPhase.AwaitingDraw),
+            stateAfterDiscard = fixture.table.copy(turnPhase = TurnPhase.AwaitingDraw),
             module = fixture.module,
             discarderId = fixture.discarder.id,
             discardedTile = fixture.discarded,
@@ -111,7 +112,7 @@ class DiscardReactionOptionsTest {
                     tripleRonResolution = RonResolution.ABORTIVE_DRAW,
                 ),
             ),
-            pendingReaction = null,
+            turnPhase = TurnPhase.AwaitingDraw,
         )
 
         assertFailsWith<RuleContractViolationException> {
@@ -132,8 +133,8 @@ class DiscardReactionOptionsTest {
         val fixture = createFixture(includePon = false)
 
         val result = DiscardReactionResolver.resolve(
-            stateBeforeDiscard = fixture.table.copy(pendingReaction = null),
-            stateAfterDiscard = fixture.table.copy(pendingReaction = null),
+            stateBeforeDiscard = fixture.table.copy(turnPhase = TurnPhase.AwaitingDraw),
+            stateAfterDiscard = fixture.table.copy(turnPhase = TurnPhase.AwaitingDraw),
             module = fixture.module,
             discarderId = fixture.discarder.id,
             discardedTile = fixture.discarded,

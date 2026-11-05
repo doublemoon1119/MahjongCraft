@@ -3,6 +3,7 @@ package com.doublemoon1119.mahjongcraft.logic.rules.taiwan
 import com.doublemoon1119.mahjongcraft.logic.base.Hand
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.tile.TaiwanTileTypes
+import com.doublemoon1119.mahjongcraft.logic.table.TurnPhase
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeIdentifiedTileFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
 import kotlin.test.Test
@@ -17,7 +18,7 @@ class TaiwanFlowerSetAsideTest {
     fun `flower moves from drawn slot to public flower area`() {
         val flower = FakeIdentifiedTileFactory.create(Tile.Extension(TaiwanTileTypes.SPRING))
         val ordinary = FakeIdentifiedTileFactory.create(Tile.Honor.East)
-        val state = FakeTableStateFactory.create()
+        val state = FakeTableStateFactory.create(turnPhase = TurnPhase.AwaitingAction)
         val player = state.currentPlayer.copy(hand = Hand(tiles = listOf(ordinary), lastDrawn = flower))
         val table = state.copy(players = state.players.map { if (it.id == player.id) player else it })
         val module = TaiwanRuleModule("mahjongcraft:taiwan", TaiwanRuleConfig())
@@ -33,7 +34,7 @@ class TaiwanFlowerSetAsideTest {
     @Test
     fun `ordinary tile cannot be set aside as a flower`() {
         val ordinary = FakeIdentifiedTileFactory.create(Tile.Honor.East)
-        val state = FakeTableStateFactory.create()
+        val state = FakeTableStateFactory.create(turnPhase = TurnPhase.AwaitingAction)
         val player = state.currentPlayer.copy(hand = Hand(lastDrawn = ordinary))
         val table = state.copy(players = state.players.map { if (it.id == player.id) player else it })
         val module = TaiwanRuleModule("mahjongcraft:taiwan", TaiwanRuleConfig())

@@ -16,6 +16,7 @@ import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanRuleModule
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanTableComponents
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.tile.TaiwanTileTypes
 import com.doublemoon1119.mahjongcraft.logic.table.TileWall
+import com.doublemoon1119.mahjongcraft.logic.table.TurnPhase
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeIdentifiedTileFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
@@ -68,6 +69,8 @@ class TaiwanOpeningFlowerResolutionTest {
         assertEquals(17, after.players[0].hand.standingTiles.size)
         assertEquals(null, after.players[1].hand.lastDrawn)
         assertEquals(16, after.players[1].hand.standingTiles.size)
+        assertEquals(0, after.currentPlayerIndex, "Replacing other players' flowers must not pass the turn.")
+        assertEquals(TurnPhase.AwaitingAction, after.turnPhase, "The dealer already drew and must not draw again.")
     }
 
     /** 牌局中摸到的花已在摸牌時呈現；補到的牌又是花時以「摸到後從摸牌位移出並補牌」呈現，不再重複呈現第一張花。 */
@@ -89,6 +92,7 @@ class TaiwanOpeningFlowerResolutionTest {
             tileWall = TileWall(List(LIVE_TILES) { ordinary() }),
             reservedWallTiles = listOf(chainedFlower, finalReplacement) + List(RESERVED_TILES - 2) { ordinary() },
             components = ComponentSet.EMPTY.with(TaiwanTableComponents.PENDING_FLOWER_FOLLOW_UP, TaiwanPendingFlowerFollowUp(players[0].id, drawnFlower.id, replacementsDue = 1)),
+            turnPhase = TurnPhase.AwaitingAction,
         )
         val step = assertNotNull(TaiwanFlowerRuleDecisionResolver.begin(RuleDecisionTiming.DRAW_FOLLOW_UP, table, module))
 

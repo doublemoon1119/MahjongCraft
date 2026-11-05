@@ -27,6 +27,7 @@ import com.doublemoon1119.mahjongcraft.logic.table.DrawSource
 import com.doublemoon1119.mahjongcraft.logic.table.PendingRobbingReaction
 import com.doublemoon1119.mahjongcraft.logic.table.SupplementalDrawReasonIds
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
+import com.doublemoon1119.mahjongcraft.logic.table.TurnPhase
 import com.doublemoon1119.mahjongcraft.logic.table.layout.PhysicalWallLayoutTransitionPhase
 import kotlin.uuid.Uuid
 
@@ -197,11 +198,13 @@ class DeclareKanUseCase(
 
                     if (ronWinningPlayerIds.isNotEmpty()) {
                         val newState = state.copy(
-                            pendingRobbingReaction = PendingRobbingReaction(
-                                playerId,
-                                kanAction,
-                                declaredTile,
-                                ronWinningPlayerIds,
+                            turnPhase = TurnPhase.AwaitingRobbingReaction(
+                                PendingRobbingReaction(
+                                    playerId,
+                                    kanAction,
+                                    declaredTile,
+                                    ronWinningPlayerIds,
+                                ),
                             ),
                             publicTileEvidenceIds = state.publicTileEvidenceIds + kanAction.withTiles + kanAction.tileId,
                         )

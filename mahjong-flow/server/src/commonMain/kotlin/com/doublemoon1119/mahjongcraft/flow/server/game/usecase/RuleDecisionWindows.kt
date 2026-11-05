@@ -14,7 +14,9 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.RuleDecisi
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.RuleDecisionWin
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
+import com.doublemoon1119.mahjongcraft.logic.table.RoundConclusion
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
+import com.doublemoon1119.mahjongcraft.logic.table.TurnPhase
 import kotlin.uuid.Uuid
 
 /**
@@ -101,8 +103,8 @@ internal object RuleDecisionWindows {
     }
 
     /**
-     * 直接成立的和牌必須結束選擇流程、發生在本局結算前、與分數變動一致，且贏家已記錄和牌動作，
-     * 結束本局的流程才能據此收尾。
+     * 直接成立的和牌必須結束選擇流程、發生在本局結算前、與分數變動一致、贏家已記錄和牌動作，且桌況的階段是
+     * 以這些贏家胡牌結束本局，結束本局的流程才能據此收尾。
      *
      * @param game 開著 [decision] 的對局。
      * @param decision 剛收齊或沒有參與者的視窗。
@@ -125,11 +127,12 @@ internal object RuleDecisionWindows {
             win.outcome.winnerPlayerIds.all { winnerId ->
                 val lastAction = players.firstOrNull { it.id == winnerId }?.actionHistory?.lastOrNull()
                 lastAction is GameAction.Tsumo || lastAction is GameAction.Ron
-            }
+            } &&
+            resolution.tableState.turnPhase == TurnPhase.RoundOver(RoundConclusion.Win(win.outcome.winnerPlayerIds))
         if (!valid) {
             throw RuleContractViolationException(
                 GameAbortReasonIds.RULE_EXECUTION_FAILED,
-                "Rule decision win must close the decision before round end, match its score changes and record the winners' win action",
+                "Rule decision win must close the decision before round end, match its score changes, record the winners' win action and conclude the round with that win",
             )
         }
     }

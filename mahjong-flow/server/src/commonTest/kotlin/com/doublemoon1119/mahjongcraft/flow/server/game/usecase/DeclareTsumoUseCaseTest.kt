@@ -32,6 +32,8 @@ import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiWallProgress
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.riichiPotPoints
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.riichiWallProgress
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanRuleConfig
+import com.doublemoon1119.mahjongcraft.logic.table.RoundConclusion
+import com.doublemoon1119.mahjongcraft.logic.table.TurnPhase
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import com.doublemoon1119.mahjongcraft.logic.table.toSnapshot
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledCoreExtensionRegistries
@@ -303,6 +305,7 @@ class DeclareTsumoUseCaseTest {
         val newState = fixtures.gameRepo.getTableState(gameId)!!
         assertEquals(1, newState.currentPlayerIndex, "currentPlayerIndex should be left untouched by this unit's scope.")
         assertNull(newState.pendingReaction)
+        assertEquals(TurnPhase.RoundOver(RoundConclusion.Win(setOf(winnerId))), newState.turnPhase)
         assertEquals(0, (newState.riichiPotPoints() / RIICHI_STICK_POINTS), "The winner should collect all sticks on the table.")
         assertEquals(
             32000 + 2000,

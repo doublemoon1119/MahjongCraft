@@ -44,6 +44,7 @@ import com.doublemoon1119.mahjongcraft.logic.table.PendingReaction
 import com.doublemoon1119.mahjongcraft.logic.table.SidewaysMarkedDiscardPile
 import com.doublemoon1119.mahjongcraft.logic.table.SupplementalDrawReasonIds
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
+import com.doublemoon1119.mahjongcraft.logic.table.TurnPhase
 import com.doublemoon1119.mahjongcraft.logic.table.WallRevealCheckpoint
 import com.doublemoon1119.mahjongcraft.logic.table.layout.PhysicalWallLayoutTransitionPhase
 import kotlin.uuid.Uuid
@@ -242,7 +243,7 @@ class RespondToDiscardUseCase(
                         )
 
                     val result = if (!newPendingReaction.isComplete) {
-                        RespondResult(state.copy(players = playersAfterResponse, pendingReaction = newPendingReaction))
+                        RespondResult(state.copy(players = playersAfterResponse, turnPhase = TurnPhase.AwaitingDiscardReaction(newPendingReaction)))
                     } else {
                         resolvePendingReaction(state, playersAfterResponse, newPendingReaction, discardedTile, module)
                     }
@@ -531,7 +532,7 @@ class RespondToDiscardUseCase(
                 winnerIds = ronWinnerIds,
             )
             val result = RespondResult(
-                tableState = resolved.tableState.copy(pendingReaction = null),
+                tableState = resolved.tableState,
                 ronWinnerIds = ronWinnerIds,
                 ronWinningTileId = discardedTile.id,
                 ronResolutions = resolved.resolutions,
@@ -554,7 +555,7 @@ class RespondToDiscardUseCase(
                 .mapTo(mutableSetOf()) { it.id },
             module = module,
         ).players
-        val stateAfterResponses = state.copy(players = players, pendingReaction = null)
+        val stateAfterResponses = state.copy(players = players, turnPhase = TurnPhase.AwaitingDraw)
         val completedDiscard = GameAction.Discard(pendingReaction.tileId)
         val abortiveDrawReason = postActionExhaustiveDrawResolverRegistry.resolve(
             CompletedGameActionContext(
@@ -581,7 +582,7 @@ class RespondToDiscardUseCase(
             return RespondResult(
                 stateWithPlayers.copy(
                     currentPlayerIndex = players.indexOf(nextPlayer),
-                    pendingReaction = null,
+                    turnPhase = TurnPhase.AwaitingDraw,
                 ),
             ).applyWallReveal(
                 checkpoint = WallRevealCheckpoint.AFTER_DISCARD_REACTIONS,
@@ -631,10 +632,7 @@ class RespondToDiscardUseCase(
         } else {
             calledHand
         }
-        val winnerAfterMeld = claimingWinner.copy(
-            hand = organizedHand,
-            mustDiscardAfterMeld = !effect.requiresSupplementalDraw,
-        ).clearPassedTiles().recordAction(winnerAction)
+        val winnerAfterMeld = claimingWinner.copy(hand = organizedHand).clearPassedTiles().recordAction(winnerAction)
 
         val playersAfterMeld = players.map { player ->
             when (player.id) {
@@ -661,7 +659,8 @@ class RespondToDiscardUseCase(
             after = state.copy(
                 players = playersAfterMeldClaimed,
                 currentPlayerIndex = winnerIndex,
-                pendingReaction = null,
+                // 需要補牌的鳴牌在補牌後進入等行動；不補牌的鳴牌只能打牌。
+                turnPhase = if (effect.requiresSupplementalDraw) TurnPhase.AwaitingAction else TurnPhase.AwaitingDiscard,
             ),
             actorPlayerId = winnerId,
             action = winnerAction,

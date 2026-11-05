@@ -10,6 +10,7 @@ import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
 import com.doublemoon1119.mahjongcraft.logic.table.PendingFollowUpDraw
 import com.doublemoon1119.mahjongcraft.logic.table.PendingRobbingReaction
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
+import com.doublemoon1119.mahjongcraft.logic.table.TurnPhase
 import kotlin.uuid.Uuid
 
 /**
@@ -122,12 +123,14 @@ internal object TileSetAsideResolver {
         if (ronWinningPlayerIds.isNotEmpty()) {
             return Resolution.RobbingWindowOpened(
                 tableState = state.copy(
-                    pendingRobbingReaction = PendingRobbingReaction(
-                        declarerId = playerId,
-                        declaredAction = action,
-                        robbedTile = setAsideTile,
-                        eligiblePlayerIds = ronWinningPlayerIds,
-                        pendingFollowUpDraws = pendingFollowUpDraws,
+                    turnPhase = TurnPhase.AwaitingRobbingReaction(
+                        PendingRobbingReaction(
+                            declarerId = playerId,
+                            declaredAction = action,
+                            robbedTile = setAsideTile,
+                            eligiblePlayerIds = ronWinningPlayerIds,
+                            pendingFollowUpDraws = pendingFollowUpDraws,
+                        ),
                     ),
                     publicTileEvidenceIds = state.publicTileEvidenceIds + setAsideTile.id,
                 ),

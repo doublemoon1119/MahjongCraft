@@ -19,6 +19,7 @@ import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.table.PendingReaction
 import com.doublemoon1119.mahjongcraft.logic.table.PendingRobbingReaction
+import com.doublemoon1119.mahjongcraft.logic.table.TurnPhase
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledCoreExtensionRegistries
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.registerBundledRuleModules
 import com.doublemoon1119.mahjongcraft.testing.logic.rules.riichi.riichiDeclarationComponents
@@ -111,7 +112,7 @@ class GameDecisionAuthorityResolverTest {
         val player = FakeMahjongPlayerFactory.create(id = playerId)
             .recordAction(GameAction.Pon(Uuid.random(), emptyList()))
         val game = Game(
-            tableState = FakeTableStateFactory.create(players = listOf(player)),
+            tableState = FakeTableStateFactory.create(players = listOf(player), turnPhase = TurnPhase.AwaitingDiscard),
             flowConfig = GameFlowConfig(),
         )
 

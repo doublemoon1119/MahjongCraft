@@ -26,8 +26,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.history.CommittedGameFac
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryFact
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.Game
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.RecordedDrawOutcome
-import com.doublemoon1119.mahjongcraft.flow.common.game.model.newlyRecordedActionsByPlayerId
-import com.doublemoon1119.mahjongcraft.flow.common.game.model.recordedDrawOutcome
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.concludedDrawOutcome
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.roundRanksByPlayer
 import com.doublemoon1119.mahjongcraft.logic.base.NamespacedId
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
@@ -35,6 +34,7 @@ import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
 import com.doublemoon1119.mahjongcraft.logic.table.RoundCompletionClassification
 import com.doublemoon1119.mahjongcraft.logic.table.RoundCompletionSummary
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
+import com.doublemoon1119.mahjongcraft.logic.table.TurnPhase
 import kotlin.uuid.Uuid
 
 /**
@@ -276,10 +276,10 @@ class GameEventProjector(
         val committed = game.roundCompletion
             ?.takeIf { previous.roundCompletion == null && it.classification in DRAW_CLASSIFICATIONS }
             ?.let { Settlement(it, RoundSettlementKind.DRAW) }
-        return committed ?: recordedDrawOutcome(
-            game.tableState,
-            newlyRecordedActionsByPlayerId(previous.tableState, game.tableState),
-        )?.let { Settlement(it, RoundSettlementKind.DRAW) }
+        val newlyConcluded = previous.tableState.turnPhase !is TurnPhase.RoundOver
+        return committed ?: game.tableState.concludedDrawOutcome()
+            ?.takeIf { newlyConcluded }
+            ?.let { Settlement(it, RoundSettlementKind.DRAW) }
     }
 
     /**

@@ -4,10 +4,9 @@ import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
 import com.doublemoon1119.mahjongcraft.logic.component.ComponentSet
 import com.doublemoon1119.mahjongcraft.logic.module.RevealedHandSettlement
 import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayer
-import com.doublemoon1119.mahjongcraft.logic.table.PendingReaction
-import com.doublemoon1119.mahjongcraft.logic.table.PendingRobbingReaction
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.logic.table.TileWall
+import com.doublemoon1119.mahjongcraft.logic.table.TurnPhase
 import com.doublemoon1119.mahjongcraft.logic.table.opening.OpeningDiceRoll
 import kotlin.uuid.Uuid
 
@@ -18,8 +17,7 @@ import kotlin.uuid.Uuid
  * @property changedPlayers 實際變動的玩家與新追加動作，未列出的玩家保持原值。
  * @property wall 活牌牆兩端的移除；未改變時為 null。
  * @property currentPlayerIndex 新的行動玩家索引；未改變時為 null。
- * @property pendingReaction 捨牌反應視窗的新值；外層 null 代表未改變。
- * @property pendingRobbingReaction 搶和反應視窗的新值；外層 null 代表未改變。
+ * @property turnPhase 新的回合階段；未改變時為 null。
  * @property reservedWallTiles 規則保留牌的新順序；未改變時為 null。
  * @property physicalWallLayout 實體牌牆位置的局部變化；未改變時為 null。
  * @property finishedPlayerIds 本局已完成玩家的新集合；未改變時為 null。
@@ -32,8 +30,7 @@ data class HistoryTableChange(
     val changedPlayers: List<HistoryPlayerChange> = emptyList(),
     val wall: HistoryWallChange? = null,
     val currentPlayerIndex: Int? = null,
-    val pendingReaction: HistoryChangedValue<PendingReaction?>? = null,
-    val pendingRobbingReaction: HistoryChangedValue<PendingRobbingReaction?>? = null,
+    val turnPhase: TurnPhase? = null,
     val reservedWallTiles: List<IdentifiedTile>? = null,
     val physicalWallLayout: HistoryWallLayoutChange? = null,
     val finishedPlayerIds: Set<Uuid>? = null,
@@ -57,8 +54,7 @@ data class HistoryTableChange(
             players = before.players.map { player -> replacements[player.id]?.applyTo(player) ?: player },
             tileWall = wall?.applyTo(before.tileWall) ?: before.tileWall,
             currentPlayerIndex = currentPlayerIndex ?: before.currentPlayerIndex,
-            pendingReaction = if (pendingReaction != null) pendingReaction.value else before.pendingReaction,
-            pendingRobbingReaction = if (pendingRobbingReaction != null) pendingRobbingReaction.value else before.pendingRobbingReaction,
+            turnPhase = turnPhase ?: before.turnPhase,
             reservedWallTiles = reservedWallTiles ?: before.reservedWallTiles,
             physicalWallLayout = physicalWallLayout?.applyTo(checkNotNull(before.physicalWallLayout))
                 ?: before.physicalWallLayout,
@@ -113,8 +109,7 @@ data class HistoryTableChange(
                 changedPlayers = changedPlayers,
                 wall = wallChange.takeUnless { it.removedFront == 0 && it.removedBack == 0 && it.updatedTiles.isEmpty() },
                 currentPlayerIndex = after.currentPlayerIndex.takeIf { it != before.currentPlayerIndex },
-                pendingReaction = if (after.pendingReaction != before.pendingReaction) HistoryChangedValue(after.pendingReaction) else null,
-                pendingRobbingReaction = if (after.pendingRobbingReaction != before.pendingRobbingReaction) HistoryChangedValue(after.pendingRobbingReaction) else null,
+                turnPhase = after.turnPhase.takeIf { it != before.turnPhase },
                 reservedWallTiles = after.reservedWallTiles.takeIf { it != before.reservedWallTiles },
                 physicalWallLayout = if (newPlacements != oldPlacements) {
                     HistoryWallLayoutChange(

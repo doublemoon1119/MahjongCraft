@@ -18,6 +18,7 @@ import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayer
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.logic.table.TileWall
+import com.doublemoon1119.mahjongcraft.logic.table.TurnPhase
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledPersistenceRegistries
 import kotlin.test.Test
@@ -83,6 +84,7 @@ class ComponentOwnerPersistenceTest {
             tileWall = TileWall(emptyList()),
             dealerPlayerId = player.id,
             components = ComponentSet.EMPTY.with(tableFlag, true),
+            turnPhase = TurnPhase.AwaitingDraw,
         )
         val dto = original.toPersistenceDto(
             ruleConfigRegistry = registries.ruleConfigs,

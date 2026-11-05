@@ -42,6 +42,7 @@ import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleModule
 import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayer
 import com.doublemoon1119.mahjongcraft.logic.table.PendingReaction
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
+import com.doublemoon1119.mahjongcraft.logic.table.TurnPhase
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledCoreExtensionRegistries
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledWinCelebrationCueResolverRegistry
 import com.doublemoon1119.mahjongcraft.testing.flow.common.game.repository.FakeGameSnapshotRepository
@@ -56,6 +57,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertIs
+import kotlin.test.assertNotEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
@@ -97,7 +99,7 @@ class CustomDiscardClaimIntegrationTest {
             assertEquals(listOf(CLAIM), fixture.events.getNotifiedActions(fixture.table.id, fixture.discarder.id, fixture.first.id))
             val remaining = state.currentPlayer.hand.tiles.single()
             assertIs<Outcome.Success<Unit>>(fixture.discard(fixture.table.id, fixture.first.id, remaining.id))
-            assertFalse(assertNotNull(fixture.repository.getTableState(fixture.table.id)).players.first { it.id == fixture.first.id }.mustDiscardAfterMeld)
+            assertNotEquals<TurnPhase>(TurnPhase.AwaitingDiscard, assertNotNull(fixture.repository.getTableState(fixture.table.id)).turnPhase)
         }
     }
 

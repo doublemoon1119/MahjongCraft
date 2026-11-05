@@ -7,6 +7,7 @@ import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.tile.TaiwanTileTypes
 import com.doublemoon1119.mahjongcraft.logic.table.PlayerTileAreas
 import com.doublemoon1119.mahjongcraft.logic.table.TileReplacementRounds
 import com.doublemoon1119.mahjongcraft.logic.table.TileWall
+import com.doublemoon1119.mahjongcraft.logic.table.TurnPhase
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeIdentifiedTileFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
@@ -186,6 +187,7 @@ class TaiwanFlowerFlowTest {
         config = TaiwanRuleConfig(),
         tileWall = TileWall(liveTiles),
         reservedWallTiles = reservedTiles,
+        turnPhase = TurnPhase.AwaitingAction,
     )
 
     /** 依固定索引建立一張花牌。 */

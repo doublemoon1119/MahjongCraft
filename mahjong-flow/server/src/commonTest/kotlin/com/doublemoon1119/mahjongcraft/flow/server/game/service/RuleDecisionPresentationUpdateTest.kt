@@ -12,6 +12,7 @@ import com.doublemoon1119.mahjongcraft.logic.rules.riichi.threeplayer.ThreePlaye
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TAIWAN_REVEAL_FLOWER_ACTION
 import com.doublemoon1119.mahjongcraft.logic.table.PlayerTileAreas
 import com.doublemoon1119.mahjongcraft.logic.table.TileWall
+import com.doublemoon1119.mahjongcraft.logic.table.TurnPhase
 import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPhysicalLayout
 import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPlacement
 import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPosition
@@ -134,6 +135,7 @@ class RuleDecisionPresentationUpdateTest {
             players = previous.players.mapIndexed { index, player ->
                 if (index == 0) player.copy(hand = player.hand.copy(lastDrawn = replacement)) else player
             },
+            turnPhase = TurnPhase.AwaitingAction,
             tileWall = TileWall(emptyList()),
         )
         val followUpStep = DrawFollowUpPresentationStep(
@@ -169,6 +171,7 @@ class RuleDecisionPresentationUpdateTest {
             players = previous.players.mapIndexed { index, player ->
                 if (index == 0) player.copy(hand = player.hand.copy(lastDrawn = drawn)) else player
             },
+            turnPhase = TurnPhase.AwaitingAction,
         )
         val followUpStep = DrawFollowUpPresentationStep(
             action = TAIWAN_REVEAL_FLOWER_ACTION,

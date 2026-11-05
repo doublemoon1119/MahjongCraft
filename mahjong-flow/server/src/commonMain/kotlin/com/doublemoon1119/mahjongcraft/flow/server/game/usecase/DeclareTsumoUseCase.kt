@@ -29,7 +29,9 @@ import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
 import com.doublemoon1119.mahjongcraft.logic.module.SettlementExtrasOccasion
 import com.doublemoon1119.mahjongcraft.logic.module.WinResolutionResult
+import com.doublemoon1119.mahjongcraft.logic.table.RoundConclusion
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
+import com.doublemoon1119.mahjongcraft.logic.table.TurnPhase
 import com.doublemoon1119.mahjongcraft.logic.table.WallRevealCheckpoint
 import kotlin.uuid.Uuid
 
@@ -161,6 +163,7 @@ class DeclareTsumoUseCase(
                     val newState = stateForSettlement.copy(
                         players = updatedPlayers,
                         components = extras.components,
+                        turnPhase = TurnPhase.RoundOver(RoundConclusion.Win(setOf(playerId))),
                     )
 
                     val settlement = WinSettlementPresentationRequestFactory.create(

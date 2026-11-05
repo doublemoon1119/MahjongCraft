@@ -11,6 +11,7 @@ import com.doublemoon1119.mahjongcraft.logic.rules.riichi.toTableComponentPatch
 import com.doublemoon1119.mahjongcraft.logic.table.SupplementalDrawDecision
 import com.doublemoon1119.mahjongcraft.logic.table.SupplementalDrawReasonIds
 import com.doublemoon1119.mahjongcraft.logic.table.TileWall
+import com.doublemoon1119.mahjongcraft.logic.table.TurnPhase
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledCoreExtensionRegistries
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeIdentifiedTileFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.rules.riichi.riichiTableComponents
@@ -31,6 +32,7 @@ class SelfDeclarationApplierTest {
         val remainingTile = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 2))
         val reservedTile = FakeIdentifiedTileFactory.create(Tile.Honor.White)
         val state = FakeTableStateFactory.create(
+            turnPhase = TurnPhase.AwaitingAction,
             tileWall = TileWall(listOf(drawnTile, remainingTile)),
             reservedWallTiles = listOf(reservedTile),
         )
@@ -66,6 +68,7 @@ class SelfDeclarationApplierTest {
         val liveTile = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 1))
         val reservedTile = FakeIdentifiedTileFactory.create(Tile.Honor.Green)
         val state = FakeTableStateFactory.create(
+            turnPhase = TurnPhase.AwaitingAction,
             tileWall = TileWall(listOf(liveTile)),
             reservedWallTiles = listOf(reservedTile),
         )
@@ -101,6 +104,7 @@ class SelfDeclarationApplierTest {
         val replenishment = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 2))
         val reservedTiles = List(4) { FakeIdentifiedTileFactory.create(Tile.Honor.White) }
         val beforeState = FakeTableStateFactory.create(
+            turnPhase = TurnPhase.AwaitingAction,
             config = RiichiRuleConfig(),
             tileWall = TileWall(listOf(loweredTile, replenishment)),
             reservedWallTiles = reservedTiles,

@@ -14,6 +14,7 @@ import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleModule
 import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayer
 import com.doublemoon1119.mahjongcraft.logic.table.PendingReaction
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
+import com.doublemoon1119.mahjongcraft.logic.table.TurnPhase
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeIdentifiedTileFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeDiscardPile
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
@@ -114,6 +115,7 @@ class AutomaticGameCommandResolverTest {
         config = RiichiRuleConfig(),
         players = listOf(player, FakeMahjongPlayerFactory.create()),
         currentPlayerIndex = 0,
+        turnPhase = if (player.hand.lastDrawn != null) TurnPhase.AwaitingAction else TurnPhase.AwaitingDiscard,
     )
 
     /** 建立可覆寫捨牌限制與反應跳過資格的測試解析器。 */

@@ -8,7 +8,9 @@ import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
 import com.doublemoon1119.mahjongcraft.logic.module.SettlementExtrasOccasion
 import com.doublemoon1119.mahjongcraft.logic.module.WinResolutionResult
 import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayer
+import com.doublemoon1119.mahjongcraft.logic.table.RoundConclusion
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
+import com.doublemoon1119.mahjongcraft.logic.table.TurnPhase
 import kotlin.uuid.Uuid
 
 /**
@@ -93,6 +95,7 @@ internal object RonSettlementResolver {
             tableState = state.copy(
                 players = updatedPlayers,
                 components = extras.components,
+                turnPhase = TurnPhase.RoundOver(RoundConclusion.Win(winnerIds.toSet())),
             ),
             resolutions = settlements,
         )

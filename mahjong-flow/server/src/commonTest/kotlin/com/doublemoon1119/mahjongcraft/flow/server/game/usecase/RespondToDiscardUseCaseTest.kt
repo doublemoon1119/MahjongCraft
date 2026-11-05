@@ -41,6 +41,8 @@ import com.doublemoon1119.mahjongcraft.logic.rules.riichi.riichiWallProgress
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.RiichiTileInterpretationPolicy
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.RiichiTileValues
 import com.doublemoon1119.mahjongcraft.logic.table.PendingReaction
+import com.doublemoon1119.mahjongcraft.logic.table.RoundConclusion
+import com.doublemoon1119.mahjongcraft.logic.table.TurnPhase
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import com.doublemoon1119.mahjongcraft.logic.table.toSnapshot
 import com.doublemoon1119.mahjongcraft.logic.table.visibleTiles
@@ -230,6 +232,7 @@ class RespondToDiscardUseCaseTest {
             "An ordinary pass must not record an exhaustive draw action.",
         )
         assertEquals(1, newState.currentPlayerIndex, "No one acted, so turn should advance like the normal discard flow.")
+        assertEquals(TurnPhase.AwaitingDraw, newState.turnPhase)
         val updatedResponder = newState.players.first { it.id == responderId }
         assertTrue(
             Tile.Honor.White in updatedResponder.passedTilesInRound,
@@ -336,6 +339,7 @@ class RespondToDiscardUseCaseTest {
         assertEquals(discarderId, draft.actorPlayerId)
         val state = assertNotNull(fixtures.gameRepo.getTableState(gameId))
         assertNull(state.pendingReaction)
+        assertEquals(TurnPhase.RoundOver(RoundConclusion.AbortiveDraw(RiichiExhaustiveDrawReason.SuuchaRiichi)), state.turnPhase)
         assertTrue(state.players.all { player -> player.actionHistory.count { it == expected } == 1 })
         assertEquals(players.map { it.score }, state.players.map { it.score })
     }
@@ -412,6 +416,7 @@ class RespondToDiscardUseCaseTest {
         val newState = fixtures.gameRepo.getTableState(gameId)!!
         assertNull(newState.pendingReaction)
         assertEquals(1, newState.currentPlayerIndex, "Turn should move to the player who claimed the meld.")
+        assertEquals(TurnPhase.AwaitingDiscard, newState.turnPhase, "A claimed pon must be followed by a discard, not a draw.")
 
         val winner = newState.players.first { it.id == responderId }
         assertTrue(winner.hand.tiles.isEmpty(), "Both matching hand tiles should be consumed into the meld.")
@@ -628,6 +633,7 @@ class RespondToDiscardUseCaseTest {
         val newState = fixtures.gameRepo.getTableState(gameId)!!
         assertNull(newState.pendingReaction)
         assertEquals(1, newState.currentPlayerIndex, "Turn should move to the player who claimed the meld.")
+        assertEquals(TurnPhase.AwaitingAction, newState.turnPhase, "After the replacement draw the claimer acts as after a normal draw.")
         assertEquals(table.tileWall.remainingCount - 1, newState.tileWall.remainingCount)
         assertEquals(table.tileWall.getAllTiles().last(), newState.reservedWallTiles.last())
         assertEquals(1, newState.riichiWallProgress().completedSupplementalDrawCount)
@@ -1028,6 +1034,7 @@ class RespondToDiscardUseCaseTest {
         assertEquals(GameAction.Ron(discardedTile.id), newWinner.actionHistory.last())
 
         val newDiscarder = newState.players.first { it.id == discarderId }
+        assertEquals(TurnPhase.RoundOver(RoundConclusion.Win(setOf(responderId))), newState.turnPhase)
         assertEquals(-32000, newDiscarder.score, "The sole discarder should pay the full amount.")
         assertTrue(
             newState.players.none { player -> player.actionHistory.any { it is GameAction.ExhaustiveDraw } },

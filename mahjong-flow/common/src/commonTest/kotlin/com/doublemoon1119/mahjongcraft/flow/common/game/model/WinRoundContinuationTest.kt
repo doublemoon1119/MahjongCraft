@@ -1,5 +1,7 @@
 package com.doublemoon1119.mahjongcraft.flow.common.game.model
 
+import com.doublemoon1119.mahjongcraft.logic.table.RoundConclusion
+import com.doublemoon1119.mahjongcraft.logic.table.TurnPhase
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
 import kotlin.test.Test
@@ -14,7 +16,11 @@ class WinRoundContinuationTest {
     /** 正常套用時應把新標記的玩家併入 `finishedPlayerIds`，並將回合交給 `nextPlayerId`。 */
     @Test
     fun `applyTo marks newly finished players and advances turn to nextPlayerId`() {
-        val state = FakeTableStateFactory.create(players = fourPlayers, currentPlayerIndex = 0)
+        val state = FakeTableStateFactory.create(
+            players = fourPlayers,
+            currentPlayerIndex = 0,
+            turnPhase = TurnPhase.RoundOver(RoundConclusion.Win(setOf(fourPlayers[0].id))),
+        )
         val directive = WinRoundDirective.ContinueRound(
             newlyFinishedPlayerIds = setOf(fourPlayers[0].id),
             nextPlayerId = fourPlayers[1].id,
@@ -25,6 +31,7 @@ class WinRoundContinuationTest {
 
         assertEquals(setOf(fourPlayers[0].id), updated.finishedPlayerIds)
         assertEquals(1, updated.currentPlayerIndex)
+        assertEquals(TurnPhase.AwaitingDraw, updated.turnPhase, "The next player continues the round by drawing.")
     }
 
     /** 已經標記過 finished 的玩家再次出現在 `newlyFinishedPlayerIds` 應拋出例外。 */

@@ -476,8 +476,12 @@ object CompactReplayCodec {
         val encoded = persistenceJson.encodeToJsonElement(state.toPersistenceDto(registries.ruleConfigs, registries.discardPiles, registries.exhaustiveDrawReasons, registries.extensionGameActions, registries.components)).jsonObject
         val gameplay = encoded.filterKeys { it !in PROJECTION_EXCLUDED_TABLE_KEYS }.toMutableMap()
         // 視窗身分只用於驗證即時提交，不屬於可回放的牌局內容。
-        (gameplay[ReplaySourceKeys.PENDING_REACTION] as? JsonObject)?.let { reaction ->
-            gameplay[ReplaySourceKeys.PENDING_REACTION] = JsonObject(reaction.filterKeys { it != ReplaySourceKeys.ID })
+        (gameplay[ReplaySourceKeys.TURN_PHASE] as? JsonObject)?.let { phase ->
+            (phase[ReplaySourceKeys.TURN_PHASE_REACTION] as? JsonObject)?.let { reaction ->
+                gameplay[ReplaySourceKeys.TURN_PHASE] = JsonObject(
+                    phase + (ReplaySourceKeys.TURN_PHASE_REACTION to JsonObject(reaction.filterKeys { it != ReplaySourceKeys.ID })),
+                )
+            }
         }
         val encodedPlayers = encoded[ReplayFormatKeys.PLAYERS] as JsonArray
         require(encodedPlayers.size == state.players.size) { "Replay player projection does not match the table" }

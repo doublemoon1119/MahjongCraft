@@ -6,6 +6,7 @@ import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.logic.table.PendingReaction
 import com.doublemoon1119.mahjongcraft.logic.table.PendingRobbingReaction
+import com.doublemoon1119.mahjongcraft.logic.table.TurnPhase
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
 import kotlin.test.Test
@@ -37,7 +38,6 @@ class PlayerActionContextResolverTest {
                 robbedTile = robbedTile,
                 eligiblePlayerIds = setOf(playerId),
             ),
-            pendingReaction = PendingReaction(Uuid.random(), Uuid.random(), setOf(playerId), ronPlayerIds = setOf(playerId), id = Uuid.random()),
         )
 
         assertIs<PlayerActionContext.RobbingReaction>(resolver.resolveFor(state, playerId))
@@ -89,7 +89,7 @@ class PlayerActionContextResolverTest {
         val playerId = Uuid.random()
         val player = FakeMahjongPlayerFactory.create(id = playerId)
             .recordAction(GameAction.Pon(Uuid.random(), emptyList()))
-        val state = FakeTableStateFactory.create(players = listOf(player))
+        val state = FakeTableStateFactory.create(players = listOf(player), turnPhase = TurnPhase.AwaitingDiscard)
 
         assertIs<PlayerActionContext.OwnTurn>(resolver.resolveFor(state, playerId))
     }

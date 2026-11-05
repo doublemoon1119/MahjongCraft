@@ -15,6 +15,8 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.RuleDecisi
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
+import com.doublemoon1119.mahjongcraft.logic.table.RoundConclusion
+import com.doublemoon1119.mahjongcraft.logic.table.TurnPhase
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.registerBundledRuleModules
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
@@ -95,6 +97,26 @@ class RuleDecisionWindowsTest {
         }
     }
 
+    /** 規則回報和牌成立，但回傳的桌況不是以這些贏家結束本局時，應以契約錯誤拒絕。 */
+    @Test
+    fun `a win whose table does not end the round with the winners is rejected`() {
+        val base = winningResolution(nextStep = null)
+        listOf(
+            TurnPhase.AwaitingAction,
+            TurnPhase.RoundOver(RoundConclusion.Win(setOf(payer.id))),
+        ).forEach { phase ->
+            assertFailsWith<RuleContractViolationException>("$phase") {
+                RuleDecisionWindows.advance(
+                    game = game.copy(pendingRuleDecision = decision),
+                    decision = decision,
+                    resolution = base.copy(tableState = base.tableState.copy(turnPhase = phase)),
+                    module = module,
+                    resolverRegistry = RuleDecisionResolverRegistry(),
+                )
+            }
+        }
+    }
+
     /** 贏家沒有記錄和牌動作時，結束本局的流程找不到贏家，應以契約錯誤拒絕。 */
     @Test
     fun `a win without the winner's win action is rejected`() {
@@ -134,6 +156,7 @@ class RuleDecisionWindowsTest {
                     else -> player
                 }
             },
+            turnPhase = TurnPhase.RoundOver(RoundConclusion.Win(setOf(winner.id))),
         ),
         nextStep = nextStep,
         win = RuleDecisionWin(

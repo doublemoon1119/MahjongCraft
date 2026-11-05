@@ -28,7 +28,6 @@ import kotlin.uuid.Uuid
  *                              榮和的捨牌，以及玩家有資格搶槓卻放過的槓牌。規則以此判斷下次取牌前的限制（例如
  *                              日麻的同巡振聽）；玩家摸牌或鳴牌時清除。
  * @property actionHistory 記錄玩家執行的動作歷史，用於判斷特定的胡牌役（如嶺上開花需要「槓牌 → 摸牌」的動作序列）。
- * @property mustDiscardAfterMeld 玩家已取得副露，接下來必須直接捨牌而不能一般摸牌；不需要補牌的鳴牌成立時設為 true。
  */
 data class MahjongPlayer(
     val id: Uuid,
@@ -39,7 +38,6 @@ data class MahjongPlayer(
     override val seatWind: Wind,
     val passedTilesInRound: Set<Tile> = emptySet(),
     val actionHistory: List<GameAction> = emptyList(),
-    val mustDiscardAfterMeld: Boolean = false,
     val components: ComponentSet = ComponentSet.EMPTY,
     val tileAreas: PlayerTileAreas = PlayerTileAreas.EMPTY,
 ) : RankablePlayer {
@@ -50,15 +48,6 @@ data class MahjongPlayer(
 
     /** 所有移出牌區的當前牌張，依區域與區域內順序排列。 */
     val setAsideTiles: List<IdentifiedTile> get() = tileAreas.allTiles
-
-    /**
-     * 是否剛完成不補牌的鳴牌，尚未捨牌。
-     *
-     * [mustDiscardAfterMeld] 記錄自訂或內建鳴牌的待捨牌狀態；內建吃、碰也可由最後一筆動作直接辨識。
-     * 此時 [Hand.lastDrawn] 可以是 `null`，不能因此視為尚未摸牌的回合。
-     */
-    val justClaimedMeld: Boolean
-        get() = mustDiscardAfterMeld || actionHistory.lastOrNull().let { it is GameAction.Chi || it is GameAction.Pon }
 
     /**
      * 記錄一張交給玩家、但玩家沒有榮和的牌，見 [passedTilesInRound]。
@@ -86,13 +75,7 @@ data class MahjongPlayer(
      * @return 記錄後的新 [MahjongPlayer] 實例。
      * @see actionHistory
      */
-    fun recordAction(action: GameAction): MahjongPlayer = copy(
-        actionHistory = actionHistory + action,
-        mustDiscardAfterMeld = when (action) {
-            is GameAction.Discard, GameAction.Draw, GameAction.Tsumo, is GameAction.Ron, is GameAction.ExhaustiveDraw -> false
-            else -> mustDiscardAfterMeld
-        },
-    )
+    fun recordAction(action: GameAction): MahjongPlayer = copy(actionHistory = actionHistory + action)
 
     /**
      * 清除動作歷史記錄。
@@ -102,5 +85,5 @@ data class MahjongPlayer(
      * @return 清除後的新 [MahjongPlayer] 實例。
      * @see actionHistory
      */
-    fun clearActionHistory(): MahjongPlayer = copy(actionHistory = emptyList(), mustDiscardAfterMeld = false)
+    fun clearActionHistory(): MahjongPlayer = copy(actionHistory = emptyList())
 }

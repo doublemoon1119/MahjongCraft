@@ -10,8 +10,9 @@ import com.doublemoon1119.mahjongcraft.logic.table.TableState
  * 同時更新其 [TableState.physicalWallLayout]。各牌區以這份結果同步，不另外重算選擇步驟。
  * @property nextStep 下一個選擇步驟；選擇流程已完成時為 null。
  * @property playerAreaPresentationSteps 此次結果需要依序呈現的玩家牌區變化；沒有時為空清單。
- * @property win 此次步驟直接成立的和牌；成立時必須同時結束選擇流程，且 [tableState] 中每位贏家最後記錄的動作
- * 都是和牌動作。其他結果為 null。
+ * @property win 此次步驟直接成立的和牌；成立時必須同時結束選擇流程，[tableState] 中每位贏家最後記錄的動作都是和牌
+ * 動作，且 [TableState.turnPhase] 是以這些贏家胡牌結束本局。其他結果為 null。以流局直接結束本局時，[tableState] 的
+ * 階段是以對應的流局結束本局。
  */
 data class RuleDecisionResolution(
     val tableState: TableState,

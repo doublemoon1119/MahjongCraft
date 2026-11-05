@@ -3,9 +3,8 @@ package com.doublemoon1119.mahjongcraft.flow.persistence.format.history
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.core.TypedPersistenceDto
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.game.IdentifiedTilePersistenceDto
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.game.OpeningDiceRollPersistenceDto
-import com.doublemoon1119.mahjongcraft.flow.persistence.format.game.PendingReactionPersistenceDto
-import com.doublemoon1119.mahjongcraft.flow.persistence.format.game.PendingRobbingReactionPersistenceDto
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.game.RevealedHandSettlementPersistenceDto
+import com.doublemoon1119.mahjongcraft.flow.persistence.format.game.TurnPhasePersistenceDto
 import kotlinx.serialization.Serializable
 
 /**
@@ -15,8 +14,7 @@ import kotlinx.serialization.Serializable
  * @property changedPlayers 實際變動的玩家狀態及其動作紀錄增量。
  * @property wall 活牌牆兩端移除數量；未改變時為 null。
  * @property currentPlayerIndex 新的行動玩家索引；未改變時為 null。
- * @property pendingReaction 捨牌反應視窗的新值；外層 null 代表未改變。
- * @property pendingRobbingReaction 搶和反應視窗的新值；外層 null 代表未改變。
+ * @property turnPhase 新的回合階段；未改變時為 null。
  * @property reservedWallTiles 規則保留牌的新順序；未改變時為 null。
  * @property physicalWallLayout 實體牌牆格位的局部變化；未改變時為 null。
  * @property finishedPlayerIds 本局已完成玩家的 UUID 字串集合；未改變時為 null。
@@ -30,8 +28,7 @@ data class HistoryTableChangePersistenceDto(
     val changedPlayers: List<HistoryPlayerChangePersistenceDto>,
     val wall: HistoryWallChangePersistenceDto?,
     val currentPlayerIndex: Int?,
-    val pendingReaction: HistoryChangedValuePersistenceDto<PendingReactionPersistenceDto?>?,
-    val pendingRobbingReaction: HistoryChangedValuePersistenceDto<PendingRobbingReactionPersistenceDto?>?,
+    val turnPhase: TurnPhasePersistenceDto?,
     val reservedWallTiles: List<IdentifiedTilePersistenceDto>?,
     val physicalWallLayout: HistoryWallLayoutChangePersistenceDto?,
     val finishedPlayerIds: Set<String>?,

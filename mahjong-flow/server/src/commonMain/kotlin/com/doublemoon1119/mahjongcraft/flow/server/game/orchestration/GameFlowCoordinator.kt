@@ -10,8 +10,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.PendingGameTransit
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.RoundOutcomePresentationClassification
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionTiming
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinRoundDirective
-import com.doublemoon1119.mahjongcraft.flow.common.game.model.newlyRecordedActionsByPlayerId
-import com.doublemoon1119.mahjongcraft.flow.common.game.model.recordedDrawOutcome
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.concludedDrawOutcome
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.GamePresentationBusyGate
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.GamePresentationPublisher
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.WinPresentationRequest
@@ -32,11 +31,13 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DeclareExhaustiv
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.ResolvePostReactionRoundOutcomeUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.ResolveWinRoundContinuationUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.ReturnToRoomUseCase
-import com.doublemoon1119.mahjongcraft.logic.base.GameAction
+import com.doublemoon1119.mahjongcraft.logic.base.ExhaustiveDrawReason
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import com.doublemoon1119.mahjongcraft.logic.table.RoundCompletionSummary
+import com.doublemoon1119.mahjongcraft.logic.table.RoundConclusion
 import com.doublemoon1119.mahjongcraft.logic.table.RoundTransitionContext
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
+import com.doublemoon1119.mahjongcraft.logic.table.TurnPhase
 import kotlinx.coroutines.sync.Mutex
 import kotlin.uuid.Uuid
 
@@ -618,25 +619,19 @@ class GameFlowCoordinator(
     }
 
     /**
-     * 若這次狀態變更新增途中流局記錄，建立統一回合結算呈現。
+     * 為這次命令結束本局的流局建立統一回合結算呈現。
      *
      * @param gameId 對局識別碼。
-     * @param previousState 執行命令前的桌況，用於辨識新增加的流局記錄。
+     * @param previousState 執行命令前的桌況。
+     * @param currentState 本局以流局結束的桌況。
+     * @param reason 流局原因，取自「本局已結束」階段。
      */
-    private suspend fun publishNewAbortiveDrawIfPresent(
+    private suspend fun publishConcludedDraw(
         gameId: Uuid,
         previousState: TableState,
+        currentState: TableState,
+        reason: ExhaustiveDrawReason,
     ) {
-        val currentState = gameRepository.getTableState(gameId) ?: return
-        val previousReasons = previousState.players.flatMap { player ->
-            player.actionHistory.filterIsInstance<GameAction.ExhaustiveDraw>().map { it.reason }
-        }.toSet()
-        val reason = currentState.players.asSequence()
-            .flatMap { it.actionHistory.asSequence() }
-            .filterIsInstance<GameAction.ExhaustiveDraw>()
-            .map { it.reason }
-            .firstOrNull { it !in previousReasons }
-            ?: return
         val module = moduleRegistry.getModule(currentState.config)
         exhaustiveDrawSettlementPresentationService.publish(
             gameId = gameId,
@@ -652,18 +647,12 @@ class GameFlowCoordinator(
     }
 
     /**
-     * 命令成功執行後，若這次新增了流局或胡牌記錄，銜接對應的後續流程。
+     * 命令成功執行後，若這次命令讓本局進入「本局已結束」階段，依結束方式銜接後續流程。
      *
-     * 兩者都必須依這次命令**新增**的記錄判斷（跟 [previousState] 逐位比對 `actionHistory` 長度），
-     * 不能像過去那樣直接掃描目前完整的 `actionHistory`——一旦某次胡牌經
-     * [resolveWinRoundContinuationUseCase] 判定為 [WinRoundDirective.ContinueRound]，本局會繼續
-     * 累積更多 `Tsumo`／`Ron` 記錄而不结束，若仍用「完整歷史裡有沒有」判斷，會讓本局稍後任何一次
-     * 成功命令都被舊記錄誤判成「本局已結束」，重複觸發銜接。
-     *
-     * 流局（[GameAction.ExhaustiveDraw]）不屬於本次胡牌延續擴充的範圍，一律維持既有行為立即結束
-     * 本局；胡牌（[GameAction.Tsumo]／[GameAction.Ron]）才會詢問 [resolveWinRoundContinuationUseCase]，
-     * 只有取得 [WinRoundDirective.EndRound]（含未註冊 resolver 的規則）才銜接 [chainAdvanceRound]——
-     * [WinRoundDirective.ContinueRound] 的桌況變化已經由該用例原子套用完畢，這裡不需要再做任何事。
+     * 只在階段從其他階段變成「本局已結束」時處理，因此同一次結束不會重複銜接。流局立即結束本局；胡牌才會詢問
+     * [resolveWinRoundContinuationUseCase]，只有取得 [WinRoundDirective.EndRound]（含未註冊 resolver 的規則）才銜接
+     * [chainAdvanceRound]——[WinRoundDirective.ContinueRound] 的桌況變化（含把階段設回回合中的階段）已經由該用例原子
+     * 套用完畢，這裡不需要再做任何事。
      *
      * @param gameId 對局識別碼。
      * @param previousState 執行命令前的桌況。
@@ -672,23 +661,23 @@ class GameFlowCoordinator(
         gameId: Uuid,
         previousState: TableState,
     ) {
+        if (previousState.turnPhase is TurnPhase.RoundOver) return
         val currentState = gameRepository.getTableState(gameId) ?: return
-        val newlyRecordedActionsByPlayerId = newlyRecordedActionsByPlayerId(previousState, currentState)
+        val conclusion = (currentState.turnPhase as? TurnPhase.RoundOver)?.conclusion ?: return
 
-        val hasNewExhaustiveDraw = newlyRecordedActionsByPlayerId.values.any { actions ->
-            actions.any { it is GameAction.ExhaustiveDraw }
+        val drawReason = when (conclusion) {
+            is RoundConclusion.ExhaustiveDraw -> conclusion.reason
+            is RoundConclusion.AbortiveDraw -> conclusion.reason
+            is RoundConclusion.Win -> null
         }
-        if (hasNewExhaustiveDraw) {
-            ensureRecordedDrawCompletion(gameId, currentState, newlyRecordedActionsByPlayerId)
-            publishNewAbortiveDrawIfPresent(gameId, previousState)
+        if (drawReason != null) {
+            ensureRecordedDrawCompletion(gameId, currentState)
+            publishConcludedDraw(gameId, previousState, currentState, drawReason)
             chainAdvanceRound(gameId)
             return
         }
 
-        val newWinnerPlayerIds = newlyRecordedActionsByPlayerId
-            .filterValues { actions -> actions.any { it is GameAction.Tsumo || it is GameAction.Ron } }
-            .keys
-        if (newWinnerPlayerIds.isEmpty()) return
+        val newWinnerPlayerIds = (conclusion as RoundConclusion.Win).winnerPlayerIds
 
         // 無論後續判定成不成功都先取走交接內容，避免失敗時殘留到下一次胡牌；贏家不符的殘留值會被
         // WinPresentationHandoff.take 自行丟棄並回傳 null。
@@ -731,18 +720,16 @@ class GameFlowCoordinator(
      * 為由反應 resolver 直接產生的途中流局補上權威摘要；正式流局 use case 已寫入摘要時不覆蓋。
      *
      * @param gameId 對局識別碼。
-     * @param state 記錄流局後的桌況。
-     * @param newActionsByPlayerId 本次命令新增的玩家動作。
+     * @param state 以流局結束本局的桌況。
      */
     private suspend fun ensureRecordedDrawCompletion(
         gameId: Uuid,
         state: TableState,
-        newActionsByPlayerId: Map<Uuid, List<GameAction>>,
     ) {
         gameRepository.updateGame(gameId) { game ->
             if (game == null || game.roundCompletion != null) return@updateGame game to Unit
-            val outcome = recordedDrawOutcome(state, newActionsByPlayerId)
-                ?: throw RuleContractViolationException(GameAbortReasonIds.INVALID_PROGRESSION, "Draw actions have no recorded draw outcome")
+            val outcome = state.concludedDrawOutcome()
+                ?: throw RuleContractViolationException(GameAbortReasonIds.INVALID_PROGRESSION, "The round did not conclude with a draw")
             val module = moduleRegistry.getModule(state.config)
             val directive = module.resolveRoundTransition(
                 RoundTransitionContext(

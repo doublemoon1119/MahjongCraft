@@ -15,6 +15,7 @@ import com.doublemoon1119.mahjongcraft.logic.rules.riichi.riichiDeclaration
 import com.doublemoon1119.mahjongcraft.logic.table.PendingReaction
 import com.doublemoon1119.mahjongcraft.logic.table.PendingRobbingReaction
 import com.doublemoon1119.mahjongcraft.logic.table.TileWall
+import com.doublemoon1119.mahjongcraft.logic.table.TurnPhase
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPhysicalLayout
 import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPlacement
@@ -92,6 +93,7 @@ class DrawTileUseCaseTest {
         assertEquals(drawnTile, updatedPlayer.hand.lastDrawn)
         assertEquals(emptySet(), updatedPlayer.passedTilesInRound, "Passed tiles should be cleared on draw.")
         assertTrue(updatedPlayer.actionHistory.last() is GameAction.Draw)
+        assertEquals(TurnPhase.AwaitingAction, newState.turnPhase)
         assertEquals(0, newState.tileWall.remainingCount)
         assertEquals(emptyMap(), newState.physicalWallLayout?.placements)
     }
@@ -285,16 +287,18 @@ class DrawTileUseCaseTest {
         )
         val discarded = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 9))
         val states = listOf(
-            base.copy(pendingReaction = PendingReaction(currentPlayerId, discarded.id, setOf(otherPlayerId), ronPlayerIds = setOf(otherPlayerId), id = Uuid.random())),
+            base.copy(turnPhase = TurnPhase.AwaitingDiscardReaction(PendingReaction(currentPlayerId, discarded.id, setOf(otherPlayerId), ronPlayerIds = setOf(otherPlayerId), id = Uuid.random()))),
             base.copy(
-                pendingRobbingReaction = PendingRobbingReaction(
-                    declarerId = otherPlayerId,
-                    declaredAction = GameAction.Kan(GameAction.KanType.ADDED_KAN, discarded.id, emptyList()),
-                    robbedTile = discarded,
-                    eligiblePlayerIds = setOf(currentPlayerId),
+                turnPhase = TurnPhase.AwaitingRobbingReaction(
+                    PendingRobbingReaction(
+                        declarerId = otherPlayerId,
+                        declaredAction = GameAction.Kan(GameAction.KanType.ADDED_KAN, discarded.id, emptyList()),
+                        robbedTile = discarded,
+                        eligiblePlayerIds = setOf(currentPlayerId),
+                    ),
                 ),
             ),
-            base.copy(players = listOf(currentPlayer.recordAction(GameAction.Pon(discarded.id, emptyList())), otherPlayer)),
+            base.copy(players = listOf(currentPlayer.recordAction(GameAction.Pon(discarded.id, emptyList())), otherPlayer), turnPhase = TurnPhase.AwaitingDiscard),
         )
 
         states.forEach { state ->

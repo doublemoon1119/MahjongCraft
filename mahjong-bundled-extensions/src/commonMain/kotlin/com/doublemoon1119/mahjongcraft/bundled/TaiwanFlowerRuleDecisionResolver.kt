@@ -29,8 +29,10 @@ import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanSpecialFlowerWin
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanTableComponents
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanTaiType
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.tile.TaiwanTileTypes
+import com.doublemoon1119.mahjongcraft.logic.table.RoundConclusion
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.logic.table.TileReplacementRounds
+import com.doublemoon1119.mahjongcraft.logic.table.TurnPhase
 import com.doublemoon1119.mahjongcraft.logic.table.drawDealerOpeningTile
 import kotlin.time.Duration.Companion.seconds
 import kotlin.uuid.Uuid
@@ -146,6 +148,7 @@ object TaiwanFlowerRuleDecisionResolver : RuleDecisionResolver {
                 players = result.tableState.players.map { player ->
                     player.recordAction(GameAction.ExhaustiveDraw(TaiwanExhaustiveDrawReason.NoSupplementalTile))
                 },
+                turnPhase = TurnPhase.RoundOver(RoundConclusion.AbortiveDraw(TaiwanExhaustiveDrawReason.NoSupplementalTile)),
             ),
             nextStep = null,
             playerAreaPresentationSteps = presentationSteps(result.steps),
@@ -173,6 +176,7 @@ object TaiwanFlowerRuleDecisionResolver : RuleDecisionResolver {
                     val updated = if (delta == 0) player else player.copy(score = player.score + delta)
                     if (player.id == winnerId) updated.recordAction(GameAction.Tsumo) else updated
                 },
+                turnPhase = TurnPhase.RoundOver(RoundConclusion.Win(setOf(winnerId))),
             )
             RuleDecisionResolution(
                 tableState = scored.withoutPendingFlower(),

@@ -91,6 +91,7 @@ import com.doublemoon1119.mahjongcraft.logic.table.RoundCompletionSummary
 import com.doublemoon1119.mahjongcraft.logic.table.RoundTransitionDirective
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.logic.table.TileWall
+import com.doublemoon1119.mahjongcraft.logic.table.TurnPhase
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledCoreExtensionRegistries
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledWinCelebrationCueResolverRegistry
@@ -1236,7 +1237,7 @@ class GameFlowCoordinatorTest {
                     player
                 }
             }
-            game.copy(tableState = state.copy(players = updated)) to Unit
+            game.copy(tableState = state.copy(players = updated, turnPhase = TurnPhase.AwaitingAction)) to Unit
         }
 
         fixtures.coordinator.dispatchThenDrive(gameId, secondWinnerId, GameCommand.Tsumo)

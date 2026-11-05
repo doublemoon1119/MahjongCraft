@@ -13,6 +13,7 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.repository.FakeGameRepos
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.logic.table.PendingReaction
+import com.doublemoon1119.mahjongcraft.logic.table.TurnPhase
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeHandFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
@@ -41,7 +42,7 @@ class GameDecisionTimerManagerTest {
             val pending = current!!.tableState.pendingReaction!!
             current.copy(
                 tableState = current.tableState.copy(
-                    pendingReaction = pending.copy(responses = mapOf(firstId to GameAction.Pass)),
+                    turnPhase = TurnPhase.AwaitingDiscardReaction(pending.copy(responses = mapOf(firstId to GameAction.Pass))),
                 ),
             ) to Unit
         }
@@ -67,7 +68,7 @@ class GameDecisionTimerManagerTest {
         fixtures.manager.reconcile(game.id)
         fixtures.clock.now = 8_000.milliseconds
         fixtures.repository.updateGame(game.id) { current ->
-            current!!.copy(tableState = current.tableState.copy(pendingReaction = null)) to Unit
+            current!!.copy(tableState = current.tableState.copy(turnPhase = TurnPhase.AwaitingDraw)) to Unit
         }
 
         val statuses = fixtures.manager.reconcile(game.id)
@@ -92,7 +93,7 @@ class GameDecisionTimerManagerTest {
             val currentPlayer = current!!.tableState.currentPlayer
             current.copy(
                 tableState = current.tableState.copy(
-                    pendingReaction = null,
+                    turnPhase = TurnPhase.AwaitingDiscard,
                     players = current.tableState.players.map { player ->
                         if (player.id == playerId) {
                             player.copy(actionHistory = currentPlayer.actionHistory + GameAction.Pon(Uuid.random(), emptyList()))
