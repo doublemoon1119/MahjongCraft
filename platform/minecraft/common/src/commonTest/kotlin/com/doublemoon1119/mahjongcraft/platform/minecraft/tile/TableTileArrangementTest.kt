@@ -92,7 +92,7 @@ class TableTileArrangementTest {
     }
 
     /**
-     * 直接補進立牌的牌依補進順序接在立牌最右邊，摸牌位的牌往旁邊挪過去；玩家理牌時，這些牌越過其他牌插進該在的位置。
+     * 直接補進立牌的牌依補進順序接在立牌最右邊，摸牌位的牌拿起來放到最右邊；玩家理牌時，這些牌越過其他牌插進該在的位置。
      */
     @Test
     fun `replacement tiles wait at the right end of the hand until it is sorted`() {
@@ -112,7 +112,7 @@ class TableTileArrangementTest {
         val handOrder = waiting.values.filter { it.row.region == TileRegion.HAND }.sortedBy { it.orderInRow }.map { it.tileId }
         assertEquals(listOf(drawn.id, replacements[0].id), handOrder.takeLast(2), "Unsorted tiles stand at the right end in arrival order.")
         assertTrue(waiting.getValue(drawn.id).unsorted)
-        assertEquals(TileMotionKind.SLIDE, TableStepMotionPlanner.plan(previous, waiting).single { it.tileId == drawn.id }.kind)
+        assertEquals(TileMotionKind.ARC, TableStepMotionPlanner.plan(previous, waiting).single { it.tileId == drawn.id }.kind, "The drawn tile is lifted onto the hand.")
 
         val sortedAfter = TableTileArrangement.arrange(input(after).copy(unsortedTileIds = UnsortedHandTiles.after(waiting, after, setOf(player.id))))
         val sortMotions = TableStepMotionPlanner.plan(waiting, sortedAfter)

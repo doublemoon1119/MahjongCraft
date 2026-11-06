@@ -7,6 +7,10 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongTileEntity
 import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.DiceAnimationVector
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileDimensions
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.PrivateHandLayout
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.PrivateHandOrder
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.PrivateHandOrderEntry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.PrivateHandOrderPayloadDto
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.PrivateHandOrderTimeline
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileDisplayInput
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileDisplayMotion
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileDisplayTransform
@@ -24,6 +28,8 @@ import kotlin.uuid.toKotlinUuid
 /**
  * 在每幀開始時讀取原生牌張資料，為渲染與命中建立同一份本人布局。
  *
+ * 本人排列取自伺服器送來的時間軸，與共享呈現的牌張動作同時生效；快照的手牌是交易結束時的結果，只在還沒收到時間軸時使用。
+ *
  * @property stateStore 已按本人視角裁切的對局快照。
  */
 class ClientHandTileLayoutController(
@@ -40,6 +46,9 @@ class ClientHandTileLayoutController(
 
     /** 桌局與回合作用域；連莊也必須建立新的暫存。 */
     private var scope: Scope? = null
+
+    /** 各桌的本人手牌排列時間軸；跨回合保留，由伺服器在發牌開始時送出空排列來結束上一局。 */
+    private val timelines = mutableMapOf<Uuid, PrivateHandOrderTimeline>()
 
     /** 本幀是否有需要替換原版位置的牌張。 */
     val hasOverrides: Boolean get() = frame.isNotEmpty()
@@ -71,8 +80,18 @@ class ClientHandTileLayoutController(
         val faceUpIds = snapshot.tilePoseStates.filter { it.pose == TilePose.FACE_UP }.mapTo(mutableSetOf()) { it.tileId }
         val handIds = (player.hand.standingTiles.map { it.id } + listOfNotNull(player.hand.lastDrawn?.id)).toSet()
         val settlementRevealedIds = snapshot.publicEvidenceTileIds.intersect(handIds)
-        val standingIds = player.hand.standingTiles.map { it.id }.filterNot { it == player.hand.lastDrawn?.id }
         val time = currentWorld.time.toDouble() + tickDelta
+        // 時間軸與牌張動作同時生效；還沒收到任何項目（例如剛重新連線）時才用快照的權威手牌。
+        val timeline = timelines[tableId]
+        val order = if (timeline == null || timeline.isEmpty) {
+            PrivateHandOrder(
+                standing = player.hand.standingTiles.map { it.id }.filterNot { it == player.hand.lastDrawn?.id },
+                drawnId = player.hand.lastDrawn?.id,
+                unsortedIds = emptyList(),
+            )
+        } else {
+            timeline.orderAt(time) ?: PrivateHandOrder(standing = emptyList(), drawnId = null, unsortedIds = emptyList())
+        }
         val inputs = currentWorld.entities.asSequence().filterIsInstance<MahjongTileEntity>()
             .filter { !it.isRemoved && it.managedTableId == tableId }
             .associate { tile ->
@@ -99,17 +118,17 @@ class ClientHandTileLayoutController(
                         )
                     },
                     visible = !tile.isInvisible,
-                    unsorted = tile.isUnsortedAt(time),
                 )
             }
         frame = layout.update(
             time = time,
-            standingOrder = standingIds,
-            drawnId = player.hand.lastDrawn?.id,
+            standingOrder = order.standing,
+            drawnId = order.drawnId,
             inputs = inputs,
             releaseHand = playerId in snapshot.finishedPlayerIds ||
                 (handIds.isNotEmpty() && (faceUpIds.containsAll(handIds) || settlementRevealedIds.containsAll(handIds))),
             releaseTileIds = faceUpIds,
+            unsortedIds = order.unsortedIds,
         )
     }
 
@@ -151,7 +170,40 @@ class ClientHandTileLayoutController(
         )
     }
 
-    /** 清除世界、桌局、回合與所有過渡，不保留上一輪私人牌位。 */
+    /**
+     * 收下伺服器送來的本人手牌排列項目。
+     *
+     * @param payload 線路資料。
+     */
+    fun receive(payload: PrivateHandOrderPayloadDto) {
+        timelines.getOrPut(Uuid.parse(payload.tableId)) { PrivateHandOrderTimeline() }.add(
+            PrivateHandOrderEntry(
+                effectiveAt = payload.effectiveGameTime,
+                order = PrivateHandOrder(
+                    standing = payload.standingTileIds.map { id -> id?.let(Uuid::parse) },
+                    drawnId = payload.drawnTileId?.let(Uuid::parse),
+                    unsortedIds = payload.unsortedTileIds.map(Uuid::parse),
+                ),
+            ),
+        )
+    }
+
+    /**
+     * 桌子已移除時丟掉它的時間軸。
+     *
+     * @param tableId 已移除的桌子。
+     */
+    fun removeTable(tableId: Uuid) {
+        timelines.remove(tableId)
+    }
+
+    /** 連線開始或結束時清除所有桌子的時間軸與目前布局。 */
+    fun clearSession() {
+        timelines.clear()
+        clear()
+    }
+
+    /** 清除世界、桌局、回合與所有過渡，不保留上一輪私人牌位；時間軸保留，本人排列仍依它生效。 */
     fun clear() {
         layout.clear()
         frame = emptyMap()

@@ -33,6 +33,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.room.TableOccupancyPay
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.RoundResultPayloadDto
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableRemovedPayloadDto
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableSpaceObstructionPayloadDto
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.PrivateHandOrderPayloadDto
 import kotlinx.serialization.builtins.nullable
 import kotlinx.serialization.builtins.serializer
 
@@ -201,6 +202,9 @@ object MahjongChannels {
 
     /** 和牌或流局結算的前後分數與名次，只送給入座的真人玩家。 */
     val roundResult = S2CChannel("round_result", RoundResultPayloadDto.serializer())
+
+    /** 本人手牌排列的時間軸項目，只送給該手牌的主人。 */
+    val privateHandOrder = S2CChannel("private_hand_order", PrivateHandOrderPayloadDto.serializer())
 
     /** 同步等待室事件及更新後快照。 */
     val roomUpdate = S2CChannel("room_update", RoomUpdatePayloadDto.serializer())

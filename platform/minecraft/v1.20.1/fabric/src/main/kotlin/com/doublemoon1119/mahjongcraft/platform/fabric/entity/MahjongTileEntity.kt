@@ -132,44 +132,6 @@ class MahjongTileEntity(
             ?.let { encoded -> runCatching { Uuid.parse(encoded) }.getOrNull() }
         private set(value) = dataTracker.set(MANAGED_TABLE_ID, value?.toString().orEmpty())
 
-    /**
-     * 這張牌直接補進立牌、還沒理過的期間：從 [unsortedFromGameTime]（含）到 [unsortedUntilGameTime]（不含）的絕對遊戲時間。
-     * 期間內共享布局把它接在立牌最右邊；本人布局也據此把它排在最右邊，理牌時才插入。
-     */
-    val unsortedFromGameTime: Long get() = dataTracker[UNSORTED_FROM_GAME_TIME]
-
-    /** [unsortedFromGameTime] 期間的結束時間；還不知道何時理牌時為 [Long.MAX_VALUE]。 */
-    val unsortedUntilGameTime: Long get() = dataTracker[UNSORTED_UNTIL_GAME_TIME]
-
-    /**
-     * 在 server 端記錄這張牌從 [gameTime] 起直接補進立牌、還沒理過。
-     *
-     * @param gameTime 開始的絕對遊戲時間。
-     */
-    fun markUnsorted(gameTime: Long) {
-        check(!world.isClient) { "Unsorted hand tiles are marked by the server" }
-        dataTracker.set(UNSORTED_FROM_GAME_TIME, gameTime)
-        dataTracker.set(UNSORTED_UNTIL_GAME_TIME, Long.MAX_VALUE)
-    }
-
-    /**
-     * 在 server 端記錄這張牌在 [gameTime] 理進手牌。
-     *
-     * @param gameTime 理牌的絕對遊戲時間。
-     */
-    fun markSorted(gameTime: Long) {
-        check(!world.isClient) { "Unsorted hand tiles are marked by the server" }
-        dataTracker.set(UNSORTED_UNTIL_GAME_TIME, gameTime)
-    }
-
-    /**
-     * 這張牌在 [gameTime] 是否還沒理進手牌。
-     *
-     * @param gameTime 絕對遊戲時間，可含部分 tick。
-     * @return 還沒理過時為 true。
-     */
-    fun isUnsortedAt(gameTime: Double): Boolean = gameTime >= unsortedFromGameTime && gameTime < unsortedUntilGameTime
-
     /** 最近一次捨牌或鳴牌落地後的短暫提示種類。 */
     val actionPopupKind: TileActionPopupKind get() = TileActionPopupKind.fromNameOrDefault(dataTracker[ACTION_POPUP_KIND])
 
@@ -551,8 +513,6 @@ class MahjongTileEntity(
         dataTracker.startTracking(ACTION_POPUP_START_GAME_TIME, 0L)
         dataTracker.startTracking(ACTION_POPUP_END_GAME_TIME, 0L)
         dataTracker.startTracking(MELD_ACTION_POPUP_TILES, "")
-        dataTracker.startTracking(UNSORTED_FROM_GAME_TIME, Long.MAX_VALUE)
-        dataTracker.startTracking(UNSORTED_UNTIL_GAME_TIME, Long.MAX_VALUE)
     }
 
     /**
@@ -570,8 +530,6 @@ class MahjongTileEntity(
         dataTracker.set(ACTION_POPUP_START_GAME_TIME, nbt.getLong(NBT_KEY_ACTION_POPUP_START_GAME_TIME))
         dataTracker.set(ACTION_POPUP_END_GAME_TIME, nbt.getLong(NBT_KEY_ACTION_POPUP_END_GAME_TIME))
         dataTracker.set(MELD_ACTION_POPUP_TILES, nbt.getString(NBT_KEY_MELD_ACTION_POPUP_TILES))
-        dataTracker.set(UNSORTED_FROM_GAME_TIME, nbt.getLong(NBT_KEY_UNSORTED_FROM_GAME_TIME))
-        dataTracker.set(UNSORTED_UNTIL_GAME_TIME, nbt.getLong(NBT_KEY_UNSORTED_UNTIL_GAME_TIME))
         nonBlockingPresentationUntilGameTime = NonBlockingPresentationLeaseCodec.read(nbt)
         readAnimationQueueFromNbt(nbt)
     }
@@ -585,8 +543,6 @@ class MahjongTileEntity(
         nbt.putLong(NBT_KEY_ACTION_POPUP_START_GAME_TIME, actionPopupStartGameTime)
         nbt.putLong(NBT_KEY_ACTION_POPUP_END_GAME_TIME, actionPopupEndGameTime)
         nbt.putString(NBT_KEY_MELD_ACTION_POPUP_TILES, dataTracker[MELD_ACTION_POPUP_TILES])
-        nbt.putLong(NBT_KEY_UNSORTED_FROM_GAME_TIME, unsortedFromGameTime)
-        nbt.putLong(NBT_KEY_UNSORTED_UNTIL_GAME_TIME, unsortedUntilGameTime)
         NonBlockingPresentationLeaseCodec.write(nbt, nonBlockingPresentationUntilGameTime)
         writeAnimationQueueToNbt(nbt)
     }
@@ -618,12 +574,6 @@ class MahjongTileEntity(
 
         /** 副露提示排列的世界存檔 key。 */
         private const val NBT_KEY_MELD_ACTION_POPUP_TILES = "MeldActionPopupTiles"
-
-        /** 還沒理過期間開始時間的世界存檔 key。 */
-        private const val NBT_KEY_UNSORTED_FROM_GAME_TIME = "UnsortedFromGameTime"
-
-        /** 還沒理過期間結束時間的世界存檔 key。 */
-        private const val NBT_KEY_UNSORTED_UNTIL_GAME_TIME = "UnsortedUntilGameTime"
 
         /** 同步牌面素材 key。 */
         private val TILE_ASSET_KEY: TrackedData<String> =
@@ -712,13 +662,5 @@ class MahjongTileEntity(
         /** 同步動畫途中往前進方向傾斜的角度。 */
         private val ANIMATION_LEAN: TrackedData<Float> =
             DataTracker.registerData(MahjongTileEntity::class.java, TrackedDataHandlerRegistry.FLOAT)
-
-        /** 同步直接補進立牌、還沒理過的開始時間。 */
-        private val UNSORTED_FROM_GAME_TIME: TrackedData<Long> =
-            DataTracker.registerData(MahjongTileEntity::class.java, TrackedDataHandlerRegistry.LONG)
-
-        /** 同步直接補進立牌、還沒理過的結束時間。 */
-        private val UNSORTED_UNTIL_GAME_TIME: TrackedData<Long> =
-            DataTracker.registerData(MahjongTileEntity::class.java, TrackedDataHandlerRegistry.LONG)
     }
 }

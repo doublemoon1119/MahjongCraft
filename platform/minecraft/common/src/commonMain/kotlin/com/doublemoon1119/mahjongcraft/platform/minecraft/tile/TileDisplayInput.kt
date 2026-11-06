@@ -6,13 +6,11 @@ package com.doublemoon1119.mahjongcraft.platform.minecraft.tile
  * @property target 共享位置的終點，不是動畫中的中間位置。
  * @property motion 目前的共享動畫；沒有時為 null。
  * @property visible 原生呈現目前是否已允許繪製這張牌。
- * @property unsorted 共享呈現中直接補進立牌、還沒理過，接在立牌最右邊。
  */
 data class TileDisplayInput(
     val target: TileDisplayTransform,
     val motion: TileDisplayMotion?,
     val visible: Boolean,
-    val unsorted: Boolean = false,
 ) {
     /**
      * 取得尚未套用私人布局時的世界呈現。

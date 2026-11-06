@@ -104,8 +104,6 @@ object TableStepMotionPlanner {
             from == to -> if (from.region in WALL_REGIONS || slides) TileMotionKind.SLIDE else TileMotionKind.ARC
             from.region in WALL_REGIONS && to.region in WALL_REGIONS -> TileMotionKind.SLIDE
             from.region in WALL_REGIONS -> TileMotionKind.DRAW
-            // 摸牌位的牌還沒理就接到立牌最右邊，只是往旁邊挪。
-            from.ownerId == to.ownerId && from.region == TileRegion.DRAWN && to.region == TileRegion.HAND && after.unsorted -> TileMotionKind.SLIDE
             from.ownerId == to.ownerId && setOf(from.region, to.region) == setOf(TileRegion.HAND, TileRegion.DRAWN) -> TileMotionKind.ARC
             else -> TileMotionKind.FLIGHT
         }

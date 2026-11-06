@@ -24,7 +24,7 @@ object ClientHandTileLayoutBridge {
     /** 清空連線內容，保留下一次連線仍會使用的 controller。 */
     @JvmStatic
     fun clear() {
-        controller?.clear()
+        controller?.clearSession()
     }
 
     /**

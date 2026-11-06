@@ -13,6 +13,7 @@ import kotlin.uuid.Uuid
 /**
  * 保留本人每張牌實際顯示的位置，將私人理牌與共享蓋牌的換位分開。
  *
+ * 本人排列由呼叫端依時間軸提供，與共享呈現的牌張動作同時生效；這裡只負責把排列轉成每張牌的位置與過渡。
  * 每次更新產生一份新的不可變結果；原生讀取、渲染與命中由平台接線處理。
  * 換世界、換桌局或換回合時，呼叫端必須使用 [clear] 清除上一輪暫存。
  */
@@ -32,14 +33,11 @@ class PrivateHandLayout {
     /** 已經顯示過的本人牌張，重新接管時不能當成首次進場瞬間定位。 */
     private val seen = mutableSetOf<Uuid>()
 
-    /** 上一次實際排列的本人立牌順序（還沒理過的牌接在最右邊），用來判斷換位時哪些牌會越過其他牌。 */
-    private var lastStandingOrder = emptyList<Uuid>()
-
-    /** 上一次快照的本人立牌順序；只有快照順序改變時才可能是單純重新排序。 */
-    private var lastSnapshotOrder = emptyList<Uuid>()
+    /** 上一次的本人立牌順序（含空格），用來判斷換位時哪些牌會越過其他牌。 */
+    private var lastStandingOrder = emptyList<Uuid?>()
 
     /** 上一次還沒理過、接在最右邊的牌。 */
-    private var lastUnsortedIds = emptySet<Uuid>()
+    private var lastUnsortedIds = emptyList<Uuid>()
 
     /** 上一次在本人摸牌位上的牌；它加入立牌時以插入動作越過其他牌。 */
     private var lastDrawnId: Uuid? = null
@@ -50,42 +48,26 @@ class PrivateHandLayout {
     /** 只是重新排序（立牌組成不變）時，下次換到新格位要直接到位的牌。 */
     private val snappingIds = mutableSetOf<Uuid>()
 
-    /** 本人立牌順序改變、還在等共享呈現開始讓位的時間；不在等待時為 null。 */
-    private var orderChangedAt: Double? = null
-
-    /** 上一幀的共享終點，用來判斷順序改變之後共享的牌是否已經移到新位置。 */
-    private var lastFrameTargets = emptyMap<Uuid, TileDisplayTransform>()
-
-    /** 順序改變前一幀的共享終點；共享的牌離開這些位置，代表共享呈現已經開始讓位。 */
-    private var targetsAtOrderChange = emptyMap<Uuid, TileDisplayTransform>()
-
-    /** 順序改變前後都在本人手牌的牌；其中任一張在共享呈現中開始移動，代表手牌開始讓位。 */
-    private var stayedIds = emptySet<Uuid>()
-
-    /** 最近一次順序改變時離開本人手牌的牌；都已在共享呈現中落地而手牌沒有讓位時，本人換位也開始。 */
-    private var leftIds = emptySet<Uuid>()
-
-    /** 已離開本人手牌、還沒在共享呈現中開始離開的牌；在那之前留在本人格位。 */
-    private val leavingIds = mutableSetOf<Uuid>()
-
     /**
      * 更新本人布局，不因某張牌動畫中或資料缺少而取消其他牌的排序。
      *
      * @param time 本幀世界時間，包含部分 tick。
-     * @param standingOrder 本人完整立牌順序；缺少原生資料的 ID 仍須保留。
+     * @param standingOrder 本人完整立牌順序；null 是保留格位的空格，缺少原生資料的 ID 仍保留格位。
      * @param drawnId 獨立摸牌位的牌；沒有時為 null。
      * @param inputs 目前已追蹤的共享牌張資料，以真實牌張 ID 索引。
      * @param releaseHand 和牌或完整攤牌時，立即交回共享呈現，不另外補間私人牌位；倒牌動畫由共享呈現播放。
      * @param releaseTileIds 立即交回共享呈現的個別牌張，不使用缺少封包時的短暫保留機制。
+     * @param unsortedIds 還沒理過、共享呈現接在立牌最右邊的牌，依共享呈現的順序排列；用來對照共享位置推算牌排。
      * @return 本幀由私人布局接管的最終絕對位置與姿態。
      */
     fun update(
         time: Double,
-        standingOrder: List<Uuid>,
+        standingOrder: List<Uuid?>,
         drawnId: Uuid?,
         inputs: Map<Uuid, TileDisplayInput>,
         releaseHand: Boolean,
         releaseTileIds: Set<Uuid> = emptySet(),
+        unsortedIds: List<Uuid> = emptyList(),
     ): Map<Uuid, TileDisplayTransform> {
         if (releaseHand) {
             clear()
@@ -93,62 +75,41 @@ class PrivateHandLayout {
         }
         val now = max(time, lastTime)
         lastTime = now
-        if (standingOrder.size != standingOrder.toSet().size || drawnId in standingOrder) {
+        val standingIds = standingOrder.filterNotNull()
+        if (standingIds.size != standingIds.toSet().size || drawnId in standingIds) {
             clear()
             return emptyMap()
         }
-        val privateIds = (standingOrder + listOfNotNull(drawnId)).toSet()
-        // 快照可能比共享呈現早到：還在牌牆上、從沒進過手牌的牌還不佔格位，等它進入手牌才排進來。缺資料的牌仍保留格位。
-        val present = standingOrder.filter { id -> inputs[id]?.let { it.target.poseDegrees == 0.0f || id in seen } ?: true }
-        // 共享呈現中直接補進立牌、還沒理過的牌，依共享位置接在最右邊；理牌時才插入本人順序。
-        val unsorted = present.filter { id -> inputs[id]?.let { it.unsorted && it.target.poseDegrees == 0.0f } == true }
-            .sortedBy { id -> row?.alongOf(inputs.getValue(id).target) ?: 0.0 }
-        val unsortedIds = unsorted.toSet()
-        val settled = present.filterNot { it in unsortedIds }
-        val effectiveOrder = settled + unsorted
-        if (effectiveOrder != lastStandingOrder) {
+        val privateIds = (standingIds + listOfNotNull(drawnId)).toSet()
+        if (standingOrder != lastStandingOrder) {
+            val previousIds = lastStandingOrder.filterNotNull()
             crossingIds.clear()
-            crossingIds += crossingTiles(lastStandingOrder, effectiveOrder, lastDrawnId?.takeUnless { it in unsortedIds })
+            crossingIds += crossingTiles(previousIds, standingIds, lastDrawnId)
             // 整副重新排序（例如切換自動理牌）不是牌的實際移動，直接到位。
             snappingIds.clear()
-            val resorted = standingOrder != lastSnapshotOrder && unsortedIds == lastUnsortedIds
-            if (resorted && lastStandingOrder.isNotEmpty() && effectiveOrder.toSet() == lastStandingOrder.toSet() && drawnId == lastDrawnId) {
-                snappingIds += effectiveOrder
+            val resorted = previousIds.isNotEmpty() &&
+                standingIds != previousIds &&
+                standingIds.toSet() == previousIds.toSet() &&
+                drawnId == lastDrawnId &&
+                unsortedIds == lastUnsortedIds
+            if (resorted) {
+                snappingIds += standingIds
                 crossingIds.clear()
             }
-            // 有牌離開手牌（打出或鳴走）時，共享呈現先讓那張牌落地才讓位；只是重新排序時沒有要等的動作。
-            val left = lastStandingOrder.filterNot { it in privateIds }
-            if (left.isNotEmpty()) {
-                orderChangedAt = now
-                targetsAtOrderChange = lastFrameTargets
-                stayedIds = (lastStandingOrder + listOfNotNull(lastDrawnId)).filterTo(mutableSetOf()) { it in privateIds }
-                leftIds = left.toSet()
-                leavingIds += left
-            }
-            lastStandingOrder = effectiveOrder
+            lastStandingOrder = standingOrder
         }
-        lastSnapshotOrder = standingOrder
         lastUnsortedIds = unsortedIds
-        // 快照會比共享呈現早到：共享呈現依序播放，可能還在播前面的步驟。共享呈現在同一步中先讓離開的牌落地，再讓位與插入；
-        // 本人換位等到原本就在手牌的牌開始移動才跟著開始，或離開的牌都已落地而手牌不需要讓位時開始，時機與其他人看到的一致。
-        orderChangedAt?.let { changedAt ->
-            val stayedMoved = stayedIds.any { id -> inputs[id]?.let { input -> input.movedSince(changedAt, targetsAtOrderChange[id]) } == true }
-            val leftLanded = leftIds.all { id -> inputs[id]?.let { input -> input.landedSince(changedAt, targetsAtOrderChange[id], now) } ?: true }
-            if (stayedMoved || leftLanded || now - changedAt >= ORDER_SYNC_TIMEOUT_TICKS) orderChangedAt = null
-        }
-        val waitingForShared = orderChangedAt != null
         lastDrawnId = drawnId
-        lastFrameTargets = inputs.mapValues { (_, input) -> input.target }
-        val publicOrder = PublicHandOrder.arrange(settled) + unsorted
+        val unsorted = unsortedIds.filter { it in standingIds }
         updateRow(
-            publicOrder = publicOrder,
+            publicOrder = PublicHandOrder.arrange(standingIds.filterNot { it in unsorted }) + unsorted,
             drawnId = drawnId,
             inputs = inputs,
         )
         val targets = buildMap {
-            effectiveOrder.forEachIndexed { slot, id ->
-                // 仍在牌牆或發牌尚未翻起的牌不能提前搬進手牌。缺資料仍保留完整格位索引。
-                if (inputs[id]?.target?.poseDegrees == 0.0f) row?.placement(slot, effectiveOrder.size)?.let { put(id, it) }
+            standingOrder.forEachIndexed { slot, id ->
+                // 仍在牌牆或發牌尚未翻起的牌不能提前搬進手牌；空格與缺資料的牌仍保留完整格位索引。
+                if (id != null && inputs[id]?.target?.poseDegrees == 0.0f) row?.placement(slot, standingOrder.size)?.let { put(id, it) }
             }
             drawnId?.let { id -> inputs[id]?.target?.takeIf { it.poseDegrees == 0.0f }?.let { put(id, it) } }
         }
@@ -202,9 +163,7 @@ class PrivateHandLayout {
                 val current = entry.sample(now)
                 if (target != null) {
                     entry.waitingSince = null
-                    if (entry.isPrivate && entry.target != target && waitingForShared) {
-                        // 還在等共享呈現開始讓位，先停在原本的位置。
-                    } else if (entry.isPrivate && entry.target != target && snappingIds.remove(id)) {
+                    if (entry.isPrivate && entry.target != target && snappingIds.remove(id)) {
                         entry.snap(target)
                     } else if (!entry.isPrivate || entry.target != target) {
                         // 依本人順序會越過其他牌的牌從上方以弧線越過，其餘一起平移，不會互相穿過。
@@ -222,14 +181,12 @@ class PrivateHandLayout {
                     val motionChanged = input.motion != null && input.motion != entry.input.motion
                     val endpointChanged = input.target != entry.input.target
                     if (entry.isPrivate && entry.waitingSince == null) entry.waitingSince = now
-                    // 已離開手牌的牌等共享呈現真的讓它離開才交回；其他缺格只短暫保留，等資料對齊。
-                    val graceTicks = if (id in leavingIds) ORDER_SYNC_TIMEOUT_TICKS else HANDOFF_GRACE_TICKS
+                    // 離開本人排列的牌等共享呈現讓它離開才交回；共享資料沒有跟上時只短暫保留。
                     val ready = motionChanged ||
                         endpointChanged ||
                         input.target.poseDegrees != 0.0f ||
-                        now - (entry.waitingSince ?: now) >= graceTicks
+                        now - (entry.waitingSince ?: now) >= HANDOFF_GRACE_TICKS
                     if (entry.isPrivate && ready) {
-                        leavingIds -= id
                         entry.move(
                             from = current,
                             to = input.target,
@@ -265,17 +222,10 @@ class PrivateHandLayout {
         entries.clear()
         seen.clear()
         lastStandingOrder = emptyList()
-        lastSnapshotOrder = emptyList()
-        lastUnsortedIds = emptySet()
+        lastUnsortedIds = emptyList()
         lastDrawnId = null
         crossingIds.clear()
         snappingIds.clear()
-        orderChangedAt = null
-        lastFrameTargets = emptyMap()
-        targetsAtOrderChange = emptyMap()
-        stayedIds = emptySet()
-        leftIds = emptySet()
-        leavingIds.clear()
         row = null
         previousTargets = emptyMap()
         lastTime = Double.NEGATIVE_INFINITY
@@ -287,7 +237,7 @@ class PrivateHandLayout {
      * 牌排中心改變時，至少要有一張牌的原生位置跟上次確認時不同，或整手都是沒有上次位置的新牌，才採用新中心。
      *
      * @param publicOrder 完整公開立牌順序。
-     * @param drawnId 獨立摸牌位的牌，用於排除已合併但快照尚未更新的中間狀態。
+     * @param drawnId 獨立摸牌位的牌，用於排除共享位置已合併、本人排列還沒更新的中間狀態。
      * @param inputs 本幀原生資料。
      */
     private fun updateRow(
@@ -312,17 +262,19 @@ class PrivateHandLayout {
         val candidate = candidates.firstOrNull() ?: return
         if (candidates.any { !candidate.matches(it) }) return
         if (row?.matches(candidate) == false) {
-            // 換格數的快照可能比位置先到；不能因為等了幾幀就把舊座標當成新中心。
+            // 換格數的本人排列可能比共享位置先到；不能因為等了幾幀就把舊座標當成新中心。
             val moved = publicOrder.any { id -> previousTargets[id]?.let { it != inputs[id]?.target } == true }
             // 整手換成全新的牌（例如載入 debug 情境）時沒有舊座標可比，全部立起且一致的位置就是新牌排。
             val replaced = publicOrder.none { id -> id in previousTargets }
-            if (candidates.size != publicOrder.size || !(moved || replaced)) return
+            // 還沒立起的牌（仍在牌牆上）不在牌排上，不影響核對；缺資料的牌則要等資料到齊。
+            val notStanding = publicOrder.count { id -> inputs[id]?.target?.let { it.poseDegrees != 0.0f } == true }
+            if (candidates.size + notStanding != publicOrder.size || !(moved || replaced)) return
             if (drawnId != null) {
                 val drawn = inputs[drawnId]?.target ?: return
                 val edge = candidate.placement(publicOrder.lastIndex, publicOrder.size)
                 val angle = candidate.yaw * PI / 180.0
                 val gap = (drawn.position.x - edge.position.x) * cos(angle) + (drawn.position.z - edge.position.z) * sin(angle)
-                // 原生位置先合併摸牌時，快照仍稱它是摸牌；此時不能用舊張數推算中心。還沒立起的摸牌（仍在牌牆上或正要飛來）
+                // 原生位置先合併摸牌時，本人排列仍稱它是摸牌；此時不能用舊張數推算中心。還沒立起的摸牌（仍在牌牆上或正要飛來）
                 // 不可能已經併入立牌，不擋牌排更新，否則手牌要等它落地才讓位。
                 if (drawn.poseDegrees == 0.0f && gap <= TILE_STEP + GEOMETRY_EPSILON) return
             }
@@ -399,25 +351,6 @@ class PrivateHandLayout {
         val inserted = setOfNotNull(previousDrawnId?.takeIf { it in currentIndex })
         return stayed.toSet() - kept + inserted
     }
-
-    /**
-     * 這張牌在共享呈現中是否在 [since] 之後開始移動：有新的動畫，或終點已離開 [before]。
-     *
-     * @param since 開始觀察的時間。
-     * @param before 開始觀察前一幀的共享終點；沒有時只看動畫。
-     * @return 已開始移動時為 true。
-     */
-    private fun TileDisplayInput.movedSince(since: Double, before: TileDisplayTransform?): Boolean = motion?.let { it.startedAt >= since - MOTION_START_TOLERANCE_TICKS } == true || (before != null && before != target)
-
-    /**
-     * 這張牌在共享呈現中是否在 [since] 之後移動並已落地。
-     *
-     * @param since 開始觀察的時間。
-     * @param before 開始觀察前一幀的共享終點；沒有時只看動畫。
-     * @param now 本幀世界時間。
-     * @return 已移動且動畫播完時為 true。
-     */
-    private fun TileDisplayInput.landedSince(since: Double, before: TileDisplayTransform?, now: Double): Boolean = movedSince(since, before) && motion?.let { now >= it.startedAt + it.spec.durationTicks } != false
 
     /**
      * 已開始的世界動畫只銜接剩餘時間；沒有可用動畫時使用短補位時間。
@@ -549,17 +482,7 @@ class PrivateHandLayout {
             leanDegrees = MahjongTileTableLayout.ROW_ARC_LEAN_DEGREES,
         )
 
-        /**
-         * 立牌順序改變後最多等共享呈現開始讓位的時間，避免共享的牌沒有移動時永久停在舊位置。
-         *
-         * 共享呈現依序播放，前面還有開局發牌或逐輪補花等步驟時，輪到這次換位可能要等好幾秒；這個值只是安全上限。
-         */
-        const val ORDER_SYNC_TIMEOUT_TICKS = 600.0
-
-        /** 判斷共享動畫是不是這次換位之後才開始時，容許的時間誤差。 */
-        const val MOTION_START_TOLERANCE_TICKS = 1.0
-
-        /** 等待快照與原生資料對齊的最長時間，避免永久停在舊位置。 */
+        /** 等待本人排列與原生資料對齊的最長時間，避免永久停在舊位置。 */
         const val HANDOFF_GRACE_TICKS = 3.0
 
         /** 與共享牌區相同的固定牌距，不由相鄰實體距離反推。 */

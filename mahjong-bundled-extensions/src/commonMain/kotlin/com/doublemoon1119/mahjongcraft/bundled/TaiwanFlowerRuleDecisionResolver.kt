@@ -282,13 +282,14 @@ object TaiwanFlowerRuleDecisionResolver : RuleDecisionResolver {
 /**
  * 將補花的牌區變化依序轉成中間步驟，每一次移出或補牌是一步。
  *
- * 局首補花時閒家補到的牌直接併入立牌，與最後結果的擺法一致。牌局中亮出的花以移出手牌的動作呈現。
+ * 補到的牌照一般摸牌先放在摸牌位，再補下一張時，摸牌位上的牌接到立牌最右邊；局首補完後各家一起理牌時才收進立牌。
+ * 牌局中亮出的花以移出手牌的動作呈現。
  *
  * @param isOpening 是否為局首補花。
  * @return 依原順序排列的中間步驟。
  */
 private fun List<TileReplacementRounds.Step>.toTableSteps(isOpening: Boolean): List<TableStep> = map { step ->
-    val state = if (isOpening) step.tableState.withOpeningReplacementsStanding() else step.tableState
+    val state = step.tableState
     val events = if (!isOpening && step is TileReplacementRounds.Step.SetAside) {
         listOf(TableStepEvent.ActionDeclared(step.playerId, TAIWAN_REVEAL_FLOWER_ACTION))
     } else {

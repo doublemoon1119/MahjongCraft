@@ -99,11 +99,12 @@ class TaiwanOpeningFlowerResolutionTest {
         listOf(flowers[0], flowers[1]).forEach { assertEquals(TileArea(TileRegion.SET_ASIDE, dealer), steps[1].tableState.areaOf(it)) }
         listOf(replacements[0], replacements[1]).forEach { assertEquals(dealer, steps[2].tableState.tileArea(it.id)?.ownerId) }
         assertEquals(TileArea(TileRegion.SET_ASIDE, downstream), steps[3].tableState.areaOf(flowers[2]))
-        assertEquals(TileArea(TileRegion.HAND, downstream), steps[4].tableState.areaOf(replacements[2]), "Non-dealer replacements join the hand.")
+        assertEquals(TileArea(TileRegion.DRAWN, downstream), steps[4].tableState.areaOf(replacements[2]), "Replacements land in the drawn slot like a draw.")
         assertEquals(TileArea(TileRegion.SET_ASIDE, dealer), steps[5].tableState.areaOf(flowers[3]))
         assertEquals(TileArea(TileRegion.DRAWN, dealer), steps[6].tableState.areaOf(replacements[3]))
         assertTrue(steps.dropLast(1).all { it.events.isEmpty() }, "Opening replacements are not declarations.")
         assertEquals(listOf(TableStepEvent.HandsSorted(players.mapTo(mutableSetOf()) { it.id })), steps.last().events)
+        assertEquals(TileArea(TileRegion.HAND, downstream), steps.last().tableState.areaOf(replacements[2]), "Sorting takes the drawn replacement into the hand.")
         val after = resolution.tableState
         assertEquals(replacements[3], after.players[0].hand.lastDrawn)
         assertEquals(17, after.players[0].hand.standingTiles.size)
