@@ -54,7 +54,11 @@ fun RuleDecisionTimingPersistenceDto.toDomain(): RuleDecisionTiming = RuleDecisi
 /** 將規則選擇輸入規格轉成存檔 DTO。 */
 private fun RuleDecisionInputSpec.toPersistenceDto(): RuleDecisionInputSpecPersistenceDto = when (this) {
     RuleDecisionInputSpec.Confirmation -> RuleDecisionInputSpecPersistenceDto.Confirmation
-    is RuleDecisionInputSpec.SingleChoice -> RuleDecisionInputSpecPersistenceDto.SingleChoice(optionIds)
+    is RuleDecisionInputSpec.SingleChoice -> RuleDecisionInputSpecPersistenceDto.SingleChoice(
+        optionIds = optionIds,
+        previewTileIdsByOptionId = previewTileIdsByOptionId.mapValues { (_, tileIds) -> tileIds.map(Uuid::toString) },
+        passOptionId = passOptionId,
+    )
     is RuleDecisionInputSpec.TileSelection -> RuleDecisionInputSpecPersistenceDto.TileSelection(
         eligibleTileIds.mapTo(mutableSetOf(), Uuid::toString),
         minCount,
@@ -65,7 +69,11 @@ private fun RuleDecisionInputSpec.toPersistenceDto(): RuleDecisionInputSpecPersi
 /** 將已保存的規則選擇輸入規格還原。 */
 private fun RuleDecisionInputSpecPersistenceDto.toDomain(): RuleDecisionInputSpec = when (this) {
     RuleDecisionInputSpecPersistenceDto.Confirmation -> RuleDecisionInputSpec.Confirmation
-    is RuleDecisionInputSpecPersistenceDto.SingleChoice -> RuleDecisionInputSpec.SingleChoice(optionIds)
+    is RuleDecisionInputSpecPersistenceDto.SingleChoice -> RuleDecisionInputSpec.SingleChoice(
+        optionIds = optionIds,
+        previewTileIdsByOptionId = previewTileIdsByOptionId.mapValues { (_, tileIds) -> tileIds.map(Uuid::parse) },
+        passOptionId = passOptionId,
+    )
     is RuleDecisionInputSpecPersistenceDto.TileSelection -> RuleDecisionInputSpec.TileSelection(
         eligibleTileIds.mapTo(mutableSetOf(), Uuid::parse),
         minCount,

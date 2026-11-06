@@ -5,6 +5,7 @@ package com.doublemoon1119.mahjongcraft.platform.minecraft.settlement
  *
  * @property outcomeId 結算結果 ID。
  * @property isTsumo 是否為自摸。
+ * @property winActionLabelKey 這次和牌動作（自摸或榮和）在本規則的名稱 translation key，例如台灣麻將的榮和是「胡牌」。
  * @property winnerId 贏家 ID。
  * @property winnerDisplayName 贏家顯示名稱。
  * @property winnerIsAi 贏家是否為 AI。
@@ -24,6 +25,7 @@ package com.doublemoon1119.mahjongcraft.platform.minecraft.settlement
 data class WinSettlementPresentationFieldSnapshot(
     val outcomeId: String,
     val isTsumo: Boolean,
+    val winActionLabelKey: String,
     val winnerId: String,
     val winnerDisplayName: String,
     val winnerIsAi: Boolean,

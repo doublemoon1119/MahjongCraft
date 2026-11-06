@@ -72,6 +72,7 @@ class ClientHandTileLayoutController(
         val handIds = (player.hand.standingTiles.map { it.id } + listOfNotNull(player.hand.lastDrawn?.id)).toSet()
         val settlementRevealedIds = snapshot.publicEvidenceTileIds.intersect(handIds)
         val standingIds = player.hand.standingTiles.map { it.id }.filterNot { it == player.hand.lastDrawn?.id }
+        val time = currentWorld.time.toDouble() + tickDelta
         val inputs = currentWorld.entities.asSequence().filterIsInstance<MahjongTileEntity>()
             .filter { !it.isRemoved && it.managedTableId == tableId }
             .associate { tile ->
@@ -98,10 +99,11 @@ class ClientHandTileLayoutController(
                         )
                     },
                     visible = !tile.isInvisible,
+                    unsorted = tile.isUnsortedAt(time),
                 )
             }
         frame = layout.update(
-            time = currentWorld.time.toDouble() + tickDelta,
+            time = time,
             standingOrder = standingIds,
             drawnId = player.hand.lastDrawn?.id,
             inputs = inputs,

@@ -138,7 +138,7 @@ class HistoryWinDetailPresentationTest {
      *
      * @return 空動作與流局名稱 registry 的 presenter。
      */
-    private fun presenter(): HistoryRoundEventPresenter = HistoryRoundEventPresenter(GameActionVocabularyRegistryImpl(), ExhaustiveDrawReasonDisplayNameRegistryImpl(), RoundOutcomeDisplayNameRegistryImpl())
+    private fun presenter(): HistoryRoundEventPresenter = HistoryRoundEventPresenter(GameActionVocabularyRegistryImpl().apply { BuiltInMinecraftMahjongExtension.registerGameActionVocabulary(this) }, ExhaustiveDrawReasonDisplayNameRegistryImpl(), RoundOutcomeDisplayNameRegistryImpl())
 
     /**
      * 建立單次和牌結算的事件呈現資料。

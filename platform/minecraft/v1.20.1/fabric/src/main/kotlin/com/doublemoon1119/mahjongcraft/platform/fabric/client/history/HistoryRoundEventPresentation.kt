@@ -355,8 +355,8 @@ internal class HistoryRoundEventPresenter(
      * @return 結算原因顯示文字。
      */
     private fun outcomeText(reasonId: String, ruleId: String?): Text = when (reasonId) {
-        BuiltInRoundOutcomeIds.TSUMO -> Text.translatable(actionVocabulary.find(ruleId, MinecraftBuiltInGameActionIds.TSUMO)?.labelKey ?: MinecraftHistoryScreenKeys.ROUND_OUTCOME_TSUMO)
-        BuiltInRoundOutcomeIds.RON -> Text.translatable(actionVocabulary.find(ruleId, MinecraftBuiltInGameActionIds.RON)?.labelKey ?: MinecraftHistoryScreenKeys.ROUND_OUTCOME_RON)
+        BuiltInRoundOutcomeIds.TSUMO -> Text.translatable(requireNotNull(actionVocabulary.find(ruleId, MinecraftBuiltInGameActionIds.TSUMO)) { "Tsumo has a built-in label" }.labelKey)
+        BuiltInRoundOutcomeIds.RON -> Text.translatable(requireNotNull(actionVocabulary.find(ruleId, MinecraftBuiltInGameActionIds.RON)) { "Ron has a built-in label" }.labelKey)
         BuiltInMatchEndReasonIds.SCHEDULE_COMPLETED -> Text.translatable(MinecraftHistoryScreenKeys.ROUND_OUTCOME_SCHEDULE_COMPLETED)
         BuiltInMatchEndReasonIds.TARGET_SCORE_REACHED -> Text.translatable(MinecraftHistoryScreenKeys.ROUND_OUTCOME_TARGET_SCORE_REACHED)
         BuiltInMatchEndReasonIds.EXTRA_ROUND_LIMIT_REACHED -> Text.translatable(MinecraftHistoryScreenKeys.ROUND_OUTCOME_EXTRA_ROUND_LIMIT_REACHED)

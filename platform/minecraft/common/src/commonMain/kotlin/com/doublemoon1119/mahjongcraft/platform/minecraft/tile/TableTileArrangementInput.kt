@@ -19,6 +19,7 @@ import kotlin.uuid.Uuid
  * @property handPoseStates 立牌與摸牌位的牌各自的姿態；沒有列出的牌直立。
  * @property wallProjection 牌牆格位投影到這張桌子的方式；沒有實體牌牆時為 null，牌牆的牌不擺放。
  * @property faceUpWallTileIds 牌牆中正面朝上的牌。
+ * @property unsortedTileIds 直接補進立牌、還沒理過的牌，依補進的順序排列。
  */
 data class TableTileArrangementInput(
     val controllerX: Int,
@@ -31,4 +32,5 @@ data class TableTileArrangementInput(
     val handPoseStates: List<TilePoseState>,
     val wallProjection: MahjongTileWallProjectionContext?,
     val faceUpWallTileIds: Set<Uuid>,
+    val unsortedTileIds: List<Uuid> = emptyList(),
 )

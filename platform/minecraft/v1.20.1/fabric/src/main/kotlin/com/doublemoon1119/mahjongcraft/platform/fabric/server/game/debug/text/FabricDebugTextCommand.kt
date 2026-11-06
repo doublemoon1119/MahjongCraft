@@ -12,6 +12,8 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.text.buildMatchResultChat
 import com.doublemoon1119.mahjongcraft.platform.fabric.text.buildRoundResultChatText
 import com.doublemoon1119.mahjongcraft.platform.fabric.text.configShowMessage
 import com.doublemoon1119.mahjongcraft.platform.fabric.text.serverConfigEntries
+import com.doublemoon1119.mahjongcraft.platform.minecraft.action.BuiltInGameActionIds
+import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionVocabularyRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftConfigCommandKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.WinSettlementTextKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocation
@@ -37,13 +39,18 @@ import kotlin.uuid.toKotlinUuid
  * @property serverConfigManager 提供伺服器設定的顯示路徑與目前內容。
  * @property json 序列化設定 DTO，供設定訊息比對變動項目。
  * @property networkRegistries 將設定轉成網路 DTO 時使用的 registry。
+ * @property actionVocabularyRegistry 結算預覽標題使用的動作名稱。
  */
 class FabricDebugTextCommand(
     private val feedbackPublisher: MinecraftPlayerFeedbackPublisher,
     private val serverConfigManager: FabricServerConfigManager,
     private val json: NetworkJson,
     private val networkRegistries: NetworkDtoRegistries,
+    private val actionVocabularyRegistry: GameActionVocabularyRegistry,
 ) {
+    /** 中立規則的榮和名稱。 */
+    private fun ronLabelKey(): String = requireNotNull(actionVocabularyRegistry.find(null, BuiltInGameActionIds.RON)) { "Ron has a built-in label" }.labelKey
+
     /**
      * 建立 `hovered_text` 的六種訊息排版預覽。
      *
@@ -114,13 +121,13 @@ class FabricDebugTextCommand(
      */
     private fun previewWinSettlementHoveredText(source: ServerCommandSource): Int {
         val details = Text.empty()
-            .append(Text.translatable(WinSettlementTextKeys.RON_SUMMARY, "Player", "AI 1"))
+            .append(Text.translatable(WinSettlementTextKeys.RON_RELATIONSHIP, "Player", "AI 1"))
             .append(Text.literal("\n"))
             .append(Text.translatable(WinSettlementTextKeys.HAN_FU, "3", "30"))
             .append(Text.literal("\n"))
             .append(Text.translatable(WinSettlementTextKeys.TOTAL_SCORE, "7700"))
         source.sendFeedback(
-            { buildRoundResultChatText(Text.translatable(WinSettlementTextKeys.RON), details, roundContinues = false) },
+            { buildRoundResultChatText(Text.translatable(ronLabelKey()), details, roundContinues = false) },
             false,
         )
         return COMMAND_SUCCESS

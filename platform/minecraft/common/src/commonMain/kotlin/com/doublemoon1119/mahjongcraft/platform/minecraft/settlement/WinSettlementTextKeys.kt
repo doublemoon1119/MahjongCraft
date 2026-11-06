@@ -13,14 +13,10 @@ object WinSettlementTextKeys {
     const val HAN_FU = PREFIX + "han_fu"
     const val NAGASHI_MANGAN = PREFIX + "nagashi_mangan"
     const val RELATIONSHIP_ARROW = PREFIX + "relationship_arrow"
-    const val RON = PREFIX + "ron"
     const val RON_RELATIONSHIP = PREFIX + "ron_relationship"
-    const val RON_SUMMARY = PREFIX + "ron_summary"
     const val SCORE_RANKING = PREFIX + "score_ranking"
     const val TEMPLATE_FALLBACK = PREFIX + "template_fallback"
     const val TOTAL_SCORE = PREFIX + "total_score"
-    const val TSUMO = PREFIX + "tsumo"
-    const val TSUMO_SUMMARY = PREFIX + "tsumo_summary"
     const val URA_DORA = PREFIX + "ura_dora"
     const val URA_DORA_INDICATOR = PREFIX + "ura_dora_indicator"
 
@@ -32,14 +28,10 @@ object WinSettlementTextKeys {
         HAN_FU,
         NAGASHI_MANGAN,
         RELATIONSHIP_ARROW,
-        RON,
         RON_RELATIONSHIP,
-        RON_SUMMARY,
         SCORE_RANKING,
         TEMPLATE_FALLBACK,
         TOTAL_SCORE,
-        TSUMO,
-        TSUMO_SUMMARY,
         URA_DORA,
         URA_DORA_INDICATOR,
     )

@@ -13,11 +13,11 @@ import com.doublemoon1119.mahjongcraft.logic.config.MahjongRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.module.BuiltInRuleModuleIds
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.RiichiTileValues
-import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanFlowerRuleDecisionIds
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanGameAction
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.tile.TaiwanTileTypes
 import com.doublemoon1119.mahjongcraft.platform.minecraft.achievement.GameAchievementResolver
 import com.doublemoon1119.mahjongcraft.platform.minecraft.achievement.GameAchievementResolverRegistryImpl
+import com.doublemoon1119.mahjongcraft.platform.minecraft.action.BuiltInGameActionIds
 import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionVocabularyRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionVocabularyRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.ai.AiStrategyDisplayNameDefinition
@@ -394,8 +394,10 @@ class MinecraftMahjongExtensionBootstrapTest {
             MinecraftMessageKeys.GAME_ACTION_REVEAL_FLOWER,
             gameActionVocabularyRegistry.find(BuiltInRuleModuleIds.TAIWAN, TaiwanGameAction.RevealFlower.id)?.labelKey,
         )
-        assertTrue(TaiwanFlowerRuleDecisionIds.PROCESS_FLOWERS.let(ruleDecisionDisplayNameRegistry::find) != null)
-        assertTrue(TaiwanFlowerRuleDecisionIds.SPECIAL_FLOWER_WIN.let(ruleDecisionDisplayNameRegistry::find) != null)
+        // 台灣麻將把榮和說成胡牌；日本麻將維持榮和。
+        assertEquals(MinecraftMessageKeys.GAME_ACTION_HU, gameActionVocabularyRegistry.find(BuiltInRuleModuleIds.TAIWAN, BuiltInGameActionIds.RON)?.messageKey)
+        assertEquals(MinecraftMessageKeys.GAME_ACTION_RON, gameActionVocabularyRegistry.find(BuiltInRuleModuleIds.RIICHI, BuiltInGameActionIds.RON)?.messageKey)
+        assertTrue(ruleDecisionDisplayNameRegistry.registrationKeys.isEmpty(), "Built-in rules show rule decision choices with action names.")
         assertTrue(TaiwanRoundOutcomeIds.EIGHT_FLOWERS.let(roundOutcomeDisplayNameRegistry::find) != null)
         assertTrue(TaiwanRoundOutcomeIds.SEVEN_FLOWERS.let(roundOutcomeDisplayNameRegistry::find) != null)
         assertEquals(

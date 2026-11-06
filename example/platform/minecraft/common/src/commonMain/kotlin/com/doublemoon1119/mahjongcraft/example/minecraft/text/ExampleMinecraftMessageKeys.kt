@@ -29,9 +29,6 @@ object ExampleMinecraftMessageKeys {
     /** 已攤牌的公開標記。 */
     const val HAND_REVEALED = "mahjongcraft_example.indicator.hand_revealed"
 
-    /** 換牌選擇步驟名稱。 */
-    const val EXCHANGE = "mahjongcraft_example.rule_decision.exchange"
-
     /** 牌山耗盡流局名稱。 */
     const val EXHAUSTIVE_DRAW = "mahjongcraft_example.draw.wall_exhausted"
 

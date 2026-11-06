@@ -35,4 +35,15 @@ sealed interface TableStepEvent {
     data class WallRearranged(
         val phases: List<PhysicalWallLayoutTransitionPhase>,
     ) : TableStepEvent
+
+    /**
+     * 玩家整理手牌：先前直接補進手牌、還沒理過的牌收進手牌。例如局首逐輪補完牌之後，各家一起理牌。
+     *
+     * 啟用自動理牌的玩家，權威手牌依規則牌序重新整理。
+     *
+     * @property playerIds 整理手牌的玩家。
+     */
+    data class HandsSorted(
+        val playerIds: Set<Uuid>,
+    ) : TableStepEvent
 }

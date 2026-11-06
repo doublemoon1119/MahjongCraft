@@ -65,7 +65,6 @@ class ExampleMinecraftResourcesTest {
         ExampleMinecraftMessageKeys.REVEAL_HAND_CARD_BODY,
         ExampleMinecraftMessageKeys.REVEAL_HAND_CARD_HINT,
         ExampleMinecraftMessageKeys.HAND_REVEALED,
-        ExampleMinecraftMessageKeys.EXCHANGE,
         ExampleMinecraftMessageKeys.EXHAUSTIVE_DRAW,
         ExampleMinecraftMessageKeys.CONFIG_CATEGORY_RULE,
         ExampleMinecraftMessageKeys.CONFIG_EXCHANGE,

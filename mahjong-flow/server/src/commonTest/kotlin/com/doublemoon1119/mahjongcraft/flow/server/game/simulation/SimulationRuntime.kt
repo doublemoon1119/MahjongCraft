@@ -253,6 +253,7 @@ internal class SimulationRuntime(defaultStrategyKey: String) {
             snapshotSynchronizer = snapshotSynchronizer,
             presentationPublisher = presentationPublisher,
             winPresentationStager = RuleDecisionWinPresentationStager(winPresentationHandoff, winSettlementDetailResolverRegistry),
+            handSortPreferenceStore = handSortPreferenceStore,
         ),
     )
 
@@ -346,6 +347,7 @@ internal class SimulationRuntime(defaultStrategyKey: String) {
             snapshotSynchronizer = snapshotSynchronizer,
             presentationPublisher = presentationPublisher,
             winPresentationStager = RuleDecisionWinPresentationStager(winPresentationHandoff, winSettlementDetailResolverRegistry),
+            handSortPreferenceStore = handSortPreferenceStore,
         ),
         beginRuleDecisionUseCase = beginRuleDecisionUseCase,
     )

@@ -19,6 +19,7 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.policy.GameVisibilityPol
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.FakeGameRepository
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.runAsSingleWrite
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameSnapshotSynchronizer
+import com.doublemoon1119.mahjongcraft.flow.server.game.service.HandSortPreferenceStore
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.RuleDecisionWinPresentationStager
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.WinPresentationHandoff
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.WinSettlementDetailResolverRegistry
@@ -71,6 +72,7 @@ class SubmitRuleDecisionUseCaseTest {
             snapshotSynchronizer = GameSnapshotSynchronizer(repository, FakeGameSnapshotRepository(), GameVisibilityPolicyImpl(moduleRegistry, componentRegistry = bundledCoreExtensionRegistries().componentRegistry)),
             presentationPublisher = presentationPublisher,
             winPresentationStager = RuleDecisionWinPresentationStager(WinPresentationHandoff(), WinSettlementDetailResolverRegistry(bundledCoreExtensionRegistries().componentRegistry)),
+            handSortPreferenceStore = HandSortPreferenceStore(),
         )
         val table = FakeTableStateFactory.create(
             players = listOf(FakeMahjongPlayerFactory.create(id = playerId)),
@@ -153,6 +155,7 @@ class SubmitRuleDecisionUseCaseTest {
             snapshotSynchronizer = snapshotSynchronizer,
             presentationPublisher = presentationPublisher,
             winPresentationStager = RuleDecisionWinPresentationStager(WinPresentationHandoff(), WinSettlementDetailResolverRegistry(bundledCoreExtensionRegistries().componentRegistry)),
+            handSortPreferenceStore = HandSortPreferenceStore(),
         )
 
         val firstResult = useCase(table.id, firstPlayerId, repository.openWindowId(table.id), RuleDecisionSubmission.Tiles(setOf(firstTile.id)))
@@ -250,6 +253,7 @@ class SubmitRuleDecisionUseCaseTest {
             ),
             presentationPublisher = presentationPublisher,
             winPresentationStager = RuleDecisionWinPresentationStager(WinPresentationHandoff(), WinSettlementDetailResolverRegistry(bundledCoreExtensionRegistries().componentRegistry)),
+            handSortPreferenceStore = HandSortPreferenceStore(),
         )
 
         val result = useCase(table.id, firstPlayerId, repository.openWindowId(table.id), RuleDecisionSubmission.Tiles(setOf(firstTile.id)))
@@ -300,6 +304,7 @@ class SubmitRuleDecisionUseCaseTest {
             ),
             presentationPublisher = presentationPublisher,
             winPresentationStager = RuleDecisionWinPresentationStager(WinPresentationHandoff(), WinSettlementDetailResolverRegistry(bundledCoreExtensionRegistries().componentRegistry)),
+            handSortPreferenceStore = HandSortPreferenceStore(),
         )
         val invalidTileId = Uuid.random()
 
@@ -353,6 +358,7 @@ class SubmitRuleDecisionUseCaseTest {
             ),
             presentationPublisher = FakeGamePresentationPublisher(),
             winPresentationStager = RuleDecisionWinPresentationStager(WinPresentationHandoff(), WinSettlementDetailResolverRegistry(bundledCoreExtensionRegistries().componentRegistry)),
+            handSortPreferenceStore = HandSortPreferenceStore(),
         )
 
         assertFailsWith<RuleContractViolationException> {
@@ -394,6 +400,7 @@ class SubmitRuleDecisionUseCaseTest {
             ),
             presentationPublisher = FakeGamePresentationPublisher(),
             winPresentationStager = RuleDecisionWinPresentationStager(WinPresentationHandoff(), WinSettlementDetailResolverRegistry(bundledCoreExtensionRegistries().componentRegistry)),
+            handSortPreferenceStore = HandSortPreferenceStore(),
         )
 
         assertFailsWith<RuleContractViolationException> {
@@ -434,6 +441,7 @@ class SubmitRuleDecisionUseCaseTest {
             ),
             presentationPublisher = FakeGamePresentationPublisher(),
             winPresentationStager = RuleDecisionWinPresentationStager(WinPresentationHandoff(), WinSettlementDetailResolverRegistry(bundledCoreExtensionRegistries().componentRegistry)),
+            handSortPreferenceStore = HandSortPreferenceStore(),
         )
 
         val result = useCase(table.id, playerId, earlierWindow.id, RuleDecisionSubmission.Confirmed)
@@ -499,6 +507,7 @@ class SubmitRuleDecisionUseCaseTest {
             snapshotSynchronizer = GameSnapshotSynchronizer(repository, FakeGameSnapshotRepository(), GameVisibilityPolicyImpl(moduleRegistry, componentRegistry = bundledCoreExtensionRegistries().componentRegistry)),
             presentationPublisher = FakeGamePresentationPublisher(),
             winPresentationStager = RuleDecisionWinPresentationStager(WinPresentationHandoff(), WinSettlementDetailResolverRegistry(bundledCoreExtensionRegistries().componentRegistry)),
+            handSortPreferenceStore = HandSortPreferenceStore(),
         )
         return Triple(repository, useCase, game)
     }

@@ -74,7 +74,6 @@
   "mahjongcraft_example.round_info.wall_remaining": "残りの牌山：%s枚",
   "mahjongcraft_example.rule.pairing.description": "簡易ペア麻雀の設定です。",
   "mahjongcraft_example.rule.pairing.name": "ペア麻雀",
-  "mahjongcraft_example.rule_decision.exchange": "牌交換",
   "mahjongcraft_example.settlement.bonus_tile_count": "加点牌の加点",
   "mahjongcraft_example.settlement.bonus_tile_points": "加点牌：%s点",
   "mahjongcraft_example.settlement.bonus_tiles": "加点牌",

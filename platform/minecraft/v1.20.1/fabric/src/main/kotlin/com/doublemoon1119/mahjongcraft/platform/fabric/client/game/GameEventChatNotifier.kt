@@ -15,7 +15,6 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.ExhaustiveD
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.RoundOutcomeDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.RoundResultKindDto
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.RoundResultPayloadDto
-import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.WinSettlementTextKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftMessageKeys
 import net.minecraft.client.MinecraftClient
 import net.minecraft.text.ClickEvent
@@ -73,7 +72,7 @@ fun buildRoundResultChatMessage(
 }
 
 /**
- * 結算結果的顯示文字：自摸使用規則的動作用語，榮和使用結算用語；其他結果依序查規則的動作用語（例如九種九牌）、
+ * 結算結果的顯示文字：自摸與榮和使用規則的動作名稱；其他結果依序查規則的動作用語（例如九種九牌）、
  * 特殊結果名稱與流局原因名稱，都沒有登記時流局退回通用流局文字、和牌顯示結果 ID。
  *
  * @param result 欲顯示的權威結算結果。
@@ -88,10 +87,8 @@ private fun roundOutcomeText(
     roundOutcomeDisplayNameRegistry: RoundOutcomeDisplayNameRegistry,
     exhaustiveDrawReasonDisplayNameRegistry: ExhaustiveDrawReasonDisplayNameRegistry,
 ): Text = when (result.outcomeId) {
-    BuiltInRoundOutcomeIds.TSUMO -> Text.translatable(
-        actionVocabularyRegistry.find(result.ruleModuleId, BuiltInGameActionIds.TSUMO)?.messageKey ?: WinSettlementTextKeys.TSUMO,
-    )
-    BuiltInRoundOutcomeIds.RON -> Text.translatable(WinSettlementTextKeys.RON)
+    BuiltInRoundOutcomeIds.TSUMO -> Text.translatable(winActionLabelKey(actionVocabularyRegistry, result.ruleModuleId, BuiltInGameActionIds.TSUMO))
+    BuiltInRoundOutcomeIds.RON -> Text.translatable(winActionLabelKey(actionVocabularyRegistry, result.ruleModuleId, BuiltInGameActionIds.RON))
     else -> (
         actionVocabularyRegistry.find(result.ruleModuleId, result.outcomeId)?.messageKey
             ?: roundOutcomeDisplayNameRegistry.find(result.outcomeId)
@@ -191,3 +188,13 @@ private fun resolvePlayerDisplayName(id: Uuid, isAi: Boolean, orderedAiPlayerIds
     val name = MinecraftClient.getInstance().networkHandler?.getPlayerListEntry(id.toJavaUuid())?.profile?.name
     return name ?: id.toString().take(8)
 }
+
+/**
+ * 和牌動作在規則中的名稱；核心的自摸與榮和一定有內建用語。
+ *
+ * @param actionVocabularyRegistry 規則專屬動作用語。
+ * @param ruleModuleId 對局規則。
+ * @param actionId 自摸或榮和的動作識別碼。
+ * @return 名稱的 translation key。
+ */
+private fun winActionLabelKey(actionVocabularyRegistry: GameActionVocabularyRegistry, ruleModuleId: String?, actionId: String): String = requireNotNull(actionVocabularyRegistry.find(ruleModuleId, actionId)) { "$actionId has a built-in label" }.labelKey

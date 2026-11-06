@@ -42,11 +42,20 @@ object TableTileArrangement {
                     setAsideTileIds = setAsideTiles.map { it.first.id },
                     cornerWidth = input.cornerWidthBySeat[seatIndex] ?: 0.0,
                     tilePoseStates = input.handPoseStates,
+                    unsortedTileIds = input.unsortedTileIds,
                 ),
             )
+            val unsorted = input.unsortedTileIds.toSet()
             val handRow = TileRowKey(TileRegion.HAND, player.id, null)
             layout.standing.forEachIndexed { order, placed ->
-                result[placed.tileId] = ArrangedTile(placed.tileId, handRow, order, placed.placement, handPoses[placed.tileId] ?: TilePose.UPRIGHT)
+                result[placed.tileId] = ArrangedTile(
+                    tileId = placed.tileId,
+                    row = handRow,
+                    orderInRow = order,
+                    placement = placed.placement,
+                    pose = handPoses[placed.tileId] ?: TilePose.UPRIGHT,
+                    unsorted = placed.tileId in unsorted,
+                )
             }
             player.hand.lastDrawn?.let { drawn ->
                 result[drawn.id] = ArrangedTile(drawn.id, TileRowKey(TileRegion.DRAWN, player.id, null), 0, layout.drawnSlot, handPoses[drawn.id] ?: TilePose.UPRIGHT)

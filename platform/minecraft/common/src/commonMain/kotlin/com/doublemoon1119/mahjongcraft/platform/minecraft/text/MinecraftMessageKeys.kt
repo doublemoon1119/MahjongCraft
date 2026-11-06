@@ -300,6 +300,9 @@ object MinecraftMessageKeys {
     /** 榮和，帶一個牌面顯示文字參數（一個 `%s`）。 */
     const val GAME_ACTION_RON = PREFIX + "game_action_ron"
 
+    /** 胡牌（例如台灣麻將對榮和的說法），帶一個牌面顯示文字參數（一個 `%s`）。 */
+    const val GAME_ACTION_HU = PREFIX + "game_action_hu"
+
     /** 過（不執行任何鳴牌或胡牌動作），不帶參數。 */
     const val GAME_ACTION_PASS = PREFIX + "game_action_pass"
 
@@ -700,6 +703,7 @@ object MinecraftMessageKeys {
         GAME_ACTION_KAN_CLOSED,
         GAME_ACTION_KAN_ADDED,
         GAME_ACTION_RON,
+        GAME_ACTION_HU,
         GAME_ACTION_PASS,
         GAME_ACTION_KYUUSHU_KYUUHAI,
         GAME_ACTION_PULL_NORTH,

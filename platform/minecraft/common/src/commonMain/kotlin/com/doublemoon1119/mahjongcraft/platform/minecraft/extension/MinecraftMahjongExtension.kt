@@ -154,7 +154,7 @@ interface MinecraftMahjongExtension {
     fun registerHistoryDiscardMarkerDisplays(registry: HistoryDiscardMarkerDisplayRegistrar) = Unit
 
     /**
-     * 登記第三方規則選擇 step／option 的本地化顯示名稱。
+     * 登記第三方規則選擇選項的本地化顯示名稱，顯示在決策面板的選項卡片上；代表跳過的選項使用一般的跳過用語，不需要登記。
      *
      * @param registry 規則選擇顯示名稱 registry。
      */

@@ -32,8 +32,14 @@ class PrivateHandLayout {
     /** 已經顯示過的本人牌張，重新接管時不能當成首次進場瞬間定位。 */
     private val seen = mutableSetOf<Uuid>()
 
-    /** 上一次的本人立牌順序，用來判斷換位時哪些牌會越過其他牌。 */
+    /** 上一次實際排列的本人立牌順序（還沒理過的牌接在最右邊），用來判斷換位時哪些牌會越過其他牌。 */
     private var lastStandingOrder = emptyList<Uuid>()
+
+    /** 上一次快照的本人立牌順序；只有快照順序改變時才可能是單純重新排序。 */
+    private var lastSnapshotOrder = emptyList<Uuid>()
+
+    /** 上一次還沒理過、接在最右邊的牌。 */
+    private var lastUnsortedIds = emptySet<Uuid>()
 
     /** 上一次在本人摸牌位上的牌；它加入立牌時以插入動作越過其他牌。 */
     private var lastDrawnId: Uuid? = null
@@ -52,6 +58,15 @@ class PrivateHandLayout {
 
     /** 順序改變前一幀的共享終點；共享的牌離開這些位置，代表共享呈現已經開始讓位。 */
     private var targetsAtOrderChange = emptyMap<Uuid, TileDisplayTransform>()
+
+    /** 順序改變前後都在本人手牌的牌；其中任一張在共享呈現中開始移動，代表手牌開始讓位。 */
+    private var stayedIds = emptySet<Uuid>()
+
+    /** 最近一次順序改變時離開本人手牌的牌；都已在共享呈現中落地而手牌沒有讓位時，本人換位也開始。 */
+    private var leftIds = emptySet<Uuid>()
+
+    /** 已離開本人手牌、還沒在共享呈現中開始離開的牌；在那之前留在本人格位。 */
+    private val leavingIds = mutableSetOf<Uuid>()
 
     /**
      * 更新本人布局，不因某張牌動畫中或資料缺少而取消其他牌的排序。
@@ -83,44 +98,57 @@ class PrivateHandLayout {
             return emptyMap()
         }
         val privateIds = (standingOrder + listOfNotNull(drawnId)).toSet()
-        if (standingOrder != lastStandingOrder) {
+        // 快照可能比共享呈現早到：還在牌牆上、從沒進過手牌的牌還不佔格位，等它進入手牌才排進來。缺資料的牌仍保留格位。
+        val present = standingOrder.filter { id -> inputs[id]?.let { it.target.poseDegrees == 0.0f || id in seen } ?: true }
+        // 共享呈現中直接補進立牌、還沒理過的牌，依共享位置接在最右邊；理牌時才插入本人順序。
+        val unsorted = present.filter { id -> inputs[id]?.let { it.unsorted && it.target.poseDegrees == 0.0f } == true }
+            .sortedBy { id -> row?.alongOf(inputs.getValue(id).target) ?: 0.0 }
+        val unsortedIds = unsorted.toSet()
+        val settled = present.filterNot { it in unsortedIds }
+        val effectiveOrder = settled + unsorted
+        if (effectiveOrder != lastStandingOrder) {
             crossingIds.clear()
-            crossingIds += crossingTiles(lastStandingOrder, standingOrder, lastDrawnId)
+            crossingIds += crossingTiles(lastStandingOrder, effectiveOrder, lastDrawnId?.takeUnless { it in unsortedIds })
             // 整副重新排序（例如切換自動理牌）不是牌的實際移動，直接到位。
             snappingIds.clear()
-            if (lastStandingOrder.isNotEmpty() && standingOrder.toSet() == lastStandingOrder.toSet() && drawnId == lastDrawnId) {
-                snappingIds += standingOrder
+            val resorted = standingOrder != lastSnapshotOrder && unsortedIds == lastUnsortedIds
+            if (resorted && lastStandingOrder.isNotEmpty() && effectiveOrder.toSet() == lastStandingOrder.toSet() && drawnId == lastDrawnId) {
+                snappingIds += effectiveOrder
                 crossingIds.clear()
             }
             // 有牌離開手牌（打出或鳴走）時，共享呈現先讓那張牌落地才讓位；只是重新排序時沒有要等的動作。
-            if (lastStandingOrder.any { it !in privateIds }) {
+            val left = lastStandingOrder.filterNot { it in privateIds }
+            if (left.isNotEmpty()) {
                 orderChangedAt = now
                 targetsAtOrderChange = lastFrameTargets
+                stayedIds = (lastStandingOrder + listOfNotNull(lastDrawnId)).filterTo(mutableSetOf()) { it in privateIds }
+                leftIds = left.toSet()
+                leavingIds += left
             }
-            lastStandingOrder = standingOrder
+            lastStandingOrder = effectiveOrder
         }
-        // 共享呈現在同一步中先讓離開的牌落地，再讓位與插入；本人換位等到共享的牌開始移動才跟著開始，時機與其他人看到的一致。
+        lastSnapshotOrder = standingOrder
+        lastUnsortedIds = unsortedIds
+        // 快照會比共享呈現早到：共享呈現依序播放，可能還在播前面的步驟。共享呈現在同一步中先讓離開的牌落地，再讓位與插入；
+        // 本人換位等到原本就在手牌的牌開始移動才跟著開始，或離開的牌都已落地而手牌不需要讓位時開始，時機與其他人看到的一致。
         orderChangedAt?.let { changedAt ->
-            val sharedStarted = privateIds.any { id ->
-                val input = inputs[id]
-                input?.motion?.let { it.startedAt >= changedAt - MOTION_START_TOLERANCE_TICKS } == true ||
-                    (input != null && targetsAtOrderChange[id]?.let { it != input.target } == true)
-            }
-            if (sharedStarted || now - changedAt >= ORDER_SYNC_TIMEOUT_TICKS) orderChangedAt = null
+            val stayedMoved = stayedIds.any { id -> inputs[id]?.let { input -> input.movedSince(changedAt, targetsAtOrderChange[id]) } == true }
+            val leftLanded = leftIds.all { id -> inputs[id]?.let { input -> input.landedSince(changedAt, targetsAtOrderChange[id], now) } ?: true }
+            if (stayedMoved || leftLanded || now - changedAt >= ORDER_SYNC_TIMEOUT_TICKS) orderChangedAt = null
         }
         val waitingForShared = orderChangedAt != null
         lastDrawnId = drawnId
         lastFrameTargets = inputs.mapValues { (_, input) -> input.target }
-        val publicOrder = PublicHandOrder.arrange(standingOrder)
+        val publicOrder = PublicHandOrder.arrange(settled) + unsorted
         updateRow(
             publicOrder = publicOrder,
             drawnId = drawnId,
             inputs = inputs,
         )
         val targets = buildMap {
-            standingOrder.forEachIndexed { slot, id ->
+            effectiveOrder.forEachIndexed { slot, id ->
                 // 仍在牌牆或發牌尚未翻起的牌不能提前搬進手牌。缺資料仍保留完整格位索引。
-                if (inputs[id]?.target?.poseDegrees == 0.0f) row?.placement(slot, standingOrder.size)?.let { put(id, it) }
+                if (inputs[id]?.target?.poseDegrees == 0.0f) row?.placement(slot, effectiveOrder.size)?.let { put(id, it) }
             }
             drawnId?.let { id -> inputs[id]?.target?.takeIf { it.poseDegrees == 0.0f }?.let { put(id, it) } }
         }
@@ -194,11 +222,14 @@ class PrivateHandLayout {
                     val motionChanged = input.motion != null && input.motion != entry.input.motion
                     val endpointChanged = input.target != entry.input.target
                     if (entry.isPrivate && entry.waitingSince == null) entry.waitingSince = now
+                    // 已離開手牌的牌等共享呈現真的讓它離開才交回；其他缺格只短暫保留，等資料對齊。
+                    val graceTicks = if (id in leavingIds) ORDER_SYNC_TIMEOUT_TICKS else HANDOFF_GRACE_TICKS
                     val ready = motionChanged ||
                         endpointChanged ||
                         input.target.poseDegrees != 0.0f ||
-                        now - (entry.waitingSince ?: now) >= HANDOFF_GRACE_TICKS
+                        now - (entry.waitingSince ?: now) >= graceTicks
                     if (entry.isPrivate && ready) {
+                        leavingIds -= id
                         entry.move(
                             from = current,
                             to = input.target,
@@ -234,12 +265,17 @@ class PrivateHandLayout {
         entries.clear()
         seen.clear()
         lastStandingOrder = emptyList()
+        lastSnapshotOrder = emptyList()
+        lastUnsortedIds = emptySet()
         lastDrawnId = null
         crossingIds.clear()
         snappingIds.clear()
         orderChangedAt = null
         lastFrameTargets = emptyMap()
         targetsAtOrderChange = emptyMap()
+        stayedIds = emptySet()
+        leftIds = emptySet()
+        leavingIds.clear()
         row = null
         previousTargets = emptyMap()
         lastTime = Double.NEGATIVE_INFINITY
@@ -324,6 +360,17 @@ class PrivateHandLayout {
         }
 
         /**
+         * 位置沿牌排方向離中心的距離，往摸牌位那一側為正。
+         *
+         * @param transform 要量的位置。
+         * @return 沿牌排方向的距離。
+         */
+        fun alongOf(transform: TileDisplayTransform): Double {
+            val angle = yaw * PI / 180.0
+            return (transform.position.x - center.x) * cos(angle) + (transform.position.z - center.z) * sin(angle)
+        }
+
+        /**
          * 允許封包座標量化的微小誤差，不接受仍混用新舊格位的牌排。
          *
          * @param other 另一張立牌推算的幾何。
@@ -352,6 +399,25 @@ class PrivateHandLayout {
         val inserted = setOfNotNull(previousDrawnId?.takeIf { it in currentIndex })
         return stayed.toSet() - kept + inserted
     }
+
+    /**
+     * 這張牌在共享呈現中是否在 [since] 之後開始移動：有新的動畫，或終點已離開 [before]。
+     *
+     * @param since 開始觀察的時間。
+     * @param before 開始觀察前一幀的共享終點；沒有時只看動畫。
+     * @return 已開始移動時為 true。
+     */
+    private fun TileDisplayInput.movedSince(since: Double, before: TileDisplayTransform?): Boolean = motion?.let { it.startedAt >= since - MOTION_START_TOLERANCE_TICKS } == true || (before != null && before != target)
+
+    /**
+     * 這張牌在共享呈現中是否在 [since] 之後移動並已落地。
+     *
+     * @param since 開始觀察的時間。
+     * @param before 開始觀察前一幀的共享終點；沒有時只看動畫。
+     * @param now 本幀世界時間。
+     * @return 已移動且動畫播完時為 true。
+     */
+    private fun TileDisplayInput.landedSince(since: Double, before: TileDisplayTransform?, now: Double): Boolean = movedSince(since, before) && motion?.let { now >= it.startedAt + it.spec.durationTicks } != false
 
     /**
      * 已開始的世界動畫只銜接剩餘時間；沒有可用動畫時使用短補位時間。
@@ -469,7 +535,7 @@ class PrivateHandLayout {
     }
 
     /** 私人顯示使用的短過渡時間，不影響權威操作計時。 */
-    private companion object {
+    internal companion object {
         /** 一般理牌與補位時間，沿用牌張預設動畫長度。 */
         const val REORDER_TICKS = TileMotionAnimationSpec.DEFAULT_DURATION_TICKS
 
@@ -483,8 +549,12 @@ class PrivateHandLayout {
             leanDegrees = MahjongTileTableLayout.ROW_ARC_LEAN_DEGREES,
         )
 
-        /** 立牌順序改變後最多等共享呈現開始讓位的時間，避免共享的牌沒有移動時永久停在舊位置。 */
-        const val ORDER_SYNC_TIMEOUT_TICKS = 10.0
+        /**
+         * 立牌順序改變後最多等共享呈現開始讓位的時間，避免共享的牌沒有移動時永久停在舊位置。
+         *
+         * 共享呈現依序播放，前面還有開局發牌或逐輪補花等步驟時，輪到這次換位可能要等好幾秒；這個值只是安全上限。
+         */
+        const val ORDER_SYNC_TIMEOUT_TICKS = 600.0
 
         /** 判斷共享動畫是不是這次換位之後才開始時，容許的時間誤差。 */
         const val MOTION_START_TOLERANCE_TICKS = 1.0

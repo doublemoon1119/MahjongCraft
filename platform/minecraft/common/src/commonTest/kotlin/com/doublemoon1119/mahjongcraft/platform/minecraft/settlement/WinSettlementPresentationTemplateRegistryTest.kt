@@ -59,6 +59,7 @@ class WinSettlementPresentationTemplateRegistryTest {
         val snapshot = WinSettlementPresentationFieldSnapshot(
             outcomeId = "mahjongcraft:ron",
             isTsumo = false,
+            winActionLabelKey = "test.win_action",
             winnerId = "winner",
             winnerDisplayName = "Winner",
             winnerIsAi = false,

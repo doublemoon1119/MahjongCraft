@@ -15,10 +15,16 @@ sealed interface RuleDecisionInputSpecDto {
      * 單選輸入規格。
      *
      * @property optionIds 可選項目的識別碼列表。
+     * @property previewTileIdsByOptionId 各選項要展示的牌張識別碼。
+     * @property passOptionId 代表跳過的選項；沒有時為 null。
      */
     @Serializable
     @SerialName("single_choice")
-    data class SingleChoice(val optionIds: List<String>) : RuleDecisionInputSpecDto
+    data class SingleChoice(
+        val optionIds: List<String>,
+        val previewTileIdsByOptionId: Map<String, List<String>>,
+        val passOptionId: String?,
+    ) : RuleDecisionInputSpecDto
 
     /**
      * 牌張選擇輸入。

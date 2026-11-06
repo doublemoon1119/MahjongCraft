@@ -211,6 +211,7 @@ class WinSettlementPresentationEntityRenderer(
         return WinSettlementPresentationFieldSnapshot(
             outcomeId = entity.outcomeId,
             isTsumo = entity.isTsumo,
+            winActionLabelKey = entity.winActionLabelKey,
             winnerId = playerId,
             winnerDisplayName = playerName(playerId),
             winnerIsAi = isAi,

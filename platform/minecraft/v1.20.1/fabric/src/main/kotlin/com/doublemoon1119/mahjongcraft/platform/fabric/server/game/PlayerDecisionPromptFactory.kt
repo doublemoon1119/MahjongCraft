@@ -63,13 +63,17 @@ class PlayerDecisionPromptFactory(
         val actions = resolvedCandidates.actions
         val reactedTile = state.reactedTile()
         val faces = visibilityPolicy.tileFacesFor(game, playerId, player.hand.standingTiles.map { it.id } + listOfNotNull(reactedTile?.id))
-        val ruleDecision = game.pendingRuleDecision
+        val ruleDecisionInput = game.pendingRuleDecision
             ?.takeIf { playerId !in it.completedPlayerIds }
             ?.inputSpecsByPlayerId
             ?.get(playerId)
-            ?.toPrompt { tileId ->
-                faces[tileId]?.takeIf { player.hand.tiles.any { it.id == tileId } }?.toAssetKey(tileAssetRegistry)
-            }
+        val previewFaces = (ruleDecisionInput as? RuleDecisionInputSpec.SingleChoice)
+            ?.let { choice -> visibilityPolicy.tileFacesFor(game, playerId, choice.previewTileIdsByOptionId.values.flatten()) }
+            .orEmpty()
+        val ruleDecision = ruleDecisionInput?.toPrompt(
+            handTileAssetKey = { tileId -> faces[tileId]?.takeIf { player.hand.tiles.any { it.id == tileId } }?.toAssetKey(tileAssetRegistry) },
+            visibleTileAssetKey = { tileId -> previewFaces[tileId]?.toAssetKey(tileAssetRegistry) },
+        )
         val analyses = if (phase == PlayerDecisionPhase.OWN_TURN) {
             resolvedCandidates.discardAnalyses.map(analysisDtoMapper::toDto)
         } else {
@@ -228,17 +232,25 @@ private fun GameAction.decisionIdentity(): String = when (this) {
 /**
  * 將受控 rule decision input 轉成不暴露其他玩家提交的私人 prompt。
  *
- * @param resolveAssetKey 以牌張識別碼取得可顯示素材 key 的函式。
+ * @param handTileAssetKey 以牌張識別碼取得自己手牌可顯示素材 key 的函式，用於選牌。
+ * @param visibleTileAssetKey 以牌張識別碼取得接收玩家看得到的素材 key 的函式，用於選項展示的牌。
  * @return 對應的私人規則選擇 prompt。
  */
-private fun RuleDecisionInputSpec.toPrompt(resolveAssetKey: (Uuid) -> String?): RuleDecisionPromptDto = when (this) {
+internal fun RuleDecisionInputSpec.toPrompt(
+    handTileAssetKey: (Uuid) -> String?,
+    visibleTileAssetKey: (Uuid) -> String?,
+): RuleDecisionPromptDto = when (this) {
     RuleDecisionInputSpec.Confirmation -> RuleDecisionPromptDto.Confirmation
-    is RuleDecisionInputSpec.SingleChoice -> RuleDecisionPromptDto.SingleChoice(optionIds)
+    is RuleDecisionInputSpec.SingleChoice -> RuleDecisionPromptDto.SingleChoice(
+        optionIds = optionIds,
+        previewTileAssetKeysByOptionId = previewTileIdsByOptionId.mapValues { (_, tileIds) -> tileIds.mapNotNull(visibleTileAssetKey) },
+        passOptionId = passOptionId,
+    )
     is RuleDecisionInputSpec.TileSelection -> {
         val sortedTileIds = eligibleTileIds.sortedBy(Uuid::toString)
         RuleDecisionPromptDto.TileSelection(
             eligibleTileIds = sortedTileIds.map(Uuid::toString),
-            eligibleTileAssetKeys = sortedTileIds.mapNotNull(resolveAssetKey),
+            eligibleTileAssetKeys = sortedTileIds.mapNotNull(handTileAssetKey),
             minCount = minCount,
             maxCount = maxCount,
         )

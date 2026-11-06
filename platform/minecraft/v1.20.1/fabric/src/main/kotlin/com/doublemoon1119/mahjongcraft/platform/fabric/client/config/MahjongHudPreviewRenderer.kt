@@ -154,7 +154,7 @@ class MahjongHudPreviewRenderer(
         ) {
             content.entries.forEachIndexed { index, entry -> renderButton(entry.label, layout.cardButtonBounds(placements[index])) }
         }
-        renderButton(Text.translatable("mahjongcraft.hud.action.skip"), layout.skipButtonBounds)
+        renderButton(decisionHud.decisionTexts.skipLabel(ruleModuleId = null), layout.skipButtonBounds)
         context.drawDecisionTimer(
             renderer = renderer,
             parts = PREVIEW_TIMER_PARTS,

@@ -8,16 +8,21 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionInputS
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionStep
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionTiming
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionWinOutcome
+import com.doublemoon1119.mahjongcraft.flow.common.game.service.TableStep
+import com.doublemoon1119.mahjongcraft.flow.common.game.service.TableStepEvent
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.RuleContractViolationException
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.RuleDecisionResolution
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.RuleDecisionResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.RuleDecisionWin
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
+import com.doublemoon1119.mahjongcraft.logic.base.Hand
+import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.table.RoundConclusion
 import com.doublemoon1119.mahjongcraft.logic.table.TurnPhase
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.registerBundledRuleModules
+import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeIdentifiedTileFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
 import kotlin.test.Test
@@ -56,6 +61,7 @@ class RuleDecisionWindowsTest {
             resolution = winningResolution(nextStep = null),
             module = module,
             resolverRegistry = RuleDecisionResolverRegistry(),
+            sortsHand = { false },
         )
 
         assertEquals(outcome, advanced.ruleDecisionWin)
@@ -75,6 +81,7 @@ class RuleDecisionWindowsTest {
                 resolution = winningResolution(nextStep = nextStep),
                 module = module,
                 resolverRegistry = RuleDecisionResolverRegistry(),
+                sortsHand = { false },
             )
         }
     }
@@ -93,6 +100,7 @@ class RuleDecisionWindowsTest {
                 resolution = resolution,
                 module = module,
                 resolverRegistry = RuleDecisionResolverRegistry(),
+                sortsHand = { false },
             )
         }
     }
@@ -112,6 +120,7 @@ class RuleDecisionWindowsTest {
                     resolution = base.copy(tableState = base.tableState.copy(turnPhase = phase)),
                     module = module,
                     resolverRegistry = RuleDecisionResolverRegistry(),
+                    sortsHand = { false },
                 )
             }
         }
@@ -137,8 +146,36 @@ class RuleDecisionWindowsTest {
                 resolution = resolution,
                 module = module,
                 resolverRegistry = RuleDecisionResolverRegistry(),
+                sortsHand = { false },
             )
         }
+    }
+
+    /** 處理過程中玩家整理手牌時，只有啟用自動理牌的玩家依規則牌序整理權威手牌。 */
+    @Test
+    fun `sorted hands follow each player's auto sort preference`() {
+        val unordered = listOf(Tile.Numeric(Tile.Suit.Dot, 9), Tile.Numeric(Tile.Suit.Dot, 1), Tile.Numeric(Tile.Suit.Dot, 5))
+        val tableState = game.tableState.copy(
+            players = game.tableState.players.map { player -> player.copy(hand = Hand(tiles = unordered.map { FakeIdentifiedTileFactory.create(it) })) },
+        )
+        val resolution = RuleDecisionResolution(
+            tableState = tableState,
+            nextStep = null,
+            steps = listOf(TableStep(tableState, listOf(TableStepEvent.HandsSorted(setOf(winner.id, payer.id))))),
+        )
+
+        val advanced = RuleDecisionWindows.advance(
+            game = game.copy(pendingRuleDecision = decision),
+            decision = decision,
+            resolution = resolution,
+            module = module,
+            resolverRegistry = RuleDecisionResolverRegistry(),
+            sortsHand = { it == winner.id },
+        )
+
+        val hands = advanced.tableState.players.associate { player -> player.id to player.hand.tiles.map { it.tile } }
+        assertEquals(unordered.sortedBy { it.value }, hands.getValue(winner.id))
+        assertEquals(unordered, hands.getValue(payer.id))
     }
 
     /**

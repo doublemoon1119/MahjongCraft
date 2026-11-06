@@ -1,10 +1,13 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.server.game
 
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.PlayerDecisionPhase
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionInputSpec
 import com.doublemoon1119.mahjongcraft.logic.base.ExtensionGameAction
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
+import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.RuleDecisionPromptDto
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertIs
 import kotlin.test.assertNotEquals
 import kotlin.uuid.Uuid
 
@@ -18,6 +21,24 @@ class PlayerDecisionPromptFactoryTest {
 
     /** 宣告前後維持相同的摸牌識別碼。 */
     private val drawnTileId = Uuid.random()
+
+    /** 選項展示的牌依接收玩家看得到的牌面顯示，不限於自己的手牌；看不到的牌不顯示。 */
+    @Test
+    fun `choice previews show the tiles the player can see`() {
+        val (shown, hidden) = List(2) { Uuid.random() }
+        val choice = RuleDecisionInputSpec.SingleChoice(
+            optionIds = listOf("mahjongcraft:accept", "mahjongcraft:decline"),
+            previewTileIdsByOptionId = mapOf("mahjongcraft:accept" to listOf(shown, hidden)),
+            passOptionId = "mahjongcraft:decline",
+        )
+
+        val prompt = assertIs<RuleDecisionPromptDto.SingleChoice>(
+            choice.toPrompt(handTileAssetKey = { null }, visibleTileAssetKey = { tileId -> "asset".takeIf { tileId == shown } }),
+        )
+
+        assertEquals(mapOf("mahjongcraft:accept" to listOf("asset")), prompt.previewTileAssetKeysByOptionId)
+        assertEquals("mahjongcraft:decline", prompt.passOptionId)
+    }
 
     /** 同一張摸牌但合法動作集合改變時，必須產生新的決策識別碼。 */
     @Test

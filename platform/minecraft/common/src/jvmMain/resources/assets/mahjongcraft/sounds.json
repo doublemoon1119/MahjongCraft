@@ -59,6 +59,26 @@
     "subtitle": "subtitles.mahjongcraft.voice.tsumo",
     "sounds": ["mahjongcraft:voice/tsumo"]
   },
+  "voice.taiwan.chi": {
+    "subtitle": "subtitles.mahjongcraft.voice.chii",
+    "sounds": ["mahjongcraft:voice/taiwan/chi"]
+  },
+  "voice.taiwan.pon": {
+    "subtitle": "subtitles.mahjongcraft.voice.pon",
+    "sounds": ["mahjongcraft:voice/taiwan/pon"]
+  },
+  "voice.taiwan.kan": {
+    "subtitle": "subtitles.mahjongcraft.voice.kan",
+    "sounds": ["mahjongcraft:voice/taiwan/kan"]
+  },
+  "voice.taiwan.hu": {
+    "subtitle": "subtitles.mahjongcraft.voice.taiwan.hu",
+    "sounds": ["mahjongcraft:voice/taiwan/hu"]
+  },
+  "voice.taiwan.tsumo": {
+    "subtitle": "subtitles.mahjongcraft.voice.tsumo",
+    "sounds": ["mahjongcraft:voice/taiwan/tsumo"]
+  },
   "win.lightning": {
     "subtitle": "subtitles.mahjongcraft.win.lightning",
     "sounds": ["mahjongcraft:win/lightning"]

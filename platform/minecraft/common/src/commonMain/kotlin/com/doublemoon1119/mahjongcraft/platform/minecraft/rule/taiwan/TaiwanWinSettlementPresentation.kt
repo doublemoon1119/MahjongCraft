@@ -19,7 +19,7 @@ internal object TaiwanWinSettlementPresentation {
     /** 台灣麻將結算模板 key。 */
     val TEMPLATE_KEY: String = MahjongCraftMetadata.id("taiwan/win_settlement")
 
-    /** 特殊花牌和牌標題欄位。 */
+    /** 結算標題欄位：特殊花牌和牌顯示花胡名稱，其餘顯示這次和牌動作的名稱。 */
     val OUTCOME_TITLE: PresentationFieldId = PresentationFieldId(MahjongCraftMetadata.id("taiwan/outcome_title"))
 
     /** 台種與台數欄位。 */

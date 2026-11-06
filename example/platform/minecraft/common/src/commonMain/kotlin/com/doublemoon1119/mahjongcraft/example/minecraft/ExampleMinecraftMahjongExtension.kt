@@ -25,14 +25,12 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.Minec
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.PublicPlayerIndicatorDisplayRegistrar
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.RoundInfoLineDisplayRegistrar
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.RuleCatalogueRegistrar
-import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.RuleDecisionDisplayNameRegistrar
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.RuleModuleDisplayNameRegistrar
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.TablePropDescriberRegistrar
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.TileDisplayNameRegistrar
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.TileEmojiRegistrar
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.TileLabelRegistrar
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.WinSettlementPresentationTemplateRegistrar
-import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.RuleDecisionDisplayNameDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.extension.MinecraftMahjongExtension
 import com.doublemoon1119.mahjongcraft.platform.minecraft.player.PublicPlayerIndicatorDisplay
 import com.doublemoon1119.mahjongcraft.platform.minecraft.player.PublicPlayerIndicatorDisplayDefinition
@@ -113,10 +111,6 @@ open class ExampleMinecraftMahjongExtension :
                 display = PublicPlayerIndicatorDisplay(ExampleMinecraftMessageKeys.HAND_REVEALED),
             ),
         )
-    }
-
-    override fun registerRuleDecisionDisplayNames(registry: RuleDecisionDisplayNameRegistrar) {
-        registry.register(RuleDecisionDisplayNameDefinition(ExamplePairingIds.EXCHANGE_STEP, ExampleMinecraftMessageKeys.EXCHANGE))
     }
 
     override fun registerExhaustiveDrawReasonDisplayNames(registry: ExhaustiveDrawReasonDisplayNameRegistrar) {

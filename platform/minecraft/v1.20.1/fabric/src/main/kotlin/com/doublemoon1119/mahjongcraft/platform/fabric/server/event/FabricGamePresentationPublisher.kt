@@ -114,6 +114,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileMotionPhase
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileWallTransitionMotionDecision
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileWallTransitionMotionPlanner
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.UNKNOWN_TILE_ASSET_KEY
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.UnsortedHandTiles
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.backAppearance
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.toAssetKey
 import kotlinx.coroutines.CancellationException
@@ -648,8 +649,9 @@ class FabricGamePresentationPublisher(
      */
     private fun presentStep(gameId: Uuid, resolved: ResolvedTableContext, step: TableStep, startGameTime: Long): Long {
         val state = step.tableState
-        val arrangement = arrange(gameId, resolved, state)
-        val previous = presentedTables[gameId]?.let { presented -> presented.arrangement ?: arrange(gameId, resolved, presented.tableState) }
+        val previous = presentedTables[gameId]?.let { presented -> presented.arrangement ?: arrange(gameId, resolved, presented.tableState, emptyList()) }
+        val sortedPlayerIds = step.events.filterIsInstance<TableStepEvent.HandsSorted>().flatMapTo(mutableSetOf()) { it.playerIds }
+        val arrangement = arrange(gameId, resolved, state, UnsortedHandTiles.after(previous, state, sortedPlayerIds))
         val rearrangements = step.events.filterIsInstance<TableStepEvent.WallRearranged>()
         val rearrangedTileIds = rearrangements.flatMapTo(mutableSetOf()) { event -> event.phases.flatMap { phase -> phase.moves.map { it.tileId } } }
         val motions = TableStepMotionPlanner.plan(previous, arrangement, rearrangedTileIds)
@@ -663,6 +665,7 @@ class FabricGamePresentationPublisher(
             val motionStart = startGameTime + phaseStarts.getValue(TableStepMotionPlanner.phaseOf(motion.kind))
             TileAnimationSteps.schedulePlannedMotion(tile, motion, motionStart, playLandingSound = motion.tileId in soundTileIds)
         }
+        markUnsortedChanges(resolved, previous, arrangement, motions, startGameTime, phaseStarts)
         var endGameTime = startGameTime + TableStepMotionPlanner.stepDurationTicks(motions)
         // 牌牆依規則重排與摸牌同一段開始，例如補牌後把牌補回王牌區。
         val arrivalStart = startGameTime + phaseStarts.getValue(TileMotionPhase.ARRIVE)
@@ -674,7 +677,7 @@ class FabricGamePresentationPublisher(
             when (event) {
                 is TableStepEvent.ActionDeclared -> spawnActionSound(gameId, resolved, state, event.actorId, event.action, startGameTime)
                 is TableStepEvent.ActionScored -> showScoreChanges(gameId, resolved, state, event.scoring, startGameTime)
-                is TableStepEvent.WallRearranged -> Unit
+                is TableStepEvent.WallRearranged, is TableStepEvent.HandsSorted -> Unit
             }
         }
         presentedTables[gameId] = PresentedTable(state, arrangement)
@@ -728,14 +731,48 @@ class FabricGamePresentationPublisher(
     }
 
     /**
+     * 在牌實體上記錄還沒理過的期間有沒有改變，時間點是那張牌這一步的動作開始時；沒有動作的牌從這一步開始時算起。
+     * 本人布局據此把還沒理過的牌排在最右邊，與共享布局一致。
+     *
+     * @param resolved 已解析的桌子與世界。
+     * @param previous 這一步開始時的擺放。
+     * @param arrangement 這一步之後的擺放。
+     * @param motions 這一步的動作。
+     * @param startGameTime 這一步開始的遊戲時間。
+     * @param phaseStarts 這一步各段相對開始時間。
+     */
+    private fun markUnsortedChanges(
+        resolved: ResolvedTableContext,
+        previous: Map<Uuid, ArrangedTile>?,
+        arrangement: Map<Uuid, ArrangedTile>,
+        motions: List<PlannedTileMotion>,
+        startGameTime: Long,
+        phaseStarts: Map<TileMotionPhase, Int>,
+    ) {
+        val motionStarts = motions.associate { motion -> motion.tileId to startGameTime + phaseStarts.getValue(TableStepMotionPlanner.phaseOf(motion.kind)) }
+        arrangement.values.forEach { after ->
+            if (after.unsorted == (previous?.get(after.tileId)?.unsorted == true)) return@forEach
+            val tile = resolved.findTile(after.tileId) ?: return@forEach
+            val changedAt = motionStarts[after.tileId] ?: startGameTime
+            if (after.unsorted) tile.markUnsorted(changedAt) else tile.markSorted(changedAt)
+        }
+    }
+
+    /**
      * 依桌況算出整桌每張牌的擺放。
      *
      * @param gameId 桌子識別碼。
      * @param resolved 已解析的桌子與世界。
      * @param state 要擺放的桌況。
+     * @param unsortedTileIds 直接補進立牌、還沒理過的牌，依補進的順序排列。
      * @return 依牌識別碼索引的擺放。
      */
-    private fun arrange(gameId: Uuid, resolved: ResolvedTableContext, state: TableState): Map<Uuid, ArrangedTile> {
+    private fun arrange(
+        gameId: Uuid,
+        resolved: ResolvedTableContext,
+        state: TableState,
+        unsortedTileIds: List<Uuid>,
+    ): Map<Uuid, ArrangedTile> {
         val module = moduleRegistry.getModule(state.config)
         val stacksPerSide = openingState.wallStacksPerSide(gameId)
         val projection = stacksPerSide?.let {
@@ -760,6 +797,7 @@ class FabricGamePresentationPublisher(
                 handPoseStates = tilePoseStates(state, module),
                 wallProjection = projection,
                 faceUpWallTileIds = module.publicFaceUpWallTileIds(state, componentRegistry),
+                unsortedTileIds = unsortedTileIds,
             ),
         )
     }

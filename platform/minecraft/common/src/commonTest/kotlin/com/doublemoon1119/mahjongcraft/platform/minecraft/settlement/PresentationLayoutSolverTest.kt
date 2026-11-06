@@ -428,6 +428,7 @@ class PresentationLayoutSolverTest {
         val SNAPSHOT = WinSettlementPresentationFieldSnapshot(
             outcomeId = "mahjongcraft:test",
             isTsumo = true,
+            winActionLabelKey = "test.win_action",
             winnerId = "winner",
             winnerDisplayName = "Winner",
             winnerIsAi = false,

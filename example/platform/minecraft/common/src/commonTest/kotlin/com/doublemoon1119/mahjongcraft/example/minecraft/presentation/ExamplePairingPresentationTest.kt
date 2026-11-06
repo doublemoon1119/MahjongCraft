@@ -206,6 +206,7 @@ class ExamplePairingPresentationTest {
         val snapshot = WinSettlementPresentationFieldSnapshot(
             outcomeId = "test:tsumo",
             isTsumo = true,
+            winActionLabelKey = "test.win_action",
             winnerId = "winner",
             winnerDisplayName = "Winner",
             winnerIsAi = false,

@@ -245,7 +245,7 @@ object BuiltInMinecraftMahjongExtension : MinecraftMahjongExtension {
         )
         registry.register(
             definition = WinSettlementPresentationFieldProviderDefinition(BuiltInWinSettlementFieldIds.OUTCOME_TITLE) { snapshot ->
-                PresentationValue.TextValue(if (snapshot.isTsumo) WinSettlementTextKeys.TSUMO else WinSettlementTextKeys.RON)
+                PresentationValue.TextValue(snapshot.winActionLabelKey)
             },
         )
         registry.register(
