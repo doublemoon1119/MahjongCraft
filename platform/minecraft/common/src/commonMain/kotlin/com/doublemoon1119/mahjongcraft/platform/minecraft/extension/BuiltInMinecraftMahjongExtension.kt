@@ -241,7 +241,7 @@ object BuiltInMinecraftMahjongExtension : MinecraftMahjongExtension {
         )
         registry.register(
             definition = WinSettlementPresentationFieldProviderDefinition(BuiltInWinSettlementFieldIds.COMPLETE_HAND_GROUPS) { snapshot ->
-                PresentationValue.TileGroupsValue(snapshot.tileGroups)
+                snapshot.tileGroups.takeIf { groups -> groups.any { it.isNotEmpty() } }?.let(PresentationValue::TileGroupsValue)
             },
         )
         registry.register(

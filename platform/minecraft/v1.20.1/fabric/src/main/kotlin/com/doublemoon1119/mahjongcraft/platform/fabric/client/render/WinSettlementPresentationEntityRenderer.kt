@@ -360,7 +360,7 @@ class WinSettlementPresentationEntityRenderer(
                 renderContainer(layout.style, x, y, size, alpha, matrices, consumers)
                 val contentWidth = size.width - layout.style.padding * 2f
                 val slots = layoutSolver.allocateMainAxis(layout.children, contentWidth, layout.spacing, snapshot)
-                val positions = arrange(slots.map { it.second }, contentWidth, layout.spacing, layout.arrangement)
+                val positions = arrange(slots.map { it.second }, contentWidth, layout.spacing, layout.arrangement, layout.children.map { layoutSolver.occupies(it, snapshot) })
                 layout.children.forEachIndexed { index, child ->
                     val childHeight = layoutSolver.measure(child.unweighted(), snapshot).height
                     val childY = y + layout.style.padding + crossAxisOffset(size.height - layout.style.padding * 2f, childHeight, layout.alignment)
@@ -371,7 +371,7 @@ class WinSettlementPresentationEntityRenderer(
                 renderContainer(layout.style, x, y, size, alpha, matrices, consumers)
                 val contentHeight = size.height - layout.style.padding * 2f
                 val heights = layoutSolver.allocateVerticalMainAxis(layout.children, contentHeight, layout.spacing, snapshot)
-                val positions = arrange(heights, contentHeight, layout.spacing, layout.arrangement)
+                val positions = arrange(heights, contentHeight, layout.spacing, layout.arrangement, layout.children.map { layoutSolver.occupies(it, snapshot) })
                 layout.children.forEachIndexed { index, child ->
                     val childLayout = child.unweighted()
                     val childWidth = layoutSolver.measure(childLayout, snapshot).width

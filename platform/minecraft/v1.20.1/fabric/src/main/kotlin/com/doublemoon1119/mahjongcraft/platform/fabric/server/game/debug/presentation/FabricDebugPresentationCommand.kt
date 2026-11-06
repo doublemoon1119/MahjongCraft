@@ -18,6 +18,8 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementQuant
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementWinnerPresentation
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.riichi.RiichiRoundOutcomeIds
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.riichi.RiichiWinSettlementIds
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.taiwan.TaiwanRoundOutcomeIds
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.taiwan.TaiwanWinSettlementIds
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.MeldPresentation
 import com.doublemoon1119.mahjongcraft.logic.base.MeldType
 import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
@@ -27,6 +29,8 @@ import com.doublemoon1119.mahjongcraft.logic.module.BuiltInPaymentReasonIds
 import com.doublemoon1119.mahjongcraft.logic.module.BuiltInRuleModuleIds
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiExhaustiveDrawReason
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.YakuType
+import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanTaiType
+import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.tile.TaiwanTileTypes
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongTileEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongTilePose
@@ -263,7 +267,8 @@ class FabricDebugPresentationCommand(
         )
 
     /**
-     * 建立 `win_settlement`：自摸、榮和（可指定贏家數）、役滿、包牌役滿與流局滿貫的結算預覽。
+     * 建立 `win_settlement`：自摸、榮和（可指定贏家數）、役滿、包牌役滿與流局滿貫的結算預覽，以及 `taiwan` 底下台灣麻將的
+     * 自摸、胡牌、八仙過海與七搶一。
      *
      * @return 已包含引數與執行處理的子指令節點，供上層指令註冊。
      */
@@ -285,6 +290,11 @@ class FabricDebugPresentationCommand(
         .then(literal(YAKUMAN_ARGUMENT).executes { context -> previewWinSettlement(context.source, WinSettlementPreview.YAKUMAN, 1) })
         .then(literal(PAO_ARGUMENT).executes { context -> previewWinSettlement(context.source, WinSettlementPreview.PAO, 1) })
         .then(literal(NAGASHI_ARGUMENT).executes { context -> previewWinSettlement(context.source, WinSettlementPreview.NAGASHI, 1) })
+        .then(
+            TaiwanWinSettlementPreview.entries.fold(literal(TAIWAN_ARGUMENT)) { node, preview ->
+                node.then(literal(preview.argument).executes { context -> previewTaiwanWinSettlement(context.source, preview) })
+            },
+        )
 
     /**
      * 建立 `match_settlement`：終局排名揭曉預覽，可指定玩家數。
@@ -1050,6 +1060,116 @@ class FabricDebugPresentationCommand(
     }
 
     /**
+     * 使用正式排程器預覽台灣麻將的胡牌結算；手牌、花牌與分數皆為版面測試資料，不保證構成合法和牌。特殊花牌和牌不攤牌，
+     * 沒有手牌列。
+     *
+     * @param source 指令發起來源。
+     * @param preview 要呈現的結算情境。
+     * @return 指令執行狀態碼。
+     */
+    private fun previewTaiwanWinSettlement(source: ServerCommandSource, preview: TaiwanWinSettlementPreview): Int {
+        val player = source.player ?: return COMMAND_FAILURE
+        val world = player.serverWorld
+        val layout = layoutFactory.create(
+            player.blockX,
+            player.blockY,
+            player.blockZ,
+            player.horizontalFacing.toMahjongTableFacing(),
+            MahjongTableSeatLayout.FOUR_PLAYER,
+        )
+        val playerIds = List(4) { index -> if (index == 0) player.uuid.toKotlinUuid() else Uuid.random() }
+        val tileAssetsById = mutableMapOf<Uuid, String>()
+        val flowerFaces = TaiwanTileTypes.ALL.map { TileFaceView(Tile.Extension(it)) }
+        val special = preview == TaiwanWinSettlementPreview.EIGHT_FLOWERS || preview == TaiwanWinSettlementPreview.SEVEN_FLOWERS
+        val handIds = if (special) {
+            emptyList()
+        } else {
+            List(TAIWAN_PREVIEW_HAND_SIZE) { index -> Uuid.random().also { tileAssetsById[it] = previewAssets[index % previewAssets.size] } }
+        }
+        val winningTileId = if (special) null else Uuid.random().also { tileAssetsById[it] = "m1" }
+        // 一般胡牌示範常見台種，胡別人的牌含一個八台以上的強調項目；台數只供版面測試，不保證與手牌一致。
+        val taiTypes = when (preview) {
+            TaiwanWinSettlementPreview.TSUMO -> listOf(
+                TaiwanTaiType.CONCEALED_HAND,
+                TaiwanTaiType.SELF_DRAW,
+                TaiwanTaiType.FULLY_CONCEALED_HAND,
+                TaiwanTaiType.SEAT_FLOWER,
+                TaiwanTaiType.ALL_SEQUENCES,
+            )
+            TaiwanWinSettlementPreview.RON -> listOf(
+                TaiwanTaiType.CONCEALED_HAND,
+                TaiwanTaiType.SINGLE_WAIT,
+                TaiwanTaiType.ALL_TRIPLETS,
+                TaiwanTaiType.FULL_FLUSH,
+            )
+            TaiwanWinSettlementPreview.EIGHT_FLOWERS -> listOf(TaiwanTaiType.EIGHT_FLOWERS)
+            TaiwanWinSettlementPreview.SEVEN_FLOWERS -> listOf(TaiwanTaiType.SEVEN_FLOWERS)
+        }
+        val flowerFields = if (special) {
+            listOf(
+                WinSettlementDetailField(TaiwanWinSettlementIds.FLOWERS_FIELD, WinSettlementDetailValue.TileFaces(flowerFaces.dropLast(1))),
+                WinSettlementDetailField(TaiwanWinSettlementIds.WINNING_FLOWER_FIELD, WinSettlementDetailValue.TileFaces(listOf(flowerFaces.last()))),
+            )
+        } else {
+            listOf(WinSettlementDetailField(TaiwanWinSettlementIds.FLOWERS_FIELD, WinSettlementDetailValue.TileFaces(flowerFaces.take(2))))
+        }
+        val detailFields = flowerFields + listOf(
+            WinSettlementDetailField(
+                TaiwanWinSettlementIds.TAI_FIELD,
+                WinSettlementDetailValue.Entries(taiTypes.map { type -> WinSettlementDetailEntry(type.id, WinSettlementQuantity(TaiwanWinSettlementIds.TAI_UNIT, type.tai)) }),
+            ),
+            WinSettlementDetailField(
+                TaiwanWinSettlementIds.TAI_TOTAL_FIELD,
+                WinSettlementDetailValue.Quantities(listOf(WinSettlementQuantity(TaiwanWinSettlementIds.TAI_UNIT, taiTypes.sumOf { it.tai }))),
+            ),
+        )
+        val isTsumo = preview == TaiwanWinSettlementPreview.TSUMO || preview == TaiwanWinSettlementPreview.EIGHT_FLOWERS
+        val request = WinSettlementPresentationRequest(
+            outcomeId = when (preview) {
+                TaiwanWinSettlementPreview.TSUMO -> BuiltInRoundOutcomeIds.TSUMO
+                TaiwanWinSettlementPreview.RON -> BuiltInRoundOutcomeIds.RON
+                TaiwanWinSettlementPreview.EIGHT_FLOWERS -> TaiwanRoundOutcomeIds.EIGHT_FLOWERS
+                TaiwanWinSettlementPreview.SEVEN_FLOWERS -> TaiwanRoundOutcomeIds.SEVEN_FLOWERS
+            },
+            ruleModuleId = BuiltInRuleModuleIds.TAIWAN,
+            isTsumo = isTsumo,
+            winners = listOf(
+                WinSettlementWinnerPresentation(
+                    playerId = playerIds[0],
+                    seatIndex = 0,
+                    responsiblePlayerId = if (isTsumo) null else playerIds[1],
+                    totalScore = TAIWAN_PREVIEW_SCORE,
+                    standingTileIds = handIds,
+                    melds = emptyList(),
+                    winningTileId = winningTileId,
+                    detailFields = detailFields,
+                ),
+            ),
+            ranking = ScoreRankingPresentation(
+                listOf(31_000, 28_000, 24_000, 17_000).zip(listOf(31_340, 27_660, 24_000, 17_000)).mapIndexed { seatIndex, (before, after) ->
+                    ScoreRankingPlayer(playerIds[seatIndex], seatIndex, seatIndex != 0, before, after, seatIndex + 1, seatIndex + 1)
+                },
+            ),
+            paymentReasonIdsByPlayerId = emptyMap(),
+        )
+        return if (
+            winSettlementScheduler.schedule(
+                world,
+                Uuid.random(),
+                BlockPos(layout.controllerX, layout.controllerY, layout.controllerZ),
+                layout.showcaseStagePlacement(),
+                world.time,
+                request,
+                tileAssetsById,
+            ) != null
+        ) {
+            COMMAND_SUCCESS
+        } else {
+            COMMAND_FAILURE
+        }
+    }
+
+    /**
      * 以臨時牌預覽理牌、倒牌與胡牌特效。自摸另生成獨立和牌張，榮和則在牌河位置生成和牌張；特效結束後清除臨時實體。
      *
      * @param source 指令發起來源。
@@ -1140,6 +1260,25 @@ class FabricDebugPresentationCommand(
         NAGASHI,
     }
 
+    /**
+     * 台灣麻將胡牌結算預覽的情境。
+     *
+     * @property argument 指令中的 literal。
+     */
+    private enum class TaiwanWinSettlementPreview(val argument: String) {
+        /** 一般自摸，附兩張花牌與常見台種。 */
+        TSUMO("tsumo"),
+
+        /** 一般胡別人的牌，附兩張花牌與含八台以上項目的台種。 */
+        RON("ron"),
+
+        /** 八仙過海：不攤牌，八張花牌。 */
+        EIGHT_FLOWERS("eight_flowers"),
+
+        /** 七搶一：不攤牌，自己的七張花與被搶的那張。 */
+        SEVEN_FLOWERS("seven_flowers"),
+    }
+
     /** 演出預覽的子指令名稱、引數名稱與取樣設定。 */
     private companion object {
         /** `win` 子指令 literal。 */
@@ -1219,6 +1358,15 @@ class FabricDebugPresentationCommand(
 
         /** 流局滿貫結算 literal。 */
         const val NAGASHI_ARGUMENT: String = "nagashi"
+
+        /** `win_settlement taiwan` 台灣麻將結算預覽 literal。 */
+        const val TAIWAN_ARGUMENT: String = "taiwan"
+
+        /** 台灣麻將一般胡牌預覽的立牌張數。 */
+        const val TAIWAN_PREVIEW_HAND_SIZE: Int = 16
+
+        /** 台灣麻將結算預覽的贏家得分。 */
+        const val TAIWAN_PREVIEW_SCORE: Int = 340
 
         /** 包牌役滿結算預覽 literal。 */
         const val PAO_ARGUMENT: String = "pao"

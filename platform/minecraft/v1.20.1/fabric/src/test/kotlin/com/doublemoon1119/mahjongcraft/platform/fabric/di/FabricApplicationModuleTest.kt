@@ -492,9 +492,14 @@ class FabricApplicationModuleTest {
             setOf("normal", "melds", "kyuushu", "score", "abortive"),
             presentationCommand.buildExhaustiveDrawSettlementCommand().build().children.map { it.name }.toSet(),
         )
+        val winSettlementNode = presentationCommand.buildWinSettlementCommand().build()
         assertEquals(
-            setOf("tsumo", "ron", "yakuman", "pao", "nagashi"),
-            presentationCommand.buildWinSettlementCommand().build().children.map { it.name }.toSet(),
+            setOf("tsumo", "ron", "yakuman", "pao", "nagashi", "taiwan"),
+            winSettlementNode.children.map { it.name }.toSet(),
+        )
+        assertEquals(
+            setOf("tsumo", "ron", "eight_flowers", "seven_flowers"),
+            winSettlementNode.getChild("taiwan").children.map { it.name }.toSet(),
         )
         assertEquals(
             setOf("winner_count"),

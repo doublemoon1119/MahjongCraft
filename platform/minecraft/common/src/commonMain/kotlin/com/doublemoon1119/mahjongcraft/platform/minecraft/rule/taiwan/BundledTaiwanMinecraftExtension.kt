@@ -115,8 +115,8 @@ object BundledTaiwanMinecraftExtension : MinecraftMahjongExtension {
         registry.register(TaiwanWinSettlementPresentation.TEMPLATE)
         registry.register(WinSettlementRuleTemplateBindingDefinition(BuiltInRuleModuleIds.TAIWAN, TaiwanWinSettlementPresentation.TEMPLATE_KEY))
         registry.register(
-            WinSettlementPresentationFieldProviderDefinition(TaiwanWinSettlementPresentation.OUTCOME_TITLE) { snapshot ->
-                PresentationValue.TextValue(TaiwanWinSettlementPresentation.outcomeTranslationKey(snapshot.outcomeId) ?: snapshot.winActionLabelKey)
+            WinSettlementPresentationFieldProviderDefinition(TaiwanWinSettlementPresentation.FLOWERS_LABEL) {
+                PresentationValue.TextValue(TaiwanWinSettlementPresentation.FLOWERS_LABEL_KEY)
             },
         )
         TaiwanWinSettlementPresentation.EXTENSION_FIELDS.forEach { fieldId ->
@@ -126,6 +126,12 @@ object BundledTaiwanMinecraftExtension : MinecraftMahjongExtension {
             WinSettlementDetailTextFormatterDefinition(
                 TaiwanWinSettlementIds.TAI_FIELD,
                 TaiwanWinSettlementPresentation.taiText,
+            ),
+        )
+        registry.register(
+            WinSettlementDetailTextFormatterDefinition(
+                TaiwanWinSettlementIds.TAI_TOTAL_FIELD,
+                TaiwanWinSettlementPresentation.taiTotalText,
             ),
         )
     }

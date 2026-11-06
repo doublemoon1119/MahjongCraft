@@ -132,6 +132,20 @@ class PresentationLayoutSolverTest {
         assertEquals(16f, size.height)
     }
 
+    /** 缺少欄位的子節點不佔空間，前後也不留間距，下面的子節點直接往上補位。 */
+    @Test
+    fun `measures a column without spacing around a missing child`() {
+        val size = solver().measure(
+            PresentationLayout.Column(
+                children = listOf(PresentationLayout.IfPresent(MISSING_FIELD, spacer(10f, 4f)), spacer(20f, 9f)),
+                spacing = 3f,
+            ),
+            SNAPSHOT,
+        )
+
+        assertEquals(9f, size.height)
+    }
+
     /** 容器留白計入兩側。 */
     @Test
     fun `adds the container padding to both sides`() {
@@ -280,12 +294,12 @@ class PresentationLayoutSolverTest {
     fun `places the children by arrangement`() {
         val widths = listOf(10f, 10f)
 
-        assertEquals(listOf(0f, 10f), arrange(widths, available = 50f, spacing = 0f, arrangement = PresentationArrangement.START))
-        assertEquals(listOf(15f, 25f), arrange(widths, available = 50f, spacing = 0f, arrangement = PresentationArrangement.CENTER))
-        assertEquals(listOf(30f, 40f), arrange(widths, available = 50f, spacing = 0f, arrangement = PresentationArrangement.END))
-        assertEquals(listOf(0f, 40f), arrange(widths, available = 50f, spacing = 0f, arrangement = PresentationArrangement.SPACE_BETWEEN))
-        assertEquals(listOf(7.5f, 32.5f), arrange(widths, available = 50f, spacing = 0f, arrangement = PresentationArrangement.SPACE_AROUND))
-        assertEquals(listOf(10f, 30f), arrange(widths, available = 50f, spacing = 0f, arrangement = PresentationArrangement.SPACE_EVENLY))
+        assertEquals(listOf(0f, 10f), arrange(widths, available = 50f, spacing = 0f, arrangement = PresentationArrangement.START, occupied = widths.map { true }))
+        assertEquals(listOf(15f, 25f), arrange(widths, available = 50f, spacing = 0f, arrangement = PresentationArrangement.CENTER, occupied = widths.map { true }))
+        assertEquals(listOf(30f, 40f), arrange(widths, available = 50f, spacing = 0f, arrangement = PresentationArrangement.END, occupied = widths.map { true }))
+        assertEquals(listOf(0f, 40f), arrange(widths, available = 50f, spacing = 0f, arrangement = PresentationArrangement.SPACE_BETWEEN, occupied = widths.map { true }))
+        assertEquals(listOf(7.5f, 32.5f), arrange(widths, available = 50f, spacing = 0f, arrangement = PresentationArrangement.SPACE_AROUND, occupied = widths.map { true }))
+        assertEquals(listOf(10f, 30f), arrange(widths, available = 50f, spacing = 0f, arrangement = PresentationArrangement.SPACE_EVENLY, occupied = widths.map { true }))
     }
 
     /** 內容塞滿時六種 arrangement 都退化成依序排開。 */
@@ -296,7 +310,7 @@ class PresentationLayoutSolverTest {
         PresentationArrangement.entries.forEach { arrangement ->
             assertEquals(
                 listOf(0f, 10f),
-                arrange(widths, available = 20f, spacing = 0f, arrangement = arrangement),
+                arrange(widths, available = 20f, spacing = 0f, arrangement = arrangement, occupied = widths.map { true }),
                 "Expected $arrangement to place the children back to back when nothing is left over.",
             )
         }
@@ -307,14 +321,27 @@ class PresentationLayoutSolverTest {
     fun `adds no gap between a single child`() {
         assertEquals(
             listOf(0f),
-            arrange(listOf(10f), available = 50f, spacing = 0f, arrangement = PresentationArrangement.SPACE_BETWEEN),
+            arrange(listOf(10f), available = 50f, spacing = 0f, arrangement = PresentationArrangement.SPACE_BETWEEN, occupied = listOf(true)),
+        )
+    }
+
+    /** 不佔位置的子節點不留間距、不參與分配，放在下一個子節點的起點。 */
+    @Test
+    fun `skips spacing around children that occupy nothing`() {
+        assertEquals(
+            listOf(0f, 14f, 14f),
+            arrange(listOf(10f, 0f, 10f), available = 24f, spacing = 4f, arrangement = PresentationArrangement.START, occupied = listOf(true, false, true)),
+        )
+        assertEquals(
+            listOf(0f, 0f),
+            arrange(listOf(0f, 0f), available = 24f, spacing = 4f, arrangement = PresentationArrangement.CENTER, occupied = listOf(false, false)),
         )
     }
 
     /** 沒有子節點時沒有任何位置。 */
     @Test
     fun `places nothing for an empty child list`() {
-        assertEquals(emptyList(), arrange(emptyList(), available = 50f, spacing = 4f, arrangement = PresentationArrangement.CENTER))
+        assertEquals(emptyList(), arrange(emptyList(), available = 50f, spacing = 4f, arrangement = PresentationArrangement.CENTER, occupied = emptyList()))
     }
 
     /** 對齊點相對於自身尺寸。 */

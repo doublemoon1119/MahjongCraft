@@ -4,16 +4,11 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.riichi.RiichiWinSe
 import com.doublemoon1119.mahjongcraft.metadata.MahjongCraftMetadata
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.BuiltInWinSettlementFieldIds
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.BuiltInWinSettlementTileAssets
-import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.PresentationAlignment
-import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.PresentationAnimationEffect
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.PresentationArrangement
-import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.PresentationContainerStyle
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.PresentationFieldId
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.PresentationLayout
-import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.PresentationTimeline
-import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.PresentationTimelineAnchor
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.PresentationValue
-import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.ScaleKeyframe
+import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.StandardWinSettlementLayout
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.WinSettlementPresentationFieldSnapshot
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.WinSettlementPresentationTemplate
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.WinSettlementTextKeys
@@ -50,70 +45,16 @@ internal object RiichiWinSettlementTemplates {
     /** 固定顯示五個位置的指示牌欄位。 */
     val INDICATOR_FIELDS: List<PresentationFieldId> = listOf(DORA, URA_DORA)
 
-    private val PANEL = PresentationContainerStyle(
-        backgroundArgb = 0xC7000000.toInt(),
-        padding = 0f,
-    )
-
-    /** 日麻完整模板。 */
+    /** 日麻完整模板：規則專屬列是寶牌與裏寶牌指示牌。 */
     val RIICHI: WinSettlementPresentationTemplate = WinSettlementPresentationTemplate(
         key = RIICHI_KEY,
-        root = PresentationLayout.Box(
-            width = 320f,
-            height = 156f,
-            style = PANEL,
-            children = listOf(
-                positioned(
-                    PresentationLayout.Text(OUTCOME_TITLE, scale = 1.35f, argb = 0xFFFFD45A.toInt()),
-                    160f,
-                    11f,
-                ),
-                positioned(playerRelationship(), 160f, 29f),
-                PresentationLayout.Positioned(
-                    PresentationLayout.Row(
-                        listOf(
-                            PresentationLayout.TileGroups(BuiltInWinSettlementFieldIds.COMPLETE_HAND_GROUPS),
-                            PresentationLayout.Spacer(width = 5f),
-                            PresentationLayout.Tile(BuiltInWinSettlementFieldIds.WINNING_TILE),
-                        ),
-                        spacing = 0.6f,
-                        arrangement = PresentationArrangement.CENTER,
-                    ),
-                    x = 160f,
-                    y = 51f,
-                    horizontalAnchor = PresentationAlignment.CENTER,
-                    verticalAnchor = PresentationAlignment.CENTER,
-                ),
-                positioned(doraIndicators(DORA, URA_DORA), 160f, 70.5f),
-                PresentationLayout.Positioned(
-                    PresentationLayout.RepeatEntries(YAKU, entriesPerColumn = 4, width = 232f),
-                    160f,
-                    95f,
-                    horizontalAnchor = PresentationAlignment.CENTER,
-                ),
-                PresentationLayout.Positioned(
-                    PresentationLayout.Row(
-                        listOf(
-                            postEntrySummary(HAN_FU, 0xFFE5E5E5.toInt()),
-                            postEntrySummary(YAKUMAN_TOTAL, 0xFFFFC247.toInt()),
-                        ),
-                    ),
-                    44f,
-                    141f,
-                ),
-                PresentationLayout.Positioned(
-                    PresentationLayout.Animated(
-                        PresentationLayout.Text(BuiltInWinSettlementFieldIds.TOTAL_SCORE, argb = 0xFFFFD45A.toInt()),
-                        // 翻符／役滿那一行錨在逐條揭示之後，佔一條役種的間隔（8 tick）；分數接在它後面出現。
-                        PresentationTimeline(PresentationTimelineAnchor.AFTER_ENTRIES, offsetTicks = 8, durationTicks = 18),
-                        listOf(PresentationAnimationEffect.Fade(), scoreRevealScale()),
-                        transformOriginX = PresentationAlignment.END,
-                        transformOriginY = PresentationAlignment.START,
-                    ),
-                    276f,
-                    141f,
-                    horizontalAnchor = PresentationAlignment.END,
-                ),
+        root = StandardWinSettlementLayout.root(
+            title = OUTCOME_TITLE,
+            ruleRow = doraIndicators(DORA, URA_DORA),
+            entries = YAKU,
+            summaries = listOf(
+                StandardWinSettlementLayout.summary(HAN_FU),
+                StandardWinSettlementLayout.summary(YAKUMAN_TOTAL, argb = 0xFFFFC247.toInt()),
             ),
         ),
         detailFieldLabelKeys = mapOf(
@@ -143,68 +84,14 @@ internal object RiichiWinSettlementTemplates {
     }
 }
 
-/** 建立役種列表揭示完成後才出現的單一結算摘要欄位。 */
-private fun postEntrySummary(fieldId: PresentationFieldId, argb: Int): PresentationLayout = PresentationLayout.IfPresent(
-    fieldId,
-    PresentationLayout.Animated(
-        PresentationLayout.Text(fieldId, argb = argb),
-        PresentationTimeline(PresentationTimelineAnchor.AFTER_ENTRIES, durationTicks = 6),
-        listOf(PresentationAnimationEffect.Fade()),
-    ),
-)
-
-/** 建立胡牌者與可選放銃者的身分列。 */
-private fun playerRelationship(): PresentationLayout = PresentationLayout.Row(
-    children = listOf(
-        PresentationLayout.PlayerIdentity(BuiltInWinSettlementFieldIds.WINNER_IDENTITY),
-        PresentationLayout.IfPresent(
-            BuiltInWinSettlementFieldIds.RESPONSIBLE_PLAYER_IDENTITY,
-            PresentationLayout.Row(
-                listOf(
-                    PresentationLayout.Text(BuiltInWinSettlementFieldIds.RELATION_ARROW, argb = 0xFFE5C16A.toInt()),
-                    PresentationLayout.PlayerIdentity(BuiltInWinSettlementFieldIds.RESPONSIBLE_PLAYER_IDENTITY),
-                ),
-                spacing = 5f,
-            ),
-        ),
-    ),
-    spacing = 5f,
-    arrangement = PresentationArrangement.CENTER,
-    fillMaxWidth = true,
-)
-
 /** 建立寶牌與裏寶牌指示牌的等寬欄位列。 */
 private fun doraIndicators(dora: PresentationFieldId, uraDora: PresentationFieldId): PresentationLayout = PresentationLayout.Row(
     children = listOf(
-        PresentationLayout.Weighted(indicator(BuiltInWinSettlementFieldIds.DORA_LABEL, dora)),
-        PresentationLayout.Weighted(indicator(BuiltInWinSettlementFieldIds.URA_DORA_LABEL, uraDora)),
+        PresentationLayout.Weighted(StandardWinSettlementLayout.labeledTiles(BuiltInWinSettlementFieldIds.DORA_LABEL, StandardWinSettlementLayout.smallTiles(dora))),
+        PresentationLayout.Weighted(StandardWinSettlementLayout.labeledTiles(BuiltInWinSettlementFieldIds.URA_DORA_LABEL, StandardWinSettlementLayout.smallTiles(uraDora))),
     ),
     arrangement = PresentationArrangement.SPACE_EVENLY,
     fillMaxWidth = true,
-)
-
-/** 建立包含標籤與牌列的單一指示牌欄位。 */
-private fun indicator(label: PresentationFieldId, tiles: PresentationFieldId): PresentationLayout = PresentationLayout.Row(
-    children = listOf(
-        PresentationLayout.Text(label, scale = 0.82f, argb = 0xFFE5C16A.toInt()),
-        PresentationLayout.TileList(tiles, tileWidth = 8f, tileHeight = 11f, spacing = 2f),
-    ),
-    spacing = 4f,
-    arrangement = PresentationArrangement.CENTER,
-    fillMaxWidth = true,
-)
-
-/** 將 [child] 以中心對齊放在指定座標。 */
-private fun positioned(child: PresentationLayout, x: Float, y: Float): PresentationLayout.Positioned = PresentationLayout.Positioned(
-    child = child,
-    x = x,
-    y = y,
-    horizontalAnchor = PresentationAlignment.CENTER,
-)
-
-/** 建立分數揭示時由放大回到原尺寸的動畫。 */
-private fun scoreRevealScale() = PresentationAnimationEffect.ScaleKeyframes(
-    listOf(ScaleKeyframe(0f, 1.35f), ScaleKeyframe(1f, 1f)),
 )
 
 /** 每種指示牌固定預留的顯示位置數。 */

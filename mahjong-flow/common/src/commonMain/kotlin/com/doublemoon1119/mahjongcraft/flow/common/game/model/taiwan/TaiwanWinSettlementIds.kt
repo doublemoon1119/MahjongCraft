@@ -7,6 +7,9 @@ object TaiwanWinSettlementIds {
     /** 台種與台數列表欄位。 */
     val TAI_FIELD: String = MahjongCraftMetadata.id("taiwan/win_settlement/tai")
 
+    /** 合計台數欄位。 */
+    val TAI_TOTAL_FIELD: String = MahjongCraftMetadata.id("taiwan/win_settlement/tai_total")
+
     /** 贏家公開的花牌欄位；特殊花牌和牌不含讓和牌成立的那張。 */
     val FLOWERS_FIELD: String = MahjongCraftMetadata.id("taiwan/win_settlement/flowers")
 

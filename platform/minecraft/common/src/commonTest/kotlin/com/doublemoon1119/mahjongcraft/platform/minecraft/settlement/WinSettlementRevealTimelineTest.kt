@@ -119,12 +119,12 @@ class WinSettlementRevealTimelineTest {
         assertEquals(listOf(0), WinSettlementRevealTimeline.lineRevealDelaysTicks(layout, setOf(yakumanTotalId)))
     }
 
-    /** 通用模板沒有排在逐條揭示之後的內容，節奏與原本相同。 */
+    /** 通用模板沿用共用骨架的分數節奏；沒有資料的摘要不會多出一行。 */
     @Test
-    fun `the generic template adds no time`() {
+    fun `the generic template follows the shared score rhythm`() {
         val layout = builtInLayout(BuiltInWinSettlementTemplateKeys.GENERIC)
 
-        assertEquals(0, WinSettlementRevealTimeline.scoreRevealDelayTicks(layout))
+        assertEquals(8, WinSettlementRevealTimeline.scoreRevealDelayTicks(layout))
         assertEquals(emptyList(), WinSettlementRevealTimeline.lineRevealDelaysTicks(layout, emptySet()))
     }
 }

@@ -17,7 +17,7 @@ import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanPlayerTileAreaId
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import kotlin.uuid.Uuid
 
-/** 台灣麻將的胡牌詳情解析器：贏家公開的花牌，以及特殊花牌和牌的台種與台數。 */
+/** 台灣麻將的胡牌詳情解析器：贏家公開的花牌，以及特殊花牌和牌的台種、台數與合計台數。 */
 object TaiwanWinSettlementDetailResolver : WinSettlementDetailResolver {
     override fun resolve(
         state: TableState,
@@ -51,6 +51,10 @@ object TaiwanWinSettlementDetailResolver : WinSettlementDetailResolver {
                         ),
                     ),
                 ),
+            ),
+            WinSettlementDetailField(
+                id = TaiwanWinSettlementIds.TAI_TOTAL_FIELD,
+                value = WinSettlementDetailValue.Quantities(listOf(WinSettlementQuantity(TaiwanWinSettlementIds.TAI_UNIT, detail.tai))),
             ),
         )
     }

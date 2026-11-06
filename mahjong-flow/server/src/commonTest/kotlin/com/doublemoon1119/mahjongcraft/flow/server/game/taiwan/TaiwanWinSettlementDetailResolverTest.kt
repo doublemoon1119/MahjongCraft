@@ -4,6 +4,7 @@ import com.doublemoon1119.mahjongcraft.bundled.TaiwanWinSettlementDetailResolver
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.ResolvedRoundOutcome
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.RoundOutcomePresentationClassification
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementDetailValue
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementQuantity
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.taiwan.TaiwanRoundOutcomeIds
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.taiwan.TaiwanSpecialFlowerWinDetail
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.taiwan.TaiwanWinSettlementIds
@@ -53,7 +54,7 @@ class TaiwanWinSettlementDetailResolverTest {
         assertEquals(emptyList(), none)
     }
 
-    /** 八仙過海：前七張一組，讓和牌成立的那張另外一格，再接台種。 */
+    /** 八仙過海：前七張一組，讓和牌成立的那張另外一格，再接台種與合計台數。 */
     @Test
     fun `eight flowers separate the winning flower`() {
         val winner = withFlowers(FakeMahjongPlayerFactory.create(), flowers)
@@ -68,7 +69,14 @@ class TaiwanWinSettlementDetailResolverTest {
 
         assertEquals(faces(flowers - winningFlower), fields[TaiwanWinSettlementIds.FLOWERS_FIELD])
         assertEquals(faces(listOf(winningFlower)), fields[TaiwanWinSettlementIds.WINNING_FLOWER_FIELD])
-        assertEquals(setOf(TaiwanWinSettlementIds.FLOWERS_FIELD, TaiwanWinSettlementIds.WINNING_FLOWER_FIELD, TaiwanWinSettlementIds.TAI_FIELD), fields.keys)
+        assertEquals(
+            setOf(TaiwanWinSettlementIds.FLOWERS_FIELD, TaiwanWinSettlementIds.WINNING_FLOWER_FIELD, TaiwanWinSettlementIds.TAI_FIELD, TaiwanWinSettlementIds.TAI_TOTAL_FIELD),
+            fields.keys,
+        )
+        assertEquals(
+            WinSettlementDetailValue.Quantities(listOf(WinSettlementQuantity(TaiwanWinSettlementIds.TAI_UNIT, TaiwanTaiType.EIGHT_FLOWERS.tai))),
+            fields[TaiwanWinSettlementIds.TAI_TOTAL_FIELD],
+        )
     }
 
     /**
