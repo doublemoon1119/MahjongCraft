@@ -83,6 +83,7 @@ class ModSoundResourceTest {
         TaiwanGameActionVoiceSoundIds.KAN to "mahjongcraft:voice/taiwan/kan",
         TaiwanGameActionVoiceSoundIds.HU to "mahjongcraft:voice/taiwan/hu",
         TaiwanGameActionVoiceSoundIds.TSUMO to "mahjongcraft:voice/taiwan/tsumo",
+        TaiwanGameActionVoiceSoundIds.READY to "mahjongcraft:voice/taiwan/ready",
         MahjongAnimationSounds.WIN_LIGHTNING to "mahjongcraft:win/lightning",
     )
 

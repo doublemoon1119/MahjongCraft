@@ -17,6 +17,9 @@ object TaiwanGameActionVoiceSoundIds {
     /** 自摸語音。 */
     const val TSUMO: String = "mahjongcraft:voice.taiwan.tsumo"
 
+    /** 宣告聽牌語音。 */
+    const val READY: String = "mahjongcraft:voice.taiwan.ready"
+
     /** 全部台灣麻將宣告語音 ID。 */
-    val ALL: List<String> = listOf(CHI, PON, KAN, HU, TSUMO)
+    val ALL: List<String> = listOf(CHI, PON, KAN, HU, TSUMO, READY)
 }

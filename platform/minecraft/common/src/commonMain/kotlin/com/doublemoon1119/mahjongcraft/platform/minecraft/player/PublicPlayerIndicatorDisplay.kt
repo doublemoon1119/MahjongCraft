@@ -6,7 +6,7 @@ package com.doublemoon1119.mahjongcraft.platform.minecraft.player
  * 公開標記包括座位上的公開 indicator 與其 option，以及胡牌結算排行中的付款原因；兩者都是規則提供、
  * 所有玩家與旁觀者都能看到的完整 namespaced ID。
  *
- * @property translationKey 公開標記名稱的翻譯鍵。
+ * @property translationKey 公開標記名稱的翻譯鍵；帶數值的公開標記以數值作為翻譯參數，例如「連 %s」。
  * @property colorRgb 顯示公開標記時使用的 RGB 顏色。
  */
 data class PublicPlayerIndicatorDisplay(

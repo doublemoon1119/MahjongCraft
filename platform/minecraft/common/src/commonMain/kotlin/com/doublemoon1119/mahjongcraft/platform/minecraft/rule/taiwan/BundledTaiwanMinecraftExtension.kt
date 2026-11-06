@@ -4,8 +4,11 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.taiwan.TaiwanRound
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.taiwan.TaiwanWinSettlementIds
 import com.doublemoon1119.mahjongcraft.logic.module.BuiltInRuleModuleIds
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanGameAction
+import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanPublicIndicatorIds
+import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanReadyKind
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.tile.TaiwanTileTypes
+import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.metadata.MahjongCraftMetadata
 import com.doublemoon1119.mahjongcraft.platform.minecraft.action.BuiltInGameActionIds
 import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionVocabulary
@@ -15,12 +18,16 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.GameA
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.GameActionVocabularyRegistrar
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.GameConfigPresentationRegistrar
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.MinecraftTileAssetRegistrar
+import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.PublicPlayerIndicatorDisplayRegistrar
+import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.RoundInfoLineDisplayRegistrar
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.RoundOutcomeDisplayNameRegistrar
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.RuleModuleDisplayNameRegistrar
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.TileEmojiRegistrar
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.TileLabelRegistrar
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.WinSettlementPresentationTemplateRegistrar
 import com.doublemoon1119.mahjongcraft.platform.minecraft.extension.MinecraftMahjongExtension
+import com.doublemoon1119.mahjongcraft.platform.minecraft.player.PublicPlayerIndicatorDisplay
+import com.doublemoon1119.mahjongcraft.platform.minecraft.player.PublicPlayerIndicatorDisplayDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.BuiltInGameConfigFields.RULE
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.BuiltInGameConfigFields.SCORE
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.BuiltInGameConfigFields.categories
@@ -37,6 +44,12 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.WinSettleme
 import com.doublemoon1119.mahjongcraft.platform.minecraft.sound.BuiltInGameActionSoundIds
 import com.doublemoon1119.mahjongcraft.platform.minecraft.sound.GameActionSoundDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.sound.GameActionSoundPresentation
+import com.doublemoon1119.mahjongcraft.platform.minecraft.table.RoundInfoArgument
+import com.doublemoon1119.mahjongcraft.platform.minecraft.table.RoundInfoLine
+import com.doublemoon1119.mahjongcraft.platform.minecraft.table.RoundInfoLineDisplay
+import com.doublemoon1119.mahjongcraft.platform.minecraft.table.RoundInfoLineDisplayDefinition
+import com.doublemoon1119.mahjongcraft.platform.minecraft.table.RoundInfoLineProvider
+import com.doublemoon1119.mahjongcraft.platform.minecraft.table.RoundInfoLineProviderDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftMessageKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.BuiltInMinecraftTileAppearanceIds
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftRuleTileAppearanceDefinition
@@ -83,6 +96,17 @@ object BundledTaiwanMinecraftExtension : MinecraftMahjongExtension {
                 ),
             ),
         )
+        registry.register(
+            GameActionVocabularyDefinition(
+                ruleModuleId = BuiltInRuleModuleIds.TAIWAN,
+                actionId = TaiwanGameAction.DeclareReady.id,
+                vocabulary = GameActionVocabulary(
+                    labelKey = GAME_ACTION_DECLARE_READY,
+                    order = DECLARE_READY_ACTION_ORDER,
+                    descriptionKey = GAME_ACTION_DECLARE_READY_DESCRIPTION,
+                ),
+            ),
+        )
         // 台灣麻將把胡別人打出的牌說成「胡牌」，不是「榮和」。
         registry.register(
             GameActionVocabularyDefinition(
@@ -93,7 +117,27 @@ object BundledTaiwanMinecraftExtension : MinecraftMahjongExtension {
         )
     }
 
-    /** 登記台灣麻將吃、碰、槓、胡牌與自摸的宣告語音。 */
+    /** 宣告聽牌的種類與莊家連莊次數的公開標示。 */
+    override fun registerPublicPlayerIndicatorDisplays(registry: PublicPlayerIndicatorDisplayRegistrar) {
+        listOf(
+            TaiwanReadyKind.GENERAL.indicatorId to INDICATOR_READY,
+            TaiwanReadyKind.HEAVENLY.indicatorId to INDICATOR_HEAVENLY_READY,
+            TaiwanReadyKind.EARTHLY.indicatorId to INDICATOR_EARTHLY_READY,
+        ).forEach { (indicatorId, translationKey) ->
+            registry.register(PublicPlayerIndicatorDisplayDefinition(indicatorId, PublicPlayerIndicatorDisplay(translationKey)))
+        }
+        registry.register(PublicPlayerIndicatorDisplayDefinition(TaiwanPublicIndicatorIds.DEALER_STREAK, PublicPlayerIndicatorDisplay(INDICATOR_DEALER_STREAK)))
+    }
+
+    /** 局況資訊：圈風與局數、連莊一次以上時的連莊次數，以及活牌剩餘張數。 */
+    override fun registerRoundInfoPresentations(registry: RoundInfoLineDisplayRegistrar) {
+        registry.register(RoundInfoLineDisplayDefinition(TAIWAN_ROUND_TITLE_LINE, RoundInfoLineDisplay(ROUND_INFO_TITLE)))
+        registry.register(RoundInfoLineDisplayDefinition(TAIWAN_DEALER_STREAK_LINE, RoundInfoLineDisplay(ROUND_INFO_DEALER_STREAK)))
+        registry.register(RoundInfoLineDisplayDefinition(TAIWAN_WALL_REMAINING_LINE, RoundInfoLineDisplay(MinecraftMessageKeys.ROUND_INFO_WALL_REMAINING)))
+        registry.register(RoundInfoLineProviderDefinition(BuiltInRuleModuleIds.TAIWAN, RoundInfoLineProvider(::taiwanRoundInfoLines)))
+    }
+
+    /** 登記台灣麻將吃、碰、槓、胡牌、自摸與宣告聽牌的宣告語音。 */
     override fun registerGameActionSounds(registry: GameActionSoundPresentationRegistrar) {
         listOf(
             BuiltInGameActionSoundIds.CHII to TaiwanGameActionVoiceSoundIds.CHI,
@@ -101,6 +145,7 @@ object BundledTaiwanMinecraftExtension : MinecraftMahjongExtension {
             BuiltInGameActionSoundIds.KAN to TaiwanGameActionVoiceSoundIds.KAN,
             BuiltInGameActionSoundIds.RON to TaiwanGameActionVoiceSoundIds.HU,
             BuiltInGameActionSoundIds.TSUMO to TaiwanGameActionVoiceSoundIds.TSUMO,
+            TaiwanGameAction.DeclareReady.id to TaiwanGameActionVoiceSoundIds.READY,
         ).forEach { (actionId, soundId) ->
             registry.register(GameActionSoundDefinition(BuiltInRuleModuleIds.TAIWAN, actionId, GameActionSoundPresentation(soundId)))
         }
@@ -224,6 +269,54 @@ private fun plantFlower(chinese: String, order: String): TileLabel = TileLabel(
     topRight = TileLabelText(order, TileLabelColor.RED),
     forced = true,
 )
+
+/**
+ * 台灣麻將的局況資訊行。
+ *
+ * @param tableState 目前桌況。
+ * @return 依顯示順序排列的資訊行。
+ */
+internal fun taiwanRoundInfoLines(tableState: TableState): List<RoundInfoLine> = listOfNotNull(
+    RoundInfoLine(TAIWAN_ROUND_TITLE_LINE, listOf(RoundInfoArgument.WindValue(tableState.prevalentWind), RoundInfoArgument.Number(tableState.localRoundNumber))),
+    RoundInfoLine(TAIWAN_DEALER_STREAK_LINE, listOf(RoundInfoArgument.Number(tableState.comboCount))).takeIf { tableState.comboCount > 0 },
+    RoundInfoLine(TAIWAN_WALL_REMAINING_LINE, listOf(RoundInfoArgument.Number(tableState.tileWall.remainingCount))),
+)
+
+/** 圈風與局數行。 */
+internal const val TAIWAN_ROUND_TITLE_LINE: String = "mahjongcraft:taiwan/round_title"
+
+/** 連莊次數行。 */
+internal const val TAIWAN_DEALER_STREAK_LINE: String = "mahjongcraft:taiwan/dealer_streak"
+
+/** 活牌剩餘張數行。 */
+internal const val TAIWAN_WALL_REMAINING_LINE: String = "mahjongcraft:taiwan/wall_remaining"
+
+/** 圈風與局數的文字。 */
+private const val ROUND_INFO_TITLE: String = "mahjongcraft.taiwan.round_info.title"
+
+/** 連莊次數的文字。 */
+private const val ROUND_INFO_DEALER_STREAK: String = "mahjongcraft.taiwan.round_info.dealer_streak"
+
+/** 宣告聽牌的操作卡名稱。 */
+private const val GAME_ACTION_DECLARE_READY: String = "mahjongcraft.taiwan.action.declare_ready"
+
+/** 宣告聽牌在操作說明中的文字。 */
+private const val GAME_ACTION_DECLARE_READY_DESCRIPTION: String = "mahjongcraft.taiwan.action.declare_ready.description"
+
+/** 宣告聽牌在操作卡中的順序，與日麻立直相同。 */
+private const val DECLARE_READY_ACTION_ORDER: Int = 5
+
+/** 一般宣告聽牌的公開標示。 */
+private const val INDICATOR_READY: String = "mahjongcraft.taiwan.indicator.ready"
+
+/** 天聽的公開標示。 */
+private const val INDICATOR_HEAVENLY_READY: String = "mahjongcraft.taiwan.indicator.heavenly_ready"
+
+/** 地聽的公開標示。 */
+private const val INDICATOR_EARTHLY_READY: String = "mahjongcraft.taiwan.indicator.earthly_ready"
+
+/** 連莊標示的文字，數值是連莊次數。 */
+private const val INDICATOR_DEALER_STREAK: String = "mahjongcraft.taiwan.indicator.dealer_streak"
 
 /** 公開花牌動作在操作說明中的文字。 */
 private const val GAME_ACTION_REVEAL_FLOWER_DESCRIPTION: String = "mahjongcraft.hud.action.reveal_flower.description"

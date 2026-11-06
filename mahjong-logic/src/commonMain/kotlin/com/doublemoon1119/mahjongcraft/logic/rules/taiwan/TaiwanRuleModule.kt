@@ -13,6 +13,7 @@ import com.doublemoon1119.mahjongcraft.logic.module.ExhaustiveDrawSettlementResu
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
 import com.doublemoon1119.mahjongcraft.logic.module.PointPotCollection
 import com.doublemoon1119.mahjongcraft.logic.module.PublicPlayerIndicator
+import com.doublemoon1119.mahjongcraft.logic.module.PublicPlayerIndicatorValue
 import com.doublemoon1119.mahjongcraft.logic.module.WinResolutionResult
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.layout.TaiwanWallLayout
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.opening.TaiwanWallOpeningPolicy
@@ -152,8 +153,12 @@ class TaiwanRuleModule(
         return ComponentPatch.basedOn(player.components, removals = setOf(TaiwanPlayerComponents.PASSED_WIN))
     }
 
-    /** 宣告聽牌後公開標示宣告的種類。 */
-    override fun getPublicPlayerIndicators(tableState: TableState, player: MahjongPlayer): List<PublicPlayerIndicator> = player.components[TaiwanPlayerComponents.READY_DECLARATION]?.let { listOf(PublicPlayerIndicator(it.indicatorId)) }.orEmpty()
+    /** 宣告聽牌的種類，以及連莊一次以上的莊家的連莊次數。 */
+    override fun getPublicPlayerIndicators(tableState: TableState, player: MahjongPlayer): List<PublicPlayerIndicator> = listOfNotNull(
+        player.components[TaiwanPlayerComponents.READY_DECLARATION]?.let { PublicPlayerIndicator(it.indicatorId) },
+        PublicPlayerIndicator(TaiwanPublicIndicatorIds.DEALER_STREAK, PublicPlayerIndicatorValue.Count(tableState.comboCount))
+            .takeIf { player.id == tableState.dealerPlayerId && tableState.comboCount > 0 },
+    )
 
     /** 建立與正式結算共用計台與付款計算的台灣麻將規則查詢。 */
     override fun createPositionRules(): TaiwanPositionRules = TaiwanPositionRules(config)

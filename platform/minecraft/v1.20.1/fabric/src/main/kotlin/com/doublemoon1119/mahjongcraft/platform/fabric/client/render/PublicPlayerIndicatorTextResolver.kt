@@ -27,10 +27,12 @@ class PublicPlayerIndicatorTextResolver(
         if (display == null && warnedIndicatorIds.add(displayId)) {
             logger.warn("Unknown public player indicator display: {}", displayId)
         }
-        val base = display?.let { Text.translatable(it.translationKey) } ?: Text.literal(displayId)
-        val text = when (val indicatorValue = indicator.indicatorValue) {
-            is PublicPlayerIndicatorValue.Count -> Text.literal("${base.string} ×${indicatorValue.value}")
-            else -> base
+        // 帶數值的標記把數值交給翻譯文字排版；找不到顯示設定時以識別碼加數值呈現。
+        val value = (indicator.indicatorValue as? PublicPlayerIndicatorValue.Count)?.value
+        val text = when {
+            display == null -> Text.literal(value?.let { "$displayId ×$it" } ?: displayId)
+            value != null -> Text.translatable(display.translationKey, value)
+            else -> Text.translatable(display.translationKey)
         }
         return text to (0xFF000000.toInt() or (display?.colorRgb ?: DEFAULT_COLOR))
     }

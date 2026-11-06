@@ -75,6 +75,10 @@
     "subtitle": "subtitles.mahjongcraft.voice.taiwan.hu",
     "sounds": ["mahjongcraft:voice/taiwan/hu"]
   },
+  "voice.taiwan.ready": {
+    "subtitle": "subtitles.mahjongcraft.voice.taiwan.ready",
+    "sounds": ["mahjongcraft:voice/taiwan/ready"]
+  },
   "voice.taiwan.tsumo": {
     "subtitle": "subtitles.mahjongcraft.voice.tsumo",
     "sounds": ["mahjongcraft:voice/taiwan/tsumo"]
