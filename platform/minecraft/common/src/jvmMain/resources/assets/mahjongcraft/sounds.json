@@ -35,40 +35,40 @@
     "subtitle": "subtitles.mahjongcraft.tile.wall_stack_land",
     "sounds": ["mahjongcraft:tile/wall_stack_land"]
   },
-  "voice.chii": {
-    "subtitle": "subtitles.mahjongcraft.voice.chii",
-    "sounds": ["mahjongcraft:voice/chii"]
+  "voice.riichi.chii": {
+    "subtitle": "subtitles.mahjongcraft.voice.riichi.chii",
+    "sounds": ["mahjongcraft:voice/riichi/chii"]
   },
-  "voice.kan": {
-    "subtitle": "subtitles.mahjongcraft.voice.kan",
-    "sounds": ["mahjongcraft:voice/kan"]
+  "voice.riichi.kan": {
+    "subtitle": "subtitles.mahjongcraft.voice.riichi.kan",
+    "sounds": ["mahjongcraft:voice/riichi/kan"]
   },
-  "voice.pon": {
-    "subtitle": "subtitles.mahjongcraft.voice.pon",
-    "sounds": ["mahjongcraft:voice/pon"]
+  "voice.riichi.pon": {
+    "subtitle": "subtitles.mahjongcraft.voice.riichi.pon",
+    "sounds": ["mahjongcraft:voice/riichi/pon"]
   },
-  "voice.riichi": {
-    "subtitle": "subtitles.mahjongcraft.voice.riichi",
-    "sounds": ["mahjongcraft:voice/riichi"]
+  "voice.riichi.riichi": {
+    "subtitle": "subtitles.mahjongcraft.voice.riichi.riichi",
+    "sounds": ["mahjongcraft:voice/riichi/riichi"]
   },
-  "voice.ron": {
-    "subtitle": "subtitles.mahjongcraft.voice.ron",
-    "sounds": ["mahjongcraft:voice/ron"]
+  "voice.riichi.ron": {
+    "subtitle": "subtitles.mahjongcraft.voice.riichi.ron",
+    "sounds": ["mahjongcraft:voice/riichi/ron"]
   },
-  "voice.tsumo": {
-    "subtitle": "subtitles.mahjongcraft.voice.tsumo",
-    "sounds": ["mahjongcraft:voice/tsumo"]
+  "voice.riichi.tsumo": {
+    "subtitle": "subtitles.mahjongcraft.voice.riichi.tsumo",
+    "sounds": ["mahjongcraft:voice/riichi/tsumo"]
   },
   "voice.taiwan.chi": {
-    "subtitle": "subtitles.mahjongcraft.voice.chii",
+    "subtitle": "subtitles.mahjongcraft.voice.taiwan.chi",
     "sounds": ["mahjongcraft:voice/taiwan/chi"]
   },
   "voice.taiwan.pon": {
-    "subtitle": "subtitles.mahjongcraft.voice.pon",
+    "subtitle": "subtitles.mahjongcraft.voice.taiwan.pon",
     "sounds": ["mahjongcraft:voice/taiwan/pon"]
   },
   "voice.taiwan.kan": {
-    "subtitle": "subtitles.mahjongcraft.voice.kan",
+    "subtitle": "subtitles.mahjongcraft.voice.taiwan.kan",
     "sounds": ["mahjongcraft:voice/taiwan/kan"]
   },
   "voice.taiwan.hu": {
@@ -80,7 +80,7 @@
     "sounds": ["mahjongcraft:voice/taiwan/ready"]
   },
   "voice.taiwan.tsumo": {
-    "subtitle": "subtitles.mahjongcraft.voice.tsumo",
+    "subtitle": "subtitles.mahjongcraft.voice.taiwan.tsumo",
     "sounds": ["mahjongcraft:voice/taiwan/tsumo"]
   },
   "win.lightning": {

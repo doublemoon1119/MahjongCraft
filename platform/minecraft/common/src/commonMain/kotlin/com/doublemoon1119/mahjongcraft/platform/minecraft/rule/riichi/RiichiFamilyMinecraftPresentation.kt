@@ -19,7 +19,6 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.DecisionStatu
 import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModMetadata
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.WinSettlementRuleTemplateBindingDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.sound.BuiltInGameActionSoundIds
-import com.doublemoon1119.mahjongcraft.platform.minecraft.sound.BuiltInGameActionVoiceSoundIds
 import com.doublemoon1119.mahjongcraft.platform.minecraft.sound.GameActionSoundDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.sound.GameActionSoundPresentation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.RoundInfoArgument
@@ -67,12 +66,12 @@ object RiichiFamilyMinecraftPresentation {
      */
     fun registerGameActionSounds(registry: GameActionSoundPresentationRegistrar, ruleModuleId: String) {
         listOf(
-            BuiltInGameActionSoundIds.CHII to BuiltInGameActionVoiceSoundIds.CHII,
-            BuiltInGameActionSoundIds.PON to BuiltInGameActionVoiceSoundIds.PON,
-            BuiltInGameActionSoundIds.KAN to BuiltInGameActionVoiceSoundIds.KAN,
-            RiichiGameAction.Riichi.id to BuiltInGameActionVoiceSoundIds.RIICHI,
-            BuiltInGameActionSoundIds.RON to BuiltInGameActionVoiceSoundIds.RON,
-            BuiltInGameActionSoundIds.TSUMO to BuiltInGameActionVoiceSoundIds.TSUMO,
+            BuiltInGameActionSoundIds.CHII to RiichiGameActionVoiceSoundIds.CHII,
+            BuiltInGameActionSoundIds.PON to RiichiGameActionVoiceSoundIds.PON,
+            BuiltInGameActionSoundIds.KAN to RiichiGameActionVoiceSoundIds.KAN,
+            RiichiGameAction.Riichi.id to RiichiGameActionVoiceSoundIds.RIICHI,
+            BuiltInGameActionSoundIds.RON to RiichiGameActionVoiceSoundIds.RON,
+            BuiltInGameActionSoundIds.TSUMO to RiichiGameActionVoiceSoundIds.TSUMO,
         ).forEach { (actionId, soundId) ->
             registry.register(
                 definition = GameActionSoundDefinition(

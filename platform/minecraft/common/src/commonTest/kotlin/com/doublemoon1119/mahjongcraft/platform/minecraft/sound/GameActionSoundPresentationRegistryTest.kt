@@ -4,6 +4,7 @@ import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.module.BuiltInRuleModuleIds
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiGameAction
 import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.riichi.BundledRiichiMinecraftExtension
+import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.riichi.RiichiGameActionVoiceSoundIds
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -21,11 +22,11 @@ class GameActionSoundPresentationRegistryTest {
         }
 
         assertEquals(
-            BuiltInGameActionVoiceSoundIds.RIICHI,
+            RiichiGameActionVoiceSoundIds.RIICHI,
             registry.find(BuiltInRuleModuleIds.RIICHI, GameAction.Extension(RiichiGameAction.Riichi))?.soundId,
         )
         assertEquals(
-            BuiltInGameActionVoiceSoundIds.TSUMO,
+            RiichiGameActionVoiceSoundIds.TSUMO,
             registry.find(BuiltInRuleModuleIds.RIICHI, GameAction.Tsumo)?.soundId,
         )
         assertNull(registry.find(BuiltInRuleModuleIds.TAIWAN, GameAction.Tsumo))

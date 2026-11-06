@@ -1,8 +1,8 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.registry
 
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongAnimationSounds
+import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.riichi.RiichiGameActionVoiceSoundIds
 import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.taiwan.TaiwanGameActionVoiceSoundIds
-import com.doublemoon1119.mahjongcraft.platform.minecraft.sound.BuiltInGameActionVoiceSoundIds
 import net.minecraft.registry.Registries
 import net.minecraft.registry.Registry
 import net.minecraft.sound.SoundEvent
@@ -34,7 +34,7 @@ object ModSounds {
         diceLand = register(MahjongAnimationSounds.DICE_LAND)
         scoringStickPlace = register(MahjongAnimationSounds.SCORING_STICK_PLACE)
         register(MahjongAnimationSounds.WIN_LIGHTNING, fixedRange = LIGHTNING_RANGE)
-        BuiltInGameActionVoiceSoundIds.ALL.forEach(::register)
+        RiichiGameActionVoiceSoundIds.ALL.forEach(::register)
         TaiwanGameActionVoiceSoundIds.ALL.forEach(::register)
     }
 

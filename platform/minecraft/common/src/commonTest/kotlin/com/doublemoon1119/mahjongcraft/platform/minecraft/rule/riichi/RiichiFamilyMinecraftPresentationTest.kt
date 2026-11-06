@@ -6,7 +6,6 @@ import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiGameAction
 import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionVocabularyRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.DecisionStatusDisplayNameRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.WinSettlementPresentationTemplateRegistryImpl
-import com.doublemoon1119.mahjongcraft.platform.minecraft.sound.BuiltInGameActionVoiceSoundIds
 import com.doublemoon1119.mahjongcraft.platform.minecraft.sound.GameActionSoundPresentationRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TablePropDescriberRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistryImpl
@@ -47,7 +46,7 @@ class RiichiFamilyMinecraftPresentationTest {
 
         assertNotNull(statuses.find(VARIANT_ID, RiichiDiscardReadinessAnalyzer.StatusIds.PERMANENT_FURITEN))
         assertNull(statuses.find(OTHER_VARIANT_ID, RiichiDiscardReadinessAnalyzer.StatusIds.PERMANENT_FURITEN))
-        assertEquals(BuiltInGameActionVoiceSoundIds.RIICHI, sounds.find(VARIANT_ID, RIICHI_GAME_ACTION)?.soundId)
+        assertEquals(RiichiGameActionVoiceSoundIds.RIICHI, sounds.find(VARIANT_ID, RIICHI_GAME_ACTION)?.soundId)
         assertSame(RiichiTableProps, props.find(VARIANT_ID))
         assertNull(props.find(OTHER_VARIANT_ID))
         assertTrue(VARIANT_ID in tiles.ruleAppearanceBindingKeys)
