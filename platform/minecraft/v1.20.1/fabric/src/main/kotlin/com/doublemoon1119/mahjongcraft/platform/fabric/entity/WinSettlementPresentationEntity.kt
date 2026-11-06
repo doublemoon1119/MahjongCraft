@@ -394,11 +394,8 @@ class WinSettlementPresentationEntity(
         /** 詳情欄位使用逐項條目呈現時的型別識別碼。 */
         const val DETAIL_ENTRIES = "E"
 
-        /** 每個條目在快照中的欄位數：名稱、右側文字、右側 key、右側參數、是否強調。 */
-        const val ENTRY_VALUE_COUNT = 5
-
-        /** 條目強調欄位為真時的值。 */
-        const val ENTRY_HIGHLIGHTED = "1"
+        /** 每個條目在快照中的欄位數：名稱、右側文字、右側 key、右側參數、顯示樣式名稱、名稱參數。 */
+        const val ENTRY_VALUE_COUNT = 6
 
         /** 結算快照一般欄位的分隔字元。 */
         private const val F = '\u001f'

@@ -232,5 +232,6 @@ private fun entrySnapshotValues(entry: PresentationValue.EntryListValue.Entry): 
     entry.trailingText,
     entry.trailingTranslationKey.orEmpty(),
     entry.trailingTranslationArgument.orEmpty(),
-    if (entry.highlighted) WinSettlementPresentationEntity.ENTRY_HIGHLIGHTED else "",
+    entry.emphasis.name,
+    entry.translationArgument.orEmpty(),
 )

@@ -134,6 +134,12 @@ object BundledTaiwanMinecraftExtension : MinecraftMahjongExtension {
                 TaiwanWinSettlementPresentation.taiTotalText,
             ),
         )
+        registry.register(
+            WinSettlementDetailTextFormatterDefinition(
+                TaiwanWinSettlementIds.DEALER_TAI_TOTAL_FIELD,
+                TaiwanWinSettlementPresentation.dealerTaiTotalText,
+            ),
+        )
     }
 
     override fun registerTileEmojis(registry: TileEmojiRegistrar) {

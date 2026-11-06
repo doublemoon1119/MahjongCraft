@@ -320,10 +320,10 @@ internal object HistoryRoundResponseValidator {
                 }
                 is HistoryWinDetailValueDto.Entries -> {
                     for (entry in value.entries) {
-                        val quantity = entry.quantity
-                        if (!namespaced(entry.id) || quantity != null && !namespaced(quantity.unitId)) return false
+                        val quantities = listOfNotNull(entry.quantity, entry.nameQuantity)
+                        if (!namespaced(entry.id) || quantities.any { !namespaced(it.unitId) }) return false
                         textBytes += entry.id.toByteArray(Charsets.UTF_8).size
-                        textBytes += quantity?.let { it.unitId.toByteArray(Charsets.UTF_8).size + Int.SIZE_BYTES } ?: 0
+                        textBytes += quantities.sumOf { it.unitId.toByteArray(Charsets.UTF_8).size + Int.SIZE_BYTES }
                     }
                 }
                 is HistoryWinDetailValueDto.TileFaces -> {

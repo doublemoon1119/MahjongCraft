@@ -22,6 +22,7 @@ interface WinSettlementDetailResolver {
      *
      * @param state 胡牌成立時的權威桌況。
      * @param winnerId 這筆詳情所屬的贏家。
+     * @param responsiblePlayerId 單獨付款的玩家，例如放銃者；由其他玩家一起付款（例如自摸）時為 null。
      * @param handValue 已完成計算的胡牌結果。
      * @param publicFace 將牌值轉成公開牌面的投影。
      * @return 規則專屬的胡牌詳情欄位；沒有要提供附加資料時回傳空清單。
@@ -29,6 +30,7 @@ interface WinSettlementDetailResolver {
     fun resolve(
         state: TableState,
         winnerId: Uuid,
+        responsiblePlayerId: Uuid?,
         handValue: HandValueResult,
         publicFace: (TileValue) -> TileFaceView,
     ): List<WinSettlementDetailField>

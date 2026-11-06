@@ -22,6 +22,12 @@ object StandardWinSettlementLayout {
     /** 小標題與關係箭頭的顏色。 */
     const val LABEL_ARGB: Int = 0xFFE5C16A.toInt()
 
+    /** 只適用於部分付款者的條目名稱與摘要顏色。 */
+    const val CONDITIONAL_ARGB: Int = 0xFF7FD4FF.toInt()
+
+    /** 只適用於部分付款者的條目右側數值顏色。 */
+    const val CONDITIONAL_TRAILING_ARGB: Int = 0xFF5FB8F0.toInt()
+
     /** 一般摘要文字的顏色。 */
     const val SUMMARY_ARGB: Int = 0xFFE5E5E5.toInt()
 
@@ -90,7 +96,7 @@ object StandardWinSettlementLayout {
                 ),
                 TILE_ROWS_TOP,
             ),
-            PresentationLayout.Positioned(PresentationLayout.Row(summaries), x = 44f, y = 141f),
+            PresentationLayout.Positioned(PresentationLayout.Row(summaries, spacing = 3f), x = 44f, y = 141f),
             PresentationLayout.Positioned(
                 PresentationLayout.Animated(
                     PresentationLayout.Text(BuiltInWinSettlementFieldIds.TOTAL_SCORE, argb = TITLE_ARGB),

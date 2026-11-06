@@ -139,6 +139,7 @@ class WinSettlementPresentationRequestFactoryTest {
                         override fun resolve(
                             state: TableState,
                             winnerId: Uuid,
+                            responsiblePlayerId: Uuid?,
                             handValue: HandValueResult,
                             publicFace: (TileValue) -> TileFaceView,
                         ): List<WinSettlementDetailField> = emptyList()

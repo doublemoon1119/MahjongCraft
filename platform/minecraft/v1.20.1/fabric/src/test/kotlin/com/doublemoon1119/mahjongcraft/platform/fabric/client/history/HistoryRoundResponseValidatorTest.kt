@@ -203,8 +203,8 @@ class HistoryRoundResponseValidatorTest {
     fun `test winner detail entries and units require namespaced identifiers`() {
         val request = HistoryRoundEventsRequestDto("request", TEST_MATCH_ID, roundNumber = 1, scope = HistoryQueryScopeDto.OWN, startTransactionIndex = 0, limit = 20)
         listOf(
-            HistoryWinDetailValueDto.Entries(listOf(HistoryWinDetailValueDto.Entries.EntryDto("invalid", quantity = null))),
-            HistoryWinDetailValueDto.Entries(listOf(HistoryWinDetailValueDto.Entries.EntryDto("test:entry", HistoryWinDetailQuantityDto("invalid", 1)))),
+            HistoryWinDetailValueDto.Entries(listOf(HistoryWinDetailValueDto.Entries.EntryDto("invalid", quantity = null, nameQuantity = null, appliesToSomePayersOnly = false))),
+            HistoryWinDetailValueDto.Entries(listOf(HistoryWinDetailValueDto.Entries.EntryDto("test:entry", HistoryWinDetailQuantityDto("invalid", 1), nameQuantity = null, appliesToSomePayersOnly = false))),
             HistoryWinDetailValueDto.Quantities(listOf(HistoryWinDetailQuantityDto("invalid", 1))),
             HistoryWinDetailValueDto.Quantities(emptyList()),
         ).forEach { value ->
@@ -266,8 +266,8 @@ class HistoryRoundResponseValidatorTest {
                         "test:entries",
                         HistoryWinDetailValueDto.Entries(
                             listOf(
-                                HistoryWinDetailValueDto.Entries.EntryDto("test:pattern", HistoryWinDetailQuantityDto("test:points", 3)),
-                                HistoryWinDetailValueDto.Entries.EntryDto("test:plain", quantity = null),
+                                HistoryWinDetailValueDto.Entries.EntryDto("test:pattern", HistoryWinDetailQuantityDto("test:points", 3), nameQuantity = null, appliesToSomePayersOnly = false),
+                                HistoryWinDetailValueDto.Entries.EntryDto("test:plain", quantity = null, nameQuantity = null, appliesToSomePayersOnly = false),
                             ),
                         ),
                     ),

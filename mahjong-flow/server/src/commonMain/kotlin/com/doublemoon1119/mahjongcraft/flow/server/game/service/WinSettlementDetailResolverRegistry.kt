@@ -47,6 +47,7 @@ class WinSettlementDetailResolverRegistry(private val componentRegistry: Compone
      * @param ruleModuleId 欲查詢的規則模組識別碼。
      * @param state 胡牌成立時的權威桌況。
      * @param winnerId 這筆詳情所屬的贏家。
+     * @param responsiblePlayerId 單獨付款的玩家；由其他玩家一起付款時為 null。
      * @param handValue 已完成計算的胡牌結果。
      * @return 規則解析器產生的詳情欄位；沒有對應解析器時為空清單。
      */
@@ -54,8 +55,9 @@ class WinSettlementDetailResolverRegistry(private val componentRegistry: Compone
         ruleModuleId: String,
         state: TableState,
         winnerId: Uuid,
+        responsiblePlayerId: Uuid?,
         handValue: HandValueResult,
-    ): List<WinSettlementDetailField> = resolvers[ruleModuleId]?.resolve(state, winnerId, handValue, publicFace(ruleModuleId, state))
+    ): List<WinSettlementDetailField> = resolvers[ruleModuleId]?.resolve(state, winnerId, responsiblePlayerId, handValue, publicFace(ruleModuleId, state))
         ?: emptyList()
 
     /**

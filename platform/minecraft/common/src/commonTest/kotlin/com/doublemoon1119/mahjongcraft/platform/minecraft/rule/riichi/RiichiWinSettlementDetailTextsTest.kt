@@ -4,6 +4,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementDetai
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementQuantity
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.riichi.RiichiWinSettlementIds
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.YakuType
+import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.EntryEmphasis
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.PresentationValue
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.WinSettlementTextKeys
 import kotlin.test.Test
@@ -33,12 +34,12 @@ class RiichiWinSettlementDetailTextsTest {
                 PresentationValue.EntryListValue.Entry(
                     translationKey = RiichiYakuTranslationKeys.keyFor(YakuType.Daisangen),
                     trailingTranslationKey = "mahjongcraft.game.score.yakuman_1x",
-                    highlighted = true,
+                    emphasis = EntryEmphasis.HIGHLIGHTED,
                 ),
                 PresentationValue.EntryListValue.Entry(
                     translationKey = RiichiYakuTranslationKeys.keyFor(YakuType.KokushiMusou13),
                     trailingTranslationKey = "mahjongcraft.game.score.yakuman_2x",
-                    highlighted = true,
+                    emphasis = EntryEmphasis.HIGHLIGHTED,
                 ),
                 PresentationValue.EntryListValue.Entry(translationKey = RiichiYakuTranslationKeys.NAGASHI_MANGAN),
             ),

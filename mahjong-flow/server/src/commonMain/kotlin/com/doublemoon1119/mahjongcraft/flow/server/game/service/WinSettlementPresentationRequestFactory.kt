@@ -107,7 +107,7 @@ object WinSettlementPresentationRequestFactory {
         val previousRanks = roundRanksByPlayer(previousState, module)
         val currentRanks = roundRanksByPlayer(currentState, module)
         val detailFields = resolutions.mapValues { (winnerId, resolution) ->
-            detailResolverRegistry.resolve(module.id, currentState, winnerId, resolution.handValueResult)
+            detailResolverRegistry.resolve(module.id, currentState, winnerId, responsiblePlayerId, resolution.handValueResult)
         }
         return WinSettlementPresentationRequest(
             outcomeId = outcomeId,

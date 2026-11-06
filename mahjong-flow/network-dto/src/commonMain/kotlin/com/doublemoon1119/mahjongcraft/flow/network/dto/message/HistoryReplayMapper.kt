@@ -189,7 +189,14 @@ private fun HistoryWinDetailField.toDto(registries: NetworkDtoConverter): Histor
 private fun HistoryWinDetailValue.toDto(registries: NetworkDtoConverter): HistoryWinDetailValueDto = when (this) {
     is HistoryWinDetailValue.Quantities -> HistoryWinDetailValueDto.Quantities(quantities.map { it.toDto() })
     is HistoryWinDetailValue.Entries -> HistoryWinDetailValueDto.Entries(
-        entries.map { HistoryWinDetailValueDto.Entries.EntryDto(it.id, it.quantity?.toDto()) },
+        entries.map { entry ->
+            HistoryWinDetailValueDto.Entries.EntryDto(
+                id = entry.id,
+                quantity = entry.quantity?.toDto(),
+                nameQuantity = entry.nameQuantity?.toDto(),
+                appliesToSomePayersOnly = entry.appliesToSomePayersOnly,
+            )
+        },
     )
     is HistoryWinDetailValue.TileFaces -> HistoryWinDetailValueDto.TileFaces(faces.map { it.toDto(registries) })
 }

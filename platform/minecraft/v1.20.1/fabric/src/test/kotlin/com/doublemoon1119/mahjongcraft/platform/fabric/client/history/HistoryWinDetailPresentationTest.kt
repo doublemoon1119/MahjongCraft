@@ -65,7 +65,7 @@ class HistoryWinDetailPresentationTest {
     @Test
     fun `multiple winners keep their own details and transaction deltas`() {
         val first = HistoryWinDetailFieldDto("custom:points", HistoryWinDetailValueDto.Quantities(listOf(HistoryWinDetailQuantityDto("custom:point", 3))))
-        val second = HistoryWinDetailFieldDto("custom:patterns", HistoryWinDetailValueDto.Entries(listOf(HistoryWinDetailValueDto.Entries.EntryDto("custom:pattern", quantity = null))))
+        val second = HistoryWinDetailFieldDto("custom:patterns", HistoryWinDetailValueDto.Entries(listOf(HistoryWinDetailValueDto.Entries.EntryDto("custom:pattern", quantity = null, nameQuantity = null, appliesToSomePayersOnly = false))))
         val outcome = HistoryRoundOutcomeDto(
             "mahjongcraft:ron",
             listOf(1, 2),
@@ -102,8 +102,8 @@ class HistoryWinDetailPresentationTest {
         }
         val yaku = HistoryWinDetailValueDto.Entries(
             listOf(
-                HistoryWinDetailValueDto.Entries.EntryDto(RiichiWinSettlementIds.yaku(YakuType.Riichi), HistoryWinDetailQuantityDto(RiichiWinSettlementIds.HAN, 1)),
-                HistoryWinDetailValueDto.Entries.EntryDto(RiichiWinSettlementIds.yaku(YakuType.Daisangen), HistoryWinDetailQuantityDto(RiichiWinSettlementIds.YAKUMAN, 2)),
+                HistoryWinDetailValueDto.Entries.EntryDto(RiichiWinSettlementIds.yaku(YakuType.Riichi), HistoryWinDetailQuantityDto(RiichiWinSettlementIds.HAN, 1), nameQuantity = null, appliesToSomePayersOnly = false),
+                HistoryWinDetailValueDto.Entries.EntryDto(RiichiWinSettlementIds.yaku(YakuType.Daisangen), HistoryWinDetailQuantityDto(RiichiWinSettlementIds.YAKUMAN, 2), nameQuantity = null, appliesToSomePayersOnly = false),
             ),
         )
         val rows = presenter().detailText(RiichiWinSettlementIds.YAKU_FIELD, yaku, templates)
@@ -127,7 +127,7 @@ class HistoryWinDetailPresentationTest {
             BuiltInMinecraftMahjongExtension.registerWinSettlementPresentationTemplates(this)
             BundledMinecraftMahjongExtensions.all.forEach { it.registerWinSettlementPresentationTemplates(this) }
         }
-        val value = HistoryWinDetailValueDto.Entries(listOf(HistoryWinDetailValueDto.Entries.EntryDto("custom:pattern", HistoryWinDetailQuantityDto("custom:point", 7))))
+        val value = HistoryWinDetailValueDto.Entries(listOf(HistoryWinDetailValueDto.Entries.EntryDto("custom:pattern", HistoryWinDetailQuantityDto("custom:point", 7), nameQuantity = null, appliesToSomePayersOnly = false)))
         val row = presenter().detailText("custom:patterns", value, templates).single()
         assertEquals("custom:pattern", (row.content as TranslatableTextContent).key)
         assertTrue(row.string.endsWith("7 custom:point"))

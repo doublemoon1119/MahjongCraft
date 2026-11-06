@@ -116,7 +116,31 @@ class StandardWinSettlementLayoutTest {
             ),
         ).entries
 
-        assertEquals(listOf(true, false, false), entries.map { it.highlighted })
+        assertEquals(listOf(EntryEmphasis.HIGHLIGHTED, EntryEmphasis.NORMAL, EntryEmphasis.NORMAL), entries.map { it.emphasis })
+    }
+
+    /** 連莊條目名稱帶連莊次數；只適用部分付款者時改用對應樣式，即使台數達到強調門檻也一樣。 */
+    @Test
+    fun `dealer streak entry carries its count and conditional style`() {
+        val entry = TaiwanWinSettlementPresentation.taiText.entries(
+            listOf(
+                WinSettlementDetailEntry(
+                    id = TaiwanWinSettlementIds.DEALER_STREAK_ENTRY,
+                    quantity = WinSettlementQuantity(TaiwanWinSettlementIds.TAI_UNIT, 9),
+                    nameQuantity = WinSettlementQuantity(TaiwanWinSettlementIds.DEALER_STREAK_UNIT, 4),
+                    appliesToSomePayersOnly = true,
+                ),
+            ),
+        ).entries.single()
+
+        assertEquals("mahjongcraft.taiwan.tai.dealer_streak", entry.translationKey)
+        assertEquals("4", entry.translationArgument)
+        assertEquals("9", entry.trailingTranslationArgument)
+        assertEquals(EntryEmphasis.CONDITIONAL, entry.emphasis)
+        assertEquals(
+            PresentationValue.TextValue(TaiwanWinSettlementPresentation.DEALER_TAI_TOTAL_KEY, listOf("12")),
+            TaiwanWinSettlementPresentation.dealerTaiTotalText.quantities(listOf(WinSettlementQuantity(TaiwanWinSettlementIds.TAI_UNIT, 12))),
+        )
     }
 
     /**

@@ -23,6 +23,7 @@ object RiichiWinSettlementDetailResolver : WinSettlementDetailResolver {
     override fun resolve(
         state: TableState,
         winnerId: Uuid,
+        responsiblePlayerId: Uuid?,
         handValue: HandValueResult,
         publicFace: (TileValue) -> TileFaceView,
     ): List<WinSettlementDetailField> = riichiDetails(state, handValue, publicFace)

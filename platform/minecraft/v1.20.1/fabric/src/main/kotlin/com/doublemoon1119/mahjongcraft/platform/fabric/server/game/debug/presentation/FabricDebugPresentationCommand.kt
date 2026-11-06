@@ -1113,15 +1113,33 @@ class FabricDebugPresentationCommand(
         } else {
             listOf(WinSettlementDetailField(TaiwanWinSettlementIds.FLOWERS_FIELD, WinSettlementDetailValue.TileFaces(flowerFaces.take(2))))
         }
-        val detailFields = flowerFields + listOf(
+        // 贏家是閒家：自摸時莊家那一條只算莊家那一份（自摸示範連兩莊），胡莊家的牌時每一份都算，七搶一被搶的是閒家所以不列。
+        val handTai = taiTypes.sumOf { it.tai }
+        val dealerStreak = if (preview == TaiwanWinSettlementPreview.TSUMO) 2 else 0
+        val dealerTai = 1 + 2 * dealerStreak
+        val dealerPaysAlone = preview == TaiwanWinSettlementPreview.TSUMO || preview == TaiwanWinSettlementPreview.EIGHT_FLOWERS
+        val dealerEntry = WinSettlementDetailEntry(
+            id = if (dealerStreak == 0) TaiwanWinSettlementIds.DEALER_ENTRY else TaiwanWinSettlementIds.DEALER_STREAK_ENTRY,
+            quantity = WinSettlementQuantity(TaiwanWinSettlementIds.TAI_UNIT, dealerTai),
+            nameQuantity = WinSettlementQuantity(TaiwanWinSettlementIds.DEALER_STREAK_UNIT, dealerStreak).takeIf { dealerStreak > 0 },
+            appliesToSomePayersOnly = dealerPaysAlone,
+        ).takeIf { preview != TaiwanWinSettlementPreview.SEVEN_FLOWERS }
+        val taiTotal = if (dealerEntry != null && !dealerPaysAlone) handTai + dealerTai else handTai
+        val detailFields = flowerFields + listOfNotNull(
             WinSettlementDetailField(
                 TaiwanWinSettlementIds.TAI_FIELD,
-                WinSettlementDetailValue.Entries(taiTypes.map { type -> WinSettlementDetailEntry(type.id, WinSettlementQuantity(TaiwanWinSettlementIds.TAI_UNIT, type.tai)) }),
+                WinSettlementDetailValue.Entries(
+                    taiTypes.map { type -> WinSettlementDetailEntry(type.id, WinSettlementQuantity(TaiwanWinSettlementIds.TAI_UNIT, type.tai)) } + listOfNotNull(dealerEntry),
+                ),
             ),
             WinSettlementDetailField(
                 TaiwanWinSettlementIds.TAI_TOTAL_FIELD,
-                WinSettlementDetailValue.Quantities(listOf(WinSettlementQuantity(TaiwanWinSettlementIds.TAI_UNIT, taiTypes.sumOf { it.tai }))),
+                WinSettlementDetailValue.Quantities(listOf(WinSettlementQuantity(TaiwanWinSettlementIds.TAI_UNIT, taiTotal))),
             ),
+            WinSettlementDetailField(
+                TaiwanWinSettlementIds.DEALER_TAI_TOTAL_FIELD,
+                WinSettlementDetailValue.Quantities(listOf(WinSettlementQuantity(TaiwanWinSettlementIds.TAI_UNIT, handTai + dealerTai))),
+            ).takeIf { dealerPaysAlone },
         )
         val isTsumo = preview == TaiwanWinSettlementPreview.TSUMO || preview == TaiwanWinSettlementPreview.EIGHT_FLOWERS
         val request = WinSettlementPresentationRequest(
@@ -1266,13 +1284,13 @@ class FabricDebugPresentationCommand(
      * @property argument 指令中的 literal。
      */
     private enum class TaiwanWinSettlementPreview(val argument: String) {
-        /** 一般自摸，附兩張花牌與常見台種。 */
+        /** 閒家自摸，附兩張花牌、常見台種，以及只算莊家那一份的連兩莊。 */
         TSUMO("tsumo"),
 
-        /** 一般胡別人的牌，附兩張花牌與含八台以上項目的台種。 */
+        /** 閒家胡莊家的牌，附兩張花牌、含八台以上項目的台種與莊家一台。 */
         RON("ron"),
 
-        /** 八仙過海：不攤牌，八張花牌。 */
+        /** 閒家八仙過海：不攤牌，八張花牌，莊家一台只算莊家那一份。 */
         EIGHT_FLOWERS("eight_flowers"),
 
         /** 七搶一：不攤牌，自己的七張花與被搶的那張。 */

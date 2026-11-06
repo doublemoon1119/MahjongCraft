@@ -19,9 +19,11 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionVocab
 import com.doublemoon1119.mahjongcraft.platform.minecraft.action.MinecraftKanActionTokenKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.event.MinecraftMatchAbortReasonIds
 import com.doublemoon1119.mahjongcraft.platform.minecraft.history.MinecraftHistoryScreenKeys
+import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.EntryEmphasis
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.ExhaustiveDrawReasonDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.PresentationFieldId
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.RoundOutcomeDisplayNameRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.StandardWinSettlementLayout
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.WinSettlementPresentationTemplateRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.detailTextFormatter
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.minecraftAbortReasonTranslationKey
@@ -298,8 +300,23 @@ internal class HistoryRoundEventPresenter(
             is HistoryWinDetailValueDto.Quantities -> formatter.quantities(value.quantities.map { it.toQuantity() }).let { text ->
                 listOf(Text.translatable(text.translationKey, *text.arguments.toTypedArray()))
             }
-            is HistoryWinDetailValueDto.Entries -> formatter.entries(value.entries.map { WinSettlementDetailEntry(it.id, it.quantity?.toQuantity()) }).entries.map { entry ->
-                val text = Text.translatable(entry.translationKey)
+            is HistoryWinDetailValueDto.Entries -> formatter.entries(
+                value.entries.map {
+                    WinSettlementDetailEntry(
+                        id = it.id,
+                        quantity = it.quantity?.toQuantity(),
+                        nameQuantity = it.nameQuantity?.toQuantity(),
+                        appliesToSomePayersOnly = it.appliesToSomePayersOnly,
+                    )
+                },
+            ).entries.map { entry ->
+                val name = entry.translationArgument?.let { Text.translatable(entry.translationKey, it) } ?: Text.translatable(entry.translationKey)
+                // 只適用於部分付款者的條目沿用結算面板的顏色，讓紀錄與面板的意思一致。
+                val text = if (entry.emphasis == EntryEmphasis.CONDITIONAL) {
+                    name.styled { it.withColor(StandardWinSettlementLayout.CONDITIONAL_ARGB and 0xFFFFFF) }
+                } else {
+                    name
+                }
                 val trailing = entry.trailingTranslationKey?.let { key ->
                     entry.trailingTranslationArgument?.let { Text.translatable(key, it) } ?: Text.translatable(key)
                 } ?: entry.trailingText.takeIf(String::isNotBlank)?.let(Text::literal)

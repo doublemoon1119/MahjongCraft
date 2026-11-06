@@ -445,6 +445,8 @@ internal object HistoryReplayProjectionMapper {
                 WinSettlementDetailEntry(
                     id = string(entry.getValue(ReplaySourceKeys.ID)),
                     quantity = entry[ReplaySourceKeys.QUANTITY]?.takeUnless { it == JsonNull }?.let { quantity(obj(it)) },
+                    nameQuantity = entry[ReplaySourceKeys.NAME_QUANTITY]?.takeUnless { it == JsonNull }?.let { quantity(obj(it)) },
+                    appliesToSomePayersOnly = boolean(entry.getValue(ReplaySourceKeys.APPLIES_TO_SOME_PAYERS_ONLY)),
                 )
             },
         )
