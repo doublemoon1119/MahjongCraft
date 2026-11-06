@@ -90,7 +90,7 @@ class ExampleFormatRoundTripTest {
     fun `settlement detail records the configured payment`() {
         val table = FakeTableStateFactory.create(config = ExamplePairingRuleConfig(paymentPerPlayer = 20))
             .copy(components = ComponentSet.EMPTY.with(ExamplePairingComponents.BONUS_TILES, ExamplePairingBonusTiles(setOf(1))))
-        val fields = ExamplePairingWinSettlementDetailResolver.resolve(table, ExamplePairingHandValueResult()) { TileFaceView(it.tile) }
+        val fields = ExamplePairingWinSettlementDetailResolver.resolve(table, table.players.first().id, ExamplePairingHandValueResult()) { TileFaceView(it.tile) }
         val field = fields.first { it.id == ExamplePairingWinSettlementDetailResolver.PAYMENT_PER_PLAYER }
         assertEquals(ExamplePairingWinSettlementDetailResolver.PAYMENT_PER_PLAYER, field.id)
         val quantity = assertIs<WinSettlementDetailValue.Quantities>(field.value).quantities.single()
@@ -106,7 +106,7 @@ class ExampleFormatRoundTripTest {
     fun `settlement includes saved bonus faces and total payment`() {
         val table = FakeTableStateFactory.create(config = ExamplePairingRuleConfig(paymentPerPlayer = 10))
             .copy(components = ComponentSet.EMPTY.with(ExamplePairingComponents.BONUS_TILES, ExamplePairingBonusTiles(setOf(3, 1))))
-        val fields = ExamplePairingWinSettlementDetailResolver.resolve(table, ExamplePairingHandValueResult(bonusTileCount = 2)) { TileFaceView(it.tile) }
+        val fields = ExamplePairingWinSettlementDetailResolver.resolve(table, table.players.first().id, ExamplePairingHandValueResult(bonusTileCount = 2)) { TileFaceView(it.tile) }
         val faces = assertIs<WinSettlementDetailValue.TileFaces>(fields.single { it.id == ExamplePairingWinSettlementDetailResolver.BONUS_TILES }.value)
         assertEquals(listOf(Tile.Extension(ExamplePairingIds.INVERTED_ONE_MAN), Tile.Numeric(Tile.Suit.Character, 3)).map(::TileFaceView), faces.faces)
         assertEquals(12, assertIs<WinSettlementDetailValue.Quantities>(fields.single { it.id == ExamplePairingWinSettlementDetailResolver.PAYMENT_PER_PLAYER }.value).quantities.single().amount)

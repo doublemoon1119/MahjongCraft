@@ -192,6 +192,8 @@ object TaiwanFlowerRuleDecisionResolver : RuleDecisionResolver {
                         winnerPlayerIds = setOf(winnerId),
                         responsiblePlayerIds = setOfNotNull(result.opportunity.payerId),
                         winningTileId = result.winningFlower.id,
+                        // 花胡與手牌組成無關，不攤牌。
+                        revealsWinnerHands = false,
                     ),
                     scoreDeltas = scored.players.associate { player ->
                         val previousScore = result.tableState.players.first { it.id == player.id }.score
@@ -200,6 +202,7 @@ object TaiwanFlowerRuleDecisionResolver : RuleDecisionResolver {
                     extensionDetail = TaiwanSpecialFlowerWinDetail(
                         taiTypeId = result.opportunity.type.id,
                         tai = result.opportunity.type.tai,
+                        winningFlowerId = result.winningFlower.id,
                     ),
                 ),
             )

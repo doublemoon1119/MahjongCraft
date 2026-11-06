@@ -161,6 +161,7 @@ class AuthoritativeStatePersistenceCodecTest {
                 winnerPlayerIds = setOf(winner.id),
                 responsiblePlayerIds = emptySet(),
                 winningTileId = Uuid.random(),
+                revealsWinnerHands = false,
             ),
         )
 

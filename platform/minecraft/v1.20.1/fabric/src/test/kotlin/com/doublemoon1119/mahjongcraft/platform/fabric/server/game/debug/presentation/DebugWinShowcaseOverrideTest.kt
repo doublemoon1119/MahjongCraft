@@ -127,6 +127,7 @@ class DebugWinShowcaseOverrideTest {
     private fun request(cues: List<List<String>>): WinCelebrationRequest = WinCelebrationRequest(
         winningTileId = Uuid.random(),
         isTsumo = true,
+        revealsWinnerHands = true,
         winners = cues.mapIndexed { index, ids -> WinCelebrationWinner(seatIndex = index, cueIds = ids) },
     )
 

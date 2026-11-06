@@ -26,6 +26,7 @@ object WinSettlementPresentationRequestFactory {
      * @param module 本局使用的規則模組。
      * @param aiPlayerIds 由 AI 操控的玩家識別碼。
      * @param detailResolverRegistry 解析規則專屬結算詳情的註冊表。
+     * @param revealsWinnerHands 是否攤開贏家的手牌；不攤牌時贏家的立牌與副露都不列入，結算面板與對局紀錄都看不到。
      * @return 特殊胡牌等價結果的呈現請求。
      */
     fun createSpecialOutcome(
@@ -34,6 +35,7 @@ object WinSettlementPresentationRequestFactory {
         module: MahjongRuleModule<*>,
         aiPlayerIds: Set<Uuid>,
         detailResolverRegistry: WinSettlementDetailResolverRegistry,
+        revealsWinnerHands: Boolean,
     ): WinSettlementPresentationRequest {
         val currentState = outcome.settledTableState
         val previousRanks = roundRanksByPlayer(previousState, module)
@@ -50,9 +52,9 @@ object WinSettlementPresentationRequestFactory {
                     seatIndex = currentState.players.indexOf(player),
                     responsiblePlayerId = outcome.responsiblePlayerIds.singleOrNull(),
                     totalScore = outcome.scoreDeltas.getValue(winnerId),
-                    standingTileIds = sortedStandingTileIds(player.hand, module),
+                    standingTileIds = if (revealsWinnerHands) sortedStandingTileIds(player.hand, module) else emptyList(),
                     // 和牌時整手公開，暗槓照公開形式呈現。
-                    melds = player.hand.melds.map { it.toPresentation(revealsClosedKanTiles = true) },
+                    melds = if (revealsWinnerHands) player.hand.melds.map { it.toPresentation(revealsClosedKanTiles = true) } else emptyList(),
                     winningTileId = null,
                     detailFields = detailFields,
                 )
@@ -104,8 +106,8 @@ object WinSettlementPresentationRequestFactory {
     ): WinSettlementPresentationRequest {
         val previousRanks = roundRanksByPlayer(previousState, module)
         val currentRanks = roundRanksByPlayer(currentState, module)
-        val detailFields = resolutions.mapValues { (_, resolution) ->
-            detailResolverRegistry.resolve(module.id, currentState, resolution.handValueResult)
+        val detailFields = resolutions.mapValues { (winnerId, resolution) ->
+            detailResolverRegistry.resolve(module.id, currentState, winnerId, resolution.handValueResult)
         }
         return WinSettlementPresentationRequest(
             outcomeId = outcomeId,

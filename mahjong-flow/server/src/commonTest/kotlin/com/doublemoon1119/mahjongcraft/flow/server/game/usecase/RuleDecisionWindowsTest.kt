@@ -50,6 +50,7 @@ class RuleDecisionWindowsTest {
         winnerPlayerIds = setOf(winner.id),
         responsiblePlayerIds = setOf(payer.id),
         winningTileId = Uuid.random(),
+        revealsWinnerHands = true,
     )
 
     /** 直接成立的和牌與分數變動一起寫入對局，並關閉選擇流程。 */

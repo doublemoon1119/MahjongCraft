@@ -12,12 +12,14 @@ import kotlin.uuid.Uuid
  * @property winnerPlayerIds 本次和牌的玩家。
  * @property responsiblePlayerIds 需為本次和牌付款負責的玩家；沒有特定責任玩家時為空集合。
  * @property winningTileId 本次和牌成立所依據的公開牌張。
+ * @property revealsWinnerHands 是否攤開贏家的手牌；和牌與手牌組成無關、不需攤牌時為 false，例如湊齊花牌成立的和牌。
  */
 data class RuleDecisionWinOutcome(
     val outcomeId: String,
     val winnerPlayerIds: Set<Uuid>,
     val responsiblePlayerIds: Set<Uuid>,
     val winningTileId: Uuid,
+    val revealsWinnerHands: Boolean,
 ) {
     init {
         NamespacedId.requireValid(outcomeId) { "Rule decision win outcome ID must be namespaced: $outcomeId" }

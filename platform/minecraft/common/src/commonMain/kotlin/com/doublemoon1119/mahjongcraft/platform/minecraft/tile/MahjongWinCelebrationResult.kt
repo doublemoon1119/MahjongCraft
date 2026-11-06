@@ -6,7 +6,8 @@ package com.doublemoon1119.mahjongcraft.platform.minecraft.tile
  * @property result 跟 [MahjongPlayerAreaPresenter.presentInitialDeal] 同一組結果分類（找不到桌子／有牌找不到既有
  * entity）。
  * @property handLaydownEndGameTime [MahjongWinCelebrationPresentation.organizedStandingTileIds] 全部
- * 一起倒下播完的絕對 game time；[result] 不是 [MahjongPlayerAreaPresentationResult.PRESENTED] 時為
+ * 一起倒下播完的絕對 game time；不攤牌（[MahjongWinCelebrationPresentation.revealsHand] 為 false）時沒有倒牌，是演出
+ * 開始的時間。找不到 [MahjongWinCelebrationPresentation.winningTileId] 的牌，或 [result] 不是 [MahjongPlayerAreaPresentationResult.PRESENTED] 時為
  * `null`，呼叫端不應該再接續排定特效。
  */
 data class MahjongWinCelebrationResult(

@@ -25,20 +25,55 @@ internal object TaiwanWinSettlementPresentation {
     /** 台種與台數欄位。 */
     val TAI: PresentationFieldId = PresentationFieldId(TaiwanWinSettlementIds.TAI_FIELD)
 
-    /** 台灣麻將目前使用的結算模板。 */
+    /** 贏家公開的花牌欄位；特殊花牌和牌不含讓和牌成立的那張。 */
+    val FLOWERS: PresentationFieldId = PresentationFieldId(TaiwanWinSettlementIds.FLOWERS_FIELD)
+
+    /** 讓特殊花牌和牌成立的那張花牌欄位。 */
+    val WINNING_FLOWER: PresentationFieldId = PresentationFieldId(TaiwanWinSettlementIds.WINNING_FLOWER_FIELD)
+
+    /** 直接顯示規則提供內容的欄位。 */
+    val EXTENSION_FIELDS: List<PresentationFieldId> = listOf(TAI, FLOWERS, WINNING_FLOWER)
+
+    /**
+     * 台灣麻將目前使用的結算模板。
+     *
+     * 手牌那一行在攤牌時才顯示；花牌那一行在有花牌時顯示於手牌下方，讓特殊花牌和牌成立的那張隔開接在最後。
+     */
     val TEMPLATE: WinSettlementPresentationTemplate = WinSettlementPresentationTemplate(
         key = TEMPLATE_KEY,
         root = PresentationLayout.Column(
             children = listOf(
                 PresentationLayout.Text(OUTCOME_TITLE),
                 PresentationLayout.Text(BuiltInWinSettlementFieldIds.WINNER_SUMMARY),
-                PresentationLayout.Row(
-                    children = listOf(
-                        PresentationLayout.TileList(BuiltInWinSettlementFieldIds.COMPLETE_HAND),
-                        PresentationLayout.Spacer(width = 5f),
-                        PresentationLayout.Tile(BuiltInWinSettlementFieldIds.WINNING_TILE),
+                PresentationLayout.IfPresent(
+                    fieldId = BuiltInWinSettlementFieldIds.COMPLETE_HAND,
+                    child = PresentationLayout.Row(
+                        children = listOf(
+                            PresentationLayout.TileList(BuiltInWinSettlementFieldIds.COMPLETE_HAND),
+                            PresentationLayout.Spacer(width = 5f),
+                            PresentationLayout.Tile(BuiltInWinSettlementFieldIds.WINNING_TILE),
+                        ),
+                        spacing = 2f,
                     ),
-                    spacing = 2f,
+                ),
+                PresentationLayout.IfPresent(
+                    fieldId = FLOWERS,
+                    child = PresentationLayout.Row(
+                        children = listOf(
+                            PresentationLayout.TileList(FLOWERS),
+                            PresentationLayout.IfPresent(
+                                fieldId = WINNING_FLOWER,
+                                child = PresentationLayout.Row(
+                                    children = listOf(
+                                        PresentationLayout.Spacer(width = 5f),
+                                        PresentationLayout.TileList(WINNING_FLOWER),
+                                    ),
+                                    spacing = 2f,
+                                ),
+                            ),
+                        ),
+                        spacing = 2f,
+                    ),
                 ),
                 PresentationLayout.RepeatEntries(TAI, entriesPerColumn = 4),
                 PresentationLayout.Text(BuiltInWinSettlementFieldIds.PAYMENT_SUMMARY),

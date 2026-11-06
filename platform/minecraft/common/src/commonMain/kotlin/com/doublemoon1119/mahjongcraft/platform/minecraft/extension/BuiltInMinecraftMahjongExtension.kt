@@ -234,8 +234,9 @@ object BuiltInMinecraftMahjongExtension : MinecraftMahjongExtension {
     override fun registerWinSettlementPresentationTemplates(registry: WinSettlementPresentationTemplateRegistrar) {
         registry.register(BuiltInWinSettlementTemplates.GENERIC)
         registry.register(
+            // 不攤牌的贏家沒有手牌，欄位不存在，版面可以整行省略。
             definition = WinSettlementPresentationFieldProviderDefinition(BuiltInWinSettlementFieldIds.COMPLETE_HAND) { snapshot ->
-                PresentationValue.TileListValue(snapshot.tileAssetKeys)
+                snapshot.tileAssetKeys.takeIf { it.isNotEmpty() }?.let(PresentationValue::TileListValue)
             },
         )
         registry.register(

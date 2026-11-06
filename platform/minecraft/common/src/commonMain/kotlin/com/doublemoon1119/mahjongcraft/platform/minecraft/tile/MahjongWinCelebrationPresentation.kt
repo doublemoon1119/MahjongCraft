@@ -28,6 +28,8 @@ import kotlin.uuid.Uuid
  * @property isTsumo `true` 代表自摸（[winningTileId] 需要先單獨倒下、再等其餘立牌一起倒下）；`false`
  * 代表榮和／搶槓（[winningTileId] 早已是面朝上姿態，省略單獨倒下這一步，直接進入「強制理牌 → 等待 →
  * 立牌一起倒下」）。
+ * @property revealsHand 是否理牌並倒下贏家手牌；為 false 時手牌與 [winningTileId] 都留在原處不動，例如湊齊花牌成立、
+ * 與手牌組成無關的和牌。
  * @property earliestStartGameTime 整條演出最早可以開始的絕對 game time；實際起點為
  * `max(現在, 這個值)`。用於把演出接在某條呈現時間軸的結束時間之後，讓同一條時間軸上的連續胡牌演出
  * 依序播放而不重疊。預設 `0` 等同「立刻開始」，維持既有呼叫端的行為不變。
@@ -44,5 +46,6 @@ data class MahjongWinCelebrationPresentation(
     val setAsideTileCount: Int,
     val winningTileId: Uuid,
     val isTsumo: Boolean,
+    val revealsHand: Boolean,
     val earliestStartGameTime: Long = 0L,
 )

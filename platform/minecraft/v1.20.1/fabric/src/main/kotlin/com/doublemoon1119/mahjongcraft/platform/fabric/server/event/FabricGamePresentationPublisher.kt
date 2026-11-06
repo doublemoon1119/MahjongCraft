@@ -1289,6 +1289,7 @@ class FabricGamePresentationPublisher(
                 setAsideTileCount = winner.setAsideTiles.size,
                 winningTileId = request.winningTileId,
                 isTsumo = request.isTsumo,
+                revealsHand = request.revealsWinnerHands,
                 earliestStartGameTime = earliestStartGameTime,
             )
             val result = playerAreaPresenter.presentWinCelebration(presentation)

@@ -97,6 +97,7 @@ class WinPresentationHandoffTest {
             celebration = WinCelebrationRequest(
                 winningTileId = winningTileId,
                 isTsumo = true,
+                revealsWinnerHands = true,
                 winners = listOf(WinCelebrationWinner(0)),
             ),
             settlement = WinSettlementPresentationRequest(

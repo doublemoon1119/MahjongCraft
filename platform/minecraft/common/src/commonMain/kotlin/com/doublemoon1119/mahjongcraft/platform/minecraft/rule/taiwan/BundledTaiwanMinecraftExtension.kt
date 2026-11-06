@@ -119,6 +119,9 @@ object BundledTaiwanMinecraftExtension : MinecraftMahjongExtension {
                 PresentationValue.TextValue(TaiwanWinSettlementPresentation.outcomeTranslationKey(snapshot.outcomeId) ?: snapshot.winActionLabelKey)
             },
         )
+        TaiwanWinSettlementPresentation.EXTENSION_FIELDS.forEach { fieldId ->
+            registry.register(WinSettlementPresentationFieldProviderDefinition(fieldId) { snapshot -> snapshot.extensionField(fieldId) })
+        }
         registry.register(
             WinSettlementDetailTextFormatterDefinition(
                 TaiwanWinSettlementIds.TAI_FIELD,
