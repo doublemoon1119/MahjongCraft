@@ -192,8 +192,7 @@ object BundledRiichiMinecraftExtension : MinecraftMahjongExtension {
                 PresentationValue.TextValue(
                     translationKey = when {
                         snapshot.outcomeId == RiichiRoundOutcomeIds.NAGASHI_MANGAN -> WinSettlementTextKeys.NAGASHI_MANGAN
-                        snapshot.isTsumo -> WinSettlementTextKeys.TSUMO
-                        else -> WinSettlementTextKeys.RON
+                        else -> snapshot.winActionLabelKey
                     },
                 )
             },

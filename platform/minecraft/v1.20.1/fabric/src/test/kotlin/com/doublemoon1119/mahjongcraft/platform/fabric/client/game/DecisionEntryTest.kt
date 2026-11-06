@@ -152,18 +152,25 @@ class DecisionEntryTest {
         assertEquals("mahjongcraft.hud.action.confirm", translationKeyOf(entries.single()))
     }
 
-    /** 單選的規則選擇每個選項各一張卡，並保留原順序。 */
+    /** 單選的規則選擇每個選項各一張卡，並保留原順序；選項附帶的牌顯示在那個選項的卡上，代表跳過的選項不佔卡片。 */
     @Test
     fun `builds one card per rule decision option`() {
         val entries = decisionEntriesFrom(
             texts,
-            ruleDecisionPrompt(RuleDecisionPromptDto.SingleChoice(listOf("mahjongcraft:accept", "mahjongcraft:decline"))),
+            ruleDecisionPrompt(
+                RuleDecisionPromptDto.SingleChoice(
+                    optionIds = listOf("mahjongcraft:accept", "mahjongcraft:other", "mahjongcraft:decline"),
+                    previewTileAssetKeysByOptionId = mapOf("mahjongcraft:accept" to listOf("asset-a", "asset-b")),
+                    passOptionId = "mahjongcraft:decline",
+                ),
+            ),
         )
 
         assertEquals(
-            listOf("mahjongcraft:accept", "mahjongcraft:decline"),
+            listOf("mahjongcraft:accept", "mahjongcraft:other"),
             entries.map { assertIs<DecisionEntryIntent.ChooseRuleDecisionOption>(it.intent).optionId },
         )
+        assertEquals(listOf(listOf("asset-a", "asset-b"), emptyList()), entries.map { it.previewTileAssetKeys })
     }
 
     /** 選牌的規則選擇展開成一張帶候選牌預覽的卡。 */

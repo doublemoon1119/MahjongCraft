@@ -12,14 +12,24 @@ sealed interface RuleDecisionInputSpec {
      * 從完整 namespaced 選項中選擇一項的輸入。
      *
      * @property optionIds 可選擇的完整命名空間識別碼；不可為空或重複。
+     * @property previewTileIdsByOptionId 選項要展示的牌，例如這個選項會用來和牌的牌，依展示順序排列；沒有列出的選項不展示牌。
+     * 展示時依觀看者的讀取權顯示牌面。
+     * @property passOptionId 代表「不做這件事」的選項，例如放棄特殊和牌；呈現端把它當成一般的跳過，不另佔選項位置。
+     * 沒有這種選項時為 null。
      */
-    data class SingleChoice(val optionIds: List<String>) : RuleDecisionInputSpec {
+    data class SingleChoice(
+        val optionIds: List<String>,
+        val previewTileIdsByOptionId: Map<String, List<Uuid>> = emptyMap(),
+        val passOptionId: String? = null,
+    ) : RuleDecisionInputSpec {
         init {
             require(optionIds.isNotEmpty()) { "Rule decision choices must not be empty" }
             require(optionIds.distinct().size == optionIds.size) { "Rule decision choices must be unique" }
             require(optionIds.all(NamespacedId::isValid)) {
                 "Rule decision choices must use namespaced IDs"
             }
+            require(previewTileIdsByOptionId.keys.all { it in optionIds }) { "Rule decision previews must belong to a choice" }
+            require(passOptionId == null || passOptionId in optionIds) { "Rule decision pass option must be one of the choices" }
         }
     }
 

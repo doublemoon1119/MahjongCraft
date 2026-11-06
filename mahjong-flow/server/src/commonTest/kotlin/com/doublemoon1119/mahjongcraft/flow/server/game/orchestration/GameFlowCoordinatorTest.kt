@@ -302,6 +302,7 @@ class GameFlowCoordinatorTest {
                     snapshotSynchronizer = snapshotSynchronizer,
                     presentationPublisher = presentationPublisher,
                     winPresentationStager = RuleDecisionWinPresentationStager(winPresentationHandoff, winSettlementDetailResolverRegistry),
+                    handSortPreferenceStore = handSortPreferenceStore,
                 )
             },
         )

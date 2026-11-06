@@ -74,7 +74,7 @@ class WinSettlementPresentationRequestFactoryTest {
             presentationClassification = RoundOutcomePresentationClassification.WIN_EQUIVALENT,
         )
 
-        val request = WinSettlementPresentationRequestFactory.createSpecialOutcome(state, outcome, module, emptySet(), detailResolverRegistry)
+        val request = WinSettlementPresentationRequestFactory.createSpecialOutcome(state, outcome, module, emptySet(), detailResolverRegistry, revealsWinnerHands = true)
 
         val winnerPresentation = request.winners.first()
         assertEquals(listOf(standing.id), winnerPresentation.standingTileIds)
@@ -85,6 +85,37 @@ class WinSettlementPresentationRequestFactoryTest {
                 "A meld tile must never be duplicated into the hand tile group.",
             )
         }
+    }
+
+    /** 不攤牌的特殊結果不列出贏家的立牌與副露，結算面板與對局紀錄都看不到手牌。 */
+    @Test
+    fun `special outcome without revealed hands omits the winner hand`() {
+        val meldTiles = List(3) { FakeIdentifiedTileFactory.create(Tile.Honor.White) }
+        val standing = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 5))
+        val winner = FakeMahjongPlayerFactory.create(
+            initialSeat = Wind.EAST,
+            hand = Hand(
+                tiles = listOf(standing),
+                melds = listOf(Meld(MeldType.PON, meldTiles, meldTiles.first(), RelativeDirection.Left, publiclyRevealedTileIds = meldTiles.map { it.id }.toSet(), faceDownTileIds = emptySet())),
+            ),
+        )
+        val state = FakeTableStateFactory.create(
+            players = listOf(winner) + List(3) { FakeMahjongPlayerFactory.create() },
+            config = config,
+        )
+        val outcome = ResolvedRoundOutcome(
+            id = "mahjongcraft:test_outcome",
+            settledTableState = state,
+            beneficiaryPlayerIds = setOf(winner.id),
+            scoreDeltas = state.players.associate { it.id to 0 },
+            transitionDirective = RoundTransitionDirective.PassToNextSeat,
+            presentationClassification = RoundOutcomePresentationClassification.WIN_EQUIVALENT,
+        )
+
+        val request = WinSettlementPresentationRequestFactory.createSpecialOutcome(state, outcome, module, emptySet(), detailResolverRegistry, revealsWinnerHands = false)
+
+        assertEquals(emptyList(), request.winners.single().standingTileIds)
+        assertEquals(emptyList(), request.winners.single().melds)
     }
 
     /** 詳情解析器不支援特殊結果時，factory 仍保留共用結算資料並交付空詳情欄位。 */
@@ -107,6 +138,8 @@ class WinSettlementPresentationRequestFactoryTest {
                     resolver = object : WinSettlementDetailResolver {
                         override fun resolve(
                             state: TableState,
+                            winnerId: Uuid,
+                            responsiblePlayerId: Uuid?,
                             handValue: HandValueResult,
                             publicFace: (TileValue) -> TileFaceView,
                         ): List<WinSettlementDetailField> = emptyList()
@@ -127,6 +160,7 @@ class WinSettlementPresentationRequestFactoryTest {
             module = module,
             aiPlayerIds = emptySet(),
             detailResolverRegistry = registry,
+            revealsWinnerHands = true,
         )
 
         assertEquals(winner.id, request.winners.single().playerId)
@@ -238,7 +272,7 @@ class WinSettlementPresentationRequestFactoryTest {
             presentationClassification = RoundOutcomePresentationClassification.WIN_EQUIVALENT,
         )
 
-        val request = WinSettlementPresentationRequestFactory.createSpecialOutcome(state, outcome, module, emptySet(), detailResolverRegistry)
+        val request = WinSettlementPresentationRequestFactory.createSpecialOutcome(state, outcome, module, emptySet(), detailResolverRegistry, revealsWinnerHands = true)
 
         assertEquals(listOf(sevenDots.id, threeBamboo.id, white.id), request.winners.single().standingTileIds)
     }
@@ -261,7 +295,7 @@ class WinSettlementPresentationRequestFactoryTest {
             presentationClassification = RoundOutcomePresentationClassification.WIN_EQUIVALENT,
         )
 
-        val request = WinSettlementPresentationRequestFactory.createSpecialOutcome(state, outcome, module, emptySet(), registry)
+        val request = WinSettlementPresentationRequestFactory.createSpecialOutcome(state, outcome, module, emptySet(), registry, revealsWinnerHands = true)
 
         assertEquals(module.id, request.ruleModuleId)
         assertEquals(RiichiWinSettlementIds.YAKU_FIELD, request.winners.single().detailFields.single().id)

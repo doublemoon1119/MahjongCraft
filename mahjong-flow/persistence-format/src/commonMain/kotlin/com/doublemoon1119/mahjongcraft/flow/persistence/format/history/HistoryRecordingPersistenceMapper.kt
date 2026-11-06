@@ -365,7 +365,14 @@ private fun WinSettlementDetailValue.toPersistenceDto(componentViews: ComponentV
     is WinSettlementDetailValue.Quantities -> HistoryWinDetailValuePersistenceDto.Quantities(quantities.map { it.toPersistenceDto() })
     is WinSettlementDetailValue.TileFaces -> HistoryWinDetailValuePersistenceDto.TileFaces(faces.map { it.toPersistenceDto(componentViews) })
     is WinSettlementDetailValue.Entries -> HistoryWinDetailValuePersistenceDto.Entries(
-        entries.map { entry -> HistoryWinDetailValuePersistenceDto.Entries.Entry(entry.id, entry.quantity?.toPersistenceDto()) },
+        entries.map { entry ->
+            HistoryWinDetailValuePersistenceDto.Entries.Entry(
+                id = entry.id,
+                quantity = entry.quantity?.toPersistenceDto(),
+                nameQuantity = entry.nameQuantity?.toPersistenceDto(),
+                appliesToSomePayersOnly = entry.appliesToSomePayersOnly,
+            )
+        },
     )
 }
 
@@ -379,7 +386,14 @@ private fun HistoryWinDetailValuePersistenceDto.toDomain(componentViews: Compone
     is HistoryWinDetailValuePersistenceDto.Quantities -> WinSettlementDetailValue.Quantities(quantities.map { it.toDomain() })
     is HistoryWinDetailValuePersistenceDto.TileFaces -> WinSettlementDetailValue.TileFaces(faces.map { it.toDomain(componentViews) })
     is HistoryWinDetailValuePersistenceDto.Entries -> WinSettlementDetailValue.Entries(
-        entries.map { entry -> WinSettlementDetailEntry(entry.id, entry.quantity?.toDomain()) },
+        entries.map { entry ->
+            WinSettlementDetailEntry(
+                id = entry.id,
+                quantity = entry.quantity?.toDomain(),
+                nameQuantity = entry.nameQuantity?.toDomain(),
+                appliesToSomePayersOnly = entry.appliesToSomePayersOnly,
+            )
+        },
     )
 }
 

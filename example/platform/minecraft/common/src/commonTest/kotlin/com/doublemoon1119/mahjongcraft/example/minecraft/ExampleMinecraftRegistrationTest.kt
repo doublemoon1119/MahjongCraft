@@ -11,7 +11,6 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.RuleDecisi
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionVocabularyRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.ai.AiStrategyDisplayNameRegistryImpl
-import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.RuleDecisionDisplayNameRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.player.PublicPlayerIndicatorDisplayRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.GameConfigPresentationRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.GameConfigPresentationValue
@@ -69,7 +68,6 @@ class ExampleMinecraftRegistrationTest {
         val strategies = AiStrategyDisplayNameRegistryImpl().apply(extension::registerAiStrategyDisplayNames)
         val actions = GameActionVocabularyRegistryImpl().apply(extension::registerGameActionVocabulary)
         val indicators = PublicPlayerIndicatorDisplayRegistryImpl().apply(extension::registerPublicPlayerIndicatorDisplays)
-        val ruleDecision = RuleDecisionDisplayNameRegistryImpl().apply(extension::registerRuleDecisionDisplayNames)
         val draws = ExhaustiveDrawReasonDisplayNameRegistryImpl().apply(extension::registerExhaustiveDrawReasonDisplayNames)
 
         assertEquals(ExampleMinecraftMessageKeys.RULE_NAME, rules.find(ExamplePairingIds.RULE_MODULE))
@@ -81,7 +79,6 @@ class ExampleMinecraftRegistrationTest {
         assertEquals(ExampleMinecraftMessageKeys.REVEAL_HAND_CARD_BODY, revealHand.cardBodyKey)
         assertEquals(ExampleMinecraftMessageKeys.REVEAL_HAND_CARD_HINT, revealHand.cardHintKey)
         assertEquals(ExampleMinecraftMessageKeys.HAND_REVEALED, indicators.find(ExamplePairingIds.HAND_REVEALED_INDICATOR)?.translationKey)
-        assertEquals(ExampleMinecraftMessageKeys.EXCHANGE, ruleDecision.find(ExamplePairingIds.EXCHANGE_STEP))
         assertEquals(ExampleMinecraftMessageKeys.EXHAUSTIVE_DRAW, draws.find(ExamplePairingIds.EXHAUSTIVE_DRAW))
     }
 }

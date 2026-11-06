@@ -10,7 +10,11 @@ import kotlin.uuid.Uuid
  */
 fun RuleDecisionInputSpec.toDto(): RuleDecisionInputSpecDto = when (this) {
     RuleDecisionInputSpec.Confirmation -> RuleDecisionInputSpecDto.Confirmation
-    is RuleDecisionInputSpec.SingleChoice -> RuleDecisionInputSpecDto.SingleChoice(optionIds)
+    is RuleDecisionInputSpec.SingleChoice -> RuleDecisionInputSpecDto.SingleChoice(
+        optionIds = optionIds,
+        previewTileIdsByOptionId = previewTileIdsByOptionId.mapValues { (_, tileIds) -> tileIds.map(Uuid::toString) },
+        passOptionId = passOptionId,
+    )
     is RuleDecisionInputSpec.TileSelection -> RuleDecisionInputSpecDto.TileSelection(
         eligibleTileIds.mapTo(mutableSetOf(), Uuid::toString),
         minCount,
@@ -25,7 +29,11 @@ fun RuleDecisionInputSpec.toDto(): RuleDecisionInputSpecDto = when (this) {
  */
 fun RuleDecisionInputSpecDto.toDomain(): RuleDecisionInputSpec = when (this) {
     RuleDecisionInputSpecDto.Confirmation -> RuleDecisionInputSpec.Confirmation
-    is RuleDecisionInputSpecDto.SingleChoice -> RuleDecisionInputSpec.SingleChoice(optionIds)
+    is RuleDecisionInputSpecDto.SingleChoice -> RuleDecisionInputSpec.SingleChoice(
+        optionIds = optionIds,
+        previewTileIdsByOptionId = previewTileIdsByOptionId.mapValues { (_, tileIds) -> tileIds.map(Uuid::parse) },
+        passOptionId = passOptionId,
+    )
     is RuleDecisionInputSpecDto.TileSelection -> RuleDecisionInputSpec.TileSelection(
         eligibleTileIds.mapTo(mutableSetOf(), Uuid::parse),
         minCount,

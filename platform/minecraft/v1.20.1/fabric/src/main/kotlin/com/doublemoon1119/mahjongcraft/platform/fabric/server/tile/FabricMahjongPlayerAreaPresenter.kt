@@ -54,6 +54,9 @@ class FabricMahjongPlayerAreaPresenter(
      *    倒下播完、再等 [MahjongTileTableLayout.WIN_PRE_HAND_LAYDOWN_DELAY_TICKS]；榮和／搶槓省略自摸牌
      *    那一步，直接在整理到位及短暫停頓後等待同一個常數。
      *
+     * 不攤牌（[MahjongWinCelebrationPresentation.revealsHand] 為 false）時三件事都不做：手牌與胡牌張留在原處，
+     * [MahjongWinCelebrationResult.handLaydownEndGameTime] 是演出開始的時間，降臨特效直接接在原處的胡牌張上。
+     *
      * 找不到對應 UUID 的既有 entity 時該筆直接跳過並記警告 log，不中斷其餘牌的呈現，比照
      * [presentInitialDeal] 的 best-effort 慣例；[MahjongWinCelebrationPresentation.winningTileId] 找不到既有 entity 時，
      * 沒有任何一張牌可以當作降臨特效的目標，[MahjongWinCelebrationResult.handLaydownEndGameTime] 回傳
@@ -89,6 +92,13 @@ class FabricMahjongPlayerAreaPresenter(
                 )
             }
             return tile
+        }
+
+        if (!presentation.revealsHand) {
+            val startGameTime = maxOf(world.time, presentation.earliestStartGameTime)
+            val winningTile = claimTile(presentation.winningTileId)
+            val result = if (winningTile == null) MahjongPlayerAreaPresentationResult.SPAWN_FAILED else MahjongPlayerAreaPresentationResult.PRESENTED
+            return MahjongWinCelebrationResult(result, winningTile?.let { startGameTime })
         }
 
         val reservedCornerWidth = MahjongTileTableLayout.cornerAreaWidth(

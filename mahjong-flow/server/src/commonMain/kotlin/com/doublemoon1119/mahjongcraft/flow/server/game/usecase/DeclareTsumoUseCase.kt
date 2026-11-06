@@ -217,6 +217,7 @@ class DeclareTsumoUseCase(
                 celebration = WinCelebrationRequest(
                     winningTileId = winningTile.id,
                     isTsumo = true,
+                    revealsWinnerHands = true,
                     winners = listOf(
                         WinCelebrationWinner(
                             winnerSeatIndex,

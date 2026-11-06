@@ -435,6 +435,12 @@ class HistoryRecordingPersistenceDtoTest {
                         listOf(
                             WinSettlementDetailEntry("mahjongcraft:yaku/test", WinSettlementQuantity("mahjongcraft:han", 1)),
                             WinSettlementDetailEntry("mahjongcraft:yaku/plain"),
+                            WinSettlementDetailEntry(
+                                id = "mahjongcraft:tai/streak",
+                                quantity = WinSettlementQuantity("mahjongcraft:tai", 5),
+                                nameQuantity = WinSettlementQuantity("mahjongcraft:streak", 2),
+                                appliesToSomePayersOnly = true,
+                            ),
                         ),
                     ),
                 ),

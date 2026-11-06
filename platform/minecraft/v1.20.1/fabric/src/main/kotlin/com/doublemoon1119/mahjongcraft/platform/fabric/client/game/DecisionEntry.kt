@@ -89,11 +89,12 @@ internal fun decisionEntriesFrom(texts: DecisionTextResolver, prompt: PlayerDeci
                 intent = DecisionEntryIntent.ConfirmRuleDecision,
             ),
         )
-        is RuleDecisionPromptDto.SingleChoice -> ruleDecision.optionIds.forEach { option ->
+        // 代表跳過的選項由一般跳過按鈕呈現，不佔卡片位置。
+        is RuleDecisionPromptDto.SingleChoice -> ruleDecision.optionIds.filterNot { it == ruleDecision.passOptionId }.forEach { option ->
             add(
                 DecisionEntry(
                     label = texts.actionLabel(prompt.ruleModuleId, option),
-                    previewTileAssetKeys = emptyList(),
+                    previewTileAssetKeys = ruleDecision.previewTileAssetKeysByOptionId[option].orEmpty(),
                     claimedTileIndex = null,
                     intent = DecisionEntryIntent.ChooseRuleDecisionOption(option),
                 ),

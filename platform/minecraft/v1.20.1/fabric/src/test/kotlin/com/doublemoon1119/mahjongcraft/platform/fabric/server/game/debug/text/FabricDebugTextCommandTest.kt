@@ -7,6 +7,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.server.config.FabricServe
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.config.FabricServerConfigManager
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.config.FabricServerConfigPathProvider
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.history.HistoryRetentionCoordinator
+import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionVocabularyRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftServerConfigState
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftServerConfigTomlCodec
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftPlayerFeedback
@@ -37,6 +38,7 @@ class FabricDebugTextCommandTest {
         ),
         json = bundledNetworkJson(),
         networkRegistries = DefaultNetworkDtoRegistries(),
+        actionVocabularyRegistry = GameActionVocabularyRegistryImpl(),
     )
 
     /** `hovered_text` 保留六個訊息排版預覽節點。 */

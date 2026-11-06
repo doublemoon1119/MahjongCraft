@@ -12,6 +12,7 @@ import com.doublemoon1119.mahjongcraft.logic.base.TileFaceView
 import com.doublemoon1119.mahjongcraft.logic.base.TileValue
 import com.doublemoon1119.mahjongcraft.logic.judgment.HandValueResult
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
+import kotlin.uuid.Uuid
 
 /** 將簡易配對的實際付款設定放入結算與歷史詳情，不套用其他規則的翻符資料。 */
 object ExamplePairingWinSettlementDetailResolver : WinSettlementDetailResolver {
@@ -29,6 +30,8 @@ object ExamplePairingWinSettlementDetailResolver : WinSettlementDetailResolver {
 
     override fun resolve(
         state: TableState,
+        winnerId: Uuid,
+        responsiblePlayerId: Uuid?,
         handValue: HandValueResult,
         publicFace: (TileValue) -> TileFaceView,
     ): List<WinSettlementDetailField> {

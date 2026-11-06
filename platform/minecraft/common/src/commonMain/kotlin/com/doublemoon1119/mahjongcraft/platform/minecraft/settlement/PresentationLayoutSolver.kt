@@ -81,7 +81,7 @@ class PresentationLayoutSolver(
         }
         is PresentationLayout.Row -> {
             val sizes = layout.children.map { measure(it, snapshot) }
-            val intrinsicWidth = sizes.sumOf { it.width.toDouble() }.toFloat() + (sizes.size - 1).coerceAtLeast(0) * layout.spacing
+            val intrinsicWidth = sizes.sumOf { it.width.toDouble() }.toFloat() + spacingTotal(layout.children, layout.spacing, snapshot)
             styledSize(
                 if (layout.fillMaxWidth) MAX_WIDTH - layout.style.padding * 2f else intrinsicWidth,
                 sizes.maxOfOrNull(PresentationNodeSize::height) ?: 0f,
@@ -90,7 +90,7 @@ class PresentationLayoutSolver(
         }
         is PresentationLayout.Column -> {
             val sizes = layout.children.map { measure(it, snapshot) }
-            val intrinsicHeight = sizes.sumOf { it.height.toDouble() }.toFloat() + (sizes.size - 1).coerceAtLeast(0) * layout.spacing
+            val intrinsicHeight = sizes.sumOf { it.height.toDouble() }.toFloat() + spacingTotal(layout.children, layout.spacing, snapshot)
             styledSize(
                 sizes.maxOfOrNull(PresentationNodeSize::width) ?: 0f,
                 if (layout.fillMaxHeight) MAX_HEIGHT - layout.style.padding * 2f else intrinsicHeight,
@@ -125,6 +125,29 @@ class PresentationLayoutSolver(
     }
 
     /**
+     * 子節點是否佔用主軸位置；權重節點一律佔用，其他節點量測為零尺寸（例如缺少欄位）時不佔空間、也不留間距。
+     *
+     * @param child 主軸上的子節點。
+     * @param snapshot 本次呈現使用的結算欄位快照。
+     * @return 佔用位置時為 true。
+     */
+    fun occupies(child: PresentationLayout, snapshot: WinSettlementPresentationFieldSnapshot): Boolean = child is PresentationLayout.Weighted || measure(child, snapshot) != PresentationNodeSize.ZERO
+
+    /**
+     * 主軸上子節點之間的固定間距總和，只計算佔用位置的子節點之間。
+     *
+     * @param children 主軸上的子節點。
+     * @param spacing 子節點固定間距。
+     * @param snapshot 本次呈現使用的結算欄位快照。
+     * @return 間距總和。
+     */
+    private fun spacingTotal(
+        children: List<PresentationLayout>,
+        spacing: Float,
+        snapshot: WinSettlementPresentationFieldSnapshot,
+    ): Float = (children.count { occupies(it, snapshot) } - 1).coerceAtLeast(0) * spacing
+
+    /**
      * 分配水平主軸空間。
      *
      * 非權重子節點取自己的量測寬度；剩下的空間依權重比例分給權重子節點，`fill` 為 `false` 的權重子節點
@@ -142,7 +165,7 @@ class PresentationLayoutSolver(
         spacing: Float,
         snapshot: WinSettlementPresentationFieldSnapshot,
     ): List<Pair<PresentationLayout, Float>> {
-        val spacingWidth = (children.size - 1).coerceAtLeast(0) * spacing
+        val spacingWidth = spacingTotal(children, spacing, snapshot)
         val fixed = children.filterNot { it is PresentationLayout.Weighted }.sumOf { measure(it, snapshot).width.toDouble() }.toFloat()
         val weighted = children.filterIsInstance<PresentationLayout.Weighted>()
         val remaining = (available - fixed - spacingWidth).coerceAtLeast(0f)
@@ -173,7 +196,7 @@ class PresentationLayoutSolver(
         spacing: Float,
         snapshot: WinSettlementPresentationFieldSnapshot,
     ): List<Float> {
-        val spacingHeight = (children.size - 1).coerceAtLeast(0) * spacing
+        val spacingHeight = spacingTotal(children, spacing, snapshot)
         val fixed = children.filterNot { it is PresentationLayout.Weighted }.sumOf { measure(it, snapshot).height.toDouble() }.toFloat()
         val weighted = children.filterIsInstance<PresentationLayout.Weighted>()
         val remaining = (available - fixed - spacingHeight).coerceAtLeast(0f)
@@ -192,28 +215,40 @@ class PresentationLayoutSolver(
         /**
          * 依 arrangement 算出每個子節點沿主軸的起點。
          *
-         * 內容超出 [available] 時沒有多餘空間可分配，六種 arrangement 都退化成從 0 依序排開。
+         * 內容超出 [available] 時沒有多餘空間可分配，六種 arrangement 都退化成從 0 依序排開。不佔位置的子節點
+         * 放在下一個子節點的起點，不計入間距與 arrangement 的分配。
          *
          * @param widths 子節點寬度。
          * @param available 可用主軸空間。
          * @param spacing 固定子節點間距。
          * @param arrangement 剩餘空間分配方式。
+         * @param occupied 各子節點是否佔用主軸位置，見 [occupies]；順序與 [widths] 相同。
          * @return 各子節點沿主軸的起點。
          */
-        fun arrange(widths: List<Float>, available: Float, spacing: Float, arrangement: PresentationArrangement): List<Float> {
-            if (widths.isEmpty()) return emptyList()
-            val content = widths.sum() + spacing * (widths.size - 1).coerceAtLeast(0)
+        fun arrange(
+            widths: List<Float>,
+            available: Float,
+            spacing: Float,
+            arrangement: PresentationArrangement,
+            occupied: List<Boolean>,
+        ): List<Float> {
+            require(occupied.size == widths.size) { "Every child needs an occupancy flag" }
+            val count = occupied.count { it }
+            if (count == 0) return List(widths.size) { 0f }
+            val content = widths.filterIndexed { index, _ -> occupied[index] }.sum() + spacing * (count - 1)
             val free = (available - content).coerceAtLeast(0f)
             val (start, extraGap) = when (arrangement) {
                 PresentationArrangement.START -> 0f to 0f
                 PresentationArrangement.CENTER -> free / 2f to 0f
                 PresentationArrangement.END -> free to 0f
-                PresentationArrangement.SPACE_BETWEEN -> 0f to if (widths.size > 1) free / (widths.size - 1) else 0f
-                PresentationArrangement.SPACE_AROUND -> free / widths.size / 2f to free / widths.size
-                PresentationArrangement.SPACE_EVENLY -> free / (widths.size + 1) to free / (widths.size + 1)
+                PresentationArrangement.SPACE_BETWEEN -> 0f to if (count > 1) free / (count - 1) else 0f
+                PresentationArrangement.SPACE_AROUND -> free / count / 2f to free / count
+                PresentationArrangement.SPACE_EVENLY -> free / (count + 1) to free / (count + 1)
             }
             var cursor = start
-            return widths.map { width -> cursor.also { cursor += width + spacing + extraGap } }
+            return widths.mapIndexed { index, width ->
+                if (occupied[index]) cursor.also { cursor += width + spacing + extraGap } else cursor
+            }
         }
 
         /** 對齊點相對於自身尺寸的偏移。 */

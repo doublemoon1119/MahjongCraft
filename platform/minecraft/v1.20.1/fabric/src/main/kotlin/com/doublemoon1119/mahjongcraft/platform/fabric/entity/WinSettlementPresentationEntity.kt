@@ -42,6 +42,9 @@ class WinSettlementPresentationEntity(
     /** 本次和牌是否為自摸。 */
     val isTsumo: Boolean get() = dataTracker[IS_TSUMO]
 
+    /** 這次和牌動作在本規則的名稱 translation key。 */
+    val winActionLabelKey: String get() = dataTracker[WIN_ACTION_LABEL_KEY]
+
     /** 贏家詳情快照；精簡中途胡牌演出可為空。 */
     val winners: List<WinSettlementWinnerSnapshot> get() = decodeWinners(dataTracker[WINNERS])
 
@@ -71,6 +74,7 @@ class WinSettlementPresentationEntity(
      * @param outcomeId 和牌結果識別碼。
      * @param templateKey 結算呈現模板 key。
      * @param isTsumo 本次是否為自摸。
+     * @param winActionLabelKey 這次和牌動作在本規則的名稱 translation key。
      * @param winners 贏家詳情快照；可為空。
      * @param rankings 結算前後分數及排行；不可為空。
      * @param revealTiming 贏家詳情揭示節奏。
@@ -82,6 +86,7 @@ class WinSettlementPresentationEntity(
         outcomeId: String,
         templateKey: String,
         isTsumo: Boolean,
+        winActionLabelKey: String,
         winners: List<WinSettlementWinnerSnapshot>,
         rankings: List<WinSettlementRankingSnapshot>,
         revealTiming: WinSettlementRevealTimingSnapshot,
@@ -97,6 +102,7 @@ class WinSettlementPresentationEntity(
         dataTracker.set(OUTCOME_ID, outcomeId)
         dataTracker.set(TEMPLATE_KEY, templateKey)
         dataTracker.set(IS_TSUMO, isTsumo)
+        dataTracker.set(WIN_ACTION_LABEL_KEY, winActionLabelKey)
         dataTracker.set(WINNERS, encodeWinners(winners))
         dataTracker.set(RANKINGS, WinSettlementRankingCodec.encode(rankings))
         enqueueSettlementSounds(startGameTime)
@@ -259,6 +265,7 @@ class WinSettlementPresentationEntity(
         dataTracker.startTracking(OUTCOME_ID, "")
         dataTracker.startTracking(TEMPLATE_KEY, "")
         dataTracker.startTracking(IS_TSUMO, false)
+        dataTracker.startTracking(WIN_ACTION_LABEL_KEY, "")
         dataTracker.startTracking(WINNERS, "")
         dataTracker.startTracking(RANKINGS, "")
         dataTracker.startTracking(REVEAL_TIMING, "")
@@ -277,6 +284,7 @@ class WinSettlementPresentationEntity(
         dataTracker.set(OUTCOME_ID, nbt.getString(NBT_KEY_OUTCOME_ID))
         dataTracker.set(TEMPLATE_KEY, nbt.getString(NBT_KEY_TEMPLATE_KEY))
         dataTracker.set(IS_TSUMO, nbt.getBoolean(NBT_KEY_IS_TSUMO))
+        dataTracker.set(WIN_ACTION_LABEL_KEY, nbt.getString(NBT_KEY_WIN_ACTION_LABEL_KEY))
         dataTracker.set(WINNERS, nbt.getString(NBT_KEY_WINNERS))
         dataTracker.set(RANKINGS, nbt.getString(NBT_KEY_RANKINGS))
         dataTracker.set(REVEAL_TIMING, nbt.getString(NBT_KEY_REVEAL_TIMING))
@@ -296,6 +304,7 @@ class WinSettlementPresentationEntity(
         nbt.putString(NBT_KEY_OUTCOME_ID, outcomeId)
         nbt.putString(NBT_KEY_TEMPLATE_KEY, templateKey)
         nbt.putBoolean(NBT_KEY_IS_TSUMO, isTsumo)
+        nbt.putString(NBT_KEY_WIN_ACTION_LABEL_KEY, winActionLabelKey)
         nbt.putString(NBT_KEY_WINNERS, dataTracker[WINNERS])
         nbt.putString(NBT_KEY_RANKINGS, dataTracker[RANKINGS])
         nbt.putString(NBT_KEY_REVEAL_TIMING, dataTracker[REVEAL_TIMING])
@@ -312,6 +321,9 @@ class WinSettlementPresentationEntity(
 
         /** 是否為自摸的固定保存鍵。 */
         private const val NBT_KEY_IS_TSUMO = "IsTsumo"
+
+        /** 和牌動作名稱的世界存檔 key。 */
+        private const val NBT_KEY_WIN_ACTION_LABEL_KEY = "WinActionLabelKey"
 
         /** 本局結果識別碼的固定保存鍵。 */
         private const val NBT_KEY_OUTCOME_ID = "OutcomeId"
@@ -382,11 +394,8 @@ class WinSettlementPresentationEntity(
         /** 詳情欄位使用逐項條目呈現時的型別識別碼。 */
         const val DETAIL_ENTRIES = "E"
 
-        /** 每個條目在快照中的欄位數：名稱、右側文字、右側 key、右側參數、是否強調。 */
-        const val ENTRY_VALUE_COUNT = 5
-
-        /** 條目強調欄位為真時的值。 */
-        const val ENTRY_HIGHLIGHTED = "1"
+        /** 每個條目在快照中的欄位數：名稱、右側文字、右側 key、右側參數、顯示樣式名稱、名稱參數。 */
+        const val ENTRY_VALUE_COUNT = 6
 
         /** 結算快照一般欄位的分隔字元。 */
         private const val F = '\u001f'
@@ -465,6 +474,9 @@ class WinSettlementPresentationEntity(
 
         /** 追蹤本次和牌是否自摸的資料欄位。 */
         private val IS_TSUMO = DataTracker.registerData(WinSettlementPresentationEntity::class.java, TrackedDataHandlerRegistry.BOOLEAN)
+
+        /** 和牌動作名稱同步欄位。 */
+        private val WIN_ACTION_LABEL_KEY = DataTracker.registerData(WinSettlementPresentationEntity::class.java, TrackedDataHandlerRegistry.STRING)
 
         /** 追蹤贏家詳情快照編碼字串的資料欄位。 */
         private val WINNERS = DataTracker.registerData(WinSettlementPresentationEntity::class.java, TrackedDataHandlerRegistry.STRING)

@@ -14,6 +14,7 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.RuleDecisi
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.RuleDecisionWin
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepository
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameSnapshotSynchronizer
+import com.doublemoon1119.mahjongcraft.flow.server.game.service.HandSortPreferenceStore
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.RuleDecisionPresentationUpdate
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.RuleDecisionWinPresentationStager
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
@@ -28,6 +29,7 @@ import kotlin.uuid.Uuid
  * @property snapshotSynchronizer 對局快照同步服務。
  * @property presentationPublisher 更新規則選擇結果改變的牌區與局況。
  * @property winPresentationStager 將規則選擇步驟直接成立的和牌交給共用胡牌演出與結算呈現。
+ * @property handSortPreferenceStore 規則選擇過程中玩家整理手牌時，查詢是否依規則牌序整理。
  */
 class SubmitRuleDecisionUseCase(
     private val gameRepository: GameRepository,
@@ -36,6 +38,7 @@ class SubmitRuleDecisionUseCase(
     private val snapshotSynchronizer: GameSnapshotSynchronizer,
     private val presentationPublisher: GamePresentationPublisher,
     private val winPresentationStager: RuleDecisionWinPresentationStager,
+    private val handSortPreferenceStore: HandSortPreferenceStore,
 ) {
     /**
      * 對指定對局提交一次規則選擇。
@@ -105,7 +108,7 @@ class SubmitRuleDecisionUseCase(
             if (submitted.isComplete) {
                 val resolution = resolver.resolve(game.tableState, submitted, module)
                 completedResolution = resolution
-                updated = RuleDecisionWindows.advance(game, submitted, resolution, module, resolverRegistry)
+                updated = RuleDecisionWindows.advance(game, submitted, resolution, module, resolverRegistry, handSortPreferenceStore::isEnabled)
             }
             updated to RuleDecisionSubmissionUpdate(
                 Outcome.Success(Unit),

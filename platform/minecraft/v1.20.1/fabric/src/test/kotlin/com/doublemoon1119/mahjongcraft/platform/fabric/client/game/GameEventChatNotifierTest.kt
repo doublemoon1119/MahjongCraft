@@ -17,7 +17,6 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.RoundOutcom
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.RoundResultKindDto
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.RoundResultPayloadDto
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.RoundResultPlayerDto
-import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.WinSettlementTextKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftMessageKeys
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
@@ -75,13 +74,14 @@ class GameEventChatNotifierTest {
         )
     }
 
-    /** 自摸使用規則的動作用語，榮和使用結算用語。 */
+    /** 自摸與榮和使用規則的動作名稱。 */
     @Test
     fun `tsumo and ron use the rule's wording`() {
-        val tsumoKey = requireNotNull(actionVocabularyRegistry.find(RULE_MODULE_ID, BuiltInGameActionIds.TSUMO)).messageKey
+        val tsumoKey = requireNotNull(actionVocabularyRegistry.find(RULE_MODULE_ID, BuiltInGameActionIds.TSUMO)).labelKey
+        val ronKey = requireNotNull(actionVocabularyRegistry.find(RULE_MODULE_ID, BuiltInGameActionIds.RON)).labelKey
 
         assertEquals(tsumoKey, buildMessage(result(BuiltInRoundOutcomeIds.TSUMO)).outcomeKey())
-        assertEquals(WinSettlementTextKeys.RON, buildMessage(result(BuiltInRoundOutcomeIds.RON)).outcomeKey())
+        assertEquals(ronKey, buildMessage(result(BuiltInRoundOutcomeIds.RON)).outcomeKey())
     }
 
     /** 其他結果依序查特殊結果與流局原因名稱，都沒有登記時流局使用通用流局文字、和牌顯示結果 ID。 */

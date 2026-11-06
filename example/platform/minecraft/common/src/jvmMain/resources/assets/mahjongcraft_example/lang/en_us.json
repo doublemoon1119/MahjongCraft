@@ -74,7 +74,6 @@
   "mahjongcraft_example.round_info.wall_remaining": "Tiles remaining: %s",
   "mahjongcraft_example.rule.pairing.description": "Simple pairing mahjong settings.",
   "mahjongcraft_example.rule.pairing.name": "Pairing Mahjong",
-  "mahjongcraft_example.rule_decision.exchange": "Tile exchange",
   "mahjongcraft_example.settlement.bonus_tile_count": "Bonus tile payment",
   "mahjongcraft_example.settlement.bonus_tile_points": "Bonus tiles: %s points",
   "mahjongcraft_example.settlement.bonus_tiles": "Bonus tiles",

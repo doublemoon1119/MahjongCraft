@@ -109,6 +109,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.server.network.AutomaticC
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.network.FabricAutomaticControlSnapshotSender
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.network.FabricObserverSnapshotSender
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.network.PlayerIdentitySender
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.network.PrivateHandOrderSender
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.network.RoundResultSender
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.notification.FabricGameConfigTextFormatter
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.notification.FabricPlayerFeedbackPublisher
@@ -297,6 +298,7 @@ val fabricServerModule = module {
     single<FabricObserverSnapshotSender>() bind ObserverSnapshotSender::class
     single<PlayerIdentitySender>()
     single<RoundResultSender>()
+    single<PrivateHandOrderSender>()
 
     single<FabricGameConfigTextFormatter>()
     single<FabricPlayerFeedbackPublisher>() bind MinecraftPlayerFeedbackPublisher::class

@@ -3,23 +3,23 @@ package com.doublemoon1119.mahjongcraft.platform.minecraft.rule.taiwan
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.taiwan.TaiwanRoundOutcomeIds
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.taiwan.TaiwanWinSettlementIds
 import com.doublemoon1119.mahjongcraft.logic.module.BuiltInRuleModuleIds
-import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanFlowerRuleDecisionIds
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanGameAction
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.tile.TaiwanTileTypes
 import com.doublemoon1119.mahjongcraft.metadata.MahjongCraftMetadata
+import com.doublemoon1119.mahjongcraft.platform.minecraft.action.BuiltInGameActionIds
 import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionVocabulary
 import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionVocabularyDefinition
+import com.doublemoon1119.mahjongcraft.platform.minecraft.action.HUD_ACTION_PREFIX
+import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.GameActionSoundPresentationRegistrar
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.GameActionVocabularyRegistrar
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.GameConfigPresentationRegistrar
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.MinecraftTileAssetRegistrar
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.RoundOutcomeDisplayNameRegistrar
-import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.RuleDecisionDisplayNameRegistrar
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.RuleModuleDisplayNameRegistrar
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.TileEmojiRegistrar
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.TileLabelRegistrar
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.WinSettlementPresentationTemplateRegistrar
-import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.RuleDecisionDisplayNameDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.extension.MinecraftMahjongExtension
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.BuiltInGameConfigFields.RULE
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.BuiltInGameConfigFields.SCORE
@@ -34,6 +34,9 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.RoundOutcom
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.WinSettlementDetailTextFormatterDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.WinSettlementPresentationFieldProviderDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.WinSettlementRuleTemplateBindingDefinition
+import com.doublemoon1119.mahjongcraft.platform.minecraft.sound.BuiltInGameActionSoundIds
+import com.doublemoon1119.mahjongcraft.platform.minecraft.sound.GameActionSoundDefinition
+import com.doublemoon1119.mahjongcraft.platform.minecraft.sound.GameActionSoundPresentation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftMessageKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.BuiltInMinecraftTileAppearanceIds
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftRuleTileAppearanceDefinition
@@ -80,17 +83,26 @@ object BundledTaiwanMinecraftExtension : MinecraftMahjongExtension {
                 ),
             ),
         )
+        // 台灣麻將把胡別人打出的牌說成「胡牌」，不是「榮和」。
+        registry.register(
+            GameActionVocabularyDefinition(
+                ruleModuleId = BuiltInRuleModuleIds.TAIWAN,
+                actionId = BuiltInGameActionIds.RON,
+                vocabulary = GameActionVocabulary(labelKey = HUD_ACTION_HU, messageKey = MinecraftMessageKeys.GAME_ACTION_HU, order = HU_ACTION_ORDER),
+            ),
+        )
     }
 
-    override fun registerRuleDecisionDisplayNames(registry: RuleDecisionDisplayNameRegistrar) {
+    /** 登記台灣麻將吃、碰、槓、胡牌與自摸的宣告語音。 */
+    override fun registerGameActionSounds(registry: GameActionSoundPresentationRegistrar) {
         listOf(
-            TaiwanFlowerRuleDecisionIds.PROCESS_FLOWERS to RULE_DECISION_PROCESS_FLOWERS,
-            TaiwanFlowerRuleDecisionIds.PROCESS_DRAW_FOLLOW_UP to RULE_DECISION_PROCESS_DRAW_FOLLOW_UP,
-            TaiwanFlowerRuleDecisionIds.SPECIAL_FLOWER_WIN to RULE_DECISION_SPECIAL_FLOWER_WIN,
-            TaiwanFlowerRuleDecisionIds.ACCEPT_FLOWER_WIN to RULE_DECISION_ACCEPT_FLOWER_WIN,
-            TaiwanFlowerRuleDecisionIds.PASS_FLOWER_WIN to RULE_DECISION_PASS_FLOWER_WIN,
-        ).forEach { (id, translationKey) ->
-            registry.register(RuleDecisionDisplayNameDefinition(id, translationKey))
+            BuiltInGameActionSoundIds.CHII to TaiwanGameActionVoiceSoundIds.CHI,
+            BuiltInGameActionSoundIds.PON to TaiwanGameActionVoiceSoundIds.PON,
+            BuiltInGameActionSoundIds.KAN to TaiwanGameActionVoiceSoundIds.KAN,
+            BuiltInGameActionSoundIds.RON to TaiwanGameActionVoiceSoundIds.HU,
+            BuiltInGameActionSoundIds.TSUMO to TaiwanGameActionVoiceSoundIds.TSUMO,
+        ).forEach { (actionId, soundId) ->
+            registry.register(GameActionSoundDefinition(BuiltInRuleModuleIds.TAIWAN, actionId, GameActionSoundPresentation(soundId)))
         }
     }
 
@@ -103,14 +115,29 @@ object BundledTaiwanMinecraftExtension : MinecraftMahjongExtension {
         registry.register(TaiwanWinSettlementPresentation.TEMPLATE)
         registry.register(WinSettlementRuleTemplateBindingDefinition(BuiltInRuleModuleIds.TAIWAN, TaiwanWinSettlementPresentation.TEMPLATE_KEY))
         registry.register(
-            WinSettlementPresentationFieldProviderDefinition(TaiwanWinSettlementPresentation.OUTCOME_TITLE) { snapshot ->
-                TaiwanWinSettlementPresentation.outcomeTranslationKey(snapshot.outcomeId)?.let(PresentationValue::TextValue)
+            WinSettlementPresentationFieldProviderDefinition(TaiwanWinSettlementPresentation.FLOWERS_LABEL) {
+                PresentationValue.TextValue(TaiwanWinSettlementPresentation.FLOWERS_LABEL_KEY)
             },
         )
+        TaiwanWinSettlementPresentation.EXTENSION_FIELDS.forEach { fieldId ->
+            registry.register(WinSettlementPresentationFieldProviderDefinition(fieldId) { snapshot -> snapshot.extensionField(fieldId) })
+        }
         registry.register(
             WinSettlementDetailTextFormatterDefinition(
                 TaiwanWinSettlementIds.TAI_FIELD,
                 TaiwanWinSettlementPresentation.taiText,
+            ),
+        )
+        registry.register(
+            WinSettlementDetailTextFormatterDefinition(
+                TaiwanWinSettlementIds.TAI_TOTAL_FIELD,
+                TaiwanWinSettlementPresentation.taiTotalText,
+            ),
+        )
+        registry.register(
+            WinSettlementDetailTextFormatterDefinition(
+                TaiwanWinSettlementIds.DEALER_TAI_TOTAL_FIELD,
+                TaiwanWinSettlementPresentation.dealerTaiTotalText,
             ),
         )
     }
@@ -201,20 +228,11 @@ private fun plantFlower(chinese: String, order: String): TileLabel = TileLabel(
 /** 公開花牌動作在操作說明中的文字。 */
 private const val GAME_ACTION_REVEAL_FLOWER_DESCRIPTION: String = "mahjongcraft.hud.action.reveal_flower.description"
 
-/** 局前自動補花步驟的顯示文字。 */
-private const val RULE_DECISION_PROCESS_FLOWERS: String = "mahjongcraft.rule_decision.taiwan.process_flowers"
+/** 胡牌的操作卡名稱。 */
+private const val HUD_ACTION_HU: String = HUD_ACTION_PREFIX + "hu"
 
-/** 摸牌後接續補花步驟的顯示文字。 */
-private const val RULE_DECISION_PROCESS_DRAW_FOLLOW_UP: String = "mahjongcraft.rule_decision.taiwan.process_draw_follow_up"
-
-/** 特殊花牌和牌選擇的顯示文字。 */
-private const val RULE_DECISION_SPECIAL_FLOWER_WIN: String = "mahjongcraft.rule_decision.taiwan.special_flower_win"
-
-/** 接受特殊花牌和牌選項的顯示文字。 */
-private const val RULE_DECISION_ACCEPT_FLOWER_WIN: String = "mahjongcraft.rule_decision.taiwan.accept_flower_win"
-
-/** 放棄特殊花牌和牌選項的顯示文字。 */
-private const val RULE_DECISION_PASS_FLOWER_WIN: String = "mahjongcraft.rule_decision.taiwan.pass_flower_win"
+/** 胡牌在操作卡中的順序，與其他規則的榮和相同。 */
+private const val HU_ACTION_ORDER: Int = 3
 
 /** 公開花牌在操作卡中的順序。 */
 private const val REVEAL_FLOWER_ACTION_ORDER: Int = 8

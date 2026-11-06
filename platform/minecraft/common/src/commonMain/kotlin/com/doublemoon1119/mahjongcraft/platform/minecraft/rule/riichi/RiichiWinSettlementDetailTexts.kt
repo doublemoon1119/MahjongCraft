@@ -4,6 +4,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementDetai
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementQuantity
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.riichi.RiichiWinSettlementIds
 import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModMetadata
+import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.EntryEmphasis
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.FallbackWinSettlementDetailTextFormatter
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.PresentationValue
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.WinSettlementDetailTextFormatter
@@ -39,7 +40,7 @@ internal object RiichiWinSettlementDetailTexts {
                             translationKey = name,
                             trailingTranslationKey = text.translationKey,
                             trailingTranslationArgument = text.arguments.singleOrNull(),
-                            highlighted = true,
+                            emphasis = EntryEmphasis.HIGHLIGHTED,
                         )
                     }
                     null -> PresentationValue.EntryListValue.Entry(translationKey = name)

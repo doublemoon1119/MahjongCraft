@@ -541,6 +541,7 @@ class GameFlowCoordinator(
                             module = moduleRegistry.getModule(previousState.config),
                             aiPlayerIds = gameRepository.getGame(gameId)?.aiPlayerIds.orEmpty(),
                             detailResolverRegistry = winSettlementDetailResolverRegistry,
+                            revealsWinnerHands = true,
                         ),
                     )
                 }

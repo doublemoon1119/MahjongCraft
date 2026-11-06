@@ -11,6 +11,8 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.entity.WinSettlementSound
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.WinSettlementWinnerSnapshot
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.entity.FabricEntitySpawnGateway
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.PersistentTableOverlayCoordinator
+import com.doublemoon1119.mahjongcraft.platform.minecraft.action.BuiltInGameActionIds
+import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionVocabularyRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.BuiltInWinSettlementTemplateKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.PresentationTimelineAnchor
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.PresentationValue
@@ -32,12 +34,14 @@ import kotlin.uuid.Uuid
  * @property tileAssetRegistry 將公開展示牌面解析為平台素材，不查詢局內牌位置。
  * @property overlays 管理桌面 overlay 的暫時隱藏。
  * @property spawnGateway 生成並追蹤舞台 entity。
+ * @property actionVocabularyRegistry 規則的動作用語，決定結算標題的和牌動作名稱。
  */
 class FabricWinSettlementPresentationScheduler(
     private val templateRegistry: WinSettlementPresentationTemplateRegistry,
     private val tileAssetRegistry: MinecraftTileAssetRegistry,
     private val overlays: PersistentTableOverlayCoordinator,
     private val spawnGateway: FabricEntitySpawnGateway,
+    private val actionVocabularyRegistry: GameActionVocabularyRegistry,
 ) {
     /**
      * 排程並生成結算舞台；成功時依內容隱藏桌面 overlay 至舞台交接完成。
@@ -118,7 +122,18 @@ class FabricWinSettlementPresentationScheduler(
         )
         val soundCues = buildSoundCues(winners, reveal, timing, scoreRevealDelayTicks)
         val stage = WinSettlementPresentationEntity(world = world).apply {
-            configure(tableId, start, request.outcomeId, templateKey, request.isTsumo, winners, rankings, timing, soundCues)
+            configure(
+                tableId = tableId,
+                startGameTime = start,
+                outcomeId = request.outcomeId,
+                templateKey = templateKey,
+                isTsumo = request.isTsumo,
+                winActionLabelKey = winActionLabelKey(request.ruleModuleId, request.isTsumo),
+                winners = winners,
+                rankings = rankings,
+                revealTiming = timing,
+                customSoundCues = soundCues,
+            )
             refreshPositionAndAngles(placement.x, placement.y + STAGE_HEIGHT_OFFSET, placement.z, placement.yaw, 0f)
         }
         if (!spawnGateway.spawn(world, stage, "win-settlement", tableId)) return null
@@ -139,6 +154,18 @@ class FabricWinSettlementPresentationScheduler(
      * @param scoreRevealDelayTicks 分數揭示延遲的 tick 數。
      * @return 依時間軸排序的聲音快照。
      */
+    /**
+     * 這次和牌動作在規則中的名稱。
+     *
+     * @param ruleModuleId 對局規則。
+     * @param isTsumo 是否為自摸。
+     * @return 名稱的 translation key。
+     */
+    private fun winActionLabelKey(ruleModuleId: String, isTsumo: Boolean): String {
+        val actionId = if (isTsumo) BuiltInGameActionIds.TSUMO else BuiltInGameActionIds.RON
+        return requireNotNull(actionVocabularyRegistry.find(ruleModuleId, actionId)) { "$actionId has a built-in label" }.labelKey
+    }
+
     private fun buildSoundCues(
         winners: List<WinSettlementWinnerSnapshot>,
         reveal: WinSettlementRevealSequence,
@@ -205,5 +232,6 @@ private fun entrySnapshotValues(entry: PresentationValue.EntryListValue.Entry): 
     entry.trailingText,
     entry.trailingTranslationKey.orEmpty(),
     entry.trailingTranslationArgument.orEmpty(),
-    if (entry.highlighted) WinSettlementPresentationEntity.ENTRY_HIGHLIGHTED else "",
+    entry.emphasis.name,
+    entry.translationArgument.orEmpty(),
 )

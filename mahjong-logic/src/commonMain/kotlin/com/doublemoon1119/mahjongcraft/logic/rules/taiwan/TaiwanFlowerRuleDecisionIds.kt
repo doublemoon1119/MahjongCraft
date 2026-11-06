@@ -13,9 +13,6 @@ object TaiwanFlowerRuleDecisionIds {
     /** 選擇是否接受特殊花牌和牌。 */
     val SPECIAL_FLOWER_WIN: String = MahjongCraftMetadata.id("taiwan/special_flower_win")
 
-    /** 接受特殊花牌和牌。 */
-    val ACCEPT_FLOWER_WIN: String = MahjongCraftMetadata.id("taiwan/accept_flower_win")
-
     /** 放棄特殊花牌和牌。 */
     val PASS_FLOWER_WIN: String = MahjongCraftMetadata.id("taiwan/pass_flower_win")
 }

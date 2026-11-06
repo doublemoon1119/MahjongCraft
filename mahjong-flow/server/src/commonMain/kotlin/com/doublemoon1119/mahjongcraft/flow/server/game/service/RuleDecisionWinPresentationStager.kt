@@ -69,6 +69,7 @@ class RuleDecisionWinPresentationStager(
                 celebration = WinCelebrationRequest(
                     winningTileId = outcome.winningTileId,
                     isTsumo = outcome.responsiblePlayerIds.isEmpty(),
+                    revealsWinnerHands = outcome.revealsWinnerHands,
                     winners = outcome.winnerPlayerIds.map { winnerId ->
                         WinCelebrationWinner(currentState.players.indexOfFirst { it.id == winnerId })
                     },
@@ -79,6 +80,7 @@ class RuleDecisionWinPresentationStager(
                     module = module,
                     aiPlayerIds = aiPlayerIds,
                     detailResolverRegistry = detailResolverRegistry,
+                    revealsWinnerHands = outcome.revealsWinnerHands,
                 ),
             ),
         )

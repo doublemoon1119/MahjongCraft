@@ -344,8 +344,9 @@ class RespondToDiscardUseCase(
             val presentation = SettledWinPresentation(
                 winnerPlayerIds = result.ronWinnerIds,
                 celebration = WinCelebrationRequest(
-                    winningTileId,
+                    winningTileId = winningTileId,
                     isTsumo = false,
+                    revealsWinnerHands = true,
                     winners = result.ronWinnerIds.map { winnerId ->
                         WinCelebrationWinner(
                             newState.players.indexOfFirst { it.id == winnerId },

@@ -15,6 +15,7 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.policy.GameVisibilityPol
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepositoryImpl
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameAbortHandler
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameSnapshotSynchronizer
+import com.doublemoon1119.mahjongcraft.flow.server.game.service.HandSortPreferenceStore
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.RuleDecisionWinPresentationStager
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.WinPresentationHandoff
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.WinSettlementDetailResolverRegistry
@@ -93,6 +94,7 @@ class ExamplePairingRuleDecisionUseCaseTest {
             snapshotSynchronizer = snapshotSynchronizer,
             presentationPublisher = FakeGamePresentationPublisher(),
             winPresentationStager = RuleDecisionWinPresentationStager(WinPresentationHandoff(), WinSettlementDetailResolverRegistry(componentRegistry)),
+            handSortPreferenceStore = HandSortPreferenceStore(),
         )
         val gameId = initialTable.id
         val orderedPlayerIds = initialTable.players.map { it.id }

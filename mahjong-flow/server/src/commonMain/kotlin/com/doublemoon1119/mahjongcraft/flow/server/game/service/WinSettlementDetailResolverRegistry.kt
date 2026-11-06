@@ -10,6 +10,7 @@ import com.doublemoon1119.mahjongcraft.logic.base.toPublicFaceView
 import com.doublemoon1119.mahjongcraft.logic.component.ComponentRegistry
 import com.doublemoon1119.mahjongcraft.logic.judgment.HandValueResult
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
+import kotlin.uuid.Uuid
 
 /**
  * 以完整規則模組 ID 登記、bootstrap 後凍結的胡牌詳情解析器；擴充只透過 [WinSettlementDetailResolverRegistrar] 登記。
@@ -45,10 +46,18 @@ class WinSettlementDetailResolverRegistry(private val componentRegistry: Compone
      *
      * @param ruleModuleId 欲查詢的規則模組識別碼。
      * @param state 胡牌成立時的權威桌況。
+     * @param winnerId 這筆詳情所屬的贏家。
+     * @param responsiblePlayerId 單獨付款的玩家；由其他玩家一起付款時為 null。
      * @param handValue 已完成計算的胡牌結果。
      * @return 規則解析器產生的詳情欄位；沒有對應解析器時為空清單。
      */
-    fun resolve(ruleModuleId: String, state: TableState, handValue: HandValueResult): List<WinSettlementDetailField> = resolvers[ruleModuleId]?.resolve(state, handValue, publicFace(ruleModuleId, state))
+    fun resolve(
+        ruleModuleId: String,
+        state: TableState,
+        winnerId: Uuid,
+        responsiblePlayerId: Uuid?,
+        handValue: HandValueResult,
+    ): List<WinSettlementDetailField> = resolvers[ruleModuleId]?.resolve(state, winnerId, responsiblePlayerId, handValue, publicFace(ruleModuleId, state))
         ?: emptyList()
 
     /**

@@ -49,6 +49,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.FabricWinSett
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.presentation.DebugWinRoundContinuationState
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.presentation.DebugWinShowcaseOverride
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.showcaseWingCards
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.network.PrivateHandOrderSender
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.network.RoundResultSender
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.player.ServerAiPlayerDisplayNameResolver
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.player.ServerPlayerIdentityStore
@@ -114,6 +115,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileMotionPhase
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileWallTransitionMotionDecision
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileWallTransitionMotionPlanner
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.UNKNOWN_TILE_ASSET_KEY
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.UnsortedHandTiles
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.backAppearance
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.toAssetKey
 import kotlinx.coroutines.CancellationException
@@ -167,6 +169,7 @@ import kotlin.uuid.toJavaUuid
  * @property tileAssetRegistry 牌面資產與材質註冊表。
  * @property gameActionSoundPresentationRegistry 動作聲音與宣告語音呈現註冊表。
  * @property roundResultSender 在和牌或流局結算當下把前後分數與名次送給入座的真人玩家。
+ * @property privateHandOrderSender 把本人手牌排列的時間軸項目送給入座的真人玩家，與牌張動作同時生效。
  * @property scope 承接世界／方塊狀態查詢需要切回伺服器主執行緒的呈現工作；呈現可以捨棄，關服時直接取消。
  * @property dispatchers 切回伺服器主執行緒用的 dispatcher。
  * @property worldTickWaiter 等待指定世界時間的工具。
@@ -205,6 +208,7 @@ class FabricGamePresentationPublisher(
     private val tileAssetRegistry: MinecraftTileAssetRegistry,
     private val gameActionSoundPresentationRegistry: GameActionSoundPresentationRegistry,
     private val roundResultSender: RoundResultSender,
+    private val privateHandOrderSender: PrivateHandOrderSender,
     private val scope: FabricSessionBackgroundScope,
     private val dispatchers: CoroutineDispatchers,
     private val worldTickWaiter: FabricWorldTickWaiter,
@@ -648,8 +652,10 @@ class FabricGamePresentationPublisher(
      */
     private fun presentStep(gameId: Uuid, resolved: ResolvedTableContext, step: TableStep, startGameTime: Long): Long {
         val state = step.tableState
-        val arrangement = arrange(gameId, resolved, state)
-        val previous = presentedTables[gameId]?.let { presented -> presented.arrangement ?: arrange(gameId, resolved, presented.tableState) }
+        val presented = presentedTables[gameId]
+        val previous = presented?.let { it.arrangement ?: arrange(gameId, resolved, it.tableState, emptyList()) }
+        val sortedPlayerIds = step.events.filterIsInstance<TableStepEvent.HandsSorted>().flatMapTo(mutableSetOf()) { it.playerIds }
+        val arrangement = arrange(gameId, resolved, state, UnsortedHandTiles.after(previous, state, sortedPlayerIds))
         val rearrangements = step.events.filterIsInstance<TableStepEvent.WallRearranged>()
         val rearrangedTileIds = rearrangements.flatMapTo(mutableSetOf()) { event -> event.phases.flatMap { phase -> phase.moves.map { it.tileId } } }
         val motions = TableStepMotionPlanner.plan(previous, arrangement, rearrangedTileIds)
@@ -663,6 +669,15 @@ class FabricGamePresentationPublisher(
             val motionStart = startGameTime + phaseStarts.getValue(TableStepMotionPlanner.phaseOf(motion.kind))
             TileAnimationSteps.schedulePlannedMotion(tile, motion, motionStart, playLandingSound = motion.tileId in soundTileIds)
         }
+        privateHandOrderSender.sendStep(
+            tableId = gameId,
+            before = presented?.tableState,
+            beforeArrangement = previous,
+            after = state,
+            afterArrangement = arrangement,
+            departAt = startGameTime + phaseStarts.getValue(TileMotionPhase.DEPART),
+            makeRoomAt = startGameTime + phaseStarts.getValue(TileMotionPhase.MAKE_ROOM),
+        )
         var endGameTime = startGameTime + TableStepMotionPlanner.stepDurationTicks(motions)
         // 牌牆依規則重排與摸牌同一段開始，例如補牌後把牌補回王牌區。
         val arrivalStart = startGameTime + phaseStarts.getValue(TileMotionPhase.ARRIVE)
@@ -674,7 +689,7 @@ class FabricGamePresentationPublisher(
             when (event) {
                 is TableStepEvent.ActionDeclared -> spawnActionSound(gameId, resolved, state, event.actorId, event.action, startGameTime)
                 is TableStepEvent.ActionScored -> showScoreChanges(gameId, resolved, state, event.scoring, startGameTime)
-                is TableStepEvent.WallRearranged -> Unit
+                is TableStepEvent.WallRearranged, is TableStepEvent.HandsSorted -> Unit
             }
         }
         presentedTables[gameId] = PresentedTable(state, arrangement)
@@ -733,9 +748,15 @@ class FabricGamePresentationPublisher(
      * @param gameId 桌子識別碼。
      * @param resolved 已解析的桌子與世界。
      * @param state 要擺放的桌況。
+     * @param unsortedTileIds 直接補進立牌、還沒理過的牌，依補進的順序排列。
      * @return 依牌識別碼索引的擺放。
      */
-    private fun arrange(gameId: Uuid, resolved: ResolvedTableContext, state: TableState): Map<Uuid, ArrangedTile> {
+    private fun arrange(
+        gameId: Uuid,
+        resolved: ResolvedTableContext,
+        state: TableState,
+        unsortedTileIds: List<Uuid>,
+    ): Map<Uuid, ArrangedTile> {
         val module = moduleRegistry.getModule(state.config)
         val stacksPerSide = openingState.wallStacksPerSide(gameId)
         val projection = stacksPerSide?.let {
@@ -760,6 +781,7 @@ class FabricGamePresentationPublisher(
                 handPoseStates = tilePoseStates(state, module),
                 wallProjection = projection,
                 faceUpWallTileIds = module.publicFaceUpWallTileIds(state, componentRegistry),
+                unsortedTileIds = unsortedTileIds,
             ),
         )
     }
@@ -925,6 +947,12 @@ class FabricGamePresentationPublisher(
             )
             val result = playerAreaPresenter.presentInitialDeal(presentation)
             val totalTurnCount = dealBatchSizes.size * tableState.players.size
+            privateHandOrderSender.sendDeal(
+                tableId = gameId,
+                state = tableState,
+                dealStartAt = resolved.world.time,
+                flipAt = resolved.world.time + presentation.extraLeadDelayTicks + MahjongTileTableLayout.dealFlipStartDelayTicks(totalTurnCount),
+            )
             val handFlipEndGameTime = resolved.world.time + presentation.extraLeadDelayTicks +
                 MahjongTileTableLayout.dealAnimationTicks(totalTurnCount)
             val opening = openingState.consumeOpening(gameId)
@@ -1261,6 +1289,7 @@ class FabricGamePresentationPublisher(
                 setAsideTileCount = winner.setAsideTiles.size,
                 winningTileId = request.winningTileId,
                 isTsumo = request.isTsumo,
+                revealsHand = request.revealsWinnerHands,
                 earliestStartGameTime = earliestStartGameTime,
             )
             val result = playerAreaPresenter.presentWinCelebration(presentation)

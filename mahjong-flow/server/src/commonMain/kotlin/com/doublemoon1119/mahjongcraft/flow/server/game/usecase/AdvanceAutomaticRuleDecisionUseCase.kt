@@ -8,6 +8,7 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.RuleDecisi
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.RuleDecisionWin
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepository
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameSnapshotSynchronizer
+import com.doublemoon1119.mahjongcraft.flow.server.game.service.HandSortPreferenceStore
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.RuleDecisionPresentationUpdate
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.RuleDecisionWinPresentationStager
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
@@ -22,6 +23,7 @@ import kotlin.uuid.Uuid
  * @property snapshotSynchronizer 更新選擇流程變更後的觀看者快照。
  * @property presentationPublisher 更新規則選擇結果改變的牌區與局況。
  * @property winPresentationStager 將規則選擇步驟直接成立的和牌交給共用胡牌演出與結算呈現。
+ * @property handSortPreferenceStore 規則選擇過程中玩家整理手牌時，查詢是否依規則牌序整理。
  */
 class AdvanceAutomaticRuleDecisionUseCase(
     private val gameRepository: GameRepository,
@@ -30,6 +32,7 @@ class AdvanceAutomaticRuleDecisionUseCase(
     private val snapshotSynchronizer: GameSnapshotSynchronizer,
     private val presentationPublisher: GamePresentationPublisher,
     private val winPresentationStager: RuleDecisionWinPresentationStager,
+    private val handSortPreferenceStore: HandSortPreferenceStore,
 ) {
     /**
      * 收斂目前連續的自動步驟。
@@ -62,7 +65,7 @@ class AdvanceAutomaticRuleDecisionUseCase(
                     if (currentRuleDecision.participantPlayerIds.isNotEmpty()) return@repeat
                     val resolution = resolver.resolve(updated.tableState, currentRuleDecision, module)
                     resolution.win?.let(wins::add)
-                    updated = RuleDecisionWindows.advance(updated, currentRuleDecision, resolution, module, resolverRegistry)
+                    updated = RuleDecisionWindows.advance(updated, currentRuleDecision, resolution, module, resolverRegistry, handSortPreferenceStore::isEnabled)
                     presentationSteps += resolution.steps + TableStep(updated.tableState, emptyList())
                     add(
                         HistoryEventDraft(

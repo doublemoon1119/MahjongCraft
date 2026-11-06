@@ -74,7 +74,6 @@
   "mahjongcraft_example.round_info.wall_remaining": "剩餘牌山：%s 張",
   "mahjongcraft_example.rule.pairing.description": "簡易配對麻將設定。",
   "mahjongcraft_example.rule.pairing.name": "配對麻將",
-  "mahjongcraft_example.rule_decision.exchange": "交換牌",
   "mahjongcraft_example.settlement.bonus_tile_count": "加分牌加分",
   "mahjongcraft_example.settlement.bonus_tile_points": "加分牌：%s 分",
   "mahjongcraft_example.settlement.bonus_tiles": "加分牌",

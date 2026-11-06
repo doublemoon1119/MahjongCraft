@@ -373,6 +373,12 @@ internal object ReplaySourceKeys {
     /** 條目附帶的有單位數值。 */
     const val QUANTITY = "quantity"
 
+    /** 出現在條目名稱裡的有單位數值。 */
+    const val NAME_QUANTITY = "nameQuantity"
+
+    /** 條目是否只適用於部分付款者。 */
+    const val APPLIES_TO_SOME_PAYERS_ONLY = "appliesToSomePayersOnly"
+
     /** 有單位數值的單位 ID。 */
     const val UNIT_ID = "unitId"
 

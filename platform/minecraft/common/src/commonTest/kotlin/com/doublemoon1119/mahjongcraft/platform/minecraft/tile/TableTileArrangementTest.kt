@@ -17,6 +17,7 @@ import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
+import kotlin.uuid.Uuid
 
 /** 驗證整桌擺放與牌區擺放一致，並把捨牌與摸牌後的變化分到正確的排。 */
 class TableTileArrangementTest {
@@ -90,6 +91,53 @@ class TableTileArrangementTest {
         assertTrue(kinds.filterKeys { it != discarded.id && it != drawn.id }.values.all { it == TileMotionKind.SLIDE || it == TileMotionKind.ARC })
     }
 
+    /**
+     * 直接補進立牌的牌依補進順序接在立牌最右邊，摸牌位的牌拿起來放到最右邊；玩家理牌時，這些牌越過其他牌插進該在的位置。
+     */
+    @Test
+    fun `replacement tiles wait at the right end of the hand until it is sorted`() {
+        val standing = List(4) { FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, it + 1)) }
+        val drawn = FakeIdentifiedTileFactory.create(Tile.Honor.East)
+        val replacements = List(2) { FakeIdentifiedTileFactory.create(Tile.Honor.North) }
+        val player = FakeMahjongPlayerFactory.create(Wind.EAST, hand = Hand(tiles = standing, lastDrawn = drawn))
+        val before = FakeTableStateFactory.create(players = listOf(player, FakeMahjongPlayerFactory.create(Wind.SOUTH)), turnPhase = TurnPhase.AwaitingAction)
+        // 補牌之後，原本摸牌位的牌與第一張補牌併入立牌，第二張補牌在摸牌位。
+        val after = before.copy(players = before.players.map { if (it.id != player.id) it else it.copy(hand = Hand(tiles = standing + drawn + replacements[0], lastDrawn = replacements[1])) })
+        val previous = TableTileArrangement.arrange(input(before)) + replacements.associate { tile -> tile.id to inWall(tile.id) }
+
+        val unsorted = UnsortedHandTiles.after(previous, after, sortedPlayerIds = emptySet())
+        val waiting = TableTileArrangement.arrange(input(after).copy(unsortedTileIds = unsorted))
+
+        assertEquals(listOf(drawn.id, replacements[0].id), unsorted)
+        val handOrder = waiting.values.filter { it.row.region == TileRegion.HAND }.sortedBy { it.orderInRow }.map { it.tileId }
+        assertEquals(listOf(drawn.id, replacements[0].id), handOrder.takeLast(2), "Unsorted tiles stand at the right end in arrival order.")
+        assertTrue(waiting.getValue(drawn.id).unsorted)
+        assertEquals(TileMotionKind.ARC, TableStepMotionPlanner.plan(previous, waiting).single { it.tileId == drawn.id }.kind, "The drawn tile is lifted onto the hand.")
+
+        val sortedAfter = TableTileArrangement.arrange(input(after).copy(unsortedTileIds = UnsortedHandTiles.after(waiting, after, setOf(player.id))))
+        val sortMotions = TableStepMotionPlanner.plan(waiting, sortedAfter)
+
+        assertTrue(sortedAfter.values.none { it.unsorted })
+        assertTrue(sortMotions.filter { it.tileId in setOf(drawn.id, replacements[0].id) }.all { it.kind == TileMotionKind.ARC || it.kind == TileMotionKind.SLIDE })
+        assertTrue(sortMotions.any { it.kind == TileMotionKind.ARC }, "Sorting carries the unsorted tiles over the hand.")
+    }
+
+    /** 玩家打出牌時正在整理手牌：摸牌位的牌直接理進去，不會留在最右邊。 */
+    @Test
+    fun `discarding sorts the drawn tile straight into the hand`() {
+        val standing = List(3) { FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, it + 1)) }
+        val drawn = FakeIdentifiedTileFactory.create(Tile.Honor.West)
+        val player = FakeMahjongPlayerFactory.create(Wind.EAST, hand = Hand(tiles = standing, lastDrawn = drawn), discardPile = FakeDiscardPile())
+        val before = FakeTableStateFactory.create(players = listOf(player, FakeMahjongPlayerFactory.create(Wind.SOUTH)), turnPhase = TurnPhase.AwaitingAction)
+        val after = before.copy(
+            players = before.players.map {
+                if (it.id != player.id) it else it.copy(hand = Hand(tiles = standing - standing[0] + drawn), discardPile = it.discardPile.discardTile(standing[0]))
+            },
+        )
+
+        assertEquals(emptyList(), UnsortedHandTiles.after(TableTileArrangement.arrange(input(before)), after, sortedPlayerIds = emptySet()))
+    }
+
     /** 沒有實體牌牆的桌況不擺放牌牆的牌。 */
     @Test
     fun `wall tiles are skipped without a wall projection`() {
@@ -99,6 +147,20 @@ class TableTileArrangementTest {
 
         assertTrue(state.tileWall.getAllTiles().none { it.id in arrangement })
     }
+
+    /**
+     * 還在牌牆上的牌。
+     *
+     * @param tileId 牌的識別碼。
+     * @return 牌牆那一排中的擺放。
+     */
+    private fun inWall(tileId: Uuid) = ArrangedTile(
+        tileId = tileId,
+        row = TileRowKey(TileRegion.WALL, null, null),
+        orderInRow = 0,
+        placement = MahjongTileWallPlacement(x = 0.0, y = 64.0, z = 0.0, yaw = 0.0f),
+        pose = TilePose.FACE_DOWN,
+    )
 
     /** 北向、兩人桌、沒有牌牆投影的擺放輸入。 */
     private fun input(state: TableState) = TableTileArrangementInput(

@@ -103,14 +103,51 @@ internal object CompactWinDetailsCodec {
         HistoryDetailValueTypeKeys.ENTRIES -> JsonArray(
             listOf(
                 JsonPrimitive(ENTRIES_CODE),
-                array(value.getValue(ReplaySourceKeys.ENTRIES)).mapArray { raw ->
-                    val entry = obj(raw)
-                    val quantity = entry[ReplaySourceKeys.QUANTITY]?.takeUnless { it == JsonNull }?.let { encodeQuantity(obj(it)) }
-                    JsonArray(listOf(entry.getValue(ReplaySourceKeys.ID)) + quantity.orEmpty())
-                },
+                array(value.getValue(ReplaySourceKeys.ENTRIES)).mapArray { raw -> encodeEntry(obj(raw)) },
             ),
         )
         else -> error("Unsupported winner detail value type")
+    }
+
+    /**
+     * 編碼單一條目：只有 ID、ID 加數值，或含名稱數值與部分付款者標記的完整六欄。
+     *
+     * @param entry 保存的條目。
+     * @return 精簡陣列。
+     */
+    private fun encodeEntry(entry: JsonObject): JsonArray {
+        val quantity = entry[ReplaySourceKeys.QUANTITY]?.takeUnless { it == JsonNull }?.let { encodeQuantity(obj(it)) }
+        val nameQuantity = entry[ReplaySourceKeys.NAME_QUANTITY]?.takeUnless { it == JsonNull }?.let { encodeQuantity(obj(it)) }
+        val partial = (entry.getValue(ReplaySourceKeys.APPLIES_TO_SOME_PAYERS_ONLY) as JsonPrimitive).content.toBooleanStrict()
+        val id = entry.getValue(ReplaySourceKeys.ID)
+        if (nameQuantity == null && !partial) return JsonArray(listOf(id) + quantity.orEmpty())
+        return JsonArray(
+            listOf(id) +
+                (quantity ?: JsonArray(listOf(JsonNull, JsonNull))) +
+                (nameQuantity ?: JsonArray(listOf(JsonNull, JsonNull))) +
+                JsonPrimitive(if (partial) 1 else 0),
+        )
+    }
+
+    /**
+     * 還原單一條目。
+     *
+     * @param entry 精簡陣列。
+     * @return 明確的條目物件。
+     */
+    private fun decodeEntry(entry: JsonArray): JsonObject {
+        require(entry.size == 1 || entry.size == 3 || entry.size == FULL_ENTRY_SIZE) { "Compact winner entry has invalid fields" }
+        val quantity = if (entry.size >= 3 && entry[1] != JsonNull) decodeQuantity(entry[1], entry[2]) else JsonNull
+        val nameQuantity = if (entry.size == FULL_ENTRY_SIZE && entry[3] != JsonNull) decodeQuantity(entry[3], entry[4]) else JsonNull
+        val partial = entry.size == FULL_ENTRY_SIZE && (entry[5] as JsonPrimitive).content == "1"
+        return JsonObject(
+            mapOf(
+                ReplaySourceKeys.ID to entry[0],
+                ReplaySourceKeys.QUANTITY to quantity,
+                ReplaySourceKeys.NAME_QUANTITY to nameQuantity,
+                ReplaySourceKeys.APPLIES_TO_SOME_PAYERS_ONLY to JsonPrimitive(partial),
+            ),
+        )
     }
 
     /**
@@ -161,14 +198,7 @@ internal object CompactWinDetailsCodec {
                 JsonObject(
                     mapOf(
                         ReplaySourceKeys.TYPE to JsonPrimitive(HistoryDetailValueTypeKeys.ENTRIES),
-                        ReplaySourceKeys.ENTRIES to array(value[1]).mapArray { raw ->
-                            val entry = array(raw)
-                            require(entry.size == 1 || entry.size == 3) { "Compact winner entry has invalid fields" }
-                            JsonObject(
-                                mapOf(ReplaySourceKeys.ID to entry[0]) +
-                                    if (entry.size == 3) mapOf(ReplaySourceKeys.QUANTITY to decodeQuantity(entry[1], entry[2])) else emptyMap(),
-                            )
-                        },
+                        ReplaySourceKeys.ENTRIES to array(value[1]).mapArray { raw -> decodeEntry(array(raw)) },
                     ),
                 )
             }
@@ -208,4 +238,7 @@ internal object CompactWinDetailsCodec {
 
     /** 條目值固定代碼。 */
     private const val ENTRIES_CODE = 2
+
+    /** 含名稱數值與部分付款者標記的條目欄位數。 */
+    private const val FULL_ENTRY_SIZE = 6
 }

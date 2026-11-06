@@ -11,6 +11,7 @@ import kotlin.uuid.Uuid
  * @property orderInRow 牌在那一排中的順序。
  * @property placement 世界座標與朝向。
  * @property pose 姿態。
+ * @property unsorted 直接補進立牌、還沒理過，接在立牌最右邊。
  */
 data class ArrangedTile(
     val tileId: Uuid,
@@ -18,4 +19,5 @@ data class ArrangedTile(
     val orderInRow: Int,
     val placement: MahjongTileWallPlacement,
     val pose: TilePose,
+    val unsorted: Boolean = false,
 )

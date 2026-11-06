@@ -43,6 +43,14 @@ class DecisionTextResolver(
     }
 
     /**
+     * 跳過按鈕的名稱，與「跳過」動作在其他地方（例如牌譜）顯示的用語相同。
+     *
+     * @param ruleModuleId 決策所屬規則；null 時使用中立用語。
+     * @return 已登記的本地化名稱。
+     */
+    fun skipLabel(ruleModuleId: String?): Text = actionLabel(ruleModuleId, PASS_ACTION_ID)
+
+    /**
      * 取得操作卡提示框與選牌提示使用的動作說明。
      *
      * @param ruleModuleId 決策所屬規則；null 時使用中立用語。

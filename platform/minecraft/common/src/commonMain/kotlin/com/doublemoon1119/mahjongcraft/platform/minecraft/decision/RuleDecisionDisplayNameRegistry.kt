@@ -2,7 +2,7 @@ package com.doublemoon1119.mahjongcraft.platform.minecraft.decision
 
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.RuleDecisionDisplayNameRegistrar
 
-/** 將規則選擇 step／option 的完整 ID 映射到 Minecraft translation key；擴充只透過 [RuleDecisionDisplayNameRegistrar] 登記。 */
+/** 將規則選擇選項的完整 ID 映射到 Minecraft translation key；擴充只透過 [RuleDecisionDisplayNameRegistrar] 登記。 */
 interface RuleDecisionDisplayNameRegistry : RuleDecisionDisplayNameRegistrar {
 
     /**

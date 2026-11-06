@@ -16,11 +16,14 @@ import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiHandValueResult
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.riichiWallProgress
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.YakuType
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
+import kotlin.uuid.Uuid
 
 /** 日麻專屬的胡牌詳情解析器：一般胡牌的役種／翻符／寶牌，以及流局滿貫的特殊結算內容。 */
 object RiichiWinSettlementDetailResolver : WinSettlementDetailResolver {
     override fun resolve(
         state: TableState,
+        winnerId: Uuid,
+        responsiblePlayerId: Uuid?,
         handValue: HandValueResult,
         publicFace: (TileValue) -> TileFaceView,
     ): List<WinSettlementDetailField> = riichiDetails(state, handValue, publicFace)

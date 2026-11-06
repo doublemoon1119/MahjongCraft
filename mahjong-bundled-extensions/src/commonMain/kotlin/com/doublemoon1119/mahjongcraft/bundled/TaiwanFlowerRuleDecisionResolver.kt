@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.bundled
 
+import com.doublemoon1119.mahjongcraft.flow.common.game.event.PublicGameActionIds
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.PendingRuleDecision
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionConfig
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionInputSpec
@@ -7,6 +8,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionStep
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionSubmission
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionTiming
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionWinOutcome
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.accepts
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.taiwan.TaiwanRoundOutcomeIds
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.taiwan.TaiwanSpecialFlowerWinDetail
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.TableStep
@@ -71,12 +73,7 @@ object TaiwanFlowerRuleDecisionResolver : RuleDecisionResolver {
         playerId: Uuid,
         submission: RuleDecisionSubmission,
         ruleModule: MahjongRuleModule<*>,
-    ): Boolean = submission is RuleDecisionSubmission.Choice &&
-        submission.optionId in setOf(
-            TaiwanFlowerRuleDecisionIds.ACCEPT_FLOWER_WIN,
-            TaiwanFlowerRuleDecisionIds.PASS_FLOWER_WIN,
-        ) &&
-        playerId in decision.participantPlayerIds
+    ): Boolean = playerId in decision.participantPlayerIds && decision.inputSpecsByPlayerId[playerId]?.accepts(submission) == true
 
     /** 逾時一律放棄花胡並繼續補花。 */
     override fun fallbackSubmission(
@@ -113,7 +110,7 @@ object TaiwanFlowerRuleDecisionResolver : RuleDecisionResolver {
                 val submission = decision.submissionsByPlayerId.getValue(winnerId) as RuleDecisionSubmission.Choice
                 TaiwanFlowerFlow.resolve(
                     reconstructPending(tableState, winnerId, decision.timing),
-                    submission.optionId == TaiwanFlowerRuleDecisionIds.ACCEPT_FLOWER_WIN,
+                    submission.optionId != TaiwanFlowerRuleDecisionIds.PASS_FLOWER_WIN,
                 )
             }
 
@@ -122,7 +119,11 @@ object TaiwanFlowerRuleDecisionResolver : RuleDecisionResolver {
         val isOpening = decision.timing == RuleDecisionTiming.ROUND_START
         val settled = if (isOpening) result.withOpeningReplacementsStanding() else result
         val openingDrawStep = openingDraw?.let { listOf(TableStep(it.tableState, emptyList())) }.orEmpty()
-        return resolution(settled, decision.stepIndex) { steps -> openingDrawStep + steps.toTableSteps(isOpening) }
+        // 局首補完牌之後各家一起理牌，補進手牌還沒理過的牌才收進手牌。
+        val sortStep = (settled as? TaiwanFlowerFlow.Result.Completed)?.takeIf { isOpening }?.let { completed ->
+            listOf(TableStep(completed.tableState, listOf(TableStepEvent.HandsSorted(completed.tableState.players.mapTo(mutableSetOf()) { it.id }))))
+        }.orEmpty()
+        return resolution(settled, decision.stepIndex) { steps -> openingDrawStep + steps.toTableSteps(isOpening) + sortStep }
     }
 
     /**
@@ -160,7 +161,7 @@ object TaiwanFlowerRuleDecisionResolver : RuleDecisionResolver {
                 result.pending.revealedFlower.id,
                 result.pending.position.replacementsDue,
             ),
-            nextStep = flowerWinStep(result.pending.opportunity.winnerId, stepIndex + 1),
+            nextStep = flowerWinStep(result.pending, stepIndex + 1),
             steps = presentationSteps(result.steps),
         )
 
@@ -191,6 +192,8 @@ object TaiwanFlowerRuleDecisionResolver : RuleDecisionResolver {
                         winnerPlayerIds = setOf(winnerId),
                         responsiblePlayerIds = setOfNotNull(result.opportunity.payerId),
                         winningTileId = result.winningFlower.id,
+                        // 花胡與手牌組成無關，不攤牌。
+                        revealsWinnerHands = false,
                     ),
                     scoreDeltas = scored.players.associate { player ->
                         val previousScore = result.tableState.players.first { it.id == player.id }.score
@@ -199,6 +202,7 @@ object TaiwanFlowerRuleDecisionResolver : RuleDecisionResolver {
                     extensionDetail = TaiwanSpecialFlowerWinDetail(
                         taiTypeId = result.opportunity.type.id,
                         tai = result.opportunity.type.tai,
+                        winningFlowerId = result.winningFlower.id,
                     ),
                 ),
             )
@@ -251,28 +255,44 @@ object TaiwanFlowerRuleDecisionResolver : RuleDecisionResolver {
     /** 建立摸牌後自動續跑的步驟。 */
     private fun processDrawFollowUpStep(index: Int) = RuleDecisionStep(TaiwanFlowerRuleDecisionIds.PROCESS_DRAW_FOLLOW_UP, index, emptyMap())
 
-    /** 建立花胡接受／放棄步驟。 */
-    private fun flowerWinStep(winnerId: Uuid, index: Int) = RuleDecisionStep(
-        TaiwanFlowerRuleDecisionIds.SPECIAL_FLOWER_WIN,
-        index,
-        mapOf(
-            winnerId to RuleDecisionInputSpec.SingleChoice(
-                listOf(TaiwanFlowerRuleDecisionIds.ACCEPT_FLOWER_WIN, TaiwanFlowerRuleDecisionIds.PASS_FLOWER_WIN),
+    /**
+     * 建立花胡接受／放棄步驟。胡牌的選項沿用一般胡牌動作：八仙過海是自摸，七搶一搶別人的花是胡別人的牌；選項展示這次
+     * 和牌用到的花牌，搶來的花排在最後。放棄以一般的跳過呈現。
+     *
+     * @param pending 等待選擇的花胡資格。
+     * @param index 選擇步驟序號。
+     * @return 花胡選擇步驟。
+     */
+    private fun flowerWinStep(pending: TaiwanFlowerFlow.Pending, index: Int): RuleDecisionStep {
+        val winnerId = pending.opportunity.winnerId
+        val winnerFlowers = pending.tableState.players.first { it.id == winnerId }.tileAreas[TaiwanPlayerTileAreaIds.FLOWERS]?.tiles.orEmpty()
+        val flowers = winnerFlowers.filterNot { it.id == pending.revealedFlower.id } + pending.revealedFlower
+        val winOption = if (pending.opportunity.payerId == null) PublicGameActionIds.TSUMO else PublicGameActionIds.RON
+        return RuleDecisionStep(
+            TaiwanFlowerRuleDecisionIds.SPECIAL_FLOWER_WIN,
+            index,
+            mapOf(
+                winnerId to RuleDecisionInputSpec.SingleChoice(
+                    optionIds = listOf(winOption, TaiwanFlowerRuleDecisionIds.PASS_FLOWER_WIN),
+                    previewTileIdsByOptionId = mapOf(winOption to flowers.map { it.id }),
+                    passOptionId = TaiwanFlowerRuleDecisionIds.PASS_FLOWER_WIN,
+                ),
             ),
-        ),
-    )
+        )
+    }
 }
 
 /**
  * 將補花的牌區變化依序轉成中間步驟，每一次移出或補牌是一步。
  *
- * 局首補花時閒家補到的牌直接併入立牌，與最後結果的擺法一致。牌局中亮出的花以移出手牌的動作呈現。
+ * 補到的牌照一般摸牌先放在摸牌位，再補下一張時，摸牌位上的牌接到立牌最右邊；局首補完後各家一起理牌時才收進立牌。
+ * 牌局中亮出的花以移出手牌的動作呈現。
  *
  * @param isOpening 是否為局首補花。
  * @return 依原順序排列的中間步驟。
  */
 private fun List<TileReplacementRounds.Step>.toTableSteps(isOpening: Boolean): List<TableStep> = map { step ->
-    val state = if (isOpening) step.tableState.withOpeningReplacementsStanding() else step.tableState
+    val state = step.tableState
     val events = if (!isOpening && step is TileReplacementRounds.Step.SetAside) {
         listOf(TableStepEvent.ActionDeclared(step.playerId, TAIWAN_REVEAL_FLOWER_ACTION))
     } else {

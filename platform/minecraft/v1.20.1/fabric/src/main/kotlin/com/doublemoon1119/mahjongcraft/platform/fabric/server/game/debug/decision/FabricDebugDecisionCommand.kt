@@ -547,7 +547,7 @@ class FabricDebugDecisionCommand(
          */
         private fun ruleDecision(): RuleDecisionPromptDto? = when (this) {
             DECISION_CONFIRM -> RuleDecisionPromptDto.Confirmation
-            DECISION_CHOICE -> RuleDecisionPromptDto.SingleChoice(listOf("mahjongcraft:alpha", "mahjongcraft:beta", "mahjongcraft:gamma"))
+            DECISION_CHOICE -> RuleDecisionPromptDto.SingleChoice(listOf("mahjongcraft:alpha", "mahjongcraft:beta", "mahjongcraft:gamma"), emptyMap(), null)
             DECISION_TILES -> RuleDecisionPromptDto.TileSelection(
                 eligibleTileIds = List(14) { Uuid.random().toString() },
                 eligibleTileAssetKeys = listOf(

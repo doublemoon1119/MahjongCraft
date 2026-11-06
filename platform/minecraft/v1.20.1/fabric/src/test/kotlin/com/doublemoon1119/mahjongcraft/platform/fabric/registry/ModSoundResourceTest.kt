@@ -1,6 +1,7 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.registry
 
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongAnimationSounds
+import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.taiwan.TaiwanGameActionVoiceSoundIds
 import com.doublemoon1119.mahjongcraft.platform.minecraft.sound.BuiltInGameActionVoiceSoundIds
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonArray
@@ -77,6 +78,11 @@ class ModSoundResourceTest {
         BuiltInGameActionVoiceSoundIds.RIICHI to "mahjongcraft:voice/riichi",
         BuiltInGameActionVoiceSoundIds.RON to "mahjongcraft:voice/ron",
         BuiltInGameActionVoiceSoundIds.TSUMO to "mahjongcraft:voice/tsumo",
+        TaiwanGameActionVoiceSoundIds.CHI to "mahjongcraft:voice/taiwan/chi",
+        TaiwanGameActionVoiceSoundIds.PON to "mahjongcraft:voice/taiwan/pon",
+        TaiwanGameActionVoiceSoundIds.KAN to "mahjongcraft:voice/taiwan/kan",
+        TaiwanGameActionVoiceSoundIds.HU to "mahjongcraft:voice/taiwan/hu",
+        TaiwanGameActionVoiceSoundIds.TSUMO to "mahjongcraft:voice/taiwan/tsumo",
         MahjongAnimationSounds.WIN_LIGHTNING to "mahjongcraft:win/lightning",
     )
 

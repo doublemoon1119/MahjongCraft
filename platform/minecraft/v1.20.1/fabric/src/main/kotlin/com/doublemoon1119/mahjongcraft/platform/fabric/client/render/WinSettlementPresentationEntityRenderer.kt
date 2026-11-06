@@ -11,6 +11,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.entity.WinSettlementRanki
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.WinSettlementWinnerSnapshot
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.winSettlementTileGroups
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.BuiltInWinSettlementTemplateKeys
+import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.EntryEmphasis
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.ExtensionPresentationField
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.PresentationAlignment
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.PresentationAnimationEffect
@@ -29,6 +30,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.Presentatio
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.PresentationTimelineAnchor
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.PresentationValue
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.ScoreRankingAnimation
+import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.StandardWinSettlementLayout
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.WinSettlementPresentationFieldSnapshot
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.WinSettlementPresentationTemplateRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.WinSettlementTextKeys
@@ -197,10 +199,11 @@ class WinSettlementPresentationEntityRenderer(
                         .map {
                             PresentationValue.EntryListValue.Entry(
                                 translationKey = it[0],
+                                translationArgument = it[5].ifBlank { null },
                                 trailingText = it[1],
                                 trailingTranslationKey = it[2].ifBlank { null },
                                 trailingTranslationArgument = it[3].ifBlank { null },
-                                highlighted = it[4] == WinSettlementPresentationEntity.ENTRY_HIGHLIGHTED,
+                                emphasis = EntryEmphasis.entries.firstOrNull { emphasis -> emphasis.name == it[4] } ?: EntryEmphasis.NORMAL,
                             )
                         },
                 )
@@ -211,6 +214,7 @@ class WinSettlementPresentationEntityRenderer(
         return WinSettlementPresentationFieldSnapshot(
             outcomeId = entity.outcomeId,
             isTsumo = entity.isTsumo,
+            winActionLabelKey = entity.winActionLabelKey,
             winnerId = playerId,
             winnerDisplayName = playerName(playerId),
             winnerIsAi = isAi,
@@ -332,7 +336,7 @@ class WinSettlementPresentationEntityRenderer(
                 val reveal = ((local - snapshot.initialFadeTicks - index * snapshot.entryStaggerTicks) / 6.0).coerceIn(0.0, 1.0).toFloat()
                 if (reveal <= MIN_VISIBLE_ALPHA) return@forEachIndexed
                 val entryScale = 0.85f
-                val emphasisScale = if (entry.highlighted) lerp(1.08f, 1f, reveal) else 1f
+                val emphasisScale = if (entry.emphasis == EntryEmphasis.HIGHLIGHTED) lerp(1.08f, 1f, reveal) else 1f
                 val count = (layoutSolver.resolve(layout, snapshot) as? PresentationValue.EntryListValue)?.entries?.size ?: 0
                 val columns = ((count + layout.entriesPerColumn - 1) / layout.entriesPerColumn).coerceAtLeast(1)
                 val columnWidth = layout.width / columns
@@ -340,7 +344,7 @@ class WinSettlementPresentationEntityRenderer(
                 val row = index % layout.entriesPerColumn
                 val rowX = x + column * columnWidth
                 val rowY = y + row * layout.rowHeight
-                val title = Text.translatable(entry.translationKey)
+                val title = entry.translationArgument?.let { Text.translatable(entry.translationKey, it) } ?: Text.translatable(entry.translationKey)
                 val titleScale = fittedScale(textRenderer.getWidth(title).toFloat(), columnWidth - 44f, entryScale)
                 val titleY = rowY + crossAxisOffset(layout.rowHeight, textRenderer.fontHeight * titleScale, layout.verticalAlignment)
                 val trailing = entry.trailingTranslationKey?.let { key ->
@@ -351,15 +355,20 @@ class WinSettlementPresentationEntityRenderer(
                 matrices.translate(rowX, rowY + layout.rowHeight / 2f, 0f)
                 matrices.scale(emphasisScale, emphasisScale, 1f)
                 matrices.translate(-rowX, -(rowY + layout.rowHeight / 2f), 0f)
-                draw(title, rowX, titleY, Align.LEFT, color(if (entry.highlighted) 0xFFD45A else 0xFFFFFF, alpha * reveal), titleScale, matrices, consumers)
-                if (trailing != null) draw(trailing, x + (column + 1) * columnWidth - 5f, trailingY, Align.RIGHT, color(if (entry.highlighted) 0xFF8C42 else 0xFFE08A, alpha * reveal), entryScale, matrices, consumers)
+                val (titleRgb, trailingRgb) = when (entry.emphasis) {
+                    EntryEmphasis.NORMAL -> 0xFFFFFF to 0xFFE08A
+                    EntryEmphasis.HIGHLIGHTED -> 0xFFD45A to 0xFF8C42
+                    EntryEmphasis.CONDITIONAL -> (StandardWinSettlementLayout.CONDITIONAL_ARGB and 0xFFFFFF) to (StandardWinSettlementLayout.CONDITIONAL_TRAILING_ARGB and 0xFFFFFF)
+                }
+                draw(title, rowX, titleY, Align.LEFT, color(titleRgb, alpha * reveal), titleScale, matrices, consumers)
+                if (trailing != null) draw(trailing, x + (column + 1) * columnWidth - 5f, trailingY, Align.RIGHT, color(trailingRgb, alpha * reveal), entryScale, matrices, consumers)
                 matrices.pop()
             }
             is PresentationLayout.Row -> {
                 renderContainer(layout.style, x, y, size, alpha, matrices, consumers)
                 val contentWidth = size.width - layout.style.padding * 2f
                 val slots = layoutSolver.allocateMainAxis(layout.children, contentWidth, layout.spacing, snapshot)
-                val positions = arrange(slots.map { it.second }, contentWidth, layout.spacing, layout.arrangement)
+                val positions = arrange(slots.map { it.second }, contentWidth, layout.spacing, layout.arrangement, layout.children.map { layoutSolver.occupies(it, snapshot) })
                 layout.children.forEachIndexed { index, child ->
                     val childHeight = layoutSolver.measure(child.unweighted(), snapshot).height
                     val childY = y + layout.style.padding + crossAxisOffset(size.height - layout.style.padding * 2f, childHeight, layout.alignment)
@@ -370,7 +379,7 @@ class WinSettlementPresentationEntityRenderer(
                 renderContainer(layout.style, x, y, size, alpha, matrices, consumers)
                 val contentHeight = size.height - layout.style.padding * 2f
                 val heights = layoutSolver.allocateVerticalMainAxis(layout.children, contentHeight, layout.spacing, snapshot)
-                val positions = arrange(heights, contentHeight, layout.spacing, layout.arrangement)
+                val positions = arrange(heights, contentHeight, layout.spacing, layout.arrangement, layout.children.map { layoutSolver.occupies(it, snapshot) })
                 layout.children.forEachIndexed { index, child ->
                     val childLayout = child.unweighted()
                     val childWidth = layoutSolver.measure(childLayout, snapshot).width

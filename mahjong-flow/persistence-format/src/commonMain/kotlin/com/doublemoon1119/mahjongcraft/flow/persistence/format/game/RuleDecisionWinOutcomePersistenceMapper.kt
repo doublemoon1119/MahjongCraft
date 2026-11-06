@@ -13,6 +13,7 @@ fun RuleDecisionWinOutcome.toPersistenceDto(): RuleDecisionWinOutcomePersistence
     winnerPlayerIds = winnerPlayerIds.mapTo(mutableSetOf(), Uuid::toString),
     responsiblePlayerIds = responsiblePlayerIds.mapTo(mutableSetOf(), Uuid::toString),
     winningTileId = winningTileId.toString(),
+    revealsWinnerHands = revealsWinnerHands,
 )
 
 /**
@@ -25,4 +26,5 @@ fun RuleDecisionWinOutcomePersistenceDto.toDomain(): RuleDecisionWinOutcome = Ru
     winnerPlayerIds = winnerPlayerIds.mapTo(mutableSetOf(), Uuid::parse),
     responsiblePlayerIds = responsiblePlayerIds.mapTo(mutableSetOf(), Uuid::parse),
     winningTileId = Uuid.parse(winningTileId),
+    revealsWinnerHands = revealsWinnerHands,
 )

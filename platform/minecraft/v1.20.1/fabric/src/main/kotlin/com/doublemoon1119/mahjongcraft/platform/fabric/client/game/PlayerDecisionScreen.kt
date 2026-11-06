@@ -2,6 +2,7 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.client.game
 
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.PlayerDecisionPromptDto
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.PlayerDecisionSelectionKindDto
+import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.RuleDecisionPromptDto
 import net.minecraft.client.gui.DrawContext
 import net.minecraft.client.gui.screen.Screen
 import net.minecraft.client.gui.tooltip.TooltipPositioner
@@ -76,9 +77,9 @@ internal class PlayerDecisionScreen(
                 .dimensions(bounds.x, bounds.y, bounds.width, bounds.height)
                 .build()
         }
-        skipButton = if (prompt.ruleDecision == null) {
+        skipButton = if (prompt.ruleDecision == null || rulePassOptionId != null) {
             val bounds = layout.skipButtonBounds
-            ButtonWidget.builder(Text.translatable("mahjongcraft.hud.action.skip")) { onSkipClicked() }
+            ButtonWidget.builder(controller.decisionTexts.skipLabel(prompt.ruleModuleId)) { onSkipClicked() }
                 .dimensions(bounds.x, bounds.y, bounds.width, bounds.height)
                 .build()
         } else {
@@ -107,10 +108,19 @@ internal class PlayerDecisionScreen(
         }
     }
 
-    /** 他家捨牌與搶和視窗的跳過提交正式 Pass，自己回合的跳過改為進入普通實體出牌模式。 */
+    /** 規則選擇中代表跳過的選項；沒有時為 null。 */
+    private val rulePassOptionId: String?
+        get() = (prompt.ruleDecision as? RuleDecisionPromptDto.SingleChoice)?.passOptionId
+
+    /**
+     * 規則選擇的跳過提交規則指定的跳過選項；他家捨牌與搶和視窗的跳過提交正式 Pass，自己回合的跳過改為進入普通實體出牌模式。
+     */
     private fun onSkipClicked() {
         val pass = prompt.actions.firstOrNull { it.actionId == PASS_ACTION_ID }
-        if (isReaction && pass != null) {
+        val rulePass = rulePassOptionId
+        if (rulePass != null) {
+            controller.submit(prompt, PlayerDecisionSelectionKindDto.DECISION_CHOICE, rulePass)
+        } else if (isReaction && pass != null) {
             controller.submit(prompt, PlayerDecisionSelectionKindDto.ACTION, pass.token)
         } else {
             controller.beginDirectDiscard(prompt)

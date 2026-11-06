@@ -14,6 +14,7 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.RuleDecisi
 import com.doublemoon1119.mahjongcraft.flow.server.game.policy.GameVisibilityPolicyImpl
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.FakeGameRepository
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameSnapshotSynchronizer
+import com.doublemoon1119.mahjongcraft.flow.server.game.service.HandSortPreferenceStore
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.RuleDecisionWinPresentationStager
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.WinPresentationHandoff
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.WinSettlementDetailResolverRegistry
@@ -87,6 +88,7 @@ class AdvanceAutomaticRuleDecisionUseCaseTest {
             ),
             presentationPublisher = presentationPublisher,
             winPresentationStager = RuleDecisionWinPresentationStager(WinPresentationHandoff(), WinSettlementDetailResolverRegistry(bundledCoreExtensionRegistries().componentRegistry)),
+            handSortPreferenceStore = HandSortPreferenceStore(),
         )
         resolverRegistry.register(MultiStepResolver(replacementTile))
 
@@ -130,6 +132,7 @@ class AdvanceAutomaticRuleDecisionUseCaseTest {
             ),
             presentationPublisher = presentationPublisher,
             winPresentationStager = RuleDecisionWinPresentationStager(WinPresentationHandoff(), WinSettlementDetailResolverRegistry(bundledCoreExtensionRegistries().componentRegistry)),
+            handSortPreferenceStore = HandSortPreferenceStore(),
         )
 
         assertFalse(useCase(table.id))
@@ -166,6 +169,7 @@ class AdvanceAutomaticRuleDecisionUseCaseTest {
             ),
             presentationPublisher = FakeGamePresentationPublisher(),
             winPresentationStager = RuleDecisionWinPresentationStager(WinPresentationHandoff(), WinSettlementDetailResolverRegistry(bundledCoreExtensionRegistries().componentRegistry)),
+            handSortPreferenceStore = HandSortPreferenceStore(),
         )
 
         assertFailsWith<RuleContractViolationException> { useCase(table.id) }

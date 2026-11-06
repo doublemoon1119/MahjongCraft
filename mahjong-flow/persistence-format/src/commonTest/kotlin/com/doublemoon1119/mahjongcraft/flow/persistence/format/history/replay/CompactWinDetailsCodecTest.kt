@@ -14,7 +14,7 @@ class CompactWinDetailsCodecTest {
     /** 測試用 JSON 解析器。 */
     private val json = Json
 
-    /** 數值、牌面與條目明細應保留多位贏家、有無數值的條目與空明細。 */
+    /** 數值、牌面與條目明細應保留多位贏家、有無數值、名稱數值與部分付款者標記的條目，以及空明細。 */
     @Test
     fun `all detail variants round trip for multiple winners`() {
         val details = json.parseToJsonElement(
@@ -26,8 +26,10 @@ class CompactWinDetailsCodecTest {
                   {"id": "test:quantities", "value": {"type": "quantities", "quantities": [{"unitId": "test:han", "amount": 3}, {"unitId": "test:fu", "amount": 30}]}},
                   {"id": "test:faces", "value": {"type": "tile_faces", "faces": [{"type": "honor", "value": "NORTH"}]}},
                   {"id": "test:entries", "value": {"type": "entries", "entries": [
-                    {"id": "test:plain"},
-                    {"id": "test:counted", "quantity": {"unitId": "test:han", "amount": 2}}
+                    {"id": "test:plain", "quantity": null, "nameQuantity": null, "appliesToSomePayersOnly": false},
+                    {"id": "test:counted", "quantity": {"unitId": "test:han", "amount": 2}, "nameQuantity": null, "appliesToSomePayersOnly": false},
+                    {"id": "test:named", "quantity": {"unitId": "test:han", "amount": 5}, "nameQuantity": {"unitId": "test:streak", "amount": 2}, "appliesToSomePayersOnly": true},
+                    {"id": "test:partial", "quantity": null, "nameQuantity": null, "appliesToSomePayersOnly": true}
                   ]}}
                 ]
               },

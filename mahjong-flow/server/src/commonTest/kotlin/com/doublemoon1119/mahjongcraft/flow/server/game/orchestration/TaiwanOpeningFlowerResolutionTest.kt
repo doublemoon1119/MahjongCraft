@@ -1,7 +1,9 @@
 package com.doublemoon1119.mahjongcraft.flow.server.game.orchestration
 
 import com.doublemoon1119.mahjongcraft.bundled.TaiwanFlowerRuleDecisionResolver
+import com.doublemoon1119.mahjongcraft.flow.common.game.event.PublicGameActionIds
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.PendingRuleDecision
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionInputSpec
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionTiming
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.TableStepEvent
 import com.doublemoon1119.mahjongcraft.logic.base.Hand
@@ -11,6 +13,7 @@ import com.doublemoon1119.mahjongcraft.logic.component.ComponentSet
 import com.doublemoon1119.mahjongcraft.logic.module.BuiltInRuleModuleIds
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TAIWAN_REVEAL_FLOWER_ACTION
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanDiscardPile
+import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanFlowerRuleDecisionIds
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanPendingFlowerFollowUp
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanPlayerTileAreaIds
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanRuleConfig
@@ -28,12 +31,40 @@ import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.tileArea
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertIs
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 import kotlin.uuid.Uuid
 
 /** 驗證台灣麻將局首補花：莊家先摸開門牌，再從莊家開始逐輪補花，並依處理順序回報呈現步驟。 */
 class TaiwanOpeningFlowerResolutionTest {
+    /** 起手八張花時，胡牌的選項沿用自摸並展示這八張花；放棄的選項不展示牌，以一般的跳過呈現。 */
+    @Test
+    fun `the eight flowers choice shows the flowers on the win option`() {
+        val flowers = TaiwanTileTypes.ALL.map { FakeIdentifiedTileFactory.create(Tile.Extension(it)) }
+        val module = TaiwanRuleModule(BuiltInRuleModuleIds.TAIWAN, TaiwanRuleConfig())
+        val players = Wind.entries.mapIndexed { index, wind ->
+            val hand = if (index == 0) flowers + List(8) { ordinary() } else List(16) { ordinary() }
+            FakeMahjongPlayerFactory.create(wind, hand = Hand(tiles = hand), discardPile = TaiwanDiscardPile())
+        }
+        val table = FakeTableStateFactory.create(
+            players = players,
+            dealerPlayerId = players[0].id,
+            config = module.config,
+            tileWall = TileWall(List(LIVE_TILES) { ordinary() }),
+            reservedWallTiles = List(RESERVED_TILES) { ordinary() },
+        )
+        val step = assertNotNull(TaiwanFlowerRuleDecisionResolver.begin(RuleDecisionTiming.ROUND_START, table, module))
+
+        val resolution = TaiwanFlowerRuleDecisionResolver.resolve(table, PendingRuleDecision.open(step, RuleDecisionTiming.ROUND_START), module)
+
+        val choice = assertIs<RuleDecisionInputSpec.SingleChoice>(assertNotNull(resolution.nextStep).inputSpecsByPlayerId.getValue(players[0].id))
+        assertEquals(listOf(PublicGameActionIds.TSUMO, TaiwanFlowerRuleDecisionIds.PASS_FLOWER_WIN), choice.optionIds)
+        assertEquals(flowers.map { it.id }.toSet(), choice.previewTileIdsByOptionId.getValue(PublicGameActionIds.TSUMO).toSet())
+        assertEquals(null, choice.previewTileIdsByOptionId[TaiwanFlowerRuleDecisionIds.PASS_FLOWER_WIN])
+        assertEquals(TaiwanFlowerRuleDecisionIds.PASS_FLOWER_WIN, choice.passOptionId, "Passing is shown as the usual skip.")
+    }
+
     /** 莊家先摸一張，第一輪莊家一次補兩張、下家補一張；莊家補到的花在第二輪再補，補完莊家直接保留摸牌位的牌。 */
     @Test
     fun `the dealer draws first and flowers are replaced round by round`() {
@@ -61,17 +92,19 @@ class TaiwanOpeningFlowerResolutionTest {
         val resolution = TaiwanFlowerRuleDecisionResolver.resolve(table, PendingRuleDecision.open(step, RuleDecisionTiming.ROUND_START), module)
 
         val (dealer, downstream) = players.map { it.id }
-        // 莊家摸牌，之後每一家的亮花與補牌各一步；同一家一次亮出的花與一次補到的牌在同一步。
+        // 莊家摸牌，之後每一家的亮花與補牌各一步；同一家一次亮出的花與一次補到的牌在同一步。補完之後各家一起理牌。
         val steps = resolution.steps
-        assertEquals(7, steps.size)
+        assertEquals(8, steps.size)
         assertEquals(TileArea(TileRegion.DRAWN, dealer), steps[0].tableState.areaOf(openingTile))
         listOf(flowers[0], flowers[1]).forEach { assertEquals(TileArea(TileRegion.SET_ASIDE, dealer), steps[1].tableState.areaOf(it)) }
         listOf(replacements[0], replacements[1]).forEach { assertEquals(dealer, steps[2].tableState.tileArea(it.id)?.ownerId) }
         assertEquals(TileArea(TileRegion.SET_ASIDE, downstream), steps[3].tableState.areaOf(flowers[2]))
-        assertEquals(TileArea(TileRegion.HAND, downstream), steps[4].tableState.areaOf(replacements[2]), "Non-dealer replacements join the hand.")
+        assertEquals(TileArea(TileRegion.DRAWN, downstream), steps[4].tableState.areaOf(replacements[2]), "Replacements land in the drawn slot like a draw.")
         assertEquals(TileArea(TileRegion.SET_ASIDE, dealer), steps[5].tableState.areaOf(flowers[3]))
         assertEquals(TileArea(TileRegion.DRAWN, dealer), steps[6].tableState.areaOf(replacements[3]))
-        assertTrue(steps.all { it.events.isEmpty() }, "Opening replacements are not declarations.")
+        assertTrue(steps.dropLast(1).all { it.events.isEmpty() }, "Opening replacements are not declarations.")
+        assertEquals(listOf(TableStepEvent.HandsSorted(players.mapTo(mutableSetOf()) { it.id })), steps.last().events)
+        assertEquals(TileArea(TileRegion.HAND, downstream), steps.last().tableState.areaOf(replacements[2]), "Sorting takes the drawn replacement into the hand.")
         val after = resolution.tableState
         assertEquals(replacements[3], after.players[0].hand.lastDrawn)
         assertEquals(17, after.players[0].hand.standingTiles.size)

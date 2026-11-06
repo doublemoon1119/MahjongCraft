@@ -509,12 +509,6 @@ object MinecraftHistoryScreenKeys {
     /** 單局交易時間格式。 */
     const val ROUND_TIMING = "mahjongcraft.history_screen.round.timing"
 
-    /** 自摸結算名稱。 */
-    const val ROUND_OUTCOME_TSUMO = "mahjongcraft.history_screen.round.outcome.tsumo"
-
-    /** 榮和結算名稱。 */
-    const val ROUND_OUTCOME_RON = "mahjongcraft.history_screen.round.outcome.ron"
-
     /** 流局滿貫結算名稱。 */
     const val ROUND_OUTCOME_NAGASHI_MANGAN = "mahjongcraft.history_screen.round.outcome.nagashi_mangan"
 

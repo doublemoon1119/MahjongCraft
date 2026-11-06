@@ -6,6 +6,7 @@ import com.doublemoon1119.mahjongcraft.logic.base.TileFaceView
 import com.doublemoon1119.mahjongcraft.logic.base.TileValue
 import com.doublemoon1119.mahjongcraft.logic.judgment.HandValueResult
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
+import kotlin.uuid.Uuid
 
 /**
  * 將權威胡牌結果轉換為規則專屬的語意詳情欄位，不指定其呈現方式。
@@ -20,12 +21,16 @@ interface WinSettlementDetailResolver {
      * 牌面欄位一律以 [publicFace] 轉換，只帶公共讀取者可知的外觀與特徵，不引用局內牌張。
      *
      * @param state 胡牌成立時的權威桌況。
+     * @param winnerId 這筆詳情所屬的贏家。
+     * @param responsiblePlayerId 單獨付款的玩家，例如放銃者；由其他玩家一起付款（例如自摸）時為 null。
      * @param handValue 已完成計算的胡牌結果。
      * @param publicFace 將牌值轉成公開牌面的投影。
      * @return 規則專屬的胡牌詳情欄位；沒有要提供附加資料時回傳空清單。
      */
     fun resolve(
         state: TableState,
+        winnerId: Uuid,
+        responsiblePlayerId: Uuid?,
         handValue: HandValueResult,
         publicFace: (TileValue) -> TileFaceView,
     ): List<WinSettlementDetailField>

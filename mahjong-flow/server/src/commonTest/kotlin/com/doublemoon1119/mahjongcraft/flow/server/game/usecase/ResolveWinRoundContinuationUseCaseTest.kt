@@ -136,6 +136,7 @@ class ResolveWinRoundContinuationUseCaseTest {
                     winnerPlayerIds = setOf(winner.id),
                     responsiblePlayerIds = setOf(responsible.id),
                     winningTileId = winningTileId,
+                    revealsWinnerHands = true,
                 ),
             ),
         )

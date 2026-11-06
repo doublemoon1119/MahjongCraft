@@ -348,11 +348,13 @@ class MahjongCraftModClient : ClientModInitializer {
             tableSpaceObstructions.clearTable(tableId)
             tileAppearanceResolver.clear(tableId)
             automaticControlUpdateCoordinator.clearTable(tableId)
+            handTileLayoutController.removeTable(tableId)
             val client = MinecraftClient.getInstance()
             if (isShowingRoomForTable(client.currentScreen, tableId)) {
                 client.setScreen(null)
             }
         }
+        MahjongChannels.privateHandOrder.registerClientReceiver(json, handTileLayoutController::receive)
         MahjongChannels.gameSnapshot.registerClientReceiver(json) { payload ->
             stateStore.applyGameSnapshot(
                 gameId = Uuid.parse(payload.gameId),

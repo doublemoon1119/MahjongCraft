@@ -13,7 +13,9 @@ object FallbackWinSettlementDetailTextFormatter : WinSettlementDetailTextFormatt
         entries.map { entry ->
             PresentationValue.EntryListValue.Entry(
                 translationKey = entry.id,
+                translationArgument = entry.nameQuantity?.amount?.toString(),
                 trailingText = entry.quantity?.let { "${it.amount} ${it.unitId}" }.orEmpty(),
+                emphasis = if (entry.appliesToSomePayersOnly) EntryEmphasis.CONDITIONAL else EntryEmphasis.NORMAL,
             )
         },
     )

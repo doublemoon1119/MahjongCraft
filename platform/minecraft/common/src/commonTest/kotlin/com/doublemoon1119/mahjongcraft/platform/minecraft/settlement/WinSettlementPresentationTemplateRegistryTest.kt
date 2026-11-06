@@ -3,6 +3,7 @@ package com.doublemoon1119.mahjongcraft.platform.minecraft.settlement
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.riichi.RiichiWinSettlementIds
 import com.doublemoon1119.mahjongcraft.logic.module.BuiltInRuleModuleIds
 import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.riichi.RiichiWinSettlementTemplates
+import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.taiwan.TaiwanWinSettlementPresentation
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -59,6 +60,7 @@ class WinSettlementPresentationTemplateRegistryTest {
         val snapshot = WinSettlementPresentationFieldSnapshot(
             outcomeId = "mahjongcraft:ron",
             isTsumo = false,
+            winActionLabelKey = "test.win_action",
             winnerId = "winner",
             winnerDisplayName = "Winner",
             winnerIsAi = false,
@@ -76,6 +78,38 @@ class WinSettlementPresentationTemplateRegistryTest {
 
         val value = assertIs<PresentationValue.TileListValue>(registry.findFieldProvider(doraId)?.provide(snapshot))
         assertEquals(listOf("man_1", "man_2", "back", "back", "back"), value.assetKeys)
+    }
+
+    /** 不攤牌的贏家沒有手牌欄位，版面可以整行省略；台麻的花牌欄位只在規則提供時存在。 */
+    @Test
+    fun `hidden hand and missing flowers leave their fields absent`() {
+        val registry = WinSettlementPresentationTemplateRegistryImpl()
+        registry.registerBundledWinSettlementTemplates()
+        val flowers = TaiwanWinSettlementPresentation.FLOWERS
+        val winningFlower = TaiwanWinSettlementPresentation.WINNING_FLOWER
+        val snapshot = WinSettlementPresentationFieldSnapshot(
+            outcomeId = "mahjongcraft:taiwan/outcome/eight_flowers",
+            isTsumo = true,
+            winActionLabelKey = "test.win_action",
+            winnerId = "winner",
+            winnerDisplayName = "Winner",
+            winnerIsAi = false,
+            responsiblePlayerId = null,
+            responsiblePlayerDisplayName = null,
+            responsiblePlayerIsAi = false,
+            totalScore = 8_000,
+            tileAssetKeys = emptyList(),
+            tileGroups = emptyList(),
+            winningTileAssetKey = null,
+            extensionFields = listOf(
+                ExtensionPresentationField(flowers, PresentationValue.TileListValue(listOf("spring", "summer"))),
+            ),
+        )
+
+        assertNull(registry.findFieldProvider(BuiltInWinSettlementFieldIds.COMPLETE_HAND)?.provide(snapshot))
+        assertEquals(PresentationValue.TileListValue(listOf("spring", "summer")), registry.findFieldProvider(flowers)?.provide(snapshot))
+        assertNull(registry.findFieldProvider(winningFlower)?.provide(snapshot))
+        assertNotNull(registry.findFieldProvider(TaiwanWinSettlementPresentation.TAI), "The tai list has a provider.")
     }
 
     /** 內建日麻模板明確提供兩種指示牌的本地化欄位標題。 */

@@ -8,9 +8,11 @@ import kotlin.uuid.Uuid
  * @property winningTileId 這次胡牌共用的牌張識別碼。
  * @property isTsumo 是否為自摸。
  * @property winners 這次一起成立的贏家及其展示理由。
+ * @property revealsWinnerHands 是否理牌並倒下贏家的手牌；不攤牌時手牌維持原樣，[winningTileId] 留在原處接受特效。
  */
 data class WinCelebrationRequest(
     val winningTileId: Uuid,
     val isTsumo: Boolean,
     val winners: List<WinCelebrationWinner>,
+    val revealsWinnerHands: Boolean,
 )
