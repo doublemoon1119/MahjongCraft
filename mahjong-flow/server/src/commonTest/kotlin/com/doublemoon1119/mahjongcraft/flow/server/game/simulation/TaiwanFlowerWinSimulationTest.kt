@@ -2,6 +2,7 @@ package com.doublemoon1119.mahjongcraft.flow.server.game.simulation
 
 import com.doublemoon1119.mahjongcraft.ai.BuiltInAiStrategyKeys
 import com.doublemoon1119.mahjongcraft.ai.RandomAiStrategy
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.PendingGameTransition
 import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
 import com.doublemoon1119.mahjongcraft.logic.component.initializeRuleComponents
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanRuleConfig
@@ -20,7 +21,7 @@ import kotlin.uuid.Uuid
 
 /** 以正式流程驗證內建 AI 遇到特殊花胡時會接受。 */
 class TaiwanFlowerWinSimulationTest {
-    /** 開局時莊家下家起手七張花、再下家起手一張花：每個內建策略都接受七搶一，只有被搶花者付款。 */
+    /** 開局時莊家下家起手七張花、再下家起手一張花：每個內建策略都接受七搶一，只有被搶花者付款，之後流程接著結束整場。 */
     @Test
     fun `every built-in strategy accepts a seven-flower win`() = runTest(timeout = 5.minutes) {
         BUILT_IN_STRATEGIES.forEach { key ->
@@ -34,10 +35,11 @@ class TaiwanFlowerWinSimulationTest {
             assertTrue(deltas.getValue(winner.id) > 0, "$key did not accept the seven-flower win: $deltas; abort: ${runtime.abortDiagnostic}")
             assertEquals(-deltas.getValue(winner.id), deltas.getValue(payer.id), "$key: only the robbed player pays")
             assertTrue(deltas.filterKeys { it != winner.id && it != payer.id }.values.all { it == 0 }, "$key: $deltas")
+            assertMatchContinued(runtime, dealt.id, key)
         }
     }
 
-    /** 開局時莊家下家起手八張花：每個內建策略都接受八仙過海，由其他三家付款。 */
+    /** 開局時莊家下家起手八張花：每個內建策略都接受八仙過海，由其他三家付款，之後流程接著結束整場。 */
     @Test
     fun `every built-in strategy accepts an eight-flower win`() = runTest(timeout = 5.minutes) {
         BUILT_IN_STRATEGIES.forEach { key ->
@@ -50,6 +52,7 @@ class TaiwanFlowerWinSimulationTest {
             assertTrue(deltas.getValue(winner.id) > 0, "$key did not accept the eight-flower win: $deltas; abort: ${runtime.abortDiagnostic}")
             assertTrue(deltas.filterKeys { it != winner.id }.values.all { it < 0 }, "$key: every other player pays: $deltas")
             assertEquals(0, deltas.values.sum(), "$key: $deltas")
+            assertMatchContinued(runtime, dealt.id, key)
         }
     }
 
@@ -87,9 +90,25 @@ class TaiwanFlowerWinSimulationTest {
         state: TableState,
     ): Map<Uuid, Int> {
         runtime.start(state, state.players.associate { it.id to key })
-        runtime.coordinator.driveAutomatedPlayers(state.id)
+        runtime.driveLikeServer(state.id)
         val firstRound = runtime.gameRepository.rounds(state.id).first().final
         return firstRound.players.associate { player -> player.id to player.score - state.players.first { it.id == player.id }.score }
+    }
+
+    /**
+     * 花胡之後流程接著換局並結束整場，等待返回房間，沒有停在排定換局的狀態。
+     *
+     * @param runtime 對局環境。
+     * @param gameId 對局識別碼。
+     * @param key 所有座位使用的策略 key。
+     */
+    private suspend fun assertMatchContinued(
+        runtime: SimulationRuntime,
+        gameId: Uuid,
+        key: String,
+    ) {
+        val game = runtime.gameRepository.getGame(gameId)
+        assertEquals(PendingGameTransition.ReturnToRoom, game?.pendingTransition, "$key: the match must finish; abort: ${runtime.abortDiagnostic}")
     }
 
     /**

@@ -6,6 +6,7 @@ import com.doublemoon1119.mahjongcraft.ai.expectation.OpponentModelRegistry
 import com.doublemoon1119.mahjongcraft.bundled.BundledRiichiExtension
 import com.doublemoon1119.mahjongcraft.bundled.BundledTaiwanExtension
 import com.doublemoon1119.mahjongcraft.flow.common.error.ExtensionFailurePolicy
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.PendingGameTransition
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionConfig
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionTiming
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.AiDecisionExecutor
@@ -74,7 +75,7 @@ import kotlin.uuid.Uuid
  *
  * 內建規則模組、日麻的立直命令、立直 AI handler、流局滿貫與途中流局判定、胡牌詳情皆已登記；AI 策略 registry
  * 建立時是空的，由呼叫端登記要使用的策略。呈現相關的 publisher 使用測試替身，呈現閘門永遠閒置，因此
- * [GameFlowCoordinator.driveAutomatedPlayers] 會一路推進到需要真人操作或整場結束為止。
+ * [driveLikeServer] 會一路推進到需要真人操作或整場結束為止。
  *
  * [ReturnToRoomUseCase] 接的是獨立的權威狀態，整場結束後的 Game → Room 轉移不會生效，只停在
  * `PendingGameTransition.ReturnToRoom`。
@@ -366,9 +367,28 @@ internal class SimulationRuntime(defaultStrategyKey: String) {
         beginRuleDecisionUseCase(state.id, RuleDecisionTiming.ROUND_START)
     }
 
+    /**
+     * 以伺服器的推進方式推進對局，直到沒有進展或整場結束待返回房間：每一輪先接手排定的流程（例如換局），沒有時才
+     * 推進自動操作。伺服器的自動推進管理器每次推進都是這個順序；只呼叫一次自動推進時，規則選擇排定的換局會留給
+     * 下一次推進。
+     *
+     * @param gameId 要推進的對局。
+     */
+    suspend fun driveLikeServer(gameId: Uuid) {
+        repeat(MAX_ADVANCES) {
+            val before = gameRepository.getGame(gameId) ?: return
+            if (before.pendingTransition == PendingGameTransition.ReturnToRoom) return
+            if (!coordinator.resumePendingGameTransition(gameId)) coordinator.driveAutomatedPlayers(gameId)
+            if (gameRepository.getGame(gameId) == before) return
+        }
+    }
+
     /** 測試常數。 */
     private companion object {
         /** 規則選擇的一般時間設定。 */
         val RULE_DECISION_TIME = 30.seconds
+
+        /** 推進輪數上限；每一輪都會讓對局前進，正常整場遠低於這個數字。 */
+        const val MAX_ADVANCES = 10_000
     }
 }

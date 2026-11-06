@@ -74,7 +74,7 @@ class RiichiSimulationAssertionsTest {
             players.associate { it.id to RON_STRATEGY_KEY },
         )
 
-        runtime.coordinator.driveAutomatedPlayers(gameId)
+        runtime.driveLikeServer(gameId)
 
         val game = requireNotNull(runtime.gameRepository.getGame(gameId))
         val finalState = game.tableState

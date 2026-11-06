@@ -174,7 +174,8 @@ internal class MatchSimulator(
     /**
      * 推進對局直到停止，回傳問題的說明與例外；正常結束時為 null。
      *
-     * 流程停在整場結束之前時，把最後一次 AI 決策的命令重新送出一次，附上流程拒絕它的原因。
+     * 以伺服器的推進方式推進（見 [SimulationRuntime.driveLikeServer]）。流程停在整場結束之前時，把最後一次 AI 決策的
+     * 命令重新送出一次，附上流程拒絕它的原因。
      *
      * @param runtime 此次模擬使用的流程與倉庫。
      * @param gameId 對局識別碼。
@@ -186,7 +187,7 @@ internal class MatchSimulator(
         gameId: Uuid,
         recorder: DecisionRecorder,
     ): Pair<String, Throwable?>? {
-        val cause = runCatching { runtime.coordinator.driveAutomatedPlayers(gameId) }.exceptionOrNull()
+        val cause = runCatching { runtime.driveLikeServer(gameId) }.exceptionOrNull()
         if (cause != null) return "flow stopped with an exception" to cause
         recorder.illegalCommand?.let { return "AI submitted an illegal command" to it }
         val rounds = runtime.gameRepository.rounds(gameId)
