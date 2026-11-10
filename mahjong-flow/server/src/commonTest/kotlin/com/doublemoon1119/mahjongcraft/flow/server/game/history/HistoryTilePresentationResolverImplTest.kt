@@ -30,7 +30,7 @@ class HistoryTilePresentationResolverImplTest {
         val redFive = FakeIdentifiedTileFactory.create(RiichiTileValues.redFive(Tile.Suit.Dot))
         val discarded = FakeIdentifiedTileFactory.create(Tile.Honor.North)
         val kanTiles = List(4) { FakeIdentifiedTileFactory.create(Tile.Honor.White) }
-        val closedKan = FakeMeldFactory.create(type = MeldType.CLOSED_KAN, tiles = kanTiles)
+        val closedKan = FakeMeldFactory.create(type = MeldType.ClosedKan, tiles = kanTiles)
         val holder = FakeMahjongPlayerFactory.create(
             id = owner,
             hand = Hand(tiles = listOf(redFive), melds = listOf(closedKan)),

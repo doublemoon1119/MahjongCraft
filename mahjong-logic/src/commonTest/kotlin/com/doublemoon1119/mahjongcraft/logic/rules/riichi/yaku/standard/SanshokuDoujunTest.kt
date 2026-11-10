@@ -70,7 +70,7 @@ class SanshokuDoujunTest : RiichiHandValueCalculatorTestBase() {
             ),
             melds = listOf(
                 FakeMeldFactory.create(
-                    type = MeldType.CHI,
+                    type = MeldType.Chi,
                     tiles = listOf(
                         FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 1)),
                         FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 2)),

@@ -91,7 +91,7 @@ class OpponentReading(
      */
     internal fun flushSignal(opponent: MahjongPlayerSnapshot): FlushSignal? {
         val melds = opponent.hand.melds
-        if (melds.none { it.type != MeldType.CLOSED_KAN }) return null
+        if (melds.none { it.type != MeldType.ClosedKan }) return null
         val meldTiles = melds.flatMap { meld -> meld.tiles.mapNotNull { it.tile?.let(interpretation::canonicalize) } }
         val suit = meldTiles.filterIsInstance<Tile.Numeric>().map { it.suit }.distinct().singleOrNull() ?: return null
         val discards = opponent.discardPile.entries.mapNotNull { entry -> entry.tile.tile?.let(interpretation::canonicalize) }

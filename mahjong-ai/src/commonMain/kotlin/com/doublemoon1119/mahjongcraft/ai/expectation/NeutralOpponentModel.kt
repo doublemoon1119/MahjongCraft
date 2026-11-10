@@ -24,7 +24,7 @@ class NeutralOpponentModel(override val readingDepth: ReadingDepth) : OpponentMo
 
     override fun threat(view: PositionView, opponentId: Uuid): ThreatEstimate {
         val opponent = view.player(opponentId)
-        val openMelds = opponent.hand.melds.count { it.type != MeldType.CLOSED_KAN }
+        val openMelds = opponent.hand.melds.count { it.type != MeldType.ClosedKan }
         val readyProbability = BASE_READY_PROBABILITY +
             READY_PROBABILITY_PER_DISCARD * opponent.discardPile.entries.size +
             READY_PROBABILITY_PER_MELD * openMelds

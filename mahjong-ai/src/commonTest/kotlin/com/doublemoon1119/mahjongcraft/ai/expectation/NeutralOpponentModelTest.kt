@@ -25,7 +25,7 @@ class NeutralOpponentModelTest {
         hand = Hand(
             melds = List(2) { index ->
                 FakeMeldFactory.create(
-                    type = MeldType.PON,
+                    type = MeldType.Pon,
                     tiles = List(3) { FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, index + 1)) },
                     sourceDirection = RelativeDirection.Across,
                 )

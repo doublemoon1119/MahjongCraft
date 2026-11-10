@@ -16,7 +16,7 @@ import kotlin.uuid.Uuid
 /**
  * 剝除 [Meld] 的牌面，只保留 [MeldPresentation] 需要的資訊。
  *
- * 牌 ID 保留副露成立時的穩定順序；[MeldType.ADDED_KAN] 補上的第四張（[Meld.tiles] 的最後一張）維持在最後。
+ * 牌 ID 保留副露成立時的穩定順序；[MeldType.AddedKan] 補上的第四張（[Meld.tiles] 的最後一張）維持在最後。
  * 鳴取的牌由 [MeldPresentation.calledTileId] 指出，不靠位置辨識。
  *
  * @param revealsClosedKanTiles 該規則是否公開暗槓的牌（[MahjongRuleConfig.revealsClosedKanTiles]），
@@ -26,7 +26,7 @@ import kotlin.uuid.Uuid
 fun Meld.toPresentation(revealsClosedKanTiles: Boolean): MeldPresentation {
     val orderedIds = tiles.map { it.id }
     val faceDownTileIds = when {
-        type == MeldType.CLOSED_KAN && !revealsClosedKanTiles -> orderedIds.toSet()
+        type == MeldType.ClosedKan && !revealsClosedKanTiles -> orderedIds.toSet()
         else -> faceDownTileIds.intersect(orderedIds.toSet())
     }
     return MeldPresentation(

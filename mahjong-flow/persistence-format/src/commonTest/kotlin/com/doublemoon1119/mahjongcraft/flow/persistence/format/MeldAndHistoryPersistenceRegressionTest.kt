@@ -43,7 +43,7 @@ class MeldAndHistoryPersistenceRegressionTest {
             identified(Tile.Numeric(Tile.Suit.Character, 2)),
         )
         val meld = Meld(
-            type = MeldType.CHI,
+            type = MeldType.Chi,
             tiles = tiles,
             sourceTile = tiles[2],
             sourceDirection = RelativeDirection.Left,
@@ -85,7 +85,7 @@ class MeldAndHistoryPersistenceRegressionTest {
     fun `visibility-only and pose-only meld changes reconstruct through history table change`() {
         val tiles = List(3) { index -> identified(Tile.Numeric(Tile.Suit.Dot, index + 1)) }
         val baseMeld = Meld(
-            type = MeldType.PON,
+            type = MeldType.Pon,
             tiles = tiles,
             sourceTile = tiles.last(),
             sourceDirection = RelativeDirection.Across,

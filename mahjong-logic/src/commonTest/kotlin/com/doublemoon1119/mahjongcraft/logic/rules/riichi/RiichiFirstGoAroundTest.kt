@@ -85,7 +85,7 @@ class RiichiFirstGoAroundTest {
         val source = meldTiles.last()
         val otherPlayer = FakeMahjongPlayerFactory.create(
             hand = Hand(tiles = meldTiles.dropLast(1)).call(
-                type = MeldType.PON,
+                type = MeldType.Pon,
                 tiles = meldTiles,
                 source = source,
                 direction = RelativeDirection.Left,

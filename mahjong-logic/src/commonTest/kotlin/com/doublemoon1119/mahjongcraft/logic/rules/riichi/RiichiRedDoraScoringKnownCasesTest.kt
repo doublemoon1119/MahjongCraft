@@ -77,7 +77,7 @@ class RiichiRedDoraScoringKnownCasesTest : RiichiHandValueCalculatorTestBase() {
     fun `red fives in melds and in the hand all count`() {
         val calledFive = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 5))
         val pon = FakeMeldFactory.create(
-            type = MeldType.PON,
+            type = MeldType.Pon,
             tiles = listOf(redFive(Tile.Suit.Dot), FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 5)), calledFive),
             sourceTile = calledFive,
             sourceDirection = RelativeDirection.Left,
@@ -99,7 +99,7 @@ class RiichiRedDoraScoringKnownCasesTest : RiichiHandValueCalculatorTestBase() {
     @Test
     fun `red dora alone does not satisfy the yaku requirement`() {
         val ones = List(3) { FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 1)) }
-        val pon = FakeMeldFactory.create(type = MeldType.PON, tiles = ones, sourceTile = ones.last(), sourceDirection = RelativeDirection.Across)
+        val pon = FakeMeldFactory.create(type = MeldType.Pon, tiles = ones, sourceTile = ones.last(), sourceDirection = RelativeDirection.Across)
         val result = calculator.calculate(
             ron(
                 hand = Hand(tiles = man(2, 3, 4) + listOf(redFive(Tile.Suit.Dot)) + pin(6, 7) + sou(3, 4, 5) + pin(8), melds = listOf(pon)),

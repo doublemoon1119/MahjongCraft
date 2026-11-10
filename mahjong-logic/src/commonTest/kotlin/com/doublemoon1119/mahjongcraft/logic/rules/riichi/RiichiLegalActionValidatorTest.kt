@@ -142,7 +142,7 @@ class RiichiLegalActionValidatorTest {
     fun `test can added kan`() {
         // 準備
         val ponMeld = FakeMeldFactory.create(
-            type = MeldType.PON,
+            type = MeldType.Pon,
             tiles = listOf(
                 FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 1)),
                 FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 1)),
@@ -206,7 +206,7 @@ class RiichiLegalActionValidatorTest {
     fun `test no kan of any type when only one live tile remains`() {
         val oneTileWall = TileWall(listOf(FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 5))))
         val ponMeld = FakeMeldFactory.create(
-            type = MeldType.PON,
+            type = MeldType.Pon,
             tiles = List(3) { FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 9)) },
             sourceDirection = RelativeDirection.Left,
         )
@@ -266,7 +266,7 @@ class RiichiLegalActionValidatorTest {
     fun `test cannot closed or added kan on the haitei tile`() {
         // 準備：手牌另外湊了一組可以暗槓的三張，且有一組可加槓的副露
         val ponMeld = FakeMeldFactory.create(
-            type = MeldType.PON,
+            type = MeldType.Pon,
             tiles = listOf(
                 FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Bamboo, 5)),
                 FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Bamboo, 5)),
@@ -311,7 +311,7 @@ class RiichiLegalActionValidatorTest {
         // 準備：這位玩家已經有 4 組暗槓副露（湊到全場上限），手牌另外湊了一組可以暗槓的第 5 組
         val existingKans = (1..4).map { value ->
             FakeMeldFactory.create(
-                type = MeldType.CLOSED_KAN,
+                type = MeldType.ClosedKan,
                 tiles = List(4) { FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, value)) },
             )
         }
@@ -343,7 +343,7 @@ class RiichiLegalActionValidatorTest {
         // 準備：另一位玩家已經獨得全場 4 組暗槓副露
         val otherPlayerKans = (1..4).map { value ->
             FakeMeldFactory.create(
-                type = MeldType.CLOSED_KAN,
+                type = MeldType.ClosedKan,
                 tiles = List(4) { FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, value)) },
             )
         }
@@ -559,7 +559,7 @@ class RiichiLegalActionValidatorTest {
             ),
         )
         val ponMeld = FakeMeldFactory.create(
-            type = MeldType.PON,
+            type = MeldType.Pon,
             tiles = listOf(
                 FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 6)),
                 FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 6)),
@@ -901,19 +901,19 @@ class RiichiLegalActionValidatorTest {
     @Test
     fun `test houtei only grants ron after live wall is exhausted`() {
         val chiMeld = FakeMeldFactory.create(
-            type = MeldType.CHI,
+            type = MeldType.Chi,
             tiles = listOf(1, 2, 3).map { value ->
                 FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, value))
             },
             sourceDirection = RelativeDirection.Left,
         )
         val terminalPon = FakeMeldFactory.create(
-            type = MeldType.PON,
+            type = MeldType.Pon,
             tiles = List(3) { FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 9)) },
             sourceDirection = RelativeDirection.Across,
         )
         val nonValueHonorPon = FakeMeldFactory.create(
-            type = MeldType.PON,
+            type = MeldType.Pon,
             tiles = List(3) { FakeIdentifiedTileFactory.create(Tile.Honor.West) },
             sourceDirection = RelativeDirection.Right,
         )
@@ -981,7 +981,7 @@ class RiichiLegalActionValidatorTest {
     fun `test can robbing kan`() {
         // 準備
         val chiMeld = FakeMeldFactory.create(
-            type = MeldType.CHI,
+            type = MeldType.Chi,
             tiles = listOf(
                 FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 1)),
                 FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 2)),
@@ -990,7 +990,7 @@ class RiichiLegalActionValidatorTest {
             sourceDirection = RelativeDirection.Left,
         )
         val ponMeld1 = FakeMeldFactory.create(
-            type = MeldType.PON,
+            type = MeldType.Pon,
             tiles = listOf(
                 FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 9)),
                 FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 9)),
@@ -999,7 +999,7 @@ class RiichiLegalActionValidatorTest {
             sourceDirection = RelativeDirection.Across,
         )
         val ponMeld2 = FakeMeldFactory.create(
-            type = MeldType.PON,
+            type = MeldType.Pon,
             tiles = listOf(
                 FakeIdentifiedTileFactory.create(Tile.Honor.West),
                 FakeIdentifiedTileFactory.create(Tile.Honor.West),

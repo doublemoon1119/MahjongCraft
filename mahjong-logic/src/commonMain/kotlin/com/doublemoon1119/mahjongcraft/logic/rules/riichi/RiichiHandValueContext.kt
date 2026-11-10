@@ -99,7 +99,7 @@ data class RiichiHandValueContext(
             hand = hand,
             winningTileValue = winningTile,
             isTsumo = isTsumo,
-            isMenzen = hand.melds.all { it.type == MeldType.CLOSED_KAN },
+            isMenzen = hand.melds.all { it.type == MeldType.ClosedKan },
             roundWind = roundWind,
             seatWind = seatWind,
             isDealer = isDealer,

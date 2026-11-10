@@ -80,7 +80,7 @@ class ChinitsuTest : RiichiHandValueCalculatorTestBase() {
             ),
             melds = listOf(
                 FakeMeldFactory.create(
-                    type = MeldType.PON,
+                    type = MeldType.Pon,
                     tiles = listOf(
                         FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 1)),
                         FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 1)),
@@ -156,7 +156,7 @@ class ChinitsuTest : RiichiHandValueCalculatorTestBase() {
             ),
             melds = listOf(
                 FakeMeldFactory.create(
-                    type = MeldType.PON,
+                    type = MeldType.Pon,
                     tiles = listOf(
                         FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 1)),
                         FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 1)),

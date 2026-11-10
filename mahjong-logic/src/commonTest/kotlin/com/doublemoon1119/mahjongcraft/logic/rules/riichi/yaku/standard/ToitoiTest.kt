@@ -75,7 +75,7 @@ class ToitoiTest : RiichiHandValueCalculatorTestBase() {
             ),
             melds = listOf(
                 FakeMeldFactory.create(
-                    type = MeldType.PON,
+                    type = MeldType.Pon,
                     tiles = listOf(
                         FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 1)),
                         FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 1)),
@@ -119,7 +119,7 @@ class ToitoiTest : RiichiHandValueCalculatorTestBase() {
             ),
             melds = listOf(
                 FakeMeldFactory.create(
-                    type = MeldType.OPEN_KAN,
+                    type = MeldType.OpenKan,
                     tiles = listOf(
                         FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 1)),
                         FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 1)),

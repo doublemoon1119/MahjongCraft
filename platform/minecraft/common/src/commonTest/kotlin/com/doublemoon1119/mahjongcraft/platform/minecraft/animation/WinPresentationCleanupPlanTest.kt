@@ -26,11 +26,11 @@ class WinPresentationCleanupPlanTest {
     fun `a winner holding melds gets only the standing tiles concealed`() {
         val standing = List(4) { tile(Tile.Numeric(Tile.Suit.Bamboo, it + 1)) }
         val drawn = tile(Tile.Honor.East)
-        val chi = meld(MeldType.CHI, 3, RelativeDirection.Left)
-        val pon = meld(MeldType.PON, 3, RelativeDirection.Across)
-        val openKan = meld(MeldType.OPEN_KAN, 4, RelativeDirection.Right)
-        val addedKan = meld(MeldType.ADDED_KAN, 4, RelativeDirection.Left)
-        val closedKan = meld(MeldType.CLOSED_KAN, 4, RelativeDirection.Self)
+        val chi = meld(MeldType.Chi, 3, RelativeDirection.Left)
+        val pon = meld(MeldType.Pon, 3, RelativeDirection.Across)
+        val openKan = meld(MeldType.OpenKan, 4, RelativeDirection.Right)
+        val addedKan = meld(MeldType.AddedKan, 4, RelativeDirection.Left)
+        val closedKan = meld(MeldType.ClosedKan, 4, RelativeDirection.Self)
         val hand = Hand(
             tiles = standing,
             melds = listOf(chi, pon, openKan, addedKan, closedKan),
@@ -58,7 +58,7 @@ class WinPresentationCleanupPlanTest {
     @Test
     fun `visibility is restored for exactly the tiles the showcase borrowed`() {
         val standing = List(3) { tile(Tile.Numeric(Tile.Suit.Character, it + 1)) }
-        val hand = Hand(tiles = standing, melds = listOf(meld(MeldType.PON, 3, RelativeDirection.Left)))
+        val hand = Hand(tiles = standing, melds = listOf(meld(MeldType.Pon, 3, RelativeDirection.Left)))
         val ronTileId = Uuid.random()
         val borrowed = standing.mapTo(mutableSetOf()) { it.id } + ronTileId
 
@@ -83,7 +83,7 @@ class WinPresentationCleanupPlanTest {
     @Test
     fun `every winner's standing tiles are concealed`() {
         val first = Hand(tiles = listOf(tile(Tile.Honor.South)))
-        val second = Hand(tiles = listOf(tile(Tile.Honor.North)), melds = listOf(meld(MeldType.CHI, 3, RelativeDirection.Left)))
+        val second = Hand(tiles = listOf(tile(Tile.Honor.North)), melds = listOf(meld(MeldType.Chi, 3, RelativeDirection.Left)))
 
         val plan = WinPresentationCleanupPlan.of(winnerHands = listOf(first, second), showcaseHiddenTileIds = emptySet())
 
@@ -121,7 +121,7 @@ class WinPresentationCleanupPlanTest {
             sourceTile = tiles.first().takeIf { sourceDirection != RelativeDirection.Self },
             sourceDirection = sourceDirection,
             publiclyRevealedTileIds = tiles.map { it.id }.toSet(),
-            faceDownTileIds = if (type == MeldType.CLOSED_KAN) setOf(tiles.first().id, tiles.last().id) else emptySet(),
+            faceDownTileIds = if (type == MeldType.ClosedKan) setOf(tiles.first().id, tiles.last().id) else emptySet(),
         )
     }
 }

@@ -52,7 +52,7 @@ class RiichiDeclarationAiHandlerTest {
     @Test
     fun `a closed kan counts as a set when checking tenpai`() {
         val kan = FakeMeldFactory.create(
-            type = MeldType.CLOSED_KAN,
+            type = MeldType.ClosedKan,
             tiles = List(4) { FakeIdentifiedTileFactory.create(Tile.Honor.White) },
         )
         val self = player(

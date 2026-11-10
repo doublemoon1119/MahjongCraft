@@ -303,11 +303,11 @@ internal object HistoryReplayProjectionMapper {
     private fun meld(value: JsonObject, context: HistoryReplayProjectionContext): HistoryReplayMeld {
         context.charge()
         val type = when (val saved = persistenceJson.decodeFromJsonElement(MeldTypePersistenceDto.serializer(), value.getValue(ReplaySourceKeys.TYPE))) {
-            MeldTypePersistenceDto.Chi -> MeldType.CHI
-            MeldTypePersistenceDto.Pon -> MeldType.PON
-            MeldTypePersistenceDto.OpenKan -> MeldType.OPEN_KAN
-            MeldTypePersistenceDto.ClosedKan -> MeldType.CLOSED_KAN
-            MeldTypePersistenceDto.AddedKan -> MeldType.ADDED_KAN
+            MeldTypePersistenceDto.Chi -> MeldType.Chi
+            MeldTypePersistenceDto.Pon -> MeldType.Pon
+            MeldTypePersistenceDto.OpenKan -> MeldType.OpenKan
+            MeldTypePersistenceDto.ClosedKan -> MeldType.ClosedKan
+            MeldTypePersistenceDto.AddedKan -> MeldType.AddedKan
             is MeldTypePersistenceDto.Extension -> MeldType.Extension(MeldTypeId.parse(saved.typeId))
         }
         val tiles = refs(value.getValue(ReplaySourceKeys.MELD_TILES), context)

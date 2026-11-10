@@ -30,7 +30,7 @@ class MeldTest {
 
         // 執行吃牌 (1,2,3萬)
         val updatedHand = hand.call(
-            type = MeldType.CHI,
+            type = MeldType.Chi,
             tiles = listOf(t1, t2, source),
             source = source,
             direction = RelativeDirection.Left,
@@ -42,7 +42,7 @@ class MeldTest {
         assertTrue(updatedHand.standingTiles.isEmpty())
         // 驗證：副露列表應有一組吃
         assertEquals(1, updatedHand.exposedMelds.size)
-        assertEquals(MeldType.CHI, updatedHand.exposedMelds[0].type)
+        assertEquals(MeldType.Chi, updatedHand.exposedMelds[0].type)
         assertEquals(3, updatedHand.exposedMelds[0].tiles.size)
         assertEquals(source, updatedHand.exposedMelds[0].sourceTile)
     }
@@ -64,7 +64,7 @@ class MeldTest {
 
         // 執行暗槓 (source 為 null)
         val updatedHand = hand.call(
-            type = MeldType.CLOSED_KAN,
+            type = MeldType.ClosedKan,
             tiles = listOf(t1, t2, t3, t4),
             source = null,
             direction = RelativeDirection.Self,
@@ -76,7 +76,7 @@ class MeldTest {
         assertTrue(updatedHand.standingTiles.isEmpty())
         assertNull(updatedHand.lastDrawn)
         assertEquals(1, updatedHand.exposedMelds.size)
-        assertEquals(MeldType.CLOSED_KAN, updatedHand.exposedMelds[0].type)
+        assertEquals(MeldType.ClosedKan, updatedHand.exposedMelds[0].type)
     }
 
     /**
@@ -93,7 +93,7 @@ class MeldTest {
 
         // 先建立一個碰 (PON)
         var hand = Hand(tiles = listOf(t1, t2)).call(
-            type = MeldType.PON,
+            type = MeldType.Pon,
             tiles = listOf(t1, t2, t3),
             source = t3,
             direction = RelativeDirection.Across,
@@ -111,7 +111,7 @@ class MeldTest {
         assertNull(hand.lastDrawn)
         // 驗證：副露升級
         val updatedMeld = hand.exposedMelds[0]
-        assertEquals(MeldType.ADDED_KAN, updatedMeld.type)
+        assertEquals(MeldType.AddedKan, updatedMeld.type)
         assertEquals(4, updatedMeld.tiles.size)
         assertTrue(updatedMeld.tiles.contains(t4))
     }

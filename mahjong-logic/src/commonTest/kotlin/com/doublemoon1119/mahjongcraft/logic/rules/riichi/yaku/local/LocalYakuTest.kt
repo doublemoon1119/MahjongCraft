@@ -281,7 +281,7 @@ class LocalYakuTest {
      * @param tile 碰子的牌面。
      * @return 測試用碰子副露。
      */
-    private fun pon(tile: Tile): Meld = meld(MeldType.PON, List(3) { tile })
+    private fun pon(tile: Tile): Meld = meld(MeldType.Pon, List(3) { tile })
 
     /**
      * 建立以指定數值為起點的吃子。
@@ -291,7 +291,7 @@ class LocalYakuTest {
      */
     private fun chi(head: Tile): Meld {
         val numeric = head as Tile.Numeric
-        return meld(MeldType.CHI, (0..2).map { Tile.Numeric(numeric.suit, numeric.value + it) })
+        return meld(MeldType.Chi, (0..2).map { Tile.Numeric(numeric.suit, numeric.value + it) })
     }
 
     /**
@@ -301,7 +301,7 @@ class LocalYakuTest {
      * @return 測試用暗槓副露。
      */
     private fun closedKan(tile: Tile): Meld = FakeMeldFactory.create(
-        type = MeldType.CLOSED_KAN,
+        type = MeldType.ClosedKan,
         tiles = List(4) { FakeIdentifiedTileFactory.create(tile) },
     )
 

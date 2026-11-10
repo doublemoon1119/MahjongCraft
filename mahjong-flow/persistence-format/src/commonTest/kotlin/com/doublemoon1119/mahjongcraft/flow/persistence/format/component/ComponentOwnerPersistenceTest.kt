@@ -61,7 +61,7 @@ class ComponentOwnerPersistenceTest {
         }
         val tiles = List(3) { IdentifiedTile(Uuid.random(), Tile.Honor.North) }
         val meld = Meld(
-            type = MeldType.PON,
+            type = MeldType.Pon,
             tiles = tiles,
             sourceTile = tiles.first(),
             sourceDirection = RelativeDirection.Left,

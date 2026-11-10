@@ -125,7 +125,7 @@ class DeclareKanUseCaseTest {
         val updated = newState.players.first { it.id == playerId }
         assertTrue(updated.hand.tiles.isEmpty(), "All 4 tiles forming the kan should be removed from standing tiles.")
         val meld = updated.hand.melds.single()
-        assertEquals(MeldType.CLOSED_KAN, meld.type)
+        assertEquals(MeldType.ClosedKan, meld.type)
         assertEquals(setOf(east1, east2, east3, east4), meld.tiles.toSet())
         assertEquals(rinshanTile, updated.hand.lastDrawn, "Should have drawn a replacement tile from the dead wall.")
         assertEquals(
@@ -229,7 +229,7 @@ class DeclareKanUseCaseTest {
                 tiles = eastTiles.take(3),
                 melds = listOf(
                     Meld(
-                        MeldType.CLOSED_KAN,
+                        MeldType.ClosedKan,
                         previousKanTiles,
                         sourceDirection = RelativeDirection.Self,
                         publiclyRevealedTileIds = previousKanTiles.map { it.id }.toSet(),
@@ -274,7 +274,7 @@ class DeclareKanUseCaseTest {
             initialSeat = Wind.EAST,
             hand = Hand(
                 tiles = eastTiles.take(3),
-                melds = listOf(FakeMeldFactory.create(type = MeldType.OPEN_KAN, tiles = openKanTiles, sourceTile = openKanTiles.first(), sourceDirection = RelativeDirection.Left)),
+                melds = listOf(FakeMeldFactory.create(type = MeldType.OpenKan, tiles = openKanTiles, sourceTile = openKanTiles.first(), sourceDirection = RelativeDirection.Left)),
                 lastDrawn = eastTiles.last(),
             ),
         )
@@ -313,7 +313,7 @@ class DeclareKanUseCaseTest {
         val south2 = FakeIdentifiedTileFactory.create(Tile.Honor.South)
         val south3 = FakeIdentifiedTileFactory.create(Tile.Honor.South)
         val south4 = FakeIdentifiedTileFactory.create(Tile.Honor.South)
-        val existingPon = Meld(MeldType.PON, listOf(south1, south2, south3), sourceTile = south3, sourceDirection = RelativeDirection.Left, publiclyRevealedTileIds = listOf(south1, south2, south3).map { it.id }.toSet(), faceDownTileIds = emptySet())
+        val existingPon = Meld(MeldType.Pon, listOf(south1, south2, south3), sourceTile = south3, sourceDirection = RelativeDirection.Left, publiclyRevealedTileIds = listOf(south1, south2, south3).map { it.id }.toSet(), faceDownTileIds = emptySet())
         val declarer = FakeMahjongPlayerFactory.create(
             id = playerId,
             initialSeat = Wind.EAST,
@@ -335,7 +335,7 @@ class DeclareKanUseCaseTest {
         val newState = fixtures.gameRepo.getTableState(gameId)!!
         val updated = newState.players.first { it.id == playerId }
         val meld = updated.hand.melds.single()
-        assertEquals(MeldType.ADDED_KAN, meld.type)
+        assertEquals(MeldType.AddedKan, meld.type)
         assertEquals(setOf(south1, south2, south3, south4), meld.tiles.toSet())
         assertEquals(south3, meld.sourceTile, "Added kan should preserve the original Pon's source tile.")
         assertEquals(RelativeDirection.Left, meld.sourceDirection, "Added kan should preserve the original Pon's source direction.")
@@ -411,7 +411,7 @@ class DeclareKanUseCaseTest {
 
         assertTrue(result is Outcome.Success, "Expected Success but got $result")
         val hand = fixtures.gameRepo.getTableState(gameId)!!.currentPlayer.hand
-        assertEquals(MeldType.CLOSED_KAN, hand.melds.single().type)
+        assertEquals(MeldType.ClosedKan, hand.melds.single().type)
         assertEquals(eastTiles.map { it.id }.toSet(), hand.melds.single().tiles.map { it.id }.toSet())
         assertTrue(hand.tiles.any { it.id == unrelatedDraw.id }, "The unrelated drawn tile must remain in the hand")
         assertEquals(rinshanTile.id, hand.lastDrawn?.id)
@@ -600,7 +600,7 @@ class DeclareKanUseCaseTest {
         val white2 = FakeIdentifiedTileFactory.create(Tile.Honor.White)
         val white3 = FakeIdentifiedTileFactory.create(Tile.Honor.White)
         val white4 = FakeIdentifiedTileFactory.create(Tile.Honor.White)
-        val existingPon = Meld(MeldType.PON, listOf(white1, white2, white3), sourceTile = white3, sourceDirection = RelativeDirection.Left, publiclyRevealedTileIds = listOf(white1, white2, white3).map { it.id }.toSet(), faceDownTileIds = emptySet())
+        val existingPon = Meld(MeldType.Pon, listOf(white1, white2, white3), sourceTile = white3, sourceDirection = RelativeDirection.Left, publiclyRevealedTileIds = listOf(white1, white2, white3).map { it.id }.toSet(), faceDownTileIds = emptySet())
         val declarer = FakeMahjongPlayerFactory.create(
             id = playerId,
             initialSeat = Wind.EAST,
@@ -645,7 +645,7 @@ class DeclareKanUseCaseTest {
         assertEquals(TurnPhase.AwaitingRobbingReaction(pending), newState.turnPhase)
 
         val unchangedDeclarer = newState.players.first { it.id == playerId }
-        assertEquals(MeldType.PON, unchangedDeclarer.hand.melds.single().type, "The meld must not be upgraded to ADDED_KAN yet.")
+        assertEquals(MeldType.Pon, unchangedDeclarer.hand.melds.single().type, "The meld must not be upgraded to ADDED_KAN yet.")
         assertEquals(white4, unchangedDeclarer.hand.lastDrawn, "The declarer's hand should be untouched while the window is open.")
         assertEquals(2, newState.tileWall.remainingCount, "The dead wall should not be drawn from yet.")
         assertEquals(setOf(white4.id), newState.publicTileEvidenceIds, "The added tile is public while others decide.")
@@ -660,7 +660,7 @@ class DeclareKanUseCaseTest {
         val presented = fixtures.presentationPublisher.getPublishedTableStepBatches(gameId).single().single()
         assertEquals(listOf<TableStepEvent>(TableStepEvent.ActionDeclared(playerId, expectedKan)), presented.events)
         val presentedDeclarer = presented.tableState.players.first { it.id == playerId }
-        assertEquals(MeldType.ADDED_KAN, presentedDeclarer.hand.melds.single().type)
+        assertEquals(MeldType.AddedKan, presentedDeclarer.hand.melds.single().type)
         assertEquals(TileRegion.MELD, presented.tableState.tileRegion(white4.id))
         assertNull(presentedDeclarer.hand.lastDrawn)
         assertTrue(presentedDeclarer.hand.tiles.isEmpty())
@@ -677,7 +677,7 @@ class DeclareKanUseCaseTest {
         val white2 = FakeIdentifiedTileFactory.create(Tile.Honor.White)
         val white3 = FakeIdentifiedTileFactory.create(Tile.Honor.White)
         val white4 = FakeIdentifiedTileFactory.create(Tile.Honor.White)
-        val existingPon = Meld(MeldType.PON, listOf(white1, white2, white3), sourceTile = white3, sourceDirection = RelativeDirection.Left, publiclyRevealedTileIds = listOf(white1, white2, white3).map { it.id }.toSet(), faceDownTileIds = emptySet())
+        val existingPon = Meld(MeldType.Pon, listOf(white1, white2, white3), sourceTile = white3, sourceDirection = RelativeDirection.Left, publiclyRevealedTileIds = listOf(white1, white2, white3).map { it.id }.toSet(), faceDownTileIds = emptySet())
         val declarer = FakeMahjongPlayerFactory.create(
             id = playerId,
             initialSeat = Wind.EAST,
@@ -739,7 +739,7 @@ class DeclareKanUseCaseTest {
         val white2 = FakeIdentifiedTileFactory.create(Tile.Honor.White)
         val white3 = FakeIdentifiedTileFactory.create(Tile.Honor.White)
         val white4 = FakeIdentifiedTileFactory.create(Tile.Honor.White)
-        val existingPon = Meld(MeldType.PON, listOf(white1, white2, white3), sourceTile = white3, sourceDirection = RelativeDirection.Left, publiclyRevealedTileIds = listOf(white1, white2, white3).map { it.id }.toSet(), faceDownTileIds = emptySet())
+        val existingPon = Meld(MeldType.Pon, listOf(white1, white2, white3), sourceTile = white3, sourceDirection = RelativeDirection.Left, publiclyRevealedTileIds = listOf(white1, white2, white3).map { it.id }.toSet(), faceDownTileIds = emptySet())
         val declarer = FakeMahjongPlayerFactory.create(
             id = playerId,
             initialSeat = Wind.EAST,
@@ -776,7 +776,7 @@ class DeclareKanUseCaseTest {
         val white2 = FakeIdentifiedTileFactory.create(Tile.Honor.White)
         val white3 = FakeIdentifiedTileFactory.create(Tile.Honor.White)
         val white4 = FakeIdentifiedTileFactory.create(Tile.Honor.White)
-        val existingPon = Meld(MeldType.PON, listOf(white1, white2, white3), sourceTile = white3, sourceDirection = RelativeDirection.Left, publiclyRevealedTileIds = listOf(white1, white2, white3).map { it.id }.toSet(), faceDownTileIds = emptySet())
+        val existingPon = Meld(MeldType.Pon, listOf(white1, white2, white3), sourceTile = white3, sourceDirection = RelativeDirection.Left, publiclyRevealedTileIds = listOf(white1, white2, white3).map { it.id }.toSet(), faceDownTileIds = emptySet())
         val declarer = FakeMahjongPlayerFactory.create(
             id = playerId,
             initialSeat = Wind.EAST,
@@ -821,7 +821,7 @@ class DeclareKanUseCaseTest {
         val white2 = FakeIdentifiedTileFactory.create(Tile.Honor.White)
         val white3 = FakeIdentifiedTileFactory.create(Tile.Honor.White)
         val white4 = FakeIdentifiedTileFactory.create(Tile.Honor.White)
-        val existingPon = Meld(MeldType.PON, listOf(white1, white2, white3), sourceTile = white3, sourceDirection = RelativeDirection.Left, publiclyRevealedTileIds = listOf(white1, white2, white3).map { it.id }.toSet(), faceDownTileIds = emptySet())
+        val existingPon = Meld(MeldType.Pon, listOf(white1, white2, white3), sourceTile = white3, sourceDirection = RelativeDirection.Left, publiclyRevealedTileIds = listOf(white1, white2, white3).map { it.id }.toSet(), faceDownTileIds = emptySet())
         val declarer = FakeMahjongPlayerFactory.create(
             id = playerId,
             initialSeat = Wind.EAST,
@@ -854,7 +854,7 @@ class DeclareKanUseCaseTest {
         assertEquals(2, newState.tileWall.remainingCount, "No rinshan tile should be drawn; the kan is voided.")
 
         val unchangedDeclarer = newState.players.first { it.id == playerId }
-        assertEquals(MeldType.PON, unchangedDeclarer.hand.melds.single().type, "The added kan must not be applied.")
+        assertEquals(MeldType.Pon, unchangedDeclarer.hand.melds.single().type, "The added kan must not be applied.")
         assertEquals(white4, unchangedDeclarer.hand.lastDrawn)
 
         newState.players.forEach { player ->

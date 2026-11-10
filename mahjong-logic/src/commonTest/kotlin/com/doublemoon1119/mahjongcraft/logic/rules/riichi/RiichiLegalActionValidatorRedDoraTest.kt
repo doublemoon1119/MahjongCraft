@@ -196,7 +196,7 @@ class RiichiLegalActionValidatorRedDoraTest {
     fun `test can added kan with red dora`() {
         // 準備
         val ponMeld = FakeMeldFactory.create(
-            type = MeldType.PON,
+            type = MeldType.Pon,
             tiles = listOf(
                 FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 5)),
                 FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 5)),

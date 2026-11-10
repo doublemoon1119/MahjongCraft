@@ -24,7 +24,7 @@ class MeldComponentTest {
         )
         val tiles = List(4) { IdentifiedTile(Uuid.random(), Tile.Numeric(Tile.Suit.Dot, 5)) }
         val original = Meld(
-            type = MeldType.PON,
+            type = MeldType.Pon,
             tiles = tiles.take(3),
             sourceTile = tiles.first(),
             sourceDirection = RelativeDirection.Left,
@@ -39,10 +39,10 @@ class MeldComponentTest {
         val upgraded = hand.upgradeToAddedKan(tiles.last(), 0).melds.single()
         assertEquals(original.id, upgraded.id)
         assertEquals(4, upgraded.components[marker])
-        assertEquals(MeldType.ADDED_KAN, upgraded.type)
+        assertEquals(MeldType.AddedKan, upgraded.type)
         assertEquals(tiles, upgraded.tiles)
         assertEquals(original.sourceTile, upgraded.sourceTile)
-        assertEquals(MeldType.PON, original.type)
+        assertEquals(MeldType.Pon, original.type)
     }
 
     /** 多組副露時加槓第二組，每組的身分與組件仍各自對應，不因位置或種類改變而錯置。 */
@@ -52,7 +52,7 @@ class MeldComponentTest {
         fun pon(tile: Tile, value: Int): Pair<Meld, IdentifiedTile> {
             val tiles = List(4) { IdentifiedTile(Uuid.random(), tile) }
             val meld = Meld(
-                type = MeldType.PON,
+                type = MeldType.Pon,
                 tiles = tiles.take(3),
                 sourceTile = tiles.first(),
                 sourceDirection = RelativeDirection.Across,
@@ -70,7 +70,7 @@ class MeldComponentTest {
 
         assertEquals(listOf(first.id, second.id), melds.map { it.id })
         assertEquals(listOf(1, 2), melds.map { it.components[marker] })
-        assertEquals(listOf(MeldType.PON, MeldType.ADDED_KAN), melds.map { it.type })
+        assertEquals(listOf(MeldType.Pon, MeldType.AddedKan), melds.map { it.type })
     }
 
     /** 不能將屬於牌張的組件誤放在整組副露。 */
@@ -84,7 +84,7 @@ class MeldComponentTest {
         )
         assertFailsWith<IllegalArgumentException> {
             Meld(
-                type = MeldType.CLOSED_KAN,
+                type = MeldType.ClosedKan,
                 tiles = emptyList(),
                 sourceDirection = RelativeDirection.Self,
                 publiclyRevealedTileIds = emptySet(),

@@ -18,7 +18,7 @@ internal object ShantenTestFixtures {
         listOf(Tile.Honor.East, Tile.Honor.South, Tile.Honor.West, Tile.Honor.North, Tile.Honor.White, Tile.Honor.Green, Tile.Honor.Red)
 
     /** 副露的種類輪替使用，讓槓與碰、吃都出現；向聽計算只看副露的組數。 */
-    private val MELD_TYPES = listOf(MeldType.PON, MeldType.CHI, MeldType.CLOSED_KAN, MeldType.OPEN_KAN, MeldType.ADDED_KAN)
+    private val MELD_TYPES = listOf(MeldType.Pon, MeldType.Chi, MeldType.ClosedKan, MeldType.OpenKan, MeldType.AddedKan)
 
     /**
      * 由立牌與 [meldCount] 組副露建立手牌。
@@ -140,7 +140,7 @@ internal object ShantenTestFixtures {
      */
     private fun melds(count: Int): List<Meld> = List(count) { index ->
         val type = MELD_TYPES[index % MELD_TYPES.size]
-        val size = if (type == MeldType.PON || type == MeldType.CHI) 3 else 4
+        val size = if (type == MeldType.Pon || type == MeldType.Chi) 3 else 4
         Meld(
             type = type,
             tiles = List(size) { FakeIdentifiedTileFactory.create(Tile.Honor.White) },

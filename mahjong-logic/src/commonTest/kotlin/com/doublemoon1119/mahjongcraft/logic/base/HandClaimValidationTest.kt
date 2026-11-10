@@ -12,7 +12,7 @@ class HandClaimValidationTest {
         val tiles = List(3) { FakeIdentifiedTileFactory.create(Tile.Honor.White) }
         assertFailsWith<IllegalArgumentException> {
             Meld(
-                type = MeldType.PON,
+                type = MeldType.Pon,
                 tiles = tiles,
                 sourceTile = tiles.last(),
                 sourceDirection = RelativeDirection.Self,
@@ -31,10 +31,10 @@ class HandClaimValidationTest {
         val hand = Hand(tiles = listOf(owned))
 
         assertFailsWith<IllegalArgumentException> {
-            hand.call(MeldType.PON, listOf(owned, foreign, source), source, RelativeDirection.Left, setOf(owned.id, foreign.id, source.id), emptySet())
+            hand.call(MeldType.Pon, listOf(owned, foreign, source), source, RelativeDirection.Left, setOf(owned.id, foreign.id, source.id), emptySet())
         }
         assertFailsWith<IllegalArgumentException> {
-            hand.call(MeldType.PON, listOf(owned, owned, source), source, RelativeDirection.Left, setOf(owned.id, source.id), emptySet())
+            hand.call(MeldType.Pon, listOf(owned, owned, source), source, RelativeDirection.Left, setOf(owned.id, source.id), emptySet())
         }
     }
 
@@ -46,10 +46,10 @@ class HandClaimValidationTest {
         val hand = Hand(tiles = tiles)
 
         assertFailsWith<IllegalArgumentException> {
-            hand.call(MeldType.PON, tiles, foreignSource, RelativeDirection.Left, tiles.map { it.id }.toSet(), emptySet())
+            hand.call(MeldType.Pon, tiles, foreignSource, RelativeDirection.Left, tiles.map { it.id }.toSet(), emptySet())
         }
         assertFailsWith<IllegalArgumentException> {
-            hand.call(MeldType.PON, tiles, tiles.first(), RelativeDirection.Left, tiles.map { it.id }.toSet(), emptySet())
+            hand.call(MeldType.Pon, tiles, tiles.first(), RelativeDirection.Left, tiles.map { it.id }.toSet(), emptySet())
         }
     }
 
@@ -58,7 +58,7 @@ class HandClaimValidationTest {
     fun `added kan rejects a tile outside the standing hand`() {
         val tiles = List(3) { FakeIdentifiedTileFactory.create(Tile.Honor.Red) }
         val meld = Meld(
-            type = MeldType.PON,
+            type = MeldType.Pon,
             tiles = tiles,
             sourceTile = tiles.last(),
             sourceDirection = RelativeDirection.Left,

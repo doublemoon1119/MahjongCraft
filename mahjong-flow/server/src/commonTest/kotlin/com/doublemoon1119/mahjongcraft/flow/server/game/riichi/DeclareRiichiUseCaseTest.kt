@@ -447,7 +447,7 @@ class DeclareRiichiUseCaseTest {
         val fixtures = Fixtures()
         val meldTiles = List(3) { FakeIdentifiedTileFactory.create(Tile.Honor.East) }
         val notMenzenHand = tenpaiHand().copy(tiles = manTiles + meldTiles.drop(1)).call(
-            type = MeldType.PON,
+            type = MeldType.Pon,
             tiles = meldTiles,
             source = meldTiles[0],
             direction = RelativeDirection.Left,

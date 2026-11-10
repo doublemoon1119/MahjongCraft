@@ -105,7 +105,7 @@ class SuuankouTest : RiichiHandValueCalculatorTestBase() {
             melds = listOf(
                 // 暗槓：5s 5s 5s 5s
                 FakeMeldFactory.create(
-                    type = MeldType.CLOSED_KAN,
+                    type = MeldType.ClosedKan,
                     tiles = listOf(
                         FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Bamboo, 5)),
                         FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Bamboo, 5)),
@@ -197,7 +197,7 @@ class SuuankouTest : RiichiHandValueCalculatorTestBase() {
             melds = listOf(
                 // 副露（碰）：白 白 白
                 FakeMeldFactory.create(
-                    type = MeldType.PON,
+                    type = MeldType.Pon,
                     tiles = listOf(
                         FakeIdentifiedTileFactory.create(Tile.Honor.White),
                         FakeIdentifiedTileFactory.create(Tile.Honor.White),

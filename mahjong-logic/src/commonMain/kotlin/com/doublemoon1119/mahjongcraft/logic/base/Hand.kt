@@ -85,8 +85,8 @@ data class Hand(
      *
      * @param type 副露種類。
      * @param tiles 構成該副露的所有牌（包含來自他人的牌與自己手牌中的牌）。
-     * @param source 鳴取來源的牌（別家打出的牌）。若為暗槓 [MeldType.CLOSED_KAN]則傳入 null。
-     * @param direction 鳴取來源的方位。對於暗槓 [MeldType.CLOSED_KAN]，必須傳入 [RelativeDirection.Self]。
+     * @param source 鳴取來源的牌（別家打出的牌）。若為暗槓 [MeldType.ClosedKan]則傳入 null。
+     * @param direction 鳴取來源的方位。對於暗槓 [MeldType.ClosedKan]，必須傳入 [RelativeDirection.Self]。
      * @param publiclyRevealedTileIds 可讓一般觀察者看到牌面的牌張 ID；必須包含來源牌。
      * @param faceDownTileIds 需要朝下呈現的牌張 ID。
      * @return 完成鳴牌後的新 [Hand] 實例。
@@ -134,18 +134,18 @@ data class Hand(
      * @param targetMeldIndex 欲升級的碰組在 [exposedMelds] 中的索引。
      * @return 完成加槓後的新 [Hand] 實例。
      * @throws IndexOutOfBoundsException 當 [targetMeldIndex] 不在副露索引範圍內時拋出。
-     * @throws IllegalArgumentException 當指定的副露不是 [MeldType.PON] 時拋出。
+     * @throws IllegalArgumentException 當指定的副露不是 [MeldType.Pon] 時拋出。
      */
     fun upgradeToAddedKan(tile: IdentifiedTile, targetMeldIndex: Int): Hand {
         val oldMeld = melds[targetMeldIndex]
-        require(oldMeld.type == MeldType.PON) { "Only PON can be upgraded to ADDED_KAN" }
+        require(oldMeld.type == MeldType.Pon) { "Only PON can be upgraded to ADDED_KAN" }
         require(standingTiles.any { it == tile } && melds.none { meld -> meld.tiles.any { it.id == tile.id } }) {
             "Added kan tile must be held by the player and outside existing melds"
         }
 
         val handAfterRemoval = removeFromHand(tile.id)
         val newMeld = oldMeld.copy(
-            type = MeldType.ADDED_KAN,
+            type = MeldType.AddedKan,
             tiles = oldMeld.tiles + tile,
             publiclyRevealedTileIds = oldMeld.publiclyRevealedTileIds + tile.id,
             faceDownTileIds = oldMeld.faceDownTileIds,

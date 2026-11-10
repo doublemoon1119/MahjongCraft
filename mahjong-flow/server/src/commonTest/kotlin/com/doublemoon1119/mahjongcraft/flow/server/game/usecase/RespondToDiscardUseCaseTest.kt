@@ -425,7 +425,7 @@ class RespondToDiscardUseCaseTest {
         val winner = newState.players.first { it.id == responderId }
         assertTrue(winner.hand.tiles.isEmpty(), "Both matching hand tiles should be consumed into the meld.")
         val meld = winner.hand.melds.single()
-        assertEquals(MeldType.PON, meld.type)
+        assertEquals(MeldType.Pon, meld.type)
         assertEquals(setOf(handTile1, handTile2, discardedTile), meld.tiles.toSet())
 
         val newDiscarder = newState.players.first { it.id == discarderId }
@@ -548,7 +548,7 @@ class RespondToDiscardUseCaseTest {
         val winner = newState.players.first { it.id == responderId }
         assertTrue(winner.hand.tiles.isEmpty())
         val meld = winner.hand.melds.single()
-        assertEquals(MeldType.CHI, meld.type)
+        assertEquals(MeldType.Chi, meld.type)
         assertEquals(setOf(handTile4, handTile6, discardedTile), meld.tiles.toSet())
         assertEquals(1, newState.currentPlayerIndex)
     }
@@ -600,7 +600,7 @@ class RespondToDiscardUseCaseTest {
 
         val winner = newState.players.first { it.id == responderId }
         val meld = winner.hand.melds.single()
-        assertEquals(MeldType.OPEN_KAN, meld.type)
+        assertEquals(MeldType.OpenKan, meld.type)
         assertEquals(setOf(handTile1, handTile2, handTile3, discardedTile), meld.tiles.toSet())
         assertEquals(rinshanTile, winner.hand.lastDrawn, "Should have drawn a replacement tile from the dead wall, not the front of the wall.")
         assertEquals(
@@ -779,7 +779,7 @@ class RespondToDiscardUseCaseTest {
         assertEquals(listOf(chiTile4, chiTile6), finalChiPlayer.hand.tiles, "The Chi player's hand should remain untouched.")
 
         val finalPonPlayer = finalState.players.first { it.id == ponPlayerId }
-        assertEquals(MeldType.PON, finalPonPlayer.hand.melds.single().type)
+        assertEquals(MeldType.Pon, finalPonPlayer.hand.melds.single().type)
         assertEquals(
             listOf(GameAction.Pon(discardedTile.id, listOf(ponTile1.id, ponTile2.id))),
             fixtures.eventPublisher.getNotifiedActions(gameId, bystander.id, ponPlayerId),
@@ -807,7 +807,7 @@ class RespondToDiscardUseCaseTest {
         val handTiles = listOf(Tile.Honor.White, Tile.Honor.White).map { FakeIdentifiedTileFactory.create(it) }
         val dragonMelds = listOf(Tile.Honor.Red, Tile.Honor.Green).map { tile ->
             FakeMeldFactory.create(
-                type = MeldType.PON,
+                type = MeldType.Pon,
                 tiles = List(3) { FakeIdentifiedTileFactory.create(tile) },
                 sourceDirection = RelativeDirection.Across,
             )
@@ -851,7 +851,7 @@ class RespondToDiscardUseCaseTest {
         val handTiles = List(3) { FakeIdentifiedTileFactory.create(Tile.Honor.North) }
         val windMelds = listOf(Tile.Honor.East, Tile.Honor.South, Tile.Honor.West).map { tile ->
             FakeMeldFactory.create(
-                type = MeldType.PON,
+                type = MeldType.Pon,
                 tiles = List(3) { FakeIdentifiedTileFactory.create(tile) },
                 sourceDirection = RelativeDirection.Across,
             )
@@ -1635,7 +1635,7 @@ class RespondToDiscardUseCaseTest {
         assertTrue(ponResult is Outcome.Success, "Expected Success but got $ponResult")
         val newState = fixtures.gameRepo.getTableState(gameId)!!
         assertNull(newState.pendingReaction)
-        assertEquals(MeldType.PON, newState.players.first { it.id == ponPlayerId }.hand.melds.single().type)
+        assertEquals(MeldType.Pon, newState.players.first { it.id == ponPlayerId }.hand.melds.single().type)
         assertTrue(newState.players.first { it.id == responderId }.components[RiichiPlayerComponents.PERMANENT_FURITEN] != null, "The riichi player who passed on Ron stays permanently furiten.")
     }
 

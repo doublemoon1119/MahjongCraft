@@ -76,9 +76,9 @@ class FabricDebugAnimationCommand(
 
     /** 建立 `meld <chi|pon|kan|added_kan> [tile]` 子指令。 */
     fun buildMeldCommand(): LiteralArgumentBuilder<ServerCommandSource> = literal(MELD_SUBCOMMAND)
-        .then(tilePreviewSupport.withOptionalTileArgument(literal(CHI_ARGUMENT)) { source, tileArg -> previewMeld(source, MeldType.CHI, tileArg) })
-        .then(tilePreviewSupport.withOptionalTileArgument(literal(PON_ARGUMENT)) { source, tileArg -> previewMeld(source, MeldType.PON, tileArg) })
-        .then(tilePreviewSupport.withOptionalTileArgument(literal(KAN_ARGUMENT)) { source, tileArg -> previewMeld(source, MeldType.OPEN_KAN, tileArg) })
+        .then(tilePreviewSupport.withOptionalTileArgument(literal(CHI_ARGUMENT)) { source, tileArg -> previewMeld(source, MeldType.Chi, tileArg) })
+        .then(tilePreviewSupport.withOptionalTileArgument(literal(PON_ARGUMENT)) { source, tileArg -> previewMeld(source, MeldType.Pon, tileArg) })
+        .then(tilePreviewSupport.withOptionalTileArgument(literal(KAN_ARGUMENT)) { source, tileArg -> previewMeld(source, MeldType.OpenKan, tileArg) })
         .then(tilePreviewSupport.withOptionalTileArgument(literal(ADDED_KAN_ARGUMENT)) { source, tileArg -> previewAddedKanMeld(source, tileArg) })
 
     /**
@@ -300,7 +300,7 @@ class FabricDebugAnimationCommand(
         val player = source.player ?: return COMMAND_FAILURE
         val world = player.serverWorld
         val assetKey = tilePreviewSupport.resolveAssetKey(tileArg)
-        val tileCount = if (type == MeldType.OPEN_KAN) MELD_KAN_TILE_COUNT else DebugPreviewDefaults.MELD_TILE_COUNT
+        val tileCount = if (type == MeldType.OpenKan) MELD_KAN_TILE_COUNT else DebugPreviewDefaults.MELD_TILE_COUNT
         val layout = layoutFactory.create(
             player.blockPos.x,
             player.blockPos.y,
@@ -308,7 +308,7 @@ class FabricDebugAnimationCommand(
             player.horizontalFacing.toMahjongTableFacing(),
             MahjongTableSeatLayout.FOUR_PLAYER,
         )
-        val sourceDirection = if (type == MeldType.CHI) RelativeDirection.Left else RelativeDirection.Across
+        val sourceDirection = if (type == MeldType.Chi) RelativeDirection.Left else RelativeDirection.Across
         val sidewaysSlot = MahjongTileTableLayout.sidewaysSlotIndex(sourceDirection, tileCount)
         val claimedOrientation = sourceDirection.claimedTileOrientation()
 
@@ -326,7 +326,7 @@ class FabricDebugAnimationCommand(
             )
         }
         val popupTiles = tiles.mapIndexed { slot, tile ->
-            MeldActionPopupTile(tileId = tile.uuid.toKotlinUuid(), claimed = type == MeldType.CHI && slot == sidewaysSlot)
+            MeldActionPopupTile(tileId = tile.uuid.toKotlinUuid(), claimed = type == MeldType.Chi && slot == sidewaysSlot)
         }
         val landingTime = world.time + MahjongTileTableLayout.DISCARD_FLIGHT_DURATION_TICKS
         tiles.first().showMeldActionPopup(

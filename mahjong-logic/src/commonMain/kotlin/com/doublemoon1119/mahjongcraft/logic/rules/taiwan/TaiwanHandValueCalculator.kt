@@ -75,14 +75,14 @@ class TaiwanHandValueCalculator(private val config: TaiwanRuleConfig) : HandValu
         return context.hand.melds.all { meld ->
             val faces = meld.tiles.map { it.tile }
             when (meld.type) {
-                MeldType.CHI -> {
+                MeldType.Chi -> {
                     val numbers = faces.filterIsInstance<Tile.Numeric>().sortedBy { it.value }
                     numbers.size == 3 &&
                         numbers.map { it.suit }.distinct().size == 1 &&
                         numbers.map { it.value } == (numbers.first().value..numbers.first().value + 2).toList()
                 }
-                MeldType.PON -> faces.size == 3 && faces.distinct().size == 1
-                MeldType.OPEN_KAN, MeldType.CLOSED_KAN, MeldType.ADDED_KAN -> faces.size == 4 && faces.distinct().size == 1
+                MeldType.Pon -> faces.size == 3 && faces.distinct().size == 1
+                MeldType.OpenKan, MeldType.ClosedKan, MeldType.AddedKan -> faces.size == 4 && faces.distinct().size == 1
                 is MeldType.Extension -> false
             }
         }
@@ -120,7 +120,7 @@ class TaiwanHandValueCalculator(private val config: TaiwanRuleConfig) : HandValu
         }
         val exposed = context.hand.melds
         val triplets = decomposition.groups.filterIsInstance<StandardHandGroup.Triplet>().map { it.tile } +
-            exposed.filter { it.type != MeldType.CHI }.map { it.tiles.first().tile }
+            exposed.filter { it.type != MeldType.Chi }.map { it.tiles.first().tile }
         val dragonCount = dragons.count { it in triplets }
         val littleDragons = dragonCount == 2 && decomposition.pair in dragons
         val bigDragons = dragonCount == 3
@@ -145,13 +145,13 @@ class TaiwanHandValueCalculator(private val config: TaiwanRuleConfig) : HandValu
                     (rank == 7 && winningGroup.first.value == 7)
             }
         }
-        val allExposed = exposed.size == 5 && exposed.none { it.type == MeldType.CLOSED_KAN }
+        val allExposed = exposed.size == 5 && exposed.none { it.type == MeldType.ClosedKan }
         if (waitCount == 1 && singleShape && !allExposed && opening != TaiwanTaiType.HEAVENLY_WIN) add(TaiwanTaiType.SINGLE_WAIT)
         if (context.situation.isRobbingKong) add(TaiwanTaiType.ROBBING_KONG)
         if (context.situation.isReplacementWin && opening != TaiwanTaiType.HEAVENLY_WIN) add(TaiwanTaiType.REPLACEMENT_WIN)
         if (context.situation.isLastDraw) add(TaiwanTaiType.LAST_DRAW)
         val allFaces = context.hand.allTiles.map { it.tile } + context.winningTile
-        val allSequences = decomposition.groups.all { it is StandardHandGroup.Sequence } && exposed.all { it.type == MeldType.CHI }
+        val allSequences = decomposition.groups.all { it is StandardHandGroup.Sequence } && exposed.all { it.type == MeldType.Chi }
         if (allSequences &&
             allFaces.all { it is Tile.Numeric } &&
             context.flowers.isEmpty() &&
@@ -163,14 +163,14 @@ class TaiwanHandValueCalculator(private val config: TaiwanRuleConfig) : HandValu
         }
         val concealedCount = decomposition.groups.withIndex().count { (index, group) ->
             group is StandardHandGroup.Triplet && (context.isTsumo || index != decomposition.winningGroupIndex)
-        } + exposed.count { it.type == MeldType.CLOSED_KAN }
+        } + exposed.count { it.type == MeldType.ClosedKan }
         when (concealedCount) {
             3 -> add(TaiwanTaiType.THREE_CONCEALED_TRIPLETS)
             4 -> add(TaiwanTaiType.FOUR_CONCEALED_TRIPLETS)
             5 -> add(TaiwanTaiType.FIVE_CONCEALED_TRIPLETS)
         }
         if (allExposed && !context.isTsumo) add(TaiwanTaiType.ALL_EXPOSED)
-        if (decomposition.groups.all { it is StandardHandGroup.Triplet } && exposed.none { it.type == MeldType.CHI }) add(TaiwanTaiType.ALL_TRIPLETS)
+        if (decomposition.groups.all { it is StandardHandGroup.Triplet } && exposed.none { it.type == MeldType.Chi }) add(TaiwanTaiType.ALL_TRIPLETS)
         if (bigDragons) {
             add(TaiwanTaiType.BIG_DRAGONS)
         } else if (littleDragons) {

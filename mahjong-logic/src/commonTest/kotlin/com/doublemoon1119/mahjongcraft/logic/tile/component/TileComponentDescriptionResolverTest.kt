@@ -70,7 +70,7 @@ class TileComponentDescriptionResolverTest {
                         hand = player.hand.copy(
                             melds = listOf(
                                 Meld(
-                                    type = MeldType.PON,
+                                    type = MeldType.Pon,
                                     tiles = meldTiles,
                                     sourceTile = meldTiles.first(),
                                     sourceDirection = RelativeDirection.Left,

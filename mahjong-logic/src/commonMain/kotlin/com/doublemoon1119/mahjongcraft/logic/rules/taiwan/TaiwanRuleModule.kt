@@ -298,7 +298,7 @@ class TaiwanRuleModule(
     fun resolveFourKans(tableState: TableState): ExhaustiveDrawReason? {
         val totalKans = tableState.players.sumOf { player ->
             player.hand.exposedMelds.count { meld ->
-                meld.type == MeldType.OPEN_KAN || meld.type == MeldType.ADDED_KAN || meld.type == MeldType.CLOSED_KAN
+                meld.type == MeldType.OpenKan || meld.type == MeldType.AddedKan || meld.type == MeldType.ClosedKan
             }
         }
         return TaiwanExhaustiveDrawReason.FourKans.takeIf { totalKans >= 4 }

@@ -12,9 +12,9 @@ import kotlin.uuid.Uuid
  *
  * @property id 這組副露的穩定識別碼；加槓時保留。
  * @property components 這組副露攜帶的規則資料。
- * @property type 副露的種類，例如 [MeldType.CHI] 或 [MeldType.PON]。
+ * @property type 副露的種類，例如 [MeldType.Chi] 或 [MeldType.Pon]。
  * @property tiles 組成該副露的所有 [IdentifiedTile]。
- * @property sourceTile 從其他玩家處鳴取而來的特定牌。若為暗槓 ([MeldType.CLOSED_KAN]) 則通常為 null。
+ * @property sourceTile 從其他玩家處鳴取而來的特定牌。若為暗槓 ([MeldType.ClosedKan]) 則通常為 null。
  * @property sourceDirection 鳴取來源的相對方位；有 [sourceTile] 時不得為 [RelativeDirection.Self]。
  * @property publiclyRevealedTileIds 可讓一般觀察者知道牌面的牌張 ID；必須是 [tiles] 中牌張 ID 的子集合。
  * @property faceDownTileIds 桌面上需要朝下呈現的牌張 ID；必須是 [tiles] 中牌張 ID 的子集合，與牌面公開狀態分開保存。

@@ -18,9 +18,9 @@ class ShowcaseWingCardsTest {
         val addedKan = pon + Uuid.random()
         val closedKan = List(4) { Uuid.random() }
         val melds = listOf(
-            MahjongMeldTileGroup(MeldType.ADDED_KAN, addedKan, pon.first(), RelativeDirection.Across, allTilesFaceDown = false, faceDownTileIds = emptySet()),
+            MahjongMeldTileGroup(MeldType.AddedKan, addedKan, pon.first(), RelativeDirection.Across, allTilesFaceDown = false, faceDownTileIds = emptySet()),
             MahjongMeldTileGroup(
-                type = MeldType.CLOSED_KAN,
+                type = MeldType.ClosedKan,
                 tileIds = closedKan,
                 calledTileId = null,
                 sourceDirection = RelativeDirection.Self,

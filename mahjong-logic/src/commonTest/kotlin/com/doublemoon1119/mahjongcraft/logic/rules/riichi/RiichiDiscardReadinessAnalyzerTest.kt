@@ -154,7 +154,7 @@ class RiichiDiscardReadinessAnalyzerTest {
         val player = FakeMahjongPlayerFactory.create(hand = hand)
         val calledTile = FakeIdentifiedTileFactory.create(threeSou)
         val meld = FakeMeldFactory.create(
-            type = MeldType.PON,
+            type = MeldType.Pon,
             tiles = listOf(
                 calledTile,
                 FakeIdentifiedTileFactory.create(threeSou),
@@ -336,7 +336,7 @@ class RiichiDiscardReadinessAnalyzerTest {
     fun `test riichi action analysis projects declaration yaku`() {
         val completedMelds = listOf(
             FakeMeldFactory.create(
-                type = MeldType.CLOSED_KAN,
+                type = MeldType.ClosedKan,
                 tiles = List(4) { FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 1)) },
             ),
         )
@@ -411,14 +411,14 @@ class RiichiDiscardReadinessAnalyzerTest {
     ): MahjongPlayer {
         val melds = listOf(
             FakeMeldFactory.create(
-                type = MeldType.PON,
+                type = MeldType.Pon,
                 tiles = List(3) {
                     FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 7))
                 },
                 sourceDirection = RelativeDirection.Left,
             ),
             FakeMeldFactory.create(
-                type = MeldType.CHI,
+                type = MeldType.Chi,
                 tiles = listOf(6, 7, 8).map { value ->
                     FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Bamboo, value))
                 },

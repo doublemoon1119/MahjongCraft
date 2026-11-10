@@ -71,7 +71,7 @@ class RiichiClosedKanAfterRiichiTest {
     @Test
     fun `existing closed kan counts as a completed meld`() {
         val existing = FakeMeldFactory.create(
-            type = MeldType.CLOSED_KAN,
+            type = MeldType.ClosedKan,
             tiles = List(4) { FakeIdentifiedTileFactory.create(Tile.Honor.East) },
         )
         val hand = tiles(dots = "33555", bamboos = "34678")
@@ -221,7 +221,7 @@ class RiichiClosedKanAfterRiichiTest {
     /** 移出三張立牌並加入本次摸牌，建立暗槓後的等待集合。 */
     private fun waitsAfterKan(standing: List<Tile>, kanTile: Tile): Set<Tile> {
         val kan = FakeMeldFactory.create(
-            type = MeldType.CLOSED_KAN,
+            type = MeldType.ClosedKan,
             tiles = List(4) { FakeIdentifiedTileFactory.create(kanTile) },
         )
         return waits(standing.filterNot { it == kanTile }, listOf(kan))

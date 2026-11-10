@@ -189,7 +189,7 @@ class DebugGameScenarioTest {
         assertEquals(
             3,
             first.game.tableState.players.sumOf { player ->
-                player.hand.melds.count { it.type == MeldType.CLOSED_KAN }
+                player.hand.melds.count { it.type == MeldType.ClosedKan }
             },
         )
         assertNotEquals(allTileIds(first), allTileIds(second))

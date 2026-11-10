@@ -60,21 +60,21 @@ fun MeldPersistenceDto.toDomain(componentRegistry: ComponentPersistenceConverter
 
 /** 將副露種類轉成存檔 DTO。 */
 private fun MeldType.toPersistenceDto(): MeldTypePersistenceDto = when (this) {
-    MeldType.CHI -> MeldTypePersistenceDto.Chi
-    MeldType.PON -> MeldTypePersistenceDto.Pon
-    MeldType.OPEN_KAN -> MeldTypePersistenceDto.OpenKan
-    MeldType.CLOSED_KAN -> MeldTypePersistenceDto.ClosedKan
-    MeldType.ADDED_KAN -> MeldTypePersistenceDto.AddedKan
+    MeldType.Chi -> MeldTypePersistenceDto.Chi
+    MeldType.Pon -> MeldTypePersistenceDto.Pon
+    MeldType.OpenKan -> MeldTypePersistenceDto.OpenKan
+    MeldType.ClosedKan -> MeldTypePersistenceDto.ClosedKan
+    MeldType.AddedKan -> MeldTypePersistenceDto.AddedKan
     is MeldType.Extension -> MeldTypePersistenceDto.Extension(typeId.toString())
 }
 
 /** 將已保存的副露種類還原成領域值。 */
 private fun MeldTypePersistenceDto.toDomain(): MeldType = when (this) {
-    MeldTypePersistenceDto.Chi -> MeldType.CHI
-    MeldTypePersistenceDto.Pon -> MeldType.PON
-    MeldTypePersistenceDto.OpenKan -> MeldType.OPEN_KAN
-    MeldTypePersistenceDto.ClosedKan -> MeldType.CLOSED_KAN
-    MeldTypePersistenceDto.AddedKan -> MeldType.ADDED_KAN
+    MeldTypePersistenceDto.Chi -> MeldType.Chi
+    MeldTypePersistenceDto.Pon -> MeldType.Pon
+    MeldTypePersistenceDto.OpenKan -> MeldType.OpenKan
+    MeldTypePersistenceDto.ClosedKan -> MeldType.ClosedKan
+    MeldTypePersistenceDto.AddedKan -> MeldType.AddedKan
     is MeldTypePersistenceDto.Extension -> MeldType.Extension(MeldTypeId.parse(typeId))
 }
 

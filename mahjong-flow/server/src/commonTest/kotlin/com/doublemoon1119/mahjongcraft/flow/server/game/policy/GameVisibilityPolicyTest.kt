@@ -120,7 +120,7 @@ class GameVisibilityPolicyTest {
         val otherId = Uuid.random()
         val tiles = List(4) { FakeIdentifiedTileFactory.create(Tile.Honor.East) }
         val meld = Meld(
-            type = MeldType.CLOSED_KAN,
+            type = MeldType.ClosedKan,
             tiles = tiles,
             sourceDirection = RelativeDirection.Self,
             publiclyRevealedTileIds = emptySet(),
@@ -505,7 +505,7 @@ class GameVisibilityPolicyTest {
         val kanTiles = List(4) { FakeIdentifiedTileFactory.create(Tile.Honor.East) }
         val standingTile = FakeIdentifiedTileFactory.create(Tile.Honor.South)
         val hand = Hand(tiles = kanTiles + standingTile).call(
-            type = MeldType.CLOSED_KAN,
+            type = MeldType.ClosedKan,
             tiles = kanTiles,
             direction = RelativeDirection.Self,
             publiclyRevealedTileIds = emptySet(),

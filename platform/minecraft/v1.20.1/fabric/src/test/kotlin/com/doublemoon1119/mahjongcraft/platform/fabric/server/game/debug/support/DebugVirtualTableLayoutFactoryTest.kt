@@ -74,7 +74,7 @@ class DebugVirtualTableLayoutFactoryTest {
             tableFacing = MahjongTableFacing.NORTH,
             seatLayout = MahjongTableSeatLayout.FOUR_PLAYER,
         )
-        val ponPlacements = layout.meldPlacements(type = MeldType.PON, tileCount = 3)
+        val ponPlacements = layout.meldPlacements(type = MeldType.Pon, tileCount = 3)
 
         val addedKanPlacements = layout.addedKanMeldPlacements(tileCount = 3)
 
@@ -99,8 +99,8 @@ class DebugVirtualTableLayoutFactoryTest {
         )
         val ponIds = List(3) { Uuid.random() }
         val addedId = Uuid.random()
-        val pon = MahjongMeldTileGroup(MeldType.PON, ponIds, ponIds.first(), RelativeDirection.Across, allTilesFaceDown = false, faceDownTileIds = emptySet())
-        val addedKan = pon.copy(type = MeldType.ADDED_KAN, tileIds = ponIds + addedId)
+        val pon = MahjongMeldTileGroup(MeldType.Pon, ponIds, ponIds.first(), RelativeDirection.Across, allTilesFaceDown = false, faceDownTileIds = emptySet())
+        val addedKan = pon.copy(type = MeldType.AddedKan, tileIds = ponIds + addedId)
 
         val ponPlacements = layout.meldPlacements(listOf(pon))
         val addedKanPlacements = layout.meldPlacements(listOf(addedKan))
@@ -124,7 +124,7 @@ class DebugVirtualTableLayoutFactoryTest {
             seatLayout = MahjongTableSeatLayout.FOUR_PLAYER,
         )
         val tileIds = List(3) { Uuid.random() }
-        val chi = MahjongMeldTileGroup(MeldType.CHI, tileIds, null, RelativeDirection.Self, allTilesFaceDown = false, faceDownTileIds = emptySet())
+        val chi = MahjongMeldTileGroup(MeldType.Chi, tileIds, null, RelativeDirection.Self, allTilesFaceDown = false, faceDownTileIds = emptySet())
 
         val nearSeat = layout.meldPlacements(listOf(chi))
         val otherSeat = layout.meldPlacements(listOf(chi), seatIndex = 2)
@@ -167,7 +167,7 @@ class DebugVirtualTableLayoutFactoryTest {
             seatLayout = MahjongTableSeatLayout.FOUR_PLAYER,
         )
 
-        val placements = layout.meldPlacements(type = MeldType.OPEN_KAN, tileCount = 4)
+        val placements = layout.meldPlacements(type = MeldType.OpenKan, tileCount = 4)
 
         assertEquals(4, placements.size)
         assertEquals(4, placements.distinct().size)

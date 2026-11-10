@@ -101,7 +101,7 @@ class TaiwanLegalActionValidatorTest {
     fun `swap calling is forbidden after chi and pon`() {
         val called = tile(Tile.Suit.Character, 3)
         val chiMeld = Meld(
-            type = MeldType.CHI,
+            type = MeldType.Chi,
             tiles = listOf(called, tile(Tile.Suit.Character, 4), tile(Tile.Suit.Character, 5)),
             sourceTile = called,
             sourceDirection = RelativeDirection.Left,

@@ -139,7 +139,7 @@ data class DebugVirtualTableLayout(
      * @return 由桌角向手牌方向排列的格位。
      */
     fun meldPlacements(type: MeldType, tileCount: Int): List<MahjongTileWallPlacement> {
-        val sourceDirection = if (type == MeldType.CHI) RelativeDirection.Left else RelativeDirection.Across
+        val sourceDirection = if (type == MeldType.Chi) RelativeDirection.Left else RelativeDirection.Across
         return singleMeld(sourceDirection, tileCount).placements
     }
 
@@ -231,7 +231,7 @@ data class DebugVirtualTableLayout(
         var cursorAlong = 0.0
         melds.forEachIndexed { meldIndex, meld ->
             if (meldIndex > 0) cursorAlong += MahjongTileTableLayout.MELD_GROUP_GAP
-            val isAddedKan = meld.type == MeldType.ADDED_KAN
+            val isAddedKan = meld.type == MeldType.AddedKan
             val baseTileIds = if (isAddedKan) meld.tileIds.dropLast(1) else meld.tileIds
             val displayDirection = meldDisplayDirection(meld.sourceDirection, seatLayout.playerCount)
             val sidewaysSlot = meld.calledTileId?.let {

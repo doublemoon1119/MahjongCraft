@@ -162,7 +162,7 @@ class MahjongTileTableLayoutTest {
     @Test
     fun `set aside tiles extend the corner area`() {
         val tileStep = MahjongTileDimensions.TILE_WIDTH + MahjongTileDimensions.TILE_SMALL_PADDING
-        val meld = MahjongMeldTileGroup(MeldType.PON, List(3) { Uuid.random() }, null, RelativeDirection.Self, false, emptySet())
+        val meld = MahjongMeldTileGroup(MeldType.Pon, List(3) { Uuid.random() }, null, RelativeDirection.Self, false, emptySet())
 
         assertEquals(2 * tileStep, MahjongTileTableLayout.cornerAreaWidth(0.0, emptyList(), setAsideTileCount = 2), ABSOLUTE_TOLERANCE)
         assertEquals(
@@ -493,7 +493,7 @@ class MahjongTileTableLayoutTest {
     /** 沒有鳴取牌（暗槓）的一組副露，每張牌都是直立寬度，逐張累加加上間距即為總寬度。 */
     @Test
     fun `meld area width sums standing tile widths without a sideways tile`() {
-        val meld = fakeMeld(type = MeldType.CLOSED_KAN, tileCount = 4, calledTileId = null)
+        val meld = fakeMeld(type = MeldType.ClosedKan, tileCount = 4, calledTileId = null)
         val stackStep = MahjongTileDimensions.TILE_WIDTH + MahjongTileDimensions.TILE_SMALL_PADDING
 
         assertEquals(4 * stackStep, MahjongTileTableLayout.meldAreaWidth(listOf(meld)), ABSOLUTE_TOLERANCE)
@@ -502,7 +502,7 @@ class MahjongTileTableLayoutTest {
     /** 有鳴取牌的一組副露，側身格位改用牌高當寬度，其餘格位仍是直立寬度。 */
     @Test
     fun `meld area width uses tile height for the sideways slot`() {
-        val meld = fakeMeld(type = MeldType.PON, tileCount = 3, calledTileId = Uuid.random(), sourceDirection = RelativeDirection.Across)
+        val meld = fakeMeld(type = MeldType.Pon, tileCount = 3, calledTileId = Uuid.random(), sourceDirection = RelativeDirection.Across)
         val standingStep = MahjongTileDimensions.TILE_WIDTH + MahjongTileDimensions.TILE_SMALL_PADDING
         val sidewaysStep = MahjongTileDimensions.TILE_HEIGHT + MahjongTileDimensions.TILE_SMALL_PADDING
         val expected = 2 * standingStep + sidewaysStep
@@ -513,8 +513,8 @@ class MahjongTileTableLayoutTest {
     /** 加槓補上的第 4 張牌疊在側身牌旁邊，不佔用額外橫向格位，寬度應跟原本的碰（3 張）相同。 */
     @Test
     fun `meld area width does not count the added kan's fourth tile`() {
-        val pon = fakeMeld(type = MeldType.PON, tileCount = 3, calledTileId = Uuid.random(), sourceDirection = RelativeDirection.Across)
-        val addedKan = fakeMeld(type = MeldType.ADDED_KAN, tileCount = 4, calledTileId = pon.calledTileId, sourceDirection = RelativeDirection.Across)
+        val pon = fakeMeld(type = MeldType.Pon, tileCount = 3, calledTileId = Uuid.random(), sourceDirection = RelativeDirection.Across)
+        val addedKan = fakeMeld(type = MeldType.AddedKan, tileCount = 4, calledTileId = pon.calledTileId, sourceDirection = RelativeDirection.Across)
 
         assertEquals(
             MahjongTileTableLayout.meldAreaWidth(listOf(pon)),
@@ -533,7 +533,7 @@ class MahjongTileTableLayoutTest {
     /** 角落總寬度：沒有副露時只有角落物件；有副露時為副露起點加副露寬度。 */
     @Test
     fun `corner area width covers the props and the melds after them`() {
-        val meld = fakeMeld(type = MeldType.CLOSED_KAN, tileCount = 4, calledTileId = null)
+        val meld = fakeMeld(type = MeldType.ClosedKan, tileCount = 4, calledTileId = null)
         val meldWidth = MahjongTileTableLayout.meldAreaWidth(listOf(meld))
 
         assertEquals(0.3, MahjongTileTableLayout.cornerAreaWidth(0.3, emptyList(), setAsideTileCount = 0), ABSOLUTE_TOLERANCE)
@@ -548,7 +548,7 @@ class MahjongTileTableLayoutTest {
     /** 兩組副露之間應額外跳過一個 [MahjongTileTableLayout.MELD_GROUP_GAP]。 */
     @Test
     fun `meld area width adds a gap between groups`() {
-        val meld = fakeMeld(type = MeldType.CLOSED_KAN, tileCount = 4, calledTileId = null)
+        val meld = fakeMeld(type = MeldType.ClosedKan, tileCount = 4, calledTileId = null)
         val oneGroup = MahjongTileTableLayout.meldAreaWidth(listOf(meld))
         val twoGroups = MahjongTileTableLayout.meldAreaWidth(listOf(meld, meld))
 

@@ -74,7 +74,7 @@ class JunchanTest : RiichiHandValueCalculatorTestBase() {
             ),
             melds = listOf(
                 FakeMeldFactory.create(
-                    type = MeldType.PON,
+                    type = MeldType.Pon,
                     tiles = listOf(
                         FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 9)),
                         FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 9)),
@@ -112,7 +112,7 @@ class JunchanTest : RiichiHandValueCalculatorTestBase() {
             ),
             melds = listOf(
                 FakeMeldFactory.create(
-                    type = MeldType.PON,
+                    type = MeldType.Pon,
                     tiles = listOf(
                         FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 9)),
                         FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 9)),

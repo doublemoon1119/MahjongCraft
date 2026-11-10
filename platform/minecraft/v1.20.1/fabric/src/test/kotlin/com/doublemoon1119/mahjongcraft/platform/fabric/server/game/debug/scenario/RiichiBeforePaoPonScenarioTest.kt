@@ -71,7 +71,7 @@ class RiichiBeforePaoPonScenarioTest {
         val calledTile = discarder.discardPile.entries.single().tile
         val direction = state.relativeDirectionOf(invoking.id, discarder.id)
 
-        val claimed = module.beforeDiscardClaimed(invoking, MeldType.PON, calledTile, direction)
+        val claimed = module.beforeDiscardClaimed(invoking, MeldType.Pon, calledTile, direction)
 
         assertEquals(
             listOf(Tile.Honor.Green, Tile.Honor.Red),

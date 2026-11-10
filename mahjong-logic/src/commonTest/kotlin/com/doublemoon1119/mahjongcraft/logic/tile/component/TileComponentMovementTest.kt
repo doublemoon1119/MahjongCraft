@@ -61,7 +61,7 @@ class TileComponentMovementTest {
         for (region in TileRegion.entries) {
             val player = FakeMahjongPlayerFactory.create(hand = Hand(), discardPile = RiichiDiscardPile(), components = riichiDeclarationComponents())
             val meldTiles = listOf(tile, tile().copy(components = ComponentSet.EMPTY), tile().copy(components = ComponentSet.EMPTY))
-            val meld = Meld(MeldType.PON, meldTiles, tile, RelativeDirection.Left, meldTiles.map { it.id }.toSet(), emptySet())
+            val meld = Meld(MeldType.Pon, meldTiles, tile, RelativeDirection.Left, meldTiles.map { it.id }.toSet(), emptySet())
             val beforePlayer = when (region) {
                 TileRegion.HAND -> player.copy(hand = Hand(tiles = listOf(tile)))
                 TileRegion.DRAWN -> player.copy(hand = Hand(lastDrawn = tile))

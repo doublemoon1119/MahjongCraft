@@ -85,7 +85,7 @@ class RiichiPositionRules(
     override fun prospectiveDeclarations(view: PositionView, hand: Hand): Set<GameAction.Extension> {
         val self = view.evaluator
         val isRiichi = self.riichiDeclaration != null
-        val isClosed = hand.melds.all { it.type == MeldType.CLOSED_KAN }
+        val isClosed = hand.melds.all { it.type == MeldType.ClosedKan }
         return if (!isRiichi && isClosed && self.score >= RIICHI_STICK_POINTS) setOf(RIICHI_GAME_ACTION) else emptySet()
     }
 

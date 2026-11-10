@@ -27,5 +27,5 @@ data class TaiwanHandValueContext(
     val flowers: List<Tile>,
     val situation: TaiwanWinSituation,
 ) : HandValueContext {
-    override val isMenzen: Boolean get() = hand.melds.all { it.type == MeldType.CLOSED_KAN }
+    override val isMenzen: Boolean get() = hand.melds.all { it.type == MeldType.ClosedKan }
 }

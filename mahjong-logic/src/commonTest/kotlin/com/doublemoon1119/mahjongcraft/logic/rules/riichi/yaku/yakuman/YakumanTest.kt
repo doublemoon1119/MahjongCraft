@@ -141,7 +141,7 @@ class YakumanTest : RiichiHandValueCalculatorTestBase() {
             ),
             melds = listOf(
                 FakeMeldFactory.create(
-                    type = MeldType.PON,
+                    type = MeldType.Pon,
                     tiles = listOf(
                         FakeIdentifiedTileFactory.create(Tile.Honor.North),
                         FakeIdentifiedTileFactory.create(Tile.Honor.North),

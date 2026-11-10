@@ -138,7 +138,7 @@ class TaiwanHandValueCalculatorTest {
     @Test
     fun `fully exposed self draw and discard win have different awards`() {
         val faces = listOf(m(1, 2, 3), m(4, 5, 6), p(2, 3, 4), p(6, 7, 8), s(7, 8, 9))
-        val melds = faces.map { meld(it, MeldType.CHI) }
+        val melds = faces.map { meld(it, MeldType.Chi) }
         val hand = FakeHandFactory.create(tiles = listOf(Tile.Honor.West), melds = melds)
         val context = context(List(17) { Tile.Honor.East }).copy(hand = hand, winningTileValue = TileValue(Tile.Honor.West), isTsumo = true)
         val tsumo = calculator.calculate(context)
@@ -152,7 +152,7 @@ class TaiwanHandValueCalculatorTest {
     /** 有副露且無任何計台項目的胡牌仍可成立。 */
     @Test
     fun `zero tai is valid unless a minimum is configured`() {
-        val meld = meld(m(1, 2, 3), MeldType.CHI)
+        val meld = meld(m(1, 2, 3), MeldType.Chi)
         val complete = m(4, 5, 6) + p(2, 3, 4) + s(7, 8, 9) + List(2) { Tile.Honor.South } + List(3) { Tile.Honor.West }
         val context = context(complete).let { it.copy(hand = it.hand.copy(melds = listOf(meld))) }
         val result = calculator.calculate(context)
@@ -186,7 +186,7 @@ class TaiwanHandValueCalculatorTest {
     fun `closed kong contributes a concealed group and rejects a fifth owned copy`() {
         val tiles = List(4) { FakeIdentifiedTileFactory.create(Tile.Honor.Red) }
         val closed = Meld(
-            type = MeldType.CLOSED_KAN,
+            type = MeldType.ClosedKan,
             tiles = tiles,
             sourceDirection = RelativeDirection.Self,
             publiclyRevealedTileIds = emptySet(),

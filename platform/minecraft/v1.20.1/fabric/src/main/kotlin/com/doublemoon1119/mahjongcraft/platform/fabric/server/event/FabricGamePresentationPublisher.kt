@@ -732,7 +732,7 @@ class FabricGamePresentationPublisher(
                     TileRegion.MELD -> {
                         val meld = owner.hand.melds.firstOrNull { meld -> meld.tiles.any { it.id in landedIds } } ?: return@forEach
                         // 比照決策卡片：依牌序排成一列，只有吃標出鳴取的那張。
-                        val markedTileId = meld.sourceTile?.id?.takeIf { meld.type == MeldType.CHI }
+                        val markedTileId = meld.sourceTile?.id?.takeIf { meld.type == MeldType.Chi }
                         meld.tiles.map { MeldActionPopupTile(tileId = it.id, claimed = it.id == markedTileId) }
                     }
                     else -> landed.map { MeldActionPopupTile(tileId = it.tileId, claimed = false) }

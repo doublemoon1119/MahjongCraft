@@ -257,7 +257,7 @@ internal fun riichiAbortiveDrawRevealedHands(
  */
 internal fun riichiSuukanNagare(tableState: TableState): ExhaustiveDrawReason? {
     val kanCountsByPlayer = tableState.players.map { player ->
-        player.hand.exposedMelds.count { it.type == MeldType.OPEN_KAN || it.type == MeldType.ADDED_KAN || it.type == MeldType.CLOSED_KAN }
+        player.hand.exposedMelds.count { it.type == MeldType.OpenKan || it.type == MeldType.AddedKan || it.type == MeldType.ClosedKan }
     }
     val totalKans = kanCountsByPlayer.sum()
     if (totalKans < 4) return null

@@ -179,7 +179,7 @@ class ServerSessionProjectionRecoveryTest {
     fun `tile player meld and table projection failures all restore conservatively`() = runTest {
         val original = game()
         val first = original.tableState.players.first()
-        val meld = FakeMeldFactory.create(MeldType.PON, List(3) { FakeIdentifiedTileFactory.create(Tile.Honor.Green) })
+        val meld = FakeMeldFactory.create(MeldType.Pon, List(3) { FakeIdentifiedTileFactory.create(Tile.Honor.Green) })
         val broken = original.copy(
             tableState = original.tableState.copy(
                 players = original.tableState.players.map { player ->

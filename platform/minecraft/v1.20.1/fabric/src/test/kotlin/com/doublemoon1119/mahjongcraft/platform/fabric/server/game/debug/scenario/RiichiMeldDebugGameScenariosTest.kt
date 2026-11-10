@@ -47,7 +47,7 @@ class RiichiMeldDebugGameScenariosTest {
             melds.map { meld -> meld.tiles.first().tile to meld.sourceDirection },
         )
         melds.forEach { meld ->
-            assertEquals(MeldType.PON, meld.type)
+            assertEquals(MeldType.Pon, meld.type)
             assertEquals(meld.tiles.last(), meld.sourceTile)
         }
     }
@@ -70,7 +70,7 @@ class RiichiMeldDebugGameScenariosTest {
         val eightDots = invoker.hand.tiles.filter { it.tile == EIGHT_DOT } + firstReplacement
         val closedKanTiles = eightDots.sortedBy { it.id.toString() }
         val closedKan = Meld(
-            type = MeldType.CLOSED_KAN,
+            type = MeldType.ClosedKan,
             tiles = closedKanTiles,
             sourceDirection = RelativeDirection.Self,
             publiclyRevealedTileIds = closedKanTiles.mapTo(LinkedHashSet()) { it.id },

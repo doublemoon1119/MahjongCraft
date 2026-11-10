@@ -86,7 +86,7 @@ class RiichiHandValueContextCalculatorTest {
         for (i in 0 until kanCount) {
             val tileValue = (i % 9) + 1
             val kanMeld = FakeMeldFactory.create(
-                type = MeldType.OPEN_KAN,
+                type = MeldType.OpenKan,
                 tiles = listOf(
                     FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, tileValue)),
                     FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, tileValue)),
@@ -323,7 +323,7 @@ class RiichiHandValueContextCalculatorTest {
         val calculator = createCalculator()
 
         val kanMeld = FakeMeldFactory.create(
-            type = MeldType.OPEN_KAN,
+            type = MeldType.OpenKan,
             tiles = listOf(
                 FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 1)),
                 FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 1)),
@@ -388,7 +388,7 @@ class RiichiHandValueContextCalculatorTest {
         val calculator = createCalculator()
 
         val kanMeld1 = FakeMeldFactory.create(
-            type = MeldType.OPEN_KAN,
+            type = MeldType.OpenKan,
             tiles = listOf(
                 FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 1)),
                 FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 1)),
@@ -398,7 +398,7 @@ class RiichiHandValueContextCalculatorTest {
             sourceDirection = RelativeDirection.Across,
         )
         val kanMeld2 = FakeMeldFactory.create(
-            type = MeldType.OPEN_KAN,
+            type = MeldType.OpenKan,
             tiles = listOf(
                 FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 2)),
                 FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 2)),
@@ -408,7 +408,7 @@ class RiichiHandValueContextCalculatorTest {
             sourceDirection = RelativeDirection.Across,
         )
         val kanMeld3 = FakeMeldFactory.create(
-            type = MeldType.OPEN_KAN,
+            type = MeldType.OpenKan,
             tiles = listOf(
                 FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Bamboo, 3)),
                 FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Bamboo, 3)),
@@ -418,7 +418,7 @@ class RiichiHandValueContextCalculatorTest {
             sourceDirection = RelativeDirection.Across,
         )
         val kanMeld4 = FakeMeldFactory.create(
-            type = MeldType.OPEN_KAN,
+            type = MeldType.OpenKan,
             tiles = listOf(
                 FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 4)),
                 FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 4)),
@@ -635,7 +635,7 @@ class RiichiHandValueContextCalculatorTest {
 
         val kanSourceTile = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 1))
         val kanMeld = FakeMeldFactory.create(
-            type = MeldType.OPEN_KAN,
+            type = MeldType.OpenKan,
             tiles = listOf(
                 kanSourceTile,
                 FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 1)),

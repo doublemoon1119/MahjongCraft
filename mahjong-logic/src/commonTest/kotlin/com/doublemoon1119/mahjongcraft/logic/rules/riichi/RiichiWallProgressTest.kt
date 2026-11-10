@@ -116,7 +116,7 @@ class RiichiWallProgressTest {
         val playerWithKan = FakeMahjongPlayerFactory.create(
             initialSeat = Wind.EAST,
             hand = Hand(tiles = kanTiles.drop(1)).call(
-                type = MeldType.OPEN_KAN,
+                type = MeldType.OpenKan,
                 tiles = kanTiles,
                 source = kanTiles[0],
                 direction = RelativeDirection.Left,
@@ -159,7 +159,7 @@ class RiichiWallProgressTest {
             return FakeMahjongPlayerFactory.create(
                 initialSeat = seat,
                 hand = Hand(tiles = kanTiles).call(
-                    type = MeldType.CLOSED_KAN,
+                    type = MeldType.ClosedKan,
                     tiles = kanTiles,
                     direction = RelativeDirection.Self,
                     publiclyRevealedTileIds = closedKanPubliclyRevealedTileIds(kanTiles, revealsClosedKanTiles = true),

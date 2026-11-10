@@ -108,7 +108,7 @@ class TaiwanOpponentModelTest {
      * @return 由三張相同牌面組成的碰副露。
      */
     private fun pon(tile: Tile): Meld = FakeMeldFactory.create(
-        type = MeldType.PON,
+        type = MeldType.Pon,
         tiles = List(3) { FakeIdentifiedTileFactory.create(tile) },
         sourceDirection = RelativeDirection.Left,
     )
@@ -119,7 +119,7 @@ class TaiwanOpponentModelTest {
      * @return 吃副露。
      */
     private fun chi(): Meld = FakeMeldFactory.create(
-        type = MeldType.CHI,
+        type = MeldType.Chi,
         tiles = (1..3).map { FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, it)) },
         sourceDirection = RelativeDirection.Left,
     )

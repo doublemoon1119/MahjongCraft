@@ -19,7 +19,7 @@ fun defaultTileRegionComponents(state: TableState, area: TileAreaEntry): Compone
         TileRegion.DISCARD, TileRegion.SET_ASIDE -> TilePose.FACE_UP
         TileRegion.MELD -> {
             val meld = state.players.first { it.id == area.ownerId }.hand.melds.single { meld -> meld.tiles.any { it.id == area.tile.id } }
-            val concealed = meld.type == MeldType.CLOSED_KAN
+            val concealed = meld.type == MeldType.ClosedKan
             public = if (concealed) state.config.revealsClosedKanTiles else area.tile.id in meld.publiclyRevealedTileIds
             if (concealed && !state.config.revealsClosedKanTiles || area.tile.id in meld.faceDownTileIds) TilePose.FACE_DOWN else TilePose.FACE_UP
         }

@@ -36,7 +36,7 @@ class RiichiOpponentModel(
     override fun baselineWinValue(view: PositionView, playerId: Uuid): Int {
         val player = view.player(playerId)
         val isRiichi = player.riichiDeclaration != null
-        val isOpen = player.hand.melds.any { it.type != MeldType.CLOSED_KAN }
+        val isOpen = player.hand.melds.any { it.type != MeldType.ClosedKan }
         val base = when {
             isRiichi -> RIICHI_BASELINE_VALUE
             isOpen -> OPEN_BASELINE_VALUE
@@ -65,7 +65,7 @@ class RiichiOpponentModel(
         val readyProbability = if (opponent.riichiDeclaration != null) {
             1.0
         } else {
-            val openMelds = opponent.hand.melds.count { it.type != MeldType.CLOSED_KAN }
+            val openMelds = opponent.hand.melds.count { it.type != MeldType.ClosedKan }
             val profile = READINESS_BY_OPEN_MELDS[openMelds.coerceAtMost(READINESS_BY_OPEN_MELDS.lastIndex)]
             (profile.base + profile.perDiscard * opponent.discardPile.entries.size).coerceAtMost(profile.cap)
         }

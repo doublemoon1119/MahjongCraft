@@ -40,7 +40,7 @@ private val DRAGONS: Set<Tile> = setOf(Tile.Honor.Red, Tile.Honor.Green, Tile.Ho
  */
 fun calculateShiiaruRaotai(hand: Hand): YakuResult? {
     val melds = hand.exposedMelds
-    if (melds.size != SHIIARU_RAOTAI_MELDS || melds.any { it.type == MeldType.CLOSED_KAN }) return null
+    if (melds.size != SHIIARU_RAOTAI_MELDS || melds.any { it.type == MeldType.ClosedKan }) return null
     if (hand.standingTiles.size != 1) return null
     return YakuResult.han(YakuType.ShiiaruRaotai, 1)
 }

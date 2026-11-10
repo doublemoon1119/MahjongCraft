@@ -40,7 +40,7 @@ fun MahjongPlayer.paoLiabilityPatch(
     calledTile: IdentifiedTile,
     sourceDirection: RelativeDirection,
 ): ComponentPatch {
-    if (meldType != MeldType.PON && meldType != MeldType.OPEN_KAN) return ComponentPatch()
+    if (meldType != MeldType.Pon && meldType != MeldType.OpenKan) return ComponentPatch()
     val liability = PaoDetector.check(hand, calledTile.tile, sourceDirection) ?: return ComponentPatch()
     return ComponentPatch.basedOn(components, values = ComponentSet.EMPTY.with(RiichiPlayerComponents.PAO_LIABILITY, liability))
 }

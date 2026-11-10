@@ -332,10 +332,10 @@ internal class ExpectedValueEvaluator(
     /** 吃、碰與明槓。 */
     internal fun claimCandidates(): List<DecisionCandidate> = context.legalActions.mapNotNull { action ->
         val (meldType, tileId, withTiles) = when (action) {
-            is GameAction.Chi -> Triple(MeldType.CHI, action.tileId, action.withTiles)
-            is GameAction.Pon -> Triple(MeldType.PON, action.tileId, action.withTiles)
+            is GameAction.Chi -> Triple(MeldType.Chi, action.tileId, action.withTiles)
+            is GameAction.Pon -> Triple(MeldType.Pon, action.tileId, action.withTiles)
             is GameAction.Kan -> if (action.type == GameAction.KanType.OPEN_KAN) {
-                Triple(MeldType.OPEN_KAN, action.tileId, action.withTiles)
+                Triple(MeldType.OpenKan, action.tileId, action.withTiles)
             } else {
                 return@mapNotNull null
             }
@@ -413,7 +413,7 @@ internal class ExpectedValueEvaluator(
                 faceDownTileIds = emptySet(),
             ),
         )
-        if (candidate.meldType == MeldType.OPEN_KAN) {
+        if (candidate.meldType == MeldType.OpenKan) {
             return if (assessor.shantenOf(called) > 1) null else evaluateWaitingHand(candidate, called)
         }
         return distinctDiscardIndices(called)
@@ -506,7 +506,7 @@ internal class ExpectedValueEvaluator(
             GameAction.KanType.CLOSED_KAN -> Hand(
                 tiles = ownHand.tiles.filterNot { it.id in candidate.tileIds },
                 melds = ownHand.melds + Meld(
-                    type = MeldType.CLOSED_KAN,
+                    type = MeldType.ClosedKan,
                     tiles = kanTiles,
                     sourceTile = null,
                     sourceDirection = RelativeDirection.Self,
@@ -519,7 +519,7 @@ internal class ExpectedValueEvaluator(
                 val added = kanTiles.single()
                 val kind = assessor.canonical(added.tile)
                 val meldIndex = ownHand.melds.indexOfFirst { meld ->
-                    meld.type == MeldType.PON && meld.tiles.all { assessor.canonical(it.tile) == kind }
+                    meld.type == MeldType.Pon && meld.tiles.all { assessor.canonical(it.tile) == kind }
                 }
                 if (meldIndex < 0) null else ownHand.upgradeToAddedKan(added, meldIndex)
             }

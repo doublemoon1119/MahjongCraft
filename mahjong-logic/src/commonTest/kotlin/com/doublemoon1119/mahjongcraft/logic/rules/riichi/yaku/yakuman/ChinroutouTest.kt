@@ -100,7 +100,7 @@ class ChinroutouTest : RiichiHandValueCalculatorTestBase() {
             melds = listOf(
                 // 副露：1s 刻子
                 FakeMeldFactory.create(
-                    type = MeldType.PON,
+                    type = MeldType.Pon,
                     tiles = listOf(
                         FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Bamboo, 1)),
                         FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Bamboo, 1)),
@@ -153,7 +153,7 @@ class ChinroutouTest : RiichiHandValueCalculatorTestBase() {
             melds = listOf(
                 // 暗槓：1p
                 FakeMeldFactory.create(
-                    type = MeldType.CLOSED_KAN,
+                    type = MeldType.ClosedKan,
                     tiles = listOf(
                         FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 1)),
                         FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 1)),

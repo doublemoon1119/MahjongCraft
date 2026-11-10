@@ -175,7 +175,7 @@ class CompactReplayRoundReaderGenuineTest {
     fun `reader applies recorded tile presentation to the catalog and melds`() = runTest {
         val redFive = FakeIdentifiedTileFactory.create(RiichiTileValues.redFive(Tile.Suit.Dot))
         val kanTiles = List(4) { FakeIdentifiedTileFactory.create(Tile.Honor.White) }
-        val closedKan = FakeMeldFactory.create(type = MeldType.CLOSED_KAN, tiles = kanTiles)
+        val closedKan = FakeMeldFactory.create(type = MeldType.ClosedKan, tiles = kanTiles)
         val base = FakeTableStateFactory.create(
             players = listOf(
                 FakeMahjongPlayerFactory.create(hand = Hand(tiles = listOf(redFive), melds = listOf(closedKan)), discardPile = RiichiDiscardPile()),
@@ -220,9 +220,9 @@ class CompactReplayRoundReaderGenuineTest {
     @Test
     fun `replay keeps a meld identity across an added kan when its position shifts`() = runTest {
         val ponTiles = List(4) { FakeIdentifiedTileFactory.create(Tile.Honor.White) }
-        val pon = FakeMeldFactory.create(type = MeldType.PON, tiles = ponTiles.take(3), sourceTile = ponTiles.first(), sourceDirection = RelativeDirection.Left)
+        val pon = FakeMeldFactory.create(type = MeldType.Pon, tiles = ponTiles.take(3), sourceTile = ponTiles.first(), sourceDirection = RelativeDirection.Left)
         val chi = FakeMeldFactory.create(
-            type = MeldType.CHI,
+            type = MeldType.Chi,
             tiles = (1..3).map { FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, it)) },
             sourceDirection = RelativeDirection.Left,
         )

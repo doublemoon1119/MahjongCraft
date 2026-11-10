@@ -75,7 +75,7 @@ class RiichiPostActionExhaustiveDrawResolversTest {
      */
     private fun kanMeld(): Meld {
         val tiles = List(4) { FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 1)) }
-        return Meld(MeldType.CLOSED_KAN, tiles, sourceDirection = RelativeDirection.Self, publiclyRevealedTileIds = tiles.map { it.id }.toSet(), faceDownTileIds = setOf(tiles.first().id, tiles.last().id))
+        return Meld(MeldType.ClosedKan, tiles, sourceDirection = RelativeDirection.Self, publiclyRevealedTileIds = tiles.map { it.id }.toSet(), faceDownTileIds = setOf(tiles.first().id, tiles.last().id))
     }
 
     /**

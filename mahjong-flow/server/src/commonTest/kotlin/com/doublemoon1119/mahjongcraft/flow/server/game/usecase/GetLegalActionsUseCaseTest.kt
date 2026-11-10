@@ -141,7 +141,7 @@ class GetLegalActionsUseCaseTest {
         val whiteTile2 = FakeIdentifiedTileFactory.create(Tile.Honor.White)
         val whiteTile3 = FakeIdentifiedTileFactory.create(Tile.Honor.White)
         val robbedWhiteTile = FakeIdentifiedTileFactory.create(Tile.Honor.White)
-        val existingPon = Meld(MeldType.PON, listOf(whiteTile1, whiteTile2, whiteTile3), sourceTile = whiteTile3, sourceDirection = RelativeDirection.Left, publiclyRevealedTileIds = listOf(whiteTile1, whiteTile2, whiteTile3).map { it.id }.toSet(), faceDownTileIds = emptySet())
+        val existingPon = Meld(MeldType.Pon, listOf(whiteTile1, whiteTile2, whiteTile3), sourceTile = whiteTile3, sourceDirection = RelativeDirection.Left, publiclyRevealedTileIds = listOf(whiteTile1, whiteTile2, whiteTile3).map { it.id }.toSet(), faceDownTileIds = emptySet())
         val kanAction = GameAction.Kan(GameAction.KanType.ADDED_KAN, robbedWhiteTile.id, emptyList())
         val declarer = FakeMahjongPlayerFactory.create(
             id = declarerId,

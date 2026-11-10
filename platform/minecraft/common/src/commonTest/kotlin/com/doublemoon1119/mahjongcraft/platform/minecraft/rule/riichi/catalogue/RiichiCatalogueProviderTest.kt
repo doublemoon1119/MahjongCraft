@@ -291,17 +291,17 @@ private val riichiTypes = setOf(YakuType.Riichi, YakuType.DoubleRiichi, YakuType
  */
 private fun exampleMeld(group: RuleCatalogueTileGroup): Meld {
     val type = when (group.role) {
-        RuleCatalogueTileGroupRole.OPEN_KAN -> MeldType.OPEN_KAN
-        RuleCatalogueTileGroupRole.CLOSED_KAN -> MeldType.CLOSED_KAN
-        else -> if (group.tiles.map { it.tile }.distinct().size == 1) MeldType.PON else MeldType.CHI
+        RuleCatalogueTileGroupRole.OPEN_KAN -> MeldType.OpenKan
+        RuleCatalogueTileGroupRole.CLOSED_KAN -> MeldType.ClosedKan
+        else -> if (group.tiles.map { it.tile }.distinct().size == 1) MeldType.Pon else MeldType.Chi
     }
     val tiles = group.tiles.map { FakeIdentifiedTileFactory.create(exampleValue(it)) }
     return Meld(
         type = type,
         tiles = tiles,
-        sourceTile = if (type == MeldType.CLOSED_KAN) null else tiles.last(),
-        sourceDirection = if (type == MeldType.CLOSED_KAN) RelativeDirection.Self else RelativeDirection.Left,
+        sourceTile = if (type == MeldType.ClosedKan) null else tiles.last(),
+        sourceDirection = if (type == MeldType.ClosedKan) RelativeDirection.Self else RelativeDirection.Left,
         publiclyRevealedTileIds = tiles.map { it.id }.toSet(),
-        faceDownTileIds = if (type == MeldType.CLOSED_KAN) setOf(tiles.first().id, tiles.last().id) else emptySet(),
+        faceDownTileIds = if (type == MeldType.ClosedKan) setOf(tiles.first().id, tiles.last().id) else emptySet(),
     )
 }

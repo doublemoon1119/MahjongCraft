@@ -221,7 +221,7 @@ private object RiichiBeforePaoPonScenario : DebugGameScenario {
         val invokingMelds = PAO_INVOKING_MELD_TILES.map { tile ->
             val tiles = takeTiles(availableTiles, List(3) { tile })
             Meld(
-                type = MeldType.PON,
+                type = MeldType.Pon,
                 tiles = tiles,
                 sourceDirection = RelativeDirection.Across,
                 publiclyRevealedTileIds = tiles.map { it.id }.toSet(),
@@ -441,7 +441,7 @@ private class RiichiBeforeAnkanScenario(
             val melds = establishedKan?.let { tiles ->
                 listOf(
                     Meld(
-                        type = MeldType.CLOSED_KAN,
+                        type = MeldType.ClosedKan,
                         tiles = tiles,
                         sourceDirection = RelativeDirection.Self,
                         publiclyRevealedTileIds = tiles.map { it.id }.toSet(),

@@ -607,7 +607,7 @@ object MahjongTileTableLayout {
      * @param isSidewaysTile 這張牌是否為鳴取自他家、需側身呈現的牌——為 `true` 時除了額外把 yaw 轉
      * [SIDEWAYS_YAW_OFFSET] 度，也依側身牌的實際外觀寬度換算 `x`／`z`，見本函式 KDoc。
      * @param depthOffsetFromEdge 這張牌垂直於排列方向（局部 Z 軸）額外往桌子中心方向（遠離桌緣）推
-     * 的距離，`0.0`（預設值）代表跟同排其他牌一樣貼齊 [MELD_NEAR_EDGE_LINE]。加槓（`MeldType.ADDED_KAN`）
+     * 的距離，`0.0`（預設值）代表跟同排其他牌一樣貼齊 [MELD_NEAR_EDGE_LINE]。加槓（`MeldType.AddedKan`）
      * 補上的第 4 張牌用這個參數疊在原碰側身牌「靠近桌子中心」那一側（不是沿排列方向的旁邊），刻意
      * 的設計決定；其餘所有牌固定 `0.0`。
      *
@@ -694,7 +694,7 @@ object MahjongTileTableLayout {
      * 每張牌後面都跟一層 [MahjongTileDimensions.TILE_SMALL_PADDING] 縫隙，組間再額外跳過
      * [MELD_GROUP_GAP]）——兩處算的是同一件事的兩種用途（一個要算出每張牌的實際座標、一個只要算出
      * 總寬度），必須共用同一套公式，否則手牌讓開的偏移量會跟副露實際佔用的空間對不上。
-     * [MeldType.ADDED_KAN] 補上的第 4 張牌疊在原碰側身牌旁邊（見 [meldPlacement] 的
+     * [MeldType.AddedKan] 補上的第 4 張牌疊在原碰側身牌旁邊（見 [meldPlacement] 的
      * `depthOffsetFromEdge`），不佔用額外的橫向格位，因此不計入寬度。
      *
      * @param melds 依宣告順序排列的副露。
@@ -704,7 +704,7 @@ object MahjongTileTableLayout {
         var width = 0.0
         melds.forEachIndexed { index, meld ->
             if (index > 0) width += MELD_GROUP_GAP
-            val isAddedKan = meld.type == MeldType.ADDED_KAN
+            val isAddedKan = meld.type == MeldType.AddedKan
             val baseTileIds = if (isAddedKan) meld.tileIds.dropLast(1) else meld.tileIds
             val slotCount = baseTileIds.size
             val sidewaysSlot = meld.calledTileId?.let { sidewaysSlotIndex(meld.sourceDirection, slotCount) }

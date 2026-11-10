@@ -36,8 +36,8 @@ data class MeldSnapshot(
  * @return 依規則與觀察者可見性建立的副露快照。
  */
 fun Meld.toSnapshot(handIsVisible: Boolean, revealsClosedKanTiles: Boolean): MeldSnapshot {
-    val canSeeAll = handIsVisible || (type == MeldType.CLOSED_KAN && revealsClosedKanTiles)
-    fun isVisible(tile: IdentifiedTile): Boolean = canSeeAll || (type != MeldType.CLOSED_KAN && tile.id in publiclyRevealedTileIds)
+    val canSeeAll = handIsVisible || (type == MeldType.ClosedKan && revealsClosedKanTiles)
+    fun isVisible(tile: IdentifiedTile): Boolean = canSeeAll || (type != MeldType.ClosedKan && tile.id in publiclyRevealedTileIds)
     return MeldSnapshot(
         id = id,
         type = type,
@@ -48,7 +48,7 @@ fun Meld.toSnapshot(handIsVisible: Boolean, revealsClosedKanTiles: Boolean): Mel
             tile.toSnapshot(isVisible = isVisible(tile))
         },
         sourceDirection = sourceDirection,
-        faceDownTileIds = if (type == MeldType.CLOSED_KAN && !revealsClosedKanTiles) {
+        faceDownTileIds = if (type == MeldType.ClosedKan && !revealsClosedKanTiles) {
             tiles.mapTo(mutableSetOf()) { it.id }
         } else {
             faceDownTileIds.toSet()

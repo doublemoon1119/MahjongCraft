@@ -95,7 +95,7 @@ object MahjongPlayerAreaLayout {
         val melds = input.melds.mapIndexed { meldIndex, meld ->
             if (meldIndex > 0) cursorAlong += MahjongTileTableLayout.MELD_GROUP_GAP
             val placements = mutableListOf<MahjongAreaTilePlacement>()
-            val addedTileId = if (meld.type == MeldType.ADDED_KAN) meld.tileIds.last() else null
+            val addedTileId = if (meld.type == MeldType.AddedKan) meld.tileIds.last() else null
             val baseTileIds = if (addedTileId != null) meld.tileIds.dropLast(1) else meld.tileIds
             val slotCount = baseTileIds.size
             val sidewaysSlot = meld.calledTileId?.let {

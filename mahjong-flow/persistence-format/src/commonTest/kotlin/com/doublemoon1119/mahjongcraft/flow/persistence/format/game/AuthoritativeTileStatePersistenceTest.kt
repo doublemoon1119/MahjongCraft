@@ -30,7 +30,7 @@ class AuthoritativeTileStatePersistenceTest {
             ),
             melds = listOf(
                 Meld(
-                    type = MeldType.PON,
+                    type = MeldType.Pon,
                     tiles = ponTiles,
                     sourceTile = source,
                     sourceDirection = RelativeDirection.Left,

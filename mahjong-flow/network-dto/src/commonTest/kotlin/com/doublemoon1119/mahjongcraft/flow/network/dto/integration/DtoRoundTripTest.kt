@@ -264,7 +264,7 @@ class DtoRoundTripTest {
     fun `test meld face down tiles round-trip through network DTOs`() {
         val kanTiles = List(4) { IdentifiedTile(Uuid.random(), Tile.Honor.Green) }
         val player = FakeMahjongPlayerFactory.create(
-            hand = Hand(melds = listOf(FakeMeldFactory.create(type = MeldType.CLOSED_KAN, tiles = kanTiles))),
+            hand = Hand(melds = listOf(FakeMeldFactory.create(type = MeldType.ClosedKan, tiles = kanTiles))),
             discardPile = RiichiDiscardPile(emptyList()),
         )
         val snapshot = FakeTableStateFactory.create(players = listOf(player), config = RiichiRuleConfig())

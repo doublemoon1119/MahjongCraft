@@ -211,7 +211,7 @@ class TableStateSnapshotTest {
                 tiles = listOf(hiddenTile, revealedTile),
                 melds = listOf(
                     Meld(
-                        type = MeldType.PON,
+                        type = MeldType.Pon,
                         tiles = meldTiles,
                         sourceTile = claimedTile,
                         sourceDirection = RelativeDirection.Right,
@@ -244,7 +244,7 @@ class TableStateSnapshotTest {
         val player = FakeMahjongPlayerFactory.create(
             hand = Hand(
                 tiles = listOf(standing),
-                melds = listOf(Meld(type = MeldType.PON, tiles = meldTiles, sourceTile = meldTiles.first(), sourceDirection = RelativeDirection.Left, publiclyRevealedTileIds = meldTiles.map { it.id }.toSet(), faceDownTileIds = emptySet())),
+                melds = listOf(Meld(type = MeldType.Pon, tiles = meldTiles, sourceTile = meldTiles.first(), sourceDirection = RelativeDirection.Left, publiclyRevealedTileIds = meldTiles.map { it.id }.toSet(), faceDownTileIds = emptySet())),
             ),
         )
         val table = FakeTableStateFactory.create(players = listOf(player.copy(tileAreas = PlayerTileAreas.EMPTY.withArea("test:aside", listOf(setAsideTile))), FakeMahjongPlayerFactory.create(Wind.SOUTH)))

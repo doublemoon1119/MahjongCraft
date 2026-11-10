@@ -67,7 +67,7 @@ class ComponentViewNetworkRegistryTest {
         registries.componentViews.register(definition(view))
         val original = MeldSnapshot(
             id = Uuid.random(),
-            type = MeldType.PON,
+            type = MeldType.Pon,
             tiles = emptyList(),
             sourceTile = null,
             sourceDirection = RelativeDirection.Self,

@@ -818,7 +818,7 @@ class GameFlowCoordinatorTest {
      */
     private fun kanMeldsOf(vararg tileValues: Tile): List<Meld> = tileValues.map { tile ->
         val tiles = List(4) { FakeIdentifiedTileFactory.create(tile) }
-        Meld(MeldType.CLOSED_KAN, tiles, sourceTile = null, sourceDirection = RelativeDirection.Self, publiclyRevealedTileIds = tiles.map { it.id }.toSet(), faceDownTileIds = setOf(tiles.first().id, tiles.last().id))
+        Meld(MeldType.ClosedKan, tiles, sourceTile = null, sourceDirection = RelativeDirection.Self, publiclyRevealedTileIds = tiles.map { it.id }.toSet(), faceDownTileIds = setOf(tiles.first().id, tiles.last().id))
     }
 
     /**
@@ -1646,7 +1646,7 @@ class GameFlowCoordinatorTest {
         val whiteTile2 = FakeIdentifiedTileFactory.create(Tile.Honor.White)
         val whiteTile3 = FakeIdentifiedTileFactory.create(Tile.Honor.White)
         val robbedWhiteTile = FakeIdentifiedTileFactory.create(Tile.Honor.White)
-        val existingPon = Meld(MeldType.PON, listOf(whiteTile1, whiteTile2, whiteTile3), sourceTile = whiteTile3, sourceDirection = RelativeDirection.Left, publiclyRevealedTileIds = listOf(whiteTile1, whiteTile2, whiteTile3).map { it.id }.toSet(), faceDownTileIds = emptySet())
+        val existingPon = Meld(MeldType.Pon, listOf(whiteTile1, whiteTile2, whiteTile3), sourceTile = whiteTile3, sourceDirection = RelativeDirection.Left, publiclyRevealedTileIds = listOf(whiteTile1, whiteTile2, whiteTile3).map { it.id }.toSet(), faceDownTileIds = emptySet())
         val kanAction = GameAction.Kan(GameAction.KanType.ADDED_KAN, robbedWhiteTile.id, emptyList())
         // score 理由同 discardReactionTable：避免放槍付款後分數跌破 0 誤觸擊飛。
         val declarer = FakeMahjongPlayerFactory.create(
@@ -1705,7 +1705,7 @@ class GameFlowCoordinatorTest {
         val newState = fixtures.gameRepo.getTableState(gameId)!!
         assertEquals(0, newState.comboCount)
         val declarer = newState.players.first { it.id == declarerId }
-        assertEquals(MeldType.ADDED_KAN, declarer.hand.melds.single().type, "The all-pass resume should have applied the kan.")
+        assertEquals(MeldType.AddedKan, declarer.hand.melds.single().type, "The all-pass resume should have applied the kan.")
         assertTrue(declarer.actionHistory.isNotEmpty(), "The kan/draw should still be recorded; the hand did not end.")
     }
 
@@ -1770,7 +1770,7 @@ class GameFlowCoordinatorTest {
         assertTrue(result is Outcome.Success, "Expected Success but got $result")
         val newState = fixtures.gameRepo.getTableState(gameId)!!
         assertEquals(0, newState.comboCount)
-        assertEquals(MeldType.CLOSED_KAN, newState.players.first { it.id == playerId }.hand.melds.single().type)
+        assertEquals(MeldType.ClosedKan, newState.players.first { it.id == playerId }.hand.melds.single().type)
     }
 
     // ---- 錯誤原樣傳遞 ----

@@ -58,7 +58,7 @@ class WinSettlementPresentationRequestFactoryTest {
             initialSeat = Wind.EAST,
             hand = Hand(
                 tiles = listOf(standing),
-                melds = listOf(Meld(MeldType.PON, meldTiles, meldTiles.first(), RelativeDirection.Left, publiclyRevealedTileIds = meldTiles.map { it.id }.toSet(), faceDownTileIds = emptySet())),
+                melds = listOf(Meld(MeldType.Pon, meldTiles, meldTiles.first(), RelativeDirection.Left, publiclyRevealedTileIds = meldTiles.map { it.id }.toSet(), faceDownTileIds = emptySet())),
             ),
         )
         val state = FakeTableStateFactory.create(
@@ -96,7 +96,7 @@ class WinSettlementPresentationRequestFactoryTest {
             initialSeat = Wind.EAST,
             hand = Hand(
                 tiles = listOf(standing),
-                melds = listOf(Meld(MeldType.PON, meldTiles, meldTiles.first(), RelativeDirection.Left, publiclyRevealedTileIds = meldTiles.map { it.id }.toSet(), faceDownTileIds = emptySet())),
+                melds = listOf(Meld(MeldType.Pon, meldTiles, meldTiles.first(), RelativeDirection.Left, publiclyRevealedTileIds = meldTiles.map { it.id }.toSet(), faceDownTileIds = emptySet())),
             ),
         )
         val state = FakeTableStateFactory.create(
@@ -216,7 +216,7 @@ class WinSettlementPresentationRequestFactoryTest {
                 lastDrawn = winningTile,
                 melds = listOf(
                     Meld(
-                        type = MeldType.CLOSED_KAN,
+                        type = MeldType.ClosedKan,
                         tiles = kanTiles,
                         sourceTile = null,
                         sourceDirection = RelativeDirection.Self,

@@ -127,7 +127,7 @@ class RiichiOpponentModelTest {
             Wind.WEST,
             melds = listOf(
                 FakeMeldFactory.create(
-                    type = MeldType.PON,
+                    type = MeldType.Pon,
                     tiles = listOf(TileValue(dot(5)), TileValue(dot(5)), RED_FIVE_DOT).map { FakeIdentifiedTileFactory.create(it) },
                     sourceDirection = RelativeDirection.Across,
                 ),
@@ -183,7 +183,7 @@ class RiichiOpponentModelTest {
      * @return 由三張相同牌面組成的碰副露。
      */
     private fun pon(tile: Tile): Meld = FakeMeldFactory.create(
-        type = MeldType.PON,
+        type = MeldType.Pon,
         tiles = List(3) { FakeIdentifiedTileFactory.create(tile) },
         sourceDirection = RelativeDirection.Across,
     )

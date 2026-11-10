@@ -19,7 +19,7 @@ class MeldPresentationTest {
     @Test
     fun `preserves meld tile order`() {
         val meld = Meld(
-            type = MeldType.CHI,
+            type = MeldType.Chi,
             tiles = listOf(two, four, three),
             sourceTile = three,
             sourceDirection = RelativeDirection.Left,
@@ -39,7 +39,7 @@ class MeldPresentationTest {
         val pon = List(3) { FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 5)) }
         val added = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 5))
         val meld = Meld(
-            type = MeldType.ADDED_KAN,
+            type = MeldType.AddedKan,
             tiles = pon + added,
             sourceTile = pon.first(),
             sourceDirection = RelativeDirection.Across,

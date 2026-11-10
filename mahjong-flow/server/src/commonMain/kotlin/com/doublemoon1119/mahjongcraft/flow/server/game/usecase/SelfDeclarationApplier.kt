@@ -181,7 +181,7 @@ internal object SelfDeclarationApplier {
                     heldKanTiles.sortedBy { it.id.toString() }
                 }
                 declarer.hand.call(
-                    type = MeldType.CLOSED_KAN,
+                    type = MeldType.ClosedKan,
                     tiles = kanTiles,
                     source = null,
                     direction = RelativeDirection.Self,
@@ -193,7 +193,7 @@ internal object SelfDeclarationApplier {
             GameAction.KanType.ADDED_KAN -> {
                 val tileInterpretation = module.createTileInterpretationPolicy()
                 val targetMeldIndex = declarer.hand.exposedMelds.indexOfFirst {
-                    it.type == MeldType.PON &&
+                    it.type == MeldType.Pon &&
                         tileInterpretation.canonicalize(it.tiles.first().tile) ==
                         tileInterpretation.canonicalize(incomingTile.tile)
                 }

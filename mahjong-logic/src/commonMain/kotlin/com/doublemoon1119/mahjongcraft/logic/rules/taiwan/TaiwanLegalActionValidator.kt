@@ -49,7 +49,7 @@ class TaiwanLegalActionValidator(config: TaiwanRuleConfig) : LegalActionValidato
                     legalActions += GameAction.Tsumo
                 }
                 if (wallHasMoreTiles) {
-                    if (player.hand.exposedMelds.any { it.type == MeldType.PON && it.tiles.first().tile == incomingTile.tile }) {
+                    if (player.hand.exposedMelds.any { it.type == MeldType.Pon && it.tiles.first().tile == incomingTile.tile }) {
                         legalActions += GameAction.Kan(GameAction.KanType.ADDED_KAN, incomingTile.id, emptyList())
                     }
                     if (!isDeclared) legalActions += closedKanActions(context.handWithIncoming, incomingTile)

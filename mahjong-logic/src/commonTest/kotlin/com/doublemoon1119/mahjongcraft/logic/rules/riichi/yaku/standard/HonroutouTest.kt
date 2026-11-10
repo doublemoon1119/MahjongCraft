@@ -36,7 +36,7 @@ class HonroutouTest : RiichiHandValueCalculatorTestBase() {
             ),
             melds = listOf(
                 FakeMeldFactory.create(
-                    type = MeldType.PON,
+                    type = MeldType.Pon,
                     tiles = listOf(
                         FakeIdentifiedTileFactory.create(Tile.Honor.Red),
                         FakeIdentifiedTileFactory.create(Tile.Honor.Red),
@@ -45,7 +45,7 @@ class HonroutouTest : RiichiHandValueCalculatorTestBase() {
                     sourceDirection = RelativeDirection.Left,
                 ),
                 FakeMeldFactory.create(
-                    type = MeldType.PON,
+                    type = MeldType.Pon,
                     tiles = listOf(
                         FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 9)),
                         FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 9)),
@@ -54,7 +54,7 @@ class HonroutouTest : RiichiHandValueCalculatorTestBase() {
                     sourceDirection = RelativeDirection.Left,
                 ),
                 FakeMeldFactory.create(
-                    type = MeldType.PON,
+                    type = MeldType.Pon,
                     tiles = listOf(
                         FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Bamboo, 9)),
                         FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Bamboo, 9)),
@@ -88,7 +88,7 @@ class HonroutouTest : RiichiHandValueCalculatorTestBase() {
             ),
             melds = listOf(
                 FakeMeldFactory.create(
-                    type = MeldType.PON,
+                    type = MeldType.Pon,
                     tiles = listOf(
                         FakeIdentifiedTileFactory.create(Tile.Honor.Red),
                         FakeIdentifiedTileFactory.create(Tile.Honor.Red),
@@ -97,7 +97,7 @@ class HonroutouTest : RiichiHandValueCalculatorTestBase() {
                     sourceDirection = RelativeDirection.Left,
                 ),
                 FakeMeldFactory.create(
-                    type = MeldType.PON,
+                    type = MeldType.Pon,
                     tiles = listOf(
                         FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 9)),
                         FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 9)),
@@ -106,7 +106,7 @@ class HonroutouTest : RiichiHandValueCalculatorTestBase() {
                     sourceDirection = RelativeDirection.Left,
                 ),
                 FakeMeldFactory.create(
-                    type = MeldType.PON,
+                    type = MeldType.Pon,
                     tiles = listOf(
                         FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Bamboo, 9)),
                         FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Bamboo, 9)),

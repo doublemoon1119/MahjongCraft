@@ -67,7 +67,7 @@ class TaiwanOpponentModel(
         val readyProbability = if (opponent.componentViews[TaiwanPlayerComponentViews.READY_DECLARATION] != null) {
             1.0
         } else {
-            val openMelds = opponent.hand.melds.count { it.type != MeldType.CLOSED_KAN }
+            val openMelds = opponent.hand.melds.count { it.type != MeldType.ClosedKan }
             val profile = READINESS_BY_OPEN_MELDS[openMelds.coerceAtMost(READINESS_BY_OPEN_MELDS.lastIndex)]
             (profile.base + profile.perDiscard * opponent.discardPile.entries.size).coerceAtMost(profile.cap)
         }
@@ -87,7 +87,7 @@ class TaiwanOpponentModel(
     private fun estimatedTai(view: PositionView, player: MahjongPlayerSnapshot): Int {
         val base = when {
             player.componentViews[TaiwanPlayerComponentViews.READY_DECLARATION] != null -> DECLARED_BASELINE_TAI
-            player.hand.melds.all { it.type == MeldType.CLOSED_KAN } -> CLOSED_BASELINE_TAI
+            player.hand.melds.all { it.type == MeldType.ClosedKan } -> CLOSED_BASELINE_TAI
             else -> OPEN_BASELINE_TAI
         }
         val flowers = player.tileAreas.firstOrNull { it.id == TaiwanPlayerTileAreaIds.FLOWERS }?.tiles.orEmpty().mapNotNull { it.tile }
@@ -95,7 +95,7 @@ class TaiwanOpponentModel(
         val valuedHonors = DRAGONS + windTile(player.seatWind) + windTile(view.snapshot.prevalentWind)
         val honorTai = player.hand.melds.sumOf { meld ->
             val tiles = meld.tiles.mapNotNull { it.tile }.distinct()
-            val honor = tiles.singleOrNull()?.takeIf { meld.type != MeldType.CHI } ?: return@sumOf 0
+            val honor = tiles.singleOrNull()?.takeIf { meld.type != MeldType.Chi } ?: return@sumOf 0
             valuedHonors.count { it == honor }
         }
         return base + flowerTai + honorTai

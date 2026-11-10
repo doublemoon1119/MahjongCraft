@@ -911,15 +911,15 @@ class PrivateHandLayoutTest {
 
         /** 暗槓前已有的三組碰，第一組已加槓。 */
         private val existingMelds: List<MahjongMeldTileGroup> = listOf(
-            pon(type = MeldType.ADDED_KAN, direction = RelativeDirection.Left, tileCount = 4),
-            pon(type = MeldType.PON, direction = RelativeDirection.Across, tileCount = 3),
-            pon(type = MeldType.PON, direction = RelativeDirection.Right, tileCount = 3),
+            pon(type = MeldType.AddedKan, direction = RelativeDirection.Left, tileCount = 4),
+            pon(type = MeldType.Pon, direction = RelativeDirection.Across, tileCount = 3),
+            pon(type = MeldType.Pon, direction = RelativeDirection.Right, tileCount = 3),
         )
 
         /** 新的暗槓。 */
         private val closedKan: MahjongMeldTileGroup = (before.dropLast(1) + beforeDrawn).let { tiles ->
             MahjongMeldTileGroup(
-                type = MeldType.CLOSED_KAN,
+                type = MeldType.ClosedKan,
                 tileIds = tiles,
                 calledTileId = null,
                 sourceDirection = RelativeDirection.Self,

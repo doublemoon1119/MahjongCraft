@@ -30,7 +30,7 @@ object FakeMeldFactory {
         sourceTile: IdentifiedTile? = null,
         sourceDirection: RelativeDirection = RelativeDirection.Self,
         publiclyRevealedTileIds: Set<Uuid> = tiles.mapTo(LinkedHashSet()) { it.id },
-        faceDownTileIds: Set<Uuid> = if (type == MeldType.CLOSED_KAN) closedKanFaceDownTileIds(tiles) else emptySet(),
+        faceDownTileIds: Set<Uuid> = if (type == MeldType.ClosedKan) closedKanFaceDownTileIds(tiles) else emptySet(),
     ): Meld = Meld(
         type = type,
         tiles = tiles,

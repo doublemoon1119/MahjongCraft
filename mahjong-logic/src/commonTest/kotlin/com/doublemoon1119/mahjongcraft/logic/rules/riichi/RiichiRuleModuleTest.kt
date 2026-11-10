@@ -278,7 +278,7 @@ class RiichiRuleModuleTest {
         val player = FakeMahjongPlayerFactory.create(hand = hand, components = riichiDeclarationComponents())
         val calledTile = FakeIdentifiedTileFactory.create(Tile.Honor.White)
 
-        val result = module.beforeDiscardClaimed(player, MeldType.PON, calledTile, RelativeDirection.Left)
+        val result = module.beforeDiscardClaimed(player, MeldType.Pon, calledTile, RelativeDirection.Left)
 
         assertEquals(PaoLiability(PaoYaku.Daisangen, RelativeDirection.Left), result.values[RiichiPlayerComponents.PAO_LIABILITY])
     }
@@ -292,7 +292,7 @@ class RiichiRuleModuleTest {
         val player = FakeMahjongPlayerFactory.create(hand = hand, components = riichiDeclarationComponents())
         val calledTile = FakeIdentifiedTileFactory.create(Tile.Honor.White)
 
-        val result = module.beforeDiscardClaimed(player, MeldType.CHI, calledTile, RelativeDirection.Left)
+        val result = module.beforeDiscardClaimed(player, MeldType.Chi, calledTile, RelativeDirection.Left)
 
         assertTrue(result.isEmpty)
     }
@@ -306,7 +306,7 @@ class RiichiRuleModuleTest {
         val player = FakeMahjongPlayerFactory.create(hand = hand, components = riichiDeclarationComponents())
         val calledTile = FakeIdentifiedTileFactory.create(Tile.Honor.White)
 
-        val result = module.beforeDiscardClaimed(player, MeldType.OPEN_KAN, calledTile, RelativeDirection.Right)
+        val result = module.beforeDiscardClaimed(player, MeldType.OpenKan, calledTile, RelativeDirection.Right)
 
         assertEquals(PaoLiability(PaoYaku.Daisangen, RelativeDirection.Right), result.values[RiichiPlayerComponents.PAO_LIABILITY])
     }
@@ -330,7 +330,7 @@ class RiichiRuleModuleTest {
         melds = listOf(Tile.Honor.Red, Tile.Honor.Green).map { tile ->
             val meldTiles = List(3) { FakeIdentifiedTileFactory.create(tile) }
             Meld(
-                type = MeldType.PON,
+                type = MeldType.Pon,
                 tiles = meldTiles,
                 sourceDirection = RelativeDirection.Across,
                 publiclyRevealedTileIds = meldTiles.map { it.id }.toSet(),
@@ -347,7 +347,7 @@ class RiichiRuleModuleTest {
         val player = FakeMahjongPlayerFactory.create(components = riichiDeclarationComponents())
         val calledTile = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 5))
 
-        val result = module.beforeDiscardClaimed(player, MeldType.PON, calledTile, RelativeDirection.Left)
+        val result = module.beforeDiscardClaimed(player, MeldType.Pon, calledTile, RelativeDirection.Left)
 
         assertTrue(result.isEmpty)
     }
@@ -360,7 +360,7 @@ class RiichiRuleModuleTest {
         val player = FakeMahjongPlayerFactory.create()
         val calledTile = FakeIdentifiedTileFactory.create(Tile.Honor.White)
 
-        val result = module.beforeDiscardClaimed(player, MeldType.PON, calledTile, RelativeDirection.Left)
+        val result = module.beforeDiscardClaimed(player, MeldType.Pon, calledTile, RelativeDirection.Left)
 
         assertTrue(result.isEmpty)
     }
@@ -1239,7 +1239,7 @@ class RiichiRuleModuleTest {
     fun `test resolveSuufonRenda returns null when someone has already melded`() {
         val meldTiles = List(3) { FakeIdentifiedTileFactory.create(Tile.Honor.White) }
         val meldedHand = Hand(tiles = meldTiles.drop(1)).call(
-            type = MeldType.PON,
+            type = MeldType.Pon,
             tiles = meldTiles,
             source = meldTiles[0],
             direction = RelativeDirection.Left,
@@ -1310,7 +1310,7 @@ class RiichiRuleModuleTest {
      * @return 持有指定槓數的測試玩家。
      */
     private fun playerWithKans(count: Int) = FakeMahjongPlayerFactory.create(
-        hand = Hand(melds = List(count) { kanMeld(MeldType.CLOSED_KAN) }),
+        hand = Hand(melds = List(count) { kanMeld(MeldType.ClosedKan) }),
     )
 
     /**

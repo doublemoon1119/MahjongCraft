@@ -285,7 +285,7 @@ class MahjongPlayerAreaLayoutTest {
                 calledTileId = tiles[2].takeIf { direction != RelativeDirection.Self },
                 sourceDirection = direction,
                 allTilesFaceDown = false,
-                faceDownTileIds = if (type == MeldType.CLOSED_KAN) setOf(tiles.first(), tiles.last()) else emptySet(),
+                faceDownTileIds = if (type == MeldType.ClosedKan) setOf(tiles.first(), tiles.last()) else emptySet(),
             )
         }
     }
@@ -312,16 +312,16 @@ class MahjongPlayerAreaLayoutTest {
         /** 測試的副露順序；每種順序依序取前幾組。 */
         val MELD_PATTERNS: List<List<MeldSpec>> = listOf(
             listOf(
-                MeldSpec(MeldType.PON, RelativeDirection.Left, 3),
-                MeldSpec(MeldType.ADDED_KAN, RelativeDirection.Right, 4),
-                MeldSpec(MeldType.CLOSED_KAN, RelativeDirection.Self, 4),
-                MeldSpec(MeldType.OPEN_KAN, RelativeDirection.Across, 4),
+                MeldSpec(MeldType.Pon, RelativeDirection.Left, 3),
+                MeldSpec(MeldType.AddedKan, RelativeDirection.Right, 4),
+                MeldSpec(MeldType.ClosedKan, RelativeDirection.Self, 4),
+                MeldSpec(MeldType.OpenKan, RelativeDirection.Across, 4),
             ),
             listOf(
-                MeldSpec(MeldType.CHI, RelativeDirection.Left, 3),
-                MeldSpec(MeldType.PON, RelativeDirection.Across, 3),
-                MeldSpec(MeldType.PON, RelativeDirection.Right, 3),
-                MeldSpec(MeldType.ADDED_KAN, RelativeDirection.Left, 4),
+                MeldSpec(MeldType.Chi, RelativeDirection.Left, 3),
+                MeldSpec(MeldType.Pon, RelativeDirection.Across, 3),
+                MeldSpec(MeldType.Pon, RelativeDirection.Right, 3),
+                MeldSpec(MeldType.AddedKan, RelativeDirection.Left, 4),
             ),
         )
     }

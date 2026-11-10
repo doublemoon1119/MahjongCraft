@@ -377,7 +377,7 @@ class DoraTest : RiichiHandValueCalculatorTestBase() {
             ),
             melds = listOf(
                 FakeMeldFactory.create(
-                    type = MeldType.PON,
+                    type = MeldType.Pon,
                     tiles = listOf(
                         FakeIdentifiedTileFactory.create(RiichiTileValues.redFive(Tile.Suit.Dot)),
                         FakeIdentifiedTileFactory.create(RiichiTileValues.redFive(Tile.Suit.Dot)),
@@ -418,7 +418,7 @@ class DoraTest : RiichiHandValueCalculatorTestBase() {
             ),
             melds = listOf(
                 FakeMeldFactory.create(
-                    type = MeldType.PON,
+                    type = MeldType.Pon,
                     tiles = listOf(
                         FakeIdentifiedTileFactory.create(RiichiTileValues.redFive(Tile.Suit.Character)),
                         FakeIdentifiedTileFactory.create(RiichiTileValues.redFive(Tile.Suit.Character)),

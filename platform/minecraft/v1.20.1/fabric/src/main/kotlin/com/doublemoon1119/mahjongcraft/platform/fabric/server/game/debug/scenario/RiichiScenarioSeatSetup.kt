@@ -270,7 +270,7 @@ internal fun SeatSpec.takeExplicitTiles(availableTiles: MutableList<IdentifiedTi
     melds = pons.map { pon ->
         val tiles = takeTiles(availableTiles, List(MELD_TILE_COUNT) { pon.tile })
         Meld(
-            type = MeldType.PON,
+            type = MeldType.Pon,
             tiles = tiles,
             sourceTile = tiles.last(),
             sourceDirection = pon.from,

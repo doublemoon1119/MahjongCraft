@@ -150,7 +150,7 @@ class OpponentReadingTest {
     fun `mixed melds suit discards few discards or only closed kans give no signal`() {
         val offSuitDiscards = listOf(m(1), s(9), m(8), Tile.Honor.North, s(2), m(5), s(4))
         val closedKan = FakeMeldFactory.create(
-            type = MeldType.CLOSED_KAN,
+            type = MeldType.ClosedKan,
             tiles = List(4) { FakeIdentifiedTileFactory.create(p(3)) },
         )
 
@@ -303,7 +303,7 @@ class OpponentReadingTest {
      * @return 使用三張相同牌面的碰副露。
      */
     private fun pon(tile: Tile): Meld = FakeMeldFactory.create(
-        type = MeldType.PON,
+        type = MeldType.Pon,
         tiles = List(3) { FakeIdentifiedTileFactory.create(tile) },
         sourceDirection = RelativeDirection.Across,
     )
@@ -317,7 +317,7 @@ class OpponentReadingTest {
     private fun chi(vararg tiles: Tile): Meld {
         val meldTiles = tiles.map(FakeIdentifiedTileFactory::create)
         return Meld(
-            type = MeldType.CHI,
+            type = MeldType.Chi,
             tiles = meldTiles,
             sourceDirection = RelativeDirection.Left,
             publiclyRevealedTileIds = meldTiles.map { it.id }.toSet(),

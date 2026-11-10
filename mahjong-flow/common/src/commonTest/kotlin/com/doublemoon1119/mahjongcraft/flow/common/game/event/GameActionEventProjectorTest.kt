@@ -131,16 +131,16 @@ class GameActionEventProjectorTest {
     /** 明槓、暗槓與加槓只公開副露中明確標記的牌面。 */
     @Test
     fun `meld faces follow public reveal ids`() {
-        assertEquals(4, meldScenario(MeldType.OPEN_KAN, revealAll = true).single().tiles.count { it != null })
-        assertEquals(0, meldScenario(MeldType.CLOSED_KAN, revealAll = false).single().tiles.count { it != null })
-        assertEquals(4, meldScenario(MeldType.ADDED_KAN, revealAll = true).single().tiles.count { it != null })
+        assertEquals(4, meldScenario(MeldType.OpenKan, revealAll = true).single().tiles.count { it != null })
+        assertEquals(0, meldScenario(MeldType.ClosedKan, revealAll = false).single().tiles.count { it != null })
+        assertEquals(4, meldScenario(MeldType.AddedKan, revealAll = true).single().tiles.count { it != null })
     }
 
     /** 槓後補牌只公開張數與來源，不公開補進來的牌 UUID 或牌面。 */
     @Test
     fun `supplemental draw exposes count without tile identity`() {
         val before = game()
-        val after = afterMeld(before, MeldType.OPEN_KAN, revealAll = true)
+        val after = afterMeld(before, MeldType.OpenKan, revealAll = true)
         val tiles = after.tableState.players.first { it.id == actorId }.hand.melds.single().tiles
         val kan = GameAction.Kan(GameAction.KanType.OPEN_KAN, tiles.first().id, tiles.drop(1).map { it.id })
         val result = project(
@@ -209,17 +209,17 @@ class GameActionEventProjectorTest {
     private fun kanAction(type: MeldType, after: Game): GameAction.Kan {
         val tiles = after.tableState.players.first { it.id == actorId }.hand.melds.last().tiles
         return when (type) {
-            MeldType.OPEN_KAN -> GameAction.Kan(
+            MeldType.OpenKan -> GameAction.Kan(
                 GameAction.KanType.OPEN_KAN,
                 tiles.first().id,
                 tiles.drop(1).map { it.id },
             )
-            MeldType.CLOSED_KAN -> GameAction.Kan(
+            MeldType.ClosedKan -> GameAction.Kan(
                 GameAction.KanType.CLOSED_KAN,
                 tiles.first().id,
                 tiles.drop(1).map { it.id },
             )
-            MeldType.ADDED_KAN -> GameAction.Kan(
+            MeldType.AddedKan -> GameAction.Kan(
                 GameAction.KanType.ADDED_KAN,
                 tiles.last().id,
                 listOf(tiles.first().id),
@@ -231,7 +231,7 @@ class GameActionEventProjectorTest {
     /** 建立包含新副露的提交後桌況。 */
     private fun afterMeld(before: Game, type: MeldType, revealAll: Boolean): Game {
         val tiles = List(4) { tile(Tile.Numeric(Tile.Suit.Dot, 5)) }
-        val oldMelds = if (type == MeldType.ADDED_KAN) listOf(meld(MeldType.PON, tiles.take(3), true)) else emptyList()
+        val oldMelds = if (type == MeldType.AddedKan) listOf(meld(MeldType.Pon, tiles.take(3), true)) else emptyList()
         return replacePlayer(before, player(hand = Hand(melds = oldMelds + meld(type, tiles, revealAll))))
     }
 
@@ -239,8 +239,8 @@ class GameActionEventProjectorTest {
     private fun meld(type: MeldType, tiles: List<IdentifiedTile>, revealAll: Boolean) = Meld(
         type = type,
         tiles = tiles,
-        sourceTile = if (type == MeldType.OPEN_KAN) tiles.first() else null,
-        sourceDirection = if (type == MeldType.OPEN_KAN) RelativeDirection.Left else RelativeDirection.Self,
+        sourceTile = if (type == MeldType.OpenKan) tiles.first() else null,
+        sourceDirection = if (type == MeldType.OpenKan) RelativeDirection.Left else RelativeDirection.Self,
         publiclyRevealedTileIds = if (revealAll) tiles.map { it.id }.toSet() else emptySet(),
         faceDownTileIds = emptySet(),
     )

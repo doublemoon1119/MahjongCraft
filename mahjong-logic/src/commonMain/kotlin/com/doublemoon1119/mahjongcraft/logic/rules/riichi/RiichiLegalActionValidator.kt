@@ -80,7 +80,7 @@ class RiichiLegalActionValidator(
         val handWithIncoming = context.handWithIncoming
         val legalActions = mutableListOf<GameAction>()
         val hand = player.hand
-        val isMenzen = hand.exposedMelds.isEmpty() || hand.exposedMelds.all { it.type == MeldType.CLOSED_KAN }
+        val isMenzen = hand.exposedMelds.isEmpty() || hand.exposedMelds.all { it.type == MeldType.ClosedKan }
         val riichiState = player.riichiDeclaration
         val isRiichi = riichiState != null
 
@@ -90,7 +90,7 @@ class RiichiLegalActionValidator(
         // 由呼叫端在下一次捨牌/立直前檢查 resolveSuukanNagare 決定是否流局。
         val totalKanCount = tableState.players.sumOf { p ->
             p.hand.exposedMelds.count {
-                it.type == MeldType.OPEN_KAN || it.type == MeldType.ADDED_KAN || it.type == MeldType.CLOSED_KAN
+                it.type == MeldType.OpenKan || it.type == MeldType.AddedKan || it.type == MeldType.ClosedKan
             }
         }
         val canDeclareAnotherKan = totalKanCount < MAX_KAN_COUNT
@@ -150,7 +150,7 @@ class RiichiLegalActionValidator(
             // 2. 檢查是否可以加槓 (Added Kan)——牌山剩 1 張以下時不能加槓
             if (canDeclareAnotherKan && wallAllowsKan) {
                 player.hand.exposedMelds.forEach { meld ->
-                    if (meld.type == MeldType.PON && meld.tiles.first().tile == incomingBaseTile) {
+                    if (meld.type == MeldType.Pon && meld.tiles.first().tile == incomingBaseTile) {
                         legalActions.add(GameAction.Kan(GameAction.KanType.ADDED_KAN, incomingTile.id, emptyList()))
                     }
                 }
@@ -470,7 +470,7 @@ class RiichiLegalActionValidator(
 
         // 建立暗槓的 Meld
         val closedKanMeld = Meld(
-            type = MeldType.CLOSED_KAN,
+            type = MeldType.ClosedKan,
             tiles = tilesToKan,
             sourceTile = null,
             sourceDirection = RelativeDirection.Self,

@@ -136,7 +136,7 @@ class RespondToRobbingUseCaseTest {
      * @return 由三張測試白板組成、來源為上家的碰子。
      */
     private fun existingPon() = Meld(
-        MeldType.PON,
+        MeldType.Pon,
         listOf(whiteTile1, whiteTile2, whiteTile3),
         sourceTile = whiteTile3,
         sourceDirection = RelativeDirection.Left,
@@ -215,7 +215,7 @@ class RespondToRobbingUseCaseTest {
 
         val declarer = newState.players.first { it.id == declarerId }
         assertTrue(declarer.score < 0, "The declarer should pay for the robbed kan, like a discarder.")
-        assertEquals(MeldType.PON, declarer.hand.melds.single().type, "The kan must not be applied; it was robbed.")
+        assertEquals(MeldType.Pon, declarer.hand.melds.single().type, "The kan must not be applied; it was robbed.")
         assertEquals(robbedWhiteTile, declarer.hand.lastDrawn, "The declarer's hand should remain untouched.")
 
         assertEquals(
@@ -294,7 +294,7 @@ class RespondToRobbingUseCaseTest {
 
         val declarer = newState.players.first { it.id == declarerId }
         val meld = declarer.hand.melds.single()
-        assertEquals(MeldType.ADDED_KAN, meld.type)
+        assertEquals(MeldType.AddedKan, meld.type)
         assertEquals(setOf(whiteTile1, whiteTile2, whiteTile3, robbedWhiteTile), meld.tiles.toSet())
         assertEquals(rinshanTile, declarer.hand.lastDrawn)
         assertEquals(listOf(kanAction, GameAction.Draw), declarer.actionHistory.takeLast(2))
@@ -339,7 +339,7 @@ class RespondToRobbingUseCaseTest {
         assertEquals(GameError.WallExhausted(gameId), result.error)
         val unchangedState = fixtures.gameRepo.getTableState(gameId)!!
         val unchangedDeclarer = unchangedState.players.first { it.id == declarerId }
-        assertEquals(MeldType.PON, unchangedDeclarer.hand.melds.single().type, "The meld should not be applied.")
+        assertEquals(MeldType.Pon, unchangedDeclarer.hand.melds.single().type, "The meld should not be applied.")
         assertEquals(robbedWhiteTile, unchangedDeclarer.hand.lastDrawn)
         assertTrue(fixtures.presentationPublisher.getPublishedTableStepBatches(gameId).isEmpty())
     }

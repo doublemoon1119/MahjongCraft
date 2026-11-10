@@ -147,7 +147,7 @@ class TanyaoTest : RiichiHandValueCalculatorTestBase() {
             ),
             melds = listOf(
                 FakeMeldFactory.create(
-                    type = MeldType.PON,
+                    type = MeldType.Pon,
                     tiles = listOf(
                         FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 5)),
                         FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 5)),

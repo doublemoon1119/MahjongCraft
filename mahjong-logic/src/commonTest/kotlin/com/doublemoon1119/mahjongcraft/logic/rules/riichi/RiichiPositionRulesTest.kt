@@ -207,7 +207,7 @@ class RiichiPositionRulesTest {
     fun `a closed hand that has not declared riichi can riichi once ready`() {
         val riichi = setOf(RIICHI_GAME_ACTION)
         val closedKan = FakeMeldFactory.create(
-            type = MeldType.CLOSED_KAN,
+            type = MeldType.ClosedKan,
             tiles = List(4) { FakeIdentifiedTileFactory.create(Tile.Honor.White) },
         )
         val closed = seat(Wind.SOUTH, hand = noYakuTankiOnFiveBamboo()).copy(score = RIICHI_STICK_POINTS)
@@ -473,7 +473,7 @@ class RiichiPositionRulesTest {
      * @return 測試用碰牌副露。
      */
     private fun pon(tile: Tile): Meld = FakeMeldFactory.create(
-        type = MeldType.PON,
+        type = MeldType.Pon,
         tiles = List(3) { FakeIdentifiedTileFactory.create(tile) },
         sourceDirection = RelativeDirection.Across,
     )

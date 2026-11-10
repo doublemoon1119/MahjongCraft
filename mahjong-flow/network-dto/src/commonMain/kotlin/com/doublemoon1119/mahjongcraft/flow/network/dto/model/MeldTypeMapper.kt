@@ -8,11 +8,11 @@ import com.doublemoon1119.mahjongcraft.logic.base.MeldTypeId
  * @return 轉換後的資料。
  */
 fun MeldType.toDto(): MeldTypeDto = when (this) {
-    MeldType.CHI -> MeldTypeDto.Chi
-    MeldType.PON -> MeldTypeDto.Pon
-    MeldType.OPEN_KAN -> MeldTypeDto.OpenKan
-    MeldType.CLOSED_KAN -> MeldTypeDto.ClosedKan
-    MeldType.ADDED_KAN -> MeldTypeDto.AddedKan
+    MeldType.Chi -> MeldTypeDto.Chi
+    MeldType.Pon -> MeldTypeDto.Pon
+    MeldType.OpenKan -> MeldTypeDto.OpenKan
+    MeldType.ClosedKan -> MeldTypeDto.ClosedKan
+    MeldType.AddedKan -> MeldTypeDto.AddedKan
     is MeldType.Extension -> MeldTypeDto.Extension(typeId.toString())
 }
 
@@ -22,10 +22,10 @@ fun MeldType.toDto(): MeldTypeDto = when (this) {
  * @return 轉換後的資料。
  */
 fun MeldTypeDto.toDomain(): MeldType = when (this) {
-    MeldTypeDto.Chi -> MeldType.CHI
-    MeldTypeDto.Pon -> MeldType.PON
-    MeldTypeDto.OpenKan -> MeldType.OPEN_KAN
-    MeldTypeDto.ClosedKan -> MeldType.CLOSED_KAN
-    MeldTypeDto.AddedKan -> MeldType.ADDED_KAN
+    MeldTypeDto.Chi -> MeldType.Chi
+    MeldTypeDto.Pon -> MeldType.Pon
+    MeldTypeDto.OpenKan -> MeldType.OpenKan
+    MeldTypeDto.ClosedKan -> MeldType.ClosedKan
+    MeldTypeDto.AddedKan -> MeldType.AddedKan
     is MeldTypeDto.Extension -> MeldType.Extension(MeldTypeId.parse(typeId))
 }

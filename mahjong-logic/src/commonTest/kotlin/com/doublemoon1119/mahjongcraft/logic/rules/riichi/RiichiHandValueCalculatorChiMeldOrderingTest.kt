@@ -45,7 +45,7 @@ class RiichiHandValueCalculatorChiMeldOrderingTest : RiichiHandValueCalculatorTe
             ),
             melds = listOf(
                 FakeMeldFactory.create(
-                    type = MeldType.CHI,
+                    type = MeldType.Chi,
                     tiles = listOf(
                         FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Bamboo, 8)),
                         FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Bamboo, 7)),

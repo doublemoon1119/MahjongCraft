@@ -96,7 +96,7 @@ class SuushiiTest : RiichiHandValueCalculatorTestBase() {
             melds = listOf(
                 // 副露：東刻子
                 FakeMeldFactory.create(
-                    type = MeldType.PON,
+                    type = MeldType.Pon,
                     tiles = listOf(
                         FakeIdentifiedTileFactory.create(Tile.Honor.East),
                         FakeIdentifiedTileFactory.create(Tile.Honor.East),
@@ -230,7 +230,7 @@ class SuushiiTest : RiichiHandValueCalculatorTestBase() {
             melds = listOf(
                 // 副露：東刻子
                 FakeMeldFactory.create(
-                    type = MeldType.PON,
+                    type = MeldType.Pon,
                     tiles = listOf(
                         FakeIdentifiedTileFactory.create(Tile.Honor.East),
                         FakeIdentifiedTileFactory.create(Tile.Honor.East),
@@ -280,7 +280,7 @@ class SuushiiTest : RiichiHandValueCalculatorTestBase() {
             melds = listOf(
                 // 副露：東暗槓
                 FakeMeldFactory.create(
-                    type = MeldType.CLOSED_KAN,
+                    type = MeldType.ClosedKan,
                     tiles = listOf(
                         FakeIdentifiedTileFactory.create(Tile.Honor.East),
                         FakeIdentifiedTileFactory.create(Tile.Honor.East),

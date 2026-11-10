@@ -108,12 +108,12 @@ class HandSnapshotTest {
             FakeIdentifiedTileFactory.create(Tile.Honor.White),
             FakeIdentifiedTileFactory.create(Tile.Honor.White),
         )
-        val hand = Hand(melds = listOf(Meld(MeldType.PON, meldTiles, calledTile, RelativeDirection.Left, meldTiles.map { it.id }.toSet(), emptySet())))
+        val hand = Hand(melds = listOf(Meld(MeldType.Pon, meldTiles, calledTile, RelativeDirection.Left, meldTiles.map { it.id }.toSet(), emptySet())))
 
         val snapshot = hand.toSnapshot(isVisible = false, revealsClosedKanTiles = false)
 
         assertEquals(1, snapshot.melds.size)
-        assertEquals(MeldType.PON, snapshot.melds[0].type)
+        assertEquals(MeldType.Pon, snapshot.melds[0].type)
         snapshot.melds[0].tiles.forEach { assertEquals(Tile.Honor.White, it.tile) }
     }
 
@@ -155,11 +155,11 @@ class HandSnapshotTest {
     @Test
     fun `test toSnapshot with closed kan meld visible when rule reveals it`() {
         val meldTiles = List(4) { FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Bamboo, 9)) }
-        val hand = Hand(melds = listOf(Meld(MeldType.CLOSED_KAN, meldTiles, sourceDirection = RelativeDirection.Self, publiclyRevealedTileIds = meldTiles.map { it.id }.toSet(), faceDownTileIds = setOf(meldTiles.first().id, meldTiles.last().id))))
+        val hand = Hand(melds = listOf(Meld(MeldType.ClosedKan, meldTiles, sourceDirection = RelativeDirection.Self, publiclyRevealedTileIds = meldTiles.map { it.id }.toSet(), faceDownTileIds = setOf(meldTiles.first().id, meldTiles.last().id))))
 
         val snapshot = hand.toSnapshot(isVisible = false, revealsClosedKanTiles = true)
 
-        assertEquals(MeldType.CLOSED_KAN, snapshot.melds[0].type)
+        assertEquals(MeldType.ClosedKan, snapshot.melds[0].type)
         snapshot.melds[0].tiles.forEach { assertEquals(Tile.Numeric(Tile.Suit.Bamboo, 9), it.tile) }
     }
 
@@ -169,11 +169,11 @@ class HandSnapshotTest {
     @Test
     fun `test toSnapshot with closed kan meld hidden when rule does not reveal it and not owner`() {
         val meldTiles = List(4) { FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Bamboo, 9)) }
-        val hand = Hand(melds = listOf(Meld(MeldType.CLOSED_KAN, meldTiles, sourceDirection = RelativeDirection.Self, publiclyRevealedTileIds = meldTiles.map { it.id }.toSet(), faceDownTileIds = setOf(meldTiles.first().id, meldTiles.last().id))))
+        val hand = Hand(melds = listOf(Meld(MeldType.ClosedKan, meldTiles, sourceDirection = RelativeDirection.Self, publiclyRevealedTileIds = meldTiles.map { it.id }.toSet(), faceDownTileIds = setOf(meldTiles.first().id, meldTiles.last().id))))
 
         val snapshot = hand.toSnapshot(isVisible = false, revealsClosedKanTiles = false)
 
-        assertEquals(MeldType.CLOSED_KAN, snapshot.melds[0].type)
+        assertEquals(MeldType.ClosedKan, snapshot.melds[0].type)
         snapshot.melds[0].tiles.forEach { assertNull(it.tile) }
     }
 
@@ -183,11 +183,11 @@ class HandSnapshotTest {
     @Test
     fun `test toSnapshot with closed kan meld visible to owner regardless of rule`() {
         val meldTiles = List(4) { FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Bamboo, 9)) }
-        val hand = Hand(melds = listOf(Meld(MeldType.CLOSED_KAN, meldTiles, sourceDirection = RelativeDirection.Self, publiclyRevealedTileIds = meldTiles.map { it.id }.toSet(), faceDownTileIds = setOf(meldTiles.first().id, meldTiles.last().id))))
+        val hand = Hand(melds = listOf(Meld(MeldType.ClosedKan, meldTiles, sourceDirection = RelativeDirection.Self, publiclyRevealedTileIds = meldTiles.map { it.id }.toSet(), faceDownTileIds = setOf(meldTiles.first().id, meldTiles.last().id))))
 
         val snapshot = hand.toSnapshot(isVisible = true, revealsClosedKanTiles = false)
 
-        assertEquals(MeldType.CLOSED_KAN, snapshot.melds[0].type)
+        assertEquals(MeldType.ClosedKan, snapshot.melds[0].type)
         snapshot.melds[0].tiles.forEach { assertEquals(Tile.Numeric(Tile.Suit.Bamboo, 9), it.tile) }
     }
 }

@@ -20,10 +20,10 @@ object DefaultDiscardReactionPolicy : DiscardReactionPolicy {
         when (action) {
             GameAction.Pass -> DiscardReactionCandidate(action, priority = 0)
             is GameAction.Ron -> DiscardReactionCandidate(action, priority = 300)
-            is GameAction.Chi -> claim(context, action, MeldType.CHI, priority = 100)
-            is GameAction.Pon -> claim(context, action, MeldType.PON, priority = 200)
+            is GameAction.Chi -> claim(context, action, MeldType.Chi, priority = 100)
+            is GameAction.Pon -> claim(context, action, MeldType.Pon, priority = 200)
             is GameAction.Kan -> if (action.type == GameAction.KanType.OPEN_KAN) {
-                claim(context, action, MeldType.OPEN_KAN, priority = 200)
+                claim(context, action, MeldType.OpenKan, priority = 200)
             } else {
                 null
             }
@@ -62,7 +62,7 @@ object DefaultDiscardReactionPolicy : DiscardReactionPolicy {
                 handTileIds = selectedTileIds,
                 publiclyRevealedTileIds = (selectedTileIds + context.discardedTile.id).toSet(),
                 faceDownTileIds = emptySet(),
-                requiresSupplementalDraw = meldType == MeldType.OPEN_KAN,
+                requiresSupplementalDraw = meldType == MeldType.OpenKan,
             ),
         )
     }

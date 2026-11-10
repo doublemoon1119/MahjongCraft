@@ -59,10 +59,10 @@ class RecordComponentInitializationTest {
     @Test
     fun `new meld receives initial values while an upgraded meld keeps its components`() {
         val ponTiles = List(3) { FakeIdentifiedTileFactory.create(Tile.Honor.Red) }
-        val pon = FakeMeldFactory.create(MeldType.PON, ponTiles).copy(components = ComponentSet.EMPTY.with(meldNote, "kept"))
+        val pon = FakeMeldFactory.create(MeldType.Pon, ponTiles).copy(components = ComponentSet.EMPTY.with(meldNote, "kept"))
         val fourth = FakeIdentifiedTileFactory.create(Tile.Honor.Red)
         val before = table(FakeMahjongPlayerFactory.create(hand = Hand(tiles = listOf(fourth), melds = listOf(pon))))
-        val newMeld = FakeMeldFactory.create(MeldType.CHI, List(3) { FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, it + 1)) })
+        val newMeld = FakeMeldFactory.create(MeldType.Chi, List(3) { FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, it + 1)) })
         val after = before.withPlayer { player ->
             val upgraded = player.hand.upgradeToAddedKan(fourth, 0)
             player.copy(hand = upgraded.copy(melds = upgraded.melds + newMeld))

@@ -23,7 +23,7 @@ class PaoDetectorTest {
     fun `test daisangen pao when calling the third dragon meld`() {
         val hand = FakeHandFactory.create(
             tiles = listOf(Tile.Honor.White, Tile.Honor.White),
-            melds = listOf(meld(MeldType.PON, Tile.Honor.Red), meld(MeldType.PON, Tile.Honor.Green)),
+            melds = listOf(meld(MeldType.Pon, Tile.Honor.Red), meld(MeldType.Pon, Tile.Honor.Green)),
         )
 
         val result = PaoDetector.check(hand, Tile.Honor.White, RelativeDirection.Right)
@@ -59,7 +59,7 @@ class PaoDetectorTest {
     fun `test no pao when one other dragon group is still concealed`() {
         val hand = FakeHandFactory.create(
             tiles = listOf(Tile.Honor.Green, Tile.Honor.Green, Tile.Honor.Green),
-            melds = listOf(meld(MeldType.PON, Tile.Honor.Red)),
+            melds = listOf(meld(MeldType.Pon, Tile.Honor.Red)),
         )
 
         val result = PaoDetector.check(hand, Tile.Honor.White, RelativeDirection.Right)
@@ -74,7 +74,7 @@ class PaoDetectorTest {
     fun `test daisangen pao counts a closed kan as a meld`() {
         val hand = FakeHandFactory.create(
             tiles = listOf(Tile.Honor.White, Tile.Honor.White),
-            melds = listOf(meld(MeldType.PON, Tile.Honor.Red), meld(MeldType.CLOSED_KAN, Tile.Honor.Green)),
+            melds = listOf(meld(MeldType.Pon, Tile.Honor.Red), meld(MeldType.ClosedKan, Tile.Honor.Green)),
         )
 
         val result = PaoDetector.check(hand, Tile.Honor.White, RelativeDirection.Across)
@@ -89,7 +89,7 @@ class PaoDetectorTest {
     fun `test no pao when only one other dragon group is exposed`() {
         val hand = FakeHandFactory.create(
             tiles = listOf(Tile.Honor.White, Tile.Honor.White),
-            melds = listOf(meld(MeldType.PON, Tile.Honor.Red)),
+            melds = listOf(meld(MeldType.Pon, Tile.Honor.Red)),
         )
 
         val result = PaoDetector.check(hand, Tile.Honor.White, RelativeDirection.Left)
@@ -105,9 +105,9 @@ class PaoDetectorTest {
         val hand = FakeHandFactory.create(
             tiles = listOf(Tile.Honor.North, Tile.Honor.North),
             melds = listOf(
-                meld(MeldType.PON, Tile.Honor.East),
-                meld(MeldType.OPEN_KAN, Tile.Honor.South),
-                meld(MeldType.CLOSED_KAN, Tile.Honor.West),
+                meld(MeldType.Pon, Tile.Honor.East),
+                meld(MeldType.OpenKan, Tile.Honor.South),
+                meld(MeldType.ClosedKan, Tile.Honor.West),
             ),
         )
 
@@ -123,7 +123,7 @@ class PaoDetectorTest {
     fun `test no pao when one other wind group is still concealed`() {
         val hand = FakeHandFactory.create(
             tiles = listOf(Tile.Honor.West, Tile.Honor.West, Tile.Honor.West, Tile.Honor.North, Tile.Honor.North),
-            melds = listOf(meld(MeldType.PON, Tile.Honor.East), meld(MeldType.OPEN_KAN, Tile.Honor.South)),
+            melds = listOf(meld(MeldType.Pon, Tile.Honor.East), meld(MeldType.OpenKan, Tile.Honor.South)),
         )
 
         val result = PaoDetector.check(hand, Tile.Honor.North, RelativeDirection.Right)
@@ -138,7 +138,7 @@ class PaoDetectorTest {
     fun `test no pao when called tile is not dragon or wind`() {
         val hand = FakeHandFactory.create(
             tiles = listOf(Tile.Numeric(Tile.Suit.Character, 5), Tile.Numeric(Tile.Suit.Character, 5)),
-            melds = listOf(meld(MeldType.PON, Tile.Honor.Red), meld(MeldType.PON, Tile.Honor.Green)),
+            melds = listOf(meld(MeldType.Pon, Tile.Honor.Red), meld(MeldType.Pon, Tile.Honor.Green)),
         )
 
         val result = PaoDetector.check(
@@ -162,7 +162,7 @@ class PaoDetectorTest {
         tile: Tile,
     ): Meld = FakeMeldFactory.create(
         type = type,
-        tiles = List(if (type == MeldType.OPEN_KAN || type == MeldType.CLOSED_KAN) 4 else 3) { FakeIdentifiedTileFactory.create(tile) },
-        sourceDirection = if (type == MeldType.CLOSED_KAN) RelativeDirection.Self else RelativeDirection.Across,
+        tiles = List(if (type == MeldType.OpenKan || type == MeldType.ClosedKan) 4 else 3) { FakeIdentifiedTileFactory.create(tile) },
+        sourceDirection = if (type == MeldType.ClosedKan) RelativeDirection.Self else RelativeDirection.Across,
     )
 }

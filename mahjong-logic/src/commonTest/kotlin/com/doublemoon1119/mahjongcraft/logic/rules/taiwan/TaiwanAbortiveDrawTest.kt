@@ -18,7 +18,7 @@ class TaiwanAbortiveDrawTest {
     private fun closedKan(): Meld {
         val tiles = List(4) { FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 1)) }
         return Meld(
-            type = MeldType.CLOSED_KAN,
+            type = MeldType.ClosedKan,
             tiles = tiles,
             sourceDirection = RelativeDirection.Self,
             publiclyRevealedTileIds = emptySet(),

@@ -122,7 +122,7 @@ class ExhaustiveDrawSettlementPresentationRequestFactoryTest {
             initialSeat = Wind.EAST,
             hand = Hand(
                 tiles = listOf(standing),
-                melds = listOf(Meld(MeldType.PON, meldTiles, meldTiles.first(), RelativeDirection.Left, publiclyRevealedTileIds = meldTiles.map { it.id }.toSet(), faceDownTileIds = emptySet())),
+                melds = listOf(Meld(MeldType.Pon, meldTiles, meldTiles.first(), RelativeDirection.Left, publiclyRevealedTileIds = meldTiles.map { it.id }.toSet(), faceDownTileIds = emptySet())),
             ),
         )
         val state = FakeTableStateFactory.create(

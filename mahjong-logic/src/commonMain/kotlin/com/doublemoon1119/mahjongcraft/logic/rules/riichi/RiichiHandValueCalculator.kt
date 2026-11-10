@@ -64,15 +64,15 @@ class RiichiHandValueCalculator(
             // 將 base.Meld 轉換為 structure.Fuuro
             val tile = meld.tiles.first().tile
             val mentsu = when (meld.type) {
-                MeldType.PON -> Mentsu.Kotsu(tile)
+                MeldType.Pon -> Mentsu.Kotsu(tile)
                 // CHI 的 tiles 依鳴牌時呼叫端選牌順序排列（被鳴牌固定最後一張），不保證數值遞增，
                 // Shuntsu 的 headTile 必須是三張裡數值最小的那張，不能直接沿用 tiles.first()。
-                MeldType.CHI -> Mentsu.Shuntsu(
+                MeldType.Chi -> Mentsu.Shuntsu(
                     headTile = meld.tiles.minBy { (it.tile as Tile.Numeric).value }.tile,
                 )
-                MeldType.OPEN_KAN -> Mentsu.Minkan(tile)
-                MeldType.CLOSED_KAN -> Mentsu.Ankan(tile)
-                MeldType.ADDED_KAN -> Mentsu.Kakan(tile)
+                MeldType.OpenKan -> Mentsu.Minkan(tile)
+                MeldType.ClosedKan -> Mentsu.Ankan(tile)
+                MeldType.AddedKan -> Mentsu.Kakan(tile)
                 is MeldType.Extension -> error("Unsupported extension meld type in riichi calculator: ${meld.type.typeId}")
             }
             Fuuro(

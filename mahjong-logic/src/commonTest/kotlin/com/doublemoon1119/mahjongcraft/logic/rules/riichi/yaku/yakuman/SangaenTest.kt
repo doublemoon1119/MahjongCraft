@@ -96,7 +96,7 @@ class SangaenTest : RiichiHandValueCalculatorTestBase() {
             melds = listOf(
                 // 副露：白刻子
                 FakeMeldFactory.create(
-                    type = MeldType.PON,
+                    type = MeldType.Pon,
                     tiles = listOf(
                         FakeIdentifiedTileFactory.create(Tile.Honor.White),
                         FakeIdentifiedTileFactory.create(Tile.Honor.White),
@@ -146,7 +146,7 @@ class SangaenTest : RiichiHandValueCalculatorTestBase() {
             melds = listOf(
                 // 暗槓：白
                 FakeMeldFactory.create(
-                    type = MeldType.CLOSED_KAN,
+                    type = MeldType.ClosedKan,
                     tiles = listOf(
                         FakeIdentifiedTileFactory.create(Tile.Honor.White),
                         FakeIdentifiedTileFactory.create(Tile.Honor.White),
@@ -287,7 +287,7 @@ class SangaenTest : RiichiHandValueCalculatorTestBase() {
             melds = listOf(
                 // 副露：白刻子
                 FakeMeldFactory.create(
-                    type = MeldType.PON,
+                    type = MeldType.Pon,
                     tiles = listOf(
                         FakeIdentifiedTileFactory.create(Tile.Honor.White),
                         FakeIdentifiedTileFactory.create(Tile.Honor.White),
@@ -337,7 +337,7 @@ class SangaenTest : RiichiHandValueCalculatorTestBase() {
             melds = listOf(
                 // 大明槓：白
                 FakeMeldFactory.create(
-                    type = MeldType.OPEN_KAN,
+                    type = MeldType.OpenKan,
                     tiles = listOf(
                         FakeIdentifiedTileFactory.create(Tile.Honor.White),
                         FakeIdentifiedTileFactory.create(Tile.Honor.White),
