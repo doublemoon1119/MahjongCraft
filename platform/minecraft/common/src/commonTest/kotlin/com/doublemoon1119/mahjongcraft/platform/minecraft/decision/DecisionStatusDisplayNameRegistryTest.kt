@@ -3,8 +3,10 @@ package com.doublemoon1119.mahjongcraft.platform.minecraft.decision
 import com.doublemoon1119.mahjongcraft.logic.judgment.WaitingTileAvailabilityIds
 import com.doublemoon1119.mahjongcraft.logic.module.BuiltInRuleModuleIds
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDiscardReadinessAnalyzer
+import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanDiscardReadinessAnalyzer
 import com.doublemoon1119.mahjongcraft.platform.minecraft.extension.BuiltInMinecraftMahjongExtension
 import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.riichi.BundledRiichiMinecraftExtension
+import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.taiwan.BundledTaiwanMinecraftExtension
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -20,6 +22,23 @@ class DecisionStatusDisplayNameRegistryTest {
     private fun registry() = DecisionStatusDisplayNameRegistryImpl().apply {
         BuiltInMinecraftMahjongExtension.registerDecisionStatusDisplayNames(this)
         BundledRiichiMinecraftExtension.registerDecisionStatusDisplayNames(this)
+        BundledTaiwanMinecraftExtension.registerDecisionStatusDisplayNames(this)
+    }
+
+    /** 台麻的過水與最低台數狀態只套用到台麻規則。 */
+    @Test
+    fun `taiwan statuses resolve only for taiwan`() {
+        val registry = registry()
+
+        assertEquals(
+            "mahjongcraft.taiwan.hud.passed_win",
+            registry.find(BuiltInRuleModuleIds.TAIWAN, TaiwanDiscardReadinessAnalyzer.StatusIds.PASSED_WIN),
+        )
+        assertEquals(
+            "mahjongcraft.taiwan.hud.win_availability.below_minimum",
+            registry.find(BuiltInRuleModuleIds.TAIWAN, TaiwanDiscardReadinessAnalyzer.StatusIds.WIN_BELOW_MINIMUM),
+        )
+        assertNull(registry.find(BuiltInRuleModuleIds.RIICHI, TaiwanDiscardReadinessAnalyzer.StatusIds.PASSED_WIN))
     }
 
     /** 日麻的振聽與和牌資格由日麻自己登記，別的規則查不到。 */

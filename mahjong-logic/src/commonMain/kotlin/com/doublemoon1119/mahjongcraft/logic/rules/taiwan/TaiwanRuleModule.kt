@@ -101,6 +101,13 @@ class TaiwanRuleModule(
      */
     override fun createShantenCalculator(): TaiwanShantenCalculator = TaiwanShantenCalculator()
 
+    /** 建立台灣麻將的捨牌與目前手牌聽牌分析器。 */
+    override fun createDiscardReadinessAnalyzer(): TaiwanDiscardReadinessAnalyzer = TaiwanDiscardReadinessAnalyzer(
+        config = config,
+        declarationDiscardPolicy = declarationDiscardPolicy(),
+        onPlayerDiscarded = ::onPlayerDiscarded,
+    )
+
     /**
      * 建立台灣麻將的合法動作判定器。
      *

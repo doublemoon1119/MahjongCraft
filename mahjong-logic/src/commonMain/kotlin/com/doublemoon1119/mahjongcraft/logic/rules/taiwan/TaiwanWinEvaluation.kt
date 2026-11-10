@@ -44,6 +44,31 @@ internal class TaiwanWinEvaluation(config: TaiwanRuleConfig) {
     )
 
     /**
+     * 分析指定牌作為胡牌張時，胡牌與自摸是否達到起胡台數。
+     *
+     * 兩種判定都沿用正式結算的計台情境；呼叫端另行處理過水等玩家資格限制。
+     *
+     * @param tableState 胡牌前的權威桌況。
+     * @param player 手牌不含胡牌張的玩家。
+     * @param winningTile 要分析的胡牌張。
+     * @return 這張等待牌的胡牌資格。
+     */
+    fun analyzeAvailability(
+        tableState: TableState,
+        player: MahjongPlayer,
+        winningTile: IdentifiedTile,
+    ): TaiwanWinAvailability {
+        val ron = evaluate(tableState, player, winningTile, isTsumo = false, isRobbingKong = false)
+        val tsumo = evaluate(tableState, player, winningTile, isTsumo = true, isRobbingKong = false)
+        return when {
+            ron.isWinningHand -> TaiwanWinAvailability.AVAILABLE
+            tsumo.isWinningHand -> TaiwanWinAvailability.TSUMO_ONLY
+            ron.decomposition != null || tsumo.decomposition != null -> TaiwanWinAvailability.BELOW_MINIMUM
+            else -> TaiwanWinAvailability.NOT_WINNING
+        }
+    }
+
+    /**
      * 依桌況判斷補牌胡、海底、起手胡與宣告聽牌資格。
      *
      * 起手胡以「全桌沒有任何副露，且胡牌者尚未打出任何牌」判斷：莊家自摸為天胡、閒家自摸為地胡、閒家胡別人的牌為人胡。

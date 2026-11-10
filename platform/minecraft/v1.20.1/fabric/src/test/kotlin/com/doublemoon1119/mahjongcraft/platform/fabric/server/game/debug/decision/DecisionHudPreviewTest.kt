@@ -1,6 +1,8 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.decision
 
+import com.doublemoon1119.mahjongcraft.logic.judgment.WaitingTileAvailabilityIds
 import com.doublemoon1119.mahjongcraft.logic.module.BuiltInRuleModuleIds
+import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanDiscardReadinessAnalyzer
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.DebugMahjongExtension
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.presentation.DebugWinRoundContinuationState
 import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionVocabularyRegistryImpl
@@ -56,5 +58,46 @@ class DecisionHudPreviewTest {
         assertNotNull(display.cardBodyKey)
         assertNotNull(display.cardHintKey)
         assertNotNull(display.descriptionKey)
+    }
+
+    /** 台灣麻將分析預覽使用台麻規則，並涵蓋過水與全部等待牌資格。 */
+    @Test
+    fun `taiwan analysis previews use taiwan statuses`() {
+        val previews = FabricDebugDecisionCommand.DecisionHudPreview.entries
+            .filter { it.commandName.startsWith("taiwan_discard_") }
+
+        previews.forEach { preview ->
+            assertEquals(BuiltInRuleModuleIds.TAIWAN, preview.prompt("preview", "tile").ruleModuleId)
+        }
+        val passed = FabricDebugDecisionCommand.DecisionHudPreview.TAIWAN_DISCARD_PASSED_WIN
+            .prompt("preview", "tile").discardAnalyses.single()
+        assertEquals(TaiwanDiscardReadinessAnalyzer.StatusIds.PASSED_WIN, passed.statusIndicatorId)
+        assertEquals(
+            TaiwanDiscardReadinessAnalyzer.StatusIds.WIN_TSUMO_ONLY,
+            FabricDebugDecisionCommand.DecisionHudPreview.TAIWAN_DISCARD_TSUMO_ONLY
+                .prompt("preview", "tile").discardAnalyses.single().waitingTiles.first().winAvailability,
+        )
+        assertEquals(
+            TaiwanDiscardReadinessAnalyzer.StatusIds.WIN_BELOW_MINIMUM,
+            FabricDebugDecisionCommand.DecisionHudPreview.TAIWAN_DISCARD_BELOW_MINIMUM
+                .prompt("preview", "tile").discardAnalyses.single().waitingTiles.first().winAvailability,
+        )
+        assertEquals(
+            TaiwanDiscardReadinessAnalyzer.StatusIds.WIN_NOT_AVAILABLE,
+            FabricDebugDecisionCommand.DecisionHudPreview.TAIWAN_DISCARD_UNAVAILABLE
+                .prompt("preview", "tile").discardAnalyses.single().waitingTiles.first().winAvailability,
+        )
+
+        val mixed = FabricDebugDecisionCommand.DecisionHudPreview.TAIWAN_DISCARD_MIXED
+            .prompt("preview", "tile").discardAnalyses.single()
+        assertEquals(
+            listOf(
+                WaitingTileAvailabilityIds.WIN_AVAILABLE,
+                TaiwanDiscardReadinessAnalyzer.StatusIds.WIN_TSUMO_ONLY,
+                TaiwanDiscardReadinessAnalyzer.StatusIds.WIN_BELOW_MINIMUM,
+                TaiwanDiscardReadinessAnalyzer.StatusIds.WIN_NOT_AVAILABLE,
+            ),
+            mixed.waitingTiles.map { it.winAvailability },
+        )
     }
 }

@@ -24,6 +24,7 @@ import com.doublemoon1119.mahjongcraft.logic.module.BuiltInRuleModuleIds
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDiscardReadinessAnalyzer
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiExhaustiveDrawReason
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiGameAction
+import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanDiscardReadinessAnalyzer
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongTileEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongTilePose
 import com.doublemoon1119.mahjongcraft.platform.fabric.network.MahjongChannels
@@ -437,6 +438,12 @@ class FabricDebugDecisionCommand(
         DISCARD_TSUMO_ONLY("discard_tsumo_only", isDiscardAnalysis = true),
         DISCARD_MIXED_AVAILABILITY("discard_mixed_availability", isDiscardAnalysis = true),
         DISCARD_FURITEN_UNAVAILABLE("discard_furiten_unavailable", isDiscardAnalysis = true),
+        TAIWAN_DISCARD_ANALYSIS("taiwan_discard_analysis", isDiscardAnalysis = true, ruleModuleId = BuiltInRuleModuleIds.TAIWAN),
+        TAIWAN_DISCARD_PASSED_WIN("taiwan_discard_passed_win", isDiscardAnalysis = true, ruleModuleId = BuiltInRuleModuleIds.TAIWAN),
+        TAIWAN_DISCARD_TSUMO_ONLY("taiwan_discard_tsumo_only", isDiscardAnalysis = true, ruleModuleId = BuiltInRuleModuleIds.TAIWAN),
+        TAIWAN_DISCARD_BELOW_MINIMUM("taiwan_discard_below_minimum", isDiscardAnalysis = true, ruleModuleId = BuiltInRuleModuleIds.TAIWAN),
+        TAIWAN_DISCARD_UNAVAILABLE("taiwan_discard_unavailable", isDiscardAnalysis = true, ruleModuleId = BuiltInRuleModuleIds.TAIWAN),
+        TAIWAN_DISCARD_MIXED("taiwan_discard_mixed", isDiscardAnalysis = true, ruleModuleId = BuiltInRuleModuleIds.TAIWAN),
         DECISION_CONFIRM("decision_confirm", PlayerDecisionPhaseDto.RULE_DECISION),
         DECISION_CHOICE("decision_choice", PlayerDecisionPhaseDto.RULE_DECISION),
         DECISION_TILES("decision_tiles", PlayerDecisionPhaseDto.RULE_DECISION),
@@ -566,17 +573,21 @@ class FabricDebugDecisionCommand(
          * @return 此情境的聽牌與可和牌狀態資料。
          */
         private fun analysis(discardTileId: String): DiscardReadinessAnalysisDto {
-            val tiles = if (this == DISCARD_MANY_WAITS) {
-                (1..9).map { TileDto.Numeric(SuitDto.CHARACTER, it) } +
-                    listOf(1, 9).map { TileDto.Numeric(SuitDto.DOT, it) } +
-                    listOf(1, 9).map { TileDto.Numeric(SuitDto.BAMBOO, it) }
-            } else {
-                listOf(2, 5, 8).map { TileDto.Numeric(SuitDto.CHARACTER, it) }
+            val tiles = when (this) {
+                DISCARD_MANY_WAITS ->
+                    (1..9).map { TileDto.Numeric(SuitDto.CHARACTER, it) } +
+                        listOf(1, 9).map { TileDto.Numeric(SuitDto.DOT, it) } +
+                        listOf(1, 9).map { TileDto.Numeric(SuitDto.BAMBOO, it) }
+                TAIWAN_DISCARD_MIXED -> listOf(2, 4, 6, 8).map { TileDto.Numeric(SuitDto.CHARACTER, it) }
+                else -> listOf(2, 5, 8).map { TileDto.Numeric(SuitDto.CHARACTER, it) }
             }
             val availability = when (this) {
                 DISCARD_NO_YAKU, DISCARD_FURITEN_UNAVAILABLE -> RiichiDiscardReadinessAnalyzer.StatusIds.WIN_NO_YAKU
                 DISCARD_BELOW_MINIMUM -> RiichiDiscardReadinessAnalyzer.StatusIds.WIN_BELOW_MINIMUM
                 DISCARD_TSUMO_ONLY -> RiichiDiscardReadinessAnalyzer.StatusIds.WIN_TSUMO_ONLY
+                TAIWAN_DISCARD_TSUMO_ONLY -> TaiwanDiscardReadinessAnalyzer.StatusIds.WIN_TSUMO_ONLY
+                TAIWAN_DISCARD_BELOW_MINIMUM -> TaiwanDiscardReadinessAnalyzer.StatusIds.WIN_BELOW_MINIMUM
+                TAIWAN_DISCARD_UNAVAILABLE -> TaiwanDiscardReadinessAnalyzer.StatusIds.WIN_NOT_AVAILABLE
                 else -> WaitingTileAvailabilityIds.WIN_AVAILABLE
             }
             return DiscardReadinessAnalysisDto(
@@ -585,16 +596,17 @@ class FabricDebugDecisionCommand(
                     WaitingTileAvailabilityDto(
                         tile,
                         (3 - index).coerceAtLeast(0),
-                        if (this == DISCARD_MIXED_AVAILABILITY) {
-                            MIXED_AVAILABILITY_CYCLE[index % MIXED_AVAILABILITY_CYCLE.size]
-                        } else {
-                            availability
+                        when (this) {
+                            DISCARD_MIXED_AVAILABILITY -> RIICHI_MIXED_AVAILABILITY_CYCLE[index % RIICHI_MIXED_AVAILABILITY_CYCLE.size]
+                            TAIWAN_DISCARD_MIXED -> TAIWAN_MIXED_AVAILABILITY_CYCLE[index % TAIWAN_MIXED_AVAILABILITY_CYCLE.size]
+                            else -> availability
                         },
                     )
                 },
                 when (this) {
                     DISCARD_FURITEN, DISCARD_FURITEN_UNAVAILABLE -> RiichiDiscardReadinessAnalyzer.StatusIds.DISCARD_FURITEN
                     DISCARD_PERMANENT_FURITEN -> RiichiDiscardReadinessAnalyzer.StatusIds.PERMANENT_FURITEN
+                    TAIWAN_DISCARD_PASSED_WIN -> TaiwanDiscardReadinessAnalyzer.StatusIds.PASSED_WIN
                     else -> null
                 },
             )
@@ -602,11 +614,19 @@ class FabricDebugDecisionCommand(
 
         private companion object {
             /** [DISCARD_MIXED_AVAILABILITY] 逐張輪流展示的和牌可用性命名字串。 */
-            val MIXED_AVAILABILITY_CYCLE = listOf(
+            val RIICHI_MIXED_AVAILABILITY_CYCLE = listOf(
                 WaitingTileAvailabilityIds.WIN_AVAILABLE,
                 RiichiDiscardReadinessAnalyzer.StatusIds.WIN_TSUMO_ONLY,
                 RiichiDiscardReadinessAnalyzer.StatusIds.WIN_NO_YAKU,
                 RiichiDiscardReadinessAnalyzer.StatusIds.WIN_BELOW_MINIMUM,
+            )
+
+            /** [TAIWAN_DISCARD_MIXED] 逐張展示的台灣麻將胡牌資格。 */
+            val TAIWAN_MIXED_AVAILABILITY_CYCLE = listOf(
+                WaitingTileAvailabilityIds.WIN_AVAILABLE,
+                TaiwanDiscardReadinessAnalyzer.StatusIds.WIN_TSUMO_ONLY,
+                TaiwanDiscardReadinessAnalyzer.StatusIds.WIN_BELOW_MINIMUM,
+                TaiwanDiscardReadinessAnalyzer.StatusIds.WIN_NOT_AVAILABLE,
             )
         }
     }

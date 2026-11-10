@@ -3,6 +3,7 @@ package com.doublemoon1119.mahjongcraft.platform.minecraft.rule.taiwan
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.taiwan.TaiwanRoundOutcomeIds
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.taiwan.TaiwanWinSettlementIds
 import com.doublemoon1119.mahjongcraft.logic.module.BuiltInRuleModuleIds
+import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanDiscardReadinessAnalyzer
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanGameAction
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanPublicIndicatorIds
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanReadyKind
@@ -14,6 +15,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.action.BuiltInGameActi
 import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionVocabulary
 import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionVocabularyDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.action.HUD_ACTION_PREFIX
+import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.DecisionStatusDisplayNameRegistrar
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.GameActionSoundPresentationRegistrar
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.GameActionVocabularyRegistrar
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.GameConfigPresentationRegistrar
@@ -25,6 +27,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.RuleM
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.TileEmojiRegistrar
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.TileLabelRegistrar
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.WinSettlementPresentationTemplateRegistrar
+import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.DecisionStatusDisplayNameDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.extension.MinecraftMahjongExtension
 import com.doublemoon1119.mahjongcraft.platform.minecraft.player.PublicPlayerIndicatorDisplay
 import com.doublemoon1119.mahjongcraft.platform.minecraft.player.PublicPlayerIndicatorDisplayDefinition
@@ -115,6 +118,18 @@ object BundledTaiwanMinecraftExtension : MinecraftMahjongExtension {
                 vocabulary = GameActionVocabulary(labelKey = HUD_ACTION_HU, messageKey = MinecraftMessageKeys.GAME_ACTION_HU, order = HU_ACTION_ORDER),
             ),
         )
+    }
+
+    /** 登記台灣麻將的過水與等待牌胡牌資格文字。 */
+    override fun registerDecisionStatusDisplayNames(registry: DecisionStatusDisplayNameRegistrar) {
+        listOf(
+            TaiwanDiscardReadinessAnalyzer.StatusIds.PASSED_WIN to HUD_PASSED_WIN,
+            TaiwanDiscardReadinessAnalyzer.StatusIds.WIN_TSUMO_ONLY to HUD_WIN_TSUMO_ONLY,
+            TaiwanDiscardReadinessAnalyzer.StatusIds.WIN_BELOW_MINIMUM to HUD_WIN_BELOW_MINIMUM,
+            TaiwanDiscardReadinessAnalyzer.StatusIds.WIN_NOT_AVAILABLE to HUD_WIN_NOT_AVAILABLE,
+        ).forEach { (statusId, translationKey) ->
+            registry.register(DecisionStatusDisplayNameDefinition(BuiltInRuleModuleIds.TAIWAN, statusId, translationKey))
+        }
     }
 
     /** 宣告聽牌的種類與莊家連莊次數的公開標示。 */
@@ -302,6 +317,18 @@ private const val GAME_ACTION_DECLARE_READY: String = "mahjongcraft.taiwan.actio
 
 /** 宣告聽牌在操作說明中的文字。 */
 private const val GAME_ACTION_DECLARE_READY_DESCRIPTION: String = "mahjongcraft.taiwan.action.declare_ready.description"
+
+/** 過水狀態的提示文字。 */
+private const val HUD_PASSED_WIN: String = "mahjongcraft.taiwan.hud.passed_win"
+
+/** 只能自摸的等待牌提示文字。 */
+private const val HUD_WIN_TSUMO_ONLY: String = "mahjongcraft.taiwan.hud.win_availability.tsumo_only"
+
+/** 未達最低台數的等待牌提示文字。 */
+private const val HUD_WIN_BELOW_MINIMUM: String = "mahjongcraft.taiwan.hud.win_availability.below_minimum"
+
+/** 目前不可胡牌的等待牌提示文字。 */
+private const val HUD_WIN_NOT_AVAILABLE: String = "mahjongcraft.taiwan.hud.win_availability.not_available"
 
 /** 宣告聽牌在操作卡中的順序，與日麻立直相同。 */
 private const val DECLARE_READY_ACTION_ORDER: Int = 5

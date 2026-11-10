@@ -8,6 +8,9 @@ import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPlayerTileAreaId
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.threeplayer.ThreePlayerRiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.table.PlayerTileAreas
+import com.doublemoon1119.mahjongcraft.logic.table.RoundCompletionClassification
+import com.doublemoon1119.mahjongcraft.logic.table.RoundCompletionSummary
+import com.doublemoon1119.mahjongcraft.logic.table.RoundTransitionDirective
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledCoreExtensionRegistries
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.registerBundledRuleModules
@@ -81,6 +84,30 @@ class HandReadinessVisibilityPolicyTest {
 
         assertEquals(Tile.Honor.North, wait.tile)
         assertEquals(1, wait.remainingCount)
+    }
+
+    /** 本局完成後不再提供聽牌分析，避免結算畫面期間繼續顯示聽牌 HUD。 */
+    @Test
+    fun `completed round hides current hand analysis`() {
+        val player = FakeMahjongPlayerFactory.create(hand = FakeHandFactory.create(tiles = tenpaiTiles))
+        val table = FakeTableStateFactory.create(
+            players = listOf(player),
+            config = RiichiRuleConfig(),
+        )
+        val game = Game(
+            tableState = table,
+            flowConfig = GameConfig(RiichiRuleConfig()).flowConfig,
+            roundCompletion = RoundCompletionSummary(
+                outcomeId = "test:win",
+                classification = RoundCompletionClassification.WIN,
+                beneficiaryPlayerIds = setOf(player.id),
+                transitionDirective = RoundTransitionDirective.PassToNextSeat,
+                settledScoresByPlayerId = mapOf(player.id to player.score),
+            ),
+            hostId = player.id,
+        )
+
+        assertNull(policy.snapshotFor(game, player.id))
     }
 
     /** 共用的聽牌牌型。 */

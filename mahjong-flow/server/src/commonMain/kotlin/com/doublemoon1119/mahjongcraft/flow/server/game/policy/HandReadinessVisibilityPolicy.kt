@@ -24,6 +24,7 @@ class HandReadinessVisibilityPolicy(
      * @return 玩家的手牌分析快照；無法提供分析時為 null。
      */
     fun snapshotFor(game: Game, observerId: Uuid): HandReadinessSnapshot? {
+        if (game.roundCompletion != null) return null
         val player = game.tableState.players.firstOrNull { it.id == observerId } ?: return null
         val module = moduleRegistry.getModule(game.tableState.config)
         val analyzer = module.createDiscardReadinessAnalyzer() ?: return null
