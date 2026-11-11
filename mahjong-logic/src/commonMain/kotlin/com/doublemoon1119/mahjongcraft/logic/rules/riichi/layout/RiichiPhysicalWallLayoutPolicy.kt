@@ -223,7 +223,7 @@ class RiichiPhysicalWallLayoutPolicy(
             else -> drawNumber / 2 + 1
         }
         val trackHeadStack = nextReservedPlacement.position.stack + nextReservedTrackIndex
-        val trackIndex = initialReservedStackCount(context.tableStateBeforeAction.config.deadTileCount) + (drawNumber - 1) / 2
+        val trackIndex = initialReservedStackCount(context.tableStateBeforeAction.config.reservedTileCount) + (drawNumber - 1) / 2
         val stack = trackHeadStack - trackIndex
         if (stack < 0) return null
         return TileWallPlacement(

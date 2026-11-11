@@ -19,7 +19,7 @@ class TaiwanRuleConfigTest {
         val config = TaiwanRuleConfig()
 
         assertEquals(16, config.initialHandSize)
-        assertEquals(16, config.deadTileCount)
+        assertEquals(16, config.reservedTileCount)
         assertEquals(4, config.minPlayers)
         assertEquals(4, config.maxPlayers)
         assertEquals(0, config.minimumWinConstraint)

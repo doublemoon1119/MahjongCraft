@@ -28,7 +28,7 @@ class TaiwanWallLayoutTest {
 
     /** 驗證不含花牌時（136 張、每面 17 墩），活牌 120 張、王牌 16 張，涵蓋全部輸入牌。 */
     @Test
-    fun `resolve splits 136 tiles into 120 live tiles and 16 dead wall tiles`() {
+    fun `resolve splits 136 tiles into 120 draw tiles and 16 reserved wall tiles`() {
         val tiles = buildShuffledTiles(136)
         val result = layout.resolve(tiles, WallOpening(wallSideOffsetFromDealer = 2, stacksFromRight = 11))
 
@@ -39,7 +39,7 @@ class TaiwanWallLayoutTest {
 
     /** 驗證含花牌時（144 張、每面 18 墩），活牌 128 張、王牌 16 張，涵蓋全部輸入牌。 */
     @Test
-    fun `resolve splits 144 tiles into 128 live tiles and 16 dead wall tiles`() {
+    fun `resolve splits 144 tiles into 128 draw tiles and 16 reserved wall tiles`() {
         val tiles = buildShuffledTiles(144)
         val result = layout.resolve(tiles, WallOpening(wallSideOffsetFromDealer = 1, stacksFromRight = 18))
 

@@ -18,7 +18,7 @@ class RiichiRuleConfigTest {
         val config = RiichiRuleConfig()
 
         assertEquals(13, config.initialHandSize)
-        assertEquals(14, config.deadTileCount)
+        assertEquals(14, config.reservedTileCount)
         assertEquals(4, config.minPlayers)
         assertEquals(4, config.maxPlayers)
         assertEquals(1, config.minimumWinConstraint)

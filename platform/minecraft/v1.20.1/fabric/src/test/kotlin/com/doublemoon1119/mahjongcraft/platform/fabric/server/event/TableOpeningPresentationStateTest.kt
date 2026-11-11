@@ -226,7 +226,7 @@ class TableOpeningPresentationStateTest {
         ),
         assemblyStructure = emptyMap(),
         finalLayout = TileWallPhysicalLayout(emptyMap()),
-        deadWallTileIds = emptySet(),
+        reservedWallTileIds = emptySet(),
         openingDiceCounts = listOf(2),
     )
 

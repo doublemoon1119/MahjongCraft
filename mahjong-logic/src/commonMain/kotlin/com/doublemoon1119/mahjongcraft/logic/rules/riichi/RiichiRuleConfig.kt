@@ -16,7 +16,7 @@ import com.doublemoon1119.mahjongcraft.logic.config.validate
  * @property allowOpenTanyao 是否允許食斷（斷么九鳴牌有效），預設為 true。
  * @property useLocalYaku 是否啟用古役（Local Yaku），預設為 false。
  * @property initialHandSize 初始手牌張數，固定為 13。
- * @property deadTileCount 王牌（死牌）張數，固定為 14。
+ * @property reservedTileCount 王牌（死牌）張數，固定為 14。
  * @property minimumWinConstraint 起胡番數限制（通常為 1 番），預設為 1。
  * @property scoreConfig 日本麻將專屬的積分配置。
  * @property gameLength 遊戲長度配置，預設為 [RiichiGameLength.OneGame]。
@@ -41,7 +41,7 @@ data class RiichiRuleConfig(
     ),
 ) : RiichiFamilyRuleConfig {
     override val initialHandSize: Int = 13
-    override val deadTileCount: Int = 14
+    override val reservedTileCount: Int = 14
     override val minPlayers: Int = 4
     override val maxPlayers: Int = 4
     override val revealsClosedKanTiles: Boolean = true

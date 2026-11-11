@@ -263,7 +263,7 @@ class AdvanceRoundUseCase(
         // StartGameUseCase，這裡不能對調呼叫順序。
         val dealerSeatIndex = newState.players.indexOfFirst { player -> player.id == newDealerId }
         advanceOutcome.initialPhysicalWallLayout?.let { layout ->
-            val deadWallTileIds = newState.reservedWallTiles.map { tile -> tile.id }.toSet()
+            val reservedWallTileIds = newState.reservedWallTiles.map { tile -> tile.id }.toSet()
             val openingDiceCounts = newState.openingDiceRolls.map { it.dice.values.size }
             val revealedTileIds = moduleRegistry.getModule(newState.config).publicFaceUpWallTileIds(newState, componentRegistry)
             presentationPublisher.publishWallStructure(
@@ -271,7 +271,7 @@ class AdvanceRoundUseCase(
                 requireNotNull(advanceOutcome.wallStructure),
                 layout,
                 dealerSeatIndex,
-                deadWallTileIds,
+                reservedWallTileIds,
                 openingDiceCounts,
                 revealedTileIds = revealedTileIds,
             )

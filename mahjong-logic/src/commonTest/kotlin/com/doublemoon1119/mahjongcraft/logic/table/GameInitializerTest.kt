@@ -73,7 +73,7 @@ class GameInitializerTest {
         val totalTileCount = module.createWallFactory(module.config.maxPlayers).create().remainingCount
         val table = GameInitializer.initialize(Uuid.random(), playerIds, module).tableState
 
-        val expectedRemaining = totalTileCount - module.config.deadTileCount - playerIds.size * module.config.initialHandSize
+        val expectedRemaining = totalTileCount - module.config.reservedTileCount - playerIds.size * module.config.initialHandSize
         assertEquals(expectedRemaining, table.tileWall.remainingCount)
     }
 
@@ -82,13 +82,13 @@ class GameInitializerTest {
      * [TableState.reservedWallTiles] 張數等於規則配置的保留牌張數。
      */
     @Test
-    fun `test initialize resolves wall opening and dead wall for a rule that supports it`() {
+    fun `test initialize resolves wall opening and reserved wall for a rule that supports it`() {
         val playerIds = List(4) { Uuid.random() }
         val result = GameInitializer.initialize(Uuid.random(), playerIds, module)
         val table = result.tableState
 
         assertTrue(table.wallOpening != null, "Riichi supports wall opening, wallOpening should not be null")
-        assertEquals(module.config.deadTileCount, table.reservedWallTiles.size)
+        assertEquals(module.config.reservedTileCount, table.reservedWallTiles.size)
         assertEquals(136, result.initialPhysicalWallLayout?.placements?.size)
         assertEquals(
             (table.tileWall.getAllTiles() + table.reservedWallTiles).map { it.id }.toSet(),
@@ -101,15 +101,15 @@ class GameInitializerTest {
      * 遺失或重複任何一張牌。
      */
     @Test
-    fun `test initialize accounts for every tile across hands, remaining wall, and dead wall`() {
+    fun `test initialize accounts for every tile across hands, remaining wall, and reserved wall`() {
         val playerIds = List(4) { Uuid.random() }
         val totalTileCount = module.createWallFactory(module.config.maxPlayers).create().remainingCount
         val table = GameInitializer.initialize(Uuid.random(), playerIds, module).tableState
 
         val dealtTileIds = table.players.flatMap { it.hand.tiles }.map { it.id }
         val remainingTileIds = table.tileWall.getAllTiles().map { it.id }
-        val deadWallTileIds = table.reservedWallTiles.map { it.id }
-        val allTileIds = dealtTileIds + remainingTileIds + deadWallTileIds
+        val reservedWallTileIds = table.reservedWallTiles.map { it.id }
+        val allTileIds = dealtTileIds + remainingTileIds + reservedWallTileIds
 
         assertEquals(totalTileCount, allTileIds.size)
         assertEquals(totalTileCount, allTileIds.toSet().size)
@@ -480,7 +480,7 @@ class GameInitializerTest {
 
         val table = GameInitializer.startNextRound(Uuid.random(), roundAdvancement, module).tableState
 
-        val expectedRemaining = totalTileCount - module.config.deadTileCount - players.size * module.config.initialHandSize
+        val expectedRemaining = totalTileCount - module.config.reservedTileCount - players.size * module.config.initialHandSize
         assertEquals(expectedRemaining, table.tileWall.remainingCount)
     }
 
@@ -489,7 +489,7 @@ class GameInitializerTest {
      * [TableState.wallOpening] 與符合規則配置張數的 [TableState.reservedWallTiles]。
      */
     @Test
-    fun `test startNextRound resolves a fresh wall opening and dead wall`() {
+    fun `test startNextRound resolves a fresh wall opening and reserved wall`() {
         val players = listOf(Wind.EAST, Wind.SOUTH, Wind.WEST, Wind.NORTH).map { FakeMahjongPlayerFactory.create(it) }
         val roundAdvancement = RoundAdvancementResult(
             players = players,
@@ -502,7 +502,7 @@ class GameInitializerTest {
         val table = GameInitializer.startNextRound(Uuid.random(), roundAdvancement, module).tableState
 
         assertTrue(table.wallOpening != null, "Riichi supports wall opening, wallOpening should not be null")
-        assertEquals(module.config.deadTileCount, table.reservedWallTiles.size)
+        assertEquals(module.config.reservedTileCount, table.reservedWallTiles.size)
     }
 
     /**

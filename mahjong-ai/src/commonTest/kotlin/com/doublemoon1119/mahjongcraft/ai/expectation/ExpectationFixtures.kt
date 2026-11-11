@@ -133,7 +133,7 @@ internal object ExpectationFixtures {
     fun table(players: List<MahjongPlayer>, liveTiles: Int = 56): TableState = FakeTableStateFactory.create(
         players = players,
         config = RiichiRuleConfig(),
-        tileWall = TileWall(List(liveTiles + RiichiRuleConfig().deadTileCount) { FakeIdentifiedTileFactory.create(p(5)) }),
+        tileWall = TileWall(List(liveTiles + RiichiRuleConfig().reservedTileCount) { FakeIdentifiedTileFactory.create(p(5)) }),
         components = riichiTableComponents(potPoints = 0),
     )
 

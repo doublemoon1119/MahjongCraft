@@ -15,7 +15,7 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.toDto as toRuleDto
  */
 fun TaiwanRuleConfig.toTaiwanDto(registries: NetworkDtoConverter): TaiwanRuleConfigDto = TaiwanRuleConfigDto(
     initialHandSize = initialHandSize,
-    deadTileCount = deadTileCount,
+    reservedTileCount = reservedTileCount,
     scoreConfig = scoreConfig.toTaiwanDto(),
     gameLength = gameLength.toRuleDto(registries),
     minimumWinConstraint = minimumWinConstraint,

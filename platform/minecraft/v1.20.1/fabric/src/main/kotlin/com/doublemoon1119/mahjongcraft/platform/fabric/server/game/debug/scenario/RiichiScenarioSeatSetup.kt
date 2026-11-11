@@ -132,7 +132,7 @@ internal class SeatSetupScenario(
         val reservedFront = takeTiles(availableTiles, deadWallFront)
         val filledSeats = seatSpecs.zip(explicitSeats) { spec, explicit -> explicit.withFillers(spec, availableTiles) }
         val initialReservedTiles = reservedFront +
-            takeAvoiding(availableTiles, config.deadTileCount - reservedFront.size, waitingTiles)
+            takeAvoiding(availableTiles, config.reservedTileCount - reservedFront.size, waitingTiles)
         val seats = if (liveWallIsFrontOnly) {
             val earlierDiscards = availableTiles.toList().also { availableTiles.clear() }
             filledSeats.mapIndexed { offset, seat ->

@@ -10,7 +10,7 @@ import kotlinx.serialization.Serializable
  * [RiichiRuleConfig] 的完整網路 DTO。起始手牌張數、王牌張數、玩家人數與暗槓揭示欄位還原時使用規則固定值。
  *
  * @property initialHandSize 起始手牌張數。
- * @property deadTileCount 王牌張數。
+ * @property reservedTileCount 規則保留區的牌張數。
  * @property scoreConfig 計分設定。
  * @property gameLength 對局長度。
  * @property minimumWinConstraint 和牌所需的最低翻數或點數限制。
@@ -25,7 +25,7 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class RiichiRuleConfigDto(
     val initialHandSize: Int,
-    val deadTileCount: Int,
+    val reservedTileCount: Int,
     val scoreConfig: RiichiScoreConfigDto,
     val gameLength: GameLengthDto,
     val minimumWinConstraint: Int,

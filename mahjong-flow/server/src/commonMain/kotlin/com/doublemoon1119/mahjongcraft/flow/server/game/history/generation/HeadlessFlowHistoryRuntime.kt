@@ -415,7 +415,7 @@ private class NoOpPresentation : GamePresentationPublisher {
     override fun publishOpeningRolls(gameId: Uuid, rolls: List<OpeningDiceRoll>) = Unit
 
     /** 丟棄牌牆呈現。 */
-    override fun publishWallStructure(gameId: Uuid, assemblyStructure: Map<Uuid, TileWallPosition>, layout: TileWallPhysicalLayout, dealerSeatIndex: Int, deadWallTileIds: Set<Uuid>, openingDiceCounts: List<Int>, isNewOpening: Boolean, revealedTileIds: Set<Uuid>) = Unit
+    override fun publishWallStructure(gameId: Uuid, assemblyStructure: Map<Uuid, TileWallPosition>, layout: TileWallPhysicalLayout, dealerSeatIndex: Int, reservedWallTileIds: Set<Uuid>, openingDiceCounts: List<Int>, isNewOpening: Boolean, revealedTileIds: Set<Uuid>) = Unit
 
     /** 丟棄桌況步驟。 */
     override fun publishTableSteps(gameId: Uuid, steps: List<TableStep>) = Unit

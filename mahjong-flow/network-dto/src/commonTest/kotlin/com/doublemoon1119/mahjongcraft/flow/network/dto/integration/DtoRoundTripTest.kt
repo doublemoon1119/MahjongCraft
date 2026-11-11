@@ -508,7 +508,7 @@ class DtoRoundTripTest {
  * 對外開放，不是名義上開放、實際上寫死日麻/台麻兩種。
  *
  * @property initialHandSize 每位玩家的起始手牌張數。
- * @property deadTileCount 王牌區的牌張數。
+ * @property reservedTileCount 規則保留區的牌張數。
  * @property scoreConfig 測試用分數配置。
  * @property gameLength 測試用對局長度。
  * @property minimumWinConstraint 和牌所需的最低限制值。
@@ -519,7 +519,7 @@ class DtoRoundTripTest {
  */
 private data class ThirdPartyRuleConfig(
     override val initialHandSize: Int = 13,
-    override val deadTileCount: Int = 14,
+    override val reservedTileCount: Int = 14,
     override val scoreConfig: ScoreConfig = object : ScoreConfig {
         override val initialScore: Int = 1000
         override val bustThreshold: Int? = null
@@ -538,7 +538,7 @@ private data class ThirdPartyRuleConfig(
  * 第三方規則配置的最小網路 DTO，只保留 round-trip 測試需要的配置欄位。
  *
  * @property initialHandSize 每位玩家的起始手牌張數。
- * @property deadTileCount 王牌區的牌張數。
+ * @property reservedTileCount 規則保留區的牌張數。
  * @property minimumWinConstraint 和牌所需的最低限制值。
  * @property minPlayers 允許的最少玩家數。
  * @property maxPlayers 允許的最多玩家數。
@@ -546,7 +546,7 @@ private data class ThirdPartyRuleConfig(
 @Serializable
 private data class ThirdPartyRuleConfigDto(
     val initialHandSize: Int,
-    val deadTileCount: Int,
+    val reservedTileCount: Int,
     val minimumWinConstraint: Int,
     val minPlayers: Int,
     val maxPlayers: Int,
@@ -560,7 +560,7 @@ private data class ThirdPartyRuleConfigDto(
  */
 private fun ThirdPartyRuleConfig.toThirdPartyDto() = ThirdPartyRuleConfigDto(
     initialHandSize = initialHandSize,
-    deadTileCount = deadTileCount,
+    reservedTileCount = reservedTileCount,
     minimumWinConstraint = minimumWinConstraint,
     minPlayers = minPlayers,
     maxPlayers = maxPlayers,
@@ -574,7 +574,7 @@ private fun ThirdPartyRuleConfig.toThirdPartyDto() = ThirdPartyRuleConfigDto(
  */
 private fun ThirdPartyRuleConfigDto.toThirdPartyDomain() = ThirdPartyRuleConfig(
     initialHandSize = initialHandSize,
-    deadTileCount = deadTileCount,
+    reservedTileCount = reservedTileCount,
     minimumWinConstraint = minimumWinConstraint,
     minPlayers = minPlayers,
     maxPlayers = maxPlayers,

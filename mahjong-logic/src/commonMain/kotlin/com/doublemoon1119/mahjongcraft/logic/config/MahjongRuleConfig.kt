@@ -12,8 +12,8 @@ interface MahjongRuleConfig {
     /** 初始手牌張數（不含摸牌）。例如日本麻將為 13，台灣麻將為 16。 */
     val initialHandSize: Int
 
-    /** 牌山結束時需保留在場上不被使用的「王牌」張數。 */
-    val deadTileCount: Int
+    /** 牌山中由規則保留、不供一般摸牌使用的牌張數。 */
+    val reservedTileCount: Int
 
     /** 該規則對應的積分配置。 */
     val scoreConfig: ScoreConfig
@@ -72,7 +72,7 @@ fun MahjongRuleConfig.validate() {
     require(minPlayers >= 1) { "minPlayers($minPlayers) must be at least 1" }
     require(maxPlayers >= minPlayers) { "maxPlayers($maxPlayers) must not be less than minPlayers($minPlayers)" }
     require(initialHandSize > 0) { "initialHandSize($initialHandSize) must be a positive integer" }
-    require(deadTileCount >= 0) { "deadTileCount($deadTileCount) must not be negative" }
+    require(reservedTileCount >= 0) { "reservedTileCount($reservedTileCount) must not be negative" }
     require(minimumWinConstraint >= 0) { "minimumWinConstraint($minimumWinConstraint) must not be negative" }
 }
 

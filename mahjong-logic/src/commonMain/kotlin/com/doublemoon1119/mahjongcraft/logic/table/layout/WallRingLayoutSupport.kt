@@ -7,7 +7,7 @@ import com.doublemoon1119.mahjongcraft.logic.table.opening.WallOpening
  * 內建規則共用的環狀牌牆排列邏輯：牌牆由莊家面起逆時針排成數面，每面墩數相同。
  *
  * 供內建規則（日本麻將四人與三人、台灣麻將）的 [TileWallLayout] 實作重用同一段墩位運算，各規則只需
- * 提供自己的面數、每面墩數與王牌墩數；不屬於 [TileWallLayout] 本身的公開契約，因為並非所有規則都必然採用
+ * 提供自己的面數、每面墩數與保留區墩數；不屬於 [TileWallLayout] 本身的公開契約，因為並非所有規則都必然採用
  * 這種牌牆形狀。[TileWallPosition.side] 是從莊家面起逆時針數的牌牆面序號。
  */
 internal object WallRingLayoutSupport {
@@ -18,10 +18,10 @@ internal object WallRingLayoutSupport {
     private const val LAYERS_PER_STACK = 2
 
     /**
-     * 依 [sideCount]、[stacksPerSide] 與 [deadWallStacks] 排列牌牆。
+     * 依 [sideCount]、[stacksPerSide] 與 [reservedWallStacks] 排列牌牆。
      *
-     * 王牌從開門缺口本身開始，往右（全域墩序號遞減，跨面時繞到前一面的最右墩）連續數
-     * [deadWallStacks] 墩；活牌緊接在王牌另一端之後，往左（全域墩序號遞增）連續繞完剩餘墩數，
+     * 規則保留區從開門缺口本身開始，往右（全域墩序號遞減，跨面時繞到前一面的最右墩）連續數
+     * [reservedWallStacks] 墩；一般摸牌區緊接在保留區另一端之後，往左（全域墩序號遞增）連續繞完剩餘墩數，
      * 最終繞回緊鄰缺口右側。牌牆內部的建牌填入順序（哪個索引對應哪面哪墩哪層）與墩內的摸牌順序
      * （上層先或下層先）皆為內部慣例，牌組進入此函式前已完成洗牌，不影響公平性。
      *
@@ -30,7 +30,7 @@ internal object WallRingLayoutSupport {
      * @param shuffledTiles 已洗牌、包含完整牌牆的牌張列表。
      * @param opening 規則決定的開門面與墩數。
      * @param stacksPerSide 每面牌牆的墩數。
-     * @param deadWallStacks 從開門缺口開始保留為規則區的連續墩數。
+     * @param reservedWallStacks 從開門缺口開始保留為規則區的連續墩數。
      * @param sideCount 牌牆面數，預設為四面。
      * @return 一般摸牌順序、保留牌與所有牌的結構座標。
      */
@@ -38,7 +38,7 @@ internal object WallRingLayoutSupport {
         shuffledTiles: List<IdentifiedTile>,
         opening: WallOpening,
         stacksPerSide: Int,
-        deadWallStacks: Int,
+        reservedWallStacks: Int,
         sideCount: Int = FOUR_SIDE_COUNT,
     ): TileWallLayoutResult {
         val totalStacks = sideCount * stacksPerSide
@@ -61,17 +61,17 @@ internal object WallRingLayoutSupport {
         // 開門缺口右側緊鄰的墩（一基底 stacksFromRight 轉零基底）。
         val breakGlobalStack = opening.wallSideOffsetFromDealer * stacksPerSide + (opening.stacksFromRight - 1)
 
-        val deadWallGlobalStacks = (0 until deadWallStacks).map { offset ->
+        val reservedWallGlobalStacks = (0 until reservedWallStacks).map { offset ->
             floorMod(breakGlobalStack - offset, totalStacks)
         }
-        val liveWallGlobalStacks = (1..(totalStacks - deadWallStacks)).map { offset ->
+        val drawWallGlobalStacks = (1..(totalStacks - reservedWallStacks)).map { offset ->
             floorMod(breakGlobalStack + offset, totalStacks)
         }
 
         // 兩份清單在這裡完成規則上的摸牌分區；是否把保留牌放在獨立實體區域由後續 layout policy
         // 決定，這個通用 helper 不賦予日麻王牌的物理語意。
-        val reservedWallTiles = deadWallGlobalStacks.flatMap { stacks[it].asReversed() }
-        val drawOrder = liveWallGlobalStacks.flatMap { stacks[it].asReversed() }
+        val reservedWallTiles = reservedWallGlobalStacks.flatMap { stacks[it].asReversed() }
+        val drawOrder = drawWallGlobalStacks.flatMap { stacks[it].asReversed() }
 
         val structure = buildMap {
             for (globalStack in 0 until totalStacks) {
@@ -87,7 +87,7 @@ internal object WallRingLayoutSupport {
     }
 
     /**
-     * 恆為非負餘數的取模，處理往回數王牌時可能產生的負值。
+     * 恆為非負餘數的取模，處理往回數保留區時可能產生的負值。
      *
      * @param value 要取模的整數。
      * @param modulus 正的模數。

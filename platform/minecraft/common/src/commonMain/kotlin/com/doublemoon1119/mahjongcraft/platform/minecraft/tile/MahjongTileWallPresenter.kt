@@ -56,7 +56,7 @@ interface MahjongTileWallPresenter {
     ): MahjongTileWallPresentationResult
 
     /**
-     * 將 [revealedTileIds] 對應的既有王牌 entity 翻至正面，不影響其他管理中的王牌。重複呼叫相同 ID
+     * 將 [revealedTileIds] 對應的既有保留區牌張 翻至正面，不影響其他管理中的保留區牌張。重複呼叫相同 ID
      * 不會改變結果。
      *
      * @param tableId 麻將桌 UUID。
@@ -64,7 +64,7 @@ interface MahjongTileWallPresenter {
      * @param revealedTileIds 本次新增公開翻面的牌 Uuid 集合；實作只處理這一批，重複 ID 仍須保持冪等。
      * @return 找不到對應 entity 的張數；比照本介面 best-effort 慣例，找不到的牌會被跳過。
      */
-    fun revealDeadWallTiles(tableId: Uuid, tableLocation: TableLocation, revealedTileIds: Set<Uuid>): MahjongTileWallPresentationResult
+    fun revealReservedWallTiles(tableId: Uuid, tableLocation: TableLocation, revealedTileIds: Set<Uuid>): MahjongTileWallPresentationResult
 
     /**
      * 清除指定桌子目前的正式牌牆用牌。

@@ -89,7 +89,7 @@ class FakeGamePresentationPublisher : GamePresentationPublisher {
         assemblyStructure: Map<Uuid, TileWallPosition>,
         layout: TileWallPhysicalLayout,
         dealerSeatIndex: Int,
-        deadWallTileIds: Set<Uuid>,
+        reservedWallTileIds: Set<Uuid>,
         openingDiceCounts: List<Int>,
         isNewOpening: Boolean,
         revealedTileIds: Set<Uuid>,
@@ -98,7 +98,7 @@ class FakeGamePresentationPublisher : GamePresentationPublisher {
         wallAssemblyStructures[gameId] = assemblyStructure
         wallStructureContexts[gameId] = WallStructureContext(
             dealerSeatIndex,
-            deadWallTileIds,
+            reservedWallTileIds,
             openingDiceCounts,
             isNewOpening,
             revealedTileIds,

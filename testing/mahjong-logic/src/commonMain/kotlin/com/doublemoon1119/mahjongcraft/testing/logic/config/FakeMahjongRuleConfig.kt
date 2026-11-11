@@ -12,7 +12,7 @@ import com.doublemoon1119.mahjongcraft.logic.config.ScoreConfig
  * 透過建構子參數提供預設值，方便在不同測試場景中快速調整核心參數。
  *
  * @property initialHandSize 初始手牌張數。
- * @property deadTileCount 王牌/保留牌張數。
+ * @property reservedTileCount 王牌/保留牌張數。
  * @property minimumWinConstraint 起胡限制。
  * @property scoreConfig 積分配置，預設使用 [FakeScoreConfig]。
  * @property gameLength 對局長度配置，預設使用 [FakeGameLength]。
@@ -23,7 +23,7 @@ import com.doublemoon1119.mahjongcraft.logic.config.ScoreConfig
  */
 class FakeMahjongRuleConfig(
     override val initialHandSize: Int = 13,
-    override val deadTileCount: Int = 14,
+    override val reservedTileCount: Int = 14,
     override val minimumWinConstraint: Int = 1,
     override val scoreConfig: ScoreConfig = FakeScoreConfig(),
     override val gameLength: GameLength = FakeGameLength(),

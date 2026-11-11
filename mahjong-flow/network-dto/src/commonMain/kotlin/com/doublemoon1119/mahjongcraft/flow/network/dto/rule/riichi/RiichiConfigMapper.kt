@@ -18,7 +18,7 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.toDto as toRuleDto
  */
 fun RiichiRuleConfig.toRiichiDto(registries: NetworkDtoConverter): RiichiRuleConfigDto = RiichiRuleConfigDto(
     initialHandSize = initialHandSize,
-    deadTileCount = deadTileCount,
+    reservedTileCount = reservedTileCount,
     scoreConfig = scoreConfig.toRiichiDto(),
     gameLength = gameLength.toRuleDto(registries),
     minimumWinConstraint = minimumWinConstraint,
@@ -55,7 +55,7 @@ fun RiichiRuleConfigDto.toDomain(registries: NetworkDtoConverter): RiichiRuleCon
  */
 fun ThreePlayerRiichiRuleConfig.toThreePlayerRiichiDto(registries: NetworkDtoConverter): ThreePlayerRiichiRuleConfigDto = ThreePlayerRiichiRuleConfigDto(
     initialHandSize = initialHandSize,
-    deadTileCount = deadTileCount,
+    reservedTileCount = reservedTileCount,
     scoreConfig = scoreConfig.toRiichiDto(),
     gameLength = gameLength.toRuleDto(registries),
     minimumWinConstraint = minimumWinConstraint,

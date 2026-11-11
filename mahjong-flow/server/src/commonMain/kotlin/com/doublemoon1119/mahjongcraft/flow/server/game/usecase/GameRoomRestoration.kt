@@ -49,7 +49,7 @@ internal object GameRoomRestoration {
             assemblyStructure = emptyMap(),
             layout = TileWallPhysicalLayout(emptyMap()),
             dealerSeatIndex = 0,
-            deadWallTileIds = emptySet(),
+            reservedWallTileIds = emptySet(),
             openingDiceCounts = emptyList(),
             isNewOpening = false,
         )

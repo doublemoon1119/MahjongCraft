@@ -460,7 +460,7 @@ class FabricMahjongTileWallPresenter(
      * @param revealedTileIds 要翻面的管理中牌 UUID。
      * @return 桌子有效時回報呈現結果；世界未載入時回報 `TABLE_NOT_FOUND`。
      */
-    override fun revealDeadWallTiles(tableId: Uuid, tableLocation: TableLocation, revealedTileIds: Set<Uuid>): MahjongTileWallPresentationResult {
+    override fun revealReservedWallTiles(tableId: Uuid, tableLocation: TableLocation, revealedTileIds: Set<Uuid>): MahjongTileWallPresentationResult {
         val world = resolveWorld(tableLocation) ?: return MahjongTileWallPresentationResult.TABLE_NOT_FOUND
         val controllerPos = tableLocation.toBlockPos()
         val managedTiles = findManagedTiles(world, tableId, controllerPos)
@@ -473,7 +473,7 @@ class FabricMahjongTileWallPresenter(
         val missingTileCount = revealedTileIds.size - managedTiles.size
         if (missingTileCount > 0) {
             logger.warn(
-                "revealDeadWallTiles tableId={} skipped {} tile(s): no existing managed entity found",
+                "revealReservedWallTiles tableId={} skipped {} tile(s): no existing managed entity found",
                 tableId,
                 missingTileCount,
             )

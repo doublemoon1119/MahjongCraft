@@ -49,7 +49,7 @@ data class RiichiWallProgress(
         val completedDraws = completedSupplementalDrawCount + completedNorthDrawCount
         val indicatorStartIndex = (rinshanTileCount - completedDraws).coerceAtLeast(0)
         // 開局王牌之後的牌是補牌時從活牌尾端補進來的：每墩先補下層、再補上層，列表順序因此是 [下層, 上層]。
-        val replenishedStartIndex = state.config.deadTileCount - completedDraws
+        val replenishedStartIndex = state.config.reservedTileCount - completedDraws
         for (i in 0 until indicatorCount) {
             val baseIndex = indicatorStartIndex + (i * 2)
             val isReplenishedStack = baseIndex >= replenishedStartIndex

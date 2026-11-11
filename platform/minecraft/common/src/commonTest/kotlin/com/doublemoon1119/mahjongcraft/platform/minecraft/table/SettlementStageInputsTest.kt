@@ -49,11 +49,11 @@ class SettlementStageInputsTest {
         assertEquals(tile, state.findTile(tile.id))
     }
 
-    /** 王牌區中的牌找得到。 */
+    /** 規則保留區中的牌找得到。 */
     @Test
-    fun `finds a tile in the dead wall`() {
+    fun `finds a tile in the reserved wall`() {
         val tile = tileOf(Tile.Honor.White)
-        val state = stateWith(deadWallTiles = listOf(tile))
+        val state = stateWith(reservedWallTiles = listOf(tile))
 
         assertEquals(tile, state.findTile(tile.id))
     }
@@ -201,13 +201,13 @@ class SettlementStageInputsTest {
      *
      * @param handTiles 莊家手牌。
      * @param wallTiles 活牌牆牌序。
-     * @param deadWallTiles 王牌區牌序。
+     * @param reservedWallTiles 規則保留區牌序。
      * @return 含東、南兩位玩家及指定牌區的桌況。
      */
     private fun stateWith(
         handTiles: List<IdentifiedTile> = emptyList(),
         wallTiles: List<IdentifiedTile> = emptyList(),
-        deadWallTiles: List<IdentifiedTile> = emptyList(),
+        reservedWallTiles: List<IdentifiedTile> = emptyList(),
     ): TableState {
         val dealer = FakeMahjongPlayerFactory.create(Wind.EAST, hand = Hand(tiles = handTiles))
         val opponent = FakeMahjongPlayerFactory.create(Wind.SOUTH)
@@ -215,7 +215,7 @@ class SettlementStageInputsTest {
             players = listOf(dealer, opponent),
             dealerPlayerId = dealer.id,
             tileWall = TileWall(wallTiles),
-            reservedWallTiles = deadWallTiles,
+            reservedWallTiles = reservedWallTiles,
         )
     }
 

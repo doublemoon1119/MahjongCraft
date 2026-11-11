@@ -5,7 +5,7 @@ import com.doublemoon1119.mahjongcraft.logic.config.MahjongRuleConfig
 
 /**
  * 規則中立的線性牌堆值物件。[TileWall] 只保存呼叫端交付的牌與其摸牌順序，本身不辨識活牌、王牌、
- * 嶺上牌或其他規則區域，也不會依 [MahjongRuleConfig.deadTileCount]
+ * 嶺上牌或其他規則區域，也不會依 [MahjongRuleConfig.reservedTileCount]
  * 自動保留或扣除任何牌。
  *
  * 內部存儲 [IdentifiedTile]，確保每一張牌在遊戲進程中都具有可追蹤的唯一性。
@@ -13,7 +13,7 @@ import com.doublemoon1119.mahjongcraft.logic.config.MahjongRuleConfig
  * 完整牌組剛由規則牌山工廠建立時，可以暫時用本型別承載全部牌；支援開門布局的對局經
  * [GameInitializer] 切分後，[TableState.tileWall] 只承載可正常摸取的牌，規則保留牌另存於
  * [TableState.reservedWallTiles]。因此判斷一般摸牌序列是否耗盡時，應直接使用
- * `tableState.tileWall.remainingCount == 0`，不得再次扣除王牌張數。
+ * `tableState.tileWall.remainingCount == 0`，不得再次扣除規則保留區張數。
  *
  * 本類別為不可變值物件：[draw] 與 [drawLast] 不會修改原實例，而是透過 [DrawResult] 回傳摸到的牌與
  * 反映變更後狀態的新 [TileWall] 實例。

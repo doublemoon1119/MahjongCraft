@@ -92,7 +92,7 @@ class TableStateSnapshotTest {
     fun `test snapshot retains config reference`() {
         val config = FakeMahjongRuleConfig(
             initialHandSize = 16,
-            deadTileCount = 16,
+            reservedTileCount = 16,
             minimumWinConstraint = 0,
         )
         val player = FakeMahjongPlayerFactory.create(initialSeat = Wind.EAST)

@@ -102,19 +102,19 @@ interface GamePresentationPublisher {
      * 通知平台本局牌牆結構。
      *
      * [assemblyStructure] 是牌牆剛完成組裝時的基本格位；[layout] 是規則決定的開門後最終布局。平台可用兩者呈現開門
-     * 過程，不必從王牌集合反推規則專有的位移。[dealerSeatIndex] 讓平台以莊家座位為基準
+     * 過程，不必從保留區集合反推規則專有的位移。[dealerSeatIndex] 讓平台以莊家座位為基準
      * 換算各面牌牆的位置。
      *
      * @param gameId 對局 Uuid。
      * @param assemblyStructure 本局牌牆完成組裝、尚未開門時的面／墩／層格位；牌張集合必須與 [layout]
      * 一致。空布局呼叫時傳空 map。
-     * @param layout 本局牌牆所有牌（含活牌與王牌）的完整抽象位置；空布局代表這局結束，只需清除舊牌。
+     * @param layout 本局牌牆所有牌（含一般摸牌區與規則保留區）的完整抽象位置；空布局代表這局結束，只需清除舊牌。
      * @param dealerSeatIndex 目前莊家在 `TableState.players` 的固定座位 index。
-     * @param deadWallTileIds [layout] 之中屬於王牌區的牌 Uuid 子集合；空布局呼叫時可傳空集合。
+     * @param reservedWallTileIds [layout] 之中屬於規則保留區的牌 Uuid 子集合；空布局呼叫時可傳空集合。
      * @param openingDiceCounts 各輪的骰子數量，供平台安排開門前的擲骰時間；沒有擲骰時傳空清單。
      * @param isNewOpening 這次是否剛完成開門；恢復既有桌況時傳 `false`。平台可據此決定是否呈現從 [assemblyStructure] 到
      * [layout] 的開門過程。
-     * @param revealedTileIds [deadWallTileIds] 之中，牌牆建立當下就公開的牌 Uuid 子集合（例如日麻開局就翻開的第一張
+     * @param revealedTileIds [reservedWallTileIds] 之中，牌牆建立當下就公開的牌 Uuid 子集合（例如日麻開局就翻開的第一張
      * 寶牌指示牌，由呼叫端從組件結果挑出已公開且正面朝上的牌）；不支援此概念的規則傳空集合。動作後才追加
      * 公開的牌由 [publishTableSteps] 的桌況得出。
      */
@@ -123,7 +123,7 @@ interface GamePresentationPublisher {
         assemblyStructure: Map<Uuid, TileWallPosition>,
         layout: TileWallPhysicalLayout,
         dealerSeatIndex: Int,
-        deadWallTileIds: Set<Uuid>,
+        reservedWallTileIds: Set<Uuid>,
         openingDiceCounts: List<Int>,
         isNewOpening: Boolean = true,
         revealedTileIds: Set<Uuid> = emptySet(),

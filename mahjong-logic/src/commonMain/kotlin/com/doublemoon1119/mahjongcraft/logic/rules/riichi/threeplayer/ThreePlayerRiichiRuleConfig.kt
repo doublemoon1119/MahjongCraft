@@ -38,7 +38,7 @@ data class ThreePlayerRiichiRuleConfig(
      * 王牌固定 14 張：最前面 8 張嶺上牌，其後是寶牌與裏寶牌指示牌。每次補牌都把活牌尾端補進王牌末端，
      * 第 3、4 組槓寶牌指示牌就落在補進來的牌上。
      */
-    override val deadTileCount: Int = 14
+    override val reservedTileCount: Int = 14
     override val minPlayers: Int = 3
     override val maxPlayers: Int = 3
     override val revealsClosedKanTiles: Boolean = true

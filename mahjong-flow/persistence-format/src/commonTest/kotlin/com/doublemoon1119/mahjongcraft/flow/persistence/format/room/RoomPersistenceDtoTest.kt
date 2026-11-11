@@ -129,7 +129,7 @@ class RoomPersistenceDtoTest {
  *
  * @property marker 驗證自訂資料往返後保持不變的標記。
  * @property initialHandSize 起始手牌張數。
- * @property deadTileCount 保留牌張數。
+ * @property reservedTileCount 保留牌張數。
  * @property scoreConfig 計分設定。
  * @property gameLength 對局長度。
  * @property minimumWinConstraint 最低和牌門檻。
@@ -141,7 +141,7 @@ class RoomPersistenceDtoTest {
 private data class ThirdPartyRuleConfig(
     val marker: String,
     override val initialHandSize: Int = 13,
-    override val deadTileCount: Int = 0,
+    override val reservedTileCount: Int = 0,
     override val scoreConfig: RiichiScoreConfig = RiichiScoreConfig(),
     override val gameLength: RiichiGameLength = RiichiGameLength.OneGame,
     override val minimumWinConstraint: Int = 0,

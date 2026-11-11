@@ -42,7 +42,7 @@ class RiichiWallProgressTest {
         ),
     ): TableState {
         val config = FakeMahjongRuleConfig(
-            deadTileCount = deadWallTiles.size,
+            reservedTileCount = deadWallTiles.size,
         )
 
         return FakeTableStateFactory.create(

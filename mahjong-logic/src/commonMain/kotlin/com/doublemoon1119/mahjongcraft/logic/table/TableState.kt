@@ -20,9 +20,9 @@ import kotlin.uuid.Uuid
  * @property id 當前遊戲的唯一識別碼
  * @property players 參與遊戲的玩家列表。
  * @property config 當前遊戲的規則配置，包含物理參數與計分規則。
- * @property tileWall 當前仍可依一般摸牌流程取得的活牌堆。支援開門布局時，王牌已在初始化階段排除並
- * 另存於 [reservedWallTiles]；因此 [TileWall.remainingCount] 就是剩餘活牌數，不得再次扣除
- * [MahjongRuleConfig.deadTileCount]。未支援開門布局的規則則由其初始化流程自行定義這個容器的內容。
+ * @property tileWall 當前仍可依一般摸牌流程取得的牌堆。支援開門布局時，規則保留牌已在初始化階段排除並
+ * 另存於 [reservedWallTiles]；因此 [TileWall.remainingCount] 就是一般摸牌流程的剩餘張數，不得再次扣除
+ * [MahjongRuleConfig.reservedTileCount]。未支援開門布局的規則則由其初始化流程自行定義這個容器的內容。
  * @property dealerPlayerId 本局權威莊家 Uuid；莊家身分與自風彼此獨立。
  * @property prevalentWind 當前的場風（圈風）。
  * @property roundNumber 當前的局數。

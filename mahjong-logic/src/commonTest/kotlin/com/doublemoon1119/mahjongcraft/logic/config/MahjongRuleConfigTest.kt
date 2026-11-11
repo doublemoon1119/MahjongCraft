@@ -49,11 +49,11 @@ class MahjongRuleConfigTest {
     }
 
     /**
-     * 測試當 deadTileCount 為負數時應拋出例外。
+     * 測試當 reservedTileCount 為負數時應拋出例外。
      */
     @Test
-    fun `test validate throws when deadTileCount is negative`() {
-        val config = FakeMahjongRuleConfig(deadTileCount = -1)
+    fun `test validate throws when reservedTileCount is negative`() {
+        val config = FakeMahjongRuleConfig(reservedTileCount = -1)
 
         assertFailsWith<IllegalArgumentException> { config.validate() }
     }

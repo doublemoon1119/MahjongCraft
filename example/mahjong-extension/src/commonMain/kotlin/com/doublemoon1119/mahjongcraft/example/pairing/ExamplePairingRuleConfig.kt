@@ -24,7 +24,7 @@ data class ExamplePairingRuleConfig(
     override val scoreConfig: ExamplePairingScoreConfig = ExamplePairingScoreConfig()
     override val gameLength: ExamplePairingGameLength = ExamplePairingGameLength(roundCount)
     override val initialHandSize: Int = 3
-    override val deadTileCount: Int = 0
+    override val reservedTileCount: Int = 0
     override val minimumWinConstraint: Int = 0
     override val minPlayers: Int = 2
     override val maxPlayers: Int = minOf(4, (wallTileValues.size * 4 - 1) / 3)

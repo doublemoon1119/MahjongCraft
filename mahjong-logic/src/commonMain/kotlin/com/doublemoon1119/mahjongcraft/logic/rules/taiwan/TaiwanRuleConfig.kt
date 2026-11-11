@@ -14,7 +14,7 @@ import com.doublemoon1119.mahjongcraft.logic.config.validate
  * @property fourWindsAbortiveDraw 是否在第一巡四位玩家依序打出相同風牌時流局。
  * @property kanClearsPassedWin 暗槓或加槓前後等待牌相同時，是否額外解除過水。
  * @property initialHandSize 初始手牌張數，預設為 16。
- * @property deadTileCount 王牌（死牌）張數，預設為 16。
+ * @property reservedTileCount 牌山尾端由規則保留、不供一般摸牌使用的張數，固定為 16。
  * @property minimumWinConstraint 起胡台數限制，預設為 0。
  * @property scoreConfig 積分配置，預設為 [TaiwanScoreConfig]。
  * @property gameLength 遊戲長度配置，預設使用 [TaiwanGameLength.OneGame]。
@@ -37,7 +37,7 @@ data class TaiwanRuleConfig(
     ),
 ) : MahjongRuleConfig {
     override val initialHandSize: Int = 16
-    override val deadTileCount: Int = 16
+    override val reservedTileCount: Int = 16
     override val minPlayers: Int = 4
     override val maxPlayers: Int = 4
     override val revealsClosedKanTiles: Boolean = false

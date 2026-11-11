@@ -79,7 +79,7 @@ class ThreePlayerRiichiRuleModuleTest {
         assertEquals(3, config.maxPlayers)
         assertEquals(35000, config.scoreConfig.initialScore)
         assertEquals(40000, config.scoreConfig.minPointsToWin)
-        assertEquals(14, config.deadTileCount)
+        assertEquals(14, config.reservedTileCount)
         assertEquals(8, config.rinshanTileCount)
         assertTrue(config.usesThreePlayerTiles)
     }

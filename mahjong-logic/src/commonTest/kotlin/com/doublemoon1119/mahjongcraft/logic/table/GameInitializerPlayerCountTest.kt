@@ -215,7 +215,7 @@ class GameInitializerPlayerCountTest {
             shuffledTiles = shuffledTiles,
             opening = opening,
             stacksPerSide = stacksPerSide,
-            deadWallStacks = 0,
+            reservedWallStacks = 0,
             sideCount = sideCount,
         )
     }
@@ -237,7 +237,7 @@ class GameInitializerPlayerCountTest {
  * 供牌山人數測試使用的最小規則設定。
  *
  * @property initialHandSize 每位玩家開局取得的手牌張數。
- * @property deadTileCount 牌山尾端保留的牌張數。
+ * @property reservedTileCount 牌山尾端保留的牌張數。
  * @property scoreConfig 測試用的分數設定。
  * @property gameLength 測試用的局數設定。
  * @property minimumWinConstraint 測試用的最低和牌條件。
@@ -248,7 +248,7 @@ class GameInitializerPlayerCountTest {
  */
 private data class VariableWallConfig(
     override val initialHandSize: Int = 1,
-    override val deadTileCount: Int = 0,
+    override val reservedTileCount: Int = 0,
     override val scoreConfig: ScoreConfig = object : ScoreConfig {
         override val initialScore: Int = 0
         override val bustThreshold: Int? = null

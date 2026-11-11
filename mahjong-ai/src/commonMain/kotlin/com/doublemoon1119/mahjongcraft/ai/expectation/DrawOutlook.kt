@@ -28,7 +28,7 @@ internal data class DrawOutlook(
          */
         fun from(snapshot: TableStateSnapshot, parameters: ExpectationParameters): DrawOutlook {
             val activePlayers = (snapshot.players.size - snapshot.finishedPlayerIds.size).coerceAtLeast(1)
-            val liveWall = (snapshot.tileWall.tiles.size - snapshot.config.deadTileCount).coerceAtLeast(0)
+            val liveWall = (snapshot.tileWall.tiles.size - snapshot.config.reservedTileCount).coerceAtLeast(0)
             return DrawOutlook(
                 ownDraws = liveWall / activePlayers,
                 ronChancesPerCycle = (activePlayers - 1) * parameters.opponentDiscardDiscount,

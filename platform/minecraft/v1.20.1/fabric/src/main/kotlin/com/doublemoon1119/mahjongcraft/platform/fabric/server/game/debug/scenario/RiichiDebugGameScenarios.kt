@@ -120,7 +120,7 @@ private object RiichiBeforeSuuchaRiichiScenario : DebugGameScenario {
         val opponentHands = List(PLAYER_COUNT - 1) { takeDistinctFillers(availableTiles, INITIAL_HAND_SIZE) }
         val opponentRiichiTiles = takeDistinctFillers(availableTiles, PLAYER_COUNT - 1)
         val consumedTiles = invokingStandingTiles + opponentHands.flatten() + opponentRiichiTiles + invokingDrawnTile
-        val initialReservedTiles = takeFirst(availableTiles, config.deadTileCount)
+        val initialReservedTiles = takeFirst(availableTiles, config.reservedTileCount)
         val initialLiveTiles = consumedTiles + availableTiles
         val templateLayout = requireNotNull(module.createWallLayout(module.config.maxPlayers)).resolve(inventory, opening)
         val structure = remapStructure(templateLayout, initialLiveTiles, initialReservedTiles)
@@ -238,7 +238,7 @@ private object RiichiBeforePaoPonScenario : DebugGameScenario {
         )
         val opponentHands = List(PLAYER_COUNT - 1) { takeTiles(availableTiles, PAO_OPPONENT_TILES) }
         val consumedTiles = invokingMelds.flatMap { it.tiles } + invokingStandingTiles + calledTile + opponentHands.flatten()
-        val initialReservedTiles = takeFirst(availableTiles, config.deadTileCount)
+        val initialReservedTiles = takeFirst(availableTiles, config.reservedTileCount)
         val liveTiles = winningDraws + availableTiles
         val initialLiveTiles = consumedTiles + liveTiles
         val templateLayout = requireNotNull(module.createWallLayout(module.config.maxPlayers)).resolve(inventory, opening)
@@ -404,7 +404,7 @@ private class RiichiBeforeAnkanScenario(
         val priorNormalDraws = List(establishedKans.size) { takeFirst(availableTiles, 1).single() }
         val dealerDraw = targetKan.last()
         val consumedFromFront = initialDealOrder + priorNormalDraws + dealerDraw
-        val initialReservedTiles = takeFirst(availableTiles, config.deadTileCount)
+        val initialReservedTiles = takeFirst(availableTiles, config.reservedTileCount)
         val initialLiveTiles = consumedFromFront + availableTiles
         val templateLayout = requireNotNull(module.createWallLayout(module.config.maxPlayers)).resolve(inventory, opening)
         val structure = remapStructure(templateLayout, initialLiveTiles, initialReservedTiles).toMutableMap()
@@ -710,7 +710,7 @@ private class RiichiBeforeMinkanScenario(
  *
  * 情境的用途是重現這一桌的狀況，不是換一套規則，因此**整份設定原封不動沿用**，不用預設值覆蓋——對局
  * 長度、紅寶牌、供託規則與初始點數都必須維持玩家在房間裡選的那一份。情境需要的張數與節奏本來就全部由
- * 設定推導（牌張工廠、`deadTileCount`、`dealBatchSizes()`、初始點數），不在此改回預設值。
+ * 設定推導（牌張工廠、`reservedTileCount`、`dealBatchSizes()`、初始點數），不在此改回預設值。
  *
  * @param currentGame 目前的四人日麻對局。
  * @return 目前桌況所持有的原設定物件。

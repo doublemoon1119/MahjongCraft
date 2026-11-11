@@ -132,7 +132,7 @@ class StartGameUseCase(
         // 是先砌好牌牆才擲骰決定開門位置，呈現層依賴這個固定呼叫順序（先牌牆、後擲骰），這裡不能對調。
         val dealerSeatIndex = tableState.dealerIndex
         initializationResult.initialPhysicalWallLayout?.let { layout ->
-            val deadWallTileIds = tableState.reservedWallTiles.map { tile -> tile.id }.toSet()
+            val reservedWallTileIds = tableState.reservedWallTiles.map { tile -> tile.id }.toSet()
             val openingDiceCounts = tableState.openingDiceRolls.map { it.dice.values.size }
             val revealedTileIds = moduleRegistry.getModule(tableState.config).publicFaceUpWallTileIds(tableState, componentRegistry)
             presentationPublisher.publishWallStructure(
@@ -140,7 +140,7 @@ class StartGameUseCase(
                 requireNotNull(initializationResult.wallStructure),
                 layout,
                 dealerSeatIndex,
-                deadWallTileIds,
+                reservedWallTileIds,
                 openingDiceCounts,
                 revealedTileIds = revealedTileIds,
             )
