@@ -2,10 +2,10 @@ package com.doublemoon1119.mahjongcraft.bundled
 
 import com.doublemoon1119.mahjongcraft.flow.common.game.event.PublicGameActionIds
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.PendingRuleDecision
-import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionConfig
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionInputSpec
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionStep
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionSubmission
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionTimeSource
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionTiming
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionWinOutcome
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.accepts
@@ -17,7 +17,6 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.RuleDecisi
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.RuleDecisionResolver
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.RuleDecisionWin
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
-import com.doublemoon1119.mahjongcraft.logic.config.MahjongRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.module.BuiltInRuleModuleIds
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TAIWAN_REVEAL_FLOWER_ACTION
@@ -36,15 +35,11 @@ import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.logic.table.TileReplacementRounds
 import com.doublemoon1119.mahjongcraft.logic.table.TurnPhase
 import com.doublemoon1119.mahjongcraft.logic.table.drawDealerOpeningTile
-import kotlin.time.Duration.Companion.seconds
 import kotlin.uuid.Uuid
 
 /** 台灣麻將局前補花與特殊花胡的可恢復規則選擇流程。 */
 object TaiwanFlowerRuleDecisionResolver : RuleDecisionResolver {
     override val ruleModuleId: String = BuiltInRuleModuleIds.TAIWAN
-
-    /** 特殊花胡需要玩家接受或放棄，因此使用一般規則選擇時間。 */
-    override fun ruleDecisionConfig(ruleConfig: MahjongRuleConfig) = RuleDecisionConfig(30.seconds).takeIf { ruleConfig is TaiwanRuleConfig }
 
     /** 發牌後若有人持有花牌，先建立不需玩家輸入的補花步驟。 */
     override fun begin(
@@ -278,6 +273,7 @@ object TaiwanFlowerRuleDecisionResolver : RuleDecisionResolver {
                     passOptionId = TaiwanFlowerRuleDecisionIds.PASS_FLOWER_WIN,
                 ),
             ),
+            timeSource = RuleDecisionTimeSource.ACTION_TIME,
         )
     }
 }

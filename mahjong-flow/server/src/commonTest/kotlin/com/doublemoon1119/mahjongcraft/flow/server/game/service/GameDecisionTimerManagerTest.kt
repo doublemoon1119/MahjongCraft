@@ -7,6 +7,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.PlayerDecisionPhas
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionConfig
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionInputSpec
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionStep
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionTimeSource
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionTiming
 import com.doublemoon1119.mahjongcraft.flow.common.time.MonotonicClock
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.FakeGameRepository
@@ -271,6 +272,27 @@ class GameDecisionTimerManagerTest {
         assertEquals(setOf(playerId), updatedGame.forcedAutoPlayPlayerIds)
     }
 
+    /** 比照一般動作計時的規則選擇逾時時，會用完共用保留時間並進入強制自動操作。 */
+    @Test
+    fun `test rule action timeout clears reserve pool`() = runTest {
+        val fixtures = Fixtures()
+        val playerId = Uuid.random()
+        val game = fixtures.ruleDecisionGame(playerId, RuleDecisionTimeSource.ACTION_TIME)
+        fixtures.repository.setGame(game)
+        fixtures.manager.reconcile(game.id)
+        fixtures.clock.now = 31_000.milliseconds
+
+        val claimed = fixtures.manager.claimTimedOutDecisions()
+
+        assertEquals(
+            listOf(TimedOutPlayerDecision(game.id, playerId, PlayerDecisionPhase.RULE_ACTION)),
+            claimed,
+        )
+        val updatedGame = fixtures.repository.getGame(game.id)!!
+        assertEquals(0.milliseconds, updatedGame.remainingReserveByPlayerId.getValue(playerId))
+        assertEquals(setOf(playerId), updatedGame.forcedAutoPlayPlayerIds)
+    }
+
     /** 驗證離開規則選擇階段時，不把此階段未使用的保留時間零值寫回玩家共用時間池。 */
     @Test
     fun `test leaving rule decision does not overwrite reserve pool`() = runTest {
@@ -418,7 +440,10 @@ class GameDecisionTimerManagerTest {
          * @param playerId 玩家識別碼。
          * @return 該玩家等待局前確認的測試遊戲。
          */
-        fun ruleDecisionGame(playerId: Uuid): Game {
+        fun ruleDecisionGame(
+            playerId: Uuid,
+            timeSource: RuleDecisionTimeSource = RuleDecisionTimeSource.RULE_DECISION_TIME,
+        ): Game {
             val player = FakeMahjongPlayerFactory.create(id = playerId)
             return Game(
                 tableState = FakeTableStateFactory.create(players = listOf(player)),
@@ -428,6 +453,7 @@ class GameDecisionTimerManagerTest {
                         stepId = "test:step",
                         stepIndex = 0,
                         inputSpecsByPlayerId = mapOf(playerId to RuleDecisionInputSpec.Confirmation),
+                        timeSource = timeSource,
                     ),
                     timing = RuleDecisionTiming.ROUND_START,
                 ),

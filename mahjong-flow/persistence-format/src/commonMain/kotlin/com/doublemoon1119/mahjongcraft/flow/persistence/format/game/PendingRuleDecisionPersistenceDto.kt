@@ -9,6 +9,7 @@ import kotlinx.serialization.Serializable
  * @property timing 視窗開啟的時間點。
  * @property stepId 選擇步驟的穩定識別碼。
  * @property stepIndex 選擇步驟在流程中的索引。
+ * @property timeSource 玩家提交這個步驟時使用的思考時間來源。
  * @property inputSpecsByPlayerId 各玩家的輸入規格，鍵為玩家 UUID 字串。
  * @property submissionsByPlayerId 各玩家已提交的內容，鍵為玩家 UUID 字串。
  */
@@ -18,6 +19,7 @@ data class PendingRuleDecisionPersistenceDto(
     val timing: RuleDecisionTimingPersistenceDto,
     val stepId: String,
     val stepIndex: Int,
+    val timeSource: RuleDecisionTimeSourcePersistenceDto,
     val inputSpecsByPlayerId: Map<String, RuleDecisionInputSpecPersistenceDto>,
     val submissionsByPlayerId: Map<String, RuleDecisionSubmissionPersistenceDto>,
 )

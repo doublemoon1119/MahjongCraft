@@ -111,10 +111,10 @@ class RulePresentationRequirementsTest {
         assertNotNull(RulePresentationRequirements.unmetRequirement(adjustedModule(providesLayout = false), playerCount = 4))
     }
 
-    /** 內建台麻的設定呈現不可選，因此不能用於房間設定與開局。 */
+    /** 內建日麻與台麻都有可選且可呈現的設定，因此都能用於房間與開局。 */
     @Test
-    fun `unselectable built in rule is not playable`() {
-        assertFalse(RulePresentationRequirements.isPlayable(TaiwanRuleConfig(), bundledPresentations(), bundledModules()))
+    fun `selectable built in rules are playable`() {
+        assertTrue(RulePresentationRequirements.isPlayable(TaiwanRuleConfig(), bundledPresentations(), bundledModules()))
         assertTrue(RulePresentationRequirements.isPlayable(RiichiRuleConfig(), bundledPresentations(), bundledModules()))
     }
 

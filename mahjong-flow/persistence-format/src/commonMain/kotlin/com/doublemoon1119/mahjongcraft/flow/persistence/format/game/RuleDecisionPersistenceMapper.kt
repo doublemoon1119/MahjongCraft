@@ -4,6 +4,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.PendingRuleDecisio
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionInputSpec
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionStep
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionSubmission
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionTimeSource
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionTiming
 import kotlin.uuid.Uuid
 
@@ -17,6 +18,7 @@ fun PendingRuleDecision.toPersistenceDto(): PendingRuleDecisionPersistenceDto = 
     timing = timing.toPersistenceDto(),
     stepId = stepId,
     stepIndex = stepIndex,
+    timeSource = step.timeSource.toPersistenceDto(),
     inputSpecsByPlayerId = inputSpecsByPlayerId.mapKeys { it.key.toString() }.mapValues { it.value.toPersistenceDto() },
     submissionsByPlayerId = submissionsByPlayerId.mapKeys { it.key.toString() }.mapValues { it.value.toPersistenceDto() },
 )
@@ -33,6 +35,7 @@ fun PendingRuleDecisionPersistenceDto.toDomain(): PendingRuleDecision = PendingR
         stepId = stepId,
         stepIndex = stepIndex,
         inputSpecsByPlayerId = inputSpecsByPlayerId.mapKeys { Uuid.parse(it.key) }.mapValues { it.value.toDomain() },
+        timeSource = timeSource.toDomain(),
     ),
     submissionsByPlayerId = submissionsByPlayerId.mapKeys { Uuid.parse(it.key) }.mapValues { it.value.toDomain() },
 )
@@ -50,6 +53,12 @@ fun RuleDecisionTiming.toPersistenceDto(): RuleDecisionTimingPersistenceDto = Ru
  * @return 同名的時間點。
  */
 fun RuleDecisionTimingPersistenceDto.toDomain(): RuleDecisionTiming = RuleDecisionTiming.valueOf(name)
+
+/** 將規則選擇的思考時間來源轉成持久化資料。 */
+private fun RuleDecisionTimeSource.toPersistenceDto(): RuleDecisionTimeSourcePersistenceDto = RuleDecisionTimeSourcePersistenceDto.valueOf(name)
+
+/** 將持久化資料還原成規則選擇的思考時間來源。 */
+private fun RuleDecisionTimeSourcePersistenceDto.toDomain(): RuleDecisionTimeSource = RuleDecisionTimeSource.valueOf(name)
 
 /** 將規則選擇輸入規格轉成存檔 DTO。 */
 private fun RuleDecisionInputSpec.toPersistenceDto(): RuleDecisionInputSpecPersistenceDto = when (this) {

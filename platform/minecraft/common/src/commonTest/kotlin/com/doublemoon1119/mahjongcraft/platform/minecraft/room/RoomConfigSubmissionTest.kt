@@ -91,10 +91,12 @@ class RoomConfigSubmissionTest {
         )
     }
 
-    /** 不可選的規則不能用於房間設定。 */
+    /** 台灣麻將可由房間畫面選用，且使用自己的預設設定。 */
     @Test
-    fun `unselectable rules are unavailable`() {
-        assertEquals(RoomConfigSubmission.Result.RuleUnavailable, review(current.copy(ruleConfig = TaiwanRuleConfig())))
+    fun `Taiwan rule is available`() {
+        val switched = current.copy(ruleConfig = TaiwanRuleConfig())
+
+        assertEquals(RoomConfigSubmission.Result.Accepted(switched), review(switched))
     }
 
     /** 已登記規則但沒有設定呈現時，不會因查不到 schema 而拋例外。 */

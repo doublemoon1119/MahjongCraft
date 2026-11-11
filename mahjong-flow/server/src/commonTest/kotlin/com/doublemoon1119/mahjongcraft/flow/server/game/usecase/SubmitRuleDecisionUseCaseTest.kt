@@ -9,6 +9,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionConfig
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionInputSpec
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionStep
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionSubmission
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionTimeSource
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionTiming
 import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.RuleContractViolationException
@@ -368,6 +369,52 @@ class SubmitRuleDecisionUseCaseTest {
     }
 
     @Test
+    fun `an action-timed submission does not require separate rule timing`() = runTest {
+        val repository = FakeGameRepository()
+        val moduleRegistry = MahjongModuleRegistryImpl().apply { registerBundledRuleModules() }
+        val table = FakeTableStateFactory.create(
+            players = listOf(FakeMahjongPlayerFactory.create(id = playerId)),
+            config = RiichiRuleConfig(),
+        )
+        repository.setGame(
+            Game(
+                tableState = table,
+                flowConfig = GameFlowConfig(),
+                pendingRuleDecision = PendingRuleDecision.open(
+                    step = RuleDecisionStep(
+                        stepId = "test:action-timed-confirm",
+                        stepIndex = 0,
+                        inputSpecsByPlayerId = mapOf(playerId to RuleDecisionInputSpec.Confirmation),
+                        timeSource = RuleDecisionTimeSource.ACTION_TIME,
+                    ),
+                    timing = RuleDecisionTiming.ROUND_START,
+                ),
+            ),
+        )
+        val resolverRegistry = RuleDecisionResolverRegistry().apply { register(ActionTimedCompletionResolver) }
+        val useCase = SubmitRuleDecisionUseCase(
+            gameRepository = repository,
+            moduleRegistry = moduleRegistry,
+            resolverRegistry = resolverRegistry,
+            snapshotSynchronizer = GameSnapshotSynchronizer(
+                repository,
+                FakeGameSnapshotRepository(),
+                GameVisibilityPolicyImpl(moduleRegistry, componentRegistry = bundledCoreExtensionRegistries().componentRegistry),
+            ),
+            presentationPublisher = FakeGamePresentationPublisher(),
+            winPresentationStager = RuleDecisionWinPresentationStager(WinPresentationHandoff(), WinSettlementDetailResolverRegistry(bundledCoreExtensionRegistries().componentRegistry)),
+            handSortPreferenceStore = HandSortPreferenceStore(),
+        )
+
+        val result = repository.runAsSingleWrite(table.id) {
+            useCase(table.id, playerId, repository.openWindowId(table.id), RuleDecisionSubmission.Confirmed)
+        }
+
+        assertIs<Outcome.Success<Unit>>(result)
+        assertNull(repository.getGame(table.id)?.pendingRuleDecision)
+    }
+
+    @Test
     fun `pending player rule decision with disabled policy aborts despite stale timing`() = runTest {
         val repository = FakeGameRepository()
         val moduleRegistry = MahjongModuleRegistryImpl().apply { registerBundledRuleModules() }
@@ -571,6 +618,19 @@ class SubmitRuleDecisionUseCaseTest {
                 inputSpecsByPlayerId = mapOf(tableState.players.first().id to RuleDecisionInputSpec.Confirmation),
             ),
         )
+    }
+
+    /** 測試用解析器：使用一般行動時間的選擇完成後直接關閉視窗。 */
+    private object ActionTimedCompletionResolver : RuleDecisionResolver {
+        override val ruleModuleId: String = BuiltInRuleModuleIds.RIICHI
+
+        override fun begin(timing: RuleDecisionTiming, tableState: TableState, ruleModule: MahjongRuleModule<*>): RuleDecisionStep? = null
+
+        override fun resolve(
+            tableState: TableState,
+            decision: PendingRuleDecision,
+            ruleModule: MahjongRuleModule<*>,
+        ): RuleDecisionResolution = RuleDecisionResolution(tableState, nextStep = null)
     }
 
     /** 測試用換牌解析器，完成後交換兩位玩家各提交的一張牌。 */

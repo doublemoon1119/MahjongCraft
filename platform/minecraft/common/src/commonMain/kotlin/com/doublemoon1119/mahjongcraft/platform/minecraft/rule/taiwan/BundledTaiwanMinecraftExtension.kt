@@ -7,7 +7,6 @@ import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanDiscardReadiness
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanGameAction
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanPublicIndicatorIds
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanReadyKind
-import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.tile.TaiwanTileTypes
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.metadata.MahjongCraftMetadata
@@ -23,6 +22,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.Minec
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.PublicPlayerIndicatorDisplayRegistrar
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.RoundInfoLineDisplayRegistrar
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.RoundOutcomeDisplayNameRegistrar
+import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.RuleCatalogueRegistrar
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.RuleModuleDisplayNameRegistrar
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.TileEmojiRegistrar
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.TileLabelRegistrar
@@ -31,14 +31,8 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.DecisionStatu
 import com.doublemoon1119.mahjongcraft.platform.minecraft.extension.MinecraftMahjongExtension
 import com.doublemoon1119.mahjongcraft.platform.minecraft.player.PublicPlayerIndicatorDisplay
 import com.doublemoon1119.mahjongcraft.platform.minecraft.player.PublicPlayerIndicatorDisplayDefinition
-import com.doublemoon1119.mahjongcraft.platform.minecraft.room.BuiltInGameConfigFields.RULE
-import com.doublemoon1119.mahjongcraft.platform.minecraft.room.BuiltInGameConfigFields.SCORE
-import com.doublemoon1119.mahjongcraft.platform.minecraft.room.BuiltInGameConfigFields.categories
-import com.doublemoon1119.mahjongcraft.platform.minecraft.room.BuiltInGameConfigFields.readOnlyBoolean
-import com.doublemoon1119.mahjongcraft.platform.minecraft.room.BuiltInGameConfigFields.readOnlyInt
-import com.doublemoon1119.mahjongcraft.platform.minecraft.room.BuiltInGameConfigFields.translationKey
-import com.doublemoon1119.mahjongcraft.platform.minecraft.room.GameConfigPresentationDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.RuleModuleDisplayNameDefinition
+import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.taiwan.catalogue.TaiwanCatalogueProvider
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.PresentationValue
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.RoundOutcomeDisplayNameDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.WinSettlementDetailTextFormatterDefinition
@@ -238,26 +232,12 @@ object BundledTaiwanMinecraftExtension : MinecraftMahjongExtension {
     override fun registerGameConfigPresentations(registry: GameConfigPresentationRegistrar) {
         registry.register(taiwanGameConfigPresentation())
     }
-}
 
-/**
- * 建立唯讀台麻設定畫面的 schema；台麻目前不能選用，只顯示固定的設定值。
- *
- * @return 不可選取且欄位唯讀的台麻設定呈現定義。
- */
-private fun taiwanGameConfigPresentation(): GameConfigPresentationDefinition = GameConfigPresentationDefinition(
-    ruleModuleId = BuiltInRuleModuleIds.TAIWAN,
-    descriptionTranslationKey = translationKey("rule.taiwan.description"),
-    selectable = false,
-    unavailableReasonTranslationKey = translationKey("rule.taiwan.unavailable"),
-    defaultRuleConfig = ::TaiwanRuleConfig,
-    categories = categories(),
-    fields = listOf(
-        readOnlyBoolean("use_flower_tiles", RULE) { (it.ruleConfig as TaiwanRuleConfig).useFlowerTiles },
-        readOnlyInt("minimum_win_constraint", RULE) { it.ruleConfig.minimumWinConstraint },
-        readOnlyInt("initial_score", SCORE) { it.ruleConfig.scoreConfig.initialScore },
-    ),
-)
+    /** 登記台灣麻將預設台表、特殊胡牌與流局說明。 */
+    override fun registerRuleCatalogues(registry: RuleCatalogueRegistrar) {
+        registry.register(TaiwanCatalogueProvider())
+    }
+}
 
 /**
  * 建立四季花牌標籤：右上紅色中文字、左上黑色排序數字，永遠顯示（理由見 [BundledTaiwanMinecraftExtension.registerTileLabels]）。

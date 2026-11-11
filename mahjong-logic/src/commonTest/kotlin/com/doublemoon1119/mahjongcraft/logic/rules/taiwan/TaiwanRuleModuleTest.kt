@@ -2,11 +2,13 @@ package com.doublemoon1119.mahjongcraft.logic.rules.taiwan
 
 import com.doublemoon1119.mahjongcraft.logic.base.Hand
 import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
+import com.doublemoon1119.mahjongcraft.logic.base.MeldType
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.logic.base.TileFaceView
 import com.doublemoon1119.mahjongcraft.logic.component.BuiltInComponentOwners
 import com.doublemoon1119.mahjongcraft.logic.component.ComponentSet
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
+import com.doublemoon1119.mahjongcraft.logic.module.MeldCompletedContext
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.layout.TaiwanWallLayout
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.opening.TaiwanWallOpeningPolicy
 import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayer
@@ -126,13 +128,63 @@ class TaiwanRuleModuleTest {
     }
 
     /**
-     * 驗證台灣麻將目前沒有鳴牌後需要清除的規則特有狀態，不做任何變更。
+     * 驗證預設設定不會在副露或槓完成後改變規則狀態。
      */
     @Test
-    fun `test onMeldClaimed changes nothing`() {
+    fun `test onMeldCompleted changes nothing by default`() {
         val players = listOf(FakeMahjongPlayerFactory.create(), FakeMahjongPlayerFactory.create())
 
-        assertTrue(module.onMeldClaimed(players).isEmpty())
+        assertTrue(module.onMeldCompleted(MeldCompletedContext(players, players, players.first().id, MeldType.Chi)).isEmpty())
+    }
+
+    /** 啟用選項後，暗槓前後等待牌相同時會解除動作者的過水。 */
+    @Test
+    fun `closed kan clears passed win when waits stay unchanged`() {
+        val enabled = TaiwanRuleModule("mahjongcraft:taiwan", TaiwanRuleConfig(kanClearsPassedWin = true))
+        val player = FakeMahjongPlayerFactory.create(
+            hand = Hand(tiles = waitingTiles()),
+            components = ComponentSet.EMPTY.with(TaiwanPlayerComponents.PASSED_WIN, Unit),
+        )
+        val players = listOf(player)
+
+        val patch = enabled.onMeldCompleted(MeldCompletedContext(players, players, player.id, MeldType.ClosedKan)).getValue(player.id)
+
+        assertNull(patch.applyTo(player.components, BuiltInComponentOwners.PLAYER)[TaiwanPlayerComponents.PASSED_WIN])
+    }
+
+    /** 啟用選項後，槓牌前後等待牌不同仍須保留過水。 */
+    @Test
+    fun `closed kan keeps passed win when waits change`() {
+        val enabled = TaiwanRuleModule("mahjongcraft:taiwan", TaiwanRuleConfig(kanClearsPassedWin = true))
+        val before = FakeMahjongPlayerFactory.create(
+            hand = Hand(tiles = waitingTiles()),
+            components = ComponentSet.EMPTY.with(TaiwanPlayerComponents.PASSED_WIN, Unit),
+        )
+        val after = before.copy(hand = Hand(tiles = waitingTiles().dropLast(1) + tile(Tile.Honor.East)))
+
+        assertTrue(
+            enabled.onMeldCompleted(
+                MeldCompletedContext(
+                    playersBefore = listOf(before),
+                    playersAfter = listOf(after),
+                    actorPlayerId = before.id,
+                    meldType = MeldType.ClosedKan,
+                ),
+            ).isEmpty(),
+        )
+    }
+
+    /** 即使選項已啟用，吃牌也不會額外解除過水。 */
+    @Test
+    fun `chi does not clear passed win`() {
+        val enabled = TaiwanRuleModule("mahjongcraft:taiwan", TaiwanRuleConfig(kanClearsPassedWin = true))
+        val player = FakeMahjongPlayerFactory.create(
+            hand = Hand(tiles = waitingTiles()),
+            components = ComponentSet.EMPTY.with(TaiwanPlayerComponents.PASSED_WIN, Unit),
+        )
+        val players = listOf(player)
+
+        assertTrue(enabled.onMeldCompleted(MeldCompletedContext(players, players, player.id, MeldType.Chi)).isEmpty())
     }
 
     /**

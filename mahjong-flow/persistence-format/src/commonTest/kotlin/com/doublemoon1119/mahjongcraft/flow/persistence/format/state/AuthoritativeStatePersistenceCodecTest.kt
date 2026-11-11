@@ -12,6 +12,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionConfig
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionInputSpec
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionStep
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionSubmission
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionTimeSource
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionTiming
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionWinOutcome
 import com.doublemoon1119.mahjongcraft.flow.common.room.model.Room
@@ -137,6 +138,7 @@ class AuthoritativeStatePersistenceCodecTest {
                 inputSpecsByPlayerId = mapOf(
                     participantId to RuleDecisionInputSpec.SingleChoice(listOf("mahjongcraft:a", "mahjongcraft:b")),
                 ),
+                timeSource = RuleDecisionTimeSource.ACTION_TIME,
             ),
             timing = RuleDecisionTiming.BEFORE_EXHAUSTIVE_DRAW,
         ).copy(submissionsByPlayerId = mapOf(participantId to RuleDecisionSubmission.Choice("mahjongcraft:b")))

@@ -6,6 +6,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameCommand
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameError
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.PlayerDecisionPhase
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionSubmission
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionTimeSource
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.GamePresentationPublisher
 import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkJson
@@ -218,13 +219,20 @@ class MahjongTableGameActionService(
             playerId in ruleDecision.participantPlayerIds &&
             playerId !in ruleDecision.completedPlayerIds
         ) {
-            PlayerDecisionPhase.RULE_DECISION
+            when (ruleDecision.step.timeSource) {
+                RuleDecisionTimeSource.RULE_DECISION_TIME -> PlayerDecisionPhase.RULE_DECISION
+                RuleDecisionTimeSource.ACTION_TIME -> PlayerDecisionPhase.RULE_ACTION
+            }
         } else {
             actionContextResolver.resolveFor(state, playerId)?.phase
         } ?: return null
         val prompt = promptFactory.create(gameId, playerId, phase) ?: return null
         return if (prompt.decisionKey == selection.decisionKey) {
-            ResolvedSelectionPrompt(gameId, prompt, ruleDecision?.id.takeIf { phase == PlayerDecisionPhase.RULE_DECISION })
+            ResolvedSelectionPrompt(
+                gameId,
+                prompt,
+                ruleDecision?.id.takeIf { phase == PlayerDecisionPhase.RULE_DECISION || phase == PlayerDecisionPhase.RULE_ACTION },
+            )
         } else {
             null
         }

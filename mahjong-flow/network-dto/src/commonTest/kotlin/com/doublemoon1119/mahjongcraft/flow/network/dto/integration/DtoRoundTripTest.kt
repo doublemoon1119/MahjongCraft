@@ -324,7 +324,7 @@ class DtoRoundTripTest {
         )
         val tableState = FakeTableStateFactory.create(
             players = listOf(taiwanPlayer),
-            config = TaiwanRuleConfig(),
+            config = TaiwanRuleConfig(kanClearsPassedWin = true),
         )
         val snapshot = tableState.toSnapshot(setOf(taiwanPlayer.id))
         val snapshotDto = snapshot.toDto(registries)

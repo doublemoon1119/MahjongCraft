@@ -7,6 +7,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.PendingRuleDecisio
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionConfig
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionInputSpec
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionStep
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionTimeSource
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionTiming
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.RuleContractViolationException
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.RuleDecisionResolution
@@ -111,6 +112,19 @@ class BeginRuleDecisionUseCaseTest {
         assertEquals("test:player", repository.getGame(game.tableState.id)?.pendingRuleDecision?.stepId)
     }
 
+    /** 比照一般遊戲動作計時的規則選擇，不需要另外提供規則選擇時間。 */
+    @Test
+    fun `action timed rule decision starts without separate timing configuration`() = runTest {
+        val repository = FakeGameRepository()
+        val game = game()
+        repository.setGame(game)
+        val resolvers = RuleDecisionResolverRegistry().apply { register(ActionTimedResolver) }
+
+        invoke(repository, resolvers)
+
+        assertEquals("test:action_timed", repository.getGame(game.tableState.id)?.pendingRuleDecision?.stepId)
+    }
+
     /** 規則設定停用玩家選擇時，即使殘留舊時間也會拒絕玩家步驟。 */
     @Test
     fun `disabled rule decision rejects stale timing configuration`() = runTest {
@@ -194,6 +208,20 @@ class BeginRuleDecisionUseCaseTest {
                 stepId = "test:player",
                 stepIndex = 0,
                 inputSpecsByPlayerId = mapOf(tableState.players.first().id to RuleDecisionInputSpec.Confirmation),
+            )
+
+            override fun resolve(tableState: TableState, decision: PendingRuleDecision, ruleModule: MahjongRuleModule<*>) = RuleDecisionResolution(tableState, null)
+        }
+
+        /** 建立比照一般遊戲動作計時的玩家選擇。 */
+        object ActionTimedResolver : RuleDecisionResolver {
+            override val ruleModuleId: String = BuiltInRuleModuleIds.RIICHI
+
+            override fun begin(timing: RuleDecisionTiming, tableState: TableState, ruleModule: MahjongRuleModule<*>) = RuleDecisionStep(
+                stepId = "test:action_timed",
+                stepIndex = 0,
+                inputSpecsByPlayerId = mapOf(tableState.players.first().id to RuleDecisionInputSpec.Confirmation),
+                timeSource = RuleDecisionTimeSource.ACTION_TIME,
             )
 
             override fun resolve(tableState: TableState, decision: PendingRuleDecision, ruleModule: MahjongRuleModule<*>) = RuleDecisionResolution(tableState, null)

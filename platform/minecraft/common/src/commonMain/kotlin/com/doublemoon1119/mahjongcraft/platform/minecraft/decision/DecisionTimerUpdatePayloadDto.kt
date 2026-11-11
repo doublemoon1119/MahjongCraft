@@ -6,6 +6,7 @@ import kotlinx.serialization.Serializable
 /** 將流程決策階段轉成網路 DTO。 */
 fun PlayerDecisionPhase.toDto(): PlayerDecisionPhaseDto = when (this) {
     PlayerDecisionPhase.RULE_DECISION -> PlayerDecisionPhaseDto.RULE_DECISION
+    PlayerDecisionPhase.RULE_ACTION -> PlayerDecisionPhaseDto.RULE_ACTION
     PlayerDecisionPhase.OWN_TURN -> PlayerDecisionPhaseDto.OWN_TURN
     PlayerDecisionPhase.DISCARD_REACTION -> PlayerDecisionPhaseDto.DISCARD_REACTION
     PlayerDecisionPhase.ROBBING_REACTION -> PlayerDecisionPhaseDto.ROBBING_REACTION
@@ -14,6 +15,7 @@ fun PlayerDecisionPhase.toDto(): PlayerDecisionPhaseDto = when (this) {
 /** 將網路決策階段還原成 flow common 型別。 */
 fun PlayerDecisionPhaseDto.toDomain(): PlayerDecisionPhase = when (this) {
     PlayerDecisionPhaseDto.RULE_DECISION -> PlayerDecisionPhase.RULE_DECISION
+    PlayerDecisionPhaseDto.RULE_ACTION -> PlayerDecisionPhase.RULE_ACTION
     PlayerDecisionPhaseDto.OWN_TURN -> PlayerDecisionPhase.OWN_TURN
     PlayerDecisionPhaseDto.DISCARD_REACTION -> PlayerDecisionPhase.DISCARD_REACTION
     PlayerDecisionPhaseDto.ROBBING_REACTION -> PlayerDecisionPhase.ROBBING_REACTION

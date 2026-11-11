@@ -338,16 +338,17 @@ interface MahjongRuleModule<T : MahjongRuleConfig> {
     fun onPlayerDiscarded(player: MahjongPlayer): ComponentPatch = ComponentPatch()
 
     /**
-     * 因應「有玩家完成一次鳴牌（吃/碰/槓）」事件，回傳各玩家規則資料的變更。
+     * 有玩家完成吃、碰或槓後，回傳各玩家規則資料的變更。
      *
-     * 例如日麻：任何一次鳴牌都會讓場上所有玩家的一發資格失效（不只鳴牌的當事人）。
-     * 鍵必須是這局的玩家；沒有列出的玩家不變。變更帶著讀到的舊值；不符合契約時本局以規則錯誤中止。
-     * 鳴牌當下要收付點數請使用 [createActionScoringPolicy]。預設不做任何變更。
+     * 吃、碰、明槓、暗槓與加槓都會呼叫一次。例如日麻的任何副露或槓都會讓全桌的一發資格失效；
+     * 台麻可比較槓牌前後的等待牌。鍵必須是這局的玩家，沒有列出的玩家不變。變更以
+     * [MeldCompletedContext.playersAfter] 的組件為基準；不符合契約時本局以規則錯誤中止。
+     * 動作當下要收付點數請使用 [createActionScoringPolicy]。預設不做任何變更。
      *
-     * @param players 鳴牌動作套用之後的完整玩家列表。
+     * @param context 本次完成的副露或槓及其前後玩家狀態。
      * @return 依玩家 ID 排列的組件變更。
      */
-    fun onMeldClaimed(players: List<MahjongPlayer>): Map<Uuid, ComponentPatch> = emptyMap()
+    fun onMeldCompleted(context: MeldCompletedContext): Map<Uuid, ComponentPatch> = emptyMap()
 
     /**
      * 玩家鳴取他家捨牌（吃／碰／明槓）、副露尚未套用到手牌之前，讓規則依這次鳴牌更新該玩家的規則狀態。

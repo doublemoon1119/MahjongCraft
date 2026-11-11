@@ -11,6 +11,7 @@ import com.doublemoon1119.mahjongcraft.logic.config.RonResolution
 import com.doublemoon1119.mahjongcraft.logic.config.ScoreConfig
 import com.doublemoon1119.mahjongcraft.logic.module.ExhaustiveDrawSettlementResult
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
+import com.doublemoon1119.mahjongcraft.logic.module.MeldCompletedContext
 import com.doublemoon1119.mahjongcraft.logic.module.PointPotCollection
 import com.doublemoon1119.mahjongcraft.logic.module.RevealedHandSettlement
 import com.doublemoon1119.mahjongcraft.logic.module.WinResolutionResult
@@ -121,7 +122,7 @@ class GameInitializerPlayerCountTest {
         override fun createHandValueContextCalculator() = delegate.createHandValueContextCalculator()
         override fun onPlayerDrew(player: MahjongPlayer) = delegate.onPlayerDrew(player)
         override fun onPlayerDiscarded(player: MahjongPlayer) = delegate.onPlayerDiscarded(player)
-        override fun onMeldClaimed(players: List<MahjongPlayer>) = delegate.onMeldClaimed(players)
+        override fun onMeldCompleted(context: MeldCompletedContext) = delegate.onMeldCompleted(context)
         override fun declareTsumo(tableState: TableState, player: MahjongPlayer): WinResolutionResult? = delegate.declareTsumo(tableState, player)
 
         override fun declareRon(

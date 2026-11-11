@@ -38,6 +38,7 @@ import com.doublemoon1119.mahjongcraft.logic.component.ComponentRegistry
 import com.doublemoon1119.mahjongcraft.logic.module.DiscardReactionCandidate
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
+import com.doublemoon1119.mahjongcraft.logic.module.MeldCompletedContext
 import com.doublemoon1119.mahjongcraft.logic.module.WinResolutionResult
 import com.doublemoon1119.mahjongcraft.logic.table.DrawSource
 import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayer
@@ -593,18 +594,25 @@ class RespondToDiscardUseCase(
             after = state.copy(players = playersAfterMeld),
             source = "Meld claim",
         )
-        val playersAfterMeldClaimed = ruleComponents.applyPlayerPatches(
+        val playersAfterMeldCompleted = ruleComponents.applyPlayerPatches(
             tableState = stateAfterMeld,
             players = stateAfterMeld.players,
-            patches = module.onMeldClaimed(stateAfterMeld.players),
-            source = "onMeldClaimed",
+            patches = module.onMeldCompleted(
+                MeldCompletedContext(
+                    playersBefore = state.copy(players = players).players,
+                    playersAfter = stateAfterMeld.players,
+                    actorPlayerId = winnerId,
+                    meldType = meldType,
+                ),
+            ),
+            source = "onMeldCompleted",
         )
-        val winnerIndex = playersAfterMeldClaimed.indexOfFirst { it.id == winnerId }
+        val winnerIndex = playersAfterMeldCompleted.indexOfFirst { it.id == winnerId }
         val originalState = state.copy(players = players)
         val scored = ActionScoringApplier.apply(
             before = originalState,
             after = state.copy(
-                players = playersAfterMeldClaimed,
+                players = playersAfterMeldCompleted,
                 currentPlayerIndex = winnerIndex,
                 // 需要補牌的鳴牌在補牌後進入等行動；不補牌的鳴牌只能打牌。
                 turnPhase = if (effect.requiresSupplementalDraw) TurnPhase.AwaitingAction else TurnPhase.AwaitingDiscard,

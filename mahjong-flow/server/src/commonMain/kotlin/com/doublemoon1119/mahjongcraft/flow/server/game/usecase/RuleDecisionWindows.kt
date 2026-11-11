@@ -7,6 +7,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameAbortReasonIds
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.PendingGameTransition
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.PendingRuleDecision
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionStep
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionTimeSource
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionTiming
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.TableStepEvent
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.RuleContractViolationException
@@ -176,7 +177,7 @@ internal object RuleDecisionWindows {
         module: MahjongRuleModule<*>,
         resolverRegistry: RuleDecisionResolverRegistry,
     ) {
-        if (step.participantPlayerIds.isEmpty()) return
+        if (step.participantPlayerIds.isEmpty() || step.timeSource == RuleDecisionTimeSource.ACTION_TIME) return
         if (resolverRegistry.findDefaultConfig(module.id, game.tableState.config) == null || game.flowConfig.ruleDecision == null) {
             throw RuleContractViolationException(
                 GameAbortReasonIds.RULE_EXECUTION_FAILED,

@@ -12,6 +12,15 @@ import kotlin.uuid.Uuid
 
 /** [DecisionTimerUpdatePayloadDto] 的 JSON 契約測試。 */
 class DecisionTimerUpdatePayloadDtoTest {
+    /** 比照一般動作計時的規則選擇具有固定的網路列舉值。 */
+    @Test
+    fun `rule action phase keeps its wire value`() {
+        assertEquals(
+            "\"RULE_ACTION\"",
+            Json.encodeToString(PlayerDecisionPhaseDto.serializer(), PlayerDecisionPhaseDto.RULE_ACTION),
+        )
+    }
+
     /** 驗證有效與停止 payload 均可完整來回。 */
     @Test
     fun `test active and stopped payloads round-trip`() {

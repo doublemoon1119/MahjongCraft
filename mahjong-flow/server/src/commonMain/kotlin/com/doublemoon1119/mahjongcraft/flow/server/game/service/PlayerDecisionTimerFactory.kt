@@ -27,7 +27,7 @@ class PlayerDecisionTimerFactory(
      *   [PlayerDecisionPhase.RULE_DECISION] 完全不動用共用保留思考時間池——固定以 0 保留思考時間
      *   起算，規則選擇時間用完就直接逾時；[GameDecisionTimerManager] 結算這個階段的計時器
      *   時，同樣不會把結算結果寫回共用池，玩家在其他階段已經存下的保留思考時間不會被這個階段消耗，
-     *   也不會被清空。
+     *   也不會被清空。[PlayerDecisionPhase.RULE_ACTION] 則比照一般遊戲動作使用基本與保留時間。
      * @param resumedBase 接續上一個 session 被中斷的同一次決策時，其尚未使用的基本思考
      *   時間；`null` 代表這是一次全新的決策。
      * @return 以目前時間開始的 [PlayerDecisionTimer]。

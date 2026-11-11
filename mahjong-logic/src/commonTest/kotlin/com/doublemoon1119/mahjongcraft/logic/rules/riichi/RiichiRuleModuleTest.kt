@@ -13,6 +13,7 @@ import com.doublemoon1119.mahjongcraft.logic.module.BuiltInAutomaticControlIds
 import com.doublemoon1119.mahjongcraft.logic.module.BuiltInPaymentReasonIds
 import com.doublemoon1119.mahjongcraft.logic.module.ExhaustiveDrawSettlementResult
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
+import com.doublemoon1119.mahjongcraft.logic.module.MeldCompletedContext
 import com.doublemoon1119.mahjongcraft.logic.module.WinSettlementResult
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RIICHI_STICK_POINTS
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDeclarationKind
@@ -257,13 +258,14 @@ class RiichiRuleModuleTest {
      * 驗證鳴牌事件會清除所有仍在一發窗口內的玩家的一發資格，不影響其他玩家。
      */
     @Test
-    fun `test onMeldClaimed clears ippatsu for all affected players`() {
+    fun `test onMeldCompleted clears ippatsu for all affected players`() {
         val ippatsuPlayer = FakeMahjongPlayerFactory.create(
             components = riichiDeclarationComponents(declarationTile = FakeIdentifiedTileFactory.create(Tile.Honor.East), isIppatsu = true),
         )
         val nonRiichiPlayer = FakeMahjongPlayerFactory.create()
 
-        val result = module.onMeldClaimed(listOf(ippatsuPlayer, nonRiichiPlayer))
+        val players = listOf(ippatsuPlayer, nonRiichiPlayer)
+        val result = module.onMeldCompleted(MeldCompletedContext(players, players, nonRiichiPlayer.id, MeldType.Chi))
 
         assertFalse(assertNotNull(ippatsuPlayer.applied(result.getValue(ippatsuPlayer.id)).riichiDeclaration).isIppatsu)
         assertTrue(result.getValue(nonRiichiPlayer.id).isEmpty)

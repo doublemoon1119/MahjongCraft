@@ -8,6 +8,9 @@ enum class PlayerDecisionPhaseDto {
     /** 玩家正在進行規則選擇。 */
     RULE_DECISION,
 
+    /** 玩家正在進行比照一般動作計時的規則選擇。 */
+    RULE_ACTION,
+
     /** 玩家自己的回合。 */
     OWN_TURN,
 

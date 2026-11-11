@@ -25,10 +25,10 @@ interface RuleDecisionResolver {
      * 依實際規則設定決定是否需要玩家規則選擇時間。
      *
      * 相同設定必須回傳相同結果，不得修改狀態或依賴外部可變資料。房間設定與選擇流程會各自查詢，
-     * 不保證每局只呼叫一次；只需要自動處理的選擇步驟不需要玩家時間設定。
+     * 不保證每局只呼叫一次；只需要自動處理，或比照一般遊戲動作計時的選擇步驟，不需要獨立的玩家時間設定。
      *
      * @param ruleConfig 目前對局使用的完整規則設定。
-     * @return 任何時間點需要玩家選擇時的預設時間；不需要玩家選擇或只會自動完成時為 null。
+     * @return 使用獨立規則選擇時間的步驟預設時間；沒有這類步驟時為 null。
      */
     fun ruleDecisionConfig(ruleConfig: MahjongRuleConfig): RuleDecisionConfig? = null
 

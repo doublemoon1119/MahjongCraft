@@ -5,6 +5,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryFact
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameAbortReasonIds
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameError
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionSubmission
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionTimeSource
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.accepts
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.GamePresentationPublisher
 import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
@@ -87,8 +88,11 @@ class SubmitRuleDecisionUseCase(
                     Outcome.Error(GameError.InvalidRuleDecisionSubmission(gameId, playerId)),
                     null,
                 )
-            val defaultRuleDecision = resolverRegistry.findDefaultConfig(module.id, game.tableState.config)
-            if (defaultRuleDecision == null || game.flowConfig.ruleDecision == null) {
+            val usesIndependentTime = ruleDecision.step.timeSource == RuleDecisionTimeSource.RULE_DECISION_TIME
+            if (
+                usesIndependentTime &&
+                (resolverRegistry.findDefaultConfig(module.id, game.tableState.config) == null || game.flowConfig.ruleDecision == null)
+            ) {
                 throw RuleContractViolationException(
                     GameAbortReasonIds.RULE_EXECUTION_FAILED,
                     "Rule decision requires a time configuration for player input",

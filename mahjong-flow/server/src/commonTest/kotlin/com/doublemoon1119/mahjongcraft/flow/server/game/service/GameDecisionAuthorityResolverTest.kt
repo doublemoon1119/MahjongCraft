@@ -8,6 +8,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.PlayerDecisionPhas
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionInputSpec
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionStep
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionSubmission
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionTimeSource
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionTiming
 import com.doublemoon1119.mahjongcraft.flow.server.game.policy.GameVisibilityPolicyImpl
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
@@ -169,6 +170,29 @@ class GameDecisionAuthorityResolverTest {
         )
 
         assertEquals(mapOf(waitingId to PlayerDecisionPhase.RULE_DECISION), resolver.resolve(game))
+    }
+
+    /** 比照一般遊戲動作計時的規則選擇使用獨立階段，讓計時器套用一般基本與保留時間。 */
+    @Test
+    fun `test action timed rule decision resolves rule action phase`() {
+        val playerId = Uuid.random()
+        val player = FakeMahjongPlayerFactory.create(id = playerId)
+        val window = PendingRuleDecision.open(
+            step = RuleDecisionStep(
+                stepId = "test:action_timed",
+                stepIndex = 0,
+                inputSpecsByPlayerId = mapOf(playerId to RuleDecisionInputSpec.Confirmation),
+                timeSource = RuleDecisionTimeSource.ACTION_TIME,
+            ),
+            timing = RuleDecisionTiming.DRAW_FOLLOW_UP,
+        )
+        val game = Game(
+            tableState = FakeTableStateFactory.create(players = listOf(player)),
+            flowConfig = GameFlowConfig(),
+            pendingRuleDecision = window,
+        )
+
+        assertEquals(mapOf(playerId to PlayerDecisionPhase.RULE_ACTION), resolver.resolve(game))
     }
 
     /** 驗證強制自動操作玩家不再建立新的思考計時器。 */

@@ -12,6 +12,7 @@ import com.doublemoon1119.mahjongcraft.logic.component.BuiltInComponentOwners
 import com.doublemoon1119.mahjongcraft.logic.component.ComponentPatch
 import com.doublemoon1119.mahjongcraft.logic.module.BuiltInAutomaticControlIds
 import com.doublemoon1119.mahjongcraft.logic.module.ExhaustiveDrawSettlementResult
+import com.doublemoon1119.mahjongcraft.logic.module.MeldCompletedContext
 import com.doublemoon1119.mahjongcraft.logic.module.PointPotCollection
 import com.doublemoon1119.mahjongcraft.logic.module.PublicPlayerIndicator
 import com.doublemoon1119.mahjongcraft.logic.module.RevealedHandSettlement
@@ -169,7 +170,7 @@ class ThreePlayerRiichiRuleModule(
     override fun onPlayerDiscarded(player: MahjongPlayer): ComponentPatch = player.ippatsuEndPatch()
 
     /** 任何一次鳴牌都會讓場上所有玩家的一發資格失效。 */
-    override fun onMeldClaimed(players: List<MahjongPlayer>): Map<Uuid, ComponentPatch> = players.associate { it.id to it.ippatsuEndPatch() }
+    override fun onMeldCompleted(context: MeldCompletedContext): Map<Uuid, ComponentPatch> = context.playersAfter.associate { it.id to it.ippatsuEndPatch() }
 
     /** 碰／明槓觸發大三元或大四喜時記錄包牌責任；三人麻將不能吃。 */
     override fun beforeDiscardClaimed(

@@ -2,6 +2,7 @@ package com.doublemoon1119.mahjongcraft.flow.server.game.service
 
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.Game
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.PlayerDecisionPhase
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionTimeSource
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.GameFlowCoordinator
 import kotlin.uuid.Uuid
 
@@ -35,11 +36,15 @@ class GameDecisionAuthorityResolver(
         val state = game.tableState
         val humanPlayerIds = state.players.filterNot { game.isAi(it.id) }.mapTo(mutableSetOf()) { it.id }
         game.pendingRuleDecision?.let { decision ->
+            val phase = when (decision.step.timeSource) {
+                RuleDecisionTimeSource.RULE_DECISION_TIME -> PlayerDecisionPhase.RULE_DECISION
+                RuleDecisionTimeSource.ACTION_TIME -> PlayerDecisionPhase.RULE_ACTION
+            }
             return decision.participantPlayerIds
                 .filter { it in humanPlayerIds }
                 .filterNot { it in decision.completedPlayerIds }
                 .filterNot { it in game.forcedAutoPlayPlayerIds }
-                .associateWith { PlayerDecisionPhase.RULE_DECISION }
+                .associateWith { phase }
         }
         if (game.pendingTransition != null) return emptyMap()
         return actionContextResolver.resolve(state)

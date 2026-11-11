@@ -11,6 +11,7 @@ import com.doublemoon1119.mahjongcraft.logic.base.closedKanPubliclyRevealedTileI
 import com.doublemoon1119.mahjongcraft.logic.base.toValue
 import com.doublemoon1119.mahjongcraft.logic.component.ComponentRegistry
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
+import com.doublemoon1119.mahjongcraft.logic.module.MeldCompletedContext
 import com.doublemoon1119.mahjongcraft.logic.table.SupplementalDrawContext
 import com.doublemoon1119.mahjongcraft.logic.table.SupplementalDrawDecision
 import com.doublemoon1119.mahjongcraft.logic.table.SupplementalDrawReasonIds
@@ -216,13 +217,24 @@ internal object SelfDeclarationApplier {
             after = state.copy(players = playersAfterMeld),
             source = "Kan declaration",
         )
-        val playersAfterHook = ruleComponents.applyPlayerPatches(
+        val playersAfterMeldHook = ruleComponents.applyPlayerPatches(
             tableState = stateAfterMeld,
             players = stateAfterMeld.players,
-            patches = module.onMeldClaimed(stateAfterMeld.players),
-            source = "onMeldClaimed",
+            patches = module.onMeldCompleted(
+                MeldCompletedContext(
+                    playersBefore = state.players,
+                    playersAfter = stateAfterMeld.players,
+                    actorPlayerId = declarerId,
+                    meldType = when (kanAction.type) {
+                        GameAction.KanType.CLOSED_KAN -> MeldType.ClosedKan
+                        GameAction.KanType.ADDED_KAN -> MeldType.AddedKan
+                        GameAction.KanType.OPEN_KAN -> error("Unreachable: OPEN_KAN is applied by RespondToDiscardUseCase")
+                    },
+                ),
+            ),
+            source = "onMeldCompleted",
         )
-        return stateAfterMeld.copy(players = playersAfterHook)
+        return stateAfterMeld.copy(players = playersAfterMeldHook)
     }
 
     /**

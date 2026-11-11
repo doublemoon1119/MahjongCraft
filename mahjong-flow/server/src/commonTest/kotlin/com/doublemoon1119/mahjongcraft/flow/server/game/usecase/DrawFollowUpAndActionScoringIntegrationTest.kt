@@ -43,6 +43,7 @@ import com.doublemoon1119.mahjongcraft.logic.module.ActionScoringContext
 import com.doublemoon1119.mahjongcraft.logic.module.ActionScoringPolicy
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleDefinition
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
+import com.doublemoon1119.mahjongcraft.logic.module.MeldCompletedContext
 import com.doublemoon1119.mahjongcraft.logic.module.NoOpActionScoringPolicy
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiFamilyRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPlayerComponents
@@ -885,7 +886,11 @@ class DrawFollowUpAndActionScoringIntegrationTest {
 
         override fun onPlayerDrew(player: MahjongPlayer): ComponentPatch = if (behavior.hooksSendStalePatch) STALE_PATCH else delegate.onPlayerDrew(player)
 
-        override fun onMeldClaimed(players: List<MahjongPlayer>): Map<Uuid, ComponentPatch> = if (behavior.hooksSendStalePatch) players.associate { it.id to STALE_PATCH } else delegate.onMeldClaimed(players)
+        override fun onMeldCompleted(context: MeldCompletedContext): Map<Uuid, ComponentPatch> = if (behavior.hooksSendStalePatch) {
+            context.playersAfter.associate { it.id to STALE_PATCH }
+        } else {
+            delegate.onMeldCompleted(context)
+        }
 
         override fun createLegalActionValidator(): LegalActionValidator {
             val base = delegate.createLegalActionValidator()

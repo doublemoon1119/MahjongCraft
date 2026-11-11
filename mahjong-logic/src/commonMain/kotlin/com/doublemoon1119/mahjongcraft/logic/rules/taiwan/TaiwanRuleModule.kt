@@ -11,6 +11,7 @@ import com.doublemoon1119.mahjongcraft.logic.module.DeclarationDiscardEffect
 import com.doublemoon1119.mahjongcraft.logic.module.DeclarationDiscardPolicy
 import com.doublemoon1119.mahjongcraft.logic.module.ExhaustiveDrawSettlementResult
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
+import com.doublemoon1119.mahjongcraft.logic.module.MeldCompletedContext
 import com.doublemoon1119.mahjongcraft.logic.module.PointPotCollection
 import com.doublemoon1119.mahjongcraft.logic.module.PublicPlayerIndicator
 import com.doublemoon1119.mahjongcraft.logic.module.PublicPlayerIndicatorValue
@@ -158,6 +159,20 @@ class TaiwanRuleModule(
         val discarded = player.discardPile.entries.lastOrNull()?.tile?.tile ?: return ComponentPatch()
         if (discarded in createLegalActionValidator().waits(player.hand)) return ComponentPatch()
         return ComponentPatch.basedOn(player.components, removals = setOf(TaiwanPlayerComponents.PASSED_WIN))
+    }
+
+    /** 暗槓或加槓前後等待牌相同時，依設定額外解除動作者的過水。 */
+    override fun onMeldCompleted(context: MeldCompletedContext): Map<Uuid, ComponentPatch> {
+        val playerAfter = context.playersAfter.first { it.id == context.actorPlayerId }
+        if (!config.kanClearsPassedWin || playerAfter.components[TaiwanPlayerComponents.PASSED_WIN] == null) return emptyMap()
+        if (context.meldType != MeldType.ClosedKan && context.meldType != MeldType.AddedKan) return emptyMap()
+        val playerBefore = context.playersBefore.first { it.id == context.actorPlayerId }
+        val waitsBefore = createLegalActionValidator().waits(playerBefore.hand.copy(lastDrawn = null))
+        val waitsAfter = createLegalActionValidator().waits(playerAfter.hand)
+        if (waitsBefore.isEmpty() || waitsBefore != waitsAfter) return emptyMap()
+        return mapOf(
+            playerAfter.id to ComponentPatch.basedOn(playerAfter.components, removals = setOf(TaiwanPlayerComponents.PASSED_WIN)),
+        )
     }
 
     /** 宣告聽牌的種類，以及連莊一次以上的莊家的連莊次數。 */

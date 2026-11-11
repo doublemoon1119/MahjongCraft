@@ -165,9 +165,9 @@ class GameConfigPresentationRegistryTest {
         }
     }
 
-    /** 內建規則提供相應選項，台麻目前明確標示為不可選。 */
+    /** 內建規則提供相應選項，日麻與台麻都可用於建立房間。 */
     @Test
-    fun `built-in schemas expose editable Riichi and unavailable Taiwan rules`() {
+    fun `built-in schemas expose editable Riichi and Taiwan rules`() {
         val registry = GameConfigPresentationRegistryImpl(RuleDecisionResolverRegistry())
 
         BundledMinecraftMahjongExtensions.all.forEach { it.registerGameConfigPresentations(registry) }
@@ -191,8 +191,19 @@ class GameConfigPresentationRegistryTest {
         assertTrue(riichi.categories.none { it.id == "mahjongcraft:technical" })
         val handVisibility = riichi.fields.single { it.id == "mahjongcraft:spectator_hand_visibility" }
         assertEquals(false, handVisibility.isEnabled(GameConfig(RiichiRuleConfig()).copy(flowConfig = GameConfig(RiichiRuleConfig()).flowConfig.copy(spectatingPolicy = SpectatingPolicy.DISABLED))))
-        assertEquals(false, taiwan.selectable)
-        assertNotNull(taiwan.unavailableReasonTranslationKey)
+        assertTrue(taiwan.selectable)
+        assertEquals(null, taiwan.unavailableReasonTranslationKey)
+        assertTrue(taiwan.fields.any { it.id == "mahjongcraft:taiwan_game_length" })
+        assertTrue(taiwan.fields.any { it.id == "mahjongcraft:kan_clears_passed_win" })
+        val doubleWinResolution = taiwan.fields.single { it.id == "mahjongcraft:taiwan_double_win_resolution" }
+        assertEquals(
+            listOf("mahjongcraft:taiwan_nearest_winner", "mahjongcraft:all_winners"),
+            (doubleWinResolution.editor as GameConfigEditorSpec.SingleChoice).optionIds,
+        )
+        assertEquals(
+            "mahjongcraft.room.config.option.taiwan_nearest_winner",
+            doubleWinResolution.editor.translationKeyFor("mahjongcraft:taiwan_nearest_winner"),
+        )
     }
 
     /** 可編輯欄位必須有 updater，重複規則 ID 不可登記。 */

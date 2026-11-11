@@ -10,6 +10,7 @@ import com.doublemoon1119.mahjongcraft.logic.component.ComponentPatch
 import com.doublemoon1119.mahjongcraft.logic.judgment.ShantenResult
 import com.doublemoon1119.mahjongcraft.logic.module.BuiltInAutomaticControlIds
 import com.doublemoon1119.mahjongcraft.logic.module.ExhaustiveDrawSettlementResult
+import com.doublemoon1119.mahjongcraft.logic.module.MeldCompletedContext
 import com.doublemoon1119.mahjongcraft.logic.module.PointPotCollection
 import com.doublemoon1119.mahjongcraft.logic.module.PublicPlayerIndicator
 import com.doublemoon1119.mahjongcraft.logic.module.RevealedHandSettlement
@@ -167,7 +168,7 @@ class RiichiRuleModule(
     /**
      * 任何一次鳴牌都會讓場上所有玩家的一發資格失效。
      */
-    override fun onMeldClaimed(players: List<MahjongPlayer>): Map<Uuid, ComponentPatch> = players.associate { it.id to it.ippatsuEndPatch() }
+    override fun onMeldCompleted(context: MeldCompletedContext): Map<Uuid, ComponentPatch> = context.playersAfter.associate { it.id to it.ippatsuEndPatch() }
 
     /**
      * 檢查本次碰／明槓是否觸發大三元／大四喜的包牌責任，若觸發則寫入 [claimingPlayer] 的包牌組件。

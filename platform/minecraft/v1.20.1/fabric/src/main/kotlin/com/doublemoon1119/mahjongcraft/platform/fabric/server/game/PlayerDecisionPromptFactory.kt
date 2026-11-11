@@ -91,7 +91,9 @@ class PlayerDecisionPromptFactory(
                     PlayerDecisionPhase.OWN_TURN -> player.hand.lastDrawn?.id ?: player.actionHistory.lastOrNull()?.hashCode()
                     PlayerDecisionPhase.DISCARD_REACTION -> state.pendingReaction?.tileId
                     PlayerDecisionPhase.ROBBING_REACTION -> state.pendingRobbingReaction?.robbedTile?.id
-                    PlayerDecisionPhase.RULE_DECISION -> game.pendingRuleDecision?.id
+                    PlayerDecisionPhase.RULE_DECISION,
+                    PlayerDecisionPhase.RULE_ACTION,
+                    -> game.pendingRuleDecision?.id
                 },
                 if (phase == PlayerDecisionPhase.OWN_TURN) actions.decisionIdentity() else null,
             ),

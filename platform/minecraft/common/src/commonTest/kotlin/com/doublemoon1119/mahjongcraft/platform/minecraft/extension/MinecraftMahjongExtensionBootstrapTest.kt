@@ -389,7 +389,10 @@ class MinecraftMahjongExtensionBootstrapTest {
         assertNull(tileLabelRegistry.find("unknown"))
         assertNull(tileLabelRegistry.find("example_unregistered"))
         assertTrue(ruleCatalogueRegistry.isFrozen)
-        assertEquals(setOf(BuiltInRuleModuleIds.RIICHI, BuiltInRuleModuleIds.RIICHI_THREE_PLAYER), ruleCatalogueRegistry.registrationKeys)
+        assertEquals(
+            setOf(BuiltInRuleModuleIds.RIICHI, BuiltInRuleModuleIds.RIICHI_THREE_PLAYER, BuiltInRuleModuleIds.TAIWAN),
+            ruleCatalogueRegistry.registrationKeys,
+        )
         assertEquals(
             MinecraftMessageKeys.GAME_ACTION_REVEAL_FLOWER,
             gameActionVocabularyRegistry.find(BuiltInRuleModuleIds.TAIWAN, TaiwanGameAction.RevealFlower.id)?.labelKey,

@@ -12,20 +12,22 @@ import com.doublemoon1119.mahjongcraft.logic.config.validate
  *
  * @property useFlowerTiles 指定是否使用花牌。
  * @property fourWindsAbortiveDraw 是否在第一巡四位玩家依序打出相同風牌時流局。
+ * @property kanClearsPassedWin 暗槓或加槓前後等待牌相同時，是否額外解除過水。
  * @property initialHandSize 初始手牌張數，預設為 16。
  * @property deadTileCount 王牌（死牌）張數，預設為 16。
- * @property minimumWinConstraint 起胡番數限制，預設為 0。
+ * @property minimumWinConstraint 起胡台數限制，預設為 0。
  * @property scoreConfig 積分配置，預設為 [TaiwanScoreConfig]。
  * @property gameLength 遊戲長度配置，預設使用 [TaiwanGameLength.OneGame]。
  * @property minPlayers 該規則要求的最小玩家人數
  * @property maxPlayers 該規則允許的最大玩家人數
- * @property multiRonPolicy 一炮多響時的結算方式，預設雙響、三響皆為頭跳。
+ * @property multiRonPolicy 一炮多響時的結算方式，預設雙響、三響皆由距離放銃者最近的玩家和牌。
  * @property revealsClosedKanTiles 暗槓身份是否公開，恆為 false——台灣麻將暗槓完全不公開，直到自摸
  *   或流局才揭露。
  */
 data class TaiwanRuleConfig(
     val useFlowerTiles: Boolean = true,
     val fourWindsAbortiveDraw: Boolean = false,
+    val kanClearsPassedWin: Boolean = false,
     override val minimumWinConstraint: Int = 0,
     override val scoreConfig: TaiwanScoreConfig = TaiwanScoreConfig(),
     override val gameLength: TaiwanGameLength = TaiwanGameLength.OneGame,

@@ -83,6 +83,29 @@ class PlayerDecisionTimerFactoryTest {
         assertEquals(0.milliseconds, timer.reserveAtStart)
     }
 
+    /** 比照一般動作計時的規則選擇使用一般基本時間，並保留玩家尚未用完的共用保留時間。 */
+    @Test
+    fun `test factory uses action timing for rule action phase`() {
+        val playerId = Uuid.random()
+        val player = FakeMahjongPlayerFactory.create(id = playerId)
+        val game = Game(
+            tableState = FakeTableStateFactory.create(players = listOf(player)),
+            flowConfig = GameFlowConfig(
+                timeControl = ActionTimeControl.Custom(base = 7.seconds, reserve = 30.seconds),
+            ),
+            remainingReserveByPlayerId = mapOf(playerId to 12_000.milliseconds),
+        )
+
+        val timer = PlayerDecisionTimerFactory(FakeMonotonicClock(now = Duration.ZERO)).create(
+            game,
+            playerId,
+            phase = PlayerDecisionPhase.RULE_ACTION,
+        )
+
+        assertEquals(7_000.milliseconds, timer.baseDuration)
+        assertEquals(12_000.milliseconds, timer.reserveAtStart)
+    }
+
     @Test
     fun `test factory rejects player rule decision without timing configuration`() {
         val playerId = Uuid.random()

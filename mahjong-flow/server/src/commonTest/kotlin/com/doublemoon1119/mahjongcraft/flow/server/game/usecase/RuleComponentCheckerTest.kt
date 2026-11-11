@@ -56,7 +56,7 @@ class RuleComponentCheckerTest {
     fun `matching player patch changes only that player's components`() {
         val patch = ComponentPatch.basedOn(player.components, values = ComponentSet.EMPTY.with(RiichiPlayerComponents.PERMANENT_FURITEN, Unit))
 
-        val updated = checker.applyPlayerPatches(table, table.players, mapOf(player.id to patch), "onMeldClaimed")
+        val updated = checker.applyPlayerPatches(table, table.players, mapOf(player.id to patch), "onMeldCompleted")
 
         assertEquals(Unit, updated.first().components[RiichiPlayerComponents.PERMANENT_FURITEN])
         assertEquals(table.players.first().copy(components = updated.first().components), updated.first())
@@ -75,7 +75,7 @@ class RuleComponentCheckerTest {
         assertFailsWith<RuleContractViolationException> { checker.applyPlayerPatch(table, player, stale, "onPlayerDrew") }
         assertFailsWith<RuleContractViolationException> { checker.applyPlayerPatch(table, player, tableOwned, "onPlayerDrew") }
         assertFailsWith<RuleContractViolationException> {
-            checker.applyPlayerPatches(table, table.players, mapOf(Uuid.random() to ComponentPatch()), "onMeldClaimed")
+            checker.applyPlayerPatches(table, table.players, mapOf(Uuid.random() to ComponentPatch()), "onMeldCompleted")
         }
     }
 
