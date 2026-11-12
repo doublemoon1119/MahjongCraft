@@ -1,6 +1,7 @@
 package com.doublemoon1119.mahjongcraft.flow.server.game.simulation
 
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiFamilyRuleConfig
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiMatchEndReasonIds
 import com.doublemoon1119.mahjongcraft.logic.table.BuiltInMatchEndReasonIds
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
@@ -31,7 +32,7 @@ internal fun assertLegalRiichiMatchCompletion(
         BuiltInMatchEndReasonIds.SCHEDULE_COMPLETED,
         BuiltInMatchEndReasonIds.TARGET_SCORE_REACHED,
         BuiltInMatchEndReasonIds.EXTRA_ROUND_LIMIT_REACHED,
-        BuiltInMatchEndReasonIds.DEALER_TOP_FINISH,
+        RiichiMatchEndReasonIds.DEALER_TOP_FINISH,
         -> assertTrue(roundCount >= config.scheduledRoundCount, "Schedule ending before the minimum rounds; $diagnostic")
         else -> throw AssertionError("Missing or unexpected match end reason; $diagnostic")
     }

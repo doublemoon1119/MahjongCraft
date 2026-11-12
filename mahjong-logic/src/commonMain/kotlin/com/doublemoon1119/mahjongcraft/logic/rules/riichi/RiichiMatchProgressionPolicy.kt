@@ -63,7 +63,7 @@ class RiichiMatchProgressionPolicy(
                 -> false
             }
             return if (dealerQualifiedForTopFinish && state.dealerPlayerId == topPlayer.id && targetReached) {
-                MatchProgressionDecision.EndMatch(BuiltInMatchEndReasonIds.DEALER_TOP_FINISH)
+                MatchProgressionDecision.EndMatch(RiichiMatchEndReasonIds.DEALER_TOP_FINISH)
             } else {
                 MatchProgressionDecision.ContinueMatch(MatchRoundTransition.RepeatCurrentRound)
             }

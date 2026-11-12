@@ -488,7 +488,6 @@ internal class HistoryRoundEventPresenter(
         BuiltInMatchEndReasonIds.SCHEDULE_COMPLETED -> Text.translatable(MinecraftHistoryScreenKeys.ROUND_OUTCOME_SCHEDULE_COMPLETED)
         BuiltInMatchEndReasonIds.TARGET_SCORE_REACHED -> Text.translatable(MinecraftHistoryScreenKeys.ROUND_OUTCOME_TARGET_SCORE_REACHED)
         BuiltInMatchEndReasonIds.EXTRA_ROUND_LIMIT_REACHED -> Text.translatable(MinecraftHistoryScreenKeys.ROUND_OUTCOME_EXTRA_ROUND_LIMIT_REACHED)
-        BuiltInMatchEndReasonIds.DEALER_TOP_FINISH -> Text.translatable(MinecraftHistoryScreenKeys.ROUND_OUTCOME_DEALER_TOP_FINISH)
         BuiltInMatchEndReasonIds.PLAYER_BUSTED -> Text.translatable(MinecraftHistoryScreenKeys.ROUND_OUTCOME_PLAYER_BUSTED)
         MinecraftMatchAbortReasonIds.TABLE_MISSING -> Text.translatable(MinecraftHistoryScreenKeys.ROUND_ABORT_REASON_TABLE_MISSING)
         MinecraftMatchAbortReasonIds.TABLE_BROKEN_BY_PLAYER -> Text.translatable(MinecraftHistoryScreenKeys.ROUND_ABORT_REASON_TABLE_BROKEN_BY_PLAYER)

@@ -3,6 +3,7 @@ package com.doublemoon1119.mahjongcraft.platform.minecraft.rule.riichi
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.riichi.RiichiRoundOutcomeIds
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiExhaustiveDrawReason
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiHistoryDiscardMarkerIds
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiMatchEndReasonIds
 import com.doublemoon1119.mahjongcraft.platform.minecraft.history.HistoryDiscardMarkerDisplay
 import com.doublemoon1119.mahjongcraft.platform.minecraft.history.HistoryDiscardMarkerDisplayRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.ExhaustiveDrawReasonDisplayNameRegistryImpl
@@ -30,6 +31,14 @@ class BundledRiichiMinecraftExtensionHistoryTest {
         val registry = RoundOutcomeDisplayNameRegistryImpl().apply { BundledRiichiMinecraftExtension.registerRoundOutcomeDisplayNames(this) }
 
         assertEquals(RiichiTranslationKeys.OUTCOME_NAGASHI_MANGAN, registry.find(RiichiRoundOutcomeIds.NAGASHI_MANGAN))
+    }
+
+    /** 最後莊家第一終局是日麻自訂的整場終止原因，由日麻登記名稱。 */
+    @Test
+    fun `dealer top finish has an outcome name`() {
+        val registry = RoundOutcomeDisplayNameRegistryImpl().apply { BundledRiichiMinecraftExtension.registerRoundOutcomeDisplayNames(this) }
+
+        assertEquals(RiichiTranslationKeys.OUTCOME_DEALER_TOP_FINISH, registry.find(RiichiMatchEndReasonIds.DEALER_TOP_FINISH))
     }
 
     /** 一般荒牌流局的得分者顯示聽牌，其他人顯示未聽。 */

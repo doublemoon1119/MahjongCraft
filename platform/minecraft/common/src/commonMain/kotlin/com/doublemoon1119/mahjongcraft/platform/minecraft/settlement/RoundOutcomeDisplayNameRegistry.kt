@@ -2,7 +2,10 @@ package com.doublemoon1119.mahjongcraft.platform.minecraft.settlement
 
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.RoundOutcomeDisplayNameRegistrar
 
-/** 將規則特殊本局結果 ID（例如日麻的流局滿貫）映射至 Minecraft translation key；擴充只透過 [RoundOutcomeDisplayNameRegistrar] 登記。 */
+/**
+ * 將規則特殊本局結果 ID（例如日麻的流局滿貫）與規則自訂的整場終止原因 ID（例如日麻的最後莊家第一終局）映射至
+ * Minecraft translation key；擴充只透過 [RoundOutcomeDisplayNameRegistrar] 登記。
+ */
 interface RoundOutcomeDisplayNameRegistry : RoundOutcomeDisplayNameRegistrar {
 
     /**

@@ -92,7 +92,7 @@ class RiichiMatchProgressionPolicyTest {
         )
 
         assertEquals(
-            MatchProgressionDecision.EndMatch(BuiltInMatchEndReasonIds.DEALER_TOP_FINISH),
+            MatchProgressionDecision.EndMatch(RiichiMatchEndReasonIds.DEALER_TOP_FINISH),
             policy(context).decide(context),
         )
     }
@@ -171,7 +171,7 @@ class RiichiMatchProgressionPolicyTest {
         )
 
         assertEquals(
-            MatchProgressionDecision.EndMatch(BuiltInMatchEndReasonIds.DEALER_TOP_FINISH),
+            MatchProgressionDecision.EndMatch(RiichiMatchEndReasonIds.DEALER_TOP_FINISH),
             policy(context).decide(context),
         )
     }

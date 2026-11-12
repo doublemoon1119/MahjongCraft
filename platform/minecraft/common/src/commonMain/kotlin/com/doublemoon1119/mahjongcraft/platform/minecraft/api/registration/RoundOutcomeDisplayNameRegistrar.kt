@@ -2,7 +2,7 @@ package com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration
 
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.RoundOutcomeDisplayNameDefinition
 
-/** 擴充登記局結果名稱時取得的登記介面；查詢與凍結由 MahjongCraft 進行。 */
+/** 擴充登記特殊本局結果與自訂整場終止原因名稱時取得的登記介面；查詢與凍結由 MahjongCraft 進行。 */
 interface RoundOutcomeDisplayNameRegistrar {
     /** 目前已登記結果 ID 的快照。 */
     val registrationKeys: Set<String>

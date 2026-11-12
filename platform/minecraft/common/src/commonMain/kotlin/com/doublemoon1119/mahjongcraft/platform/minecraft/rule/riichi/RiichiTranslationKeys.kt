@@ -77,6 +77,9 @@ object RiichiTranslationKeys {
     /** 流局滿貫的本局結果名稱。 */
     const val OUTCOME_NAGASHI_MANGAN: String = "mahjongcraft.riichi.outcome.nagashi_mangan"
 
+    /** 最後莊家已居第一並符合終局點數而結束整場的結果名稱。 */
+    const val OUTCOME_DEALER_TOP_FINISH: String = "mahjongcraft.riichi.outcome.dealer_top_finish"
+
     /** 牌譜上三人日麻北牌區的標題。 */
     const val HISTORY_TILE_AREA_NORTH: String = "mahjongcraft.riichi.history_screen.tile_area.north"
 
@@ -155,6 +158,7 @@ object RiichiTranslationKeys {
         RULE_NAME,
         RULE_NAME_THREE_PLAYER,
         OUTCOME_NAGASHI_MANGAN,
+        OUTCOME_DEALER_TOP_FINISH,
         HISTORY_TILE_AREA_NORTH,
         ROUND_INFO_TITLE,
         ROUND_INFO_STICK_POT,

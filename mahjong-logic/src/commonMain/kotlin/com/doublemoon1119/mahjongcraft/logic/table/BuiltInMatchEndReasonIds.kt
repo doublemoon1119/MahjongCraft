@@ -13,9 +13,6 @@ object BuiltInMatchEndReasonIds {
     /** 延長賽已到規則允許的最後局位。 */
     val EXTRA_ROUND_LIMIT_REACHED: String = MahjongCraftMetadata.id("extra_round_limit_reached")
 
-    /** 最後莊家已居第一並符合終局點數。 */
-    val DEALER_TOP_FINISH: String = MahjongCraftMetadata.id("dealer_top_finish")
-
     /** 至少一位玩家已達擊飛門檻。 */
     val PLAYER_BUSTED: String = MahjongCraftMetadata.id("player_busted")
 }

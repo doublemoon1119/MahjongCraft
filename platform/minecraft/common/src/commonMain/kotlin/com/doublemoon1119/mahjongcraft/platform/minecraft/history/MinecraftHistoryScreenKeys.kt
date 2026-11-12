@@ -473,9 +473,6 @@ object MinecraftHistoryScreenKeys {
     /** 已達延長賽上限。 */
     const val ROUND_OUTCOME_EXTRA_ROUND_LIMIT_REACHED = "mahjongcraft.history_screen.round.outcome.extra_round_limit_reached"
 
-    /** 最後莊家符合終局條件。 */
-    const val ROUND_OUTCOME_DEALER_TOP_FINISH = "mahjongcraft.history_screen.round.outcome.dealer_top_finish"
-
     /** 玩家分數達到終止門檻。 */
     const val ROUND_OUTCOME_PLAYER_BUSTED = "mahjongcraft.history_screen.round.outcome.player_busted"
 

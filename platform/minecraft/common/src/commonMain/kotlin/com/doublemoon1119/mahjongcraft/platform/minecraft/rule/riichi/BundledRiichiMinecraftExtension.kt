@@ -6,6 +6,7 @@ import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.logic.module.BuiltInRuleModuleIds
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiExhaustiveDrawReason
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiHistoryDiscardMarkerIds
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiMatchEndReasonIds
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPlayerTileAreaIds
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPublicIndicatorIds
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.threeplayer.ThreePlayerRiichiRuleConfig
@@ -173,6 +174,7 @@ object BundledRiichiMinecraftExtension : MinecraftMahjongExtension {
 
     override fun registerRoundOutcomeDisplayNames(registry: RoundOutcomeDisplayNameRegistrar) {
         registry.register(RoundOutcomeDisplayNameDefinition(RiichiRoundOutcomeIds.NAGASHI_MANGAN, RiichiTranslationKeys.OUTCOME_NAGASHI_MANGAN))
+        registry.register(RoundOutcomeDisplayNameDefinition(RiichiMatchEndReasonIds.DEALER_TOP_FINISH, RiichiTranslationKeys.OUTCOME_DEALER_TOP_FINISH))
     }
 
     /** 三人日麻拔出的北在牌譜上標示為「拔出的牌」。 */

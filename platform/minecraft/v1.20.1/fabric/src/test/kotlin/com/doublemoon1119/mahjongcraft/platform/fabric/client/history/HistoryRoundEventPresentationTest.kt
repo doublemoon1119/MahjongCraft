@@ -244,7 +244,7 @@ class HistoryRoundEventPresentationTest {
     /** 整場結束使用獨立標題，所有內建終止原因均能本地化。 */
     @Test
     fun `match completion localizes built in end reasons`() {
-        val reasons = mapOf(BuiltInMatchEndReasonIds.SCHEDULE_COMPLETED to MinecraftHistoryScreenKeys.ROUND_OUTCOME_SCHEDULE_COMPLETED, BuiltInMatchEndReasonIds.TARGET_SCORE_REACHED to MinecraftHistoryScreenKeys.ROUND_OUTCOME_TARGET_SCORE_REACHED, BuiltInMatchEndReasonIds.EXTRA_ROUND_LIMIT_REACHED to MinecraftHistoryScreenKeys.ROUND_OUTCOME_EXTRA_ROUND_LIMIT_REACHED, BuiltInMatchEndReasonIds.DEALER_TOP_FINISH to MinecraftHistoryScreenKeys.ROUND_OUTCOME_DEALER_TOP_FINISH, BuiltInMatchEndReasonIds.PLAYER_BUSTED to MinecraftHistoryScreenKeys.ROUND_OUTCOME_PLAYER_BUSTED)
+        val reasons = mapOf(BuiltInMatchEndReasonIds.SCHEDULE_COMPLETED to MinecraftHistoryScreenKeys.ROUND_OUTCOME_SCHEDULE_COMPLETED, BuiltInMatchEndReasonIds.TARGET_SCORE_REACHED to MinecraftHistoryScreenKeys.ROUND_OUTCOME_TARGET_SCORE_REACHED, BuiltInMatchEndReasonIds.EXTRA_ROUND_LIMIT_REACHED to MinecraftHistoryScreenKeys.ROUND_OUTCOME_EXTRA_ROUND_LIMIT_REACHED, BuiltInMatchEndReasonIds.PLAYER_BUSTED to MinecraftHistoryScreenKeys.ROUND_OUTCOME_PLAYER_BUSTED)
         reasons.forEach { (reason, key) ->
             val outcome = HistoryRoundOutcomeDto(reason, emptyList(), emptyMap(), null, emptyList(), null, nextDealerSeat = null, scoreChangesBySeat = emptyMap(), winnerDetails = emptyList(), hasEarlierWinSettlement = false)
             val fact = presenter().present(events(HistoryReplayFactDto.Completion(HistoryFactTypeKeys.MATCH_COMPLETED, outcome)), null).transactions.single().facts.single()
@@ -252,6 +252,15 @@ class HistoryRoundEventPresentationTest {
             assertEquals(key, checkNotNull(fact.outcome).reasonText.string)
             assertTrue(reason in fact.identifiers)
         }
+    }
+
+    /** 規則自訂的整場終止原因使用規則登記的特殊結果名稱。 */
+    @Test
+    fun `match completion uses registered rule end reasons`() {
+        val outcome = HistoryRoundOutcomeDto("example:special", emptyList(), emptyMap(), null, emptyList(), null, nextDealerSeat = null, scoreChangesBySeat = emptyMap(), winnerDetails = emptyList(), hasEarlierWinSettlement = false)
+        val fact = presenter().present(events(HistoryReplayFactDto.Completion(HistoryFactTypeKeys.MATCH_COMPLETED, outcome)), null).transactions.single().facts.single()
+
+        assertEquals("test.special", checkNotNull(fact.outcome).reasonText.string)
     }
 
     /** 中途終止顯示已知平台原因，未知原因則回退為通用結算文字。 */
