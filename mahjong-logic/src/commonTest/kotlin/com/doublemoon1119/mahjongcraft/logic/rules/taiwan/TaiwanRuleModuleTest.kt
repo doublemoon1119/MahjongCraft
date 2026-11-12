@@ -7,6 +7,8 @@ import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.logic.base.TileFaceView
 import com.doublemoon1119.mahjongcraft.logic.component.BuiltInComponentOwners
 import com.doublemoon1119.mahjongcraft.logic.component.ComponentSet
+import com.doublemoon1119.mahjongcraft.logic.module.BuiltInAutomaticControlIds
+import com.doublemoon1119.mahjongcraft.logic.module.LegalActionAutomaticControlPolicy
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
 import com.doublemoon1119.mahjongcraft.logic.module.MeldCompletedContext
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.layout.TaiwanPhysicalWallLayoutPolicy
@@ -47,6 +49,16 @@ class TaiwanRuleModuleTest {
         config = TaiwanRuleConfig(),
     )
     private val module: MahjongRuleModule<TaiwanRuleConfig> = taiwanModule
+
+    /** 台麻支援與日麻相同的三種本局自動操作，並使用只看合法動作的共用判斷。 */
+    @Test
+    fun `test automatic controls match riichi and use the shared policy`() {
+        assertEquals(
+            setOf(BuiltInAutomaticControlIds.AUTO_WIN, BuiltInAutomaticControlIds.DECLINE_CALLS, BuiltInAutomaticControlIds.AUTO_TSUMOGIRI),
+            module.getSupportedAutomaticControlIds(),
+        )
+        assertSame(LegalActionAutomaticControlPolicy, module.createAutomaticControlPolicy())
+    }
 
     /** 未提供牌牆公開政策的規則應安全使用 no-op，不套用日麻行為。 */
     @Test

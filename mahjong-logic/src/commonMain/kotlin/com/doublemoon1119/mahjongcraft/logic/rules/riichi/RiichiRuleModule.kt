@@ -10,6 +10,7 @@ import com.doublemoon1119.mahjongcraft.logic.component.ComponentPatch
 import com.doublemoon1119.mahjongcraft.logic.judgment.ShantenResult
 import com.doublemoon1119.mahjongcraft.logic.module.BuiltInAutomaticControlIds
 import com.doublemoon1119.mahjongcraft.logic.module.ExhaustiveDrawSettlementResult
+import com.doublemoon1119.mahjongcraft.logic.module.LegalActionAutomaticControlPolicy
 import com.doublemoon1119.mahjongcraft.logic.module.MeldCompletedContext
 import com.doublemoon1119.mahjongcraft.logic.module.PointPotCollection
 import com.doublemoon1119.mahjongcraft.logic.module.PublicPlayerIndicator
@@ -52,8 +53,8 @@ class RiichiRuleModule(
         BuiltInAutomaticControlIds.AUTO_TSUMOGIRI,
     )
 
-    /** 建立日本麻將本局自動操作 policy。 */
-    override fun createAutomaticControlPolicy(): RiichiAutomaticControlPolicy = RiichiAutomaticControlPolicy
+    /** 本局自動操作只依合法動作決定，與其他規則共用同一套判斷。 */
+    override fun createAutomaticControlPolicy(): LegalActionAutomaticControlPolicy = LegalActionAutomaticControlPolicy
 
     /** 日麻只公開已經能從桌面立直棒觀察到的立直狀態。 */
     override fun getPublicPlayerIndicators(tableState: TableState, player: MahjongPlayer): List<PublicPlayerIndicator> = if (isPlayerInRiichi(player)) listOf(PublicPlayerIndicator(RiichiPublicIndicatorIds.RIICHI)) else emptyList()

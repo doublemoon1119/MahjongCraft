@@ -7,9 +7,11 @@ import com.doublemoon1119.mahjongcraft.logic.base.MeldType
 import com.doublemoon1119.mahjongcraft.logic.base.TileOrder
 import com.doublemoon1119.mahjongcraft.logic.component.ComponentPatch
 import com.doublemoon1119.mahjongcraft.logic.component.ComponentSet
+import com.doublemoon1119.mahjongcraft.logic.module.BuiltInAutomaticControlIds
 import com.doublemoon1119.mahjongcraft.logic.module.DeclarationDiscardEffect
 import com.doublemoon1119.mahjongcraft.logic.module.DeclarationDiscardPolicy
 import com.doublemoon1119.mahjongcraft.logic.module.ExhaustiveDrawSettlementResult
+import com.doublemoon1119.mahjongcraft.logic.module.LegalActionAutomaticControlPolicy
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
 import com.doublemoon1119.mahjongcraft.logic.module.MeldCompletedContext
 import com.doublemoon1119.mahjongcraft.logic.module.PointPotCollection
@@ -45,6 +47,16 @@ class TaiwanRuleModule(
     override val id: String,
     override val config: TaiwanRuleConfig,
 ) : MahjongRuleModule<TaiwanRuleConfig> {
+    /** 台灣麻將支援的本局自動操作控制，與日麻相同。 */
+    override fun getSupportedAutomaticControlIds(): Set<String> = setOf(
+        BuiltInAutomaticControlIds.AUTO_WIN,
+        BuiltInAutomaticControlIds.DECLINE_CALLS,
+        BuiltInAutomaticControlIds.AUTO_TSUMOGIRI,
+    )
+
+    /** 本局自動操作只依合法動作決定：過水、起胡台數與報聽都已反映在合法動作中。 */
+    override fun createAutomaticControlPolicy(): LegalActionAutomaticControlPolicy = LegalActionAutomaticControlPolicy
+
     /** 摸到花牌後自動公開並從保留區補牌。 */
     override fun createDrawFollowUpPolicy(): DrawFollowUpPolicy = TaiwanFlowerDrawPolicy
 

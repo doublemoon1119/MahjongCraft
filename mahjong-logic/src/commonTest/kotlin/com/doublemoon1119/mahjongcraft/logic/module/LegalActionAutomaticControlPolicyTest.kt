@@ -1,10 +1,8 @@
-package com.doublemoon1119.mahjongcraft.logic.rules.riichi
+package com.doublemoon1119.mahjongcraft.logic.module
 
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.base.Hand
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
-import com.doublemoon1119.mahjongcraft.logic.module.AutomaticControlContext
-import com.doublemoon1119.mahjongcraft.logic.module.BuiltInAutomaticControlIds
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeIdentifiedTileFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
@@ -14,8 +12,8 @@ import kotlin.test.assertEquals
 import kotlin.test.assertNull
 import kotlin.uuid.Uuid
 
-/** [RiichiAutomaticControlPolicy] 的優先順序與安全條件測試。 */
-class RiichiAutomaticControlPolicyTest {
+/** [LegalActionAutomaticControlPolicy] 的優先順序與安全條件測試。 */
+class LegalActionAutomaticControlPolicyTest {
     /** 自動和牌優先於其他自動控制。 */
     @Test
     fun `test auto win selects winning action first`() {
@@ -24,7 +22,7 @@ class RiichiAutomaticControlPolicyTest {
             enabledIds = setOf(BuiltInAutomaticControlIds.AUTO_WIN, BuiltInAutomaticControlIds.DECLINE_CALLS),
         )
 
-        val result = RiichiAutomaticControlPolicy.evaluate(context)
+        val result = LegalActionAutomaticControlPolicy.evaluate(context)
 
         assertEquals(context.legalActions[1], result.immediateAction?.action)
     }
@@ -42,7 +40,7 @@ class RiichiAutomaticControlPolicyTest {
             GameAction.Pass,
         )
 
-        val result = RiichiAutomaticControlPolicy.evaluate(
+        val result = LegalActionAutomaticControlPolicy.evaluate(
             context(actions, setOf(BuiltInAutomaticControlIds.DECLINE_CALLS)),
         )
 
@@ -54,7 +52,7 @@ class RiichiAutomaticControlPolicyTest {
     @Test
     fun `test decline calls immediately passes when no other choice remains`() {
         val incomingId = Uuid.random()
-        val result = RiichiAutomaticControlPolicy.evaluate(
+        val result = LegalActionAutomaticControlPolicy.evaluate(
             context(
                 listOf(GameAction.Pon(incomingId, emptyList()), GameAction.Pass),
                 setOf(BuiltInAutomaticControlIds.DECLINE_CALLS),
@@ -70,8 +68,8 @@ class RiichiAutomaticControlPolicyTest {
         val drawn = FakeIdentifiedTileFactory.create(Tile.Honor.East)
         val enabled = setOf(BuiltInAutomaticControlIds.AUTO_TSUMOGIRI)
 
-        val immediate = RiichiAutomaticControlPolicy.evaluate(context(emptyList(), enabled, drawn.id))
-        val blocked = RiichiAutomaticControlPolicy.evaluate(context(listOf(GameAction.Tsumo), enabled, drawn.id))
+        val immediate = LegalActionAutomaticControlPolicy.evaluate(context(emptyList(), enabled, drawn.id))
+        val blocked = LegalActionAutomaticControlPolicy.evaluate(context(listOf(GameAction.Tsumo), enabled, drawn.id))
 
         assertEquals(GameAction.Discard(drawn.id), immediate.immediateAction?.action)
         assertNull(blocked.immediateAction)

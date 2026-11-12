@@ -12,6 +12,7 @@ import com.doublemoon1119.mahjongcraft.logic.component.BuiltInComponentOwners
 import com.doublemoon1119.mahjongcraft.logic.component.ComponentPatch
 import com.doublemoon1119.mahjongcraft.logic.module.BuiltInAutomaticControlIds
 import com.doublemoon1119.mahjongcraft.logic.module.ExhaustiveDrawSettlementResult
+import com.doublemoon1119.mahjongcraft.logic.module.LegalActionAutomaticControlPolicy
 import com.doublemoon1119.mahjongcraft.logic.module.MeldCompletedContext
 import com.doublemoon1119.mahjongcraft.logic.module.PointPotCollection
 import com.doublemoon1119.mahjongcraft.logic.module.PublicPlayerIndicator
@@ -19,7 +20,6 @@ import com.doublemoon1119.mahjongcraft.logic.module.RevealedHandSettlement
 import com.doublemoon1119.mahjongcraft.logic.module.WinResolutionResult
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RIICHI_PULL_NORTH_GAME_ACTION
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RIICHI_STICK_POINTS
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiAutomaticControlPolicy
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDiscardPile
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDiscardReadinessAnalyzer
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiExhaustiveDrawReason
@@ -86,7 +86,7 @@ class ThreePlayerRiichiRuleModule(
     )
 
     /** 與四人日麻相同的本局自動操作 policy。 */
-    override fun createAutomaticControlPolicy(): RiichiAutomaticControlPolicy = RiichiAutomaticControlPolicy
+    override fun createAutomaticControlPolicy(): LegalActionAutomaticControlPolicy = LegalActionAutomaticControlPolicy
 
     /** 只公開已經能從桌面立直棒觀察到的立直狀態。 */
     override fun getPublicPlayerIndicators(tableState: TableState, player: MahjongPlayer): List<PublicPlayerIndicator> = if (isPlayerInRiichi(player)) listOf(PublicPlayerIndicator(RiichiPublicIndicatorIds.RIICHI)) else emptyList()

@@ -1,14 +1,13 @@
-package com.doublemoon1119.mahjongcraft.logic.rules.riichi
+package com.doublemoon1119.mahjongcraft.logic.module
 
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
-import com.doublemoon1119.mahjongcraft.logic.module.AutomaticControlAction
-import com.doublemoon1119.mahjongcraft.logic.module.AutomaticControlContext
-import com.doublemoon1119.mahjongcraft.logic.module.AutomaticControlPolicy
-import com.doublemoon1119.mahjongcraft.logic.module.AutomaticControlResult
-import com.doublemoon1119.mahjongcraft.logic.module.BuiltInAutomaticControlIds
 
-/** 日本麻將的自動和牌、不吃碰槓與安全摸切 policy。 */
-object RiichiAutomaticControlPolicy : AutomaticControlPolicy {
+/**
+ * 只依目前合法動作決定的自動和牌、自動跳過鳴牌與自動打出摸到的牌。
+ *
+ * 不含任何規則專屬判斷：能不能和、能不能鳴牌都已由規則的合法動作決定，有其他可做的動作（例如宣告）時不會自動打牌。
+ */
+object LegalActionAutomaticControlPolicy : AutomaticControlPolicy {
     /** 依固定優先序解析目前可以立即完成或隱藏的動作。 */
     override fun evaluate(context: AutomaticControlContext): AutomaticControlResult {
         val enabled = context.enabledControlIds
@@ -49,10 +48,10 @@ object RiichiAutomaticControlPolicy : AutomaticControlPolicy {
     }
 
     /**
-     * 判斷動作是否為日麻可自動接受的和牌。
+     * 判斷動作是否為可自動接受的和牌。
      *
      * @param action 待檢查的遊戲動作。
-     * @return 動作為榮和或自摸時為 true。
+     * @return 動作為和別人打出的牌或自摸時為 true。
      */
     private fun isWinAction(action: GameAction): Boolean = action is GameAction.Ron || action == GameAction.Tsumo
 
