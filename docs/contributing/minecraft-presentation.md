@@ -84,6 +84,20 @@ rules come from collisions that only showed up in game, so check them even when 
 - Map every registered ID to an explicit translation key; see [Correctness](correctness.md) for why keys are
   never derived from an ID path.
 
+## Rule wording
+
+- Shared defaults use rule-neutral wording in every language: Chow, Pung, Kong, Win and Self-draw in English,
+  和牌 and 牌牆 in Chinese. A rule whose players say it differently registers its own wording for the same
+  action, status or text, as riichi does for Ron, Tsumo, 榮和 and 牌山 and Taiwan does for 胡牌.
+- Register wording through the registry that already owns the text: action vocabulary, round info lines,
+  decision statuses or automatic control displays. Shared text without such a registry gets a rule wording ID
+  in `BuiltInRuleWordingIds`, a neutral default from the built-in extension, and per-rule overrides through
+  `registerRuleWordings`.
+- Text shown outside a table, such as client settings, the rule catalogue screen and sound subtitles, cannot
+  depend on a rule and stays neutral.
+- Code keeps one fixed set of names for mahjong concepts: `Chi`, `Pon`, `Kan`, `Ron` and `Tsumo`, where `Ron`
+  means winning on another player's discard in any rule. These names never need to match player wording.
+
 ## Round Info Parameters
 
 - A rule's `RoundInfoLineProvider` may use `Number` and `WindValue` for values, `TileValue` for a

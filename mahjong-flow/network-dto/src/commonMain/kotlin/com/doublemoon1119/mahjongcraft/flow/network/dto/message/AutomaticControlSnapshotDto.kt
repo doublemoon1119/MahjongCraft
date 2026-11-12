@@ -7,6 +7,7 @@ import kotlinx.serialization.Serializable
  *
  *
  * @property gameId 所屬對局識別碼。
+ * @property ruleModuleId 所屬對局採用的規則模組 ID。
  * @property revision 建立快照時的權威 revision。
  * @property supportedControlIds 目前規則支援的完整控制 ID 集合。
  * @property enabledControlIds 該玩家目前已啟用的控制 ID 集合。
@@ -14,6 +15,7 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class AutomaticControlSnapshotDto(
     val gameId: String,
+    val ruleModuleId: String,
     val revision: Long,
     val supportedControlIds: Set<String>,
     val enabledControlIds: Set<String>,

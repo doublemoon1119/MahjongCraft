@@ -144,6 +144,7 @@ class ClientAutomaticControlStateStoreTest {
      */
     private fun snapshot(gameId: String, revision: Long, enabled: Set<String>): AutomaticControlSnapshotDto = AutomaticControlSnapshotDto(
         gameId = gameId,
+        ruleModuleId = "mahjongcraft:riichi",
         revision = revision,
         supportedControlIds = enabled,
         enabledControlIds = enabled,

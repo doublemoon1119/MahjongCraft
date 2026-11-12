@@ -7,8 +7,11 @@ class AutomaticControlDisplayRegistryImpl : AutomaticControlDisplayRegistry {
     /** 依自動操作識別碼索引的顯示資料。 */
     private val displays = mutableMapOf<String, AutomaticControlDisplay>()
 
+    /** 依規則模組與自動操作識別碼索引的規則專屬顯示資料。 */
+    private val byRuleModule = mutableMapOf<Pair<String, String>, AutomaticControlDisplay>()
+
     override val registrationKeys: Set<String>
-        get() = displays.keys.toSet()
+        get() = displays.keys + byRuleModule.keys.map { (ruleModuleId, controlId) -> "$ruleModuleId/$controlId" }
 
     override var isFrozen: Boolean = false
         private set
@@ -23,7 +26,18 @@ class AutomaticControlDisplayRegistryImpl : AutomaticControlDisplayRegistry {
         }
     }
 
-    override fun find(controlId: String): AutomaticControlDisplay? = displays[controlId]
+    override fun register(definition: AutomaticControlRuleDisplayDefinition) {
+        val ruleModuleId = definition.ruleModuleId
+        val controlId = definition.controlId
+        check(!isFrozen) { "Automatic control display registry is frozen" }
+        MinecraftResourceIds.requireValid(ruleModuleId) { "Rule module ID must be namespaced: $ruleModuleId" }
+        MinecraftResourceIds.requireValid(controlId) { "Automatic control ID must be namespaced: $controlId" }
+        require(byRuleModule.putIfAbsent(ruleModuleId to controlId, definition.display) == null) {
+            "Automatic control display already registered: $ruleModuleId/$controlId"
+        }
+    }
+
+    override fun find(ruleModuleId: String?, controlId: String): AutomaticControlDisplay? = ruleModuleId?.let { byRuleModule[it to controlId] } ?: displays[controlId]
 
     override fun freeze() {
         isFrozen = true

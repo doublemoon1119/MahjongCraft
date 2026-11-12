@@ -6,12 +6,13 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.Autom
 interface AutomaticControlDisplayRegistry : AutomaticControlDisplayRegistrar {
 
     /**
-     * 查詢指定 control ID 的顯示資料；未登記時回傳 `null`。
+     * 查詢指定 control ID 的顯示資料；規則登記了自己的顯示時優先使用，否則使用預設。
      *
+     * @param ruleModuleId 目前對局的規則模組 ID；不在對局中時為 null，只查預設。
      * @param controlId 自動操作的穩定 ID。
-     * @return 已登記的顯示資料，或未登記時的 null。
+     * @return 已登記的顯示資料，或都未登記時的 null。
      */
-    fun find(controlId: String): AutomaticControlDisplay?
+    fun find(ruleModuleId: String?, controlId: String): AutomaticControlDisplay?
 
     /** 凍結 registry，禁止後續登記。 */
     fun freeze()

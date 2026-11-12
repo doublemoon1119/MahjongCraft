@@ -63,6 +63,7 @@ class MahjongClientConfigDifferenceFormatterTest {
         }
         val baseline = AutomaticControlSnapshotDto(
             gameId = "game",
+            ruleModuleId = "mahjongcraft:riichi",
             revision = 1,
             supportedControlIds = setOf("example:auto", "example:unknown"),
             enabledControlIds = setOf("example:auto"),

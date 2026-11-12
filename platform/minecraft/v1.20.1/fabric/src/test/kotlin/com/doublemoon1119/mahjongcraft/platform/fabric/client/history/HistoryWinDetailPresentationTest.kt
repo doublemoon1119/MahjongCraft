@@ -25,6 +25,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.riichi.RiichiYaku
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.ExhaustiveDrawReasonDisplayNameRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.RoundOutcomeDisplayNameRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.WinSettlementPresentationTemplateRegistryImpl
+import com.doublemoon1119.mahjongcraft.platform.minecraft.text.RuleWordingRegistryImpl
 import net.minecraft.text.TranslatableTextContent
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -140,7 +141,7 @@ class HistoryWinDetailPresentationTest {
      *
      * @return 空動作與流局名稱 registry 的 presenter。
      */
-    private fun presenter(): HistoryRoundEventPresenter = HistoryRoundEventPresenter(GameActionVocabularyRegistryImpl().apply { BuiltInMinecraftMahjongExtension.registerGameActionVocabulary(this) }, ExhaustiveDrawReasonDisplayNameRegistryImpl(), RoundOutcomeDisplayNameRegistryImpl(), RuleDecisionDisplayNameRegistryImpl(), HistoryTileSetAsideDisplayRegistryImpl())
+    private fun presenter(): HistoryRoundEventPresenter = HistoryRoundEventPresenter(GameActionVocabularyRegistryImpl().apply { BuiltInMinecraftMahjongExtension.registerGameActionVocabulary(this) }, ExhaustiveDrawReasonDisplayNameRegistryImpl(), RoundOutcomeDisplayNameRegistryImpl(), RuleDecisionDisplayNameRegistryImpl(), HistoryTileSetAsideDisplayRegistryImpl(), RuleWordingRegistryImpl().also(BuiltInMinecraftMahjongExtension::registerRuleWordings))
 
     /**
      * 建立單次和牌結算的事件呈現資料。

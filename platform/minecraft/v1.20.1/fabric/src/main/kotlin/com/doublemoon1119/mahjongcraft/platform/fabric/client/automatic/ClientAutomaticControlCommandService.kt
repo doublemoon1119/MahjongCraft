@@ -12,6 +12,9 @@ class ClientAutomaticControlCommandService(
     private val autoSortHandPreferenceService: ClientAutoSortHandPreferenceService,
     private val updateCoordinator: ClientAutomaticControlUpdateCoordinator,
 ) {
+    /** 目前對局的規則模組 ID，決定控制項用語；沒有本局快照時為 null。 */
+    fun ruleModuleId(): String? = updateCoordinator.snapshot()?.ruleModuleId
+
     /** 目前可供補全的控制 ID；永久自動理牌固定存在。 */
     fun availableControlIds(): Set<String> = buildSet {
         add(BuiltInMinecraftAutomaticControlIds.AUTO_SORT_HAND)

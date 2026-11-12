@@ -21,16 +21,19 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.Minec
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.PlayerPortraitSourceRegistrar
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.PublicPlayerIndicatorDisplayRegistrar
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.RoomMemberAppearanceSourceRegistrar
+import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.RuleWordingRegistrar
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.TileEmojiRegistrar
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.TileLabelRegistrar
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.WinSettlementPresentationTemplateRegistrar
 import com.doublemoon1119.mahjongcraft.platform.minecraft.automatic.AutomaticControlDisplay
 import com.doublemoon1119.mahjongcraft.platform.minecraft.automatic.AutomaticControlDisplayDefinition
+import com.doublemoon1119.mahjongcraft.platform.minecraft.automatic.BuiltInAutomaticControlDisplayOrders
 import com.doublemoon1119.mahjongcraft.platform.minecraft.automatic.BuiltInAutomaticControlTranslationKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.automatic.BuiltInMinecraftAutomaticControlIds
 import com.doublemoon1119.mahjongcraft.platform.minecraft.character.BuiltInAiCharacters
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftClientConfigScreenKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.DecisionStatusDisplayNameDefaultDefinition
+import com.doublemoon1119.mahjongcraft.platform.minecraft.history.MinecraftHistoryScreenKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.player.PlayerPortraitSource
 import com.doublemoon1119.mahjongcraft.platform.minecraft.player.PlayerPortraitSourceDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.player.PublicPlayerIndicatorDisplay
@@ -44,8 +47,10 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.MatchSettle
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.PresentationValue
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.WinSettlementPresentationFieldProviderDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.WinSettlementTextKeys
+import com.doublemoon1119.mahjongcraft.platform.minecraft.text.BuiltInRuleWordingIds
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftHudKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftMessageKeys
+import com.doublemoon1119.mahjongcraft.platform.minecraft.text.RuleWordingDefaultDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.BuiltInMinecraftTileAppearances
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileEmojiDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileLabelDefinition
@@ -117,7 +122,7 @@ object BuiltInMinecraftMahjongExtension : MinecraftMahjongExtension {
                 display = AutomaticControlDisplay(
                     labelTranslationKey = MinecraftClientConfigScreenKeys.AUTO_SORT_HAND,
                     descriptionTranslationKey = MinecraftClientConfigScreenKeys.AUTO_SORT_HAND_DESCRIPTION,
-                    displayOrder = 0,
+                    displayOrder = BuiltInAutomaticControlDisplayOrders.AUTO_SORT_HAND,
                 ),
             ),
         )
@@ -127,7 +132,7 @@ object BuiltInMinecraftMahjongExtension : MinecraftMahjongExtension {
                 display = AutomaticControlDisplay(
                     labelTranslationKey = BuiltInAutomaticControlTranslationKeys.AUTO_WIN,
                     descriptionTranslationKey = BuiltInAutomaticControlTranslationKeys.AUTO_WIN_DESCRIPTION,
-                    displayOrder = 10,
+                    displayOrder = BuiltInAutomaticControlDisplayOrders.AUTO_WIN,
                 ),
             ),
         )
@@ -137,7 +142,7 @@ object BuiltInMinecraftMahjongExtension : MinecraftMahjongExtension {
                 display = AutomaticControlDisplay(
                     labelTranslationKey = BuiltInAutomaticControlTranslationKeys.DECLINE_CALLS,
                     descriptionTranslationKey = BuiltInAutomaticControlTranslationKeys.DECLINE_CALLS_DESCRIPTION,
-                    displayOrder = 20,
+                    displayOrder = BuiltInAutomaticControlDisplayOrders.DECLINE_CALLS,
                 ),
             ),
         )
@@ -147,7 +152,7 @@ object BuiltInMinecraftMahjongExtension : MinecraftMahjongExtension {
                 display = AutomaticControlDisplay(
                     labelTranslationKey = BuiltInAutomaticControlTranslationKeys.AUTO_TSUMOGIRI,
                     descriptionTranslationKey = BuiltInAutomaticControlTranslationKeys.AUTO_TSUMOGIRI_DESCRIPTION,
-                    displayOrder = 30,
+                    displayOrder = BuiltInAutomaticControlDisplayOrders.AUTO_TSUMOGIRI,
                 ),
             ),
         )
@@ -337,6 +342,12 @@ object BuiltInMinecraftMahjongExtension : MinecraftMahjongExtension {
                 display = PublicPlayerIndicatorDisplay(MinecraftMessageKeys.PLAYER_INDICATOR_PAO, colorRgb = PAO_PAYMENT_REASON_COLOR),
             ),
         )
+    }
+
+    /** 摸完提示與牌譜槓動作的中立用語；說法不同的規則以同一個文字 ID 覆寫。 */
+    override fun registerRuleWordings(registry: RuleWordingRegistrar) {
+        registry.register(RuleWordingDefaultDefinition(BuiltInRuleWordingIds.WALL_EXHAUSTED, MinecraftMessageKeys.WALL_EXHAUSTED))
+        registry.register(RuleWordingDefaultDefinition(BuiltInRuleWordingIds.HISTORY_KAN, MinecraftHistoryScreenKeys.ROUND_ACTION_KAN))
     }
 
     /** 核心動作的中立預設用語與操作卡順序；說法不同的規則登記同一個動作 ID 即可覆寫，不需要改動呈現程式。 */

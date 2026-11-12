@@ -14,10 +14,12 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.ai.AiStrategyDisplayNa
 import com.doublemoon1119.mahjongcraft.platform.minecraft.history.MinecraftHistoryScreenKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.ExhaustiveDrawReasonDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocation
+import com.doublemoon1119.mahjongcraft.platform.minecraft.text.BuiltInRuleWordingIds
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.GameTurnStatus
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftMessageKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftPlayerFeedback
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftPlayerFeedbackPublisher
+import com.doublemoon1119.mahjongcraft.platform.minecraft.text.RuleWordingRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.minecraftAbortReasonTranslationKey
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileDisplayNameRegistry
@@ -42,6 +44,7 @@ import kotlin.uuid.Uuid
  * @property aiStrategyDisplayNames AI 策略的顯示名稱註冊表。
  * @property actionVocabulary 規則動作的用語註冊表。
  * @property exhaustiveDrawReasonDisplayNames 流局原因的顯示名稱註冊表。
+ * @property ruleWordings 依規則選擇共用文字說法的註冊表。
  * @property tileDisplayNames 牌種的顯示名稱註冊表。
  * @property tileAssetRegistry 牌面資產註冊表。
  * @property tileEmojiRegistry 聊天牌面圖示註冊表。
@@ -55,6 +58,7 @@ class FabricPlayerFeedbackPublisher(
     private val aiStrategyDisplayNames: AiStrategyDisplayNameRegistry,
     private val actionVocabulary: GameActionVocabularyRegistry,
     private val exhaustiveDrawReasonDisplayNames: ExhaustiveDrawReasonDisplayNameRegistry,
+    private val ruleWordings: RuleWordingRegistry,
     private val tileDisplayNames: TileDisplayNameRegistry,
     private val tileAssetRegistry: MinecraftTileAssetRegistry,
     private val tileEmojiRegistry: TileEmojiRegistry,
@@ -185,8 +189,10 @@ class FabricPlayerFeedbackPublisher(
                     player.sendMessage(Text.translatable(MinecraftMessageKeys.FORCED_AUTO_PLAY_ACTIVE), true)
                 MinecraftPlayerFeedback.IllegalGameAction ->
                     player.sendMessage(Text.translatable(MinecraftMessageKeys.ILLEGAL_GAME_ACTION), true)
-                MinecraftPlayerFeedback.WallExhausted ->
-                    player.sendMessage(Text.translatable(MinecraftMessageKeys.WALL_EXHAUSTED), true)
+                is MinecraftPlayerFeedback.WallExhausted -> {
+                    val key = requireNotNull(ruleWordings.find(feedback.ruleModuleId, BuiltInRuleWordingIds.WALL_EXHAUSTED)) { "Wall exhausted has a built-in wording" }
+                    player.sendMessage(Text.translatable(key), true)
+                }
                 MinecraftPlayerFeedback.UnsupportedGameAction ->
                     player.sendMessage(Text.translatable(MinecraftMessageKeys.UNSUPPORTED_GAME_ACTION), true)
                 MinecraftPlayerFeedback.TableAnimationBusy ->

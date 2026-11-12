@@ -30,6 +30,8 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.RoundOutcom
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.StandardWinSettlementLayout
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.WinSettlementPresentationTemplateRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.detailTextFormatter
+import com.doublemoon1119.mahjongcraft.platform.minecraft.text.BuiltInRuleWordingIds
+import com.doublemoon1119.mahjongcraft.platform.minecraft.text.RuleWordingRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.minecraftAbortReasonTranslationKey
 import net.minecraft.text.Text
 import net.minecraft.util.Formatting
@@ -45,6 +47,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.action.BuiltInGameActi
  * @property roundOutcomes 規則特殊本局結果的顯示名稱來源。
  * @property ruleDecisionNames 規則選擇選項的顯示名稱來源。
  * @property setAsideDisplays 移出牌區標題與換牌用語來源。
+ * @property ruleWordings 依規則選擇共用文字說法的來源。
  */
 internal class HistoryRoundEventPresenter(
     private val actionVocabulary: GameActionVocabularyRegistry,
@@ -52,6 +55,7 @@ internal class HistoryRoundEventPresenter(
     private val roundOutcomes: RoundOutcomeDisplayNameRegistry,
     private val ruleDecisionNames: RuleDecisionDisplayNameRegistry,
     private val setAsideDisplays: HistoryTileSetAsideDisplayRegistry,
+    private val ruleWordings: RuleWordingRegistry,
 ) {
     /**
      * 將單局事件轉換為保留原始順序的呈現模型。
@@ -461,7 +465,7 @@ internal class HistoryRoundEventPresenter(
      */
     private fun actionText(ruleId: String?, actionType: String, extensionTypeId: String?): Text {
         when (actionType) {
-            HistoryActionTypeKeys.KAN -> return Text.translatable(MinecraftHistoryScreenKeys.ROUND_ACTION_KAN)
+            HistoryActionTypeKeys.KAN -> return Text.translatable(requireNotNull(ruleWordings.find(ruleId, BuiltInRuleWordingIds.HISTORY_KAN)) { "Kan has a built-in wording" })
             HistoryActionTypeKeys.DRAW -> return Text.translatable(MinecraftHistoryScreenKeys.ROUND_ACTION_DRAW)
             HistoryActionTypeKeys.EXHAUSTIVE_DRAW -> return Text.translatable(MinecraftHistoryScreenKeys.ROUND_CLASSIFICATION_EXHAUSTIVE_DRAW)
             HistoryActionTypeKeys.GAME_STARTED -> return Text.translatable(MinecraftHistoryScreenKeys.ROUND_ACTION_GAME_STARTED)

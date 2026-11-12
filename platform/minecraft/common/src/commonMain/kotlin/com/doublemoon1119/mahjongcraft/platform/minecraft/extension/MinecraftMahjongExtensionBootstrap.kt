@@ -107,6 +107,7 @@ object MinecraftMahjongExtensionBootstrap {
         extension.registerGameActionSounds(registries.gameActionSoundPresentationRegistry)
         extension.registerExhaustiveDrawReasonDisplayNames(registries.exhaustiveDrawReasonDisplayNameRegistry)
         extension.registerRoundOutcomeDisplayNames(registries.roundOutcomeDisplayNameRegistry)
+        extension.registerRuleWordings(registries.ruleWordingRegistry)
         extension.registerHistoryDiscardMarkerDisplays(registries.historyDiscardMarkerDisplayRegistry)
         extension.registerHistoryTileSetAsideDisplays(registries.historyTileSetAsideDisplayRegistry)
         extension.registerRuleDecisionDisplayNames(registries.ruleDecisionDisplayNameRegistry)

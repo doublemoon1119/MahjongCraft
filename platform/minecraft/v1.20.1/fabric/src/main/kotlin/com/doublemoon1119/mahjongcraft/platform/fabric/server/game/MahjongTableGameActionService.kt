@@ -427,7 +427,8 @@ class MahjongTableGameActionService(
                 is Outcome.Success -> Unit
                 // 中止已通知全部參與者與觀察者，送出命令的人不再收到重複訊息。
                 is Outcome.Error -> if (result.error !is GameError.MatchAborted) {
-                    feedbackPublisher.publish(playerId, MinecraftGameFeedbackResolver.actionError(result.error))
+                    val ruleModuleId = gameRepository.getGame(gameId)?.let { game -> moduleRegistry.getModule(game.tableState.config).id }
+                    feedbackPublisher.publish(playerId, MinecraftGameFeedbackResolver.actionError(result.error, ruleModuleId))
                 }
             }
             // 強制自動操作中的玩家送出的命令被拒絕，視為完全沒發生過，不請求推進。其餘成功／失敗結果都要請求，

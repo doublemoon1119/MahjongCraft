@@ -21,22 +21,24 @@ class AutomaticControlDisplayResolver(
     /**
      * 解析並依顯示順序、control ID 穩定排列指定項目。
      *
+     * @param ruleModuleId 目前對局的規則模組 ID；不在對局中時為 null，使用預設顯示。
      * @param controlIds 要顯示的自動操作 ID。
      * @return 去重後的顯示資料清單。
      */
-    fun resolveAll(controlIds: Iterable<String>): List<ResolvedAutomaticControlDisplay> = controlIds
+    fun resolveAll(ruleModuleId: String?, controlIds: Iterable<String>): List<ResolvedAutomaticControlDisplay> = controlIds
         .distinct()
-        .map(::resolve)
+        .map { controlId -> resolve(ruleModuleId, controlId) }
         .sortedWith(compareBy(ResolvedAutomaticControlDisplay::displayOrder, ResolvedAutomaticControlDisplay::controlId))
 
     /**
      * 解析單一項目；未知 ID 以原始 ID 顯示、沒有說明並排列於已登記項目之後。
      *
+     * @param ruleModuleId 目前對局的規則模組 ID；不在對局中時為 null，使用預設顯示。
      * @param controlId 自動操作 ID。
      * @return 對應的本地化顯示資料或未知 ID 的回退顯示。
      */
-    fun resolve(controlId: String): ResolvedAutomaticControlDisplay {
-        val display = registry.find(controlId)
+    fun resolve(ruleModuleId: String?, controlId: String): ResolvedAutomaticControlDisplay {
+        val display = registry.find(ruleModuleId, controlId)
         if (display == null && warnedUnknownControlIds.add(controlId)) {
             logger.warn("Unknown automatic control display: {}", controlId)
         }

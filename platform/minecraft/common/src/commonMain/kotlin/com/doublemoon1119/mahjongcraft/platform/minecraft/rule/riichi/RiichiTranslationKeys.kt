@@ -110,6 +110,15 @@ object RiichiTranslationKeys {
     /** 自摸聊天訊息的日麻說法。 */
     const val ACTION_TSUMO_MESSAGE: String = "mahjongcraft.riichi.action.tsumo.message"
 
+    /** 牌山摸完時的提示。 */
+    const val WALL_EXHAUSTED: String = "mahjongcraft.riichi.message.wall_exhausted"
+
+    /** 牌譜中槓的日麻動作名稱。 */
+    const val HISTORY_ACTION_KAN: String = "mahjongcraft.riichi.history_screen.round.action.kan"
+
+    /** 自動打出摸到的牌的日麻名稱（自動摸切）。 */
+    const val AUTOMATIC_CONTROL_TSUMOGIRI: String = "mahjongcraft.riichi.automatic_control.auto_tsumogiri"
+
     /** 局況資訊的牌山剩餘張數。 */
     const val ROUND_INFO_WALL_REMAINING: String = "mahjongcraft.riichi.round_info.wall_remaining"
 
@@ -209,6 +218,9 @@ object RiichiTranslationKeys {
         ACTION_TSUMO,
         ACTION_TSUMO_MESSAGE,
         ROUND_INFO_WALL_REMAINING,
+        AUTOMATIC_CONTROL_TSUMOGIRI,
+        WALL_EXHAUSTED,
+        HISTORY_ACTION_KAN,
         OUTCOME_NAGASHI_MANGAN,
         OUTCOME_DEALER_TOP_FINISH,
         HISTORY_TILE_AREA_NORTH,

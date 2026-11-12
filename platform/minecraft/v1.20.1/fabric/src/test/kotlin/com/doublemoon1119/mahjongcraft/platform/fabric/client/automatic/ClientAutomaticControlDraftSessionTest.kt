@@ -158,6 +158,7 @@ class ClientAutomaticControlDraftSessionTest {
         enabled: Set<String> = emptySet(),
     ): AutomaticControlSnapshotDto = AutomaticControlSnapshotDto(
         gameId = gameId,
+        ruleModuleId = "mahjongcraft:riichi",
         revision = revision,
         supportedControlIds = setOf("test:auto"),
         enabledControlIds = enabled,

@@ -56,7 +56,7 @@ fun clientConfigDifferenceText(
     val changedIds = baseline.supportedControlIds.filter { id ->
         (id in baseline.enabledControlIds) != (id in automaticDraft.enabledControlIds)
     }
-    displayResolver.resolveAll(changedIds).forEach { display ->
+    displayResolver.resolveAll(baseline.ruleModuleId, changedIds).forEach { display ->
         result.appendValueChange(
             display.label,
             booleanText(display.controlId in baseline.enabledControlIds),

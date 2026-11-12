@@ -216,15 +216,19 @@ class MinecraftLanguageFilesTest {
         }
     }
 
-    /** 驗證所有語系都提供內建自動操作 registry 宣告的名稱與說明。 */
+    /** 驗證所有語系都提供內建自動操作 registry 宣告的名稱與說明，含規則專屬的顯示。 */
     @Test
     fun `all built-in automatic control displays have translations in every language`() {
         val registry = AutomaticControlDisplayRegistryImpl().apply {
             BuiltInMinecraftMahjongExtension.registerAutomaticControlDisplays(this)
+            BundledMinecraftMahjongExtensions.all.forEach { it.registerAutomaticControlDisplays(this) }
             freeze()
         }
-        val keys = registry.registrationKeys.flatMapTo(mutableSetOf()) { controlId ->
-            val display = checkNotNull(registry.find(controlId)) { "Missing automatic control display: $controlId" }
+        // 規則專屬顯示的登記鍵為「規則 ID/control ID」，預設顯示為 control ID。
+        val keys = registry.registrationKeys.flatMapTo(mutableSetOf()) { key ->
+            val ruleModuleId = key.substringBefore('/', missingDelimiterValue = "").ifEmpty { null }
+            val controlId = key.substringAfter('/')
+            val display = checkNotNull(registry.find(ruleModuleId, controlId)) { "Missing automatic control display: $key" }
             listOf(display.labelTranslationKey, display.descriptionTranslationKey)
         }
 

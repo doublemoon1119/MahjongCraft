@@ -1,11 +1,15 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.automatic
 
 import com.doublemoon1119.mahjongcraft.logic.module.BuiltInAutomaticControlIds
+import com.doublemoon1119.mahjongcraft.logic.module.BuiltInRuleModuleIds
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftClientConfigScreenKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.extension.BuiltInMinecraftMahjongExtension
+import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.riichi.BundledRiichiMinecraftExtension
+import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.riichi.RiichiTranslationKeys
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
+import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
@@ -21,11 +25,11 @@ class AutomaticControlDisplayRegistryTest {
 
         assertEquals(
             MinecraftClientConfigScreenKeys.AUTO_SORT_HAND,
-            registry.find(BuiltInMinecraftAutomaticControlIds.AUTO_SORT_HAND)?.labelTranslationKey,
+            registry.find(null, BuiltInMinecraftAutomaticControlIds.AUTO_SORT_HAND)?.labelTranslationKey,
         )
-        assertEquals(10, registry.find(BuiltInAutomaticControlIds.AUTO_WIN)?.displayOrder)
-        assertEquals(20, registry.find(BuiltInAutomaticControlIds.DECLINE_CALLS)?.displayOrder)
-        assertEquals(30, registry.find(BuiltInAutomaticControlIds.AUTO_TSUMOGIRI)?.displayOrder)
+        assertEquals(10, registry.find(null, BuiltInAutomaticControlIds.AUTO_WIN)?.displayOrder)
+        assertEquals(20, registry.find(null, BuiltInAutomaticControlIds.DECLINE_CALLS)?.displayOrder)
+        assertEquals(30, registry.find(null, BuiltInAutomaticControlIds.AUTO_TSUMOGIRI)?.displayOrder)
         assertTrue(registry.isFrozen)
     }
 
@@ -41,9 +45,29 @@ class AutomaticControlDisplayRegistryTest {
 
         registry.register(AutomaticControlDisplayDefinition("example:control", display))
         assertFailsWith<IllegalArgumentException> { registry.register(AutomaticControlDisplayDefinition("example:control", display)) }
-        assertNull(registry.find("example:missing"))
+        assertNull(registry.find(null, "example:missing"))
 
         registry.freeze()
         assertFailsWith<IllegalStateException> { registry.register(AutomaticControlDisplayDefinition("example:late", display)) }
+    }
+
+    /** 日麻把摸到就打稱為摸切；台麻、第三方規則與不在對局中時使用中立名稱，排列順序不變。 */
+    @Test
+    fun `rules override automatic control names only for their own tables`() {
+        val registry = AutomaticControlDisplayRegistryImpl().apply {
+            BuiltInMinecraftMahjongExtension.registerAutomaticControlDisplays(this)
+            BundledRiichiMinecraftExtension.registerAutomaticControlDisplays(this)
+        }
+
+        val riichi = assertNotNull(registry.find(BuiltInRuleModuleIds.RIICHI_THREE_PLAYER, BuiltInAutomaticControlIds.AUTO_TSUMOGIRI))
+        val neutral = assertNotNull(registry.find(BuiltInRuleModuleIds.TAIWAN, BuiltInAutomaticControlIds.AUTO_TSUMOGIRI))
+        assertEquals(RiichiTranslationKeys.AUTOMATIC_CONTROL_TSUMOGIRI, riichi.labelTranslationKey)
+        assertEquals(BuiltInAutomaticControlTranslationKeys.AUTO_TSUMOGIRI, neutral.labelTranslationKey)
+        assertEquals(neutral.displayOrder, riichi.displayOrder)
+        assertEquals(neutral, registry.find(null, BuiltInAutomaticControlIds.AUTO_TSUMOGIRI))
+        assertEquals(neutral, registry.find("example:rule", BuiltInAutomaticControlIds.AUTO_TSUMOGIRI))
+        assertFailsWith<IllegalArgumentException> {
+            registry.register(AutomaticControlRuleDisplayDefinition(BuiltInRuleModuleIds.RIICHI, BuiltInAutomaticControlIds.AUTO_TSUMOGIRI, riichi))
+        }
     }
 }

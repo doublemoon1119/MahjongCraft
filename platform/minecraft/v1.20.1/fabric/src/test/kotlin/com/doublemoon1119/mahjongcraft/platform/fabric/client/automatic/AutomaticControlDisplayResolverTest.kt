@@ -3,6 +3,7 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.client.automatic
 import com.doublemoon1119.mahjongcraft.platform.minecraft.automatic.AutomaticControlDisplay
 import com.doublemoon1119.mahjongcraft.platform.minecraft.automatic.AutomaticControlDisplayDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.automatic.AutomaticControlDisplayRegistryImpl
+import com.doublemoon1119.mahjongcraft.platform.minecraft.automatic.AutomaticControlRuleDisplayDefinition
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
@@ -20,7 +21,8 @@ class AutomaticControlDisplayResolverTest {
         val resolver = AutomaticControlDisplayResolver(registry)
 
         val resolved = resolver.resolveAll(
-            listOf("example:unknown_b", "example:second", "example:unknown_a", "example:first", "example:unknown_a"),
+            ruleModuleId = null,
+            controlIds = listOf("example:unknown_b", "example:second", "example:unknown_a", "example:first", "example:unknown_a"),
         )
 
         assertEquals(
@@ -29,7 +31,22 @@ class AutomaticControlDisplayResolverTest {
         )
         assertEquals("example:unknown_a", resolved[2].label.string)
         assertNull(resolved[2].description)
-        resolver.resolve("example:unknown_a")
+        resolver.resolve(null, "example:unknown_a")
         assertEquals(setOf("example:unknown_a", "example:unknown_b"), resolver.warnedUnknownControlIds)
+    }
+
+    /** 規則登記了自己的顯示時，該規則的對局使用規則顯示；其他規則使用預設。 */
+    @Test
+    fun `rule displays apply only to their own rule`() {
+        val registry = AutomaticControlDisplayRegistryImpl().apply {
+            register(AutomaticControlDisplayDefinition("example:auto", AutomaticControlDisplay("example.neutral", "example.description", 10)))
+            register(AutomaticControlRuleDisplayDefinition("example:rule", "example:auto", AutomaticControlDisplay("example.rule", "example.description", 10)))
+            freeze()
+        }
+        val resolver = AutomaticControlDisplayResolver(registry)
+
+        assertEquals("example.rule", resolver.resolve("example:rule", "example:auto").label.string)
+        assertEquals("example.neutral", resolver.resolve("example:other", "example:auto").label.string)
+        assertEquals("example.neutral", resolver.resolve(null, "example:auto").label.string)
     }
 }

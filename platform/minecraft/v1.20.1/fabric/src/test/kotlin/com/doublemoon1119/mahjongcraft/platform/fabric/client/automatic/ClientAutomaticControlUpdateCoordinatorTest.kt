@@ -349,7 +349,7 @@ class ClientAutomaticControlUpdateCoordinatorTest {
         revision: Long = 1L,
         supported: Set<String> = emptySet(),
         enabled: Set<String> = emptySet(),
-    ): AutomaticControlSnapshotDto = AutomaticControlSnapshotDto(gameId, revision, supported, enabled)
+    ): AutomaticControlSnapshotDto = AutomaticControlSnapshotDto(gameId, "mahjongcraft:riichi", revision, supported, enabled)
 
     /**
      * 建立對應 [request] 的權威結果。

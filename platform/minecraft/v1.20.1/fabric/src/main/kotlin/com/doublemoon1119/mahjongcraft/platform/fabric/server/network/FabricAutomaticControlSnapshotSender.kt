@@ -43,10 +43,12 @@ class FabricAutomaticControlSnapshotSender(
                 val snapshot = if (game.isMatchOver) {
                     null
                 } else {
+                    val module = moduleRegistry.getModule(game.tableState.config)
                     PlayerAutomaticControlSnapshot(
                         gameId = game.id,
+                        ruleModuleId = module.id,
                         revision = game.automaticControlRevision,
-                        supportedControlIds = moduleRegistry.getModule(game.tableState.config).getSupportedAutomaticControlIds(),
+                        supportedControlIds = module.getSupportedAutomaticControlIds(),
                         enabledControlIds = game.enabledAutomaticControlIdsByPlayerId[playerId].orEmpty(),
                     ).toDto()
                 }

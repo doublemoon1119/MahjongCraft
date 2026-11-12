@@ -52,9 +52,10 @@ class UpdatePlayerAutomaticControlsUseCase(
             )
         }
 
-        val supportedControlIds = moduleRegistry.getModule(game.tableState.config).getSupportedAutomaticControlIds()
+        val module = moduleRegistry.getModule(game.tableState.config)
+        val supportedControlIds = module.getSupportedAutomaticControlIds()
         requireValidAutomaticControlIds(supportedControlIds)
-        val currentSnapshot = game.toAutomaticControlSnapshot(playerId, supportedControlIds)
+        val currentSnapshot = game.toAutomaticControlSnapshot(playerId, module.id, supportedControlIds)
 
         if (enabledControlIds.any { controlId -> !NamespacedId.isValid(controlId) }) {
             return@updateGame game to UpdatePlayerAutomaticControlsResult.Rejected(
@@ -85,7 +86,7 @@ class UpdatePlayerAutomaticControlsUseCase(
             automaticControlRevision = game.automaticControlRevision + 1L,
         )
         updatedGame to UpdatePlayerAutomaticControlsResult.Accepted(
-            updatedGame.toAutomaticControlSnapshot(playerId, supportedControlIds),
+            updatedGame.toAutomaticControlSnapshot(playerId, module.id, supportedControlIds),
             changed = true,
         )
     }
@@ -95,14 +96,17 @@ class UpdatePlayerAutomaticControlsUseCase(
  * 建立只包含 [playerId] 自身控制集合的權威快照。
  *
  * @param playerId 快照所屬玩家的識別碼。
+ * @param ruleModuleId 對局採用的規則模組 ID。
  * @param supportedControlIds 規則支援的自動操作 ID 集合。
  * @return 僅包含指定玩家已啟用控制的權威快照。
  */
 private fun Game.toAutomaticControlSnapshot(
     playerId: Uuid,
+    ruleModuleId: String,
     supportedControlIds: Set<String>,
 ): PlayerAutomaticControlSnapshot = PlayerAutomaticControlSnapshot(
     gameId = id,
+    ruleModuleId = ruleModuleId,
     revision = automaticControlRevision,
     supportedControlIds = supportedControlIds,
     enabledControlIds = enabledAutomaticControlIdsByPlayerId[playerId].orEmpty(),

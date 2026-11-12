@@ -140,6 +140,7 @@ public abstract interface class com/doublemoon1119/mahjongcraft/platform/minecra
 	public abstract fun getRegistrationKeys ()Ljava/util/Set;
 	public abstract fun isFrozen ()Z
 	public abstract fun register (Lcom/doublemoon1119/mahjongcraft/platform/minecraft/automatic/AutomaticControlDisplayDefinition;)V
+	public abstract fun register (Lcom/doublemoon1119/mahjongcraft/platform/minecraft/automatic/AutomaticControlRuleDisplayDefinition;)V
 }
 
 public abstract interface class com/doublemoon1119/mahjongcraft/platform/minecraft/api/registration/DecisionStatusDisplayNameRegistrar {
@@ -257,6 +258,13 @@ public abstract interface class com/doublemoon1119/mahjongcraft/platform/minecra
 	public abstract fun getRegistrationKeys ()Ljava/util/Set;
 	public abstract fun isFrozen ()Z
 	public abstract fun register (Lcom/doublemoon1119/mahjongcraft/platform/minecraft/rule/RuleModuleDisplayNameDefinition;)V
+}
+
+public abstract interface class com/doublemoon1119/mahjongcraft/platform/minecraft/api/registration/RuleWordingRegistrar {
+	public abstract fun getRegistrationKeys ()Ljava/util/Set;
+	public abstract fun isFrozen ()Z
+	public abstract fun register (Lcom/doublemoon1119/mahjongcraft/platform/minecraft/text/RuleWordingDefaultDefinition;)V
+	public abstract fun register (Lcom/doublemoon1119/mahjongcraft/platform/minecraft/text/RuleWordingDefinition;)V
 }
 
 public abstract interface class com/doublemoon1119/mahjongcraft/platform/minecraft/api/registration/TablePropDescriberRegistrar {
@@ -412,6 +420,7 @@ public abstract interface class com/doublemoon1119/mahjongcraft/platform/minecra
 	public fun registerRuleCatalogues (Lcom/doublemoon1119/mahjongcraft/platform/minecraft/api/registration/RuleCatalogueRegistrar;)V
 	public fun registerRuleDecisionDisplayNames (Lcom/doublemoon1119/mahjongcraft/platform/minecraft/api/registration/RuleDecisionDisplayNameRegistrar;)V
 	public fun registerRuleModuleDisplayNames (Lcom/doublemoon1119/mahjongcraft/platform/minecraft/api/registration/RuleModuleDisplayNameRegistrar;)V
+	public fun registerRuleWordings (Lcom/doublemoon1119/mahjongcraft/platform/minecraft/api/registration/RuleWordingRegistrar;)V
 	public fun registerTablePropDescribers (Lcom/doublemoon1119/mahjongcraft/platform/minecraft/api/registration/TablePropDescriberRegistrar;)V
 	public fun registerTileAssets (Lcom/doublemoon1119/mahjongcraft/platform/minecraft/api/registration/MinecraftTileAssetRegistrar;)V
 	public fun registerTileDisplayNames (Lcom/doublemoon1119/mahjongcraft/platform/minecraft/api/registration/TileDisplayNameRegistrar;)V

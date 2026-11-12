@@ -93,7 +93,7 @@ class FabricAutomaticControlCommand(
                 context.source.sendFeedback(
                     Text.translatable(
                         MinecraftMessageKeys.AUTOMATIC_CONTROL_WAITING,
-                        displayResolver.resolve(result.controlId).label,
+                        displayResolver.resolve(commandService.ruleModuleId(), result.controlId).label,
                         stateText(result.previousEnabled),
                         stateText(result.enabled),
                     ),
@@ -112,7 +112,7 @@ class FabricAutomaticControlCommand(
                 context.source,
                 Text.translatable(
                     MinecraftMessageKeys.AUTOMATIC_CONTROL_UNSUPPORTED,
-                    displayResolver.resolve(result.controlId).label,
+                    displayResolver.resolve(commandService.ruleModuleId(), result.controlId).label,
                 ),
             )
             is ClientAutomaticControlCommandResult.SaveFailed -> failure(
@@ -145,7 +145,7 @@ class FabricAutomaticControlCommand(
         context: CommandContext<FabricClientCommandSource>,
         builder: SuggestionsBuilder,
     ): CompletableFuture<Suggestions> {
-        displayResolver.resolveAll(commandService.availableControlIds()).forEach { display ->
+        displayResolver.resolveAll(commandService.ruleModuleId(), commandService.availableControlIds()).forEach { display ->
             builder.suggest(display.controlId, display.label)
         }
         return builder.buildFuture()
@@ -206,7 +206,7 @@ class FabricAutomaticControlCommand(
      */
     private fun updatedMessage(controlId: String, previousEnabled: Boolean, enabled: Boolean): MutableText = Text.translatable(
         MinecraftMessageKeys.AUTOMATIC_CONTROL_UPDATED,
-        displayResolver.resolve(controlId).label,
+        displayResolver.resolve(commandService.ruleModuleId(), controlId).label,
         stateText(previousEnabled),
         stateText(enabled),
     ).formatted(Formatting.GREEN)
@@ -220,7 +220,7 @@ class FabricAutomaticControlCommand(
      */
     private fun unchangedMessage(controlId: String, enabled: Boolean): MutableText = Text.translatable(
         MinecraftMessageKeys.AUTOMATIC_CONTROL_UNCHANGED,
-        displayResolver.resolve(controlId).label,
+        displayResolver.resolve(commandService.ruleModuleId(), controlId).label,
         stateText(enabled),
     ).formatted(Formatting.YELLOW)
 

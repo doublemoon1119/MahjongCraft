@@ -48,6 +48,8 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.table.RoundInfoLineDis
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.RoundInfoLineDisplayRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TablePropDescriberRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TablePropDescriberRegistryImpl
+import com.doublemoon1119.mahjongcraft.platform.minecraft.text.RuleWordingRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.text.RuleWordingRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileDisplayNameRegistry
@@ -100,6 +102,7 @@ val minecraftCommonModule = module {
     single<ExhaustiveDrawReasonDisplayNameRegistryImpl>() bind ExhaustiveDrawReasonDisplayNameRegistry::class
     single<MatchSettlementPresentationTemplateRegistryImpl>() bind MatchSettlementPresentationTemplateRegistry::class
     single<RoundOutcomeDisplayNameRegistryImpl>() bind RoundOutcomeDisplayNameRegistry::class
+    single<RuleWordingRegistryImpl>() bind RuleWordingRegistry::class
     single<WinSettlementPresentationTemplateRegistryImpl>() bind WinSettlementPresentationTemplateRegistry::class
 
     single<WinCelebrationShowcaseRegistryImpl>() bind WinCelebrationShowcaseRegistry::class

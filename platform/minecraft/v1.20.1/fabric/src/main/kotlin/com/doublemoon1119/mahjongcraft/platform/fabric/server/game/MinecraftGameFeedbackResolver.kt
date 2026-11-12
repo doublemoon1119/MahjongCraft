@@ -9,15 +9,16 @@ internal object MinecraftGameFeedbackResolver {
      * 將對局操作的 [error] 轉成可呈現的回饋。
      *
      * @param error 對局命令回傳的錯誤種類。
+     * @param ruleModuleId 這局採用的規則模組 ID；找不到對局時為 null。
      * @return 對應的玩家回饋，不包含具體呈現方式。
      */
-    fun actionError(error: GameError): MinecraftPlayerFeedback = when (error) {
+    fun actionError(error: GameError, ruleModuleId: String?): MinecraftPlayerFeedback = when (error) {
         is GameError.MatchAborted -> MinecraftPlayerFeedback.MatchAborted(error.reasonId)
         is GameError.GameNotFound, is GameError.PlayerNotInGame -> MinecraftPlayerFeedback.PlayerNotInGame
         is GameError.ForcedAutoPlayActive -> MinecraftPlayerFeedback.ForcedAutoPlayActive
         is GameError.NotPlayersTurn -> MinecraftPlayerFeedback.NotYourTurn
         is GameError.IllegalAction -> MinecraftPlayerFeedback.IllegalGameAction
-        is GameError.WallExhausted -> MinecraftPlayerFeedback.WallExhausted
+        is GameError.WallExhausted -> MinecraftPlayerFeedback.WallExhausted(ruleModuleId)
         is GameError.UnsupportedAction,
         is GameError.RuleDecisionUnavailable,
         is GameError.InvalidRuleDecisionSubmission,

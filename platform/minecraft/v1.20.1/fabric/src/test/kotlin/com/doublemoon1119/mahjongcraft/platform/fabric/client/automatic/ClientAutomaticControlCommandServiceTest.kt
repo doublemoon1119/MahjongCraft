@@ -194,7 +194,7 @@ class ClientAutomaticControlCommandServiceTest {
         revision: Long = 1L,
         supported: Set<String> = emptySet(),
         enabled: Set<String> = emptySet(),
-    ): AutomaticControlSnapshotDto = AutomaticControlSnapshotDto(gameId, revision, supported, enabled)
+    ): AutomaticControlSnapshotDto = AutomaticControlSnapshotDto(gameId, "mahjongcraft:riichi", revision, supported, enabled)
 
     /** 刪除測試暫存目錄。 */
     private fun deleteRecursively(path: Path) {

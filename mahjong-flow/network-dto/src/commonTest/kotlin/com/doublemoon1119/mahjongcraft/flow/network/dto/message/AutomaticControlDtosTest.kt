@@ -33,6 +33,7 @@ class AutomaticControlDtosTest {
                 result = result,
                 snapshot = AutomaticControlSnapshotDto(
                     gameId = "game-1",
+                    ruleModuleId = "mahjongcraft:riichi",
                     revision = 8L,
                     supportedControlIds = setOf("example:auto_one"),
                     enabledControlIds = setOf("example:auto_one"),
@@ -49,6 +50,7 @@ class AutomaticControlDtosTest {
     fun `automatic control snapshot maps between domain and dto`() {
         val expected = PlayerAutomaticControlSnapshot(
             gameId = Uuid.random(),
+            ruleModuleId = "mahjongcraft:riichi",
             revision = 9L,
             supportedControlIds = setOf("example:auto_one", "example:auto_two"),
             enabledControlIds = setOf("example:auto_two"),

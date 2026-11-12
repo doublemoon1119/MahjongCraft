@@ -64,6 +64,7 @@ class AutomaticControlStatusHudModelTest {
         enabled: Set<String> = emptySet(),
     ) = AutomaticControlSnapshotDto(
         gameId = "game-a",
+        ruleModuleId = "mahjongcraft:riichi",
         revision = 1,
         supportedControlIds = supported,
         enabledControlIds = enabled,

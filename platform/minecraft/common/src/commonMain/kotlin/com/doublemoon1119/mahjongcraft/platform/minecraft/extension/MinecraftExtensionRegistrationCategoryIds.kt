@@ -47,6 +47,9 @@ internal object MinecraftExtensionRegistrationCategoryIds {
     /** 本局結果名稱分類。 */
     const val ROUND_OUTCOME_DISPLAY_NAME = "mahjongcraft:round_outcome_display_name"
 
+    /** 規則用語分類。 */
+    const val RULE_WORDING = "mahjongcraft:rule_wording"
+
     /** 牌河標記分類。 */
     const val HISTORY_DISCARD_MARKER_DISPLAY = "mahjongcraft:history_discard_marker_display"
 

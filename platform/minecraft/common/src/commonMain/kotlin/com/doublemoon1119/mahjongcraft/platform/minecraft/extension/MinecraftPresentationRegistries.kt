@@ -23,6 +23,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.showcase.WinCelebratio
 import com.doublemoon1119.mahjongcraft.platform.minecraft.sound.GameActionSoundPresentationRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.RoundInfoLineDisplayRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TablePropDescriberRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.text.RuleWordingRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileEmojiRegistry
@@ -45,6 +46,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileLabelRegistry
  * @property gameActionSoundPresentationRegistry 遊戲動作音效呈現 registry。
  * @property exhaustiveDrawReasonDisplayNameRegistry 流局原因顯示名稱 registry。
  * @property roundOutcomeDisplayNameRegistry 規則特殊本局結果顯示名稱 registry。
+ * @property ruleWordingRegistry 依規則選擇共用文字說法的 registry。
  * @property historyDiscardMarkerDisplayRegistry 歷史牌河公開標記呈現 registry。
  * @property historyTileSetAsideDisplayRegistry 牌譜移出牌區標題與換牌用語 registry。
  * @property ruleDecisionDisplayNameRegistry 規則選擇顯示名稱 registry。
@@ -76,6 +78,7 @@ class MinecraftPresentationRegistries(
     val gameActionSoundPresentationRegistry: GameActionSoundPresentationRegistry,
     val exhaustiveDrawReasonDisplayNameRegistry: ExhaustiveDrawReasonDisplayNameRegistry,
     val roundOutcomeDisplayNameRegistry: RoundOutcomeDisplayNameRegistry,
+    val ruleWordingRegistry: RuleWordingRegistry,
     val historyDiscardMarkerDisplayRegistry: HistoryDiscardMarkerDisplayRegistry,
     val historyTileSetAsideDisplayRegistry: HistoryTileSetAsideDisplayRegistry,
     val ruleDecisionDisplayNameRegistry: RuleDecisionDisplayNameRegistry,
@@ -118,6 +121,7 @@ class MinecraftPresentationRegistries(
             snapshotCategory(MinecraftExtensionRegistrationCategoryIds.EXHAUSTIVE_DRAW_REASON_DISPLAY_NAME, "Exhaustive Draw Reason Display Name", exhaustiveDrawReasonDisplayNameRegistry.reasonIds),
             snapshotCategory(MinecraftExtensionRegistrationCategoryIds.EXHAUSTIVE_DRAW_SETTLEMENT_STATUS_LABEL, "Exhaustive Draw Settlement Status Label", exhaustiveDrawReasonDisplayNameRegistry.settlementStatusReasonIds),
             snapshotCategory(MinecraftExtensionRegistrationCategoryIds.ROUND_OUTCOME_DISPLAY_NAME, "Round Outcome Display Name", roundOutcomeDisplayNameRegistry.registrationKeys),
+            snapshotCategory(MinecraftExtensionRegistrationCategoryIds.RULE_WORDING, "Rule Wording", ruleWordingRegistry.registrationKeys),
             snapshotCategory(MinecraftExtensionRegistrationCategoryIds.HISTORY_DISCARD_MARKER_DISPLAY, "History Discard Marker Display", historyDiscardMarkerDisplayRegistry.registrationKeys),
             snapshotCategory(MinecraftExtensionRegistrationCategoryIds.HISTORY_TILE_SET_ASIDE_DISPLAY, "History Tile Set Aside Display", historyTileSetAsideDisplayRegistry.registrationKeys),
             snapshotCategory(MinecraftExtensionRegistrationCategoryIds.RULE_DECISION_DISPLAY_NAME, "Round RuleDecision Display Name", ruleDecisionDisplayNameRegistry.registrationKeys),
@@ -150,6 +154,7 @@ class MinecraftPresentationRegistries(
         gameActionSoundPresentationRegistry.freeze()
         exhaustiveDrawReasonDisplayNameRegistry.freeze()
         roundOutcomeDisplayNameRegistry.freeze()
+        ruleWordingRegistry.freeze()
         historyDiscardMarkerDisplayRegistry.freeze()
         historyTileSetAsideDisplayRegistry.freeze()
         ruleDecisionDisplayNameRegistry.freeze()

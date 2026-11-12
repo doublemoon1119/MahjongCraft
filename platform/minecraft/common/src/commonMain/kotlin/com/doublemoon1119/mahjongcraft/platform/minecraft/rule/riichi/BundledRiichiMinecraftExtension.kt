@@ -3,6 +3,7 @@ package com.doublemoon1119.mahjongcraft.platform.minecraft.rule.riichi
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.riichi.RiichiRoundOutcomeIds
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.riichi.RiichiWinSettlementIds
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
+import com.doublemoon1119.mahjongcraft.logic.module.BuiltInAutomaticControlIds
 import com.doublemoon1119.mahjongcraft.logic.module.BuiltInRuleModuleIds
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiExhaustiveDrawReason
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiHistoryDiscardMarkerIds
@@ -12,6 +13,7 @@ import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPublicIndicatorI
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.threeplayer.ThreePlayerRiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.RiichiTileValues
 import com.doublemoon1119.mahjongcraft.metadata.MahjongCraftMetadata
+import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.AutomaticControlDisplayRegistrar
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.DecisionStatusDisplayNameRegistrar
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.ExhaustiveDrawReasonDisplayNameRegistrar
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.GameAchievementResolverRegistrar
@@ -26,12 +28,17 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.Round
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.RoundOutcomeDisplayNameRegistrar
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.RuleCatalogueRegistrar
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.RuleModuleDisplayNameRegistrar
+import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.RuleWordingRegistrar
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.TablePropDescriberRegistrar
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.TileDisplayNameRegistrar
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.TileEmojiRegistrar
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.TileLabelRegistrar
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.WinCelebrationShowcaseRegistrar
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.WinSettlementPresentationTemplateRegistrar
+import com.doublemoon1119.mahjongcraft.platform.minecraft.automatic.AutomaticControlDisplay
+import com.doublemoon1119.mahjongcraft.platform.minecraft.automatic.AutomaticControlRuleDisplayDefinition
+import com.doublemoon1119.mahjongcraft.platform.minecraft.automatic.BuiltInAutomaticControlDisplayOrders
+import com.doublemoon1119.mahjongcraft.platform.minecraft.automatic.BuiltInAutomaticControlTranslationKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.extension.MinecraftMahjongExtension
 import com.doublemoon1119.mahjongcraft.platform.minecraft.history.HistoryDiscardMarkerDisplay
 import com.doublemoon1119.mahjongcraft.platform.minecraft.history.HistoryDiscardMarkerDisplayDefinition
@@ -51,7 +58,9 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.WinSettleme
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.WinSettlementTextKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.RoundInfoLineDisplay
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.RoundInfoLineDisplayDefinition
+import com.doublemoon1119.mahjongcraft.platform.minecraft.text.BuiltInRuleWordingIds
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftMessageKeys
+import com.doublemoon1119.mahjongcraft.platform.minecraft.text.RuleWordingDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileStyleAssetDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileEmojiDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileLabelDefinition
@@ -258,6 +267,31 @@ object BundledRiichiMinecraftExtension : MinecraftMahjongExtension {
         registry.register(RoundInfoLineDisplayDefinition(RIICHI_WALL_REMAINING_KEY, RoundInfoLineDisplay(RiichiTranslationKeys.ROUND_INFO_WALL_REMAINING)))
         registry.register(RoundInfoLineDisplayDefinition(RIICHI_STICK_POT_KEY, RoundInfoLineDisplay(RiichiTranslationKeys.ROUND_INFO_STICK_POT)))
         RIICHI_FAMILY_RULE_MODULE_IDS.forEach { ruleModuleId -> RiichiFamilyMinecraftPresentation.registerRoundInfo(registry, ruleModuleId) }
+    }
+
+    /** 日麻把牌堆稱為牌山、槓的英文為 Kan。 */
+    override fun registerRuleWordings(registry: RuleWordingRegistrar) {
+        RIICHI_FAMILY_RULE_MODULE_IDS.forEach { ruleModuleId ->
+            registry.register(RuleWordingDefinition(ruleModuleId, BuiltInRuleWordingIds.WALL_EXHAUSTED, RiichiTranslationKeys.WALL_EXHAUSTED))
+            registry.register(RuleWordingDefinition(ruleModuleId, BuiltInRuleWordingIds.HISTORY_KAN, RiichiTranslationKeys.HISTORY_ACTION_KAN))
+        }
+    }
+
+    /** 日麻把「打出剛摸到的牌」稱為摸切，覆寫這個自動操作的名稱；說明與排列順序沿用預設。 */
+    override fun registerAutomaticControlDisplays(registry: AutomaticControlDisplayRegistrar) {
+        RIICHI_FAMILY_RULE_MODULE_IDS.forEach { ruleModuleId ->
+            registry.register(
+                definition = AutomaticControlRuleDisplayDefinition(
+                    ruleModuleId = ruleModuleId,
+                    controlId = BuiltInAutomaticControlIds.AUTO_TSUMOGIRI,
+                    display = AutomaticControlDisplay(
+                        labelTranslationKey = RiichiTranslationKeys.AUTOMATIC_CONTROL_TSUMOGIRI,
+                        descriptionTranslationKey = BuiltInAutomaticControlTranslationKeys.AUTO_TSUMOGIRI_DESCRIPTION,
+                        displayOrder = BuiltInAutomaticControlDisplayOrders.AUTO_TSUMOGIRI,
+                    ),
+                ),
+            )
+        }
     }
 
     /** 立直與九種九牌接在核心動作（自摸為 4）之後；三人日麻另有拔北。 */

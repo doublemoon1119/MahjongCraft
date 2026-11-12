@@ -9,6 +9,7 @@ import kotlin.uuid.Uuid
  */
 fun PlayerAutomaticControlSnapshot.toDto(): AutomaticControlSnapshotDto = AutomaticControlSnapshotDto(
     gameId = gameId.toString(),
+    ruleModuleId = ruleModuleId,
     revision = revision,
     supportedControlIds = supportedControlIds,
     enabledControlIds = enabledControlIds,
@@ -21,6 +22,7 @@ fun PlayerAutomaticControlSnapshot.toDto(): AutomaticControlSnapshotDto = Automa
  */
 fun AutomaticControlSnapshotDto.toDomain(): PlayerAutomaticControlSnapshot = PlayerAutomaticControlSnapshot(
     gameId = Uuid.parse(gameId),
+    ruleModuleId = ruleModuleId,
     revision = revision,
     supportedControlIds = supportedControlIds,
     enabledControlIds = enabledControlIds,

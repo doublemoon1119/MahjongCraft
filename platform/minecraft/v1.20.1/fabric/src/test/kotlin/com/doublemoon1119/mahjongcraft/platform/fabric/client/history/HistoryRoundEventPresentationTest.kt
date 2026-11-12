@@ -12,6 +12,7 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.model.RuleDecisionTiming
 import com.doublemoon1119.mahjongcraft.flow.network.dto.model.SuitDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.model.TileDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.model.TileFaceViewDto
+import com.doublemoon1119.mahjongcraft.logic.module.BuiltInRuleModuleIds
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiExhaustiveDrawReason
 import com.doublemoon1119.mahjongcraft.logic.table.BuiltInMatchEndReasonIds
 import com.doublemoon1119.mahjongcraft.logic.table.RoundCompletionClassification
@@ -21,9 +22,11 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionVocab
 import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionVocabularyRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.action.MinecraftKanActionTokenKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.RuleDecisionDisplayNameRegistryImpl
+import com.doublemoon1119.mahjongcraft.platform.minecraft.extension.BuiltInMinecraftMahjongExtension
 import com.doublemoon1119.mahjongcraft.platform.minecraft.history.HistoryTileReplacementDisplayDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.history.HistoryTileSetAsideDisplayRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.history.MinecraftHistoryScreenKeys
+import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.riichi.BundledRiichiMinecraftExtension
 import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.riichi.RiichiTranslationKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.ExhaustiveDrawReasonDisplayNameDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.ExhaustiveDrawReasonDisplayNameRegistryImpl
@@ -31,6 +34,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.ExhaustiveD
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.ExhaustiveDrawSettlementStatusLabelsDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.RoundOutcomeDisplayNameDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.RoundOutcomeDisplayNameRegistryImpl
+import com.doublemoon1119.mahjongcraft.platform.minecraft.text.RuleWordingRegistryImpl
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
@@ -209,6 +213,26 @@ class HistoryRoundEventPresentationTest {
         }
     }
 
+    /** 牌譜的槓依規則顯示：日麻用自己的說法，其他規則使用中立用語。 */
+    @Test
+    fun `kan wording follows the rule of the match`() {
+        val presenter = HistoryRoundEventPresenter(
+            actionVocabulary = GameActionVocabularyRegistryImpl(),
+            exhaustiveDrawReasons = ExhaustiveDrawReasonDisplayNameRegistryImpl(),
+            roundOutcomes = RoundOutcomeDisplayNameRegistryImpl(),
+            ruleDecisionNames = RuleDecisionDisplayNameRegistryImpl(),
+            setAsideDisplays = HistoryTileSetAsideDisplayRegistryImpl(),
+            ruleWordings = RuleWordingRegistryImpl().apply {
+                BuiltInMinecraftMahjongExtension.registerRuleWordings(this)
+                BundledRiichiMinecraftExtension.registerRuleWordings(this)
+            },
+        )
+        val kan = events(HistoryReplayFactDto.KnownAction(HistoryFactTypeKeys.ACTION_ACCEPTED, null, HistoryActionTypeKeys.KAN, emptyList(), emptyList(), null))
+
+        assertEquals(RiichiTranslationKeys.HISTORY_ACTION_KAN, presenter.present(kan, BuiltInRuleModuleIds.RIICHI).transactions.single().facts.single().text.string)
+        assertEquals(MinecraftHistoryScreenKeys.ROUND_ACTION_KAN, presenter.present(kan, BuiltInRuleModuleIds.TAIWAN).transactions.single().facts.single().text.string)
+    }
+
     /** 槓牌簡寫與 namespaced 動作 ID 都應解析至相同的槓牌用語。 */
     @Test
     fun `kan action aliases resolve to the registered vocabulary`() {
@@ -220,7 +244,7 @@ class HistoryRoundEventPresentationTest {
         val vocabulary = GameActionVocabularyRegistryImpl().apply {
             aliases.values.forEach { actionId -> register(GameActionVocabularyDefaultDefinition(actionId, GameActionVocabulary("test.$actionId"))) }
         }
-        val presenter = HistoryRoundEventPresenter(vocabulary, ExhaustiveDrawReasonDisplayNameRegistryImpl(), RoundOutcomeDisplayNameRegistryImpl(), RuleDecisionDisplayNameRegistryImpl(), HistoryTileSetAsideDisplayRegistryImpl())
+        val presenter = HistoryRoundEventPresenter(vocabulary, ExhaustiveDrawReasonDisplayNameRegistryImpl(), RoundOutcomeDisplayNameRegistryImpl(), RuleDecisionDisplayNameRegistryImpl(), HistoryTileSetAsideDisplayRegistryImpl(), RuleWordingRegistryImpl().also(BuiltInMinecraftMahjongExtension::registerRuleWordings))
 
         aliases.forEach { (alias, actionId) ->
             listOf(alias, actionId).forEach { actionType ->
@@ -391,7 +415,7 @@ class HistoryRoundEventPresentationTest {
         val vocabulary = GameActionVocabularyRegistryImpl().apply {
             register(GameActionVocabularyDefaultDefinition("custom:spell", GameActionVocabulary("test.spell")))
         }
-        val presenter = HistoryRoundEventPresenter(vocabulary, ExhaustiveDrawReasonDisplayNameRegistryImpl(), RoundOutcomeDisplayNameRegistryImpl(), RuleDecisionDisplayNameRegistryImpl(), HistoryTileSetAsideDisplayRegistryImpl())
+        val presenter = HistoryRoundEventPresenter(vocabulary, ExhaustiveDrawReasonDisplayNameRegistryImpl(), RoundOutcomeDisplayNameRegistryImpl(), RuleDecisionDisplayNameRegistryImpl(), HistoryTileSetAsideDisplayRegistryImpl(), RuleWordingRegistryImpl().also(BuiltInMinecraftMahjongExtension::registerRuleWordings))
         val fact = presenter.present(
             events(HistoryReplayFactDto.KnownAction("action", 0, HistoryActionTypeKeys.EXTENSION, emptyList(), emptyList(), "custom:spell")),
             "custom:rule",
@@ -518,6 +542,7 @@ class HistoryRoundEventPresentationTest {
         setAsideDisplays = HistoryTileSetAsideDisplayRegistryImpl().apply {
             register(HistoryTileReplacementDisplayDefinition("test:rule", "test.flower_replacement"))
         },
+        ruleWordings = RuleWordingRegistryImpl().also(BuiltInMinecraftMahjongExtension::registerRuleWordings),
     )
 
     /**
@@ -596,7 +621,7 @@ class HistoryRoundEventPresentationTest {
             )
         }
         val outcomes = RoundOutcomeDisplayNameRegistryImpl().apply { register(RoundOutcomeDisplayNameDefinition("example:special", "test.special")) }
-        return HistoryRoundEventPresenter(vocabulary, reasons, outcomes, RuleDecisionDisplayNameRegistryImpl(), HistoryTileSetAsideDisplayRegistryImpl())
+        return HistoryRoundEventPresenter(vocabulary, reasons, outcomes, RuleDecisionDisplayNameRegistryImpl(), HistoryTileSetAsideDisplayRegistryImpl(), RuleWordingRegistryImpl().also(BuiltInMinecraftMahjongExtension::registerRuleWordings))
     }
 
     /** 本局結果名稱依序查詢規則登記的特殊結果、流局原因，都沒有登記時使用通用的「其他」。 */

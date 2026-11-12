@@ -636,11 +636,12 @@ class MahjongClientConfigScreen(
      * 不在對局中則改用內建項目當樣本，讓玩家在任何時候都能先安排位置。
      */
     private fun automaticControlPreviewLabels(): List<Text> {
-        val supported = automaticDraft.state().baseline?.supportedControlIds?.takeIf { it.isNotEmpty() }
-            ?: AUTOMATIC_CONTROL_PREVIEW_SAMPLE_IDS
+        val baseline = automaticDraft.state().baseline?.takeIf { it.supportedControlIds.isNotEmpty() }
+        val ruleModuleId = baseline?.ruleModuleId
+        val supported = baseline?.supportedControlIds ?: AUTOMATIC_CONTROL_PREVIEW_SAMPLE_IDS
         val sortId = BuiltInMinecraftAutomaticControlIds.AUTO_SORT_HAND
-        return listOf(displayResolver.resolve(sortId).label) +
-            displayResolver.resolveAll(supported - sortId).map { it.label }
+        return listOf(displayResolver.resolve(ruleModuleId, sortId).label) +
+            displayResolver.resolveAll(ruleModuleId, supported - sortId).map { it.label }
     }
 
     /** 依權威支援集合建立本局控制列，不憑規則名稱猜測可用功能。 */
@@ -654,7 +655,7 @@ class MahjongClientConfigScreen(
         }
         val heading = ConfigRow(explanation, explanation, { Text.empty() }, information = true)
         if (snapshot == null) return listOf(heading)
-        return listOf(heading) + displayResolver.resolveAll(snapshot.supportedControlIds).map { display ->
+        return listOf(heading) + displayResolver.resolveAll(snapshot.ruleModuleId, snapshot.supportedControlIds).map { display ->
             ConfigRow(
                 nameKey = display.controlId,
                 descriptionKey = display.controlId,

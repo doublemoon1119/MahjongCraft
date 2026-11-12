@@ -22,6 +22,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.Round
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.RuleCatalogueRegistrar
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.RuleDecisionDisplayNameRegistrar
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.RuleModuleDisplayNameRegistrar
+import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.RuleWordingRegistrar
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.TablePropDescriberRegistrar
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.TileDisplayNameRegistrar
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.TileEmojiRegistrar
@@ -146,6 +147,13 @@ interface MinecraftMahjongExtension {
      * @param registry 本局結果顯示名稱 registry。
      */
     fun registerRoundOutcomeDisplayNames(registry: RoundOutcomeDisplayNameRegistrar) = Unit
+
+    /**
+     * 登記共用文字的中立用語，或規則對共用文字的說法（例如牌堆叫「牌牆」或「牌山」）。
+     *
+     * @param registry 規則用語 registry。
+     */
+    fun registerRuleWordings(registry: RuleWordingRegistrar) = Unit
 
     /**
      * 登記規則在歷史牌河上的公開標記如何呈現，例如日麻立直宣告的牌要橫擺。

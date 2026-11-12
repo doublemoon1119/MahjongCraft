@@ -36,8 +36,8 @@ internal fun automaticControlStatusRows(
     val sortId = BuiltInMinecraftAutomaticControlIds.AUTO_SORT_HAND
     val roundControlIds = snapshot.supportedControlIds - sortId
     if (roundControlIds.isEmpty()) return emptyList()
-    return listOf(AutomaticControlStatusRow(sortId, displays.resolve(sortId).label, autoSortHandEnabled)) +
-        displays.resolveAll(roundControlIds).map { display ->
+    return listOf(AutomaticControlStatusRow(sortId, displays.resolve(snapshot.ruleModuleId, sortId).label, autoSortHandEnabled)) +
+        displays.resolveAll(snapshot.ruleModuleId, roundControlIds).map { display ->
             AutomaticControlStatusRow(
                 controlId = display.controlId,
                 label = display.label,

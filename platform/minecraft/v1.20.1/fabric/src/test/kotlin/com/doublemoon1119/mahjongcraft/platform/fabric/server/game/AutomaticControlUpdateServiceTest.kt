@@ -31,6 +31,7 @@ class AutomaticControlUpdateServiceTest {
     /** 修訂為 4、已開啟自動和牌的權威快照。 */
     private val snapshot = PlayerAutomaticControlSnapshot(
         gameId = gameId,
+        ruleModuleId = "mahjongcraft:riichi",
         revision = 4L,
         supportedControlIds = setOf("mahjongcraft:auto_win"),
         enabledControlIds = setOf("mahjongcraft:auto_win"),

@@ -220,8 +220,12 @@ sealed interface MinecraftPlayerFeedback {
     /** 該動作在目前桌況下不合法。 */
     data object IllegalGameAction : MinecraftPlayerFeedback
 
-    /** 牌山已摸盡。 */
-    data object WallExhausted : MinecraftPlayerFeedback
+    /**
+     * 牌已摸完，無法再摸牌。
+     *
+     * @property ruleModuleId 這局採用的規則模組 ID，決定牌堆的說法；找不到對局時為 null。
+     */
+    data class WallExhausted(val ruleModuleId: String?) : MinecraftPlayerFeedback
 
     /** 目前規則不支援這個動作。 */
     data object UnsupportedGameAction : MinecraftPlayerFeedback

@@ -72,6 +72,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.sound.GameActionSoundP
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.RoundInfoLineDisplayRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TablePropDescriberRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftMessageKeys
+import com.doublemoon1119.mahjongcraft.platform.minecraft.text.RuleWordingRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistryImpl
@@ -176,6 +177,7 @@ class MinecraftMahjongExtensionBootstrapTest {
             gameActionSoundPresentationRegistry = GameActionSoundPresentationRegistryImpl(),
             exhaustiveDrawReasonDisplayNameRegistry = ExhaustiveDrawReasonDisplayNameRegistryImpl(),
             roundOutcomeDisplayNameRegistry = roundOutcomeDisplayNameRegistry,
+            ruleWordingRegistry = RuleWordingRegistryImpl(),
             historyDiscardMarkerDisplayRegistry = HistoryDiscardMarkerDisplayRegistryImpl(),
             historyTileSetAsideDisplayRegistry = HistoryTileSetAsideDisplayRegistryImpl(),
             ruleDecisionDisplayNameRegistry = ruleDecisionDisplayNameRegistry,
@@ -290,7 +292,7 @@ class MinecraftMahjongExtensionBootstrapTest {
             aiStrategyDisplayNameRegistry.register(AiStrategyDisplayNameDefinition("example:late", "example.ai_strategy.late"))
         }
 
-        assertEquals("example.auto_flower", automaticControlDisplayRegistry.find("example:auto_flower")?.labelTranslationKey)
+        assertEquals("example.auto_flower", automaticControlDisplayRegistry.find(null, "example:auto_flower")?.labelTranslationKey)
         assertEquals(
             setOf("example:auto_flower"),
             result.registrationKeys("mahjongcraft:automatic_control_display"),
