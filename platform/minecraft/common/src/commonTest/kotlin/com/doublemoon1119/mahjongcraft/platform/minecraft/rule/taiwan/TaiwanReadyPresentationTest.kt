@@ -1,16 +1,19 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.rule.taiwan
 
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
+import com.doublemoon1119.mahjongcraft.logic.judgment.WaitingTileAvailabilityIds
 import com.doublemoon1119.mahjongcraft.logic.module.BuiltInRuleModuleIds
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanGameAction
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanPublicIndicatorIds
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanReadyKind
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanRuleConfig
 import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionVocabularyRegistryImpl
+import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.DecisionStatusDisplayNameRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.player.PublicPlayerIndicatorDisplayRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.sound.GameActionSoundPresentationRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.RoundInfoArgument
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.RoundInfoLineDisplayRegistryImpl
+import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftMessageKeys
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -48,5 +51,15 @@ class TaiwanReadyPresentationTest {
         assertEquals(listOf(RoundInfoArgument.Number(3)), lines[1].args)
         assertEquals(listOf(TAIWAN_ROUND_TITLE_LINE, TAIWAN_WALL_REMAINING_LINE), firstDealership.map { it.key })
         lines.forEach { line -> assertNotNull(registry.find(line.key), line.key) }
+    }
+
+    /** 牌數行用共用的中立用語；可以胡牌的狀態改用台麻的胡牌說法。 */
+    @Test
+    fun `wall line uses neutral wording and win availability uses taiwan wording`() {
+        val roundInfo = RoundInfoLineDisplayRegistryImpl().also(BundledTaiwanMinecraftExtension::registerRoundInfoPresentations)
+        val statuses = DecisionStatusDisplayNameRegistryImpl().also(BundledTaiwanMinecraftExtension::registerDecisionStatusDisplayNames)
+
+        assertEquals(MinecraftMessageKeys.ROUND_INFO_WALL_REMAINING, roundInfo.find(TAIWAN_WALL_REMAINING_LINE)?.translationKey)
+        assertEquals(TaiwanTranslationKeys.HUD_WIN_AVAILABLE, statuses.find(BuiltInRuleModuleIds.TAIWAN, WaitingTileAvailabilityIds.WIN_AVAILABLE))
     }
 }

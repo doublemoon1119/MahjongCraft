@@ -15,8 +15,8 @@
     "subtitle": "subtitles.mahjongcraft.tile.discard_land",
     "sounds": ["mahjongcraft:tile/discard_land"]
   },
-  "tile.dora_reveal": {
-    "subtitle": "subtitles.mahjongcraft.tile.dora_reveal",
+  "tile.wall_reveal": {
+    "subtitle": "subtitles.mahjongcraft.tile.wall_reveal",
     "sounds": ["mahjongcraft:tile/draw_land"]
   },
   "tile.draw_land": {

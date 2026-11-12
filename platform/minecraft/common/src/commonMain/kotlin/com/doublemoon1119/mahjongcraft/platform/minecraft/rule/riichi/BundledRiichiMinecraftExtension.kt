@@ -255,7 +255,7 @@ object BundledRiichiMinecraftExtension : MinecraftMahjongExtension {
 
     override fun registerRoundInfoPresentations(registry: RoundInfoLineDisplayRegistrar) {
         registry.register(RoundInfoLineDisplayDefinition(RIICHI_TITLE_KEY, RoundInfoLineDisplay(RiichiTranslationKeys.ROUND_INFO_TITLE)))
-        registry.register(RoundInfoLineDisplayDefinition(RIICHI_WALL_REMAINING_KEY, RoundInfoLineDisplay(MinecraftMessageKeys.ROUND_INFO_WALL_REMAINING)))
+        registry.register(RoundInfoLineDisplayDefinition(RIICHI_WALL_REMAINING_KEY, RoundInfoLineDisplay(RiichiTranslationKeys.ROUND_INFO_WALL_REMAINING)))
         registry.register(RoundInfoLineDisplayDefinition(RIICHI_STICK_POT_KEY, RoundInfoLineDisplay(RiichiTranslationKeys.ROUND_INFO_STICK_POT)))
         RIICHI_FAMILY_RULE_MODULE_IDS.forEach { ruleModuleId -> RiichiFamilyMinecraftPresentation.registerRoundInfo(registry, ruleModuleId) }
     }

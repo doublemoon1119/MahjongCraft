@@ -361,13 +361,13 @@ class FabricMahjongTileWallPresenter(
     )
 
     /**
-     * 建立只在寶牌指示牌正式開始翻面時有效的提示聲音 step。
+     * 建立只在牌牆上的牌正式開始翻面時有效的提示聲音 step。
      *
      * @param gameTime 預定播放提示聲的絕對遊戲 tick。
      * @return 帶播放與過期時刻的提示音效步驟。
      */
-    private fun doraRevealSound(gameTime: Long): AnimationStep.PlaySound = AnimationStep.PlaySound(
-        soundId = MahjongAnimationSounds.DORA_REVEAL,
+    private fun wallRevealSound(gameTime: Long): AnimationStep.PlaySound = AnimationStep.PlaySound(
+        soundId = MahjongAnimationSounds.WALL_REVEAL,
         volume = 0.7f,
         pitch = 1.0f,
         playAtGameTime = gameTime,
@@ -375,7 +375,7 @@ class FabricMahjongTileWallPresenter(
     )
 
     /**
-     * 寶牌指示牌翻面公開的「起飛→翻面→落下」步驟：牌原地（[x]／[z]／[yaw] 不變）往上抬起，在半空中
+     * 牌牆上的牌翻面公開的「起飛→翻面→落下」步驟：牌原地（[x]／[z]／[yaw] 不變）往上抬起，在半空中
      * 把姿態從 [MahjongTilePose.FACE_DOWN] 轉成 [MahjongTilePose.FACE_UP]（180 度旋轉插值，不是瞬間
      * 換面——[MahjongTilePose.rotationDegrees] 這兩個姿態剛好相差 180 度），再落回原位，手法完全比照
      * `FabricMahjongPlayerAreaPresenter` 開局發牌的起飛/翻牌/落下動畫。跟開局發牌不同的是這裡真實座標
@@ -416,7 +416,7 @@ class FabricMahjongTileWallPresenter(
                     endPoseRotationDegrees = MahjongTilePose.FACE_DOWN.rotationDegrees,
                 ),
             )
-            if (soundGameTime != null) add(doraRevealSound(soundGameTime))
+            if (soundGameTime != null) add(wallRevealSound(soundGameTime))
             add(AnimationStep.Custom(MahjongTilePose.FACE_UP))
             add(
                 AnimationStep.PlayMotion(
@@ -547,19 +547,19 @@ class FabricMahjongTileWallPresenter(
         /** 每墩負責播放落桌聲音的牌牆層數。 */
         private const val WALL_STACK_SOUND_LAYER: Int = 1
 
-        /** 寶牌指示牌翻面動畫的起飛高度，理由同 [WALL_DROP_HEIGHT]。 */
+        /** 牌牆上的牌翻面動畫的起飛高度，理由同 [WALL_DROP_HEIGHT]。 */
         const val REVEAL_LIFT_HEIGHT: Double = 0.4
 
         /**
-         * 寶牌指示牌翻面動畫起飛階段的時長；比其他牌張動畫的對應時長長，因為這段動畫沒有其他牌同時
+         * 牌牆上的牌翻面動畫起飛階段的時長；比其他牌張動畫的對應時長長，因為這段動畫沒有其他牌同時
          * 播放分散注意力，需要單獨看得清楚，遊戲內比對後從最初的 4 調到現在的值。
          */
         const val REVEAL_LIFT_DURATION_TICKS: Int = 8
 
-        /** 寶牌指示牌翻面動畫本身（[MahjongTilePose.FACE_DOWN] 轉 [MahjongTilePose.FACE_UP]）的時長，理由同 [REVEAL_LIFT_DURATION_TICKS]。 */
+        /** 牌牆上的牌翻面動畫本身（[MahjongTilePose.FACE_DOWN] 轉 [MahjongTilePose.FACE_UP]）的時長，理由同 [REVEAL_LIFT_DURATION_TICKS]。 */
         const val REVEAL_FLIP_DURATION_TICKS: Int = 8
 
-        /** 寶牌指示牌翻面動畫落下階段的時長，理由同 [REVEAL_LIFT_DURATION_TICKS]。 */
+        /** 牌牆上的牌翻面動畫落下階段的時長，理由同 [REVEAL_LIFT_DURATION_TICKS]。 */
         const val REVEAL_DROP_DURATION_TICKS: Int = 8
     }
 }

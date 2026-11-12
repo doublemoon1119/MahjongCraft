@@ -30,7 +30,7 @@ object ModSounds {
         register(MahjongAnimationSounds.TILE_HAND_TURN)
         register(MahjongAnimationSounds.WALL_STACK_LAND)
         register(MahjongAnimationSounds.DEAL_BATCH)
-        register(MahjongAnimationSounds.DORA_REVEAL)
+        register(MahjongAnimationSounds.WALL_REVEAL)
         diceLand = register(MahjongAnimationSounds.DICE_LAND)
         scoringStickPlace = register(MahjongAnimationSounds.SCORING_STICK_PLACE)
         register(MahjongAnimationSounds.WIN_LIGHTNING, fixedRange = LIGHTNING_RANGE)

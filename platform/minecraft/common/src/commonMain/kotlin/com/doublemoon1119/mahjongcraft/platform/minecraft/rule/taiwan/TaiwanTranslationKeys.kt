@@ -56,6 +56,9 @@ object TaiwanTranslationKeys {
     /** 過水狀態的提示文字。 */
     const val HUD_PASSED_WIN: String = "mahjongcraft.taiwan.hud.passed_win"
 
+    /** 捨牌分析中可以胡牌的狀態名稱。 */
+    const val HUD_WIN_AVAILABLE: String = "mahjongcraft.taiwan.hud.win_availability.available"
+
     /** 只能自摸的等待牌提示文字。 */
     const val HUD_WIN_TSUMO_ONLY: String = "mahjongcraft.taiwan.hud.win_availability.tsumo_only"
 
@@ -127,6 +130,7 @@ object TaiwanTranslationKeys {
         ROUND_INFO_TITLE,
         ROUND_INFO_DEALER_STREAK,
         HUD_PASSED_WIN,
+        HUD_WIN_AVAILABLE,
         HUD_WIN_TSUMO_ONLY,
         HUD_WIN_BELOW_MINIMUM,
         HUD_WIN_NOT_AVAILABLE,

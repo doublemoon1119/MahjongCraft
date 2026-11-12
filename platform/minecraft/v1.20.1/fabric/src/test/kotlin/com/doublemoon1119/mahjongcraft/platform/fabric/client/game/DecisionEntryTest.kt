@@ -26,7 +26,7 @@ class DecisionEntryTest {
         )
 
         assertEquals(
-            listOf("chi", "pon", "kan_open", "ron", "tsumo").map { "mahjongcraft.hud.action.$it" },
+            listOf("chi", "pon", "kan", "ron", "tsumo").map { "mahjongcraft.riichi.action.$it" },
             entries.map { translationKeyOf(it) },
         )
     }
@@ -37,7 +37,7 @@ class DecisionEntryTest {
         val entries = decisionEntriesFrom(texts, promptOf("mahjongcraft:pass", "mahjongcraft:ron"))
 
         assertEquals(1, entries.size)
-        assertEquals("mahjongcraft.hud.action.ron", translationKeyOf(entries.single()))
+        assertEquals("mahjongcraft.riichi.action.ron", translationKeyOf(entries.single()))
     }
 
     /** 不需選牌的動作點擊後直接送出該候選。 */
@@ -216,7 +216,7 @@ class DecisionEntryTest {
         val entries = decisionEntriesFrom(texts, promptOf("example:first", "example:second", "mahjongcraft:ron"))
 
         assertEquals(
-            listOf("mahjongcraft.hud.action.ron", "example:first", "example:second"),
+            listOf("mahjongcraft.riichi.action.ron", "example:first", "example:second"),
             entries.map { translationKeyOf(it) },
         )
     }

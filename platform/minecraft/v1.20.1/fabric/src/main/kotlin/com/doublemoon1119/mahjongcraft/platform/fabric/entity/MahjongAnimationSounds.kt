@@ -17,8 +17,8 @@ internal object MahjongAnimationSounds {
     /** 開局每批牌從牌牆起飛時使用的聲音。 */
     const val DEAL_BATCH: String = "mahjongcraft:tile.deal_batch"
 
-    /** 寶牌指示牌開始翻面公開時使用的提示聲音。 */
-    const val DORA_REVEAL: String = "mahjongcraft:tile.dora_reveal"
+    /** 牌牆上的牌開始翻面公開時使用的提示聲音。 */
+    const val WALL_REVEAL: String = "mahjongcraft:tile.wall_reveal"
 
     /** 每巡摸牌抵達手牌右側摸牌位時使用的聲音。 */
     const val DRAW_TILE_LAND: String = "mahjongcraft:tile.draw_land"

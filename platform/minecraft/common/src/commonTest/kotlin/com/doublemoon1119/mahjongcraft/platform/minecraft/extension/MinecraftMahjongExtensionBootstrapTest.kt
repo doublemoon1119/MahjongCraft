@@ -57,6 +57,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.RuleModuleDisplay
 import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.RuleModuleDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.RuleModuleDisplayNameRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.riichi.BundledRiichiMinecraftExtension
+import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.riichi.RiichiTranslationKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.taiwan.BundledTaiwanMinecraftExtension
 import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.taiwan.TaiwanTranslationKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.taiwan.TaiwanWinSettlementTemplates
@@ -400,9 +401,12 @@ class MinecraftMahjongExtensionBootstrapTest {
             TaiwanTranslationKeys.ACTION_REVEAL_FLOWER,
             gameActionVocabularyRegistry.find(BuiltInRuleModuleIds.TAIWAN, TaiwanGameAction.RevealFlower.id)?.labelKey,
         )
-        // 台灣麻將把榮和說成胡牌；日本麻將維持榮和。
+        // 共用預設是中立用語；台灣麻將把和說成胡牌，日本麻將登記榮和與自己的吃碰槓說法，三人日麻相同。
         assertEquals(TaiwanTranslationKeys.ACTION_HU_MESSAGE, gameActionVocabularyRegistry.find(BuiltInRuleModuleIds.TAIWAN, BuiltInGameActionIds.RON)?.messageKey)
-        assertEquals(MinecraftMessageKeys.GAME_ACTION_RON, gameActionVocabularyRegistry.find(BuiltInRuleModuleIds.RIICHI, BuiltInGameActionIds.RON)?.messageKey)
+        assertEquals(MinecraftMessageKeys.GAME_ACTION_CHI, gameActionVocabularyRegistry.find(BuiltInRuleModuleIds.TAIWAN, BuiltInGameActionIds.CHI)?.messageKey)
+        assertEquals(RiichiTranslationKeys.ACTION_RON_MESSAGE, gameActionVocabularyRegistry.find(BuiltInRuleModuleIds.RIICHI, BuiltInGameActionIds.RON)?.messageKey)
+        assertEquals(RiichiTranslationKeys.ACTION_KAN, gameActionVocabularyRegistry.find(BuiltInRuleModuleIds.RIICHI_THREE_PLAYER, BuiltInGameActionIds.KAN_CLOSED)?.labelKey)
+        assertEquals(MinecraftMessageKeys.GAME_ACTION_RON, gameActionVocabularyRegistry.find("example:rule", BuiltInGameActionIds.RON)?.messageKey)
         assertTrue(ruleDecisionDisplayNameRegistry.registrationKeys.isEmpty(), "Built-in rules show rule decision choices with action names.")
         assertTrue(TaiwanRoundOutcomeIds.EIGHT_FLOWERS.let(roundOutcomeDisplayNameRegistry::find) != null)
         assertTrue(TaiwanRoundOutcomeIds.SEVEN_FLOWERS.let(roundOutcomeDisplayNameRegistry::find) != null)

@@ -65,10 +65,10 @@ class GameActionDisplayTextTest {
             emojiRegistry,
             exhaustiveDrawReasonDisplayNameRegistry,
         ).content as TranslatableTextContent
-        assertEquals("mahjongcraft.message.game_action_tsumo", content.key)
+        assertEquals("mahjongcraft.riichi.action.tsumo.message", content.key)
     }
 
-    /** 驗證三種槓型各自對應不同的翻譯 key，不會被混淆成同一種槓。 */
+    /** 驗證三種槓型各自對應日麻不同的翻譯 key，不會被混淆成同一種槓。 */
     @Test
     fun `each kan type maps to its own key`() {
         val openKey = (
@@ -84,9 +84,9 @@ class GameActionDisplayTextTest {
                 .toDisplayText(fiveDot, ruleModuleId, actionVocabulary, displayNameRegistry, assetRegistry, emojiRegistry, exhaustiveDrawReasonDisplayNameRegistry).content as TranslatableTextContent
             ).key
 
-        assertEquals("mahjongcraft.message.game_action_kan_open", openKey)
-        assertEquals("mahjongcraft.message.game_action_kan_closed", closedKey)
-        assertEquals("mahjongcraft.message.game_action_kan_added", addedKey)
+        assertEquals("mahjongcraft.riichi.action.kan_open.message", openKey)
+        assertEquals("mahjongcraft.riichi.action.kan_closed.message", closedKey)
+        assertEquals("mahjongcraft.riichi.action.kan_added.message", addedKey)
     }
 
     /** 驗證九種九牌顯示成專屬文字，不是通用流局 fallback。 */
@@ -117,8 +117,14 @@ class GameActionDisplayTextTest {
                 .toDisplayText(fiveDot, ruleModuleId, actionVocabulary, displayNameRegistry, assetRegistry, emojiRegistry, exhaustiveDrawReasonDisplayNameRegistry).content as TranslatableTextContent
             ).key
 
+        val unregisteredKey = (
+            GameAction.Ron(Uuid.random())
+                .toDisplayText(fiveDot, "example:rule", actionVocabulary, displayNameRegistry, assetRegistry, emojiRegistry, exhaustiveDrawReasonDisplayNameRegistry).content as TranslatableTextContent
+            ).key
+
         assertEquals("example.message.win", taiwanKey)
-        assertEquals("mahjongcraft.message.game_action_ron", riichiKey)
+        assertEquals("mahjongcraft.riichi.action.ron.message", riichiKey)
+        assertEquals("mahjongcraft.message.game_action_ron", unregisteredKey)
     }
 
     /** 驗證非九種九牌的流局原因退回通用 fallback 文字。 */

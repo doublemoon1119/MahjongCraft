@@ -67,7 +67,7 @@ class ModSoundResourceTest {
         MahjongAnimationSounds.SCORING_STICK_PLACE to "mahjongcraft:tile/draw_land",
         MahjongAnimationSounds.DEAL_BATCH to "mahjongcraft:tile/deal_batch",
         MahjongAnimationSounds.TILE_DISCARD_LAND to "mahjongcraft:tile/discard_land",
-        MahjongAnimationSounds.DORA_REVEAL to "mahjongcraft:tile/draw_land",
+        MahjongAnimationSounds.WALL_REVEAL to "mahjongcraft:tile/draw_land",
         MahjongAnimationSounds.DRAW_TILE_LAND to "mahjongcraft:tile/draw_land",
         MahjongAnimationSounds.TILE_HAND_TURN to "mahjongcraft:tile/hand_turn",
         MahjongAnimationSounds.TILE_MELD_LAND to "mahjongcraft:tile/meld_land",

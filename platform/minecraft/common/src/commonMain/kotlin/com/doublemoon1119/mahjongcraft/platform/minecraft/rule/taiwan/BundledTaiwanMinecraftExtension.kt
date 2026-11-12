@@ -2,6 +2,7 @@ package com.doublemoon1119.mahjongcraft.platform.minecraft.rule.taiwan
 
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.taiwan.TaiwanRoundOutcomeIds
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.taiwan.TaiwanWinSettlementIds
+import com.doublemoon1119.mahjongcraft.logic.judgment.WaitingTileAvailabilityIds
 import com.doublemoon1119.mahjongcraft.logic.module.BuiltInRuleModuleIds
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanDiscardReadinessAnalyzer
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanExhaustiveDrawReason
@@ -122,10 +123,11 @@ object BundledTaiwanMinecraftExtension : MinecraftMahjongExtension {
         )
     }
 
-    /** 登記台灣麻將的過水與等待牌胡牌資格文字。 */
+    /** 登記台灣麻將的過水與等待牌胡牌資格文字；可以胡牌的狀態改用台麻說法。 */
     override fun registerDecisionStatusDisplayNames(registry: DecisionStatusDisplayNameRegistrar) {
         listOf(
             TaiwanDiscardReadinessAnalyzer.StatusIds.PASSED_WIN to TaiwanTranslationKeys.HUD_PASSED_WIN,
+            WaitingTileAvailabilityIds.WIN_AVAILABLE to TaiwanTranslationKeys.HUD_WIN_AVAILABLE,
             TaiwanDiscardReadinessAnalyzer.StatusIds.WIN_TSUMO_ONLY to TaiwanTranslationKeys.HUD_WIN_TSUMO_ONLY,
             TaiwanDiscardReadinessAnalyzer.StatusIds.WIN_BELOW_MINIMUM to TaiwanTranslationKeys.HUD_WIN_BELOW_MINIMUM,
             TaiwanDiscardReadinessAnalyzer.StatusIds.WIN_NOT_AVAILABLE to TaiwanTranslationKeys.HUD_WIN_NOT_AVAILABLE,

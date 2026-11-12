@@ -63,11 +63,12 @@ class DecisionStatusDisplayNameRegistryTest {
         val registry = registry()
 
         assertEquals("mahjongcraft.hud.win_availability.available", registry.find(BuiltInRuleModuleIds.RIICHI, WaitingTileAvailabilityIds.WIN_AVAILABLE))
-        assertEquals("mahjongcraft.hud.win_availability.available", registry.find(BuiltInRuleModuleIds.TAIWAN, WaitingTileAvailabilityIds.WIN_AVAILABLE))
+        assertEquals("mahjongcraft.hud.win_availability.available", registry.find(EXAMPLE_RULE, WaitingTileAvailabilityIds.WIN_AVAILABLE))
+        assertEquals("mahjongcraft.taiwan.hud.win_availability.available", registry.find(BuiltInRuleModuleIds.TAIWAN, WaitingTileAvailabilityIds.WIN_AVAILABLE))
 
-        registry.register(DecisionStatusDisplayNameDefinition(BuiltInRuleModuleIds.TAIWAN, WaitingTileAvailabilityIds.WIN_AVAILABLE, "example.hud.can_win"))
+        registry.register(DecisionStatusDisplayNameDefinition(EXAMPLE_RULE, WaitingTileAvailabilityIds.WIN_AVAILABLE, "example.hud.can_win"))
 
-        assertEquals("example.hud.can_win", registry.find(BuiltInRuleModuleIds.TAIWAN, WaitingTileAvailabilityIds.WIN_AVAILABLE))
+        assertEquals("example.hud.can_win", registry.find(EXAMPLE_RULE, WaitingTileAvailabilityIds.WIN_AVAILABLE))
         assertEquals("mahjongcraft.hud.win_availability.available", registry.find(BuiltInRuleModuleIds.RIICHI, WaitingTileAvailabilityIds.WIN_AVAILABLE))
     }
 
@@ -95,3 +96,6 @@ class DecisionStatusDisplayNameRegistryTest {
         assertFailsWith<IllegalStateException> { registry.register(DecisionStatusDisplayNameDefaultDefinition("example:late", "example.hud.late")) }
     }
 }
+
+/** 沒有登記任何狀態名稱的第三方規則。 */
+private const val EXAMPLE_RULE: String = "example:rule"

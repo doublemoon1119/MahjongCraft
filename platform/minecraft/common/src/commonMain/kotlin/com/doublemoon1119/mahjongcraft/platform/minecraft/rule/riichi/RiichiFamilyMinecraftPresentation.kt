@@ -6,6 +6,7 @@ import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiExhaustiveDrawRe
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiGameAction
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.riichiPotPoints
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
+import com.doublemoon1119.mahjongcraft.platform.minecraft.action.BuiltInGameActionIds
 import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionVocabulary
 import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionVocabularyDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.DecisionStatusDisplayNameRegistrar
@@ -125,6 +126,23 @@ object RiichiFamilyMinecraftPresentation {
                 ),
             ),
         )
+        listOf(
+            BuiltInGameActionIds.CHI to RiichiCoreActionWording(RiichiTranslationKeys.ACTION_CHI, RiichiTranslationKeys.ACTION_CHI_MESSAGE, order = 0),
+            BuiltInGameActionIds.PON to RiichiCoreActionWording(RiichiTranslationKeys.ACTION_PON, RiichiTranslationKeys.ACTION_PON_MESSAGE, order = 1),
+            BuiltInGameActionIds.KAN_OPEN to RiichiCoreActionWording(RiichiTranslationKeys.ACTION_KAN, RiichiTranslationKeys.ACTION_KAN_OPEN_MESSAGE, order = 2),
+            BuiltInGameActionIds.KAN_CLOSED to RiichiCoreActionWording(RiichiTranslationKeys.ACTION_KAN, RiichiTranslationKeys.ACTION_KAN_CLOSED_MESSAGE, order = 2),
+            BuiltInGameActionIds.KAN_ADDED to RiichiCoreActionWording(RiichiTranslationKeys.ACTION_KAN, RiichiTranslationKeys.ACTION_KAN_ADDED_MESSAGE, order = 2),
+            BuiltInGameActionIds.RON to RiichiCoreActionWording(RiichiTranslationKeys.ACTION_RON, RiichiTranslationKeys.ACTION_RON_MESSAGE, order = 3),
+            BuiltInGameActionIds.TSUMO to RiichiCoreActionWording(RiichiTranslationKeys.ACTION_TSUMO, RiichiTranslationKeys.ACTION_TSUMO_MESSAGE, order = 4),
+        ).forEach { (actionId, wording) ->
+            registry.register(
+                definition = GameActionVocabularyDefinition(
+                    ruleModuleId = ruleModuleId,
+                    actionId = actionId,
+                    vocabulary = GameActionVocabulary(labelKey = wording.labelKey, messageKey = wording.messageKey, order = wording.order),
+                ),
+            )
+        }
         if (!includesPullNorth) return
         registry.register(
             definition = GameActionVocabularyDefinition(
@@ -210,3 +228,16 @@ private const val KYUUSHU_KYUUHAI_ACTION_ORDER: Int = 6
 
 /** 拔北在操作卡中的順序。 */
 private const val PULL_NORTH_ACTION_ORDER: Int = 7
+
+/**
+ * 核心動作的日麻說法；操作卡順序與共用預設相同。
+ *
+ * @property labelKey 操作卡名稱的翻譯鍵。
+ * @property messageKey 聊天訊息的翻譯鍵。
+ * @property order 操作卡排序值。
+ */
+private data class RiichiCoreActionWording(
+    val labelKey: String,
+    val messageKey: String,
+    val order: Int,
+)

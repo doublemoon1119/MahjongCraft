@@ -74,6 +74,45 @@ object RiichiTranslationKeys {
     /** 三人日本立直麻將的規則名稱。 */
     const val RULE_NAME_THREE_PLAYER: String = "mahjongcraft.riichi.rule_name.three_player"
 
+    /** 吃牌操作卡的日麻說法。 */
+    const val ACTION_CHI: String = "mahjongcraft.riichi.action.chi"
+
+    /** 吃牌聊天訊息的日麻說法。 */
+    const val ACTION_CHI_MESSAGE: String = "mahjongcraft.riichi.action.chi.message"
+
+    /** 碰牌操作卡的日麻說法。 */
+    const val ACTION_PON: String = "mahjongcraft.riichi.action.pon"
+
+    /** 碰牌聊天訊息的日麻說法。 */
+    const val ACTION_PON_MESSAGE: String = "mahjongcraft.riichi.action.pon.message"
+
+    /** 各種槓操作卡共用的日麻說法。 */
+    const val ACTION_KAN: String = "mahjongcraft.riichi.action.kan"
+
+    /** 明槓聊天訊息的日麻說法（大明槓）。 */
+    const val ACTION_KAN_OPEN_MESSAGE: String = "mahjongcraft.riichi.action.kan_open.message"
+
+    /** 暗槓聊天訊息的日麻說法。 */
+    const val ACTION_KAN_CLOSED_MESSAGE: String = "mahjongcraft.riichi.action.kan_closed.message"
+
+    /** 加槓聊天訊息的日麻說法。 */
+    const val ACTION_KAN_ADDED_MESSAGE: String = "mahjongcraft.riichi.action.kan_added.message"
+
+    /** 榮和操作卡。 */
+    const val ACTION_RON: String = "mahjongcraft.riichi.action.ron"
+
+    /** 榮和聊天訊息。 */
+    const val ACTION_RON_MESSAGE: String = "mahjongcraft.riichi.action.ron.message"
+
+    /** 自摸操作卡的日麻說法。 */
+    const val ACTION_TSUMO: String = "mahjongcraft.riichi.action.tsumo"
+
+    /** 自摸聊天訊息的日麻說法。 */
+    const val ACTION_TSUMO_MESSAGE: String = "mahjongcraft.riichi.action.tsumo.message"
+
+    /** 局況資訊的牌山剩餘張數。 */
+    const val ROUND_INFO_WALL_REMAINING: String = "mahjongcraft.riichi.round_info.wall_remaining"
+
     /** 流局滿貫的本局結果名稱。 */
     const val OUTCOME_NAGASHI_MANGAN: String = "mahjongcraft.riichi.outcome.nagashi_mangan"
 
@@ -157,6 +196,19 @@ object RiichiTranslationKeys {
         TILE_RED_FIVE_BAMBOO,
         RULE_NAME,
         RULE_NAME_THREE_PLAYER,
+        ACTION_CHI,
+        ACTION_CHI_MESSAGE,
+        ACTION_PON,
+        ACTION_PON_MESSAGE,
+        ACTION_KAN,
+        ACTION_KAN_OPEN_MESSAGE,
+        ACTION_KAN_CLOSED_MESSAGE,
+        ACTION_KAN_ADDED_MESSAGE,
+        ACTION_RON,
+        ACTION_RON_MESSAGE,
+        ACTION_TSUMO,
+        ACTION_TSUMO_MESSAGE,
+        ROUND_INFO_WALL_REMAINING,
         OUTCOME_NAGASHI_MANGAN,
         OUTCOME_DEALER_TOP_FINISH,
         HISTORY_TILE_AREA_NORTH,
