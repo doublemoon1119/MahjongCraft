@@ -62,7 +62,7 @@ class RiichiCatalogueProvider(
                             else -> null
                         },
                         examples = riichiCatalogueExamples(definition.type, config.usesThreePlayerTiles),
-                        additionalCategoryIds = if (definition.type.isLocal) listOf(RiichiCatalogueCategory.LOCAL.id) else emptyList(),
+                        additionalCategoryIds = if (definition.type.isLocal) listOf(RiichiCatalogueCategory.Local.id) else emptyList(),
                     )
                 } + riichiCatalogueSpecialEntries(config),
         )
@@ -77,13 +77,13 @@ class RiichiCatalogueProvider(
 /** 建立不經一般手牌役種判定的特殊結算與途中流局說明；三人日麻沒有四風連打與四家立直。 */
 private fun riichiCatalogueSpecialEntries(config: RiichiFamilyRuleConfig): List<RuleCatalogueEntry> = RiichiCatalogueSpecial.entries
     .filter { definition ->
-        !config.usesThreePlayerTiles || (definition != RiichiCatalogueSpecial.SUUFON_RENDA && definition != RiichiCatalogueSpecial.SUUCHA_RIICHI)
+        !config.usesThreePlayerTiles || (definition != RiichiCatalogueSpecial.SuufonRenda && definition != RiichiCatalogueSpecial.SuuchaRiichi)
     }
     .map { definition ->
-        val isMangan = definition == RiichiCatalogueSpecial.NAGASHI_MANGAN
+        val isMangan = definition == RiichiCatalogueSpecial.NagashiMangan
         RuleCatalogueEntry(
             id = definition.id,
-            categoryId = if (isMangan) RiichiCatalogueCategory.MANGAN.id else RiichiCatalogueCategory.ABORTIVE_DRAW.id,
+            categoryId = if (isMangan) RiichiCatalogueCategory.Mangan.id else RiichiCatalogueCategory.AbortiveDraw.id,
             nameTranslationKey = definition.nameKey,
             descriptionTranslationKey = definition.descriptionKey,
             labels = if (isMangan) listOf(riichiCatalogueLabel(RiichiCatalogueKeys.MANGAN)) else emptyList(),

@@ -10,71 +10,68 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.catalogue.RuleCatalogu
 
 /** 日麻役種目錄使用的範例牌面與情境說明鍵。 */
 internal object RiichiCatalogueExampleKeys {
-    /** 範例說明翻譯鍵的共用前綴。 */
-    private const val PREFIX: String = "mahjongcraft.rule_catalogue.riichi.example."
-
     /** 自風為西的情境。 */
-    const val SEAT_WEST: String = PREFIX + "seat_west"
+    const val SEAT_WEST: String = "mahjongcraft.riichi.rule_catalogue.example.seat_west"
 
     /** 西場情境。 */
-    const val ROUND_WEST: String = PREFIX + "round_west"
+    const val ROUND_WEST: String = "mahjongcraft.riichi.rule_catalogue.example.round_west"
 
     /** 自摸情境。 */
-    const val TSUMO: String = PREFIX + "tsumo"
+    const val TSUMO: String = "mahjongcraft.riichi.rule_catalogue.example.tsumo"
 
     /** 榮和情境。 */
-    const val RON: String = PREFIX + "ron"
+    const val RON: String = "mahjongcraft.riichi.rule_catalogue.example.ron"
 
     /** 立直情境。 */
-    const val RIICHI: String = PREFIX + "riichi"
+    const val RIICHI: String = "mahjongcraft.riichi.rule_catalogue.example.riichi"
 
     /** 雙立直情境。 */
-    const val DOUBLE_RIICHI: String = PREFIX + "double_riichi"
+    const val DOUBLE_RIICHI: String = "mahjongcraft.riichi.rule_catalogue.example.double_riichi"
 
     /** 一發情境。 */
-    const val IPPATSU: String = PREFIX + "ippatsu"
+    const val IPPATSU: String = "mahjongcraft.riichi.rule_catalogue.example.ippatsu"
 
     /** 嶺上開花情境。 */
-    const val RINSHAN: String = PREFIX + "rinshan"
+    const val RINSHAN: String = "mahjongcraft.riichi.rule_catalogue.example.rinshan"
 
     /** 海底摸月情境。 */
-    const val HAITEI: String = PREFIX + "haitei"
+    const val HAITEI: String = "mahjongcraft.riichi.rule_catalogue.example.haitei"
 
     /** 河底撈魚情境。 */
-    const val HOUTEI: String = PREFIX + "houtei"
+    const val HOUTEI: String = "mahjongcraft.riichi.rule_catalogue.example.houtei"
 
     /** 搶槓情境。 */
-    const val CHANKAN: String = PREFIX + "chankan"
+    const val CHANKAN: String = "mahjongcraft.riichi.rule_catalogue.example.chankan"
 
     /** 天和情境。 */
-    const val TENHOU: String = PREFIX + "tenhou"
+    const val TENHOU: String = "mahjongcraft.riichi.rule_catalogue.example.tenhou"
 
     /** 地和情境。 */
-    const val CHIIHOU: String = PREFIX + "chiihou"
+    const val CHIIHOU: String = "mahjongcraft.riichi.rule_catalogue.example.chiihou"
 
     /** 牌面加碼示意。 */
-    const val BONUS: String = PREFIX + "bonus"
+    const val BONUS: String = "mahjongcraft.riichi.rule_catalogue.example.bonus"
 
     /** 拔出的北擺在副露旁示意。 */
-    const val NUKI_DORA: String = PREFIX + "nuki_dora"
+    const val NUKI_DORA: String = "mahjongcraft.riichi.rule_catalogue.example.nuki_dora"
 
     /** 以其他玩家的立直宣言牌榮和。 */
-    const val TSUBAME_GAESHI: String = PREFIX + "tsubame_gaeshi"
+    const val TSUBAME_GAESHI: String = "mahjongcraft.riichi.rule_catalogue.example.tsubame_gaeshi"
 
     /** 以其他玩家槓後打出的牌榮和。 */
-    const val KANBURI: String = PREFIX + "kanburi"
+    const val KANBURI: String = "mahjongcraft.riichi.rule_catalogue.example.kanburi"
 
     /** 海底自摸一筒。 */
-    const val IIPIN_MOYUE: String = PREFIX + "iipin_moyue"
+    const val IIPIN_MOYUE: String = "mahjongcraft.riichi.rule_catalogue.example.iipin_moyue"
 
     /** 河底榮和九筒。 */
-    const val CHUUPIN_RAOYUI: String = PREFIX + "chuupin_raoyui"
+    const val CHUUPIN_RAOYUI: String = "mahjongcraft.riichi.rule_catalogue.example.chuupin_raoyui"
 
     /** 非莊家在自己第一次摸牌前榮和。 */
-    const val RENHOU: String = PREFIX + "renhou"
+    const val RENHOU: String = "mahjongcraft.riichi.rule_catalogue.example.renhou"
 
     /** 雙立直後以海底自摸或河底榮和。 */
-    const val ISHI_NO_UE_NI_MO_SANNEN: String = PREFIX + "ishi_no_ue_ni_mo_sannen"
+    const val ISHI_NO_UE_NI_MO_SANNEN: String = "mahjongcraft.riichi.rule_catalogue.example.ishi_no_ue_ni_mo_sannen"
 }
 
 /**

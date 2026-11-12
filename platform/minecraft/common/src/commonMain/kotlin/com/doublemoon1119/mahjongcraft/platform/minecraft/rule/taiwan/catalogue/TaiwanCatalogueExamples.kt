@@ -8,6 +8,57 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.catalogue.RuleCatalogu
 import com.doublemoon1119.mahjongcraft.platform.minecraft.catalogue.RuleCatalogueTileGroup
 import com.doublemoon1119.mahjongcraft.platform.minecraft.catalogue.RuleCatalogueTileGroupRole
 
+/** 台灣麻將圖鑑使用的範例情境說明鍵。 */
+internal object TaiwanCatalogueExampleKeys {
+    /** 門清牌例的情境說明。 */
+    const val CONCEALED_HAND: String = "mahjongcraft.taiwan.rule_catalogue.example.concealed_hand"
+
+    /** 自摸牌例的情境說明。 */
+    const val SELF_DRAW: String = "mahjongcraft.taiwan.rule_catalogue.example.self_draw"
+
+    /** 門清自摸牌例的情境說明。 */
+    const val FULLY_CONCEALED_HAND: String = "mahjongcraft.taiwan.rule_catalogue.example.fully_concealed_hand"
+
+    /** 門風牌例的情境說明。 */
+    const val SEAT_WIND: String = "mahjongcraft.taiwan.rule_catalogue.example.seat_wind"
+
+    /** 圈風牌例的情境說明。 */
+    const val ROUND_WIND: String = "mahjongcraft.taiwan.rule_catalogue.example.round_wind"
+
+    /** 正花牌例的情境說明。 */
+    const val SEAT_FLOWER: String = "mahjongcraft.taiwan.rule_catalogue.example.seat_flower"
+
+    /** 獨聽牌例的情境說明。 */
+    const val SINGLE_WAIT: String = "mahjongcraft.taiwan.rule_catalogue.example.single_wait"
+
+    /** 搶槓牌例的情境說明。 */
+    const val ROBBING_KONG: String = "mahjongcraft.taiwan.rule_catalogue.example.robbing_kong"
+
+    /** 槓上開花牌例的情境說明。 */
+    const val REPLACEMENT_WIN: String = "mahjongcraft.taiwan.rule_catalogue.example.replacement_win"
+
+    /** 海底撈月牌例的情境說明。 */
+    const val LAST_DRAW: String = "mahjongcraft.taiwan.rule_catalogue.example.last_draw"
+
+    /** 宣告聽牌牌例的情境說明。 */
+    const val DECLARED_READY: String = "mahjongcraft.taiwan.rule_catalogue.example.declared_ready"
+
+    /** 天聽牌例的情境說明。 */
+    const val HEAVENLY_READY: String = "mahjongcraft.taiwan.rule_catalogue.example.heavenly_ready"
+
+    /** 地聽牌例的情境說明。 */
+    const val EARTHLY_READY: String = "mahjongcraft.taiwan.rule_catalogue.example.earthly_ready"
+
+    /** 人胡牌例的情境說明。 */
+    const val HUMAN_WIN: String = "mahjongcraft.taiwan.rule_catalogue.example.human_win"
+
+    /** 地胡牌例的情境說明。 */
+    const val EARTHLY_WIN: String = "mahjongcraft.taiwan.rule_catalogue.example.earthly_win"
+
+    /** 天胡牌例的情境說明。 */
+    const val HEAVENLY_WIN: String = "mahjongcraft.taiwan.rule_catalogue.example.heavenly_win"
+}
+
 /**
  * 建立需要以牌面解釋的台灣麻將台型範例。
  *
@@ -17,26 +68,26 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.catalogue.RuleCatalogu
  * @return 對應台種的完整手牌範例；不需要牌例時為空列表。
  */
 internal fun taiwanCatalogueExamples(type: TaiwanTaiType): List<RuleCatalogueExample> = when (type) {
-    TaiwanTaiType.ConcealedHand -> listOf(standardHand(TaiwanCatalogueKeys.CONCEALED_HAND_EXAMPLE))
-    TaiwanTaiType.SelfDraw -> listOf(standardHand(TaiwanCatalogueKeys.SELF_DRAW_EXAMPLE))
-    TaiwanTaiType.FullyConcealedHand -> listOf(standardHand(TaiwanCatalogueKeys.FULLY_CONCEALED_HAND_EXAMPLE))
+    TaiwanTaiType.ConcealedHand -> listOf(standardHand(TaiwanCatalogueExampleKeys.CONCEALED_HAND))
+    TaiwanTaiType.SelfDraw -> listOf(standardHand(TaiwanCatalogueExampleKeys.SELF_DRAW))
+    TaiwanTaiType.FullyConcealedHand -> listOf(standardHand(TaiwanCatalogueExampleKeys.FULLY_CONCEALED_HAND))
     TaiwanTaiType.SeatWind -> listOf(
-        full(m1, m2, m3, p4, p5, p6, s7, s8, s9, east, east, east, red, red, s1, s2, winning = s3, description = TaiwanCatalogueKeys.SEAT_WIND_EXAMPLE),
+        full(m1, m2, m3, p4, p5, p6, s7, s8, s9, east, east, east, red, red, s1, s2, winning = s3, description = TaiwanCatalogueExampleKeys.SEAT_WIND),
     )
     TaiwanTaiType.RoundWind -> listOf(
-        full(m1, m2, m3, p4, p5, p6, s7, s8, s9, south, south, south, red, red, s1, s2, winning = s3, description = TaiwanCatalogueKeys.ROUND_WIND_EXAMPLE),
+        full(m1, m2, m3, p4, p5, p6, s7, s8, s9, south, south, south, red, red, s1, s2, winning = s3, description = TaiwanCatalogueExampleKeys.ROUND_WIND),
     )
     TaiwanTaiType.Dragon -> listOf(
         full(m1, m2, m3, p4, p5, p6, s7, s8, s9, red, red, red, east, east, s1, s2, winning = s3),
     )
-    TaiwanTaiType.SeatFlower -> listOf(illustration(spring, plum, description = TaiwanCatalogueKeys.SEAT_FLOWER_EXAMPLE))
+    TaiwanTaiType.SeatFlower -> listOf(illustration(spring, plum, description = TaiwanCatalogueExampleKeys.SEAT_FLOWER))
     TaiwanTaiType.FlowerSet -> listOf(illustration(spring, summer, autumn, winter))
     TaiwanTaiType.SingleWait -> listOf(
-        full(m1, m2, m3, m4, m5, m6, p1, p2, p3, p4, p5, p6, s1, s2, s3, east, winning = east, description = TaiwanCatalogueKeys.SINGLE_WAIT_EXAMPLE),
+        full(m1, m2, m3, m4, m5, m6, p1, p2, p3, p4, p5, p6, s1, s2, s3, east, winning = east, description = TaiwanCatalogueExampleKeys.SINGLE_WAIT),
     )
-    TaiwanTaiType.RobbingKong -> listOf(standardHand(TaiwanCatalogueKeys.ROBBING_KONG_EXAMPLE))
-    TaiwanTaiType.ReplacementWin -> listOf(standardHand(TaiwanCatalogueKeys.REPLACEMENT_WIN_EXAMPLE))
-    TaiwanTaiType.LastDraw -> listOf(standardHand(TaiwanCatalogueKeys.LAST_DRAW_EXAMPLE))
+    TaiwanTaiType.RobbingKong -> listOf(standardHand(TaiwanCatalogueExampleKeys.ROBBING_KONG))
+    TaiwanTaiType.ReplacementWin -> listOf(standardHand(TaiwanCatalogueExampleKeys.REPLACEMENT_WIN))
+    TaiwanTaiType.LastDraw -> listOf(standardHand(TaiwanCatalogueExampleKeys.LAST_DRAW))
     TaiwanTaiType.AllSequences -> listOf(
         full(m1, m2, m3, m4, m5, m6, p1, p2, p3, p4, p5, p6, s2, s3, s8, s8, winning = s1),
     )
@@ -84,12 +135,12 @@ internal fun taiwanCatalogueExamples(type: TaiwanTaiType): List<RuleCatalogueExa
     TaiwanTaiType.AllHonors -> listOf(
         full(east, east, east, south, south, south, west, west, west, north, north, north, white, white, white, red, winning = red),
     )
-    TaiwanTaiType.DeclaredReady -> listOf(standardHand(TaiwanCatalogueKeys.DECLARED_READY_EXAMPLE))
-    TaiwanTaiType.HeavenlyReady -> listOf(standardHand(TaiwanCatalogueKeys.HEAVENLY_READY_EXAMPLE))
-    TaiwanTaiType.EarthlyReady -> listOf(standardHand(TaiwanCatalogueKeys.EARTHLY_READY_EXAMPLE))
-    TaiwanTaiType.HumanWin -> listOf(standardHand(TaiwanCatalogueKeys.HUMAN_WIN_EXAMPLE))
-    TaiwanTaiType.EarthlyWin -> listOf(standardHand(TaiwanCatalogueKeys.EARTHLY_WIN_EXAMPLE))
-    TaiwanTaiType.HeavenlyWin -> listOf(standardHand(TaiwanCatalogueKeys.HEAVENLY_WIN_EXAMPLE))
+    TaiwanTaiType.DeclaredReady -> listOf(standardHand(TaiwanCatalogueExampleKeys.DECLARED_READY))
+    TaiwanTaiType.HeavenlyReady -> listOf(standardHand(TaiwanCatalogueExampleKeys.HEAVENLY_READY))
+    TaiwanTaiType.EarthlyReady -> listOf(standardHand(TaiwanCatalogueExampleKeys.EARTHLY_READY))
+    TaiwanTaiType.HumanWin -> listOf(standardHand(TaiwanCatalogueExampleKeys.HUMAN_WIN))
+    TaiwanTaiType.EarthlyWin -> listOf(standardHand(TaiwanCatalogueExampleKeys.EARTHLY_WIN))
+    TaiwanTaiType.HeavenlyWin -> listOf(standardHand(TaiwanCatalogueExampleKeys.HEAVENLY_WIN))
     TaiwanTaiType.EightFlowers -> listOf(illustration(spring, summer, autumn, winter, plum, orchid, chrysanthemum, bamboo))
     TaiwanTaiType.SevenFlowers -> listOf(illustration(spring, summer, autumn, winter, plum, orchid, chrysanthemum))
 }

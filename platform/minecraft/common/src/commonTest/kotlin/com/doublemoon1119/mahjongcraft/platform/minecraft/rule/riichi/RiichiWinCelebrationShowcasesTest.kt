@@ -18,7 +18,7 @@ class RiichiWinCelebrationShowcasesTest {
     fun `every yakuman resolves to a registered showcase`() {
         val registry = WinCelebrationShowcaseRegistryImpl().apply { BundledRiichiMinecraftExtension.registerWinCelebrationShowcases(this) }
         val yakuman = RiichiCatalogueYaku.entries.filter {
-            it.category == RiichiCatalogueCategory.YAKUMAN || it.category == RiichiCatalogueCategory.DOUBLE_YAKUMAN
+            it.category == RiichiCatalogueCategory.Yakuman || it.category == RiichiCatalogueCategory.DoubleYakuman
         }
 
         yakuman.forEach { definition ->

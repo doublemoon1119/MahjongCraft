@@ -1,13 +1,11 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.rule.taiwan.catalogue
 
-import com.doublemoon1119.mahjongcraft.flow.common.game.model.taiwan.TaiwanWinSettlementIds
 import com.doublemoon1119.mahjongcraft.logic.base.Hand
 import com.doublemoon1119.mahjongcraft.logic.base.Meld
 import com.doublemoon1119.mahjongcraft.logic.base.MeldType
 import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.logic.base.TileFaceView
 import com.doublemoon1119.mahjongcraft.logic.base.TileValue
-import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanExhaustiveDrawReason
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanHandValueCalculator
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanHandValueContext
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanRuleConfig
@@ -32,19 +30,24 @@ import kotlin.test.assertTrue
 
 /** 驗證台灣麻將圖鑑完整涵蓋台表與依房間設定標示不可用項目。 */
 class TaiwanCatalogueProviderTest {
-    /** 每個計台項目恰有一筆條目，並列出四種流局。 */
+    /** 每個計台項目恰有一筆條目，並列出所有流局。 */
     @Test
     fun `catalogue covers every tai type and draw reason`() {
         val catalogue = assertNotNull(TaiwanCatalogueProvider().catalogue(TaiwanRuleConfig()))
-        val expectedDrawIds = setOf(
-            TaiwanExhaustiveDrawReason.Normal.id,
-            TaiwanExhaustiveDrawReason.NoSupplementalTile.id,
-            TaiwanExhaustiveDrawReason.FourKans.id,
-            TaiwanExhaustiveDrawReason.FourWinds.id,
-        )
+        val drawEntries = catalogue.entries.filter { it.categoryId == TaiwanCatalogueCategory.Draw.id }
 
-        assertEquals(TaiwanTaiType.entries.map(TaiwanWinSettlementIds::tai).toSet(), catalogue.entries.map { it.id }.filter { it !in expectedDrawIds }.toSet())
-        assertTrue(expectedDrawIds.all { id -> catalogue.entries.any { it.id == id } })
+        assertEquals(TaiwanCatalogueTai.entries.map { it.id }.toSet(), catalogue.entries.map { it.id }.filter { id -> drawEntries.none { it.id == id } }.toSet())
+        assertEquals(TaiwanCatalogueSpecial.entries.map { it.id }, drawEntries.map { it.id })
+    }
+
+    /** 圖鑑對照表中每個計台項目恰好出現一次，條目識別碼不重複。 */
+    @Test
+    fun `catalogue table maps each tai type once`() {
+        val catalogue = assertNotNull(TaiwanCatalogueProvider().catalogue(TaiwanRuleConfig()))
+
+        assertEquals(TaiwanTaiType.entries, TaiwanCatalogueTai.entries.map { it.type })
+        assertEquals(TaiwanCatalogueTai.entries.size + TaiwanCatalogueSpecial.entries.size, catalogue.entries.size)
+        assertEquals(catalogue.entries.size, catalogue.entries.map { it.id }.distinct().size)
     }
 
     /** 停用花牌與四風連打只標示相關條目不可用，不從一般說明中刪除。 */
@@ -54,14 +57,14 @@ class TaiwanCatalogueProviderTest {
             TaiwanCatalogueProvider().catalogue(TaiwanRuleConfig(useFlowerTiles = false, fourWindsAbortiveDraw = false)),
         )
 
-        listOf(TaiwanWinSettlementIds.tai(TaiwanTaiType.SeatFlower), TaiwanWinSettlementIds.tai(TaiwanTaiType.FlowerSet), TaiwanWinSettlementIds.tai(TaiwanTaiType.EightFlowers), TaiwanWinSettlementIds.tai(TaiwanTaiType.SevenFlowers)).forEach { id ->
+        listOf(TaiwanCatalogueTai.SeatFlower.id, TaiwanCatalogueTai.FlowerSet.id, TaiwanCatalogueTai.EightFlowers.id, TaiwanCatalogueTai.SevenFlowers.id).forEach { id ->
             assertEquals(TaiwanCatalogueKeys.FLOWERS_UNAVAILABLE, catalogue.entries.single { it.id == id }.unavailableReasonTranslationKey)
         }
         assertEquals(
             TaiwanCatalogueKeys.FOUR_WINDS_UNAVAILABLE,
-            catalogue.entries.single { it.id == TaiwanExhaustiveDrawReason.FourWinds.id }.unavailableReasonTranslationKey,
+            catalogue.entries.single { it.id == TaiwanCatalogueSpecial.FourWinds.id }.unavailableReasonTranslationKey,
         )
-        assertNull(catalogue.entries.single { it.id == TaiwanWinSettlementIds.tai(TaiwanTaiType.ConcealedHand) }.unavailableReasonTranslationKey)
+        assertNull(catalogue.entries.single { it.id == TaiwanCatalogueTai.ConcealedHand.id }.unavailableReasonTranslationKey)
     }
 
     /** 每個計台項目都有牌面範例；一般牌型與情境使用完整十六張手牌加一張和牌。 */
@@ -76,7 +79,7 @@ class TaiwanCatalogueProviderTest {
         )
 
         TaiwanTaiType.entries.forEach { type ->
-            val example = catalogue.entries.single { it.id == TaiwanWinSettlementIds.tai(type) }.examples.single()
+            val example = catalogue.entries.single { it.id == type.catalogueId }.examples.single()
 
             if (type in illustrationTypes) {
                 assertEquals(false, example.completeHand, type.name)
@@ -95,14 +98,14 @@ class TaiwanCatalogueProviderTest {
         TaiwanTaiType.entries.forEach { type ->
             assertEquals(
                 "mahjongcraft:catalogue/taiwan/category/tai_${EXPECTED_TAI.getValue(type)}",
-                catalogue.entries.single { it.id == TaiwanWinSettlementIds.tai(type) }.categoryId,
+                catalogue.entries.single { it.id == type.catalogueId }.categoryId,
                 type.name,
             )
         }
         assertTrue(
-            catalogue.entries
-                .filter { it.id.startsWith("mahjongcraft:taiwan/exhaustive_draw/") }
-                .all { it.categoryId == TaiwanCatalogueCategory.DRAW.id },
+            TaiwanCatalogueSpecial.entries.all { definition ->
+                catalogue.entries.single { it.id == definition.id }.categoryId == TaiwanCatalogueCategory.Draw.id
+            },
         )
     }
 
@@ -254,3 +257,7 @@ private val EXPECTED_TAI: Map<TaiwanTaiType, Int> = mapOf(
     TaiwanTaiType.EightFlowers to 8,
     TaiwanTaiType.SevenFlowers to 8,
 )
+
+/** 計台項目在圖鑑對照表中的條目識別碼。 */
+private val TaiwanTaiType.catalogueId: String
+    get() = TaiwanCatalogueTai.entries.single { it.type == this }.id

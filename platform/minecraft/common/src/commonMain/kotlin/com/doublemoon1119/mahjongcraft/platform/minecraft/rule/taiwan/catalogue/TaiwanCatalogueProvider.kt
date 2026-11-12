@@ -1,9 +1,7 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.rule.taiwan.catalogue
 
-import com.doublemoon1119.mahjongcraft.flow.common.game.model.taiwan.TaiwanWinSettlementIds
 import com.doublemoon1119.mahjongcraft.logic.config.MahjongRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.module.BuiltInRuleModuleIds
-import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanExhaustiveDrawReason
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.tai.TaiwanTaiType
 import com.doublemoon1119.mahjongcraft.platform.minecraft.catalogue.RuleCatalogue
@@ -30,92 +28,41 @@ class TaiwanCatalogueProvider : RuleCatalogueProvider {
         if (config !is TaiwanRuleConfig) return null
         return RuleCatalogue(
             categories = TaiwanCatalogueCategory.entries.map { RuleCatalogueCategory(it.id, it.nameKey) },
-            entries = TaiwanTaiType.entries.map { type -> type.toCatalogueEntry(config) } + drawEntries(config),
+            entries = TaiwanCatalogueTai.entries.map { definition -> definition.toCatalogueEntry(config) } + taiwanCatalogueSpecialEntries(config),
         )
     }
 }
 
-/** 將計台項目轉成圖鑑條目。 */
-private fun TaiwanTaiType.toCatalogueEntry(config: TaiwanRuleConfig): RuleCatalogueEntry {
-    val id = TaiwanWinSettlementIds.tai(this)
-    val slug = id.substringAfterLast('/')
-    val flowerEntry = this == TaiwanTaiType.SeatFlower ||
-        this == TaiwanTaiType.FlowerSet ||
-        this == TaiwanTaiType.EightFlowers ||
-        this == TaiwanTaiType.SevenFlowers
-    return RuleCatalogueEntry(
-        id = id,
-        categoryId = taiCatalogueCategory.id,
-        nameTranslationKey = TaiwanTaiTranslationKeys.keyFor(this),
-        descriptionTranslationKey = TaiwanCatalogueKeys.PREFIX + "entry.$slug.description",
-        labels = listOf(RuleCatalogueLabel(TaiwanCatalogueKeys.PREFIX + "label.tai_${taiCatalogueCategory.tai}")),
-        unavailableReasonTranslationKey = TaiwanCatalogueKeys.FLOWERS_UNAVAILABLE.takeIf { flowerEntry && !config.useFlowerTiles },
-        examples = taiwanCatalogueExamples(this),
+/** 將計台項目對照轉成圖鑑條目。 */
+private fun TaiwanCatalogueTai.toCatalogueEntry(config: TaiwanRuleConfig): RuleCatalogueEntry = RuleCatalogueEntry(
+    id = id,
+    categoryId = category.id,
+    nameTranslationKey = TaiwanTaiTranslationKeys.keyFor(type),
+    descriptionTranslationKey = descriptionKey,
+    labels = listOf(RuleCatalogueLabel(valueKey)),
+    unavailableReasonTranslationKey = TaiwanCatalogueKeys.FLOWERS_UNAVAILABLE.takeIf { type in FLOWER_TAI && !config.useFlowerTiles },
+    examples = taiwanCatalogueExamples(type),
+)
+
+/** 只有使用花牌時才會成立的計台項目。 */
+private val FLOWER_TAI: Set<TaiwanTaiType> = setOf(
+    TaiwanTaiType.SeatFlower,
+    TaiwanTaiType.FlowerSet,
+    TaiwanTaiType.EightFlowers,
+    TaiwanTaiType.SevenFlowers,
+)
+
+/** 建立一般流局與途中流局條目；停用的流局保留條目並標示原因。 */
+private fun taiwanCatalogueSpecialEntries(config: TaiwanRuleConfig): List<RuleCatalogueEntry> = TaiwanCatalogueSpecial.entries.map { definition ->
+    RuleCatalogueEntry(
+        id = definition.id,
+        categoryId = TaiwanCatalogueCategory.Draw.id,
+        nameTranslationKey = definition.nameKey,
+        descriptionTranslationKey = definition.descriptionKey,
+        unavailableReasonTranslationKey = when (definition) {
+            TaiwanCatalogueSpecial.NoSupplementalTile -> TaiwanCatalogueKeys.FLOWERS_UNAVAILABLE.takeIf { !config.useFlowerTiles }
+            TaiwanCatalogueSpecial.FourWinds -> TaiwanCatalogueKeys.FOUR_WINDS_UNAVAILABLE.takeIf { !config.fourWindsAbortiveDraw }
+            TaiwanCatalogueSpecial.Normal, TaiwanCatalogueSpecial.FourKans -> null
+        },
     )
 }
-
-/** 每個計台項目明確對應的主要分類；新增計台項目時必須一併決定圖鑑位置。 */
-private val TaiwanTaiType.taiCatalogueCategory: TaiwanCatalogueCategory
-    get() = when (this) {
-        TaiwanTaiType.ConcealedHand,
-        TaiwanTaiType.SelfDraw,
-        TaiwanTaiType.FullyConcealedHand,
-        TaiwanTaiType.SeatWind,
-        TaiwanTaiType.RoundWind,
-        TaiwanTaiType.Dragon,
-        TaiwanTaiType.SeatFlower,
-        TaiwanTaiType.FlowerSet,
-        TaiwanTaiType.SingleWait,
-        TaiwanTaiType.RobbingKong,
-        TaiwanTaiType.ReplacementWin,
-        TaiwanTaiType.LastDraw,
-        TaiwanTaiType.DeclaredReady,
-        -> TaiwanCatalogueCategory.TAI_1
-
-        TaiwanTaiType.AllSequences,
-        TaiwanTaiType.ThreeConcealedTriplets,
-        TaiwanTaiType.AllExposed,
-        -> TaiwanCatalogueCategory.TAI_2
-
-        TaiwanTaiType.AllTriplets,
-        TaiwanTaiType.LittleDragons,
-        TaiwanTaiType.HalfFlush,
-        -> TaiwanCatalogueCategory.TAI_4
-
-        TaiwanTaiType.FourConcealedTriplets -> TaiwanCatalogueCategory.TAI_5
-
-        TaiwanTaiType.FiveConcealedTriplets,
-        TaiwanTaiType.BigDragons,
-        TaiwanTaiType.FullFlush,
-        TaiwanTaiType.LittleWinds,
-        TaiwanTaiType.EarthlyReady,
-        TaiwanTaiType.EightFlowers,
-        TaiwanTaiType.SevenFlowers,
-        -> TaiwanCatalogueCategory.TAI_8
-
-        TaiwanTaiType.BigWinds,
-        TaiwanTaiType.AllHonors,
-        TaiwanTaiType.HeavenlyReady,
-        TaiwanTaiType.HumanWin,
-        TaiwanTaiType.EarthlyWin,
-        -> TaiwanCatalogueCategory.TAI_16
-
-        TaiwanTaiType.HeavenlyWin -> TaiwanCatalogueCategory.TAI_24
-    }
-
-/** 建立一般流局與途中流局條目。 */
-private fun drawEntries(config: TaiwanRuleConfig): List<RuleCatalogueEntry> = listOf(
-    drawEntry(TaiwanExhaustiveDrawReason.Normal.id, "normal"),
-    drawEntry(TaiwanExhaustiveDrawReason.NoSupplementalTile.id, "no_supplemental_tile", TaiwanCatalogueKeys.FLOWERS_UNAVAILABLE.takeIf { !config.useFlowerTiles }),
-    drawEntry(TaiwanExhaustiveDrawReason.FourKans.id, "four_kans"),
-    drawEntry(TaiwanExhaustiveDrawReason.FourWinds.id, "four_winds", TaiwanCatalogueKeys.FOUR_WINDS_UNAVAILABLE.takeIf { !config.fourWindsAbortiveDraw }),
-)
-
-/** 建立一筆流局圖鑑條目。 */
-private fun drawEntry(id: String, slug: String, unavailableReason: String? = null): RuleCatalogueEntry = RuleCatalogueEntry(
-    id = id,
-    categoryId = TaiwanCatalogueCategory.DRAW.id,
-    nameTranslationKey = TaiwanCatalogueKeys.PREFIX + "draw.$slug.name",
-    descriptionTranslationKey = TaiwanCatalogueKeys.PREFIX + "draw.$slug.description",
-    unavailableReasonTranslationKey = unavailableReason,
-)

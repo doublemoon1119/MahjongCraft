@@ -49,10 +49,10 @@ class RiichiCatalogueProviderTest {
         assertEquals(RiichiCatalogueYaku.entries.size - 1 + RiichiCatalogueSpecial.entries.size, catalogue.entries.size)
         assertTrue(catalogue.entries.none { it.id == RiichiCatalogueYaku.NukiDora.id })
         assertEquals(catalogue.entries.size, catalogue.entries.map { it.id }.distinct().size)
-        assertEquals(3, catalogue.entries.count { it.categoryId == RiichiCatalogueCategory.BONUS.id })
-        assertEquals(4, catalogue.entries.count { it.categoryId == RiichiCatalogueCategory.ABORTIVE_DRAW.id })
-        assertEquals(1, catalogue.entries.count { it.categoryId == RiichiCatalogueCategory.MANGAN.id })
-        assertEquals(2, catalogue.entries.count { it.categoryId == RiichiCatalogueCategory.HAN_5.id })
+        assertEquals(3, catalogue.entries.count { it.categoryId == RiichiCatalogueCategory.Bonus.id })
+        assertEquals(4, catalogue.entries.count { it.categoryId == RiichiCatalogueCategory.AbortiveDraw.id })
+        assertEquals(1, catalogue.entries.count { it.categoryId == RiichiCatalogueCategory.Mangan.id })
+        assertEquals(2, catalogue.entries.count { it.categoryId == RiichiCatalogueCategory.Han5.id })
         catalogue.categories.forEach { category -> assertTrue(catalogue.entries.any { category.id in it.categoryIds }, category.id) }
         assertTrue(catalogue.entries.all { it.descriptionTranslationKey.isNotBlank() })
     }
@@ -69,11 +69,11 @@ class RiichiCatalogueProviderTest {
         assertNull(RiichiCatalogueProvider().catalogue(ThreePlayerRiichiRuleConfig()))
         val catalogue = checkNotNull(provider.catalogue(provider.defaultRuleConfig()))
 
-        assertEquals(4, catalogue.entries.count { it.categoryId == RiichiCatalogueCategory.BONUS.id })
+        assertEquals(4, catalogue.entries.count { it.categoryId == RiichiCatalogueCategory.Bonus.id })
         assertTrue(catalogue.entries.any { it.id == RiichiCatalogueYaku.NukiDora.id })
         assertEquals(
-            listOf(RiichiCatalogueSpecial.SUUKAIKAN.id, RiichiCatalogueSpecial.KYUUSHU_KYUUHAI.id),
-            catalogue.entries.filter { it.categoryId == RiichiCatalogueCategory.ABORTIVE_DRAW.id }.map { it.id },
+            listOf(RiichiCatalogueSpecial.Suukaikan.id, RiichiCatalogueSpecial.KyuushuKyuuhai.id),
+            catalogue.entries.filter { it.categoryId == RiichiCatalogueCategory.AbortiveDraw.id }.map { it.id },
         )
         listOf(RiichiCatalogueYaku.SanshokuDoujun, RiichiCatalogueYaku.Daisuurin).forEach { definition ->
             assertEquals(
@@ -132,8 +132,8 @@ class RiichiCatalogueProviderTest {
         assertTrue(disabled.entries.filterNot { it.id in localIds }.none { it.unavailableReasonTranslationKey == RiichiCatalogueKeys.LOCAL_YAKU_UNAVAILABLE })
         assertTrue(enabled.entries.filter { it.id in localIds }.all { entry -> entry.labels.any { it.nameTranslationKey == RiichiCatalogueKeys.LOCAL_YAKU } })
         assertTrue(enabled.entries.filterNot { it.id in localIds }.none { entry -> entry.labels.any { it.nameTranslationKey == RiichiCatalogueKeys.LOCAL_YAKU } })
-        assertEquals(localIds, enabled.entries.filter { RiichiCatalogueCategory.LOCAL.id in it.categoryIds }.map { it.id }.toSet())
-        assertTrue(enabled.entries.filter { it.id in localIds }.none { it.categoryId == RiichiCatalogueCategory.LOCAL.id })
+        assertEquals(localIds, enabled.entries.filter { RiichiCatalogueCategory.Local.id in it.categoryIds }.map { it.id }.toSet())
+        assertTrue(enabled.entries.filter { it.id in localIds }.none { it.categoryId == RiichiCatalogueCategory.Local.id })
     }
 
     /** 一般說明仍標記為預設配置，台麻不冒用日麻目錄。 */
@@ -170,7 +170,7 @@ class RiichiCatalogueProviderTest {
             RiichiCatalogueYaku.entries.forEach { definition ->
                 val examples = riichiCatalogueExamples(definition.type, usesThreePlayerTiles)
                 assertTrue(examples.isNotEmpty(), "Missing example for ${definition.type}")
-                if (definition.category != RiichiCatalogueCategory.BONUS) assertTrue(examples.all { it.completeHand }, "Yaku example must be a complete hand: ${definition.type}")
+                if (definition.category != RiichiCatalogueCategory.Bonus) assertTrue(examples.all { it.completeHand }, "Yaku example must be a complete hand: ${definition.type}")
                 examples.filter { it.completeHand }.forEach { example ->
                     val result = evaluateExample(definition.type, example)
                     assertTrue(result.yakuResults.any { it.yaku == definition.type }, "${definition.type} example produced ${result.yakuResults}")
