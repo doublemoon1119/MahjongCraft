@@ -6,7 +6,7 @@
       "nbt": "{tile:\"west\"}"
     },
     "title": {
-      "translate": "mahjongcraft.game.yaku.chiho"
+      "translate": "mahjongcraft.riichi.yaku.chiho"
     },
     "description": {
       "translate": "advancements.mahjongcraft.riichi.yakuman.chiihou.description"

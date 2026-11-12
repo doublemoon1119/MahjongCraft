@@ -6,7 +6,7 @@
       "nbt": "{tile:\"white_dragon\"}"
     },
     "title": {
-      "translate": "mahjongcraft.game.yaku.tenho"
+      "translate": "mahjongcraft.riichi.yaku.tenho"
     },
     "description": {
       "translate": "advancements.mahjongcraft.riichi.yakuman.tenhou.description"

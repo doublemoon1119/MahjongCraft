@@ -6,7 +6,7 @@
       "nbt": "{tile:\"s8\"}"
     },
     "title": {
-      "translate": "mahjongcraft.game.yaku.sukantsu"
+      "translate": "mahjongcraft.riichi.yaku.sukantsu"
     },
     "description": {
       "translate": "advancements.mahjongcraft.riichi.yakuman.suukantsu.description"

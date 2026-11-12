@@ -6,7 +6,7 @@
       "nbt": "{tile:\"m9\"}"
     },
     "title": {
-      "translate": "mahjongcraft.game.yaku.kokushimuso_jusanmenmachi"
+      "translate": "mahjongcraft.riichi.yaku.kokushimuso_jusanmenmachi"
     },
     "description": {
       "translate": "advancements.mahjongcraft.riichi.yakuman.kokushi_musou_13_wait.description"

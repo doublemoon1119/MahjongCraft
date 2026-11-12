@@ -70,7 +70,7 @@ class WinCelebrationShowcaseRegistryTest {
         val registry = WinCelebrationShowcaseRegistryImpl().apply { BundledRiichiMinecraftExtension.registerWinCelebrationShowcases(this) }
         val definition = assertNotNull(registry.find("mahjongcraft:riichi/yakuman/daisuushii"))
 
-        assertEquals("mahjongcraft.showcase.riichi.daisuushii", definition.titleTranslationKey)
+        assertEquals("mahjongcraft.riichi.showcase.daisuushii", definition.titleTranslationKey)
         assertEquals("mahjongcraft:textures/showcase/riichi/daisuushii.png", definition.titleImageResourceId)
         assertEquals(true, registry.cueKeys.all { it.startsWith("mahjongcraft:riichi/yakuman/") })
     }

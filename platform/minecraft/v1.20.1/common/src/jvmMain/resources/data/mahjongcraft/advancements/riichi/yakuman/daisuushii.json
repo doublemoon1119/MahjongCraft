@@ -6,7 +6,7 @@
       "nbt": "{tile:\"east\"}"
     },
     "title": {
-      "translate": "mahjongcraft.game.yaku.daisushi"
+      "translate": "mahjongcraft.riichi.yaku.daisushi"
     },
     "description": {
       "translate": "advancements.mahjongcraft.riichi.yakuman.daisuushii.description"

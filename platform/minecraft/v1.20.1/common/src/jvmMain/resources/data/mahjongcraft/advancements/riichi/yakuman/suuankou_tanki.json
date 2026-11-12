@@ -6,7 +6,7 @@
       "nbt": "{tile:\"p1\"}"
     },
     "title": {
-      "translate": "mahjongcraft.game.yaku.suanko_tanki"
+      "translate": "mahjongcraft.riichi.yaku.suanko_tanki"
     },
     "description": {
       "translate": "advancements.mahjongcraft.riichi.yakuman.suuankou_tanki.description"

@@ -8,6 +8,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.riichi.catalogue.
 import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.riichi.catalogue.RiichiCatalogueYaku
 import com.doublemoon1119.mahjongcraft.platform.minecraft.showcase.WinCelebrationShowcaseRegistryImpl
 import kotlin.test.Test
+import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 
 /** 驗證日麻役滿的展示理由都對得上內建展示定義。 */
@@ -30,5 +31,14 @@ class RiichiWinCelebrationShowcasesTest {
             val cue = RiichiWinCelebrationCueResolver.resolve(result).single()
             assertNotNull(registry.find(cue), "No showcase for ${definition.type}: $cue")
         }
+    }
+
+    /** 展示使用的標題 key 正好是語系檔測試檢查的那一組，每個役滿各用一個。 */
+    @Test
+    fun `showcase titles use exactly the listed translation keys`() {
+        val titles = riichiWinCelebrationShowcases().map { it.titleTranslationKey }
+
+        assertEquals(titles.size, titles.toSet().size)
+        assertEquals(RiichiShowcaseTranslationKeys.ALL, titles.toSet())
     }
 }

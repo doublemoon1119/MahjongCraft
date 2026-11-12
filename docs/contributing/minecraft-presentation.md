@@ -72,6 +72,9 @@ rules come from collisions that only showed up in game, so check them even when 
   those conventions.
 - Keep the constants with the rule's presentation code, for example `RiichiTranslationKeys`, rather than in a
   shared key object.
+- Write each constant as the full key string, such as `"mahjongcraft.riichi.yaku.pinfu"`, so a key copied from a
+  language file finds its definition. Do not assemble keys at runtime from names, numbers or IDs; list the keys
+  in an explicit table instead.
 - Third-party extensions use their own resource namespace, as the example mod does with
   `mahjongcraft_example`.
 - Map every registered ID to an explicit translation key; see [Correctness](correctness.md) for why keys are

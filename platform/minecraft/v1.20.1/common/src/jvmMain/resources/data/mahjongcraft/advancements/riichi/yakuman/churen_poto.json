@@ -6,7 +6,7 @@
       "nbt": "{tile:\"p9\"}"
     },
     "title": {
-      "translate": "mahjongcraft.game.yaku.churenpohto"
+      "translate": "mahjongcraft.riichi.yaku.churenpohto"
     },
     "description": {
       "translate": "advancements.mahjongcraft.riichi.yakuman.churen_poto.description"

@@ -6,7 +6,7 @@
       "nbt": "{tile:\"red_dragon\"}"
     },
     "title": {
-      "translate": "mahjongcraft.game.yaku.daisangen"
+      "translate": "mahjongcraft.riichi.yaku.daisangen"
     },
     "description": {
       "translate": "advancements.mahjongcraft.riichi.yakuman.daisangen.description"

@@ -12,6 +12,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.room.GameConfigEditorS
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.GameConfigPresentationRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.GameConfigPresentationRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.MinecraftRoomScreenKeys
+import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.riichi.RiichiShowcaseTranslationKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.riichi.RiichiTranslationKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.riichi.RiichiYakuTranslationKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.WinSettlementTextKeys
@@ -41,11 +42,10 @@ class MinecraftLanguageFilesTest {
         }
     }
 
-    /** 日麻專屬文字的 key 都在 `mahjongcraft.riichi.` 底下，且每個語系都有翻譯，包含各倍數的役滿文字。 */
+    /** 日麻專屬文字的 key 都在 `mahjongcraft.riichi.` 底下，且每個語系都有翻譯。 */
     @Test
     fun `riichi text keys live under the riichi prefix and exist in every locale`() {
-        val yakumanKeys = listOf("1x", "2x", "3x", "4x", "5x", "6x", "nx").map { RiichiTranslationKeys.SETTLEMENT_YAKUMAN_PREFIX + it }
-        val keys = RiichiTranslationKeys.ALL + yakumanKeys
+        val keys = RiichiTranslationKeys.ALL
         keys.forEach { key -> assertTrue(key.startsWith(MinecraftModMetadata.MOD_ID + ".riichi."), "Riichi text key outside the riichi prefix: $key") }
         locales.forEach { locale ->
             val translations = loadTranslations(locale)
@@ -62,11 +62,11 @@ class MinecraftLanguageFilesTest {
     /** MahjongCraft 胡牌結算 translation key 的命名空間前綴。 */
     private val settlementPrefix = MinecraftModMetadata.MOD_ID + ".settlement."
 
-    /** MahjongCraft 役滿 showcase translation key 的命名空間前綴。 */
-    private val showcasePrefix = MinecraftModMetadata.MOD_ID + ".showcase."
+    /** 日麻役滿 showcase translation key 的命名空間前綴。 */
+    private val showcasePrefix = "mahjongcraft.riichi.showcase."
 
-    /** MahjongCraft 役種 translation key 的命名空間前綴。 */
-    private val yakuPrefix = MinecraftModMetadata.MOD_ID + ".game.yaku."
+    /** 日麻役種 translation key 的命名空間前綴。 */
+    private val yakuPrefix = "mahjongcraft.riichi.yaku."
 
     /** 驗證所有語系檔具有相同 key，且每個翻譯都是非空字串。 */
     @Test
@@ -119,7 +119,7 @@ class MinecraftLanguageFilesTest {
             val showcaseKeys = loadTranslations(locale).keys.filterTo(mutableSetOf()) { it.startsWith(showcasePrefix) }
 
             assertEquals(
-                MinecraftShowcaseKeys.ALL,
+                RiichiShowcaseTranslationKeys.ALL,
                 showcaseKeys,
                 "$locale showcase keys do not match the production showcase schema",
             )

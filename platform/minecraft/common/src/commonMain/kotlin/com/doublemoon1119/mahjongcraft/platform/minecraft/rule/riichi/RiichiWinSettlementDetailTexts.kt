@@ -10,14 +10,15 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.WinSettleme
 
 /** 內建日麻胡牌詳情的顯示文字。 */
 internal object RiichiWinSettlementDetailTexts {
-    /** 有專屬名稱的役滿倍數上限；超過時使用 [YAKUMAN_N_KEY]。 */
-    private const val NAMED_YAKUMAN_MULTIPLIER_MAX = 6
-
-    /** 役滿倍數 translation key 的共用前綴。 */
-    private const val YAKUMAN_KEY_PREFIX = RiichiTranslationKeys.SETTLEMENT_YAKUMAN_PREFIX
-
-    /** 沒有專屬名稱的役滿倍數 translation key；參數為倍數。 */
-    private const val YAKUMAN_N_KEY = YAKUMAN_KEY_PREFIX + "nx"
+    /** 有專屬名稱的役滿倍數文字，依倍數由 1 起排列；超過時使用 [RiichiTranslationKeys.SETTLEMENT_YAKUMAN_NX]。 */
+    private val NAMED_YAKUMAN_KEYS: List<String> = listOf(
+        RiichiTranslationKeys.SETTLEMENT_YAKUMAN_1X,
+        RiichiTranslationKeys.SETTLEMENT_YAKUMAN_2X,
+        RiichiTranslationKeys.SETTLEMENT_YAKUMAN_3X,
+        RiichiTranslationKeys.SETTLEMENT_YAKUMAN_4X,
+        RiichiTranslationKeys.SETTLEMENT_YAKUMAN_5X,
+        RiichiTranslationKeys.SETTLEMENT_YAKUMAN_6X,
+    )
 
     /** 役種欄位：役種名稱，右側為翻數或役滿倍數；役滿條目以強調樣式顯示。 */
     val yaku: WinSettlementDetailTextFormatter = object : WinSettlementDetailTextFormatter {
@@ -70,11 +71,9 @@ internal object RiichiWinSettlementDetailTexts {
      * @param multiplier 役滿倍數。
      * @return 1～6 倍使用專屬名稱，其餘使用帶倍數參數的通用名稱。
      */
-    private fun yakumanText(multiplier: Int): PresentationValue.TextValue = if (multiplier in 1..NAMED_YAKUMAN_MULTIPLIER_MAX) {
-        PresentationValue.TextValue("${YAKUMAN_KEY_PREFIX}${multiplier}x")
-    } else {
-        PresentationValue.TextValue(YAKUMAN_N_KEY, listOf(multiplier.toString()))
-    }
+    private fun yakumanText(multiplier: Int): PresentationValue.TextValue = NAMED_YAKUMAN_KEYS.getOrNull(multiplier - 1)
+        ?.let { PresentationValue.TextValue(it) }
+        ?: PresentationValue.TextValue(RiichiTranslationKeys.SETTLEMENT_YAKUMAN_NX, listOf(multiplier.toString()))
 
     /**
      * 建立只處理數值的格式化器；無法辨識的數值與條目使用通用格式。
