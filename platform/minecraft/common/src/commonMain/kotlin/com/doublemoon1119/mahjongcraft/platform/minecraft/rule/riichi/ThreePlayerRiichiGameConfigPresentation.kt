@@ -1,9 +1,7 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.rule.riichi
 
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameConfig
-import com.doublemoon1119.mahjongcraft.logic.config.RonResolution
 import com.doublemoon1119.mahjongcraft.logic.module.BuiltInRuleModuleIds
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiGameLength
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiScoreConfig
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.threeplayer.ThreePlayerRiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.BuiltInGameConfigFields.RULE
@@ -12,7 +10,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.room.BuiltInGameConfig
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.BuiltInGameConfigFields.categories
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.BuiltInGameConfigFields.choiceField
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.BuiltInGameConfigFields.intField
-import com.doublemoon1119.mahjongcraft.platform.minecraft.room.BuiltInGameConfigFields.translationKey
+import com.doublemoon1119.mahjongcraft.platform.minecraft.room.BuiltInGameConfigOption
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.GameConfigPresentationDefinition
 
 /**
@@ -21,89 +19,110 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.room.GameConfigPresent
  */
 internal fun threePlayerRiichiGameConfigPresentation(): GameConfigPresentationDefinition = GameConfigPresentationDefinition(
     ruleModuleId = BuiltInRuleModuleIds.RIICHI_THREE_PLAYER,
-    descriptionTranslationKey = translationKey("rule.riichi_three_player.description"),
+    descriptionTranslationKey = RiichiGameConfigTranslationKeys.THREE_PLAYER_DESCRIPTION,
     selectable = true,
     defaultRuleConfig = ::ThreePlayerRiichiRuleConfig,
     categories = categories(),
     fields = listOf(
         choiceField(
-            "game_length",
-            RULE,
-            listOf("one_game", "east", "two_winds"),
-            read = { (it.ruleConfig as ThreePlayerRiichiRuleConfig).gameLength.toOption() },
-            update = { config, option -> config.withThreePlayerRiichi { copy(gameLength = option.toRiichiGameLength()) } },
+            id = RiichiGameConfigIds.GAME_LENGTH,
+            category = RULE,
+            nameKey = RiichiGameConfigTranslationKeys.GAME_LENGTH,
+            descriptionKey = RiichiGameConfigTranslationKeys.GAME_LENGTH_DESCRIPTION,
+            options = RIICHI_GAME_LENGTH_OPTIONS,
+            read = { (it.ruleConfig as ThreePlayerRiichiRuleConfig).gameLength },
+            update = { config, gameLength -> config.withThreePlayerRiichi { copy(gameLength = gameLength) } },
         ),
         choiceField(
-            "red_dora_count",
-            RULE,
-            listOf("red_dora_0", "red_dora_2"),
-            read = { "red_dora_${(it.ruleConfig as ThreePlayerRiichiRuleConfig).redDoraCount}" },
-            update = { config, option -> config.withThreePlayerRiichi { copy(redDoraCount = option.substringAfterLast('_').toInt()) } },
+            id = RiichiGameConfigIds.RED_DORA_COUNT,
+            category = RULE,
+            nameKey = RiichiGameConfigTranslationKeys.RED_DORA_COUNT,
+            descriptionKey = RiichiGameConfigTranslationKeys.RED_DORA_COUNT_DESCRIPTION,
+            options = listOf(
+                BuiltInGameConfigOption(RiichiGameConfigIds.RED_DORA_COUNT_0, RiichiGameConfigTranslationKeys.OPTION_RED_DORA_0, 0),
+                BuiltInGameConfigOption(RiichiGameConfigIds.RED_DORA_COUNT_2, RiichiGameConfigTranslationKeys.OPTION_RED_DORA_2, 2),
+            ),
+            read = { (it.ruleConfig as ThreePlayerRiichiRuleConfig).redDoraCount },
+            update = { config, count -> config.withThreePlayerRiichi { copy(redDoraCount = count) } },
         ),
         boolField(
-            "allow_open_tanyao",
-            RULE,
+            id = RiichiGameConfigIds.ALLOW_OPEN_TANYAO,
+            category = RULE,
+            nameKey = RiichiGameConfigTranslationKeys.ALLOW_OPEN_TANYAO,
+            descriptionKey = RiichiGameConfigTranslationKeys.ALLOW_OPEN_TANYAO_DESCRIPTION,
             read = { (it.ruleConfig as ThreePlayerRiichiRuleConfig).allowOpenTanyao },
             update = { config, enabled -> config.withThreePlayerRiichi { copy(allowOpenTanyao = enabled) } },
         ),
         boolField(
-            "use_local_yaku",
-            RULE,
+            id = RiichiGameConfigIds.USE_LOCAL_YAKU,
+            category = RULE,
+            nameKey = RiichiGameConfigTranslationKeys.USE_LOCAL_YAKU,
+            descriptionKey = RiichiGameConfigTranslationKeys.USE_LOCAL_YAKU_DESCRIPTION,
             read = { (it.ruleConfig as ThreePlayerRiichiRuleConfig).useLocalYaku },
             update = { config, enabled -> config.withThreePlayerRiichi { copy(useLocalYaku = enabled) } },
         ),
         intField(
-            "minimum_win_constraint",
-            RULE,
-            1,
-            13,
+            id = RiichiGameConfigIds.MINIMUM_WIN_CONSTRAINT,
+            category = RULE,
+            nameKey = RiichiGameConfigTranslationKeys.MINIMUM_WIN_CONSTRAINT,
+            descriptionKey = RiichiGameConfigTranslationKeys.MINIMUM_WIN_CONSTRAINT_DESCRIPTION,
+            minimum = 1,
+            maximum = 13,
             read = { (it.ruleConfig as ThreePlayerRiichiRuleConfig).minimumWinConstraint },
             update = { config, number -> config.withThreePlayerRiichi { copy(minimumWinConstraint = number) } },
         ),
         intField(
-            "initial_score",
-            SCORE,
-            0,
-            10_000_000,
+            id = RiichiGameConfigIds.INITIAL_SCORE,
+            category = SCORE,
+            nameKey = RiichiGameConfigTranslationKeys.INITIAL_SCORE,
+            descriptionKey = RiichiGameConfigTranslationKeys.INITIAL_SCORE_DESCRIPTION,
+            minimum = 0,
+            maximum = 10_000_000,
             step = 100,
             read = { (it.ruleConfig as ThreePlayerRiichiRuleConfig).scoreConfig.initialScore },
             update = { config, number -> config.withThreePlayerRiichiScore { copy(initialScore = number) } },
         ),
         intField(
-            "bust_threshold",
-            SCORE,
-            -1_000_000,
-            10_000_000,
-            100,
+            id = RiichiGameConfigIds.BUST_THRESHOLD,
+            category = SCORE,
+            nameKey = RiichiGameConfigTranslationKeys.BUST_THRESHOLD,
+            descriptionKey = RiichiGameConfigTranslationKeys.BUST_THRESHOLD_DESCRIPTION,
+            minimum = -1_000_000,
+            maximum = 10_000_000,
+            step = 100,
             read = { (it.ruleConfig as ThreePlayerRiichiRuleConfig).scoreConfig.bustThreshold ?: 0 },
             update = { config, number -> config.withThreePlayerRiichiScore { copy(bustThreshold = number) } },
         ),
         intField(
-            "min_points_to_win",
-            SCORE,
-            0,
-            10_000_000,
+            id = RiichiGameConfigIds.MIN_POINTS_TO_WIN,
+            category = SCORE,
+            nameKey = RiichiGameConfigTranslationKeys.MIN_POINTS_TO_WIN,
+            descriptionKey = RiichiGameConfigTranslationKeys.MIN_POINTS_TO_WIN_DESCRIPTION,
+            minimum = 0,
+            maximum = 10_000_000,
             step = 100,
             read = { (it.ruleConfig as ThreePlayerRiichiRuleConfig).scoreConfig.minPointsToWin },
             update = { config, number -> config.withThreePlayerRiichiScore { copy(minPointsToWin = number) } },
         ),
         intField(
-            "noten_penalty_unit",
-            SCORE,
-            0,
-            100_000,
+            id = RiichiGameConfigIds.NOTEN_PENALTY_UNIT,
+            category = SCORE,
+            nameKey = RiichiGameConfigTranslationKeys.NOTEN_PENALTY_UNIT,
+            descriptionKey = RiichiGameConfigTranslationKeys.NOTEN_PENALTY_UNIT_DESCRIPTION,
+            minimum = 0,
+            maximum = 100_000,
             step = 100,
             read = { (it.ruleConfig as ThreePlayerRiichiRuleConfig).scoreConfig.notenPenaltyUnit },
             update = { config, number -> config.withThreePlayerRiichiScore { copy(notenPenaltyUnit = number) } },
         ),
         choiceField(
-            "double_ron_resolution",
-            RULE,
-            listOf("nearest_winner", "all_winners", "abortive_draw"),
-            read = { (it.ruleConfig as ThreePlayerRiichiRuleConfig).multiRonPolicy.doubleRonResolution.name.lowercase() },
-            update = { config, option ->
-                config.withThreePlayerRiichi { copy(multiRonPolicy = multiRonPolicy.copy(doubleRonResolution = RonResolution.valueOf(option.uppercase()))) }
-            },
+            id = RiichiGameConfigIds.DOUBLE_RON_RESOLUTION,
+            category = RULE,
+            nameKey = RiichiGameConfigTranslationKeys.DOUBLE_RON_RESOLUTION,
+            descriptionKey = RiichiGameConfigTranslationKeys.DOUBLE_RON_RESOLUTION_DESCRIPTION,
+            options = RIICHI_DOUBLE_RON_OPTIONS,
+            read = { (it.ruleConfig as ThreePlayerRiichiRuleConfig).multiRonPolicy.doubleRonResolution },
+            update = { config, resolution -> config.withThreePlayerRiichi { copy(multiRonPolicy = multiRonPolicy.copy(doubleRonResolution = resolution)) } },
         ),
     ),
 )
@@ -113,18 +132,3 @@ private fun GameConfig.withThreePlayerRiichi(transform: ThreePlayerRiichiRuleCon
 
 /** 透過 [withThreePlayerRiichi] 更新三人日麻計分配置。 */
 private fun GameConfig.withThreePlayerRiichiScore(transform: RiichiScoreConfig.() -> RiichiScoreConfig): GameConfig = withThreePlayerRiichi { copy(scoreConfig = scoreConfig.transform()) }
-
-/** 將日麻局長轉成設定欄位使用的選項值。 */
-private fun RiichiGameLength.toOption(): String = when (this) {
-    RiichiGameLength.OneGame -> "one_game"
-    RiichiGameLength.East -> "east"
-    RiichiGameLength.TwoWinds -> "two_winds"
-}
-
-/** 將設定欄位選項轉回日麻局長；不支援的選項視為程式錯誤。 */
-private fun String.toRiichiGameLength(): RiichiGameLength = when (this) {
-    "one_game" -> RiichiGameLength.OneGame
-    "east" -> RiichiGameLength.East
-    "two_winds" -> RiichiGameLength.TwoWinds
-    else -> error("Unknown Riichi game length option: $this")
-}

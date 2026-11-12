@@ -13,7 +13,7 @@ class GameConfigPresentationTextTest {
     @Test
     fun `choice text uses the explicitly assigned translation for each namespace`() {
         val translations = mapOf(
-            "mahjongcraft:two_winds" to "mahjongcraft.room.config.option.two_winds",
+            "mahjongcraft:riichi/config/game_length/two_winds" to "mahjongcraft.riichi.room.config.option.two_winds",
             "example:two_winds" to "example.room.option.short_match",
             "example.one:two" to "example.first",
             "example:one.two" to "example.second",

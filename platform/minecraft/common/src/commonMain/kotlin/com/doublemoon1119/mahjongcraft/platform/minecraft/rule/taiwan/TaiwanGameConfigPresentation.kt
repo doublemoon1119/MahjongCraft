@@ -12,87 +12,118 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.room.BuiltInGameConfig
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.BuiltInGameConfigFields.categories
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.BuiltInGameConfigFields.choiceField
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.BuiltInGameConfigFields.intField
-import com.doublemoon1119.mahjongcraft.platform.minecraft.room.BuiltInGameConfigFields.translationKey
+import com.doublemoon1119.mahjongcraft.platform.minecraft.room.BuiltInGameConfigOption
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.GameConfigPresentationDefinition
 
 /** 台麻設定畫面的 schema；共用流程欄位由 registry 登記時附加。 */
 internal fun taiwanGameConfigPresentation(): GameConfigPresentationDefinition = GameConfigPresentationDefinition(
     ruleModuleId = BuiltInRuleModuleIds.TAIWAN,
-    descriptionTranslationKey = translationKey("rule.taiwan.description"),
+    descriptionTranslationKey = TaiwanGameConfigTranslationKeys.DESCRIPTION,
     selectable = true,
     defaultRuleConfig = ::TaiwanRuleConfig,
     categories = categories(),
     fields = listOf(
         choiceField(
-            "taiwan_game_length",
-            RULE,
-            listOf("taiwan_one_game", "taiwan_east", "taiwan_two_winds", "taiwan_four_winds"),
-            read = { (it.ruleConfig as TaiwanRuleConfig).gameLength.toOption() },
-            update = { config, option -> config.withTaiwan { copy(gameLength = option.toTaiwanGameLength()) } },
+            id = TaiwanGameConfigIds.GAME_LENGTH,
+            category = RULE,
+            nameKey = TaiwanGameConfigTranslationKeys.GAME_LENGTH,
+            descriptionKey = TaiwanGameConfigTranslationKeys.GAME_LENGTH_DESCRIPTION,
+            options = listOf(
+                BuiltInGameConfigOption(TaiwanGameConfigIds.GAME_LENGTH_ONE_GAME, TaiwanGameConfigTranslationKeys.OPTION_ONE_GAME, TaiwanGameLength.OneGame),
+                BuiltInGameConfigOption(TaiwanGameConfigIds.GAME_LENGTH_EAST, TaiwanGameConfigTranslationKeys.OPTION_EAST, TaiwanGameLength.East),
+                BuiltInGameConfigOption(TaiwanGameConfigIds.GAME_LENGTH_TWO_WINDS, TaiwanGameConfigTranslationKeys.OPTION_TWO_WINDS, TaiwanGameLength.TwoWinds),
+                BuiltInGameConfigOption(TaiwanGameConfigIds.GAME_LENGTH_FOUR_WINDS, TaiwanGameConfigTranslationKeys.OPTION_FOUR_WINDS, TaiwanGameLength.FourWinds),
+            ),
+            read = { (it.ruleConfig as TaiwanRuleConfig).gameLength },
+            update = { config, gameLength -> config.withTaiwan { copy(gameLength = gameLength) } },
         ),
         boolField(
-            "use_flower_tiles",
-            RULE,
+            id = TaiwanGameConfigIds.USE_FLOWER_TILES,
+            category = RULE,
+            nameKey = TaiwanGameConfigTranslationKeys.USE_FLOWER_TILES,
+            descriptionKey = TaiwanGameConfigTranslationKeys.USE_FLOWER_TILES_DESCRIPTION,
             read = { (it.ruleConfig as TaiwanRuleConfig).useFlowerTiles },
             update = { config, enabled -> config.withTaiwan { copy(useFlowerTiles = enabled) } },
         ),
         boolField(
-            "four_winds_abortive_draw",
-            RULE,
+            id = TaiwanGameConfigIds.FOUR_WINDS_ABORTIVE_DRAW,
+            category = RULE,
+            nameKey = TaiwanGameConfigTranslationKeys.FOUR_WINDS_ABORTIVE_DRAW,
+            descriptionKey = TaiwanGameConfigTranslationKeys.FOUR_WINDS_ABORTIVE_DRAW_DESCRIPTION,
             read = { (it.ruleConfig as TaiwanRuleConfig).fourWindsAbortiveDraw },
             update = { config, enabled -> config.withTaiwan { copy(fourWindsAbortiveDraw = enabled) } },
         ),
         boolField(
-            "kan_clears_passed_win",
-            RULE,
+            id = TaiwanGameConfigIds.KAN_CLEARS_PASSED_WIN,
+            category = RULE,
+            nameKey = TaiwanGameConfigTranslationKeys.KAN_CLEARS_PASSED_WIN,
+            descriptionKey = TaiwanGameConfigTranslationKeys.KAN_CLEARS_PASSED_WIN_DESCRIPTION,
             read = { (it.ruleConfig as TaiwanRuleConfig).kanClearsPassedWin },
             update = { config, enabled -> config.withTaiwan { copy(kanClearsPassedWin = enabled) } },
         ),
         intField(
-            "taiwan_minimum_tai",
-            RULE,
-            0,
-            100,
+            id = TaiwanGameConfigIds.MINIMUM_TAI,
+            category = RULE,
+            nameKey = TaiwanGameConfigTranslationKeys.MINIMUM_TAI,
+            descriptionKey = TaiwanGameConfigTranslationKeys.MINIMUM_TAI_DESCRIPTION,
+            minimum = 0,
+            maximum = 100,
             read = { (it.ruleConfig as TaiwanRuleConfig).minimumWinConstraint },
             update = { config, number -> config.withTaiwan { copy(minimumWinConstraint = number) } },
         ),
         choiceField(
-            "taiwan_double_win_resolution",
-            RULE,
-            ronOptions(),
-            read = { (it.ruleConfig as TaiwanRuleConfig).multiRonPolicy.doubleRonResolution.toOption() },
-            update = { config, option -> config.withTaiwan { copy(multiRonPolicy = multiRonPolicy.copy(doubleRonResolution = option.toRonResolution())) } },
+            id = TaiwanGameConfigIds.DOUBLE_WIN_RESOLUTION,
+            category = RULE,
+            nameKey = TaiwanGameConfigTranslationKeys.DOUBLE_WIN_RESOLUTION,
+            descriptionKey = TaiwanGameConfigTranslationKeys.DOUBLE_WIN_RESOLUTION_DESCRIPTION,
+            options = taiwanWinResolutionOptions(
+                nearestWinnerId = TaiwanGameConfigIds.DOUBLE_WIN_RESOLUTION_NEAREST_WINNER,
+                allWinnersId = TaiwanGameConfigIds.DOUBLE_WIN_RESOLUTION_ALL_WINNERS,
+            ),
+            read = { (it.ruleConfig as TaiwanRuleConfig).multiRonPolicy.doubleRonResolution },
+            update = { config, resolution -> config.withTaiwan { copy(multiRonPolicy = multiRonPolicy.copy(doubleRonResolution = resolution)) } },
         ),
         choiceField(
-            "taiwan_triple_win_resolution",
-            RULE,
-            ronOptions(),
-            read = { (it.ruleConfig as TaiwanRuleConfig).multiRonPolicy.tripleRonResolution.toOption() },
-            update = { config, option -> config.withTaiwan { copy(multiRonPolicy = multiRonPolicy.copy(tripleRonResolution = option.toRonResolution())) } },
+            id = TaiwanGameConfigIds.TRIPLE_WIN_RESOLUTION,
+            category = RULE,
+            nameKey = TaiwanGameConfigTranslationKeys.TRIPLE_WIN_RESOLUTION,
+            descriptionKey = TaiwanGameConfigTranslationKeys.TRIPLE_WIN_RESOLUTION_DESCRIPTION,
+            options = taiwanWinResolutionOptions(
+                nearestWinnerId = TaiwanGameConfigIds.TRIPLE_WIN_RESOLUTION_NEAREST_WINNER,
+                allWinnersId = TaiwanGameConfigIds.TRIPLE_WIN_RESOLUTION_ALL_WINNERS,
+            ),
+            read = { (it.ruleConfig as TaiwanRuleConfig).multiRonPolicy.tripleRonResolution },
+            update = { config, resolution -> config.withTaiwan { copy(multiRonPolicy = multiRonPolicy.copy(tripleRonResolution = resolution)) } },
         ),
         intField(
-            "base_score",
-            SCORE,
-            0,
-            1_000_000,
+            id = TaiwanGameConfigIds.BASE_SCORE,
+            category = SCORE,
+            nameKey = TaiwanGameConfigTranslationKeys.BASE_SCORE,
+            descriptionKey = TaiwanGameConfigTranslationKeys.BASE_SCORE_DESCRIPTION,
+            minimum = 0,
+            maximum = 1_000_000,
             step = 10,
             read = { (it.ruleConfig as TaiwanRuleConfig).scoreConfig.baseScore },
             update = { config, number -> config.withTaiwanScore { copy(baseScore = number) } },
         ),
         intField(
-            "point_per_tai",
-            SCORE,
-            0,
-            1_000_000,
+            id = TaiwanGameConfigIds.POINT_PER_TAI,
+            category = SCORE,
+            nameKey = TaiwanGameConfigTranslationKeys.POINT_PER_TAI,
+            descriptionKey = TaiwanGameConfigTranslationKeys.POINT_PER_TAI_DESCRIPTION,
+            minimum = 0,
+            maximum = 1_000_000,
             step = 10,
             read = { (it.ruleConfig as TaiwanRuleConfig).scoreConfig.pointPerTai },
             update = { config, number -> config.withTaiwanScore { copy(pointPerTai = number) } },
         ),
         intField(
-            "initial_score",
-            SCORE,
-            0,
-            10_000_000,
+            id = TaiwanGameConfigIds.INITIAL_SCORE,
+            category = SCORE,
+            nameKey = TaiwanGameConfigTranslationKeys.INITIAL_SCORE,
+            descriptionKey = TaiwanGameConfigTranslationKeys.INITIAL_SCORE_DESCRIPTION,
+            minimum = 0,
+            maximum = 10_000_000,
             step = 100,
             read = { (it.ruleConfig as TaiwanRuleConfig).scoreConfig.initialScore },
             update = { config, number -> config.withTaiwanScore { copy(initialScore = number) } },
@@ -106,36 +137,17 @@ private fun GameConfig.withTaiwan(transform: TaiwanRuleConfig.() -> TaiwanRuleCo
 /** 透過 [withTaiwan] 更新台麻計分設定。 */
 private fun GameConfig.withTaiwanScore(transform: TaiwanScoreConfig.() -> TaiwanScoreConfig): GameConfig = withTaiwan { copy(scoreConfig = scoreConfig.transform()) }
 
-/** 將台麻賽程轉成設定欄位使用的選項值。 */
-private fun TaiwanGameLength.toOption(): String = when (this) {
-    TaiwanGameLength.OneGame -> "taiwan_one_game"
-    TaiwanGameLength.East -> "taiwan_east"
-    TaiwanGameLength.TwoWinds -> "taiwan_two_winds"
-    TaiwanGameLength.FourWinds -> "taiwan_four_winds"
-}
-
-/** 將設定欄位選項轉回台麻賽程；不支援的選項視為程式錯誤。 */
-private fun String.toTaiwanGameLength(): TaiwanGameLength = when (this) {
-    "taiwan_one_game" -> TaiwanGameLength.OneGame
-    "taiwan_east" -> TaiwanGameLength.East
-    "taiwan_two_winds" -> TaiwanGameLength.TwoWinds
-    "taiwan_four_winds" -> TaiwanGameLength.FourWinds
-    else -> error("Unknown Taiwan game length option: $this")
-}
-
-/** 將多響處理方式轉成設定欄位使用的小寫選項值。 */
-private fun RonResolution.toOption(): String = when (this) {
-    RonResolution.NEAREST_WINNER -> "taiwan_nearest_winner"
-    RonResolution.ALL_WINNERS -> "all_winners"
-    RonResolution.ABORTIVE_DRAW -> error("Taiwan rules do not support abortive draws for multiple wins")
-}
-
-/** 將設定欄位選項轉回多響處理方式。 */
-private fun String.toRonResolution(): RonResolution = when (this) {
-    "taiwan_nearest_winner" -> RonResolution.NEAREST_WINNER
-    "all_winners" -> RonResolution.ALL_WINNERS
-    else -> error("Unknown Taiwan multiple-win option: $this")
-}
-
-/** 台麻多響設定接受的選項值；台麻不以多響作為流局。 */
-private fun ronOptions(): List<String> = listOf("taiwan_nearest_winner", "all_winners")
+/**
+ * 建立台麻多響欄位的選項；台麻不以多響作為流局。
+ *
+ * @param nearestWinnerId 最近順位優先選項的完整 ID。
+ * @param allWinnersId 全部成立選項的完整 ID。
+ * @return 依畫面順序排列的選項。
+ */
+private fun taiwanWinResolutionOptions(
+    nearestWinnerId: String,
+    allWinnersId: String,
+): List<BuiltInGameConfigOption<RonResolution>> = listOf(
+    BuiltInGameConfigOption(nearestWinnerId, TaiwanGameConfigTranslationKeys.OPTION_NEAREST_WINNER, RonResolution.NEAREST_WINNER),
+    BuiltInGameConfigOption(allWinnersId, TaiwanGameConfigTranslationKeys.OPTION_ALL_WINNERS, RonResolution.ALL_WINNERS),
+)

@@ -10,10 +10,15 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.RuleDecisi
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.RuleDecisionResolver
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.RuleDecisionResolverRegistry
 import com.doublemoon1119.mahjongcraft.logic.config.MahjongRuleConfig
+import com.doublemoon1119.mahjongcraft.logic.module.BuiltInRuleModuleIds
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.platform.minecraft.extension.BundledMinecraftMahjongExtensions
+import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.riichi.RiichiGameConfigIds
+import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.riichi.RiichiGameConfigTranslationKeys
+import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.taiwan.TaiwanGameConfigIds
+import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.taiwan.TaiwanGameConfigTranslationKeys
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -178,32 +183,75 @@ class GameConfigPresentationRegistryTest {
         assertEquals(1, riichi.categories.count { it.id == "mahjongcraft:flow" })
         assertEquals(4, riichi.fields.count { it.categoryId == "mahjongcraft:flow" })
         assertTrue(riichi.fields.none { it.id == "mahjongcraft:rule_decision_base_seconds" })
-        assertTrue(riichi.fields.any { it.id == "mahjongcraft:initial_score" && it.isEditable })
+        assertTrue(riichi.fields.any { it.id == RiichiGameConfigIds.INITIAL_SCORE && it.isEditable })
         assertEquals(
-            listOf("mahjongcraft:red_dora_0", "mahjongcraft:red_dora_3", "mahjongcraft:red_dora_4"),
-            (riichi.fields.single { it.id == "mahjongcraft:red_dora_count" }.editor as GameConfigEditorSpec.SingleChoice).optionIds,
+            listOf(RiichiGameConfigIds.RED_DORA_COUNT_0, RiichiGameConfigIds.RED_DORA_COUNT_3, RiichiGameConfigIds.RED_DORA_COUNT_4),
+            (riichi.fields.single { it.id == RiichiGameConfigIds.RED_DORA_COUNT }.editor as GameConfigEditorSpec.SingleChoice).optionIds,
         )
         assertEquals(
-            "mahjongcraft.room.config.option.red_dora_0",
-            (riichi.fields.single { it.id == "mahjongcraft:red_dora_count" }.editor as GameConfigEditorSpec.SingleChoice)
-                .translationKeyFor("mahjongcraft:red_dora_0"),
+            RiichiGameConfigTranslationKeys.OPTION_RED_DORA_0,
+            (riichi.fields.single { it.id == RiichiGameConfigIds.RED_DORA_COUNT }.editor as GameConfigEditorSpec.SingleChoice)
+                .translationKeyFor(RiichiGameConfigIds.RED_DORA_COUNT_0),
         )
         assertTrue(riichi.categories.none { it.id == "mahjongcraft:technical" })
         val handVisibility = riichi.fields.single { it.id == "mahjongcraft:spectator_hand_visibility" }
         assertEquals(false, handVisibility.isEnabled(GameConfig(RiichiRuleConfig()).copy(flowConfig = GameConfig(RiichiRuleConfig()).flowConfig.copy(spectatingPolicy = SpectatingPolicy.DISABLED))))
         assertTrue(taiwan.selectable)
         assertEquals(null, taiwan.unavailableReasonTranslationKey)
-        assertTrue(taiwan.fields.any { it.id == "mahjongcraft:taiwan_game_length" })
-        assertTrue(taiwan.fields.any { it.id == "mahjongcraft:kan_clears_passed_win" })
-        val doubleWinResolution = taiwan.fields.single { it.id == "mahjongcraft:taiwan_double_win_resolution" }
+        assertTrue(taiwan.fields.any { it.id == TaiwanGameConfigIds.GAME_LENGTH })
+        assertTrue(taiwan.fields.any { it.id == TaiwanGameConfigIds.KAN_CLEARS_PASSED_WIN })
+        val doubleWinResolution = taiwan.fields.single { it.id == TaiwanGameConfigIds.DOUBLE_WIN_RESOLUTION }
         assertEquals(
-            listOf("mahjongcraft:taiwan_nearest_winner", "mahjongcraft:all_winners"),
+            listOf(TaiwanGameConfigIds.DOUBLE_WIN_RESOLUTION_NEAREST_WINNER, TaiwanGameConfigIds.DOUBLE_WIN_RESOLUTION_ALL_WINNERS),
             (doubleWinResolution.editor as GameConfigEditorSpec.SingleChoice).optionIds,
         )
         assertEquals(
-            "mahjongcraft.room.config.option.taiwan_nearest_winner",
-            doubleWinResolution.editor.translationKeyFor("mahjongcraft:taiwan_nearest_winner"),
+            TaiwanGameConfigTranslationKeys.OPTION_NEAREST_WINNER,
+            doubleWinResolution.editor.translationKeyFor(TaiwanGameConfigIds.DOUBLE_WIN_RESOLUTION_NEAREST_WINNER),
         )
+    }
+
+    /** 規則專屬欄位與選項的 ID 放在規則路徑底下，翻譯鍵放在規則名稱底下；共用流程欄位不受影響。 */
+    @Test
+    fun `built-in rule fields live under their rule path`() {
+        val registry = builtInRegistry()
+        val rulePaths = mapOf(
+            BuiltInRuleModuleIds.RIICHI to "riichi",
+            BuiltInRuleModuleIds.RIICHI_THREE_PLAYER to "riichi",
+            BuiltInRuleModuleIds.TAIWAN to "taiwan",
+        )
+
+        rulePaths.forEach { (ruleModuleId, rule) ->
+            val definition = assertNotNull(registry.find(ruleModuleId))
+            assertTrue(definition.descriptionTranslationKey.startsWith("mahjongcraft.$rule.room.config."), ruleModuleId)
+            definition.fields.filter { it.categoryId != SharedGameFlowConfigPresentation.FLOW }.forEach { field ->
+                assertTrue(field.id.startsWith("mahjongcraft:$rule/config/"), field.id)
+                assertTrue(field.nameTranslationKey.startsWith("mahjongcraft.$rule.room.config.field."), field.id)
+                assertTrue(field.descriptionTranslationKey.startsWith("mahjongcraft.$rule.room.config.field."), field.id)
+                (field.editor as? GameConfigEditorSpec.SingleChoice)?.let { editor ->
+                    assertTrue(editor.optionIds.all { it.startsWith(field.id + "/") }, field.id)
+                    assertTrue(editor.optionTranslationKeys.values.all { it.startsWith("mahjongcraft.$rule.room.config.option.") }, field.id)
+                }
+            }
+        }
+    }
+
+    /** 每個內建單選欄位的每個選項寫入設定後，都能從設定讀回同一個選項。 */
+    @Test
+    fun `built-in choice options round trip through the game config`() {
+        val registry = builtInRegistry()
+
+        registry.ruleModuleIds.forEach { ruleModuleId ->
+            val definition = assertNotNull(registry.find(ruleModuleId))
+            val defaultConfig = GameConfig(definition.defaultRuleConfig())
+            definition.fields.filter { it.editor is GameConfigEditorSpec.SingleChoice }.forEach { field ->
+                (field.editor as GameConfigEditorSpec.SingleChoice).optionIds.forEach { optionId ->
+                    val updated = assertNotNull(field.update).invoke(defaultConfig, GameConfigPresentationValue.ChoiceValue(optionId))
+
+                    assertEquals(GameConfigPresentationValue.ChoiceValue(optionId), field.read(updated), "${field.id} -> $optionId")
+                }
+            }
+        }
     }
 
     /** 可編輯欄位必須有 updater，重複規則 ID 不可登記。 */
@@ -393,5 +441,11 @@ class GameConfigPresentationRegistryTest {
             decision: PendingRuleDecision,
             ruleModule: MahjongRuleModule<*>,
         ): RuleDecisionResolution = error("not used")
+    }
+
+    /** 登記全部內建擴充的設定呈現並凍結。 */
+    private fun builtInRegistry(): GameConfigPresentationRegistryImpl = GameConfigPresentationRegistryImpl(RuleDecisionResolverRegistry()).apply {
+        BundledMinecraftMahjongExtensions.all.forEach { it.registerGameConfigPresentations(this) }
+        freeze()
     }
 }
