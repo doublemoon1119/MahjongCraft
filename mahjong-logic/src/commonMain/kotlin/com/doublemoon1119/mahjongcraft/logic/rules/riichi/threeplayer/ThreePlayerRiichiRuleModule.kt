@@ -32,7 +32,7 @@ import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiMatchProgression
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiNagashiManganResolution
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPlayerTileAreaIds
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPositionRules
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleModule
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPublicIndicatorIds
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiShantenCalculator
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiSupplementalDrawPolicy
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiTileOrder
@@ -89,7 +89,7 @@ class ThreePlayerRiichiRuleModule(
     override fun createAutomaticControlPolicy(): RiichiAutomaticControlPolicy = RiichiAutomaticControlPolicy
 
     /** 只公開已經能從桌面立直棒觀察到的立直狀態。 */
-    override fun getPublicPlayerIndicators(tableState: TableState, player: MahjongPlayer): List<PublicPlayerIndicator> = if (isPlayerInRiichi(player)) listOf(PublicPlayerIndicator(RiichiRuleModule.RIICHI_INDICATOR_ID)) else emptyList()
+    override fun getPublicPlayerIndicators(tableState: TableState, player: MahjongPlayer): List<PublicPlayerIndicator> = if (isPlayerInRiichi(player)) listOf(PublicPlayerIndicator(RiichiPublicIndicatorIds.RIICHI)) else emptyList()
 
     /** 與四人日麻相同的手牌整理排序。 */
     override val tileOrder: TileOrder = RiichiTileOrder

@@ -56,7 +56,7 @@ class RiichiRuleModule(
     override fun createAutomaticControlPolicy(): RiichiAutomaticControlPolicy = RiichiAutomaticControlPolicy
 
     /** 日麻只公開已經能從桌面立直棒觀察到的立直狀態。 */
-    override fun getPublicPlayerIndicators(tableState: TableState, player: MahjongPlayer): List<PublicPlayerIndicator> = if (isPlayerInRiichi(player)) listOf(PublicPlayerIndicator(RIICHI_INDICATOR_ID)) else emptyList()
+    override fun getPublicPlayerIndicators(tableState: TableState, player: MahjongPlayer): List<PublicPlayerIndicator> = if (isPlayerInRiichi(player)) listOf(PublicPlayerIndicator(RiichiPublicIndicatorIds.RIICHI)) else emptyList()
 
     /** 日本麻將手牌整理排序規則。 */
     override val tileOrder: TileOrder = RiichiTileOrder
@@ -367,10 +367,4 @@ class RiichiRuleModule(
 
     /** 立直中的玩家放過和牌時記錄本局永久振聽；未立直時放過和牌只構成同巡振聽，不做任何變更。 */
     override fun onPlayerDeclinedWin(player: MahjongPlayer): ComponentPatch = player.riichiPermanentFuritenPatch()
-
-    /** 公開狀態的註冊識別碼。 */
-    companion object {
-        /** 玩家已公開宣告立直的 indicator ID。 */
-        const val RIICHI_INDICATOR_ID = "mahjongcraft:riichi/riichi_indicator"
-    }
 }

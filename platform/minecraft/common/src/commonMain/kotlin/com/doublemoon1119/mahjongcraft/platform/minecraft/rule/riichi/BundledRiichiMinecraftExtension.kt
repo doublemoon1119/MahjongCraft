@@ -7,7 +7,7 @@ import com.doublemoon1119.mahjongcraft.logic.module.BuiltInRuleModuleIds
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiExhaustiveDrawReason
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiHistoryDiscardMarkerIds
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPlayerTileAreaIds
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleModule
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPublicIndicatorIds
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.threeplayer.ThreePlayerRiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.RiichiTileValues
 import com.doublemoon1119.mahjongcraft.metadata.MahjongCraftMetadata
@@ -238,7 +238,7 @@ object BundledRiichiMinecraftExtension : MinecraftMahjongExtension {
     }
 
     override fun registerPublicPlayerIndicatorDisplays(registry: PublicPlayerIndicatorDisplayRegistrar) {
-        registry.register(PublicPlayerIndicatorDisplayDefinition(RiichiRuleModule.RIICHI_INDICATOR_ID, PublicPlayerIndicatorDisplay(RiichiTranslationKeys.INDICATOR_RIICHI)))
+        registry.register(PublicPlayerIndicatorDisplayDefinition(RiichiPublicIndicatorIds.RIICHI, PublicPlayerIndicatorDisplay(RiichiTranslationKeys.INDICATOR_RIICHI)))
     }
 
     override fun registerGameConfigPresentations(registry: GameConfigPresentationRegistrar) {
