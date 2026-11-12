@@ -1,6 +1,5 @@
 package com.doublemoon1119.mahjongcraft.flow.server.game.taiwan
 
-import com.doublemoon1119.mahjongcraft.bundled.TaiwanWinSettlementDetailResolver
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.ResolvedRoundOutcome
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.RoundOutcomePresentationClassification
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementDetailEntry

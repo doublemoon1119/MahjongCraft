@@ -50,8 +50,10 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.ExtensionG
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.ExtensionGameCommandHandler
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.ExtensionGameCommandHandlerDefinition
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.WinSettlementDetailResolverDefinition
+import com.doublemoon1119.mahjongcraft.flow.server.game.taiwan.TaiwanFlowerRuleDecisionResolver
 import com.doublemoon1119.mahjongcraft.flow.server.game.taiwan.TaiwanFourKansResolver
 import com.doublemoon1119.mahjongcraft.flow.server.game.taiwan.TaiwanFourWindsResolver
+import com.doublemoon1119.mahjongcraft.flow.server.game.taiwan.TaiwanWinSettlementDetailResolver
 import com.doublemoon1119.mahjongcraft.logic.api.registration.ComponentRegistrar
 import com.doublemoon1119.mahjongcraft.logic.api.registration.MahjongModuleRegistrar
 import com.doublemoon1119.mahjongcraft.logic.api.registration.TileTypeRegistrar

@@ -1,4 +1,4 @@
-package com.doublemoon1119.mahjongcraft.bundled
+package com.doublemoon1119.mahjongcraft.flow.server.game.taiwan
 
 import com.doublemoon1119.mahjongcraft.flow.common.game.event.PublicGameActionIds
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.PendingRuleDecision

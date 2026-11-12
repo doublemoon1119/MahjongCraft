@@ -1,6 +1,5 @@
 package com.doublemoon1119.mahjongcraft.flow.server.game.orchestration
 
-import com.doublemoon1119.mahjongcraft.bundled.TaiwanFlowerRuleDecisionResolver
 import com.doublemoon1119.mahjongcraft.flow.common.game.event.PublicGameActionIds
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.PendingRuleDecision
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionInputSpec
@@ -8,6 +7,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionTiming
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.TileReplacementRemoval
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.TileReplacementRound
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.TableStepEvent
+import com.doublemoon1119.mahjongcraft.flow.server.game.taiwan.TaiwanFlowerRuleDecisionResolver
 import com.doublemoon1119.mahjongcraft.logic.base.Hand
 import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
