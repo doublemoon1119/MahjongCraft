@@ -284,8 +284,11 @@ object MinecraftHistoryScreenKeys {
     /** 副露區標籤。 */
     const val STATE_MELDS = "mahjongcraft.history_screen.state.melds"
 
-    /** 移出手牌、公開擺在桌上的牌（例如三人日麻拔出的北）區標籤。 */
+    /** 規則沒有登記標題的移出牌區使用的中立標題。 */
     const val STATE_SET_ASIDE = "mahjongcraft.history_screen.state.set_aside"
+
+    /** 三人日麻拔出的北所在牌區的標題。 */
+    const val STATE_TILE_AREA_RIICHI_NORTH = "mahjongcraft.history_screen.state.tile_area.riichi_north"
 
     /** 牌河區標籤。 */
     const val STATE_DISCARDS = "mahjongcraft.history_screen.state.discards"
@@ -349,6 +352,18 @@ object MinecraftHistoryScreenKeys {
 
     /** 單局事件中的玩家座位標籤。 */
     const val ROUND_SEAT = "mahjongcraft.history_screen.round.seat"
+
+    /** 規則沒有登記換牌用語時使用的中立用語。 */
+    const val ROUND_REPLACEMENT = "mahjongcraft.history_screen.round.replacement"
+
+    /** 會產生換牌紀錄的規則選擇步驟開始時的文字，帶換牌用語。 */
+    const val ROUND_REPLACEMENT_STARTED = "mahjongcraft.history_screen.round.replacement.started"
+
+    /** 局首逐輪換牌的標題，帶輪次與換牌用語。 */
+    const val ROUND_REPLACEMENT_ROUND = "mahjongcraft.history_screen.round.replacement.round"
+
+    /** 依玩家列出一列牌時，牌前面的玩家名稱。 */
+    const val ROUND_SEAT_LINE = "mahjongcraft.history_screen.round.seat_line"
 
     /** 單局事件中的結算分數列。 */
     const val ROUND_SCORE = "mahjongcraft.history_screen.round.score"

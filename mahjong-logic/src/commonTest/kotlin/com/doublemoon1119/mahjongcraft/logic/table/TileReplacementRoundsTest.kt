@@ -50,6 +50,8 @@ class TileReplacementRoundsTest {
         assertEquals(listOf(first, second), outcome.steps[3].tableState.setAsideOf(p0))
         assertEquals(listOf(first, second, chained), outcome.steps[4].tableState.setAsideOf(p0))
         assertEquals(listOf(2, 1, 1, 1), replacementsRemaining)
+        // 補到又要移出的牌留到下一輪：前四步在第 1 輪，最後兩步在第 2 輪。
+        assertEquals(listOf(1, 1, 1, 1, 2, 2), outcome.steps.map { it.round })
     }
 
     /** 移出後暫停的位置帶著尚未補的張數，從那裡繼續時先補牌，再接著處理下一位玩家。 */
@@ -66,7 +68,7 @@ class TileReplacementRoundsTest {
         )
         val resumed = assertIs<TileReplacementRounds.Outcome.Completed>(TileReplacementRounds.process(paused.tableState, order, Rules(), paused.position))
 
-        assertEquals(TileReplacementRounds.Position(playerOrderIndex = 0, replacementsDue = 2), paused.position)
+        assertEquals(TileReplacementRounds.Position(playerOrderIndex = 0, replacementsDue = 2, round = 1), paused.position)
         assertEquals(
             listOf(
                 replaced(p0, listOf(plainA, plainB)),
@@ -88,7 +90,22 @@ class TileReplacementRoundsTest {
             TileReplacementRounds.process(table, order, Rules(pauseAfterReplacementBy = order[0])),
         )
 
-        assertEquals(TileReplacementRounds.Position(playerOrderIndex = 1, replacementsDue = 0), paused.position)
+        assertEquals(TileReplacementRounds.Position(playerOrderIndex = 1, replacementsDue = 0, round = 1), paused.position)
+    }
+
+    /** 最後一位玩家補完牌後暫停時，繼續的位置是下一輪的第一位玩家。 */
+    @Test
+    fun `a pause after the last replacement of a round resumes in the next round`() {
+        val (first, second) = List(2) { marked() }
+        val table = table(hands = listOf(listOf(first), listOf(second)), wall = List(2) { plain() })
+        // 只讓前兩位玩家參與，第二位就是這一輪的最後一位。
+        val order = table.players.map { it.id }.take(2)
+
+        val paused = assertIs<TileReplacementRounds.Outcome.Paused<String>>(
+            TileReplacementRounds.process(table, order, Rules(pauseAfterReplacementBy = order[1])),
+        )
+
+        assertEquals(TileReplacementRounds.Position(playerOrderIndex = 0, replacementsDue = 0, round = 2), paused.position)
     }
 
     /** 補到一半沒有牌可以補時停下，已補到的牌仍回報。 */

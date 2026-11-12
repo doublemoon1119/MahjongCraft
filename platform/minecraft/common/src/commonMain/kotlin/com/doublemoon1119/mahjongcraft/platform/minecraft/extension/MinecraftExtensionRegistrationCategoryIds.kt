@@ -50,6 +50,9 @@ internal object MinecraftExtensionRegistrationCategoryIds {
     /** 牌河標記分類。 */
     const val HISTORY_DISCARD_MARKER_DISPLAY = "mahjongcraft:history_discard_marker_display"
 
+    /** 牌譜移出牌區標題與換牌用語分類。 */
+    const val HISTORY_TILE_SET_ASIDE_DISPLAY = "mahjongcraft:history_tile_set_aside_display"
+
     /** 規則選擇名稱分類。 */
     const val RULE_DECISION_DISPLAY_NAME = "mahjongcraft:rule_decision_display_name"
 

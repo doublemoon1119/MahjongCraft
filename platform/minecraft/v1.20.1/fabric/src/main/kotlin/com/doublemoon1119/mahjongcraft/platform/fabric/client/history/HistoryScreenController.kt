@@ -6,7 +6,9 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.client.catalogue.RuleCata
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.concurrency.ClientThreadCoroutineDispatcher
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.MahjongTileFaceRenderer
 import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionVocabularyRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.RuleDecisionDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.history.HistoryDiscardMarkerDisplayRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.history.HistoryTileSetAsideDisplayRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.GameConfigPresentationResolver
 import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.RuleModuleDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.ExhaustiveDrawReasonDisplayNameRegistry
@@ -28,13 +30,15 @@ import kotlin.uuid.Uuid
  * @property configResolver 將歷史開局設定轉為唯讀欄位的呈現解析器。
  * @property networkRegistries 解碼歷史規則設定的正式網路註冊表。
  * @property moduleRegistry 解析歷史規則的牌面顯示順序。
- * @property actionVocabulary 歷史動作的規則專屬名稱來源。
- * @property exhaustiveDrawReasons 流局原因名稱與玩家結算身分用語來源。
- * @property roundOutcomes 規則特殊本局結果名稱來源。
+ * @param actionVocabulary 歷史動作的規則專屬名稱來源。
+ * @param exhaustiveDrawReasons 流局原因名稱與玩家結算身分用語來源。
+ * @param roundOutcomes 規則特殊本局結果名稱來源。
  * @property discardMarkers 牌河公開標記的呈現方式來源。
  * @property settlementTemplates 結算明細欄位的規則專屬標題來源。
  * @property tileFaces 共用 GUI 牌面 renderer。
  * @property tileAssets 牌種與 Minecraft 素材的映射來源。
+ * @param ruleDecisionNames 規則選擇選項的顯示名稱來源。
+ * @property setAsideDisplays 移出牌區標題與換牌用語來源。
  * @property ruleCatalogue 從規則設定頁開啟規則一覽。
  * @property archiveStatus 保存狀態查詢。
  * @property dispatcher 客戶端主執行緒排程。
@@ -46,13 +50,15 @@ class HistoryScreenController internal constructor(
     private val configResolver: GameConfigPresentationResolver,
     private val networkRegistries: NetworkDtoRegistries,
     private val moduleRegistry: MahjongModuleRegistry,
-    private val actionVocabulary: GameActionVocabularyRegistry,
-    private val exhaustiveDrawReasons: ExhaustiveDrawReasonDisplayNameRegistry,
-    private val roundOutcomes: RoundOutcomeDisplayNameRegistry,
+    actionVocabulary: GameActionVocabularyRegistry,
+    exhaustiveDrawReasons: ExhaustiveDrawReasonDisplayNameRegistry,
+    roundOutcomes: RoundOutcomeDisplayNameRegistry,
     private val discardMarkers: HistoryDiscardMarkerDisplayRegistry,
     private val settlementTemplates: WinSettlementPresentationTemplateRegistry,
     private val tileFaces: MahjongTileFaceRenderer,
     private val tileAssets: MinecraftTileAssetRegistry,
+    ruleDecisionNames: RuleDecisionDisplayNameRegistry,
+    private val setAsideDisplays: HistoryTileSetAsideDisplayRegistry,
     private val ruleCatalogue: RuleCatalogueScreenController,
     private val archiveStatus: HistoryArchiveStatusTransport,
     private val dispatcher: ClientThreadCoroutineDispatcher,
@@ -62,6 +68,15 @@ class HistoryScreenController internal constructor(
         minimumInterval = { transport.minimumInterval.value },
         now = { System.nanoTime().nanoseconds },
         sessionRevision = { transport.sessionRevision.value },
+    )
+
+    /** 單局事件頁與牌面頁共用的事件文字呈現。 */
+    private val eventPresenter = HistoryRoundEventPresenter(
+        actionVocabulary = actionVocabulary,
+        exhaustiveDrawReasons = exhaustiveDrawReasons,
+        roundOutcomes = roundOutcomes,
+        ruleDecisionNames = ruleDecisionNames,
+        setAsideDisplays = setAsideDisplays,
     )
 
     /** 等待下一個 tick 的單一開啟要求。 */
@@ -130,9 +145,8 @@ class HistoryScreenController internal constructor(
             configResolver,
             networkRegistries,
             moduleRegistry,
-            actionVocabulary,
-            exhaustiveDrawReasons,
-            roundOutcomes,
+            eventPresenter,
+            setAsideDisplays,
             discardMarkers,
             settlementTemplates,
             tileFaces,

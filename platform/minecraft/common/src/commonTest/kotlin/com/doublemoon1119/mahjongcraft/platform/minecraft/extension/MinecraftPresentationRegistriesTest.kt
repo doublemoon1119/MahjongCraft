@@ -11,6 +11,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.character.AiCharacterR
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.DecisionStatusDisplayNameRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.RuleDecisionDisplayNameRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.history.HistoryDiscardMarkerDisplayRegistryImpl
+import com.doublemoon1119.mahjongcraft.platform.minecraft.history.HistoryTileSetAsideDisplayRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.player.PlayerPortraitSourceRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.player.PublicPlayerIndicatorDisplayRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.GameConfigPresentationRegistryImpl
@@ -122,6 +123,7 @@ class MinecraftPresentationRegistriesTest {
         exhaustiveDrawReasonDisplayNameRegistry = exhaustiveDrawReasonDisplayNameRegistry,
         roundOutcomeDisplayNameRegistry = RoundOutcomeDisplayNameRegistryImpl(),
         historyDiscardMarkerDisplayRegistry = HistoryDiscardMarkerDisplayRegistryImpl(),
+        historyTileSetAsideDisplayRegistry = HistoryTileSetAsideDisplayRegistryImpl(),
         ruleDecisionDisplayNameRegistry = RuleDecisionDisplayNameRegistryImpl(),
         roundInfoLineDisplayRegistry = RoundInfoLineDisplayRegistryImpl(),
         tablePropDescriberRegistry = TablePropDescriberRegistryImpl(),

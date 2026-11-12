@@ -5,6 +5,8 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.event.PublicGameActionId
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.PendingRuleDecision
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionInputSpec
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionTiming
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.TileReplacementRemoval
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.TileReplacementRound
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.TableStepEvent
 import com.doublemoon1119.mahjongcraft.logic.base.Hand
 import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
@@ -65,7 +67,7 @@ class TaiwanOpeningFlowerResolutionTest {
         assertEquals(TaiwanFlowerRuleDecisionIds.PASS_FLOWER_WIN, choice.passOptionId, "Passing is shown as the usual skip.")
     }
 
-    /** 莊家先摸一張，第一輪莊家一次補兩張、下家補一張；莊家補到的花在第二輪再補，補完莊家直接保留摸牌位的牌。 */
+    /** 莊家先摸一張，第一輪莊家一次補兩張、下家補一張；莊家補到的花在第二輪再補，補完莊家直接保留摸牌位的牌；每一輪各家移出的花都留下紀錄。 */
     @Test
     fun `the dealer draws first and flowers are replaced round by round`() {
         val flowers = TaiwanTileTypes.ALL.map { FakeIdentifiedTileFactory.create(Tile.Extension(it)) }
@@ -112,6 +114,20 @@ class TaiwanOpeningFlowerResolutionTest {
         assertEquals(16, after.players[1].hand.standingTiles.size)
         assertEquals(0, after.currentPlayerIndex, "Replacing other players' flowers must not pass the turn.")
         assertEquals(TurnPhase.AwaitingAction, after.turnPhase, "The dealer already drew and must not draw again.")
+        assertEquals(
+            listOf(
+                TileReplacementRound(
+                    round = 1,
+                    removals = listOf(
+                        TileReplacementRemoval(dealer, listOf(flowers[0].id, flowers[1].id)),
+                        TileReplacementRemoval(downstream, listOf(flowers[2].id)),
+                    ),
+                ),
+                TileReplacementRound(round = 2, removals = listOf(TileReplacementRemoval(dealer, listOf(flowers[3].id)))),
+            ),
+            resolution.replacementRounds,
+            "Each round records the flowers every player set aside.",
+        )
     }
 
     /** 牌局中摸到的花已經亮出；補到的牌又是花時依序呈現補牌、亮花與再補牌，第一張花不再移動也不再宣告。 */
@@ -132,7 +148,7 @@ class TaiwanOpeningFlowerResolutionTest {
             config = module.config,
             tileWall = TileWall(List(LIVE_TILES) { ordinary() }),
             reservedWallTiles = listOf(chainedFlower, finalReplacement) + List(RESERVED_TILES - 2) { ordinary() },
-            components = ComponentSet.EMPTY.with(TaiwanTableComponents.PENDING_FLOWER_FOLLOW_UP, TaiwanPendingFlowerFollowUp(players[0].id, drawnFlower.id, replacementsDue = 1)),
+            components = ComponentSet.EMPTY.with(TaiwanTableComponents.PENDING_FLOWER_FOLLOW_UP, TaiwanPendingFlowerFollowUp(players[0].id, drawnFlower.id, replacementsDue = 1, resumeRound = 1)),
             turnPhase = TurnPhase.AwaitingAction,
         )
         val step = assertNotNull(TaiwanFlowerRuleDecisionResolver.begin(RuleDecisionTiming.DRAW_FOLLOW_UP, table, module))
@@ -147,6 +163,11 @@ class TaiwanOpeningFlowerResolutionTest {
         assertEquals(TileArea(TileRegion.SET_ASIDE, revealer), declaration.tableState.areaOf(chainedFlower))
         assertEquals(TileArea(TileRegion.DRAWN, revealer), steps.last().tableState.areaOf(finalReplacement))
         assertEquals(finalReplacement, resolution.tableState.players[0].hand.lastDrawn)
+        assertEquals(
+            listOf(TileReplacementRound(round = 2, removals = listOf(TileReplacementRemoval(revealer, listOf(chainedFlower.id))))),
+            resolution.replacementRounds,
+            "The drawn flower was declared as an action in the first round; only the chained flower is a replacement record.",
+        )
     }
 
     /**

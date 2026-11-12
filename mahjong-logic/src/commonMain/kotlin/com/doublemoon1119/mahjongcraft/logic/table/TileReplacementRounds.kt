@@ -18,20 +18,23 @@ object TileReplacementRounds {
      *
      * @property playerOrderIndex 目前處理到的玩家在玩家順序中的索引。
      * @property replacementsDue 這位玩家已移出、尚未補的張數；為 0 時從移出開始處理這位玩家。
+     * @property round 目前所在的輪次，從 1 開始。
      */
     data class Position(
         val playerOrderIndex: Int,
         val replacementsDue: Int,
+        val round: Int,
     ) {
         init {
             require(playerOrderIndex >= 0) { "Player order index must not be negative" }
             require(replacementsDue >= 0) { "Replacements due must not be negative" }
+            require(round >= 1) { "Replacement round must start at one" }
         }
 
         /** [Position] 的固定值。 */
         companion object {
-            /** 從第一位玩家開始。 */
-            val START: Position = Position(playerOrderIndex = 0, replacementsDue = 0)
+            /** 第一輪從第一位玩家開始。 */
+            val START: Position = Position(playerOrderIndex = 0, replacementsDue = 0, round = 1)
         }
     }
 
@@ -46,17 +49,22 @@ object TileReplacementRounds {
         /** 這次移出或補到的牌，依發生順序排列。 */
         val tiles: List<IdentifiedTile>
 
+        /** 這次變化所在的輪次，從 1 開始。 */
+        val round: Int
+
         /**
          * 玩家把手上的指定牌一次移出。
          *
          * @property playerId 移出牌的玩家。
          * @property tiles 移出的牌，依移出順序排列。
          * @property tableState 移出之後的桌況。
+         * @property round 移出所在的輪次。
          */
         data class SetAside(
             override val playerId: Uuid,
             override val tiles: List<IdentifiedTile>,
             override val tableState: TableState,
+            override val round: Int,
         ) : Step
 
         /**
@@ -65,11 +73,13 @@ object TileReplacementRounds {
          * @property playerId 補牌的玩家。
          * @property tiles 補到的牌，依補牌順序排列。
          * @property tableState 補牌之後的桌況。
+         * @property round 補牌所在的輪次。
          */
         data class Replaced(
             override val playerId: Uuid,
             override val tiles: List<IdentifiedTile>,
             override val tableState: TableState,
+            override val round: Int,
         ) : Step
     }
 
@@ -210,10 +220,10 @@ object TileReplacementRounds {
                     val tiles = state.players.first { it.id == playerId }.hand.standingTiles.filter(rules::isSetAside)
                     if (tiles.isNotEmpty()) {
                         tiles.forEach { tile -> state = rules.setAside(state, playerId, tile) }
-                        steps += Step.SetAside(playerId, tiles, state)
+                        steps += Step.SetAside(playerId, tiles, state, position.round)
                         due = tiles.size
                         rules.pauseAfterSetAside(state, playerId, tiles)?.let { reason ->
-                            return Outcome.Paused(state, Position(position.playerOrderIndex, due), reason, steps.toList())
+                            return Outcome.Paused(state, Position(position.playerOrderIndex, due, position.round), reason, steps.toList())
                         }
                     }
                 }
@@ -222,22 +232,22 @@ object TileReplacementRounds {
                     repeat(due) { replacementIndex ->
                         val replaced = rules.replace(state, playerId, due - replacementIndex)
                         if (replaced == null) {
-                            if (replacements.isNotEmpty()) steps += Step.Replaced(playerId, replacements.toList(), state)
+                            if (replacements.isNotEmpty()) steps += Step.Replaced(playerId, replacements.toList(), state, position.round)
                             return Outcome.Exhausted(state, playerId, steps.toList())
                         }
                         state = replaced.tableState
                         replacements += replaced.tile
                     }
-                    steps += Step.Replaced(playerId, replacements.toList(), state)
+                    steps += Step.Replaced(playerId, replacements.toList(), state, position.round)
                     rules.pauseAfterReplacement(state, playerId)?.let { reason ->
-                        return Outcome.Paused(state, Position(position.playerOrderIndex + 1, 0).wrapped(playerOrderIds.size), reason, steps.toList())
+                        return Outcome.Paused(state, Position(position.playerOrderIndex + 1, 0, position.round).wrapped(playerOrderIds.size), reason, steps.toList())
                     }
                 }
-                position = Position(position.playerOrderIndex + 1, 0)
+                position = Position(position.playerOrderIndex + 1, 0, position.round)
             }
             val anyRemaining = playerOrderIds.any { id -> state.players.first { it.id == id }.hand.standingTiles.any(rules::isSetAside) }
             if (!anyRemaining) return Outcome.Completed(state, steps.toList())
-            position = Position.START
+            position = Position(playerOrderIndex = 0, replacementsDue = 0, round = position.round + 1)
         }
     }
 
@@ -247,5 +257,5 @@ object TileReplacementRounds {
      * @param playerCount 玩家順序的人數。
      * @return 位於玩家順序內的位置。
      */
-    private fun Position.wrapped(playerCount: Int): Position = if (playerOrderIndex >= playerCount) Position.START else this
+    private fun Position.wrapped(playerCount: Int): Position = if (playerOrderIndex >= playerCount) Position(playerOrderIndex = 0, replacementsDue = 0, round = round + 1) else this
 }

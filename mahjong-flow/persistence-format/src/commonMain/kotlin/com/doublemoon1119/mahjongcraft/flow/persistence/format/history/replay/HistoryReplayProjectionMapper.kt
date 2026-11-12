@@ -8,6 +8,8 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryRe
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryReplayIdentity
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryReplayMeld
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryReplayPlayerState
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryReplayTileArea
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryReplayTileRemoval
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryReplayWinningHand
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryRoundOutcome
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryRoundPosition
@@ -32,6 +34,7 @@ import com.doublemoon1119.mahjongcraft.flow.persistence.format.game.TurnPhaseSer
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.game.toDomain
 import com.doublemoon1119.mahjongcraft.logic.base.MeldType
 import com.doublemoon1119.mahjongcraft.logic.base.MeldTypeId
+import com.doublemoon1119.mahjongcraft.logic.base.NamespacedId
 import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.logic.table.RoundCompletionClassification
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
@@ -147,7 +150,28 @@ internal object HistoryReplayProjectionMapper {
                     HistoryReplayFact.Reaction(type, action?.getValue(ReplaySourceKeys.TYPE)?.let(::string), resolved)
                 }
                 HistoryFactTypeKeys.RULE_DECISION_STARTED, HistoryFactTypeKeys.RULE_DECISION_SUBMITTED, HistoryFactTypeKeys.RULE_DECISION_AUTOMATIC_RESOLVED ->
-                    HistoryReplayFact.RuleDecision(type, RuleDecisionTiming.valueOf(string(fact.getValue(ReplaySourceKeys.TIMING))), string(fact.getValue(ReplaySourceKeys.STEP_ID)), integer(fact.getValue(ReplaySourceKeys.STEP_INDEX)).also { require(it >= 0) { "Replay rule decision index must not be negative" } }, fact[ReplaySourceKeys.NEXT_STEP_ID]?.takeUnless { it == JsonNull }?.let(::string))
+                    HistoryReplayFact.RuleDecision(
+                        typeKey = type,
+                        timing = RuleDecisionTiming.valueOf(string(fact.getValue(ReplaySourceKeys.TIMING))),
+                        stepId = string(fact.getValue(ReplaySourceKeys.STEP_ID)),
+                        stepIndex = integer(fact.getValue(ReplaySourceKeys.STEP_INDEX)).also { require(it >= 0) { "Replay rule decision index must not be negative" } },
+                        nextStepId = fact[ReplaySourceKeys.NEXT_STEP_ID]?.takeUnless { it == JsonNull }?.let(::string),
+                        actorSeat = actor,
+                        optionId = fact[ReplaySourceKeys.SUBMISSION]?.let(::obj)?.get(ReplaySourceKeys.OPTION_ID)?.let(::string),
+                        passed = fact[ReplaySourceKeys.PASSED]?.let(::boolean) ?: false,
+                    )
+                HistoryFactTypeKeys.TILE_REPLACEMENT_ROUND_RESOLVED -> HistoryReplayFact.TileReplacementRound(
+                    typeKey = type,
+                    timing = RuleDecisionTiming.valueOf(string(fact.getValue(ReplaySourceKeys.TIMING))),
+                    round = integer(fact.getValue(ReplaySourceKeys.REPLACEMENT_ROUND)).also { require(it >= 1) { "Replay replacement round must start at one" } },
+                    removals = array(fact.getValue(ReplaySourceKeys.REMOVALS)).map { raw ->
+                        val removal = obj(raw)
+                        HistoryReplayTileRemoval(
+                            seat = context.seat(integer(removal.getValue(ReplaySourceKeys.PLAYER_ID))),
+                            tiles = refs(removal.getValue(ReplaySourceKeys.TILE_IDS), context),
+                        )
+                    },
+                )
                 HistoryFactTypeKeys.DICE_ROLLED -> {
                     val roll = obj(fact.getValue(ReplaySourceKeys.ROLL))
                     val values = array(roll.getValue(ReplaySourceKeys.DICE)).map(::integer)
@@ -259,7 +283,15 @@ internal object HistoryReplayProjectionMapper {
         val lastDrawn = hand.getValue(ReplaySourceKeys.LAST_DRAWN).takeUnless { it == JsonNull }?.let { ref(it, context) }
         require(lastDrawn == null || lastDrawn !in tiles) { "Replay last drawn tile must be separate from standing hand tiles" }
         val discards = array(value.getValue(ReplayFormatKeys.DISCARDS)).map { discard(obj(it), context) }
-        val setAside = refs(value.getValue(ReplayFormatKeys.SET_ASIDE_TILES), context)
+        val tileAreas = array(value.getValue(ReplaySourceKeys.TILE_AREAS)).map { raw ->
+            context.charge()
+            val area = obj(raw)
+            HistoryReplayTileArea(
+                areaId = string(area.getValue(ReplaySourceKeys.ID)).also { require(NamespacedId.isValid(it)) { "Replay tile area ID must be namespaced" } },
+                tiles = refs(area.getValue(ReplaySourceKeys.TILE_AREA_TILES), context),
+            )
+        }
+        require(tileAreas.map { it.areaId }.distinct().size == tileAreas.size) { "Replay tile areas must be distinct" }
         return HistoryReplayPlayerState(
             context.seat(integer(value.getValue(ReplaySourceKeys.INITIAL_SEAT_INDEX))),
             tiles,
@@ -268,7 +300,7 @@ internal object HistoryReplayProjectionMapper {
             discards,
             integer(value.getValue(ReplaySourceKeys.SCORE)),
             Wind.valueOf(string(value.getValue(ReplaySourceKeys.SEAT_WIND))),
-            setAside,
+            tileAreas,
         )
     }
 

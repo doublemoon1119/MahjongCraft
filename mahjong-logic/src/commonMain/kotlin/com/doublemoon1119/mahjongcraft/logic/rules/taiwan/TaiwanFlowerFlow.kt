@@ -125,7 +125,7 @@ object TaiwanFlowerFlow {
         flower: IdentifiedTile,
     ): Result {
         val order = listOf(playerId)
-        val resumeAt = TileReplacementRounds.Position(playerOrderIndex = 0, replacementsDue = 1)
+        val resumeAt = TileReplacementRounds.Position(playerOrderIndex = 0, replacementsDue = 1, round = 1)
         FlowerRules.pauseAfterSetAside(tableState, playerId, listOf(flower))?.let { pause ->
             return Result.AwaitingDecision(pause.pending(tableState, order, resumeAt), emptyList())
         }

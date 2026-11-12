@@ -15,6 +15,8 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryWinningHa
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameFlowConfig
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionSubmission
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionTiming
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.TileReplacementRemoval
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.TileReplacementRound
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementDetailEntry
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementDetailField
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementDetailValue
@@ -223,7 +225,7 @@ class HistoryRecordingPersistenceDtoTest {
         assertEquals(state, mapper.decode(mapper.encode(state)))
     }
 
-    /** 規則選擇的開始、提交與自動完成事實在 JSON 往返後保留開啟視窗的時間點。 */
+    /** 規則選擇的開始、提交、自動完成與換牌事實在 JSON 往返後保留開啟視窗的時間點與內容。 */
     @Test
     fun `rule decision facts round trip with their timing`() {
         val playerId = Uuid.random()
@@ -236,8 +238,19 @@ class HistoryRecordingPersistenceDtoTest {
                 stepIndex = 0,
                 submission = RuleDecisionSubmission.Choice("mahjongcraft:option"),
                 nextStepId = null,
+                passed = true,
             ),
             HistoryFact.RuleDecisionAutomaticallyResolved(RuleDecisionTiming.ROUND_END, "mahjongcraft:test_step", 1, "mahjongcraft:next_step"),
+            HistoryFact.TileReplacementRoundResolved(
+                timing = RuleDecisionTiming.ROUND_START,
+                round = TileReplacementRound(
+                    round = 2,
+                    removals = listOf(
+                        TileReplacementRemoval(playerId, listOf(Uuid.random(), Uuid.random())),
+                        TileReplacementRemoval(Uuid.random(), listOf(Uuid.random())),
+                    ),
+                ),
+            ),
         )
         val state = HistoryRecordingState(
             nextSequenceByMatchId = mapOf(matchId to facts.size + 1L),

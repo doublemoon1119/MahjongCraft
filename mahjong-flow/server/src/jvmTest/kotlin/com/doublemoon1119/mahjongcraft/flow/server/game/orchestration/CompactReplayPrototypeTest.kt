@@ -11,7 +11,6 @@ import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.logic.base.TileTypeId
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiGameLength
-import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayer
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledPersistenceRegistries
 import kotlinx.coroutines.runBlocking
@@ -309,7 +308,6 @@ class CompactReplayPrototypeTest {
         val encodedEvents = priorPrototype.slimActionResults(json.parseToJsonElement(json.encodeToString(encoded)) as JsonArray)
         val pairs = events.zip(encodedEvents.map { it as JsonObject })
         val first = events.first()
-        val setAsideTiles: (MahjongPlayer) -> List<IdentifiedTile> = { it.setAsideTiles }
         val typeDictionary = linkedMapOf<String, JsonElement>()
         val rounds = mutableListOf<MutableRound>()
         val players = mutableListOf<JsonElement>()
@@ -391,7 +389,7 @@ class CompactReplayPrototypeTest {
                         }
                         current = state
                         roundIndex = createRoundIndex(state, typeDictionary)
-                        val projection = project(state, checkNotNull(roundIndex), setAsideTiles)
+                        val projection = project(state, checkNotNull(roundIndex))
                         rounds += MutableRound(rounds.size + 1, checkNotNull(roundIndex).tileTypes.toList(), projection)
                         parts["h"] = JsonPrimitive(true)
                         openedRound = true
@@ -417,7 +415,7 @@ class CompactReplayPrototypeTest {
             }
             if (tableChanged) {
                 val index = checkNotNull(roundIndex)
-                val afterProjection = project(checkNotNull(current), index, setAsideTiles)
+                val afterProjection = project(checkNotNull(current), index)
                 val previousProjection = if (openedRound) rounds.last().initial else rounds.last().replayed
                 val delta = priorPrototype.jsonDelta(previousProjection, afterProjection)
                 val encodedPatch = when {
@@ -438,7 +436,7 @@ class CompactReplayPrototypeTest {
             } else if (openedRound) {
                 rounds.last().replayed = rounds.last().initial
             } else if (before != null) {
-                assertEquals(project(before, checkNotNull(roundIndex), setAsideTiles), rounds.last().replayed)
+                assertEquals(project(before, checkNotNull(roundIndex)), rounds.last().replayed)
             }
             rounds.last().transactions += JsonObject(parts)
             rounds.last().expected += rounds.last().replayed
@@ -569,17 +567,15 @@ class CompactReplayPrototypeTest {
     /**
      * 將權威桌況轉為歷史重播需要的遊戲內容投影。
      *
-     * 牌河與移出手牌的牌使用不分規則的清單，與正式編碼器保存的內容一致。
+     * 牌河使用不分規則的清單，與正式編碼器保存的內容一致。
      *
      * @param state 待投影的權威桌況。
      * @param index 本局牌與玩家的索引。
-     * @param setAsideTiles 取得每位玩家移出手牌的牌。
      * @return 使用局內索引的遊戲內容投影。
      */
     private fun project(
         state: TableState,
         index: RoundIndex,
-        setAsideTiles: (MahjongPlayer) -> List<IdentifiedTile>,
     ): JsonElement {
         val dto = state.toPersistenceDto(
             registries.ruleConfigs,
@@ -610,7 +606,6 @@ class CompactReplayPrototypeTest {
                         )
                     },
                 )
-                projected["setAside"] = JsonArray(setAsideTiles(player).map { json.encodeToJsonElement(it.toPersistenceDto(registries.components)) })
                 JsonObject(projected)
             },
         )

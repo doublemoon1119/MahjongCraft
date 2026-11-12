@@ -78,6 +78,7 @@ class AdvanceAutomaticRuleDecisionUseCase(
                             ),
                         ),
                     )
+                    addAll(resolution.replacementHistoryDrafts(currentRuleDecision.timing))
                 }
             }
             if (updated.pendingRuleDecision?.participantPlayerIds?.isEmpty() == true) {

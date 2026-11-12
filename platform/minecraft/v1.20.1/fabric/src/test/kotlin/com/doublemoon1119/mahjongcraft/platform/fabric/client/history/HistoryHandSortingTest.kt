@@ -87,7 +87,7 @@ class HistoryHandSortingTest {
         discards = emptyList(),
         score = 25000,
         seatWind = WindDto.EAST,
-        setAsideTiles = emptyList(),
+        tileAreas = emptyList(),
     )
 
     /**

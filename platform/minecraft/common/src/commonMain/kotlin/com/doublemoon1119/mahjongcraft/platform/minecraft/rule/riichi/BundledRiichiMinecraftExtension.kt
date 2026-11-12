@@ -6,6 +6,7 @@ import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.logic.module.BuiltInRuleModuleIds
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiExhaustiveDrawReason
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiHistoryDiscardMarkerIds
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPlayerTileAreaIds
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleModule
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.threeplayer.ThreePlayerRiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.RiichiTileValues
@@ -17,6 +18,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.GameA
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.GameActionVocabularyRegistrar
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.GameConfigPresentationRegistrar
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.HistoryDiscardMarkerDisplayRegistrar
+import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.HistoryTileSetAsideDisplayRegistrar
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.MinecraftTileAssetRegistrar
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.PublicPlayerIndicatorDisplayRegistrar
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.RoundInfoLineDisplayRegistrar
@@ -32,6 +34,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.WinSe
 import com.doublemoon1119.mahjongcraft.platform.minecraft.extension.MinecraftMahjongExtension
 import com.doublemoon1119.mahjongcraft.platform.minecraft.history.HistoryDiscardMarkerDisplay
 import com.doublemoon1119.mahjongcraft.platform.minecraft.history.HistoryDiscardMarkerDisplayDefinition
+import com.doublemoon1119.mahjongcraft.platform.minecraft.history.HistoryTileAreaDisplayDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.history.MinecraftHistoryScreenKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.player.PublicPlayerIndicatorDisplay
 import com.doublemoon1119.mahjongcraft.platform.minecraft.player.PublicPlayerIndicatorDisplayDefinition
@@ -171,6 +174,11 @@ object BundledRiichiMinecraftExtension : MinecraftMahjongExtension {
 
     override fun registerRoundOutcomeDisplayNames(registry: RoundOutcomeDisplayNameRegistrar) {
         registry.register(RoundOutcomeDisplayNameDefinition(RiichiRoundOutcomeIds.NAGASHI_MANGAN, MinecraftHistoryScreenKeys.ROUND_OUTCOME_NAGASHI_MANGAN))
+    }
+
+    /** 三人日麻拔出的北在牌譜上標示為「拔出的牌」。 */
+    override fun registerHistoryTileSetAsideDisplays(registry: HistoryTileSetAsideDisplayRegistrar) {
+        registry.register(HistoryTileAreaDisplayDefinition(RiichiPlayerTileAreaIds.NORTH, MinecraftHistoryScreenKeys.STATE_TILE_AREA_RIICHI_NORTH))
     }
 
     /** 立直宣告的牌在歷史牌河上橫擺，提示顯示「立直」。 */

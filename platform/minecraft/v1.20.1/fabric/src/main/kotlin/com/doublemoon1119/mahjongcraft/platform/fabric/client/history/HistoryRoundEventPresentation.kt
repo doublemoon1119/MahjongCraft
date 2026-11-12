@@ -7,17 +7,21 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameAbortReasonIds
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementDetailEntry
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementQuantity
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryReplayFactDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryReplayTransactionDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryRoundEventsDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryRoundOutcomeDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryWinDetailFieldDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryWinDetailQuantityDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryWinDetailValueDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.model.RuleDecisionTimingDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.model.TileFaceViewDto
 import com.doublemoon1119.mahjongcraft.logic.table.BuiltInMatchEndReasonIds
 import com.doublemoon1119.mahjongcraft.logic.table.RoundCompletionClassification
 import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionVocabularyRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.action.MinecraftKanActionTokenKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.event.MinecraftMatchAbortReasonIds
+import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.RuleDecisionDisplayNameRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.history.HistoryTileSetAsideDisplayRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.history.MinecraftHistoryScreenKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.EntryEmphasis
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.ExhaustiveDrawReasonDisplayNameRegistry
@@ -39,34 +43,114 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.action.BuiltInGameActi
  * @property actionVocabulary 動作 ID 的規則專屬顯示名稱來源。
  * @property exhaustiveDrawReasons 流局原因 ID 的顯示名稱與玩家結算身分用語來源。
  * @property roundOutcomes 規則特殊本局結果的顯示名稱來源。
+ * @property ruleDecisionNames 規則選擇選項的顯示名稱來源。
+ * @property setAsideDisplays 移出牌區標題與換牌用語來源。
  */
 internal class HistoryRoundEventPresenter(
     private val actionVocabulary: GameActionVocabularyRegistry,
     private val exhaustiveDrawReasons: ExhaustiveDrawReasonDisplayNameRegistry,
     private val roundOutcomes: RoundOutcomeDisplayNameRegistry,
+    private val ruleDecisionNames: RuleDecisionDisplayNameRegistry,
+    private val setAsideDisplays: HistoryTileSetAsideDisplayRegistry,
 ) {
     /**
      * 將單局事件轉換為保留原始順序的呈現模型。
+     *
+     * 規則選擇步驟的結果已由換牌紀錄說明時，步驟的開始改用換牌用語（例如「開始補花」），自動完成不再列出；
+     * 已由玩家的選擇說明時，步驟的開始與自動完成都不再列出。省略後交易沒有任何內容時，保留原本的事實，
+     * 讓每筆交易都有內容、交易編號維持連續。
      *
      * @param events 已通過客戶端驗證的單局事件資料。
      * @param ruleId 對局摘要中的規則模組 ID；未提供時使用中立預設用語。
      * @return 可交給單局畫面分頁與卡片 renderer 使用的呈現模型。
      */
-    fun present(events: HistoryRoundEventsDto, ruleId: String?): HistoryRoundPresentation = HistoryRoundPresentation(
-        ruleId = ruleId,
-        roundNumber = events.roundNumber,
-        nextTransactionIndex = events.nextTransactionIndex,
-        transactions = events.transactions.map { transaction ->
-            HistoryTransactionPresentation(
-                index = transaction.index,
-                occurredAtEpochMillis = transaction.occurredAtEpochMillis,
-                isOpening = transaction.isOpening,
-                facts = transaction.facts.map { fact ->
-                    fact.present(events.tileCatalog, events.identity.players.map { it.initialSeatIndex }, ruleId)
-                },
-            )
-        },
-    )
+    fun present(events: HistoryRoundEventsDto, ruleId: String?): HistoryRoundPresentation {
+        val choiceSteps = ruleDecisionSteps(events) { _, decision -> choiceLabelKey(ruleId, decision) != null }
+        val replacementSteps = ruleDecisionSteps(events) { transaction, _ -> transaction.facts.any { it is HistoryReplayFactDto.TileReplacementRound } } - choiceSteps
+        val identitySeats = events.identity.players.map { it.initialSeatIndex }
+        return HistoryRoundPresentation(
+            ruleId = ruleId,
+            roundNumber = events.roundNumber,
+            nextTransactionIndex = events.nextTransactionIndex,
+            transactions = events.transactions.map { transaction ->
+                val shown = transaction.facts.filterNot { fact ->
+                    fact is HistoryReplayFactDto.RuleDecision &&
+                        fact.isStepBookkeeping() &&
+                        (fact.stepKey() in choiceSteps || (fact.stepKey() in replacementSteps && fact.typeKey != HistoryFactTypeKeys.RULE_DECISION_STARTED))
+                }.ifEmpty { transaction.facts }
+                HistoryTransactionPresentation(
+                    index = transaction.index,
+                    occurredAtEpochMillis = transaction.occurredAtEpochMillis,
+                    isOpening = transaction.isOpening,
+                    facts = shown.map { fact -> fact.present(events.tileCatalog, identitySeats, ruleId, replacementSteps) },
+                )
+            },
+        )
+    }
+
+    /**
+     * 找出符合條件的規則選擇事實所屬的步驟。
+     *
+     * @param events 單局事件資料。
+     * @param matches 依事實所在的交易與事實本身判斷。
+     * @return 這些步驟的識別。
+     */
+    private fun ruleDecisionSteps(
+        events: HistoryRoundEventsDto,
+        matches: (HistoryReplayTransactionDto, HistoryReplayFactDto.RuleDecision) -> Boolean,
+    ): Set<RuleDecisionStepKey> = events.transactions.flatMap { transaction ->
+        transaction.facts.filterIsInstance<HistoryReplayFactDto.RuleDecision>().filter { matches(transaction, it) }.map { it.stepKey() }
+    }.toSet()
+
+    /** 開始或自動完成這類只標示流程位置的規則選擇事實。 */
+    private fun HistoryReplayFactDto.RuleDecision.isStepBookkeeping(): Boolean = typeKey != HistoryFactTypeKeys.RULE_DECISION_SUBMITTED
+
+    /** 同一局內識別一個規則選擇步驟。 */
+    private fun HistoryReplayFactDto.RuleDecision.stepKey(): RuleDecisionStepKey = RuleDecisionStepKey(timing, stepId, stepIndex)
+
+    /**
+     * 玩家提交的選擇以動作或選項名稱顯示時使用的翻譯 key。
+     *
+     * 選了代表跳過的選項時使用規則的跳過用語；其他選項依序查動作用語與規則選擇選項名稱。
+     *
+     * @param ruleId 對局規則模組 ID。
+     * @param fact 規則選擇事實。
+     * @return 翻譯 key；不是玩家選擇或查無名稱時為 null。
+     */
+    private fun choiceLabelKey(ruleId: String?, fact: HistoryReplayFactDto.RuleDecision): String? {
+        if (fact.typeKey != HistoryFactTypeKeys.RULE_DECISION_SUBMITTED || fact.actorSeat == null) return null
+        if (fact.passed) return actionVocabulary.find(ruleId, MinecraftBuiltInGameActionIds.PASS)?.labelKey
+        val optionId = fact.optionId ?: return null
+        return actionVocabulary.find(ruleId, optionId)?.labelKey ?: ruleDecisionNames.find(optionId)
+    }
+
+    /**
+     * 會產生換牌紀錄的規則選擇步驟開始時的文字。
+     *
+     * @param ruleId 對局規則模組 ID。
+     * @return 例如「開始補花」；規則沒有登記用語時為「開始換牌」。
+     */
+    private fun replacementStartText(ruleId: String?): Text = Text.translatable(MinecraftHistoryScreenKeys.ROUND_REPLACEMENT_STARTED, replacementName(ruleId))
+
+    /**
+     * 規則登記的換牌用語。
+     *
+     * @param ruleId 對局規則模組 ID。
+     * @return 例如「補花」；規則沒有登記時為中立的「換牌」。
+     */
+    private fun replacementName(ruleId: String?): Text = Text.translatable(setAsideDisplays.findReplacementName(ruleId) ?: MinecraftHistoryScreenKeys.ROUND_REPLACEMENT)
+
+    /**
+     * 換牌紀錄的標題；局首逐輪換牌帶輪次，牌局中的換牌只顯示用語。
+     *
+     * @param fact 一輪換牌結果。
+     * @param ruleId 對局規則模組 ID。
+     * @return 例如「第 1 輪補花」或「補花」。
+     */
+    private fun replacementText(fact: HistoryReplayFactDto.TileReplacementRound, ruleId: String?): Text {
+        val name = replacementName(ruleId)
+        return if (fact.timing == RuleDecisionTimingDto.ROUND_START) Text.translatable(MinecraftHistoryScreenKeys.ROUND_REPLACEMENT_ROUND, fact.round, name) else name
+    }
 
     /**
      * 將單一語意事實映射成呈現模型。
@@ -74,11 +158,18 @@ internal class HistoryRoundEventPresenter(
      * @param tileCatalog 目前回覆可解析的牌目錄。
      * @param identitySeats 對局身份中的所有座位索引。
      * @param ruleId 對局規則模組 ID。
+     * @param replacementSteps 結果由換牌紀錄說明的規則選擇步驟；這些步驟的開始改用換牌用語。
      * @return 單一事實的呈現資料。
      */
-    private fun HistoryReplayFactDto.present(tileCatalog: List<TileFaceViewDto>, identitySeats: List<Int>, ruleId: String?): HistoryFactPresentation = (
+    private fun HistoryReplayFactDto.present(
+        tileCatalog: List<TileFaceViewDto>,
+        identitySeats: List<Int>,
+        ruleId: String?,
+        replacementSteps: Set<RuleDecisionStepKey>,
+    ): HistoryFactPresentation = (
         when (this) {
             is HistoryReplayFactDto.KnownAction -> HistoryFactPresentation(
+                source = this,
                 text = actionText(ruleId, actionType, extensionTypeId),
                 actorSeat = actorSeat,
                 directTiles = tiles(tileCatalog, directTiles),
@@ -87,6 +178,7 @@ internal class HistoryRoundEventPresenter(
             )
 
             is HistoryReplayFactDto.ActionScored -> HistoryFactPresentation(
+                source = this,
                 text = when {
                     potDeposit > 0 -> Text.translatable(
                         MinecraftHistoryScreenKeys.ROUND_ACTION_SCORED_POT_DEPOSIT,
@@ -108,6 +200,7 @@ internal class HistoryRoundEventPresenter(
             )
 
             is HistoryReplayFactDto.Reaction -> HistoryFactPresentation(
+                source = this,
                 text = Text.translatable(
                     MinecraftHistoryScreenKeys.ROUND_REACTION,
                     actionType?.let { actionText(ruleId, it, null) } ?: Text.translatable(MinecraftHistoryScreenKeys.ROUND_REACTION_NONE),
@@ -119,18 +212,32 @@ internal class HistoryRoundEventPresenter(
             )
 
             is HistoryReplayFactDto.RuleDecision -> HistoryFactPresentation(
-                text = Text.translatable(
-                    MinecraftHistoryScreenKeys.RULE_DECISION,
-                    Text.translatable(MinecraftHistoryScreenKeys.RULE_DECISION_STEP, stepIndex + 1),
-                    ruleDecisionText(typeKey, nextStepId),
-                ),
-                actorSeat = null,
+                source = this,
+                text = choiceLabelKey(ruleId, this)?.let(Text::translatable)
+                    ?: replacementStartText(ruleId).takeIf { typeKey == HistoryFactTypeKeys.RULE_DECISION_STARTED && stepKey() in replacementSteps }
+                    ?: Text.translatable(
+                        MinecraftHistoryScreenKeys.RULE_DECISION,
+                        Text.translatable(MinecraftHistoryScreenKeys.RULE_DECISION_STEP, stepIndex + 1),
+                        ruleDecisionText(typeKey, nextStepId),
+                    ),
+                actorSeat = actorSeat,
                 directTiles = emptyList(),
                 revealedTiles = emptyList(),
                 outcome = null,
             )
 
+            is HistoryReplayFactDto.TileReplacementRound -> HistoryFactPresentation(
+                source = this,
+                text = replacementText(this, ruleId),
+                actorSeat = null,
+                directTiles = emptyList(),
+                revealedTiles = emptyList(),
+                outcome = null,
+                seatLines = removals.map { removal -> HistorySeatLinePresentation(removal.seat, tiles(tileCatalog, removal.tiles)) },
+            )
+
             is HistoryReplayFactDto.DiceRolled -> HistoryFactPresentation(
+                source = this,
                 text = Text.translatable(
                     MinecraftHistoryScreenKeys.ROUND_EVENT_DICE_ROLLED,
                     rollIndex + 1,
@@ -143,6 +250,7 @@ internal class HistoryRoundEventPresenter(
             )
 
             is HistoryReplayFactDto.Completion -> HistoryFactPresentation(
+                source = this,
                 text = when (typeKey) {
                     HistoryFactTypeKeys.MATCH_COMPLETED -> Text.translatable(MinecraftHistoryScreenKeys.ROUND_MATCH_COMPLETION, outcome?.let { outcomeText(it.reasonId, ruleId) } ?: Text.translatable(MinecraftHistoryScreenKeys.ROUND_OUTCOME_OTHER))
                     HistoryFactTypeKeys.MATCH_ABORTED -> Text.translatable(MinecraftHistoryScreenKeys.ROUND_MATCH_ABORTED, outcome?.let { outcomeText(it.reasonId, ruleId) } ?: Text.translatable(MinecraftHistoryScreenKeys.ROUND_OUTCOME_OTHER))
@@ -157,6 +265,7 @@ internal class HistoryRoundEventPresenter(
                     ?.let { result -> result.toPresentation(identitySeats, outcomeText(result.reasonId, ruleId)) },
             )
             is HistoryReplayFactDto.RuleEffect -> HistoryFactPresentation(
+                source = this,
                 text = Text.translatable(MinecraftHistoryScreenKeys.ROUND_RULE_EFFECT, outcomeText(reasonId, ruleId)),
                 actorSeat = null,
                 directTiles = emptyList(),
@@ -164,6 +273,7 @@ internal class HistoryRoundEventPresenter(
                 outcome = outcome?.let { it.toPresentation(identitySeats, outcomeText(it.reasonId, ruleId)) },
             )
             is HistoryReplayFactDto.Opaque -> HistoryFactPresentation(
+                source = this,
                 text = eventText(typeKey),
                 actorSeat = actorSeat,
                 directTiles = tiles(tileCatalog, directTiles),
@@ -183,7 +293,8 @@ internal class HistoryRoundEventPresenter(
             is HistoryReplayFactDto.KnownAction -> listOfNotNull(actionType, extensionTypeId)
             is HistoryReplayFactDto.ActionScored -> listOfNotNull(actionType, extensionTypeId)
             is HistoryReplayFactDto.Reaction -> listOfNotNull(actionType)
-            is HistoryReplayFactDto.RuleDecision -> listOfNotNull(stepId, nextStepId)
+            is HistoryReplayFactDto.RuleDecision -> listOfNotNull(stepId, optionId, nextStepId)
+            is HistoryReplayFactDto.TileReplacementRound -> emptyList()
             is HistoryReplayFactDto.DiceRolled -> emptyList()
             is HistoryReplayFactDto.Completion -> listOfNotNull(outcome?.reasonId, outcome?.classification)
             is HistoryReplayFactDto.RuleEffect -> listOfNotNull(reasonId, outcome?.reasonId, outcome?.classification)
@@ -461,6 +572,8 @@ internal data class HistoryTransactionPresentation(
  * @property outcome 結算資料；沒有結算事實或保存結果為 null 時為 null。
  * @property identifiers 僅供 tooltip 顯示的原始識別碼。
  * @property scoreChanges 動作即時收付的各座位點數增減，依座位排序；不是收付事實時為空。
+ * @property seatLines 依玩家列出的牌，例如一輪補花中各玩家移出的花牌；沒有時為空。
+ * @property source 畫面需要更多保存資料（例如和牌者手牌）時查閱的原始事實。
  */
 internal data class HistoryFactPresentation(
     val text: Text,
@@ -470,6 +583,32 @@ internal data class HistoryFactPresentation(
     val outcome: HistoryOutcomePresentation?,
     val identifiers: List<String> = emptyList(),
     val scoreChanges: Map<Int, Int> = emptyMap(),
+    val seatLines: List<HistorySeatLinePresentation> = emptyList(),
+    val source: HistoryReplayFactDto,
+)
+
+/**
+ * 事實中屬於一位玩家的一列牌。
+ *
+ * @property seat 玩家座位。
+ * @property tiles 這位玩家的牌，例如移出的花牌，保留原始順序。
+ */
+internal data class HistorySeatLinePresentation(
+    val seat: Int,
+    val tiles: List<TileFaceViewDto>,
+)
+
+/**
+ * 同一局內識別一個規則選擇步驟。
+ *
+ * @property timing 選擇視窗開啟的時間點。
+ * @property stepId 步驟識別碼。
+ * @property stepIndex 局內步驟順序。
+ */
+private data class RuleDecisionStepKey(
+    val timing: RuleDecisionTimingDto,
+    val stepId: String,
+    val stepIndex: Int,
 )
 
 /**

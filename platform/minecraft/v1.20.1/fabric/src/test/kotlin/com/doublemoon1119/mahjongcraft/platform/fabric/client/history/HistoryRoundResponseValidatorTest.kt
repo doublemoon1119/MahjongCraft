@@ -9,6 +9,7 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryReplayIde
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryReplayMeldDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryReplayPlayerIdentityDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryReplayPlayerStateDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryReplayTileAreaDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryReplayTransactionDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryReplayWinningHandDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryRoundEventsDto
@@ -25,6 +26,7 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryWinDetail
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryWinnerDetailsDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.model.MeldTypeDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.model.RelativeDirectionDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.model.RuleDecisionTimingDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.model.SuitDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.model.TileDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.model.TileFaceViewDto
@@ -118,6 +120,38 @@ class HistoryRoundResponseValidatorTest {
         )
 
         assertEquals(HistoryRoundValidationError.SEAT_INDEX_INVALID, assertIs<HistoryRoundValidationResult.Invalid>(result).reason)
+    }
+
+    /** 換牌紀錄與玩家選擇引用不存在的座位或牌時拒絕事件頁。 */
+    @Test
+    fun `replacement records and player choices must reference existing seats and tiles`() {
+        val request = HistoryRoundEventsRequestDto("request", TEST_MATCH_ID, roundNumber = 1, scope = HistoryQueryScopeDto.OWN, startTransactionIndex = 0, limit = 20)
+        fun replacement(seat: Int, tile: Int) = HistoryReplayFactDto.TileReplacementRound(
+            typeKey = HistoryFactTypeKeys.TILE_REPLACEMENT_ROUND_RESOLVED,
+            timing = RuleDecisionTimingDto.ROUND_START,
+            round = 1,
+            removals = listOf(HistoryReplayFactDto.TileReplacementRound.Removal(seat, listOf(tile))),
+        )
+        fun choice(seat: Int) = HistoryReplayFactDto.RuleDecision(
+            typeKey = HistoryFactTypeKeys.RULE_DECISION_SUBMITTED,
+            timing = RuleDecisionTimingDto.ROUND_START,
+            stepId = "test:step",
+            stepIndex = 0,
+            nextStepId = null,
+            actorSeat = seat,
+            optionId = "test:option",
+            passed = false,
+        )
+        fun validate(fact: HistoryReplayFactDto) = HistoryRoundResponseValidator.validateEvents(
+            request,
+            HistoryRoundEventsResponseDto("request", TEST_MATCH_ID, 1, 0, events(fact = fact), errorCode = null),
+        )
+
+        assertIs<HistoryRoundValidationResult.Success<*>>(validate(replacement(seat = 0, tile = 0)))
+        assertIs<HistoryRoundValidationResult.Success<*>>(validate(choice(seat = 0)))
+        assertEquals(HistoryRoundValidationError.SEAT_INDEX_INVALID, assertIs<HistoryRoundValidationResult.Invalid>(validate(replacement(seat = 1, tile = 0))).reason)
+        assertEquals(HistoryRoundValidationError.TILE_INDEX_INVALID, assertIs<HistoryRoundValidationResult.Invalid>(validate(replacement(seat = 0, tile = 1))).reason)
+        assertEquals(HistoryRoundValidationError.SEAT_INDEX_INVALID, assertIs<HistoryRoundValidationResult.Invalid>(validate(choice(seat = 1))).reason)
     }
 
     /** 動作即時收付的行為者或增減座位不存在時拒絕事件頁。 */
@@ -405,15 +439,31 @@ class HistoryRoundResponseValidatorTest {
         assertIs<HistoryRoundValidationResult.Success<*>>(HistoryRoundResponseValidator.validateState(request, response))
     }
 
-    /** 玩家移出手牌的牌索引超出目錄時拒絕。 */
+    /** 玩家移出牌區的牌索引超出目錄時拒絕。 */
     @Test
-    fun `test invalid set aside tile index is rejected`() {
+    fun `test invalid tile area index is rejected`() {
         val request = HistoryRoundStateRequestDto("request", TEST_MATCH_ID, roundNumber = 1, scope = HistoryQueryScopeDto.OWN, position = HistoryRoundPositionDto.Initial)
         val base = state()
-        val invalid = base.copy(players = base.players.mapIndexed { index, player -> if (index == 0) player.copy(setAsideTiles = listOf(base.tileCatalog.size)) else player })
+        val invalid = base.copy(players = base.players.mapIndexed { index, player -> if (index == 0) player.copy(tileAreas = listOf(HistoryReplayTileAreaDto("test:area", listOf(base.tileCatalog.size)))) else player })
         val response = HistoryRoundStateResponseDto("request", TEST_MATCH_ID, 1, HistoryRoundPositionDto.Initial, state = invalid, errorCode = null)
 
         assertEquals(HistoryRoundValidationError.TILE_INDEX_INVALID, assertIs<HistoryRoundValidationResult.Invalid>(HistoryRoundResponseValidator.validateState(request, response)).reason)
+    }
+
+    /** 移出牌區的識別碼格式錯誤或重複時拒絕。 */
+    @Test
+    fun `tile areas need distinct namespaced ids`() {
+        val request = HistoryRoundStateRequestDto("request", TEST_MATCH_ID, roundNumber = 1, scope = HistoryQueryScopeDto.OWN, position = HistoryRoundPositionDto.Initial)
+        val base = state()
+        listOf(
+            listOf(HistoryReplayTileAreaDto("area", emptyList())),
+            listOf(HistoryReplayTileAreaDto("test:area", emptyList()), HistoryReplayTileAreaDto("test:area", emptyList())),
+        ).forEach { areas ->
+            val invalid = base.copy(players = base.players.mapIndexed { index, player -> if (index == 0) player.copy(tileAreas = areas) else player })
+            val response = HistoryRoundStateResponseDto("request", TEST_MATCH_ID, 1, HistoryRoundPositionDto.Initial, state = invalid, errorCode = null)
+
+            assertIs<HistoryRoundValidationResult.Invalid>(HistoryRoundResponseValidator.validateState(request, response))
+        }
     }
 
     /** 桌況回覆中的牌索引超出目錄時拒絕。 */

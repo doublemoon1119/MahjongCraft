@@ -66,6 +66,9 @@ sealed interface HistoryReplayFact {
      * @property stepId 步驟識別碼。
      * @property stepIndex 步驟索引。
      * @property nextStepId 下一步識別碼。
+     * @property actorSeat 提交選擇的玩家座位；不是玩家提交的事實為 null。
+     * @property optionId 玩家選擇的選項識別碼；不是單選提交時為 null。
+     * @property passed 玩家選的是否為代表跳過的選項；不是玩家提交的事實為 false。
      */
     data class RuleDecision(
         override val typeKey: String,
@@ -73,6 +76,9 @@ sealed interface HistoryReplayFact {
         val stepId: String,
         val stepIndex: Int,
         val nextStepId: String?,
+        val actorSeat: Int?,
+        val optionId: String?,
+        val passed: Boolean,
     ) : HistoryReplayFact
 
     /**
@@ -88,6 +94,21 @@ sealed interface HistoryReplayFact {
         val rollIndex: Int,
         val actorSeat: Int,
         val dice: List<Int>,
+    ) : HistoryReplayFact
+
+    /**
+     * 規則選擇流程中完成的一輪公開換牌。
+     *
+     * @property typeKey 事實種類。
+     * @property timing 選擇視窗開啟的時間點。
+     * @property round 輪次，從 1 開始。
+     * @property removals 這一輪各玩家移出的牌，依處理順序排列。
+     */
+    data class TileReplacementRound(
+        override val typeKey: String,
+        val timing: RuleDecisionTiming,
+        val round: Int,
+        val removals: List<HistoryReplayTileRemoval>,
     ) : HistoryReplayFact
 
     /**

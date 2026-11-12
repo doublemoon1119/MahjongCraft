@@ -216,7 +216,7 @@ class TaiwanRuleModule(
                 publicTileEvidenceIds = tableState.publicTileEvidenceIds,
                 components = revealed.components.with(
                     TaiwanTableComponents.PENDING_FLOWER_FOLLOW_UP,
-                    TaiwanPendingFlowerFollowUp(actorPlayerId, flower.id, replacementsDue = 1),
+                    TaiwanPendingFlowerFollowUp(actorPlayerId, flower.id, replacementsDue = 1, resumeRound = 1),
                 ),
             )
         }

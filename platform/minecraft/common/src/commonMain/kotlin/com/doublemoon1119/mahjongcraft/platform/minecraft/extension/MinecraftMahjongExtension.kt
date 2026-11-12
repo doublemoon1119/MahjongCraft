@@ -11,6 +11,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.GameA
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.GameActionVocabularyRegistrar
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.GameConfigPresentationRegistrar
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.HistoryDiscardMarkerDisplayRegistrar
+import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.HistoryTileSetAsideDisplayRegistrar
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.MatchSettlementPresentationTemplateRegistrar
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.MinecraftTileAssetRegistrar
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.PlayerPortraitSourceRegistrar
@@ -152,6 +153,13 @@ interface MinecraftMahjongExtension {
      * @param registry 歷史牌河標記顯示 registry。
      */
     fun registerHistoryDiscardMarkerDisplays(registry: HistoryDiscardMarkerDisplayRegistrar) = Unit
+
+    /**
+     * 登記牌譜上規則移出牌區的標題與換牌用語，例如台灣麻將的「花牌」區與「補花」；未登記時顯示中立的「移出的牌」與「換牌」。
+     *
+     * @param registry 移出牌區呈現 registry。
+     */
+    fun registerHistoryTileSetAsideDisplays(registry: HistoryTileSetAsideDisplayRegistrar) = Unit
 
     /**
      * 登記第三方規則選擇選項的本地化顯示名稱，顯示在決策面板的選項卡片上；代表跳過的選項使用一般的跳過用語，不需要登記。

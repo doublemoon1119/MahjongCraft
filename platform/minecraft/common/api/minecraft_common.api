@@ -187,6 +187,13 @@ public abstract interface class com/doublemoon1119/mahjongcraft/platform/minecra
 	public abstract fun register (Lcom/doublemoon1119/mahjongcraft/platform/minecraft/history/HistoryDiscardMarkerDisplayDefinition;)V
 }
 
+public abstract interface class com/doublemoon1119/mahjongcraft/platform/minecraft/api/registration/HistoryTileSetAsideDisplayRegistrar {
+	public abstract fun getRegistrationKeys ()Ljava/util/Set;
+	public abstract fun isFrozen ()Z
+	public abstract fun register (Lcom/doublemoon1119/mahjongcraft/platform/minecraft/history/HistoryTileAreaDisplayDefinition;)V
+	public abstract fun register (Lcom/doublemoon1119/mahjongcraft/platform/minecraft/history/HistoryTileReplacementDisplayDefinition;)V
+}
+
 public abstract interface class com/doublemoon1119/mahjongcraft/platform/minecraft/api/registration/MatchSettlementPresentationTemplateRegistrar {
 	public abstract fun getRegistrationKeys ()Ljava/util/Set;
 	public abstract fun register (Lcom/doublemoon1119/mahjongcraft/platform/minecraft/settlement/MatchSettlementPresentationTemplate;)V
@@ -395,6 +402,7 @@ public abstract interface class com/doublemoon1119/mahjongcraft/platform/minecra
 	public fun registerGameActionVocabulary (Lcom/doublemoon1119/mahjongcraft/platform/minecraft/api/registration/GameActionVocabularyRegistrar;)V
 	public fun registerGameConfigPresentations (Lcom/doublemoon1119/mahjongcraft/platform/minecraft/api/registration/GameConfigPresentationRegistrar;)V
 	public fun registerHistoryDiscardMarkerDisplays (Lcom/doublemoon1119/mahjongcraft/platform/minecraft/api/registration/HistoryDiscardMarkerDisplayRegistrar;)V
+	public fun registerHistoryTileSetAsideDisplays (Lcom/doublemoon1119/mahjongcraft/platform/minecraft/api/registration/HistoryTileSetAsideDisplayRegistrar;)V
 	public fun registerMatchSettlementPresentationTemplates (Lcom/doublemoon1119/mahjongcraft/platform/minecraft/api/registration/MatchSettlementPresentationTemplateRegistrar;)V
 	public fun registerPlayerPortraitSources (Lcom/doublemoon1119/mahjongcraft/platform/minecraft/api/registration/PlayerPortraitSourceRegistrar;)V
 	public fun registerPublicPlayerIndicatorDisplays (Lcom/doublemoon1119/mahjongcraft/platform/minecraft/api/registration/PublicPlayerIndicatorDisplayRegistrar;)V

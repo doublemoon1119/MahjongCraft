@@ -7,6 +7,8 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.PendingRuleDecisio
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionInputSpec
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionStep
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionTiming
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.TileReplacementRemoval
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.TileReplacementRound
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.RuleContractViolationException
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.RuleDecisionResolution
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.RuleDecisionResolver
@@ -102,8 +104,19 @@ class AdvanceAutomaticRuleDecisionUseCaseTest {
         assertTrue(presentationPublisher.getPublishedInitialDeal(table.id) == null)
         assertEquals(
             listOf(RuleDecisionTiming.WIN_CONTINUES, RuleDecisionTiming.WIN_CONTINUES),
-            repository.historyDrafts.map { (it.fact as HistoryFact.RuleDecisionAutomaticallyResolved).timing },
+            repository.historyDrafts.map { it.fact }.filterIsInstance<HistoryFact.RuleDecisionAutomaticallyResolved>().map { it.timing },
         )
+        // 步驟中的換牌結果緊接在該步驟之後記錄，不歸屬任何玩家的操作。
+        val replacement = repository.historyDrafts[1]
+        assertEquals(null, replacement.actorPlayerId)
+        assertEquals(
+            HistoryFact.TileReplacementRoundResolved(
+                RuleDecisionTiming.WIN_CONTINUES,
+                TileReplacementRound(round = 1, removals = listOf(TileReplacementRemoval(firstPlayerId, listOf(firstTile.id)))),
+            ),
+            replacement.fact,
+        )
+        assertEquals(3, repository.historyDrafts.size)
     }
 
     /** 驗證沒有自動步驟時不會回報變更或發布牌張更新。 */
@@ -201,6 +214,12 @@ class AdvanceAutomaticRuleDecisionUseCaseTest {
                     stepId = "test:auto-1",
                     stepIndex = 1,
                     inputSpecsByPlayerId = emptyMap(),
+                ),
+                replacementRounds = listOf(
+                    TileReplacementRound(
+                        round = 1,
+                        removals = listOf(TileReplacementRemoval(tableState.players[0].id, tableState.players[0].hand.tiles.map { it.id })),
+                    ),
                 ),
             )
         } else {

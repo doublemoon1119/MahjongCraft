@@ -10,6 +10,8 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryRecording
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryWinDetails
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryWinningHand
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.ContinuingWinSettlementDetail
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.TileReplacementRemoval
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.TileReplacementRound
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinRoundDirective
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementDetailEntry
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementDetailField
@@ -175,12 +177,20 @@ class HistoryRecordingPersistenceMapper(
             fact.stepIndex,
             fact.submission.toPersistenceDto(),
             fact.nextStepId,
+            fact.passed,
         )
         is HistoryFact.RuleDecisionAutomaticallyResolved -> HistoryFactPersistenceDto.RuleDecisionAutomaticallyResolved(
             fact.timing.toPersistenceDto(),
             fact.stepId,
             fact.stepIndex,
             fact.nextStepId,
+        )
+        is HistoryFact.TileReplacementRoundResolved -> HistoryFactPersistenceDto.TileReplacementRoundResolved(
+            timing = fact.timing.toPersistenceDto(),
+            round = fact.round.round,
+            removals = fact.round.removals.map { removal ->
+                HistoryFactPersistenceDto.TileReplacementRoundResolved.Removal(removal.playerId.toString(), removal.tileIds.map(Uuid::toString))
+            },
         )
         is HistoryFact.ActionAccepted -> HistoryFactPersistenceDto.ActionAccepted(
             fact.action.toPersistenceDto(registries.exhaustiveDrawReasons, registries.extensionGameActions),
@@ -248,12 +258,20 @@ class HistoryRecordingPersistenceMapper(
             dto.stepIndex,
             dto.submission.toDomain(),
             dto.nextStepId,
+            dto.passed,
         )
         is HistoryFactPersistenceDto.RuleDecisionAutomaticallyResolved -> HistoryFact.RuleDecisionAutomaticallyResolved(
             dto.timing.toDomain(),
             dto.stepId,
             dto.stepIndex,
             dto.nextStepId,
+        )
+        is HistoryFactPersistenceDto.TileReplacementRoundResolved -> HistoryFact.TileReplacementRoundResolved(
+            timing = dto.timing.toDomain(),
+            round = TileReplacementRound(
+                round = dto.round,
+                removals = dto.removals.map { removal -> TileReplacementRemoval(Uuid.parse(removal.playerId), removal.tileIds.map(Uuid::parse)) },
+            ),
         )
         is HistoryFactPersistenceDto.ActionAccepted -> HistoryFact.ActionAccepted(
             dto.action.toDomain(registries.exhaustiveDrawReasons, registries.extensionGameActions),

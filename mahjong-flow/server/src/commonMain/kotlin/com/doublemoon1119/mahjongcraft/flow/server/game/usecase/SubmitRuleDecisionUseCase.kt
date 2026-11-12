@@ -4,6 +4,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryEventDraf
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryFact
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameAbortReasonIds
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameError
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionInputSpec
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionSubmission
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionTimeSource
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.accepts
@@ -58,35 +59,35 @@ class SubmitRuleDecisionUseCase(
     ): Outcome<Unit, GameError> {
         val result = gameRepository.updateGame(
             gameId,
-            history = { _, _, update -> update.historyDraft?.let(::listOf).orEmpty() },
+            history = { _, _, update -> update.historyDrafts },
         ) { game ->
             if (game == null) {
                 return@updateGame null to RuleDecisionSubmissionUpdate(
                     Outcome.Error(GameError.GameNotFound(gameId)),
-                    null,
+                    emptyList(),
                 )
             }
             val ruleDecision = game.pendingRuleDecision?.takeIf { it.id == windowId }
                 ?: return@updateGame game to RuleDecisionSubmissionUpdate(
                     Outcome.Error(GameError.RuleDecisionUnavailable(gameId, playerId)),
-                    null,
+                    emptyList(),
                 )
             val input = ruleDecision.inputSpecsByPlayerId[playerId]
                 ?: return@updateGame game to RuleDecisionSubmissionUpdate(
                     Outcome.Error(GameError.RuleDecisionUnavailable(gameId, playerId)),
-                    null,
+                    emptyList(),
                 )
             if (playerId in ruleDecision.completedPlayerIds || !input.accepts(submission)) {
                 return@updateGame game to RuleDecisionSubmissionUpdate(
                     Outcome.Error(GameError.InvalidRuleDecisionSubmission(gameId, playerId)),
-                    null,
+                    emptyList(),
                 )
             }
             val module = moduleRegistry.getModule(game.tableState.config)
             val resolver = resolverRegistry.find(module.id)
                 ?: return@updateGame game to RuleDecisionSubmissionUpdate(
                     Outcome.Error(GameError.InvalidRuleDecisionSubmission(gameId, playerId)),
-                    null,
+                    emptyList(),
                 )
             val usesIndependentTime = ruleDecision.step.timeSource == RuleDecisionTimeSource.RULE_DECISION_TIME
             if (
@@ -101,7 +102,7 @@ class SubmitRuleDecisionUseCase(
             if (!resolver.accepts(game.tableState, ruleDecision, playerId, submission, module)) {
                 return@updateGame game to RuleDecisionSubmissionUpdate(
                     Outcome.Error(GameError.InvalidRuleDecisionSubmission(gameId, playerId)),
-                    null,
+                    emptyList(),
                 )
             }
             val submitted = ruleDecision.copy(
@@ -116,16 +117,19 @@ class SubmitRuleDecisionUseCase(
             }
             updated to RuleDecisionSubmissionUpdate(
                 Outcome.Success(Unit),
-                HistoryEventDraft(
-                    actorPlayerId = playerId,
-                    fact = HistoryFact.RuleDecisionSubmitted(
-                        timing = ruleDecision.timing,
-                        stepId = ruleDecision.stepId,
-                        stepIndex = ruleDecision.stepIndex,
-                        submission = submission,
-                        nextStepId = updated.pendingRuleDecision?.stepId,
+                listOf(
+                    HistoryEventDraft(
+                        actorPlayerId = playerId,
+                        fact = HistoryFact.RuleDecisionSubmitted(
+                            timing = ruleDecision.timing,
+                            stepId = ruleDecision.stepId,
+                            stepIndex = ruleDecision.stepIndex,
+                            submission = submission,
+                            nextStepId = updated.pendingRuleDecision?.stepId,
+                            passed = submission.isPassFor(ruleDecision.inputSpecsByPlayerId[playerId]),
+                        ),
                     ),
-                ),
+                ) + completedResolution?.replacementHistoryDrafts(ruleDecision.timing).orEmpty(),
                 presentationUpdate = if (submitted.isComplete) {
                     RuleDecisionPresentationUpdate(
                         previous = game.tableState,
@@ -163,14 +167,25 @@ class SubmitRuleDecisionUseCase(
      * 將更新結果與可選的歷史事件草稿帶出交易區塊。
      *
      * @property outcome 對外回傳的提交結果。
-     * @property historyDraft 本次成功提交的歷史事件；失敗時為 null。
+     * @property historyDrafts 本次成功提交的歷史事件，以及完成步驟的換牌結果；失敗時為空清單。
      * @property presentationUpdate 已完成步驟的桌況差異；尚未收齊或提交失敗時為 null。
      * @property win 已完成步驟直接成立的和牌；沒有時為 null。
      */
     private data class RuleDecisionSubmissionUpdate(
         val outcome: Outcome<Unit, GameError>,
-        val historyDraft: HistoryEventDraft?,
+        val historyDrafts: List<HistoryEventDraft>,
         val presentationUpdate: RuleDecisionPresentationUpdate? = null,
         val win: RuleDecisionWin? = null,
     )
+}
+
+/**
+ * 判斷提交內容是否為玩家輸入規格中代表跳過的選項。
+ *
+ * @param spec 這位玩家在步驟中的輸入規格；沒有規格時視為未跳過。
+ * @return 選擇的是代表跳過的選項時為 true。
+ */
+private fun RuleDecisionSubmission.isPassFor(spec: RuleDecisionInputSpec?): Boolean {
+    val passOptionId = (spec as? RuleDecisionInputSpec.SingleChoice)?.passOptionId ?: return false
+    return (this as? RuleDecisionSubmission.Choice)?.optionId == passOptionId
 }

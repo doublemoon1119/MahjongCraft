@@ -51,7 +51,7 @@ internal class HistoryRoundStateScreen(
     private val groups = HistoryTileGroupRenderer(session.tileFaces, session.tileAssets, session.discardMarkers)
 
     /** 共用規則欄位標題與文字呈現。 */
-    private val events = HistoryRoundEventPresenter(session.actionVocabulary, session.exhaustiveDrawReasons, session.roundOutcomes)
+    private val events = session.eventPresenter
 
     /** 建立固定控制項，恢復同一狀態的捲動位置。 */
     override fun init() {
@@ -432,9 +432,9 @@ internal class HistoryRoundStateScreen(
                 ),
             )
         }
-        if (player.setAsideTiles.isNotEmpty()) {
-            line(Text.translatable(MinecraftHistoryScreenKeys.STATE_SET_ASIDE), MUTED_COLOR)
-            group(HistoryTileGroupLayoutCalculator.hand(player.setAsideTiles, maxWidth = maxWidth))
+        player.tileAreas.filter { it.tiles.isNotEmpty() }.forEach { area ->
+            line(Text.translatable(session.setAsideDisplays.findAreaName(area.areaId) ?: MinecraftHistoryScreenKeys.STATE_SET_ASIDE), MUTED_COLOR)
+            group(HistoryTileGroupLayoutCalculator.hand(area.tiles, maxWidth = maxWidth))
         }
         line(
             Text.translatable(MinecraftHistoryScreenKeys.STATE_DISCARDS_COUNT, player.discards.size),

@@ -38,7 +38,7 @@ class HistoryQueryDtosTest {
     /** 規則選擇事實轉成網路格式後保留開啟視窗的時間點。 */
     @Test
     fun `rule decision fact keeps its timing in the network format`() {
-        val fact = HistoryReplayFact.RuleDecision(HistoryFactTypeKeys.RULE_DECISION_STARTED, RuleDecisionTiming.BEFORE_EXHAUSTIVE_DRAW, "test:step", 0, null)
+        val fact = HistoryReplayFact.RuleDecision(HistoryFactTypeKeys.RULE_DECISION_STARTED, RuleDecisionTiming.BEFORE_EXHAUSTIVE_DRAW, "test:step", 0, null, actorSeat = null, optionId = null, passed = false)
         val events = HistoryRoundEvents(
             identity = HistoryReplayIdentity(Uuid.random(), Uuid.random(), emptyList()),
             roundNumber = 1,
@@ -123,7 +123,13 @@ class HistoryQueryDtosTest {
         val facts = listOf<HistoryReplayFactDto>(
             HistoryReplayFactDto.KnownAction("a", 0, "discard", listOf(1), listOf(2), null),
             HistoryReplayFactDto.Reaction("r", "pon", 1),
-            HistoryReplayFactDto.RuleDecision("p", RuleDecisionTimingDto.BEFORE_EXHAUSTIVE_DRAW, "deal", 0, "draw"),
+            HistoryReplayFactDto.RuleDecision("p", RuleDecisionTimingDto.BEFORE_EXHAUSTIVE_DRAW, "deal", 0, "draw", actorSeat = 1, optionId = "test:option", passed = true),
+            HistoryReplayFactDto.TileReplacementRound(
+                typeKey = "t",
+                timing = RuleDecisionTimingDto.ROUND_START,
+                round = 2,
+                removals = listOf(HistoryReplayFactDto.TileReplacementRound.Removal(seat = 0, tiles = listOf(4, 5))),
+            ),
             HistoryReplayFactDto.Completion("c", null),
             HistoryReplayFactDto.RuleEffect("e", "mahjongcraft:effect", null),
             HistoryReplayFactDto.ActionScored("f", 0, "kan", null, mapOf(0 to 2000, 1 to -2000), 0),

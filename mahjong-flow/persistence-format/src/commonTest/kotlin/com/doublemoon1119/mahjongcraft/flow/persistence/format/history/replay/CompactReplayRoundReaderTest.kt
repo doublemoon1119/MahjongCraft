@@ -6,6 +6,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryRe
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryReplayFact
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryReplayIdentity
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryReplayPlayerIdentity
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryReplayTileArea
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryRoundPosition
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryRoundTileCatalog
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryTileReference
@@ -308,7 +309,7 @@ class CompactReplayRoundReaderTest {
         ).single()
 
         assertEquals(
-            HistoryReplayFact.RuleDecision(HistoryFactTypeKeys.RULE_DECISION_STARTED, RuleDecisionTiming.BEFORE_EXHAUSTIVE_DRAW, "test:step", 0, null),
+            HistoryReplayFact.RuleDecision(HistoryFactTypeKeys.RULE_DECISION_STARTED, RuleDecisionTiming.BEFORE_EXHAUSTIVE_DRAW, "test:step", 0, null, actorSeat = 0, optionId = null, passed = false),
             result,
         )
     }
@@ -398,11 +399,16 @@ class CompactReplayRoundReaderTest {
         )
     }
 
-    /** 移出手牌的牌依保存順序讀出。 */
+    /** 每個移出牌區依保存順序讀出，空的牌區也保留。 */
     @Test
-    fun `state mapping reads set aside tiles in saved order`() {
+    fun `state mapping reads each tile area with its tiles in saved order`() {
         val state = HistoryReplayProjectionMapper.mapState(
-            projection = playerProjection(standingTiles = listOf(0), lastDrawn = null, wallTiles = emptyList(), setAsideTiles = listOf(2, 1)),
+            projection = playerProjection(
+                standingTiles = listOf(0),
+                lastDrawn = null,
+                wallTiles = emptyList(),
+                tileAreas = mapOf("test:flowers" to listOf(2, 1), "test:north" to emptyList()),
+            ),
             identity = identity(),
             roundNumber = 1,
             position = HistoryRoundPosition.Initial,
@@ -412,7 +418,13 @@ class CompactReplayRoundReaderTest {
             poses = emptyMap(),
         )
 
-        assertEquals(listOf(HistoryTileReference(2), HistoryTileReference(1)), state.players.single().setAsideTiles)
+        assertEquals(
+            listOf(
+                HistoryReplayTileArea("test:flowers", listOf(HistoryTileReference(2), HistoryTileReference(1))),
+                HistoryReplayTileArea("test:north", emptyList()),
+            ),
+            state.players.single().tileAreas,
+        )
     }
 
     /** 副露牌有保存姿態時依姿態決定是否朝下，沒有姿態時沿用副露保存的朝下牌。 */
@@ -495,7 +507,7 @@ class CompactReplayRoundReaderTest {
      * @param wallTiles 活牌牆索引。
      * @param reservedTiles 保留牌區索引。
      * @param discards 牌河項目。
-     * @param setAsideTiles 移出手牌的牌索引。
+     * @param tileAreas 各個移出牌區的牌索引，依區域識別碼。
      * @param melds 副露投影。
      * @return 可供投影映射器讀取的 JSON 桌況。
      */
@@ -505,7 +517,7 @@ class CompactReplayRoundReaderTest {
         wallTiles: List<Int>,
         reservedTiles: List<Int> = emptyList(),
         discards: List<JsonObject> = emptyList(),
-        setAsideTiles: List<Int> = emptyList(),
+        tileAreas: Map<String, List<Int>> = emptyMap(),
         melds: List<JsonObject> = emptyList(),
     ): JsonObject = buildJsonObject {
         put(
@@ -523,7 +535,17 @@ class CompactReplayRoundReaderTest {
                             },
                         )
                         put(ReplayFormatKeys.DISCARDS, JsonArray(discards))
-                        put(ReplayFormatKeys.SET_ASIDE_TILES, JsonArray(setAsideTiles.map(::JsonPrimitive)))
+                        put(
+                            ReplaySourceKeys.TILE_AREAS,
+                            JsonArray(
+                                tileAreas.map { (areaId, tiles) ->
+                                    buildJsonObject {
+                                        put(ReplaySourceKeys.ID, areaId)
+                                        put(ReplaySourceKeys.TILE_AREA_TILES, JsonArray(tiles.map(::JsonPrimitive)))
+                                    }
+                                },
+                            ),
+                        )
                         put(ReplaySourceKeys.SCORE, 25000)
                         put(ReplaySourceKeys.SEAT_WIND, "EAST")
                     },

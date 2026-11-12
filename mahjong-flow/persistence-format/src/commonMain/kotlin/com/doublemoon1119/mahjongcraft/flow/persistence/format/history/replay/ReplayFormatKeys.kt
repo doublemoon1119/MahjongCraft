@@ -109,9 +109,6 @@ internal object ReplayFormatKeys {
 
     /** 牌河項目的公開標記；沒有標記時省略。 */
     const val DISCARD_MARKERS = "markers"
-
-    /** 玩家投影中移出手牌的牌，依移出順序排列。 */
-    const val SET_ASIDE_TILES = "setAside"
 }
 
 /** 桌況差異樹使用的操作名稱。 */
@@ -283,8 +280,32 @@ internal object ReplaySourceKeys {
     /** 規則選擇步驟索引。 */
     const val STEP_INDEX = "stepIndex"
 
+    /** 換牌事實的輪次。 */
+    const val REPLACEMENT_ROUND = "round"
+
+    /** 換牌事實中各玩家移出的牌。 */
+    const val REMOVALS = "removals"
+
+    /** 換牌事實中一位玩家移出的牌。 */
+    const val TILE_IDS = "tileIds"
+
+    /** 玩家移出手牌的各個牌區。 */
+    const val TILE_AREAS = "tileAreas"
+
+    /** 牌區內的牌。 */
+    const val TILE_AREA_TILES = "tiles"
+
     /** 下一個規則選擇步驟識別碼。 */
     const val NEXT_STEP_ID = "nextStepId"
+
+    /** 規則選擇的提交內容。 */
+    const val SUBMISSION = "submission"
+
+    /** 單選提交選擇的選項。 */
+    const val OPTION_ID = "optionId"
+
+    /** 規則選擇提交是否為代表跳過的選項。 */
+    const val PASSED = "passed"
 
     /** 局完成摘要。 */
     const val SUMMARY = "summary"

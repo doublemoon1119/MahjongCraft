@@ -8,6 +8,8 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionSubmis
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionTimeSource
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionTiming
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionWinOutcome
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.TileReplacementRemoval
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.TileReplacementRound
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.accepts
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.taiwan.TaiwanRoundOutcomeIds
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.taiwan.TaiwanSpecialFlowerWinDetail
@@ -138,6 +140,7 @@ object TaiwanFlowerRuleDecisionResolver : RuleDecisionResolver {
             tableState = result.tableState.withoutPendingFlower(),
             nextStep = null,
             steps = presentationSteps(result.steps),
+            replacementRounds = result.steps.toReplacementRounds(),
         )
         is TaiwanFlowerFlow.Result.Exhausted -> RuleDecisionResolution(
             result.tableState.withoutPendingFlower().copy(
@@ -148,6 +151,7 @@ object TaiwanFlowerRuleDecisionResolver : RuleDecisionResolver {
             ),
             nextStep = null,
             steps = presentationSteps(result.steps),
+            replacementRounds = result.steps.toReplacementRounds(),
         )
 
         is TaiwanFlowerFlow.Result.AwaitingDecision -> RuleDecisionResolution(
@@ -155,9 +159,11 @@ object TaiwanFlowerRuleDecisionResolver : RuleDecisionResolver {
                 result.pending.revealingPlayerId,
                 result.pending.revealedFlower.id,
                 result.pending.position.replacementsDue,
+                result.pending.position.round,
             ),
             nextStep = flowerWinStep(result.pending, stepIndex + 1),
             steps = presentationSteps(result.steps),
+            replacementRounds = result.steps.toReplacementRounds(),
         )
 
         is TaiwanFlowerFlow.Result.Won -> {
@@ -225,9 +231,9 @@ object TaiwanFlowerRuleDecisionResolver : RuleDecisionResolver {
         val order = if (timing == RuleDecisionTiming.ROUND_START) openingOrder(tableState) else listOf(pending.playerId)
         val revealerIndex = order.indexOf(pending.playerId)
         val position = if (pending.replacementsDue > 0) {
-            TileReplacementRounds.Position(revealerIndex, pending.replacementsDue)
+            TileReplacementRounds.Position(revealerIndex, pending.replacementsDue, pending.resumeRound)
         } else {
-            TileReplacementRounds.Position(playerOrderIndex = (revealerIndex + 1) % order.size, replacementsDue = 0)
+            TileReplacementRounds.Position(playerOrderIndex = (revealerIndex + 1) % order.size, replacementsDue = 0, round = pending.resumeRound)
         }
         return TaiwanFlowerFlow.Pending(
             tableState = tableState,
@@ -279,6 +285,20 @@ object TaiwanFlowerRuleDecisionResolver : RuleDecisionResolver {
 }
 
 /**
+ * 依輪次整理每一輪各玩家移出的花牌；補到的牌不公開，不列入。
+ *
+ * @return 依輪次排列的換牌結果。
+ */
+private fun List<TileReplacementRounds.Step>.toReplacementRounds(): List<TileReplacementRound> = filterIsInstance<TileReplacementRounds.Step.SetAside>()
+    .groupBy { it.round }
+    .map { (round, setAsides) ->
+        TileReplacementRound(
+            round = round,
+            removals = setAsides.groupBy { it.playerId }.map { (playerId, steps) -> TileReplacementRemoval(playerId, steps.flatMap { step -> step.tiles.map { it.id } }) },
+        )
+    }
+
+/**
  * 將補花的牌區變化依序轉成中間步驟，每一次移出或補牌是一步。
  *
  * 補到的牌照一般摸牌先放在摸牌位，再補下一張時，摸牌位上的牌接到立牌最右邊；局首補完後各家一起理牌時才收進立牌。
@@ -317,10 +337,15 @@ private fun TableState.withoutPendingFlower(): TableState = copy(
     components = components.without(TaiwanTableComponents.PENDING_FLOWER_FOLLOW_UP),
 )
 
-/** 更新尚待玩家選擇的花牌身分與亮花者尚未補的張數。 */
-private fun TableState.withPendingFlower(playerId: Uuid, tileId: Uuid, replacementsDue: Int): TableState = copy(
+/** 更新尚待玩家選擇的花牌身分、亮花者尚未補的張數與繼續補花時的輪次。 */
+private fun TableState.withPendingFlower(
+    playerId: Uuid,
+    tileId: Uuid,
+    replacementsDue: Int,
+    resumeRound: Int,
+): TableState = copy(
     components = components.with(
         TaiwanTableComponents.PENDING_FLOWER_FOLLOW_UP,
-        TaiwanPendingFlowerFollowUp(playerId, tileId, replacementsDue),
+        TaiwanPendingFlowerFollowUp(playerId, tileId, replacementsDue, resumeRound),
     ),
 )

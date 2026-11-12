@@ -10,16 +10,18 @@ import kotlin.uuid.Uuid
  * @property playerId 公開花牌的玩家。
  * @property tileId 已移到公開花區的牌張識別碼。
  * @property replacementsDue 這位玩家已公開、尚未補的張數。
+ * @property resumeRound 繼續補花時所在的輪次。
  */
 @Serializable
 data class TaiwanPendingFlowerFollowUpPersistenceDto(
     val playerId: String,
     val tileId: String,
     val replacementsDue: Int,
+    val resumeRound: Int,
 )
 
 /** 將尚待處理的花牌轉成持久化資料。 */
-fun TaiwanPendingFlowerFollowUp.toPersistenceDto(): TaiwanPendingFlowerFollowUpPersistenceDto = TaiwanPendingFlowerFollowUpPersistenceDto(playerId.toString(), tileId.toString(), replacementsDue)
+fun TaiwanPendingFlowerFollowUp.toPersistenceDto(): TaiwanPendingFlowerFollowUpPersistenceDto = TaiwanPendingFlowerFollowUpPersistenceDto(playerId.toString(), tileId.toString(), replacementsDue, resumeRound)
 
 /** 將持久化資料還原成尚待處理的花牌。 */
-fun TaiwanPendingFlowerFollowUpPersistenceDto.toDomain(): TaiwanPendingFlowerFollowUp = TaiwanPendingFlowerFollowUp(Uuid.parse(playerId), Uuid.parse(tileId), replacementsDue)
+fun TaiwanPendingFlowerFollowUpPersistenceDto.toDomain(): TaiwanPendingFlowerFollowUp = TaiwanPendingFlowerFollowUp(Uuid.parse(playerId), Uuid.parse(tileId), replacementsDue, resumeRound)

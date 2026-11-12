@@ -521,13 +521,31 @@ class SubmitRuleDecisionUseCaseTest {
         assertEquals(RuleDecisionTiming.BEFORE_EXHAUSTIVE_DRAW, submitted.timing)
     }
 
+    /** 玩家選了代表跳過的選項時，牌譜記錄為跳過；選其他選項則不是。 */
+    @Test
+    fun `the history records whether the player chose the pass option`() = runTest {
+        val spec = RuleDecisionInputSpec.SingleChoice(optionIds = listOf("test:accept", "test:pass"), passOptionId = "test:pass")
+        listOf("test:pass" to true, "test:accept" to false).forEach { (optionId, passed) ->
+            val (repository, useCase, game) = scoreChangingFixture(RuleDecisionTiming.BEFORE_EXHAUSTIVE_DRAW, spec)
+
+            assertIs<Outcome.Success<Unit>>(useCase(game.id, playerId, assertNotNull(game.pendingRuleDecision).id, RuleDecisionSubmission.Choice(optionId)))
+
+            val submitted = assertIs<HistoryFact.RuleDecisionSubmitted>(repository.historyDrafts.single().fact)
+            assertEquals(passed, submitted.passed, optionId)
+        }
+    }
+
     /**
-     * 建立在 [timing] 開著確認視窗、確認後會改變分數的對局。
+     * 建立在 [timing] 開著選擇視窗、提交後會改變分數的對局。
      *
      * @param timing 視窗開啟的時間點。
+     * @param inputSpec 玩家在視窗中的輸入規格。
      * @return 保存對局的 repository、受測用例與開窗後的對局。
      */
-    private suspend fun scoreChangingFixture(timing: RuleDecisionTiming): Triple<FakeGameRepository, SubmitRuleDecisionUseCase, Game> {
+    private suspend fun scoreChangingFixture(
+        timing: RuleDecisionTiming,
+        inputSpec: RuleDecisionInputSpec = RuleDecisionInputSpec.Confirmation,
+    ): Triple<FakeGameRepository, SubmitRuleDecisionUseCase, Game> {
         val repository = FakeGameRepository()
         val moduleRegistry = MahjongModuleRegistryImpl().apply { registerBundledRuleModules() }
         val table = FakeTableStateFactory.create(
@@ -541,7 +559,7 @@ class SubmitRuleDecisionUseCaseTest {
                 step = RuleDecisionStep(
                     stepId = "test:confirm",
                     stepIndex = 0,
-                    inputSpecsByPlayerId = mapOf(playerId to RuleDecisionInputSpec.Confirmation),
+                    inputSpecsByPlayerId = mapOf(playerId to inputSpec),
                 ),
                 timing = timing,
             ),

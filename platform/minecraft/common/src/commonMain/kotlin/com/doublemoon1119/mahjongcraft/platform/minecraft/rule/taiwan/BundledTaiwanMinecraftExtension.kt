@@ -5,6 +5,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.taiwan.TaiwanWinSe
 import com.doublemoon1119.mahjongcraft.logic.module.BuiltInRuleModuleIds
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanDiscardReadinessAnalyzer
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanGameAction
+import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanPlayerTileAreaIds
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanPublicIndicatorIds
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanReadyKind
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.tile.TaiwanTileTypes
@@ -18,17 +19,21 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.Decis
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.GameActionSoundPresentationRegistrar
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.GameActionVocabularyRegistrar
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.GameConfigPresentationRegistrar
+import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.HistoryTileSetAsideDisplayRegistrar
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.MinecraftTileAssetRegistrar
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.PublicPlayerIndicatorDisplayRegistrar
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.RoundInfoLineDisplayRegistrar
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.RoundOutcomeDisplayNameRegistrar
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.RuleCatalogueRegistrar
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.RuleModuleDisplayNameRegistrar
+import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.TileDisplayNameRegistrar
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.TileEmojiRegistrar
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.TileLabelRegistrar
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.WinSettlementPresentationTemplateRegistrar
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.DecisionStatusDisplayNameDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.extension.MinecraftMahjongExtension
+import com.doublemoon1119.mahjongcraft.platform.minecraft.history.HistoryTileAreaDisplayDefinition
+import com.doublemoon1119.mahjongcraft.platform.minecraft.history.HistoryTileReplacementDisplayDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.player.PublicPlayerIndicatorDisplay
 import com.doublemoon1119.mahjongcraft.platform.minecraft.player.PublicPlayerIndicatorDisplayDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.RuleModuleDisplayNameDefinition
@@ -51,6 +56,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftMessageK
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.BuiltInMinecraftTileAppearanceIds
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftRuleTileAppearanceDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetDefinition
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileDisplayNameDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileEmojiDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileLabel
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileLabelColor
@@ -160,6 +166,12 @@ object BundledTaiwanMinecraftExtension : MinecraftMahjongExtension {
         }
     }
 
+    /** 花牌區在牌譜上標示為「花牌」，補花流程稱為「補花」。 */
+    override fun registerHistoryTileSetAsideDisplays(registry: HistoryTileSetAsideDisplayRegistrar) {
+        registry.register(HistoryTileAreaDisplayDefinition(TaiwanPlayerTileAreaIds.FLOWERS, HISTORY_FLOWERS))
+        registry.register(HistoryTileReplacementDisplayDefinition(BuiltInRuleModuleIds.TAIWAN, HISTORY_FLOWER_REPLACEMENT))
+    }
+
     override fun registerRoundOutcomeDisplayNames(registry: RoundOutcomeDisplayNameRegistrar) {
         registry.register(RoundOutcomeDisplayNameDefinition(TaiwanRoundOutcomeIds.EIGHT_FLOWERS, TaiwanWinSettlementPresentation.EIGHT_FLOWERS))
         registry.register(RoundOutcomeDisplayNameDefinition(TaiwanRoundOutcomeIds.SEVEN_FLOWERS, TaiwanWinSettlementPresentation.SEVEN_FLOWERS))
@@ -194,6 +206,18 @@ object BundledTaiwanMinecraftExtension : MinecraftMahjongExtension {
                 TaiwanWinSettlementPresentation.dealerTaiTotalText,
             ),
         )
+    }
+
+    /** 花牌以文字列出時（例如牌譜的補花紀錄）顯示牌名。 */
+    override fun registerTileDisplayNames(registry: TileDisplayNameRegistrar) {
+        registry.register(TileDisplayNameDefinition(TaiwanTileTypes.SPRING, TILE_NAME_SPRING))
+        registry.register(TileDisplayNameDefinition(TaiwanTileTypes.SUMMER, TILE_NAME_SUMMER))
+        registry.register(TileDisplayNameDefinition(TaiwanTileTypes.AUTUMN, TILE_NAME_AUTUMN))
+        registry.register(TileDisplayNameDefinition(TaiwanTileTypes.WINTER, TILE_NAME_WINTER))
+        registry.register(TileDisplayNameDefinition(TaiwanTileTypes.PLUM, TILE_NAME_PLUM))
+        registry.register(TileDisplayNameDefinition(TaiwanTileTypes.ORCHID, TILE_NAME_ORCHID))
+        registry.register(TileDisplayNameDefinition(TaiwanTileTypes.BAMBOO, TILE_NAME_BAMBOO))
+        registry.register(TileDisplayNameDefinition(TaiwanTileTypes.CHRYSANTHEMUM, TILE_NAME_CHRYSANTHEMUM))
     }
 
     override fun registerTileEmojis(registry: TileEmojiRegistrar) {
@@ -297,6 +321,36 @@ private const val GAME_ACTION_DECLARE_READY: String = "mahjongcraft.taiwan.actio
 
 /** 宣告聽牌在操作說明中的文字。 */
 private const val GAME_ACTION_DECLARE_READY_DESCRIPTION: String = "mahjongcraft.taiwan.action.declare_ready.description"
+
+/** 花牌「春」的名稱。 */
+private const val TILE_NAME_SPRING: String = "mahjongcraft.taiwan.tile.spring"
+
+/** 花牌「夏」的名稱。 */
+private const val TILE_NAME_SUMMER: String = "mahjongcraft.taiwan.tile.summer"
+
+/** 花牌「秋」的名稱。 */
+private const val TILE_NAME_AUTUMN: String = "mahjongcraft.taiwan.tile.autumn"
+
+/** 花牌「冬」的名稱。 */
+private const val TILE_NAME_WINTER: String = "mahjongcraft.taiwan.tile.winter"
+
+/** 花牌「梅」的名稱。 */
+private const val TILE_NAME_PLUM: String = "mahjongcraft.taiwan.tile.plum"
+
+/** 花牌「蘭」的名稱。 */
+private const val TILE_NAME_ORCHID: String = "mahjongcraft.taiwan.tile.orchid"
+
+/** 花牌「竹」的名稱。 */
+private const val TILE_NAME_BAMBOO: String = "mahjongcraft.taiwan.tile.bamboo"
+
+/** 花牌「菊」的名稱。 */
+private const val TILE_NAME_CHRYSANTHEMUM: String = "mahjongcraft.taiwan.tile.chrysanthemum"
+
+/** 牌譜上花牌區的標題。 */
+private const val HISTORY_FLOWERS: String = "mahjongcraft.taiwan.history_screen.tile_area.flowers"
+
+/** 牌譜上補花紀錄的用語。 */
+private const val HISTORY_FLOWER_REPLACEMENT: String = "mahjongcraft.taiwan.history_screen.replacement"
 
 /** 過水狀態的提示文字。 */
 private const val HUD_PASSED_WIN: String = "mahjongcraft.taiwan.hud.passed_win"

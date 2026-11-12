@@ -15,6 +15,10 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryRo
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryRoundState
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryWinDetailValue
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameFlowConfig
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionSubmission
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionTiming
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.TileReplacementRemoval
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.TileReplacementRound
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementDetailEntry
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementDetailField
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementDetailValue
@@ -110,7 +114,7 @@ class CompactReplayRoundReaderGenuineTest {
 
     /** 驗證放在玩家拔北牌區的北，經正式編碼後投影為該玩家移出手牌的牌。 */
     @Test
-    fun `reader projects pulled norths as set aside tiles`() = runTest {
+    fun `reader projects pulled norths into their tile area`() = runTest {
         val north = FakeIdentifiedTileFactory.create(Tile.Honor.North)
         val kept = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 1))
         val base = FakeTableStateFactory.create(
@@ -156,10 +160,97 @@ class CompactReplayRoundReaderGenuineTest {
         val initial = assertIs<ReplayReadResult.Success<HistoryRoundState>>(reader().readState(document, matchId, 1, HistoryRoundPosition.Initial)).value
         val after = assertIs<ReplayReadResult.Success<HistoryRoundState>>(reader().readState(document, matchId, 1, HistoryRoundPosition.AfterTransaction(1))).value
 
-        assertTrue(initial.players.all { it.setAsideTiles.isEmpty() })
+        assertTrue(initial.players.all { player -> player.tileAreas.all { it.tiles.isEmpty() } })
         val puller = after.players.single { it.initialSeatIndex == 0 }
-        assertEquals(listOf<Tile>(Tile.Honor.North), puller.setAsideTiles.map { after.tileCatalog.tiles[it.tileIndex].tile })
+        assertEquals(listOf(RiichiPlayerTileAreaIds.NORTH), puller.tileAreas.filter { it.tiles.isNotEmpty() }.map { it.areaId })
+        assertEquals(listOf<Tile>(Tile.Honor.North), puller.tileAreas.flatMap { it.tiles }.map { after.tileCatalog.tiles[it.tileIndex].tile })
         assertEquals(listOf<Tile>(Tile.Numeric(Tile.Suit.Dot, 1)), puller.handTiles.map { after.tileCatalog.tiles[it.tileIndex].tile })
+    }
+
+    /** 換牌輪次與玩家的單選提交經過壓縮格式後，保留各玩家座位、移出的牌與選擇的選項。 */
+    @Test
+    fun `reader maps replacement rounds and chosen rule decision options`() = runTest {
+        val firstRemoved = listOf(FakeIdentifiedTileFactory.create(Tile.Honor.East), FakeIdentifiedTileFactory.create(Tile.Honor.South))
+        val secondRemoved = listOf(FakeIdentifiedTileFactory.create(Tile.Honor.West))
+        val base = FakeTableStateFactory.create(
+            players = listOf(
+                FakeMahjongPlayerFactory.create(hand = Hand(firstRemoved), discardPile = RiichiDiscardPile(), components = riichiDeclarationComponents()),
+                FakeMahjongPlayerFactory.create(hand = Hand(secondRemoved), discardPile = RiichiDiscardPile(), components = riichiDeclarationComponents()),
+            ),
+            config = RiichiRuleConfig(),
+        )
+        val first = base.players[0]
+        val second = base.players[1]
+        val matchId = Uuid.random()
+        val events = listOf(
+            event(matchId, base.id, 1, 0L, HistoryFact.MatchStarted(base, GameFlowConfig(), emptyMap())),
+            event(
+                matchId,
+                base.id,
+                2,
+                50L,
+                HistoryFact.TileReplacementRoundResolved(
+                    timing = RuleDecisionTiming.ROUND_START,
+                    round = TileReplacementRound(
+                        round = 1,
+                        removals = listOf(
+                            TileReplacementRemoval(first.id, firstRemoved.map { it.id }),
+                            TileReplacementRemoval(second.id, secondRemoved.map { it.id }),
+                        ),
+                    ),
+                ),
+            ),
+            HistoryOutboxEvent(
+                matchId,
+                base.id,
+                1,
+                3,
+                3,
+                100L,
+                second.id,
+                HistoryFact.RuleDecisionSubmitted(
+                    timing = RuleDecisionTiming.ROUND_START,
+                    stepId = "test:step",
+                    stepIndex = 0,
+                    submission = RuleDecisionSubmission.Choice("test:option"),
+                    nextStepId = null,
+                    passed = true,
+                ),
+            ),
+            event(
+                matchId,
+                base.id,
+                4,
+                150L,
+                HistoryFact.RoundCompleted(
+                    RoundCompletionSummary(
+                        "test:round_completed",
+                        RoundCompletionClassification.EXHAUSTIVE_DRAW,
+                        emptySet(),
+                        transitionDirective = RoundTransitionDirective.PassToNextSeat,
+                        settledScoresByPlayerId = base.players.associate { it.id to it.score },
+                    ),
+                ),
+            ),
+            event(matchId, base.id, 5, 150L, HistoryFact.MatchCompleted("test:completed", base.players.associate { it.id to it.score })).copy(transactionFirstSequence = 4),
+        )
+        val registries = bundledPersistenceRegistries()
+        val document = CompactReplayCodec.encodeCompact(events, HistoryRecordingPersistenceMapper(registries), registries)
+
+        val read = assertIs<ReplayReadResult.Success<HistoryRoundEvents>>(reader().readEvents(document, matchId, 1, 0, 20)).value
+        val facts = read.transactions.flatMap { it.facts }
+        val round = facts.filterIsInstance<HistoryReplayFact.TileReplacementRound>().single()
+        assertEquals(RuleDecisionTiming.ROUND_START, round.timing)
+        assertEquals(1, round.round)
+        assertEquals(listOf(first.initialSeatIndex, second.initialSeatIndex), round.removals.map { it.seat })
+        assertEquals(
+            listOf(firstRemoved.map { it.tile }, secondRemoved.map { it.tile }),
+            round.removals.map { removal -> removal.tiles.map { read.tileCatalog.tiles[it.tileIndex].tile } },
+        )
+        val choice = facts.filterIsInstance<HistoryReplayFact.RuleDecision>().single()
+        assertEquals(second.initialSeatIndex, choice.actorSeat)
+        assertEquals("test:option", choice.optionId)
+        assertTrue(choice.passed)
     }
 
     /**

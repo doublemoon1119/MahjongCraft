@@ -74,6 +74,7 @@ sealed interface HistoryFactPersistenceDto {
      * @property stepIndex 被提交的選擇步驟索引。
      * @property submission 玩家提交的選擇內容。
      * @property nextStepId 下一個選擇步驟識別碼；沒有下一步時為 null。
+     * @property passed 玩家選的是否為代表跳過的選項。
      */
     @Serializable
     @SerialName(HistoryFactTypeKeys.RULE_DECISION_SUBMITTED)
@@ -83,6 +84,7 @@ sealed interface HistoryFactPersistenceDto {
         val stepIndex: Int,
         val submission: RuleDecisionSubmissionPersistenceDto,
         val nextStepId: String?,
+        val passed: Boolean,
     ) : HistoryFactPersistenceDto
 
     /**
@@ -101,6 +103,33 @@ sealed interface HistoryFactPersistenceDto {
         val stepIndex: Int,
         val nextStepId: String?,
     ) : HistoryFactPersistenceDto
+
+    /**
+     * 規則選擇流程中完成的一輪公開換牌。
+     *
+     * @property timing 選擇視窗開啟的時間點。
+     * @property round 輪次，從 1 開始。
+     * @property removals 這一輪各玩家移出的牌，依處理順序排列。
+     */
+    @Serializable
+    @SerialName(HistoryFactTypeKeys.TILE_REPLACEMENT_ROUND_RESOLVED)
+    data class TileReplacementRoundResolved(
+        val timing: RuleDecisionTimingPersistenceDto,
+        val round: Int,
+        val removals: List<Removal>,
+    ) : HistoryFactPersistenceDto {
+        /**
+         * 一位玩家在這一輪移出的牌。
+         *
+         * @property playerId 移出牌的玩家。
+         * @property tileIds 移出的牌，依移出順序排列。
+         */
+        @Serializable
+        data class Removal(
+            val playerId: String,
+            val tileIds: List<String>,
+        )
+    }
 
     /**
      * 規則接受一個玩家動作後的結果。

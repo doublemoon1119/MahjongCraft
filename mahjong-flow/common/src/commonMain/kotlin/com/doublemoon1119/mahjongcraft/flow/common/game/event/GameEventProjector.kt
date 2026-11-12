@@ -143,6 +143,7 @@ class GameEventProjector(
                 is HistoryFact.MatchAborted -> Unit
                 is HistoryFact.RoundStarted,
                 is HistoryFact.DiceRolled,
+                is HistoryFact.TileReplacementRoundResolved,
                 is HistoryFact.RuleDecisionStarted,
                 is HistoryFact.RuleDecisionSubmitted,
                 is HistoryFact.RuleDecisionAutomaticallyResolved,

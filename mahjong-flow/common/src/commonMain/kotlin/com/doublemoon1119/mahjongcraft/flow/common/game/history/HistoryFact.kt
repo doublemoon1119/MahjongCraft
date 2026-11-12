@@ -3,6 +3,7 @@ package com.doublemoon1119.mahjongcraft.flow.common.game.history
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameFlowConfig
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionSubmission
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionTiming
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.TileReplacementRound
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinRoundDirective
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.table.RoundCompletionSummary
@@ -60,6 +61,7 @@ sealed interface HistoryFact {
      * @property stepIndex 此局內的步驟順序。
      * @property submission 已接受的玩家選擇。
      * @property nextStepId 步驟完成後接續的步驟 ID；沒有後續步驟時為 null。
+     * @property passed 玩家選的是否為步驟中代表跳過的選項，例如放棄特殊和牌。
      */
     data class RuleDecisionSubmitted(
         val timing: RuleDecisionTiming,
@@ -67,6 +69,7 @@ sealed interface HistoryFact {
         val stepIndex: Int,
         val submission: RuleDecisionSubmission,
         val nextStepId: String?,
+        val passed: Boolean,
     ) : HistoryFact
 
     /**
@@ -82,6 +85,17 @@ sealed interface HistoryFact {
         val stepId: String,
         val stepIndex: Int,
         val nextStepId: String?,
+    ) : HistoryFact
+
+    /**
+     * 規則選擇流程中完成的一輪公開換牌，例如補花時這一輪各玩家移出的花牌；補到的牌不公開，不記錄。
+     *
+     * @property timing 換牌所屬規則選擇視窗開啟的時間點。
+     * @property round 這一輪的換牌結果。
+     */
+    data class TileReplacementRoundResolved(
+        val timing: RuleDecisionTiming,
+        val round: TileReplacementRound,
     ) : HistoryFact
 
     /**

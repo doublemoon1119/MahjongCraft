@@ -13,7 +13,7 @@ import kotlinx.serialization.Serializable
  * @property discards 捨牌。
  * @property score 分數。
  * @property seatWind 座風。
- * @property setAsideTiles 移出手牌、公開擺在桌上的牌索引（例如三人日麻拔出的北），依移出順序排列。
+ * @property tileAreas 移出手牌、公開擺在桌上的各個牌區（例如三人日麻拔出的北），依規則保存的順序排列。
  */
 @Serializable
 data class HistoryReplayPlayerStateDto(
@@ -24,5 +24,5 @@ data class HistoryReplayPlayerStateDto(
     val discards: List<HistoryReplayDiscardDto>,
     val score: Int,
     val seatWind: WindDto,
-    val setAsideTiles: List<Int>,
+    val tileAreas: List<HistoryReplayTileAreaDto>,
 )

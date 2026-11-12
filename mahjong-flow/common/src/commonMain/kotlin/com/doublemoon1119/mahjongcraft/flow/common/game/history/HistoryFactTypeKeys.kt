@@ -24,6 +24,9 @@ object HistoryFactTypeKeys {
     /** 自動完成規則選擇事實的種類識別碼。 */
     const val RULE_DECISION_AUTOMATIC_RESOLVED: String = "rule_decision_automatic_resolved"
 
+    /** 規則流程完成一輪公開換牌的事實種類識別碼。 */
+    const val TILE_REPLACEMENT_ROUND_RESOLVED: String = "tile_replacement_round_resolved"
+
     /** 玩家動作接受事實的種類識別碼。 */
     const val ACTION_ACCEPTED: String = "action_accepted"
 

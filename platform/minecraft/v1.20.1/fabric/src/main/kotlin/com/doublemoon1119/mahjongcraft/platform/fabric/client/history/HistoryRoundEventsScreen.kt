@@ -233,8 +233,7 @@ internal class HistoryRoundEventsScreen(
             rows += Row.Space(4)
             if (transaction.facts.isEmpty()) addText(Text.translatable(MinecraftHistoryScreenKeys.ROUND_EMPTY_FACTS), MUTED_COLOR, 16)
             transaction.facts.forEachIndexed { factIndex, fact ->
-                val savedFact = events.transactions.first { it.index == transaction.index }.facts[factIndex]
-                val savedOutcome = when (savedFact) {
+                val savedOutcome = when (val savedFact = fact.source) {
                     is HistoryReplayFactDto.Completion -> savedFact.outcome
                     is HistoryReplayFactDto.RuleEffect -> savedFact.outcome
                     else -> null
@@ -244,6 +243,21 @@ internal class HistoryRoundEventsScreen(
                 addText(label, TEXT_COLOR, 16, participant, fact.identifiers)
                 addTiles(fact.directTiles, MinecraftHistoryScreenKeys.ROUND_DIRECT_TILES)
                 addTiles(fact.revealedTiles, MinecraftHistoryScreenKeys.ROUND_REVEALED_TILES)
+                fact.seatLines.forEach { line ->
+                    val label = Text.translatable(MinecraftHistoryScreenKeys.ROUND_SEAT_LINE, actorText(events.identity, line.seat))
+                    val seatParticipant = participant(events.identity, line.seat)
+                    val portraitIndent = 24 + textRenderer.getWidth(SEAT_LINE_BULLET)
+                    val labelIndent = portraitIndent + if (seatParticipant != null) PORTRAIT_STEP else 0
+                    val tileIndent = labelIndent + textRenderer.getWidth(label) + 4
+                    val perRow = ((layout.contentWidth - tileIndent - 8) / TILE_STEP).coerceAtLeast(1)
+                    line.tiles.chunked(perRow).forEachIndexed { index, chunk ->
+                        rows += if (index == 0) {
+                            Row.LabeledTiles(label, seatParticipant, chunk, bulletIndent = 24, portraitIndent = portraitIndent, labelIndent = labelIndent, tileIndent = tileIndent)
+                        } else {
+                            Row.Tiles(chunk, tileIndent)
+                        }
+                    }
+                }
                 fact.scoreChanges.forEach { (seat, change) ->
                     val line = Text.translatable(MinecraftHistoryScreenKeys.ROUND_SCORE, actorText(events.identity, seat), eventPresenter.scoreChangeText(change))
                     addText(line, TEXT_COLOR, 24, participant(events.identity, seat))
@@ -356,6 +370,18 @@ internal class HistoryRoundEventsScreen(
                             val x = layout.left + row.indent + index * TILE_STEP
                             tileFaceRenderer.renderGui(context, asset, x, y, TILE_WIDTH, TILE_HEIGHT, appearance = session.tileAppearance())
                             if (hovered && mouseX >= x && mouseX < x + TILE_WIDTH && mouseY >= y && mouseY < y + TILE_HEIGHT) tooltip = listOf(Text.literal(asset))
+                        }
+                        is Row.LabeledTiles -> {
+                            val textY = y + (TILE_HEIGHT - LINE_HEIGHT) / 2 + 1
+                            context.drawTextWithShadow(textRenderer, SEAT_LINE_BULLET, layout.left + row.bulletIndent, textY, TEXT_COLOR)
+                            row.participant?.let { session.participants.render(it, context, layout.left + row.portraitIndent, textY - 1, 10, matchId = session.controller.state.value.summary?.detail?.summary?.matchId) }
+                            context.drawTextWithShadow(textRenderer, row.label, layout.left + row.labelIndent, textY, TEXT_COLOR)
+                            row.tiles.forEachIndexed { index, tile ->
+                                val asset = tile.toHistoryAssetKey(tileAssetRegistry)
+                                val x = layout.left + row.tileIndent + index * TILE_STEP
+                                tileFaceRenderer.renderGui(context, asset, x, y, TILE_WIDTH, TILE_HEIGHT, appearance = session.tileAppearance())
+                                if (hovered && mouseX >= x && mouseX < x + TILE_WIDTH && mouseY >= y && mouseY < y + TILE_HEIGHT) tooltip = listOf(Text.literal(asset))
+                            }
                         }
                         is Row.Space -> Unit
                         is Row.StateLink -> {
@@ -630,6 +656,30 @@ internal class HistoryRoundEventsScreen(
         }
 
         /**
+         * 開頭帶玩家的一列牌，例如補花紀錄中「• 頭像 AI 3：」後接移出的花牌。
+         *
+         * @property label 牌前面的玩家名稱。
+         * @property participant 玩家頭像來源；沒有對應玩家時為 null。
+         * @property tiles 保留順序與重複的牌張。
+         * @property bulletIndent 相對卡片左側的項目符號縮排。
+         * @property portraitIndent 相對卡片左側的頭像縮排。
+         * @property labelIndent 相對卡片左側的名稱縮排。
+         * @property tileIndent 相對卡片左側的牌面縮排。
+         */
+        data class LabeledTiles(
+            val label: Text,
+            val participant: HistoryParticipantSummaryDto?,
+            val tiles: List<TileFaceViewDto>,
+            val bulletIndent: Int,
+            val portraitIndent: Int,
+            val labelIndent: Int,
+            val tileIndent: Int,
+        ) : Row {
+            /** 牌面及下方間距。 */
+            override val height: Int = TILE_HEIGHT + 4
+        }
+
+        /**
          * 段落間距。
          *
          * @property height 間距高度。
@@ -683,6 +733,12 @@ internal class HistoryRoundEventsScreen(
 
         /** 牌面起點間距。 */
         const val TILE_STEP = 20
+
+        /** 頭像加上與後方文字的間距。 */
+        const val PORTRAIT_STEP = 14
+
+        /** 依玩家列出牌時，每一列開頭的項目符號。 */
+        val SEAT_LINE_BULLET: Text = Text.literal("• ")
 
         /** 一般文字。 */
         const val TEXT_COLOR = 0xffffff

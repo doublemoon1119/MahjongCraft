@@ -1,6 +1,7 @@
 package com.doublemoon1119.mahjongcraft.flow.server.game.orchestration
 
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionStep
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.TileReplacementRound
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.TableStep
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 
@@ -15,10 +16,13 @@ import com.doublemoon1119.mahjongcraft.logic.table.TableState
  * @property win 此次步驟直接成立的和牌；成立時必須同時結束選擇流程，[tableState] 中每位贏家最後記錄的動作都是和牌
  * 動作，且 [TableState.turnPhase] 是以這些贏家胡牌結束本局。其他結果為 null。以流局直接結束本局時，[tableState] 的
  * 階段是以對應的流局結束本局。
+ * @property replacementRounds 這個步驟中逐輪公開換牌的結果，例如補花時每一輪各玩家移出的牌，依輪次排列；共用流程據此寫入牌譜。
+ * 沒有換牌時為空清單。
  */
 data class RuleDecisionResolution(
     val tableState: TableState,
     val nextStep: RuleDecisionStep?,
     val steps: List<TableStep> = emptyList(),
     val win: RuleDecisionWin? = null,
+    val replacementRounds: List<TileReplacementRound> = emptyList(),
 )

@@ -19,6 +19,8 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.RuleDecisionD
 import com.doublemoon1119.mahjongcraft.platform.minecraft.extension.MinecraftPresentationRegistries
 import com.doublemoon1119.mahjongcraft.platform.minecraft.history.HistoryDiscardMarkerDisplayRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.history.HistoryDiscardMarkerDisplayRegistryImpl
+import com.doublemoon1119.mahjongcraft.platform.minecraft.history.HistoryTileSetAsideDisplayRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.history.HistoryTileSetAsideDisplayRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.player.PlayerPortraitSourceRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.player.PlayerPortraitSourceRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.player.PublicPlayerIndicatorDisplayRegistry
@@ -82,6 +84,7 @@ val minecraftCommonModule = module {
     single<DecisionStatusDisplayNameRegistryImpl>() bind DecisionStatusDisplayNameRegistry::class
 
     single<HistoryDiscardMarkerDisplayRegistryImpl>() bind HistoryDiscardMarkerDisplayRegistry::class
+    single<HistoryTileSetAsideDisplayRegistryImpl>() bind HistoryTileSetAsideDisplayRegistry::class
 
     single<PlayerPortraitSourceRegistryImpl>() bind PlayerPortraitSourceRegistry::class
     single<PublicPlayerIndicatorDisplayRegistryImpl>() bind PublicPlayerIndicatorDisplayRegistry::class

@@ -114,6 +114,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.environment.MinecraftE
 import com.doublemoon1119.mahjongcraft.platform.minecraft.extension.MinecraftMahjongExtension
 import com.doublemoon1119.mahjongcraft.platform.minecraft.extension.MinecraftPresentationRegistries
 import com.doublemoon1119.mahjongcraft.platform.minecraft.history.HistoryDiscardMarkerDisplayRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.history.HistoryTileSetAsideDisplayRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.player.PlayerPortraitSourceRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.player.PublicPlayerIndicatorDisplayRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.GameConfigPresentationRegistry
@@ -580,6 +581,7 @@ class FabricApplicationModuleTest {
         assertSame(koin.get<ExhaustiveDrawReasonDisplayNameRegistry>(), presentation.exhaustiveDrawReasonDisplayNameRegistry)
         assertSame(koin.get<RoundOutcomeDisplayNameRegistry>(), presentation.roundOutcomeDisplayNameRegistry)
         assertSame(koin.get<HistoryDiscardMarkerDisplayRegistry>(), presentation.historyDiscardMarkerDisplayRegistry)
+        assertSame(koin.get<HistoryTileSetAsideDisplayRegistry>(), presentation.historyTileSetAsideDisplayRegistry)
         assertSame(koin.get<RuleDecisionDisplayNameRegistry>(), presentation.ruleDecisionDisplayNameRegistry)
         assertSame(koin.get<RoundInfoLineDisplayRegistry>(), presentation.roundInfoLineDisplayRegistry)
         assertSame(koin.get<TablePropDescriberRegistry>(), presentation.tablePropDescriberRegistry)

@@ -124,7 +124,22 @@ private fun HistoryReplayFact.toDto(registries: NetworkDtoConverter): HistoryRep
         potDeposit,
     )
     is HistoryReplayFact.Reaction -> HistoryReplayFactDto.Reaction(typeKey, actionType, resolvedActorSeat)
-    is HistoryReplayFact.RuleDecision -> HistoryReplayFactDto.RuleDecision(typeKey, RuleDecisionTimingDto.valueOf(timing.name), stepId, stepIndex, nextStepId)
+    is HistoryReplayFact.RuleDecision -> HistoryReplayFactDto.RuleDecision(
+        typeKey = typeKey,
+        timing = RuleDecisionTimingDto.valueOf(timing.name),
+        stepId = stepId,
+        stepIndex = stepIndex,
+        nextStepId = nextStepId,
+        actorSeat = actorSeat,
+        optionId = optionId,
+        passed = passed,
+    )
+    is HistoryReplayFact.TileReplacementRound -> HistoryReplayFactDto.TileReplacementRound(
+        typeKey = typeKey,
+        timing = RuleDecisionTimingDto.valueOf(timing.name),
+        round = round,
+        removals = removals.map { removal -> HistoryReplayFactDto.TileReplacementRound.Removal(removal.seat, removal.tiles.map { it.tileIndex }) },
+    )
     is HistoryReplayFact.DiceRolled -> HistoryReplayFactDto.DiceRolled(typeKey, rollIndex, actorSeat, dice)
     is HistoryReplayFact.Completion -> HistoryReplayFactDto.Completion(typeKey, outcome?.toDto(registries))
     is HistoryReplayFact.RuleEffect -> HistoryReplayFactDto.RuleEffect(typeKey, reasonId, outcome?.toDto(registries))
@@ -246,7 +261,7 @@ private fun HistoryReplayPlayerState.toDto(): HistoryReplayPlayerStateDto = Hist
     discards = discards.map { HistoryReplayDiscardDto(it.tile.tileIndex, it.isTaken, it.markers) },
     score = score,
     seatWind = seatWind.toDto(),
-    setAsideTiles = setAsideTiles.map { it.tileIndex },
+    tileAreas = tileAreas.map { area -> HistoryReplayTileAreaDto(area.areaId, area.tiles.map { it.tileIndex }) },
 )
 
 /**

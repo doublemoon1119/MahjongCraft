@@ -489,7 +489,6 @@ object CompactReplayCodec {
             encodedPlayers.zip(state.players) { encodedPlayer, player ->
                 val projected = (encodedPlayer as JsonObject).filterKeys { it !in PROJECTION_EXCLUDED_PLAYER_KEYS }.toMutableMap()
                 projected[ReplayFormatKeys.DISCARDS] = JsonArray(player.discardPile.entries.map { projectDiscard(it, registries) })
-                projected[ReplayFormatKeys.SET_ASIDE_TILES] = JsonArray(player.setAsideTiles.map { persistenceJson.encodeToJsonElement(it.toPersistenceDto(registries.components)) })
                 JsonObject(projected)
             },
         )
