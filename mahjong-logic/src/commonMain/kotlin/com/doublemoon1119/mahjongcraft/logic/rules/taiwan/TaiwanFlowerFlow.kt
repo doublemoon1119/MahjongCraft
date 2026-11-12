@@ -2,6 +2,7 @@ package com.doublemoon1119.mahjongcraft.logic.rules.taiwan
 
 import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
 import com.doublemoon1119.mahjongcraft.logic.module.WinSettlementResult
+import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.tai.TaiwanTaiType
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.tile.TaiwanTileTypes
 import com.doublemoon1119.mahjongcraft.logic.table.PlayerDraw
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
@@ -195,7 +196,7 @@ object TaiwanFlowerFlow {
             if (tableState.tileWall.remainingCount == 0) return null
             return tiles.firstNotNullOfOrNull { flower ->
                 TaiwanSpecialFlowerWin.findOpportunity(tableState, playerId, flower)
-                    ?.takeIf { it.type == TaiwanTaiType.SEVEN_FLOWERS }
+                    ?.takeIf { it.taiResult.type == TaiwanTaiType.SevenFlowers }
                     ?.let { FlowerPause(it, playerId, flower) }
             }
         }
@@ -204,7 +205,7 @@ object TaiwanFlowerFlow {
         override fun pauseAfterReplacement(tableState: TableState, playerId: Uuid): FlowerPause? {
             val flower = tableState.players.first { it.id == playerId }.tileAreas[TaiwanPlayerTileAreaIds.FLOWERS]?.tiles?.lastOrNull() ?: return null
             return TaiwanSpecialFlowerWin.findOpportunity(tableState, playerId, flower)
-                ?.takeIf { it.type == TaiwanTaiType.EIGHT_FLOWERS }
+                ?.takeIf { it.taiResult.type == TaiwanTaiType.EightFlowers }
                 ?.let { FlowerPause(it, playerId, flower) }
         }
     }

@@ -2,6 +2,7 @@ package com.doublemoon1119.mahjongcraft.logic.rules.taiwan
 
 import com.doublemoon1119.mahjongcraft.logic.judgment.HandValueResult
 import com.doublemoon1119.mahjongcraft.logic.judgment.StandardHandDecomposition
+import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.tai.TaiwanTaiResult
 
 /**
  * 台灣麻將的手牌計台結果，不包含依付款人而異的莊家台。

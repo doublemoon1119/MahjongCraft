@@ -6,6 +6,16 @@ import com.doublemoon1119.mahjongcraft.logic.judgment.HandValueCalculator
 import com.doublemoon1119.mahjongcraft.logic.judgment.StandardHandDecomposer
 import com.doublemoon1119.mahjongcraft.logic.judgment.StandardHandDecomposition
 import com.doublemoon1119.mahjongcraft.logic.judgment.StandardHandGroup
+import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.tai.TaiwanTaiResult
+import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.tai.TaiwanTaiType
+import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.tai.flower.calculateTaiwanFlowerTai
+import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.tai.honor.calculateTaiwanHonorTai
+import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.tai.situation.calculateTaiwanSituationTai
+import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.tai.standard.calculateTaiwanAllExposed
+import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.tai.standard.calculateTaiwanAllSequences
+import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.tai.standard.calculateTaiwanAllTriplets
+import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.tai.standard.calculateTaiwanConcealedTriplets
+import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.tai.standard.calculateTaiwanFlush
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.tile.TaiwanTileTypes
 
 /**
@@ -46,7 +56,7 @@ class TaiwanHandValueCalculator(private val config: TaiwanRuleConfig) : HandValu
                 decomposition = decomposition,
                 waitCount = waits.size,
             )
-            val total = items.sumOf { it.totalTai }
+            val total = items.sumOf { it.tai }
             TaiwanHandValueResult(
                 isWinningHand = total >= config.minimumWinConstraint,
                 taiResults = items,
@@ -70,8 +80,8 @@ class TaiwanHandValueCalculator(private val config: TaiwanRuleConfig) : HandValu
         val situation = context.situation
         if (situation.isRobbingKong && context.isTsumo) return false
         if ((situation.isReplacementWin || situation.isLastDraw) && !context.isTsumo) return false
-        if (situation.openingWin == TaiwanTaiType.HUMAN_WIN && context.isTsumo) return false
-        if (situation.openingWin in setOf(TaiwanTaiType.HEAVENLY_WIN, TaiwanTaiType.EARTHLY_WIN) && !context.isTsumo) return false
+        if (situation.openingWin == TaiwanTaiType.HumanWin && context.isTsumo) return false
+        if ((situation.openingWin == TaiwanTaiType.HeavenlyWin || situation.openingWin == TaiwanTaiType.EarthlyWin) && !context.isTsumo) return false
         return context.hand.melds.all { meld ->
             val faces = meld.tiles.map { it.tile }
             when (meld.type) {
@@ -89,7 +99,7 @@ class TaiwanHandValueCalculator(private val config: TaiwanRuleConfig) : HandValu
     }
 
     /**
-     * 計算一種拆法，互斥項在同一次計算中處理。
+     * 計算一種拆法成立的台，依各類判定收集後按台種宣告順序排列。
      *
      * @param context 牌況與胡牌情境。
      * @param decomposition 這次選用的拆法。
@@ -101,41 +111,11 @@ class TaiwanHandValueCalculator(private val config: TaiwanRuleConfig) : HandValu
         decomposition: StandardHandDecomposition,
         waitCount: Int,
     ): List<TaiwanTaiResult> {
-        val result = mutableListOf<TaiwanTaiResult>()
-
-        /**
-         * 加入成立的項目，零次不產生明細。
-         *
-         * @param type 成立的台種。
-         * @param count 成立次數。
-         */
-        fun add(type: TaiwanTaiType, count: Int = 1) {
-            if (count > 0) result += TaiwanTaiResult(type, count)
-        }
-        val opening = context.situation.openingWin
-        if (context.isMenzen && opening == null) add(TaiwanTaiType.CONCEALED_HAND)
-        if (context.isTsumo) add(TaiwanTaiType.SELF_DRAW)
-        if (context.isMenzen && context.isTsumo && opening !in setOf(TaiwanTaiType.HEAVENLY_WIN, TaiwanTaiType.EARTHLY_WIN)) {
-            add(TaiwanTaiType.FULLY_CONCEALED_HAND)
-        }
         val exposed = context.hand.melds
+        val allFaces = context.hand.allTiles.map { it.tile } + context.winningTile
         val triplets = decomposition.groups.filterIsInstance<StandardHandGroup.Triplet>().map { it.tile } +
             exposed.filter { it.type != MeldType.Chi }.map { it.tiles.first().tile }
-        val dragonCount = dragons.count { it in triplets }
-        val littleDragons = dragonCount == 2 && decomposition.pair in dragons
-        val bigDragons = dragonCount == 3
-        val windCount = winds.count { it in triplets }
-        val littleWinds = windCount == 3 && decomposition.pair in winds
-        val bigWinds = windCount == 4
-        if (!littleWinds && !bigWinds) {
-            if (winds[context.seatWind.ordinal] in triplets) add(TaiwanTaiType.SEAT_WIND)
-            if (winds[context.roundWind.ordinal] in triplets) add(TaiwanTaiType.ROUND_WIND)
-        }
-        if (!littleDragons && !bigDragons) add(TaiwanTaiType.DRAGON, dragonCount)
-        add(TaiwanTaiType.SEAT_FLOWER, TaiwanFlowerTai.seatFlowerCount(context.flowers, context.seatWind))
-        add(TaiwanTaiType.FLOWER_SET, TaiwanFlowerTai.completeSetCount(context.flowers))
-        val winningGroup = decomposition.winningGroupIndex?.let(decomposition.groups::get)
-        val singleShape = when (winningGroup) {
+        val isSingleShape = when (val winningGroup = decomposition.winningGroupIndex?.let(decomposition.groups::get)) {
             null -> true
             is StandardHandGroup.Triplet -> false
             is StandardHandGroup.Sequence -> {
@@ -145,57 +125,38 @@ class TaiwanHandValueCalculator(private val config: TaiwanRuleConfig) : HandValu
                     (rank == 7 && winningGroup.first.value == 7)
             }
         }
-        val allExposed = exposed.size == 5 && exposed.none { it.type == MeldType.ClosedKan }
-        if (waitCount == 1 && singleShape && !allExposed && opening != TaiwanTaiType.HEAVENLY_WIN) add(TaiwanTaiType.SINGLE_WAIT)
-        if (context.situation.isRobbingKong) add(TaiwanTaiType.ROBBING_KONG)
-        if (context.situation.isReplacementWin && opening != TaiwanTaiType.HEAVENLY_WIN) add(TaiwanTaiType.REPLACEMENT_WIN)
-        if (context.situation.isLastDraw) add(TaiwanTaiType.LAST_DRAW)
-        val allFaces = context.hand.allTiles.map { it.tile } + context.winningTile
-        val allSequences = decomposition.groups.all { it is StandardHandGroup.Sequence } && exposed.all { it.type == MeldType.Chi }
-        if (allSequences &&
-            allFaces.all { it is Tile.Numeric } &&
-            context.flowers.isEmpty() &&
-            !context.isTsumo &&
-            winningGroup is StandardHandGroup.Sequence &&
-            !singleShape
-        ) {
-            add(TaiwanTaiType.ALL_SEQUENCES)
-        }
-        val concealedCount = decomposition.groups.withIndex().count { (index, group) ->
-            group is StandardHandGroup.Triplet && (context.isTsumo || index != decomposition.winningGroupIndex)
-        } + exposed.count { it.type == MeldType.ClosedKan }
-        when (concealedCount) {
-            3 -> add(TaiwanTaiType.THREE_CONCEALED_TRIPLETS)
-            4 -> add(TaiwanTaiType.FOUR_CONCEALED_TRIPLETS)
-            5 -> add(TaiwanTaiType.FIVE_CONCEALED_TRIPLETS)
-        }
-        if (allExposed && !context.isTsumo) add(TaiwanTaiType.ALL_EXPOSED)
-        if (decomposition.groups.all { it is StandardHandGroup.Triplet } && exposed.none { it.type == MeldType.Chi }) add(TaiwanTaiType.ALL_TRIPLETS)
-        if (bigDragons) {
-            add(TaiwanTaiType.BIG_DRAGONS)
-        } else if (littleDragons) {
-            add(TaiwanTaiType.LITTLE_DRAGONS)
-        }
-        if (bigWinds) {
-            add(TaiwanTaiType.BIG_WINDS)
-        } else if (littleWinds) {
-            add(TaiwanTaiType.LITTLE_WINDS)
-        }
-        val suits = allFaces.filterIsInstance<Tile.Numeric>().map { it.suit }.toSet()
-        val honors = allFaces.any { it is Tile.Honor }
-        if (suits.size == 1) add(if (honors) TaiwanTaiType.HALF_FLUSH else TaiwanTaiType.FULL_FLUSH)
-        if (suits.isEmpty()) add(TaiwanTaiType.ALL_HONORS)
-        if (opening != null) add(opening) else context.situation.readyQualification?.let { add(it) }
-        return result.toList()
+        val isAllExposed = exposed.size == 5 && exposed.none { it.type == MeldType.ClosedKan }
+        val results = calculateTaiwanSituationTai(
+            isMenzen = context.isMenzen,
+            isTsumo = context.isTsumo,
+            situation = context.situation,
+            waitCount = waitCount,
+            isSingleShape = isSingleShape,
+            isAllExposed = isAllExposed,
+        ) + calculateTaiwanHonorTai(
+            triplets = triplets,
+            pair = decomposition.pair,
+            allFaces = allFaces,
+            seatWind = context.seatWind,
+            roundWind = context.roundWind,
+        ) + calculateTaiwanFlowerTai(context.flowers, context.seatWind) + listOfNotNull(
+            calculateTaiwanAllSequences(
+                decomposition = decomposition,
+                exposed = exposed,
+                allFaces = allFaces,
+                flowers = context.flowers,
+                isTsumo = context.isTsumo,
+                isSingleShape = isSingleShape,
+            ),
+            calculateTaiwanConcealedTriplets(decomposition, exposed, context.isTsumo),
+            calculateTaiwanAllExposed(isAllExposed, context.isTsumo),
+            calculateTaiwanAllTriplets(decomposition, exposed),
+            calculateTaiwanFlush(allFaces),
+        )
+        return results.sortedBy { it.type.ordinal }
     }
 
     /** 固定的結構牌面集合，不受牌山剩餘張數或其他玩家暗牌影響。 */
     private val standardTiles: List<Tile> = Tile.Suit.entries.flatMap { suit -> (1..9).map { Tile.Numeric(suit, it) } } +
         listOf(Tile.Honor.East, Tile.Honor.South, Tile.Honor.West, Tile.Honor.North, Tile.Honor.Red, Tile.Honor.Green, Tile.Honor.White)
-
-    /** 風牌依門風順序排列。 */
-    private val winds: List<Tile> = listOf(Tile.Honor.East, Tile.Honor.South, Tile.Honor.West, Tile.Honor.North)
-
-    /** 三元牌集合。 */
-    private val dragons: List<Tile> = listOf(Tile.Honor.Red, Tile.Honor.Green, Tile.Honor.White)
 }

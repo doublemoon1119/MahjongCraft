@@ -5,6 +5,7 @@ import com.doublemoon1119.mahjongcraft.logic.base.MeldType
 import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.logic.base.TileValue
+import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.tai.TaiwanTaiType
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.tile.TaiwanTileTypes
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeHandFactory
@@ -25,9 +26,9 @@ class TaiwanHandValueCalculatorTest {
         val context = context(sequences())
         val result = calculator.calculate(context)
         assertEquals(3, result.totalTai)
-        assertEquals(setOf(TaiwanTaiType.CONCEALED_HAND, TaiwanTaiType.ALL_SEQUENCES), types(result))
-        assertFalse(TaiwanTaiType.ALL_SEQUENCES in types(calculator.calculate(context.copy(isTsumo = true))))
-        assertFalse(TaiwanTaiType.ALL_SEQUENCES in types(calculator.calculate(context.copy(flowers = listOf(Tile.Extension(TaiwanTileTypes.SUMMER))))))
+        assertEquals(setOf(TaiwanTaiType.ConcealedHand, TaiwanTaiType.AllSequences), types(result))
+        assertFalse(TaiwanTaiType.AllSequences in types(calculator.calculate(context.copy(isTsumo = true))))
+        assertFalse(TaiwanTaiType.AllSequences in types(calculator.calculate(context.copy(flowers = listOf(Tile.Extension(TaiwanTileTypes.SUMMER))))))
     }
 
     /** 五暗刻只取最高暗刻獎勵，另計碰碰胡與門清自摸。 */
@@ -36,9 +37,9 @@ class TaiwanHandValueCalculatorTest {
         val context = context(m(1, 1, 1) + p(2, 2, 2) + s(3, 3, 3) + List(3) { Tile.Honor.East } + List(3) { Tile.Honor.Red } + List(2) { Tile.Honor.South })
         val ron = calculator.calculate(context)
         assertEquals(17, ron.totalTai)
-        assertTrue(TaiwanTaiType.FIVE_CONCEALED_TRIPLETS in types(ron))
-        assertFalse(TaiwanTaiType.FOUR_CONCEALED_TRIPLETS in types(ron))
-        assertFalse(TaiwanTaiType.THREE_CONCEALED_TRIPLETS in types(ron))
+        assertTrue(TaiwanTaiType.FiveConcealedTriplets in types(ron))
+        assertFalse(TaiwanTaiType.FourConcealedTriplets in types(ron))
+        assertFalse(TaiwanTaiType.ThreeConcealedTriplets in types(ron))
         val tsumo = calculator.calculate(context.copy(isTsumo = true))
         assertEquals(19, tsumo.totalTai)
     }
@@ -48,8 +49,8 @@ class TaiwanHandValueCalculatorTest {
     fun `discard completed triplet is not a concealed triplet`() {
         val complete = m(1, 1, 1) + p(2, 2, 2) + s(3, 3, 3) + List(2) { Tile.Honor.South } + List(3) { Tile.Honor.East } + List(3) { Tile.Honor.Red }
         val result = calculator.calculate(context(complete))
-        assertTrue(TaiwanTaiType.FOUR_CONCEALED_TRIPLETS in types(result))
-        assertFalse(TaiwanTaiType.FIVE_CONCEALED_TRIPLETS in types(result))
+        assertTrue(TaiwanTaiType.FourConcealedTriplets in types(result))
+        assertFalse(TaiwanTaiType.FiveConcealedTriplets in types(result))
     }
 
     /** 同雀頭的多種面子拆法也需全部比較。 */
@@ -57,7 +58,7 @@ class TaiwanHandValueCalculatorTest {
     fun `highest scoring partition is selected without merging alternative awards`() {
         val complete = m(1, 1, 1, 2, 2, 2, 3, 3, 3) + p(4, 5, 6) + s(7, 8, 9) + List(2) { Tile.Honor.East }
         val result = calculator.calculate(context(complete))
-        assertTrue(TaiwanTaiType.THREE_CONCEALED_TRIPLETS in types(result))
+        assertTrue(TaiwanTaiType.ThreeConcealedTriplets in types(result))
         assertEquals(4, result.totalTai)
     }
 
@@ -67,9 +68,9 @@ class TaiwanHandValueCalculatorTest {
         val complete = List(3) { Tile.Honor.East } + List(3) { Tile.Honor.South } + List(3) { Tile.Honor.West } +
             List(3) { Tile.Honor.North } + List(3) { Tile.Honor.Red } + List(2) { Tile.Honor.White }
         val result = calculator.calculate(context(complete))
-        assertTrue(setOf(TaiwanTaiType.ALL_HONORS, TaiwanTaiType.ALL_TRIPLETS, TaiwanTaiType.BIG_WINDS).all { it in types(result) })
-        assertFalse(TaiwanTaiType.SEAT_WIND in types(result))
-        assertFalse(TaiwanTaiType.ROUND_WIND in types(result))
+        assertTrue(setOf(TaiwanTaiType.AllHonors, TaiwanTaiType.AllTriplets, TaiwanTaiType.BigWinds).all { it in types(result) })
+        assertFalse(TaiwanTaiType.SeatWind in types(result))
+        assertFalse(TaiwanTaiType.RoundWind in types(result))
     }
 
     /** 大小三元均不再加單獨三元台。 */
@@ -78,10 +79,10 @@ class TaiwanHandValueCalculatorTest {
         val base = m(1, 2, 3) + p(4, 5, 6) + List(3) { Tile.Honor.Red } + List(3) { Tile.Honor.Green }
         val big = calculator.calculate(context(base + List(3) { Tile.Honor.White } + List(2) { Tile.Honor.South }))
         val little = calculator.calculate(context(base + s(7, 8, 9) + List(2) { Tile.Honor.White }))
-        assertTrue(TaiwanTaiType.BIG_DRAGONS in types(big))
-        assertTrue(TaiwanTaiType.LITTLE_DRAGONS in types(little))
-        assertFalse(TaiwanTaiType.DRAGON in types(big))
-        assertFalse(TaiwanTaiType.DRAGON in types(little))
+        assertTrue(TaiwanTaiType.BigDragons in types(big))
+        assertTrue(TaiwanTaiType.LittleDragons in types(little))
+        assertFalse(TaiwanTaiType.Dragon in types(big))
+        assertFalse(TaiwanTaiType.Dragon in types(little))
     }
 
     /** 花槓仍計正花，八花不在一般計台器中自動變成花胡。 */
@@ -89,9 +90,9 @@ class TaiwanHandValueCalculatorTest {
     fun `flower sets stack with matching seat flowers`() {
         val flowers = TaiwanTileTypes.createAll()
         val result = calculator.calculate(context(sequences()).copy(flowers = flowers))
-        assertEquals(2, result.taiResults.single { it.type == TaiwanTaiType.SEAT_FLOWER }.totalTai)
-        assertEquals(2, result.taiResults.single { it.type == TaiwanTaiType.FLOWER_SET }.totalTai)
-        assertFalse(TaiwanTaiType.EIGHT_FLOWERS in types(result))
+        assertEquals(2, result.taiResults.single { it.type == TaiwanTaiType.SeatFlower }.tai)
+        assertEquals(2, result.taiResults.single { it.type == TaiwanTaiType.FlowerSet }.tai)
+        assertFalse(TaiwanTaiType.EightFlowers in types(result))
         assertFalse(calculator.calculate(context(sequences()).copy(flowers = flowers + flowers.first())).isWinningHand)
     }
 
@@ -103,23 +104,23 @@ class TaiwanHandValueCalculatorTest {
                 isTsumo = true,
                 situation = TaiwanWinSituation(
                     isReplacementWin = true,
-                    openingWin = TaiwanTaiType.HEAVENLY_WIN,
-                    readyQualification = TaiwanTaiType.HEAVENLY_READY,
+                    openingWin = TaiwanTaiType.HeavenlyWin,
+                    readyQualification = TaiwanTaiType.HeavenlyReady,
                 ),
             ),
         )
         assertEquals(25, result.totalTai)
-        assertEquals(setOf(TaiwanTaiType.HEAVENLY_WIN, TaiwanTaiType.SELF_DRAW), types(result))
+        assertEquals(setOf(TaiwanTaiType.HeavenlyWin, TaiwanTaiType.SelfDraw), types(result))
     }
 
     /** 聽牌資格互斥由輸入型別限制，普通牌況不會自動取得資格。 */
     @Test
     fun `ready and situational awards are explicit and opening win replaces ready`() {
         val context = context(sequences())
-        val ready = calculator.calculate(context.copy(situation = TaiwanWinSituation(readyQualification = TaiwanTaiType.HEAVENLY_READY)))
+        val ready = calculator.calculate(context.copy(situation = TaiwanWinSituation(readyQualification = TaiwanTaiType.HeavenlyReady)))
         assertEquals(19, ready.totalTai)
-        val human = calculator.calculate(context.copy(situation = TaiwanWinSituation(openingWin = TaiwanTaiType.HUMAN_WIN, readyQualification = TaiwanTaiType.EARTHLY_READY)))
-        assertEquals(setOf(TaiwanTaiType.HUMAN_WIN, TaiwanTaiType.ALL_SEQUENCES), types(human))
+        val human = calculator.calculate(context.copy(situation = TaiwanWinSituation(openingWin = TaiwanTaiType.HumanWin, readyQualification = TaiwanTaiType.EarthlyReady)))
+        assertEquals(setOf(TaiwanTaiType.HumanWin, TaiwanTaiType.AllSequences), types(human))
         assertEquals(18, human.totalTai)
         val robbed = calculator.calculate(context.copy(situation = TaiwanWinSituation(isRobbingKong = true)))
         assertEquals(4, robbed.totalTai)
@@ -146,7 +147,7 @@ class TaiwanHandValueCalculatorTest {
         assertEquals(1, tsumo.totalTai)
         val ron = calculator.calculate(context.copy(isTsumo = false))
         assertEquals(2, ron.totalTai)
-        assertEquals(setOf(TaiwanTaiType.ALL_EXPOSED), types(ron))
+        assertEquals(setOf(TaiwanTaiType.AllExposed), types(ron))
     }
 
     /** 有副露且無任何計台項目的胡牌仍可成立。 */
@@ -166,19 +167,19 @@ class TaiwanHandValueCalculatorTest {
     @Test
     fun `flush and little winds use their own stacking rules`() {
         val pure = calculator.calculate(context(m(1, 2, 3, 2, 3, 4, 4, 5, 6, 6, 7, 8, 7, 8, 9, 5, 5)))
-        assertTrue(TaiwanTaiType.FULL_FLUSH in types(pure))
-        assertFalse(TaiwanTaiType.HALF_FLUSH in types(pure))
+        assertTrue(TaiwanTaiType.FullFlush in types(pure))
+        assertFalse(TaiwanTaiType.HalfFlush in types(pure))
         val mixed = calculator.calculate(context(m(1, 2, 3, 2, 3, 4, 4, 5, 6, 7, 8, 9) + List(3) { Tile.Honor.Red } + List(2) { Tile.Honor.South }))
-        assertTrue(TaiwanTaiType.HALF_FLUSH in types(mixed))
+        assertTrue(TaiwanTaiType.HalfFlush in types(mixed))
         val winds = calculator.calculate(
             context(
                 List(3) { Tile.Honor.East } + List(3) { Tile.Honor.South } + List(3) { Tile.Honor.West } +
                     m(1, 2, 3) + p(4, 5, 6) + List(2) { Tile.Honor.North },
             ),
         )
-        assertTrue(TaiwanTaiType.LITTLE_WINDS in types(winds))
-        assertFalse(TaiwanTaiType.SEAT_WIND in types(winds))
-        assertFalse(TaiwanTaiType.ROUND_WIND in types(winds))
+        assertTrue(TaiwanTaiType.LittleWinds in types(winds))
+        assertFalse(TaiwanTaiType.SeatWind in types(winds))
+        assertFalse(TaiwanTaiType.RoundWind in types(winds))
     }
 
     /** 暗槓仍為門清及暗刻，且其四張牌須列入總持有量檢查。 */
@@ -196,8 +197,8 @@ class TaiwanHandValueCalculatorTest {
         val context = context(remaining).let { it.copy(hand = it.hand.copy(melds = listOf(closed))) }
         val result = calculator.calculate(context)
         assertTrue(result.isWinningHand)
-        assertTrue(TaiwanTaiType.FIVE_CONCEALED_TRIPLETS in types(result))
-        assertTrue(TaiwanTaiType.CONCEALED_HAND in types(result))
+        assertTrue(TaiwanTaiType.FiveConcealedTriplets in types(result))
+        assertTrue(TaiwanTaiType.ConcealedHand in types(result))
         val invalid = context.copy(winningTileValue = TileValue(Tile.Honor.Red))
         assertFalse(calculator.calculate(invalid).isWinningHand)
     }
@@ -208,10 +209,10 @@ class TaiwanHandValueCalculatorTest {
         val context = context(sequences()).copy(isTsumo = true)
         val normal = calculator.calculate(context.copy(situation = TaiwanWinSituation(isReplacementWin = true, isLastDraw = true)))
         assertEquals(5, normal.totalTai)
-        val earthly = calculator.calculate(context.copy(situation = TaiwanWinSituation(isReplacementWin = true, openingWin = TaiwanTaiType.EARTHLY_WIN)))
+        val earthly = calculator.calculate(context.copy(situation = TaiwanWinSituation(isReplacementWin = true, openingWin = TaiwanTaiType.EarthlyWin)))
         assertEquals(18, earthly.totalTai)
-        assertEquals(setOf(TaiwanTaiType.EARTHLY_WIN, TaiwanTaiType.SELF_DRAW, TaiwanTaiType.REPLACEMENT_WIN), types(earthly))
-        val ready = calculator.calculate(context.copy(situation = TaiwanWinSituation(readyQualification = TaiwanTaiType.EARTHLY_READY)))
+        assertEquals(setOf(TaiwanTaiType.EarthlyWin, TaiwanTaiType.SelfDraw, TaiwanTaiType.ReplacementWin), types(earthly))
+        val ready = calculator.calculate(context.copy(situation = TaiwanWinSituation(readyQualification = TaiwanTaiType.EarthlyReady)))
         assertEquals(11, ready.totalTai)
     }
 

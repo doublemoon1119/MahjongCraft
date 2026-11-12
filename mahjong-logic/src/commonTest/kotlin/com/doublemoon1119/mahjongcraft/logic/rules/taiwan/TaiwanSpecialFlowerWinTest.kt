@@ -2,6 +2,7 @@ package com.doublemoon1119.mahjongcraft.logic.rules.taiwan
 
 import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
+import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.tai.TaiwanTaiType
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.tile.TaiwanTileTypes
 import com.doublemoon1119.mahjongcraft.logic.table.PlayerTileAreas
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
@@ -26,7 +27,7 @@ class TaiwanSpecialFlowerWinTest {
         val opportunity = TaiwanSpecialFlowerWin.findOpportunity(table, winner.id, revealed)
 
         requireNotNull(opportunity)
-        assertEquals(TaiwanTaiType.EIGHT_FLOWERS, opportunity.type)
+        assertEquals(TaiwanTaiType.EightFlowers, opportunity.taiResult.type)
         assertEquals(winner.id, opportunity.winnerId)
         assertNull(opportunity.payerId)
         assertEquals(3, TaiwanSpecialFlowerWin.settle(table, opportunity).paymentsByPlayerId.size)
@@ -43,7 +44,7 @@ class TaiwanSpecialFlowerWinTest {
         val opportunity = TaiwanSpecialFlowerWin.findOpportunity(table, revealer.id, revealed)
 
         requireNotNull(opportunity)
-        assertEquals(TaiwanTaiType.SEVEN_FLOWERS, opportunity.type)
+        assertEquals(TaiwanTaiType.SevenFlowers, opportunity.taiResult.type)
         assertEquals(winner.id, opportunity.winnerId)
         assertEquals(revealer.id, opportunity.payerId)
         assertEquals(revealed, opportunity.claimedFlower)

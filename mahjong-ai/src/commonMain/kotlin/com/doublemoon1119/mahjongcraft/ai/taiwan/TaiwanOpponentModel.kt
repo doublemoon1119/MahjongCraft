@@ -8,11 +8,11 @@ import com.doublemoon1119.mahjongcraft.ai.expectation.WaitShapeDanger
 import com.doublemoon1119.mahjongcraft.logic.base.MeldType
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.logic.module.PositionView
-import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanFlowerTai
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanPaymentCalculator
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanPlayerComponentViews
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanPlayerTileAreaIds
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanScoreConfig
+import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.tai.flower.calculateTaiwanFlowerTai
 import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayerSnapshot
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import kotlin.uuid.Uuid
@@ -91,7 +91,7 @@ class TaiwanOpponentModel(
             else -> OPEN_BASELINE_TAI
         }
         val flowers = player.tileAreas.firstOrNull { it.id == TaiwanPlayerTileAreaIds.FLOWERS }?.tiles.orEmpty().mapNotNull { it.tile }
-        val flowerTai = TaiwanFlowerTai.seatFlowerCount(flowers, player.seatWind) + TaiwanFlowerTai.completeSetCount(flowers)
+        val flowerTai = calculateTaiwanFlowerTai(flowers, player.seatWind).sumOf { it.tai }
         val valuedHonors = DRAGONS + windTile(player.seatWind) + windTile(view.snapshot.prevalentWind)
         val honorTai = player.hand.melds.sumOf { meld ->
             val tiles = meld.tiles.mapNotNull { it.tile }.distinct()

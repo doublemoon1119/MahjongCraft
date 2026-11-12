@@ -1,5 +1,7 @@
 package com.doublemoon1119.mahjongcraft.logic.rules.taiwan
 
+import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.tai.TaiwanTaiType
+
 /**
  * 胡牌時由規則流程確認的情境，不由牌型計算器推測行動經過。
  *
@@ -17,7 +19,7 @@ data class TaiwanWinSituation(
     val readyQualification: TaiwanTaiType? = null,
 ) {
     init {
-        require(openingWin == null || openingWin in setOf(TaiwanTaiType.HEAVENLY_WIN, TaiwanTaiType.EARTHLY_WIN, TaiwanTaiType.HUMAN_WIN)) {
+        require(openingWin == null || openingWin in setOf(TaiwanTaiType.HeavenlyWin, TaiwanTaiType.EarthlyWin, TaiwanTaiType.HumanWin)) {
             "Opening win must be a heavenly, earthly or human win"
         }
         require(readyQualification == null || readyQualification in TaiwanReadyKind.entries.map { it.taiType }) {

@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.rule.taiwan.catalogue
 
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.taiwan.TaiwanWinSettlementIds
 import com.doublemoon1119.mahjongcraft.logic.base.Hand
 import com.doublemoon1119.mahjongcraft.logic.base.Meld
 import com.doublemoon1119.mahjongcraft.logic.base.MeldType
@@ -10,8 +11,8 @@ import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanExhaustiveDrawRe
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanHandValueCalculator
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanHandValueContext
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanRuleConfig
-import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanTaiType
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanWinSituation
+import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.tai.TaiwanTaiType
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import com.doublemoon1119.mahjongcraft.platform.minecraft.catalogue.RuleCatalogueExample
 import com.doublemoon1119.mahjongcraft.platform.minecraft.catalogue.RuleCatalogueTileGroup
@@ -42,7 +43,7 @@ class TaiwanCatalogueProviderTest {
             TaiwanExhaustiveDrawReason.FourWinds.id,
         )
 
-        assertEquals(TaiwanTaiType.entries.map { it.id }.toSet(), catalogue.entries.map { it.id }.filter { it !in expectedDrawIds }.toSet())
+        assertEquals(TaiwanTaiType.entries.map(TaiwanWinSettlementIds::tai).toSet(), catalogue.entries.map { it.id }.filter { it !in expectedDrawIds }.toSet())
         assertTrue(expectedDrawIds.all { id -> catalogue.entries.any { it.id == id } })
     }
 
@@ -53,14 +54,14 @@ class TaiwanCatalogueProviderTest {
             TaiwanCatalogueProvider().catalogue(TaiwanRuleConfig(useFlowerTiles = false, fourWindsAbortiveDraw = false)),
         )
 
-        listOf(TaiwanTaiType.SEAT_FLOWER.id, TaiwanTaiType.FLOWER_SET.id, TaiwanTaiType.EIGHT_FLOWERS.id, TaiwanTaiType.SEVEN_FLOWERS.id).forEach { id ->
+        listOf(TaiwanWinSettlementIds.tai(TaiwanTaiType.SeatFlower), TaiwanWinSettlementIds.tai(TaiwanTaiType.FlowerSet), TaiwanWinSettlementIds.tai(TaiwanTaiType.EightFlowers), TaiwanWinSettlementIds.tai(TaiwanTaiType.SevenFlowers)).forEach { id ->
             assertEquals(TaiwanCatalogueKeys.FLOWERS_UNAVAILABLE, catalogue.entries.single { it.id == id }.unavailableReasonTranslationKey)
         }
         assertEquals(
             TaiwanCatalogueKeys.FOUR_WINDS_UNAVAILABLE,
             catalogue.entries.single { it.id == TaiwanExhaustiveDrawReason.FourWinds.id }.unavailableReasonTranslationKey,
         )
-        assertNull(catalogue.entries.single { it.id == TaiwanTaiType.CONCEALED_HAND.id }.unavailableReasonTranslationKey)
+        assertNull(catalogue.entries.single { it.id == TaiwanWinSettlementIds.tai(TaiwanTaiType.ConcealedHand) }.unavailableReasonTranslationKey)
     }
 
     /** 每個計台項目都有牌面範例；一般牌型與情境使用完整十六張手牌加一張和牌。 */
@@ -68,14 +69,14 @@ class TaiwanCatalogueProviderTest {
     fun `every tai entry provides a suitable example`() {
         val catalogue = assertNotNull(TaiwanCatalogueProvider().catalogue(TaiwanRuleConfig()))
         val illustrationTypes = setOf(
-            TaiwanTaiType.SEAT_FLOWER,
-            TaiwanTaiType.FLOWER_SET,
-            TaiwanTaiType.EIGHT_FLOWERS,
-            TaiwanTaiType.SEVEN_FLOWERS,
+            TaiwanTaiType.SeatFlower,
+            TaiwanTaiType.FlowerSet,
+            TaiwanTaiType.EightFlowers,
+            TaiwanTaiType.SevenFlowers,
         )
 
         TaiwanTaiType.entries.forEach { type ->
-            val example = catalogue.entries.single { it.id == type.id }.examples.single()
+            val example = catalogue.entries.single { it.id == TaiwanWinSettlementIds.tai(type) }.examples.single()
 
             if (type in illustrationTypes) {
                 assertEquals(false, example.completeHand, type.name)
@@ -93,8 +94,8 @@ class TaiwanCatalogueProviderTest {
 
         TaiwanTaiType.entries.forEach { type ->
             assertEquals(
-                "mahjongcraft:catalogue/taiwan/category/tai_${type.tai}",
-                catalogue.entries.single { it.id == type.id }.categoryId,
+                "mahjongcraft:catalogue/taiwan/category/tai_${EXPECTED_TAI.getValue(type)}",
+                catalogue.entries.single { it.id == TaiwanWinSettlementIds.tai(type) }.categoryId,
                 type.name,
             )
         }
@@ -158,13 +159,13 @@ private fun evaluateExample(type: TaiwanTaiType, example: RuleCatalogueExample) 
         hand = hand,
         winningTileValue = winning,
         isTsumo = type in tsumoTypes,
-        roundWind = if (type == TaiwanTaiType.ROUND_WIND) Wind.SOUTH else Wind.EAST,
-        seatWind = if (type == TaiwanTaiType.SEAT_WIND || type == TaiwanTaiType.HEAVENLY_WIN) Wind.EAST else Wind.SOUTH,
+        roundWind = if (type == TaiwanTaiType.RoundWind) Wind.SOUTH else Wind.EAST,
+        seatWind = if (type == TaiwanTaiType.SeatWind || type == TaiwanTaiType.HeavenlyWin) Wind.EAST else Wind.SOUTH,
         flowers = emptyList(),
         situation = TaiwanWinSituation(
-            isRobbingKong = type == TaiwanTaiType.ROBBING_KONG,
-            isReplacementWin = type == TaiwanTaiType.REPLACEMENT_WIN,
-            isLastDraw = type == TaiwanTaiType.LAST_DRAW,
+            isRobbingKong = type == TaiwanTaiType.RobbingKong,
+            isReplacementWin = type == TaiwanTaiType.ReplacementWin,
+            isLastDraw = type == TaiwanTaiType.LastDraw,
             openingWin = type.takeIf { it in openingWinTypes },
             readyQualification = type.takeIf { it in readyTypes },
         ),
@@ -180,19 +181,19 @@ private val meldRoles = setOf(RuleCatalogueTileGroupRole.OPEN_MELD, RuleCatalogu
 
 /** 使用自摸情境驗證的台種。 */
 private val tsumoTypes = setOf(
-    TaiwanTaiType.SELF_DRAW,
-    TaiwanTaiType.FULLY_CONCEALED_HAND,
-    TaiwanTaiType.REPLACEMENT_WIN,
-    TaiwanTaiType.LAST_DRAW,
-    TaiwanTaiType.EARTHLY_WIN,
-    TaiwanTaiType.HEAVENLY_WIN,
+    TaiwanTaiType.SelfDraw,
+    TaiwanTaiType.FullyConcealedHand,
+    TaiwanTaiType.ReplacementWin,
+    TaiwanTaiType.LastDraw,
+    TaiwanTaiType.EarthlyWin,
+    TaiwanTaiType.HeavenlyWin,
 )
 
 /** 需要透過開局胡牌情境成立的台種。 */
-private val openingWinTypes = setOf(TaiwanTaiType.HUMAN_WIN, TaiwanTaiType.EARTHLY_WIN, TaiwanTaiType.HEAVENLY_WIN)
+private val openingWinTypes = setOf(TaiwanTaiType.HumanWin, TaiwanTaiType.EarthlyWin, TaiwanTaiType.HeavenlyWin)
 
 /** 需要透過宣告聽牌資格成立的台種。 */
-private val readyTypes = setOf(TaiwanTaiType.DECLARED_READY, TaiwanTaiType.HEAVENLY_READY, TaiwanTaiType.EARTHLY_READY)
+private val readyTypes = setOf(TaiwanTaiType.DeclaredReady, TaiwanTaiType.HeavenlyReady, TaiwanTaiType.EarthlyReady)
 
 /**
  * 將牌例中明確標示的副露轉成計台模型。
@@ -216,3 +217,40 @@ private fun exampleMeld(group: RuleCatalogueTileGroup): Meld {
         faceDownTileIds = emptySet(),
     )
 }
+
+/** 預設台表中每個計台項目的台數，用來核對圖鑑分類。 */
+private val EXPECTED_TAI: Map<TaiwanTaiType, Int> = mapOf(
+    TaiwanTaiType.ConcealedHand to 1,
+    TaiwanTaiType.SelfDraw to 1,
+    TaiwanTaiType.FullyConcealedHand to 1,
+    TaiwanTaiType.SeatWind to 1,
+    TaiwanTaiType.RoundWind to 1,
+    TaiwanTaiType.Dragon to 1,
+    TaiwanTaiType.SeatFlower to 1,
+    TaiwanTaiType.FlowerSet to 1,
+    TaiwanTaiType.SingleWait to 1,
+    TaiwanTaiType.RobbingKong to 1,
+    TaiwanTaiType.ReplacementWin to 1,
+    TaiwanTaiType.LastDraw to 1,
+    TaiwanTaiType.AllSequences to 2,
+    TaiwanTaiType.ThreeConcealedTriplets to 2,
+    TaiwanTaiType.FourConcealedTriplets to 5,
+    TaiwanTaiType.FiveConcealedTriplets to 8,
+    TaiwanTaiType.AllExposed to 2,
+    TaiwanTaiType.AllTriplets to 4,
+    TaiwanTaiType.LittleDragons to 4,
+    TaiwanTaiType.BigDragons to 8,
+    TaiwanTaiType.HalfFlush to 4,
+    TaiwanTaiType.FullFlush to 8,
+    TaiwanTaiType.LittleWinds to 8,
+    TaiwanTaiType.BigWinds to 16,
+    TaiwanTaiType.AllHonors to 16,
+    TaiwanTaiType.DeclaredReady to 1,
+    TaiwanTaiType.HeavenlyReady to 16,
+    TaiwanTaiType.EarthlyReady to 8,
+    TaiwanTaiType.HumanWin to 16,
+    TaiwanTaiType.EarthlyWin to 16,
+    TaiwanTaiType.HeavenlyWin to 24,
+    TaiwanTaiType.EightFlowers to 8,
+    TaiwanTaiType.SevenFlowers to 8,
+)

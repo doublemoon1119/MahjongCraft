@@ -8,7 +8,7 @@ import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanPlayerTileAreaId
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanRuleModule
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanShantenCalculator
-import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanTaiType
+import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.tai.TaiwanTaiType
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.tile.TaiwanTileTypes
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.logic.table.drawDealerOpeningTile
@@ -47,7 +47,7 @@ class TaiwanDebugGameScenariosTest {
 
         val pending = assertIs<TaiwanFlowerFlow.Result.AwaitingDecision>(processOpening(state)).pending
 
-        assertEquals(TaiwanTaiType.SEVEN_FLOWERS, pending.opportunity.type)
+        assertEquals(TaiwanTaiType.SevenFlowers, pending.opportunity.taiResult.type)
         assertEquals(invokerId, pending.opportunity.winnerId)
     }
 
@@ -58,7 +58,7 @@ class TaiwanDebugGameScenariosTest {
 
         val pending = assertIs<TaiwanFlowerFlow.Result.AwaitingDecision>(processOpening(state)).pending
 
-        assertEquals(TaiwanTaiType.EIGHT_FLOWERS, pending.opportunity.type)
+        assertEquals(TaiwanTaiType.EightFlowers, pending.opportunity.taiResult.type)
         assertEquals(invokerId, pending.opportunity.winnerId)
     }
 

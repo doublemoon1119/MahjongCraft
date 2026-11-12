@@ -17,8 +17,9 @@ import com.doublemoon1119.mahjongcraft.logic.judgment.HandValueResult
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanHandValueResult
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanPlayerTileAreaIds
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanRuleConfig
-import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanTaiResult
-import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanTaiType
+import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.tai.TaiwanTaiResult
+import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.tai.TaiwanTaiType
+import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.tai.flower.calculateTaiwanEightFlowers
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.tile.TaiwanTileTypes
 import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayer
 import com.doublemoon1119.mahjongcraft.logic.table.RoundTransitionDirective
@@ -65,7 +66,7 @@ class TaiwanWinSettlementDetailResolverTest {
 
         val fields = TaiwanWinSettlementDetailResolver.resolveSpecialOutcome(
             state = state,
-            outcome = outcome(state, winner.id, TaiwanRoundOutcomeIds.EIGHT_FLOWERS, TaiwanTaiType.EIGHT_FLOWERS, winningFlower.id),
+            outcome = outcome(state, winner.id, TaiwanRoundOutcomeIds.EIGHT_FLOWERS, calculateTaiwanEightFlowers(), winningFlower.id),
             publicFace = publicFace,
         ).orEmpty().associate { it.id to it.value }
 
@@ -75,7 +76,7 @@ class TaiwanWinSettlementDetailResolverTest {
             setOf(TaiwanWinSettlementIds.FLOWERS_FIELD, TaiwanWinSettlementIds.WINNING_FLOWER_FIELD, TaiwanWinSettlementIds.TAI_FIELD, TaiwanWinSettlementIds.TAI_TOTAL_FIELD),
             fields.keys,
         )
-        assertEquals(tai(TaiwanTaiType.EIGHT_FLOWERS.tai + 1), fields[TaiwanWinSettlementIds.TAI_TOTAL_FIELD])
+        assertEquals(tai(calculateTaiwanEightFlowers().tai + 1), fields[TaiwanWinSettlementIds.TAI_TOTAL_FIELD])
     }
 
     /** 莊家胡牌：手牌台種後面接莊家那一條，每一份付款都算，合計包含莊家台。 */
@@ -145,15 +146,15 @@ class TaiwanWinSettlementDetailResolverTest {
     /** 測試用手牌成立的台種：門清與正花兩張。 */
     private val taiwanHand = TaiwanHandValueResult(
         isWinningHand = true,
-        taiResults = listOf(TaiwanTaiResult(TaiwanTaiType.CONCEALED_HAND), TaiwanTaiResult(TaiwanTaiType.SEAT_FLOWER, count = 2)),
+        taiResults = listOf(TaiwanTaiResult(TaiwanTaiType.ConcealedHand, 1), TaiwanTaiResult(TaiwanTaiType.SeatFlower, 2)),
         totalTai = HAND_TAI,
         decomposition = null,
     )
 
     /** [taiwanHand] 對應的清單條目。 */
     private val handEntries = listOf(
-        WinSettlementDetailEntry(TaiwanTaiType.CONCEALED_HAND.id, WinSettlementQuantity(TaiwanWinSettlementIds.TAI_UNIT, 1)),
-        WinSettlementDetailEntry(TaiwanTaiType.SEAT_FLOWER.id, WinSettlementQuantity(TaiwanWinSettlementIds.TAI_UNIT, 2)),
+        WinSettlementDetailEntry(TaiwanWinSettlementIds.tai(TaiwanTaiType.ConcealedHand), WinSettlementQuantity(TaiwanWinSettlementIds.TAI_UNIT, 1)),
+        WinSettlementDetailEntry(TaiwanWinSettlementIds.tai(TaiwanTaiType.SeatFlower), WinSettlementQuantity(TaiwanWinSettlementIds.TAI_UNIT, 2)),
     )
 
     /**
@@ -201,7 +202,7 @@ class TaiwanWinSettlementDetailResolverTest {
      * @param state 桌況。
      * @param winnerId 贏家。
      * @param outcomeId 結果識別碼。
-     * @param type 台種。
+     * @param taiResult 台種。
      * @param winningFlowerId 讓和牌成立的花牌。
      * @return 特殊結果。
      */
@@ -209,7 +210,7 @@ class TaiwanWinSettlementDetailResolverTest {
         state: TableState,
         winnerId: Uuid,
         outcomeId: String,
-        type: TaiwanTaiType,
+        taiResult: TaiwanTaiResult,
         winningFlowerId: Uuid,
     ) = ResolvedRoundOutcome(
         id = outcomeId,
@@ -218,7 +219,7 @@ class TaiwanWinSettlementDetailResolverTest {
         scoreDeltas = state.players.associate { it.id to 0 },
         transitionDirective = RoundTransitionDirective.PassToNextSeat,
         presentationClassification = RoundOutcomePresentationClassification.WIN_EQUIVALENT,
-        extensionDetail = TaiwanSpecialFlowerWinDetail(taiTypeId = type.id, tai = type.tai, winningFlowerId = winningFlowerId),
+        extensionDetail = TaiwanSpecialFlowerWinDetail(taiTypeId = TaiwanWinSettlementIds.tai(taiResult.type), tai = taiResult.tai, winningFlowerId = winningFlowerId),
     )
 
     /** 測試用常數。 */

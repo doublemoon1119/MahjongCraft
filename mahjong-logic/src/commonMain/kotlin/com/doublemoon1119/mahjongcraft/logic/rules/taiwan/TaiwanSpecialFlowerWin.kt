@@ -2,6 +2,9 @@ package com.doublemoon1119.mahjongcraft.logic.rules.taiwan
 
 import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
 import com.doublemoon1119.mahjongcraft.logic.module.WinSettlementResult
+import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.tai.TaiwanTaiResult
+import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.tai.flower.calculateTaiwanEightFlowers
+import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.tai.flower.calculateTaiwanSevenFlowers
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import kotlin.uuid.Uuid
 
@@ -10,13 +13,13 @@ object TaiwanSpecialFlowerWin {
     /**
      * 一次已成立、尚待玩家接受的花胡資格。
      *
-     * @property type 八仙過海或七搶一。
+     * @property taiResult 八仙過海或七搶一及其台數。
      * @property winnerId 可以選擇花胡的玩家。
      * @property payerId 七搶一的被搶花玩家；八仙過海由三家付款，因此為 null。
      * @property claimedFlower 七搶一中被搶的花牌；八仙過海為 null。
      */
     data class Opportunity(
-        val type: TaiwanTaiType,
+        val taiResult: TaiwanTaiResult,
         val winnerId: Uuid,
         val payerId: Uuid?,
         val claimedFlower: IdentifiedTile?,
@@ -42,7 +45,7 @@ object TaiwanSpecialFlowerWin {
         if (revealedFlower.id !in revealerFlowers.map { it.id }) return null
         if (revealerFlowers.size == 8) {
             return Opportunity(
-                type = TaiwanTaiType.EIGHT_FLOWERS,
+                taiResult = calculateTaiwanEightFlowers(),
                 winnerId = revealer.id,
                 payerId = null,
                 claimedFlower = null,
@@ -52,7 +55,7 @@ object TaiwanSpecialFlowerWin {
             player.id != revealer.id && flowersOf(player.id, tableState).size == 7
         }?.let { winner ->
             return Opportunity(
-                type = TaiwanTaiType.SEVEN_FLOWERS,
+                taiResult = calculateTaiwanSevenFlowers(),
                 winnerId = winner.id,
                 payerId = revealer.id,
                 claimedFlower = revealedFlower,
@@ -63,7 +66,7 @@ object TaiwanSpecialFlowerWin {
             player.id != revealer.id && flowersOf(player.id, tableState).size == 1
         } ?: return null
         return Opportunity(
-            type = TaiwanTaiType.SEVEN_FLOWERS,
+            taiResult = calculateTaiwanSevenFlowers(),
             winnerId = revealer.id,
             payerId = payer.id,
             claimedFlower = flowersOf(payer.id, tableState).single(),
@@ -75,7 +78,7 @@ object TaiwanSpecialFlowerWin {
      *
      * @param tableState 花胡成立時的桌況。
      * @param opportunity 已確認的花胡資格。
-     * @return 固定八台加上莊家與連莊關係的付款結果。
+     * @return 花胡台數加上莊家與連莊關係的付款結果。
      */
     fun settle(tableState: TableState, opportunity: Opportunity): WinSettlementResult {
         val config = tableState.config as? TaiwanRuleConfig
@@ -85,7 +88,7 @@ object TaiwanSpecialFlowerWin {
             playerIds = tableState.players.map { it.id },
             winnerId = opportunity.winnerId,
             dealerId = tableState.dealerPlayerId,
-            handTai = opportunity.type.tai,
+            handTai = opportunity.taiResult.tai,
             dealerStreak = tableState.comboCount,
             discarderId = opportunity.payerId,
         )

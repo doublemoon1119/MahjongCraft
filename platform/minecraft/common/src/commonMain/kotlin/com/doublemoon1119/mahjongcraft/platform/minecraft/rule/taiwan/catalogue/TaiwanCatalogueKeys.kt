@@ -62,33 +62,39 @@ internal object TaiwanCatalogueKeys {
     const val HEAVENLY_WIN_EXAMPLE: String = PREFIX + "example.heavenly_win"
 }
 
-/** 台灣麻將圖鑑依台數劃分的主要分類。 */
+/**
+ * 台灣麻將圖鑑依台數劃分的主要分類。
+ *
+ * @property slug 分類識別碼的尾段。
+ * @property tai 這一類計台項目的台數，用於條目標籤；流局分類為 null。
+ */
 internal enum class TaiwanCatalogueCategory(
     private val slug: String,
+    val tai: Int?,
 ) {
     /** 一台項目。 */
-    TAI_1("tai_1"),
+    TAI_1("tai_1", 1),
 
     /** 兩台項目。 */
-    TAI_2("tai_2"),
+    TAI_2("tai_2", 2),
 
     /** 四台項目。 */
-    TAI_4("tai_4"),
+    TAI_4("tai_4", 4),
 
     /** 五台項目。 */
-    TAI_5("tai_5"),
+    TAI_5("tai_5", 5),
 
     /** 八台項目。 */
-    TAI_8("tai_8"),
+    TAI_8("tai_8", 8),
 
     /** 十六台項目。 */
-    TAI_16("tai_16"),
+    TAI_16("tai_16", 16),
 
     /** 二十四台項目。 */
-    TAI_24("tai_24"),
+    TAI_24("tai_24", 24),
 
     /** 一般與途中流局。 */
-    DRAW("draw"),
+    DRAW("draw", null),
     ;
 
     /** namespaced 分類識別碼。 */

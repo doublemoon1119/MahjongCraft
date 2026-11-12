@@ -13,6 +13,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.TileReplacementRou
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.accepts
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.taiwan.TaiwanRoundOutcomeIds
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.taiwan.TaiwanSpecialFlowerWinDetail
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.taiwan.TaiwanWinSettlementIds
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.TableStep
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.TableStepEvent
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.RuleDecisionResolution
@@ -30,7 +31,7 @@ import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanPlayerTileAreaId
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanSpecialFlowerWin
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanTableComponents
-import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanTaiType
+import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.tai.TaiwanTaiType
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.tile.TaiwanTileTypes
 import com.doublemoon1119.mahjongcraft.logic.table.RoundConclusion
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
@@ -185,10 +186,10 @@ object TaiwanFlowerRuleDecisionResolver : RuleDecisionResolver {
                 nextStep = null,
                 win = RuleDecisionWin(
                     outcome = RuleDecisionWinOutcome(
-                        outcomeId = when (result.opportunity.type) {
-                            TaiwanTaiType.EIGHT_FLOWERS -> TaiwanRoundOutcomeIds.EIGHT_FLOWERS
-                            TaiwanTaiType.SEVEN_FLOWERS -> TaiwanRoundOutcomeIds.SEVEN_FLOWERS
-                            else -> error("Unsupported Taiwan special flower win: ${result.opportunity.type}")
+                        outcomeId = when (result.opportunity.taiResult.type) {
+                            TaiwanTaiType.EightFlowers -> TaiwanRoundOutcomeIds.EIGHT_FLOWERS
+                            TaiwanTaiType.SevenFlowers -> TaiwanRoundOutcomeIds.SEVEN_FLOWERS
+                            else -> error("Unsupported Taiwan special flower win: ${result.opportunity.taiResult.type}")
                         },
                         winnerPlayerIds = setOf(winnerId),
                         responsiblePlayerIds = setOfNotNull(result.opportunity.payerId),
@@ -201,8 +202,8 @@ object TaiwanFlowerRuleDecisionResolver : RuleDecisionResolver {
                         player.id to (player.score - previousScore)
                     },
                     extensionDetail = TaiwanSpecialFlowerWinDetail(
-                        taiTypeId = result.opportunity.type.id,
-                        tai = result.opportunity.type.tai,
+                        taiTypeId = TaiwanWinSettlementIds.tai(result.opportunity.taiResult.type),
+                        tai = result.opportunity.taiResult.tai,
                         winningFlowerId = result.winningFlower.id,
                     ),
                 ),

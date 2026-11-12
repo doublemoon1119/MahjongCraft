@@ -1,10 +1,11 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.rule.taiwan.catalogue
 
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.taiwan.TaiwanWinSettlementIds
 import com.doublemoon1119.mahjongcraft.logic.config.MahjongRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.module.BuiltInRuleModuleIds
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanExhaustiveDrawReason
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanRuleConfig
-import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanTaiType
+import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.tai.TaiwanTaiType
 import com.doublemoon1119.mahjongcraft.platform.minecraft.catalogue.RuleCatalogue
 import com.doublemoon1119.mahjongcraft.platform.minecraft.catalogue.RuleCatalogueCategory
 import com.doublemoon1119.mahjongcraft.platform.minecraft.catalogue.RuleCatalogueEntry
@@ -35,17 +36,18 @@ class TaiwanCatalogueProvider : RuleCatalogueProvider {
 
 /** 將計台項目轉成圖鑑條目。 */
 private fun TaiwanTaiType.toCatalogueEntry(config: TaiwanRuleConfig): RuleCatalogueEntry {
+    val id = TaiwanWinSettlementIds.tai(this)
     val slug = id.substringAfterLast('/')
-    val flowerEntry = this == TaiwanTaiType.SEAT_FLOWER ||
-        this == TaiwanTaiType.FLOWER_SET ||
-        this == TaiwanTaiType.EIGHT_FLOWERS ||
-        this == TaiwanTaiType.SEVEN_FLOWERS
+    val flowerEntry = this == TaiwanTaiType.SeatFlower ||
+        this == TaiwanTaiType.FlowerSet ||
+        this == TaiwanTaiType.EightFlowers ||
+        this == TaiwanTaiType.SevenFlowers
     return RuleCatalogueEntry(
         id = id,
         categoryId = taiCatalogueCategory.id,
         nameTranslationKey = "mahjongcraft.taiwan.tai.$slug",
         descriptionTranslationKey = TaiwanCatalogueKeys.PREFIX + "entry.$slug.description",
-        labels = listOf(RuleCatalogueLabel(TaiwanCatalogueKeys.PREFIX + "label.tai_$tai")),
+        labels = listOf(RuleCatalogueLabel(TaiwanCatalogueKeys.PREFIX + "label.tai_${taiCatalogueCategory.tai}")),
         unavailableReasonTranslationKey = TaiwanCatalogueKeys.FLOWERS_UNAVAILABLE.takeIf { flowerEntry && !config.useFlowerTiles },
         examples = taiwanCatalogueExamples(this),
     )
@@ -54,50 +56,50 @@ private fun TaiwanTaiType.toCatalogueEntry(config: TaiwanRuleConfig): RuleCatalo
 /** 每個計台項目明確對應的主要分類；新增計台項目時必須一併決定圖鑑位置。 */
 private val TaiwanTaiType.taiCatalogueCategory: TaiwanCatalogueCategory
     get() = when (this) {
-        TaiwanTaiType.CONCEALED_HAND,
-        TaiwanTaiType.SELF_DRAW,
-        TaiwanTaiType.FULLY_CONCEALED_HAND,
-        TaiwanTaiType.SEAT_WIND,
-        TaiwanTaiType.ROUND_WIND,
-        TaiwanTaiType.DRAGON,
-        TaiwanTaiType.SEAT_FLOWER,
-        TaiwanTaiType.FLOWER_SET,
-        TaiwanTaiType.SINGLE_WAIT,
-        TaiwanTaiType.ROBBING_KONG,
-        TaiwanTaiType.REPLACEMENT_WIN,
-        TaiwanTaiType.LAST_DRAW,
-        TaiwanTaiType.DECLARED_READY,
+        TaiwanTaiType.ConcealedHand,
+        TaiwanTaiType.SelfDraw,
+        TaiwanTaiType.FullyConcealedHand,
+        TaiwanTaiType.SeatWind,
+        TaiwanTaiType.RoundWind,
+        TaiwanTaiType.Dragon,
+        TaiwanTaiType.SeatFlower,
+        TaiwanTaiType.FlowerSet,
+        TaiwanTaiType.SingleWait,
+        TaiwanTaiType.RobbingKong,
+        TaiwanTaiType.ReplacementWin,
+        TaiwanTaiType.LastDraw,
+        TaiwanTaiType.DeclaredReady,
         -> TaiwanCatalogueCategory.TAI_1
 
-        TaiwanTaiType.ALL_SEQUENCES,
-        TaiwanTaiType.THREE_CONCEALED_TRIPLETS,
-        TaiwanTaiType.ALL_EXPOSED,
+        TaiwanTaiType.AllSequences,
+        TaiwanTaiType.ThreeConcealedTriplets,
+        TaiwanTaiType.AllExposed,
         -> TaiwanCatalogueCategory.TAI_2
 
-        TaiwanTaiType.ALL_TRIPLETS,
-        TaiwanTaiType.LITTLE_DRAGONS,
-        TaiwanTaiType.HALF_FLUSH,
+        TaiwanTaiType.AllTriplets,
+        TaiwanTaiType.LittleDragons,
+        TaiwanTaiType.HalfFlush,
         -> TaiwanCatalogueCategory.TAI_4
 
-        TaiwanTaiType.FOUR_CONCEALED_TRIPLETS -> TaiwanCatalogueCategory.TAI_5
+        TaiwanTaiType.FourConcealedTriplets -> TaiwanCatalogueCategory.TAI_5
 
-        TaiwanTaiType.FIVE_CONCEALED_TRIPLETS,
-        TaiwanTaiType.BIG_DRAGONS,
-        TaiwanTaiType.FULL_FLUSH,
-        TaiwanTaiType.LITTLE_WINDS,
-        TaiwanTaiType.EARTHLY_READY,
-        TaiwanTaiType.EIGHT_FLOWERS,
-        TaiwanTaiType.SEVEN_FLOWERS,
+        TaiwanTaiType.FiveConcealedTriplets,
+        TaiwanTaiType.BigDragons,
+        TaiwanTaiType.FullFlush,
+        TaiwanTaiType.LittleWinds,
+        TaiwanTaiType.EarthlyReady,
+        TaiwanTaiType.EightFlowers,
+        TaiwanTaiType.SevenFlowers,
         -> TaiwanCatalogueCategory.TAI_8
 
-        TaiwanTaiType.BIG_WINDS,
-        TaiwanTaiType.ALL_HONORS,
-        TaiwanTaiType.HEAVENLY_READY,
-        TaiwanTaiType.HUMAN_WIN,
-        TaiwanTaiType.EARTHLY_WIN,
+        TaiwanTaiType.BigWinds,
+        TaiwanTaiType.AllHonors,
+        TaiwanTaiType.HeavenlyReady,
+        TaiwanTaiType.HumanWin,
+        TaiwanTaiType.EarthlyWin,
         -> TaiwanCatalogueCategory.TAI_16
 
-        TaiwanTaiType.HEAVENLY_WIN -> TaiwanCatalogueCategory.TAI_24
+        TaiwanTaiType.HeavenlyWin -> TaiwanCatalogueCategory.TAI_24
     }
 
 /** 建立一般流局與途中流局條目。 */

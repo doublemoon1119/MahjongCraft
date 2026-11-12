@@ -2,7 +2,7 @@ package com.doublemoon1119.mahjongcraft.platform.minecraft.rule.taiwan.catalogue
 
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.logic.base.TileFaceView
-import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanTaiType
+import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.tai.TaiwanTaiType
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.tile.TaiwanTileTypes
 import com.doublemoon1119.mahjongcraft.platform.minecraft.catalogue.RuleCatalogueExample
 import com.doublemoon1119.mahjongcraft.platform.minecraft.catalogue.RuleCatalogueTileGroup
@@ -17,39 +17,39 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.catalogue.RuleCatalogu
  * @return 對應台種的完整手牌範例；不需要牌例時為空列表。
  */
 internal fun taiwanCatalogueExamples(type: TaiwanTaiType): List<RuleCatalogueExample> = when (type) {
-    TaiwanTaiType.CONCEALED_HAND -> listOf(standardHand(TaiwanCatalogueKeys.CONCEALED_HAND_EXAMPLE))
-    TaiwanTaiType.SELF_DRAW -> listOf(standardHand(TaiwanCatalogueKeys.SELF_DRAW_EXAMPLE))
-    TaiwanTaiType.FULLY_CONCEALED_HAND -> listOf(standardHand(TaiwanCatalogueKeys.FULLY_CONCEALED_HAND_EXAMPLE))
-    TaiwanTaiType.SEAT_WIND -> listOf(
+    TaiwanTaiType.ConcealedHand -> listOf(standardHand(TaiwanCatalogueKeys.CONCEALED_HAND_EXAMPLE))
+    TaiwanTaiType.SelfDraw -> listOf(standardHand(TaiwanCatalogueKeys.SELF_DRAW_EXAMPLE))
+    TaiwanTaiType.FullyConcealedHand -> listOf(standardHand(TaiwanCatalogueKeys.FULLY_CONCEALED_HAND_EXAMPLE))
+    TaiwanTaiType.SeatWind -> listOf(
         full(m1, m2, m3, p4, p5, p6, s7, s8, s9, east, east, east, red, red, s1, s2, winning = s3, description = TaiwanCatalogueKeys.SEAT_WIND_EXAMPLE),
     )
-    TaiwanTaiType.ROUND_WIND -> listOf(
+    TaiwanTaiType.RoundWind -> listOf(
         full(m1, m2, m3, p4, p5, p6, s7, s8, s9, south, south, south, red, red, s1, s2, winning = s3, description = TaiwanCatalogueKeys.ROUND_WIND_EXAMPLE),
     )
-    TaiwanTaiType.DRAGON -> listOf(
+    TaiwanTaiType.Dragon -> listOf(
         full(m1, m2, m3, p4, p5, p6, s7, s8, s9, red, red, red, east, east, s1, s2, winning = s3),
     )
-    TaiwanTaiType.SEAT_FLOWER -> listOf(illustration(spring, plum, description = TaiwanCatalogueKeys.SEAT_FLOWER_EXAMPLE))
-    TaiwanTaiType.FLOWER_SET -> listOf(illustration(spring, summer, autumn, winter))
-    TaiwanTaiType.SINGLE_WAIT -> listOf(
+    TaiwanTaiType.SeatFlower -> listOf(illustration(spring, plum, description = TaiwanCatalogueKeys.SEAT_FLOWER_EXAMPLE))
+    TaiwanTaiType.FlowerSet -> listOf(illustration(spring, summer, autumn, winter))
+    TaiwanTaiType.SingleWait -> listOf(
         full(m1, m2, m3, m4, m5, m6, p1, p2, p3, p4, p5, p6, s1, s2, s3, east, winning = east, description = TaiwanCatalogueKeys.SINGLE_WAIT_EXAMPLE),
     )
-    TaiwanTaiType.ROBBING_KONG -> listOf(standardHand(TaiwanCatalogueKeys.ROBBING_KONG_EXAMPLE))
-    TaiwanTaiType.REPLACEMENT_WIN -> listOf(standardHand(TaiwanCatalogueKeys.REPLACEMENT_WIN_EXAMPLE))
-    TaiwanTaiType.LAST_DRAW -> listOf(standardHand(TaiwanCatalogueKeys.LAST_DRAW_EXAMPLE))
-    TaiwanTaiType.ALL_SEQUENCES -> listOf(
+    TaiwanTaiType.RobbingKong -> listOf(standardHand(TaiwanCatalogueKeys.ROBBING_KONG_EXAMPLE))
+    TaiwanTaiType.ReplacementWin -> listOf(standardHand(TaiwanCatalogueKeys.REPLACEMENT_WIN_EXAMPLE))
+    TaiwanTaiType.LastDraw -> listOf(standardHand(TaiwanCatalogueKeys.LAST_DRAW_EXAMPLE))
+    TaiwanTaiType.AllSequences -> listOf(
         full(m1, m2, m3, m4, m5, m6, p1, p2, p3, p4, p5, p6, s2, s3, s8, s8, winning = s1),
     )
-    TaiwanTaiType.THREE_CONCEALED_TRIPLETS -> listOf(
+    TaiwanTaiType.ThreeConcealedTriplets -> listOf(
         full(m1, m1, m1, p2, p2, p2, s3, s3, s3, p4, p5, p6, s7, s8, s9, east, winning = east),
     )
-    TaiwanTaiType.FOUR_CONCEALED_TRIPLETS -> listOf(
+    TaiwanTaiType.FourConcealedTriplets -> listOf(
         full(m1, m1, m1, p2, p2, p2, s3, s3, s3, east, east, east, p4, p5, p6, red, winning = red),
     )
-    TaiwanTaiType.FIVE_CONCEALED_TRIPLETS -> listOf(
+    TaiwanTaiType.FiveConcealedTriplets -> listOf(
         full(m1, m1, m1, p2, p2, p2, s3, s3, s3, east, east, east, red, red, red, white, winning = white),
     )
-    TaiwanTaiType.ALL_EXPOSED -> listOf(
+    TaiwanTaiType.AllExposed -> listOf(
         groupedFull(
             group(RuleCatalogueTileGroupRole.OPEN_MELD, m1, m2, m3),
             group(RuleCatalogueTileGroupRole.OPEN_MELD, p1, p2, p3),
@@ -60,38 +60,38 @@ internal fun taiwanCatalogueExamples(type: TaiwanTaiType): List<RuleCatalogueExa
             winning = east,
         ),
     )
-    TaiwanTaiType.ALL_TRIPLETS -> listOf(
+    TaiwanTaiType.AllTriplets -> listOf(
         full(m1, m1, m1, p2, p2, p2, s3, s3, s3, east, east, east, red, red, white, white, winning = red),
     )
-    TaiwanTaiType.LITTLE_DRAGONS -> listOf(
+    TaiwanTaiType.LittleDragons -> listOf(
         full(m1, m2, m3, p4, p5, p6, white, white, white, green, green, green, red, red, s7, s8, winning = s9),
     )
-    TaiwanTaiType.BIG_DRAGONS -> listOf(
+    TaiwanTaiType.BigDragons -> listOf(
         full(m1, m2, m3, white, white, white, green, green, green, red, red, red, s7, s8, east, east, winning = s9),
     )
-    TaiwanTaiType.HALF_FLUSH -> listOf(
+    TaiwanTaiType.HalfFlush -> listOf(
         full(p1, p2, p3, p4, p5, p6, p7, p8, p9, east, east, east, white, white, green, green, winning = white),
     )
-    TaiwanTaiType.FULL_FLUSH -> listOf(
+    TaiwanTaiType.FullFlush -> listOf(
         full(p1, p2, p3, p2, p3, p4, p4, p5, p6, p7, p8, p9, p9, p9, p5, p5, winning = p5),
     )
-    TaiwanTaiType.LITTLE_WINDS -> listOf(
+    TaiwanTaiType.LittleWinds -> listOf(
         full(east, east, east, south, south, south, west, west, west, north, north, m1, m2, m3, p7, p8, winning = p9),
     )
-    TaiwanTaiType.BIG_WINDS -> listOf(
+    TaiwanTaiType.BigWinds -> listOf(
         full(east, east, east, south, south, south, west, west, west, north, north, north, m1, m2, red, red, winning = m3),
     )
-    TaiwanTaiType.ALL_HONORS -> listOf(
+    TaiwanTaiType.AllHonors -> listOf(
         full(east, east, east, south, south, south, west, west, west, north, north, north, white, white, white, red, winning = red),
     )
-    TaiwanTaiType.DECLARED_READY -> listOf(standardHand(TaiwanCatalogueKeys.DECLARED_READY_EXAMPLE))
-    TaiwanTaiType.HEAVENLY_READY -> listOf(standardHand(TaiwanCatalogueKeys.HEAVENLY_READY_EXAMPLE))
-    TaiwanTaiType.EARTHLY_READY -> listOf(standardHand(TaiwanCatalogueKeys.EARTHLY_READY_EXAMPLE))
-    TaiwanTaiType.HUMAN_WIN -> listOf(standardHand(TaiwanCatalogueKeys.HUMAN_WIN_EXAMPLE))
-    TaiwanTaiType.EARTHLY_WIN -> listOf(standardHand(TaiwanCatalogueKeys.EARTHLY_WIN_EXAMPLE))
-    TaiwanTaiType.HEAVENLY_WIN -> listOf(standardHand(TaiwanCatalogueKeys.HEAVENLY_WIN_EXAMPLE))
-    TaiwanTaiType.EIGHT_FLOWERS -> listOf(illustration(spring, summer, autumn, winter, plum, orchid, chrysanthemum, bamboo))
-    TaiwanTaiType.SEVEN_FLOWERS -> listOf(illustration(spring, summer, autumn, winter, plum, orchid, chrysanthemum))
+    TaiwanTaiType.DeclaredReady -> listOf(standardHand(TaiwanCatalogueKeys.DECLARED_READY_EXAMPLE))
+    TaiwanTaiType.HeavenlyReady -> listOf(standardHand(TaiwanCatalogueKeys.HEAVENLY_READY_EXAMPLE))
+    TaiwanTaiType.EarthlyReady -> listOf(standardHand(TaiwanCatalogueKeys.EARTHLY_READY_EXAMPLE))
+    TaiwanTaiType.HumanWin -> listOf(standardHand(TaiwanCatalogueKeys.HUMAN_WIN_EXAMPLE))
+    TaiwanTaiType.EarthlyWin -> listOf(standardHand(TaiwanCatalogueKeys.EARTHLY_WIN_EXAMPLE))
+    TaiwanTaiType.HeavenlyWin -> listOf(standardHand(TaiwanCatalogueKeys.HEAVENLY_WIN_EXAMPLE))
+    TaiwanTaiType.EightFlowers -> listOf(illustration(spring, summer, autumn, winter, plum, orchid, chrysanthemum, bamboo))
+    TaiwanTaiType.SevenFlowers -> listOf(illustration(spring, summer, autumn, winter, plum, orchid, chrysanthemum))
 }
 
 /**

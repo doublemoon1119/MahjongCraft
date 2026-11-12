@@ -66,7 +66,7 @@ class TaiwanPositionRulesTest {
         val plain = assertIs<WinValue.Points>(rules.winValue(view(table, waiter), waiter.hand, WINNING_VALUE, isTsumo = false))
         val declared = assertIs<WinValue.Points>(rules.winValue(view(table, waiter), waiter.hand, WINNING_VALUE, isTsumo = false, declarations = setOf(TAIWAN_DECLARE_READY_ACTION)))
 
-        assertEquals(TaiwanTaiType.DECLARED_READY.tai * pointsPerTai, declared.points - plain.points)
+        assertEquals(DECLARED_READY_TAI * pointsPerTai, declared.points - plain.points)
     }
 
     /** 已成立的天聽以天聽的台數計算。 */
@@ -79,7 +79,7 @@ class TaiwanPositionRulesTest {
         val declared = assertIs<WinValue.Points>(rules.winValue(view(table, waiter), waiter.hand, WINNING_VALUE, isTsumo = false))
         val plain = assertIs<WinValue.Points>(rules.winValue(view(undeclared, undeclared.players[WAITER]), waiter.hand, WINNING_VALUE, isTsumo = false))
 
-        assertEquals(TaiwanTaiType.HEAVENLY_READY.tai * pointsPerTai, declared.points - plain.points)
+        assertEquals(HEAVENLY_READY_TAI * pointsPerTai, declared.points - plain.points)
     }
 
     /** 過水中最後打出的牌仍是自己聽的牌時不能胡；打出其他牌之後就能胡。 */
@@ -192,3 +192,9 @@ class TaiwanPositionRulesTest {
         val WINNING_VALUE = TileValue(WINNING_TILE)
     }
 }
+
+/** 報聽的台數。 */
+private const val DECLARED_READY_TAI = 1
+
+/** 天聽的台數。 */
+private const val HEAVENLY_READY_TAI = 16

@@ -29,7 +29,10 @@ import com.doublemoon1119.mahjongcraft.logic.module.BuiltInPaymentReasonIds
 import com.doublemoon1119.mahjongcraft.logic.module.BuiltInRuleModuleIds
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiExhaustiveDrawReason
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.YakuType
-import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanTaiType
+import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.tai.TaiwanTaiResult
+import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.tai.TaiwanTaiType
+import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.tai.flower.calculateTaiwanEightFlowers
+import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.tai.flower.calculateTaiwanSevenFlowers
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.tile.TaiwanTileTypes
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongTileEntity
@@ -1088,22 +1091,22 @@ class FabricDebugPresentationCommand(
         }
         val winningTileId = if (special) null else Uuid.random().also { tileAssetsById[it] = "m1" }
         // 一般胡牌示範常見台種，胡別人的牌含一個八台以上的強調項目；台數只供版面測試，不保證與手牌一致。
-        val taiTypes = when (preview) {
+        val taiResults = when (preview) {
             TaiwanWinSettlementPreview.TSUMO -> listOf(
-                TaiwanTaiType.CONCEALED_HAND,
-                TaiwanTaiType.SELF_DRAW,
-                TaiwanTaiType.FULLY_CONCEALED_HAND,
-                TaiwanTaiType.SEAT_FLOWER,
-                TaiwanTaiType.ALL_SEQUENCES,
+                TaiwanTaiResult(TaiwanTaiType.ConcealedHand, 1),
+                TaiwanTaiResult(TaiwanTaiType.SelfDraw, 1),
+                TaiwanTaiResult(TaiwanTaiType.FullyConcealedHand, 1),
+                TaiwanTaiResult(TaiwanTaiType.SeatFlower, 1),
+                TaiwanTaiResult(TaiwanTaiType.AllSequences, 2),
             )
             TaiwanWinSettlementPreview.RON -> listOf(
-                TaiwanTaiType.CONCEALED_HAND,
-                TaiwanTaiType.SINGLE_WAIT,
-                TaiwanTaiType.ALL_TRIPLETS,
-                TaiwanTaiType.FULL_FLUSH,
+                TaiwanTaiResult(TaiwanTaiType.ConcealedHand, 1),
+                TaiwanTaiResult(TaiwanTaiType.SingleWait, 1),
+                TaiwanTaiResult(TaiwanTaiType.AllTriplets, 4),
+                TaiwanTaiResult(TaiwanTaiType.FullFlush, 8),
             )
-            TaiwanWinSettlementPreview.EIGHT_FLOWERS -> listOf(TaiwanTaiType.EIGHT_FLOWERS)
-            TaiwanWinSettlementPreview.SEVEN_FLOWERS -> listOf(TaiwanTaiType.SEVEN_FLOWERS)
+            TaiwanWinSettlementPreview.EIGHT_FLOWERS -> listOf(calculateTaiwanEightFlowers())
+            TaiwanWinSettlementPreview.SEVEN_FLOWERS -> listOf(calculateTaiwanSevenFlowers())
         }
         val flowerFields = if (special) {
             listOf(
@@ -1114,7 +1117,7 @@ class FabricDebugPresentationCommand(
             listOf(WinSettlementDetailField(TaiwanWinSettlementIds.FLOWERS_FIELD, WinSettlementDetailValue.TileFaces(flowerFaces.take(2))))
         }
         // 贏家是閒家：自摸時莊家那一條只算莊家那一份（自摸示範連兩莊），胡莊家的牌時每一份都算，七搶一被搶的是閒家所以不列。
-        val handTai = taiTypes.sumOf { it.tai }
+        val handTai = taiResults.sumOf { it.tai }
         val dealerStreak = if (preview == TaiwanWinSettlementPreview.TSUMO) 2 else 0
         val dealerTai = 1 + 2 * dealerStreak
         val dealerPaysAlone = preview == TaiwanWinSettlementPreview.TSUMO || preview == TaiwanWinSettlementPreview.EIGHT_FLOWERS
@@ -1129,7 +1132,7 @@ class FabricDebugPresentationCommand(
             WinSettlementDetailField(
                 TaiwanWinSettlementIds.TAI_FIELD,
                 WinSettlementDetailValue.Entries(
-                    taiTypes.map { type -> WinSettlementDetailEntry(type.id, WinSettlementQuantity(TaiwanWinSettlementIds.TAI_UNIT, type.tai)) } + listOfNotNull(dealerEntry),
+                    taiResults.map { result -> TaiwanWinSettlementIds.taiEntry(result.type, result.tai) } + listOfNotNull(dealerEntry),
                 ),
             ),
             WinSettlementDetailField(

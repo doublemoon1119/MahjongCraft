@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.logic.rules.taiwan
 
+import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.tai.TaiwanTaiType
 import com.doublemoon1119.mahjongcraft.metadata.MahjongCraftMetadata
 
 /**
@@ -10,11 +11,11 @@ import com.doublemoon1119.mahjongcraft.metadata.MahjongCraftMetadata
  */
 enum class TaiwanReadyKind(val taiType: TaiwanTaiType, val indicatorId: String) {
     /** 一般時候的宣告聽牌。 */
-    GENERAL(TaiwanTaiType.DECLARED_READY, MahjongCraftMetadata.id("taiwan/ready_indicator/general")),
+    GENERAL(TaiwanTaiType.DeclaredReady, MahjongCraftMetadata.id("taiwan/ready_indicator/general")),
 
     /** 莊家打出第一張牌時宣告的天聽。 */
-    HEAVENLY(TaiwanTaiType.HEAVENLY_READY, MahjongCraftMetadata.id("taiwan/ready_indicator/heavenly")),
+    HEAVENLY(TaiwanTaiType.HeavenlyReady, MahjongCraftMetadata.id("taiwan/ready_indicator/heavenly")),
 
     /** 第一巡內宣告的地聽。 */
-    EARTHLY(TaiwanTaiType.EARTHLY_READY, MahjongCraftMetadata.id("taiwan/ready_indicator/earthly")),
+    EARTHLY(TaiwanTaiType.EarthlyReady, MahjongCraftMetadata.id("taiwan/ready_indicator/earthly")),
 }

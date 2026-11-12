@@ -12,7 +12,8 @@ import com.doublemoon1119.mahjongcraft.logic.base.TileFaceView
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanPlayerTileAreaIds
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanRuleConfig
-import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanTaiType
+import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.tai.TaiwanTaiType
+import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.tai.flower.calculateTaiwanSevenFlowers
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.tile.TaiwanTileTypes
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledCoreExtensionRegistries
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.registerBundledRuleModules
@@ -79,8 +80,8 @@ class RuleDecisionWinPresentationStagerTest {
                     player.id to (player.score - oldScore)
                 },
                 extensionDetail = TaiwanSpecialFlowerWinDetail(
-                    taiTypeId = TaiwanTaiType.SEVEN_FLOWERS.id,
-                    tai = TaiwanTaiType.SEVEN_FLOWERS.tai,
+                    taiTypeId = TaiwanWinSettlementIds.tai(TaiwanTaiType.SevenFlowers),
+                    tai = calculateTaiwanSevenFlowers().tai,
                     winningFlowerId = winningFlowerId,
                 ),
             ),

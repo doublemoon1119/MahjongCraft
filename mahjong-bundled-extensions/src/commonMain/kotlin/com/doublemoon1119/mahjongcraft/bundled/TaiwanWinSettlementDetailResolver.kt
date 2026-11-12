@@ -33,7 +33,7 @@ object TaiwanWinSettlementDetailResolver : WinSettlementDetailResolver {
         publicFace: (TileValue) -> TileFaceView,
     ): List<WinSettlementDetailField> {
         val taiwanValue = handValue as? TaiwanHandValueResult
-        val handEntries = taiwanValue?.taiResults.orEmpty().map { result -> taiEntry(result.type.id, result.totalTai) }
+        val handEntries = taiwanValue?.taiResults.orEmpty().map { result -> TaiwanWinSettlementIds.taiEntry(result.type, result.tai) }
         return listOfNotNull(flowersField(flowersOf(state, winnerId), publicFace)) +
             taiFields(state, winnerId, responsiblePlayerId, handEntries, taiwanValue?.totalTai ?: 0)
     }

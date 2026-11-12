@@ -1,5 +1,7 @@
 package com.doublemoon1119.mahjongcraft.logic.rules.taiwan
 
+import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.tai.flower.calculateTaiwanEightFlowers
+import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.tai.flower.calculateTaiwanSevenFlowers
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -82,7 +84,7 @@ class TaiwanPaymentCalculatorTest {
             playerIds = players,
             winnerId = players[1],
             dealerId = players[0],
-            handTai = TaiwanTaiType.EIGHT_FLOWERS.tai,
+            handTai = calculateTaiwanEightFlowers().tai,
             dealerStreak = 0,
             discarderId = null,
         )
@@ -92,7 +94,7 @@ class TaiwanPaymentCalculatorTest {
             playerIds = players,
             winnerId = players[1],
             dealerId = players[0],
-            handTai = TaiwanTaiType.SEVEN_FLOWERS.tai,
+            handTai = calculateTaiwanSevenFlowers().tai,
             dealerStreak = 0,
             discarderId = players[2],
         )

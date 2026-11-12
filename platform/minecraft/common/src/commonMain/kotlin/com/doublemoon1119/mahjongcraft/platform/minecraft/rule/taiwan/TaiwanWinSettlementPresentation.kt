@@ -3,7 +3,7 @@ package com.doublemoon1119.mahjongcraft.platform.minecraft.rule.taiwan
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementDetailEntry
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementQuantity
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.taiwan.TaiwanWinSettlementIds
-import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanTaiType
+import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.tai.TaiwanTaiType
 import com.doublemoon1119.mahjongcraft.metadata.MahjongCraftMetadata
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.BuiltInWinSettlementFieldIds
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.EntryEmphasis
@@ -125,7 +125,7 @@ internal object TaiwanWinSettlementPresentation {
     }
 
     /** 台種 ID 的翻譯鍵；不是內建台種或莊家台時為 null，直接顯示 ID。 */
-    private fun taiTypeTranslationKey(id: String): String? = (TaiwanTaiType.entries.map { it.id } + TaiwanWinSettlementIds.DEALER_ENTRY + TaiwanWinSettlementIds.DEALER_STREAK_ENTRY)
+    private fun taiTypeTranslationKey(id: String): String? = (TaiwanTaiType.entries.map(TaiwanWinSettlementIds::tai) + TaiwanWinSettlementIds.DEALER_ENTRY + TaiwanWinSettlementIds.DEALER_STREAK_ENTRY)
         .firstOrNull { it == id }
         ?.let { TAI_KEY_PREFIX + it.substringAfter(TAI_ID_PREFIX) }
 

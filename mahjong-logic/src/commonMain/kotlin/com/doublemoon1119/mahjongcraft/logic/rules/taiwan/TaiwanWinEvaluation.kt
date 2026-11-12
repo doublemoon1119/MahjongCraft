@@ -2,6 +2,7 @@ package com.doublemoon1119.mahjongcraft.logic.rules.taiwan
 
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
+import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.tai.TaiwanTaiType
 import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayer
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 
@@ -93,9 +94,9 @@ internal class TaiwanWinEvaluation(config: TaiwanRuleConfig) {
         val isDealer = player.id == tableState.dealerPlayerId
         val openingWin = when {
             !isOpening -> null
-            isTsumo && isDealer -> TaiwanTaiType.HEAVENLY_WIN
-            isTsumo -> TaiwanTaiType.EARTHLY_WIN
-            !isDealer -> TaiwanTaiType.HUMAN_WIN
+            isTsumo && isDealer -> TaiwanTaiType.HeavenlyWin
+            isTsumo -> TaiwanTaiType.EarthlyWin
+            !isDealer -> TaiwanTaiType.HumanWin
             else -> null
         }
         return TaiwanWinSituation(

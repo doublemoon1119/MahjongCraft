@@ -4,7 +4,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementDetai
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementQuantity
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.taiwan.TaiwanWinSettlementIds
 import com.doublemoon1119.mahjongcraft.logic.module.BuiltInRuleModuleIds
-import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanTaiType
+import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.tai.TaiwanTaiType
 import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.riichi.RiichiWinSettlementTemplates
 import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.taiwan.TaiwanWinSettlementPresentation
 import kotlin.test.Test
@@ -62,7 +62,7 @@ class StandardWinSettlementLayoutTest {
     fun `taiwan tai entries use translated names`() {
         val entries = TaiwanWinSettlementPresentation.taiText.entries(
             listOf(
-                WinSettlementDetailEntry(TaiwanTaiType.FULL_FLUSH.id, WinSettlementQuantity(TaiwanWinSettlementIds.TAI_UNIT, 8)),
+                WinSettlementDetailEntry(TaiwanWinSettlementIds.tai(TaiwanTaiType.FullFlush), WinSettlementQuantity(TaiwanWinSettlementIds.TAI_UNIT, 8)),
                 WinSettlementDetailEntry("mahjongcraft:taiwan/tai/test_unknown", null),
             ),
         ).entries
