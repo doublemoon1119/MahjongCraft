@@ -58,7 +58,7 @@ class TaiwanCatalogueProviderTest {
         assertEquals(catalogue.entries.size, catalogue.entries.map { it.id }.distinct().size)
     }
 
-    /** 停用花牌與四風連打只標示相關條目不可用，不從一般說明中刪除。 */
+    /** 停用花牌、四風連打與報聽只標示相關條目不可用，不從一般說明中刪除。 */
     @Test
     fun `disabled options keep entries with an unavailable reason`() {
         val catalogue = assertNotNull(
@@ -72,7 +72,14 @@ class TaiwanCatalogueProviderTest {
             TaiwanCatalogueKeys.FOUR_WINDS_UNAVAILABLE,
             catalogue.entries.single { it.id == TaiwanCatalogueSpecial.FourWinds.id }.unavailableReasonTranslationKey,
         )
+        assertEquals(
+            TaiwanCatalogueKeys.GENERAL_READY_DECLARATION_UNAVAILABLE,
+            catalogue.entries.single { it.id == TaiwanCatalogueTai.DeclaredReady.id }.unavailableReasonTranslationKey,
+        )
+        assertNull(catalogue.entries.single { it.id == TaiwanCatalogueTai.HeavenlyReady.id }.unavailableReasonTranslationKey)
         assertNull(catalogue.entries.single { it.id == TaiwanCatalogueTai.ConcealedHand.id }.unavailableReasonTranslationKey)
+        val generalReady = assertNotNull(TaiwanCatalogueProvider().catalogue(TaiwanRuleConfig(generalReadyDeclaration = true)))
+        assertNull(generalReady.entries.single { it.id == TaiwanCatalogueTai.DeclaredReady.id }.unavailableReasonTranslationKey)
     }
 
     /** 每個計台項目都有牌面範例；一般牌型與情境使用完整十六張手牌加一張和牌。 */

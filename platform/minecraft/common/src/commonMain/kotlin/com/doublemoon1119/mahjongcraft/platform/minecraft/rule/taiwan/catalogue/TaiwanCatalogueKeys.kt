@@ -66,6 +66,9 @@ internal object TaiwanCatalogueKeys {
 
     /** 四風連打停用時顯示的原因。 */
     const val FOUR_WINDS_UNAVAILABLE: String = "mahjongcraft.taiwan.rule_catalogue.unavailable.four_winds"
+
+    /** 未開啟報聽時的報聽台說明。 */
+    const val GENERAL_READY_DECLARATION_UNAVAILABLE: String = "mahjongcraft.taiwan.rule_catalogue.unavailable.general_ready_declaration"
 }
 
 /**

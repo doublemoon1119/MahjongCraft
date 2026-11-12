@@ -40,7 +40,11 @@ private fun TaiwanCatalogueTai.toCatalogueEntry(config: TaiwanRuleConfig): RuleC
     nameTranslationKey = TaiwanTaiTranslationKeys.keyFor(type),
     descriptionTranslationKey = descriptionKey,
     labels = listOf(RuleCatalogueLabel(valueKey)),
-    unavailableReasonTranslationKey = TaiwanCatalogueKeys.FLOWERS_UNAVAILABLE.takeIf { type in FLOWER_TAI && !config.useFlowerTiles },
+    unavailableReasonTranslationKey = when {
+        type in FLOWER_TAI && !config.useFlowerTiles -> TaiwanCatalogueKeys.FLOWERS_UNAVAILABLE
+        type == TaiwanTaiType.DeclaredReady && !config.generalReadyDeclaration -> TaiwanCatalogueKeys.GENERAL_READY_DECLARATION_UNAVAILABLE
+        else -> null
+    },
     examples = taiwanCatalogueExamples(type),
 )
 

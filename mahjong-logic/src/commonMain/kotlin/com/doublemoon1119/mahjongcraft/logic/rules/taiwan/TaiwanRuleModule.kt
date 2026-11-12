@@ -137,19 +137,15 @@ class TaiwanRuleModule(
     override fun discardableTileIds(tableState: TableState, player: MahjongPlayer): Set<Uuid>? = TaiwanDiscardRestriction.discardableTileIds(player)
 
     /**
-     * 宣告聽牌並打牌：打出後必須仍聽牌。莊家第一打為天聽；全桌沒有副露時，閒家第一打或莊家第二打為地聽；其他時候為一般宣告。
+     * 宣告聽牌並打牌：打出後必須仍聽牌。莊家第一打為天聽；全桌沒有副露時，閒家第一打或莊家第二打為地聽；其他時候為一般宣告，
+     * 只有開啟報聽時才能宣告。
      */
     override fun declarationDiscardPolicy(): DeclarationDiscardPolicy = DeclarationDiscardPolicy { tableState, player, action, discardResult ->
         if (action != TAIWAN_DECLARE_READY_ACTION || player.components[TaiwanPlayerComponents.READY_DECLARATION] != null) return@DeclarationDiscardPolicy null
-        if (createLegalActionValidator().waits(discardResult.hand).isEmpty()) return@DeclarationDiscardPolicy null
-        val noMelds = tableState.players.all { it.hand.melds.isEmpty() }
-        val isDealer = player.id == tableState.dealerPlayerId
-        val previousDiscards = player.discardPile.entries.size
-        val kind = when {
-            noMelds && isDealer && previousDiscards == 0 -> TaiwanReadyKind.HEAVENLY
-            noMelds && previousDiscards == (if (isDealer) 1 else 0) -> TaiwanReadyKind.EARTHLY
-            else -> TaiwanReadyKind.GENERAL
-        }
+        val validator = createLegalActionValidator()
+        if (validator.waits(discardResult.hand).isEmpty()) return@DeclarationDiscardPolicy null
+        val kind = validator.readyKind(tableState, player)
+        if (!TaiwanReadyDeclarationRules.isDeclarable(config, kind)) return@DeclarationDiscardPolicy null
         DeclarationDiscardEffect(
             playerComponents = ComponentPatch.basedOn(player.components, values = ComponentSet.EMPTY.with(TaiwanPlayerComponents.READY_DECLARATION, kind)),
             discardComponents = ComponentSet.EMPTY,

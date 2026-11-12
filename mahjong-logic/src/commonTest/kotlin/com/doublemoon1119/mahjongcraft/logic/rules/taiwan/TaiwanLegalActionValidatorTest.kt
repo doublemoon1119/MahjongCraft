@@ -141,6 +141,20 @@ class TaiwanLegalActionValidatorTest {
         assertEquals(setOf(drawn.id, waitingTiles.last().id), validator.tileSelectionRequirement(state, self, TAIWAN_DECLARE_READY_ACTION)?.eligibleTileIds)
     }
 
+    /** 已過地聽時機時，只有開啟報聽才提供宣告聽牌。 */
+    @Test
+    fun `declare ready after the opening turn requires the declared ready option`() {
+        val drawn = tile(Tile.Honor.West)
+        val waiter = player(Wind.SOUTH, Hand(tiles = waitingTiles, lastDrawn = drawn))
+            .copy(discardPile = TaiwanDiscardPile().discardTile(tile(Tile.Honor.North)))
+        val state = table(waiter = waiter, currentPlayerIndex = 1)
+        val context = LegalActionContext.ownTurn(state, state.players[1].id)
+        val generalReadyValidator = TaiwanLegalActionValidator(TaiwanRuleConfig(generalReadyDeclaration = true))
+
+        assertFalse(TAIWAN_DECLARE_READY_ACTION in validator.getLegalActions(context))
+        assertTrue(TAIWAN_DECLARE_READY_ACTION in generalReadyValidator.getLegalActions(context))
+    }
+
     /**
      * 讓指定座位的玩家打出 [discarded]，取得 [TableState.players] 第二位玩家的反應。
      *

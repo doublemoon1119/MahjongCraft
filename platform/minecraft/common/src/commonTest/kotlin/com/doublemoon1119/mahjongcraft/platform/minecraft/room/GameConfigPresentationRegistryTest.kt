@@ -200,6 +200,7 @@ class GameConfigPresentationRegistryTest {
         assertEquals(null, taiwan.unavailableReasonTranslationKey)
         assertTrue(taiwan.fields.any { it.id == TaiwanGameConfigIds.GAME_LENGTH })
         assertTrue(taiwan.fields.any { it.id == TaiwanGameConfigIds.KAN_CLEARS_PASSED_WIN })
+        assertTrue(taiwan.fields.any { it.id == TaiwanGameConfigIds.GENERAL_READY_DECLARATION })
         val doubleWinResolution = taiwan.fields.single { it.id == TaiwanGameConfigIds.DOUBLE_WIN_RESOLUTION }
         assertEquals(
             listOf(TaiwanGameConfigIds.DOUBLE_WIN_RESOLUTION_NEAREST_WINNER, TaiwanGameConfigIds.DOUBLE_WIN_RESOLUTION_ALL_WINNERS),

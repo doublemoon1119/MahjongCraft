@@ -34,6 +34,9 @@ class TaiwanPositionRulesTest {
     /** 台灣麻將的規則查詢。 */
     private val rules = module.createPositionRules()
 
+    /** 開啟報聽的規則查詢。 */
+    private val generalReadyRules = TaiwanRuleModule(BuiltInRuleModuleIds.TAIWAN, TaiwanRuleConfig(generalReadyDeclaration = true)).createPositionRules()
+
     /** 自摸的胡牌價值等於正式自摸結算的收入，包含連莊台。 */
     @Test
     fun `self-draw value matches the formal settlement`() {
@@ -57,16 +60,41 @@ class TaiwanPositionRulesTest {
         assertEquals(WinValue.Points(incomes.sum() / incomes.size), rules.winValue(view(table, waiter), waiter.hand, WINNING_VALUE, isTsumo = false))
     }
 
-    /** 假設宣告聽牌時多一台。 */
+    /** 開啟報聽時，假設宣告聽牌多一台。 */
     @Test
     fun `a hypothetical ready declaration adds one tai`() {
         val table = table()
         val waiter = table.players[WAITER]
 
-        val plain = assertIs<WinValue.Points>(rules.winValue(view(table, waiter), waiter.hand, WINNING_VALUE, isTsumo = false))
-        val declared = assertIs<WinValue.Points>(rules.winValue(view(table, waiter), waiter.hand, WINNING_VALUE, isTsumo = false, declarations = setOf(TAIWAN_DECLARE_READY_ACTION)))
+        val plain = assertIs<WinValue.Points>(generalReadyRules.winValue(view(table, waiter), waiter.hand, WINNING_VALUE, isTsumo = false))
+        val declared = assertIs<WinValue.Points>(
+            generalReadyRules.winValue(
+                view = view(table, waiter),
+                hand = waiter.hand,
+                winningTile = WINNING_VALUE,
+                isTsumo = false,
+                declarations = setOf(TAIWAN_DECLARE_READY_ACTION),
+            ),
+        )
 
         assertEquals(DECLARED_READY_TAI * pointsPerTai, declared.points - plain.points)
+    }
+
+    /** 未開啟報聽時，已成立的一般宣告（例如天聽放過胡牌後）在查詢與正式結算都不計台。 */
+    @Test
+    fun `a general declaration counts no tai without the declared ready option`() {
+        val table = table(waiterComponents = ComponentSet.EMPTY.with(TaiwanPlayerComponents.READY_DECLARATION, TaiwanReadyKind.GENERAL))
+        val waiter = table.players[WAITER]
+        val undeclared = table()
+
+        val declared = assertIs<WinValue.Points>(rules.winValue(view(table, waiter), waiter.hand, WINNING_VALUE, isTsumo = false))
+        val plain = assertIs<WinValue.Points>(rules.winValue(view(undeclared, undeclared.players[WAITER]), waiter.hand, WINNING_VALUE, isTsumo = false))
+
+        assertEquals(plain, declared)
+        val formalDeclared = checkNotNull(module.declareTsumo(table, waiter.copy(hand = waiter.hand.copy(lastDrawn = winningTile()))))
+        val undeclaredWaiter = undeclared.players[WAITER]
+        val formalPlain = checkNotNull(module.declareTsumo(undeclared, undeclaredWaiter.copy(hand = undeclaredWaiter.hand.copy(lastDrawn = winningTile()))))
+        assertEquals(formalPlain.totalGained, formalDeclared.totalGained)
     }
 
     /** 已成立的天聽以天聽的台數計算。 */
@@ -110,15 +138,25 @@ class TaiwanPositionRulesTest {
         assertNotNull(asSelf.componentViews[TaiwanPlayerComponentViews.PASSED_WIN])
     }
 
-    /** 宣告聽牌不付分數且鎖住手牌；已宣告後不再提議宣告。 */
+    /** 宣告聽牌不付分數且鎖住手牌；開啟報聽時已宣告後不再提議宣告。 */
     @Test
     fun `ready declaration locks the hand and is offered only once`() {
         val undeclared = table()
         val declared = table(waiterComponents = ComponentSet.EMPTY.with(TaiwanPlayerComponents.READY_DECLARATION, TaiwanReadyKind.GENERAL))
 
         assertEquals(DeclarationEffect(cost = 0, locksHand = true), rules.declarationEffect(view(undeclared, undeclared.players[WAITER]), TAIWAN_DECLARE_READY_ACTION))
-        assertEquals(setOf(TAIWAN_DECLARE_READY_ACTION), rules.prospectiveDeclarations(view(undeclared, undeclared.players[WAITER]), undeclared.players[WAITER].hand))
-        assertEquals(emptySet(), rules.prospectiveDeclarations(view(declared, declared.players[WAITER]), declared.players[WAITER].hand))
+        assertEquals(setOf(TAIWAN_DECLARE_READY_ACTION), generalReadyRules.prospectiveDeclarations(view(undeclared, undeclared.players[WAITER]), undeclared.players[WAITER].hand))
+        assertEquals(emptySet(), generalReadyRules.prospectiveDeclarations(view(declared, declared.players[WAITER]), declared.players[WAITER].hand))
+    }
+
+    /** 未開啟報聽時，已過天聽、地聽時機的局面不提議宣告；第一打前仍會提議。 */
+    @Test
+    fun `without the declared ready option only the opening turn offers a declaration`() {
+        val laterTurn = table()
+        val openingTurn = laterTurn.copy(players = laterTurn.players.map { it.copy(discardPile = TaiwanDiscardPile()) })
+
+        assertEquals(emptySet(), rules.prospectiveDeclarations(view(laterTurn, laterTurn.players[WAITER]), laterTurn.players[WAITER].hand))
+        assertEquals(setOf(TAIWAN_DECLARE_READY_ACTION), rules.prospectiveDeclarations(view(openingTurn, openingTurn.players[WAITER]), openingTurn.players[WAITER].hand))
     }
 
     /**

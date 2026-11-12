@@ -29,6 +29,12 @@ internal object TaiwanGameConfigTranslationKeys {
     /** 槓牌解除過水欄位說明。 */
     const val KAN_CLEARS_PASSED_WIN_DESCRIPTION: String = "mahjongcraft.taiwan.room.config.field.kan_clears_passed_win.description"
 
+    /** 報聽欄位名稱。 */
+    const val GENERAL_READY_DECLARATION: String = "mahjongcraft.taiwan.room.config.field.general_ready_declaration"
+
+    /** 報聽欄位說明。 */
+    const val GENERAL_READY_DECLARATION_DESCRIPTION: String = "mahjongcraft.taiwan.room.config.field.general_ready_declaration.description"
+
     /** 起胡台數欄位名稱。 */
     const val MINIMUM_TAI: String = "mahjongcraft.taiwan.room.config.field.minimum_tai"
 

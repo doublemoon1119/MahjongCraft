@@ -250,17 +250,22 @@ class TaiwanRuleModuleTest {
         assertFalse(module.isBonusTile(TileFaceView(tile), listOf(TileFaceView(Tile.Numeric(Tile.Suit.Character, 4)))))
     }
 
-    /** 宣告時機決定宣告種類：莊家第一打為天聽，全桌沒有副露時閒家第一打為地聽，其他時候為一般宣告聽牌。 */
+    /**
+     * 宣告時機決定宣告種類：莊家第一打為天聽，全桌沒有副露時閒家第一打為地聽，其他時候為一般宣告聽牌；
+     * 一般宣告只有開啟報聽時才成立。
+     */
     @Test
     fun `declaration kind follows the declaring turn`() {
         val table = fourPlayerTable(waiterHand = Hand(tiles = waitingTiles(), lastDrawn = tile(Tile.Honor.West)))
         val dealer = table.players[0].copy(hand = table.players[1].hand)
         val waiter = table.players[1]
-
-        assertEquals(TaiwanReadyKind.HEAVENLY, declaredKind(table, dealer))
-        assertEquals(TaiwanReadyKind.EARTHLY, declaredKind(table, waiter))
         val afterDiscard = waiter.copy(discardPile = TaiwanDiscardPile().discardTile(tile(Tile.Honor.North)))
-        assertEquals(TaiwanReadyKind.GENERAL, declaredKind(table, afterDiscard))
+        val generalReadyModule = TaiwanRuleModule(id = "mahjongcraft:taiwan", config = TaiwanRuleConfig(generalReadyDeclaration = true))
+
+        assertEquals(TaiwanReadyKind.HEAVENLY, declaredKind(taiwanModule, table, dealer))
+        assertEquals(TaiwanReadyKind.EARTHLY, declaredKind(taiwanModule, table, waiter))
+        assertNull(declaredKind(taiwanModule, table, afterDiscard))
+        assertEquals(TaiwanReadyKind.GENERAL, declaredKind(generalReadyModule, table, afterDiscard))
     }
 
     /** 放過胡牌後進入過水，天聽改為一般宣告聽牌；打出不能胡的牌後解除，打出聽的牌時不解除。 */
@@ -333,13 +338,18 @@ class TaiwanRuleModuleTest {
     /**
      * 讓玩家打出剛摸入的牌並宣告聽牌，取得成立的宣告種類。
      *
+     * @param ruleModule 使用的規則模組。
      * @param table 宣告前的桌況。
      * @param player 宣告的玩家。
      * @return 宣告種類；宣告不成立時為 null。
      */
-    private fun declaredKind(table: TableState, player: MahjongPlayer): TaiwanReadyKind? {
+    private fun declaredKind(
+        ruleModule: TaiwanRuleModule,
+        table: TableState,
+        player: MahjongPlayer,
+    ): TaiwanReadyKind? {
         val discard = checkNotNull(player.hand.discardById(checkNotNull(player.hand.lastDrawn).id))
-        val effect = taiwanModule.declarationDiscardPolicy().resolve(table, player, TAIWAN_DECLARE_READY_ACTION, discard) ?: return null
+        val effect = ruleModule.declarationDiscardPolicy().resolve(table, player, TAIWAN_DECLARE_READY_ACTION, discard) ?: return null
         return effect.playerComponents.applyTo(player.components, BuiltInComponentOwners.PLAYER)[TaiwanPlayerComponents.READY_DECLARATION]
     }
 

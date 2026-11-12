@@ -18,13 +18,14 @@ import kotlin.uuid.Uuid
  * 台灣麻將的合法動作判定器，只列出鳴牌、槓、胡與宣告聽牌等額外動作；一般捨牌由呼叫端依手牌建立。
  *
  * - 過水期間不能胡也不能自摸。
+ * - 天聽、地聽的時機可以宣告聽牌；其他時機只有開啟報聽時才能宣告。
  * - 宣告聽牌後不能吃、碰、明槓或暗槓，只能用剛摸進來的牌加槓。
  * - 不能槓上家打出的牌；只能搶加槓，不能搶暗槓；別人移出手牌的牌不能胡或鳴。
  * - 最後一張可打出的牌只能胡；槓需要至少還有一張活牌。
  *
- * @param config 規則設定。
+ * @property config 規則設定。
  */
-class TaiwanLegalActionValidator(config: TaiwanRuleConfig) : LegalActionValidator {
+class TaiwanLegalActionValidator(private val config: TaiwanRuleConfig) : LegalActionValidator {
     private val shantenCalculator = TaiwanShantenCalculator()
     private val winEvaluation = TaiwanWinEvaluation(config)
 
@@ -38,7 +39,7 @@ class TaiwanLegalActionValidator(config: TaiwanRuleConfig) : LegalActionValidato
         val legalActions = mutableListOf<GameAction>()
 
         if (context.sourceDirection == RelativeDirection.Self) {
-            if (!isDeclared && wallHasMoreTiles && readyDiscardTileIds(context.player).isNotEmpty()) {
+            if (!isDeclared && wallHasMoreTiles && isReadyDeclarable(tableState, player) && readyDiscardTileIds(context.player).isNotEmpty()) {
                 legalActions += TAIWAN_DECLARE_READY_ACTION
             }
             if (incomingTile != null) {
@@ -83,6 +84,31 @@ class TaiwanLegalActionValidator(config: TaiwanRuleConfig) : LegalActionValidato
         if (action != TAIWAN_DECLARE_READY_ACTION) return null
         return TileSelectionRequirement(readyDiscardTileIds(player))
     }
+
+    /**
+     * 判斷玩家這一打的時機是否可以宣告聽牌。
+     *
+     * @param tableState 目前桌況。
+     * @param player 即將打牌的玩家。
+     * @return 天聽、地聽時機，或已開啟報聽時為 true。
+     */
+    internal fun isReadyDeclarable(tableState: TableState, player: MahjongPlayer): Boolean = TaiwanReadyDeclarationRules.isDeclarable(
+        config = config,
+        kind = readyKind(tableState, player),
+    )
+
+    /**
+     * 依玩家這一打的時機判斷宣告種類。
+     *
+     * @param tableState 目前桌況。
+     * @param player 即將打牌的玩家。
+     * @return 宣告種類。
+     */
+    internal fun readyKind(tableState: TableState, player: MahjongPlayer): TaiwanReadyKind = TaiwanReadyDeclarationRules.kind(
+        tableHasMelds = tableState.players.any { it.hand.melds.isNotEmpty() },
+        isDealer = player.id == tableState.dealerPlayerId,
+        previousDiscards = player.discardPile.entries.size,
+    )
 
     /**
      * 列出打出後仍聽牌、且規則允許打出的立牌。

@@ -20,6 +20,7 @@ import kotlinx.serialization.Serializable
  * @property useFlowerTiles 是否使用花牌。
  * @property fourWindsAbortiveDraw 是否啟用四風連打流局。
  * @property kanClearsPassedWin 暗槓或加槓前後等待牌相同時，是否額外解除過水。
+ * @property generalReadyDeclaration 是否可在天聽、地聽以外的時機宣告聽牌（報聽）並計報聽台。
  * @property revealsClosedKanTiles 暗槓時是否揭示牌面。
  */
 @Serializable
@@ -35,5 +36,6 @@ data class TaiwanRuleConfigDto(
     val useFlowerTiles: Boolean,
     val fourWindsAbortiveDraw: Boolean,
     val kanClearsPassedWin: Boolean,
+    val generalReadyDeclaration: Boolean,
     val revealsClosedKanTiles: Boolean,
 ) : MahjongRuleConfigDto

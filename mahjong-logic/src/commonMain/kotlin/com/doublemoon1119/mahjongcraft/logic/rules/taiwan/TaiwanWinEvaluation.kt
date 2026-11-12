@@ -9,9 +9,9 @@ import com.doublemoon1119.mahjongcraft.logic.table.TableState
 /**
  * 從權威桌況整理台灣麻將胡牌情境並計台，供合法動作判定與正式結算共用同一套判斷。
  *
- * @param config 規則設定。
+ * @property config 規則設定。
  */
-internal class TaiwanWinEvaluation(config: TaiwanRuleConfig) {
+internal class TaiwanWinEvaluation(private val config: TaiwanRuleConfig) {
     private val contextCalculator = TaiwanHandValueContextCalculator()
     private val handValueCalculator = TaiwanHandValueCalculator(config)
 
@@ -104,7 +104,7 @@ internal class TaiwanWinEvaluation(config: TaiwanRuleConfig) {
             isReplacementWin = isReplacementWin,
             isLastDraw = isTsumo && !isReplacementWin && tableState.tileWall.remainingCount == 0,
             openingWin = openingWin,
-            readyQualification = player.components[TaiwanPlayerComponents.READY_DECLARATION]?.taiType,
+            readyQualification = TaiwanReadyDeclarationRules.taiType(config, player.components[TaiwanPlayerComponents.READY_DECLARATION]),
         )
     }
 }

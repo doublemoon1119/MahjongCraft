@@ -17,6 +17,7 @@ import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayerSnapshot
  *   取每位對手放槍時收入的平均值。
  * - 需要出牌先後才能判斷的情境不列入：補牌胡（槓上開花、花上自摸）、起手胡（天胡、地胡、人胡）、搶槓與海底。
  * - 已宣告聽牌時以宣告種類計台；假設的宣告一律以一般宣告聽牌計台，因為假設局面無法分辨宣告會在哪一巡發生。
+ *   未開啟報聽時一般宣告不計台，假設的宣告也只在天聽、地聽的時機提出。
  * - 過水只有在評估者最後打出的牌仍是自己聽的牌時才算持續；打出其他牌的假設局面視為已解除。
  * - 宣告聽牌不付分數，宣告後只能打出摸到的牌。
  * - 對手自己打過的牌仍可榮和，因此沒有不能榮和的牌；也沒有依牌張加計的打點。
@@ -38,6 +39,7 @@ class TaiwanPositionRules(private val config: TaiwanRuleConfig) : PositionRules 
         if (isPassedWin(self, hand)) return WinValue.NotWinnable
         val declared = self.componentViews[TaiwanPlayerComponentViews.READY_DECLARATION]
             ?: TaiwanReadyKind.GENERAL.takeIf { declarations.any { it.value == TaiwanGameAction.DeclareReady } }
+        val readyQualification = TaiwanReadyDeclarationRules.taiType(config, declared)
         val result = handValueCalculator.calculate(
             TaiwanHandValueContext(
                 hand = hand,
@@ -46,7 +48,7 @@ class TaiwanPositionRules(private val config: TaiwanRuleConfig) : PositionRules 
                 roundWind = view.snapshot.prevalentWind,
                 seatWind = self.seatWind,
                 flowers = self.tileAreas.firstOrNull { it.id == TaiwanPlayerTileAreaIds.FLOWERS }?.tiles.orEmpty().mapNotNull { it.tile },
-                situation = TaiwanWinSituation(readyQualification = declared?.taiType),
+                situation = TaiwanWinSituation(readyQualification = readyQualification),
             ),
         )
         if (!result.isWinningHand) return WinValue.NotWinnable
@@ -72,10 +74,17 @@ class TaiwanPositionRules(private val config: TaiwanRuleConfig) : PositionRules 
         DeclarationEffect.NONE
     }
 
-    /** 尚未宣告且牌牆還有牌時，聽牌後可以宣告聽牌。 */
+    /** 尚未宣告、牌牆還有牌，且這一打的時機可以宣告時，聽牌後可以宣告聽牌。 */
     override fun prospectiveDeclarations(view: PositionView, hand: Hand): Set<GameAction.Extension> {
-        val isDeclared = view.evaluator.componentViews[TaiwanPlayerComponentViews.READY_DECLARATION] != null
-        return if (!isDeclared && view.snapshot.tileWall.tiles.isNotEmpty()) setOf(TAIWAN_DECLARE_READY_ACTION) else emptySet()
+        val self = view.evaluator
+        val isDeclared = self.componentViews[TaiwanPlayerComponentViews.READY_DECLARATION] != null
+        val kind = TaiwanReadyDeclarationRules.kind(
+            tableHasMelds = view.snapshot.players.any { it.hand.melds.isNotEmpty() },
+            isDealer = self.id == view.snapshot.dealerPlayerId,
+            previousDiscards = self.discardPile.entries.size,
+        )
+        val isDeclarable = !isDeclared && view.snapshot.tileWall.tiles.isNotEmpty() && TaiwanReadyDeclarationRules.isDeclarable(config, kind)
+        return if (isDeclarable) setOf(TAIWAN_DECLARE_READY_ACTION) else emptySet()
     }
 
     /**

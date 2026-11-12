@@ -13,6 +13,7 @@ import com.doublemoon1119.mahjongcraft.logic.config.validate
  * @property useFlowerTiles 指定是否使用花牌。
  * @property fourWindsAbortiveDraw 是否在第一巡四位玩家依序打出相同風牌時流局。
  * @property kanClearsPassedWin 暗槓或加槓前後等待牌相同時，是否額外解除過水。
+ * @property generalReadyDeclaration 是否可在天聽、地聽以外的時機宣告聽牌（報聽）並計報聽台，預設關閉。
  * @property initialHandSize 初始手牌張數，預設為 16。
  * @property reservedTileCount 牌山尾端由規則保留、不供一般摸牌使用的張數，固定為 16。
  * @property minimumWinConstraint 起胡台數限制，預設為 0。
@@ -28,6 +29,7 @@ data class TaiwanRuleConfig(
     val useFlowerTiles: Boolean = true,
     val fourWindsAbortiveDraw: Boolean = false,
     val kanClearsPassedWin: Boolean = false,
+    val generalReadyDeclaration: Boolean = false,
     override val minimumWinConstraint: Int = 0,
     override val scoreConfig: TaiwanScoreConfig = TaiwanScoreConfig(),
     override val gameLength: TaiwanGameLength = TaiwanGameLength.OneGame,

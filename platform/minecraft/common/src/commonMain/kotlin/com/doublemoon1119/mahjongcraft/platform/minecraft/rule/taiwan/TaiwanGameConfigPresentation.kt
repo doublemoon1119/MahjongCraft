@@ -61,6 +61,14 @@ internal fun taiwanGameConfigPresentation(): GameConfigPresentationDefinition = 
             read = { (it.ruleConfig as TaiwanRuleConfig).kanClearsPassedWin },
             update = { config, enabled -> config.withTaiwan { copy(kanClearsPassedWin = enabled) } },
         ),
+        boolField(
+            id = TaiwanGameConfigIds.GENERAL_READY_DECLARATION,
+            category = RULE,
+            nameKey = TaiwanGameConfigTranslationKeys.GENERAL_READY_DECLARATION,
+            descriptionKey = TaiwanGameConfigTranslationKeys.GENERAL_READY_DECLARATION_DESCRIPTION,
+            read = { (it.ruleConfig as TaiwanRuleConfig).generalReadyDeclaration },
+            update = { config, enabled -> config.withTaiwan { copy(generalReadyDeclaration = enabled) } },
+        ),
         intField(
             id = TaiwanGameConfigIds.MINIMUM_TAI,
             category = RULE,
