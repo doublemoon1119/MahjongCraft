@@ -100,7 +100,7 @@ class DecisionEntryTest {
         val (chi, riichi) = decisionEntriesFrom(texts, prompt)
 
         assertNull(chi.description)
-        assertEquals("mahjongcraft.hud.action.riichi.description", (riichi.description?.content as? TranslatableTextContent)?.key)
+        assertEquals("mahjongcraft.riichi.action.riichi.description", (riichi.description?.content as? TranslatableTextContent)?.key)
     }
 
     /** 動作卡沿用該候選的預覽牌與鳴牌指標索引。 */

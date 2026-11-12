@@ -6,7 +6,6 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.riichi.RiichiWinSe
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.YakuType
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.EntryEmphasis
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.PresentationValue
-import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.WinSettlementTextKeys
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
@@ -28,17 +27,17 @@ class RiichiWinSettlementDetailTextsTest {
             listOf(
                 PresentationValue.EntryListValue.Entry(
                     translationKey = RiichiYakuTranslationKeys.keyFor(YakuType.Tanyao),
-                    trailingTranslationKey = WinSettlementTextKeys.HAN,
+                    trailingTranslationKey = RiichiTranslationKeys.SETTLEMENT_HAN,
                     trailingTranslationArgument = "1",
                 ),
                 PresentationValue.EntryListValue.Entry(
                     translationKey = RiichiYakuTranslationKeys.keyFor(YakuType.Daisangen),
-                    trailingTranslationKey = "mahjongcraft.game.score.yakuman_1x",
+                    trailingTranslationKey = "mahjongcraft.riichi.settlement.yakuman_1x",
                     emphasis = EntryEmphasis.HIGHLIGHTED,
                 ),
                 PresentationValue.EntryListValue.Entry(
                     translationKey = RiichiYakuTranslationKeys.keyFor(YakuType.KokushiMusou13),
-                    trailingTranslationKey = "mahjongcraft.game.score.yakuman_2x",
+                    trailingTranslationKey = "mahjongcraft.riichi.settlement.yakuman_2x",
                     emphasis = EntryEmphasis.HIGHLIGHTED,
                 ),
                 PresentationValue.EntryListValue.Entry(translationKey = RiichiYakuTranslationKeys.NAGASHI_MANGAN),
@@ -52,20 +51,20 @@ class RiichiWinSettlementDetailTextsTest {
     fun `large yakuman multipliers use the generic name with the multiplier`() {
         val total = RiichiWinSettlementDetailTexts.yakumanTotal.quantities(listOf(WinSettlementQuantity(RiichiWinSettlementIds.YAKUMAN, 7)))
 
-        assertEquals(PresentationValue.TextValue("mahjongcraft.game.score.yakuman_nx", listOf("7")), total)
+        assertEquals(PresentationValue.TextValue("mahjongcraft.riichi.settlement.yakuman_nx", listOf("7")), total)
     }
 
     /** 有符數時顯示翻與符，否則只顯示翻。 */
     @Test
     fun `han fu shows fu only when present`() {
         assertEquals(
-            PresentationValue.TextValue(WinSettlementTextKeys.HAN_FU, listOf("3", "30")),
+            PresentationValue.TextValue(RiichiTranslationKeys.SETTLEMENT_HAN_FU, listOf("3", "30")),
             RiichiWinSettlementDetailTexts.hanFu.quantities(
                 listOf(WinSettlementQuantity(RiichiWinSettlementIds.HAN, 3), WinSettlementQuantity(RiichiWinSettlementIds.FU, 30)),
             ),
         )
         assertEquals(
-            PresentationValue.TextValue(WinSettlementTextKeys.HAN, listOf("6")),
+            PresentationValue.TextValue(RiichiTranslationKeys.SETTLEMENT_HAN, listOf("6")),
             RiichiWinSettlementDetailTexts.hanFu.quantities(listOf(WinSettlementQuantity(RiichiWinSettlementIds.HAN, 6))),
         )
     }

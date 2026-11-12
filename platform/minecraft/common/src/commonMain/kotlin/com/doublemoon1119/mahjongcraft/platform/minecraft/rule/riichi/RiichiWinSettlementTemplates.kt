@@ -2,7 +2,6 @@ package com.doublemoon1119.mahjongcraft.platform.minecraft.rule.riichi
 
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.riichi.RiichiWinSettlementIds
 import com.doublemoon1119.mahjongcraft.metadata.MahjongCraftMetadata
-import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.BuiltInWinSettlementFieldIds
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.BuiltInWinSettlementTileAssets
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.PresentationArrangement
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.PresentationFieldId
@@ -11,7 +10,6 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.Presentatio
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.StandardWinSettlementLayout
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.WinSettlementPresentationFieldSnapshot
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.WinSettlementPresentationTemplate
-import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.WinSettlementTextKeys
 
 /** 日麻的胡牌結算版面：日麻完整模板與日麻專屬欄位；流局滿貫也使用完整模板。 */
 internal object RiichiWinSettlementTemplates {
@@ -39,6 +37,12 @@ internal object RiichiWinSettlementTemplates {
     /** 裏寶牌指示牌欄位。 */
     val URA_DORA: PresentationFieldId = PresentationFieldId(RiichiWinSettlementIds.URA_DORA_FIELD)
 
+    /** 寶牌指示牌列的標題欄位。 */
+    val DORA_LABEL: PresentationFieldId = PresentationFieldId(MahjongCraftMetadata.id("riichi/dora_label"))
+
+    /** 裏寶牌指示牌列的標題欄位。 */
+    val URA_DORA_LABEL: PresentationFieldId = PresentationFieldId(MahjongCraftMetadata.id("riichi/ura_dora_label"))
+
     /** 直接顯示規則提供內容的欄位。 */
     val ENTRY_FIELDS: List<PresentationFieldId> = listOf(YAKU, HAN_FU, YAKUMAN_TOTAL)
 
@@ -58,8 +62,8 @@ internal object RiichiWinSettlementTemplates {
             ),
         ),
         detailFieldLabelKeys = mapOf(
-            DORA to WinSettlementTextKeys.DORA_INDICATOR,
-            URA_DORA to WinSettlementTextKeys.URA_DORA_INDICATOR,
+            DORA to RiichiTranslationKeys.SETTLEMENT_DORA_INDICATOR,
+            URA_DORA to RiichiTranslationKeys.SETTLEMENT_URA_DORA_INDICATOR,
         ),
     )
 
@@ -87,8 +91,8 @@ internal object RiichiWinSettlementTemplates {
 /** 建立寶牌與裏寶牌指示牌的等寬欄位列。 */
 private fun doraIndicators(dora: PresentationFieldId, uraDora: PresentationFieldId): PresentationLayout = PresentationLayout.Row(
     children = listOf(
-        PresentationLayout.Weighted(StandardWinSettlementLayout.labeledTiles(BuiltInWinSettlementFieldIds.DORA_LABEL, StandardWinSettlementLayout.smallTiles(dora))),
-        PresentationLayout.Weighted(StandardWinSettlementLayout.labeledTiles(BuiltInWinSettlementFieldIds.URA_DORA_LABEL, StandardWinSettlementLayout.smallTiles(uraDora))),
+        PresentationLayout.Weighted(StandardWinSettlementLayout.labeledTiles(RiichiWinSettlementTemplates.DORA_LABEL, StandardWinSettlementLayout.smallTiles(dora))),
+        PresentationLayout.Weighted(StandardWinSettlementLayout.labeledTiles(RiichiWinSettlementTemplates.URA_DORA_LABEL, StandardWinSettlementLayout.smallTiles(uraDora))),
     ),
     arrangement = PresentationArrangement.SPACE_EVENLY,
     fillMaxWidth = true,

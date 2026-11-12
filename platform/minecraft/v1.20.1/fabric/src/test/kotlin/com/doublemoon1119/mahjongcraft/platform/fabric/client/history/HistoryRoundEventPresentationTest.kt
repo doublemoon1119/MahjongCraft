@@ -24,13 +24,13 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.RuleDecisionD
 import com.doublemoon1119.mahjongcraft.platform.minecraft.history.HistoryTileReplacementDisplayDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.history.HistoryTileSetAsideDisplayRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.history.MinecraftHistoryScreenKeys
+import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.riichi.RiichiTranslationKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.ExhaustiveDrawReasonDisplayNameDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.ExhaustiveDrawReasonDisplayNameRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.ExhaustiveDrawSettlementStatusLabels
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.ExhaustiveDrawSettlementStatusLabelsDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.RoundOutcomeDisplayNameDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.RoundOutcomeDisplayNameRegistryImpl
-import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftMessageKeys
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
@@ -580,8 +580,8 @@ class HistoryRoundEventPresentationTest {
                 definition = ExhaustiveDrawSettlementStatusLabelsDefinition(
                     reasonId = RiichiExhaustiveDrawReason.Normal.id,
                     labels = ExhaustiveDrawSettlementStatusLabels(
-                        beneficiaryTranslationKey = MinecraftMessageKeys.EXHAUSTIVE_DRAW_SETTLEMENT_STATUS_TENPAI,
-                        othersTranslationKey = MinecraftMessageKeys.EXHAUSTIVE_DRAW_SETTLEMENT_STATUS_NOTEN,
+                        beneficiaryTranslationKey = RiichiTranslationKeys.EXHAUSTIVE_DRAW_TENPAI,
+                        othersTranslationKey = RiichiTranslationKeys.EXHAUSTIVE_DRAW_NOTEN,
                     ),
                 ),
             )
@@ -617,8 +617,8 @@ class HistoryRoundEventPresentationTest {
         )
         val tenpai = HistoryOutcomeRowPresentation(0, 28000, true, false, 3000)
         val noten = HistoryOutcomeRowPresentation(1, 24000, false, false, -1000)
-        assertEquals(MinecraftMessageKeys.EXHAUSTIVE_DRAW_SETTLEMENT_STATUS_TENPAI, presenter.settlementStatusText(outcome, tenpai)?.string)
-        assertEquals(MinecraftMessageKeys.EXHAUSTIVE_DRAW_SETTLEMENT_STATUS_NOTEN, presenter.settlementStatusText(outcome, noten)?.string)
+        assertEquals(RiichiTranslationKeys.EXHAUSTIVE_DRAW_TENPAI, presenter.settlementStatusText(outcome, tenpai)?.string)
+        assertEquals(RiichiTranslationKeys.EXHAUSTIVE_DRAW_NOTEN, presenter.settlementStatusText(outcome, noten)?.string)
         assertEquals(MinecraftHistoryScreenKeys.ROUND_BENEFICIARY, presenter.settlementStatusText(outcome.copy(reasonId = "custom:draw"), tenpai)?.string)
         assertEquals(null, presenter.settlementStatusText(outcome.copy(reasonId = "custom:draw"), noten))
         assertEquals("+3000", presenter.scoreChangeText(3000).string)

@@ -47,11 +47,11 @@ class DecisionStatusDisplayNameRegistryTest {
         val registry = registry()
 
         assertEquals(
-            "mahjongcraft.hud.furiten.discard",
+            "mahjongcraft.riichi.hud.furiten.discard",
             registry.find(BuiltInRuleModuleIds.RIICHI, RiichiDiscardReadinessAnalyzer.StatusIds.DISCARD_FURITEN),
         )
         assertEquals(
-            "mahjongcraft.hud.win_availability.no_yaku",
+            "mahjongcraft.riichi.hud.win_availability.no_yaku",
             registry.find(BuiltInRuleModuleIds.RIICHI, RiichiDiscardReadinessAnalyzer.StatusIds.WIN_NO_YAKU),
         )
         assertNull(registry.find(BuiltInRuleModuleIds.TAIWAN, RiichiDiscardReadinessAnalyzer.StatusIds.WIN_NO_YAKU))

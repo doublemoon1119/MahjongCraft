@@ -16,7 +16,6 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.Round
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.TablePropDescriberRegistrar
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.WinSettlementPresentationTemplateRegistrar
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.DecisionStatusDisplayNameDefinition
-import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModMetadata
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.WinSettlementRuleTemplateBindingDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.sound.BuiltInGameActionSoundIds
 import com.doublemoon1119.mahjongcraft.platform.minecraft.sound.GameActionSoundDefinition
@@ -26,7 +25,6 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.table.RoundInfoLine
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.RoundInfoLineProvider
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.RoundInfoLineProviderDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TablePropDescriberDefinition
-import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftMessageKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.BuiltInMinecraftTileAppearanceIds
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftRuleTileAppearanceDefinition
 
@@ -110,9 +108,9 @@ object RiichiFamilyMinecraftPresentation {
                 ruleModuleId = ruleModuleId,
                 actionId = RiichiGameAction.Riichi.id,
                 vocabulary = GameActionVocabulary(
-                    labelKey = MinecraftMessageKeys.GAME_ACTION_RIICHI,
+                    labelKey = RiichiTranslationKeys.ACTION_RIICHI,
                     order = RIICHI_ACTION_ORDER,
-                    descriptionKey = HUD_ACTION_RIICHI_DESCRIPTION,
+                    descriptionKey = RiichiTranslationKeys.ACTION_RIICHI_DESCRIPTION,
                 ),
             ),
         )
@@ -121,9 +119,9 @@ object RiichiFamilyMinecraftPresentation {
                 ruleModuleId = ruleModuleId,
                 actionId = RiichiExhaustiveDrawReason.KyuushuKyuuhai.id,
                 vocabulary = GameActionVocabulary(
-                    labelKey = MinecraftMessageKeys.GAME_ACTION_KYUUSHU_KYUUHAI,
+                    labelKey = RiichiTranslationKeys.ACTION_KYUUSHU_KYUUHAI,
                     order = KYUUSHU_KYUUHAI_ACTION_ORDER,
-                    descriptionKey = HUD_ACTION_KYUUSHU_KYUUHAI_DESCRIPTION,
+                    descriptionKey = RiichiTranslationKeys.ACTION_KYUUSHU_KYUUHAI_DESCRIPTION,
                 ),
             ),
         )
@@ -133,9 +131,9 @@ object RiichiFamilyMinecraftPresentation {
                 ruleModuleId = ruleModuleId,
                 actionId = RiichiGameAction.PullNorth.id,
                 vocabulary = GameActionVocabulary(
-                    labelKey = MinecraftMessageKeys.GAME_ACTION_PULL_NORTH,
+                    labelKey = RiichiTranslationKeys.ACTION_PULL_NORTH,
                     order = PULL_NORTH_ACTION_ORDER,
-                    descriptionKey = HUD_ACTION_PULL_NORTH_DESCRIPTION,
+                    descriptionKey = RiichiTranslationKeys.ACTION_PULL_NORTH_DESCRIPTION,
                 ),
             ),
         )
@@ -149,12 +147,12 @@ object RiichiFamilyMinecraftPresentation {
      */
     fun registerDecisionStatusDisplayNames(registry: DecisionStatusDisplayNameRegistrar, ruleModuleId: String) {
         listOf(
-            RiichiDiscardReadinessAnalyzer.StatusIds.DISCARD_FURITEN to HUD_FURITEN_DISCARD,
-            RiichiDiscardReadinessAnalyzer.StatusIds.TEMPORARY_FURITEN to HUD_FURITEN_TEMPORARY,
-            RiichiDiscardReadinessAnalyzer.StatusIds.PERMANENT_FURITEN to HUD_FURITEN_PERMANENT,
-            RiichiDiscardReadinessAnalyzer.StatusIds.WIN_TSUMO_ONLY to HUD_WIN_TSUMO_ONLY,
-            RiichiDiscardReadinessAnalyzer.StatusIds.WIN_NO_YAKU to HUD_WIN_NO_YAKU,
-            RiichiDiscardReadinessAnalyzer.StatusIds.WIN_BELOW_MINIMUM to HUD_WIN_BELOW_MINIMUM,
+            RiichiDiscardReadinessAnalyzer.StatusIds.DISCARD_FURITEN to RiichiTranslationKeys.HUD_FURITEN_DISCARD,
+            RiichiDiscardReadinessAnalyzer.StatusIds.TEMPORARY_FURITEN to RiichiTranslationKeys.HUD_FURITEN_TEMPORARY,
+            RiichiDiscardReadinessAnalyzer.StatusIds.PERMANENT_FURITEN to RiichiTranslationKeys.HUD_FURITEN_PERMANENT,
+            RiichiDiscardReadinessAnalyzer.StatusIds.WIN_TSUMO_ONLY to RiichiTranslationKeys.HUD_WIN_TSUMO_ONLY,
+            RiichiDiscardReadinessAnalyzer.StatusIds.WIN_NO_YAKU to RiichiTranslationKeys.HUD_WIN_NO_YAKU,
+            RiichiDiscardReadinessAnalyzer.StatusIds.WIN_BELOW_MINIMUM to RiichiTranslationKeys.HUD_WIN_BELOW_MINIMUM,
         ).forEach { (statusId, translationKey) ->
             registry.register(DecisionStatusDisplayNameDefinition(ruleModuleId, statusId, translationKey))
         }
@@ -203,36 +201,6 @@ internal const val RIICHI_WALL_REMAINING_KEY: String = "mahjongcraft:riichi/wall
 
 /** 累積供託立直棒數量行的 key。 */
 internal const val RIICHI_STICK_POT_KEY: String = "mahjongcraft:riichi/stick_pot"
-
-/** 日麻捨牌分析狀態使用的 translation key 前綴。 */
-private const val RIICHI_HUD_PREFIX: String = MinecraftModMetadata.MOD_ID + ".hud."
-
-/** 捨牌振聽。 */
-private const val HUD_FURITEN_DISCARD: String = RIICHI_HUD_PREFIX + "furiten.discard"
-
-/** 立直操作卡的說明。 */
-private const val HUD_ACTION_RIICHI_DESCRIPTION: String = RIICHI_HUD_PREFIX + "action.riichi.description"
-
-/** 拔北操作卡的說明。 */
-private const val HUD_ACTION_PULL_NORTH_DESCRIPTION: String = RIICHI_HUD_PREFIX + "action.pull_north.description"
-
-/** 九種九牌操作卡的說明。 */
-private const val HUD_ACTION_KYUUSHU_KYUUHAI_DESCRIPTION: String = RIICHI_HUD_PREFIX + "action.kyuushu_kyuuhai.description"
-
-/** 同巡振聽。 */
-private const val HUD_FURITEN_TEMPORARY: String = RIICHI_HUD_PREFIX + "furiten.temporary"
-
-/** 立直後振聽。 */
-private const val HUD_FURITEN_PERMANENT: String = RIICHI_HUD_PREFIX + "furiten.permanent"
-
-/** 只能自摸和牌。 */
-private const val HUD_WIN_TSUMO_ONLY: String = RIICHI_HUD_PREFIX + "win_availability.tsumo_only"
-
-/** 無役，不能和牌。 */
-private const val HUD_WIN_NO_YAKU: String = RIICHI_HUD_PREFIX + "win_availability.no_yaku"
-
-/** 未達最低翻符要求。 */
-private const val HUD_WIN_BELOW_MINIMUM: String = RIICHI_HUD_PREFIX + "win_availability.below_minimum"
 
 /** 立直在操作卡中的順序。 */
 private const val RIICHI_ACTION_ORDER: Int = 5

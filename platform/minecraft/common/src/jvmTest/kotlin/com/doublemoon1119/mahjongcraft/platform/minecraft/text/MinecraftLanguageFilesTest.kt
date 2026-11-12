@@ -12,6 +12,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.room.GameConfigEditorS
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.GameConfigPresentationRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.GameConfigPresentationRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.MinecraftRoomScreenKeys
+import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.riichi.RiichiTranslationKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.riichi.RiichiYakuTranslationKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.WinSettlementTextKeys
 import kotlinx.serialization.json.Json
@@ -37,6 +38,18 @@ class MinecraftLanguageFilesTest {
             ).forEach { key ->
                 assertTrue(key in translations, "$locale is missing optional rule decision field translation: $key")
             }
+        }
+    }
+
+    /** 日麻專屬文字的 key 都在 `mahjongcraft.riichi.` 底下，且每個語系都有翻譯，包含各倍數的役滿文字。 */
+    @Test
+    fun `riichi text keys live under the riichi prefix and exist in every locale`() {
+        val yakumanKeys = listOf("1x", "2x", "3x", "4x", "5x", "6x", "nx").map { RiichiTranslationKeys.SETTLEMENT_YAKUMAN_PREFIX + it }
+        val keys = RiichiTranslationKeys.ALL + yakumanKeys
+        keys.forEach { key -> assertTrue(key.startsWith(MinecraftModMetadata.MOD_ID + ".riichi."), "Riichi text key outside the riichi prefix: $key") }
+        locales.forEach { locale ->
+            val translations = loadTranslations(locale)
+            keys.forEach { key -> assertTrue(key in translations, "$locale is missing riichi translation: $key") }
         }
     }
 

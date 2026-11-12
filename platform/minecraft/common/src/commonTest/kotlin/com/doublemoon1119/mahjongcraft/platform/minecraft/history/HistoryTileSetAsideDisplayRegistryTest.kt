@@ -4,6 +4,7 @@ import com.doublemoon1119.mahjongcraft.logic.module.BuiltInRuleModuleIds
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPlayerTileAreaIds
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanPlayerTileAreaIds
 import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.riichi.BundledRiichiMinecraftExtension
+import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.riichi.RiichiTranslationKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.taiwan.BundledTaiwanMinecraftExtension
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -51,7 +52,7 @@ class HistoryTileSetAsideDisplayRegistryTest {
             BundledTaiwanMinecraftExtension.registerHistoryTileSetAsideDisplays(this)
         }
 
-        assertEquals(MinecraftHistoryScreenKeys.STATE_TILE_AREA_RIICHI_NORTH, registry.findAreaName(RiichiPlayerTileAreaIds.NORTH))
+        assertEquals(RiichiTranslationKeys.HISTORY_TILE_AREA_NORTH, registry.findAreaName(RiichiPlayerTileAreaIds.NORTH))
         assertNotNull(registry.findAreaName(TaiwanPlayerTileAreaIds.FLOWERS))
         assertNotNull(registry.findReplacementName(BuiltInRuleModuleIds.TAIWAN))
         assertNull(registry.findReplacementName(BuiltInRuleModuleIds.RIICHI))

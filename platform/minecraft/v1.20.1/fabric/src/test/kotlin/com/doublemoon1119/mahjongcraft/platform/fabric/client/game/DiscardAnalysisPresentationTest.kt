@@ -55,7 +55,7 @@ class DiscardAnalysisPresentationTest {
         )
 
         assertEquals(
-            listOf("mahjongcraft.hud.furiten.discard"),
+            listOf("mahjongcraft.riichi.hud.furiten.discard"),
             content.statusTexts.map { assertIs<TranslatableTextContent>(it.content).key },
         )
     }
@@ -70,7 +70,7 @@ class DiscardAnalysisPresentationTest {
         )
 
         assertEquals(
-            listOf("mahjongcraft.hud.win_availability.no_yaku"),
+            listOf("mahjongcraft.riichi.hud.win_availability.no_yaku"),
             content.statusTexts.map { assertIs<TranslatableTextContent>(it.content).key },
         )
         assertFalse(content.hasAvailabilityRow)
@@ -97,7 +97,7 @@ class DiscardAnalysisPresentationTest {
 
         assertTrue(content.hasAvailabilityRow)
         assertEquals(
-            "mahjongcraft.hud.win_availability.tsumo_only",
+            "mahjongcraft.riichi.hud.win_availability.tsumo_only",
             assertIs<TranslatableTextContent>(content.cells[0].availabilityText?.content).key,
         )
         assertNull(content.cells[1].availabilityText)
@@ -114,7 +114,7 @@ class DiscardAnalysisPresentationTest {
         )
 
         assertEquals(
-            listOf("mahjongcraft.hud.furiten.temporary", "mahjongcraft.hud.win_availability.no_yaku"),
+            listOf("mahjongcraft.riichi.hud.furiten.temporary", "mahjongcraft.riichi.hud.win_availability.no_yaku"),
             content.statusTexts.map { assertIs<TranslatableTextContent>(it.content).key },
         )
     }

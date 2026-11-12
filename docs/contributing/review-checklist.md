@@ -100,6 +100,8 @@ Examples of failures:
 - Is every namespaced ID used whole, including in translation keys, asset paths, caches and `when` branches?
 - Does every registry that accepts IDs validate their namespace and reject duplicates?
 - Could two extensions, or an extension and bundled content, end up with the same key?
+- Does new text that belongs to one rule live under that rule's translation key prefix, while shared defaults
+  stay in their shared groups?
 
 Examples of failures:
 

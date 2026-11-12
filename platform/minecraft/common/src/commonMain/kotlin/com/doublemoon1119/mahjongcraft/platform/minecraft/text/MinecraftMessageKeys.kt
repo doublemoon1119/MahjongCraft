@@ -176,9 +176,6 @@ object MinecraftMessageKeys {
     /** 目標玩家不是 AI，無法更換策略。 */
     const val TARGET_NOT_AI = PREFIX + "target_not_ai"
 
-    /** 玩家公開資訊面板中的立直狀態。 */
-    const val PLAYER_INDICATOR_RIICHI = PREFIX + "player_indicator_riichi"
-
     /** 結算排行中包牌責任者的付款原因。 */
     const val PLAYER_INDICATOR_PAO = PREFIX + "player_indicator_pao"
 
@@ -253,21 +250,6 @@ object MinecraftMessageKeys {
     /** 白（白板）顯示文字。 */
     const val TILE_HONOR_WHITE = PREFIX + "tile_honor_white"
 
-    /** 赤五萬完整顯示文字，供 `TileDisplayNameRegistry` 內建登記使用。 */
-    const val TILE_RED_FIVE_CHARACTER = PREFIX + "tile_red_five_character"
-
-    /** 赤五筒完整顯示文字，供 `TileDisplayNameRegistry` 內建登記使用。 */
-    const val TILE_RED_FIVE_DOT = PREFIX + "tile_red_five_dot"
-
-    /** 赤五條完整顯示文字，供 `TileDisplayNameRegistry` 內建登記使用。 */
-    const val TILE_RED_FIVE_BAMBOO = PREFIX + "tile_red_five_bamboo"
-
-    /** 日本麻將規則模組顯示名稱，供 `RuleModuleDisplayNameRegistry` 內建登記使用。 */
-    const val RULE_MODULE_RIICHI = PREFIX + "rule_module_riichi"
-
-    /** 三人日本麻將規則模組顯示名稱，供 `RuleModuleDisplayNameRegistry` 內建登記使用。 */
-    const val RULE_MODULE_RIICHI_THREE_PLAYER = PREFIX + "rule_module_riichi_three_player"
-
     /** 台灣麻將規則模組顯示名稱，供 `RuleModuleDisplayNameRegistry` 內建登記使用。 */
     const val RULE_MODULE_TAIWAN = PREFIX + "rule_module_taiwan"
 
@@ -275,9 +257,6 @@ object MinecraftMessageKeys {
 
     /** 打出，帶一個牌面顯示文字參數（一個 `%s`）。 */
     const val GAME_ACTION_DISCARD = PREFIX + "game_action_discard"
-
-    /** 立直，不帶參數（實際捨牌另外顯示，見 [GAME_ACTION_DISCARD]）。 */
-    const val GAME_ACTION_RIICHI = PREFIX + "game_action_riichi"
 
     /** 自摸，不帶參數。 */
     const val GAME_ACTION_TSUMO = PREFIX + "game_action_tsumo"
@@ -306,12 +285,6 @@ object MinecraftMessageKeys {
     /** 過（不執行任何鳴牌或胡牌動作），不帶參數。 */
     const val GAME_ACTION_PASS = PREFIX + "game_action_pass"
 
-    /** 九種九牌，不帶參數。 */
-    const val GAME_ACTION_KYUUSHU_KYUUHAI = PREFIX + "game_action_kyuushu_kyuuhai"
-
-    /** 拔北，不帶參數。 */
-    const val GAME_ACTION_PULL_NORTH = PREFIX + "game_action_pull_north"
-
     /** 補花，不帶參數。 */
     const val GAME_ACTION_REVEAL_FLOWER = PREFIX + "game_action_reveal_flower"
 
@@ -323,18 +296,6 @@ object MinecraftMessageKeys {
 
     /** round-result 訊息末尾可 hover 顯示完整結算內容的標籤。 */
     const val ROUND_RESULT_DETAILS_LABEL = PREFIX + "round_result_details_label"
-
-    /** 四風連打，不帶參數。 */
-    const val GAME_ACTION_SUUFON_RENDA = PREFIX + "game_action_suufon_renda"
-
-    /** 四槓散了，不帶參數。 */
-    const val GAME_ACTION_SUUKAN_NAGARE = PREFIX + "game_action_suukan_nagare"
-
-    /** 四家立直，不帶參數。 */
-    const val GAME_ACTION_SUUCHA_RIICHI = PREFIX + "game_action_suucha_riichi"
-
-    /** 三家和了，不帶參數。 */
-    const val GAME_ACTION_SANCHA_HOU = PREFIX + "game_action_sancha_hou"
 
     /** 回合結束廣播標題，帶一個動作顯示文字參數（`%s`，見上方 `GAME_ACTION_*`）。 */
     const val ROUND_RESULT_BROADCAST = PREFIX + "round_result_broadcast"
@@ -349,12 +310,6 @@ object MinecraftMessageKeys {
      * 升降跟分數增減兩種資料都在同一行裡。
      */
     const val ROUND_RESULT_PLAYER_LINE = PREFIX + "round_result_player_line"
-
-    /** 流局結算展示中的聽牌狀態。 */
-    const val EXHAUSTIVE_DRAW_SETTLEMENT_STATUS_TENPAI = PREFIX + "exhaustive_draw_settlement_status.tenpai"
-
-    /** 流局結算展示中的未聽狀態。 */
-    const val EXHAUSTIVE_DRAW_SETTLEMENT_STATUS_NOTEN = PREFIX + "exhaustive_draw_settlement_status.noten"
 
     /** 流局結算展示中需要公開牌面的流局宣告狀態。 */
     const val EXHAUSTIVE_DRAW_SETTLEMENT_STATUS_DRAW_DECLARATION = PREFIX + "exhaustive_draw_settlement_status.draw_declaration"
@@ -464,7 +419,6 @@ object MinecraftMessageKeys {
      * 本場之間該用什麼分隔（頓號、逗號、還是單純空格）」本身就是語言慣例的一部分，不同語系的自然
      * 表達方式不一定相同，必須讓每個語系檔自己決定，不能寫死在程式碼裡。
      */
-    const val ROUND_INFO_TITLE = PREFIX + "round_info_title"
 
     /** 局況顯示牌山剩餘張數，帶一個張數參數（一個 `%d`）。 */
     const val ROUND_INFO_WALL_REMAINING = PREFIX + "round_info_wall_remaining"
@@ -474,7 +428,6 @@ object MinecraftMessageKeys {
      * `riichiStickPot`），只有支援供託概念的規則會貢獻這個項目，並由各自的 Minecraft 局況 provider
      * 建立資料。
      */
-    const val ROUND_INFO_STICK_POT = PREFIX + "round_info_stick_pot"
 
     /** 牌面角落輔助標籤（給非中文圈玩家看的數字/字母）切換訊息的前綴，後面接切換前後的狀態文字。 */
     const val TILE_LABELS_TOGGLE_PREFIX = PREFIX + "tile_labels_toggle_prefix"
@@ -670,7 +623,6 @@ object MinecraftMessageKeys {
         AI_STRATEGY_CHANGED,
         AI_STRATEGY_UNCHANGED,
         TARGET_NOT_AI,
-        PLAYER_INDICATOR_RIICHI,
         PLAYER_INDICATOR_PAO,
         CHANGE_AI_STRATEGY_FAILED,
         GAME_CONFIG_CHANGED,
@@ -688,14 +640,8 @@ object MinecraftMessageKeys {
         TILE_HONOR_RED,
         TILE_HONOR_GREEN,
         TILE_HONOR_WHITE,
-        TILE_RED_FIVE_CHARACTER,
-        TILE_RED_FIVE_DOT,
-        TILE_RED_FIVE_BAMBOO,
-        RULE_MODULE_RIICHI,
-        RULE_MODULE_RIICHI_THREE_PLAYER,
         RULE_MODULE_TAIWAN,
         GAME_ACTION_DISCARD,
-        GAME_ACTION_RIICHI,
         GAME_ACTION_TSUMO,
         GAME_ACTION_CHI,
         GAME_ACTION_PON,
@@ -705,21 +651,13 @@ object MinecraftMessageKeys {
         GAME_ACTION_RON,
         GAME_ACTION_HU,
         GAME_ACTION_PASS,
-        GAME_ACTION_KYUUSHU_KYUUHAI,
-        GAME_ACTION_PULL_NORTH,
         GAME_ACTION_REVEAL_FLOWER,
         GAME_ACTION_EXHAUSTIVE_DRAW,
         EXHAUSTIVE_DRAW_REASON_NORMAL,
         ROUND_RESULT_DETAILS_LABEL,
-        GAME_ACTION_SUUFON_RENDA,
-        GAME_ACTION_SUUKAN_NAGARE,
-        GAME_ACTION_SUUCHA_RIICHI,
-        GAME_ACTION_SANCHA_HOU,
         ROUND_RESULT_BROADCAST,
         CONTINUING_WIN_RESULT_BROADCAST,
         ROUND_RESULT_PLAYER_LINE,
-        EXHAUSTIVE_DRAW_SETTLEMENT_STATUS_TENPAI,
-        EXHAUSTIVE_DRAW_SETTLEMENT_STATUS_NOTEN,
         EXHAUSTIVE_DRAW_SETTLEMENT_STATUS_DRAW_DECLARATION,
         EXHAUSTIVE_DRAW_SETTLEMENT_WIND_EAST,
         EXHAUSTIVE_DRAW_SETTLEMENT_WIND_SOUTH,
@@ -751,9 +689,7 @@ object MinecraftMessageKeys {
         HAND_NO_LEGAL_ACTIONS,
         HAND_NO_RESPONSE_AVAILABLE,
         HAND_WAITING,
-        ROUND_INFO_TITLE,
         ROUND_INFO_WALL_REMAINING,
-        ROUND_INFO_STICK_POT,
         TILE_LABELS_TOGGLE_PREFIX,
         TILE_LABELS_STATE_ON,
         TILE_LABELS_STATE_OFF,

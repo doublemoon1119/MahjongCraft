@@ -2,6 +2,7 @@ package com.doublemoon1119.mahjongcraft.platform.minecraft.settlement
 
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiExhaustiveDrawReason
 import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.riichi.BundledRiichiMinecraftExtension
+import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.riichi.RiichiTranslationKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftMessageKeys
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -18,11 +19,11 @@ class ExhaustiveDrawReasonDisplayNameRegistryTest {
         BundledRiichiMinecraftExtension.registerExhaustiveDrawReasonDisplayNames(registry)
 
         assertEquals(MinecraftMessageKeys.EXHAUSTIVE_DRAW_REASON_NORMAL, registry.find(RiichiExhaustiveDrawReason.Normal.id))
-        assertEquals(MinecraftMessageKeys.GAME_ACTION_KYUUSHU_KYUUHAI, registry.find(RiichiExhaustiveDrawReason.KyuushuKyuuhai.id))
-        assertEquals(MinecraftMessageKeys.GAME_ACTION_SUUFON_RENDA, registry.find(RiichiExhaustiveDrawReason.SuufonRenda.id))
-        assertEquals(MinecraftMessageKeys.GAME_ACTION_SUUKAN_NAGARE, registry.find(RiichiExhaustiveDrawReason.SuukanNagare.id))
-        assertEquals(MinecraftMessageKeys.GAME_ACTION_SUUCHA_RIICHI, registry.find(RiichiExhaustiveDrawReason.SuuchaRiichi.id))
-        assertEquals(MinecraftMessageKeys.GAME_ACTION_SANCHA_HOU, registry.find(RiichiExhaustiveDrawReason.SanchaHou.id))
+        assertEquals(RiichiTranslationKeys.ACTION_KYUUSHU_KYUUHAI, registry.find(RiichiExhaustiveDrawReason.KyuushuKyuuhai.id))
+        assertEquals(RiichiTranslationKeys.EXHAUSTIVE_DRAW_SUUFON_RENDA, registry.find(RiichiExhaustiveDrawReason.SuufonRenda.id))
+        assertEquals(RiichiTranslationKeys.EXHAUSTIVE_DRAW_SUUKAN_NAGARE, registry.find(RiichiExhaustiveDrawReason.SuukanNagare.id))
+        assertEquals(RiichiTranslationKeys.EXHAUSTIVE_DRAW_SUUCHA_RIICHI, registry.find(RiichiExhaustiveDrawReason.SuuchaRiichi.id))
+        assertEquals(RiichiTranslationKeys.EXHAUSTIVE_DRAW_SANCHA_HOU, registry.find(RiichiExhaustiveDrawReason.SanchaHou.id))
     }
 
     @Test

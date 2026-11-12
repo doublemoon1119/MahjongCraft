@@ -59,6 +59,24 @@ rules come from collisions that only showed up in game, so check them even when 
 - A tile still in the drawn slot when a round ends stays in its slot. Sort only the standing tiles that are
   revealed.
 
+## Translation keys
+
+- Put text that belongs to one rule under that rule: `mahjongcraft.<rule>.<feature>.*`, for example
+  `mahjongcraft.riichi.action.riichi`, `mahjongcraft.riichi.settlement.han_fu` or `mahjongcraft.taiwan.tile.spring`.
+  Four-player and three-player riichi share the `riichi` segment.
+- A key belongs to a rule when only that rule's extension registers or uses it. Keep shared defaults in their
+  shared groups even when one rule's wording inspired them: common actions such as chi, pon and kan, the
+  liability indicator, room settings used by more than one rule, the generic draw name, and platform features
+  such as HUD layout previews and debug tools.
+- Keys whose names follow Minecraft conventions, such as `advancements.*`, `subtitles.*` and `stat.*`, keep
+  those conventions.
+- Keep the constants with the rule's presentation code, for example `RiichiTranslationKeys`, rather than in a
+  shared key object.
+- Third-party extensions use their own resource namespace, as the example mod does with
+  `mahjongcraft_example`.
+- Map every registered ID to an explicit translation key; see [Correctness](correctness.md) for why keys are
+  never derived from an ID path.
+
 ## Round Info Parameters
 
 - A rule's `RoundInfoLineProvider` may use `Number` and `WindValue` for values, `TileValue` for a

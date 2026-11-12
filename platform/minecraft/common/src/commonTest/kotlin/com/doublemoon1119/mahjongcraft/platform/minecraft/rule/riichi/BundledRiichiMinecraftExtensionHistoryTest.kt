@@ -5,11 +5,9 @@ import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiExhaustiveDrawRe
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiHistoryDiscardMarkerIds
 import com.doublemoon1119.mahjongcraft.platform.minecraft.history.HistoryDiscardMarkerDisplay
 import com.doublemoon1119.mahjongcraft.platform.minecraft.history.HistoryDiscardMarkerDisplayRegistryImpl
-import com.doublemoon1119.mahjongcraft.platform.minecraft.history.MinecraftHistoryScreenKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.ExhaustiveDrawReasonDisplayNameRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.ExhaustiveDrawSettlementStatusLabels
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.RoundOutcomeDisplayNameRegistryImpl
-import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftMessageKeys
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
@@ -21,7 +19,7 @@ class BundledRiichiMinecraftExtensionHistoryTest {
         val registry = HistoryDiscardMarkerDisplayRegistryImpl().apply { BundledRiichiMinecraftExtension.registerHistoryDiscardMarkerDisplays(this) }
 
         assertEquals(
-            HistoryDiscardMarkerDisplay(labelTranslationKey = MinecraftMessageKeys.PLAYER_INDICATOR_RIICHI, sideways = true),
+            HistoryDiscardMarkerDisplay(labelTranslationKey = RiichiTranslationKeys.INDICATOR_RIICHI, sideways = true),
             registry.find(RiichiHistoryDiscardMarkerIds.RIICHI_DECLARED),
         )
     }
@@ -31,7 +29,7 @@ class BundledRiichiMinecraftExtensionHistoryTest {
     fun `nagashi mangan has an outcome name`() {
         val registry = RoundOutcomeDisplayNameRegistryImpl().apply { BundledRiichiMinecraftExtension.registerRoundOutcomeDisplayNames(this) }
 
-        assertEquals(MinecraftHistoryScreenKeys.ROUND_OUTCOME_NAGASHI_MANGAN, registry.find(RiichiRoundOutcomeIds.NAGASHI_MANGAN))
+        assertEquals(RiichiTranslationKeys.OUTCOME_NAGASHI_MANGAN, registry.find(RiichiRoundOutcomeIds.NAGASHI_MANGAN))
     }
 
     /** 一般荒牌流局的得分者顯示聽牌，其他人顯示未聽。 */
@@ -41,8 +39,8 @@ class BundledRiichiMinecraftExtensionHistoryTest {
 
         assertEquals(
             ExhaustiveDrawSettlementStatusLabels(
-                beneficiaryTranslationKey = MinecraftMessageKeys.EXHAUSTIVE_DRAW_SETTLEMENT_STATUS_TENPAI,
-                othersTranslationKey = MinecraftMessageKeys.EXHAUSTIVE_DRAW_SETTLEMENT_STATUS_NOTEN,
+                beneficiaryTranslationKey = RiichiTranslationKeys.EXHAUSTIVE_DRAW_TENPAI,
+                othersTranslationKey = RiichiTranslationKeys.EXHAUSTIVE_DRAW_NOTEN,
             ),
             registry.findSettlementStatusLabels(RiichiExhaustiveDrawReason.Normal.id),
         )

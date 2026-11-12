@@ -3,12 +3,10 @@ package com.doublemoon1119.mahjongcraft.platform.minecraft.rule.riichi
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementDetailEntry
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementQuantity
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.riichi.RiichiWinSettlementIds
-import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModMetadata
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.EntryEmphasis
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.FallbackWinSettlementDetailTextFormatter
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.PresentationValue
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.WinSettlementDetailTextFormatter
-import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.WinSettlementTextKeys
 
 /** 內建日麻胡牌詳情的顯示文字。 */
 internal object RiichiWinSettlementDetailTexts {
@@ -16,7 +14,7 @@ internal object RiichiWinSettlementDetailTexts {
     private const val NAMED_YAKUMAN_MULTIPLIER_MAX = 6
 
     /** 役滿倍數 translation key 的共用前綴。 */
-    private const val YAKUMAN_KEY_PREFIX = MinecraftModMetadata.MOD_ID + ".game.score.yakuman_"
+    private const val YAKUMAN_KEY_PREFIX = RiichiTranslationKeys.SETTLEMENT_YAKUMAN_PREFIX
 
     /** 沒有專屬名稱的役滿倍數 translation key；參數為倍數。 */
     private const val YAKUMAN_N_KEY = YAKUMAN_KEY_PREFIX + "nx"
@@ -32,7 +30,7 @@ internal object RiichiWinSettlementDetailTexts {
                 when (quantity?.unitId) {
                     RiichiWinSettlementIds.HAN -> PresentationValue.EntryListValue.Entry(
                         translationKey = name,
-                        trailingTranslationKey = WinSettlementTextKeys.HAN,
+                        trailingTranslationKey = RiichiTranslationKeys.SETTLEMENT_HAN,
                         trailingTranslationArgument = quantity.amount.toString(),
                     )
                     RiichiWinSettlementIds.YAKUMAN -> yakumanText(quantity.amount).let { text ->
@@ -56,8 +54,8 @@ internal object RiichiWinSettlementDetailTexts {
         val fu = quantities.singleOrNull { it.unitId == RiichiWinSettlementIds.FU }
         when {
             han == null || quantities.size != listOfNotNull(han, fu).size -> null
-            fu != null -> PresentationValue.TextValue(WinSettlementTextKeys.HAN_FU, listOf(han.amount.toString(), fu.amount.toString()))
-            else -> PresentationValue.TextValue(WinSettlementTextKeys.HAN, listOf(han.amount.toString()))
+            fu != null -> PresentationValue.TextValue(RiichiTranslationKeys.SETTLEMENT_HAN_FU, listOf(han.amount.toString(), fu.amount.toString()))
+            else -> PresentationValue.TextValue(RiichiTranslationKeys.SETTLEMENT_HAN, listOf(han.amount.toString()))
         }
     }
 

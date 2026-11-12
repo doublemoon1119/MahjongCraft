@@ -120,11 +120,11 @@ class WinSettlementPresentationTemplateRegistryTest {
         val template = registry.findTemplate(RiichiWinSettlementTemplates.RIICHI_KEY) ?: error("Missing built-in riichi template")
 
         assertEquals(
-            expected = "mahjongcraft.settlement.dora_indicator",
+            expected = "mahjongcraft.riichi.settlement.dora_indicator",
             actual = template.detailFieldLabelKeys[PresentationFieldId(RiichiWinSettlementIds.DORA_FIELD)],
         )
         assertEquals(
-            expected = "mahjongcraft.settlement.ura_dora_indicator",
+            expected = "mahjongcraft.riichi.settlement.ura_dora_indicator",
             actual = template.detailFieldLabelKeys[PresentationFieldId(RiichiWinSettlementIds.URA_DORA_FIELD)],
         )
     }

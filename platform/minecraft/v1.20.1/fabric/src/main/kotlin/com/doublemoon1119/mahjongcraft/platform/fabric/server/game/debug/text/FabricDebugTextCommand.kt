@@ -15,6 +15,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.text.serverConfigEntries
 import com.doublemoon1119.mahjongcraft.platform.minecraft.action.BuiltInGameActionIds
 import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionVocabularyRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftConfigCommandKeys
+import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.riichi.RiichiTranslationKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.WinSettlementTextKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftMessageKeys
@@ -123,7 +124,7 @@ class FabricDebugTextCommand(
         val details = Text.empty()
             .append(Text.translatable(WinSettlementTextKeys.RON_RELATIONSHIP, "Player", "AI 1"))
             .append(Text.literal("\n"))
-            .append(Text.translatable(WinSettlementTextKeys.HAN_FU, "3", "30"))
+            .append(Text.translatable(RiichiTranslationKeys.SETTLEMENT_HAN_FU, "3", "30"))
             .append(Text.literal("\n"))
             .append(Text.translatable(WinSettlementTextKeys.TOTAL_SCORE, "7700"))
         source.sendFeedback(

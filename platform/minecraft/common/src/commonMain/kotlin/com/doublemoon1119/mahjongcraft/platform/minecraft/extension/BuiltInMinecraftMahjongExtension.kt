@@ -282,16 +282,6 @@ object BuiltInMinecraftMahjongExtension : MinecraftMahjongExtension {
                 snapshot.responsiblePlayerId?.let { PresentationValue.TextValue(WinSettlementTextKeys.RELATIONSHIP_ARROW) }
             },
         )
-        registry.register(
-            definition = WinSettlementPresentationFieldProviderDefinition(BuiltInWinSettlementFieldIds.DORA_LABEL) {
-                PresentationValue.TextValue(WinSettlementTextKeys.DORA)
-            },
-        )
-        registry.register(
-            definition = WinSettlementPresentationFieldProviderDefinition(BuiltInWinSettlementFieldIds.URA_DORA_LABEL) {
-                PresentationValue.TextValue(WinSettlementTextKeys.URA_DORA)
-            },
-        )
         registry.register(WinSettlementPresentationFieldProviderDefinition(BuiltInWinSettlementFieldIds.PAYMENT_SUMMARY) { null })
         registry.register(
             definition = WinSettlementPresentationFieldProviderDefinition(BuiltInWinSettlementFieldIds.WINNING_TILE) { snapshot ->

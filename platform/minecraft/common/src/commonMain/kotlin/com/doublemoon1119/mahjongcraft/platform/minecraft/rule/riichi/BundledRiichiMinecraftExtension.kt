@@ -35,7 +35,6 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.extension.MinecraftMah
 import com.doublemoon1119.mahjongcraft.platform.minecraft.history.HistoryDiscardMarkerDisplay
 import com.doublemoon1119.mahjongcraft.platform.minecraft.history.HistoryDiscardMarkerDisplayDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.history.HistoryTileAreaDisplayDefinition
-import com.doublemoon1119.mahjongcraft.platform.minecraft.history.MinecraftHistoryScreenKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.player.PublicPlayerIndicatorDisplay
 import com.doublemoon1119.mahjongcraft.platform.minecraft.player.PublicPlayerIndicatorDisplayDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.RuleModuleDisplayNameDefinition
@@ -98,28 +97,28 @@ object BundledRiichiMinecraftExtension : MinecraftMahjongExtension {
             definition = TileStyleDisplayNameDefinition(
                 styleId = RiichiTileValues.RED_FIVE_APPEARANCE_ID,
                 tile = Tile.Numeric(Tile.Suit.Character, 5),
-                translationKey = MinecraftMessageKeys.TILE_RED_FIVE_CHARACTER,
+                translationKey = RiichiTranslationKeys.TILE_RED_FIVE_CHARACTER,
             ),
         )
         registry.register(
             definition = TileStyleDisplayNameDefinition(
                 styleId = RiichiTileValues.RED_FIVE_APPEARANCE_ID,
                 tile = Tile.Numeric(Tile.Suit.Dot, 5),
-                translationKey = MinecraftMessageKeys.TILE_RED_FIVE_DOT,
+                translationKey = RiichiTranslationKeys.TILE_RED_FIVE_DOT,
             ),
         )
         registry.register(
             definition = TileStyleDisplayNameDefinition(
                 styleId = RiichiTileValues.RED_FIVE_APPEARANCE_ID,
                 tile = Tile.Numeric(Tile.Suit.Bamboo, 5),
-                translationKey = MinecraftMessageKeys.TILE_RED_FIVE_BAMBOO,
+                translationKey = RiichiTranslationKeys.TILE_RED_FIVE_BAMBOO,
             ),
         )
     }
 
     override fun registerRuleModuleDisplayNames(registry: RuleModuleDisplayNameRegistrar) {
-        registry.register(RuleModuleDisplayNameDefinition(BuiltInRuleModuleIds.RIICHI, MinecraftMessageKeys.RULE_MODULE_RIICHI))
-        registry.register(RuleModuleDisplayNameDefinition(BuiltInRuleModuleIds.RIICHI_THREE_PLAYER, MinecraftMessageKeys.RULE_MODULE_RIICHI_THREE_PLAYER))
+        registry.register(RuleModuleDisplayNameDefinition(BuiltInRuleModuleIds.RIICHI, RiichiTranslationKeys.RULE_NAME))
+        registry.register(RuleModuleDisplayNameDefinition(BuiltInRuleModuleIds.RIICHI_THREE_PLAYER, RiichiTranslationKeys.RULE_NAME_THREE_PLAYER))
     }
 
     override fun registerTileEmojis(registry: TileEmojiRegistrar) {
@@ -156,29 +155,29 @@ object BundledRiichiMinecraftExtension : MinecraftMahjongExtension {
 
     override fun registerExhaustiveDrawReasonDisplayNames(registry: ExhaustiveDrawReasonDisplayNameRegistrar) {
         registry.register(ExhaustiveDrawReasonDisplayNameDefinition(RiichiExhaustiveDrawReason.Normal.id, MinecraftMessageKeys.EXHAUSTIVE_DRAW_REASON_NORMAL))
-        registry.register(ExhaustiveDrawReasonDisplayNameDefinition(RiichiExhaustiveDrawReason.KyuushuKyuuhai.id, MinecraftMessageKeys.GAME_ACTION_KYUUSHU_KYUUHAI))
-        registry.register(ExhaustiveDrawReasonDisplayNameDefinition(RiichiExhaustiveDrawReason.SuufonRenda.id, MinecraftMessageKeys.GAME_ACTION_SUUFON_RENDA))
-        registry.register(ExhaustiveDrawReasonDisplayNameDefinition(RiichiExhaustiveDrawReason.SuukanNagare.id, MinecraftMessageKeys.GAME_ACTION_SUUKAN_NAGARE))
-        registry.register(ExhaustiveDrawReasonDisplayNameDefinition(RiichiExhaustiveDrawReason.SuuchaRiichi.id, MinecraftMessageKeys.GAME_ACTION_SUUCHA_RIICHI))
-        registry.register(ExhaustiveDrawReasonDisplayNameDefinition(RiichiExhaustiveDrawReason.SanchaHou.id, MinecraftMessageKeys.GAME_ACTION_SANCHA_HOU))
+        registry.register(ExhaustiveDrawReasonDisplayNameDefinition(RiichiExhaustiveDrawReason.KyuushuKyuuhai.id, RiichiTranslationKeys.ACTION_KYUUSHU_KYUUHAI))
+        registry.register(ExhaustiveDrawReasonDisplayNameDefinition(RiichiExhaustiveDrawReason.SuufonRenda.id, RiichiTranslationKeys.EXHAUSTIVE_DRAW_SUUFON_RENDA))
+        registry.register(ExhaustiveDrawReasonDisplayNameDefinition(RiichiExhaustiveDrawReason.SuukanNagare.id, RiichiTranslationKeys.EXHAUSTIVE_DRAW_SUUKAN_NAGARE))
+        registry.register(ExhaustiveDrawReasonDisplayNameDefinition(RiichiExhaustiveDrawReason.SuuchaRiichi.id, RiichiTranslationKeys.EXHAUSTIVE_DRAW_SUUCHA_RIICHI))
+        registry.register(ExhaustiveDrawReasonDisplayNameDefinition(RiichiExhaustiveDrawReason.SanchaHou.id, RiichiTranslationKeys.EXHAUSTIVE_DRAW_SANCHA_HOU))
         registry.register(
             definition = ExhaustiveDrawSettlementStatusLabelsDefinition(
                 reasonId = RiichiExhaustiveDrawReason.Normal.id,
                 labels = ExhaustiveDrawSettlementStatusLabels(
-                    beneficiaryTranslationKey = MinecraftMessageKeys.EXHAUSTIVE_DRAW_SETTLEMENT_STATUS_TENPAI,
-                    othersTranslationKey = MinecraftMessageKeys.EXHAUSTIVE_DRAW_SETTLEMENT_STATUS_NOTEN,
+                    beneficiaryTranslationKey = RiichiTranslationKeys.EXHAUSTIVE_DRAW_TENPAI,
+                    othersTranslationKey = RiichiTranslationKeys.EXHAUSTIVE_DRAW_NOTEN,
                 ),
             ),
         )
     }
 
     override fun registerRoundOutcomeDisplayNames(registry: RoundOutcomeDisplayNameRegistrar) {
-        registry.register(RoundOutcomeDisplayNameDefinition(RiichiRoundOutcomeIds.NAGASHI_MANGAN, MinecraftHistoryScreenKeys.ROUND_OUTCOME_NAGASHI_MANGAN))
+        registry.register(RoundOutcomeDisplayNameDefinition(RiichiRoundOutcomeIds.NAGASHI_MANGAN, RiichiTranslationKeys.OUTCOME_NAGASHI_MANGAN))
     }
 
     /** 三人日麻拔出的北在牌譜上標示為「拔出的牌」。 */
     override fun registerHistoryTileSetAsideDisplays(registry: HistoryTileSetAsideDisplayRegistrar) {
-        registry.register(HistoryTileAreaDisplayDefinition(RiichiPlayerTileAreaIds.NORTH, MinecraftHistoryScreenKeys.STATE_TILE_AREA_RIICHI_NORTH))
+        registry.register(HistoryTileAreaDisplayDefinition(RiichiPlayerTileAreaIds.NORTH, RiichiTranslationKeys.HISTORY_TILE_AREA_NORTH))
     }
 
     /** 立直宣告的牌在歷史牌河上橫擺，提示顯示「立直」。 */
@@ -186,7 +185,7 @@ object BundledRiichiMinecraftExtension : MinecraftMahjongExtension {
         registry.register(
             definition = HistoryDiscardMarkerDisplayDefinition(
                 markerId = RiichiHistoryDiscardMarkerIds.RIICHI_DECLARED,
-                display = HistoryDiscardMarkerDisplay(labelTranslationKey = MinecraftMessageKeys.PLAYER_INDICATOR_RIICHI, sideways = true),
+                display = HistoryDiscardMarkerDisplay(labelTranslationKey = RiichiTranslationKeys.INDICATOR_RIICHI, sideways = true),
             ),
         )
     }
@@ -199,7 +198,7 @@ object BundledRiichiMinecraftExtension : MinecraftMahjongExtension {
             definition = WinSettlementPresentationFieldProviderDefinition(RiichiWinSettlementTemplates.OUTCOME_TITLE) { snapshot ->
                 PresentationValue.TextValue(
                     translationKey = when {
-                        snapshot.outcomeId == RiichiRoundOutcomeIds.NAGASHI_MANGAN -> WinSettlementTextKeys.NAGASHI_MANGAN
+                        snapshot.outcomeId == RiichiRoundOutcomeIds.NAGASHI_MANGAN -> RiichiTranslationKeys.SETTLEMENT_NAGASHI_MANGAN
                         else -> snapshot.winActionLabelKey
                     },
                 )
@@ -217,6 +216,16 @@ object BundledRiichiMinecraftExtension : MinecraftMahjongExtension {
                 }
             },
         )
+        registry.register(
+            definition = WinSettlementPresentationFieldProviderDefinition(RiichiWinSettlementTemplates.DORA_LABEL) {
+                PresentationValue.TextValue(RiichiTranslationKeys.SETTLEMENT_DORA)
+            },
+        )
+        registry.register(
+            definition = WinSettlementPresentationFieldProviderDefinition(RiichiWinSettlementTemplates.URA_DORA_LABEL) {
+                PresentationValue.TextValue(RiichiTranslationKeys.SETTLEMENT_URA_DORA)
+            },
+        )
         registry.register(WinSettlementDetailTextFormatterDefinition(RiichiWinSettlementIds.YAKU_FIELD, RiichiWinSettlementDetailTexts.yaku))
         registry.register(WinSettlementDetailTextFormatterDefinition(RiichiWinSettlementIds.HAN_FU_FIELD, RiichiWinSettlementDetailTexts.hanFu))
         registry.register(WinSettlementDetailTextFormatterDefinition(RiichiWinSettlementIds.YAKUMAN_TOTAL_FIELD, RiichiWinSettlementDetailTexts.yakumanTotal))
@@ -229,7 +238,7 @@ object BundledRiichiMinecraftExtension : MinecraftMahjongExtension {
     }
 
     override fun registerPublicPlayerIndicatorDisplays(registry: PublicPlayerIndicatorDisplayRegistrar) {
-        registry.register(PublicPlayerIndicatorDisplayDefinition(RiichiRuleModule.RIICHI_INDICATOR_ID, PublicPlayerIndicatorDisplay(MinecraftMessageKeys.PLAYER_INDICATOR_RIICHI)))
+        registry.register(PublicPlayerIndicatorDisplayDefinition(RiichiRuleModule.RIICHI_INDICATOR_ID, PublicPlayerIndicatorDisplay(RiichiTranslationKeys.INDICATOR_RIICHI)))
     }
 
     override fun registerGameConfigPresentations(registry: GameConfigPresentationRegistrar) {
@@ -243,9 +252,9 @@ object BundledRiichiMinecraftExtension : MinecraftMahjongExtension {
     }
 
     override fun registerRoundInfoPresentations(registry: RoundInfoLineDisplayRegistrar) {
-        registry.register(RoundInfoLineDisplayDefinition(RIICHI_TITLE_KEY, RoundInfoLineDisplay(MinecraftMessageKeys.ROUND_INFO_TITLE)))
+        registry.register(RoundInfoLineDisplayDefinition(RIICHI_TITLE_KEY, RoundInfoLineDisplay(RiichiTranslationKeys.ROUND_INFO_TITLE)))
         registry.register(RoundInfoLineDisplayDefinition(RIICHI_WALL_REMAINING_KEY, RoundInfoLineDisplay(MinecraftMessageKeys.ROUND_INFO_WALL_REMAINING)))
-        registry.register(RoundInfoLineDisplayDefinition(RIICHI_STICK_POT_KEY, RoundInfoLineDisplay(MinecraftMessageKeys.ROUND_INFO_STICK_POT)))
+        registry.register(RoundInfoLineDisplayDefinition(RIICHI_STICK_POT_KEY, RoundInfoLineDisplay(RiichiTranslationKeys.ROUND_INFO_STICK_POT)))
         RIICHI_FAMILY_RULE_MODULE_IDS.forEach { ruleModuleId -> RiichiFamilyMinecraftPresentation.registerRoundInfo(registry, ruleModuleId) }
     }
 

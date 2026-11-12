@@ -122,6 +122,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.room.GameConfigPresent
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.RoomMemberAppearanceSourceRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.RuleModuleDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.RuleModuleDisplayNameRegistryImpl
+import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.riichi.RiichiTranslationKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.ExhaustiveDrawReasonDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.MatchSettlementPresentationTemplateRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.RoundOutcomeDisplayNameRegistry
@@ -133,7 +134,6 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.table.RoundInfoLineDis
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocationRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TablePropDescriberRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TablePropPresenter
-import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftMessageKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileDisplayNameRegistryImpl
@@ -409,7 +409,7 @@ class FabricApplicationModuleTest {
         assertTrue(gameActionCommandFactoryRegistry.isRegistered(RiichiGameAction.Riichi::class))
         assertTrue(gameCommandRegistry.isRegistered(RiichiGameCommand::class))
         assertEquals(
-            MinecraftMessageKeys.GAME_ACTION_RIICHI,
+            RiichiTranslationKeys.ACTION_RIICHI,
             actionVocabularyRegistry.find(BuiltInRuleModuleIds.RIICHI, RiichiGameAction.Riichi.id)?.labelKey,
         )
         assertTrue(actionVocabularyRegistry.isFrozen)

@@ -7,32 +7,18 @@ object WinSettlementTextKeys {
     /** 所有 MahjongCraft 胡牌結算 translation key 的共用前綴。 */
     private const val PREFIX = MinecraftModMetadata.MOD_ID + ".settlement."
 
-    const val DORA = PREFIX + "dora"
-    const val DORA_INDICATOR = PREFIX + "dora_indicator"
-    const val HAN = PREFIX + "han"
-    const val HAN_FU = PREFIX + "han_fu"
-    const val NAGASHI_MANGAN = PREFIX + "nagashi_mangan"
     const val RELATIONSHIP_ARROW = PREFIX + "relationship_arrow"
     const val RON_RELATIONSHIP = PREFIX + "ron_relationship"
     const val SCORE_RANKING = PREFIX + "score_ranking"
     const val TEMPLATE_FALLBACK = PREFIX + "template_fallback"
     const val TOTAL_SCORE = PREFIX + "total_score"
-    const val URA_DORA = PREFIX + "ura_dora"
-    const val URA_DORA_INDICATOR = PREFIX + "ura_dora_indicator"
 
     /** 平台語系資源必須提供的全部內建胡牌結算 key。 */
     val ALL: Set<String> = setOf(
-        DORA,
-        DORA_INDICATOR,
-        HAN,
-        HAN_FU,
-        NAGASHI_MANGAN,
         RELATIONSHIP_ARROW,
         RON_RELATIONSHIP,
         SCORE_RANKING,
         TEMPLATE_FALLBACK,
         TOTAL_SCORE,
-        URA_DORA,
-        URA_DORA_INDICATOR,
     )
 }

@@ -6,6 +6,7 @@ import com.doublemoon1119.mahjongcraft.logic.base.TileTypeId
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.RiichiTileValues
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.tile.TaiwanTileTypes
 import com.doublemoon1119.mahjongcraft.platform.minecraft.extension.BundledMinecraftMahjongExtensions
+import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.riichi.RiichiTranslationKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftMessageKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileDisplayNameRegistryImpl
 import net.minecraft.text.LiteralTextContent
@@ -42,7 +43,7 @@ class MahjongTileNameTextTest {
         val redFive = TileFaceView(Tile.Numeric(Tile.Suit.Dot, 5), appearanceId = RiichiTileValues.RED_FIVE_APPEARANCE_ID).toNameText(displayNames)
         val unnamedStyle = TileFaceView(Tile.Numeric(Tile.Suit.Dot, 4), appearanceId = RiichiTileValues.RED_FIVE_APPEARANCE_ID).toNameText(displayNames)
 
-        assertEquals(MinecraftMessageKeys.TILE_RED_FIVE_DOT, (redFive.content as TranslatableTextContent).key)
+        assertEquals(RiichiTranslationKeys.TILE_RED_FIVE_DOT, (redFive.content as TranslatableTextContent).key)
         assertEquals(MinecraftMessageKeys.TILE_SUIT_DOT, (unnamedStyle.content as TranslatableTextContent).key)
     }
 

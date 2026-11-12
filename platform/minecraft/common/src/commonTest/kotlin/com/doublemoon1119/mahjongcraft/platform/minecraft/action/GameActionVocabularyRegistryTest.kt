@@ -42,9 +42,9 @@ class GameActionVocabularyRegistryTest {
             BundledRiichiMinecraftExtension.registerGameActionVocabulary(this)
         }
 
-        assertEquals("mahjongcraft.hud.action.riichi.description", registry.find(BuiltInRuleModuleIds.RIICHI, RiichiGameAction.Riichi.id)?.descriptionKey)
+        assertEquals("mahjongcraft.riichi.action.riichi.description", registry.find(BuiltInRuleModuleIds.RIICHI, RiichiGameAction.Riichi.id)?.descriptionKey)
         assertEquals(
-            "mahjongcraft.hud.action.kyuushu_kyuuhai.description",
+            "mahjongcraft.riichi.action.kyuushu_kyuuhai.description",
             registry.find(BuiltInRuleModuleIds.RIICHI, RiichiExhaustiveDrawReason.KyuushuKyuuhai.id)?.descriptionKey,
         )
         assertNull(registry.find(BuiltInRuleModuleIds.RIICHI, BuiltInGameActionIds.CHI)?.descriptionKey)
@@ -82,7 +82,7 @@ class GameActionVocabularyRegistryTest {
         val riichi = registry.find(BuiltInRuleModuleIds.RIICHI, RiichiGameAction.Riichi.id)
         val tsumoOrder = registry.find(BuiltInRuleModuleIds.RIICHI, BuiltInGameActionIds.TSUMO)?.order
 
-        assertEquals("mahjongcraft.message.game_action_riichi", riichi?.labelKey)
+        assertEquals("mahjongcraft.riichi.action.riichi", riichi?.labelKey)
         assertEquals(riichi?.labelKey, riichi?.messageKey)
         assertTrue((riichi?.order ?: 0) > (tsumoOrder ?: 0), "Expected riichi to come after the built-in actions.")
         assertNull(registry.find(BuiltInRuleModuleIds.TAIWAN, RiichiGameAction.Riichi.id))

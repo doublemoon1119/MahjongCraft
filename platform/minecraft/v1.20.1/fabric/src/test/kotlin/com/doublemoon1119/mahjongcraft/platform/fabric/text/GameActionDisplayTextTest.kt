@@ -94,7 +94,7 @@ class GameActionDisplayTextTest {
     fun `kyuushu kyuuhai resolves its dedicated key`() {
         val content = GameAction.ExhaustiveDraw(RiichiExhaustiveDrawReason.KyuushuKyuuhai)
             .toDisplayText(null, ruleModuleId, actionVocabulary, displayNameRegistry, assetRegistry, emojiRegistry, exhaustiveDrawReasonDisplayNameRegistry).content as TranslatableTextContent
-        assertEquals("mahjongcraft.message.game_action_kyuushu_kyuuhai", content.key)
+        assertEquals("mahjongcraft.riichi.action.kyuushu_kyuuhai", content.key)
     }
 
     /** 驗證規則登記自己的用語時覆寫中立預設，沒有登記的規則沿用預設。 */

@@ -16,6 +16,12 @@ Its Gradle project path is `:minecraft_common`; the source directory remains `pl
 - Define shared history presentation, rule catalogues, achievement mappings,
   and game-event subscriptions and delivery contracts.
 
+## Language files
+
+`src/jvmMain/resources/assets/mahjongcraft/lang` holds the bundled translations for every supported
+locale. Name new keys as described in
+[Translation keys](../../../docs/contributing/minecraft-presentation.md#translation-keys).
+
 ## Selectable rules
 
 A rule appears in the room screen only when `MinecraftMahjongExtension.registerGameConfigPresentations`

@@ -51,7 +51,7 @@ class MahjongTileDisplayTextTest {
         val text = face.toDisplayText(displayNameRegistry, assetRegistry, emojiRegistry)
         assertEquals("🀬 ", (text.content as LiteralTextContent).string())
         val translatable = text.siblings.single().content as TranslatableTextContent
-        assertEquals("mahjongcraft.message.tile_red_five_character", translatable.key)
+        assertEquals("mahjongcraft.riichi.tile.red_five_character", translatable.key)
     }
 
     /** 驗證外觀樣式沒有登記名稱時，使用基本牌面的名稱與 emoji。 */

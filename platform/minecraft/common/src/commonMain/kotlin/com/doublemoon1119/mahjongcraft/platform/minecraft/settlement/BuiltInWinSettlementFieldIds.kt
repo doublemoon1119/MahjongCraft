@@ -19,12 +19,6 @@ object BuiltInWinSettlementFieldIds {
     /** 關係箭頭欄位。 */
     val RELATION_ARROW = field("relation_arrow")
 
-    /** 寶牌標籤欄位。 */
-    val DORA_LABEL = field("dora_label")
-
-    /** 裏寶牌標籤欄位。 */
-    val URA_DORA_LABEL = field("ura_dora_label")
-
     /** 完整手牌欄位。 */
     val COMPLETE_HAND = field("complete_hand")
 

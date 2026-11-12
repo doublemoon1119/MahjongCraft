@@ -287,9 +287,6 @@ object MinecraftHistoryScreenKeys {
     /** 規則沒有登記標題的移出牌區使用的中立標題。 */
     const val STATE_SET_ASIDE = "mahjongcraft.history_screen.state.set_aside"
 
-    /** 三人日麻拔出的北所在牌區的標題。 */
-    const val STATE_TILE_AREA_RIICHI_NORTH = "mahjongcraft.history_screen.state.tile_area.riichi_north"
-
     /** 牌河區標籤。 */
     const val STATE_DISCARDS = "mahjongcraft.history_screen.state.discards"
 
@@ -523,9 +520,6 @@ object MinecraftHistoryScreenKeys {
 
     /** 單局交易時間格式。 */
     const val ROUND_TIMING = "mahjongcraft.history_screen.round.timing"
-
-    /** 流局滿貫結算名稱。 */
-    const val ROUND_OUTCOME_NAGASHI_MANGAN = "mahjongcraft.history_screen.round.outcome.nagashi_mangan"
 
     /** 中立槓牌動作名稱。 */
     const val ROUND_ACTION_KAN = "mahjongcraft.history_screen.round.action.kan"
