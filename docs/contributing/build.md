@@ -4,7 +4,9 @@
 
 - The repository tracks `gradle.properties` with conservative daemon defaults suitable for the
   multi-module build. They are maximum JVM limits rather than memory reserved at startup.
-- Developers may override `org.gradle.jvmargs` in the Gradle user home
+- The Kotlin compile daemon has its own limit, `kotlin.daemon.jvmargs`, set higher than the Gradle daemon
+  because compiling the Minecraft modules needs more heap.
+- Developers may override `org.gradle.jvmargs` and `kotlin.daemon.jvmargs` in the Gradle user home
   (`~/.gradle/gradle.properties`). CI jobs should set limits appropriate for their runner instead of
   assuming the repository defaults fit every environment.
 - Parallel project execution is enabled by default. Memory-constrained environments can pass
