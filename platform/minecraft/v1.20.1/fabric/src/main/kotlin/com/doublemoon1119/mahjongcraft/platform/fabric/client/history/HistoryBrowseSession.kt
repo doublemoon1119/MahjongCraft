@@ -22,6 +22,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.WinSettleme
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.BuiltInMinecraftTileAppearances
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileSetAppearanceDefinition
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileDisplayNameRegistry
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
@@ -46,6 +47,7 @@ import kotlin.time.TimeSource
  * @property settlementTemplates 結算明細欄位的規則專屬標題來源。
  * @property tileFaces 共用 GUI 牌面 renderer。
  * @property tileAssets 牌種與 Minecraft 素材的映射來源。
+ * @property tileDisplayNames 牌面提示中牌名的查詢來源。
  * @property ruleCatalogue 從規則設定頁開啟規則一覽。
  * @param dispatcher 客戶端主執行緒排程。
  * @property parent 關閉後返回的原畫面，指令入口為 null。
@@ -67,6 +69,7 @@ internal class HistoryBrowseSession(
     val settlementTemplates: WinSettlementPresentationTemplateRegistry,
     val tileFaces: MahjongTileFaceRenderer,
     val tileAssets: MinecraftTileAssetRegistry,
+    val tileDisplayNames: TileDisplayNameRegistry,
     private val ruleCatalogue: RuleCatalogueScreenController,
     dispatcher: ClientThreadCoroutineDispatcher,
     private val parent: Screen?,

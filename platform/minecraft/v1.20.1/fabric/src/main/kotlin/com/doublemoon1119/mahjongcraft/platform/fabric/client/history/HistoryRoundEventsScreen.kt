@@ -65,7 +65,7 @@ internal class HistoryRoundEventsScreen(
     private var initialButton: ButtonWidget? = null
 
     /** 完整手牌與狀態頁共用的牌組繪製。 */
-    private val tileGroups = HistoryTileGroupRenderer(tileFaceRenderer, tileAssetRegistry, session.discardMarkers)
+    private val tileGroups = HistoryTileGroupRenderer(tileFaceRenderer, tileAssetRegistry, session.discardMarkers, session.tileDisplayNames)
 
     /** 建立固定控制項並恢復此局位置。 */
     override fun init() {
@@ -369,7 +369,7 @@ internal class HistoryRoundEventsScreen(
                             val asset = tile.toHistoryAssetKey(tileAssetRegistry)
                             val x = layout.left + row.indent + index * TILE_STEP
                             tileFaceRenderer.renderGui(context, asset, x, y, TILE_WIDTH, TILE_HEIGHT, appearance = session.tileAppearance())
-                            if (hovered && mouseX >= x && mouseX < x + TILE_WIDTH && mouseY >= y && mouseY < y + TILE_HEIGHT) tooltip = listOf(Text.literal(asset))
+                            if (hovered && mouseX >= x && mouseX < x + TILE_WIDTH && mouseY >= y && mouseY < y + TILE_HEIGHT) tooltip = historyTileTooltip(tile.toHistoryNameText(session.tileDisplayNames), catalogIndex = null, taken = false, markerLabels = emptyList())
                         }
                         is Row.LabeledTiles -> {
                             val textY = y + (TILE_HEIGHT - LINE_HEIGHT) / 2 + 1
@@ -380,7 +380,7 @@ internal class HistoryRoundEventsScreen(
                                 val asset = tile.toHistoryAssetKey(tileAssetRegistry)
                                 val x = layout.left + row.tileIndent + index * TILE_STEP
                                 tileFaceRenderer.renderGui(context, asset, x, y, TILE_WIDTH, TILE_HEIGHT, appearance = session.tileAppearance())
-                                if (hovered && mouseX >= x && mouseX < x + TILE_WIDTH && mouseY >= y && mouseY < y + TILE_HEIGHT) tooltip = listOf(Text.literal(asset))
+                                if (hovered && mouseX >= x && mouseX < x + TILE_WIDTH && mouseY >= y && mouseY < y + TILE_HEIGHT) tooltip = historyTileTooltip(tile.toHistoryNameText(session.tileDisplayNames), catalogIndex = null, taken = false, markerLabels = emptyList())
                             }
                         }
                         is Row.Space -> Unit

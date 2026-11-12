@@ -15,6 +15,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.ExhaustiveD
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.RoundOutcomeDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.WinSettlementPresentationTemplateRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileDisplayNameRegistry
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 import net.minecraft.client.MinecraftClient
 import net.minecraft.client.gui.screen.Screen
@@ -39,6 +40,7 @@ import kotlin.uuid.Uuid
  * @property tileAssets 牌種與 Minecraft 素材的映射來源。
  * @param ruleDecisionNames 規則選擇選項的顯示名稱來源。
  * @property setAsideDisplays 移出牌區標題與換牌用語來源。
+ * @property tileDisplayNames 牌面提示中牌名的查詢來源。
  * @property ruleCatalogue 從規則設定頁開啟規則一覽。
  * @property archiveStatus 保存狀態查詢。
  * @property dispatcher 客戶端主執行緒排程。
@@ -59,6 +61,7 @@ class HistoryScreenController internal constructor(
     private val tileAssets: MinecraftTileAssetRegistry,
     ruleDecisionNames: RuleDecisionDisplayNameRegistry,
     private val setAsideDisplays: HistoryTileSetAsideDisplayRegistry,
+    private val tileDisplayNames: TileDisplayNameRegistry,
     private val ruleCatalogue: RuleCatalogueScreenController,
     private val archiveStatus: HistoryArchiveStatusTransport,
     private val dispatcher: ClientThreadCoroutineDispatcher,
@@ -151,6 +154,7 @@ class HistoryScreenController internal constructor(
             settlementTemplates,
             tileFaces,
             tileAssets,
+            tileDisplayNames,
             ruleCatalogue,
             dispatcher,
             request.parent,

@@ -37,21 +37,31 @@ fun Tile.toDisplayText(
     tileAssetRegistry: MinecraftTileAssetRegistry,
     tileEmojiRegistry: TileEmojiRegistry,
 ): Text {
-    val text = when (this) {
-        is Tile.Numeric -> Text.translatable(suit.toMessageKey(), value)
-        Tile.Honor.East -> Text.translatable(MinecraftMessageKeys.TILE_HONOR_EAST)
-        Tile.Honor.South -> Text.translatable(MinecraftMessageKeys.TILE_HONOR_SOUTH)
-        Tile.Honor.West -> Text.translatable(MinecraftMessageKeys.TILE_HONOR_WEST)
-        Tile.Honor.North -> Text.translatable(MinecraftMessageKeys.TILE_HONOR_NORTH)
-        Tile.Honor.Red -> Text.translatable(MinecraftMessageKeys.TILE_HONOR_RED)
-        Tile.Honor.Green -> Text.translatable(MinecraftMessageKeys.TILE_HONOR_GREEN)
-        Tile.Honor.White -> Text.translatable(MinecraftMessageKeys.TILE_HONOR_WHITE)
-        is Tile.Extension -> displayNameRegistry.find(typeId)
-            ?.let(Text::translatable)
-            ?: Text.literal(typeId.toString())
-    }
+    val text = toNameText(displayNameRegistry)
     val emoji = tileEmojiRegistry.findFor(toAssetKey(tileAssetRegistry), tileAssetRegistry) ?: return text
     return Text.literal("$emoji ").append(text)
+}
+
+/**
+ * 將 [Tile] 轉成本地化牌名，不加牌面 emoji，例如滑鼠提示中的「3萬」。
+ *
+ * [Tile.Extension] 查 [displayNameRegistry]；查不到時顯示原始 [TileTypeId] 字串。
+ *
+ * @param displayNameRegistry 擴充牌種顯示名稱查詢來源。
+ * @return 本地化牌名。
+ */
+fun Tile.toNameText(displayNameRegistry: TileDisplayNameRegistry): Text = when (this) {
+    is Tile.Numeric -> Text.translatable(suit.toMessageKey(), value)
+    Tile.Honor.East -> Text.translatable(MinecraftMessageKeys.TILE_HONOR_EAST)
+    Tile.Honor.South -> Text.translatable(MinecraftMessageKeys.TILE_HONOR_SOUTH)
+    Tile.Honor.West -> Text.translatable(MinecraftMessageKeys.TILE_HONOR_WEST)
+    Tile.Honor.North -> Text.translatable(MinecraftMessageKeys.TILE_HONOR_NORTH)
+    Tile.Honor.Red -> Text.translatable(MinecraftMessageKeys.TILE_HONOR_RED)
+    Tile.Honor.Green -> Text.translatable(MinecraftMessageKeys.TILE_HONOR_GREEN)
+    Tile.Honor.White -> Text.translatable(MinecraftMessageKeys.TILE_HONOR_WHITE)
+    is Tile.Extension -> displayNameRegistry.find(typeId)
+        ?.let(Text::translatable)
+        ?: Text.literal(typeId.toString())
 }
 
 /**
@@ -74,6 +84,17 @@ fun TileFaceView.toDisplayText(
     val emoji = tileEmojiRegistry.findFor(toAssetKey(tileAssetRegistry), tileAssetRegistry) ?: return text
     return Text.literal("$emoji ").append(text)
 }
+
+/**
+ * 將已知牌面轉成本地化牌名，不加牌面 emoji：外觀樣式有登記名稱時使用該名稱，例如「赤五萬」，否則使用基本牌面的名稱。
+ *
+ * @param displayNameRegistry 牌種與外觀樣式的名稱查詢來源。
+ * @return 本地化牌名。
+ */
+fun TileFaceView.toNameText(displayNameRegistry: TileDisplayNameRegistry): Text = appearanceId
+    ?.let { displayNameRegistry.findStyle(it, tile) }
+    ?.let(Text::translatable)
+    ?: tile.toNameText(displayNameRegistry)
 
 /**
  * 將數牌花色映射到對應的翻譯 key。

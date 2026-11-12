@@ -9,6 +9,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.BuiltInMinecraftT
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileSetAppearanceDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TILE_BACK_PREVIEW_ASSET_KEY
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.backAppearance
 import net.minecraft.client.gui.DrawContext
 import net.minecraft.text.Text
@@ -20,11 +21,13 @@ import net.minecraft.util.Formatting
  * @property faces 共用牌面 renderer。
  * @property assets 牌種素材註冊表。
  * @property markerDisplays 牌河公開標記的提示文字來源。
+ * @property displayNames 提示中牌名的查詢來源。
  */
 internal class HistoryTileGroupRenderer(
     private val faces: MahjongTileFaceRenderer,
     private val assets: MinecraftTileAssetRegistry,
     private val markerDisplays: HistoryDiscardMarkerDisplayRegistry,
+    private val displayNames: TileDisplayNameRegistry,
 ) {
     /**
      * 繪製已測量群組並取得指向牌張的索引提示。
@@ -83,14 +86,14 @@ internal class HistoryTileGroupRenderer(
                 context.fill((x + placement.x).toInt(), (y + placement.y + placement.height).toInt(), (x + placement.x + placement.width).toInt(), (y + placement.y + placement.height + 1).toInt(), MARKER_COLOR)
             }
             if (mouseX >= x + placement.x && mouseX < x + placement.x + placement.width && mouseY >= y + placement.y && mouseY < y + placement.y + placement.height) {
-                tooltip = buildList {
-                    if (showCatalogIndex) add(Text.translatable(MinecraftHistoryScreenKeys.STATE_TILE_INDEX, placement.tile).formatted(Formatting.GRAY))
-                    if (placement.tile in taken) add(Text.translatable(MinecraftHistoryScreenKeys.STATE_TAKEN)) else add(Text.literal(asset))
-                    markers[placement.tile].orEmpty().sorted().forEach { marker ->
-                        val label = markerDisplays.find(marker)?.let { Text.translatable(it.labelTranslationKey) } ?: Text.literal(marker)
-                        add(label.formatted(Formatting.GRAY))
-                    }
-                }
+                tooltip = historyTileTooltip(
+                    name = tile.toHistoryNameText(displayNames),
+                    catalogIndex = placement.tile.takeIf { showCatalogIndex },
+                    taken = placement.tile in taken,
+                    markerLabels = markers[placement.tile].orEmpty().sorted().map { marker ->
+                        markerDisplays.find(marker)?.let { Text.translatable(it.labelTranslationKey) } ?: Text.literal(marker)
+                    },
+                )
             }
         }
         return tooltip
@@ -110,4 +113,25 @@ internal class HistoryTileGroupRenderer(
         /** 直立基準牌高。 */
         const val BASE_HEIGHT = 24
     }
+}
+
+/**
+ * 牌譜中一張牌的滑鼠提示：牌名在前，其次是被鳴走與牌河公開標記；設定開啟時最前面加上局內牌索引。
+ *
+ * @param name 本地化牌名。
+ * @param catalogIndex 局內牌索引；不顯示時為 null。
+ * @param taken 這張牌是否已被鳴走。
+ * @param markerLabels 牌河公開標記的文字，依顯示順序排列。
+ * @return 依序顯示的提示文字。
+ */
+internal fun historyTileTooltip(
+    name: Text,
+    catalogIndex: Int?,
+    taken: Boolean,
+    markerLabels: List<Text>,
+): List<Text> = buildList {
+    catalogIndex?.let { add(Text.translatable(MinecraftHistoryScreenKeys.STATE_TILE_INDEX, it).formatted(Formatting.GRAY)) }
+    add(name)
+    if (taken) add(Text.translatable(MinecraftHistoryScreenKeys.STATE_TAKEN).formatted(Formatting.GRAY))
+    markerLabels.forEach { add(it.copy().formatted(Formatting.GRAY)) }
 }
