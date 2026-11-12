@@ -44,34 +44,34 @@ object RiichiAchievementIds {
     /** 「被大差距擊飛」的點數門檻：最終點數不高於此值。 */
     const val FAR_BUST_SCORE: Int = -30_000
 
-    /** 一般役滿役種的成果 ID 尾段。 */
-    private val YAKUMAN_PATHS: Map<RiichiYakuType, String> = mapOf(
-        RiichiYakuType.KokushiMusou to "kokushi_musou",
-        RiichiYakuType.ChurenPoto to "churen_poto",
-        RiichiYakuType.Tsuuiisou to "tsuuiisou",
-        RiichiYakuType.Ryuuuiisou to "ryuuiisou",
-        RiichiYakuType.Suuankou to "suuankou",
-        RiichiYakuType.Sukantsu to "suukantsu",
-        RiichiYakuType.Shousuushi to "shousuushii",
-        RiichiYakuType.Daisangen to "daisangen",
-        RiichiYakuType.Chinroutou to "chinroutou",
-        RiichiYakuType.Tenhou to "tenhou",
-        RiichiYakuType.Chiihou to "chiihou",
+    /** 一般役滿役種的成果 ID。 */
+    private val YAKUMAN_IDS: Map<RiichiYakuType, String> = mapOf(
+        RiichiYakuType.KokushiMusou to MahjongCraftMetadata.id("riichi/yakuman/kokushi_musou"),
+        RiichiYakuType.ChurenPoto to MahjongCraftMetadata.id("riichi/yakuman/churen_poto"),
+        RiichiYakuType.Tsuuiisou to MahjongCraftMetadata.id("riichi/yakuman/tsuuiisou"),
+        RiichiYakuType.Ryuuuiisou to MahjongCraftMetadata.id("riichi/yakuman/ryuuiisou"),
+        RiichiYakuType.Suuankou to MahjongCraftMetadata.id("riichi/yakuman/suuankou"),
+        RiichiYakuType.Sukantsu to MahjongCraftMetadata.id("riichi/yakuman/suukantsu"),
+        RiichiYakuType.Shousuushi to MahjongCraftMetadata.id("riichi/yakuman/shousuushii"),
+        RiichiYakuType.Daisangen to MahjongCraftMetadata.id("riichi/yakuman/daisangen"),
+        RiichiYakuType.Chinroutou to MahjongCraftMetadata.id("riichi/yakuman/chinroutou"),
+        RiichiYakuType.Tenhou to MahjongCraftMetadata.id("riichi/yakuman/tenhou"),
+        RiichiYakuType.Chiihou to MahjongCraftMetadata.id("riichi/yakuman/chiihou"),
     )
 
-    /** 雙倍役滿役種的成果 ID 尾段。 */
-    private val DOUBLE_YAKUMAN_PATHS: Map<RiichiYakuType, String> = mapOf(
-        RiichiYakuType.KokushiMusou13 to "kokushi_musou_13_wait",
-        RiichiYakuType.ChurenPoto9 to "junsei_churen_poto",
-        RiichiYakuType.SuuankouTanki to "suuankou_tanki",
-        RiichiYakuType.Daisuushii to "daisuushii",
+    /** 雙倍役滿役種的成果 ID。 */
+    private val DOUBLE_YAKUMAN_IDS: Map<RiichiYakuType, String> = mapOf(
+        RiichiYakuType.KokushiMusou13 to MahjongCraftMetadata.id("riichi/yakuman/kokushi_musou_13_wait"),
+        RiichiYakuType.ChurenPoto9 to MahjongCraftMetadata.id("riichi/yakuman/junsei_churen_poto"),
+        RiichiYakuType.SuuankouTanki to MahjongCraftMetadata.id("riichi/yakuman/suuankou_tanki"),
+        RiichiYakuType.Daisuushii to MahjongCraftMetadata.id("riichi/yakuman/daisuushii"),
     )
 
     /** 一般役滿役種。 */
-    val yakumanTypes: Set<RiichiYakuType> get() = YAKUMAN_PATHS.keys
+    val yakumanTypes: Set<RiichiYakuType> get() = YAKUMAN_IDS.keys
 
     /** 雙倍役滿役種。 */
-    val doubleYakumanTypes: Set<RiichiYakuType> get() = DOUBLE_YAKUMAN_PATHS.keys
+    val doubleYakumanTypes: Set<RiichiYakuType> get() = DOUBLE_YAKUMAN_IDS.keys
 
     /**
      * 取得 [type] 的役滿成果 ID；不是役滿役種時回傳 null。
@@ -79,6 +79,5 @@ object RiichiAchievementIds {
      * @param type 日麻役種。
      * @return 成果 ID，或 null。
      */
-    fun yakuman(type: RiichiYakuType): String? = (YAKUMAN_PATHS[type] ?: DOUBLE_YAKUMAN_PATHS[type])
-        ?.let { path -> MahjongCraftMetadata.id("riichi/yakuman/$path") }
+    fun yakuman(type: RiichiYakuType): String? = YAKUMAN_IDS[type] ?: DOUBLE_YAKUMAN_IDS[type]
 }

@@ -154,7 +154,7 @@ object BundledTaiwanMinecraftExtension : MinecraftMahjongExtension {
     /** 登記台灣麻將吃、碰、槓、胡牌、自摸與宣告聽牌的宣告語音。 */
     override fun registerGameActionSounds(registry: GameActionSoundPresentationRegistrar) {
         listOf(
-            BuiltInGameActionSoundIds.CHII to TaiwanGameActionVoiceSoundIds.CHI,
+            BuiltInGameActionSoundIds.CHI to TaiwanGameActionVoiceSoundIds.CHI,
             BuiltInGameActionSoundIds.PON to TaiwanGameActionVoiceSoundIds.PON,
             BuiltInGameActionSoundIds.KAN to TaiwanGameActionVoiceSoundIds.KAN,
             BuiltInGameActionSoundIds.RON to TaiwanGameActionVoiceSoundIds.HU,

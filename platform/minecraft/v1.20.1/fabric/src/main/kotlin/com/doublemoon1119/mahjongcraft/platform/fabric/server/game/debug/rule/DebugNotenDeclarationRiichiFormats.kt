@@ -22,7 +22,7 @@ import kotlinx.serialization.Serializable
  * @property base 四人日麻設定的網路 DTO。
  */
 @Serializable
-@SerialName("mahjongcraft:debug/noten_declaration_riichi_rule_config")
+@SerialName("mahjongcraft:debug_noten_declaration_riichi/rule_config")
 internal data class DebugNotenDeclarationRiichiRuleConfigDto(
     val base: RiichiRuleConfigDto,
 ) : MahjongRuleConfigDto
@@ -39,7 +39,7 @@ internal data class DebugNotenDeclarationRiichiRuleConfigPersistenceDto(
 
 /** [DebugDeclareNotenAction] 的網路 DTO。 */
 @Serializable
-@SerialName("mahjongcraft:debug_declare_noten")
+@SerialName("mahjongcraft:debug_noten_declaration_riichi/declare_noten")
 internal data object DebugDeclareNotenActionDto : ExtensionGameActionDto
 
 /** [DebugDeclareNotenAction] 的 persistence DTO。 */
@@ -80,7 +80,7 @@ internal fun registerDebugNotenDeclarationRiichiNetworkDtos(registries: NetworkD
 internal fun registerDebugNotenDeclarationRiichiPersistenceDtos(registries: PersistenceRegistrars) {
     registries.ruleConfigs.register(
         definition = PersistenceDtoDefinition(
-            typeKey = MahjongCraftMetadata.id("debug/noten_declaration_riichi_rule_config"),
+            typeKey = MahjongCraftMetadata.id("debug_noten_declaration_riichi/rule_config"),
             domainClass = DebugNotenDeclarationRiichiRuleConfig::class,
             serializer = DebugNotenDeclarationRiichiRuleConfigPersistenceDto.serializer(),
             toDto = { DebugNotenDeclarationRiichiRuleConfigPersistenceDto(it.base.toPersistenceDto()) },

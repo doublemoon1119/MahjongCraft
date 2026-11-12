@@ -54,7 +54,7 @@ class HistoryGenerationControllerTest {
             )
             assertEquals(
                 HistoryGenerationStartResult.PolicyRejected,
-                controller.start("mahjongcraft:riichi_east", 1),
+                controller.start("mahjongcraft:riichi/history_scenario/east", 1),
             )
             assertTrue(controller.snapshot() == null)
         } finally {
@@ -88,9 +88,9 @@ class HistoryGenerationControllerTest {
             dispatchers = TestDispatchers,
         )
         try {
-            assertEquals(HistoryGenerationStartResult.Started, controller.start("mahjongcraft:riichi_east", 2))
+            assertEquals(HistoryGenerationStartResult.Started, controller.start("mahjongcraft:riichi/history_scenario/east", 2))
             withTimeout(5.seconds) { entered.await() }
-            assertEquals(HistoryGenerationStartResult.Busy, controller.start("mahjongcraft:riichi_east", 1))
+            assertEquals(HistoryGenerationStartResult.Busy, controller.start("mahjongcraft:riichi/history_scenario/east", 1))
             assertTrue(controller.cancel())
             release.complete(Unit)
             withTimeout(55.seconds) {

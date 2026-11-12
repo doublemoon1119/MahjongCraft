@@ -1,9 +1,11 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.rule.riichi
 
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.riichi.RiichiWinCelebrationCueIds
 import com.doublemoon1119.mahjongcraft.flow.common.game.riichi.RiichiWinCelebrationCueResolver
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiHandValueResult
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPointResult
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.RiichiYakuResult
+import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.riichi.achievement.RiichiAchievementIds
 import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.riichi.catalogue.RiichiCatalogueCategory
 import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.riichi.catalogue.RiichiCatalogueYaku
 import com.doublemoon1119.mahjongcraft.platform.minecraft.showcase.WinCelebrationShowcaseRegistryImpl
@@ -31,6 +33,19 @@ class RiichiWinCelebrationShowcasesTest {
             val cue = RiichiWinCelebrationCueResolver.resolve(result).single()
             assertNotNull(registry.find(cue), "No showcase for ${definition.type}: $cue")
         }
+    }
+
+    /** 展示理由與目錄的役滿分類涵蓋同一組役滿役種；役滿成就涵蓋其中非古役的部分。 */
+    @Test
+    fun `cue achievement and catalogue yakuman sets match`() {
+        val catalogue = RiichiCatalogueYaku.entries
+            .filter { it.category == RiichiCatalogueCategory.Yakuman || it.category == RiichiCatalogueCategory.DoubleYakuman }
+            .map { it.type }
+            .toSet()
+
+        assertEquals(catalogue, RiichiWinCelebrationCueIds.yakumanTypes)
+        // 古役役滿不設成就。
+        assertEquals(catalogue.filterNot { it.isLocal }.toSet(), RiichiAchievementIds.yakumanTypes + RiichiAchievementIds.doubleYakumanTypes)
     }
 
     /** 展示使用的標題 key 正好是語系檔測試檢查的那一組，每個役滿各用一個。 */

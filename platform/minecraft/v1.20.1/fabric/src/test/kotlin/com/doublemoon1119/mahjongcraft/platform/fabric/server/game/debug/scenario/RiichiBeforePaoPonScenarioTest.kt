@@ -127,7 +127,7 @@ class RiichiBeforePaoPonScenarioTest {
     private fun buildScenario(invokingSeat: Int): Pair<TableState, MahjongPlayer> {
         val players = Wind.entries.map { FakeMahjongPlayerFactory.create(initialSeat = it, components = riichiDeclarationComponents()) }
         val game = Game(tableState = FakeTableStateFactory.create(players = players, config = config), flowConfig = GameFlowConfig())
-        val scenario = RiichiDebugGameScenarios.all.single { it.id == "mahjongcraft:riichi_before_pao_pon" }
+        val scenario = RiichiDebugGameScenarios.all.single { it.id == "mahjongcraft:riichi/debug/before_pao_pon" }
 
         val state = scenario.build(DebugGameScenarioContext(game, players[invokingSeat].id, bundledCoreExtensionRegistries().componentRegistry)).game.tableState
 

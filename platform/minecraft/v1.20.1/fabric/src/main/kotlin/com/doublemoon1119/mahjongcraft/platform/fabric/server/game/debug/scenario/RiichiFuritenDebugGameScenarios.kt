@@ -14,7 +14,7 @@ object RiichiFuritenDebugGameScenarios {
     /** 所有振聽驗收情境。 */
     val all: List<DebugGameScenario> = listOf(
         SeatSetupScenario(
-            id = "mahjongcraft:riichi_furiten_discarded_wait",
+            id = "mahjongcraft:riichi/debug/furiten_discarded_wait",
             invoker = SeatSpec(
                 standingTiles = YAKUHAI_TWO_SIDED_WAIT,
                 drawnTile = Tile.Honor.West,
@@ -24,7 +24,7 @@ object RiichiFuritenDebugGameScenarios {
             waitingTiles = WAITING_TILES,
         ),
         SeatSetupScenario(
-            id = "mahjongcraft:riichi_furiten_unoffered_wait",
+            id = "mahjongcraft:riichi/debug/furiten_unoffered_wait",
             invoker = SeatSpec(
                 standingTiles = TANYAO_ONLY_ON_FOUR_WAIT,
                 drawnTile = Tile.Honor.North,
@@ -34,7 +34,7 @@ object RiichiFuritenDebugGameScenarios {
             waitingTiles = WAITING_TILES,
         ),
         SeatSetupScenario(
-            id = "mahjongcraft:riichi_furiten_declined_ron",
+            id = "mahjongcraft:riichi/debug/furiten_declined_ron",
             invoker = SeatSpec(
                 standingTiles = YAKUHAI_TWO_SIDED_WAIT,
                 drawnTile = Tile.Honor.North,
@@ -44,7 +44,7 @@ object RiichiFuritenDebugGameScenarios {
             waitingTiles = WAITING_TILES,
         ),
         SeatSetupScenario(
-            id = "mahjongcraft:riichi_furiten_cleared_by_call",
+            id = "mahjongcraft:riichi/debug/furiten_cleared_by_call",
             invoker = SeatSpec(
                 standingTiles = RED_DRAGON_PAIR_BEFORE_CALL,
                 drawnTile = Tile.Honor.West,
@@ -54,7 +54,7 @@ object RiichiFuritenDebugGameScenarios {
             waitingTiles = WAITING_TILES,
         ),
         SeatSetupScenario(
-            id = "mahjongcraft:riichi_furiten_declined_chankan",
+            id = "mahjongcraft:riichi/debug/furiten_declined_chankan",
             invoker = SeatSpec(
                 standingTiles = YAKUHAI_TWO_SIDED_WAIT,
                 drawnTile = Tile.Honor.West,
@@ -66,7 +66,7 @@ object RiichiFuritenDebugGameScenarios {
             waitingTiles = WAITING_TILES,
         ),
         SeatSetupScenario(
-            id = "mahjongcraft:riichi_furiten_closed_kan_not_offered",
+            id = "mahjongcraft:riichi/debug/furiten_closed_kan_not_offered",
             invoker = SeatSpec(
                 standingTiles = YAKUHAI_TWO_SIDED_WAIT,
                 drawnTile = Tile.Honor.West,
@@ -80,7 +80,7 @@ object RiichiFuritenDebugGameScenarios {
             waitingTiles = WAITING_TILES,
         ),
         SeatSetupScenario(
-            id = "mahjongcraft:riichi_furiten_head_bump_chankan",
+            id = "mahjongcraft:riichi/debug/furiten_head_bump_chankan",
             invoker = SeatSpec(
                 standingTiles = YAKUHAI_TWO_SIDED_WAIT,
                 drawnTile = Tile.Honor.West,

@@ -10,6 +10,11 @@
 - **Rule-neutral IDs**: Place them directly under the namespace, for example `mahjongcraft:pao`. Rule-neutral
   objects must not hold rule-specific IDs.
 - **Third-party extensions**: Use their own namespace instead of `mahjongcraft`.
+- **Full paths**: Write each ID's complete path where it is defined, for example
+  `MahjongCraftMetadata.id("riichi/yaku/pinfu")`. Do not build IDs from slugs, enum names or other IDs. IDs
+  created at runtime for numbered instances, such as one per seat, may append that number.
+- **Sound events**: Minecraft sound event IDs keep Minecraft's dot-separated style and name the rule as a
+  segment, for example `mahjongcraft:voice.riichi.chii`.
 
 ## Registry Contracts
 

@@ -57,16 +57,16 @@ import kotlin.uuid.Uuid
 object RiichiDebugGameScenarios {
     /** 所有內建日麻 debug 情境。 */
     val all: List<DebugGameScenario> = listOf(
-        RiichiBeforeAnkanScenario("mahjongcraft:riichi_before_ankan_1", 0),
-        RiichiBeforeAnkanScenario("mahjongcraft:riichi_before_ankan_2", 1),
-        RiichiBeforeAnkanScenario("mahjongcraft:riichi_before_ankan_3", 2),
-        RiichiBeforeAnkanScenario("mahjongcraft:riichi_before_ankan_4", 3),
-        RiichiBeforeAnkanScenario("mahjongcraft:riichi_before_ankan_at_break_1", 0, AT_BREAK_WALL_OPENING),
-        RiichiBeforeAnkanScenario("mahjongcraft:riichi_before_ankan_at_break_2", 1, AT_BREAK_WALL_OPENING),
-        RiichiBeforeAnkanScenario("mahjongcraft:riichi_before_ankan_at_break_3", 2, AT_BREAK_WALL_OPENING),
-        RiichiBeforeAnkanScenario("mahjongcraft:riichi_before_ankan_at_break_4", 3, AT_BREAK_WALL_OPENING),
-        RiichiBeforeMinkanScenario("mahjongcraft:riichi_before_minkan_1"),
-        RiichiBeforeMinkanScenario("mahjongcraft:riichi_before_minkan_at_break_1", AT_BREAK_WALL_OPENING),
+        RiichiBeforeAnkanScenario("mahjongcraft:riichi/debug/before_ankan_1", 0),
+        RiichiBeforeAnkanScenario("mahjongcraft:riichi/debug/before_ankan_2", 1),
+        RiichiBeforeAnkanScenario("mahjongcraft:riichi/debug/before_ankan_3", 2),
+        RiichiBeforeAnkanScenario("mahjongcraft:riichi/debug/before_ankan_4", 3),
+        RiichiBeforeAnkanScenario("mahjongcraft:riichi/debug/before_ankan_at_break_1", 0, AT_BREAK_WALL_OPENING),
+        RiichiBeforeAnkanScenario("mahjongcraft:riichi/debug/before_ankan_at_break_2", 1, AT_BREAK_WALL_OPENING),
+        RiichiBeforeAnkanScenario("mahjongcraft:riichi/debug/before_ankan_at_break_3", 2, AT_BREAK_WALL_OPENING),
+        RiichiBeforeAnkanScenario("mahjongcraft:riichi/debug/before_ankan_at_break_4", 3, AT_BREAK_WALL_OPENING),
+        RiichiBeforeMinkanScenario("mahjongcraft:riichi/debug/before_minkan_1"),
+        RiichiBeforeMinkanScenario("mahjongcraft:riichi/debug/before_minkan_at_break_1", AT_BREAK_WALL_OPENING),
         RiichiBeforePaoPonScenario,
         RiichiBeforeSuuchaRiichiScenario,
         RiichiWallOpeningScenario,
@@ -97,7 +97,7 @@ private val AT_BREAK_WALL_OPENING = WallOpening(wallSideOffsetFromDealer = 0, st
 
 /** 建立前三家已立直、呼叫者可合法宣告第四家立直的四人日麻情境。 */
 private object RiichiBeforeSuuchaRiichiScenario : DebugGameScenario {
-    override val id: String = "mahjongcraft:riichi_before_suucha_riichi"
+    override val id: String = "mahjongcraft:riichi/debug/before_suucha_riichi"
 
     override fun build(context: DebugGameScenarioContext): DebugGameScenarioResult {
         val currentGame = context.currentGame
@@ -203,7 +203,7 @@ private object RiichiBeforeSuuchaRiichiScenario : DebugGameScenario {
  * 其他三家的立牌固定為 [PAO_OPPONENT_TILES]：不含一、四萬與三元牌，無法聽牌，也無法吃碰呼叫者的北與和牌張。
  */
 private object RiichiBeforePaoPonScenario : DebugGameScenario {
-    override val id: String = "mahjongcraft:riichi_before_pao_pon"
+    override val id: String = "mahjongcraft:riichi/debug/before_pao_pon"
 
     override fun build(context: DebugGameScenarioContext): DebugGameScenarioResult {
         val currentGame = context.currentGame
@@ -323,7 +323,7 @@ private object RiichiBeforePaoPonScenario : DebugGameScenario {
 
 /** 使用正式初始化流程建立完整日麻開局呈現情境；四人與三人日麻都適用。 */
 private object RiichiWallOpeningScenario : DebugGameScenario {
-    override val id: String = "mahjongcraft:riichi_wall_opening"
+    override val id: String = "mahjongcraft:riichi/debug/wall_opening"
 
     override fun build(context: DebugGameScenarioContext): DebugGameScenarioResult {
         val currentGame = context.currentGame

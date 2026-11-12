@@ -31,7 +31,7 @@ internal object TaiwanDebugGameScenarios {
         // 局首逐輪補花與途中連續補花：莊家先摸開門的第一張，再從莊家開始補花。莊家起手兩張花、下家一張、上家一張，
         // 對家沒有花；莊家第一輪補到的第一張又是花，等這一輪結束後的下一輪再補。莊家打出第一張牌後，下家摸到的牌是花，
         // 補到的牌又是花，當場再補一次。第八張花在活牌中段。
-        TaiwanOpeningScenario(id = "mahjongcraft:taiwan_flower_replacement") { dealt, _ ->
+        TaiwanOpeningScenario(id = "mahjongcraft:taiwan/debug/flower_replacement") { dealt, _ ->
             val dealer = dealt.dealerIndex
             val supplementalOrder = dealt.reservedWallTiles
             flowerFaces(
@@ -45,16 +45,16 @@ internal object TaiwanDebugGameScenarios {
             )
         },
         // 七搶一：呼叫者起手七張花，呼叫者的下家起手一張花；下家亮出第八張花時，呼叫者可以選擇胡牌或放棄。
-        TaiwanOpeningScenario(id = "mahjongcraft:taiwan_seven_flowers") { dealt, invoker ->
+        TaiwanOpeningScenario(id = "mahjongcraft:taiwan/debug/seven_flowers") { dealt, invoker ->
             flowerFaces(dealt.handTilesOf(invoker).take(SEVEN_FLOWERS) + dealt.handTilesOf(invoker + 1).take(1))
         },
         // 八仙過海：呼叫者起手八張花，補完花後可以選擇胡牌或放棄。
-        TaiwanOpeningScenario(id = "mahjongcraft:taiwan_eight_flowers") { dealt, invoker ->
+        TaiwanOpeningScenario(id = "mahjongcraft:taiwan/debug/eight_flowers") { dealt, invoker ->
             flowerFaces(dealt.handTilesOf(invoker).take(ALL_FLOWERS))
         },
         // 宣告聽牌：呼叫者起手就是一至九萬、一至六筒、九條，單吊九條聽牌。第一次摸牌後打出摸到的牌就能宣告聽牌：
         // 呼叫者是莊家時為天聽，不是莊家時為地聽。八張花都在活牌尾端，開局不補花。
-        TaiwanOpeningScenario(id = "mahjongcraft:taiwan_ready_declaration") { dealt, invoker ->
+        TaiwanOpeningScenario(id = "mahjongcraft:taiwan/debug/ready_declaration") { dealt, invoker ->
             dealt.handTilesOf(invoker).zip(READY_HAND) { tile, face -> tile.id to face } +
                 flowerFaces(dealt.tileWall.getAllTiles().takeLast(ALL_FLOWERS))
         },
@@ -107,7 +107,7 @@ private class TaiwanOpeningScenario(
  * 花區。
  */
 private object TaiwanLastTileFlowerScenario : DebugGameScenario {
-    override val id: String = "mahjongcraft:taiwan_last_tile_flower"
+    override val id: String = "mahjongcraft:taiwan/debug/last_tile_flower"
 
     override fun build(context: DebugGameScenarioContext): DebugGameScenarioResult {
         val currentGame = context.currentGame

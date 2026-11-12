@@ -30,6 +30,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongTilePose
 import com.doublemoon1119.mahjongcraft.platform.fabric.network.MahjongChannels
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.support.DebugPlayerTableScope
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.support.DebugPreviewEntityLifecycle
+import com.doublemoon1119.mahjongcraft.platform.minecraft.action.BuiltInGameActionIds
 import com.doublemoon1119.mahjongcraft.platform.minecraft.action.MinecraftKanActionTokenKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.DecisionPlayerRelationDto
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.DecisionTimerStatusDto
@@ -475,9 +476,9 @@ class FabricDebugDecisionCommand(
          * @return 此情境的 HUD 動作清單；不展示動作時為空集合。
          */
         private fun actions(): List<PlayerDecisionActionDto> {
-            fun action(id: String, tiles: List<String>, claimedIndex: Int? = null) = PlayerDecisionActionDto(
-                token = "$commandName:$id",
-                actionId = "mahjongcraft:$id",
+            fun action(tokenName: String, actionId: String, tiles: List<String>, claimedIndex: Int? = null) = PlayerDecisionActionDto(
+                token = "$commandName:$tokenName",
+                actionId = actionId,
                 previewTileAssetKeys = tiles,
                 claimedTileIndex = claimedIndex,
                 referenceTileAssetKey = null,
@@ -506,12 +507,12 @@ class FabricDebugDecisionCommand(
             )
             // 只有吃會標出鳴來的那張牌（三張牌花色/數值不同才有辨識意義）；碰／槓牌面彼此完全相同，不標記。
             return when (this) {
-                CHI -> listOf(action("chi", listOf("s4", "s5", "s6"), claimedIndex = 1))
-                PON -> listOf(action("pon", listOf("p5", "p5", "p5")))
-                KAN -> listOf(action(MinecraftKanActionTokenKeys.OPEN, listOf("m9", "m9", "m9", "m9")))
-                ANKAN -> listOf(action(MinecraftKanActionTokenKeys.CLOSED, listOf("m9", "m9", "m9", "m9")))
-                RON -> listOf(action("ron", listOf("s5")))
-                TSUMO -> listOf(action("tsumo", listOf("red_dragon")))
+                CHI -> listOf(action("chi", BuiltInGameActionIds.CHI, listOf("s4", "s5", "s6"), claimedIndex = 1))
+                PON -> listOf(action("pon", BuiltInGameActionIds.PON, listOf("p5", "p5", "p5")))
+                KAN -> listOf(action(MinecraftKanActionTokenKeys.OPEN, BuiltInGameActionIds.KAN_OPEN, listOf("m9", "m9", "m9", "m9")))
+                ANKAN -> listOf(action(MinecraftKanActionTokenKeys.CLOSED, BuiltInGameActionIds.KAN_CLOSED, listOf("m9", "m9", "m9", "m9")))
+                RON -> listOf(action("ron", BuiltInGameActionIds.RON, listOf("s5")))
+                TSUMO -> listOf(action("tsumo", BuiltInGameActionIds.TSUMO, listOf("red_dragon")))
                 RIICHI -> listOf(riichiAction())
                 TEXT_CARD -> listOf(textCardAction())
                 KYUUSHU -> listOf(
@@ -535,13 +536,13 @@ class FabricDebugDecisionCommand(
                     ),
                 )
                 MIXED -> listOf(
-                    action("chi", listOf("s4", "s5", "s6"), claimedIndex = 1),
-                    action("pon", listOf("s5", "s5", "s5")),
-                    action(MinecraftKanActionTokenKeys.OPEN, listOf("s5", "s5", "s5", "s5")),
-                    action("ron", listOf("s5")),
+                    action("chi", BuiltInGameActionIds.CHI, listOf("s4", "s5", "s6"), claimedIndex = 1),
+                    action("pon", BuiltInGameActionIds.PON, listOf("s5", "s5", "s5")),
+                    action(MinecraftKanActionTokenKeys.OPEN, BuiltInGameActionIds.KAN_OPEN, listOf("s5", "s5", "s5", "s5")),
+                    action("ron", BuiltInGameActionIds.RON, listOf("s5")),
                     riichiAction(),
                     textCardAction(),
-                    action("pass", emptyList()),
+                    action("pass", BuiltInGameActionIds.PASS, emptyList()),
                 )
                 else -> emptyList()
             }

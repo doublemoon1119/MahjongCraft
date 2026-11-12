@@ -81,7 +81,7 @@ class DebugGameScenarioTest {
             assertEquals(before.dealerPlayerId, state.dealerPlayerId, id)
             assertTrue(state.players.all { it.score == state.config.scoreConfig.initialScore }, id)
         }
-        val riichi = registry.get("mahjongcraft:riichi_wall_opening")!!.build(createFixture().context).game.tableState
+        val riichi = registry.get("mahjongcraft:riichi/debug/wall_opening")!!.build(createFixture().context).game.tableState
         assertEquals(0, riichi.riichiPotPoints())
     }
 
@@ -100,7 +100,7 @@ class DebugGameScenarioTest {
     @Test
     fun `test validator rejects a changed match id`() {
         val fixture = createFixture()
-        val result = DebugGameScenarioRegistry().get("mahjongcraft:riichi_before_pao_pon")!!.build(fixture.context)
+        val result = DebugGameScenarioRegistry().get("mahjongcraft:riichi/debug/before_pao_pon")!!.build(fixture.context)
         val changed = result.copy(game = result.game.copy(matchId = Uuid.random()))
 
         val error = assertFailsWith<IllegalArgumentException> { fixture.validator.validate(fixture.context, changed) }
@@ -111,7 +111,7 @@ class DebugGameScenarioTest {
     @Test
     fun `test wall opening scenario contains a consistent formal initialization`() {
         val fixture = createFixture()
-        val result = DebugGameScenarioRegistry().get("mahjongcraft:riichi_wall_opening")!!.build(fixture.context)
+        val result = DebugGameScenarioRegistry().get("mahjongcraft:riichi/debug/wall_opening")!!.build(fixture.context)
 
         fixture.validator.validate(fixture.context, result)
         val state = result.game.tableState
@@ -137,7 +137,7 @@ class DebugGameScenarioTest {
     @Test
     fun `test wall opening presentation publishes the formal initial timeline`() {
         val fixture = createFixture()
-        val result = DebugGameScenarioRegistry().get("mahjongcraft:riichi_wall_opening")!!.build(fixture.context)
+        val result = DebugGameScenarioRegistry().get("mahjongcraft:riichi/debug/wall_opening")!!.build(fixture.context)
         val presentation = assertIs<DebugGameScenarioPresentation.InitialRound>(result.presentation)
         val publisher = FakeGamePresentationPublisher()
 
@@ -159,7 +159,7 @@ class DebugGameScenarioTest {
     @Test
     fun `test playable scenario keeps static presentation`() {
         val fixture = createFixture()
-        val result = DebugGameScenarioRegistry().get("mahjongcraft:riichi_before_ankan_1")!!.build(fixture.context)
+        val result = DebugGameScenarioRegistry().get("mahjongcraft:riichi/debug/before_ankan_1")!!.build(fixture.context)
         val publisher = FakeGamePresentationPublisher()
 
         DebugGameScenarioPresentationPublisher(publisher, fixture.moduleRegistry, componentRegistry = bundledCoreExtensionRegistries().componentRegistry).publish(result)
@@ -177,7 +177,7 @@ class DebugGameScenarioTest {
     @Test
     fun `test repeated scenario builds preserve semantics with fresh tile ids`() {
         val fixture = createFixture()
-        val scenario = DebugGameScenarioRegistry().get("mahjongcraft:riichi_before_ankan_4") ?: error("Missing scenario")
+        val scenario = DebugGameScenarioRegistry().get("mahjongcraft:riichi/debug/before_ankan_4") ?: error("Missing scenario")
 
         val first = scenario.build(fixture.context)
         val second = scenario.build(fixture.context)
@@ -201,8 +201,9 @@ class DebugGameScenarioTest {
         val fixture = createFixture()
         val registry = DebugGameScenarioRegistry()
 
-        (1..4).forEach { number ->
-            val result = registry.get("mahjongcraft:riichi_before_ankan_$number")!!.build(fixture.context)
+        ANKAN_SCENARIO_IDS.forEachIndexed { index, id ->
+            val number = index + 1
+            val result = registry.get(id)!!.build(fixture.context)
             fixture.validator.validate(fixture.context, result)
             val state = result.game.tableState
             val module = fixture.moduleRegistry.getModule(state.config)
@@ -227,8 +228,9 @@ class DebugGameScenarioTest {
         val fixture = createFixture()
         val registry = DebugGameScenarioRegistry()
 
-        (1..4).forEach { number ->
-            val state = registry.get("mahjongcraft:riichi_before_ankan_$number")!!.build(fixture.context).game.tableState
+        ANKAN_SCENARIO_IDS.forEachIndexed { index, id ->
+            val number = index + 1
+            val state = registry.get(id)!!.build(fixture.context).game.tableState
             val module = fixture.moduleRegistry.getModule(state.config)
             val validator = module.createLegalActionValidator()
             val actor = state.currentPlayer
@@ -264,8 +266,9 @@ class DebugGameScenarioTest {
         val templateLivePositions = template.drawOrder.map { template.structure.getValue(it.id) }
         val templateReservedPositions = template.reservedWallTiles.map { template.structure.getValue(it.id) }
 
-        (1..4).forEach { number ->
-            val result = registry.get("mahjongcraft:riichi_before_ankan_$number")!!.build(fixture.context)
+        ANKAN_SCENARIO_IDS.forEachIndexed { index, id ->
+            val number = index + 1
+            val result = registry.get(id)!!.build(fixture.context)
             val state = result.game.tableState
             val completedKanCount = number - 1
             val consumedFrontCount = INITIAL_DEAL_TILE_COUNT + completedKanCount + CURRENT_DRAW_TILE_COUNT
@@ -290,8 +293,9 @@ class DebugGameScenarioTest {
         val fixture = createFixture()
         val registry = DebugGameScenarioRegistry()
 
-        (1..4).forEach { number ->
-            val result = registry.get("mahjongcraft:riichi_before_ankan_$number")!!.build(fixture.context)
+        ANKAN_SCENARIO_IDS.forEachIndexed { index, id ->
+            val number = index + 1
+            val result = registry.get(id)!!.build(fixture.context)
             val state = result.game.tableState
             val kanAction = fixture.moduleRegistry.getModule(state.config)
                 .createLegalActionValidator()
@@ -338,7 +342,7 @@ class DebugGameScenarioTest {
     @Test
     fun `test minkan scenario exposes the intended open kan reaction`() {
         val fixture = createFixture()
-        val result = DebugGameScenarioRegistry().get("mahjongcraft:riichi_before_minkan_1")!!.build(fixture.context)
+        val result = DebugGameScenarioRegistry().get("mahjongcraft:riichi/debug/before_minkan_1")!!.build(fixture.context)
 
         fixture.validator.validate(fixture.context, result)
         val state = result.game.tableState
@@ -371,7 +375,7 @@ class DebugGameScenarioTest {
     @Test
     fun `test suucha riichi scenario exposes the fourth legal declaration`() {
         val fixture = createFixture()
-        val result = DebugGameScenarioRegistry().get("mahjongcraft:riichi_before_suucha_riichi")!!.build(fixture.context)
+        val result = DebugGameScenarioRegistry().get("mahjongcraft:riichi/debug/before_suucha_riichi")!!.build(fixture.context)
 
         fixture.validator.validate(fixture.context, result)
         val state = result.game.tableState
@@ -464,7 +468,7 @@ class DebugGameScenarioTest {
     @Test
     fun `test pao pon scenario passes the authoritative validation`() {
         val fixture = createFixture()
-        val result = DebugGameScenarioRegistry().get("mahjongcraft:riichi_before_pao_pon")!!.build(fixture.context)
+        val result = DebugGameScenarioRegistry().get("mahjongcraft:riichi/debug/before_pao_pon")!!.build(fixture.context)
 
         fixture.validator.validate(fixture.context, result)
     }
@@ -493,7 +497,7 @@ class DebugGameScenarioTest {
         val config = RiichiRuleConfig(gameLength = RiichiGameLength.TwoWinds)
         val fixture = createFixture(config)
 
-        val result = DebugGameScenarioRegistry().get("mahjongcraft:riichi_before_ankan_1")!!.build(fixture.context)
+        val result = DebugGameScenarioRegistry().get("mahjongcraft:riichi/debug/before_ankan_1")!!.build(fixture.context)
 
         assertEquals(config, result.game.tableState.config)
     }
@@ -508,62 +512,70 @@ class DebugGameScenarioTest {
 
         /** 所有內建情境應採用的固定排序。 */
         val EXPECTED_IDS: List<String> = listOf(
-            "mahjongcraft:auto_north_riichi_chain",
-            "mahjongcraft:auto_north_riichi_kan_payments",
-            "mahjongcraft:auto_north_riichi_last_tile",
-            "mahjongcraft:auto_north_riichi_rob",
-            "mahjongcraft:automatic_auto_win_ron",
-            "mahjongcraft:automatic_auto_win_tsumo",
-            "mahjongcraft:automatic_decline_calls_keeps_win",
-            "mahjongcraft:automatic_tsumogiri_plain_draw",
-            "mahjongcraft:noten_declaration_exhaustive_draw",
-            "mahjongcraft:riichi_before_ankan_1",
-            "mahjongcraft:riichi_before_ankan_2",
-            "mahjongcraft:riichi_before_ankan_3",
-            "mahjongcraft:riichi_before_ankan_4",
-            "mahjongcraft:riichi_before_ankan_at_break_1",
-            "mahjongcraft:riichi_before_ankan_at_break_2",
-            "mahjongcraft:riichi_before_ankan_at_break_3",
-            "mahjongcraft:riichi_before_ankan_at_break_4",
-            "mahjongcraft:riichi_before_minkan_1",
-            "mahjongcraft:riichi_before_minkan_at_break_1",
-            "mahjongcraft:riichi_before_pao_pon",
-            "mahjongcraft:riichi_before_suucha_riichi",
-            "mahjongcraft:riichi_furiten_cleared_by_call",
-            "mahjongcraft:riichi_furiten_closed_kan_not_offered",
-            "mahjongcraft:riichi_furiten_declined_chankan",
-            "mahjongcraft:riichi_furiten_declined_ron",
-            "mahjongcraft:riichi_furiten_discarded_wait",
-            "mahjongcraft:riichi_furiten_head_bump_chankan",
-            "mahjongcraft:riichi_furiten_unoffered_wait",
-            "mahjongcraft:riichi_ippatsu_ron",
-            "mahjongcraft:riichi_ippatsu_tsumo",
-            "mahjongcraft:riichi_meld_showcase",
-            "mahjongcraft:riichi_three_player_kan_and_pull_north",
-            "mahjongcraft:riichi_three_player_public_faces",
-            "mahjongcraft:riichi_three_player_pull_north",
-            "mahjongcraft:riichi_three_player_pull_north_in_riichi",
-            "mahjongcraft:riichi_three_player_pull_north_with_melds",
-            "mahjongcraft:riichi_three_player_rob_north",
-            "mahjongcraft:riichi_wall_opening",
-            "mahjongcraft:taiwan_eight_flowers",
-            "mahjongcraft:taiwan_flower_replacement",
-            "mahjongcraft:taiwan_last_tile_flower",
-            "mahjongcraft:taiwan_ready_declaration",
-            "mahjongcraft:taiwan_seven_flowers",
-            "mahjongcraft:winner_dealer_seat_rotation",
+            "mahjongcraft:riichi/debug/automatic_auto_win_ron",
+            "mahjongcraft:riichi/debug/automatic_auto_win_tsumo",
+            "mahjongcraft:riichi/debug/automatic_decline_calls_keeps_win",
+            "mahjongcraft:riichi/debug/automatic_tsumogiri_plain_draw",
+            "mahjongcraft:riichi/debug/before_ankan_1",
+            "mahjongcraft:riichi/debug/before_ankan_2",
+            "mahjongcraft:riichi/debug/before_ankan_3",
+            "mahjongcraft:riichi/debug/before_ankan_4",
+            "mahjongcraft:riichi/debug/before_ankan_at_break_1",
+            "mahjongcraft:riichi/debug/before_ankan_at_break_2",
+            "mahjongcraft:riichi/debug/before_ankan_at_break_3",
+            "mahjongcraft:riichi/debug/before_ankan_at_break_4",
+            "mahjongcraft:riichi/debug/before_minkan_1",
+            "mahjongcraft:riichi/debug/before_minkan_at_break_1",
+            "mahjongcraft:riichi/debug/before_pao_pon",
+            "mahjongcraft:riichi/debug/before_suucha_riichi",
+            "mahjongcraft:riichi/debug/furiten_cleared_by_call",
+            "mahjongcraft:riichi/debug/furiten_closed_kan_not_offered",
+            "mahjongcraft:riichi/debug/furiten_declined_chankan",
+            "mahjongcraft:riichi/debug/furiten_declined_ron",
+            "mahjongcraft:riichi/debug/furiten_discarded_wait",
+            "mahjongcraft:riichi/debug/furiten_head_bump_chankan",
+            "mahjongcraft:riichi/debug/furiten_unoffered_wait",
+            "mahjongcraft:riichi/debug/ippatsu_ron",
+            "mahjongcraft:riichi/debug/ippatsu_tsumo",
+            "mahjongcraft:riichi/debug/meld_showcase",
+            "mahjongcraft:riichi/debug/noten_declaration_exhaustive_draw",
+            "mahjongcraft:riichi/debug/wall_opening",
+            "mahjongcraft:riichi/debug/winner_dealer_seat_rotation",
+            "mahjongcraft:riichi_three_player/debug/auto_north_riichi_chain",
+            "mahjongcraft:riichi_three_player/debug/auto_north_riichi_kan_payments",
+            "mahjongcraft:riichi_three_player/debug/auto_north_riichi_last_tile",
+            "mahjongcraft:riichi_three_player/debug/auto_north_riichi_rob",
+            "mahjongcraft:riichi_three_player/debug/kan_and_pull_north",
+            "mahjongcraft:riichi_three_player/debug/public_faces",
+            "mahjongcraft:riichi_three_player/debug/pull_north",
+            "mahjongcraft:riichi_three_player/debug/pull_north_in_riichi",
+            "mahjongcraft:riichi_three_player/debug/pull_north_with_melds",
+            "mahjongcraft:riichi_three_player/debug/rob_north",
+            "mahjongcraft:taiwan/debug/eight_flowers",
+            "mahjongcraft:taiwan/debug/flower_replacement",
+            "mahjongcraft:taiwan/debug/last_tile_flower",
+            "mahjongcraft:taiwan/debug/ready_declaration",
+            "mahjongcraft:taiwan/debug/seven_flowers",
         )
 
         /** 以正式開局呈現的情境。 */
         val INITIAL_ROUND_IDS: Set<String> = setOf(
-            "mahjongcraft:riichi_wall_opening",
-            "mahjongcraft:taiwan_eight_flowers",
-            "mahjongcraft:taiwan_flower_replacement",
-            "mahjongcraft:taiwan_ready_declaration",
-            "mahjongcraft:taiwan_seven_flowers",
+            "mahjongcraft:riichi/debug/wall_opening",
+            "mahjongcraft:taiwan/debug/eight_flowers",
+            "mahjongcraft:taiwan/debug/flower_replacement",
+            "mahjongcraft:taiwan/debug/ready_declaration",
+            "mahjongcraft:taiwan/debug/seven_flowers",
         )
 
         /** 只能在三人日麻的桌子載入的情境。 */
         val THREE_PLAYER_IDS: Set<String> = ThreePlayerRiichiDebugGameScenarios.all.mapTo(mutableSetOf()) { it.id }
     }
 }
+
+/** 四個暗槓前立直情境的完整識別碼，依槓牌位置排列。 */
+private val ANKAN_SCENARIO_IDS = listOf(
+    "mahjongcraft:riichi/debug/before_ankan_1",
+    "mahjongcraft:riichi/debug/before_ankan_2",
+    "mahjongcraft:riichi/debug/before_ankan_3",
+    "mahjongcraft:riichi/debug/before_ankan_4",
+)

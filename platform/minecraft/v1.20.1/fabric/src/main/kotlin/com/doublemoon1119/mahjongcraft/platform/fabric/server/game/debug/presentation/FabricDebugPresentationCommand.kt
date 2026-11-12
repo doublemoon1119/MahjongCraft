@@ -2,7 +2,6 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.presen
 
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.BuiltInExhaustiveDrawSettlementStatusIds
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.BuiltInRoundOutcomeIds
-import com.doublemoon1119.mahjongcraft.flow.common.game.model.BuiltInWinCelebrationCueIds
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.ExhaustiveDrawHandDisclosure
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.ExhaustiveDrawSettlementPlayerPresentation
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.ExhaustiveDrawSettlementPresentationRequest
@@ -17,6 +16,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementPrese
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementQuantity
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementWinnerPresentation
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.riichi.RiichiRoundOutcomeIds
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.riichi.RiichiWinCelebrationCueIds
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.riichi.RiichiWinSettlementIds
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.taiwan.TaiwanRoundOutcomeIds
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.taiwan.TaiwanWinSettlementIds
@@ -1324,10 +1324,10 @@ class FabricDebugPresentationCommand(
         const val PHASE_NAME_ARGUMENT: String = "phase_name"
 
         /** 省略 cue 時使用的預設演出。 */
-        val DEFAULT_SHOWCASE_CUE: String = BuiltInWinCelebrationCueIds.riichiYakuman("kokushi_musou")
+        val DEFAULT_SHOWCASE_CUE: String = RiichiWinCelebrationCueIds.yakuman(RiichiYakuType.KokushiMusou)
 
         /** `showcase melds` 省略 cue 時使用的演出。 */
-        val MELD_SHOWCASE_CUE: String = BuiltInWinCelebrationCueIds.riichiYakuman("sukantsu")
+        val MELD_SHOWCASE_CUE: String = RiichiWinCelebrationCueIds.yakuman(RiichiYakuType.Sukantsu)
 
         /** `showcase melds` 的單騎待牌，也是和牌張。 */
         const val MELD_SHOWCASE_WAIT_ASSET: String = "north"

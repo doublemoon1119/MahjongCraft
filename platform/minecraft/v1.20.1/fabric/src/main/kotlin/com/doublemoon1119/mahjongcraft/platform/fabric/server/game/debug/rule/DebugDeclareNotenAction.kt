@@ -9,5 +9,5 @@ import com.doublemoon1119.mahjongcraft.metadata.MahjongCraftMetadata
  * 記錄在玩家本局的動作紀錄裡；一般流局結算把有這個動作的玩家當作不聽。
  */
 internal data object DebugDeclareNotenAction : ExtensionGameAction {
-    override val id: String = MahjongCraftMetadata.id("debug_declare_noten")
+    override val id: String = MahjongCraftMetadata.id("debug_noten_declaration_riichi/declare_noten")
 }

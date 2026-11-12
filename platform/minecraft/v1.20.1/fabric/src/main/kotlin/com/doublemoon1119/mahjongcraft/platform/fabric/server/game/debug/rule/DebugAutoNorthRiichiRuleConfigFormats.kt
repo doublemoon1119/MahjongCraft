@@ -21,7 +21,7 @@ import kotlinx.serialization.Serializable
  * @property base 三人日麻設定的網路 DTO。
  */
 @Serializable
-@SerialName("mahjongcraft:debug/auto_north_riichi_rule_config")
+@SerialName("mahjongcraft:debug_auto_north_riichi/rule_config")
 internal data class DebugAutoNorthRiichiRuleConfigDto(
     val base: ThreePlayerRiichiRuleConfigDto,
 ) : MahjongRuleConfigDto
@@ -61,7 +61,7 @@ internal fun registerDebugAutoNorthRiichiNetworkDtos(registries: NetworkDtoRegis
 internal fun registerDebugAutoNorthRiichiPersistenceDtos(registries: PersistenceRegistrars) {
     registries.ruleConfigs.register(
         definition = PersistenceDtoDefinition(
-            typeKey = MahjongCraftMetadata.id("debug/auto_north_riichi_rule_config"),
+            typeKey = MahjongCraftMetadata.id("debug_auto_north_riichi/rule_config"),
             domainClass = DebugAutoNorthRiichiRuleConfig::class,
             serializer = DebugAutoNorthRiichiRuleConfigPersistenceDto.serializer(),
             toDto = { DebugAutoNorthRiichiRuleConfigPersistenceDto(it.base.toPersistenceDto()) },

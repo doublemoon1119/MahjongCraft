@@ -24,7 +24,7 @@ interface GameActionSoundPresentationRegistry : GameActionSoundPresentationRegis
  * @return 對應的穩定聲音 ID；不支援語音的動作為 `null`。
  */
 fun GameAction.soundPresentationId(): String? = when (this) {
-    is GameAction.Chi -> BuiltInGameActionSoundIds.CHII
+    is GameAction.Chi -> BuiltInGameActionSoundIds.CHI
     is GameAction.Pon -> BuiltInGameActionSoundIds.PON
     is GameAction.Kan -> BuiltInGameActionSoundIds.KAN
     is GameAction.Ron -> BuiltInGameActionSoundIds.RON

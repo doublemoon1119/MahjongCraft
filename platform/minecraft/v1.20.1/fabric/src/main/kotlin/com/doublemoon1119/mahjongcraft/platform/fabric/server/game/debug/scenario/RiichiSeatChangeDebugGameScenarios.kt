@@ -14,7 +14,7 @@ internal object RiichiSeatChangeDebugGameScenarios {
         // 子家榮和後由和牌者坐莊並換位：呼叫者打出剛摸到的西，下家單騎聽西、有一氣通貫與役牌中，會榮和這張西。
         // 下一局由下家坐莊，所有玩家往下一個座位輪換一格。
         SeatSetupScenario(
-            id = "mahjongcraft:winner_dealer_seat_rotation",
+            id = "mahjongcraft:riichi/debug/winner_dealer_seat_rotation",
             invoker = SeatSpec(
                 drawnTile = Tile.Honor.West,
                 discards = listOf(Tile.Honor.South),

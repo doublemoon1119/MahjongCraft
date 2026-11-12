@@ -55,7 +55,7 @@ class StressTestMetricsTest {
     @Test
     fun `time series file writes a header and matching rows`() {
         val path = createTempDirectory("mahjongcraft-stress-series-").resolve("nested").resolve("series.csv")
-        StressTimeSeriesFile.create(path, "mahjongcraft:riichi_east", StressTestPace.REALTIME, StressHistoryMode.OFF).use { file ->
+        StressTimeSeriesFile.create(path, "mahjongcraft:riichi/history_scenario/east", StressTestPace.REALTIME, StressHistoryMode.OFF).use { file ->
             file.append(sampleRow())
         }
 
@@ -103,6 +103,6 @@ class StressTestMetricsTest {
 
     private companion object {
         /** [sampleRow] 對應的 CSV 列。 */
-        const val EXPECTED_ROW = "61.50,false,mahjongcraft:riichi_east,realtime,off,12,20,31.25,120.00,50.50,71.00,30.00,40.00,12,2.50,1.50,9.00,2.00,18.00,1.00,9,3.25,12.00,0,1,2,40,38,2,0,3,900,1,7"
+        const val EXPECTED_ROW = "61.50,false,mahjongcraft:riichi/history_scenario/east,realtime,off,12,20,31.25,120.00,50.50,71.00,30.00,40.00,12,2.50,1.50,9.00,2.00,18.00,1.00,9,3.25,12.00,0,1,2,40,38,2,0,3,900,1,7"
     }
 }

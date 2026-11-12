@@ -1,8 +1,9 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.presentation
 
-import com.doublemoon1119.mahjongcraft.flow.common.game.model.BuiltInWinCelebrationCueIds
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinCelebrationRequest
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinCelebrationWinner
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.riichi.RiichiWinCelebrationCueIds
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.RiichiYakuType
 import com.doublemoon1119.mahjongcraft.platform.minecraft.environment.MinecraftEnvironment
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -134,7 +135,7 @@ class DebugWinShowcaseOverrideTest {
     /** 測試共用的慶祝提示與環境替身。 */
     private companion object {
         /** 測試指定的國士無雙慶祝提示。 */
-        val CUE_KEY: String = BuiltInWinCelebrationCueIds.riichiYakuman("kokushi_musou")
+        val CUE_KEY: String = RiichiWinCelebrationCueIds.yakuman(RiichiYakuType.KokushiMusou)
 
         /** 允許開發功能的環境替身。 */
         object DevelopmentEnvironment : MinecraftEnvironment {

@@ -72,7 +72,7 @@ object RiichiTableProps : TablePropDescriber {
 
     /** 立直棒：從牌河內緣再往桌子中心退半根棒子厚度與一道縫隙，沿排列方向置中。 */
     private fun riichiStick(seatIndex: Int) = TablePropPlacement(
-        id = "mahjongcraft:riichi-sticks/seat-$seatIndex",
+        id = "mahjongcraft:riichi/sticks/seat/$seatIndex",
         kind = BuiltInTablePropKinds.SCORING_STICK,
         content = TablePropContent.CustomVariant(STICK_POT_VARIANT),
         location = TablePropLocation.Seat(
@@ -91,7 +91,7 @@ object RiichiTableProps : TablePropDescriber {
         val layer = stackIndex / STICKS_PER_ROW
         val layerHeight = MahjongScoringStickDimensions.STICK_HEIGHT + MahjongTileDimensions.TILE_SMALL_PADDING
         return TablePropPlacement(
-            id = "mahjongcraft:riichi-sticks/corner-$seatIndex-$stackIndex",
+            id = "mahjongcraft:riichi/sticks/corner/$seatIndex/$stackIndex",
             kind = BuiltInTablePropKinds.SCORING_STICK,
             content = TablePropContent.CustomVariant(variant),
             location = TablePropLocation.Seat(

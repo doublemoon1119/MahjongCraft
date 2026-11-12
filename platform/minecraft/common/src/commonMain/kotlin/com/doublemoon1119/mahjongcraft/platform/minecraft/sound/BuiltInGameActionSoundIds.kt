@@ -3,7 +3,7 @@ package com.doublemoon1119.mahjongcraft.platform.minecraft.sound
 /** MahjongCraft 內建動作語音使用的穩定 ID。 */
 object BuiltInGameActionSoundIds {
     /** 吃牌。 */
-    const val CHII: String = "mahjongcraft:chii"
+    const val CHI: String = "mahjongcraft:chi"
 
     /** 碰牌。 */
     const val PON: String = "mahjongcraft:pon"

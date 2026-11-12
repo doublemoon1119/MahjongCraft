@@ -56,7 +56,7 @@ class DebugAutoNorthRiichiRuleModuleTest {
     /** 摸到北時自動拔北，摸到其他牌時不處理。 */
     @Test
     fun `a drawn north is pulled automatically`() {
-        val state = scenarioState("auto_north_riichi_chain")
+        val state = scenarioState("mahjongcraft:riichi_three_player/debug/auto_north_riichi_chain")
         val north = state.tileWall.getAllTiles().first { it.tile == Tile.Honor.North }
 
         assertEquals(DrawFollowUpDecision.SetAside(RIICHI_PULL_NORTH_GAME_ACTION), state.followUpAfterDrawing(north))
@@ -66,7 +66,7 @@ class DebugAutoNorthRiichiRuleModuleTest {
     /** 最後一張活牌是北時已經不能拔北補牌，本局以一般流局結束。 */
     @Test
     fun `a north drawn as the last live tile ends the round`() {
-        val state = scenarioState("auto_north_riichi_last_tile")
+        val state = scenarioState("mahjongcraft:riichi_three_player/debug/auto_north_riichi_last_tile")
         val north = state.tileWall.getAllTiles().last()
 
         assertEquals(Tile.Honor.North, north.tile)
@@ -79,7 +79,7 @@ class DebugAutoNorthRiichiRuleModuleTest {
     /** 拔北的玩家付一根立直棒的點數進供託，桌上的立直棒多一根。 */
     @Test
     fun `pulling north pays into the riichi stick pot`() {
-        val state = scenarioState("auto_north_riichi_chain").copy(components = riichiTableComponents(potPoints = 1000))
+        val state = scenarioState("mahjongcraft:riichi_three_player/debug/auto_north_riichi_chain").copy(components = riichiTableComponents(potPoints = 1000))
         val actorId = state.currentPlayer.id
 
         val scoring = assertNotNull(
@@ -94,7 +94,7 @@ class DebugAutoNorthRiichiRuleModuleTest {
     /** 明槓由放槓者付 1000 點，暗槓與加槓由另外兩家各付 500 點；碰不收付。 */
     @Test
     fun `kans pay the declarer and other calls do not score`() {
-        val state = scenarioState("auto_north_riichi_kan_payments")
+        val state = scenarioState("mahjongcraft:riichi_three_player/debug/auto_north_riichi_kan_payments")
         val actorId = state.currentPlayer.id
         val (downstreamId, upstreamId) = state.seat(1).id to state.seat(2).id
         val kanTileId = state.currentPlayer.hand.tiles.first().id
@@ -139,10 +139,10 @@ class DebugAutoNorthRiichiRuleModuleTest {
     /**
      * 建立指定自動拔北情境的桌況。
      *
-     * @param idPath 情境識別碼中 namespace 後的路徑。
+     * @param id 情境的完整識別碼。
      * @return 建立後的對局桌況。
      */
-    private fun scenarioState(idPath: String): TableState = scenarios.get("mahjongcraft:$idPath")!!
+    private fun scenarioState(id: String): TableState = scenarios.get(id)!!
         .build(createThreePlayerRiichiScenarioContext())
         .game
         .tableState

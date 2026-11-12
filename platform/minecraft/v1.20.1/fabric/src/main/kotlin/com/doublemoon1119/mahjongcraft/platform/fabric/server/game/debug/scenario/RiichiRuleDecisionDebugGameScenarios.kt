@@ -15,7 +15,7 @@ internal object RiichiRuleDecisionDebugGameScenarios {
         // 輪到呼叫者摸牌時牌山已空。呼叫者聽一、四條，下家聽四、七條，兩人都沒有立直，結算前要選擇公開聽牌或宣告
         // 不聽；對家已立直、聽白與發，不能宣告不聽；上家不聽。流局結算後所有人再確認一次才進入下一局。
         SeatSetupScenario(
-            id = "mahjongcraft:noten_declaration_exhaustive_draw",
+            id = "mahjongcraft:riichi/debug/noten_declaration_exhaustive_draw",
             invoker = SeatSpec(
                 standingTiles = PINZU_STRAIGHT + listOf(bamboo(2), bamboo(3), character(9), character(9)),
                 drawnTile = Tile.Honor.West,

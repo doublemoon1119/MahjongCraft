@@ -65,7 +65,7 @@ class ThreePlayerRiichiDebugGameScenariosTest {
     @Test
     fun `wall opening scenario deals a three player round`() {
         val context = createThreePlayerRiichiScenarioContext()
-        val result = registry.get("mahjongcraft:riichi_wall_opening")!!.build(context)
+        val result = registry.get("mahjongcraft:riichi/debug/wall_opening")!!.build(context)
 
         scenarioValidator.validate(context, result)
         val state = result.game.tableState
@@ -79,7 +79,7 @@ class ThreePlayerRiichiDebugGameScenariosTest {
     /** 先拔剛摸到的北、再拔手上的北；第二次補到的四條可以自摸。 */
     @Test
     fun `pull north scenario completes the hand with the second replacement draw`() {
-        val state = build("riichi_three_player_pull_north")
+        val state = build("mahjongcraft:riichi_three_player/debug/pull_north")
 
         assertTrue(RIICHI_PULL_NORTH_GAME_ACTION in state.currentOwnTurnActions())
         assertEquals(listOf(NINE_CHARACTER, FOUR_BAMBOO), state.reservedWallTiles.take(2).map { it.tile })
@@ -94,7 +94,7 @@ class ThreePlayerRiichiDebugGameScenariosTest {
     /** 立直中拔的是剛摸到的北；手上那對北在之後摸到別的牌時不能拔，補到的四條可以自摸。 */
     @Test
     fun `pull north in riichi only sets aside the drawn north`() {
-        val state = build("riichi_three_player_pull_north_in_riichi")
+        val state = build("mahjongcraft:riichi_three_player/debug/pull_north_in_riichi")
         val invoker = state.currentPlayer
 
         assertNotNull(invoker.riichiDeclaration)
@@ -112,7 +112,7 @@ class ThreePlayerRiichiDebugGameScenariosTest {
     /** 下家摸到北後會先拔北；單騎聽北的呼叫者可以搶這張北榮和，上家不能。 */
     @Test
     fun `rob north scenario lets the invoker ron the pulled north`() {
-        val result = registry.get("mahjongcraft:riichi_three_player_rob_north")!!.build(createThreePlayerRiichiScenarioContext())
+        val result = registry.get("mahjongcraft:riichi_three_player/debug/rob_north")!!.build(createThreePlayerRiichiScenarioContext())
         val state = result.game.tableState
         val north = state.liveWallTile(0)
 
@@ -126,7 +126,7 @@ class ThreePlayerRiichiDebugGameScenariosTest {
     /** 剛摸到北時可以拔北，也可以暗槓一筒、九筒、一條；王牌前端依序是九條、北、九條、九條，湊得出第四槓。 */
     @Test
     fun `kan and pull north scenario offers every declaration and arranges the replacement draws`() {
-        val state = build("riichi_three_player_kan_and_pull_north")
+        val state = build("mahjongcraft:riichi_three_player/debug/kan_and_pull_north")
         val actions = state.currentOwnTurnActions()
         val handTiles = state.currentPlayer.hand.allTiles.associateBy { it.id }
 
@@ -145,7 +145,7 @@ class ThreePlayerRiichiDebugGameScenariosTest {
     /** 公開牌面情境中，排定牌種的每一張都公開並使用 debug 樣式，且分布在副露、牌河、王牌與手牌；其他牌不受影響。 */
     @Test
     fun `public faces scenario marks the chosen tiles in every region`() {
-        val state = build("riichi_three_player_public_faces")
+        val state = build("mahjongcraft:riichi_three_player/debug/public_faces")
         val publicFaces = setOf(ONE_DOT, Tile.Honor.White, Tile.Honor.North, Tile.Honor.South, NINE_BAMBOO)
         val allTiles = state.tileWall.getAllTiles() + state.reservedWallTiles + state.players.flatMap { player ->
             player.hand.allTiles + player.hand.melds.flatMap { it.tiles } + player.discardPile.entries.map { it.tile }
@@ -171,7 +171,7 @@ class ThreePlayerRiichiDebugGameScenariosTest {
      */
     @Test
     fun `pull north with melds scenario chains three pulls into a tsumo`() {
-        val state = build("riichi_three_player_pull_north_with_melds")
+        val state = build("mahjongcraft:riichi_three_player/debug/pull_north_with_melds")
 
         assertEquals(
             listOf(Tile.Honor.White to RelativeDirection.Left, Tile.Honor.Green to RelativeDirection.Right),
@@ -206,17 +206,17 @@ class ThreePlayerRiichiDebugGameScenariosTest {
         val config = ThreePlayerRiichiRuleConfig(redDoraCount = 0)
         val context = createThreePlayerRiichiScenarioContext(config)
 
-        val autoNorth = registry.get("mahjongcraft:auto_north_riichi_chain")!!.build(context)
+        val autoNorth = registry.get("mahjongcraft:riichi_three_player/debug/auto_north_riichi_chain")!!.build(context)
         assertEquals(DebugAutoNorthRiichiRuleConfig(config), autoNorth.game.tableState.config)
 
-        val plain = registry.get("mahjongcraft:riichi_three_player_pull_north")!!.build(context.copy(currentGame = autoNorth.game))
+        val plain = registry.get("mahjongcraft:riichi_three_player/debug/pull_north")!!.build(context.copy(currentGame = autoNorth.game))
         assertEquals(config, plain.game.tableState.config)
     }
 
     /** 連續自動拔北：兩家對手先摸東，呼叫者摸到北後，王牌前端依序補到北、北、四條；呼叫者聽一、四條。 */
     @Test
     fun `auto north chain scenario arranges three consecutive pulls`() {
-        val state = build("auto_north_riichi_chain")
+        val state = build("mahjongcraft:riichi_three_player/debug/auto_north_riichi_chain")
 
         assertEquals(listOf(Tile.Honor.East, Tile.Honor.East, Tile.Honor.North), state.liveWallFront(3))
         assertEquals(listOf(Tile.Honor.North, Tile.Honor.North, FOUR_BAMBOO), state.reservedWallTiles.take(3).map { it.tile })
@@ -226,7 +226,7 @@ class ThreePlayerRiichiDebugGameScenariosTest {
     /** 自動拔北被搶：呼叫者碰出中與白，下家照常摸切，摸到的北由規則自動拔出；單騎聽北的呼叫者可以搶，上家不能。 */
     @Test
     fun `auto north rob scenario lets the invoker ron the pulled north`() {
-        val result = registry.get("mahjongcraft:auto_north_riichi_rob")!!.build(createThreePlayerRiichiScenarioContext())
+        val result = registry.get("mahjongcraft:riichi_three_player/debug/auto_north_riichi_rob")!!.build(createThreePlayerRiichiScenarioContext())
         val state = result.game.tableState
         val north = state.liveWallTile(0)
 
@@ -243,7 +243,7 @@ class ThreePlayerRiichiDebugGameScenariosTest {
     /** 沒有牌可補：活牌只剩東、東、北三張，呼叫者摸到的最後一張是北。 */
     @Test
     fun `auto north last tile scenario leaves a north as the last live tile`() {
-        val state = build("auto_north_riichi_last_tile")
+        val state = build("mahjongcraft:riichi_three_player/debug/auto_north_riichi_last_tile")
 
         assertEquals(listOf(Tile.Honor.East, Tile.Honor.East, Tile.Honor.North), state.tileWall.getAllTiles().map { it.tile })
     }
@@ -251,7 +251,7 @@ class ThreePlayerRiichiDebugGameScenariosTest {
     /** 槓牌收付：現在可以暗槓一筒，九筒從上家碰出、嶺上補到九筒可以加槓；下家會摸切一條，王牌前端依序是九筒、南、東。 */
     @Test
     fun `auto north kan payments scenario arranges every kan`() {
-        val state = build("auto_north_riichi_kan_payments")
+        val state = build("mahjongcraft:riichi_three_player/debug/auto_north_riichi_kan_payments")
         val handTiles = state.currentPlayer.hand.allTiles.associateBy { it.id }
 
         assertEquals(
@@ -271,7 +271,7 @@ class ThreePlayerRiichiDebugGameScenariosTest {
     @Test
     fun `validator counts pulled norths`() {
         val context = createThreePlayerRiichiScenarioContext()
-        val result = registry.get("mahjongcraft:riichi_three_player_pull_north")!!.build(context)
+        val result = registry.get("mahjongcraft:riichi_three_player/debug/pull_north")!!.build(context)
         val state = result.game.tableState
         val pulled = assertNotNull(state.module().applyTileSetAsideAction(state, state.currentPlayer.id, RIICHI_PULL_NORTH_GAME_ACTION))
 
@@ -281,10 +281,10 @@ class ThreePlayerRiichiDebugGameScenariosTest {
     /**
      * 由 registry 建立指定三人日麻情境的桌況。
      *
-     * @param idPath 情境識別碼中 namespace 後的路徑。
+     * @param id 情境的完整識別碼。
      * @return 建立後的對局桌況。
      */
-    private fun build(idPath: String): TableState = registry.get("mahjongcraft:$idPath")!!
+    private fun build(id: String): TableState = registry.get(id)!!
         .build(createThreePlayerRiichiScenarioContext())
         .game
         .tableState

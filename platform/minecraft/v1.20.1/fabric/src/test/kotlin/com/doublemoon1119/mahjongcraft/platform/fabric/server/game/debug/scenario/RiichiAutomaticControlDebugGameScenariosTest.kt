@@ -23,10 +23,10 @@ class RiichiAutomaticControlDebugGameScenariosTest {
 
         assertEquals(
             listOf(
-                "mahjongcraft:automatic_auto_win_tsumo",
-                "mahjongcraft:automatic_auto_win_ron",
-                "mahjongcraft:automatic_decline_calls_keeps_win",
-                "mahjongcraft:automatic_tsumogiri_plain_draw",
+                "mahjongcraft:riichi/debug/automatic_auto_win_tsumo",
+                "mahjongcraft:riichi/debug/automatic_auto_win_ron",
+                "mahjongcraft:riichi/debug/automatic_decline_calls_keeps_win",
+                "mahjongcraft:riichi/debug/automatic_tsumogiri_plain_draw",
             ),
             ids,
         )
@@ -49,7 +49,7 @@ class RiichiAutomaticControlDebugGameScenariosTest {
     /** 自動和牌（自摸）：呼叫者的下一次摸牌就是有役的和牌張，中間三家的捨牌不打斷。 */
     @Test
     fun `auto win tsumo scenario draws a winning tile on the next own turn`() {
-        val state = build("automatic_auto_win_tsumo").game.tableState
+        val state = build("mahjongcraft:riichi/debug/automatic_auto_win_tsumo").game.tableState
 
         assertEquals(listOf(NINE_BAMBOO, NINE_CHARACTER, Tile.Honor.North, FOUR_CHARACTER), state.liveWallFront(4))
         (0..2).forEach { index ->
@@ -67,7 +67,7 @@ class RiichiAutomaticControlDebugGameScenariosTest {
     /** 自動和牌（榮和）：下家的第一張捨牌就是有役的和牌張，且呼叫者沒有振聽。 */
     @Test
     fun `auto win ron scenario offers ron on the first opponent discard`() {
-        val state = build("automatic_auto_win_ron").game.tableState
+        val state = build("mahjongcraft:riichi/debug/automatic_auto_win_ron").game.tableState
 
         assertEquals(FOUR_CHARACTER, state.liveWallFront(1).single())
         assertTrue(state.canRon(offset = 0, discarderOffset = 1, tile = FOUR_CHARACTER))
@@ -80,7 +80,7 @@ class RiichiAutomaticControlDebugGameScenariosTest {
     /** 不吃碰槓：同一張捨牌同時可碰與可榮和，控制只該拿掉碰。 */
     @Test
     fun `decline calls scenario offers pon and ron on the same discard`() {
-        val state = build("automatic_decline_calls_keeps_win").game.tableState
+        val state = build("mahjongcraft:riichi/debug/automatic_decline_calls_keeps_win").game.tableState
         val discarded = state.liveWallTile(0)
 
         assertEquals(Tile.Numeric(Tile.Suit.Bamboo, 2), discarded.tile)
@@ -97,7 +97,7 @@ class RiichiAutomaticControlDebugGameScenariosTest {
     /** 自動摸切：呼叫者摸到的牌沒有任何特殊選項，摸切才不會蓋掉玩家的決定。 */
     @Test
     fun `tsumogiri scenario leaves the invoking player without any special action`() {
-        val state = build("automatic_tsumogiri_plain_draw").game.tableState
+        val state = build("mahjongcraft:riichi/debug/automatic_tsumogiri_plain_draw").game.tableState
 
         assertEquals(NINE_BAMBOO, state.currentPlayer.hand.lastDrawn?.tile)
         assertEquals(emptyList(), state.currentOwnTurnActions())
@@ -106,7 +106,7 @@ class RiichiAutomaticControlDebugGameScenariosTest {
     /** 摸到可暗槓的牌時仍有特殊選項，既有的暗槓情境正是這個對照組。 */
     @Test
     fun `an existing closed kan scenario keeps a special action on the same draw`() {
-        val state = build("riichi_before_ankan_1").game.tableState
+        val state = build("mahjongcraft:riichi/debug/before_ankan_1").game.tableState
         val actions = state.currentOwnTurnActions()
 
         assertFalse(actions.isEmpty(), "the closed kan scenario must keep a special action available")
@@ -116,14 +116,14 @@ class RiichiAutomaticControlDebugGameScenariosTest {
     /**
      * 由 registry 建立指定自動操作情境。
      *
-     * @param idPath 情境識別碼中 namespace 後的路徑。
+     * @param id 情境的完整識別碼。
      * @param context 情境使用的目前對局輸入。
      * @return 建立後的情境結果。
      */
     private fun build(
-        idPath: String,
+        id: String,
         context: DebugGameScenarioContext = createRiichiScenarioContext(),
-    ): DebugGameScenarioResult = registry.get("mahjongcraft:$idPath")!!.build(context)
+    ): DebugGameScenarioResult = registry.get(id)!!.build(context)
 
     /** 測試使用的規則選項與牌面。 */
     private companion object {

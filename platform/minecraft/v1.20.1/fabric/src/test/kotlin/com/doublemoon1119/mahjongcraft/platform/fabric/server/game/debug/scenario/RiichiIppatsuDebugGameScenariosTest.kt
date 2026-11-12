@@ -58,7 +58,7 @@ class RiichiIppatsuDebugGameScenariosTest {
     /** 自摸一發：三家摸切的牌都不是和牌張，呼叫者立直後的下一次摸牌是四萬，可以自摸。 */
     @Test
     fun `tsumo scenario brings the wait on the first draw after riichi`() {
-        val state = build("riichi_ippatsu_tsumo").afterInvokerRiichi()
+        val state = build("mahjongcraft:riichi/debug/ippatsu_tsumo").afterInvokerRiichi()
 
         assertEquals(listOf(Tile.Honor.North, Tile.Honor.White, NINE_CHARACTER, FOUR_CHARACTER), state.liveWallFront(4))
         (1..3).forEach { discarderOffset ->
@@ -70,7 +70,7 @@ class RiichiIppatsuDebugGameScenariosTest {
     /** 榮和一發：下家摸到四萬立刻打出，呼叫者可以榮和。 */
     @Test
     fun `ron scenario lets the downstream player discard the wait right after riichi`() {
-        val state = build("riichi_ippatsu_ron").afterInvokerRiichi()
+        val state = build("mahjongcraft:riichi/debug/ippatsu_ron").afterInvokerRiichi()
 
         assertEquals(listOf(FOUR_CHARACTER), state.liveWallFront(1))
         assertTrue(state.canRon(offset = 0, discarderOffset = 1, tile = FOUR_CHARACTER))
@@ -79,10 +79,10 @@ class RiichiIppatsuDebugGameScenariosTest {
     /**
      * 由 registry 建立指定一發情境的桌況。
      *
-     * @param idPath 情境識別碼中 namespace 後的路徑。
+     * @param id 情境的完整識別碼。
      * @return 建立後的對局桌況。
      */
-    private fun build(idPath: String): TableState = registry.get("mahjongcraft:$idPath")!!
+    private fun build(id: String): TableState = registry.get(id)!!
         .build(createRiichiScenarioContext())
         .game
         .tableState

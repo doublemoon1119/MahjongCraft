@@ -84,13 +84,13 @@ internal class DebugNotenDeclarationRuleDecisionResolver : RuleDecisionResolver 
 
     companion object {
         /** 一般流局結算前選擇公開聽牌或宣告不聽的步驟 ID。 */
-        val NOTEN_DECLARATION_STEP: String = MahjongCraftMetadata.id("debug_noten_declaration")
+        val NOTEN_DECLARATION_STEP: String = MahjongCraftMetadata.id("debug_noten_declaration_riichi/noten_declaration")
 
         /** 本局結算後所有玩家確認的步驟 ID。 */
-        val ROUND_END_CONFIRMATION_STEP: String = MahjongCraftMetadata.id("debug_round_end_confirmation")
+        val ROUND_END_CONFIRMATION_STEP: String = MahjongCraftMetadata.id("debug_noten_declaration_riichi/round_end_confirmation")
 
         /** 公開聽牌的選項 ID。 */
-        val REVEAL_TENPAI_OPTION: String = MahjongCraftMetadata.id("debug_reveal_tenpai")
+        val REVEAL_TENPAI_OPTION: String = MahjongCraftMetadata.id("debug_noten_declaration_riichi/reveal_tenpai")
 
         /** 宣告不聽的選項 ID，與記錄下來的動作共用同一個 ID 與用語。 */
         val DECLARE_NOTEN_OPTION: String = DebugDeclareNotenAction.id

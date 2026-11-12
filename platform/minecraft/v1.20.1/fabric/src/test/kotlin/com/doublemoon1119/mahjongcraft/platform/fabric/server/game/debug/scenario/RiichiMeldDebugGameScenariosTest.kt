@@ -95,7 +95,7 @@ class RiichiMeldDebugGameScenariosTest {
     /** 副露擺放情境共用的識別碼與牌面。 */
     private companion object {
         /** 副露擺放情境的識別碼。 */
-        const val MELD_SHOWCASE_ID: String = "mahjongcraft:riichi_meld_showcase"
+        const val MELD_SHOWCASE_ID: String = "mahjongcraft:riichi/debug/meld_showcase"
 
         /** 四人日麻房間設定可選的赤寶牌張數。 */
         val RED_DORA_COUNTS: List<Int> = listOf(0, 3, 4)

@@ -21,7 +21,7 @@ class DebugScenarioAutomaticControlsTest {
             enabledAutomaticControlIdsByPlayerId = mapOf(playerId to enabled),
             automaticControlRevision = 4L,
         )
-        val scenario = registry.get("mahjongcraft:automatic_auto_win_tsumo")!!
+        val scenario = registry.get("mahjongcraft:riichi/debug/automatic_auto_win_tsumo")!!
 
         val loaded = scenario
             .build(DebugGameScenarioContext(currentGame, playerId, bundledCoreExtensionRegistries().componentRegistry))
@@ -36,7 +36,7 @@ class DebugScenarioAutomaticControlsTest {
     fun `loading advances the revision even without any enabled control`() {
         val context = createRiichiScenarioContext()
         val currentGame = context.currentGame.copy(automaticControlRevision = 2L)
-        val scenario = registry.get("mahjongcraft:automatic_tsumogiri_plain_draw")!!
+        val scenario = registry.get("mahjongcraft:riichi/debug/automatic_tsumogiri_plain_draw")!!
 
         val loaded = scenario
             .build(DebugGameScenarioContext(currentGame, context.invokingPlayerId, bundledCoreExtensionRegistries().componentRegistry))
@@ -51,7 +51,7 @@ class DebugScenarioAutomaticControlsTest {
     fun `a freshly built scenario would otherwise reset the revision`() {
         val context = createRiichiScenarioContext()
         val currentGame = context.currentGame.copy(automaticControlRevision = 7L)
-        val scenario = registry.get("mahjongcraft:automatic_auto_win_ron")!!
+        val scenario = registry.get("mahjongcraft:riichi/debug/automatic_auto_win_ron")!!
 
         val built = scenario.build(DebugGameScenarioContext(currentGame, context.invokingPlayerId, bundledCoreExtensionRegistries().componentRegistry))
 

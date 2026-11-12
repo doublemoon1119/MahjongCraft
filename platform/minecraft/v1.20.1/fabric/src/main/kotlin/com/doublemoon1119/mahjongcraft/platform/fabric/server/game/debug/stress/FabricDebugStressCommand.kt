@@ -22,7 +22,7 @@ import kotlin.uuid.toKotlinUuid
  * 建立 `/mahjongcraft debug stress` 的壓力測試指令：固定桌數、爬坡、狀態、停止與刪除資料庫。
  *
  * 開始測試的格式為 `/mahjongcraft debug stress fixed <情境> <桌數>` 與 `/mahjongcraft debug stress ramp <情境>`，後面可接選用的具名選項。
- * 選項以「名稱 值」成對出現，順序不限、只寫需要的（見 [StressOption]），例如 `fixed mahjongcraft:riichi_east 40 history off warmup 30`：
+ * 選項以「名稱 值」成對出現，順序不限、只寫需要的（見 [StressOption]），例如 `fixed mahjongcraft:riichi/history_scenario/east 40 history off warmup 30`：
  * `pace realtime|fast`、`history write|encode|off`、`max_mspt <毫秒>`（判定卡頓的單次 tick 實際間隔，卡頓只記錄開始時的桌數，不會停止測試）、
  * `warmup <秒>`（0 表示不暖機）。沒有寫的選項使用 [StressRunOptions.DEFAULT]。
  *

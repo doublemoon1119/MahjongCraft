@@ -13,14 +13,14 @@ object RiichiIppatsuDebugGameScenarios {
     val all: List<DebugGameScenario> = listOf(
         // 三家依序摸切北、白、九萬，呼叫者立直後的下一次摸牌摸到四萬，可以自摸一發。
         SeatSetupScenario(
-            id = "mahjongcraft:riichi_ippatsu_tsumo",
+            id = "mahjongcraft:riichi/debug/ippatsu_tsumo",
             invoker = IPPATSU_INVOKER,
             liveWallFront = listOf(Tile.Honor.North, Tile.Honor.White, NINE_CHARACTER, FOUR_CHARACTER),
             waitingTiles = WAITING_TILES,
         ),
         // 下家摸到四萬後立刻打出，呼叫者可以榮和一發。
         SeatSetupScenario(
-            id = "mahjongcraft:riichi_ippatsu_ron",
+            id = "mahjongcraft:riichi/debug/ippatsu_ron",
             invoker = IPPATSU_INVOKER,
             liveWallFront = listOf(FOUR_CHARACTER),
             waitingTiles = WAITING_TILES,

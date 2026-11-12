@@ -14,7 +14,7 @@ class RiichiSeatChangeDebugGameScenariosTest {
     @Test
     fun `winner dealer scenario lets the downstream player ron the drawn west`() {
         val registry = DebugGameScenarioRegistry()
-        val result = registry.get("mahjongcraft:winner_dealer_seat_rotation")!!.build(createRiichiScenarioContext())
+        val result = registry.get("mahjongcraft:riichi/debug/winner_dealer_seat_rotation")!!.build(createRiichiScenarioContext())
         val state = result.game.tableState
 
         assertIs<DebugWinnerDealerRiichiRuleConfig>(state.config)

@@ -64,7 +64,7 @@ object RiichiFamilyMinecraftPresentation {
      */
     fun registerGameActionSounds(registry: GameActionSoundPresentationRegistrar, ruleModuleId: String) {
         listOf(
-            BuiltInGameActionSoundIds.CHII to RiichiGameActionVoiceSoundIds.CHII,
+            BuiltInGameActionSoundIds.CHI to RiichiGameActionVoiceSoundIds.CHII,
             BuiltInGameActionSoundIds.PON to RiichiGameActionVoiceSoundIds.PON,
             BuiltInGameActionSoundIds.KAN to RiichiGameActionVoiceSoundIds.KAN,
             RiichiGameAction.Riichi.id to RiichiGameActionVoiceSoundIds.RIICHI,

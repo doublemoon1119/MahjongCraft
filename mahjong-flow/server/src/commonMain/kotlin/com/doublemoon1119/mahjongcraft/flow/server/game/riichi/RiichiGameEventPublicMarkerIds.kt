@@ -26,5 +26,10 @@ object RiichiGameEventPublicMarkerIds {
      * @param wind 場風。
      * @return 該場風的完整識別碼。
      */
-    fun prevalentWind(wind: Wind): String = MahjongCraftMetadata.id("wind/${wind.name.lowercase()}")
+    fun prevalentWind(wind: Wind): String = when (wind) {
+        Wind.EAST -> MahjongCraftMetadata.id("wind/east")
+        Wind.SOUTH -> MahjongCraftMetadata.id("wind/south")
+        Wind.WEST -> MahjongCraftMetadata.id("wind/west")
+        Wind.NORTH -> MahjongCraftMetadata.id("wind/north")
+    }
 }

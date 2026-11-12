@@ -14,7 +14,7 @@ object RiichiMeldDebugGameScenarios {
         // 白從上家碰、東從對家碰、發從下家碰，剛摸到第四張白。加槓白補到八筒，暗槓八筒補到九萬，嶺上自摸；
         // 結算與牌譜可以一次看到三個方向的碰、加槓與暗槓的擺法。
         SeatSetupScenario(
-            id = "mahjongcraft:riichi_meld_showcase",
+            id = "mahjongcraft:riichi/debug/meld_showcase",
             invoker = SeatSpec(
                 standingTiles = List(MELD_TILE_COUNT) { EIGHT_DOT } + NINE_CHARACTER,
                 pons = listOf(

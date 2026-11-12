@@ -20,9 +20,8 @@ class DebugWinRoundContinuationResolver(
     override val ruleModuleId: String,
     private val state: DebugWinRoundContinuationState,
 ) : WinRoundContinuationResolver {
-    // ruleModuleId 本身已經是 namespaced（例如 `mahjongcraft:riichi`），id() 不接受 path 內再帶
-    // namespace，因此只取 path 段。
-    override val id: String = MahjongCraftMetadata.id("debug_continuing_win/${ruleModuleId.substringAfter(':')}")
+    /** 每個規則各登記一個實例；registry 以規則 ID 加上這個 ID 判斷重複，因此 ID 不必再帶規則。 */
+    override val id: String = MahjongCraftMetadata.id("debug/continuing_win")
 
     /** 排在所有真實規則 resolver 之後，開啟時也不會蓋掉規則本身的判定。 */
     override val priority: Int = Int.MIN_VALUE

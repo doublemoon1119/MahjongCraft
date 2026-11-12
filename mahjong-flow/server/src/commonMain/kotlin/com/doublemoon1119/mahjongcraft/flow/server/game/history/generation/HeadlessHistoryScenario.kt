@@ -14,14 +14,14 @@ import kotlinx.coroutines.flow.flow
  */
 enum class HeadlessHistoryScenario(val identifier: String, val ruleConfig: RiichiFamilyRuleConfig) {
     /** 四人東風戰。 */
-    RIICHI_EAST("mahjongcraft:riichi_east", RiichiRuleConfig(gameLength = RiichiGameLength.East)),
+    RIICHI_EAST("mahjongcraft:riichi/history_scenario/east", RiichiRuleConfig(gameLength = RiichiGameLength.East)),
 
     /** 四人半莊戰。 */
-    RIICHI_HANCHAN("mahjongcraft:riichi_hanchan", RiichiRuleConfig(gameLength = RiichiGameLength.TwoWinds)),
+    RIICHI_HANCHAN("mahjongcraft:riichi/history_scenario/hanchan", RiichiRuleConfig(gameLength = RiichiGameLength.TwoWinds)),
 
     /** 三人東風戰。 */
-    THREE_PLAYER_RIICHI_EAST("mahjongcraft:riichi_three_player_east", ThreePlayerRiichiRuleConfig(gameLength = RiichiGameLength.East)),
+    THREE_PLAYER_RIICHI_EAST("mahjongcraft:riichi_three_player/history_scenario/east", ThreePlayerRiichiRuleConfig(gameLength = RiichiGameLength.East)),
 
     /** 三人半莊戰。 */
-    THREE_PLAYER_RIICHI_HANCHAN("mahjongcraft:riichi_three_player_hanchan", ThreePlayerRiichiRuleConfig(gameLength = RiichiGameLength.TwoWinds)),
+    THREE_PLAYER_RIICHI_HANCHAN("mahjongcraft:riichi_three_player/history_scenario/hanchan", ThreePlayerRiichiRuleConfig(gameLength = RiichiGameLength.TwoWinds)),
 }

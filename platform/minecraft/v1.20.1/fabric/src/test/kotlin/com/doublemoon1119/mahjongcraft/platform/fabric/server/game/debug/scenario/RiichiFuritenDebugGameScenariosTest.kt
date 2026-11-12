@@ -71,13 +71,13 @@ class RiichiFuritenDebugGameScenariosTest {
     fun `scenarios reject a table with a human opponent`() {
         val context = createRiichiScenarioContext(aiOpponentCount = 2)
 
-        assertFailsWith<IllegalArgumentException> { build("riichi_furiten_discarded_wait", context) }
+        assertFailsWith<IllegalArgumentException> { build("mahjongcraft:riichi/debug/furiten_discarded_wait", context) }
     }
 
     /** 捨牌振聽：下家打四萬不能榮和，自己摸到四萬可以自摸。 */
     @Test
     fun `discarded wait scenario blocks ron but allows tsumo`() {
-        val state = build("riichi_furiten_discarded_wait").game.tableState
+        val state = build("mahjongcraft:riichi/debug/furiten_discarded_wait").game.tableState
 
         assertEquals(listOf(FOUR_CHARACTER, Tile.Honor.North, NINE_BAMBOO, FOUR_CHARACTER), state.liveWallFront(4))
         assertFalse(state.canRon(offset = 0, discarderOffset = 1, tile = FOUR_CHARACTER))
@@ -97,7 +97,7 @@ class RiichiFuritenDebugGameScenariosTest {
     /** 沒被詢問的和牌張：一萬無役不能榮和，四萬有役可以榮和。 */
     @Test
     fun `unoffered wait scenario offers only the tanyao wait`() {
-        val state = build("riichi_furiten_unoffered_wait").game.tableState
+        val state = build("mahjongcraft:riichi/debug/furiten_unoffered_wait").game.tableState
 
         assertEquals(listOf(ONE_CHARACTER, FOUR_CHARACTER, Tile.Honor.East, NINE_BAMBOO, FOUR_CHARACTER), state.liveWallFront(5))
         assertFalse(state.canRon(offset = 0, discarderOffset = 1, tile = ONE_CHARACTER))
@@ -107,7 +107,7 @@ class RiichiFuritenDebugGameScenariosTest {
     /** 放過榮和：下家打一萬時可以榮和。 */
     @Test
     fun `declined ron scenario offers the first wait`() {
-        val state = build("riichi_furiten_declined_ron").game.tableState
+        val state = build("mahjongcraft:riichi/debug/furiten_declined_ron").game.tableState
 
         assertEquals(listOf(ONE_CHARACTER, FOUR_CHARACTER, NINE_BAMBOO, NINE_CHARACTER, FOUR_CHARACTER), state.liveWallFront(5))
         assertTrue(state.canRon(offset = 0, discarderOffset = 1, tile = ONE_CHARACTER))
@@ -116,7 +116,7 @@ class RiichiFuritenDebugGameScenariosTest {
     /** 鳴牌解除：呼叫者尚未聽牌，可以碰對家打出的中。 */
     @Test
     fun `cleared by call scenario lets the invoking player pon the red dragon`() {
-        val state = build("riichi_furiten_cleared_by_call").game.tableState
+        val state = build("mahjongcraft:riichi/debug/furiten_cleared_by_call").game.tableState
         val red = state.liveWallTile(1)
 
         assertEquals(listOf(ONE_CHARACTER, Tile.Honor.Red, ONE_CHARACTER), state.liveWallFront(3))
@@ -127,7 +127,7 @@ class RiichiFuritenDebugGameScenariosTest {
     /** 立直中放過搶槓：下家摸到一萬可以加槓，呼叫者可以搶槓。 */
     @Test
     fun `declined chankan scenario lets the downstream player add a kan the invoker can rob`() {
-        val game = build("riichi_furiten_declined_chankan").game
+        val game = build("mahjongcraft:riichi/debug/furiten_declined_chankan").game
         val state = game.tableState
 
         assertNotNull(state.seat(0).riichiDeclaration)
@@ -139,7 +139,7 @@ class RiichiFuritenDebugGameScenariosTest {
     /** 暗槓：下家摸到一萬可以暗槓，呼叫者不能搶。 */
     @Test
     fun `closed kan scenario lets the downstream player declare a kan the invoker cannot rob`() {
-        val state = build("riichi_furiten_closed_kan_not_offered").game.tableState
+        val state = build("mahjongcraft:riichi/debug/furiten_closed_kan_not_offered").game.tableState
 
         assertTrue(state.ownTurnKans(offset = 1).any { it.type == GameAction.KanType.CLOSED_KAN })
         assertFalse(state.canRobKan(offset = 0, type = GameAction.KanType.CLOSED_KAN))
@@ -150,7 +150,7 @@ class RiichiFuritenDebugGameScenariosTest {
     @Test
     fun `head bump scenario overrides only the multi ron policy`() {
         val context = createRiichiScenarioContext()
-        val result = build("riichi_furiten_head_bump_chankan", context)
+        val result = build("mahjongcraft:riichi/debug/furiten_head_bump_chankan", context)
         val state = result.game.tableState
         val config = state.config as RiichiRuleConfig
 
@@ -166,14 +166,14 @@ class RiichiFuritenDebugGameScenariosTest {
     /**
      * 由 registry 建立指定振聽情境。
      *
-     * @param idPath 情境識別碼中 namespace 後的路徑。
+     * @param id 情境的完整識別碼。
      * @param context 情境使用的目前對局輸入。
      * @return 建立後的情境結果。
      */
     private fun build(
-        idPath: String,
+        id: String,
         context: DebugGameScenarioContext = createRiichiScenarioContext(),
-    ): DebugGameScenarioResult = registry.get("mahjongcraft:$idPath")!!.build(context)
+    ): DebugGameScenarioResult = registry.get(id)!!.build(context)
 
     /** 振聽情境共用的規則選項與牌面。 */
     private companion object {

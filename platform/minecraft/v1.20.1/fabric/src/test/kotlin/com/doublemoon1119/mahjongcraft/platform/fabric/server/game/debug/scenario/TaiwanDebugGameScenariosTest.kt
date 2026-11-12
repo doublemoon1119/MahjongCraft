@@ -27,7 +27,7 @@ class TaiwanDebugGameScenariosTest {
     /** 莊家先摸開門牌，再逐輪補花：莊家兩輪共三張、下家與上家各一張；之後下家摸到的花補到的又是花。 */
     @Test
     fun `flower replacement scenario chains opening and mid-game replacements`() {
-        val (state) = build("mahjongcraft:taiwan_flower_replacement")
+        val (state) = build("mahjongcraft:taiwan/debug/flower_replacement")
         val dealer = state.dealerIndex
         val module = TaiwanRuleModule(BuiltInRuleModuleIds.TAIWAN, state.config as TaiwanRuleConfig)
         val drawn = assertNotNull(state.drawDealerOpeningTile(module))
@@ -43,7 +43,7 @@ class TaiwanDebugGameScenariosTest {
     /** 呼叫者起手七張花，下家亮出第八張時，呼叫者可以選擇七搶一。 */
     @Test
     fun `seven flowers scenario offers the invoker a seven-flower win`() {
-        val (state, invokerId) = build("mahjongcraft:taiwan_seven_flowers")
+        val (state, invokerId) = build("mahjongcraft:taiwan/debug/seven_flowers")
 
         val pending = assertIs<TaiwanFlowerFlow.Result.AwaitingDecision>(processOpening(state)).pending
 
@@ -54,7 +54,7 @@ class TaiwanDebugGameScenariosTest {
     /** 呼叫者起手八張花，補完花後可以選擇八仙過海。 */
     @Test
     fun `eight flowers scenario offers the invoker an eight-flower win`() {
-        val (state, invokerId) = build("mahjongcraft:taiwan_eight_flowers")
+        val (state, invokerId) = build("mahjongcraft:taiwan/debug/eight_flowers")
 
         val pending = assertIs<TaiwanFlowerFlow.Result.AwaitingDecision>(processOpening(state)).pending
 
@@ -65,7 +65,7 @@ class TaiwanDebugGameScenariosTest {
     /** 呼叫者起手聽牌，沒有任何人起手有花。 */
     @Test
     fun `ready declaration scenario deals the invoker a ready hand without opening flowers`() {
-        val (state, invokerId) = build("mahjongcraft:taiwan_ready_declaration")
+        val (state, invokerId) = build("mahjongcraft:taiwan/debug/ready_declaration")
         val invoker = state.players.single { it.id == invokerId }
         val sixteen = invoker.hand.copy(tiles = invoker.hand.standingTiles.filterNot { it.tile == Tile.Honor.North }, lastDrawn = null)
 
@@ -78,7 +78,7 @@ class TaiwanDebugGameScenariosTest {
     /** 呼叫者剛摸到牌；活牌只剩一張花，其餘七張花已在花區；下家摸到那張花後沒有牌可以補。 */
     @Test
     fun `last tile flower scenario leaves one flower and no replacement`() {
-        val (state, invokerId) = build("mahjongcraft:taiwan_last_tile_flower")
+        val (state, invokerId) = build("mahjongcraft:taiwan/debug/last_tile_flower")
         val drawer = state.players[(state.players.indexOfFirst { it.id == invokerId } + 1) % PLAYERS]
 
         assertEquals(invokerId, state.currentPlayer.id)

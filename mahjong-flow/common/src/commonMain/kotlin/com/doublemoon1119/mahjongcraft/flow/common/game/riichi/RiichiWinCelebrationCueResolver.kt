@@ -1,6 +1,6 @@
 package com.doublemoon1119.mahjongcraft.flow.common.game.riichi
 
-import com.doublemoon1119.mahjongcraft.flow.common.game.model.BuiltInWinCelebrationCueIds
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.riichi.RiichiWinCelebrationCueIds
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.WinCelebrationCueResolver
 import com.doublemoon1119.mahjongcraft.logic.judgment.HandValueResult
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiHandValueResult
@@ -12,11 +12,6 @@ object RiichiWinCelebrationCueResolver : WinCelebrationCueResolver {
         return riichi.yakuResults
             .filter { it.isYakuman }
             .sortedWith(compareBy({ it.han }, { it.yaku.ordinal }))
-            .map { BuiltInWinCelebrationCueIds.riichiYakuman(it.yaku.name.toSnakeCase()) }
+            .map { RiichiWinCelebrationCueIds.yakuman(it.yaku) }
     }
-
-    /** 役種名稱轉成展示 cue 路徑；數字前也加底線，例如 `KokushiMusou13` 轉成 `kokushi_musou_13`。 */
-    private fun String.toSnakeCase(): String = replace(Regex("([a-z0-9])([A-Z])"), "$1_$2")
-        .replace(Regex("([a-z])([0-9])"), "$1_$2")
-        .lowercase()
 }

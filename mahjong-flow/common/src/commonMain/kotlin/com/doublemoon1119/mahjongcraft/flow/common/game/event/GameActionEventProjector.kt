@@ -163,7 +163,11 @@ internal object GameActionEventProjector {
     private fun face(tile: Tile): PublicTileFace = PublicTileFace.create(
         when (tile) {
             is Tile.Extension -> tile.typeId.toString()
-            is Tile.Numeric -> "mahjongcraft:tile/numeric/${tile.suit.name.lowercase()}/${tile.value}"
+            is Tile.Numeric -> when (tile.suit) {
+                Tile.Suit.Character -> "mahjongcraft:tile/numeric/character/${tile.value}"
+                Tile.Suit.Dot -> "mahjongcraft:tile/numeric/dot/${tile.value}"
+                Tile.Suit.Bamboo -> "mahjongcraft:tile/numeric/bamboo/${tile.value}"
+            }
             is Tile.Honor -> "mahjongcraft:tile/honor/${when (tile) {
                 Tile.Honor.East -> "east"
                 Tile.Honor.South -> "south"

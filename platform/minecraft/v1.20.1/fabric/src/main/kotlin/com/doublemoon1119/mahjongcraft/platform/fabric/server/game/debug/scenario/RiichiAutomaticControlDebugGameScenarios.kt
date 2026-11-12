@@ -13,7 +13,7 @@ object RiichiAutomaticControlDebugGameScenarios {
     /** 所有自動操作驗收情境。 */
     val all: List<DebugGameScenario> = listOf(
         SeatSetupScenario(
-            id = "mahjongcraft:automatic_auto_win_tsumo",
+            id = "mahjongcraft:riichi/debug/automatic_auto_win_tsumo",
             invoker = SeatSpec(
                 standingTiles = YAKUHAI_TWO_SIDED_WAIT,
                 drawnTile = Tile.Honor.West,
@@ -23,7 +23,7 @@ object RiichiAutomaticControlDebugGameScenarios {
             waitingTiles = WAITING_TILES,
         ),
         SeatSetupScenario(
-            id = "mahjongcraft:automatic_auto_win_ron",
+            id = "mahjongcraft:riichi/debug/automatic_auto_win_ron",
             invoker = SeatSpec(
                 standingTiles = YAKUHAI_TWO_SIDED_WAIT,
                 drawnTile = Tile.Honor.West,
@@ -33,7 +33,7 @@ object RiichiAutomaticControlDebugGameScenarios {
             waitingTiles = WAITING_TILES,
         ),
         SeatSetupScenario(
-            id = "mahjongcraft:automatic_decline_calls_keeps_win",
+            id = "mahjongcraft:riichi/debug/automatic_decline_calls_keeps_win",
             invoker = SeatSpec(
                 standingTiles = YAKUHAI_SHANPON_WAIT,
                 pons = listOf(ScenarioPon(NINE_CHARACTER)),
@@ -44,7 +44,7 @@ object RiichiAutomaticControlDebugGameScenarios {
             waitingTiles = SHANPON_WAITING_TILES,
         ),
         SeatSetupScenario(
-            id = "mahjongcraft:automatic_tsumogiri_plain_draw",
+            id = "mahjongcraft:riichi/debug/automatic_tsumogiri_plain_draw",
             invoker = SeatSpec(
                 standingTiles = FAR_FROM_TENPAI,
                 drawnTile = NINE_BAMBOO,
