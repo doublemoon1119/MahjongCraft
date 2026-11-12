@@ -182,7 +182,13 @@ object TaiwanFlowerFlow {
 
         override fun setAside(tableState: TableState, playerId: Uuid, tile: IdentifiedTile): TableState = requireNotNull(TaiwanFlowerReplacement.reveal(tableState, playerId, tile)) { "Selected flower could not be revealed" }
 
-        override fun replace(tableState: TableState, playerId: Uuid): PlayerDraw? = TaiwanFlowerReplacement.supplement(tableState, playerId)?.let { PlayerDraw(it.tableState, it.replacementTile) }
+        override fun replace(
+            tableState: TableState,
+            playerId: Uuid,
+            replacementsRemaining: Int,
+        ): PlayerDraw? = TaiwanFlowerReplacement.supplement(tableState, playerId, replacementsRemaining)?.let {
+            PlayerDraw(it.tableState, it.replacementTile)
+        }
 
         /** 還有牌可以補時，公開的花讓有人湊到七搶一就暫停。 */
         override fun pauseAfterSetAside(tableState: TableState, playerId: Uuid, tiles: List<IdentifiedTile>): FlowerPause? {

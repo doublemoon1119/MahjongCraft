@@ -2,9 +2,12 @@ package com.doublemoon1119.mahjongcraft.logic.rules.taiwan
 
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
+import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.layout.TaiwanPhysicalWallLayoutPolicy
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.tile.TaiwanTileTypes
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.logic.table.drawFromReservedWall
+import com.doublemoon1119.mahjongcraft.logic.table.layout.PhysicalWallLayoutTransitionContext
+import com.doublemoon1119.mahjongcraft.logic.table.layout.PhysicalWallLayoutTransitionDecision
 import kotlin.uuid.Uuid
 
 /** 台灣麻將公開花牌與從保留區補牌的純狀態操作。 */
@@ -56,9 +59,15 @@ object TaiwanFlowerReplacement {
      *
      * @param tableState 補牌前的桌況。
      * @param playerId 接收補牌的玩家。
+     * @param replacementsRemaining 包含本次在內，這位玩家本輪尚待補入的張數。
      * @return 補牌結果；已無合法補牌或玩家不存在時為 null。
      */
-    fun supplement(tableState: TableState, playerId: Uuid): Supplemented? {
+    fun supplement(
+        tableState: TableState,
+        playerId: Uuid,
+        replacementsRemaining: Int,
+    ): Supplemented? {
+        require(replacementsRemaining > 0) { "Remaining replacement count must be positive" }
         val supplement = drawFromReservedWall(tableState) ?: return null
         val index = tableState.players.indexOfFirst { it.id == playerId }
         if (index == -1) return null
@@ -71,12 +80,36 @@ object TaiwanFlowerReplacement {
         ).recordAction(GameAction.Draw)
         val remainingWallIds = (supplement.tileWall.getAllTiles() + supplement.reservedWallTiles)
             .mapTo(mutableSetOf()) { it.id }
-        val result = tableState.copy(
+        var result = tableState.copy(
             players = tableState.players.toMutableList().apply { this[index] = updated },
             tileWall = supplement.tileWall,
             reservedWallTiles = supplement.reservedWallTiles,
             physicalWallLayout = tableState.physicalWallLayout?.retainOnly(remainingWallIds),
         )
+        val currentLayout = tableState.physicalWallLayout
+        if (currentLayout != null) {
+            val config = tableState.config as? TaiwanRuleConfig
+                ?: error("Taiwan flower replacement requires Taiwan rule config")
+            val decision = TaiwanPhysicalWallLayoutPolicy(config).resolveSupplementalTransition(
+                PhysicalWallLayoutTransitionContext(
+                    tableStateBeforeAction = tableState,
+                    tableStateAfterAction = result.copy(physicalWallLayout = null),
+                    currentLayout = currentLayout,
+                    actorPlayerId = playerId,
+                    action = TAIWAN_REVEAL_FLOWER_ACTION,
+                ),
+                drawNumber = TaiwanPhysicalWallLayoutPolicy.completedSupplementalDrawCount(result) - replacementsRemaining + 1,
+            )
+            result = when (decision) {
+                is PhysicalWallLayoutTransitionDecision.Completed -> result.copy(physicalWallLayout = decision.layout)
+                is PhysicalWallLayoutTransitionDecision.Rejected -> error(
+                    "Taiwan reserved wall layout rejected flower replacement: ${decision.reasonId}",
+                )
+                PhysicalWallLayoutTransitionDecision.Unchanged -> error(
+                    "Taiwan reserved wall layout did not apply flower replacement",
+                )
+            }
+        }
         return Supplemented(result, replacement)
     }
 }

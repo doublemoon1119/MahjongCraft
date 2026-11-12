@@ -151,9 +151,14 @@ object TileReplacementRounds {
          *
          * @param tableState 補牌前的桌況。
          * @param playerId 補牌的玩家。
+         * @param replacementsRemaining 包含本次在內，這位玩家尚待補入的張數。
          * @return 補牌後的桌況與補到的牌；已經沒有牌可以補時為 null。
          */
-        fun replace(tableState: TableState, playerId: Uuid): PlayerDraw?
+        fun replace(
+            tableState: TableState,
+            playerId: Uuid,
+            replacementsRemaining: Int,
+        ): PlayerDraw?
 
         /**
          * 玩家移出 [tiles] 之後、補牌之前是否暫停；預設不暫停。
@@ -214,8 +219,8 @@ object TileReplacementRounds {
                 }
                 if (due > 0) {
                     val replacements = mutableListOf<IdentifiedTile>()
-                    repeat(due) {
-                        val replaced = rules.replace(state, playerId)
+                    repeat(due) { replacementIndex ->
+                        val replaced = rules.replace(state, playerId, due - replacementIndex)
                         if (replaced == null) {
                             if (replacements.isNotEmpty()) steps += Step.Replaced(playerId, replacements.toList(), state)
                             return Outcome.Exhausted(state, playerId, steps.toList())

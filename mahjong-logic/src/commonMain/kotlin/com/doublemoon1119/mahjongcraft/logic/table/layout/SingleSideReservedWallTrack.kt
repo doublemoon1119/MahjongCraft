@@ -13,7 +13,7 @@ import com.doublemoon1119.mahjongcraft.logic.table.opening.WallOpening
 data class SingleSideReservedWallTrack(
     val side: Int,
     val stackIndices: List<Int>,
-) {
+) : ReservedWallTrack {
     init {
         require(side >= 0) { "Reserved wall track side must not be negative" }
         require(stackIndices.isNotEmpty()) { "Reserved wall track must contain at least one stack" }
@@ -32,7 +32,7 @@ data class SingleSideReservedWallTrack(
      * @throws IllegalArgumentException 當 layer 不在 0..1 時拋出。
      * @throws IndexOutOfBoundsException 當 index 超出 stackIndices 索引範圍時拋出。
      */
-    fun position(index: Int, layer: Int): TileWallPosition {
+    override fun position(index: Int, layer: Int): TileWallPosition {
         require(layer in 0..1) { "Reserved wall track layer must be 0 or 1" }
         return TileWallPosition(side, stackIndices[index], layer)
     }

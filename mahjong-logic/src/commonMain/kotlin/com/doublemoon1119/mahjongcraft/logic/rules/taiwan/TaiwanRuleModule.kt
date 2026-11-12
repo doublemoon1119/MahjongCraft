@@ -16,6 +16,7 @@ import com.doublemoon1119.mahjongcraft.logic.module.PointPotCollection
 import com.doublemoon1119.mahjongcraft.logic.module.PublicPlayerIndicator
 import com.doublemoon1119.mahjongcraft.logic.module.PublicPlayerIndicatorValue
 import com.doublemoon1119.mahjongcraft.logic.module.WinResolutionResult
+import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.layout.TaiwanPhysicalWallLayoutPolicy
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.layout.TaiwanWallLayout
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.opening.TaiwanWallOpeningPolicy
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.tile.TaiwanTileTypes
@@ -30,6 +31,7 @@ import com.doublemoon1119.mahjongcraft.logic.table.SupplementalDrawPolicy
 import com.doublemoon1119.mahjongcraft.logic.table.SupplementalDrawReasonIds
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.logic.table.drawFromReservedWall
+import com.doublemoon1119.mahjongcraft.logic.table.layout.PhysicalWallLayoutPolicy
 import com.doublemoon1119.mahjongcraft.logic.util.isWind
 import kotlin.uuid.Uuid
 
@@ -71,6 +73,9 @@ class TaiwanRuleModule(
 
     /** 建立台灣麻將的牌牆布局，依 [TaiwanRuleConfig.useFlowerTiles] 支援 136 或 144 張。 */
     override fun createWallLayout(playerCount: Int): TaiwanWallLayout = TaiwanWallLayout(config)
+
+    /** 建立台灣麻將保留區分界與補牌後補位布局。 */
+    override fun createPhysicalWallLayoutPolicy(): PhysicalWallLayoutPolicy = TaiwanPhysicalWallLayoutPolicy(config)
 
     /** 打完選定圈數後結束，末局莊家連莊時打到下莊為止。 */
     override fun createMatchProgressionPolicy(): MatchProgressionPolicy = TaiwanMatchProgressionPolicy(config.scheduledRoundCount)

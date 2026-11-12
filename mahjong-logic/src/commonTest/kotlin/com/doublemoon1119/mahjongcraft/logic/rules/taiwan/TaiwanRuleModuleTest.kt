@@ -9,6 +9,7 @@ import com.doublemoon1119.mahjongcraft.logic.component.BuiltInComponentOwners
 import com.doublemoon1119.mahjongcraft.logic.component.ComponentSet
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
 import com.doublemoon1119.mahjongcraft.logic.module.MeldCompletedContext
+import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.layout.TaiwanPhysicalWallLayoutPolicy
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.layout.TaiwanWallLayout
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.opening.TaiwanWallOpeningPolicy
 import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayer
@@ -72,6 +73,12 @@ class TaiwanRuleModuleTest {
     @Test
     fun `test create wall layout returns taiwan implementation`() {
         assertTrue(module.createWallLayout(module.config.maxPlayers) is TaiwanWallLayout)
+    }
+
+    /** 驗證規則模組提供台灣麻將的保留區實體布局。 */
+    @Test
+    fun `test create physical wall layout policy returns taiwan implementation`() {
+        assertIs<TaiwanPhysicalWallLayoutPolicy>(module.createPhysicalWallLayoutPolicy())
     }
 
     /**

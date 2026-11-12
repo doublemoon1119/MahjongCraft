@@ -119,7 +119,11 @@ class ThreePlayerRiichiRuleModule(
     override fun createWallLayout(playerCount: Int): ThreePlayerRiichiWallLayout = ThreePlayerRiichiWallLayout(config)
 
     /** 與四人日麻共用的王牌區布局；嶺上牌為 8 張。 */
-    override fun createPhysicalWallLayoutPolicy(): PhysicalWallLayoutPolicy = RiichiPhysicalWallLayoutPolicy(rinshanTileCount = config.rinshanTileCount)
+    override fun createPhysicalWallLayoutPolicy(): PhysicalWallLayoutPolicy = RiichiPhysicalWallLayoutPolicy(
+        rinshanTileCount = config.rinshanTileCount,
+        sideCount = ThreePlayerRiichiWallLayout.SIDE_COUNT,
+        stacksPerSide = ThreePlayerRiichiWallLayout.STACKS_PER_SIDE,
+    )
 
     /** 將赤五解讀為普通五的牌面 policy。 */
     override fun createTileInterpretationPolicy(): TileInterpretationPolicy = RiichiTileInterpretationPolicy

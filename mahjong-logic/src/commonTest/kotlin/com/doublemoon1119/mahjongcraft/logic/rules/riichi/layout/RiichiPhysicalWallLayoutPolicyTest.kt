@@ -3,6 +3,7 @@ package com.doublemoon1119.mahjongcraft.logic.rules.riichi.layout
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.logic.component.BuiltInComponentOwners
+import com.doublemoon1119.mahjongcraft.logic.component.ComponentSet
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiSupplementalDrawPolicy
 import com.doublemoon1119.mahjongcraft.logic.table.SupplementalDrawContext
@@ -149,6 +150,34 @@ class RiichiPhysicalWallLayoutPolicyTest {
 
         assertTrue(draw.tile?.id !in transition.layout.placements)
         assertTrue(transition.phases.isEmpty())
+    }
+
+    /** 缺少日麻牌牆進度時必須拒絕補牌，不得把它誤判成一般移除牌張。 */
+    @Test
+    fun `supplemental transition rejects missing wall progress`() {
+        val opening = WallOpening(0, 1)
+        val wallLayout = createWallLayout(opening)
+        val tableState = FakeTableStateFactory.create(
+            config = RiichiRuleConfig(),
+            tileWall = TileWall(wallLayout.drawOrder),
+            reservedWallTiles = wallLayout.reservedWallTiles,
+            components = ComponentSet.EMPTY,
+        )
+
+        val transition = RiichiPhysicalWallLayoutPolicy(rinshanTileCount = 4).resolveTransitionValidated(
+            PhysicalWallLayoutTransitionContext(
+                tableStateBeforeAction = tableState,
+                tableStateAfterAction = tableState,
+                currentLayout = initialPhysicalLayout(wallLayout, opening),
+                actorPlayerId = tableState.currentPlayer.id,
+                action = kanAction(),
+            ),
+        )
+
+        assertEquals(
+            RiichiPhysicalWallLayoutPolicy.INVALID_STATE_REASON_ID,
+            assertIs<PhysicalWallLayoutTransitionDecision.Rejected>(transition).reasonId,
+        )
     }
 
     /**

@@ -24,7 +24,14 @@ class TileReplacementRoundsTest {
         val table = table(hands = listOf(listOf(first, second), emptyList(), listOf(third)), wall = listOf(chained, plainA, plainB, plainC))
         val (p0, _, p2) = table.players.map { it.id }
 
-        val outcome = assertIs<TileReplacementRounds.Outcome.Completed>(TileReplacementRounds.process(table, table.players.map { it.id }, Rules()))
+        val replacementsRemaining = mutableListOf<Int>()
+        val outcome = assertIs<TileReplacementRounds.Outcome.Completed>(
+            TileReplacementRounds.process(
+                table,
+                table.players.map { it.id },
+                Rules(observedReplacementsRemaining = replacementsRemaining),
+            ),
+        )
 
         assertEquals(
             listOf(
@@ -42,6 +49,7 @@ class TileReplacementRoundsTest {
         assertEquals(listOf(first, second), outcome.steps[0].tableState.setAsideOf(p0))
         assertEquals(listOf(first, second), outcome.steps[3].tableState.setAsideOf(p0))
         assertEquals(listOf(first, second, chained), outcome.steps[4].tableState.setAsideOf(p0))
+        assertEquals(listOf(2, 1, 1, 1), replacementsRemaining)
     }
 
     /** 移出後暫停的位置帶著尚未補的張數，從那裡繼續時先補牌，再接著處理下一位玩家。 */
@@ -105,10 +113,12 @@ class TileReplacementRoundsTest {
      *
      * @property pauseAfterSetAsideBy 這位玩家移出後暫停；不暫停時為 null。
      * @property pauseAfterReplacementBy 這位玩家補完牌後暫停；不暫停時為 null。
+     * @property observedReplacementsRemaining 記錄每次補牌前仍待補入的張數。
      */
     private class Rules(
         private val pauseAfterSetAsideBy: Uuid? = null,
         private val pauseAfterReplacementBy: Uuid? = null,
+        private val observedReplacementsRemaining: MutableList<Int>? = null,
     ) : TileReplacementRounds.Rules<String> {
         override fun isSetAside(tile: IdentifiedTile): Boolean = tile.tile == MARKED
 
@@ -125,7 +135,12 @@ class TileReplacementRoundsTest {
             },
         )
 
-        override fun replace(tableState: TableState, playerId: Uuid): PlayerDraw? {
+        override fun replace(
+            tableState: TableState,
+            playerId: Uuid,
+            replacementsRemaining: Int,
+        ): PlayerDraw? {
+            observedReplacementsRemaining?.add(replacementsRemaining)
             val (tile, wall) = tableState.tileWall.draw()
             if (tile == null) return null
             return PlayerDraw(

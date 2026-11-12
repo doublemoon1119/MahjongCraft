@@ -49,7 +49,7 @@ class ThreePlayerRiichiPhysicalWallLayoutTest {
                 components = riichiTableComponents(potPoints = 0),
             )
             var layout = assertIs<InitialPhysicalWallLayoutDecision.Completed>(
-                RiichiPhysicalWallLayoutPolicy(rinshanTileCount = config.rinshanTileCount).createInitialLayoutValidated(
+                physicalWallLayoutPolicy(config).createInitialLayoutValidated(
                     InitialPhysicalWallLayoutContext(
                         wallLayout,
                         opening,
@@ -73,7 +73,7 @@ class ThreePlayerRiichiPhysicalWallLayoutTest {
                     components = supplemental.tableComponents.applyTo(tableState.components, BuiltInComponentOwners.TABLE),
                 )
                 layout = assertIs<PhysicalWallLayoutTransitionDecision.Completed>(
-                    RiichiPhysicalWallLayoutPolicy(rinshanTileCount = config.rinshanTileCount).resolveTransitionValidated(
+                    physicalWallLayoutPolicy(config).resolveTransitionValidated(
                         PhysicalWallLayoutTransitionContext(
                             tableStateBeforeAction = tableState,
                             tableStateAfterAction = updatedState,
@@ -89,6 +89,13 @@ class ThreePlayerRiichiPhysicalWallLayoutTest {
             }
         }
     }
+
+    /** 建立符合三人牌牆拓樸的日麻實體布局規則。 */
+    private fun physicalWallLayoutPolicy(config: ThreePlayerRiichiRuleConfig): RiichiPhysicalWallLayoutPolicy = RiichiPhysicalWallLayoutPolicy(
+        rinshanTileCount = config.rinshanTileCount,
+        sideCount = ThreePlayerRiichiWallLayout.SIDE_COUNT,
+        stacksPerSide = ThreePlayerRiichiWallLayout.STACKS_PER_SIDE,
+    )
 
     /** 同一面同一層任兩張牌中心距不得小於一墩。 */
     private fun assertNoOverlap(layout: TileWallPhysicalLayout, tableState: TableState, stage: String) {
