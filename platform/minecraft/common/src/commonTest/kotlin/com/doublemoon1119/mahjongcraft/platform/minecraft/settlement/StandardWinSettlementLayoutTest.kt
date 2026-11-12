@@ -6,7 +6,9 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.taiwan.TaiwanWinSe
 import com.doublemoon1119.mahjongcraft.logic.module.BuiltInRuleModuleIds
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.tai.TaiwanTaiType
 import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.riichi.RiichiWinSettlementTemplates
-import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.taiwan.TaiwanWinSettlementPresentation
+import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.taiwan.TaiwanTranslationKeys
+import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.taiwan.TaiwanWinSettlementDetailTexts
+import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.taiwan.TaiwanWinSettlementTemplates
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
@@ -30,8 +32,8 @@ class StandardWinSettlementLayoutTest {
     /** 沒有手牌時規則專屬列往上補到手牌的位置，不留手牌列與間距。 */
     @Test
     fun `rule row moves up when the hand is not shown`() {
-        val tileRows = tileRows(TaiwanWinSettlementPresentation.TEMPLATE)
-        val flowers = ExtensionPresentationField(TaiwanWinSettlementPresentation.FLOWERS, PresentationValue.TileListValue(listOf("flower_spring")))
+        val tileRows = tileRows(TaiwanWinSettlementTemplates.TEMPLATE)
+        val flowers = ExtensionPresentationField(TaiwanWinSettlementTemplates.FLOWERS, PresentationValue.TileListValue(listOf("flower_spring")))
 
         val withHand = solver.measure(tileRows, snapshot(tileGroups = listOf(listOf(PresentationTile.Face("m1"))), extensionFields = listOf(flowers)))
         val flowersOnly = solver.measure(tileRows, snapshot(tileGroups = emptyList(), extensionFields = listOf(flowers)))
@@ -45,10 +47,10 @@ class StandardWinSettlementLayoutTest {
     /** 清單接在規則專屬列下面，沒有手牌時一起往上補，中間不留空白。 */
     @Test
     fun `entries follow the rule row without a gap`() {
-        val tileRows = tileRows(TaiwanWinSettlementPresentation.TEMPLATE)
-        val flowers = ExtensionPresentationField(TaiwanWinSettlementPresentation.FLOWERS, PresentationValue.TileListValue(listOf("flower_spring")))
+        val tileRows = tileRows(TaiwanWinSettlementTemplates.TEMPLATE)
+        val flowers = ExtensionPresentationField(TaiwanWinSettlementTemplates.FLOWERS, PresentationValue.TileListValue(listOf("flower_spring")))
         val tai = ExtensionPresentationField(
-            TaiwanWinSettlementPresentation.TAI,
+            TaiwanWinSettlementTemplates.TAI,
             PresentationValue.EntryListValue(listOf(PresentationValue.EntryListValue.Entry(translationKey = "test.tai"))),
         )
 
@@ -60,7 +62,7 @@ class StandardWinSettlementLayoutTest {
     /** 內建台種都有翻譯鍵，台數清單不會顯示原始 ID。 */
     @Test
     fun `taiwan tai entries use translated names`() {
-        val entries = TaiwanWinSettlementPresentation.taiText.entries(
+        val entries = TaiwanWinSettlementDetailTexts.taiText.entries(
             listOf(
                 WinSettlementDetailEntry(TaiwanWinSettlementIds.tai(TaiwanTaiType.FullFlush), WinSettlementQuantity(TaiwanWinSettlementIds.TAI_UNIT, 8)),
                 WinSettlementDetailEntry("mahjongcraft:taiwan/tai/test_unknown", null),
@@ -75,7 +77,7 @@ class StandardWinSettlementLayoutTest {
     fun `built in templates share the skeleton`() {
         val templates = listOf(
             RiichiWinSettlementTemplates.RIICHI,
-            TaiwanWinSettlementPresentation.TEMPLATE,
+            TaiwanWinSettlementTemplates.TEMPLATE,
             BuiltInWinSettlementTemplates.GENERIC,
         )
 
@@ -85,13 +87,13 @@ class StandardWinSettlementLayoutTest {
             assertEquals(StandardWinSettlementLayout.HEIGHT, root.height)
             assertIs<PresentationLayout.Column>(tileRows(template))
         }
-        assertEquals(registry.findTemplateForRule(BuiltInRuleModuleIds.TAIWAN)?.key, TaiwanWinSettlementPresentation.TEMPLATE_KEY)
+        assertEquals(registry.findTemplateForRule(BuiltInRuleModuleIds.TAIWAN)?.key, TaiwanWinSettlementTemplates.TEMPLATE_KEY)
     }
 
     /** 台麻標題使用共用的胡牌動作文字，由各規則的動作用詞決定，不寫死在版面裡。 */
     @Test
     fun `taiwan title uses the win action wording`() {
-        val title = (TaiwanWinSettlementPresentation.TEMPLATE.root as PresentationLayout.Box).children.first().child
+        val title = (TaiwanWinSettlementTemplates.TEMPLATE.root as PresentationLayout.Box).children.first().child
 
         assertEquals(BuiltInWinSettlementFieldIds.OUTCOME_TITLE, assertIs<PresentationLayout.Text>(title).fieldId)
         assertEquals(
@@ -99,16 +101,16 @@ class StandardWinSettlementLayoutTest {
             registry.findFieldProvider(BuiltInWinSettlementFieldIds.OUTCOME_TITLE)?.provide(snapshot(emptyList(), emptyList())),
         )
         assertEquals(
-            PresentationValue.TextValue(TaiwanWinSettlementPresentation.FLOWERS_LABEL_KEY),
-            registry.findFieldProvider(TaiwanWinSettlementPresentation.FLOWERS_LABEL)?.provide(snapshot(emptyList(), emptyList())),
+            PresentationValue.TextValue(TaiwanTranslationKeys.SETTLEMENT_FLOWERS),
+            registry.findFieldProvider(TaiwanWinSettlementTemplates.FLOWERS_LABEL)?.provide(snapshot(emptyList(), emptyList())),
         )
-        assertTrue(TaiwanWinSettlementPresentation.TEMPLATE.toString().contains("RepeatEntries"))
+        assertTrue(TaiwanWinSettlementTemplates.TEMPLATE.toString().contains("RepeatEntries"))
     }
 
     /** 台麻台種清單只有八台以上的台種使用強調樣式。 */
     @Test
     fun `taiwan tai entries highlight eight tai or more`() {
-        val entries = TaiwanWinSettlementPresentation.taiText.entries(
+        val entries = TaiwanWinSettlementDetailTexts.taiText.entries(
             listOf(
                 WinSettlementDetailEntry("mahjongcraft:taiwan/tai/eight_flowers", WinSettlementQuantity(TaiwanWinSettlementIds.TAI_UNIT, 8)),
                 WinSettlementDetailEntry("mahjongcraft:taiwan/tai/test_small", WinSettlementQuantity(TaiwanWinSettlementIds.TAI_UNIT, 7)),
@@ -122,7 +124,7 @@ class StandardWinSettlementLayoutTest {
     /** 連莊條目名稱帶連莊次數；只適用部分付款者時改用對應樣式，即使台數達到強調門檻也一樣。 */
     @Test
     fun `dealer streak entry carries its count and conditional style`() {
-        val entry = TaiwanWinSettlementPresentation.taiText.entries(
+        val entry = TaiwanWinSettlementDetailTexts.taiText.entries(
             listOf(
                 WinSettlementDetailEntry(
                     id = TaiwanWinSettlementIds.DEALER_STREAK_ENTRY,
@@ -138,8 +140,8 @@ class StandardWinSettlementLayoutTest {
         assertEquals("9", entry.trailingTranslationArgument)
         assertEquals(EntryEmphasis.CONDITIONAL, entry.emphasis)
         assertEquals(
-            PresentationValue.TextValue(TaiwanWinSettlementPresentation.DEALER_TAI_TOTAL_KEY, listOf("12")),
-            TaiwanWinSettlementPresentation.dealerTaiTotalText.quantities(listOf(WinSettlementQuantity(TaiwanWinSettlementIds.TAI_UNIT, 12))),
+            PresentationValue.TextValue(TaiwanTranslationKeys.SETTLEMENT_DEALER_TAI_TOTAL, listOf("12")),
+            TaiwanWinSettlementDetailTexts.dealerTaiTotalText.quantities(listOf(WinSettlementQuantity(TaiwanWinSettlementIds.TAI_UNIT, 12))),
         )
     }
 

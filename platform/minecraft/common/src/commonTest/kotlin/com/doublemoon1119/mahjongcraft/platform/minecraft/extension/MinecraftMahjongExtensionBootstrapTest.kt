@@ -58,7 +58,8 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.RuleModuleDisplay
 import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.RuleModuleDisplayNameRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.riichi.BundledRiichiMinecraftExtension
 import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.taiwan.BundledTaiwanMinecraftExtension
-import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.taiwan.TaiwanWinSettlementPresentation
+import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.taiwan.TaiwanTranslationKeys
+import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.taiwan.TaiwanWinSettlementTemplates
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.ExhaustiveDrawReasonDisplayNameRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.MatchSettlementPresentationTemplateRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.RoundOutcomeDisplayNameRegistry
@@ -396,17 +397,17 @@ class MinecraftMahjongExtensionBootstrapTest {
             ruleCatalogueRegistry.registrationKeys,
         )
         assertEquals(
-            MinecraftMessageKeys.GAME_ACTION_REVEAL_FLOWER,
+            TaiwanTranslationKeys.ACTION_REVEAL_FLOWER,
             gameActionVocabularyRegistry.find(BuiltInRuleModuleIds.TAIWAN, TaiwanGameAction.RevealFlower.id)?.labelKey,
         )
         // 台灣麻將把榮和說成胡牌；日本麻將維持榮和。
-        assertEquals(MinecraftMessageKeys.GAME_ACTION_HU, gameActionVocabularyRegistry.find(BuiltInRuleModuleIds.TAIWAN, BuiltInGameActionIds.RON)?.messageKey)
+        assertEquals(TaiwanTranslationKeys.ACTION_HU_MESSAGE, gameActionVocabularyRegistry.find(BuiltInRuleModuleIds.TAIWAN, BuiltInGameActionIds.RON)?.messageKey)
         assertEquals(MinecraftMessageKeys.GAME_ACTION_RON, gameActionVocabularyRegistry.find(BuiltInRuleModuleIds.RIICHI, BuiltInGameActionIds.RON)?.messageKey)
         assertTrue(ruleDecisionDisplayNameRegistry.registrationKeys.isEmpty(), "Built-in rules show rule decision choices with action names.")
         assertTrue(TaiwanRoundOutcomeIds.EIGHT_FLOWERS.let(roundOutcomeDisplayNameRegistry::find) != null)
         assertTrue(TaiwanRoundOutcomeIds.SEVEN_FLOWERS.let(roundOutcomeDisplayNameRegistry::find) != null)
         assertEquals(
-            TaiwanWinSettlementPresentation.TEMPLATE_KEY,
+            TaiwanWinSettlementTemplates.TEMPLATE_KEY,
             winSettlementTemplateRegistry.findTemplateForRule(BuiltInRuleModuleIds.TAIWAN)?.key,
         )
         assertTrue(winSettlementTemplateRegistry.findDetailTextFormatter(TaiwanWinSettlementIds.TAI_FIELD) != null)

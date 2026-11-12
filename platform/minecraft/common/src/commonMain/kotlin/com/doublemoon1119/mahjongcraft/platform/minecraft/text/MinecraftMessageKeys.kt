@@ -250,9 +250,6 @@ object MinecraftMessageKeys {
     /** 白（白板）顯示文字。 */
     const val TILE_HONOR_WHITE = PREFIX + "tile_honor_white"
 
-    /** 台灣麻將規則模組顯示名稱，供 `RuleModuleDisplayNameRegistry` 內建登記使用。 */
-    const val RULE_MODULE_TAIWAN = PREFIX + "rule_module_taiwan"
-
     // ── 對局動作顯示文字（見 GameActionDisplayText.kt） ──────────────────────
 
     /** 打出，帶一個牌面顯示文字參數（一個 `%s`）。 */
@@ -279,14 +276,8 @@ object MinecraftMessageKeys {
     /** 榮和，帶一個牌面顯示文字參數（一個 `%s`）。 */
     const val GAME_ACTION_RON = PREFIX + "game_action_ron"
 
-    /** 胡牌（例如台灣麻將對榮和的說法），帶一個牌面顯示文字參數（一個 `%s`）。 */
-    const val GAME_ACTION_HU = PREFIX + "game_action_hu"
-
     /** 過（不執行任何鳴牌或胡牌動作），不帶參數。 */
     const val GAME_ACTION_PASS = PREFIX + "game_action_pass"
-
-    /** 補花，不帶參數。 */
-    const val GAME_ACTION_REVEAL_FLOWER = PREFIX + "game_action_reveal_flower"
 
     /** 其他規則專屬流局原因的通用 fallback 顯示文字，不帶參數。 */
     const val GAME_ACTION_EXHAUSTIVE_DRAW = PREFIX + "game_action_exhaustive_draw"
@@ -640,7 +631,6 @@ object MinecraftMessageKeys {
         TILE_HONOR_RED,
         TILE_HONOR_GREEN,
         TILE_HONOR_WHITE,
-        RULE_MODULE_TAIWAN,
         GAME_ACTION_DISCARD,
         GAME_ACTION_TSUMO,
         GAME_ACTION_CHI,
@@ -649,9 +639,7 @@ object MinecraftMessageKeys {
         GAME_ACTION_KAN_CLOSED,
         GAME_ACTION_KAN_ADDED,
         GAME_ACTION_RON,
-        GAME_ACTION_HU,
         GAME_ACTION_PASS,
-        GAME_ACTION_REVEAL_FLOWER,
         GAME_ACTION_EXHAUSTIVE_DRAW,
         EXHAUSTIVE_DRAW_REASON_NORMAL,
         ROUND_RESULT_DETAILS_LABEL,

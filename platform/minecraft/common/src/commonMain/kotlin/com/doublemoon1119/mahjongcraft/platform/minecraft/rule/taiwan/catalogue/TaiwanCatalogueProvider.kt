@@ -11,6 +11,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.catalogue.RuleCatalogu
 import com.doublemoon1119.mahjongcraft.platform.minecraft.catalogue.RuleCatalogueEntry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.catalogue.RuleCatalogueLabel
 import com.doublemoon1119.mahjongcraft.platform.minecraft.catalogue.RuleCatalogueProvider
+import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.taiwan.TaiwanTaiTranslationKeys
 
 /** 台灣麻將預設台表、特殊花胡與流局說明的圖鑑來源。 */
 class TaiwanCatalogueProvider : RuleCatalogueProvider {
@@ -45,7 +46,7 @@ private fun TaiwanTaiType.toCatalogueEntry(config: TaiwanRuleConfig): RuleCatalo
     return RuleCatalogueEntry(
         id = id,
         categoryId = taiCatalogueCategory.id,
-        nameTranslationKey = "mahjongcraft.taiwan.tai.$slug",
+        nameTranslationKey = TaiwanTaiTranslationKeys.keyFor(this),
         descriptionTranslationKey = TaiwanCatalogueKeys.PREFIX + "entry.$slug.description",
         labels = listOf(RuleCatalogueLabel(TaiwanCatalogueKeys.PREFIX + "label.tai_${taiCatalogueCategory.tai}")),
         unavailableReasonTranslationKey = TaiwanCatalogueKeys.FLOWERS_UNAVAILABLE.takeIf { flowerEntry && !config.useFlowerTiles },

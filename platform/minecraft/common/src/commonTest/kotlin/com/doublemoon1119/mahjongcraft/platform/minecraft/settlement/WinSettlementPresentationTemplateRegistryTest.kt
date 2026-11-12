@@ -3,7 +3,7 @@ package com.doublemoon1119.mahjongcraft.platform.minecraft.settlement
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.riichi.RiichiWinSettlementIds
 import com.doublemoon1119.mahjongcraft.logic.module.BuiltInRuleModuleIds
 import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.riichi.RiichiWinSettlementTemplates
-import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.taiwan.TaiwanWinSettlementPresentation
+import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.taiwan.TaiwanWinSettlementTemplates
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -85,8 +85,8 @@ class WinSettlementPresentationTemplateRegistryTest {
     fun `hidden hand and missing flowers leave their fields absent`() {
         val registry = WinSettlementPresentationTemplateRegistryImpl()
         registry.registerBundledWinSettlementTemplates()
-        val flowers = TaiwanWinSettlementPresentation.FLOWERS
-        val winningFlower = TaiwanWinSettlementPresentation.WINNING_FLOWER
+        val flowers = TaiwanWinSettlementTemplates.FLOWERS
+        val winningFlower = TaiwanWinSettlementTemplates.WINNING_FLOWER
         val snapshot = WinSettlementPresentationFieldSnapshot(
             outcomeId = "mahjongcraft:taiwan/outcome/eight_flowers",
             isTsumo = true,
@@ -109,7 +109,7 @@ class WinSettlementPresentationTemplateRegistryTest {
         assertNull(registry.findFieldProvider(BuiltInWinSettlementFieldIds.COMPLETE_HAND)?.provide(snapshot))
         assertEquals(PresentationValue.TileListValue(listOf("spring", "summer")), registry.findFieldProvider(flowers)?.provide(snapshot))
         assertNull(registry.findFieldProvider(winningFlower)?.provide(snapshot))
-        assertNotNull(registry.findFieldProvider(TaiwanWinSettlementPresentation.TAI), "The tai list has a provider.")
+        assertNotNull(registry.findFieldProvider(TaiwanWinSettlementTemplates.TAI), "The tai list has a provider.")
     }
 
     /** 內建日麻模板明確提供兩種指示牌的本地化欄位標題。 */

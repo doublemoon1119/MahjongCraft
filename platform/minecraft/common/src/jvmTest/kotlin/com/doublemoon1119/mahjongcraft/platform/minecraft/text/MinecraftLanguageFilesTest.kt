@@ -15,6 +15,8 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.room.MinecraftRoomScre
 import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.riichi.RiichiShowcaseTranslationKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.riichi.RiichiTranslationKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.riichi.RiichiYakuTranslationKeys
+import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.taiwan.TaiwanTaiTranslationKeys
+import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.taiwan.TaiwanTranslationKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.WinSettlementTextKeys
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
@@ -50,6 +52,26 @@ class MinecraftLanguageFilesTest {
         locales.forEach { locale ->
             val translations = loadTranslations(locale)
             keys.forEach { key -> assertTrue(key in translations, "$locale is missing riichi translation: $key") }
+        }
+    }
+
+    /** 台灣麻將專屬文字的 key 都在 `mahjongcraft.taiwan.` 底下，且每個語系都有翻譯。 */
+    @Test
+    fun `taiwan text keys live under the taiwan prefix and exist in every locale`() {
+        TaiwanTranslationKeys.ALL.forEach { key -> assertTrue(key.startsWith("mahjongcraft.taiwan."), "Taiwan text key outside the taiwan prefix: $key") }
+        locales.forEach { locale ->
+            val translations = loadTranslations(locale)
+            TaiwanTranslationKeys.ALL.forEach { key -> assertTrue(key in translations, "$locale is missing taiwan translation: $key") }
+        }
+    }
+
+    /** 驗證語系檔中的台灣麻將台種 key 與程式碼定義完全一致。 */
+    @Test
+    fun `language tai keys match the production tai key schema`() {
+        locales.forEach { locale ->
+            val taiKeys = loadTranslations(locale).keys.filterTo(mutableSetOf()) { it.startsWith("mahjongcraft.taiwan.tai.") }
+
+            assertEquals(TaiwanTaiTranslationKeys.ALL, taiKeys, "$locale tai keys do not match the production tai schema")
         }
     }
 

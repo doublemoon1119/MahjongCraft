@@ -14,7 +14,6 @@ import com.doublemoon1119.mahjongcraft.metadata.MahjongCraftMetadata
 import com.doublemoon1119.mahjongcraft.platform.minecraft.action.BuiltInGameActionIds
 import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionVocabulary
 import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionVocabularyDefinition
-import com.doublemoon1119.mahjongcraft.platform.minecraft.action.HUD_ACTION_PREFIX
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.DecisionStatusDisplayNameRegistrar
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.GameActionSoundPresentationRegistrar
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.GameActionVocabularyRegistrar
@@ -84,7 +83,7 @@ object BundledTaiwanMinecraftExtension : MinecraftMahjongExtension {
     }
 
     override fun registerRuleModuleDisplayNames(registry: RuleModuleDisplayNameRegistrar) {
-        registry.register(RuleModuleDisplayNameDefinition(BuiltInRuleModuleIds.TAIWAN, MinecraftMessageKeys.RULE_MODULE_TAIWAN))
+        registry.register(RuleModuleDisplayNameDefinition(BuiltInRuleModuleIds.TAIWAN, TaiwanTranslationKeys.RULE_NAME))
     }
 
     override fun registerGameActionVocabulary(registry: GameActionVocabularyRegistrar) {
@@ -93,9 +92,9 @@ object BundledTaiwanMinecraftExtension : MinecraftMahjongExtension {
                 ruleModuleId = BuiltInRuleModuleIds.TAIWAN,
                 actionId = TaiwanGameAction.RevealFlower.id,
                 vocabulary = GameActionVocabulary(
-                    labelKey = MinecraftMessageKeys.GAME_ACTION_REVEAL_FLOWER,
+                    labelKey = TaiwanTranslationKeys.ACTION_REVEAL_FLOWER,
                     order = REVEAL_FLOWER_ACTION_ORDER,
-                    descriptionKey = GAME_ACTION_REVEAL_FLOWER_DESCRIPTION,
+                    descriptionKey = TaiwanTranslationKeys.ACTION_REVEAL_FLOWER_DESCRIPTION,
                 ),
             ),
         )
@@ -104,9 +103,9 @@ object BundledTaiwanMinecraftExtension : MinecraftMahjongExtension {
                 ruleModuleId = BuiltInRuleModuleIds.TAIWAN,
                 actionId = TaiwanGameAction.DeclareReady.id,
                 vocabulary = GameActionVocabulary(
-                    labelKey = GAME_ACTION_DECLARE_READY,
+                    labelKey = TaiwanTranslationKeys.ACTION_DECLARE_READY,
                     order = DECLARE_READY_ACTION_ORDER,
-                    descriptionKey = GAME_ACTION_DECLARE_READY_DESCRIPTION,
+                    descriptionKey = TaiwanTranslationKeys.ACTION_DECLARE_READY_DESCRIPTION,
                 ),
             ),
         )
@@ -115,7 +114,7 @@ object BundledTaiwanMinecraftExtension : MinecraftMahjongExtension {
             GameActionVocabularyDefinition(
                 ruleModuleId = BuiltInRuleModuleIds.TAIWAN,
                 actionId = BuiltInGameActionIds.RON,
-                vocabulary = GameActionVocabulary(labelKey = HUD_ACTION_HU, messageKey = MinecraftMessageKeys.GAME_ACTION_HU, order = HU_ACTION_ORDER),
+                vocabulary = GameActionVocabulary(labelKey = TaiwanTranslationKeys.ACTION_HU, messageKey = TaiwanTranslationKeys.ACTION_HU_MESSAGE, order = HU_ACTION_ORDER),
             ),
         )
     }
@@ -123,10 +122,10 @@ object BundledTaiwanMinecraftExtension : MinecraftMahjongExtension {
     /** 登記台灣麻將的過水與等待牌胡牌資格文字。 */
     override fun registerDecisionStatusDisplayNames(registry: DecisionStatusDisplayNameRegistrar) {
         listOf(
-            TaiwanDiscardReadinessAnalyzer.StatusIds.PASSED_WIN to HUD_PASSED_WIN,
-            TaiwanDiscardReadinessAnalyzer.StatusIds.WIN_TSUMO_ONLY to HUD_WIN_TSUMO_ONLY,
-            TaiwanDiscardReadinessAnalyzer.StatusIds.WIN_BELOW_MINIMUM to HUD_WIN_BELOW_MINIMUM,
-            TaiwanDiscardReadinessAnalyzer.StatusIds.WIN_NOT_AVAILABLE to HUD_WIN_NOT_AVAILABLE,
+            TaiwanDiscardReadinessAnalyzer.StatusIds.PASSED_WIN to TaiwanTranslationKeys.HUD_PASSED_WIN,
+            TaiwanDiscardReadinessAnalyzer.StatusIds.WIN_TSUMO_ONLY to TaiwanTranslationKeys.HUD_WIN_TSUMO_ONLY,
+            TaiwanDiscardReadinessAnalyzer.StatusIds.WIN_BELOW_MINIMUM to TaiwanTranslationKeys.HUD_WIN_BELOW_MINIMUM,
+            TaiwanDiscardReadinessAnalyzer.StatusIds.WIN_NOT_AVAILABLE to TaiwanTranslationKeys.HUD_WIN_NOT_AVAILABLE,
         ).forEach { (statusId, translationKey) ->
             registry.register(DecisionStatusDisplayNameDefinition(BuiltInRuleModuleIds.TAIWAN, statusId, translationKey))
         }
@@ -135,19 +134,19 @@ object BundledTaiwanMinecraftExtension : MinecraftMahjongExtension {
     /** 宣告聽牌的種類與莊家連莊次數的公開標示。 */
     override fun registerPublicPlayerIndicatorDisplays(registry: PublicPlayerIndicatorDisplayRegistrar) {
         listOf(
-            TaiwanReadyKind.GENERAL.indicatorId to INDICATOR_READY,
-            TaiwanReadyKind.HEAVENLY.indicatorId to INDICATOR_HEAVENLY_READY,
-            TaiwanReadyKind.EARTHLY.indicatorId to INDICATOR_EARTHLY_READY,
+            TaiwanReadyKind.GENERAL.indicatorId to TaiwanTranslationKeys.INDICATOR_READY,
+            TaiwanReadyKind.HEAVENLY.indicatorId to TaiwanTranslationKeys.INDICATOR_HEAVENLY_READY,
+            TaiwanReadyKind.EARTHLY.indicatorId to TaiwanTranslationKeys.INDICATOR_EARTHLY_READY,
         ).forEach { (indicatorId, translationKey) ->
             registry.register(PublicPlayerIndicatorDisplayDefinition(indicatorId, PublicPlayerIndicatorDisplay(translationKey)))
         }
-        registry.register(PublicPlayerIndicatorDisplayDefinition(TaiwanPublicIndicatorIds.DEALER_STREAK, PublicPlayerIndicatorDisplay(INDICATOR_DEALER_STREAK)))
+        registry.register(PublicPlayerIndicatorDisplayDefinition(TaiwanPublicIndicatorIds.DEALER_STREAK, PublicPlayerIndicatorDisplay(TaiwanTranslationKeys.INDICATOR_DEALER_STREAK)))
     }
 
     /** 局況資訊：圈風與局數、連莊一次以上時的連莊次數，以及活牌剩餘張數。 */
     override fun registerRoundInfoPresentations(registry: RoundInfoLineDisplayRegistrar) {
-        registry.register(RoundInfoLineDisplayDefinition(TAIWAN_ROUND_TITLE_LINE, RoundInfoLineDisplay(ROUND_INFO_TITLE)))
-        registry.register(RoundInfoLineDisplayDefinition(TAIWAN_DEALER_STREAK_LINE, RoundInfoLineDisplay(ROUND_INFO_DEALER_STREAK)))
+        registry.register(RoundInfoLineDisplayDefinition(TAIWAN_ROUND_TITLE_LINE, RoundInfoLineDisplay(TaiwanTranslationKeys.ROUND_INFO_TITLE)))
+        registry.register(RoundInfoLineDisplayDefinition(TAIWAN_DEALER_STREAK_LINE, RoundInfoLineDisplay(TaiwanTranslationKeys.ROUND_INFO_DEALER_STREAK)))
         registry.register(RoundInfoLineDisplayDefinition(TAIWAN_WALL_REMAINING_LINE, RoundInfoLineDisplay(MinecraftMessageKeys.ROUND_INFO_WALL_REMAINING)))
         registry.register(RoundInfoLineProviderDefinition(BuiltInRuleModuleIds.TAIWAN, RoundInfoLineProvider(::taiwanRoundInfoLines)))
     }
@@ -168,56 +167,56 @@ object BundledTaiwanMinecraftExtension : MinecraftMahjongExtension {
 
     /** 花牌區在牌譜上標示為「花牌」，補花流程稱為「補花」。 */
     override fun registerHistoryTileSetAsideDisplays(registry: HistoryTileSetAsideDisplayRegistrar) {
-        registry.register(HistoryTileAreaDisplayDefinition(TaiwanPlayerTileAreaIds.FLOWERS, HISTORY_FLOWERS))
-        registry.register(HistoryTileReplacementDisplayDefinition(BuiltInRuleModuleIds.TAIWAN, HISTORY_FLOWER_REPLACEMENT))
+        registry.register(HistoryTileAreaDisplayDefinition(TaiwanPlayerTileAreaIds.FLOWERS, TaiwanTranslationKeys.HISTORY_TILE_AREA_FLOWERS))
+        registry.register(HistoryTileReplacementDisplayDefinition(BuiltInRuleModuleIds.TAIWAN, TaiwanTranslationKeys.HISTORY_REPLACEMENT))
     }
 
     override fun registerRoundOutcomeDisplayNames(registry: RoundOutcomeDisplayNameRegistrar) {
-        registry.register(RoundOutcomeDisplayNameDefinition(TaiwanRoundOutcomeIds.EIGHT_FLOWERS, TaiwanWinSettlementPresentation.EIGHT_FLOWERS))
-        registry.register(RoundOutcomeDisplayNameDefinition(TaiwanRoundOutcomeIds.SEVEN_FLOWERS, TaiwanWinSettlementPresentation.SEVEN_FLOWERS))
+        registry.register(RoundOutcomeDisplayNameDefinition(TaiwanRoundOutcomeIds.EIGHT_FLOWERS, TaiwanTranslationKeys.OUTCOME_EIGHT_FLOWERS))
+        registry.register(RoundOutcomeDisplayNameDefinition(TaiwanRoundOutcomeIds.SEVEN_FLOWERS, TaiwanTranslationKeys.OUTCOME_SEVEN_FLOWERS))
     }
 
     override fun registerWinSettlementPresentationTemplates(registry: WinSettlementPresentationTemplateRegistrar) {
-        registry.register(TaiwanWinSettlementPresentation.TEMPLATE)
-        registry.register(WinSettlementRuleTemplateBindingDefinition(BuiltInRuleModuleIds.TAIWAN, TaiwanWinSettlementPresentation.TEMPLATE_KEY))
+        registry.register(TaiwanWinSettlementTemplates.TEMPLATE)
+        registry.register(WinSettlementRuleTemplateBindingDefinition(BuiltInRuleModuleIds.TAIWAN, TaiwanWinSettlementTemplates.TEMPLATE_KEY))
         registry.register(
-            WinSettlementPresentationFieldProviderDefinition(TaiwanWinSettlementPresentation.FLOWERS_LABEL) {
-                PresentationValue.TextValue(TaiwanWinSettlementPresentation.FLOWERS_LABEL_KEY)
+            WinSettlementPresentationFieldProviderDefinition(TaiwanWinSettlementTemplates.FLOWERS_LABEL) {
+                PresentationValue.TextValue(TaiwanTranslationKeys.SETTLEMENT_FLOWERS)
             },
         )
-        TaiwanWinSettlementPresentation.EXTENSION_FIELDS.forEach { fieldId ->
+        TaiwanWinSettlementTemplates.EXTENSION_FIELDS.forEach { fieldId ->
             registry.register(WinSettlementPresentationFieldProviderDefinition(fieldId) { snapshot -> snapshot.extensionField(fieldId) })
         }
         registry.register(
             WinSettlementDetailTextFormatterDefinition(
                 TaiwanWinSettlementIds.TAI_FIELD,
-                TaiwanWinSettlementPresentation.taiText,
+                TaiwanWinSettlementDetailTexts.taiText,
             ),
         )
         registry.register(
             WinSettlementDetailTextFormatterDefinition(
                 TaiwanWinSettlementIds.TAI_TOTAL_FIELD,
-                TaiwanWinSettlementPresentation.taiTotalText,
+                TaiwanWinSettlementDetailTexts.taiTotalText,
             ),
         )
         registry.register(
             WinSettlementDetailTextFormatterDefinition(
                 TaiwanWinSettlementIds.DEALER_TAI_TOTAL_FIELD,
-                TaiwanWinSettlementPresentation.dealerTaiTotalText,
+                TaiwanWinSettlementDetailTexts.dealerTaiTotalText,
             ),
         )
     }
 
     /** 花牌以文字列出時（例如牌譜的補花紀錄）顯示牌名。 */
     override fun registerTileDisplayNames(registry: TileDisplayNameRegistrar) {
-        registry.register(TileDisplayNameDefinition(TaiwanTileTypes.SPRING, TILE_NAME_SPRING))
-        registry.register(TileDisplayNameDefinition(TaiwanTileTypes.SUMMER, TILE_NAME_SUMMER))
-        registry.register(TileDisplayNameDefinition(TaiwanTileTypes.AUTUMN, TILE_NAME_AUTUMN))
-        registry.register(TileDisplayNameDefinition(TaiwanTileTypes.WINTER, TILE_NAME_WINTER))
-        registry.register(TileDisplayNameDefinition(TaiwanTileTypes.PLUM, TILE_NAME_PLUM))
-        registry.register(TileDisplayNameDefinition(TaiwanTileTypes.ORCHID, TILE_NAME_ORCHID))
-        registry.register(TileDisplayNameDefinition(TaiwanTileTypes.BAMBOO, TILE_NAME_BAMBOO))
-        registry.register(TileDisplayNameDefinition(TaiwanTileTypes.CHRYSANTHEMUM, TILE_NAME_CHRYSANTHEMUM))
+        registry.register(TileDisplayNameDefinition(TaiwanTileTypes.SPRING, TaiwanTranslationKeys.TILE_SPRING))
+        registry.register(TileDisplayNameDefinition(TaiwanTileTypes.SUMMER, TaiwanTranslationKeys.TILE_SUMMER))
+        registry.register(TileDisplayNameDefinition(TaiwanTileTypes.AUTUMN, TaiwanTranslationKeys.TILE_AUTUMN))
+        registry.register(TileDisplayNameDefinition(TaiwanTileTypes.WINTER, TaiwanTranslationKeys.TILE_WINTER))
+        registry.register(TileDisplayNameDefinition(TaiwanTileTypes.PLUM, TaiwanTranslationKeys.TILE_PLUM))
+        registry.register(TileDisplayNameDefinition(TaiwanTileTypes.ORCHID, TaiwanTranslationKeys.TILE_ORCHID))
+        registry.register(TileDisplayNameDefinition(TaiwanTileTypes.BAMBOO, TaiwanTranslationKeys.TILE_BAMBOO))
+        registry.register(TileDisplayNameDefinition(TaiwanTileTypes.CHRYSANTHEMUM, TaiwanTranslationKeys.TILE_CHRYSANTHEMUM))
     }
 
     override fun registerTileEmojis(registry: TileEmojiRegistrar) {
@@ -310,80 +309,8 @@ internal const val TAIWAN_DEALER_STREAK_LINE: String = "mahjongcraft:taiwan/deal
 /** 活牌剩餘張數行。 */
 internal const val TAIWAN_WALL_REMAINING_LINE: String = "mahjongcraft:taiwan/wall_remaining"
 
-/** 圈風與局數的文字。 */
-private const val ROUND_INFO_TITLE: String = "mahjongcraft.taiwan.round_info.title"
-
-/** 連莊次數的文字。 */
-private const val ROUND_INFO_DEALER_STREAK: String = "mahjongcraft.taiwan.round_info.dealer_streak"
-
-/** 宣告聽牌的操作卡名稱。 */
-private const val GAME_ACTION_DECLARE_READY: String = "mahjongcraft.taiwan.action.declare_ready"
-
-/** 宣告聽牌在操作說明中的文字。 */
-private const val GAME_ACTION_DECLARE_READY_DESCRIPTION: String = "mahjongcraft.taiwan.action.declare_ready.description"
-
-/** 花牌「春」的名稱。 */
-private const val TILE_NAME_SPRING: String = "mahjongcraft.taiwan.tile.spring"
-
-/** 花牌「夏」的名稱。 */
-private const val TILE_NAME_SUMMER: String = "mahjongcraft.taiwan.tile.summer"
-
-/** 花牌「秋」的名稱。 */
-private const val TILE_NAME_AUTUMN: String = "mahjongcraft.taiwan.tile.autumn"
-
-/** 花牌「冬」的名稱。 */
-private const val TILE_NAME_WINTER: String = "mahjongcraft.taiwan.tile.winter"
-
-/** 花牌「梅」的名稱。 */
-private const val TILE_NAME_PLUM: String = "mahjongcraft.taiwan.tile.plum"
-
-/** 花牌「蘭」的名稱。 */
-private const val TILE_NAME_ORCHID: String = "mahjongcraft.taiwan.tile.orchid"
-
-/** 花牌「竹」的名稱。 */
-private const val TILE_NAME_BAMBOO: String = "mahjongcraft.taiwan.tile.bamboo"
-
-/** 花牌「菊」的名稱。 */
-private const val TILE_NAME_CHRYSANTHEMUM: String = "mahjongcraft.taiwan.tile.chrysanthemum"
-
-/** 牌譜上花牌區的標題。 */
-private const val HISTORY_FLOWERS: String = "mahjongcraft.taiwan.history_screen.tile_area.flowers"
-
-/** 牌譜上補花紀錄的用語。 */
-private const val HISTORY_FLOWER_REPLACEMENT: String = "mahjongcraft.taiwan.history_screen.replacement"
-
-/** 過水狀態的提示文字。 */
-private const val HUD_PASSED_WIN: String = "mahjongcraft.taiwan.hud.passed_win"
-
-/** 只能自摸的等待牌提示文字。 */
-private const val HUD_WIN_TSUMO_ONLY: String = "mahjongcraft.taiwan.hud.win_availability.tsumo_only"
-
-/** 未達最低台數的等待牌提示文字。 */
-private const val HUD_WIN_BELOW_MINIMUM: String = "mahjongcraft.taiwan.hud.win_availability.below_minimum"
-
-/** 目前不可胡牌的等待牌提示文字。 */
-private const val HUD_WIN_NOT_AVAILABLE: String = "mahjongcraft.taiwan.hud.win_availability.not_available"
-
 /** 宣告聽牌在操作卡中的順序，與日麻立直相同。 */
 private const val DECLARE_READY_ACTION_ORDER: Int = 5
-
-/** 一般宣告聽牌的公開標示。 */
-private const val INDICATOR_READY: String = "mahjongcraft.taiwan.indicator.ready"
-
-/** 天聽的公開標示。 */
-private const val INDICATOR_HEAVENLY_READY: String = "mahjongcraft.taiwan.indicator.heavenly_ready"
-
-/** 地聽的公開標示。 */
-private const val INDICATOR_EARTHLY_READY: String = "mahjongcraft.taiwan.indicator.earthly_ready"
-
-/** 連莊標示的文字，數值是連莊次數。 */
-private const val INDICATOR_DEALER_STREAK: String = "mahjongcraft.taiwan.indicator.dealer_streak"
-
-/** 公開花牌動作在操作說明中的文字。 */
-private const val GAME_ACTION_REVEAL_FLOWER_DESCRIPTION: String = "mahjongcraft.hud.action.reveal_flower.description"
-
-/** 胡牌的操作卡名稱。 */
-private const val HUD_ACTION_HU: String = HUD_ACTION_PREFIX + "hu"
 
 /** 胡牌在操作卡中的順序，與其他規則的榮和相同。 */
 private const val HU_ACTION_ORDER: Int = 3
