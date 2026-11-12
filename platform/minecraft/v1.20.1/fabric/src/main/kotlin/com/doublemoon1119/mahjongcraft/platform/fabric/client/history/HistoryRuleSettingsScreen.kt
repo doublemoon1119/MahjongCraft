@@ -212,7 +212,7 @@ internal class HistoryRuleSettingsScreen(
         var hoveredTooltip: List<Text>? = null
         when (status) {
             HistoryBrowseStatus.Idle, HistoryBrowseStatus.Loading -> centered(context, Text.translatable(MinecraftHistoryScreenKeys.LOADING), layout.contentTop + 12, 0xffffff)
-            is HistoryBrowseStatus.Failed -> centered(context, Text.translatable("${MinecraftHistoryScreenKeys.FAILURE_PREFIX}${status.reason.name.lowercase()}"), layout.contentTop + 12, 0xff6666)
+            is HistoryBrowseStatus.Failed -> centered(context, Text.translatable(status.reason.translationKey), layout.contentTop + 12, 0xff6666)
             HistoryBrowseStatus.Ready -> hoveredTooltip = renderConfig(context, mouseX, mouseY)
         }
         context.disableScissor()

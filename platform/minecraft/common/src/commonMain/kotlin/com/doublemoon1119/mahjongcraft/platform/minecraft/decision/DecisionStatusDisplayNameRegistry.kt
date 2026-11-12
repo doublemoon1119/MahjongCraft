@@ -1,7 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.decision
 
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.DecisionStatusDisplayNameRegistrar
-import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModMetadata
 
 /**
  * 管理捨牌分析狀態（例如振聽、和牌資格）顯示名稱的凍結式 registry；擴充只透過 [DecisionStatusDisplayNameRegistrar] 登記。
@@ -28,6 +27,3 @@ interface DecisionStatusDisplayNameRegistry : DecisionStatusDisplayNameRegistrar
         const val DEFAULT_KEY: String = "default"
     }
 }
-
-/** 捨牌分析狀態顯示名稱的 translation key 前綴。 */
-internal const val HUD_STATUS_PREFIX: String = MinecraftModMetadata.MOD_ID + ".hud."

@@ -1,6 +1,5 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.client.history
 
-import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryArchiveStatusDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryMatchSummaryDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryOutcomeFilterDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryParticipantSummaryDto
@@ -23,12 +22,8 @@ internal object HistoryScreenText {
      */
     fun archiveStatus(value: HistoryArchiveStatusView): Text? = when (value) {
         HistoryArchiveStatusView.Idle -> null
-        is HistoryArchiveStatusView.Resolved -> if (value.status == HistoryArchiveStatusDto.SAVED) {
-            null
-        } else {
-            Text.translatable("${MinecraftHistoryScreenKeys.ARCHIVE_STATUS_PREFIX}${value.status.name.lowercase()}")
-        }
-        is HistoryArchiveStatusView.Pending -> Text.translatable("${MinecraftHistoryScreenKeys.ARCHIVE_STATUS_PREFIX}pending")
+        is HistoryArchiveStatusView.Resolved -> value.status.translationKey?.let(Text::translatable)
+        is HistoryArchiveStatusView.Pending -> Text.translatable(MinecraftHistoryScreenKeys.ARCHIVE_STATUS_PENDING)
         is HistoryArchiveStatusView.Failed -> Text.translatable(MinecraftHistoryScreenKeys.ARCHIVE_UNAVAILABLE)
     }
 

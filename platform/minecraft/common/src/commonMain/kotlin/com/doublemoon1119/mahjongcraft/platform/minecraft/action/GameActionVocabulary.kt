@@ -1,7 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.action
 
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
-import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModMetadata
 
 /**
  * 一個動作在某個規則下的顯示用語。
@@ -58,6 +57,3 @@ fun GameAction.vocabularyActionId(): String = when (this) {
     is GameAction.Extension -> value.id
     else -> BuiltInGameActionIds.UNKNOWN
 }
-
-/** HUD 操作卡短名稱的 translation key 前綴。 */
-internal const val HUD_ACTION_PREFIX: String = MinecraftModMetadata.MOD_ID + ".hud.action."

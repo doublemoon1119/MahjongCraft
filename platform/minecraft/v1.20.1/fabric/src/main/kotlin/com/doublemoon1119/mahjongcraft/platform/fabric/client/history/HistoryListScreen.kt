@@ -176,13 +176,13 @@ internal class HistoryListScreen(
     private fun contentHeight(entries: List<HistoryMatchSummaryDto>): Int = entries.sumOf(::entryHeight) + if (entries.isEmpty()) 0 else 4
 
     /** 取得目前紀錄範圍的按鈕文字。 */
-    private fun scopeText(): Text = Text.translatable("${MinecraftHistoryScreenKeys.SCOPE_PREFIX}${session.controller.state.value.query.scope.name.lowercase()}")
+    private fun scopeText(): Text = Text.translatable(session.controller.state.value.query.scope.translationKey)
 
     /** 取得目前排序欄位的按鈕文字。 */
-    private fun sortText(): Text = Text.translatable("${MinecraftHistoryScreenKeys.SORT_PREFIX}${session.controller.state.value.query.sortField.name.lowercase()}")
+    private fun sortText(): Text = Text.translatable(session.controller.state.value.query.sortField.translationKey)
 
     /** 取得目前排序方向的按鈕文字。 */
-    private fun directionText(): Text = Text.translatable("${MinecraftHistoryScreenKeys.DIRECTION_PREFIX}${session.controller.state.value.query.sortDirection.name.lowercase()}")
+    private fun directionText(): Text = Text.translatable(session.controller.state.value.query.sortDirection.translationKey)
 
     /**
      * 建立列出目前值與可選值的 tooltip。
@@ -193,7 +193,7 @@ internal class HistoryListScreen(
      * @return 格式化後的 tooltip 文字。
      */
     /** 建立紀錄範圍按鈕的選項 tooltip。 */
-    private fun scopeTooltip(): Text = historyOptionTooltip(Text.translatable(MinecraftHistoryScreenKeys.SCOPE_TITLE), scopeText(), availableScopes().indexOf(session.controller.state.value.query.scope), availableScopes().map { Text.translatable("${MinecraftHistoryScreenKeys.SCOPE_PREFIX}${it.name.lowercase()}") })
+    private fun scopeTooltip(): Text = historyOptionTooltip(Text.translatable(MinecraftHistoryScreenKeys.SCOPE_TITLE), scopeText(), availableScopes().indexOf(session.controller.state.value.query.scope), availableScopes().map { Text.translatable(it.translationKey) })
 
     /** 只提供最近權威回應允許的查詢範圍。 */
     private fun availableScopes(): List<HistoryQueryScopeDto> = buildList {
@@ -207,10 +207,10 @@ internal class HistoryListScreen(
     private fun availableSortFields(): List<HistorySortFieldDto> = if (session.controller.state.value.query.scope.coversAllMatches) listOf(HistorySortFieldDto.ENDED_AT, HistorySortFieldDto.DURATION) else HistorySortFieldDto.entries
 
     /** 建立排序欄位按鈕的選項 tooltip。 */
-    private fun sortTooltip(): Text = historyOptionTooltip(Text.translatable(MinecraftHistoryScreenKeys.SORT_TITLE), sortText(), availableSortFields().indexOf(session.controller.state.value.query.sortField), availableSortFields().map { Text.translatable("${MinecraftHistoryScreenKeys.SORT_PREFIX}${it.name.lowercase()}") })
+    private fun sortTooltip(): Text = historyOptionTooltip(Text.translatable(MinecraftHistoryScreenKeys.SORT_TITLE), sortText(), availableSortFields().indexOf(session.controller.state.value.query.sortField), availableSortFields().map { Text.translatable(it.translationKey) })
 
     /** 建立排序方向按鈕的選項 tooltip。 */
-    private fun directionTooltip(): Text = historyOptionTooltip(Text.translatable(MinecraftHistoryScreenKeys.DIRECTION_TITLE), directionText(), session.controller.state.value.query.sortDirection.ordinal, HistorySortDirectionDto.entries.map { Text.translatable("${MinecraftHistoryScreenKeys.DIRECTION_PREFIX}${it.name.lowercase()}") })
+    private fun directionTooltip(): Text = historyOptionTooltip(Text.translatable(MinecraftHistoryScreenKeys.DIRECTION_TITLE), directionText(), session.controller.state.value.query.sortDirection.ordinal, HistorySortDirectionDto.entries.map { Text.translatable(it.translationKey) })
 
     /** 僅列出已套用條件，不將尚未通過驗證的草稿混入。 */
     private fun appliedFiltersTooltip(): Text {
@@ -233,9 +233,9 @@ internal class HistoryListScreen(
         filters.endedAtBeforeEpochMillis?.let { add(MinecraftHistoryScreenKeys.FILTER_THROUGH, Text.literal(HistoryScreenText.endedAt(it - 1))) }
         filters.ownRankMin?.let { add(MinecraftHistoryScreenKeys.FILTER_MIN_RANK, Text.literal(it.toString())) }
         filters.ownRankMax?.let { add(MinecraftHistoryScreenKeys.FILTER_MAX_RANK, Text.literal(it.toString())) }
-        filters.outcome?.let { add(MinecraftHistoryScreenKeys.FILTER_OUTCOME, Text.translatable("${MinecraftHistoryScreenKeys.FILTER_OUTCOME}.${it.name.lowercase()}")) }
-        filters.integrity?.let { add(MinecraftHistoryScreenKeys.FILTER_INTEGRITY, Text.translatable("${MinecraftHistoryScreenKeys.FILTER_INTEGRITY}.${it.name.lowercase()}")) }
-        filters.ai?.let { add(MinecraftHistoryScreenKeys.FILTER_AI, Text.translatable("${MinecraftHistoryScreenKeys.FILTER_AI}.${it.name.lowercase()}")) }
+        filters.outcome?.let { add(MinecraftHistoryScreenKeys.FILTER_OUTCOME, Text.translatable(it.translationKey)) }
+        filters.integrity?.let { add(MinecraftHistoryScreenKeys.FILTER_INTEGRITY, Text.translatable(it.translationKey)) }
+        filters.ai?.let { add(MinecraftHistoryScreenKeys.FILTER_AI, Text.translatable(it.translationKey)) }
         return Text.translatable(MinecraftHistoryScreenKeys.TOOLTIP_FILTERS).copy().also { text ->
             if (lines.isEmpty()) {
                 text.append("\n").append(Text.translatable(MinecraftHistoryScreenKeys.FILTER_NONE))
@@ -345,7 +345,7 @@ internal class HistoryListScreen(
             }
             is HistoryBrowseStatus.Failed -> {
                 if (displayEntries.isNotEmpty()) renderEntries(context, displayEntries, mouseX, mouseY)
-                context.drawCenteredTextWithShadow(textRenderer, Text.translatable("${MinecraftHistoryScreenKeys.FAILURE_PREFIX}${status.reason.name.lowercase()}"), width / 2, layout.contentTop + 12, 0xff6666)
+                context.drawCenteredTextWithShadow(textRenderer, Text.translatable(status.reason.translationKey), width / 2, layout.contentTop + 12, 0xff6666)
             }
         }
         context.disableScissor()

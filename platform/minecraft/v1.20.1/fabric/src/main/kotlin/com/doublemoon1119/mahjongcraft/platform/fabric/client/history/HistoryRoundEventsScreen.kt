@@ -148,7 +148,7 @@ internal class HistoryRoundEventsScreen(
         context.enableScissor(8, layout.contentTop, (width - 8).coerceAtLeast(8), layout.contentBottom)
         when (status) {
             HistoryBrowseStatus.Idle, HistoryBrowseStatus.Loading -> drawNotice(context, Text.translatable(MinecraftHistoryScreenKeys.LOADING), layout.contentTop + 12, TEXT_COLOR)
-            is HistoryBrowseStatus.Failed -> drawNotice(context, Text.translatable("${MinecraftHistoryScreenKeys.FAILURE_PREFIX}${status.reason.name.lowercase()}"), layout.contentTop + 12, ERROR_COLOR)
+            is HistoryBrowseStatus.Failed -> drawNotice(context, Text.translatable(status.reason.translationKey), layout.contentTop + 12, ERROR_COLOR)
             HistoryBrowseStatus.Ready -> {
                 tooltip = renderCards(context, cards, mouseX, mouseY)
                 val bottom = layout.contentTop + 4 + cards.sumOf { it.height } - scroll.toInt()
@@ -286,7 +286,7 @@ internal class HistoryRoundEventsScreen(
                                 else -> {
                                     val failure = round?.stateStatus as? HistoryBrowseStatus.Failed
                                     if (round?.requestedPosition == position && failure != null) {
-                                        addText(Text.translatable("${MinecraftHistoryScreenKeys.FAILURE_PREFIX}${failure.reason.name.lowercase()}"), ERROR_COLOR, 46)
+                                        addText(Text.translatable(failure.reason.translationKey), ERROR_COLOR, 46)
                                     }
                                     rows += Row.StateLink(transaction.index, inline = true)
                                 }

@@ -191,7 +191,7 @@ internal class HistorySummaryScreen(
         context.enableScissor(8, layout.contentTop, width - 8, layout.contentBottom)
         when (status) {
             HistoryBrowseStatus.Idle, HistoryBrowseStatus.Loading -> centered(context, Text.translatable(MinecraftHistoryScreenKeys.LOADING), layout.contentTop + 12, 0xffffff)
-            is HistoryBrowseStatus.Failed -> centered(context, Text.translatable("${MinecraftHistoryScreenKeys.FAILURE_PREFIX}${status.reason.name.lowercase()}"), layout.contentTop + 12, 0xff6666)
+            is HistoryBrowseStatus.Failed -> centered(context, Text.translatable(status.reason.translationKey), layout.contentTop + 12, 0xff6666)
             HistoryBrowseStatus.Ready -> summary?.detail?.let { hoveredTooltip = renderDetail(context, it, mouseX, mouseY) }
         }
         context.disableScissor()

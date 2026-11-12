@@ -207,11 +207,11 @@ internal class HistoryFilterScreen(
      * @return 包含用途及範例的提示文字。
      */
     private fun inputTooltip(field: HistoryBrowseFilterField, labelKey: String): Text = Text.empty()
-        .append(Text.translatable("${MinecraftHistoryScreenKeys.FILTER_INPUT_DESCRIPTION_PREFIX}${field.name.lowercase()}", Text.translatable(labelKey)).formatted(Formatting.GRAY))
+        .append(Text.translatable(requireNotNull(field.inputDescriptionKey) { "Filter field has no text input: $field" }, Text.translatable(labelKey)).formatted(Formatting.GRAY))
         .append("\n")
         .append(Text.translatable(MinecraftHistoryScreenKeys.FILTER_INPUT_EXAMPLE_LABEL).formatted(Formatting.GOLD))
         .append(" ")
-        .append(Text.translatable("${MinecraftHistoryScreenKeys.FILTER_INPUT_EXAMPLE_PREFIX}${field.name.lowercase()}").formatted(Formatting.WHITE))
+        .append(Text.translatable(requireNotNull(field.inputExampleKey) { "Filter field has no text input: $field" }).formatted(Formatting.WHITE))
 
     /**
      * 更新欄位草稿並嘗試套用有效查詢。
@@ -358,7 +358,7 @@ internal class HistoryFilterScreen(
      * @param value 篩選值；null 表示不限。
      * @return 本地化選項文字。
      */
-    private fun outcomeLabel(value: HistoryOutcomeFilterDto?): Text = value?.let { Text.translatable("${MinecraftHistoryScreenKeys.FILTER_OUTCOME}.${it.name.lowercase()}") }
+    private fun outcomeLabel(value: HistoryOutcomeFilterDto?): Text = value?.let { Text.translatable(it.translationKey) }
         ?: Text.translatable(MinecraftHistoryScreenKeys.FILTER_ANY)
 
     /**
@@ -367,7 +367,7 @@ internal class HistoryFilterScreen(
      * @param value 篩選值；null 表示不限。
      * @return 本地化選項文字。
      */
-    private fun integrityLabel(value: HistoryIntegrityFilterDto?): Text = value?.let { Text.translatable("${MinecraftHistoryScreenKeys.FILTER_INTEGRITY}.${it.name.lowercase()}") }
+    private fun integrityLabel(value: HistoryIntegrityFilterDto?): Text = value?.let { Text.translatable(it.translationKey) }
         ?: Text.translatable(MinecraftHistoryScreenKeys.FILTER_ANY)
 
     /**
@@ -376,7 +376,7 @@ internal class HistoryFilterScreen(
      * @param value 篩選值；null 表示不限。
      * @return 本地化選項文字。
      */
-    private fun aiLabel(value: HistoryAiFilterDto?): Text = value?.let { Text.translatable("${MinecraftHistoryScreenKeys.FILTER_AI}.${it.name.lowercase()}") }
+    private fun aiLabel(value: HistoryAiFilterDto?): Text = value?.let { Text.translatable(it.translationKey) }
         ?: Text.translatable(MinecraftHistoryScreenKeys.FILTER_ANY)
 
     /**
@@ -469,7 +469,7 @@ internal class HistoryFilterScreen(
             fields[field]?.visible = visible
             if (!visible) return@forEachIndexed
             val error = session.filterDraft.errors[field]?.let {
-                Text.translatable("${MinecraftHistoryScreenKeys.FILTER_ERROR_PREFIX}${it.name.lowercase()}").formatted(Formatting.RED)
+                Text.translatable(it.translationKey).formatted(Formatting.RED)
             }
             drawLabel(context, key, y, if (error == null) 0xffffff else 0xff5555)
             fields[field]?.tooltip = if (rulePickerOpen) {

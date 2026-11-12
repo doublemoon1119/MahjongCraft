@@ -32,11 +32,29 @@ object MinecraftHistoryScreenKeys {
     /** 結果篩選欄位。 */
     const val FILTER_OUTCOME = "mahjongcraft.history_screen.filter.outcome"
 
+    /** 結果篩選：已完成。 */
+    const val FILTER_OUTCOME_COMPLETED = "mahjongcraft.history_screen.filter.outcome.completed"
+
+    /** 結果篩選：中斷。 */
+    const val FILTER_OUTCOME_INTERRUPTED = "mahjongcraft.history_screen.filter.outcome.interrupted"
+
     /** 完整性篩選欄位。 */
     const val FILTER_INTEGRITY = "mahjongcraft.history_screen.filter.integrity"
 
+    /** 完整性篩選：完整。 */
+    const val FILTER_INTEGRITY_COMPLETE = "mahjongcraft.history_screen.filter.integrity.complete"
+
+    /** 完整性篩選：不完整。 */
+    const val FILTER_INTEGRITY_INCOMPLETE = "mahjongcraft.history_screen.filter.integrity.incomplete"
+
     /** AI 篩選欄位。 */
     const val FILTER_AI = "mahjongcraft.history_screen.filter.ai"
+
+    /** AI 篩選：含 AI。 */
+    const val FILTER_AI_CONTAINS_AI = "mahjongcraft.history_screen.filter.ai.contains_ai"
+
+    /** AI 篩選：不含 AI。 */
+    const val FILTER_AI_NO_AI = "mahjongcraft.history_screen.filter.ai.no_ai"
 
     /** 篩選規則選擇按鈕。 */
     const val FILTER_RULE_SELECT = "mahjongcraft.history_screen.filter.rule_select"
@@ -53,8 +71,23 @@ object MinecraftHistoryScreenKeys {
     /** 篩選日期格式提示。 */
     const val FILTER_DATE_HINT = "mahjongcraft.history_screen.filter.date_hint"
 
-    /** 篩選錯誤鍵前綴。 */
-    const val FILTER_ERROR_PREFIX = "mahjongcraft.history_screen.filter.error."
+    /** 篩選錯誤：規則無效。 */
+    const val FILTER_ERROR_INVALID_RULE = "mahjongcraft.history_screen.filter.error.invalid_rule"
+
+    /** 篩選錯誤：日期格式無效。 */
+    const val FILTER_ERROR_INVALID_DATE = "mahjongcraft.history_screen.filter.error.invalid_date"
+
+    /** 篩選錯誤：名次無效。 */
+    const val FILTER_ERROR_INVALID_RANK = "mahjongcraft.history_screen.filter.error.invalid_rank"
+
+    /** 篩選錯誤：對局 ID 無效。 */
+    const val FILTER_ERROR_INVALID_MATCH_ID = "mahjongcraft.history_screen.filter.error.invalid_match_id"
+
+    /** 篩選錯誤：玩家名稱無效。 */
+    const val FILTER_ERROR_INVALID_PLAYER_NAME = "mahjongcraft.history_screen.filter.error.invalid_player_name"
+
+    /** 篩選錯誤：範圍起訖顛倒。 */
+    const val FILTER_ERROR_REVERSED_RANGE = "mahjongcraft.history_screen.filter.error.reversed_range"
 
     /** 選項 tooltip 說明格式。 */
     const val TOOLTIP_DESCRIPTION = "mahjongcraft.history_screen.tooltip.description"
@@ -77,11 +110,41 @@ object MinecraftHistoryScreenKeys {
     /** 對局 UUID 篩選欄位。 */
     const val FILTER_MATCH_ID = "mahjongcraft.history_screen.filter.match_id"
 
-    /** 篩選欄位用途說明鍵前綴。 */
-    const val FILTER_INPUT_DESCRIPTION_PREFIX = "mahjongcraft.history_screen.filter.input_description."
+    /** 篩選欄位用途說明：玩家名稱。 */
+    const val FILTER_INPUT_DESCRIPTION_PLAYER_NAME = "mahjongcraft.history_screen.filter.input_description.player_name"
 
-    /** 篩選欄位輸入範例鍵前綴。 */
-    const val FILTER_INPUT_EXAMPLE_PREFIX = "mahjongcraft.history_screen.filter.input_example."
+    /** 篩選欄位用途說明：對局 ID。 */
+    const val FILTER_INPUT_DESCRIPTION_MATCH_ID = "mahjongcraft.history_screen.filter.input_description.match_id"
+
+    /** 篩選欄位用途說明：起始日期。 */
+    const val FILTER_INPUT_DESCRIPTION_FROM_DATE = "mahjongcraft.history_screen.filter.input_description.from_date"
+
+    /** 篩選欄位用途說明：結束日期。 */
+    const val FILTER_INPUT_DESCRIPTION_THROUGH_DATE = "mahjongcraft.history_screen.filter.input_description.through_date"
+
+    /** 篩選欄位用途說明：名次下限。 */
+    const val FILTER_INPUT_DESCRIPTION_MIN_RANK = "mahjongcraft.history_screen.filter.input_description.min_rank"
+
+    /** 篩選欄位用途說明：名次上限。 */
+    const val FILTER_INPUT_DESCRIPTION_MAX_RANK = "mahjongcraft.history_screen.filter.input_description.max_rank"
+
+    /** 篩選欄位輸入範例：玩家名稱。 */
+    const val FILTER_INPUT_EXAMPLE_PLAYER_NAME = "mahjongcraft.history_screen.filter.input_example.player_name"
+
+    /** 篩選欄位輸入範例：對局 ID。 */
+    const val FILTER_INPUT_EXAMPLE_MATCH_ID = "mahjongcraft.history_screen.filter.input_example.match_id"
+
+    /** 篩選欄位輸入範例：起始日期。 */
+    const val FILTER_INPUT_EXAMPLE_FROM_DATE = "mahjongcraft.history_screen.filter.input_example.from_date"
+
+    /** 篩選欄位輸入範例：結束日期。 */
+    const val FILTER_INPUT_EXAMPLE_THROUGH_DATE = "mahjongcraft.history_screen.filter.input_example.through_date"
+
+    /** 篩選欄位輸入範例：名次下限。 */
+    const val FILTER_INPUT_EXAMPLE_MIN_RANK = "mahjongcraft.history_screen.filter.input_example.min_rank"
+
+    /** 篩選欄位輸入範例：名次上限。 */
+    const val FILTER_INPUT_EXAMPLE_MAX_RANK = "mahjongcraft.history_screen.filter.input_example.max_rank"
 
     /** 篩選欄位輸入範例標籤。 */
     const val FILTER_INPUT_EXAMPLE_LABEL = "mahjongcraft.history_screen.filter.input.example_label"
@@ -101,11 +164,56 @@ object MinecraftHistoryScreenKeys {
     /** 空列表提示。 */
     const val EMPTY = "mahjongcraft.history_screen.empty"
 
-    /** 查詢失敗訊息前綴。 */
-    const val FAILURE_PREFIX = "mahjongcraft.history_screen.failure."
+    /** 查詢失敗：查詢已停用。 */
+    const val FAILURE_QUERY_DISABLED = "mahjongcraft.history_screen.failure.query_disabled"
 
-    /** 保存狀態提示前綴。 */
-    const val ARCHIVE_STATUS_PREFIX = "mahjongcraft.history_screen.archive_status."
+    /** 查詢失敗：沒有權限。 */
+    const val FAILURE_ACCESS_DENIED = "mahjongcraft.history_screen.failure.access_denied"
+
+    /** 查詢失敗：請求無效。 */
+    const val FAILURE_INVALID_REQUEST = "mahjongcraft.history_screen.failure.invalid_request"
+
+    /** 查詢失敗：紀錄不存在。 */
+    const val FAILURE_NOT_AVAILABLE = "mahjongcraft.history_screen.failure.not_available"
+
+    /** 查詢失敗：伺服器忙碌。 */
+    const val FAILURE_BUSY = "mahjongcraft.history_screen.failure.busy"
+
+    /** 查詢失敗：查詢過於頻繁。 */
+    const val FAILURE_RATE_LIMITED = "mahjongcraft.history_screen.failure.rate_limited"
+
+    /** 查詢失敗：伺服器逾時。 */
+    const val FAILURE_SERVER_TIMEOUT = "mahjongcraft.history_screen.failure.server_timeout"
+
+    /** 查詢失敗：已中斷連線。 */
+    const val FAILURE_DISCONNECTED = "mahjongcraft.history_screen.failure.disconnected"
+
+    /** 查詢失敗：內容過大。 */
+    const val FAILURE_CONTENT_TOO_LARGE = "mahjongcraft.history_screen.failure.content_too_large"
+
+    /** 查詢失敗：送出失敗。 */
+    const val FAILURE_SEND_FAILED = "mahjongcraft.history_screen.failure.send_failed"
+
+    /** 查詢失敗：客戶端逾時。 */
+    const val FAILURE_CLIENT_TIMEOUT = "mahjongcraft.history_screen.failure.client_timeout"
+
+    /** 保存狀態：保存中。 */
+    const val ARCHIVE_STATUS_PENDING = "mahjongcraft.history_screen.archive_status.pending"
+
+    /** 保存狀態：不保存。 */
+    const val ARCHIVE_STATUS_EXCLUDED = "mahjongcraft.history_screen.archive_status.excluded"
+
+    /** 保存狀態：保存已停用。 */
+    const val ARCHIVE_STATUS_DISABLED = "mahjongcraft.history_screen.archive_status.disabled"
+
+    /** 保存狀態：保存失敗。 */
+    const val ARCHIVE_STATUS_FAILED = "mahjongcraft.history_screen.archive_status.failed"
+
+    /** 保存狀態：找不到紀錄。 */
+    const val ARCHIVE_STATUS_MISSING = "mahjongcraft.history_screen.archive_status.missing"
+
+    /** 保存狀態：沒有權限。 */
+    const val ARCHIVE_STATUS_DENIED = "mahjongcraft.history_screen.archive_status.denied"
 
     /** 重試按鈕。 */
     const val RETRY = "mahjongcraft.history_screen.retry"
@@ -533,20 +641,38 @@ object MinecraftHistoryScreenKeys {
     /** 保存狀態查詢不可用。 */
     const val ARCHIVE_UNAVAILABLE = "mahjongcraft.history_screen.archive_status.unavailable"
 
-    /** 紀錄範圍鍵前綴。 */
-    const val SCOPE_PREFIX = "mahjongcraft.history_screen.scope."
+    /** 紀錄範圍：自己的紀錄。 */
+    const val SCOPE_OWN = "mahjongcraft.history_screen.scope.own"
+
+    /** 紀錄範圍：全部紀錄。 */
+    const val SCOPE_ALL = "mahjongcraft.history_screen.scope.all"
+
+    /** 紀錄範圍：壓力測試紀錄。 */
+    const val SCOPE_STRESS_TEST = "mahjongcraft.history_screen.scope.stress_test"
 
     /** 紀錄範圍 tooltip 標題。 */
     const val SCOPE_TITLE = "mahjongcraft.history_screen.scope"
 
-    /** 排序欄位鍵前綴。 */
-    const val SORT_PREFIX = "mahjongcraft.history_screen.sort."
+    /** 排序欄位：結束時間。 */
+    const val SORT_ENDED_AT = "mahjongcraft.history_screen.sort.ended_at"
+
+    /** 排序欄位：對局時間。 */
+    const val SORT_DURATION = "mahjongcraft.history_screen.sort.duration"
+
+    /** 排序欄位：自己的名次。 */
+    const val SORT_OWN_RANK = "mahjongcraft.history_screen.sort.own_rank"
+
+    /** 排序欄位：自己的分數。 */
+    const val SORT_OWN_SCORE = "mahjongcraft.history_screen.sort.own_score"
 
     /** 排序欄位 tooltip 標題。 */
     const val SORT_TITLE = "mahjongcraft.history_screen.sort"
 
-    /** 排序方向鍵前綴。 */
-    const val DIRECTION_PREFIX = "mahjongcraft.history_screen.direction."
+    /** 排序方向：由小到大。 */
+    const val DIRECTION_ASC = "mahjongcraft.history_screen.direction.asc"
+
+    /** 排序方向：由大到小。 */
+    const val DIRECTION_DESC = "mahjongcraft.history_screen.direction.desc"
 
     /** 排序方向 tooltip 標題。 */
     const val DIRECTION_TITLE = "mahjongcraft.history_screen.direction"

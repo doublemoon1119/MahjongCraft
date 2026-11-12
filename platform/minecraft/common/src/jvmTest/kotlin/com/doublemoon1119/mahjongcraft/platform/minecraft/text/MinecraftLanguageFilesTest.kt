@@ -4,6 +4,7 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.RuleDecisi
 import com.doublemoon1119.mahjongcraft.platform.minecraft.automatic.AutomaticControlDisplayRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftClientConfigScreenKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftConfigCommandKeys
+import com.doublemoon1119.mahjongcraft.platform.minecraft.config.StressDebugKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.extension.BuiltInMinecraftMahjongExtension
 import com.doublemoon1119.mahjongcraft.platform.minecraft.extension.BundledMinecraftMahjongExtensions
 import com.doublemoon1119.mahjongcraft.platform.minecraft.history.MinecraftHistoryScreenKeys
@@ -18,6 +19,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.riichi.RiichiYaku
 import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.taiwan.TaiwanTaiTranslationKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.taiwan.TaiwanTranslationKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.WinSettlementTextKeys
+import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftHudKeys
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
@@ -239,19 +241,19 @@ class MinecraftLanguageFilesTest {
         MinecraftConfigCommandKeys::class,
         MinecraftHistoryScreenKeys::class,
         MinecraftCycleButtonKeys::class,
+        MinecraftHudKeys::class,
+        StressDebugKeys::class,
     )
 
     /**
      * 以反射列舉 Kotlin `object` 上所有 MahjongCraft 命名空間的字串常數。
-     *
-     * 以 `.` 結尾的常數是組成完整鍵用的前綴（例如單選選項前綴），本身不是翻譯鍵，不納入檢查。
      */
     private fun declaredTranslationKeys(holder: KClass<*>): List<String> = holder.java.declaredFields
         .filter { Modifier.isStatic(it.modifiers) && it.type == String::class.java }
         .mapNotNull { field ->
             field.isAccessible = true
             (field.get(null) as? String)
-                ?.takeIf { it.startsWith(MinecraftModMetadata.MOD_ID + ".") && !it.endsWith(".") }
+                ?.takeIf { it.startsWith(MinecraftModMetadata.MOD_ID + ".") }
         }
 
     /**

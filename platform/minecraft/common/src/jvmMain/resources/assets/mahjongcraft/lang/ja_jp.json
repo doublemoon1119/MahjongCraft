@@ -377,7 +377,6 @@
   "mahjongcraft.history_screen.filter.error.invalid_player_name": "名前は16文字以内で入力してください",
   "mahjongcraft.history_screen.filter.error.invalid_rank": "無効な順位",
   "mahjongcraft.history_screen.filter.error.invalid_rule": "無効なルール",
-  "mahjongcraft.history_screen.filter.error.missing_date": "日付が必要です",
   "mahjongcraft.history_screen.filter.error.reversed_range": "範囲が逆です",
   "mahjongcraft.history_screen.filter.from": "開始日",
   "mahjongcraft.history_screen.filter.input.example_label": "例：",

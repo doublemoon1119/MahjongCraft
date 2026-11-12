@@ -143,7 +143,7 @@ internal class HistoryRoundStateScreen(
         var tooltip: List<Text>? = null
         context.enableScissor(layout.left, layout.contentTop, layout.cardRight, layout.contentBottom)
         if (state == null) {
-            val message = if (status is HistoryBrowseStatus.Failed) Text.translatable("${MinecraftHistoryScreenKeys.FAILURE_PREFIX}${status.reason.name.lowercase()}") else Text.translatable(MinecraftHistoryScreenKeys.LOADING)
+            val message = if (status is HistoryBrowseStatus.Failed) Text.translatable(status.reason.translationKey) else Text.translatable(MinecraftHistoryScreenKeys.LOADING)
             val lines = textRenderer.wrapLines(message, (layout.contentWidth - 16).coerceAtLeast(1)).take(
                 ((layout.contentBottom - layout.contentTop - 32) / LINE_HEIGHT).coerceAtLeast(1),
             )

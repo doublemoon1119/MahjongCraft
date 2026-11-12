@@ -23,7 +23,7 @@ internal fun stressTestReportMessage(report: StressTestReport): MutableText = pr
     message.append(entry(StressDebugKeys.SCENARIO, Text.literal(report.scenarioId), Formatting.GRAY))
         .append(entry(StressDebugKeys.MODE, modeText(report.mode), Formatting.GRAY))
         .append(entry(StressDebugKeys.PACE, stressText(paceKey(report.pace)), Formatting.GRAY))
-        .append(entry(StressDebugKeys.HISTORY_MODE, stressText(StressDebugKeys.HISTORY_MODE_PREFIX + report.historyMode.commandName), Formatting.GRAY))
+        .append(entry(StressDebugKeys.HISTORY_MODE, stressText(report.historyMode.translationKey), Formatting.GRAY))
         .append(entry(StressDebugKeys.TABLES, Text.literal(report.tables.toString()), Formatting.GREEN))
         .append(entry(StressDebugKeys.COMPLETED, Text.literal(report.completedMatches.toString()), Formatting.GREEN))
         .append(entry(StressDebugKeys.FAILED, Text.literal(report.failedMatches.toString()), if (report.failedMatches > 0) Formatting.RED else Formatting.GREEN))
@@ -38,7 +38,7 @@ internal fun stressTestReportMessage(report: StressTestReport): MutableText = pr
         .append(entry(StressDebugKeys.STEP, Text.literal(formatTriple(report.stepAverageMillis, report.stepP95Millis, report.stepMaxMillis)), Formatting.AQUA))
         .append(entry(StressDebugKeys.STEP_BREAKDOWN, Text.empty(), Formatting.AQUA))
     report.stepStages.forEach { (stage, summary) ->
-        message.append(subEntry(stressText(StressDebugKeys.STEP_STAGE_PREFIX + stage.name.lowercase(Locale.ROOT)), formatAverageMax(summary)))
+        message.append(subEntry(stressText(stage.translationKey), formatAverageMax(summary)))
     }
     message.append(entry(StressDebugKeys.HISTORY_RECORDING, Text.literal(formatAverageMax(report.historyRecording)), Formatting.AQUA))
         .append(entry(StressDebugKeys.AI_LATENCY, Text.literal(formatMillisList(report.aiLatencyAverageMillis, report.aiLatencyP95Millis, report.aiLatencyP99Millis, report.aiLatencyMaxMillis)), Formatting.AQUA))
@@ -61,7 +61,7 @@ internal fun stressTestReportMessage(report: StressTestReport): MutableText = pr
         .append(entry(StressDebugKeys.EVENTS, Text.literal(formatEvents(report)), Formatting.AQUA))
         .append(entry(StressDebugKeys.WRITER_BREAKDOWN, Text.empty(), Formatting.AQUA))
     report.writerStages.forEach { (stage, summary) ->
-        message.append(subEntry(stressText(writerStageKey(stage)), "${formatAverageMax(summary)} ×${summary.count}"))
+        message.append(subEntry(stressText(stage.translationKey), "${formatAverageMax(summary)} ×${summary.count}"))
     }
     message.append(entry(StressDebugKeys.PENDING, Text.literal("${report.pendingEvents} / ${report.pendingPeak} / ${report.pendingCapacity}"), Formatting.AQUA))
         .append(entry(StressDebugKeys.LOST, Text.literal(report.lostSegments.toString()), if (report.lostSegments > 0) Formatting.RED else Formatting.GREEN))
@@ -76,7 +76,7 @@ internal fun stressTestReportMessage(report: StressTestReport): MutableText = pr
         .append(entry(StressDebugKeys.GC, Text.literal("${report.gc.count} / ${report.gc.millis} ms"), Formatting.GRAY))
     report.timeSeriesFile?.let { file -> message.append(entry(StressDebugKeys.TIME_SERIES, Text.literal(file), Formatting.GRAY)) }
     report.stopReason?.let { reason ->
-        message.append(entry(StressDebugKeys.STOP_REASON, stressText(StressDebugKeys.REASON_PREFIX + reason.name.lowercase(Locale.ROOT)), Formatting.YELLOW))
+        message.append(entry(StressDebugKeys.STOP_REASON, stressText(reason.translationKey), Formatting.YELLOW))
     }
     report.sustainedTables?.let { tables ->
         message.append(entry(StressDebugKeys.SUSTAINED, Text.literal(tables.toString()), Formatting.GOLD))
@@ -280,14 +280,6 @@ private fun paceKey(pace: StressTestPace): String = when (pace) {
 }
 
 /**
- * 歷史背景工作環節的翻譯鍵。
- *
- * @param stage 要呈現的寫入環節。
- * @return 對應環節的翻譯鍵。
- */
-private fun writerStageKey(stage: HistoryWriterStage): String = StressDebugKeys.WRITER_STAGE_PREFIX + stage.name.lowercase(Locale.ROOT)
-
-/**
  * 單一欄位：灰色欄位名稱加上指定顏色的值。
  *
  * @param key 欄位名稱的翻譯鍵。
@@ -422,9 +414,9 @@ private val STRESS_FALLBACKS: Map<String, String> = mapOf(
     StressDebugKeys.PACE_REALTIME to "Real time",
     StressDebugKeys.PACE_FAST to "Fast",
     StressDebugKeys.HISTORY_MODE to "History",
-    StressDebugKeys.HISTORY_MODE_PREFIX + "write" to "Record and write to the database",
-    StressDebugKeys.HISTORY_MODE_PREFIX + "encode" to "Record and encode only",
-    StressDebugKeys.HISTORY_MODE_PREFIX + "off" to "Not recorded",
+    StressDebugKeys.HISTORY_MODE_WRITE to "Record and write to the database",
+    StressDebugKeys.HISTORY_MODE_ENCODE to "Record and encode only",
+    StressDebugKeys.HISTORY_MODE_OFF to "Not recorded",
     StressDebugKeys.TABLES to "Running tables",
     StressDebugKeys.COMPLETED to "Completed matches",
     StressDebugKeys.FAILED to "Stalled matches",
@@ -439,10 +431,10 @@ private val STRESS_FALLBACKS: Map<String, String> = mapOf(
     StressDebugKeys.SLOW_TICKS to "Ticks over 50 / 100 / 250 ms",
     StressDebugKeys.STEP to "MahjongCraft advance time per step (avg / p95 / max)",
     StressDebugKeys.STEP_BREAKDOWN to "Step breakdown (avg / max)",
-    StressDebugKeys.STEP_STAGE_PREFIX + "ai_context" to "AI view",
-    StressDebugKeys.STEP_STAGE_PREFIX + "rules_and_state" to "Rules and state",
-    StressDebugKeys.STEP_STAGE_PREFIX + "snapshot_sync" to "Snapshot sync",
-    StressDebugKeys.STEP_STAGE_PREFIX + "ai_decision" to "AI thinking (background)",
+    StressDebugKeys.STEP_STAGE_AI_CONTEXT to "AI view",
+    StressDebugKeys.STEP_STAGE_RULES_AND_STATE to "Rules and state",
+    StressDebugKeys.STEP_STAGE_SNAPSHOT_SYNC to "Snapshot sync",
+    StressDebugKeys.STEP_STAGE_AI_DECISION to "AI thinking (background)",
     StressDebugKeys.HISTORY_RECORDING to "History recording per tick (avg / max)",
     StressDebugKeys.AI_LATENCY to "AI decision delay incl. queueing (avg / p95 / p99 / max)",
     StressDebugKeys.AI_DECISIONS to "AI decisions (total / timed out / previous still running)",
@@ -451,14 +443,14 @@ private val STRESS_FALLBACKS: Map<String, String> = mapOf(
     StressDebugKeys.PEAK_PER_TICK to "Most in one tick (finished steps / history events)",
     StressDebugKeys.EVENTS to "History events produced / processed (per second)",
     StressDebugKeys.WRITER_BREAKDOWN to "History background work (avg / max × count)",
-    StressDebugKeys.WRITER_STAGE_PREFIX + "disk_usage" to "Disk usage check",
-    StressDebugKeys.WRITER_STAGE_PREFIX + "decision_sync" to "Match status sync",
-    StressDebugKeys.WRITER_STAGE_PREFIX + "tombstones" to "Deleted match check",
-    StressDebugKeys.WRITER_STAGE_PREFIX + "encode" to "Encoding",
-    StressDebugKeys.WRITER_STAGE_PREFIX + "batch_write" to "Batch write",
-    StressDebugKeys.WRITER_STAGE_PREFIX + "archive" to "Replay archiving",
-    StressDebugKeys.WRITER_STAGE_PREFIX + "maintenance" to "Periodic maintenance",
-    StressDebugKeys.WRITER_STAGE_PREFIX + "storage_stats" to "Storage statistics",
+    StressDebugKeys.WRITER_STAGE_DISK_USAGE to "Disk usage check",
+    StressDebugKeys.WRITER_STAGE_DECISION_SYNC to "Match status sync",
+    StressDebugKeys.WRITER_STAGE_TOMBSTONES to "Deleted match check",
+    StressDebugKeys.WRITER_STAGE_ENCODE to "Encoding",
+    StressDebugKeys.WRITER_STAGE_BATCH_WRITE to "Batch write",
+    StressDebugKeys.WRITER_STAGE_ARCHIVE to "Replay archiving",
+    StressDebugKeys.WRITER_STAGE_MAINTENANCE to "Periodic maintenance",
+    StressDebugKeys.WRITER_STAGE_STORAGE_STATS to "Storage statistics",
     StressDebugKeys.PENDING to "History backlog (now / peak / capacity)",
     StressDebugKeys.LOST to "Matches with lost history",
     StressDebugKeys.WRITER to "History background work",
@@ -470,11 +462,53 @@ private val STRESS_FALLBACKS: Map<String, String> = mapOf(
     StressDebugKeys.STOP_REASON to "Stop reason",
     StressDebugKeys.SUSTAINED to "Most tables sustained",
     StressDebugKeys.STUTTER_NONE to "Not yet",
-    StressDebugKeys.REASON_PREFIX + "requested" to "Stopped by request",
-    StressDebugKeys.REASON_PREFIX + "falling_behind" to "The server fell behind 20 ticks per second",
-    StressDebugKeys.REASON_PREFIX + "history_backlog" to "History backlog reached the limit",
-    StressDebugKeys.REASON_PREFIX + "history_lost" to "History was lost",
-    StressDebugKeys.REASON_PREFIX + "history_writer_failed" to "History background work failed",
-    StressDebugKeys.REASON_PREFIX + "server_stopping" to "Server stopping",
-    StressDebugKeys.REASON_PREFIX + "run_failed" to "The stress test failed unexpectedly",
+    StressDebugKeys.REASON_REQUESTED to "Stopped by request",
+    StressDebugKeys.REASON_FALLING_BEHIND to "The server fell behind 20 ticks per second",
+    StressDebugKeys.REASON_HISTORY_BACKLOG to "History backlog reached the limit",
+    StressDebugKeys.REASON_HISTORY_LOST to "History was lost",
+    StressDebugKeys.REASON_HISTORY_WRITER_FAILED to "History background work failed",
+    StressDebugKeys.REASON_SERVER_STOPPING to "Server stopping",
+    StressDebugKeys.REASON_RUN_FAILED to "The stress test failed unexpectedly",
 )
+
+/** 壓力測試報告中歷史處理方式的翻譯鍵。 */
+private val StressHistoryMode.translationKey: String
+    get() = when (this) {
+        StressHistoryMode.WRITE -> StressDebugKeys.HISTORY_MODE_WRITE
+        StressHistoryMode.ENCODE -> StressDebugKeys.HISTORY_MODE_ENCODE
+        StressHistoryMode.OFF -> StressDebugKeys.HISTORY_MODE_OFF
+    }
+
+/** 壓力測試報告中單步環節的翻譯鍵。 */
+private val StressStepStage.translationKey: String
+    get() = when (this) {
+        StressStepStage.AI_CONTEXT -> StressDebugKeys.STEP_STAGE_AI_CONTEXT
+        StressStepStage.RULES_AND_STATE -> StressDebugKeys.STEP_STAGE_RULES_AND_STATE
+        StressStepStage.SNAPSHOT_SYNC -> StressDebugKeys.STEP_STAGE_SNAPSHOT_SYNC
+        StressStepStage.AI_DECISION -> StressDebugKeys.STEP_STAGE_AI_DECISION
+    }
+
+/** 壓力測試報告中歷史背景工作環節的翻譯鍵。 */
+private val HistoryWriterStage.translationKey: String
+    get() = when (this) {
+        HistoryWriterStage.DISK_USAGE -> StressDebugKeys.WRITER_STAGE_DISK_USAGE
+        HistoryWriterStage.DECISION_SYNC -> StressDebugKeys.WRITER_STAGE_DECISION_SYNC
+        HistoryWriterStage.TOMBSTONES -> StressDebugKeys.WRITER_STAGE_TOMBSTONES
+        HistoryWriterStage.ENCODE -> StressDebugKeys.WRITER_STAGE_ENCODE
+        HistoryWriterStage.BATCH_WRITE -> StressDebugKeys.WRITER_STAGE_BATCH_WRITE
+        HistoryWriterStage.ARCHIVE -> StressDebugKeys.WRITER_STAGE_ARCHIVE
+        HistoryWriterStage.MAINTENANCE -> StressDebugKeys.WRITER_STAGE_MAINTENANCE
+        HistoryWriterStage.STORAGE_STATS -> StressDebugKeys.WRITER_STAGE_STORAGE_STATS
+    }
+
+/** 壓力測試報告中停止原因的翻譯鍵。 */
+private val StressStopReason.translationKey: String
+    get() = when (this) {
+        StressStopReason.REQUESTED -> StressDebugKeys.REASON_REQUESTED
+        StressStopReason.FALLING_BEHIND -> StressDebugKeys.REASON_FALLING_BEHIND
+        StressStopReason.HISTORY_BACKLOG -> StressDebugKeys.REASON_HISTORY_BACKLOG
+        StressStopReason.HISTORY_LOST -> StressDebugKeys.REASON_HISTORY_LOST
+        StressStopReason.HISTORY_WRITER_FAILED -> StressDebugKeys.REASON_HISTORY_WRITER_FAILED
+        StressStopReason.SERVER_STOPPING -> StressDebugKeys.REASON_SERVER_STOPPING
+        StressStopReason.RUN_FAILED -> StressDebugKeys.REASON_RUN_FAILED
+    }

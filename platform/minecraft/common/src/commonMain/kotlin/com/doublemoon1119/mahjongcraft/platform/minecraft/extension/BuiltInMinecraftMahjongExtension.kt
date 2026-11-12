@@ -9,8 +9,6 @@ import com.doublemoon1119.mahjongcraft.metadata.MahjongCraftMetadata
 import com.doublemoon1119.mahjongcraft.platform.minecraft.action.BuiltInGameActionIds
 import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionVocabulary
 import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionVocabularyDefaultDefinition
-import com.doublemoon1119.mahjongcraft.platform.minecraft.action.HUD_ACTION_PREFIX
-import com.doublemoon1119.mahjongcraft.platform.minecraft.action.MinecraftKanActionTokenKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.ai.AiStrategyDisplayNameDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.character.AiCharacterFace
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.AiCharacterRegistrar
@@ -32,7 +30,6 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.automatic.BuiltInMinec
 import com.doublemoon1119.mahjongcraft.platform.minecraft.character.BuiltInAiCharacters
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftClientConfigScreenKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.DecisionStatusDisplayNameDefaultDefinition
-import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.HUD_STATUS_PREFIX
 import com.doublemoon1119.mahjongcraft.platform.minecraft.player.PlayerPortraitSource
 import com.doublemoon1119.mahjongcraft.platform.minecraft.player.PlayerPortraitSourceDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.player.PublicPlayerIndicatorDisplay
@@ -46,6 +43,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.MatchSettle
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.PresentationValue
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.WinSettlementPresentationFieldProviderDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.WinSettlementTextKeys
+import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftHudKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftMessageKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.BuiltInMinecraftTileAppearances
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileEmojiDefinition
@@ -318,62 +316,62 @@ object BuiltInMinecraftMahjongExtension : MinecraftMahjongExtension {
         registry.register(
             definition = GameActionVocabularyDefaultDefinition(
                 actionId = BuiltInGameActionIds.CHI,
-                vocabulary = GameActionVocabulary(HUD_ACTION_PREFIX + "chi", MinecraftMessageKeys.GAME_ACTION_CHI, order = 0),
+                vocabulary = GameActionVocabulary(MinecraftHudKeys.ACTION_CHI, MinecraftMessageKeys.GAME_ACTION_CHI, order = 0),
             ),
         )
         registry.register(
             definition = GameActionVocabularyDefaultDefinition(
                 actionId = BuiltInGameActionIds.PON,
-                vocabulary = GameActionVocabulary(HUD_ACTION_PREFIX + "pon", MinecraftMessageKeys.GAME_ACTION_PON, order = 1),
+                vocabulary = GameActionVocabulary(MinecraftHudKeys.ACTION_PON, MinecraftMessageKeys.GAME_ACTION_PON, order = 1),
             ),
         )
         registry.register(
             definition = GameActionVocabularyDefaultDefinition(
                 actionId = BuiltInGameActionIds.KAN_OPEN,
-                vocabulary = GameActionVocabulary(HUD_ACTION_PREFIX + MinecraftKanActionTokenKeys.OPEN, MinecraftMessageKeys.GAME_ACTION_KAN_OPEN, order = 2),
+                vocabulary = GameActionVocabulary(MinecraftHudKeys.ACTION_KAN_OPEN, MinecraftMessageKeys.GAME_ACTION_KAN_OPEN, order = 2),
             ),
         )
         registry.register(
             definition = GameActionVocabularyDefaultDefinition(
                 actionId = BuiltInGameActionIds.KAN_CLOSED,
-                vocabulary = GameActionVocabulary(HUD_ACTION_PREFIX + MinecraftKanActionTokenKeys.CLOSED, MinecraftMessageKeys.GAME_ACTION_KAN_CLOSED, order = 2),
+                vocabulary = GameActionVocabulary(MinecraftHudKeys.ACTION_KAN_CLOSED, MinecraftMessageKeys.GAME_ACTION_KAN_CLOSED, order = 2),
             ),
         )
         registry.register(
             definition = GameActionVocabularyDefaultDefinition(
                 actionId = BuiltInGameActionIds.KAN_ADDED,
-                vocabulary = GameActionVocabulary(HUD_ACTION_PREFIX + MinecraftKanActionTokenKeys.ADDED, MinecraftMessageKeys.GAME_ACTION_KAN_ADDED, order = 2),
+                vocabulary = GameActionVocabulary(MinecraftHudKeys.ACTION_KAN_ADDED, MinecraftMessageKeys.GAME_ACTION_KAN_ADDED, order = 2),
             ),
         )
         registry.register(
             definition = GameActionVocabularyDefaultDefinition(
                 actionId = BuiltInGameActionIds.RON,
-                vocabulary = GameActionVocabulary(HUD_ACTION_PREFIX + "ron", MinecraftMessageKeys.GAME_ACTION_RON, order = 3),
+                vocabulary = GameActionVocabulary(MinecraftHudKeys.ACTION_RON, MinecraftMessageKeys.GAME_ACTION_RON, order = 3),
             ),
         )
         registry.register(
             definition = GameActionVocabularyDefaultDefinition(
                 actionId = BuiltInGameActionIds.TSUMO,
-                vocabulary = GameActionVocabulary(HUD_ACTION_PREFIX + "tsumo", MinecraftMessageKeys.GAME_ACTION_TSUMO, order = 4),
+                vocabulary = GameActionVocabulary(MinecraftHudKeys.ACTION_TSUMO, MinecraftMessageKeys.GAME_ACTION_TSUMO, order = 4),
             ),
         )
         registry.register(
             definition = GameActionVocabularyDefaultDefinition(
                 actionId = BuiltInGameActionIds.PASS,
-                vocabulary = GameActionVocabulary(HUD_ACTION_PREFIX + "pass", MinecraftMessageKeys.GAME_ACTION_PASS),
+                vocabulary = GameActionVocabulary(MinecraftHudKeys.ACTION_PASS, MinecraftMessageKeys.GAME_ACTION_PASS),
             ),
         )
         registry.register(
             definition = GameActionVocabularyDefaultDefinition(
                 actionId = BuiltInGameActionIds.DISCARD,
-                vocabulary = GameActionVocabulary(HUD_ACTION_PREFIX + "discard", MinecraftMessageKeys.GAME_ACTION_DISCARD),
+                vocabulary = GameActionVocabulary(MinecraftHudKeys.ACTION_DISCARD, MinecraftMessageKeys.GAME_ACTION_DISCARD),
             ),
         )
     }
 
     /** 中立預設：和牌資格沒有特殊限制。 */
     override fun registerDecisionStatusDisplayNames(registry: DecisionStatusDisplayNameRegistrar) {
-        registry.register(DecisionStatusDisplayNameDefaultDefinition(WaitingTileAvailabilityIds.WIN_AVAILABLE, HUD_STATUS_PREFIX + "win_availability.available"))
+        registry.register(DecisionStatusDisplayNameDefaultDefinition(WaitingTileAvailabilityIds.WIN_AVAILABLE, MinecraftHudKeys.WIN_AVAILABILITY_AVAILABLE))
     }
 }
 

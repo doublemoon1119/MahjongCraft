@@ -377,7 +377,6 @@
   "mahjongcraft.history_screen.filter.error.invalid_player_name": "名称最多 16 个字符",
   "mahjongcraft.history_screen.filter.error.invalid_rank": "名次无效",
   "mahjongcraft.history_screen.filter.error.invalid_rule": "规则无效",
-  "mahjongcraft.history_screen.filter.error.missing_date": "需要日期",
   "mahjongcraft.history_screen.filter.error.reversed_range": "范围顺序相反",
   "mahjongcraft.history_screen.filter.from": "开始日期",
   "mahjongcraft.history_screen.filter.input.example_label": "示例：",

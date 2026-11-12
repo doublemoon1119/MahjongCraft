@@ -377,7 +377,6 @@
   "mahjongcraft.history_screen.filter.error.invalid_player_name": "Enter at most 16 name characters",
   "mahjongcraft.history_screen.filter.error.invalid_rank": "Invalid rank",
   "mahjongcraft.history_screen.filter.error.invalid_rule": "Invalid rule",
-  "mahjongcraft.history_screen.filter.error.missing_date": "Date is required",
   "mahjongcraft.history_screen.filter.error.reversed_range": "Range is reversed",
   "mahjongcraft.history_screen.filter.from": "From Date",
   "mahjongcraft.history_screen.filter.input.example_label": "Example:",
