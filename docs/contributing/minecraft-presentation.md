@@ -75,6 +75,10 @@ rules come from collisions that only showed up in game, so check them even when 
 - Write each constant as the full key string, such as `"mahjongcraft.riichi.yaku.pinfu"`, so a key copied from a
   language file finds its definition. Do not assemble keys at runtime from names, numbers or IDs; list the keys
   in an explicit table instead.
+- Keep key constants in key objects rather than writing key strings where they are used.
+- Every key in a language file must be referenced in full by production code or resources;
+  `verifyMinecraftLangKeysUsed` checks this as part of `check`. Names Minecraft derives from registry IDs, such
+  as `item.<namespace>.<path>`, only need the registry path. Remove a key when nothing uses it.
 - Third-party extensions use their own resource namespace, as the example mod does with
   `mahjongcraft_example`.
 - Map every registered ID to an explicit translation key; see [Correctness](correctness.md) for why keys are

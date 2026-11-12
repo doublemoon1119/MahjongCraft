@@ -2,6 +2,7 @@ package com.doublemoon1119.mahjongcraft.platform.minecraft.text
 
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.RuleDecisionResolverRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.automatic.AutomaticControlDisplayRegistryImpl
+import com.doublemoon1119.mahjongcraft.platform.minecraft.automatic.BuiltInAutomaticControlTranslationKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftClientConfigScreenKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftConfigCommandKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.StressDebugKeys
@@ -13,6 +14,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.room.GameConfigEditorS
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.GameConfigPresentationRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.GameConfigPresentationRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.MinecraftRoomScreenKeys
+import com.doublemoon1119.mahjongcraft.platform.minecraft.room.SharedGameFlowConfigTranslationKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.riichi.RiichiShowcaseTranslationKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.riichi.RiichiTranslationKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.riichi.RiichiYakuTranslationKeys
@@ -243,6 +245,8 @@ class MinecraftLanguageFilesTest {
         MinecraftCycleButtonKeys::class,
         MinecraftHudKeys::class,
         StressDebugKeys::class,
+        BuiltInAutomaticControlTranslationKeys::class,
+        SharedGameFlowConfigTranslationKeys::class,
     )
 
     /**

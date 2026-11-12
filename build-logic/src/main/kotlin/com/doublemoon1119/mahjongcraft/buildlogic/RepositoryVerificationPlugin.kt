@@ -72,6 +72,15 @@ class RepositoryVerificationPlugin : Plugin<Project> {
             this.rootDirectory.set(rootDirectory)
             this.langDirectory.set(langDirectory)
         }
+        val verifyMinecraftLangKeysUsed = project.tasks.register(
+            "verifyMinecraftLangKeysUsed",
+            VerifyMinecraftLangKeysUsedTask::class.java,
+        ) {
+            group = "verification"
+            description = "Verifies every Minecraft language key is referenced in full by production sources or resources."
+            this.rootDirectory.set(rootDirectory)
+            langDirectories.set(MINECRAFT_LANG_DIRECTORIES.map { rootDirectory.dir(it).asFile })
+        }
         project.tasks.named("check").configure {
             dependsOn(
                 verifyNoDocsTempReferences,
@@ -79,6 +88,7 @@ class RepositoryVerificationPlugin : Plugin<Project> {
                 verifyProjectVersionPolicy,
                 verifyModuleReadmes,
                 verifyMinecraftLangFileKeyOrder,
+                verifyMinecraftLangKeysUsed,
             )
         }
     }
@@ -86,6 +96,12 @@ class RepositoryVerificationPlugin : Plugin<Project> {
 
 /** Minecraft 平台語系檔目錄，相對於 root project。 */
 private const val MINECRAFT_LANG_DIRECTORY: String = "platform/minecraft/common/src/jvmMain/resources/assets/mahjongcraft/lang"
+
+/** 檢查 key 是否有使用的語系檔目錄：MahjongCraft 本體與範例擴充，相對於 root project。 */
+private val MINECRAFT_LANG_DIRECTORIES: List<String> = listOf(
+    MINECRAFT_LANG_DIRECTORY,
+    "example/platform/minecraft/common/src/jvmMain/resources/assets/mahjongcraft_example/lang",
+)
 
 /** 正式程式碼不得使用 JSON 型別的 project；序列化格式只屬於存檔、網路 DTO 與平台轉接層。 */
 private val JSON_FREE_PROJECT_PATHS: Set<String> = setOf(

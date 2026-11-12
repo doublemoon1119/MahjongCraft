@@ -71,26 +71,11 @@ private fun MutableText.appendPresentationVisibilityChanges(
     from: MahjongPresentationVisibilityConfig,
     to: MahjongPresentationVisibilityConfig,
 ) {
-    val entries = listOf(
-        "round_info" to (from.roundInfoEnabled to to.roundInfoEnabled),
-        "player_info" to (from.playerInfoEnabled to to.playerInfoEnabled),
-        "lobby_info" to (from.lobbyInfoEnabled to to.lobbyInfoEnabled),
-        "dice_result" to (from.diceResultEnabled to to.diceResultEnabled),
-        "compact_prompt" to (from.compactPromptEnabled to to.compactPromptEnabled),
-        "discard_analysis" to (from.discardAnalysisEnabled to to.discardAnalysisEnabled),
-        "win_settlement" to (from.winSettlementEnabled to to.winSettlementEnabled),
-        "draw_settlement" to (from.drawSettlementEnabled to to.drawSettlementEnabled),
-        "match_settlement" to (from.matchSettlementEnabled to to.matchSettlementEnabled),
-        "matching_tile_highlight" to (from.matchingTileHighlightEnabled to to.matchingTileHighlightEnabled),
-        "discard_popup" to (from.discardPopupEnabled to to.discardPopupEnabled),
-        "meld_popup" to (from.meldPopupEnabled to to.meldPopupEnabled),
-        "automatic_control_status" to (from.automaticControlStatusEnabled to to.automaticControlStatusEnabled),
-    )
-    entries.filter { (_, values) -> values.first != values.second }.forEach { (id, values) ->
+    MahjongPresentationToggle.entries.filter { it.read(from) != it.read(to) }.forEach { toggle ->
         appendValueChange(
-            MinecraftClientConfigScreenKeys.presentationName(id),
-            booleanText(values.first),
-            booleanText(values.second),
+            toggle.nameKey,
+            booleanText(toggle.read(from)),
+            booleanText(toggle.read(to)),
         )
     }
 }

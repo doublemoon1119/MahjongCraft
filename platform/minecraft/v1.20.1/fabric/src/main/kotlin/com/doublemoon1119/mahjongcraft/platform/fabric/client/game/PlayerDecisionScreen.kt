@@ -3,6 +3,7 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.client.game
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.PlayerDecisionPromptDto
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.PlayerDecisionSelectionKindDto
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.RuleDecisionPromptDto
+import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftHudKeys
 import net.minecraft.client.gui.DrawContext
 import net.minecraft.client.gui.screen.Screen
 import net.minecraft.client.gui.tooltip.TooltipPositioner
@@ -24,7 +25,7 @@ internal class PlayerDecisionScreen(
     private val prompt: PlayerDecisionPromptDto,
     private val isReaction: Boolean,
     private val controller: PlayerDecisionHudController,
-) : Screen(Text.translatable("mahjongcraft.hud.action_title")) {
+) : Screen(Text.translatable(MinecraftHudKeys.ACTION_TITLE)) {
     /** 畫面所呈現 prompt 的穩定 key，供生命週期協調器關閉過期畫面。 */
     val decisionKey: String
         get() = prompt.decisionKey

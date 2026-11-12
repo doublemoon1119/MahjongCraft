@@ -3,6 +3,7 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.client.game
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.PlayerDecisionActionDto
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.PlayerDecisionPromptDto
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.RuleDecisionPromptDto
+import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftHudKeys
 import net.minecraft.text.Text
 
 /** 點擊一張操作卡後要執行的事。 */
@@ -83,7 +84,7 @@ internal fun decisionEntriesFrom(texts: DecisionTextResolver, prompt: PlayerDeci
     when (val ruleDecision = prompt.ruleDecision) {
         RuleDecisionPromptDto.Confirmation -> add(
             DecisionEntry(
-                label = Text.translatable("mahjongcraft.hud.action.confirm"),
+                label = Text.translatable(MinecraftHudKeys.ACTION_CONFIRM),
                 previewTileAssetKeys = emptyList(),
                 claimedTileIndex = null,
                 intent = DecisionEntryIntent.ConfirmRuleDecision,
@@ -102,7 +103,7 @@ internal fun decisionEntriesFrom(texts: DecisionTextResolver, prompt: PlayerDeci
         }
         is RuleDecisionPromptDto.TileSelection -> add(
             DecisionEntry(
-                label = Text.translatable("mahjongcraft.hud.action.select_tiles", ruleDecision.maxCount),
+                label = Text.translatable(MinecraftHudKeys.ACTION_SELECT_TILES, ruleDecision.maxCount),
                 previewTileAssetKeys = ruleDecision.eligibleTileAssetKeys,
                 claimedTileIndex = null,
                 intent = DecisionEntryIntent.BeginRuleDecisionTileSelection,

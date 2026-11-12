@@ -176,6 +176,7 @@ class RepositoryTasksConfigurationCacheTest {
         )
             .forEach { root.resolve(it).resolve("README.md").writeText("# Test\n") }
         root.resolve(LANG_DIRECTORY).resolve("en_us.json").writeText("{\n  \"a.key\": \"A\",\n  \"b.key\": \"B\"\n}\n")
+        root.resolve(KEY_SOURCE).apply { parentFile.mkdirs() }.writeText("object Keys { val A = \"a.key\"; val B = \"b.key\" }\n")
     }
 
     /**
@@ -213,6 +214,9 @@ class RepositoryTasksConfigurationCacheTest {
         /** fixture 中的 Minecraft 語系檔目錄。 */
         const val LANG_DIRECTORY = "platform/minecraft/common/src/jvmMain/resources/assets/mahjongcraft/lang"
 
+        /** 引用 fixture 語系 key 的正式原始碼，讓語系 key 使用檢查通過。 */
+        const val KEY_SOURCE = "platform/minecraft/common/src/commonMain/kotlin/Keys.kt"
+
         /** `check` 串接的所有驗證任務。 */
         val VERIFICATION_TASKS = listOf(
             ":verifyNoDocsTempReferences",
@@ -220,6 +224,7 @@ class RepositoryTasksConfigurationCacheTest {
             ":verifyProjectVersionPolicy",
             ":verifyModuleReadmes",
             ":verifyMinecraftLangFileKeyOrder",
+            ":verifyMinecraftLangKeysUsed",
         )
     }
 }

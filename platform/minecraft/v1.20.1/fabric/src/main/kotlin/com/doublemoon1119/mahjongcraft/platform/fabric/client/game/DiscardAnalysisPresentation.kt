@@ -7,6 +7,7 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.model.TileDto
 import com.doublemoon1119.mahjongcraft.logic.judgment.WaitingTileAvailabilityIds
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.config.hudCoordinate
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.PlayerDecisionPromptDto
+import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftHudKeys
 import net.minecraft.text.Text
 
 /**
@@ -147,7 +148,7 @@ private fun readinessAnalysisContent(
         cells = waitingTiles.map { waiting ->
             DiscardAnalysisCell(
                 tile = waiting.tile,
-                countText = Text.translatable("mahjongcraft.hud.remaining_tiles", waiting.remainingCount),
+                countText = Text.translatable(MinecraftHudKeys.REMAINING_TILES, waiting.remainingCount),
                 countColor = when (waiting.remainingCount) {
                     0 -> 0xAA4444
                     1 -> 0xFFD54F

@@ -22,6 +22,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.PlayerDecisio
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.PlayerDecisionSelectionDto
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.PlayerDecisionSelectionKindDto
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.PlayerDecisionSubmissionResultDto
+import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftHudKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftMessageKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.toAssetKey
@@ -498,7 +499,7 @@ class PlayerDecisionHudController(
                 renderCompactLines(
                     context,
                     layout,
-                    Text.translatable("mahjongcraft.hud.tile_selection_in_progress"),
+                    Text.translatable(MinecraftHudKeys.TILE_SELECTION_IN_PROGRESS),
                     tileSelectionDetailText(content.progress),
                 )
                 descriptionLines.forEachIndexed { index, line ->
@@ -508,8 +509,8 @@ class PlayerDecisionHudController(
             CompactDecisionHudContent.ReopenReminder -> renderCompactLines(
                 context,
                 layout,
-                Text.translatable("mahjongcraft.hud.waiting_for_action"),
-                Text.translatable("mahjongcraft.hud.reopen_action"),
+                Text.translatable(MinecraftHudKeys.WAITING_FOR_ACTION),
+                Text.translatable(MinecraftHudKeys.REOPEN_ACTION),
             )
         }
     }
@@ -536,11 +537,11 @@ class PlayerDecisionHudController(
         val headingWidths = when (content) {
             CompactDecisionHudContent.TimerOnly -> emptyList()
             CompactDecisionHudContent.ReopenReminder -> listOf(
-                renderer.getWidth(Text.translatable("mahjongcraft.hud.waiting_for_action")),
-                renderer.getWidth(Text.translatable("mahjongcraft.hud.reopen_action")),
+                renderer.getWidth(Text.translatable(MinecraftHudKeys.WAITING_FOR_ACTION)),
+                renderer.getWidth(Text.translatable(MinecraftHudKeys.REOPEN_ACTION)),
             )
             is CompactDecisionHudContent.TileSelection -> listOf(
-                renderer.getWidth(Text.translatable("mahjongcraft.hud.tile_selection_in_progress")),
+                renderer.getWidth(Text.translatable(MinecraftHudKeys.TILE_SELECTION_IN_PROGRESS)),
                 renderer.getWidth(tileSelectionDetailText(content.progress)),
             )
         }

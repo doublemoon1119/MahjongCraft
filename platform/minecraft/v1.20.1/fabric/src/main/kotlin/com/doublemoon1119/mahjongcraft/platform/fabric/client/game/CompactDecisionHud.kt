@@ -2,6 +2,7 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.client.game
 
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.config.hudCoordinate
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.PlayerDecisionPromptDto
+import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftHudKeys
 import net.minecraft.text.Text
 
 /** Prompt 是否包含需要玩家明確選擇的內容。 */
@@ -76,13 +77,13 @@ internal fun compactDecisionHudContent(
  */
 internal fun tileSelectionDetailText(progress: DecisionTileSelectionState.Progress): Text = if (progress.selectedCount < progress.validRange.first) {
     Text.translatable(
-        "mahjongcraft.hud.tile_selection_need_more",
+        MinecraftHudKeys.TILE_SELECTION_NEED_MORE,
         progress.validRange.first - progress.selectedCount,
         progress.selectedCount,
         progress.validRange.last,
     )
 } else {
-    Text.translatable("mahjongcraft.hud.tile_selection_ready", progress.selectedCount, progress.validRange.last)
+    Text.translatable(MinecraftHudKeys.TILE_SELECTION_READY, progress.selectedCount, progress.validRange.last)
 }
 
 /**

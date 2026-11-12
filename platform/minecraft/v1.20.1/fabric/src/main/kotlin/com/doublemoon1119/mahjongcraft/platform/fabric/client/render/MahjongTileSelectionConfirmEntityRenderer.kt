@@ -2,6 +2,7 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.client.render
 
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.game.PlayerDecisionHudController
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongTileSelectionConfirmEntity
+import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftHudKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileTableLayout
 import net.minecraft.client.MinecraftClient
 import net.minecraft.client.font.TextRenderer
@@ -71,7 +72,7 @@ class MahjongTileSelectionConfirmEntityRenderer(
         super.render(entity, yaw, tickDelta, matrices, vertexConsumers, light)
 
         val hovered = isHovered(entity)
-        val baseText = Text.translatable("mahjongcraft.hud.tile_selection_confirm")
+        val baseText = Text.translatable(MinecraftHudKeys.TILE_SELECTION_CONFIRM)
         val measurementLabel = markedLabel(baseText)
         val neededWidthBlocks = (((textRenderer.getWidth(measurementLabel) + PANEL_PADDING * 2) * TEXT_SCALE).toDouble()).coerceAtMost(MAX_PANEL_WIDTH_BLOCKS)
         val myOffset = MahjongTileTableLayout.tileSelectionConfirmSegmentAlongOffset(entity.segmentIndex)

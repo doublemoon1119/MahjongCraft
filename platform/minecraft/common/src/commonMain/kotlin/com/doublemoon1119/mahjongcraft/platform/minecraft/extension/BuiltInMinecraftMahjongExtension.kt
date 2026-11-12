@@ -26,6 +26,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.TileL
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.WinSettlementPresentationTemplateRegistrar
 import com.doublemoon1119.mahjongcraft.platform.minecraft.automatic.AutomaticControlDisplay
 import com.doublemoon1119.mahjongcraft.platform.minecraft.automatic.AutomaticControlDisplayDefinition
+import com.doublemoon1119.mahjongcraft.platform.minecraft.automatic.BuiltInAutomaticControlTranslationKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.automatic.BuiltInMinecraftAutomaticControlIds
 import com.doublemoon1119.mahjongcraft.platform.minecraft.character.BuiltInAiCharacters
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftClientConfigScreenKeys
@@ -120,9 +121,36 @@ object BuiltInMinecraftMahjongExtension : MinecraftMahjongExtension {
                 ),
             ),
         )
-        registry.register(AutomaticControlDisplayDefinition(BuiltInAutomaticControlIds.AUTO_WIN, roundControlDisplay("auto_win", displayOrder = 10)))
-        registry.register(AutomaticControlDisplayDefinition(BuiltInAutomaticControlIds.DECLINE_CALLS, roundControlDisplay("decline_calls", displayOrder = 20)))
-        registry.register(AutomaticControlDisplayDefinition(BuiltInAutomaticControlIds.AUTO_TSUMOGIRI, roundControlDisplay("auto_tsumogiri", displayOrder = 30)))
+        registry.register(
+            definition = AutomaticControlDisplayDefinition(
+                controlId = BuiltInAutomaticControlIds.AUTO_WIN,
+                display = AutomaticControlDisplay(
+                    labelTranslationKey = BuiltInAutomaticControlTranslationKeys.AUTO_WIN,
+                    descriptionTranslationKey = BuiltInAutomaticControlTranslationKeys.AUTO_WIN_DESCRIPTION,
+                    displayOrder = 10,
+                ),
+            ),
+        )
+        registry.register(
+            definition = AutomaticControlDisplayDefinition(
+                controlId = BuiltInAutomaticControlIds.DECLINE_CALLS,
+                display = AutomaticControlDisplay(
+                    labelTranslationKey = BuiltInAutomaticControlTranslationKeys.DECLINE_CALLS,
+                    descriptionTranslationKey = BuiltInAutomaticControlTranslationKeys.DECLINE_CALLS_DESCRIPTION,
+                    displayOrder = 20,
+                ),
+            ),
+        )
+        registry.register(
+            definition = AutomaticControlDisplayDefinition(
+                controlId = BuiltInAutomaticControlIds.AUTO_TSUMOGIRI,
+                display = AutomaticControlDisplay(
+                    labelTranslationKey = BuiltInAutomaticControlTranslationKeys.AUTO_TSUMOGIRI,
+                    descriptionTranslationKey = BuiltInAutomaticControlTranslationKeys.AUTO_TSUMOGIRI_DESCRIPTION,
+                    displayOrder = 30,
+                ),
+            ),
+        )
     }
 
     /**
@@ -373,18 +401,6 @@ object BuiltInMinecraftMahjongExtension : MinecraftMahjongExtension {
     override fun registerDecisionStatusDisplayNames(registry: DecisionStatusDisplayNameRegistrar) {
         registry.register(DecisionStatusDisplayNameDefaultDefinition(WaitingTileAvailabilityIds.WIN_AVAILABLE, MinecraftHudKeys.WIN_AVAILABILITY_AVAILABLE))
     }
-}
-
-/**
- * 只在本局有效的內建自動操作的顯示設定；名稱與說明的 translation key 由 [translationId] 組成。
- *
- * @param translationId 名稱與說明翻譯鍵使用的識別片段。
- * @param displayOrder 自動操作在清單中的排序值。
- * @return 對應本局自動操作的顯示設定。
- */
-private fun roundControlDisplay(translationId: String, displayOrder: Int): AutomaticControlDisplay {
-    val prefix = "mahjongcraft.automatic_control.$translationId"
-    return AutomaticControlDisplay(prefix, "$prefix.description", displayOrder)
 }
 
 /** 包牌付款原因的文字顏色；與分數增減的紅綠色區隔。 */

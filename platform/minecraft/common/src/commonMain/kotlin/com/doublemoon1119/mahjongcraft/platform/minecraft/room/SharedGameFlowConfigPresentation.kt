@@ -19,9 +19,6 @@ internal object SharedGameFlowConfigPresentation {
     /** 共用流程設定分類。 */
     const val FLOW = "mahjongcraft:flow"
 
-    /** 共用流程設定分類名稱。 */
-    private const val FLOW_NAME_KEY = "mahjongcraft.room.config.category.flow"
-
     /** 玩家規則選擇時間的可設定範圍，供欄位與既有設定檢查共用。 */
     val ruleDecisionTimeRange: ClosedRange<Duration> = 1.seconds..3600.seconds
 
@@ -50,7 +47,7 @@ internal object SharedGameFlowConfigPresentation {
             "Config presentation ${definition.ruleModuleId} must not declare reserved flow field $conflictingFieldId"
         }
         return definition.copy(
-            categories = definition.categories + GameConfigCategoryDefinition(FLOW, FLOW_NAME_KEY),
+            categories = definition.categories + GameConfigCategoryDefinition(FLOW, SharedGameFlowConfigTranslationKeys.CATEGORY_FLOW),
             fields = definition.fields + fields + listOfNotNull(ruleDecisionTime),
         )
     }
@@ -67,8 +64,8 @@ internal object SharedGameFlowConfigPresentation {
     private fun baseSecondsField(): GameConfigFieldDefinition = intField(
         id = "mahjongcraft:base_seconds",
         category = FLOW,
-        nameKey = "mahjongcraft.room.config.field.base_seconds",
-        descriptionKey = "mahjongcraft.room.config.field.base_seconds.description",
+        nameKey = SharedGameFlowConfigTranslationKeys.BASE_SECONDS,
+        descriptionKey = SharedGameFlowConfigTranslationKeys.BASE_SECONDS_DESCRIPTION,
         minimum = 0,
         maximum = 3600,
         read = { it.flowConfig.timeControl.base.inWholeSeconds.toInt() },
@@ -79,8 +76,8 @@ internal object SharedGameFlowConfigPresentation {
     private fun reserveSecondsField(): GameConfigFieldDefinition = intField(
         id = "mahjongcraft:reserve_seconds",
         category = FLOW,
-        nameKey = "mahjongcraft.room.config.field.reserve_seconds",
-        descriptionKey = "mahjongcraft.room.config.field.reserve_seconds.description",
+        nameKey = SharedGameFlowConfigTranslationKeys.RESERVE_SECONDS,
+        descriptionKey = SharedGameFlowConfigTranslationKeys.RESERVE_SECONDS_DESCRIPTION,
         minimum = 0,
         maximum = 3600,
         read = { it.flowConfig.timeControl.reserve.inWholeSeconds.toInt() },
@@ -96,8 +93,8 @@ internal object SharedGameFlowConfigPresentation {
     private fun ruleDecisionBaseSecondsField(config: RuleDecisionConfig): GameConfigFieldDefinition = intField(
         id = RULE_DECISION_BASE_SECONDS_ID,
         category = FLOW,
-        nameKey = "mahjongcraft.room.config.field.rule_decision_base_seconds",
-        descriptionKey = "mahjongcraft.room.config.field.rule_decision_base_seconds.description",
+        nameKey = SharedGameFlowConfigTranslationKeys.RULE_DECISION_BASE_SECONDS,
+        descriptionKey = SharedGameFlowConfigTranslationKeys.RULE_DECISION_BASE_SECONDS_DESCRIPTION,
         minimum = ruleDecisionTimeRange.start.inWholeSeconds.toInt(),
         maximum = ruleDecisionTimeRange.endInclusive.inWholeSeconds.toInt(),
         read = { (it.flowConfig.ruleDecision?.base ?: config.base).inWholeSeconds.toInt() },
@@ -117,11 +114,11 @@ internal object SharedGameFlowConfigPresentation {
     private fun spectatingField(): GameConfigFieldDefinition = choiceField(
         id = "mahjongcraft:spectating_policy",
         category = FLOW,
-        nameKey = "mahjongcraft.room.config.field.spectating_policy",
-        descriptionKey = "mahjongcraft.room.config.field.spectating_policy.description",
+        nameKey = SharedGameFlowConfigTranslationKeys.SPECTATING_POLICY,
+        descriptionKey = SharedGameFlowConfigTranslationKeys.SPECTATING_POLICY_DESCRIPTION,
         options = listOf(
-            BuiltInGameConfigOption("mahjongcraft:enabled", "mahjongcraft.room.config.option.enabled", SpectatingPolicy.ENABLED),
-            BuiltInGameConfigOption("mahjongcraft:disabled", "mahjongcraft.room.config.option.disabled", SpectatingPolicy.DISABLED),
+            BuiltInGameConfigOption("mahjongcraft:enabled", SharedGameFlowConfigTranslationKeys.OPTION_ENABLED, SpectatingPolicy.ENABLED),
+            BuiltInGameConfigOption("mahjongcraft:disabled", SharedGameFlowConfigTranslationKeys.OPTION_DISABLED, SpectatingPolicy.DISABLED),
         ),
         read = { it.flowConfig.spectatingPolicy },
         update = { config, policy -> config.copy(flowConfig = config.flowConfig.copy(spectatingPolicy = policy)) },
@@ -131,11 +128,11 @@ internal object SharedGameFlowConfigPresentation {
     private fun handVisibilityField(): GameConfigFieldDefinition = choiceField(
         id = "mahjongcraft:spectator_hand_visibility",
         category = FLOW,
-        nameKey = "mahjongcraft.room.config.field.spectator_hand_visibility",
-        descriptionKey = "mahjongcraft.room.config.field.spectator_hand_visibility.description",
+        nameKey = SharedGameFlowConfigTranslationKeys.SPECTATOR_HAND_VISIBILITY,
+        descriptionKey = SharedGameFlowConfigTranslationKeys.SPECTATOR_HAND_VISIBILITY_DESCRIPTION,
         options = listOf(
-            BuiltInGameConfigOption("mahjongcraft:revealed", "mahjongcraft.room.config.option.revealed", SpectatorHandVisibility.REVEALED),
-            BuiltInGameConfigOption("mahjongcraft:hidden", "mahjongcraft.room.config.option.hidden", SpectatorHandVisibility.HIDDEN),
+            BuiltInGameConfigOption("mahjongcraft:revealed", SharedGameFlowConfigTranslationKeys.OPTION_REVEALED, SpectatorHandVisibility.REVEALED),
+            BuiltInGameConfigOption("mahjongcraft:hidden", SharedGameFlowConfigTranslationKeys.OPTION_HIDDEN, SpectatorHandVisibility.HIDDEN),
         ),
         read = { it.flowConfig.spectatorHandVisibility },
         update = { config, visibility -> config.copy(flowConfig = config.flowConfig.copy(spectatorHandVisibility = visibility)) },

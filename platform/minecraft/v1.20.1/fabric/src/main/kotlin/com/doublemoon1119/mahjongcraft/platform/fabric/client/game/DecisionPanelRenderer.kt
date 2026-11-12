@@ -4,6 +4,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.ClaimedTileMar
 import com.doublemoon1119.mahjongcraft.platform.minecraft.action.BuiltInGameActionIds
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.DecisionPlayerRelationDto
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.PlayerDecisionPromptDto
+import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftHudKeys
 import net.minecraft.client.font.TextRenderer
 import net.minecraft.client.gui.DrawContext
 import net.minecraft.text.OrderedText
@@ -41,7 +42,7 @@ internal fun decisionPanelContent(
     renderer: TextRenderer,
     screenWidth: Int,
 ): DecisionPanelContent = DecisionPanelContent(
-    title = Text.translatable("mahjongcraft.hud.action_title"),
+    title = Text.translatable(MinecraftHudKeys.ACTION_TITLE),
     triggerLines = decisionTriggerText(prompt, texts, resolvePlayerName)
         ?.let { renderer.wrapLines(it, DecisionCardLayout.triggerTextMaximumWidth(screenWidth)) }
         .orEmpty(),
@@ -63,16 +64,16 @@ private fun decisionTriggerText(
     resolvePlayerName: (String) -> String,
 ): Text? {
     val playerId = prompt.triggerPlayerId
-        ?: return if (prompt.triggerTileAssetKey != null) Text.translatable("mahjongcraft.hud.trigger.self_draw") else null
+        ?: return if (prompt.triggerTileAssetKey != null) Text.translatable(MinecraftHudKeys.TRIGGER_SELF_DRAW) else null
     val playerName = prompt.triggerPlayerName ?: resolvePlayerName(playerId)
     val relationKey = when (prompt.triggerPlayerRelation) {
-        DecisionPlayerRelationDto.LEFT -> "mahjongcraft.hud.relation.left"
-        DecisionPlayerRelationDto.ACROSS -> "mahjongcraft.hud.relation.across"
-        DecisionPlayerRelationDto.RIGHT -> "mahjongcraft.hud.relation.right"
+        DecisionPlayerRelationDto.LEFT -> MinecraftHudKeys.RELATION_LEFT
+        DecisionPlayerRelationDto.ACROSS -> MinecraftHudKeys.RELATION_ACROSS
+        DecisionPlayerRelationDto.RIGHT -> MinecraftHudKeys.RELATION_RIGHT
         null -> return null
     }
     val action = texts.actionLabel(prompt.ruleModuleId, prompt.triggerActionId ?: BuiltInGameActionIds.DISCARD)
-    return Text.translatable("mahjongcraft.hud.trigger", playerName, Text.translatable(relationKey), action)
+    return Text.translatable(MinecraftHudKeys.TRIGGER, playerName, Text.translatable(relationKey), action)
 }
 
 /**

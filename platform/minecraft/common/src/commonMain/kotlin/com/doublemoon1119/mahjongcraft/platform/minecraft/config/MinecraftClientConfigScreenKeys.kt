@@ -62,21 +62,83 @@ object MinecraftClientConfigScreenKeys {
     /** 牌面輔助標籤說明。 */
     const val TILE_LABELS_DESCRIPTION: String = "mahjongcraft.client_config.tile_labels.description"
 
-    /**
-     * 建立呈現開關名稱鍵。
-     *
-     * @param id 呈現開關的穩定 ID。
-     * @return 對應的名稱 translation key。
-     */
-    fun presentationName(id: String): String = "mahjongcraft.client_config.presentation.$id"
+    /** 顯示開關：局況資訊。 */
+    const val PRESENTATION_ROUND_INFO: String = "mahjongcraft.client_config.presentation.round_info"
 
-    /**
-     * 建立呈現開關說明鍵。
-     *
-     * @param id 呈現開關的穩定 ID。
-     * @return 對應的說明 translation key。
-     */
-    fun presentationDescription(id: String): String = "${presentationName(id)}.description"
+    /** 顯示開關說明：局況資訊。 */
+    const val PRESENTATION_ROUND_INFO_DESCRIPTION: String = "mahjongcraft.client_config.presentation.round_info.description"
+
+    /** 顯示開關：玩家資訊。 */
+    const val PRESENTATION_PLAYER_INFO: String = "mahjongcraft.client_config.presentation.player_info"
+
+    /** 顯示開關說明：玩家資訊。 */
+    const val PRESENTATION_PLAYER_INFO_DESCRIPTION: String = "mahjongcraft.client_config.presentation.player_info.description"
+
+    /** 顯示開關：大廳資訊。 */
+    const val PRESENTATION_LOBBY_INFO: String = "mahjongcraft.client_config.presentation.lobby_info"
+
+    /** 顯示開關說明：大廳資訊。 */
+    const val PRESENTATION_LOBBY_INFO_DESCRIPTION: String = "mahjongcraft.client_config.presentation.lobby_info.description"
+
+    /** 顯示開關：骰子結果。 */
+    const val PRESENTATION_DICE_RESULT: String = "mahjongcraft.client_config.presentation.dice_result"
+
+    /** 顯示開關說明：骰子結果。 */
+    const val PRESENTATION_DICE_RESULT_DESCRIPTION: String = "mahjongcraft.client_config.presentation.dice_result.description"
+
+    /** 顯示開關：精簡提示。 */
+    const val PRESENTATION_COMPACT_PROMPT: String = "mahjongcraft.client_config.presentation.compact_prompt"
+
+    /** 顯示開關說明：精簡提示。 */
+    const val PRESENTATION_COMPACT_PROMPT_DESCRIPTION: String = "mahjongcraft.client_config.presentation.compact_prompt.description"
+
+    /** 顯示開關：捨牌分析。 */
+    const val PRESENTATION_DISCARD_ANALYSIS: String = "mahjongcraft.client_config.presentation.discard_analysis"
+
+    /** 顯示開關說明：捨牌分析。 */
+    const val PRESENTATION_DISCARD_ANALYSIS_DESCRIPTION: String = "mahjongcraft.client_config.presentation.discard_analysis.description"
+
+    /** 顯示開關：自動操作狀態。 */
+    const val PRESENTATION_AUTOMATIC_CONTROL_STATUS: String = "mahjongcraft.client_config.presentation.automatic_control_status"
+
+    /** 顯示開關說明：自動操作狀態。 */
+    const val PRESENTATION_AUTOMATIC_CONTROL_STATUS_DESCRIPTION: String = "mahjongcraft.client_config.presentation.automatic_control_status.description"
+
+    /** 顯示開關：和牌結算。 */
+    const val PRESENTATION_WIN_SETTLEMENT: String = "mahjongcraft.client_config.presentation.win_settlement"
+
+    /** 顯示開關說明：和牌結算。 */
+    const val PRESENTATION_WIN_SETTLEMENT_DESCRIPTION: String = "mahjongcraft.client_config.presentation.win_settlement.description"
+
+    /** 顯示開關：流局結算。 */
+    const val PRESENTATION_DRAW_SETTLEMENT: String = "mahjongcraft.client_config.presentation.draw_settlement"
+
+    /** 顯示開關說明：流局結算。 */
+    const val PRESENTATION_DRAW_SETTLEMENT_DESCRIPTION: String = "mahjongcraft.client_config.presentation.draw_settlement.description"
+
+    /** 顯示開關：整場結算。 */
+    const val PRESENTATION_MATCH_SETTLEMENT: String = "mahjongcraft.client_config.presentation.match_settlement"
+
+    /** 顯示開關說明：整場結算。 */
+    const val PRESENTATION_MATCH_SETTLEMENT_DESCRIPTION: String = "mahjongcraft.client_config.presentation.match_settlement.description"
+
+    /** 顯示開關：相同牌標示。 */
+    const val PRESENTATION_MATCHING_TILE_HIGHLIGHT: String = "mahjongcraft.client_config.presentation.matching_tile_highlight"
+
+    /** 顯示開關說明：相同牌標示。 */
+    const val PRESENTATION_MATCHING_TILE_HIGHLIGHT_DESCRIPTION: String = "mahjongcraft.client_config.presentation.matching_tile_highlight.description"
+
+    /** 顯示開關：打牌提示。 */
+    const val PRESENTATION_DISCARD_POPUP: String = "mahjongcraft.client_config.presentation.discard_popup"
+
+    /** 顯示開關說明：打牌提示。 */
+    const val PRESENTATION_DISCARD_POPUP_DESCRIPTION: String = "mahjongcraft.client_config.presentation.discard_popup.description"
+
+    /** 顯示開關：鳴牌提示。 */
+    const val PRESENTATION_MELD_POPUP: String = "mahjongcraft.client_config.presentation.meld_popup"
+
+    /** 顯示開關說明：鳴牌提示。 */
+    const val PRESENTATION_MELD_POPUP_DESCRIPTION: String = "mahjongcraft.client_config.presentation.meld_popup.description"
 
     /** HUD 位置編輯器入口。 */
     const val EDIT_HUD_LAYOUT: String = "mahjongcraft.client_config.edit_hud_layout"

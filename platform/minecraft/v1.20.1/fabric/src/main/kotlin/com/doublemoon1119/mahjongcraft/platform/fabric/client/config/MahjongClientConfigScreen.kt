@@ -1,6 +1,5 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.client.config
 
-import com.doublemoon1119.mahjongcraft.flow.network.dto.message.AutomaticControlUpdateResultKindDto
 import com.doublemoon1119.mahjongcraft.logic.module.BuiltInAutomaticControlIds
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.automatic.AutomaticControlDisplayResolver
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.automatic.ClientAutoSortHandPreferenceService
@@ -17,6 +16,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.SettingsFooter
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.UnsavedChangesConfirmationScreen
 import com.doublemoon1119.mahjongcraft.platform.minecraft.automatic.BuiltInMinecraftAutomaticControlIds
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftClientConfigScreenKeys
+import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftMessageKeys
 import net.minecraft.client.gui.DrawContext
 import net.minecraft.client.gui.screen.Screen
 import net.minecraft.client.gui.tooltip.Tooltip
@@ -46,7 +46,7 @@ class MahjongClientConfigScreen(
     private val automaticDraft = ClientAutomaticControlDraftSession(automaticCoordinator.snapshot())
 
     /** 最近一次送出／確認失敗的本局控制狀態。 */
-    private var automaticError: String? = null
+    private var automaticError: AutomaticControlError? = null
 
     /** 本機保存成功但偏好封包未送出。 */
     private var preferenceSyncFailed = false
@@ -159,7 +159,7 @@ class MahjongClientConfigScreen(
         automaticDraft.state().pendingRequestId?.let { requestId ->
             automaticCoordinator.takeCompletion(requestId)?.let { completion ->
                 val result = automaticDraft.applyCompletion(completion)
-                automaticError = if (result?.accepted == true) null else completion.result.name
+                automaticError = if (result?.accepted == true) null else completion.result.toAutomaticControlError()
                 if (result?.closeAfterAcceptance == true) {
                     client?.setScreen(parent)
                     return
@@ -352,7 +352,7 @@ class MahjongClientConfigScreen(
         }
         val remote = automaticDraft.state()
         if (remote.stale) {
-            automaticError = AutomaticControlUpdateResultKindDto.STALE.name
+            automaticError = AutomaticControlError.STALE
             refreshButtons()
             return false
         }
@@ -364,10 +364,10 @@ class MahjongClientConfigScreen(
                     rebuild()
                     return true
                 }
-                is ClientAutomaticControlSubmitResult.Pending -> automaticError = "PENDING"
-                is ClientAutomaticControlSubmitResult.Unavailable -> automaticError = "UNAVAILABLE"
-                is ClientAutomaticControlSubmitResult.Unsupported -> automaticError = "UNSUPPORTED"
-                is ClientAutomaticControlSubmitResult.SendFailed -> automaticError = "SEND_FAILED"
+                is ClientAutomaticControlSubmitResult.Pending -> automaticError = AutomaticControlError.PENDING
+                is ClientAutomaticControlSubmitResult.Unavailable -> automaticError = AutomaticControlError.UNAVAILABLE
+                is ClientAutomaticControlSubmitResult.Unsupported -> automaticError = AutomaticControlError.REJECTED
+                is ClientAutomaticControlSubmitResult.SendFailed -> automaticError = AutomaticControlError.SEND_FAILED
             }
             refreshButtons()
             return false
@@ -485,12 +485,11 @@ class MahjongClientConfigScreen(
         val status = when {
             draftStale -> Text.translatable(MinecraftClientConfigScreenKeys.DRAFT_STALE).formatted(Formatting.RED)
             saveFailed -> Text.translatable(MinecraftClientConfigScreenKeys.SAVE_FAILED).formatted(Formatting.RED)
-            preferenceSyncFailed -> Text.translatable("mahjongcraft.message.automatic_control_preference_sync_failed").formatted(Formatting.RED)
+            preferenceSyncFailed -> Text.translatable(MinecraftMessageKeys.AUTOMATIC_CONTROL_PREFERENCE_SYNC_FAILED).formatted(Formatting.RED)
             automaticDraft.state().pending -> Text.translatable(pendingStatusKey(checkNotNull(automaticDraft.state().pendingRequestId)))
-            automaticError == ClientAutomaticControlResultKind.UNCONFIRMED.name ->
-                Text.translatable(MinecraftClientConfigScreenKeys.AUTOMATIC_UNCONFIRMED).formatted(Formatting.RED)
+            automaticError == AutomaticControlError.UNCONFIRMED -> Text.translatable(AutomaticControlError.UNCONFIRMED.translationKey).formatted(Formatting.RED)
             automaticDraft.state().stale -> Text.translatable(MinecraftClientConfigScreenKeys.AUTOMATIC_STALE).formatted(Formatting.RED)
-            automaticError != null -> Text.translatable(automaticErrorKey(checkNotNull(automaticError))).formatted(Formatting.RED)
+            automaticError != null -> Text.translatable(checkNotNull(automaticError).translationKey).formatted(Formatting.RED)
             else -> return
         }
         context.drawTextWithShadow(
@@ -512,22 +511,6 @@ class MahjongClientConfigScreen(
         MinecraftClientConfigScreenKeys.AUTOMATIC_RESYNCING
     } else {
         MinecraftClientConfigScreenKeys.AUTOMATIC_PENDING
-    }
-
-    /**
-     * 將本地提交錯誤與 ACK 結果映射到既有玩家訊息。
-     *
-     * @param error 本地提交或伺服器確認的錯誤代碼。
-     * @return 對應的訊息翻譯鍵；未知代碼使用通用拒絕訊息。
-     */
-    private fun automaticErrorKey(error: String): String = when (error) {
-        "PENDING" -> "mahjongcraft.message.automatic_control_pending"
-        "UNAVAILABLE" -> "mahjongcraft.message.automatic_control_unavailable"
-        "UNSUPPORTED" -> "mahjongcraft.message.automatic_control_rejected"
-        "SEND_FAILED" -> "mahjongcraft.message.automatic_control_send_failed"
-        "STALE" -> MinecraftClientConfigScreenKeys.AUTOMATIC_STALE
-        "NOT_APPLIED" -> MinecraftClientConfigScreenKeys.AUTOMATIC_NOT_APPLIED
-        else -> "mahjongcraft.message.automatic_control_rejected"
     }
 
     /**
@@ -619,21 +602,20 @@ class MahjongClientConfigScreen(
                     )
                 },
             ),
-            presentationRow("compact_prompt", { it.compactPromptEnabled }) { state, enabled -> state.copy(compactPromptEnabled = enabled) },
-            presentationRow("discard_analysis", { it.discardAnalysisEnabled }) { state, enabled -> state.copy(discardAnalysisEnabled = enabled) },
-            presentationRow("automatic_control_status", { it.automaticControlStatusEnabled }) { state, enabled ->
-                state.copy(automaticControlStatusEnabled = enabled)
-            },
+        ) + presentationRows(
+            MahjongPresentationToggle.CompactPrompt,
+            MahjongPresentationToggle.DiscardAnalysis,
+            MahjongPresentationToggle.AutomaticControlStatus,
         )
 
         Category.GAME_PANELS -> presentationRows(
-            "round_info",
-            "player_info",
-            "lobby_info",
-            "dice_result",
-            "win_settlement",
-            "draw_settlement",
-            "match_settlement",
+            MahjongPresentationToggle.RoundInfo,
+            MahjongPresentationToggle.PlayerInfo,
+            MahjongPresentationToggle.LobbyInfo,
+            MahjongPresentationToggle.DiceResult,
+            MahjongPresentationToggle.WinSettlement,
+            MahjongPresentationToggle.DrawSettlement,
+            MahjongPresentationToggle.MatchSettlement,
         )
         Category.VISUAL_FEEDBACK -> listOf(
             ConfigRow(
@@ -642,7 +624,11 @@ class MahjongClientConfigScreen(
                 { booleanText(it.tileLabelsEnabled) },
                 { it.copy(tileLabelsEnabled = !it.tileLabelsEnabled) },
             ),
-        ) + presentationRows("matching_tile_highlight", "discard_popup", "meld_popup")
+        ) + presentationRows(
+            MahjongPresentationToggle.MatchingTileHighlight,
+            MahjongPresentationToggle.DiscardPopup,
+            MahjongPresentationToggle.MeldPopup,
+        )
     }
 
     /**
@@ -689,48 +675,22 @@ class MahjongClientConfigScreen(
     }
 
     /**
-     * 建立 HUD、遊戲面板與視覺效果的個別開關列。
+     * 依畫面順序建立顯示項目的個別開關列。
      *
-     * @param includedIds 要保留的顯示項目識別碼。
-     * @return 符合識別碼篩選的開關列。
+     * @param toggles 要列出的顯示項目。
+     * @return 每個顯示項目一列的開關列。
      */
-    private fun presentationRows(vararg includedIds: String): List<ConfigRow> = listOf(
-        presentationRow("round_info", { it.roundInfoEnabled }) { state, enabled -> state.copy(roundInfoEnabled = enabled) },
-        presentationRow("player_info", { it.playerInfoEnabled }) { state, enabled -> state.copy(playerInfoEnabled = enabled) },
-        presentationRow("lobby_info", { it.lobbyInfoEnabled }) { state, enabled -> state.copy(lobbyInfoEnabled = enabled) },
-        presentationRow("dice_result", { it.diceResultEnabled }) { state, enabled -> state.copy(diceResultEnabled = enabled) },
-        presentationRow("compact_prompt", { it.compactPromptEnabled }) { state, enabled -> state.copy(compactPromptEnabled = enabled) },
-        presentationRow("discard_analysis", { it.discardAnalysisEnabled }) { state, enabled -> state.copy(discardAnalysisEnabled = enabled) },
-        presentationRow("win_settlement", { it.winSettlementEnabled }) { state, enabled -> state.copy(winSettlementEnabled = enabled) },
-        presentationRow("draw_settlement", { it.drawSettlementEnabled }) { state, enabled -> state.copy(drawSettlementEnabled = enabled) },
-        presentationRow("match_settlement", { it.matchSettlementEnabled }) { state, enabled -> state.copy(matchSettlementEnabled = enabled) },
-        presentationRow("matching_tile_highlight", { it.matchingTileHighlightEnabled }) { state, enabled -> state.copy(matchingTileHighlightEnabled = enabled) },
-        presentationRow("discard_popup", { it.discardPopupEnabled }) { state, enabled -> state.copy(discardPopupEnabled = enabled) },
-        presentationRow("meld_popup", { it.meldPopupEnabled }) { state, enabled -> state.copy(meldPopupEnabled = enabled) },
-    ).filter { it.id in includedIds }
-
-    /**
-     * 建立一列 [MahjongPresentationVisibilityConfig] Boolean 開關。
-     *
-     * @param id 顯示項目識別碼，用於取得名稱與說明。
-     * @param read 讀取目前開關值。
-     * @param update 將切換後的值寫入新的顯示設定。
-     * @return 可切換指定顯示項目的設定列。
-     */
-    private fun presentationRow(
-        id: String,
-        read: (MahjongPresentationVisibilityConfig) -> Boolean,
-        update: (MahjongPresentationVisibilityConfig, Boolean) -> MahjongPresentationVisibilityConfig,
-    ): ConfigRow = ConfigRow(
-        MinecraftClientConfigScreenKeys.presentationName(id),
-        MinecraftClientConfigScreenKeys.presentationDescription(id),
-        { booleanText(read(it.presentationVisibility)) },
-        { config ->
-            val visibility = config.presentationVisibility
-            config.copy(presentationVisibility = update(visibility, !read(visibility)))
-        },
-        id = id,
-    )
+    private fun presentationRows(vararg toggles: MahjongPresentationToggle): List<ConfigRow> = toggles.map { toggle ->
+        ConfigRow(
+            nameKey = toggle.nameKey,
+            descriptionKey = toggle.descriptionKey,
+            valueText = { booleanText(toggle.read(it.presentationVisibility)) },
+            update = { config ->
+                val visibility = config.presentationVisibility
+                config.copy(presentationVisibility = toggle.update(visibility, !toggle.read(visibility)))
+            },
+        )
+    }
 
     /**
      * 將 Boolean 轉換成本地化的開關狀態。
@@ -982,4 +942,42 @@ class MahjongClientConfigScreen(
         /** 一般文字色。 */
         const val TEXT_COLOR = 0xFFFFFF
     }
+}
+
+/**
+ * 設定畫面上本局自動操作送出或確認失敗的狀態，各自帶有要顯示的訊息。
+ *
+ * @property translationKey 狀態訊息的翻譯鍵。
+ */
+private enum class AutomaticControlError(val translationKey: String) {
+    /** 上一次送出仍在等待伺服器確認。 */
+    PENDING(MinecraftMessageKeys.AUTOMATIC_CONTROL_PENDING),
+
+    /** 目前沒有可以變更的本局。 */
+    UNAVAILABLE(MinecraftMessageKeys.AUTOMATIC_CONTROL_UNAVAILABLE),
+
+    /** 變更不被接受。 */
+    REJECTED(MinecraftMessageKeys.AUTOMATIC_CONTROL_REJECTED),
+
+    /** 變更沒有送出。 */
+    SEND_FAILED(MinecraftMessageKeys.AUTOMATIC_CONTROL_SEND_FAILED),
+
+    /** 草稿根據的狀態已過期。 */
+    STALE(MinecraftClientConfigScreenKeys.AUTOMATIC_STALE),
+
+    /** 伺服器確認收到，但變更沒有套用。 */
+    NOT_APPLIED(MinecraftClientConfigScreenKeys.AUTOMATIC_NOT_APPLIED),
+
+    /** 等不到伺服器確認。 */
+    UNCONFIRMED(MinecraftClientConfigScreenKeys.AUTOMATIC_UNCONFIRMED),
+}
+
+/** 將伺服器確認結果轉成畫面上的失敗狀態；接受時沒有失敗狀態。 */
+private fun ClientAutomaticControlResultKind.toAutomaticControlError(): AutomaticControlError? = when (this) {
+    ClientAutomaticControlResultKind.ACCEPTED -> null
+    ClientAutomaticControlResultKind.REJECTED -> AutomaticControlError.REJECTED
+    ClientAutomaticControlResultKind.STALE -> AutomaticControlError.STALE
+    ClientAutomaticControlResultKind.UNAVAILABLE -> AutomaticControlError.UNAVAILABLE
+    ClientAutomaticControlResultKind.NOT_APPLIED -> AutomaticControlError.NOT_APPLIED
+    ClientAutomaticControlResultKind.UNCONFIRMED -> AutomaticControlError.UNCONFIRMED
 }
