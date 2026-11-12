@@ -4,6 +4,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.taiwan.TaiwanRound
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.taiwan.TaiwanWinSettlementIds
 import com.doublemoon1119.mahjongcraft.logic.module.BuiltInRuleModuleIds
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanDiscardReadinessAnalyzer
+import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanExhaustiveDrawReason
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanGameAction
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanPlayerTileAreaIds
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanPublicIndicatorIds
@@ -15,6 +16,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.action.BuiltInGameActi
 import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionVocabulary
 import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionVocabularyDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.DecisionStatusDisplayNameRegistrar
+import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.ExhaustiveDrawReasonDisplayNameRegistrar
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.GameActionSoundPresentationRegistrar
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.GameActionVocabularyRegistrar
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.GameConfigPresentationRegistrar
@@ -37,6 +39,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.player.PublicPlayerInd
 import com.doublemoon1119.mahjongcraft.platform.minecraft.player.PublicPlayerIndicatorDisplayDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.RuleModuleDisplayNameDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.taiwan.catalogue.TaiwanCatalogueProvider
+import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.ExhaustiveDrawReasonDisplayNameDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.PresentationValue
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.RoundOutcomeDisplayNameDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.WinSettlementDetailTextFormatterDefinition
@@ -169,6 +172,18 @@ object BundledTaiwanMinecraftExtension : MinecraftMahjongExtension {
     override fun registerHistoryTileSetAsideDisplays(registry: HistoryTileSetAsideDisplayRegistrar) {
         registry.register(HistoryTileAreaDisplayDefinition(TaiwanPlayerTileAreaIds.FLOWERS, TaiwanTranslationKeys.HISTORY_TILE_AREA_FLOWERS))
         registry.register(HistoryTileReplacementDisplayDefinition(BuiltInRuleModuleIds.TAIWAN, TaiwanTranslationKeys.HISTORY_REPLACEMENT))
+    }
+
+    override fun registerExhaustiveDrawReasonDisplayNames(registry: ExhaustiveDrawReasonDisplayNameRegistrar) {
+        registry.register(ExhaustiveDrawReasonDisplayNameDefinition(TaiwanExhaustiveDrawReason.Normal.id, MinecraftMessageKeys.EXHAUSTIVE_DRAW_REASON_NORMAL))
+        registry.register(
+            definition = ExhaustiveDrawReasonDisplayNameDefinition(
+                reasonId = TaiwanExhaustiveDrawReason.NoSupplementalTile.id,
+                translationKey = TaiwanTranslationKeys.EXHAUSTIVE_DRAW_NO_SUPPLEMENTAL_TILE,
+            ),
+        )
+        registry.register(ExhaustiveDrawReasonDisplayNameDefinition(TaiwanExhaustiveDrawReason.FourKans.id, TaiwanTranslationKeys.EXHAUSTIVE_DRAW_FOUR_KANS))
+        registry.register(ExhaustiveDrawReasonDisplayNameDefinition(TaiwanExhaustiveDrawReason.FourWinds.id, TaiwanTranslationKeys.EXHAUSTIVE_DRAW_FOUR_WINDS))
     }
 
     override fun registerRoundOutcomeDisplayNames(registry: RoundOutcomeDisplayNameRegistrar) {

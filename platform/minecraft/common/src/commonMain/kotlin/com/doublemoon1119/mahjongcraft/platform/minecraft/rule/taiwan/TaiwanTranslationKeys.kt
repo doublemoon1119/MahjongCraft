@@ -83,6 +83,15 @@ object TaiwanTranslationKeys {
     /** 七搶一的本局結果名稱。 */
     const val OUTCOME_SEVEN_FLOWERS: String = "mahjongcraft.taiwan.outcome.seven_flowers"
 
+    /** 補花或補槓時已經沒有牌可補而流局的名稱。 */
+    const val EXHAUSTIVE_DRAW_NO_SUPPLEMENTAL_TILE: String = "mahjongcraft.taiwan.exhaustive_draw.no_supplemental_tile"
+
+    /** 四槓流局的名稱。 */
+    const val EXHAUSTIVE_DRAW_FOUR_KANS: String = "mahjongcraft.taiwan.exhaustive_draw.four_kans"
+
+    /** 四風連打流局的名稱。 */
+    const val EXHAUSTIVE_DRAW_FOUR_WINDS: String = "mahjongcraft.taiwan.exhaustive_draw.four_winds"
+
     /** 結算面板花牌列的標題。 */
     const val SETTLEMENT_FLOWERS: String = "mahjongcraft.taiwan.settlement.flowers"
 
@@ -127,6 +136,9 @@ object TaiwanTranslationKeys {
         INDICATOR_DEALER_STREAK,
         OUTCOME_EIGHT_FLOWERS,
         OUTCOME_SEVEN_FLOWERS,
+        EXHAUSTIVE_DRAW_NO_SUPPLEMENTAL_TILE,
+        EXHAUSTIVE_DRAW_FOUR_KANS,
+        EXHAUSTIVE_DRAW_FOUR_WINDS,
         SETTLEMENT_FLOWERS,
         SETTLEMENT_TAI_COUNT,
         SETTLEMENT_DEALER_TAI_TOTAL,
