@@ -25,6 +25,7 @@ import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDiscardReadiness
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiExhaustiveDrawReason
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiGameAction
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanDiscardReadinessAnalyzer
+import com.doublemoon1119.mahjongcraft.metadata.MahjongCraftMetadata
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongTileEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongTilePose
 import com.doublemoon1119.mahjongcraft.platform.fabric.network.MahjongChannels
@@ -40,7 +41,6 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.PlayerDecisio
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.PlayerDecisionPhaseDto
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.PlayerDecisionPromptDto
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.RuleDecisionPromptDto
-import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModMetadata
 import com.mojang.brigadier.arguments.IntegerArgumentType
 import com.mojang.brigadier.arguments.StringArgumentType
 import com.mojang.brigadier.builder.LiteralArgumentBuilder
@@ -342,7 +342,7 @@ class FabricDebugDecisionCommand(
             game.copy(
                 pendingRuleDecision = PendingRuleDecision.open(
                     step = RuleDecisionStep(
-                        stepId = "${MinecraftModMetadata.MOD_ID}:debug_${preview.name.lowercase()}",
+                        stepId = preview.stepId,
                         stepIndex = 0,
                         inputSpecsByPlayerId = mapOf(playerId to input),
                     ),
@@ -681,11 +681,15 @@ class FabricDebugDecisionCommand(
         /** 單選步驟使用的固定 option ID。 */
         val DEBUG_OPTION_IDS: List<String> = listOf("mahjongcraft:alpha", "mahjongcraft:beta", "mahjongcraft:gamma")
 
-        /** Development rule decision 測試步驟種類。 */
-        enum class RuleDecisionPreview {
-            CONFIRM,
-            CHOICE,
-            TILES,
+        /**
+         * Development rule decision 測試步驟種類。
+         *
+         * @property stepId 測試步驟的完整 ID。
+         */
+        enum class RuleDecisionPreview(val stepId: String) {
+            CONFIRM(MahjongCraftMetadata.id("debug/rule_decision_confirm")),
+            CHOICE(MahjongCraftMetadata.id("debug/rule_decision_choice")),
+            TILES(MahjongCraftMetadata.id("debug/rule_decision_tiles")),
         }
 
         /** Brigadier 成功回傳值。 */
