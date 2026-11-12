@@ -30,6 +30,14 @@ import kotlin.test.assertTrue
 
 /** 驗證台灣麻將圖鑑完整涵蓋台表與依房間設定標示不可用項目。 */
 class TaiwanCatalogueProviderTest {
+    /** 圖鑑的分類與條目都是台麻專屬 ID，放在台麻的路徑底下。 */
+    @Test
+    fun `catalogue ids live under the taiwan path`() {
+        val ids = TaiwanCatalogueCategory.entries.map { it.id } + TaiwanCatalogueTai.entries.map { it.id } + TaiwanCatalogueSpecial.entries.map { it.id }
+
+        assertTrue(ids.all { it.startsWith("mahjongcraft:taiwan/catalogue/") }, ids.toString())
+    }
+
     /** 每個計台項目恰有一筆條目，並列出所有流局。 */
     @Test
     fun `catalogue covers every tai type and draw reason`() {
@@ -97,7 +105,7 @@ class TaiwanCatalogueProviderTest {
 
         TaiwanTaiType.entries.forEach { type ->
             assertEquals(
-                "mahjongcraft:catalogue/taiwan/category/tai_${EXPECTED_TAI.getValue(type)}",
+                "mahjongcraft:taiwan/catalogue/category/tai_${EXPECTED_TAI.getValue(type)}",
                 catalogue.entries.single { it.id == type.catalogueId }.categoryId,
                 type.name,
             )

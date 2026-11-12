@@ -39,6 +39,14 @@ import kotlin.test.assertTrue
 
 /** 驗證日麻目錄覆蓋、配置邊界、範例牌面與既有計算器一致。 */
 class RiichiCatalogueProviderTest {
+    /** 目錄的分類與條目都是日麻專屬 ID，放在日麻的路徑底下。 */
+    @Test
+    fun `catalogue ids live under the riichi path`() {
+        val ids = RiichiCatalogueCategory.entries.map { it.id } + RiichiCatalogueYaku.entries.map { it.id } + RiichiCatalogueSpecial.entries.map { it.id }
+
+        assertTrue(ids.all { it.startsWith("mahjongcraft:riichi/catalogue/") }, ids.toString())
+    }
+
     /** 內建役種與特殊說明不缺漏，也不把流局條件混成一般役。 */
     @Test
     fun `catalogue covers every built in yaku and separate special categories`() {
