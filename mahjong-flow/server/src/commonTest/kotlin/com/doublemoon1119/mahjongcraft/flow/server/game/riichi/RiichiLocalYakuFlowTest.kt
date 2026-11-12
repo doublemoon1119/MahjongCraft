@@ -16,7 +16,7 @@ import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDiscardPile
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.YakuType
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.RiichiYakuType
 import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayer
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
@@ -51,8 +51,8 @@ class RiichiLocalYakuFlowTest {
         val enabled = ronOnDiscardAfterKan(useLocalYaku = true)
         val disabled = ronOnDiscardAfterKan(useLocalYaku = false)
 
-        assertTrue(YakuType.Kanburi in enabled, "Settled yaku: $enabled")
-        assertTrue(YakuType.GreenDragon in enabled && YakuType.GreenDragon in disabled)
+        assertTrue(RiichiYakuType.Kanburi in enabled, "Settled yaku: $enabled")
+        assertTrue(RiichiYakuType.GreenDragon in enabled && RiichiYakuType.GreenDragon in disabled)
         assertTrue(disabled.none { it.isLocal }, "Settled yaku: $disabled")
     }
 
@@ -62,8 +62,8 @@ class RiichiLocalYakuFlowTest {
         val enabled = ronOnRiichiDeclaration(useLocalYaku = true)
         val disabled = ronOnRiichiDeclaration(useLocalYaku = false)
 
-        assertTrue(YakuType.TsubameGaeshi in enabled, "Settled yaku: $enabled")
-        assertTrue(YakuType.GreenDragon in enabled && YakuType.GreenDragon in disabled)
+        assertTrue(RiichiYakuType.TsubameGaeshi in enabled, "Settled yaku: $enabled")
+        assertTrue(RiichiYakuType.GreenDragon in enabled && RiichiYakuType.GreenDragon in disabled)
         assertTrue(disabled.none { it.isLocal }, "Settled yaku: $disabled")
     }
 
@@ -73,7 +73,7 @@ class RiichiLocalYakuFlowTest {
      * @param useLocalYaku 是否啟用古役。
      * @return 實際和牌結算中的役種。
      */
-    private suspend fun ronOnDiscardAfterKan(useLocalYaku: Boolean): Set<YakuType> {
+    private suspend fun ronOnDiscardAfterKan(useLocalYaku: Boolean): Set<RiichiYakuType> {
         val kanTiles = List(4) { tile(m(1)) }
         val red = tile(Tile.Honor.Red)
         val otherTiles = listOf(p(1), p(1), p(9), p(9), s(1), s(9), Tile.Honor.South, Tile.Honor.West, Tile.Honor.North).map(::tile)
@@ -101,7 +101,7 @@ class RiichiLocalYakuFlowTest {
      * @param useLocalYaku 是否啟用古役。
      * @return 實際和牌結算中的役種。
      */
-    private suspend fun ronOnRiichiDeclaration(useLocalYaku: Boolean): Set<YakuType> {
+    private suspend fun ronOnRiichiDeclaration(useLocalYaku: Boolean): Set<RiichiYakuType> {
         val red = tile(Tile.Honor.Red)
         val standing = listOf(m(1), m(2), m(3), p(4), p(5), p(6), s(7), s(8), s(9), Tile.Honor.East, Tile.Honor.East, s(2)).map(::tile)
         val discarder = discarder(hand = Hand(tiles = standing + red, lastDrawn = tile(s(3))))
@@ -127,7 +127,7 @@ class RiichiLocalYakuFlowTest {
      * @param commands 玩家識別碼與命令的執行序列。
      * @return 和牌者在結算中的役種。
      */
-    private suspend fun play(table: TableState, vararg commands: Pair<Uuid, GameCommand>): Set<YakuType> {
+    private suspend fun play(table: TableState, vararg commands: Pair<Uuid, GameCommand>): Set<RiichiYakuType> {
         val runtime = SimulationRuntime(defaultStrategyKey = "unused")
         runtime.gameRepository.setTableState(table)
         commands.forEach { (playerId, command) ->

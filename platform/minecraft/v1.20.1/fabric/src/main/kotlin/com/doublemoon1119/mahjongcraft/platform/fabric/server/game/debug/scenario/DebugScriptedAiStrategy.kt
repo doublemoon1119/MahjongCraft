@@ -7,7 +7,7 @@ import com.doublemoon1119.mahjongcraft.ai.MahjongAiStrategyRegistry
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameCommand
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.riichi.RiichiPullNorthCommand
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.PULL_NORTH_GAME_ACTION
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RIICHI_PULL_NORTH_GAME_ACTION
 import com.doublemoon1119.mahjongcraft.metadata.MahjongCraftMetadata
 
 /**
@@ -43,7 +43,7 @@ class DebugScriptedAiStrategy(
      */
     private fun decideOwnTurn(context: AiDecisionContext): GameCommand {
         if (winsFirst && GameAction.Tsumo in context.legalActions) return GameCommand.Tsumo
-        if (pullsNorthFirst && PULL_NORTH_GAME_ACTION in context.legalActions) {
+        if (pullsNorthFirst && RIICHI_PULL_NORTH_GAME_ACTION in context.legalActions) {
             return GameCommand.Extension(RiichiPullNorthCommand)
         }
         if (declaresKanFirst) {

@@ -3,7 +3,7 @@ package com.doublemoon1119.mahjongcraft.logic.rules.riichi
 import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.RiichiHandValueCalculatorTestBase
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.YakuType
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.RiichiYakuType
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeHandFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.rules.riichi.FakeRiichiHandValueContextFactory
@@ -18,8 +18,8 @@ import kotlin.test.assertTrue
  * 驗證 [RiichiHandValueContext.paoLiability] 如何影響最終的 [RiichiPointResult]，
  * 以及 [RiichiHandValueResult.paoLiability] 的透傳行為。
  *
- * @see PaoDetector
- * @see PointCalculator
+ * @see RiichiPaoDetector
+ * @see RiichiPointCalculator
  */
 class RiichiHandValueCalculatorPaoTest : RiichiHandValueCalculatorTestBase() {
 
@@ -44,7 +44,7 @@ class RiichiHandValueCalculatorPaoTest : RiichiHandValueCalculatorTestBase() {
 
     /**
      * 測試大三元自摸胡牌，且包牌責任已成立時，點數結算應改為 [RiichiPointResult.PaoTsumo]，
-     * 並將 [PaoLiability] 透傳至結果中。
+     * 並將 [RiichiPaoLiability] 透傳至結果中。
      */
     @Test
     fun `test daisangen tsumo with pao liability settles as PaoTsumo`() {
@@ -53,13 +53,13 @@ class RiichiHandValueCalculatorPaoTest : RiichiHandValueCalculatorTestBase() {
             winningTile = Tile.Honor.Red,
             isTsumo = true,
             seatWind = Wind.SOUTH,
-            paoLiability = PaoLiability(PaoYaku.Daisangen, RelativeDirection.Left),
+            paoLiability = RiichiPaoLiability(RiichiPaoYaku.Daisangen, RelativeDirection.Left),
         )
 
         val result = calculator.calculate(context)
 
-        assertTrue(result.yakuResults.any { it.yaku == YakuType.Daisangen })
-        assertEquals(PaoLiability(PaoYaku.Daisangen, RelativeDirection.Left), result.paoLiability)
+        assertTrue(result.yakuResults.any { it.yaku == RiichiYakuType.Daisangen })
+        assertEquals(RiichiPaoLiability(RiichiPaoYaku.Daisangen, RelativeDirection.Left), result.paoLiability)
         assertEquals(RiichiPointResult.PaoTsumo(32000), result.pointResult)
     }
 
@@ -73,13 +73,13 @@ class RiichiHandValueCalculatorPaoTest : RiichiHandValueCalculatorTestBase() {
             winningTile = Tile.Honor.Red,
             isTsumo = false,
             seatWind = Wind.SOUTH,
-            paoLiability = PaoLiability(PaoYaku.Daisangen, RelativeDirection.Across),
+            paoLiability = RiichiPaoLiability(RiichiPaoYaku.Daisangen, RelativeDirection.Across),
         )
 
         val result = calculator.calculate(context)
 
-        assertTrue(result.yakuResults.any { it.yaku == YakuType.Daisangen })
-        assertEquals(PaoLiability(PaoYaku.Daisangen, RelativeDirection.Across), result.paoLiability)
+        assertTrue(result.yakuResults.any { it.yaku == RiichiYakuType.Daisangen })
+        assertEquals(RiichiPaoLiability(RiichiPaoYaku.Daisangen, RelativeDirection.Across), result.paoLiability)
         assertEquals(RiichiPointResult.PaoRon(16000), result.pointResult)
     }
 
@@ -96,12 +96,12 @@ class RiichiHandValueCalculatorPaoTest : RiichiHandValueCalculatorTestBase() {
             winningTile = Tile.Honor.Red,
             isTsumo = true,
             seatWind = Wind.SOUTH,
-            paoLiability = PaoLiability(PaoYaku.Daisuushii, RelativeDirection.Left),
+            paoLiability = RiichiPaoLiability(RiichiPaoYaku.Daisuushii, RelativeDirection.Left),
         )
 
         val result = calculator.calculate(context)
 
-        assertTrue(result.yakuResults.any { it.yaku == YakuType.Daisangen })
+        assertTrue(result.yakuResults.any { it.yaku == RiichiYakuType.Daisangen })
         assertNull(result.paoLiability, "Pao should not apply when armed yaku does not match the actual win")
         assertEquals(RiichiPointResult.NonDealerTsumo(dealerPayment = 16000, otherNonDealerPayment = 8000), result.pointResult)
     }
@@ -120,7 +120,7 @@ class RiichiHandValueCalculatorPaoTest : RiichiHandValueCalculatorTestBase() {
 
         val result = calculator.calculate(context)
 
-        assertTrue(result.yakuResults.any { it.yaku == YakuType.Daisangen })
+        assertTrue(result.yakuResults.any { it.yaku == RiichiYakuType.Daisangen })
         assertNull(result.paoLiability)
         assertEquals(RiichiPointResult.NonDealerTsumo(dealerPayment = 16000, otherNonDealerPayment = 8000), result.pointResult)
     }

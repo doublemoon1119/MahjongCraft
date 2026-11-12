@@ -13,7 +13,7 @@ import kotlin.test.assertEquals
  *
  * 驗證莊家點數只讀取權威 `isDealer`，不會從場風或規則可變的自風反推。
  *
- * @see PointCalculator
+ * @see RiichiPointCalculator
  */
 class RiichiHandValueCalculatorDealerTest : RiichiHandValueCalculatorTestBase() {
 

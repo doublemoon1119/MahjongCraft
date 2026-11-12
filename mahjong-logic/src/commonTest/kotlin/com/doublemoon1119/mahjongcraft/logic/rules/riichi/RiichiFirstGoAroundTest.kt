@@ -13,7 +13,7 @@ import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 /**
- * 針對 [isFirstGoAround] 進行單元測試。
+ * 針對 [isRiichiFirstGoAround] 進行單元測試。
  *
  * 驗證「場上沒有任何人鳴牌、且每個人都還沒打出第二張牌」這個第一巡判斷邏輯。
  */
@@ -28,7 +28,7 @@ class RiichiFirstGoAroundTest {
         val otherPlayer = FakeMahjongPlayerFactory.create()
         val table = FakeTableStateFactory.create(players = listOf(player, otherPlayer))
 
-        assertTrue(table.isFirstGoAround(player))
+        assertTrue(table.isRiichiFirstGoAround(player))
     }
 
     /**
@@ -43,7 +43,7 @@ class RiichiFirstGoAroundTest {
         )
         val table = FakeTableStateFactory.create(players = listOf(player, otherPlayer))
 
-        assertTrue(table.isFirstGoAround(player))
+        assertTrue(table.isRiichiFirstGoAround(player))
     }
 
     /**
@@ -57,7 +57,7 @@ class RiichiFirstGoAroundTest {
         )
         val table = FakeTableStateFactory.create(players = listOf(player))
 
-        assertFalse(table.isFirstGoAround(player))
+        assertFalse(table.isRiichiFirstGoAround(player))
     }
 
     /**
@@ -72,7 +72,7 @@ class RiichiFirstGoAroundTest {
         val otherPlayer = FakeMahjongPlayerFactory.create(discardPile = otherDiscardPile)
         val table = FakeTableStateFactory.create(players = listOf(player, otherPlayer))
 
-        assertFalse(table.isFirstGoAround(player))
+        assertFalse(table.isRiichiFirstGoAround(player))
     }
 
     /**
@@ -95,6 +95,6 @@ class RiichiFirstGoAroundTest {
         )
         val table = FakeTableStateFactory.create(players = listOf(player, otherPlayer))
 
-        assertFalse(table.isFirstGoAround(player))
+        assertFalse(table.isRiichiFirstGoAround(player))
     }
 }

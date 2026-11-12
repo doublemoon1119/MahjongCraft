@@ -202,7 +202,7 @@ private fun riichiNotenPenaltyDeltas(tableState: TableState, tenpaiIds: Set<Uuid
  * @param tableState 判定牌河及付款對象的桌況。
  * @return 成立者與分數差額；沒有成立者時為 null。
  */
-internal fun riichiNagashiMangan(tableState: TableState): NagashiManganResolution? {
+internal fun riichiNagashiMangan(tableState: TableState): RiichiNagashiManganResolution? {
     val achieverIds = tableState.activePlayers
         .filter { player ->
             player.discardPile.entries.isNotEmpty() &&
@@ -213,7 +213,7 @@ internal fun riichiNagashiMangan(tableState: TableState): NagashiManganResolutio
 
     val deltas = tableState.players.associate { it.id to 0 }.toMutableMap()
     achieverIds.forEach { achieverId ->
-        val pointResult = PointCalculator.calculateNonYakumanPoint(han = 5, fu = 0, isDealer = tableState.isDealer(achieverId), isTsumo = true)
+        val pointResult = RiichiPointCalculator.calculateNonYakumanPoint(han = 5, fu = 0, isDealer = tableState.isDealer(achieverId), isTsumo = true)
         val payments: Map<Uuid, Int> = when (pointResult) {
             is RiichiPointResult.DealerTsumo ->
                 tableState.activePlayers.filter { it.id != achieverId }.associate { it.id to pointResult.paymentPerNonDealer }
@@ -228,7 +228,7 @@ internal fun riichiNagashiMangan(tableState: TableState): NagashiManganResolutio
         deltas[achieverId] = (deltas[achieverId] ?: 0) + payments.values.sum()
         payments.forEach { (payerId, amount) -> deltas[payerId] = (deltas[payerId] ?: 0) - amount }
     }
-    return NagashiManganResolution(achieverIds, deltas)
+    return RiichiNagashiManganResolution(achieverIds, deltas)
 }
 
 /**

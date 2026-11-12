@@ -12,7 +12,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.riichi.RiichiRound
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.riichi.RiichiWinSettlementIds
 import com.doublemoon1119.mahjongcraft.flow.server.game.riichi.RiichiGameEventPublicMarkerIds
 import com.doublemoon1119.mahjongcraft.logic.module.BuiltInRuleModuleIds
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.YakuType
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.RiichiYakuType
 import com.doublemoon1119.mahjongcraft.logic.table.BuiltInMatchEndReasonIds
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import com.doublemoon1119.mahjongcraft.platform.minecraft.achievement.GameAchievementResolver
@@ -81,9 +81,9 @@ class RiichiGameAchievementResolver(
     private fun winAchievements(details: RoundWinDetail): List<String> = buildList {
         val yaku = details.yakuTypes()
         val isNaturalYakuman = details.detailFields.any { it.id == RiichiWinSettlementIds.YAKUMAN_TOTAL_FIELD }
-        val isRiichi = YakuType.Riichi in yaku || YakuType.DoubleRiichi in yaku || details.hasMarker(RiichiGameEventPublicMarkerIds.RIICHI)
+        val isRiichi = RiichiYakuType.Riichi in yaku || RiichiYakuType.DoubleRiichi in yaku || details.hasMarker(RiichiGameEventPublicMarkerIds.RIICHI)
         if (isRiichi) add(RiichiAchievementIds.RIICHI_WIN)
-        if (YakuType.Ippatsu in yaku || (isNaturalYakuman && details.hasMarker(RiichiGameEventPublicMarkerIds.RIICHI) && details.hasMarker(RiichiGameEventPublicMarkerIds.IPPATSU))) {
+        if (RiichiYakuType.Ippatsu in yaku || (isNaturalYakuman && details.hasMarker(RiichiGameEventPublicMarkerIds.RIICHI) && details.hasMarker(RiichiGameEventPublicMarkerIds.IPPATSU))) {
             add(RiichiAchievementIds.IPPATSU)
         }
         if (isNaturalYakuman) {
@@ -112,7 +112,7 @@ class RiichiGameAchievementResolver(
     }
 
     /** 詳情中的役種；無法辨識的條目略過。 */
-    private fun RoundWinDetail.yakuTypes(): List<YakuType> = detailFields
+    private fun RoundWinDetail.yakuTypes(): List<RiichiYakuType> = detailFields
         .filter { it.id == RiichiWinSettlementIds.YAKU_FIELD }
         .flatMap { it.entries.orEmpty() }
         .mapNotNull { entry -> RiichiWinSettlementIds.yakuType(entry.id) }
@@ -122,7 +122,7 @@ class RiichiGameAchievementResolver(
      *
      * @return 役滿役種對應的役滿倍數；無法辨識的條目略過。
      */
-    private fun RoundWinDetail.yakumanMultipliers(): Map<YakuType, Int> = detailFields
+    private fun RoundWinDetail.yakumanMultipliers(): Map<RiichiYakuType, Int> = detailFields
         .filter { it.id == RiichiWinSettlementIds.YAKU_FIELD }
         .flatMap { it.entries.orEmpty() }
         .filter { it.quantity?.unitId == RiichiWinSettlementIds.YAKUMAN }

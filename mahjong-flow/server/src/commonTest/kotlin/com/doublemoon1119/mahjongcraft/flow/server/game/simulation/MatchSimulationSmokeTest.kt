@@ -9,7 +9,7 @@ import com.doublemoon1119.mahjongcraft.ai.RandomAiStrategy
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameCommand
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.riichi.RiichiPullNorthCommand
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.PULL_NORTH_GAME_ACTION
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RIICHI_PULL_NORTH_GAME_ACTION
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiGameLength
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.threeplayer.ThreePlayerRiichiRuleConfig
@@ -65,7 +65,7 @@ class MatchSimulationSmokeTest {
 
         assertNull(result.failure, result.failure?.describe())
         assertLegalRiichiMatchCompletion(config, result.rounds.size, result.matchEndReasonId, result.finalScoresByPlayer)
-        val pullNorthChances = recorder.recent.filter { PULL_NORTH_GAME_ACTION in it.legalActions && it.strategyKey != RandomAiStrategy.KEY }
+        val pullNorthChances = recorder.recent.filter { RIICHI_PULL_NORTH_GAME_ACTION in it.legalActions && it.strategyKey != RandomAiStrategy.KEY }
         if (pullNorthChances.isNotEmpty()) {
             assertTrue(pullNorthChances.any { it.command == GameCommand.Extension(RiichiPullNorthCommand) }, "Expectation strategies never pulled north")
         }

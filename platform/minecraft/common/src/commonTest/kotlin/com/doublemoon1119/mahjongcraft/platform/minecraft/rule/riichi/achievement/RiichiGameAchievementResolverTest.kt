@@ -28,7 +28,7 @@ import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiScoreConfig
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.threeplayer.ThreePlayerRiichiRuleConfig
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.YakuType
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.RiichiYakuType
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.table.BuiltInMatchEndReasonIds
 import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayer
@@ -59,7 +59,7 @@ class RiichiGameAchievementResolverTest {
         val game = riichiGame()
         val winner = game.tableState.players.first()
 
-        val result = resolve(game, win(winner.id, nonYakumanFields(han = 2, YakuType.Riichi, YakuType.Tanyao)))
+        val result = resolve(game, win(winner.id, nonYakumanFields(han = 2, RiichiYakuType.Riichi, RiichiYakuType.Tanyao)))
 
         assertEquals(setOf(RiichiAchievementIds.RIICHI_WIN), result.getValue(winner.id))
     }
@@ -71,7 +71,7 @@ class RiichiGameAchievementResolverTest {
         val game = riichiGame(firstPlayerComponents = riichiState)
         val winner = game.tableState.players.first()
 
-        val result = resolve(game, win(winner.id, yakumanFields(YakuType.Suuankou)))
+        val result = resolve(game, win(winner.id, yakumanFields(RiichiYakuType.Suuankou)))
 
         assertTrue(RiichiAchievementIds.RIICHI_WIN in result.getValue(winner.id))
         assertTrue(RiichiAchievementIds.IPPATSU in result.getValue(winner.id))
@@ -83,7 +83,7 @@ class RiichiGameAchievementResolverTest {
         val game = riichiGame()
         val winner = game.tableState.players.first()
 
-        val result = resolve(game, win(winner.id, nonYakumanFields(han = 2, YakuType.Riichi, YakuType.Ippatsu)))
+        val result = resolve(game, win(winner.id, nonYakumanFields(han = 2, RiichiYakuType.Riichi, RiichiYakuType.Ippatsu)))
 
         assertEquals(setOf(RiichiAchievementIds.RIICHI_WIN, RiichiAchievementIds.IPPATSU), result.getValue(winner.id))
     }
@@ -94,9 +94,9 @@ class RiichiGameAchievementResolverTest {
         val game = riichiGame()
         val winner = game.tableState.players.first()
 
-        val exact = resolve(game, win(winner.id, nonYakumanFields(han = 13, YakuType.Chinitsu)))
-        val over = resolve(game, win(winner.id, nonYakumanFields(han = 15, YakuType.Chinitsu)))
-        val below = resolve(game, win(winner.id, nonYakumanFields(han = 12, YakuType.Chinitsu)))
+        val exact = resolve(game, win(winner.id, nonYakumanFields(han = 13, RiichiYakuType.Chinitsu)))
+        val over = resolve(game, win(winner.id, nonYakumanFields(han = 15, RiichiYakuType.Chinitsu)))
+        val below = resolve(game, win(winner.id, nonYakumanFields(han = 12, RiichiYakuType.Chinitsu)))
 
         assertEquals(setOf(RiichiAchievementIds.COUNTED_YAKUMAN_EXACT), exact.getValue(winner.id))
         assertEquals(setOf(RiichiAchievementIds.COUNTED_YAKUMAN_OVER), over.getValue(winner.id))
@@ -109,10 +109,10 @@ class RiichiGameAchievementResolverTest {
         val game = riichiGame()
         val winner = game.tableState.players.first()
 
-        val result = resolve(game, win(winner.id, yakumanFields(YakuType.Suuankou)))
+        val result = resolve(game, win(winner.id, yakumanFields(RiichiYakuType.Suuankou)))
 
         assertEquals(
-            setOf(RiichiAchievementIds.YAKUMAN, RiichiAchievementIds.yakuman(YakuType.Suuankou)),
+            setOf(RiichiAchievementIds.YAKUMAN, RiichiAchievementIds.yakuman(RiichiYakuType.Suuankou)),
             result.getValue(winner.id),
         )
     }
@@ -123,12 +123,12 @@ class RiichiGameAchievementResolverTest {
         val game = riichiGame()
         val winner = game.tableState.players.first()
 
-        val result = resolve(game, win(winner.id, yakumanFields(YakuType.SuuankouTanki)))
+        val result = resolve(game, win(winner.id, yakumanFields(RiichiYakuType.SuuankouTanki)))
 
         assertEquals(
             setOf(
                 RiichiAchievementIds.YAKUMAN,
-                RiichiAchievementIds.yakuman(YakuType.SuuankouTanki),
+                RiichiAchievementIds.yakuman(RiichiYakuType.SuuankouTanki),
                 RiichiAchievementIds.DOUBLE_YAKUMAN,
             ),
             result.getValue(winner.id),
@@ -141,13 +141,13 @@ class RiichiGameAchievementResolverTest {
         val game = riichiGame()
         val winner = game.tableState.players.first()
 
-        val result = resolve(game, win(winner.id, yakumanFields(YakuType.Daisangen, YakuType.Tsuuiisou)))
+        val result = resolve(game, win(winner.id, yakumanFields(RiichiYakuType.Daisangen, RiichiYakuType.Tsuuiisou)))
 
         assertEquals(
             setOf(
                 RiichiAchievementIds.YAKUMAN,
-                RiichiAchievementIds.yakuman(YakuType.Daisangen),
-                RiichiAchievementIds.yakuman(YakuType.Tsuuiisou),
+                RiichiAchievementIds.yakuman(RiichiYakuType.Daisangen),
+                RiichiAchievementIds.yakuman(RiichiYakuType.Tsuuiisou),
                 RiichiAchievementIds.MULTIPLE_YAKUMAN,
             ),
             result.getValue(winner.id),
@@ -160,14 +160,14 @@ class RiichiGameAchievementResolverTest {
         val game = riichiGame()
         val winner = game.tableState.players.first()
 
-        val single = resolve(game, win(winner.id, yakumanFields(YakuType.Renhou)))
-        val double = resolve(game, win(winner.id, yakumanFields(YakuType.Daichisei)))
-        val combined = resolve(game, win(winner.id, yakumanFields(YakuType.Renhou, YakuType.Daisangen)))
+        val single = resolve(game, win(winner.id, yakumanFields(RiichiYakuType.Renhou)))
+        val double = resolve(game, win(winner.id, yakumanFields(RiichiYakuType.Daichisei)))
+        val combined = resolve(game, win(winner.id, yakumanFields(RiichiYakuType.Renhou, RiichiYakuType.Daisangen)))
 
         assertEquals(setOf(RiichiAchievementIds.YAKUMAN), single.getValue(winner.id))
         assertEquals(setOf(RiichiAchievementIds.YAKUMAN, RiichiAchievementIds.DOUBLE_YAKUMAN), double.getValue(winner.id))
         assertEquals(
-            setOf(RiichiAchievementIds.YAKUMAN, RiichiAchievementIds.yakuman(YakuType.Daisangen), RiichiAchievementIds.MULTIPLE_YAKUMAN),
+            setOf(RiichiAchievementIds.YAKUMAN, RiichiAchievementIds.yakuman(RiichiYakuType.Daisangen), RiichiAchievementIds.MULTIPLE_YAKUMAN),
             combined.getValue(winner.id),
         )
     }
@@ -178,21 +178,21 @@ class RiichiGameAchievementResolverTest {
         val game = riichiGame()
         val winner = game.tableState.players.first()
         val yakumanTypes = listOf(
-            YakuType.KokushiMusou,
-            YakuType.ChurenPoto,
-            YakuType.Tsuuiisou,
-            YakuType.Ryuuuiisou,
-            YakuType.Suuankou,
-            YakuType.Sukantsu,
-            YakuType.Shousuushi,
-            YakuType.Daisangen,
-            YakuType.Chinroutou,
-            YakuType.Tenhou,
-            YakuType.Chiihou,
-            YakuType.KokushiMusou13,
-            YakuType.ChurenPoto9,
-            YakuType.SuuankouTanki,
-            YakuType.Daisuushii,
+            RiichiYakuType.KokushiMusou,
+            RiichiYakuType.ChurenPoto,
+            RiichiYakuType.Tsuuiisou,
+            RiichiYakuType.Ryuuuiisou,
+            RiichiYakuType.Suuankou,
+            RiichiYakuType.Sukantsu,
+            RiichiYakuType.Shousuushi,
+            RiichiYakuType.Daisangen,
+            RiichiYakuType.Chinroutou,
+            RiichiYakuType.Tenhou,
+            RiichiYakuType.Chiihou,
+            RiichiYakuType.KokushiMusou13,
+            RiichiYakuType.ChurenPoto9,
+            RiichiYakuType.SuuankouTanki,
+            RiichiYakuType.Daisuushii,
         )
 
         yakumanTypes.forEach { yaku ->
@@ -214,7 +214,7 @@ class RiichiGameAchievementResolverTest {
     fun `duplicate yaku fields are rejected by the source contract`() {
         val game = riichiGame()
         val winner = game.tableState.players.first()
-        val fields = yakumanFields(YakuType.Daisangen) + yakumanFields(YakuType.Tsuuiisou)
+        val fields = yakumanFields(RiichiYakuType.Daisangen) + yakumanFields(RiichiYakuType.Tsuuiisou)
             .filter { it.id == RiichiWinSettlementIds.YAKU_FIELD }
 
         assertFailsWith<IllegalArgumentException> { win(winner.id, fields) }
@@ -315,7 +315,7 @@ class RiichiGameAchievementResolverTest {
         val winner = game.tableState.players.first()
 
         val facts = listOf(
-            win(winner.id, nonYakumanFields(han = 1, YakuType.Riichi)),
+            win(winner.id, nonYakumanFields(han = 1, RiichiYakuType.Riichi)),
             HistoryFact.RuleEffectResolved(
                 reasonId = "example:win",
                 roundCompletion = RoundCompletionSummary(
@@ -326,7 +326,7 @@ class RiichiGameAchievementResolverTest {
                     transitionDirective = RoundTransitionDirective.PassToNextSeat,
                     settledScoresByPlayerId = game.tableState.players.associate { it.id to it.score },
                 ),
-                winDetails = listOf(HistoryWinDetails(winner.id, yakumanFields(YakuType.Daisangen))),
+                winDetails = listOf(HistoryWinDetails(winner.id, yakumanFields(RiichiYakuType.Daisangen))),
             ),
         )
 
@@ -344,10 +344,10 @@ class RiichiGameAchievementResolverTest {
             WinSettlementDetailField(
                 RiichiWinSettlementIds.YAKU_FIELD,
                 WinSettlementDetailValue.Entries(
-                    listOf(RiichiWinSettlementIds.yakumanEntry(YakuType.Suuankou, 1), RiichiWinSettlementIds.yakuEntry(YakuType.Riichi, 1)),
+                    listOf(RiichiWinSettlementIds.yakumanEntry(RiichiYakuType.Suuankou, 1), RiichiWinSettlementIds.yakuEntry(RiichiYakuType.Riichi, 1)),
                 ),
             ),
-        ) + yakumanFields(YakuType.Suuankou).filter { it.id != RiichiWinSettlementIds.YAKU_FIELD }
+        ) + yakumanFields(RiichiYakuType.Suuankou).filter { it.id != RiichiWinSettlementIds.YAKU_FIELD }
         val result = resolveFacts(
             game,
             win(winner.id, fields),
@@ -357,7 +357,7 @@ class RiichiGameAchievementResolverTest {
         )
 
         assertEquals(
-            setOf(RiichiAchievementIds.YAKUMAN, checkNotNull(RiichiAchievementIds.yakuman(YakuType.Suuankou)), RiichiAchievementIds.RIICHI_WIN),
+            setOf(RiichiAchievementIds.YAKUMAN, checkNotNull(RiichiAchievementIds.yakuman(RiichiYakuType.Suuankou)), RiichiAchievementIds.RIICHI_WIN),
             result.getValue(winner.id),
         )
     }
@@ -368,8 +368,8 @@ class RiichiGameAchievementResolverTest {
         val game = riichiGame()
         val winner = game.tableState.players.first()
         val entries = listOf(
-            RiichiWinSettlementIds.yakumanEntry(YakuType.Daisangen, 1),
-            RiichiWinSettlementIds.yakumanEntry(YakuType.Daisangen, 2),
+            RiichiWinSettlementIds.yakumanEntry(RiichiYakuType.Daisangen, 1),
+            RiichiWinSettlementIds.yakumanEntry(RiichiYakuType.Daisangen, 2),
         )
         val fields = listOf(
             WinSettlementDetailField(RiichiWinSettlementIds.YAKU_FIELD, WinSettlementDetailValue.Entries(entries)),
@@ -383,7 +383,7 @@ class RiichiGameAchievementResolverTest {
         assertEquals(
             setOf(
                 RiichiAchievementIds.YAKUMAN,
-                checkNotNull(RiichiAchievementIds.yakuman(YakuType.Daisangen)),
+                checkNotNull(RiichiAchievementIds.yakuman(RiichiYakuType.Daisangen)),
                 RiichiAchievementIds.DOUBLE_YAKUMAN,
             ),
             result,
@@ -461,7 +461,7 @@ class RiichiGameAchievementResolverTest {
         val winner = game.tableState.players.first()
 
         val result = GameAchievementDetector(registry)
-            .detect(facts(game, win(winner.id, nonYakumanFields(han = 2, YakuType.Riichi))))
+            .detect(facts(game, win(winner.id, nonYakumanFields(han = 2, RiichiYakuType.Riichi))))
 
         assertTrue(result.single { it.playerId == winner.id }.achievementIds.contains(RiichiAchievementIds.RIICHI_WIN))
     }
@@ -474,7 +474,7 @@ class RiichiGameAchievementResolverTest {
         val winner = game.tableState.players.first()
 
         val result = GameAchievementDetector(registry)
-            .detect(facts(game, win(winner.id, nonYakumanFields(han = 2, YakuType.Riichi))))
+            .detect(facts(game, win(winner.id, nonYakumanFields(han = 2, RiichiYakuType.Riichi))))
 
         assertTrue(result.flatMap { it.achievementIds }.none { it.startsWith("mahjongcraft:riichi/") })
     }
@@ -590,7 +590,7 @@ class RiichiGameAchievementResolverTest {
      * @param yaku 和牌成立的一般役種。
      * @return 役種與番符欄位。
      */
-    private fun nonYakumanFields(han: Int, vararg yaku: YakuType) = listOf(
+    private fun nonYakumanFields(han: Int, vararg yaku: RiichiYakuType) = listOf(
         yakuField(yaku.toList()),
         WinSettlementDetailField(
             RiichiWinSettlementIds.HAN_FU_FIELD,
@@ -604,7 +604,7 @@ class RiichiGameAchievementResolverTest {
      * @param yaku 和牌成立的役滿役種。
      * @return 役種與役滿數量欄位。
      */
-    private fun yakumanFields(vararg yaku: YakuType) = listOf(
+    private fun yakumanFields(vararg yaku: RiichiYakuType) = listOf(
         WinSettlementDetailField(
             RiichiWinSettlementIds.YAKU_FIELD,
             WinSettlementDetailValue.Entries(yaku.map { RiichiWinSettlementIds.yakumanEntry(it, if (it in doubleYakuman) 2 else 1) }),
@@ -621,11 +621,11 @@ class RiichiGameAchievementResolverTest {
      * @param yaku 成立的一般役種。
      * @return 對應的役種欄位。
      */
-    private fun yakuField(yaku: List<YakuType>) = WinSettlementDetailField(
+    private fun yakuField(yaku: List<RiichiYakuType>) = WinSettlementDetailField(
         RiichiWinSettlementIds.YAKU_FIELD,
         WinSettlementDetailValue.Entries(yaku.map { RiichiWinSettlementIds.yakuEntry(it, 1) }),
     )
 
     /** 測試用的雙倍役滿役種。 */
-    private val doubleYakuman = setOf(YakuType.KokushiMusou13, YakuType.ChurenPoto9, YakuType.SuuankouTanki, YakuType.Daisuushii, YakuType.Daichisei)
+    private val doubleYakuman = setOf(RiichiYakuType.KokushiMusou13, RiichiYakuType.ChurenPoto9, RiichiYakuType.SuuankouTanki, RiichiYakuType.Daisuushii, RiichiYakuType.Daichisei)
 }

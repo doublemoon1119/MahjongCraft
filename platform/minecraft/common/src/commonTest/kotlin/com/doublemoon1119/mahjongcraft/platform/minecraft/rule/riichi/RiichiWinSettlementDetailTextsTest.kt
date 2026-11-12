@@ -3,7 +3,7 @@ package com.doublemoon1119.mahjongcraft.platform.minecraft.rule.riichi
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementDetailEntry
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementQuantity
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.riichi.RiichiWinSettlementIds
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.YakuType
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.RiichiYakuType
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.EntryEmphasis
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.PresentationValue
 import kotlin.test.Test
@@ -16,9 +16,9 @@ class RiichiWinSettlementDetailTextsTest {
     fun `yaku entries show han yakuman multipliers and plain entries`() {
         val entries = RiichiWinSettlementDetailTexts.yaku.entries(
             listOf(
-                RiichiWinSettlementIds.yakuEntry(YakuType.Tanyao, 1),
-                RiichiWinSettlementIds.yakumanEntry(YakuType.Daisangen, 1),
-                RiichiWinSettlementIds.yakumanEntry(YakuType.KokushiMusou13, 2),
+                RiichiWinSettlementIds.yakuEntry(RiichiYakuType.Tanyao, 1),
+                RiichiWinSettlementIds.yakumanEntry(RiichiYakuType.Daisangen, 1),
+                RiichiWinSettlementIds.yakumanEntry(RiichiYakuType.KokushiMusou13, 2),
                 WinSettlementDetailEntry(RiichiWinSettlementIds.NAGASHI_MANGAN),
             ),
         ).entries
@@ -26,17 +26,17 @@ class RiichiWinSettlementDetailTextsTest {
         assertEquals(
             listOf(
                 PresentationValue.EntryListValue.Entry(
-                    translationKey = RiichiYakuTranslationKeys.keyFor(YakuType.Tanyao),
+                    translationKey = RiichiYakuTranslationKeys.keyFor(RiichiYakuType.Tanyao),
                     trailingTranslationKey = RiichiTranslationKeys.SETTLEMENT_HAN,
                     trailingTranslationArgument = "1",
                 ),
                 PresentationValue.EntryListValue.Entry(
-                    translationKey = RiichiYakuTranslationKeys.keyFor(YakuType.Daisangen),
+                    translationKey = RiichiYakuTranslationKeys.keyFor(RiichiYakuType.Daisangen),
                     trailingTranslationKey = "mahjongcraft.riichi.settlement.yakuman_1x",
                     emphasis = EntryEmphasis.HIGHLIGHTED,
                 ),
                 PresentationValue.EntryListValue.Entry(
-                    translationKey = RiichiYakuTranslationKeys.keyFor(YakuType.KokushiMusou13),
+                    translationKey = RiichiYakuTranslationKeys.keyFor(RiichiYakuType.KokushiMusou13),
                     trailingTranslationKey = "mahjongcraft.riichi.settlement.yakuman_2x",
                     emphasis = EntryEmphasis.HIGHLIGHTED,
                 ),

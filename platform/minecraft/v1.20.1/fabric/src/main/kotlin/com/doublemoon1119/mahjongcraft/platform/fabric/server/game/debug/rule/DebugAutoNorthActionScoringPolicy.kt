@@ -6,7 +6,7 @@ import com.doublemoon1119.mahjongcraft.logic.component.ComponentSet
 import com.doublemoon1119.mahjongcraft.logic.module.ActionScoring
 import com.doublemoon1119.mahjongcraft.logic.module.ActionScoringContext
 import com.doublemoon1119.mahjongcraft.logic.module.ActionScoringPolicy
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.PULL_NORTH_GAME_ACTION
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RIICHI_PULL_NORTH_GAME_ACTION
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RIICHI_STICK_POINTS
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiTableComponents
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.riichiPotPoints
@@ -24,7 +24,7 @@ internal object DebugAutoNorthActionScoringPolicy : ActionScoringPolicy {
     override fun resolve(context: ActionScoringContext): ActionScoring? {
         val stateAfterAction = context.tableStateAfterAction
         return when {
-            context.action == PULL_NORTH_GAME_ACTION -> {
+            context.action == RIICHI_PULL_NORTH_GAME_ACTION -> {
                 val potPoints = stateAfterAction.riichiPotPoints()
                 require(potPoints <= Int.MAX_VALUE - RIICHI_STICK_POINTS) { "Riichi pot points overflow" }
                 ActionScoring(

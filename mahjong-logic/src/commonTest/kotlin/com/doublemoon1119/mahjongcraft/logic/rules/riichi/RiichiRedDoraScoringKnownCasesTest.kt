@@ -8,7 +8,7 @@ import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.logic.base.TileValue
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.RiichiTileValues
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.RiichiHandValueCalculatorTestBase
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.YakuType
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.RiichiYakuType
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeIdentifiedTileFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeMeldFactory
@@ -33,7 +33,7 @@ class RiichiRedDoraScoringKnownCasesTest : RiichiHandValueCalculatorTestBase() {
             ),
         )
 
-        assertEquals(mapOf(YakuType.Tanyao to 1, YakuType.AkaDora to 1), result.hanByYaku())
+        assertEquals(mapOf(RiichiYakuType.Tanyao to 1, RiichiYakuType.AkaDora to 1), result.hanByYaku())
         assertEquals(40, result.totalFu)
         assertEquals(RiichiPointResult.Ron(2600), result.pointResult)
     }
@@ -48,7 +48,7 @@ class RiichiRedDoraScoringKnownCasesTest : RiichiHandValueCalculatorTestBase() {
             ),
         )
 
-        assertEquals(mapOf(YakuType.Tanyao to 1), result.hanByYaku())
+        assertEquals(mapOf(RiichiYakuType.Tanyao to 1), result.hanByYaku())
         assertEquals(RiichiPointResult.Ron(1300), result.pointResult)
     }
 
@@ -65,7 +65,7 @@ class RiichiRedDoraScoringKnownCasesTest : RiichiHandValueCalculatorTestBase() {
         val result = calculator.calculate(context)
 
         assertEquals(
-            mapOf(YakuType.Menzentsumo to 1, YakuType.Pinfu to 1, YakuType.Tanyao to 1, YakuType.AkaDora to 1),
+            mapOf(RiichiYakuType.Menzentsumo to 1, RiichiYakuType.Pinfu to 1, RiichiYakuType.Tanyao to 1, RiichiYakuType.AkaDora to 1),
             result.hanByYaku(),
         )
         assertEquals(20, result.totalFu)
@@ -90,7 +90,7 @@ class RiichiRedDoraScoringKnownCasesTest : RiichiHandValueCalculatorTestBase() {
             ),
         )
 
-        assertEquals(mapOf(YakuType.Tanyao to 1, YakuType.AkaDora to 2), result.hanByYaku())
+        assertEquals(mapOf(RiichiYakuType.Tanyao to 1, RiichiYakuType.AkaDora to 2), result.hanByYaku())
         assertEquals(30, result.totalFu)
         assertEquals(RiichiPointResult.Ron(3900), result.pointResult)
     }
@@ -108,7 +108,7 @@ class RiichiRedDoraScoringKnownCasesTest : RiichiHandValueCalculatorTestBase() {
             ),
         )
 
-        assertEquals(mapOf(YakuType.AkaDora to 1), result.hanByYaku())
+        assertEquals(mapOf(RiichiYakuType.AkaDora to 1), result.hanByYaku())
         assertEquals(0, result.qualifyingHan().value)
         assertFalse(result.qualifyingHan().satisfies(1))
     }
@@ -134,7 +134,7 @@ class RiichiRedDoraScoringKnownCasesTest : RiichiHandValueCalculatorTestBase() {
     ).copy(winningTileValue = winningTile)
 
     /** 依役種彙整番數，只保留有番數的項目。 */
-    private fun RiichiHandValueResult.hanByYaku(): Map<YakuType, Int> = yakuResults.filter { it.han != 0 }.associate { it.yaku to it.han }
+    private fun RiichiHandValueResult.hanByYaku(): Map<RiichiYakuType, Int> = yakuResults.filter { it.han != 0 }.associate { it.yaku to it.han }
 
     /** 建立指定花色的赤五牌張。 */
     private fun redFive(suit: Tile.Suit): IdentifiedTile = FakeIdentifiedTileFactory.create(RiichiTileValues.redFive(suit))

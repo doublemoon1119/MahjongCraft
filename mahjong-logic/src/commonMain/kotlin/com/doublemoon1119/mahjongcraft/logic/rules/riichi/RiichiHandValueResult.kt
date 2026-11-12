@@ -1,7 +1,7 @@
 package com.doublemoon1119.mahjongcraft.logic.rules.riichi
 
 import com.doublemoon1119.mahjongcraft.logic.judgment.HandValueResult
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.YakuResult
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.RiichiYakuResult
 
 /**
  * 立直麻將手牌價值計算結果。
@@ -15,12 +15,12 @@ import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.YakuResult
  *                        此欄位記錄對應的包牌責任方位；否則為 null。呼叫端需自行將方位對應回實際玩家。
  */
 data class RiichiHandValueResult(
-    val yakuResults: List<YakuResult>,
+    val yakuResults: List<RiichiYakuResult>,
     val totalHan: Int,
     val totalFu: Int,
     val pointResult: RiichiPointResult,
     val isYakuman: Boolean = totalHan < 0,
-    val paoLiability: PaoLiability? = null,
+    val paoLiability: RiichiPaoLiability? = null,
 ) : HandValueResult {
     /** 點數結果按四人付款結構加總的金額；人數不足四人時應改用 [RiichiPointResult.totalFor]。 */
     val totalPoint: Int get() = pointResult.total

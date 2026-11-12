@@ -11,4 +11,4 @@ import kotlinx.serialization.Serializable
  */
 @Serializable
 @SerialName("mahjongcraft:riichi/player_view/pao_liability")
-data class RiichiPaoLiabilityViewDto(val liability: PaoLiabilityDto) : ComponentViewDto
+data class RiichiPaoLiabilityViewDto(val liability: RiichiPaoLiabilityDto) : ComponentViewDto

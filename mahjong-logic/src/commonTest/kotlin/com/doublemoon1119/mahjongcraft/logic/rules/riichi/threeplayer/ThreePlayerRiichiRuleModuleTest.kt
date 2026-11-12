@@ -11,7 +11,7 @@ import com.doublemoon1119.mahjongcraft.logic.component.ComponentSet
 import com.doublemoon1119.mahjongcraft.logic.module.BuiltInRuleModuleIds
 import com.doublemoon1119.mahjongcraft.logic.module.WinSettlementResult
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.LegalActionTestContexts
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.PULL_NORTH_GAME_ACTION
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RIICHI_PULL_NORTH_GAME_ACTION
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDiscardPile
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiGameLength
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiHandValueResult
@@ -22,7 +22,7 @@ import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiWallProgress
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.riichiDeclaration
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.riichiWallProgress
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.RiichiTileComponents
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.YakuType
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.RiichiYakuType
 import com.doublemoon1119.mahjongcraft.logic.table.BuiltInMatchEndReasonIds
 import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayer
 import com.doublemoon1119.mahjongcraft.logic.table.MatchProgressionContext
@@ -166,7 +166,7 @@ class ThreePlayerRiichiRuleModuleTest {
             components = riichiDeclarationComponents(),
         )
 
-        assertTrue(PULL_NORTH_GAME_ACTION in selfTurnActions(player))
+        assertTrue(RIICHI_PULL_NORTH_GAME_ACTION in selfTurnActions(player))
     }
 
     /** 驗證立直後只能拔剛摸到的北。 */
@@ -182,8 +182,8 @@ class ThreePlayerRiichiRuleModuleTest {
             components = riichiState,
         )
 
-        assertFalse(PULL_NORTH_GAME_ACTION in selfTurnActions(heldNorth))
-        assertTrue(PULL_NORTH_GAME_ACTION in selfTurnActions(drawnNorth))
+        assertFalse(RIICHI_PULL_NORTH_GAME_ACTION in selfTurnActions(heldNorth))
+        assertTrue(RIICHI_PULL_NORTH_GAME_ACTION in selfTurnActions(drawnNorth))
     }
 
     /** 驗證四張北都拔完補牌後不再提供拔北。 */
@@ -196,7 +196,7 @@ class ThreePlayerRiichiRuleModuleTest {
 
         val actions = selfTurnActions(player, riichiTableComponents(potPoints = 0, wallProgress = RiichiWallProgress(completedNorthDrawCount = RiichiSupplementalDrawPolicy.MAX_SUPPLEMENTAL_DRAWS)))
 
-        assertFalse(PULL_NORTH_GAME_ACTION in actions)
+        assertFalse(RIICHI_PULL_NORTH_GAME_ACTION in actions)
     }
 
     /** 驗證拔北優先拔剛摸到的北、記錄動作，並讓所有玩家的一發失效。 */
@@ -211,14 +211,14 @@ class ThreePlayerRiichiRuleModuleTest {
         val ippatsuOther = other(Wind.SOUTH).copy(components = riichiDeclarationComponents(declarationTile = riichiTile(), isIppatsu = true))
         val table = threePlayerTable(listOf(puller, ippatsuOther, other(Wind.WEST)))
 
-        assertEquals(drawnNorth, module.tileSetAsideBy(puller, PULL_NORTH_GAME_ACTION))
-        val after = assertNotNull(module.applyTileSetAsideAction(table, puller.id, PULL_NORTH_GAME_ACTION))
+        assertEquals(drawnNorth, module.tileSetAsideBy(puller, RIICHI_PULL_NORTH_GAME_ACTION))
+        val after = assertNotNull(module.applyTileSetAsideAction(table, puller.id, RIICHI_PULL_NORTH_GAME_ACTION))
 
         val pullerAfter = after.players.first { it.id == puller.id }
         assertNull(pullerAfter.hand.lastDrawn)
         assertEquals(listOf(heldNorth.id), pullerAfter.hand.tiles.filter { it.tile == Tile.Honor.North }.map { it.id })
         assertEquals(listOf(drawnNorth), pullerAfter.tileAreas[RiichiPlayerTileAreaIds.NORTH]?.tiles.orEmpty())
-        assertEquals(PULL_NORTH_GAME_ACTION, pullerAfter.actionHistory.last())
+        assertEquals(RIICHI_PULL_NORTH_GAME_ACTION, pullerAfter.actionHistory.last())
         assertTrue(after.players.none { it.riichiDeclaration?.isIppatsu == true })
     }
 
@@ -233,7 +233,7 @@ class ThreePlayerRiichiRuleModuleTest {
         )
         val table = threePlayerTable(listOf(puller, other(Wind.SOUTH), other(Wind.WEST)))
 
-        val after = assertNotNull(module.applyTileSetAsideAction(table, puller.id, PULL_NORTH_GAME_ACTION))
+        val after = assertNotNull(module.applyTileSetAsideAction(table, puller.id, RIICHI_PULL_NORTH_GAME_ACTION))
 
         val pullerAfter = after.players.first { it.id == puller.id }
         assertTrue(drawn in pullerAfter.hand.tiles)
@@ -250,8 +250,8 @@ class ThreePlayerRiichiRuleModuleTest {
         )
         val table = threePlayerTable(listOf(player, other(Wind.SOUTH), other(Wind.WEST)))
 
-        assertNull(module.tileSetAsideBy(player, PULL_NORTH_GAME_ACTION))
-        assertNull(module.applyTileSetAsideAction(table, player.id, PULL_NORTH_GAME_ACTION))
+        assertNull(module.tileSetAsideBy(player, RIICHI_PULL_NORTH_GAME_ACTION))
+        assertNull(module.applyTileSetAsideAction(table, player.id, RIICHI_PULL_NORTH_GAME_ACTION))
     }
 
     /** 驗證拔北補牌從嶺上牌前端取牌、只增加拔北補牌次數，不影響槓的補牌次數。 */
@@ -268,7 +268,7 @@ class ThreePlayerRiichiRuleModuleTest {
 
         val result = assertIs<SupplementalDrawDecision.Completed>(
             module.createSupplementalDrawPolicy().resolve(
-                SupplementalDrawContext(state, state, state.currentPlayer.id, PULL_NORTH_GAME_ACTION),
+                SupplementalDrawContext(state, state, state.currentPlayer.id, RIICHI_PULL_NORTH_GAME_ACTION),
             ),
         )
 
@@ -294,7 +294,7 @@ class ThreePlayerRiichiRuleModuleTest {
             components = riichiTableComponents(potPoints = 0),
         )
         val drawn = mutableListOf<IdentifiedTile>()
-        val actions = List(4) { PULL_NORTH_GAME_ACTION } + List(4) { GameAction.Kan(GameAction.KanType.CLOSED_KAN, Uuid.random(), emptyList()) }
+        val actions = List(4) { RIICHI_PULL_NORTH_GAME_ACTION } + List(4) { GameAction.Kan(GameAction.KanType.CLOSED_KAN, Uuid.random(), emptyList()) }
 
         actions.forEach { action ->
             val result = assertIs<SupplementalDrawDecision.Completed>(
@@ -415,8 +415,8 @@ class ThreePlayerRiichiRuleModuleTest {
         val result = assertNotNull(module.declareTsumo(table, winner))
 
         val yaku = (result.handValueResult as RiichiHandValueResult).yakuResults.associate { it.yaku to it.han }
-        assertEquals(2, yaku[YakuType.NukiDora])
-        assertEquals(2, yaku[YakuType.Dora])
+        assertEquals(2, yaku[RiichiYakuType.NukiDora])
+        assertEquals(2, yaku[RiichiYakuType.Dora])
     }
 
     /** 驗證萬子寶牌在一萬與九萬之間循環。 */

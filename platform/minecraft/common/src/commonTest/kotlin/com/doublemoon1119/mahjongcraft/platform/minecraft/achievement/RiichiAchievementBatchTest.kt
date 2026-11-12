@@ -22,7 +22,7 @@ import com.doublemoon1119.mahjongcraft.logic.module.BuiltInRuleModuleIds
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.threeplayer.ThreePlayerRiichiRuleConfig
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.YakuType
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.RiichiYakuType
 import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayer
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.riichi.BundledRiichiMinecraftExtension
@@ -59,14 +59,14 @@ class RiichiAchievementBatchTest {
             fourPlayerGame,
             HistoryFact.WinSettled(
                 outcomeId = BuiltInRoundOutcomeIds.TSUMO,
-                winDetails = listOf(HistoryWinDetails(fourPlayerWinner.id, nonYakumanFields(YakuType.Riichi))),
+                winDetails = listOf(HistoryWinDetails(fourPlayerWinner.id, nonYakumanFields(RiichiYakuType.Riichi))),
             ),
         )
         val threePlayerWin = facts(
             threePlayerGame,
             HistoryFact.WinSettled(
                 outcomeId = BuiltInRoundOutcomeIds.TSUMO,
-                winDetails = listOf(HistoryWinDetails(threePlayerWinner.id, yakumanFields(YakuType.Suuankou))),
+                winDetails = listOf(HistoryWinDetails(threePlayerWinner.id, yakumanFields(RiichiYakuType.Suuankou))),
             ),
         )
         val completedMatch = facts(
@@ -97,7 +97,7 @@ class RiichiAchievementBatchTest {
                     BuiltInAchievementIds.WIN,
                     BuiltInAchievementIds.SELF_DRAW_WIN,
                     RiichiAchievementIds.YAKUMAN,
-                    checkNotNull(RiichiAchievementIds.yakuman(YakuType.Suuankou)),
+                    checkNotNull(RiichiAchievementIds.yakuman(RiichiYakuType.Suuankou)),
                 ),
             ),
             expectedStatistics = mapOf(threePlayerWinner.id to setOf(AchievementStatisticIds.WINS, AchievementStatisticIds.SELF_DRAW_WINS)),
@@ -137,7 +137,7 @@ class RiichiAchievementBatchTest {
             game,
             HistoryFact.WinSettled(
                 outcomeId = BuiltInRoundOutcomeIds.TSUMO,
-                winDetails = listOf(HistoryWinDetails(winner.id, yakumanFields(YakuType.Suuankou))),
+                winDetails = listOf(HistoryWinDetails(winner.id, yakumanFields(RiichiYakuType.Suuankou))),
             ),
         )
 
@@ -151,7 +151,7 @@ class RiichiAchievementBatchTest {
                     RiichiAchievementIds.RIICHI_WIN,
                     RiichiAchievementIds.IPPATSU,
                     RiichiAchievementIds.YAKUMAN,
-                    checkNotNull(RiichiAchievementIds.yakuman(YakuType.Suuankou)),
+                    checkNotNull(RiichiAchievementIds.yakuman(RiichiYakuType.Suuankou)),
                 ),
             ),
             expectedStatistics = mapOf(winner.id to setOf(AchievementStatisticIds.WINS, AchievementStatisticIds.SELF_DRAW_WINS)),
@@ -203,7 +203,7 @@ class RiichiAchievementBatchTest {
     )
 
     /** 建立一番的一般日麻役種欄位。 */
-    private fun nonYakumanFields(vararg yaku: YakuType) = listOf(
+    private fun nonYakumanFields(vararg yaku: RiichiYakuType) = listOf(
         WinSettlementDetailField(
             RiichiWinSettlementIds.YAKU_FIELD,
             WinSettlementDetailValue.Entries(yaku.map { RiichiWinSettlementIds.yakuEntry(it, 1) }),
@@ -211,7 +211,7 @@ class RiichiAchievementBatchTest {
     )
 
     /** 建立自然役滿欄位。 */
-    private fun yakumanFields(vararg yaku: YakuType) = listOf(
+    private fun yakumanFields(vararg yaku: RiichiYakuType) = listOf(
         WinSettlementDetailField(
             RiichiWinSettlementIds.YAKU_FIELD,
             WinSettlementDetailValue.Entries(yaku.map { RiichiWinSettlementIds.yakumanEntry(it, 1) }),

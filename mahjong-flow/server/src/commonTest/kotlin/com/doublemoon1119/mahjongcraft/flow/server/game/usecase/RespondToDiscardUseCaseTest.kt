@@ -28,12 +28,12 @@ import com.doublemoon1119.mahjongcraft.logic.config.RonResolution
 import com.doublemoon1119.mahjongcraft.logic.module.BuiltInRuleModuleIds
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.PaoLiability
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.PaoYaku
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RIICHI_GAME_ACTION
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RIICHI_STICK_POINTS
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDiscardPile
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiExhaustiveDrawReason
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPaoLiability
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPaoYaku
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPlayerComponents
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.riichiDeclaration
@@ -833,7 +833,7 @@ class RespondToDiscardUseCaseTest {
         val newState = fixtures.gameRepo.getTableState(gameId)!!
         val winner = newState.players.first { it.id == responderId }
         assertEquals(
-            PaoLiability(PaoYaku.Daisangen, newState.relativeDirectionOf(responderId, discarderId)),
+            RiichiPaoLiability(RiichiPaoYaku.Daisangen, newState.relativeDirectionOf(responderId, discarderId)),
             winner.components[RiichiPlayerComponents.PAO_LIABILITY],
         )
     }
@@ -877,7 +877,7 @@ class RespondToDiscardUseCaseTest {
 
         assertTrue(result is Outcome.Success, "Expected Success but got $result")
         val claimer = fixtures.gameRepo.getTableState(gameId)!!.players.first { it.id == responderId }
-        assertEquals(PaoYaku.Daisuushii, claimer.components[RiichiPlayerComponents.PAO_LIABILITY]?.yaku)
+        assertEquals(RiichiPaoYaku.Daisuushii, claimer.components[RiichiPlayerComponents.PAO_LIABILITY]?.yaku)
     }
 
     /**
@@ -1118,7 +1118,7 @@ class RespondToDiscardUseCaseTest {
             hand = Hand(tiles = daisangenTiles().map { FakeIdentifiedTileFactory.create(it) }),
             // 已經打過一輪牌，確保不是第一巡，避免誤觸天和/地和/人和疊加成雙倍役滿
             discardPile = RiichiDiscardPile().discardTile(FakeIdentifiedTileFactory.create(Tile.Honor.South)),
-            components = ComponentSet.EMPTY.with(RiichiPlayerComponents.PAO_LIABILITY, PaoLiability(PaoYaku.Daisangen, RelativeDirection.Left)).merge(riichiDeclarationComponents()),
+            components = ComponentSet.EMPTY.with(RiichiPlayerComponents.PAO_LIABILITY, RiichiPaoLiability(RiichiPaoYaku.Daisangen, RelativeDirection.Left)).merge(riichiDeclarationComponents()),
         )
         val discarder = FakeMahjongPlayerFactory.create(
             id = discarderId,

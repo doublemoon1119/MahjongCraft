@@ -163,12 +163,12 @@ class RiichiRuleModule(
     /**
      * 若玩家已立直且仍有一發資格，這次捨牌代表一發的期限已經結束（立直後一巡內未能胡牌），故清除一發資格。
      */
-    override fun onPlayerDiscarded(player: MahjongPlayer): ComponentPatch = player.ippatsuEndPatch()
+    override fun onPlayerDiscarded(player: MahjongPlayer): ComponentPatch = player.riichiIppatsuEndPatch()
 
     /**
      * 任何一次鳴牌都會讓場上所有玩家的一發資格失效。
      */
-    override fun onMeldCompleted(context: MeldCompletedContext): Map<Uuid, ComponentPatch> = context.playersAfter.associate { it.id to it.ippatsuEndPatch() }
+    override fun onMeldCompleted(context: MeldCompletedContext): Map<Uuid, ComponentPatch> = context.playersAfter.associate { it.id to it.riichiIppatsuEndPatch() }
 
     /**
      * 檢查本次碰／明槓是否觸發大三元／大四喜的包牌責任，若觸發則寫入 [claimingPlayer] 的包牌組件。
@@ -180,7 +180,7 @@ class RiichiRuleModule(
         meldType: MeldType,
         calledTile: IdentifiedTile,
         sourceDirection: RelativeDirection,
-    ): ComponentPatch = claimingPlayer.paoLiabilityPatch(meldType, calledTile, sourceDirection)
+    ): ComponentPatch = claimingPlayer.riichiPaoLiabilityPatch(meldType, calledTile, sourceDirection)
 
     /**
      * 計算日本麻將自摸的點數結算：透過 [RiichiHandValueContextCalculator] 與 [RiichiHandValueCalculator]
@@ -288,7 +288,7 @@ class RiichiRuleModule(
      * 只計入 [TableState.activePlayers]：本局已胡牌退場的玩家不再參與流局計算，其牌河也不該成立
      * 流局滿貫。
      */
-    override fun resolveNagashiMangan(tableState: TableState): NagashiManganResolution? = riichiNagashiMangan(tableState)
+    override fun resolveNagashiMangan(tableState: TableState): RiichiNagashiManganResolution? = riichiNagashiMangan(tableState)
 
     /** 九種九牌需要公開宣告者手牌作為成立證明，其餘途中流局不公開手牌。 */
     override fun resolveAbortiveDrawRevealedHands(
@@ -366,7 +366,7 @@ class RiichiRuleModule(
     fun getStickPotCount(tableState: TableState): Int = tableState.riichiPotPoints() / RIICHI_STICK_POINTS
 
     /** 立直中的玩家放過和牌時記錄本局永久振聽；未立直時放過和牌只構成同巡振聽，不做任何變更。 */
-    override fun onPlayerDeclinedWin(player: MahjongPlayer): ComponentPatch = player.permanentFuritenPatch()
+    override fun onPlayerDeclinedWin(player: MahjongPlayer): ComponentPatch = player.riichiPermanentFuritenPatch()
 
     /** 公開狀態的註冊識別碼。 */
     companion object {

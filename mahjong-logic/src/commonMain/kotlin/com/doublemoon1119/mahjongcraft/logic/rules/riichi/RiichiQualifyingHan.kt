@@ -1,6 +1,6 @@
 package com.doublemoon1119.mahjongcraft.logic.rules.riichi
 
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.YakuType
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.RiichiYakuType
 
 /**
  * 起胡限制判定使用的非寶牌番數。
@@ -35,12 +35,12 @@ internal fun RiichiHandValueResult.qualifyingHan(): RiichiQualifyingHan {
         return RiichiQualifyingHan(
             value = Int.MAX_VALUE,
             yakuman = true,
-            isKokushi = yakuResults.any { it.yaku == YakuType.KokushiMusou || it.yaku == YakuType.KokushiMusou13 },
+            isKokushi = yakuResults.any { it.yaku == RiichiYakuType.KokushiMusou || it.yaku == RiichiYakuType.KokushiMusou13 },
         )
     }
     return RiichiQualifyingHan(
         value = yakuResults
-            .filterNot { it.yaku == YakuType.Dora || it.yaku == YakuType.UraDora || it.yaku == YakuType.AkaDora || it.yaku == YakuType.NukiDora }
+            .filterNot { it.yaku == RiichiYakuType.Dora || it.yaku == RiichiYakuType.UraDora || it.yaku == RiichiYakuType.AkaDora || it.yaku == RiichiYakuType.NukiDora }
             .sumOf { it.han },
     )
 }

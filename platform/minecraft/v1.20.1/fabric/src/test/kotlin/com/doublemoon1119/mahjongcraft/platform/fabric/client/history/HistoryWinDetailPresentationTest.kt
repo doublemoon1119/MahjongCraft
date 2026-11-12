@@ -12,7 +12,7 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryWinDetail
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryWinDetailQuantityDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryWinDetailValueDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryWinnerDetailsDto
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.YakuType
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.RiichiYakuType
 import com.doublemoon1119.mahjongcraft.logic.table.RoundCompletionClassification
 import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionVocabularyRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.RuleDecisionDisplayNameRegistryImpl
@@ -104,16 +104,16 @@ class HistoryWinDetailPresentationTest {
         }
         val yaku = HistoryWinDetailValueDto.Entries(
             listOf(
-                HistoryWinDetailValueDto.Entries.EntryDto(RiichiWinSettlementIds.yaku(YakuType.Riichi), HistoryWinDetailQuantityDto(RiichiWinSettlementIds.HAN, 1), nameQuantity = null, appliesToSomePayersOnly = false),
-                HistoryWinDetailValueDto.Entries.EntryDto(RiichiWinSettlementIds.yaku(YakuType.Daisangen), HistoryWinDetailQuantityDto(RiichiWinSettlementIds.YAKUMAN, 2), nameQuantity = null, appliesToSomePayersOnly = false),
+                HistoryWinDetailValueDto.Entries.EntryDto(RiichiWinSettlementIds.yaku(RiichiYakuType.Riichi), HistoryWinDetailQuantityDto(RiichiWinSettlementIds.HAN, 1), nameQuantity = null, appliesToSomePayersOnly = false),
+                HistoryWinDetailValueDto.Entries.EntryDto(RiichiWinSettlementIds.yaku(RiichiYakuType.Daisangen), HistoryWinDetailQuantityDto(RiichiWinSettlementIds.YAKUMAN, 2), nameQuantity = null, appliesToSomePayersOnly = false),
             ),
         )
         val rows = presenter().detailText(RiichiWinSettlementIds.YAKU_FIELD, yaku, templates)
-        assertEquals(RiichiYakuTranslationKeys.keyFor(YakuType.Riichi), (rows[0].content as TranslatableTextContent).key)
+        assertEquals(RiichiYakuTranslationKeys.keyFor(RiichiYakuType.Riichi), (rows[0].content as TranslatableTextContent).key)
         val han = rows[0].siblings.last().content as TranslatableTextContent
         assertEquals(RiichiTranslationKeys.SETTLEMENT_HAN, han.key)
         assertEquals(listOf("1"), han.args.toList())
-        assertEquals(RiichiYakuTranslationKeys.keyFor(YakuType.Daisangen), (rows[1].content as TranslatableTextContent).key)
+        assertEquals(RiichiYakuTranslationKeys.keyFor(RiichiYakuType.Daisangen), (rows[1].content as TranslatableTextContent).key)
         assertEquals("mahjongcraft.riichi.settlement.yakuman_2x", (rows[1].siblings.last().content as TranslatableTextContent).key)
 
         val hanFu = HistoryWinDetailValueDto.Quantities(listOf(HistoryWinDetailQuantityDto(RiichiWinSettlementIds.HAN, 3), HistoryWinDetailQuantityDto(RiichiWinSettlementIds.FU, 30)))

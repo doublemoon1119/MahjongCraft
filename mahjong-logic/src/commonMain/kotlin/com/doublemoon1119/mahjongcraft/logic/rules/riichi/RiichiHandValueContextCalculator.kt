@@ -103,11 +103,11 @@ class RiichiHandValueContextCalculator(
                 val lastTwoActions = actionHistory.takeLast(2)
                 val firstAction = lastTwoActions.first()
                 val secondAction = lastTwoActions.last()
-                (firstAction is GameAction.Kan || firstAction == PULL_NORTH_GAME_ACTION) && secondAction is GameAction.Draw && isTsumo
+                (firstAction is GameAction.Kan || firstAction == RIICHI_PULL_NORTH_GAME_ACTION) && secondAction is GameAction.Draw && isTsumo
             } else {
                 false
             },
-            isFirstTurn = tableState.players.all { it.hand.exposedMelds.isEmpty() && !it.hasPulledNorth() } &&
+            isFirstTurn = tableState.players.all { it.hand.exposedMelds.isEmpty() && !it.hasRiichiPulledNorth() } &&
                 tableState.players.all { it.discardPile.entries.size <= 1 } &&
                 player.discardPile.entries.isEmpty(),
             isRiichiDeclarationDiscard = discarder?.let { isRiichiDeclarationDiscard(it, incomingTile) } == true,

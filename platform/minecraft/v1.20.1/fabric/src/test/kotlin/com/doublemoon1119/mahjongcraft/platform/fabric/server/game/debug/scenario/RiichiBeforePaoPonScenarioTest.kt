@@ -7,8 +7,8 @@ import com.doublemoon1119.mahjongcraft.logic.base.MeldType
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.logic.judgment.LegalActionContext
 import com.doublemoon1119.mahjongcraft.logic.module.BuiltInRuleModuleIds
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.PaoLiability
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.PaoYaku
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPaoLiability
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPaoYaku
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPlayerComponents
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleModule
@@ -77,7 +77,7 @@ class RiichiBeforePaoPonScenarioTest {
             listOf(Tile.Honor.Green, Tile.Honor.Red),
             invoking.hand.exposedMelds.map { meld -> meld.tiles.map { it.tile }.distinct().single() },
         )
-        assertEquals(PaoLiability(PaoYaku.Daisangen, direction), claimed.values[RiichiPlayerComponents.PAO_LIABILITY])
+        assertEquals(RiichiPaoLiability(RiichiPaoYaku.Daisangen, direction), claimed.values[RiichiPlayerComponents.PAO_LIABILITY])
     }
 
     /** 活牌最前端交錯排著四萬與一萬，呼叫者輪到時第一張就是和牌張。 */

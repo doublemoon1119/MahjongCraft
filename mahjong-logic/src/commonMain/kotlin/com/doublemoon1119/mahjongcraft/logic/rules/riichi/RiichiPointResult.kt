@@ -1,6 +1,6 @@
 package com.doublemoon1119.mahjongcraft.logic.rules.riichi
 
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.YakuResult
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.RiichiYakuResult
 
 /**
  * 立直麻將的點數結算結果。
@@ -50,10 +50,10 @@ sealed interface RiichiPointResult {
      * 改由包牌責任者一人支付包牌部分的點數，取代原本應由三家分攤的自摸點數。
      *
      * 結果形狀與 [Ron] 相同（單一玩家支付全額），但實際付款人是包牌責任者而非放銃者，
-     * 由呼叫端依 [PaoLiability.direction] 決定對象。
+     * 由呼叫端依 [RiichiPaoLiability.direction] 決定對象。
      *
      * @property paoPayment 包牌責任者支付的點數——依觸發包牌的那個役滿本身的倍數換算（大三元 1
-     * 倍、大四喜 2 倍，見 [YakuResult.doubleYakuman]），不是整體役滿倍數。
+     * 倍、大四喜 2 倍，見 [RiichiYakuResult.doubleYakuman]），不是整體役滿倍數。
      * @property remainder 若和了同時疊加其他役滿（例如大四喜 + 四暗刻），超出包牌範圍的那部分改走
      * 正常自摸結算（[DealerTsumo]/[NonDealerTsumo]），由呼叫端疊加進正常付款對象；沒有
      * 疊加時為 null，全額都在包牌範圍內。

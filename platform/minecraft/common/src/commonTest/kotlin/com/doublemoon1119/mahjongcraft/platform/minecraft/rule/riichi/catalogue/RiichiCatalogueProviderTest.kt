@@ -13,7 +13,7 @@ import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.threeplayer.ThreePlayerRiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.threeplayer.ThreePlayerRiichiRuleModule
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.RiichiTileValues
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.YakuType
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.RiichiYakuType
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import com.doublemoon1119.mahjongcraft.platform.minecraft.catalogue.RuleCatalogueExample
@@ -42,8 +42,8 @@ class RiichiCatalogueProviderTest {
     /** 內建役種與特殊說明不缺漏，也不把流局條件混成一般役。 */
     @Test
     fun `catalogue covers every built in yaku and separate special categories`() {
-        assertEquals(YakuType.entries.toSet(), RiichiCatalogueYaku.entries.flatMap { it.coveredTypes }.toSet())
-        assertEquals(YakuType.entries.size, RiichiCatalogueYaku.entries.sumOf { it.coveredTypes.size }, "Each yaku belongs to exactly one entry")
+        assertEquals(RiichiYakuType.entries.toSet(), RiichiCatalogueYaku.entries.flatMap { it.coveredTypes }.toSet())
+        assertEquals(RiichiYakuType.entries.size, RiichiCatalogueYaku.entries.sumOf { it.coveredTypes.size }, "Each yaku belongs to exactly one entry")
         val catalogue = checkNotNull(RiichiCatalogueProvider().catalogue(RiichiRuleConfig()))
         // 四人日麻不列拔北寶牌。
         assertEquals(RiichiCatalogueYaku.entries.size - 1 + RiichiCatalogueSpecial.entries.size, catalogue.entries.size)
@@ -214,7 +214,7 @@ class RiichiCatalogueProviderTest {
  * @param example 完整手牌及明確分組。
  * @return 現行日麻計算器的結果。
  */
-private fun evaluateExample(type: YakuType, example: RuleCatalogueExample) = run {
+private fun evaluateExample(type: RiichiYakuType, example: RuleCatalogueExample) = run {
     val winning = exampleValue(example.groups.single { it.role == RuleCatalogueTileGroupRole.WINNING_TILE }.tiles.single())
     val kanCount = example.groups.count { it.role == RuleCatalogueTileGroupRole.OPEN_KAN || it.role == RuleCatalogueTileGroupRole.CLOSED_KAN }
     val allTiles = example.groups.flatMap { it.tiles }
@@ -233,23 +233,23 @@ private fun evaluateExample(type: YakuType, example: RuleCatalogueExample) = run
         winningTileValue = winning,
         isTsumo = type in tsumoTypes,
         isMenzen = isMenzen,
-        isDealer = type == YakuType.Tenhou,
+        isDealer = type == RiichiYakuType.Tenhou,
         seatWind = when (type) {
-            YakuType.SeatWind -> Wind.WEST
-            YakuType.Tenhou -> Wind.EAST
+            RiichiYakuType.SeatWind -> Wind.WEST
+            RiichiYakuType.Tenhou -> Wind.EAST
             else -> Wind.SOUTH
         },
-        roundWind = if (type == YakuType.RoundWind) Wind.WEST else Wind.EAST,
+        roundWind = if (type == RiichiYakuType.RoundWind) Wind.WEST else Wind.EAST,
         isRiichi = type in riichiTypes,
-        isDoubleRiichi = type == YakuType.DoubleRiichi || type == YakuType.IshinoUeSannen,
-        isIppatsu = type == YakuType.Ippatsu,
-        isLastDraw = type == YakuType.Haitei || type == YakuType.IipinMoyue || type == YakuType.IshinoUeSannen,
-        isLastDiscard = type == YakuType.Houtei || type == YakuType.ChuupinRaoyui,
-        isRobbingKan = type == YakuType.Chankan,
-        isRinshanKaihou = type == YakuType.RinshanKaihou,
-        isFirstTurn = type == YakuType.Tenhou || type == YakuType.Chiihou || type == YakuType.Renhou,
-        isRiichiDeclarationDiscard = type == YakuType.TsubameGaeshi,
-        isDiscardAfterKan = type == YakuType.Kanburi,
+        isDoubleRiichi = type == RiichiYakuType.DoubleRiichi || type == RiichiYakuType.IshinoUeSannen,
+        isIppatsu = type == RiichiYakuType.Ippatsu,
+        isLastDraw = type == RiichiYakuType.Haitei || type == RiichiYakuType.IipinMoyue || type == RiichiYakuType.IshinoUeSannen,
+        isLastDiscard = type == RiichiYakuType.Houtei || type == RiichiYakuType.ChuupinRaoyui,
+        isRobbingKan = type == RiichiYakuType.Chankan,
+        isRinshanKaihou = type == RiichiYakuType.RinshanKaihou,
+        isFirstTurn = type == RiichiYakuType.Tenhou || type == RiichiYakuType.Chiihou || type == RiichiYakuType.Renhou,
+        isRiichiDeclarationDiscard = type == RiichiYakuType.TsubameGaeshi,
+        isDiscardAfterKan = type == RiichiYakuType.Kanburi,
     )
     RiichiHandValueCalculator(useLocalYaku = type.isLocal).calculate(context)
 }
@@ -270,18 +270,18 @@ private val meldRoles = setOf(RuleCatalogueTileGroupRole.OPEN_MELD, RuleCatalogu
 
 /** 使用自摸情境驗證的役種。 */
 private val tsumoTypes = setOf(
-    YakuType.Menzentsumo,
-    YakuType.RinshanKaihou,
-    YakuType.Haitei,
-    YakuType.Tenhou,
-    YakuType.Chiihou,
-    YakuType.Suuankou,
-    YakuType.IipinMoyue,
-    YakuType.IshinoUeSannen,
+    RiichiYakuType.Menzentsumo,
+    RiichiYakuType.RinshanKaihou,
+    RiichiYakuType.Haitei,
+    RiichiYakuType.Tenhou,
+    RiichiYakuType.Chiihou,
+    RiichiYakuType.Suuankou,
+    RiichiYakuType.IipinMoyue,
+    RiichiYakuType.IshinoUeSannen,
 )
 
 /** 使用已立直情境驗證的役種。 */
-private val riichiTypes = setOf(YakuType.Riichi, YakuType.DoubleRiichi, YakuType.Ippatsu, YakuType.IshinoUeSannen)
+private val riichiTypes = setOf(RiichiYakuType.Riichi, RiichiYakuType.DoubleRiichi, RiichiYakuType.Ippatsu, RiichiYakuType.IshinoUeSannen)
 
 /**
  * 將已明確標記的範例副露轉成測試模型。

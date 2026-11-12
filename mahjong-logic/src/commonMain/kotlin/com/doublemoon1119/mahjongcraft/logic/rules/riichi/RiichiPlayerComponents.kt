@@ -22,9 +22,9 @@ object RiichiPlayerComponents {
     )
 
     /** 本局成立的包牌責任；沒有此項表示尚未成立。 */
-    val PAO_LIABILITY: ComponentType<PaoLiability> = ComponentType(
+    val PAO_LIABILITY: ComponentType<RiichiPaoLiability> = ComponentType(
         id = "mahjongcraft:riichi/player/pao_liability",
-        valueClass = PaoLiability::class,
+        valueClass = RiichiPaoLiability::class,
         copyValue = { it.copy() },
         target = BuiltInComponentOwners.PLAYER,
     )

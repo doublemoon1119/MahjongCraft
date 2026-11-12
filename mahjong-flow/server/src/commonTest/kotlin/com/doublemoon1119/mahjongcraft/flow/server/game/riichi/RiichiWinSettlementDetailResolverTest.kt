@@ -18,8 +18,8 @@ import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPointResult
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiWallProgress
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.RiichiTileValues
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.YakuResult
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.YakuType
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.RiichiYakuResult
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.RiichiYakuType
 import com.doublemoon1119.mahjongcraft.logic.table.RoundTransitionDirective
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.testing.logic.rules.riichi.riichiComponentRegistryForTests
@@ -45,14 +45,14 @@ class RiichiWinSettlementDetailResolverTest {
     @Test
     fun `ura indicators require an applicable winning riichi result`() {
         val state = FakeTableStateFactory.create(config = config)
-        listOf(YakuType.Riichi, YakuType.DoubleRiichi).forEach { yaku ->
-            val result = RiichiHandValueResult(listOf(YakuResult.han(yaku, 1)), 1, 30, RiichiPointResult.Ron(1000))
+        listOf(RiichiYakuType.Riichi, RiichiYakuType.DoubleRiichi).forEach { yaku ->
+            val result = RiichiHandValueResult(listOf(RiichiYakuResult.han(yaku, 1)), 1, 30, RiichiPointResult.Ron(1000))
             val fields = RiichiWinSettlementDetailResolver.riichiDetails(state, result, publicFace(state))
             assertTrue(fields.any { it.id == RiichiWinSettlementIds.URA_DORA_FIELD })
         }
         listOf(
-            RiichiHandValueResult(listOf(YakuResult.han(YakuType.Tanyao, 1)), 1, 30, RiichiPointResult.Ron(1000)),
-            RiichiHandValueResult(listOf(YakuResult.han(YakuType.Riichi, 1)), -1, 0, RiichiPointResult.Ron(32000)),
+            RiichiHandValueResult(listOf(RiichiYakuResult.han(RiichiYakuType.Tanyao, 1)), 1, 30, RiichiPointResult.Ron(1000)),
+            RiichiHandValueResult(listOf(RiichiYakuResult.han(RiichiYakuType.Riichi, 1)), -1, 0, RiichiPointResult.Ron(32000)),
         ).forEach { result ->
             val fields = RiichiWinSettlementDetailResolver.riichiDetails(state, result, publicFace(state))
             assertTrue(fields.any { it.id == RiichiWinSettlementIds.DORA_FIELD })
@@ -65,7 +65,7 @@ class RiichiWinSettlementDetailResolverTest {
     fun `dora and ura details preserve ordered faces without tile references`() {
         val reserved = List(14) { index -> IdentifiedTile(Uuid.random(), if (index == 5) Tile.Honor.North else Tile.Numeric(Tile.Suit.Dot, 5)) }
         val state = FakeTableStateFactory.create(config = config).copy(reservedWallTiles = reserved, components = riichiTableComponents(potPoints = 0, wallProgress = RiichiWallProgress(completedSupplementalDrawCount = 1, revealedKanDoraCount = 1)))
-        val result = RiichiHandValueResult(listOf(YakuResult.han(YakuType.Riichi, 1)), 1, 30, RiichiPointResult.Ron(1000))
+        val result = RiichiHandValueResult(listOf(RiichiYakuResult.han(RiichiYakuType.Riichi, 1)), 1, 30, RiichiPointResult.Ron(1000))
         val fields = RiichiWinSettlementDetailResolver.riichiDetails(state, result, publicFace(state))
         assertEquals(WinSettlementDetailValue.TileFaces(listOf(Tile.Numeric(Tile.Suit.Dot, 5), Tile.Honor.North).map(::TileFaceView)), fields.value(RiichiWinSettlementIds.DORA_FIELD))
         assertEquals(WinSettlementDetailValue.TileFaces(listOf(Tile.Numeric(Tile.Suit.Dot, 5), Tile.Numeric(Tile.Suit.Dot, 5)).map(::TileFaceView)), fields.value(RiichiWinSettlementIds.URA_DORA_FIELD))
@@ -79,7 +79,7 @@ class RiichiWinSettlementDetailResolverTest {
             if (index == 5) IdentifiedTile(Uuid.random(), Tile.Honor.North) else IdentifiedTile(Uuid.random(), redFive.tile, redFive.components)
         }
         val state = FakeTableStateFactory.create(config = config).copy(reservedWallTiles = reserved, components = riichiTableComponents(potPoints = 0, wallProgress = RiichiWallProgress(completedSupplementalDrawCount = 1, revealedKanDoraCount = 1)))
-        val result = RiichiHandValueResult(listOf(YakuResult.han(YakuType.Riichi, 1)), 1, 30, RiichiPointResult.Ron(1000))
+        val result = RiichiHandValueResult(listOf(RiichiYakuResult.han(RiichiYakuType.Riichi, 1)), 1, 30, RiichiPointResult.Ron(1000))
 
         val fields = RiichiWinSettlementDetailResolver.riichiDetails(state, result, publicFace(state))
 
@@ -93,7 +93,7 @@ class RiichiWinSettlementDetailResolverTest {
     fun `regular win lists yaku with han and the han fu total`() {
         val state = FakeTableStateFactory.create(config = config)
         val result = RiichiHandValueResult(
-            listOf(YakuResult.han(YakuType.Riichi, 1), YakuResult.han(YakuType.Tanyao, 1), YakuResult.han(YakuType.Honitsu, 3)),
+            listOf(RiichiYakuResult.han(RiichiYakuType.Riichi, 1), RiichiYakuResult.han(RiichiYakuType.Tanyao, 1), RiichiYakuResult.han(RiichiYakuType.Honitsu, 3)),
             5,
             40,
             RiichiPointResult.Ron(8000),
@@ -104,9 +104,9 @@ class RiichiWinSettlementDetailResolverTest {
         assertEquals(
             WinSettlementDetailValue.Entries(
                 listOf(
-                    RiichiWinSettlementIds.yakuEntry(YakuType.Riichi, 1),
-                    RiichiWinSettlementIds.yakuEntry(YakuType.Tanyao, 1),
-                    RiichiWinSettlementIds.yakuEntry(YakuType.Honitsu, 3),
+                    RiichiWinSettlementIds.yakuEntry(RiichiYakuType.Riichi, 1),
+                    RiichiWinSettlementIds.yakuEntry(RiichiYakuType.Tanyao, 1),
+                    RiichiWinSettlementIds.yakuEntry(RiichiYakuType.Honitsu, 3),
                 ),
             ),
             fields.value(RiichiWinSettlementIds.YAKU_FIELD),
@@ -125,7 +125,7 @@ class RiichiWinSettlementDetailResolverTest {
     fun `yakuman win lists multipliers and the yakuman total`() {
         val state = FakeTableStateFactory.create(config = config)
         val result = RiichiHandValueResult(
-            listOf(YakuResult.doubleYakuman(YakuType.KokushiMusou13), YakuResult.yakuman(YakuType.Tenhou)),
+            listOf(RiichiYakuResult.doubleYakuman(RiichiYakuType.KokushiMusou13), RiichiYakuResult.yakuman(RiichiYakuType.Tenhou)),
             -3,
             0,
             RiichiPointResult.Ron(96000),
@@ -136,8 +136,8 @@ class RiichiWinSettlementDetailResolverTest {
         assertEquals(
             WinSettlementDetailValue.Entries(
                 listOf(
-                    RiichiWinSettlementIds.yakumanEntry(YakuType.KokushiMusou13, 2),
-                    RiichiWinSettlementIds.yakumanEntry(YakuType.Tenhou, 1),
+                    RiichiWinSettlementIds.yakumanEntry(RiichiYakuType.KokushiMusou13, 2),
+                    RiichiWinSettlementIds.yakumanEntry(RiichiYakuType.Tenhou, 1),
                 ),
             ),
             fields.value(RiichiWinSettlementIds.YAKU_FIELD),

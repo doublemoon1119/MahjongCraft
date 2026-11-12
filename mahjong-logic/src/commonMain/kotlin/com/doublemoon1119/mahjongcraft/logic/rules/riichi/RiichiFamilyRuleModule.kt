@@ -21,7 +21,7 @@ interface RiichiFamilyRuleModule<T : RiichiFamilyRuleConfig> : MahjongRuleModule
      * @param tableState 待判定的權威牌桌狀態。
      * @return 流局滿貫成立者與點數差額；無成立者時為 null。
      */
-    fun resolveNagashiMangan(tableState: TableState): NagashiManganResolution?
+    fun resolveNagashiMangan(tableState: TableState): RiichiNagashiManganResolution?
 
     /**
      * 四槓散了成立時回傳對應的流局原因，否則回傳 `null`。

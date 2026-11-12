@@ -5,12 +5,12 @@ import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
 import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.logic.component.ComponentSet
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.PaoLiability
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.PaoYaku
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RIICHI_GAME_ACTION
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDiscardComponents
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDiscardPile
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiExhaustiveDrawReason
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPaoLiability
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPaoYaku
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPlayerComponents
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.isRiichiDeclaration
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.RiichiTileValues
@@ -56,7 +56,7 @@ class MahjongPlayerPersistenceTest {
             initialSeatIndex = Wind.WEST.ordinal,
             hand = Hand(tiles = listOf(standingTile), lastDrawn = lastDrawn),
             discardPile = discardPile,
-            components = ComponentSet.EMPTY.with(RiichiPlayerComponents.PAO_LIABILITY, PaoLiability(PaoYaku.Daisangen, RelativeDirection.Left)).with(RiichiPlayerComponents.PERMANENT_FURITEN, Unit).merge(
+            components = ComponentSet.EMPTY.with(RiichiPlayerComponents.PAO_LIABILITY, RiichiPaoLiability(RiichiPaoYaku.Daisangen, RelativeDirection.Left)).with(RiichiPlayerComponents.PERMANENT_FURITEN, Unit).merge(
                 riichiDeclarationComponents(
                     declarationTile = riichiTile,
                     isIppatsu = true,

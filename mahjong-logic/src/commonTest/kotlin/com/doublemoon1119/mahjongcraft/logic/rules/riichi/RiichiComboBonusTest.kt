@@ -161,7 +161,7 @@ class RiichiComboBonusTest {
             ),
             // 已經打過一輪牌，確保不是第一巡，避免誤觸天和/地和疊加成雙倍役滿
             discardPile = RiichiDiscardPile().discardTile(FakeIdentifiedTileFactory.create(Tile.Honor.South)),
-            components = winnerPao?.let { ComponentSet.EMPTY.with(RiichiPlayerComponents.PAO_LIABILITY, PaoLiability(PaoYaku.Daisangen, it)) } ?: ComponentSet.EMPTY.merge(riichiDeclarationComponents()),
+            components = winnerPao?.let { ComponentSet.EMPTY.with(RiichiPlayerComponents.PAO_LIABILITY, RiichiPaoLiability(RiichiPaoYaku.Daisangen, it)) } ?: ComponentSet.EMPTY.merge(riichiDeclarationComponents()),
         )
 
         /** 西家測試座位。 */

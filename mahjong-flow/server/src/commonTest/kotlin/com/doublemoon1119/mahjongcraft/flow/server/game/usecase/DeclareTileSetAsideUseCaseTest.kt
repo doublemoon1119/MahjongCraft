@@ -16,11 +16,11 @@ import com.doublemoon1119.mahjongcraft.logic.base.Hand
 import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.PULL_NORTH_GAME_ACTION
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RIICHI_PULL_NORTH_GAME_ACTION
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPlayerTileAreaIds
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.riichiWallProgress
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.threeplayer.ThreePlayerRiichiRuleConfig
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.YakuType
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.RiichiYakuType
 import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayer
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
@@ -110,7 +110,7 @@ class DeclareTileSetAsideUseCaseTest {
         val fixtures = Fixtures()
         fixtures.gameRepo.setTableState(table(waiter = bystander(waiterId, Wind.SOUTH)))
 
-        val result = fixtures.gameRepo.runAsSingleWrite(gameId) { fixtures.useCase(gameId, pullerId, PULL_NORTH_GAME_ACTION) }
+        val result = fixtures.gameRepo.runAsSingleWrite(gameId) { fixtures.useCase(gameId, pullerId, RIICHI_PULL_NORTH_GAME_ACTION) }
 
         assertIs<Outcome.Success<Unit>>(result)
         val state = assertNotNull(fixtures.gameRepo.getTableState(gameId))
@@ -118,12 +118,12 @@ class DeclareTileSetAsideUseCaseTest {
         assertEquals(listOf(north), puller.tileAreas[RiichiPlayerTileAreaIds.NORTH]?.tiles.orEmpty())
         assertEquals(rinshan, puller.hand.lastDrawn)
         assertTrue(puller.hand.tiles.none { it.id == north.id })
-        assertEquals(listOf(PULL_NORTH_GAME_ACTION, GameAction.Draw), puller.actionHistory.takeLast(2))
+        assertEquals(listOf(RIICHI_PULL_NORTH_GAME_ACTION, GameAction.Draw), puller.actionHistory.takeLast(2))
         assertEquals(1, state.riichiWallProgress().completedNorthDrawCount)
         assertNull(state.pendingRobbingReaction)
         // 先呈現北移到拔北區，再呈現補牌到摸牌位。
         val (pulled, drawn) = fixtures.presentationPublisher.getPublishedTableStepBatches(gameId).single()
-        assertEquals(TableStepEvent.ActionDeclared(pullerId, PULL_NORTH_GAME_ACTION), pulled.events.first())
+        assertEquals(TableStepEvent.ActionDeclared(pullerId, RIICHI_PULL_NORTH_GAME_ACTION), pulled.events.first())
         assertEquals(TileRegion.SET_ASIDE, pulled.tableState.tileRegion(north.id))
         assertEquals(TileRegion.DRAWN, drawn.tableState.tileRegion(rinshan.id))
         assertEquals(state, drawn.tableState)
@@ -136,9 +136,9 @@ class DeclareTileSetAsideUseCaseTest {
         val noNorth = puller().copy(hand = Hand(tiles = listOf(tile(Tile.Numeric(Tile.Suit.Dot, 1))), lastDrawn = tile(Tile.Numeric(Tile.Suit.Dot, 2))))
         fixtures.gameRepo.setTableState(table(puller = noNorth, waiter = bystander(waiterId, Wind.SOUTH)))
 
-        val result = fixtures.useCase(gameId, pullerId, PULL_NORTH_GAME_ACTION)
+        val result = fixtures.useCase(gameId, pullerId, RIICHI_PULL_NORTH_GAME_ACTION)
 
-        assertEquals(Outcome.Error(GameError.IllegalAction(pullerId, gameId, PULL_NORTH_GAME_ACTION)), result)
+        assertEquals(Outcome.Error(GameError.IllegalAction(pullerId, gameId, RIICHI_PULL_NORTH_GAME_ACTION)), result)
     }
 
     /** 驗證等待北牌的玩家取得搶和機會，拔北與補牌暫緩套用，先呈現北已拔出、尚未補牌的樣子。 */
@@ -147,12 +147,12 @@ class DeclareTileSetAsideUseCaseTest {
         val fixtures = Fixtures()
         fixtures.gameRepo.setTableState(table(waiter = northWaiter()))
 
-        val result = fixtures.useCase(gameId, pullerId, PULL_NORTH_GAME_ACTION)
+        val result = fixtures.useCase(gameId, pullerId, RIICHI_PULL_NORTH_GAME_ACTION)
 
         assertIs<Outcome.Success<Unit>>(result)
         val state = assertNotNull(fixtures.gameRepo.getTableState(gameId))
         val pending = assertNotNull(state.pendingRobbingReaction)
-        assertEquals(PULL_NORTH_GAME_ACTION, pending.declaredAction)
+        assertEquals(RIICHI_PULL_NORTH_GAME_ACTION, pending.declaredAction)
         assertEquals(north, pending.robbedTile)
         assertEquals(setOf(waiterId), pending.eligiblePlayerIds)
         val puller = state.players.first { it.id == pullerId }
@@ -161,7 +161,7 @@ class DeclareTileSetAsideUseCaseTest {
         assertEquals(setOf(north.id), state.publicTileEvidenceIds, "The declared north is public while others decide.")
         // 先呈現北已移到拔北區、尚未補牌的候選桌況。
         val presented = fixtures.presentationPublisher.getPublishedTableStepBatches(gameId).single().single()
-        assertEquals(listOf<TableStepEvent>(TableStepEvent.ActionDeclared(pullerId, PULL_NORTH_GAME_ACTION)), presented.events)
+        assertEquals(listOf<TableStepEvent>(TableStepEvent.ActionDeclared(pullerId, RIICHI_PULL_NORTH_GAME_ACTION)), presented.events)
         assertEquals(TileRegion.SET_ASIDE, presented.tableState.tileRegion(north.id))
         assertNull(presented.tableState.players.first { it.id == pullerId }.hand.lastDrawn)
     }
@@ -171,7 +171,7 @@ class DeclareTileSetAsideUseCaseTest {
     fun `passing the robbing window completes the pull`() = runTest {
         val fixtures = Fixtures()
         fixtures.gameRepo.setTableState(table(waiter = northWaiter()))
-        fixtures.useCase(gameId, pullerId, PULL_NORTH_GAME_ACTION)
+        fixtures.useCase(gameId, pullerId, RIICHI_PULL_NORTH_GAME_ACTION)
 
         val result = fixtures.respondToRobbing(gameId, waiterId, GameAction.Pass)
 
@@ -194,7 +194,7 @@ class DeclareTileSetAsideUseCaseTest {
     fun `robbing the north is paid by the puller without chankan`() = runTest {
         val fixtures = Fixtures()
         fixtures.gameRepo.setTableState(table(waiter = northWaiter()))
-        fixtures.useCase(gameId, pullerId, PULL_NORTH_GAME_ACTION)
+        fixtures.useCase(gameId, pullerId, RIICHI_PULL_NORTH_GAME_ACTION)
 
         val result = fixtures.respondToRobbing(gameId, waiterId, GameAction.Ron(north.id))
 
@@ -211,7 +211,7 @@ class DeclareTileSetAsideUseCaseTest {
         val winner = presentation.settlement.winners.single()
         assertEquals(pullerId, winner.responsiblePlayerId)
         assertEquals(north.id, winner.winningTileId)
-        assertTrue(winner.detailFields.toString().contains(RiichiWinSettlementIds.yakuEntry(YakuType.Ittuitsu, 2).toString()))
+        assertTrue(winner.detailFields.toString().contains(RiichiWinSettlementIds.yakuEntry(RiichiYakuType.Ittuitsu, 2).toString()))
         assertTrue(!winner.detailFields.toString().contains("chankan"))
     }
 

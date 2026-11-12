@@ -20,7 +20,7 @@ class RiichiPlayerComponentsTest {
     @Test
     fun `pao liability projects independently of declaration state`() {
         val registry = registry()
-        val liability = PaoLiability(PaoYaku.Daisangen, RelativeDirection.Left)
+        val liability = RiichiPaoLiability(RiichiPaoYaku.Daisangen, RelativeDirection.Left)
         val player = FakeMahjongPlayerFactory.create(
             components = ComponentSet.EMPTY.with(RiichiPlayerComponents.PAO_LIABILITY, liability),
         )
@@ -79,9 +79,9 @@ class RiichiPlayerComponentsTest {
             previousTableState = null,
         )
         assertNull(registry.initialize(context)[RiichiPlayerComponents.PAO_LIABILITY])
-        val previous = ComponentSet.EMPTY.with(RiichiPlayerComponents.PAO_LIABILITY, PaoLiability(PaoYaku.Daisuushii, RelativeDirection.Right))
+        val previous = ComponentSet.EMPTY.with(RiichiPlayerComponents.PAO_LIABILITY, RiichiPaoLiability(RiichiPaoYaku.Daisuushii, RelativeDirection.Right))
         assertNull(registry.transitionRound(context.copy(previousTableState = state), previous)[RiichiPlayerComponents.PAO_LIABILITY])
-        assertEquals(PaoYaku.Daisuushii, previous[RiichiPlayerComponents.PAO_LIABILITY]?.yaku)
+        assertEquals(RiichiPaoYaku.Daisuushii, previous[RiichiPlayerComponents.PAO_LIABILITY]?.yaku)
     }
 
     /** 建立只包含日麻玩家組件的登記。 */

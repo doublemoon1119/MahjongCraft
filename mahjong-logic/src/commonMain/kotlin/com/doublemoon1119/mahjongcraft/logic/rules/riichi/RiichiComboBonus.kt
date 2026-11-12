@@ -50,12 +50,12 @@ internal fun riichiComboBonusPayments(
 }
 
 /**
- * 贏家本次胡牌的包牌責任者：依 [PaoLiability.direction] 找出相對於 [winnerId] 位於該方向的玩家。
+ * 贏家本次胡牌的包牌責任者：依 [RiichiPaoLiability.direction] 找出相對於 [winnerId] 位於該方向的玩家。
  *
  * @param winnerId 被包的贏家 Uuid。
  * @param paoLiability 贏家身上成立的包牌責任。
  * @return 包牌責任者 Uuid。
  */
-internal fun TableState.riichiPaoPlayerId(winnerId: Uuid, paoLiability: PaoLiability): Uuid = players
+internal fun TableState.riichiPaoPlayerId(winnerId: Uuid, paoLiability: RiichiPaoLiability): Uuid = players
     .first { relativeDirectionOf(winnerId, it.id) == paoLiability.direction }
     .id

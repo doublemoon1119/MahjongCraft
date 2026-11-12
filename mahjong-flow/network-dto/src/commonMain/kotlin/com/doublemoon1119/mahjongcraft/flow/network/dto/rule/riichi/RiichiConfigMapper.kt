@@ -2,9 +2,9 @@ package com.doublemoon1119.mahjongcraft.flow.network.dto.rule.riichi
 import com.doublemoon1119.mahjongcraft.flow.network.dto.model.toDomain
 import com.doublemoon1119.mahjongcraft.flow.network.dto.model.toDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.registry.NetworkDtoConverter
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.PaoLiability
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.PaoYaku
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiGameLength
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPaoLiability
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPaoYaku
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiScoreConfig
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.threeplayer.ThreePlayerRiichiRuleConfig
@@ -113,10 +113,10 @@ fun RiichiScoreConfigDto.toDomain(): RiichiScoreConfig = RiichiScoreConfig(
  *
  * @return 轉換後的資料。
  */
-fun PaoLiability.toDto(): PaoLiabilityDto = PaoLiabilityDto(
+fun RiichiPaoLiability.toDto(): RiichiPaoLiabilityDto = RiichiPaoLiabilityDto(
     yaku = when (yaku) {
-        PaoYaku.Daisangen -> PaoYakuDto.Daisangen
-        PaoYaku.Daisuushii -> PaoYakuDto.Daisuushii
+        RiichiPaoYaku.Daisangen -> RiichiPaoYakuDto.Daisangen
+        RiichiPaoYaku.Daisuushii -> RiichiPaoYakuDto.Daisuushii
     },
     direction = direction.toDto(),
 )
@@ -126,10 +126,10 @@ fun PaoLiability.toDto(): PaoLiabilityDto = PaoLiabilityDto(
  *
  * @return 轉換後的資料。
  */
-fun PaoLiabilityDto.toDomain(): PaoLiability = PaoLiability(
+fun RiichiPaoLiabilityDto.toDomain(): RiichiPaoLiability = RiichiPaoLiability(
     yaku = when (yaku) {
-        PaoYakuDto.Daisangen -> PaoYaku.Daisangen
-        PaoYakuDto.Daisuushii -> PaoYaku.Daisuushii
+        RiichiPaoYakuDto.Daisangen -> RiichiPaoYaku.Daisangen
+        RiichiPaoYakuDto.Daisuushii -> RiichiPaoYaku.Daisuushii
     },
     direction = direction.toDomain(),
 )

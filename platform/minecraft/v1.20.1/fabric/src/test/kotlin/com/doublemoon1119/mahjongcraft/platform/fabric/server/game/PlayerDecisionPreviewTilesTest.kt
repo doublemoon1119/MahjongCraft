@@ -5,7 +5,7 @@ import com.doublemoon1119.mahjongcraft.logic.base.Hand
 import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.logic.base.TileFaceView
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.PULL_NORTH_GAME_ACTION
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RIICHI_PULL_NORTH_GAME_ACTION
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiTileOrder
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.RiichiTileValues
 import com.doublemoon1119.mahjongcraft.logic.tile.component.BuiltInTileComponents
@@ -21,7 +21,7 @@ class PlayerDecisionPreviewTilesTest {
     /** 移出手牌的動作顯示規則回報要移出的牌，不是剛摸到的牌。 */
     @Test
     fun `set aside action previews the tile it sets aside`() {
-        val preview = PULL_NORTH_GAME_ACTION.preview(Hand(tiles = listOf(north), lastDrawn = drawnFive), setAsideTile = north)
+        val preview = RIICHI_PULL_NORTH_GAME_ACTION.preview(Hand(tiles = listOf(north), lastDrawn = drawnFive), setAsideTile = north)
 
         assertEquals(listOf<Tile>(Tile.Honor.North), preview.tiles.map { it.tile })
     }
@@ -29,7 +29,7 @@ class PlayerDecisionPreviewTilesTest {
     /** 規則沒有回報要移出的牌時，擴充動作不顯示牌。 */
     @Test
     fun `extension action without a set aside tile previews nothing`() {
-        val preview = PULL_NORTH_GAME_ACTION.preview(Hand(tiles = listOf(north), lastDrawn = drawnFive))
+        val preview = RIICHI_PULL_NORTH_GAME_ACTION.preview(Hand(tiles = listOf(north), lastDrawn = drawnFive))
 
         assertEquals(emptyList(), preview.tiles.map { it.tile })
     }

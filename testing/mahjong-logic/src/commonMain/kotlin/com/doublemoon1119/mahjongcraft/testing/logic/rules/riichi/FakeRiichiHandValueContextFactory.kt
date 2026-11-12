@@ -3,8 +3,8 @@ package com.doublemoon1119.mahjongcraft.testing.logic.rules.riichi
 import com.doublemoon1119.mahjongcraft.logic.base.Hand
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.logic.base.TileValue
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.PaoLiability
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiHandValueContext
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPaoLiability
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
 
 /**
@@ -64,7 +64,7 @@ object FakeRiichiHandValueContextFactory {
         isFirstTurn: Boolean = false,
         isRiichiDeclarationDiscard: Boolean = false,
         isDiscardAfterKan: Boolean = false,
-        paoLiability: PaoLiability? = null,
+        paoLiability: RiichiPaoLiability? = null,
         nukiDoraTiles: List<Tile> = emptyList(),
         usesThreePlayerTiles: Boolean = false,
     ): RiichiHandValueContext = RiichiHandValueContext(

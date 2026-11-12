@@ -6,7 +6,7 @@ import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.logic.judgment.LegalActionContext
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.PULL_NORTH_GAME_ACTION
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RIICHI_PULL_NORTH_GAME_ACTION
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPlayerTileAreaIds
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.riichiDeclaration
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.threeplayer.ThreePlayerRiichiRuleConfig
@@ -81,10 +81,10 @@ class ThreePlayerRiichiDebugGameScenariosTest {
     fun `pull north scenario completes the hand with the second replacement draw`() {
         val state = build("riichi_three_player_pull_north")
 
-        assertTrue(PULL_NORTH_GAME_ACTION in state.currentOwnTurnActions())
+        assertTrue(RIICHI_PULL_NORTH_GAME_ACTION in state.currentOwnTurnActions())
         assertEquals(listOf(NINE_CHARACTER, FOUR_BAMBOO), state.reservedWallTiles.take(2).map { it.tile })
         val afterFirstPull = state.pullNorthThenDraw(state.reservedWallTiles[0])
-        assertTrue(PULL_NORTH_GAME_ACTION in afterFirstPull.currentOwnTurnActions())
+        assertTrue(RIICHI_PULL_NORTH_GAME_ACTION in afterFirstPull.currentOwnTurnActions())
         val afterSecondPull = afterFirstPull.pullNorthThenDraw(state.reservedWallTiles[1])
 
         assertEquals(2, afterSecondPull.currentPlayer.tileAreas[RiichiPlayerTileAreaIds.NORTH]?.tiles?.size)
@@ -98,15 +98,15 @@ class ThreePlayerRiichiDebugGameScenariosTest {
         val invoker = state.currentPlayer
 
         assertNotNull(invoker.riichiDeclaration)
-        assertTrue(PULL_NORTH_GAME_ACTION in state.currentOwnTurnActions())
-        assertEquals(invoker.hand.lastDrawn, state.module().tileSetAsideBy(invoker, PULL_NORTH_GAME_ACTION))
+        assertTrue(RIICHI_PULL_NORTH_GAME_ACTION in state.currentOwnTurnActions())
+        assertEquals(invoker.hand.lastDrawn, state.module().tileSetAsideBy(invoker, RIICHI_PULL_NORTH_GAME_ACTION))
         assertEquals(FOUR_BAMBOO, state.reservedWallTiles[0].tile)
 
         val afterPull = state.pullNorthThenDraw(state.reservedWallTiles[0])
         assertEquals(2, afterPull.currentPlayer.hand.standingTiles.count { it.tile == Tile.Honor.North })
         assertTrue(GameAction.Tsumo in afterPull.currentOwnTurnActions())
         val laterDraw = IdentifiedTile(Uuid.random(), NINE_CHARACTER)
-        assertFalse(PULL_NORTH_GAME_ACTION in afterPull.ownTurnActions(offset = 0, drawnTile = laterDraw))
+        assertFalse(RIICHI_PULL_NORTH_GAME_ACTION in afterPull.ownTurnActions(offset = 0, drawnTile = laterDraw))
     }
 
     /** 下家摸到北後會先拔北；單騎聽北的呼叫者可以搶這張北榮和，上家不能。 */
@@ -118,7 +118,7 @@ class ThreePlayerRiichiDebugGameScenariosTest {
 
         assertEquals(Tile.Honor.North, north.tile)
         assertEquals(DebugScriptedAiStrategy.PULL_NORTH_FIRST_KEY, result.game.aiPlayerStrategyKeys[state.seat(1).id])
-        assertTrue(PULL_NORTH_GAME_ACTION in state.ownTurnActions(offset = 1, drawnTile = north))
+        assertTrue(RIICHI_PULL_NORTH_GAME_ACTION in state.ownTurnActions(offset = 1, drawnTile = north))
         assertTrue(state.canRobPulledNorth(offset = 0, north = north))
         assertFalse(state.canRobPulledNorth(offset = 2, north = north))
     }
@@ -130,7 +130,7 @@ class ThreePlayerRiichiDebugGameScenariosTest {
         val actions = state.currentOwnTurnActions()
         val handTiles = state.currentPlayer.hand.allTiles.associateBy { it.id }
 
-        assertTrue(PULL_NORTH_GAME_ACTION in actions)
+        assertTrue(RIICHI_PULL_NORTH_GAME_ACTION in actions)
         assertEquals(
             setOf(ONE_DOT, NINE_DOT, ONE_BAMBOO),
             actions.filterIsInstance<GameAction.Kan>().mapTo(mutableSetOf()) { kan -> handTiles.getValue(kan.tileId).tile },
@@ -161,7 +161,7 @@ class ThreePlayerRiichiDebugGameScenariosTest {
         assertEquals(Tile.Honor.South, invoker.discardPile.entries.first().tile.tile)
         assertEquals(listOf(NINE_BAMBOO, NINE_BAMBOO), state.reservedWallTiles.take(2).map { it.tile })
         val actions = state.currentOwnTurnActions()
-        assertTrue(PULL_NORTH_GAME_ACTION in actions)
+        assertTrue(RIICHI_PULL_NORTH_GAME_ACTION in actions)
         assertTrue(actions.filterIsInstance<GameAction.Kan>().isNotEmpty())
     }
 
@@ -189,11 +189,11 @@ class ThreePlayerRiichiDebugGameScenariosTest {
 
         val (seven, eight, four) = state.reservedWallTiles.take(3)
         assertEquals(listOf(SEVEN_DOT, EIGHT_DOT, FOUR_DOT), listOf(seven.tile, eight.tile, four.tile))
-        assertTrue(PULL_NORTH_GAME_ACTION in state.currentOwnTurnActions())
+        assertTrue(RIICHI_PULL_NORTH_GAME_ACTION in state.currentOwnTurnActions())
         val afterFirstPull = state.pullNorthThenDraw(seven)
-        assertTrue(PULL_NORTH_GAME_ACTION in afterFirstPull.currentOwnTurnActions())
+        assertTrue(RIICHI_PULL_NORTH_GAME_ACTION in afterFirstPull.currentOwnTurnActions())
         val afterSecondPull = afterFirstPull.pullNorthThenDraw(eight)
-        assertTrue(PULL_NORTH_GAME_ACTION in afterSecondPull.currentOwnTurnActions())
+        assertTrue(RIICHI_PULL_NORTH_GAME_ACTION in afterSecondPull.currentOwnTurnActions())
         val afterThirdPull = afterSecondPull.pullNorthThenDraw(four)
 
         assertEquals(3, afterThirdPull.currentPlayer.tileAreas[RiichiPlayerTileAreaIds.NORTH]?.tiles?.size)
@@ -273,7 +273,7 @@ class ThreePlayerRiichiDebugGameScenariosTest {
         val context = createThreePlayerRiichiScenarioContext()
         val result = registry.get("mahjongcraft:riichi_three_player_pull_north")!!.build(context)
         val state = result.game.tableState
-        val pulled = assertNotNull(state.module().applyTileSetAsideAction(state, state.currentPlayer.id, PULL_NORTH_GAME_ACTION))
+        val pulled = assertNotNull(state.module().applyTileSetAsideAction(state, state.currentPlayer.id, RIICHI_PULL_NORTH_GAME_ACTION))
 
         scenarioValidator.validate(context, result.copy(game = result.game.copy(tableState = pulled)))
     }
@@ -299,7 +299,7 @@ class ThreePlayerRiichiDebugGameScenariosTest {
      * @return 更新拔北狀態與目前玩家摸牌位後的桌況。
      */
     private fun TableState.pullNorthThenDraw(replacement: IdentifiedTile): TableState {
-        val pulled = assertNotNull(module().applyTileSetAsideAction(this, currentPlayer.id, PULL_NORTH_GAME_ACTION))
+        val pulled = assertNotNull(module().applyTileSetAsideAction(this, currentPlayer.id, RIICHI_PULL_NORTH_GAME_ACTION))
         val player = pulled.currentPlayer
         return pulled.copy(
             players = pulled.players.map { if (it.id == player.id) player.copy(hand = player.hand.copy(lastDrawn = replacement)) else it },
@@ -326,7 +326,7 @@ class ThreePlayerRiichiDebugGameScenariosTest {
                 contextState,
                 player.id,
                 declarer.id,
-                PULL_NORTH_GAME_ACTION,
+                RIICHI_PULL_NORTH_GAME_ACTION,
                 north,
             ),
         ).any { it is GameAction.Ron }

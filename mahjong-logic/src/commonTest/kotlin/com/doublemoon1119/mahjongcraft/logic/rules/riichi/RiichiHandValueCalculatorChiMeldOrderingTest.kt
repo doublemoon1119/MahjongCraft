@@ -4,9 +4,9 @@ import com.doublemoon1119.mahjongcraft.logic.base.Meld
 import com.doublemoon1119.mahjongcraft.logic.base.MeldType
 import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.structure.Mentsu
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.structure.RiichiMentsu
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.RiichiHandValueCalculatorTestBase
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.YakuType
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.RiichiYakuType
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeHandFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeIdentifiedTileFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeMeldFactory
@@ -20,7 +20,7 @@ import kotlin.test.assertNotNull
  *
  * `Meld.tiles` 依鳴牌時呼叫端選牌順序排列（被鳴牌固定最後一張），不保證數值遞增——例如吃 6 索用
  * 7、8 索，`withTiles` 若以 `[8, 7]` 順序傳入，`tiles` 就會是 `[8, 7, 6]`，`tiles.first()` 不是這組
- * 順子裡數值最小的那張。算番時必須取數值最小的牌當 [Mentsu.Shuntsu] 的 `headTile`，
+ * 順子裡數值最小的那張。算番時必須取數值最小的牌當 [RiichiMentsu.Shuntsu] 的 `headTile`，
  * 否則 `headTile.value + 2` 會超出 1~9 範圍而拋出 `IllegalArgumentException`。
  */
 class RiichiHandValueCalculatorChiMeldOrderingTest : RiichiHandValueCalculatorTestBase() {
@@ -60,7 +60,7 @@ class RiichiHandValueCalculatorChiMeldOrderingTest : RiichiHandValueCalculatorTe
         val context = FakeRiichiHandValueContextFactory.create(hand, winningTile, isTsumo = false, isMenzen = false)
         val result = calculator.calculate(context)
 
-        val tanyaoResult = result.yakuResults.find { it.yaku == YakuType.Tanyao }
+        val tanyaoResult = result.yakuResults.find { it.yaku == RiichiYakuType.Tanyao }
         assertNotNull(tanyaoResult, "Should have Tanyao once the descending-order chi meld is decomposed correctly")
         assertEquals(1, tanyaoResult.han, "Open Tanyao should be 1 han")
     }

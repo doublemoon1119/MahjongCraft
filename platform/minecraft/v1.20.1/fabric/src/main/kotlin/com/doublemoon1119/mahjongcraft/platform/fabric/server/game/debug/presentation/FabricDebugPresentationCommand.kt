@@ -28,7 +28,7 @@ import com.doublemoon1119.mahjongcraft.logic.base.TileFaceView
 import com.doublemoon1119.mahjongcraft.logic.module.BuiltInPaymentReasonIds
 import com.doublemoon1119.mahjongcraft.logic.module.BuiltInRuleModuleIds
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiExhaustiveDrawReason
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.YakuType
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.RiichiYakuType
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.tai.TaiwanTaiResult
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.tai.TaiwanTaiType
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.tai.flower.calculateTaiwanEightFlowers
@@ -934,24 +934,24 @@ class FabricDebugPresentationCommand(
             val dealsIn = preview == WinSettlementPreview.RON || yakuman
             val regularYakuEntries = if (preview == WinSettlementPreview.RON && winnerIndex == 0) {
                 listOf(
-                    YakuType.Riichi to 1,
-                    YakuType.Ippatsu to 1,
-                    YakuType.Menzentsumo to 1,
-                    YakuType.Pinfu to 1,
-                    YakuType.Tanyao to 1,
-                    YakuType.Iipeikou to 1,
-                    YakuType.SanshokuDoujun to 2,
-                    YakuType.Ittuitsu to 2,
-                    YakuType.Honchan to 2,
-                    YakuType.Toitoi to 2,
-                    YakuType.Honitsu to 3,
-                    YakuType.Chinitsu to 6,
+                    RiichiYakuType.Riichi to 1,
+                    RiichiYakuType.Ippatsu to 1,
+                    RiichiYakuType.Menzentsumo to 1,
+                    RiichiYakuType.Pinfu to 1,
+                    RiichiYakuType.Tanyao to 1,
+                    RiichiYakuType.Iipeikou to 1,
+                    RiichiYakuType.SanshokuDoujun to 2,
+                    RiichiYakuType.Ittuitsu to 2,
+                    RiichiYakuType.Honchan to 2,
+                    RiichiYakuType.Toitoi to 2,
+                    RiichiYakuType.Honitsu to 3,
+                    RiichiYakuType.Chinitsu to 6,
                 )
             } else {
                 listOf(
-                    YakuType.Riichi to 1,
-                    YakuType.Ippatsu to 1,
-                    YakuType.Pinfu to 1,
+                    RiichiYakuType.Riichi to 1,
+                    RiichiYakuType.Ippatsu to 1,
+                    RiichiYakuType.Pinfu to 1,
                 )
             }
             WinSettlementWinnerPresentation(
@@ -978,8 +978,8 @@ class FabricDebugPresentationCommand(
                             WinSettlementDetailValue.Entries(
                                 if (yakuman) {
                                     listOf(
-                                        RiichiWinSettlementIds.yakumanEntry(YakuType.KokushiMusou13, 2),
-                                        RiichiWinSettlementIds.yakumanEntry(YakuType.Daisangen, 1),
+                                        RiichiWinSettlementIds.yakumanEntry(RiichiYakuType.KokushiMusou13, 2),
+                                        RiichiWinSettlementIds.yakumanEntry(RiichiYakuType.Daisangen, 1),
                                     )
                                 } else if (preview != WinSettlementPreview.NAGASHI) {
                                     regularYakuEntries.map { (type, han) -> RiichiWinSettlementIds.yakuEntry(type, han) }

@@ -3,7 +3,7 @@ package com.doublemoon1119.mahjongcraft.platform.minecraft.rule.riichi
 import com.doublemoon1119.mahjongcraft.flow.common.game.riichi.RiichiWinCelebrationCueResolver
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiHandValueResult
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPointResult
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.YakuResult
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.RiichiYakuResult
 import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.riichi.catalogue.RiichiCatalogueCategory
 import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.riichi.catalogue.RiichiCatalogueYaku
 import com.doublemoon1119.mahjongcraft.platform.minecraft.showcase.WinCelebrationShowcaseRegistryImpl
@@ -23,7 +23,7 @@ class RiichiWinCelebrationShowcasesTest {
 
         yakuman.forEach { definition ->
             val result = RiichiHandValueResult(
-                yakuResults = listOf(YakuResult.yakuman(definition.type)),
+                yakuResults = listOf(RiichiYakuResult.yakuman(definition.type)),
                 totalHan = -1,
                 totalFu = 0,
                 pointResult = RiichiPointResult.Ron(32_000),

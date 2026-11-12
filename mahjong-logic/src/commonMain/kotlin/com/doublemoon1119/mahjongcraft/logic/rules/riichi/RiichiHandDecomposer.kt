@@ -3,11 +3,11 @@ package com.doublemoon1119.mahjongcraft.logic.rules.riichi
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.logic.judgment.StandardHandDecomposer
 import com.doublemoon1119.mahjongcraft.logic.judgment.StandardHandGroup
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.structure.CompletionType
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.structure.Fuuro
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.structure.HandStructure
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.structure.Janto
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.structure.Mentsu
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.structure.RiichiCompletionType
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.structure.RiichiFuuro
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.structure.RiichiHandStructure
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.structure.RiichiJanto
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.structure.RiichiMentsu
 
 /**
  * 麻將手牌分割器。
@@ -52,8 +52,8 @@ object RiichiHandDecomposer {
     fun decompose(
         handTiles: List<Tile>,
         winningTile: Tile,
-        fuuro: List<Fuuro> = emptyList(),
-    ): List<HandStructure> {
+        fuuro: List<RiichiFuuro> = emptyList(),
+    ): List<RiichiHandStructure> {
         // 標準手牌（4 面子 + 1 雀頭）
         val standard = tryDecomposeStandard(handTiles, winningTile, fuuro)
         if (standard.isNotEmpty()) {
@@ -78,7 +78,7 @@ object RiichiHandDecomposer {
     /**
      * 嘗試分割為標準手牌（4 面子 + 1 雀頭）。
      *
-     * 窮舉所有可能的分割方式，並根據 [winningTile] 在牌型中的位置計算 [CompletionType]。
+     * 窮舉所有可能的分割方式，並根據 [winningTile] 在牌型中的位置計算 [RiichiCompletionType]。
      *
      * @param handTiles 手牌中的立牌，不含和牌張與副露。
      * @param winningTile 本次和牌的牌張。
@@ -88,8 +88,8 @@ object RiichiHandDecomposer {
     private fun tryDecomposeStandard(
         handTiles: List<Tile>,
         winningTile: Tile,
-        fuuro: List<Fuuro>,
-    ): List<HandStructure.Standard> = StandardHandDecomposer.decompose(
+        fuuro: List<RiichiFuuro>,
+    ): List<RiichiHandStructure.Standard> = StandardHandDecomposer.decompose(
         handTiles = handTiles,
         winningTile = winningTile,
         exposedMeldCount = fuuro.size,
@@ -97,26 +97,26 @@ object RiichiHandDecomposer {
     ).map { decomposition ->
         val winningGroup = decomposition.winningGroupIndex?.let(decomposition.groups::get)
         val completion = when (winningGroup) {
-            null -> CompletionType.Tanki
-            is StandardHandGroup.Triplet -> CompletionType.Shanpon
+            null -> RiichiCompletionType.Tanki
+            is StandardHandGroup.Triplet -> RiichiCompletionType.Shanpon
             is StandardHandGroup.Sequence -> {
                 val rank = (winningTile as Tile.Numeric).value
                 when {
-                    rank == winningGroup.first.value + 1 -> CompletionType.Kanchan
+                    rank == winningGroup.first.value + 1 -> RiichiCompletionType.Kanchan
                     (rank == 3 && winningGroup.first.value == 1) ||
-                        (rank == 7 && winningGroup.first.value == 7) -> CompletionType.Penchan
-                    else -> CompletionType.Ryanmen
+                        (rank == 7 && winningGroup.first.value == 7) -> RiichiCompletionType.Penchan
+                    else -> RiichiCompletionType.Ryanmen
                 }
             }
         }
-        HandStructure.Standard(
+        RiichiHandStructure.Standard(
             mentsus = decomposition.groups.map { group ->
                 when (group) {
-                    is StandardHandGroup.Triplet -> Mentsu.Kotsu(group.tile)
-                    is StandardHandGroup.Sequence -> Mentsu.Shuntsu(group.first)
+                    is StandardHandGroup.Triplet -> RiichiMentsu.Kotsu(group.tile)
+                    is StandardHandGroup.Sequence -> RiichiMentsu.Shuntsu(group.first)
                 }
             },
-            pair = Janto(decomposition.pair),
+            pair = RiichiJanto(decomposition.pair),
             fuuro = fuuro,
             completionType = completion,
         )
@@ -133,8 +133,8 @@ object RiichiHandDecomposer {
     private fun tryDecomposeChiitoitsu(
         handTiles: List<Tile>,
         winningTile: Tile,
-        fuuro: List<Fuuro>,
-    ): HandStructure.Chiitoitsu? {
+        fuuro: List<RiichiFuuro>,
+    ): RiichiHandStructure.Chiitoitsu? {
         if (fuuro.isNotEmpty()) return null // 七對子不能有副露
 
         val tiles = handTiles + winningTile
@@ -143,10 +143,10 @@ object RiichiHandDecomposer {
         // 使用 groupingBy 來正確計算相同牌的數量
         val tileCounts = tiles.groupingBy { it }.eachCount()
 
-        val pairs = mutableListOf<Janto>()
+        val pairs = mutableListOf<RiichiJanto>()
         for ((tile, count) in tileCounts) {
             if (count >= 2) {
-                pairs.add(Janto(tile))
+                pairs.add(RiichiJanto(tile))
             }
         }
 
@@ -159,7 +159,7 @@ object RiichiHandDecomposer {
             if ((tileCounts[pair.tile] ?: 0) != 2) return null
         }
 
-        return HandStructure.Chiitoitsu(pairs = uniquePairs)
+        return RiichiHandStructure.Chiitoitsu(pairs = uniquePairs)
     }
 
     /**
@@ -173,8 +173,8 @@ object RiichiHandDecomposer {
     private fun tryDecomposeKokushiMusou(
         handTiles: List<Tile>,
         winningTile: Tile,
-        fuuro: List<Fuuro>,
-    ): HandStructure.KokushiMusou? {
+        fuuro: List<RiichiFuuro>,
+    ): RiichiHandStructure.KokushiMusou? {
         if (fuuro.isNotEmpty()) return null // 國士無雙不能有副露
 
         val tiles = handTiles + winningTile
@@ -202,7 +202,7 @@ object RiichiHandDecomposer {
 
         if (orphans.size != 13) return null
 
-        return HandStructure.KokushiMusou(
+        return RiichiHandStructure.KokushiMusou(
             orphans = orphans,
             headTile = headTile,
         )

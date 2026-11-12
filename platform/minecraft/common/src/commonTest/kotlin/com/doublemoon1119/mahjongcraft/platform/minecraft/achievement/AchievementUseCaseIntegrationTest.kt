@@ -24,7 +24,7 @@ import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDiscardPile
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.threeplayer.ThreePlayerRiichiRuleConfig
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.YakuType
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.RiichiYakuType
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.riichi.BundledRiichiMinecraftExtension
 import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.riichi.achievement.RiichiAchievementIds
@@ -116,7 +116,7 @@ class AchievementUseCaseIntegrationTest {
                 BuiltInAchievementIds.WIN,
                 BuiltInAchievementIds.SELF_DRAW_WIN,
                 RiichiAchievementIds.YAKUMAN,
-                checkNotNull(RiichiAchievementIds.yakuman(YakuType.Daisangen)),
+                checkNotNull(RiichiAchievementIds.yakuman(RiichiYakuType.Daisangen)),
                 RiichiAchievementIds.RIICHI_WIN,
                 RiichiAchievementIds.IPPATSU,
             ),

@@ -17,8 +17,8 @@ import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiFamilyRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPlayerComponents
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiTableComponents
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.ippatsuEndPatch
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.riichiDeclaration
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.riichiIppatsuEndPatch
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanRuleConfig
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledCoreExtensionRegistries
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeIdentifiedTileFactory
@@ -111,7 +111,7 @@ class RuleComponentCheckerTest {
                 .with(otherNote, "kept"),
         )
 
-        val updated = RuleComponentChecker(registry, "mahjongcraft:riichi").applyPlayerPatch(table, declarer, declarer.ippatsuEndPatch(), "onPlayerDiscarded")
+        val updated = RuleComponentChecker(registry, "mahjongcraft:riichi").applyPlayerPatch(table, declarer, declarer.riichiIppatsuEndPatch(), "onPlayerDiscarded")
 
         assertEquals(false, updated.riichiDeclaration?.isIppatsu)
         assertEquals("kept", updated.components[otherNote])

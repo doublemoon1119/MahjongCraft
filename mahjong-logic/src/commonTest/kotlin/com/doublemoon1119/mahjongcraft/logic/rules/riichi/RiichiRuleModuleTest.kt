@@ -282,7 +282,7 @@ class RiichiRuleModuleTest {
 
         val result = module.beforeDiscardClaimed(player, MeldType.Pon, calledTile, RelativeDirection.Left)
 
-        assertEquals(PaoLiability(PaoYaku.Daisangen, RelativeDirection.Left), result.values[RiichiPlayerComponents.PAO_LIABILITY])
+        assertEquals(RiichiPaoLiability(RiichiPaoYaku.Daisangen, RelativeDirection.Left), result.values[RiichiPlayerComponents.PAO_LIABILITY])
     }
 
     /**
@@ -310,7 +310,7 @@ class RiichiRuleModuleTest {
 
         val result = module.beforeDiscardClaimed(player, MeldType.OpenKan, calledTile, RelativeDirection.Right)
 
-        assertEquals(PaoLiability(PaoYaku.Daisangen, RelativeDirection.Right), result.values[RiichiPlayerComponents.PAO_LIABILITY])
+        assertEquals(RiichiPaoLiability(RiichiPaoYaku.Daisangen, RelativeDirection.Right), result.values[RiichiPlayerComponents.PAO_LIABILITY])
     }
 
     /**
@@ -440,7 +440,7 @@ class RiichiRuleModuleTest {
     }
 
     /**
-     * 驗證包牌責任已成立時，只有包牌責任者（依 [PaoLiability.direction] 解析回實際玩家）付款，
+     * 驗證包牌責任已成立時，只有包牌責任者（依 [RiichiPaoLiability.direction] 解析回實際玩家）付款，
      * 其餘玩家完全不出現在結算結果中。
      */
     @Test
@@ -452,7 +452,7 @@ class RiichiRuleModuleTest {
             hand = Hand(tiles = daisangenTiles().map { FakeIdentifiedTileFactory.create(it) }, lastDrawn = winningTile),
             // 已經打過一輪牌，確保不是第一巡，避免誤觸天和/地和疊加成雙倍役滿
             discardPile = RiichiDiscardPile().discardTile(FakeIdentifiedTileFactory.create(Tile.Honor.South)),
-            components = ComponentSet.EMPTY.with(RiichiPlayerComponents.PAO_LIABILITY, PaoLiability(PaoYaku.Daisangen, RelativeDirection.Left)).merge(riichiDeclarationComponents()),
+            components = ComponentSet.EMPTY.with(RiichiPlayerComponents.PAO_LIABILITY, RiichiPaoLiability(RiichiPaoYaku.Daisangen, RelativeDirection.Left)).merge(riichiDeclarationComponents()),
         )
         val other1 = FakeMahjongPlayerFactory.create(initialSeat = Wind.WEST)
         val other2 = FakeMahjongPlayerFactory.create(initialSeat = Wind.NORTH)
@@ -546,7 +546,7 @@ class RiichiRuleModuleTest {
             hand = Hand(tiles = daisangenTiles().map { FakeIdentifiedTileFactory.create(it) }),
             // 已經打過一輪牌，確保不是第一巡，避免誤觸天和/地和疊加成雙倍役滿
             discardPile = RiichiDiscardPile().discardTile(FakeIdentifiedTileFactory.create(Tile.Honor.South)),
-            components = ComponentSet.EMPTY.with(RiichiPlayerComponents.PAO_LIABILITY, PaoLiability(PaoYaku.Daisangen, RelativeDirection.Left)).merge(riichiDeclarationComponents()),
+            components = ComponentSet.EMPTY.with(RiichiPlayerComponents.PAO_LIABILITY, RiichiPaoLiability(RiichiPaoYaku.Daisangen, RelativeDirection.Left)).merge(riichiDeclarationComponents()),
         )
         val discarder = FakeMahjongPlayerFactory.create(initialSeat = Wind.WEST)
         val other = FakeMahjongPlayerFactory.create(initialSeat = Wind.NORTH)
@@ -578,7 +578,7 @@ class RiichiRuleModuleTest {
             hand = Hand(tiles = daisangenTiles().map { FakeIdentifiedTileFactory.create(it) }),
             // 已經打過一輪牌，確保不是第一巡，避免誤觸天和/地和疊加成雙倍役滿
             discardPile = RiichiDiscardPile().discardTile(FakeIdentifiedTileFactory.create(Tile.Honor.South)),
-            components = ComponentSet.EMPTY.with(RiichiPlayerComponents.PAO_LIABILITY, PaoLiability(PaoYaku.Daisangen, RelativeDirection.Left)).merge(riichiDeclarationComponents()),
+            components = ComponentSet.EMPTY.with(RiichiPlayerComponents.PAO_LIABILITY, RiichiPaoLiability(RiichiPaoYaku.Daisangen, RelativeDirection.Left)).merge(riichiDeclarationComponents()),
         )
         val other1 = FakeMahjongPlayerFactory.create(initialSeat = Wind.WEST)
         val other2 = FakeMahjongPlayerFactory.create(initialSeat = Wind.NORTH)
@@ -627,7 +627,7 @@ class RiichiRuleModuleTest {
             hand = Hand(tiles = daisangenPlusTsuuiisouTiles().map { FakeIdentifiedTileFactory.create(it) }, lastDrawn = winningTile),
             // 已經打過一輪牌，確保不是第一巡，避免誤觸天和/地和疊加成雙倍役滿
             discardPile = RiichiDiscardPile().discardTile(FakeIdentifiedTileFactory.create(Tile.Honor.North)),
-            components = ComponentSet.EMPTY.with(RiichiPlayerComponents.PAO_LIABILITY, PaoLiability(PaoYaku.Daisangen, RelativeDirection.Left)).merge(riichiDeclarationComponents()),
+            components = ComponentSet.EMPTY.with(RiichiPlayerComponents.PAO_LIABILITY, RiichiPaoLiability(RiichiPaoYaku.Daisangen, RelativeDirection.Left)).merge(riichiDeclarationComponents()),
         )
         // paoPlayer（東家）恰好也是莊家，故正常結算的「莊家份」與包牌份會疊加到同一人身上
         val other1 = FakeMahjongPlayerFactory.create(initialSeat = Wind.WEST)
@@ -659,7 +659,7 @@ class RiichiRuleModuleTest {
             hand = Hand(tiles = daisangenPlusTsuuiisouTiles().map { FakeIdentifiedTileFactory.create(it) }),
             // 已經打過一輪牌，確保不是第一巡，避免誤觸天和/地和疊加成雙倍役滿
             discardPile = RiichiDiscardPile().discardTile(FakeIdentifiedTileFactory.create(Tile.Honor.North)),
-            components = ComponentSet.EMPTY.with(RiichiPlayerComponents.PAO_LIABILITY, PaoLiability(PaoYaku.Daisangen, RelativeDirection.Left)).merge(riichiDeclarationComponents()),
+            components = ComponentSet.EMPTY.with(RiichiPlayerComponents.PAO_LIABILITY, RiichiPaoLiability(RiichiPaoYaku.Daisangen, RelativeDirection.Left)).merge(riichiDeclarationComponents()),
         )
         val discarder = FakeMahjongPlayerFactory.create(initialSeat = Wind.WEST)
         val other = FakeMahjongPlayerFactory.create(initialSeat = Wind.NORTH)
@@ -703,7 +703,7 @@ class RiichiRuleModuleTest {
             initialSeat = Wind.SOUTH,
             hand = Hand(tiles = daisuushiiTiles().map { FakeIdentifiedTileFactory.create(it) }),
             discardPile = RiichiDiscardPile().discardTile(FakeIdentifiedTileFactory.create(Tile.Honor.Red)),
-            components = ComponentSet.EMPTY.with(RiichiPlayerComponents.PAO_LIABILITY, PaoLiability(PaoYaku.Daisuushii, RelativeDirection.Left)).merge(riichiDeclarationComponents()),
+            components = ComponentSet.EMPTY.with(RiichiPlayerComponents.PAO_LIABILITY, RiichiPaoLiability(RiichiPaoYaku.Daisuushii, RelativeDirection.Left)).merge(riichiDeclarationComponents()),
         )
         val discarder = FakeMahjongPlayerFactory.create(initialSeat = Wind.WEST)
         val other = FakeMahjongPlayerFactory.create(initialSeat = Wind.NORTH)
@@ -739,7 +739,7 @@ class RiichiRuleModuleTest {
     )
 
     /**
-     * 驗證 `isRobbingKan = true` 時，搶槓（[YakuType.Chankan]）1 翻會被計入榮和結算，
+     * 驗證 `isRobbingKan = true` 時，搶槓（[RiichiYakuType.Chankan]）1 翻會被計入榮和結算，
      * 點數比 `isRobbingKan = false`（預設值）的同一手牌更高。
      */
     @Test

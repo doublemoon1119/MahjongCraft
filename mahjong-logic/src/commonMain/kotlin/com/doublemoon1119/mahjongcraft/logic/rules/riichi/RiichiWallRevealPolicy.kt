@@ -36,7 +36,7 @@ object RiichiWallRevealPolicy : WallRevealPolicy {
         context: WallRevealContext,
         state: RiichiWallProgress,
     ): WallRevealDecision {
-        if (context.sourceAction == PULL_NORTH_GAME_ACTION) return WallRevealDecision.NoChange
+        if (context.sourceAction == RIICHI_PULL_NORTH_GAME_ACTION) return WallRevealDecision.NoChange
         val action = context.sourceAction as? GameAction.Kan
             ?: return WallRevealDecision.Rejected(INVALID_ACTION_REASON_ID)
         val actorPlayerId = context.actorPlayerId

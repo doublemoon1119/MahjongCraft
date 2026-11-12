@@ -2,7 +2,7 @@ package com.doublemoon1119.mahjongcraft.logic.rules.riichi
 
 import com.doublemoon1119.mahjongcraft.logic.base.TileFaceView
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.RiichiTileComponentViews
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.dora.getNextDora
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.dora.riichiNextDora
 
 /**
  * 判斷已知牌面是否為日麻加值牌：帶赤寶牌特徵，或是生效寶牌指示牌的下一張。
@@ -21,4 +21,4 @@ internal fun riichiIsBonusTile(
 ): Boolean = face.views[RiichiTileComponentViews.RED_DORA] != null ||
     wallFaces
         .filter { it.views[RiichiTileComponentViews.DORA_INDICATOR] != null }
-        .any { indicator -> face.tile == getNextDora(indicator.tile, usesThreePlayerTiles) }
+        .any { indicator -> face.tile == riichiNextDora(indicator.tile, usesThreePlayerTiles) }

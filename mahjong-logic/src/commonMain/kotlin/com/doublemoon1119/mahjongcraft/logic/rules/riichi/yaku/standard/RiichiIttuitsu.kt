@@ -1,0 +1,54 @@
+package com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.standard
+
+import com.doublemoon1119.mahjongcraft.logic.base.Hand
+import com.doublemoon1119.mahjongcraft.logic.base.Tile
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.RiichiYakuResult
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.RiichiYakuType
+
+/**
+ * 一氣通貫 (Ittuitsu) 役種檢測器。
+ *
+ * 萬、筒、條三種花色中，某種花色同時擁有 123、456、789 三個順子。
+ * 門前清時為 2 番，副露時為 1 番。
+ *
+ * @param hand 玩家手牌（包含立牌與副露）。
+ * @param winningTile 胡牌張。
+ * @param isMenzen 是否為門前清（無副露）。
+ * @return 一氣通貫役種結果，若不符合則返回 null。
+ */
+fun calculateRiichiIttuitsu(
+    hand: Hand,
+    winningTile: Tile,
+    isMenzen: Boolean,
+): RiichiYakuResult? {
+    val allTiles = (hand.allTiles.map { it.tile } + winningTile)
+
+    for (suit in listOf(Tile.Suit.Character, Tile.Suit.Dot, Tile.Suit.Bamboo)) {
+        val suitTiles = allTiles.filter { it is Tile.Numeric && it.suit == suit }
+        val hasLower = hasMelds(suitTiles, 1, 2, 3)
+        val hasMiddle = hasMelds(suitTiles, 4, 5, 6)
+        val hasUpper = hasMelds(suitTiles, 7, 8, 9)
+
+        if (hasLower && hasMiddle && hasUpper) {
+            val han = if (isMenzen) 2 else 1
+            return RiichiYakuResult.han(RiichiYakuType.Ittuitsu, han)
+        }
+    }
+
+    return null
+}
+
+/**
+ * 檢查是否包含指定數值的三張牌（可來自順子或刻子）。
+ *
+ * @param tiles 要檢查的牌。
+ * @param first 第一個必須出現的數值。
+ * @param second 第二個必須出現的數值。
+ * @param third 第三個必須出現的數值。
+ * @return 三個數值都至少出現一次時為 true。
+ */
+private fun hasMelds(tiles: List<Tile>, first: Int, second: Int, third: Int): Boolean {
+    val counts = tiles.filterIsInstance<Tile.Numeric>().groupBy { it.value }.mapValues { it.value.size }
+
+    return (counts[first] ?: 0) > 0 && (counts[second] ?: 0) > 0 && (counts[third] ?: 0) > 0
+}

@@ -59,14 +59,14 @@ import com.doublemoon1119.mahjongcraft.logic.config.MultiRonPolicy
 import com.doublemoon1119.mahjongcraft.logic.config.RonResolution
 import com.doublemoon1119.mahjongcraft.logic.config.ScoreConfig
 import com.doublemoon1119.mahjongcraft.logic.judgment.WaitingTileAvailabilityIds
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.PaoLiability
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.PaoYaku
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RIICHI_GAME_ACTION
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDeclaration
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDeclarationKind
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDiscardComponents
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDiscardPile
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiExhaustiveDrawReason
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPaoLiability
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPaoYaku
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPendingKanDoraReveal
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPlayerComponentViews
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPlayerComponents
@@ -219,7 +219,7 @@ class DtoRoundTripTest {
             discardPile = RiichiDiscardPile(
                 listOf(DiscardEntry(tile = IdentifiedTile(Uuid.random(), Tile.Honor.East), components = RiichiDiscardComponents.declaration())),
             ),
-            components = ComponentSet.EMPTY.with(RiichiPlayerComponents.PAO_LIABILITY, PaoLiability(PaoYaku.Daisuushii, RelativeDirection.Across)).merge(
+            components = ComponentSet.EMPTY.with(RiichiPlayerComponents.PAO_LIABILITY, RiichiPaoLiability(RiichiPaoYaku.Daisuushii, RelativeDirection.Across)).merge(
                 riichiDeclarationComponents(
                     declarationTile = IdentifiedTile(Uuid.random(), Tile.Honor.East),
                     isIppatsu = true,

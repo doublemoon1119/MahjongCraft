@@ -3,7 +3,7 @@ package com.doublemoon1119.mahjongcraft.logic.rules.riichi.threeplayer
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.logic.component.BuiltInComponentOwners
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.PULL_NORTH_GAME_ACTION
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RIICHI_PULL_NORTH_GAME_ACTION
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiSupplementalDrawPolicy
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.layout.RiichiPhysicalWallLayoutPolicy
 import com.doublemoon1119.mahjongcraft.logic.table.SupplementalDrawContext
@@ -62,7 +62,7 @@ class ThreePlayerRiichiPhysicalWallLayoutTest {
             layout = TileWallPhysicalLayout(layout.placements.filterKeys { it in presentTileIds(tableState) })
             assertNoOverlap(layout, tableState, "total $total dealt")
 
-            val actions = List(RiichiSupplementalDrawPolicy.MAX_SUPPLEMENTAL_DRAWS) { listOf(PULL_NORTH_GAME_ACTION, kanAction()) }.flatten()
+            val actions = List(RiichiSupplementalDrawPolicy.MAX_SUPPLEMENTAL_DRAWS) { listOf(RIICHI_PULL_NORTH_GAME_ACTION, kanAction()) }.flatten()
             actions.forEachIndexed { index, action ->
                 val supplemental = assertIs<SupplementalDrawDecision.Completed>(
                     RiichiSupplementalDrawPolicy.resolve(SupplementalDrawContext(tableState, tableState, tableState.currentPlayer.id, action)),

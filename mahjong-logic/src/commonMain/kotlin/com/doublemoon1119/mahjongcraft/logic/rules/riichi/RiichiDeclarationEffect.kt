@@ -25,7 +25,7 @@ fun riichiDeclarationEffect(
     val potPoints = tableState.riichiPotPoints()
     require(potPoints <= Int.MAX_VALUE - RIICHI_STICK_POINTS) { "Riichi pot points overflow" }
     val declaration = RiichiDeclaration(
-        kind = if (tableState.isFirstGoAround(player)) RiichiDeclarationKind.DOUBLE_RIICHI else RiichiDeclarationKind.RIICHI,
+        kind = if (tableState.isRiichiFirstGoAround(player)) RiichiDeclarationKind.DOUBLE_RIICHI else RiichiDeclarationKind.RIICHI,
         discardTileId = discardResult.tile.id,
         isIppatsu = true,
     )

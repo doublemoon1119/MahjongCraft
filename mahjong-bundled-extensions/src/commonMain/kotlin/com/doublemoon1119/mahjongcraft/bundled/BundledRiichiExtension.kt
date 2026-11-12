@@ -49,12 +49,12 @@ import com.doublemoon1119.mahjongcraft.flow.persistence.format.core.PersistenceD
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.game.toDomain
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.game.toPersistenceDto
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.rule.BuiltInDiscardPilePersistenceKeys
-import com.doublemoon1119.mahjongcraft.flow.persistence.format.rule.PaoLiabilityPersistenceDto
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.rule.RiichiDeclarationPersistenceDto
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.rule.RiichiDiscardPilePersistenceDto
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.rule.RiichiExhaustiveDrawReasonPersistenceDto
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.rule.RiichiExhaustiveDrawReasonPersistenceValue
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.rule.RiichiGameActionPersistenceDto
+import com.doublemoon1119.mahjongcraft.flow.persistence.format.rule.RiichiPaoLiabilityPersistenceDto
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.rule.RiichiPullNorthActionPersistenceDto
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.rule.RiichiRuleConfigPersistenceDto
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.rule.RiichiWallProgressPersistenceDto
@@ -82,7 +82,7 @@ import com.doublemoon1119.mahjongcraft.logic.api.registration.ComponentRegistrar
 import com.doublemoon1119.mahjongcraft.logic.api.registration.MahjongModuleRegistrar
 import com.doublemoon1119.mahjongcraft.logic.module.BuiltInRuleModuleIds
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleDefinition
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.PULL_NORTH_GAME_ACTION
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RIICHI_PULL_NORTH_GAME_ACTION
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDiscardComponents
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDiscardPile
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiExhaustiveDrawReason
@@ -405,7 +405,7 @@ object BundledRiichiExtension : MahjongExtension {
         registries.components.register(
             ComponentPersistenceDefinition(
                 component = RiichiPlayerComponents.PAO_LIABILITY,
-                serializer = PaoLiabilityPersistenceDto.serializer(),
+                serializer = RiichiPaoLiabilityPersistenceDto.serializer(),
                 toDto = { it.toPersistenceDto() },
                 toDomain = { it.toDomain() },
             ),
@@ -576,7 +576,7 @@ object BundledRiichiExtension : MahjongExtension {
                         gameId: Uuid,
                         playerId: Uuid,
                         command: RiichiPullNorthCommand,
-                    ): Outcome<Unit, GameError> = declareTileSetAsideUseCase(gameId, playerId, PULL_NORTH_GAME_ACTION)
+                    ): Outcome<Unit, GameError> = declareTileSetAsideUseCase(gameId, playerId, RIICHI_PULL_NORTH_GAME_ACTION)
                 }
             },
         )

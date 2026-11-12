@@ -8,7 +8,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.riichi.RiichiPullN
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.base.Hand
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.PULL_NORTH_GAME_ACTION
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RIICHI_PULL_NORTH_GAME_ACTION
 import com.doublemoon1119.mahjongcraft.logic.table.toSnapshot
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.DebugMahjongExtension
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.presentation.DebugWinRoundContinuationState
@@ -80,7 +80,7 @@ class DebugScriptedAiStrategyTest {
 
         assertEquals(
             GameCommand.Extension(RiichiPullNorthCommand),
-            strategy.decideGameCommand(context(AiDecisionPhase.OwnTurn, listOf(kan, PULL_NORTH_GAME_ACTION))),
+            strategy.decideGameCommand(context(AiDecisionPhase.OwnTurn, listOf(kan, RIICHI_PULL_NORTH_GAME_ACTION))),
         )
     }
 

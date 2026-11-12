@@ -193,11 +193,11 @@ class RiichiLegalActionValidator(
                 } else {
                     handWithIncoming.standingTiles.any { it.tile == Tile.Honor.North }
                 }
-                if (canPull) legalActions.add(PULL_NORTH_GAME_ACTION)
+                if (canPull) legalActions.add(RIICHI_PULL_NORTH_GAME_ACTION)
             }
 
             // 5. 檢查是否可以宣告和局 (九種九牌)
-            if (tableState.isFirstGoAround(player)) {
+            if (tableState.isRiichiFirstGoAround(player)) {
                 val isKyuushuKyuuhai = handWithIncoming.standingTiles
                     .filter { it.tile.isTerminal || it.tile.isHonor } // 過濾么九牌
                     .map { it.tile }

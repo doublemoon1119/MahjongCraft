@@ -3,7 +3,7 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.rule
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.logic.judgment.LegalActionContext
 import com.doublemoon1119.mahjongcraft.logic.judgment.LegalActionValidator
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.PULL_NORTH_GAME_ACTION
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RIICHI_PULL_NORTH_GAME_ACTION
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiExhaustiveDrawReason
 import com.doublemoon1119.mahjongcraft.logic.table.DrawFollowUpContext
 import com.doublemoon1119.mahjongcraft.logic.table.DrawFollowUpDecision
@@ -25,8 +25,8 @@ internal class DebugAutoNorthDrawFollowUpPolicy(
     override fun resolve(context: DrawFollowUpContext): DrawFollowUpDecision {
         if (context.drawnTile.tile != Tile.Honor.North) return DrawFollowUpDecision.None
         val legalActions = legalActionValidator.getLegalActions(LegalActionContext.ownTurn(context.tableState, context.playerId))
-        return if (PULL_NORTH_GAME_ACTION in legalActions) {
-            DrawFollowUpDecision.SetAside(PULL_NORTH_GAME_ACTION)
+        return if (RIICHI_PULL_NORTH_GAME_ACTION in legalActions) {
+            DrawFollowUpDecision.SetAside(RIICHI_PULL_NORTH_GAME_ACTION)
         } else {
             DrawFollowUpDecision.EndRound(RiichiExhaustiveDrawReason.Normal)
         }

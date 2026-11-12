@@ -1,6 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.rule.riichi.catalogue
 
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.YakuType
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.RiichiYakuType
 import com.doublemoon1119.mahjongcraft.metadata.MahjongCraftMetadata
 import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.riichi.RiichiYakuTranslationKeys
 
@@ -136,201 +136,201 @@ internal object RiichiCatalogueKeys {
  * @property coveredTypes 條目說明的全部役種；規則相同的多個役種（例如白、發、中三種役牌）合併成一個條目。
  */
 internal enum class RiichiCatalogueYaku(
-    val type: YakuType,
+    val type: RiichiYakuType,
     private val slug: String,
     val category: RiichiCatalogueCategory,
     val valueKey: String,
     val conditionKey: String? = null,
-    val coveredTypes: Set<YakuType> = setOf(type),
+    val coveredTypes: Set<RiichiYakuType> = setOf(type),
 ) {
     /** Dora 的說明對照。 */
-    Dora(YakuType.Dora, "dora", RiichiCatalogueCategory.BONUS, RiichiCatalogueKeys.BONUS_ONLY),
+    Dora(RiichiYakuType.Dora, "dora", RiichiCatalogueCategory.BONUS, RiichiCatalogueKeys.BONUS_ONLY),
 
     /** UraDora 的說明對照。 */
-    UraDora(YakuType.UraDora, "uradora", RiichiCatalogueCategory.BONUS, RiichiCatalogueKeys.BONUS_ONLY),
+    UraDora(RiichiYakuType.UraDora, "uradora", RiichiCatalogueCategory.BONUS, RiichiCatalogueKeys.BONUS_ONLY),
 
     /** AkaDora 的說明對照。 */
-    AkaDora(YakuType.AkaDora, "red_five", RiichiCatalogueCategory.BONUS, RiichiCatalogueKeys.BONUS_ONLY),
+    AkaDora(RiichiYakuType.AkaDora, "red_five", RiichiCatalogueCategory.BONUS, RiichiCatalogueKeys.BONUS_ONLY),
 
     /** 三人日麻拔北寶牌的說明對照。 */
-    NukiDora(YakuType.NukiDora, "nuki_dora", RiichiCatalogueCategory.BONUS, RiichiCatalogueKeys.BONUS_ONLY),
+    NukiDora(RiichiYakuType.NukiDora, "nuki_dora", RiichiCatalogueCategory.BONUS, RiichiCatalogueKeys.BONUS_ONLY),
 
     /** Tanyao 的說明對照。 */
-    Tanyao(YakuType.Tanyao, "tanyao", RiichiCatalogueCategory.HAN_1, RiichiCatalogueKeys.HAN_1),
+    Tanyao(RiichiYakuType.Tanyao, "tanyao", RiichiCatalogueCategory.HAN_1, RiichiCatalogueKeys.HAN_1),
 
     /** Pinfu 的說明對照。 */
-    Pinfu(YakuType.Pinfu, "pinfu", RiichiCatalogueCategory.HAN_1, RiichiCatalogueKeys.HAN_1, RiichiCatalogueKeys.CLOSED_ONLY),
+    Pinfu(RiichiYakuType.Pinfu, "pinfu", RiichiCatalogueCategory.HAN_1, RiichiCatalogueKeys.HAN_1, RiichiCatalogueKeys.CLOSED_ONLY),
 
     /** Iipeikou 的說明對照。 */
-    Iipeikou(YakuType.Iipeikou, "ipeiko", RiichiCatalogueCategory.HAN_1, RiichiCatalogueKeys.HAN_1, RiichiCatalogueKeys.CLOSED_ONLY),
+    Iipeikou(RiichiYakuType.Iipeikou, "ipeiko", RiichiCatalogueCategory.HAN_1, RiichiCatalogueKeys.HAN_1, RiichiCatalogueKeys.CLOSED_ONLY),
 
     /** Riichi 的說明對照。 */
-    Riichi(YakuType.Riichi, "reach", RiichiCatalogueCategory.HAN_1, RiichiCatalogueKeys.HAN_1, RiichiCatalogueKeys.CLOSED_ONLY),
+    Riichi(RiichiYakuType.Riichi, "reach", RiichiCatalogueCategory.HAN_1, RiichiCatalogueKeys.HAN_1, RiichiCatalogueKeys.CLOSED_ONLY),
 
     /** DoubleRiichi 的說明對照。 */
-    DoubleRiichi(YakuType.DoubleRiichi, "double_reach", RiichiCatalogueCategory.HAN_2, RiichiCatalogueKeys.HAN_2, RiichiCatalogueKeys.CLOSED_ONLY),
+    DoubleRiichi(RiichiYakuType.DoubleRiichi, "double_reach", RiichiCatalogueCategory.HAN_2, RiichiCatalogueKeys.HAN_2, RiichiCatalogueKeys.CLOSED_ONLY),
 
     /** Ippatsu 的說明對照。 */
-    Ippatsu(YakuType.Ippatsu, "ippatsu", RiichiCatalogueCategory.HAN_1, RiichiCatalogueKeys.HAN_1, RiichiCatalogueKeys.CLOSED_ONLY),
+    Ippatsu(RiichiYakuType.Ippatsu, "ippatsu", RiichiCatalogueCategory.HAN_1, RiichiCatalogueKeys.HAN_1, RiichiCatalogueKeys.CLOSED_ONLY),
 
     /** RinshanKaihou 的說明對照。 */
-    RinshanKaihou(YakuType.RinshanKaihou, "rinshankaihoh", RiichiCatalogueCategory.HAN_1, RiichiCatalogueKeys.HAN_1),
+    RinshanKaihou(RiichiYakuType.RinshanKaihou, "rinshankaihoh", RiichiCatalogueCategory.HAN_1, RiichiCatalogueKeys.HAN_1),
 
     /** Haitei 的說明對照。 */
-    Haitei(YakuType.Haitei, "haitei", RiichiCatalogueCategory.HAN_1, RiichiCatalogueKeys.HAN_1),
+    Haitei(RiichiYakuType.Haitei, "haitei", RiichiCatalogueCategory.HAN_1, RiichiCatalogueKeys.HAN_1),
 
     /** Houtei 的說明對照。 */
-    Houtei(YakuType.Houtei, "houtei", RiichiCatalogueCategory.HAN_1, RiichiCatalogueKeys.HAN_1),
+    Houtei(RiichiYakuType.Houtei, "houtei", RiichiCatalogueCategory.HAN_1, RiichiCatalogueKeys.HAN_1),
 
     /** Chankan 的說明對照。 */
-    Chankan(YakuType.Chankan, "chankan", RiichiCatalogueCategory.HAN_1, RiichiCatalogueKeys.HAN_1),
+    Chankan(RiichiYakuType.Chankan, "chankan", RiichiCatalogueCategory.HAN_1, RiichiCatalogueKeys.HAN_1),
 
     /** Menzentsumo 的說明對照。 */
-    Menzentsumo(YakuType.Menzentsumo, "tsumo", RiichiCatalogueCategory.HAN_1, RiichiCatalogueKeys.HAN_1, RiichiCatalogueKeys.CLOSED_ONLY),
+    Menzentsumo(RiichiYakuType.Menzentsumo, "tsumo", RiichiCatalogueCategory.HAN_1, RiichiCatalogueKeys.HAN_1, RiichiCatalogueKeys.CLOSED_ONLY),
 
     /** Toitoi 的說明對照。 */
-    Toitoi(YakuType.Toitoi, "toitoiho", RiichiCatalogueCategory.HAN_2, RiichiCatalogueKeys.HAN_2),
+    Toitoi(RiichiYakuType.Toitoi, "toitoiho", RiichiCatalogueCategory.HAN_2, RiichiCatalogueKeys.HAN_2),
 
     /** Sanankou 的說明對照。 */
-    Sanankou(YakuType.Sanankou, "sananko", RiichiCatalogueCategory.HAN_2, RiichiCatalogueKeys.HAN_2),
+    Sanankou(RiichiYakuType.Sanankou, "sananko", RiichiCatalogueCategory.HAN_2, RiichiCatalogueKeys.HAN_2),
 
     /** Sankantsu 的說明對照。 */
-    Sankantsu(YakuType.Sankantsu, "sankantsu", RiichiCatalogueCategory.HAN_2, RiichiCatalogueKeys.HAN_2),
+    Sankantsu(RiichiYakuType.Sankantsu, "sankantsu", RiichiCatalogueCategory.HAN_2, RiichiCatalogueKeys.HAN_2),
 
     /** SanshokuDokoku 的說明對照。 */
-    SanshokuDokoku(YakuType.SanshokuDokoku, "sanshokudohko", RiichiCatalogueCategory.HAN_2, RiichiCatalogueKeys.HAN_2),
+    SanshokuDokoku(RiichiYakuType.SanshokuDokoku, "sanshokudohko", RiichiCatalogueCategory.HAN_2, RiichiCatalogueKeys.HAN_2),
 
     /** SanshokuDoujun 的說明對照。 */
-    SanshokuDoujun(YakuType.SanshokuDoujun, "sanshokudohjun", RiichiCatalogueCategory.HAN_2, RiichiCatalogueKeys.HAN_2, RiichiCatalogueKeys.OPEN_HAN_1),
+    SanshokuDoujun(RiichiYakuType.SanshokuDoujun, "sanshokudohjun", RiichiCatalogueCategory.HAN_2, RiichiCatalogueKeys.HAN_2, RiichiCatalogueKeys.OPEN_HAN_1),
 
     /** Honchan 的說明對照。 */
-    Honchan(YakuType.Honchan, "chanta", RiichiCatalogueCategory.HAN_2, RiichiCatalogueKeys.HAN_2, RiichiCatalogueKeys.OPEN_HAN_1),
+    Honchan(RiichiYakuType.Honchan, "chanta", RiichiCatalogueCategory.HAN_2, RiichiCatalogueKeys.HAN_2, RiichiCatalogueKeys.OPEN_HAN_1),
 
     /** Junchan 的說明對照。 */
-    Junchan(YakuType.Junchan, "junchan", RiichiCatalogueCategory.HAN_3, RiichiCatalogueKeys.HAN_3, RiichiCatalogueKeys.OPEN_HAN_2),
+    Junchan(RiichiYakuType.Junchan, "junchan", RiichiCatalogueCategory.HAN_3, RiichiCatalogueKeys.HAN_3, RiichiCatalogueKeys.OPEN_HAN_2),
 
     /** Honitsu 的說明對照。 */
-    Honitsu(YakuType.Honitsu, "honitsu", RiichiCatalogueCategory.HAN_3, RiichiCatalogueKeys.HAN_3, RiichiCatalogueKeys.OPEN_HAN_2),
+    Honitsu(RiichiYakuType.Honitsu, "honitsu", RiichiCatalogueCategory.HAN_3, RiichiCatalogueKeys.HAN_3, RiichiCatalogueKeys.OPEN_HAN_2),
 
     /** Ryanpeikou 的說明對照。 */
-    Ryanpeikou(YakuType.Ryanpeikou, "ryanpeiko", RiichiCatalogueCategory.HAN_3, RiichiCatalogueKeys.HAN_3, RiichiCatalogueKeys.CLOSED_ONLY),
+    Ryanpeikou(RiichiYakuType.Ryanpeikou, "ryanpeiko", RiichiCatalogueCategory.HAN_3, RiichiCatalogueKeys.HAN_3, RiichiCatalogueKeys.CLOSED_ONLY),
 
     /** Ittuitsu 的說明對照。 */
-    Ittuitsu(YakuType.Ittuitsu, "ikkitsukan", RiichiCatalogueCategory.HAN_2, RiichiCatalogueKeys.HAN_2, RiichiCatalogueKeys.OPEN_HAN_1),
+    Ittuitsu(RiichiYakuType.Ittuitsu, "ikkitsukan", RiichiCatalogueCategory.HAN_2, RiichiCatalogueKeys.HAN_2, RiichiCatalogueKeys.OPEN_HAN_1),
 
     /** Honroutou 的說明對照。 */
-    Honroutou(YakuType.Honroutou, "honrohtoh", RiichiCatalogueCategory.HAN_2, RiichiCatalogueKeys.HAN_2),
+    Honroutou(RiichiYakuType.Honroutou, "honrohtoh", RiichiCatalogueCategory.HAN_2, RiichiCatalogueKeys.HAN_2),
 
     /** Chinitsu 的說明對照。 */
-    Chinitsu(YakuType.Chinitsu, "chinitsu", RiichiCatalogueCategory.HAN_6, RiichiCatalogueKeys.HAN_6, RiichiCatalogueKeys.OPEN_HAN_5),
+    Chinitsu(RiichiYakuType.Chinitsu, "chinitsu", RiichiCatalogueCategory.HAN_6, RiichiCatalogueKeys.HAN_6, RiichiCatalogueKeys.OPEN_HAN_5),
 
     /** Shousangen 的說明對照。 */
-    Shousangen(YakuType.Shousangen, "shosangen", RiichiCatalogueCategory.HAN_2, RiichiCatalogueKeys.HAN_2),
+    Shousangen(RiichiYakuType.Shousangen, "shosangen", RiichiCatalogueCategory.HAN_2, RiichiCatalogueKeys.HAN_2),
 
     /** Chiitoitsu 的說明對照。 */
-    Chiitoitsu(YakuType.Chiitoitsu, "chitoitsu", RiichiCatalogueCategory.HAN_2, RiichiCatalogueKeys.HAN_2, RiichiCatalogueKeys.CLOSED_ONLY),
+    Chiitoitsu(RiichiYakuType.Chiitoitsu, "chitoitsu", RiichiCatalogueCategory.HAN_2, RiichiCatalogueKeys.HAN_2, RiichiCatalogueKeys.CLOSED_ONLY),
 
     /** RoundWind 的說明對照。 */
-    RoundWind(YakuType.RoundWind, "bakaze", RiichiCatalogueCategory.HAN_1, RiichiCatalogueKeys.HAN_1),
+    RoundWind(RiichiYakuType.RoundWind, "bakaze", RiichiCatalogueCategory.HAN_1, RiichiCatalogueKeys.HAN_1),
 
     /** SeatWind 的說明對照。 */
-    SeatWind(YakuType.SeatWind, "jikaze", RiichiCatalogueCategory.HAN_1, RiichiCatalogueKeys.HAN_1),
+    SeatWind(RiichiYakuType.SeatWind, "jikaze", RiichiCatalogueCategory.HAN_1, RiichiCatalogueKeys.HAN_1),
 
     /** 白、發、中三種役牌合併的說明對照，以中為範例。 */
     Dragon(
-        type = YakuType.RedDragon,
+        type = RiichiYakuType.RedDragon,
         slug = "dragon",
         category = RiichiCatalogueCategory.HAN_1,
         valueKey = RiichiCatalogueKeys.HAN_1,
-        coveredTypes = setOf(YakuType.WhiteDragon, YakuType.GreenDragon, YakuType.RedDragon),
+        coveredTypes = setOf(RiichiYakuType.WhiteDragon, RiichiYakuType.GreenDragon, RiichiYakuType.RedDragon),
     ),
 
     /** KokushiMusou 的說明對照。 */
-    KokushiMusou(YakuType.KokushiMusou, "kokushimuso", RiichiCatalogueCategory.YAKUMAN, RiichiCatalogueKeys.YAKUMAN, RiichiCatalogueKeys.CLOSED_ONLY),
+    KokushiMusou(RiichiYakuType.KokushiMusou, "kokushimuso", RiichiCatalogueCategory.YAKUMAN, RiichiCatalogueKeys.YAKUMAN, RiichiCatalogueKeys.CLOSED_ONLY),
 
     /** ChurenPoto 的說明對照。 */
-    ChurenPoto(YakuType.ChurenPoto, "churenpohto", RiichiCatalogueCategory.YAKUMAN, RiichiCatalogueKeys.YAKUMAN, RiichiCatalogueKeys.CLOSED_ONLY),
+    ChurenPoto(RiichiYakuType.ChurenPoto, "churenpohto", RiichiCatalogueCategory.YAKUMAN, RiichiCatalogueKeys.YAKUMAN, RiichiCatalogueKeys.CLOSED_ONLY),
 
     /** Tsuuiisou 的說明對照。 */
-    Tsuuiisou(YakuType.Tsuuiisou, "tsuiso", RiichiCatalogueCategory.YAKUMAN, RiichiCatalogueKeys.YAKUMAN),
+    Tsuuiisou(RiichiYakuType.Tsuuiisou, "tsuiso", RiichiCatalogueCategory.YAKUMAN, RiichiCatalogueKeys.YAKUMAN),
 
     /** Ryuuuiisou 的說明對照。 */
-    Ryuuuiisou(YakuType.Ryuuuiisou, "ryuiso", RiichiCatalogueCategory.YAKUMAN, RiichiCatalogueKeys.YAKUMAN),
+    Ryuuuiisou(RiichiYakuType.Ryuuuiisou, "ryuiso", RiichiCatalogueCategory.YAKUMAN, RiichiCatalogueKeys.YAKUMAN),
 
     /** Suuankou 的說明對照。 */
-    Suuankou(YakuType.Suuankou, "suanko", RiichiCatalogueCategory.YAKUMAN, RiichiCatalogueKeys.YAKUMAN, RiichiCatalogueKeys.CLOSED_ONLY),
+    Suuankou(RiichiYakuType.Suuankou, "suanko", RiichiCatalogueCategory.YAKUMAN, RiichiCatalogueKeys.YAKUMAN, RiichiCatalogueKeys.CLOSED_ONLY),
 
     /** Sukantsu 的說明對照。 */
-    Sukantsu(YakuType.Sukantsu, "sukantsu", RiichiCatalogueCategory.YAKUMAN, RiichiCatalogueKeys.YAKUMAN),
+    Sukantsu(RiichiYakuType.Sukantsu, "sukantsu", RiichiCatalogueCategory.YAKUMAN, RiichiCatalogueKeys.YAKUMAN),
 
     /** Shousuushi 的說明對照。 */
-    Shousuushi(YakuType.Shousuushi, "shosushi", RiichiCatalogueCategory.YAKUMAN, RiichiCatalogueKeys.YAKUMAN),
+    Shousuushi(RiichiYakuType.Shousuushi, "shosushi", RiichiCatalogueCategory.YAKUMAN, RiichiCatalogueKeys.YAKUMAN),
 
     /** Daisangen 的說明對照。 */
-    Daisangen(YakuType.Daisangen, "daisangen", RiichiCatalogueCategory.YAKUMAN, RiichiCatalogueKeys.YAKUMAN),
+    Daisangen(RiichiYakuType.Daisangen, "daisangen", RiichiCatalogueCategory.YAKUMAN, RiichiCatalogueKeys.YAKUMAN),
 
     /** Chinroutou 的說明對照。 */
-    Chinroutou(YakuType.Chinroutou, "chinroto", RiichiCatalogueCategory.YAKUMAN, RiichiCatalogueKeys.YAKUMAN),
+    Chinroutou(RiichiYakuType.Chinroutou, "chinroto", RiichiCatalogueCategory.YAKUMAN, RiichiCatalogueKeys.YAKUMAN),
 
     /** Tenhou 的說明對照。 */
-    Tenhou(YakuType.Tenhou, "tenho", RiichiCatalogueCategory.YAKUMAN, RiichiCatalogueKeys.YAKUMAN, RiichiCatalogueKeys.CLOSED_ONLY),
+    Tenhou(RiichiYakuType.Tenhou, "tenho", RiichiCatalogueCategory.YAKUMAN, RiichiCatalogueKeys.YAKUMAN, RiichiCatalogueKeys.CLOSED_ONLY),
 
     /** Chiihou 的說明對照。 */
-    Chiihou(YakuType.Chiihou, "chiho", RiichiCatalogueCategory.YAKUMAN, RiichiCatalogueKeys.YAKUMAN, RiichiCatalogueKeys.CLOSED_ONLY),
+    Chiihou(RiichiYakuType.Chiihou, "chiho", RiichiCatalogueCategory.YAKUMAN, RiichiCatalogueKeys.YAKUMAN, RiichiCatalogueKeys.CLOSED_ONLY),
 
     /** KokushiMusou13 的說明對照。 */
-    KokushiMusou13(YakuType.KokushiMusou13, "kokushimuso_jusanmenmachi", RiichiCatalogueCategory.DOUBLE_YAKUMAN, RiichiCatalogueKeys.DOUBLE_YAKUMAN, RiichiCatalogueKeys.CLOSED_ONLY),
+    KokushiMusou13(RiichiYakuType.KokushiMusou13, "kokushimuso_jusanmenmachi", RiichiCatalogueCategory.DOUBLE_YAKUMAN, RiichiCatalogueKeys.DOUBLE_YAKUMAN, RiichiCatalogueKeys.CLOSED_ONLY),
 
     /** ChurenPoto9 的說明對照。 */
-    ChurenPoto9(YakuType.ChurenPoto9, "junsei_churenpohto", RiichiCatalogueCategory.DOUBLE_YAKUMAN, RiichiCatalogueKeys.DOUBLE_YAKUMAN, RiichiCatalogueKeys.CLOSED_ONLY),
+    ChurenPoto9(RiichiYakuType.ChurenPoto9, "junsei_churenpohto", RiichiCatalogueCategory.DOUBLE_YAKUMAN, RiichiCatalogueKeys.DOUBLE_YAKUMAN, RiichiCatalogueKeys.CLOSED_ONLY),
 
     /** SuuankouTanki 的說明對照。 */
-    SuuankouTanki(YakuType.SuuankouTanki, "suanko_tanki", RiichiCatalogueCategory.DOUBLE_YAKUMAN, RiichiCatalogueKeys.DOUBLE_YAKUMAN, RiichiCatalogueKeys.CLOSED_ONLY),
+    SuuankouTanki(RiichiYakuType.SuuankouTanki, "suanko_tanki", RiichiCatalogueCategory.DOUBLE_YAKUMAN, RiichiCatalogueKeys.DOUBLE_YAKUMAN, RiichiCatalogueKeys.CLOSED_ONLY),
 
     /** Daisuushii 的說明對照。 */
-    Daisuushii(YakuType.Daisuushii, "daisushi", RiichiCatalogueCategory.DOUBLE_YAKUMAN, RiichiCatalogueKeys.DOUBLE_YAKUMAN),
+    Daisuushii(RiichiYakuType.Daisuushii, "daisushi", RiichiCatalogueCategory.DOUBLE_YAKUMAN, RiichiCatalogueKeys.DOUBLE_YAKUMAN),
 
     /** 古役燕返的說明對照。 */
-    TsubameGaeshi(YakuType.TsubameGaeshi, "tsubame_gaeshi", RiichiCatalogueCategory.HAN_1, RiichiCatalogueKeys.HAN_1),
+    TsubameGaeshi(RiichiYakuType.TsubameGaeshi, "tsubame_gaeshi", RiichiCatalogueCategory.HAN_1, RiichiCatalogueKeys.HAN_1),
 
     /** 古役槓振的說明對照。 */
-    Kanburi(YakuType.Kanburi, "kanburi", RiichiCatalogueCategory.HAN_1, RiichiCatalogueKeys.HAN_1),
+    Kanburi(RiichiYakuType.Kanburi, "kanburi", RiichiCatalogueCategory.HAN_1, RiichiCatalogueKeys.HAN_1),
 
     /** 古役十二落抬的說明對照。 */
-    ShiiaruRaotai(YakuType.ShiiaruRaotai, "shiiaru_raotai", RiichiCatalogueCategory.HAN_1, RiichiCatalogueKeys.HAN_1),
+    ShiiaruRaotai(RiichiYakuType.ShiiaruRaotai, "shiiaru_raotai", RiichiCatalogueCategory.HAN_1, RiichiCatalogueKeys.HAN_1),
 
     /** 古役五門齊的說明對照。 */
-    UumenChii(YakuType.UumenChii, "uumen_chii", RiichiCatalogueCategory.HAN_2, RiichiCatalogueKeys.HAN_2),
+    UumenChii(RiichiYakuType.UumenChii, "uumen_chii", RiichiCatalogueCategory.HAN_2, RiichiCatalogueKeys.HAN_2),
 
     /** 古役三連刻的說明對照。 */
-    Sanrenkou(YakuType.Sanrenkou, "sanrenkou", RiichiCatalogueCategory.HAN_2, RiichiCatalogueKeys.HAN_2),
+    Sanrenkou(RiichiYakuType.Sanrenkou, "sanrenkou", RiichiCatalogueCategory.HAN_2, RiichiCatalogueKeys.HAN_2),
 
     /** 古役一色三同順的說明對照。 */
-    IsshokuSanjun(YakuType.IsshokuSanjun, "isshoku_sanjun", RiichiCatalogueCategory.HAN_3, RiichiCatalogueKeys.HAN_3, RiichiCatalogueKeys.OPEN_HAN_2),
+    IsshokuSanjun(RiichiYakuType.IsshokuSanjun, "isshoku_sanjun", RiichiCatalogueCategory.HAN_3, RiichiCatalogueKeys.HAN_3, RiichiCatalogueKeys.OPEN_HAN_2),
 
     /** 古役一筒摸月的說明對照。 */
-    IipinMoyue(YakuType.IipinMoyue, "iipin_moyue", RiichiCatalogueCategory.HAN_5, RiichiCatalogueKeys.HAN_5),
+    IipinMoyue(RiichiYakuType.IipinMoyue, "iipin_moyue", RiichiCatalogueCategory.HAN_5, RiichiCatalogueKeys.HAN_5),
 
     /** 古役九筒撈魚的說明對照。 */
-    ChuupinRaoyui(YakuType.ChuupinRaoyui, "chuupin_raoyui", RiichiCatalogueCategory.HAN_5, RiichiCatalogueKeys.HAN_5),
+    ChuupinRaoyui(RiichiYakuType.ChuupinRaoyui, "chuupin_raoyui", RiichiCatalogueCategory.HAN_5, RiichiCatalogueKeys.HAN_5),
 
     /** 古役人和的說明對照。 */
-    Renhou(YakuType.Renhou, "renhou", RiichiCatalogueCategory.YAKUMAN, RiichiCatalogueKeys.YAKUMAN, RiichiCatalogueKeys.CLOSED_ONLY),
+    Renhou(RiichiYakuType.Renhou, "renhou", RiichiCatalogueCategory.YAKUMAN, RiichiCatalogueKeys.YAKUMAN, RiichiCatalogueKeys.CLOSED_ONLY),
 
     /** 古役大車輪的說明對照。 */
-    Daisharin(YakuType.Daisharin, "daisharin", RiichiCatalogueCategory.YAKUMAN, RiichiCatalogueKeys.YAKUMAN, RiichiCatalogueKeys.CLOSED_ONLY),
+    Daisharin(RiichiYakuType.Daisharin, "daisharin", RiichiCatalogueCategory.YAKUMAN, RiichiCatalogueKeys.YAKUMAN, RiichiCatalogueKeys.CLOSED_ONLY),
 
     /** 古役大竹林的說明對照。 */
-    Daichikurin(YakuType.Daichikurin, "daichikurin", RiichiCatalogueCategory.YAKUMAN, RiichiCatalogueKeys.YAKUMAN, RiichiCatalogueKeys.CLOSED_ONLY),
+    Daichikurin(RiichiYakuType.Daichikurin, "daichikurin", RiichiCatalogueCategory.YAKUMAN, RiichiCatalogueKeys.YAKUMAN, RiichiCatalogueKeys.CLOSED_ONLY),
 
     /** 古役大數鄰的說明對照。 */
-    Daisuurin(YakuType.Daisuurin, "daisuurin", RiichiCatalogueCategory.YAKUMAN, RiichiCatalogueKeys.YAKUMAN, RiichiCatalogueKeys.CLOSED_ONLY),
+    Daisuurin(RiichiYakuType.Daisuurin, "daisuurin", RiichiCatalogueCategory.YAKUMAN, RiichiCatalogueKeys.YAKUMAN, RiichiCatalogueKeys.CLOSED_ONLY),
 
     /** 古役石上三年的說明對照。 */
-    IshinoUeSannen(YakuType.IshinoUeSannen, "ishi_no_ue_ni_mo_sannen", RiichiCatalogueCategory.YAKUMAN, RiichiCatalogueKeys.YAKUMAN, RiichiCatalogueKeys.CLOSED_ONLY),
+    IshinoUeSannen(RiichiYakuType.IshinoUeSannen, "ishi_no_ue_ni_mo_sannen", RiichiCatalogueCategory.YAKUMAN, RiichiCatalogueKeys.YAKUMAN, RiichiCatalogueKeys.CLOSED_ONLY),
 
     /** 古役大七星的說明對照。 */
-    Daichisei(YakuType.Daichisei, "daichisei", RiichiCatalogueCategory.DOUBLE_YAKUMAN, RiichiCatalogueKeys.DOUBLE_YAKUMAN, RiichiCatalogueKeys.CLOSED_ONLY),
+    Daichisei(RiichiYakuType.Daichisei, "daichisei", RiichiCatalogueCategory.DOUBLE_YAKUMAN, RiichiCatalogueKeys.DOUBLE_YAKUMAN, RiichiCatalogueKeys.CLOSED_ONLY),
     ;
 
     /** namespaced 役種說明識別碼。 */

@@ -21,10 +21,10 @@ import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.logic.component.ComponentSet
 import com.doublemoon1119.mahjongcraft.logic.module.BuiltInRuleModuleIds
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.PaoLiability
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.PaoYaku
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RIICHI_STICK_POINTS
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDiscardPile
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPaoLiability
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPaoYaku
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPendingKanDoraReveal
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPlayerComponents
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
@@ -223,7 +223,7 @@ class DeclareTsumoUseCaseTest {
             initialSeat = Wind.SOUTH,
             hand = daisangenHand(),
             discardPile = priorDiscardPile(),
-            components = ComponentSet.EMPTY.with(RiichiPlayerComponents.PAO_LIABILITY, PaoLiability(PaoYaku.Daisangen, RelativeDirection.Left)).merge(riichiDeclarationComponents()),
+            components = ComponentSet.EMPTY.with(RiichiPlayerComponents.PAO_LIABILITY, RiichiPaoLiability(RiichiPaoYaku.Daisangen, RelativeDirection.Left)).merge(riichiDeclarationComponents()),
         ).copy(score = 25000)
         val other1 = FakeMahjongPlayerFactory.create(initialSeat = Wind.WEST).copy(score = 25000)
         val other2 = FakeMahjongPlayerFactory.create(initialSeat = Wind.NORTH).copy(score = 25000)

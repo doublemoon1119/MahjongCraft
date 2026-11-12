@@ -19,9 +19,9 @@ object RiichiPlayerComponentViews {
     )
 
     /** 已成立且公開的包牌責任。 */
-    val PAO_LIABILITY: ComponentViewType<PaoLiability> = ComponentViewType(
+    val PAO_LIABILITY: ComponentViewType<RiichiPaoLiability> = ComponentViewType(
         id = "mahjongcraft:riichi/player_view/pao_liability",
-        valueClass = PaoLiability::class,
+        valueClass = RiichiPaoLiability::class,
         copyValue = { it.copy() },
     )
 }

@@ -4,7 +4,7 @@ import com.doublemoon1119.mahjongcraft.logic.config.MahjongRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.module.BuiltInRuleModuleIds
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiFamilyRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.YakuType
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.RiichiYakuType
 import com.doublemoon1119.mahjongcraft.platform.minecraft.catalogue.RuleCatalogue
 import com.doublemoon1119.mahjongcraft.platform.minecraft.catalogue.RuleCatalogueCategory
 import com.doublemoon1119.mahjongcraft.platform.minecraft.catalogue.RuleCatalogueEntry
@@ -42,7 +42,7 @@ class RiichiCatalogueProvider(
         return RuleCatalogue(
             categories = RiichiCatalogueCategory.entries.map { RuleCatalogueCategory(it.id, it.nameKey) },
             entries = RiichiCatalogueYaku.entries
-                .filter { definition -> definition.type != YakuType.NukiDora || config.usesThreePlayerTiles }
+                .filter { definition -> definition.type != RiichiYakuType.NukiDora || config.usesThreePlayerTiles }
                 .map { definition ->
                     RuleCatalogueEntry(
                         id = definition.id,
@@ -52,13 +52,13 @@ class RiichiCatalogueProvider(
                         labels = buildList {
                             add(definition.valueKey)
                             definition.conditionKey?.let(::add)
-                            if (definition.type == YakuType.Tanyao && !config.allowOpenTanyao) add(RiichiCatalogueKeys.CLOSED_ONLY)
+                            if (definition.type == RiichiYakuType.Tanyao && !config.allowOpenTanyao) add(RiichiCatalogueKeys.CLOSED_ONLY)
                             if (definition.type.isLocal) add(RiichiCatalogueKeys.LOCAL_YAKU)
                         }.map(::riichiCatalogueLabel),
                         unavailableReasonTranslationKey = when {
                             definition.type in MIDDLE_CHARACTER_YAKU && config.usesThreePlayerTiles -> RiichiCatalogueKeys.THREE_PLAYER_TILES_UNAVAILABLE
                             definition.type.isLocal && !config.useLocalYaku -> RiichiCatalogueKeys.LOCAL_YAKU_UNAVAILABLE
-                            definition.type == YakuType.AkaDora && config.redDoraCount == 0 -> RiichiCatalogueKeys.RED_DORA_UNAVAILABLE
+                            definition.type == RiichiYakuType.AkaDora && config.redDoraCount == 0 -> RiichiCatalogueKeys.RED_DORA_UNAVAILABLE
                             else -> null
                         },
                         examples = riichiCatalogueExamples(definition.type, config.usesThreePlayerTiles),
@@ -70,7 +70,7 @@ class RiichiCatalogueProvider(
 
     private companion object {
         /** 一定要用到二～八萬才能成立的役種；三人日麻的牌組沒有這些牌。 */
-        val MIDDLE_CHARACTER_YAKU: Set<YakuType> = setOf(YakuType.SanshokuDoujun, YakuType.Daisuurin)
+        val MIDDLE_CHARACTER_YAKU: Set<RiichiYakuType> = setOf(RiichiYakuType.SanshokuDoujun, RiichiYakuType.Daisuurin)
     }
 }
 

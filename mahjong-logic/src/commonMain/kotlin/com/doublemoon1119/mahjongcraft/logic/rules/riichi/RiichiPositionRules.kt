@@ -14,7 +14,7 @@ import com.doublemoon1119.mahjongcraft.logic.module.RonExclusions
 import com.doublemoon1119.mahjongcraft.logic.module.WinValue
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.RiichiTileComponentViews
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.RiichiTileComponents
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.dora.getNextDora
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.dora.riichiNextDora
 import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayerSnapshot
 import kotlin.uuid.Uuid
 
@@ -117,7 +117,7 @@ class RiichiPositionRules(
     override fun afterTileSetAside(view: PositionView, tileId: Uuid): PositionView = view.withTileSetAside(tileId, RiichiPlayerTileAreaIds.NORTH)
 
     override fun bonusTileCount(view: PositionView, tile: TileValue): Int {
-        val doraTiles = visibleDoraIndicators(view).map { getNextDora(it, config.usesThreePlayerTiles) }
+        val doraTiles = visibleDoraIndicators(view).map { riichiNextDora(it, config.usesThreePlayerTiles) }
         return doraTiles.count { it == tile.tile } + if (tile.components[RiichiTileComponents.RED_DORA] != null) 1 else 0
     }
 

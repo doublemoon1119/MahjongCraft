@@ -14,7 +14,7 @@ import com.doublemoon1119.mahjongcraft.logic.base.toValue
 import com.doublemoon1119.mahjongcraft.logic.judgment.HandValueResult
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiHandValueResult
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.riichiWallProgress
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.YakuType
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.RiichiYakuType
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import kotlin.uuid.Uuid
 
@@ -84,7 +84,7 @@ object RiichiWinSettlementDetailResolver : WinSettlementDetailResolver {
             }
             add(WinSettlementDetailField(RiichiWinSettlementIds.DORA_FIELD, WinSettlementDetailValue.TileFaces(indicators.first.map { publicFace(it.toValue()) })))
             // 只使用本次權威役種結果辨識立直資格，不從其他玩家的立直狀態推測。
-            if (!result.isYakuman && result.yakuResults.any { it.yaku == YakuType.Riichi || it.yaku == YakuType.DoubleRiichi }) {
+            if (!result.isYakuman && result.yakuResults.any { it.yaku == RiichiYakuType.Riichi || it.yaku == RiichiYakuType.DoubleRiichi }) {
                 add(WinSettlementDetailField(RiichiWinSettlementIds.URA_DORA_FIELD, WinSettlementDetailValue.TileFaces(indicators.second.map { publicFace(it.toValue()) })))
             }
         }

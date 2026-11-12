@@ -17,7 +17,7 @@ object RiichiSupplementalDrawPolicy : SupplementalDrawPolicy {
      * 分別記在 [RiichiWallProgress.completedSupplementalDrawCount] 與 [RiichiWallProgress.completedNorthDrawCount]。
      */
     override fun resolve(context: SupplementalDrawContext): SupplementalDrawDecision {
-        val isPullNorth = context.action == PULL_NORTH_GAME_ACTION
+        val isPullNorth = context.action == RIICHI_PULL_NORTH_GAME_ACTION
         if (context.action !is GameAction.Kan && !isPullNorth) return SupplementalDrawDecision.NotRequired
         val wallProgress = context.tableStateBeforeAction.components[RiichiTableComponents.WALL_PROGRESS]
             ?: return SupplementalDrawDecision.Rejected(INVALID_STATE_REASON_ID)

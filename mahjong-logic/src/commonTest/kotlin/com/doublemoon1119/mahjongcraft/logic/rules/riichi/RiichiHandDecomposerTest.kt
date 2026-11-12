@@ -2,9 +2,9 @@ package com.doublemoon1119.mahjongcraft.logic.rules.riichi
 
 import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.structure.Fuuro
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.structure.HandStructure
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.structure.Mentsu
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.structure.RiichiFuuro
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.structure.RiichiHandStructure
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.structure.RiichiMentsu
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
@@ -102,8 +102,8 @@ class RiichiHandDecomposerTest {
         )
 
         val fuuro = listOf(
-            Fuuro(
-                mentsu = Mentsu.Kotsu(Tile.Numeric(Tile.Suit.Dot, 1)),
+            RiichiFuuro(
+                mentsu = RiichiMentsu.Kotsu(Tile.Numeric(Tile.Suit.Dot, 1)),
                 from = RelativeDirection.Left,
             ),
         )
@@ -138,10 +138,10 @@ class RiichiHandDecomposerTest {
         )
 
         val winningTile = Tile.Numeric(Tile.Suit.Character, 9)
-        val result = RiichiHandDecomposer.decompose(handTiles, winningTile).find { it is HandStructure.Chiitoitsu }
+        val result = RiichiHandDecomposer.decompose(handTiles, winningTile).find { it is RiichiHandStructure.Chiitoitsu }
 
         assertNotNull(result)
-        assertTrue(result is HandStructure.Chiitoitsu)
+        assertTrue(result is RiichiHandStructure.Chiitoitsu)
         assertEquals(7, result.pairs.size)
     }
 
@@ -169,13 +169,13 @@ class RiichiHandDecomposerTest {
         )
 
         val winningTile = Tile.Numeric(Tile.Suit.Character, 1)
-        val result = RiichiHandDecomposer.decompose(handTiles, winningTile).find { it is HandStructure.Standard }
+        val result = RiichiHandDecomposer.decompose(handTiles, winningTile).find { it is RiichiHandStructure.Standard }
 
         assertNotNull(result)
-        assertTrue(result is HandStructure.Standard)
+        assertTrue(result is RiichiHandStructure.Standard)
 
         assertEquals(4, result.mentsus.size)
-        assertTrue(result.mentsus.all { it is Mentsu.Kotsu })
+        assertTrue(result.mentsus.all { it is RiichiMentsu.Kotsu })
 
         assertTrue(result.pair.tile is Tile.Numeric)
     }
@@ -204,15 +204,15 @@ class RiichiHandDecomposerTest {
         )
 
         val winningTile = Tile.Numeric(Tile.Suit.Character, 1)
-        val result = RiichiHandDecomposer.decompose(handTiles, winningTile).find { it is HandStructure.Standard }
+        val result = RiichiHandDecomposer.decompose(handTiles, winningTile).find { it is RiichiHandStructure.Standard }
 
         assertNotNull(result)
-        assertTrue(result is HandStructure.Standard)
+        assertTrue(result is RiichiHandStructure.Standard)
 
         assertEquals(4, result.mentsus.size)
 
-        val shuntsuCount = result.mentsus.count { it is Mentsu.Shuntsu }
-        val kotsuCount = result.mentsus.count { it is Mentsu.Kotsu }
+        val shuntsuCount = result.mentsus.count { it is RiichiMentsu.Shuntsu }
+        val kotsuCount = result.mentsus.count { it is RiichiMentsu.Kotsu }
         assertEquals(1, kotsuCount)
         assertEquals(3, shuntsuCount)
 

@@ -8,7 +8,7 @@ import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.logic.component.BuiltInComponentOwners
 import com.doublemoon1119.mahjongcraft.logic.module.ActionScoringContext
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.PULL_NORTH_GAME_ACTION
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RIICHI_PULL_NORTH_GAME_ACTION
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiExhaustiveDrawReason
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiTableComponents
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.threeplayer.ThreePlayerRiichiRuleConfig
@@ -59,7 +59,7 @@ class DebugAutoNorthRiichiRuleModuleTest {
         val state = scenarioState("auto_north_riichi_chain")
         val north = state.tileWall.getAllTiles().first { it.tile == Tile.Honor.North }
 
-        assertEquals(DrawFollowUpDecision.SetAside(PULL_NORTH_GAME_ACTION), state.followUpAfterDrawing(north))
+        assertEquals(DrawFollowUpDecision.SetAside(RIICHI_PULL_NORTH_GAME_ACTION), state.followUpAfterDrawing(north))
         assertEquals(DrawFollowUpDecision.None, state.followUpAfterDrawing(state.tileWall.getAllTiles().first { it.tile != Tile.Honor.North }))
     }
 
@@ -83,7 +83,7 @@ class DebugAutoNorthRiichiRuleModuleTest {
         val actorId = state.currentPlayer.id
 
         val scoring = assertNotNull(
-            DebugAutoNorthActionScoringPolicy.resolve(state.scoringContext(actorId, PULL_NORTH_GAME_ACTION, sourcePlayerId = null)),
+            DebugAutoNorthActionScoringPolicy.resolve(state.scoringContext(actorId, RIICHI_PULL_NORTH_GAME_ACTION, sourcePlayerId = null)),
         )
         assertEquals(mapOf(actorId to -1000), scoring.scoreDeltas)
         assertEquals(1000, scoring.potDeposit)

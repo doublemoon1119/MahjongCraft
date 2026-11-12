@@ -12,7 +12,7 @@ import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayer
  *
  * @return 結束一發的變更；沒有一發資格時不做任何變更。
  */
-fun MahjongPlayer.ippatsuEndPatch(): ComponentPatch {
+fun MahjongPlayer.riichiIppatsuEndPatch(): ComponentPatch {
     val riichiState = riichiDeclaration?.takeIf { it.isIppatsu } ?: return ComponentPatch()
     return ComponentPatch.basedOn(components, values = ComponentSet.EMPTY.with(RiichiPlayerComponents.DECLARATION, riichiState.copy(isIppatsu = false)))
 }
@@ -22,7 +22,7 @@ fun MahjongPlayer.ippatsuEndPatch(): ComponentPatch {
  *
  * @return 永久振聽的變更；沒有立直時不做任何變更。
  */
-fun MahjongPlayer.permanentFuritenPatch(): ComponentPatch {
+fun MahjongPlayer.riichiPermanentFuritenPatch(): ComponentPatch {
     if (riichiDeclaration == null) return ComponentPatch()
     return ComponentPatch.basedOn(components, values = ComponentSet.EMPTY.with(RiichiPlayerComponents.PERMANENT_FURITEN, Unit))
 }
@@ -35,12 +35,12 @@ fun MahjongPlayer.permanentFuritenPatch(): ComponentPatch {
  * @param sourceDirection 本次鳴取的來源相對方位。
  * @return 記錄包牌責任的變更；不構成包牌時不做任何變更。
  */
-fun MahjongPlayer.paoLiabilityPatch(
+fun MahjongPlayer.riichiPaoLiabilityPatch(
     meldType: MeldType,
     calledTile: IdentifiedTile,
     sourceDirection: RelativeDirection,
 ): ComponentPatch {
     if (meldType != MeldType.Pon && meldType != MeldType.OpenKan) return ComponentPatch()
-    val liability = PaoDetector.check(hand, calledTile.tile, sourceDirection) ?: return ComponentPatch()
+    val liability = RiichiPaoDetector.check(hand, calledTile.tile, sourceDirection) ?: return ComponentPatch()
     return ComponentPatch.basedOn(components, values = ComponentSet.EMPTY.with(RiichiPlayerComponents.PAO_LIABILITY, liability))
 }

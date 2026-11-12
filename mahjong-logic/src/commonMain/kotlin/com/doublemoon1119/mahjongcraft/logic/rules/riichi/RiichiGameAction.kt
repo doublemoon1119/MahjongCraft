@@ -21,4 +21,4 @@ sealed interface RiichiGameAction : ExtensionGameAction {
 val RIICHI_GAME_ACTION: GameAction.Extension = GameAction.Extension(RiichiGameAction.Riichi)
 
 /** 三人麻將的拔北動作。 */
-val PULL_NORTH_GAME_ACTION: GameAction.Extension = GameAction.Extension(RiichiGameAction.PullNorth)
+val RIICHI_PULL_NORTH_GAME_ACTION: GameAction.Extension = GameAction.Extension(RiichiGameAction.PullNorth)

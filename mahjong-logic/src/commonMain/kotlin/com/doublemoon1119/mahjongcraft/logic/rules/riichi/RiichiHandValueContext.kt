@@ -58,7 +58,7 @@ data class RiichiHandValueContext(
     val isFirstTurn: Boolean,
     val isRiichiDeclarationDiscard: Boolean,
     val isDiscardAfterKan: Boolean,
-    val paoLiability: PaoLiability?,
+    val paoLiability: RiichiPaoLiability?,
     val nukiDoraTiles: List<Tile>,
     val usesThreePlayerTiles: Boolean,
 ) : HandValueContext {
@@ -94,7 +94,7 @@ data class RiichiHandValueContext(
             isDealer: Boolean,
             doraIndicators: List<Tile>,
             nukiDoraTiles: List<Tile>,
-            paoLiability: PaoLiability?,
+            paoLiability: RiichiPaoLiability?,
         ): RiichiHandValueContext = RiichiHandValueContext(
             hand = hand,
             winningTileValue = winningTile,
