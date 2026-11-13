@@ -262,7 +262,7 @@ class CompactReplayCapacityTest {
      */
     private fun translate(element: JsonElement, index: RoundIndex): JsonElement = when (element) {
         is JsonObject -> {
-            val typeCode = if (element.keys in index.tileTypeKeySets()) index.typeDictionary.keys.indexOf(element.toString()) else -1
+            val typeCode = index.typeCodeOf(element)
             val tileId = (element["id"] as? JsonPrimitive)?.content
             if (typeCode >= 0) {
                 JsonPrimitive(typeCode)
@@ -372,12 +372,30 @@ class CompactReplayCapacityTest {
         val playerIds: Map<String, Int>,
         val typeDictionary: MutableMap<String, JsonElement>,
     ) {
+        /** 建立查詢快取時的牌種數量；牌種字典只會增加，數量不同就重建快取。 */
+        private var cachedTypeCount = -1
+
+        /** 牌種 DTO 會出現的欄位組合。 */
+        private var typeKeySets: Set<Set<String>> = emptySet()
+
+        /** 牌種 DTO 文字到牌種代碼的對照。 */
+        private var typeCodes: Map<String, Int> = emptyMap()
+
         /**
-         * 牌種 DTO 會出現的欄位組合；只有欄位相同的物件才需要比對牌種字典。
+         * 取得與 [element] 內容相同的牌種代碼；只有欄位組合與某個牌種相同的物件才轉成文字比對。
          *
-         * @return 目前字典中所有牌種的欄位組合。
+         * @param element 待比對的 JSON 物件。
+         * @return 牌種代碼；不是牌種時為 -1。
          */
-        fun tileTypeKeySets(): Set<Set<String>> = typeDictionary.values.mapTo(mutableSetOf()) { (it as JsonObject).keys }
+        fun typeCodeOf(element: JsonObject): Int {
+            if (cachedTypeCount != typeDictionary.size) {
+                typeKeySets = typeDictionary.values.mapTo(mutableSetOf()) { (it as JsonObject).keys }
+                typeCodes = typeDictionary.keys.withIndex().associate { it.value to it.index }
+                cachedTypeCount = typeDictionary.size
+            }
+            if (element.keys !in typeKeySets) return -1
+            return typeCodes[element.toString()] ?: -1
+        }
     }
 
     /**
