@@ -23,6 +23,8 @@ import kotlin.math.floor
 import kotlin.math.hypot
 import kotlin.math.sin
 import kotlin.math.sqrt
+import kotlin.random.Random
+import kotlin.uuid.Uuid
 
 /** 局部水平向量；沿用 [MahjongTableSide]／[MahjongTableFacing] 兩段式旋轉合成，Y 軸不受水平旋轉影響。 */
 private data class TileTableVector(val x: Double, val y: Double, val z: Double)
@@ -493,6 +495,102 @@ object MahjongTileTableLayout {
         val gap = MahjongTileDimensions.TILE_WIDTH * DRAWN_TILE_GAP_RATIO
         val alongSide = handRowEdge + stackStep + gap - handShift
         return TileTableVector(x = alongSide, y = 0.0, z = HAND_EDGE_OFFSET)
+    }
+
+    /**
+     * 散放牌河中一張牌的世界座標與朝向，見 [TableDiscardArea.SCATTERED]。
+     *
+     * 牌牆內側的中央區域切成方格，桌心周圍幾格留給擲骰；每格依格心最靠近的桌邊分給那一側的座位，相鄰座位的格子不重疊。
+     * 第幾張牌放在自己的哪一格，依每個座位固定的打亂順序決定；牌在格內的小偏移與偏轉角度由牌的識別碼決定，格子大小保證
+     * 偏轉後也不會碰到相鄰的格子。位置只取決於這家的第幾張與牌本身，打出新牌或有牌被鳴走時其他牌不會移動。格子用完後，
+     * 後面的牌從第一格起疊在上一層。
+     *
+     * @param controllerX 麻將桌 controller 的世界 X 座標。
+     * @param controllerY 麻將桌 controller 的世界 Y 座標。
+     * @param controllerZ 麻將桌 controller 的世界 Z 座標。
+     * @param tableFacing 麻將桌的世界朝向。
+     * @param seatLayout 本局玩家座位 index 對應的標準桌面布局。
+     * @param seatIndex 打牌者的座位 index。
+     * @param tileLayout 該規則的桌面牌位配置，決定牌牆內側的位置。
+     * @param wallStacksPerSide 牌牆每面的墩數；沒有實體牌牆時為 null，以標準牌牆計算範圍。
+     * @param discardIndex 這張牌是這家打出的第幾張，被鳴走的牌也計入。
+     * @param tileId 牌識別碼，決定格內偏移與偏轉角度。
+     * @return 世界座標與 yaw。
+     */
+    @Suppress("LongParameterList")
+    fun scatteredDiscardPlacement(
+        controllerX: Int,
+        controllerY: Int,
+        controllerZ: Int,
+        tableFacing: MahjongTableFacing,
+        seatLayout: MahjongTableSeatLayout,
+        seatIndex: Int,
+        tileLayout: TableTileLayoutProfile,
+        wallStacksPerSide: Int?,
+        discardIndex: Int,
+        tileId: Uuid,
+    ): MahjongTileWallPlacement {
+        require(discardIndex >= 0) { "Discard index must not be negative" }
+        val scatter = scatteredDiscardLocal(seatIndex, tileLayout, wallStacksPerSide, discardIndex, tileId)
+        val physicalSide = seatLayout.sideOf(seatIndex)
+        val worldOffset = rotateForFacing(rotateForSide(TileTableVector(scatter.x, scatter.y, scatter.z), physicalSide), tableFacing)
+        val baseYaw = (yawForSide(physicalSide) + yawForFacing(tableFacing)).mod(FULL_YAW_DEGREES)
+        return MahjongTileWallPlacement(
+            x = controllerX + BLOCK_CENTER + worldOffset.x,
+            y = controllerY + TABLETOP_HEIGHT + worldOffset.y,
+            z = controllerZ + BLOCK_CENTER + worldOffset.z,
+            yaw = (baseYaw + scatter.angleDegrees).mod(FULL_YAW_DEGREES),
+        )
+    }
+
+    /**
+     * 散放牌河中一張牌在打牌者局部座標中的位置與偏轉角度。
+     *
+     * @param seatIndex 打牌者的座位 index，決定打亂順序。
+     * @param tileLayout 該規則的桌面牌位配置。
+     * @param wallStacksPerSide 牌牆每面的墩數；沒有實體牌牆時為 null。
+     * @param discardIndex 這家打出的第幾張。
+     * @param tileId 牌識別碼。
+     * @return 局部位置與偏轉角度。
+     */
+    internal fun scatteredDiscardLocal(
+        seatIndex: Int,
+        tileLayout: TableTileLayoutProfile,
+        wallStacksPerSide: Int?,
+        discardIndex: Int,
+        tileId: Uuid,
+    ): ScatteredDiscard {
+        val cells = scatteredDiscardCells(tileLayout, wallStacksPerSide)
+        check(cells.isNotEmpty()) { "The table centre has no room for scattered discards" }
+        val order = cells.indices.shuffled(Random(SCATTER_ORDER_SEED + seatIndex))
+        val cell = cells[order[discardIndex % cells.size]]
+        val layer = discardIndex / cells.size
+        val random = tileId.toLongs { most, least -> Random(most xor least) }
+        return ScatteredDiscard(
+            x = cell.x + random.nextDouble(-SCATTER_JITTER, SCATTER_JITTER),
+            y = layer * (MahjongTileDimensions.TILE_DEPTH + MahjongTileDimensions.TILE_SMALL_PADDING),
+            z = cell.z + random.nextDouble(-SCATTER_JITTER, SCATTER_JITTER),
+            angleDegrees = random.nextDouble(-SCATTER_MAX_ANGLE_DEGREES, SCATTER_MAX_ANGLE_DEGREES).toFloat(),
+        )
+    }
+
+    /**
+     * 打牌者那一側的散放格心，局部座標；不含留給擲骰的桌心格。
+     *
+     * @param tileLayout 該規則的桌面牌位配置。
+     * @param wallStacksPerSide 牌牆每面的墩數；沒有實體牌牆時為 null。
+     * @return 依固定順序排列的格心。
+     */
+    internal fun scatteredDiscardCells(tileLayout: TableTileLayoutProfile, wallStacksPerSide: Int?): List<ScatterCell> {
+        val stackStep = MahjongTileDimensions.TILE_WIDTH + MahjongTileDimensions.TILE_SMALL_PADDING
+        val wallHalfSpan = maxOf((wallStacksPerSide ?: STANDARD_WALL_STACKS_PER_SIDE) / 2.0 * stackStep, STANDARD_WALL_HALF_SPAN)
+        val reach = wallHalfSpan - tileLayout.wallInset - MahjongTileDimensions.TILE_HEIGHT / 2.0 - DISCARD_WALL_CLEARANCE_MARGIN
+        val count = floor(2.0 * reach / SCATTER_CELL_SIZE).toInt()
+        val centres = List(count) { index -> (index - (count - 1) / 2.0) * SCATTER_CELL_SIZE }
+        // z 較大的一側靠近打牌者；對角線上的格子分給格心在打牌者右手邊（x 為正）的那一側。
+        return centres.flatMap { z -> centres.map { x -> ScatterCell(x, z) } }.filter { (x, z) ->
+            hypot(x, z) >= SCATTER_DICE_CLEARANCE && z >= abs(x) && (z > abs(x) || x > 0.0)
+        }
     }
 
     /**
@@ -1354,6 +1452,21 @@ object MahjongTileTableLayout {
      */
     internal const val HAND_CORNER_GAP: Double = MahjongTileDimensions.TILE_WIDTH * 0.2
 
+    /** 散放牌河每一格的邊長；牌偏轉到 [SCATTER_MAX_ANGLE_DEGREES] 並加上格內偏移後仍在格內。 */
+    internal const val SCATTER_CELL_SIZE: Double = 0.2
+
+    /** 散放牌河的牌在格內的最大偏移。 */
+    internal const val SCATTER_JITTER: Double = 0.008
+
+    /** 散放牌河的牌相對打牌者方向的最大偏轉角度。 */
+    internal const val SCATTER_MAX_ANGLE_DEGREES: Double = 25.0
+
+    /** 桌心留給擲骰、不放牌的半徑。 */
+    internal const val SCATTER_DICE_CLEARANCE: Double = 0.2
+
+    /** 散放牌河打亂順序的固定種子，加上座位 index 讓每家的順序不同。 */
+    private const val SCATTER_ORDER_SEED: Int = 4_096
+
     /** 牌牆與手牌之間的副露列，與推倒後的手牌之間保留的縫隙。 */
     internal const val FRONT_MELD_GAP: Double = MahjongTileDimensions.TILE_WIDTH * 0.05
 }
@@ -1365,3 +1478,21 @@ object MahjongTileTableLayout {
  * @property right 較大的一端。
  */
 internal data class RowSpan(val left: Double, val right: Double)
+
+/**
+ * 散放牌河的一格，局部座標。
+ *
+ * @property x 格心的局部 X，往打牌者右手邊為正。
+ * @property z 格心的局部 Z，往打牌者方向為正。
+ */
+internal data class ScatterCell(val x: Double, val z: Double)
+
+/**
+ * 散放牌河中一張牌的局部位置與偏轉。
+ *
+ * @property x 局部 X。
+ * @property y 往上疊的高度。
+ * @property z 局部 Z。
+ * @property angleDegrees 相對打牌者方向的偏轉角度。
+ */
+internal data class ScatteredDiscard(val x: Double, val y: Double, val z: Double, val angleDegrees: Float)

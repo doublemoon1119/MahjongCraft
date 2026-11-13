@@ -73,6 +73,26 @@ object TableTileArrangement {
                 val row = TileRowKey(TileRegion.SET_ASIDE, player.id, areaByTileId.getValue(placed.tileId))
                 result[placed.tileId] = ArrangedTile(placed.tileId, row, order, placed.placement, TilePose.FACE_UP)
             }
+            if (input.tileLayout.discardArea == TableDiscardArea.SCATTERED) {
+                // 散放的位置依這家打出的第幾張決定，被鳴走的牌也計入，其他牌不會因此移動。
+                val discardRow = TileRowKey(TileRegion.DISCARD, player.id, null)
+                player.discardPile.entries.withIndex().filterNot { (_, entry) -> entry.isTaken }.forEachIndexed { order, (index, entry) ->
+                    val placement = MahjongTileTableLayout.scatteredDiscardPlacement(
+                        controllerX = input.controllerX,
+                        controllerY = input.controllerY,
+                        controllerZ = input.controllerZ,
+                        tableFacing = input.tableFacing,
+                        seatLayout = input.seatLayout,
+                        seatIndex = seatIndex,
+                        tileLayout = input.tileLayout,
+                        wallStacksPerSide = input.wallProjection?.stacksPerSide,
+                        discardIndex = index,
+                        tileId = entry.tile.id,
+                    )
+                    result[entry.tile.id] = ArrangedTile(entry.tile.id, discardRow, order, placement, TilePose.FACE_UP)
+                }
+                return@forEachIndexed
+            }
             val discards = player.discardPile.entries.filterNot { it.isTaken }.map { it.tile.id }
             val sidewaysTileId = (player.discardPile as? SidewaysMarkedDiscardPile)?.sidewaysMarkedTileId()
             val sidewaysIndex = sidewaysTileId?.let(discards::indexOf)?.takeIf { it >= 0 }

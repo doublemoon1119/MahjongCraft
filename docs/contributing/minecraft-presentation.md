@@ -169,6 +169,9 @@ rules come from collisions that only showed up in game, so check them even when 
   pulled inward at the table or a wall;
   a full meld row moves its last items to the right of the hand row and the hand moves left. The wall must
   move in far enough to leave that row free.
+- A profile chooses whether discards form rows in front of each player or scatter across the centre. A
+  scattered discard's spot depends only on how many tiles that player has discarded, counting claimed ones,
+  and on the tile itself, so new discards and claims never move the others.
 - Hand rows and meld rows avoid every wall from its actual position. Every presentation that needs the hand
   position, such as the deal, a win or an exhaustive draw, takes the shift from `MahjongPlayerAreaLayout`
   instead of computing its own.

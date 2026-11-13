@@ -10,6 +10,7 @@ package com.doublemoon1119.mahjongcraft.platform.minecraft.tile
  * 四面同向移動，轉角處由一面牌牆超出、相鄰牌牆的端點頂在它的側邊，形成風車形。`0` 為標準錯開。
  * @property meldArea 副露擺放的區域；移出手牌的牌（例如花牌）接在副露後面。
  * @property claimedTileSideways 副露中被鳴的牌是否依來源方向橫放；`false` 時全部直立。
+ * @property discardArea 牌河的擺法。
  * @property addedKan 加槓補上的牌的擺法；[TableAddedKanPlacement.BESIDE_CLAIMED_TILE] 需要 [claimedTileSideways]，
  * 且副露放在桌角。
  */
@@ -19,6 +20,7 @@ data class TableTileLayoutProfile(
     val meldArea: TableMeldArea = TableMeldArea.CORNER,
     val claimedTileSideways: Boolean = true,
     val addedKan: TableAddedKanPlacement = TableAddedKanPlacement.BESIDE_CLAIMED_TILE,
+    val discardArea: TableDiscardArea = TableDiscardArea.ROWS,
 ) {
     init {
         require(wallInset.isFinite() && wallInset >= 0.0) { "Wall inset must be a non-negative finite distance: $wallInset" }
