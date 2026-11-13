@@ -47,3 +47,7 @@ sealed interface MeldType {
      */
     data class Extension(val typeId: MeldTypeId) : MeldType
 }
+
+/** 是否包含鳴取自別家的牌：吃、碰、明槓與加槓；暗槓與第三方規則提供的種類不算。 */
+val MeldType.containsClaimedTile: Boolean
+    get() = this == MeldType.Chi || this == MeldType.Pon || this == MeldType.OpenKan || this == MeldType.AddedKan

@@ -3,10 +3,10 @@ package com.doublemoon1119.mahjongcraft.logic.judgment
 import com.doublemoon1119.mahjongcraft.logic.base.Hand
 import com.doublemoon1119.mahjongcraft.logic.base.Meld
 import com.doublemoon1119.mahjongcraft.logic.base.MeldType
-import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeHandFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeIdentifiedTileFactory
+import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeMeldFactory
 import kotlin.random.Random
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -141,12 +141,6 @@ internal object ShantenTestFixtures {
     private fun melds(count: Int): List<Meld> = List(count) { index ->
         val type = MELD_TYPES[index % MELD_TYPES.size]
         val size = if (type == MeldType.Pon || type == MeldType.Chi) 3 else 4
-        Meld(
-            type = type,
-            tiles = List(size) { FakeIdentifiedTileFactory.create(Tile.Honor.White) },
-            sourceDirection = RelativeDirection.Left,
-            publiclyRevealedTileIds = emptySet(),
-            faceDownTileIds = emptySet(),
-        )
+        FakeMeldFactory.create(type = type, tiles = List(size) { FakeIdentifiedTileFactory.create(Tile.Honor.White) })
     }
 }

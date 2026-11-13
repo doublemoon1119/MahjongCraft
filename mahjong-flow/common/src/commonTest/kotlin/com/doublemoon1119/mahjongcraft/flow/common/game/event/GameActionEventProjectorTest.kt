@@ -18,6 +18,7 @@ import com.doublemoon1119.mahjongcraft.logic.base.Meld
 import com.doublemoon1119.mahjongcraft.logic.base.MeldType
 import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
+import com.doublemoon1119.mahjongcraft.logic.base.containsClaimedTile
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleModule
 import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayer
@@ -239,8 +240,8 @@ class GameActionEventProjectorTest {
     private fun meld(type: MeldType, tiles: List<IdentifiedTile>, revealAll: Boolean) = Meld(
         type = type,
         tiles = tiles,
-        sourceTile = if (type == MeldType.OpenKan) tiles.first() else null,
-        sourceDirection = if (type == MeldType.OpenKan) RelativeDirection.Left else RelativeDirection.Self,
+        sourceTile = tiles.first().takeIf { type.containsClaimedTile },
+        sourceDirection = if (type.containsClaimedTile) RelativeDirection.Left else RelativeDirection.Self,
         publiclyRevealedTileIds = if (revealAll) tiles.map { it.id }.toSet() else emptySet(),
         faceDownTileIds = emptySet(),
     )

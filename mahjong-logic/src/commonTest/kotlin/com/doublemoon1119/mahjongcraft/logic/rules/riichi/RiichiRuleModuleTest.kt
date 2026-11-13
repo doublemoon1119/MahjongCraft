@@ -334,6 +334,7 @@ class RiichiRuleModuleTest {
             Meld(
                 type = MeldType.Pon,
                 tiles = meldTiles,
+                sourceTile = meldTiles.last(),
                 sourceDirection = RelativeDirection.Across,
                 publiclyRevealedTileIds = meldTiles.map { it.id }.toSet(),
                 faceDownTileIds = emptySet(),

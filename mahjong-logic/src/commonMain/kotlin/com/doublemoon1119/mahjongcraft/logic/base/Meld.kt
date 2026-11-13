@@ -14,7 +14,7 @@ import kotlin.uuid.Uuid
  * @property components 這組副露攜帶的規則資料。
  * @property type 副露的種類，例如 [MeldType.Chi] 或 [MeldType.Pon]。
  * @property tiles 組成該副露的所有 [IdentifiedTile]。
- * @property sourceTile 從其他玩家處鳴取而來的特定牌。若為暗槓 ([MeldType.ClosedKan]) 則通常為 null。
+ * @property sourceTile 從其他玩家處鳴取而來的特定牌；吃、碰、明槓與加槓必須有，暗槓 ([MeldType.ClosedKan]) 必須為 null。
  * @property sourceDirection 鳴取來源的相對方位；有 [sourceTile] 時不得為 [RelativeDirection.Self]。
  * @property publiclyRevealedTileIds 可讓一般觀察者知道牌面的牌張 ID；必須是 [tiles] 中牌張 ID 的子集合。
  * @property faceDownTileIds 桌面上需要朝下呈現的牌張 ID；必須是 [tiles] 中牌張 ID 的子集合，與牌面公開狀態分開保存。
@@ -33,6 +33,8 @@ data class Meld(
         components.requireTarget(BuiltInComponentOwners.MELD)
         val tileIds = tiles.map { it.id }.toSet()
         require(tileIds.size == tiles.size) { "Meld tiles must have unique IDs" }
+        require(sourceTile != null || !type.containsClaimedTile) { "Claimed melds must record their source tile" }
+        require(sourceTile == null || type != MeldType.ClosedKan) { "Closed kans have no source tile" }
         require(sourceTile == null || sourceTile in tiles) { "Meld source must belong to the meld" }
         require(sourceTile == null || sourceDirection != RelativeDirection.Self) { "Claimed source must come from another player" }
         require(sourceTile == null || sourceTile.id in publiclyRevealedTileIds) { "Claimed source tile must remain public" }

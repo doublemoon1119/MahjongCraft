@@ -3,6 +3,7 @@ package com.doublemoon1119.mahjongcraft.logic.base
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeIdentifiedTileFactory
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
@@ -124,5 +125,33 @@ class MeldTest {
         assertEquals(tiles.map { it.id }.toSet(), closedKanPubliclyRevealedTileIds(tiles, revealsClosedKanTiles = true))
         assertEquals(emptySet(), closedKanPubliclyRevealedTileIds(tiles, revealsClosedKanTiles = false))
         assertEquals(setOf(tiles.first().id, tiles.last().id), closedKanFaceDownTileIds(tiles))
+    }
+
+    /** 吃、碰、明槓與加槓一定要記錄被鳴的牌；暗槓不能有被鳴的牌。 */
+    @Test
+    fun `claimed melds require a source tile and closed kans forbid one`() {
+        listOf(MeldType.Chi, MeldType.Pon, MeldType.OpenKan, MeldType.AddedKan).forEach { type ->
+            val tiles = List(if (type == MeldType.Chi || type == MeldType.Pon) 3 else 4) { FakeIdentifiedTileFactory.create(Tile.Honor.Green) }
+            assertFailsWith<IllegalArgumentException>(type.toString()) {
+                Meld(
+                    type = type,
+                    tiles = tiles,
+                    sourceDirection = RelativeDirection.Left,
+                    publiclyRevealedTileIds = tiles.mapTo(mutableSetOf()) { it.id },
+                    faceDownTileIds = emptySet(),
+                )
+            }
+        }
+        val kanTiles = List(4) { FakeIdentifiedTileFactory.create(Tile.Honor.Green) }
+        assertFailsWith<IllegalArgumentException> {
+            Meld(
+                type = MeldType.ClosedKan,
+                tiles = kanTiles,
+                sourceTile = kanTiles.last(),
+                sourceDirection = RelativeDirection.Left,
+                publiclyRevealedTileIds = kanTiles.mapTo(mutableSetOf()) { it.id },
+                faceDownTileIds = emptySet(),
+            )
+        }
     }
 }

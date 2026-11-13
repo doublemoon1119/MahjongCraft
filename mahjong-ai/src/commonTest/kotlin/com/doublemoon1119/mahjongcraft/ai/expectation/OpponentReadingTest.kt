@@ -319,6 +319,7 @@ class OpponentReadingTest {
         return Meld(
             type = MeldType.Chi,
             tiles = meldTiles,
+            sourceTile = meldTiles.first(),
             sourceDirection = RelativeDirection.Left,
             publiclyRevealedTileIds = meldTiles.map { it.id }.toSet(),
             faceDownTileIds = emptySet(),
