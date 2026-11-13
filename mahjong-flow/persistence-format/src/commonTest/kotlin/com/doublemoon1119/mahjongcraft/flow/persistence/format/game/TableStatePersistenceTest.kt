@@ -115,6 +115,7 @@ class TableStatePersistenceTest {
 
         assertEncodedRoundTrip(
             state.copy(
+                lastDiscardTileId = tileId,
                 turnPhase = TurnPhase.AwaitingDiscardReaction(
                     PendingReaction(
                         discarderId = discarderId,

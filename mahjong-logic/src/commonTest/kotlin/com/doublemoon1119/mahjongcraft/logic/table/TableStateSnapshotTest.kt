@@ -27,6 +27,26 @@ import kotlin.uuid.Uuid
  */
 class TableStateSnapshotTest {
 
+    /** 最後打出的牌還在牌河、本局還沒結束時，快照帶出這張牌；被鳴走或本局結束後不帶。 */
+    @Test
+    fun `latest discard is exposed only while it stays in the river during the round`() {
+        val earlier = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 1))
+        val latest = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 2))
+        val discarder = FakeMahjongPlayerFactory.create(
+            initialSeat = Wind.EAST,
+            discardPile = FakeDiscardPile().discardTile(earlier).discardTile(latest),
+        )
+        val table = FakeTableStateFactory.create(players = listOf(discarder, FakeMahjongPlayerFactory.create(initialSeat = Wind.SOUTH)))
+            .copy(lastDiscardTileId = latest.id)
+        val taken = table.copy(players = listOf(discarder.copy(discardPile = discarder.discardPile.takeLast())) + table.players.drop(1))
+        val roundOver = table.copy(turnPhase = TurnPhase.RoundOver(RoundConclusion.Win(setOf(table.players[1].id))))
+
+        assertEquals(latest.id, table.toSnapshot(emptySet()).latestDiscardTileId)
+        assertNull(table.copy(lastDiscardTileId = null).toSnapshot(emptySet()).latestDiscardTileId)
+        assertNull(taken.toSnapshot(emptySet()).latestDiscardTileId)
+        assertNull(roundOver.toSnapshot(emptySet()).latestDiscardTileId)
+    }
+
     /**
      * 驗證觀察者能看到自己的手牌，但看不到其他玩家的手牌。
      */

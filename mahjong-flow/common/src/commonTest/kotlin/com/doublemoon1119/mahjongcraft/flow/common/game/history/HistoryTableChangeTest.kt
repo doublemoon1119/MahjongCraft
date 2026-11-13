@@ -11,6 +11,7 @@ import com.doublemoon1119.mahjongcraft.logic.table.opening.DiceRollResult
 import com.doublemoon1119.mahjongcraft.logic.table.opening.OpeningDiceRoll
 import com.doublemoon1119.mahjongcraft.logic.tile.component.BuiltInTileComponents
 import com.doublemoon1119.mahjongcraft.logic.tile.component.TileFaceAccess
+import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeDiscardPile
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
 import kotlin.test.Test
@@ -75,6 +76,25 @@ class HistoryTableChangeTest {
 
         assertEquals(after.publicTileEvidenceIds, change.publicTileEvidenceIds)
         assertEquals(after, change.applyTo(before))
+    }
+
+    /** 最後打出的牌換成新打出的牌時，差異記下新牌，套用後還原；沒換時不記錄。 */
+    @Test
+    fun `change records and restores the last discard`() {
+        val first = IdentifiedTile(Uuid.random(), Tile.Numeric(Tile.Suit.Dot, 1))
+        val second = IdentifiedTile(Uuid.random(), Tile.Numeric(Tile.Suit.Dot, 2))
+        val discarder = FakeMahjongPlayerFactory.create(discardPile = FakeDiscardPile().discardTile(first))
+        val earlier = FakeTableStateFactory.create(players = listOf(discarder)).copy(lastDiscardTileId = first.id)
+        val later = earlier.copy(
+            players = listOf(discarder.copy(discardPile = discarder.discardPile.discardTile(second))),
+            lastDiscardTileId = second.id,
+        )
+
+        val change = assertNotNull(HistoryTableChange.between(earlier, later))
+
+        assertEquals(second.id, change.lastDiscardTileId)
+        assertEquals(later, change.applyTo(earlier))
+        assertNull(assertNotNull(HistoryTableChange.between(earlier, earlier.copy(currentPlayerIndex = 0))).lastDiscardTileId)
     }
 
     /** 已公開手牌沒有改變時不記錄。 */

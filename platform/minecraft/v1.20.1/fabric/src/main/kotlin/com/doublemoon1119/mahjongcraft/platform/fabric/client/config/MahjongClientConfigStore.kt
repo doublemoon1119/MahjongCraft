@@ -332,6 +332,7 @@ class MahjongClientConfigStore() {
             visibilityField("draw-settlement-enabled", MahjongPresentationVisibilityConfig::drawSettlementEnabled),
             visibilityField("match-settlement-enabled", MahjongPresentationVisibilityConfig::matchSettlementEnabled),
             visibilityField("matching-tile-highlight-enabled", MahjongPresentationVisibilityConfig::matchingTileHighlightEnabled),
+            visibilityField("latest-discard-highlight-enabled", MahjongPresentationVisibilityConfig::latestDiscardHighlightEnabled),
             visibilityField("discard-popup-enabled", MahjongPresentationVisibilityConfig::discardPopupEnabled),
             visibilityField("meld-popup-enabled", MahjongPresentationVisibilityConfig::meldPopupEnabled),
             visibilityField(

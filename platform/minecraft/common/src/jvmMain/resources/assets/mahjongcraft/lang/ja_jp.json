@@ -118,6 +118,8 @@
   "mahjongcraft.client_config.presentation.discard_popup.description": "捨て牌が着地した際、その牌面を短時間表示します。",
   "mahjongcraft.client_config.presentation.draw_settlement": "流局精算",
   "mahjongcraft.client_config.presentation.draw_settlement.description": "流局精算パネルを表示します。",
+  "mahjongcraft.client_config.presentation.latest_discard_highlight": "最新の捨て牌の強調",
+  "mahjongcraft.client_config.presentation.latest_discard_highlight.description": "この表示を使うルールでは、最後に捨てられた牌が河に残っている間、枠を光らせます。",
   "mahjongcraft.client_config.presentation.lobby_info": "参加案内",
   "mahjongcraft.client_config.presentation.lobby_info.description": "参加可能な座席の案内パネルを表示します。",
   "mahjongcraft.client_config.presentation.match_settlement": "対局結果",

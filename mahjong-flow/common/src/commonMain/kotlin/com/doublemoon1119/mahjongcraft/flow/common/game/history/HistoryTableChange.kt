@@ -24,6 +24,7 @@ import kotlin.uuid.Uuid
  * @property publicTileEvidenceIds 本局公開證據的新集合；未改變時為 null。
  * @property revealedHandSettlements 流局公開手牌與等待牌的新資料；未改變時為 null，空集合代表清空。
  * @property openingDiceRolls 本局逐輪擲骰結果；未改變時為 null。
+ * @property lastDiscardTileId 本局最後打出的牌；未改變時為 null。一局之內只會換成新打出的牌，不會清空。
  */
 data class HistoryTableChange(
     val components: ComponentSet? = null,
@@ -37,6 +38,7 @@ data class HistoryTableChange(
     val publicTileEvidenceIds: Set<Uuid>? = null,
     val revealedHandSettlements: List<RevealedHandSettlement>? = null,
     val openingDiceRolls: List<OpeningDiceRoll>? = null,
+    val lastDiscardTileId: Uuid? = null,
 ) {
     /**
      * 將差異套用到前一個完整桌況。
@@ -62,6 +64,7 @@ data class HistoryTableChange(
             publicTileEvidenceIds = publicTileEvidenceIds ?: before.publicTileEvidenceIds,
             revealedHandSettlements = revealedHandSettlements ?: before.revealedHandSettlements,
             openingDiceRolls = openingDiceRolls ?: before.openingDiceRolls,
+            lastDiscardTileId = lastDiscardTileId ?: before.lastDiscardTileId,
         )
     }
 
@@ -125,6 +128,7 @@ data class HistoryTableChange(
                     it != before.revealedHandSettlements
                 },
                 openingDiceRolls = after.openingDiceRolls.takeIf { it != before.openingDiceRolls },
+                lastDiscardTileId = after.lastDiscardTileId.takeIf { it != before.lastDiscardTileId },
             )
             return result.takeIf { runCatching { it.applyTo(before) == after }.getOrDefault(false) }
         }

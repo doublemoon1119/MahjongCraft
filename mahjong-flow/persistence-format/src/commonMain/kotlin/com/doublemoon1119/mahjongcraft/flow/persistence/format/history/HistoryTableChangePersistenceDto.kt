@@ -21,6 +21,7 @@ import kotlinx.serialization.Serializable
  * @property publicTileEvidenceIds 本局公開證據的 UUID 字串集合；未改變時為 null。
  * @property revealedHandSettlements 流局公開手牌與等待牌的新資料；未改變時為 null，空集合代表清空。
  * @property openingDiceRolls 本局逐輪擲骰結果；未改變時為 null。
+ * @property lastDiscardTileId 本局最後打出的牌的 UUID 字串；未改變時為 null。
  */
 @Serializable
 data class HistoryTableChangePersistenceDto(
@@ -35,4 +36,5 @@ data class HistoryTableChangePersistenceDto(
     val publicTileEvidenceIds: Set<String>?,
     val revealedHandSettlements: List<RevealedHandSettlementPersistenceDto>?,
     val openingDiceRolls: List<OpeningDiceRollPersistenceDto>?,
+    val lastDiscardTileId: String?,
 )

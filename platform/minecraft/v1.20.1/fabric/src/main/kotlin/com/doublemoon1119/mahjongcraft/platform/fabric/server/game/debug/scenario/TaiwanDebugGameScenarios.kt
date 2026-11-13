@@ -208,6 +208,7 @@ private object TaiwanBeforePaoPonScenario : DebugGameScenario {
             tileWall = draw.wall,
             physicalWallLayout = dealt.physicalWallLayout?.retainOnly(remainingWallIds),
             currentPlayerIndex = discarderIndex,
+            lastDiscardTileId = calledTile.id,
             turnPhase = TurnPhase.AwaitingDiscardReaction(
                 PendingReaction(
                     discarderId = players[discarderIndex].id,
@@ -314,6 +315,7 @@ private object TaiwanCrowdedMeldsScenario : DebugGameScenario {
             tileWall = wall,
             physicalWallLayout = dealt.physicalWallLayout?.retainOnly(remainingWallIds),
             currentPlayerIndex = discarderIndex,
+            lastDiscardTileId = called.id,
             turnPhase = TurnPhase.AwaitingDiscardReaction(
                 PendingReaction(
                     discarderId = players[discarderIndex].id,

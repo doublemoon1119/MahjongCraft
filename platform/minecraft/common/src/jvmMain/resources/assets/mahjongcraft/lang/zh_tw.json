@@ -118,6 +118,8 @@
   "mahjongcraft.client_config.presentation.discard_popup.description": "捨牌落地時，短暫顯示該張牌面。",
   "mahjongcraft.client_config.presentation.draw_settlement": "流局結算",
   "mahjongcraft.client_config.presentation.draw_settlement.description": "顯示流局結算面板。",
+  "mahjongcraft.client_config.presentation.latest_discard_highlight": "最新捨牌提示",
+  "mahjongcraft.client_config.presentation.latest_discard_highlight.description": "在使用這項提示的規則中，最後打出的牌留在牌河時，外框會一直發光。",
   "mahjongcraft.client_config.presentation.lobby_info": "可加入遊戲提示",
   "mahjongcraft.client_config.presentation.lobby_info.description": "顯示尚可加入遊戲的座位提示面板。",
   "mahjongcraft.client_config.presentation.match_settlement": "整場結算",

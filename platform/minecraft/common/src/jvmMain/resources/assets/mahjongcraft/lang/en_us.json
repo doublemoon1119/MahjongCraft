@@ -118,6 +118,8 @@
   "mahjongcraft.client_config.presentation.discard_popup.description": "Briefly show the tile face when a discard lands.",
   "mahjongcraft.client_config.presentation.draw_settlement": "Draw Settlement",
   "mahjongcraft.client_config.presentation.draw_settlement.description": "Show the exhaustive draw settlement panel.",
+  "mahjongcraft.client_config.presentation.latest_discard_highlight": "Latest Discard Highlight",
+  "mahjongcraft.client_config.presentation.latest_discard_highlight.description": "Keep an outline on the most recently discarded tile while it stays in the discards, for rules that use it.",
   "mahjongcraft.client_config.presentation.lobby_info": "Join Prompt",
   "mahjongcraft.client_config.presentation.lobby_info.description": "Show the panel prompting players to join open seats.",
   "mahjongcraft.client_config.presentation.match_settlement": "Match Settlement",

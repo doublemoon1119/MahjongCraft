@@ -154,7 +154,7 @@ class DiscardTileUseCase(
                             source = "onPlayerDiscarded",
                         )
                         val updatedPlayers = state.players.map { if (it.id == playerId) updatedPlayer else it }
-                        val stateAfterDiscard = state.copy(players = updatedPlayers)
+                        val stateAfterDiscard = state.copy(players = updatedPlayers, lastDiscardTileId = tileId)
 
                         val resolved =
                             DiscardReactionResolver.resolve(state, stateAfterDiscard, module, playerId, discardedTile)

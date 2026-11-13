@@ -44,4 +44,16 @@ class TableTileLayoutProfileRegistryTest {
             registry.registrationKeys,
         )
     }
+
+    /** 只有散放牌河的台麻標示最後打出的牌，日麻照順序排的牌河不標示。 */
+    @Test
+    fun `only taiwan highlights the latest discard`() {
+        val registry = TableTileLayoutProfileRegistryImpl()
+        BundledMinecraftMahjongExtensions.all.forEach { it.registerTableTileLayoutProfiles(registry) }
+
+        assertEquals(
+            setOf(BuiltInRuleModuleIds.TAIWAN),
+            registry.registrationKeys.filter { registry.profileFor(it).highlightsLatestDiscard }.toSet(),
+        )
+    }
 }

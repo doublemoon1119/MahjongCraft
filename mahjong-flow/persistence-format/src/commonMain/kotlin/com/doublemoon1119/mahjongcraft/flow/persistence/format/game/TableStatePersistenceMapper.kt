@@ -54,6 +54,7 @@ fun TableState.toPersistenceDto(
             waitingTiles = settlement.waitingTiles.map { it.toPersistenceDto() },
         )
     },
+    lastDiscardTileId = lastDiscardTileId?.toString(),
 )
 
 /**
@@ -97,4 +98,5 @@ fun TableStatePersistenceDto.toDomain(
             waitingTiles = settlement.waitingTiles.map { it.toDomain() }.toSet(),
         )
     },
+    lastDiscardTileId = lastDiscardTileId?.let(Uuid::parse),
 )

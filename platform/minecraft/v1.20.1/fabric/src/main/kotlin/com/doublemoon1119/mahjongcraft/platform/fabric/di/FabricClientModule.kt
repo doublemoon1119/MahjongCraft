@@ -52,6 +52,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.client.table.TableSpaceOb
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.tile.ClientHandTileLayoutController
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.tile.FabricHandSortCommand
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.tile.FabricTileLabelCommand
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.tile.LatestDiscardHighlightController
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.tile.MatchingTileHighlightController
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.time.PauseAwareClientMonotonicClock
 import com.doublemoon1119.mahjongcraft.platform.minecraft.character.AiCharacterClientStateStore
@@ -135,4 +136,5 @@ val fabricClientModule = module {
     single<FabricTileLabelCommand>()
     single<ClientHandTileLayoutController>()
     single<MatchingTileHighlightController>()
+    single<LatestDiscardHighlightController>()
 }

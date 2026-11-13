@@ -172,6 +172,7 @@ class DeclareAndDiscardUseCase(
                 before = state,
                 after = state.copy(
                     players = state.players.map { if (it.id == playerId) updatedPlayer else it },
+                    lastDiscardTileId = tileId,
                     components = ruleComponents.applyTablePatch(state, effect.tableComponents, "declarationDiscardPolicy"),
                 ),
                 source = "declarationDiscardPolicy",

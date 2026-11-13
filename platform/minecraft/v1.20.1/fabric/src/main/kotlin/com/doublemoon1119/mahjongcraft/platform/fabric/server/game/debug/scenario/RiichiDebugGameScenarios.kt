@@ -294,6 +294,7 @@ private object RiichiBeforePaoPonScenario : DebugGameScenario {
             roundPosition = MatchRoundPosition(sequenceIndex = 0, prevalentWind = Wind.EAST, localRoundNumber = 1),
             currentPlayerIndex = discarderIndex,
             components = ComponentSet.EMPTY.with(RiichiTableComponents.POT_POINTS, 0).with(RiichiTableComponents.WALL_PROGRESS, RiichiWallProgress()),
+            lastDiscardTileId = calledTile.id,
             turnPhase = TurnPhase.AwaitingDiscardReaction(
                 PendingReaction(
                     discarderId = players[discarderIndex].id,
@@ -692,6 +693,7 @@ private class RiichiBeforeMinkanScenario(
         val tableState = state.copy(
             players = players,
             currentPlayerIndex = discarderIndex,
+            lastDiscardTileId = discardedTile.id,
             turnPhase = TurnPhase.AwaitingDiscardReaction(
                 PendingReaction(
                     discarderId = players[discarderIndex].id,

@@ -70,6 +70,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.client.tile.ClientHandTil
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.tile.ClientHandTileLayoutController
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.tile.FabricHandSortCommand
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.tile.FabricTileLabelCommand
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.tile.LatestDiscardHighlightController
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.tile.MatchingTileHighlightController
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.time.PauseAwareClientMonotonicClock
 import com.doublemoon1119.mahjongcraft.platform.fabric.extension.BuiltInFabricMahjongClientExtension
@@ -178,6 +179,7 @@ class MahjongCraftModClient : ClientModInitializer {
         val decisionHudController = koin.get<PlayerDecisionHudController>()
         decisionHudController.registerEvents()
         koin.get<MatchingTileHighlightController>().register()
+        koin.get<LatestDiscardHighlightController>().register()
 
         val json = koin.get<NetworkJson>()
         val historyQueries = koin.get<ClientHistoryQueryCoordinator>()

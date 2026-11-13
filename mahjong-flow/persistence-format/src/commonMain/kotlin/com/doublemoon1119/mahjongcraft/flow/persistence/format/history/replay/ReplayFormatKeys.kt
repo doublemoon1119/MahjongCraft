@@ -200,6 +200,9 @@ internal object ReplaySourceKeys {
     /** 桌況的實體牌牆布局。 */
     const val PHYSICAL_WALL_LAYOUT = "physicalWallLayout"
 
+    /** 桌況記錄的本局最後打出的牌。 */
+    const val LAST_DISCARD_TILE_ID = "lastDiscardTileId"
+
     /** 玩家初始座位。 */
     const val INITIAL_SEAT_INDEX = "initialSeatIndex"
 

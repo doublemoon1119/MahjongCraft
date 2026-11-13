@@ -33,6 +33,7 @@ win-settlement-enabled = true
 draw-settlement-enabled = true
 match-settlement-enabled = true
 matching-tile-highlight-enabled = true
+latest-discard-highlight-enabled = true
 discard-popup-enabled = true
 meld-popup-enabled = true
 automatic-control-status-enabled = true

@@ -43,6 +43,7 @@ import kotlin.uuid.Uuid
  * 私人授權不能寫入此集合；牌移動或更換持有人不清除公共證據，換局才清空。
  * @property revealedHandSettlements 本局流局 resolver 第一次計算出的公開手牌與等待牌資料；呈現流程只讀這份結果，
  * 每局重新開始時為空集合。
+ * @property lastDiscardTileId 本局最後打出的牌；這張牌之後被鳴走或胡走仍保留，本局還沒有人打牌時為 null。
  */
 data class TableState(
     val id: Uuid,
@@ -67,6 +68,7 @@ data class TableState(
     val finishedPlayerIds: Set<Uuid> = emptySet(),
     val publicTileEvidenceIds: Set<Uuid> = emptySet(),
     val revealedHandSettlements: List<RevealedHandSettlement> = emptyList(),
+    val lastDiscardTileId: Uuid? = null,
     val components: ComponentSet = ComponentSet.EMPTY,
 ) {
     init {
@@ -84,6 +86,11 @@ data class TableState(
         }
         require(roundPosition.prevalentWind == prevalentWind) { "prevalentWind must match roundPosition" }
         require(roundPosition.roundNumber == roundNumber) { "roundNumber must match roundPosition" }
+        lastDiscardTileId?.let { tileId ->
+            require(players.any { player -> player.discardPile.entries.any { it.tile.id == tileId } }) {
+                "lastDiscardTileId must be in a discard pile: $tileId"
+            }
+        }
         physicalWallLayout?.let { layout ->
             val wallTileIds = (tileWall.getAllTiles() + reservedWallTiles).mapTo(mutableSetOf()) { it.id }
             require(layout.placements.keys == wallTileIds) {
