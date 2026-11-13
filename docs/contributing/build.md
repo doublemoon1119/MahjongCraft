@@ -11,6 +11,10 @@
   assuming the repository defaults fit every environment.
 - Parallel project execution is enabled by default. Memory-constrained environments can pass
   `--no-parallel` and lower `org.gradle.workers.max` in their Gradle user properties.
+- The Minecraft loader convention makes every Fabric Loom remap task (`remapJar`, `remapSourcesJar`) share one
+  build-wide slot, so remapping runs one task at a time while other work stays parallel. Two remap tasks running at
+  once in the same daemon can fail with `ClosedFileSystemException` while reading a classpath JAR. New loader or
+  version modules inherit this through the convention; do not add per-module workarounds.
 - The configuration cache is enabled by default. Custom tasks must not read `Task.project` while executing;
   pass the data they need as task properties at configuration time. A new platform target must build and run
   its `run` tasks with the configuration cache, or document why its builds pass `--no-configuration-cache`.

@@ -7,7 +7,7 @@ import org.gradle.language.jvm.tasks.ProcessResources
 import org.gradle.kotlin.dsl.configure
 import org.gradle.kotlin.dsl.withType
 
-/** 套用 Minecraft loader module 的 target Java、archive 與 metadata 政策。 */
+/** 套用 Minecraft loader module 的 target Java、archive 與 metadata 政策，並讓整個建置的重新映射任務排隊執行。 */
 class MahjongCraftMinecraftLoaderPlugin : Plugin<Project> {
     /** 套用 JVM convention 並設定 loader-specific build 行為。 */
     override fun apply(project: Project) = with(project) {
@@ -49,5 +49,34 @@ class MahjongCraftMinecraftLoaderPlugin : Plugin<Project> {
                 expand(metadata.get())
             }
         }
+        serializeRemapTasks()
     }
 }
+
+/**
+ * 讓這個模組的 Fabric Loom 重新映射任務使用整個建置共用的單一名額；其他任務照常並行。
+ *
+ * 以任務名稱比對，build-logic 不需要依賴 Loom；沒有套用 Loom 的 loader 模組不受影響。
+ */
+private fun Project.serializeRemapTasks() {
+    val remapSerialization = gradle.sharedServices.registerIfAbsent(
+        MINECRAFT_REMAP_SERIALIZATION_SERVICE,
+        MinecraftRemapSerializationService::class.java,
+    ) {
+        maxParallelUsages.set(1)
+    }
+    pluginManager.withPlugin(FABRIC_LOOM_PLUGIN_ID) {
+        tasks.matching { it.name in LOOM_REMAP_TASK_NAMES }.configureEach {
+            usesService(remapSerialization)
+        }
+    }
+}
+
+/** 整個建置共用的重新映射排隊服務名稱。 */
+private const val MINECRAFT_REMAP_SERIALIZATION_SERVICE = "minecraftRemapSerialization"
+
+/** Fabric Loom 的 plugin ID。 */
+private const val FABRIC_LOOM_PLUGIN_ID = "fabric-loom"
+
+/** Fabric Loom 會讀取並重新映射 JAR 的任務。 */
+private val LOOM_REMAP_TASK_NAMES: Set<String> = setOf("remapJar", "remapSourcesJar")
