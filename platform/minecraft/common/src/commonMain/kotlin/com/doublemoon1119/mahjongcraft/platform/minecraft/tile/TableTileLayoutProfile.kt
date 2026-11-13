@@ -8,15 +8,28 @@ package com.doublemoon1119.mahjongcraft.platform.minecraft.tile
  * @property wallInset 牌牆整體往桌心移動的距離；`0` 為標準位置。
  * @property wallCornerOverhang 每面牌牆在標準錯開之外，再往「從桌外面向這面牌牆時的右端」移動的距離；
  * 四面同向移動，轉角處由一面牌牆超出、相鄰牌牆的端點頂在它的側邊，形成風車形。`0` 為標準錯開。
+ * @property meldArea 副露擺放的區域；移出手牌的牌（例如花牌）接在副露後面。
+ * @property claimedTileSideways 副露中被鳴的牌是否依來源方向橫放；`false` 時全部直立。
+ * @property addedKan 加槓補上的牌的擺法；[TableAddedKanPlacement.BESIDE_CLAIMED_TILE] 需要 [claimedTileSideways]，
+ * 且副露放在桌角。
  */
 data class TableTileLayoutProfile(
     val wallInset: Double = 0.0,
     val wallCornerOverhang: Double = 0.0,
+    val meldArea: TableMeldArea = TableMeldArea.CORNER,
+    val claimedTileSideways: Boolean = true,
+    val addedKan: TableAddedKanPlacement = TableAddedKanPlacement.BESIDE_CLAIMED_TILE,
 ) {
     init {
         require(wallInset.isFinite() && wallInset >= 0.0) { "Wall inset must be a non-negative finite distance: $wallInset" }
         require(wallCornerOverhang.isFinite() && wallCornerOverhang >= 0.0) {
             "Wall corner overhang must be a non-negative finite distance: $wallCornerOverhang"
+        }
+        require(addedKan != TableAddedKanPlacement.BESIDE_CLAIMED_TILE || claimedTileSideways) {
+            "An added kan can sit beside the claimed tile only when claimed tiles lie sideways"
+        }
+        require(meldArea == TableMeldArea.CORNER || addedKan == TableAddedKanPlacement.IN_ROW) {
+            "Melds between the wall and the hand lay an added kan in the row"
         }
     }
 

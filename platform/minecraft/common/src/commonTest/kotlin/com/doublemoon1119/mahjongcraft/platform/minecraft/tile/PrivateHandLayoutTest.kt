@@ -1001,10 +1001,15 @@ class PrivateHandLayoutTest {
             drawnId: Uuid?,
             melds: List<MahjongMeldTileGroup>,
         ): Map<Uuid, TileDisplayInput> {
-            val shift = MahjongTileTableLayout.handCornerYieldShift(
-                handSize = standing.size,
-                reservedCornerWidth = MahjongTileTableLayout.cornerAreaWidth(cornerPropWidth = 0.0, melds = melds, setAsideTileCount = 0),
+            val shift = MahjongPlayerAreaLayout.handShift(
+                tileLayout = TableTileLayoutProfile.STANDARD,
+                wallStacksPerSide = null,
+                cornerWidth = 0.0,
+                melds = melds,
+                setAsideTileCount = 0,
+                standingTileCount = standing.size,
                 hasDrawnTile = drawnId != null,
+                playerCount = 4,
             )
             val standingInputs = PublicHandOrder.arrange(standing).mapIndexed { orderIndex, id ->
                 id to MahjongTileTableLayout.handPlacement(
@@ -1016,7 +1021,7 @@ class PrivateHandLayoutTest {
                     seatIndex = seatIndex,
                     handSize = standing.size,
                     tileIndex = standing.size - 1 - orderIndex,
-                    cornerYieldShift = shift,
+                    handShift = shift,
                 ).toStandingInput()
             }
             val drawnInput = drawnId?.let { id ->
@@ -1028,7 +1033,7 @@ class PrivateHandLayoutTest {
                     seatLayout = SEAT_LAYOUT,
                     seatIndex = seatIndex,
                     standingTileCount = standing.size,
-                    cornerYieldShift = shift,
+                    handShift = shift,
                 ).toStandingInput()
             }
             return (standingInputs + listOfNotNull(drawnInput)).toMap()

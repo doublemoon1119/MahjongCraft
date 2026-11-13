@@ -348,9 +348,9 @@ class FabricAiCharacterManager internal constructor(
     }
 
     /**
-     * 主要看各自手牌區的固定中央，錯開短暫轉看公開捨牌及目前行動者的時機。
+     * 主要看各自手牌實際的位置，錯開短暫轉看公開捨牌及目前行動者的時機。
      *
-     * @param game 目前權威對局，不讀取手牌或待決選擇。
+     * @param game 目前權威對局；只用手牌的牌張身分找出桌上的位置，不讀取牌面或待決選擇。
      * @param seating 已載入的席位世界。
      * @param roster 完整席位名冊。
      */
@@ -379,7 +379,14 @@ class FabricAiCharacterManager internal constructor(
                 anchor = TableSeatAnchor.HAND_ROW_CENTER,
                 offset = TableSeatOffset(),
             )
-            val handTarget = Vec3d(placement.x, placement.y, placement.z)
+            // 看向自己手牌實際的位置，手牌隨規則的桌面配置移動時視線跟著移動；手牌還沒擺上桌時看手牌那一列的中央。
+            val handTiles = game.tableState.players.firstOrNull { it.id == playerId }?.hand?.let { hand -> hand.tiles + listOfNotNull(hand.lastDrawn) }.orEmpty()
+                .mapNotNull { tile -> seating.world.getEntity(tile.id.toJavaUuid())?.takeUnless { it.isRemoved }?.pos }
+            val handTarget = if (handTiles.isEmpty()) {
+                Vec3d(placement.x, placement.y, placement.z)
+            } else {
+                Vec3d(handTiles.sumOf { it.x } / handTiles.size, handTiles.sumOf { it.y } / handTiles.size, handTiles.sumOf { it.z } / handTiles.size)
+            }
             val requested = when (AiCharacterLookSchedule.focus(playerId, ticks)) {
                 AiCharacterLookFocus.HAND_AREA -> handTarget
                 AiCharacterLookFocus.DISCARD -> discardTarget ?: handTarget

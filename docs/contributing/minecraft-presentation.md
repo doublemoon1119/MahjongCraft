@@ -163,6 +163,15 @@ rules come from collisions that only showed up in game, so check them even when 
   caller cannot silently fall back to the standard layout. Resolve it from the table's rule, never from a
   hard-coded rule check.
 - Tile and table sizes are shared by all rules; a profile only moves tiles within the table.
+- A profile can move the wall toward the centre and offset it into a pinwheel, and choose where melds go:
+  the corner on the player's right, or between the wall and the hand. Set-aside tiles such as flowers follow
+  the melds. In the second form the meld row is centred on the standing tiles, so drawing does not move it, and
+  pulled inward at the table or a wall;
+  a full meld row moves its last items to the right of the hand row and the hand moves left. The wall must
+  move in far enough to leave that row free.
+- Hand rows and meld rows avoid every wall from its actual position. Every presentation that needs the hand
+  position, such as the deal, a win or an exhaustive draw, takes the shift from `MahjongPlayerAreaLayout`
+  instead of computing its own.
 - Positions that stand for a seat, such as where a declaration sound plays or where an AI character looks,
   use the seat geometry or a `TableSeatAnchor`, not a tile placement that happens to sit nearby.
 

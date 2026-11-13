@@ -52,14 +52,14 @@ data class DebugVirtualTableLayout(
      * @param seatIndex 座位索引。
      * @param handSize 手牌張數。
      * @param tileIndex 手牌中的格位索引。
-     * @param cornerYieldShift 沿桌角方向額外讓出的距離。
+     * @param handShift 整排手牌往玩家左手邊平移的距離，負值往右手邊。
      * @return 指定手牌的世界格位。
      */
     fun handPlacement(
         seatIndex: Int,
         handSize: Int,
         tileIndex: Int,
-        cornerYieldShift: Double = 0.0,
+        handShift: Double = 0.0,
     ): MahjongTileWallPlacement = MahjongTileTableLayout.handPlacement(
         controllerX = controllerX,
         controllerY = controllerY,
@@ -69,7 +69,7 @@ data class DebugVirtualTableLayout(
         seatIndex = seatIndex,
         handSize = handSize,
         tileIndex = tileIndex,
-        cornerYieldShift = cornerYieldShift,
+        handShift = handShift,
     )
 
     /**

@@ -57,6 +57,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.ExhaustiveD
 import com.doublemoon1119.mahjongcraft.platform.minecraft.showcase.WinCelebrationShowcaseRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongTableSeatLayout
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongMeldTileGroup
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongPlayerAreaLayout
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileTableLayout
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.STANDARD_TILE_ASSET_KEYS
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.winningHandFaceDownIndices
@@ -768,21 +769,24 @@ class FabricDebugPresentationCommand(
             previewMeldTiles.flatten().first { it.uuid.toKotlinUuid() == tileId }
                 .refreshPositionAndAngles(tilePlacement.x, tilePlacement.y, tilePlacement.z, tilePlacement.yaw, 0.0f)
         }
-        val reservedCornerWidths = if (previewMelds.isEmpty()) {
-            emptyMap()
-        } else {
-            mapOf(DebugVirtualTableLayout.DEBUG_SEAT_INDEX to MahjongTileTableLayout.meldAreaWidth(previewMelds))
-        }
+        val handShifts = mutableMapOf<Int, Double>()
         val previewTilesBySeat = List(playerCount) { seat ->
             val handSize = if (seat == DebugVirtualTableLayout.DEBUG_SEAT_INDEX && meldCount > 0) {
                 maxOf(MIN_DEBUG_CONCEALED_HAND_SIZE, DebugPreviewDefaults.RULE_CONFIG.initialHandSize - meldCount * DebugPreviewDefaults.MELD_TILE_COUNT)
             } else {
                 DebugPreviewDefaults.RULE_CONFIG.initialHandSize
             }
-            val cornerYieldShift = MahjongTileTableLayout.handCornerYieldShift(
-                handSize = handSize,
-                reservedCornerWidth = reservedCornerWidths[seat] ?: 0.0,
+            val handShift = MahjongPlayerAreaLayout.handShift(
+                tileLayout = layout.tileLayout,
+                wallStacksPerSide = null,
+                cornerWidth = 0.0,
+                melds = if (seat == DebugVirtualTableLayout.DEBUG_SEAT_INDEX) previewMelds else emptyList(),
+                setAsideTileCount = 0,
+                standingTileCount = handSize,
+                hasDrawnTile = false,
+                playerCount = playerCount,
             )
+            handShifts[seat] = handShift
             val assets = if (proof && seat == 0) {
                 KYUUSHU_PREVIEW_ASSETS
             } else {
@@ -793,7 +797,7 @@ class FabricDebugPresentationCommand(
             assets.mapIndexed { index, asset ->
                 tilePreviewSupport.spawnFreeTile(
                     player.serverWorld,
-                    layout.handPlacement(seat, assets.size, index, cornerYieldShift),
+                    layout.handPlacement(seat, assets.size, index, handShift),
                     MahjongTilePose.STANDING,
                     asset,
                 ) to asset
@@ -844,7 +848,7 @@ class FabricDebugPresentationCommand(
             waitingTileAssetsBySeat = players.filter { it.handDisclosure == ExhaustiveDrawHandDisclosure.TENPAI }
                 .associate { it.ranking.seatIndex to DEFAULT_WAITING_TILE_ASSETS },
             revealedTileAssetsById = revealedAssetsById,
-            reservedCornerWidthsBySeat = reservedCornerWidths,
+            handShiftsBySeat = handShifts,
         ) ?: return COMMAND_FAILURE
         entityLifecycle.schedule(
             player.serverWorld,

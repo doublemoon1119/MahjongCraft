@@ -133,6 +133,25 @@ class TaiwanDebugGameScenariosTest {
         assertEquals(TaiwanPaoLiability(TaiwanPaoHand.BIG_DRAGONS, direction), liability)
     }
 
+    /** 副露擁擠情境：呼叫者有三組明槓、一組碰與八張花，可以碰上家打出的白；全桌不到四個槓，其他人不能碰或胡。 */
+    @Test
+    fun `crowded melds scenario offers a fifth meld without four kongs`() {
+        val (state, invokerId) = build("mahjongcraft:taiwan/debug/crowded_melds")
+        val invoker = state.players.single { it.id == invokerId }
+        val discarder = state.players[(state.players.indexOf(invoker) + PLAYERS - 1) % PLAYERS]
+        val reaction = assertIs<TurnPhase.AwaitingDiscardReaction>(state.turnPhase).reaction
+        val calledTile = discarder.discardPile.entries.single().tile
+
+        assertEquals(listOf(MeldType.OpenKan, MeldType.OpenKan, MeldType.OpenKan, MeldType.Pon), invoker.hand.melds.map { it.type })
+        assertTrue(invoker.hand.melds.all { meld -> meld.tiles.map { it.tile }.distinct().size == 1 && meld.sourceTile in meld.tiles })
+        assertEquals(TaiwanTileTypes.ALL.size, flowerCount(state, state.players.indexOf(invoker)))
+        assertEquals(Tile.Honor.White, calledTile.tile)
+        assertEquals(calledTile.id, reaction.tileId)
+        assertEquals(2, invoker.hand.tiles.count { it.tile == Tile.Honor.White })
+        assertEquals(null, TaiwanRuleModule(BuiltInRuleModuleIds.TAIWAN, state.config as TaiwanRuleConfig).resolveFourKans(state))
+        assertTrue(state.players.filterNot { it.id == invokerId }.none { TaiwanShantenCalculator().calculate(it.hand) is ShantenResult.Tenpai })
+    }
+
     /**
      * 以四人日麻桌建立情境，確認改用台灣麻將並通過權威情境驗證。
      *

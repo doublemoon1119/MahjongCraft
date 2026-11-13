@@ -94,6 +94,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.ArrangedTile
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.BuiltInMinecraftTileAppearances
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongInitialDealPresentation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongMeldTileGroup
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongPlayerAreaLayout
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongPlayerAreaPresentationResult
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongPlayerAreaPresenter
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileTableLayout
@@ -347,6 +348,8 @@ class FabricGamePresentationPublisher(
                 request = request,
                 tableState = tableState,
                 cornerWidthsBySeat = cornerWidthsBySeat(gameId, tableState),
+                tileLayout = tableState?.let(::tileLayoutFor) ?: TableTileLayoutProfile.STANDARD,
+                wallStacksPerSide = openingState.wallStacksPerSide(gameId),
                 revealedTileFaces = tableState
                     ?.let { state -> visibilityPolicy.publicTileFaces(state, request.players.flatMap { it.revealedHandTileIds }) }
                     .orEmpty(),
@@ -365,7 +368,7 @@ class FabricGamePresentationPublisher(
                 request = request,
                 waitingTileAssetsBySeat = stageInputs.waitingTileAssetsBySeat,
                 revealedTileAssetsById = stageInputs.revealedTileAssetsById,
-                reservedCornerWidthsBySeat = stageInputs.reservedCornerWidthsBySeat,
+                handShiftsBySeat = stageInputs.handShiftsBySeat,
             )
             if (endGameTime == null) {
                 logger.warn("publishExhaustiveDrawSettlement gameId={} skipped: stage spawn failed", gameId)
@@ -784,6 +787,7 @@ class FabricGamePresentationPublisher(
                 tableFacing = resolved.facing,
                 seatLayout = MahjongTableSeatLayout.forPlayerCount(state.players.size),
                 tableState = state,
+                tileLayout = tileLayoutFor(state),
                 cornerWidthBySeat = describerFor(state).cornerWidthsBySeat(state),
                 handPoseStates = tilePoseStates(state, module),
                 wallProjection = projection,
@@ -947,7 +951,20 @@ class FabricGamePresentationPublisher(
                     seatIndex to player.hand.tiles.map { it.id }
                 },
                 dealerSeatIndex = tableState.dealerIndex,
-                cornerWidthBySeatIndex = describerFor(tableState).cornerWidthsBySeat(tableState),
+                handShiftBySeatIndex = describerFor(tableState).cornerWidthsBySeat(tableState).let { cornerWidths ->
+                    handTileIdsBySeatIndex.mapValues { (seatIndex, tileIds) ->
+                        MahjongPlayerAreaLayout.handShift(
+                            tileLayout = tileLayoutFor(tableState),
+                            wallStacksPerSide = openingState.wallStacksPerSide(gameId),
+                            cornerWidth = cornerWidths[seatIndex] ?: 0.0,
+                            melds = emptyList(),
+                            setAsideTileCount = 0,
+                            standingTileCount = tileIds.size,
+                            hasDrawnTile = false,
+                            playerCount = tableState.players.size,
+                        )
+                    }
+                },
                 tilePoseStates = tilePoseStates(tableState, moduleRegistry.getModule(tableState.config)),
                 dealBatchSizes = dealBatchSizes,
                 extraLeadDelayTicks = (openingEndGameTime - resolved.world.time).coerceAtLeast(0L).coerceAtMost(Int.MAX_VALUE.toLong()).toInt(),
@@ -1291,9 +1308,16 @@ class FabricGamePresentationPublisher(
                 seatLayout = MahjongTableSeatLayout.forPlayerCount(state.players.size),
                 seatIndex = requestedWinner.seatIndex,
                 organizedStandingTileIds = organizedHand.tiles.map { it.id },
-                melds = melds,
-                cornerWidth = cornerWidthsBySeat[requestedWinner.seatIndex] ?: 0.0,
-                setAsideTileCount = winner.setAsideTiles.size,
+                handShift = MahjongPlayerAreaLayout.handShift(
+                    tileLayout = tileLayoutFor(state),
+                    wallStacksPerSide = openingState.wallStacksPerSide(gameId),
+                    cornerWidth = cornerWidthsBySeat[requestedWinner.seatIndex] ?: 0.0,
+                    melds = melds,
+                    setAsideTileCount = winner.setAsideTiles.size,
+                    standingTileCount = organizedHand.tiles.size - if (request.isTsumo) 1 else 0,
+                    hasDrawnTile = request.isTsumo,
+                    playerCount = state.players.size,
+                ),
                 winningTileId = request.winningTileId,
                 isTsumo = request.isTsumo,
                 revealsHand = request.revealsWinnerHands,

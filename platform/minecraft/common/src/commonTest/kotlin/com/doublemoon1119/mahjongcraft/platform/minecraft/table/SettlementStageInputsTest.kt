@@ -13,13 +13,14 @@ import com.doublemoon1119.mahjongcraft.logic.table.PlayerTileAreas
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.logic.table.TileWall
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
-import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileTableLayout
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongPlayerAreaLayout
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftRuleTileAppearanceDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileResources
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileSetAppearanceDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileStyleAssetDefinition
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TableTileLayoutProfile
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeIdentifiedTileFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
@@ -83,7 +84,7 @@ class SettlementStageInputsTest {
             playerPresentation(seatIndex = 1, waitingTiles = listOf(Tile.Numeric(Tile.Suit.Bamboo, 2))),
         )
 
-        val inputs = exhaustiveDrawSettlementStageInputs(request, stateWith(), emptyMap(), emptyMap(), FakeTileAssetRegistry)
+        val inputs = exhaustiveDrawSettlementStageInputs(request, stateWith(), emptyMap(), TableTileLayoutProfile.STANDARD, null, emptyMap(), FakeTileAssetRegistry)
 
         assertEquals(
             mapOf(0 to listOf("east", "p9"), 1 to listOf("s2")),
@@ -98,12 +99,12 @@ class SettlementStageInputsTest {
         val state = stateWith(handTiles = listOf(revealed))
         val request = requestOf(playerPresentation(seatIndex = 0, revealedHandTileIds = listOf(revealed.id)))
 
-        val inputs = exhaustiveDrawSettlementStageInputs(request, state, emptyMap(), mapOf(revealed.id to TileFaceView(revealed.tile)), FakeTileAssetRegistry)
+        val inputs = exhaustiveDrawSettlementStageInputs(request, state, emptyMap(), TableTileLayoutProfile.STANDARD, null, mapOf(revealed.id to TileFaceView(revealed.tile)), FakeTileAssetRegistry)
 
         assertEquals(mapOf(revealed.id to "m5"), inputs.revealedTileAssetsById)
     }
 
-    /** 桌況已不存在時仍算得出聽牌資產，沒有公開牌面與角落寬度。 */
+    /** 桌況已不存在時仍算得出聽牌資產，沒有公開牌面與手牌平移。 */
     @Test
     fun `still resolves the waiting assets without a table state`() {
         val request = requestOf(
@@ -114,18 +115,20 @@ class SettlementStageInputsTest {
             request = request,
             tableState = null,
             cornerWidthsBySeat = emptyMap(),
+            tileLayout = TableTileLayoutProfile.STANDARD,
+            wallStacksPerSide = null,
             revealedTileFaces = emptyMap(),
             tileAssetRegistry = FakeTileAssetRegistry,
         )
 
         assertEquals(mapOf(0 to listOf("south")), inputs.waitingTileAssetsBySeat)
         assertEquals(emptyMap(), inputs.revealedTileAssetsById)
-        assertEquals(emptyMap(), inputs.reservedCornerWidthsBySeat)
+        assertEquals(emptyMap(), inputs.handShiftsBySeat)
     }
 
-    /** 移出手牌的牌（例如拔出的北）接在副露之後，計入桌角預留寬度。 */
+    /** 移出手牌的牌（例如拔出的北）接在副露之後，手牌平移與桌面擺放使用同一份計算。 */
     @Test
-    fun `reserves corner width for set aside tiles`() {
+    fun `hand shifts count set aside tiles like the table layout`() {
         val north = tileOf(Tile.Honor.North)
         val initial = stateWith()
         val state = initial.copy(
@@ -138,55 +141,82 @@ class SettlementStageInputsTest {
             request = requestOf(playerPresentation(seatIndex = 0)),
             tableState = state,
             cornerWidthsBySeat = emptyMap(),
+            tileLayout = TableTileLayoutProfile.STANDARD,
+            wallStacksPerSide = null,
             revealedTileFaces = emptyMap(),
             tileAssetRegistry = FakeTileAssetRegistry,
         )
 
-        assertEquals(
-            MahjongTileTableLayout.cornerAreaWidth(0.0, emptyList(), setAsideTileCount = 1),
-            inputs.reservedCornerWidthsBySeat.getValue(0),
-        )
-        assertEquals(0.0, inputs.reservedCornerWidthsBySeat.getValue(1))
+        state.players.forEachIndexed { seat, player ->
+            assertEquals(
+                MahjongPlayerAreaLayout.handShift(
+                    tileLayout = TableTileLayoutProfile.STANDARD,
+                    wallStacksPerSide = null,
+                    cornerWidth = 0.0,
+                    melds = emptyList(),
+                    setAsideTileCount = player.setAsideTiles.size,
+                    standingTileCount = player.hand.tiles.size,
+                    hasDrawnTile = player.hand.lastDrawn != null,
+                    playerCount = state.players.size,
+                ),
+                inputs.handShiftsBySeat.getValue(seat),
+            )
+        }
     }
 
-    /** 每個座位都有一份桌角預留寬度。 */
+    /** 每個座位都有一份手牌平移。 */
     @Test
-    fun `reserves a corner width for every seat`() {
+    fun `gives every seat a hand shift`() {
         val inputs = exhaustiveDrawSettlementStageInputs(
             request = requestOf(playerPresentation(seatIndex = 0)),
             tableState = stateWith(),
             cornerWidthsBySeat = emptyMap(),
+            tileLayout = TableTileLayoutProfile.STANDARD,
+            wallStacksPerSide = null,
             revealedTileFaces = emptyMap(),
             tileAssetRegistry = FakeTileAssetRegistry,
         )
 
-        assertEquals(setOf(0, 1), inputs.reservedCornerWidthsBySeat.keys)
-        assertTrue(inputs.reservedCornerWidthsBySeat.values.all { it >= 0.0 })
+        assertEquals(setOf(0, 1), inputs.handShiftsBySeat.keys)
+        assertTrue(inputs.handShiftsBySeat.values.all { it.isFinite() })
     }
 
-    /** 角落物件寬度只加在指定的座位上，沒有列出的座位不佔用。 */
+    /** 桌角物件寬度只影響指定的座位。 */
     @Test
-    fun `adds the corner prop width to the listed seat only`() {
-        val without = cornerWidths(emptyMap())
-        val with = cornerWidths(mapOf(0 to 0.5))
+    fun `applies the corner prop width to the listed seat only`() {
+        val state = stateWith()
+        val without = handShifts(emptyMap())
+        val with = handShifts(mapOf(0 to 2.0))
+        val expected = MahjongPlayerAreaLayout.handShift(
+            tileLayout = TableTileLayoutProfile.STANDARD,
+            wallStacksPerSide = null,
+            cornerWidth = 2.0,
+            melds = emptyList(),
+            setAsideTileCount = 0,
+            standingTileCount = state.players[0].hand.tiles.size,
+            hasDrawnTile = state.players[0].hand.lastDrawn != null,
+            playerCount = state.players.size,
+        )
 
-        assertEquals(without.getValue(0) + 0.5, with.getValue(0), "Expected the listed seat to reserve the corner prop width.")
-        assertEquals(without.getValue(1), with.getValue(1), "Expected an unlisted seat to reserve no corner prop width.")
+        assertEquals(expected, with.getValue(0), "Expected the listed seat to use its corner prop width.")
+        assertEquals(without.getValue(1), with.getValue(1), "Expected an unlisted seat to keep its hand position.")
     }
 
     /**
-     * 取得各座位的桌角預留寬度。
+     * 取得各座位的手牌平移。
      *
      * @param cornerWidthsBySeat 指定座位的物件寬度。
-     * @return 計入指定物件後，各座位的預留寬度。
+     * @return 計入指定物件後，各座位的手牌平移。
      */
-    private fun cornerWidths(cornerWidthsBySeat: Map<Int, Double>) = exhaustiveDrawSettlementStageInputs(
+    private fun handShifts(cornerWidthsBySeat: Map<Int, Double>) = exhaustiveDrawSettlementStageInputs(
         request = requestOf(playerPresentation(seatIndex = 0)),
         tableState = stateWith(),
         cornerWidthsBySeat = cornerWidthsBySeat,
+        tileLayout = TableTileLayoutProfile.STANDARD,
+        wallStacksPerSide = null,
         revealedTileFaces = emptyMap(),
         tileAssetRegistry = FakeTileAssetRegistry,
-    ).reservedCornerWidthsBySeat
+    ).handShiftsBySeat
 
     /**
      * 建立測試用的牌張。

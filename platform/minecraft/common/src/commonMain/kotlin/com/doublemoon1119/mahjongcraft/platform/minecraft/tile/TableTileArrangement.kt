@@ -36,6 +36,8 @@ object TableTileArrangement {
                     tableFacing = input.tableFacing,
                     seatLayout = input.seatLayout,
                     seatIndex = seatIndex,
+                    tileLayout = input.tileLayout,
+                    wallStacksPerSide = input.wallProjection?.stacksPerSide,
                     standingTileIds = player.hand.tiles.map { it.id },
                     drawnTileId = player.hand.lastDrawn?.id,
                     melds = melds,

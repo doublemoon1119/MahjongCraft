@@ -552,6 +552,7 @@ class DebugGameScenarioTest {
             "mahjongcraft:riichi_three_player/debug/pull_north_with_melds",
             "mahjongcraft:riichi_three_player/debug/rob_north",
             "mahjongcraft:taiwan/debug/before_pao_pon",
+            "mahjongcraft:taiwan/debug/crowded_melds",
             "mahjongcraft:taiwan/debug/eight_flowers",
             "mahjongcraft:taiwan/debug/flower_replacement",
             "mahjongcraft:taiwan/debug/last_tile_flower",

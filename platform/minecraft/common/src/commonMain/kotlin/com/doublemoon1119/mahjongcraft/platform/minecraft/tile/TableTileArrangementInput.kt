@@ -15,6 +15,7 @@ import kotlin.uuid.Uuid
  * @property tableFacing 桌子在世界中的朝向。
  * @property seatLayout 座位與桌邊的對應。
  * @property tableState 要擺放的桌況。
+ * @property tileLayout 該規則的桌面牌位配置；有實體牌牆時必須與 [wallProjection] 的配置相同。
  * @property cornerWidthBySeat 各座位副露角落被桌上物件占用的寬度；沒有列出的座位為 0。
  * @property handPoseStates 立牌與摸牌位的牌各自的姿態；沒有列出的牌直立。
  * @property wallProjection 牌牆格位投影到這張桌子的方式；沒有實體牌牆時為 null，牌牆的牌不擺放。
@@ -28,9 +29,14 @@ data class TableTileArrangementInput(
     val tableFacing: MahjongTableFacing,
     val seatLayout: MahjongTableSeatLayout,
     val tableState: TableState,
+    val tileLayout: TableTileLayoutProfile,
     val cornerWidthBySeat: Map<Int, Double>,
     val handPoseStates: List<TilePoseState>,
     val wallProjection: MahjongTileWallProjectionContext?,
     val faceUpWallTileIds: Set<Uuid>,
     val unsortedTileIds: List<Uuid> = emptyList(),
-)
+) {
+    init {
+        require(wallProjection == null || wallProjection.tileLayout == tileLayout) { "The wall and the player areas must use the same table tile layout" }
+    }
+}
