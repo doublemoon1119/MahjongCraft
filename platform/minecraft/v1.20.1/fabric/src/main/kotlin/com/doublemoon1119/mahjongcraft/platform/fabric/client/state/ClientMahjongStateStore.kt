@@ -115,6 +115,13 @@ class ClientMahjongStateStore(
     fun gameSnapshot(tableId: Uuid): TableStateSnapshot? = tables[tableId]?.gameSnapshot
 
     /**
+     * 目前持有對局快照的桌子，包含本人所坐與正在旁觀的桌子。
+     *
+     * @return 桌子識別碼。
+     */
+    fun gameTableIds(): Set<Uuid> = tables.filterValues { it.gameSnapshot != null }.keys.toSet()
+
+    /**
      * 取得指定桌子目前對局中由 AI 操控的玩家；沒有對局快照時為空集合。
      *
      * @param tableId 桌子 UUID。
