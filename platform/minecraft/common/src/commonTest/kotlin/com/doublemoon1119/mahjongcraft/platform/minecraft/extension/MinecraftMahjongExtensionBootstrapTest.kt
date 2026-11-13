@@ -76,6 +76,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.text.RuleWordingRegist
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistryImpl
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TableTileLayoutProfileRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileDisplayNameDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileDisplayNameRegistryImpl
@@ -183,6 +184,7 @@ class MinecraftMahjongExtensionBootstrapTest {
             ruleDecisionDisplayNameRegistry = ruleDecisionDisplayNameRegistry,
             roundInfoLineDisplayRegistry = RoundInfoLineDisplayRegistryImpl(),
             tablePropDescriberRegistry = TablePropDescriberRegistryImpl(),
+            tableTileLayoutProfileRegistry = TableTileLayoutProfileRegistryImpl(),
             winCelebrationShowcaseRegistry = WinCelebrationShowcaseRegistryImpl(),
             winSettlementTemplateRegistry = winSettlementTemplateRegistry,
             matchSettlementTemplateRegistry = MatchSettlementPresentationTemplateRegistryImpl(),

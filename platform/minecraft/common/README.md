@@ -251,6 +251,13 @@ Its JVM tests also load recipe resources from the version-common module.
 Use the [complete Minecraft target build](../README.md) to verify packaging and the loader integration;
 this focused check does not replace it.
 
+## Rule table tile layouts
+
+A rule can move the wall on its table, for example toward the centre or offset into a pinwheel, by
+registering a `TableTileLayoutProfile` with `registerTableTileLayoutProfiles`. Rules without one use the
+standard layout. Tile and table sizes stay the same for every rule. See the
+[presentation conventions](../../../docs/contributing/minecraft-presentation.md#rule-table-tile-layouts).
+
 ## Rule-owned table props
 
 A rule can show scoring sticks, public bonus tiles or custom tokens through the same table-prop

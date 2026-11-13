@@ -44,6 +44,7 @@ object MahjongTileTableLayout {
      * @param controllerZ 麻將桌 controller 的世界 Z 座標。
      * @param tableFacing 麻將桌的世界朝向。
      * @param sideLayout 規則指定並已解析的牌牆面與桌邊對應。
+     * @param tileLayout 該規則的桌面牌位配置，決定牌牆往桌心的移動與風車形錯開。
      * @param placement 牌牆格位、位移與牌張方向。
      * @return 對應格位的世界座標與 yaw。
      * [TileWallPlacement.offset] 使用牌張尺寸正規化的三軸位移；沿牌牆的小數位移會在相鄰兩個基本墩位
@@ -55,6 +56,7 @@ object MahjongTileTableLayout {
         controllerZ: Int,
         tableFacing: MahjongTableFacing,
         sideLayout: MahjongTileWallSideLayout,
+        tileLayout: TableTileLayoutProfile,
         stacksPerSide: Int,
         placement: TileWallPlacement,
     ): MahjongTileWallPlacement {
@@ -77,6 +79,7 @@ object MahjongTileTableLayout {
             controllerZ,
             tableFacing,
             sideLayout,
+            tileLayout,
             stacksPerSide,
             lowerCoordinate,
             position.layer,
@@ -87,6 +90,7 @@ object MahjongTileTableLayout {
             controllerZ,
             tableFacing,
             sideLayout,
+            tileLayout,
             stacksPerSide,
             lowerCoordinate + 1,
             position.layer,
@@ -173,6 +177,7 @@ object MahjongTileTableLayout {
      * @param controllerZ 麻將桌 controller 的世界 Z 座標。
      * @param tableFacing 麻將桌的世界朝向。
      * @param sideLayout 規則指定並已解析的牌牆面與桌邊對應。
+     * @param tileLayout 該規則的桌面牌位配置。
      * @param stacksPerSide 牌牆每面的墩數。
      * @param position 牌牆基本格位。
      * @return 對應格位的世界座標與 yaw。
@@ -183,6 +188,7 @@ object MahjongTileTableLayout {
         controllerZ: Int,
         tableFacing: MahjongTableFacing,
         sideLayout: MahjongTileWallSideLayout,
+        tileLayout: TableTileLayoutProfile,
         stacksPerSide: Int,
         position: TileWallPosition,
     ): MahjongTileWallPlacement = wallPlacement(
@@ -191,6 +197,7 @@ object MahjongTileTableLayout {
         controllerZ = controllerZ,
         tableFacing = tableFacing,
         sideLayout = sideLayout,
+        tileLayout = tileLayout,
         stacksPerSide = stacksPerSide,
         placement = TileWallPlacement(position),
     )
@@ -211,6 +218,7 @@ object MahjongTileTableLayout {
      * @param controllerZ 麻將桌 controller 的世界 Z 座標。
      * @param tableFacing 麻將桌的世界朝向。
      * @param sideLayout 規則指定並已解析的牌牆面與桌邊對應。
+     * @param tileLayout 該規則的桌面牌位配置。
      * @param stacksPerSide 牌牆每面的墩數。
      * @param circularStack 環狀排列中的整數墩位。
      * @param layer 墩內牌張層數（`0` 或 `1`）。
@@ -222,6 +230,7 @@ object MahjongTileTableLayout {
         controllerZ: Int,
         tableFacing: MahjongTableFacing,
         sideLayout: MahjongTileWallSideLayout,
+        tileLayout: TableTileLayoutProfile,
         stacksPerSide: Int,
         circularStack: Int,
         layer: Int,
@@ -230,7 +239,7 @@ object MahjongTileTableLayout {
         val side = normalized / stacksPerSide
         val stack = normalized % stacksPerSide
         val physicalSide = sideLayout.sideOf(side)
-        val local = localWallVector(stacksPerSide, stack, layer)
+        val local = localWallVector(stacksPerSide, stack, layer, tileLayout)
         val worldOffset = rotateForFacing(rotateForSide(local, physicalSide), tableFacing)
         return MahjongTileWallPlacement(
             x = controllerX + BLOCK_CENTER + worldOffset.x,
@@ -301,19 +310,28 @@ object MahjongTileTableLayout {
      * 角落端點依牌張實際寬度錯開：沿局部 X 軸移動半個 [MahjongTileDimensions.TILE_HEIGHT]，形成端邊與側邊相接的布局。
      * 再加上 [MahjongTileDimensions.TILE_WIDTH] 的 [CORNER_GAP_RATIO] 倍，保留角落間距。
      *
+     * [TableTileLayoutProfile.wallInset] 讓整面牌牆再往桌心移動；[TableTileLayoutProfile.wallCornerOverhang] 讓整面牌牆再往
+     * `stack = 0` 那一端移動，四面同向移動形成風車形。
+     *
      * `stack = 0` 位於從桌外面向該面牌牆時的右端，索引遞增時往左端移動。
      * 哪一面牆放在哪個桌邊，由 [MahjongTileWallSideLayout] 決定，該側不一定有玩家。
      *
      * @param stacksPerSide 牌牆每面的墩數。
      * @param stack 面內墩位 index。
      * @param layer 墩內牌張層數。
+     * @param tileLayout 該規則的桌面牌位配置。
      * @return 局部座標向量。
      */
-    private fun localWallVector(stacksPerSide: Int, stack: Int, layer: Int): TileTableVector {
+    private fun localWallVector(
+        stacksPerSide: Int,
+        stack: Int,
+        layer: Int,
+        tileLayout: TableTileLayoutProfile,
+    ): TileTableVector {
         val stackStep = MahjongTileDimensions.TILE_WIDTH + MahjongTileDimensions.TILE_SMALL_PADDING
-        val halfSpan = maxOf(stacksPerSide / 2.0 * stackStep, STANDARD_WALL_HALF_SPAN)
+        val halfSpan = maxOf(stacksPerSide / 2.0 * stackStep, STANDARD_WALL_HALF_SPAN) - tileLayout.wallInset
         val cornerInterlockShift = MahjongTileDimensions.TILE_HEIGHT / 2.0 +
-            MahjongTileDimensions.TILE_WIDTH * CORNER_GAP_RATIO
+            MahjongTileDimensions.TILE_WIDTH * CORNER_GAP_RATIO + tileLayout.wallCornerOverhang
         val alongSide = ((stacksPerSide - 1) / 2.0 - stack) * stackStep + cornerInterlockShift
         val layerHeight = layer * MahjongTileDimensions.TILE_DEPTH +
             if (layer > 0) MahjongTileDimensions.TILE_SMALL_PADDING else 0.0
@@ -851,6 +869,7 @@ object MahjongTileTableLayout {
      *   高，即牌河靠桌子中心那條邊；沿排列方向置中。
      * - [TableSeatAnchor.MELD_CORNER]：副露角落，沿排列方向位於 [MELD_AREA_CORNER_OFFSET]，垂直方向位於
      *   [MELD_NEAR_EDGE_LINE]。
+     * - [TableSeatAnchor.HAND_ROW_CENTER]：手牌那一列的中央，沿排列方向置中，垂直方向位於 [HAND_EDGE_OFFSET]。
      *
      * @param anchor 座位上的基準位置。
      * @return 基準位置的局部座標向量。
@@ -862,6 +881,7 @@ object MahjongTileTableLayout {
             z = DISCARD_ROW_BASE_OFFSET - MahjongTileDimensions.TILE_HEIGHT / 2.0,
         )
         TableSeatAnchor.MELD_CORNER -> TileTableVector(x = MELD_AREA_CORNER_OFFSET, y = 0.0, z = MELD_NEAR_EDGE_LINE)
+        TableSeatAnchor.HAND_ROW_CENTER -> TileTableVector(x = 0.0, y = 0.0, z = HAND_EDGE_OFFSET)
     }
 
     /**

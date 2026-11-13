@@ -30,6 +30,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.RuleC
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.RuleModuleDisplayNameRegistrar
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.RuleWordingRegistrar
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.TablePropDescriberRegistrar
+import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.TableTileLayoutProfileRegistrar
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.TileDisplayNameRegistrar
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.TileEmojiRegistrar
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.TileLabelRegistrar
@@ -62,6 +63,8 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.text.BuiltInRuleWordin
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftMessageKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.RuleWordingDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileStyleAssetDefinition
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TableTileLayoutProfile
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TableTileLayoutProfileDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileEmojiDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileLabelDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileStyleDisplayNameDefinition
@@ -306,6 +309,12 @@ object BundledRiichiMinecraftExtension : MinecraftMahjongExtension {
 
     override fun registerTablePropDescribers(registry: TablePropDescriberRegistrar) {
         RIICHI_FAMILY_RULE_MODULE_IDS.forEach { ruleModuleId -> RiichiFamilyMinecraftPresentation.registerTableProps(registry, ruleModuleId) }
+    }
+
+    override fun registerTableTileLayoutProfiles(registry: TableTileLayoutProfileRegistrar) {
+        RIICHI_FAMILY_RULE_MODULE_IDS.forEach { ruleModuleId ->
+            registry.register(TableTileLayoutProfileDefinition(ruleModuleId, TableTileLayoutProfile.STANDARD))
+        }
     }
 }
 

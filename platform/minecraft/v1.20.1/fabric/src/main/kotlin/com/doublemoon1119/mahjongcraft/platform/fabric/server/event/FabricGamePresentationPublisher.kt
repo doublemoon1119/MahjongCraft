@@ -68,6 +68,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongDiceRollPr
 import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongDiceRollPresenter
 import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongDiceRollTimeline
 import com.doublemoon1119.mahjongcraft.platform.minecraft.seating.MahjongSeatingPresenter
+import com.doublemoon1119.mahjongcraft.platform.minecraft.seating.MahjongSeatingTableLayout
 import com.doublemoon1119.mahjongcraft.platform.minecraft.showcase.WinCelebrationShowcaseDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.sound.GameActionSoundPresentationRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongPlayerInfoPresentationFactory
@@ -110,6 +111,8 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.PlannedTileMotion
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TableStepMotionPlanner
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TableTileArrangement
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TableTileArrangementInput
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TableTileLayoutProfile
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TableTileLayoutProfileRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileMotionKind
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileMotionPhase
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileWallTransitionMotionDecision
@@ -144,6 +147,7 @@ import kotlin.uuid.toJavaUuid
  * @property playerAreaPresenter 手牌、摸牌位、副露與另置牌的呈現元件。
  * @property tablePropPresenter 規則桌面物件（例如點棒）的差量同步邏輯。
  * @property tablePropDescriberRegistry 依規則模組查詢桌上應擺哪些物件的描述。
+ * @property tableTileLayoutProfileRegistry 依規則模組查詢桌面牌位配置。
  * @property roundInfoPresenter 桌面中央局況顯示的實際呈現邏輯。
  * @property roundInfoLineDisplayRegistry 依規則模組建立局況行並查詢其翻譯資訊。
  * @property playerInfoPresenter 座位玩家資訊的呈現邏輯。
@@ -184,6 +188,7 @@ class FabricGamePresentationPublisher(
     private val playerAreaPresenter: MahjongPlayerAreaPresenter,
     private val tablePropPresenter: TablePropPresenter,
     private val tablePropDescriberRegistry: TablePropDescriberRegistry,
+    private val tableTileLayoutProfileRegistry: TableTileLayoutProfileRegistry,
     private val roundInfoPresenter: MahjongRoundInfoPresenter,
     private val roundInfoLineDisplayRegistry: RoundInfoLineDisplayRegistry,
     private val playerInfoPresenter: MahjongPlayerInfoPresenter,
@@ -270,18 +275,16 @@ class FabricGamePresentationPublisher(
         if (actorSeatIndex < 0) return
         val ruleModuleId = moduleRegistry.getModule(state.config).id
         val sound = gameActionSoundPresentationRegistry.find(ruleModuleId, action) ?: return
-        val placement = MahjongTileTableLayout.handPlacement(
+        // 宣告聲從該座位的椅子上、坐著的人頭部的高度發出，與手牌怎麼排無關。
+        val seat = MahjongSeatingTableLayout.seatPlacements(
+            layout = MahjongTableSeatLayout.forPlayerCount(state.players.size),
             controllerX = resolved.location.x,
             controllerY = resolved.location.y,
             controllerZ = resolved.location.z,
             tableFacing = resolved.facing,
-            seatLayout = MahjongTableSeatLayout.forPlayerCount(state.players.size),
-            seatIndex = actorSeatIndex,
-            handSize = 1,
-            tileIndex = 0,
-        )
+        )[actorSeatIndex]
         val entity = MahjongSoundTimelineEntity(world = resolved.world).apply {
-            refreshPositionAndAngles(placement.x, placement.y, placement.z, placement.yaw, 0.0f)
+            refreshPositionAndAngles(seat.x, seat.y + SEATED_HEAD_HEIGHT, seat.z, seat.yaw, 0.0f)
             configure(gameId, sound.soundId, sound.volume, sound.pitch, playAtGameTime)
         }
         if (!spawnGateway.spawn(resolved.world, entity, "game-action-sound", gameId)) {
@@ -545,6 +548,7 @@ class FabricGamePresentationPublisher(
                 tableLocation = resolved.location,
                 tableFacing = resolved.facing,
                 sideLayout = wallSideLayout(state, dealerSeatIndex),
+                tileLayout = tileLayoutFor(state),
                 assemblyStructure = assemblyStructure,
                 finalLayout = layout,
                 reservedWallTileIds = reservedWallTileIds,
@@ -594,6 +598,7 @@ class FabricGamePresentationPublisher(
                 tableLocation = resolved.location,
                 tableFacing = resolved.facing,
                 sideLayout = sideLayout,
+                tileLayout = tileLayoutFor(state),
                 stacksPerSide = stacksPerSide,
                 phases = phases,
                 startGameTime = startGameTime,
@@ -609,6 +614,7 @@ class FabricGamePresentationPublisher(
             controllerZ = resolved.location.z,
             tableFacing = resolved.facing,
             sideLayout = sideLayout,
+            tileLayout = tileLayoutFor(state),
             stacksPerSide = stacksPerSide,
         )
         val plan = (TileWallTransitionMotionPlanner.plan(context, phases) as? TileWallTransitionMotionDecision.Completed)?.plan ?: return null
@@ -766,6 +772,7 @@ class FabricGamePresentationPublisher(
                 controllerZ = resolved.location.z,
                 tableFacing = resolved.facing,
                 sideLayout = wallSideLayout(state, state.dealerIndex),
+                tileLayout = tileLayoutFor(state),
                 stacksPerSide = it,
             )
         }
@@ -1471,6 +1478,14 @@ class FabricGamePresentationPublisher(
     private fun describerFor(tableState: TableState): TablePropDescriber? = tablePropDescriberRegistry.find(moduleRegistry.getModule(tableState.config).id)
 
     /**
+     * 查詢桌況所採用規則的桌面牌位配置。
+     *
+     * @param tableState 決定規則模組的桌況。
+     * @return 已登記的配置；規則未登記時為標準配置。
+     */
+    private fun tileLayoutFor(tableState: TableState): TableTileLayoutProfile = tableTileLayoutProfileRegistry.profileFor(moduleRegistry.getModule(tableState.config).id)
+
+    /**
      * 取得目前桌面物件占用的座位角落寬度，優先使用最後呈現的桌況。
      *
      * @param gameId 桌子識別碼。
@@ -1549,3 +1564,6 @@ class FabricGamePresentationPublisher(
         val arrangement: Map<Uuid, ArrangedTile>?,
     )
 }
+
+/** 坐在標準座位上的人頭部相對於座位腳底的高度。 */
+private const val SEATED_HEAD_HEIGHT: Double = 1.5

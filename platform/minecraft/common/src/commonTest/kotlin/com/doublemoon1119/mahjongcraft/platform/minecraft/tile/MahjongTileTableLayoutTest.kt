@@ -11,6 +11,9 @@ import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallSideReference
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.table.MahjongTableFacing
 import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongTableSide
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongTableSeatLayout
+import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableSeatAnchor
+import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableSeatOffset
+import kotlin.math.abs
 import kotlin.math.hypot
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -36,6 +39,58 @@ class MahjongTileTableLayoutTest {
         assertEquals((STACKS_PER_SIDE - 1) * stackStep, first.x - last.x, ABSOLUTE_TOLERANCE)
         assertEquals(cornerInterlockShift, middle.x - CONTROLLER_CENTER_X, ABSOLUTE_TOLERANCE)
         assertEquals(first.z, last.z, ABSOLUTE_TOLERANCE)
+    }
+
+    /** 桌面牌位配置讓整面牌牆往桌心移動，並往 `stack = 0` 那一端錯開；同面內的間距不變。 */
+    @Test
+    fun `table tile layout moves the wall toward the centre and along its row`() {
+        val tileLayout = TableTileLayoutProfile(wallInset = 0.07, wallCornerOverhang = 0.18)
+        val position = TileWallPosition(side = 0, stack = 3, layer = 1)
+        val standard = wallPlacement(position = position)
+        val moved = wallPlacement(position = position, tileLayout = tileLayout)
+
+        assertEquals(0.07, abs(standard.z - CONTROLLER_CENTER_Z) - abs(moved.z - CONTROLLER_CENTER_Z), ABSOLUTE_TOLERANCE)
+        assertEquals(0.18, moved.x - standard.x, ABSOLUTE_TOLERANCE)
+        assertEquals(standard.y, moved.y, ABSOLUTE_TOLERANCE)
+        assertEquals(standard.yaw, moved.yaw)
+    }
+
+    /** 牌牆配置的距離不能是負數或非有限值。 */
+    @Test
+    fun `table tile layout rejects invalid distances`() {
+        assertFailsWith<IllegalArgumentException> { TableTileLayoutProfile(wallInset = -0.01) }
+        assertFailsWith<IllegalArgumentException> { TableTileLayoutProfile(wallCornerOverhang = Double.NaN) }
+    }
+
+    /** 手牌那一列的中央錨點與單張手牌的位置一致。 */
+    @Test
+    fun `hand row centre anchor matches a single hand tile`() {
+        val seatLayout = MahjongTableSeatLayout.forPlayerCount(4)
+        (0 until 4).forEach { seat ->
+            val anchor = MahjongTileTableLayout.seatAnchorPlacement(
+                controllerX = 10,
+                controllerY = 64,
+                controllerZ = -4,
+                tableFacing = MahjongTableFacing.EAST,
+                seatLayout = seatLayout,
+                seatIndex = seat,
+                anchor = TableSeatAnchor.HAND_ROW_CENTER,
+                offset = TableSeatOffset(),
+            )
+            val hand = MahjongTileTableLayout.handPlacement(
+                controllerX = 10,
+                controllerY = 64,
+                controllerZ = -4,
+                tableFacing = MahjongTableFacing.EAST,
+                seatLayout = seatLayout,
+                seatIndex = seat,
+                handSize = 1,
+                tileIndex = 0,
+            )
+            assertEquals(hand.x, anchor.x, ABSOLUTE_TOLERANCE)
+            assertEquals(hand.z, anchor.z, ABSOLUTE_TOLERANCE)
+            assertEquals(hand.yaw, anchor.yaw)
+        }
     }
 
     /**
@@ -694,6 +749,7 @@ class MahjongTileTableLayoutTest {
         stacksPerSide: Int = STACKS_PER_SIDE,
         sideCount: Int = SIDE_COUNT,
         quarterTurns: List<Int> = List(sideCount) { (dealerSeatIndex - it).mod(sideCount) },
+        tileLayout: TableTileLayoutProfile = TableTileLayoutProfile.STANDARD,
     ): MahjongTileWallPlacement = MahjongTileTableLayout.wallPlacement(
         controllerX = 10,
         controllerY = 64,
@@ -706,6 +762,7 @@ class MahjongTileTableLayoutTest {
             ),
             dealerSide = MahjongTableSide.SOUTH,
         ),
+        tileLayout = tileLayout,
         stacksPerSide = stacksPerSide,
         placement = placement,
     )

@@ -25,6 +25,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.table.RoundInfoLineDis
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TablePropDescriberRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.RuleWordingRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TableTileLayoutProfileRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileEmojiRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileLabelRegistry
@@ -52,6 +53,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileLabelRegistry
  * @property ruleDecisionDisplayNameRegistry 規則選擇顯示名稱 registry。
  * @property roundInfoLineDisplayRegistry 局況資訊行顯示 registry。
  * @property tablePropDescriberRegistry 規則桌面物件描述 registry。
+ * @property tableTileLayoutProfileRegistry 規則桌面牌位配置 registry。
  * @property winCelebrationShowcaseRegistry 胡牌 showcase registry。
  * @property winSettlementTemplateRegistry 胡牌結算模板 registry。
  * @property matchSettlementTemplateRegistry 終局結算模板 registry。
@@ -84,6 +86,7 @@ class MinecraftPresentationRegistries(
     val ruleDecisionDisplayNameRegistry: RuleDecisionDisplayNameRegistry,
     val roundInfoLineDisplayRegistry: RoundInfoLineDisplayRegistry,
     val tablePropDescriberRegistry: TablePropDescriberRegistry,
+    val tableTileLayoutProfileRegistry: TableTileLayoutProfileRegistry,
     // 胡牌與結算呈現
     val winCelebrationShowcaseRegistry: WinCelebrationShowcaseRegistry,
     val winSettlementTemplateRegistry: WinSettlementPresentationTemplateRegistry,
@@ -127,6 +130,7 @@ class MinecraftPresentationRegistries(
             snapshotCategory(MinecraftExtensionRegistrationCategoryIds.RULE_DECISION_DISPLAY_NAME, "Round RuleDecision Display Name", ruleDecisionDisplayNameRegistry.registrationKeys),
             snapshotCategory(MinecraftExtensionRegistrationCategoryIds.ROUND_INFO_LINE_DISPLAY, "Round Info Line Display", roundInfoLineDisplayRegistry.registrationKeys),
             snapshotCategory(MinecraftExtensionRegistrationCategoryIds.TABLE_PROP_DESCRIBER, "Table Prop Describer", tablePropDescriberRegistry.registrationKeys),
+            snapshotCategory(MinecraftExtensionRegistrationCategoryIds.TABLE_TILE_LAYOUT_PROFILE, "Table Tile Layout Profile", tableTileLayoutProfileRegistry.registrationKeys),
             snapshotCategory(MinecraftExtensionRegistrationCategoryIds.WIN_CELEBRATION_SHOWCASE, "Win Celebration Showcase", winCelebrationShowcaseRegistry.registrationKeys),
             snapshotCategory(MinecraftExtensionRegistrationCategoryIds.WIN_SETTLEMENT_PRESENTATION, "Win Settlement Presentation", winSettlementTemplateRegistry.registrationKeys),
             snapshotCategory(MinecraftExtensionRegistrationCategoryIds.MATCH_SETTLEMENT_TEMPLATE, "Match Settlement Template", matchSettlementTemplateRegistry.registrationKeys),
@@ -160,6 +164,7 @@ class MinecraftPresentationRegistries(
         ruleDecisionDisplayNameRegistry.freeze()
         roundInfoLineDisplayRegistry.freeze()
         tablePropDescriberRegistry.freeze()
+        tableTileLayoutProfileRegistry.freeze()
         winCelebrationShowcaseRegistry.freeze()
         winSettlementTemplateRegistry.freeze()
         matchSettlementTemplateRegistry.freeze()

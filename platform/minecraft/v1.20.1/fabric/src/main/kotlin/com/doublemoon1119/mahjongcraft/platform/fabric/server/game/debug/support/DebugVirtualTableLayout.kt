@@ -11,6 +11,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileDimens
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileTableLayout
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileWallPlacement
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileWallSideLayout
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TableTileLayoutProfile
 import kotlin.uuid.Uuid
 
 /**
@@ -25,6 +26,7 @@ import kotlin.uuid.Uuid
  * @property tableFacing 虛擬桌的朝向。
  * @property seatLayout 此次預覽使用的玩家座位布局。
  * @property wallSideLayout 此次預覽使用的牌牆側面布局。
+ * @property tileLayout 此次預覽使用的桌面牌位配置。
  */
 data class DebugVirtualTableLayout(
     val controllerX: Int,
@@ -33,6 +35,7 @@ data class DebugVirtualTableLayout(
     val tableFacing: MahjongTableFacing,
     val seatLayout: MahjongTableSeatLayout,
     val wallSideLayout: MahjongTileWallSideLayout,
+    val tileLayout: TableTileLayoutProfile,
 ) {
     /**
      * 取得座位 0 的正式手牌格位。
@@ -104,6 +107,7 @@ data class DebugVirtualTableLayout(
         controllerZ = controllerZ,
         tableFacing = tableFacing,
         sideLayout = wallSideLayout,
+        tileLayout = tileLayout,
         stacksPerSide = STANDARD_WALL_STACKS_PER_SIDE,
         position = TileWallPosition(
             side = 0,

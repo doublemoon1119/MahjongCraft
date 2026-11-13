@@ -28,6 +28,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.Round
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.RoundOutcomeDisplayNameRegistrar
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.RuleCatalogueRegistrar
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.RuleModuleDisplayNameRegistrar
+import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.TableTileLayoutProfileRegistrar
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.TileDisplayNameRegistrar
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.TileEmojiRegistrar
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.TileLabelRegistrar
@@ -59,6 +60,8 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftMessageK
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.BuiltInMinecraftTileAppearanceIds
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftRuleTileAppearanceDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetDefinition
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TableTileLayoutProfile
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TableTileLayoutProfileDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileDisplayNameDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileEmojiDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileLabel
@@ -276,6 +279,10 @@ object BundledTaiwanMinecraftExtension : MinecraftMahjongExtension {
     /** 登記台灣麻將預設台表、特殊胡牌與流局說明。 */
     override fun registerRuleCatalogues(registry: RuleCatalogueRegistrar) {
         registry.register(TaiwanCatalogueProvider())
+    }
+
+    override fun registerTableTileLayoutProfiles(registry: TableTileLayoutProfileRegistrar) {
+        registry.register(TableTileLayoutProfileDefinition(BuiltInRuleModuleIds.TAIWAN, TableTileLayoutProfile.STANDARD))
     }
 }
 

@@ -119,5 +119,6 @@ object MinecraftMahjongExtensionBootstrap {
         extension.registerRoomMemberAppearanceSources(registries.roomMemberAppearanceSourceRegistry)
         extension.registerRoundInfoPresentations(registries.roundInfoLineDisplayRegistry)
         extension.registerTablePropDescribers(registries.tablePropDescriberRegistry)
+        extension.registerTableTileLayoutProfiles(registries.tableTileLayoutProfileRegistry)
     }
 }

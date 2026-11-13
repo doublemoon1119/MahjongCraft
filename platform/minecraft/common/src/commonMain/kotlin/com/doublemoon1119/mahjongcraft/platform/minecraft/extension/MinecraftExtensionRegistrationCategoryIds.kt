@@ -65,6 +65,9 @@ internal object MinecraftExtensionRegistrationCategoryIds {
     /** 桌面物件描述分類。 */
     const val TABLE_PROP_DESCRIBER = "mahjongcraft:table_prop_describer"
 
+    /** 桌面牌位配置分類。 */
+    const val TABLE_TILE_LAYOUT_PROFILE = "mahjongcraft:table_tile_layout_profile"
+
     /** 胡牌 showcase 分類。 */
     const val WIN_CELEBRATION_SHOWCASE = "mahjongcraft:win_celebration_showcase"
 

@@ -154,6 +154,18 @@ rules come from collisions that only showed up in game, so check them even when 
 - A new capability that changes what appears on the table comes with debug scenarios that show it in game,
   including the crowded cases: many melds, several set-aside tiles and a wide corner.
 
+## Rule table tile layouts
+
+- Where tiles sit on the table is shared geometry; a rule adjusts it only through a
+  `TableTileLayoutProfile` registered with `registerTableTileLayoutProfiles`, keyed by rule module ID.
+  Rules without a profile use `TableTileLayoutProfile.STANDARD`.
+- Every placement entry point that a profile affects takes the profile as a required argument, so a new
+  caller cannot silently fall back to the standard layout. Resolve it from the table's rule, never from a
+  hard-coded rule check.
+- Tile and table sizes are shared by all rules; a profile only moves tiles within the table.
+- Positions that stand for a seat, such as where a declaration sound plays or where an AI character looks,
+  use the seat geometry or a `TableSeatAnchor`, not a tile placement that happens to sit nearby.
+
 ## Rule-owned table props
 
 - A rule supplies the complete scene through `TablePropDescriber`. Give every object a stable,

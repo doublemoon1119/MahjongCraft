@@ -11,6 +11,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.api.table.MahjongTable
  * @property controllerZ 控制方塊 Z 座標。
  * @property tableFacing 桌子在世界中的朝向。
  * @property sideLayout 規則指定並依本局莊家解析的牌牆面與桌邊對應。
+ * @property tileLayout 該規則的桌面牌位配置。
  * @property stacksPerSide 牌牆每面的墩數。
  */
 data class MahjongTileWallProjectionContext(
@@ -19,6 +20,7 @@ data class MahjongTileWallProjectionContext(
     val controllerZ: Int,
     val tableFacing: MahjongTableFacing,
     val sideLayout: MahjongTileWallSideLayout,
+    val tileLayout: TableTileLayoutProfile,
     val stacksPerSide: Int,
 ) {
     /** 牌牆面數只由規則的側面對應決定。 */
@@ -40,6 +42,7 @@ data class MahjongTileWallProjectionContext(
         controllerZ = controllerZ,
         tableFacing = tableFacing,
         sideLayout = sideLayout,
+        tileLayout = tileLayout,
         stacksPerSide = stacksPerSide,
         placement = placement,
     )

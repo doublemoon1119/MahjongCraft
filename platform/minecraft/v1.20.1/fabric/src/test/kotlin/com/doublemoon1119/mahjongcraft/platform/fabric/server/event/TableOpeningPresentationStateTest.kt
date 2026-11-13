@@ -8,6 +8,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongTableSide
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileWallPresentation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileWallSideLayout
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TableTileLayoutProfile
 import kotlinx.coroutines.async
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
@@ -224,6 +225,7 @@ class TableOpeningPresentationStateTest {
             arrangement = TileWallSideArrangement(TileWallSideReference.TABLE, listOf(0, 1, 2, 3)),
             dealerSide = MahjongTableSide.SOUTH,
         ),
+        tileLayout = TableTileLayoutProfile.STANDARD,
         assemblyStructure = emptyMap(),
         finalLayout = TileWallPhysicalLayout(emptyMap()),
         reservedWallTileIds = emptySet(),

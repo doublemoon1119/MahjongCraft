@@ -25,6 +25,8 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.seating.SeatAssignment
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongTableSeatLayout
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableInteractionReach
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocationRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableSeatAnchor
+import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableSeatOffset
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileTableLayout
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerChunkEvents
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents
@@ -367,15 +369,15 @@ class FabricAiCharacterManager internal constructor(
         }?.takeIf { it.world === seating.world && !it.isRemoved && seating.world.chunkManager.isChunkLoaded(it.blockPos.x shr CHUNK_SHIFT, it.blockPos.z shr CHUNK_SHIFT) }?.eyePos
         roster.forEachIndexed { index, playerId ->
             val actor = bindings.find(game.id, playerId) ?: return@forEachIndexed
-            val placement = MahjongTileTableLayout.handPlacement(
+            val placement = MahjongTileTableLayout.seatAnchorPlacement(
                 controllerX = seating.location.x,
                 controllerY = seating.location.y,
                 controllerZ = seating.location.z,
                 tableFacing = seating.facing,
                 seatLayout = MahjongTableSeatLayout.forPlayerCount(roster.size),
                 seatIndex = index,
-                handSize = 1,
-                tileIndex = 0,
+                anchor = TableSeatAnchor.HAND_ROW_CENTER,
+                offset = TableSeatOffset(),
             )
             val handTarget = Vec3d(placement.x, placement.y, placement.z)
             val requested = when (AiCharacterLookSchedule.focus(playerId, ticks)) {

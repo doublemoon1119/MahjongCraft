@@ -99,6 +99,7 @@ class FabricMahjongTileWallPresenter(
                 controllerZ = controllerPos.z,
                 tableFacing = presentation.tableFacing,
                 sideLayout = presentation.sideLayout,
+                tileLayout = presentation.tileLayout,
                 stacksPerSide = stacksPerSide,
                 placement = if (restoresFinalStateImmediately) finalPlacement else TileWallPlacement(assemblyPosition),
             )
@@ -174,6 +175,7 @@ class FabricMahjongTileWallPresenter(
                 controllerZ = controllerPos.z,
                 tableFacing = request.tableFacing,
                 sideLayout = request.sideLayout,
+                tileLayout = request.tileLayout,
                 stacksPerSide = request.projectionContext(controllerPos).stacksPerSide,
                 placement = placement,
             )
@@ -324,6 +326,7 @@ class FabricMahjongTileWallPresenter(
         controllerZ = controllerPos.z,
         tableFacing = tableFacing,
         sideLayout = sideLayout,
+        tileLayout = tileLayout,
         stacksPerSide = assemblyStructure.values
             .filter { position -> position.side == 0 }
             .maxOf { position -> position.stack + 1 },
@@ -343,6 +346,7 @@ class FabricMahjongTileWallPresenter(
         controllerZ = controllerPos.z,
         tableFacing = tableFacing,
         sideLayout = sideLayout,
+        tileLayout = tileLayout,
         stacksPerSide = stacksPerSide,
     )
 

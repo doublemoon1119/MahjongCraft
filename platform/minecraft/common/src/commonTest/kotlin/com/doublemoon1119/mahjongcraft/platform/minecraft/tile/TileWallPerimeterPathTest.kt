@@ -80,6 +80,7 @@ class TileWallPerimeterPathTest {
                 TileWallSideArrangement(TileWallSideReference.TABLE, listOf(0, 2)),
                 dealerSide = MahjongTableSide.SOUTH,
             ),
+            tileLayout = TableTileLayoutProfile.STANDARD,
             stacksPerSide = 17,
         )
         val decision = TileWallMotionPathPlanner.plan(

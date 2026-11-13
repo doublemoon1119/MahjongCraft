@@ -31,6 +31,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.table.RoundInfoLineDis
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TablePropDescriberRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.RuleWordingRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistryImpl
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TableTileLayoutProfileRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileDisplayNameRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileEmojiRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileLabelRegistryImpl
@@ -129,6 +130,7 @@ class MinecraftPresentationRegistriesTest {
         ruleDecisionDisplayNameRegistry = RuleDecisionDisplayNameRegistryImpl(),
         roundInfoLineDisplayRegistry = RoundInfoLineDisplayRegistryImpl(),
         tablePropDescriberRegistry = TablePropDescriberRegistryImpl(),
+        tableTileLayoutProfileRegistry = TableTileLayoutProfileRegistryImpl(),
         winCelebrationShowcaseRegistry = WinCelebrationShowcaseRegistryImpl(),
         winSettlementTemplateRegistry = WinSettlementPresentationTemplateRegistryImpl(),
         matchSettlementTemplateRegistry = MatchSettlementPresentationTemplateRegistryImpl(),
