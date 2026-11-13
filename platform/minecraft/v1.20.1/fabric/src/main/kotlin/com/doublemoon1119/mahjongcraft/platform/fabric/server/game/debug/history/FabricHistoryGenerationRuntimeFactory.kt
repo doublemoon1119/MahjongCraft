@@ -12,6 +12,7 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.AiDecision
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.ExtensionGameCommandExecutorRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.PostActionExhaustiveDrawResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.PostReactionRoundOutcomeResolverRegistry
+import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.RuleDecisionResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.WinRoundContinuationResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.WinSettlementDetailResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateStore
@@ -30,6 +31,7 @@ import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
  * @property winRoundContinuationResolvers 胡牌後本局是否繼續。
  * @property winSettlementDetailResolvers 胡牌詳情。
  * @property gameCommands 擴充命令 handler。
+ * @property ruleDecisionResolvers 規則選擇流程，例如補花。
  * @property failurePolicy 判斷 AI 策略丟出的失敗能否改用固定結果。
  */
 class FabricHistoryGenerationRuntimeFactory(
@@ -42,6 +44,7 @@ class FabricHistoryGenerationRuntimeFactory(
     private val winRoundContinuationResolvers: WinRoundContinuationResolverRegistry,
     private val winSettlementDetailResolvers: WinSettlementDetailResolverRegistry,
     private val gameCommands: ExtensionGameCommandExecutorRegistry,
+    private val ruleDecisionResolvers: RuleDecisionResolverRegistry,
     private val failurePolicy: ExtensionFailurePolicy,
 ) : HistoryGenerationRuntimeFactory {
 /**
@@ -93,5 +96,6 @@ class FabricHistoryGenerationRuntimeFactory(
         winRoundContinuationResolverRegistry = winRoundContinuationResolvers,
         winSettlementDetailResolverRegistry = winSettlementDetailResolvers,
         gameCommandRegistry = gameCommands,
+        ruleDecisionResolverRegistry = ruleDecisionResolvers,
     )
 }

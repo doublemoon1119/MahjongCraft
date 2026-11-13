@@ -36,6 +36,7 @@ import com.doublemoon1119.mahjongcraft.testing.flow.common.game.repository.FakeG
 import com.doublemoon1119.mahjongcraft.testing.flow.common.game.repository.componentValidatedGameRepository
 import com.doublemoon1119.mahjongcraft.testing.flow.common.game.service.FakeGameEventPublisher
 import com.doublemoon1119.mahjongcraft.testing.flow.common.game.service.FakeGamePresentationPublisher
+import com.doublemoon1119.mahjongcraft.testing.flow.server.noRuleDecisionBeginUseCase
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -123,6 +124,7 @@ class StartGameUseCaseTest {
             eventPublisher,
             presentationPublisher,
             componentRegistry = bundledCoreExtensionRegistries().componentRegistry,
+            beginRuleDecisionUseCase = noRuleDecisionBeginUseCase(gameRepo, moduleRegistry, snapshotSynchronizer),
         )
     }
 

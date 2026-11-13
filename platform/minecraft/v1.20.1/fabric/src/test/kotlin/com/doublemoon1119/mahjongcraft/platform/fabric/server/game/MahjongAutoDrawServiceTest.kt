@@ -70,6 +70,8 @@ import com.doublemoon1119.mahjongcraft.testing.flow.common.game.service.FakeGame
 import com.doublemoon1119.mahjongcraft.testing.flow.common.game.service.FakeGamePresentationPublisher
 import com.doublemoon1119.mahjongcraft.testing.flow.common.room.repository.FakeRoomSnapshotRepository
 import com.doublemoon1119.mahjongcraft.testing.flow.common.room.service.FakeRoomEventPublisher
+import com.doublemoon1119.mahjongcraft.testing.flow.server.RuleDecisionTestUseCases
+import com.doublemoon1119.mahjongcraft.testing.flow.server.emptyRuleDecisionResolverRegistry
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.test.runTest
@@ -139,6 +141,20 @@ class MahjongAutoDrawServiceTest {
                 componentRegistry = bundledCoreExtensionRegistries().componentRegistry,
             ),
         )
+        val aiStrategyRegistry = MahjongAiStrategyRegistryImpl(defaultKey = RandomAiStrategy.KEY).apply {
+            registerBuiltInAiStrategies(moduleRegistry, ExtensionGameActionAiRegistry(moduleRegistry), OpponentModelRegistry().apply { BundledRiichiExtension.registerOpponentModels(this) })
+        }
+        val ruleDecisions = RuleDecisionTestUseCases(
+            gameRepository = gameRepo,
+            moduleRegistry = moduleRegistry,
+            snapshotSynchronizer = snapshotSynchronizer,
+            presentationPublisher = presentationPublisher,
+            handSortPreferenceStore = handSortPreferenceStore,
+            winPresentationHandoff = winPresentationHandoff,
+            winSettlementDetailResolverRegistry = winSettlementDetailResolverRegistry,
+            aiStrategyRegistry = aiStrategyRegistry,
+            visibilityPolicy = GameVisibilityPolicyImpl(moduleRegistry, componentRegistry = bundledCoreExtensionRegistries().componentRegistry),
+        )
         val router = GameActionRouter(
             drawTileUseCase = DrawTileUseCase(gameRepo, moduleRegistry, snapshotSynchronizer, eventPublisher, presentationPublisher, componentRegistry = bundledCoreExtensionRegistries().componentRegistry),
             discardTileUseCase = DiscardTileUseCase(
@@ -193,11 +209,9 @@ class MahjongAutoDrawServiceTest {
             ),
             declareAbortiveDrawUseCase = DeclareAbortiveDrawUseCase(gameRepo, moduleRegistry, snapshotSynchronizer, eventPublisher),
             extensionCommandExecutor = extensionCommandExecutor,
+            submitRuleDecisionUseCase = ruleDecisions.submit,
         )
         val getLegalActionsUseCase = GetLegalActionsUseCase(gameRepo, moduleRegistry)
-        val aiStrategyRegistry = MahjongAiStrategyRegistryImpl(defaultKey = RandomAiStrategy.KEY).apply {
-            registerBuiltInAiStrategies(moduleRegistry, ExtensionGameActionAiRegistry(moduleRegistry), OpponentModelRegistry().apply { BundledRiichiExtension.registerOpponentModels(this) })
-        }
         val aiTurnDriver = AiTurnDriver(
             gameRepo,
             getLegalActionsUseCase,
@@ -241,6 +255,7 @@ class MahjongAutoDrawServiceTest {
                 moduleRegistry,
                 WinRoundContinuationResolverRegistry().apply { freeze() },
                 snapshotSynchronizer,
+                ruleDecisionResolverRegistry = emptyRuleDecisionResolverRegistry(),
             ),
             advanceRoundUseCase = AdvanceRoundUseCase(
                 gameRepo,
@@ -250,6 +265,7 @@ class MahjongAutoDrawServiceTest {
                 eventPublisher,
                 presentationPublisher,
                 componentRegistry = bundledCoreExtensionRegistries().componentRegistry,
+                beginRuleDecisionUseCase = ruleDecisions.begin,
             ),
             returnToRoomUseCase = ReturnToRoomUseCase(
                 store,
@@ -275,6 +291,9 @@ class MahjongAutoDrawServiceTest {
                 effects = GameAbortEffects.NONE,
             ),
             automaticCommandResolver = AutomaticGameCommandResolver(moduleRegistry),
+            ruleDecisionAiDriver = ruleDecisions.aiDriver,
+            advanceAutomaticRuleDecisionUseCase = ruleDecisions.advanceAutomatic,
+            beginRuleDecisionUseCase = ruleDecisions.begin,
         )
         val autoDrawService = MahjongAutoDrawService(
             gameRepo,

@@ -36,7 +36,7 @@ import kotlin.uuid.Uuid
  * @property eventPublisher 對局通知服務。
  * @property presentationPublisher 對局 in-process 呈現觸發器。
  * @property componentRegistry 正式開局與換局使用的組件建立及保留規格。
- * @property beginRuleDecisionUseCase 開局後啟動第一個回合選擇步驟的用例；未提供時不啟動選擇流程。
+ * @property beginRuleDecisionUseCase 開局後啟動第一個回合選擇步驟的用例。
  */
 class StartGameUseCase(
     private val authoritativeStateStore: AuthoritativeStateStore,
@@ -46,7 +46,7 @@ class StartGameUseCase(
     private val eventPublisher: GameEventPublisher,
     private val presentationPublisher: GamePresentationPublisher,
     private val componentRegistry: ComponentRegistry,
-    private val beginRuleDecisionUseCase: BeginRuleDecisionUseCase? = null,
+    private val beginRuleDecisionUseCase: BeginRuleDecisionUseCase,
 ) {
     /**
      * 執行開始遊戲邏輯。
@@ -163,7 +163,7 @@ class StartGameUseCase(
             openingDiceCounts = tableState.openingDiceRolls.map { it.dice.values.size },
         )
         presentationPublisher.publishGameStarted(roomId, tableState.players.map { it.id })
-        beginRuleDecisionUseCase?.invoke(roomId, RuleDecisionTiming.ROUND_START)
+        beginRuleDecisionUseCase(roomId, RuleDecisionTiming.ROUND_START)
 
         return Outcome.Success(roomId)
     }

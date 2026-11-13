@@ -63,6 +63,8 @@ import com.doublemoon1119.mahjongcraft.testing.flow.common.game.service.FakeGame
 import com.doublemoon1119.mahjongcraft.testing.flow.common.game.service.FakeGamePresentationPublisher
 import com.doublemoon1119.mahjongcraft.testing.flow.common.room.repository.FakeRoomSnapshotRepository
 import com.doublemoon1119.mahjongcraft.testing.flow.common.room.service.FakeRoomEventPublisher
+import com.doublemoon1119.mahjongcraft.testing.flow.server.RuleDecisionTestUseCases
+import com.doublemoon1119.mahjongcraft.testing.flow.server.emptyRuleDecisionResolverRegistry
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -137,6 +139,21 @@ class RoomToRoomFullLifecycleIntegrationTest {
             register(MahjongAiStrategyDefinition(FakeAiStrategy.KEY) { FakeAiStrategy() })
         }
         val addAiPlayerUseCase = AddAiPlayerUseCase(roomRepo, roomSnapshotRepo, roomEventPublisher, aiStrategyRegistry)
+        val winSettlementDetailResolverRegistry = WinSettlementDetailResolverRegistry(bundledCoreExtensionRegistries().componentRegistry).apply {
+            BundledRiichiExtension.registerWinSettlementDetailResolvers(this)
+            freeze()
+        }
+        val ruleDecisions = RuleDecisionTestUseCases(
+            gameRepository = gameRepo,
+            moduleRegistry = moduleRegistry,
+            snapshotSynchronizer = snapshotSynchronizer,
+            presentationPublisher = presentationPublisher,
+            handSortPreferenceStore = handSortPreferenceStore,
+            winPresentationHandoff = winPresentationHandoff,
+            winSettlementDetailResolverRegistry = winSettlementDetailResolverRegistry,
+            aiStrategyRegistry = aiStrategyRegistry,
+            visibilityPolicy = GameVisibilityPolicyImpl(moduleRegistry, componentRegistry = bundledCoreExtensionRegistries().componentRegistry),
+        )
         val startGameUseCase = StartGameUseCase(
             store,
             moduleRegistry,
@@ -145,14 +162,11 @@ class RoomToRoomFullLifecycleIntegrationTest {
             gameEventPublisher,
             presentationPublisher,
             componentRegistry = bundledCoreExtensionRegistries().componentRegistry,
+            beginRuleDecisionUseCase = ruleDecisions.begin,
         )
 
         val postActionExhaustiveDrawResolverRegistry = PostActionExhaustiveDrawResolverRegistry().apply {
             BundledRiichiExtension.registerPostActionExhaustiveDrawResolvers(this)
-            freeze()
-        }
-        val winSettlementDetailResolverRegistry = WinSettlementDetailResolverRegistry(bundledCoreExtensionRegistries().componentRegistry).apply {
-            BundledRiichiExtension.registerWinSettlementDetailResolvers(this)
             freeze()
         }
         val extensionCommandExecutor = ExtensionGameCommandExecutor(
@@ -238,6 +252,7 @@ class RoomToRoomFullLifecycleIntegrationTest {
             ),
             declareAbortiveDrawUseCase = DeclareAbortiveDrawUseCase(gameRepo, moduleRegistry, snapshotSynchronizer, gameEventPublisher),
             extensionCommandExecutor = extensionCommandExecutor,
+            submitRuleDecisionUseCase = ruleDecisions.submit,
         )
         val getLegalActionsUseCase = GetLegalActionsUseCase(gameRepo, moduleRegistry)
         val aiTurnDriver = AiTurnDriver(
@@ -283,6 +298,7 @@ class RoomToRoomFullLifecycleIntegrationTest {
                 moduleRegistry,
                 WinRoundContinuationResolverRegistry().apply { freeze() },
                 snapshotSynchronizer,
+                ruleDecisionResolverRegistry = emptyRuleDecisionResolverRegistry(),
             ),
             advanceRoundUseCase = AdvanceRoundUseCase(
                 gameRepo,
@@ -292,6 +308,7 @@ class RoomToRoomFullLifecycleIntegrationTest {
                 gameEventPublisher,
                 presentationPublisher,
                 componentRegistry = bundledCoreExtensionRegistries().componentRegistry,
+                beginRuleDecisionUseCase = ruleDecisions.begin,
             ),
             returnToRoomUseCase = ReturnToRoomUseCase(
                 store,
@@ -317,6 +334,9 @@ class RoomToRoomFullLifecycleIntegrationTest {
                 effects = GameAbortEffects.NONE,
             ),
             automaticCommandResolver = AutomaticGameCommandResolver(moduleRegistry),
+            ruleDecisionAiDriver = ruleDecisions.aiDriver,
+            advanceAutomaticRuleDecisionUseCase = ruleDecisions.advanceAutomatic,
+            beginRuleDecisionUseCase = ruleDecisions.begin,
         )
     }
 

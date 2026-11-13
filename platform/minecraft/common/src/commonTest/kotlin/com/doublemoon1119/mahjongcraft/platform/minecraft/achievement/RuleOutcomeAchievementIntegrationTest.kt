@@ -39,6 +39,7 @@ import com.doublemoon1119.mahjongcraft.testing.flow.common.game.repository.FakeG
 import com.doublemoon1119.mahjongcraft.testing.flow.common.game.repository.componentValidatedGameRepository
 import com.doublemoon1119.mahjongcraft.testing.flow.common.game.service.FakeGameEventPublisher
 import com.doublemoon1119.mahjongcraft.testing.flow.common.game.service.FakeGamePresentationPublisher
+import com.doublemoon1119.mahjongcraft.testing.flow.server.noRuleDecisionBeginUseCase
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeIdentifiedTileFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
@@ -115,14 +116,16 @@ class RuleOutcomeAchievementIntegrationTest {
         val repository = componentValidatedGameRepository(store)
         val submitted = captureCommittedFacts(store)
         repository.updateGame(game.id, history = { _, _, _ -> emptyList() }) { game to Unit }
+        val synchronizer = GameSnapshotSynchronizer(repository, FakeGameSnapshotRepository(), GameVisibilityPolicyImpl(modules, componentRegistry = bundledCoreExtensionRegistries().componentRegistry))
         val useCase = AdvanceRoundUseCase(
             gameRepository = repository,
             moduleRegistry = modules,
-            snapshotSynchronizer = GameSnapshotSynchronizer(repository, FakeGameSnapshotRepository(), GameVisibilityPolicyImpl(modules, componentRegistry = bundledCoreExtensionRegistries().componentRegistry)),
+            snapshotSynchronizer = synchronizer,
             handSortPreferenceStore = HandSortPreferenceStore(),
             eventPublisher = FakeGameEventPublisher(),
             presentationPublisher = FakeGamePresentationPublisher(),
             componentRegistry = bundledCoreExtensionRegistries().componentRegistry,
+            beginRuleDecisionUseCase = noRuleDecisionBeginUseCase(repository, modules, synchronizer),
         )
         assertTrue(useCase(game.id) is Outcome.Success, "The real progression should end a busted match")
 

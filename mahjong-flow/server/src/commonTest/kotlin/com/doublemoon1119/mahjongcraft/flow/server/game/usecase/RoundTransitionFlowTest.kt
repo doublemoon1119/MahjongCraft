@@ -34,6 +34,7 @@ import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledCoreExtension
 import com.doublemoon1119.mahjongcraft.testing.flow.common.game.repository.FakeGameSnapshotRepository
 import com.doublemoon1119.mahjongcraft.testing.flow.common.game.service.FakeGameEventPublisher
 import com.doublemoon1119.mahjongcraft.testing.flow.common.game.service.FakeGamePresentationPublisher
+import com.doublemoon1119.mahjongcraft.testing.flow.server.noRuleDecisionBeginUseCase
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeIdentifiedTileFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.rules.riichi.riichiTableComponents
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
@@ -112,6 +113,7 @@ class RoundTransitionFlowTest {
             eventPublisher,
             presentationPublisher,
             componentRegistry = bundledCoreExtensionRegistries().componentRegistry,
+            beginRuleDecisionUseCase = noRuleDecisionBeginUseCase(gameRepo, moduleRegistry, snapshotSynchronizer),
         )
     }
 

@@ -87,9 +87,9 @@ import kotlin.uuid.Uuid
  * @property presentationBusyGate 查詢平台是否仍在呈現需要等待的內容；[driveAutomatedPlayers] 與
  *   [resumePendingGameTransition] 都會在推進權威流程前檢查，忙碌時直接返回並留待後續心跳重試；
  *   實作由平台層提供，理由見 [GamePresentationBusyGate] KDoc。
- * @property ruleDecisionAiDriver 解析下一筆自動規則選擇提交；未提供時不處理 AI 準備提交。
- * @property advanceAutomaticRuleDecisionUseCase 收斂無須玩家輸入的規則選擇步驟；未提供時略過。
- * @property beginRuleDecisionUseCase 在一般流局結算前與本局結算後開啟規則選擇視窗；未提供時這兩個時間點不暫停。
+ * @property ruleDecisionAiDriver 解析下一筆自動規則選擇提交。
+ * @property advanceAutomaticRuleDecisionUseCase 收斂無須玩家輸入的規則選擇步驟。
+ * @property beginRuleDecisionUseCase 在一般流局結算前與本局結算後開啟規則選擇視窗。
  * @property abortGameUseCase 無法安全繼續時中止原場次並還原房間。
  * @property automaticCommandResolver 從同一份權威桌況取得安全代打命令。
  * @property failurePolicy 判斷流程中擴充失敗是否能隔離；取消與致命錯誤原樣外傳。
@@ -115,9 +115,9 @@ class GameFlowCoordinator(
     private val abortGameUseCase: GameAbortHandler,
     private val automaticCommandResolver: AutomaticGameCommandResolver,
     private val failurePolicy: ExtensionFailurePolicy = ExtensionFailurePolicy.Default,
-    private val ruleDecisionAiDriver: RuleDecisionAiDriver? = null,
-    private val advanceAutomaticRuleDecisionUseCase: AdvanceAutomaticRuleDecisionUseCase? = null,
-    private val beginRuleDecisionUseCase: BeginRuleDecisionUseCase? = null,
+    private val ruleDecisionAiDriver: RuleDecisionAiDriver,
+    private val advanceAutomaticRuleDecisionUseCase: AdvanceAutomaticRuleDecisionUseCase,
+    private val beginRuleDecisionUseCase: BeginRuleDecisionUseCase,
 ) {
     /** 避免玩家命令與恢復心跳同時重複執行同一個待完成流程。 */
     private val pendingTransitionMutex = Mutex()
@@ -222,10 +222,10 @@ class GameFlowCoordinator(
         if (resumePendingGameTransition(gameId)) {
             return stepBefore != gameRepository.getGame(gameId)
         }
-        if ((beginRuleDecisionUseCase?.invoke(gameId, RuleDecisionTiming.DRAW_FOLLOW_UP) as? Outcome.Success)?.value == true) {
+        if ((beginRuleDecisionUseCase(gameId, RuleDecisionTiming.DRAW_FOLLOW_UP) as? Outcome.Success)?.value == true) {
             return stepBefore != gameRepository.getGame(gameId)
         }
-        if (advanceAutomaticRuleDecisionUseCase?.invoke(gameId) == true) {
+        if (advanceAutomaticRuleDecisionUseCase(gameId)) {
             handleHandConclusionIfPresent(
                 gameId = gameId,
                 previousState = stepBefore.tableState,
@@ -233,7 +233,7 @@ class GameFlowCoordinator(
             return stepBefore != gameRepository.getGame(gameId)
         }
 
-        val ruleDecisionAction = ruleDecisionAiDriver?.resolveNextAction(gameId)
+        val ruleDecisionAction = ruleDecisionAiDriver.resolveNextAction(gameId)
         if (ruleDecisionAction != null) {
             val result = submitAutomatedDecision(gameId, ruleDecisionAction.playerId, ruleDecisionAction.command, ruleDecisionAction.basis)
             if (ruleDecisionAction.clearsForcedAutoPlay && result is Outcome.Success) {
@@ -549,13 +549,13 @@ class GameFlowCoordinator(
                 return result
             }
             // 規則要在一般流局結算前請玩家選擇時先暫停；視窗關閉後由排定的流程結算。
-            val opened = beginRuleDecisionUseCase?.invoke(gameId, RuleDecisionTiming.BEFORE_EXHAUSTIVE_DRAW)
+            val opened = beginRuleDecisionUseCase(gameId, RuleDecisionTiming.BEFORE_EXHAUSTIVE_DRAW)
             if ((opened as? Outcome.Success)?.value != true) settleExhaustiveDraw(gameId, previousState)
             return result
         }
 
         if (result is Outcome.Success) {
-            val opened = beginRuleDecisionUseCase?.invoke(gameId, RuleDecisionTiming.DRAW_FOLLOW_UP)
+            val opened = beginRuleDecisionUseCase(gameId, RuleDecisionTiming.DRAW_FOLLOW_UP)
             if ((opened as? Outcome.Success)?.value == true) return result
             handleHandConclusionIfPresent(
                 gameId = gameId,
@@ -574,15 +574,8 @@ class GameFlowCoordinator(
      * @param gameId 欲排定下一局的對局識別碼。
      */
     private suspend fun chainAdvanceRound(gameId: Uuid) {
-        val useCase = beginRuleDecisionUseCase
-        if (useCase == null) {
-            gameRepository.updateGame(gameId) { game ->
-                game?.copy(pendingTransition = PendingGameTransition.AdvanceRound) to Unit
-            }
-            return
-        }
         // 排定換局與開啟本局結算後的規則選擇在同一筆寫入，視窗關閉後才換局。
-        useCase(gameId, RuleDecisionTiming.ROUND_END, PendingGameTransition.AdvanceRound)
+        beginRuleDecisionUseCase(gameId, RuleDecisionTiming.ROUND_END, PendingGameTransition.AdvanceRound)
     }
 
     /**

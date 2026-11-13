@@ -10,6 +10,7 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.repository.FakeGameRepos
 import com.doublemoon1119.mahjongcraft.flow.server.game.riichi.DeclareRiichiUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameSnapshotSynchronizer
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.HandSortPreferenceStore
+import com.doublemoon1119.mahjongcraft.flow.server.game.service.RuleDecisionWinPresentationStager
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.WinPresentationHandoff
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.WinSettlementDetailResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DeclareAbortiveDrawUseCase
@@ -20,6 +21,7 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DiscardTileUseCa
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DrawTileUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.RespondToDiscardUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.RespondToRobbingUseCase
+import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.SubmitRuleDecisionUseCase
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.base.Hand
 import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
@@ -42,6 +44,7 @@ import com.doublemoon1119.mahjongcraft.testing.flow.bundled.registerBundledRuleM
 import com.doublemoon1119.mahjongcraft.testing.flow.common.game.repository.FakeGameSnapshotRepository
 import com.doublemoon1119.mahjongcraft.testing.flow.common.game.service.FakeGameEventPublisher
 import com.doublemoon1119.mahjongcraft.testing.flow.common.game.service.FakeGamePresentationPublisher
+import com.doublemoon1119.mahjongcraft.testing.flow.server.emptyRuleDecisionResolverRegistry
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeIdentifiedTileFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.rules.riichi.riichiDeclarationComponents
 import com.doublemoon1119.mahjongcraft.testing.logic.rules.riichi.riichiTableComponents
@@ -184,6 +187,15 @@ class GameActionRouterTest {
             ),
             declareAbortiveDrawUseCase = DeclareAbortiveDrawUseCase(gameRepo, moduleRegistry, snapshotSynchronizer, eventPublisher),
             extensionCommandExecutor = extensionCommandExecutor,
+            submitRuleDecisionUseCase = SubmitRuleDecisionUseCase(
+                gameRepository = gameRepo,
+                moduleRegistry = moduleRegistry,
+                resolverRegistry = emptyRuleDecisionResolverRegistry(),
+                snapshotSynchronizer = snapshotSynchronizer,
+                presentationPublisher = presentationPublisher,
+                winPresentationStager = RuleDecisionWinPresentationStager(winPresentationHandoff, winSettlementDetailResolverRegistry),
+                handSortPreferenceStore = handSortPreferenceStore,
+            ),
         )
     }
 

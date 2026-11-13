@@ -49,6 +49,7 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.service.PlayerDecisionTi
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.RuleDecisionWinPresentationStager
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.WinPresentationHandoff
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.WinSettlementDetailResolverRegistry
+import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.AdvanceAutomaticRuleDecisionUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.AdvanceRoundUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.BeginRuleDecisionUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DeclareAbortiveDrawUseCase
@@ -143,7 +144,7 @@ class GameFlowCoordinatorTest {
      *
      * @param winRoundContinuationResolverRegistry 胡牌後是否繼續本局的解析器。
      * @param extraStrategies 另外登記的 AI 策略，以策略 key 索引。
-     * @param ruleDecisionResolvers 規則選擇的解析器；提供時才接上規則選擇的提交與 AI。
+     * @param ruleDecisionResolvers 規則選擇的解析器；預設沒有任何規則選擇。
      * @param extraCommandHandlers 另外登記擴充命令 handler 的方式。
      * @param ruleModuleDecorator 覆寫測試日麻模組的行為；未提供時使用內建規則註冊。
      * @property gameRepo 保存測試對局與已提交事實的資料倉庫。
@@ -169,7 +170,7 @@ class GameFlowCoordinatorTest {
     private class Fixtures(
         winRoundContinuationResolverRegistry: WinRoundContinuationResolverRegistry = WinRoundContinuationResolverRegistry().apply { freeze() },
         extraStrategies: Map<String, MahjongAiStrategy> = emptyMap(),
-        ruleDecisionResolvers: RuleDecisionResolverRegistry? = null,
+        ruleDecisionResolvers: RuleDecisionResolverRegistry = RuleDecisionResolverRegistry().apply { freeze() },
         extraCommandHandlers: (ExtensionGameCommandExecutorRegistry) -> Unit = {},
         ruleModuleDecorator: ((RiichiRuleModule) -> MahjongRuleModule<RiichiRuleConfig>)? = null,
     ) {
@@ -294,17 +295,15 @@ class GameFlowCoordinatorTest {
             ),
             declareAbortiveDrawUseCase = DeclareAbortiveDrawUseCase(gameRepo, moduleRegistry, snapshotSynchronizer, eventPublisher),
             extensionCommandExecutor = extensionCommandExecutor,
-            submitRuleDecisionUseCase = ruleDecisionResolvers?.let {
-                SubmitRuleDecisionUseCase(
-                    gameRepository = gameRepo,
-                    moduleRegistry = moduleRegistry,
-                    resolverRegistry = it,
-                    snapshotSynchronizer = snapshotSynchronizer,
-                    presentationPublisher = presentationPublisher,
-                    winPresentationStager = RuleDecisionWinPresentationStager(winPresentationHandoff, winSettlementDetailResolverRegistry),
-                    handSortPreferenceStore = handSortPreferenceStore,
-                )
-            },
+            submitRuleDecisionUseCase = SubmitRuleDecisionUseCase(
+                gameRepository = gameRepo,
+                moduleRegistry = moduleRegistry,
+                resolverRegistry = ruleDecisionResolvers,
+                snapshotSynchronizer = snapshotSynchronizer,
+                presentationPublisher = presentationPublisher,
+                winPresentationStager = RuleDecisionWinPresentationStager(winPresentationHandoff, winSettlementDetailResolverRegistry),
+                handSortPreferenceStore = handSortPreferenceStore,
+            ),
         )
         val getLegalActionsUseCase = GetLegalActionsUseCase(gameRepo, moduleRegistry)
         val aiStrategyRegistry = MahjongAiStrategyRegistryImpl(defaultKey = RandomAiStrategy.KEY).apply {
@@ -342,6 +341,13 @@ class GameFlowCoordinatorTest {
                 true
             }
         }
+        val beginRuleDecisionUseCase = BeginRuleDecisionUseCase(
+            gameRepository = gameRepo,
+            moduleRegistry = moduleRegistry,
+            resolverRegistry = ruleDecisionResolvers,
+            snapshotSynchronizer = snapshotSynchronizer,
+            abortGameHandler = abortGameHandler,
+        )
         val coordinator = GameFlowCoordinator(
             gameActionRouter = router,
             gameRepository = gameRepo,
@@ -370,6 +376,7 @@ class GameFlowCoordinatorTest {
                 eventPublisher,
                 presentationPublisher,
                 componentRegistry = bundledCoreExtensionRegistries().componentRegistry,
+                beginRuleDecisionUseCase = beginRuleDecisionUseCase,
             ),
             // FakeGameRepository 是獨立於 AuthoritativeStateStore 的測試替身，這裡的 ReturnToRoomUseCase
             // 因此接不到同一份對局資料，對本檔案的測試而言只是滿足建構子的無害 no-op；真的驗證
@@ -398,25 +405,24 @@ class GameFlowCoordinatorTest {
             presentationPublisher = presentationPublisher,
             abortGameUseCase = abortGameHandler,
             automaticCommandResolver = AutomaticGameCommandResolver(moduleRegistry),
-            ruleDecisionAiDriver = ruleDecisionResolvers?.let {
-                RuleDecisionAiDriver(
-                    gameRepo,
-                    moduleRegistry,
-                    it,
-                    aiStrategyRegistry,
-                    GameVisibilityPolicyImpl(moduleRegistry, componentRegistry = bundledCoreExtensionRegistries().componentRegistry),
-                    AiDecisionExecutor.direct(failurePolicy = ExtensionFailurePolicy.Default),
-                )
-            },
-            beginRuleDecisionUseCase = ruleDecisionResolvers?.let {
-                BeginRuleDecisionUseCase(
-                    gameRepository = gameRepo,
-                    moduleRegistry = moduleRegistry,
-                    resolverRegistry = it,
-                    snapshotSynchronizer = snapshotSynchronizer,
-                    abortGameHandler = abortGameHandler,
-                )
-            },
+            ruleDecisionAiDriver = RuleDecisionAiDriver(
+                gameRepo,
+                moduleRegistry,
+                ruleDecisionResolvers,
+                aiStrategyRegistry,
+                GameVisibilityPolicyImpl(moduleRegistry, componentRegistry = bundledCoreExtensionRegistries().componentRegistry),
+                AiDecisionExecutor.direct(failurePolicy = ExtensionFailurePolicy.Default),
+            ),
+            advanceAutomaticRuleDecisionUseCase = AdvanceAutomaticRuleDecisionUseCase(
+                gameRepository = gameRepo,
+                moduleRegistry = moduleRegistry,
+                resolverRegistry = ruleDecisionResolvers,
+                snapshotSynchronizer = snapshotSynchronizer,
+                presentationPublisher = presentationPublisher,
+                winPresentationStager = RuleDecisionWinPresentationStager(winPresentationHandoff, winSettlementDetailResolverRegistry),
+                handSortPreferenceStore = handSortPreferenceStore,
+            ),
+            beginRuleDecisionUseCase = beginRuleDecisionUseCase,
         )
     }
 
@@ -1269,7 +1275,7 @@ class GameFlowCoordinatorTest {
         winningTile: IdentifiedTile,
         settlementDetail: ContinuingWinSettlementDetail,
         handTiles: List<Tile> = daisangenTiles,
-        ruleDecisionResolvers: RuleDecisionResolverRegistry? = null,
+        ruleDecisionResolvers: RuleDecisionResolverRegistry = RuleDecisionResolverRegistry().apply { freeze() },
     ): Fixtures {
         val ruleModuleId = MahjongModuleRegistryImpl().apply { registerBundledRuleModules() }.getModule(RiichiRuleConfig()).id
         val continuationRegistry = WinRoundContinuationResolverRegistry().apply {

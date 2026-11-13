@@ -52,7 +52,7 @@ import kotlin.uuid.Uuid
  * @property eventPublisher 對局通知服務。
  * @property presentationPublisher 對局 in-process 呈現觸發器。
  * @property componentRegistry 正式開局與換局使用的組件建立及保留規格。
- * @property beginRuleDecisionUseCase 新局發牌後啟動規則選擇步驟的 use case；未注入時略過。
+ * @property beginRuleDecisionUseCase 新局發牌後啟動規則選擇步驟的 use case。
  * @property failurePolicy 判斷規則失敗能否回報為無法推進；取消與致命錯誤不得轉成一般錯誤。
  */
 class AdvanceRoundUseCase(
@@ -63,7 +63,7 @@ class AdvanceRoundUseCase(
     private val eventPublisher: GameEventPublisher,
     private val presentationPublisher: GamePresentationPublisher,
     private val componentRegistry: ComponentRegistry,
-    private val beginRuleDecisionUseCase: BeginRuleDecisionUseCase? = null,
+    private val beginRuleDecisionUseCase: BeginRuleDecisionUseCase,
     private val failurePolicy: ExtensionFailurePolicy = ExtensionFailurePolicy.Default,
 ) {
     /**
@@ -293,7 +293,7 @@ class AdvanceRoundUseCase(
             dealBatchSizes = newState.config.dealBatchSizes(),
             openingDiceCounts = newState.openingDiceRolls.map { it.dice.values.size },
         )
-        beginRuleDecisionUseCase?.invoke(gameId, RuleDecisionTiming.ROUND_START)
+        beginRuleDecisionUseCase(gameId, RuleDecisionTiming.ROUND_START)
 
         return Outcome.Success(result)
     }

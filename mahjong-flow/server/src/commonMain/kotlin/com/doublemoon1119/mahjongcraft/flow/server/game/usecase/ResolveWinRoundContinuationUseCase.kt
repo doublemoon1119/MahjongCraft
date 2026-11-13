@@ -44,14 +44,14 @@ import kotlin.uuid.Uuid
  * @property moduleRegistry 麻將規則模組註冊中心，用於解析當前對局的規則模組。
  * @property resolverRegistry 供規則 extension 登記胡牌後續決策的 registry。
  * @property snapshotSynchronizer 對局快照同步服務。
- * @property ruleDecisionResolverRegistry 取得規則提供的選擇流程；未提供時胡牌後不開規則選擇視窗。
+ * @property ruleDecisionResolverRegistry 取得規則提供的選擇流程。
  */
 class ResolveWinRoundContinuationUseCase(
     private val gameRepository: GameRepository,
     private val moduleRegistry: MahjongModuleRegistry,
     private val resolverRegistry: WinRoundContinuationResolverRegistry,
     private val snapshotSynchronizer: GameSnapshotSynchronizer,
-    private val ruleDecisionResolverRegistry: RuleDecisionResolverRegistry? = null,
+    private val ruleDecisionResolverRegistry: RuleDecisionResolverRegistry,
 ) {
     /**
      * 原子判定並（若 [WinRoundDirective.ContinueRound]）套用本局後續決策。
@@ -134,10 +134,11 @@ class ResolveWinRoundContinuationUseCase(
 
                 is WinRoundDirective.ContinueRound -> {
                     val continued = game.copy(tableState = directive.applyTo(settledTableState), ruleDecisionWin = null)
-                    val withDecision = ruleDecisionResolverRegistry
-                        ?.takeIf { continued.pendingRuleDecision == null }
-                        ?.let { registry -> RuleDecisionWindows.open(continued, RuleDecisionTiming.WIN_CONTINUES, module, registry).game }
-                        ?: continued
+                    val withDecision = if (continued.pendingRuleDecision == null) {
+                        RuleDecisionWindows.open(continued, RuleDecisionTiming.WIN_CONTINUES, module, ruleDecisionResolverRegistry).game
+                    } else {
+                        continued
+                    }
                     withDecision to Outcome.Success(directive)
                 }
             }

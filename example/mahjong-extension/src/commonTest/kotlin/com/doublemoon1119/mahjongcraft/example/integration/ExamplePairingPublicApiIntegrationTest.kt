@@ -51,6 +51,7 @@ import com.doublemoon1119.mahjongcraft.testing.flow.common.game.service.FakeGame
 import com.doublemoon1119.mahjongcraft.testing.flow.common.game.service.FakeGamePresentationPublisher
 import com.doublemoon1119.mahjongcraft.testing.flow.common.room.repository.FakeRoomSnapshotRepository
 import com.doublemoon1119.mahjongcraft.testing.flow.common.room.service.FakeRoomEventPublisher
+import com.doublemoon1119.mahjongcraft.testing.flow.server.noRuleDecisionBeginUseCase
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -392,6 +393,7 @@ class ExamplePairingPublicApiIntegrationTest {
                 gameEvents,
                 presentations,
                 componentRegistry = componentRegistry,
+                beginRuleDecisionUseCase = noRuleDecisionBeginUseCase(gameRepository, moduleRegistry, snapshotSynchronizer),
             )
             drawTileUseCase = DrawTileUseCase(gameRepository, moduleRegistry, snapshotSynchronizer, gameEvents, presentations, componentRegistry = componentRegistry)
             getLegalActionsUseCase = GetLegalActionsUseCase(gameRepository, moduleRegistry)
@@ -427,6 +429,7 @@ class ExamplePairingPublicApiIntegrationTest {
                 gameEvents,
                 presentations,
                 componentRegistry = componentRegistry,
+                beginRuleDecisionUseCase = noRuleDecisionBeginUseCase(gameRepository, moduleRegistry, snapshotSynchronizer),
             )
             returnToRoomUseCase = ReturnToRoomUseCase(
                 store,

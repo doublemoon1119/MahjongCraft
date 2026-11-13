@@ -131,5 +131,6 @@ fun bundledHeadlessHistoryRegistries(): HeadlessHistoryRegistries = bundledCoreE
         winRoundContinuationResolverRegistry = registries.winRoundContinuationResolverRegistry,
         winSettlementDetailResolverRegistry = registries.winSettlementDetailResolverRegistry,
         gameCommandRegistry = registries.gameCommandRegistry,
+        ruleDecisionResolverRegistry = registries.ruleDecisionResolverRegistry,
     )
 }

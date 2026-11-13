@@ -30,6 +30,7 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.ExtensionG
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.ForcedAutoPlayDriver
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.GameActionRouter
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.GameFlowCoordinator
+import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.RuleDecisionAiDriver
 import com.doublemoon1119.mahjongcraft.flow.server.game.policy.GameVisibilityPolicyImpl
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.ExpectedGameResult
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepository
@@ -43,9 +44,12 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameDecisionTime
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameSnapshotSynchronizer
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.HandSortPreferenceStore
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.PlayerDecisionTimerFactory
+import com.doublemoon1119.mahjongcraft.flow.server.game.service.RuleDecisionWinPresentationStager
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.WinPresentationHandoff
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.AbortGameUseCase
+import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.AdvanceAutomaticRuleDecisionUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.AdvanceRoundUseCase
+import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.BeginRuleDecisionUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DeclareAbortiveDrawUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DeclareAndDiscardUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DeclareExhaustiveDrawUseCase
@@ -60,6 +64,7 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.RespondToDiscard
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.RespondToRobbingUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.ReturnToRoomUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.StartGameUseCase
+import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.SubmitRuleDecisionUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.membership.repository.PlayerMembershipRepositoryImpl
 import com.doublemoon1119.mahjongcraft.flow.server.room.repository.RoomRepositoryImpl
 import com.doublemoon1119.mahjongcraft.flow.server.room.usecase.AddAiPlayerUseCase
@@ -198,6 +203,22 @@ class HeadlessFlowHistoryRuntime private constructor(
                     ),
                 ),
             )
+            val clock = MonotonicClockImpl()
+            val timers = GameDecisionTimerManager(gameRepository, GameDecisionAuthorityResolver(), PlayerDecisionTimerFactory(clock), clock)
+            val timerSync = DecisionTimerSynchronizationService(timers, gameRepository, NoOpTimerUpdates())
+            val abort = AbortGameUseCase(
+                store = store,
+                gameSnapshots = gameSnapshots,
+                roomSnapshots = rooms,
+                roomEvents = roomEvents,
+                presentation = presentation,
+                availability = GameDecisionAvailabilityService(busy, timers, timerSync),
+                winHandoff = winHandoff,
+                effects = GameAbortEffects.NONE,
+            )
+            val ruleDecisions = registries.ruleDecisionResolverRegistry
+            val ruleDecisionWins = RuleDecisionWinPresentationStager(winHandoff, winDetails)
+            val beginRuleDecision = BeginRuleDecisionUseCase(gameRepository, moduleRegistry, ruleDecisions, synchronizer, abort)
             val router = GameActionRouter(
                 DrawTileUseCase(gameRepository, moduleRegistry, synchronizer, gameEvents, presentation, componentRegistry = registries.componentRegistry),
                 DiscardTileUseCase(gameRepository, moduleRegistry, synchronizer, handSort, postAction, gameEvents, presentation, componentRegistry = registries.componentRegistry),
@@ -207,6 +228,15 @@ class HeadlessFlowHistoryRuntime private constructor(
                 RespondToRobbingUseCase(gameRepository, moduleRegistry, synchronizer, gameEvents, presentation, winHandoff, createCue, winDetails, componentRegistry = registries.componentRegistry),
                 DeclareAbortiveDrawUseCase(gameRepository, moduleRegistry, synchronizer, gameEvents),
                 commands,
+                SubmitRuleDecisionUseCase(
+                    gameRepository = gameRepository,
+                    moduleRegistry = moduleRegistry,
+                    resolverRegistry = ruleDecisions,
+                    snapshotSynchronizer = synchronizer,
+                    presentationPublisher = presentation,
+                    winPresentationStager = ruleDecisionWins,
+                    handSortPreferenceStore = handSort,
+                ),
             )
             val getLegal = GetLegalActionsUseCase(gameRepository, moduleRegistry)
             val ai = AiTurnDriver(
@@ -218,9 +248,6 @@ class HeadlessFlowHistoryRuntime private constructor(
                 decisionExecutor,
                 AutomaticGameCommandResolver(moduleRegistry),
             )
-            val clock = MonotonicClockImpl()
-            val timers = GameDecisionTimerManager(gameRepository, GameDecisionAuthorityResolver(), PlayerDecisionTimerFactory(clock), clock)
-            val timerSync = DecisionTimerSynchronizationService(timers, gameRepository, NoOpTimerUpdates())
             // 協調者以這個倉庫提交 AI 決策；量測時一併計算過期而沒有套用的決策。
             val decisionRepository = if (stepTimer == null) gameRepository else StaleCountingGameRepository(gameRepository, stepTimer)
             val coordinator = GameFlowCoordinator(
@@ -241,6 +268,7 @@ class HeadlessFlowHistoryRuntime private constructor(
                     moduleRegistry,
                     registries.winRoundContinuationResolverRegistry,
                     synchronizer,
+                    ruleDecisionResolverRegistry = ruleDecisions,
                 ),
                 advanceRoundUseCase = AdvanceRoundUseCase(
                     gameRepository,
@@ -250,6 +278,7 @@ class HeadlessFlowHistoryRuntime private constructor(
                     gameEvents,
                     presentation,
                     componentRegistry = registries.componentRegistry,
+                    beginRuleDecisionUseCase = beginRuleDecision,
                 ),
                 returnToRoomUseCase = ReturnToRoomUseCase(store, rooms, roomEvents, presentation),
                 aiTurnDriver = ai,
@@ -263,17 +292,19 @@ class HeadlessFlowHistoryRuntime private constructor(
                 winPresentationHandoff = winHandoff,
                 presentationPublisher = presentation,
                 presentationBusyGate = busy,
-                abortGameUseCase = AbortGameUseCase(
-                    store = store,
-                    gameSnapshots = gameSnapshots,
-                    roomSnapshots = rooms,
-                    roomEvents = roomEvents,
-                    presentation = presentation,
-                    availability = GameDecisionAvailabilityService(busy, timers, timerSync),
-                    winHandoff = winHandoff,
-                    effects = GameAbortEffects.NONE,
-                ),
+                abortGameUseCase = abort,
                 automaticCommandResolver = AutomaticGameCommandResolver(moduleRegistry),
+                ruleDecisionAiDriver = RuleDecisionAiDriver(gameRepository, moduleRegistry, ruleDecisions, aiStrategies, aiPolicy, decisionExecutor),
+                advanceAutomaticRuleDecisionUseCase = AdvanceAutomaticRuleDecisionUseCase(
+                    gameRepository = gameRepository,
+                    moduleRegistry = moduleRegistry,
+                    resolverRegistry = ruleDecisions,
+                    snapshotSynchronizer = synchronizer,
+                    presentationPublisher = presentation,
+                    winPresentationStager = ruleDecisionWins,
+                    handSortPreferenceStore = handSort,
+                ),
+                beginRuleDecisionUseCase = beginRuleDecision,
             )
             val start = StartGameUseCase(
                 store,
@@ -283,6 +314,7 @@ class HeadlessFlowHistoryRuntime private constructor(
                 gameEvents,
                 presentation,
                 componentRegistry = registries.componentRegistry,
+                beginRuleDecisionUseCase = beginRuleDecision,
             )
             val venueId = Uuid.random()
             val host = Uuid.random()

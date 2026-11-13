@@ -21,6 +21,7 @@ import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledCoreExtensionRegistries
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.registerBundledRuleModules
 import com.doublemoon1119.mahjongcraft.testing.flow.common.game.repository.FakeGameSnapshotRepository
+import com.doublemoon1119.mahjongcraft.testing.flow.server.emptyRuleDecisionResolverRegistry
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeIdentifiedTileFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
@@ -60,7 +61,7 @@ class ResolveWinRoundContinuationUseCaseTest {
             config = RiichiRuleConfig(),
         )
         gameRepo.setTableState(settledState)
-        val useCase = ResolveWinRoundContinuationUseCase(gameRepo, moduleRegistry, WinRoundContinuationResolverRegistry().apply { freeze() }, snapshotSynchronizer)
+        val useCase = ResolveWinRoundContinuationUseCase(gameRepo, moduleRegistry, WinRoundContinuationResolverRegistry().apply { freeze() }, snapshotSynchronizer, ruleDecisionResolverRegistry = emptyRuleDecisionResolverRegistry())
 
         val result = useCase(gameId, previousState, setOf(winner.id))
 
@@ -158,7 +159,7 @@ class ResolveWinRoundContinuationUseCaseTest {
             )
             freeze()
         }
-        val useCase = ResolveWinRoundContinuationUseCase(gameRepo, moduleRegistry, registry, snapshotSynchronizer)
+        val useCase = ResolveWinRoundContinuationUseCase(gameRepo, moduleRegistry, registry, snapshotSynchronizer, ruleDecisionResolverRegistry = emptyRuleDecisionResolverRegistry())
 
         val result = useCase(
             gameId = gameId,
@@ -202,7 +203,7 @@ class ResolveWinRoundContinuationUseCaseTest {
             )
             freeze()
         }
-        val useCase = ResolveWinRoundContinuationUseCase(gameRepo, moduleRegistry, registry, snapshotSynchronizer)
+        val useCase = ResolveWinRoundContinuationUseCase(gameRepo, moduleRegistry, registry, snapshotSynchronizer, ruleDecisionResolverRegistry = emptyRuleDecisionResolverRegistry())
 
         val result = useCase(gameId, previousState, setOf(winner.id))
 
@@ -237,7 +238,7 @@ class ResolveWinRoundContinuationUseCaseTest {
             )
             freeze()
         }
-        val useCase = ResolveWinRoundContinuationUseCase(gameRepo, moduleRegistry, registry, snapshotSynchronizer)
+        val useCase = ResolveWinRoundContinuationUseCase(gameRepo, moduleRegistry, registry, snapshotSynchronizer, ruleDecisionResolverRegistry = emptyRuleDecisionResolverRegistry())
         useCase(gameId, previousState, winnerPlayerIds)
         return checkNotNull(observed) { "resolver was not invoked" }
     }
