@@ -208,6 +208,8 @@ class GameInitializerPlayerCountTest {
             quarterTurns = if (sideCount == 2) listOf(0, 2) else listOf(0, 1, 2, 3),
         )
 
+        override fun sideStackCounts(): List<Int> = List(sideCount) { stacksPerSide }
+
         override fun resolve(
             shuffledTiles: List<IdentifiedTile>,
             opening: WallOpening,

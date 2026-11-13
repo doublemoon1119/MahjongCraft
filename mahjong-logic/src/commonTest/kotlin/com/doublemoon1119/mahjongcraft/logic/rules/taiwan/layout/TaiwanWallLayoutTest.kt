@@ -10,11 +10,14 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertTrue
 
-/** 驗證四人台灣麻將支援 136（不含花牌）或 144（含花牌）張的牌牆布局。 */
+/** 驗證四人台灣麻將不含花牌時 136 張、含花牌時 144 張的牌牆布局。 */
 class TaiwanWallLayoutTest {
 
-    /** 使用預設 [TaiwanRuleConfig]（王牌 16 張）的布局實例。 */
-    private val layout = TaiwanWallLayout(TaiwanRuleConfig())
+    /** 含花牌、王牌 16 張的布局實例。 */
+    private val layout = TaiwanWallLayout(TaiwanRuleConfig(useFlowerTiles = true))
+
+    /** 不含花牌、王牌 16 張的布局實例。 */
+    private val layoutWithoutFlowers = TaiwanWallLayout(TaiwanRuleConfig(useFlowerTiles = false))
 
     /**
      * 建立指定張數、互不相同（依 [IdentifiedTile.id] 區分）的測試牌，牌面本身無關緊要。
@@ -30,7 +33,7 @@ class TaiwanWallLayoutTest {
     @Test
     fun `resolve splits 136 tiles into 120 draw tiles and 16 reserved wall tiles`() {
         val tiles = buildShuffledTiles(136)
-        val result = layout.resolve(tiles, WallOpening(wallSideOffsetFromDealer = 2, stacksFromRight = 11))
+        val result = layoutWithoutFlowers.resolve(tiles, WallOpening(wallSideOffsetFromDealer = 2, stacksFromRight = 11))
 
         assertEquals(120, result.drawOrder.size)
         assertEquals(16, result.reservedWallTiles.size)
@@ -48,10 +51,10 @@ class TaiwanWallLayoutTest {
         assertEquals(tiles.map { it.id }.toSet(), (result.drawOrder + result.reservedWallTiles).map { it.id }.toSet())
     }
 
-    /** 驗證 structure 涵蓋全部輸入牌，且面／墩／層座標範圍隨牌數（含花牌與否）正確調整。 */
+    /** 驗證 structure 涵蓋全部輸入牌，且墩座標範圍隨是否使用花牌正確調整。 */
     @Test
     fun `structure assigns a unique valid position to every tile for both tile counts`() {
-        val withoutFlowers = layout.resolve(buildShuffledTiles(136), WallOpening(0, 1))
+        val withoutFlowers = layoutWithoutFlowers.resolve(buildShuffledTiles(136), WallOpening(0, 1))
         assertEquals(136, withoutFlowers.structure.size)
         withoutFlowers.structure.values.forEach { assertTrue(it.stack in 0..16) }
 
@@ -60,11 +63,14 @@ class TaiwanWallLayoutTest {
         withFlowers.structure.values.forEach { assertTrue(it.stack in 0..17) }
     }
 
-    /** 驗證牌數不符 136 或 144 時明確拋出例外，不靜默截斷或補牌。 */
+    /** 驗證牌數與是否使用花牌不符時明確拋出例外，不靜默截斷或補牌。 */
     @Test
-    fun `resolve rejects a tile list that is neither 136 nor 144 tiles`() {
+    fun `resolve rejects a tile list that does not match the flower setting`() {
         assertFailsWith<IllegalArgumentException> {
-            layout.resolve(buildShuffledTiles(135), WallOpening(0, 1))
+            layout.resolve(buildShuffledTiles(136), WallOpening(0, 1))
+        }
+        assertFailsWith<IllegalArgumentException> {
+            layoutWithoutFlowers.resolve(buildShuffledTiles(144), WallOpening(0, 1))
         }
         assertFailsWith<IllegalArgumentException> {
             layout.resolve(buildShuffledTiles(140), WallOpening(0, 1))
@@ -75,7 +81,7 @@ class TaiwanWallLayoutTest {
     @Test
     fun `resolve rejects an opening beyond 17 stacks per side when flowers are unused`() {
         assertFailsWith<IllegalArgumentException> {
-            layout.resolve(buildShuffledTiles(136), WallOpening(wallSideOffsetFromDealer = 1, stacksFromRight = 18))
+            layoutWithoutFlowers.resolve(buildShuffledTiles(136), WallOpening(wallSideOffsetFromDealer = 1, stacksFromRight = 18))
         }
     }
 }

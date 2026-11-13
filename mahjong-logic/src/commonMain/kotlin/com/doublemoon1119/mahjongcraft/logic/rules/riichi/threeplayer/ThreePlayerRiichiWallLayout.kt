@@ -25,6 +25,8 @@ class ThreePlayerRiichiWallLayout(private val config: ThreePlayerRiichiRuleConfi
         )
     }
 
+    override fun sideStackCounts(): List<Int> = List(SIDE_COUNT) { STACKS_PER_SIDE }
+
     override fun resolve(shuffledTiles: List<IdentifiedTile>, opening: WallOpening): TileWallLayoutResult = WallRingLayoutSupport.resolve(
         shuffledTiles = shuffledTiles,
         opening = opening,

@@ -28,6 +28,8 @@ class RiichiWallLayout(private val config: RiichiRuleConfig) : TileWallLayout {
         quarterTurns = listOf(0, 3, 2, 1),
     )
 
+    override fun sideStackCounts(): List<Int> = List(WallRingLayoutSupport.FOUR_SIDE_COUNT) { STACKS_PER_SIDE }
+
     override fun resolve(shuffledTiles: List<IdentifiedTile>, opening: WallOpening): TileWallLayoutResult = WallRingLayoutSupport.resolve(
         shuffledTiles = shuffledTiles,
         opening = opening,

@@ -146,6 +146,9 @@ core extension behavior through one adapter. For example, see the Minecraft guid
   and whether those sides stay fixed or rotate with the dealer. This is a rule design, not a room option.
   It must return the same arrangement for the same rule configuration and dealer seat, including after
   a restart. Do not use randomness or mutable external state in this function.
+- `TileWallLayout.sideStackCounts` reports how many stacks each wall face has, in face order. It must
+  match the structure `resolve` lays out and depend only on the rule configuration, because the platform
+  reads the wall size from it after a restart instead of keeping the opening structure.
 - Keep draw order and opening indices separate from physical placement. The platform adapter maps the
   arrangement to its fixed table geometry; rules do not choose arbitrary coordinates or tile dimensions.
 - Test two-player games with four walls, adjacent and opposite two-wall arrangements, both dealer seats,

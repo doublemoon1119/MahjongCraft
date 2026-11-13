@@ -49,6 +49,8 @@ The list order matches logical wall-face indices; it does not have to match play
 
 The adapter rebuilds the arrangement from the rule configuration and dealer seat during restoration,
 so the function must be deterministic. It does not allow custom coordinates, table sizes, or tile sizes.
+The wall size comes from `TileWallLayout.sideStackCounts` in the same way, so table tiles still keep
+clear of the walls after a restart.
 
 ## Shared room settings
 

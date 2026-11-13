@@ -1,5 +1,12 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.tile
 
+import com.doublemoon1119.mahjongcraft.logic.module.BuiltInRuleModuleIds
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleModule
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.threeplayer.ThreePlayerRiichiRuleConfig
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.threeplayer.ThreePlayerRiichiRuleModule
+import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanRuleConfig
+import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanRuleModule
 import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPlacement
 import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPlacementOffset
 import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPlacementOrientation
@@ -21,6 +28,27 @@ import kotlin.test.assertNotEquals
 
 /** [MahjongTileTableLayout] 的墩位間距、四面旋轉、角落不重疊與輸入驗證測試。 */
 class MahjongTileTableLayoutTest {
+    /** 牌牆大小直接向規則查詢，不需要開局時排出的牌牆結構；台麻依是否使用花牌決定。 */
+    @Test
+    fun `wall size comes from the rule without an opening record`() {
+        assertEquals(17, MahjongTileTableLayout.wallStacksPerSide(RiichiRuleModule(BuiltInRuleModuleIds.RIICHI, RiichiRuleConfig()), 4))
+        assertEquals(
+            18,
+            MahjongTileTableLayout.wallStacksPerSide(
+                ThreePlayerRiichiRuleModule(BuiltInRuleModuleIds.RIICHI_THREE_PLAYER, ThreePlayerRiichiRuleConfig()),
+                3,
+            ),
+        )
+        assertEquals(
+            18,
+            MahjongTileTableLayout.wallStacksPerSide(TaiwanRuleModule(BuiltInRuleModuleIds.TAIWAN, TaiwanRuleConfig(useFlowerTiles = true)), 4),
+        )
+        assertEquals(
+            17,
+            MahjongTileTableLayout.wallStacksPerSide(TaiwanRuleModule(BuiltInRuleModuleIds.TAIWAN, TaiwanRuleConfig(useFlowerTiles = false)), 4),
+        )
+    }
+
     /**
      * 同一面內不同墩應等距排列，`stack` 0 在最大 X（該面玩家自己右手邊）、遞增時往負向移動；整條線
      *  額外偏移半個牌高（見 [MahjongTileTableLayout] 角落互相接角的說明），不是置中於側面正中央。 */

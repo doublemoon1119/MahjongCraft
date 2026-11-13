@@ -349,7 +349,7 @@ class FabricGamePresentationPublisher(
                 tableState = tableState,
                 cornerWidthsBySeat = cornerWidthsBySeat(gameId, tableState),
                 tileLayout = tableState?.let(::tileLayoutFor) ?: TableTileLayoutProfile.STANDARD,
-                wallStacksPerSide = openingState.wallStacksPerSide(gameId),
+                wallStacksPerSide = tableState?.let(::wallStacksPerSide),
                 revealedTileFaces = tableState
                     ?.let { state -> visibilityPolicy.publicTileFaces(state, request.players.flatMap { it.revealedHandTileIds }) }
                     .orEmpty(),
@@ -537,8 +537,6 @@ class FabricGamePresentationPublisher(
         openingState.beginWall(
             gameId = gameId,
             wallDropTicks = wallDropTicks,
-            stacksPerSide = stacksPerSide,
-            sideCount = MahjongTileTableLayout.wallSideCount(assemblyStructure.values),
             isNewOpening = isNewOpening,
         )
         launchOpeningStage(gameId, "wall-structure", openingOperation, pendingOperation = "publishWallStructure") {
@@ -589,9 +587,9 @@ class FabricGamePresentationPublisher(
         phases: List<PhysicalWallLayoutTransitionPhase>,
         startGameTime: Long,
     ): Long? {
-        val stacksPerSide = openingState.wallStacksPerSide(gameId)
+        val stacksPerSide = wallStacksPerSide(state)
         if (stacksPerSide == null) {
-            logger.warn("Wall rearrangement gameId={} skipped: wall stack count is unavailable", gameId)
+            logger.warn("Wall rearrangement gameId={} skipped: the rule has no wall layout", gameId)
             return null
         }
         val sideLayout = wallSideLayout(state, state.dealerIndex)
@@ -767,7 +765,7 @@ class FabricGamePresentationPublisher(
         unsortedTileIds: List<Uuid>,
     ): Map<Uuid, ArrangedTile> {
         val module = moduleRegistry.getModule(state.config)
-        val stacksPerSide = openingState.wallStacksPerSide(gameId)
+        val stacksPerSide = wallStacksPerSide(state)
         val projection = stacksPerSide?.let {
             MahjongTileWallProjectionContext(
                 controllerX = resolved.location.x,
@@ -955,7 +953,7 @@ class FabricGamePresentationPublisher(
                     handTileIdsBySeatIndex.mapValues { (seatIndex, tileIds) ->
                         MahjongPlayerAreaLayout.handShift(
                             tileLayout = tileLayoutFor(tableState),
-                            wallStacksPerSide = openingState.wallStacksPerSide(gameId),
+                            wallStacksPerSide = wallStacksPerSide(tableState),
                             cornerWidth = cornerWidths[seatIndex] ?: 0.0,
                             melds = emptyList(),
                             setAsideTileCount = 0,
@@ -1310,7 +1308,7 @@ class FabricGamePresentationPublisher(
                 organizedStandingTileIds = organizedHand.tiles.map { it.id },
                 handShift = MahjongPlayerAreaLayout.handShift(
                     tileLayout = tileLayoutFor(state),
-                    wallStacksPerSide = openingState.wallStacksPerSide(gameId),
+                    wallStacksPerSide = wallStacksPerSide(state),
                     cornerWidth = cornerWidthsBySeat[requestedWinner.seatIndex] ?: 0.0,
                     melds = melds,
                     setAsideTileCount = winner.setAsideTiles.size,
@@ -1508,6 +1506,14 @@ class FabricGamePresentationPublisher(
      * @return 已登記的配置；規則未登記時為標準配置。
      */
     private fun tileLayoutFor(tableState: TableState): TableTileLayoutProfile = tableTileLayoutProfileRegistry.profileFor(moduleRegistry.getModule(tableState.config).id)
+
+    /**
+     * 本局牌牆第一面的墩數，見 [MahjongTileTableLayout.wallStacksPerSide]。
+     *
+     * @param tableState 本局權威桌況。
+     * @return 第一面牌牆的墩數；規則沒有牌牆布局時為 null。
+     */
+    private fun wallStacksPerSide(tableState: TableState): Int? = MahjongTileTableLayout.wallStacksPerSide(moduleRegistry.getModule(tableState.config), tableState.playerCount)
 
     /**
      * 取得目前桌面物件占用的座位角落寬度，優先使用最後呈現的桌況。

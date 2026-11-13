@@ -23,8 +23,10 @@ class ExamplePairingWallLayout(
         else -> TileWallSideArrangement(TileWallSideReference.DEALER, listOf(0, 3, 2, 1))
     }
 
+    override fun sideStackCounts(): List<Int> = ExamplePairingWallGeometry.stacksPerSide(playerCount, wallTileValueCount)
+
     override fun resolve(shuffledTiles: List<IdentifiedTile>, opening: WallOpening): TileWallLayoutResult {
-        val stacksPerSide = ExamplePairingWallGeometry.stacksPerSide(playerCount, wallTileValueCount)
+        val stacksPerSide = sideStackCounts()
         val sideCount = stacksPerSide.size
         val totalStacks = wallTileValueCount * 2
         require(totalStacks % sideCount == 0 || playerCount != 2) {

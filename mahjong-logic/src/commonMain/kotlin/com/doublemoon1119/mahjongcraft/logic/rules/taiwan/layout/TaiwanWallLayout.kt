@@ -13,8 +13,8 @@ import com.doublemoon1119.mahjongcraft.logic.table.opening.WallOpening
 /**
  * 四人台灣麻將的牌牆布局，依是否使用花牌支援 136 或 144 張。
  *
- * 四面牌牆，不含花牌時每面 17 墩（136 張），含花牌時每面 18 墩（144 張）；每面墩數依實際輸入的
- * 牌組張數換算，不假設固定值。規則保留區墩數依 [TaiwanRuleConfig.reservedTileCount] 換算（預設 16 張＝8
+ * 四面牌牆，不含花牌時每面 17 墩（136 張），含花牌時每面 18 墩（144 張），依 [TaiwanRuleConfig.useFlowerTiles]
+ * 決定。規則保留區墩數依 [TaiwanRuleConfig.reservedTileCount] 換算（預設 16 張＝8
  * 墩），與 [WallRingLayoutSupport] 共用的排列邏輯保持單一事實來源。
  *
  * 保留區相對開門缺口的方向與張數，來源：
@@ -30,29 +30,26 @@ class TaiwanWallLayout(private val config: TaiwanRuleConfig) : TileWallLayout {
         quarterTurns = listOf(0, 3, 2, 1),
     )
 
-    override fun resolve(shuffledTiles: List<IdentifiedTile>, opening: WallOpening): TileWallLayoutResult {
-        require(shuffledTiles.size == TILE_COUNT_WITHOUT_FLOWERS || shuffledTiles.size == TILE_COUNT_WITH_FLOWERS) {
-            "Taiwan wall layout requires $TILE_COUNT_WITHOUT_FLOWERS or $TILE_COUNT_WITH_FLOWERS tiles, " +
-                "got ${shuffledTiles.size}"
-        }
-        val stacksPerSide = shuffledTiles.size / TILES_PER_STACK / WallRingLayoutSupport.FOUR_SIDE_COUNT
+    override fun sideStackCounts(): List<Int> = List(WallRingLayoutSupport.FOUR_SIDE_COUNT) { stacksPerSide }
 
-        return WallRingLayoutSupport.resolve(
-            shuffledTiles = shuffledTiles,
-            opening = opening,
-            stacksPerSide = stacksPerSide,
-            reservedWallStacks = config.reservedTileCount / TILES_PER_STACK,
-        )
-    }
+    override fun resolve(shuffledTiles: List<IdentifiedTile>, opening: WallOpening): TileWallLayoutResult = WallRingLayoutSupport.resolve(
+        shuffledTiles = shuffledTiles,
+        opening = opening,
+        stacksPerSide = stacksPerSide,
+        reservedWallStacks = config.reservedTileCount / TILES_PER_STACK,
+    )
+
+    /** 每面牌牆的墩數。 */
+    private val stacksPerSide: Int get() = if (config.useFlowerTiles) STACKS_WITH_FLOWERS else STACKS_WITHOUT_FLOWERS
 
     private companion object {
         /** 每墩的層數，用於將牌數換算成墩數。 */
         const val TILES_PER_STACK = 2
 
-        /** 不含花牌的總張數。 */
-        const val TILE_COUNT_WITHOUT_FLOWERS = 136
+        /** 不含花牌（136 張）時每面牌牆的墩數。 */
+        const val STACKS_WITHOUT_FLOWERS = 17
 
-        /** 含八張花牌的總張數。 */
-        const val TILE_COUNT_WITH_FLOWERS = 144
+        /** 含八張花牌（144 張）時每面牌牆的墩數。 */
+        const val STACKS_WITH_FLOWERS = 18
     }
 }

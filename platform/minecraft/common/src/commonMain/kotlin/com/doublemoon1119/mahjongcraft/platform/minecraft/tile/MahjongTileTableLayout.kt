@@ -1,6 +1,7 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.tile
 
 import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
+import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
 import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPlacement
 import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPlacementOrientation
 import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPosition
@@ -210,6 +211,16 @@ object MahjongTileTableLayout {
      * @return 牌牆面數。
      */
     fun wallSideCount(positions: Collection<TileWallPosition>): Int = positions.maxOfOrNull { it.side + 1 } ?: 0
+
+    /**
+     * 向規則查詢本局牌牆第一面的墩數。規則提供的大小只由規則配置與人數決定，不需要開局時排出的牌牆結構，
+     * 重新開啟世界後也能取得。
+     *
+     * @param module 本局的規則模組。
+     * @param playerCount 本局玩家人數。
+     * @return 第一面牌牆的墩數；規則沒有牌牆布局時為 null。
+     */
+    fun wallStacksPerSide(module: MahjongRuleModule<*>, playerCount: Int): Int? = module.createWallLayout(playerCount)?.sideStackCounts()?.firstOrNull()
 
     /**
      * 將環狀牌牆上的整數墩位投影為基本世界座標，超出單面範圍時會依 [sideLayout] 的面數循環。

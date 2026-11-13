@@ -28,47 +28,38 @@ class TableOpeningPresentationStateTest {
         assertEquals(0, state.wallDropTicks(TABLE))
     }
 
-    /** 沒有發布過牌牆時墩數未知，呼叫端應放棄需要它的呈現。 */
+    /** 牌牆發布後取得本局的掉落動畫時長。 */
     @Test
-    fun `reports an unknown stack count before any wall is published`() {
-        assertNull(state.wallStacksPerSide(TABLE))
-    }
-
-    /** 牌牆發布後兩個讀取端都取得本局的值。 */
-    @Test
-    fun `publishes the drop ticks and the stack count of this round`() {
-        state.beginWall(TABLE, wallDropTicks = 40, stacksPerSide = 17, sideCount = 4)
+    fun `publishes the drop ticks of this round`() {
+        state.beginWall(TABLE, wallDropTicks = 40)
 
         assertEquals(40, state.wallDropTicks(TABLE))
-        assertEquals(17, state.wallStacksPerSide(TABLE))
     }
 
-    /** 兩個讀取端各自安全讀取，不會互相消費。 */
+    /** 讀取不會消費掉紀錄。 */
     @Test
     fun `keeps the values readable more than once`() {
-        state.beginWall(TABLE, wallDropTicks = 40, stacksPerSide = 17, sideCount = 4)
+        state.beginWall(TABLE, wallDropTicks = 40)
 
         repeat(3) { assertEquals(40, state.wallDropTicks(TABLE)) }
-        repeat(3) { assertEquals(17, state.wallStacksPerSide(TABLE)) }
     }
 
     /** 下一局的牌牆覆寫上一局的值。 */
     @Test
     fun `overwrites the values of the previous round`() {
-        state.beginWall(TABLE, wallDropTicks = 40, stacksPerSide = 17, sideCount = 4)
+        state.beginWall(TABLE, wallDropTicks = 40)
 
-        state.beginWall(TABLE, wallDropTicks = 24, stacksPerSide = 9, sideCount = 4)
+        state.beginWall(TABLE, wallDropTicks = 24)
 
         assertEquals(24, state.wallDropTicks(TABLE))
-        assertEquals(9, state.wallStacksPerSide(TABLE))
     }
 
     /** 新開局的擲骰序號會持續遞增，不依賴局數或本場數的固定上限。 */
     @Test
     fun `allocates a fresh sequence for each new opening`() {
-        state.beginWall(TABLE, wallDropTicks = 40, stacksPerSide = 17, sideCount = 4)
+        state.beginWall(TABLE, wallDropTicks = 40)
         val first = state.openingRollSequence(TABLE, 0)
-        state.beginWall(TABLE, wallDropTicks = 24, stacksPerSide = 9, sideCount = 4)
+        state.beginWall(TABLE, wallDropTicks = 24)
         val second = state.openingRollSequence(TABLE, 0)
 
         assertEquals(1L, second!! - first!!)
@@ -78,10 +69,10 @@ class TableOpeningPresentationStateTest {
     /** 不同開局批次的輪次索引即使相同，也不會產生相同序號。 */
     @Test
     fun `does not collide when a later batch starts at an earlier roll index`() {
-        state.beginWall(TABLE, wallDropTicks = 40, stacksPerSide = 17, sideCount = 4)
+        state.beginWall(TABLE, wallDropTicks = 40)
         val firstBatchSecondRoll = state.openingRollSequence(TABLE, 1)
 
-        state.beginWall(TABLE, wallDropTicks = 24, stacksPerSide = 9, sideCount = 4)
+        state.beginWall(TABLE, wallDropTicks = 24)
         val secondBatchFirstRoll = state.openingRollSequence(TABLE, 0)
 
         assertNotEquals(firstBatchSecondRoll, secondBatchFirstRoll)
@@ -90,9 +81,9 @@ class TableOpeningPresentationStateTest {
     /** 恢復既有牌牆不應建立新的擲骰序號。 */
     @Test
     fun `restoring a wall keeps the current opening sequence`() {
-        state.beginWall(TABLE, wallDropTicks = 40, stacksPerSide = 17, sideCount = 4)
+        state.beginWall(TABLE, wallDropTicks = 40)
         val sequence = state.openingRollSequence(TABLE, 0)
-        state.beginWall(TABLE, wallDropTicks = 40, stacksPerSide = 17, sideCount = 4, isNewOpening = false)
+        state.beginWall(TABLE, wallDropTicks = 40, isNewOpening = false)
 
         assertEquals(sequence, state.openingRollSequence(TABLE, 0))
     }
@@ -100,7 +91,7 @@ class TableOpeningPresentationStateTest {
     /** 開局後續階段可讀取牌牆真正開始時的共同時間線錨點。 */
     @Test
     fun `records the wall animation start time`() = runTest {
-        state.beginWall(TABLE, wallDropTicks = 40, stacksPerSide = 17, sideCount = 4)
+        state.beginWall(TABLE, wallDropTicks = 40)
         state.markWallStarted(TABLE, 1234L)
 
         assertEquals(1234L, state.awaitWallStartGameTime(TABLE))
@@ -109,7 +100,7 @@ class TableOpeningPresentationStateTest {
     /** 後續階段即使先開始，也必須等待牌牆交付同一個實際起點。 */
     @Test
     fun `later stages wait for the wall anchor instead of inventing their own`() = runTest {
-        state.beginWall(TABLE, wallDropTicks = 40, stacksPerSide = 17, sideCount = 4)
+        state.beginWall(TABLE, wallDropTicks = 40)
         val waiting = async { state.awaitWallStartGameTime(TABLE) }
         testScheduler.runCurrent()
 
@@ -122,7 +113,7 @@ class TableOpeningPresentationStateTest {
     /** 清除尚未開始的牌牆會取消等待者，不留下永遠忙碌的開局工作。 */
     @Test
     fun `clearing a wall cancels stages awaiting its anchor`() = runTest {
-        state.beginWall(TABLE, wallDropTicks = 40, stacksPerSide = 17, sideCount = 4)
+        state.beginWall(TABLE, wallDropTicks = 40)
         val waiting = async { state.awaitWallStartGameTime(TABLE) }
         testScheduler.runCurrent()
 
@@ -135,8 +126,8 @@ class TableOpeningPresentationStateTest {
     /** 每張桌子各自保存，互不影響。 */
     @Test
     fun `keeps the tables apart`() {
-        state.beginWall(TABLE, wallDropTicks = 40, stacksPerSide = 17, sideCount = 4)
-        state.beginWall(OTHER_TABLE, wallDropTicks = 24, stacksPerSide = 9, sideCount = 4)
+        state.beginWall(TABLE, wallDropTicks = 40)
+        state.beginWall(OTHER_TABLE, wallDropTicks = 24)
 
         assertEquals(40, state.wallDropTicks(TABLE))
         assertEquals(24, state.wallDropTicks(OTHER_TABLE))
@@ -145,7 +136,7 @@ class TableOpeningPresentationStateTest {
     /** 沒有排定開門時發牌不會取到任何開門資料。 */
     @Test
     fun `consumes no opening while none is armed`() {
-        state.beginWall(TABLE, wallDropTicks = 40, stacksPerSide = 17, sideCount = 4)
+        state.beginWall(TABLE, wallDropTicks = 40)
 
         assertNull(state.consumeOpening(TABLE))
     }
@@ -182,7 +173,7 @@ class TableOpeningPresentationStateTest {
     fun `drops an unplayed opening when the next round starts`() {
         state.armOpening(TABLE, openingPresentation())
 
-        state.beginWall(TABLE, wallDropTicks = 24, stacksPerSide = 9, sideCount = 4)
+        state.beginWall(TABLE, wallDropTicks = 24)
 
         assertNull(state.consumeOpening(TABLE))
     }
@@ -190,26 +181,24 @@ class TableOpeningPresentationStateTest {
     /** 開局失敗後整張桌子回到初始狀態。 */
     @Test
     fun `resets the table after a failed opening`() {
-        state.beginWall(TABLE, wallDropTicks = 40, stacksPerSide = 17, sideCount = 4)
+        state.beginWall(TABLE, wallDropTicks = 40)
         state.armOpening(TABLE, openingPresentation())
 
         state.clear(TABLE)
 
         assertEquals(0, state.wallDropTicks(TABLE))
-        assertNull(state.wallStacksPerSide(TABLE))
         assertNull(state.consumeOpening(TABLE))
     }
 
     /** 清除一張桌子不影響其他桌。 */
     @Test
     fun `clears only the given table`() {
-        state.beginWall(TABLE, wallDropTicks = 40, stacksPerSide = 17, sideCount = 4)
-        state.beginWall(OTHER_TABLE, wallDropTicks = 24, stacksPerSide = 9, sideCount = 4)
+        state.beginWall(TABLE, wallDropTicks = 40)
+        state.beginWall(OTHER_TABLE, wallDropTicks = 24)
 
         state.clear(TABLE)
 
         assertEquals(24, state.wallDropTicks(OTHER_TABLE))
-        assertEquals(9, state.wallStacksPerSide(OTHER_TABLE))
     }
 
     /**
