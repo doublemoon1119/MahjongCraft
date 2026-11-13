@@ -3,6 +3,10 @@ package com.doublemoon1119.mahjongcraft.flow.server.game.history.generation
 import com.doublemoon1119.mahjongcraft.flow.common.error.ExtensionFailurePolicy
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.AiDecisionExecutor
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateStore
+import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanGameLength
+import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanPlayerTileAreaIds
+import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanRuleConfig
+import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.tile.TaiwanTileTypes
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledHeadlessHistoryRegistries
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -55,6 +59,29 @@ class HeadlessFlowHistoryRuntimeTest {
             assertTrue(terminal, "$scenario must reach its terminal event")
             assertEquals(3, runtime.store.snapshot().rooms.getValue(runtime.venueId).aiPlayerIds.size)
         }
+    }
+
+    /**
+     * 驗證台灣麻將東風圈可由四個真實 AI 自動完成，且花牌都經補花移到花區、從不打出；一將走同一條流程，只確認它使用東南西北圈。
+     */
+    @Test
+    fun `taiwan match completes through cold history flow`() = runTest {
+        val runtime = HeadlessFlowHistoryRuntime.create(HeadlessHistoryScenario.TAIWAN_EAST, bundledHeadlessHistoryRegistries(), decisionExecutor = AiDecisionExecutor.direct(failurePolicy = ExtensionFailurePolicy.Default))
+        var terminal = false
+        var flowersSetAside = false
+        HeadlessHistoryMatchRunner(runtime).events().collect { progress ->
+            runtime.store.acknowledgeHistoryEvents(progress.events.map { it.matchId to it.sequence }.toSet())
+            if (progress.terminal && progress.events.isEmpty()) terminal = true
+            runtime.currentGame()?.tableState?.players?.forEach { player ->
+                val discardedFlowers = player.discardPile.entries.filter { TaiwanTileTypes.isFlower(it.tile.tile) }
+                assertTrue(discardedFlowers.isEmpty(), "Flowers must be set aside, not discarded: $discardedFlowers")
+                if (player.tileAreas[TaiwanPlayerTileAreaIds.FLOWERS]?.tiles.orEmpty().isNotEmpty()) flowersSetAside = true
+            }
+        }
+        assertTrue(terminal)
+        assertTrue(flowersSetAside, "Some flowers must reach a flower area during the match")
+        assertEquals(4, runtime.store.snapshot().rooms.getValue(runtime.venueId).aiPlayerIds.size)
+        assertEquals(TaiwanGameLength.FourWinds, (HeadlessHistoryScenario.TAIWAN_FOUR_WINDS.ruleConfig as TaiwanRuleConfig).gameLength)
     }
 
     /** 驗證計時器量到 AI 決策、快照同步與歷史記錄，歸零後重新累計。 */
