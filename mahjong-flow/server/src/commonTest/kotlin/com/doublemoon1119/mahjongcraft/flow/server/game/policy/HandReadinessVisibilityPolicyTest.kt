@@ -110,6 +110,21 @@ class HandReadinessVisibilityPolicyTest {
         assertNull(policy.snapshotFor(game, player.id))
     }
 
+    /** 整場結束後本局結算已清除，仍不提供聽牌分析，終局排名期間不顯示聽牌 HUD。 */
+    @Test
+    fun `finished match hides current hand analysis`() {
+        val player = FakeMahjongPlayerFactory.create(hand = FakeHandFactory.create(tiles = tenpaiTiles))
+        val game = Game(
+            tableState = FakeTableStateFactory.create(players = listOf(player), config = RiichiRuleConfig()),
+            flowConfig = GameConfig(RiichiRuleConfig()).flowConfig,
+            isMatchOver = true,
+            matchEndReasonId = "test:completed",
+            hostId = player.id,
+        )
+
+        assertNull(policy.snapshotFor(game, player.id))
+    }
+
     /** 共用的聽牌牌型。 */
     private companion object {
         /** 三組萬子順子、五餅雀頭與四五索搭子，等待三索或六索。 */
