@@ -74,6 +74,7 @@ class GameInitializerPlayerCountTest {
                 roundNumber = 1,
                 comboCount = 0,
                 prevalentWind = Wind.EAST,
+                roundSerial = 1,
             )
 
             val result = GameInitializer.startNextRound(

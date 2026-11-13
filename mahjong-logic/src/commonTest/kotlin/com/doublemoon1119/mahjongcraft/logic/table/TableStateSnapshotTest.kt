@@ -37,12 +37,11 @@ class TableStateSnapshotTest {
             discardPile = FakeDiscardPile().discardTile(earlier).discardTile(latest),
         )
         val table = FakeTableStateFactory.create(players = listOf(discarder, FakeMahjongPlayerFactory.create(initialSeat = Wind.SOUTH)))
-            .copy(lastDiscardTileId = latest.id)
         val taken = table.copy(players = listOf(discarder.copy(discardPile = discarder.discardPile.takeLast())) + table.players.drop(1))
         val roundOver = table.copy(turnPhase = TurnPhase.RoundOver(RoundConclusion.Win(setOf(table.players[1].id))))
 
         assertEquals(latest.id, table.toSnapshot(emptySet()).latestDiscardTileId)
-        assertNull(table.copy(lastDiscardTileId = null).toSnapshot(emptySet()).latestDiscardTileId)
+        assertNull(FakeTableStateFactory.create().toSnapshot(emptySet()).latestDiscardTileId)
         assertNull(taken.toSnapshot(emptySet()).latestDiscardTileId)
         assertNull(roundOver.toSnapshot(emptySet()).latestDiscardTileId)
     }

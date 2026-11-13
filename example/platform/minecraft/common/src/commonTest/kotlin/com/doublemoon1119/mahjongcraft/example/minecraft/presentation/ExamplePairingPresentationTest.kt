@@ -119,6 +119,7 @@ class ExamplePairingPresentationTest {
         val table = TableState(
             id = Uuid.random(),
             players = playersWithDiscard,
+            discardOrder = discarder.discardPile.entries.map { it.tile.id },
             config = ExamplePairingRuleConfig(exchangeEnabled = true, roundCount = 8),
             tileWall = TileWall(),
             dealerPlayerId = players.first().id,

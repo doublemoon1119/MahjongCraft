@@ -226,7 +226,7 @@ class CompactReplayCapacityTest {
             registries.components,
         )
         val encoded = json.encodeToJsonElement(dto) as JsonObject
-        val gameplay = encoded.filterKeys { it !in setOf("id", "config", "physicalWallLayout", "lastDiscardTileId") }.toMutableMap()
+        val gameplay = encoded.filterKeys { it !in setOf("id", "config", "physicalWallLayout", "roundSerial", "discardOrder") }.toMutableMap()
         // 即時提交的視窗身分不參與歷史內容投影。
         (gameplay["turnPhase"] as? JsonObject)?.let { phase ->
             (phase["reaction"] as? JsonObject)?.let { reaction ->

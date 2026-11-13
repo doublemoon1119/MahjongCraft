@@ -32,6 +32,7 @@ internal fun formalFirstRoundKeepingSeats(
         roundAdvancement = RoundAdvancementResult(
             players = players,
             dealerPlayerId = dealerPlayerId,
+            roundSerial = current.roundSerial + 1,
             roundNumber = position.roundNumber,
             comboCount = 0,
             prevalentWind = position.prevalentWind,

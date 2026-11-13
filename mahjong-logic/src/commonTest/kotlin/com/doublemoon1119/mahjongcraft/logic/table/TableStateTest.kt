@@ -208,6 +208,18 @@ class TableStateTest {
         assertEquals(0, reset.comboCount)
     }
 
+    /** 每開一局，本場局序都加一；連莊、過莊都一樣。 */
+    @Test
+    fun `test round advancement counts every round including repeats`() {
+        val state = FakeTableStateFactory.create(players = fourPlayers).copy(roundSerial = 4)
+
+        val repeated = state.advanceRound(MatchRoundTransition.RepeatCurrentRound, RoundTransitionDirective.RepeatDealer)
+        val advanced = state.advanceRound(MatchRoundTransition.AdvanceTo(MatchRoundPosition(1, Wind.EAST, 2)), RoundTransitionDirective.PassToNextSeat)
+
+        assertEquals(5, repeated.roundSerial)
+        assertEquals(5, advanced.roundSerial)
+    }
+
     /** 規則指定的玩家成為下一任莊家；指定外人、指定現任莊家或與局位變化矛盾時拒絕。 */
     @Test
     fun `test round advancement passes the deal to the chosen player`() {

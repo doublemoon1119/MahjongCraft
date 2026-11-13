@@ -149,6 +149,7 @@ class GameInitializerOpeningTest {
             roundNumber = 2,
             comboCount = 0,
             prevalentWind = Wind.EAST,
+            roundSerial = 1,
         )
 
         assertFailsWith<IllegalArgumentException> {

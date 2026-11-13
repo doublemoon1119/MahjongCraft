@@ -115,7 +115,6 @@ class TableStatePersistenceTest {
 
         assertEncodedRoundTrip(
             state.copy(
-                lastDiscardTileId = tileId,
                 turnPhase = TurnPhase.AwaitingDiscardReaction(
                     PendingReaction(
                         discarderId = discarderId,
@@ -279,6 +278,8 @@ class TableStatePersistenceTest {
             roundNumber = 5,
             comboCount = 2,
             currentPlayerIndex = 1,
+            roundSerial = 6,
+            discardOrder = listOf(humanDiscard.id),
             components = riichiTableComponents(
                 potPoints = 3000,
                 wallProgress = RiichiWallProgress(

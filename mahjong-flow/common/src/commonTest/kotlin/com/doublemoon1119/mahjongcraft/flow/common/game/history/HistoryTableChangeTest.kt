@@ -78,23 +78,23 @@ class HistoryTableChangeTest {
         assertEquals(after, change.applyTo(before))
     }
 
-    /** 最後打出的牌換成新打出的牌時，差異記下新牌，套用後還原；沒換時不記錄。 */
+    /** 新打出的牌接在打牌順序後面時，差異只記下新牌，套用後還原；沒有新牌時不記錄。 */
     @Test
-    fun `change records and restores the last discard`() {
+    fun `change records and restores appended discards`() {
         val first = IdentifiedTile(Uuid.random(), Tile.Numeric(Tile.Suit.Dot, 1))
         val second = IdentifiedTile(Uuid.random(), Tile.Numeric(Tile.Suit.Dot, 2))
         val discarder = FakeMahjongPlayerFactory.create(discardPile = FakeDiscardPile().discardTile(first))
-        val earlier = FakeTableStateFactory.create(players = listOf(discarder)).copy(lastDiscardTileId = first.id)
+        val earlier = FakeTableStateFactory.create(players = listOf(discarder))
         val later = earlier.copy(
             players = listOf(discarder.copy(discardPile = discarder.discardPile.discardTile(second))),
-            lastDiscardTileId = second.id,
+            discardOrder = earlier.discardOrder + second.id,
         )
 
         val change = assertNotNull(HistoryTableChange.between(earlier, later))
 
-        assertEquals(second.id, change.lastDiscardTileId)
+        assertEquals(listOf(second.id), change.appendedDiscards)
         assertEquals(later, change.applyTo(earlier))
-        assertNull(assertNotNull(HistoryTableChange.between(earlier, earlier.copy(currentPlayerIndex = 0))).lastDiscardTileId)
+        assertEquals(emptyList(), assertNotNull(HistoryTableChange.between(earlier, earlier.copy(currentPlayerIndex = 0))).appendedDiscards)
     }
 
     /** 已公開手牌沒有改變時不記錄。 */

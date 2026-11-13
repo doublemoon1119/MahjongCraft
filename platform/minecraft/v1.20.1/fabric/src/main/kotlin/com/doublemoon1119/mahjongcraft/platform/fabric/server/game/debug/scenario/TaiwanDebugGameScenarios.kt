@@ -148,6 +148,7 @@ private object TaiwanLastTileFlowerScenario : DebugGameScenario {
         val initialPhysicalLayout = requireNotNull(initialization.initialPhysicalWallLayout) { "Taiwan initialization did not produce physical wall layout" }
         val state = dealt.copy(
             players = players.map { player -> player.copy(hand = player.hand.organize(module.tileOrder)) },
+            discardOrder = scenarioDiscardOrder(players),
             tileWall = TileWall(listOf(faceById.getValue(lastLiveTile.id))),
             physicalWallLayout = TileWallPhysicalLayout(initialPhysicalLayout.placements.filterKeys { it in remainingWallIds }),
         )
@@ -219,7 +220,7 @@ private object TaiwanBeforePaoPonScenario : DebugGameScenario {
             tileWall = draw.wall,
             physicalWallLayout = dealt.physicalWallLayout?.retainOnly(remainingWallIds),
             currentPlayerIndex = discarderIndex,
-            lastDiscardTileId = calledTile.id,
+            discardOrder = scenarioDiscardOrder(players, last = calledTile.id),
             turnPhase = TurnPhase.AwaitingDiscardReaction(
                 PendingReaction(
                     discarderId = players[discarderIndex].id,
@@ -326,7 +327,7 @@ private object TaiwanCrowdedMeldsScenario : DebugGameScenario {
             tileWall = wall,
             physicalWallLayout = dealt.physicalWallLayout?.retainOnly(remainingWallIds),
             currentPlayerIndex = discarderIndex,
-            lastDiscardTileId = called.id,
+            discardOrder = scenarioDiscardOrder(players, last = called.id),
             turnPhase = TurnPhase.AwaitingDiscardReaction(
                 PendingReaction(
                     discarderId = players[discarderIndex].id,

@@ -48,6 +48,7 @@ class ExampleRuleComponentApplicabilityTest {
                     roundNumber = 2,
                     comboCount = 0,
                     prevalentWind = opening.prevalentWind,
+                    roundSerial = 1,
                 ),
                 module = case.module,
             ).initializeRuleComponents(case.module.id, registry, opening).tableState

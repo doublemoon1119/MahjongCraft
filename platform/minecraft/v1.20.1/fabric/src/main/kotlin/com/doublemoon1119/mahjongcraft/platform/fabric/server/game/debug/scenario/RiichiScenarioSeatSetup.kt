@@ -182,6 +182,7 @@ internal class SeatSetupScenario(
         val state = TableState(
             id = currentGame.id,
             players = players,
+            discardOrder = scenarioDiscardOrder(players),
             config = config,
             tileWall = TileWall(liveTiles),
             dealerPlayerId = context.invokingPlayerId,

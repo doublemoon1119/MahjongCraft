@@ -166,6 +166,7 @@ object GameInitializer {
             config = module.config,
             tileWall = remainingWall,
             dealerPlayerId = roundAdvancement.dealerPlayerId,
+            roundSerial = roundAdvancement.roundSerial,
             prevalentWind = roundAdvancement.prevalentWind,
             roundNumber = roundAdvancement.roundNumber,
             roundPosition = roundAdvancement.roundPosition,

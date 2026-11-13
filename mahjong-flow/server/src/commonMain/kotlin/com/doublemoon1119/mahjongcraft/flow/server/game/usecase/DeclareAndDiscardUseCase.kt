@@ -129,7 +129,10 @@ class DeclareAndDiscardUseCase(
                 .recordAction(GameAction.Discard(tileId))
             val stateWithDiscard = ruleComponents.initializeCreatedRecords(
                 before = state,
-                after = state.copy(players = state.players.map { if (it.id == playerId) playerWithDiscard else it }),
+                after = state.copy(
+                    players = state.players.map { if (it.id == playerId) playerWithDiscard else it },
+                    discardOrder = state.discardOrder + tileId,
+                ),
                 source = "Discard",
             )
             val discardedPlayer = stateWithDiscard.players.first { it.id == playerId }
@@ -172,7 +175,7 @@ class DeclareAndDiscardUseCase(
                 before = state,
                 after = state.copy(
                     players = state.players.map { if (it.id == playerId) updatedPlayer else it },
-                    lastDiscardTileId = tileId,
+                    discardOrder = state.discardOrder + tileId,
                     components = ruleComponents.applyTablePatch(state, effect.tableComponents, "declarationDiscardPolicy"),
                 ),
                 source = "declarationDiscardPolicy",

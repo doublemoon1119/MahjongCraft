@@ -11,6 +11,7 @@ import kotlin.uuid.Uuid
  * @property comboCount 套用後的本場數。
  * @property prevalentWind 套用後的場風。
  * @property roundPosition 套用後的權威局位。
+ * @property roundSerial 下一局是本場對局開始的第幾局，見 [TableState.roundSerial]。
  */
 data class RoundAdvancementResult(
     val players: List<MahjongPlayer>,
@@ -23,4 +24,5 @@ data class RoundAdvancementResult(
         prevalentWind = prevalentWind,
         localRoundNumber = ((roundNumber - 1) % players.size) + 1,
     ),
+    val roundSerial: Int,
 )

@@ -153,7 +153,7 @@ class TaiwanPositionRulesTest {
     @Test
     fun `without the declared ready option only the opening turn offers a declaration`() {
         val laterTurn = table()
-        val openingTurn = laterTurn.copy(players = laterTurn.players.map { it.copy(discardPile = TaiwanDiscardPile()) })
+        val openingTurn = laterTurn.copy(players = laterTurn.players.map { it.copy(discardPile = TaiwanDiscardPile()) }, discardOrder = emptyList())
 
         assertEquals(emptySet(), rules.prospectiveDeclarations(view(laterTurn, laterTurn.players[WAITER]), laterTurn.players[WAITER].hand))
         assertEquals(setOf(TAIWAN_DECLARE_READY_ACTION), rules.prospectiveDeclarations(view(openingTurn, openingTurn.players[WAITER]), openingTurn.players[WAITER].hand))
