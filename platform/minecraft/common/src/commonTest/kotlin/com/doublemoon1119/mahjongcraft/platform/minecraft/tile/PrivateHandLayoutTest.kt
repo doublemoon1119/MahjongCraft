@@ -190,6 +190,62 @@ class PrivateHandLayoutTest {
         assertEquals(0.0, inserting.getValue(firstId).position.y, "The rest of the hand slides without lifting.")
     }
 
+    /**
+     * 補進一張牌、共享擺放整排往右挪半格時，即使本機認定還沒理過的牌與共享擺放不同（逐張推算的中心對不上），
+     * 本人整排的兩端仍與共享擺放一致，不沿用舊中心往左多伸出半格。
+     */
+    @Test
+    fun `row follows the shared row ends when unsorted tiles differ from the shared layout`() {
+        val layout = PrivateHandLayout()
+        val replacementId = Uuid.parse("00000000-0000-0000-0000-000000000000")
+        layout.update(
+            time = 0.0,
+            standingOrder = listOf(firstId, secondId, thirdId),
+            drawnId = null,
+            inputs = transforms(firstId to transform(-1.0), secondId to transform(0.0), thirdId to transform(1.0)),
+            releaseHand = false,
+        )
+        // 共享擺放已把補進的牌理到最左邊；本機仍認為它還沒理過，接在最右邊。
+        val shifted = transforms(replacementId to transform(-1.0), firstId to transform(0.0), secondId to transform(1.0), thirdId to transform(2.0))
+        val order = listOf(firstId, secondId, thirdId, replacementId)
+        layout.update(time = 1.0, standingOrder = order, drawnId = null, inputs = shifted, releaseHand = false, unsortedIds = listOf(replacementId))
+        val settled = layout.update(time = 30.0, standingOrder = order, drawnId = null, inputs = shifted, releaseHand = false, unsortedIds = listOf(replacementId))
+        val shown = order.map { settled.getValue(it).position.x }
+
+        assertEquals(transform(-1.0).position.x, shown.min(), 0.000001)
+        assertEquals(transform(2.0).position.x, shown.max(), 0.000001)
+    }
+
+    /**
+     * 原本的牌先換到加牌後的位置、本人排列下一刻才多一張牌時，本人整排的兩端仍與共享擺放一致；
+     * 先換好的位置已記成上次的位置，不能因此判斷牌排沒動而沿用舊中心。
+     */
+    @Test
+    fun `row adopts the new ends when a tile joins after the others already moved`() {
+        val layout = PrivateHandLayout()
+        val replacementId = Uuid.parse("00000000-0000-0000-0000-000000000000")
+        val order = listOf(firstId, secondId, thirdId)
+        layout.update(
+            time = 0.0,
+            standingOrder = order,
+            drawnId = null,
+            inputs = transforms(firstId to transform(-1.0), secondId to transform(0.0), thirdId to transform(1.0)),
+            releaseHand = false,
+        )
+        // 共享擺放先把原本三張換到加牌後的位置，左邊空出一格給補進的牌；本人排列還是三張。
+        val moved = transforms(firstId to transform(0.0), secondId to transform(1.0), thirdId to transform(2.0))
+        layout.update(time = 1.0, standingOrder = order, drawnId = null, inputs = moved, releaseHand = false)
+        // 下一刻本人排列多了補進的牌，接在最右邊、還沒理過。
+        val joined = order + replacementId
+        val inputs = moved + transforms(replacementId to transform(-1.0))
+        layout.update(time = 2.0, standingOrder = joined, drawnId = null, inputs = inputs, releaseHand = false, unsortedIds = listOf(replacementId))
+        val settled = layout.update(time = 30.0, standingOrder = joined, drawnId = null, inputs = inputs, releaseHand = false, unsortedIds = listOf(replacementId))
+        val shown = joined.map { settled.getValue(it).position.x }
+
+        assertEquals(transform(-1.0).position.x, shown.min(), 0.000001)
+        assertEquals(transform(2.0).position.x, shown.max(), 0.000001)
+    }
+
     /** 手牌第一次出現在立牌（例如發完牌翻起）後再理牌時，不是插入：沒有任何牌被提起。 */
     @Test
     fun `first appearance of the hand is not treated as an insertion`() {

@@ -63,6 +63,11 @@ internal object TaiwanDebugGameScenarios {
             dealt.handTilesOf(invoker).zip(READY_HAND) { tile, face -> tile.id to face } +
                 flowerFaces(dealt.tileWall.getAllTiles().takeLast(ALL_FLOWERS))
         },
+        // 莊家補花：呼叫者當莊家，起手一張花，其餘七張花在活牌尾端。莊家摸開門牌後手上十七張，補花補進的牌接在最右邊、
+        // 還沒理過；用來確認莊家手牌在補花前後都不碰到左邊的牌牆。
+        TaiwanOpeningScenario(id = "mahjongcraft:taiwan/debug/dealer_flower", invokerDeals = true) { dealt, invoker ->
+            flowerFaces(dealt.handTilesOf(invoker).take(1) + dealt.tileWall.getAllTiles().takeLast(ALL_FLOWERS - 1))
+        },
         TaiwanLastTileFlowerScenario,
         TaiwanBeforePaoPonScenario,
         TaiwanCrowdedMeldsScenario,
@@ -73,16 +78,22 @@ internal object TaiwanDebugGameScenarios {
  * 以正式初始化流程發牌、交換牌面後播放完整開局的台灣麻將情境；載入後與正式開局相同，接著處理局首補花。
  *
  * @property id 完整的 namespaced 情境 ID。
+ * @property invokerDeals 是否由呼叫者當莊家；否則沿用這一桌目前的莊家。
  * @property faces 依發牌後的桌況與呼叫者座位，列出要放到各牌張的牌面。
  */
 private class TaiwanOpeningScenario(
     override val id: String,
+    private val invokerDeals: Boolean = false,
     private val faces: (dealt: TableState, invokerIndex: Int) -> List<Pair<Uuid, Tile>>,
 ) : DebugGameScenario {
     override fun build(context: DebugGameScenarioContext): DebugGameScenarioResult {
         val currentGame = context.currentGame
         val module = taiwanScenarioModule(currentGame)
-        val initialization = formalFirstRoundKeepingSeats(context, module)
+        val initialization = if (invokerDeals) {
+            formalFirstRoundKeepingSeats(context, module, dealerPlayerId = context.invokingPlayerId)
+        } else {
+            formalFirstRoundKeepingSeats(context, module)
+        }
         val dealt = initialization.tableState.withFaces(faces(initialization.tableState, initialization.tableState.seatOf(context.invokingPlayerId)))
         val dealOrderHandTileIdsBySeatIndex = dealt.players.withIndex().associate { (seatIndex, player) ->
             seatIndex to player.hand.tiles.map { tile -> tile.id }

@@ -46,6 +46,18 @@ class TaiwanDebugGameScenariosTest {
         assertTrue(TaiwanTileTypes.isFlower(opened.tableState.reservedWallTiles.first().tile))
     }
 
+    /** 呼叫者當莊家、起手一張花；摸開門牌後補一次花就結束，補到的牌與開門牌都不是花，其他人沒有花。 */
+    @Test
+    fun `dealer flower scenario makes the invoker the dealer with one opening flower`() {
+        val (state, invokerId) = build("mahjongcraft:taiwan/debug/dealer_flower")
+        val dealer = state.dealerIndex
+
+        val opened = assertIs<TaiwanFlowerFlow.Result.Completed>(processOpening(state))
+
+        assertEquals(invokerId, state.players[dealer].id)
+        assertEquals(listOf(1, 0, 0, 0), (0 until PLAYERS).map { offset -> flowerCount(opened.tableState, dealer + offset) })
+    }
+
     /** 呼叫者起手七張花，下家亮出第八張時，呼叫者可以選擇七搶一。 */
     @Test
     fun `seven flowers scenario offers the invoker a seven-flower win`() {

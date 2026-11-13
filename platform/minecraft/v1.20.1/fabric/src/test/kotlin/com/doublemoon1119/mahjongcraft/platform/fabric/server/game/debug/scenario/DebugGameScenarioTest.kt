@@ -67,7 +67,7 @@ class DebugGameScenarioTest {
         }
     }
 
-    /** 開局情境保留這一桌的座位順序與莊家，分數為規則初始分數，規則組件已初始化。 */
+    /** 開局情境保留這一桌的座位順序與莊家（莊家補花情境改由呼叫者當莊家），分數為規則初始分數，規則組件已初始化。 */
     @Test
     fun `test opening scenarios keep seats and dealer and initialize the round`() {
         val registry = DebugGameScenarioRegistry()
@@ -78,7 +78,8 @@ class DebugGameScenarioTest {
             val state = registry.get(id)!!.build(context).game.tableState
 
             assertEquals(before.players.map { it.id }, state.players.map { it.id }, id)
-            assertEquals(before.dealerPlayerId, state.dealerPlayerId, id)
+            val expectedDealer = if (id == "mahjongcraft:taiwan/debug/dealer_flower") context.invokingPlayerId else before.dealerPlayerId
+            assertEquals(expectedDealer, state.dealerPlayerId, id)
             assertTrue(state.players.all { it.score == state.config.scoreConfig.initialScore }, id)
         }
         val riichi = registry.get("mahjongcraft:riichi/debug/wall_opening")!!.build(createFixture().context).game.tableState
@@ -553,6 +554,7 @@ class DebugGameScenarioTest {
             "mahjongcraft:riichi_three_player/debug/rob_north",
             "mahjongcraft:taiwan/debug/before_pao_pon",
             "mahjongcraft:taiwan/debug/crowded_melds",
+            "mahjongcraft:taiwan/debug/dealer_flower",
             "mahjongcraft:taiwan/debug/eight_flowers",
             "mahjongcraft:taiwan/debug/flower_replacement",
             "mahjongcraft:taiwan/debug/last_tile_flower",
@@ -563,6 +565,7 @@ class DebugGameScenarioTest {
         /** 以正式開局呈現的情境。 */
         val INITIAL_ROUND_IDS: Set<String> = setOf(
             "mahjongcraft:riichi/debug/wall_opening",
+            "mahjongcraft:taiwan/debug/dealer_flower",
             "mahjongcraft:taiwan/debug/eight_flowers",
             "mahjongcraft:taiwan/debug/flower_replacement",
             "mahjongcraft:taiwan/debug/ready_declaration",
