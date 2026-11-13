@@ -800,7 +800,6 @@ class FabricDebugPresentationCommand(
                 melds = if (seat == DebugVirtualTableLayout.DEBUG_SEAT_INDEX) previewMelds else emptyList(),
                 setAsideTileCount = 0,
                 standingTileCount = handSize,
-                hasDrawnTile = false,
                 playerCount = playerCount,
             )
             handShifts[seat] = handShift

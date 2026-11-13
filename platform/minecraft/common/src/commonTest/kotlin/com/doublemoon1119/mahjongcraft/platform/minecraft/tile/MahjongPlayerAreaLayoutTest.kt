@@ -78,11 +78,11 @@ class MahjongPlayerAreaLayoutTest {
         }
     }
 
-    /** 手牌讓開桌角區時剛好讓到保留的縫隙，不會讓得太少或太多；不需要讓開時維持置中。 */
+    /** 手牌讓開桌角區時，連同一律預留的摸牌位剛好讓到保留的縫隙，不會讓得太少或太多；不需要讓開時維持置中。 */
     @Test
     fun `yielding hand keeps exactly the corner gap`() {
         forEachLayout { input, layout ->
-            val handRight = MahjongTileTableLayout.handRowEdges(input.standingTileIds.size, input.drawnTileId != null).right - layout.handShift
+            val handRight = MahjongTileTableLayout.handRowEdges(input.standingTileIds.size, hasDrawnTile = true).right - layout.handShift
             val cornerTiles = layout.melds.flatten() + layout.setAside
             val cornerReach = maxOf(input.cornerWidth, cornerTiles.maxOfOrNull { tile -> requireNotNull(tile.alongOffsetFromCorner) + tile.halfAlong() } ?: 0.0)
             val gap = MahjongTileTableLayout.MELD_AREA_CORNER_OFFSET - cornerReach - handRight
@@ -199,6 +199,45 @@ class MahjongPlayerAreaLayoutTest {
             val ponXs = layout.melds[0].map { MahjongTileTableLayout.MELD_AREA_CORNER_OFFSET - requireNotNull(it.alongOffsetFromCorner) }
             val chiXs = layout.melds[1].map { MahjongTileTableLayout.MELD_AREA_CORNER_OFFSET - requireNotNull(it.alongOffsetFromCorner) }
             assertTrue(ponXs.min() > chiXs.max(), "Expected the first meld on the right")
+        }
+    }
+
+    /** 摸牌位一律預留：日麻各種桌角副露與台麻的牌區，摸牌前後立牌、副露與移出的牌都不移動。 */
+    @Test
+    fun `drawing a tile moves nothing in the player area`() {
+        forEachLayout { input, layout ->
+            val withoutDrawn = MahjongPlayerAreaLayout.compute(input.copy(drawnTileId = null))
+            assertEquals(withoutDrawn.handShift, layout.handShift, EPSILON, "Drawing moved the hand in $input")
+            assertEquals(withoutDrawn.standing, layout.standing)
+            assertEquals(withoutDrawn.melds, layout.melds)
+            assertEquals(withoutDrawn.setAside, layout.setAside)
+        }
+        TAIWAN_MELD_PATTERNS.forEach { pattern ->
+            (0..pattern.size).forEach { meldCount ->
+                (0..TAIWAN_FLOWER_COUNT).forEach { flowerCount ->
+                    val input = MahjongPlayerAreaLayoutInput(
+                        controllerX = 0,
+                        controllerY = 0,
+                        controllerZ = 0,
+                        tableFacing = MahjongTableFacing.NORTH,
+                        seatLayout = MahjongTableSeatLayout.forPlayerCount(4),
+                        seatIndex = 0,
+                        tileLayout = taiwanTileLayout(),
+                        wallStacksPerSide = TAIWAN_WALL_STACKS,
+                        standingTileIds = List(TAIWAN_HAND_SIZE - meldCount * MELD_HAND_TILES) { Uuid.random() },
+                        drawnTileId = Uuid.random(),
+                        melds = pattern.take(meldCount).map { it.create() },
+                        setAsideTileIds = List(flowerCount) { Uuid.random() },
+                        cornerWidth = 0.0,
+                    )
+                    val drawn = MahjongPlayerAreaLayout.compute(input)
+                    val withoutDrawn = MahjongPlayerAreaLayout.compute(input.copy(drawnTileId = null))
+
+                    assertEquals(withoutDrawn.handShift, drawn.handShift, EPSILON, "Drawing moved the hand in $input")
+                    assertEquals(withoutDrawn.melds, drawn.melds)
+                    assertEquals(withoutDrawn.setAside, drawn.setAside)
+                }
+            }
         }
     }
 

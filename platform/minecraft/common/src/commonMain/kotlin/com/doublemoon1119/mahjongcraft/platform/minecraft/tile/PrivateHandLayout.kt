@@ -27,6 +27,9 @@ class PrivateHandLayout {
     /** 已確認的固定牌排幾何，不跟隨不同步抵達的單張換位封包抖動。 */
     private var row: Row? = null
 
+    /** 目前的牌排是否只由部分立牌推算；之後所有立牌排成等距連續的一列時直接改用兩端的中點。 */
+    private var rowProvisional = false
+
     /** 最後確認牌排時的原生終點；未對齊的中間封包不能覆蓋這份基準。 */
     private var previousTargets = emptyMap<Uuid, TileDisplayTransform>()
 
@@ -227,6 +230,7 @@ class PrivateHandLayout {
         crossingIds.clear()
         snappingIds.clear()
         row = null
+        rowProvisional = false
         previousTargets = emptyMap()
         lastTime = Double.NEGATIVE_INFINITY
     }
@@ -275,9 +279,11 @@ class PrivateHandLayout {
             // 牌排多了一張牌、全部排成等距連續的一列時，其餘牌的位置可能在張數改變前就已經換好、記在上次的位置裡；
             // 新加入的牌已有位置，兩端就是新的牌排。
             val joined = extent != null && publicOrder.any { id -> id !in previousTargets }
+            // 只由部分立牌推算的牌排可能沿用已經離開的牌的格位；所有立牌排成一列後就以兩端為準。
+            val confirmed = extent != null && rowProvisional
             // 還沒立起的牌（仍在牌牆上）不在牌排上，不影響核對；缺資料的牌則要等資料到齊。
             val notStanding = publicOrder.count { id -> inputs[id]?.target?.let { it.poseDegrees != 0.0f } == true }
-            if (candidates.size + notStanding != publicOrder.size || !(moved || replaced || joined)) return
+            if (candidates.size + notStanding != publicOrder.size || !(moved || replaced || joined || confirmed)) return
             if (drawnId != null) {
                 val drawn = inputs[drawnId]?.target ?: return
                 val edge = candidate.placement(publicOrder.lastIndex, publicOrder.size)
@@ -289,6 +295,7 @@ class PrivateHandLayout {
             }
         }
         row = candidate
+        rowProvisional = extent == null && candidates.size < publicOrder.size
         previousTargets = publicOrder.mapNotNull { id -> inputs[id]?.target?.let { id to it } }.toMap()
     }
 

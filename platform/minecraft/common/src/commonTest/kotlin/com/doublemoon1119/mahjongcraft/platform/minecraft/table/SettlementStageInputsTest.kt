@@ -156,7 +156,6 @@ class SettlementStageInputsTest {
                     melds = emptyList(),
                     setAsideTileCount = player.setAsideTiles.size,
                     standingTileCount = player.hand.tiles.size,
-                    hasDrawnTile = player.hand.lastDrawn != null,
                     playerCount = state.players.size,
                 ),
                 inputs.handShiftsBySeat.getValue(seat),
@@ -194,7 +193,6 @@ class SettlementStageInputsTest {
             melds = emptyList(),
             setAsideTileCount = 0,
             standingTileCount = state.players[0].hand.tiles.size,
-            hasDrawnTile = state.players[0].hand.lastDrawn != null,
             playerCount = state.players.size,
         )
 

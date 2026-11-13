@@ -958,7 +958,6 @@ class FabricGamePresentationPublisher(
                             melds = emptyList(),
                             setAsideTileCount = 0,
                             standingTileCount = tileIds.size,
-                            hasDrawnTile = false,
                             playerCount = tableState.players.size,
                         )
                     }
@@ -1313,7 +1312,6 @@ class FabricGamePresentationPublisher(
                     melds = melds,
                     setAsideTileCount = winner.setAsideTiles.size,
                     standingTileCount = organizedHand.tiles.size - if (request.isTsumo) 1 else 0,
-                    hasDrawnTile = request.isTsumo,
                     playerCount = state.players.size,
                 ),
                 winningTileId = request.winningTileId,

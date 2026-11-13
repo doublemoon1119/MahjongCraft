@@ -1064,7 +1064,6 @@ class PrivateHandLayoutTest {
                 melds = melds,
                 setAsideTileCount = 0,
                 standingTileCount = standing.size,
-                hasDrawnTile = drawnId != null,
                 playerCount = 4,
             )
             val standingInputs = PublicHandOrder.arrange(standing).mapIndexed { orderIndex, id ->

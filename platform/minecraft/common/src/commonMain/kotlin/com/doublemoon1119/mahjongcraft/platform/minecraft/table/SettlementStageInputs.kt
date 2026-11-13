@@ -99,7 +99,6 @@ private fun TableState.handShiftsBySeat(
         melds = melds,
         setAsideTileCount = player.setAsideTiles.size,
         standingTileCount = player.hand.tiles.size,
-        hasDrawnTile = player.hand.lastDrawn != null,
         playerCount = players.size,
     )
 }.toMap()

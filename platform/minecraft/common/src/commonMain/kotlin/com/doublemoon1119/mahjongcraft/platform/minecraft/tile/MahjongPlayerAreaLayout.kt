@@ -27,7 +27,6 @@ object MahjongPlayerAreaLayout {
             melds = input.melds,
             setAsideTileCount = input.setAsideTileIds.size,
             standingTileCount = input.standingTileIds.size,
-            hasDrawnTile = input.drawnTileId != null,
             playerCount = input.seatLayout.playerCount,
         )
         // 只有全部立牌已公開平放時才使用玩家牌序；仍有隱藏或直立牌時不洩漏私人排序。還沒理過的牌依補進順序接在最右邊。
@@ -104,13 +103,14 @@ object MahjongPlayerAreaLayout {
     /**
      * 立牌與摸牌位整排的平移；需要手牌位置但不需要整個牌區的呈現（例如發牌、胡牌、流局攤牌）用它，與 [compute] 結果一致。
      *
+     * 摸牌位一律預留，不論目前有沒有摸到的牌，所以摸牌與打牌時手牌不移動，只有立牌張數、副露或移出的牌改變時才重新平移。
+     *
      * @param tileLayout 該規則的桌面牌位配置。
      * @param wallStacksPerSide 牌牆每面的墩數；沒有實體牌牆時為 null。
      * @param cornerWidth 桌角物件佔用的寬度。
      * @param melds 依宣告順序排列的副露。
      * @param setAsideTileCount 接在副露後面的移出牌張數。
      * @param standingTileCount 立牌張數，不含摸牌位。
-     * @param hasDrawnTile 是否另有摸牌位。
      * @param playerCount 本局玩家人數，決定被鳴的牌橫放的位置。
      * @return 往玩家左手邊平移的距離，負值往右手邊。
      */
@@ -121,9 +121,8 @@ object MahjongPlayerAreaLayout {
         melds: List<MahjongMeldTileGroup>,
         setAsideTileCount: Int,
         standingTileCount: Int,
-        hasDrawnTile: Boolean,
         playerCount: Int,
-    ): Double = plan(tileLayout, wallStacksPerSide, cornerWidth, melds, setAsideTileCount, standingTileCount, hasDrawnTile, playerCount).handShift
+    ): Double = plan(tileLayout, wallStacksPerSide, cornerWidth, melds, setAsideTileCount, standingTileCount, playerCount).handShift
 
     /**
      * 依配置排出副露、移出的牌與手牌平移。
@@ -138,7 +137,6 @@ object MahjongPlayerAreaLayout {
         melds: List<MahjongMeldTileGroup>,
         setAsideTileCount: Int,
         standingTileCount: Int,
-        hasDrawnTile: Boolean,
         playerCount: Int,
     ): AreaPlan {
         val handBand = MahjongTileTableLayout.handRowBand()
@@ -146,8 +144,8 @@ object MahjongPlayerAreaLayout {
         val groups = melds.map { meld -> meldGroup(meld, tileLayout, playerCount) } +
             listOfNotNull(List(setAsideTileCount) { PlannedSlot(tileId = null, isSideways = false) }.takeIf { it.isNotEmpty() })
         return when (tileLayout.meldArea) {
-            TableMeldArea.CORNER -> cornerPlan(groups, melds.size, cornerWidth, standingTileCount, hasDrawnTile, handSpan)
-            TableMeldArea.BETWEEN_WALL_AND_HAND -> frontPlan(groups, melds.size, tileLayout, wallStacksPerSide, standingTileCount, hasDrawnTile, handSpan)
+            TableMeldArea.CORNER -> cornerPlan(groups, melds.size, cornerWidth, standingTileCount, handSpan)
+            TableMeldArea.BETWEEN_WALL_AND_HAND -> frontPlan(groups, melds.size, tileLayout, wallStacksPerSide, standingTileCount, handSpan)
         }
     }
 
@@ -162,7 +160,6 @@ object MahjongPlayerAreaLayout {
         meldCount: Int,
         cornerWidth: Double,
         standingTileCount: Int,
-        hasDrawnTile: Boolean,
         handSpan: RowSpan,
     ): AreaPlan {
         var cursor = MahjongTileTableLayout.meldStartOffset(cornerWidth)
@@ -192,7 +189,7 @@ object MahjongPlayerAreaLayout {
             Double.POSITIVE_INFINITY
         }
         return AreaPlan(
-            handShift = MahjongTileTableLayout.fitHandShift(standingTileCount, hasDrawnTile, handSpan.left, rightLimit),
+            handShift = MahjongTileTableLayout.fitHandShift(standingTileCount, RESERVE_DRAWN_SLOT, handSpan.left, rightLimit),
             meldTiles = placed.take(meldCount),
             setAsideTiles = placed.drop(meldCount).flatten(),
         )
@@ -211,7 +208,6 @@ object MahjongPlayerAreaLayout {
         tileLayout: TableTileLayoutProfile,
         wallStacksPerSide: Int?,
         standingTileCount: Int,
-        hasDrawnTile: Boolean,
         handSpan: RowSpan,
     ): AreaPlan {
         val rowZ = MahjongTileTableLayout.FRONT_MELD_ROW_Z
@@ -249,10 +245,9 @@ object MahjongPlayerAreaLayout {
 
         val overflows = frontCount < items.size
         // 全部放得下時整列對齊立牌的中心，超出可用範圍時往內收；放不下時整列已經塞滿，從右端排起。
-        // 中心不計摸牌位，摸牌與打牌時副露不跟著移動。
-        val unblockedHandShift = MahjongTileTableLayout.fitHandShift(standingTileCount, hasDrawnTile, handSpan.left, handSpan.right)
-        val standingCentre = MahjongTileTableLayout.handRowEdges(standingTileCount, false).let { (it.left + it.right) / 2.0 } -
-            MahjongTileTableLayout.fitHandShift(standingTileCount, false, handSpan.left, handSpan.right)
+        // 中心不計摸牌位；摸牌位一律預留，摸牌與打牌時立牌與副露都不移動。
+        val unblockedHandShift = MahjongTileTableLayout.fitHandShift(standingTileCount, RESERVE_DRAWN_SLOT, handSpan.left, handSpan.right)
+        val standingCentre = MahjongTileTableLayout.handRowEdges(standingTileCount, false).let { (it.left + it.right) / 2.0 } - unblockedHandShift
         // 每張牌之後都算了一段間距，最後一張之後的不屬於牌列本身。
         val rowWidth = totalWidth(frontCount, gap) - if (frontCount > 0) MahjongTileDimensions.TILE_SMALL_PADDING else 0.0
         val planned = MutableList(items.size) { emptyList<PlannedTile>() }
@@ -276,7 +271,7 @@ object MahjongPlayerAreaLayout {
             }.reversed()
         }
         val handShift = if (overflows) {
-            MahjongTileTableLayout.fitHandShift(standingTileCount, hasDrawnTile, handSpan.left, overflowCursor - MahjongTileTableLayout.HAND_CORNER_GAP)
+            MahjongTileTableLayout.fitHandShift(standingTileCount, RESERVE_DRAWN_SLOT, handSpan.left, overflowCursor - MahjongTileTableLayout.HAND_CORNER_GAP)
         } else {
             unblockedHandShift
         }
@@ -339,6 +334,9 @@ object MahjongPlayerAreaLayout {
 
     /** 這張副露牌是否蓋著擺放，依副露的逐牌描述判定，不以副露種類推測。 */
     private fun MahjongMeldTileGroup.isFaceDown(tileId: Uuid): Boolean = allTilesFaceDown || tileId in faceDownTileIds
+
+    /** 計算手牌平移時一律預留摸牌位，摸牌與打牌時手牌不移動。 */
+    private const val RESERVE_DRAWN_SLOT: Boolean = true
 }
 
 /**
