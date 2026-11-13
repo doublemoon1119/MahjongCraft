@@ -25,6 +25,25 @@ object TableTileArrangement {
         val wallPlacements = wallTiles(input)
         wallPlacements.forEach { result[it.tileId] = it }
         val handPoses = input.handPoseStates.associate { it.tileId to it.pose }
+        val scatteredDiscards = if (input.tileLayout.discardArea == TableDiscardArea.SCATTERED) {
+            val entryByTileId = state.players.withIndex().flatMap { (seatIndex, player) ->
+                player.discardPile.entries.map { entry -> entry.tile.id to ScatteredDiscardEntry(entry.tile.id, seatIndex, entry.isTaken) }
+            }.toMap()
+            MahjongTileTableLayout.scatteredDiscardPlacements(
+                controllerX = input.controllerX,
+                controllerY = input.controllerY,
+                controllerZ = input.controllerZ,
+                tableFacing = input.tableFacing,
+                seatLayout = input.seatLayout,
+                tileLayout = input.tileLayout,
+                wallStacksPerSide = input.wallProjection?.stacksPerSide,
+                tableId = state.id,
+                roundSerial = state.roundSerial,
+                discards = state.discardOrder.map(entryByTileId::getValue),
+            )
+        } else {
+            emptyMap()
+        }
         state.players.forEachIndexed { seatIndex, player ->
             val melds = player.hand.melds.map { it.toPresentation(state.config.revealsClosedKanTiles).toTileGroup() }
             val setAsideTiles = player.tileAreas.areas.flatMap { area -> area.tiles.map { it to area.id } }
@@ -74,22 +93,11 @@ object TableTileArrangement {
                 result[placed.tileId] = ArrangedTile(placed.tileId, row, order, placed.placement, TilePose.FACE_UP)
             }
             if (input.tileLayout.discardArea == TableDiscardArea.SCATTERED) {
-                // 散放的位置依這家打出的第幾張決定，被鳴走的牌也計入，其他牌不會因此移動。
+                // 散放的位置依全桌先打出的牌決定，被鳴走的牌也計入，其他牌不會因此移動。
                 val discardRow = TileRowKey(TileRegion.DISCARD, player.id, null)
-                player.discardPile.entries.withIndex().filterNot { (_, entry) -> entry.isTaken }.forEachIndexed { order, (index, entry) ->
-                    val placement = MahjongTileTableLayout.scatteredDiscardPlacement(
-                        controllerX = input.controllerX,
-                        controllerY = input.controllerY,
-                        controllerZ = input.controllerZ,
-                        tableFacing = input.tableFacing,
-                        seatLayout = input.seatLayout,
-                        seatIndex = seatIndex,
-                        tileLayout = input.tileLayout,
-                        wallStacksPerSide = input.wallProjection?.stacksPerSide,
-                        discardIndex = index,
-                        tileId = entry.tile.id,
-                    )
-                    result[entry.tile.id] = ArrangedTile(entry.tile.id, discardRow, order, placement, TilePose.FACE_UP)
+                player.discardPile.entries.filterNot { it.isTaken }.forEachIndexed { order, entry ->
+                    val tileId = entry.tile.id
+                    result[tileId] = ArrangedTile(tileId, discardRow, order, scatteredDiscards.getValue(tileId), TilePose.FACE_UP)
                 }
                 return@forEachIndexed
             }
