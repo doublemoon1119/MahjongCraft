@@ -117,6 +117,15 @@ internal enum class MahjongPresentationToggle(
         update = { config, enabled -> config.copy(latestDiscardHighlightEnabled = enabled) },
     ),
 
+    /** 捨牌來源。 */
+    DiscardSource(
+        nameKey = MinecraftClientConfigScreenKeys.PRESENTATION_DISCARD_SOURCE,
+        descriptionKey = MinecraftClientConfigScreenKeys.PRESENTATION_DISCARD_SOURCE_DESCRIPTION,
+        section = MahjongPresentationToggleSection.VISUAL_FEEDBACK,
+        read = { it.discardSourceEnabled },
+        update = { config, enabled -> config.copy(discardSourceEnabled = enabled) },
+    ),
+
     /** 打牌提示。 */
     DiscardPopup(
         nameKey = MinecraftClientConfigScreenKeys.PRESENTATION_DISCARD_POPUP,

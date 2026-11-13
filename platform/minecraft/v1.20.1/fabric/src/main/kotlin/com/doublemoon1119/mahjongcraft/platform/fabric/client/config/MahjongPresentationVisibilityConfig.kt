@@ -17,6 +17,7 @@ import kotlinx.serialization.Serializable
  * @property matchSettlementEnabled 是否顯示整場結算面板。
  * @property matchingTileHighlightEnabled 是否高亮準星所指牌張的同種可見牌。
  * @property latestDiscardHighlightEnabled 規則有開最新捨牌標示時，是否讓最後打出的牌外框發光。
+ * @property discardSourceEnabled 準星指著打出過的牌時，是否在準星下方顯示是誰打出的。
  * @property discardPopupEnabled 是否顯示捨牌落地後的短暫牌面提示。
  * @property meldPopupEnabled 是否顯示鳴牌落地後的短暫牌組提示。
  * @property automaticControlStatusEnabled 是否顯示目前已啟用的自動操作狀態 HUD。
@@ -34,6 +35,7 @@ data class MahjongPresentationVisibilityConfig(
     @SerialName("match-settlement-enabled") val matchSettlementEnabled: Boolean = true,
     @SerialName("matching-tile-highlight-enabled") val matchingTileHighlightEnabled: Boolean = true,
     @SerialName("latest-discard-highlight-enabled") val latestDiscardHighlightEnabled: Boolean = true,
+    @SerialName("discard-source-enabled") val discardSourceEnabled: Boolean = true,
     @SerialName("discard-popup-enabled") val discardPopupEnabled: Boolean = true,
     @SerialName("meld-popup-enabled") val meldPopupEnabled: Boolean = true,
     @SerialName("automatic-control-status-enabled") val automaticControlStatusEnabled: Boolean = true,

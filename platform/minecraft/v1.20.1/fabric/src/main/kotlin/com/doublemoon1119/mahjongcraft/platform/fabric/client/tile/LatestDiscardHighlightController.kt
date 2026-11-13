@@ -12,13 +12,14 @@ import kotlin.uuid.toKotlinUuid
 
 /**
  * 逐 client tick 讓每桌最後打出、仍留在牌河的那張牌外框發光；規則的 [TableTileLayoutProfile.highlightsLatestDiscard]
- * 與玩家的顯示設定都開著才顯示，牌還在飛行動畫中時不亮。
+ * 與玩家的顯示設定都開著才顯示，牌還沒落到牌河或還在移動時不亮。
  */
 class LatestDiscardHighlightController(
     private val stateStore: ClientMahjongStateStore,
     private val moduleRegistry: MahjongModuleRegistry,
     private val layoutProfiles: TableTileLayoutProfileRegistry,
     private val configStore: MahjongClientConfigStore,
+    private val settlement: ClientDiscardSettlementTracker,
 ) {
     /** 註冊 client tick 更新。 */
     fun register() {
@@ -43,7 +44,10 @@ class LatestDiscardHighlightController(
         if (latestDiscards.isEmpty()) return
         tiles.asSequence()
             .filter { tile -> tile.managedByGame && !tile.animating }
-            .filter { tile -> tile.managedTableId?.let { tableId -> (tableId to tile.uuid.toKotlinUuid()) in latestDiscards } == true }
+            .filter { tile ->
+                val tileId = tile.uuid.toKotlinUuid()
+                tile.managedTableId?.let { tableId -> (tableId to tileId) in latestDiscards && settlement.isSettled(tableId, tileId) } == true
+            }
             .forEach { tile -> tile.setLatestDiscardHighlight(HIGHLIGHT_COLOR) }
     }
 

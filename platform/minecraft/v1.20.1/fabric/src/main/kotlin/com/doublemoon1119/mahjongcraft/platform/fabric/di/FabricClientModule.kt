@@ -49,7 +49,9 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.client.state.ClientAutoma
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.state.ClientMahjongStateStore
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.table.ClientTableSpaceObstructionStore
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.table.TableSpaceObstructionRenderer
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.tile.ClientDiscardSettlementTracker
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.tile.ClientHandTileLayoutController
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.tile.DiscardSourceHudRenderer
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.tile.FabricHandSortCommand
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.tile.FabricTileLabelCommand
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.tile.LatestDiscardHighlightController
@@ -136,5 +138,7 @@ val fabricClientModule = module {
     single<FabricTileLabelCommand>()
     single<ClientHandTileLayoutController>()
     single<MatchingTileHighlightController>()
+    single<ClientDiscardSettlementTracker>()
     single<LatestDiscardHighlightController>()
+    single<DiscardSourceHudRenderer>()
 }

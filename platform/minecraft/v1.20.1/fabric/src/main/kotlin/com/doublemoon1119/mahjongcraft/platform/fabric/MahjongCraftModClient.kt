@@ -66,6 +66,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.client.room.isShowingRoom
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.state.ClientMahjongStateStore
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.table.ClientTableSpaceObstructionStore
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.table.TableSpaceObstructionRenderer
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.tile.ClientDiscardSettlementTracker
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.tile.ClientHandTileLayoutBridge
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.tile.ClientHandTileLayoutController
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.tile.FabricHandSortCommand
@@ -179,6 +180,7 @@ class MahjongCraftModClient : ClientModInitializer {
         val decisionHudController = koin.get<PlayerDecisionHudController>()
         decisionHudController.registerEvents()
         koin.get<MatchingTileHighlightController>().register()
+        koin.get<ClientDiscardSettlementTracker>().register()
         koin.get<LatestDiscardHighlightController>().register()
 
         val json = koin.get<NetworkJson>()
