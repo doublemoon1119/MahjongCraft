@@ -207,11 +207,29 @@ class FabricDebugPresentationCommand(
         )
 
     /**
-     * 建立 `exhaustive_draw_settlement`：一般、副露、九種九牌、分數變動與流局滿貫外的中止流局預覽。
+     * 建立 `exhaustive_draw_settlement`：`riichi` 底下日麻的一般、副露、九種九牌與分數變動預覽，以及不分規則、依流局原因 ID
+     * 預覽的中止流局。
      *
      * @return 已包含引數與執行處理的子指令節點，供上層指令註冊。
      */
     fun buildExhaustiveDrawSettlementCommand(): LiteralArgumentBuilder<ServerCommandSource> = literal(EXHAUSTIVE_DRAW_SETTLEMENT_SUBCOMMAND)
+        .then(buildRiichiExhaustiveDrawSettlementCommand())
+        .then(
+            literal(ABORTIVE_ARGUMENT).then(
+                argument(REASON_ARGUMENT, IdentifierArgumentType.identifier())
+                    .suggests(::suggestAbortiveDrawReasons)
+                    .executes { context ->
+                        previewSettlement(context.source, IdentifierArgumentType.getIdentifier(context, REASON_ARGUMENT).toString(), 0)
+                    },
+            ),
+        )
+
+    /**
+     * 建立 `exhaustive_draw_settlement riichi`：日麻的一般、副露、九種九牌與分數變動預覽。
+     *
+     * @return 日麻流局結算預覽的子指令節點。
+     */
+    private fun buildRiichiExhaustiveDrawSettlementCommand(): LiteralArgumentBuilder<ServerCommandSource> = literal(RIICHI_ARGUMENT)
         .then(
             literal(NORMAL_ARGUMENT).then(
                 argument(TENPAI_COUNT_ARGUMENT, IntegerArgumentType.integer(0, 4)).executes { context ->
@@ -261,23 +279,27 @@ class FabricDebugPresentationCommand(
                     },
                 ),
         )
-        .then(
-            literal(ABORTIVE_ARGUMENT).then(
-                argument(REASON_ARGUMENT, IdentifierArgumentType.identifier())
-                    .suggests(::suggestAbortiveDrawReasons)
-                    .executes { context ->
-                        previewSettlement(context.source, IdentifierArgumentType.getIdentifier(context, REASON_ARGUMENT).toString(), 0)
-                    },
-            ),
-        )
 
     /**
-     * 建立 `win_settlement`：自摸、榮和（可指定贏家數）、役滿、包牌役滿與流局滿貫的結算預覽，以及 `taiwan` 底下台灣麻將的
-     * 自摸、胡牌、八仙過海與七搶一。
+     * 建立 `win_settlement`：`riichi` 底下日麻的自摸、榮和（可指定贏家數）、役滿、包牌役滿與流局滿貫，以及 `taiwan` 底下
+     * 台灣麻將的自摸、胡牌、八仙過海與七搶一的結算預覽。
      *
      * @return 已包含引數與執行處理的子指令節點，供上層指令註冊。
      */
     fun buildWinSettlementCommand(): LiteralArgumentBuilder<ServerCommandSource> = literal(WIN_SETTLEMENT_SUBCOMMAND)
+        .then(buildRiichiWinSettlementCommand())
+        .then(
+            TaiwanWinSettlementPreview.entries.fold(literal(TAIWAN_ARGUMENT)) { node, preview ->
+                node.then(literal(preview.argument).executes { context -> previewTaiwanWinSettlement(context.source, preview) })
+            },
+        )
+
+    /**
+     * 建立 `win_settlement riichi`：日麻的自摸、榮和、役滿、包牌役滿與流局滿貫結算預覽。
+     *
+     * @return 日麻胡牌結算預覽的子指令節點。
+     */
+    private fun buildRiichiWinSettlementCommand(): LiteralArgumentBuilder<ServerCommandSource> = literal(RIICHI_ARGUMENT)
         .then(literal(TSUMO_ARGUMENT).executes { context -> previewWinSettlement(context.source, WinSettlementPreview.TSUMO, 1) })
         .then(
             literal(RON_ARGUMENT)
@@ -295,11 +317,6 @@ class FabricDebugPresentationCommand(
         .then(literal(YAKUMAN_ARGUMENT).executes { context -> previewWinSettlement(context.source, WinSettlementPreview.YAKUMAN, 1) })
         .then(literal(PAO_ARGUMENT).executes { context -> previewWinSettlement(context.source, WinSettlementPreview.PAO, 1) })
         .then(literal(NAGASHI_ARGUMENT).executes { context -> previewWinSettlement(context.source, WinSettlementPreview.NAGASHI, 1) })
-        .then(
-            TaiwanWinSettlementPreview.entries.fold(literal(TAIWAN_ARGUMENT)) { node, preview ->
-                node.then(literal(preview.argument).executes { context -> previewTaiwanWinSettlement(context.source, preview) })
-            },
-        )
 
     /**
      * 建立 `match_settlement`：終局排名揭曉預覽，可指定玩家數。
@@ -1392,8 +1409,11 @@ class FabricDebugPresentationCommand(
         /** 流局滿貫結算 literal。 */
         const val NAGASHI_ARGUMENT: String = "nagashi"
 
-        /** `win_settlement taiwan` 台灣麻將結算預覽 literal。 */
+        /** 台灣麻將預覽分類 literal。 */
         const val TAIWAN_ARGUMENT: String = "taiwan"
+
+        /** 日本麻將預覽分類 literal。 */
+        const val RIICHI_ARGUMENT: String = "riichi"
 
         /** 台灣麻將一般胡牌預覽的立牌張數。 */
         const val TAIWAN_PREVIEW_HAND_SIZE: Int = 16

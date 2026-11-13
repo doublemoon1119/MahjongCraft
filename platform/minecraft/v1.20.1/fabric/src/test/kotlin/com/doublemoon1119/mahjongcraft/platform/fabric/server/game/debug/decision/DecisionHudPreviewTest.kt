@@ -64,7 +64,7 @@ class DecisionHudPreviewTest {
     @Test
     fun `taiwan analysis previews use taiwan statuses`() {
         val previews = FabricDebugDecisionCommand.DecisionHudPreview.entries
-            .filter { it.commandName.startsWith("taiwan_discard_") }
+            .filter { it.ruleGroup == FabricDebugDecisionCommand.DecisionHudRuleGroup.TAIWAN }
 
         previews.forEach { preview ->
             assertEquals(BuiltInRuleModuleIds.TAIWAN, preview.prompt("preview", "tile").ruleModuleId)

@@ -46,10 +46,14 @@ class FabricDebugProgressionCommandTest {
         assertNull(node.command, "match_progression is not executable on its own")
     }
 
-    /** 八個內建情境各自掛一個可直接執行的 literal，且沒有更深的子節點。 */
+    /** 八個內建日麻情境各自在 `riichi` 底下掛一個可直接執行的 literal，且沒有更深的子節點。 */
     @Test
     fun `match progression keeps every built-in scenario literal`() {
-        val children = command.buildMatchProgressionCommand().build().children
+        val node = command.buildMatchProgressionCommand().build()
+        assertEquals(setOf("riichi"), node.children.map(CommandNode<ServerCommandSource>::getName).toSet())
+        val riichi = node.getChild("riichi")
+        assertNull(riichi.command, "match_progression riichi is not executable on its own")
+        val children = riichi.children
 
         assertEquals(
             setOf(
