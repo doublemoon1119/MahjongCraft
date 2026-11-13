@@ -55,12 +55,13 @@ internal fun WinSettlementRevealSequence.snapshot(): WinSettlementRevealSequence
  * 建立胡牌結算模板的獨立快照。
  *
  * @receiver 要複製的胡牌結算模板。
- * @return 不共用布局樹、揭示音效清單或詳情標籤 map 的模板快照。
+ * @return 不共用布局樹、揭示音效清單、詳情標籤 map 或贏家牌欄位集合的模板快照。
  */
 internal fun WinSettlementPresentationTemplate.snapshot(): WinSettlementPresentationTemplate = copy(
     root = root.snapshot(),
     reveal = reveal.snapshot(),
     detailFieldLabelKeys = detailFieldLabelKeys.toMap(),
+    winnerTileDetailFields = winnerTileDetailFields.toSet(),
 )
 
 /**

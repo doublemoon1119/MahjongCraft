@@ -416,11 +416,17 @@ object MinecraftHistoryScreenKeys {
     /** 未記錄完整和牌牌組提示。 */
     const val STATE_WINNING_HAND_UNAVAILABLE = "mahjongcraft.history_screen.state.winning_hand_unavailable"
 
+    /** 副露被鳴的牌的來源玩家說明。 */
+    const val STATE_MELD_CLAIMED_FROM = "mahjongcraft.history_screen.state.meld_claimed_from"
+
+    /** 加槓補上的牌的說明。 */
+    const val STATE_MELD_ADDED_KAN = "mahjongcraft.history_screen.state.meld_added_kan"
+
     /** 局內牌索引標籤。 */
     const val STATE_TILE_INDEX = "mahjongcraft.history_screen.state.tile_index"
 
-    /** 已被取走標籤。 */
-    const val STATE_TAKEN = "mahjongcraft.history_screen.state.taken"
+    /** 牌河中被鳴走的牌，帶鳴走它的玩家。 */
+    const val STATE_TAKEN_BY = "mahjongcraft.history_screen.state.taken_by"
 
     /** 牌牆展開區塊與兩區剩餘數量。 */
     const val STATE_WALL_SECTION = "mahjongcraft.history_screen.state.wall_section"

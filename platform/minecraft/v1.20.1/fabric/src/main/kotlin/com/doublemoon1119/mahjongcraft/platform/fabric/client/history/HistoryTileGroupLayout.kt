@@ -1,12 +1,7 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.client.history
 
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryReplayMeldDto
-import com.doublemoon1119.mahjongcraft.flow.network.dto.model.MeldTypeDto
-import com.doublemoon1119.mahjongcraft.flow.network.dto.model.toDomain
-import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.DecisionTileOrientationDto
-import com.doublemoon1119.mahjongcraft.platform.minecraft.table.meldDisplayDirection
-import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileTableLayout
 
 /**
  * 單張歷史牌面在一組牌面中的幾何位置與顯示方向。
@@ -136,10 +131,11 @@ internal object HistoryTileGroupLayoutCalculator {
     }
 
     /**
-     * 計算單一副露配置，保留來源牌的橫置位置與加槓疊牌。
+     * 計算單一副露配置：所有牌直立、依保存順序排成一列，加槓的四張也排成一列。
+     *
+     * 牌譜沒有桌面座位方向，因此不以橫放表示鳴牌來源；來源由呼叫端另外標記。
      *
      * @param meld 歷史資料中的副露。
-     * @param playerCount 完整歷史桌況中的玩家人數。
      * @param maxWidth 單組副露允許的最大寬度；超出時等比例縮小。
      * @param tileWidth 直立牌的寬度。
      * @param tileHeight 直立牌的高度。
@@ -148,68 +144,28 @@ internal object HistoryTileGroupLayoutCalculator {
      */
     fun meld(
         meld: HistoryReplayMeldDto,
-        playerCount: Int,
         maxWidth: Float,
         tileWidth: Float = DEFAULT_TILE_WIDTH,
         tileHeight: Float = DEFAULT_TILE_HEIGHT,
         gap: Float = DEFAULT_GAP,
     ): HistoryTileGroupLayout {
-        require(playerCount in 2..4) { "playerCount must be between 2 and 4" }
-        val isAddedKan = meld.type == MeldTypeDto.AddedKan && meld.tiles.size == ADDED_KAN_TILE_COUNT
-        val baseTiles = if (isAddedKan) meld.tiles.take(ADDED_KAN_BASE_TILE_COUNT) else meld.tiles
-        val displayDirection = meld.sourceDirection?.toDomain()?.let { meldDisplayDirection(it, playerCount) }
-        val sidewaysSlot = meld.sourceTile?.takeIf { it in baseTiles }?.let {
-            displayDirection
-        }?.let {
-            MahjongTileTableLayout.sidewaysSlotIndex(it, baseTiles.size)
+        val placements = meld.tiles.mapIndexed { index, tile ->
+            HistoryTilePlacement(
+                tile = tile,
+                x = index * (tileWidth + gap),
+                y = 0f,
+                width = tileWidth,
+                height = tileHeight,
+                faceDown = tile in meld.faceDownTileIds,
+            )
         }
-        val orderedBaseTiles = moveSourceToSlot(baseTiles, meld.sourceTile, sidewaysSlot)
-        val basePlacements = mutableListOf<HistoryTilePlacement>()
-        val baseHeights = orderedBaseTiles.mapIndexed { index, _ ->
-            if (index == sidewaysSlot) tileWidth else tileHeight
-        }
-        val baseHeight = baseHeights.maxOrNull() ?: 0f
-        var x = 0f
-        orderedBaseTiles.forEachIndexed { index, tile ->
-            val sideways = index == sidewaysSlot
-            val orientation = if (!sideways) {
-                DecisionTileOrientationDto.UPRIGHT
-            } else if (displayDirection == RelativeDirection.Left) {
-                DecisionTileOrientationDto.ROTATED_LEFT
-            } else {
-                DecisionTileOrientationDto.ROTATED_RIGHT
-            }
-            val width = if (sideways) tileHeight else tileWidth
-            val height = if (sideways) tileWidth else tileHeight
-            val faceDown = tile in meld.faceDownTileIds
-            basePlacements += HistoryTilePlacement(tile, x, baseHeight - height, width, height, orientation, faceDown)
-            x += width + gap
-        }
-
-        val placements = basePlacements.toMutableList()
-        if (isAddedKan) {
-            val stackIndex = sidewaysSlot ?: 0
-            val base = basePlacements.getOrNull(stackIndex)
-            val addedTile = meld.tiles.last()
-            if (base != null) {
-                placements += base.copy(
-                    tile = addedTile,
-                    y = -base.height * ADDED_KAN_STACK_RATIO,
-                    faceDown = addedTile in meld.faceDownTileIds,
-                )
-            }
-        }
-
-        val minY = placements.minOfOrNull { it.y } ?: 0f
-        val normalized = placements.map { it.copy(y = it.y - minY) }
-        val rawWidth = normalized.maxOfOrNull { it.x + it.width } ?: 0f
-        val rawHeight = normalized.maxOfOrNull { it.y + it.height } ?: 0f
+        val rawWidth = placements.maxOfOrNull { it.x + it.width } ?: 0f
+        val rawHeight = if (placements.isEmpty()) 0f else tileHeight
         val scale = if (rawWidth > maxWidth && maxWidth > 0f) maxWidth / rawWidth else 1f
         return HistoryTileGroupLayout(
-            placements = normalized.map { placement ->
+            placements = placements.map { placement ->
                 placement.copy(
                     x = placement.x * scale,
-                    y = placement.y * scale,
                     width = placement.width * scale,
                     height = placement.height * scale,
                 )
@@ -217,24 +173,6 @@ internal object HistoryTileGroupLayoutCalculator {
             width = rawWidth * scale,
             height = rawHeight * scale,
         )
-    }
-
-    /**
-     * 將實際來源牌移到規則指定的橫置格位，並維持其餘牌的歷史順序。
-     *
-     * @param tiles 副露中依歷史資料保存的牌索引。
-     * @param sourceTile 實際鳴取來源牌索引；沒有來源牌時為 null。
-     * @param targetSlot 規則指定的橫置格位；沒有來源牌時為 null。
-     * @return 將來源牌移到指定格位後的牌索引順序。
-     */
-    private fun moveSourceToSlot(tiles: List<Int>, sourceTile: Int?, targetSlot: Int?): List<Int> {
-        if (sourceTile == null || targetSlot == null) return tiles
-        val sourceIndex = tiles.indexOf(sourceTile)
-        if (sourceIndex < 0 || sourceIndex == targetSlot || targetSlot !in tiles.indices) return tiles
-        val reordered = tiles.toMutableList()
-        val source = reordered.removeAt(sourceIndex)
-        reordered.add(targetSlot.coerceIn(0, reordered.size), source)
-        return reordered
     }
 
     /** 預設直立牌寬度。 */
@@ -248,13 +186,4 @@ internal object HistoryTileGroupLayoutCalculator {
 
     /** 立牌與和牌張之間的額外間距。 */
     private const val WINNING_TILE_EXTRA_GAP = 6f
-
-    /** 加槓完整牌數。 */
-    private const val ADDED_KAN_TILE_COUNT = 4
-
-    /** 加槓原本碰牌的牌數。 */
-    private const val ADDED_KAN_BASE_TILE_COUNT = 3
-
-    /** 加槓疊牌向上偏移的牌高比例。 */
-    private const val ADDED_KAN_STACK_RATIO = 0.35f
 }

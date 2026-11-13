@@ -5,7 +5,6 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryReplayPla
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryRoundPositionDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryRoundStateDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryWinDetailValueDto
-import com.doublemoon1119.mahjongcraft.flow.network.dto.model.TileFaceViewDto
 import com.doublemoon1119.mahjongcraft.platform.minecraft.history.MinecraftHistoryScreenKeys
 import net.minecraft.client.gui.DrawContext
 import net.minecraft.client.gui.screen.Screen
@@ -40,6 +39,9 @@ internal class HistoryRoundStateScreen(
 
     /** 牌牆是否展開。 */
     private var wallExpanded = false
+
+    /** 上一個畫面游標指向的牌；被鳴的牌與被鳴走的空位依此一起蓋上強調色層。 */
+    private var linkedTile: Int? = null
 
     /** 前後及重試控制項。 */
     private val queryButtons = mutableListOf<ButtonWidget>()
@@ -141,6 +143,7 @@ internal class HistoryRoundStateScreen(
             session.controller.rememberRoundPosition(scroll)
         }
         var tooltip: List<Text>? = null
+        var hoveredTile: Int? = null
         context.enableScissor(layout.left, layout.contentTop, layout.cardRight, layout.contentBottom)
         if (state == null) {
             val message = if (status is HistoryBrowseStatus.Failed) Text.translatable(status.reason.translationKey) else Text.translatable(MinecraftHistoryScreenKeys.LOADING)
@@ -173,12 +176,21 @@ internal class HistoryRoundStateScreen(
                         }
                         is Row.Group -> {
                             context.fill(layout.left, y, layout.cardRight, y + row.height - 4, if (hover) HOVER_COLOR else CARD_COLOR)
-                            val hit = groups.render(context, row.layout, row.faceCatalog ?: state.tileCatalog, layout.left + 8, y + 4, mouseX, mouseY, row.taken, row.markers, session.tileAppearance(state.identity.matchId), showCatalogIndex = row.faceCatalog == null)
-                            if (hover) tooltip = hit?.plus(row.hint?.let(::listOf).orEmpty())
+                            val hit = groups.render(context, row.layout, state.tileCatalog, layout.left + 8, y + 4, mouseX, mouseY, row.taken, row.markers, row.notes, linkedTile, session.tileAppearance(state.identity.matchId))
+                            if (hover) hit?.let { hoveredTile = it.tile }
+                            if (hover) tooltip = hit?.tooltip?.plus(row.hint?.let(::listOf).orEmpty())
                         }
                         is Row.HandHeading -> Unit
                         is Row.PlayerCard -> {
                             context.fill(layout.left, y, layout.cardRight, y + row.height - 4, if (hover) HOVER_COLOR else CARD_COLOR)
+                            row.scoreChange?.takeIf { it != 0 }?.let { change ->
+                                val borderColor = OPAQUE or events.scoreChangeColor(change)
+                                val bottom = y + row.height - 4
+                                context.fill(layout.left, y, layout.cardRight, y + 1, borderColor)
+                                context.fill(layout.left, bottom - 1, layout.cardRight, bottom, borderColor)
+                                context.fill(layout.left, y, layout.left + 1, bottom, borderColor)
+                                context.fill(layout.cardRight - 1, y, layout.cardRight, bottom, borderColor)
+                            }
                             var nestedY = y + 8
                             row.rows.forEach { nested ->
                                 val nestedHover = !dragging && layout.containsCard(mouseX.toDouble(), mouseY.toDouble(), nestedY, nested.height)
@@ -208,8 +220,9 @@ internal class HistoryRoundStateScreen(
                                         if (actionHover || (!nested.actionEnabled && nestedHover)) tooltip = listOf(nested.tooltip)
                                     }
                                     is Row.Group -> {
-                                        val hit = groups.render(context, nested.layout, nested.faceCatalog ?: state.tileCatalog, layout.left + 16, nestedY + 4, mouseX, mouseY, nested.taken, nested.markers, session.tileAppearance(state.identity.matchId), showCatalogIndex = nested.faceCatalog == null)
-                                        if (nestedHover) tooltip = hit?.plus(nested.hint?.let(::listOf).orEmpty())
+                                        val hit = groups.render(context, nested.layout, state.tileCatalog, layout.left + 16, nestedY + 4, mouseX, mouseY, nested.taken, nested.markers, nested.notes, linkedTile, session.tileAppearance(state.identity.matchId))
+                                        if (nestedHover) hit?.let { hoveredTile = it.tile }
+                                        if (nestedHover) tooltip = hit?.tooltip?.plus(nested.hint?.let(::listOf).orEmpty())
                                     }
                                     is Row.Space, is Row.PlayerCard, is Row.WallSection -> Unit
                                 }
@@ -235,8 +248,9 @@ internal class HistoryRoundStateScreen(
                                     context.drawTextWithShadow(textRenderer, sectionLabel, layout.left + 16, nestedY, MUTED_COLOR)
                                     nestedY += LINE_HEIGHT
                                     val nestedHover = !dragging && layout.containsCard(mouseX.toDouble(), mouseY.toDouble(), nestedY, nested.height)
-                                    val hit = groups.render(context, nested.layout, nested.faceCatalog ?: state.tileCatalog, layout.left + 16, nestedY + 4, mouseX, mouseY, nested.taken, nested.markers, session.tileAppearance(state.identity.matchId), showCatalogIndex = nested.faceCatalog == null)
-                                    if (nestedHover) tooltip = hit?.plus(nested.hint?.let(::listOf).orEmpty())
+                                    val hit = groups.render(context, nested.layout, state.tileCatalog, layout.left + 16, nestedY + 4, mouseX, mouseY, nested.taken, nested.markers, nested.notes, linkedTile, session.tileAppearance(state.identity.matchId))
+                                    if (nestedHover) hit?.let { hoveredTile = it.tile }
+                                    if (nestedHover) tooltip = hit?.tooltip?.plus(nested.hint?.let(::listOf).orEmpty())
                                     nestedY += nested.height
                                 }
                             }
@@ -248,6 +262,8 @@ internal class HistoryRoundStateScreen(
             }
         }
         context.disableScissor()
+        // 兩端可能分屬先後畫出的牌組，強調色層沿用上一個畫面的指向結果。
+        linkedTile = hoveredTile
         val bar = layout.scrollbar(contentHeight, scroll)
         val track = layout.scrollbarBounds()
         if (state != null && bar.maximumScroll > 0) {
@@ -286,50 +302,14 @@ internal class HistoryRoundStateScreen(
     private fun rows(state: HistoryRoundStateDto): List<Row> = buildList {
         val maxWidth = (layout.contentWidth - 32).coerceAtLeast(1).toFloat()
 
-        /**
-         * 加入可換行文字。
-         *
-         * @param text 文字。
-         * @param color 文字色。
-         * @param portrait 可選玩家頭像。
-         */
-        fun line(text: Text, color: Int = TEXT_COLOR, portrait: HistoryParticipantSummaryDto? = null) {
-            val indent = if (portrait == null) 8 else 22
-            textRenderer.wrapLines(text, (layout.contentWidth - indent - 8).coerceAtLeast(1)).forEachIndexed { index, ordered ->
-                add(Row.Line(ordered, text, color, indent, portrait.takeIf { index == 0 }))
-            }
+        textRenderer.wrapLines(Text.translatable(MinecraftHistoryScreenKeys.ROUND_NUMBER, state.roundNumber), (layout.contentWidth - 16).coerceAtLeast(1)).forEach { ordered ->
+            add(Row.Line(ordered, Text.translatable(MinecraftHistoryScreenKeys.ROUND_NUMBER, state.roundNumber), ACCENT_COLOR, 8, null))
         }
-
-        /**
-         * 加入一組已測量牌面。
-         *
-         * @param group 牌面幾何。
-         * @param hint 可選額外提示。
-         */
-        fun group(group: HistoryTileGroupLayout, hint: Text? = null) {
-            if (group.placements.isEmpty()) line(Text.translatable(MinecraftHistoryScreenKeys.STATE_EMPTY), MUTED_COLOR) else add(Row.Group(group, hint))
-        }
-        line(Text.translatable(MinecraftHistoryScreenKeys.ROUND_NUMBER, state.roundNumber), ACCENT_COLOR)
         add(Row.Space(8))
-        state.outcome?.winnerDetails?.forEach { winner ->
-            line(Text.translatable(MinecraftHistoryScreenKeys.ROUND_SCORE, name(state, winner.seatIndex), state.players.firstOrNull { it.initialSeatIndex == winner.seatIndex }?.score ?: "—"), ACCENT_COLOR, participant(state, winner.seatIndex))
-            line(Text.translatable(MinecraftHistoryScreenKeys.STATE_WINNING_HAND), ACCENT_COLOR)
-            val winning = HistoryRoundStatePresenter.winningHand(state, winner, maxWidth)
-            if (winning == null) line(Text.translatable(MinecraftHistoryScreenKeys.STATE_WINNING_HAND_UNAVAILABLE), MUTED_COLOR) else group(winning)
-            winner.detailFields.forEach detailField@{ field ->
-                val value = field.value
-                if (value is HistoryWinDetailValueDto.TileFaces && value.faces.isEmpty()) return@detailField
-                events.detailLabel(session.controller.state.value.summary?.detail?.summary?.ruleId, field.id, session.settlementTemplates)?.let { line(it, MUTED_COLOR) }
-                events.detailText(field.id, value, session.settlementTemplates).forEach { line(it) }
-                if (value is HistoryWinDetailValueDto.TileFaces && value.faces.isNotEmpty()) {
-                    add(Row.Group(HistoryTileGroupLayoutCalculator.hand(value.faces.indices.toList(), maxWidth = maxWidth), faceCatalog = value.faces))
-                }
-            }
-            add(Row.Space(12))
-        }
         state.players.sortedBy { it.initialSeatIndex }.forEach { player ->
             val playerRows = buildPlayerRows(state, player, maxWidth)
-            add(Row.PlayerCard(player.initialSeatIndex, playerRows, playerRows.sumOf(Row::height) + 16))
+            val scoreChange = state.outcome?.scoreChangesBySeat?.get(player.initialSeatIndex)
+            add(Row.PlayerCard(player.initialSeatIndex, playerRows, playerRows.sumOf(Row::height) + 16, scoreChange))
             add(Row.Space(8))
         }
         val wallGroups = listOf(
@@ -416,25 +396,21 @@ internal class HistoryRoundStateScreen(
             ),
         )
         val orderedTiles = session.sortedHandTiles(state, player)
-        group(HistoryTileGroupLayoutCalculator.hand(orderedTiles, player.lastDrawn, maxWidth))
-        if (player.melds.isNotEmpty()) {
-            line(Text.translatable(MinecraftHistoryScreenKeys.STATE_MELDS), MUTED_COLOR)
-            group(
-                HistoryRoundStatePresenter.combine(
-                    player.melds.map {
-                        HistoryTileGroupLayoutCalculator.meld(
-                            meld = it,
-                            playerCount = state.players.size,
-                            maxWidth = maxWidth,
-                        )
-                    },
-                    maxWidth,
-                ),
-            )
+        group(HistoryRoundStatePresenter.cardHand(state, player, orderedTiles, maxWidth))
+        HistoryRoundStatePresenter.exposedTiles(state, player, maxWidth)?.let { exposed ->
+            line(exposed.heading(session.setAsideDisplays::findAreaName), MUTED_COLOR)
+            add(Row.Group(exposed.layout, notes = exposed.notes { seat -> name(state, seat) }))
         }
-        player.tileAreas.filter { it.tiles.isNotEmpty() }.forEach { area ->
-            line(Text.translatable(session.setAsideDisplays.findAreaName(area.areaId) ?: MinecraftHistoryScreenKeys.STATE_SET_ASIDE), MUTED_COLOR)
-            group(HistoryTileGroupLayoutCalculator.hand(area.tiles, maxWidth = maxWidth))
+        state.outcome?.winnerDetails?.firstOrNull { it.seatIndex == player.initialSeatIndex }?.let { winner ->
+            line(Text.translatable(MinecraftHistoryScreenKeys.ROUND_WIN_DETAILS), ACCENT_COLOR)
+            if (HistoryRoundStatePresenter.winningHand(state, winner, maxWidth) == null) {
+                line(Text.translatable(MinecraftHistoryScreenKeys.STATE_WINNING_HAND_UNAVAILABLE), MUTED_COLOR)
+            }
+            // 牌面欄位只列桌上公開的牌，這一頁的玩家卡片與牌山區已經畫出它們，因此只列文字欄位。
+            winner.detailFields.filterNot { it.value is HistoryWinDetailValueDto.TileFaces }.forEach { field ->
+                events.detailLabel(session.controller.state.value.summary?.detail?.summary?.ruleId, field.id, session.settlementTemplates)?.let { line(it, MUTED_COLOR) }
+                events.detailText(field.id, field.value, session.settlementTemplates).forEach { line(it) }
+            }
         }
         line(
             Text.translatable(MinecraftHistoryScreenKeys.STATE_DISCARDS_COUNT, player.discards.size),
@@ -442,7 +418,15 @@ internal class HistoryRoundStateScreen(
             fullText = Text.translatable(MinecraftHistoryScreenKeys.STATE_DISCARDS_COUNT_TOOLTIP, player.discards.size),
         )
         val river = HistoryRoundStatePresenter.discards(player, maxWidth, session.discardMarkers)
-        if (river.placements.isEmpty()) group(river) else add(Row.Group(river, taken = player.discards.filter { it.isTaken }.map { it.tile }.toSet(), markers = player.discards.associate { it.tile to it.markers }))
+        if (river.placements.isEmpty()) {
+            group(river)
+        } else {
+            val takenBySeat = HistoryRoundStatePresenter.takenBySeat(state)
+            val taken = player.discards.filter { it.isTaken }.associate { discard ->
+                discard.tile to Text.translatable(MinecraftHistoryScreenKeys.STATE_TAKEN_BY, name(state, takenBySeat.getValue(discard.tile)))
+            }
+            add(Row.Group(river, taken = taken, markers = player.discards.associate { it.tile to it.markers }))
+        }
         return@buildList
     }
 
@@ -613,16 +597,16 @@ internal class HistoryRoundStateScreen(
          *
          * @property layout 牌面幾何。
          * @property hint 額外提示。
-         * @property taken 已被取走的牌索引，保持空槽。
+         * @property taken 已被取走的牌索引對應取走它的說明，保持空槽。
          * @property markers 各牌公開標記。
-         * @property faceCatalog 獨立展示牌面，使用列內位置而非局內牌索引；null 時使用本局牌目錄。
+         * @property notes 各牌的額外說明，例如副露被鳴的牌來自哪位玩家。
          */
         data class Group(
             val layout: HistoryTileGroupLayout,
             val hint: Text? = null,
-            val taken: Set<Int> = emptySet(),
+            val taken: Map<Int, Text> = emptyMap(),
             val markers: Map<Int, Set<String>> = emptyMap(),
-            val faceCatalog: List<TileFaceViewDto>? = null,
+            val notes: Map<Int, List<HistoryTileNote>> = emptyMap(),
         ) : Row {
             /** 牌組高度與垂直內距。 */
             override val height: Int = ceil(layout.height).toInt() + 8
@@ -632,13 +616,15 @@ internal class HistoryRoundStateScreen(
          * 單一玩家的完整牌面卡片。
          *
          * @property seat 玩家初始座位，用於個別保存手牌排序狀態。
-         * @property rows 玩家標頭、手牌、副露與牌河列。
+         * @property rows 玩家標頭、手牌、副露、和牌明細與牌河列。
          * @property height 卡片總高度。
+         * @property scoreChange 本局結算的分數變化；增加時加上綠色外框、減少時加上紅色外框，沒有變化或尚未結算時不加。
          */
         data class PlayerCard(
             val seat: Int,
             val rows: List<Row>,
             override val height: Int,
+            val scoreChange: Int?,
         ) : Row
 
         /**
@@ -725,5 +711,8 @@ internal class HistoryRoundStateScreen(
 
         /** 指向牌組底色。 */
         val HOVER_COLOR = 0xB0343434.toInt()
+
+        /** 將 RGB 配色轉為不透明 ARGB 的 alpha 位元。 */
+        val OPAQUE = 0xFF000000.toInt()
     }
 }

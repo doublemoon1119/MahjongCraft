@@ -277,10 +277,18 @@ internal class HistoryRoundEventsScreen(
                             val round = currentRound()
                             val position = HistoryRoundPositionDto.AfterTransaction(transaction.index)
                             val state = round?.state?.takeIf { round.stateStatus == HistoryBrowseStatus.Ready && it.position == position }
-                            val hand = state?.let { HistoryRoundStatePresenter.winningHand(it, winner, (layout.contentWidth - 54).coerceAtLeast(1).toFloat()) }
+                            val handWidth = (layout.contentWidth - 54).coerceAtLeast(1).toFloat()
+                            val hand = state?.let { HistoryRoundStatePresenter.winningHand(it, winner, handWidth) }
                             when {
                                 winner.hand == null -> addText(Text.translatable(MinecraftHistoryScreenKeys.STATE_WINNING_HAND_UNAVAILABLE), MUTED_COLOR, 46)
-                                hand != null -> rows += Row.Hand(hand, state.tileCatalog)
+                                hand != null -> {
+                                    rows += Row.Hand(hand, state.tileCatalog)
+                                    val winnerState = state.players.firstOrNull { it.initialSeatIndex == winner.seatIndex }
+                                    winnerState?.let { HistoryRoundStatePresenter.exposedTiles(state, it, handWidth) }?.let { exposed ->
+                                        addText(exposed.heading(session.setAsideDisplays::findAreaName), MUTED_COLOR, 38)
+                                        rows += Row.Hand(exposed.layout, state.tileCatalog, exposed.notes { seat -> actorText(events.identity, seat) })
+                                    }
+                                }
                                 state != null -> addText(Text.translatable(MinecraftHistoryScreenKeys.STATE_WINNING_HAND_UNAVAILABLE), MUTED_COLOR, 46)
                                 round?.requestedPosition == position && round.stateStatus == HistoryBrowseStatus.Loading -> addText(Text.translatable(MinecraftHistoryScreenKeys.LOADING), MUTED_COLOR, 46)
                                 else -> {
@@ -297,6 +305,8 @@ internal class HistoryRoundEventsScreen(
                             row.detailFields.forEach detailField@{ field ->
                                 val tileValue = field.value as? HistoryWinDetailValueDto.TileFaces
                                 if (tileValue != null && tileValue.faces.isEmpty()) return@detailField
+                                // 只列贏家自己公開牌的欄位，展開的和牌區已在副露旁畫出這些牌。
+                                if (tileValue != null && eventPresenter.isWinnerTileDetailField(ruleId, field.id, settlementTemplates)) return@detailField
                                 eventPresenter.detailLabel(ruleId, field.id, settlementTemplates)?.let {
                                     addText(it, MUTED_COLOR, 46, identifiers = listOf(field.id))
                                 }
@@ -369,7 +379,7 @@ internal class HistoryRoundEventsScreen(
                             val asset = tile.toHistoryAssetKey(tileAssetRegistry)
                             val x = layout.left + row.indent + index * TILE_STEP
                             tileFaceRenderer.renderGui(context, asset, x, y, TILE_WIDTH, TILE_HEIGHT, appearance = session.tileAppearance())
-                            if (hovered && mouseX >= x && mouseX < x + TILE_WIDTH && mouseY >= y && mouseY < y + TILE_HEIGHT) tooltip = historyTileTooltip(tile.toHistoryNameText(session.tileDisplayNames), catalogIndex = null, taken = false, markerLabels = emptyList())
+                            if (hovered && mouseX >= x && mouseX < x + TILE_WIDTH && mouseY >= y && mouseY < y + TILE_HEIGHT) tooltip = historyTileTooltip(tile.toHistoryNameText(session.tileDisplayNames), catalogIndex = null, takenBy = null, markerLabels = emptyList())
                         }
                         is Row.LabeledTiles -> {
                             val textY = y + (TILE_HEIGHT - LINE_HEIGHT) / 2 + 1
@@ -380,7 +390,7 @@ internal class HistoryRoundEventsScreen(
                                 val asset = tile.toHistoryAssetKey(tileAssetRegistry)
                                 val x = layout.left + row.tileIndent + index * TILE_STEP
                                 tileFaceRenderer.renderGui(context, asset, x, y, TILE_WIDTH, TILE_HEIGHT, appearance = session.tileAppearance())
-                                if (hovered && mouseX >= x && mouseX < x + TILE_WIDTH && mouseY >= y && mouseY < y + TILE_HEIGHT) tooltip = historyTileTooltip(tile.toHistoryNameText(session.tileDisplayNames), catalogIndex = null, taken = false, markerLabels = emptyList())
+                                if (hovered && mouseX >= x && mouseX < x + TILE_WIDTH && mouseY >= y && mouseY < y + TILE_HEIGHT) tooltip = historyTileTooltip(tile.toHistoryNameText(session.tileDisplayNames), catalogIndex = null, takenBy = null, markerLabels = emptyList())
                             }
                         }
                         is Row.Space -> Unit
@@ -402,8 +412,8 @@ internal class HistoryRoundEventsScreen(
                             if (linkHover) tooltip = listOf(Text.translatable(if (row.inline) MinecraftHistoryScreenKeys.STATE_LOAD_WINNING_HAND_TOOLTIP else MinecraftHistoryScreenKeys.STATE_OPEN_TOOLTIP))
                         }
                         is Row.Hand -> {
-                            val hit = tileGroups.render(context, row.layout, row.catalog, layout.left + 46, y, mouseX, mouseY, appearance = session.tileAppearance())
-                            if (hovered) hit?.let { tooltip = it }
+                            val hit = tileGroups.render(context, row.layout, row.catalog, layout.left + 46, y, mouseX, mouseY, notes = row.notes, appearance = session.tileAppearance())
+                            if (hovered) hit?.let { tooltip = it.tooltip }
                         }
                     }
                     y += row.height
@@ -710,10 +720,12 @@ internal class HistoryRoundEventsScreen(
          *
          * @property layout 共用群組排列。
          * @property catalog 經驗證的同筆牌目錄。
+         * @property notes 各牌的額外說明，例如副露被鳴的牌來自哪位玩家。
          */
         data class Hand(
             val layout: HistoryTileGroupLayout,
             val catalog: List<TileFaceViewDto>,
+            val notes: Map<Int, List<HistoryTileNote>> = emptyMap(),
         ) : Row {
             /** 牌組完整高度與段落間距。 */
             override val height: Int = ceil(layout.height).toInt() + 8

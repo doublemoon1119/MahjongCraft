@@ -70,5 +70,7 @@ internal object TaiwanWinSettlementTemplates {
                 StandardWinSettlementLayout.summary(DEALER_TAI_TOTAL, argb = StandardWinSettlementLayout.CONDITIONAL_ARGB),
             ),
         ),
+        detailFieldLabelKeys = mapOf(WINNING_FLOWER to TaiwanTranslationKeys.SETTLEMENT_WINNING_FLOWER),
+        winnerTileDetailFields = setOf(FLOWERS),
     )
 }

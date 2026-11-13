@@ -98,6 +98,9 @@ object TaiwanTranslationKeys {
     /** 結算面板花牌列的標題。 */
     const val SETTLEMENT_FLOWERS: String = "mahjongcraft.taiwan.settlement.flowers"
 
+    /** 歷史畫面胡牌明細中，七搶一搶到的那張花牌的標題。 */
+    const val SETTLEMENT_WINNING_FLOWER: String = "mahjongcraft.taiwan.settlement.winning_flower"
+
     /** 結算面板的台數，帶台數。 */
     const val SETTLEMENT_TAI_COUNT: String = "mahjongcraft.taiwan.settlement.tai_count"
 
@@ -144,6 +147,7 @@ object TaiwanTranslationKeys {
         EXHAUSTIVE_DRAW_FOUR_KANS,
         EXHAUSTIVE_DRAW_FOUR_WINDS,
         SETTLEMENT_FLOWERS,
+        SETTLEMENT_WINNING_FLOWER,
         SETTLEMENT_TAI_COUNT,
         SETTLEMENT_DEALER_TAI_TOTAL,
         HISTORY_TILE_AREA_FLOWERS,

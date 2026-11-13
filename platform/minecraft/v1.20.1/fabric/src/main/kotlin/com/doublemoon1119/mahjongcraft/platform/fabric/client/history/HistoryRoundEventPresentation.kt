@@ -395,7 +395,7 @@ internal class HistoryRoundEventPresenter(
      * @param change 該次交易前後分數差。
      * @return RGB 配色。
      */
-    private fun scoreChangeColor(change: Int): Int = when {
+    fun scoreChangeColor(change: Int): Int = when {
         change > 0 -> 0x91c998
         change < 0 -> 0xde9696
         else -> 0xaaaaaa
@@ -451,6 +451,17 @@ internal class HistoryRoundEventPresenter(
      */
     fun detailLabel(ruleId: String?, fieldId: String, templates: WinSettlementPresentationTemplateRegistry): Text? = ruleId
         ?.let(templates::findTemplateForRule)?.detailFieldLabelKeys?.get(PresentationFieldId(fieldId))?.let(Text::translatable)
+
+    /**
+     * 欄位是否只列出贏家自己桌前的公開牌；牌譜已在贏家牌組旁畫出這些牌時不再重複列出。
+     *
+     * @param ruleId 對局規則模組 ID；未知時為 null。
+     * @param fieldId 已驗證的明細欄位識別碼。
+     * @param templates 正式結算模板註冊表。
+     * @return 對應模板宣告此欄位時為 true；沒有對應模板時為 false。
+     */
+    fun isWinnerTileDetailField(ruleId: String?, fieldId: String, templates: WinSettlementPresentationTemplateRegistry): Boolean = ruleId
+        ?.let(templates::findTemplateForRule)?.winnerTileDetailFields?.contains(PresentationFieldId(fieldId)) == true
 
     /** 將網路 DTO 的有單位數值還原為語意值。 */
     private fun HistoryWinDetailQuantityDto.toQuantity(): WinSettlementQuantity = WinSettlementQuantity(unitId, amount)

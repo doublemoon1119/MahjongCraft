@@ -129,6 +129,17 @@ class WinSettlementPresentationTemplateRegistryTest {
         )
     }
 
+    /** 內建台麻模板只把贏家花牌標為贏家桌前的牌，並為搶到的花提供標題。 */
+    @Test
+    fun `built in taiwan template marks only the winner flowers as winner tiles`() {
+        val registry = WinSettlementPresentationTemplateRegistryImpl()
+        registry.registerBundledWinSettlementTemplates()
+        val template = registry.findTemplate(TaiwanWinSettlementTemplates.TEMPLATE_KEY) ?: error("Missing built-in taiwan template")
+
+        assertEquals(setOf(TaiwanWinSettlementTemplates.FLOWERS), template.winnerTileDetailFields)
+        assertEquals("mahjongcraft.taiwan.settlement.winning_flower", template.detailFieldLabelKeys[TaiwanWinSettlementTemplates.WINNING_FLOWER])
+    }
+
     /** 版面提供預期的排列、權重及預設垂直對齊選項。 */
     @Test
     fun `layout exposes compose style arrangements and weighted children`() {

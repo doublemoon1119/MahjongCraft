@@ -52,52 +52,32 @@ class HistoryTileGroupLayoutTest {
         assertTrue(scaled.width <= 10f)
     }
 
-    /** 上家鳴牌應固定在副露最左格，且使用左旋方向。 */
+    /** 牌譜的副露全部直立，依保存順序排列，不因鳴牌來源改變順序或方向。 */
     @Test
-    fun `meld uses left source slot and orientation`() {
+    fun `meld keeps saved order with every tile upright`() {
         val layout = HistoryTileGroupLayoutCalculator.meld(
             HistoryReplayMeldDto(MeldTypeDto.Pon, listOf(1, 2, 3), 3, RelativeDirectionDto.Left, emptySet(), emptySet()),
-            playerCount = 4,
             maxWidth = 100f,
         )
 
-        assertEquals(0f, layout.placements.first().x)
-        assertEquals(3, layout.placements.first().tile)
-        assertEquals(DecisionTileOrientationDto.ROTATED_LEFT, layout.placements.first().orientation)
-        assertFalse(layout.placements[1].faceDown)
-        assertEquals(DecisionTileOrientationDto.UPRIGHT, layout.placements[1].orientation)
+        assertEquals(listOf(1, 2, 3), layout.placements.map { it.tile })
+        assertTrue(layout.placements.all { it.orientation == DecisionTileOrientationDto.UPRIGHT })
+        assertTrue(layout.placements.all { it.y == 0f })
+        assertFalse(layout.placements.any { it.faceDown })
     }
 
-    /** 兩人對局的非自身來源都呈現為對家位置。 */
+    /** 加槓的四張排成一列，補上的牌保留自己的牌面狀態。 */
     @Test
-    fun `two player meld maps non self source to across slot`() {
-        val layout = HistoryTileGroupLayoutCalculator.meld(
-            HistoryReplayMeldDto(MeldTypeDto.Pon, listOf(1, 2, 3), 3, RelativeDirectionDto.Right, emptySet(), emptySet()),
-            playerCount = 2,
-            maxWidth = 100f,
-        )
-
-        assertEquals(1, layout.placements.first().tile)
-        assertEquals(3, layout.placements[1].tile)
-        assertEquals(DecisionTileOrientationDto.ROTATED_RIGHT, layout.placements[1].orientation)
-    }
-
-    /** 加槓第四張不增加橫向格位，而是疊在原來源牌上方。 */
-    @Test
-    fun `added kan stacks fourth tile above source tile`() {
+    fun `added kan lays four tiles in a row`() {
         val layout = HistoryTileGroupLayoutCalculator.meld(
             HistoryReplayMeldDto(MeldTypeDto.AddedKan, listOf(1, 2, 3, 4), 2, RelativeDirectionDto.Across, setOf(4), emptySet()),
-            playerCount = 4,
             maxWidth = 100f,
         )
 
-        assertEquals(4, layout.placements.size)
-        val source = layout.placements[1]
-        val added = layout.placements.last()
-        assertEquals(source.x, added.x)
-        assertTrue(added.y < source.y)
-        assertTrue(added.faceDown)
-        assertTrue(layout.width < 4 * 18f + 3 * 2f)
+        assertEquals(listOf(1, 2, 3, 4), layout.placements.map { it.tile })
+        assertTrue(layout.placements.zipWithNext().all { (left, right) -> right.x > left.x && right.y == left.y })
+        assertTrue(layout.placements.last().faceDown)
+        assertEquals(4 * 18f + 3 * 2f, layout.width)
     }
 
     /** 不完整或超過四張的加槓資料應完整保留，避免靜默丟失歷史牌面。 */
@@ -105,7 +85,6 @@ class HistoryTileGroupLayoutTest {
     fun `malformed added kan keeps every saved tile`() {
         val layout = HistoryTileGroupLayoutCalculator.meld(
             HistoryReplayMeldDto(MeldTypeDto.AddedKan, listOf(1, 2, 3, 4, 5), 1, RelativeDirectionDto.Across, emptySet(), emptySet()),
-            playerCount = 4,
             maxWidth = 200f,
         )
 
@@ -118,7 +97,6 @@ class HistoryTileGroupLayoutTest {
     fun `closed kan hides only edge tiles`() {
         val layout = HistoryTileGroupLayoutCalculator.meld(
             HistoryReplayMeldDto(MeldTypeDto.ClosedKan, listOf(1, 2, 3, 4), null, RelativeDirectionDto.Self, setOf(1, 4), emptySet()),
-            playerCount = 4,
             maxWidth = 100f,
         )
 
@@ -131,7 +109,6 @@ class HistoryTileGroupLayoutTest {
     fun `meld scales as one group when width is limited`() {
         val layout = HistoryTileGroupLayoutCalculator.meld(
             HistoryReplayMeldDto(MeldTypeDto.OpenKan, listOf(1, 2, 3, 4), 1, RelativeDirectionDto.Right, emptySet(), emptySet()),
-            playerCount = 4,
             maxWidth = 30f,
         )
 
