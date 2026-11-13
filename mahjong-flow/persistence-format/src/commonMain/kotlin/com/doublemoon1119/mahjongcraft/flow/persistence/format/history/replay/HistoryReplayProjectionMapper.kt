@@ -89,6 +89,9 @@ internal object HistoryReplayProjectionMapper {
             player.handTiles + listOfNotNull(player.lastDrawn) + player.melds.flatMap { it.tiles } + player.discards.filterNot { it.isTaken }.map { it.tile }
         }
         require(held.map { it.tileIndex }.distinct().size == held.size) { "Replay tile appears in multiple holding areas" }
+        // 牌河的牌只會因為副露被取走，所以每張取走的牌都是某組副露的來源牌；副露牌不重複，對應的副露只有一組。
+        val meldSources = players.flatMap { player -> player.melds.mapNotNull { it.sourceTile } }.toSet()
+        require(players.all { player -> player.discards.all { !it.isTaken || it.tile in meldSources } }) { "Replay taken discard must be the source of a meld" }
         val phaseType = string(obj(root.getValue(ReplaySourceKeys.TURN_PHASE)).getValue(ReplaySourceKeys.TYPE))
         return HistoryRoundState(
             identity, roundNumber, position, tileCatalog, players, wall, reserved,

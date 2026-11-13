@@ -593,28 +593,50 @@ class CompactReplayRoundReaderGenuineTest {
     fun `reader restores discards with public markers without rule specific codecs`() = runTest {
         val declared = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 3))
         val taken = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 4))
+        val pair = List(2) { FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 4)) }
         val base = FakeTableStateFactory.create(
             players = listOf(
                 FakeMahjongPlayerFactory.create(
                     discardPile = RiichiDiscardPile(
                         listOf(
                             DiscardEntry(tile = declared, components = RiichiDiscardComponents.declaration()),
-                            DiscardEntry(tile = taken, isTaken = true),
+                            DiscardEntry(tile = taken),
                         ),
                     ),
                 ),
-                FakeMahjongPlayerFactory.create(discardPile = RiichiDiscardPile()),
+                FakeMahjongPlayerFactory.create(hand = Hand(tiles = pair), discardPile = RiichiDiscardPile()),
             ),
             config = RiichiRuleConfig(),
+        )
+        // 被取走的牌河牌與鳴走它的副露在同一次變化中出現。
+        val claimed = base.copy(
+            players = base.players.mapIndexed { index, player ->
+                when (index) {
+                    0 -> player.copy(discardPile = player.discardPile.takeLast())
+                    else -> player.copy(
+                        hand = Hand(
+                            melds = listOf(
+                                FakeMeldFactory.create(
+                                    type = MeldType.Pon,
+                                    tiles = pair + taken,
+                                    sourceTile = taken,
+                                    sourceDirection = RelativeDirection.Right,
+                                ),
+                            ),
+                        ),
+                    )
+                }
+            },
         )
         val matchId = Uuid.random()
         val scores = base.players.associate { it.id to it.score }
         val events = listOf(
             event(matchId, base.id, 1, 0L, HistoryFact.MatchStarted(base, GameFlowConfig(), emptyMap())),
+            event(matchId, base.id, 2, 50L, HistoryFact.TableChanged(HistoryTableResult.Checkpoint("test:pon", claimed))),
             event(
                 matchId,
                 base.id,
-                2,
+                3,
                 100L,
                 HistoryFact.RoundCompleted(
                     RoundCompletionSummary(
@@ -626,17 +648,18 @@ class CompactReplayRoundReaderGenuineTest {
                     ),
                 ),
             ),
-            event(matchId, base.id, 3, 100L, HistoryFact.MatchCompleted("test:completed", scores)).copy(transactionFirstSequence = 2),
+            event(matchId, base.id, 4, 100L, HistoryFact.MatchCompleted("test:completed", scores)).copy(transactionFirstSequence = 3),
         )
         val registries = bundledPersistenceRegistries()
         val document = CompactReplayCodec.encodeCompact(events, HistoryRecordingPersistenceMapper(registries), registries)
 
-        val state = assertIs<ReplayReadResult.Success<HistoryRoundState>>(reader().readState(document, matchId, 1, HistoryRoundPosition.Initial)).value
+        val state = assertIs<ReplayReadResult.Success<HistoryRoundState>>(reader().readState(document, matchId, 1, HistoryRoundPosition.AfterTransaction(1))).value
         val discards = state.players.single { it.initialSeatIndex == 0 }.discards
 
         assertEquals(listOf<Tile>(Tile.Numeric(Tile.Suit.Character, 3), Tile.Numeric(Tile.Suit.Character, 4)), discards.map { state.tileCatalog.tiles[it.tile.tileIndex].tile })
         assertEquals(listOf(setOf(RiichiHistoryDiscardMarkerIds.RIICHI_DECLARED), emptySet()), discards.map { it.markers })
         assertEquals(listOf(false, true), discards.map { it.isTaken })
+        assertEquals(discards[1].tile, state.players.single { it.initialSeatIndex == 1 }.melds.single().sourceTile)
     }
 
     /** 未宣告牌與重複玩家座位均拒絕，不以陣列位置補足身分。 */

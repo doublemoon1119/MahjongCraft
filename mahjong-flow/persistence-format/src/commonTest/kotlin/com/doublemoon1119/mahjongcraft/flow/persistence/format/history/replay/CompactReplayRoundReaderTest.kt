@@ -380,11 +380,14 @@ class CompactReplayRoundReaderTest {
                     discard(tile = 1),
                     discard(tile = 2, taken = true, markers = listOf("test:declared")),
                 ),
+                melds = listOf(pon(tiles = listOf(2, 3, 4), source = 2)),
             ),
             identity = identity(),
             roundNumber = 1,
             position = HistoryRoundPosition.Initial,
-            tileCatalog = HistoryRoundTileCatalog((listOf(Tile.Honor.East, Tile.Honor.South, Tile.Honor.West)).map(::TileFaceView)),
+            tileCatalog = HistoryRoundTileCatalog(
+                (listOf(Tile.Honor.East, Tile.Honor.South, Tile.Honor.West, Tile.Honor.West, Tile.Honor.West)).map(::TileFaceView),
+            ),
             budget = ReplayReadBudget(ReplayReadLimits()) {},
             componentViews = ComponentViewPersistenceRegistry(),
             poses = emptyMap(),
@@ -397,6 +400,31 @@ class CompactReplayRoundReaderTest {
             ),
             state.players.single().discards,
         )
+    }
+
+    /** 牌河的牌只會因副露被取走；標成取走卻不是任何副露來源牌的牌河項目會被拒絕。 */
+    @Test
+    fun `state mapping rejects a taken discard that no meld claimed`() {
+        assertFailsWith<IllegalArgumentException> {
+            HistoryReplayProjectionMapper.mapState(
+                projection = playerProjection(
+                    standingTiles = listOf(0),
+                    lastDrawn = null,
+                    wallTiles = emptyList(),
+                    discards = listOf(discard(tile = 1, taken = true)),
+                    melds = listOf(pon(tiles = listOf(2, 3, 4), source = 2)),
+                ),
+                identity = identity(),
+                roundNumber = 1,
+                position = HistoryRoundPosition.Initial,
+                tileCatalog = HistoryRoundTileCatalog(
+                    (listOf(Tile.Honor.East, Tile.Honor.South, Tile.Honor.West, Tile.Honor.West, Tile.Honor.West)).map(::TileFaceView),
+                ),
+                budget = ReplayReadBudget(ReplayReadLimits()) {},
+                componentViews = ComponentViewPersistenceRegistry(),
+                poses = emptyMap(),
+            )
+        }
     }
 
     /** 每個移出牌區依保存順序讀出，空的牌區也保留。 */
@@ -587,5 +615,21 @@ class CompactReplayRoundReaderTest {
         put(ReplayFormatKeys.DISCARD_TILE, tile)
         if (taken) put(ReplayFormatKeys.DISCARD_TAKEN, true)
         if (markers.isNotEmpty()) put(ReplayFormatKeys.DISCARD_MARKERS, JsonArray(markers.map(::JsonPrimitive)))
+    }
+
+    /**
+     * 建立一組由左家打出的碰。
+     *
+     * @param tiles 副露牌索引。
+     * @param source 被鳴的牌索引。
+     * @return 副露投影。
+     */
+    private fun pon(tiles: List<Int>, source: Int): JsonObject = buildJsonObject {
+        put(ReplaySourceKeys.TYPE, persistenceJson.encodeToJsonElement(MeldTypePersistenceDto.serializer(), MeldTypePersistenceDto.Pon))
+        put(ReplaySourceKeys.MELD_TILES, JsonArray(tiles.map(::JsonPrimitive)))
+        put(ReplaySourceKeys.SOURCE_TILE, source)
+        put(ReplaySourceKeys.SOURCE_DIRECTION, "LEFT")
+        put(ReplaySourceKeys.FACE_DOWN_TILE_IDS, JsonArray(emptyList()))
+        put(ReplaySourceKeys.PUBLICLY_REVEALED_TILE_IDS, JsonArray(emptyList()))
     }
 }
