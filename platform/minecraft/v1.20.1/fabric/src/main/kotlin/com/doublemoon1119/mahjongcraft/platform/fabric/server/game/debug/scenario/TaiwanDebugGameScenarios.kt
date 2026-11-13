@@ -2,7 +2,11 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.scenar
 
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.Game
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
+import com.doublemoon1119.mahjongcraft.logic.base.Hand
 import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
+import com.doublemoon1119.mahjongcraft.logic.base.Meld
+import com.doublemoon1119.mahjongcraft.logic.base.MeldType
+import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.logic.module.BuiltInRuleModuleIds
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TAIWAN_REVEAL_FLOWER_ACTION
@@ -12,6 +16,7 @@ import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanRuleModule
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.tile.TaiwanTileTypes
 import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayer
+import com.doublemoon1119.mahjongcraft.logic.table.PendingReaction
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.logic.table.TileWall
 import com.doublemoon1119.mahjongcraft.logic.table.TurnPhase
@@ -59,6 +64,7 @@ internal object TaiwanDebugGameScenarios {
                 flowerFaces(dealt.tileWall.getAllTiles().takeLast(ALL_FLOWERS))
         },
         TaiwanLastTileFlowerScenario,
+        TaiwanBeforePaoPonScenario,
     )
 }
 
@@ -152,6 +158,93 @@ private object TaiwanLastTileFlowerScenario : DebugGameScenario {
         tileAreas = tileAreas.withArea(TaiwanPlayerTileAreaIds.FLOWERS, flowers),
         actionHistory = flowers.flatMap { listOf(GameAction.Draw, TAIWAN_REVEAL_FLOWER_ACTION) } +
             discards.flatMap { tile -> listOf(GameAction.Draw, GameAction.Discard(tile.id)) },
+    )
+}
+
+/**
+ * 包牌：呼叫者已碰出發、中兩組，上家剛打出白，呼叫者碰白就以第三組三元牌副露湊齊大三元，上家成為包牌者。
+ *
+ * 呼叫者的立牌為白白、二三萬、五五筒、六七八條與一張北；碰白後打出北即聽一、四萬。活牌最前端交錯排著四萬與一萬：
+ * 其他三家摸到後打出即可胡牌（上家打出為包牌者本人放槍，其他兩家打出為平分），輪到呼叫者時第一張即可自摸（包牌
+ * 自摸）。其他三家的立牌固定為 [PAO_OPPONENT_HAND]：沒有對子，不含三元牌、北與一、四萬，無法聽牌，也無法碰呼叫者
+ * 打出的牌。八張花都在活牌尾端。載入後開啟包牌選項；這一桌原本是台灣麻將時沿用其餘設定。
+ */
+private object TaiwanBeforePaoPonScenario : DebugGameScenario {
+    override val id: String = "mahjongcraft:taiwan/debug/before_pao_pon"
+
+    override fun build(context: DebugGameScenarioContext): DebugGameScenarioResult {
+        val baseModule = taiwanScenarioModule(context.currentGame)
+        val module = TaiwanRuleModule(BuiltInRuleModuleIds.TAIWAN, baseModule.config.copy(paoLiability = true))
+        val initialization = formalFirstRoundKeepingSeats(context, module)
+        val initial = initialization.tableState
+        val invokerIndex = initial.seatOf(context.invokingPlayerId)
+        val discarderIndex = (invokerIndex + PLAYER_COUNT - 1) % PLAYER_COUNT
+        val liveTiles = initial.tileWall.getAllTiles()
+        val handFaces = initial.players.indices.flatMap { seatIndex ->
+            val faces = if (seatIndex == invokerIndex) PAO_INVOKER_HAND else PAO_OPPONENT_HAND
+            initial.handTilesOf(seatIndex).zip(faces) { tile, face -> tile.id to face }
+        }
+        val calledFace = liveTiles.first().id to Tile.Honor.White
+        val winningFaces = liveTiles.drop(1).take(PAO_WINNING_DRAWS).mapIndexed { index, tile -> tile.id to PAO_WAITS[index % PAO_WAITS.size] }
+        val dealt = initial.withFaces(handFaces + calledFace + winningFaces + flowerFaces(liveTiles.takeLast(ALL_FLOWERS)))
+
+        val draw = dealt.tileWall.draw()
+        val calledTile = requireNotNull(draw.tile) { "The live wall is empty" }
+        val players = dealt.players.mapIndexed { seatIndex, player ->
+            when (seatIndex) {
+                invokerIndex -> player.withPaoInvokerHand(dealt.handTilesOf(seatIndex), module)
+                discarderIndex -> player.copy(
+                    hand = player.hand.organize(module.tileOrder),
+                    discardPile = TaiwanDiscardPile().discardTile(calledTile),
+                    actionHistory = listOf(GameAction.Draw, GameAction.Discard(calledTile.id)),
+                )
+                else -> player.copy(hand = player.hand.organize(module.tileOrder))
+            }
+        }
+        val remainingWallIds = (draw.wall.getAllTiles() + dealt.reservedWallTiles).mapTo(mutableSetOf()) { it.id }
+        val state = dealt.copy(
+            players = players,
+            tileWall = draw.wall,
+            physicalWallLayout = dealt.physicalWallLayout?.retainOnly(remainingWallIds),
+            currentPlayerIndex = discarderIndex,
+            turnPhase = TurnPhase.AwaitingDiscardReaction(
+                PendingReaction(
+                    discarderId = players[discarderIndex].id,
+                    tileId = calledTile.id,
+                    eligiblePlayerIds = setOf(context.invokingPlayerId),
+                    ronPlayerIds = setOf(context.invokingPlayerId),
+                    id = Uuid.random(),
+                ),
+            ),
+        )
+        return DebugGameScenarioResult(
+            game = context.currentGame.withTableState(state),
+            wallStructure = requireNotNull(initialization.wallStructure) { "Taiwan initialization did not produce wall structure" },
+            wallLayout = requireNotNull(initialization.initialPhysicalWallLayout) { "Taiwan initialization did not produce physical wall layout" },
+        )
+    }
+
+    /**
+     * 把呼叫者的牌排成發、中兩組碰與其餘立牌。
+     *
+     * @param tiles 已換好牌面的十六張牌，前六張是兩組碰。
+     * @param module 用來整理立牌順序的規則模組。
+     * @return 排好手牌的呼叫者。
+     */
+    private fun MahjongPlayer.withPaoInvokerHand(tiles: List<IdentifiedTile>, module: TaiwanRuleModule): MahjongPlayer = copy(
+        hand = Hand(
+            tiles = tiles.drop(PAO_INVOKER_MELD_TILES),
+            melds = tiles.take(PAO_INVOKER_MELD_TILES).chunked(PON_SIZE).map { pon ->
+                Meld(
+                    type = MeldType.Pon,
+                    tiles = pon,
+                    sourceTile = pon.last(),
+                    sourceDirection = RelativeDirection.Across,
+                    publiclyRevealedTileIds = pon.mapTo(mutableSetOf()) { it.id },
+                    faceDownTileIds = emptySet(),
+                )
+            },
+        ).organize(module.tileOrder),
     )
 }
 
@@ -270,6 +363,54 @@ private fun Game.withTableState(tableState: TableState): Game = Game(
     hostId = hostId,
     roomPlayerIds = roomPlayerIds,
 )
+
+/** 包牌情境呼叫者的十六張牌：前六張是發、中兩組碰，其餘為立牌，碰白並打出北後聽一、四萬。 */
+private val PAO_INVOKER_HAND: List<Tile> = List(PON_SIZE) { Tile.Honor.Green } +
+    List(PON_SIZE) { Tile.Honor.Red } +
+    listOf(
+        Tile.Honor.White,
+        Tile.Honor.White,
+        Tile.Numeric(Tile.Suit.Character, 2),
+        Tile.Numeric(Tile.Suit.Character, 3),
+        Tile.Numeric(Tile.Suit.Dot, 5),
+        Tile.Numeric(Tile.Suit.Dot, 5),
+        Tile.Numeric(Tile.Suit.Bamboo, 6),
+        Tile.Numeric(Tile.Suit.Bamboo, 7),
+        Tile.Numeric(Tile.Suit.Bamboo, 8),
+        Tile.Honor.North,
+    )
+
+/** 包牌情境其他三家的十六張牌：沒有對子，不含三元牌、北與一、四萬。 */
+private val PAO_OPPONENT_HAND: List<Tile> = listOf(
+    Tile.Numeric(Tile.Suit.Character, 5),
+    Tile.Numeric(Tile.Suit.Character, 6),
+    Tile.Numeric(Tile.Suit.Character, 7),
+    Tile.Numeric(Tile.Suit.Character, 9),
+    Tile.Numeric(Tile.Suit.Dot, 1),
+    Tile.Numeric(Tile.Suit.Dot, 3),
+    Tile.Numeric(Tile.Suit.Dot, 7),
+    Tile.Numeric(Tile.Suit.Dot, 8),
+    Tile.Numeric(Tile.Suit.Dot, 9),
+    Tile.Numeric(Tile.Suit.Bamboo, 1),
+    Tile.Numeric(Tile.Suit.Bamboo, 3),
+    Tile.Numeric(Tile.Suit.Bamboo, 5),
+    Tile.Numeric(Tile.Suit.Bamboo, 9),
+    Tile.Honor.East,
+    Tile.Honor.South,
+    Tile.Honor.West,
+)
+
+/** 包牌情境呼叫者聽的牌，依序交錯排在活牌最前端。 */
+private val PAO_WAITS: List<Tile> = listOf(Tile.Numeric(Tile.Suit.Character, 4), Tile.Numeric(Tile.Suit.Character, 1))
+
+/** 包牌情境活牌最前端排放聽牌的張數。 */
+private const val PAO_WINNING_DRAWS: Int = 6
+
+/** 包牌情境呼叫者兩組碰的張數。 */
+private const val PAO_INVOKER_MELD_TILES: Int = 6
+
+/** 一組碰的張數。 */
+private const val PON_SIZE: Int = 3
 
 /** 一至九萬、一至六筒、九條：單吊九條的十六張聽牌。 */
 private val READY_HAND: List<Tile> = (1..9).map { Tile.Numeric(Tile.Suit.Character, it) } +

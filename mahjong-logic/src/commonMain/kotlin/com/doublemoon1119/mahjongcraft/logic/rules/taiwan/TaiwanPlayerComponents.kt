@@ -13,6 +13,14 @@ object TaiwanPlayerComponents {
         target = BuiltInComponentOwners.PLAYER,
     )
 
+    /** 碰或明槓別人打出的牌完成大三元或大四喜副露時成立的包牌責任；沒有此項表示沒有包牌。 */
+    val PAO_LIABILITY: ComponentType<TaiwanPaoLiability> = ComponentType(
+        id = "mahjongcraft:taiwan/player/pao_liability",
+        valueClass = TaiwanPaoLiability::class,
+        copyValue = { it },
+        target = BuiltInComponentOwners.PLAYER,
+    )
+
     /** 放過胡牌後尚未解除的過水；沒有此項表示可以胡牌。 */
     val PASSED_WIN: ComponentType<Unit> = ComponentType(
         id = "mahjongcraft:taiwan/player/passed_win",

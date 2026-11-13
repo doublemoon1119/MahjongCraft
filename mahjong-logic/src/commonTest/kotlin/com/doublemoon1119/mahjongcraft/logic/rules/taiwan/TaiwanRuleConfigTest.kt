@@ -26,6 +26,7 @@ class TaiwanRuleConfigTest {
         assertEquals(true, config.useFlowerTiles)
         assertFalse(config.fourWindsAbortiveDraw)
         assertFalse(config.generalReadyDeclaration)
+        assertFalse(config.paoLiability)
         assertEquals(
             MultiRonPolicy(doubleRonResolution = RonResolution.NEAREST_WINNER, tripleRonResolution = RonResolution.NEAREST_WINNER),
             config.multiRonPolicy,

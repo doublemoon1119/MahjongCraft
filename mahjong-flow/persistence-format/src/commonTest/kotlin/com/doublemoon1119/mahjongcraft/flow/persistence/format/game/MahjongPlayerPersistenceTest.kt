@@ -15,6 +15,10 @@ import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPlayerComponents
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.isRiichiDeclaration
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.RiichiTileValues
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanDiscardPile
+import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanPaoHand
+import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanPaoLiability
+import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanPlayerComponents
+import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanReadyKind
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.tile.TaiwanTileTypes
 import com.doublemoon1119.mahjongcraft.logic.table.DiscardPile
 import com.doublemoon1119.mahjongcraft.logic.table.DiscardPile.DiscardEntry
@@ -101,6 +105,27 @@ class MahjongPlayerPersistenceTest {
         val restoredEntry = assertIs<TaiwanDiscardPile>(restored.discardPile).entries.single()
         assertEquals(discard, restoredEntry.tile)
         assertEquals(true, restoredEntry.isTaken)
+    }
+
+    /** 驗證台麻玩家的宣告聽牌、過水與包牌責任都能完整還原。 */
+    @Test
+    fun `taiwan player round-trips with rule components`() {
+        val player = MahjongPlayer(
+            id = Uuid.random(),
+            initialSeatIndex = Wind.SOUTH.ordinal,
+            seatWind = Wind.SOUTH,
+            discardPile = TaiwanDiscardPile(),
+            components = ComponentSet.EMPTY
+                .with(TaiwanPlayerComponents.READY_DECLARATION, TaiwanReadyKind.EARTHLY)
+                .with(TaiwanPlayerComponents.PASSED_WIN, Unit)
+                .with(TaiwanPlayerComponents.PAO_LIABILITY, TaiwanPaoLiability(TaiwanPaoHand.BIG_WINDS, RelativeDirection.Across)),
+            score = 0,
+        )
+
+        val restored = encodedRoundTrip(player)
+
+        assertPlayerCommonState(player, restored)
+        assertEquals(player.components, restored.components)
     }
 
     /**

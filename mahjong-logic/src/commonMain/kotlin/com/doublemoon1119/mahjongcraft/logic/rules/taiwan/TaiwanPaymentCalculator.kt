@@ -1,9 +1,10 @@
 package com.doublemoon1119.mahjongcraft.logic.rules.taiwan
 
+import com.doublemoon1119.mahjongcraft.logic.module.BuiltInPaymentReasonIds
 import com.doublemoon1119.mahjongcraft.logic.module.WinSettlementResult
 import kotlin.uuid.Uuid
 
-/** 台灣麻將逐筆計算底台、莊家與連莊付款，不修改玩家分數。 */
+/** 台灣麻將逐筆計算底台、莊家與連莊付款，以及包牌時的付款分配，不修改玩家分數。 */
 object TaiwanPaymentCalculator {
     /**
      * 計算自摸三家付款或放槍者單獨付款；特殊花胡亦使用相同的付款結構。
@@ -43,5 +44,39 @@ object TaiwanPaymentCalculator {
         val total = payments.values.sumOf { it.toLong() }
         require(total <= Int.MAX_VALUE) { "Taiwan total payment exceeds the supported point range" }
         return WinSettlementResult(total.toInt(), payments)
+    }
+
+    /**
+     * 把一般付款改由包牌者負擔，贏家總收入不變。
+     *
+     * - 自摸：包牌者付三家的份，每一份照原本付款者計算的莊家台不變。
+     * - 包牌者本人放槍：照常由他付。
+     * - 別人放槍：包牌者與放槍者平分；除不盡時包牌者多付一點。
+     *
+     * 包牌者一律標示包牌付款原因。
+     *
+     * @param settlement [calculate] 算出的一般付款。
+     * @param paoPlayerId 包牌者。
+     * @param discarderId 放槍者；自摸為 null。
+     * @return 改由包牌者負擔後的付款。
+     */
+    fun withPaoLiability(
+        settlement: WinSettlementResult,
+        paoPlayerId: Uuid,
+        discarderId: Uuid?,
+    ): WinSettlementResult {
+        val payments = when (discarderId) {
+            null -> mapOf(paoPlayerId to settlement.totalGained)
+            paoPlayerId -> settlement.paymentsByPlayerId
+            else -> {
+                val amount = settlement.paymentsByPlayerId.getValue(discarderId)
+                mapOf(paoPlayerId to amount - amount / 2, discarderId to amount / 2).filterValues { it > 0 }
+            }
+        }
+        return WinSettlementResult(
+            totalGained = settlement.totalGained,
+            paymentsByPlayerId = payments,
+            paymentReasonIdsByPlayerId = mapOf(paoPlayerId to BuiltInPaymentReasonIds.PAO),
+        )
     }
 }

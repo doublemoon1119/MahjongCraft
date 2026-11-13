@@ -35,6 +35,12 @@ internal object TaiwanGameConfigTranslationKeys {
     /** 報聽欄位說明。 */
     const val GENERAL_READY_DECLARATION_DESCRIPTION: String = "mahjongcraft.taiwan.room.config.field.general_ready_declaration.description"
 
+    /** 包牌欄位名稱。 */
+    const val PAO_LIABILITY: String = "mahjongcraft.taiwan.room.config.field.pao_liability"
+
+    /** 包牌欄位說明。 */
+    const val PAO_LIABILITY_DESCRIPTION: String = "mahjongcraft.taiwan.room.config.field.pao_liability.description"
+
     /** 起胡台數欄位名稱。 */
     const val MINIMUM_TAI: String = "mahjongcraft.taiwan.room.config.field.minimum_tai"
 

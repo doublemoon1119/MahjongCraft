@@ -223,6 +223,7 @@ private object RiichiBeforePaoPonScenario : DebugGameScenario {
             Meld(
                 type = MeldType.Pon,
                 tiles = tiles,
+                sourceTile = tiles.last(),
                 sourceDirection = RelativeDirection.Across,
                 publiclyRevealedTileIds = tiles.map { it.id }.toSet(),
                 faceDownTileIds = emptySet(),

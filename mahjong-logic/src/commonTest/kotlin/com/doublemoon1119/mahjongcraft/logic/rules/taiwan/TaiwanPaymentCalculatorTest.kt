@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.logic.rules.taiwan
 
+import com.doublemoon1119.mahjongcraft.logic.module.BuiltInPaymentReasonIds
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.tai.flower.calculateTaiwanEightFlowers
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.tai.flower.calculateTaiwanSevenFlowers
 import kotlin.test.Test
@@ -203,4 +204,72 @@ class TaiwanPaymentCalculatorTest {
 
     /** 零付款不留下假的付款玩家。 */
     private fun assertTrueEmpty(payments: Map<Uuid, Int>) = assertEquals(emptyMap(), payments)
+
+    /** 包牌自摸：包牌者付三家的份，總額與每份照原付款者計算的莊家台相同。 */
+    @Test
+    fun `pao self draw moves every share to the liable player`() {
+        val normal = TaiwanPaymentCalculator.calculate(
+            config = config,
+            playerIds = players,
+            winnerId = players[1],
+            dealerId = players[0],
+            handTai = 8,
+            dealerStreak = 1,
+            discarderId = null,
+        )
+
+        val pao = TaiwanPaymentCalculator.withPaoLiability(settlement = normal, paoPlayerId = players[3], discarderId = null)
+
+        assertEquals(mapOf(players[3] to normal.totalGained), pao.paymentsByPlayerId)
+        assertEquals(normal.totalGained, pao.totalGained)
+        assertEquals(mapOf(players[3] to BuiltInPaymentReasonIds.PAO), pao.paymentReasonIdsByPlayerId)
+    }
+
+    /** 包牌者本人放槍時照常由他付。 */
+    @Test
+    fun `pao player dealing in pays as usual`() {
+        val normal = ron(discarder = players[3], baseScore = 30)
+
+        val pao = TaiwanPaymentCalculator.withPaoLiability(settlement = normal, paoPlayerId = players[3], discarderId = players[3])
+
+        assertEquals(normal.paymentsByPlayerId, pao.paymentsByPlayerId)
+        assertEquals(mapOf(players[3] to BuiltInPaymentReasonIds.PAO), pao.paymentReasonIdsByPlayerId)
+    }
+
+    /** 別人放槍時包牌者與放槍者平分；除不盡時包牌者多付一點，總額不變。 */
+    @Test
+    fun `pao discard win by someone else is split with the liable player paying the odd point`() {
+        val even = ron(discarder = players[2], baseScore = 30)
+        val odd = ron(discarder = players[2], baseScore = 31)
+
+        val evenSplit = TaiwanPaymentCalculator.withPaoLiability(settlement = even, paoPlayerId = players[3], discarderId = players[2])
+        val oddSplit = TaiwanPaymentCalculator.withPaoLiability(settlement = odd, paoPlayerId = players[3], discarderId = players[2])
+
+        val evenAmount = even.totalGained
+        assertEquals(mapOf(players[3] to evenAmount / 2, players[2] to evenAmount / 2), evenSplit.paymentsByPlayerId)
+        val oddAmount = odd.totalGained
+        assertEquals(1, oddAmount % 2)
+        assertEquals(mapOf(players[3] to oddAmount / 2 + 1, players[2] to oddAmount / 2), oddSplit.paymentsByPlayerId)
+        assertEquals(oddAmount, oddSplit.paymentsByPlayerId.values.sum())
+    }
+
+    /**
+     * 閒家胡閒家放槍、8 台的一般付款。
+     *
+     * @param discarder 放槍者。
+     * @param baseScore 底分。
+     * @return 一般付款。
+     */
+    private fun ron(
+        discarder: Uuid,
+        baseScore: Int,
+    ) = TaiwanPaymentCalculator.calculate(
+        config = TaiwanScoreConfig(baseScore = baseScore),
+        playerIds = players,
+        winnerId = players[1],
+        dealerId = players[0],
+        handTai = 8,
+        dealerStreak = 0,
+        discarderId = discarder,
+    )
 }

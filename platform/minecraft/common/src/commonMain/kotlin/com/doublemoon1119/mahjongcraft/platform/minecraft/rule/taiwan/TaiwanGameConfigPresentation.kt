@@ -69,6 +69,14 @@ internal fun taiwanGameConfigPresentation(): GameConfigPresentationDefinition = 
             read = { (it.ruleConfig as TaiwanRuleConfig).generalReadyDeclaration },
             update = { config, enabled -> config.withTaiwan { copy(generalReadyDeclaration = enabled) } },
         ),
+        boolField(
+            id = TaiwanGameConfigIds.PAO_LIABILITY,
+            category = RULE,
+            nameKey = TaiwanGameConfigTranslationKeys.PAO_LIABILITY,
+            descriptionKey = TaiwanGameConfigTranslationKeys.PAO_LIABILITY_DESCRIPTION,
+            read = { (it.ruleConfig as TaiwanRuleConfig).paoLiability },
+            update = { config, enabled -> config.withTaiwan { copy(paoLiability = enabled) } },
+        ),
         intField(
             id = TaiwanGameConfigIds.MINIMUM_TAI,
             category = RULE,

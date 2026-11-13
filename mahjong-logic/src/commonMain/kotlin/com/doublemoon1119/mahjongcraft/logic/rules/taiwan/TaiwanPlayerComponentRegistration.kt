@@ -12,7 +12,7 @@ import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayer
 /**
  * 登記台灣麻將玩家組件、每局重設的生命週期與公開範圍。
  *
- * 宣告聽牌對所有讀取者公開；過水只交付本人。
+ * 宣告聽牌對所有讀取者公開；過水只交付本人；包牌責任只供結算使用，不交付任何讀取者。
  *
  * @param registry 本次執行尚未凍結的組件登記。
  */
@@ -30,6 +30,8 @@ fun registerTaiwanPlayerComponents(registry: ComponentRegistrar) {
             project = { _, value -> value },
         ),
     )
+    registry.register(TaiwanPlayerComponents.PAO_LIABILITY)
+    registry.registerLifecycle(resetEachRound(TaiwanPlayerComponents.PAO_LIABILITY))
     registry.register(TaiwanPlayerComponents.PASSED_WIN)
     registry.registerView(TaiwanPlayerComponentViews.PASSED_WIN)
     registry.registerLifecycle(resetEachRound(TaiwanPlayerComponents.PASSED_WIN))

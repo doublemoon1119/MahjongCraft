@@ -4,9 +4,12 @@ import com.doublemoon1119.mahjongcraft.logic.base.ExhaustiveDrawReason
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
 import com.doublemoon1119.mahjongcraft.logic.base.MeldType
+import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.logic.base.TileOrder
 import com.doublemoon1119.mahjongcraft.logic.component.ComponentPatch
 import com.doublemoon1119.mahjongcraft.logic.component.ComponentSet
+import com.doublemoon1119.mahjongcraft.logic.judgment.HonorSet
+import com.doublemoon1119.mahjongcraft.logic.judgment.HonorSetCompletionDetector
 import com.doublemoon1119.mahjongcraft.logic.module.BuiltInAutomaticControlIds
 import com.doublemoon1119.mahjongcraft.logic.module.DeclarationDiscardEffect
 import com.doublemoon1119.mahjongcraft.logic.module.DeclarationDiscardPolicy
@@ -188,6 +191,25 @@ class TaiwanRuleModule(
         )
     }
 
+    /** 開啟包牌時，碰或明槓別人打出的牌完成大三元或大四喜副露，記下打出那張牌的玩家方位。 */
+    override fun beforeDiscardClaimed(
+        claimingPlayer: MahjongPlayer,
+        meldType: MeldType,
+        calledTile: IdentifiedTile,
+        sourceDirection: RelativeDirection,
+    ): ComponentPatch {
+        if (!config.paoLiability || (meldType != MeldType.Pon && meldType != MeldType.OpenKan)) return ComponentPatch()
+        val hand = when (HonorSetCompletionDetector.completedBy(claimingPlayer.hand, calledTile.tile)) {
+            HonorSet.DRAGONS -> TaiwanPaoHand.BIG_DRAGONS
+            HonorSet.WINDS -> TaiwanPaoHand.BIG_WINDS
+            null -> return ComponentPatch()
+        }
+        return ComponentPatch.basedOn(
+            claimingPlayer.components,
+            values = ComponentSet.EMPTY.with(TaiwanPlayerComponents.PAO_LIABILITY, TaiwanPaoLiability(hand, sourceDirection)),
+        )
+    }
+
     /** 宣告聽牌的種類，以及連莊一次以上的莊家的連莊次數。 */
     override fun getPublicPlayerIndicators(tableState: TableState, player: MahjongPlayer): List<PublicPlayerIndicator> = listOfNotNull(
         player.components[TaiwanPlayerComponents.READY_DECLARATION]?.let { PublicPlayerIndicator(it.indicatorId) },
@@ -246,7 +268,7 @@ class TaiwanRuleModule(
     ): WinResolutionResult? = resolveWin(tableState, player, winningTile, discarderId, isRobbingKan)
 
     /**
-     * 計台並計算付款。
+     * 計台並計算付款；胡牌成立包牌牌型時改由包牌者負擔。
      *
      * @param tableState 胡牌前的桌況。
      * @param player 手牌不含胡牌張的玩家。
@@ -273,7 +295,27 @@ class TaiwanRuleModule(
             dealerStreak = tableState.comboCount,
             discarderId = discarderId,
         )
-        return WinResolutionResult(settlement, handValue)
+        val paoPlayerId = paoPlayerId(tableState, player, handValue)
+        val finalSettlement = paoPlayerId?.let { TaiwanPaymentCalculator.withPaoLiability(settlement, it, discarderId) } ?: settlement
+        return WinResolutionResult(finalSettlement, handValue)
+    }
+
+    /**
+     * 找出這次胡牌的包牌者：玩家身上有包牌責任，且胡牌確實成立該牌型的台。
+     *
+     * @param tableState 胡牌前的桌況。
+     * @param player 胡牌的玩家。
+     * @param handValue 這次胡牌的計台結果。
+     * @return 包牌者；不適用包牌時為 null。
+     */
+    private fun paoPlayerId(
+        tableState: TableState,
+        player: MahjongPlayer,
+        handValue: TaiwanHandValueResult,
+    ): Uuid? {
+        val liability = player.components[TaiwanPlayerComponents.PAO_LIABILITY] ?: return null
+        if (handValue.taiResults.none { it.type == liability.hand.taiType }) return null
+        return tableState.players.first { tableState.relativeDirectionOf(player.id, it.id) == liability.direction }.id
     }
 
     /**

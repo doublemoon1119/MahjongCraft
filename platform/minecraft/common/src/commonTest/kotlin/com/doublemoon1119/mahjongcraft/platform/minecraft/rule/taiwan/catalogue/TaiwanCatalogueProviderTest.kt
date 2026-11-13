@@ -33,19 +33,20 @@ class TaiwanCatalogueProviderTest {
     /** 圖鑑的分類與條目都是台麻專屬 ID，放在台麻的路徑底下。 */
     @Test
     fun `catalogue ids live under the taiwan path`() {
-        val ids = TaiwanCatalogueCategory.entries.map { it.id } + TaiwanCatalogueTai.entries.map { it.id } + TaiwanCatalogueSpecial.entries.map { it.id }
+        val ids = TaiwanCatalogueCategory.entries.map { it.id } + TaiwanCatalogueTai.entries.map { it.id } + TaiwanCatalogueSpecial.entries.map { it.id } + TaiwanCatalogueKeys.PAO_ID
 
         assertTrue(ids.all { it.startsWith("mahjongcraft:taiwan/catalogue/") }, ids.toString())
     }
 
-    /** 每個計台項目恰有一筆條目，並列出所有流局。 */
+    /** 每個計台項目恰有一筆條目，並列出所有流局與包牌。 */
     @Test
-    fun `catalogue covers every tai type and draw reason`() {
+    fun `catalogue covers every tai type, draw reason and payment rule`() {
         val catalogue = assertNotNull(TaiwanCatalogueProvider().catalogue(TaiwanRuleConfig()))
-        val drawEntries = catalogue.entries.filter { it.categoryId == TaiwanCatalogueCategory.Draw.id }
+        val otherCategories = setOf(TaiwanCatalogueCategory.Draw.id, TaiwanCatalogueCategory.Payment.id)
 
-        assertEquals(TaiwanCatalogueTai.entries.map { it.id }.toSet(), catalogue.entries.map { it.id }.filter { id -> drawEntries.none { it.id == id } }.toSet())
-        assertEquals(TaiwanCatalogueSpecial.entries.map { it.id }, drawEntries.map { it.id })
+        assertEquals(TaiwanCatalogueTai.entries.map { it.id }.toSet(), catalogue.entries.filter { it.categoryId !in otherCategories }.map { it.id }.toSet())
+        assertEquals(TaiwanCatalogueSpecial.entries.map { it.id }, catalogue.entries.filter { it.categoryId == TaiwanCatalogueCategory.Draw.id }.map { it.id })
+        assertEquals(listOf(TaiwanCatalogueKeys.PAO_ID), catalogue.entries.filter { it.categoryId == TaiwanCatalogueCategory.Payment.id }.map { it.id })
     }
 
     /** 圖鑑對照表中每個計台項目恰好出現一次，條目識別碼不重複。 */
@@ -54,11 +55,11 @@ class TaiwanCatalogueProviderTest {
         val catalogue = assertNotNull(TaiwanCatalogueProvider().catalogue(TaiwanRuleConfig()))
 
         assertEquals(TaiwanTaiType.entries, TaiwanCatalogueTai.entries.map { it.type })
-        assertEquals(TaiwanCatalogueTai.entries.size + TaiwanCatalogueSpecial.entries.size, catalogue.entries.size)
+        assertEquals(TaiwanCatalogueTai.entries.size + TaiwanCatalogueSpecial.entries.size + 1, catalogue.entries.size)
         assertEquals(catalogue.entries.size, catalogue.entries.map { it.id }.distinct().size)
     }
 
-    /** 停用花牌、四風連打與報聽只標示相關條目不可用，不從一般說明中刪除。 */
+    /** 停用花牌、四風連打、報聽與包牌只標示相關條目不可用，不從一般說明中刪除。 */
     @Test
     fun `disabled options keep entries with an unavailable reason`() {
         val catalogue = assertNotNull(
@@ -78,8 +79,10 @@ class TaiwanCatalogueProviderTest {
         )
         assertNull(catalogue.entries.single { it.id == TaiwanCatalogueTai.HeavenlyReady.id }.unavailableReasonTranslationKey)
         assertNull(catalogue.entries.single { it.id == TaiwanCatalogueTai.ConcealedHand.id }.unavailableReasonTranslationKey)
-        val generalReady = assertNotNull(TaiwanCatalogueProvider().catalogue(TaiwanRuleConfig(generalReadyDeclaration = true)))
-        assertNull(generalReady.entries.single { it.id == TaiwanCatalogueTai.DeclaredReady.id }.unavailableReasonTranslationKey)
+        assertEquals(TaiwanCatalogueKeys.PAO_UNAVAILABLE, catalogue.entries.single { it.id == TaiwanCatalogueKeys.PAO_ID }.unavailableReasonTranslationKey)
+        val enabled = assertNotNull(TaiwanCatalogueProvider().catalogue(TaiwanRuleConfig(generalReadyDeclaration = true, paoLiability = true)))
+        assertNull(enabled.entries.single { it.id == TaiwanCatalogueTai.DeclaredReady.id }.unavailableReasonTranslationKey)
+        assertNull(enabled.entries.single { it.id == TaiwanCatalogueKeys.PAO_ID }.unavailableReasonTranslationKey)
     }
 
     /** 每個計台項目都有牌面範例；一般牌型與情境使用完整十六張手牌加一張和牌。 */

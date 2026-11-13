@@ -36,6 +36,7 @@ import com.doublemoon1119.mahjongcraft.flow.persistence.format.rule.TaiwanDiscar
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.rule.TaiwanExhaustiveDrawReasonPersistenceDto
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.rule.TaiwanExhaustiveDrawReasonPersistenceValue
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.rule.TaiwanGameActionPersistenceDto
+import com.doublemoon1119.mahjongcraft.flow.persistence.format.rule.TaiwanPaoLiabilityPersistenceDto
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.rule.TaiwanPendingFlowerFollowUpPersistenceDto
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.rule.TaiwanReadyDeclarationPersistenceDto
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.rule.TaiwanRuleConfigPersistenceDto
@@ -295,6 +296,14 @@ object BundledTaiwanExtension : MahjongExtension {
             ComponentPersistenceDefinition(
                 component = TaiwanPlayerComponents.READY_DECLARATION,
                 serializer = TaiwanReadyDeclarationPersistenceDto.serializer(),
+                toDto = { it.toPersistenceDto() },
+                toDomain = { it.toDomain() },
+            ),
+        )
+        registries.components.register(
+            ComponentPersistenceDefinition(
+                component = TaiwanPlayerComponents.PAO_LIABILITY,
+                serializer = TaiwanPaoLiabilityPersistenceDto.serializer(),
                 toDto = { it.toPersistenceDto() },
                 toDomain = { it.toDomain() },
             ),

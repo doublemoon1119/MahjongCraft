@@ -50,6 +50,7 @@ class RoomPersistenceDtoTest {
             fourWindsAbortiveDraw = true,
             kanClearsPassedWin = true,
             generalReadyDeclaration = true,
+            paoLiability = true,
             minimumWinConstraint = 3,
             scoreConfig = TaiwanScoreConfig(100, 20, 1000, -1),
             gameLength = TaiwanGameLength.FourWinds,

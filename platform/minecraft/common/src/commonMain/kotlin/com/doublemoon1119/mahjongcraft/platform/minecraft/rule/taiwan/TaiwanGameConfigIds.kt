@@ -29,6 +29,9 @@ internal object TaiwanGameConfigIds {
     /** 報聽欄位。 */
     const val GENERAL_READY_DECLARATION: String = "mahjongcraft:taiwan/config/general_ready_declaration"
 
+    /** 包牌欄位。 */
+    const val PAO_LIABILITY: String = "mahjongcraft:taiwan/config/pao_liability"
+
     /** 起胡台數欄位。 */
     const val MINIMUM_TAI: String = "mahjongcraft:taiwan/config/minimum_tai"
 

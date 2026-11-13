@@ -1,9 +1,14 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.scenario
 
+import com.doublemoon1119.mahjongcraft.logic.base.MeldType
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
+import com.doublemoon1119.mahjongcraft.logic.component.BuiltInComponentOwners
 import com.doublemoon1119.mahjongcraft.logic.judgment.ShantenResult
 import com.doublemoon1119.mahjongcraft.logic.module.BuiltInRuleModuleIds
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanFlowerFlow
+import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanPaoHand
+import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanPaoLiability
+import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanPlayerComponents
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanPlayerTileAreaIds
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanRuleModule
@@ -11,6 +16,7 @@ import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanShantenCalculato
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.tai.TaiwanTaiType
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.tile.TaiwanTileTypes
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
+import com.doublemoon1119.mahjongcraft.logic.table.TurnPhase
 import com.doublemoon1119.mahjongcraft.logic.table.drawDealerOpeningTile
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -95,6 +101,38 @@ class TaiwanDebugGameScenariosTest {
         assertIs<TaiwanFlowerFlow.Result.Exhausted>(TaiwanFlowerFlow.process(drawn, listOf(drawer.id)))
     }
 
+    /** 上家剛打出白，呼叫者已碰發、中；碰白後上家成為大三元的包牌者，活牌最前端交錯排著一、四萬，花在活牌尾端。 */
+    @Test
+    fun `pao scenario lets the invoker pon the third dragon from the upstream player`() {
+        val (state, invokerId) = build("mahjongcraft:taiwan/debug/before_pao_pon")
+        val config = state.config as TaiwanRuleConfig
+        val invoker = state.players.single { it.id == invokerId }
+        val discarder = state.players[(state.players.indexOf(invoker) + PLAYERS - 1) % PLAYERS]
+        val reaction = assertIs<TurnPhase.AwaitingDiscardReaction>(state.turnPhase).reaction
+        val calledTile = discarder.discardPile.entries.single().tile
+
+        assertTrue(config.paoLiability)
+        assertEquals(listOf(Tile.Honor.Green, Tile.Honor.Red), invoker.hand.melds.map { meld -> meld.tiles.map { it.tile }.distinct().single() })
+        assertEquals(2, invoker.hand.tiles.count { it.tile == Tile.Honor.White })
+        assertTrue(invoker.hand.melds.all { meld -> meld.sourceTile != null && meld.sourceTile in meld.tiles })
+        assertEquals(Tile.Honor.White, calledTile.tile)
+        assertEquals(calledTile.id, reaction.tileId)
+        assertEquals(discarder.id, reaction.discarderId)
+        assertTrue(state.players.filterNot { it.id == invokerId }.all { it.hand.tiles.size == READY_HAND_SIZE })
+        assertTrue(state.players.filterNot { it.id == invokerId }.none { TaiwanShantenCalculator().calculate(it.hand) is ShantenResult.Tenpai })
+        assertEquals(
+            List(PAO_WINNING_DRAWS) { index -> Tile.Numeric(Tile.Suit.Character, if (index % 2 == 0) 4 else 1) },
+            state.tileWall.getAllTiles().take(PAO_WINNING_DRAWS).map { it.tile },
+        )
+        assertTrue(state.tileWall.getAllTiles().takeLast(TaiwanTileTypes.ALL.size).all { TaiwanTileTypes.isFlower(it.tile) })
+
+        val module = TaiwanRuleModule(BuiltInRuleModuleIds.TAIWAN, config)
+        val direction = state.relativeDirectionOf(invokerId, discarder.id)
+        val liability = module.beforeDiscardClaimed(invoker, MeldType.Pon, calledTile, direction)
+            .applyTo(invoker.components, BuiltInComponentOwners.PLAYER)[TaiwanPlayerComponents.PAO_LIABILITY]
+        assertEquals(TaiwanPaoLiability(TaiwanPaoHand.BIG_DRAGONS, direction), liability)
+    }
+
     /**
      * 以四人日麻桌建立情境，確認改用台灣麻將並通過權威情境驗證。
      *
@@ -148,5 +186,8 @@ class TaiwanDebugGameScenariosTest {
 
         /** 聽牌手牌張數。 */
         const val READY_HAND_SIZE = 16
+
+        /** 包牌情境活牌最前端排放聽牌的張數。 */
+        const val PAO_WINNING_DRAWS = 6
     }
 }

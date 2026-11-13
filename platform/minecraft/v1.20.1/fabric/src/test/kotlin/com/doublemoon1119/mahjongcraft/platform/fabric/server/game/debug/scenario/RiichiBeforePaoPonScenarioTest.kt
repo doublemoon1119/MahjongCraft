@@ -44,6 +44,14 @@ class RiichiBeforePaoPonScenarioTest {
         assertEquals(pending.tileId, discarder.discardPile.entries.single().tile.id)
     }
 
+    /** 呼叫者原有的兩組碰都記錄被碰的牌，之後加槓時才有橫放牌可以疊上去。 */
+    @Test
+    fun `existing pons record their claimed tile`() {
+        val (_, invoking) = buildScenario(invokingSeat = 1)
+
+        assertTrue(invoking.hand.melds.all { meld -> meld.sourceTile != null && meld.sourceTile in meld.tiles })
+    }
+
     /** 呼叫者可以合法碰上家的白。 */
     @Test
     fun `lets the invoking player pon the white`() {

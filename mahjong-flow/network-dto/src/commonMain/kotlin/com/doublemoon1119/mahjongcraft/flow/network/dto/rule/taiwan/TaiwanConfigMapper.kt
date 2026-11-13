@@ -26,6 +26,7 @@ fun TaiwanRuleConfig.toTaiwanDto(registries: NetworkDtoConverter): TaiwanRuleCon
     fourWindsAbortiveDraw = fourWindsAbortiveDraw,
     kanClearsPassedWin = kanClearsPassedWin,
     generalReadyDeclaration = generalReadyDeclaration,
+    paoLiability = paoLiability,
     revealsClosedKanTiles = revealsClosedKanTiles,
 )
 
@@ -40,6 +41,7 @@ fun TaiwanRuleConfigDto.toDomain(registries: NetworkDtoConverter): TaiwanRuleCon
     fourWindsAbortiveDraw = fourWindsAbortiveDraw,
     kanClearsPassedWin = kanClearsPassedWin,
     generalReadyDeclaration = generalReadyDeclaration,
+    paoLiability = paoLiability,
     minimumWinConstraint = minimumWinConstraint,
     scoreConfig = scoreConfig.toDomain(),
     gameLength = requireNotNull(gameLength.toRuleDomain(registries) as? TaiwanGameLength) { "Taiwan config requires a taiwan game length" },

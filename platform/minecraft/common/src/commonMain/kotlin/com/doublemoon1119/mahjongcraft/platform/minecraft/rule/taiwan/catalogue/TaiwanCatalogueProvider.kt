@@ -28,7 +28,9 @@ class TaiwanCatalogueProvider : RuleCatalogueProvider {
         if (config !is TaiwanRuleConfig) return null
         return RuleCatalogue(
             categories = TaiwanCatalogueCategory.entries.map { RuleCatalogueCategory(it.id, it.nameKey) },
-            entries = TaiwanCatalogueTai.entries.map { definition -> definition.toCatalogueEntry(config) } + taiwanCatalogueSpecialEntries(config),
+            entries = TaiwanCatalogueTai.entries.map { definition -> definition.toCatalogueEntry(config) } +
+                taiwanCatalogueSpecialEntries(config) +
+                taiwanCataloguePaoEntry(config),
         )
     }
 }
@@ -54,6 +56,15 @@ private val FLOWER_TAI: Set<TaiwanTaiType> = setOf(
     TaiwanTaiType.FlowerSet,
     TaiwanTaiType.EightFlowers,
     TaiwanTaiType.SevenFlowers,
+)
+
+/** 建立包牌條目；未開啟包牌時保留條目並標示原因。 */
+private fun taiwanCataloguePaoEntry(config: TaiwanRuleConfig): RuleCatalogueEntry = RuleCatalogueEntry(
+    id = TaiwanCatalogueKeys.PAO_ID,
+    categoryId = TaiwanCatalogueCategory.Payment.id,
+    nameTranslationKey = TaiwanCatalogueKeys.PAO_NAME,
+    descriptionTranslationKey = TaiwanCatalogueKeys.PAO_DESCRIPTION,
+    unavailableReasonTranslationKey = TaiwanCatalogueKeys.PAO_UNAVAILABLE.takeIf { !config.paoLiability },
 )
 
 /** 建立一般流局與途中流局條目；停用的流局保留條目並標示原因。 */

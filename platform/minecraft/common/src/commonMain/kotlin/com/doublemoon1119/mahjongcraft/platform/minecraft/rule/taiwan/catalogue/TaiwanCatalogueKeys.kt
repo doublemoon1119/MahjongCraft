@@ -36,6 +36,9 @@ internal enum class TaiwanCatalogueCategory(
 
     /** 一般與途中流局項目。 */
     Draw(MahjongCraftMetadata.id("taiwan/catalogue/category/draw"), "mahjongcraft.taiwan.rule_catalogue.category.draw"),
+
+    /** 計台以外、改變付款方式的規則。 */
+    Payment(MahjongCraftMetadata.id("taiwan/catalogue/category/payment"), "mahjongcraft.taiwan.rule_catalogue.category.payment"),
 }
 
 /** 台灣麻將圖鑑的共用翻譯鍵，不影響結算名稱契約。 */
@@ -69,6 +72,18 @@ internal object TaiwanCatalogueKeys {
 
     /** 未開啟報聽時的報聽台說明。 */
     const val GENERAL_READY_DECLARATION_UNAVAILABLE: String = "mahjongcraft.taiwan.rule_catalogue.unavailable.general_ready_declaration"
+
+    /** 包牌條目 ID。 */
+    val PAO_ID: String = MahjongCraftMetadata.id("taiwan/catalogue/pao")
+
+    /** 包牌條目名稱。 */
+    const val PAO_NAME: String = "mahjongcraft.taiwan.rule_catalogue.payment.pao.name"
+
+    /** 包牌條目說明。 */
+    const val PAO_DESCRIPTION: String = "mahjongcraft.taiwan.rule_catalogue.payment.pao.description"
+
+    /** 未開啟包牌時的說明。 */
+    const val PAO_UNAVAILABLE: String = "mahjongcraft.taiwan.rule_catalogue.unavailable.pao"
 }
 
 /**
