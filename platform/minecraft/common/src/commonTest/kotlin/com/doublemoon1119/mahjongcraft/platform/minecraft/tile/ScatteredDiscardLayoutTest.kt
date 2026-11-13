@@ -129,6 +129,7 @@ class ScatteredDiscardLayoutTest {
         /** 台麻的桌面牌位配置。 */
         val PROFILE = TableTileLayoutProfile(
             wallInset = 0.105,
+            wallStagger = TableWallStagger.LEFT,
             wallCornerOverhang = 0.18,
             meldArea = TableMeldArea.BETWEEN_WALL_AND_HAND,
             claimedTileSideways = false,

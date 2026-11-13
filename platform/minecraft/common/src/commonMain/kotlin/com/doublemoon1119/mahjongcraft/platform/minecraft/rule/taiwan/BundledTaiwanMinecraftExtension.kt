@@ -65,6 +65,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TableDiscardArea
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TableMeldArea
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TableTileLayoutProfile
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TableTileLayoutProfileDefinition
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TableWallStagger
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileDisplayNameDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileEmojiDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileLabel
@@ -340,11 +341,12 @@ internal const val TAIWAN_WALL_REMAINING_LINE: String = "mahjongcraft:taiwan/wal
 private const val DECLARE_READY_ACTION_ORDER: Int = 5
 
 /**
- * 台灣麻將的桌面牌位：牌牆往桌心移動並錯開成風車形，副露放在牌牆與手牌之間、全部直立，加槓四張一列，牌河散放在桌子中央；
+ * 台灣麻將的桌面牌位：牌牆往桌心移動並往左錯開成風車形，副露放在牌牆與手牌之間、全部直立，加槓四張一列，牌河散放在桌子中央；
  * 散放的牌河看不出打出順序，所以標示最後打出的牌。
  */
 private val TAIWAN_TABLE_TILE_LAYOUT = TableTileLayoutProfile(
     wallInset = 0.105,
+    wallStagger = TableWallStagger.LEFT,
     wallCornerOverhang = 0.18,
     meldArea = TableMeldArea.BETWEEN_WALL_AND_HAND,
     claimedTileSideways = false,

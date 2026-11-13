@@ -6,8 +6,9 @@ package com.doublemoon1119.mahjongcraft.platform.minecraft.tile
  * 牌的大小與桌子的大小所有規則共用，這裡只調整牌在桌上的位置。
  *
  * @property wallInset 牌牆整體往桌心移動的距離；`0` 為標準位置。
- * @property wallCornerOverhang 每面牌牆在標準錯開之外，再往「從桌外面向這面牌牆時的右端」移動的距離；
- * 四面同向移動，轉角處由一面牌牆超出、相鄰牌牆的端點頂在它的側邊，形成風車形。`0` 為標準錯開。
+ * @property wallStagger 四面牌牆錯開的方向。
+ * @property wallCornerOverhang 每面牌牆在標準錯開之外，再往 [wallStagger] 那一端移動的距離；四面同向移動，轉角處由一面
+ * 牌牆超出、相鄰牌牆的端點頂在它的側邊，形成風車形。`0` 為標準錯開。
  * @property meldArea 副露擺放的區域；移出手牌的牌（例如花牌）接在副露後面。
  * @property claimedTileSideways 副露中被鳴的牌是否依來源方向橫放；`false` 時全部直立。
  * @property discardArea 牌河的擺法。
@@ -18,6 +19,7 @@ package com.doublemoon1119.mahjongcraft.platform.minecraft.tile
  */
 data class TableTileLayoutProfile(
     val wallInset: Double = 0.0,
+    val wallStagger: TableWallStagger = TableWallStagger.RIGHT,
     val wallCornerOverhang: Double = 0.0,
     val meldArea: TableMeldArea = TableMeldArea.CORNER,
     val claimedTileSideways: Boolean = true,

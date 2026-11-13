@@ -80,6 +80,29 @@ class MahjongTileTableLayoutTest {
         assertEquals(standard.yaw, moved.yaw)
     }
 
+    /**
+     * 往左錯開時整面牌牆是往右錯開的鏡像：同一面牌牆中第幾墩的位置左右對調，轉角伸出的那一端換到另一邊；
+     * 手牌那一列避開牌牆後的可用範圍也左右對調。
+     */
+    @Test
+    fun `left stagger mirrors the right stagger`() {
+        val right = TableTileLayoutProfile(wallInset = 0.105, wallStagger = TableWallStagger.RIGHT, wallCornerOverhang = 0.18)
+        val left = right.copy(wallStagger = TableWallStagger.LEFT)
+        (0 until STACKS_PER_SIDE).forEach { stack ->
+            val rightPlacement = wallPlacement(position = TileWallPosition(side = 0, stack = STACKS_PER_SIDE - 1 - stack, layer = 0), tileLayout = right)
+            val leftPlacement = wallPlacement(position = TileWallPosition(side = 0, stack = stack, layer = 0), tileLayout = left)
+
+            assertEquals(CONTROLLER_CENTER_X - rightPlacement.x, leftPlacement.x - CONTROLLER_CENTER_X, ABSOLUTE_TOLERANCE)
+            assertEquals(rightPlacement.z, leftPlacement.z, ABSOLUTE_TOLERANCE)
+        }
+        val band = MahjongTileTableLayout.handRowBand()
+        val rightSpan = MahjongTileTableLayout.rowSpan(right, STACKS_PER_SIDE, band.left, band.right)
+        val leftSpan = MahjongTileTableLayout.rowSpan(left, STACKS_PER_SIDE, band.left, band.right)
+
+        assertEquals(-rightSpan.right, leftSpan.left, ABSOLUTE_TOLERANCE)
+        assertEquals(-rightSpan.left, leftSpan.right, ABSOLUTE_TOLERANCE)
+    }
+
     /** 牌牆配置的距離不能是負數或非有限值。 */
     @Test
     fun `table tile layout rejects invalid distances`() {

@@ -319,11 +319,11 @@ object MahjongTileTableLayout {
      * 垂直於側面的偏移（`halfSpan`）至少維持標準 17 墩牌牆的外側邊界；較長的牌牆依自身長度
      * 向外延伸。這讓短牌牆仍避開桌心的中央擲骰區，同時讓標準四面牌牆的直線在桌角相接。
      *
-     * 角落端點依牌張實際寬度錯開：沿局部 X 軸移動半個 [MahjongTileDimensions.TILE_HEIGHT]，形成端邊與側邊相接的布局。
-     * 再加上 [MahjongTileDimensions.TILE_WIDTH] 的 [CORNER_GAP_RATIO] 倍，保留角落間距。
+     * 角落端點依牌張實際寬度錯開：往 [TableTileLayoutProfile.wallStagger] 那一端移動半個 [MahjongTileDimensions.TILE_HEIGHT]，
+     * 形成端邊與側邊相接的布局，再加上 [MahjongTileDimensions.TILE_WIDTH] 的 [CORNER_GAP_RATIO] 倍，保留角落間距。
      *
      * [TableTileLayoutProfile.wallInset] 讓整面牌牆再往桌心移動；[TableTileLayoutProfile.wallCornerOverhang] 讓整面牌牆再往
-     * `stack = 0` 那一端移動，四面同向移動形成風車形。
+     * 同一端移動，四面同向移動形成風車形。
      *
      * `stack = 0` 位於從桌外面向該面牌牆時的右端，索引遞增時往左端移動。
      * 哪一面牆放在哪個桌邊，由 [MahjongTileWallSideLayout] 決定，該側不一定有玩家。
@@ -342,8 +342,13 @@ object MahjongTileTableLayout {
     ): TileTableVector {
         val stackStep = MahjongTileDimensions.TILE_WIDTH + MahjongTileDimensions.TILE_SMALL_PADDING
         val halfSpan = maxOf(stacksPerSide / 2.0 * stackStep, STANDARD_WALL_HALF_SPAN) - tileLayout.wallInset
-        val cornerInterlockShift = MahjongTileDimensions.TILE_HEIGHT / 2.0 +
-            MahjongTileDimensions.TILE_WIDTH * CORNER_GAP_RATIO + tileLayout.wallCornerOverhang
+        val staggerSign = when (tileLayout.wallStagger) {
+            TableWallStagger.RIGHT -> 1.0
+            TableWallStagger.LEFT -> -1.0
+        }
+        val cornerInterlockShift = staggerSign * (
+            MahjongTileDimensions.TILE_HEIGHT / 2.0 + MahjongTileDimensions.TILE_WIDTH * CORNER_GAP_RATIO + tileLayout.wallCornerOverhang
+            )
         val alongSide = ((stacksPerSide - 1) / 2.0 - stack) * stackStep + cornerInterlockShift
         val layerHeight = layer * MahjongTileDimensions.TILE_DEPTH +
             if (layer > 0) MahjongTileDimensions.TILE_SMALL_PADDING else 0.0
