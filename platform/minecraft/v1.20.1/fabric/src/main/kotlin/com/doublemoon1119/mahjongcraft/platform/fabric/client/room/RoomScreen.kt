@@ -5,21 +5,19 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameConfig
 import com.doublemoon1119.mahjongcraft.flow.common.room.model.RoomSnapshot
 import com.doublemoon1119.mahjongcraft.flow.common.time.MonotonicClock
 import com.doublemoon1119.mahjongcraft.flow.network.dto.config.toDomain
-import com.doublemoon1119.mahjongcraft.flow.network.dto.config.toDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.RoomActionDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkDtoRegistries
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkJson
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.catalogue.RuleCatalogueScreenController
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.character.GuiEntityModelRenderer
-import com.doublemoon1119.mahjongcraft.platform.fabric.client.config.MahjongClientConfigScreen
-import com.doublemoon1119.mahjongcraft.platform.fabric.client.config.MahjongHudLayoutEditorScreen
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.fitClientText
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.CycleButtonInput
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.RestartableMarqueeButtonWidget
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.ScrollState
-import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.SettingsFooterLayout
-import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.UnsavedChangesConfirmationScreen
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.SettingTooltip
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.SettingsScreenLayout
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.SettingsScreenRenderer
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.player.ClientPlayerDisplayNameResolver
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.player.ClientPlayerProfileResolver
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.player.playerInfoDisplayName
@@ -31,16 +29,12 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.client.table.ClientTableS
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongPlayerInfoEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.logging.mahjongCraftLogger
 import com.doublemoon1119.mahjongcraft.platform.fabric.network.MahjongChannels
-import com.doublemoon1119.mahjongcraft.platform.fabric.text.gameConfigPresentationText
 import com.doublemoon1119.mahjongcraft.platform.minecraft.ai.AiStrategyDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.table.MahjongTableController
+import com.doublemoon1119.mahjongcraft.platform.minecraft.catalogue.RuleCatalogueBrowseContext
 import com.doublemoon1119.mahjongcraft.platform.minecraft.character.AiCharacterClientStateStore
-import com.doublemoon1119.mahjongcraft.platform.minecraft.room.GameConfigEditorSpec
-import com.doublemoon1119.mahjongcraft.platform.minecraft.room.GameConfigFieldDefinition
-import com.doublemoon1119.mahjongcraft.platform.minecraft.room.GameConfigPresentationDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.GameConfigPresentationRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.GameConfigPresentationResolver
-import com.doublemoon1119.mahjongcraft.platform.minecraft.room.GameConfigPresentationValue
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.MinecraftRoomScreenKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.RoomMemberAppearanceSourceRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.TableOccupancyDto
@@ -48,14 +42,16 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.RuleModuleDisplay
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongPlayerInfoEntry
 import com.mojang.authlib.GameProfile
 import net.minecraft.client.MinecraftClient
+import net.minecraft.client.font.TextRenderer
 import net.minecraft.client.gui.DrawContext
+import net.minecraft.client.gui.Drawable
+import net.minecraft.client.gui.Element
+import net.minecraft.client.gui.Selectable
 import net.minecraft.client.gui.screen.Screen
 import net.minecraft.client.gui.tooltip.Tooltip
-import net.minecraft.client.gui.widget.ButtonWidget
 import net.minecraft.client.network.OtherClientPlayerEntity
 import net.minecraft.entity.LivingEntity
 import net.minecraft.text.Text
-import net.minecraft.util.Formatting
 import net.minecraft.util.math.BlockPos
 import net.minecraft.util.math.Box
 import java.util.UUID
@@ -68,9 +64,9 @@ import kotlin.uuid.toJavaUuid
  * @property stateStore 目前客戶端持有的房間、對局與牌桌快照。
  * @property characters 此連線已授權的角色描述。
  * @property tableId 本畫面對應的牌桌識別碼。
- * @property configPresentations 規則設定的呈現定義登錄表。
- * @property configResolver 將設定解析成欄位定義與值的解析器。
- * @property ruleNames 規則名稱登錄表。
+ * @param configPresentations 規則設定的呈現定義登錄表。
+ * @param configResolver 將設定解析成欄位定義與值的解析器。
+ * @param ruleNames 規則名稱登錄表。
  * @property portraitRenderer 成員頭像繪製器。
  * @property aiStrategies 可選 AI 策略登錄表。
  * @property aiStrategyNames AI 策略名稱登錄表。
@@ -89,9 +85,9 @@ class RoomScreen(
     private val stateStore: ClientMahjongStateStore,
     private val characters: AiCharacterClientStateStore,
     private val tableId: Uuid,
-    private val configPresentations: GameConfigPresentationRegistry,
-    private val configResolver: GameConfigPresentationResolver,
-    private val ruleNames: RuleModuleDisplayNameRegistry,
+    configPresentations: GameConfigPresentationRegistry,
+    configResolver: GameConfigPresentationResolver,
+    ruleNames: RuleModuleDisplayNameRegistry,
     private val portraitRenderer: PlayerPortraitRenderer,
     private val aiStrategies: MahjongAiStrategyRegistry,
     private val aiStrategyNames: AiStrategyDisplayNameRegistry,
@@ -115,14 +111,17 @@ class RoomScreen(
     /** 目前顯示的房間或設定頁。 */
     private var page = if (openSettings) Page.SETTINGS else Page.ROOM
 
-    /** 設定頁選中的分類；尚未選定時為 null。 */
-    private var selectedCategoryId: String? = null
-
-    /** 設定欄位清單的捲動與拖曳狀態。 */
-    private val fieldScroll = ScrollState()
-
-    /** 尚未送出或等待權威確認的設定草稿。 */
-    private val draft = RoomSettingsDraft()
+    /** 規則與流程設定頁。 */
+    private val settingsPage = RoomSettingsPage(
+        host = SettingsPageHost(),
+        stateStore = stateStore,
+        tableId = tableId,
+        configPresentations = configPresentations,
+        configResolver = configResolver,
+        ruleNames = ruleNames,
+        json = json,
+        networkRegistries = networkRegistries,
+    )
 
     /** 對局成員卡片內資訊列共用的捲動狀態。 */
     private val playingInfoScroll = ScrollState()
@@ -132,18 +131,6 @@ class RoomScreen(
 
     /** 等待室玩家卡片 grid 換列時的垂直捲動狀態，避免超出範圍的列疊在底部操作列上。 */
     private val memberScroll = ScrollState()
-
-    /** 目前設定頁的套用按鈕；其他頁面為 null。 */
-    private var applyButton: ButtonWidget? = null
-
-    /** 目前設定頁的復原按鈕。 */
-    private var undoButton: ButtonWidget? = null
-
-    /** 目前設定頁的預設值重設按鈕。 */
-    private var resetButton: ButtonWidget? = null
-
-    /** 目前設定頁的完成按鈕。 */
-    private var doneButton: ButtonWidget? = null
 
     /** 等目前輸入事件結束後再重建控制項的旗標。 */
     private var rebuildRequested = false
@@ -175,21 +162,20 @@ class RoomScreen(
     internal fun isForTable(tableId: Uuid): Boolean = this.tableId == tableId
 
     override fun init() {
-        applyButton = null
-        undoButton = null
-        resetButton = null
-        doneButton = null
-        addDrawableChild(tabButton(width / 2 - 102, MinecraftRoomScreenKeys.PAGE_ROOM, Page.ROOM))
+        val pageSwitchLeft = width / 2 - SettingsScreenLayout.PAGE_SWITCH_WIDTH - SettingsScreenLayout.PAGE_SWITCH_GAP / 2
+        addDrawableChild(pageButton(pageSwitchLeft, MinecraftRoomScreenKeys.PAGE_ROOM, Page.ROOM))
         addDrawableChild(
-            tabButton(width / 2 + 2, MinecraftRoomScreenKeys.PAGE_SETTINGS, Page.SETTINGS).also {
-                it.active = currentConfig() != null && page != Page.SETTINGS
-            },
+            pageButton(
+                x = pageSwitchLeft + SettingsScreenLayout.PAGE_SWITCH_WIDTH + SettingsScreenLayout.PAGE_SWITCH_GAP,
+                key = MinecraftRoomScreenKeys.PAGE_SETTINGS,
+                target = Page.SETTINGS,
+            ).also { it.active = currentConfig() != null },
         )
         if (stateStore.roomSnapshot(tableId)?.isHost == true) {
             addDrawableChild(
                 RoomExcludedParticipantsButton(
-                    x = width / 2 + 106,
-                    y = 24,
+                    x = width / 2 + SettingsScreenLayout.PAGE_SWITCH_WIDTH + SettingsScreenLayout.PAGE_SWITCH_GAP * 3 / 2,
+                    y = SettingsScreenLayout.PAGE_SWITCH_Y,
                     count = { stateStore.roomSnapshot(tableId)?.excludedPlayerIds?.size ?: 0 },
                     open = {
                         client?.setScreen(
@@ -209,22 +195,26 @@ class RoomScreen(
         }
         when (page) {
             Page.ROOM -> initRoomPage()
-            Page.SETTINGS -> initSettingsPage()
+            Page.SETTINGS -> settingsPage.init()
         }
     }
 
     /**
-     * 建立頁籤按鈕；目前所在頁籤不可再次點擊。
+     * 建立頁面切換按鈕；目前所在的頁面以白色外框標示，再點一次沒有作用。
      *
      * @param x 按鈕左界。
-     * @param key 頁籤名稱翻譯鍵。
+     * @param key 頁面名稱翻譯鍵。
      * @param target 點擊後要顯示的頁面。
      * @return 切換頁面並要求重建控制項的按鈕。
      */
-    private fun tabButton(x: Int, key: String, target: Page): ButtonWidget = RestartableMarqueeButtonWidget.builder(Text.translatable(key)) {
-        page = target
-        rebuild()
-    }.dimensions(x, 24, 100, 20).build().also { it.active = page != target }
+    private fun pageButton(x: Int, key: String, target: Page): RestartableMarqueeButtonWidget = RestartableMarqueeButtonWidget.builder(Text.translatable(key)) {
+        if (page != target) {
+            page = target
+            rebuild()
+        }
+    }.dimensions(x, SettingsScreenLayout.PAGE_SWITCH_Y, SettingsScreenLayout.PAGE_SWITCH_WIDTH, SettingsScreenLayout.BUTTON_HEIGHT).build().also {
+        it.outlined = page == target
+    }
 
     /** 依牌桌占用狀態與本地成員身分建立房間頁的操作按鈕。 */
     private fun initRoomPage() {
@@ -312,15 +302,9 @@ class RoomScreen(
                             val next = keys[CycleButtonInput.nextIndex(currentIndex = keys.indexOf(current), size = keys.size, step = CycleButtonInput.step())]
                             send(RoomActionDto.ChangeAiStrategy(tableIdText, targetId.toString(), next))
                         }
-                    }.dimensions(cardX + 8, cardY + AI_STRATEGY_BUTTON_OFFSET_Y, grid.cardWidth - 20, 18).build().also {
+                    }.pressesOnSecondaryClick().dimensions(cardX + 8, cardY + AI_STRATEGY_BUTTON_OFFSET_Y, grid.cardWidth - 20, 18).build().also {
                         it.active = room.isHost
-                        it.tooltip = Tooltip.of(
-                            CycleButtonInput.withHint(
-                                tooltip = aiStrategyTooltip(current),
-                                optionCount = aiStrategies.getAllStrategyKeys().size,
-                                active = it.active,
-                            ),
-                        )
+                        it.tooltip = Tooltip.of(aiStrategyTooltip(current, it.active))
                     },
                 )
             }
@@ -334,505 +318,6 @@ class RoomScreen(
             )
         }
     }
-
-    /** 依目前草稿建立分類、欄位與底部操作列，非房主只提供唯讀控制項。 */
-    private fun initSettingsPage() {
-        val authoritative = currentConfig() ?: return
-        val room = stateStore.roomSnapshot(tableId)
-        draft.beginIfAbsent(authoritative)
-        val config = draft.config ?: authoritative
-        val resolved = configResolver.resolve(config)
-        val moduleId = resolved.ruleModuleId
-        val definition = resolved.definition ?: return
-        val canEditRoom = stateStore.tableOccupancy(tableId)?.occupancy == TableOccupancyDto.ROOM && room?.isHost == true
-        val editable = canEditRoom && definition.selectable
-        val categories = definition.categories
-        if (selectedCategoryId !in categories.map { it.id }) selectedCategoryId = categories.firstOrNull()?.id
-        val compact = settingsLayout().isCompact
-        addRuleSelector(config, moduleId, canEditRoom, compact)
-        if (compact) {
-            val categoryWidth = (width - COMPACT_CONTENT_MARGIN * 2 - RoomSettingsLayout.COMPACT_FIELDS_GAP) / 2
-            categories.forEachIndexed { index, category ->
-                addDrawableChild(
-                    RestartableMarqueeButtonWidget.builder(Text.translatable(category.nameTranslationKey)) {
-                        selectedCategoryId = category.id
-                        fieldScroll.reset()
-                        rebuild()
-                    }.dimensions(
-                        x = COMPACT_CONTENT_MARGIN + index % 2 * (categoryWidth + RoomSettingsLayout.COMPACT_FIELDS_GAP),
-                        y = RoomSettingsLayout.COMPACT_CATEGORY_TOP + index / 2 * RoomSettingsLayout.COMPACT_CATEGORY_ROW_HEIGHT,
-                        width = categoryWidth,
-                        height = 20,
-                    ).build().also { it.active = selectedCategoryId != category.id },
-                )
-            }
-        } else {
-            var categoryY = 82
-            categories.forEach { category ->
-                addDrawableChild(
-                    RestartableMarqueeButtonWidget.builder(Text.translatable(category.nameTranslationKey)) {
-                        selectedCategoryId = category.id
-                        fieldScroll.reset()
-                        rebuild()
-                    }.dimensions(18, categoryY, 112, 20).build().also { it.active = selectedCategoryId != category.id },
-                )
-                categoryY += 24
-            }
-        }
-        val categoryFields = definition.fields.filter { it.categoryId == selectedCategoryId }
-        val settings = settingsLayout()
-        val maximumVisibleFields = settings.maximumVisibleFields
-        fieldScroll.clamp(categoryFields.size - maximumVisibleFields)
-        val fieldsTop = settings.fieldsTop
-        val rowHeight = settings.fieldRowHeight
-        categoryFields.drop(fieldScroll.index).take(maximumVisibleFields).forEachIndexed { index, field ->
-            val controlY = settings.fieldControlY(fieldsTop + index * rowHeight)
-            addFieldControls(field, config, controlY, editable && field.isEditable && field.isEnabled(config))
-        }
-        if (editable) {
-            val defaultConfig = draft.normalized(
-                config = GameConfig(
-                    ruleConfig = definition.defaultRuleConfig(),
-                    flowConfig = configPresentations.defaultFlowConfig(
-                        ruleModuleId = definition.ruleModuleId,
-                        ruleConfig = definition.defaultRuleConfig(),
-                    ),
-                ),
-            )
-            val footer = settingsFooterLayout()
-            val reset = RestartableMarqueeButtonWidget.builder(Text.translatable(MinecraftRoomScreenKeys.RESET_DEFAULTS_BUTTON)) {
-                draft.resetTo(defaultConfig)
-                rebuild()
-            }.dimensions(footer.resetX, height - 30, footer.resetWidth, 20).build().also {
-                it.tooltip = Tooltip.of(resetTooltip())
-            }
-            resetButton = reset
-            addDrawableChild(reset)
-            val undo = RestartableMarqueeButtonWidget.builder(Text.translatable(MinecraftRoomScreenKeys.UNDO)) {
-                restoreAuthoritativeDraft(authoritative)
-            }.dimensions(footer.undoX, height - 30, footer.actionWidth, 20).build()
-            undoButton = undo
-            addDrawableChild(undo)
-            val apply = RestartableMarqueeButtonWidget.builder(Text.translatable(MinecraftRoomScreenKeys.APPLY)) { applyDraft() }
-                .dimensions(footer.applyX, height - 30, footer.actionWidth, 20).build()
-            applyButton = apply
-            addDrawableChild(apply)
-            val done = RestartableMarqueeButtonWidget.builder(Text.translatable(MinecraftRoomScreenKeys.DONE)) {
-                finishSettings()
-            }.dimensions(footer.doneX, height - 30, footer.actionWidth, 20).build().also {
-                it.active = draft.canDone(roomPlayerCount())
-            }
-            doneButton = done
-            addDrawableChild(done)
-            refreshDraftButtons(config, authoritative, defaultConfig)
-        } else {
-            addDrawableChild(
-                RestartableMarqueeButtonWidget.builder(Text.translatable(MinecraftRoomScreenKeys.DONE)) {
-                    page = Page.ROOM
-                    rebuild()
-                }.dimensions(width - 94, height - 30, 74, 20).build(),
-            )
-        }
-    }
-
-    /**
-     * 依欄位編輯器規格建立布林、單選或整數控制項。
-     *
-     * @param field 欄位定義。
-     * @param config 用於讀取目前值與提示內容的設定。
-     * @param y 控制項頂端座標。
-     * @param editable 是否允許修改此欄位。
-     */
-    private fun addFieldControls(field: GameConfigFieldDefinition, config: GameConfig, y: Int, editable: Boolean) {
-        val value = field.read(config)
-        val controlY = y
-        val compact = settingsLayout().isCompact
-        when (val editor = field.editor) {
-            GameConfigEditorSpec.BooleanToggle -> {
-                val enabled = (value as GameConfigPresentationValue.BooleanValue).enabled
-                val (left, controlWidth) = if (compact) compactControlBounds() else (width - 152) to 124
-                addDrawableChild(
-                    RestartableMarqueeButtonWidget.builder(booleanText(enabled)) {
-                        updateDraft(field, GameConfigPresentationValue.BooleanValue(!enabled))
-                    }.dimensions(left, controlY, controlWidth, 20).build().withFieldTooltip(field, config, editable),
-                )
-            }
-            is GameConfigEditorSpec.SingleChoice -> {
-                val option = (value as GameConfigPresentationValue.ChoiceValue).optionId
-                val (left, controlWidth) = if (compact) compactControlBounds() else (width - 212) to 184
-                addDrawableChild(
-                    RestartableMarqueeButtonWidget.builder(optionText(option, editor)) {
-                        val index = CycleButtonInput.nextIndex(
-                            currentIndex = editor.optionIds.indexOf(option),
-                            size = editor.optionIds.size,
-                            step = CycleButtonInput.step(),
-                        )
-                        updateDraft(field, GameConfigPresentationValue.ChoiceValue(editor.optionIds[index]))
-                    }.dimensions(left, controlY, controlWidth, 20).build().withFieldTooltip(field, config, editable, editor.optionIds.size),
-                )
-            }
-            is GameConfigEditorSpec.MultiChoice -> {
-                val selected = (value as GameConfigPresentationValue.MultiChoiceValue).optionIds
-                val (left, controlWidth) = if (compact) compactControlBounds() else (width - 212) to 184
-                addDrawableChild(
-                    RestartableMarqueeButtonWidget.builder(
-                        message = Text.translatable(
-                            MinecraftRoomScreenKeys.SELECTED_COUNT,
-                            selected.size,
-                        ),
-                    ) {
-                        val basisConfig = currentConfig() ?: return@builder
-                        val basisSnapshot = stateStore.roomSnapshot(tableId)
-                        client?.setScreen(
-                            MultiChoiceScreen(
-                                parent = this,
-                                fieldName = field.nameTranslationKey,
-                                fieldDescriptionKey = field.descriptionTranslationKey,
-                                editor = editor,
-                                initialSelection = selected,
-                            ) { next ->
-                                val latest = currentConfig()
-                                if (
-                                    latest == null ||
-                                    latest != basisConfig ||
-                                    stateStore.roomSnapshot(tableId)?.isHost != true ||
-                                    basisSnapshot?.isHost != true ||
-                                    stateStore.tableOccupancy(tableId)?.occupancy != TableOccupancyDto.ROOM ||
-                                    draft.config != config ||
-                                    !field.isEditable ||
-                                    !field.isEnabled(config) ||
-                                    !editor.accepts(GameConfigPresentationValue.MultiChoiceValue(next))
-                                ) {
-                                    client?.setScreen(this)
-                                } else {
-                                    updateDraft(field, GameConfigPresentationValue.MultiChoiceValue(next))
-                                    client?.setScreen(this)
-                                }
-                            },
-                        )
-                    }.dimensions(left, controlY, controlWidth, 20).build().withFieldTooltip(field, config, editable),
-                )
-            }
-            is GameConfigEditorSpec.IntegerInput -> {
-                val number = (value as GameConfigPresentationValue.IntegerValue).number
-                val bounds = if (compact) {
-                    val (left, controlWidth) = compactControlBounds()
-                    val plusX = left + controlWidth - COMPACT_INTEGER_BUTTON_WIDTH
-                    val textX = left + COMPACT_INTEGER_BUTTON_WIDTH + COMPACT_INTEGER_BUTTON_GAP
-                    val textWidth = (plusX - COMPACT_INTEGER_BUTTON_GAP - textX).coerceAtLeast(1)
-                    IntegerControlBounds(left, textX, textWidth, plusX)
-                } else {
-                    IntegerControlBounds(width - 212, width - 184, 128, width - 52)
-                }
-                addDrawableChild(
-                    RestartableMarqueeButtonWidget.builder(Text.literal("−")) {
-                        val next = RoomConfigIntegerControl.decrement(
-                            current = number,
-                            editor = editor,
-                            shiftHeld = hasShiftDown(),
-                        )
-                        updateDraft(field, GameConfigPresentationValue.IntegerValue(next))
-                    }.dimensions(bounds.minusX, controlY, COMPACT_INTEGER_BUTTON_WIDTH, 20).build().withFieldTooltip(
-                        field = field,
-                        config = config,
-                        active = editable && RoomConfigIntegerControl.canDecrease(current = number, editor = editor),
-                    ),
-                )
-                val input = CenteredIntegerTextFieldWidget(
-                    fieldTextRenderer = textRenderer,
-                    x = bounds.textX,
-                    y = controlY,
-                    width = bounds.textWidth,
-                    height = 20,
-                    narration = Text.translatable(field.nameTranslationKey),
-                ).also { widget ->
-                    widget.text = number?.toString().orEmpty()
-                    widget.setMaxLength(11)
-                    widget.setEditable(editable)
-                    widget.active = editable
-                    widget.setEditableColor(0xFFFFFF)
-                    widget.setUneditableColor(0xAAAAAA)
-                    widget.tooltip = Tooltip.of(fieldTooltip(field, config))
-                    widget.setChangedListener { raw ->
-                        updateNumericDraft(field, editor, raw)
-                        widget.setEditableColor(if (draft.isFieldInvalid(field.id)) 0xFF5555 else 0xFFFFFF)
-                    }
-                }
-                addDrawableChild(input)
-                addDrawableChild(
-                    RestartableMarqueeButtonWidget.builder(Text.literal("+")) {
-                        val next = RoomConfigIntegerControl.increment(
-                            current = number,
-                            editor = editor,
-                            shiftHeld = hasShiftDown(),
-                        )
-                        updateDraft(field, GameConfigPresentationValue.IntegerValue(next))
-                    }.dimensions(bounds.plusX, controlY, COMPACT_INTEGER_BUTTON_WIDTH, 20).build().withFieldTooltip(
-                        field = field,
-                        config = config,
-                        active = editable && RoomConfigIntegerControl.canIncrease(current = number, editor = editor),
-                    ),
-                )
-            }
-        }
-    }
-
-    /**
-     * 計算窄視窗控制項的單欄水平範圍。
-     *
-     * @return 控制項左界與寬度；寬度至少為設定的最小值。
-     */
-    private fun compactControlBounds(): Pair<Int, Int> {
-        val left = COMPACT_CONTENT_MARGIN
-        val controlWidth = (width - COMPACT_CONTENT_MARGIN - COMPACT_SCROLLBAR_RESERVE).coerceAtLeast(MIN_COMPACT_CONTROL_WIDTH)
-        return left to controlWidth
-    }
-
-    /**
-     * 整數欄位三個控制項的水平範圍。
-     *
-     * @property minusX 減號按鈕左界。
-     * @property textX 輸入框左界。
-     * @property textWidth 輸入框寬度。
-     * @property plusX 加號按鈕左界。
-     */
-    private data class IntegerControlBounds(val minusX: Int, val textX: Int, val textWidth: Int, val plusX: Int)
-
-    /**
-     * 設定欄位按鈕的啟用狀態與含操作提示的 tooltip。
-     *
-     * @param field 欄位定義。
-     * @param config 讀取目前值使用的設定。
-     * @param active 是否可操作。
-     * @param optionCount 循環選項數；零表示不附加切換提示。
-     * @return 原按鈕本身。
-     */
-    private fun ButtonWidget.withFieldTooltip(
-        field: GameConfigFieldDefinition,
-        config: GameConfig,
-        active: Boolean,
-        optionCount: Int = 0,
-    ): ButtonWidget = apply {
-        this.active = active
-        tooltip = Tooltip.of(CycleButtonInput.withHint(tooltip = fieldTooltip(field, config), optionCount = optionCount, active = active))
-    }
-
-    /**
-     * 更新草稿欄位並要求重建控制項。
-     *
-     * @param field 要更新的欄位。
-     * @param value 新欄位值。
-     */
-    private fun updateDraft(field: GameConfigFieldDefinition, value: GameConfigPresentationValue) {
-        draft.updateField(field, value)
-        normalizeDraftFlowConfig()
-        rebuild()
-    }
-
-    /** 規則欄位變更後，讓依規則設定決定的共用流程欄位保持一致。 */
-    private fun normalizeDraftFlowConfig() {
-        val before = draft.config ?: return
-        val updated = before.let { config ->
-            val moduleId = configResolver.resolve(config).ruleModuleId
-            config.copy(
-                flowConfig = configPresentations.normalizeFlowConfig(
-                    ruleModuleId = moduleId,
-                    ruleConfig = config.ruleConfig,
-                    current = config.flowConfig,
-                ),
-            )
-        }
-        val afterFieldIds = effectiveFieldIds(updated)
-        draft.replaceConfig(updated, afterFieldIds)
-    }
-
-    /** 取得目前設定實際呈現的欄位，供規則切換時同步清理草稿驗證狀態。 */
-    private fun effectiveFieldIds(config: GameConfig): Set<String> = configResolver.resolve(config).definition
-        ?.let { definition -> definition.fields.mapTo(mutableSetOf()) { it.id } }
-        .orEmpty()
-
-    /**
-     * 直接輸入整數時保留焦點，只更新草稿、驗證狀態與底部按鈕。
-     *
-     * @param field 要更新的欄位。
-     * @param editor 整數輸入範圍與可空規格。
-     * @param raw 原始輸入文字。
-     */
-    private fun updateNumericDraft(
-        field: GameConfigFieldDefinition,
-        editor: GameConfigEditorSpec.IntegerInput,
-        raw: String,
-    ) {
-        if (!draft.markNumericInput(field, editor, raw)) {
-            refreshDraftButtons()
-            return
-        }
-        val beforeFieldIds = draft.config?.let(::effectiveFieldIds).orEmpty()
-        draft.applyNumericInput(field, raw)
-        normalizeDraftFlowConfig()
-        if (beforeFieldIds != draft.config?.let(::effectiveFieldIds).orEmpty()) {
-            rebuild()
-        } else {
-            refreshDraftButtons()
-        }
-    }
-
-    /**
-     * 開啟規則一覽的「?」按鈕，位於規則切換鈕右側；依點擊當下設定頁顯示的規則與設定開啟，含尚未套用的修改。
-     *
-     * @param x 按鈕左界。
-     */
-    private fun addRuleCatalogueButton(x: Int) {
-        addDrawableChild(
-            ButtonWidget.builder(Text.literal(RULE_CATALOGUE_BUTTON_LABEL)) {
-                val authoritative = currentConfig() ?: return@builder
-                val displayed = draft.config ?: authoritative
-                val context = roomRuleCatalogueContext(
-                    ruleModuleId = configResolver.resolve(displayed).ruleModuleId,
-                    displayed = displayed,
-                    authoritative = authoritative,
-                )
-                client?.setScreen(ruleCatalogue.createScreen(context = context, exit = RoomRuleCatalogueExit(this)))
-            }.dimensions(x, RULE_SELECTOR_Y, RULE_CATALOGUE_BUTTON_SIZE, RULE_CATALOGUE_BUTTON_SIZE).build().also {
-                it.tooltip = Tooltip.of(
-                    Text.empty()
-                        .append(Text.translatable(MinecraftRoomScreenKeys.RULE_CATALOGUE_BUTTON).formatted(Formatting.GOLD))
-                        .append("\n")
-                        .append(Text.translatable(MinecraftRoomScreenKeys.RULE_CATALOGUE_BUTTON_DESCRIPTION).formatted(Formatting.GRAY)),
-                )
-            },
-        )
-    }
-
-    /**
-     * 建立規則切換鈕與規則一覽入口，窄視窗時兩者合計佔滿內容寬度。
-     *
-     * @param config 切換規則時保留其流程設定的目前設定。
-     * @param moduleId 目前規則模組識別碼。
-     * @param canEdit 是否有編輯房間的權限。
-     * @param compact 是否採用窄視窗版面。
-     */
-    private fun addRuleSelector(config: GameConfig, moduleId: String, canEdit: Boolean, compact: Boolean) {
-        val candidates = configPresentations.ruleModuleIds.sorted()
-        val currentName = ruleName(moduleId)
-        val (x, rowWidth) = if (compact) COMPACT_CONTENT_MARGIN to (width - COMPACT_CONTENT_MARGIN * 2) else 18 to 112
-        val buttonWidth = rowWidth - RULE_CATALOGUE_BUTTON_SIZE - RULE_CATALOGUE_BUTTON_GAP
-        addRuleCatalogueButton(x = x + buttonWidth + RULE_CATALOGUE_BUTTON_GAP)
-        addDrawableChild(
-            RestartableMarqueeButtonWidget.builder(currentName) {
-                val selectable = candidates.filter { configPresentations.find(it)?.selectable == true }
-                if (selectable.isEmpty()) return@builder
-                val nextId = selectable[CycleButtonInput.nextIndex(currentIndex = selectable.indexOf(moduleId), size = selectable.size, step = CycleButtonInput.step())]
-                val next = configPresentations.find(nextId) ?: return@builder
-                draft.resetTo(
-                    config = config.copy(
-                        ruleConfig = next.defaultRuleConfig(),
-                        flowConfig = configPresentations.defaultFlowConfig(
-                            ruleModuleId = next.ruleModuleId,
-                            ruleConfig = next.defaultRuleConfig(),
-                            current = config.flowConfig,
-                        ),
-                    ),
-                )
-                selectedCategoryId = null
-                fieldScroll.reset()
-                rebuild()
-            }.dimensions(x, RULE_SELECTOR_Y, buttonWidth, 20).build().also { button ->
-                button.active = canEdit && candidates.count { configPresentations.find(it)?.selectable == true } > 1
-                button.tooltip = Tooltip.of(
-                    CycleButtonInput.withHint(
-                        tooltip = roomRuleSelectorTooltip(
-                            currentModuleId = moduleId,
-                            candidates = candidates.mapNotNull(configPresentations::find),
-                            ruleName = ::ruleName,
-                        ),
-                        optionCount = candidates.count { configPresentations.find(it)?.selectable == true },
-                        active = button.active,
-                    ),
-                )
-            },
-        )
-    }
-
-    /**
-     * 建立包含說明、目前值、選項或數值限制的條列提示。
-     *
-     * @param field 欄位呈現定義。
-     * @param config 讀取目前值及相依條件使用的設定。
-     * @return 完整的多行欄位提示文字。
-     */
-    private fun fieldTooltip(field: GameConfigFieldDefinition, config: GameConfig): Text {
-        val result = Text.empty().append(Text.translatable(field.descriptionTranslationKey).formatted(Formatting.GRAY))
-        val current = field.read(config)
-        result.append("\n• ").append(
-            Text.translatable(MinecraftRoomScreenKeys.CURRENT_VALUE, presentationText(current, field.editor)).formatted(Formatting.GREEN),
-        )
-        when (val editor = field.editor) {
-            GameConfigEditorSpec.BooleanToggle -> {
-                result.append("\n• ").append(Text.translatable(MinecraftRoomScreenKeys.AVAILABLE_OPTIONS).formatted(Formatting.GOLD))
-                result.append("\n  • ").append(booleanText(true))
-                result.append("\n  • ").append(booleanText(false))
-            }
-            is GameConfigEditorSpec.SingleChoice -> {
-                result.append("\n• ").append(Text.translatable(MinecraftRoomScreenKeys.AVAILABLE_OPTIONS).formatted(Formatting.GOLD))
-                editor.optionIds.forEach { option ->
-                    result.append("\n  • ").append(optionText(option, editor).copy().formatted(if ((current as GameConfigPresentationValue.ChoiceValue).optionId == option) Formatting.GREEN else Formatting.WHITE))
-                }
-            }
-            is GameConfigEditorSpec.MultiChoice -> {
-                result.append("\n• ").append(
-                    Text.translatable(
-                        MinecraftRoomScreenKeys.SELECTION_LIMITS,
-                        (current as GameConfigPresentationValue.MultiChoiceValue).optionIds.size,
-                        editor.minimumCount,
-                        editor.maximumCount,
-                    ).formatted(Formatting.GREEN),
-                )
-                result.append("\n• ").append(Text.translatable(MinecraftRoomScreenKeys.AVAILABLE_OPTIONS).formatted(Formatting.GOLD))
-                editor.optionIds.forEach { option ->
-                    val selected = option in current.optionIds
-                    result.append("\n  • ").append(optionText(option, editor).copy().formatted(if (selected) Formatting.GREEN else Formatting.WHITE))
-                }
-            }
-            is GameConfigEditorSpec.IntegerInput -> {
-                result.append("\n• ").append(
-                    Text.translatable(
-                        MinecraftRoomScreenKeys.VALID_RANGE,
-                        formatRoomInteger(editor.minimum),
-                        formatRoomInteger(editor.maximum),
-                    ).formatted(Formatting.GOLD),
-                )
-                result.append("\n• ").append(
-                    Text.translatable(MinecraftRoomScreenKeys.NORMAL_STEP, formatRoomInteger(editor.step)).formatted(Formatting.WHITE),
-                )
-                result.append("\n• ").append(
-                    Text.translatable(MinecraftRoomScreenKeys.SHIFT_STEP, formatRoomInteger(editor.step * 10)).formatted(Formatting.YELLOW),
-                )
-                result.append("\n• ").append(Text.translatable(MinecraftRoomScreenKeys.KEYBOARD_INPUT).formatted(Formatting.GRAY))
-            }
-        }
-        if (!field.isEnabled(config)) {
-            result.append("\n• ").append(Text.translatable(MinecraftRoomScreenKeys.DISABLED_BY_DEPENDENCY).formatted(Formatting.RED))
-        }
-        return result
-    }
-
-    /**
-     * 將欄位值轉成顯示文字。
-     *
-     * @param value 要呈現的欄位值。
-     * @param editor 欄位編輯器描述。
-     * @return 值對應的文字。
-     */
-    private fun presentationText(value: GameConfigPresentationValue, editor: GameConfigEditorSpec): Text = gameConfigPresentationText(value, editor)
-
-    /**
-     * 取得規則名稱，未登記時顯示原始識別碼。
-     *
-     * @param moduleId 規則模組識別碼。
-     * @return 本地化名稱或識別碼。
-     */
-    private fun ruleName(moduleId: String): Text = ruleNames.find(moduleId)?.let(Text::translatable) ?: Text.literal(moduleId)
 
     /**
      * 將房間操作與關閉按鈕整組置中。
@@ -857,135 +342,21 @@ class RoomScreen(
         )
     }
 
-    /** 依實際畫面寬度配置固定單行的設定頁 footer。 */
-    private fun settingsFooterLayout(): SettingsFooterLayout {
-        val availableWidth = width - 20
-        return SettingsFooterLayout.create(
-            left = 10,
-            availableWidth = availableWidth,
-            preferredResetWidth = 104,
-            gap = 6,
-        )
-    }
-
     /**
-     * 建立目前策略與全部可選策略的提示。
+     * 建立 AI 策略按鈕的提示：全部可選策略與目前策略，可操作時附上操作提示。
      *
      * @param current 目前策略識別碼；未知時為 null。
-     * @return 將目前策略標色的多行提示。
+     * @param active 按鈕是否可以操作。
+     * @return 多行提示文字。
      */
-    private fun aiStrategyTooltip(current: String?): Text = Text.empty()
-        .append(Text.translatable(MinecraftRoomScreenKeys.AI_STRATEGY_TITLE).formatted(Formatting.GOLD))
-        .append("\n• ")
-        .append(Text.translatable(MinecraftRoomScreenKeys.CURRENT_VALUE, aiStrategyText(current)).formatted(Formatting.GREEN))
-        .append("\n")
-        .append(Text.translatable(MinecraftRoomScreenKeys.AVAILABLE_OPTIONS).formatted(Formatting.GOLD))
-        .also { tooltip ->
-            aiStrategies.getAllStrategyKeys().forEach { key ->
-                tooltip.append("\n• ").append(aiStrategyText(key).copy().formatted(if (key == current) Formatting.GREEN else Formatting.WHITE))
-            }
-        }
-
-    /** 草稿未過期且驗證通過時送出設定更新；不自行判定伺服器是否接受。 */
-    private fun applyDraft() {
-        if (!draft.canDone(roomPlayerCount())) return
-        val table = stateStore.tableOccupancy(tableId) ?: return
-        val config = draft.config ?: return
-        MahjongChannels.roomAction.sendToServer(json, RoomActionDto.UpdateConfig(table.tableId, config.toDto(networkRegistries)))
+    private fun aiStrategyTooltip(current: String?, active: Boolean): Text {
+        val keys = aiStrategies.getAllStrategyKeys()
+        return SettingTooltip.options(
+            description = Text.translatable(MinecraftRoomScreenKeys.AI_STRATEGY_TITLE),
+            options = keys.map { SettingTooltip.Option(label = aiStrategyText(it), current = it == current) },
+            hints = CycleButtonInput.hintTexts(optionCount = keys.size, active = active),
+        )
     }
-
-    /** 有變更時提交並等待權威 snapshot，沒有變更時立即返回玩家頁。 */
-    private fun finishSettings() {
-        val authoritative = currentConfig() ?: return
-        val current = draft.config ?: authoritative
-        if (current == authoritative) {
-            page = Page.ROOM
-            rebuild()
-            return
-        }
-        draft.markReturnToRoomAfterApply()
-        applyDraft()
-    }
-
-    /**
-     * 將草稿恢復成權威設定並要求重建。
-     *
-     * @param authoritative 要採用的權威設定；未知時不處理。
-     */
-    private fun restoreAuthoritativeDraft(authoritative: GameConfig? = currentConfig()) {
-        val resolvedAuthoritative = authoritative ?: return
-        draft.restoreAuthoritative(resolvedAuthoritative)
-        rebuild()
-    }
-
-    /**
-     * 依草稿、權威值與預設值同步底部按鈕及差異提示。
-     *
-     * @param current 目前草稿。
-     * @param authoritative 目前權威設定。
-     * @param defaults 用於判斷是否可重設的預設設定。
-     */
-    private fun refreshDraftButtons(
-        current: GameConfig? = draft.config,
-        authoritative: GameConfig? = currentConfig(),
-        defaults: GameConfig? = current?.let { config ->
-            configResolver.resolve(config).definition?.let {
-                GameConfig(
-                    ruleConfig = it.defaultRuleConfig(),
-                    flowConfig = configPresentations.defaultFlowConfig(
-                        ruleModuleId = it.ruleModuleId,
-                        ruleConfig = it.defaultRuleConfig(),
-                    ),
-                )
-            }
-        },
-    ) {
-        val roomPlayerCount = roomPlayerCount()
-        applyButton?.active = draft.canApply(authoritative, roomPlayerCount)
-        undoButton?.active = draft.canUndo(authoritative)
-        resetButton?.active = draft.canReset(defaults)
-        doneButton?.active = draft.canDone(roomPlayerCount)
-        val changes = if (current != null && authoritative != null && current != authoritative && !draft.isStale) {
-            Tooltip.of(gameConfigDifferenceText(configResolver, ruleNames, authoritative, current))
-        } else {
-            null
-        }
-        val playerLimit = current?.takeIf { draft.exceedsPlayerLimit(roomPlayerCount) }?.let { config ->
-            Tooltip.of(playerLimitExceededText(config, roomPlayerCount).copy().formatted(Formatting.RED))
-        }
-        applyButton?.tooltip = playerLimit ?: changes
-        doneButton?.tooltip = playerLimit
-        undoButton?.tooltip = changes ?: Tooltip.of(undoTooltip())
-    }
-
-    /** 房間目前人數（含 AI）；房間資料尚未同步時為 0。 */
-    private fun roomPlayerCount(): Int = stateStore.roomSnapshot(tableId)?.playerIds?.size ?: 0
-
-    /**
-     * 建立房間人數超過規則上限的說明。
-     *
-     * @param config 用於取得規則名稱與人數上限的設定。
-     * @param roomPlayerCount 目前房間人數。
-     * @return 超過人數上限的提示文字。
-     */
-    private fun playerLimitExceededText(config: GameConfig, roomPlayerCount: Int): Text = Text.translatable(
-        MinecraftRoomScreenKeys.PLAYER_LIMIT_EXCEEDED,
-        roomPlayerCount,
-        ruleName(configResolver.resolve(config).ruleModuleId),
-        config.ruleConfig.maxPlayers,
-    )
-
-    /** 建立復原按鈕的放棄草稿說明。 */
-    private fun undoTooltip(): Text = Text.empty()
-        .append(Text.translatable(MinecraftRoomScreenKeys.UNDO).formatted(Formatting.GOLD))
-        .append("\n• ").append(Text.translatable(MinecraftRoomScreenKeys.UNDO_DISCARD).formatted(Formatting.WHITE))
-        .append("\n• ").append(Text.translatable(MinecraftRoomScreenKeys.UNDO_RESTORE).formatted(Formatting.GRAY))
-
-    /** 建立重設預設值按鈕的說明，提醒尚未儲存。 */
-    private fun resetTooltip(): Text = Text.empty()
-        .append(Text.translatable(MinecraftRoomScreenKeys.RESET_DEFAULTS_BUTTON).formatted(Formatting.GOLD))
-        .append("\n• ").append(Text.translatable(MinecraftRoomScreenKeys.RESET_DEFAULTS).formatted(Formatting.WHITE))
-        .append("\n• ").append(Text.translatable(MinecraftRoomScreenKeys.RESET_NOT_SAVED).formatted(Formatting.GRAY))
 
     /**
      * 建立並加入一個房間操作按鈕。
@@ -1025,24 +396,22 @@ class RoomScreen(
 
     override fun render(context: DrawContext, mouseX: Int, mouseY: Int, delta: Float) {
         renderBackground(context)
-        context.drawCenteredTextWithShadow(textRenderer, title, width / 2, 8, 0xFFD700)
-        val labelTooltip = when (page) {
-            Page.ROOM -> {
-                renderRoom(context, mouseX, mouseY)
-                null
-            }
-            Page.SETTINGS -> renderSettings(context, mouseX, mouseY)
+        SettingsScreenRenderer.title(context, textRenderer, title, width)
+        if (page == Page.ROOM) {
+            renderRoom(context, mouseX, mouseY)
+            super.render(context, mouseX, mouseY, delta)
+            return
         }
-        super.render(context, mouseX, mouseY, delta)
+        val labelTooltip = settingsPage.renderContent(context, mouseX, mouseY)
+        val pointerBlocked = settingsPage.blocksPointer
+        super.render(context, if (pointerBlocked) OFFSCREEN_POINTER else mouseX, if (pointerBlocked) OFFSCREEN_POINTER else mouseY, delta)
+        settingsPage.renderOverlay(context, mouseX, mouseY)
         labelTooltip?.let { context.drawTooltip(textRenderer, it, mouseX, mouseY) }
     }
 
     override fun mouseScrolled(mouseX: Double, mouseY: Double, amount: Double): Boolean {
         if (amount == 0.0) return super.mouseScrolled(mouseX, mouseY, amount)
-        if (page == Page.SETTINGS) {
-            if (fieldScroll.scrollBy(amount, settingsLayout().maximumScroll)) rebuild()
-            return true
-        }
+        if (page == Page.SETTINGS) return settingsPage.mouseScrolled(mouseX, mouseY, amount)
         val playingInfoScrollMaximum = playingGrid().maximumInfoScroll(totalPlayingInfoRows())
         if (page == Page.ROOM && stateStore.tableOccupancy(tableId)?.occupancy == TableOccupancyDto.GAME && playingInfoScrollMaximum > 0) {
             playingInfoScroll.scrollBy(amount, playingInfoScrollMaximum)
@@ -1057,10 +426,7 @@ class RoomScreen(
     }
 
     override fun mouseClicked(mouseX: Double, mouseY: Double, button: Int): Boolean {
-        if (page == Page.SETTINGS && button == 0 && settingsLayout().isOverScrollbar(mouseX, mouseY)) {
-            if (fieldScroll.beginDrag(mouseY, settingsLayout().scrollbar)) rebuild()
-            return true
-        }
+        if (page == Page.SETTINGS && settingsPage.mouseClicked(mouseX, mouseY, button)) return true
         if (page == Page.ROOM && button == 0) {
             val playingGrid = playingGrid()
             val totalInfoRows = totalPlayingInfoRows()
@@ -1080,10 +446,7 @@ class RoomScreen(
     }
 
     override fun mouseDragged(mouseX: Double, mouseY: Double, button: Int, deltaX: Double, deltaY: Double): Boolean {
-        if (fieldScroll.dragging && button == 0) {
-            if (fieldScroll.dragTo(mouseY, settingsLayout().scrollbar)) rebuild()
-            return true
-        }
+        if (page == Page.SETTINGS && settingsPage.mouseDragged(mouseY, button)) return true
         if (playingInfoScroll.dragging && button == 0) {
             playingInfoScroll.dragTo(mouseY, playingGrid().infoScrollbar(playingInfoDragRow, totalPlayingInfoRows(), playingInfoScroll.index))
             return true
@@ -1097,10 +460,20 @@ class RoomScreen(
     }
 
     override fun mouseReleased(mouseX: Double, mouseY: Double, button: Int): Boolean {
-        fieldScroll.endDrag()
+        settingsPage.mouseReleased()
         playingInfoScroll.endDrag()
         memberScroll.endDrag()
         return super.mouseReleased(mouseX, mouseY, button)
+    }
+
+    override fun keyPressed(keyCode: Int, scanCode: Int, modifiers: Int): Boolean {
+        if (page == Page.SETTINGS && settingsPage.keyPressed(keyCode)) return true
+        return super.keyPressed(keyCode, scanCode, modifiers)
+    }
+
+    override fun charTyped(chr: Char, modifiers: Int): Boolean {
+        if (page == Page.SETTINGS && settingsPage.blocksPointer) return true
+        return super.charTyped(chr, modifiers)
     }
 
     override fun tick() {
@@ -1136,26 +509,20 @@ class RoomScreen(
             }
             lastTable = stateStore.tableOccupancy(tableId)
             lastRoomSnapshot = stateStore.roomSnapshot(tableId)
-            if (draft.isReturningToRoomAfterApply && currentConfig() == draft.config) {
-                draft.adoptAuthoritative(currentConfig())
-                page = Page.ROOM
-            }
+            if (settingsPage.finishPendingApply()) page = Page.ROOM
             if (stateStore.tableOccupancy(tableId)?.occupancy == TableOccupancyDto.VACANT) {
                 wasRoomMember = false
                 page = Page.ROOM
-                draft.clear()
+                settingsPage.clearDraft()
             }
             clearAndInit()
             return
         }
         val authoritative = currentConfig() ?: return
-        when (val outcome = draft.onAuthoritativeChanged(authoritative)) {
-            RoomSettingsDraft.Outcome.Unchanged -> Unit
-            is RoomSettingsDraft.Outcome.Adopted -> {
-                if (outcome.returnToRoom) page = Page.ROOM
-                clearAndInit()
-            }
-            RoomSettingsDraft.Outcome.BecameStale -> refreshDraftButtons()
+        val outcome = settingsPage.syncAuthoritative(authoritative)
+        if (outcome is RoomSettingsDraft.Outcome.Adopted) {
+            if (outcome.returnToRoom) page = Page.ROOM
+            clearAndInit()
         }
     }
 
@@ -1478,86 +845,6 @@ class RoomScreen(
         )
     }
 
-    /**
-     * 繪製設定欄位標籤、捲軸與驗證狀態。
-     *
-     * @param context 畫面繪製情境。
-     * @param mouseX 游標水平座標。
-     * @param mouseY 游標垂直座標。
-     * @return 被截斷且正被游標指向的標籤原文；沒有時為 null。
-     */
-    private fun renderSettings(context: DrawContext, mouseX: Int, mouseY: Int): Text? {
-        val config = draft.config ?: currentConfig() ?: return null
-        val resolved = configResolver.resolve(config)
-        val definition = resolved.definition
-        val settings = settingsLayout()
-        val fieldsTop = settings.fieldsTop
-        if (definition == null) {
-            context.drawCenteredTextWithShadow(
-                textRenderer,
-                Text.translatable(MinecraftRoomScreenKeys.READ_ONLY),
-                width / 2,
-                fieldsTop,
-                0xAAAAAA,
-            )
-            return null
-        }
-        var hoveredLabel: Text? = null
-        val compact = settings.isCompact
-        val rowHeight = settings.fieldRowHeight
-        definition.fields.filter { it.categoryId == selectedCategoryId }
-            .drop(fieldScroll.index)
-            .take(settings.maximumVisibleFields)
-            .forEachIndexed { index, field ->
-                val label = Text.translatable(field.nameTranslationKey)
-                val rowTop = fieldsTop + index * rowHeight
-                val labelX: Int
-                val labelY: Int
-                val hoverRight: Int
-                val maximumLabelWidth: Int
-                if (compact) {
-                    labelX = COMPACT_CONTENT_MARGIN
-                    labelY = rowTop
-                    hoverRight = width - COMPACT_CONTENT_MARGIN
-                    maximumLabelWidth = (hoverRight - labelX).coerceAtLeast(1)
-                } else {
-                    labelX = SETTINGS_FIELD_LABEL_X
-                    labelY = rowTop + (20 - VANILLA_VISIBLE_TEXT_HEIGHT) / 2
-                    hoverRight = settings.fieldControlLeft(field.editor)
-                    maximumLabelWidth = (hoverRight - labelX - SETTINGS_FIELD_LABEL_GAP).coerceAtLeast(1)
-                }
-                val fittedLabel = fitClientText(textRenderer, label, maximumLabelWidth)
-                context.drawTextWithShadow(textRenderer, fittedLabel, labelX, labelY, 0xFFFFFF)
-                if (
-                    fittedLabel.string != label.string &&
-                    mouseX in labelX until hoverRight &&
-                    mouseY in labelY until labelY + textRenderer.fontHeight
-                ) {
-                    hoveredLabel = label
-                }
-            }
-        renderScrollbar(context, definition.fields.count { it.categoryId == selectedCategoryId })
-        val status = when {
-            !definition.selectable -> Text.translatable(definition.unavailableReasonTranslationKey!!) to 0xFF7777
-            draft.isStale -> Text.translatable(MinecraftRoomScreenKeys.DRAFT_STALE) to 0xFF5555
-            draft.hasInvalidFields -> Text.translatable(MinecraftRoomScreenKeys.VALIDATION_FAILED) to 0xFF5555
-            draft.exceedsPlayerLimit(roomPlayerCount()) -> playerLimitExceededText(config, roomPlayerCount()) to 0xFF5555
-            else -> null
-        }
-        status?.let { (message, color) ->
-            val statusLabelX = if (compact) COMPACT_CONTENT_MARGIN else SETTINGS_FIELD_LABEL_X
-            val contentWidth = (width - statusLabelX - 20).coerceAtLeast(1)
-            context.drawCenteredTextWithShadow(
-                textRenderer,
-                fitClientText(textRenderer, message, contentWidth),
-                statusLabelX + contentWidth / 2,
-                settings.statusY,
-                color,
-            )
-        }
-        return hoveredLabel
-    }
-
     /** 取得房間設定，沒有房間快照時改用進行中對局的設定；兩者皆無時為 null。 */
     private fun currentConfig(): GameConfig? = stateStore.roomSnapshot(tableId)?.gameConfig
         ?: stateStore.tableOccupancy(tableId)?.playingGameConfig?.let { dto -> dto.toDomain(networkRegistries) }
@@ -1608,41 +895,6 @@ class RoomScreen(
     }
 
     /**
-     * 依目前視窗尺寸、草稿分類與捲動位置建立設定頁版面。
-     *
-     * @param fieldCount 目前分類的完整欄位數。
-     * @return 設定頁版面幾何。
-     */
-    private fun settingsLayout(fieldCount: Int = currentFieldCount()): RoomSettingsLayout = RoomSettingsLayout(
-        windowWidth = width,
-        windowHeight = height,
-        categoryCount = resolvedDefinition()?.categories?.size ?: 0,
-        fieldCount = fieldCount,
-        scrollIndex = fieldScroll.index,
-    )
-
-    /** 目前草稿或權威設定解析出的欄位定義；沒有可編輯定義時為 null。 */
-    private fun resolvedDefinition(): GameConfigPresentationDefinition? = (draft.config ?: currentConfig())?.let(configResolver::resolve)?.definition
-
-    /** 目前分類的完整欄位數，供 scrollbar 幾何與捲動上限共用。 */
-    private fun currentFieldCount(): Int = resolvedDefinition()?.fields?.count { it.categoryId == selectedCategoryId } ?: 0
-
-    /**
-     * 只在設定欄位超出可見範圍時繪製捲軸。
-     *
-     * @param context 畫面繪製情境。
-     * @param fieldCount 目前分類的完整欄位數。
-     */
-    private fun renderScrollbar(context: DrawContext, fieldCount: Int) {
-        val settings = settingsLayout(fieldCount)
-        val scrollbar = settings.scrollbar
-        if (scrollbar.maximumScroll <= 0) return
-        val column = settings.scrollbarColumn
-        context.fill(column.trackLeft, scrollbar.trackTop, column.trackRight, scrollbar.trackBottom, 0x80505050.toInt())
-        context.fill(column.trackLeft, scrollbar.thumbTop, column.trackRight, scrollbar.thumbTop + scrollbar.thumbHeight, 0xFFD0D0D0.toInt())
-    }
-
-    /**
      * 優先使用世界中的玩家，否則以玩家列表或已解析 profile 建立純客戶端預覽。
      * 未取得 profile 時要求 [profileResolver] 載入並使用問號佔位模型；是否外部查詢由解析器的帳號政策決定。
      * 取得 profile 後，下次呼叫會取代佔位模型。
@@ -1666,64 +918,10 @@ class RoomScreen(
         return OtherClientPlayerEntity(world, profile).also { profilePreviews[playerId] = it }
     }
 
-    /**
-     * 取得布林值的本地化文字。
-     *
-     * @param enabled 是否啟用。
-     * @return 對應真或假的文字。
-     */
-    private fun booleanText(enabled: Boolean): Text = Text.translatable(
-        if (enabled) MinecraftRoomScreenKeys.TRUE else MinecraftRoomScreenKeys.FALSE,
-    )
-
-    /**
-     * 取得設定選項的本地化文字。
-     *
-     * @param optionId 選項識別碼。
-     * @param editor 單選或多選欄位編輯器描述。
-     * @return 已登記的本地化文字；未登記翻譯鍵時顯示完整選項 ID。
-     */
-    private fun optionText(optionId: String, editor: GameConfigEditorSpec.ChoiceEditor): Text = editor.translationKeyFor(optionId)?.let(Text::translatable) ?: Text.literal(optionId)
-
-    /**
-     * Esc 在設定頁沒有可套用草稿時直接返回玩家頁；有尚未套用的合法草稿時改顯示「套用並返回／放棄
-     * 變更／繼續編輯」確認畫面，避免無聲丟棄——房間規則是所有玩家共享的狀態，比個人化的用戶端設定
-     * 風險更高（比照 [MahjongClientConfigScreen]／[MahjongHudLayoutEditorScreen] 既有的保護）。玩家頁
-     * 才離開整個畫面。
-     */
+    /** Esc 在設定頁返回成員頁，有尚未套用的修改時先確認；在成員頁才離開整個畫面。 */
     override fun close() {
-        if (page == Page.SETTINGS) {
-            if (hasUnsavedSettingsDraft()) {
-                client?.setScreen(
-                    UnsavedChangesConfirmationScreen(
-                        previousScreen = this,
-                        onApply = {
-                            finishSettings()
-                            client?.setScreen(this)
-                        },
-                        onDiscard = {
-                            restoreAuthoritativeDraft()
-                            page = Page.ROOM
-                            client?.setScreen(this)
-                        },
-                        changesPreview = gameConfigDifferenceText(configResolver, ruleNames, currentConfig()!!, draft.config!!),
-                    ),
-                )
-            } else {
-                restoreAuthoritativeDraft()
-                page = Page.ROOM
-                rebuild()
-            }
-        } else {
-            closeEntireScreen()
-        }
+        if (page == Page.SETTINGS) settingsPage.close() else closeEntireScreen()
     }
-
-    /**
-     * 目前是否有尚未套用、且可以直接套用的設定草稿；草稿因外部變更失效或驗證失敗時視為沒有，交由
-     * 既有 Undo 流程處理，不提供「套用並返回」選項。
-     */
-    private fun hasUnsavedSettingsDraft(): Boolean = draft.canDone(roomPlayerCount()) && draft.hasUnsavedChanges(currentConfig())
 
     /** 關閉整個 RoomScreen，不套用設定頁的階層式 Esc 行為。 */
     private fun closeEntireScreen() {
@@ -1736,6 +934,34 @@ class RoomScreen(
     }
 
     override fun shouldPause(): Boolean = false
+
+    /** 設定頁借用本畫面能力的接口。 */
+    private inner class SettingsPageHost : RoomSettingsPageHost {
+        override val screen: Screen
+            get() = this@RoomScreen
+
+        override val textRenderer: TextRenderer
+            get() = this@RoomScreen.textRenderer
+
+        override fun <T> addWidget(widget: T): T where T : Element, T : Drawable, T : Selectable = addDrawableChild(widget)
+
+        override fun requestRebuild() = rebuild()
+
+        override fun showRoomPage() {
+            page = Page.ROOM
+            rebuild()
+        }
+
+        override fun openScreen(screen: Screen) {
+            client?.setScreen(screen)
+        }
+
+        override fun openRuleCatalogue(context: RuleCatalogueBrowseContext) {
+            client?.setScreen(ruleCatalogue.createScreen(context = context, exit = RoomRuleCatalogueExit(this@RoomScreen)))
+        }
+
+        override fun currentConfig(): GameConfig? = this@RoomScreen.currentConfig()
+    }
 
     /** 桌級畫面目前顯示的頁面。 */
     private enum class Page {
@@ -1779,41 +1005,8 @@ class RoomScreen(
     }
 
     private companion object {
-        /** 一般版面設定欄位標籤的左界。 */
-        const val SETTINGS_FIELD_LABEL_X = 150
-
-        /** 欄位標籤與控制項之間的水平間距。 */
-        const val SETTINGS_FIELD_LABEL_GAP = 8
-
-        /** 輸入文字置中計算使用的可視字高。 */
-        const val VANILLA_VISIBLE_TEXT_HEIGHT = 8
-
-        /** 窄視窗內容區的水平邊距。 */
-        const val COMPACT_CONTENT_MARGIN = 18
-
-        /** 規則切換鈕與規則一覽按鈕的上界。 */
-        const val RULE_SELECTOR_Y = 54
-
-        /** 規則一覽按鈕的邊長。 */
-        const val RULE_CATALOGUE_BUTTON_SIZE = 20
-
-        /** 規則切換鈕與規則一覽按鈕之間的距離。 */
-        const val RULE_CATALOGUE_BUTTON_GAP = 4
-
-        /** 規則一覽按鈕上的文字。 */
-        const val RULE_CATALOGUE_BUTTON_LABEL = "?"
-
-        /** 窄視窗整數欄位加減按鈕的寬度。 */
-        const val COMPACT_INTEGER_BUTTON_WIDTH = 24
-
-        /** 整數輸入框與加減按鈕之間的間距。 */
-        const val COMPACT_INTEGER_BUTTON_GAP = 4
-
-        /** 右側需保留給 scrollbar 的寬度，避免 compact 控制項覆蓋到它。 */
-        const val COMPACT_SCROLLBAR_RESERVE = 20
-
-        /** 窄視窗控制項的最小寬度。 */
-        const val MIN_COMPACT_CONTROL_WIDTH = 80
+        /** 展開清單開啟時交給其他元件的游標座標，讓它們不顯示游標停留效果與提示框。 */
+        const val OFFSCREEN_POINTER = -1
 
         /** 成員名稱相對卡片頂端的垂直偏移。 */
         const val MEMBER_NAME_OFFSET = 96

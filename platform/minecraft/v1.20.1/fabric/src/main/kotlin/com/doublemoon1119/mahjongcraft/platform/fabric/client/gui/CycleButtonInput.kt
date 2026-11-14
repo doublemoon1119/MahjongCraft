@@ -2,25 +2,57 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.client.gui
 
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftCycleButtonKeys
 import net.minecraft.client.gui.screen.Screen
-import net.minecraft.text.MutableText
 import net.minecraft.text.Text
 import net.minecraft.util.Formatting
 
 /**
- * 循環切換按鈕的共用操作：點擊選擇下一項，按住 Shift 點擊選擇上一項。
+ * 循環切換按鈕的共用操作：左鍵選擇下一項，右鍵或按住 Shift 點擊選擇上一項。
  *
- * 選項至少三個時才在提示框尾端說明這兩種操作；只有兩個選項時往前往後結果相同，不另外說明。
+ * 選項至少三個時在提示框尾端說明兩種操作；只有兩個選項時往前往後結果相同，只說明左鍵；
+ * 少於兩個選項時不說明。
  */
 internal object CycleButtonInput {
+    /** 需要同時說明往前與往後操作的最少選項數。 */
+    const val MIN_OPTIONS_FOR_PREVIOUS_HINT: Int = 3
+
     /** 需要說明操作方式的最少選項數。 */
-    const val MIN_OPTIONS_FOR_HINT: Int = 3
+    const val MIN_OPTIONS_FOR_HINT: Int = 2
+
+    /** 目前是否正在處理按鈕的右鍵點擊。 */
+    private var secondaryClickActive: Boolean = false
 
     /**
-     * 依目前是否按住 Shift 決定這次點擊的方向。
+     * 依這次點擊是右鍵或按住 Shift 決定方向。
      *
-     * @return 按住 Shift 時為 -1（上一項），否則為 1（下一項）。
+     * @return 右鍵或按住 Shift 時為 -1（上一項），否則為 1（下一項）。
      */
-    fun step(): Int = if (Screen.hasShiftDown()) -1 else 1
+    fun step(): Int = direction(shiftHeld = Screen.hasShiftDown(), secondaryClick = secondaryClickActive)
+
+    /**
+     * 依按鍵狀態決定點擊的方向。
+     *
+     * @param shiftHeld 是否按住 Shift。
+     * @param secondaryClick 是否為右鍵點擊。
+     * @return 右鍵或按住 Shift 時為 -1（上一項），否則為 1（下一項）。
+     */
+    fun direction(shiftHeld: Boolean, secondaryClick: Boolean): Int = if (shiftHeld || secondaryClick) -1 else 1
+
+    /**
+     * 以右鍵點擊的身分執行按鈕動作；動作執行期間 [step] 回報往上一項。
+     *
+     * @param T 動作的回傳型別。
+     * @param action 按鈕被右鍵點擊時執行的動作。
+     * @return 動作的回傳值。
+     */
+    fun <T> duringSecondaryClick(action: () -> T): T {
+        val previous = secondaryClickActive
+        secondaryClickActive = true
+        try {
+            return action()
+        } finally {
+            secondaryClickActive = previous
+        }
+    }
 
     /**
      * 依方向取得下一個選項索引，頭尾相接。
@@ -58,7 +90,7 @@ internal object CycleButtonInput {
     ): T = options[nextIndex(currentIndex = options.indexOf(current), size = options.size, step = step)]
 
     /**
-     * 在提示框尾端空一行後加上操作說明；選項少於三個或按鈕停用時不加。
+     * 在提示框尾端空一行後加上操作說明；選項少於兩個或按鈕停用時不加。
      *
      * @param tooltip 原有的提示內容。
      * @param optionCount 選項數量。
@@ -70,12 +102,15 @@ internal object CycleButtonInput {
         optionCount: Int,
         active: Boolean = true,
     ): Text {
-        if (!active || optionCount < MIN_OPTIONS_FOR_HINT) return tooltip
-        return Text.empty().append(tooltip).append("\n\n").append(hintLines())
+        val hints = hintTexts(optionCount = optionCount, active = active)
+        if (hints.isEmpty()) return tooltip
+        val result = Text.empty().append(tooltip).append("\n")
+        hints.forEach { result.append("\n").append(it) }
+        return result
     }
 
     /**
-     * 逐行繪製的提示框版本：在最後空一行後加上兩行操作說明；選項少於三個或按鈕停用時不加。
+     * 逐行繪製的提示框版本：在最後空一行後加上操作說明；選項少於兩個或按鈕停用時不加。
      *
      * @param lines 原有提示的每一行。
      * @param optionCount 選項數量。
@@ -87,33 +122,28 @@ internal object CycleButtonInput {
         optionCount: Int,
         active: Boolean = true,
     ): List<Text> {
-        if (!active || optionCount < MIN_OPTIONS_FOR_HINT) return lines
+        val hints = hintTexts(optionCount = optionCount, active = active)
+        if (hints.isEmpty()) return lines
         return buildList {
             addAll(lines)
             add(Text.empty())
-            addAll(hintTexts())
+            addAll(hints)
         }
     }
 
     /**
-     * 兩行操作說明，以換行串成一段文字。
+     * 取得循環按鈕的操作說明。
      *
-     * @return 灰色的「點擊選擇下一項」與「Shift＋點擊選擇上一項」。
+     * @param optionCount 選項數量。
+     * @param active 按鈕是否可以操作。
+     * @return 灰色的操作說明：至少三個選項時為往下與往上兩行，兩個選項時只有往下一行，其他情況為空。
      */
-    private fun hintLines(): MutableText = Text.empty().also { result ->
-        hintTexts().forEachIndexed { index, line ->
-            if (index > 0) result.append("\n")
-            result.append(line)
-        }
+    fun hintTexts(optionCount: Int, active: Boolean = true): List<Text> = when {
+        !active || optionCount < MIN_OPTIONS_FOR_HINT -> emptyList()
+        optionCount < MIN_OPTIONS_FOR_PREVIOUS_HINT -> listOf(Text.translatable(MinecraftCycleButtonKeys.CLICK_NEXT).formatted(Formatting.GRAY))
+        else -> listOf(
+            Text.translatable(MinecraftCycleButtonKeys.CLICK_NEXT).formatted(Formatting.GRAY),
+            Text.translatable(MinecraftCycleButtonKeys.CLICK_PREVIOUS).formatted(Formatting.GRAY),
+        )
     }
-
-    /**
-     * 兩行操作說明。
-     *
-     * @return 灰色的「點擊選擇下一項」與「Shift＋點擊選擇上一項」。
-     */
-    private fun hintTexts(): List<Text> = listOf(
-        Text.translatable(MinecraftCycleButtonKeys.CLICK_NEXT).formatted(Formatting.GRAY),
-        Text.translatable(MinecraftCycleButtonKeys.SHIFT_CLICK_PREVIOUS).formatted(Formatting.GRAY),
-    )
 }

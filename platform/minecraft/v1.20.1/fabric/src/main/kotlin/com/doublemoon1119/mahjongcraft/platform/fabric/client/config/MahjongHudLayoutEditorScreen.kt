@@ -74,9 +74,9 @@ class MahjongHudLayoutEditorScreen(
     /** Editor 不暫停單人遊戲或 integrated server。 */
     override fun shouldPause(): Boolean = false
 
-    /** 建立工具列按鈕與固定單列的重設、復原、套用與返回按鈕。 */
+    /** 建立工具列按鈕與等寬排成一列的重設、復原、套用與返回按鈕。 */
     override fun init() {
-        val footer = SettingsFooterLayout.create(12, width - 24, 104, 6)
+        val footer = SettingsFooterLayout(left = FOOTER_MARGIN, width = width - FOOTER_MARGIN * 2)
         val y = height - 28
         addToolbarButtons()
         resetButton = addDrawableChild(
@@ -84,24 +84,24 @@ class MahjongHudLayoutEditorScreen(
                 model = model.reset()
                 saveFailed = false
                 refreshButtons()
-            }.dimensions(footer.resetX, y, footer.resetWidth, 20).build(),
+            }.dimensions(footer.buttonX(SettingsFooterLayout.RESET), y, footer.buttonWidth(SettingsFooterLayout.RESET), 20).build(),
         )
         undoButton = addDrawableChild(
             RestartableMarqueeButtonWidget.builder(Text.translatable(MinecraftClientConfigScreenKeys.UNDO)) {
                 model = model.undo()
                 saveFailed = false
                 refreshButtons()
-            }.dimensions(footer.undoX, y, footer.actionWidth, 20).build(),
+            }.dimensions(footer.buttonX(SettingsFooterLayout.UNDO), y, footer.buttonWidth(SettingsFooterLayout.UNDO), 20).build(),
         )
         applyButton = addDrawableChild(
             RestartableMarqueeButtonWidget.builder(Text.translatable(MinecraftClientConfigScreenKeys.APPLY)) {
                 apply(returnAfterSave = false)
-            }.dimensions(footer.applyX, y, footer.actionWidth, 20).build(),
+            }.dimensions(footer.buttonX(SettingsFooterLayout.APPLY), y, footer.buttonWidth(SettingsFooterLayout.APPLY), 20).build(),
         )
         addDrawableChild(
             RestartableMarqueeButtonWidget.builder(Text.translatable(MinecraftClientConfigScreenKeys.BACK)) {
                 requestReturn()
-            }.dimensions(footer.doneX, y, footer.actionWidth, 20).build(),
+            }.dimensions(footer.buttonX(SettingsFooterLayout.DONE), y, footer.buttonWidth(SettingsFooterLayout.DONE), 20).build(),
         )
         refreshButtons()
         updateControlVisibility()
@@ -163,7 +163,7 @@ class MahjongHudLayoutEditorScreen(
             val entries = HudElement.entries
             model = model.selectElement(CycleButtonInput.next(options = entries, current = model.selectedElement))
             clearAndInit()
-        }.dimensions(0, 0, width, MahjongHudToolbarLayout.BUTTON_HEIGHT).build()
+        }.pressesOnSecondaryClick().dimensions(0, 0, width, MahjongHudToolbarLayout.BUTTON_HEIGHT).build()
         toolbarTooltips[button] = selectionTooltip(HudElement.entries.map { Text.translatable(it.translationKey) to (it == model.selectedElement) })
         return button
     }
@@ -176,7 +176,7 @@ class MahjongHudLayoutEditorScreen(
             val entries = HudPreviewScenario.entries
             model = model.selectScenario(CycleButtonInput.next(options = entries, current = model.scenario))
             clearAndInit()
-        }.dimensions(0, 0, MahjongHudToolbarLayout.SELECTOR_WIDTH, MahjongHudToolbarLayout.BUTTON_HEIGHT).build()
+        }.pressesOnSecondaryClick().dimensions(0, 0, MahjongHudToolbarLayout.SELECTOR_WIDTH, MahjongHudToolbarLayout.BUTTON_HEIGHT).build()
         toolbarTooltips[button] = selectionTooltip(HudPreviewScenario.entries.map { Text.translatable(it.translationKey) to (it == model.scenario) })
         return button
     }
@@ -194,7 +194,7 @@ class MahjongHudLayoutEditorScreen(
             val entries = HudPreviewVisibility.entries
             model = model.selectVisibility(CycleButtonInput.next(options = entries, current = model.otherHudVisibility))
             clearAndInit()
-        }.dimensions(0, 0, width, MahjongHudToolbarLayout.BUTTON_HEIGHT).build()
+        }.pressesOnSecondaryClick().dimensions(0, 0, width, MahjongHudToolbarLayout.BUTTON_HEIGHT).build()
         toolbarTooltips[button] = selectionTooltip(HudPreviewVisibility.entries.map { Text.translatable(it.translationKey) to (it == model.otherHudVisibility) })
         return button
     }
@@ -697,6 +697,9 @@ class MahjongHudLayoutEditorScreen(
 
     /** Editor 配色與 Z 位移常數；第二行捲動幾何常數見 [MahjongHudToolbarLayout]。 */
     private companion object {
+        /** 底部按鈕列與視窗左右邊界的距離。 */
+        const val FOOTER_MARGIN = 12
+
         /** 預覽框內文字與左右邊界之間的內距。 */
         const val PREVIEW_TEXT_PADDING = 2
 

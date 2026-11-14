@@ -5,6 +5,7 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryIntegrity
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryOutcomeFilterDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryQueryFiltersDto
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.CycleButtonInput
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.RestartableMarqueeButtonWidget
 import com.doublemoon1119.mahjongcraft.platform.minecraft.history.MinecraftHistoryScreenKeys
 import net.minecraft.client.gui.DrawContext
 import net.minecraft.client.gui.screen.Screen
@@ -130,15 +131,18 @@ internal class HistoryFilterScreen(
     }
 
     /**
-     * 建立與文字輸入欄位同一排版語言的選項按鈕。
+     * 建立與文字輸入欄位同一排版語言的循環選項按鈕；左鍵選下一項，右鍵或 Shift＋左鍵選上一項。
      *
      * @param labelKey 按鈕標題翻譯鍵。
      * @param y 按鈕垂直座標。
      * @param action 點擊後執行的變更動作。
      * @return 建立的按鈕。
      */
-    private fun addChoiceButton(labelKey: String, y: Int, action: () -> Unit): ButtonWidget = ButtonWidget.builder(Text.translatable(labelKey)) { action() }
-        .dimensions(controlLeft(), y, controlWidth(), layout.rowHeight).build().also(::addDrawableChild)
+    private fun addChoiceButton(labelKey: String, y: Int, action: () -> Unit): ButtonWidget = RestartableMarqueeButtonWidget.builder(Text.translatable(labelKey)) { action() }
+        .pressesOnSecondaryClick()
+        .dimensions(controlLeft(), y, controlWidth(), layout.rowHeight)
+        .build()
+        .also(::addDrawableChild)
 
     /**
      * 取得控制項高度。

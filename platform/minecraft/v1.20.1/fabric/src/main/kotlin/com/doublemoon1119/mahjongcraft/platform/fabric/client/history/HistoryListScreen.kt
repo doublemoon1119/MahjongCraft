@@ -6,6 +6,7 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryQueryScop
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistorySortDirectionDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistorySortFieldDto
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.CycleButtonInput
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.RestartableMarqueeButtonWidget
 import com.doublemoon1119.mahjongcraft.platform.minecraft.history.MinecraftHistoryScreenKeys
 import net.minecraft.client.MinecraftClient
 import net.minecraft.client.gui.DrawContext
@@ -76,8 +77,16 @@ internal class HistoryListScreen(
         clearChildren()
         val toolbar = layout.toolbarBounds(width)
         filterButton = ButtonWidget.builder(Text.translatable(MinecraftHistoryScreenKeys.FILTERS)) { session.openFilters() }.dimensions(toolbar[0].x, toolbar[0].y, toolbar[0].width, 20).build().also(::addDrawableChild)
-        scopeButton = ButtonWidget.builder(scopeText()) { cycleScope() }.dimensions(toolbar[1].x, toolbar[1].y, toolbar[1].width, 20).build().also(::addDrawableChild)
-        sortButton = ButtonWidget.builder(sortText()) { cycleSort() }.dimensions(toolbar[2].x, toolbar[2].y, toolbar[2].width, 20).build().also(::addDrawableChild)
+        scopeButton = RestartableMarqueeButtonWidget.builder(scopeText()) { cycleScope() }
+            .pressesOnSecondaryClick()
+            .dimensions(toolbar[1].x, toolbar[1].y, toolbar[1].width, 20)
+            .build()
+            .also(::addDrawableChild)
+        sortButton = RestartableMarqueeButtonWidget.builder(sortText()) { cycleSort() }
+            .pressesOnSecondaryClick()
+            .dimensions(toolbar[2].x, toolbar[2].y, toolbar[2].width, 20)
+            .build()
+            .also(::addDrawableChild)
         directionButton = ButtonWidget.builder(directionText()) { toggleDirection() }.dimensions(toolbar[3].x, toolbar[3].y, toolbar[3].width, 20).build().also(::addDrawableChild)
         refreshButton = ButtonWidget.builder(Text.translatable(MinecraftHistoryScreenKeys.REFRESH)) { session.controller.refresh() }.dimensions(toolbar[4].x, toolbar[4].y, toolbar[4].width, 20).build().also(::addDrawableChild)
         val footer = layout.footerBounds(width, layout.footerTop)

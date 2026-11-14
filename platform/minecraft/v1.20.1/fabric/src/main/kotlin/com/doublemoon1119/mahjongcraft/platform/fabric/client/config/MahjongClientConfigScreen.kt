@@ -8,11 +8,16 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.client.automatic.ClientAu
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.automatic.ClientAutomaticControlResultKind
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.automatic.ClientAutomaticControlSubmitResult
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.automatic.ClientAutomaticControlUpdateCoordinator
-import com.doublemoon1119.mahjongcraft.platform.fabric.client.fitClientText
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.MarqueeState
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.RestartableMarqueeButtonWidget
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.ScrollState
-import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.ScrollbarLayout
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.SettingTooltip
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.SettingsFooterLayout
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.SettingsScreenLayout
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.SettingsScreenRenderer
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.SettingsScrollbar
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.SettingsTabStripLayout
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.SettingsTabWidget
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.UnsavedChangesConfirmationScreen
 import com.doublemoon1119.mahjongcraft.platform.minecraft.automatic.BuiltInMinecraftAutomaticControlIds
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftClientConfigScreenKeys
@@ -22,7 +27,6 @@ import net.minecraft.client.gui.screen.Screen
 import net.minecraft.client.gui.tooltip.Tooltip
 import net.minecraft.client.gui.widget.ButtonWidget
 import net.minecraft.text.Text
-import net.minecraft.util.Formatting
 
 /**
  * 原生 MahjongCraft client 設定畫面；分開編輯本機設定與本局自動操作草稿，不接觸房間規則。
@@ -72,6 +76,15 @@ class MahjongClientConfigScreen(
     /** 目前分類的垂直捲動狀態。 */
     private val rowScroll = ScrollState()
 
+    /** 分類頁籤列向左捲動的像素數。 */
+    private var tabScroll = 0
+
+    /** 底部狀態文字的跑馬燈進度。 */
+    private val statusMarquee = MarqueeState()
+
+    /** 下次建立元件時是否捲動頁籤列，讓選中的頁籤完整顯示。 */
+    private var revealSelectedTab = true
+
     /** 下一個 client tick 是否需要安全重建 widgets。 */
     private var rebuildRequested = false
 
@@ -91,29 +104,11 @@ class MahjongClientConfigScreen(
         applyButton = null
         undoButton = null
         resetButton = null
-        val bounds = panelBounds()
-        if (bounds.compact) {
-            val categoryWidth = (bounds.width - PANEL_PADDING * 2 - BOTTOM_BUTTON_GAP) / 2
-            Category.entries.forEachIndexed { index, entry ->
-                addCategoryButton(
-                    x = bounds.left + PANEL_PADDING + index % 2 * (categoryWidth + BOTTOM_BUTTON_GAP),
-                    y = bounds.contentTop + index / 2 * ClientConfigCategoryLayout.CATEGORY_ROW_HEIGHT,
-                    buttonWidth = categoryWidth,
-                    target = entry,
-                )
-            }
-        } else {
-            Category.entries.forEachIndexed { index, entry ->
-                addCategoryButton(
-                    x = bounds.left + PANEL_PADDING,
-                    y = bounds.contentTop + index * CATEGORY_BUTTON_GAP,
-                    buttonWidth = bounds.sidebarButtonWidth,
-                    target = entry,
-                )
-            }
-        }
-        addFieldButtons(bounds)
-        addBottomButtons(bounds)
+        doneButton = null
+        val layout = layout()
+        addTabs(layout)
+        addFieldButtons(layout)
+        addBottomButtons(layout)
         refreshButtons()
     }
 
@@ -171,28 +166,29 @@ class MahjongClientConfigScreen(
     }
 
     override fun render(context: DrawContext, mouseX: Int, mouseY: Int, delta: Float) {
-        context.fill(0, 0, width, height, SCREEN_OVERLAY_COLOR)
-        val bounds = panelBounds()
-        context.fill(bounds.left, bounds.top, bounds.right, bounds.bottom, PANEL_COLOR)
-        context.drawCenteredTextWithShadow(textRenderer, title, width / 2, bounds.titleY, TITLE_COLOR)
-        if (!bounds.compact) {
-            context.fill(
-                bounds.left + SIDEBAR_WIDTH,
-                bounds.contentTop - 8,
-                bounds.left + SIDEBAR_WIDTH + 1,
-                bounds.bottom - BOTTOM_AREA_HEIGHT,
-                DIVIDER_COLOR,
-            )
-        }
-        val hoveredLabel = renderFieldLabels(context, bounds, mouseX, mouseY)
-        renderStatus(context, bounds)
-        renderScrollbar(context, bounds)
+        renderBackground(context)
+        val layout = layout()
+        SettingsScreenRenderer.title(context, textRenderer, title, width)
+        SettingsScreenRenderer.tabLine(context, tabStrip(layout))
+        val hoveredLabel = renderFieldLabels(context, layout, mouseX, mouseY)
+        renderStatus(context, layout, mouseX, mouseY)
+        SettingsScrollbar.render(context, layout.scrollbarLeft, layout.scrollbar(rows().size, rowScroll.index))
         super.render(context, mouseX, mouseY, delta)
         hoveredLabel?.let { context.drawTooltip(textRenderer, it, mouseX, mouseY) }
     }
 
     override fun mouseScrolled(mouseX: Double, mouseY: Double, amount: Double): Boolean {
-        if (isInsideFields(mouseX, mouseY, panelBounds()) && rowScroll.scrollBy(amount, maximumScroll())) {
+        val layout = layout()
+        val strip = tabStrip(layout)
+        if (strip.contains(mouseX, mouseY) && strip.maximumScroll > 0) {
+            val next = strip.scrollByWheel(amount)
+            if (next != tabScroll) {
+                tabScroll = next
+                rebuild()
+            }
+            return true
+        }
+        if (rowScroll.scrollBy(amount, layout.scrollbar(rows().size, rowScroll.index).maximumScroll)) {
             rebuild()
             return true
         }
@@ -200,8 +196,10 @@ class MahjongClientConfigScreen(
     }
 
     override fun mouseClicked(mouseX: Double, mouseY: Double, button: Int): Boolean {
-        if (button == 0 && isOverScrollbar(mouseX, mouseY, panelBounds())) {
-            if (rowScroll.beginDrag(mouseY, scrollbarLayout(panelBounds()))) rebuild()
+        val layout = layout()
+        val scrollbar = layout.scrollbar(rows().size, rowScroll.index)
+        if (button == 0 && scrollbar.maximumScroll > 0 && layout.isOverScrollbar(mouseX, mouseY)) {
+            if (rowScroll.beginDrag(mouseY, scrollbar)) rebuild()
             return true
         }
         return super.mouseClicked(mouseX, mouseY, button)
@@ -209,7 +207,7 @@ class MahjongClientConfigScreen(
 
     override fun mouseDragged(mouseX: Double, mouseY: Double, button: Int, deltaX: Double, deltaY: Double): Boolean {
         if (rowScroll.dragging && button == 0) {
-            if (rowScroll.dragTo(mouseY, scrollbarLayout(panelBounds()))) rebuild()
+            if (rowScroll.dragTo(mouseY, layout().scrollbar(rows().size, rowScroll.index))) rebuild()
             return true
         }
         return super.mouseDragged(mouseX, mouseY, button, deltaX, deltaY)
@@ -221,104 +219,124 @@ class MahjongClientConfigScreen(
     }
 
     /**
-     * 建立分類切換按鈕。
+     * 建立分類頁籤。
      *
-     * @param x 按鈕左側座標。
-     * @param y 按鈕上緣座標。
-     * @param buttonWidth 按鈕寬度。
-     * @param target 點擊後切換的分類。
+     * @param layout 設定頁版面。
      */
-    private fun addCategoryButton(x: Int, y: Int, buttonWidth: Int, target: Category) {
-        addDrawableChild(
-            RestartableMarqueeButtonWidget.builder(Text.translatable(target.translationKey)) {
-                category = target
-                rowScroll.reset()
-                rebuild()
-            }.dimensions(x, y, buttonWidth, BUTTON_HEIGHT).build().also {
-                it.active = category != target
-            },
-        )
-    }
-
-    /**
-     * 依分類建立目前可見的欄位控制項。
-     *
-     * @param bounds 中央面板的邊界與控制項位置。
-     */
-    private fun addFieldButtons(bounds: PanelBounds) {
-        val rows = rows()
-        val visible = visibleRowCount(bounds)
-        rowScroll.clamp(rows.size - visible)
-        rows.drop(rowScroll.index).take(visible).forEachIndexed { index, row ->
-            if (row.information) return@forEachIndexed
-            val y = rowsTop(bounds) + index * FIELD_ROW_HEIGHT
-            val message = if (bounds.compact) {
-                row.nameText().copy().append(": ").append(row.valueText(draft))
-            } else {
-                row.valueText(draft)
-            }
-            val button = RestartableMarqueeButtonWidget.builder(message) {
-                if (row.onActivate != null) {
-                    row.onActivate.invoke()
-                } else {
-                    row.update?.let { update ->
-                        draft = update(draft)
-                        saveFailed = false
+    private fun addTabs(layout: SettingsScreenLayout) {
+        if (revealSelectedTab) {
+            tabScroll = tabStrip(layout).scrollRevealing(category.ordinal)
+            revealSelectedTab = false
+        }
+        val strip = tabStrip(layout)
+        tabScroll = strip.effectiveScroll
+        Category.entries.forEachIndexed { index, entry ->
+            val selected = entry == category
+            addDrawableChild(
+                SettingsTabWidget(
+                    x = strip.tabX(index),
+                    y = strip.tabY(selected),
+                    width = strip.tabWidth,
+                    height = strip.tabHeight(selected),
+                    message = Text.translatable(entry.translationKey),
+                    selected = selected,
+                    clipLeft = strip.left,
+                    clipRight = strip.right,
+                    onSelect = {
+                        category = entry
+                        revealSelectedTab = true
+                        rowScroll.reset()
                         rebuild()
-                    }
-                }
-            }.dimensions(bounds.controlLeft, y, bounds.controlWidth, BUTTON_HEIGHT).build().also {
-                it.active = (row.update != null || row.onActivate != null) &&
-                    !draftStale &&
-                    !automaticDraft.state().pending &&
-                    (!row.remote || !automaticDraft.state().stale)
-                it.tooltip = row.descriptionText()?.let(Tooltip::of) ?: row.nameOverride?.let(Tooltip::of)
-            }
-            addDrawableChild(button)
+                    },
+                ),
+            )
         }
     }
 
     /**
-     * 建立固定單行的 Reset to Defaults、Undo、Apply、Done。
+     * 依分類建立目前可見的欄位控制項：開關靠右、寬度固定；沒有對應值的動作佔滿整列。
      *
-     * @param bounds 中央面板的邊界與控制項位置。
+     * @param layout 設定頁版面。
      */
-    private fun addBottomButtons(bounds: PanelBounds) {
-        val availableWidth = bounds.width - PANEL_PADDING * 2
-        val footer = SettingsFooterLayout.create(
-            left = bounds.left + PANEL_PADDING,
-            availableWidth = availableWidth,
-            preferredResetWidth = RESET_BUTTON_PREFERRED_WIDTH,
-            gap = BOTTOM_BUTTON_GAP,
-        )
-        val y = bounds.bottom - PANEL_PADDING - BUTTON_HEIGHT
-        resetButton = addDrawableChild(
-            RestartableMarqueeButtonWidget.builder(Text.translatable(MinecraftClientConfigScreenKeys.RESET_DEFAULTS)) {
-                draft = MahjongClientConfigState()
-                automaticDraft.reset()
-                saveFailed = false
-                rebuild()
-            }.dimensions(footer.resetX, y, footer.resetWidth, BUTTON_HEIGHT).build(),
-        )
-        undoButton = addDrawableChild(
-            RestartableMarqueeButtonWidget.builder(Text.translatable(MinecraftClientConfigScreenKeys.UNDO)) {
-                undoDraft()
-            }.dimensions(footer.undoX, y, footer.actionWidth, BUTTON_HEIGHT).build(),
-        )
-        applyButton = addDrawableChild(
-            RestartableMarqueeButtonWidget.builder(Text.translatable(MinecraftClientConfigScreenKeys.APPLY)) {
-                applyDraft(closeAfterSave = false)
-            }.dimensions(footer.applyX, y, footer.actionWidth, BUTTON_HEIGHT).build(),
-        )
-        doneButton = addDrawableChild(
-            RestartableMarqueeButtonWidget.builder(Text.translatable(MinecraftClientConfigScreenKeys.DONE)) {
-                if (draftStale || (!hasChanges() && !preferenceService.hasPendingSync)) {
-                    close()
-                } else {
-                    applyDraft(closeAfterSave = true)
+    private fun addFieldButtons(layout: SettingsScreenLayout) {
+        val rows = rows()
+        rowScroll.clamp(rows.size - layout.visibleFieldCount)
+        rows.drop(rowScroll.index).take(layout.visibleFieldCount).forEachIndexed { index, row ->
+            val y = layout.fieldControlY(layout.fieldRowTop(index))
+            val active = !draftStale && !automaticDraft.state().pending && (!row.remote || !automaticDraft.state().stale)
+            when (row) {
+                is ConfigRow.Information -> Unit
+                is ConfigRow.Action -> addDrawableChild(
+                    RestartableMarqueeButtonWidget.builder(row.name) { row.activate() }
+                        .dimensions(layout.contentLeft, y, layout.contentWidth, SettingsScreenLayout.BUTTON_HEIGHT)
+                        .build()
+                        .also {
+                            it.active = active
+                            it.tooltip = Tooltip.of(SettingTooltip.description(row.description))
+                        },
+                )
+                is ConfigRow.Toggle -> {
+                    val enabled = row.enabled()
+                    addDrawableChild(
+                        RestartableMarqueeButtonWidget.builder(booleanText(enabled)) { row.toggle() }
+                            .pressesOnSecondaryClick()
+                            .dimensions(layout.controlLeft, y, layout.controlWidth, SettingsScreenLayout.BUTTON_HEIGHT)
+                            .build()
+                            .also {
+                                it.active = active
+                                it.tooltip = Tooltip.of(
+                                    SettingTooltip.options(
+                                        description = row.description,
+                                        options = listOf(
+                                            SettingTooltip.Option(label = booleanText(true), current = enabled),
+                                            SettingTooltip.Option(label = booleanText(false), current = !enabled),
+                                        ),
+                                        hints = if (active) SettingTooltip.toggleHints() else emptyList(),
+                                    ),
+                                )
+                            },
+                    )
                 }
-            }.dimensions(footer.doneX, y, footer.actionWidth, BUTTON_HEIGHT).build(),
+            }
+        }
+    }
+
+    /**
+     * 建立等寬排成一列的重設為預設、復原、套用、完成。
+     *
+     * @param layout 設定頁版面。
+     */
+    private fun addBottomButtons(layout: SettingsScreenLayout) {
+        val footer = layout.footer
+
+        /**
+         * 建立底部按鈕。
+         *
+         * @param index 按鈕在底部操作列中的順序。
+         * @param key 按鈕文字翻譯鍵。
+         * @param action 點擊時執行的動作。
+         * @return 已加入畫面的按鈕。
+         */
+        fun button(index: Int, key: String, action: () -> Unit): ButtonWidget = addDrawableChild(
+            RestartableMarqueeButtonWidget.builder(Text.translatable(key)) { action() }
+                .dimensions(footer.buttonX(index), layout.footerY, footer.buttonWidth(index), SettingsScreenLayout.BUTTON_HEIGHT)
+                .build(),
         )
+        resetButton = button(SettingsFooterLayout.RESET, MinecraftClientConfigScreenKeys.RESET_DEFAULTS) {
+            draft = MahjongClientConfigState()
+            automaticDraft.reset()
+            saveFailed = false
+            rebuild()
+        }
+        undoButton = button(SettingsFooterLayout.UNDO, MinecraftClientConfigScreenKeys.UNDO) { undoDraft() }
+        applyButton = button(SettingsFooterLayout.APPLY, MinecraftClientConfigScreenKeys.APPLY) { applyDraft(closeAfterSave = false) }
+        doneButton = button(SettingsFooterLayout.DONE, MinecraftClientConfigScreenKeys.DONE) {
+            if (draftStale || (!hasChanges() && !preferenceService.hasPendingSync)) {
+                close()
+            } else {
+                applyDraft(closeAfterSave = true)
+            }
+        }
     }
 
     /**
@@ -444,60 +462,77 @@ class MahjongClientConfigScreen(
     private fun differenceText(): Text = clientConfigDifferenceText(baseline, draft, automaticDraft.state(), displayResolver)
 
     /**
-     * 繪製欄位名稱，控制項寬度固定且名稱依實際像素寬度安全截斷；名稱被截斷且滑鼠懸停時回傳完整
-     * 名稱供呼叫端繪製 tooltip。
+     * 繪製欄位名稱與說明列；放不下時截斷。
      *
      * @param context 畫面繪製環境。
-     * @param bounds 中央面板邊界。
+     * @param layout 設定頁版面。
      * @param mouseX 游標水平座標。
      * @param mouseY 游標垂直座標。
-     * @return 游標下被截斷的完整欄位名稱；未懸停於截斷名稱時為 null。
+     * @return 游標下被截斷的文字全文；游標不在被截斷的文字上時為 null。
      */
-    private fun renderFieldLabels(context: DrawContext, bounds: PanelBounds, mouseX: Int, mouseY: Int): Text? {
+    private fun renderFieldLabels(context: DrawContext, layout: SettingsScreenLayout, mouseX: Int, mouseY: Int): Text? {
         var hoveredLabel: Text? = null
-        val rows = rows()
-        rows.drop(rowScroll.index).take(visibleRowCount(bounds)).forEachIndexed { index, row ->
-            if (bounds.compact && !row.information) return@forEachIndexed
-            val label = row.nameText()
-            val y = rowsTop(bounds) + index * FIELD_ROW_HEIGHT + VANILLA_TEXT_OFFSET_Y
-            val left = if (row.information) bounds.contentLeft else bounds.left + SIDEBAR_WIDTH + PANEL_PADDING
-            val available = if (row.information) bounds.right - PANEL_PADDING - left else bounds.controlLeft - PANEL_PADDING - left
-            val fittedLabel = fitClientText(textRenderer, label, available)
-            context.drawTextWithShadow(textRenderer, fittedLabel, left, y, TEXT_COLOR)
-            if (
-                fittedLabel.string != label.string &&
-                mouseX in left until left + available &&
-                mouseY in y until y + textRenderer.fontHeight
-            ) {
-                hoveredLabel = label
+        rows().drop(rowScroll.index).take(layout.visibleFieldCount).forEachIndexed { index, row ->
+            val rowTop = layout.fieldRowTop(index)
+            val hovered = when (row) {
+                is ConfigRow.Action -> null
+                is ConfigRow.Information -> SettingsScreenRenderer.label(
+                    context = context,
+                    textRenderer = textRenderer,
+                    label = row.name,
+                    x = layout.contentLeft,
+                    y = rowTop + (SettingsScreenLayout.BUTTON_HEIGHT - SettingsScreenLayout.VISIBLE_TEXT_HEIGHT) / 2,
+                    maximumWidth = layout.contentWidth,
+                    mouseX = mouseX,
+                    mouseY = mouseY,
+                    color = SettingsScreenRenderer.MUTED_TEXT_COLOR,
+                )
+                is ConfigRow.Toggle -> SettingsScreenRenderer.label(
+                    context = context,
+                    textRenderer = textRenderer,
+                    label = row.name,
+                    x = layout.contentLeft,
+                    y = layout.fieldLabelY(rowTop),
+                    maximumWidth = layout.labelWidth,
+                    mouseX = mouseX,
+                    mouseY = mouseY,
+                )
             }
+            hovered?.let { hoveredLabel = it }
         }
         return hoveredLabel
     }
 
     /**
-     * 繪製草稿過期或保存失敗狀態。
+     * 繪製草稿過期、保存失敗或等待伺服器確認的狀態。
      *
      * @param context 畫面繪製環境。
-     * @param bounds 中央面板邊界。
+     * @param layout 設定頁版面。
+     * @param mouseX 游標水平座標。
+     * @param mouseY 游標垂直座標。
      */
-    private fun renderStatus(context: DrawContext, bounds: PanelBounds) {
-        val status = when {
-            draftStale -> Text.translatable(MinecraftClientConfigScreenKeys.DRAFT_STALE).formatted(Formatting.RED)
-            saveFailed -> Text.translatable(MinecraftClientConfigScreenKeys.SAVE_FAILED).formatted(Formatting.RED)
-            preferenceSyncFailed -> Text.translatable(MinecraftMessageKeys.AUTOMATIC_CONTROL_PREFERENCE_SYNC_FAILED).formatted(Formatting.RED)
-            automaticDraft.state().pending -> Text.translatable(pendingStatusKey(checkNotNull(automaticDraft.state().pendingRequestId)))
-            automaticError == AutomaticControlError.UNCONFIRMED -> Text.translatable(AutomaticControlError.UNCONFIRMED.translationKey).formatted(Formatting.RED)
-            automaticDraft.state().stale -> Text.translatable(MinecraftClientConfigScreenKeys.AUTOMATIC_STALE).formatted(Formatting.RED)
-            automaticError != null -> Text.translatable(checkNotNull(automaticError).translationKey).formatted(Formatting.RED)
+    private fun renderStatus(context: DrawContext, layout: SettingsScreenLayout, mouseX: Int, mouseY: Int) {
+        val remote = automaticDraft.state()
+        val error = SettingsScreenRenderer.ERROR_TEXT_COLOR
+        val (status, color) = when {
+            draftStale -> Text.translatable(MinecraftClientConfigScreenKeys.DRAFT_STALE) to error
+            saveFailed -> Text.translatable(MinecraftClientConfigScreenKeys.SAVE_FAILED) to error
+            preferenceSyncFailed -> Text.translatable(MinecraftMessageKeys.AUTOMATIC_CONTROL_PREFERENCE_SYNC_FAILED) to error
+            remote.pending -> Text.translatable(pendingStatusKey(checkNotNull(remote.pendingRequestId))) to SettingsScreenRenderer.TEXT_COLOR
+            automaticError == AutomaticControlError.UNCONFIRMED -> Text.translatable(AutomaticControlError.UNCONFIRMED.translationKey) to error
+            remote.stale -> Text.translatable(MinecraftClientConfigScreenKeys.AUTOMATIC_STALE) to error
+            automaticError != null -> Text.translatable(checkNotNull(automaticError).translationKey) to error
             else -> return
         }
-        context.drawTextWithShadow(
-            textRenderer,
-            fitClientText(textRenderer, status, bounds.width - PANEL_PADDING * 2),
-            bounds.left + PANEL_PADDING,
-            bounds.bottom - BOTTOM_AREA_HEIGHT + STATUS_OFFSET_Y,
-            TEXT_COLOR,
+        SettingsScreenRenderer.status(
+            context = context,
+            textRenderer = textRenderer,
+            layout = layout,
+            message = status,
+            color = color,
+            marquee = statusMarquee,
+            mouseX = mouseX,
+            mouseY = mouseY,
         )
     }
 
@@ -513,85 +548,22 @@ class MahjongClientConfigScreen(
         MinecraftClientConfigScreenKeys.AUTOMATIC_PENDING
     }
 
-    /**
-     * 只有欄位超出可見範圍時繪製 scrollbar。
-     *
-     * @param context 畫面繪製環境。
-     * @param bounds 中央面板邊界。
-     */
-    private fun renderScrollbar(context: DrawContext, bounds: PanelBounds) {
-        val layout = scrollbarLayout(bounds)
-        if (layout.maximumScroll <= 0) return
-        val trackLeft = bounds.right - SCROLLBAR_MARGIN
-        context.fill(trackLeft, layout.trackTop, trackLeft + SCROLLBAR_WIDTH, layout.trackBottom, SCROLLBAR_TRACK_COLOR)
-        context.fill(
-            trackLeft,
-            layout.thumbTop,
-            trackLeft + SCROLLBAR_WIDTH,
-            layout.thumbTop + layout.thumbHeight,
-            SCROLLBAR_THUMB_COLOR,
-        )
-    }
-
-    /**
-     * 建立目前分類的 scrollbar 幾何。
-     *
-     * @param bounds 中央面板邊界。
-     * @return 依可見列數與捲動位置建立的捲軸配置。
-     */
-    private fun scrollbarLayout(bounds: PanelBounds): ScrollbarLayout = ScrollbarLayout(
-        trackTop = rowsTop(bounds),
-        trackBottom = bounds.bottom - BOTTOM_AREA_HEIGHT,
-        itemCount = rows().size,
-        visibleItemCount = visibleRowCount(bounds),
-        scrollIndex = rowScroll.index,
-        minimumThumbHeight = MIN_SCROLLBAR_THUMB_HEIGHT,
-    )
-
-    /**
-     * 判斷游標是否位於欄位內容區。
-     *
-     * @param mouseX 游標水平座標。
-     * @param mouseY 游標垂直座標。
-     * @param bounds 中央面板邊界。
-     * @return 游標位於欄位內容區時為 true。
-     */
-    private fun isInsideFields(mouseX: Double, mouseY: Double, bounds: PanelBounds): Boolean = mouseX >= bounds.contentLeft &&
-        mouseX < bounds.right &&
-        mouseY >= rowsTop(bounds) &&
-        mouseY < bounds.bottom - BOTTOM_AREA_HEIGHT
-
-    /**
-     * 判斷游標是否位於有效 scrollbar。
-     *
-     * @param mouseX 游標水平座標。
-     * @param mouseY 游標垂直座標。
-     * @param bounds 中央面板邊界。
-     * @return 存在可捲動內容且游標位於捲軸範圍時為 true。
-     */
-    private fun isOverScrollbar(mouseX: Double, mouseY: Double, bounds: PanelBounds): Boolean = maximumScroll() > 0 &&
-        mouseX >= bounds.right - SCROLLBAR_MARGIN &&
-        mouseX < bounds.right - SCROLLBAR_MARGIN + SCROLLBAR_WIDTH &&
-        mouseY >= rowsTop(bounds) &&
-        mouseY < bounds.bottom - BOTTOM_AREA_HEIGHT
-
     /** 取得目前分類的宣告式欄位。 */
     private fun rows(): List<ConfigRow> = when (category) {
         Category.AUTOMATIC -> listOf(
-            element = ConfigRow(
+            element = localToggle(
                 nameKey = MinecraftClientConfigScreenKeys.AUTO_SORT_HAND,
                 descriptionKey = MinecraftClientConfigScreenKeys.AUTO_SORT_HAND_DESCRIPTION,
-                valueText = { booleanText(it.autoSortHandEnabled) },
-                update = { it.copy(autoSortHandEnabled = !it.autoSortHandEnabled) },
+                read = { it.autoSortHandEnabled },
+                update = { config, enabled -> config.copy(autoSortHandEnabled = enabled) },
             ),
         ) + automaticRows()
 
         Category.HUD -> listOf(
-            element = ConfigRow(
-                nameKey = MinecraftClientConfigScreenKeys.EDIT_HUD_LAYOUT,
-                descriptionKey = MinecraftClientConfigScreenKeys.EDIT_HUD_LAYOUT_DESCRIPTION,
-                valueText = { Text.translatable(MinecraftClientConfigScreenKeys.EDIT_HUD_LAYOUT) },
-                onActivate = {
+            element = ConfigRow.Action(
+                name = Text.translatable(MinecraftClientConfigScreenKeys.EDIT_HUD_LAYOUT),
+                description = Text.translatable(MinecraftClientConfigScreenKeys.EDIT_HUD_LAYOUT_DESCRIPTION),
+                activate = {
                     client?.setScreen(
                         MahjongHudLayoutEditorScreen(
                             parent = this,
@@ -606,14 +578,39 @@ class MahjongClientConfigScreen(
 
         Category.GAME_PANELS -> presentationRows(MahjongPresentationToggleSection.GAME_PANELS)
         Category.VISUAL_FEEDBACK -> listOf(
-            element = ConfigRow(
+            element = localToggle(
                 nameKey = MinecraftClientConfigScreenKeys.TILE_LABELS,
                 descriptionKey = MinecraftClientConfigScreenKeys.TILE_LABELS_DESCRIPTION,
-                valueText = { booleanText(it.tileLabelsEnabled) },
-                update = { it.copy(tileLabelsEnabled = !it.tileLabelsEnabled) },
+                read = { it.tileLabelsEnabled },
+                update = { config, enabled -> config.copy(tileLabelsEnabled = enabled) },
             ),
         ) + presentationRows(MahjongPresentationToggleSection.VISUAL_FEEDBACK)
     }
+
+    /**
+     * 建立保存在本機設定草稿中的開關列。
+     *
+     * @param nameKey 欄位名稱翻譯鍵。
+     * @param descriptionKey 欄位說明翻譯鍵。
+     * @param read 從草稿讀取開關狀態。
+     * @param update 以新的開關狀態建立草稿。
+     * @return 切換時更新本機設定草稿的開關列。
+     */
+    private fun localToggle(
+        nameKey: String,
+        descriptionKey: String,
+        read: (MahjongClientConfigState) -> Boolean,
+        update: (MahjongClientConfigState, Boolean) -> MahjongClientConfigState,
+    ): ConfigRow = ConfigRow.Toggle(
+        name = Text.translatable(nameKey),
+        description = Text.translatable(descriptionKey),
+        enabled = { read(draft) },
+        toggle = {
+            draft = update(draft, !read(draft))
+            saveFailed = false
+            rebuild()
+        },
+    )
 
     /**
      * 供 HUD 位置編輯器量測自動操作狀態預覽的項目名稱；本局有權威快照時用實際支援的項目，
@@ -630,21 +627,20 @@ class MahjongClientConfigScreen(
 
     /** 依權威支援集合建立本局控制列，不憑規則名稱猜測可用功能。 */
     private fun automaticRows(): List<ConfigRow> {
-        val remote = automaticDraft.state()
-        val snapshot = remote.baseline
+        val snapshot = automaticDraft.state().baseline
         val explanation = when {
             snapshot == null -> MinecraftClientConfigScreenKeys.AUTOMATIC_UNAVAILABLE
             snapshot.supportedControlIds.isEmpty() -> MinecraftClientConfigScreenKeys.AUTOMATIC_EMPTY
             else -> MinecraftClientConfigScreenKeys.AUTOMATIC_ROUND_ONLY
         }
-        val heading = ConfigRow(explanation, explanation, { Text.empty() }, information = true)
+        val heading = ConfigRow.Information(Text.translatable(explanation))
         if (snapshot == null) return listOf(heading)
         return listOf(heading) + displayResolver.resolveAll(snapshot.ruleModuleId, snapshot.supportedControlIds).map { display ->
-            ConfigRow(
-                nameKey = display.controlId,
-                descriptionKey = display.controlId,
-                valueText = { booleanText(display.controlId in automaticDraft.state().enabledControlIds) },
-                onActivate = {
+            ConfigRow.Toggle(
+                name = display.label,
+                description = display.description,
+                enabled = { display.controlId in automaticDraft.state().enabledControlIds },
+                toggle = {
                     val enabled = automaticDraft.state().enabledControlIds
                     val next = if (display.controlId in enabled) enabled - display.controlId else enabled + display.controlId
                     if (automaticDraft.replaceDraft(next)) {
@@ -652,8 +648,6 @@ class MahjongClientConfigScreen(
                         rebuild()
                     }
                 },
-                nameOverride = display.label,
-                descriptionOverride = display.description?.let { display.label.copy().append("\n").append(it) } ?: display.label,
                 remote = true,
             )
         }
@@ -668,14 +662,11 @@ class MahjongClientConfigScreen(
     private fun presentationRows(section: MahjongPresentationToggleSection): List<ConfigRow> = MahjongPresentationToggle.entries
         .filter { it.section == section }
         .map { toggle ->
-            ConfigRow(
+            localToggle(
                 nameKey = toggle.nameKey,
                 descriptionKey = toggle.descriptionKey,
-                valueText = { booleanText(toggle.read(it.presentationVisibility)) },
-                update = { config ->
-                    val visibility = config.presentationVisibility
-                    config.copy(presentationVisibility = toggle.update(visibility, !toggle.read(visibility)))
-                },
+                read = { toggle.read(it.presentationVisibility) },
+                update = { config, enabled -> config.copy(presentationVisibility = toggle.update(config.presentationVisibility, enabled)) },
             )
         }
 
@@ -694,33 +685,31 @@ class MahjongClientConfigScreen(
         rebuildRequested = true
     }
 
-    /** 計算依目前解析度限制的中央面板。 */
-    private fun panelBounds(): PanelBounds {
-        val panelWidth = (width - SCREEN_MARGIN * 2).coerceAtMost(MAX_PANEL_WIDTH)
-        val panelHeight = (height - SCREEN_MARGIN * 2).coerceAtMost(MAX_PANEL_HEIGHT)
-        val left = (width - panelWidth) / 2
-        val top = (height - panelHeight) / 2
-        return PanelBounds(left, top, left + panelWidth, top + panelHeight)
-    }
+    /**
+     * 依目前視窗尺寸建立設定頁版面。
+     *
+     * @return 沒有頁面切換與規則列的設定頁版面。
+     */
+    private fun layout(): SettingsScreenLayout = SettingsScreenLayout(
+        windowWidth = width,
+        windowHeight = height,
+        hasPageSwitch = false,
+        hasRuleRow = false,
+    )
 
     /**
-     * 目前面板可容納的完整欄位列數。
+     * 依目前捲動位置建立分類頁籤列版面。
      *
-     * @param bounds 中央面板邊界。
-     * @return 可容納的列數，至少為一列。
+     * @param layout 設定頁版面。
+     * @return 頁籤列版面。
      */
-    private fun visibleRowCount(bounds: PanelBounds): Int = ((bounds.bottom - BOTTOM_AREA_HEIGHT - rowsTop(bounds)) / FIELD_ROW_HEIGHT).coerceAtLeast(1)
-
-    /**
-     * 目前分類可捲動欄位的起始位置。
-     *
-     * @param bounds 中央面板邊界。
-     * @return 欄位區的上緣座標。
-     */
-    private fun rowsTop(bounds: PanelBounds): Int = bounds.fieldsTop
-
-    /** 目前分類最大的捲動列數。 */
-    private fun maximumScroll(): Int = (rows().size - visibleRowCount(panelBounds())).coerceAtLeast(0)
+    private fun tabStrip(layout: SettingsScreenLayout): SettingsTabStripLayout = SettingsTabStripLayout(
+        left = layout.contentLeft,
+        width = layout.contentWidth,
+        top = layout.tabsTop,
+        tabCount = Category.entries.size,
+        scroll = tabScroll,
+    )
 
     /**
      * 設定分類。
@@ -741,95 +730,55 @@ class MahjongClientConfigScreen(
         AUTOMATIC(MinecraftClientConfigScreenKeys.CATEGORY_AUTOMATIC),
     }
 
-    /**
-     * 一列設定的宣告式內容與不可變更新函式。
-     *
-     * @property nameKey 欄位名稱翻譯鍵。
-     * @property descriptionKey 欄位說明翻譯鍵。
-     * @property valueText 依草稿產生目前值文字。
-     * @property update 不可變更新函式；null 表示唯讀入口。
-     * @property onActivate 非設定值切換的入口動作。
-     * @property id 供呈現分類過濾使用的穩定識別字。
-     * @property nameOverride 動態 registry 名稱。
-     * @property descriptionOverride 動態 registry 說明。
-     * @property information 是否為沒有可編輯控制項的說明列。
-     * @property remote 本局權威狀態過期時不可切換。
-     */
-    private data class ConfigRow(
-        val nameKey: String,
-        val descriptionKey: String,
-        val valueText: (MahjongClientConfigState) -> Text,
-        val update: ((MahjongClientConfigState) -> MahjongClientConfigState)? = null,
-        val onActivate: (() -> Unit)? = null,
-        val id: String = nameKey,
-        val nameOverride: Text? = null,
-        val descriptionOverride: Text? = null,
-        val information: Boolean = false,
-        val remote: Boolean = false,
-    ) {
-        /** 取得自訂名稱，或由名稱翻譯鍵建立文字。 */
-        fun nameText(): Text = nameOverride ?: Text.translatable(nameKey)
+    /** 分類中的一列。 */
+    private sealed interface ConfigRow {
+        /** 這一列顯示的名稱或說明文字。 */
+        val name: Text
 
-        /** 取得自訂說明或翻譯文字；未指定說明的資訊列回傳 null。 */
-        fun descriptionText(): Text? = descriptionOverride ?: if (information) null else Text.translatable(descriptionKey)
+        /** 本局權威狀態過期時是否不可操作。 */
+        val remote: Boolean
+            get() = false
+
+        /**
+         * 有開啟與關閉兩種狀態的設定。
+         *
+         * @property name 欄位名稱。
+         * @property description 欄位說明；沒有說明時為 null。
+         * @property enabled 讀取目前草稿中的開關狀態。
+         * @property toggle 切換開關並更新草稿。
+         * @property remote 本局權威狀態過期時是否不可操作。
+         */
+        data class Toggle(
+            override val name: Text,
+            val description: Text?,
+            val enabled: () -> Boolean,
+            val toggle: () -> Unit,
+            override val remote: Boolean = false,
+        ) : ConfigRow
+
+        /**
+         * 沒有對應值的動作，佔滿整列的一顆按鈕。
+         *
+         * @property name 按鈕文字。
+         * @property description 按鈕說明。
+         * @property activate 按下按鈕時執行的動作。
+         */
+        data class Action(
+            override val name: Text,
+            val description: Text,
+            val activate: () -> Unit,
+        ) : ConfigRow
+
+        /**
+         * 沒有控制項的說明列。
+         *
+         * @property name 說明文字。
+         */
+        data class Information(
+            override val name: Text,
+        ) : ConfigRow
     }
 
-    /**
-     * 中央面板邊界。
-     *
-     * @property left 左邊界。
-     * @property top 上邊界。
-     * @property right 右邊界。
-     * @property bottom 下邊界。
-     */
-    private data class PanelBounds(
-        val left: Int,
-        val top: Int,
-        val right: Int,
-        val bottom: Int,
-    ) {
-        /** 面板寬度。 */
-        val width: Int
-            get() = right - left
-
-        /** 標題基準 Y。 */
-        val titleY: Int
-            get() = top + TITLE_OFFSET_Y
-
-        /** 分類內容起始 Y。 */
-        val contentTop: Int
-            get() = top + CONTENT_OFFSET_Y
-
-        /** 欄位內容起始 Y。 */
-        val fieldsTop: Int
-            get() = if (compact) ClientConfigCategoryLayout.compactFieldsTop(top, Category.entries.size) else top + FIELDS_OFFSET_Y
-
-        /** 是否改用頂部分類 tab 與單欄設定按鈕。 */
-        val compact: Boolean
-            get() = width < TWO_COLUMN_MIN_WIDTH
-
-        /** 側欄分類按鈕寬度。 */
-        val sidebarButtonWidth: Int
-            get() = SIDEBAR_WIDTH - PANEL_PADDING * 2
-
-        /** 設定內容左界。 */
-        val contentLeft: Int
-            get() = if (compact) left + PANEL_PADDING else left + SIDEBAR_WIDTH + PANEL_PADDING
-
-        /** 設定控制項左界。 */
-        val controlLeft: Int
-            get() = if (compact) contentLeft else right - controlWidth - PANEL_PADDING
-
-        /** 設定控制項寬度。 */
-        val controlWidth: Int
-            get() = if (compact) {
-                width - PANEL_PADDING * 2
-            } else {
-                minOf(CONTROL_WIDTH, width - SIDEBAR_WIDTH - PANEL_PADDING * 3)
-            }
-    }
-
-    /** 畫面尺寸與配色常數。 */
     private companion object {
         /** 不在對局中時，用來量測自動操作狀態預覽的內建項目樣本。 */
         val AUTOMATIC_CONTROL_PREVIEW_SAMPLE_IDS = setOf(
@@ -837,90 +786,6 @@ class MahjongClientConfigScreen(
             BuiltInAutomaticControlIds.DECLINE_CALLS,
             BuiltInAutomaticControlIds.AUTO_TSUMOGIRI,
         )
-
-        /** 面板最大寬度。 */
-        const val MAX_PANEL_WIDTH = 560
-
-        /** 面板最大高度。 */
-        const val MAX_PANEL_HEIGHT = 320
-
-        /** 面板與螢幕邊緣的最小距離。 */
-        const val SCREEN_MARGIN = 12
-
-        /** 面板內距。 */
-        const val PANEL_PADDING = 10
-
-        /** 分類側欄寬度。 */
-        const val SIDEBAR_WIDTH = 128
-
-        /** 標題相對面板上緣的 Y 位移。 */
-        const val TITLE_OFFSET_Y = 12
-
-        /** 分類按鈕相對面板上緣的 Y 位移。 */
-        const val CONTENT_OFFSET_Y = ClientConfigCategoryLayout.CATEGORY_TOP_OFFSET
-
-        /** 欄位相對面板上緣的 Y 位移。 */
-        const val FIELDS_OFFSET_Y = 50
-
-        /** 低於此面板寬度時改用單欄版面。 */
-        const val TWO_COLUMN_MIN_WIDTH = 400
-
-        /** 欄位列高。 */
-        const val FIELD_ROW_HEIGHT = 30
-
-        /** 原版按鈕高度。 */
-        const val BUTTON_HEIGHT = 20
-
-        /** 分類按鈕垂直間距。 */
-        const val CATEGORY_BUTTON_GAP = ClientConfigCategoryLayout.CATEGORY_ROW_HEIGHT
-
-        /** 欄位控制項寬度。 */
-        const val CONTROL_WIDTH = 180
-
-        /** 底部操作區高度。 */
-        const val BOTTOM_AREA_HEIGHT = 52
-
-        /** 狀態訊息在底部保留區中的 Y 位移。 */
-        const val STATUS_OFFSET_Y = 2
-
-        /** Reset to Defaults 偏好寬度。 */
-        const val RESET_BUTTON_PREFERRED_WIDTH = 104
-
-        /** 底部按鈕間距。 */
-        const val BOTTOM_BUTTON_GAP = 6
-
-        /** 原版按鈕文字垂直位移。 */
-        const val VANILLA_TEXT_OFFSET_Y = 6
-
-        /** Scrollbar 與右邊界距離。 */
-        const val SCROLLBAR_MARGIN = 7
-
-        /** Scrollbar 寬度。 */
-        const val SCROLLBAR_WIDTH = 3
-
-        /** Scrollbar thumb 最小高度。 */
-        const val MIN_SCROLLBAR_THUMB_HEIGHT = 12
-
-        /** 全畫面遮罩色。 */
-        const val SCREEN_OVERLAY_COLOR = 0x88000000.toInt()
-
-        /** 面板背景色。 */
-        const val PANEL_COLOR = 0xD0222B3A.toInt()
-
-        /** 側欄分隔線色。 */
-        const val DIVIDER_COLOR = 0x66708088
-
-        /** Scrollbar 軌道色。 */
-        const val SCROLLBAR_TRACK_COLOR = 0x554A5566
-
-        /** Scrollbar thumb 色。 */
-        const val SCROLLBAR_THUMB_COLOR = 0xFFD0D5DD.toInt()
-
-        /** 標題色。 */
-        const val TITLE_COLOR = 0xFFD54F
-
-        /** 一般文字色。 */
-        const val TEXT_COLOR = 0xFFFFFF
     }
 }
 

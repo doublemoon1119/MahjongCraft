@@ -38,6 +38,24 @@ object MinecraftRoomScreenKeys {
 
     /** 開啟規則一覽按鈕的提示說明。 */
     const val RULE_CATALOGUE_BUTTON_DESCRIPTION = "mahjongcraft.room.screen.rule_catalogue.description"
+
+    /** 規則選擇器的提示說明。 */
+    const val RULE_SELECTOR_DESCRIPTION = "mahjongcraft.room.screen.rule.description"
+
+    /** 玩法選擇器左側的標籤。 */
+    const val VARIANT_SELECTOR = "mahjongcraft.room.screen.variant"
+
+    /** 每個規則自動提供的標準玩法名稱。 */
+    const val VARIANT_STANDARD = "mahjongcraft.room.variant.standard"
+
+    /** 標準玩法的說明。 */
+    const val VARIANT_STANDARD_DESCRIPTION = "mahjongcraft.room.variant.standard.description"
+
+    /** 設定不符合任何玩法時，玩法選擇器顯示的名稱。 */
+    const val VARIANT_CUSTOM = "mahjongcraft.room.variant.custom"
+
+    /** 設定不符合任何玩法時的說明。 */
+    const val VARIANT_CUSTOM_DESCRIPTION = "mahjongcraft.room.variant.custom.description"
     const val EMPTY = "mahjongcraft.room.screen.empty"
     const val PLAYING = "mahjongcraft.room.screen.playing"
     const val CREATE = "mahjongcraft.room.screen.create"
@@ -71,17 +89,13 @@ object MinecraftRoomScreenKeys {
     const val RESET_DEFAULTS_BUTTON = "mahjongcraft.room.screen.reset_defaults"
     const val UNDO_DISCARD = "mahjongcraft.room.screen.tooltip.undo_discard"
     const val UNDO_RESTORE = "mahjongcraft.room.screen.tooltip.undo_restore"
-    const val CURRENT_VALUE = "mahjongcraft.room.screen.tooltip.current"
-    const val AVAILABLE_OPTIONS = "mahjongcraft.room.screen.tooltip.options"
-    const val VALID_RANGE = "mahjongcraft.room.screen.tooltip.range"
-    const val NORMAL_STEP = "mahjongcraft.room.screen.tooltip.step"
-    const val SHIFT_STEP = "mahjongcraft.room.screen.tooltip.shift_step"
-    const val KEYBOARD_INPUT = "mahjongcraft.room.screen.tooltip.keyboard_input"
     const val DISABLED_BY_DEPENDENCY = "mahjongcraft.room.screen.tooltip.disabled_by_dependency"
     const val RESET_DEFAULTS = "mahjongcraft.room.screen.tooltip.reset_defaults"
     const val RESET_NOT_SAVED = "mahjongcraft.room.screen.tooltip.reset_not_saved"
     const val CONFIG_CHANGES = "mahjongcraft.room.screen.tooltip.changes"
     const val CONFIG_VALUE_CHANGE = "mahjongcraft.room.screen.tooltip.value_change"
+
+    /** 「規則」：規則選擇器的標籤，也是設定差異清單中規則一列的名稱。 */
     const val RULE = "mahjongcraft.room.screen.tooltip.rule"
 
     /** 多選欄位目前選取的項目數量。 */

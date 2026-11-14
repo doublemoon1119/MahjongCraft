@@ -28,6 +28,7 @@ class GameConfigPresentationRegistryImpl(
                 ruleConfig = definition.defaultRuleConfig(),
             ),
         )
+        GameConfigVariantResolver.requireDistinctVariants(normalized)
         require(definitions.putIfAbsent(normalized.ruleModuleId, definition.snapshot()) == null) {
             "Duplicate game config presentation: ${definition.ruleModuleId}"
         }
@@ -82,6 +83,7 @@ class GameConfigPresentationRegistryImpl(
     /** 複製設定與選項集合，讓登記及查詢各自持有獨立快照。 */
     private fun GameConfigPresentationDefinition.snapshot(): GameConfigPresentationDefinition = copy(
         categories = categories.toList(),
+        variants = variants.map { it.copy(fieldValues = it.fieldValues.toMap()) },
         fields = fields.map { field ->
             val editor = field.editor
             field.copy(

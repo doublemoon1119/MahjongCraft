@@ -313,6 +313,24 @@ class RoomSettingsDraftTest {
         assertFalse(draft.hasInvalidFields)
     }
 
+    /** 套用玩法時採用新設定，只清除玩法所設定欄位的無效標記。 */
+    @Test
+    fun `applying a variant clears invalid flags only for the fields it sets`() {
+        val draft = RoomSettingsDraft()
+        draft.beginIfAbsent(AUTHORITATIVE)
+        draft.updateField(rejectingField(), GameConfigPresentationValue.IntegerValue(1))
+
+        draft.applyVariant(updated = THREE_PLAYER, variantFieldIds = setOf("mahjongcraft:other"))
+
+        assertEquals(THREE_PLAYER, draft.config)
+        assertTrue(draft.isFieldInvalid(REJECTING_FIELD_ID))
+
+        draft.applyVariant(updated = AUTHORITATIVE, variantFieldIds = setOf(REJECTING_FIELD_ID))
+
+        assertEquals(AUTHORITATIVE, draft.config)
+        assertFalse(draft.hasInvalidFields)
+    }
+
     /** 房間清空時丟棄草稿。 */
     @Test
     fun `drops the draft when the room is cleared`() {

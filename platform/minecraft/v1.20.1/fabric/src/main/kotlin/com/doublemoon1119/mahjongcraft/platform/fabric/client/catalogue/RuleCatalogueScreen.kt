@@ -101,7 +101,7 @@ internal class RuleCatalogueScreen(
             MinecraftRuleCatalogueScreenKeys.RULE_TOOLTIP,
             MinecraftRuleCatalogueScreenKeys.GENERAL_NOTE.takeIf { state.configSource == RuleCatalogueConfigSource.GENERAL },
         )
-        button(label = presenter.format(MinecraftRuleCatalogueScreenKeys.RULE_BUTTON, name), bounds = layout.rule) {
+        button(label = presenter.format(MinecraftRuleCatalogueScreenKeys.RULE_BUTTON, name), bounds = layout.rule, cycles = true) {
             val next = options[CycleButtonInput.nextIndex(currentIndex = options.indexOf(selected), size = options.size, step = CycleButtonInput.step())]
             changed(browser.selectRule(next.ruleModuleId))
         }.apply {
@@ -126,7 +126,7 @@ internal class RuleCatalogueScreen(
         val options = listOf(null to MinecraftRuleCatalogueScreenKeys.ALL_CATEGORIES) + categories.map { it.id to it.nameTranslationKey }
         val current = options.firstOrNull { it.first == state.categoryId } ?: options.first()
         val name = presenter.text(current.second)
-        button(label = presenter.format(MinecraftRuleCatalogueScreenKeys.CATEGORY_BUTTON, name), bounds = layout.category) {
+        button(label = presenter.format(MinecraftRuleCatalogueScreenKeys.CATEGORY_BUTTON, name), bounds = layout.category, cycles = true) {
             changed(browser.selectCategory(CycleButtonInput.next(options = options, current = current).first))
         }.apply {
             active = categories.isNotEmpty()
@@ -219,17 +219,20 @@ internal class RuleCatalogueScreen(
      *
      * @param label 按鈕文字。
      * @param bounds 按鈕範圍。
+     * @param cycles 是否為循環切換按鈕；循環切換按鈕的右鍵也觸發行為，用來選擇上一項。
      * @param action 按下後的行為。
      * @return 已加入畫面的按鈕。
      */
     private fun button(
         label: String,
         bounds: CatalogueRect,
+        cycles: Boolean = false,
         action: () -> Unit,
     ): ButtonWidget = addDrawableChild(
         RestartableMarqueeButtonWidget.builder(Text.literal(label)) { action() }
             .dimensions(bounds.x, bounds.y, bounds.width, bounds.height)
-            .build(),
+            .build()
+            .also { it.pressesOnSecondaryClick = cycles },
     )
 
     /**
