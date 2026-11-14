@@ -1,0 +1,16 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "group": "mahjong_ruler",
+  "pattern": [
+    "GGG"
+  ],
+  "key": {
+    "G": {
+      "item": "minecraft:glass_pane"
+    }
+  },
+  "result": {
+    "item": "mahjongcraft:mahjong_ruler",
+    "count": 4
+  }
+}

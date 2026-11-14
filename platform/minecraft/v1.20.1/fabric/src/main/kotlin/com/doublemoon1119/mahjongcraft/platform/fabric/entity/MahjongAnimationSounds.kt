@@ -29,6 +29,9 @@ internal object MahjongAnimationSounds {
     /** 玩家自由放置點棒時使用的聲音。 */
     const val SCORING_STICK_PLACE: String = "mahjongcraft:scoring_stick.place"
 
+    /** 玩家放下牌尺時使用的聲音。 */
+    const val RULER_PLACE: String = "mahjongcraft:ruler.place"
+
     /** 胡牌閃電落下時使用的雷聲。 */
     const val WIN_LIGHTNING: String = "mahjongcraft:win.lightning"
 

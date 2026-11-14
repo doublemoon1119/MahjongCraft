@@ -65,6 +65,7 @@ class ModSoundResourceTest {
     private val expectedSounds: Map<String, String> = linkedMapOf(
         MahjongAnimationSounds.DICE_LAND to "mahjongcraft:dice/land",
         MahjongAnimationSounds.SCORING_STICK_PLACE to "mahjongcraft:tile/draw_land",
+        MahjongAnimationSounds.RULER_PLACE to "mahjongcraft:tile/draw_land",
         MahjongAnimationSounds.DEAL_BATCH to "mahjongcraft:tile/deal_batch",
         MahjongAnimationSounds.TILE_DISCARD_LAND to "mahjongcraft:tile/discard_land",
         MahjongAnimationSounds.WALL_REVEAL to "mahjongcraft:tile/draw_land",

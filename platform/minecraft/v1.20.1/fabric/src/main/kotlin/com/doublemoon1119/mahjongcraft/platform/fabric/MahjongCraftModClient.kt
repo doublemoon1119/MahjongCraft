@@ -45,6 +45,8 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.MahjongDice
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.MahjongLobbyInfoEntityRenderer
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.MahjongPlayerInfoEntityRenderer
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.MahjongRoundInfoEntityRenderer
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.MahjongRulerEntityRenderer
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.MahjongRulerTint
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.MahjongScoringStickEntityRenderer
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.MahjongSoundTimelineEntityRenderer
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.MahjongStoolSeatEntityRenderer
@@ -112,6 +114,7 @@ import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 import net.fabricmc.fabric.api.client.model.loading.v1.PreparableModelLoadingPlugin
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents
 import net.fabricmc.fabric.api.client.rendering.v1.BuiltinItemRendererRegistry
+import net.fabricmc.fabric.api.client.rendering.v1.ColorProviderRegistry
 import net.fabricmc.fabric.api.client.rendering.v1.EntityRendererRegistry
 import net.fabricmc.fabric.api.resource.ResourceManagerHelper
 import net.fabricmc.fabric.api.resource.SimpleSynchronousResourceReloadListener
@@ -165,6 +168,9 @@ class MahjongCraftModClient : ClientModInitializer {
             ModItems.MAHJONG_SCORING_STICK,
             Identifier(MinecraftModMetadata.MOD_ID, "denomination"),
         ) { stack, _, _, _ -> MahjongScoringStickItem.readDenomination(stack).toModelPredicateValue() }
+        ModItems.MAHJONG_RULERS.forEach { (color, item) ->
+            ColorProviderRegistry.ITEM.register({ _, _ -> MahjongRulerTint.rgb(color) }, item)
+        }
         val clientConfigStore = koin.get<MahjongClientConfigStore>()
         koin.get<FabricRoomConfigScreenCommand>().register()
         initializeClientConfig(clientConfigStore)
@@ -387,6 +393,7 @@ class MahjongCraftModClient : ClientModInitializer {
         EntityRendererRegistry.register(ModEntities.mahjongStoolSeat, ::MahjongStoolSeatEntityRenderer)
         EntityRendererRegistry.register(ModEntities.diceRollPresentation) { context -> DiceRollPresentationEntityRenderer(context, clientConfigStore) }
         EntityRendererRegistry.register(ModEntities.mahjongScoringStick, ::MahjongScoringStickEntityRenderer)
+        EntityRendererRegistry.register(ModEntities.mahjongRuler, ::MahjongRulerEntityRenderer)
         EntityRendererRegistry.register(ModEntities.mahjongTileSelectionConfirm, ::MahjongTileSelectionConfirmEntityRenderer)
         EntityRendererRegistry.register(ModEntities.mahjongRoundInfo) { context ->
             MahjongRoundInfoEntityRenderer(

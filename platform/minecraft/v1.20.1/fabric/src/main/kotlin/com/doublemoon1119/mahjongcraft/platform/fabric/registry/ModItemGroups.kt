@@ -25,6 +25,7 @@ object ModItemGroups {
                 entries.add(iconStack.copy())
                 entries.add(ModItems.MAHJONG_DICE)
                 entries.add(ModItems.MAHJONG_SCORING_STICK)
+                ModItems.MAHJONG_RULERS.values.forEach(entries::add)
                 entries.add(ModBlocks.woodenMahjongTable)
                 entries.add(ModBlocks.concreteMahjongTable)
                 entries.add(ModBlocks.woodenMahjongStool)

@@ -7,6 +7,10 @@
     "subtitle": "subtitles.mahjongcraft.scoring_stick.place",
     "sounds": ["mahjongcraft:tile/draw_land"]
   },
+  "ruler.place": {
+    "subtitle": "subtitles.mahjongcraft.ruler.place",
+    "sounds": ["mahjongcraft:tile/draw_land"]
+  },
   "tile.deal_batch": {
     "subtitle": "subtitles.mahjongcraft.tile.deal_batch",
     "sounds": ["mahjongcraft:tile/deal_batch"]

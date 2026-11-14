@@ -7,6 +7,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongDiceEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongLobbyInfoEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongPlayerInfoEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongRoundInfoEntity
+import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongRulerEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongScoringStickEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongSoundTimelineEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongStoolSeatEntity
@@ -19,6 +20,8 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.entity.WinCelebrationEffe
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.WinCelebrationShowcaseEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.WinSettlementPresentationEntity
 import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModMetadata
+import com.doublemoon1119.mahjongcraft.platform.minecraft.ruler.MahjongRulerColor
+import com.doublemoon1119.mahjongcraft.platform.minecraft.ruler.MahjongRulerDimensions
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.BuiltInTablePropDefinitions
 import net.fabricmc.fabric.api.`object`.builder.v1.entity.FabricEntityTypeBuilder
 import net.minecraft.entity.EntityDimensions
@@ -56,6 +59,10 @@ object ModEntities {
 
     /** 麻將點棒 entity type；由 [register] 初始化。 */
     lateinit var mahjongScoringStick: EntityType<MahjongScoringStickEntity>
+        private set
+
+    /** 放在方塊上的牌尺 entity type；由 [register] 初始化。 */
+    lateinit var mahjongRuler: EntityType<MahjongRulerEntity>
         private set
 
     /** 桌面中央局況顯示 entity type；由 [register] 初始化。 */
@@ -98,7 +105,7 @@ object ModEntities {
     lateinit var mahjongBot: EntityType<MahjongBotEntity>
         private set
 
-    /** 註冊骰子、牌張、點棒、座位與各種呈現實體的類型；皆不自然生成。 */
+    /** 註冊骰子、牌張、點棒、牌尺、座位與各種呈現實體的類型；皆不自然生成。 */
     fun register() {
         mahjongBot = Registry.register(
             Registries.ENTITY_TYPE,
@@ -176,6 +183,16 @@ object ModEntities {
             Identifier(MinecraftModMetadata.MOD_ID, "mahjong_scoring_stick"),
             FabricEntityTypeBuilder.create(SpawnGroup.MISC, ::MahjongScoringStickEntity)
                 .dimensions(EntityDimensions.fixed(MahjongScoringStickEntity.STICK_WIDTH, MahjongScoringStickEntity.STICK_HEIGHT))
+                .trackRangeBlocks(16)
+                .trackedUpdateRate(10)
+                .fireImmune()
+                .build(),
+        )
+        mahjongRuler = Registry.register(
+            Registries.ENTITY_TYPE,
+            Identifier(MinecraftModMetadata.MOD_ID, MahjongRulerColor.BASE_ITEM_PATH),
+            FabricEntityTypeBuilder.create(SpawnGroup.MISC, ::MahjongRulerEntity)
+                .dimensions(EntityDimensions.fixed(MahjongRulerDimensions.LENGTH.toFloat(), MahjongRulerDimensions.BROAD_SIDE.toFloat()))
                 .trackRangeBlocks(16)
                 .trackedUpdateRate(10)
                 .fireImmune()
