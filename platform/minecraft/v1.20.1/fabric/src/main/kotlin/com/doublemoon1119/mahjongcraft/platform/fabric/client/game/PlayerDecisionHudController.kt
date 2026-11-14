@@ -11,6 +11,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.client.player.ClientPlaye
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.MahjongTileFaceRenderer
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.MahjongTileSelectionConfirmEntityRenderer
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.state.ClientMahjongStateStore
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.tile.DiscardSourceHudRenderer
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.tile.MatchingTileHighlightController
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.time.PauseAwareClientMonotonicClock
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongTileEntity
@@ -48,6 +49,7 @@ import kotlin.uuid.toKotlinUuid
  * @property configStore 客戶端呈現設定。
  * @property stateStore 玩家可見的房間與桌況。
  * @property automaticControlStatusHudRenderer 自動操作狀態繪製器。
+ * @property discardSourceHudRenderer 準星下方的捨牌來源繪製器。
  * @property playerNames 共用真人普通名稱與 AI 名稱解析器。
  * @property decisionTexts 規則提供的動作文字解析器。
  * @property json 決策提交的封包序列化設定。
@@ -62,6 +64,7 @@ class PlayerDecisionHudController(
     private val configStore: MahjongClientConfigStore,
     private val stateStore: ClientMahjongStateStore,
     private val automaticControlStatusHudRenderer: AutomaticControlStatusHudRenderer,
+    private val discardSourceHudRenderer: DiscardSourceHudRenderer,
     private val playerNames: ClientPlayerDisplayNameResolver,
     val decisionTexts: DecisionTextResolver,
     private val json: NetworkJson,
@@ -436,7 +439,10 @@ class PlayerDecisionHudController(
         if (client.currentScreen !is PlayerDecisionScreen) {
             renderCompactDecisionHud(context)
         }
-        if (client.currentScreen == null) renderHandAnalysis(context, promptStore.prompt, client.crosshairTarget)
+        if (client.currentScreen == null) {
+            renderHandAnalysis(context, promptStore.prompt, client.crosshairTarget)
+            discardSourceHudRenderer.render(context)
+        }
     }
 
     /**

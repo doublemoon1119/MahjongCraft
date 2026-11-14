@@ -147,6 +147,45 @@ internal class ReplenishingReservedWallPhysicalLayoutPolicy(
         return PhysicalWallLayoutTransitionDecision.Completed(TileWallPhysicalLayout(placements), phases)
     }
 
+    /**
+     * 目前位置加上保留區之後可能用到的墩位。補牌只會把保留區往軌道尾端推，所以從目前保留區的第一墩到軌道尾端的上下兩層，
+     * 涵蓋這一局剩下所有補牌後保留牌的位置。
+     */
+    override fun roundReach(tableState: TableState): Set<TileWallPlacement> {
+        val placements = tableState.physicalWallLayout?.placements ?: return emptySet()
+        val current = placements.values.toSet()
+        val drawCount = completedDrawCount(tableState)
+        val frontPlacement = tableState.reservedWallTiles.firstOrNull()?.let { placements[it.id] }
+        if (drawCount !in 0..maximumSupplementalDrawCount || frontPlacement == null) return current
+        val frontTrackIndex = reservedFrontTrackIndex(drawCount)
+        val totalStacks = sideCount * stacksPerSide
+        val frontStack = frontPlacement.position.side * stacksPerSide + frontPlacement.position.stack
+        val trackHeadStack = floorMod(frontStack + frontTrackIndex, totalStacks)
+        val trackEnd = initialReservedStackCount(tableState.config.reservedTileCount) + supplementalStackCount
+        val future = (frontTrackIndex until trackEnd).flatMap { trackIndex ->
+            val globalStack = floorMod(trackHeadStack - trackIndex, totalStacks)
+            (0 until TILES_PER_STACK).map { layer ->
+                TileWallPlacement(TileWallPosition(globalStack / stacksPerSide, globalStack % stacksPerSide, layer), reservedWallGapOffset)
+            }
+        }
+        return current + future
+    }
+
+    /**
+     * 完成指定次數補牌後，保留區第一張牌所在的軌道墩位。
+     *
+     * @param drawCount 本局已完成的補牌次數。
+     * @return 從軌道頭端起算的墩位。
+     */
+    private fun reservedFrontTrackIndex(drawCount: Int): Int = when (initialShape) {
+        ReservedWallInitialShape.STACKED -> drawCount / TILES_PER_STACK
+        ReservedWallInitialShape.SPLIT_FIRST_TWO -> when (drawCount) {
+            0 -> 0
+            1 -> 1
+            else -> drawCount / TILES_PER_STACK + 1
+        }
+    }
+
     /** 依規則指定的靠缺口形狀建立保留牌位置。 */
     private fun createReservedPlacements(
         wallLayout: TileWallLayoutResult,
@@ -214,10 +253,7 @@ internal class ReplenishingReservedWallPhysicalLayoutPolicy(
     ): TileWallPlacement? {
         val nextReservedId = context.tableStateAfterAction.reservedWallTiles.firstOrNull()?.id ?: return null
         val nextReservedPlacement = context.currentLayout.placements[nextReservedId] ?: return null
-        val nextReservedTrackIndex = when (initialShape) {
-            ReservedWallInitialShape.STACKED -> drawNumber / TILES_PER_STACK
-            ReservedWallInitialShape.SPLIT_FIRST_TWO -> if (drawNumber == 1) 1 else drawNumber / TILES_PER_STACK + 1
-        }
+        val nextReservedTrackIndex = reservedFrontTrackIndex(drawNumber)
         val nextReservedGlobalStack = nextReservedPlacement.position.side * stacksPerSide + nextReservedPlacement.position.stack
         val trackIndex = initialReservedStackCount(context.tableStateBeforeAction.config.reservedTileCount) +
             (drawNumber - 1) / TILES_PER_STACK

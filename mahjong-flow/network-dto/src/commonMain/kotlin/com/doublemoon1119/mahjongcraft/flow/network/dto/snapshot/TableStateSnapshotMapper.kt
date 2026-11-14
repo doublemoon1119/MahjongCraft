@@ -31,6 +31,7 @@ fun TableStateSnapshot.toDto(registries: NetworkDtoConverter): TableStateSnapsho
     publicTileIds = publicTileIds.map(Uuid::toString).toSet(),
     publicEvidenceTileIds = publicEvidenceTileIds.map(Uuid::toString).toSet(),
     tilePoseStates = tilePoseStates.map { it.toDto() },
+    latestDiscardTileId = latestDiscardTileId?.toString(),
 )
 
 /**
@@ -57,4 +58,5 @@ fun TableStateSnapshotDto.toDomain(registries: NetworkDtoConverter): TableStateS
     publicTileIds = publicTileIds.map(Uuid::parse).toSet(),
     publicEvidenceTileIds = publicEvidenceTileIds.map(Uuid::parse).toSet(),
     tilePoseStates = tilePoseStates.map { it.toDomain() },
+    latestDiscardTileId = latestDiscardTileId?.let(Uuid::parse),
 )

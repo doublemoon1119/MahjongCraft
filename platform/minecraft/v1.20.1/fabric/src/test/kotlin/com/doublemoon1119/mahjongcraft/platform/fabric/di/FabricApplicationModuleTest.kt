@@ -489,14 +489,17 @@ class FabricApplicationModuleTest {
             setOf("melds", "tsumo", "ron", "multi_ron", "phase"),
             presentationCommand.buildShowcaseCommand().build().children.map { it.name }.toSet(),
         )
+        val exhaustiveDrawSettlementNode = presentationCommand.buildExhaustiveDrawSettlementCommand().build()
+        assertEquals(setOf("riichi", "abortive"), exhaustiveDrawSettlementNode.children.map { it.name }.toSet())
         assertEquals(
-            setOf("normal", "melds", "kyuushu", "score", "abortive"),
-            presentationCommand.buildExhaustiveDrawSettlementCommand().build().children.map { it.name }.toSet(),
+            setOf("normal", "melds", "kyuushu", "score"),
+            exhaustiveDrawSettlementNode.getChild("riichi").children.map { it.name }.toSet(),
         )
         val winSettlementNode = presentationCommand.buildWinSettlementCommand().build()
+        assertEquals(setOf("riichi", "taiwan"), winSettlementNode.children.map { it.name }.toSet())
         assertEquals(
-            setOf("tsumo", "ron", "yakuman", "pao", "nagashi", "taiwan"),
-            winSettlementNode.children.map { it.name }.toSet(),
+            setOf("tsumo", "ron", "yakuman", "pao", "nagashi"),
+            winSettlementNode.getChild("riichi").children.map { it.name }.toSet(),
         )
         assertEquals(
             setOf("tsumo", "ron", "eight_flowers", "seven_flowers"),
@@ -504,8 +507,7 @@ class FabricApplicationModuleTest {
         )
         assertEquals(
             setOf("winner_count"),
-            presentationCommand.buildWinSettlementCommand().build().children
-                .single { it.name == "ron" }.children.map { it.name }.toSet(),
+            winSettlementNode.getChild("riichi").getChild("ron").children.map { it.name }.toSet(),
             "ron keeps its optional winner count argument",
         )
         assertEquals(
@@ -514,11 +516,27 @@ class FabricApplicationModuleTest {
         )
         koin.get<FabricDebugTextCommand>()
         val decisionCommand = koin.get<FabricDebugDecisionCommand>()
-        val decisionHudChildren = decisionCommand.buildDecisionHudCommand().build()
-            .children.map { it.name }.toSet()
+        val decisionHudNode = decisionCommand.buildDecisionHudCommand().build()
+        assertEquals(
+            setOf("clear", "riichi", "riichi_three_player", "taiwan"),
+            decisionHudNode.children.map { it.name }.toSet(),
+        )
         assertTrue(
-            decisionHudChildren.containsAll(listOf("timer", "chi", "pon", "kan", "ron", "text_card", "mixed", "clear")),
-            "decision_hud keeps its preview literals and clear",
+            decisionHudNode.getChild("riichi").children.map { it.name }
+                .containsAll(listOf("timer", "chi", "pon", "kan", "ron", "text_card", "mixed")),
+            "decision_hud riichi keeps its preview literals",
+        )
+        assertEquals(setOf("pull_north"), decisionHudNode.getChild("riichi_three_player").children.map { it.name }.toSet())
+        assertEquals(
+            setOf(
+                "discard_analysis",
+                "discard_passed_win",
+                "discard_tsumo_only",
+                "discard_below_minimum",
+                "discard_unavailable",
+                "discard_mixed",
+            ),
+            decisionHudNode.getChild("taiwan").children.map { it.name }.toSet(),
         )
         assertEquals(
             setOf("start", "submit", "timeout", "cancel"),

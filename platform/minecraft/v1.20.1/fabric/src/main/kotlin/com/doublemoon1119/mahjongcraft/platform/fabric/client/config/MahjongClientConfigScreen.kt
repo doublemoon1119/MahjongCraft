@@ -602,21 +602,9 @@ class MahjongClientConfigScreen(
                     )
                 },
             ),
-        ) + presentationRows(
-            MahjongPresentationToggle.CompactPrompt,
-            MahjongPresentationToggle.DiscardAnalysis,
-            MahjongPresentationToggle.AutomaticControlStatus,
-        )
+        ) + presentationRows(MahjongPresentationToggleSection.HUD)
 
-        Category.GAME_PANELS -> presentationRows(
-            MahjongPresentationToggle.RoundInfo,
-            MahjongPresentationToggle.PlayerInfo,
-            MahjongPresentationToggle.LobbyInfo,
-            MahjongPresentationToggle.DiceResult,
-            MahjongPresentationToggle.WinSettlement,
-            MahjongPresentationToggle.DrawSettlement,
-            MahjongPresentationToggle.MatchSettlement,
-        )
+        Category.GAME_PANELS -> presentationRows(MahjongPresentationToggleSection.GAME_PANELS)
         Category.VISUAL_FEEDBACK -> listOf(
             ConfigRow(
                 MinecraftClientConfigScreenKeys.TILE_LABELS,
@@ -624,11 +612,7 @@ class MahjongClientConfigScreen(
                 { booleanText(it.tileLabelsEnabled) },
                 { it.copy(tileLabelsEnabled = !it.tileLabelsEnabled) },
             ),
-        ) + presentationRows(
-            MahjongPresentationToggle.MatchingTileHighlight,
-            MahjongPresentationToggle.DiscardPopup,
-            MahjongPresentationToggle.MeldPopup,
-        )
+        ) + presentationRows(MahjongPresentationToggleSection.VISUAL_FEEDBACK)
     }
 
     /**
@@ -676,22 +660,24 @@ class MahjongClientConfigScreen(
     }
 
     /**
-     * 依畫面順序建立顯示項目的個別開關列。
+     * 依宣告順序建立某個分頁的顯示項目開關列。
      *
-     * @param toggles 要列出的顯示項目。
-     * @return 每個顯示項目一列的開關列。
+     * @param section 要列出的分頁。
+     * @return 這個分頁每個顯示項目一列的開關列。
      */
-    private fun presentationRows(vararg toggles: MahjongPresentationToggle): List<ConfigRow> = toggles.map { toggle ->
-        ConfigRow(
-            nameKey = toggle.nameKey,
-            descriptionKey = toggle.descriptionKey,
-            valueText = { booleanText(toggle.read(it.presentationVisibility)) },
-            update = { config ->
-                val visibility = config.presentationVisibility
-                config.copy(presentationVisibility = toggle.update(visibility, !toggle.read(visibility)))
-            },
-        )
-    }
+    private fun presentationRows(section: MahjongPresentationToggleSection): List<ConfigRow> = MahjongPresentationToggle.entries
+        .filter { it.section == section }
+        .map { toggle ->
+            ConfigRow(
+                nameKey = toggle.nameKey,
+                descriptionKey = toggle.descriptionKey,
+                valueText = { booleanText(toggle.read(it.presentationVisibility)) },
+                update = { config ->
+                    val visibility = config.presentationVisibility
+                    config.copy(presentationVisibility = toggle.update(visibility, !toggle.read(visibility)))
+                },
+            )
+        }
 
     /**
      * 將 Boolean 轉換成本地化的開關狀態。

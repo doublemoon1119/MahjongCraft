@@ -128,6 +128,19 @@ object MinecraftClientConfigScreenKeys {
     /** 顯示開關說明：相同牌標示。 */
     const val PRESENTATION_MATCHING_TILE_HIGHLIGHT_DESCRIPTION: String = "mahjongcraft.client_config.presentation.matching_tile_highlight.description"
 
+    /** 最新捨牌標示開關名稱。 */
+    const val PRESENTATION_LATEST_DISCARD_HIGHLIGHT: String = "mahjongcraft.client_config.presentation.latest_discard_highlight"
+
+    /** 最新捨牌標示開關說明。 */
+    const val PRESENTATION_LATEST_DISCARD_HIGHLIGHT_DESCRIPTION: String =
+        "mahjongcraft.client_config.presentation.latest_discard_highlight.description"
+
+    /** 捨牌來源開關名稱。 */
+    const val PRESENTATION_DISCARD_SOURCE: String = "mahjongcraft.client_config.presentation.discard_source"
+
+    /** 捨牌來源開關說明。 */
+    const val PRESENTATION_DISCARD_SOURCE_DESCRIPTION: String = "mahjongcraft.client_config.presentation.discard_source.description"
+
     /** 顯示開關：打牌提示。 */
     const val PRESENTATION_DISCARD_POPUP: String = "mahjongcraft.client_config.presentation.discard_popup"
 

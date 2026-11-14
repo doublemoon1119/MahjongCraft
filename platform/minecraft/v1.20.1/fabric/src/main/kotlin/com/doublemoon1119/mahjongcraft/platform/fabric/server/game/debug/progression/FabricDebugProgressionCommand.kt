@@ -33,17 +33,19 @@ class FabricDebugProgressionCommand(
     private val playerTableScope: DebugPlayerTableScope,
 ) {
     /**
-     * 建立不修改權威對局、只預覽日麻終局推進決策的指令樹。
+     * 建立不修改權威對局、只預覽終局推進決策的指令樹；日麻的情境放在 `riichi` 底下。
      *
      * @return 包含各預覽情境的指令節點。
      */
-    fun buildMatchProgressionCommand(): LiteralArgumentBuilder<ServerCommandSource> = MatchProgressionPreview.entries.fold(literal(MATCH_PROGRESSION_SUBCOMMAND)) { node, preview ->
-        node.then(
-            literal(preview.commandName).executes { context ->
-                previewMatchProgression(context.source, preview)
-            },
-        )
-    }
+    fun buildMatchProgressionCommand(): LiteralArgumentBuilder<ServerCommandSource> = literal(MATCH_PROGRESSION_SUBCOMMAND).then(
+        MatchProgressionPreview.entries.fold(literal(RIICHI_ARGUMENT)) { node, preview ->
+            node.then(
+                literal(preview.commandName).executes { context ->
+                    previewMatchProgression(context.source, preview)
+                },
+            )
+        },
+    )
 
     /**
      * 使用執行者目前牌桌的玩家身分建立唯讀情境，回報正式日麻推進策略的決策。
@@ -190,6 +192,9 @@ class FabricDebugProgressionCommand(
     private companion object {
         /** `match_progression` 子指令 literal。 */
         const val MATCH_PROGRESSION_SUBCOMMAND: String = "match_progression"
+
+        /** 日本麻將預覽情境分類 literal。 */
+        const val RIICHI_ARGUMENT: String = "riichi"
 
         /** 內建日麻 progression debug 情境固定使用的玩家數。 */
         const val RIICHI_PLAYER_COUNT: Int = 4

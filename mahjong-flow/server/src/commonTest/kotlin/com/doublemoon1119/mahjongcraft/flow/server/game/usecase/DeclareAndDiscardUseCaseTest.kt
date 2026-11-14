@@ -207,6 +207,7 @@ class DeclareAndDiscardUseCaseTest {
         assertEquals(listOf(fixture.tile.id), updated.discardPile.entries.map { it.tile.id })
         assertEquals(85, updated.score)
         assertEquals(fixture.table.components, fixture.repository.getTableState(fixture.gameId)?.components)
+        assertEquals(fixture.tile.id, fixture.repository.getTableState(fixture.gameId)?.lastDiscardTileId)
         val actions = fixture.repository.historyDrafts.map { assertIs<HistoryFact.ActionAccepted>(it.fact).action }
         assertEquals(updated.actionHistory, actions)
         assertEquals(actions, fixture.eventPublisher.getNotifiedActions(fixture.gameId, fixture.playerId, fixture.playerId))

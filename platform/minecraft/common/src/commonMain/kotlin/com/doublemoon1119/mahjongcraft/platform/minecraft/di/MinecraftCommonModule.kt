@@ -52,6 +52,8 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.text.RuleWordingRegist
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.RuleWordingRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistryImpl
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TableTileLayoutProfileRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TableTileLayoutProfileRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileDisplayNameRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileEmojiRegistry
@@ -111,6 +113,7 @@ val minecraftCommonModule = module {
 
     single<RoundInfoLineDisplayRegistryImpl>() bind RoundInfoLineDisplayRegistry::class
     single<TablePropDescriberRegistryImpl>() bind TablePropDescriberRegistry::class
+    single<TableTileLayoutProfileRegistryImpl>() bind TableTileLayoutProfileRegistry::class
 
     single<MinecraftTileAssetRegistryImpl>() bind MinecraftTileAssetRegistry::class
     single<TileDisplayNameRegistryImpl>() bind TileDisplayNameRegistry::class

@@ -168,6 +168,7 @@ private object RiichiBeforeSuuchaRiichiScenario : DebugGameScenario {
         val state = TableState(
             id = currentGame.id,
             players = players,
+            discardOrder = scenarioDiscardOrder(players),
             config = config,
             tileWall = TileWall(availableTiles),
             dealerPlayerId = context.invokingPlayerId,
@@ -294,6 +295,7 @@ private object RiichiBeforePaoPonScenario : DebugGameScenario {
             roundPosition = MatchRoundPosition(sequenceIndex = 0, prevalentWind = Wind.EAST, localRoundNumber = 1),
             currentPlayerIndex = discarderIndex,
             components = ComponentSet.EMPTY.with(RiichiTableComponents.POT_POINTS, 0).with(RiichiTableComponents.WALL_PROGRESS, RiichiWallProgress()),
+            discardOrder = scenarioDiscardOrder(players, last = calledTile.id),
             turnPhase = TurnPhase.AwaitingDiscardReaction(
                 PendingReaction(
                     discarderId = players[discarderIndex].id,
@@ -471,6 +473,7 @@ private class RiichiBeforeAnkanScenario(
         val tableStateWithoutLayout = TableState(
             id = currentGame.id,
             players = players,
+            discardOrder = scenarioDiscardOrder(players),
             config = config,
             tileWall = TileWall(liveTiles),
             dealerPlayerId = context.invokingPlayerId,
@@ -692,6 +695,7 @@ private class RiichiBeforeMinkanScenario(
         val tableState = state.copy(
             players = players,
             currentPlayerIndex = discarderIndex,
+            discardOrder = scenarioDiscardOrder(players, last = discardedTile.id),
             turnPhase = TurnPhase.AwaitingDiscardReaction(
                 PendingReaction(
                     discarderId = players[discarderIndex].id,

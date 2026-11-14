@@ -49,6 +49,8 @@ The list order matches logical wall-face indices; it does not have to match play
 
 The adapter rebuilds the arrangement from the rule configuration and dealer seat during restoration,
 so the function must be deterministic. It does not allow custom coordinates, table sizes, or tile sizes.
+The wall size comes from `TileWallLayout.sideStackCounts` in the same way, so table tiles still keep
+clear of the walls after a restart.
 
 ## Shared room settings
 
@@ -250,6 +252,13 @@ The module is currently configured with a JVM target.
 Its JVM tests also load recipe resources from the version-common module.
 Use the [complete Minecraft target build](../README.md) to verify packaging and the loader integration;
 this focused check does not replace it.
+
+## Rule table tile layouts
+
+A rule can move the wall on its table, for example toward the centre or offset into a pinwheel, by
+registering a `TableTileLayoutProfile` with `registerTableTileLayoutProfiles`. Rules without one use the
+standard layout. Tile and table sizes stay the same for every rule. See the
+[presentation conventions](../../../docs/contributing/minecraft-presentation.md#rule-table-tile-layouts).
 
 ## Rule-owned table props
 

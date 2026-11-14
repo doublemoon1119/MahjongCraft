@@ -24,6 +24,7 @@ import kotlin.uuid.Uuid
  * @property publicTileEvidenceIds 本局公開證據的新集合；未改變時為 null。
  * @property revealedHandSettlements 流局公開手牌與等待牌的新資料；未改變時為 null，空集合代表清空。
  * @property openingDiceRolls 本局逐輪擲骰結果；未改變時為 null。
+ * @property appendedDiscards 接在本局打牌順序後面的牌；沒有新打出的牌時為空清單。一局之內打牌順序只會往後加。
  */
 data class HistoryTableChange(
     val components: ComponentSet? = null,
@@ -37,6 +38,7 @@ data class HistoryTableChange(
     val publicTileEvidenceIds: Set<Uuid>? = null,
     val revealedHandSettlements: List<RevealedHandSettlement>? = null,
     val openingDiceRolls: List<OpeningDiceRoll>? = null,
+    val appendedDiscards: List<Uuid> = emptyList(),
 ) {
     /**
      * 將差異套用到前一個完整桌況。
@@ -62,6 +64,7 @@ data class HistoryTableChange(
             publicTileEvidenceIds = publicTileEvidenceIds ?: before.publicTileEvidenceIds,
             revealedHandSettlements = revealedHandSettlements ?: before.revealedHandSettlements,
             openingDiceRolls = openingDiceRolls ?: before.openingDiceRolls,
+            discardOrder = before.discardOrder + appendedDiscards,
         )
     }
 
@@ -81,6 +84,7 @@ data class HistoryTableChange(
                 before.dealerPlayerId != after.dealerPlayerId ||
                 before.prevalentWind != after.prevalentWind ||
                 before.roundNumber != after.roundNumber ||
+                before.roundSerial != after.roundSerial ||
                 before.roundPosition != after.roundPosition ||
                 before.comboCount != after.comboCount ||
                 before.wallOpening != after.wallOpening
@@ -88,6 +92,7 @@ data class HistoryTableChange(
                 return null
             }
             if (before.players.map(MahjongPlayer::id) != after.players.map(MahjongPlayer::id)) return null
+            if (after.discardOrder.take(before.discardOrder.size) != before.discardOrder) return null
             if ((before.physicalWallLayout == null) != (after.physicalWallLayout == null)) return null
             val wallChange = wallChange(before.tileWall, after.tileWall) ?: return null
             val oldPlacements = before.physicalWallLayout?.placements.orEmpty()
@@ -125,6 +130,7 @@ data class HistoryTableChange(
                     it != before.revealedHandSettlements
                 },
                 openingDiceRolls = after.openingDiceRolls.takeIf { it != before.openingDiceRolls },
+                appendedDiscards = after.discardOrder.drop(before.discardOrder.size),
             )
             return result.takeIf { runCatching { it.applyTo(before) == after }.getOrDefault(false) }
         }

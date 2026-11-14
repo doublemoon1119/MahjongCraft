@@ -28,6 +28,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.Round
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.RoundOutcomeDisplayNameRegistrar
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.RuleCatalogueRegistrar
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.RuleModuleDisplayNameRegistrar
+import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.TableTileLayoutProfileRegistrar
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.TileDisplayNameRegistrar
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.TileEmojiRegistrar
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.TileLabelRegistrar
@@ -59,6 +60,12 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftMessageK
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.BuiltInMinecraftTileAppearanceIds
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftRuleTileAppearanceDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetDefinition
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TableAddedKanPlacement
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TableDiscardArea
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TableMeldArea
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TableTileLayoutProfile
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TableTileLayoutProfileDefinition
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TableWallStagger
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileDisplayNameDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileEmojiDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileLabel
@@ -277,6 +284,10 @@ object BundledTaiwanMinecraftExtension : MinecraftMahjongExtension {
     override fun registerRuleCatalogues(registry: RuleCatalogueRegistrar) {
         registry.register(TaiwanCatalogueProvider())
     }
+
+    override fun registerTableTileLayoutProfiles(registry: TableTileLayoutProfileRegistrar) {
+        registry.register(TableTileLayoutProfileDefinition(BuiltInRuleModuleIds.TAIWAN, TAIWAN_TABLE_TILE_LAYOUT))
+    }
 }
 
 /**
@@ -328,6 +339,21 @@ internal const val TAIWAN_WALL_REMAINING_LINE: String = "mahjongcraft:taiwan/wal
 
 /** 宣告聽牌在操作卡中的順序，與日麻立直相同。 */
 private const val DECLARE_READY_ACTION_ORDER: Int = 5
+
+/**
+ * 台灣麻將的桌面牌位：牌牆往桌心移動並往左錯開成風車形，副露放在牌牆與手牌之間、全部直立，加槓四張一列，牌河散放在桌子中央；
+ * 散放的牌河看不出打出順序，所以標示最後打出的牌。
+ */
+private val TAIWAN_TABLE_TILE_LAYOUT = TableTileLayoutProfile(
+    wallInset = 0.105,
+    wallStagger = TableWallStagger.LEFT,
+    wallCornerOverhang = 0.18,
+    meldArea = TableMeldArea.BETWEEN_WALL_AND_HAND,
+    claimedTileSideways = false,
+    addedKan = TableAddedKanPlacement.IN_ROW,
+    discardArea = TableDiscardArea.SCATTERED,
+    highlightsLatestDiscard = true,
+)
 
 /** 胡牌在操作卡中的順序，與其他規則的榮和相同。 */
 private const val HU_ACTION_ORDER: Int = 3

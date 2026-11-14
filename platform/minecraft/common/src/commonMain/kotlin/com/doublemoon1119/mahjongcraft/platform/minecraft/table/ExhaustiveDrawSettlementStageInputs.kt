@@ -7,10 +7,10 @@ import kotlin.uuid.Uuid
  *
  * @property waitingTileAssetsBySeat 各座位聽牌的牌面資產，順序與請求中的等待牌相同。
  * @property revealedTileAssetsById 公開手牌的牌面資產。
- * @property reservedCornerWidthsBySeat 各座位桌角已被角落物件與副露佔用的寬度，讓舞台避開這塊區域。
+ * @property handShiftsBySeat 各座位立牌整排往玩家左手邊平移的距離（負值往右手邊）；桌況已不存在時為空。
  */
 data class ExhaustiveDrawSettlementStageInputs(
     val waitingTileAssetsBySeat: Map<Int, List<String>>,
     val revealedTileAssetsById: Map<Uuid, String>,
-    val reservedCornerWidthsBySeat: Map<Int, Double>,
+    val handShiftsBySeat: Map<Int, Double>,
 )

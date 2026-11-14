@@ -11,4 +11,7 @@ enum class TableSeatAnchor {
 
     /** 這個座位的副露角落。 */
     MELD_CORNER,
+
+    /** 這個座位手牌那一列的中央。 */
+    HAND_ROW_CENTER,
 }

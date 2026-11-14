@@ -10,6 +10,7 @@ import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeMeldFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeDiscardPile
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
+import com.doublemoon1119.mahjongcraft.testing.logic.table.interleavedDiscardOrder
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -148,7 +149,9 @@ class RecordComponentInitializationTest {
      * @param transform 玩家變更。
      * @return 改動後的桌況。
      */
-    private fun TableState.withPlayer(transform: (MahjongPlayer) -> MahjongPlayer): TableState = copy(players = players.map(transform))
+    private fun TableState.withPlayer(transform: (MahjongPlayer) -> MahjongPlayer): TableState = players.map(transform).let { changed ->
+        copy(players = changed, discardOrder = interleavedDiscardOrder(changed))
+    }
 
     /** 測試常數。 */
     private companion object {

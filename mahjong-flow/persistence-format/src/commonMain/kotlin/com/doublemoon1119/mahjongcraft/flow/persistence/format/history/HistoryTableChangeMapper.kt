@@ -109,6 +109,7 @@ internal class HistoryTableChangeMapper(
             )
         },
         openingDiceRolls = change.openingDiceRolls?.map { it.toPersistenceDto() },
+        appendedDiscards = change.appendedDiscards.map(Uuid::toString),
     )
 
     /**
@@ -160,5 +161,6 @@ internal class HistoryTableChangeMapper(
             )
         },
         openingDiceRolls = dto.openingDiceRolls?.map { it.toDomain() },
+        appendedDiscards = dto.appendedDiscards.map(Uuid::parse),
     )
 }

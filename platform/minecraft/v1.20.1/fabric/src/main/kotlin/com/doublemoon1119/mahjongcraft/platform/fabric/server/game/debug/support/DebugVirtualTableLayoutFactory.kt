@@ -6,12 +6,13 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.api.table.MahjongTable
 import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongTableSide
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongTableSeatLayout
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileWallSideLayout
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TableTileLayoutProfile
 
 /**
  * 依呼叫者所在的方塊座標建立 debug 預覽用的虛擬桌布局。
  *
  * 無狀態，也不接觸世界或 entity：只把虛擬 controller 沿玩家視線前推固定距離，讓座位 0 的正式布局落在
- * 玩家面前，再交由 [DebugVirtualTableLayout] 轉呼叫正式幾何。
+ * 玩家面前，再交由 [DebugVirtualTableLayout] 轉呼叫正式幾何。預覽模擬四人日麻的標準桌面，因此使用標準牌位配置。
  */
 class DebugVirtualTableLayoutFactory {
     /**
@@ -44,6 +45,7 @@ class DebugVirtualTableLayoutFactory {
             tableFacing = tableFacing,
             seatLayout = seatLayout,
             wallSideLayout = STANDARD_WALL_SIDE_LAYOUT,
+            tileLayout = TableTileLayoutProfile.STANDARD,
         )
     }
 

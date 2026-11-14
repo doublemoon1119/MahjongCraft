@@ -15,6 +15,17 @@ interface PhysicalWallLayoutPolicy {
 
     /** 根據已完成的遊戲動作與牌牆變化解析新的實體布局。 */
     fun resolveTransition(context: PhysicalWallLayoutTransitionContext): PhysicalWallLayoutTransitionDecision
+
+    /**
+     * 牌牆的牌在這一局剩下的時間裡可能佔到的所有位置，包含目前的位置。
+     *
+     * 桌面其他牌區依這份位置讓開牌牆，所以同一局之內，後面的桌況回報的位置不可以超出前面回報的範圍；
+     * 牌只會離開、不會移動的規則回報目前位置即可。
+     *
+     * @param tableState 目前桌況；沒有實體牌牆布局時回報空集合。
+     * @return 目前與之後可能佔到的位置。
+     */
+    fun roundReach(tableState: TableState): Set<TileWallPlacement>
 }
 
 /** 建立初始實體牌牆布局的強型別結果。 */
@@ -93,6 +104,9 @@ object ContinuousPhysicalWallLayoutPolicy : PhysicalWallLayoutPolicy {
             phases = emptyList(),
         )
     }
+
+    /** 牌只會被摸走、不會移動，回報目前位置。 */
+    override fun roundReach(tableState: TableState): Set<TileWallPlacement> = tableState.physicalWallLayout?.placements?.values?.toSet().orEmpty()
 }
 
 /**

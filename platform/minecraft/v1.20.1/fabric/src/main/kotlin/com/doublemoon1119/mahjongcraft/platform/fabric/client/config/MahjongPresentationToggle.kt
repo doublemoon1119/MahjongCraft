@@ -7,12 +7,14 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftClient
  *
  * @property nameKey 開關名稱的翻譯鍵。
  * @property descriptionKey 開關說明的翻譯鍵。
+ * @property section 開關列在設定畫面的哪個分頁；同一分頁內依宣告順序排列。
  * @property read 讀取目前開關值。
  * @property update 寫入新開關值後的顯示設定。
  */
 internal enum class MahjongPresentationToggle(
     val nameKey: String,
     val descriptionKey: String,
+    val section: MahjongPresentationToggleSection,
     val read: (MahjongPresentationVisibilityConfig) -> Boolean,
     val update: (MahjongPresentationVisibilityConfig, Boolean) -> MahjongPresentationVisibilityConfig,
 ) {
@@ -20,6 +22,7 @@ internal enum class MahjongPresentationToggle(
     RoundInfo(
         nameKey = MinecraftClientConfigScreenKeys.PRESENTATION_ROUND_INFO,
         descriptionKey = MinecraftClientConfigScreenKeys.PRESENTATION_ROUND_INFO_DESCRIPTION,
+        section = MahjongPresentationToggleSection.GAME_PANELS,
         read = { it.roundInfoEnabled },
         update = { config, enabled -> config.copy(roundInfoEnabled = enabled) },
     ),
@@ -28,6 +31,7 @@ internal enum class MahjongPresentationToggle(
     PlayerInfo(
         nameKey = MinecraftClientConfigScreenKeys.PRESENTATION_PLAYER_INFO,
         descriptionKey = MinecraftClientConfigScreenKeys.PRESENTATION_PLAYER_INFO_DESCRIPTION,
+        section = MahjongPresentationToggleSection.GAME_PANELS,
         read = { it.playerInfoEnabled },
         update = { config, enabled -> config.copy(playerInfoEnabled = enabled) },
     ),
@@ -36,6 +40,7 @@ internal enum class MahjongPresentationToggle(
     LobbyInfo(
         nameKey = MinecraftClientConfigScreenKeys.PRESENTATION_LOBBY_INFO,
         descriptionKey = MinecraftClientConfigScreenKeys.PRESENTATION_LOBBY_INFO_DESCRIPTION,
+        section = MahjongPresentationToggleSection.GAME_PANELS,
         read = { it.lobbyInfoEnabled },
         update = { config, enabled -> config.copy(lobbyInfoEnabled = enabled) },
     ),
@@ -44,6 +49,7 @@ internal enum class MahjongPresentationToggle(
     DiceResult(
         nameKey = MinecraftClientConfigScreenKeys.PRESENTATION_DICE_RESULT,
         descriptionKey = MinecraftClientConfigScreenKeys.PRESENTATION_DICE_RESULT_DESCRIPTION,
+        section = MahjongPresentationToggleSection.GAME_PANELS,
         read = { it.diceResultEnabled },
         update = { config, enabled -> config.copy(diceResultEnabled = enabled) },
     ),
@@ -52,6 +58,7 @@ internal enum class MahjongPresentationToggle(
     CompactPrompt(
         nameKey = MinecraftClientConfigScreenKeys.PRESENTATION_COMPACT_PROMPT,
         descriptionKey = MinecraftClientConfigScreenKeys.PRESENTATION_COMPACT_PROMPT_DESCRIPTION,
+        section = MahjongPresentationToggleSection.HUD,
         read = { it.compactPromptEnabled },
         update = { config, enabled -> config.copy(compactPromptEnabled = enabled) },
     ),
@@ -60,6 +67,7 @@ internal enum class MahjongPresentationToggle(
     DiscardAnalysis(
         nameKey = MinecraftClientConfigScreenKeys.PRESENTATION_DISCARD_ANALYSIS,
         descriptionKey = MinecraftClientConfigScreenKeys.PRESENTATION_DISCARD_ANALYSIS_DESCRIPTION,
+        section = MahjongPresentationToggleSection.HUD,
         read = { it.discardAnalysisEnabled },
         update = { config, enabled -> config.copy(discardAnalysisEnabled = enabled) },
     ),
@@ -68,6 +76,7 @@ internal enum class MahjongPresentationToggle(
     WinSettlement(
         nameKey = MinecraftClientConfigScreenKeys.PRESENTATION_WIN_SETTLEMENT,
         descriptionKey = MinecraftClientConfigScreenKeys.PRESENTATION_WIN_SETTLEMENT_DESCRIPTION,
+        section = MahjongPresentationToggleSection.GAME_PANELS,
         read = { it.winSettlementEnabled },
         update = { config, enabled -> config.copy(winSettlementEnabled = enabled) },
     ),
@@ -76,6 +85,7 @@ internal enum class MahjongPresentationToggle(
     DrawSettlement(
         nameKey = MinecraftClientConfigScreenKeys.PRESENTATION_DRAW_SETTLEMENT,
         descriptionKey = MinecraftClientConfigScreenKeys.PRESENTATION_DRAW_SETTLEMENT_DESCRIPTION,
+        section = MahjongPresentationToggleSection.GAME_PANELS,
         read = { it.drawSettlementEnabled },
         update = { config, enabled -> config.copy(drawSettlementEnabled = enabled) },
     ),
@@ -84,6 +94,7 @@ internal enum class MahjongPresentationToggle(
     MatchSettlement(
         nameKey = MinecraftClientConfigScreenKeys.PRESENTATION_MATCH_SETTLEMENT,
         descriptionKey = MinecraftClientConfigScreenKeys.PRESENTATION_MATCH_SETTLEMENT_DESCRIPTION,
+        section = MahjongPresentationToggleSection.GAME_PANELS,
         read = { it.matchSettlementEnabled },
         update = { config, enabled -> config.copy(matchSettlementEnabled = enabled) },
     ),
@@ -92,14 +103,34 @@ internal enum class MahjongPresentationToggle(
     MatchingTileHighlight(
         nameKey = MinecraftClientConfigScreenKeys.PRESENTATION_MATCHING_TILE_HIGHLIGHT,
         descriptionKey = MinecraftClientConfigScreenKeys.PRESENTATION_MATCHING_TILE_HIGHLIGHT_DESCRIPTION,
+        section = MahjongPresentationToggleSection.VISUAL_FEEDBACK,
         read = { it.matchingTileHighlightEnabled },
         update = { config, enabled -> config.copy(matchingTileHighlightEnabled = enabled) },
+    ),
+
+    /** 最新捨牌標示。 */
+    LatestDiscardHighlight(
+        nameKey = MinecraftClientConfigScreenKeys.PRESENTATION_LATEST_DISCARD_HIGHLIGHT,
+        descriptionKey = MinecraftClientConfigScreenKeys.PRESENTATION_LATEST_DISCARD_HIGHLIGHT_DESCRIPTION,
+        section = MahjongPresentationToggleSection.VISUAL_FEEDBACK,
+        read = { it.latestDiscardHighlightEnabled },
+        update = { config, enabled -> config.copy(latestDiscardHighlightEnabled = enabled) },
+    ),
+
+    /** 捨牌來源。 */
+    DiscardSource(
+        nameKey = MinecraftClientConfigScreenKeys.PRESENTATION_DISCARD_SOURCE,
+        descriptionKey = MinecraftClientConfigScreenKeys.PRESENTATION_DISCARD_SOURCE_DESCRIPTION,
+        section = MahjongPresentationToggleSection.VISUAL_FEEDBACK,
+        read = { it.discardSourceEnabled },
+        update = { config, enabled -> config.copy(discardSourceEnabled = enabled) },
     ),
 
     /** 打牌提示。 */
     DiscardPopup(
         nameKey = MinecraftClientConfigScreenKeys.PRESENTATION_DISCARD_POPUP,
         descriptionKey = MinecraftClientConfigScreenKeys.PRESENTATION_DISCARD_POPUP_DESCRIPTION,
+        section = MahjongPresentationToggleSection.VISUAL_FEEDBACK,
         read = { it.discardPopupEnabled },
         update = { config, enabled -> config.copy(discardPopupEnabled = enabled) },
     ),
@@ -108,6 +139,7 @@ internal enum class MahjongPresentationToggle(
     MeldPopup(
         nameKey = MinecraftClientConfigScreenKeys.PRESENTATION_MELD_POPUP,
         descriptionKey = MinecraftClientConfigScreenKeys.PRESENTATION_MELD_POPUP_DESCRIPTION,
+        section = MahjongPresentationToggleSection.VISUAL_FEEDBACK,
         read = { it.meldPopupEnabled },
         update = { config, enabled -> config.copy(meldPopupEnabled = enabled) },
     ),
@@ -116,6 +148,7 @@ internal enum class MahjongPresentationToggle(
     AutomaticControlStatus(
         nameKey = MinecraftClientConfigScreenKeys.PRESENTATION_AUTOMATIC_CONTROL_STATUS,
         descriptionKey = MinecraftClientConfigScreenKeys.PRESENTATION_AUTOMATIC_CONTROL_STATUS_DESCRIPTION,
+        section = MahjongPresentationToggleSection.HUD,
         read = { it.automaticControlStatusEnabled },
         update = { config, enabled -> config.copy(automaticControlStatusEnabled = enabled) },
     ),

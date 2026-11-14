@@ -110,6 +110,7 @@ class MahjongTileWallArrangementProjectionTest {
             TileWallSideArrangement(reference, sides),
             MahjongTableSeatLayout.TWO_PLAYER.sideOf(dealer),
         ),
+        tileLayout = TableTileLayoutProfile.STANDARD,
         stacksPerSide = 17,
     )
 }

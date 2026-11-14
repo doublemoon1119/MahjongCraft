@@ -14,11 +14,7 @@ import kotlin.uuid.Uuid
  * [MahjongTileWallPresenter] 已經生成好的既有 entity，直接改標記、改姿態、移動位置，比照
  * [MahjongTileWallPresenter] 的 best-effort 慣例。
  *
- * 規則桌面物件的 entity 由 [TablePropPresenter] 管理；這裡只讀取呼叫端提供的角落寬度以計算讓位偏移。
- *
- * [MahjongTileTableLayout.meldPlacement]／[MahjongTileTableLayout.handPlacement] 只負責單一格位／
- * 單張牌座標，把多組副露、各組張數、各組內鳴取牌位置、角落佔用寬度換算成這些函式需要的參數是實作的
- * 責任——見 [MahjongTileTableLayout.meldAreaWidth]／[MahjongTileTableLayout.handCornerYieldShift] 的 KDoc。
+ * 規則桌面物件的 entity 由 [TablePropPresenter] 管理；手牌平移由呼叫端以 [MahjongPlayerAreaLayout] 算好放進呈現資料。
  */
 interface MahjongPlayerAreaPresenter {
     /**

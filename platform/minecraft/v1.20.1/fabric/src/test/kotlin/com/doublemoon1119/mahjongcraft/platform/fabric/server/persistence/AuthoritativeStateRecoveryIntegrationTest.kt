@@ -157,6 +157,7 @@ class AuthoritativeStateRecoveryIntegrationTest {
                     else -> player
                 }
             },
+            discardOrder = state.discardOrder + discardedTile.id,
             turnPhase = TurnPhase.AwaitingDiscardReaction(
                 PendingReaction(
                     discarderId = discarder.id,

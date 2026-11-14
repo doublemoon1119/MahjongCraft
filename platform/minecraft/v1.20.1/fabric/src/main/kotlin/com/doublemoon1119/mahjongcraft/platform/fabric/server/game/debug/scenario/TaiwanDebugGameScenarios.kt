@@ -63,8 +63,14 @@ internal object TaiwanDebugGameScenarios {
             dealt.handTilesOf(invoker).zip(READY_HAND) { tile, face -> tile.id to face } +
                 flowerFaces(dealt.tileWall.getAllTiles().takeLast(ALL_FLOWERS))
         },
+        // 莊家補花：呼叫者當莊家，起手一張花，其餘七張花在活牌尾端。莊家摸開門牌後手上十七張，補花補進的牌接在最右邊、
+        // 還沒理過；用來確認莊家手牌在補花前後都不碰到左邊的牌牆。
+        TaiwanOpeningScenario(id = "mahjongcraft:taiwan/debug/dealer_flower", invokerDeals = true) { dealt, invoker ->
+            flowerFaces(dealt.handTilesOf(invoker).take(1) + dealt.tileWall.getAllTiles().takeLast(ALL_FLOWERS - 1))
+        },
         TaiwanLastTileFlowerScenario,
         TaiwanBeforePaoPonScenario,
+        TaiwanCrowdedMeldsScenario,
     )
 }
 
@@ -72,16 +78,22 @@ internal object TaiwanDebugGameScenarios {
  * 以正式初始化流程發牌、交換牌面後播放完整開局的台灣麻將情境；載入後與正式開局相同，接著處理局首補花。
  *
  * @property id 完整的 namespaced 情境 ID。
+ * @property invokerDeals 是否由呼叫者當莊家；否則沿用這一桌目前的莊家。
  * @property faces 依發牌後的桌況與呼叫者座位，列出要放到各牌張的牌面。
  */
 private class TaiwanOpeningScenario(
     override val id: String,
+    private val invokerDeals: Boolean = false,
     private val faces: (dealt: TableState, invokerIndex: Int) -> List<Pair<Uuid, Tile>>,
 ) : DebugGameScenario {
     override fun build(context: DebugGameScenarioContext): DebugGameScenarioResult {
         val currentGame = context.currentGame
         val module = taiwanScenarioModule(currentGame)
-        val initialization = formalFirstRoundKeepingSeats(context, module)
+        val initialization = if (invokerDeals) {
+            formalFirstRoundKeepingSeats(context, module, dealerPlayerId = context.invokingPlayerId)
+        } else {
+            formalFirstRoundKeepingSeats(context, module)
+        }
         val dealt = initialization.tableState.withFaces(faces(initialization.tableState, initialization.tableState.seatOf(context.invokingPlayerId)))
         val dealOrderHandTileIdsBySeatIndex = dealt.players.withIndex().associate { (seatIndex, player) ->
             seatIndex to player.hand.tiles.map { tile -> tile.id }
@@ -136,6 +148,7 @@ private object TaiwanLastTileFlowerScenario : DebugGameScenario {
         val initialPhysicalLayout = requireNotNull(initialization.initialPhysicalWallLayout) { "Taiwan initialization did not produce physical wall layout" }
         val state = dealt.copy(
             players = players.map { player -> player.copy(hand = player.hand.organize(module.tileOrder)) },
+            discardOrder = scenarioDiscardOrder(players),
             tileWall = TileWall(listOf(faceById.getValue(lastLiveTile.id))),
             physicalWallLayout = TileWallPhysicalLayout(initialPhysicalLayout.placements.filterKeys { it in remainingWallIds }),
         )
@@ -207,6 +220,7 @@ private object TaiwanBeforePaoPonScenario : DebugGameScenario {
             tileWall = draw.wall,
             physicalWallLayout = dealt.physicalWallLayout?.retainOnly(remainingWallIds),
             currentPlayerIndex = discarderIndex,
+            discardOrder = scenarioDiscardOrder(players, last = calledTile.id),
             turnPhase = TurnPhase.AwaitingDiscardReaction(
                 PendingReaction(
                     discarderId = players[discarderIndex].id,
@@ -245,6 +259,107 @@ private object TaiwanBeforePaoPonScenario : DebugGameScenario {
                 )
             },
         ).organize(module.tileOrder),
+    )
+}
+
+/**
+ * 副露與花牌多到副露那一列放不下：呼叫者已有三組明槓、一組碰與八張花，副露列放不下的部分移到手牌那一列的右手邊。
+ *
+ * 呼叫者的明槓依序是一萬、四筒、二條，被鳴的牌分別來自上家、對家、下家，碰的是紅中；立牌是兩張白、四條與六條。上家剛打出
+ * 第三張白，呼叫者可以碰白成為第五組副露。全桌只有三個槓，不會觸發四槓流局；碰不需要從牌尾補牌。其他三家的立牌固定為
+ * [PAO_OPPONENT_HAND]，不會碰或胡。
+ */
+private object TaiwanCrowdedMeldsScenario : DebugGameScenario {
+    override val id: String = "mahjongcraft:taiwan/debug/crowded_melds"
+
+    override fun build(context: DebugGameScenarioContext): DebugGameScenarioResult {
+        val module = taiwanScenarioModule(context.currentGame)
+        val initialization = formalFirstRoundKeepingSeats(context, module)
+        val initial = initialization.tableState
+        val invokerIndex = initial.seatOf(context.invokingPlayerId)
+        val discarderIndex = (invokerIndex + PLAYER_COUNT - 1) % PLAYER_COUNT
+        val invokerTiles = initial.handTilesOf(invokerIndex)
+        val liveTiles = initial.tileWall.getAllTiles()
+        // 呼叫者需要的副露與立牌比起手多時，從活牌最前端補足；莊家起手多一張，從活牌取的牌少一張。
+        val ownFaces = CROWDED_MELD_FACES + CROWDED_HAND
+        val fromLive = ownFaces.size - invokerTiles.size
+        val ownTiles = invokerTiles + liveTiles.take(fromLive)
+        val calledTile = liveTiles[fromLive]
+        val flowerTiles = liveTiles.drop(fromLive + 1).take(ALL_FLOWERS)
+        val opponentFaces = initial.players.indices.filter { it != invokerIndex }.flatMap { seatIndex ->
+            initial.handTilesOf(seatIndex).zip(PAO_OPPONENT_HAND) { tile, face -> tile.id to face }
+        }
+        val dealt = initial.withFaces(
+            ownTiles.zip(ownFaces) { tile, face -> tile.id to face } +
+                (calledTile.id to Tile.Honor.White) +
+                flowerFaces(flowerTiles) +
+                opponentFaces,
+        )
+        val faceById = (dealt.players.flatMap { player -> player.hand.tiles + listOfNotNull(player.hand.lastDrawn) } + dealt.tileWall.getAllTiles())
+            .associateBy { it.id }
+        val own = ownTiles.map { faceById.getValue(it.id) }
+        val meldTiles = own.take(CROWDED_MELD_FACES.size)
+        val kongs = meldTiles.take(CROWDED_KONG_COUNT * KONG_SIZE).chunked(KONG_SIZE).zip(CROWDED_KONG_SOURCES) { kong, direction ->
+            claimedMeld(MeldType.OpenKan, kong, direction)
+        }
+        val pon = claimedMeld(MeldType.Pon, meldTiles.drop(CROWDED_KONG_COUNT * KONG_SIZE), RelativeDirection.Across)
+        val called = faceById.getValue(calledTile.id)
+        val flowers = flowerTiles.map { faceById.getValue(it.id) }
+        val removedIds = (own + called + flowers).mapTo(mutableSetOf()) { it.id }
+        val wall = TileWall(dealt.tileWall.getAllTiles().filterNot { it.id in removedIds })
+        val players = dealt.players.mapIndexed { seatIndex, player ->
+            when (seatIndex) {
+                invokerIndex -> player.copy(
+                    hand = Hand(tiles = own.drop(CROWDED_MELD_FACES.size), melds = kongs + pon).organize(module.tileOrder),
+                    tileAreas = player.tileAreas.withArea(TaiwanPlayerTileAreaIds.FLOWERS, flowers),
+                )
+                discarderIndex -> player.copy(
+                    hand = player.hand.organize(module.tileOrder),
+                    discardPile = TaiwanDiscardPile().discardTile(called),
+                    actionHistory = listOf(GameAction.Draw, GameAction.Discard(called.id)),
+                )
+                else -> player.copy(hand = player.hand.organize(module.tileOrder))
+            }
+        }
+        val remainingWallIds = (wall.getAllTiles() + dealt.reservedWallTiles).mapTo(mutableSetOf()) { it.id }
+        val state = dealt.copy(
+            players = players,
+            tileWall = wall,
+            physicalWallLayout = dealt.physicalWallLayout?.retainOnly(remainingWallIds),
+            currentPlayerIndex = discarderIndex,
+            discardOrder = scenarioDiscardOrder(players, last = called.id),
+            turnPhase = TurnPhase.AwaitingDiscardReaction(
+                PendingReaction(
+                    discarderId = players[discarderIndex].id,
+                    tileId = called.id,
+                    eligiblePlayerIds = setOf(context.invokingPlayerId),
+                    ronPlayerIds = emptySet(),
+                    id = Uuid.random(),
+                ),
+            ),
+        )
+        return DebugGameScenarioResult(
+            game = context.currentGame.withTableState(state),
+            wallStructure = requireNotNull(initialization.wallStructure) { "Taiwan initialization did not produce wall structure" },
+            wallLayout = requireNotNull(initialization.initialPhysicalWallLayout) { "Taiwan initialization did not produce physical wall layout" },
+        )
+    }
+
+    /**
+     * 建立一組鳴他家的牌而成立的副露，最後一張是被鳴的牌。
+     *
+     * @param type 副露種類。
+     * @param tiles 副露的牌。
+     * @param direction 被鳴的牌的來源。
+     * @return 副露。
+     */
+    private fun claimedMeld(type: MeldType, tiles: List<IdentifiedTile>, direction: RelativeDirection): Meld = Meld(
+        type = type,
+        tiles = tiles,
+        sourceTile = tiles.last(),
+        sourceDirection = direction,
+        publiclyRevealedTileIds = tiles.mapTo(mutableSetOf()) { it.id },
+        faceDownTileIds = emptySet(),
     )
 }
 
@@ -399,6 +514,34 @@ private val PAO_OPPONENT_HAND: List<Tile> = listOf(
     Tile.Honor.South,
     Tile.Honor.West,
 )
+
+/** 副露擁擠情境的明槓組數；全桌合計四個槓會流局。 */
+private const val CROWDED_KONG_COUNT: Int = 3
+
+/** 副露擁擠情境呼叫者副露的牌面：一萬、四筒、二條各一組明槓，再一組碰紅中；都不在 [PAO_OPPONENT_HAND] 中。 */
+private val CROWDED_MELD_FACES: List<Tile> = listOf(
+    Tile.Numeric(Tile.Suit.Character, 1),
+    Tile.Numeric(Tile.Suit.Dot, 4),
+    Tile.Numeric(Tile.Suit.Bamboo, 2),
+).flatMap { face -> List(KONG_SIZE) { face } } + List(PON_SIZE) { Tile.Honor.Red }
+
+/** 副露擁擠情境三組明槓被鳴的牌的來源。 */
+private val CROWDED_KONG_SOURCES: List<RelativeDirection> = listOf(
+    RelativeDirection.Left,
+    RelativeDirection.Across,
+    RelativeDirection.Right,
+)
+
+/** 副露擁擠情境呼叫者的立牌：兩張白、四條與六條，可以碰上家打出的白。 */
+private val CROWDED_HAND: List<Tile> = listOf(
+    Tile.Honor.White,
+    Tile.Honor.White,
+    Tile.Numeric(Tile.Suit.Bamboo, 4),
+    Tile.Numeric(Tile.Suit.Bamboo, 6),
+)
+
+/** 一組槓的張數。 */
+private const val KONG_SIZE: Int = 4
 
 /** 包牌情境呼叫者聽的牌，依序交錯排在活牌最前端。 */
 private val PAO_WAITS: List<Tile> = listOf(Tile.Numeric(Tile.Suit.Character, 4), Tile.Numeric(Tile.Suit.Character, 1))

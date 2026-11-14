@@ -155,6 +155,7 @@ class TileWallMotionPathPlannerTest {
                 arrangement = TileWallSideArrangement(TileWallSideReference.TABLE, listOf(0, 1, 2, 3)),
                 dealerSide = MahjongTableSide.SOUTH,
             ),
+            tileLayout = TableTileLayoutProfile.STANDARD,
             stacksPerSide = 17,
         )
 

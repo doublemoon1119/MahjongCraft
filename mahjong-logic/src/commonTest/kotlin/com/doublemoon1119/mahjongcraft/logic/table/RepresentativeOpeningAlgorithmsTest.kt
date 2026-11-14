@@ -125,6 +125,7 @@ class RepresentativeOpeningAlgorithmsTest {
                 roundNumber = 2,
                 comboCount = 0,
                 prevalentWind = Wind.EAST,
+                roundSerial = 1,
             ),
             module = module(twoRollSummedCutProcedure()) { drawOrder = it },
             diceRollSource = queuedDiceSource(
@@ -159,6 +160,7 @@ class RepresentativeOpeningAlgorithmsTest {
                     roundNumber = 2,
                     comboCount = 0,
                     prevalentWind = Wind.EAST,
+                    roundSerial = 1,
                 ),
                 module = module(procedure),
                 diceRollSource = queuedDiceSource(listOf(listOf(2, 2))),

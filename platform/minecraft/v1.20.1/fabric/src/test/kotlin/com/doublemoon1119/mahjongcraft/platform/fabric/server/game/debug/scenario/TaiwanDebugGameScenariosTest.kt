@@ -46,6 +46,18 @@ class TaiwanDebugGameScenariosTest {
         assertTrue(TaiwanTileTypes.isFlower(opened.tableState.reservedWallTiles.first().tile))
     }
 
+    /** 呼叫者當莊家、起手一張花；摸開門牌後補一次花就結束，補到的牌與開門牌都不是花，其他人沒有花。 */
+    @Test
+    fun `dealer flower scenario makes the invoker the dealer with one opening flower`() {
+        val (state, invokerId) = build("mahjongcraft:taiwan/debug/dealer_flower")
+        val dealer = state.dealerIndex
+
+        val opened = assertIs<TaiwanFlowerFlow.Result.Completed>(processOpening(state))
+
+        assertEquals(invokerId, state.players[dealer].id)
+        assertEquals(listOf(1, 0, 0, 0), (0 until PLAYERS).map { offset -> flowerCount(opened.tableState, dealer + offset) })
+    }
+
     /** 呼叫者起手七張花，下家亮出第八張時，呼叫者可以選擇七搶一。 */
     @Test
     fun `seven flowers scenario offers the invoker a seven-flower win`() {
@@ -131,6 +143,25 @@ class TaiwanDebugGameScenariosTest {
         val liability = module.beforeDiscardClaimed(invoker, MeldType.Pon, calledTile, direction)
             .applyTo(invoker.components, BuiltInComponentOwners.PLAYER)[TaiwanPlayerComponents.PAO_LIABILITY]
         assertEquals(TaiwanPaoLiability(TaiwanPaoHand.BIG_DRAGONS, direction), liability)
+    }
+
+    /** 副露擁擠情境：呼叫者有三組明槓、一組碰與八張花，可以碰上家打出的白；全桌不到四個槓，其他人不能碰或胡。 */
+    @Test
+    fun `crowded melds scenario offers a fifth meld without four kongs`() {
+        val (state, invokerId) = build("mahjongcraft:taiwan/debug/crowded_melds")
+        val invoker = state.players.single { it.id == invokerId }
+        val discarder = state.players[(state.players.indexOf(invoker) + PLAYERS - 1) % PLAYERS]
+        val reaction = assertIs<TurnPhase.AwaitingDiscardReaction>(state.turnPhase).reaction
+        val calledTile = discarder.discardPile.entries.single().tile
+
+        assertEquals(listOf(MeldType.OpenKan, MeldType.OpenKan, MeldType.OpenKan, MeldType.Pon), invoker.hand.melds.map { it.type })
+        assertTrue(invoker.hand.melds.all { meld -> meld.tiles.map { it.tile }.distinct().size == 1 && meld.sourceTile in meld.tiles })
+        assertEquals(TaiwanTileTypes.ALL.size, flowerCount(state, state.players.indexOf(invoker)))
+        assertEquals(Tile.Honor.White, calledTile.tile)
+        assertEquals(calledTile.id, reaction.tileId)
+        assertEquals(2, invoker.hand.tiles.count { it.tile == Tile.Honor.White })
+        assertEquals(null, TaiwanRuleModule(BuiltInRuleModuleIds.TAIWAN, state.config as TaiwanRuleConfig).resolveFourKans(state))
+        assertTrue(state.players.filterNot { it.id == invokerId }.none { TaiwanShantenCalculator().calculate(it.hand) is ShantenResult.Tenpai })
     }
 
     /**

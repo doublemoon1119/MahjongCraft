@@ -53,6 +53,7 @@ class ExamplePairingRuleCoreTest {
                 roundNumber = 2,
                 comboCount = 0,
                 prevalentWind = initial.prevalentWind,
+                roundSerial = 1,
             ),
             module = module,
         ).initializeRuleComponents(module.id, exampleComponentRegistry(), initial.copy(players = revealedPlayers)).tableState
@@ -283,7 +284,7 @@ class ExamplePairingRuleCoreTest {
         assertTrue(randomlySelectedState.values.all { it in 1..4 })
         val next = GameInitializer.startNextRound(
             gameId = initial.id,
-            roundAdvancement = RoundAdvancementResult(initial.players, initial.dealerPlayerId, 2, 0, initial.prevalentWind),
+            roundAdvancement = RoundAdvancementResult(initial.players, initial.dealerPlayerId, 2, 0, initial.prevalentWind, roundSerial = 1),
             module = module,
         ).initializeRuleComponents(module.id, exampleComponentRegistry(), initial).tableState
         val nextRandomlySelectedState = assertNotNull(next.components[ExamplePairingComponents.BONUS_TILES])

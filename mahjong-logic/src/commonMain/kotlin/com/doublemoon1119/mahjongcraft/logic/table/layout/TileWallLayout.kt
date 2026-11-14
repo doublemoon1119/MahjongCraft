@@ -23,6 +23,16 @@ interface TileWallLayout {
     fun sideArrangement(dealerSeatIndex: Int): TileWallSideArrangement
 
     /**
+     * 取得每面牌牆的墩數，依面的順序排列；清單長度就是牌牆面數。
+     *
+     * 必須與 [resolve] 排出的結構一致。與 [sideArrangement] 相同，相同規則配置必須得到相同結果，
+     * 讓恢復對局時不必重新排列牌牆就能取得牌牆大小；不得使用亂數、修改狀態，或依賴可能改變的外部資料。
+     *
+     * @return 每面牌牆的墩數。
+     */
+    fun sideStackCounts(): List<Int>
+
+    /**
      * 依 [shuffledTiles] 與 [opening] 排列牌牆。
      *
      * @param shuffledTiles 已洗牌完成的完整牌組。

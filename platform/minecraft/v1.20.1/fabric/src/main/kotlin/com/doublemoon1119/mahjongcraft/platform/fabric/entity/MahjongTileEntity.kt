@@ -59,14 +59,22 @@ class MahjongTileEntity(
     /** 僅供本地 client 動作選牌（例如多選 rule decision）使用的原版 outline RGB；不追蹤也不持久化。 */
     private var selectionHighlightColor: Int? = null
 
-    /** 原版或其他來源未啟用 glowing 時，加入本地同種牌提示或選牌提示狀態。 */
-    override fun isGlowing(): Boolean = super.isGlowing() || selectionHighlightColor != null || matchingHighlightColor != null
+    /** 僅供本地 client 最新捨牌標示使用的原版 outline RGB；不追蹤也不持久化。 */
+    private var latestDiscardHighlightColor: Int? = null
 
-    /** 原版 glowing 優先；其次是選牌提示（比同種牌提示更即時可動作），最後才是同種牌提示。 */
+    /** 原版或其他來源未啟用 glowing 時，加入本地選牌提示、同種牌提示或最新捨牌標示狀態。 */
+    override fun isGlowing(): Boolean = super.isGlowing() ||
+        selectionHighlightColor != null ||
+        matchingHighlightColor != null ||
+        latestDiscardHighlightColor != null
+
+    /**
+     * 原版 glowing 優先；其次是選牌提示（比同種牌提示更即時可動作），再來是同種牌提示，最後才是一直亮著的最新捨牌標示。
+     */
     override fun getTeamColorValue(): Int = if (super.isGlowing()) {
         super.getTeamColorValue()
     } else {
-        selectionHighlightColor ?: matchingHighlightColor ?: super.getTeamColorValue()
+        selectionHighlightColor ?: matchingHighlightColor ?: latestDiscardHighlightColor ?: super.getTeamColorValue()
     }
 
     /** 設定僅供目前 client 使用的同種牌描邊色彩。 */
@@ -87,6 +95,16 @@ class MahjongTileEntity(
     /** 清除本地選牌描邊，不影響原版或其他模組的 glowing flag。 */
     fun clearSelectionHighlight() {
         selectionHighlightColor = null
+    }
+
+    /** 設定僅供目前 client 使用的最新捨牌描邊色彩。 */
+    fun setLatestDiscardHighlight(rgb: Int) {
+        latestDiscardHighlightColor = rgb and 0xFFFFFF
+    }
+
+    /** 清除本地最新捨牌描邊，不影響原版或其他模組的 glowing flag。 */
+    fun clearLatestDiscardHighlight() {
+        latestDiscardHighlightColor = null
     }
 
     /**

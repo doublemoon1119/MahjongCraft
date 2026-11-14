@@ -24,6 +24,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.RuleD
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.RuleModuleDisplayNameRegistrar
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.RuleWordingRegistrar
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.TablePropDescriberRegistrar
+import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.TableTileLayoutProfileRegistrar
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.TileDisplayNameRegistrar
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.TileEmojiRegistrar
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.TileLabelRegistrar
@@ -133,6 +134,15 @@ interface MinecraftMahjongExtension {
      * @param registry 桌面物件描述 registry。
      */
     fun registerTablePropDescribers(registry: TablePropDescriberRegistrar) = Unit
+
+    /**
+     * 登記規則的桌面牌位配置，依規則模組識別碼登記，例如牌牆往桌心移動的距離與風車形錯開量。
+     *
+     * 預設不登記，該規則使用標準擺法。
+     *
+     * @param registry 桌面牌位配置 registry。
+     */
+    fun registerTableTileLayoutProfiles(registry: TableTileLayoutProfileRegistrar) = Unit
 
     /**
      * 登記第三方流局原因在 Minecraft 中使用的本地化顯示名稱。

@@ -47,6 +47,7 @@ object FakeTableStateFactory {
      * @param physicalWallLayout 實體牌牆配置，預設為 null。
      * @param finishedPlayerIds 已完成本局的玩家識別碼，預設為空集合。
      * @param components 初始桌況組件；日麻設定預設建立零供託與本局初始進度，其他設定為空集合。
+     * @param discardOrder 本局打牌順序；為 null 時依 [interleavedDiscardOrder] 由各家牌河排出。
      */
     fun create(
         id: Uuid = Uuid.random(),
@@ -68,6 +69,7 @@ object FakeTableStateFactory {
         physicalWallLayout: TileWallPhysicalLayout? = null,
         finishedPlayerIds: Set<Uuid> = emptySet(),
         components: ComponentSet = if (config is RiichiFamilyRuleConfig) riichiTableComponents() else ComponentSet.EMPTY,
+        discardOrder: List<Uuid>? = null,
     ): TableState {
         val hasDuplicateWinds = players.map { it.seatWind }.distinct().size != players.size
         val normalizedPlayers = players.mapIndexed { index, player ->
@@ -95,6 +97,7 @@ object FakeTableStateFactory {
             reservedWallTiles = reservedWallTiles,
             physicalWallLayout = physicalWallLayout,
             finishedPlayerIds = finishedPlayerIds,
+            discardOrder = discardOrder ?: interleavedDiscardOrder(normalizedPlayers),
             components = components,
         )
     }
@@ -102,3 +105,21 @@ object FakeTableStateFactory {
     /** [TileWall] 預設牌張數，供一般測試避免意外觸發牌山摸盡判斷。 */
     private const val DEFAULT_WALL_SIZE = 70
 }
+
+/**
+ * 測試用的打牌順序：各家依座位順序輪流，先排每家第一張、再排每家第二張，依此類推；被鳴走的牌也列入。
+ *
+ * @param players 依座位順序排列的玩家。
+ * @return 每張捨牌剛好出現一次的順序。
+ */
+fun interleavedDiscardOrder(players: List<MahjongPlayer>): List<Uuid> {
+    val piles = players.map { player -> player.discardPile.entries.map { it.tile.id } }
+    return (0 until (piles.maxOfOrNull { it.size } ?: 0)).flatMap { index -> piles.mapNotNull { it.getOrNull(index) } }
+}
+
+/**
+ * 換成依 [interleavedDiscardOrder] 排出的打牌順序；測試直接改了牌河之後用來補上順序。
+ *
+ * @return 打牌順序與牌河一致的桌況。
+ */
+fun TableState.withInterleavedDiscardOrder(): TableState = copy(discardOrder = interleavedDiscardOrder(players))

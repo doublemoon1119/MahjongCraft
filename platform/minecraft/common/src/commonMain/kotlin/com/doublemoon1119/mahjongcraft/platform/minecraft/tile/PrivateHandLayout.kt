@@ -27,6 +27,9 @@ class PrivateHandLayout {
     /** 已確認的固定牌排幾何，不跟隨不同步抵達的單張換位封包抖動。 */
     private var row: Row? = null
 
+    /** 目前的牌排是否只由部分立牌推算；之後所有立牌排成等距連續的一列時直接改用兩端的中點。 */
+    private var rowProvisional = false
+
     /** 最後確認牌排時的原生終點；未對齊的中間封包不能覆蓋這份基準。 */
     private var previousTargets = emptyMap<Uuid, TileDisplayTransform>()
 
@@ -227,6 +230,7 @@ class PrivateHandLayout {
         crossingIds.clear()
         snappingIds.clear()
         row = null
+        rowProvisional = false
         previousTargets = emptyMap()
         lastTime = Double.NEGATIVE_INFINITY
     }
@@ -259,16 +263,27 @@ class PrivateHandLayout {
                 )
             }
         }
-        val candidate = candidates.firstOrNull() ?: return
-        if (candidates.any { !candidate.matches(it) }) return
+        // 所有立牌都已立起時，牌排是等距連續的一列，中心就是兩端的中點，與每張牌排在第幾格無關；
+        // 本機對還沒理過的牌的認定與共享擺放稍有不同時，逐張推算的中心會對不上。
+        val extent = extentRow(publicOrder, inputs)
+        val candidate = extent ?: run {
+            val first = candidates.firstOrNull() ?: return
+            if (candidates.any { !first.matches(it) }) return
+            first
+        }
         if (row?.matches(candidate) == false) {
             // 換格數的本人排列可能比共享位置先到；不能因為等了幾幀就把舊座標當成新中心。
             val moved = publicOrder.any { id -> previousTargets[id]?.let { it != inputs[id]?.target } == true }
             // 整手換成全新的牌（例如載入 debug 情境）時沒有舊座標可比，全部立起且一致的位置就是新牌排。
             val replaced = publicOrder.none { id -> id in previousTargets }
+            // 牌排多了一張牌、全部排成等距連續的一列時，其餘牌的位置可能在張數改變前就已經換好、記在上次的位置裡；
+            // 新加入的牌已有位置，兩端就是新的牌排。
+            val joined = extent != null && publicOrder.any { id -> id !in previousTargets }
+            // 只由部分立牌推算的牌排可能沿用已經離開的牌的格位；所有立牌排成一列後就以兩端為準。
+            val confirmed = extent != null && rowProvisional
             // 還沒立起的牌（仍在牌牆上）不在牌排上，不影響核對；缺資料的牌則要等資料到齊。
             val notStanding = publicOrder.count { id -> inputs[id]?.target?.let { it.poseDegrees != 0.0f } == true }
-            if (candidates.size + notStanding != publicOrder.size || !(moved || replaced)) return
+            if (candidates.size + notStanding != publicOrder.size || !(moved || replaced || joined || confirmed)) return
             if (drawnId != null) {
                 val drawn = inputs[drawnId]?.target ?: return
                 val edge = candidate.placement(publicOrder.lastIndex, publicOrder.size)
@@ -280,7 +295,46 @@ class PrivateHandLayout {
             }
         }
         row = candidate
+        rowProvisional = extent == null && candidates.size < publicOrder.size
         previousTargets = publicOrder.mapNotNull { id -> inputs[id]?.target?.let { id to it } }.toMap()
+    }
+
+    /**
+     * 所有立牌都已立起、排成等距連續的一列時，以兩端的中點作為牌排中心。
+     *
+     * @param publicOrder 完整公開立牌順序。
+     * @param inputs 本幀原生資料。
+     * @return 牌排；有牌還沒立起、缺少資料，或位置不是等距連續的一列時為 null。
+     */
+    private fun extentRow(
+        publicOrder: List<Uuid>,
+        inputs: Map<Uuid, TileDisplayInput>,
+    ): Row? {
+        val targets = publicOrder.map { id -> inputs[id]?.target?.takeIf { it.poseDegrees == 0.0f } ?: return null }
+        val first = targets.firstOrNull() ?: return null
+        val angle = first.yawDegrees * PI / 180.0
+        fun along(target: TileDisplayTransform) = target.position.x * cos(angle) + target.position.z * sin(angle)
+        fun across(target: TileDisplayTransform) = -target.position.x * sin(angle) + target.position.z * cos(angle)
+        val acrossLine = across(first)
+        val sameLine = targets.all { target ->
+            abs(across(target) - acrossLine) < GEOMETRY_EPSILON &&
+                abs(target.position.y - first.position.y) < GEOMETRY_EPSILON &&
+                abs(((target.yawDegrees - first.yawDegrees + 540.0f) % 360.0f) - 180.0f) < GEOMETRY_EPSILON
+        }
+        if (!sameLine) return null
+        val alongs = targets.map(::along)
+        val min = alongs.min()
+        val max = alongs.max()
+        if (abs(max - min - (targets.size - 1) * TILE_STEP) > GEOMETRY_EPSILON) return null
+        val middle = (min + max) / 2.0
+        return Row(
+            center = DiceAnimationVector(
+                x = middle * cos(angle) - acrossLine * sin(angle),
+                y = first.position.y,
+                z = middle * sin(angle) + acrossLine * cos(angle),
+            ),
+            yaw = first.yawDegrees,
+        )
     }
 
     /**

@@ -143,7 +143,10 @@ class DiscardTileUseCase(
                             .recordAction(GameAction.Discard(tileId))
                         val stateWithDiscard = ruleComponents.initializeCreatedRecords(
                             before = state,
-                            after = state.copy(players = state.players.map { if (it.id == playerId) playerWithDiscard else it }),
+                            after = state.copy(
+                                players = state.players.map { if (it.id == playerId) playerWithDiscard else it },
+                                discardOrder = state.discardOrder + tileId,
+                            ),
                             source = "Discard",
                         )
                         val discardedPlayer = stateWithDiscard.players.first { it.id == playerId }
@@ -154,7 +157,7 @@ class DiscardTileUseCase(
                             source = "onPlayerDiscarded",
                         )
                         val updatedPlayers = state.players.map { if (it.id == playerId) updatedPlayer else it }
-                        val stateAfterDiscard = state.copy(players = updatedPlayers)
+                        val stateAfterDiscard = state.copy(players = updatedPlayers, discardOrder = state.discardOrder + tileId)
 
                         val resolved =
                             DiscardReactionResolver.resolve(state, stateAfterDiscard, module, playerId, discardedTile)

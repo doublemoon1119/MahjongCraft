@@ -98,11 +98,30 @@ class FabricDebugDecisionCommand(
     /** 每位測試者最後一次 HUD 預覽的虛擬 game ID，供 clear 精確停止同一份 client state。 */
     private val debugDecisionGameIds = mutableMapOf<UUID, String>()
 
-    /** 建立涵蓋操作、立直、分析及 rule decision 的 HUD 預覽指令；literal 節點同時提供完整 tab 補全。 */
-    fun buildDecisionHudCommand(): LiteralArgumentBuilder<ServerCommandSource> = DecisionHudPreview.entries.fold(
+    /**
+     * 建立涵蓋操作、立直、分析及 rule decision 的 HUD 預覽指令：各預覽依規則分組放在 [DecisionHudRuleGroup] 的 literal
+     * 底下，`clear` 不分規則；literal 節點同時提供完整 tab 補全。
+     */
+    fun buildDecisionHudCommand(): LiteralArgumentBuilder<ServerCommandSource> = DecisionHudRuleGroup.entries.fold(
         literal(DECISION_HUD_SUBCOMMAND).then(literal(CLEAR_ARGUMENT).executes { clearDecisionHud(it.source) }),
-    ) { node, preview ->
-        node.then(literal(preview.commandName).executes { context -> previewDecisionHud(context.source, preview) })
+    ) { node, group ->
+        node.then(
+            DecisionHudPreview.entries.filter { it.ruleGroup == group }.fold(literal(group.commandName)) { groupNode, preview ->
+                groupNode.then(literal(preview.commandName).executes { context -> previewDecisionHud(context.source, preview) })
+            },
+        )
+    }
+
+    /**
+     * `decision_hud` 預覽的規則分組。
+     *
+     * @property commandName 分組 literal。
+     * @property ruleModuleId 分組內預覽使用的規則模組 ID。
+     */
+    internal enum class DecisionHudRuleGroup(val commandName: String, val ruleModuleId: String) {
+        RIICHI("riichi", BuiltInRuleModuleIds.RIICHI),
+        RIICHI_THREE_PLAYER("riichi_three_player", BuiltInRuleModuleIds.RIICHI_THREE_PLAYER),
+        TAIWAN("taiwan", BuiltInRuleModuleIds.TAIWAN),
     }
 
     /**
@@ -148,7 +167,7 @@ class FabricDebugDecisionCommand(
                 ),
             ),
         )
-        source.sendFeedback({ Text.literal("Decision HUD preview: ${preview.commandName}") }, false)
+        source.sendFeedback({ Text.literal("Decision HUD preview: ${preview.ruleGroup.commandName} ${preview.commandName}") }, false)
         return COMMAND_SUCCESS
     }
 
@@ -409,14 +428,14 @@ class FabricDebugDecisionCommand(
      * @property phase 預覽所處的決策階段。
      * @property isDiscardAnalysis 是否附帶捨牌分析資料。
      * @property selfDrawTileAssetKey 自己回合「摸到這張牌」情境的觸發牌資產鍵；例如計時器情境不給值。
-     * @property ruleModuleId 預覽使用的規則模組 ID，動作用語與振聽用語依此查詢。
+     * @property ruleGroup 預覽所屬的規則分組，決定指令路徑與動作用語、振聽用語查詢用的規則模組。
      */
     internal enum class DecisionHudPreview(
         val commandName: String,
         val phase: PlayerDecisionPhaseDto = PlayerDecisionPhaseDto.OWN_TURN,
         val isDiscardAnalysis: Boolean = false,
         val selfDrawTileAssetKey: String? = null,
-        val ruleModuleId: String = BuiltInRuleModuleIds.RIICHI,
+        val ruleGroup: DecisionHudRuleGroup = DecisionHudRuleGroup.RIICHI,
     ) {
         TIMER("timer"),
         CHI("chi", PlayerDecisionPhaseDto.DISCARD_REACTION),
@@ -427,7 +446,7 @@ class FabricDebugDecisionCommand(
         RIICHI("riichi", selfDrawTileAssetKey = "m1"),
         ANKAN("ankan", selfDrawTileAssetKey = "m9"),
         KYUUSHU("kyuushu", selfDrawTileAssetKey = "east"),
-        PULL_NORTH("pull_north", selfDrawTileAssetKey = "north", ruleModuleId = BuiltInRuleModuleIds.RIICHI_THREE_PLAYER),
+        PULL_NORTH("pull_north", selfDrawTileAssetKey = "north", ruleGroup = DecisionHudRuleGroup.RIICHI_THREE_PLAYER),
         TEXT_CARD("text_card"),
         MIXED("mixed", PlayerDecisionPhaseDto.DISCARD_REACTION),
         DISCARD_ANALYSIS("discard_analysis", isDiscardAnalysis = true),
@@ -439,12 +458,12 @@ class FabricDebugDecisionCommand(
         DISCARD_TSUMO_ONLY("discard_tsumo_only", isDiscardAnalysis = true),
         DISCARD_MIXED_AVAILABILITY("discard_mixed_availability", isDiscardAnalysis = true),
         DISCARD_FURITEN_UNAVAILABLE("discard_furiten_unavailable", isDiscardAnalysis = true),
-        TAIWAN_DISCARD_ANALYSIS("taiwan_discard_analysis", isDiscardAnalysis = true, ruleModuleId = BuiltInRuleModuleIds.TAIWAN),
-        TAIWAN_DISCARD_PASSED_WIN("taiwan_discard_passed_win", isDiscardAnalysis = true, ruleModuleId = BuiltInRuleModuleIds.TAIWAN),
-        TAIWAN_DISCARD_TSUMO_ONLY("taiwan_discard_tsumo_only", isDiscardAnalysis = true, ruleModuleId = BuiltInRuleModuleIds.TAIWAN),
-        TAIWAN_DISCARD_BELOW_MINIMUM("taiwan_discard_below_minimum", isDiscardAnalysis = true, ruleModuleId = BuiltInRuleModuleIds.TAIWAN),
-        TAIWAN_DISCARD_UNAVAILABLE("taiwan_discard_unavailable", isDiscardAnalysis = true, ruleModuleId = BuiltInRuleModuleIds.TAIWAN),
-        TAIWAN_DISCARD_MIXED("taiwan_discard_mixed", isDiscardAnalysis = true, ruleModuleId = BuiltInRuleModuleIds.TAIWAN),
+        TAIWAN_DISCARD_ANALYSIS("discard_analysis", isDiscardAnalysis = true, ruleGroup = DecisionHudRuleGroup.TAIWAN),
+        TAIWAN_DISCARD_PASSED_WIN("discard_passed_win", isDiscardAnalysis = true, ruleGroup = DecisionHudRuleGroup.TAIWAN),
+        TAIWAN_DISCARD_TSUMO_ONLY("discard_tsumo_only", isDiscardAnalysis = true, ruleGroup = DecisionHudRuleGroup.TAIWAN),
+        TAIWAN_DISCARD_BELOW_MINIMUM("discard_below_minimum", isDiscardAnalysis = true, ruleGroup = DecisionHudRuleGroup.TAIWAN),
+        TAIWAN_DISCARD_UNAVAILABLE("discard_unavailable", isDiscardAnalysis = true, ruleGroup = DecisionHudRuleGroup.TAIWAN),
+        TAIWAN_DISCARD_MIXED("discard_mixed", isDiscardAnalysis = true, ruleGroup = DecisionHudRuleGroup.TAIWAN),
         DECISION_CONFIRM("decision_confirm", PlayerDecisionPhaseDto.RULE_DECISION),
         DECISION_CHOICE("decision_choice", PlayerDecisionPhaseDto.RULE_DECISION),
         DECISION_TILES("decision_tiles", PlayerDecisionPhaseDto.RULE_DECISION),
@@ -459,7 +478,7 @@ class FabricDebugDecisionCommand(
          */
         fun prompt(decisionKey: String, analysisTileId: String?): PlayerDecisionPromptDto = PlayerDecisionPromptDto(
             decisionKey = decisionKey,
-            ruleModuleId = ruleModuleId,
+            ruleModuleId = ruleGroup.ruleModuleId,
             actions = actions(),
             triggerTileAssetKey = if (phase == PlayerDecisionPhaseDto.DISCARD_REACTION) "s5" else selfDrawTileAssetKey,
             triggerPlayerId = if (phase == PlayerDecisionPhaseDto.DISCARD_REACTION) Uuid.random().toString() else null,

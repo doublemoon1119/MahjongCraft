@@ -105,6 +105,7 @@ class RiichiIppatsuDebugGameScenariosTest {
         )
         return copy(
             players = players.map { if (it.id == invoker.id) declared else it },
+            discardOrder = discardOrder + discardResult.tile.id,
             components = effect.tableComponents.applyTo(components, BuiltInComponentOwners.TABLE),
         )
     }

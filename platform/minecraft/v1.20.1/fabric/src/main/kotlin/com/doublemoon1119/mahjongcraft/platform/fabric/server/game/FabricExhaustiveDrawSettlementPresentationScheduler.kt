@@ -42,7 +42,7 @@ class FabricExhaustiveDrawSettlementPresentationScheduler(
      * @param request 流局結算顯示資料。
      * @param waitingTileAssetsBySeat 各座位聽牌等待牌的素材 key。
      * @param revealedTileAssetsById 可公開牌張識別碼到素材 key 的對應。
-     * @param reservedCornerWidthsBySeat 各座位為其他牌面預留的桌角寬度。
+     * @param handShiftsBySeat 各座位立牌整排往玩家左手邊平移的距離（負值往右手邊）。
      * @return 舞台固定結束的絕對 game time；未能生成時為 null。
      */
     fun schedule(
@@ -54,7 +54,7 @@ class FabricExhaustiveDrawSettlementPresentationScheduler(
         request: ExhaustiveDrawSettlementPresentationRequest,
         waitingTileAssetsBySeat: Map<Int, List<String>>,
         revealedTileAssetsById: Map<Uuid, String>,
-        reservedCornerWidthsBySeat: Map<Int, Double>,
+        handShiftsBySeat: Map<Int, Double>,
     ): Long? {
         val startGameTime = world.time
         val playerSnapshots = request.players.map { player ->
@@ -90,11 +90,7 @@ class FabricExhaustiveDrawSettlementPresentationScheduler(
             val handTileIds = player.handTileIds.distinct()
             val drawnTileId = player.drawnTileId
             val revealsHand = player.handDisclosure != ExhaustiveDrawHandDisclosure.CONCEALED
-            val cornerYieldShift = MahjongTileTableLayout.handCornerYieldShift(
-                handSize = handTileIds.size,
-                reservedCornerWidth = reservedCornerWidthsBySeat[player.ranking.seatIndex] ?: 0.0,
-                hasDrawnTile = drawnTileId != null,
-            )
+            val handShift = handShiftsBySeat[player.ranking.seatIndex] ?: 0.0
             val tileIds = handTileIds + listOfNotNull(drawnTileId)
             val presentedTiles = mutableListOf<MahjongTileEntity>()
             tileIds.forEachIndexed { orderIndex, tileId ->
@@ -114,7 +110,7 @@ class FabricExhaustiveDrawSettlementPresentationScheduler(
                         seatIndex = player.ranking.seatIndex,
                         handSize = handTileIds.size,
                         tileIndex = handTileIds.size - 1 - orderIndex,
-                        cornerYieldShift = cornerYieldShift,
+                        handShift = handShift,
                     )
                     TileAnimationSteps.scheduleInstantReorder(tile, sortedPlacement, startGameTime + HAND_REORDER_START_TICK)
                 }

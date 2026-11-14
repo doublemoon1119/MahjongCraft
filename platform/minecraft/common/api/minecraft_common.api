@@ -273,6 +273,12 @@ public abstract interface class com/doublemoon1119/mahjongcraft/platform/minecra
 	public abstract fun register (Lcom/doublemoon1119/mahjongcraft/platform/minecraft/table/TablePropDescriberDefinition;)V
 }
 
+public abstract interface class com/doublemoon1119/mahjongcraft/platform/minecraft/api/registration/TableTileLayoutProfileRegistrar {
+	public abstract fun getRegistrationKeys ()Ljava/util/Set;
+	public abstract fun isFrozen ()Z
+	public abstract fun register (Lcom/doublemoon1119/mahjongcraft/platform/minecraft/tile/TableTileLayoutProfileDefinition;)V
+}
+
 public abstract interface class com/doublemoon1119/mahjongcraft/platform/minecraft/api/registration/TileDisplayNameRegistrar {
 	public abstract fun getRegistrationKeys ()Ljava/util/Set;
 	public abstract fun isFrozen ()Z
@@ -422,6 +428,7 @@ public abstract interface class com/doublemoon1119/mahjongcraft/platform/minecra
 	public fun registerRuleModuleDisplayNames (Lcom/doublemoon1119/mahjongcraft/platform/minecraft/api/registration/RuleModuleDisplayNameRegistrar;)V
 	public fun registerRuleWordings (Lcom/doublemoon1119/mahjongcraft/platform/minecraft/api/registration/RuleWordingRegistrar;)V
 	public fun registerTablePropDescribers (Lcom/doublemoon1119/mahjongcraft/platform/minecraft/api/registration/TablePropDescriberRegistrar;)V
+	public fun registerTableTileLayoutProfiles (Lcom/doublemoon1119/mahjongcraft/platform/minecraft/api/registration/TableTileLayoutProfileRegistrar;)V
 	public fun registerTileAssets (Lcom/doublemoon1119/mahjongcraft/platform/minecraft/api/registration/MinecraftTileAssetRegistrar;)V
 	public fun registerTileDisplayNames (Lcom/doublemoon1119/mahjongcraft/platform/minecraft/api/registration/TileDisplayNameRegistrar;)V
 	public fun registerTileEmojis (Lcom/doublemoon1119/mahjongcraft/platform/minecraft/api/registration/TileEmojiRegistrar;)V

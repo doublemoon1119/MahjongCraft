@@ -19,10 +19,8 @@ import kotlin.uuid.Uuid
  * 是否啟用自動整理手牌，胡牌慶祝演出一律強制整理一次）——依「加入時間軸、由實作端反過來對應左右座標」的慣例；自摸時 [winningTileId] 已經併入這份清單
  * （原本的摸牌位併入立牌），榮和／搶槓時 [winningTileId] 不在這份清單裡（那張牌仍在放銃者的牌河或
  * 副露區，不屬於贏家手牌）。
- * @property melds 贏家目前所有副露，依宣告先後排列，只用來正確計算
- * 立牌讓開副露的偏移，這個方法不重新呈現副露本身（副露的位置/姿態不受胡牌影響）。
- * @property cornerWidth 贏家副露角落被佔用的寬度，只用來換算讓開偏移，避免立牌與角落物件重疊。
- * @property setAsideTileCount 贏家移出手牌、接在副露之後擺放的牌張數（例如三人日麻拔出的北），只用來換算讓開偏移。
+ * @property handShift 贏家立牌與摸牌位整排往玩家左手邊平移的距離（負值往右手邊），由
+ * [MahjongPlayerAreaLayout.handShift] 依副露、移出的牌、桌角物件與牌牆算好；這個方法不重新呈現副露本身。
  * @property winningTileId 胡的那張牌 Uuid——自摸時是原本的摸牌位那張，此時已併入 [organizedStandingTileIds]；
  * 榮和／搶槓時是放銃者打出的那張捨牌，或搶槓來源的那張加槓/暗槓牌，仍在放銃者／宣告者的區域。
  * @property isTsumo `true` 代表自摸（[winningTileId] 需要先單獨倒下、再等其餘立牌一起倒下）；`false`
@@ -41,9 +39,7 @@ data class MahjongWinCelebrationPresentation(
     val seatLayout: MahjongTableSeatLayout,
     val seatIndex: Int,
     val organizedStandingTileIds: List<Uuid>,
-    val melds: List<MahjongMeldTileGroup>,
-    val cornerWidth: Double,
-    val setAsideTileCount: Int,
+    val handShift: Double,
     val winningTileId: Uuid,
     val isTsumo: Boolean,
     val revealsHand: Boolean,

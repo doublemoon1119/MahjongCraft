@@ -285,6 +285,7 @@ class GameInitializerTest {
             roundNumber = 2,
             comboCount = 0,
             prevalentWind = Wind.EAST,
+            roundSerial = 1,
         )
     }
 
@@ -303,6 +304,7 @@ class GameInitializerTest {
             roundNumber = 2,
             comboCount = 0,
             prevalentWind = Wind.EAST,
+            roundSerial = 1,
         )
 
         val table = GameInitializer.startNextRound(Uuid.random(), roundAdvancement, module).tableState
@@ -328,6 +330,7 @@ class GameInitializerTest {
             roundNumber = 1,
             comboCount = 0,
             prevalentWind = Wind.EAST,
+            roundSerial = 1,
         )
 
         val table = GameInitializer.startNextRound(Uuid.random(), roundAdvancement, module).tableState
@@ -350,6 +353,7 @@ class GameInitializerTest {
             roundNumber = 3,
             comboCount = 1,
             prevalentWind = Wind.SOUTH,
+            roundSerial = 1,
         )
 
         val table = GameInitializer.startNextRound(Uuid.random(), roundAdvancement, module).tableState
@@ -378,6 +382,7 @@ class GameInitializerTest {
             roundNumber = 2,
             comboCount = 0,
             prevalentWind = Wind.EAST,
+            roundSerial = 1,
         )
 
         val table = GameInitializer.startNextRound(Uuid.random(), roundAdvancement, module).tableState
@@ -411,6 +416,7 @@ class GameInitializerTest {
             roundNumber = 1,
             comboCount = 0,
             prevalentWind = Wind.EAST,
+            roundSerial = 1,
         )
 
         val previous = FakeTableStateFactory.create(players = roundAdvancement.players, config = module.config)
@@ -455,6 +461,7 @@ class GameInitializerTest {
             roundNumber = 1,
             comboCount = 0,
             prevalentWind = Wind.EAST,
+            roundSerial = 1,
         )
 
         val table = GameInitializer.startNextRound(Uuid.random(), roundAdvancement, module).tableState
@@ -475,6 +482,7 @@ class GameInitializerTest {
             roundNumber = 1,
             comboCount = 0,
             prevalentWind = Wind.EAST,
+            roundSerial = 1,
         )
         val totalTileCount = module.createWallFactory(module.config.maxPlayers).create().remainingCount
 
@@ -497,6 +505,7 @@ class GameInitializerTest {
             roundNumber = 1,
             comboCount = 0,
             prevalentWind = Wind.EAST,
+            roundSerial = 1,
         )
 
         val table = GameInitializer.startNextRound(Uuid.random(), roundAdvancement, module).tableState

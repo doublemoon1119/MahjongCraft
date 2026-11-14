@@ -27,6 +27,7 @@ import kotlinx.serialization.Serializable
  * @property publicTileIds 所有合法觀察者都可讀取牌面的牌張 ID。
  * @property publicEvidenceTileIds 由對局事件明確公開過的牌張 UUID 字串。
  * @property tilePoseStates 規則描述的逐張共同姿態，不含原始授權名單。
+ * @property latestDiscardTileId 本局最後打出、仍留在牌河的牌 UUID 字串；沒有時為 `null`。
  */
 @Serializable
 data class TableStateSnapshotDto(
@@ -46,5 +47,6 @@ data class TableStateSnapshotDto(
     val publicTileIds: Set<String>,
     val publicEvidenceTileIds: Set<String>,
     val tilePoseStates: List<TilePoseStateDto>,
+    val latestDiscardTileId: String?,
     val componentViews: List<@Polymorphic ComponentViewDto>,
 )

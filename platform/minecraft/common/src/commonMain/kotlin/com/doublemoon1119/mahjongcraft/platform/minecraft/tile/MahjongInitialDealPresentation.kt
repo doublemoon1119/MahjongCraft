@@ -21,8 +21,8 @@ import kotlin.uuid.Uuid
  * 翻牌前牌背仍朝上時先瞬間換到這份順序對應的格位，再原地翻起；背面朝上的牌外觀相同，換位看不出來。
  * 發牌動畫本身（起飛／落下／翻牌的節奏與順序）不受影響。
  * @property dealerSeatIndex 本局莊家座位 index，決定發牌從哪個座位開始輪。
- * @property cornerWidthBySeatIndex 開局當下每個座位副露角落被佔用的寬度，鍵為座位 index；沒有列出的座位
- * 視為 `0.0`。手牌依這個寬度讓開角落，避免與副露、點棒等角落物件重疊。
+ * @property handShiftBySeatIndex 每個座位立牌整排往玩家左手邊平移的距離（負值往右手邊），由
+ * [MahjongPlayerAreaLayout.handShift] 算好；沒有列出的座位不平移。
  * @property dealBatchSizes 依序播放的批次大小列表，見 `MahjongRuleConfig.dealBatchSizes()`；呼叫端
  * 不驗證總和是否等於各座位手牌張數，由該函式自己保證。
  * @property extraLeadDelayTicks 這次發牌動畫在每張牌自己的動畫佇列最前面該多等待的 tick 數（等牌牆
@@ -39,7 +39,7 @@ data class MahjongInitialDealPresentation(
     val handTileIdsBySeatIndex: Map<Int, List<Uuid>>,
     val postFlipHandTileIdsBySeatIndex: Map<Int, List<Uuid>>,
     val dealerSeatIndex: Int,
-    val cornerWidthBySeatIndex: Map<Int, Double>,
+    val handShiftBySeatIndex: Map<Int, Double>,
     val dealBatchSizes: List<Int>,
     val extraLeadDelayTicks: Int = 0,
     val tilePoseStates: List<TilePoseState> = emptyList(),

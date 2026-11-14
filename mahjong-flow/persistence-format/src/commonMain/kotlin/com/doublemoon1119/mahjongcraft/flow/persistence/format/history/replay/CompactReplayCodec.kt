@@ -780,11 +780,15 @@ object CompactReplayCodec {
         }
     }
 
-    /** 桌況投影不保存的桌級欄位：桌子身分、規則設定、實體布局與規則桌況。 */
+    /**
+     * 桌況投影不保存的桌級欄位：桌子身分、規則設定、實體布局與規則桌況，以及只供呈現使用的本場局序與可由捨牌事實得知的打牌順序。
+     */
     private val PROJECTION_EXCLUDED_TABLE_KEYS = setOf(
         ReplaySourceKeys.ID,
         ReplaySourceKeys.CONFIG,
         ReplaySourceKeys.PHYSICAL_WALL_LAYOUT,
+        ReplaySourceKeys.ROUND_SERIAL,
+        ReplaySourceKeys.DISCARD_ORDER,
     )
 
     /** 玩家投影不保存的欄位：玩家身分、AI 策略、動作歷史、規則格式的牌河與規則狀態。 */

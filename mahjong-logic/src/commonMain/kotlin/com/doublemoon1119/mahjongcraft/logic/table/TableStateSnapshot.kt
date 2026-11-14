@@ -32,6 +32,8 @@ import kotlin.uuid.Uuid
  * @property publicEvidenceTileIds 由對局事件明確公開過的牌張，例如流局攤開的手牌、宣告的暗槓；不包含規則讓所有人都
  *   讀得到牌面的牌。
  * @property tilePoseStates 規則要求的逐張共同姿態，不攜帶原始授權名單。
+ * @property latestDiscardTileId 本局最後打出、仍留在牌河的牌；這張牌被鳴走或胡走、本局已經結束，或本局還沒有人打牌時
+ *   為 null。
  */
 data class TableStateSnapshot(
     val id: Uuid,
@@ -50,6 +52,7 @@ data class TableStateSnapshot(
     val publicTileIds: Set<Uuid>,
     val publicEvidenceTileIds: Set<Uuid>,
     val tilePoseStates: List<TilePoseState>,
+    val latestDiscardTileId: Uuid?,
     val componentViews: ComponentViewSet = ComponentViewSet.EMPTY,
 )
 
@@ -102,6 +105,10 @@ fun TableState.toSnapshot(
         publicTileIds = publicTileEvidenceIds,
         publicEvidenceTileIds = publicTileEvidenceIds,
         tilePoseStates = emptyList(),
+        latestDiscardTileId = lastDiscardTileId?.takeIf { tileId ->
+            turnPhase !is TurnPhase.RoundOver &&
+                players.any { player -> player.discardPile.entries.any { it.tile.id == tileId && !it.isTaken } }
+        },
     )
 }
 

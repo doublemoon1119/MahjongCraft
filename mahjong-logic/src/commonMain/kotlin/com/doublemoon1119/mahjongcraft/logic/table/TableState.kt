@@ -43,6 +43,9 @@ import kotlin.uuid.Uuid
  * 私人授權不能寫入此集合；牌移動或更換持有人不清除公共證據，換局才清空。
  * @property revealedHandSettlements 本局流局 resolver 第一次計算出的公開手牌與等待牌資料；呈現流程只讀這份結果，
  * 每局重新開始時為空集合。
+ * @property roundSerial 這一局是本場對局開始的第幾局，從 `0` 起算；每開一局加一，連莊與流局重來的局也算。
+ * @property discardOrder 本局全桌打出的牌，依打出先後排列；各家牌河中的每張牌（包含被鳴走的）都剛好出現一次，
+ * 每局重新開始時為空清單。
  */
 data class TableState(
     val id: Uuid,
@@ -67,6 +70,8 @@ data class TableState(
     val finishedPlayerIds: Set<Uuid> = emptySet(),
     val publicTileEvidenceIds: Set<Uuid> = emptySet(),
     val revealedHandSettlements: List<RevealedHandSettlement> = emptyList(),
+    val roundSerial: Int = 0,
+    val discardOrder: List<Uuid> = emptyList(),
     val components: ComponentSet = ComponentSet.EMPTY,
 ) {
     init {
@@ -84,6 +89,11 @@ data class TableState(
         }
         require(roundPosition.prevalentWind == prevalentWind) { "prevalentWind must match roundPosition" }
         require(roundPosition.roundNumber == roundNumber) { "roundNumber must match roundPosition" }
+        require(roundSerial >= 0) { "roundSerial must not be negative" }
+        val discardedTileIds = players.flatMap { player -> player.discardPile.entries.map { it.tile.id } }
+        require(discardOrder.size == discardedTileIds.size && discardOrder.toSet() == discardedTileIds.toSet()) {
+            "discardOrder must list every discard exactly once"
+        }
         physicalWallLayout?.let { layout ->
             val wallTileIds = (tileWall.getAllTiles() + reservedWallTiles).mapTo(mutableSetOf()) { it.id }
             require(layout.placements.keys == wallTileIds) {
@@ -102,6 +112,9 @@ data class TableState(
             }
         }
     }
+
+    /** 本局最後打出的牌；這張牌之後被鳴走或胡走仍是它，本局還沒有人打牌時為 null。 */
+    val lastDiscardTileId: Uuid? get() = discardOrder.lastOrNull()
 
     /** 獲取參與遊戲的總人數。 */
     val playerCount: Int get() = players.size
@@ -288,6 +301,7 @@ data class TableState(
                 RoundAdvancementResult(
                     players = nextPlayers,
                     dealerPlayerId = dealerPlayerId,
+                    roundSerial = roundSerial + 1,
                     roundNumber = roundNumber,
                     comboCount = comboCount + 1,
                     prevalentWind = prevalentWind,
@@ -310,6 +324,7 @@ data class TableState(
                 RoundAdvancementResult(
                     players = nextPlayers,
                     dealerPlayerId = nextDealerPlayerId,
+                    roundSerial = roundSerial + 1,
                     roundNumber = transition.nextPosition.roundNumber,
                     comboCount = if (transition.continuesCombo) comboCount + 1 else 0,
                     prevalentWind = transition.nextPosition.prevalentWind,

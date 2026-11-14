@@ -182,6 +182,7 @@ class DiscardTileUseCaseTest {
         assertEquals(1, newState.currentPlayerIndex, "Turn should advance to the next player.")
         assertEquals(TurnPhase.AwaitingDraw, newState.turnPhase)
         assertNull(newState.pendingReaction, "No one is eligible to react, so no reaction window should open.")
+        assertEquals(drawnTile.id, newState.lastDiscardTileId)
     }
 
     /**

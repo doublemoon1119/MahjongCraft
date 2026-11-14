@@ -40,6 +40,8 @@ class TableTileArrangementTest {
                 tableFacing = MahjongTableFacing.NORTH,
                 seatLayout = MahjongTableSeatLayout.forPlayerCount(2),
                 seatIndex = 0,
+                tileLayout = TableTileLayoutProfile.STANDARD,
+                wallClearance = null,
                 standingTileIds = standing.map { it.id },
                 drawnTileId = drawn.id,
                 melds = emptyList(),
@@ -80,6 +82,7 @@ class TableTileArrangementTest {
             players = before.players.map {
                 if (it.id != player.id) it else it.copy(hand = Hand(tiles = standing - discarded + drawn), discardPile = it.discardPile.discardTile(discarded))
             },
+            discardOrder = before.discardOrder + discarded.id,
             turnPhase = TurnPhase.AwaitingDraw,
         )
 
@@ -133,6 +136,7 @@ class TableTileArrangementTest {
             players = before.players.map {
                 if (it.id != player.id) it else it.copy(hand = Hand(tiles = standing - standing[0] + drawn), discardPile = it.discardPile.discardTile(standing[0]))
             },
+            discardOrder = before.discardOrder + standing[0].id,
         )
 
         assertEquals(emptyList(), UnsortedHandTiles.after(TableTileArrangement.arrange(input(before)), after, sortedPlayerIds = emptySet()))
@@ -170,9 +174,11 @@ class TableTileArrangementTest {
         tableFacing = MahjongTableFacing.NORTH,
         seatLayout = MahjongTableSeatLayout.forPlayerCount(state.players.size),
         tableState = state,
+        tileLayout = TableTileLayoutProfile.STANDARD,
         cornerWidthBySeat = emptyMap(),
         handPoseStates = emptyList(),
         wallProjection = null,
+        wallClearance = null,
         faceUpWallTileIds = emptySet(),
     )
 }

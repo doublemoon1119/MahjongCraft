@@ -59,6 +59,15 @@ object MinecraftHudKeys {
     /** 下家。 */
     const val RELATION_RIGHT: String = "mahjongcraft.hud.relation.right"
 
+    /** 旁觀時準星指著的牌是誰打出的；參數為打出者名稱。 */
+    const val DISCARD_SOURCE: String = "mahjongcraft.hud.discard_source"
+
+    /** 入座時準星指著的牌是誰打出的；參數依序為打出者的相對位置與名稱。 */
+    const val DISCARD_SOURCE_SEATED: String = "mahjongcraft.hud.discard_source.seated"
+
+    /** 準星指著的牌是自己打出的。 */
+    const val DISCARD_SOURCE_SELF: String = "mahjongcraft.hud.discard_source.self"
+
     /** 他家動作觸發操作時的說明。 */
     const val TRIGGER: String = "mahjongcraft.hud.trigger"
 

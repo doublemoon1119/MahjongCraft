@@ -101,21 +101,12 @@ class FabricMahjongPlayerAreaPresenter(
             return MahjongWinCelebrationResult(result, winningTile?.let { startGameTime })
         }
 
-        val reservedCornerWidth = MahjongTileTableLayout.cornerAreaWidth(
-            cornerPropWidth = presentation.cornerWidth,
-            melds = presentation.melds,
-            setAsideTileCount = presentation.setAsideTileCount,
-        )
         val standingHandTileIds = if (presentation.isTsumo) {
             presentation.organizedStandingTileIds.filterNot { tileId -> tileId == presentation.winningTileId }
         } else {
             presentation.organizedStandingTileIds
         }
-        val cornerYieldShift = MahjongTileTableLayout.handCornerYieldShift(
-            standingHandTileIds.size,
-            reservedCornerWidth,
-            hasDrawnTile = presentation.isTsumo,
-        )
+        val handShift = presentation.handShift
 
         // 整條慶祝動畫鏈都由這個起點推導；接在呼叫端指定的時間軸之後，讓同一條時間軸上的連續胡牌
         // 演出依序播放而不重疊（預設 0 等同 world.time，維持既有行為）。
@@ -135,7 +126,7 @@ class FabricMahjongPlayerAreaPresenter(
                 seatIndex = presentation.seatIndex,
                 handSize = standingHandTileIds.size,
                 tileIndex = standingHandTileIds.size - 1 - orderIndex,
-                cornerYieldShift = cornerYieldShift,
+                handShift = handShift,
             )
             tile.assignToTable(presentation.tableId)
             TileAnimationSteps.scheduleInstantReorder(tile, placement, reorderStartGameTime)
@@ -152,7 +143,7 @@ class FabricMahjongPlayerAreaPresenter(
                     seatLayout = presentation.seatLayout,
                     seatIndex = presentation.seatIndex,
                     standingTileCount = standingHandTileIds.size,
-                    cornerYieldShift = cornerYieldShift,
+                    handShift = handShift,
                 )
                 tile.assignToTable(presentation.tableId)
                 TileAnimationSteps.scheduleInstantReorder(
@@ -242,12 +233,8 @@ class FabricMahjongPlayerAreaPresenter(
 
         val seatCount = presentation.seatLayout.playerCount
         val dealOrderSeatIndices = List(seatCount) { offset -> (presentation.dealerSeatIndex + offset) % seatCount }
-        val cornerYieldShiftBySeat = presentation.handTileIdsBySeatIndex.mapValues { (seatIndex, tileIds) ->
-            MahjongTileTableLayout.handCornerYieldShift(
-                handSize = tileIds.size,
-                reservedCornerWidth = presentation.cornerWidthBySeatIndex[seatIndex] ?: 0.0,
-                hasDrawnTile = false,
-            )
+        val handShiftBySeat = presentation.handTileIdsBySeatIndex.mapValues { (seatIndex, _) ->
+            presentation.handShiftBySeatIndex[seatIndex] ?: 0.0
         }
         // 發牌保留取牌時間順序；翻起後的共享布局只依牌張身分排列，本人的理牌另外在本機呈現。
         val postFlipOrderIndexBySeat = presentation.postFlipHandTileIdsBySeatIndex.mapValues { (_, tileIds) ->
@@ -283,7 +270,7 @@ class FabricMahjongPlayerAreaPresenter(
                         seatIndex = seatIndex,
                         handSize = tileIds.size,
                         tileIndex = tileIds.size - 1 - orderIndex,
-                        cornerYieldShift = cornerYieldShiftBySeat.getValue(seatIndex),
+                        handShift = handShiftBySeat.getValue(seatIndex),
                     )
                     val postFlipOrderIndex = postFlipOrderIndexBySeat.getValue(seatIndex).getValue(tileId)
                     val postFlipPlacement = MahjongTileTableLayout.handPlacement(
@@ -295,7 +282,7 @@ class FabricMahjongPlayerAreaPresenter(
                         seatIndex = seatIndex,
                         handSize = tileIds.size,
                         tileIndex = tileIds.size - 1 - postFlipOrderIndex,
-                        cornerYieldShift = cornerYieldShiftBySeat.getValue(seatIndex),
+                        handShift = handShiftBySeat.getValue(seatIndex),
                     )
                     tile.assignToTable(presentation.tableId)
                     TileAnimationSteps.scheduleDealBatch(

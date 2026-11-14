@@ -154,6 +154,34 @@ rules come from collisions that only showed up in game, so check them even when 
 - A new capability that changes what appears on the table comes with debug scenarios that show it in game,
   including the crowded cases: many melds, several set-aside tiles and a wide corner.
 
+## Rule table tile layouts
+
+- Where tiles sit on the table is shared geometry; a rule adjusts it only through a
+  `TableTileLayoutProfile` registered with `registerTableTileLayoutProfiles`, keyed by rule module ID.
+  Rules without a profile use `TableTileLayoutProfile.STANDARD`.
+- Every placement entry point that a profile affects takes the profile as a required argument, so a new
+  caller cannot silently fall back to the standard layout. Resolve it from the table's rule, never from a
+  hard-coded rule check.
+- Tile and table sizes are shared by all rules; a profile only moves tiles within the table.
+- A profile can move the wall toward the centre and offset it into a pinwheel, and choose where melds go:
+  the corner on the player's right, or between the wall and the hand. Set-aside tiles such as flowers follow
+  the melds. In the second form the meld row is centred on the standing tiles, so drawing does not move it,
+  and it is pulled inward where it would reach the table edge or a wall. A full meld row moves its last
+  items to the right of the hand row and the hand moves left. The wall must move in far enough to leave
+  that row free.
+- A profile chooses whether discards form rows in front of each player or scatter across the centre.
+  Scattered discards take spots from a position table chosen for each round, preferring free spots on the
+  discarder's side. A placed discard never moves, and a claimed tile frees its spot.
+- Hand rows and meld rows avoid the wall positions the rule reports through
+  `PhysicalWallLayoutPolicy.roundReach`: the tiles still in the wall plus the positions its tiles may
+  still move to this round. Rows therefore only gain room during a round and come back when the stacks in
+  their way are drawn. The deal also avoids the wall as it stood before dealing, because the dealt stacks
+  leave one by one while the hand is already in place. Every presentation that needs the hand position,
+  such as the deal, a win or an exhaustive draw, takes the shift from `MahjongPlayerAreaLayout` instead of
+  computing its own.
+- Positions that stand for a seat, such as where a declaration sound plays or where an AI character looks,
+  use the seat geometry or a `TableSeatAnchor`, not a tile placement that happens to sit nearby.
+
 ## Rule-owned table props
 
 - A rule supplies the complete scene through `TablePropDescriber`. Give every object a stable,

@@ -54,6 +54,8 @@ fun TableState.toPersistenceDto(
             waitingTiles = settlement.waitingTiles.map { it.toPersistenceDto() },
         )
     },
+    roundSerial = roundSerial,
+    discardOrder = discardOrder.map(Uuid::toString),
 )
 
 /**
@@ -97,4 +99,6 @@ fun TableStatePersistenceDto.toDomain(
             waitingTiles = settlement.waitingTiles.map { it.toDomain() }.toSet(),
         )
     },
+    roundSerial = roundSerial,
+    discardOrder = discardOrder.map(Uuid::parse),
 )

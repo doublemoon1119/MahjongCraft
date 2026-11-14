@@ -12,6 +12,7 @@ import com.doublemoon1119.mahjongcraft.logic.table.layout.PhysicalWallLayoutTran
 import com.doublemoon1119.mahjongcraft.logic.table.layout.ReplenishingReservedWallPhysicalLayoutPolicy
 import com.doublemoon1119.mahjongcraft.logic.table.layout.ReservedWallInitialShape
 import com.doublemoon1119.mahjongcraft.logic.table.layout.ReservedWallTrackScope
+import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPlacement
 import com.doublemoon1119.mahjongcraft.metadata.MahjongCraftMetadata
 
 /**
@@ -44,6 +45,9 @@ class TaiwanPhysicalWallLayoutPolicy(
 
     /** 依已公開花牌與已完成槓數解析本次保留區補位。 */
     override fun resolveTransition(context: PhysicalWallLayoutTransitionContext): PhysicalWallLayoutTransitionDecision = delegate.resolveTransition(context)
+
+    /** 目前牌牆位置加上保留區之後補牌可能用到的位置。 */
+    override fun roundReach(tableState: TableState): Set<TileWallPlacement> = delegate.roundReach(tableState)
 
     /**
      * 解析觸發動作與補牌分成不同步驟時的保留區補位。

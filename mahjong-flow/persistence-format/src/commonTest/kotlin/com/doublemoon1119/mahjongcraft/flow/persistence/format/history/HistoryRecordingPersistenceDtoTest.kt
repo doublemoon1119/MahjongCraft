@@ -85,6 +85,7 @@ class HistoryRecordingPersistenceDtoTest {
         val change = HistoryTableChange(
             changedPlayers = listOf(HistoryPlayerChange(player.copy(score = 100), 0, listOf(GameAction.Draw))),
             publicTileEvidenceIds = setOf(Uuid.random()),
+            appendedDiscards = listOf(Uuid.random()),
             revealedHandSettlements = listOf(
                 RevealedHandSettlement(
                     playerId = player.id,

@@ -14,6 +14,7 @@ import kotlin.uuid.Uuid
  * @property tableLocation 麻將桌 controller 的位置。
  * @property tableFacing 麻將桌 controller 的世界水平朝向。
  * @property sideLayout 規則指定並依本局莊家解析的牌牆面與桌邊對應。
+ * @property tileLayout 該規則的桌面牌位配置，決定牌牆的位置。
  * @property assemblyStructure 牌牆完成組裝、尚未開門時的面／墩／層格位，鍵為 [IdentifiedTile.id]；
  *                             空 map 代表這局結束，只需清除舊牌。
  * @property finalLayout 規則決定的開門後最終抽象實體布局；牌張集合必須與 [assemblyStructure] 相同。
@@ -30,6 +31,7 @@ data class MahjongTileWallPresentation(
     val tableLocation: TableLocation,
     val tableFacing: MahjongTableFacing,
     val sideLayout: MahjongTileWallSideLayout,
+    val tileLayout: TableTileLayoutProfile,
     val assemblyStructure: Map<Uuid, TileWallPosition>,
     val finalLayout: TileWallPhysicalLayout,
     val reservedWallTileIds: Set<Uuid>,

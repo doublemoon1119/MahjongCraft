@@ -28,6 +28,7 @@ import com.doublemoon1119.mahjongcraft.logic.table.TurnPhase
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeDiscardPile
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
+import com.doublemoon1119.mahjongcraft.testing.logic.table.interleavedDiscardOrder
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.uuid.Uuid
@@ -261,9 +262,9 @@ class GameActionEventProjectorTest {
 
     /** 只替換指定玩家，保留其餘對局資料。 */
     private fun replacePlayer(game: Game, replacement: MahjongPlayer): Game = game.copy(
-        tableState = game.tableState.copy(
-            players = game.tableState.players.map { if (it.id == replacement.id) replacement else it },
-        ),
+        tableState = game.tableState.players.map { if (it.id == replacement.id) replacement else it }.let { players ->
+            game.tableState.copy(players = players, discardOrder = interleavedDiscardOrder(players))
+        },
     )
 
     /** 建立可指定手牌、動作與牌河的玩家。 */
