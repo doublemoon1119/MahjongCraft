@@ -30,7 +30,7 @@ class AttachAuthoritativeStateOrDisableTest {
         assertFalse(status.isMahjongAvailable)
         assertEquals(
             expected = listOf(
-                MahjongDataProblem(
+                element = MahjongDataProblem(
                     source = MahjongDataSource.AUTHORITATIVE_STATE,
                     file = persistentStateDisplayPath(MahjongAuthoritativePersistentState.STORAGE_KEY),
                     cause = MahjongDataLoadCause.MissingExtension("example:custom_rule"),

@@ -45,7 +45,7 @@ class RiichiLegalActionValidatorRedDoraTest {
     fun `test can pon with red dora incoming`() {
         // 準備
         val playerHand = FakeHandFactory.create(
-            listOf(
+            tiles = listOf(
                 Tile.Numeric(Tile.Suit.Character, 5), // 普通5萬
                 Tile.Numeric(Tile.Suit.Character, 5), // 普通5萬
             ),
@@ -75,7 +75,7 @@ class RiichiLegalActionValidatorRedDoraTest {
     fun `test can pon with red dora in hand`() {
         // 準備
         val playerHand = FakeHandFactory.create(
-            listOf(
+            tiles = listOf(
                 Tile.Numeric(Tile.Suit.Character, 5), // 赤5萬
                 Tile.Numeric(Tile.Suit.Character, 5), // 赤5萬
             ),
@@ -134,7 +134,7 @@ class RiichiLegalActionValidatorRedDoraTest {
     fun `test can open kan with red dora`() {
         // 準備
         val playerHand = FakeHandFactory.create(
-            listOf(
+            tiles = listOf(
                 Tile.Numeric(Tile.Suit.Character, 5),
                 Tile.Numeric(Tile.Suit.Character, 5),
                 Tile.Numeric(Tile.Suit.Character, 5),
@@ -165,7 +165,7 @@ class RiichiLegalActionValidatorRedDoraTest {
     fun `test can closed kan with red dora`() {
         // 準備
         val playerHand = FakeHandFactory.create(
-            listOf(
+            tiles = listOf(
                 Tile.Numeric(Tile.Suit.Character, 5),
                 Tile.Numeric(Tile.Suit.Character, 5),
                 Tile.Numeric(Tile.Suit.Character, 5),
@@ -230,7 +230,7 @@ class RiichiLegalActionValidatorRedDoraTest {
     fun `test can chi with red dora incoming`() {
         // 準備
         val playerHand = FakeHandFactory.create(
-            listOf(
+            tiles = listOf(
                 Tile.Numeric(Tile.Suit.Character, 4),
                 Tile.Numeric(Tile.Suit.Character, 6),
             ),

@@ -17,12 +17,12 @@ class PlayerDecisionTimerTest {
         val timer = timer(startedAt = 1_000L)
 
         assertEquals(
-            DecisionTimeStatus(
+            expected = DecisionTimeStatus(
                 baseRemaining = 3_000.milliseconds,
                 reserveRemaining = 20_000.milliseconds,
                 isTimedOut = false,
             ),
-            timer.statusAt(3_000.milliseconds),
+            actual = timer.statusAt(3_000.milliseconds),
         )
     }
 
@@ -32,12 +32,12 @@ class PlayerDecisionTimerTest {
         val timer = timer(startedAt = 1_000L)
 
         assertEquals(
-            DecisionTimeStatus(
+            expected = DecisionTimeStatus(
                 baseRemaining = 0.milliseconds,
                 reserveRemaining = 18_000.milliseconds,
                 isTimedOut = false,
             ),
-            timer.statusAt(8_000.milliseconds),
+            actual = timer.statusAt(8_000.milliseconds),
         )
     }
 
@@ -75,12 +75,12 @@ class PlayerDecisionTimerTest {
         val timer = timer(startedAt = 1_000L)
 
         assertEquals(
-            DecisionTimeStatus(
+            expected = DecisionTimeStatus(
                 baseRemaining = 5_000.milliseconds,
                 reserveRemaining = 20_000.milliseconds,
                 isTimedOut = false,
             ),
-            timer.statusAt(500.milliseconds),
+            actual = timer.statusAt(500.milliseconds),
         )
     }
 
@@ -101,8 +101,8 @@ class PlayerDecisionTimerTest {
 
         assertEquals(1_200.milliseconds, timer.baseDuration)
         assertEquals(
-            DecisionTimeStatus(baseRemaining = 700.milliseconds, reserveRemaining = 20_000.milliseconds, isTimedOut = false),
-            timer.statusAt(1_500.milliseconds),
+            expected = DecisionTimeStatus(baseRemaining = 700.milliseconds, reserveRemaining = 20_000.milliseconds, isTimedOut = false),
+            actual = timer.statusAt(1_500.milliseconds),
         )
     }
 

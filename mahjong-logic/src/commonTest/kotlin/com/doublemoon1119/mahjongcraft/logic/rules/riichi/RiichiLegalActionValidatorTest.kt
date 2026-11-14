@@ -49,7 +49,7 @@ class RiichiLegalActionValidatorTest {
     fun `test can pon`() {
         // 準備
         val playerHand = FakeHandFactory.create(
-            listOf(
+            tiles = listOf(
                 Tile.Numeric(Tile.Suit.Character, 1),
                 Tile.Numeric(Tile.Suit.Character, 1),
             ),
@@ -81,7 +81,7 @@ class RiichiLegalActionValidatorTest {
     fun `test can chi`() {
         // 準備
         val playerHand = FakeHandFactory.create(
-            listOf(
+            tiles = listOf(
                 Tile.Numeric(Tile.Suit.Character, 2),
                 Tile.Numeric(Tile.Suit.Character, 3),
             ),
@@ -111,7 +111,7 @@ class RiichiLegalActionValidatorTest {
     fun `test can open kan`() {
         // 準備
         val playerHand = FakeHandFactory.create(
-            listOf(
+            tiles = listOf(
                 Tile.Numeric(Tile.Suit.Character, 1),
                 Tile.Numeric(Tile.Suit.Character, 1),
                 Tile.Numeric(Tile.Suit.Character, 1),
@@ -176,7 +176,7 @@ class RiichiLegalActionValidatorTest {
     fun `test can closed kan`() {
         // 準備
         val playerHand = FakeHandFactory.create(
-            listOf(
+            tiles = listOf(
                 Tile.Numeric(Tile.Suit.Character, 1),
                 Tile.Numeric(Tile.Suit.Character, 1),
                 Tile.Numeric(Tile.Suit.Character, 1),
@@ -235,7 +235,7 @@ class RiichiLegalActionValidatorTest {
     fun `test cannot chi pon or open kan when wall is exhausted`() {
         // 準備：手牌同時滿足吃、碰、大明槓三種條件
         val playerHand = FakeHandFactory.create(
-            listOf(
+            tiles = listOf(
                 Tile.Numeric(Tile.Suit.Character, 1),
                 Tile.Numeric(Tile.Suit.Character, 1),
                 Tile.Numeric(Tile.Suit.Character, 1),
@@ -349,7 +349,7 @@ class RiichiLegalActionValidatorTest {
         }
         val otherPlayer = FakeMahjongPlayerFactory.create(hand = Hand(melds = otherPlayerKans))
         val playerHand = FakeHandFactory.create(
-            listOf(
+            tiles = listOf(
                 Tile.Numeric(Tile.Suit.Character, 1),
                 Tile.Numeric(Tile.Suit.Character, 1),
                 Tile.Numeric(Tile.Suit.Character, 1),
@@ -377,7 +377,7 @@ class RiichiLegalActionValidatorTest {
         // 手牌: 111234567899m + incoming 9m = 111 234 567 899 99 (4面子+1雀頭=14張=胡牌)
         // 原本13張: 1,1,1,2,3,4,5,6,7,8,9,9,9 = 13張
         val playerHand = FakeHandFactory.create(
-            listOf(
+            tiles = listOf(
                 Tile.Numeric(Tile.Suit.Character, 1),
                 Tile.Numeric(Tile.Suit.Character, 1),
                 Tile.Numeric(Tile.Suit.Character, 1),
@@ -418,7 +418,7 @@ class RiichiLegalActionValidatorTest {
     @Test
     fun `test can ron on a shanpon wait that completes a dragon triplet`() {
         val playerHand = FakeHandFactory.create(
-            listOf(
+            tiles = listOf(
                 Tile.Numeric(Tile.Suit.Dot, 4),
                 Tile.Numeric(Tile.Suit.Dot, 5),
                 Tile.Numeric(Tile.Suit.Dot, 6),
@@ -460,7 +460,7 @@ class RiichiLegalActionValidatorTest {
         // 手牌: 111234567899m + incoming 9m = 111 234 567 899 99 (4面子+1雀頭=14張=胡牌)
         // 原本13張: 1,1,1,2,3,4,5,6,7,8,9,9,9 = 13張
         val playerHand = FakeHandFactory.create(
-            listOf(
+            tiles = listOf(
                 Tile.Numeric(Tile.Suit.Character, 1),
                 Tile.Numeric(Tile.Suit.Character, 1),
                 Tile.Numeric(Tile.Suit.Character, 1),
@@ -503,7 +503,7 @@ class RiichiLegalActionValidatorTest {
         // 準備
         // 手牌: 112233445566m (6對子=12張) + incoming 7m = 7對子 (胡牌)
         val playerHand = FakeHandFactory.create(
-            listOf(
+            tiles = listOf(
                 Tile.Numeric(Tile.Suit.Character, 1),
                 Tile.Numeric(Tile.Suit.Character, 1),
                 Tile.Numeric(Tile.Suit.Character, 2),
@@ -545,7 +545,7 @@ class RiichiLegalActionValidatorTest {
     fun `test cannot ron with seven pairs if exposed meld`() {
         // 準備
         val playerHand = FakeHandFactory.create(
-            listOf(
+            tiles = listOf(
                 Tile.Numeric(Tile.Suit.Character, 1),
                 Tile.Numeric(Tile.Suit.Character, 1),
                 Tile.Numeric(Tile.Suit.Character, 2),
@@ -592,7 +592,7 @@ class RiichiLegalActionValidatorTest {
     fun `test tsumo not allowed when han is insufficient`() {
         // 準備：手牌為 1 番 (門前清自摸) 的牌型
         val playerHand = FakeHandFactory.create(
-            listOf(
+            tiles = listOf(
                 Tile.Numeric(Tile.Suit.Character, 1),
                 Tile.Numeric(Tile.Suit.Character, 2),
                 Tile.Numeric(Tile.Suit.Character, 3),
@@ -643,7 +643,7 @@ class RiichiLegalActionValidatorTest {
     @Test
     fun `test tsumo not allowed when han is insufficient even with aka dora`() {
         val playerHand = FakeHandFactory.create(
-            listOf(
+            tiles = listOf(
                 Tile.Numeric(Tile.Suit.Character, 1),
                 Tile.Numeric(Tile.Suit.Character, 2),
                 Tile.Numeric(Tile.Suit.Character, 3),
@@ -689,7 +689,7 @@ class RiichiLegalActionValidatorTest {
     @Test
     fun `test tsumo allowed when han is sufficient`() {
         val playerHand = FakeHandFactory.create(
-            listOf(
+            tiles = listOf(
                 Tile.Numeric(Tile.Suit.Character, 1),
                 Tile.Numeric(Tile.Suit.Character, 1),
                 Tile.Numeric(Tile.Suit.Character, 1),
@@ -733,7 +733,7 @@ class RiichiLegalActionValidatorTest {
     @Test
     fun `test yakuman always allowed regardless of minimum constraint`() {
         val playerHand = FakeHandFactory.create(
-            listOf(
+            tiles = listOf(
                 Tile.Numeric(Tile.Suit.Character, 1),
                 Tile.Numeric(Tile.Suit.Character, 1),
                 Tile.Numeric(Tile.Suit.Character, 1),
@@ -780,7 +780,7 @@ class RiichiLegalActionValidatorTest {
     fun `test can kyuushu kyuuhai`() {
         // 準備：持有九種么九牌（東南西北發中白 + 19m + 19s + 19p = 13種取9種）
         val playerHand = FakeHandFactory.create(
-            listOf(
+            tiles = listOf(
                 Tile.Honor.East,
                 Tile.Honor.South,
                 Tile.Honor.West,
@@ -803,8 +803,8 @@ class RiichiLegalActionValidatorTest {
         )
         // 建立其他玩家（每人只打1張以滿足第一巡條件）
         val discardPile1 = FakeDiscardPile().discard(
-            FakeDiscardPile.FakeEntry(
-                FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Bamboo, 1)),
+            entry = FakeDiscardPile.FakeEntry(
+                tile = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Bamboo, 1)),
             ),
         )
         val otherPlayer1 = FakeMahjongPlayerFactory.create(
@@ -813,8 +813,8 @@ class RiichiLegalActionValidatorTest {
             discardPile = discardPile1,
         )
         val discardPile2 = FakeDiscardPile().discard(
-            FakeDiscardPile.FakeEntry(
-                FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Bamboo, 2)),
+            entry = FakeDiscardPile.FakeEntry(
+                tile = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Bamboo, 2)),
             ),
         )
         val otherPlayer2 = FakeMahjongPlayerFactory.create(
@@ -823,8 +823,8 @@ class RiichiLegalActionValidatorTest {
             discardPile = discardPile2,
         )
         val discardPile3 = FakeDiscardPile().discard(
-            FakeDiscardPile.FakeEntry(
-                FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Bamboo, 3)),
+            entry = FakeDiscardPile.FakeEntry(
+                tile = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Bamboo, 3)),
             ),
         )
         val otherPlayer3 = FakeMahjongPlayerFactory.create(
@@ -853,7 +853,7 @@ class RiichiLegalActionValidatorTest {
     fun `test cannot kyuushu kyuuhai with insufficient tile types`() {
         // 準備：只持有3種么九牌
         val playerHand = FakeHandFactory.create(
-            listOf(
+            tiles = listOf(
                 Tile.Numeric(Tile.Suit.Character, 1),
                 Tile.Numeric(Tile.Suit.Character, 2),
                 Tile.Numeric(Tile.Suit.Character, 3),
@@ -874,8 +874,8 @@ class RiichiLegalActionValidatorTest {
             discardPile = FakeDiscardPile(),
         )
         val discardPile1 = FakeDiscardPile().discard(
-            FakeDiscardPile.FakeEntry(
-                FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Bamboo, 1)),
+            entry = FakeDiscardPile.FakeEntry(
+                tile = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Bamboo, 1)),
             ),
         )
         val otherPlayer1 = FakeMahjongPlayerFactory.create(
@@ -929,13 +929,13 @@ class RiichiLegalActionValidatorTest {
                 melds = listOf(chiMeld, terminalPon, nonValueHonorPon),
             ),
             discardPile = FakeDiscardPile().discard(
-                FakeDiscardPile.FakeEntry(FakeIdentifiedTileFactory.create(Tile.Honor.North)),
+                entry = FakeDiscardPile.FakeEntry(FakeIdentifiedTileFactory.create(Tile.Honor.North)),
             ),
             components = riichiDeclarationComponents(),
         )
         val incomingTile = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Bamboo, 8))
         val fourteenLiveTiles = TileWall(
-            List(14) { FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 1)) },
+            tiles = List(14) { FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 1)) },
         )
         val liveWallState = FakeTableStateFactory.create(
             players = listOf(player),
@@ -945,21 +945,21 @@ class RiichiLegalActionValidatorTest {
         )
 
         assertEquals(
-            RiichiWinAvailability.NO_YAKU,
-            validator.analyzeWinAvailability(liveWallState, player, incomingTile),
+            expected = RiichiWinAvailability.NO_YAKU,
+            actual = validator.analyzeWinAvailability(liveWallState, player, incomingTile),
         )
         val prematureActions = validator.getLegalActions(
-            LegalActionTestContexts.discard(liveWallState, player, RelativeDirection.Across, incomingTile),
+            context = LegalActionTestContexts.discard(liveWallState, player, RelativeDirection.Across, incomingTile),
         )
         assertFalse(prematureActions.any { it is GameAction.Ron })
 
         val exhaustedState = liveWallState.copy(tileWall = TileWall(emptyList()))
         assertEquals(
-            RiichiWinAvailability.AVAILABLE,
-            validator.analyzeWinAvailability(exhaustedState, player, incomingTile),
+            expected = RiichiWinAvailability.AVAILABLE,
+            actual = validator.analyzeWinAvailability(exhaustedState, player, incomingTile),
         )
         val houteiActions = validator.getLegalActions(
-            LegalActionTestContexts.discard(exhaustedState, player, RelativeDirection.Across, incomingTile),
+            context = LegalActionTestContexts.discard(exhaustedState, player, RelativeDirection.Across, incomingTile),
         )
         assertTrue(houteiActions.any { it is GameAction.Ron })
     }
@@ -1008,13 +1008,13 @@ class RiichiLegalActionValidatorTest {
             sourceDirection = RelativeDirection.Right,
         )
         val playerHand = Hand(
-            mutableListOf(
+            tiles = mutableListOf(
                 FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Bamboo, 5)),
                 FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Bamboo, 5)),
                 FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Bamboo, 6)),
                 FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Bamboo, 7)),
             ),
-            mutableListOf(chiMeld, ponMeld1, ponMeld2),
+            melds = mutableListOf(chiMeld, ponMeld1, ponMeld2),
         )
         val player = FakeMahjongPlayerFactory.create(
             hand = playerHand,
@@ -1046,7 +1046,7 @@ class RiichiLegalActionValidatorTest {
         // 準備：國士無雙聽牌（13張幺九牌 + 1張東風雀頭）
         // 聽牌為其他任意幺九牌，暗槓東風後手牌變為 14 張（東風刻子 + 13 張幺九牌）
         val playerHand = FakeHandFactory.create(
-            listOf(
+            tiles = listOf(
                 Tile.Numeric(Tile.Suit.Character, 1),
                 Tile.Numeric(Tile.Suit.Character, 9),
                 Tile.Numeric(Tile.Suit.Dot, 1),
@@ -1091,7 +1091,7 @@ class RiichiLegalActionValidatorTest {
     fun `test cannot robbing closed kan without kokushi musou`() {
         // 準備：九蓮寶燈 (聽 2 萬)
         val playerHand = FakeHandFactory.create(
-            listOf(
+            tiles = listOf(
                 Tile.Numeric(Tile.Suit.Character, 1),
                 Tile.Numeric(Tile.Suit.Character, 1),
                 Tile.Numeric(Tile.Suit.Character, 1),

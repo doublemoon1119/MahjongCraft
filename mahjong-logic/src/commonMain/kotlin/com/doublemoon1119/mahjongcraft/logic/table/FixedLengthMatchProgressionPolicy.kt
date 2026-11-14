@@ -21,7 +21,7 @@ class FixedLengthMatchProgressionPolicy(
         return when (directive) {
             RoundTransitionDirective.RepeatDealer -> MatchProgressionDecision.ContinueMatch(MatchRoundTransition.RepeatCurrentRound)
             RoundTransitionDirective.PassToNextSeat, is RoundTransitionDirective.PassTo -> MatchProgressionDecision.ContinueMatch(
-                MatchRoundTransition.AdvanceTo(nextPosition(state.roundPosition, state.playerCount)),
+                transition = MatchRoundTransition.AdvanceTo(nextPosition(state.roundPosition, state.playerCount)),
             )
         }
     }

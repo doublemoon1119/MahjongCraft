@@ -97,8 +97,8 @@ class PlayerDecisionTimerFactoryTest {
         )
 
         val timer = PlayerDecisionTimerFactory(FakeMonotonicClock(now = Duration.ZERO)).create(
-            game,
-            playerId,
+            game = game,
+            playerId = playerId,
             phase = PlayerDecisionPhase.RULE_ACTION,
         )
 
@@ -118,8 +118,8 @@ class PlayerDecisionTimerFactoryTest {
 
         assertFailsWith<IllegalArgumentException> {
             PlayerDecisionTimerFactory(FakeMonotonicClock(now = Duration.ZERO)).create(
-                game,
-                playerId,
+                game = game,
+                playerId = playerId,
                 phase = PlayerDecisionPhase.RULE_DECISION,
             )
         }

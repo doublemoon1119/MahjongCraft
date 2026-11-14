@@ -228,8 +228,8 @@ class RuleCatalogueLayoutTest {
      * @return 測試牌組。
      */
     private fun group(role: RuleCatalogueTileGroupRole, count: Int): RuleCatalogueTileGroup = RuleCatalogueTileGroup(
-        role,
-        List(count) { TileFaceView(Tile.Numeric(Tile.Suit.Character, it % 9 + 1)) },
+        role = role,
+        tiles = List(count) { TileFaceView(Tile.Numeric(Tile.Suit.Character, it % 9 + 1)) },
     )
 
     /**

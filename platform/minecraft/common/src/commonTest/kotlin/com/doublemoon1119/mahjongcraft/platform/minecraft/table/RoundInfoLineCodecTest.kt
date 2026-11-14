@@ -18,8 +18,8 @@ class RoundInfoLineCodecTest {
     fun `round trip preserves every parameter and extension tiles`() {
         val lines = listOf(
             RoundInfoLine(
-                "example:title",
-                listOf(
+                key = "example:title",
+                args = listOf(
                     RoundInfoArgument.WindValue(Wind.SOUTH),
                     RoundInfoArgument.Number(2),
                     RoundInfoArgument.TileValue(Tile.Honor.East),
@@ -57,10 +57,10 @@ class RoundInfoLineCodecTest {
         """.trimIndent()
 
         assertEquals(
-            listOf(
-                RoundInfoLine(
-                    "example:line",
-                    listOf(
+            expected = listOf(
+                element = RoundInfoLine(
+                    key = "example:line",
+                    args = listOf(
                         RoundInfoArgument.Number(4),
                         RoundInfoArgument.Unrecognized,
                         RoundInfoArgument.Unrecognized,
@@ -68,7 +68,7 @@ class RoundInfoLineCodecTest {
                     ),
                 ),
             ),
-            RoundInfoLineCodec.decode(encoded),
+            actual = RoundInfoLineCodec.decode(encoded),
         )
     }
 
@@ -78,8 +78,8 @@ class RoundInfoLineCodecTest {
         val encoded = "[{\"key\":\"example:line\",\"args\":[{\"kind\":\"number\",\"value\":\"4\"}]}]"
 
         assertEquals(
-            listOf(RoundInfoLine("example:line", listOf(RoundInfoArgument.Unrecognized))),
-            RoundInfoLineCodec.decode(encoded),
+            expected = listOf(RoundInfoLine("example:line", listOf(RoundInfoArgument.Unrecognized))),
+            actual = RoundInfoLineCodec.decode(encoded),
         )
     }
 
@@ -104,10 +104,10 @@ class RoundInfoLineCodecTest {
         """.trimIndent()
 
         assertEquals(
-            listOf(
-                RoundInfoLine(
-                    "example:line",
-                    listOf(
+            expected = listOf(
+                element = RoundInfoLine(
+                    key = "example:line",
+                    args = listOf(
                         RoundInfoArgument.Number(1),
                         RoundInfoArgument.Unrecognized,
                         RoundInfoArgument.Message("thirdparty:unregistered"),
@@ -115,7 +115,7 @@ class RoundInfoLineCodecTest {
                     ),
                 ),
             ),
-            RoundInfoLineCodec.decode(encoded),
+            actual = RoundInfoLineCodec.decode(encoded),
         )
     }
 
@@ -132,10 +132,10 @@ class RoundInfoLineCodecTest {
         """.trimIndent()
 
         assertEquals(
-            listOf(
-                RoundInfoLine(
-                    "example:line",
-                    listOf(
+            expected = listOf(
+                element = RoundInfoLine(
+                    key = "example:line",
+                    args = listOf(
                         RoundInfoArgument.Number(1),
                         RoundInfoArgument.Unrecognized,
                         RoundInfoArgument.Unrecognized,
@@ -143,7 +143,7 @@ class RoundInfoLineCodecTest {
                     ),
                 ),
             ),
-            RoundInfoLineCodec.decode(encoded),
+            actual = RoundInfoLineCodec.decode(encoded),
         )
     }
 }

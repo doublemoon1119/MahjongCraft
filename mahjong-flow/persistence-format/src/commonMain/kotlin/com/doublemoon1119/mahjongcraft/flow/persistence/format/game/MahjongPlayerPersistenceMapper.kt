@@ -61,7 +61,7 @@ fun MahjongPlayerPersistenceDto.toDomain(
     id = Uuid.parse(id),
     components = componentRegistry.decode(components),
     tileAreas = PlayerTileAreas(
-        tileAreas.map { area ->
+        areas = tileAreas.map { area ->
             PlayerTileArea(
                 id = area.id,
                 tiles = area.tiles.map { it.toDomain(componentRegistry) },

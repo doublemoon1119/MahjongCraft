@@ -127,7 +127,7 @@ class PlayerConnectionLifecycleServiceTest {
         val fixture = createFixture(DisconnectedPlayerPolicy.KEEP_SEAT)
         fixture.roomRepository.removeRoom(fixture.tableId)
         fixture.gameRepository.setTableState(
-            FakeTableStateFactory.create(id = fixture.tableId, players = fixture.players, config = RiichiRuleConfig()),
+            state = FakeTableStateFactory.create(id = fixture.tableId, players = fixture.players, config = RiichiRuleConfig()),
         )
         assertNull(fixture.gameSnapshotRepository.getSnapshot(fixture.tableId, fixture.playerId))
 
@@ -136,8 +136,8 @@ class PlayerConnectionLifecycleServiceTest {
 
         assertNotNull(fixture.gameSnapshotRepository.getSnapshot(fixture.tableId, fixture.playerId))
         assertEquals(
-            listOf(fixture.tableId to fixture.playerId),
-            fixture.automaticControlSnapshots.sentSnapshots,
+            expected = listOf(fixture.tableId to fixture.playerId),
+            actual = fixture.automaticControlSnapshots.sentSnapshots,
         )
     }
 
@@ -171,7 +171,7 @@ class PlayerConnectionLifecycleServiceTest {
     fun `test subsequent disconnect uses replaced config`() = runTest {
         val fixture = createFixture(DisconnectedPlayerPolicy.KEEP_SEAT)
         fixture.configState.replace(
-            MinecraftServerConfig(disconnectedPlayerPolicy = DisconnectedPlayerPolicy.LEAVE_IMMEDIATELY),
+            config = MinecraftServerConfig(disconnectedPlayerPolicy = DisconnectedPlayerPolicy.LEAVE_IMMEDIATELY),
         )
 
         fixture.service.onDisconnected(fixture.playerId)
@@ -187,7 +187,7 @@ class PlayerConnectionLifecycleServiceTest {
         fixture.service.onDisconnected(fixture.playerId)
         runCurrent()
         fixture.configState.replace(
-            MinecraftServerConfig(
+            config = MinecraftServerConfig(
                 disconnectedPlayerPolicy = DisconnectedPlayerPolicy.KEEP_SEAT,
                 disconnectedPlayerTimeout = 300.seconds,
             ),
@@ -225,7 +225,7 @@ class PlayerConnectionLifecycleServiceTest {
             FakeMahjongPlayerFactory.create(id = playerId),
         )
         roomRepository.setRoom(
-            Room(
+            room = Room(
                 id = tableId,
                 hostId = hostId,
                 gameConfig = GameConfig(FakeMahjongRuleConfig()),
@@ -236,43 +236,43 @@ class PlayerConnectionLifecycleServiceTest {
         val roomSnapshotRepository = FakeRoomSnapshotRepository()
         val gameSnapshotRepository = FakeGameSnapshotRepository()
         val leaveRoom = LeaveRoomUseCase(
-            roomRepository,
-            memberships,
-            roomSnapshotRepository,
-            FakeRoomEventPublisher(),
+            roomRepository = roomRepository,
+            membershipRepository = memberships,
+            snapshotRepository = roomSnapshotRepository,
+            eventPublisher = FakeRoomEventPublisher(),
         )
         val configState = MinecraftServerConfigState(
-            MinecraftServerConfig(
+            initialConfig = MinecraftServerConfig(
                 disconnectedPlayerPolicy = policy,
                 disconnectedPlayerTimeout = timeout,
             ),
         )
         val automaticControlSnapshots = RecordingAutomaticControlSnapshotSender()
         val service = PlayerConnectionLifecycleService(
-            scope,
-            FabricSessionBackgroundScope(dispatchers),
-            configState,
-            memberships,
-            roomRepository,
-            gameRepository,
-            leaveRoom,
-            SyncRoomSnapshotUseCase(roomRepository, roomSnapshotRepository),
-            SyncGameSnapshotUseCase(GameSnapshotSynchronizer(gameRepository, gameSnapshotRepository, GameVisibilityPolicyImpl(MahjongModuleRegistryImpl().apply { registerBundledRuleModules() }, componentRegistry = bundledCoreExtensionRegistries().componentRegistry))),
-            automaticControlSnapshots,
-            ServerPlayerIdentityStore(FabricServerHolder()),
+            scope = scope,
+            timeoutScope = FabricSessionBackgroundScope(dispatchers),
+            configState = configState,
+            membershipRepository = memberships,
+            roomRepository = roomRepository,
+            gameRepository = gameRepository,
+            leaveRoom = leaveRoom,
+            syncRoom = SyncRoomSnapshotUseCase(roomRepository, roomSnapshotRepository),
+            syncGame = SyncGameSnapshotUseCase(GameSnapshotSynchronizer(gameRepository, gameSnapshotRepository, GameVisibilityPolicyImpl(MahjongModuleRegistryImpl().apply { registerBundledRuleModules() }, componentRegistry = bundledCoreExtensionRegistries().componentRegistry))),
+            automaticControlSnapshotSender = automaticControlSnapshots,
+            playerIdentityStore = ServerPlayerIdentityStore(FabricServerHolder()),
         )
         return Fixture(
-            service,
-            configState,
-            roomRepository,
-            gameRepository,
-            memberships,
-            roomSnapshotRepository,
-            gameSnapshotRepository,
-            automaticControlSnapshots,
-            tableId,
-            playerId,
-            players,
+            service = service,
+            configState = configState,
+            roomRepository = roomRepository,
+            gameRepository = gameRepository,
+            memberships = memberships,
+            roomSnapshotRepository = roomSnapshotRepository,
+            gameSnapshotRepository = gameSnapshotRepository,
+            automaticControlSnapshots = automaticControlSnapshots,
+            tableId = tableId,
+            playerId = playerId,
+            players = players,
         )
     }
 

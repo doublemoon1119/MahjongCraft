@@ -26,8 +26,8 @@ class MahjongTileWallArrangementProjectionTest {
                 assertEquals(4, placements.map { it.x to it.z }.distinct().size)
                 assertEquals(4, placements.map { it.yaw }.distinct().size)
                 assertEquals(
-                    MahjongTileTableLayout.seatYaw(facing, MahjongTableSeatLayout.TWO_PLAYER, dealer),
-                    placements.first().yaw,
+                    expected = MahjongTileTableLayout.seatYaw(facing, MahjongTableSeatLayout.TWO_PLAYER, dealer),
+                    actual = placements.first().yaw,
                 )
             }
         }
@@ -59,7 +59,7 @@ class MahjongTileWallArrangementProjectionTest {
                     val context = context(facing, dealer, TileWallSideReference.DEALER, sides)
                     (0..20).forEach { step ->
                         val placement = context.project(
-                            TileWallPlacement(
+                            placement = TileWallPlacement(
                                 position = TileWallPosition(0, 16, 0),
                                 offset = TileWallPlacementOffset(alongWallStacks = step / 20.0),
                             ),
@@ -78,7 +78,7 @@ class MahjongTileWallArrangementProjectionTest {
         val context = context(MahjongTableFacing.NORTH, 0, TileWallSideReference.TABLE, listOf(0, 2)).copy(stacksPerSide = 1)
         (0..20).forEach { step ->
             val placement = context.project(
-                TileWallPlacement(
+                placement = TileWallPlacement(
                     position = TileWallPosition(0, 0, 0),
                     offset = TileWallPlacementOffset(alongWallStacks = step / 20.0),
                 ),
@@ -107,8 +107,8 @@ class MahjongTileWallArrangementProjectionTest {
         controllerZ = 0,
         tableFacing = facing,
         sideLayout = MahjongTileWallSideLayout.resolve(
-            TileWallSideArrangement(reference, sides),
-            MahjongTableSeatLayout.TWO_PLAYER.sideOf(dealer),
+            arrangement = TileWallSideArrangement(reference, sides),
+            dealerSide = MahjongTableSeatLayout.TWO_PLAYER.sideOf(dealer),
         ),
         tileLayout = TableTileLayoutProfile.STANDARD,
         stacksPerSide = 17,

@@ -9,8 +9,8 @@ class FabricDebugPresentationCommandTest {
     @Test
     fun `expands one cue to every winner`() {
         assertEquals(
-            listOf("kokushi_musou", "kokushi_musou", "kokushi_musou"),
-            expandShowcaseCues(listOf("kokushi_musou"), winnerCount = 3, defaultCue = "generic"),
+            expected = listOf("kokushi_musou", "kokushi_musou", "kokushi_musou"),
+            actual = expandShowcaseCues(listOf("kokushi_musou"), winnerCount = 3, defaultCue = "generic"),
         )
     }
 
@@ -18,8 +18,8 @@ class FabricDebugPresentationCommandTest {
     @Test
     fun `keeps positional cues for multiple winners`() {
         assertEquals(
-            listOf("kokushi_musou", "daisangen", "suuankou"),
-            expandShowcaseCues(
+            expected = listOf("kokushi_musou", "daisangen", "suuankou"),
+            actual = expandShowcaseCues(
                 supplied = listOf("kokushi_musou", "daisangen", "suuankou"),
                 winnerCount = 3,
                 defaultCue = "generic",
@@ -31,8 +31,8 @@ class FabricDebugPresentationCommandTest {
     @Test
     fun `fills missing positional cues with default`() {
         assertEquals(
-            listOf("kokushi_musou", "daisangen", "generic"),
-            expandShowcaseCues(
+            expected = listOf("kokushi_musou", "daisangen", "generic"),
+            actual = expandShowcaseCues(
                 supplied = listOf("kokushi_musou", "daisangen"),
                 winnerCount = 3,
                 defaultCue = "generic",

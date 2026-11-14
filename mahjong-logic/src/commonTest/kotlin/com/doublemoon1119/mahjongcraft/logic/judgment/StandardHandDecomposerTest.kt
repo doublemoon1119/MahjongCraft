@@ -12,7 +12,7 @@ class StandardHandDecomposerTest {
     fun `four and five meld hands use the same decomposition`() {
         val four = numbers(1, 2, 3, 4, 5, 6, 7, 8, 9) + List(3) { Tile.Honor.Red } + Tile.Honor.East
         assertTrue(
-            StandardHandDecomposer.decompose(
+            actual = StandardHandDecomposer.decompose(
                 handTiles = four,
                 winningTile = Tile.Honor.East,
                 exposedMeldCount = 0,
@@ -20,7 +20,7 @@ class StandardHandDecomposerTest {
             ).isNotEmpty(),
         )
         assertTrue(
-            StandardHandDecomposer.decompose(
+            actual = StandardHandDecomposer.decompose(
                 handTiles = four,
                 winningTile = Tile.Honor.East,
                 exposedMeldCount = 0,
@@ -29,7 +29,7 @@ class StandardHandDecomposerTest {
         )
         val five = four + List(3) { Tile.Honor.Green }
         assertTrue(
-            StandardHandDecomposer.decompose(
+            actual = StandardHandDecomposer.decompose(
                 handTiles = five,
                 winningTile = Tile.Honor.East,
                 exposedMeldCount = 0,
@@ -37,7 +37,7 @@ class StandardHandDecomposerTest {
             ).any { it.groups.size == 5 },
         )
         assertTrue(
-            StandardHandDecomposer.decompose(
+            actual = StandardHandDecomposer.decompose(
                 handTiles = five,
                 winningTile = Tile.Honor.East,
                 exposedMeldCount = 0,
@@ -59,8 +59,8 @@ class StandardHandDecomposerTest {
         assertTrue(result.any { it.groups.count { group -> group is StandardHandGroup.Triplet } == 3 })
         assertTrue(result.any { it.groups.all { group -> group is StandardHandGroup.Sequence } })
         assertEquals(
-            result,
-            StandardHandDecomposer.decompose(
+            expected = result,
+            actual = StandardHandDecomposer.decompose(
                 handTiles = hand.reversed(),
                 winningTile = Tile.Honor.East,
                 exposedMeldCount = 0,
@@ -87,7 +87,7 @@ class StandardHandDecomposerTest {
     @Test
     fun `exposed groups and invalid tile multiplicities are handled explicitly`() {
         assertTrue(
-            StandardHandDecomposer.decompose(
+            actual = StandardHandDecomposer.decompose(
                 handTiles = listOf(Tile.Honor.East),
                 winningTile = Tile.Honor.East,
                 exposedMeldCount = 5,
@@ -95,7 +95,7 @@ class StandardHandDecomposerTest {
             ).isNotEmpty(),
         )
         assertTrue(
-            StandardHandDecomposer.decompose(
+            actual = StandardHandDecomposer.decompose(
                 handTiles = numbers(1, 1, 1, 1),
                 winningTile = numbers(1).single(),
                 exposedMeldCount = 4,
@@ -103,7 +103,7 @@ class StandardHandDecomposerTest {
             ).isEmpty(),
         )
         assertTrue(
-            StandardHandDecomposer.decompose(
+            actual = StandardHandDecomposer.decompose(
                 handTiles = numbers(1, 2),
                 winningTile = numbers(3).single(),
                 exposedMeldCount = 5,

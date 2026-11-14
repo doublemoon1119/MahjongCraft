@@ -76,7 +76,7 @@ class FabricTableLocationPersistence(
         val file = persistentStateDisplayPath(MahjongTableLocationsPersistentState.STORAGE_KEY)
         logger.error("Mahjong table location index {} could not be read; rebuilding it from loaded tables", file, exception)
         dataStatus.report(
-            MahjongDataProblem(
+            problem = MahjongDataProblem(
                 source = MahjongDataSource.TABLE_LOCATIONS,
                 file = file,
                 cause = classifyDataLoadFailure(exception),

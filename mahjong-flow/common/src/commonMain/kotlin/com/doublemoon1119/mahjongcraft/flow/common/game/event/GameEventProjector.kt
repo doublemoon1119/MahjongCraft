@@ -131,13 +131,13 @@ class GameEventProjector(
                 is HistoryFact.WinSettled -> wins += fact
                 is HistoryFact.RuleEffectResolved -> fact.roundCompletion?.let { specialOutcome = specialOutcome ?: it }
                 is HistoryFact.MatchCompleted -> ended = matchEnded(
-                    game,
-                    module,
-                    fact.reasonId,
-                    MatchCompletion.COMPLETED,
-                    facts,
-                    fact.finalScoresByPlayerId.keys,
-                    fact.finalScoresByPlayerId,
+                    game = game,
+                    module = module,
+                    reasonId = fact.reasonId,
+                    completion = MatchCompletion.COMPLETED,
+                    facts = facts,
+                    completedPlayerIds = fact.finalScoresByPlayerId.keys,
+                    completedScores = fact.finalScoresByPlayerId,
                 )
                 is HistoryFact.RoundCompleted -> completed += roundCompleted(facts, module, fact.summary)
                 is HistoryFact.MatchAborted -> Unit
@@ -316,15 +316,15 @@ class GameEventProjector(
         roundContext = roundContext(facts, module.id, (facts.previousGame ?: game).tableState),
         publicMarkers = publicMarkers(facts, module.id, "match_end", null) { resolver ->
             resolver.resolveMatchEndMarkers(
-                MatchEndPublicMarkerContext(
-                    module.id,
-                    facts.matchId,
-                    completion,
-                    reasonId,
-                    (facts.previousGame ?: game).tableState,
-                    facts.game?.tableState,
-                    ReadOnlyMapSnapshot(
-                        if (completion == MatchCompletion.COMPLETED) completedScores else game.tableState.players.associate { it.id to it.score },
+                context = MatchEndPublicMarkerContext(
+                    ruleModuleId = module.id,
+                    matchId = facts.matchId,
+                    completion = completion,
+                    reasonId = reasonId,
+                    previousState = (facts.previousGame ?: game).tableState,
+                    finalState = facts.game?.tableState,
+                    finalScoresByPlayerId = ReadOnlyMapSnapshot(
+                        source = if (completion == MatchCompletion.COMPLETED) completedScores else game.tableState.players.associate { it.id to it.score },
                     ),
                 ),
             )

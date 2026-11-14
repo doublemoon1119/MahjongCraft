@@ -15,7 +15,7 @@ class DtoRegistryConverterTest {
         val received = mutableListOf<NetworkDtoConverter>()
         val registry = DtoRegistry<Value, ValueDto> { registries }
         registry.register(
-            DtoDefinition(
+            definition = DtoDefinition(
                 domainClass = Value::class,
                 dtoClass = ValueDto::class,
                 serializer = ValueDto.serializer(),

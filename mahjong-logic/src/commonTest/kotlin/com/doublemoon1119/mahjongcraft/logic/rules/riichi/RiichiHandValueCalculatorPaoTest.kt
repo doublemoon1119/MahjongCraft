@@ -30,7 +30,7 @@ class RiichiHandValueCalculatorPaoTest : RiichiHandValueCalculatorTestBase() {
      * @return 大三元測試手牌。
      */
     private fun daisangenHand() = FakeHandFactory.create(
-        listOf(
+        tiles = listOf(
             Tile.Honor.Red, Tile.Honor.Red,
             Tile.Honor.Green, Tile.Honor.Green, Tile.Honor.Green,
             Tile.Honor.White, Tile.Honor.White, Tile.Honor.White,

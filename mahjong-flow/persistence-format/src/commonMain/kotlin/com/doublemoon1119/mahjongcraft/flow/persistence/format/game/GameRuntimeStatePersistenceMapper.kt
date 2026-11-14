@@ -51,8 +51,8 @@ fun GameRuntimeStatePersistenceDto.toRemainingReserveByPlayerId(): Map<Uuid, Dur
  * @return 轉換後的結果。
  */
 fun GameRuntimeStatePersistenceDto.toForcedAutoPlayPlayerIds(): Set<Uuid> = forcedAutoPlayPlayerIds.mapTo(
-    mutableSetOf(),
-    Uuid::parse,
+    destination = mutableSetOf(),
+    transform = Uuid::parse,
 )
 
 /**

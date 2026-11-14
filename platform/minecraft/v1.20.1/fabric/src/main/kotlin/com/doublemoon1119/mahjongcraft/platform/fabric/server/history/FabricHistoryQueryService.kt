@@ -152,7 +152,7 @@ class FabricHistoryQueryService(
      */
     private fun receiveRoundEvents(server: MinecraftServer, player: ServerPlayerEntity, request: HistoryRoundEventsRequestDto) {
         receiveRoundQuery(
-            server, player, request.requestId, request.matchId, request.scope,
+            server = server, player = player, requestId = request.requestId, matchId = request.matchId, wireScope = request.scope,
             failure = { HistoryRoundEventsResponseDto(request.requestId, request.matchId, request.roundNumber, request.startTransactionIndex, errorCode = it, events = null) },
             query = { access, repository ->
                 when (val result = GetHistoryRoundEventsUseCase(repository, ::policy)(access, request.toDomain())) {
@@ -175,7 +175,7 @@ class FabricHistoryQueryService(
      */
     private fun receiveRoundState(server: MinecraftServer, player: ServerPlayerEntity, request: HistoryRoundStateRequestDto) {
         receiveRoundQuery(
-            server, player, request.requestId, request.matchId, request.scope,
+            server = server, player = player, requestId = request.requestId, matchId = request.matchId, wireScope = request.scope,
             failure = { HistoryRoundStateResponseDto(request.requestId, request.matchId, request.roundNumber, request.position, errorCode = it, state = null) },
             query = { access, repository ->
                 when (val result = GetHistoryRoundStateUseCase(repository, ::policy)(access, request.toDomain())) {
@@ -282,9 +282,9 @@ class FabricHistoryQueryService(
         if (accepted !is HistoryQueryAdmission.Admission.Accepted) {
             if (admission.shouldSendRejection(access.principalId)) {
                 MahjongChannels.historyArchiveStatusResponse.sendTo(
-                    player,
-                    json,
-                    HistoryArchiveStatusResponseDto(request.requestId, HistoryArchiveStatusDto.MISSING, accepted.errorCode()),
+                    player = player,
+                    json = json,
+                    value = HistoryArchiveStatusResponseDto(request.requestId, HistoryArchiveStatusDto.MISSING, accepted.errorCode()),
                 )
             }
             return
@@ -336,11 +336,11 @@ class FabricHistoryQueryService(
         if (!validRequestId(request.requestId)) return
         val access = player.queryAccess()
         val source = sourceFor(request.scope) ?: return MahjongChannels.historyListResponse.sendTo(
-            player,
-            json,
-            HistoryListResponseDto(
-                request.requestId,
-                emptyList(),
+            player = player,
+            json = json,
+            value = HistoryListResponseDto(
+                requestId = request.requestId,
+                entries = emptyList(),
                 nextCursor = null,
                 errorCode = HistoryQueryErrorCodeDto.NOT_AVAILABLE,
                 allowAll = canQueryAll(access, policy()),
@@ -352,11 +352,11 @@ class FabricHistoryQueryService(
         if (accepted !is HistoryQueryAdmission.Admission.Accepted) {
             if (admission.shouldSendRejection(access.principalId)) {
                 MahjongChannels.historyListResponse.sendTo(
-                    player,
-                    json,
-                    HistoryListResponseDto(
-                        request.requestId,
-                        emptyList(),
+                    player = player,
+                    json = json,
+                    value = HistoryListResponseDto(
+                        requestId = request.requestId,
+                        entries = emptyList(),
                         nextCursor = null,
                         errorCode = accepted.errorCode(),
                         allowAll = canQueryAll(access, policy()),
@@ -459,9 +459,9 @@ class FabricHistoryQueryService(
         if (!validRequestId(request.requestId)) return
         val access = player.queryAccess()
         val source = sourceFor(request.scope) ?: return MahjongChannels.historySummaryResponse.sendTo(
-            player,
-            json,
-            HistorySummaryResponseDto(request.requestId, errorCode = HistoryQueryErrorCodeDto.NOT_AVAILABLE, detail = null),
+            player = player,
+            json = json,
+            value = HistorySummaryResponseDto(request.requestId, errorCode = HistoryQueryErrorCodeDto.NOT_AVAILABLE, detail = null),
         )
         val sessionId = source.writer.currentSessionId
         val accepted = admission.acquire(access.principalId)
@@ -532,18 +532,18 @@ class FabricHistoryQueryService(
         if (!validRequestId(request.requestId)) return
         val access = player.queryAccess()
         val source = sourceFor(request.scope) ?: return MahjongChannels.historyRuleSettingsResponse.sendTo(
-            player,
-            json,
-            HistoryRuleSettingsResponseDto(request.requestId, errorCode = HistoryQueryErrorCodeDto.NOT_AVAILABLE, config = null),
+            player = player,
+            json = json,
+            value = HistoryRuleSettingsResponseDto(request.requestId, errorCode = HistoryQueryErrorCodeDto.NOT_AVAILABLE, config = null),
         )
         val sessionId = source.writer.currentSessionId
         val accepted = admission.acquire(access.principalId)
         if (accepted !is HistoryQueryAdmission.Admission.Accepted) {
             if (admission.shouldSendRejection(access.principalId)) {
                 MahjongChannels.historyRuleSettingsResponse.sendTo(
-                    player,
-                    json,
-                    HistoryRuleSettingsResponseDto(request.requestId, errorCode = accepted.errorCode(), config = null),
+                    player = player,
+                    json = json,
+                    value = HistoryRuleSettingsResponseDto(request.requestId, errorCode = accepted.errorCode(), config = null),
                 )
             }
             return
@@ -577,7 +577,7 @@ class FabricHistoryQueryService(
                 val requestedMatchId = runCatching { Uuid.parse(request.matchId).toString() }.getOrNull()
                 if (requestedMatchId != null && requestedMatchId in activeMatches(source)) {
                     response = HistoryRuleSettingsResponseDto(
-                        request.requestId,
+                        requestId = request.requestId,
                         errorCode = HistoryQueryErrorCodeDto.NOT_AVAILABLE,
                         config = null,
                     )
@@ -655,8 +655,8 @@ class FabricHistoryQueryService(
      */
     private suspend fun sendIdentities(player: ServerPlayerEntity, playerIds: Collection<String>) {
         playerIdentities.send(
-            player.uuid.toKotlinUuid(),
-            playerIds.mapNotNull { runCatching { Uuid.parse(it) }.getOrNull() },
+            targetId = player.uuid.toKotlinUuid(),
+            playerIds = playerIds.mapNotNull { runCatching { Uuid.parse(it) }.getOrNull() },
         )
     }
 }

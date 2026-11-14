@@ -61,8 +61,8 @@ class MahjongSeatingTableLayoutTest {
                 val normalizedDot = (lookX * toCenterX + lookZ * toCenterZ) / magnitude
 
                 assertTrue(
-                    normalizedDot > 0.999,
-                    "Seat at (${placement.x}, ${placement.z}) should face the table center for facing $tableFacing.",
+                    actual = normalizedDot > 0.999,
+                    message = "Seat at (${placement.x}, ${placement.z}) should face the table center for facing $tableFacing.",
                 )
             }
         }
@@ -104,8 +104,8 @@ class MahjongSeatingTableLayoutTest {
 
         assertEquals(4, positionsByFacing.values.toSet().size)
         assertNotEquals(
-            positionsByFacing.getValue(MahjongTableFacing.NORTH),
-            positionsByFacing.getValue(MahjongTableFacing.EAST),
+            illegal = positionsByFacing.getValue(MahjongTableFacing.NORTH),
+            actual = positionsByFacing.getValue(MahjongTableFacing.EAST),
         )
     }
 

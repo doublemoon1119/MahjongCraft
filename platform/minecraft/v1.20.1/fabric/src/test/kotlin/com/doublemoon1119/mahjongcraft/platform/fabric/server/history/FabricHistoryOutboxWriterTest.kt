@@ -44,7 +44,7 @@ class FabricHistoryOutboxWriterTest {
         val pending = event()
         val store = AuthoritativeStateStore()
         store.load(
-            AuthoritativeStateSnapshot(
+            state = AuthoritativeStateSnapshot(
                 historyRecordingState = HistoryRecordingState(
                     pendingEvents = listOf(pending),
                     nextSequenceByMatchId = mapOf(pending.matchId to 3L),
@@ -102,7 +102,7 @@ class FabricHistoryOutboxWriterTest {
         val pending = event().copy(matchId = game.matchId, venueId = game.id)
         val store = AuthoritativeStateStore()
         store.load(
-            AuthoritativeStateSnapshot(
+            state = AuthoritativeStateSnapshot(
                 games = mapOf(game.id to game),
                 historyRecordingState = HistoryRecordingState(pendingEvents = listOf(pending)),
             ),
@@ -152,7 +152,7 @@ class FabricHistoryOutboxWriterTest {
         val store = AuthoritativeStateStore()
         val event = event()
         store.load(
-            AuthoritativeStateSnapshot(
+            state = AuthoritativeStateSnapshot(
                 historyRecordingState = HistoryRecordingState(
                     nextSequenceByMatchId = mapOf(event.matchId to 3L),
                     pendingEvents = listOf(event),
@@ -201,7 +201,7 @@ class FabricHistoryOutboxWriterTest {
         val store = AuthoritativeStateStore()
         val event = event()
         store.load(
-            AuthoritativeStateSnapshot(
+            state = AuthoritativeStateSnapshot(
                 historyRecordingState = HistoryRecordingState(pendingEvents = listOf(event)),
             ),
         )
@@ -260,7 +260,7 @@ class FabricHistoryOutboxWriterTest {
         val matchId = Uuid.random()
         val store = AuthoritativeStateStore()
         store.load(
-            AuthoritativeStateSnapshot(
+            state = AuthoritativeStateSnapshot(
                 historyRecordingState = HistoryRecordingState(
                     decisionsByMatchId = mapOf(matchId to HistoryRecordingDecision.STOPPED_CONFIG_DISABLED),
                 ),
@@ -273,8 +273,8 @@ class FabricHistoryOutboxWriterTest {
         writer.detach()
 
         assertEquals(
-            mapOf(matchId.toString() to "PARTIAL_CONFIG_DISABLED"),
-            SqliteHistoryDatabase.open(path).readRecordingStops(),
+            expected = mapOf(matchId.toString() to "PARTIAL_CONFIG_DISABLED"),
+            actual = SqliteHistoryDatabase.open(path).readRecordingStops(),
         )
     }
 
@@ -286,7 +286,7 @@ class FabricHistoryOutboxWriterTest {
         val removedMatchId = Uuid.random()
         val store = AuthoritativeStateStore()
         store.load(
-            AuthoritativeStateSnapshot(
+            state = AuthoritativeStateSnapshot(
                 games = mapOf(activeGame.id to activeGame),
                 historyRecordingState = HistoryRecordingState(
                     pendingEvents = listOf(pending),
@@ -301,15 +301,15 @@ class FabricHistoryOutboxWriterTest {
         val allMatchIds = setOf(activeGame.matchId, pending.matchId, removedMatchId)
         store.acknowledgeHistoryDecisions(allMatchIds)
         assertEquals(
-            setOf(activeGame.matchId, pending.matchId),
-            store.snapshot().historyRecordingState.decisionsByMatchId.keys,
+            expected = setOf(activeGame.matchId, pending.matchId),
+            actual = store.snapshot().historyRecordingState.decisionsByMatchId.keys,
         )
 
         store.acknowledgeHistoryEvents(setOf(pending.matchId to pending.sequence))
         store.acknowledgeHistoryDecisions(setOf(pending.matchId))
         assertEquals(
-            setOf(activeGame.matchId),
-            store.snapshot().historyRecordingState.decisionsByMatchId.keys,
+            expected = setOf(activeGame.matchId),
+            actual = store.snapshot().historyRecordingState.decisionsByMatchId.keys,
         )
     }
 
@@ -413,7 +413,7 @@ class FabricHistoryOutboxWriterTest {
      */
     private suspend fun startMatch(store: AuthoritativeStateStore): Game {
         val table = FakeTableStateFactory.create()
-        componentValidatedGameRepository(store).updateGame(table.id, history = { _, _, _ ->
+        componentValidatedGameRepository(store).updateGame(gameId = table.id, history = { _, _, _ ->
             listOf(HistoryEventDraft(null, HistoryFact.MatchStarted(table, GameFlowConfig(), emptyMap())))
         }) { Game(table, GameFlowConfig()) to Unit }
         return checkNotNull(store.getGame(table.id))

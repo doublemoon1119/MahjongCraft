@@ -27,7 +27,7 @@ object RoundInfoLineCodec {
      * @return 編碼後的 JSON 字串。
      */
     fun encode(lines: List<RoundInfoLine>): String = json.encodeToString(
-        lines.map { line ->
+        value = lines.map { line ->
             EncodedLine(
                 key = line.key,
                 args = line.args.map { argument ->

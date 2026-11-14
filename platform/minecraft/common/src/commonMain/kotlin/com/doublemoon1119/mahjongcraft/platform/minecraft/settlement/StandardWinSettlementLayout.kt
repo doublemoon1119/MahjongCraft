@@ -65,7 +65,7 @@ object StandardWinSettlementLayout {
             centered(PresentationLayout.Text(title, scale = 1.35f, argb = TITLE_ARGB), 11f),
             centered(playerRelationship(), 29f),
             centered(
-                PresentationLayout.Column(
+                child = PresentationLayout.Column(
                     children = listOfNotNull(
                         PresentationLayout.IfPresent(
                             fieldId = BuiltInWinSettlementFieldIds.COMPLETE_HAND_GROUPS,
@@ -94,15 +94,15 @@ object StandardWinSettlementLayout {
                     ),
                     spacing = ROW_GAP,
                 ),
-                TILE_ROWS_TOP,
+                y = TILE_ROWS_TOP,
             ),
             PresentationLayout.Positioned(PresentationLayout.Row(summaries, spacing = 3f), x = 44f, y = 141f),
             PresentationLayout.Positioned(
-                PresentationLayout.Animated(
-                    PresentationLayout.Text(BuiltInWinSettlementFieldIds.TOTAL_SCORE, argb = TITLE_ARGB),
+                child = PresentationLayout.Animated(
+                    child = PresentationLayout.Text(BuiltInWinSettlementFieldIds.TOTAL_SCORE, argb = TITLE_ARGB),
                     // 摘要那一行錨在逐條揭示之後，佔一條清單的間隔（8 tick）；分數接在它後面出現。
-                    PresentationTimeline(PresentationTimelineAnchor.AFTER_ENTRIES, offsetTicks = 8, durationTicks = 18),
-                    listOf(
+                    timeline = PresentationTimeline(PresentationTimelineAnchor.AFTER_ENTRIES, offsetTicks = 8, durationTicks = 18),
+                    effects = listOf(
                         PresentationAnimationEffect.Fade(),
                         PresentationAnimationEffect.ScaleKeyframes(listOf(ScaleKeyframe(0f, 1.35f), ScaleKeyframe(1f, 1f))),
                     ),
@@ -124,11 +124,11 @@ object StandardWinSettlementLayout {
      * @return 摘要節點。
      */
     fun summary(fieldId: PresentationFieldId, argb: Int = SUMMARY_ARGB): PresentationLayout = PresentationLayout.IfPresent(
-        fieldId,
-        PresentationLayout.Animated(
-            PresentationLayout.Text(fieldId, argb = argb),
-            PresentationTimeline(PresentationTimelineAnchor.AFTER_ENTRIES, durationTicks = 6),
-            listOf(PresentationAnimationEffect.Fade()),
+        fieldId = fieldId,
+        child = PresentationLayout.Animated(
+            child = PresentationLayout.Text(fieldId, argb = argb),
+            timeline = PresentationTimeline(PresentationTimelineAnchor.AFTER_ENTRIES, durationTicks = 6),
+            effects = listOf(PresentationAnimationEffect.Fade()),
         ),
     )
 
@@ -162,9 +162,9 @@ object StandardWinSettlementLayout {
         children = listOf(
             PresentationLayout.PlayerIdentity(BuiltInWinSettlementFieldIds.WINNER_IDENTITY),
             PresentationLayout.IfPresent(
-                BuiltInWinSettlementFieldIds.RESPONSIBLE_PLAYER_IDENTITY,
-                PresentationLayout.Row(
-                    listOf(
+                fieldId = BuiltInWinSettlementFieldIds.RESPONSIBLE_PLAYER_IDENTITY,
+                child = PresentationLayout.Row(
+                    children = listOf(
                         PresentationLayout.Text(BuiltInWinSettlementFieldIds.RELATION_ARROW, argb = LABEL_ARGB),
                         PresentationLayout.PlayerIdentity(BuiltInWinSettlementFieldIds.RESPONSIBLE_PLAYER_IDENTITY),
                     ),

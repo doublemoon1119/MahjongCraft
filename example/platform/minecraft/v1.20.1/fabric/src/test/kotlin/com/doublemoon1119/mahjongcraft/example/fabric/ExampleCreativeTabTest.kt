@@ -12,7 +12,7 @@ class ExampleCreativeTabTest {
     @Test
     fun `creative tab contents contain the furniture and tables in order`() {
         assertEquals(
-            listOf(
+            expected = listOf(
                 ExampleFurnitureIds.CHAIR,
                 ExampleFurnitureIds.CUSHION,
                 ExampleFurnitureIds.BENCH,
@@ -21,7 +21,7 @@ class ExampleCreativeTabTest {
                 ExampleFurnitureIds.LOW_TABLE,
                 ExampleFurnitureIds.ROUND_TABLE,
             ),
-            ExampleItemGroups.itemIds(),
+            actual = ExampleItemGroups.itemIds(),
         )
     }
 }

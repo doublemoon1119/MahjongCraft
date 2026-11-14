@@ -19,7 +19,7 @@ internal inline fun <T> requireValidRuleComponents(source: String, block: () -> 
     block()
 } catch (failure: IllegalArgumentException) {
     throw RuleContractViolationException(
-        GameAbortReasonIds.RULE_EXECUTION_FAILED,
-        "$source produced invalid components: ${failure.message}",
+        reasonId = GameAbortReasonIds.RULE_EXECUTION_FAILED,
+        diagnostic = "$source produced invalid components: ${failure.message}",
     )
 }

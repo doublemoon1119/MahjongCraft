@@ -87,8 +87,8 @@ class SettlementStageInputsTest {
         val inputs = exhaustiveDrawSettlementStageInputs(request, stateWith(), emptyMap(), TableTileLayoutProfile.STANDARD, null, emptyMap(), FakeTileAssetRegistry)
 
         assertEquals(
-            mapOf(0 to listOf("east", "p9"), 1 to listOf("s2")),
-            inputs.waitingTileAssetsBySeat,
+            expected = mapOf(0 to listOf("east", "p9"), 1 to listOf("s2")),
+            actual = inputs.waitingTileAssetsBySeat,
         )
     }
 
@@ -149,7 +149,7 @@ class SettlementStageInputsTest {
 
         state.players.forEachIndexed { seat, player ->
             assertEquals(
-                MahjongPlayerAreaLayout.handShift(
+                expected = MahjongPlayerAreaLayout.handShift(
                     tileLayout = TableTileLayoutProfile.STANDARD,
                     wallClearance = null,
                     cornerWidth = 0.0,
@@ -158,7 +158,7 @@ class SettlementStageInputsTest {
                     standingTileCount = player.hand.tiles.size,
                     playerCount = state.players.size,
                 ),
-                inputs.handShiftsBySeat.getValue(seat),
+                actual = inputs.handShiftsBySeat.getValue(seat),
             )
         }
     }

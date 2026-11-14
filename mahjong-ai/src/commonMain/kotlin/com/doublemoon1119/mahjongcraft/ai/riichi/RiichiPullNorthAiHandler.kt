@@ -26,7 +26,7 @@ object RiichiPullNorthAiHandler : ExtensionGameActionAiHandler<RiichiGameAction.
             ?: hand.standingTiles.firstOrNull { it.tile == Tile.Honor.North }
             ?: return emptyList()
         return listOf(
-            ExtensionCommandCandidate(
+            element = ExtensionCommandCandidate(
                 command = GameCommand.Extension(RiichiPullNorthCommand),
                 declaration = GameAction.Extension(action),
                 setAsideTileId = north.id,

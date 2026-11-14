@@ -89,9 +89,9 @@ class ExpectedValueAiStrategyTest {
     @Test
     fun `every level discards an isolated honor rather than breaking a shape`() = runTest {
         val self = player(
-            Wind.SOUTH,
+            wind = Wind.SOUTH,
             hand = hand(
-                listOf(m(1), m(2), m(3), p(4), p(5), p(6), s(7), s(8), m(6), m(7), s(9), s(9), Tile.Honor.East),
+                tiles = listOf(m(1), m(2), m(3), p(4), p(5), p(6), s(7), s(8), m(6), m(7), s(9), s(9), Tile.Honor.East),
                 drawn = Tile.Honor.North,
             ),
         )
@@ -107,9 +107,9 @@ class ExpectedValueAiStrategyTest {
     @Test
     fun `the intermediate level keeps the wider wait`() = runTest {
         val self = player(
-            Wind.SOUTH,
+            wind = Wind.SOUTH,
             hand = hand(
-                listOf(m(1), m(2), m(3), m(4), m(5), m(6), m(7), m(8), m(9), p(1), p(1), s(3), s(4)),
+                tiles = listOf(m(1), m(2), m(3), m(4), m(5), m(6), m(7), m(8), m(9), p(1), p(1), s(3), s(4)),
                 drawn = s(6),
             ),
         )
@@ -125,9 +125,9 @@ class ExpectedValueAiStrategyTest {
     fun `against a riichi only the intermediate and advanced levels fold with a distant hand`() = runTest {
         val dealer = player(Wind.EAST, discards = listOf(Tile.Honor.North, Tile.Honor.White, p(7)), riichi = true)
         val self = player(
-            Wind.SOUTH,
+            wind = Wind.SOUTH,
             hand = hand(
-                listOf(m(1), m(2), m(3), s(7), s(8), s(9), p(4), p(6), p(7), p(7), m(5), s(5), m(8)),
+                tiles = listOf(m(1), m(2), m(3), s(7), s(8), s(9), p(4), p(6), p(7), p(7), m(5), s(5), m(8)),
                 drawn = s(2),
             ),
         )
@@ -145,7 +145,7 @@ class ExpectedValueAiStrategyTest {
         val (table, self, pon) = ponSituation(ponTile = Tile.Honor.Red, others = listOf(Tile.Honor.Red, Tile.Honor.Red, m(9)))
 
         val command = strategy(InformationLevel.INTERMEDIATE).decideGameCommand(
-            context(table, self, phase = AiDecisionPhase.RespondingToDiscard, legalActions = listOf(pon, GameAction.Pass)),
+            context = context(table, self, phase = AiDecisionPhase.RespondingToDiscard, legalActions = listOf(pon, GameAction.Pass)),
         )
 
         assertEquals(GameCommand.RespondToDiscard(pon, discardReactionId, pon.withTiles), command)
@@ -158,7 +158,7 @@ class ExpectedValueAiStrategyTest {
 
         allLevels.forEach { level ->
             val command = strategy(level).decideGameCommand(
-                context(table, self, phase = AiDecisionPhase.RespondingToDiscard, legalActions = listOf(pon, GameAction.Pass)),
+                context = context(table, self, phase = AiDecisionPhase.RespondingToDiscard, legalActions = listOf(pon, GameAction.Pass)),
             )
             assertEquals(GameCommand.RespondToDiscard(GameAction.Pass, discardReactionId), command, "$level")
         }
@@ -168,7 +168,7 @@ class ExpectedValueAiStrategyTest {
     @Test
     fun `a legal win is always taken`() = runTest {
         val self = player(
-            Wind.SOUTH,
+            wind = Wind.SOUTH,
             hand = hand(listOf(m(1), m(2), m(3), m(4), m(5), m(6), m(7), m(8), m(9), p(1), p(1), s(3), s(4)), drawn = s(5)),
         )
         val table = fourPlayers(self)
@@ -176,19 +176,19 @@ class ExpectedValueAiStrategyTest {
 
         allLevels.forEach { level ->
             assertEquals(
-                GameCommand.Tsumo,
-                strategy(level).decideGameCommand(context(table, self, legalActions = listOf(GameAction.Tsumo))),
+                expected = GameCommand.Tsumo,
+                actual = strategy(level).decideGameCommand(context(table, self, legalActions = listOf(GameAction.Tsumo))),
             )
             assertEquals(
-                GameCommand.RespondToDiscard(ron, discardReactionId),
-                strategy(level).decideGameCommand(
-                    context(table, self, phase = AiDecisionPhase.RespondingToDiscard, legalActions = listOf(GameAction.Pass, ron)),
+                expected = GameCommand.RespondToDiscard(ron, discardReactionId),
+                actual = strategy(level).decideGameCommand(
+                    context = context(table, self, phase = AiDecisionPhase.RespondingToDiscard, legalActions = listOf(GameAction.Pass, ron)),
                 ),
             )
             assertEquals(
-                GameCommand.RespondToRobbing(ron),
-                strategy(level).decideGameCommand(
-                    context(table, self, phase = AiDecisionPhase.RespondingToRobbing, legalActions = listOf(GameAction.Pass, ron)),
+                expected = GameCommand.RespondToRobbing(ron),
+                actual = strategy(level).decideGameCommand(
+                    context = context(table, self, phase = AiDecisionPhase.RespondingToRobbing, legalActions = listOf(GameAction.Pass, ron)),
                 ),
             )
         }
@@ -198,9 +198,9 @@ class ExpectedValueAiStrategyTest {
     @Test
     fun `riichi scores above dama for a closed tenpai without yaku`() {
         val self = player(
-            Wind.SOUTH,
+            wind = Wind.SOUTH,
             hand = hand(
-                listOf(m(2), m(3), m(4), p(4), p(5), p(6), p(7), p(8), p(9), s(2), s(3), s(4), s(5)),
+                tiles = listOf(m(2), m(3), m(4), p(4), p(5), p(6), p(7), p(8), p(9), s(2), s(3), s(4), s(5)),
                 drawn = Tile.Honor.North,
             ),
         )
@@ -229,9 +229,9 @@ class ExpectedValueAiStrategyTest {
     fun `pulling a north values the extra pulled north dora`() {
         val module = ThreePlayerRiichiRuleModule(BuiltInRuleModuleIds.RIICHI_THREE_PLAYER, ThreePlayerRiichiRuleConfig())
         val self = player(
-            Wind.SOUTH,
+            wind = Wind.SOUTH,
             hand = hand(
-                List(3) { m(9) } + listOf(p(4), p(5), p(6), p(7), p(8), p(9), Tile.Honor.Red, Tile.Honor.Red, Tile.Honor.Red, s(2)),
+                tiles = List(3) { m(9) } + listOf(p(4), p(5), p(6), p(7), p(8), p(9), Tile.Honor.Red, Tile.Honor.Red, Tile.Honor.Red, s(2)),
                 drawn = Tile.Honor.North,
             ),
         )
@@ -266,9 +266,9 @@ class ExpectedValueAiStrategyTest {
     @Test
     fun `win value detail scales how much riichi adds over dama`() {
         val self = player(
-            Wind.SOUTH,
+            wind = Wind.SOUTH,
             hand = hand(
-                listOf(m(2), m(3), m(4), p(4), p(5), p(6), p(7), p(8), p(9), Tile.Honor.Red, Tile.Honor.Red, Tile.Honor.Red, s(2)),
+                tiles = listOf(m(2), m(3), m(4), p(4), p(5), p(6), p(7), p(8), p(9), Tile.Honor.Red, Tile.Honor.Red, Tile.Honor.Red, s(2)),
                 drawn = Tile.Honor.North,
             ),
         )
@@ -311,9 +311,9 @@ class ExpectedValueAiStrategyTest {
          */
         fun expectedValue(visibleFive: TileValue): Double {
             val self = player(
-                Wind.SOUTH,
+                wind = Wind.SOUTH,
                 hand = hand(
-                    listOf(m(2), m(3), m(4), p(1), p(2), p(3), p(7), p(8), p(9), Tile.Honor.Red, Tile.Honor.Red, Tile.Honor.Red, p(5)),
+                    tiles = listOf(m(2), m(3), m(4), p(1), p(2), p(3), p(7), p(8), p(9), Tile.Honor.Red, Tile.Honor.Red, Tile.Honor.Red, p(5)),
                     drawn = Tile.Honor.North,
                 ),
             )
@@ -353,11 +353,11 @@ class ExpectedValueAiStrategyTest {
             val action = GameAction.Pon(tileId = claimed.id, withTiles = seatedSelf.hand.tiles.filter { it.tile == p(5) }.take(2).map { it.id })
             val level = InformationLevel.ADVANCED
             val evaluator = ExpectedValueEvaluator(
-                level,
-                ExpectationParameters.DEFAULT,
-                ExpectationFixtures.module,
-                ExpectationFixtures.opponentModel(level),
-                context(table, seatedSelf, phase = AiDecisionPhase.RespondingToDiscard, legalActions = listOf(action)),
+                level = level,
+                parameters = ExpectationParameters.DEFAULT,
+                module = ExpectationFixtures.module,
+                opponentModel = ExpectationFixtures.opponentModel(level),
+                context = context(table, seatedSelf, phase = AiDecisionPhase.RespondingToDiscard, legalActions = listOf(action)),
             )
             val claim = assertIs<DecisionCandidate.Claim>(evaluator.claimCandidates().single())
             return claim to evaluator.scoreAll(listOf(claim)).single().expectedValue
@@ -382,9 +382,9 @@ class ExpectedValueAiStrategyTest {
     fun `future risk keeps a thin wait from riichi into a dealer riichi`() = runTest {
         val dealer = player(Wind.EAST, discards = listOf(Tile.Honor.North, Tile.Honor.West, s(1)), riichi = true)
         val self = player(
-            Wind.SOUTH,
+            wind = Wind.SOUTH,
             hand = hand(
-                listOf(m(2), m(3), m(4), p(4), p(5), p(6), p(6), p(7), p(8), s(2), s(3), s(4), s(5)),
+                tiles = listOf(m(2), m(3), m(4), p(4), p(5), p(6), p(6), p(7), p(8), s(2), s(3), s(4), s(5)),
                 drawn = m(8),
             ),
         )
@@ -401,14 +401,14 @@ class ExpectedValueAiStrategyTest {
     fun `future risk against high threats only ignores quiet opponents`() {
         val quietDiscards = listOf(Tile.Honor.North, Tile.Honor.West, s(1), p(9), m(9), Tile.Honor.White)
         val self = player(
-            Wind.SOUTH,
+            wind = Wind.SOUTH,
             hand = hand(
-                listOf(m(1), m(2), m(3), m(4), m(5), m(6), m(7), m(8), m(9), p(1), p(1), s(3), s(4)),
+                tiles = listOf(m(1), m(2), m(3), m(4), m(5), m(6), m(7), m(8), m(9), p(1), p(1), s(3), s(4)),
                 drawn = s(6),
             ),
         )
         val table = table(
-            listOf(
+            players = listOf(
                 player(Wind.EAST, discards = quietDiscards),
                 self,
                 player(Wind.WEST, discards = quietDiscards),
@@ -437,9 +437,9 @@ class ExpectedValueAiStrategyTest {
     fun `future risk parameters change how risky continuing looks`() {
         val dealer = player(Wind.EAST, discards = listOf(Tile.Honor.North, Tile.Honor.West, s(1)), riichi = true)
         val self = player(
-            Wind.SOUTH,
+            wind = Wind.SOUTH,
             hand = hand(
-                listOf(m(2), m(3), m(4), p(4), p(5), p(6), p(6), p(7), p(8), s(2), s(3), s(4), s(5)),
+                tiles = listOf(m(2), m(3), m(4), p(4), p(5), p(6), p(6), p(7), p(8), s(2), s(3), s(4), s(5)),
                 drawn = m(8),
             ),
         )
@@ -470,9 +470,9 @@ class ExpectedValueAiStrategyTest {
     fun `an abortive draw is declared only for a hopeless hand`() = runTest {
         val kyuushu = GameAction.ExhaustiveDraw(RiichiExhaustiveDrawReason.KyuushuKyuuhai)
         val hopeless = player(
-            Wind.SOUTH,
+            wind = Wind.SOUTH,
             hand = hand(
-                listOf(
+                tiles = listOf(
                     m(1), m(9), p(1), p(9), s(1),
                     Tile.Honor.East, Tile.Honor.South, Tile.Honor.West, Tile.Honor.North,
                     m(4), p(6), s(3), s(7),
@@ -481,25 +481,25 @@ class ExpectedValueAiStrategyTest {
             ),
         )
         val ready = player(
-            Wind.SOUTH,
+            wind = Wind.SOUTH,
             hand = hand(
-                listOf(m(1), m(2), m(3), m(4), m(5), m(6), m(7), m(8), m(9), p(1), p(1), s(3), s(4)),
+                tiles = listOf(m(1), m(2), m(3), m(4), m(5), m(6), m(7), m(8), m(9), p(1), p(1), s(3), s(4)),
                 drawn = Tile.Honor.East,
             ),
         )
 
         assertEquals(
-            GameCommand.DeclareExhaustiveDraw(RiichiExhaustiveDrawReason.KyuushuKyuuhai),
-            strategy(InformationLevel.INTERMEDIATE).decideGameCommand(context(fourPlayers(hopeless), hopeless, legalActions = listOf(kyuushu))),
+            expected = GameCommand.DeclareExhaustiveDraw(RiichiExhaustiveDrawReason.KyuushuKyuuhai),
+            actual = strategy(InformationLevel.INTERMEDIATE).decideGameCommand(context(fourPlayers(hopeless), hopeless, legalActions = listOf(kyuushu))),
         )
         assertIs<GameCommand.Discard>(
-            strategy(InformationLevel.INTERMEDIATE).decideGameCommand(context(fourPlayers(ready), ready, legalActions = listOf(kyuushu))),
+            value = strategy(InformationLevel.INTERMEDIATE).decideGameCommand(context(fourPlayers(ready), ready, legalActions = listOf(kyuushu))),
         )
         val neverDeclares = ExpectationParameters(abortiveDrawWinProbability = 0.0)
         assertIs<GameCommand.Discard>(
-            strategy(InformationLevel.INTERMEDIATE, neverDeclares)
+            value = strategy(InformationLevel.INTERMEDIATE, neverDeclares)
                 .decideGameCommand(context(fourPlayers(hopeless), hopeless, legalActions = listOf(kyuushu))),
-            "the strategy must use the parameters it was given",
+            message = "the strategy must use the parameters it was given",
         )
     }
 
@@ -507,9 +507,9 @@ class ExpectedValueAiStrategyTest {
     @Test
     fun `a forced discard is obeyed`() = runTest {
         val self = player(
-            Wind.SOUTH,
+            wind = Wind.SOUTH,
             hand = hand(
-                listOf(m(2), m(3), m(4), p(4), p(5), p(6), p(7), p(8), p(9), s(2), s(3), s(4), s(5)),
+                tiles = listOf(m(2), m(3), m(4), p(4), p(5), p(6), p(7), p(8), p(9), s(2), s(3), s(4), s(5)),
                 drawn = m(5),
             ),
             riichi = true,
@@ -525,9 +525,9 @@ class ExpectedValueAiStrategyTest {
     @Test
     fun `decisions are deterministic and use own tiles`() = runTest {
         val self = player(
-            Wind.SOUTH,
+            wind = Wind.SOUTH,
             hand = hand(
-                listOf(m(1), m(3), m(5), p(2), p(4), p(8), s(1), s(6), s(9), Tile.Honor.East, Tile.Honor.Red, m(9), p(9)),
+                tiles = listOf(m(1), m(3), m(5), p(2), p(4), p(8), s(1), s(6), s(9), Tile.Honor.East, Tile.Honor.Red, m(9), p(9)),
                 drawn = s(4),
             ),
         )

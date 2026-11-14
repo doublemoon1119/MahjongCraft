@@ -60,8 +60,8 @@ internal object ReplayCapacityFixtures {
             input.readBytes().toString(Charsets.UTF_8)
         }
         val persistenceEvents = Json.decodeFromString(
-            ListSerializer(HistoryOutboxEventPersistenceDto.serializer()),
-            jsonText,
+            deserializer = ListSerializer(HistoryOutboxEventPersistenceDto.serializer()),
+            string = jsonText,
         )
         val mapper = HistoryRecordingPersistenceMapper(bundledPersistenceRegistries())
         return Fixture(gameLength, persistenceEvents.map(mapper::decodePendingEvent))

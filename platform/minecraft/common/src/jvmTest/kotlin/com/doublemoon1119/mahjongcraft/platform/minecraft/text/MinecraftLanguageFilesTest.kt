@@ -117,9 +117,9 @@ class MinecraftLanguageFilesTest {
             val messageKeys = loadTranslations(locale).keys.filterTo(mutableSetOf()) { it.startsWith(messagePrefix) }
 
             assertEquals(
-                MinecraftMessageKeys.ALL,
-                messageKeys,
-                "$locale message keys do not match the production message schema",
+                expected = MinecraftMessageKeys.ALL,
+                actual = messageKeys,
+                message = "$locale message keys do not match the production message schema",
             )
         }
     }
@@ -131,9 +131,9 @@ class MinecraftLanguageFilesTest {
             val settlementKeys = loadTranslations(locale).keys.filterTo(mutableSetOf()) { it.startsWith(settlementPrefix) }
 
             assertEquals(
-                WinSettlementTextKeys.ALL,
-                settlementKeys,
-                "$locale settlement keys do not match the production settlement schema",
+                expected = WinSettlementTextKeys.ALL,
+                actual = settlementKeys,
+                message = "$locale settlement keys do not match the production settlement schema",
             )
         }
     }
@@ -145,9 +145,9 @@ class MinecraftLanguageFilesTest {
             val showcaseKeys = loadTranslations(locale).keys.filterTo(mutableSetOf()) { it.startsWith(showcasePrefix) }
 
             assertEquals(
-                RiichiShowcaseTranslationKeys.ALL,
-                showcaseKeys,
-                "$locale showcase keys do not match the production showcase schema",
+                expected = RiichiShowcaseTranslationKeys.ALL,
+                actual = showcaseKeys,
+                message = "$locale showcase keys do not match the production showcase schema",
             )
         }
     }
@@ -159,9 +159,9 @@ class MinecraftLanguageFilesTest {
             val yakuKeys = loadTranslations(locale).keys.filterTo(mutableSetOf()) { it.startsWith(yakuPrefix) }
 
             assertEquals(
-                RiichiYakuTranslationKeys.ALL,
-                yakuKeys,
-                "$locale yaku keys do not match the production yaku schema",
+                expected = RiichiYakuTranslationKeys.ALL,
+                actual = yakuKeys,
+                message = "$locale yaku keys do not match the production yaku schema",
             )
         }
     }
@@ -171,8 +171,8 @@ class MinecraftLanguageFilesTest {
     fun `all language files contain the main item group translation`() {
         locales.forEach { locale ->
             assertTrue(
-                MinecraftItemGroupKeys.MAIN in loadTranslations(locale),
-                "$locale language file does not contain the main item group translation",
+                actual = MinecraftItemGroupKeys.MAIN in loadTranslations(locale),
+                message = "$locale language file does not contain the main item group translation",
             )
         }
     }
@@ -289,17 +289,17 @@ class MinecraftLanguageFilesTest {
                         is GameConfigEditorSpec.IntegerInput -> editor.unitTranslationKey?.let(::add)
                         is GameConfigEditorSpec.SingleChoice -> {
                             assertEquals(
-                                editor.optionIds.toSet(),
-                                editor.optionTranslationKeys.keys,
-                                "Every built-in choice must explicitly provide a translation: ${field.id}",
+                                expected = editor.optionIds.toSet(),
+                                actual = editor.optionTranslationKeys.keys,
+                                message = "Every built-in choice must explicitly provide a translation: ${field.id}",
                             )
                             editor.optionTranslationKeys.values.forEach(::add)
                         }
                         is GameConfigEditorSpec.MultiChoice -> {
                             assertEquals(
-                                editor.optionIds.toSet(),
-                                editor.optionTranslationKeys.keys,
-                                "Every built-in multi-choice must explicitly provide a translation: ${field.id}",
+                                expected = editor.optionIds.toSet(),
+                                actual = editor.optionTranslationKeys.keys,
+                                message = "Every built-in multi-choice must explicitly provide a translation: ${field.id}",
                             )
                             editor.optionTranslationKeys.values.forEach(::add)
                             editor.optionDescriptionTranslationKeys.values.forEach(::add)

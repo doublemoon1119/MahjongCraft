@@ -217,10 +217,10 @@ class DtoRoundTripTest {
         val riichiPlayer = FakeMahjongPlayerFactory.create(
             hand = Hand(tiles = listOf(redFive(Tile.Suit.Character))),
             discardPile = RiichiDiscardPile(
-                listOf(DiscardEntry(tile = IdentifiedTile(Uuid.random(), Tile.Honor.East), components = RiichiDiscardComponents.declaration())),
+                _entries = listOf(DiscardEntry(tile = IdentifiedTile(Uuid.random(), Tile.Honor.East), components = RiichiDiscardComponents.declaration())),
             ),
             components = ComponentSet.EMPTY.with(RiichiPlayerComponents.PAO_LIABILITY, RiichiPaoLiability(RiichiPaoYaku.Daisuushii, RelativeDirection.Across)).merge(
-                riichiDeclarationComponents(
+                higher = riichiDeclarationComponents(
                     declarationTile = IdentifiedTile(Uuid.random(), Tile.Honor.East),
                     isIppatsu = true,
                 ),
@@ -232,7 +232,7 @@ class DtoRoundTripTest {
             config = RiichiRuleConfig(),
             tileWall = TileWall(listOf(wallTile)),
             physicalWallLayout = TileWallPhysicalLayout(
-                mapOf(wallTile.id to TileWallPlacement(TileWallPosition(2, 4, 1))),
+                placements = mapOf(wallTile.id to TileWallPlacement(TileWallPosition(2, 4, 1))),
             ),
             components = riichiTableComponents(
                 potPoints = 2000,
@@ -319,7 +319,7 @@ class DtoRoundTripTest {
         val taiwanPlayer = FakeMahjongPlayerFactory.create(
             hand = Hand(tiles = TaiwanTileTypes.createAll().map { IdentifiedTile(Uuid.random(), it) }),
             discardPile = TaiwanDiscardPile(
-                listOf(DiscardPile.DiscardEntry(IdentifiedTile(Uuid.random(), Tile.Numeric(Tile.Suit.Dot, 3)))),
+                _entries = listOf(DiscardPile.DiscardEntry(IdentifiedTile(Uuid.random(), Tile.Numeric(Tile.Suit.Dot, 3)))),
             ),
         )
         val tableState = FakeTableStateFactory.create(
@@ -425,7 +425,7 @@ class DtoRoundTripTest {
             handReadinessAnalysis = HandReadinessAnalysisDto(
                 ruleModuleId = "mahjongcraft:riichi",
                 waitingTiles = listOf(
-                    WaitingTileAvailabilityDto(
+                    element = WaitingTileAvailabilityDto(
                         tile = TileDto.Numeric(SuitDto.CHARACTER, 1),
                         remainingCount = 2,
                         winAvailability = WaitingTileAvailabilityIds.WIN_AVAILABLE,

@@ -65,7 +65,7 @@ fun GameActionPersistenceDto.toDomain(
     GameActionPersistenceDto.RoundStarted -> GameAction.RoundStarted
     GameActionPersistenceDto.MatchEnded -> GameAction.MatchEnded
     is GameActionPersistenceDto.DiceRolled -> GameAction.DiceRolled(
-        OpeningDiceRoll(rollIndex, Uuid.parse(playerId), DiceRollResult.of(dice)),
+        roll = OpeningDiceRoll(rollIndex, Uuid.parse(playerId), DiceRollResult.of(dice)),
     )
     GameActionPersistenceDto.Draw -> GameAction.Draw
     is GameActionPersistenceDto.Discard -> GameAction.Discard(Uuid.parse(tileId))

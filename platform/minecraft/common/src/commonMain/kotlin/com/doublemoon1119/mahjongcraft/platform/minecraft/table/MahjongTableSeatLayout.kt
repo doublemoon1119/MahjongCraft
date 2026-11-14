@@ -57,18 +57,18 @@ class MahjongTableSeatLayout private constructor(
         /** 建立指定玩家人數的固定標準座位布局。 */
         private fun createLayout(playerCount: Int): MahjongTableSeatLayout = when (playerCount) {
             2 -> MahjongTableSeatLayout(
-                playerCount,
-                listOf(MahjongTableSide.SOUTH, MahjongTableSide.NORTH),
+                playerCount = playerCount,
+                seatSides = listOf(MahjongTableSide.SOUTH, MahjongTableSide.NORTH),
             )
 
             3 -> MahjongTableSeatLayout(
-                playerCount,
-                listOf(MahjongTableSide.SOUTH, MahjongTableSide.EAST, MahjongTableSide.NORTH),
+                playerCount = playerCount,
+                seatSides = listOf(MahjongTableSide.SOUTH, MahjongTableSide.EAST, MahjongTableSide.NORTH),
             )
 
             4 -> MahjongTableSeatLayout(
-                playerCount,
-                listOf(
+                playerCount = playerCount,
+                seatSides = listOf(
                     MahjongTableSide.SOUTH,
                     MahjongTableSide.EAST,
                     MahjongTableSide.NORTH,

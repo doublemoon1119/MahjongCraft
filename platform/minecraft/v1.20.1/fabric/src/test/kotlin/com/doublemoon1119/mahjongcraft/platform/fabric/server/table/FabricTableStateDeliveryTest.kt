@@ -65,7 +65,7 @@ class FabricTableStateDeliveryTest {
         var releasePreparation = false
 
         val job = async {
-            fixture.delivery.prepareAndSend(ticket, {
+            fixture.delivery.prepareAndSend(ticket = ticket, prepare = {
                 while (!releasePreparation) yield()
                 "old"
             }) { sent += it }

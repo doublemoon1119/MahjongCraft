@@ -97,9 +97,9 @@ class DiceRollAnimation(
         seed: Long,
         elapsedTicks: Double,
         startOffset: DiceAnimationVector = DiceAnimationVector(
-            spec.startOffsetX,
-            spec.startOffsetY,
-            spec.startOffsetZ,
+            x = spec.startOffsetX,
+            y = spec.startOffsetY,
+            z = spec.startOffsetZ,
         ),
     ): DiceRollAnimationFrame {
         val progress = (elapsedTicks / spec.durationTicks).coerceIn(0.0, 1.0)
@@ -176,16 +176,16 @@ class DiceRollAnimation(
         spinTurns: Double,
     ): DiceAnimationQuaternion {
         val settleStartRotation = DiceAnimationQuaternion.fromAxisAngle(
-            spinAxis,
-            spinTurns * FULL_ROTATION_RADIANS * ROTATION_SETTLE_START,
+            axis = spinAxis,
+            angleRadians = spinTurns * FULL_ROTATION_RADIANS * ROTATION_SETTLE_START,
         )
         if (progress >= ROTATION_SETTLE_START) {
             val settleProgress = (progress - ROTATION_SETTLE_START) / (1.0 - ROTATION_SETTLE_START)
             return settleStartRotation.slerp(DiceAnimationQuaternion.IDENTITY, smoothStep(settleProgress))
         }
         return DiceAnimationQuaternion.fromAxisAngle(
-            spinAxis,
-            spinTurns * FULL_ROTATION_RADIANS * progress,
+            axis = spinAxis,
+            angleRadians = spinTurns * FULL_ROTATION_RADIANS * progress,
         )
     }
 
@@ -199,7 +199,7 @@ class DiceRollAnimation(
      * @return 此進度的彈跳高度。
      */
     private fun bounceHeight(progress: Double, start: Double, end: Double, height: Double): Double = sin(
-        PI * ((progress - start) / (end - start)),
+        x = PI * ((progress - start) / (end - start)),
     ) * height
 
     /**

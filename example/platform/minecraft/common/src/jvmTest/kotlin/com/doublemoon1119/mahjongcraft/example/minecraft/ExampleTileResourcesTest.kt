@@ -124,7 +124,7 @@ class ExampleTileResourcesTest {
      * @return JSON 物件。
      */
     private fun readJson(path: String): JsonObject = Json.parseToJsonElement(
-        checkNotNull(javaClass.getResourceAsStream(path)) { "Missing resource: $path" }.bufferedReader().use { it.readText() },
+        string = checkNotNull(javaClass.getResourceAsStream(path)) { "Missing resource: $path" }.bufferedReader().use { it.readText() },
     ).jsonObject
 
     /**

@@ -137,7 +137,7 @@ class SqliteHistoryRetentionDatabaseTest {
         val second = "00000000-0000-0000-0000-000000000109"
         database.appendPendingBatch(listOf(pending(first), pending(second)))
         database.recordTerminals(
-            listOf(
+            terminals = listOf(
                 HistoryTerminalRecord(first, "table", 1100L, false),
                 HistoryTerminalRecord(second, "table", 1100L, false),
             ),
@@ -167,10 +167,10 @@ class SqliteHistoryRetentionDatabaseTest {
         val matchId = "00000000-0000-0000-0000-000000000105"
         database.appendPending(pending(matchId))
         database.archive(
-            HistoryArchiveRecord(
-                matchId, "table", "rule", null, 100L, 200L,
-                listOf(HistoryParticipantRecord(0, "player", null)),
-                listOf(HistoryRoundRecord(1, 100L, 200L)), "{}",
+            record = HistoryArchiveRecord(
+                matchId = matchId, tableId = "table", ruleId = "rule", dimensionId = null, startedAtEpochMillis = 100L, endedAtEpochMillis = 200L,
+                participants = listOf(HistoryParticipantRecord(0, "player", null)),
+                rounds = listOf(HistoryRoundRecord(1, 100L, 200L)), replayPayload = "{}",
             ),
         )
         database.recordTerminals(listOf(HistoryTerminalRecord(matchId, "table", 200L, true)))

@@ -108,7 +108,7 @@ class MinecraftPresentationRegistries(
      * @return 各 registry 分類及當前註冊 key 的快照。
      */
     fun registrationSnapshot(): MinecraftPresentationRegistrationSnapshot = MinecraftPresentationRegistrationSnapshot(
-        listOf(
+        categories = listOf(
             snapshotCategory(MinecraftExtensionRegistrationCategoryIds.AI_CHARACTER, "AI Character", aiCharacterRegistry.registrationKeys),
             snapshotCategory(MinecraftExtensionRegistrationCategoryIds.TILE_ASSET, "Tile Asset", tileAssetRegistry.registrationKeys),
             snapshotCategory(MinecraftExtensionRegistrationCategoryIds.TILE_SET_APPEARANCE, "Tile Set Appearance", tileAssetRegistry.appearanceRegistrationKeys),
@@ -191,7 +191,7 @@ private fun snapshotCategory(
     displayName: String,
     registrationKeys: Iterable<String>,
 ): MinecraftPresentationRegistrationSnapshotCategory = MinecraftPresentationRegistrationSnapshotCategory(
-    id,
-    displayName,
-    registrationKeys.toSet(),
+    id = id,
+    displayName = displayName,
+    registrationKeys = registrationKeys.toSet(),
 )

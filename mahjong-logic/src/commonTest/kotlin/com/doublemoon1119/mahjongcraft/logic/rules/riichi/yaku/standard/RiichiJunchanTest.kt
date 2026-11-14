@@ -28,7 +28,7 @@ class RiichiJunchanTest : RiichiHandValueCalculatorTestBase() {
         // 所有面子和雀頭都包含老頭牌，無字牌
         // 門前清：3 翻
         val hand = FakeHandFactory.create(
-            listOf(
+            tiles = listOf(
                 Tile.Numeric(Tile.Suit.Character, 1),
                 Tile.Numeric(Tile.Suit.Character, 1),
                 Tile.Numeric(Tile.Suit.Character, 1),
@@ -60,7 +60,7 @@ class RiichiJunchanTest : RiichiHandValueCalculatorTestBase() {
         // 所有面子和雀頭都包含老頭牌，無字牌
         // 副露：2 翻
         val hand = FakeHandFactory.create(
-            listOf(
+            tiles = listOf(
                 Tile.Numeric(Tile.Suit.Character, 1),
                 Tile.Numeric(Tile.Suit.Character, 1),
                 Tile.Numeric(Tile.Suit.Character, 1),
@@ -73,7 +73,7 @@ class RiichiJunchanTest : RiichiHandValueCalculatorTestBase() {
                 Tile.Numeric(Tile.Suit.Bamboo, 9),
             ),
             melds = listOf(
-                FakeMeldFactory.create(
+                element = FakeMeldFactory.create(
                     type = MeldType.Pon,
                     tiles = listOf(
                         FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 9)),
@@ -98,7 +98,7 @@ class RiichiJunchanTest : RiichiHandValueCalculatorTestBase() {
     fun `test junchan with honor tiles returns null`() {
         // 手牌：含有字牌，應該是 Honchan 不是 Junchan
         val hand = FakeHandFactory.create(
-            listOf(
+            tiles = listOf(
                 Tile.Numeric(Tile.Suit.Character, 1),
                 Tile.Numeric(Tile.Suit.Character, 1),
                 Tile.Numeric(Tile.Suit.Character, 1),
@@ -111,7 +111,7 @@ class RiichiJunchanTest : RiichiHandValueCalculatorTestBase() {
                 Tile.Honor.Red,
             ),
             melds = listOf(
-                FakeMeldFactory.create(
+                element = FakeMeldFactory.create(
                     type = MeldType.Pon,
                     tiles = listOf(
                         FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 9)),

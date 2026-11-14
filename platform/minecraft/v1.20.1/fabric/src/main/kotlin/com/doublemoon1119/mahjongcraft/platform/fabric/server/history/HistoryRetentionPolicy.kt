@@ -78,10 +78,10 @@ internal data class HistoryCleanupPlan(
  * @return 設定值的不可變政策快照。
  */
 internal fun MinecraftHistoryConfig.retentionPolicy(): HistoryRetentionPolicy = HistoryRetentionPolicy(
-    includeInterruptedMatches,
-    maxMatches,
-    retention,
-    maxDiskBytes,
+    includeInterruptedMatches = includeInterruptedMatches,
+    maxMatches = maxMatches,
+    retentionDuration = retention,
+    maxDiskBytes = maxDiskBytes,
 )
 
 /**
@@ -101,7 +101,7 @@ internal fun evaluateHistoryCleanup(
 ): HistoryCleanupPlan {
     require(candidates.distinctBy { it.matchId }.size == candidates.size) { "History retention candidates must be unique" }
     val eligible = candidates.filterNot { it.matchId in protectedMatchIds }.sortedWith(
-        compareBy(HistoryRetentionCandidate::endedAtEpochMillis, HistoryRetentionCandidate::startedAtEpochMillis, HistoryRetentionCandidate::matchId),
+        comparator = compareBy(HistoryRetentionCandidate::endedAtEpochMillis, HistoryRetentionCandidate::startedAtEpochMillis, HistoryRetentionCandidate::matchId),
     )
     val removals = linkedMapOf<String, HistoryCleanupReason>()
     val retained = eligible.filter { candidate ->

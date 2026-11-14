@@ -81,8 +81,8 @@ class RiichiPhysicalWallLayoutPolicyTest {
             repeat(4) { index ->
                 val action = kanAction()
                 val supplemental = assertIs<SupplementalDrawDecision.Completed>(
-                    RiichiSupplementalDrawPolicy.resolve(
-                        SupplementalDrawContext(tableState, tableState, tableState.currentPlayer.id, action),
+                    value = RiichiSupplementalDrawPolicy.resolve(
+                        context = SupplementalDrawContext(tableState, tableState, tableState.currentPlayer.id, action),
                     ),
                 )
                 val replenishmentId = supplemental.reservedWallTiles.last().id
@@ -93,8 +93,8 @@ class RiichiPhysicalWallLayoutPolicyTest {
                     components = supplemental.tableComponents.applyTo(tableState.components, BuiltInComponentOwners.TABLE),
                 )
                 val transition = assertIs<PhysicalWallLayoutTransitionDecision.Completed>(
-                    RiichiPhysicalWallLayoutPolicy(rinshanTileCount = 4).resolveTransitionValidated(
-                        PhysicalWallLayoutTransitionContext(
+                    value = RiichiPhysicalWallLayoutPolicy(rinshanTileCount = 4).resolveTransitionValidated(
+                        context = PhysicalWallLayoutTransitionContext(
                             tableStateBeforeAction = tableState,
                             tableStateAfterAction = updatedState,
                             currentLayout = physicalLayout,
@@ -140,13 +140,13 @@ class RiichiPhysicalWallLayoutPolicyTest {
         val initialLayout = initialPhysicalLayout(wallLayout, WallOpening(0, 1))
 
         val transition = assertIs<PhysicalWallLayoutTransitionDecision.Completed>(
-            RiichiPhysicalWallLayoutPolicy(rinshanTileCount = 4).resolveTransitionValidated(
-                PhysicalWallLayoutTransitionContext(
-                    initialState,
-                    updatedState,
-                    initialLayout,
-                    initialState.currentPlayer.id,
-                    GameAction.Draw,
+            value = RiichiPhysicalWallLayoutPolicy(rinshanTileCount = 4).resolveTransitionValidated(
+                context = PhysicalWallLayoutTransitionContext(
+                    tableStateBeforeAction = initialState,
+                    tableStateAfterAction = updatedState,
+                    currentLayout = initialLayout,
+                    actorPlayerId = initialState.currentPlayer.id,
+                    action = GameAction.Draw,
                 ),
             ),
         )
@@ -168,7 +168,7 @@ class RiichiPhysicalWallLayoutPolicyTest {
         )
 
         val transition = RiichiPhysicalWallLayoutPolicy(rinshanTileCount = 4).resolveTransitionValidated(
-            PhysicalWallLayoutTransitionContext(
+            context = PhysicalWallLayoutTransitionContext(
                 tableStateBeforeAction = tableState,
                 tableStateAfterAction = tableState,
                 currentLayout = initialPhysicalLayout(wallLayout, opening),
@@ -178,8 +178,8 @@ class RiichiPhysicalWallLayoutPolicyTest {
         )
 
         assertEquals(
-            RiichiPhysicalWallLayoutPolicy.INVALID_STATE_REASON_ID,
-            assertIs<PhysicalWallLayoutTransitionDecision.Rejected>(transition).reasonId,
+            expected = RiichiPhysicalWallLayoutPolicy.INVALID_STATE_REASON_ID,
+            actual = assertIs<PhysicalWallLayoutTransitionDecision.Rejected>(transition).reasonId,
         )
     }
 
@@ -195,8 +195,8 @@ class RiichiPhysicalWallLayoutPolicyTest {
             playFourKans(opening) { stage, layout, state ->
                 val overlaps = overlappingPairs(layout, state)
                 assertTrue(
-                    overlaps.isEmpty(),
-                    "Expected no overlapping wall tiles at $stage for $opening, but found $overlaps.",
+                    actual = overlaps.isEmpty(),
+                    message = "Expected no overlapping wall tiles at $stage for $opening, but found $overlaps.",
                 )
             }
         }
@@ -218,8 +218,8 @@ class RiichiPhysicalWallLayoutPolicyTest {
             playFourKans(opening) { stage, layout, state ->
                 val gap = nearestGap(layout, state) ?: return@playFourKans
                 assertTrue(
-                    gap >= MINIMUM_GAP,
-                    "Expected at least $MINIMUM_GAP stacks of gap at $stage for $opening, but measured $gap.",
+                    actual = gap >= MINIMUM_GAP,
+                    message = "Expected at least $MINIMUM_GAP stacks of gap at $stage for $opening, but measured $gap.",
                 )
                 val expected = when {
                     previousGap == null -> gap
@@ -227,9 +227,9 @@ class RiichiPhysicalWallLayoutPolicyTest {
                     else -> previousGap!! + 1.0
                 }
                 assertEquals(
-                    expected,
-                    gap,
-                    "Expected a gap of $expected stacks at $stage for $opening, but measured $gap.",
+                    expected = expected,
+                    actual = gap,
+                    message = "Expected a gap of $expected stacks at $stage for $opening, but measured $gap.",
                 )
                 previousGap = gap
             }
@@ -264,7 +264,7 @@ class RiichiPhysicalWallLayoutPolicyTest {
                     val after = if (kan) {
                         kans++
                         val supplemental = assertIs<SupplementalDrawDecision.Completed>(
-                            RiichiSupplementalDrawPolicy.resolve(SupplementalDrawContext(tableState, tableState, tableState.currentPlayer.id, action)),
+                            value = RiichiSupplementalDrawPolicy.resolve(SupplementalDrawContext(tableState, tableState, tableState.currentPlayer.id, action)),
                         )
                         tableState.copy(
                             tileWall = supplemental.tileWall,
@@ -277,7 +277,7 @@ class RiichiPhysicalWallLayoutPolicyTest {
                     }
                     layout = when (
                         val result = policy.resolveTransitionValidated(
-                            PhysicalWallLayoutTransitionContext(
+                            context = PhysicalWallLayoutTransitionContext(
                                 tableStateBeforeAction = tableState,
                                 tableStateAfterAction = after,
                                 currentLayout = layout,
@@ -357,8 +357,8 @@ class RiichiPhysicalWallLayoutPolicyTest {
         repeat(4) { index ->
             val action = kanAction()
             val supplemental = assertIs<SupplementalDrawDecision.Completed>(
-                RiichiSupplementalDrawPolicy.resolve(
-                    SupplementalDrawContext(tableState, tableState, tableState.currentPlayer.id, action),
+                value = RiichiSupplementalDrawPolicy.resolve(
+                    context = SupplementalDrawContext(tableState, tableState, tableState.currentPlayer.id, action),
                 ),
             )
             val updatedState = tableState.copy(
@@ -367,8 +367,8 @@ class RiichiPhysicalWallLayoutPolicyTest {
                 components = supplemental.tableComponents.applyTo(tableState.components, BuiltInComponentOwners.TABLE),
             )
             val transition = assertIs<PhysicalWallLayoutTransitionDecision.Completed>(
-                RiichiPhysicalWallLayoutPolicy(rinshanTileCount = 4).resolveTransitionValidated(
-                    PhysicalWallLayoutTransitionContext(
+                value = RiichiPhysicalWallLayoutPolicy(rinshanTileCount = 4).resolveTransitionValidated(
+                    context = PhysicalWallLayoutTransitionContext(
                         tableStateBeforeAction = tableState,
                         tableStateAfterAction = updatedState,
                         currentLayout = layout,
@@ -456,8 +456,8 @@ class RiichiPhysicalWallLayoutPolicyTest {
      * @return 由指定開門位置排出的牌牆。
      */
     private fun createWallLayout(opening: WallOpening): TileWallLayoutResult = RiichiWallLayout(RiichiRuleConfig()).resolve(
-        List(136) { FakeIdentifiedTileFactory.create(Tile.Honor.East) },
-        opening,
+        shuffledTiles = List(136) { FakeIdentifiedTileFactory.create(Tile.Honor.East) },
+        opening = opening,
     )
 
     /**
@@ -471,11 +471,11 @@ class RiichiPhysicalWallLayoutPolicyTest {
         wallLayout: TileWallLayoutResult,
         opening: WallOpening,
     ): TileWallPhysicalLayout = assertIs<InitialPhysicalWallLayoutDecision.Completed>(
-        RiichiPhysicalWallLayoutPolicy(rinshanTileCount = 4).createInitialLayoutValidated(
-            InitialPhysicalWallLayoutContext(
-                wallLayout,
-                opening,
-                (wallLayout.drawOrder.drop(INITIAL_DEAL_TILE_COUNT) + wallLayout.reservedWallTiles)
+        value = RiichiPhysicalWallLayoutPolicy(rinshanTileCount = 4).createInitialLayoutValidated(
+            context = InitialPhysicalWallLayoutContext(
+                wallLayout = wallLayout,
+                wallOpening = opening,
+                occupiedTileIds = (wallLayout.drawOrder.drop(INITIAL_DEAL_TILE_COUNT) + wallLayout.reservedWallTiles)
                     .mapTo(mutableSetOf()) { it.id },
             ),
         ),

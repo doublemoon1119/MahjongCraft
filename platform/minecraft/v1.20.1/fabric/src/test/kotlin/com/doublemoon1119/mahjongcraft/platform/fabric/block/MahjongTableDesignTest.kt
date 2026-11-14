@@ -46,8 +46,8 @@ class MahjongTableDesignTest {
             MahjongTablePart.entries.filter { part -> part != MahjongTablePart.TOP_CENTER }.forEach { part ->
                 Direction.Type.HORIZONTAL.forEach { facing ->
                     assertEquals(
-                        design.collisionShape(part, facing).boundingBoxes,
-                        design.outlineShape(part, facing).boundingBoxes,
+                        expected = design.collisionShape(part, facing).boundingBoxes,
+                        actual = design.outlineShape(part, facing).boundingBoxes,
                     )
                 }
             }

@@ -75,8 +75,8 @@ class UpdatePlayerAutomaticControlsUseCaseTest {
         val enabledIds = setOf(BuiltInAutomaticControlIds.AUTO_WIN, BuiltInAutomaticControlIds.AUTO_TSUMOGIRI)
 
         val result = fixtures.useCase(
-            game.id,
-            playerId,
+            gameId = game.id,
+            playerId = playerId,
             expectedRevision = 4L,
             enabledControlIds = enabledIds,
         )
@@ -98,8 +98,8 @@ class UpdatePlayerAutomaticControlsUseCaseTest {
         val (game, playerId) = fixtures.createGame(3L, enabledIds)
 
         val result = fixtures.useCase(
-            game.id,
-            playerId,
+            gameId = game.id,
+            playerId = playerId,
             expectedRevision = 3L,
             enabledControlIds = enabledIds,
         )
@@ -118,8 +118,8 @@ class UpdatePlayerAutomaticControlsUseCaseTest {
         val (game, playerId) = fixtures.createGame(7L, currentIds)
 
         val result = fixtures.useCase(
-            game.id,
-            playerId,
+            gameId = game.id,
+            playerId = playerId,
             expectedRevision = 6L,
             enabledControlIds = setOf(BuiltInAutomaticControlIds.AUTO_TSUMOGIRI),
         )
@@ -177,13 +177,13 @@ class UpdatePlayerAutomaticControlsUseCaseTest {
         val secondPlayerId = game.tableState.players.first { it.id != firstPlayerId }.id
 
         val first = assertIs<UpdatePlayerAutomaticControlsResult.Accepted>(
-            fixtures.useCase(game.id, firstPlayerId, 0L, setOf(BuiltInAutomaticControlIds.AUTO_WIN)),
+            value = fixtures.useCase(game.id, firstPlayerId, 0L, setOf(BuiltInAutomaticControlIds.AUTO_WIN)),
         )
         val second = assertIs<UpdatePlayerAutomaticControlsResult.Accepted>(
-            fixtures.useCase(game.id, secondPlayerId, 1L, setOf(BuiltInAutomaticControlIds.DECLINE_CALLS)),
+            value = fixtures.useCase(game.id, secondPlayerId, 1L, setOf(BuiltInAutomaticControlIds.DECLINE_CALLS)),
         )
         val firstNoOp = assertIs<UpdatePlayerAutomaticControlsResult.Accepted>(
-            fixtures.useCase(game.id, firstPlayerId, 2L, setOf(BuiltInAutomaticControlIds.AUTO_WIN)),
+            value = fixtures.useCase(game.id, firstPlayerId, 2L, setOf(BuiltInAutomaticControlIds.AUTO_WIN)),
         )
 
         assertEquals(setOf(BuiltInAutomaticControlIds.AUTO_WIN), first.snapshot.enabledControlIds)
@@ -198,15 +198,15 @@ class UpdatePlayerAutomaticControlsUseCaseTest {
         val fixtures = Fixtures()
         val missing = fixtures.useCase(Uuid.random(), Uuid.random(), 0L, emptySet())
         assertEquals(
-            AutomaticControlUpdateUnavailableReason.GAME_NOT_FOUND,
-            assertIs<UpdatePlayerAutomaticControlsResult.Unavailable>(missing).reason,
+            expected = AutomaticControlUpdateUnavailableReason.GAME_NOT_FOUND,
+            actual = assertIs<UpdatePlayerAutomaticControlsResult.Unavailable>(missing).reason,
         )
 
         val (finishedGame, playerId) = fixtures.createGame(isMatchOver = true)
         val finished = fixtures.useCase(finishedGame.id, playerId, 0L, emptySet())
         assertEquals(
-            AutomaticControlUpdateUnavailableReason.MATCH_OVER,
-            assertIs<UpdatePlayerAutomaticControlsResult.Unavailable>(finished).reason,
+            expected = AutomaticControlUpdateUnavailableReason.MATCH_OVER,
+            actual = assertIs<UpdatePlayerAutomaticControlsResult.Unavailable>(finished).reason,
         )
     }
 }

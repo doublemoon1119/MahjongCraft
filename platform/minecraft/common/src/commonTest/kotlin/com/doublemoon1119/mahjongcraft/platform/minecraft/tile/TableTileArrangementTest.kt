@@ -33,7 +33,7 @@ class TableTileArrangementTest {
         val arrangement = TableTileArrangement.arrange(input(state))
 
         val area = MahjongPlayerAreaLayout.compute(
-            MahjongPlayerAreaLayoutInput(
+            input = MahjongPlayerAreaLayoutInput(
                 controllerX = 0,
                 controllerY = 64,
                 controllerZ = 0,

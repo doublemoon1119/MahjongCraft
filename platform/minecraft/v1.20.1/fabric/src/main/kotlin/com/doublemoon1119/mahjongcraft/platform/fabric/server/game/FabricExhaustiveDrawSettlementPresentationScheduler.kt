@@ -116,8 +116,8 @@ class FabricExhaustiveDrawSettlementPresentationScheduler(
                 }
                 if (!revealsHand) {
                     TileAnimationSteps.scheduleConceal(
-                        tile,
-                        startGameTime + HAND_LAYDOWN_START_TICK,
+                        tile = tile,
+                        startGameTime = startGameTime + HAND_LAYDOWN_START_TICK,
                         playGroupSound = orderIndex == tileIds.size / 2,
                     )
                 }

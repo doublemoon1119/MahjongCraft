@@ -35,10 +35,10 @@ class MahjongDiceTableLayoutTest {
     fun `total animation time includes shared result presentation`() {
         listOf(2, 3).forEach { diceCount ->
             assertEquals(
-                MahjongDiceTableLayout.maxStartDelayTicks(diceCount) +
+                expected = MahjongDiceTableLayout.maxStartDelayTicks(diceCount) +
                     DiceRollAnimationSpec.DEFAULT_DURATION_TICKS +
                     DiceRollAnimationSpec.EXTRA_VIEWING_TICKS,
-                MahjongDiceTableLayout.totalAnimationTicks(diceCount),
+                actual = MahjongDiceTableLayout.totalAnimationTicks(diceCount),
             )
         }
         assertEquals(40, DiceRollAnimationSpec.EXTRA_VIEWING_TICKS)

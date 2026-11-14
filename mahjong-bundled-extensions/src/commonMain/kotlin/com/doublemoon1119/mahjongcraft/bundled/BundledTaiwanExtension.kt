@@ -155,7 +155,7 @@ object BundledTaiwanExtension : MahjongExtension {
 
     override fun registerNetworkDtos(registries: NetworkDtoRegistrars) {
         registries.componentViews.register(
-            ComponentViewNetworkDefinition(
+            definition = ComponentViewNetworkDefinition(
                 viewType = TaiwanPlayerComponentViews.READY_DECLARATION,
                 dtoClass = TaiwanReadyDeclarationViewDto::class,
                 serializer = TaiwanReadyDeclarationViewDto.serializer(),
@@ -164,7 +164,7 @@ object BundledTaiwanExtension : MahjongExtension {
             ),
         )
         registries.componentViews.register(
-            ComponentViewNetworkDefinition(
+            definition = ComponentViewNetworkDefinition(
                 viewType = TaiwanPlayerComponentViews.PASSED_WIN,
                 dtoClass = TaiwanPassedWinViewDto::class,
                 serializer = TaiwanPassedWinViewDto.serializer(),
@@ -293,7 +293,7 @@ object BundledTaiwanExtension : MahjongExtension {
 
     override fun registerPersistenceDtos(registries: PersistenceRegistrars) {
         registries.components.register(
-            ComponentPersistenceDefinition(
+            definition = ComponentPersistenceDefinition(
                 component = TaiwanPlayerComponents.READY_DECLARATION,
                 serializer = TaiwanReadyDeclarationPersistenceDto.serializer(),
                 toDto = { it.toPersistenceDto() },
@@ -301,7 +301,7 @@ object BundledTaiwanExtension : MahjongExtension {
             ),
         )
         registries.components.register(
-            ComponentPersistenceDefinition(
+            definition = ComponentPersistenceDefinition(
                 component = TaiwanPlayerComponents.PAO_LIABILITY,
                 serializer = TaiwanPaoLiabilityPersistenceDto.serializer(),
                 toDto = { it.toPersistenceDto() },
@@ -309,7 +309,7 @@ object BundledTaiwanExtension : MahjongExtension {
             ),
         )
         registries.components.register(
-            ComponentPersistenceDefinition(
+            definition = ComponentPersistenceDefinition(
                 component = TaiwanPlayerComponents.PASSED_WIN,
                 serializer = ComponentUnitPersistenceDto.serializer(),
                 toDto = { ComponentUnitPersistenceDto },
@@ -335,7 +335,7 @@ object BundledTaiwanExtension : MahjongExtension {
             ),
         )
         registries.components.register(
-            ComponentPersistenceDefinition(
+            definition = ComponentPersistenceDefinition(
                 component = TaiwanTableComponents.PENDING_FLOWER_FOLLOW_UP,
                 serializer = TaiwanPendingFlowerFollowUpPersistenceDto.serializer(),
                 toDto = { it.toPersistenceDto() },

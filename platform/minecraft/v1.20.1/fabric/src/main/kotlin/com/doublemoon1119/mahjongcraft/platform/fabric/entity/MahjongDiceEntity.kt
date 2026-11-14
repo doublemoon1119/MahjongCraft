@@ -138,11 +138,11 @@ class MahjongDiceEntity(
             require(sharedEnd >= naturalViewingEndGameTime) { "Shared dice viewing end must not shorten the presentation" }
         } ?: naturalViewingEndGameTime
         enqueueAll(
-            buildList {
+            steps = buildList {
                 DiceRollAnimationSpec().landingSoundCues(seed).forEach { cue ->
                     val playAtGameTime = rollStartGameTime + cue.tickOffset
                     add(
-                        AnimationStep.PlaySound(
+                        element = AnimationStep.PlaySound(
                             soundId = MahjongAnimationSounds.DICE_LAND,
                             volume = cue.volume,
                             pitch = cue.pitch,
@@ -152,7 +152,7 @@ class MahjongDiceEntity(
                     )
                 }
                 addAll(
-                    listOf(
+                    elements = listOf(
                         AnimationStep.SetInvisible(true),
                         AnimationStep.WaitUntil(rollStartGameTime),
                         AnimationStep.SetInvisible(false),

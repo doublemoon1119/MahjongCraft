@@ -25,13 +25,13 @@ class HistoryWinningHandProjectionTest {
     @Test
     fun `compact win details project shared external winning tile`() {
         val details = JsonArray(
-            listOf(
+            content = listOf(
                 winner(0, listOf(2, 0), 1),
                 winner(1, listOf(3, 4), 1),
             ),
         )
         val fact = JsonObject(
-            mapOf(
+            content = mapOf(
                 ReplaySourceKeys.TYPE to JsonPrimitive(HistoryFactTypeKeys.WIN_SETTLED),
                 ReplaySourceKeys.OUTCOME_ID to JsonPrimitive("test:ron"),
                 ReplaySourceKeys.RESPONSIBLE_PLAYER_IDS to JsonArray(listOf(JsonPrimitive(2))),
@@ -41,13 +41,13 @@ class HistoryWinningHandProjectionTest {
         val encoded = CompactFactCodec.encode(fact, linkedMapOf(), linkedMapOf())
         val restored = CompactFactCodec.decode(encoded, listOf(HistoryFactTypeKeys.WIN_SETTLED), emptyList())
         val projected = HistoryReplayProjectionMapper.mapFacts(
-            listOf(restored),
-            listOf(null),
-            identity(3),
-            1,
-            catalog(5),
-            budget(),
-            ComponentViewPersistenceRegistry(),
+            facts = listOf(restored),
+            actorSeats = listOf(null),
+            identity = identity(3),
+            roundNumber = 1,
+            tileCatalog = catalog(5),
+            budget = budget(),
+            componentViews = ComponentViewPersistenceRegistry(),
         ).single()
         val completion = assertIs<HistoryReplayFact.Completion>(projected)
         val winners = completion.outcome?.winnerDetails.orEmpty()
@@ -62,7 +62,7 @@ class HistoryWinningHandProjectionTest {
     @Test
     fun `compact win details preserve absent winning hand`() {
         val fact = JsonObject(
-            mapOf(
+            content = mapOf(
                 ReplaySourceKeys.TYPE to JsonPrimitive(HistoryFactTypeKeys.WIN_SETTLED),
                 ReplaySourceKeys.OUTCOME_ID to JsonPrimitive("test:ron"),
                 ReplaySourceKeys.RESPONSIBLE_PLAYER_IDS to JsonArray(emptyList()),
@@ -99,9 +99,9 @@ class HistoryWinningHandProjectionTest {
      * @return 與事實座位索引相符的對局身分。
      */
     private fun identity(count: Int) = HistoryReplayIdentity(
-        Uuid.parse("00000000-0000-0000-0000-000000000001"),
-        Uuid.parse("00000000-0000-0000-0000-000000000002"),
-        List(count) { HistoryReplayPlayerIdentity(it, Uuid.random(), null) },
+        matchId = Uuid.parse("00000000-0000-0000-0000-000000000001"),
+        venueId = Uuid.parse("00000000-0000-0000-0000-000000000002"),
+        players = List(count) { HistoryReplayPlayerIdentity(it, Uuid.random(), null) },
     )
 
     /**
@@ -113,14 +113,14 @@ class HistoryWinningHandProjectionTest {
      * @return 可交給精簡事實 codec 的贏家 JSON。
      */
     private fun winner(seat: Int, standing: List<Int>?, winning: Int?): JsonObject = JsonObject(
-        buildMap {
+        content = buildMap {
             put(ReplaySourceKeys.PLAYER_ID, JsonPrimitive(seat))
             put(ReplaySourceKeys.DETAIL_FIELDS, JsonArray(emptyList()))
             if (standing != null) {
                 put(
-                    ReplaySourceKeys.WINNING_HAND,
-                    JsonObject(
-                        mapOf(
+                    key = ReplaySourceKeys.WINNING_HAND,
+                    value = JsonObject(
+                        content = mapOf(
                             ReplaySourceKeys.WINNING_STANDING_TILES to JsonArray(standing.map(::JsonPrimitive)),
                             ReplaySourceKeys.WINNING_TILE to (winning?.let(::JsonPrimitive) ?: JsonNull),
                         ),

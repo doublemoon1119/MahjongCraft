@@ -32,7 +32,7 @@ class GameDecisionAvailabilityServiceTest {
         val game = Game(
             tableState = FakeTableStateFactory.create(
                 players = listOf(
-                    FakeMahjongPlayerFactory.create(
+                    element = FakeMahjongPlayerFactory.create(
                         id = playerId,
                         hand = FakeHandFactory.create(lastDrawn = Tile.Honor.East),
                     ),
@@ -42,17 +42,17 @@ class GameDecisionAvailabilityServiceTest {
         )
         repository.setGame(game)
         val timerManager = GameDecisionTimerManager(
-            repository,
-            GameDecisionAuthorityResolver(),
-            PlayerDecisionTimerFactory(clock),
-            clock,
+            gameRepository = repository,
+            authorityResolver = GameDecisionAuthorityResolver(),
+            timerFactory = PlayerDecisionTimerFactory(clock),
+            clock = clock,
         )
         val publisher = FakeDecisionTimerUpdatePublisher()
         val busyGate = FakeGamePresentationBusyGate()
         val service = GameDecisionAvailabilityService(
-            busyGate,
-            timerManager,
-            DecisionTimerSynchronizationService(timerManager, repository, publisher),
+            busyGate = busyGate,
+            timerManager = timerManager,
+            synchronizationService = DecisionTimerSynchronizationService(timerManager, repository, publisher),
         )
         assertTrue(service.reconcile(game.id))
         clock.now = 2_000.milliseconds

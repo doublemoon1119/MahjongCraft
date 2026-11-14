@@ -91,7 +91,7 @@ object TaiwanFlowerReplacement {
             val config = tableState.config as? TaiwanRuleConfig
                 ?: error("Taiwan flower replacement requires Taiwan rule config")
             val decision = TaiwanPhysicalWallLayoutPolicy(config).resolveSupplementalTransition(
-                PhysicalWallLayoutTransitionContext(
+                context = PhysicalWallLayoutTransitionContext(
                     tableStateBeforeAction = tableState,
                     tableStateAfterAction = result.copy(physicalWallLayout = null),
                     currentLayout = currentLayout,

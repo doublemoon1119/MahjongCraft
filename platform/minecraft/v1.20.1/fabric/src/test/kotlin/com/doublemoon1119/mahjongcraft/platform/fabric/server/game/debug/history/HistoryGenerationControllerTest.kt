@@ -53,8 +53,8 @@ class HistoryGenerationControllerTest {
                 dispatchers = TestDispatchers,
             )
             assertEquals(
-                HistoryGenerationStartResult.PolicyRejected,
-                controller.start("mahjongcraft:riichi/history_scenario/east", 1),
+                expected = HistoryGenerationStartResult.PolicyRejected,
+                actual = controller.start("mahjongcraft:riichi/history_scenario/east", 1),
             )
             assertTrue(controller.snapshot() == null)
         } finally {

@@ -172,7 +172,7 @@ class MahjongScoringStickEntity(
     fun enqueueDropAnimation() {
         check(!world.isClient) { "Scoring stick drop animation must be started by the server" }
         enqueue(
-            AnimationStep.PlayMotion(
+            step = AnimationStep.PlayMotion(
                 durationTicks = DROP_DURATION_TICKS,
                 arcHeight = 0.0,
                 startOffsetX = 0.0,

@@ -33,19 +33,19 @@ class MahjongTileTableLayoutTest {
     fun `wall size comes from the rule without an opening record`() {
         assertEquals(17, MahjongTileTableLayout.wallStacksPerSide(RiichiRuleModule(BuiltInRuleModuleIds.RIICHI, RiichiRuleConfig()), 4))
         assertEquals(
-            18,
-            MahjongTileTableLayout.wallStacksPerSide(
-                ThreePlayerRiichiRuleModule(BuiltInRuleModuleIds.RIICHI_THREE_PLAYER, ThreePlayerRiichiRuleConfig()),
-                3,
+            expected = 18,
+            actual = MahjongTileTableLayout.wallStacksPerSide(
+                module = ThreePlayerRiichiRuleModule(BuiltInRuleModuleIds.RIICHI_THREE_PLAYER, ThreePlayerRiichiRuleConfig()),
+                playerCount = 3,
             ),
         )
         assertEquals(
-            18,
-            MahjongTileTableLayout.wallStacksPerSide(TaiwanRuleModule(BuiltInRuleModuleIds.TAIWAN, TaiwanRuleConfig(useFlowerTiles = true)), 4),
+            expected = 18,
+            actual = MahjongTileTableLayout.wallStacksPerSide(TaiwanRuleModule(BuiltInRuleModuleIds.TAIWAN, TaiwanRuleConfig(useFlowerTiles = true)), 4),
         )
         assertEquals(
-            17,
-            MahjongTileTableLayout.wallStacksPerSide(TaiwanRuleModule(BuiltInRuleModuleIds.TAIWAN, TaiwanRuleConfig(useFlowerTiles = false)), 4),
+            expected = 17,
+            actual = MahjongTileTableLayout.wallStacksPerSide(TaiwanRuleModule(BuiltInRuleModuleIds.TAIWAN, TaiwanRuleConfig(useFlowerTiles = false)), 4),
         )
     }
 
@@ -233,9 +233,9 @@ class MahjongTileTableLayoutTest {
                             )
                             val distance = hypot(placement.x - centerX, placement.z - centerZ)
                             assertEquals(
-                                true,
-                                distance > minimumClearDistance,
-                                "Short wall placement $placement must clear the central dice area",
+                                expected = true,
+                                actual = distance > minimumClearDistance,
+                                message = "Short wall placement $placement must clear the central dice area",
                             )
                         }
                     }
@@ -328,8 +328,8 @@ class MahjongTileTableLayoutTest {
                     wallPlacement(
                         tableFacing = facing,
                         placement = TileWallPlacement(
-                            TileWallPosition(side, stack, 0),
-                            TileWallPlacementOffset(alongWallStacks = 0.25),
+                            position = TileWallPosition(side, stack, 0),
+                            offset = TileWallPlacementOffset(alongWallStacks = 0.25),
                         ),
                     )
                 }
@@ -381,9 +381,9 @@ class MahjongTileTableLayoutTest {
         )
 
         assertEquals(
-            MahjongTileDimensions.TILE_DEPTH + MahjongTileDimensions.TILE_SMALL_PADDING,
-            shifted.y - base.y,
-            ABSOLUTE_TOLERANCE,
+            expected = MahjongTileDimensions.TILE_DEPTH + MahjongTileDimensions.TILE_SMALL_PADDING,
+            actual = shifted.y - base.y,
+            absoluteTolerance = ABSOLUTE_TOLERANCE,
         )
     }
 
@@ -417,17 +417,17 @@ class MahjongTileTableLayoutTest {
             val shifted = wallPlacement(
                 tableFacing = facing,
                 placement = TileWallPlacement(
-                    position,
-                    TileWallPlacementOffset(towardTableCenterTiles = 0.5, upwardLayers = 0.5),
+                    position = position,
+                    offset = TileWallPlacementOffset(towardTableCenterTiles = 0.5, upwardLayers = 0.5),
                 ),
             )
             val horizontalDistance = hypot(shifted.x - base.x, shifted.z - base.z)
 
             assertEquals(MahjongTileDimensions.TILE_HEIGHT * 0.5, horizontalDistance, ABSOLUTE_TOLERANCE)
             assertEquals(
-                (MahjongTileDimensions.TILE_DEPTH + MahjongTileDimensions.TILE_SMALL_PADDING) * 0.5,
-                shifted.y - base.y,
-                ABSOLUTE_TOLERANCE,
+                expected = (MahjongTileDimensions.TILE_DEPTH + MahjongTileDimensions.TILE_SMALL_PADDING) * 0.5,
+                actual = shifted.y - base.y,
+                absoluteTolerance = ABSOLUTE_TOLERANCE,
             )
         }
     }
@@ -780,22 +780,22 @@ class MahjongTileTableLayoutTest {
         MahjongTableFacing.entries.forEach { facing ->
             (0..3).forEach { seat ->
                 val hand = MahjongTileTableLayout.handPlacement(
-                    0,
-                    64,
-                    0,
-                    facing,
-                    MahjongTableSeatLayout.FOUR_PLAYER,
-                    seat,
+                    controllerX = 0,
+                    controllerY = 64,
+                    controllerZ = 0,
+                    tableFacing = facing,
+                    seatLayout = MahjongTableSeatLayout.FOUR_PLAYER,
+                    seatIndex = seat,
                     handSize = 13,
                     tileIndex = 0,
                 )
                 val meld = MahjongTileTableLayout.meldPlacement(
-                    0,
-                    64,
-                    0,
-                    facing,
-                    MahjongTableSeatLayout.FOUR_PLAYER,
-                    seat,
+                    controllerX = 0,
+                    controllerY = 64,
+                    controllerZ = 0,
+                    tableFacing = facing,
+                    seatLayout = MahjongTableSeatLayout.FOUR_PLAYER,
+                    seatIndex = seat,
                     alongOffsetFromCorner = 0.1,
                     isSidewaysTile = false,
                 )

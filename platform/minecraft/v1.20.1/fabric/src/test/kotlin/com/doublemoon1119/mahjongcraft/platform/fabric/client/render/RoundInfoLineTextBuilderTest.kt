@@ -46,13 +46,13 @@ class RoundInfoLineTextBuilderTest {
             register(RoundInfoLineDisplayDefinition("thirdparty:round_info", RoundInfoLineDisplay("thirdparty.round_info.line")))
             register(RoundInfoMessageDefinition("thirdparty:exchange_enabled", "thirdparty.round_info.exchange_enabled"))
             register(
-                RoundInfoLineProviderDefinition(
-                    "thirdparty:rule",
-                    RoundInfoLineProvider {
+                definition = RoundInfoLineProviderDefinition(
+                    ruleModuleId = "thirdparty:rule",
+                    provider = RoundInfoLineProvider {
                         listOf(
-                            RoundInfoLine(
-                                "thirdparty:round_info",
-                                listOf(RoundInfoArgument.TileValue(tile), RoundInfoArgument.Message("thirdparty:exchange_enabled")),
+                            element = RoundInfoLine(
+                                key = "thirdparty:round_info",
+                                args = listOf(RoundInfoArgument.TileValue(tile), RoundInfoArgument.Message("thirdparty:exchange_enabled")),
                             ),
                         )
                     },
@@ -82,14 +82,14 @@ class RoundInfoLineTextBuilderTest {
             register(RoundInfoLineDisplayDefinition("example:line", RoundInfoLineDisplay("example.line")))
         }
         val builder = RoundInfoLineTextBuilder(
-            registry,
-            TileDisplayNameRegistryImpl(),
-            MinecraftTileAssetRegistryImpl(),
-            TileEmojiRegistryImpl(),
+            roundInfoLineDisplayRegistry = registry,
+            tileDisplayNameRegistry = TileDisplayNameRegistryImpl(),
+            tileAssetRegistry = MinecraftTileAssetRegistryImpl(),
+            tileEmojiRegistry = TileEmojiRegistryImpl(),
         ) { }
         val line = RoundInfoLine(
-            "example:line",
-            listOf(RoundInfoArgument.TileValue(Tile.Extension(TileTypeId.parse("thirdparty:unnamed")))),
+            key = "example:line",
+            args = listOf(RoundInfoArgument.TileValue(Tile.Extension(TileTypeId.parse("thirdparty:unnamed")))),
         )
 
         val content = assertIs<TranslatableTextContent>(builder.buildLineText(line).content)
@@ -105,17 +105,17 @@ class RoundInfoLineTextBuilderTest {
             register(RoundInfoMessageDefinition("example:enabled", "example.enabled"))
         }
         val builder = RoundInfoLineTextBuilder(
-            registry,
-            TileDisplayNameRegistryImpl(),
-            MinecraftTileAssetRegistryImpl(),
-            TileEmojiRegistryImpl(),
+            roundInfoLineDisplayRegistry = registry,
+            tileDisplayNameRegistry = TileDisplayNameRegistryImpl(),
+            tileAssetRegistry = MinecraftTileAssetRegistryImpl(),
+            tileEmojiRegistry = TileEmojiRegistryImpl(),
         ) { }
 
         val content = assertIs<TranslatableTextContent>(
-            builder.buildLineText(
-                RoundInfoLine(
-                    "example:line",
-                    listOf(
+            value = builder.buildLineText(
+                line = RoundInfoLine(
+                    key = "example:line",
+                    args = listOf(
                         RoundInfoArgument.Number(3),
                         RoundInfoArgument.WindValue(Wind.SOUTH),
                         RoundInfoArgument.Message("example:enabled"),
@@ -137,14 +137,14 @@ class RoundInfoLineTextBuilderTest {
         }
         val warnings = mutableListOf<String>()
         val builder = RoundInfoLineTextBuilder(
-            registry,
-            TileDisplayNameRegistryImpl(),
-            MinecraftTileAssetRegistryImpl(),
-            TileEmojiRegistryImpl(),
+            roundInfoLineDisplayRegistry = registry,
+            tileDisplayNameRegistry = TileDisplayNameRegistryImpl(),
+            tileAssetRegistry = MinecraftTileAssetRegistryImpl(),
+            tileEmojiRegistry = TileEmojiRegistryImpl(),
         ) { warnings += it }
         val line = RoundInfoLine(
-            "example:line",
-            listOf(
+            key = "example:line",
+            args = listOf(
                 RoundInfoArgument.Message("thirdparty:missing"),
                 RoundInfoArgument.Message("thirdparty:missing"),
                 RoundInfoArgument.Unrecognized,

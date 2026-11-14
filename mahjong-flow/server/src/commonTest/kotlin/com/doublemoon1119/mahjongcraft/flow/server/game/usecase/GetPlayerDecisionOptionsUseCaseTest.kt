@@ -50,8 +50,8 @@ class GetPlayerDecisionOptionsUseCaseTest {
 
         /** 待測的完整決策查詢 use case。 */
         val useCase = GetPlayerDecisionOptionsUseCase(
-            gameRepository,
-            AutomaticDecisionEvaluator(moduleRegistry, GameVisibilityPolicyImpl(moduleRegistry, componentRegistry = bundledCoreExtensionRegistries().componentRegistry), PlayerActionContextResolver()),
+            gameRepository = gameRepository,
+            automaticDecisionEvaluator = AutomaticDecisionEvaluator(moduleRegistry, GameVisibilityPolicyImpl(moduleRegistry, componentRegistry = bundledCoreExtensionRegistries().componentRegistry), PlayerActionContextResolver()),
         )
     }
 
@@ -79,7 +79,7 @@ class GetPlayerDecisionOptionsUseCaseTest {
             components = riichiDeclarationComponents(),
         ).copy(score = 25000)
         fixtures.gameRepository.setTableState(
-            FakeTableStateFactory.create(
+            state = FakeTableStateFactory.create(
                 id = gameId,
                 players = listOf(player),
                 config = RiichiRuleConfig(),
@@ -122,7 +122,7 @@ class GetPlayerDecisionOptionsUseCaseTest {
             components = riichiDeclarationComponents(),
         )
         fixtures.gameRepository.setTableState(
-            FakeTableStateFactory.create(
+            state = FakeTableStateFactory.create(
                 id = gameId,
                 players = listOf(discarder, respondent),
                 config = RiichiRuleConfig(),
@@ -134,8 +134,8 @@ class GetPlayerDecisionOptionsUseCaseTest {
 
         assertTrue(result is Outcome.Success)
         assertEquals(
-            listOf(GameAction.Pon(discarded.id, matchingTiles.map { it.id }), GameAction.Pass),
-            result.value.actions.map { it.action },
+            expected = listOf(GameAction.Pon(discarded.id, matchingTiles.map { it.id }), GameAction.Pass),
+            actual = result.value.actions.map { it.action },
         )
         assertTrue(result.value.discardAnalyses.isEmpty())
         assertTrue(result.value.actions.all { it.discardAnalyses.isEmpty() })
@@ -164,11 +164,11 @@ class GetPlayerDecisionOptionsUseCaseTest {
             pendingReaction = PendingReaction(discarder.id, discarded.id, setOf(respondent.id), ronPlayerIds = setOf(respondent.id), id = Uuid.random()),
         )
         fixtures.gameRepository.setGame(
-            Game(
+            game = Game(
                 tableState = state,
                 flowConfig = GameFlowConfig(),
                 enabledAutomaticControlIdsByPlayerId = mapOf(
-                    respondent.id to setOf(BuiltInAutomaticControlIds.DECLINE_CALLS),
+                    pair = respondent.id to setOf(BuiltInAutomaticControlIds.DECLINE_CALLS),
                 ),
             ),
         )
@@ -191,7 +191,7 @@ class GetPlayerDecisionOptionsUseCaseTest {
             hand = Hand(lastDrawn = drawn),
         )
         fixtures.gameRepository.setTableState(
-            FakeTableStateFactory.create(
+            state = FakeTableStateFactory.create(
                 id = gameId,
                 players = listOf(player),
                 config = TaiwanRuleConfig(),
@@ -225,7 +225,7 @@ class GetPlayerDecisionOptionsUseCaseTest {
         val player = FakeMahjongPlayerFactory.create(initialSeat = Wind.EAST)
         val missingPlayerId = Uuid.random()
         fixtures.gameRepository.setTableState(
-            FakeTableStateFactory.create(id = gameId, players = listOf(player), config = RiichiRuleConfig()),
+            state = FakeTableStateFactory.create(id = gameId, players = listOf(player), config = RiichiRuleConfig()),
         )
 
         val result = fixtures.useCase(gameId, missingPlayerId)

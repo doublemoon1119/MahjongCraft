@@ -115,9 +115,9 @@ class ExampleMinecraftResourcesTest {
             val translations = readLanguage(language)
             reference.forEach { (key, value) ->
                 assertEquals(
-                    placeholders(value),
-                    placeholders(translations.getValue(key)),
-                    "Placeholders differ for $key in $language",
+                    expected = placeholders(value),
+                    actual = placeholders(translations.getValue(key)),
+                    message = "Placeholders differ for $key in $language",
                 )
             }
         }
@@ -137,11 +137,11 @@ class ExampleMinecraftResourcesTest {
         val translations = Json.parseToJsonElement(text).jsonObject.mapValues { (_, value) -> value.jsonPrimitive.content }
         translations.keys.forEach { key ->
             assertTrue(
-                key.startsWith("mahjongcraft_example.") ||
+                actual = key.startsWith("mahjongcraft_example.") ||
                     key.startsWith("block.mahjongcraft_example.") ||
                     key.startsWith("item.mahjongcraft_example.") ||
                     key.startsWith("entity.mahjongcraft_example."),
-                "Unexpected translation namespace: $key",
+                message = "Unexpected translation namespace: $key",
             )
         }
         return translations

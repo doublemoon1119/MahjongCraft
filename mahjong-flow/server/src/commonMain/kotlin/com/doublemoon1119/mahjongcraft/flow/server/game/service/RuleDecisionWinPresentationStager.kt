@@ -44,7 +44,7 @@ class RuleDecisionWinPresentationStager(
     ) {
         val outcome = win.outcome
         val transitionDirective = module.resolveRoundTransition(
-            RoundTransitionContext(
+            context = RoundTransitionContext(
                 tableState = currentState,
                 outcomeId = outcome.outcomeId,
                 classification = RoundCompletionClassification.WIN,
@@ -63,8 +63,8 @@ class RuleDecisionWinPresentationStager(
             extensionDetail = win.extensionDetail,
         )
         handoff.stage(
-            gameId,
-            SettledWinPresentation(
+            gameId = gameId,
+            presentation = SettledWinPresentation(
                 winnerPlayerIds = outcome.winnerPlayerIds,
                 celebration = WinCelebrationRequest(
                     winningTileId = outcome.winningTileId,

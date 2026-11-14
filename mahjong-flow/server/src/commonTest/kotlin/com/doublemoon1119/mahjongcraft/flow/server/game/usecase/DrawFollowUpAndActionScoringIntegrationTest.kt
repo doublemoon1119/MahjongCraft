@@ -118,21 +118,21 @@ class DrawFollowUpAndActionScoringIntegrationTest {
         assertEquals(listOf(firstFlower, secondFlower), drawer.tileAreas["test:flowers"]?.tiles.orEmpty())
         assertEquals(listOf(GameAction.Draw, FLOWER_ACTION, GameAction.Draw, FLOWER_ACTION, GameAction.Draw), fixture.recordedActions())
         assertEquals(
-            listOf(GameAction.Draw, FLOWER_ACTION, GameAction.Draw, FLOWER_ACTION, GameAction.Draw),
-            fixture.events.getNotifiedActions(fixture.gameId, fixture.drawerId, fixture.drawerId),
+            expected = listOf(GameAction.Draw, FLOWER_ACTION, GameAction.Draw, FLOWER_ACTION, GameAction.Draw),
+            actual = fixture.events.getNotifiedActions(fixture.gameId, fixture.drawerId, fixture.drawerId),
         )
         // 摸牌一步，之後每朵花的移出與補牌各一步；最後留在摸牌位的是補到的一般牌。
         val steps = fixture.presentation.getPublishedTableStepBatches(fixture.gameId).single()
         assertEquals(TileRegion.DRAWN, steps.first().tableState.tileRegion(firstFlower.id))
         assertEquals(
-            listOf(firstFlower.id to setOf(secondFlower.id), secondFlower.id to setOf(ordinary.id)),
-            followUps(steps),
+            expected = listOf(firstFlower.id to setOf(secondFlower.id), secondFlower.id to setOf(ordinary.id)),
+            actual = followUps(steps),
         )
         assertEquals(TileRegion.DRAWN, steps.last().tableState.tileRegion(ordinary.id))
         val publicActions = fixture.actionEvents().single().actions
         assertEquals(
-            listOf(PerformedActionKind.DECLARATION, PerformedActionKind.SUPPLEMENTAL_DRAW, PerformedActionKind.DECLARATION, PerformedActionKind.SUPPLEMENTAL_DRAW),
-            publicActions.map { it.kind },
+            expected = listOf(PerformedActionKind.DECLARATION, PerformedActionKind.SUPPLEMENTAL_DRAW, PerformedActionKind.DECLARATION, PerformedActionKind.SUPPLEMENTAL_DRAW),
+            actual = publicActions.map { it.kind },
         )
         val replacements = publicActions.filter { it.kind == PerformedActionKind.SUPPLEMENTAL_DRAW }
         assertEquals(listOf(1, 1), replacements.map { it.supplementalTileCount })
@@ -218,8 +218,8 @@ class DrawFollowUpAndActionScoringIntegrationTest {
         assertEquals(ordinary, resumed.hand.lastDrawn)
         assertEquals(listOf(flower), resumed.tileAreas["test:flowers"]?.tiles.orEmpty())
         assertEquals(
-            listOf(PerformedActionKind.DECLARATION, PerformedActionKind.SUPPLEMENTAL_DRAW),
-            fixture.actionEvents().single().actions.map { it.kind },
+            expected = listOf(PerformedActionKind.DECLARATION, PerformedActionKind.SUPPLEMENTAL_DRAW),
+            actual = fixture.actionEvents().single().actions.map { it.kind },
         )
     }
 
@@ -264,7 +264,7 @@ class DrawFollowUpAndActionScoringIntegrationTest {
             scoring = { context ->
                 if (context.action is GameAction.Pon) {
                     ActionScoring(
-                        mapOf(context.actorPlayerId to 2000, requireNotNull(context.sourcePlayerId) to -2000),
+                        scoreDeltas = mapOf(context.actorPlayerId to 2000, requireNotNull(context.sourcePlayerId) to -2000),
                         potDeposit = 0,
                         tableComponents = ComponentPatch(),
                     )
@@ -279,7 +279,7 @@ class DrawFollowUpAndActionScoringIntegrationTest {
         fixture.repository.setTableState(fixture.ponTable(discarded, matching))
 
         assertIs<Outcome.Success<Unit>>(
-            fixture.respondToDiscard(
+            value = fixture.respondToDiscard(
                 gameId = fixture.gameId,
                 playerId = fixture.southId,
                 action = GameAction.Pon(discarded.id, matching.map { it.id }),
@@ -320,7 +320,7 @@ class DrawFollowUpAndActionScoringIntegrationTest {
     @Test
     fun `action scoring that overflows a score is a contract violation`() = runTest {
         val fixture = Fixture(
-            TestBehavior(
+            behavior = TestBehavior(
                 scoring = { context ->
                     ActionScoring(mapOf(context.actorPlayerId to 1000, context.tableStateAfterAction.players.first { it.id != context.actorPlayerId }.id to -1000), potDeposit = 0, tableComponents = ComponentPatch())
                         .takeIf { context.action == FLOWER_ACTION }
@@ -398,8 +398,8 @@ class DrawFollowUpAndActionScoringIntegrationTest {
         assertTrue(drawer.hand.tiles.containsAll(listOf(b, c)))
         assertTrue(drawer.hand.standingTiles.none { it.tile == FLOWER })
         assertEquals(
-            listOf(first.id to setOf(second.id, c.id), second.id to setOf(b.id, a.id)),
-            followUps(fixture.presentation.getPublishedTableStepBatches(fixture.gameId).single()),
+            expected = listOf(first.id to setOf(second.id, c.id), second.id to setOf(b.id, a.id)),
+            actual = followUps(fixture.presentation.getPublishedTableStepBatches(fixture.gameId).single()),
         )
     }
 
@@ -784,7 +784,7 @@ class DrawFollowUpAndActionScoringIntegrationTest {
         override fun registerComponents(registry: ComponentRegistrar) {
             registry.register(testPotComponent)
             registry.registerLifecycle(
-                ComponentLifecycleDefinition(
+                definition = ComponentLifecycleDefinition(
                     component = testPotComponent,
                     ownerType = BuiltInComponentOwners.TABLE,
                     appliesTo = { _, config -> config is FlowerRuleConfig },
@@ -797,7 +797,7 @@ class DrawFollowUpAndActionScoringIntegrationTest {
 
         override fun registerRuleModules(registry: MahjongModuleRegistrar) {
             registry.register(
-                MahjongModuleDefinition(FlowerRuleConfig::class, id) { config, moduleId ->
+                definition = MahjongModuleDefinition(FlowerRuleConfig::class, id) { config, moduleId ->
                     FlowerRule(RiichiRuleModule(moduleId, config.delegate), behavior)
                 },
             )
@@ -958,7 +958,7 @@ class DrawFollowUpAndActionScoringIntegrationTest {
 
         /** 兩家同時可以搶和時判定流局的配置。 */
         val ABORTIVE_DRAW_CONFIG = FlowerRuleConfig(
-            RiichiRuleConfig(multiRonPolicy = MultiRonPolicy(doubleRonResolution = RonResolution.ABORTIVE_DRAW, tripleRonResolution = RonResolution.ABORTIVE_DRAW)),
+            delegate = RiichiRuleConfig(multiRonPolicy = MultiRonPolicy(doubleRonResolution = RonResolution.ABORTIVE_DRAW, tripleRonResolution = RonResolution.ABORTIVE_DRAW)),
         )
 
         /**

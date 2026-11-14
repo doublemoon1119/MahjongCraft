@@ -64,7 +64,7 @@ class RoomPersistenceDtoTest {
     fun `third-party rule config can register without changing persistence module`() {
         val registry = bundledPersistenceRegistries().ruleConfigs.apply {
             register(
-                PersistenceDtoDefinition(
+                definition = PersistenceDtoDefinition(
                     typeKey = "example:custom_rule_config",
                     domainClass = ThirdPartyRuleConfig::class,
                     serializer = ThirdPartyRuleConfigPersistenceDto.serializer(),
@@ -150,8 +150,8 @@ private data class ThirdPartyRuleConfig(
     override val minPlayers: Int = 1,
     override val maxPlayers: Int = 4,
     override val multiRonPolicy: MultiRonPolicy = MultiRonPolicy(
-        RonResolution.ALL_WINNERS,
-        RonResolution.ALL_WINNERS,
+        doubleRonResolution = RonResolution.ALL_WINNERS,
+        tripleRonResolution = RonResolution.ALL_WINNERS,
     ),
     override val revealsClosedKanTiles: Boolean = true,
 ) : MahjongRuleConfig

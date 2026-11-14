@@ -50,8 +50,8 @@ class BoundedPayloadTest {
         val buffer = bufferFor(Json.encodeToString(AutomaticControlUpdateRequestDto.serializer(), expected))
 
         assertEquals(
-            expected,
-            decodeBoundedPayload(buffer, bundledNetworkJson(), AutomaticControlUpdateRequestDto.serializer(), 1024),
+            expected = expected,
+            actual = decodeBoundedPayload(buffer, bundledNetworkJson(), AutomaticControlUpdateRequestDto.serializer(), 1024),
         )
     }
 

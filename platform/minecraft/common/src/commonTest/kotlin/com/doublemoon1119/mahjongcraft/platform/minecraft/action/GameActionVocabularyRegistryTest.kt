@@ -44,8 +44,8 @@ class GameActionVocabularyRegistryTest {
 
         assertEquals("mahjongcraft.riichi.action.riichi.description", registry.find(BuiltInRuleModuleIds.RIICHI, RiichiGameAction.Riichi.id)?.descriptionKey)
         assertEquals(
-            "mahjongcraft.riichi.action.kyuushu_kyuuhai.description",
-            registry.find(BuiltInRuleModuleIds.RIICHI, RiichiExhaustiveDrawReason.KyuushuKyuuhai.id)?.descriptionKey,
+            expected = "mahjongcraft.riichi.action.kyuushu_kyuuhai.description",
+            actual = registry.find(BuiltInRuleModuleIds.RIICHI, RiichiExhaustiveDrawReason.KyuushuKyuuhai.id)?.descriptionKey,
         )
         assertNull(registry.find(BuiltInRuleModuleIds.RIICHI, BuiltInGameActionIds.CHI)?.descriptionKey)
     }

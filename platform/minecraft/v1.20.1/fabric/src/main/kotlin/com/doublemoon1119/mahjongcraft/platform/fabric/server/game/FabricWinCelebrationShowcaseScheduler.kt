@@ -184,7 +184,7 @@ class FabricWinCelebrationShowcaseScheduler(
 
         wings.flatMap { it.cards }.map { it.tileId }.plus(winningTileId).distinct().forEach { tileId ->
             (world.getEntity(tileId.toJavaUuid()) as? MahjongTileEntity)?.enqueueAll(
-                listOf(AnimationStep.WaitUntil(startGameTime), AnimationStep.SetInvisible(true)),
+                steps = listOf(AnimationStep.WaitUntil(startGameTime), AnimationStep.SetInvisible(true)),
             )
         }
         overlays.hideUntil(world, tableId, controllerPos, endGameTime)

@@ -96,7 +96,7 @@ class FakeGameRepository : GameRepository {
         gameId: Uuid,
         history: (TableState?, TableState?, T) -> List<HistoryEventDraft>,
         block: suspend (TableState?) -> Pair<TableState?, T>,
-    ): T = updateGame(gameId, history = { previous, next, result ->
+    ): T = updateGame(gameId = gameId, history = { previous, next, result ->
         history(previous?.tableState, next?.tableState, result)
     }) { current ->
         val (nextTableState, result) = block(current?.tableState)

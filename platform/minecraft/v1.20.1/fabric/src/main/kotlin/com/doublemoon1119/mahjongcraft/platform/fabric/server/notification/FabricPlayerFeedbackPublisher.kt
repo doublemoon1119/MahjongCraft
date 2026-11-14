@@ -302,10 +302,10 @@ class FabricPlayerFeedbackPublisher(
     private fun gameConfigChangedMessage(feedback: MinecraftPlayerFeedback.GameConfigChanged): MutableText = Text.translatable(
         MinecraftMessageKeys.GAME_CONFIG_CHANGED,
         bracketedInteractiveLabel(
-            Text.translatable(MinecraftMessageKeys.GAME_CONFIG_LABEL),
-            gameConfigFormatter.changes(feedback.oldConfigJson, feedback.newConfigJson),
-            ClickEvent(ClickEvent.Action.RUN_COMMAND, OPEN_ROOM_CONFIG_SCREEN_COMMAND),
-            Formatting.AQUA,
+            label = Text.translatable(MinecraftMessageKeys.GAME_CONFIG_LABEL),
+            hoverText = gameConfigFormatter.changes(feedback.oldConfigJson, feedback.newConfigJson),
+            clickEvent = ClickEvent(ClickEvent.Action.RUN_COMMAND, OPEN_ROOM_CONFIG_SCREEN_COMMAND),
+            color = Formatting.AQUA,
         ),
     )
 
@@ -331,9 +331,9 @@ class FabricPlayerFeedbackPublisher(
     private fun showGameConfigMessage(feedback: MinecraftPlayerFeedback.ShowGameConfig): MutableText = Text.translatable(
         MinecraftMessageKeys.SHOW_GAME_CONFIG,
         bracketedInteractiveLabel(
-            Text.translatable(MinecraftMessageKeys.GAME_CONFIG_LABEL),
-            gameConfigHoverText(feedback.configJson),
-            ClickEvent(ClickEvent.Action.RUN_COMMAND, OPEN_ROOM_CONFIG_SCREEN_COMMAND),
+            label = Text.translatable(MinecraftMessageKeys.GAME_CONFIG_LABEL),
+            hoverText = gameConfigHoverText(feedback.configJson),
+            clickEvent = ClickEvent(ClickEvent.Action.RUN_COMMAND, OPEN_ROOM_CONFIG_SCREEN_COMMAND),
         ),
     )
 
@@ -345,10 +345,10 @@ class FabricPlayerFeedbackPublisher(
      * @return 可開啟設定畫面的互動文字。
      */
     private fun gameConfigText(configJson: String, color: Formatting = Formatting.AQUA): MutableText = bracketedInteractiveLabel(
-        Text.translatable(MinecraftMessageKeys.GAME_CONFIG_LABEL),
-        gameConfigHoverText(configJson),
-        ClickEvent(ClickEvent.Action.RUN_COMMAND, OPEN_ROOM_CONFIG_SCREEN_COMMAND),
-        color,
+        label = Text.translatable(MinecraftMessageKeys.GAME_CONFIG_LABEL),
+        hoverText = gameConfigHoverText(configJson),
+        clickEvent = ClickEvent(ClickEvent.Action.RUN_COMMAND, OPEN_ROOM_CONFIG_SCREEN_COMMAND),
+        color = color,
     )
 
     /**
@@ -403,13 +403,13 @@ class FabricPlayerFeedbackPublisher(
                 message.append(Text.literal(" ${index + 1}:"))
                     .append(
                         action.toDisplayText(
-                            referenceTile,
-                            feedback.ruleModuleId,
-                            actionVocabulary,
-                            tileDisplayNames,
-                            tileAssetRegistry,
-                            tileEmojiRegistry,
-                            exhaustiveDrawReasonDisplayNames,
+                            referenceTile = referenceTile,
+                            ruleModuleId = feedback.ruleModuleId,
+                            actionVocabularyRegistry = actionVocabulary,
+                            displayNameRegistry = tileDisplayNames,
+                            tileAssetRegistry = tileAssetRegistry,
+                            tileEmojiRegistry = tileEmojiRegistry,
+                            exhaustiveDrawReasonDisplayNameRegistry = exhaustiveDrawReasonDisplayNames,
                         ),
                     )
             }

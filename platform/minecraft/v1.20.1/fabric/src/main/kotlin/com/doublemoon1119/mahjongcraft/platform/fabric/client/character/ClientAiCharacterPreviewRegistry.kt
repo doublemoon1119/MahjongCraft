@@ -36,7 +36,7 @@ internal class ClientAiCharacterPreviewRegistry : FabricAiCharacterPreviewRegist
      * @return 可比較來源增量的登記快照。
      */
     fun registrationSnapshot(): ExtensionRegistrationSnapshot = ExtensionRegistrationSnapshot(
-        listOf(ExtensionRegistrationSnapshotCategory(FabricExtensionRegistrationCategoryIds.AI_CHARACTER_PREVIEW, "AI Character Preview", registrationKeys)),
+        categories = listOf(ExtensionRegistrationSnapshotCategory(FabricExtensionRegistrationCategoryIds.AI_CHARACTER_PREVIEW, "AI Character Preview", registrationKeys)),
     )
 
     /** 全部回呼成功後結束登記。 */

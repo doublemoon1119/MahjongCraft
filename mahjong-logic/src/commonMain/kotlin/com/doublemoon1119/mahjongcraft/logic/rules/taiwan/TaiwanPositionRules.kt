@@ -41,7 +41,7 @@ class TaiwanPositionRules(private val config: TaiwanRuleConfig) : PositionRules 
             ?: TaiwanReadyKind.GENERAL.takeIf { declarations.any { it.value == TaiwanGameAction.DeclareReady } }
         val readyQualification = TaiwanReadyDeclarationRules.taiType(config, declared)
         val result = handValueCalculator.calculate(
-            TaiwanHandValueContext(
+            context = TaiwanHandValueContext(
                 hand = hand,
                 winningTileValue = winningTile,
                 isTsumo = isTsumo,

@@ -100,7 +100,7 @@ class MahjongTileEntityRenderer(
         val elapsedAnimationTicks = entity.world.time.toDouble() + tickDelta - entity.animationStartGameTime
         val animationFrame = if (localDisplay == null && entity.animating) {
             TileMotionAnimation(
-                TileMotionAnimationSpec(
+                spec = TileMotionAnimationSpec(
                     durationTicks = entity.animationDurationTicks,
                     arcHeight = entity.animationArcHeight,
                     startPoseRotationDegrees = entity.animationStartPoseRotationDegrees,
@@ -263,26 +263,26 @@ class MahjongTileEntityRenderer(
         matrices.multiply(dispatcher.rotation)
         matrices.scale(-ACTION_POPUP_SCALE, -ACTION_POPUP_SCALE, ACTION_POPUP_SCALE)
         WorldPanelRenderer.drawBackground(
-            -ACTION_POPUP_PANEL_WIDTH / 2f,
-            -ACTION_POPUP_PANEL_HEIGHT / 2f,
-            ACTION_POPUP_PANEL_WIDTH / 2f,
-            ACTION_POPUP_PANEL_HEIGHT / 2f,
-            WorldPanelRenderer.withAlpha(ACTION_POPUP_BACKGROUND, alpha * ACTION_POPUP_BACKGROUND_ALPHA),
-            0f,
-            matrices,
-            consumers,
+            left = -ACTION_POPUP_PANEL_WIDTH / 2f,
+            top = -ACTION_POPUP_PANEL_HEIGHT / 2f,
+            right = ACTION_POPUP_PANEL_WIDTH / 2f,
+            bottom = ACTION_POPUP_PANEL_HEIGHT / 2f,
+            color = WorldPanelRenderer.withAlpha(ACTION_POPUP_BACKGROUND, alpha * ACTION_POPUP_BACKGROUND_ALPHA),
+            z = 0f,
+            matrices = matrices,
+            consumers = consumers,
         )
         tileFaceRenderer.renderWorldPanel(
-            assetKey,
-            0f,
-            0f,
-            ACTION_POPUP_TILE_WIDTH,
-            ACTION_POPUP_TILE_HEIGHT,
-            alpha,
-            -0.02f,
-            matrices,
-            consumers,
-            appearance,
+            assetKey = assetKey,
+            centerX = 0f,
+            centerY = 0f,
+            width = ACTION_POPUP_TILE_WIDTH,
+            height = ACTION_POPUP_TILE_HEIGHT,
+            alpha = alpha,
+            z = -0.02f,
+            matrices = matrices,
+            consumers = consumers,
+            appearance = appearance,
         )
         matrices.pop()
     }
@@ -311,10 +311,10 @@ class MahjongTileEntityRenderer(
             TileGroupPreviewEntry(tile.resolvedTileAssetKey(), popupTile.claimed)
         }
         val layout = TileGroupPreviewLayoutCalculator.calculate(
-            entries,
-            ACTION_POPUP_TILE_WIDTH,
-            ACTION_POPUP_TILE_HEIGHT,
-            ACTION_POPUP_TILE_GAP,
+            entries = entries,
+            tileWidth = ACTION_POPUP_TILE_WIDTH,
+            tileHeight = ACTION_POPUP_TILE_HEIGHT,
+            gap = ACTION_POPUP_TILE_GAP,
         )
         if (layout.placements.isEmpty()) return
         val markerHeight = if (layout.placements.any { it.claimed }) CLAIMED_MARKER_HEIGHT + CLAIMED_MARKER_GAP else 0f
@@ -325,14 +325,14 @@ class MahjongTileEntityRenderer(
         matrices.multiply(dispatcher.rotation)
         matrices.scale(-ACTION_POPUP_SCALE, -ACTION_POPUP_SCALE, ACTION_POPUP_SCALE)
         WorldPanelRenderer.drawBackground(
-            -panelWidth / 2f,
-            -panelHeight / 2f,
-            panelWidth / 2f,
-            panelHeight / 2f,
-            WorldPanelRenderer.withAlpha(ACTION_POPUP_BACKGROUND, alpha * ACTION_POPUP_BACKGROUND_ALPHA),
-            0f,
-            matrices,
-            consumers,
+            left = -panelWidth / 2f,
+            top = -panelHeight / 2f,
+            right = panelWidth / 2f,
+            bottom = panelHeight / 2f,
+            color = WorldPanelRenderer.withAlpha(ACTION_POPUP_BACKGROUND, alpha * ACTION_POPUP_BACKGROUND_ALPHA),
+            z = 0f,
+            matrices = matrices,
+            consumers = consumers,
         )
         // 有指標時整列牌往下讓出指標高度，面板仍以內容整體置中。
         val tileCenterY = markerHeight / 2f
@@ -341,12 +341,12 @@ class MahjongTileEntityRenderer(
             renderPopupTile(placement.assetKey, placement.centerX, placement.centerY + tileCenterY, alpha, z, matrices, consumers, appearance)
             if (placement.claimed) {
                 renderClaimedTileMarker(
-                    placement.centerX,
-                    placement.centerY + tileCenterY - ACTION_POPUP_TILE_HEIGHT / 2f - CLAIMED_MARKER_GAP,
-                    alpha,
-                    z,
-                    matrices,
-                    consumers,
+                    centerX = placement.centerX,
+                    bottom = placement.centerY + tileCenterY - ACTION_POPUP_TILE_HEIGHT / 2f - CLAIMED_MARKER_GAP,
+                    alpha = alpha,
+                    z = z,
+                    matrices = matrices,
+                    consumers = consumers,
                 )
             }
         }
@@ -378,16 +378,16 @@ class MahjongTileEntityRenderer(
         matrices.push()
         matrices.translate(centerX.toDouble(), centerY.toDouble(), 0.0)
         tileFaceRenderer.renderWorldPanel(
-            assetKey,
-            0f,
-            0f,
-            ACTION_POPUP_TILE_WIDTH,
-            ACTION_POPUP_TILE_HEIGHT,
-            alpha,
-            z,
-            matrices,
-            consumers,
-            appearance,
+            assetKey = assetKey,
+            centerX = 0f,
+            centerY = 0f,
+            width = ACTION_POPUP_TILE_WIDTH,
+            height = ACTION_POPUP_TILE_HEIGHT,
+            alpha = alpha,
+            z = z,
+            matrices = matrices,
+            consumers = consumers,
+            appearance = appearance,
         )
         matrices.pop()
     }
@@ -418,14 +418,14 @@ class MahjongTileEntityRenderer(
             val halfWidth = width * CLAIMED_MARKER_UNIT / 2f
             val rowBottom = bottom - (ClaimedTileMarker.ROW_WIDTHS.size - 1 - row) * CLAIMED_MARKER_UNIT
             WorldPanelRenderer.drawBackground(
-                centerX - halfWidth,
-                rowBottom - CLAIMED_MARKER_UNIT,
-                centerX + halfWidth,
-                rowBottom,
-                color,
-                z,
-                matrices,
-                consumers,
+                left = centerX - halfWidth,
+                top = rowBottom - CLAIMED_MARKER_UNIT,
+                right = centerX + halfWidth,
+                bottom = rowBottom,
+                color = color,
+                z = z,
+                matrices = matrices,
+                consumers = consumers,
             )
         }
     }
@@ -476,9 +476,9 @@ class MahjongTileEntityRenderer(
         val (startX, startY, startZ) = poseOriginOffset(startRotationDegrees)
         val (endX, endY, endZ) = poseOriginOffset(endRotationDegrees)
         return Triple(
-            startX + (endX - startX) * progress,
-            startY + (endY - startY) * progress,
-            startZ + (endZ - startZ) * progress,
+            first = startX + (endX - startX) * progress,
+            second = startY + (endY - startY) * progress,
+            third = startZ + (endZ - startZ) * progress,
         )
     }
 

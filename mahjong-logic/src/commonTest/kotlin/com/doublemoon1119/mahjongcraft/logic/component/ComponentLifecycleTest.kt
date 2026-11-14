@@ -28,7 +28,7 @@ class ComponentLifecycleTest {
         registry.registerLifecycle(definition(retained, ComponentRoundTransition.RETAIN, 0))
         registry.registerLifecycle(definition(reset, ComponentRoundTransition.RESET, 1))
         registry.registerLifecycle(
-            ComponentLifecycleDefinition(
+            definition = ComponentLifecycleDefinition(
                 component = transformed,
                 ownerType = BuiltInComponentOwners.TABLE,
                 appliesTo = { _, _ -> true },
@@ -55,7 +55,7 @@ class ComponentLifecycleTest {
     fun `lifecycle applies only to its declared rule`() {
         val registry = registry()
         registry.registerLifecycle(
-            ComponentLifecycleDefinition(
+            definition = ComponentLifecycleDefinition(
                 component = retained,
                 ownerType = BuiltInComponentOwners.TABLE,
                 appliesTo = { id, _ -> id == "test:rule" },
@@ -105,7 +105,7 @@ class ComponentLifecycleTest {
             registerOwner(BuiltInComponentOwners.TILE)
             register(tileValue)
             registerLifecycle(
-                ComponentLifecycleDefinition(
+                definition = ComponentLifecycleDefinition(
                     component = retained,
                     ownerType = BuiltInComponentOwners.TABLE,
                     appliesTo = { id, _ -> id == "test:rule" },
@@ -122,14 +122,14 @@ class ComponentLifecycleTest {
         assertFailsWith<IllegalArgumentException> { registry.validateState(context(false), ComponentSet.EMPTY.with(reset, 1)) }
         val tile = table.tileWall.getAllTiles().first()
         registry.validateState(
-            ComponentLifecycleContext(
+            context = ComponentLifecycleContext(
                 ruleModuleId = "test:rule",
                 tableState = table,
                 ownerType = BuiltInComponentOwners.TILE,
                 owner = tile,
                 previousTableState = null,
             ),
-            ComponentSet.EMPTY.with(tileValue, 1),
+            components = ComponentSet.EMPTY.with(tileValue, 1),
         )
     }
 
@@ -138,7 +138,7 @@ class ComponentLifecycleTest {
     fun `lifecycle scope extends a component to another rule`() {
         val registry = registry()
         registry.registerLifecycle(
-            ComponentLifecycleDefinition(
+            definition = ComponentLifecycleDefinition(
                 component = retained,
                 ownerType = BuiltInComponentOwners.TABLE,
                 appliesTo = { id, _ -> id == "test:rule" },

@@ -56,10 +56,10 @@ internal class ExampleActorHandle(
         val changed = previous != null && (previous.tableId != request.tableId || previous.dimensionId != request.dimensionId || !ExampleActorReturnToSeat.sameSeat(previous.seat, request.seat))
         val misplaced = actor.hasVehicle() &&
             !ExampleActorReturnToSeat.isAtSeat(
-                actor.x,
-                actor.y,
-                actor.z,
-                request.seat,
+                x = actor.x,
+                y = actor.y,
+                z = actor.z,
+                seat = request.seat,
             )
         if (changed || misplaced) {
             val vehicle = actor.vehicle

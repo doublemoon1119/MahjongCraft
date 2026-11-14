@@ -34,11 +34,11 @@ class RoundResultSenderTest {
         assertEquals(RoundResultKindDto.WIN, payload.kind)
         assertEquals(true, payload.roundContinues)
         assertEquals(
-            listOf(
+            expected = listOf(
                 RoundResultPlayerDto(ai.playerId.toString(), 0, true, 25_000, 7_000, 1, 2),
                 RoundResultPlayerDto(human.playerId.toString(), 1, false, 25_000, 43_000, 2, 1),
             ),
-            payload.players,
+            actual = payload.players,
         )
     }
 

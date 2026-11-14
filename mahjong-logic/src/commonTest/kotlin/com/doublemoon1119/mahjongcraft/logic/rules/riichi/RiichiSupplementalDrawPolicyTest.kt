@@ -43,7 +43,7 @@ class RiichiSupplementalDrawPolicyTest {
         )
 
         val result = assertIs<SupplementalDrawDecision.Completed>(
-            RiichiSupplementalDrawPolicy.resolve(context(state)),
+            value = RiichiSupplementalDrawPolicy.resolve(context(state)),
         )
 
         assertEquals(listOf(deadWall.first()), result.drawnTiles)
@@ -74,7 +74,7 @@ class RiichiSupplementalDrawPolicyTest {
 
         repeat(RiichiSupplementalDrawPolicy.MAX_SUPPLEMENTAL_DRAWS) {
             val result = assertIs<SupplementalDrawDecision.Completed>(
-                RiichiSupplementalDrawPolicy.resolve(context(state)),
+                value = RiichiSupplementalDrawPolicy.resolve(context(state)),
             )
             drawnTiles += result.drawnTiles.single()
             state = state.copy(
@@ -103,7 +103,7 @@ class RiichiSupplementalDrawPolicyTest {
             components = riichiTableComponents(potPoints = 0, wallProgress = RiichiWallProgress(completedSupplementalDrawCount = 3, revealedKanDoraCount = 3)),
         )
         val fourth = assertIs<SupplementalDrawDecision.Completed>(
-            RiichiSupplementalDrawPolicy.resolve(context(state)),
+            value = RiichiSupplementalDrawPolicy.resolve(context(state)),
         )
         assertEquals(deadWall[3], fourth.drawnTiles.single())
 
@@ -111,7 +111,7 @@ class RiichiSupplementalDrawPolicyTest {
             components = riichiTableComponents(potPoints = 0, wallProgress = RiichiWallProgress(completedSupplementalDrawCount = 4, revealedKanDoraCount = 4)),
         )
         val rejected = assertIs<SupplementalDrawDecision.Rejected>(
-            RiichiSupplementalDrawPolicy.resolve(context(limitState)),
+            value = RiichiSupplementalDrawPolicy.resolve(context(limitState)),
         )
         assertEquals(RiichiSupplementalDrawPolicy.LIMIT_REACHED_REASON_ID, rejected.reasonId)
     }
@@ -128,7 +128,7 @@ class RiichiSupplementalDrawPolicyTest {
         )
 
         val result = assertIs<SupplementalDrawDecision.Rejected>(
-            RiichiSupplementalDrawPolicy.resolve(context(state)),
+            value = RiichiSupplementalDrawPolicy.resolve(context(state)),
         )
 
         assertEquals(SupplementalDrawReasonIds.WALL_EXHAUSTED, result.reasonId)
@@ -152,7 +152,7 @@ class RiichiSupplementalDrawPolicyTest {
         val state = FakeTableStateFactory.create(config = RiichiRuleConfig())
 
         val result = assertIs<SupplementalDrawDecision.Rejected>(
-            UnsupportedSupplementalDrawPolicy.resolve(context(state)),
+            value = UnsupportedSupplementalDrawPolicy.resolve(context(state)),
         )
 
         assertEquals(UnsupportedSupplementalDrawPolicy.UNSUPPORTED_REASON_ID, result.reasonId)

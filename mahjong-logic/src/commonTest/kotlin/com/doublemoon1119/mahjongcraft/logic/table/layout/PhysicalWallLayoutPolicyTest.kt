@@ -32,13 +32,13 @@ class PhysicalWallLayoutPolicyTest {
         )
 
         val decision = ContinuousPhysicalWallLayoutPolicy.createInitialLayoutValidated(
-            InitialPhysicalWallLayoutContext(result, WallOpening(0, 1), result.structure.keys),
+            context = InitialPhysicalWallLayoutContext(result, WallOpening(0, 1), result.structure.keys),
         )
 
         val completed = assertIs<InitialPhysicalWallLayoutDecision.Completed>(decision)
         assertEquals(
-            structure.mapValues { (_, position) -> TileWallPlacement(position) },
-            completed.layout.placements,
+            expected = structure.mapValues { (_, position) -> TileWallPlacement(position) },
+            actual = completed.layout.placements,
         )
     }
 
@@ -57,8 +57,8 @@ class PhysicalWallLayoutPolicyTest {
         val policy = completedPolicy(
             layout = TileWallPhysicalLayout(mapOf(bottomTile.id to bottomEnd, topTile.id to topEnd)),
             phases = listOf(
-                PhysicalWallLayoutTransitionPhase(
-                    listOf(
+                element = PhysicalWallLayoutTransitionPhase(
+                    moves = listOf(
                         PhysicalWallTileMove(bottomTile.id, bottomStart, bottomEnd),
                         PhysicalWallTileMove(topTile.id, topStart, topEnd),
                     ),
@@ -67,19 +67,19 @@ class PhysicalWallLayoutPolicyTest {
         )
 
         val decision = policy.resolveTransitionValidated(
-            transitionContext(state, state, current),
+            context = transitionContext(state, state, current),
         )
 
         val completed = assertIs<PhysicalWallLayoutTransitionDecision.Completed>(decision)
         assertEquals(1, completed.phases.size)
         assertEquals(2, completed.phases.single().moves.size)
         assertEquals(
-            bottomEnd.position.layer - bottomStart.position.layer,
-            topEnd.position.layer - topStart.position.layer,
+            expected = bottomEnd.position.layer - bottomStart.position.layer,
+            actual = topEnd.position.layer - topStart.position.layer,
         )
         assertEquals(
-            bottomEnd.position.stack - bottomStart.position.stack,
-            topEnd.position.stack - topStart.position.stack,
+            expected = bottomEnd.position.stack - bottomStart.position.stack,
+            actual = topEnd.position.stack - topStart.position.stack,
         )
     }
 
@@ -97,14 +97,14 @@ class PhysicalWallLayoutPolicyTest {
         )
         val remainingPlacement = TileWallPlacement(TileWallPosition(side = 0, stack = 0, layer = 0))
         val current = TileWallPhysicalLayout(
-            mapOf(
+            placements = mapOf(
                 remainingTile.id to remainingPlacement,
                 drawnTile.id to TileWallPlacement(TileWallPosition(side = 0, stack = 0, layer = 1)),
             ),
         )
 
         val decision = ContinuousPhysicalWallLayoutPolicy.resolveTransitionValidated(
-            transitionContext(before, after, current),
+            context = transitionContext(before, after, current),
         )
 
         val completed = assertIs<PhysicalWallLayoutTransitionDecision.Completed>(decision)
@@ -122,7 +122,7 @@ class PhysicalWallLayoutPolicyTest {
             override fun createInitialLayout(
                 context: InitialPhysicalWallLayoutContext,
             ): InitialPhysicalWallLayoutDecision = InitialPhysicalWallLayoutDecision.Completed(
-                TileWallPhysicalLayout(mapOf(Uuid.random() to TileWallPlacement(position))),
+                layout = TileWallPhysicalLayout(mapOf(Uuid.random() to TileWallPlacement(position))),
             )
 
             override fun resolveTransition(
@@ -133,12 +133,12 @@ class PhysicalWallLayoutPolicyTest {
         }
 
         val decision = policy.createInitialLayoutValidated(
-            InitialPhysicalWallLayoutContext(result, WallOpening(0, 1), result.structure.keys),
+            context = InitialPhysicalWallLayoutContext(result, WallOpening(0, 1), result.structure.keys),
         )
 
         assertEquals(
-            InitialPhysicalWallLayoutDecision.Rejected(PhysicalWallLayoutReasonIds.INVALID_RESULT),
-            decision,
+            expected = InitialPhysicalWallLayoutDecision.Rejected(PhysicalWallLayoutReasonIds.INVALID_RESULT),
+            actual = decision,
         )
     }
 
@@ -148,19 +148,19 @@ class PhysicalWallLayoutPolicyTest {
         val tile = testTile()
         val state = FakeTableStateFactory.create(tileWall = TileWall(listOf(tile)))
         val current = TileWallPhysicalLayout(
-            mapOf(tile.id to TileWallPlacement(TileWallPosition(side = 0, stack = 0, layer = 0))),
+            placements = mapOf(tile.id to TileWallPlacement(TileWallPosition(side = 0, stack = 0, layer = 0))),
         )
         val changed = TileWallPhysicalLayout(
-            mapOf(tile.id to TileWallPlacement(TileWallPosition(side = 0, stack = 1, layer = 0))),
+            placements = mapOf(tile.id to TileWallPlacement(TileWallPosition(side = 0, stack = 1, layer = 0))),
         )
 
         val decision = completedPolicy(changed, emptyList()).resolveTransitionValidated(
-            transitionContext(state, state, current),
+            context = transitionContext(state, state, current),
         )
 
         assertEquals(
-            PhysicalWallLayoutTransitionDecision.Rejected(PhysicalWallLayoutReasonIds.INVALID_RESULT),
-            decision,
+            expected = PhysicalWallLayoutTransitionDecision.Rejected(PhysicalWallLayoutReasonIds.INVALID_RESULT),
+            actual = decision,
         )
     }
 
@@ -174,15 +174,15 @@ class PhysicalWallLayoutPolicyTest {
         val end = TileWallPlacement(TileWallPosition(side = 0, stack = 2, layer = 0))
         val current = TileWallPhysicalLayout(mapOf(tile.id to start))
         val completed = completedPolicy(
-            TileWallPhysicalLayout(mapOf(tile.id to end)),
-            listOf(PhysicalWallLayoutTransitionPhase(listOf(PhysicalWallTileMove(tile.id, stale, end)))),
+            layout = TileWallPhysicalLayout(mapOf(tile.id to end)),
+            phases = listOf(PhysicalWallLayoutTransitionPhase(listOf(PhysicalWallTileMove(tile.id, stale, end)))),
         )
 
         val decision = completed.resolveTransitionValidated(transitionContext(state, state, current))
 
         assertEquals(
-            PhysicalWallLayoutTransitionDecision.Rejected(PhysicalWallLayoutReasonIds.INVALID_RESULT),
-            decision,
+            expected = PhysicalWallLayoutTransitionDecision.Rejected(PhysicalWallLayoutReasonIds.INVALID_RESULT),
+            actual = decision,
         )
     }
 
@@ -196,13 +196,13 @@ class PhysicalWallLayoutPolicyTest {
         val occupied = TileWallPlacement(TileWallPosition(side = 0, stack = 1, layer = 0))
         val current = TileWallPhysicalLayout(mapOf(moving.id to movingStart, stationary.id to occupied))
         val completed = completedPolicy(
-            TileWallPhysicalLayout(mapOf(moving.id to occupied, stationary.id to movingStart)),
-            listOf(
+            layout = TileWallPhysicalLayout(mapOf(moving.id to occupied, stationary.id to movingStart)),
+            phases = listOf(
                 PhysicalWallLayoutTransitionPhase(
-                    listOf(PhysicalWallTileMove(moving.id, movingStart, occupied)),
+                    moves = listOf(PhysicalWallTileMove(moving.id, movingStart, occupied)),
                 ),
                 PhysicalWallLayoutTransitionPhase(
-                    listOf(PhysicalWallTileMove(stationary.id, occupied, movingStart)),
+                    moves = listOf(PhysicalWallTileMove(stationary.id, occupied, movingStart)),
                 ),
             ),
         )
@@ -210,8 +210,8 @@ class PhysicalWallLayoutPolicyTest {
         val decision = completed.resolveTransitionValidated(transitionContext(state, state, current))
 
         assertEquals(
-            PhysicalWallLayoutTransitionDecision.Rejected(PhysicalWallLayoutReasonIds.INVALID_RESULT),
-            decision,
+            expected = PhysicalWallLayoutTransitionDecision.Rejected(PhysicalWallLayoutReasonIds.INVALID_RESULT),
+            actual = decision,
         )
     }
 

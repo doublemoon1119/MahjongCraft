@@ -106,7 +106,7 @@ class HistoryWinDetailsCapacityTest {
                         (event.fact is HistoryFact.TableChanged || event.fact is HistoryFact.RoundCompleted)
                     ) {
                         add(
-                            event.copy(
+                            element = event.copy(
                                 sequence = sequence++,
                                 transactionFirstSequence = first,
                                 fact = HistoryFact.WinSettled(summary.outcomeId, winners, summary.responsiblePlayerIds.toList()),
@@ -128,16 +128,16 @@ class HistoryWinDetailsCapacityTest {
      */
     private fun fields(entryCount: Int): List<WinSettlementDetailField> = listOf(
         WinSettlementDetailField(
-            "capacity:patterns",
-            WinSettlementDetailValue.Entries(
-                (1..entryCount).map { index ->
+            id = "capacity:patterns",
+            value = WinSettlementDetailValue.Entries(
+                entries = (1..entryCount).map { index ->
                     WinSettlementDetailEntry("capacity:pattern/$index", WinSettlementQuantity("capacity:unit", index))
                 },
             ),
         ),
         WinSettlementDetailField(
-            "capacity:summary",
-            WinSettlementDetailValue.Quantities(listOf(WinSettlementQuantity("capacity:han", 12), WinSettlementQuantity("capacity:fu", 40))),
+            id = "capacity:summary",
+            value = WinSettlementDetailValue.Quantities(listOf(WinSettlementQuantity("capacity:han", 12), WinSettlementQuantity("capacity:fu", 40))),
         ),
     )
 

@@ -31,7 +31,7 @@ class RiichiChinitsuTest : RiichiHandValueCalculatorTestBase() {
     @Test
     fun `test honitsu`() {
         val hand = FakeHandFactory.create(
-            listOf(
+            tiles = listOf(
                 Tile.Numeric(Tile.Suit.Character, 1),
                 Tile.Numeric(Tile.Suit.Character, 2),
                 Tile.Numeric(Tile.Suit.Character, 3),
@@ -66,7 +66,7 @@ class RiichiChinitsuTest : RiichiHandValueCalculatorTestBase() {
         // 副露：碰 111m
         // 手牌：234m, 567m, 789m, 東風對子
         val hand = FakeHandFactory.create(
-            listOf(
+            tiles = listOf(
                 Tile.Numeric(Tile.Suit.Character, 2),
                 Tile.Numeric(Tile.Suit.Character, 3),
                 Tile.Numeric(Tile.Suit.Character, 4),
@@ -79,7 +79,7 @@ class RiichiChinitsuTest : RiichiHandValueCalculatorTestBase() {
                 Tile.Honor.East,
             ),
             melds = listOf(
-                FakeMeldFactory.create(
+                element = FakeMeldFactory.create(
                     type = MeldType.Pon,
                     tiles = listOf(
                         FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 1)),
@@ -107,7 +107,7 @@ class RiichiChinitsuTest : RiichiHandValueCalculatorTestBase() {
     @Test
     fun `test chinitsu`() {
         val hand = FakeHandFactory.create(
-            listOf(
+            tiles = listOf(
                 Tile.Numeric(Tile.Suit.Character, 1),
                 Tile.Numeric(Tile.Suit.Character, 2),
                 Tile.Numeric(Tile.Suit.Character, 3),
@@ -142,7 +142,7 @@ class RiichiChinitsuTest : RiichiHandValueCalculatorTestBase() {
         // 副露：碰 111m
         // 手牌：234m, 567m, 789m, 55m
         val hand = FakeHandFactory.create(
-            listOf(
+            tiles = listOf(
                 Tile.Numeric(Tile.Suit.Character, 2),
                 Tile.Numeric(Tile.Suit.Character, 3),
                 Tile.Numeric(Tile.Suit.Character, 4),
@@ -155,7 +155,7 @@ class RiichiChinitsuTest : RiichiHandValueCalculatorTestBase() {
                 Tile.Numeric(Tile.Suit.Character, 5),
             ),
             melds = listOf(
-                FakeMeldFactory.create(
+                element = FakeMeldFactory.create(
                     type = MeldType.Pon,
                     tiles = listOf(
                         FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 1)),
@@ -183,7 +183,7 @@ class RiichiChinitsuTest : RiichiHandValueCalculatorTestBase() {
     @Test
     fun `test chinitsu overrides honitsu`() {
         val hand = FakeHandFactory.create(
-            listOf(
+            tiles = listOf(
                 Tile.Numeric(Tile.Suit.Character, 1),
                 Tile.Numeric(Tile.Suit.Character, 2),
                 Tile.Numeric(Tile.Suit.Character, 3),

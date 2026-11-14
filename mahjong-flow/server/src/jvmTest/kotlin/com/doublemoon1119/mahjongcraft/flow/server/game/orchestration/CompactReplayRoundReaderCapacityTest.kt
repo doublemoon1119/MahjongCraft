@@ -33,7 +33,7 @@ class CompactReplayRoundReaderCapacityTest {
         for (fixture in ReplayCapacityFixtures.all) {
             val document = CompactReplayCodec.encodeCompact(fixture.events, HistoryRecordingPersistenceMapper(registries), registries)
             val parsed = assertIs<ReplayReadResult.Success<JsonObject>>(
-                parseBoundedReplayJson(document.toString(), ReplayJsonParseLimits(maximumUtf8Bytes = 8 * 1024 * 1024)),
+                value = parseBoundedReplayJson(document.toString(), ReplayJsonParseLimits(maximumUtf8Bytes = 8 * 1024 * 1024)),
             ).value
             val full = CompactReplayCodec.decodeCompact(document)
             val openings = fixture.events.count { it.fact is HistoryFact.MatchStarted || it.fact is HistoryFact.RoundStarted }

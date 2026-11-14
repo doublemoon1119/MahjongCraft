@@ -16,8 +16,8 @@ import java.util.Locale
  * @return 具有單一 prefix 與條列內容的訊息。
  */
 internal fun historyGenerationProgressMessage(progress: HistoryGenerationProgress): MutableText = prefixedConfigMessage(
-    label(HistoryDebugKeys.PROGRESS),
-    if (progress.failure == null && progress.running) Formatting.AQUA else Formatting.YELLOW,
+    message = label(HistoryDebugKeys.PROGRESS),
+    color = if (progress.failure == null && progress.running) Formatting.AQUA else Formatting.YELLOW,
 ).also { message ->
     message.append(generationEntry(HistoryDebugKeys.SCENARIO, Text.literal(progress.scenarioId), Formatting.GRAY))
         .append(generationEntry(HistoryDebugKeys.REQUESTED, progress.requested, Formatting.GREEN))
@@ -34,9 +34,9 @@ internal fun historyGenerationProgressMessage(progress: HistoryGenerationProgres
         .append(generationEntry(HistoryDebugKeys.REPLAY_MAXIMUM, formatBytes(progress.largestReplayBytes), Formatting.GRAY))
         .append(
             generationEntry(
-                HistoryDebugKeys.CANCEL_STATE,
-                label(
-                    if (progress.cancelRequested) {
+                key = HistoryDebugKeys.CANCEL_STATE,
+                value = label(
+                    key = if (progress.cancelRequested) {
                         HistoryDebugKeys.CANCEL_REQUESTED
                     } else if (progress.running) {
                         HistoryDebugKeys.RUNNING
@@ -44,7 +44,7 @@ internal fun historyGenerationProgressMessage(progress: HistoryGenerationProgres
                         HistoryDebugKeys.COMPLETED
                     },
                 ),
-                Formatting.YELLOW,
+                valueColor = Formatting.YELLOW,
             ),
         )
     progress.failure?.let { failure ->

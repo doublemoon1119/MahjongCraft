@@ -33,7 +33,7 @@ class RiichiSanshokuDokokuTest : RiichiHandValueCalculatorTestBase() {
         // 手牌：111m, 111p, 111s, 77z, 56m (自摸)
         // 3 刻子 + 1 雀頭
         val hand = FakeHandFactory.create(
-            listOf(
+            tiles = listOf(
                 Tile.Numeric(Tile.Suit.Character, 1),
                 Tile.Numeric(Tile.Suit.Character, 1),
                 Tile.Numeric(Tile.Suit.Character, 1),
@@ -69,7 +69,7 @@ class RiichiSanshokuDokokuTest : RiichiHandValueCalculatorTestBase() {
         // 手牌：111p, 111s, 77z, 66z (自摸湊成刻子)
         // 副露 1 刻子 + 手牌 2 刻子 = 3 刻子
         val hand = FakeHandFactory.create(
-            listOf(
+            tiles = listOf(
                 Tile.Numeric(Tile.Suit.Dot, 1),
                 Tile.Numeric(Tile.Suit.Dot, 1),
                 Tile.Numeric(Tile.Suit.Dot, 1),
@@ -82,7 +82,7 @@ class RiichiSanshokuDokokuTest : RiichiHandValueCalculatorTestBase() {
                 Tile.Honor.Green,
             ),
             melds = listOf(
-                FakeMeldFactory.create(
+                element = FakeMeldFactory.create(
                     type = MeldType.Pon,
                     tiles = listOf(
                         FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 1)),
@@ -112,7 +112,7 @@ class RiichiSanshokuDokokuTest : RiichiHandValueCalculatorTestBase() {
         // 手牌：111m, 111p, 234s, 77z, 66s (自摸)
         // 只有 2 組三色同刻的要素
         val hand = FakeHandFactory.create(
-            listOf(
+            tiles = listOf(
                 Tile.Numeric(Tile.Suit.Character, 1),
                 Tile.Numeric(Tile.Suit.Character, 1),
                 Tile.Numeric(Tile.Suit.Character, 1),

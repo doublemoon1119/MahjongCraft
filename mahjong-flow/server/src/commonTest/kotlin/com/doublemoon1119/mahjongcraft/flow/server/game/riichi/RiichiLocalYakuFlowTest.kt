@@ -88,7 +88,7 @@ class RiichiLocalYakuFlowTest {
         ).withFirstKanPhysicalWallLayout()
 
         return play(
-            table,
+            table = table,
             discarderId to GameCommand.Kan(GameAction.KanType.CLOSED_KAN, kanTiles.last().id),
             discarderId to GameCommand.Discard(red.id),
             winnerId to GameCommand.RespondToDiscard(GameAction.Ron(red.id), Uuid.random()),
@@ -114,7 +114,7 @@ class RiichiLocalYakuFlowTest {
         )
 
         return play(
-            table,
+            table = table,
             discarderId to GameCommand.Extension(RiichiGameCommand(red.id)),
             winnerId to GameCommand.RespondToDiscard(GameAction.Ron(red.id), Uuid.random()),
         )

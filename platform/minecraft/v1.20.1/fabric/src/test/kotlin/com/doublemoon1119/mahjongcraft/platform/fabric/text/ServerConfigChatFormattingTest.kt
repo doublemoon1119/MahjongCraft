@@ -17,14 +17,14 @@ class ServerConfigChatFormattingTest {
     fun `test sections follow toml order and contain all settings`() {
         val sections = serverConfigSections(MinecraftServerConfig())
         assertEquals(
-            listOf(
+            expected = listOf(
                 MinecraftConfigCommandKeys.SERVER_CONFIG_SECTION_PLAYER_DISCONNECTION,
                 MinecraftConfigCommandKeys.SERVER_CONFIG_SECTION_AI_PLAYER,
                 MinecraftConfigCommandKeys.SERVER_CONFIG_SECTION_TABLE,
                 MinecraftConfigCommandKeys.SERVER_CONFIG_SECTION_MAHJONG_TILE,
                 MinecraftConfigCommandKeys.SERVER_CONFIG_SECTION_HISTORY,
             ),
-            sections.map { (it.name.content as TranslatableTextContent).key },
+            actual = sections.map { (it.name.content as TranslatableTextContent).key },
         )
         assertEquals(listOf(2, 1, 2, 1, 11), sections.map { it.entries.size })
         val keys = sections.flatMap { it.entries }.map { (it.name.content as TranslatableTextContent).key }

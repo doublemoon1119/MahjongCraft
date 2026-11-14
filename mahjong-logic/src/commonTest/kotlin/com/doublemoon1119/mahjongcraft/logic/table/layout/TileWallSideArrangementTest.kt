@@ -63,10 +63,10 @@ class TileWallSideArrangementTest {
             val arrangement = wallLayout.sideArrangement(dealerSeatIndex)
 
             assertEquals(
-                List(ThreePlayerRiichiWallLayout.SIDE_COUNT) { side ->
+                expected = List(ThreePlayerRiichiWallLayout.SIDE_COUNT) { side ->
                     (dealerSeatIndex - side).mod(ThreePlayerRiichiWallLayout.SIDE_COUNT)
                 },
-                (0 until arrangement.sideCount).map(arrangement::quarterTurnsOf),
+                actual = (0 until arrangement.sideCount).map(arrangement::quarterTurnsOf),
             )
         }
     }

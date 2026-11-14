@@ -29,7 +29,7 @@ class WinCelebrationShowcaseRegistryTest {
         assertEquals(true, "mahjongcraft:riichi/yakuman/kokushi_musou" in snapshot)
         assertEquals(true, "test:cue" in snapshot)
         registry.register(
-            WinCelebrationShowcaseDefinition(
+            definition = WinCelebrationShowcaseDefinition(
                 cueKey = "test:later",
                 titleTranslationKey = "showcase.test.later",
                 titleImageResourceId = "test:textures/showcase/later.png",
@@ -53,12 +53,12 @@ class WinCelebrationShowcaseRegistryTest {
         val registry = WinCelebrationShowcaseRegistryImpl().apply { BundledRiichiMinecraftExtension.registerWinCelebrationShowcases(this) }
 
         assertEquals(
-            "mahjongcraft:riichi/yakuman/daisuushii",
-            registry.select(listOf("mahjongcraft:riichi/yakuman/daisangen", "mahjongcraft:riichi/yakuman/daisuushii"))?.cueKey,
+            expected = "mahjongcraft:riichi/yakuman/daisuushii",
+            actual = registry.select(listOf("mahjongcraft:riichi/yakuman/daisangen", "mahjongcraft:riichi/yakuman/daisuushii"))?.cueKey,
         )
         assertEquals(
-            "mahjongcraft:riichi/yakuman/kokushi_musou",
-            registry.select(listOf("unknown:cue", "mahjongcraft:riichi/yakuman/kokushi_musou"))?.cueKey,
+            expected = "mahjongcraft:riichi/yakuman/kokushi_musou",
+            actual = registry.select(listOf("unknown:cue", "mahjongcraft:riichi/yakuman/kokushi_musou"))?.cueKey,
         )
         assertNull(registry.select(listOf("unknown:cue")))
         assertNull(registry.select(emptyList()))

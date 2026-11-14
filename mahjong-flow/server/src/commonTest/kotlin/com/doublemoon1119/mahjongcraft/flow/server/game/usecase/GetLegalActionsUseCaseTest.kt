@@ -85,8 +85,8 @@ class GetLegalActionsUseCaseTest {
         val actions = result.value
         assertTrue(actions.any { it == RIICHI_GAME_ACTION }, "Riichi should be legal from the own-turn context.")
         assertTrue(
-            actions.any { it is GameAction.Kan && it.type == GameAction.KanType.CLOSED_KAN },
-            "Closed kan should be legal from the own-turn context.",
+            actual = actions.any { it is GameAction.Kan && it.type == GameAction.KanType.CLOSED_KAN },
+            message = "Closed kan should be legal from the own-turn context.",
         )
     }
 
@@ -171,8 +171,8 @@ class GetLegalActionsUseCaseTest {
 
         assertTrue(result is Outcome.Success, "Expected Success but got $result")
         assertEquals(
-            listOf(GameAction.Ron(robbedWhiteTile.id), GameAction.Pass),
-            result.value,
+            expected = listOf(GameAction.Ron(robbedWhiteTile.id), GameAction.Pass),
+            actual = result.value,
         )
     }
 
@@ -194,10 +194,10 @@ class GetLegalActionsUseCaseTest {
             config = RiichiRuleConfig(),
             currentPlayerIndex = 0,
             pendingRobbingReaction = PendingRobbingReaction(
-                declarerId,
-                kanAction,
-                robbedWhiteTile,
-                setOf(robberId),
+                declarerId = declarerId,
+                declaredAction = kanAction,
+                robbedTile = robbedWhiteTile,
+                eligiblePlayerIds = setOf(robberId),
                 responses = mapOf(robberId to GameAction.Pass),
             ),
         )
@@ -245,8 +245,8 @@ class GetLegalActionsUseCaseTest {
 
         assertTrue(result is Outcome.Success, "Expected Success but got $result")
         assertEquals(
-            listOf(GameAction.Pon(discardedSouthTile.id, listOf(southTile1.id, southTile2.id)), GameAction.Pass),
-            result.value,
+            expected = listOf(GameAction.Pon(discardedSouthTile.id, listOf(southTile1.id, southTile2.id)), GameAction.Pass),
+            actual = result.value,
         )
     }
 
@@ -271,9 +271,9 @@ class GetLegalActionsUseCaseTest {
             config = RiichiRuleConfig(),
             currentPlayerIndex = 0,
             pendingReaction = PendingReaction(
-                discarderId,
-                discardedSouthTile.id,
-                setOf(respondentId),
+                discarderId = discarderId,
+                tileId = discardedSouthTile.id,
+                eligiblePlayerIds = setOf(respondentId),
                 responses = mapOf(respondentId to GameAction.Pass),
                 ronPlayerIds = setOf(respondentId),
                 id = Uuid.random(),

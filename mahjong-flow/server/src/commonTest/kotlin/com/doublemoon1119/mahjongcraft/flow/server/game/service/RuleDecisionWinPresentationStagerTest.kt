@@ -96,8 +96,8 @@ class RuleDecisionWinPresentationStagerTest {
         assertEquals(emptyList(), winnerPresentation.standingTileIds)
         val fields = winnerPresentation.detailFields.associate { it.id to it.value }
         assertEquals(
-            WinSettlementDetailValue.TileFaces(ownFlowers.map { TileFaceView(it.tile) }),
-            fields[TaiwanWinSettlementIds.FLOWERS_FIELD],
+            expected = WinSettlementDetailValue.TileFaces(ownFlowers.map { TileFaceView(it.tile) }),
+            actual = fields[TaiwanWinSettlementIds.FLOWERS_FIELD],
         )
         assertEquals(WinSettlementDetailValue.TileFaces(listOf(TileFaceView(robbedFlower.tile))), fields[TaiwanWinSettlementIds.WINNING_FLOWER_FIELD])
     }

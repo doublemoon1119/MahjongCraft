@@ -13,7 +13,7 @@ import kotlin.uuid.Uuid
  */
 fun registerBuiltInComponentPersistence(registry: ComponentPersistenceRegistrar) {
     registry.register(
-        ComponentPersistenceDefinition(
+        definition = ComponentPersistenceDefinition(
             component = BuiltInTileComponents.FACE_ACCESS,
             serializer = TileFaceAccessPersistenceDto.serializer(),
             toDto = { access ->
@@ -40,7 +40,7 @@ fun registerBuiltInComponentPersistence(registry: ComponentPersistenceRegistrar)
         ),
     )
     registry.register(
-        ComponentPersistenceDefinition(
+        definition = ComponentPersistenceDefinition(
             component = BuiltInTileComponents.POSE,
             serializer = ComponentStringPersistenceDto.serializer(),
             toDto = { ComponentStringPersistenceDto(it.name) },
@@ -48,7 +48,7 @@ fun registerBuiltInComponentPersistence(registry: ComponentPersistenceRegistrar)
         ),
     )
     registry.register(
-        ComponentPersistenceDefinition(
+        definition = ComponentPersistenceDefinition(
             component = BuiltInTileComponents.APPEARANCE,
             serializer = ComponentStringPersistenceDto.serializer(),
             toDto = ::ComponentStringPersistenceDto,

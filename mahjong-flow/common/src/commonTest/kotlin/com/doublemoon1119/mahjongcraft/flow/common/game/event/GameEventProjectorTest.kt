@@ -78,7 +78,7 @@ class GameEventProjectorTest {
         val after = before.withScores(scores(23_000, 25_000, 33_000, 19_000))
 
         val event = assertIs<RoundSettledEvent>(
-            project(before, after, ron(west, responsible = north), ron(east, responsible = north)).single(),
+            value = project(before, after, ron(west, responsible = north), ron(east, responsible = north)).single(),
         )
 
         assertEquals(RoundSettlementKind.WIN, event.kind)
@@ -101,7 +101,7 @@ class GameEventProjectorTest {
         val summary = summary(RiichiRoundOutcomeIds.NAGASHI_MANGAN, RoundCompletionClassification.WIN, after, beneficiaries = setOf(south))
 
         val event = assertIs<RoundSettledEvent>(
-            project(before, after, HistoryFact.RuleEffectResolved(RiichiRoundOutcomeIds.NAGASHI_MANGAN, summary))
+            value = project(before, after, HistoryFact.RuleEffectResolved(RiichiRoundOutcomeIds.NAGASHI_MANGAN, summary))
                 .filterIsInstance<RoundSettledEvent>()
                 .single(),
         )
@@ -196,7 +196,7 @@ class GameEventProjectorTest {
         val committed = scores(31_000, 24_000, 25_000, 20_000)
 
         val event = assertIs<MatchEndedEvent>(
-            project(game, game, HistoryFact.MatchCompleted(REASON_ID, committed)).single(),
+            value = project(game, game, HistoryFact.MatchCompleted(REASON_ID, committed)).single(),
         )
 
         assertEquals(committed, event.completedScores)
@@ -208,9 +208,9 @@ class GameEventProjectorTest {
         var fail = true
         val failingMarkers = GameEventPublicMarkerResolverRegistry().apply {
             register(
-                GameEventPublicMarkerResolverDefinition(
-                    RULE_MODULE_ID,
-                    object : GameEventPublicMarkerResolver {
+                definition = GameEventPublicMarkerResolverDefinition(
+                    ruleModuleId = RULE_MODULE_ID,
+                    resolver = object : GameEventPublicMarkerResolver {
                         override fun resolveMatchEndMarkers(context: MatchEndPublicMarkerContext): List<RulePublicEventMarker> {
                             if (fail) error("test marker failure")
                             return emptyList()
@@ -243,9 +243,9 @@ class GameEventProjectorTest {
     fun `round context marker failure is reported without dropping completion`() {
         val failingMarkers = GameEventPublicMarkerResolverRegistry().apply {
             register(
-                GameEventPublicMarkerResolverDefinition(
-                    RULE_MODULE_ID,
-                    object : GameEventPublicMarkerResolver {
+                definition = GameEventPublicMarkerResolverDefinition(
+                    ruleModuleId = RULE_MODULE_ID,
+                    resolver = object : GameEventPublicMarkerResolver {
                         override fun resolvePrevalentWindId(state: TableState): String = error("test wind failure")
                     },
                 ),
@@ -400,7 +400,7 @@ class GameEventProjectorTest {
         val after = before.withScores(scores(21_000, 37_000, 21_000, 21_000))
         val summary = summary(RiichiRoundOutcomeIds.NAGASHI_MANGAN, RoundCompletionClassification.WIN, after, beneficiaries = setOf(south))
         val settled = assertIs<RoundSettledEvent>(
-            project(before, after, HistoryFact.RuleEffectResolved(RiichiRoundOutcomeIds.NAGASHI_MANGAN, summary))
+            value = project(before, after, HistoryFact.RuleEffectResolved(RiichiRoundOutcomeIds.NAGASHI_MANGAN, summary))
                 .filterIsInstance<RoundSettledEvent>()
                 .single(),
         )

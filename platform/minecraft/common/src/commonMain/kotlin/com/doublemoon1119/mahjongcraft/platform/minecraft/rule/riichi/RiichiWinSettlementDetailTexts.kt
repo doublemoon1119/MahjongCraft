@@ -25,7 +25,7 @@ internal object RiichiWinSettlementDetailTexts {
         override fun quantities(quantities: List<WinSettlementQuantity>): PresentationValue.TextValue = FallbackWinSettlementDetailTextFormatter.quantities(quantities)
 
         override fun entries(entries: List<WinSettlementDetailEntry>): PresentationValue.EntryListValue = PresentationValue.EntryListValue(
-            entries.map { entry ->
+            entries = entries.map { entry ->
                 val name = RiichiYakuTranslationKeys.keyForEntry(entry.id) ?: entry.id
                 val quantity = entry.quantity
                 when (quantity?.unitId) {

@@ -75,9 +75,9 @@ class HistoryRecordingPersistenceMapper(
             decisionsByMatchId = state.decisionsByMatchId.mapKeys { it.key.toString() }.mapValues { it.value.name },
             terminalByMatchId = state.terminalByMatchId.mapKeys { it.key.toString() }.mapValues { (_, terminal) ->
                 HistoryRecordingTerminalPersistenceDto(
-                    terminal.endedAtEpochMillis,
-                    terminal.completed,
-                    terminal.venueId.toString(),
+                    endedAtEpochMillis = terminal.endedAtEpochMillis,
+                    completed = terminal.completed,
+                    venueId = terminal.venueId.toString(),
                 )
             },
             transfersByMatchId = state.transfersByMatchId.mapKeys { it.key.toString() }.mapValues { (_, transfer) ->
@@ -111,9 +111,9 @@ class HistoryRecordingPersistenceMapper(
                 .mapValues { HistoryRecordingDecision.valueOf(it.value) },
             terminalByMatchId = dto.terminalByMatchId.mapKeys { Uuid.parse(it.key) }.mapValues { (_, terminal) ->
                 HistoryRecordingTerminal(
-                    terminal.endedAtEpochMillis,
-                    terminal.completed,
-                    Uuid.parse(terminal.venueId),
+                    endedAtEpochMillis = terminal.endedAtEpochMillis,
+                    completed = terminal.completed,
+                    venueId = Uuid.parse(terminal.venueId),
                 )
             },
             transfersByMatchId = dto.transfersByMatchId.mapKeys { Uuid.parse(it.key) }.mapValues { (_, transfer) ->
@@ -164,26 +164,26 @@ class HistoryRecordingPersistenceMapper(
      */
     private fun encodeFact(fact: HistoryFact): HistoryFactPersistenceDto = when (fact) {
         is HistoryFact.MatchStarted -> HistoryFactPersistenceDto.MatchStarted(
-            encodeTable(fact.tableState),
-            fact.flowConfig.toPersistenceDto(),
-            fact.aiPlayerStrategyKeys.mapKeys { (playerId, _) -> playerId.toString() },
+            state = encodeTable(fact.tableState),
+            flowConfig = fact.flowConfig.toPersistenceDto(),
+            aiPlayerStrategyKeys = fact.aiPlayerStrategyKeys.mapKeys { (playerId, _) -> playerId.toString() },
         )
         is HistoryFact.RoundStarted -> HistoryFactPersistenceDto.RoundStarted(encodeTable(fact.tableState))
         is HistoryFact.DiceRolled -> HistoryFactPersistenceDto.DiceRolled(fact.roll.toPersistenceDto())
         is HistoryFact.RuleDecisionStarted -> HistoryFactPersistenceDto.RuleDecisionStarted(fact.timing.toPersistenceDto(), fact.stepId, fact.stepIndex)
         is HistoryFact.RuleDecisionSubmitted -> HistoryFactPersistenceDto.RuleDecisionSubmitted(
-            fact.timing.toPersistenceDto(),
-            fact.stepId,
-            fact.stepIndex,
-            fact.submission.toPersistenceDto(),
-            fact.nextStepId,
-            fact.passed,
+            timing = fact.timing.toPersistenceDto(),
+            stepId = fact.stepId,
+            stepIndex = fact.stepIndex,
+            submission = fact.submission.toPersistenceDto(),
+            nextStepId = fact.nextStepId,
+            passed = fact.passed,
         )
         is HistoryFact.RuleDecisionAutomaticallyResolved -> HistoryFactPersistenceDto.RuleDecisionAutomaticallyResolved(
-            fact.timing.toPersistenceDto(),
-            fact.stepId,
-            fact.stepIndex,
-            fact.nextStepId,
+            timing = fact.timing.toPersistenceDto(),
+            stepId = fact.stepId,
+            stepIndex = fact.stepIndex,
+            nextStepId = fact.nextStepId,
         )
         is HistoryFact.TileReplacementRoundResolved -> HistoryFactPersistenceDto.TileReplacementRoundResolved(
             timing = fact.timing.toPersistenceDto(),
@@ -193,45 +193,45 @@ class HistoryRecordingPersistenceMapper(
             },
         )
         is HistoryFact.ActionAccepted -> HistoryFactPersistenceDto.ActionAccepted(
-            fact.action.toPersistenceDto(registries.exhaustiveDrawReasons, registries.extensionGameActions),
-            fact.result.toPersistenceDto(),
+            action = fact.action.toPersistenceDto(registries.exhaustiveDrawReasons, registries.extensionGameActions),
+            result = fact.result.toPersistenceDto(),
         )
         is HistoryFact.ActionScored -> HistoryFactPersistenceDto.ActionScored(
-            fact.action.toPersistenceDto(registries.exhaustiveDrawReasons, registries.extensionGameActions),
-            fact.scoreDeltas.mapKeys { it.key.toString() },
-            fact.potDeposit,
+            action = fact.action.toPersistenceDto(registries.exhaustiveDrawReasons, registries.extensionGameActions),
+            scoreDeltasByPlayerId = fact.scoreDeltas.mapKeys { it.key.toString() },
+            potDeposit = fact.potDeposit,
         )
         is HistoryFact.ReactionResolved -> HistoryFactPersistenceDto.ReactionResolved(
-            fact.resolvedAction?.toPersistenceDto(registries.exhaustiveDrawReasons, registries.extensionGameActions),
-            fact.actorPlayerId?.toString(),
+            resolvedAction = fact.resolvedAction?.toPersistenceDto(registries.exhaustiveDrawReasons, registries.extensionGameActions),
+            actorPlayerId = fact.actorPlayerId?.toString(),
         )
         is HistoryFact.RoundCompleted -> HistoryFactPersistenceDto.RoundCompleted(
-            fact.summary.toPersistenceDto(),
+            summary = fact.summary.toPersistenceDto(),
         )
         is HistoryFact.WinSettled -> HistoryFactPersistenceDto.WinSettled(
-            fact.outcomeId,
-            fact.winDetails.map { it.toPersistenceDto(registries.componentViews) },
-            fact.responsiblePlayerIds.map(Uuid::toString),
+            outcomeId = fact.outcomeId,
+            winDetails = fact.winDetails.map { it.toPersistenceDto(registries.componentViews) },
+            responsiblePlayerIds = fact.responsiblePlayerIds.map(Uuid::toString),
         )
         is HistoryFact.MatchCompleted -> HistoryFactPersistenceDto.MatchCompleted(
-            fact.reasonId,
-            fact.finalScoresByPlayerId.mapKeys { it.key.toString() },
+            reasonId = fact.reasonId,
+            finalScoresByPlayerId = fact.finalScoresByPlayerId.mapKeys { it.key.toString() },
         )
         is HistoryFact.MatchAborted -> HistoryFactPersistenceDto.MatchAborted(fact.reasonId)
         is HistoryFact.WinContinuationResolved -> HistoryFactPersistenceDto.WinContinuationResolved(
-            fact.directive.toPersistenceDto(),
+            directive = fact.directive.toPersistenceDto(),
         )
         is HistoryFact.RuleEffectResolved -> HistoryFactPersistenceDto.RuleEffectResolved(
-            fact.reasonId,
-            fact.roundCompletion?.toPersistenceDto(),
-            fact.winDetails.map { it.toPersistenceDto(registries.componentViews) },
+            reasonId = fact.reasonId,
+            roundCompletion = fact.roundCompletion?.toPersistenceDto(),
+            winDetails = fact.winDetails.map { it.toPersistenceDto(registries.componentViews) },
         )
         HistoryFact.ReturnedToRoom -> HistoryFactPersistenceDto.ReturnedToRoom
         is HistoryFact.TableChanged -> HistoryFactPersistenceDto.TableChanged(
-            HistoryTableChangeMapper(registries).encode(fact.result),
+            result = HistoryTableChangeMapper(registries).encode(fact.result),
         )
         is HistoryFact.TilePresentationChanged -> HistoryFactPersistenceDto.TilePresentationChanged(
-            fact.presentations.entries.sortedBy { it.key.toString() }.associate { (tileId, presentation) ->
+            presentations = fact.presentations.entries.sortedBy { it.key.toString() }.associate { (tileId, presentation) ->
                 tileId.toString() to presentation.toPersistenceDto(registries.componentViews)
             },
         )
@@ -245,26 +245,26 @@ class HistoryRecordingPersistenceMapper(
      */
     private fun decodeFact(dto: HistoryFactPersistenceDto): HistoryFact = when (dto) {
         is HistoryFactPersistenceDto.MatchStarted -> HistoryFact.MatchStarted(
-            decodeTable(dto.state),
-            dto.flowConfig.toDomain(),
-            dto.aiPlayerStrategyKeys.mapKeys { (playerId, _) -> Uuid.parse(playerId) },
+            tableState = decodeTable(dto.state),
+            flowConfig = dto.flowConfig.toDomain(),
+            aiPlayerStrategyKeys = dto.aiPlayerStrategyKeys.mapKeys { (playerId, _) -> Uuid.parse(playerId) },
         )
         is HistoryFactPersistenceDto.RoundStarted -> HistoryFact.RoundStarted(decodeTable(dto.state))
         is HistoryFactPersistenceDto.DiceRolled -> HistoryFact.DiceRolled(dto.roll.toDomain())
         is HistoryFactPersistenceDto.RuleDecisionStarted -> HistoryFact.RuleDecisionStarted(dto.timing.toDomain(), dto.stepId, dto.stepIndex)
         is HistoryFactPersistenceDto.RuleDecisionSubmitted -> HistoryFact.RuleDecisionSubmitted(
-            dto.timing.toDomain(),
-            dto.stepId,
-            dto.stepIndex,
-            dto.submission.toDomain(),
-            dto.nextStepId,
-            dto.passed,
+            timing = dto.timing.toDomain(),
+            stepId = dto.stepId,
+            stepIndex = dto.stepIndex,
+            submission = dto.submission.toDomain(),
+            nextStepId = dto.nextStepId,
+            passed = dto.passed,
         )
         is HistoryFactPersistenceDto.RuleDecisionAutomaticallyResolved -> HistoryFact.RuleDecisionAutomaticallyResolved(
-            dto.timing.toDomain(),
-            dto.stepId,
-            dto.stepIndex,
-            dto.nextStepId,
+            timing = dto.timing.toDomain(),
+            stepId = dto.stepId,
+            stepIndex = dto.stepIndex,
+            nextStepId = dto.nextStepId,
         )
         is HistoryFactPersistenceDto.TileReplacementRoundResolved -> HistoryFact.TileReplacementRoundResolved(
             timing = dto.timing.toDomain(),
@@ -274,45 +274,45 @@ class HistoryRecordingPersistenceMapper(
             ),
         )
         is HistoryFactPersistenceDto.ActionAccepted -> HistoryFact.ActionAccepted(
-            dto.action.toDomain(registries.exhaustiveDrawReasons, registries.extensionGameActions),
-            dto.result.toDomain(),
+            action = dto.action.toDomain(registries.exhaustiveDrawReasons, registries.extensionGameActions),
+            result = dto.result.toDomain(),
         )
         is HistoryFactPersistenceDto.ActionScored -> HistoryFact.ActionScored(
-            dto.action.toDomain(registries.exhaustiveDrawReasons, registries.extensionGameActions),
-            dto.scoreDeltasByPlayerId.mapKeys { Uuid.parse(it.key) },
-            dto.potDeposit,
+            action = dto.action.toDomain(registries.exhaustiveDrawReasons, registries.extensionGameActions),
+            scoreDeltas = dto.scoreDeltasByPlayerId.mapKeys { Uuid.parse(it.key) },
+            potDeposit = dto.potDeposit,
         )
         is HistoryFactPersistenceDto.ReactionResolved -> HistoryFact.ReactionResolved(
-            dto.resolvedAction?.toDomain(registries.exhaustiveDrawReasons, registries.extensionGameActions),
-            dto.actorPlayerId?.let(Uuid::parse),
+            resolvedAction = dto.resolvedAction?.toDomain(registries.exhaustiveDrawReasons, registries.extensionGameActions),
+            actorPlayerId = dto.actorPlayerId?.let(Uuid::parse),
         )
         is HistoryFactPersistenceDto.RoundCompleted -> HistoryFact.RoundCompleted(
-            dto.summary.toDomain(),
+            summary = dto.summary.toDomain(),
         )
         is HistoryFactPersistenceDto.WinSettled -> HistoryFact.WinSettled(
-            dto.outcomeId,
-            dto.winDetails.map { it.toDomain(registries.componentViews) },
-            dto.responsiblePlayerIds.map(Uuid::parse),
+            outcomeId = dto.outcomeId,
+            winDetails = dto.winDetails.map { it.toDomain(registries.componentViews) },
+            responsiblePlayerIds = dto.responsiblePlayerIds.map(Uuid::parse),
         )
         is HistoryFactPersistenceDto.MatchCompleted -> HistoryFact.MatchCompleted(
-            dto.reasonId,
-            dto.finalScoresByPlayerId.mapKeys { Uuid.parse(it.key) },
+            reasonId = dto.reasonId,
+            finalScoresByPlayerId = dto.finalScoresByPlayerId.mapKeys { Uuid.parse(it.key) },
         )
         is HistoryFactPersistenceDto.MatchAborted -> HistoryFact.MatchAborted(dto.reasonId)
         is HistoryFactPersistenceDto.WinContinuationResolved -> HistoryFact.WinContinuationResolved(
-            dto.directive.toDomain(),
+            directive = dto.directive.toDomain(),
         )
         is HistoryFactPersistenceDto.RuleEffectResolved -> HistoryFact.RuleEffectResolved(
-            dto.reasonId,
-            dto.roundCompletion?.toDomain(),
-            dto.winDetails.map { it.toDomain(registries.componentViews) },
+            reasonId = dto.reasonId,
+            roundCompletion = dto.roundCompletion?.toDomain(),
+            winDetails = dto.winDetails.map { it.toDomain(registries.componentViews) },
         )
         HistoryFactPersistenceDto.ReturnedToRoom -> HistoryFact.ReturnedToRoom
         is HistoryFactPersistenceDto.TableChanged -> HistoryFact.TableChanged(
-            HistoryTableChangeMapper(registries).decode(dto.result),
+            result = HistoryTableChangeMapper(registries).decode(dto.result),
         )
         is HistoryFactPersistenceDto.TilePresentationChanged -> HistoryFact.TilePresentationChanged(
-            dto.presentations.entries.associate { (tileId, presentation) -> Uuid.parse(tileId) to presentation.toDomain(registries.componentViews) },
+            presentations = dto.presentations.entries.associate { (tileId, presentation) -> Uuid.parse(tileId) to presentation.toDomain(registries.componentViews) },
         )
     }
 
@@ -323,11 +323,11 @@ class HistoryRecordingPersistenceMapper(
      * @return 編碼後的完整桌況 DTO。
      */
     private fun encodeTable(state: TableState) = state.toPersistenceDto(
-        registries.ruleConfigs,
-        registries.discardPiles,
-        registries.exhaustiveDrawReasons,
-        registries.extensionGameActions,
-        registries.components,
+        ruleConfigRegistry = registries.ruleConfigs,
+        discardPileRegistry = registries.discardPiles,
+        exhaustiveDrawReasonRegistry = registries.exhaustiveDrawReasons,
+        extensionGameActionRegistry = registries.extensionGameActions,
+        componentRegistry = registries.components,
     )
 
     /**
@@ -337,11 +337,11 @@ class HistoryRecordingPersistenceMapper(
      * @return 還原後的完整桌況。
      */
     private fun decodeTable(dto: TableStatePersistenceDto) = dto.toDomain(
-        registries.ruleConfigs,
-        registries.discardPiles,
-        registries.exhaustiveDrawReasons,
-        registries.extensionGameActions,
-        registries.components,
+        ruleConfigRegistry = registries.ruleConfigs,
+        discardPileRegistry = registries.discardPiles,
+        exhaustiveDrawReasonRegistry = registries.exhaustiveDrawReasons,
+        extensionGameActionRegistry = registries.extensionGameActions,
+        componentRegistry = registries.components,
     )
 }
 
@@ -383,7 +383,7 @@ private fun WinSettlementDetailValue.toPersistenceDto(componentViews: ComponentV
     is WinSettlementDetailValue.Quantities -> HistoryWinDetailValuePersistenceDto.Quantities(quantities.map { it.toPersistenceDto() })
     is WinSettlementDetailValue.TileFaces -> HistoryWinDetailValuePersistenceDto.TileFaces(faces.map { it.toPersistenceDto(componentViews) })
     is WinSettlementDetailValue.Entries -> HistoryWinDetailValuePersistenceDto.Entries(
-        entries.map { entry ->
+        entries = entries.map { entry ->
             HistoryWinDetailValuePersistenceDto.Entries.Entry(
                 id = entry.id,
                 quantity = entry.quantity?.toPersistenceDto(),
@@ -404,7 +404,7 @@ private fun HistoryWinDetailValuePersistenceDto.toDomain(componentViews: Compone
     is HistoryWinDetailValuePersistenceDto.Quantities -> WinSettlementDetailValue.Quantities(quantities.map { it.toDomain() })
     is HistoryWinDetailValuePersistenceDto.TileFaces -> WinSettlementDetailValue.TileFaces(faces.map { it.toDomain(componentViews) })
     is HistoryWinDetailValuePersistenceDto.Entries -> WinSettlementDetailValue.Entries(
-        entries.map { entry ->
+        entries = entries.map { entry ->
             WinSettlementDetailEntry(
                 id = entry.id,
                 quantity = entry.quantity?.toDomain(),
@@ -425,9 +425,9 @@ private fun HistoryWinDetailQuantityPersistenceDto.toDomain() = WinSettlementQua
 private fun WinRoundDirective.toPersistenceDto(): WinRoundDirectivePersistenceDto = when (this) {
     WinRoundDirective.EndRound -> WinRoundDirectivePersistenceDto.EndRound
     is WinRoundDirective.ContinueRound -> WinRoundDirectivePersistenceDto.ContinueRound(
-        newlyFinishedPlayerIds.map(Uuid::toString).toSet(),
-        nextPlayerId.toString(),
-        settlementDetail.name,
+        newlyFinishedPlayerIds = newlyFinishedPlayerIds.map(Uuid::toString).toSet(),
+        nextPlayerId = nextPlayerId.toString(),
+        settlementDetail = settlementDetail.name,
     )
 }
 
@@ -435,9 +435,9 @@ private fun WinRoundDirective.toPersistenceDto(): WinRoundDirectivePersistenceDt
 private fun WinRoundDirectivePersistenceDto.toDomain(): WinRoundDirective = when (this) {
     WinRoundDirectivePersistenceDto.EndRound -> WinRoundDirective.EndRound
     is WinRoundDirectivePersistenceDto.ContinueRound -> WinRoundDirective.ContinueRound(
-        newlyFinishedPlayerIds.map(Uuid::parse).toSet(),
-        Uuid.parse(nextPlayerId),
-        ContinuingWinSettlementDetail.valueOf(settlementDetail),
+        newlyFinishedPlayerIds = newlyFinishedPlayerIds.map(Uuid::parse).toSet(),
+        nextPlayerId = Uuid.parse(nextPlayerId),
+        settlementDetail = ContinuingWinSettlementDetail.valueOf(settlementDetail),
     )
 }
 

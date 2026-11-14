@@ -96,9 +96,9 @@ class RiichiPostActionExhaustiveDrawResolversTest {
      * @return 供途中流局解析器使用的情境。
      */
     private fun context(table: TableState, action: GameAction): CompletedGameActionContext = CompletedGameActionContext(
-        table.players.first().id,
-        action,
-        table,
+        actorPlayerId = table.players.first().id,
+        action = action,
+        tableState = table,
     )
 
     /**
@@ -128,8 +128,8 @@ class RiichiPostActionExhaustiveDrawResolversTest {
         val resolver = RiichiSuufonRendaResolver()
 
         assertEquals(
-            RiichiExhaustiveDrawReason.SuufonRenda,
-            resolver.resolve(context(table, GameAction.Discard(Uuid.random())), riichiModule),
+            expected = RiichiExhaustiveDrawReason.SuufonRenda,
+            actual = resolver.resolve(context(table, GameAction.Discard(Uuid.random())), riichiModule),
         )
         assertNull(resolver.resolve(context(table, RIICHI_GAME_ACTION), riichiModule))
         assertNull(resolver.resolve(context(table, kanAction()), riichiModule))
@@ -143,8 +143,8 @@ class RiichiPostActionExhaustiveDrawResolversTest {
         val discard = GameAction.Discard(Uuid.random())
 
         assertEquals(
-            RiichiExhaustiveDrawReason.SuuchaRiichi,
-            resolver.resolve(contextWithActorHistory(table, listOf(RIICHI_GAME_ACTION, discard)), riichiModule),
+            expected = RiichiExhaustiveDrawReason.SuuchaRiichi,
+            actual = resolver.resolve(contextWithActorHistory(table, listOf(RIICHI_GAME_ACTION, discard)), riichiModule),
         )
         assertNull(resolver.resolve(context(table, discard), riichiModule))
         assertNull(resolver.resolve(context(table, RIICHI_GAME_ACTION), riichiModule))
@@ -160,8 +160,8 @@ class RiichiPostActionExhaustiveDrawResolversTest {
         val discard = GameAction.Discard(Uuid.random())
 
         assertEquals(
-            RiichiExhaustiveDrawReason.SuukanNagare,
-            resolver.resolve(contextWithActorHistory(table, listOf(kan, GameAction.Draw, discard)), riichiModule),
+            expected = RiichiExhaustiveDrawReason.SuukanNagare,
+            actual = resolver.resolve(contextWithActorHistory(table, listOf(kan, GameAction.Draw, discard)), riichiModule),
         )
         assertNull(resolver.resolve(context(table, discard), riichiModule))
         assertNull(resolver.resolve(contextWithActorHistory(table, listOf(kan, GameAction.Draw, discard, discard)), riichiModule))
@@ -179,15 +179,15 @@ class RiichiPostActionExhaustiveDrawResolversTest {
         assertNull(RiichiSuufonRendaResolver().resolve(context(discardTable, GameAction.Discard(Uuid.random())), taiwanModule))
         val discard = GameAction.Discard(Uuid.random())
         assertNull(
-            RiichiSuuchaRiichiResolver().resolve(
-                contextWithActorHistory(riichiTable, listOf(RIICHI_GAME_ACTION, discard)),
-                taiwanModule,
+            actual = RiichiSuuchaRiichiResolver().resolve(
+                context = contextWithActorHistory(riichiTable, listOf(RIICHI_GAME_ACTION, discard)),
+                ruleModule = taiwanModule,
             ),
         )
         assertNull(
-            RiichiSuukanNagareResolver().resolve(
-                contextWithActorHistory(kanTable, listOf(kanAction(), GameAction.Draw, discard)),
-                taiwanModule,
+            actual = RiichiSuukanNagareResolver().resolve(
+                context = contextWithActorHistory(kanTable, listOf(kanAction(), GameAction.Draw, discard)),
+                ruleModule = taiwanModule,
             ),
         )
     }

@@ -50,8 +50,8 @@ class PresentationLayoutSolverTest {
     @Test
     fun `measures a tile list with its gaps`() {
         val size = solver().measure(
-            PresentationLayout.TileList(TILE_LIST_FIELD, tileWidth = 10f, tileHeight = 14f, spacing = 2f),
-            SNAPSHOT,
+            layout = PresentationLayout.TileList(TILE_LIST_FIELD, tileWidth = 10f, tileHeight = 14f, spacing = 2f),
+            snapshot = SNAPSHOT,
         )
 
         assertEquals(3 * 10f + 2 * 2f, size.width)
@@ -88,8 +88,8 @@ class PresentationLayoutSolverTest {
     @Test
     fun `measures tile groups with the wider group spacing`() {
         val size = solver().measure(
-            PresentationLayout.TileGroups(TILE_GROUPS_FIELD, tileWidth = 10f, tileHeight = 14f, tileSpacing = 2f, groupSpacing = 6f),
-            SNAPSHOT,
+            layout = PresentationLayout.TileGroups(TILE_GROUPS_FIELD, tileWidth = 10f, tileHeight = 14f, tileSpacing = 2f, groupSpacing = 6f),
+            snapshot = SNAPSHOT,
         )
 
         // 兩組共四張牌：四張牌寬 + 三個牌間距 + 一個組間距與牌間距的差額。
@@ -100,8 +100,8 @@ class PresentationLayoutSolverTest {
     @Test
     fun `caps the entry height at one column`() {
         val size = solver().measure(
-            PresentationLayout.RepeatEntries(ENTRY_FIELD, entriesPerColumn = 2, width = 100f, rowHeight = 11f),
-            SNAPSHOT,
+            layout = PresentationLayout.RepeatEntries(ENTRY_FIELD, entriesPerColumn = 2, width = 100f, rowHeight = 11f),
+            snapshot = SNAPSHOT,
         )
 
         assertEquals(2 * 11f, size.height)
@@ -112,8 +112,8 @@ class PresentationLayoutSolverTest {
     @Test
     fun `measures a row from its children`() {
         val size = solver().measure(
-            PresentationLayout.Row(children = listOf(spacer(10f, 4f), spacer(20f, 9f)), spacing = 3f),
-            SNAPSHOT,
+            layout = PresentationLayout.Row(children = listOf(spacer(10f, 4f), spacer(20f, 9f)), spacing = 3f),
+            snapshot = SNAPSHOT,
         )
 
         assertEquals(33f, size.width)
@@ -124,8 +124,8 @@ class PresentationLayoutSolverTest {
     @Test
     fun `measures a column from its children`() {
         val size = solver().measure(
-            PresentationLayout.Column(children = listOf(spacer(10f, 4f), spacer(20f, 9f)), spacing = 3f),
-            SNAPSHOT,
+            layout = PresentationLayout.Column(children = listOf(spacer(10f, 4f), spacer(20f, 9f)), spacing = 3f),
+            snapshot = SNAPSHOT,
         )
 
         assertEquals(20f, size.width)
@@ -136,11 +136,11 @@ class PresentationLayoutSolverTest {
     @Test
     fun `measures a column without spacing around a missing child`() {
         val size = solver().measure(
-            PresentationLayout.Column(
+            layout = PresentationLayout.Column(
                 children = listOf(PresentationLayout.IfPresent(MISSING_FIELD, spacer(10f, 4f)), spacer(20f, 9f)),
                 spacing = 3f,
             ),
-            SNAPSHOT,
+            snapshot = SNAPSHOT,
         )
 
         assertEquals(9f, size.height)
@@ -150,8 +150,8 @@ class PresentationLayoutSolverTest {
     @Test
     fun `adds the container padding to both sides`() {
         assertEquals(
-            PresentationNodeSize(10f + 6f, 4f + 6f),
-            styledSize(10f, 4f, PresentationContainerStyle(padding = 3f)),
+            expected = PresentationNodeSize(10f + 6f, 4f + 6f),
+            actual = styledSize(10f, 4f, PresentationContainerStyle(padding = 3f)),
         )
     }
 
@@ -160,8 +160,8 @@ class PresentationLayoutSolverTest {
     fun `fills the maximum width on request`() {
         val style = PresentationContainerStyle(padding = 2f)
         val size = solver().measure(
-            PresentationLayout.Row(children = listOf(spacer(10f, 4f)), fillMaxWidth = true, style = style),
-            SNAPSHOT,
+            layout = PresentationLayout.Row(children = listOf(spacer(10f, 4f)), fillMaxWidth = true, style = style),
+            snapshot = SNAPSHOT,
         )
 
         assertEquals(PresentationLayoutSolver.MAX_WIDTH, size.width)
@@ -171,13 +171,13 @@ class PresentationLayoutSolverTest {
     @Test
     fun `measures a grid by its cell size and row count`() {
         val size = solver().measure(
-            PresentationLayout.Grid(
+            layout = PresentationLayout.Grid(
                 children = List(5) { spacer(10f, 4f) },
                 columns = 2,
                 horizontalSpacing = 3f,
                 verticalSpacing = 1f,
             ),
-            SNAPSHOT,
+            snapshot = SNAPSHOT,
         )
 
         assertEquals(2 * 10f + 3f, size.width)
@@ -190,12 +190,12 @@ class PresentationLayoutSolverTest {
         val solver = solver()
 
         assertEquals(
-            PresentationNodeSize(8f, 4f),
-            solver.measure(PresentationLayout.SizeConstraint(spacer(10f, 4f), maxWidth = 8f), SNAPSHOT),
+            expected = PresentationNodeSize(8f, 4f),
+            actual = solver.measure(PresentationLayout.SizeConstraint(spacer(10f, 4f), maxWidth = 8f), SNAPSHOT),
         )
         assertEquals(
-            PresentationNodeSize(10f, 4f),
-            solver.measure(PresentationLayout.SizeConstraint(spacer(10f, 4f), maxWidth = 30f), SNAPSHOT),
+            expected = PresentationNodeSize(10f, 4f),
+            actual = solver.measure(PresentationLayout.SizeConstraint(spacer(10f, 4f), maxWidth = 30f), SNAPSHOT),
         )
     }
 
@@ -205,12 +205,12 @@ class PresentationLayoutSolverTest {
         val solver = solver()
 
         assertEquals(
-            PresentationNodeSize(10f, 4f),
-            solver.measure(PresentationLayout.IfPresent(TEXT_FIELD, spacer(10f, 4f)), SNAPSHOT),
+            expected = PresentationNodeSize(10f, 4f),
+            actual = solver.measure(PresentationLayout.IfPresent(TEXT_FIELD, spacer(10f, 4f)), SNAPSHOT),
         )
         assertEquals(
-            PresentationNodeSize.ZERO,
-            solver.measure(PresentationLayout.IfPresent(MISSING_FIELD, spacer(10f, 4f)), SNAPSHOT),
+            expected = PresentationNodeSize.ZERO,
+            actual = solver.measure(PresentationLayout.IfPresent(MISSING_FIELD, spacer(10f, 4f)), SNAPSHOT),
         )
     }
 
@@ -309,9 +309,9 @@ class PresentationLayoutSolverTest {
 
         PresentationArrangement.entries.forEach { arrangement ->
             assertEquals(
-                listOf(0f, 10f),
-                arrange(widths, available = 20f, spacing = 0f, arrangement = arrangement, occupied = widths.map { true }),
-                "Expected $arrangement to place the children back to back when nothing is left over.",
+                expected = listOf(0f, 10f),
+                actual = arrange(widths, available = 20f, spacing = 0f, arrangement = arrangement, occupied = widths.map { true }),
+                message = "Expected $arrangement to place the children back to back when nothing is left over.",
             )
         }
     }
@@ -320,8 +320,8 @@ class PresentationLayoutSolverTest {
     @Test
     fun `adds no gap between a single child`() {
         assertEquals(
-            listOf(0f),
-            arrange(listOf(10f), available = 50f, spacing = 0f, arrangement = PresentationArrangement.SPACE_BETWEEN, occupied = listOf(true)),
+            expected = listOf(0f),
+            actual = arrange(listOf(10f), available = 50f, spacing = 0f, arrangement = PresentationArrangement.SPACE_BETWEEN, occupied = listOf(true)),
         )
     }
 
@@ -329,12 +329,12 @@ class PresentationLayoutSolverTest {
     @Test
     fun `skips spacing around children that occupy nothing`() {
         assertEquals(
-            listOf(0f, 14f, 14f),
-            arrange(listOf(10f, 0f, 10f), available = 24f, spacing = 4f, arrangement = PresentationArrangement.START, occupied = listOf(true, false, true)),
+            expected = listOf(0f, 14f, 14f),
+            actual = arrange(listOf(10f, 0f, 10f), available = 24f, spacing = 4f, arrangement = PresentationArrangement.START, occupied = listOf(true, false, true)),
         )
         assertEquals(
-            listOf(0f, 0f),
-            arrange(listOf(0f, 0f), available = 24f, spacing = 4f, arrangement = PresentationArrangement.CENTER, occupied = listOf(false, false)),
+            expected = listOf(0f, 0f),
+            actual = arrange(listOf(0f, 0f), available = 24f, spacing = 4f, arrangement = PresentationArrangement.CENTER, occupied = listOf(false, false)),
         )
     }
 
@@ -359,8 +359,8 @@ class PresentationLayoutSolverTest {
         assertEquals(10f, crossAxisOffset(available = 20f, childSize = 10f, alignment = PresentationAlignment.END))
         PresentationAlignment.entries.forEach { alignment ->
             assertTrue(
-                crossAxisOffset(available = 10f, childSize = 30f, alignment = alignment) >= 0f,
-                "Expected $alignment to keep an oversized child at the container start.",
+                actual = crossAxisOffset(available = 10f, childSize = 30f, alignment = alignment) >= 0f,
+                message = "Expected $alignment to keep an oversized child at the container start.",
             )
         }
     }
@@ -371,8 +371,8 @@ class PresentationLayoutSolverTest {
      * @return 使用固定文字尺寸與測試 registry 的解算器。
      */
     private fun solver() = PresentationLayoutSolver(
-        FakeTemplateRegistry,
-        object : PresentationTextMeasurer {
+        templateRegistry = FakeTemplateRegistry,
+        textMeasurer = object : PresentationTextMeasurer {
             override fun measure(text: PresentationValue.TextValue): Float = TEXT_WIDTH
 
             override fun measurePlain(text: String): Float = NAME_WIDTH

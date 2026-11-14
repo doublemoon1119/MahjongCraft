@@ -30,7 +30,7 @@ internal class RoomMemberPresentation(private val indicatorTextResolver: PublicP
     fun infoRows(player: MahjongPlayerInfoEntry, dealerPlayerId: Uuid?): List<Pair<Text, Int>> = buildList {
         val wind = windText(player.seatWind)
         add(
-            if (player.playerId == dealerPlayerId) {
+            element = if (player.playerId == dealerPlayerId) {
                 Text.empty().append(wind).append(DEALER_MARKER) to WIND_COLOR
             } else {
                 wind to WIND_COLOR

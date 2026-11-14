@@ -150,14 +150,14 @@ internal class SeatSetupScenario(
         val visibleWallTileIds = (liveTiles + initialReservedTiles).mapTo(mutableSetOf()) { tile -> tile.id }
         val initialPhysicalLayout = when (
             val decision = module.createPhysicalWallLayoutPolicy().createInitialLayoutValidated(
-                InitialPhysicalWallLayoutContext(layoutResult, opening, visibleWallTileIds),
+                context = InitialPhysicalWallLayoutContext(layoutResult, opening, visibleWallTileIds),
             )
         ) {
             is InitialPhysicalWallLayoutDecision.Completed -> decision.layout
             is InitialPhysicalWallLayoutDecision.Rejected -> error(decision.reasonId)
         }
         val physicalLayout = TileWallPhysicalLayout(
-            initialPhysicalLayout.placements.filterKeys { tileId -> tileId in visibleWallTileIds },
+            placements = initialPhysicalLayout.placements.filterKeys { tileId -> tileId in visibleWallTileIds },
         )
 
         val players = tableState.players.mapIndexed { index, oldPlayer ->

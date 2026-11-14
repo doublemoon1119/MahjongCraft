@@ -158,23 +158,23 @@ class MahjongAutoDrawServiceTest {
         val router = GameActionRouter(
             drawTileUseCase = DrawTileUseCase(gameRepo, moduleRegistry, snapshotSynchronizer, eventPublisher, presentationPublisher, componentRegistry = bundledCoreExtensionRegistries().componentRegistry),
             discardTileUseCase = DiscardTileUseCase(
-                gameRepo,
-                moduleRegistry,
-                snapshotSynchronizer,
-                handSortPreferenceStore,
-                postActionExhaustiveDrawResolverRegistry,
-                eventPublisher,
-                presentationPublisher,
+                gameRepository = gameRepo,
+                moduleRegistry = moduleRegistry,
+                snapshotSynchronizer = snapshotSynchronizer,
+                handSortPreferenceStore = handSortPreferenceStore,
+                postActionExhaustiveDrawResolverRegistry = postActionExhaustiveDrawResolverRegistry,
+                eventPublisher = eventPublisher,
+                presentationPublisher = presentationPublisher,
 
                 componentRegistry = bundledCoreExtensionRegistries().componentRegistry,
             ),
             declareTsumoUseCase = DeclareTsumoUseCase(
-                gameRepo,
-                moduleRegistry,
-                snapshotSynchronizer,
-                eventPublisher,
-                presentationPublisher,
-                winPresentationHandoff,
+                gameRepository = gameRepo,
+                moduleRegistry = moduleRegistry,
+                snapshotSynchronizer = snapshotSynchronizer,
+                eventPublisher = eventPublisher,
+                presentationPublisher = presentationPublisher,
+                winPresentationHandoff = winPresentationHandoff,
                 winCelebrationCueResolverRegistry = bundledWinCelebrationCueResolverRegistry(),
                 winSettlementDetailResolverRegistry = winSettlementDetailResolverRegistry,
 
@@ -182,13 +182,13 @@ class MahjongAutoDrawServiceTest {
             ),
             declareKanUseCase = DeclareKanUseCase(gameRepo, moduleRegistry, snapshotSynchronizer, eventPublisher, presentationPublisher, componentRegistry = bundledCoreExtensionRegistries().componentRegistry),
             respondToDiscardUseCase = RespondToDiscardUseCase(
-                gameRepo,
-                moduleRegistry,
-                snapshotSynchronizer,
-                handSortPreferenceStore,
-                eventPublisher,
-                presentationPublisher,
-                winPresentationHandoff,
+                gameRepository = gameRepo,
+                moduleRegistry = moduleRegistry,
+                snapshotSynchronizer = snapshotSynchronizer,
+                handSortPreferenceStore = handSortPreferenceStore,
+                eventPublisher = eventPublisher,
+                presentationPublisher = presentationPublisher,
+                winPresentationHandoff = winPresentationHandoff,
                 winCelebrationCueResolverRegistry = bundledWinCelebrationCueResolverRegistry(),
                 winSettlementDetailResolverRegistry = winSettlementDetailResolverRegistry,
                 postActionExhaustiveDrawResolverRegistry = postActionExhaustiveDrawResolverRegistry,
@@ -196,12 +196,12 @@ class MahjongAutoDrawServiceTest {
                 componentRegistry = bundledCoreExtensionRegistries().componentRegistry,
             ),
             respondToRobbingUseCase = RespondToRobbingUseCase(
-                gameRepo,
-                moduleRegistry,
-                snapshotSynchronizer,
-                eventPublisher,
-                presentationPublisher,
-                winPresentationHandoff,
+                gameRepository = gameRepo,
+                moduleRegistry = moduleRegistry,
+                snapshotSynchronizer = snapshotSynchronizer,
+                eventPublisher = eventPublisher,
+                presentationPublisher = presentationPublisher,
+                winPresentationHandoff = winPresentationHandoff,
                 winCelebrationCueResolverRegistry = bundledWinCelebrationCueResolverRegistry(),
                 winSettlementDetailResolverRegistry = winSettlementDetailResolverRegistry,
 
@@ -213,13 +213,13 @@ class MahjongAutoDrawServiceTest {
         )
         val getLegalActionsUseCase = GetLegalActionsUseCase(gameRepo, moduleRegistry)
         val aiTurnDriver = AiTurnDriver(
-            gameRepo,
-            getLegalActionsUseCase,
-            aiStrategyRegistry,
-            GameVisibilityPolicyImpl(moduleRegistry, componentRegistry = bundledCoreExtensionRegistries().componentRegistry),
-            moduleRegistry,
-            AiDecisionExecutor.direct(failurePolicy = ExtensionFailurePolicy.Default),
-            AutomaticGameCommandResolver(moduleRegistry),
+            gameRepository = gameRepo,
+            getLegalActionsUseCase = getLegalActionsUseCase,
+            aiStrategyRegistry = aiStrategyRegistry,
+            visibilityPolicy = GameVisibilityPolicyImpl(moduleRegistry, componentRegistry = bundledCoreExtensionRegistries().componentRegistry),
+            moduleRegistry = moduleRegistry,
+            decisionExecutor = AiDecisionExecutor.direct(failurePolicy = ExtensionFailurePolicy.Default),
+            commandResolver = AutomaticGameCommandResolver(moduleRegistry),
         )
         val clock = MutableMonotonicClock()
         val decisionTimerManager = GameDecisionTimerManager(
@@ -229,12 +229,12 @@ class MahjongAutoDrawServiceTest {
             clock = clock,
         )
         val decisionAvailabilityService = GameDecisionAvailabilityService(
-            presentationBusyGate,
-            decisionTimerManager,
-            DecisionTimerSynchronizationService(
-                decisionTimerManager,
-                gameRepo,
-                FakeDecisionTimerUpdatePublisher(),
+            busyGate = presentationBusyGate,
+            timerManager = decisionTimerManager,
+            synchronizationService = DecisionTimerSynchronizationService(
+                timerManager = decisionTimerManager,
+                gameRepository = gameRepo,
+                publisher = FakeDecisionTimerUpdatePublisher(),
             ),
         )
         val coordinator = GameFlowCoordinator(
@@ -244,34 +244,34 @@ class MahjongAutoDrawServiceTest {
             winSettlementDetailResolverRegistry = winSettlementDetailResolverRegistry,
             declareExhaustiveDrawUseCase = DeclareExhaustiveDrawUseCase(gameRepo, moduleRegistry, snapshotSynchronizer, eventPublisher),
             resolvePostReactionRoundOutcomeUseCase = ResolvePostReactionRoundOutcomeUseCase(
-                gameRepo,
-                moduleRegistry,
-                PostReactionRoundOutcomeResolverRegistry().apply { freeze() },
-                snapshotSynchronizer,
-                winSettlementDetailResolverRegistry,
+                gameRepository = gameRepo,
+                moduleRegistry = moduleRegistry,
+                resolverRegistry = PostReactionRoundOutcomeResolverRegistry().apply { freeze() },
+                snapshotSynchronizer = snapshotSynchronizer,
+                winSettlementDetailResolverRegistry = winSettlementDetailResolverRegistry,
             ),
             resolveWinRoundContinuationUseCase = ResolveWinRoundContinuationUseCase(
-                gameRepo,
-                moduleRegistry,
-                WinRoundContinuationResolverRegistry().apply { freeze() },
-                snapshotSynchronizer,
+                gameRepository = gameRepo,
+                moduleRegistry = moduleRegistry,
+                resolverRegistry = WinRoundContinuationResolverRegistry().apply { freeze() },
+                snapshotSynchronizer = snapshotSynchronizer,
                 ruleDecisionResolverRegistry = emptyRuleDecisionResolverRegistry(),
             ),
             advanceRoundUseCase = AdvanceRoundUseCase(
-                gameRepo,
-                moduleRegistry,
-                snapshotSynchronizer,
-                handSortPreferenceStore,
-                eventPublisher,
-                presentationPublisher,
+                gameRepository = gameRepo,
+                moduleRegistry = moduleRegistry,
+                snapshotSynchronizer = snapshotSynchronizer,
+                handSortPreferenceStore = handSortPreferenceStore,
+                eventPublisher = eventPublisher,
+                presentationPublisher = presentationPublisher,
                 componentRegistry = bundledCoreExtensionRegistries().componentRegistry,
                 beginRuleDecisionUseCase = ruleDecisions.begin,
             ),
             returnToRoomUseCase = ReturnToRoomUseCase(
-                store,
-                roomSnapshotRepo,
-                roomEventPublisher,
-                presentationPublisher,
+                authoritativeStateStore = store,
+                roomSnapshotRepository = roomSnapshotRepo,
+                eventPublisher = roomEventPublisher,
+                presentationPublisher = presentationPublisher,
             ),
             aiTurnDriver = aiTurnDriver,
             forcedAutoPlayDriver = ForcedAutoPlayDriver(gameRepo, AutomaticGameCommandResolver(moduleRegistry)),
@@ -296,9 +296,9 @@ class MahjongAutoDrawServiceTest {
             beginRuleDecisionUseCase = ruleDecisions.begin,
         )
         val autoDrawService = MahjongAutoDrawService(
-            gameRepo,
-            coordinator,
-            TablePresentationBusyTracker(FabricServerHolder(), TableLocationRegistry()),
+            gameRepository = gameRepo,
+            gameFlowCoordinator = coordinator,
+            busyTracker = TablePresentationBusyTracker(FabricServerHolder(), TableLocationRegistry()),
         )
 
         /**

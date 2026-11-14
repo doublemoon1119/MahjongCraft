@@ -11,8 +11,8 @@ class RoomModelPreviewLayoutTest {
     @Test
     fun `player placement matches the original room preview`() {
         assertEquals(
-            RoomModelPreviewLayout(155, 124, 36, 35f, 12f),
-            RoomModelPreviewLayout.forCard(100, 40, 110, 120, 70),
+            expected = RoomModelPreviewLayout(155, 124, 36, 35f, 12f),
+            actual = RoomModelPreviewLayout.forCard(100, 40, 110, 120, 70),
         )
     }
 

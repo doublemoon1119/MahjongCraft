@@ -60,7 +60,7 @@ class ReturnToRoomUseCase(
                         ),
                         result = Outcome.Success(newRoom),
                         historyDraftsByVenueId = mapOf(
-                            gameId to listOf(HistoryEventDraft(null, HistoryFact.ReturnedToRoom)),
+                            pair = gameId to listOf(HistoryEventDraft(null, HistoryFact.ReturnedToRoom)),
                         ),
                     )
                 }

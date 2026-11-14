@@ -44,13 +44,13 @@ class SelfDeclarationApplierTest {
         )
 
         val result = assertIs<SelfDeclarationApplier.Result.Applied>(
-            SelfDeclarationApplier.applyCompletedDecision(
-                state,
-                state,
-                state.currentPlayer.id,
-                decision,
-                GameAction.Kan(GameAction.KanType.CLOSED_KAN, drawnTile.id, emptyList()),
-                module,
+            value = SelfDeclarationApplier.applyCompletedDecision(
+                originalState = state,
+                candidateState = state,
+                actorPlayerId = state.currentPlayer.id,
+                decision = decision,
+                action = GameAction.Kan(GameAction.KanType.CLOSED_KAN, drawnTile.id, emptyList()),
+                module = module,
 
                 componentRegistry = bundledCoreExtensionRegistries().componentRegistry,
             ),
@@ -79,13 +79,13 @@ class SelfDeclarationApplierTest {
         )
 
         val result = assertIs<SelfDeclarationApplier.Result.Rejected>(
-            SelfDeclarationApplier.applyCompletedDecision(
-                state,
-                state,
-                state.currentPlayer.id,
-                invalidDecision,
-                GameAction.Kan(GameAction.KanType.CLOSED_KAN, reservedTile.id, emptyList()),
-                module,
+            value = SelfDeclarationApplier.applyCompletedDecision(
+                originalState = state,
+                candidateState = state,
+                actorPlayerId = state.currentPlayer.id,
+                decision = invalidDecision,
+                action = GameAction.Kan(GameAction.KanType.CLOSED_KAN, reservedTile.id, emptyList()),
+                module = module,
 
                 componentRegistry = bundledCoreExtensionRegistries().componentRegistry,
             ),
@@ -118,21 +118,21 @@ class SelfDeclarationApplierTest {
         val action = GameAction.Kan(GameAction.KanType.CLOSED_KAN, reservedTiles.first().id, emptyList())
 
         val result = assertIs<SelfDeclarationApplier.Result.Applied>(
-            SelfDeclarationApplier.applyCompletedDecision(
-                beforeState,
-                beforeState,
-                beforeState.currentPlayer.id,
-                decision,
-                action,
-                module,
+            value = SelfDeclarationApplier.applyCompletedDecision(
+                originalState = beforeState,
+                candidateState = beforeState,
+                actorPlayerId = beforeState.currentPlayer.id,
+                decision = decision,
+                action = action,
+                module = module,
 
                 componentRegistry = bundledCoreExtensionRegistries().componentRegistry,
             ),
         )
 
         assertEquals(
-            (result.tableState.tileWall.getAllTiles() + result.tableState.reservedWallTiles).map { it.id }.toSet(),
-            result.tableState.physicalWallLayout?.placements?.keys,
+            expected = (result.tableState.tileWall.getAllTiles() + result.tableState.reservedWallTiles).map { it.id }.toSet(),
+            actual = result.tableState.physicalWallLayout?.placements?.keys,
         )
         assertEquals(2, result.physicalWallTransitionPhases.size)
     }

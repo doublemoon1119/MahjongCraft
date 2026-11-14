@@ -133,8 +133,8 @@ class TaiwanDebugGameScenariosTest {
         assertTrue(state.players.filterNot { it.id == invokerId }.all { it.hand.tiles.size == READY_HAND_SIZE })
         assertTrue(state.players.filterNot { it.id == invokerId }.none { TaiwanShantenCalculator().calculate(it.hand) is ShantenResult.Tenpai })
         assertEquals(
-            List(PAO_WINNING_DRAWS) { index -> Tile.Numeric(Tile.Suit.Character, if (index % 2 == 0) 4 else 1) },
-            state.tileWall.getAllTiles().take(PAO_WINNING_DRAWS).map { it.tile },
+            expected = List(PAO_WINNING_DRAWS) { index -> Tile.Numeric(Tile.Suit.Character, if (index % 2 == 0) 4 else 1) },
+            actual = state.tileWall.getAllTiles().take(PAO_WINNING_DRAWS).map { it.tile },
         )
         assertTrue(state.tileWall.getAllTiles().takeLast(TaiwanTileTypes.ALL.size).all { TaiwanTileTypes.isFlower(it.tile) })
 

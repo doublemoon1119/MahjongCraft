@@ -18,7 +18,7 @@ class TaiwanShantenKnownCasesTest {
     @Test
     fun `seventeen-tile standard hand is complete`() {
         val hand = FakeHandFactory.create(
-            listOf(
+            tiles = listOf(
                 m(1), m(1), m(1), m(2), m(3), m(4), m(5), m(6), m(7),
                 m(8), m(8), m(8), Tile.Honor.East, Tile.Honor.East, Tile.Honor.East,
                 Tile.Honor.South, Tile.Honor.South,
@@ -32,7 +32,7 @@ class TaiwanShantenKnownCasesTest {
     @Test
     fun `sixteen-tile hand is tenpai`() {
         val hand = FakeHandFactory.create(
-            listOf(
+            tiles = listOf(
                 m(1), m(1), m(1), m(2), m(3), m(4), m(5), m(6), m(7),
                 m(8), m(8), m(8), Tile.Honor.East, Tile.Honor.East, Tile.Honor.East, Tile.Honor.South,
             ),
@@ -55,7 +55,7 @@ class TaiwanShantenKnownCasesTest {
     @Test
     fun `three complete groups with one partial group is two shanten`() {
         val hand = FakeHandFactory.create(
-            listOf(
+            tiles = listOf(
                 m(1), m(2), m(3), p(1), p(2), p(3), p(7), p(8), p(9),
                 Tile.Honor.East, Tile.Honor.East, m(4), m(5),
                 Tile.Honor.South, Tile.Honor.West, Tile.Honor.North,
@@ -69,7 +69,7 @@ class TaiwanShantenKnownCasesTest {
     @Test
     fun `two complete groups with two partial groups is three shanten`() {
         val hand = FakeHandFactory.create(
-            listOf(
+            tiles = listOf(
                 m(1), m(2), m(3), p(1), p(2), p(3), Tile.Honor.East, Tile.Honor.East,
                 m(5), m(7), p(7), p(9),
                 Tile.Honor.South, Tile.Honor.West, Tile.Honor.North, Tile.Honor.White,

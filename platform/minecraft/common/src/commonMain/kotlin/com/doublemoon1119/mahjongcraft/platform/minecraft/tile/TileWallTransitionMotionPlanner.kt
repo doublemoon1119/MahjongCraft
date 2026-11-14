@@ -24,8 +24,8 @@ object TileWallTransitionMotionPlanner {
     ): TileWallTransitionMotionDecision {
         if (assemblyStructure.keys != finalLayout.placements.keys) {
             return TileWallTransitionMotionDecision.Rejected(
-                assemblyStructure.keys.firstOrNull() ?: finalLayout.placements.keys.first(),
-                TileWallMotionPathRejection.INCONSISTENT_LAYOUT,
+                tileId = assemblyStructure.keys.firstOrNull() ?: finalLayout.placements.keys.first(),
+                reason = TileWallMotionPathRejection.INCONSISTENT_LAYOUT,
             )
         }
         val moves = assemblyStructure.mapNotNull { (tileId, position) ->

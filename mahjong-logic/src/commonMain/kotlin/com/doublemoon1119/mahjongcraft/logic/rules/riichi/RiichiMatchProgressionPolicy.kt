@@ -73,7 +73,7 @@ class RiichiMatchProgressionPolicy(
             return MatchProgressionDecision.EndMatch(BuiltInMatchEndReasonIds.EXTRA_ROUND_LIMIT_REACHED)
         }
         return MatchProgressionDecision.ContinueMatch(
-            MatchRoundTransition.AdvanceTo(
+            transition = MatchRoundTransition.AdvanceTo(
                 nextPosition = position(current.sequenceIndex + 1, schedule.regularLastIndex, roundsPerWind),
                 continuesCombo = continuesCombo,
             ),
@@ -99,7 +99,7 @@ class RiichiMatchProgressionPolicy(
     ): MatchProgressionDecision = when (directive) {
         RoundTransitionDirective.RepeatDealer -> MatchProgressionDecision.ContinueMatch(MatchRoundTransition.RepeatCurrentRound)
         RoundTransitionDirective.PassToNextSeat, is RoundTransitionDirective.PassTo -> MatchProgressionDecision.ContinueMatch(
-            MatchRoundTransition.AdvanceTo(
+            transition = MatchRoundTransition.AdvanceTo(
                 nextPosition = position(current.sequenceIndex + 1, regularLastIndex, roundsPerWind),
                 continuesCombo = continuesCombo,
             ),

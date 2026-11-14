@@ -77,16 +77,16 @@ class TileWallPerimeterPathTest {
             controllerZ = 0,
             tableFacing = MahjongTableFacing.NORTH,
             sideLayout = MahjongTileWallSideLayout.resolve(
-                TileWallSideArrangement(TileWallSideReference.TABLE, listOf(0, 2)),
+                arrangement = TileWallSideArrangement(TileWallSideReference.TABLE, listOf(0, 2)),
                 dealerSide = MahjongTableSide.SOUTH,
             ),
             tileLayout = TableTileLayoutProfile.STANDARD,
             stacksPerSide = 17,
         )
         val decision = TileWallMotionPathPlanner.plan(
-            context,
-            TileWallPlacement(TileWallPosition(side = 0, stack = 8, layer = 0)),
-            TileWallPlacement(TileWallPosition(side = 1, stack = 8, layer = 0)),
+            context = context,
+            start = TileWallPlacement(TileWallPosition(side = 0, stack = 8, layer = 0)),
+            end = TileWallPlacement(TileWallPosition(side = 1, stack = 8, layer = 0)),
         )
 
         val completed = assertIs<TileWallMotionPathDecision.Completed>(decision)

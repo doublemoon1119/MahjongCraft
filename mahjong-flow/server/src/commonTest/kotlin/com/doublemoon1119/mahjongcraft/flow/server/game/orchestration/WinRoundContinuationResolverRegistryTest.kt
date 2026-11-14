@@ -83,8 +83,8 @@ class WinRoundContinuationResolverRegistryTest {
         }
 
         assertEquals(
-            "Win round continuation resolver already registered: ${module.id}/test:dup",
-            error.message,
+            expected = "Win round continuation resolver already registered: ${module.id}/test:dup",
+            actual = error.message,
         )
     }
 

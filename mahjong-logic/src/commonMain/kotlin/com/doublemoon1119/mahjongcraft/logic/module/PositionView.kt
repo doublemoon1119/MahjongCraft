@@ -61,7 +61,7 @@ data class PositionView(
         val area = PlayerTileAreaSnapshot(areaId, previousArea?.tiles.orEmpty() + tile)
         val areas = if (previousArea == null) self.tileAreas + area else self.tileAreas.map { if (it.id == areaId) area else it }
         return withEvaluator(
-            self.copy(
+            evaluator = self.copy(
                 hand = self.hand.copy(
                     standingTiles = self.hand.standingTiles.filterNot { it.id == tileId },
                     lastDrawn = self.hand.lastDrawn?.takeUnless { it.id == tileId },

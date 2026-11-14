@@ -73,14 +73,14 @@ class MatchSettlementPresentationEntityRenderer(
         matrices.scale(-TEXT_SCALE, -TEXT_SCALE, TEXT_SCALE)
         renderPanel(layout, template, alpha, matrices, vertexConsumers)
         drawText(
-            Text.translatable(template.titleTranslationKey),
-            0f,
-            TITLE_Y,
-            Alignment.CENTER,
-            withAlpha(template.titleRgb, alpha),
-            matrices,
-            vertexConsumers,
-            TITLE_SCALE,
+            text = Text.translatable(template.titleTranslationKey),
+            anchorX = 0f,
+            y = TITLE_Y,
+            alignment = Alignment.CENTER,
+            color = withAlpha(template.titleRgb, alpha),
+            matrices = matrices,
+            consumers = vertexConsumers,
+            scale = TITLE_SCALE,
         )
         entity.players.sortedBy(MatchSettlementPlayerSnapshot::finalRank).forEach { player ->
             val revealIndex = revealIndexByPlayer.getValue(player.playerId)
@@ -125,22 +125,22 @@ class MatchSettlementPresentationEntityRenderer(
         val rankY = nameY + 11f
         renderPortrait(player, -faceSize / 2f, 0f, faceSize, alpha, matrices, consumers)
         drawText(
-            Text.literal(displayName),
-            0f,
-            nameY,
-            Alignment.CENTER,
-            withAlpha(if (champion) template.championRgb else NAME_RGB, alpha),
-            matrices,
-            consumers,
+            text = Text.literal(displayName),
+            anchorX = 0f,
+            y = nameY,
+            alignment = Alignment.CENTER,
+            color = withAlpha(if (champion) template.championRgb else NAME_RGB, alpha),
+            matrices = matrices,
+            consumers = consumers,
         )
         drawText(
-            rankText,
-            0f,
-            rankY,
-            Alignment.CENTER,
-            withAlpha(if (champion) template.championRgb else template.rankRgb, alpha),
-            matrices,
-            consumers,
+            text = rankText,
+            anchorX = 0f,
+            y = rankY,
+            alignment = Alignment.CENTER,
+            color = withAlpha(if (champion) template.championRgb else template.rankRgb, alpha),
+            matrices = matrices,
+            consumers = consumers,
         )
         matrices.pop()
     }
@@ -358,11 +358,11 @@ class MatchSettlementPresentationEntityRenderer(
      * @return 當前面板透明度。
      */
     private fun panelAlpha(elapsed: Double, duration: Double): Float = WorldPanelRenderer.phaseAlpha(
-        elapsed,
-        MatchSettlementPresentationEntity.PANEL_FADE_IN_START_TICK.toDouble(),
-        MatchSettlementPresentationEntity.FIRST_ROW_REVEAL_TICK.toDouble(),
-        duration - MatchSettlementPresentationEntity.FADE_OUT_TICKS,
-        duration,
+        value = elapsed,
+        inStart = MatchSettlementPresentationEntity.PANEL_FADE_IN_START_TICK.toDouble(),
+        inEnd = MatchSettlementPresentationEntity.FIRST_ROW_REVEAL_TICK.toDouble(),
+        outStart = duration - MatchSettlementPresentationEntity.FADE_OUT_TICKS,
+        outEnd = duration,
     )
 
     /**

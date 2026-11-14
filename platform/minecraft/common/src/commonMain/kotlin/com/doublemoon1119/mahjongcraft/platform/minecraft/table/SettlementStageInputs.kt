@@ -85,12 +85,12 @@ private fun TableState.handShiftsBySeat(
     val melds = player.hand.melds.map { meld ->
         val presentation = meld.toPresentation(config.revealsClosedKanTiles)
         MahjongMeldTileGroup(
-            presentation.type,
-            presentation.tileIds,
-            presentation.calledTileId,
-            presentation.sourceDirection,
-            presentation.allTilesFaceDown,
-            presentation.faceDownTileIds,
+            type = presentation.type,
+            tileIds = presentation.tileIds,
+            calledTileId = presentation.calledTileId,
+            sourceDirection = presentation.sourceDirection,
+            allTilesFaceDown = presentation.allTilesFaceDown,
+            faceDownTileIds = presentation.faceDownTileIds,
         )
     }
     seatIndex to MahjongPlayerAreaLayout.handShift(

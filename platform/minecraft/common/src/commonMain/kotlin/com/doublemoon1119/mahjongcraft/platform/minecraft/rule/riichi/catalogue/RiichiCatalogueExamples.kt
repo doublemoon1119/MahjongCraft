@@ -87,7 +87,7 @@ internal object RiichiCatalogueExampleKeys {
 internal fun riichiCatalogueExamples(type: RiichiYakuType, usesThreePlayerTiles: Boolean): List<RuleCatalogueExample> = when (type) {
     RiichiYakuType.Dora, RiichiYakuType.UraDora -> listOf(illustration(m9, p5, s5, description = RiichiCatalogueExampleKeys.BONUS))
     RiichiYakuType.AkaDora -> listOf(
-        if (usesThreePlayerTiles) {
+        element = if (usesThreePlayerTiles) {
             illustration(p5Red, s5Red, description = RiichiCatalogueExampleKeys.BONUS)
         } else {
             illustration(m5Red, p5Red, s5Red, description = RiichiCatalogueExampleKeys.BONUS)
@@ -101,7 +101,7 @@ internal fun riichiCatalogueExamples(type: RiichiYakuType, usesThreePlayerTiles:
     RiichiYakuType.DoubleRiichi -> listOf(full(s1, s2, s3, s4, s4, s4, p5, p6, p7, white, white, white, green, winning = green, description = RiichiCatalogueExampleKeys.DOUBLE_RIICHI))
     RiichiYakuType.Ippatsu -> listOf(full(p1, p2, p3, p4, p4, p4, s5, s6, s7, east, east, east, south, winning = south, description = RiichiCatalogueExampleKeys.IPPATSU))
     RiichiYakuType.RinshanKaihou -> listOf(
-        groupedFull(
+        element = groupedFull(
             group(RuleCatalogueTileGroupRole.CLOSED_KAN, s8, s8, s8, s8),
             group(RuleCatalogueTileGroupRole.HAND, p2, p3, p4),
             group(RuleCatalogueTileGroupRole.HAND, p5, p5, p5),
@@ -116,7 +116,7 @@ internal fun riichiCatalogueExamples(type: RiichiYakuType, usesThreePlayerTiles:
     RiichiYakuType.Chankan -> listOf(full(s1, s2, s3, p1, p1, p1, s4, s5, s6, east, east, east, west, winning = west, description = RiichiCatalogueExampleKeys.CHANKAN))
     RiichiYakuType.Menzentsumo -> listOf(full(m1, m1, m1, p2, p3, p4, s3, s3, s3, s7, s8, s9, south, winning = south, description = RiichiCatalogueExampleKeys.TSUMO))
     RiichiYakuType.Toitoi -> listOf(
-        groupedFull(
+        element = groupedFull(
             group(RuleCatalogueTileGroupRole.OPEN_MELD, m1, m1, m1),
             group(RuleCatalogueTileGroupRole.OPEN_MELD, p4, p4, p4),
             group(RuleCatalogueTileGroupRole.HAND, s3, s3, s3),
@@ -127,7 +127,7 @@ internal fun riichiCatalogueExamples(type: RiichiYakuType, usesThreePlayerTiles:
     )
     RiichiYakuType.Sanankou -> listOf(full(m1, m1, m1, p1, p1, p1, s1, s1, s1, s3, s4, s5, east, winning = east))
     RiichiYakuType.Sankantsu -> listOf(
-        groupedFull(
+        element = groupedFull(
             group(RuleCatalogueTileGroupRole.OPEN_KAN, m1, m1, m1, m1),
             group(RuleCatalogueTileGroupRole.OPEN_KAN, p3, p3, p3, p3),
             group(RuleCatalogueTileGroupRole.CLOSED_KAN, s3, s3, s3, s3),
@@ -144,7 +144,7 @@ internal fun riichiCatalogueExamples(type: RiichiYakuType, usesThreePlayerTiles:
     RiichiYakuType.Ryanpeikou -> listOf(full(s1, s2, s3, s1, s2, s3, p4, p5, p6, p4, p5, p6, east, winning = east))
     RiichiYakuType.Ittuitsu -> listOf(full(p1, p2, p3, p4, p5, p6, p7, p8, p9, s1, s1, s1, east, winning = east))
     RiichiYakuType.Honroutou -> listOf(
-        groupedFull(
+        element = groupedFull(
             group(RuleCatalogueTileGroupRole.OPEN_MELD, m1, m1, m1),
             group(RuleCatalogueTileGroupRole.OPEN_MELD, m9, m9, m9),
             group(RuleCatalogueTileGroupRole.HAND, p1, p1, p1),
@@ -167,7 +167,7 @@ internal fun riichiCatalogueExamples(type: RiichiYakuType, usesThreePlayerTiles:
     RiichiYakuType.Ryuuuiisou -> listOf(full(s2, s3, s4, s2, s3, s4, s6, s6, s6, s8, s8, s8, green, winning = green))
     RiichiYakuType.Suuankou -> listOf(full(m1, m1, m1, p2, p2, p2, p5, p5, p5, s7, s7, north, north, winning = north, description = RiichiCatalogueExampleKeys.TSUMO))
     RiichiYakuType.Sukantsu -> listOf(
-        groupedFull(
+        element = groupedFull(
             group(RuleCatalogueTileGroupRole.OPEN_KAN, m1, m1, m1, m1),
             group(RuleCatalogueTileGroupRole.OPEN_KAN, p2, p2, p2, p2),
             group(RuleCatalogueTileGroupRole.OPEN_KAN, s3, s3, s3, s3),
@@ -188,7 +188,7 @@ internal fun riichiCatalogueExamples(type: RiichiYakuType, usesThreePlayerTiles:
     RiichiYakuType.TsubameGaeshi -> listOf(full(s1, s2, s3, p4, p5, p6, s7, s8, s9, m9, m9, p7, p8, winning = p9, description = RiichiCatalogueExampleKeys.TSUBAME_GAESHI))
     RiichiYakuType.Kanburi -> listOf(full(p2, p3, p4, s2, s3, s4, s6, s7, s8, east, east, p7, p8, winning = p6, description = RiichiCatalogueExampleKeys.KANBURI))
     RiichiYakuType.ShiiaruRaotai -> listOf(
-        groupedFull(
+        element = groupedFull(
             group(RuleCatalogueTileGroupRole.OPEN_MELD, m1, m1, m1),
             group(RuleCatalogueTileGroupRole.OPEN_MELD, p5, p5, p5),
             group(RuleCatalogueTileGroupRole.OPEN_MELD, s9, s9, s9),
@@ -199,7 +199,7 @@ internal fun riichiCatalogueExamples(type: RiichiYakuType, usesThreePlayerTiles:
     )
     RiichiYakuType.UumenChii -> listOf(full(m1, m1, m1, p4, p5, p6, s7, s8, s9, east, east, east, white, winning = white))
     RiichiYakuType.Sanrenkou -> listOf(
-        groupedFull(
+        element = groupedFull(
             group(RuleCatalogueTileGroupRole.OPEN_MELD, p3, p3, p3),
             group(RuleCatalogueTileGroupRole.OPEN_MELD, p4, p4, p4),
             group(RuleCatalogueTileGroupRole.HAND, p5, p5, p5),
@@ -216,7 +216,7 @@ internal fun riichiCatalogueExamples(type: RiichiYakuType, usesThreePlayerTiles:
     RiichiYakuType.Daichikurin -> listOf(full(s2, s2, s3, s3, s4, s4, s5, s5, s6, s6, s7, s7, s8, winning = s8))
     RiichiYakuType.Daisuurin -> listOf(full(m2, m2, m3, m3, m4, m4, m5, m5, m6, m6, m7, m7, m8, winning = m8))
     RiichiYakuType.IshinoUeSannen -> listOf(
-        full(s1, s2, s3, p4, p5, p6, s7, s8, s9, west, west, p7, p8, winning = p9, description = RiichiCatalogueExampleKeys.ISHI_NO_UE_NI_MO_SANNEN),
+        element = full(s1, s2, s3, p4, p5, p6, s7, s8, s9, west, west, p7, p8, winning = p9, description = RiichiCatalogueExampleKeys.ISHI_NO_UE_NI_MO_SANNEN),
     )
     RiichiYakuType.Daichisei -> listOf(full(east, east, south, south, west, west, north, north, white, white, green, green, red, winning = red))
 }

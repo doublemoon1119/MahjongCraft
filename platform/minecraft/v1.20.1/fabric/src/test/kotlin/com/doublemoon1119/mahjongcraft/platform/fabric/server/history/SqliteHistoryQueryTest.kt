@@ -125,7 +125,7 @@ class SqliteHistoryQueryTest {
         insertParticipant(database.path, "other", 0, "different")
 
         val first = database.readHistoryQueryPage(
-            SqliteHistoryQuery(
+            query = SqliteHistoryQuery(
                 playerId = "owner",
                 includeAll = false,
                 sortField = SqliteHistorySortField.ENDED_AT,
@@ -146,7 +146,7 @@ class SqliteHistoryQueryTest {
         insertTerminal(database.path, "terminal-only", "table-terminal", 500L, false)
 
         val all = database.readHistoryQueryPage(
-            SqliteHistoryQuery(
+            query = SqliteHistoryQuery(
                 playerId = null,
                 includeAll = true,
                 sortField = SqliteHistorySortField.ENDED_AT,
@@ -159,7 +159,7 @@ class SqliteHistoryQueryTest {
         assertTrue(all.entries.single().participants.isEmpty())
 
         val noAi = database.readHistoryQueryPage(
-            SqliteHistoryQuery(
+            query = SqliteHistoryQuery(
                 playerId = null,
                 includeAll = true,
                 sortField = SqliteHistorySortField.ENDED_AT,
@@ -218,7 +218,7 @@ class SqliteHistoryQueryTest {
             insertParticipant(database.path, matchId, 0, "owner")
         }
         val page = database.readHistoryQueryPage(
-            SqliteHistoryQuery(
+            query = SqliteHistoryQuery(
                 playerId = "owner",
                 includeAll = false,
                 sortField = SqliteHistorySortField.ENDED_AT,
@@ -239,14 +239,14 @@ class SqliteHistoryQueryTest {
             insertReplay(database.path, id, "{}")
             insertParticipant(database.path, id, 0, "owner")
             sql(
-                database.path,
-                "INSERT INTO history_result_projection(match_id, duration_millis) VALUES (?, ?)",
+                path = database.path,
+                statement = "INSERT INTO history_result_projection(match_id, duration_millis) VALUES (?, ?)",
                 id,
                 ended - 1L,
             )
             sql(
-                database.path,
-                "INSERT INTO history_participant_result(match_id, seat_index, final_score, final_rank) VALUES (?, 0, ?, ?)",
+                path = database.path,
+                statement = "INSERT INTO history_participant_result(match_id, seat_index, final_score, final_rank) VALUES (?, 0, ?, ?)",
                 id,
                 score,
                 rank,
@@ -264,7 +264,7 @@ class SqliteHistoryQueryTest {
         fields.forEach { field ->
             SqliteHistorySortDirection.entries.forEach { direction ->
                 val page = database.readHistoryQueryPage(
-                    SqliteHistoryQuery(
+                    query = SqliteHistoryQuery(
                         playerId = "owner",
                         includeAll = false,
                         sortField = field,
@@ -292,7 +292,7 @@ class SqliteHistoryQueryTest {
                 var cursor: SqliteHistoryCursor? = null
                 do {
                     val next = database.readHistoryQueryPage(
-                        SqliteHistoryQuery("owner", false, field, direction, pageSize = 1, cursor = cursor),
+                        query = SqliteHistoryQuery("owner", false, field, direction, pageSize = 1, cursor = cursor),
                     )
                     paged += next.entries.map { it.matchId }
                     cursor = next.nextCursor
@@ -303,7 +303,7 @@ class SqliteHistoryQueryTest {
         }
 
         val first = database.readHistoryQueryPage(
-            SqliteHistoryQuery(
+            query = SqliteHistoryQuery(
                 playerId = "owner",
                 includeAll = false,
                 sortField = SqliteHistorySortField.ENDED_AT,
@@ -313,7 +313,7 @@ class SqliteHistoryQueryTest {
         )
         deleteMatch(database.path, "first")
         val continuation = database.readHistoryQueryPage(
-            SqliteHistoryQuery(
+            query = SqliteHistoryQuery(
                 playerId = "owner",
                 includeAll = false,
                 sortField = SqliteHistorySortField.ENDED_AT,
@@ -374,7 +374,7 @@ class SqliteHistoryQueryTest {
         insertRecordingStop(database.path, "stop")
 
         val page = database.readHistoryQueryPage(
-            SqliteHistoryQuery(null, true, SqliteHistorySortField.ENDED_AT, SqliteHistorySortDirection.ASC),
+            query = SqliteHistoryQuery(null, true, SqliteHistorySortField.ENDED_AT, SqliteHistorySortDirection.ASC),
         )
         assertTrue(page.entries.isEmpty())
     }
@@ -438,8 +438,8 @@ class SqliteHistoryQueryTest {
      * @param ruleId 規則 ID。
      */
     private fun insertMatch(path: Path, id: String, started: Long, ended: Long, ruleId: String = "rule-$id") = sql(
-        path,
-        "INSERT INTO history_match(match_id, table_id, rule_id, dimension_id, status, started_at_epoch_millis, ended_at_epoch_millis) VALUES (?, ?, ?, NULL, 'COMPLETED', ?, ?)",
+        path = path,
+        statement = "INSERT INTO history_match(match_id, table_id, rule_id, dimension_id, status, started_at_epoch_millis, ended_at_epoch_millis) VALUES (?, ?, ?, NULL, 'COMPLETED', ?, ?)",
         id,
         "table-$id",
         ruleId,
@@ -455,8 +455,8 @@ class SqliteHistoryQueryTest {
      * @param payload Replay payload。
      */
     private fun insertReplay(path: Path, id: String, payload: String) = sql(
-        path,
-        "INSERT INTO history_replay(match_id, format_version, created_at_epoch_millis, payload) VALUES (?, 1, 1, ?)",
+        path = path,
+        statement = "INSERT INTO history_replay(match_id, format_version, created_at_epoch_millis, payload) VALUES (?, 1, 1, ?)",
         id,
         payload,
     )
@@ -469,8 +469,8 @@ class SqliteHistoryQueryTest {
      * @param payload 事件 payload。
      */
     private fun insertPending(path: Path, id: String, payload: String) = sql(
-        path,
-        "INSERT INTO history_pending_event(match_id, sequence, round_number, occurred_at_epoch_millis, payload_version, payload) VALUES (?, 1, 1, 1, 1, ?)",
+        path = path,
+        statement = "INSERT INTO history_pending_event(match_id, sequence, round_number, occurred_at_epoch_millis, payload_version, payload) VALUES (?, 1, 1, 1, 1, ?)",
         id,
         payload,
     )
@@ -485,8 +485,8 @@ class SqliteHistoryQueryTest {
      * @param completed 是否由完整終局流程確認。
      */
     private fun insertTerminal(path: Path, id: String, tableId: String, ended: Long, completed: Boolean) = sql(
-        path,
-        "INSERT INTO history_terminal(match_id, table_id, ended_at_epoch_millis, completed) VALUES (?, ?, ?, ?)",
+        path = path,
+        statement = "INSERT INTO history_terminal(match_id, table_id, ended_at_epoch_millis, completed) VALUES (?, ?, ?, ?)",
         id,
         tableId,
         ended,
@@ -500,8 +500,8 @@ class SqliteHistoryQueryTest {
      * @param id 對局 ID。
      */
     private fun insertGap(path: Path, id: String) = sql(
-        path,
-        "INSERT INTO history_gap(match_id, first_missing_sequence) VALUES (?, 2)",
+        path = path,
+        statement = "INSERT INTO history_gap(match_id, first_missing_sequence) VALUES (?, 2)",
         id,
     )
 
@@ -521,8 +521,8 @@ class SqliteHistoryQueryTest {
         playerId: String = "player",
         aiStrategyId: String? = null,
     ) = sql(
-        path,
-        "INSERT INTO history_participant(match_id, seat_index, player_id, ai_strategy_id) VALUES (?, ?, ?, ?)",
+        path = path,
+        statement = "INSERT INTO history_participant(match_id, seat_index, player_id, ai_strategy_id) VALUES (?, ?, ?, ?)",
         id,
         seat,
         playerId,
@@ -536,8 +536,8 @@ class SqliteHistoryQueryTest {
      * @param id 對局 ID。
      */
     private fun insertRecordingStop(path: Path, id: String) = sql(
-        path,
-        "INSERT INTO history_recording_stop(match_id, reason) VALUES (?, 'test')",
+        path = path,
+        statement = "INSERT INTO history_recording_stop(match_id, reason) VALUES (?, 'test')",
         id,
     )
 
@@ -548,8 +548,8 @@ class SqliteHistoryQueryTest {
      * @param id 對局 ID。
      */
     private fun insertTombstone(path: Path, id: String) = sql(
-        path,
-        "INSERT INTO history_tombstone(match_id, pruned_at_epoch_millis, reason) VALUES (?, 1, 'test')",
+        path = path,
+        statement = "INSERT INTO history_tombstone(match_id, pruned_at_epoch_millis, reason) VALUES (?, 1, 'test')",
         id,
     )
 

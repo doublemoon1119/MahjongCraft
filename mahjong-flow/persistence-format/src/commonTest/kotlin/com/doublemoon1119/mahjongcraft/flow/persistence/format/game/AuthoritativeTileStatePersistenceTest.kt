@@ -29,7 +29,7 @@ class AuthoritativeTileStatePersistenceTest {
                 tile(Tile.Extension(TaiwanTileTypes.PLUM)),
             ),
             melds = listOf(
-                Meld(
+                element = Meld(
                     type = MeldType.Pon,
                     tiles = ponTiles,
                     sourceTile = source,
@@ -52,7 +52,7 @@ class AuthoritativeTileStatePersistenceTest {
     @Test
     fun `tile wall round-trips without exposing a snapshot projection`() {
         val wall = TileWall(
-            listOf(
+            tiles = listOf(
                 tile(Tile.Honor.White),
                 tile(Tile.Numeric(Tile.Suit.Bamboo, 1)),
                 tile(Tile.Extension(TaiwanTileTypes.CHRYSANTHEMUM)),

@@ -56,7 +56,7 @@ class PlayerTileAreas(areas: List<PlayerTileArea>) {
         val original = requireNotNull(allTiles.singleOrNull { it.id == tileId }) { "Tile is not held in a player area" }
         require(replacement.id == original.id && replacement.tile == original.tile) { "Area tile replacement must preserve identity and face" }
         return PlayerTileAreas(
-            contents.map { area ->
+            areas = contents.map { area ->
                 PlayerTileArea(area.id, area.tiles.map { if (it.id == tileId) replacement else it })
             },
         )

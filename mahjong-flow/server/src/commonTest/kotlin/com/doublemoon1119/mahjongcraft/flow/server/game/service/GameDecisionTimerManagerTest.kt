@@ -76,8 +76,8 @@ class GameDecisionTimerManagerTest {
 
         assertTrue(statuses.isEmpty())
         assertEquals(
-            17_000.milliseconds,
-            fixtures.repository.getGame(game.id)!!.remainingReserveByPlayerId.getValue(playerId),
+            expected = 17_000.milliseconds,
+            actual = fixtures.repository.getGame(game.id)!!.remainingReserveByPlayerId.getValue(playerId),
         )
     }
 
@@ -112,8 +112,8 @@ class GameDecisionTimerManagerTest {
         assertEquals(5_000.milliseconds, status.time.baseRemaining)
         assertEquals(17_000.milliseconds, status.time.reserveRemaining)
         assertEquals(
-            17_000.milliseconds,
-            fixtures.repository.getGame(game.id)!!.remainingReserveByPlayerId.getValue(playerId),
+            expected = 17_000.milliseconds,
+            actual = fixtures.repository.getGame(game.id)!!.remainingReserveByPlayerId.getValue(playerId),
         )
     }
 
@@ -147,8 +147,8 @@ class GameDecisionTimerManagerTest {
         assertEquals(3_500.milliseconds, status.time.baseRemaining)
         assertEquals(20_000.milliseconds, status.time.reserveRemaining)
         assertTrue(
-            fixtures.repository.getGame(game.id)!!.interruptedBaseByPlayerId.isEmpty(),
-            "the interrupted base time must be consumed once resumed, not left around for reuse",
+            actual = fixtures.repository.getGame(game.id)!!.interruptedBaseByPlayerId.isEmpty(),
+            message = "the interrupted base time must be consumed once resumed, not left around for reuse",
         )
     }
 
@@ -238,8 +238,8 @@ class GameDecisionTimerManagerTest {
         val claimed = fixtures.manager.claimTimedOutDecisions()
 
         assertEquals(
-            listOf(TimedOutPlayerDecision(game.id, playerId, PlayerDecisionPhase.DISCARD_REACTION)),
-            claimed,
+            expected = listOf(TimedOutPlayerDecision(game.id, playerId, PlayerDecisionPhase.DISCARD_REACTION)),
+            actual = claimed,
         )
         val updatedGame = fixtures.repository.getGame(game.id)!!
         assertEquals(0.milliseconds, updatedGame.remainingReserveByPlayerId.getValue(playerId))
@@ -264,8 +264,8 @@ class GameDecisionTimerManagerTest {
         val claimed = fixtures.manager.claimTimedOutDecisions()
 
         assertEquals(
-            listOf(TimedOutPlayerDecision(game.id, playerId, PlayerDecisionPhase.RULE_DECISION)),
-            claimed,
+            expected = listOf(TimedOutPlayerDecision(game.id, playerId, PlayerDecisionPhase.RULE_DECISION)),
+            actual = claimed,
         )
         val updatedGame = fixtures.repository.getGame(game.id)!!
         assertEquals(20_000.milliseconds, updatedGame.remainingReserveByPlayerId.getValue(playerId))
@@ -285,8 +285,8 @@ class GameDecisionTimerManagerTest {
         val claimed = fixtures.manager.claimTimedOutDecisions()
 
         assertEquals(
-            listOf(TimedOutPlayerDecision(game.id, playerId, PlayerDecisionPhase.RULE_ACTION)),
-            claimed,
+            expected = listOf(TimedOutPlayerDecision(game.id, playerId, PlayerDecisionPhase.RULE_ACTION)),
+            actual = claimed,
         )
         val updatedGame = fixtures.repository.getGame(game.id)!!
         assertEquals(0.milliseconds, updatedGame.remainingReserveByPlayerId.getValue(playerId))
@@ -310,8 +310,8 @@ class GameDecisionTimerManagerTest {
 
         assertTrue(statuses.isEmpty())
         assertEquals(
-            20_000.milliseconds,
-            fixtures.repository.getGame(game.id)!!.remainingReserveByPlayerId.getValue(playerId),
+            expected = 20_000.milliseconds,
+            actual = fixtures.repository.getGame(game.id)!!.remainingReserveByPlayerId.getValue(playerId),
         )
     }
 
@@ -373,8 +373,8 @@ class GameDecisionTimerManagerTest {
         val pausedGame = fixtures.repository.getGame(game.id)!!
         assertEquals(20_000.milliseconds, pausedGame.remainingReserveByPlayerId.getValue(playerId))
         assertEquals(
-            game.flowConfig.ruleDecision!!.base - 5_000.milliseconds,
-            pausedGame.interruptedBaseByPlayerId.getValue(playerId),
+            expected = game.flowConfig.ruleDecision!!.base - 5_000.milliseconds,
+            actual = pausedGame.interruptedBaseByPlayerId.getValue(playerId),
         )
     }
 

@@ -88,9 +88,9 @@ class MahjongPlayerAreaLayoutTest {
             val gap = MahjongTileTableLayout.MELD_AREA_CORNER_OFFSET - cornerReach - handRight
             if (layout.handShift > 0.0) {
                 assertTrue(
-                    gap >= MahjongTileTableLayout.HAND_CORNER_GAP - EPSILON &&
+                    actual = gap >= MahjongTileTableLayout.HAND_CORNER_GAP - EPSILON &&
                         gap <= MahjongTileTableLayout.HAND_CORNER_GAP + 2 * MahjongTileDimensions.TILE_SMALL_PADDING + EPSILON,
-                    "hand leaves $gap before the corner area in $input",
+                    message = "hand leaves $gap before the corner area in $input",
                 )
             } else {
                 assertEquals(0.0, layout.handShift, EPSILON)
@@ -382,11 +382,11 @@ class MahjongPlayerAreaLayoutTest {
         val tileFootprints = tiles.map { tile -> Footprint.of(tile.tileId.toString(), tile.placement, tile.halfAlong(), tile.halfAcross(), alongIsX) }
         val drawnFootprint = layout.drawnSlot.takeIf { (input.drawnTileId != null) }?.let { slot ->
             Footprint.of(
-                "drawn slot",
-                slot,
-                MahjongTileDimensions.TILE_WIDTH / 2.0,
-                if (input.tilePoseStates.any { it.tileId == input.drawnTileId && it.pose == TilePose.FACE_UP }) MahjongTileDimensions.TILE_HEIGHT / 2.0 else MahjongTileDimensions.TILE_DEPTH / 2.0,
-                alongIsX,
+                label = "drawn slot",
+                center = slot,
+                halfAlong = MahjongTileDimensions.TILE_WIDTH / 2.0,
+                halfAcross = if (input.tilePoseStates.any { it.tileId == input.drawnTileId && it.pose == TilePose.FACE_UP }) MahjongTileDimensions.TILE_HEIGHT / 2.0 else MahjongTileDimensions.TILE_DEPTH / 2.0,
+                alongIsX = alongIsX,
             )
         }
         // 桌角物件佔用從桌角錨點起 cornerWidth 的範圍，橫向與平放的副露同寬。

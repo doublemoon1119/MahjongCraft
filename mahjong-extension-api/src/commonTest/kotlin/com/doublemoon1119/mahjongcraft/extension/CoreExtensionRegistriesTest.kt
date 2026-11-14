@@ -61,18 +61,18 @@ class CoreExtensionRegistriesTest {
         val registries = registries()
         val before = registries.registrationSnapshot()
         registries.gameEventPublicMarkerResolverRegistry.register(
-            GameEventPublicMarkerResolverDefinition("example:pairing", object : GameEventPublicMarkerResolver {}),
+            definition = GameEventPublicMarkerResolverDefinition("example:pairing", object : GameEventPublicMarkerResolver {}),
         )
 
         assertEquals(
-            listOf(
-                ExtensionRegistrationCategory(
+            expected = listOf(
+                element = ExtensionRegistrationCategory(
                     id = "mahjongcraft:game_event_public_marker_resolver",
                     displayName = "Game Event Public Marker Resolver",
                     registrationIds = listOf("example:pairing"),
                 ),
             ),
-            before.additionsSince(registries.registrationSnapshot()),
+            actual = before.additionsSince(registries.registrationSnapshot()),
         )
     }
 
@@ -84,14 +84,14 @@ class CoreExtensionRegistriesTest {
         BundledRiichiExtension.registerOpponentModels(registries.opponentModelRegistry)
 
         assertEquals(
-            listOf(
-                ExtensionRegistrationCategory(
+            expected = listOf(
+                element = ExtensionRegistrationCategory(
                     id = "mahjongcraft:opponent_model",
                     displayName = "Opponent Model",
                     registrationIds = listOf(BuiltInRuleModuleIds.RIICHI, BuiltInRuleModuleIds.RIICHI_THREE_PLAYER),
                 ),
             ),
-            before.additionsSince(registries.registrationSnapshot()),
+            actual = before.additionsSince(registries.registrationSnapshot()),
         )
     }
 
@@ -103,8 +103,8 @@ class CoreExtensionRegistriesTest {
         registries.aiStrategyRegistry.register(MahjongAiStrategyDefinition(RandomAiStrategy.KEY) { RandomAiStrategy(registries.gameActionAiRegistry) })
 
         assertEquals(
-            listOf(ExtensionRegistrationCategory("mahjongcraft:ai_strategy", "AI Strategy", listOf(RandomAiStrategy.KEY))),
-            before.additionsSince(registries.registrationSnapshot()),
+            expected = listOf(ExtensionRegistrationCategory("mahjongcraft:ai_strategy", "AI Strategy", listOf(RandomAiStrategy.KEY))),
+            actual = before.additionsSince(registries.registrationSnapshot()),
         )
     }
 
@@ -113,10 +113,10 @@ class CoreExtensionRegistriesTest {
     fun `registration snapshot keeps scoped continuation resolver keys`() {
         val registries = registries()
         registries.winRoundContinuationResolverRegistry.register(
-            scopedResolver(id = "example:shared", ruleModuleId = "example:first"),
+            resolver = scopedResolver(id = "example:shared", ruleModuleId = "example:first"),
         )
         registries.winRoundContinuationResolverRegistry.register(
-            scopedResolver(id = "example:shared", ruleModuleId = "example:second"),
+            resolver = scopedResolver(id = "example:shared", ruleModuleId = "example:second"),
         )
 
         val category = registries.registrationSnapshot().toCategories().single {
@@ -124,8 +124,8 @@ class CoreExtensionRegistriesTest {
         }
 
         assertEquals(
-            listOf("example:first/example:shared", "example:second/example:shared"),
-            category.registrationIds,
+            expected = listOf("example:first/example:shared", "example:second/example:shared"),
+            actual = category.registrationIds,
         )
     }
 

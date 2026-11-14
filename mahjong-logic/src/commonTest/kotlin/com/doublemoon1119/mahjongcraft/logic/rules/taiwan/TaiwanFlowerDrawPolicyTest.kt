@@ -32,8 +32,8 @@ class TaiwanFlowerDrawPolicyTest {
         val state = FakeTableStateFactory.create(tileWall = TileWall(listOf(replacement)))
 
         assertEquals(
-            DrawFollowUpDecision.SetAsideThenDecide(TAIWAN_REVEAL_FLOWER_ACTION),
-            TaiwanFlowerDrawPolicy.resolve(context(state, flower)),
+            expected = DrawFollowUpDecision.SetAsideThenDecide(TAIWAN_REVEAL_FLOWER_ACTION),
+            actual = TaiwanFlowerDrawPolicy.resolve(context(state, flower)),
         )
     }
 
@@ -44,8 +44,8 @@ class TaiwanFlowerDrawPolicyTest {
         val state = FakeTableStateFactory.create(tileWall = TileWall(emptyList()))
 
         assertEquals(
-            DrawFollowUpDecision.EndRound(TaiwanExhaustiveDrawReason.NoSupplementalTile),
-            TaiwanFlowerDrawPolicy.resolve(context(state, flower)),
+            expected = DrawFollowUpDecision.EndRound(TaiwanExhaustiveDrawReason.NoSupplementalTile),
+            actual = TaiwanFlowerDrawPolicy.resolve(context(state, flower)),
         )
     }
 

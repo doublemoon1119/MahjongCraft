@@ -49,8 +49,8 @@ class AchievementGrantExecutorTest {
         AchievementGrantExecutor.grant(achievements, increments::add) {}
 
         assertEquals(
-            listOf(AchievementStatisticIds.WINS, AchievementStatisticIds.SELF_DRAW_WINS),
-            increments,
+            expected = listOf(AchievementStatisticIds.WINS, AchievementStatisticIds.SELF_DRAW_WINS),
+            actual = increments,
         )
     }
 

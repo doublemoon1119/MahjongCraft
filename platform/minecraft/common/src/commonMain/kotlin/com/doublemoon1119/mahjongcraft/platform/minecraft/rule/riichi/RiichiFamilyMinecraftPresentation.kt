@@ -192,8 +192,8 @@ private fun buildRiichiRoundInfoLines(tableState: TableState): List<RoundInfoLin
     val stickPotCount = tableState.riichiPotPoints() / RIICHI_STICK_POINTS
     return listOfNotNull(
         RoundInfoLine(
-            RIICHI_TITLE_KEY,
-            listOf(
+            key = RIICHI_TITLE_KEY,
+            args = listOf(
                 RoundInfoArgument.WindValue(tableState.prevalentWind),
                 RoundInfoArgument.Number(tableState.localRoundNumber),
                 RoundInfoArgument.Number(tableState.comboCount),
@@ -205,8 +205,8 @@ private fun buildRiichiRoundInfoLines(tableState: TableState): List<RoundInfoLin
             null
         },
         RoundInfoLine(
-            RIICHI_WALL_REMAINING_KEY,
-            listOf(RoundInfoArgument.Number(tableState.tileWall.remainingCount)),
+            key = RIICHI_WALL_REMAINING_KEY,
+            args = listOf(RoundInfoArgument.Number(tableState.tileWall.remainingCount)),
         ),
     )
 }

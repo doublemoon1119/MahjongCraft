@@ -75,16 +75,16 @@ class AdvanceRoundUseCase(
     suspend operator fun invoke(gameId: Uuid): Outcome<AdvanceRoundResult, GameError> {
         // 1. 以原子方式讀取桌況、計算連莊/過莊結果並寫回
         val outcome = gameRepository.updateGame(
-            gameId,
+            gameId = gameId,
             history = { before, after, result ->
                 if (result is Outcome.Success && before != null && after != null) {
                     val completed = HistoryEventDraft(null, HistoryFact.RoundCompleted(checkNotNull(before.roundCompletion)))
                     val next = if (after.isMatchOver) {
                         HistoryEventDraft(
-                            null,
-                            HistoryFact.MatchCompleted(
-                                checkNotNull(after.matchEndReasonId),
-                                after.tableState.players.associate { it.id to it.score },
+                            actorPlayerId = null,
+                            fact = HistoryFact.MatchCompleted(
+                                reasonId = checkNotNull(after.matchEndReasonId),
+                                finalScoresByPlayerId = after.tableState.players.associate { it.id to it.score },
                             ),
                         )
                     } else {
@@ -107,16 +107,16 @@ class AdvanceRoundUseCase(
                     val module = moduleRegistry.getModule(state.config)
                     val completion = game.roundCompletion
                         ?: return@updateGame game to Outcome.Error(
-                            GameError.InvalidMatchProgression(gameId, "Missing round completion summary"),
+                            error = GameError.InvalidMatchProgression(gameId, "Missing round completion summary"),
                         )
                     if (completion.settledScoresByPlayerId != state.players.associate { it.id to it.score }) {
                         return@updateGame game to Outcome.Error(
-                            GameError.InvalidMatchProgression(gameId, "Round completion scores do not match table state"),
+                            error = GameError.InvalidMatchProgression(gameId, "Round completion scores do not match table state"),
                         )
                     }
                     val decision = try {
                         module.createMatchProgressionPolicy().decide(
-                            MatchProgressionContext(
+                            context = MatchProgressionContext(
                                 tableState = state,
                                 completion = completion,
                                 rankedPlayerIds = state.players.sortedWith(module.compareForMatchRanking()).map { it.id },
@@ -125,7 +125,7 @@ class AdvanceRoundUseCase(
                     } catch (error: Throwable) {
                         if (!failurePolicy.isIsolatable(error)) throw error
                         return@updateGame game to Outcome.Error(
-                            GameError.InvalidMatchProgression(gameId, error.message ?: error::class.simpleName.orEmpty()),
+                            error = GameError.InvalidMatchProgression(gameId, error.message ?: error::class.simpleName.orEmpty()),
                         )
                     }
 
@@ -167,7 +167,7 @@ class AdvanceRoundUseCase(
                         } catch (error: Throwable) {
                             if (!failurePolicy.isIsolatable(error)) throw error
                             return@updateGame game to Outcome.Error(
-                                GameError.InvalidMatchProgression(gameId, error.message ?: error::class.simpleName.orEmpty()),
+                                error = GameError.InvalidMatchProgression(gameId, error.message ?: error::class.simpleName.orEmpty()),
                             )
                         }
                         val initializationResult = GameInitializer.startNextRound(
@@ -230,8 +230,8 @@ class AdvanceRoundUseCase(
                 .mapIndexed { index, player -> player.id to index + 1 }
                 .toMap()
             presentationPublisher.publishMatchSettlement(
-                gameId,
-                MatchSettlementPresentationRequest(
+                gameId = gameId,
+                request = MatchSettlementPresentationRequest(
                     ruleModuleId = presentationModule.id,
                     players = newState.players.mapIndexed { seatIndex, player ->
                         MatchSettlementPlayerPresentation(
@@ -267,19 +267,19 @@ class AdvanceRoundUseCase(
             val openingDiceCounts = newState.openingDiceRolls.map { it.dice.values.size }
             val revealedTileIds = moduleRegistry.getModule(newState.config).publicFaceUpWallTileIds(newState, componentRegistry)
             presentationPublisher.publishWallStructure(
-                gameId,
-                requireNotNull(advanceOutcome.wallStructure),
-                layout,
-                dealerSeatIndex,
-                reservedWallTileIds,
-                openingDiceCounts,
+                gameId = gameId,
+                assemblyStructure = requireNotNull(advanceOutcome.wallStructure),
+                layout = layout,
+                dealerSeatIndex = dealerSeatIndex,
+                reservedWallTileIds = reservedWallTileIds,
+                openingDiceCounts = openingDiceCounts,
                 revealedTileIds = revealedTileIds,
             )
         }
         if (newState.openingDiceRolls.isNotEmpty()) {
             presentationPublisher.publishOpeningRolls(
-                gameId,
-                newState.openingDiceRolls,
+                gameId = gameId,
+                rolls = newState.openingDiceRolls,
             )
             newState.openingDiceRolls.forEach { roll ->
                 eventPublisher.publishToAllObservers(gameId, seatedPlayerIds, roll.playerId, GameAction.DiceRolled(roll))
@@ -287,9 +287,9 @@ class AdvanceRoundUseCase(
         }
         // newState 的立牌已是整理後的最終牌序，與發牌順序 advanceOutcome.dealOrderHandTileIdsBySeatIndex 分開。
         presentationPublisher.publishInitialDeal(
-            gameId,
-            newState,
-            advanceOutcome.dealOrderHandTileIdsBySeatIndex,
+            gameId = gameId,
+            tableState = newState,
+            handTileIdsBySeatIndex = advanceOutcome.dealOrderHandTileIdsBySeatIndex,
             dealBatchSizes = newState.config.dealBatchSizes(),
             openingDiceCounts = newState.openingDiceRolls.map { it.dice.values.size },
         )

@@ -11,7 +11,7 @@ import kotlin.test.assertTrue
 class DiceRollAnimationTest {
     /** 共用 100 ticks 規格，使標準化時間可直接換算。 */
     private val animation = DiceRollAnimation(
-        DiceRollAnimationSpec(
+        spec = DiceRollAnimationSpec(
             durationTicks = 100,
             startOffsetX = -0.8,
             startOffsetY = 0.0,
@@ -78,8 +78,8 @@ class DiceRollAnimationTest {
     @Test
     fun `elapsed time is clamped after completion`() {
         assertEquals(
-            animation.frame(seed = 42L, elapsedTicks = 100.0),
-            animation.frame(seed = 42L, elapsedTicks = 500.0),
+            expected = animation.frame(seed = 42L, elapsedTicks = 100.0),
+            actual = animation.frame(seed = 42L, elapsedTicks = 500.0),
         )
     }
 
@@ -87,8 +87,8 @@ class DiceRollAnimationTest {
     @Test
     fun `same seed reproduces identical frame`() {
         assertEquals(
-            animation.frame(seed = 987654321L, elapsedTicks = 41.25),
-            animation.frame(seed = 987654321L, elapsedTicks = 41.25),
+            expected = animation.frame(seed = 987654321L, elapsedTicks = 41.25),
+            actual = animation.frame(seed = 987654321L, elapsedTicks = 41.25),
         )
     }
 
@@ -132,7 +132,7 @@ class DiceRollAnimationTest {
         assertVectorEquals(DiceAnimationVector.ZERO, settling.offset)
         assertFalse(settling.completed)
         assertTrue(
-            quaternionDistance(settling.rotation, DiceAnimationQuaternion.IDENTITY) <
+            actual = quaternionDistance(settling.rotation, DiceAnimationQuaternion.IDENTITY) <
                 quaternionDistance(earlySettling.rotation, DiceAnimationQuaternion.IDENTITY),
         )
     }
@@ -182,7 +182,7 @@ class DiceRollAnimationTest {
      * @return 對應分量差距的總和。
      */
     private fun quaternionDistance(first: DiceAnimationQuaternion, second: DiceAnimationQuaternion): Double = abs(
-        first.x - second.x,
+        x = first.x - second.x,
     ) + abs(first.y - second.y) + abs(first.z - second.z) + abs(first.w - second.w)
 
     /** 測試共用容差。 */

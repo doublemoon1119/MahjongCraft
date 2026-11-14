@@ -39,9 +39,9 @@ class WorldParticipantPresenceMonitor(
             val missing = participants.entries.firstOrNull { (_, identity) -> !available(game, identity) } ?: continue
             if (!active() || policy() != MissingAiPlayerPolicy.ABORT_MATCH) return
             abortHandler.abort(
-                game,
-                MinecraftMatchAbortReasonIds.AI_PLAYER_MISSING,
-                "World participant is unavailable memberId=${missing.key} entityId=${missing.value.subjectId}",
+                expectedGame = game,
+                reasonId = MinecraftMatchAbortReasonIds.AI_PLAYER_MISSING,
+                diagnostic = "World participant is unavailable memberId=${missing.key} entityId=${missing.value.subjectId}",
             )
         }
     }

@@ -131,28 +131,28 @@ class MahjongTileSelectionConfirmEntityRenderer(
         val textColor = if (confirmable) CONFIRMABLE_TEXT_COLOR else NOT_CONFIRMABLE_TEXT_COLOR
         val height = textRenderer.fontHeight
         WorldPanelRenderer.drawBackground(
-            -widthPx / 2f,
-            -height / 2f - PANEL_PADDING,
-            widthPx / 2f,
-            height / 2f + PANEL_PADDING,
-            BACKGROUND_COLOR,
-            0f,
-            matrices,
-            consumers,
+            left = -widthPx / 2f,
+            top = -height / 2f - PANEL_PADDING,
+            right = widthPx / 2f,
+            bottom = height / 2f + PANEL_PADDING,
+            color = BACKGROUND_COLOR,
+            z = 0f,
+            matrices = matrices,
+            consumers = consumers,
         )
         val maxTextWidthPx = (widthPx - PANEL_PADDING * 2f).toInt().coerceAtLeast(0)
         val fittedText = WorldPanelRenderer.fitText(textRenderer, label.string, maxTextWidthPx)
         val fittedWidth = textRenderer.getWidth(fittedText)
         WorldPanelRenderer.drawText(
-            textRenderer,
-            Text.literal(fittedText),
-            -fittedWidth / 2.0f,
-            -height / 2.0f,
-            textColor,
-            TEXT_Z,
-            light,
-            matrices,
-            consumers,
+            renderer = textRenderer,
+            text = Text.literal(fittedText),
+            x = -fittedWidth / 2.0f,
+            y = -height / 2.0f,
+            color = textColor,
+            z = TEXT_Z,
+            light = light,
+            matrices = matrices,
+            consumers = consumers,
         )
     }
 

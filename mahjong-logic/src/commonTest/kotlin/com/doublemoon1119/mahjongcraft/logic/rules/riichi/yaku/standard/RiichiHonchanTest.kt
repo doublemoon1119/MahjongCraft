@@ -28,7 +28,7 @@ class RiichiHonchanTest : RiichiHandValueCalculatorTestBase() {
         // 所有面子和雀頭都包含么九牌
         // 門前清：2 翻
         val hand = FakeHandFactory.create(
-            listOf(
+            tiles = listOf(
                 Tile.Numeric(Tile.Suit.Character, 1),
                 Tile.Numeric(Tile.Suit.Character, 2),
                 Tile.Numeric(Tile.Suit.Character, 3),
@@ -60,7 +60,7 @@ class RiichiHonchanTest : RiichiHandValueCalculatorTestBase() {
         // 所有面子和雀頭都包含么九牌
         // 門前清：2 翻
         val hand = FakeHandFactory.create(
-            listOf(
+            tiles = listOf(
                 Tile.Numeric(Tile.Suit.Character, 1),
                 Tile.Numeric(Tile.Suit.Character, 2),
                 Tile.Numeric(Tile.Suit.Character, 3),
@@ -73,7 +73,7 @@ class RiichiHonchanTest : RiichiHandValueCalculatorTestBase() {
                 Tile.Honor.Green,
             ),
             melds = listOf(
-                FakeMeldFactory.create(
+                element = FakeMeldFactory.create(
                     type = MeldType.Pon,
                     tiles = listOf(
                         FakeIdentifiedTileFactory.create(Tile.Honor.East),
@@ -99,7 +99,7 @@ class RiichiHonchanTest : RiichiHandValueCalculatorTestBase() {
         // 手牌：123m, 789p, 111z, 456s, 77z (雀頭)
         // 456s 不包含么九牌，不構成混全帶么九
         val hand = FakeHandFactory.create(
-            listOf(
+            tiles = listOf(
                 Tile.Numeric(Tile.Suit.Character, 1),
                 Tile.Numeric(Tile.Suit.Character, 2),
                 Tile.Numeric(Tile.Suit.Character, 3),

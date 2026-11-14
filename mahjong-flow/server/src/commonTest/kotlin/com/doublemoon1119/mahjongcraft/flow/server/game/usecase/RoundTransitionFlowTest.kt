@@ -72,7 +72,7 @@ class RoundTransitionFlowTest {
         val gameRepo = FakeGameRepository()
         val moduleRegistry = MahjongModuleRegistryImpl().apply {
             register(
-                MahjongModuleDefinition(RiichiRuleConfig::class, "test:round-transition") { config, id ->
+                definition = MahjongModuleDefinition(RiichiRuleConfig::class, "test:round-transition") { config, id ->
                     TransitionOverrideRuleModule(
                         delegate = RiichiRuleModule(id, config),
                         transitionDirective = transitionDirective,
@@ -85,33 +85,33 @@ class RoundTransitionFlowTest {
         }
         private val snapshotRepo = FakeGameSnapshotRepository()
         private val snapshotSynchronizer = GameSnapshotSynchronizer(
-            gameRepo,
-            snapshotRepo,
-            GameVisibilityPolicyImpl(moduleRegistry, componentRegistry = bundledCoreExtensionRegistries().componentRegistry),
+            gameRepository = gameRepo,
+            snapshotRepository = snapshotRepo,
+            visibilityPolicy = GameVisibilityPolicyImpl(moduleRegistry, componentRegistry = bundledCoreExtensionRegistries().componentRegistry),
         )
         private val eventPublisher = FakeGameEventPublisher()
         val presentationPublisher = FakeGamePresentationPublisher()
         private val handSortPreferenceStore = HandSortPreferenceStore()
 
         val exhaustiveDrawUseCase = DeclareExhaustiveDrawUseCase(
-            gameRepo,
-            moduleRegistry,
-            snapshotSynchronizer,
-            eventPublisher,
+            gameRepository = gameRepo,
+            moduleRegistry = moduleRegistry,
+            snapshotSynchronizer = snapshotSynchronizer,
+            eventPublisher = eventPublisher,
         )
         val abortiveDrawUseCase = DeclareAbortiveDrawUseCase(
-            gameRepo,
-            moduleRegistry,
-            snapshotSynchronizer,
-            eventPublisher,
+            gameRepository = gameRepo,
+            moduleRegistry = moduleRegistry,
+            snapshotSynchronizer = snapshotSynchronizer,
+            eventPublisher = eventPublisher,
         )
         val advanceRoundUseCase = AdvanceRoundUseCase(
-            gameRepo,
-            moduleRegistry,
-            snapshotSynchronizer,
-            handSortPreferenceStore,
-            eventPublisher,
-            presentationPublisher,
+            gameRepository = gameRepo,
+            moduleRegistry = moduleRegistry,
+            snapshotSynchronizer = snapshotSynchronizer,
+            handSortPreferenceStore = handSortPreferenceStore,
+            eventPublisher = eventPublisher,
+            presentationPublisher = presentationPublisher,
             componentRegistry = bundledCoreExtensionRegistries().componentRegistry,
             beginRuleDecisionUseCase = noRuleDecisionBeginUseCase(gameRepo, moduleRegistry, snapshotSynchronizer),
         )

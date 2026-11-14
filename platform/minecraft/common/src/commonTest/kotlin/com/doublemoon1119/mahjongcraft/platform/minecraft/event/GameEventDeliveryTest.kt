@@ -135,7 +135,7 @@ class GameEventDeliveryTest {
         var received = 0
         val ruleResults = MahjongCraftEvent.create<RuleResultsResolvedListener>().also {
             it.register(
-                RuleResultsResolvedListener { event, _ ->
+                listener = RuleResultsResolvedListener { event, _ ->
                     received += event.results.size
                 },
             )
@@ -157,9 +157,9 @@ class GameEventDeliveryTest {
         var projectionCalls = 0
         val markers = GameEventPublicMarkerResolverRegistry().apply {
             register(
-                GameEventPublicMarkerResolverDefinition(
-                    RULE_MODULE_ID,
-                    object : GameEventPublicMarkerResolver {
+                definition = GameEventPublicMarkerResolverDefinition(
+                    ruleModuleId = RULE_MODULE_ID,
+                    resolver = object : GameEventPublicMarkerResolver {
                         override fun resolveMatchEndMarkers(context: MatchEndPublicMarkerContext): List<RulePublicEventMarker> {
                             projectionCalls++
                             if (fail) error("test marker failure")
@@ -233,14 +233,14 @@ class GameEventDeliveryTest {
         }
         val settled = MahjongCraftEvent.create<RoundSettledListener>()
         settled.register(
-            RoundSettledListener { _, context ->
+            listener = RoundSettledListener { _, context ->
                 received += "settled"
                 contexts += context
             },
         )
         val ended = MahjongCraftEvent.create<MatchEndedListener>()
         ended.register(
-            MatchEndedListener { _, context ->
+            listener = MatchEndedListener { _, context ->
                 received += "ended"
                 contexts += context
             },
@@ -294,7 +294,7 @@ class GameEventDeliveryTest {
         }
         val batches = MahjongCraftEvent.create<EventBatchCommittedListener>().also {
             it.register(
-                EventBatchCommittedListener { batch, _ ->
+                listener = EventBatchCommittedListener { batch, _ ->
                     deliveredBatch = batch
                     received += "batch"
                 },
@@ -357,7 +357,7 @@ class GameEventDeliveryTest {
             reporter = reporter,
         )
         val session = delivery.startSession()
-        delivery.onCommitted(session, 1, startFacts(), onBatchDelivered = {
+        delivery.onCommitted(sessionId = session, sequence = 1, facts = startFacts(), onBatchDelivered = {
             assertNotNull(it)
             calls++
         })
@@ -422,7 +422,7 @@ class GameEventDeliveryTest {
         val batches = MahjongCraftEvent.create<EventBatchCommittedListener>().also {
             it.register(failingListener)
             it.register(
-                EventBatchCommittedListener { batch, _ ->
+                listener = EventBatchCommittedListener { batch, _ ->
                     received++
                     delivered += batch
                 },
@@ -465,7 +465,7 @@ class GameEventDeliveryTest {
         var failedEvent: MatchEvent? = null
         val settled = MahjongCraftEvent.create<RoundSettledListener>().also {
             it.register(
-                RoundSettledListener { event, _ ->
+                listener = RoundSettledListener { event, _ ->
                     failedEvent = event
                     throw IllegalStateException("listener failed")
                 },
@@ -520,7 +520,7 @@ class GameEventDeliveryTest {
         var failure: Throwable? = IsolatableTestError()
         val endpoint = MahjongCraftEvent.create<MatchStartedListener>().also {
             it.register(
-                MatchStartedListener { event, _ ->
+                listener = MatchStartedListener { event, _ ->
                     failure?.let { cause -> throw cause }
                     received += event.matchId
                 },
@@ -528,8 +528,8 @@ class GameEventDeliveryTest {
         }
         val reporter = RecordingReporter()
         val delivery = delivery(
-            scheduler,
-            endpoint,
+            scheduler = scheduler,
+            endpoint = endpoint,
             reporter = reporter,
             failurePolicy = ExtensionFailurePolicy { it is IsolatableTestError || ExtensionFailurePolicy.Default.isIsolatable(it) },
         )
@@ -638,7 +638,7 @@ class GameEventDeliveryTest {
         var first = true
         val endpoint = MahjongCraftEvent.create<MatchStartedListener>().also {
             it.register(
-                MatchStartedListener { event, _ ->
+                listener = MatchStartedListener { event, _ ->
                     if (first) {
                         first = false
                         error("test listener failure")
@@ -716,7 +716,7 @@ class GameEventDeliveryTest {
         var reentered = false
         lateinit var sessionId: Uuid
         endpoint.register(
-            MatchStartedListener { event, _ ->
+            listener = MatchStartedListener { event, _ ->
                 received += event.matchId
                 if (!reentered) {
                     reentered = true
@@ -820,9 +820,9 @@ class GameEventDeliveryTest {
         previousGame = game,
         game = game,
         facts = listOf(
-            HistoryEventDraft(
-                null,
-                HistoryFact.RuleEffectResolved(
+            element = HistoryEventDraft(
+                actorPlayerId = null,
+                fact = HistoryFact.RuleEffectResolved(
                     reasonId = "test:rule_result",
                     roundCompletion = null,
                     winDetails = emptyList(),

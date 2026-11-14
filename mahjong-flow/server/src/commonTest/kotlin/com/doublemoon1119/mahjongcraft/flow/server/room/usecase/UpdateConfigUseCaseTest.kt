@@ -136,7 +136,7 @@ class UpdateConfigUseCaseTest {
         val humanId = Uuid.random()
         val aiId = Uuid.random()
         roomRepo.setRoom(
-            Room(
+            room = Room(
                 id = roomId,
                 hostId = hostId,
                 gameConfig = GameConfig(initialConfig),
@@ -177,8 +177,8 @@ class UpdateConfigUseCaseTest {
         val useCase = UpdateConfigUseCase(roomRepo, FakeRoomSnapshotRepository(), FakeRoomEventPublisher())
         roomRepo.setRoom(Room(roomId, hostId, GameConfig(initialConfig), listOf(hostId)))
         val contradictory = GameConfig(
-            newConfig,
-            GameFlowConfig(
+            ruleConfig = newConfig,
+            flowConfig = GameFlowConfig(
                 spectatingPolicy = SpectatingPolicy.DISABLED,
                 spectatorHandVisibility = SpectatorHandVisibility.REVEALED,
             ),

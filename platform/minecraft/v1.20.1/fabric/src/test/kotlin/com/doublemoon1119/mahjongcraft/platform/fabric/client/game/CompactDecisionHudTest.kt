@@ -57,8 +57,8 @@ class CompactDecisionHudTest {
     @Test
     fun `shows no reminder for a prompt with nothing to choose`() {
         assertEquals(
-            CompactDecisionHudContent.TimerOnly,
-            content(prompt = PlayerDecisionPromptDto(decisionKey = DECISION_KEY, ruleModuleId = null, actions = emptyList(), triggerTileAssetKey = null, triggerPlayerId = null, triggerPlayerName = null, triggerPlayerRelation = null, triggerActionId = null, ruleDecision = null, discardAnalyses = emptyList()), dismissedDecisionKey = DECISION_KEY),
+            expected = CompactDecisionHudContent.TimerOnly,
+            actual = content(prompt = PlayerDecisionPromptDto(decisionKey = DECISION_KEY, ruleModuleId = null, actions = emptyList(), triggerTileAssetKey = null, triggerPlayerId = null, triggerPlayerName = null, triggerPlayerRelation = null, triggerActionId = null, ruleDecision = null, discardAnalyses = emptyList()), dismissedDecisionKey = DECISION_KEY),
         )
     }
 
@@ -74,8 +74,8 @@ class CompactDecisionHudTest {
     @Test
     fun `shows no reminder once a physical selection is active`() {
         assertEquals(
-            CompactDecisionHudContent.TimerOnly,
-            content(dismissedDecisionKey = DECISION_KEY, isPhysicalSelectionActive = true),
+            expected = CompactDecisionHudContent.TimerOnly,
+            actual = content(dismissedDecisionKey = DECISION_KEY, isPhysicalSelectionActive = true),
         )
     }
 

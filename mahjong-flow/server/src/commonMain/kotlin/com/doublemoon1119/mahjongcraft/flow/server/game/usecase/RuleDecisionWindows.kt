@@ -89,8 +89,8 @@ internal object RuleDecisionWindows {
     ): Game {
         if (decision.timing == RuleDecisionTiming.ROUND_END && scoresOf(resolution.tableState) != scoresOf(game.tableState)) {
             throw RuleContractViolationException(
-                GameAbortReasonIds.RULE_EXECUTION_FAILED,
-                "Rule decisions after the round is settled cannot change scores",
+                reasonId = GameAbortReasonIds.RULE_EXECUTION_FAILED,
+                diagnostic = "Rule decisions after the round is settled cannot change scores",
             )
         }
         resolution.win?.let { win -> requireValidWin(game, decision, resolution, win) }
@@ -148,8 +148,8 @@ internal object RuleDecisionWindows {
             resolution.tableState.turnPhase == TurnPhase.RoundOver(RoundConclusion.Win(win.outcome.winnerPlayerIds))
         if (!valid) {
             throw RuleContractViolationException(
-                GameAbortReasonIds.RULE_EXECUTION_FAILED,
-                "Rule decision win must close the decision before round end, match its score changes, record the winners' win action and conclude the round with that win",
+                reasonId = GameAbortReasonIds.RULE_EXECUTION_FAILED,
+                diagnostic = "Rule decision win must close the decision before round end, match its score changes, record the winners' win action and conclude the round with that win",
             )
         }
     }
@@ -180,8 +180,8 @@ internal object RuleDecisionWindows {
         if (step.participantPlayerIds.isEmpty() || step.timeSource == RuleDecisionTimeSource.ACTION_TIME) return
         if (resolverRegistry.findDefaultConfig(module.id, game.tableState.config) == null || game.flowConfig.ruleDecision == null) {
             throw RuleContractViolationException(
-                GameAbortReasonIds.RULE_EXECUTION_FAILED,
-                "Rule decision requires a time configuration for player input",
+                reasonId = GameAbortReasonIds.RULE_EXECUTION_FAILED,
+                diagnostic = "Rule decision requires a time configuration for player input",
             )
         }
     }

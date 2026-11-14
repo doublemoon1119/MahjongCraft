@@ -14,7 +14,7 @@ internal object DebugFabricMahjongClientExtension : FabricMahjongClientExtension
 
     override fun registerCharacterPreviews(registry: FabricAiCharacterPreviewRegistrar) {
         registry.register(
-            FabricAiCharacterPreviewDefinition(DebugSeatedParticipantAdapter.ID) { world, _ ->
+            definition = FabricAiCharacterPreviewDefinition(DebugSeatedParticipantAdapter.ID) { world, _ ->
                 val model = ArmorStandEntity(world, 0.0, 0.0, 0.0)
                 object : FabricAiCharacterPreviewHandle {
                     override val entity: Entity = model

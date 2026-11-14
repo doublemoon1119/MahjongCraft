@@ -31,12 +31,12 @@ class DecisionStatusDisplayNameRegistryTest {
         val registry = registry()
 
         assertEquals(
-            "mahjongcraft.taiwan.hud.passed_win",
-            registry.find(BuiltInRuleModuleIds.TAIWAN, TaiwanDiscardReadinessAnalyzer.StatusIds.PASSED_WIN),
+            expected = "mahjongcraft.taiwan.hud.passed_win",
+            actual = registry.find(BuiltInRuleModuleIds.TAIWAN, TaiwanDiscardReadinessAnalyzer.StatusIds.PASSED_WIN),
         )
         assertEquals(
-            "mahjongcraft.taiwan.hud.win_availability.below_minimum",
-            registry.find(BuiltInRuleModuleIds.TAIWAN, TaiwanDiscardReadinessAnalyzer.StatusIds.WIN_BELOW_MINIMUM),
+            expected = "mahjongcraft.taiwan.hud.win_availability.below_minimum",
+            actual = registry.find(BuiltInRuleModuleIds.TAIWAN, TaiwanDiscardReadinessAnalyzer.StatusIds.WIN_BELOW_MINIMUM),
         )
         assertNull(registry.find(BuiltInRuleModuleIds.RIICHI, TaiwanDiscardReadinessAnalyzer.StatusIds.PASSED_WIN))
     }
@@ -47,12 +47,12 @@ class DecisionStatusDisplayNameRegistryTest {
         val registry = registry()
 
         assertEquals(
-            "mahjongcraft.riichi.hud.furiten.discard",
-            registry.find(BuiltInRuleModuleIds.RIICHI, RiichiDiscardReadinessAnalyzer.StatusIds.DISCARD_FURITEN),
+            expected = "mahjongcraft.riichi.hud.furiten.discard",
+            actual = registry.find(BuiltInRuleModuleIds.RIICHI, RiichiDiscardReadinessAnalyzer.StatusIds.DISCARD_FURITEN),
         )
         assertEquals(
-            "mahjongcraft.riichi.hud.win_availability.no_yaku",
-            registry.find(BuiltInRuleModuleIds.RIICHI, RiichiDiscardReadinessAnalyzer.StatusIds.WIN_NO_YAKU),
+            expected = "mahjongcraft.riichi.hud.win_availability.no_yaku",
+            actual = registry.find(BuiltInRuleModuleIds.RIICHI, RiichiDiscardReadinessAnalyzer.StatusIds.WIN_NO_YAKU),
         )
         assertNull(registry.find(BuiltInRuleModuleIds.TAIWAN, RiichiDiscardReadinessAnalyzer.StatusIds.WIN_NO_YAKU))
     }

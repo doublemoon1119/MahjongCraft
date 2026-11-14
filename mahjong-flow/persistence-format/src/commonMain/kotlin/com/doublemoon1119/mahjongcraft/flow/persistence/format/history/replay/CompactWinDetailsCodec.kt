@@ -18,7 +18,7 @@ internal object CompactWinDetailsCodec {
     fun encode(details: JsonElement): JsonArray = array(details).mapArray { raw ->
         val winner = obj(raw)
         JsonArray(
-            listOf(
+            content = listOf(
                 winner.getValue(ReplaySourceKeys.PLAYER_ID),
                 array(winner.getValue(ReplaySourceKeys.DETAIL_FIELDS)).mapArray { fieldRaw ->
                     val field = obj(fieldRaw)
@@ -39,7 +39,7 @@ internal object CompactWinDetailsCodec {
         require(winner.size in 2..3) { "Compact winner detail must contain two or three fields" }
         val hand = winner.getOrNull(2)?.let { decodeHand(array(it)) }
         JsonObject(
-            linkedMapOf(
+            content = linkedMapOf(
                 ReplaySourceKeys.PLAYER_ID to winner[0],
                 ReplaySourceKeys.DETAIL_FIELDS to array(winner[1]).mapArray { fieldRaw ->
                     val field = array(fieldRaw)
@@ -97,11 +97,11 @@ internal object CompactWinDetailsCodec {
      */
     private fun encodeValue(value: JsonObject): JsonArray = when ((value[ReplaySourceKeys.TYPE] as? JsonPrimitive)?.content) {
         HistoryDetailValueTypeKeys.QUANTITIES -> JsonArray(
-            listOf(JsonPrimitive(QUANTITIES_CODE), array(value.getValue(ReplaySourceKeys.QUANTITIES)).mapArray { encodeQuantity(obj(it)) }),
+            content = listOf(JsonPrimitive(QUANTITIES_CODE), array(value.getValue(ReplaySourceKeys.QUANTITIES)).mapArray { encodeQuantity(obj(it)) }),
         )
         HistoryDetailValueTypeKeys.TILE_FACES -> JsonArray(listOf(JsonPrimitive(TILE_FACES_CODE), array(value.getValue(ReplaySourceKeys.TILE_FACES))))
         HistoryDetailValueTypeKeys.ENTRIES -> JsonArray(
-            listOf(
+            content = listOf(
                 JsonPrimitive(ENTRIES_CODE),
                 array(value.getValue(ReplaySourceKeys.ENTRIES)).mapArray { raw -> encodeEntry(obj(raw)) },
             ),
@@ -122,7 +122,7 @@ internal object CompactWinDetailsCodec {
         val id = entry.getValue(ReplaySourceKeys.ID)
         if (nameQuantity == null && !partial) return JsonArray(listOf(id) + quantity.orEmpty())
         return JsonArray(
-            listOf(id) +
+            content = listOf(id) +
                 (quantity ?: JsonArray(listOf(JsonNull, JsonNull))) +
                 (nameQuantity ?: JsonArray(listOf(JsonNull, JsonNull))) +
                 JsonPrimitive(if (partial) 1 else 0),
@@ -141,7 +141,7 @@ internal object CompactWinDetailsCodec {
         val nameQuantity = if (entry.size == FULL_ENTRY_SIZE && entry[3] != JsonNull) decodeQuantity(entry[3], entry[4]) else JsonNull
         val partial = entry.size == FULL_ENTRY_SIZE && (entry[5] as JsonPrimitive).content == "1"
         return JsonObject(
-            mapOf(
+            content = mapOf(
                 ReplaySourceKeys.ID to entry[0],
                 ReplaySourceKeys.QUANTITY to quantity,
                 ReplaySourceKeys.NAME_QUANTITY to nameQuantity,
@@ -179,7 +179,7 @@ internal object CompactWinDetailsCodec {
             JsonPrimitive(QUANTITIES_CODE) -> {
                 require(value.size == 2) { "Compact quantity detail has unexpected fields" }
                 JsonObject(
-                    mapOf(
+                    content = mapOf(
                         ReplaySourceKeys.TYPE to JsonPrimitive(HistoryDetailValueTypeKeys.QUANTITIES),
                         ReplaySourceKeys.QUANTITIES to array(value[1]).mapArray { raw ->
                             val quantity = array(raw)
@@ -196,7 +196,7 @@ internal object CompactWinDetailsCodec {
             JsonPrimitive(ENTRIES_CODE) -> {
                 require(value.size == 2) { "Compact entry detail has unexpected fields" }
                 JsonObject(
-                    mapOf(
+                    content = mapOf(
                         ReplaySourceKeys.TYPE to JsonPrimitive(HistoryDetailValueTypeKeys.ENTRIES),
                         ReplaySourceKeys.ENTRIES to array(value[1]).mapArray { raw -> decodeEntry(array(raw)) },
                     ),

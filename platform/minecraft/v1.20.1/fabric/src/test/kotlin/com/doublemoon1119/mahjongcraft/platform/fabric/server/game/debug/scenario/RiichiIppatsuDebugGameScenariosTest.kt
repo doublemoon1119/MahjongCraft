@@ -24,7 +24,7 @@ class RiichiIppatsuDebugGameScenariosTest {
 
     /** 使用內建規則檢查情境結果的驗證器。 */
     private val scenarioValidator = DebugGameScenarioValidator(
-        MahjongModuleRegistryImpl().apply {
+        moduleRegistry = MahjongModuleRegistryImpl().apply {
             registerBundledRuleModules()
             freeze()
         },
@@ -48,8 +48,8 @@ class RiichiIppatsuDebugGameScenariosTest {
                 assertTrue(riichiState.isIppatsu, scenario.id)
                 assertEquals(RiichiDeclarationKind.RIICHI, riichiState.kind, "${scenario.id} should not be a double riichi")
                 assertTrue(
-                    state.reservedWallTiles.none { it.tile == ONE_CHARACTER || it.tile == FOUR_CHARACTER },
-                    "${scenario.id} should keep the waits out of the dead wall",
+                    actual = state.reservedWallTiles.none { it.tile == ONE_CHARACTER || it.tile == FOUR_CHARACTER },
+                    message = "${scenario.id} should keep the waits out of the dead wall",
                 )
             }
         }

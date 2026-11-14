@@ -62,9 +62,9 @@ class ScatteredDiscardLayoutTest {
             val tableId = Uuid.fromLongs(random.nextLong(), random.nextLong())
             (0 until ROUNDS).forEach { roundSerial ->
                 assertNotEquals(
-                    ScatteredDiscardLayout.roundPattern(tableId, roundSerial, reach()),
-                    ScatteredDiscardLayout.roundPattern(tableId, roundSerial + 1, reach()),
-                    "Round $roundSerial and the next share a pattern",
+                    illegal = ScatteredDiscardLayout.roundPattern(tableId, roundSerial, reach()),
+                    actual = ScatteredDiscardLayout.roundPattern(tableId, roundSerial + 1, reach()),
+                    message = "Round $roundSerial and the next share a pattern",
                 )
             }
         }
@@ -108,7 +108,7 @@ class ScatteredDiscardLayoutTest {
         val pile = tiles.fold(FakeDiscardPile()) { acc, tile -> acc.discardTile(tile) }
         val tableId = Uuid.random()
         fun arrange(discardPile: FakeDiscardPile) = TableTileArrangement.arrange(
-            TableTileArrangementInput(
+            input = TableTileArrangementInput(
                 controllerX = 0,
                 controllerY = 64,
                 controllerZ = 0,

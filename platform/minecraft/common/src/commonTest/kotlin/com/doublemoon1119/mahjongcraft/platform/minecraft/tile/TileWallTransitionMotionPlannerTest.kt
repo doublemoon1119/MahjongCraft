@@ -26,15 +26,15 @@ class TileWallTransitionMotionPlannerTest {
         val stationaryPosition = TileWallPosition(0, 4, 0)
         val movingPosition = TileWallPosition(0, 5, 0)
         val destination = TileWallPlacement(
-            movingPosition,
-            TileWallPlacementOffset(alongWallStacks = 0.25),
+            position = movingPosition,
+            offset = TileWallPlacementOffset(alongWallStacks = 0.25),
         )
 
         val decision = TileWallTransitionMotionPlanner.planOpening(
-            CONTEXT,
-            mapOf(stationaryId to stationaryPosition, movingId to movingPosition),
-            TileWallPhysicalLayout(
-                mapOf(
+            context = CONTEXT,
+            assemblyStructure = mapOf(stationaryId to stationaryPosition, movingId to movingPosition),
+            finalLayout = TileWallPhysicalLayout(
+                placements = mapOf(
                     stationaryId to TileWallPlacement(stationaryPosition),
                     movingId to destination,
                 ),
@@ -97,9 +97,9 @@ class TileWallTransitionMotionPlannerTest {
         assertEquals(motions[0].segments.map { it.durationTicks }, motions[1].segments.map { it.durationTicks })
         motions[0].segments.zip(motions[1].segments).forEach { (bottomSegment, topSegment) ->
             assertEquals(
-                topSegment.start.y - bottomSegment.start.y,
-                topSegment.end.y - bottomSegment.end.y,
-                TOLERANCE,
+                expected = topSegment.start.y - bottomSegment.start.y,
+                actual = topSegment.end.y - bottomSegment.end.y,
+                absoluteTolerance = TOLERANCE,
             )
         }
     }
@@ -128,7 +128,7 @@ class TileWallTransitionMotionPlannerTest {
      * @return planner 成功產生的 transition 計畫。
      */
     private fun completedPlan(phases: List<PhysicalWallLayoutTransitionPhase>): TileWallTransitionMotionPlan = assertIs<TileWallTransitionMotionDecision.Completed>(
-        TileWallTransitionMotionPlanner.plan(CONTEXT, phases),
+        value = TileWallTransitionMotionPlanner.plan(CONTEXT, phases),
     ).plan
 
     /**

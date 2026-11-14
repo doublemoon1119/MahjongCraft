@@ -18,11 +18,11 @@ class WinSettlementTileGroupsTest {
         ) { asset -> if (asset == "public_east") "example:purple" else "example:rule" }
 
         assertEquals(
-            listOf(
+            expected = listOf(
                 listOf(PresentationTile.Back("example:purple"), PresentationTile.Face("east"), PresentationTile.Face("east"), PresentationTile.Back("example:purple")),
                 List(3) { PresentationTile.Face("p5") },
             ),
-            groups,
+            actual = groups,
         )
     }
 }

@@ -103,7 +103,7 @@ class FabricDebugDecisionCommand(
      * 底下，`clear` 不分規則；literal 節點同時提供完整 tab 補全。
      */
     fun buildDecisionHudCommand(): LiteralArgumentBuilder<ServerCommandSource> = DecisionHudRuleGroup.entries.fold(
-        literal(DECISION_HUD_SUBCOMMAND).then(literal(CLEAR_ARGUMENT).executes { clearDecisionHud(it.source) }),
+        initial = literal(DECISION_HUD_SUBCOMMAND).then(literal(CLEAR_ARGUMENT).executes { clearDecisionHud(it.source) }),
     ) { node, group ->
         node.then(
             DecisionHudPreview.entries.filter { it.ruleGroup == group }.fold(literal(group.commandName)) { groupNode, preview ->
@@ -155,11 +155,11 @@ class FabricDebugDecisionCommand(
             null
         }
         MahjongChannels.decisionTimerUpdate.sendTo(
-            player,
-            json,
-            DecisionTimerUpdatePayloadDto(
-                gameId,
-                DecisionTimerStatusDto(
+            player = player,
+            json = json,
+            value = DecisionTimerUpdatePayloadDto(
+                gameId = gameId,
+                status = DecisionTimerStatusDto(
                     phase = preview.phase,
                     baseRemaining = 8.seconds,
                     reserveRemaining = 15.seconds,
@@ -181,9 +181,9 @@ class FabricDebugDecisionCommand(
         val player = source.player ?: return COMMAND_FAILURE
         val gameId = debugDecisionGameIds.remove(player.uuid) ?: return COMMAND_SUCCESS
         MahjongChannels.decisionTimerUpdate.sendTo(
-            player,
-            json,
-            DecisionTimerUpdatePayloadDto(gameId, null),
+            player = player,
+            json = json,
+            value = DecisionTimerUpdatePayloadDto(gameId, null),
         )
         return COMMAND_SUCCESS
     }
@@ -200,8 +200,8 @@ class FabricDebugDecisionCommand(
                             argument(MIN_COUNT_ARGUMENT, IntegerArgumentType.integer(1)).then(
                                 argument(MAX_COUNT_ARGUMENT, IntegerArgumentType.integer(1)).executes { context ->
                                     startRuleDecision(
-                                        context.source,
-                                        RuleDecisionPreview.TILES,
+                                        source = context.source,
+                                        preview = RuleDecisionPreview.TILES,
                                         minCount = IntegerArgumentType.getInteger(context, MIN_COUNT_ARGUMENT),
                                         maxCount = IntegerArgumentType.getInteger(context, MAX_COUNT_ARGUMENT),
                                     )
@@ -219,9 +219,9 @@ class FabricDebugDecisionCommand(
                             .suggests(::suggestRuleDecisionOptions)
                             .executes { context ->
                                 submitRuleDecision(
-                                    context.source,
-                                    RuleDecisionSubmission.Choice(
-                                        IdentifierArgumentType.getIdentifier(context, OPTION_ID_ARGUMENT).toString(),
+                                    source = context.source,
+                                    submission = RuleDecisionSubmission.Choice(
+                                        optionId = IdentifierArgumentType.getIdentifier(context, OPTION_ID_ARGUMENT).toString(),
                                     ),
                                 )
                             },
@@ -535,7 +535,7 @@ class FabricDebugDecisionCommand(
                 RIICHI -> listOf(riichiAction())
                 TEXT_CARD -> listOf(textCardAction())
                 KYUUSHU -> listOf(
-                    PlayerDecisionActionDto(
+                    element = PlayerDecisionActionDto(
                         token = "$commandName:kyuushu_kyuuhai",
                         actionId = RiichiExhaustiveDrawReason.KyuushuKyuuhai.id,
                         previewTileAssetKeys = listOf("m1", "m9", "p1", "p9", "s1", "s9", "east", "south", "west", "north", "white_dragon", "green_dragon"),
@@ -545,7 +545,7 @@ class FabricDebugDecisionCommand(
                     ),
                 )
                 PULL_NORTH -> listOf(
-                    PlayerDecisionActionDto(
+                    element = PlayerDecisionActionDto(
                         token = "$commandName:pull_north",
                         actionId = RiichiGameAction.PullNorth.id,
                         previewTileAssetKeys = listOf("north"),
@@ -611,19 +611,19 @@ class FabricDebugDecisionCommand(
                 else -> WaitingTileAvailabilityIds.WIN_AVAILABLE
             }
             return DiscardReadinessAnalysisDto(
-                discardTileId,
-                tiles.mapIndexed { index, tile ->
+                discardTileId = discardTileId,
+                waitingTiles = tiles.mapIndexed { index, tile ->
                     WaitingTileAvailabilityDto(
-                        tile,
-                        (3 - index).coerceAtLeast(0),
-                        when (this) {
+                        tile = tile,
+                        remainingCount = (3 - index).coerceAtLeast(0),
+                        winAvailability = when (this) {
                             DISCARD_MIXED_AVAILABILITY -> RIICHI_MIXED_AVAILABILITY_CYCLE[index % RIICHI_MIXED_AVAILABILITY_CYCLE.size]
                             TAIWAN_DISCARD_MIXED -> TAIWAN_MIXED_AVAILABILITY_CYCLE[index % TAIWAN_MIXED_AVAILABILITY_CYCLE.size]
                             else -> availability
                         },
                     )
                 },
-                when (this) {
+                statusIndicatorId = when (this) {
                     DISCARD_FURITEN, DISCARD_FURITEN_UNAVAILABLE -> RiichiDiscardReadinessAnalyzer.StatusIds.DISCARD_FURITEN
                     DISCARD_PERMANENT_FURITEN -> RiichiDiscardReadinessAnalyzer.StatusIds.PERMANENT_FURITEN
                     TAIWAN_DISCARD_PASSED_WIN -> TaiwanDiscardReadinessAnalyzer.StatusIds.PASSED_WIN

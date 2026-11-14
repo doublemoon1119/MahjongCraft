@@ -57,12 +57,12 @@ class RiichiFuritenDebugGameScenariosTest {
         assertTrue(state.currentPlayer.hand.lastDrawn != null, "${scenario.id} should start after the invoking player drew")
         val strategyKeys = state.players.filterNot { it.id == context.invokingPlayerId }.map { result.game.aiPlayerStrategyKeys[it.id] }
         assertTrue(
-            strategyKeys.all { it == DebugScriptedAiStrategy.TSUMOGIRI_KEY || it == DebugScriptedAiStrategy.KAN_FIRST_KEY },
-            "${scenario.id} should hand every opponent to a scripted AI",
+            actual = strategyKeys.all { it == DebugScriptedAiStrategy.TSUMOGIRI_KEY || it == DebugScriptedAiStrategy.KAN_FIRST_KEY },
+            message = "${scenario.id} should hand every opponent to a scripted AI",
         )
         assertTrue(
-            state.reservedWallTiles.none { it.tile == ONE_CHARACTER || it.tile == FOUR_CHARACTER },
-            "${scenario.id} should keep the waits out of the dead wall",
+            actual = state.reservedWallTiles.none { it.tile == ONE_CHARACTER || it.tile == FOUR_CHARACTER },
+            message = "${scenario.id} should keep the waits out of the dead wall",
         )
     }
 
@@ -89,7 +89,7 @@ class RiichiFuritenDebugGameScenariosTest {
             },
         )
         val ownTurnActions = contextState.scenarioValidator().getLegalActions(
-            LegalActionContext.ownTurn(contextState, invoker.id),
+            context = LegalActionContext.ownTurn(contextState, invoker.id),
         )
         assertTrue(GameAction.Tsumo in ownTurnActions)
     }
@@ -156,8 +156,8 @@ class RiichiFuritenDebugGameScenariosTest {
 
         assertEquals(RonResolution.NEAREST_WINNER, config.multiRonPolicy.doubleRonResolution)
         assertEquals(
-            (context.currentGame.tableState.config as RiichiRuleConfig).copy(multiRonPolicy = config.multiRonPolicy),
-            config,
+            expected = (context.currentGame.tableState.config as RiichiRuleConfig).copy(multiRonPolicy = config.multiRonPolicy),
+            actual = config,
         )
         assertTrue(state.canRobKan(offset = 2, type = GameAction.KanType.ADDED_KAN))
         assertTrue(state.canRobKan(offset = 0, type = GameAction.KanType.ADDED_KAN))

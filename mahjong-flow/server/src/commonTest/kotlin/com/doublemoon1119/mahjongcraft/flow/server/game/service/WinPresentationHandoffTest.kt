@@ -55,12 +55,12 @@ class WinPresentationHandoffTest {
         handoff.stage(gameId, presentationFor(firstWinnerId))
 
         assertNull(
-            handoff.take(gameId, setOf(secondWinnerId)),
-            "The second win must not receive the first win's presentation.",
+            actual = handoff.take(gameId, setOf(secondWinnerId)),
+            message = "The second win must not receive the first win's presentation.",
         )
         assertNull(
-            handoff.take(gameId, setOf(firstWinnerId)),
-            "The stale entry must also be cleared, not left for a third win to pick up.",
+            actual = handoff.take(gameId, setOf(firstWinnerId)),
+            message = "The stale entry must also be cleared, not left for a third win to pick up.",
         )
     }
 
@@ -105,7 +105,7 @@ class WinPresentationHandoffTest {
                 ruleModuleId = "mahjongcraft:riichi",
                 isTsumo = true,
                 winners = listOf(
-                    WinSettlementWinnerPresentation(
+                    element = WinSettlementWinnerPresentation(
                         playerId = winnerId,
                         seatIndex = 0,
                         responsiblePlayerId = null,
@@ -118,7 +118,7 @@ class WinPresentationHandoffTest {
                 ),
                 ranking = ScoreRankingPresentation(
                     players = listOf(
-                        ScoreRankingPlayer(winnerId, 0, isAi = false, previousScore = 25_000, currentScore = 33_000, previousRank = 1, currentRank = 1),
+                        element = ScoreRankingPlayer(winnerId, 0, isAi = false, previousScore = 25_000, currentScore = 33_000, previousRank = 1, currentRank = 1),
                     ),
                 ),
             ),

@@ -22,8 +22,8 @@ fun riichiDeclarationComponents(
     require(declarationTile != null || !isIppatsu) { "Ippatsu requires an existing declaration" }
     return declarationTile?.let {
         ComponentSet.EMPTY.with(
-            RiichiPlayerComponents.DECLARATION,
-            RiichiDeclaration(
+            type = RiichiPlayerComponents.DECLARATION,
+            value = RiichiDeclaration(
                 kind = kind,
                 discardTileId = it.id,
                 isIppatsu = isIppatsu,

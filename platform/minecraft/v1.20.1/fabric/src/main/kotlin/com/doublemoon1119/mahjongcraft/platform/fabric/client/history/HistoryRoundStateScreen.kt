@@ -148,7 +148,7 @@ internal class HistoryRoundStateScreen(
         if (state == null) {
             val message = if (status is HistoryBrowseStatus.Failed) Text.translatable(status.reason.translationKey) else Text.translatable(MinecraftHistoryScreenKeys.LOADING)
             val lines = textRenderer.wrapLines(message, (layout.contentWidth - 16).coerceAtLeast(1)).take(
-                ((layout.contentBottom - layout.contentTop - 32) / LINE_HEIGHT).coerceAtLeast(1),
+                n = ((layout.contentBottom - layout.contentTop - 32) / LINE_HEIGHT).coerceAtLeast(1),
             )
             lines.forEachIndexed { index, line ->
                 context.drawTextWithShadow(textRenderer, line, layout.left + 8, layout.contentTop + 8 + index * LINE_HEIGHT, TEXT_COLOR)
@@ -382,7 +382,7 @@ internal class HistoryRoundStateScreen(
         )
         val handHeading = Text.translatable(MinecraftHistoryScreenKeys.STATE_HAND).append(" ·")
         add(
-            Row.HandHeading(
+            element = Row.HandHeading(
                 label = handHeading,
                 action = currentMode,
                 tooltip = if (canSortHand) {
@@ -413,8 +413,8 @@ internal class HistoryRoundStateScreen(
             }
         }
         line(
-            Text.translatable(MinecraftHistoryScreenKeys.STATE_DISCARDS_COUNT, player.discards.size),
-            MUTED_COLOR,
+            text = Text.translatable(MinecraftHistoryScreenKeys.STATE_DISCARDS_COUNT, player.discards.size),
+            color = MUTED_COLOR,
             fullText = Text.translatable(MinecraftHistoryScreenKeys.STATE_DISCARDS_COUNT_TOOLTIP, player.discards.size),
         )
         val river = HistoryRoundStatePresenter.discards(player, maxWidth, session.discardMarkers)

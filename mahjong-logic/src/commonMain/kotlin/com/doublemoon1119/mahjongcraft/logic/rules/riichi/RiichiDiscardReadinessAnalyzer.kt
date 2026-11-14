@@ -160,9 +160,9 @@ class RiichiDiscardReadinessAnalyzer(
                 tile = tile,
                 remainingCount = (COPIES_PER_TILE - (visibleCounts[tile] ?: 0)).coerceAtLeast(0),
                 winAvailability = legalActionValidator.analyzeWinAvailability(
-                    tableState,
-                    winPlayer,
-                    IdentifiedTile(Uuid.random(), tile),
+                    tableState = tableState,
+                    player = winPlayer,
+                    incomingTile = IdentifiedTile(Uuid.random(), tile),
                 ).toStatusId(),
             )
         }

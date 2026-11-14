@@ -124,7 +124,7 @@ internal object TileSetAsideResolver {
             return Resolution.RobbingWindowOpened(
                 tableState = state.copy(
                     turnPhase = TurnPhase.AwaitingRobbingReaction(
-                        PendingRobbingReaction(
+                        reaction = PendingRobbingReaction(
                             declarerId = playerId,
                             declaredAction = action,
                             robbedTile = setAsideTile,

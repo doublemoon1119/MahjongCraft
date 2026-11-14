@@ -120,9 +120,9 @@ class TableLocationRegistry {
         tableIdsByChunk = entriesByTableId.values
             .groupBy { entry ->
                 DimensionChunkKey(
-                    entry.location.dimensionId,
-                    entry.location.chunkX,
-                    entry.location.chunkZ,
+                    dimensionId = entry.location.dimensionId,
+                    chunkX = entry.location.chunkX,
+                    chunkZ = entry.location.chunkZ,
                 )
             }
             .mapValues { (_, entries) -> entries.map(TableLocationEntry::tableId).toSet() }

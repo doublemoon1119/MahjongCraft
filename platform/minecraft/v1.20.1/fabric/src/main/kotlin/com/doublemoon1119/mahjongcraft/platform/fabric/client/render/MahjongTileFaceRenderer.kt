@@ -176,13 +176,13 @@ class MahjongTileFaceRenderer(
         matrices.scale(metrics.scale, -metrics.scale, metrics.scale)
         val originX = if (isLeft) 0f else -renderer.getWidth(label.text).toFloat()
         drawLabelWithOutline(
-            renderer,
-            label,
-            originX,
-            0f,
-            matrices.peek().positionMatrix,
-            consumers,
-            light,
+            renderer = renderer,
+            label = label,
+            x = originX,
+            y = 0f,
+            matrix = matrices.peek().positionMatrix,
+            consumers = consumers,
+            light = light,
         )
         matrices.pop()
     }
@@ -223,14 +223,14 @@ class MahjongTileFaceRenderer(
         matrices.translate(x.toDouble(), (top + metrics.marginY).toDouble(), (z - WORLD_LABEL_Z_OFFSET).toDouble())
         matrices.scale(metrics.scale, metrics.scale, 1f)
         drawLabelWithOutline(
-            renderer,
-            label,
-            0f,
-            0f,
-            matrices.peek().positionMatrix,
-            consumers,
-            LightmapTextureManager.MAX_LIGHT_COORDINATE,
-            alpha,
+            renderer = renderer,
+            label = label,
+            x = 0f,
+            y = 0f,
+            matrix = matrices.peek().positionMatrix,
+            consumers = consumers,
+            light = LightmapTextureManager.MAX_LIGHT_COORDINATE,
+            alpha = alpha,
         )
         matrices.pop()
     }
@@ -295,13 +295,13 @@ class MahjongTileFaceRenderer(
         context.matrices.translate(drawX.toDouble(), (y + metrics.marginY).toDouble(), LABEL_Z)
         context.matrices.scale(metrics.scale, metrics.scale, 1f)
         drawLabelWithOutline(
-            renderer,
-            label,
-            0f,
-            0f,
-            context.matrices.peek().positionMatrix,
-            context.vertexConsumers,
-            LightmapTextureManager.MAX_LIGHT_COORDINATE,
+            renderer = renderer,
+            label = label,
+            x = 0f,
+            y = 0f,
+            matrix = context.matrices.peek().positionMatrix,
+            consumers = context.vertexConsumers,
+            light = LightmapTextureManager.MAX_LIGHT_COORDINATE,
         )
         context.matrices.pop()
         // 與原版繪製文字相同，立即送出暫存的文字，讓標籤套用目前的裁切範圍與繪製順序。

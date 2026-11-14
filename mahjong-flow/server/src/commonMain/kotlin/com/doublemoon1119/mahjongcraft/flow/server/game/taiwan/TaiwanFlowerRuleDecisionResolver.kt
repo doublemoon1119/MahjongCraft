@@ -107,8 +107,8 @@ object TaiwanFlowerRuleDecisionResolver : RuleDecisionResolver {
                 val winnerId = decision.participantPlayerIds.single()
                 val submission = decision.submissionsByPlayerId.getValue(winnerId) as RuleDecisionSubmission.Choice
                 TaiwanFlowerFlow.resolve(
-                    reconstructPending(tableState, winnerId, decision.timing),
-                    submission.optionId != TaiwanFlowerRuleDecisionIds.PASS_FLOWER_WIN,
+                    pending = reconstructPending(tableState, winnerId, decision.timing),
+                    accepted = submission.optionId != TaiwanFlowerRuleDecisionIds.PASS_FLOWER_WIN,
                 )
             }
 
@@ -144,7 +144,7 @@ object TaiwanFlowerRuleDecisionResolver : RuleDecisionResolver {
             replacementRounds = result.steps.toReplacementRounds(),
         )
         is TaiwanFlowerFlow.Result.Exhausted -> RuleDecisionResolution(
-            result.tableState.withoutPendingFlower().copy(
+            tableState = result.tableState.withoutPendingFlower().copy(
                 players = result.tableState.players.map { player ->
                     player.recordAction(GameAction.ExhaustiveDraw(TaiwanExhaustiveDrawReason.NoSupplementalTile))
                 },
@@ -156,11 +156,11 @@ object TaiwanFlowerRuleDecisionResolver : RuleDecisionResolver {
         )
 
         is TaiwanFlowerFlow.Result.AwaitingDecision -> RuleDecisionResolution(
-            result.pending.tableState.withPendingFlower(
-                result.pending.revealingPlayerId,
-                result.pending.revealedFlower.id,
-                result.pending.position.replacementsDue,
-                result.pending.position.round,
+            tableState = result.pending.tableState.withPendingFlower(
+                playerId = result.pending.revealingPlayerId,
+                tileId = result.pending.revealedFlower.id,
+                replacementsDue = result.pending.position.replacementsDue,
+                resumeRound = result.pending.position.round,
             ),
             nextStep = flowerWinStep(result.pending, stepIndex + 1),
             steps = presentationSteps(result.steps),
@@ -271,10 +271,10 @@ object TaiwanFlowerRuleDecisionResolver : RuleDecisionResolver {
         val flowers = winnerFlowers.filterNot { it.id == pending.revealedFlower.id } + pending.revealedFlower
         val winOption = if (pending.opportunity.payerId == null) PublicGameActionIds.TSUMO else PublicGameActionIds.RON
         return RuleDecisionStep(
-            TaiwanFlowerRuleDecisionIds.SPECIAL_FLOWER_WIN,
-            index,
-            mapOf(
-                winnerId to RuleDecisionInputSpec.SingleChoice(
+            stepId = TaiwanFlowerRuleDecisionIds.SPECIAL_FLOWER_WIN,
+            stepIndex = index,
+            inputSpecsByPlayerId = mapOf(
+                pair = winnerId to RuleDecisionInputSpec.SingleChoice(
                     optionIds = listOf(winOption, TaiwanFlowerRuleDecisionIds.PASS_FLOWER_WIN),
                     previewTileIdsByOptionId = mapOf(winOption to flowers.map { it.id }),
                     passOptionId = TaiwanFlowerRuleDecisionIds.PASS_FLOWER_WIN,
@@ -346,7 +346,7 @@ private fun TableState.withPendingFlower(
     resumeRound: Int,
 ): TableState = copy(
     components = components.with(
-        TaiwanTableComponents.PENDING_FLOWER_FOLLOW_UP,
-        TaiwanPendingFlowerFollowUp(playerId, tileId, replacementsDue, resumeRound),
+        type = TaiwanTableComponents.PENDING_FLOWER_FOLLOW_UP,
+        value = TaiwanPendingFlowerFollowUp(playerId, tileId, replacementsDue, resumeRound),
     ),
 )

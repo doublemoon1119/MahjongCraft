@@ -76,8 +76,8 @@ class RiichiFuCalculatorTest {
     @Test
     fun `test chiitoitsu fixed 25 fu`() {
         val result = RiichiFuCalculator.calculateTotalFu(
-            createContext(),
-            RiichiHandStructure.Chiitoitsu(
+            context = createContext(),
+            handStructure = RiichiHandStructure.Chiitoitsu(
                 pairs = listOf(
                     RiichiJanto(Tile.Numeric(Tile.Suit.Character, 1)),
                     RiichiJanto(Tile.Numeric(Tile.Suit.Bamboo, 1)),

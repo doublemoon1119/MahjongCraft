@@ -20,15 +20,15 @@ class AiCharacterMetadataCodec {
      * @return 完整保存內容。
      */
     fun encode(metadata: AiCharacterMetadata): String = format.encodeToString(
-        MetadataDto(
+        value = MetadataDto(
             participants = metadata.participants.entries.sortedBy { it.key.toString() }.map { (player, snapshot) -> SnapshotDto(player.toString(), snapshot.characterId, snapshot.definition?.toPersistenceDefinitionDto(), snapshot.displayName) },
             selections = metadata.selections.entries.sortedBy { it.key.toString() }.map { (table, players) ->
                 SelectionDto(table.toString(), players.entries.sortedBy { it.key.toString() }.map { (player, character) -> ChoiceDto(player.toString(), character) })
             },
             matches = metadata.matches.entries.sortedBy { it.key.toString() }.map { (match, players) ->
                 MatchDto(
-                    match.toString(),
-                    players.entries.sortedBy { it.key.toString() }.map { (player, snapshot) ->
+                    matchId = match.toString(),
+                    players = players.entries.sortedBy { it.key.toString() }.map { (player, snapshot) ->
                         SnapshotDto(player.toString(), snapshot.characterId, snapshot.definition?.toPersistenceDefinitionDto(), snapshot.displayName)
                     },
                 )

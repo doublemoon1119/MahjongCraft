@@ -98,8 +98,8 @@ class KickPlayerUseCaseTest {
         val updatedRoom = roomRepo.getRoom(roomId)
         assertNotNull(updatedRoom)
         assertFalse(
-            updatedRoom.aiPlayerStrategyKeys.containsKey(aiId),
-            "Kicked AI's strategy key should be removed, not left dangling.",
+            actual = updatedRoom.aiPlayerStrategyKeys.containsKey(aiId),
+            message = "Kicked AI's strategy key should be removed, not left dangling.",
         )
     }
 

@@ -58,22 +58,22 @@ class ExamplePairingPresentationTest {
 
         assertEquals(ExamplePairingIds.RULE_MODULE, definition.ruleModuleId)
         assertEquals(
-            setOf(
+            expected = setOf(
                 ExampleMinecraftPresentationIds.WALL_TILE_VALUES_FIELD,
                 ExampleMinecraftPresentationIds.EXCHANGE_FIELD,
                 ExampleMinecraftPresentationIds.PUBLIC_FACES_FIELD,
                 ExampleMinecraftPresentationIds.PAYMENT_FIELD,
                 ExampleMinecraftPresentationIds.ROUND_COUNT_FIELD,
             ),
-            definition.fields.map { it.id }.toSet(),
+            actual = definition.fields.map { it.id }.toSet(),
         )
         assertEquals(
-            GameConfigEditorSpec.IntegerInput(1, 100),
-            definition.fields.single { it.id == ExampleMinecraftPresentationIds.PAYMENT_FIELD }.editor,
+            expected = GameConfigEditorSpec.IntegerInput(1, 100),
+            actual = definition.fields.single { it.id == ExampleMinecraftPresentationIds.PAYMENT_FIELD }.editor,
         )
         assertEquals(
-            GameConfigEditorSpec.IntegerInput(1, 16),
-            definition.fields.single { it.id == ExampleMinecraftPresentationIds.ROUND_COUNT_FIELD }.editor,
+            expected = GameConfigEditorSpec.IntegerInput(1, 16),
+            actual = definition.fields.single { it.id == ExampleMinecraftPresentationIds.ROUND_COUNT_FIELD }.editor,
         )
     }
 
@@ -112,7 +112,7 @@ class ExamplePairingPresentationTest {
         val latestDiscardTile = Tile.Numeric(Tile.Suit.Dot, 5)
         val discarder = players.last().copy(
             discardPile = ExamplePairingDiscardPile().discard(
-                DiscardPile.DiscardEntry(IdentifiedTile(Uuid.random(), latestDiscardTile)),
+                entry = DiscardPile.DiscardEntry(IdentifiedTile(Uuid.random(), latestDiscardTile)),
             ),
         )
         val playersWithDiscard = players.dropLast(1) + discarder
@@ -129,21 +129,21 @@ class ExamplePairingPresentationTest {
         val lines = registry.buildLines(ExamplePairingIds.RULE_MODULE, table)
         assertEquals(listOf(RoundInfoArgument.Number(0)), lines.single { it.key == ExampleMinecraftPresentationIds.WALL_REMAINING_INFO }.args)
         assertEquals(
-            listOf(RoundInfoArgument.Number(3), RoundInfoArgument.Number(8)),
-            lines.single { it.key == ExampleMinecraftPresentationIds.ROUND_COUNT_INFO }.args,
+            expected = listOf(RoundInfoArgument.Number(3), RoundInfoArgument.Number(8)),
+            actual = lines.single { it.key == ExampleMinecraftPresentationIds.ROUND_COUNT_INFO }.args,
         )
         assertEquals(
-            listOf(RoundInfoArgument.TileValue(latestDiscardTile)),
-            lines.single { it.key == ExampleMinecraftPresentationIds.LATEST_DISCARD_INFO }.args,
+            expected = listOf(RoundInfoArgument.TileValue(latestDiscardTile)),
+            actual = lines.single { it.key == ExampleMinecraftPresentationIds.LATEST_DISCARD_INFO }.args,
         )
         assertEquals(
-            listOf(RoundInfoArgument.Message(ExampleMinecraftPresentationIds.EXCHANGE_ENABLED_MESSAGE)),
-            lines.single { it.key == ExampleMinecraftPresentationIds.EXCHANGE_STATUS_INFO }.args,
+            expected = listOf(RoundInfoArgument.Message(ExampleMinecraftPresentationIds.EXCHANGE_ENABLED_MESSAGE)),
+            actual = lines.single { it.key == ExampleMinecraftPresentationIds.EXCHANGE_STATUS_INFO }.args,
         )
         val disabledTable = table.copy(config = ExamplePairingRuleConfig(exchangeEnabled = false, roundCount = 8))
         assertEquals(
-            listOf(RoundInfoArgument.Message(ExampleMinecraftPresentationIds.EXCHANGE_DISABLED_MESSAGE)),
-            registry.buildLines(ExamplePairingIds.RULE_MODULE, disabledTable)
+            expected = listOf(RoundInfoArgument.Message(ExampleMinecraftPresentationIds.EXCHANGE_DISABLED_MESSAGE)),
+            actual = registry.buildLines(ExamplePairingIds.RULE_MODULE, disabledTable)
                 .single { it.key == ExampleMinecraftPresentationIds.EXCHANGE_STATUS_INFO }.args,
         )
     }
@@ -170,12 +170,12 @@ class ExamplePairingPresentationTest {
         )
 
         assertEquals(
-            listOf(
+            expected = listOf(
                 ExampleMinecraftPresentationIds.WALL_REMAINING_INFO,
                 ExampleMinecraftPresentationIds.ROUND_COUNT_INFO,
                 ExampleMinecraftPresentationIds.EXCHANGE_STATUS_INFO,
             ),
-            registry.buildLines(ExamplePairingIds.RULE_MODULE, table).map { it.key },
+            actual = registry.buildLines(ExamplePairingIds.RULE_MODULE, table).map { it.key },
         )
     }
 
@@ -190,8 +190,8 @@ class ExamplePairingPresentationTest {
         assertTrue("rule:${ExamplePairingIds.RULE_MODULE}" in registry.registrationKeys)
         val formatter = assertNotNull(registry.findDetailTextFormatter(ExamplePairingWinSettlementDetailResolver.PAYMENT_PER_PLAYER))
         assertEquals(
-            PresentationValue.TextValue(ExampleMinecraftMessageKeys.PAYMENT_AMOUNT, listOf("25")),
-            formatter.quantities(listOf(WinSettlementQuantity(ExamplePairingWinSettlementDetailResolver.POINTS, 25))),
+            expected = PresentationValue.TextValue(ExampleMinecraftMessageKeys.PAYMENT_AMOUNT, listOf("25")),
+            actual = formatter.quantities(listOf(WinSettlementQuantity(ExamplePairingWinSettlementDetailResolver.POINTS, 25))),
         )
     }
 
@@ -221,8 +221,8 @@ class ExamplePairingPresentationTest {
             extensionFields = listOf(ExtensionPresentationField(bonusId, bonus), ExtensionPresentationField(facesId, faces)),
         )
         val solver = PresentationLayoutSolver(
-            registry,
-            object : PresentationTextMeasurer {
+            templateRegistry = registry,
+            textMeasurer = object : PresentationTextMeasurer {
                 override fun measure(text: PresentationValue.TextValue): Float = 20f
 
                 override fun measurePlain(text: String): Float = 20f
@@ -262,15 +262,15 @@ class ExamplePairingPresentationTest {
         val props = ExamplePairingTableProps.describe(table)
 
         assertEquals(
-            listOf(0, 1),
-            props.map { (it.location as TablePropLocation.Center).order },
+            expected = listOf(0, 1),
+            actual = props.map { (it.location as TablePropLocation.Center).order },
         )
         assertEquals(
-            listOf(
+            expected = listOf(
                 TablePropContent.FaceUpTile(ExamplePairingTileType.invertedOneMan()),
                 TablePropContent.FaceUpTile(Tile.Numeric(Tile.Suit.Character, 3)),
             ),
-            props.map { it.content },
+            actual = props.map { it.content },
         )
     }
 
@@ -340,7 +340,7 @@ class ExamplePairingPresentationTest {
             placements = placements,
         )
         val result = presentation.targets(
-            mapOf(
+            definitions = mapOf(
                 BuiltInTablePropKinds.FACE_UP_TILE to BuiltInTablePropDefinitions.FACE_UP_TILE,
                 ExampleMinecraftPresentationIds.HAND_REVEAL_CHIP_KIND to ExampleTablePropDefinitions.HAND_REVEAL_CHIP,
             ),

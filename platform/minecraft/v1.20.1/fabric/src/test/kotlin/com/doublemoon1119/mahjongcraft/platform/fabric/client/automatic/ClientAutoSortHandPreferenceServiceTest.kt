@@ -84,7 +84,7 @@ class ClientAutoSortHandPreferenceServiceTest {
         assertIs<MahjongClientConfigUpdateResult.Success>(store.load())
 
         assertIs<ClientAutoSortHandPreferenceUpdateResult.Unchanged>(
-            service.saveDraft(store.current.copy(autoSortHandEnabled = false), connected = false),
+            value = service.saveDraft(store.current.copy(autoSortHandEnabled = false), connected = false),
         )
 
         assertFalse(service.current())

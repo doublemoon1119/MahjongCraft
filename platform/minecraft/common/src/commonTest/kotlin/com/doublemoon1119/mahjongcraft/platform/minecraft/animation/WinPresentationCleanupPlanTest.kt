@@ -40,14 +40,14 @@ class WinPresentationCleanupPlanTest {
         val plan = WinPresentationCleanupPlan.of(winnerHands = listOf(hand), showcaseHiddenTileIds = emptySet())
 
         assertEquals(
-            (standing + drawn).mapTo(mutableSetOf()) { it.id },
-            plan.concealTileIds,
-            "Only standing tiles (including the drawn tile) may be concealed.",
+            expected = (standing + drawn).mapTo(mutableSetOf()) { it.id },
+            actual = plan.concealTileIds,
+            message = "Only standing tiles (including the drawn tile) may be concealed.",
         )
         val meldTileIds = hand.melds.flatMapTo(mutableSetOf()) { it.tiles.map { tile -> tile.id } }
         assertTrue(
-            plan.animatedTileIds.none { it in meldTileIds },
-            "Meld tiles must receive no cleanup animation at all, or their layout would be destroyed.",
+            actual = plan.animatedTileIds.none { it in meldTileIds },
+            message = "Meld tiles must receive no cleanup animation at all, or their layout would be destroyed.",
         )
     }
 
@@ -88,8 +88,8 @@ class WinPresentationCleanupPlanTest {
         val plan = WinPresentationCleanupPlan.of(winnerHands = listOf(first, second), showcaseHiddenTileIds = emptySet())
 
         assertEquals(
-            setOf(first.tiles[0].id, second.tiles[0].id),
-            plan.concealTileIds,
+            expected = setOf(first.tiles[0].id, second.tiles[0].id),
+            actual = plan.concealTileIds,
         )
     }
 

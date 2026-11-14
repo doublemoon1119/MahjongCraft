@@ -148,9 +148,9 @@ class FabricMahjongTileWallPresenter(
             return MahjongTileWallPresentationResult.TABLE_NOT_FOUND
         }
         val decision = TileWallTransitionMotionPlanner.planOpening(
-            request.projectionContext(controllerPos),
-            request.assemblyStructure,
-            request.finalLayout,
+            context = request.projectionContext(controllerPos),
+            assemblyStructure = request.assemblyStructure,
+            finalLayout = request.finalLayout,
         )
         val plan = (decision as? TileWallTransitionMotionDecision.Completed)?.plan
             ?: return MahjongTileWallPresentationResult.INVALID_PATH
@@ -182,11 +182,11 @@ class FabricMahjongTileWallPresenter(
             val steps = stepsByTile.getOrPut(tileId) { mutableListOf() }
             steps += AnimationStep.WaitUntil(revealGameTime)
             steps += revealFlipAnimationSteps(
-                worldPlacement.x,
-                worldPlacement.y,
-                worldPlacement.z,
-                worldPlacement.yaw,
-                if (revealSoundScheduled) null else revealGameTime + REVEAL_LIFT_DURATION_TICKS,
+                x = worldPlacement.x,
+                y = worldPlacement.y,
+                z = worldPlacement.z,
+                yaw = worldPlacement.yaw,
+                soundGameTime = if (revealSoundScheduled) null else revealGameTime + REVEAL_LIFT_DURATION_TICKS,
             )
             revealSoundScheduled = true
         }
@@ -410,7 +410,7 @@ class FabricMahjongTileWallPresenter(
         return buildList {
             add(AnimationStep.Teleport(x, peakY, z, yaw))
             add(
-                AnimationStep.PlayMotion(
+                element = AnimationStep.PlayMotion(
                     durationTicks = REVEAL_LIFT_DURATION_TICKS,
                     arcHeight = 0.0,
                     startOffsetX = 0.0,
@@ -423,7 +423,7 @@ class FabricMahjongTileWallPresenter(
             if (soundGameTime != null) add(wallRevealSound(soundGameTime))
             add(AnimationStep.Custom(MahjongTilePose.FACE_UP))
             add(
-                AnimationStep.PlayMotion(
+                element = AnimationStep.PlayMotion(
                     durationTicks = REVEAL_FLIP_DURATION_TICKS,
                     arcHeight = 0.0,
                     startOffsetX = 0.0,
@@ -436,7 +436,7 @@ class FabricMahjongTileWallPresenter(
             )
             add(AnimationStep.Teleport(x, y, z, yaw))
             add(
-                AnimationStep.PlayMotion(
+                element = AnimationStep.PlayMotion(
                     durationTicks = REVEAL_DROP_DURATION_TICKS,
                     arcHeight = 0.0,
                     startOffsetX = 0.0,

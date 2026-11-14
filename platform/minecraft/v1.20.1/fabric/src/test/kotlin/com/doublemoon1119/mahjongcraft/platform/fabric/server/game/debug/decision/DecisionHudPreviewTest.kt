@@ -28,8 +28,8 @@ class DecisionHudPreviewTest {
             val prompt = preview.prompt(decisionKey = "preview", analysisTileId = null)
             prompt.actions.forEach { action ->
                 assertNotNull(
-                    vocabulary.find(prompt.ruleModuleId, action.actionId),
-                    "${preview.commandName} uses an unregistered action ${action.actionId}",
+                    actual = vocabulary.find(prompt.ruleModuleId, action.actionId),
+                    message = "${preview.commandName} uses an unregistered action ${action.actionId}",
                 )
             }
         }
@@ -73,31 +73,31 @@ class DecisionHudPreviewTest {
             .prompt("preview", "tile").discardAnalyses.single()
         assertEquals(TaiwanDiscardReadinessAnalyzer.StatusIds.PASSED_WIN, passed.statusIndicatorId)
         assertEquals(
-            TaiwanDiscardReadinessAnalyzer.StatusIds.WIN_TSUMO_ONLY,
-            FabricDebugDecisionCommand.DecisionHudPreview.TAIWAN_DISCARD_TSUMO_ONLY
+            expected = TaiwanDiscardReadinessAnalyzer.StatusIds.WIN_TSUMO_ONLY,
+            actual = FabricDebugDecisionCommand.DecisionHudPreview.TAIWAN_DISCARD_TSUMO_ONLY
                 .prompt("preview", "tile").discardAnalyses.single().waitingTiles.first().winAvailability,
         )
         assertEquals(
-            TaiwanDiscardReadinessAnalyzer.StatusIds.WIN_BELOW_MINIMUM,
-            FabricDebugDecisionCommand.DecisionHudPreview.TAIWAN_DISCARD_BELOW_MINIMUM
+            expected = TaiwanDiscardReadinessAnalyzer.StatusIds.WIN_BELOW_MINIMUM,
+            actual = FabricDebugDecisionCommand.DecisionHudPreview.TAIWAN_DISCARD_BELOW_MINIMUM
                 .prompt("preview", "tile").discardAnalyses.single().waitingTiles.first().winAvailability,
         )
         assertEquals(
-            TaiwanDiscardReadinessAnalyzer.StatusIds.WIN_NOT_AVAILABLE,
-            FabricDebugDecisionCommand.DecisionHudPreview.TAIWAN_DISCARD_UNAVAILABLE
+            expected = TaiwanDiscardReadinessAnalyzer.StatusIds.WIN_NOT_AVAILABLE,
+            actual = FabricDebugDecisionCommand.DecisionHudPreview.TAIWAN_DISCARD_UNAVAILABLE
                 .prompt("preview", "tile").discardAnalyses.single().waitingTiles.first().winAvailability,
         )
 
         val mixed = FabricDebugDecisionCommand.DecisionHudPreview.TAIWAN_DISCARD_MIXED
             .prompt("preview", "tile").discardAnalyses.single()
         assertEquals(
-            listOf(
+            expected = listOf(
                 WaitingTileAvailabilityIds.WIN_AVAILABLE,
                 TaiwanDiscardReadinessAnalyzer.StatusIds.WIN_TSUMO_ONLY,
                 TaiwanDiscardReadinessAnalyzer.StatusIds.WIN_BELOW_MINIMUM,
                 TaiwanDiscardReadinessAnalyzer.StatusIds.WIN_NOT_AVAILABLE,
             ),
-            mixed.waitingTiles.map { it.winAvailability },
+            actual = mixed.waitingTiles.map { it.winAvailability },
         )
     }
 }

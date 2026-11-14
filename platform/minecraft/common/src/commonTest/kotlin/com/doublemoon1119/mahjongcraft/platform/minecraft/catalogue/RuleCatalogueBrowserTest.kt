@@ -34,9 +34,9 @@ class RuleCatalogueBrowserTest {
     @Test
     fun `general browser prefers registered provider over known only rule`() {
         val browser = RuleCatalogueBrowser(
-            registry(RecordingProvider(PROVIDER_C, TaiwanRuleConfig())),
-            names(),
-            listOf(PROVIDER_A, PROVIDER_D),
+            catalogues = registry(RecordingProvider(PROVIDER_C, TaiwanRuleConfig())),
+            ruleNames = names(),
+            knownRuleIds = listOf(PROVIDER_A, PROVIDER_D),
         )
 
         assertEquals(PROVIDER_C, browser.snapshot(::translate).selectedRuleModuleId)
@@ -48,9 +48,9 @@ class RuleCatalogueBrowserTest {
     @Test
     fun `missing rule name translation falls back to rule id`() {
         val browser = RuleCatalogueBrowser(
-            registry(RecordingProvider(PROVIDER_A, TaiwanRuleConfig())),
-            names(),
-            listOf(PROVIDER_A),
+            catalogues = registry(RecordingProvider(PROVIDER_A, TaiwanRuleConfig())),
+            ruleNames = names(),
+            knownRuleIds = listOf(PROVIDER_A),
         )
 
         assertEquals(PROVIDER_A, browser.snapshot { null }.ruleOptions.single().displayName)
@@ -64,10 +64,10 @@ class RuleCatalogueBrowserTest {
         listOf(RuleCatalogueConfigSource.ROOM, RuleCatalogueConfigSource.ROOM_DRAFT, RuleCatalogueConfigSource.HISTORY).forEachIndexed { index, source ->
             val config = RiichiRuleConfig(redDoraCount = index)
             val browser = RuleCatalogueBrowser(
-                registry(provider, other),
-                names(),
-                listOf(PROVIDER_A, PROVIDER_B),
-                RuleCatalogueBrowseContext(PROVIDER_A, source, config),
+                catalogues = registry(provider, other),
+                ruleNames = names(),
+                knownRuleIds = listOf(PROVIDER_A, PROVIDER_B),
+                context = RuleCatalogueBrowseContext(PROVIDER_A, source, config),
             )
 
             assertEquals(source, browser.snapshot(::translate).configSource)
@@ -84,10 +84,10 @@ class RuleCatalogueBrowserTest {
     fun `missing opening config does not call default until general explanation`() {
         val provider = RecordingProvider(PROVIDER_A, TaiwanRuleConfig())
         val browser = RuleCatalogueBrowser(
-            registry(provider),
-            names(),
-            listOf(PROVIDER_A),
-            RuleCatalogueBrowseContext(PROVIDER_A, RuleCatalogueConfigSource.ROOM, null),
+            catalogues = registry(provider),
+            ruleNames = names(),
+            knownRuleIds = listOf(PROVIDER_A),
+            context = RuleCatalogueBrowseContext(PROVIDER_A, RuleCatalogueConfigSource.ROOM, null),
         )
 
         assertEquals(RuleCatalogueBrowseStatus.CONFIG_UNAVAILABLE, browser.snapshot(::translate).status)
@@ -109,19 +109,19 @@ class RuleCatalogueBrowserTest {
     @Test
     fun `browser reports distinct unavailable and empty states`() {
         assertEquals(
-            RuleCatalogueBrowseStatus.MISSING_PROVIDER,
-            RuleCatalogueBrowser(
-                RuleCatalogueRegistryImpl(),
-                names(),
-                listOf(PROVIDER_A),
-                RuleCatalogueBrowseContext(PROVIDER_A),
+            expected = RuleCatalogueBrowseStatus.MISSING_PROVIDER,
+            actual = RuleCatalogueBrowser(
+                catalogues = RuleCatalogueRegistryImpl(),
+                ruleNames = names(),
+                knownRuleIds = listOf(PROVIDER_A),
+                context = RuleCatalogueBrowseContext(PROVIDER_A),
             ).snapshot(::translate).status,
         )
 
         val unsupported = RecordingProvider(PROVIDER_A, TaiwanRuleConfig()) { null }
         assertEquals(
-            RuleCatalogueBrowseStatus.UNSUPPORTED_CONFIG,
-            RuleCatalogueBrowser(registry(unsupported), names(), listOf(PROVIDER_A), RuleCatalogueBrowseContext(PROVIDER_A, RuleCatalogueConfigSource.ROOM, RiichiRuleConfig())).snapshot(::translate).status,
+            expected = RuleCatalogueBrowseStatus.UNSUPPORTED_CONFIG,
+            actual = RuleCatalogueBrowser(registry(unsupported), names(), listOf(PROVIDER_A), RuleCatalogueBrowseContext(PROVIDER_A, RuleCatalogueConfigSource.ROOM, RiichiRuleConfig())).snapshot(::translate).status,
         )
 
         val empty = RecordingProvider(PROVIDER_A, TaiwanRuleConfig()) { RuleCatalogue(emptyList(), emptyList()) }
@@ -238,10 +238,10 @@ class RuleCatalogueBrowserTest {
             if (config is TaiwanRuleConfig) sampleCatalogue() else null
         }
         val browser = RuleCatalogueBrowser(
-            registry(provider),
-            names(),
-            emptyList(),
-            RuleCatalogueBrowseContext(PROVIDER_A, RuleCatalogueConfigSource.HISTORY, RiichiRuleConfig()),
+            catalogues = registry(provider),
+            ruleNames = names(),
+            knownRuleIds = emptyList(),
+            context = RuleCatalogueBrowseContext(PROVIDER_A, RuleCatalogueConfigSource.HISTORY, RiichiRuleConfig()),
         )
         assertEquals(RuleCatalogueBrowseStatus.UNSUPPORTED_CONFIG, browser.snapshot(::translate).status)
         assertEquals(0, provider.defaultCalls)
@@ -307,10 +307,10 @@ class RuleCatalogueBrowserTest {
             sampleCatalogue()
         }
         val browser = RuleCatalogueBrowser(
-            registry(provider),
-            names(),
-            emptyList(),
-            RuleCatalogueBrowseContext(PROVIDER_A, RuleCatalogueConfigSource.ROOM_DRAFT, RiichiRuleConfig()),
+            catalogues = registry(provider),
+            ruleNames = names(),
+            knownRuleIds = emptyList(),
+            context = RuleCatalogueBrowseContext(PROVIDER_A, RuleCatalogueConfigSource.ROOM_DRAFT, RiichiRuleConfig()),
         )
         browser.selectCategory(CATEGORY_B)
         browser.setSearch("entry")
@@ -349,10 +349,10 @@ class RuleCatalogueBrowserTest {
      * @return 使用測試名稱 registry 的瀏覽器。
      */
     private fun browserFor(vararg providers: RecordingProvider): RuleCatalogueBrowser = RuleCatalogueBrowser(
-        registry(*providers),
-        names(),
-        providers.map { it.ruleModuleId },
-        RuleCatalogueBrowseContext(providers.first().ruleModuleId),
+        catalogues = registry(*providers),
+        ruleNames = names(),
+        knownRuleIds = providers.map { it.ruleModuleId },
+        context = RuleCatalogueBrowseContext(providers.first().ruleModuleId),
     )
 
     /**
@@ -478,12 +478,12 @@ private fun sampleCatalogue(): RuleCatalogue = RuleCatalogue(
             nameTranslationKey = "example:first.name",
             descriptionTranslationKey = "example:first.description",
             examples = listOf(
-                RuleCatalogueExample(
+                element = RuleCatalogueExample(
                     completeHand = false,
                     groups = listOf(
-                        RuleCatalogueTileGroup(
-                            RuleCatalogueTileGroupRole.ILLUSTRATION,
-                            listOf(TileFaceView(Tile.Extension(TileTypeId("example", "custom_tile")))),
+                        element = RuleCatalogueTileGroup(
+                            role = RuleCatalogueTileGroupRole.ILLUSTRATION,
+                            tiles = listOf(TileFaceView(Tile.Extension(TileTypeId("example", "custom_tile")))),
                         ),
                     ),
                 ),

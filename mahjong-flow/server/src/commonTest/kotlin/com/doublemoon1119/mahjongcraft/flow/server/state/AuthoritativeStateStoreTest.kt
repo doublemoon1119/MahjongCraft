@@ -45,7 +45,7 @@ class AuthoritativeStateStoreTest {
         val first = HistoryOutboxEvent(matchId, venueId, 1, 1, 1, 100L, null, HistoryFact.ReturnedToRoom)
         val second = first.copy(sequence = 2)
         store.load(
-            AuthoritativeStateSnapshot(
+            state = AuthoritativeStateSnapshot(
                 historyRecordingState = HistoryRecordingState(
                     nextSequenceByMatchId = mapOf(matchId to 4L),
                     pendingEvents = listOf(first),
@@ -56,8 +56,8 @@ class AuthoritativeStateStoreTest {
         val batchIds = setOf(matchId to 1L)
         store.update { state ->
             AuthoritativeStateUpdate(
-                state.copy(historyRecordingState = state.historyRecordingState.copy(pendingEvents = listOf(first, second))),
-                Unit,
+                state = state.copy(historyRecordingState = state.historyRecordingState.copy(pendingEvents = listOf(first, second))),
+                result = Unit,
             )
         }
 
@@ -81,7 +81,7 @@ class AuthoritativeStateStoreTest {
             tileWall = before.tileWall.draw().wall,
             currentPlayerIndex = 1,
             revealedHandSettlements = listOf(
-                RevealedHandSettlement(
+                element = RevealedHandSettlement(
                     playerId = before.players.first().id,
                     waitingTiles = setOf(Tile.Honor.North),
                 ),
@@ -94,7 +94,7 @@ class AuthoritativeStateStoreTest {
                 state = state.copy(games = state.games + (game.id to game.copy(tableState = after))),
                 result = Unit,
                 historyDraftsByVenueId = mapOf(
-                    game.id to listOf(
+                    pair = game.id to listOf(
                         HistoryEventDraft(null, HistoryFact.ReturnedToRoom),
                         HistoryEventDraft(null, HistoryFact.ReturnedToRoom),
                     ),
@@ -209,7 +209,7 @@ class AuthoritativeStateStoreTest {
         val loadedGame = FakeTableStateFactory.create()
 
         store.load(
-            AuthoritativeStateSnapshot(
+            state = AuthoritativeStateSnapshot(
                 rooms = mapOf(loadedRoom.id to loadedRoom),
                 games = mapOf(loadedGame.id to Game(loadedGame, GameFlowConfig())),
             ),
@@ -234,11 +234,11 @@ class AuthoritativeStateStoreTest {
 
         store.update { state ->
             AuthoritativeStateUpdate(
-                state.copy(
+                state = state.copy(
                     rooms = state.rooms - room.id,
                     games = state.games + (game.id to game),
                 ),
-                Unit,
+                result = Unit,
             )
         }
 
@@ -294,15 +294,15 @@ class AuthoritativeStateStoreTest {
                 state = state.copy(games = state.games + (game.id to nextGame)),
                 result = Unit,
                 historyDraftsByVenueId = mapOf(
-                    game.id to listOf(HistoryEventDraft(null, HistoryFact.ReturnedToRoom)),
+                    pair = game.id to listOf(HistoryEventDraft(null, HistoryFact.ReturnedToRoom)),
                 ),
             )
         }
 
         val snapshot = store.snapshot()
         assertEquals(
-            setOf(1_000.milliseconds),
-            snapshot.games.getValue(game.id).remainingReserveByPlayerId.values.toSet(),
+            expected = setOf(1_000.milliseconds),
+            actual = snapshot.games.getValue(game.id).remainingReserveByPlayerId.values.toSet(),
         )
         val event = snapshot.historyRecordingState.pendingEvents.last()
         assertEquals(2L, event.sequence)
@@ -331,7 +331,7 @@ class AuthoritativeStateStoreTest {
                 ),
                 result = Unit,
                 historyDraftsByVenueId = mapOf(
-                    game.id to listOf(HistoryEventDraft(null, HistoryFact.ReturnedToRoom)),
+                    pair = game.id to listOf(HistoryEventDraft(null, HistoryFact.ReturnedToRoom)),
                 ),
             )
         }
@@ -406,7 +406,7 @@ class AuthoritativeStateStoreTest {
                 state = state.copy(games = state.games + (firstGame.id to firstGame.copy(isMatchOver = true))),
                 result = Unit,
                 historyDraftsByVenueId = mapOf(
-                    firstGame.id to listOf(
+                    pair = firstGame.id to listOf(
                         HistoryEventDraft(null, HistoryFact.ReturnedToRoom),
                         HistoryEventDraft(null, HistoryFact.ReturnedToRoom),
                     ),
@@ -419,7 +419,7 @@ class AuthoritativeStateStoreTest {
                 state = state.copy(games = state.games + (secondGame.id to secondGame)),
                 result = Unit,
                 historyDraftsByVenueId = mapOf(
-                    secondGame.id to listOf(
+                    pair = secondGame.id to listOf(
                         HistoryEventDraft(null, HistoryFact.MatchStarted(secondGame.tableState, secondGame.flowConfig, secondGame.aiPlayerStrategyKeys)),
                         HistoryEventDraft(null, HistoryFact.ReturnedToRoom),
                     ),
@@ -545,7 +545,7 @@ class AuthoritativeStateStoreTest {
         val second = store.openGame(FakeTableStateFactory.create())
         val received = mutableListOf<Pair<Long, Uuid>>()
         store.setCommittedFactsListener(
-            recordingListener { sequence, facts -> received += sequence to facts.venueId },
+            listener = recordingListener { sequence, facts -> received += sequence to facts.venueId },
         )
 
         store.update { state ->
@@ -577,7 +577,7 @@ class AuthoritativeStateStoreTest {
         repository.setTableState(tableState)
         var releasedState: AuthoritativeStateSnapshot? = null
         store.setCommittedFactsListener(
-            object : CommittedFactsListener {
+            listener = object : CommittedFactsListener {
                 override fun onCommitted(sequence: Long, facts: CommittedGameFacts) = Unit
 
                 override fun onReleased(sequence: Long) {
@@ -631,8 +631,8 @@ class AuthoritativeStateStoreTest {
         }
 
         assertEquals(
-            listOf("original-committed", "original-released", "replacement-committed", "replacement-released"),
-            notifications,
+            expected = listOf("original-committed", "original-released", "replacement-committed", "replacement-released"),
+            actual = notifications,
         )
     }
 
@@ -645,7 +645,7 @@ class AuthoritativeStateStoreTest {
         repository.setTableState(tableState)
         val events = mutableListOf<String>()
         store.setCommittedFactsListener(
-            object : CommittedFactsListener {
+            listener = object : CommittedFactsListener {
                 override fun onCommitted(sequence: Long, facts: CommittedGameFacts) {
                     events += "committed-$sequence"
                 }
@@ -675,7 +675,7 @@ class AuthoritativeStateStoreTest {
         val received = mutableListOf<Uuid>()
         var released = false
         store.setCommittedFactsListener(
-            object : CommittedFactsListener {
+            listener = object : CommittedFactsListener {
                 override fun onCommitted(sequence: Long, facts: CommittedGameFacts) {
                     if (facts.venueId == first.id) error("first venue listener failed")
                     received += facts.venueId
@@ -714,7 +714,7 @@ class AuthoritativeStateStoreTest {
         val tableState = FakeTableStateFactory.create()
         repository.setTableState(tableState)
         store.setCommittedFactsListener(
-            object : CommittedFactsListener {
+            listener = object : CommittedFactsListener {
                 override fun onCommitted(sequence: Long, facts: CommittedGameFacts) = error("listener failed")
 
                 override fun onReleased(sequence: Long) = Unit

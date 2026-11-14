@@ -38,36 +38,36 @@ internal object TileWallPerimeterPath {
         val candidates = if (northSouth) {
             listOf(
                 route(
-                    start,
-                    end,
-                    centerX + radius,
-                    centerZ + sign(startZ) * radius,
-                    centerZ + sign(endZ) * radius,
+                    start = start,
+                    end = end,
+                    firstCornerX = centerX + radius,
+                    firstCornerZ = centerZ + sign(startZ) * radius,
+                    secondCornerXOrZ = centerZ + sign(endZ) * radius,
                 ),
                 route(
-                    start,
-                    end,
-                    centerX - radius,
-                    centerZ + sign(startZ) * radius,
-                    centerZ + sign(endZ) * radius,
+                    start = start,
+                    end = end,
+                    firstCornerX = centerX - radius,
+                    firstCornerZ = centerZ + sign(startZ) * radius,
+                    secondCornerXOrZ = centerZ + sign(endZ) * radius,
                 ),
             )
         } else {
             listOf(
                 route(
-                    start,
-                    end,
-                    centerX + sign(startX) * radius,
-                    centerZ + radius,
-                    centerX + sign(endX) * radius,
+                    start = start,
+                    end = end,
+                    firstCornerX = centerX + sign(startX) * radius,
+                    firstCornerZ = centerZ + radius,
+                    secondCornerXOrZ = centerX + sign(endX) * radius,
                     isNorthSouth = false,
                 ),
                 route(
-                    start,
-                    end,
-                    centerX + sign(startX) * radius,
-                    centerZ - radius,
-                    centerX + sign(endX) * radius,
+                    start = start,
+                    end = end,
+                    firstCornerX = centerX + sign(startX) * radius,
+                    firstCornerZ = centerZ - radius,
+                    secondCornerXOrZ = centerX + sign(endX) * radius,
                     isNorthSouth = false,
                 ),
             )

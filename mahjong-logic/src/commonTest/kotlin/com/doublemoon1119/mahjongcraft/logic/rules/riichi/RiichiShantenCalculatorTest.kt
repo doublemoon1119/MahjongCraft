@@ -36,7 +36,7 @@ class RiichiShantenCalculatorTest {
     fun `test tenpai standard hand`() {
         // 手牌: 1112345678999m (聽 1m) - 向聽 0
         val hand = FakeHandFactory.create(
-            listOf(
+            tiles = listOf(
                 Tile.Numeric(Tile.Suit.Character, 1),
                 Tile.Numeric(Tile.Suit.Character, 1),
                 Tile.Numeric(Tile.Suit.Character, 1),
@@ -65,7 +65,7 @@ class RiichiShantenCalculatorTest {
     fun `test complete hand - seven pairs`() {
         // 7對子 = 14張牌 (門前清)
         val hand = FakeHandFactory.create(
-            listOf(
+            tiles = listOf(
                 Tile.Numeric(Tile.Suit.Character, 1),
                 Tile.Numeric(Tile.Suit.Character, 1),
                 Tile.Numeric(Tile.Suit.Character, 2),
@@ -95,7 +95,7 @@ class RiichiShantenCalculatorTest {
     fun `test seven pairs one away`() {
         // 6對子 + 一張單張 = 聽七對子 (門前清)
         val hand = FakeHandFactory.create(
-            listOf(
+            tiles = listOf(
                 Tile.Numeric(Tile.Suit.Character, 1),
                 Tile.Numeric(Tile.Suit.Character, 1),
                 Tile.Numeric(Tile.Suit.Character, 2),
@@ -125,7 +125,7 @@ class RiichiShantenCalculatorTest {
         // 國士無雙胡牌: 13種么九牌各一張 + 其中一張有兩張 = 14張
         // 手牌: 1m,9m,1p,9p,1s,9s,東,南,西北,白發中 + 雙東
         val hand = FakeHandFactory.create(
-            listOf(
+            tiles = listOf(
                 // 萬子
                 Tile.Numeric(Tile.Suit.Character, 1),
                 Tile.Numeric(Tile.Suit.Character, 9),
@@ -161,7 +161,7 @@ class RiichiShantenCalculatorTest {
         // 國士無雙聽牌: 13種么九牌各一張 = 13張 (聽最後一張)
         // 手牌: 1m,9m,1p,9p,1s,9s,東,南,西北,白發中 (13張)
         val hand = FakeHandFactory.create(
-            listOf(
+            tiles = listOf(
                 // 萬子
                 Tile.Numeric(Tile.Suit.Character, 1),
                 Tile.Numeric(Tile.Suit.Character, 9),
@@ -195,7 +195,7 @@ class RiichiShantenCalculatorTest {
         // 國士無雙一間聽: 12種么九牌 = 12張 (需要再補1種)
         // 手牌: 1m,9m,1p,9p,1s,9s,東,南,西北,白發 (12張)
         val hand = FakeHandFactory.create(
-            listOf(
+            tiles = listOf(
                 // 萬子
                 Tile.Numeric(Tile.Suit.Character, 1),
                 Tile.Numeric(Tile.Suit.Character, 9),
@@ -246,12 +246,12 @@ class RiichiShantenCalculatorTest {
         val result = calculator.calculate(FakeHandFactory.create(ryanmenHandWithSurplus))
         val tenpaiResult = result as ShantenResult.Tenpai
         assertEquals(
-            setOf(
+            expected = setOf(
                 Tile.Numeric(Tile.Suit.Bamboo, 3),
                 Tile.Numeric(Tile.Suit.Bamboo, 6),
             ),
-            tenpaiResult.winningTiles.toSet(),
-            "Unrelated quadruple tile should not suppress the actual wait",
+            actual = tenpaiResult.winningTiles.toSet(),
+            message = "Unrelated quadruple tile should not suppress the actual wait",
         )
     }
 

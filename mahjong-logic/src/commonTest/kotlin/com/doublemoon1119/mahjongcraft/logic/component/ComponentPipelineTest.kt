@@ -115,7 +115,7 @@ class ComponentPipelineTest {
         val view = ComponentViewType("test:label", String::class, { it })
         registry.registerView(view)
         registry.registerProjection(
-            ComponentProjectionDefinition(
+            definition = ComponentProjectionDefinition(
                 id = "test:label_projection",
                 ownerType = BuiltInComponentOwners.TABLE,
                 component = first,
@@ -125,8 +125,8 @@ class ComponentPipelineTest {
             ),
         )
         val result = registry.project(
-            ComponentProjectionContext("test:rule", table, BuiltInComponentOwners.TABLE, table, ComponentReadContext.Public),
-            ComponentSet.EMPTY.with(first, 3000),
+            context = ComponentProjectionContext("test:rule", table, BuiltInComponentOwners.TABLE, table, ComponentReadContext.Public),
+            components = ComponentSet.EMPTY.with(first, 3000),
         )
         assertEquals("3000 points", result[view])
         val impostor = ComponentViewType(view.id, String::class, { it })

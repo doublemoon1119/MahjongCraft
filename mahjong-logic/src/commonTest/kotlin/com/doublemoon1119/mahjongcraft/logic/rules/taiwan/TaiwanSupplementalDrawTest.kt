@@ -32,9 +32,9 @@ class TaiwanSupplementalDrawTest {
             tableStateAfterAction = state,
             actorPlayerId = state.currentPlayer.id,
             action = GameAction.Kan(
-                GameAction.KanType.CLOSED_KAN,
-                Uuid.random(),
-                emptyList(),
+                type = GameAction.KanType.CLOSED_KAN,
+                tileId = Uuid.random(),
+                withTiles = emptyList(),
             ),
         )
         val result = assertIs<SupplementalDrawDecision.Completed>(policy.resolve(context))

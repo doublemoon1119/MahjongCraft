@@ -63,7 +63,7 @@ class AiCharacterSeatActivationTest {
     fun `borrowed actor is never spawned or directly moved`() {
         val events = mutableListOf<String>()
         assertTrue(
-            AiCharacterSeatActivation.activate(
+            actual = AiCharacterSeatActivation.activate(
                 ownership = AiCharacterOwnership.BORROWED,
                 preview = {
                     error("Borrowed actor does not require a seat preview")
@@ -82,7 +82,7 @@ class AiCharacterSeatActivationTest {
     @Test
     fun `spawn rejection does not invoke seating`() {
         assertFalse(
-            AiCharacterSeatActivation.activate(
+            actual = AiCharacterSeatActivation.activate(
                 ownership = AiCharacterOwnership.OWNED,
                 preview = { SeatGeometry(1.0, 64.0, 2.0, 90f) },
                 position = {},
@@ -113,8 +113,8 @@ class AiCharacterSeatActivationTest {
         val human = Uuid.random()
         val ai = Uuid.random()
         assertEquals(
-            listOf("human", "actor"),
-            AiCharacterSeatRiders.resolve(
+            expected = listOf("human", "actor"),
+            actual = AiCharacterSeatRiders.resolve(
                 roster = listOf(human, ai),
                 includePlayers = true,
                 player = { if (it == human) "human" else null },

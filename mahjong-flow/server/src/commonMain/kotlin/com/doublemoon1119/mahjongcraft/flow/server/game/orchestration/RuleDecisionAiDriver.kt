@@ -74,8 +74,8 @@ class RuleDecisionAiDriver(
         } ?: fallback
         if (!input.accepts(validated) || !resolver.accepts(game.tableState, ruleDecision, player.id, validated, module)) {
             throw RuleContractViolationException(
-                GameAbortReasonIds.AUTOMATIC_DECISION_FAILED,
-                "Rule decision ${ruleDecision.stepId} has no valid automatic submission for ${player.id}",
+                reasonId = GameAbortReasonIds.AUTOMATIC_DECISION_FAILED,
+                diagnostic = "Rule decision ${ruleDecision.stepId} has no valid automatic submission for ${player.id}",
             )
         }
         return AutomatedRuleDecision(

@@ -36,7 +36,7 @@ class RiichiRyuuuiisouTest : RiichiHandValueCalculatorTestBase() {
     @Test
     fun `test ryuuuiisou all green tiles standard`() {
         val hand = FakeHandFactory.create(
-            listOf(
+            tiles = listOf(
                 // 刻子：2s 2s 2s
                 Tile.Numeric(Tile.Suit.Bamboo, 2),
                 Tile.Numeric(Tile.Suit.Bamboo, 2),
@@ -78,7 +78,7 @@ class RiichiRyuuuiisouTest : RiichiHandValueCalculatorTestBase() {
     @Test
     fun `test ryuuuiisou with fuuro`() {
         val hand = FakeHandFactory.create(
-            listOf(
+            tiles = listOf(
                 // 刻子：3s 3s 3s
                 Tile.Numeric(Tile.Suit.Bamboo, 3),
                 Tile.Numeric(Tile.Suit.Bamboo, 3),
@@ -96,7 +96,7 @@ class RiichiRyuuuiisouTest : RiichiHandValueCalculatorTestBase() {
             ),
             melds = listOf(
                 // 副露：2s 2s 2s（碰）
-                FakeMeldFactory.create(
+                element = FakeMeldFactory.create(
                     type = MeldType.Pon,
                     tiles = listOf(
                         FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Bamboo, 2)),
@@ -127,7 +127,7 @@ class RiichiRyuuuiisouTest : RiichiHandValueCalculatorTestBase() {
     @Test
     fun `test non-ryuuuiisou contains non-green tiles returns null`() {
         val hand = FakeHandFactory.create(
-            listOf(
+            tiles = listOf(
                 // 刻子：2s 2s 2s
                 Tile.Numeric(Tile.Suit.Bamboo, 2),
                 Tile.Numeric(Tile.Suit.Bamboo, 2),
@@ -165,7 +165,7 @@ class RiichiRyuuuiisouTest : RiichiHandValueCalculatorTestBase() {
     @Test
     fun `test non-ryuuuiisou contains other honor tiles returns null`() {
         val hand = FakeHandFactory.create(
-            listOf(
+            tiles = listOf(
                 // 刻子：2s 2s 2s
                 Tile.Numeric(Tile.Suit.Bamboo, 2),
                 Tile.Numeric(Tile.Suit.Bamboo, 2),
@@ -200,7 +200,7 @@ class RiichiRyuuuiisouTest : RiichiHandValueCalculatorTestBase() {
     @Test
     fun `test ryuuuiisou via calculator`() {
         val hand = FakeHandFactory.create(
-            listOf(
+            tiles = listOf(
                 // 刻子：2s 2s 2s
                 Tile.Numeric(Tile.Suit.Bamboo, 2),
                 Tile.Numeric(Tile.Suit.Bamboo, 2),
@@ -239,7 +239,7 @@ class RiichiRyuuuiisouTest : RiichiHandValueCalculatorTestBase() {
     @Test
     fun `test ryuuuiisou with fuuro via calculator`() {
         val hand = FakeHandFactory.create(
-            listOf(
+            tiles = listOf(
                 // 刻子：3s 3s 3s
                 Tile.Numeric(Tile.Suit.Bamboo, 3),
                 Tile.Numeric(Tile.Suit.Bamboo, 3),
@@ -257,7 +257,7 @@ class RiichiRyuuuiisouTest : RiichiHandValueCalculatorTestBase() {
             ),
             melds = listOf(
                 // 副露：2s 2s 2s（碰）
-                FakeMeldFactory.create(
+                element = FakeMeldFactory.create(
                     type = MeldType.Pon,
                     tiles = listOf(
                         FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Bamboo, 2)),

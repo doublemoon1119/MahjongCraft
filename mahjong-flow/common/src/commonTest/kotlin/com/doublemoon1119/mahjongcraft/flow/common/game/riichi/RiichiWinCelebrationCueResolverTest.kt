@@ -45,8 +45,8 @@ class RiichiWinCelebrationCueResolverTest {
         )
 
         assertEquals(
-            listOf("mahjongcraft:riichi/yakuman/suuankou_tanki", "mahjongcraft:riichi/yakuman/daisangen", "mahjongcraft:riichi/yakuman/daisuushii"),
-            registry.resolve(BuiltInRuleModuleIds.RIICHI, result),
+            expected = listOf("mahjongcraft:riichi/yakuman/suuankou_tanki", "mahjongcraft:riichi/yakuman/daisangen", "mahjongcraft:riichi/yakuman/daisuushii"),
+            actual = registry.resolve(BuiltInRuleModuleIds.RIICHI, result),
         )
     }
 
@@ -56,8 +56,8 @@ class RiichiWinCelebrationCueResolverTest {
         val result = resultOf(RiichiYakuResult.yakuman(RiichiYakuType.Renhou), RiichiYakuResult.doubleYakuman(RiichiYakuType.Daichisei), RiichiYakuResult.yakuman(RiichiYakuType.IshinoUeSannen))
 
         assertEquals(
-            listOf("mahjongcraft:riichi/yakuman/daichisei", "mahjongcraft:riichi/yakuman/renhou", "mahjongcraft:riichi/yakuman/ishino_ue_sannen"),
-            registry.resolve(BuiltInRuleModuleIds.RIICHI, result),
+            expected = listOf("mahjongcraft:riichi/yakuman/daichisei", "mahjongcraft:riichi/yakuman/renhou", "mahjongcraft:riichi/yakuman/ishino_ue_sannen"),
+            actual = registry.resolve(BuiltInRuleModuleIds.RIICHI, result),
         )
     }
 
@@ -67,8 +67,8 @@ class RiichiWinCelebrationCueResolverTest {
         val result = resultOf(RiichiYakuResult.doubleYakuman(RiichiYakuType.KokushiMusou13), RiichiYakuResult.doubleYakuman(RiichiYakuType.ChurenPoto9))
 
         assertEquals(
-            listOf("mahjongcraft:riichi/yakuman/kokushi_musou_13", "mahjongcraft:riichi/yakuman/churen_poto_9"),
-            registry.resolve(BuiltInRuleModuleIds.RIICHI, result),
+            expected = listOf("mahjongcraft:riichi/yakuman/kokushi_musou_13", "mahjongcraft:riichi/yakuman/churen_poto_9"),
+            actual = registry.resolve(BuiltInRuleModuleIds.RIICHI, result),
         )
     }
 

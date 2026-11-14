@@ -15,14 +15,14 @@ class MahjongTableLocationsPersistentStateTest {
     @Test
     fun `test entries survive nbt round trip`() {
         val first = TableLocationEntry(
-            Uuid.random(),
-            TableLocation("minecraft:overworld", 32, -60, -17),
-            3,
+            tableId = Uuid.random(),
+            location = TableLocation("minecraft:overworld", 32, -60, -17),
+            revision = 3,
         )
         val second = TableLocationEntry(
-            Uuid.random(),
-            TableLocation("example:custom_dimension", 32, -60, -17),
-            7,
+            tableId = Uuid.random(),
+            location = TableLocation("example:custom_dimension", 32, -60, -17),
+            revision = 7,
         )
         val state = MahjongTableLocationsPersistentState.create()
         state.update(mapOf(first.tableId to first, second.tableId to second))
@@ -48,8 +48,8 @@ class MahjongTableLocationsPersistentStateTest {
         val nbt = MahjongTableLocationsPersistentState.create().writeNbt(NbtCompound())
 
         assertEquals(
-            MahjongTableLocationsPersistentState.CURRENT_VERSION,
-            nbt.getInt(MahjongTableLocationsPersistentState.NBT_KEY_VERSION),
+            expected = MahjongTableLocationsPersistentState.CURRENT_VERSION,
+            actual = nbt.getInt(MahjongTableLocationsPersistentState.NBT_KEY_VERSION),
         )
     }
 

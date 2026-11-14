@@ -80,7 +80,7 @@ internal object RiichiWinSettlementTemplates {
     ): PresentationValue {
         val revealed = (snapshot.extensionField(fieldId) as? PresentationValue.TileListValue)?.assetKeys.orEmpty()
         return PresentationValue.TileListValue(
-            revealed.take(INDICATOR_SLOT_COUNT) +
+            assetKeys = revealed.take(INDICATOR_SLOT_COUNT) +
                 List((INDICATOR_SLOT_COUNT - revealed.size).coerceAtLeast(0)) {
                     BuiltInWinSettlementTileAssets.TILE_BACK
                 },

@@ -101,8 +101,8 @@ class MahjongWallClearanceTest {
 
     /** @return 南側座位看出去的讓位範圍。 */
     private fun seatClearance(tileLayout: TableTileLayoutProfile, placements: List<TileWallPlacement>): MahjongSeatWallClearance = MahjongTileTableLayout.seatWallClearance(
-        MahjongTileTableLayout.wallClearance(FULL_WALL_SIDE_LAYOUT, tileLayout, WALL_STACKS, placements),
-        MahjongTableSide.SOUTH,
+        clearance = MahjongTileTableLayout.wallClearance(FULL_WALL_SIDE_LAYOUT, tileLayout, WALL_STACKS, placements),
+        side = MahjongTableSide.SOUTH,
     )
 
     /** @return 南側座位看出去，每張牌佔用的範圍。 */

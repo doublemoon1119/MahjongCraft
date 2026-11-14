@@ -348,8 +348,8 @@ class PlayerPortraitRenderer internal constructor(
             renderRegion(resolveTileTexture(source.assetKey), x + (size - width) / 2f, y, width, size, alpha, z, 0f, 0f, 1f, 1f, false, matrices, consumers)
         }
         is PlayerPortraitSource.TextureRegion -> renderRegion(
-            Identifier(source.resourceId), x, y, size, size, alpha, z,
-            source.u0, source.v0, source.u1, source.v1, false, matrices, consumers,
+            texture = Identifier(source.resourceId), x = x, y = y, width = size, height = size, alpha = alpha, z = z,
+            u0 = source.u0, v0 = source.v0, u1 = source.u1, v1 = source.v1, usesEntityLayer = false, matrices = matrices, consumers = consumers,
         )
     }
 

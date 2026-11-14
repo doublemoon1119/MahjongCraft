@@ -20,7 +20,7 @@ import kotlin.uuid.Uuid
 class RoomMemberPresentationTest {
     /** 使用空的公開指示器登記表建立成員呈現器。 */
     private val presentation = RoomMemberPresentation(
-        PublicPlayerIndicatorTextResolver(PublicPlayerIndicatorDisplayRegistryImpl()),
+        indicatorTextResolver = PublicPlayerIndicatorTextResolver(PublicPlayerIndicatorDisplayRegistryImpl()),
     )
 
     /** 非莊家的第一列只有自風。 */
@@ -66,7 +66,7 @@ class RoomMemberPresentationTest {
     @Test
     fun `appends every indicator after the score`() {
         val rows = presentation.infoRows(
-            entry(indicators = listOf(PublicPlayerIndicator("mahjongcraft:riichi"), PublicPlayerIndicator("mahjongcraft:furiten"))),
+            player = entry(indicators = listOf(PublicPlayerIndicator("mahjongcraft:riichi"), PublicPlayerIndicator("mahjongcraft:furiten"))),
             dealerPlayerId = null,
         )
 

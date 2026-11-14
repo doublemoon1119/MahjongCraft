@@ -158,7 +158,7 @@ class MahjongHudLayoutEditorScreen(
      */
     private fun hudSelectorButton(width: Int): ButtonWidget {
         val button = RestartableMarqueeButtonWidget.builder(
-            Text.translatable(MinecraftClientConfigScreenKeys.HUD_LAYOUT_SELECTOR_HUD, Text.translatable(model.selectedElement.translationKey)),
+            message = Text.translatable(MinecraftClientConfigScreenKeys.HUD_LAYOUT_SELECTOR_HUD, Text.translatable(model.selectedElement.translationKey)),
         ) {
             val entries = HudElement.entries
             model = model.selectElement(CycleButtonInput.next(options = entries, current = model.selectedElement))
@@ -171,7 +171,7 @@ class MahjongHudLayoutEditorScreen(
     /** 循環切換操作面板的代表性內容情境；只在編輯操作面板時顯示。 */
     private fun scenarioSelectorButton(): ButtonWidget {
         val button = RestartableMarqueeButtonWidget.builder(
-            Text.translatable(MinecraftClientConfigScreenKeys.HUD_LAYOUT_SELECTOR_SCENARIO, Text.translatable(model.scenario.translationKey)),
+            message = Text.translatable(MinecraftClientConfigScreenKeys.HUD_LAYOUT_SELECTOR_SCENARIO, Text.translatable(model.scenario.translationKey)),
         ) {
             val entries = HudPreviewScenario.entries
             model = model.selectScenario(CycleButtonInput.next(options = entries, current = model.scenario))
@@ -189,7 +189,7 @@ class MahjongHudLayoutEditorScreen(
      */
     private fun visibilitySelectorButton(width: Int): ButtonWidget {
         val button = RestartableMarqueeButtonWidget.builder(
-            Text.translatable(MinecraftClientConfigScreenKeys.HUD_LAYOUT_SELECTOR_VISIBILITY, Text.translatable(model.otherHudVisibility.translationKey)),
+            message = Text.translatable(MinecraftClientConfigScreenKeys.HUD_LAYOUT_SELECTOR_VISIBILITY, Text.translatable(model.otherHudVisibility.translationKey)),
         ) {
             val entries = HudPreviewVisibility.entries
             model = model.selectVisibility(CycleButtonInput.next(options = entries, current = model.otherHudVisibility))
@@ -469,12 +469,12 @@ class MahjongHudLayoutEditorScreen(
         } else {
             client?.setScreen(
                 UnsavedChangesConfirmationScreen(
-                    this,
-                    { apply(true) },
-                    { client?.setScreen(parent) },
-                    clientConfigDifferenceText(
-                        MahjongClientConfigState(hudLayout = model.baseline),
-                        MahjongClientConfigState(hudLayout = model.draft),
+                    previousScreen = this,
+                    onApply = { apply(true) },
+                    onDiscard = { client?.setScreen(parent) },
+                    changesPreview = clientConfigDifferenceText(
+                        from = MahjongClientConfigState(hudLayout = model.baseline),
+                        to = MahjongClientConfigState(hudLayout = model.draft),
                     ),
                 ),
             )
@@ -488,8 +488,8 @@ class MahjongHudLayoutEditorScreen(
         } else {
             Tooltip.of(
                 clientConfigDifferenceText(
-                    MahjongClientConfigState(hudLayout = model.baseline),
-                    MahjongClientConfigState(hudLayout = model.draft),
+                    from = MahjongClientConfigState(hudLayout = model.baseline),
+                    to = MahjongClientConfigState(hudLayout = model.draft),
                 ),
             )
         }

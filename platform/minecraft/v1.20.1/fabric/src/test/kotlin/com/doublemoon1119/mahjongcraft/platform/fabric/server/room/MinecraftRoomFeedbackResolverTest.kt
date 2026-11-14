@@ -12,7 +12,7 @@ class MinecraftRoomFeedbackResolverTest {
     @Test
     fun `player membership conflict uses already in game feedback`() {
         val feedback = MinecraftRoomFeedbackResolver.joinError(
-            RoomError.PlayerAlreadyInAnotherGame(Uuid.random(), Uuid.random()),
+            error = RoomError.PlayerAlreadyInAnotherGame(Uuid.random(), Uuid.random()),
         )
 
         assertEquals(MinecraftPlayerFeedback.PlayerAlreadyInGame, feedback)
@@ -22,7 +22,7 @@ class MinecraftRoomFeedbackResolverTest {
     @Test
     fun `other join errors use generic failure feedback`() {
         val feedback = MinecraftRoomFeedbackResolver.joinError(
-            RoomError.RoomNotFound(Uuid.random()),
+            error = RoomError.RoomNotFound(Uuid.random()),
         )
 
         assertEquals(MinecraftPlayerFeedback.GameJoinFailed, feedback)
@@ -32,8 +32,8 @@ class MinecraftRoomFeedbackResolverTest {
     @Test
     fun `host leave uses game dissolved feedback`() {
         assertEquals(
-            MinecraftPlayerFeedback.GameDissolved,
-            MinecraftRoomFeedbackResolver.successfulLeave(wasHost = true),
+            expected = MinecraftPlayerFeedback.GameDissolved,
+            actual = MinecraftRoomFeedbackResolver.successfulLeave(wasHost = true),
         )
     }
 
@@ -41,8 +41,8 @@ class MinecraftRoomFeedbackResolverTest {
     @Test
     fun `member leave uses game left feedback`() {
         assertEquals(
-            MinecraftPlayerFeedback.GameLeft,
-            MinecraftRoomFeedbackResolver.successfulLeave(wasHost = false),
+            expected = MinecraftPlayerFeedback.GameLeft,
+            actual = MinecraftRoomFeedbackResolver.successfulLeave(wasHost = false),
         )
     }
 }

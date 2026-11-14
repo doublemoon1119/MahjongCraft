@@ -75,7 +75,7 @@ class HistoryGenerationController(
     /** 進度所屬的固定 session，切換後不對外顯示。 */
     @Volatile private var sessionId: Uuid? = null
 
-/**
+    /**
      * 驗證政策及 session 後啟動一批工作。
      *
      * @param scenarioId 場長情境 ID。
@@ -107,7 +107,7 @@ class HistoryGenerationController(
         HistoryGenerationStartResult.Started
     }
 
-/**
+    /**
      * 要求目前場次完成後停止，不回滾已提交事件。
      *
      * @return 是否存在目前 session 的執行中批次。
@@ -119,14 +119,14 @@ class HistoryGenerationController(
         return true
     }
 
-/**
+    /**
      * 讀取目前 session 的最新安全進度。
      *
      * @return 最新進度，或沒有同 session 批次時的 null。
      */
     internal fun snapshot(): HistoryGenerationProgress? = state.value.takeIf { writer.isCurrentSession(sessionId) }
 
-/**
+    /**
      * 在批次時間限制內逐場計算及封存。
      *
      * @param scenario 場長情境。
@@ -230,7 +230,7 @@ class HistoryGenerationController(
         }
     }
 
-/**
+    /**
      * 追加完整批次，等待正式 outbox 的精確 SQLite 確認後才返回。
      *
      * @param batch 一步產生的完整交易批次。
@@ -256,7 +256,7 @@ class HistoryGenerationController(
         }
     }
 
-/**
+    /**
      * 將權威的固定停止決策轉為批次回報原因。
      *
      * @param matchId 被停止的生成場次。
@@ -268,7 +268,7 @@ class HistoryGenerationController(
         HistoryGenerationFailure.STORAGE
     }
 
-/**
+    /**
      * 重試忙碌要求，其他管理失敗明確停止；不自行重新開庫。
      *
      * @param session 固定存檔 session。
@@ -290,7 +290,7 @@ class HistoryGenerationController(
         error("History management retry loop exited unexpectedly")
     }
 
-/**
+    /**
      * 合併收據，不因重複查詢重複計算場次或 Replay bytes。
      *
      * @param receipt SQLite 已提交的封存及清理證據。
@@ -307,7 +307,7 @@ class HistoryGenerationController(
         receipt.pruned.forEach { pruned += Uuid.parse(it) }
     }
 
-/**
+    /**
      * 驗證來源仍屬於開始時的存檔。
      *
      * @param session 開始時的 session。
@@ -316,7 +316,7 @@ class HistoryGenerationController(
         if (!writer.isCurrentSession(session)) throw GenerationStopped(HistoryGenerationFailure.SESSION)
     }
 
-/**
+    /**
      * 保留失敗分類與失敗場數，原始訊息不傳給玩家。
      *
      * @param failure 安全分類。
@@ -325,7 +325,7 @@ class HistoryGenerationController(
         state.update { it?.copy(failure = failure, failed = it.failed + 1) }
     }
 
-/**
+    /**
      * 具型別的安全停止，不從例外字串猜測原因。
      *
      * @property failure 停止分類。

@@ -51,7 +51,7 @@ class ComponentOwnerPersistenceTest {
         val registries = bundledPersistenceRegistries()
         listOf(tableFlag, playerFlag, meldFlag).forEach { component ->
             registries.components.register(
-                ComponentPersistenceDefinition(
+                definition = ComponentPersistenceDefinition(
                     component = component,
                     serializer = ComponentBooleanPersistenceDto.serializer(),
                     toDto = ::ComponentBooleanPersistenceDto,

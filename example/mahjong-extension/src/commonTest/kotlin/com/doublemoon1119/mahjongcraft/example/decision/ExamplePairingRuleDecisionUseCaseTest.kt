@@ -60,7 +60,7 @@ class ExamplePairingRuleDecisionUseCaseTest {
         }
         val moduleRegistry = MahjongModuleRegistryImpl().apply {
             register(
-                MahjongModuleDefinition(
+                definition = MahjongModuleDefinition(
                     configClass = ExamplePairingRuleConfig::class,
                     id = ExamplePairingIds.RULE_MODULE,
                     factory = { value, id -> ExamplePairingRuleModule(id, value) },
@@ -75,9 +75,9 @@ class ExamplePairingRuleDecisionUseCaseTest {
         }
         val snapshotRepository = FakeGameSnapshotRepository()
         val snapshotSynchronizer = GameSnapshotSynchronizer(
-            repository,
-            snapshotRepository,
-            GameVisibilityPolicyImpl(moduleRegistry, componentRegistry = exampleComponentRegistry()),
+            gameRepository = repository,
+            snapshotRepository = snapshotRepository,
+            visibilityPolicy = GameVisibilityPolicyImpl(moduleRegistry, componentRegistry = exampleComponentRegistry()),
         )
         val visibilityPolicy = GameVisibilityPolicyImpl(moduleRegistry, componentRegistry = exampleComponentRegistry())
         val begin = BeginRuleDecisionUseCase(
@@ -107,29 +107,29 @@ class ExamplePairingRuleDecisionUseCaseTest {
         }
 
         assertIs<Outcome.Error<*>>(
-            submit(
-                gameId,
-                orderedPlayerIds[0],
-                ruleDecision.id,
-                RuleDecisionSubmission.Tiles(selected.getValue(orderedPlayerIds[0]).take(1).toSet()),
+            value = submit(
+                gameId = gameId,
+                playerId = orderedPlayerIds[0],
+                windowId = ruleDecision.id,
+                submission = RuleDecisionSubmission.Tiles(selected.getValue(orderedPlayerIds[0]).take(1).toSet()),
             ),
         )
         assertIs<Outcome.Error<*>>(
-            submit(
-                gameId,
-                orderedPlayerIds[0],
-                ruleDecision.id,
-                RuleDecisionSubmission.Tiles(
-                    selected.getValue(orderedPlayerIds[0]) + initialTable.players[0].hand.standingTiles[2].id,
+            value = submit(
+                gameId = gameId,
+                playerId = orderedPlayerIds[0],
+                windowId = ruleDecision.id,
+                submission = RuleDecisionSubmission.Tiles(
+                    tileIds = selected.getValue(orderedPlayerIds[0]) + initialTable.players[0].hand.standingTiles[2].id,
                 ),
             ),
         )
         assertIs<Outcome.Error<*>>(
-            submit(
-                gameId,
-                orderedPlayerIds[0],
-                ruleDecision.id,
-                RuleDecisionSubmission.Tiles(setOf(Uuid.random(), Uuid.random())),
+            value = submit(
+                gameId = gameId,
+                playerId = orderedPlayerIds[0],
+                windowId = ruleDecision.id,
+                submission = RuleDecisionSubmission.Tiles(setOf(Uuid.random(), Uuid.random())),
             ),
         )
 
@@ -139,8 +139,8 @@ class ExamplePairingRuleDecisionUseCaseTest {
         snapshotSynchronizer.sync(gameId, orderedPlayerIds[0])
         snapshotSynchronizer.sync(gameId, orderedPlayerIds[1])
         assertEquals(
-            RuleDecisionSubmission.Tiles(selected.getValue(orderedPlayerIds[0])),
-            visibilityPolicy.ruleDecisionSnapshotFor(repository.getGame(gameId)!!, orderedPlayerIds[0])!!.ownSubmission,
+            expected = RuleDecisionSubmission.Tiles(selected.getValue(orderedPlayerIds[0])),
+            actual = visibilityPolicy.ruleDecisionSnapshotFor(repository.getGame(gameId)!!, orderedPlayerIds[0])!!.ownSubmission,
         )
         assertNull(visibilityPolicy.ruleDecisionSnapshotFor(repository.getGame(gameId)!!, orderedPlayerIds[1])!!.ownSubmission)
 
@@ -158,8 +158,8 @@ class ExamplePairingRuleDecisionUseCaseTest {
             assertEquals(expectedIncoming, actualIncoming)
         }
         assertEquals(
-            initialTable.players.flatMap { it.hand.standingTiles }.map { it.id }.toSet(),
-            resolved.players.flatMap { it.hand.standingTiles }.map { it.id }.toSet(),
+            expected = initialTable.players.flatMap { it.hand.standingTiles }.map { it.id }.toSet(),
+            actual = resolved.players.flatMap { it.hand.standingTiles }.map { it.id }.toSet(),
         )
         assertTrue(resolved.players.flatMap { it.hand.standingTiles }.map { it.id }.distinct().size == 9)
         assertEquals(ruleDecision.stepId, ExamplePairingIds.RULE_MODULE + "/exchange")

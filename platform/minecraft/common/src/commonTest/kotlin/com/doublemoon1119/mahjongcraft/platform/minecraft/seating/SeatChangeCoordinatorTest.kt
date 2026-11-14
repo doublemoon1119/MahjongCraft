@@ -94,7 +94,7 @@ class SeatChangeCoordinatorTest {
      */
     private fun coordinator(environment: Environment): SeatAssignmentCoordinator<World, Rider, Rider.Snapshot> = SeatAssignmentCoordinator(
         providers = listOf(
-            RegisteredSeatProvider(
+            element = RegisteredSeatProvider(
                 id = "test:table",
                 provider = SeatProvider { _, _ -> seats },
                 priority = 0,

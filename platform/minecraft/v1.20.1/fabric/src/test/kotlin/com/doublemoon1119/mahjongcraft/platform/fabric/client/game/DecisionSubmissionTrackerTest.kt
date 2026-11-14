@@ -51,8 +51,8 @@ class DecisionSubmissionTrackerTest {
         assertTrue(tracker.begin("game", "decision", "submission"))
 
         assertEquals(
-            AcknowledgementEffect.UNLOCKED,
-            tracker.acknowledge(ack(PlayerDecisionSubmissionResultKindDto.REJECTED)),
+            expected = AcknowledgementEffect.UNLOCKED,
+            actual = tracker.acknowledge(ack(PlayerDecisionSubmissionResultKindDto.REJECTED)),
         )
         assertTrue(tracker.begin("game", "decision", "retry"))
     }
@@ -122,8 +122,8 @@ class DecisionSubmissionTrackerTest {
     fun `test accepted submission unlocks when authoritative candidate set changes`() {
         tracker.begin("game", "old-candidates", "submission")
         assertEquals(
-            AcknowledgementEffect.KEPT_LOCKED,
-            tracker.acknowledge(ack(PlayerDecisionSubmissionResultKindDto.ACCEPTED, "old-candidates", "submission")),
+            expected = AcknowledgementEffect.KEPT_LOCKED,
+            actual = tracker.acknowledge(ack(PlayerDecisionSubmissionResultKindDto.ACCEPTED, "old-candidates", "submission")),
         )
 
         tracker.applyAuthoritativeDecision("new-candidates", updateSequence)
@@ -131,8 +131,8 @@ class DecisionSubmissionTrackerTest {
 
         assertTrue(tracker.begin("game", "new-candidates", "new-submission"))
         assertEquals(
-            AcknowledgementEffect.IGNORED,
-            tracker.acknowledge(ack(PlayerDecisionSubmissionResultKindDto.REJECTED, "old-candidates", "submission")),
+            expected = AcknowledgementEffect.IGNORED,
+            actual = tracker.acknowledge(ack(PlayerDecisionSubmissionResultKindDto.REJECTED, "old-candidates", "submission")),
         )
         assertTrue(tracker.isPending("new-candidates"))
     }

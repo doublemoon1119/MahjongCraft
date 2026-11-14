@@ -78,8 +78,8 @@ class HistoryRoundResponseValidatorTest {
         val response = HistoryRoundEventsResponseDto("request", TEST_MATCH_ID, 1, 0, errorCode = HistoryQueryErrorCodeDto.NOT_AVAILABLE, events = null)
 
         assertEquals(
-            HistoryQueryErrorCodeDto.NOT_AVAILABLE,
-            assertIs<HistoryRoundValidationResult.Error>(HistoryRoundResponseValidator.validateEvents(request, response)).code,
+            expected = HistoryQueryErrorCodeDto.NOT_AVAILABLE,
+            actual = assertIs<HistoryRoundValidationResult.Error>(HistoryRoundResponseValidator.validateEvents(request, response)).code,
         )
     }
 
@@ -115,8 +115,8 @@ class HistoryRoundResponseValidatorTest {
         )
         val request = HistoryRoundEventsRequestDto("request", TEST_MATCH_ID, roundNumber = 1, scope = HistoryQueryScopeDto.OWN, startTransactionIndex = 0, limit = 20)
         val result = HistoryRoundResponseValidator.validateEvents(
-            request,
-            HistoryRoundEventsResponseDto("request", TEST_MATCH_ID, 1, 0, invalid, errorCode = null),
+            request = request,
+            response = HistoryRoundEventsResponseDto("request", TEST_MATCH_ID, 1, 0, invalid, errorCode = null),
         )
 
         assertEquals(HistoryRoundValidationError.SEAT_INDEX_INVALID, assertIs<HistoryRoundValidationResult.Invalid>(result).reason)
@@ -143,8 +143,8 @@ class HistoryRoundResponseValidatorTest {
             passed = false,
         )
         fun validate(fact: HistoryReplayFactDto) = HistoryRoundResponseValidator.validateEvents(
-            request,
-            HistoryRoundEventsResponseDto("request", TEST_MATCH_ID, 1, 0, events(fact = fact), errorCode = null),
+            request = request,
+            response = HistoryRoundEventsResponseDto("request", TEST_MATCH_ID, 1, 0, events(fact = fact), errorCode = null),
         )
 
         assertIs<HistoryRoundValidationResult.Success<*>>(validate(replacement(seat = 0, tile = 0)))
@@ -165,8 +165,8 @@ class HistoryRoundResponseValidatorTest {
         )
         facts.forEach { (fact, valid) ->
             val result = HistoryRoundResponseValidator.validateEvents(
-                request,
-                HistoryRoundEventsResponseDto("request", TEST_MATCH_ID, 1, 0, events(fact = fact), errorCode = null),
+                request = request,
+                response = HistoryRoundEventsResponseDto("request", TEST_MATCH_ID, 1, 0, events(fact = fact), errorCode = null),
             )
 
             if (valid) {
@@ -294,28 +294,28 @@ class HistoryRoundResponseValidatorTest {
         )
         val details = listOf(
             HistoryWinnerDetailsDto(
-                0,
-                listOf(
+                seatIndex = 0,
+                detailFields = listOf(
                     HistoryWinDetailFieldDto(
-                        "test:entries",
-                        HistoryWinDetailValueDto.Entries(
-                            listOf(
+                        id = "test:entries",
+                        value = HistoryWinDetailValueDto.Entries(
+                            entries = listOf(
                                 HistoryWinDetailValueDto.Entries.EntryDto("test:pattern", HistoryWinDetailQuantityDto("test:points", 3), nameQuantity = null, appliesToSomePayersOnly = false),
                                 HistoryWinDetailValueDto.Entries.EntryDto("test:plain", quantity = null, nameQuantity = null, appliesToSomePayersOnly = false),
                             ),
                         ),
                     ),
                     HistoryWinDetailFieldDto(
-                        "test:quantities",
-                        HistoryWinDetailValueDto.Quantities(listOf(HistoryWinDetailQuantityDto("test:han", 3), HistoryWinDetailQuantityDto("test:fu", 30))),
+                        id = "test:quantities",
+                        value = HistoryWinDetailValueDto.Quantities(listOf(HistoryWinDetailQuantityDto("test:han", 3), HistoryWinDetailQuantityDto("test:fu", 30))),
                     ),
                     HistoryWinDetailFieldDto("test:tiles", HistoryWinDetailValueDto.TileFaces(listOf(TileFaceViewDto(TileDto.Numeric(SuitDto.CHARACTER, 9), emptyList(), null)))),
                 ),
                 hand = null,
             ),
             HistoryWinnerDetailsDto(
-                1,
-                listOf(HistoryWinDetailFieldDto("test:tiles", HistoryWinDetailValueDto.TileFaces(listOf(TileFaceViewDto(TileDto.Extension("test:bonus"), emptyList(), null))))),
+                seatIndex = 1,
+                detailFields = listOf(HistoryWinDetailFieldDto("test:tiles", HistoryWinDetailValueDto.TileFaces(listOf(TileFaceViewDto(TileDto.Extension("test:bonus"), emptyList(), null))))),
                 hand = null,
             ),
         )
@@ -327,7 +327,7 @@ class HistoryRoundResponseValidatorTest {
         )
 
         assertIs<HistoryRoundValidationResult.Success<*>>(
-            HistoryRoundResponseValidator.validateEvents(request, HistoryRoundEventsResponseDto("request", TEST_MATCH_ID, 1, 0, base, errorCode = null)),
+            value = HistoryRoundResponseValidator.validateEvents(request, HistoryRoundEventsResponseDto("request", TEST_MATCH_ID, 1, 0, base, errorCode = null)),
         )
     }
 
@@ -336,18 +336,18 @@ class HistoryRoundResponseValidatorTest {
     fun `test winning hand references respect catalog and declared count`() {
         val request = HistoryRoundEventsRequestDto("request", TEST_MATCH_ID, roundNumber = 1, scope = HistoryQueryScopeDto.OWN, startTransactionIndex = 0, limit = 20)
         val details = listOf(
-            HistoryWinnerDetailsDto(
-                0,
-                emptyList(),
-                HistoryReplayWinningHandDto(standingTiles = listOf(1), winningTile = 0),
+            element = HistoryWinnerDetailsDto(
+                seatIndex = 0,
+                detailFields = emptyList(),
+                hand = HistoryReplayWinningHandDto(standingTiles = listOf(1), winningTile = 0),
             ),
         )
         val outcome = HistoryRoundOutcomeDto("test:win", listOf(0), mapOf(0 to 25000), "WIN", emptyList(), null, nextDealerSeat = null, winnerDetails = details, scoreChangesBySeat = emptyMap(), hasEarlierWinSettlement = false)
         val base = events().copy(transactions = listOf(events().transactions.single().copy(facts = listOf(HistoryReplayFactDto.Completion(HistoryFactTypeKeys.ROUND_COMPLETED, outcome)))))
         val catalogInvalid = base.copy(tileCatalog = listOf(TileFaceViewDto(TileDto.Numeric(SuitDto.CHARACTER, 1), emptyList(), null)))
         assertEquals(
-            HistoryRoundValidationError.CONTENT_MISMATCH,
-            assertIs<HistoryRoundValidationResult.Invalid>(HistoryRoundResponseValidator.validateEvents(request, HistoryRoundEventsResponseDto("request", TEST_MATCH_ID, 1, 0, catalogInvalid, errorCode = null))).reason,
+            expected = HistoryRoundValidationError.CONTENT_MISMATCH,
+            actual = assertIs<HistoryRoundValidationResult.Invalid>(HistoryRoundResponseValidator.validateEvents(request, HistoryRoundEventsResponseDto("request", TEST_MATCH_ID, 1, 0, catalogInvalid, errorCode = null))).reason,
         )
 
         val declaredInvalid = base.copy(
@@ -355,8 +355,8 @@ class HistoryRoundResponseValidatorTest {
             transactions = listOf(base.transactions.single().copy(declaredTileCountAfter = 1)),
         )
         assertEquals(
-            HistoryRoundValidationError.CONTENT_MISMATCH,
-            assertIs<HistoryRoundValidationResult.Invalid>(HistoryRoundResponseValidator.validateEvents(request, HistoryRoundEventsResponseDto("request", TEST_MATCH_ID, 1, 0, declaredInvalid, errorCode = null))).reason,
+            expected = HistoryRoundValidationError.CONTENT_MISMATCH,
+            actual = assertIs<HistoryRoundValidationResult.Invalid>(HistoryRoundResponseValidator.validateEvents(request, HistoryRoundEventsResponseDto("request", TEST_MATCH_ID, 1, 0, declaredInvalid, errorCode = null))).reason,
         )
     }
 
@@ -365,18 +365,18 @@ class HistoryRoundResponseValidatorTest {
     fun `test winning hand standing and winning tile must be unique`() {
         val request = HistoryRoundEventsRequestDto("request", TEST_MATCH_ID, roundNumber = 1, scope = HistoryQueryScopeDto.OWN, startTransactionIndex = 0, limit = 20)
         val details = listOf(
-            HistoryWinnerDetailsDto(
-                0,
-                emptyList(),
-                HistoryReplayWinningHandDto(standingTiles = listOf(0, 0), winningTile = 0),
+            element = HistoryWinnerDetailsDto(
+                seatIndex = 0,
+                detailFields = emptyList(),
+                hand = HistoryReplayWinningHandDto(standingTiles = listOf(0, 0), winningTile = 0),
             ),
         )
         val outcome = HistoryRoundOutcomeDto("test:win", listOf(0), mapOf(0 to 25000), "WIN", emptyList(), null, nextDealerSeat = null, winnerDetails = details, scoreChangesBySeat = emptyMap(), hasEarlierWinSettlement = false)
         val base = events().copy(transactions = listOf(events().transactions.single().copy(facts = listOf(HistoryReplayFactDto.Completion(HistoryFactTypeKeys.ROUND_COMPLETED, outcome)))))
 
         assertEquals(
-            HistoryRoundValidationError.CONTENT_MISMATCH,
-            assertIs<HistoryRoundValidationResult.Invalid>(HistoryRoundResponseValidator.validateEvents(request, HistoryRoundEventsResponseDto("request", TEST_MATCH_ID, 1, 0, base, errorCode = null))).reason,
+            expected = HistoryRoundValidationError.CONTENT_MISMATCH,
+            actual = assertIs<HistoryRoundValidationResult.Invalid>(HistoryRoundResponseValidator.validateEvents(request, HistoryRoundEventsResponseDto("request", TEST_MATCH_ID, 1, 0, base, errorCode = null))).reason,
         )
     }
 
@@ -403,7 +403,7 @@ class HistoryRoundResponseValidatorTest {
         )
 
         assertIs<HistoryRoundValidationResult.Success<*>>(
-            HistoryRoundResponseValidator.validateEvents(request, HistoryRoundEventsResponseDto("request", TEST_MATCH_ID, 1, 0, base, errorCode = null)),
+            value = HistoryRoundResponseValidator.validateEvents(request, HistoryRoundEventsResponseDto("request", TEST_MATCH_ID, 1, 0, base, errorCode = null)),
         )
     }
 
@@ -412,12 +412,12 @@ class HistoryRoundResponseValidatorTest {
     fun `test absent winning hand remains accepted`() {
         val request = HistoryRoundEventsRequestDto("request", TEST_MATCH_ID, roundNumber = 1, scope = HistoryQueryScopeDto.OWN, startTransactionIndex = 0, limit = 20)
         val outcome = HistoryRoundOutcomeDto(
-            "test:win",
-            listOf(0),
-            mapOf(0 to 25000),
-            "WIN",
-            emptyList(),
-            null,
+            reasonId = "test:win",
+            beneficiarySeats = listOf(0),
+            scoresBySeat = mapOf(0 to 25000),
+            classification = "WIN",
+            responsibleSeats = emptyList(),
+            transitionDirective = null,
             nextDealerSeat = null,
             winnerDetails = listOf(HistoryWinnerDetailsDto(0, emptyList(), hand = null)),
             scoreChangesBySeat = emptyMap(),
@@ -426,7 +426,7 @@ class HistoryRoundResponseValidatorTest {
         val base = events().copy(transactions = listOf(events().transactions.single().copy(facts = listOf(HistoryReplayFactDto.Completion(HistoryFactTypeKeys.ROUND_COMPLETED, outcome)))))
 
         assertIs<HistoryRoundValidationResult.Success<*>>(
-            HistoryRoundResponseValidator.validateEvents(request, HistoryRoundEventsResponseDto("request", TEST_MATCH_ID, 1, 0, base, errorCode = null)),
+            value = HistoryRoundResponseValidator.validateEvents(request, HistoryRoundEventsResponseDto("request", TEST_MATCH_ID, 1, 0, base, errorCode = null)),
         )
     }
 
@@ -499,12 +499,12 @@ class HistoryRoundResponseValidatorTest {
     fun `test invalid state winning hand tile index is rejected`() {
         val request = HistoryRoundStateRequestDto("request", TEST_MATCH_ID, roundNumber = 1, scope = HistoryQueryScopeDto.OWN, position = HistoryRoundPositionDto.Initial)
         val outcome = HistoryRoundOutcomeDto(
-            "test:win",
-            listOf(0),
-            mapOf(0 to 25000),
-            "WIN",
-            emptyList(),
-            null,
+            reasonId = "test:win",
+            beneficiarySeats = listOf(0),
+            scoresBySeat = mapOf(0 to 25000),
+            classification = "WIN",
+            responsibleSeats = emptyList(),
+            transitionDirective = null,
             nextDealerSeat = null,
             winnerDetails = listOf(HistoryWinnerDetailsDto(0, emptyList(), HistoryReplayWinningHandDto(listOf(1), null))),
             scoreChangesBySeat = emptyMap(),
@@ -513,8 +513,8 @@ class HistoryRoundResponseValidatorTest {
         val response = HistoryRoundStateResponseDto("request", TEST_MATCH_ID, 1, HistoryRoundPositionDto.Initial, state = state().copy(outcome = outcome), errorCode = null)
 
         assertEquals(
-            HistoryRoundValidationError.SEAT_INDEX_INVALID,
-            assertIs<HistoryRoundValidationResult.Invalid>(HistoryRoundResponseValidator.validateState(request, response)).reason,
+            expected = HistoryRoundValidationError.SEAT_INDEX_INVALID,
+            actual = assertIs<HistoryRoundValidationResult.Invalid>(HistoryRoundResponseValidator.validateState(request, response)).reason,
         )
     }
 
@@ -523,12 +523,12 @@ class HistoryRoundResponseValidatorTest {
     fun `test state winning tile cannot be in standing hand`() {
         val request = HistoryRoundStateRequestDto("request", TEST_MATCH_ID, roundNumber = 1, scope = HistoryQueryScopeDto.OWN, position = HistoryRoundPositionDto.Initial)
         val outcome = HistoryRoundOutcomeDto(
-            "test:win",
-            listOf(0),
-            mapOf(0 to 25000),
-            "WIN",
-            emptyList(),
-            null,
+            reasonId = "test:win",
+            beneficiarySeats = listOf(0),
+            scoresBySeat = mapOf(0 to 25000),
+            classification = "WIN",
+            responsibleSeats = emptyList(),
+            transitionDirective = null,
             nextDealerSeat = null,
             winnerDetails = listOf(HistoryWinnerDetailsDto(0, emptyList(), HistoryReplayWinningHandDto(listOf(0), 0))),
             scoreChangesBySeat = emptyMap(),
@@ -537,8 +537,8 @@ class HistoryRoundResponseValidatorTest {
         val response = HistoryRoundStateResponseDto("request", TEST_MATCH_ID, 1, HistoryRoundPositionDto.Initial, state = state().copy(outcome = outcome), errorCode = null)
 
         assertEquals(
-            HistoryRoundValidationError.SEAT_INDEX_INVALID,
-            assertIs<HistoryRoundValidationResult.Invalid>(HistoryRoundResponseValidator.validateState(request, response)).reason,
+            expected = HistoryRoundValidationError.SEAT_INDEX_INVALID,
+            actual = assertIs<HistoryRoundValidationResult.Invalid>(HistoryRoundResponseValidator.validateState(request, response)).reason,
         )
     }
 
@@ -556,20 +556,20 @@ class HistoryRoundResponseValidatorTest {
     fun `test valid meld source and taken discard alias`() {
         val request = HistoryRoundStateRequestDto("request", TEST_MATCH_ID, roundNumber = 1, scope = HistoryQueryScopeDto.OWN, position = HistoryRoundPositionDto.Initial)
         val player = HistoryReplayPlayerStateDto(
-            0,
-            emptyList(),
-            listOf(HistoryReplayMeldDto(MeldTypeDto.Pon, listOf(0, 1, 2), 0, RelativeDirectionDto.Left, emptySet(), emptySet())),
-            null,
-            listOf(HistoryReplayDiscardDto(0, true, emptySet())),
-            25000,
-            WindDto.EAST,
-            emptyList(),
+            initialSeatIndex = 0,
+            handTiles = emptyList(),
+            melds = listOf(HistoryReplayMeldDto(MeldTypeDto.Pon, listOf(0, 1, 2), 0, RelativeDirectionDto.Left, emptySet(), emptySet())),
+            lastDrawn = null,
+            discards = listOf(HistoryReplayDiscardDto(0, true, emptySet())),
+            score = 25000,
+            seatWind = WindDto.EAST,
+            tileAreas = emptyList(),
         )
         val response = HistoryRoundStateResponseDto(
-            "request",
-            TEST_MATCH_ID,
-            1,
-            HistoryRoundPositionDto.Initial,
+            requestId = "request",
+            matchId = TEST_MATCH_ID,
+            roundNumber = 1,
+            position = HistoryRoundPositionDto.Initial,
             state = state().copy(players = listOf(player), tileCatalog = List(3) { TileFaceViewDto(TileDto.Numeric(SuitDto.CHARACTER, 1), emptyList(), null) }, wallTiles = emptyList()),
             errorCode = null,
         )
@@ -590,10 +590,10 @@ class HistoryRoundResponseValidatorTest {
         )
         invalidMelds.forEach { meld ->
             val response = HistoryRoundStateResponseDto(
-                "request",
-                TEST_MATCH_ID,
-                1,
-                HistoryRoundPositionDto.Initial,
+                requestId = "request",
+                matchId = TEST_MATCH_ID,
+                roundNumber = 1,
+                position = HistoryRoundPositionDto.Initial,
                 state = base.copy(players = listOf(base.players.single().copy(melds = listOf(meld)))),
                 errorCode = null,
             )
@@ -625,7 +625,7 @@ class HistoryRoundResponseValidatorTest {
         identity = identity(),
         roundNumber = 1,
         transactions = listOf(
-            HistoryReplayTransactionDto(
+            element = HistoryReplayTransactionDto(
                 index = 0,
                 occurredAtEpochMillis = 1,
                 isOpening = true,

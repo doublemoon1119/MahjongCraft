@@ -46,9 +46,9 @@ internal fun TableState.withFirstKanPhysicalWallLayout(): TableState {
                 0 -> TileWallPosition(RESERVED_SIDE, RESERVED_HEAD_STACK, 0)
                 1 -> TileWallPosition(RESERVED_SIDE, RESERVED_HEAD_STACK - 1, 0)
                 else -> TileWallPosition(
-                    RESERVED_SIDE,
-                    RESERVED_HEAD_STACK - (index / 2 + 1),
-                    if (index % 2 == 0) 1 else 0,
+                    side = RESERVED_SIDE,
+                    stack = RESERVED_HEAD_STACK - (index / 2 + 1),
+                    layer = if (index % 2 == 0) 1 else 0,
                 )
             }
             put(tile.id, TileWallPlacement(position, RESERVED_WALL_OFFSET))

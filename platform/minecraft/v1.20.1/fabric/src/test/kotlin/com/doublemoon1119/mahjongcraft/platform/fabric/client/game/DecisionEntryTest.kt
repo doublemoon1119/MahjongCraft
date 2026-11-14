@@ -26,8 +26,8 @@ class DecisionEntryTest {
         )
 
         assertEquals(
-            listOf("chi", "pon", "kan", "ron", "tsumo").map { "mahjongcraft.riichi.action.$it" },
-            entries.map { translationKeyOf(it) },
+            expected = listOf("chi", "pon", "kan", "ron", "tsumo").map { "mahjongcraft.riichi.action.$it" },
+            actual = entries.map { translationKeyOf(it) },
         )
     }
 
@@ -55,7 +55,7 @@ class DecisionEntryTest {
         val prompt = PlayerDecisionPromptDto(
             decisionKey = DECISION_KEY,
             actions = listOf(
-                PlayerDecisionActionDto(
+                element = PlayerDecisionActionDto(
                     token = "token-riichi",
                     actionId = RiichiGameAction.Riichi.id,
                     tileSelection = PlayerDecisionActionTileSelectionDto(listOf("tile-a"), minCount = 1, maxCount = 1, discardAnalyses = emptyList()),
@@ -109,7 +109,7 @@ class DecisionEntryTest {
         val prompt = PlayerDecisionPromptDto(
             decisionKey = DECISION_KEY,
             actions = listOf(
-                PlayerDecisionActionDto(
+                element = PlayerDecisionActionDto(
                     token = "token-chi",
                     actionId = "mahjongcraft:chi",
                     previewTileAssetKeys = listOf("a", "b", "c"),
@@ -156,9 +156,9 @@ class DecisionEntryTest {
     @Test
     fun `builds one card per rule decision option`() {
         val entries = decisionEntriesFrom(
-            texts,
-            ruleDecisionPrompt(
-                RuleDecisionPromptDto.SingleChoice(
+            texts = texts,
+            prompt = ruleDecisionPrompt(
+                ruleDecision = RuleDecisionPromptDto.SingleChoice(
                     optionIds = listOf("mahjongcraft:accept", "mahjongcraft:other", "mahjongcraft:decline"),
                     previewTileAssetKeysByOptionId = mapOf("mahjongcraft:accept" to listOf("asset-a", "asset-b")),
                     passOptionId = "mahjongcraft:decline",
@@ -167,8 +167,8 @@ class DecisionEntryTest {
         )
 
         assertEquals(
-            listOf("mahjongcraft:accept", "mahjongcraft:other"),
-            entries.map { assertIs<DecisionEntryIntent.ChooseRuleDecisionOption>(it.intent).optionId },
+            expected = listOf("mahjongcraft:accept", "mahjongcraft:other"),
+            actual = entries.map { assertIs<DecisionEntryIntent.ChooseRuleDecisionOption>(it.intent).optionId },
         )
         assertEquals(listOf(listOf("asset-a", "asset-b"), emptyList()), entries.map { it.previewTileAssetKeys })
     }
@@ -177,9 +177,9 @@ class DecisionEntryTest {
     @Test
     fun `builds one card carrying the eligible tiles of a rule decision selection`() {
         val entries = decisionEntriesFrom(
-            texts,
-            ruleDecisionPrompt(
-                RuleDecisionPromptDto.TileSelection(
+            texts = texts,
+            prompt = ruleDecisionPrompt(
+                ruleDecision = RuleDecisionPromptDto.TileSelection(
                     eligibleTileIds = listOf("tile-a", "tile-b"),
                     eligibleTileAssetKeys = listOf("asset-a", "asset-b"),
                     minCount = 1,
@@ -216,8 +216,8 @@ class DecisionEntryTest {
         val entries = decisionEntriesFrom(texts, promptOf("example:first", "example:second", "mahjongcraft:ron"))
 
         assertEquals(
-            listOf("mahjongcraft.riichi.action.ron", "example:first", "example:second"),
-            entries.map { translationKeyOf(it) },
+            expected = listOf("mahjongcraft.riichi.action.ron", "example:first", "example:second"),
+            actual = entries.map { translationKeyOf(it) },
         )
     }
 

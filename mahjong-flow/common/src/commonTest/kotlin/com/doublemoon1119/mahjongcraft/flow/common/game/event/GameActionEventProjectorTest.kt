@@ -49,8 +49,8 @@ class GameActionEventProjectorTest {
     fun `ordinary draw is omitted`() {
         val before = game()
         assertEquals(
-            emptyList(),
-            project(before, before, draft(actorId, HistoryFact.ActionAccepted(GameAction.Draw, actionResult()))),
+            expected = emptyList(),
+            actual = project(before, before, draft(actorId, HistoryFact.ActionAccepted(GameAction.Draw, actionResult()))),
         )
     }
 
@@ -74,15 +74,15 @@ class GameActionEventProjectorTest {
         val declaration = GameAction.Extension(DeclarationAction)
         val before = game()
         val after = replacePlayer(
-            before,
-            player(
+            game = before,
+            replacement = player(
                 actionHistory = listOf(declaration, GameAction.Discard(discarded.id)),
                 discardPile = FakeDiscardPile().discardTile(discarded),
             ),
         )
         val result = project(
-            before,
-            after,
+            before = before,
+            after = after,
             draft(actorId, HistoryFact.ActionAccepted(declaration, actionResult())),
             draft(actorId, accepted(GameAction.Discard(discarded.id))),
         )
@@ -100,7 +100,7 @@ class GameActionEventProjectorTest {
         val before = base.copy(
             tableState = base.tableState.copy(
                 turnPhase = TurnPhase.AwaitingDiscardReaction(
-                    PendingReaction(
+                    reaction = PendingReaction(
                         discarderId = otherPlayerId,
                         tileId = discarded.id,
                         eligiblePlayerIds = setOf(actorId),
@@ -120,8 +120,8 @@ class GameActionEventProjectorTest {
     @Test
     fun `ron uses settled winner rather than last responder`() {
         val result = project(
-            game(),
-            game(),
+            before = game(),
+            after = game(),
             draft(otherPlayerId, HistoryFact.ReactionResolved(GameAction.Ron(Uuid.random()), otherPlayerId)),
             draft(null, HistoryFact.WinSettled("test:ron", listOf(HistoryWinDetails(actorId, emptyList())))),
         )
@@ -146,12 +146,12 @@ class GameActionEventProjectorTest {
         val tiles = after.tableState.players.first { it.id == actorId }.hand.melds.single().tiles
         val kan = GameAction.Kan(GameAction.KanType.OPEN_KAN, tiles.first().id, tiles.drop(1).map { it.id })
         val result = project(
-            before,
-            after,
+            before = before,
+            after = after,
             draft(actorId, HistoryFact.ReactionResolved(kan, actorId)),
             draft(
-                actorId,
-                HistoryFact.ActionAccepted(GameAction.Draw, actionResult(listOf(Uuid.random(), Uuid.random()))),
+                actor = actorId,
+                fact = HistoryFact.ActionAccepted(GameAction.Draw, actionResult(listOf(Uuid.random(), Uuid.random()))),
             ),
         )
 
@@ -170,7 +170,7 @@ class GameActionEventProjectorTest {
         val after = before.copy(
             tableState = before.tableState.copy(
                 turnPhase = TurnPhase.AwaitingRobbingReaction(
-                    PendingRobbingReaction(
+                    reaction = PendingRobbingReaction(
                         declarerId = actorId,
                         declaredAction = action,
                         robbedTile = tile(Tile.Numeric(Tile.Suit.Dot, 5)),
@@ -191,8 +191,8 @@ class GameActionEventProjectorTest {
         val after = replacePlayer(before, player(actionHistory = listOf(declaration)))
         val facts = arrayOf(
             draft(
-                null,
-                HistoryFact.RuleDecisionAutomaticallyResolved(RuleDecisionTiming.ROUND_START, "test:step", 0, null),
+                actor = null,
+                fact = HistoryFact.RuleDecisionAutomaticallyResolved(RuleDecisionTiming.ROUND_START, "test:step", 0, null),
             ),
             draft(actorId, HistoryFact.ActionAccepted(declaration, actionResult())),
         )
@@ -212,19 +212,19 @@ class GameActionEventProjectorTest {
         val tiles = after.tableState.players.first { it.id == actorId }.hand.melds.last().tiles
         return when (type) {
             MeldType.OpenKan -> GameAction.Kan(
-                GameAction.KanType.OPEN_KAN,
-                tiles.first().id,
-                tiles.drop(1).map { it.id },
+                type = GameAction.KanType.OPEN_KAN,
+                tileId = tiles.first().id,
+                withTiles = tiles.drop(1).map { it.id },
             )
             MeldType.ClosedKan -> GameAction.Kan(
-                GameAction.KanType.CLOSED_KAN,
-                tiles.first().id,
-                tiles.drop(1).map { it.id },
+                type = GameAction.KanType.CLOSED_KAN,
+                tileId = tiles.first().id,
+                withTiles = tiles.drop(1).map { it.id },
             )
             MeldType.AddedKan -> GameAction.Kan(
-                GameAction.KanType.ADDED_KAN,
-                tiles.last().id,
-                listOf(tiles.first().id),
+                type = GameAction.KanType.ADDED_KAN,
+                tileId = tiles.last().id,
+                withTiles = listOf(tiles.first().id),
             )
             else -> error("Test only covers kan melds")
         }

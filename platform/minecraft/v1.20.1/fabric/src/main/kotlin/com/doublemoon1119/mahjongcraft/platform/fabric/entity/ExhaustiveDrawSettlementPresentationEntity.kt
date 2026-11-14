@@ -103,33 +103,33 @@ class ExhaustiveDrawSettlementPresentationEntity(
         val sounds = buildList {
             informationPlayers().indices.forEach { index ->
                 add(
-                    soundStep(
-                        startGameTime + informationRowRevealTick(index),
-                        DETAIL_SOUND_ID,
-                        SettlementPresentationSoundSpec.DETAIL_VOLUME,
-                        SettlementPresentationSoundSpec.DETAIL_BASE_PITCH +
+                    element = soundStep(
+                        gameTime = startGameTime + informationRowRevealTick(index),
+                        soundId = DETAIL_SOUND_ID,
+                        volume = SettlementPresentationSoundSpec.DETAIL_VOLUME,
+                        pitch = SettlementPresentationSoundSpec.DETAIL_BASE_PITCH +
                             index * SettlementPresentationSoundSpec.DETAIL_PITCH_STEP,
                     ),
                 )
             }
             players.indices.forEach { index ->
                 add(
-                    soundStep(
-                        startGameTime + rowRevealTick(index, hasInformationPhase),
-                        DETAIL_SOUND_ID,
-                        SettlementPresentationSoundSpec.ROW_VOLUME,
-                        SettlementPresentationSoundSpec.ROW_BASE_PITCH +
+                    element = soundStep(
+                        gameTime = startGameTime + rowRevealTick(index, hasInformationPhase),
+                        soundId = DETAIL_SOUND_ID,
+                        volume = SettlementPresentationSoundSpec.ROW_VOLUME,
+                        pitch = SettlementPresentationSoundSpec.ROW_BASE_PITCH +
                             index * SettlementPresentationSoundSpec.ROW_PITCH_STEP,
                     ),
                 )
             }
             if (players.any { it.previousRank != it.currentRank }) {
                 add(
-                    soundStep(
-                        startGameTime + rankingSettledSoundTick(hasInformationPhase),
-                        RANKING_SETTLED_SOUND_ID,
-                        SettlementPresentationSoundSpec.RANKING_SETTLED_VOLUME,
-                        SettlementPresentationSoundSpec.RANKING_SETTLED_PITCH,
+                    element = soundStep(
+                        gameTime = startGameTime + rankingSettledSoundTick(hasInformationPhase),
+                        soundId = RANKING_SETTLED_SOUND_ID,
+                        volume = SettlementPresentationSoundSpec.RANKING_SETTLED_VOLUME,
+                        pitch = SettlementPresentationSoundSpec.RANKING_SETTLED_PITCH,
                     ),
                 )
             }

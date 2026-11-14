@@ -47,12 +47,12 @@ class RoomMemberAppearanceResolverTest {
     @Test
     fun `passes through the resolved appearance`() {
         assertEquals(
-            RoomMemberAppearanceResolver.Appearance.PlayerModel,
-            resolver { RoomMemberAppearanceSource.PlayerModel }.resolve(PLAYER_ID, isAi = false).appearance,
+            expected = RoomMemberAppearanceResolver.Appearance.PlayerModel,
+            actual = resolver { RoomMemberAppearanceSource.PlayerModel }.resolve(PLAYER_ID, isAi = false).appearance,
         )
         assertEquals(
-            RoomMemberAppearanceResolver.Appearance.Portrait,
-            resolver { RoomMemberAppearanceSource.Portrait }.resolve(PLAYER_ID, isAi = true).appearance,
+            expected = RoomMemberAppearanceResolver.Appearance.Portrait,
+            actual = resolver { RoomMemberAppearanceSource.Portrait }.resolve(PLAYER_ID, isAi = true).appearance,
         )
     }
 
@@ -66,12 +66,12 @@ class RoomMemberAppearanceResolverTest {
     @Test
     fun `falls back by player kind when the registry fails`() {
         assertEquals(
-            RoomMemberAppearanceResolver.Appearance.Portrait,
-            failingResolver().resolve(PLAYER_ID, isAi = true).appearance,
+            expected = RoomMemberAppearanceResolver.Appearance.Portrait,
+            actual = failingResolver().resolve(PLAYER_ID, isAi = true).appearance,
         )
         assertEquals(
-            RoomMemberAppearanceResolver.Appearance.PlayerModel,
-            failingResolver().resolve(PLAYER_ID, isAi = false).appearance,
+            expected = RoomMemberAppearanceResolver.Appearance.PlayerModel,
+            actual = failingResolver().resolve(PLAYER_ID, isAi = false).appearance,
         )
     }
 
@@ -88,7 +88,7 @@ class RoomMemberAppearanceResolverTest {
     @Test
     fun `attributes a plain failure to the registry`() {
         val resolver = RoomMemberAppearanceResolver(
-            object : FakeRegistry() {
+            sources = object : FakeRegistry() {
                 /**
                  * 此案例模擬登記表本身失敗。
                  *
@@ -100,7 +100,7 @@ class RoomMemberAppearanceResolverTest {
         )
 
         val failure = assertIs<RoomMemberAppearanceResolver.Warning.ProviderFailed>(
-            resolver.resolve(PLAYER_ID, isAi = false).warning,
+            value = resolver.resolve(PLAYER_ID, isAi = false).warning,
         )
         assertEquals("registry", failure.providerId)
     }
@@ -160,7 +160,7 @@ class RoomMemberAppearanceResolverTest {
     fun `warns separately for each failing provider`() {
         var providerId = "example:first"
         val resolver = RoomMemberAppearanceResolver(
-            object : FakeRegistry() {
+            sources = object : FakeRegistry() {
                 /**
                  * 依目前測試識別碼模擬 provider 失敗。
                  *
@@ -194,7 +194,7 @@ class RoomMemberAppearanceResolverTest {
     fun `warns separately for each missing actor key`() {
         var actorKey = "example:cat"
         val resolver = RoomMemberAppearanceResolver(
-            object : FakeRegistry() {
+            sources = object : FakeRegistry() {
                 /**
                  * 回傳測試指定的角色預覽來源。
                  *
@@ -217,7 +217,7 @@ class RoomMemberAppearanceResolverTest {
      * @return 使用測試登記表的外觀解析器。
      */
     private fun resolver(source: () -> RoomMemberAppearanceSource) = RoomMemberAppearanceResolver(
-        object : FakeRegistry() {
+        sources = object : FakeRegistry() {
             /**
              * 回傳測試指定的外觀來源。
              *
@@ -235,7 +235,7 @@ class RoomMemberAppearanceResolverTest {
      * @return 解析時會拋出指定來源例外的解析器。
      */
     private fun failingResolver(providerId: String = "example:provider") = RoomMemberAppearanceResolver(
-        object : FakeRegistry() {
+        sources = object : FakeRegistry() {
             /**
              * 以指定 provider 識別碼模擬來源解析失敗。
              *

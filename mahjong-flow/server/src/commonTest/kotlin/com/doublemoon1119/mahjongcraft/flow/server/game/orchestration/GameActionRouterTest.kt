@@ -136,23 +136,23 @@ class GameActionRouterTest {
         val router = GameActionRouter(
             drawTileUseCase = DrawTileUseCase(gameRepo, moduleRegistry, snapshotSynchronizer, eventPublisher, presentationPublisher, componentRegistry = bundledCoreExtensionRegistries().componentRegistry),
             discardTileUseCase = DiscardTileUseCase(
-                gameRepo,
-                moduleRegistry,
-                snapshotSynchronizer,
-                handSortPreferenceStore,
-                postActionExhaustiveDrawResolverRegistry,
-                eventPublisher,
-                presentationPublisher,
+                gameRepository = gameRepo,
+                moduleRegistry = moduleRegistry,
+                snapshotSynchronizer = snapshotSynchronizer,
+                handSortPreferenceStore = handSortPreferenceStore,
+                postActionExhaustiveDrawResolverRegistry = postActionExhaustiveDrawResolverRegistry,
+                eventPublisher = eventPublisher,
+                presentationPublisher = presentationPublisher,
 
                 componentRegistry = bundledCoreExtensionRegistries().componentRegistry,
             ),
             declareTsumoUseCase = DeclareTsumoUseCase(
-                gameRepo,
-                moduleRegistry,
-                snapshotSynchronizer,
-                eventPublisher,
-                presentationPublisher,
-                winPresentationHandoff,
+                gameRepository = gameRepo,
+                moduleRegistry = moduleRegistry,
+                snapshotSynchronizer = snapshotSynchronizer,
+                eventPublisher = eventPublisher,
+                presentationPublisher = presentationPublisher,
+                winPresentationHandoff = winPresentationHandoff,
                 winCelebrationCueResolverRegistry = bundledWinCelebrationCueResolverRegistry(),
                 winSettlementDetailResolverRegistry = winSettlementDetailResolverRegistry,
 
@@ -160,13 +160,13 @@ class GameActionRouterTest {
             ),
             declareKanUseCase = DeclareKanUseCase(gameRepo, moduleRegistry, snapshotSynchronizer, eventPublisher, presentationPublisher, componentRegistry = bundledCoreExtensionRegistries().componentRegistry),
             respondToDiscardUseCase = RespondToDiscardUseCase(
-                gameRepo,
-                moduleRegistry,
-                snapshotSynchronizer,
-                handSortPreferenceStore,
-                eventPublisher,
-                presentationPublisher,
-                winPresentationHandoff,
+                gameRepository = gameRepo,
+                moduleRegistry = moduleRegistry,
+                snapshotSynchronizer = snapshotSynchronizer,
+                handSortPreferenceStore = handSortPreferenceStore,
+                eventPublisher = eventPublisher,
+                presentationPublisher = presentationPublisher,
+                winPresentationHandoff = winPresentationHandoff,
                 winCelebrationCueResolverRegistry = bundledWinCelebrationCueResolverRegistry(),
                 winSettlementDetailResolverRegistry = winSettlementDetailResolverRegistry,
                 postActionExhaustiveDrawResolverRegistry = postActionExhaustiveDrawResolverRegistry,
@@ -174,12 +174,12 @@ class GameActionRouterTest {
                 componentRegistry = bundledCoreExtensionRegistries().componentRegistry,
             ),
             respondToRobbingUseCase = RespondToRobbingUseCase(
-                gameRepo,
-                moduleRegistry,
-                snapshotSynchronizer,
-                eventPublisher,
-                presentationPublisher,
-                winPresentationHandoff,
+                gameRepository = gameRepo,
+                moduleRegistry = moduleRegistry,
+                snapshotSynchronizer = snapshotSynchronizer,
+                eventPublisher = eventPublisher,
+                presentationPublisher = presentationPublisher,
+                winPresentationHandoff = winPresentationHandoff,
                 winCelebrationCueResolverRegistry = bundledWinCelebrationCueResolverRegistry(),
                 winSettlementDetailResolverRegistry = winSettlementDetailResolverRegistry,
 
@@ -274,9 +274,9 @@ class GameActionRouterTest {
         fixtures.gameRepo.setTableState(table)
 
         val result = fixtures.router(
-            gameId,
-            playerId,
-            GameCommand.Extension(RiichiGameCommand(tileId)),
+            gameId = gameId,
+            playerId = playerId,
+            command = GameCommand.Extension(RiichiGameCommand(tileId)),
         )
 
         assertTrue(result is Outcome.Error)
@@ -316,8 +316,8 @@ class GameActionRouterTest {
 
         assertTrue(result is Outcome.Error)
         assertEquals(
-            GameError.IllegalAction(playerId, gameId, GameAction.Kan(GameAction.KanType.CLOSED_KAN, tileId, emptyList())),
-            result.error,
+            expected = GameError.IllegalAction(playerId, gameId, GameAction.Kan(GameAction.KanType.CLOSED_KAN, tileId, emptyList())),
+            actual = result.error,
         )
     }
 
@@ -423,9 +423,9 @@ class GameActionRouterTest {
         fixtures.gameRepo.setTableState(discardReactionTable(discarderId, respondentId))
 
         val result = fixtures.router(
-            gameId,
-            respondentId,
-            GameCommand.RespondToDiscard(GameAction.Pass, checkNotNull(fixtures.gameRepo.getTableState(gameId)?.pendingReaction).id),
+            gameId = gameId,
+            playerId = respondentId,
+            command = GameCommand.RespondToDiscard(GameAction.Pass, checkNotNull(fixtures.gameRepo.getTableState(gameId)?.pendingReaction).id),
         )
 
         assertTrue(result is Outcome.Success, "Expected Success but got $result")

@@ -198,12 +198,12 @@ class FabricAiCharacterManager internal constructor(
      */
     private fun isNearby(seating: FabricSeatingSession, entity: Entity): Boolean = entity.world === seating.world &&
         TableInteractionReach.distance(
-            entity.x,
-            entity.y,
-            entity.z,
-            seating.location.x,
-            seating.location.y,
-            seating.location.z,
+            x = entity.x,
+            y = entity.y,
+            z = entity.z,
+            tableX = seating.location.x,
+            tableY = seating.location.y,
+            tableZ = seating.location.z,
         ) <= TableInteractionReach.SURVIVAL
 
     /**
@@ -424,10 +424,10 @@ class FabricAiCharacterManager internal constructor(
                     if (target == null) {
                         logger.debug("AI character activation deferred before spawn tableId={} seatIndex={} entityId={}", tableId, index, actor.entity.uuid)
                         FabricAiCharacterActivationDiagnostics.beforeSpawn(
-                            seating.world,
-                            actor.entity,
-                            request,
-                            index,
+                            world = seating.world,
+                            rider = actor.entity,
+                            request = request,
+                            seatIndex = index,
                         )
                     }
                 }

@@ -55,7 +55,7 @@ class HistoryStorageQueryServiceTest {
         )
         val store = AuthoritativeStateStore()
         store.load(
-            AuthoritativeStateSnapshot(
+            state = AuthoritativeStateSnapshot(
                 games = mapOf(activeGame.id to activeGame, unrecordedGame.id to unrecordedGame),
                 historyRecordingState = HistoryRecordingState(
                     nextSequenceByMatchId = mapOf(activeMatchId to 2L),
@@ -108,8 +108,8 @@ class HistoryStorageQueryServiceTest {
      * @param ended 結束時間的 UTC 毫秒時間戳。
      */
     private fun insertMatch(path: Path, id: String, started: Long, ended: Long) = sql(
-        path,
-        "INSERT INTO history_match(match_id, table_id, rule_id, dimension_id, status, started_at_epoch_millis, ended_at_epoch_millis) VALUES (?, ?, ?, NULL, 'COMPLETED', ?, ?)",
+        path = path,
+        statement = "INSERT INTO history_match(match_id, table_id, rule_id, dimension_id, status, started_at_epoch_millis, ended_at_epoch_millis) VALUES (?, ?, ?, NULL, 'COMPLETED', ?, ?)",
         id,
         "table-$id",
         "rule-$id",
@@ -124,8 +124,8 @@ class HistoryStorageQueryServiceTest {
      * @param id 場次識別碼。
      */
     private fun insertReplay(path: Path, id: String) = sql(
-        path,
-        "INSERT INTO history_replay(match_id, format_version, created_at_epoch_millis, payload) VALUES (?, 1, 1, '{}')",
+        path = path,
+        statement = "INSERT INTO history_replay(match_id, format_version, created_at_epoch_millis, payload) VALUES (?, 1, 1, '{}')",
         id,
     )
 
@@ -136,8 +136,8 @@ class HistoryStorageQueryServiceTest {
      * @param id 場次識別碼。
      */
     private fun insertPending(path: Path, id: String) = sql(
-        path,
-        "INSERT INTO history_pending_event(match_id, sequence, round_number, occurred_at_epoch_millis, payload_version, payload) VALUES (?, 1, 1, 1, 1, '{}')",
+        path = path,
+        statement = "INSERT INTO history_pending_event(match_id, sequence, round_number, occurred_at_epoch_millis, payload_version, payload) VALUES (?, 1, 1, 1, 1, '{}')",
         id,
     )
 
@@ -149,8 +149,8 @@ class HistoryStorageQueryServiceTest {
      * @param completed 場次離開權威狀態時是否已完成整場對局。
      */
     private fun insertTerminal(path: Path, id: String, completed: Boolean) = sql(
-        path,
-        "INSERT INTO history_terminal(match_id, table_id, ended_at_epoch_millis, completed) VALUES (?, ?, 50, ?)",
+        path = path,
+        statement = "INSERT INTO history_terminal(match_id, table_id, ended_at_epoch_millis, completed) VALUES (?, ?, 50, ?)",
         id,
         "table-$id",
         completed,
@@ -163,8 +163,8 @@ class HistoryStorageQueryServiceTest {
      * @param id 場次識別碼。
      */
     private fun insertParticipant(path: Path, id: String) = sql(
-        path,
-        "INSERT INTO history_participant(match_id, seat_index, player_id, ai_strategy_id) VALUES (?, 0, 'player', NULL)",
+        path = path,
+        statement = "INSERT INTO history_participant(match_id, seat_index, player_id, ai_strategy_id) VALUES (?, 0, 'player', NULL)",
         id,
     )
 

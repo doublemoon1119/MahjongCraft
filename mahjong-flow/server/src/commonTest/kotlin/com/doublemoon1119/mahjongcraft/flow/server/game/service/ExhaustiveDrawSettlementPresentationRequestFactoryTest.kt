@@ -144,7 +144,7 @@ class ExhaustiveDrawSettlementPresentationRequestFactoryTest {
         meldTiles.forEach { meldTile ->
             assertTrue(
                 meldTile.id !in request.players.first().handTileIds,
-                "A meld tile must never be scheduled for the exhaustive-draw conceal animation.",
+                message = "A meld tile must never be scheduled for the exhaustive-draw conceal animation.",
             )
         }
     }
@@ -225,8 +225,8 @@ class ExhaustiveDrawSettlementPresentationRequestFactoryTest {
         )
 
         assertEquals(
-            listOf(oneCharacters.id, nineCharacters.id, east.id),
-            request.players.first().handTileIds,
+            expected = listOf(oneCharacters.id, nineCharacters.id, east.id),
+            actual = request.players.first().handTileIds,
         )
     }
 
@@ -243,7 +243,7 @@ class ExhaustiveDrawSettlementPresentationRequestFactoryTest {
             reason = RiichiExhaustiveDrawReason.Normal,
             tenpaiPlayerIds = setOf(player.id),
             revealedHands = listOf(
-                RevealedHandSettlement(
+                element = RevealedHandSettlement(
                     playerId = player.id,
                     waitingTiles = setOf(
                         Tile.Honor.East,
@@ -255,12 +255,12 @@ class ExhaustiveDrawSettlementPresentationRequestFactoryTest {
         )
 
         assertEquals(
-            listOf(
+            expected = listOf(
                 Tile.Numeric(Tile.Suit.Character, 1),
                 Tile.Numeric(Tile.Suit.Character, 9),
                 Tile.Honor.East,
             ),
-            request.players.first().waitingTiles,
+            actual = request.players.first().waitingTiles,
         )
     }
 
@@ -286,9 +286,9 @@ class ExhaustiveDrawSettlementPresentationRequestFactoryTest {
         assertEquals(null, finishedRow.statusId, "A finished player is neither tenpai nor noten.")
         assertEquals(4, request.players.size, "The score ranking still lists everyone.")
         assertEquals(
-            BuiltInExhaustiveDrawSettlementStatusIds.NOTEN,
-            request.players.first { it.ranking.playerId == base.players[1].id }.statusId,
-            "Players still in the round are judged as usual.",
+            expected = BuiltInExhaustiveDrawSettlementStatusIds.NOTEN,
+            actual = request.players.first { it.ranking.playerId == base.players[1].id }.statusId,
+            message = "Players still in the round are judged as usual.",
         )
     }
 
@@ -310,7 +310,7 @@ class ExhaustiveDrawSettlementPresentationRequestFactoryTest {
             reason = RiichiExhaustiveDrawReason.Normal,
             tenpaiPlayerIds = setOf(finished.id),
             revealedHands = listOf(
-                RevealedHandSettlement(
+                element = RevealedHandSettlement(
                     playerId = finished.id,
                     waitingTiles = setOf(Tile.Honor.East),
                 ),

@@ -232,13 +232,13 @@ object MahjongChannels {
 
     /** 回覆自動操作集合更新的權威結果。 */
     val automaticControlUpdateResult = S2CChannel(
-        "automatic_control_update_result",
-        AutomaticControlUpdateResultDto.serializer(),
+        id = "automatic_control_update_result",
+        serializer = AutomaticControlUpdateResultDto.serializer(),
     )
 
     /** 同步目前自動操作集合；`null` 表示清除。 */
     val automaticControlSnapshot = S2CChannel(
-        "automatic_control_snapshot",
-        AutomaticControlSnapshotDto.serializer().nullable,
+        id = "automatic_control_snapshot",
+        serializer = AutomaticControlSnapshotDto.serializer().nullable,
     )
 }

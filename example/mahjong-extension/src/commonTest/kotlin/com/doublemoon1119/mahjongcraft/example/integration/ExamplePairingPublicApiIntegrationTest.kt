@@ -79,8 +79,8 @@ class ExamplePairingPublicApiIntegrationTest {
         )
         cases.forEach { (playerCount, selectedValues, mayStart) ->
             val roomId = fixtures.installRoom(
-                ExamplePairingRuleConfig(wallTileValues = selectedValues),
-                playerCount,
+                config = ExamplePairingRuleConfig(wallTileValues = selectedValues),
+                playerCount = playerCount,
             )
             val before = fixtures.store.snapshot()
             val outcome = fixtures.startGameUseCase(roomId, fixtures.hostId(roomId))
@@ -106,7 +106,7 @@ class ExamplePairingPublicApiIntegrationTest {
         val roomId = Uuid.random()
         fixtures.store.update { state ->
             AuthoritativeStateUpdate(
-                state.copy(
+                state = state.copy(
                     rooms = state.rooms + (
                         roomId to Room(
                             id = roomId,
@@ -118,7 +118,7 @@ class ExamplePairingPublicApiIntegrationTest {
                         )
                         ),
                 ),
-                Unit,
+                result = Unit,
             )
         }
 
@@ -130,7 +130,7 @@ class ExamplePairingPublicApiIntegrationTest {
         val drawn = fixtures.gameRepository.getGame(roomId)!!.tableState.currentPlayer.hand.lastDrawn
         assertTrue(drawn != null)
         assertIs<Outcome.Success<*>>(
-            fixtures.extensionExecutor.execute(roomId, actor, ExamplePairingRevealHandCommand),
+            value = fixtures.extensionExecutor.execute(roomId, actor, ExamplePairingRevealHandCommand),
         )
         assertIs<Outcome.Success<*>>(fixtures.discardTileUseCase(roomId, actor, drawn.id))
 
@@ -151,12 +151,12 @@ class ExamplePairingPublicApiIntegrationTest {
         assertEquals(snapshot.rooms, restored.rooms)
         val facts = restored.historyRecordingState.pendingEvents.map { it.fact }
         assertTrue(
-            facts.any { fact ->
+            actual = facts.any { fact ->
                 fact is HistoryFact.ActionAccepted && fact.action == GameAction.Extension(ExamplePairingRevealHandAction)
             },
         )
         assertTrue(
-            facts.filterIsInstance<HistoryFact.MatchStarted>().any { fact ->
+            actual = facts.filterIsInstance<HistoryFact.MatchStarted>().any { fact ->
                 fact.tableState.allIdentifiedTiles().any { tile -> tile.tile == Tile.Extension(ExamplePairingIds.INVERTED_ONE_MAN) }
             },
         )
@@ -171,7 +171,7 @@ class ExamplePairingPublicApiIntegrationTest {
         val roomId = Uuid.random()
         fixtures.store.update { state ->
             AuthoritativeStateUpdate(
-                state.copy(
+                state = state.copy(
                     rooms = state.rooms + (
                         roomId to Room(
                             id = roomId,
@@ -183,7 +183,7 @@ class ExamplePairingPublicApiIntegrationTest {
                         )
                         ),
                 ),
-                Unit,
+                result = Unit,
             )
         }
 
@@ -267,9 +267,9 @@ class ExamplePairingPublicApiIntegrationTest {
 
         /** 依範例規則的可見性同步遊戲快照。 */
         private val snapshotSynchronizer = GameSnapshotSynchronizer(
-            gameRepository,
-            snapshotRepository,
-            GameVisibilityPolicyImpl(moduleRegistry, componentRegistry = componentRegistry),
+            gameRepository = gameRepository,
+            snapshotRepository = snapshotRepository,
+            visibilityPolicy = GameVisibilityPolicyImpl(moduleRegistry, componentRegistry = componentRegistry),
         )
 
         /** 接收測試期間產生的遊戲事件。 */
@@ -292,23 +292,23 @@ class ExamplePairingPublicApiIntegrationTest {
 
         /** 執行範例規則提供的擴充命令。 */
         val extensionExecutor = ExtensionGameCommandExecutor(
-            commandRegistry,
-            ExtensionGameCommandContext(
-                gameRepository,
-                moduleRegistry,
-                snapshotSynchronizer,
-                handSort,
-                postActionResolvers,
-                gameEvents,
-                presentations,
-                DeclareAndDiscardUseCase(
-                    gameRepository,
-                    moduleRegistry,
-                    snapshotSynchronizer,
-                    handSort,
-                    postActionResolvers,
-                    gameEvents,
-                    presentations,
+            registry = commandRegistry,
+            context = ExtensionGameCommandContext(
+                gameRepository = gameRepository,
+                moduleRegistry = moduleRegistry,
+                snapshotSynchronizer = snapshotSynchronizer,
+                handSortPreferenceStore = handSort,
+                postActionExhaustiveDrawResolverRegistry = postActionResolvers,
+                eventPublisher = gameEvents,
+                presentationPublisher = presentations,
+                declareAndDiscardUseCase = DeclareAndDiscardUseCase(
+                    gameRepository = gameRepository,
+                    moduleRegistry = moduleRegistry,
+                    snapshotSynchronizer = snapshotSynchronizer,
+                    handSortPreferenceStore = handSort,
+                    postActionExhaustiveDrawResolverRegistry = postActionResolvers,
+                    eventPublisher = gameEvents,
+                    presentationPublisher = presentations,
 
                     componentRegistry = componentRegistry,
                 ),
@@ -361,7 +361,7 @@ class ExamplePairingPublicApiIntegrationTest {
             roomHosts[roomId] = hostId
             store.update { state ->
                 AuthoritativeStateUpdate(
-                    state.copy(
+                    state = state.copy(
                         rooms = state.rooms + (
                             roomId to Room(
                                 id = roomId,
@@ -373,7 +373,7 @@ class ExamplePairingPublicApiIntegrationTest {
                             )
                             ),
                     ),
-                    Unit,
+                    result = Unit,
                 )
             }
             return roomId
@@ -386,12 +386,12 @@ class ExamplePairingPublicApiIntegrationTest {
             extension.registerRuleModules(moduleRegistry)
             moduleRegistry.freeze()
             startGameUseCase = StartGameUseCase(
-                store,
-                moduleRegistry,
-                snapshotSynchronizer,
-                handSort,
-                gameEvents,
-                presentations,
+                authoritativeStateStore = store,
+                moduleRegistry = moduleRegistry,
+                snapshotSynchronizer = snapshotSynchronizer,
+                handSortPreferenceStore = handSort,
+                eventPublisher = gameEvents,
+                presentationPublisher = presentations,
                 componentRegistry = componentRegistry,
                 beginRuleDecisionUseCase = noRuleDecisionBeginUseCase(gameRepository, moduleRegistry, snapshotSynchronizer),
             )
@@ -410,32 +410,32 @@ class ExamplePairingPublicApiIntegrationTest {
                 componentRegistry = componentRegistry,
             )
             discardTileUseCase = DiscardTileUseCase(
-                gameRepository,
-                moduleRegistry,
-                snapshotSynchronizer,
-                handSort,
-                postActionResolvers,
-                gameEvents,
-                presentations,
+                gameRepository = gameRepository,
+                moduleRegistry = moduleRegistry,
+                snapshotSynchronizer = snapshotSynchronizer,
+                handSortPreferenceStore = handSort,
+                postActionExhaustiveDrawResolverRegistry = postActionResolvers,
+                eventPublisher = gameEvents,
+                presentationPublisher = presentations,
 
                 componentRegistry = componentRegistry,
             )
             declareExhaustiveDrawUseCase = DeclareExhaustiveDrawUseCase(gameRepository, moduleRegistry, snapshotSynchronizer, gameEvents)
             advanceRoundUseCase = AdvanceRoundUseCase(
-                gameRepository,
-                moduleRegistry,
-                snapshotSynchronizer,
-                handSort,
-                gameEvents,
-                presentations,
+                gameRepository = gameRepository,
+                moduleRegistry = moduleRegistry,
+                snapshotSynchronizer = snapshotSynchronizer,
+                handSortPreferenceStore = handSort,
+                eventPublisher = gameEvents,
+                presentationPublisher = presentations,
                 componentRegistry = componentRegistry,
                 beginRuleDecisionUseCase = noRuleDecisionBeginUseCase(gameRepository, moduleRegistry, snapshotSynchronizer),
             )
             returnToRoomUseCase = ReturnToRoomUseCase(
-                store,
-                FakeRoomSnapshotRepository(),
-                FakeRoomEventPublisher(),
-                presentations,
+                authoritativeStateStore = store,
+                roomSnapshotRepository = FakeRoomSnapshotRepository(),
+                eventPublisher = FakeRoomEventPublisher(),
+                presentationPublisher = presentations,
             )
             val persistenceRegistries = emptyPersistenceRegistries()
             extension.registerPersistenceDtos(persistenceRegistries)

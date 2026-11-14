@@ -12,8 +12,8 @@ class ExampleSeatGeometryTest {
         val seatY = ExampleSeatGeometry.chairSeatY(10)
 
         assertEquals(
-            10.0 + 0.5625 - 0.25 - 0.586 + 0.25,
-            ExampleSeatGeometry.passengerFeetY(seatY),
+            expected = 10.0 + 0.5625 - 0.25 - 0.586 + 0.25,
+            actual = ExampleSeatGeometry.passengerFeetY(seatY),
             absoluteTolerance = 1e-9,
         )
     }

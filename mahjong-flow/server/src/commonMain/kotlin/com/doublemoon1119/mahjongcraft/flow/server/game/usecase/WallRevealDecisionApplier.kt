@@ -53,7 +53,7 @@ internal object WallRevealDecisionApplier {
         componentRegistry: ComponentRegistry,
     ): Result {
         val decision = module.createWallRevealPolicy().resolve(
-            WallRevealContext(checkpoint, tableState, actorPlayerId, sourceAction),
+            context = WallRevealContext(checkpoint, tableState, actorPlayerId, sourceAction),
         )
         return when (decision) {
             WallRevealDecision.NoChange -> Result.Applied(tableState)

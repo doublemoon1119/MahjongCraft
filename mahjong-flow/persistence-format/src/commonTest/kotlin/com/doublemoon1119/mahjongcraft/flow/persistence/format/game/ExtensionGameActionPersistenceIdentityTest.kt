@@ -24,7 +24,7 @@ class ExtensionGameActionPersistenceIdentityTest {
         for (amount in listOf(0, 7, 23)) {
             val action = GameAction.Extension(TestAction(amount))
             val encoded = assertIs<GameActionPersistenceDto.Extension>(
-                action.toPersistenceDto(registries.exhaustiveDrawReasons, registries.extensionGameActions),
+                value = action.toPersistenceDto(registries.exhaustiveDrawReasons, registries.extensionGameActions),
             )
 
             assertEquals(TestIds.ACTION, encoded.value.typeKey)
@@ -49,7 +49,7 @@ class ExtensionGameActionPersistenceIdentityTest {
     fun `decoding rejects a persistence key different from the restored action ID`() {
         val registries = registries(TestIds.WRONG_FORMAT)
         val encoded = GameActionPersistenceDto.Extension(
-            TypedPersistenceDto(TestIds.WRONG_FORMAT, JsonObject(mapOf("amount" to JsonPrimitive(7)))),
+            value = TypedPersistenceDto(TestIds.WRONG_FORMAT, JsonObject(mapOf("amount" to JsonPrimitive(7)))),
         )
         val error = assertFailsWith<IllegalArgumentException> {
             encoded.toDomain(registries.exhaustiveDrawReasons, registries.extensionGameActions)
@@ -65,7 +65,7 @@ class ExtensionGameActionPersistenceIdentityTest {
         val registries = emptyPersistenceRegistries()
         var calls = 0
         registries.extensionGameActions.register(
-            PersistenceDtoDefinition(
+            definition = PersistenceDtoDefinition(
                 typeKey = TestIds.ACTION,
                 domainClass = TestAction::class,
                 serializer = TestActionDto.serializer(),
@@ -92,7 +92,7 @@ class ExtensionGameActionPersistenceIdentityTest {
      */
     private fun registries(typeKey: String): PersistenceRegistries = emptyPersistenceRegistries().apply {
         extensionGameActions.register(
-            PersistenceDtoDefinition(
+            definition = PersistenceDtoDefinition(
                 typeKey = typeKey,
                 domainClass = TestAction::class,
                 serializer = TestActionDto.serializer(),

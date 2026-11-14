@@ -54,19 +54,21 @@ class AiCharacterPersistenceIntegrationTest {
         store.setDirtyListener(saved::update)
         store.update { AuthoritativeStateUpdate(it.copy(rooms = mapOf(room.id to room)), Unit) }
         var observed = false
-        store.setCommittedFactsListener(object : CommittedFactsListener {
-            /** 在持鎖通知中只讀已擷取的封套，不再次進入 store。 */
-            override fun onCommitted(sequence: Long, facts: CommittedGameFacts) {
-                val opening = saved.characterSnapshot().characters!!.matches[game.matchId]
-                assertEquals(room.aiPlayerStrategyKeys.keys, opening?.keys)
-                assertEquals(BuiltInAiCharacters.TILE_MASCOT_ID, opening?.get(players[1])?.characterId)
-                assertTrue((opening?.get(players[1])?.definition?.face as? AiCharacterFace.Tile)?.assetKey in STANDARD_TILE_ASSET_KEYS)
-                observed = true
-            }
+        store.setCommittedFactsListener(
+            listener = object : CommittedFactsListener {
+                /** 在持鎖通知中只讀已擷取的封套，不再次進入 store。 */
+                override fun onCommitted(sequence: Long, facts: CommittedGameFacts) {
+                    val opening = saved.characterSnapshot().characters!!.matches[game.matchId]
+                    assertEquals(room.aiPlayerStrategyKeys.keys, opening?.keys)
+                    assertEquals(BuiltInAiCharacters.TILE_MASCOT_ID, opening?.get(players[1])?.characterId)
+                    assertTrue((opening?.get(players[1])?.definition?.face as? AiCharacterFace.Tile)?.assetKey in STANDARD_TILE_ASSET_KEYS)
+                    observed = true
+                }
 
-            /** 此測試不使用延後公開事件。 */
-            override fun onReleased(sequence: Long) = Unit
-        })
+                /** 此測試不使用延後公開事件。 */
+                override fun onReleased(sequence: Long) = Unit
+            },
+        )
         store.update { before ->
             AuthoritativeStateUpdate(
                 state = before.copy(rooms = emptyMap(), games = mapOf(game.id to game)),

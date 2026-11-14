@@ -37,7 +37,7 @@ class RiichiPaoDetectorTest {
     @Test
     fun `test no pao when the other dragon groups are concealed triplets`() {
         val hand = FakeHandFactory.create(
-            listOf(
+            tiles = listOf(
                 Tile.Honor.Red,
                 Tile.Honor.Red,
                 Tile.Honor.Red,
@@ -142,9 +142,9 @@ class RiichiPaoDetectorTest {
         )
 
         val result = RiichiPaoDetector.check(
-            hand,
-            Tile.Numeric(Tile.Suit.Character, 5),
-            RelativeDirection.Left,
+            hand = hand,
+            calledTile = Tile.Numeric(Tile.Suit.Character, 5),
+            sourceDirection = RelativeDirection.Left,
         )
 
         assertNull(result, "Non-honor tiles should never trigger pao")

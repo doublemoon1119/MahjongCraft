@@ -6,7 +6,7 @@ import dev.detekt.api.RuleSet
 import dev.detekt.api.RuleSetId
 import dev.detekt.api.RuleSetProvider
 
-/** 提供 MahjongCraft 專用的 KDoc 檢查規則集合。 */
+/** 提供 MahjongCraft 專用的檢查規則集合：KDoc 格式與多行呼叫的參數名稱。 */
 class MahjongCraftRuleSetProvider : RuleSetProvider {
     /** 規則集合在 detekt 中使用的識別碼。 */
     override val ruleSetId: RuleSetId = RuleSetId("mahjongcraft")
@@ -17,6 +17,7 @@ class MahjongCraftRuleSetProvider : RuleSetProvider {
         mapOf(
             RuleName("KDocOpeningLine") to { config: Config -> KDocOpeningLineRule(config) },
             RuleName("KDocTagSpacing") to { config: Config -> KDocTagSpacingRule(config) },
+            RuleName("MultilineCallArgumentName") to { config: Config -> MultilineCallArgumentNameRule(config) },
         ),
     )
 }

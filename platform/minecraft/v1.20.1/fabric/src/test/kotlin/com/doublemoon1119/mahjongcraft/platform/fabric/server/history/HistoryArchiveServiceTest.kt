@@ -79,7 +79,7 @@ class HistoryArchiveServiceTest {
         val records = (opening + aborted).map(fixture::record)
         fixture.database.appendPendingBatch(records)
         fixture.database.recordTerminals(
-            listOf(HistoryTerminalRecord(fixture.matchId.toString(), fixture.tableId.toString(), 300, completed = false)),
+            terminals = listOf(HistoryTerminalRecord(fixture.matchId.toString(), fixture.tableId.toString(), 300, completed = false)),
         )
 
         assertEquals(0, fixture.service.archiveReady(fixture.database, AuthoritativeStateSnapshot(), scanAllPending = false))
@@ -165,14 +165,14 @@ class HistoryArchiveServiceTest {
         val path = createTempDirectory("mahjongcraft-history-repeated-round-").resolve("history.sqlite")
         val database = SqliteHistoryDatabase.open(path)
         database.appendPendingBatch(
-            events.map { event ->
+            records = events.map { event ->
                 PendingHistoryRecord(
-                    event.matchId.toString(),
-                    event.sequence,
-                    event.roundNumber,
-                    event.occurredAtEpochMillis,
-                    1,
-                    Json.encodeToString(HistoryOutboxEventPersistenceDto.serializer(), mapper.encodePendingEvent(event)),
+                    matchId = event.matchId.toString(),
+                    sequence = event.sequence,
+                    roundNumber = event.roundNumber,
+                    occurredAtEpochMillis = event.occurredAtEpochMillis,
+                    payloadVersion = 1,
+                    payload = Json.encodeToString(HistoryOutboxEventPersistenceDto.serializer(), mapper.encodePendingEvent(event)),
                 )
             },
         )
@@ -222,14 +222,14 @@ class HistoryArchiveServiceTest {
         val path = createTempDirectory("mahjongcraft-history-archive-").resolve("history.sqlite")
         val database = SqliteHistoryDatabase.open(path)
         database.appendPendingBatch(
-            events.take(2).map { event ->
+            records = events.take(2).map { event ->
                 PendingHistoryRecord(
-                    event.matchId.toString(),
-                    event.sequence,
-                    event.roundNumber,
-                    event.occurredAtEpochMillis,
-                    1,
-                    Json.encodeToString(HistoryOutboxEventPersistenceDto.serializer(), mapper.encodePendingEvent(event)),
+                    matchId = event.matchId.toString(),
+                    sequence = event.sequence,
+                    roundNumber = event.roundNumber,
+                    occurredAtEpochMillis = event.occurredAtEpochMillis,
+                    payloadVersion = 1,
+                    payload = Json.encodeToString(HistoryOutboxEventPersistenceDto.serializer(), mapper.encodePendingEvent(event)),
                 )
             },
         )
@@ -238,13 +238,13 @@ class HistoryArchiveServiceTest {
         assertEquals(2, database.readPending(matchId.toString()).size)
         val returned = events.last()
         database.appendPending(
-            PendingHistoryRecord(
-                returned.matchId.toString(),
-                returned.sequence,
-                returned.roundNumber,
-                returned.occurredAtEpochMillis,
-                1,
-                Json.encodeToString(HistoryOutboxEventPersistenceDto.serializer(), mapper.encodePendingEvent(returned)),
+            record = PendingHistoryRecord(
+                matchId = returned.matchId.toString(),
+                sequence = returned.sequence,
+                roundNumber = returned.roundNumber,
+                occurredAtEpochMillis = returned.occurredAtEpochMillis,
+                payloadVersion = 1,
+                payload = Json.encodeToString(HistoryOutboxEventPersistenceDto.serializer(), mapper.encodePendingEvent(returned)),
             ),
         )
         val active = Game(tableState = table, flowConfig = GameFlowConfig(), matchId = matchId)
@@ -271,9 +271,9 @@ class HistoryArchiveServiceTest {
         )
         val matchId = Uuid.random()
         val opening = HistoryOutboxEvent(
-            matchId,
-            table.id,
-            table.roundNumber,
+            matchId = matchId,
+            venueId = table.id,
+            roundNumber = table.roundNumber,
             sequence = 1,
             occurredAtEpochMillis = 100,
             actorPlayerId = null,
@@ -282,7 +282,7 @@ class HistoryArchiveServiceTest {
         val game = Game(table, GameFlowConfig(), matchId = matchId)
         val store = AuthoritativeStateStore(historyRecordingEnabled = true)
         store.load(
-            AuthoritativeStateSnapshot(
+            state = AuthoritativeStateSnapshot(
                 games = mapOf(table.id to game),
                 historyRecordingState = HistoryRecordingState(
                     nextSequenceByMatchId = mapOf(matchId to 2),
@@ -298,14 +298,14 @@ class HistoryArchiveServiceTest {
             components = riichiTableComponents(potPoints = 0),
         )
         componentValidatedGameRepository(store).updateGame(
-            table.id,
+            gameId = table.id,
             history = { _, after, _ ->
                 listOf(
-                    HistoryEventDraft(
-                        null,
-                        HistoryFact.MatchCompleted(
-                            "mahjongcraft:test_complete",
-                            after!!.tableState.players.associate { it.id to it.score },
+                    element = HistoryEventDraft(
+                        actorPlayerId = null,
+                        fact = HistoryFact.MatchCompleted(
+                            reasonId = "mahjongcraft:test_complete",
+                            finalScoresByPlayerId = after!!.tableState.players.associate { it.id to it.score },
                         ),
                     ),
                 )
@@ -315,13 +315,13 @@ class HistoryArchiveServiceTest {
         }
         store.update { state ->
             AuthoritativeStateUpdate(
-                state.copy(games = emptyMap()),
-                Unit,
+                state = state.copy(games = emptyMap()),
+                result = Unit,
                 historyDraftsByVenueId = mapOf(
-                    table.id to listOf(
-                        HistoryEventDraft(
-                            null,
-                            HistoryFact.ReturnedToRoom,
+                    pair = table.id to listOf(
+                        element = HistoryEventDraft(
+                            actorPlayerId = null,
+                            fact = HistoryFact.ReturnedToRoom,
                         ),
                     ),
                 ),
@@ -340,14 +340,14 @@ class HistoryArchiveServiceTest {
         val path = createTempDirectory("mahjongcraft-history-generated-table-change-").resolve("history.sqlite")
         val database = SqliteHistoryDatabase.open(path)
         database.appendPendingBatch(
-            events.map { event ->
+            records = events.map { event ->
                 PendingHistoryRecord(
-                    event.matchId.toString(),
-                    event.sequence,
-                    event.roundNumber,
-                    event.occurredAtEpochMillis,
-                    1,
-                    Json.encodeToString(HistoryOutboxEventPersistenceDto.serializer(), mapper.encodePendingEvent(event)),
+                    matchId = event.matchId.toString(),
+                    sequence = event.sequence,
+                    roundNumber = event.roundNumber,
+                    occurredAtEpochMillis = event.occurredAtEpochMillis,
+                    payloadVersion = 1,
+                    payload = Json.encodeToString(HistoryOutboxEventPersistenceDto.serializer(), mapper.encodePendingEvent(event)),
                 )
             },
         )
@@ -516,8 +516,8 @@ class HistoryArchiveServiceTest {
         fixture.database.appendPendingBatch(events.map(fixture::record))
 
         fixture.service.reconcile(
-            fixture.database,
-            HistoryRecordingState(pendingEvents = listOf(events[1]), nextSequenceByMatchId = mapOf(fixture.matchId to 3L)),
+            database = fixture.database,
+            recording = HistoryRecordingState(pendingEvents = listOf(events[1]), nextSequenceByMatchId = mapOf(fixture.matchId to 3L)),
         )
 
         assertEquals(ORPHAN_ERROR, fixture.service.lastArchiveError)
@@ -532,8 +532,8 @@ class HistoryArchiveServiceTest {
         fixture.database.appendPendingBatch(events.take(3).map(fixture::record))
 
         fixture.service.reconcile(
-            fixture.database,
-            HistoryRecordingState(pendingEvents = events.drop(1), nextSequenceByMatchId = mapOf(fixture.matchId to events.size + 1L)),
+            database = fixture.database,
+            recording = HistoryRecordingState(pendingEvents = events.drop(1), nextSequenceByMatchId = mapOf(fixture.matchId to events.size + 1L)),
         )
 
         assertEquals(null, fixture.service.lastArchiveError)
@@ -553,10 +553,10 @@ class HistoryArchiveServiceTest {
         private val registries = bundledPersistenceRegistries()
         private val mapper = HistoryRecordingPersistenceMapper(registries)
         val service = HistoryArchiveService(
-            mapper,
-            registries,
-            MahjongModuleRegistryImpl().apply { registerBundledRuleModules() },
-            TableLocationRegistry(),
+            mapper = mapper,
+            registries = registries,
+            moduleRegistry = MahjongModuleRegistryImpl().apply { registerBundledRuleModules() },
+            locations = TableLocationRegistry(),
             appearanceFor = appearanceFor,
         )
 
@@ -604,12 +604,12 @@ class HistoryArchiveServiceTest {
          * @return 對應的待寫資料庫紀錄。
          */
         fun record(event: HistoryOutboxEvent): PendingHistoryRecord = PendingHistoryRecord(
-            event.matchId.toString(),
-            event.sequence,
-            event.roundNumber,
-            event.occurredAtEpochMillis,
-            1,
-            Json.encodeToString(HistoryOutboxEventPersistenceDto.serializer(), mapper.encodePendingEvent(event)),
+            matchId = event.matchId.toString(),
+            sequence = event.sequence,
+            roundNumber = event.roundNumber,
+            occurredAtEpochMillis = event.occurredAtEpochMillis,
+            payloadVersion = 1,
+            payload = Json.encodeToString(HistoryOutboxEventPersistenceDto.serializer(), mapper.encodePendingEvent(event)),
         )
 
         /**

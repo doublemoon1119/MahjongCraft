@@ -27,7 +27,7 @@ class TaiwanShantenCalculatorTest {
         // 手牌: 111m, 234m, 567m, 東東東, 南南, 88m (16張)
         // 4 面子, 1 雀頭, 1 搭子 -> 聽牌 (0 shanten)
         val hand = FakeHandFactory.create(
-            listOf(
+            tiles = listOf(
                 // 4 面子
                 Tile.Numeric(Tile.Suit.Character, 1),
                 Tile.Numeric(Tile.Suit.Character, 1),
@@ -59,7 +59,7 @@ class TaiwanShantenCalculatorTest {
         // 手牌: 111m, 234m, 567m, 888m, 東東東, 南 (16張)
         // 5 面子, 1 單張 -> 聽牌 (0 shanten), 聽單騎 南
         val hand = FakeHandFactory.create(
-            listOf(
+            tiles = listOf(
                 // 5 面子
                 Tile.Numeric(Tile.Suit.Character, 1),
                 Tile.Numeric(Tile.Suit.Character, 1),
@@ -90,7 +90,7 @@ class TaiwanShantenCalculatorTest {
         // 手牌: 111m, 234m, 567m, 888m, 東東東, 南南 (17張)
         // 5 面子, 1 雀頭 -> 胡牌 (-1 shanten)
         val hand = FakeHandFactory.create(
-            listOf(
+            tiles = listOf(
                 Tile.Numeric(Tile.Suit.Character, 1),
                 Tile.Numeric(Tile.Suit.Character, 1),
                 Tile.Numeric(Tile.Suit.Character, 1),
@@ -112,8 +112,8 @@ class TaiwanShantenCalculatorTest {
         )
         val result = calculator.calculate(hand)
         assertTrue(
-            result is ShantenResult.Complete,
-            "Hand with 5 melds, 1 pair should be Complete (Agari), but was: $result",
+            actual = result is ShantenResult.Complete,
+            message = "Hand with 5 melds, 1 pair should be Complete (Agari), but was: $result",
         )
     }
 

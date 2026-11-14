@@ -49,10 +49,10 @@ class HistoryRetentionPolicyTest {
         val policy = policy(retentionDuration = Duration.INFINITE)
 
         val plan = evaluateHistoryCleanup(
-            listOf(candidate("ancient", endedAt = 0)),
-            emptySet(),
-            policy,
-            instant(2.days.inWholeMilliseconds),
+            candidates = listOf(candidate("ancient", endedAt = 0)),
+            protectedMatchIds = emptySet(),
+            policy = policy,
+            now = instant(2.days.inWholeMilliseconds),
         )
 
         assertTrue(plan.removals.isEmpty(), "Infinite retention should not expire candidates")
@@ -62,10 +62,10 @@ class HistoryRetentionPolicyTest {
     @Test
     fun `test interrupted candidate is excluded when disabled`() {
         val plan = evaluateHistoryCleanup(
-            listOf(candidate("partial", interrupted = true)),
-            emptySet(),
-            policy(includeInterruptedMatches = false),
-            instant(100),
+            candidates = listOf(candidate("partial", interrupted = true)),
+            protectedMatchIds = emptySet(),
+            policy = policy(includeInterruptedMatches = false),
+            now = instant(100),
         )
 
         assertEquals(HistoryCleanupReason.INTERRUPTED_EXCLUDED, plan.removals["partial"])
@@ -75,10 +75,10 @@ class HistoryRetentionPolicyTest {
     @Test
     fun `test protected match is excluded from evaluation`() {
         val plan = evaluateHistoryCleanup(
-            listOf(candidate("active"), candidate("finished")),
-            setOf("active"),
-            policy(),
-            instant(100),
+            candidates = listOf(candidate("active"), candidate("finished")),
+            protectedMatchIds = setOf("active"),
+            policy = policy(),
+            now = instant(100),
         )
 
         assertFalse("active" in plan.removals)
@@ -111,10 +111,10 @@ class HistoryRetentionPolicyTest {
         )
 
         val plan = evaluateHistoryCleanup(
-            candidates,
-            emptySet(),
-            policy(includeInterruptedMatches = true, maxMatches = 2),
-            instant(4),
+            candidates = candidates,
+            protectedMatchIds = emptySet(),
+            policy = policy(includeInterruptedMatches = true, maxMatches = 2),
+            now = instant(4),
         )
 
         assertEquals(HistoryCleanupReason.MATCH_LIMIT, plan.removals["old-partial"])
@@ -126,10 +126,10 @@ class HistoryRetentionPolicyTest {
     fun `test duplicate candidates are rejected`() {
         val exception = assertFailsWith<IllegalArgumentException> {
             evaluateHistoryCleanup(
-                listOf(candidate("duplicate"), candidate("duplicate")),
-                emptySet(),
-                policy(),
-                instant(1),
+                candidates = listOf(candidate("duplicate"), candidate("duplicate")),
+                protectedMatchIds = emptySet(),
+                policy = policy(),
+                now = instant(1),
             )
         }
 

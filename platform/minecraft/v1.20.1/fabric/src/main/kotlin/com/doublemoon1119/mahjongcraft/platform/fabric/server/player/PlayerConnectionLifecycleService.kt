@@ -153,8 +153,8 @@ class PlayerConnectionLifecycleService(
             DisconnectedPlayerPolicy.KEEP_SEAT -> Unit
             DisconnectedPlayerPolicy.LEAVE_IMMEDIATELY -> scope.launch { leaveWaitingRoom(playerId) }
             DisconnectedPlayerPolicy.LEAVE_AFTER_TIMEOUT -> scheduleTimeout(
-                playerId,
-                config.disconnectedPlayerTimeout,
+                playerId = playerId,
+                timeout = config.disconnectedPlayerTimeout,
             )
         }
     }

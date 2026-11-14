@@ -45,7 +45,7 @@ class RiichiLegalActionValidatorRiichiTest {
         // 準備
         // 手牌已聽牌
         val playerHand = FakeHandFactory.create(
-            listOf(
+            tiles = listOf(
                 Tile.Numeric(Tile.Suit.Character, 1),
                 Tile.Numeric(Tile.Suit.Character, 1),
                 Tile.Numeric(Tile.Suit.Character, 1),
@@ -85,7 +85,7 @@ class RiichiLegalActionValidatorRiichiTest {
     fun `test can riichi with high score`() {
         // 準備
         val playerHand = FakeHandFactory.create(
-            listOf(
+            tiles = listOf(
                 Tile.Numeric(Tile.Suit.Character, 1),
                 Tile.Numeric(Tile.Suit.Character, 1),
                 Tile.Numeric(Tile.Suit.Character, 1),
@@ -126,7 +126,7 @@ class RiichiLegalActionValidatorRiichiTest {
     fun `test cannot riichi when wall remaining is below player count`() {
         // 準備
         val playerHand = FakeHandFactory.create(
-            listOf(
+            tiles = listOf(
                 Tile.Numeric(Tile.Suit.Character, 1),
                 Tile.Numeric(Tile.Suit.Character, 1),
                 Tile.Numeric(Tile.Suit.Character, 1),
@@ -163,7 +163,7 @@ class RiichiLegalActionValidatorRiichiTest {
     fun `test can riichi when wall remaining equals player count`() {
         // 準備
         val playerHand = FakeHandFactory.create(
-            listOf(
+            tiles = listOf(
                 Tile.Numeric(Tile.Suit.Character, 1),
                 Tile.Numeric(Tile.Suit.Character, 1),
                 Tile.Numeric(Tile.Suit.Character, 1),
@@ -202,7 +202,7 @@ class RiichiLegalActionValidatorRiichiTest {
     fun `test cannot riichi with insufficient score`() {
         // 準備
         val playerHand = FakeHandFactory.create(
-            listOf(
+            tiles = listOf(
                 Tile.Numeric(Tile.Suit.Character, 1),
                 Tile.Numeric(Tile.Suit.Character, 1),
                 Tile.Numeric(Tile.Suit.Character, 1),
@@ -242,7 +242,7 @@ class RiichiLegalActionValidatorRiichiTest {
     fun `test cannot riichi with zero score`() {
         // 準備
         val playerHand = FakeHandFactory.create(
-            listOf(
+            tiles = listOf(
                 Tile.Numeric(Tile.Suit.Character, 1),
                 Tile.Numeric(Tile.Suit.Character, 1),
                 Tile.Numeric(Tile.Suit.Character, 1),
@@ -371,7 +371,7 @@ class RiichiLegalActionValidatorRiichiTest {
         // 聽牌： 兩面聽 4 萬、7 萬
         // 摸到： 1 餅
         val playerHand = FakeHandFactory.create(
-            listOf(
+            tiles = listOf(
                 Tile.Numeric(Tile.Suit.Dot, 1),
                 Tile.Numeric(Tile.Suit.Dot, 1),
                 Tile.Numeric(Tile.Suit.Dot, 1),
@@ -423,7 +423,7 @@ class RiichiLegalActionValidatorRiichiTest {
         // 聽牌： 7 萬
         // 摸到： 1 萬
         val playerHand = FakeHandFactory.create(
-            listOf(
+            tiles = listOf(
                 Tile.Numeric(Tile.Suit.Character, 1),
                 Tile.Numeric(Tile.Suit.Character, 1),
                 Tile.Numeric(Tile.Suit.Character, 1),
@@ -473,7 +473,7 @@ class RiichiLegalActionValidatorRiichiTest {
     @Test
     fun `test riichi tile selection requirement only includes tiles that keep tenpai`() {
         val playerHand = FakeHandFactory.create(
-            listOf(
+            tiles = listOf(
                 Tile.Numeric(Tile.Suit.Dot, 1),
                 Tile.Numeric(Tile.Suit.Dot, 1),
                 Tile.Numeric(Tile.Suit.Dot, 1),

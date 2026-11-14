@@ -152,7 +152,7 @@ private fun causeLine(cause: MahjongDataLoadCause): MutableText = when (cause) {
         .append(Text.literal(" "))
         .append(
             detailLabel(
-                Text.literal(cause.summary)
+                detail = Text.literal(cause.summary)
                     .append(Text.literal("\n"))
                     .append(Text.translatable(MinecraftMessageKeys.DATA_CAUSE_UNREADABLE_DETAIL)),
             ),

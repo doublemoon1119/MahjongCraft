@@ -269,13 +269,13 @@ internal data class PlayerEntryDto(
         val id = runCatching { Uuid.parse(playerId) }.getOrNull() ?: return null
         return runCatching {
             MahjongPlayerInfoEntry(
-                id,
-                playerName,
-                isAi,
-                seatIndex,
-                wind,
-                score,
-                indicators.map(IndicatorDto::toDomain),
+                playerId = id,
+                playerName = playerName,
+                isAi = isAi,
+                seatIndex = seatIndex,
+                seatWind = wind,
+                score = score,
+                indicators = indicators.map(IndicatorDto::toDomain),
             )
         }.getOrNull()
     }
@@ -288,13 +288,13 @@ internal data class PlayerEntryDto(
          * @return 可序列化的玩家條目。
          */
         fun fromDomain(value: MahjongPlayerInfoEntry) = PlayerEntryDto(
-            value.playerId.toString(),
-            value.playerName,
-            value.isAi,
-            value.seatIndex,
-            value.seatWind.name,
-            value.score,
-            value.indicators.map(IndicatorDto::fromDomain),
+            playerId = value.playerId.toString(),
+            playerName = value.playerName,
+            isAi = value.isAi,
+            seatIndex = value.seatIndex,
+            seatWind = value.seatWind.name,
+            score = value.score,
+            indicators = value.indicators.map(IndicatorDto::fromDomain),
         )
     }
 }
@@ -314,8 +314,8 @@ internal data class IndicatorDto(val id: String, val kind: String, val value: St
      * @return 還原的公開玩家指示器。
      */
     fun toDomain() = PublicPlayerIndicator(
-        id,
-        when (kind) {
+        id = id,
+        indicatorValue = when (kind) {
             "count" -> PublicPlayerIndicatorValue.Count(checkNotNull(value).toInt())
             "option" -> PublicPlayerIndicatorValue.Option(checkNotNull(value))
             else -> PublicPlayerIndicatorValue.Marker

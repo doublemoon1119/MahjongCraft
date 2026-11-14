@@ -61,7 +61,7 @@ class MahjongPlayerPersistenceTest {
             hand = Hand(tiles = listOf(standingTile), lastDrawn = lastDrawn),
             discardPile = discardPile,
             components = ComponentSet.EMPTY.with(RiichiPlayerComponents.PAO_LIABILITY, RiichiPaoLiability(RiichiPaoYaku.Daisangen, RelativeDirection.Left)).with(RiichiPlayerComponents.PERMANENT_FURITEN, Unit).merge(
-                riichiDeclarationComponents(
+                higher = riichiDeclarationComponents(
                     declarationTile = riichiTile,
                     isIppatsu = true,
                 ),
@@ -136,19 +136,19 @@ class MahjongPlayerPersistenceTest {
      */
     private fun encodedRoundTrip(player: MahjongPlayer): MahjongPlayer {
         val encoded = json.encodeToString(
-            MahjongPlayerPersistenceDto.serializer(),
-            player.toPersistenceDto(
-                discardPileRegistry,
-                exhaustiveDrawReasonRegistry,
-                extensionGameActionRegistry,
-                bundledPersistenceRegistries().components,
+            serializer = MahjongPlayerPersistenceDto.serializer(),
+            value = player.toPersistenceDto(
+                discardPileRegistry = discardPileRegistry,
+                exhaustiveDrawReasonRegistry = exhaustiveDrawReasonRegistry,
+                extensionGameActionRegistry = extensionGameActionRegistry,
+                componentRegistry = bundledPersistenceRegistries().components,
             ),
         )
         return json.decodeFromString(MahjongPlayerPersistenceDto.serializer(), encoded).toDomain(
-            discardPileRegistry,
-            exhaustiveDrawReasonRegistry,
-            extensionGameActionRegistry,
-            bundledPersistenceRegistries().components,
+            discardPileRegistry = discardPileRegistry,
+            exhaustiveDrawReasonRegistry = exhaustiveDrawReasonRegistry,
+            extensionGameActionRegistry = extensionGameActionRegistry,
+            componentRegistry = bundledPersistenceRegistries().components,
         )
     }
 

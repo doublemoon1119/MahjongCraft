@@ -40,7 +40,7 @@ class RiichiChurenPotoTest : RiichiHandValueCalculatorTestBase() {
     fun `test churen poto 9-men`() {
         // Hand: 111m 999m 2345678m (13 tiles) - 這個牌型有 2 個刻子 + 7 張單張
         val hand = FakeHandFactory.create(
-            listOf(
+            tiles = listOf(
                 // 111m (3)
                 Tile.Numeric(Tile.Suit.Character, 1),
                 Tile.Numeric(Tile.Suit.Character, 1),
@@ -82,7 +82,7 @@ class RiichiChurenPotoTest : RiichiHandValueCalculatorTestBase() {
     fun `test churen poto general`() {
         // Hand: 111m 999m 2345677m (13 tiles)
         val hand = FakeHandFactory.create(
-            listOf(
+            tiles = listOf(
                 // 111m (3)
                 Tile.Numeric(Tile.Suit.Character, 1),
                 Tile.Numeric(Tile.Suit.Character, 1),
@@ -118,7 +118,7 @@ class RiichiChurenPotoTest : RiichiHandValueCalculatorTestBase() {
     @Test
     fun `test churen poto not menzen returns null`() {
         val hand = FakeHandFactory.create(
-            listOf(
+            tiles = listOf(
                 // 234m (3)
                 Tile.Numeric(Tile.Suit.Character, 2),
                 Tile.Numeric(Tile.Suit.Character, 3),
@@ -135,7 +135,7 @@ class RiichiChurenPotoTest : RiichiHandValueCalculatorTestBase() {
                 Tile.Numeric(Tile.Suit.Character, 9),
             ),
             melds = listOf(
-                FakeMeldFactory.create(
+                element = FakeMeldFactory.create(
                     type = MeldType.Pon,
                     tiles = listOf(
                         FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 1)),
@@ -165,7 +165,7 @@ class RiichiChurenPotoTest : RiichiHandValueCalculatorTestBase() {
     fun `test non-churen poto with mixed suits returns null`() {
         // Hand: 111m 999m 234p...
         val hand = FakeHandFactory.create(
-            listOf(
+            tiles = listOf(
                 // 111m
                 Tile.Numeric(Tile.Suit.Character, 1),
                 Tile.Numeric(Tile.Suit.Character, 1),
@@ -200,7 +200,7 @@ class RiichiChurenPotoTest : RiichiHandValueCalculatorTestBase() {
     @Test
     fun `test non-churen poto without 111 or 999 returns null`() {
         val hand = FakeHandFactory.create(
-            listOf(
+            tiles = listOf(
                 // 234m (3)
                 Tile.Numeric(Tile.Suit.Character, 2),
                 Tile.Numeric(Tile.Suit.Character, 3),

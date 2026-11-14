@@ -73,7 +73,7 @@ class FabricWinCelebrationEffectScheduler(private val spawnGateway: FabricEntity
                 endGameTime = endGameTime,
             )
             enqueue(
-                AnimationStep.PlaySound(
+                step = AnimationStep.PlaySound(
                     soundId = MahjongAnimationSounds.TRIDENT_HIT_GROUND,
                     volume = 1.0f,
                     pitch = 1.0f,
@@ -82,7 +82,7 @@ class FabricWinCelebrationEffectScheduler(private val spawnGateway: FabricEntity
                 ),
             )
             enqueue(
-                AnimationStep.PlaySound(
+                step = AnimationStep.PlaySound(
                     soundId = MahjongAnimationSounds.WIN_LIGHTNING,
                     volume = 0.9f,
                     pitch = 1.0f,

@@ -21,7 +21,7 @@ class FabricTablePropSearchAreaTest {
     fun `every entity chunk in the search area must be available`() {
         val queried = mutableSetOf<Long>()
         assertTrue(
-            FabricTablePropSearchArea.entitiesLoaded(
+            actual = FabricTablePropSearchArea.entitiesLoaded(
                 pos = BlockPos(0, 64, 0),
                 blocksLoaded = { _, _ -> true },
                 savedEntitiesLoaded = {
@@ -32,7 +32,7 @@ class FabricTablePropSearchAreaTest {
         )
         assertEquals(setOf(ChunkPos.toLong(-1, -1), ChunkPos.toLong(-1, 0), ChunkPos.toLong(0, -1), ChunkPos.toLong(0, 0)), queried)
         assertFalse(
-            FabricTablePropSearchArea.entitiesLoaded(
+            actual = FabricTablePropSearchArea.entitiesLoaded(
                 pos = BlockPos(0, 64, 0),
                 blocksLoaded = { _, _ -> true },
                 savedEntitiesLoaded = { it != ChunkPos.toLong(-1, -1) },

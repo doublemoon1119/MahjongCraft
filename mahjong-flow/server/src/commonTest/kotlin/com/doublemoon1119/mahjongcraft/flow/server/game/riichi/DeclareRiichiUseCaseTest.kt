@@ -105,7 +105,7 @@ class DeclareRiichiUseCaseTest {
             componentRegistry = bundledCoreExtensionRegistries().componentRegistry,
         )
         val useCase = DeclareRiichiUseCase(
-            sharedDeclarationUseCase,
+            declareAndDiscardUseCase = sharedDeclarationUseCase,
         )
     }
 
@@ -190,9 +190,9 @@ class DeclareRiichiUseCaseTest {
         val riichiState = checkNotNull(updatedPlayer.riichiDeclaration)
         assertEquals(drawnTile.id, riichiState.discardTileId)
         assertEquals(
-            RiichiDeclarationKind.RIICHI,
-            riichiState.kind,
-            "This is not the first go-around, so it should not be a double riichi.",
+            expected = RiichiDeclarationKind.RIICHI,
+            actual = riichiState.kind,
+            message = "This is not the first go-around, so it should not be a double riichi.",
         )
         assertTrue(riichiState.isIppatsu)
 
@@ -322,12 +322,12 @@ class DeclareRiichiUseCaseTest {
         assertNotNull(fixtures.snapshotRepo.getSnapshot(gameId, currentPlayerId))
         assertNotNull(fixtures.snapshotRepo.getSnapshot(gameId, otherPlayerId))
         assertEquals(
-            listOf(RIICHI_GAME_ACTION, GameAction.Discard(drawnTile.id)),
-            fixtures.eventPublisher.getNotifiedActions(gameId, otherPlayerId, currentPlayerId),
+            expected = listOf(RIICHI_GAME_ACTION, GameAction.Discard(drawnTile.id)),
+            actual = fixtures.eventPublisher.getNotifiedActions(gameId, otherPlayerId, currentPlayerId),
         )
         assertEquals(
-            listOf<TableStepEvent>(TableStepEvent.ActionDeclared(currentPlayerId, RIICHI_GAME_ACTION)),
-            fixtures.presentationPublisher.getPublishedTableStepBatches(gameId).single().single().events,
+            expected = listOf<TableStepEvent>(TableStepEvent.ActionDeclared(currentPlayerId, RIICHI_GAME_ACTION)),
+            actual = fixtures.presentationPublisher.getPublishedTableStepBatches(gameId).single().single().events,
         )
     }
 
@@ -408,8 +408,8 @@ class DeclareRiichiUseCaseTest {
 
         assertTrue(result is Outcome.Error)
         assertEquals(
-            GameError.NotPlayersTurn(currentPlayerId, gameId),
-            result.error,
+            expected = GameError.NotPlayersTurn(currentPlayerId, gameId),
+            actual = result.error,
         )
     }
 
@@ -434,8 +434,8 @@ class DeclareRiichiUseCaseTest {
 
         assertTrue(result is Outcome.Error)
         assertEquals(
-            GameError.IllegalAction(currentPlayerId, gameId, RIICHI_GAME_ACTION),
-            result.error,
+            expected = GameError.IllegalAction(currentPlayerId, gameId, RIICHI_GAME_ACTION),
+            actual = result.error,
         )
     }
 
@@ -467,8 +467,8 @@ class DeclareRiichiUseCaseTest {
 
         assertTrue(result is Outcome.Error)
         assertEquals(
-            GameError.IllegalAction(currentPlayerId, gameId, RIICHI_GAME_ACTION),
-            result.error,
+            expected = GameError.IllegalAction(currentPlayerId, gameId, RIICHI_GAME_ACTION),
+            actual = result.error,
         )
     }
 
@@ -491,8 +491,8 @@ class DeclareRiichiUseCaseTest {
 
         assertTrue(result is Outcome.Error)
         assertEquals(
-            GameError.IllegalAction(currentPlayerId, gameId, RIICHI_GAME_ACTION),
-            result.error,
+            expected = GameError.IllegalAction(currentPlayerId, gameId, RIICHI_GAME_ACTION),
+            actual = result.error,
         )
     }
 
@@ -517,8 +517,8 @@ class DeclareRiichiUseCaseTest {
 
         assertTrue(result is Outcome.Error)
         assertEquals(
-            GameError.IllegalAction(currentPlayerId, gameId, RIICHI_GAME_ACTION),
-            result.error,
+            expected = GameError.IllegalAction(currentPlayerId, gameId, RIICHI_GAME_ACTION),
+            actual = result.error,
         )
     }
 
@@ -544,8 +544,8 @@ class DeclareRiichiUseCaseTest {
 
         assertTrue(result is Outcome.Error)
         assertEquals(
-            GameError.IllegalAction(currentPlayerId, gameId, RIICHI_GAME_ACTION),
-            result.error,
+            expected = GameError.IllegalAction(currentPlayerId, gameId, RIICHI_GAME_ACTION),
+            actual = result.error,
         )
     }
 

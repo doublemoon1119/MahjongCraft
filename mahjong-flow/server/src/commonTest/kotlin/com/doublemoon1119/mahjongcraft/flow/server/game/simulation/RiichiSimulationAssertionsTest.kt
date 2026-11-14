@@ -50,7 +50,7 @@ class RiichiSimulationAssertionsTest {
                 id = southId,
                 hand = Hand(daisangenTiles().map(FakeIdentifiedTileFactory::create)),
                 discardPile = FakeDiscardPile().discardTile(
-                    FakeIdentifiedTileFactory.create(Tile.Honor.South),
+                    tile = FakeIdentifiedTileFactory.create(Tile.Honor.South),
                 ),
             ).copy(score = INITIAL_SCORE),
             FakeMahjongPlayerFactory.create(
@@ -63,7 +63,7 @@ class RiichiSimulationAssertionsTest {
             ).copy(score = INITIAL_SCORE),
         )
         runtime.gameRepository.setTableState(
-            FakeTableStateFactory.create(
+            state = FakeTableStateFactory.create(
                 id = gameId,
                 players = players,
                 dealerPlayerId = eastId,
@@ -71,7 +71,7 @@ class RiichiSimulationAssertionsTest {
                 currentPlayerIndex = 0,
                 pendingReaction = PendingReaction(eastId, discardedTile.id, setOf(southId), ronPlayerIds = setOf(southId), id = Uuid.random()),
             ),
-            players.associate { it.id to RON_STRATEGY_KEY },
+            aiPlayerStrategyKeys = players.associate { it.id to RON_STRATEGY_KEY },
         )
 
         runtime.driveLikeServer(gameId)
@@ -196,8 +196,8 @@ class RiichiSimulationAssertionsTest {
     private class RonOnlyStrategy : MahjongAiStrategy {
         override suspend fun decideGameCommand(context: AiDecisionContext): GameCommand = when (context.phase) {
             AiDecisionPhase.RespondingToDiscard -> GameCommand.RespondToDiscard(
-                context.legalActions.filterIsInstance<GameAction.Ron>().single(),
-                checkNotNull(context.discardReactionId),
+                action = context.legalActions.filterIsInstance<GameAction.Ron>().single(),
+                reactionId = checkNotNull(context.discardReactionId),
             )
             AiDecisionPhase.RespondingToRobbing -> GameCommand.RespondToRobbing(GameAction.Pass)
             AiDecisionPhase.OwnTurn -> error("The fixed ron scenario should end before an own turn")

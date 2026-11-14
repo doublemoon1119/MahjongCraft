@@ -16,8 +16,8 @@ class DecisionTimerUpdatePayloadDtoTest {
     @Test
     fun `rule action phase keeps its wire value`() {
         assertEquals(
-            "\"RULE_ACTION\"",
-            Json.encodeToString(PlayerDecisionPhaseDto.serializer(), PlayerDecisionPhaseDto.RULE_ACTION),
+            expected = "\"RULE_ACTION\"",
+            actual = Json.encodeToString(PlayerDecisionPhaseDto.serializer(), PlayerDecisionPhaseDto.RULE_ACTION),
         )
     }
 
@@ -27,12 +27,12 @@ class DecisionTimerUpdatePayloadDtoTest {
         val gameId = Uuid.random().toString()
         val payloads = listOf(
             DecisionTimerUpdatePayloadDto(
-                gameId,
-                DecisionTimerStatusDto(
-                    PlayerDecisionPhaseDto.OWN_TURN,
-                    4_000.milliseconds,
-                    20_000.milliseconds,
-                    PlayerDecisionPromptDto(
+                gameId = gameId,
+                status = DecisionTimerStatusDto(
+                    phase = PlayerDecisionPhaseDto.OWN_TURN,
+                    baseRemaining = 4_000.milliseconds,
+                    reserveRemaining = 20_000.milliseconds,
+                    prompt = PlayerDecisionPromptDto(
                         decisionKey = "game:player:own-turn:tile",
                         actions = listOf(
                             PlayerDecisionActionDto(
@@ -52,13 +52,13 @@ class DecisionTimerUpdatePayloadDtoTest {
                                     minCount = 1,
                                     maxCount = 1,
                                     discardAnalyses = listOf(
-                                        DiscardReadinessAnalysisDto(
+                                        element = DiscardReadinessAnalysisDto(
                                             discardTileId = Uuid.random().toString(),
                                             waitingTiles = listOf(
-                                                WaitingTileAvailabilityDto(
-                                                    TileDto.Numeric(SuitDto.DOT, 5),
-                                                    2,
-                                                    "mahjongcraft:win_available",
+                                                element = WaitingTileAvailabilityDto(
+                                                    tile = TileDto.Numeric(SuitDto.DOT, 5),
+                                                    remainingCount = 2,
+                                                    winAvailability = "mahjongcraft:win_available",
                                                 ),
                                             ),
                                             statusIndicatorId = null,
@@ -75,13 +75,13 @@ class DecisionTimerUpdatePayloadDtoTest {
                         triggerPlayerRelation = DecisionPlayerRelationDto.LEFT,
                         triggerActionId = "mahjongcraft:discard",
                         discardAnalyses = listOf(
-                            DiscardReadinessAnalysisDto(
+                            element = DiscardReadinessAnalysisDto(
                                 discardTileId = Uuid.random().toString(),
                                 waitingTiles = listOf(
-                                    WaitingTileAvailabilityDto(
-                                        TileDto.Honor.Red,
-                                        3,
-                                        "mahjongcraft:win_tsumo_only",
+                                    element = WaitingTileAvailabilityDto(
+                                        tile = TileDto.Honor.Red,
+                                        remainingCount = 3,
+                                        winAvailability = "mahjongcraft:win_tsumo_only",
                                     ),
                                 ),
                                 statusIndicatorId = "mahjongcraft:discard_furiten",
@@ -105,12 +105,12 @@ class DecisionTimerUpdatePayloadDtoTest {
     @Test
     fun `test payload keeps its wire field names`() {
         val payload = DecisionTimerUpdatePayloadDto(
-            "game",
-            DecisionTimerStatusDto(
-                PlayerDecisionPhaseDto.OWN_TURN,
-                1_000.milliseconds,
-                2_000.milliseconds,
-                PlayerDecisionPromptDto(
+            gameId = "game",
+            status = DecisionTimerStatusDto(
+                phase = PlayerDecisionPhaseDto.OWN_TURN,
+                baseRemaining = 1_000.milliseconds,
+                reserveRemaining = 2_000.milliseconds,
+                prompt = PlayerDecisionPromptDto(
                     decisionKey = "key",
                     actions = listOf(PlayerDecisionActionDto(token = "pass", actionId = "mahjongcraft:pass", referenceTileAssetKey = null, previewTileAssetKeys = emptyList(), claimedTileIndex = null, tileSelection = null)),
                     triggerPlayerRelation = DecisionPlayerRelationDto.ACROSS,
@@ -126,13 +126,13 @@ class DecisionTimerUpdatePayloadDtoTest {
         )
 
         assertEquals(
-            """{"gameId":"game","status":{"phase":"OWN_TURN","baseRemaining":"PT1S","reserveRemaining":"PT2S",""" +
+            expected = """{"gameId":"game","status":{"phase":"OWN_TURN","baseRemaining":"PT1S","reserveRemaining":"PT2S",""" +
                 """"prompt":{"decisionKey":"key","ruleModuleId":null,""" +
                 """"actions":[{"token":"pass","actionId":"mahjongcraft:pass","referenceTileAssetKey":null,"previewTileAssetKeys":[],""" +
                 """"claimedTileIndex":null,"tileSelection":null}],""" +
                 """"triggerTileAssetKey":null,"triggerPlayerId":null,"triggerPlayerName":null,"triggerPlayerRelation":"ACROSS",""" +
                 """"triggerActionId":null,"ruleDecision":null,"discardAnalyses":[]}}}""",
-            Json.encodeToString(DecisionTimerUpdatePayloadDto.serializer(), payload),
+            actual = Json.encodeToString(DecisionTimerUpdatePayloadDto.serializer(), payload),
         )
     }
 }

@@ -951,12 +951,12 @@ internal class HistoryBrowseController(
      * @return 唯一事件頁條件。
      */
     private fun Intent.RoundEvents.cacheKey(): HistoryRoundCacheKey.Events = HistoryRoundCacheKey.Events(
-        sessionRevision,
-        matchId,
-        roundNumber,
-        query.scope,
-        starts.last(),
-        request().limit,
+        sessionRevision = sessionRevision,
+        matchId = matchId,
+        roundNumber = roundNumber,
+        scope = query.scope,
+        startTransactionIndex = starts.last(),
+        limit = request().limit,
     )
 
     /**
@@ -965,11 +965,11 @@ internal class HistoryBrowseController(
      * @return 唯一局內位置條件。
      */
     private fun Intent.RoundState.cacheKey(): HistoryRoundCacheKey.State = HistoryRoundCacheKey.State(
-        sessionRevision,
-        matchId,
-        roundNumber,
-        query.scope,
-        position,
+        sessionRevision = sessionRevision,
+        matchId = matchId,
+        roundNumber = roundNumber,
+        scope = query.scope,
+        position = position,
     )
 
     /**

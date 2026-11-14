@@ -187,7 +187,7 @@ class TaiwanRuleModule(
         val waitsAfter = createLegalActionValidator().waits(playerAfter.hand)
         if (waitsBefore.isEmpty() || waitsBefore != waitsAfter) return emptyMap()
         return mapOf(
-            playerAfter.id to ComponentPatch.basedOn(playerAfter.components, removals = setOf(TaiwanPlayerComponents.PASSED_WIN)),
+            pair = playerAfter.id to ComponentPatch.basedOn(playerAfter.components, removals = setOf(TaiwanPlayerComponents.PASSED_WIN)),
         )
     }
 
@@ -205,7 +205,7 @@ class TaiwanRuleModule(
             null -> return ComponentPatch()
         }
         return ComponentPatch.basedOn(
-            claimingPlayer.components,
+            current = claimingPlayer.components,
             values = ComponentSet.EMPTY.with(TaiwanPlayerComponents.PAO_LIABILITY, TaiwanPaoLiability(hand, sourceDirection)),
         )
     }
@@ -245,8 +245,8 @@ class TaiwanRuleModule(
             revealed.copy(
                 publicTileEvidenceIds = tableState.publicTileEvidenceIds,
                 components = revealed.components.with(
-                    TaiwanTableComponents.PENDING_FLOWER_FOLLOW_UP,
-                    TaiwanPendingFlowerFollowUp(actorPlayerId, flower.id, replacementsDue = 1, resumeRound = 1),
+                    type = TaiwanTableComponents.PENDING_FLOWER_FOLLOW_UP,
+                    value = TaiwanPendingFlowerFollowUp(actorPlayerId, flower.id, replacementsDue = 1, resumeRound = 1),
                 ),
             )
         }

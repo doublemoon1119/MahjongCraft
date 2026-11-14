@@ -27,7 +27,7 @@ class RiichiRedDoraScoringKnownCasesTest : RiichiHandValueCalculatorTestBase() {
     @Test
     fun `red five in a closed hand adds one han`() {
         val result = calculator.calculate(
-            ron(
+            context = ron(
                 hand = Hand(tiles = man(2, 3, 4) + listOf(redFive(Tile.Suit.Dot)) + pin(6, 7) + sou(3, 4, 5, 6, 7, 8) + pin(8)),
                 winningTile = TileValue(Tile.Numeric(Tile.Suit.Dot, 8)),
             ),
@@ -42,7 +42,7 @@ class RiichiRedDoraScoringKnownCasesTest : RiichiHandValueCalculatorTestBase() {
     @Test
     fun `plain five in the same hand adds nothing`() {
         val result = calculator.calculate(
-            ron(
+            context = ron(
                 hand = Hand(tiles = man(2, 3, 4) + pin(5, 6, 7) + sou(3, 4, 5, 6, 7, 8) + pin(8)),
                 winningTile = TileValue(Tile.Numeric(Tile.Suit.Dot, 8)),
             ),
@@ -65,8 +65,8 @@ class RiichiRedDoraScoringKnownCasesTest : RiichiHandValueCalculatorTestBase() {
         val result = calculator.calculate(context)
 
         assertEquals(
-            mapOf(RiichiYakuType.Menzentsumo to 1, RiichiYakuType.Pinfu to 1, RiichiYakuType.Tanyao to 1, RiichiYakuType.AkaDora to 1),
-            result.hanByYaku(),
+            expected = mapOf(RiichiYakuType.Menzentsumo to 1, RiichiYakuType.Pinfu to 1, RiichiYakuType.Tanyao to 1, RiichiYakuType.AkaDora to 1),
+            actual = result.hanByYaku(),
         )
         assertEquals(20, result.totalFu)
         assertEquals(RiichiPointResult.NonDealerTsumo(dealerPayment = 2600, otherNonDealerPayment = 1300), result.pointResult)
@@ -83,7 +83,7 @@ class RiichiRedDoraScoringKnownCasesTest : RiichiHandValueCalculatorTestBase() {
             sourceDirection = RelativeDirection.Left,
         )
         val result = calculator.calculate(
-            ron(
+            context = ron(
                 hand = Hand(tiles = man(2, 3, 4, 6, 7, 8) + sou(3, 4) + listOf(redFive(Tile.Suit.Bamboo)) + sou(6), melds = listOf(pon)),
                 winningTile = TileValue(Tile.Numeric(Tile.Suit.Bamboo, 6)),
                 isMenzen = false,
@@ -101,7 +101,7 @@ class RiichiRedDoraScoringKnownCasesTest : RiichiHandValueCalculatorTestBase() {
         val ones = List(3) { FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 1)) }
         val pon = FakeMeldFactory.create(type = MeldType.Pon, tiles = ones, sourceTile = ones.last(), sourceDirection = RelativeDirection.Across)
         val result = calculator.calculate(
-            ron(
+            context = ron(
                 hand = Hand(tiles = man(2, 3, 4) + listOf(redFive(Tile.Suit.Dot)) + pin(6, 7) + sou(3, 4, 5) + pin(8), melds = listOf(pon)),
                 winningTile = TileValue(Tile.Numeric(Tile.Suit.Dot, 8)),
                 isMenzen = false,

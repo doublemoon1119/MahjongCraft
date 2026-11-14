@@ -53,7 +53,7 @@ internal object DebugPublicFaceTiles {
      */
     fun register(registry: MinecraftTileAssetRegistrar) {
         registry.register(
-            MinecraftTileSetAppearanceDefinition(
+            definition = MinecraftTileSetAppearanceDefinition(
                 id = BODY_APPEARANCE_ID,
                 coverTextureId = "${MinecraftModMetadata.MOD_ID}:${tileTextureAssetPath("cover_debug_public_face")}",
             ),
@@ -65,7 +65,7 @@ internal object DebugPublicFaceTiles {
                 is Tile.Extension -> return@forEach
             }
             registry.register(
-                MinecraftTileStyleAssetDefinition(
+                definition = MinecraftTileStyleAssetDefinition(
                     styleId = APPEARANCE_ID,
                     tile = tile,
                     assetKey = "${MinecraftModMetadata.MOD_ID}:debug_public_face_$baseAssetKey",

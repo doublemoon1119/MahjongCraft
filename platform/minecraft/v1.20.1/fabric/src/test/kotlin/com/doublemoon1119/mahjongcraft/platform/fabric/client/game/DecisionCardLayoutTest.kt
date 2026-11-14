@@ -112,8 +112,8 @@ class DecisionCardLayoutTest {
         val layout = layout(cardCount = 3, previewTileCount = 0)
 
         assertEquals(
-            DecisionCardLayout.CARD_WIDTH * 3 + DecisionCardLayout.CARD_GAP * 2,
-            layout.contentWidth,
+            expected = DecisionCardLayout.CARD_WIDTH * 3 + DecisionCardLayout.CARD_GAP * 2,
+            actual = layout.contentWidth,
         )
     }
 
@@ -134,8 +134,8 @@ class DecisionCardLayoutTest {
 
         assertTrue(overflowing.hasOverflow)
         assertEquals(
-            fitting.panelHeight + DecisionCardLayout.SCROLLBAR_GAP + DecisionCardLayout.SCROLLBAR_HEIGHT,
-            overflowing.panelHeight,
+            expected = fitting.panelHeight + DecisionCardLayout.SCROLLBAR_GAP + DecisionCardLayout.SCROLLBAR_HEIGHT,
+            actual = overflowing.panelHeight,
         )
     }
 
@@ -145,8 +145,8 @@ class DecisionCardLayoutTest {
         val layout = layout(cardCount = 1, previewTileCount = 0, headerTextWidth = 200)
 
         assertEquals(
-            200 + DecisionCardLayout.HEADER_SIDE_WIDTH * 2 + DecisionCardLayout.PANEL_PADDING * 2,
-            layout.panelWidth,
+            expected = 200 + DecisionCardLayout.HEADER_SIDE_WIDTH * 2 + DecisionCardLayout.PANEL_PADDING * 2,
+            actual = layout.panelWidth,
         )
     }
 
@@ -189,8 +189,8 @@ class DecisionCardLayoutTest {
         val wrapped = layout(cardCount = 1, hasTriggerTile = true, triggerLineCount = 3, triggerTextWidth = 80)
 
         assertEquals(
-            single.triggerAreaHeight + 2 * DecisionCardLayout.TEXT_LINE_HEIGHT,
-            wrapped.triggerAreaHeight,
+            expected = single.triggerAreaHeight + 2 * DecisionCardLayout.TEXT_LINE_HEIGHT,
+            actual = wrapped.triggerAreaHeight,
         )
     }
 
@@ -200,8 +200,8 @@ class DecisionCardLayoutTest {
         val layout = layout(cardCount = 1, hasTriggerTile = true, triggerLineCount = 0, triggerTextWidth = 0)
 
         assertEquals(
-            DecisionCardLayout.PREVIEW_TILE_WIDTH + DecisionCardLayout.TRIGGER_PADDING * 2,
-            layout.triggerPanelBounds.width,
+            expected = DecisionCardLayout.PREVIEW_TILE_WIDTH + DecisionCardLayout.TRIGGER_PADDING * 2,
+            actual = layout.triggerPanelBounds.width,
         )
     }
 
@@ -256,8 +256,8 @@ class DecisionCardLayoutTest {
         val placements = layout.cardPlacements(scroll = 0.0)
 
         assertEquals(
-            placements[0].x + placements[0].width + DecisionCardLayout.CARD_GAP,
-            placements[1].x,
+            expected = placements[0].x + placements[0].width + DecisionCardLayout.CARD_GAP,
+            actual = placements[1].x,
         )
         assertEquals(listOf(layout.cardTop, layout.cardTop, layout.cardTop), placements.map { it.y })
     }
@@ -287,8 +287,8 @@ class DecisionCardLayoutTest {
         val rightGap = placement.x + placement.width - (tiles.last().x + tiles.last().width)
         assertEquals(leftGap, rightGap)
         assertEquals(
-            layout.cardButtonBounds(placement).y - DecisionCardLayout.TILE_BUTTON_GAP,
-            tiles.first().y + tiles.first().height,
+            expected = layout.cardButtonBounds(placement).y - DecisionCardLayout.TILE_BUTTON_GAP,
+            actual = tiles.first().y + tiles.first().height,
         )
     }
 
@@ -320,8 +320,8 @@ class DecisionCardLayoutTest {
         val tile = layout.previewTilePlacements(layout.cardPlacements(scroll = 0.0).single(), 3).first()
 
         assertEquals(
-            tile.y - ClaimedTileMarker.GAP - ClaimedTileMarker.height,
-            layout.claimedTileMarkerTop(tile),
+            expected = tile.y - ClaimedTileMarker.GAP - ClaimedTileMarker.height,
+            actual = layout.claimedTileMarkerTop(tile),
         )
     }
 
@@ -407,8 +407,8 @@ class DecisionCardLayoutTest {
 
         assertEquals(card.x + card.width / 2 - 60, position.x)
         assertEquals(
-            layout.panelTop - DecisionCardLayout.TOOLTIP_GAP - DecisionCardLayout.TOOLTIP_FRAME - 20,
-            position.y,
+            expected = layout.panelTop - DecisionCardLayout.TOOLTIP_GAP - DecisionCardLayout.TOOLTIP_FRAME - 20,
+            actual = position.y,
         )
     }
 
@@ -432,8 +432,8 @@ class DecisionCardLayoutTest {
 
         assertEquals(DecisionCardLayout.TOOLTIP_FRAME, layout.descriptionTooltipPosition(first, width = 200, height = 20).x)
         assertEquals(
-            400 - DecisionCardLayout.TOOLTIP_FRAME - 200,
-            layout.descriptionTooltipPosition(last.copy(x = 390), width = 200, height = 20).x,
+            expected = 400 - DecisionCardLayout.TOOLTIP_FRAME - 200,
+            actual = layout.descriptionTooltipPosition(last.copy(x = 390), width = 200, height = 20).x,
         )
     }
 

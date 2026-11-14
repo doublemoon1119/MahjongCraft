@@ -10,7 +10,7 @@ import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDiscardPile
  * @return 依捨牌順序排列的保存資料。
  */
 fun RiichiDiscardPile.toPersistenceDto(registry: ComponentPersistenceConverter): RiichiDiscardPilePersistenceDto = RiichiDiscardPilePersistenceDto(
-    entries.map { it.toPersistenceDto(registry) },
+    entries = entries.map { it.toPersistenceDto(registry) },
 )
 
 /**

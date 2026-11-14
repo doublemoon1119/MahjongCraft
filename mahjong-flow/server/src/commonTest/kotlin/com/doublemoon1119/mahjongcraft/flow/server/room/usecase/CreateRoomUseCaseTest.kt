@@ -68,10 +68,10 @@ class CreateRoomUseCaseTest {
     fun `test create room with an ai host preserves strategy and readiness`() = runTest {
         val store = AuthoritativeStateStore()
         val useCase = CreateRoomUseCase(
-            store,
-            PlayerMembershipRepositoryImpl(),
-            FakeRoomSnapshotRepository(),
-            FakeRoomEventPublisher(),
+            authoritativeStateStore = store,
+            membershipRepository = PlayerMembershipRepositoryImpl(),
+            snapshotRepository = FakeRoomSnapshotRepository(),
+            eventPublisher = FakeRoomEventPublisher(),
         )
         val strategyKey = "test:host_ai"
         val result = useCase(roomId, hostId, GameConfig(config), hostAiStrategyKey = strategyKey)
@@ -151,10 +151,10 @@ class CreateRoomUseCaseTest {
         val otherVenueId = Uuid.random()
         memberships.claim(hostId, otherVenueId)
         val useCase = CreateRoomUseCase(
-            store,
-            memberships,
-            FakeRoomSnapshotRepository(),
-            FakeRoomEventPublisher(),
+            authoritativeStateStore = store,
+            membershipRepository = memberships,
+            snapshotRepository = FakeRoomSnapshotRepository(),
+            eventPublisher = FakeRoomEventPublisher(),
         )
 
         val result = useCase(roomId, hostId, GameConfig(config))

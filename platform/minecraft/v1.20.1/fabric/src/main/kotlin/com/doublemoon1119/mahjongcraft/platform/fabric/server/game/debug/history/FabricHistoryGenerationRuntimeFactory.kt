@@ -47,7 +47,7 @@ class FabricHistoryGenerationRuntimeFactory(
     private val ruleDecisionResolvers: RuleDecisionResolverRegistry,
     private val failurePolicy: ExtensionFailurePolicy,
 ) : HistoryGenerationRuntimeFactory {
-/**
+    /**
      * 建立全部座位都是真 AI 的完整對局。
      *
      * @param scenario 規則與場長情境。

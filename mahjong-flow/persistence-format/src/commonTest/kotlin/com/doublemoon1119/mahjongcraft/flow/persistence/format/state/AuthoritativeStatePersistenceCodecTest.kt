@@ -57,7 +57,7 @@ class AuthoritativeStatePersistenceCodecTest {
         val recording = HistoryRecordingState(
             nextSequenceByMatchId = mapOf(matchId to 4L),
             pendingEvents = listOf(
-                HistoryOutboxEvent(
+                element = HistoryOutboxEvent(
                     matchId = matchId,
                     venueId = Uuid.random(),
                     roundNumber = 1,
@@ -136,7 +136,7 @@ class AuthoritativeStatePersistenceCodecTest {
                 stepId = "mahjongcraft:test_step",
                 stepIndex = 1,
                 inputSpecsByPlayerId = mapOf(
-                    participantId to RuleDecisionInputSpec.SingleChoice(listOf("mahjongcraft:a", "mahjongcraft:b")),
+                    pair = participantId to RuleDecisionInputSpec.SingleChoice(listOf("mahjongcraft:a", "mahjongcraft:b")),
                 ),
                 timeSource = RuleDecisionTimeSource.ACTION_TIME,
             ),
@@ -194,8 +194,8 @@ class AuthoritativeStatePersistenceCodecTest {
     @Test
     fun `invalid schema version is rejected by migration registry`() {
         val envelope = json.decodeFromString(
-            PersistenceEnvelopeDto.serializer(),
-            codec.encode(emptyList(), emptyList()),
+            deserializer = PersistenceEnvelopeDto.serializer(),
+            string = codec.encode(emptyList(), emptyList()),
         ).copy(schemaVersion = 0)
 
         assertFailsWith<InvalidPersistenceSchemaVersionException> {
@@ -207,8 +207,8 @@ class AuthoritativeStatePersistenceCodecTest {
     @Test
     fun `newer schema version is rejected by migration registry`() {
         val envelope = json.decodeFromString(
-            PersistenceEnvelopeDto.serializer(),
-            codec.encode(emptyList(), emptyList()),
+            deserializer = PersistenceEnvelopeDto.serializer(),
+            string = codec.encode(emptyList(), emptyList()),
         ).copy(schemaVersion = Int.MAX_VALUE)
 
         assertFailsWith<UnsupportedPersistenceSchemaVersionException> {

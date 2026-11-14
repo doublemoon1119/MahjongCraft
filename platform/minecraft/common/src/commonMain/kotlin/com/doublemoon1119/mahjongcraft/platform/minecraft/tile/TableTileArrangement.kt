@@ -48,7 +48,7 @@ object TableTileArrangement {
             val melds = player.hand.melds.map { it.toPresentation(state.config.revealsClosedKanTiles).toTileGroup() }
             val setAsideTiles = player.tileAreas.areas.flatMap { area -> area.tiles.map { it to area.id } }
             val layout = MahjongPlayerAreaLayout.compute(
-                MahjongPlayerAreaLayoutInput(
+                input = MahjongPlayerAreaLayoutInput(
                     controllerX = input.controllerX,
                     controllerY = input.controllerY,
                     controllerZ = input.controllerZ,

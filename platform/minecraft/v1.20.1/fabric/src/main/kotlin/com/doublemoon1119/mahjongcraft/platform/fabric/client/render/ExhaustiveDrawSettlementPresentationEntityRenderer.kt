@@ -125,22 +125,22 @@ class ExhaustiveDrawSettlementPresentationEntityRenderer(
             if (rowProgress <= 0f) return@forEach
             val targetY = FIRST_ROW_Y + (row.position - 1.0).toFloat() * ROW_HEIGHT
             val settledEffect = SettlementRankingSettledEffect.resolve(
-                elapsed,
-                ExhaustiveDrawSettlementPresentationEntity.rankingSettledSoundTick(hasInformationPhase).toDouble(),
-                player.previousRank != player.currentRank,
+                elapsed = elapsed,
+                settledTick = ExhaustiveDrawSettlementPresentationEntity.rankingSettledSoundTick(hasInformationPhase).toDouble(),
+                rankChanged = player.previousRank != player.currentRank,
             )
             drawRow(
-                player,
-                entity.reasonId,
-                liveRanks.getValue(KotlinUuid.parse(player.playerId)),
-                rankingLayout,
-                row.score,
-                row.delta,
-                targetY - (1f - rowProgress) * ROW_REVEAL_OFFSET,
-                rankingAlpha * rowProgress,
-                settledEffect,
-                matrices,
-                vertexConsumers,
+                player = player,
+                reasonId = entity.reasonId,
+                displayedRank = liveRanks.getValue(KotlinUuid.parse(player.playerId)),
+                layout = rankingLayout,
+                score = row.score,
+                delta = row.delta,
+                y = targetY - (1f - rowProgress) * ROW_REVEAL_OFFSET,
+                alpha = rankingAlpha * rowProgress,
+                settledEffect = settledEffect,
+                matrices = matrices,
+                vertexConsumers = vertexConsumers,
             )
         }
         matrices.pop()
@@ -230,13 +230,13 @@ class ExhaustiveDrawSettlementPresentationEntityRenderer(
         matrices.translate(layout.rankRightX, 0f, 0f)
         matrices.scale(settledEffect.rankScale, settledEffect.rankScale, 1f)
         drawText(
-            Text.literal(displayedRank.toString()),
-            0f,
-            0f,
-            Alignment.RIGHT,
-            withAlpha(mixRgb(0xFFD86A, 0xFFFFFF, settledEffect.rankWhiteness), alpha),
-            matrices,
-            vertexConsumers,
+            text = Text.literal(displayedRank.toString()),
+            anchorX = 0f,
+            y = 0f,
+            alignment = Alignment.RIGHT,
+            color = withAlpha(mixRgb(0xFFD86A, 0xFFFFFF, settledEffect.rankWhiteness), alpha),
+            matrices = matrices,
+            vertexConsumers = vertexConsumers,
         )
         matrices.pop()
         renderPortrait(player, layout.faceLeftX, -FACE_TEXT_CENTER_OFFSET, alpha, matrices, vertexConsumers)
@@ -273,13 +273,13 @@ class ExhaustiveDrawSettlementPresentationEntityRenderer(
         renderHighlightQuad(left, right, y - 3f, y + 11f, alpha * effect.highlightAlpha, matrices, vertexConsumers)
         val sweepCenter = left + (right - left) * effect.sweepProgress
         renderHighlightQuad(
-            maxOf(left, sweepCenter - RANKING_SWEEP_HALF_WIDTH),
-            minOf(right, sweepCenter + RANKING_SWEEP_HALF_WIDTH),
-            y - 3f,
-            y + 11f,
-            alpha * effect.highlightAlpha * 1.6f,
-            matrices,
-            vertexConsumers,
+            left = maxOf(left, sweepCenter - RANKING_SWEEP_HALF_WIDTH),
+            right = minOf(right, sweepCenter + RANKING_SWEEP_HALF_WIDTH),
+            top = y - 3f,
+            bottom = y + 11f,
+            alpha = alpha * effect.highlightAlpha * 1.6f,
+            matrices = matrices,
+            vertexConsumers = vertexConsumers,
         )
     }
 
@@ -357,13 +357,13 @@ class ExhaustiveDrawSettlementPresentationEntityRenderer(
     ) {
         renderPortrait(player, layout.faceLeftX, y - FACE_TEXT_CENTER_OFFSET, alpha, matrices, vertexConsumers)
         drawText(
-            Text.literal(fitPlayerName(resolvePlayerName(player))),
-            layout.nameLeftX,
-            y,
-            Alignment.LEFT,
-            withAlpha(0xFFFFFF, alpha),
-            matrices,
-            vertexConsumers,
+            text = Text.literal(fitPlayerName(resolvePlayerName(player))),
+            anchorX = layout.nameLeftX,
+            y = y,
+            alignment = Alignment.LEFT,
+            color = withAlpha(0xFFFFFF, alpha),
+            matrices = matrices,
+            vertexConsumers = vertexConsumers,
         )
         settlementStatusText(reasonId, player)?.let { status ->
             drawText(status, layout.statusLeftX, y, Alignment.LEFT, withAlpha(0xFFE08A, alpha), matrices, vertexConsumers)

@@ -315,7 +315,7 @@ internal class HistorySummaryScreen(
             detail.rounds.sortedBy { it.roundNumber }.forEach { round ->
                 val duration = HistoryScreenText.intervalDuration(round.startedAtEpochMillis, round.endedAtEpochMillis)
                 add(
-                    Text.translatable(MinecraftHistoryScreenKeys.SUMMARY_ROUND_ROW, round.roundNumber, HistoryScreenText.endedAt(round.startedAtEpochMillis), HistoryScreenText.endedAt(round.endedAtEpochMillis), duration),
+                    text = Text.translatable(MinecraftHistoryScreenKeys.SUMMARY_ROUND_ROW, round.roundNumber, HistoryScreenText.endedAt(round.startedAtEpochMillis), HistoryScreenText.endedAt(round.endedAtEpochMillis), duration),
                     tooltip = Text.translatable(MinecraftHistoryScreenKeys.ROUND_OPEN_HINT).formatted(Formatting.AQUA),
                     roundNumber = round.roundNumber,
                 )
@@ -331,8 +331,8 @@ internal class HistorySummaryScreen(
      * @return 含欄間距的像素寬度。
      */
     private fun rankColumnWidth(detail: HistoryMatchDetailDto): Int = maxOf(
-        textRenderer.getWidth(Text.translatable(MinecraftHistoryScreenKeys.SUMMARY_RANK_HEADER)),
-        detail.summary.results.maxOfOrNull { textRenderer.getWidth(it.finalRank?.toString() ?: "—") } ?: textRenderer.getWidth("—"),
+        a = textRenderer.getWidth(Text.translatable(MinecraftHistoryScreenKeys.SUMMARY_RANK_HEADER)),
+        b = detail.summary.results.maxOfOrNull { textRenderer.getWidth(it.finalRank?.toString() ?: "—") } ?: textRenderer.getWidth("—"),
     ) + 8
 
     /**

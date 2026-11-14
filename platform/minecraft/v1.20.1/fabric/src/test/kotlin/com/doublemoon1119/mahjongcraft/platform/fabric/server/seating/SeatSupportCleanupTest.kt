@@ -29,7 +29,7 @@ class SeatSupportCleanupTest {
         val supports = listOf(Support("first"), Support("second"))
         val removed = mutableListOf<String>()
         assertTrue(
-            SeatSupportCleanup.clearEmpty(
+            actual = SeatSupportCleanup.clearEmpty(
                 supports = supports,
                 hasPassengers = { it.passengers > 0 },
                 discard = {
@@ -47,7 +47,7 @@ class SeatSupportCleanupTest {
     fun `occupied support prevents all cleanup and remains available to its original passenger`() {
         val supports = listOf(Support("empty"), Support("occupied", passengers = 1))
         assertFalse(
-            SeatSupportCleanup.clearEmpty(
+            actual = SeatSupportCleanup.clearEmpty(
                 supports = supports,
                 hasPassengers = { it.passengers > 0 },
                 discard = { it.removed = true },
@@ -63,7 +63,7 @@ class SeatSupportCleanupTest {
         val first = Support("first")
         val second = Support("second")
         assertFalse(
-            SeatSupportCleanup.clearEmpty(
+            actual = SeatSupportCleanup.clearEmpty(
                 supports = listOf(first, second),
                 hasPassengers = { it.passengers > 0 },
                 discard = {
@@ -83,7 +83,7 @@ class SeatSupportCleanupTest {
         assertFalse(SeatSupportCleanup.isOccupied(emptyList<Support>()) { it.passengers > 0 })
         var removals = 0
         assertTrue(
-            SeatSupportCleanup.clearEmpty(
+            actual = SeatSupportCleanup.clearEmpty(
                 supports = emptyList<Support>(),
                 hasPassengers = { it.passengers > 0 },
                 discard = { removals++ },

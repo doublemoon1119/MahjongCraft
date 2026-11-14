@@ -23,7 +23,7 @@ class DecisionCardTextTest {
         val resolver = DecisionTextResolver(
             actionVocabulary = GameActionVocabularyRegistryImpl().apply {
                 register(
-                    GameActionVocabularyDefinition(
+                    definition = GameActionVocabularyDefinition(
                         ruleModuleId = BuiltInRuleModuleIds.RIICHI,
                         actionId = "sample:declare",
                         vocabulary = GameActionVocabulary(

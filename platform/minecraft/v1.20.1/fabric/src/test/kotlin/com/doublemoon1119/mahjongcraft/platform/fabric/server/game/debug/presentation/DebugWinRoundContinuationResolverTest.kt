@@ -62,14 +62,14 @@ class DebugWinRoundContinuationResolverTest {
         state.setMode(table.id, DebugWinRoundContinuationMode.FULL)
 
         val directive = resolver.resolve(
-            WinRoundContinuationContext(
+            context = WinRoundContinuationContext(
                 previousTableState = table,
                 settledTableState = table,
                 winnerPlayerIds = setOf(table.players[3].id),
                 ronDiscarderId = table.players[1].id,
                 winningTileId = Uuid.random(),
             ),
-            ruleModule,
+            ruleModule = ruleModule,
         )
 
         val continueRound = assertContinueRound(directive)

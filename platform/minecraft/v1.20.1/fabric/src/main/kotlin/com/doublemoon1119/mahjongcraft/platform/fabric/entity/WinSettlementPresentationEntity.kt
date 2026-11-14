@@ -177,7 +177,7 @@ class WinSettlementPresentationEntity(
                 .map { delay -> afterEntriesTick + delay }
             (entryBeatTicks + lineBeatTicks).forEachIndexed { beatIndex, eventTick ->
                 add(
-                    WinSettlementSoundCueSnapshot(
+                    element = WinSettlementSoundCueSnapshot(
                         eventTick = eventTick,
                         soundId = DETAIL_SOUND_ID,
                         volume = SettlementPresentationSoundSpec.DETAIL_VOLUME,
@@ -191,7 +191,7 @@ class WinSettlementPresentationEntity(
             val scoreTick = afterEntriesTick + scoreRevealDelayTicks(layout)
             SettlementPresentationSoundSpec.TOTAL_SCORE_MELODY_PITCHES.forEachIndexed { noteIndex, pitch ->
                 add(
-                    WinSettlementSoundCueSnapshot(
+                    element = WinSettlementSoundCueSnapshot(
                         eventTick = scoreTick + noteIndex * SettlementPresentationSoundSpec.TOTAL_SCORE_MELODY_INTERVAL_TICKS,
                         soundId = DETAIL_SOUND_ID,
                         volume = SettlementPresentationSoundSpec.TOTAL_SCORE_VOLUME,
@@ -211,7 +211,7 @@ class WinSettlementPresentationEntity(
         val rankingStart = rankingStartTick()
         rankings.indices.forEach { rowIndex ->
             add(
-                WinSettlementSoundCueSnapshot(
+                element = WinSettlementSoundCueSnapshot(
                     eventTick = rankingStart + RANKING_ROW_START_TICKS + rowIndex * RANKING_ROW_STAGGER_TICKS,
                     soundId = DETAIL_SOUND_ID,
                     volume = SettlementPresentationSoundSpec.ROW_VOLUME,
@@ -222,7 +222,7 @@ class WinSettlementPresentationEntity(
         }
         if (rankings.any { it.previousRank != it.currentRank }) {
             add(
-                WinSettlementSoundCueSnapshot(
+                element = WinSettlementSoundCueSnapshot(
                     eventTick = rankingStart + RANKING_SETTLED_SOUND_TICKS,
                     soundId = RANKING_SETTLED_SOUND_ID,
                     volume = SettlementPresentationSoundSpec.RANKING_SETTLED_VOLUME,
@@ -538,10 +538,10 @@ class WinSettlementPresentationEntity(
             val values = row.split(F)
             if (values.size != 4) return@mapNotNull null
             WinSettlementSoundCueSnapshot(
-                values[0].toLongOrNull() ?: return@mapNotNull null,
-                values[1],
-                values[2].toFloatOrNull() ?: return@mapNotNull null,
-                values[3].toFloatOrNull() ?: return@mapNotNull null,
+                eventTick = values[0].toLongOrNull() ?: return@mapNotNull null,
+                soundId = values[1],
+                volume = values[2].toFloatOrNull() ?: return@mapNotNull null,
+                pitch = values[3].toFloatOrNull() ?: return@mapNotNull null,
             )
         }.orEmpty()
 
@@ -579,21 +579,21 @@ class WinSettlementPresentationEntity(
             val f = row.split(F)
             if (f.size != 9) return@mapNotNull null
             WinSettlementWinnerSnapshot(
-                f[0],
-                f[1].toIntOrNull() ?: return@mapNotNull null,
-                f[2] == "1",
-                f[3].ifBlank { null },
-                f[4].toIntOrNull() ?: return@mapNotNull null,
-                f[5].splitList(),
-                f[6].takeIf(String::isNotBlank)?.split(G)?.map { encodedMeld ->
+                playerId = f[0],
+                seatIndex = f[1].toIntOrNull() ?: return@mapNotNull null,
+                isAi = f[2] == "1",
+                responsiblePlayerId = f[3].ifBlank { null },
+                totalScore = f[4].toIntOrNull() ?: return@mapNotNull null,
+                handAssetKeys = f[5].splitList(),
+                melds = f[6].takeIf(String::isNotBlank)?.split(G)?.map { encodedMeld ->
                     val parts = encodedMeld.split('\u001a')
                     WinSettlementMeldSnapshot(
                         assetKeys = parts.first().splitList(),
                         faceDownIndices = parts.getOrNull(1)?.takeIf(String::isNotBlank)?.split(',')?.mapNotNull(String::toIntOrNull)?.toSet().orEmpty(),
                     )
                 }.orEmpty(),
-                f[7],
-                f[8].takeIf(String::isNotBlank)?.split(G)?.mapNotNull { item ->
+                winningTileAssetKey = f[7],
+                details = f[8].takeIf(String::isNotBlank)?.split(G)?.mapNotNull { item ->
                     val parts = item.split('\u001b')
                     if (parts.size != 3) null else WinSettlementDetailSnapshot(parts[0], parts[1], parts[2].splitList())
                 }.orEmpty(),

@@ -67,7 +67,7 @@ class PostActionExhaustiveDrawResolverRegistryTest {
         var received = false
         val registry = PostActionExhaustiveDrawResolverRegistry().apply {
             register(
-                object : PostActionExhaustiveDrawResolver {
+                resolver = object : PostActionExhaustiveDrawResolver {
                     override val id: String = "test:extension_action"
                     override val ruleModuleId: String = module.id
                     override val priority: Int = 0
@@ -85,12 +85,12 @@ class PostActionExhaustiveDrawResolverRegistryTest {
         }
 
         registry.resolve(
-            CompletedGameActionContext(
+            context = CompletedGameActionContext(
                 actorPlayerId = Uuid.random(),
                 action = GameAction.Extension(extensionAction),
                 tableState = FakeTableStateFactory.create(config = RiichiRuleConfig()),
             ),
-            module,
+            ruleModule = module,
         )
 
         assertTrue(received)

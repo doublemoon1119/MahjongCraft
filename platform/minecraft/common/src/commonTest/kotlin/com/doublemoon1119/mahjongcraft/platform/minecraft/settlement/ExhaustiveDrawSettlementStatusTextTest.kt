@@ -11,7 +11,7 @@ class ExhaustiveDrawSettlementStatusTextTest {
     /** 以第三方原因登記的結算用語。 */
     private val registry = ExhaustiveDrawReasonDisplayNameRegistryImpl().apply {
         register(
-            ExhaustiveDrawSettlementStatusLabelsDefinition(
+            definition = ExhaustiveDrawSettlementStatusLabelsDefinition(
                 reasonId = "example:normal",
                 labels = ExhaustiveDrawSettlementStatusLabels(
                     beneficiaryTranslationKey = "example.status.beneficiary",
@@ -26,7 +26,7 @@ class ExhaustiveDrawSettlementStatusTextTest {
     fun `unknown reason and missing status have no invented label`() {
         listOf(null, BuiltInExhaustiveDrawSettlementStatusIds.TENPAI, BuiltInExhaustiveDrawSettlementStatusIds.NOTEN, "example:unknown").forEach { statusId ->
             assertNull(
-                exhaustiveDrawSettlementStatusTranslationKey(
+                actual = exhaustiveDrawSettlementStatusTranslationKey(
                     reasonId = "other:normal",
                     statusId = statusId,
                     registry = registry,
@@ -39,16 +39,16 @@ class ExhaustiveDrawSettlementStatusTextTest {
     @Test
     fun `registered reason uses its settlement labels`() {
         assertEquals(
-            "example.status.beneficiary",
-            exhaustiveDrawSettlementStatusTranslationKey(
+            expected = "example.status.beneficiary",
+            actual = exhaustiveDrawSettlementStatusTranslationKey(
                 reasonId = "example:normal",
                 statusId = BuiltInExhaustiveDrawSettlementStatusIds.TENPAI,
                 registry = registry,
             ),
         )
         assertEquals(
-            "example.status.others",
-            exhaustiveDrawSettlementStatusTranslationKey(
+            expected = "example.status.others",
+            actual = exhaustiveDrawSettlementStatusTranslationKey(
                 reasonId = "example:normal",
                 statusId = BuiltInExhaustiveDrawSettlementStatusIds.NOTEN,
                 registry = registry,
@@ -60,7 +60,7 @@ class ExhaustiveDrawSettlementStatusTextTest {
     @Test
     fun `same path in another namespace is not treated as built in status`() {
         assertNull(
-            exhaustiveDrawSettlementStatusTranslationKey(
+            actual = exhaustiveDrawSettlementStatusTranslationKey(
                 reasonId = "example:normal",
                 statusId = "other:tenpai",
                 registry = registry,
@@ -72,15 +72,15 @@ class ExhaustiveDrawSettlementStatusTextTest {
     @Test
     fun `draw declaration requires the built in status id`() {
         assertEquals(
-            MinecraftMessageKeys.EXHAUSTIVE_DRAW_SETTLEMENT_STATUS_DRAW_DECLARATION,
-            exhaustiveDrawSettlementStatusTranslationKey(
+            expected = MinecraftMessageKeys.EXHAUSTIVE_DRAW_SETTLEMENT_STATUS_DRAW_DECLARATION,
+            actual = exhaustiveDrawSettlementStatusTranslationKey(
                 reasonId = "example:declaration",
                 statusId = BuiltInExhaustiveDrawSettlementStatusIds.DRAW_DECLARATION,
                 registry = registry,
             ),
         )
         assertNull(
-            exhaustiveDrawSettlementStatusTranslationKey(
+            actual = exhaustiveDrawSettlementStatusTranslationKey(
                 reasonId = "example:declaration",
                 statusId = "other:draw_declaration",
                 registry = registry,

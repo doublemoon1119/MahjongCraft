@@ -112,7 +112,7 @@ class RiichiLegalActionValidator(
             tableState.tileWall.remainingCount >= tableState.playerCount
         ) {
             val result = shantenCalculator.calculate(
-                handWithIncoming,
+                hand = handWithIncoming,
             )
             if (result is ShantenResult.Tenpai || result is ShantenResult.Complete) {
                 legalActions.add(RIICHI_GAME_ACTION)
@@ -176,10 +176,10 @@ class RiichiLegalActionValidator(
                     }
                     val triggerTile = candidate.firstOrNull { it.id == incomingTile.id } ?: candidate.first()
                     legalActions.add(
-                        GameAction.Kan(
-                            GameAction.KanType.CLOSED_KAN,
-                            triggerTile.id,
-                            candidate.filterNot { it.id == triggerTile.id }.map { it.id },
+                        element = GameAction.Kan(
+                            type = GameAction.KanType.CLOSED_KAN,
+                            tileId = triggerTile.id,
+                            withTiles = candidate.filterNot { it.id == triggerTile.id }.map { it.id },
                         ),
                     )
                 }
@@ -215,9 +215,9 @@ class RiichiLegalActionValidator(
                 // 振聽檢查：收到這張牌前的聽牌中，只要任何一種和牌張在自己的牌河或本巡放過的牌裡，
                 // 所有和牌張都不能榮和（捨牌振聽、同巡振聽）。
                 val currentHandResult = shantenCalculator.calculate(
-                    Hand(
-                        player.hand.standingTiles.toMutableList(),
-                        player.hand.exposedMelds.toMutableList(),
+                    hand = Hand(
+                        tiles = player.hand.standingTiles.toMutableList(),
+                        melds = player.hand.exposedMelds.toMutableList(),
                     ),
                 )
 
@@ -344,7 +344,7 @@ class RiichiLegalActionValidator(
             .filter { candidate ->
                 val discardResult = player.hand.discardById(candidate.id) ?: return@filter false
                 shantenCalculator.calculate(
-                    Hand(tiles = discardResult.hand.tiles, melds = discardResult.hand.melds),
+                    hand = Hand(tiles = discardResult.hand.tiles, melds = discardResult.hand.melds),
                 ) is ShantenResult.Tenpai
             }
             .map { it.id }
@@ -416,7 +416,7 @@ class RiichiLegalActionValidator(
         isRobbingKan: Boolean = false,
     ): RiichiQualifyingHan {
         val context = contextCalculator.calculate(
-            RiichiHandValueContextCalculator.Input(tableState, player, incomingTile, isTsumo, isRobbingKan),
+            input = RiichiHandValueContextCalculator.Input(tableState, player, incomingTile, isTsumo, isRobbingKan),
         )
         return handValueCalculator.calculate(context).qualifyingHan()
     }
@@ -442,8 +442,8 @@ class RiichiLegalActionValidator(
 
         // 取得暗槓前的聽牌列表
         val currentHand = Hand(
-            player.hand.standingTiles.toMutableList(),
-            player.hand.exposedMelds.toMutableList(),
+            tiles = player.hand.standingTiles.toMutableList(),
+            melds = player.hand.exposedMelds.toMutableList(),
         )
         val beforeKanResult = shantenCalculator.calculate(currentHand)
 

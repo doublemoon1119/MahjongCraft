@@ -32,12 +32,12 @@ class TableLocationRegistryTest {
         registry.put(netherTableId, TableLocation("minecraft:the_nether", 32, 64, -17))
 
         assertEquals(
-            listOf(overworldTableId),
-            registry.getByChunk(DimensionChunkKey("minecraft:overworld", 2, -2)).map { it.tableId },
+            expected = listOf(overworldTableId),
+            actual = registry.getByChunk(DimensionChunkKey("minecraft:overworld", 2, -2)).map { it.tableId },
         )
         assertEquals(
-            listOf(netherTableId),
-            registry.getByChunk(DimensionChunkKey("minecraft:the_nether", 2, -2)).map { it.tableId },
+            expected = listOf(netherTableId),
+            actual = registry.getByChunk(DimensionChunkKey("minecraft:the_nether", 2, -2)).map { it.tableId },
         )
     }
 

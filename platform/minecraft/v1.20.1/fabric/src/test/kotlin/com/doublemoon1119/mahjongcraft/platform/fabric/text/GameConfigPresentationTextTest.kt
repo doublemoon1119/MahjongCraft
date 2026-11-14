@@ -51,8 +51,8 @@ class GameConfigPresentationTextTest {
         )
 
         val text = gameConfigPresentationText(
-            GameConfigPresentationValue.MultiChoiceValue(setOf("example:three", "example:one")),
-            editor,
+            value = GameConfigPresentationValue.MultiChoiceValue(setOf("example:three", "example:one")),
+            editor = editor,
         )
 
         assertEquals("example.option.one, example.option.three", text.string)
@@ -63,12 +63,12 @@ class GameConfigPresentationTextTest {
     fun `multi choice text preserves unknown ids after registered options`() {
         val editor = GameConfigEditorSpec.MultiChoice(listOf("example:known"))
         val first = gameConfigPresentationText(
-            GameConfigPresentationValue.MultiChoiceValue(linkedSetOf("other:unknown", "example:known")),
-            editor,
+            value = GameConfigPresentationValue.MultiChoiceValue(linkedSetOf("other:unknown", "example:known")),
+            editor = editor,
         )
         val reordered = gameConfigPresentationText(
-            GameConfigPresentationValue.MultiChoiceValue(linkedSetOf("example:known", "other:unknown")),
-            editor,
+            value = GameConfigPresentationValue.MultiChoiceValue(linkedSetOf("example:known", "other:unknown")),
+            editor = editor,
         )
         assertEquals("example:known, other:unknown", first.string)
         assertEquals(first.string, reordered.string)

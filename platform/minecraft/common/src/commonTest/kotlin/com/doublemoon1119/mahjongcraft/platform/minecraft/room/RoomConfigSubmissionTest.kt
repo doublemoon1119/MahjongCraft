@@ -65,8 +65,8 @@ class RoomConfigSubmissionTest {
             val ruleDecision = current.copy(flowConfig = current.flowConfig.copy(ruleDecision = RuleDecisionConfig(seconds.seconds)))
             assertEquals(RoomConfigSubmission.Result.Invalid, review(ruleDecision))
             assertEquals(
-                RoomConfigSubmission.Result.Invalid,
-                review(ruleDecision, current, customPresentations, customModules),
+                expected = RoomConfigSubmission.Result.Invalid,
+                actual = review(ruleDecision, current, customPresentations, customModules),
             )
         }
     }
@@ -86,8 +86,8 @@ class RoomConfigSubmissionTest {
         )
 
         assertEquals(
-            RoomConfigSubmission.Result.Accepted(switched),
-            review(switched, currentWithFlow, presentations, modules),
+            expected = RoomConfigSubmission.Result.Accepted(switched),
+            actual = review(switched, currentWithFlow, presentations, modules),
         )
     }
 
@@ -103,8 +103,8 @@ class RoomConfigSubmissionTest {
     @Test
     fun `missing presentation is unavailable`() {
         assertEquals(
-            RoomConfigSubmission.Result.RuleUnavailable,
-            review(current, current, customPresentations, modules),
+            expected = RoomConfigSubmission.Result.RuleUnavailable,
+            actual = review(current, current, customPresentations, modules),
         )
     }
 
@@ -121,8 +121,8 @@ class RoomConfigSubmissionTest {
         )
 
         assertEquals(
-            RoomConfigSubmission.Result.Accepted(submitted),
-            review(submitted, customCurrent, customPresentations, customModules),
+            expected = RoomConfigSubmission.Result.Accepted(submitted),
+            actual = review(submitted, customCurrent, customPresentations, customModules),
         )
     }
 
@@ -135,8 +135,8 @@ class RoomConfigSubmissionTest {
                 flowConfig = customCurrent.flowConfig.copy(ruleDecision = RuleDecisionConfig(seconds.seconds)),
             )
             assertEquals(
-                RoomConfigSubmission.Result.Accepted(submitted),
-                review(submitted, customCurrent, customRuleDecisionPresentations, customModules),
+                expected = RoomConfigSubmission.Result.Accepted(submitted),
+                actual = review(submitted, customCurrent, customRuleDecisionPresentations, customModules),
             )
         }
 
@@ -144,16 +144,16 @@ class RoomConfigSubmissionTest {
             flowConfig = customCurrent.flowConfig.copy(ruleDecision = RuleDecisionConfig(3601.seconds)),
         )
         assertEquals(
-            RoomConfigSubmission.Result.Invalid,
-            review(overflow, customCurrent, customRuleDecisionPresentations, customModules),
+            expected = RoomConfigSubmission.Result.Invalid,
+            actual = review(overflow, customCurrent, customRuleDecisionPresentations, customModules),
         )
 
         val accepted = assertIs<RoomConfigSubmission.Result.Accepted>(
-            review(
-                customCurrent.copy(flowConfig = customCurrent.flowConfig.copy(ruleDecision = RuleDecisionConfig(47.seconds))),
-                customCurrent,
-                customRuleDecisionPresentations,
-                customModules,
+            value = review(
+                submitted = customCurrent.copy(flowConfig = customCurrent.flowConfig.copy(ruleDecision = RuleDecisionConfig(47.seconds))),
+                current = customCurrent,
+                presentations = customRuleDecisionPresentations,
+                modules = customModules,
             ),
         )
         val room = Room(id = Uuid.random(), hostId = Uuid.random(), gameConfig = accepted.config)
@@ -173,16 +173,16 @@ class RoomConfigSubmissionTest {
             flowConfig = currentWithRuleDecision.flowConfig.copy(ruleDecision = null),
         )
         assertEquals(
-            RoomConfigSubmission.Result.Accepted(switched),
-            review(switched, currentWithRuleDecision, mixedPresentations, mixedModules),
+            expected = RoomConfigSubmission.Result.Accepted(switched),
+            actual = review(switched, currentWithRuleDecision, mixedPresentations, mixedModules),
         )
 
         val changedAfterSwitch = switched.copy(
             flowConfig = switched.flowConfig.copy(ruleDecision = RuleDecisionConfig(46.seconds)),
         )
         assertEquals(
-            RoomConfigSubmission.Result.Invalid,
-            review(changedAfterSwitch, currentWithRuleDecision, mixedPresentations, mixedModules),
+            expected = RoomConfigSubmission.Result.Invalid,
+            actual = review(changedAfterSwitch, currentWithRuleDecision, mixedPresentations, mixedModules),
         )
     }
 
@@ -202,8 +202,8 @@ class RoomConfigSubmissionTest {
         )
 
         assertEquals(
-            RoomConfigSubmission.Result.Accepted(submitted),
-            review(submitted, source, mixedPresentations, mixedModules),
+            expected = RoomConfigSubmission.Result.Accepted(submitted),
+            actual = review(submitted, source, mixedPresentations, mixedModules),
         )
     }
 
@@ -214,8 +214,8 @@ class RoomConfigSubmissionTest {
         val submitted = GameConfig(RiichiRuleConfig())
 
         assertEquals(
-            RoomConfigSubmission.Result.Invalid,
-            review(submitted, source, mixedPresentations, mixedModules),
+            expected = RoomConfigSubmission.Result.Invalid,
+            actual = review(submitted, source, mixedPresentations, mixedModules),
         )
     }
 
@@ -228,20 +228,20 @@ class RoomConfigSubmissionTest {
             flowConfig = off.flowConfig.copy(ruleDecision = RuleDecisionConfig(47.seconds)),
         )
         val enabled = assertIs<RoomConfigSubmission.Result.Accepted>(
-            review(on, off, configAwareRuleDecisionPresentations, customModules),
+            value = review(on, off, configAwareRuleDecisionPresentations, customModules),
         )
         assertEquals(47.seconds, enabled.config.flowConfig.ruleDecision?.base)
         assertEquals(
-            RoomConfigSubmission.Result.Accepted(off),
-            review(off, enabled.config, configAwareRuleDecisionPresentations, customModules),
+            expected = RoomConfigSubmission.Result.Accepted(off),
+            actual = review(off, enabled.config, configAwareRuleDecisionPresentations, customModules),
         )
         assertEquals(
-            RoomConfigSubmission.Result.Invalid,
-            review(
-                off.copy(flowConfig = off.flowConfig.copy(ruleDecision = RuleDecisionConfig(47.seconds))),
-                enabled.config,
-                configAwareRuleDecisionPresentations,
-                customModules,
+            expected = RoomConfigSubmission.Result.Invalid,
+            actual = review(
+                submitted = off.copy(flowConfig = off.flowConfig.copy(ruleDecision = RuleDecisionConfig(47.seconds))),
+                current = enabled.config,
+                presentations = configAwareRuleDecisionPresentations,
+                modules = customModules,
             ),
         )
     }
@@ -315,7 +315,7 @@ class RoomConfigSubmissionTest {
     private companion object {
         /** 內建設定呈現。 */
         val presentations: GameConfigPresentationRegistry = GameConfigPresentationRegistryImpl(
-            RuleDecisionResolverRegistry(),
+            ruleDecisionResolvers = RuleDecisionResolverRegistry(),
         ).apply {
             BundledMinecraftMahjongExtensions.all.forEach { it.registerGameConfigPresentations(this) }
         }
@@ -328,7 +328,7 @@ class RoomConfigSubmissionTest {
 
         /** 只包含第三方測試規則的設定呈現。 */
         val customPresentations: GameConfigPresentationRegistry = GameConfigPresentationRegistryImpl(
-            RuleDecisionResolverRegistry(),
+            ruleDecisionResolvers = RuleDecisionResolverRegistry(),
         ).apply {
             register(customDefinition())
         }
@@ -347,7 +347,7 @@ class RoomConfigSubmissionTest {
         /** 只包含第三方測試規則的模組 registry。 */
         val customModules: MahjongModuleRegistry = MahjongModuleRegistryImpl().apply {
             register(
-                MahjongModuleDefinition(RiichiRuleConfig::class, "example:pairing") { config, id ->
+                definition = MahjongModuleDefinition(RiichiRuleConfig::class, "example:pairing") { config, id ->
                     RiichiRuleModule(id, config)
                 },
             )
@@ -363,12 +363,12 @@ class RoomConfigSubmissionTest {
         /** 同時包含有規則選擇的第三方規則與沒有規則選擇的內建規則的模組 registry。 */
         val mixedModules: MahjongModuleRegistry = MahjongModuleRegistryImpl().apply {
             register(
-                MahjongModuleDefinition(RiichiRuleConfig::class, "example:pairing") { config, id ->
+                definition = MahjongModuleDefinition(RiichiRuleConfig::class, "example:pairing") { config, id ->
                     RiichiRuleModule(id, config)
                 },
             )
             register(
-                MahjongModuleDefinition(ThreePlayerRiichiRuleConfig::class, "mahjongcraft:riichi_three_player") { config, id ->
+                definition = MahjongModuleDefinition(ThreePlayerRiichiRuleConfig::class, "mahjongcraft:riichi_three_player") { config, id ->
                     ThreePlayerRiichiRuleModule(id, config)
                 },
             )
@@ -383,7 +383,7 @@ class RoomConfigSubmissionTest {
             defaultRuleConfig = ::RiichiRuleConfig,
             categories = listOf(GameConfigCategoryDefinition("example:rule", "example.rule")),
             fields = listOf(
-                GameConfigFieldDefinition(
+                element = GameConfigFieldDefinition(
                     id = "example:initial_score",
                     categoryId = "example:rule",
                     nameTranslationKey = "example.initial_score",
@@ -407,22 +407,24 @@ class RoomConfigSubmissionTest {
         )
 
         private fun ruleDecisionResolverRegistry(configAware: Boolean = false) = RuleDecisionResolverRegistry().apply {
-            register(object : RuleDecisionResolver {
-                override val ruleModuleId: String = "example:pairing"
-                override fun ruleDecisionConfig(ruleConfig: MahjongRuleConfig): RuleDecisionConfig? = if (!configAware || (ruleConfig as? RiichiRuleConfig)?.scoreConfig?.initialScore == 30_000) {
-                    RuleDecisionConfig(30.seconds)
-                } else {
-                    null
-                }
+            register(
+                resolver = object : RuleDecisionResolver {
+                    override val ruleModuleId: String = "example:pairing"
+                    override fun ruleDecisionConfig(ruleConfig: MahjongRuleConfig): RuleDecisionConfig? = if (!configAware || (ruleConfig as? RiichiRuleConfig)?.scoreConfig?.initialScore == 30_000) {
+                        RuleDecisionConfig(30.seconds)
+                    } else {
+                        null
+                    }
 
-                override fun begin(timing: RuleDecisionTiming, tableState: TableState, ruleModule: MahjongRuleModule<*>) = error("not used")
+                    override fun begin(timing: RuleDecisionTiming, tableState: TableState, ruleModule: MahjongRuleModule<*>) = error("not used")
 
-                override fun resolve(
-                    tableState: TableState,
-                    decision: PendingRuleDecision,
-                    ruleModule: MahjongRuleModule<*>,
-                ): RuleDecisionResolution = error("not used")
-            })
+                    override fun resolve(
+                        tableState: TableState,
+                        decision: PendingRuleDecision,
+                        ruleModule: MahjongRuleModule<*>,
+                    ): RuleDecisionResolution = error("not used")
+                },
+            )
         }
     }
 }

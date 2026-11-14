@@ -54,8 +54,8 @@ class GameDecisionAuthorityResolverTest {
         )
 
         assertEquals(
-            mapOf(secondId to PlayerDecisionPhase.DISCARD_REACTION),
-            resolver.resolve(game),
+            expected = mapOf(secondId to PlayerDecisionPhase.DISCARD_REACTION),
+            actual = resolver.resolve(game),
         )
     }
 
@@ -82,8 +82,8 @@ class GameDecisionAuthorityResolverTest {
         )
 
         assertEquals(
-            mapOf(playerId to PlayerDecisionPhase.ROBBING_REACTION),
-            resolver.resolve(game),
+            expected = mapOf(playerId to PlayerDecisionPhase.ROBBING_REACTION),
+            actual = resolver.resolve(game),
         )
     }
 
@@ -101,8 +101,8 @@ class GameDecisionAuthorityResolverTest {
         )
 
         assertEquals(
-            mapOf(playerId to PlayerDecisionPhase.OWN_TURN),
-            resolver.resolve(game),
+            expected = mapOf(playerId to PlayerDecisionPhase.OWN_TURN),
+            actual = resolver.resolve(game),
         )
     }
 
@@ -118,8 +118,8 @@ class GameDecisionAuthorityResolverTest {
         )
 
         assertEquals(
-            mapOf(playerId to PlayerDecisionPhase.OWN_TURN),
-            resolver.resolve(game),
+            expected = mapOf(playerId to PlayerDecisionPhase.OWN_TURN),
+            actual = resolver.resolve(game),
         )
     }
 
@@ -218,8 +218,8 @@ class GameDecisionAuthorityResolverTest {
         val moduleRegistry = MahjongModuleRegistryImpl().apply { registerBundledRuleModules() }
         val contextResolver = PlayerActionContextResolver()
         val automaticResolver = GameDecisionAuthorityResolver(
-            contextResolver,
-            AutomaticDecisionEvaluator(moduleRegistry, GameVisibilityPolicyImpl(moduleRegistry, componentRegistry = bundledCoreExtensionRegistries().componentRegistry), contextResolver),
+            actionContextResolver = contextResolver,
+            automaticDecisionEvaluator = AutomaticDecisionEvaluator(moduleRegistry, GameVisibilityPolicyImpl(moduleRegistry, componentRegistry = bundledCoreExtensionRegistries().componentRegistry), contextResolver),
         )
         val discarded = IdentifiedTile(Uuid.random(), Tile.Honor.South)
         val discarder = FakeMahjongPlayerFactory.create(discardPile = FakeDiscardPile().discardTile(discarded))
@@ -235,7 +235,7 @@ class GameDecisionAuthorityResolverTest {
             ),
             flowConfig = GameFlowConfig(),
             enabledAutomaticControlIdsByPlayerId = mapOf(
-                respondent.id to setOf(BuiltInAutomaticControlIds.DECLINE_CALLS),
+                pair = respondent.id to setOf(BuiltInAutomaticControlIds.DECLINE_CALLS),
             ),
         )
 
@@ -284,8 +284,8 @@ class GameDecisionAuthorityResolverTest {
         )
 
         assertEquals(
-            mapOf(humanId to PlayerDecisionPhase.DISCARD_REACTION),
-            resolver.resolve(game),
+            expected = mapOf(humanId to PlayerDecisionPhase.DISCARD_REACTION),
+            actual = resolver.resolve(game),
         )
     }
 

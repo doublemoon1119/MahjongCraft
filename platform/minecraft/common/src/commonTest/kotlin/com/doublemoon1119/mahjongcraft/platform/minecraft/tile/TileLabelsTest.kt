@@ -48,12 +48,12 @@ class TileLabelsTest {
     @Test
     fun `seasonal flowers pair red chinese character with black order number`() {
         assertEquals(
-            TileLabel(topLeft = TileLabelText("1", TileLabelColor.BLACK), topRight = TileLabelText("春", TileLabelColor.RED), forced = true),
-            registry.find("flower_spring"),
+            expected = TileLabel(topLeft = TileLabelText("1", TileLabelColor.BLACK), topRight = TileLabelText("春", TileLabelColor.RED), forced = true),
+            actual = registry.find("flower_spring"),
         )
         assertEquals(
-            TileLabel(topLeft = TileLabelText("4", TileLabelColor.BLACK), topRight = TileLabelText("冬", TileLabelColor.RED), forced = true),
-            registry.find("flower_winter"),
+            expected = TileLabel(topLeft = TileLabelText("4", TileLabelColor.BLACK), topRight = TileLabelText("冬", TileLabelColor.RED), forced = true),
+            actual = registry.find("flower_winter"),
         )
     }
 
@@ -61,20 +61,20 @@ class TileLabelsTest {
     @Test
     fun `plant flowers pair black chinese character with red order number in plum orchid chrysanthemum bamboo order`() {
         assertEquals(
-            TileLabel(topLeft = TileLabelText("梅", TileLabelColor.BLACK), topRight = TileLabelText("1", TileLabelColor.RED), forced = true),
-            registry.find("flower_plum"),
+            expected = TileLabel(topLeft = TileLabelText("梅", TileLabelColor.BLACK), topRight = TileLabelText("1", TileLabelColor.RED), forced = true),
+            actual = registry.find("flower_plum"),
         )
         assertEquals(
-            TileLabel(topLeft = TileLabelText("蘭", TileLabelColor.BLACK), topRight = TileLabelText("2", TileLabelColor.RED), forced = true),
-            registry.find("flower_orchid"),
+            expected = TileLabel(topLeft = TileLabelText("蘭", TileLabelColor.BLACK), topRight = TileLabelText("2", TileLabelColor.RED), forced = true),
+            actual = registry.find("flower_orchid"),
         )
         assertEquals(
-            TileLabel(topLeft = TileLabelText("菊", TileLabelColor.BLACK), topRight = TileLabelText("3", TileLabelColor.RED), forced = true),
-            registry.find("flower_chrysanthemum"),
+            expected = TileLabel(topLeft = TileLabelText("菊", TileLabelColor.BLACK), topRight = TileLabelText("3", TileLabelColor.RED), forced = true),
+            actual = registry.find("flower_chrysanthemum"),
         )
         assertEquals(
-            TileLabel(topLeft = TileLabelText("竹", TileLabelColor.BLACK), topRight = TileLabelText("4", TileLabelColor.RED), forced = true),
-            registry.find("flower_bamboo"),
+            expected = TileLabel(topLeft = TileLabelText("竹", TileLabelColor.BLACK), topRight = TileLabelText("4", TileLabelColor.RED), forced = true),
+            actual = registry.find("flower_bamboo"),
         )
     }
 

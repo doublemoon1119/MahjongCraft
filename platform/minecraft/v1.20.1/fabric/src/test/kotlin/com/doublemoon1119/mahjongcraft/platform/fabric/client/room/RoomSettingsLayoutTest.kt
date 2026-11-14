@@ -50,8 +50,8 @@ class RoomSettingsLayoutTest {
     fun `offsets the control below the label only when compact`() {
         assertEquals(100, layout(width = 640).fieldControlY(100))
         assertEquals(
-            100 + RoomSettingsLayout.COMPACT_CONTROL_Y_OFFSET,
-            layout(width = RoomSettingsLayout.COMPACT_MIN_WIDTH - 1).fieldControlY(100),
+            expected = 100 + RoomSettingsLayout.COMPACT_CONTROL_Y_OFFSET,
+            actual = layout(width = RoomSettingsLayout.COMPACT_MIN_WIDTH - 1).fieldControlY(100),
         )
     }
 
@@ -62,12 +62,12 @@ class RoomSettingsLayoutTest {
 
         assertEquals(640 - RoomSettingsLayout.BOOLEAN_CONTROL_LEFT_INSET, layout.fieldControlLeft(GameConfigEditorSpec.BooleanToggle))
         assertEquals(
-            640 - RoomSettingsLayout.WIDE_CONTROL_LEFT_INSET,
-            layout.fieldControlLeft(GameConfigEditorSpec.IntegerInput(minimum = 0, maximum = 1)),
+            expected = 640 - RoomSettingsLayout.WIDE_CONTROL_LEFT_INSET,
+            actual = layout.fieldControlLeft(GameConfigEditorSpec.IntegerInput(minimum = 0, maximum = 1)),
         )
         assertEquals(
-            640 - RoomSettingsLayout.WIDE_CONTROL_LEFT_INSET,
-            layout.fieldControlLeft(GameConfigEditorSpec.MultiChoice(listOf("example:one"))),
+            expected = 640 - RoomSettingsLayout.WIDE_CONTROL_LEFT_INSET,
+            actual = layout.fieldControlLeft(GameConfigEditorSpec.MultiChoice(listOf("example:one"))),
         )
     }
 

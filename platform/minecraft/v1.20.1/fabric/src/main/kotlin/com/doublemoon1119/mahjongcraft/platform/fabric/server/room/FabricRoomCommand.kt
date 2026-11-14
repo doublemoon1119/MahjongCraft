@@ -104,8 +104,8 @@ class FabricRoomCommand(
                                                     .suggests(::suggestAiStrategies)
                                                     .executes { context ->
                                                         addAi(
-                                                            context.source,
-                                                            StringArgumentType.getString(context, STRATEGY_ARGUMENT),
+                                                            source = context.source,
+                                                            strategyKey = StringArgumentType.getString(context, STRATEGY_ARGUMENT),
                                                         )
                                                     },
                                             ),

@@ -16,7 +16,7 @@ fun registerRiichiPlayerComponents(registry: ComponentRegistrar) {
     registry.register(RiichiPlayerComponents.DECLARATION)
     registry.registerView(RiichiPlayerComponentViews.DECLARATION)
     registry.registerLifecycle(
-        ComponentLifecycleDefinition(
+        definition = ComponentLifecycleDefinition(
             component = RiichiPlayerComponents.DECLARATION,
             ownerType = BuiltInComponentOwners.PLAYER,
             appliesTo = { _, config -> config is RiichiFamilyRuleConfig },
@@ -26,7 +26,7 @@ fun registerRiichiPlayerComponents(registry: ComponentRegistrar) {
         ),
     )
     registry.registerProjection(
-        ComponentProjectionDefinition(
+        definition = ComponentProjectionDefinition(
             id = "mahjongcraft:riichi/projection/declaration",
             ownerType = BuiltInComponentOwners.PLAYER,
             component = RiichiPlayerComponents.DECLARATION,
@@ -38,7 +38,7 @@ fun registerRiichiPlayerComponents(registry: ComponentRegistrar) {
     registry.register(RiichiPlayerComponents.PERMANENT_FURITEN)
     registry.registerView(RiichiPlayerComponentViews.PERMANENT_FURITEN)
     registry.registerLifecycle(
-        ComponentLifecycleDefinition(
+        definition = ComponentLifecycleDefinition(
             component = RiichiPlayerComponents.PERMANENT_FURITEN,
             ownerType = BuiltInComponentOwners.PLAYER,
             appliesTo = { _, config -> config is RiichiFamilyRuleConfig },
@@ -48,7 +48,7 @@ fun registerRiichiPlayerComponents(registry: ComponentRegistrar) {
         ),
     )
     registry.registerProjection(
-        ComponentProjectionDefinition(
+        definition = ComponentProjectionDefinition(
             id = "mahjongcraft:riichi/projection/permanent_furiten",
             ownerType = BuiltInComponentOwners.PLAYER,
             component = RiichiPlayerComponents.PERMANENT_FURITEN,
@@ -63,7 +63,7 @@ fun registerRiichiPlayerComponents(registry: ComponentRegistrar) {
     registry.register(RiichiPlayerComponents.PAO_LIABILITY)
     registry.registerView(RiichiPlayerComponentViews.PAO_LIABILITY)
     registry.registerLifecycle(
-        ComponentLifecycleDefinition(
+        definition = ComponentLifecycleDefinition(
             component = RiichiPlayerComponents.PAO_LIABILITY,
             ownerType = BuiltInComponentOwners.PLAYER,
             appliesTo = { _, config -> config is RiichiFamilyRuleConfig },
@@ -73,7 +73,7 @@ fun registerRiichiPlayerComponents(registry: ComponentRegistrar) {
         ),
     )
     registry.registerProjection(
-        ComponentProjectionDefinition(
+        definition = ComponentProjectionDefinition(
             id = "mahjongcraft:riichi/projection/pao_liability",
             ownerType = BuiltInComponentOwners.PLAYER,
             component = RiichiPlayerComponents.PAO_LIABILITY,

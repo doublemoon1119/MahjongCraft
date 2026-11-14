@@ -199,7 +199,7 @@ class RiichiRuleModule(
         val playerForCalculation = player.copy(hand = player.hand.copy(lastDrawn = null))
 
         val context = createHandValueContextCalculator().calculate(
-            RiichiHandValueContextCalculator.Input(
+            input = RiichiHandValueContextCalculator.Input(
                 tableState = tableState,
                 player = playerForCalculation,
                 incomingTile = winningTile,
@@ -227,7 +227,7 @@ class RiichiRuleModule(
         // 榮和的胡牌張本來就不在贏家自己手上（是他家的捨牌），不像自摸的 lastDrawn 那樣有
         // 重複計數的疑慮，這裡不需要額外剝離手牌。
         val context = createHandValueContextCalculator().calculate(
-            RiichiHandValueContextCalculator.Input(
+            input = RiichiHandValueContextCalculator.Input(
                 tableState = tableState,
                 player = player,
                 incomingTile = winningTile,

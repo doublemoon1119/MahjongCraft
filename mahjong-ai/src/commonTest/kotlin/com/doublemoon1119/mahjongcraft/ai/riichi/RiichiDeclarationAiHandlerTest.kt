@@ -27,9 +27,9 @@ class RiichiDeclarationAiHandlerTest {
     @Test
     fun `every discard that keeps tenpai becomes a riichi candidate including the drawn tile`() {
         val self = player(
-            Wind.SOUTH,
+            wind = Wind.SOUTH,
             hand = hand(
-                listOf(m(2), m(3), m(4), p(4), p(5), p(6), p(7), p(8), p(9), s(2), s(3), s(4), s(5)),
+                tiles = listOf(m(2), m(3), m(4), p(4), p(5), p(6), p(7), p(8), p(9), s(2), s(3), s(4), s(5)),
                 drawn = Tile.Honor.North,
             ),
         )
@@ -41,10 +41,10 @@ class RiichiDeclarationAiHandlerTest {
         val candidates = extensionRegistry.createCandidates(RiichiGameAction.Riichi, context(table, self, legalActions = listOf(RIICHI_GAME_ACTION)))
 
         assertEquals(
-            listOf(two, five, drawn).map { tile ->
+            expected = listOf(two, five, drawn).map { tile ->
                 ExtensionCommandCandidate(GameCommand.Extension(RiichiGameCommand(tile.id)), tile.id, RIICHI_GAME_ACTION)
             }.toSet(),
-            candidates.toSet(),
+            actual = candidates.toSet(),
         )
     }
 
@@ -56,9 +56,9 @@ class RiichiDeclarationAiHandlerTest {
             tiles = List(4) { FakeIdentifiedTileFactory.create(Tile.Honor.White) },
         )
         val self = player(
-            Wind.SOUTH,
+            wind = Wind.SOUTH,
             hand = hand(
-                listOf(p(4), p(5), p(6), p(7), p(8), p(9), s(2), s(3), s(4), s(5)),
+                tiles = listOf(p(4), p(5), p(6), p(7), p(8), p(9), s(2), s(3), s(4), s(5)),
                 drawn = Tile.Honor.North,
                 melds = listOf(kan),
             ),

@@ -32,12 +32,12 @@ class RoundTransitionRuleHookTest {
         val module = RiichiRuleModule("mahjongcraft:riichi", RiichiRuleConfig())
 
         assertEquals(
-            RoundTransitionDirective.RepeatDealer,
-            module.resolveRoundTransition(context(state, RoundCompletionClassification.WIN, setOf(players.first().id))),
+            expected = RoundTransitionDirective.RepeatDealer,
+            actual = module.resolveRoundTransition(context(state, RoundCompletionClassification.WIN, setOf(players.first().id))),
         )
         assertEquals(
-            RoundTransitionDirective.PassToNextSeat,
-            module.resolveRoundTransition(context(state, RoundCompletionClassification.WIN, setOf(players.last().id))),
+            expected = RoundTransitionDirective.PassToNextSeat,
+            actual = module.resolveRoundTransition(context(state, RoundCompletionClassification.WIN, setOf(players.last().id))),
         )
     }
 
@@ -52,24 +52,24 @@ class RoundTransitionRuleHookTest {
         val module = RiichiRuleModule("mahjongcraft:riichi", RiichiRuleConfig())
 
         assertEquals(
-            RoundTransitionDirective.RepeatDealer,
-            module.resolveRoundTransition(
-                context(
-                    state,
-                    RoundCompletionClassification.EXHAUSTIVE_DRAW,
-                    setOf(players.first().id),
-                    RiichiExhaustiveDrawReason.Normal,
+            expected = RoundTransitionDirective.RepeatDealer,
+            actual = module.resolveRoundTransition(
+                context = context(
+                    state = state,
+                    classification = RoundCompletionClassification.EXHAUSTIVE_DRAW,
+                    beneficiaries = setOf(players.first().id),
+                    drawReason = RiichiExhaustiveDrawReason.Normal,
                 ),
             ),
         )
         assertEquals(
-            RoundTransitionDirective.PassToNextSeat,
-            module.resolveRoundTransition(
-                context(
-                    state,
-                    RoundCompletionClassification.EXHAUSTIVE_DRAW,
-                    setOf(players.last().id),
-                    RiichiExhaustiveDrawReason.Normal,
+            expected = RoundTransitionDirective.PassToNextSeat,
+            actual = module.resolveRoundTransition(
+                context = context(
+                    state = state,
+                    classification = RoundCompletionClassification.EXHAUSTIVE_DRAW,
+                    beneficiaries = setOf(players.last().id),
+                    drawReason = RiichiExhaustiveDrawReason.Normal,
                 ),
             ),
         )
@@ -86,13 +86,13 @@ class RoundTransitionRuleHookTest {
         val module = TaiwanRuleModule("mahjongcraft:taiwan", TaiwanRuleConfig())
 
         assertEquals(
-            RoundTransitionDirective.RepeatDealer,
-            module.resolveRoundTransition(
-                context(
-                    state,
-                    RoundCompletionClassification.ABORTIVE_DRAW,
-                    emptySet(),
-                    RiichiExhaustiveDrawReason.Normal,
+            expected = RoundTransitionDirective.RepeatDealer,
+            actual = module.resolveRoundTransition(
+                context = context(
+                    state = state,
+                    classification = RoundCompletionClassification.ABORTIVE_DRAW,
+                    beneficiaries = emptySet(),
+                    drawReason = RiichiExhaustiveDrawReason.Normal,
                 ),
             ),
         )
@@ -111,17 +111,17 @@ class RoundTransitionRuleHookTest {
         )
 
         assertEquals(
-            RoundTransitionDirective.RepeatDealer,
-            module.resolveRoundTransition(context(state, RoundCompletionClassification.WIN, setOf(players.last().id))),
+            expected = RoundTransitionDirective.RepeatDealer,
+            actual = module.resolveRoundTransition(context(state, RoundCompletionClassification.WIN, setOf(players.last().id))),
         )
         assertEquals(
-            RoundTransitionDirective.PassToNextSeat,
-            module.resolveRoundTransition(
-                context(
-                    state,
-                    RoundCompletionClassification.ABORTIVE_DRAW,
-                    emptySet(),
-                    RiichiExhaustiveDrawReason.SuuchaRiichi,
+            expected = RoundTransitionDirective.PassToNextSeat,
+            actual = module.resolveRoundTransition(
+                context = context(
+                    state = state,
+                    classification = RoundCompletionClassification.ABORTIVE_DRAW,
+                    beneficiaries = emptySet(),
+                    drawReason = RiichiExhaustiveDrawReason.SuuchaRiichi,
                 ),
             ),
         )

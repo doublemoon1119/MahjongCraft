@@ -40,8 +40,8 @@ class TableTileLayoutProfileRegistryTest {
         BundledMinecraftMahjongExtensions.all.forEach { it.registerTableTileLayoutProfiles(registry) }
 
         assertEquals(
-            setOf(BuiltInRuleModuleIds.RIICHI, BuiltInRuleModuleIds.RIICHI_THREE_PLAYER, BuiltInRuleModuleIds.TAIWAN),
-            registry.registrationKeys,
+            expected = setOf(BuiltInRuleModuleIds.RIICHI, BuiltInRuleModuleIds.RIICHI_THREE_PLAYER, BuiltInRuleModuleIds.TAIWAN),
+            actual = registry.registrationKeys,
         )
     }
 
@@ -52,8 +52,8 @@ class TableTileLayoutProfileRegistryTest {
         BundledMinecraftMahjongExtensions.all.forEach { it.registerTableTileLayoutProfiles(registry) }
 
         assertEquals(
-            setOf(BuiltInRuleModuleIds.TAIWAN),
-            registry.registrationKeys.filter { registry.profileFor(it).highlightsLatestDiscard }.toSet(),
+            expected = setOf(BuiltInRuleModuleIds.TAIWAN),
+            actual = registry.registrationKeys.filter { registry.profileFor(it).highlightsLatestDiscard }.toSet(),
         )
     }
 }

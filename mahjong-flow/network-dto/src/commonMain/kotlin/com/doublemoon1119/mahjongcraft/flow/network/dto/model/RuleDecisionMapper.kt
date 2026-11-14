@@ -16,9 +16,9 @@ fun RuleDecisionInputSpec.toDto(): RuleDecisionInputSpecDto = when (this) {
         passOptionId = passOptionId,
     )
     is RuleDecisionInputSpec.TileSelection -> RuleDecisionInputSpecDto.TileSelection(
-        eligibleTileIds.mapTo(mutableSetOf(), Uuid::toString),
-        minCount,
-        maxCount,
+        eligibleTileIds = eligibleTileIds.mapTo(mutableSetOf(), Uuid::toString),
+        minCount = minCount,
+        maxCount = maxCount,
     )
 }
 
@@ -35,9 +35,9 @@ fun RuleDecisionInputSpecDto.toDomain(): RuleDecisionInputSpec = when (this) {
         passOptionId = passOptionId,
     )
     is RuleDecisionInputSpecDto.TileSelection -> RuleDecisionInputSpec.TileSelection(
-        eligibleTileIds.mapTo(mutableSetOf(), Uuid::parse),
-        minCount,
-        maxCount,
+        eligibleTileIds = eligibleTileIds.mapTo(mutableSetOf(), Uuid::parse),
+        minCount = minCount,
+        maxCount = maxCount,
     )
 }
 

@@ -22,12 +22,12 @@ class GameActionSoundPresentationRegistryTest {
         }
 
         assertEquals(
-            RiichiGameActionVoiceSoundIds.RIICHI,
-            registry.find(BuiltInRuleModuleIds.RIICHI, GameAction.Extension(RiichiGameAction.Riichi))?.soundId,
+            expected = RiichiGameActionVoiceSoundIds.RIICHI,
+            actual = registry.find(BuiltInRuleModuleIds.RIICHI, GameAction.Extension(RiichiGameAction.Riichi))?.soundId,
         )
         assertEquals(
-            RiichiGameActionVoiceSoundIds.TSUMO,
-            registry.find(BuiltInRuleModuleIds.RIICHI, GameAction.Tsumo)?.soundId,
+            expected = RiichiGameActionVoiceSoundIds.TSUMO,
+            actual = registry.find(BuiltInRuleModuleIds.RIICHI, GameAction.Tsumo)?.soundId,
         )
         assertNull(registry.find(BuiltInRuleModuleIds.TAIWAN, GameAction.Tsumo))
     }

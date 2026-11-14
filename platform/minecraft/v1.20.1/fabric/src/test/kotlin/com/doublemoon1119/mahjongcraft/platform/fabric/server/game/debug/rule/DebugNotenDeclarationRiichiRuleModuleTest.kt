@@ -24,8 +24,8 @@ import kotlin.test.assertEquals
 class DebugNotenDeclarationRiichiRuleModuleTest {
     /** 受測規則模組。 */
     private val module = DebugNotenDeclarationRiichiRuleModule(
-        DebugNotenDeclarationRiichiRuleModule.ID,
-        DebugNotenDeclarationRiichiRuleConfig(RiichiRuleConfig()),
+        id = DebugNotenDeclarationRiichiRuleModule.ID,
+        config = DebugNotenDeclarationRiichiRuleConfig(RiichiRuleConfig()),
     )
 
     /** 動作紀錄中有宣告不聽的聽牌玩家，一般流局結算時不公開手牌，照不聽支付罰符。 */
@@ -68,8 +68,8 @@ class DebugNotenDeclarationRiichiRuleModuleTest {
         }
         assertEquals(config, persistenceRegistries.ruleConfigs.decode(persistenceRegistries.ruleConfigs.encode(config)))
         assertEquals(
-            DebugDeclareNotenAction,
-            persistenceRegistries.extensionGameActions.decode(persistenceRegistries.extensionGameActions.encode(DebugDeclareNotenAction)),
+            expected = DebugDeclareNotenAction,
+            actual = persistenceRegistries.extensionGameActions.decode(persistenceRegistries.extensionGameActions.encode(DebugDeclareNotenAction)),
         )
     }
 
@@ -86,7 +86,7 @@ class DebugNotenDeclarationRiichiRuleModuleTest {
      * @return 不聽的手牌。
      */
     private fun notenHand(): Hand = hand(
-        listOf(Tile.Suit.Character, Tile.Suit.Dot, Tile.Suit.Bamboo).flatMap { suit -> listOf(1, 4, 7).map { Tile.Numeric(suit, it) } } +
+        tiles = listOf(Tile.Suit.Character, Tile.Suit.Dot, Tile.Suit.Bamboo).flatMap { suit -> listOf(1, 4, 7).map { Tile.Numeric(suit, it) } } +
             listOf(Tile.Honor.East, Tile.Honor.South, Tile.Honor.West, Tile.Honor.North),
     )
 

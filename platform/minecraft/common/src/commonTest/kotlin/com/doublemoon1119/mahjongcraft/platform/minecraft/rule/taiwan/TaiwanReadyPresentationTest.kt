@@ -31,8 +31,8 @@ class TaiwanReadyPresentationTest {
         val label = assertNotNull(vocabulary.find(BuiltInRuleModuleIds.TAIWAN, TaiwanGameAction.DeclareReady.id))
         assertNotNull(label.descriptionKey)
         assertEquals(
-            TaiwanGameActionVoiceSoundIds.READY,
-            sounds.find(BuiltInRuleModuleIds.TAIWAN, GameAction.Extension(TaiwanGameAction.DeclareReady))?.soundId,
+            expected = TaiwanGameActionVoiceSoundIds.READY,
+            actual = sounds.find(BuiltInRuleModuleIds.TAIWAN, GameAction.Extension(TaiwanGameAction.DeclareReady))?.soundId,
         )
         TaiwanReadyKind.entries.forEach { kind -> assertNotNull(indicators.find(kind.indicatorId), "$kind") }
         assertEquals("mahjongcraft.taiwan.indicator.dealer_streak", indicators.find(TaiwanPublicIndicatorIds.DEALER_STREAK)?.translationKey)

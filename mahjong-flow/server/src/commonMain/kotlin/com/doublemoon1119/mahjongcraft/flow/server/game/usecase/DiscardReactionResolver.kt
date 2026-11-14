@@ -110,7 +110,7 @@ internal object DiscardReactionResolver {
             } else {
                 stateAfterDiscard.copy(
                     turnPhase = TurnPhase.AwaitingDiscardReaction(
-                        PendingReaction(
+                        reaction = PendingReaction(
                             discarderId = discarderId,
                             tileId = discardedTile.id,
                             eligiblePlayerIds = eligiblePlayerIds,

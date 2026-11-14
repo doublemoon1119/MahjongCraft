@@ -19,7 +19,7 @@ class AiCharacterSnapshotCodec {
      * @return 不帶回呼或原生身分的保存文字。
      */
     fun encode(snapshot: AiCharacterSnapshot): String = format.encodeToString(
-        SnapshotDto(snapshot.characterId, snapshot.definition?.toPersistenceDefinitionDto(), snapshot.displayName),
+        value = SnapshotDto(snapshot.characterId, snapshot.definition?.toPersistenceDefinitionDto(), snapshot.displayName),
     )
 
     /**

@@ -73,11 +73,11 @@ internal object TileAnimationSteps {
         val viewingEndGameTime = flipAbsoluteGameTime + MahjongTileTableLayout.DEAL_FLIP_DURATION_TICKS +
             DEAL_VIEWING_BUFFER_TICKS
         tile.enqueueAll(
-            buildList {
+            steps = buildList {
                 add(AnimationStep.WaitUntil(liftAbsoluteGameTime))
                 if (playDealSound) add(dealBatchSound(liftAbsoluteGameTime))
                 addAll(
-                    listOf(
+                    elements = listOf(
                         AnimationStep.Teleport(wallX, peakY, wallZ, wallYaw),
                         AnimationStep.PlayMotion(
                             durationTicks = MahjongTileTableLayout.DEAL_LIFT_DURATION_TICKS,
@@ -107,12 +107,12 @@ internal object TileAnimationSteps {
                 add(AnimationStep.WaitUntil(flipAbsoluteGameTime))
                 if (playFlipSound) add(handTurnSound(flipAbsoluteGameTime))
                 addAll(
-                    listOf(
+                    elements = listOf(
                         AnimationStep.Teleport(
-                            postFlipPlacement.x,
-                            postFlipPlacement.y,
-                            postFlipPlacement.z,
-                            postFlipPlacement.yaw,
+                            x = postFlipPlacement.x,
+                            y = postFlipPlacement.y,
+                            z = postFlipPlacement.z,
+                            yaw = postFlipPlacement.yaw,
                         ),
                         AnimationStep.Custom(endPose),
                         AnimationStep.PlayMotion(
@@ -173,7 +173,7 @@ internal object TileAnimationSteps {
                 steps += AnimationStep.Teleport(to.x, to.y, to.z, to.yaw)
                 steps += AnimationStep.Custom(toPose)
                 steps += AnimationStep.WaitUntil(
-                    startGameTime + MahjongTileTableLayout.DRAW_LIFT_DURATION_TICKS + MahjongTileTableLayout.DRAW_SNAP_GAP_TICKS,
+                    gameTime = startGameTime + MahjongTileTableLayout.DRAW_LIFT_DURATION_TICKS + MahjongTileTableLayout.DRAW_SNAP_GAP_TICKS,
                 )
                 steps += AnimationStep.SetInvisible(false)
                 steps += AnimationStep.PlayMotion(
@@ -337,7 +337,7 @@ internal object TileAnimationSteps {
                 add(handTurnSound(startGameTime + MahjongTileTableLayout.WIN_LAYDOWN_DURATION_TICKS))
             }
             addAll(
-                listOf(
+                elements = listOf(
                     AnimationStep.WaitUntil(startGameTime),
                     AnimationStep.Custom(MahjongTilePose.FACE_UP),
                     AnimationStep.PlayMotion(
@@ -365,12 +365,12 @@ internal object TileAnimationSteps {
     fun scheduleConceal(tile: MahjongTileEntity, startGameTime: Long, playGroupSound: Boolean = false) {
         val startPose = tile.tilePose
         tile.enqueueAll(
-            buildList {
+            steps = buildList {
                 if (playGroupSound) {
                     add(handTurnSound(startGameTime + MahjongTileTableLayout.WIN_LAYDOWN_DURATION_TICKS))
                 }
                 addAll(
-                    listOf(
+                    elements = listOf(
                         AnimationStep.WaitUntil(startGameTime),
                         AnimationStep.Custom(MahjongTilePose.FACE_DOWN),
                         AnimationStep.PlayMotion(

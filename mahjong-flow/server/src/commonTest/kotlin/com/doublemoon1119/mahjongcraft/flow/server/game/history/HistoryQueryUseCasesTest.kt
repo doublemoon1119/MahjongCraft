@@ -42,12 +42,12 @@ class HistoryQueryUseCasesTest {
         val access = HistoryQueryAccess(Uuid.random(), isAdministrator = false)
         val matchId = Uuid.random()
         val events = GetHistoryRoundEventsUseCase(repository) { HistoryQueryPolicy() }(
-            access,
-            HistoryRoundEventsRequest(matchId, HistoryQueryScope.ALL, roundNumber = 1),
+            access = access,
+            request = HistoryRoundEventsRequest(matchId, HistoryQueryScope.ALL, roundNumber = 1),
         )
         val state = GetHistoryRoundStateUseCase(repository) { HistoryQueryPolicy() }(
-            access,
-            HistoryRoundStateRequest(matchId, HistoryQueryScope.ALL, roundNumber = 1),
+            access = access,
+            request = HistoryRoundStateRequest(matchId, HistoryQueryScope.ALL, roundNumber = 1),
         )
         assertError(events, HistoryQueryErrorCode.ACCESS_DENIED)
         assertError(state, HistoryQueryErrorCode.ACCESS_DENIED)
@@ -110,8 +110,8 @@ class HistoryQueryUseCasesTest {
         val repository = RecordingHistoryQueryRepository()
         val useCase = GetHistorySummaryUseCase(repository) { HistoryQueryPolicy() }
         val result = useCase(
-            HistoryQueryAccess(Uuid.random(), false),
-            HistorySummaryRequest(Uuid.random(), HistoryQueryScope.ALL),
+            access = HistoryQueryAccess(Uuid.random(), false),
+            request = HistorySummaryRequest(Uuid.random(), HistoryQueryScope.ALL),
         )
         assertTrue(result is HistoryQueryResult.Failure, "Expected a denied summary query")
         assertEquals("ACCESS_DENIED", result.error.code.name)
@@ -124,8 +124,8 @@ class HistoryQueryUseCasesTest {
         val repository = RecordingHistoryQueryRepository()
         val useCase = GetHistoryRuleSettingsUseCase(repository) { HistoryQueryPolicy() }
         val result = useCase(
-            HistoryQueryAccess(Uuid.random(), false),
-            HistoryRuleSettingsRequest(Uuid.random(), HistoryQueryScope.ALL),
+            access = HistoryQueryAccess(Uuid.random(), false),
+            request = HistoryRuleSettingsRequest(Uuid.random(), HistoryQueryScope.ALL),
         )
         assertError(result, HistoryQueryErrorCode.ACCESS_DENIED)
         assertEquals(0, repository.ruleSettingsCalls)
@@ -137,8 +137,8 @@ class HistoryQueryUseCasesTest {
         val repository = RecordingHistoryQueryRepository()
         val useCase = GetHistoryRuleSettingsUseCase(repository) { HistoryQueryPolicy(queryEnabled = false) }
         val result = useCase(
-            HistoryQueryAccess(Uuid.random(), false),
-            HistoryRuleSettingsRequest(Uuid.random()),
+            access = HistoryQueryAccess(Uuid.random(), false),
+            request = HistoryRuleSettingsRequest(Uuid.random()),
         )
         assertError(result, HistoryQueryErrorCode.QUERY_DISABLED)
         assertEquals(0, repository.ruleSettingsCalls)
@@ -150,8 +150,8 @@ class HistoryQueryUseCasesTest {
         val repository = RecordingHistoryQueryRepository()
         val access = HistoryQueryAccess(Uuid.random(), false)
         val result = GetHistoryRuleSettingsUseCase(repository) { HistoryQueryPolicy() }(
-            access,
-            HistoryRuleSettingsRequest(Uuid.random()),
+            access = access,
+            request = HistoryRuleSettingsRequest(Uuid.random()),
         )
         assertTrue(result is HistoryQueryResult.Success, "Expected rule settings query to succeed")
         assertEquals(access, repository.lastRuleSettingsAccess)
@@ -165,8 +165,8 @@ class HistoryQueryUseCasesTest {
         val result = GetHistoryRuleSettingsUseCase(repository) {
             HistoryQueryPolicy(allowAdministratorQuery = false)
         }(
-            HistoryQueryAccess(Uuid.random(), true),
-            HistoryRuleSettingsRequest(Uuid.random(), HistoryQueryScope.ALL),
+            access = HistoryQueryAccess(Uuid.random(), true),
+            request = HistoryRuleSettingsRequest(Uuid.random(), HistoryQueryScope.ALL),
         )
         assertError(result, HistoryQueryErrorCode.ACCESS_DENIED)
         assertEquals(0, repository.ruleSettingsCalls)
@@ -345,7 +345,7 @@ class HistoryQueryUseCasesTest {
         ): HistoryQueryResult<HistoryMatchDetail> {
             summaryCalls++
             return HistoryQueryResult.Failure(
-                HistoryQueryError(HistoryQueryErrorCode.NOT_AVAILABLE, "No test history"),
+                error = HistoryQueryError(HistoryQueryErrorCode.NOT_AVAILABLE, "No test history"),
             )
         }
 
@@ -363,8 +363,8 @@ class HistoryQueryUseCasesTest {
             ruleSettingsCalls++
             lastRuleSettingsAccess = access
             return HistoryQueryResult.Success(
-                HistoryRuleSettings(
-                    GameConfig(RiichiRuleConfig()),
+                value = HistoryRuleSettings(
+                    config = GameConfig(RiichiRuleConfig()),
                 ),
             )
         }

@@ -99,7 +99,7 @@ object BundledTaiwanMinecraftExtension : MinecraftMahjongExtension {
 
     override fun registerGameActionVocabulary(registry: GameActionVocabularyRegistrar) {
         registry.register(
-            GameActionVocabularyDefinition(
+            definition = GameActionVocabularyDefinition(
                 ruleModuleId = BuiltInRuleModuleIds.TAIWAN,
                 actionId = TaiwanGameAction.RevealFlower.id,
                 vocabulary = GameActionVocabulary(
@@ -110,7 +110,7 @@ object BundledTaiwanMinecraftExtension : MinecraftMahjongExtension {
             ),
         )
         registry.register(
-            GameActionVocabularyDefinition(
+            definition = GameActionVocabularyDefinition(
                 ruleModuleId = BuiltInRuleModuleIds.TAIWAN,
                 actionId = TaiwanGameAction.DeclareReady.id,
                 vocabulary = GameActionVocabulary(
@@ -122,7 +122,7 @@ object BundledTaiwanMinecraftExtension : MinecraftMahjongExtension {
         )
         // 台灣麻將把胡別人打出的牌說成「胡牌」，不是「榮和」。
         registry.register(
-            GameActionVocabularyDefinition(
+            definition = GameActionVocabularyDefinition(
                 ruleModuleId = BuiltInRuleModuleIds.TAIWAN,
                 actionId = BuiltInGameActionIds.RON,
                 vocabulary = GameActionVocabulary(labelKey = TaiwanTranslationKeys.ACTION_HU, messageKey = TaiwanTranslationKeys.ACTION_HU_MESSAGE, order = HU_ACTION_ORDER),
@@ -204,7 +204,7 @@ object BundledTaiwanMinecraftExtension : MinecraftMahjongExtension {
         registry.register(TaiwanWinSettlementTemplates.TEMPLATE)
         registry.register(WinSettlementRuleTemplateBindingDefinition(BuiltInRuleModuleIds.TAIWAN, TaiwanWinSettlementTemplates.TEMPLATE_KEY))
         registry.register(
-            WinSettlementPresentationFieldProviderDefinition(TaiwanWinSettlementTemplates.FLOWERS_LABEL) {
+            definition = WinSettlementPresentationFieldProviderDefinition(TaiwanWinSettlementTemplates.FLOWERS_LABEL) {
                 PresentationValue.TextValue(TaiwanTranslationKeys.SETTLEMENT_FLOWERS)
             },
         )
@@ -212,21 +212,21 @@ object BundledTaiwanMinecraftExtension : MinecraftMahjongExtension {
             registry.register(WinSettlementPresentationFieldProviderDefinition(fieldId) { snapshot -> snapshot.extensionField(fieldId) })
         }
         registry.register(
-            WinSettlementDetailTextFormatterDefinition(
-                TaiwanWinSettlementIds.TAI_FIELD,
-                TaiwanWinSettlementDetailTexts.taiText,
+            definition = WinSettlementDetailTextFormatterDefinition(
+                fieldId = TaiwanWinSettlementIds.TAI_FIELD,
+                formatter = TaiwanWinSettlementDetailTexts.taiText,
             ),
         )
         registry.register(
-            WinSettlementDetailTextFormatterDefinition(
-                TaiwanWinSettlementIds.TAI_TOTAL_FIELD,
-                TaiwanWinSettlementDetailTexts.taiTotalText,
+            definition = WinSettlementDetailTextFormatterDefinition(
+                fieldId = TaiwanWinSettlementIds.TAI_TOTAL_FIELD,
+                formatter = TaiwanWinSettlementDetailTexts.taiTotalText,
             ),
         )
         registry.register(
-            WinSettlementDetailTextFormatterDefinition(
-                TaiwanWinSettlementIds.DEALER_TAI_TOTAL_FIELD,
-                TaiwanWinSettlementDetailTexts.dealerTaiTotalText,
+            definition = WinSettlementDetailTextFormatterDefinition(
+                fieldId = TaiwanWinSettlementIds.DEALER_TAI_TOTAL_FIELD,
+                formatter = TaiwanWinSettlementDetailTexts.dealerTaiTotalText,
             ),
         )
     }

@@ -74,7 +74,7 @@ class TaiwanSpecialFlowerWinTest {
         val revealer = table.players[0]
 
         assertNull(
-            TaiwanSpecialFlowerWin.findOpportunity(
+            actual = TaiwanSpecialFlowerWin.findOpportunity(
                 tableState = table,
                 revealingPlayerId = revealer.id,
                 revealedFlower = flowersOf(revealer.id, table).last(),

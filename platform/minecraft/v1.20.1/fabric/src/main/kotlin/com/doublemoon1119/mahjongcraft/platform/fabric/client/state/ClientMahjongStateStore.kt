@@ -211,8 +211,8 @@ class ClientMahjongStateStore(
         updateTable(tableId) { current ->
             val waitingConfig = current.roomSnapshot?.gameConfig?.toDto(networkRegistries)
             current.withGameSnapshot(
-                payload.snapshot.toDomain(networkRegistries),
-                payload.aiPlayerIds.mapTo(mutableSetOf(), Uuid::parse),
+                snapshot = payload.snapshot.toDomain(networkRegistries),
+                aiPlayerIds = payload.aiPlayerIds.mapTo(mutableSetOf(), Uuid::parse),
             ).copy(
                 tableOccupancy = current.tableOccupancy?.copy(
                     occupancy = TableOccupancyDto.GAME,

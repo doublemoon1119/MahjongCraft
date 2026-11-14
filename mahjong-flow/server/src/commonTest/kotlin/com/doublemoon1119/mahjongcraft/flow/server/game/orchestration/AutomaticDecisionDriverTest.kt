@@ -56,10 +56,10 @@ class AutomaticDecisionDriverTest {
         val contextResolver = PlayerActionContextResolver()
         val evaluator = AutomaticDecisionEvaluator(moduleRegistry, GameVisibilityPolicyImpl(moduleRegistry, componentRegistry = bundledCoreExtensionRegistries().componentRegistry), contextResolver)
         val driver = AutomaticDecisionDriver(
-            repository,
-            evaluator,
-            GameActionCommandMapper(ExtensionGameActionCommandFactoryRegistry()),
-            contextResolver,
+            gameRepository = repository,
+            evaluator = evaluator,
+            commandMapper = GameActionCommandMapper(ExtensionGameActionCommandFactoryRegistry()),
+            actionContextResolver = contextResolver,
         )
         val discarded = FakeIdentifiedTileFactory.create(Tile.Honor.South)
         val discarder = FakeMahjongPlayerFactory.create(
@@ -76,11 +76,11 @@ class AutomaticDecisionDriverTest {
             pendingReaction = PendingReaction(discarder.id, discarded.id, setOf(respondent.id), ronPlayerIds = setOf(respondent.id), id = Uuid.random()),
         )
         repository.setGame(
-            Game(
+            game = Game(
                 tableState = state,
                 flowConfig = GameFlowConfig(),
                 enabledAutomaticControlIdsByPlayerId = mapOf(
-                    respondent.id to setOf(BuiltInAutomaticControlIds.DECLINE_CALLS),
+                    pair = respondent.id to setOf(BuiltInAutomaticControlIds.DECLINE_CALLS),
                 ),
             ),
         )
@@ -115,8 +115,8 @@ class AutomaticDecisionDriverTest {
         )
 
         assertEquals(
-            winner.id to GameCommand.RespondToDiscard(GameAction.Ron(winningTile.id), checkNotNull(state.pendingReaction).id),
-            driver.resolveNextAction(state.id),
+            expected = winner.id to GameCommand.RespondToDiscard(GameAction.Ron(winningTile.id), checkNotNull(state.pendingReaction).id),
+            actual = driver.resolveNextAction(state.id),
         )
     }
 
@@ -251,17 +251,17 @@ class AutomaticDecisionDriverTest {
         val moduleRegistry = MahjongModuleRegistryImpl().apply { registerBundledRuleModules() }
         val contextResolver = PlayerActionContextResolver()
         repository.setGame(
-            Game(
+            game = Game(
                 tableState = state,
                 flowConfig = GameFlowConfig(),
                 enabledAutomaticControlIdsByPlayerId = enabledControlIds,
             ),
         )
         return AutomaticDecisionDriver(
-            repository,
-            AutomaticDecisionEvaluator(moduleRegistry, GameVisibilityPolicyImpl(moduleRegistry, componentRegistry = bundledCoreExtensionRegistries().componentRegistry), contextResolver),
-            GameActionCommandMapper(ExtensionGameActionCommandFactoryRegistry()),
-            contextResolver,
+            gameRepository = repository,
+            evaluator = AutomaticDecisionEvaluator(moduleRegistry, GameVisibilityPolicyImpl(moduleRegistry, componentRegistry = bundledCoreExtensionRegistries().componentRegistry), contextResolver),
+            commandMapper = GameActionCommandMapper(ExtensionGameActionCommandFactoryRegistry()),
+            actionContextResolver = contextResolver,
         )
     }
 }

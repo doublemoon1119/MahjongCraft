@@ -312,8 +312,8 @@ class MahjongCraftModClient : ClientModInitializer {
         MahjongChannels.roomSnapshot.registerClientReceiver(json) { payload ->
             automaticControlUpdateCoordinator.clearTable(Uuid.parse(payload.roomId))
             stateStore.applyRoomSnapshot(
-                Uuid.parse(payload.roomId),
-                payload.snapshot.toDomain(networkRegistries),
+                roomId = Uuid.parse(payload.roomId),
+                snapshot = payload.snapshot.toDomain(networkRegistries),
             )
         }
         MahjongChannels.tableOccupancy.registerClientReceiver(json) { payload ->
@@ -382,8 +382,8 @@ class MahjongCraftModClient : ClientModInitializer {
             }
         }
         MahjongChannels.automaticControlUpdateResult.registerClientReceiver(
-            json,
-            automaticControlUpdateCoordinator::applyResult,
+            json = json,
+            handler = automaticControlUpdateCoordinator::applyResult,
         )
         koin.get<PauseAwareClientMonotonicClock>().registerEvents()
         ClientTickEvents.END_CLIENT_TICK.register { automaticControlUpdateCoordinator.checkTimeout() }
@@ -397,12 +397,12 @@ class MahjongCraftModClient : ClientModInitializer {
         EntityRendererRegistry.register(ModEntities.mahjongTileSelectionConfirm, ::MahjongTileSelectionConfirmEntityRenderer)
         EntityRendererRegistry.register(ModEntities.mahjongRoundInfo) { context ->
             MahjongRoundInfoEntityRenderer(
-                context,
-                clientConfigStore,
-                roundInfoLineDisplayRegistry,
-                tileDisplayNames,
-                tileAssetRegistry,
-                tileEmojiRegistry,
+                context = context,
+                configStore = clientConfigStore,
+                roundInfoLineDisplayRegistry = roundInfoLineDisplayRegistry,
+                tileDisplayNameRegistry = tileDisplayNames,
+                tileAssetRegistry = tileAssetRegistry,
+                tileEmojiRegistry = tileEmojiRegistry,
             )
         }
         EntityRendererRegistry.register(ModEntities.mahjongPlayerInfo) { context ->
@@ -429,15 +429,15 @@ class MahjongCraftModClient : ClientModInitializer {
         }
         EntityRendererRegistry.register(ModEntities.mahjongTile) { context ->
             MahjongTileEntityRenderer(
-                context,
-                stateStore,
-                tileAssetRegistry,
-                tileFaceRenderer,
-                tileAppearanceResolver,
-                moduleRegistry,
-                decisionPromptStore,
-                clientConfigStore,
-                handTileLayoutController,
+                context = context,
+                stateStore = stateStore,
+                tileAssetRegistry = tileAssetRegistry,
+                tileFaceRenderer = tileFaceRenderer,
+                tileAppearanceResolver = tileAppearanceResolver,
+                moduleRegistry = moduleRegistry,
+                decisionPromptStore = decisionPromptStore,
+                configStore = clientConfigStore,
+                handTileLayoutController = handTileLayoutController,
             )
         }
         MahjongChannels.decisionTimerUpdate.registerClientReceiver(json) { payload ->

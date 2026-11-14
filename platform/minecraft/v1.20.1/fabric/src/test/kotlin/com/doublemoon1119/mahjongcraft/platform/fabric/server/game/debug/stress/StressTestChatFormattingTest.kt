@@ -20,7 +20,7 @@ class StressTestChatFormattingTest {
     @Test
     fun `log line lists every report field`() {
         assertEquals(
-            "reason=HISTORY_BACKLOG, scenario=mahjongcraft:riichi/history_scenario/east, mode=ramp, pace=fast, historyMode=encode, warmupSeconds=60, elapsedSeconds=120, " +
+            expected = "reason=HISTORY_BACKLOG, scenario=mahjongcraft:riichi/history_scenario/east, mode=ramp, pace=fast, historyMode=encode, warmupSeconds=60, elapsedSeconds=120, " +
                 "measuredSeconds=60.0, tables=8, completed=8, stalled=0, tickMs(avg/p95/max)=56.2/117.2/181.0, " +
                 "tickIntervalMs(avg/p95/max)=58.0/120.0/190.0, lagMs=1600.0, advanceMsPerSecond=320.5, slowTicks(>50ms/>100ms/>250ms)=25.0%/5.0%/0.0%, stutter(limitMs/tables)=100.0/24, stepMs(avg/p95/max)=7.2/29.3/127.1, " +
                 "stepStageMs(avg/max)=ai_context:0.5/7.0,rules_and_state:2.0/20.0,snapshot_sync:1.0/10.0,ai_decision:4.0/90.0, " +
@@ -28,7 +28,7 @@ class StressTestChatFormattingTest {
                 "staleDecisions=3, strategyCalls(now/peak/capacity)=2/14/30, peakPerTick(steps/events)=8/30, events(produced/written)=600/540, eventsPerSecond(produced/written)=10.0/9.0, " +
                 "writerStageMs(avg/max/count)=encode:1.5/4.0/9, pending(now/peak/capacity)=206/206/256, lostSegments=0, writerFailed=false, " +
                 "memoryMiB=1024, gc(count/ms)=12/85, timeSeries=stress-test-20261008-120000-encode.csv, sustainedTables=4",
-            stressTestReportLogLine(sampleReport()),
+            actual = stressTestReportLogLine(sampleReport()),
         )
     }
 

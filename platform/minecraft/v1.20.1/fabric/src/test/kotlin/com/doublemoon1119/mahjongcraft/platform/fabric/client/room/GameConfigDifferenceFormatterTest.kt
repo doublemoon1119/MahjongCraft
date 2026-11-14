@@ -70,8 +70,8 @@ class GameConfigDifferenceFormatterTest {
 
         assertEquals(MinecraftRoomScreenKeys.CONFIG_VALUE_CHANGE, change.key)
         assertEquals(
-            "mahjongcraft.room.config.field.base_seconds",
-            ((change.args[0] as Text).content as TranslatableTextContent).key,
+            expected = "mahjongcraft.room.config.field.base_seconds",
+            actual = ((change.args[0] as Text).content as TranslatableTextContent).key,
         )
         assertEquals(beforeBaseSeconds.toString(), (change.args[1] as Text).string)
         assertEquals(afterBaseSeconds.toString(), (change.args[2] as Text).string)
@@ -114,7 +114,7 @@ class GameConfigDifferenceFormatterTest {
     private fun resolver(withRuleDecision: Boolean = false): GameConfigPresentationResolver {
         val modules = MahjongModuleRegistryImpl().apply {
             register(
-                MahjongModuleDefinition(
+                definition = MahjongModuleDefinition(
                     id = "example:rule",
                     configClass = RiichiRuleConfig::class,
                     factory = { config, id -> RiichiRuleModule(id, config) },
@@ -127,7 +127,7 @@ class GameConfigDifferenceFormatterTest {
         }
         val presentations = GameConfigPresentationRegistryImpl(ruleDecisionResolvers).apply {
             register(
-                GameConfigPresentationDefinition(
+                definition = GameConfigPresentationDefinition(
                     ruleModuleId = "example:rule",
                     descriptionTranslationKey = "example.rule.description",
                     selectable = true,

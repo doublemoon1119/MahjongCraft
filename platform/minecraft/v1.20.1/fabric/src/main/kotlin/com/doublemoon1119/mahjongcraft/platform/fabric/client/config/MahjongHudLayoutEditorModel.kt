@@ -112,8 +112,8 @@ internal enum class HudPreviewScenario(
             fromLeftPlayer = false,
             actions = listOf(
                 previewAction(
-                    RiichiExhaustiveDrawReason.KyuushuKyuuhai.id,
-                    listOf("m1", "m9", "p1", "p9", "s1", "s9", "east", "south", "west", "north", "white_dragon", "green_dragon"),
+                    actionId = RiichiExhaustiveDrawReason.KyuushuKyuuhai.id,
+                    previewTileAssetKeys = listOf("m1", "m9", "p1", "p9", "s1", "s9", "east", "south", "west", "north", "white_dragon", "green_dragon"),
                 ),
                 previewAction(RiichiGameAction.Riichi.id, RIICHI_PREVIEW_TILES),
             ),
@@ -400,14 +400,14 @@ internal data class MahjongHudLayoutEditorModel(
             screenHeight = screenHeight,
         )
         val horizontal = snap(
-            hudRatio(
+            value = hudRatio(
                 coordinate = (mouseX - dragOffsetX).roundToInt(),
                 screenSize = screenWidth,
                 elementSize = size.width,
             ),
         )
         val vertical = snap(
-            hudRatio(
+            value = hudRatio(
                 coordinate = (mouseY - dragOffsetY).roundToInt(),
                 screenSize = screenHeight,
                 elementSize = size.height,

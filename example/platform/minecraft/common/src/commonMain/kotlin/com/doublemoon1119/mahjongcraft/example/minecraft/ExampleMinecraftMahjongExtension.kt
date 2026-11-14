@@ -90,7 +90,7 @@ open class ExampleMinecraftMahjongExtension :
 
     override fun registerGameActionVocabulary(registry: GameActionVocabularyRegistrar) {
         registry.register(
-            GameActionVocabularyDefinition(
+            definition = GameActionVocabularyDefinition(
                 ruleModuleId = ExamplePairingIds.RULE_MODULE,
                 actionId = ExamplePairingIds.REVEAL_HAND_ACTION,
                 vocabulary = GameActionVocabulary(
@@ -106,7 +106,7 @@ open class ExampleMinecraftMahjongExtension :
 
     override fun registerPublicPlayerIndicatorDisplays(registry: PublicPlayerIndicatorDisplayRegistrar) {
         registry.register(
-            PublicPlayerIndicatorDisplayDefinition(
+            definition = PublicPlayerIndicatorDisplayDefinition(
                 id = ExamplePairingIds.HAND_REVEALED_INDICATOR,
                 display = PublicPlayerIndicatorDisplay(ExampleMinecraftMessageKeys.HAND_REVEALED),
             ),

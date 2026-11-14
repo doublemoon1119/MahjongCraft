@@ -40,9 +40,9 @@ class RiichiSukantsuTest : RiichiHandValueCalculatorTestBase() {
     @Test
     fun `test suukantsu with three ankan and one minkan`() {
         val hand = FakeHandFactory.create(
-            listOf(
+            tiles = listOf(
                 // 單騎：東
-                Tile.Honor.East,
+                element = Tile.Honor.East,
             ),
             melds = listOf(
                 // 暗槓 1：1m 1m 1m 1m
@@ -109,9 +109,9 @@ class RiichiSukantsuTest : RiichiHandValueCalculatorTestBase() {
     @Test
     fun `test suukantsu with four ankan`() {
         val hand = FakeHandFactory.create(
-            listOf(
+            tiles = listOf(
                 // 單騎：東
-                Tile.Honor.East,
+                element = Tile.Honor.East,
             ),
             melds = listOf(
                 // 暗槓 1：1m 1m 1m 1m
@@ -173,7 +173,7 @@ class RiichiSukantsuTest : RiichiHandValueCalculatorTestBase() {
     @Test
     fun `test non-sukantsu with only three kans returns null`() {
         val hand = FakeHandFactory.create(
-            listOf(
+            tiles = listOf(
                 // 面子：2p 3p 4p
                 Tile.Numeric(Tile.Suit.Dot, 2),
                 Tile.Numeric(Tile.Suit.Dot, 3),
@@ -220,8 +220,8 @@ class RiichiSukantsuTest : RiichiHandValueCalculatorTestBase() {
         val result = calculator.calculate(context)
 
         assertNull(
-            result.yakuResults.find { it.yaku == RiichiYakuType.Sukantsu },
-            "Should not have Sukantsu with only 3 kans",
+            actual = result.yakuResults.find { it.yaku == RiichiYakuType.Sukantsu },
+            message = "Should not have Sukantsu with only 3 kans",
         )
         assertTrue(result.yakuResults.any { it.yaku == RiichiYakuType.Sankantsu }, "Should have Sankantsu with 3 kans")
     }
@@ -234,7 +234,7 @@ class RiichiSukantsuTest : RiichiHandValueCalculatorTestBase() {
     @Test
     fun `test non-sukantsu with non-kan mentsu returns null`() {
         val hand = FakeHandFactory.create(
-            listOf(
+            tiles = listOf(
                 // 面子：2p 3p 4p
                 Tile.Numeric(Tile.Suit.Dot, 2),
                 Tile.Numeric(Tile.Suit.Dot, 3),
@@ -282,8 +282,8 @@ class RiichiSukantsuTest : RiichiHandValueCalculatorTestBase() {
         val result = calculator.calculate(context)
 
         assertNull(
-            result.yakuResults.find { it.yaku == RiichiYakuType.Sukantsu },
-            "Should not have Sukantsu with non-kan mentsu",
+            actual = result.yakuResults.find { it.yaku == RiichiYakuType.Sukantsu },
+            message = "Should not have Sukantsu with non-kan mentsu",
         )
     }
 }

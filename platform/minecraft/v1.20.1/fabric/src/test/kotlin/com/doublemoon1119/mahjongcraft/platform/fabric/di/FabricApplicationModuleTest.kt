@@ -396,8 +396,8 @@ class FabricApplicationModuleTest {
         assertTrue(result.sources[1].categories.any { it.id == "mahjongcraft:opponent_model" && BuiltInRuleModuleIds.RIICHI in it.registrationIds })
         assertTrue(result.sources[2].categories.any { it.id == "mahjongcraft:rule_module" && BuiltInRuleModuleIds.TAIWAN in it.registrationIds })
         assertEquals(
-            listOf(BuiltInAiStrategyKeys.BEGINNER, BuiltInAiStrategyKeys.INTERMEDIATE, BuiltInAiStrategyKeys.ADVANCED, RandomAiStrategy.KEY),
-            aiStrategyRegistry.getAllStrategyKeys().toList(),
+            expected = listOf(BuiltInAiStrategyKeys.BEGINNER, BuiltInAiStrategyKeys.INTERMEDIATE, BuiltInAiStrategyKeys.ADVANCED, RandomAiStrategy.KEY),
+            actual = aiStrategyRegistry.getAllStrategyKeys().toList(),
         )
         assertFailsWith<IllegalStateException> {
             aiStrategyRegistry.register(MahjongAiStrategyDefinition("example:late") { aiStrategyRegistry.resolve(null) })
@@ -409,16 +409,16 @@ class FabricApplicationModuleTest {
         assertTrue(gameActionCommandFactoryRegistry.isRegistered(RiichiGameAction.Riichi::class))
         assertTrue(gameCommandRegistry.isRegistered(RiichiGameCommand::class))
         assertEquals(
-            RiichiTranslationKeys.ACTION_RIICHI,
-            actionVocabularyRegistry.find(BuiltInRuleModuleIds.RIICHI, RiichiGameAction.Riichi.id)?.labelKey,
+            expected = RiichiTranslationKeys.ACTION_RIICHI,
+            actual = actionVocabularyRegistry.find(BuiltInRuleModuleIds.RIICHI, RiichiGameAction.Riichi.id)?.labelKey,
         )
         assertTrue(actionVocabularyRegistry.isFrozen)
         assertTrue(automaticControlDisplayRegistry.isFrozen)
         assertTrue(decisionStatusDisplayNameRegistry.find(BuiltInRuleModuleIds.RIICHI, WaitingTileAvailabilityIds.WIN_AVAILABLE) != null)
         assertTrue(
-            decisionStatusDisplayNameRegistry.find(
-                BuiltInRuleModuleIds.RIICHI,
-                RiichiDiscardReadinessAnalyzer.StatusIds.DISCARD_FURITEN,
+            actual = decisionStatusDisplayNameRegistry.find(
+                ruleModuleId = BuiltInRuleModuleIds.RIICHI,
+                statusId = RiichiDiscardReadinessAnalyzer.StatusIds.DISCARD_FURITEN,
             ) != null,
         )
         assertTrue(decisionStatusDisplayNameRegistry.isFrozen)
@@ -450,7 +450,7 @@ class FabricApplicationModuleTest {
         assertEquals(setOf("debug"), debugRoot.children.map { it.name }.toSet())
         val debugNode = debugRoot.children.single()
         assertEquals(
-            setOf(
+            expected = setOf(
                 "seated_participant",
                 "scenario",
                 "history",
@@ -473,62 +473,62 @@ class FabricApplicationModuleTest {
                 "rule_decision",
                 "round",
             ),
-            debugNode.children.map { it.name }.toSet(),
-            "every family subcommand is mounted under the debug root, and nothing else is",
+            actual = debugNode.children.map { it.name }.toSet(),
+            message = "every family subcommand is mounted under the debug root, and nothing else is",
         )
         assertEquals(
-            setOf("list", "load", "stress"),
-            koin.get<FabricDebugScenarioCommand>().build().build().children.map { it.name }.toSet(),
+            expected = setOf("list", "load", "stress"),
+            actual = koin.get<FabricDebugScenarioCommand>().build().build().children.map { it.name }.toSet(),
         )
         assertEquals(
-            setOf("next", "combo"),
-            koin.get<FabricDebugRoundCommand>().buildRoundCommand().build().children.map { it.name }.toSet(),
+            expected = setOf("next", "combo"),
+            actual = koin.get<FabricDebugRoundCommand>().buildRoundCommand().build().children.map { it.name }.toSet(),
         )
         val presentationCommand = koin.get<FabricDebugPresentationCommand>()
         assertEquals(
-            setOf("melds", "tsumo", "ron", "multi_ron", "phase"),
-            presentationCommand.buildShowcaseCommand().build().children.map { it.name }.toSet(),
+            expected = setOf("melds", "tsumo", "ron", "multi_ron", "phase"),
+            actual = presentationCommand.buildShowcaseCommand().build().children.map { it.name }.toSet(),
         )
         val exhaustiveDrawSettlementNode = presentationCommand.buildExhaustiveDrawSettlementCommand().build()
         assertEquals(setOf("riichi", "abortive"), exhaustiveDrawSettlementNode.children.map { it.name }.toSet())
         assertEquals(
-            setOf("normal", "melds", "kyuushu", "score"),
-            exhaustiveDrawSettlementNode.getChild("riichi").children.map { it.name }.toSet(),
+            expected = setOf("normal", "melds", "kyuushu", "score"),
+            actual = exhaustiveDrawSettlementNode.getChild("riichi").children.map { it.name }.toSet(),
         )
         val winSettlementNode = presentationCommand.buildWinSettlementCommand().build()
         assertEquals(setOf("riichi", "taiwan"), winSettlementNode.children.map { it.name }.toSet())
         assertEquals(
-            setOf("tsumo", "ron", "yakuman", "pao", "nagashi"),
-            winSettlementNode.getChild("riichi").children.map { it.name }.toSet(),
+            expected = setOf("tsumo", "ron", "yakuman", "pao", "nagashi"),
+            actual = winSettlementNode.getChild("riichi").children.map { it.name }.toSet(),
         )
         assertEquals(
-            setOf("tsumo", "ron", "eight_flowers", "seven_flowers"),
-            winSettlementNode.getChild("taiwan").children.map { it.name }.toSet(),
+            expected = setOf("tsumo", "ron", "eight_flowers", "seven_flowers"),
+            actual = winSettlementNode.getChild("taiwan").children.map { it.name }.toSet(),
         )
         assertEquals(
-            setOf("winner_count"),
-            winSettlementNode.getChild("riichi").getChild("ron").children.map { it.name }.toSet(),
-            "ron keeps its optional winner count argument",
+            expected = setOf("winner_count"),
+            actual = winSettlementNode.getChild("riichi").getChild("ron").children.map { it.name }.toSet(),
+            message = "ron keeps its optional winner count argument",
         )
         assertEquals(
-            setOf("clear", "cue"),
-            presentationCommand.buildWinShowcaseOverrideCommand().build().children.map { it.name }.toSet(),
+            expected = setOf("clear", "cue"),
+            actual = presentationCommand.buildWinShowcaseOverrideCommand().build().children.map { it.name }.toSet(),
         )
         koin.get<FabricDebugTextCommand>()
         val decisionCommand = koin.get<FabricDebugDecisionCommand>()
         val decisionHudNode = decisionCommand.buildDecisionHudCommand().build()
         assertEquals(
-            setOf("clear", "riichi", "riichi_three_player", "taiwan"),
-            decisionHudNode.children.map { it.name }.toSet(),
+            expected = setOf("clear", "riichi", "riichi_three_player", "taiwan"),
+            actual = decisionHudNode.children.map { it.name }.toSet(),
         )
         assertTrue(
-            decisionHudNode.getChild("riichi").children.map { it.name }
+            actual = decisionHudNode.getChild("riichi").children.map { it.name }
                 .containsAll(listOf("timer", "chi", "pon", "kan", "ron", "text_card", "mixed")),
-            "decision_hud riichi keeps its preview literals",
+            message = "decision_hud riichi keeps its preview literals",
         )
         assertEquals(setOf("pull_north"), decisionHudNode.getChild("riichi_three_player").children.map { it.name }.toSet())
         assertEquals(
-            setOf(
+            expected = setOf(
                 "discard_analysis",
                 "discard_passed_win",
                 "discard_tsumo_only",
@@ -536,11 +536,11 @@ class FabricApplicationModuleTest {
                 "discard_unavailable",
                 "discard_mixed",
             ),
-            decisionHudNode.getChild("taiwan").children.map { it.name }.toSet(),
+            actual = decisionHudNode.getChild("taiwan").children.map { it.name }.toSet(),
         )
         assertEquals(
-            setOf("start", "submit", "timeout", "cancel"),
-            decisionCommand.buildRuleDecisionCommand().build().children.map { it.name }.toSet(),
+            expected = setOf("start", "submit", "timeout", "cancel"),
+            actual = decisionCommand.buildRuleDecisionCommand().build().children.map { it.name }.toSet(),
         )
         koin.get<FabricDebugProgressionCommand>()
         koin.get<FabricDebugAnimationCommand>()

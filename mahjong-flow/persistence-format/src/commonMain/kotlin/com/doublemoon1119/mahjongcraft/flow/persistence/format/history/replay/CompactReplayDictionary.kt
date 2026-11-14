@@ -84,7 +84,7 @@ object CompactReplayDictionary {
         val keys = linkedMapOf<String, Int>()
         val data = compact(document, keys, strings)
         return JsonObject(
-            linkedMapOf(
+            content = linkedMapOf(
                 ReplayFormatKeys.KEY_DICTIONARY to JsonArray(keys.keys.map(::JsonPrimitive)),
                 ReplayFormatKeys.STRING_DICTIONARY to JsonArray(repeated.map(::JsonPrimitive)),
                 ReplayFormatKeys.DATA to data,

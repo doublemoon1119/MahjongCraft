@@ -162,9 +162,9 @@ class BeginRuleDecisionUseCaseTest {
             moduleRegistry = moduleRegistry,
             resolverRegistry = resolvers,
             snapshotSynchronizer = GameSnapshotSynchronizer(
-                repository,
-                FakeGameSnapshotRepository(),
-                GameVisibilityPolicyImpl(moduleRegistry, componentRegistry = bundledCoreExtensionRegistries().componentRegistry),
+                gameRepository = repository,
+                snapshotRepository = FakeGameSnapshotRepository(),
+                visibilityPolicy = GameVisibilityPolicyImpl(moduleRegistry, componentRegistry = bundledCoreExtensionRegistries().componentRegistry),
             ),
             abortGameHandler = abortHandler,
         )(repository.getGame(testGameId)!!.tableState.id, timing)

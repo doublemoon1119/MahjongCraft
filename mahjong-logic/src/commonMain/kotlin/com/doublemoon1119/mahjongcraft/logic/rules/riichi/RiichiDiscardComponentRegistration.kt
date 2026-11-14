@@ -15,7 +15,7 @@ import com.doublemoon1119.mahjongcraft.logic.component.ComponentRoundTransition
 fun registerRiichiDiscardComponents(registry: ComponentRegistrar) {
     registry.register(RiichiDiscardComponents.RIICHI_DECLARED)
     registry.registerLifecycle(
-        ComponentLifecycleDefinition(
+        definition = ComponentLifecycleDefinition(
             component = RiichiDiscardComponents.RIICHI_DECLARED,
             ownerType = BuiltInComponentOwners.DISCARD_ENTRY,
             appliesTo = { _, config -> config is RiichiFamilyRuleConfig },

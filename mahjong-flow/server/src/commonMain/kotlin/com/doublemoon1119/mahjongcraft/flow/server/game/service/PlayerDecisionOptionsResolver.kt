@@ -96,7 +96,7 @@ internal object PlayerDecisionOptionsResolver {
     ): List<GameAction> = when (context) {
         is PlayerActionContext.RobbingReaction ->
             validator.getLegalActions(
-                LegalActionContext.declarationReaction(
+                context = LegalActionContext.declarationReaction(
                     tableState = state,
                     playerId = player.id,
                     declarerId = context.pending.declarerId,

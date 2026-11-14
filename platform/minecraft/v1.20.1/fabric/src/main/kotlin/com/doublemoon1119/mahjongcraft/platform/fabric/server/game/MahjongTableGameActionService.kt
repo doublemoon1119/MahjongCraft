@@ -229,9 +229,9 @@ class MahjongTableGameActionService(
         val prompt = promptFactory.create(gameId, playerId, phase) ?: return null
         return if (prompt.decisionKey == selection.decisionKey) {
             ResolvedSelectionPrompt(
-                gameId,
-                prompt,
-                ruleDecision?.id.takeIf { phase == PlayerDecisionPhase.RULE_DECISION || phase == PlayerDecisionPhase.RULE_ACTION },
+                gameId = gameId,
+                prompt = prompt,
+                ruleDecisionWindowId = ruleDecision?.id.takeIf { phase == PlayerDecisionPhase.RULE_DECISION || phase == PlayerDecisionPhase.RULE_ACTION },
             )
         } else {
             null
@@ -287,9 +287,9 @@ class MahjongTableGameActionService(
     ) {
         if (selection.kind == PlayerDecisionSelectionKindDto.BEGIN_TILE_SELECTION) return
         MahjongChannels.decisionSubmissionResult.sendTo(
-            player,
-            json,
-            PlayerDecisionSubmissionResultDto(selection.gameId, selection.decisionKey, selection.submissionId, result),
+            player = player,
+            json = json,
+            value = PlayerDecisionSubmissionResultDto(selection.gameId, selection.decisionKey, selection.submissionId, result),
         )
     }
 
@@ -392,8 +392,8 @@ class MahjongTableGameActionService(
             val meldTiles = playerState.hand.exposedMelds.map { it.tiles }
             val faces = visibilityPolicy.tileFacesFor(game, playerId, playerState.hand.standingTiles.map { it.id } + meldTiles.flatten().map { it.id })
             feedbackPublisher.publish(
-                playerId,
-                MinecraftPlayerFeedback.ShowHand(
+                playerId = playerId,
+                feedback = MinecraftPlayerFeedback.ShowHand(
                     ruleModuleId = moduleRegistry.getModule(state.config).id,
                     standingTiles = playerState.hand.standingTiles.map { faces.getValue(it.id) },
                     melds = meldTiles.map { tiles -> tiles.map { faces.getValue(it.id) } },

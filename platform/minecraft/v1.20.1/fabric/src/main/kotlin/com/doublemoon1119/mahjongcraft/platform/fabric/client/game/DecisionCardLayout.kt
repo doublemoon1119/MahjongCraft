@@ -105,8 +105,8 @@ internal data class DecisionCardLayout(
             0
         }
         return maxOf(
-            MIN_CARD_HEIGHT,
-            CARD_PADDING * 2 + markerHeight + previewHeight + textGap + textHeight + BUTTON_HEIGHT,
+            a = MIN_CARD_HEIGHT,
+            b = CARD_PADDING * 2 + markerHeight + previewHeight + textGap + textHeight + BUTTON_HEIGHT,
         )
     }
 

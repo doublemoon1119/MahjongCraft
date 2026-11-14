@@ -78,6 +78,6 @@ class PlayerPortraitSourceRegistryImpl(
      * @return 登記項目的解析順序。
      */
     private fun sortedEntries(): List<Entry> = entries.values.sortedWith(
-        compareByDescending<Entry> { it.priority }.thenBy { it.providerId },
+        comparator = compareByDescending<Entry> { it.priority }.thenBy { it.providerId },
     )
 }

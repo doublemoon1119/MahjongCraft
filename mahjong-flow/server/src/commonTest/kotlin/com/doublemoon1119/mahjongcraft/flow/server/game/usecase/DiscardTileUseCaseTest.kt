@@ -93,13 +93,13 @@ class DiscardTileUseCaseTest {
         val eventPublisher = FakeGameEventPublisher()
         val presentationPublisher = FakeGamePresentationPublisher()
         val useCase = DiscardTileUseCase(
-            gameRepo,
-            moduleRegistry,
-            snapshotSynchronizer,
-            handSortPreferenceStore,
-            postActionExhaustiveDrawResolverRegistry,
-            eventPublisher,
-            presentationPublisher,
+            gameRepository = gameRepo,
+            moduleRegistry = moduleRegistry,
+            snapshotSynchronizer = snapshotSynchronizer,
+            handSortPreferenceStore = handSortPreferenceStore,
+            postActionExhaustiveDrawResolverRegistry = postActionExhaustiveDrawResolverRegistry,
+            eventPublisher = eventPublisher,
+            presentationPublisher = presentationPublisher,
 
             componentRegistry = bundledCoreExtensionRegistries().componentRegistry,
         )
@@ -128,7 +128,7 @@ class DiscardTileUseCaseTest {
             currentPlayerIndex = 0,
         ).copy(
             turnPhase = TurnPhase.AwaitingRobbingReaction(
-                PendingRobbingReaction(
+                reaction = PendingRobbingReaction(
                     declarerId = currentPlayerId,
                     declaredAction = GameAction.Kan(GameAction.KanType.ADDED_KAN, handTile.id, emptyList()),
                     robbedTile = handTile,
@@ -468,8 +468,8 @@ class DiscardTileUseCaseTest {
         assertTrue(result is Outcome.Success, "Expected Success but got $result")
         val updatedPlayer = fixtures.gameRepo.getTableState(gameId)!!.players.single()
         assertFalse(
-            updatedPlayer.components[RiichiPlayerComponents.PERMANENT_FURITEN] != null,
-            "Declining a tsumo without riichi should not mark permanent furiten.",
+            actual = updatedPlayer.components[RiichiPlayerComponents.PERMANENT_FURITEN] != null,
+            message = "Declining a tsumo without riichi should not mark permanent furiten.",
         )
     }
 
@@ -637,17 +637,17 @@ class DiscardTileUseCaseTest {
         val newState = fixtures.gameRepo.getTableState(gameId)
         assertNotNull(newState)
         assertNull(
-            newState.pendingReaction,
-            "The hand already ended via the abortive draw; no reaction window should open, not even for ponPlayer.",
+            actual = newState.pendingReaction,
+            message = "The hand already ended via the abortive draw; no reaction window should open, not even for ponPlayer.",
         )
         assertEquals(0, newState.currentPlayerIndex, "Turn advancement is left to AdvanceRoundUseCase.")
         assertEquals(TurnPhase.RoundOver(RoundConclusion.AbortiveDraw(RiichiExhaustiveDrawReason.SanchaHou)), newState.turnPhase)
         val expectedAction = GameAction.ExhaustiveDraw(RiichiExhaustiveDrawReason.SanchaHou)
         newState.players.forEach { player ->
             assertEquals(
-                expectedAction,
-                player.actionHistory.last(),
-                "Every player should have ExhaustiveDraw recorded.",
+                expected = expectedAction,
+                actual = player.actionHistory.last(),
+                message = "Every player should have ExhaustiveDraw recorded.",
             )
             assertEquals(25000, player.score, "An abortive draw should not exchange any points.")
         }
@@ -747,8 +747,8 @@ class DiscardTileUseCaseTest {
 
         val notifiedActions = fixtures.eventPublisher.getNotifiedActions(gameId, currentPlayerId, currentPlayerId)
         assertEquals(
-            listOf(GameAction.Discard(winningTile.id), GameAction.ExhaustiveDraw(RiichiExhaustiveDrawReason.SanchaHou)),
-            notifiedActions,
+            expected = listOf(GameAction.Discard(winningTile.id), GameAction.ExhaustiveDraw(RiichiExhaustiveDrawReason.SanchaHou)),
+            actual = notifiedActions,
         )
     }
 
@@ -951,9 +951,9 @@ class DiscardTileUseCaseTest {
         val pendingReaction = newState.pendingReaction
         assertNotNull(pendingReaction)
         assertEquals(
-            setOf(southId),
-            pendingReaction.eligiblePlayerIds,
-            "South sits immediately after the discarder, so South should win under NEAREST_WINNER.",
+            expected = setOf(southId),
+            actual = pendingReaction.eligiblePlayerIds,
+            message = "South sits immediately after the discarder, so South should win under NEAREST_WINNER.",
         )
     }
 
@@ -985,12 +985,12 @@ class DiscardTileUseCaseTest {
         assertNotNull(fixtures.snapshotRepo.getSnapshot(gameId, currentPlayerId))
         assertNotNull(fixtures.snapshotRepo.getSnapshot(gameId, otherPlayerId))
         assertEquals(
-            GameAction.Discard(drawnTile.id),
-            fixtures.eventPublisher.getNotifiedAction(gameId, currentPlayerId, currentPlayerId),
+            expected = GameAction.Discard(drawnTile.id),
+            actual = fixtures.eventPublisher.getNotifiedAction(gameId, currentPlayerId, currentPlayerId),
         )
         assertEquals(
-            GameAction.Discard(drawnTile.id),
-            fixtures.eventPublisher.getNotifiedAction(gameId, otherPlayerId, currentPlayerId),
+            expected = GameAction.Discard(drawnTile.id),
+            actual = fixtures.eventPublisher.getNotifiedAction(gameId, otherPlayerId, currentPlayerId),
         )
     }
 
@@ -1075,8 +1075,8 @@ class DiscardTileUseCaseTest {
 
         assertTrue(result is Outcome.Error)
         assertEquals(
-            GameError.IllegalAction(currentPlayerId, gameId, GameAction.Discard(handTile.id)),
-            result.error,
+            expected = GameError.IllegalAction(currentPlayerId, gameId, GameAction.Discard(handTile.id)),
+            actual = result.error,
         )
     }
 
@@ -1128,8 +1128,8 @@ class DiscardTileUseCaseTest {
 
         assertTrue(result is Outcome.Error)
         assertEquals(
-            GameError.IllegalAction(currentPlayerId, gameId, GameAction.Discard(unknownTileId)),
-            result.error,
+            expected = GameError.IllegalAction(currentPlayerId, gameId, GameAction.Discard(unknownTileId)),
+            actual = result.error,
         )
     }
 
@@ -1363,7 +1363,7 @@ class DiscardTileUseCaseTest {
                     completedSupplementalDrawCount = 1,
                     revealedKanDoraCount = 0,
                     pendingKanDoraReveals = listOf(
-                        RiichiPendingKanDoraReveal(currentPlayerId, GameAction.KanType.OPEN_KAN, 1),
+                        element = RiichiPendingKanDoraReveal(currentPlayerId, GameAction.KanType.OPEN_KAN, 1),
                     ),
                 ),
             ),
@@ -1509,7 +1509,7 @@ class DiscardTileUseCaseTest {
         val fourCharacter = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 4))
         val validator = fixtures.moduleRegistry.getModule(table.config).createLegalActionValidator()
         fun canRonFourCharacter(state: TableState) = validator.getLegalActions(
-            LegalActionContext.discardReaction(
+            context = LegalActionContext.discardReaction(
                 tableState = state,
                 playerId = waitingPlayerId,
                 discarderId = otherPlayerId,

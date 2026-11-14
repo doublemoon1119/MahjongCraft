@@ -39,8 +39,8 @@ class ThreePlayerRiichiPhysicalWallLayoutTest {
             val first = (total - 1).coerceAtMost(6)
             val opening = ThreePlayerRiichiWallOpeningPolicy.resolve(DiceRollResult.of(listOf(first, total - first)))
             val wallLayout = ThreePlayerRiichiWallLayout(config).resolve(
-                List(108) { FakeIdentifiedTileFactory.create(Tile.Honor.East) },
-                opening,
+                shuffledTiles = List(108) { FakeIdentifiedTileFactory.create(Tile.Honor.East) },
+                opening = opening,
             )
             var tableState = FakeTableStateFactory.create(
                 config = config,
@@ -49,14 +49,14 @@ class ThreePlayerRiichiPhysicalWallLayoutTest {
                 components = riichiTableComponents(potPoints = 0),
             )
             var layout = assertIs<InitialPhysicalWallLayoutDecision.Completed>(
-                physicalWallLayoutPolicy(config).createInitialLayoutValidated(
-                    InitialPhysicalWallLayoutContext(
-                        wallLayout,
-                        opening,
-                        (wallLayout.drawOrder.drop(INITIAL_DEAL_TILE_COUNT) + wallLayout.reservedWallTiles).mapTo(mutableSetOf()) { it.id },
+                value = physicalWallLayoutPolicy(config).createInitialLayoutValidated(
+                    context = InitialPhysicalWallLayoutContext(
+                        wallLayout = wallLayout,
+                        wallOpening = opening,
+                        occupiedTileIds = (wallLayout.drawOrder.drop(INITIAL_DEAL_TILE_COUNT) + wallLayout.reservedWallTiles).mapTo(mutableSetOf()) { it.id },
                     ),
                 ),
-                "Initial layout failed for dice total $total",
+                message = "Initial layout failed for dice total $total",
             ).layout
             repeat(INITIAL_DEAL_TILE_COUNT) { tableState = tableState.copy(tileWall = tableState.tileWall.draw().wall) }
             layout = TileWallPhysicalLayout(layout.placements.filterKeys { it in presentTileIds(tableState) })
@@ -65,7 +65,7 @@ class ThreePlayerRiichiPhysicalWallLayoutTest {
             val actions = List(RiichiSupplementalDrawPolicy.MAX_SUPPLEMENTAL_DRAWS) { listOf(RIICHI_PULL_NORTH_GAME_ACTION, kanAction()) }.flatten()
             actions.forEachIndexed { index, action ->
                 val supplemental = assertIs<SupplementalDrawDecision.Completed>(
-                    RiichiSupplementalDrawPolicy.resolve(SupplementalDrawContext(tableState, tableState, tableState.currentPlayer.id, action)),
+                    value = RiichiSupplementalDrawPolicy.resolve(SupplementalDrawContext(tableState, tableState, tableState.currentPlayer.id, action)),
                 )
                 val updatedState = tableState.copy(
                     tileWall = supplemental.tileWall,
@@ -73,8 +73,8 @@ class ThreePlayerRiichiPhysicalWallLayoutTest {
                     components = supplemental.tableComponents.applyTo(tableState.components, BuiltInComponentOwners.TABLE),
                 )
                 layout = assertIs<PhysicalWallLayoutTransitionDecision.Completed>(
-                    physicalWallLayoutPolicy(config).resolveTransitionValidated(
-                        PhysicalWallLayoutTransitionContext(
+                    value = physicalWallLayoutPolicy(config).resolveTransitionValidated(
+                        context = PhysicalWallLayoutTransitionContext(
                             tableStateBeforeAction = tableState,
                             tableStateAfterAction = updatedState,
                             currentLayout = layout,
@@ -82,7 +82,7 @@ class ThreePlayerRiichiPhysicalWallLayoutTest {
                             action = action,
                         ),
                     ),
-                    "Transition ${index + 1} failed for dice total $total",
+                    message = "Transition ${index + 1} failed for dice total $total",
                 ).layout
                 tableState = updatedState
                 assertNoOverlap(layout, tableState, "total $total draw ${index + 1}")

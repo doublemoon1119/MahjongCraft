@@ -17,8 +17,8 @@ import java.util.Locale
  * @return 帶模組前綴與分行欄位的報告文字。
  */
 internal fun stressTestReportMessage(report: StressTestReport): MutableText = prefixedConfigMessage(
-    stressText(if (report.running) StressDebugKeys.TITLE_RUNNING else StressDebugKeys.TITLE_STOPPED),
-    if (report.running) Formatting.AQUA else Formatting.YELLOW,
+    message = stressText(if (report.running) StressDebugKeys.TITLE_RUNNING else StressDebugKeys.TITLE_STOPPED),
+    color = if (report.running) Formatting.AQUA else Formatting.YELLOW,
 ).also { message ->
     message.append(entry(StressDebugKeys.SCENARIO, Text.literal(report.scenarioId), Formatting.GRAY))
         .append(entry(StressDebugKeys.MODE, modeText(report.mode), Formatting.GRAY))
@@ -44,17 +44,17 @@ internal fun stressTestReportMessage(report: StressTestReport): MutableText = pr
         .append(entry(StressDebugKeys.AI_LATENCY, Text.literal(formatMillisList(report.aiLatencyAverageMillis, report.aiLatencyP95Millis, report.aiLatencyP99Millis, report.aiLatencyMaxMillis)), Formatting.AQUA))
         .append(
             entry(
-                StressDebugKeys.AI_DECISIONS,
-                Text.literal("${report.aiDecisions} / ${report.aiTimeouts} / ${report.aiPreviousStillRunning}"),
-                if (report.aiTimeouts + report.aiPreviousStillRunning > 0) Formatting.RED else Formatting.AQUA,
+                key = StressDebugKeys.AI_DECISIONS,
+                value = Text.literal("${report.aiDecisions} / ${report.aiTimeouts} / ${report.aiPreviousStillRunning}"),
+                valueColor = if (report.aiTimeouts + report.aiPreviousStillRunning > 0) Formatting.RED else Formatting.AQUA,
             ),
         )
         .append(entry(StressDebugKeys.STALE_DECISIONS, Text.literal(report.staleDecisions.toString()), Formatting.AQUA))
         .append(
             entry(
-                StressDebugKeys.STRATEGY_CALLS,
-                Text.literal("${report.unfinishedStrategyCalls} / ${report.unfinishedStrategyPeak} / ${report.strategyCapacity}"),
-                Formatting.AQUA,
+                key = StressDebugKeys.STRATEGY_CALLS,
+                value = Text.literal("${report.unfinishedStrategyCalls} / ${report.unfinishedStrategyPeak} / ${report.strategyCapacity}"),
+                valueColor = Formatting.AQUA,
             ),
         )
     message.append(entry(StressDebugKeys.PEAK_PER_TICK, Text.literal("${report.maxStepsInTick} / ${report.maxEventsInTick}"), Formatting.AQUA))
@@ -67,9 +67,9 @@ internal fun stressTestReportMessage(report: StressTestReport): MutableText = pr
         .append(entry(StressDebugKeys.LOST, Text.literal(report.lostSegments.toString()), if (report.lostSegments > 0) Formatting.RED else Formatting.GREEN))
         .append(
             entry(
-                StressDebugKeys.WRITER,
-                stressText(if (report.writerFailed) StressDebugKeys.WRITER_FAILED else StressDebugKeys.WRITER_OK),
-                if (report.writerFailed) Formatting.RED else Formatting.GREEN,
+                key = StressDebugKeys.WRITER,
+                value = stressText(if (report.writerFailed) StressDebugKeys.WRITER_FAILED else StressDebugKeys.WRITER_OK),
+                valueColor = if (report.writerFailed) Formatting.RED else Formatting.GREEN,
             ),
         )
         .append(entry(StressDebugKeys.MEMORY, Text.literal("${report.usedMemoryMiB} MiB"), Formatting.GRAY))
@@ -244,7 +244,7 @@ private fun warmupText(report: StressTestReport): Text = when {
  * @return 帶模組前綴的紅色錯誤回覆。
  */
 internal fun stressOptionErrorMessage(error: StressOptionError): MutableText = prefixedConfigMessage(
-    when (error) {
+    message = when (error) {
         is StressOptionError.UnknownOption -> Text.translatableWithFallback(
             StressDebugKeys.UNKNOWN_OPTION,
             "Unknown stress test option: %s; use %s",
@@ -265,7 +265,7 @@ internal fun stressOptionErrorMessage(error: StressOptionError): MutableText = p
             )
         }
     },
-    Formatting.RED,
+    color = Formatting.RED,
 )
 
 /**

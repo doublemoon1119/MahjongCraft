@@ -53,26 +53,26 @@ class MahjongLobbyInfoEntityRenderer(
         val totalHeight = lines.size * lineHeight
         val maximumWidth = lines.maxOf { textRenderer.getWidth(it.first) }
         WorldPanelRenderer.drawBackground(
-            -maximumWidth / 2f - PANEL_PADDING,
-            -totalHeight / 2f - PANEL_PADDING,
-            maximumWidth / 2f + PANEL_PADDING,
-            totalHeight / 2f + PANEL_PADDING,
-            BACKGROUND_COLOR,
-            0f,
-            matrices,
-            vertexConsumers,
+            left = -maximumWidth / 2f - PANEL_PADDING,
+            top = -totalHeight / 2f - PANEL_PADDING,
+            right = maximumWidth / 2f + PANEL_PADDING,
+            bottom = totalHeight / 2f + PANEL_PADDING,
+            color = BACKGROUND_COLOR,
+            z = 0f,
+            matrices = matrices,
+            consumers = vertexConsumers,
         )
         lines.forEachIndexed { index, (line, color) ->
             WorldPanelRenderer.drawText(
-                textRenderer,
-                line,
-                -textRenderer.getWidth(line) / 2f,
-                -totalHeight / 2f + index * lineHeight,
-                color,
-                TEXT_Z,
-                light,
-                matrices,
-                vertexConsumers,
+                renderer = textRenderer,
+                text = line,
+                x = -textRenderer.getWidth(line) / 2f,
+                y = -totalHeight / 2f + index * lineHeight,
+                color = color,
+                z = TEXT_Z,
+                light = light,
+                matrices = matrices,
+                consumers = vertexConsumers,
             )
         }
         matrices.pop()

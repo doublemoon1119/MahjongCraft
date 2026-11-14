@@ -32,12 +32,12 @@ fun registerExamplePairingSettlementTemplates(registry: WinSettlementPresentatio
         registry.register(WinSettlementPresentationFieldProviderDefinition(fieldId) { snapshot -> snapshot.extensionField(fieldId) })
     }
     registry.register(
-        WinSettlementPresentationFieldProviderDefinition(PresentationFieldId(ExampleMinecraftPresentationIds.BONUS_TILES_LABEL)) {
+        definition = WinSettlementPresentationFieldProviderDefinition(PresentationFieldId(ExampleMinecraftPresentationIds.BONUS_TILES_LABEL)) {
             PresentationValue.TextValue(ExampleMinecraftMessageKeys.BONUS_TILES, emptyList())
         },
     )
     registry.register(
-        WinSettlementPresentationTemplate(
+        template = WinSettlementPresentationTemplate(
             key = ExampleMinecraftPresentationIds.SETTLEMENT_TEMPLATE,
             root = PresentationLayout.Column(
                 children = listOf(
@@ -72,19 +72,19 @@ fun registerExamplePairingSettlementTemplates(registry: WinSettlementPresentatio
         ),
     )
     registry.register(
-        WinSettlementRuleTemplateBindingDefinition(
+        definition = WinSettlementRuleTemplateBindingDefinition(
             ruleModuleId = ExamplePairingIds.RULE_MODULE,
             templateKey = ExampleMinecraftPresentationIds.SETTLEMENT_TEMPLATE,
         ),
     )
     registry.register(
-        WinSettlementDetailTextFormatterDefinition(
+        definition = WinSettlementDetailTextFormatterDefinition(
             fieldId = ExamplePairingWinSettlementDetailResolver.PAYMENT_PER_PLAYER,
             formatter = ExamplePairingPaymentFormatter,
         ),
     )
     registry.register(
-        WinSettlementDetailTextFormatterDefinition(
+        definition = WinSettlementDetailTextFormatterDefinition(
             fieldId = ExamplePairingWinSettlementDetailResolver.BONUS_TILE_COUNT,
             formatter = ExamplePairingBonusTileFormatter,
         ),

@@ -22,9 +22,9 @@ class MinecraftGameEventsJavaVisibilityTest {
                 !it.isSynthetic && !Modifier.isPrivate(it.modifiers)
             }
             assertEquals(
-                emptyList(),
-                visibleConstructors.map { it.toGenericString() },
-                "${type.simpleName} must not expose a Java-callable constructor",
+                expected = emptyList(),
+                actual = visibleConstructors.map { it.toGenericString() },
+                message = "${type.simpleName} must not expose a Java-callable constructor",
             )
         }
     }

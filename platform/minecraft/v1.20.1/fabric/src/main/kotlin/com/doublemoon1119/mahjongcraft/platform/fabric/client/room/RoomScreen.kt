@@ -233,8 +233,8 @@ class RoomScreen(
         val bottom = height - 30
         when (table.occupancy) {
             TableOccupancyDto.VACANT -> addCenteredActions(
-                listOf(ActionButton(MinecraftRoomScreenKeys.CREATE, RoomActionDto.Create(table.tableId), true)),
-                bottom,
+                actions = listOf(ActionButton(MinecraftRoomScreenKeys.CREATE, RoomActionDto.Create(table.tableId), true)),
+                y = bottom,
             )
             TableOccupancyDto.GAME -> addCenteredActions(emptyList(), bottom)
             TableOccupancyDto.ROOM -> {
@@ -272,8 +272,8 @@ class RoomScreen(
                     val selfId = client?.player?.uuid?.let(UUID::toString)
                     val ready = room.readyPlayerIds.any { it.toString() == selfId }
                     button(
-                        if (ready) MinecraftRoomScreenKeys.CANCEL_READY else MinecraftRoomScreenKeys.READY,
-                        RoomActionDto.ToggleReady(table.tableId),
+                        key = if (ready) MinecraftRoomScreenKeys.CANCEL_READY else MinecraftRoomScreenKeys.READY,
+                        action = RoomActionDto.ToggleReady(table.tableId),
                     )
                     button(MinecraftRoomScreenKeys.LEAVE, RoomActionDto.Leave(table.tableId))
                 }
@@ -359,10 +359,10 @@ class RoomScreen(
                         fieldScroll.reset()
                         rebuild()
                     }.dimensions(
-                        COMPACT_CONTENT_MARGIN + index % 2 * (categoryWidth + RoomSettingsLayout.COMPACT_FIELDS_GAP),
-                        RoomSettingsLayout.COMPACT_CATEGORY_TOP + index / 2 * RoomSettingsLayout.COMPACT_CATEGORY_ROW_HEIGHT,
-                        categoryWidth,
-                        20,
+                        x = COMPACT_CONTENT_MARGIN + index % 2 * (categoryWidth + RoomSettingsLayout.COMPACT_FIELDS_GAP),
+                        y = RoomSettingsLayout.COMPACT_CATEGORY_TOP + index / 2 * RoomSettingsLayout.COMPACT_CATEGORY_ROW_HEIGHT,
+                        width = categoryWidth,
+                        height = 20,
                     ).build().also { it.active = selectedCategoryId != category.id },
                 )
             }
@@ -391,7 +391,7 @@ class RoomScreen(
         }
         if (editable) {
             val defaultConfig = draft.normalized(
-                GameConfig(
+                config = GameConfig(
                     ruleConfig = definition.defaultRuleConfig(),
                     flowConfig = configPresentations.defaultFlowConfig(
                         ruleModuleId = definition.ruleModuleId,
@@ -476,7 +476,7 @@ class RoomScreen(
                 val (left, controlWidth) = if (compact) compactControlBounds() else (width - 212) to 184
                 addDrawableChild(
                     RestartableMarqueeButtonWidget.builder(
-                        Text.translatable(
+                        message = Text.translatable(
                             MinecraftRoomScreenKeys.SELECTED_COUNT,
                             selected.size,
                         ),
@@ -533,18 +533,18 @@ class RoomScreen(
                         )
                         updateDraft(field, GameConfigPresentationValue.IntegerValue(next))
                     }.dimensions(bounds.minusX, controlY, COMPACT_INTEGER_BUTTON_WIDTH, 20).build().withFieldTooltip(
-                        field,
-                        config,
-                        editable && RoomConfigIntegerControl.canDecrease(current = number, editor = editor),
+                        field = field,
+                        config = config,
+                        active = editable && RoomConfigIntegerControl.canDecrease(current = number, editor = editor),
                     ),
                 )
                 val input = CenteredIntegerTextFieldWidget(
-                    textRenderer,
-                    bounds.textX,
-                    controlY,
-                    bounds.textWidth,
-                    20,
-                    Text.translatable(field.nameTranslationKey),
+                    fieldTextRenderer = textRenderer,
+                    x = bounds.textX,
+                    y = controlY,
+                    width = bounds.textWidth,
+                    height = 20,
+                    narration = Text.translatable(field.nameTranslationKey),
                 ).also { widget ->
                     widget.text = number?.toString().orEmpty()
                     widget.setMaxLength(11)
@@ -568,9 +568,9 @@ class RoomScreen(
                         )
                         updateDraft(field, GameConfigPresentationValue.IntegerValue(next))
                     }.dimensions(bounds.plusX, controlY, COMPACT_INTEGER_BUTTON_WIDTH, 20).build().withFieldTooltip(
-                        field,
-                        config,
-                        editable && RoomConfigIntegerControl.canIncrease(current = number, editor = editor),
+                        field = field,
+                        config = config,
+                        active = editable && RoomConfigIntegerControl.canIncrease(current = number, editor = editor),
                     ),
                 )
             }
@@ -725,7 +725,7 @@ class RoomScreen(
                 val nextId = selectable[CycleButtonInput.nextIndex(currentIndex = selectable.indexOf(moduleId), size = selectable.size, step = CycleButtonInput.step())]
                 val next = configPresentations.find(nextId) ?: return@builder
                 draft.resetTo(
-                    config.copy(
+                    config = config.copy(
                         ruleConfig = next.defaultRuleConfig(),
                         flowConfig = configPresentations.defaultFlowConfig(
                             ruleModuleId = next.ruleModuleId,
@@ -1197,12 +1197,12 @@ class RoomScreen(
             }
             TableOccupancyDto.ROOM -> stateStore.roomSnapshot(tableId)?.let { room ->
                 renderMembers(
-                    context,
-                    room.playerIds,
-                    room.aiPlayerIds.toSet(),
-                    MemberStatus.Waiting(room.readyPlayerIds.toSet(), room.hostId),
-                    mouseX,
-                    mouseY,
+                    context = context,
+                    playerIds = room.playerIds,
+                    aiIds = room.aiPlayerIds.toSet(),
+                    memberStatus = MemberStatus.Waiting(room.readyPlayerIds.toSet(), room.hostId),
+                    mouseX = mouseX,
+                    mouseY = mouseY,
                 )
             }
         }
@@ -1466,15 +1466,15 @@ class RoomScreen(
     private fun renderPortrait(context: DrawContext, playerId: Uuid, isAi: Boolean, x: Int, y: Int, cardWidth: Int) {
         val portraitSize = (cardWidth - 24).coerceIn(28, 38)
         portraitRenderer.render(
-            playerId,
-            isAi,
-            (x + (cardWidth - portraitSize) / 2).toFloat(),
-            (y + 24).toFloat(),
-            portraitSize.toFloat(),
-            1f,
-            200f,
-            context.matrices,
-            MinecraftClient.getInstance().bufferBuilders.entityVertexConsumers,
+            playerId = playerId,
+            isAi = isAi,
+            x = (x + (cardWidth - portraitSize) / 2).toFloat(),
+            y = (y + 24).toFloat(),
+            size = portraitSize.toFloat(),
+            alpha = 1f,
+            z = 200f,
+            matrices = context.matrices,
+            consumers = MinecraftClient.getInstance().bufferBuilders.entityVertexConsumers,
         )
     }
 
@@ -1696,17 +1696,17 @@ class RoomScreen(
             if (hasUnsavedSettingsDraft()) {
                 client?.setScreen(
                     UnsavedChangesConfirmationScreen(
-                        this,
-                        {
+                        previousScreen = this,
+                        onApply = {
                             finishSettings()
                             client?.setScreen(this)
                         },
-                        {
+                        onDiscard = {
                             restoreAuthoritativeDraft()
                             page = Page.ROOM
                             client?.setScreen(this)
                         },
-                        gameConfigDifferenceText(configResolver, ruleNames, currentConfig()!!, draft.config!!),
+                        changesPreview = gameConfigDifferenceText(configResolver, ruleNames, currentConfig()!!, draft.config!!),
                     ),
                 )
             } else {

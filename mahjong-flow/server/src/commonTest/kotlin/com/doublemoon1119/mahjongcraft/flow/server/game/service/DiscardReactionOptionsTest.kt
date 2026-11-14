@@ -56,11 +56,11 @@ class DiscardReactionOptionsTest {
         val result = fixture.useCase.resolve(fixture.table, fixture.respondent.id)
 
         assertEquals(
-            listOf(
+            expected = listOf(
                 GameAction.Pon(fixture.discarded.id, listOf(fixture.handTileA.id, fixture.handTileB.id)),
                 GameAction.Pass,
             ),
-            assertIs<Outcome.Success<List<GameAction>>>(result).value,
+            actual = assertIs<Outcome.Success<List<GameAction>>>(result).value,
         )
     }
 
@@ -80,14 +80,14 @@ class DiscardReactionOptionsTest {
         assertTrue(result.abortiveDrawReason == null)
         val pendingReaction = assertIs<PendingReaction>(result.tableState.pendingReaction)
         assertEquals(
-            PendingReaction(
+            expected = PendingReaction(
                 discarderId = fixture.discarder.id,
                 tileId = fixture.discarded.id,
                 eligiblePlayerIds = setOf(fixture.respondent.id),
                 ronPlayerIds = emptySet(),
                 id = pendingReaction.id,
             ),
-            pendingReaction,
+            actual = pendingReaction,
         )
     }
 
@@ -151,16 +151,16 @@ class DiscardReactionOptionsTest {
         val repository = FakeGameRepository().apply { setTableState(fixture.table) }
         val moduleRegistry = MahjongModuleRegistryImpl().apply {
             register(
-                MahjongModuleDefinition(RiichiRuleConfig::class, TEST_RULE_ID) { config, _ ->
+                definition = MahjongModuleDefinition(RiichiRuleConfig::class, TEST_RULE_ID) { config, _ ->
                     TestRuleModule(RiichiRuleModule(TEST_RULE_ID, config))
                 },
             )
             freeze()
         }
         val snapshotSynchronizer = GameSnapshotSynchronizer(
-            repository,
-            FakeGameSnapshotRepository(),
-            GameVisibilityPolicyImpl(moduleRegistry, componentRegistry = bundledCoreExtensionRegistries().componentRegistry),
+            gameRepository = repository,
+            snapshotRepository = FakeGameSnapshotRepository(),
+            visibilityPolicy = GameVisibilityPolicyImpl(moduleRegistry, componentRegistry = bundledCoreExtensionRegistries().componentRegistry),
         )
         val winDetails = WinSettlementDetailResolverRegistry(bundledCoreExtensionRegistries().componentRegistry).apply { freeze() }
         val useCase = RespondToDiscardUseCase(
@@ -227,7 +227,7 @@ class DiscardReactionOptionsTest {
                 gameRepository = FakeGameRepository(),
                 moduleRegistry = MahjongModuleRegistryImpl().apply {
                     register(
-                        MahjongModuleDefinition(RiichiRuleConfig::class, TEST_RULE_ID) { config, _ ->
+                        definition = MahjongModuleDefinition(RiichiRuleConfig::class, TEST_RULE_ID) { config, _ ->
                             TestRuleModule(RiichiRuleModule(TEST_RULE_ID, config), includePon, includeRon, abortiveDrawReason)
                         },
                     )

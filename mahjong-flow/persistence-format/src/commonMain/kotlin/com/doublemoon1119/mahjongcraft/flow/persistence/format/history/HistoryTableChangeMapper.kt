@@ -31,13 +31,13 @@ internal class HistoryTableChangeMapper(
     fun encode(result: HistoryTableResult): HistoryTableResultPersistenceDto = when (result) {
         is HistoryTableResult.Change -> HistoryTableResultPersistenceDto.Change(encodeChange(result.change))
         is HistoryTableResult.Checkpoint -> HistoryTableResultPersistenceDto.Checkpoint(
-            result.reasonId,
-            result.tableState.toPersistenceDto(
-                registries.ruleConfigs,
-                registries.discardPiles,
-                registries.exhaustiveDrawReasons,
-                registries.extensionGameActions,
-                registries.components,
+            reasonId = result.reasonId,
+            state = result.tableState.toPersistenceDto(
+                ruleConfigRegistry = registries.ruleConfigs,
+                discardPileRegistry = registries.discardPiles,
+                exhaustiveDrawReasonRegistry = registries.exhaustiveDrawReasons,
+                extensionGameActionRegistry = registries.extensionGameActions,
+                componentRegistry = registries.components,
             ),
         )
     }
@@ -51,13 +51,13 @@ internal class HistoryTableChangeMapper(
     fun decode(dto: HistoryTableResultPersistenceDto): HistoryTableResult = when (dto) {
         is HistoryTableResultPersistenceDto.Change -> HistoryTableResult.Change(decodeChange(dto.change))
         is HistoryTableResultPersistenceDto.Checkpoint -> HistoryTableResult.Checkpoint(
-            dto.reasonId,
-            dto.state.toDomain(
-                registries.ruleConfigs,
-                registries.discardPiles,
-                registries.exhaustiveDrawReasons,
-                registries.extensionGameActions,
-                registries.components,
+            reasonId = dto.reasonId,
+            tableState = dto.state.toDomain(
+                ruleConfigRegistry = registries.ruleConfigs,
+                discardPileRegistry = registries.discardPiles,
+                exhaustiveDrawReasonRegistry = registries.exhaustiveDrawReasons,
+                extensionGameActionRegistry = registries.extensionGameActions,
+                componentRegistry = registries.components,
             ),
         )
     }
@@ -73,10 +73,10 @@ internal class HistoryTableChangeMapper(
         changedPlayers = change.changedPlayers.map { playerChange ->
             HistoryPlayerChangePersistenceDto(
                 playerWithoutHistory = playerChange.playerWithoutHistory.toPersistenceDto(
-                    registries.discardPiles,
-                    registries.exhaustiveDrawReasons,
-                    registries.extensionGameActions,
-                    registries.components,
+                    discardPileRegistry = registries.discardPiles,
+                    exhaustiveDrawReasonRegistry = registries.exhaustiveDrawReasons,
+                    extensionGameActionRegistry = registries.extensionGameActions,
+                    componentRegistry = registries.components,
                 ),
                 retainedActionCount = playerChange.retainedActionCount,
                 appendedActions = playerChange.appendedActions.map {
@@ -96,8 +96,8 @@ internal class HistoryTableChangeMapper(
         reservedWallTiles = change.reservedWallTiles?.map { it.toPersistenceDto(registries.components) },
         physicalWallLayout = change.physicalWallLayout?.let { layout ->
             HistoryWallLayoutChangePersistenceDto(
-                layout.removedTileIds.map(Uuid::toString).toSet(),
-                TileWallPhysicalLayout(layout.updatedPlacements).toPersistenceDto().placements,
+                removedTileIds = layout.removedTileIds.map(Uuid::toString).toSet(),
+                updatedPlacements = TileWallPhysicalLayout(layout.updatedPlacements).toPersistenceDto().placements,
             )
         },
         finishedPlayerIds = change.finishedPlayerIds?.map(Uuid::toString)?.toSet(),
@@ -123,10 +123,10 @@ internal class HistoryTableChangeMapper(
         changedPlayers = dto.changedPlayers.map { playerChange ->
             HistoryPlayerChange(
                 playerWithoutHistory = playerChange.playerWithoutHistory.toDomain(
-                    registries.discardPiles,
-                    registries.exhaustiveDrawReasons,
-                    registries.extensionGameActions,
-                    registries.components,
+                    discardPileRegistry = registries.discardPiles,
+                    exhaustiveDrawReasonRegistry = registries.exhaustiveDrawReasons,
+                    extensionGameActionRegistry = registries.extensionGameActions,
+                    componentRegistry = registries.components,
                 ),
                 retainedActionCount = playerChange.retainedActionCount,
                 appendedActions = playerChange.appendedActions.map {
@@ -146,9 +146,9 @@ internal class HistoryTableChangeMapper(
         reservedWallTiles = dto.reservedWallTiles?.map { it.toDomain(registries.components) },
         physicalWallLayout = dto.physicalWallLayout?.let { layout ->
             HistoryWallLayoutChange(
-                layout.removedTileIds.map(Uuid::parse).toSet(),
-                TileWallPhysicalLayoutPersistenceDto(
-                    layout.updatedPlacements,
+                removedTileIds = layout.removedTileIds.map(Uuid::parse).toSet(),
+                updatedPlacements = TileWallPhysicalLayoutPersistenceDto(
+                    placements = layout.updatedPlacements,
                 ).toDomain().placements,
             )
         },

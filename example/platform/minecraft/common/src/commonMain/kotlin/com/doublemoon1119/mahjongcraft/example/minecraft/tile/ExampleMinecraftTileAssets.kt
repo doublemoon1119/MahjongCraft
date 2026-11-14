@@ -28,20 +28,20 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.standardAssetKey
  */
 fun registerExampleTileAssets(registry: MinecraftTileAssetRegistrar) {
     registry.register(
-        MinecraftTileSetAppearanceDefinition(
+        definition = MinecraftTileSetAppearanceDefinition(
             id = EXAMPLE_TILE_SET_APPEARANCE_ID,
             coverTextureId = "$EXAMPLE_ASSET_NAMESPACE:textures/item/mahjong_tile/mahjong_tile_cover.png",
             unknownFaceTextureId = "$EXAMPLE_ASSET_NAMESPACE:textures/item/mahjong_tile/mahjong_tile_unknown.png",
         ),
     )
     registry.register(
-        MinecraftRuleTileAppearanceDefinition(
+        definition = MinecraftRuleTileAppearanceDefinition(
             ruleModuleId = ExamplePairingIds.RULE_MODULE,
             appearanceId = EXAMPLE_TILE_SET_APPEARANCE_ID,
         ),
     )
     registry.register(
-        MinecraftTileSetAppearanceDefinition(
+        definition = MinecraftTileSetAppearanceDefinition(
             id = PUBLIC_FACE_BODY_APPEARANCE_ID,
             coverTextureId = "$EXAMPLE_ASSET_NAMESPACE:textures/item/mahjong_tile/mahjong_tile_cover_public_face.png",
             unknownFaceTextureId = "$EXAMPLE_ASSET_NAMESPACE:textures/item/mahjong_tile/mahjong_tile_unknown.png",
@@ -50,7 +50,7 @@ fun registerExampleTileAssets(registry: MinecraftTileAssetRegistrar) {
     (1..8).forEach { value ->
         val tile = Tile.Numeric(Tile.Suit.Character, value)
         registry.register(
-            MinecraftTileStyleAssetDefinition(
+            definition = MinecraftTileStyleAssetDefinition(
                 styleId = ExamplePairingComponentIds.PUBLIC_FACE_APPEARANCE,
                 tile = tile,
                 assetKey = "$EXAMPLE_ASSET_NAMESPACE:public_face_m$value",
@@ -60,7 +60,7 @@ fun registerExampleTileAssets(registry: MinecraftTileAssetRegistrar) {
         )
     }
     registry.register(
-        MinecraftTileAssetDefinition(
+        definition = MinecraftTileAssetDefinition(
             typeId = ExamplePairingIds.INVERTED_ONE_MAN,
             assetKey = INVERTED_ONE_MAN_ASSET_KEY,
             resources = MinecraftTileResources(
@@ -78,7 +78,7 @@ fun registerExampleTileAssets(registry: MinecraftTileAssetRegistrar) {
  */
 fun registerExampleTileLabels(registry: TileLabelRegistrar) {
     registry.register(
-        TileLabelDefinition(
+        definition = TileLabelDefinition(
             assetKey = INVERTED_ONE_MAN_ASSET_KEY,
             label = TileLabel(topLeft = TileLabelText("1", TileLabelColor.RED), topRight = null),
         ),

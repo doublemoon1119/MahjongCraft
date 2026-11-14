@@ -101,8 +101,8 @@ class TileAssetKeysTest {
     @Test
     fun `unsupported extension tile types fall back to unknown`() {
         assertEquals(
-            UNKNOWN_TILE_ASSET_KEY,
-            Tile.Extension(TileTypeId.parse("example:missing")).toAssetKey(registry),
+            expected = UNKNOWN_TILE_ASSET_KEY,
+            actual = Tile.Extension(TileTypeId.parse("example:missing")).toAssetKey(registry),
         )
     }
 

@@ -97,7 +97,7 @@ object ShowcaseTimelineCurves {
      * @return 介於 0 到 1 的具現進度。
      */
     fun equipmentAppearance(elapsed: Double): Double = easeOut(
-        ((elapsed - ELYTRA_APPEAR_TICK) / (ELYTRA_OPEN_TICK - ELYTRA_APPEAR_TICK)).coerceIn(0.0, 1.0),
+        value = ((elapsed - ELYTRA_APPEAR_TICK) / (ELYTRA_OPEN_TICK - ELYTRA_APPEAR_TICK)).coerceIn(0.0, 1.0),
     )
 
     /**

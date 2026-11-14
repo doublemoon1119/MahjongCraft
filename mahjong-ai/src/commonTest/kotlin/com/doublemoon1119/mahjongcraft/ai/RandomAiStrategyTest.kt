@@ -82,9 +82,9 @@ class RandomAiStrategyTest {
         val strategy = RandomAiStrategy(extensionActionRegistry, Random(1))
         val ronAction = GameAction.Ron(Uuid.random())
         val context = contextWithHand(
-            Hand(),
-            AiDecisionPhase.RespondingToDiscard,
-            listOf(ronAction, GameAction.Pass),
+            hand = Hand(),
+            phase = AiDecisionPhase.RespondingToDiscard,
+            legalActions = listOf(ronAction, GameAction.Pass),
             discardReactionId = Uuid.random(),
         )
 
@@ -102,9 +102,9 @@ class RandomAiStrategyTest {
         val strategy = RandomAiStrategy(extensionActionRegistry, Random(1))
         val reactionId = Uuid.random()
         val context = contextWithHand(
-            Hand(),
-            AiDecisionPhase.RespondingToDiscard,
-            emptyList(),
+            hand = Hand(),
+            phase = AiDecisionPhase.RespondingToDiscard,
+            legalActions = emptyList(),
             discardReactionId = reactionId,
         )
 
@@ -125,7 +125,7 @@ class RandomAiStrategyTest {
             selectedTileIds = selectedTileIds,
         )
         val result = strategy.decideGameCommand(
-            contextWithHand(
+            context = contextWithHand(
                 hand = Hand(),
                 phase = AiDecisionPhase.RespondingToDiscard,
                 legalActions = listOf(GameAction.Extension(TestExtensionAction)),
@@ -254,8 +254,8 @@ class RandomAiStrategyTest {
         }
 
         assertTrue(
-            results.any { it == GameCommand.Kan(GameAction.KanType.CLOSED_KAN, tile.id) },
-            "Kan should be selected at least once across many trials.",
+            actual = results.any { it == GameCommand.Kan(GameAction.KanType.CLOSED_KAN, tile.id) },
+            message = "Kan should be selected at least once across many trials.",
         )
         assertTrue(results.any { it is GameCommand.Discard }, "Discard should still occur at least once across many trials.")
     }
@@ -305,7 +305,7 @@ class RandomAiStrategyTest {
         val hand = Hand(tiles = listOf(FakeIdentifiedTileFactory.create(Tile.Honor.East)))
         val results = List(200) {
             strategy.decideGameCommand(
-                contextWithHand(hand, AiDecisionPhase.OwnTurn, listOf(GameAction.Extension(TestExtensionAction))).let { context ->
+                context = contextWithHand(hand, AiDecisionPhase.OwnTurn, listOf(GameAction.Extension(TestExtensionAction))).let { context ->
                     // 擴充動作 handler 會依對局設定取得規則模組，這裡改用已登記的日麻設定。
                     context.copy(snapshot = context.snapshot.copy(config = RiichiRuleConfig()))
                 },

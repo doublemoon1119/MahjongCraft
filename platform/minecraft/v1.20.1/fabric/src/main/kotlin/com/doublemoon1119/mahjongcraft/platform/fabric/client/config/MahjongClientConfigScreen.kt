@@ -96,19 +96,19 @@ class MahjongClientConfigScreen(
             val categoryWidth = (bounds.width - PANEL_PADDING * 2 - BOTTOM_BUTTON_GAP) / 2
             Category.entries.forEachIndexed { index, entry ->
                 addCategoryButton(
-                    bounds.left + PANEL_PADDING + index % 2 * (categoryWidth + BOTTOM_BUTTON_GAP),
-                    bounds.contentTop + index / 2 * ClientConfigCategoryLayout.CATEGORY_ROW_HEIGHT,
-                    categoryWidth,
-                    entry,
+                    x = bounds.left + PANEL_PADDING + index % 2 * (categoryWidth + BOTTOM_BUTTON_GAP),
+                    y = bounds.contentTop + index / 2 * ClientConfigCategoryLayout.CATEGORY_ROW_HEIGHT,
+                    buttonWidth = categoryWidth,
+                    target = entry,
                 )
             }
         } else {
             Category.entries.forEachIndexed { index, entry ->
                 addCategoryButton(
-                    bounds.left + PANEL_PADDING,
-                    bounds.contentTop + index * CATEGORY_BUTTON_GAP,
-                    bounds.sidebarButtonWidth,
-                    entry,
+                    x = bounds.left + PANEL_PADDING,
+                    y = bounds.contentTop + index * CATEGORY_BUTTON_GAP,
+                    buttonWidth = bounds.sidebarButtonWidth,
+                    target = entry,
                 )
             }
         }
@@ -128,13 +128,13 @@ class MahjongClientConfigScreen(
         } else {
             client?.setScreen(
                 UnsavedChangesConfirmationScreen(
-                    this,
-                    {
+                    previousScreen = this,
+                    onApply = {
                         client?.setScreen(this)
                         applyDraft(closeAfterSave = true)
                     },
-                    { client?.setScreen(parent) },
-                    differenceText(),
+                    onDiscard = { client?.setScreen(parent) },
+                    changesPreview = differenceText(),
                 ),
             )
         }
@@ -578,19 +578,19 @@ class MahjongClientConfigScreen(
     /** 取得目前分類的宣告式欄位。 */
     private fun rows(): List<ConfigRow> = when (category) {
         Category.AUTOMATIC -> listOf(
-            ConfigRow(
-                MinecraftClientConfigScreenKeys.AUTO_SORT_HAND,
-                MinecraftClientConfigScreenKeys.AUTO_SORT_HAND_DESCRIPTION,
-                { booleanText(it.autoSortHandEnabled) },
-                { it.copy(autoSortHandEnabled = !it.autoSortHandEnabled) },
+            element = ConfigRow(
+                nameKey = MinecraftClientConfigScreenKeys.AUTO_SORT_HAND,
+                descriptionKey = MinecraftClientConfigScreenKeys.AUTO_SORT_HAND_DESCRIPTION,
+                valueText = { booleanText(it.autoSortHandEnabled) },
+                update = { it.copy(autoSortHandEnabled = !it.autoSortHandEnabled) },
             ),
         ) + automaticRows()
 
         Category.HUD -> listOf(
-            ConfigRow(
-                MinecraftClientConfigScreenKeys.EDIT_HUD_LAYOUT,
-                MinecraftClientConfigScreenKeys.EDIT_HUD_LAYOUT_DESCRIPTION,
-                { Text.translatable(MinecraftClientConfigScreenKeys.EDIT_HUD_LAYOUT) },
+            element = ConfigRow(
+                nameKey = MinecraftClientConfigScreenKeys.EDIT_HUD_LAYOUT,
+                descriptionKey = MinecraftClientConfigScreenKeys.EDIT_HUD_LAYOUT_DESCRIPTION,
+                valueText = { Text.translatable(MinecraftClientConfigScreenKeys.EDIT_HUD_LAYOUT) },
                 onActivate = {
                     client?.setScreen(
                         MahjongHudLayoutEditorScreen(
@@ -606,11 +606,11 @@ class MahjongClientConfigScreen(
 
         Category.GAME_PANELS -> presentationRows(MahjongPresentationToggleSection.GAME_PANELS)
         Category.VISUAL_FEEDBACK -> listOf(
-            ConfigRow(
-                MinecraftClientConfigScreenKeys.TILE_LABELS,
-                MinecraftClientConfigScreenKeys.TILE_LABELS_DESCRIPTION,
-                { booleanText(it.tileLabelsEnabled) },
-                { it.copy(tileLabelsEnabled = !it.tileLabelsEnabled) },
+            element = ConfigRow(
+                nameKey = MinecraftClientConfigScreenKeys.TILE_LABELS,
+                descriptionKey = MinecraftClientConfigScreenKeys.TILE_LABELS_DESCRIPTION,
+                valueText = { booleanText(it.tileLabelsEnabled) },
+                update = { it.copy(tileLabelsEnabled = !it.tileLabelsEnabled) },
             ),
         ) + presentationRows(MahjongPresentationToggleSection.VISUAL_FEEDBACK)
     }

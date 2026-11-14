@@ -52,8 +52,8 @@ class DecisionTileSelectionStateTest {
     @Test
     fun `ignores a tile outside any selection`() {
         assertEquals(
-            DecisionTileSelectionState.Outcome.Ignored,
-            state.toggle(ruleDecisionPrompt(), TILE_A, isActionSelectionActive = false),
+            expected = DecisionTileSelectionState.Outcome.Ignored,
+            actual = state.toggle(ruleDecisionPrompt(), TILE_A, isActionSelectionActive = false),
         )
     }
 
@@ -128,8 +128,8 @@ class DecisionTileSelectionStateTest {
         state.beginAction(prompt.actions.single())
 
         assertEquals(
-            DecisionTileSelectionState.Outcome.Ignored,
-            state.toggle(prompt, TILE_A, isActionSelectionActive = false),
+            expected = DecisionTileSelectionState.Outcome.Ignored,
+            actual = state.toggle(prompt, TILE_A, isActionSelectionActive = false),
         )
     }
 
@@ -174,8 +174,8 @@ class DecisionTileSelectionStateTest {
     @Test
     fun `ignores confirm outside any selection`() {
         assertEquals(
-            DecisionTileSelectionState.Outcome.Ignored,
-            state.confirm(ruleDecisionPrompt(), isActionSelectionActive = false),
+            expected = DecisionTileSelectionState.Outcome.Ignored,
+            actual = state.confirm(ruleDecisionPrompt(), isActionSelectionActive = false),
         )
     }
 
@@ -358,7 +358,7 @@ class DecisionTileSelectionStateTest {
     private fun actionPrompt(minCount: Int, maxCount: Int) = PlayerDecisionPromptDto(
         decisionKey = DECISION_KEY,
         actions = listOf(
-            PlayerDecisionActionDto(
+            element = PlayerDecisionActionDto(
                 token = ACTION_TOKEN,
                 actionId = RiichiGameAction.Riichi.id,
                 tileSelection = PlayerDecisionActionTileSelectionDto(

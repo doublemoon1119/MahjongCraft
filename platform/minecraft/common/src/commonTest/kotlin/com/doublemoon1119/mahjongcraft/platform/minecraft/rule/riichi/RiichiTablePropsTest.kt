@@ -139,9 +139,9 @@ class RiichiTablePropsTest {
         assertEquals(2 * step, RiichiTableProps.cornerWidth(state(stickPotCount = 2), seatIndex = 0), EPSILON)
         assertEquals(0.0, RiichiTableProps.cornerWidth(state(riichiSeatIndices = setOf(1), stickPotCount = 1), seatIndex = 0))
         assertEquals(
-            3 * step,
-            RiichiTableProps.cornerWidth(state(riichiSeatIndices = setOf(1), comboCount = 1, stickPotCount = 3), seatIndex = 0),
-            EPSILON,
+            expected = 3 * step,
+            actual = RiichiTableProps.cornerWidth(state(riichiSeatIndices = setOf(1), comboCount = 1, stickPotCount = 3), seatIndex = 0),
+            absoluteTolerance = EPSILON,
         )
     }
 

@@ -69,33 +69,33 @@ class HistoryRoundQueryReaderTest {
         var parseCount = 0
 
         assertFailure(
-            read(database, fixture.matchId, policy = HistoryQueryPolicy(queryEnabled = false), parse = {
+            result = read(database = database, matchId = fixture.matchId, policy = HistoryQueryPolicy(queryEnabled = false), parse = {
                 parseCount++
                 successDocument()
             }),
-            HistoryQueryErrorCode.QUERY_DISABLED,
+            code = HistoryQueryErrorCode.QUERY_DISABLED,
         )
         assertFailure(
-            read(database, fixture.matchId, scope = HistoryQueryScope.ALL, access = access(fixture.playerId, false), parse = {
+            result = read(database = database, matchId = fixture.matchId, scope = HistoryQueryScope.ALL, access = access(fixture.playerId, false), parse = {
                 parseCount++
                 successDocument()
             }),
-            HistoryQueryErrorCode.ACCESS_DENIED,
+            code = HistoryQueryErrorCode.ACCESS_DENIED,
         )
         assertFailure(
-            read(database, fixture.matchId, excluded = setOf(fixture.matchId.toString()), parse = {
+            result = read(database = database, matchId = fixture.matchId, excluded = setOf(fixture.matchId.toString()), parse = {
                 parseCount++
                 successDocument()
             }),
-            HistoryQueryErrorCode.NOT_AVAILABLE,
+            code = HistoryQueryErrorCode.NOT_AVAILABLE,
         )
         insertTombstone(database.path, fixture.matchId)
         assertFailure(
-            read(database, fixture.matchId, parse = {
+            result = read(database = database, matchId = fixture.matchId, parse = {
                 parseCount++
                 successDocument()
             }),
-            HistoryQueryErrorCode.NOT_AVAILABLE,
+            code = HistoryQueryErrorCode.NOT_AVAILABLE,
         )
         assertEquals(0, parseCount)
     }
@@ -108,21 +108,21 @@ class HistoryRoundQueryReaderTest {
         val otherPlayer = Uuid.parse("00000000-0000-0000-0000-000000000011")
 
         assertFailure(
-            read(database, fixture.matchId, access = access(otherPlayer)),
-            HistoryQueryErrorCode.NOT_AVAILABLE,
+            result = read(database, fixture.matchId, access = access(otherPlayer)),
+            code = HistoryQueryErrorCode.NOT_AVAILABLE,
         )
         assertIs<HistoryQueryResult.Success<TestReplay>>(
-            read(database, fixture.matchId, scope = HistoryQueryScope.ALL, access = access(otherPlayer, true)),
+            value = read(database, fixture.matchId, scope = HistoryQueryScope.ALL, access = access(otherPlayer, true)),
         )
         assertFailure(
-            read(
-                database,
-                fixture.matchId,
+            result = read(
+                database = database,
+                matchId = fixture.matchId,
                 scope = HistoryQueryScope.ALL,
                 access = access(otherPlayer, true),
                 policy = HistoryQueryPolicy(allowAdministratorQuery = false),
             ),
-            HistoryQueryErrorCode.ACCESS_DENIED,
+            code = HistoryQueryErrorCode.ACCESS_DENIED,
         )
     }
 
@@ -205,18 +205,18 @@ class HistoryRoundQueryReaderTest {
         assertFailure(result, HistoryQueryErrorCode.NOT_AVAILABLE)
 
         val wrongPlayer = TestReplay(
-            fixture.matchId,
-            fixture.tableId,
-            Uuid.parse("00000000-0000-0000-0000-000000000099"),
+            matchId = fixture.matchId,
+            tableId = fixture.tableId,
+            playerId = Uuid.parse("00000000-0000-0000-0000-000000000099"),
         )
         assertFailure(
-            read(
+            result = read(
                 database = database,
                 matchId = fixture.matchId,
                 read = { success(wrongPlayer) },
                 identity = TestReplay::identity,
             ),
-            HistoryQueryErrorCode.NOT_AVAILABLE,
+            code = HistoryQueryErrorCode.NOT_AVAILABLE,
         )
     }
 
@@ -274,8 +274,8 @@ class HistoryRoundQueryReaderTest {
     ): MatchFixture {
         val matchId = Uuid.parse("00000000-0000-0000-0000-000000000001")
         sql(
-            path,
-            "INSERT INTO history_match(match_id, table_id, rule_id, status, started_at_epoch_millis, ended_at_epoch_millis) VALUES (?, ?, ?, 'COMPLETED', 1, 2)",
+            path = path,
+            statement = "INSERT INTO history_match(match_id, table_id, rule_id, status, started_at_epoch_millis, ended_at_epoch_millis) VALUES (?, ?, ?, 'COMPLETED', 1, 2)",
             matchId,
             TABLE_ID,
             "mahjongcraft:riichi",

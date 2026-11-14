@@ -32,7 +32,7 @@ class SqliteHistoryDatabaseTest {
         val database = SqliteHistoryDatabase.open(path)
         val match = Uuid.random().toString()
         database.archive(
-            archive(match).copy(
+            record = archive(match).copy(
                 participants = listOf(
                     HistoryParticipantRecord(0, "large", "example:strategy", "x".repeat(400_000)),
                     HistoryParticipantRecord(1, "valid", "example:strategy", "{}"),
@@ -83,7 +83,7 @@ class SqliteHistoryDatabaseTest {
         val database = SqliteHistoryDatabase.open(path)
         val matchId = Uuid.random().toString()
         database.archive(
-            HistoryArchiveRecord(
+            record = HistoryArchiveRecord(
                 matchId = matchId,
                 tableId = Uuid.random().toString(),
                 ruleId = "mahjongcraft:test",
@@ -97,8 +97,8 @@ class SqliteHistoryDatabaseTest {
         )
 
         assertEquals(
-            HistoryReplayPayloadRead.Found("{\"payload\":true}"),
-            database.readReplayPayload(matchId, 64),
+            expected = HistoryReplayPayloadRead.Found("{\"payload\":true}"),
+            actual = database.readReplayPayload(matchId, 64),
         )
         assertEquals(HistoryReplayPayloadRead.TooLarge, database.readReplayPayload(matchId, 4))
         assertEquals(HistoryReplayPayloadRead.Missing, database.readReplayPayload(Uuid.random().toString(), 64))
@@ -128,7 +128,7 @@ class SqliteHistoryDatabaseTest {
 
         assertFailsWith<IllegalStateException> {
             database.appendPendingBatch(
-                listOf(pending(sequence = 2, payload = "new"), original.copy(payload = "different")),
+                records = listOf(pending(sequence = 2, payload = "new"), original.copy(payload = "different")),
             )
         }
         assertEquals(listOf(original), database.readPending(original.matchId))

@@ -55,8 +55,8 @@ class FabricTileLabelCommand(
             is MahjongClientConfigUpdateResult.Failure -> {
                 MinecraftClient.getInstance().player?.sendMessage(
                     configSaveFailureMessage(
-                        Text.translatable(MinecraftClientConfigScreenKeys.TILE_LABELS),
-                        result.message,
+                        settingName = Text.translatable(MinecraftClientConfigScreenKeys.TILE_LABELS),
+                        details = result.message,
                     ),
                     false,
                 )

@@ -45,7 +45,7 @@ fun GameInitializationResult.initializeRuleComponents(
         val tile = area.tile
         registry.validate(tile.components)
         val initial = registry.initialize(
-            ComponentLifecycleContext(
+            context = ComponentLifecycleContext(
                 ruleModuleId = ruleModuleId,
                 tableState = candidate,
                 ownerType = BuiltInComponentOwners.TILE,
@@ -75,14 +75,14 @@ fun GameInitializationResult.initializeRuleComponents(
         var discardPile = player.discardPile
         player.discardPile.entries.forEachIndexed { index, entry ->
             val entryComponents = registry.initializeRecordComponents(
-                ComponentLifecycleContext(
+                context = ComponentLifecycleContext(
                     ruleModuleId = ruleModuleId,
                     tableState = candidate,
                     ownerType = BuiltInComponentOwners.DISCARD_ENTRY,
                     owner = entry,
                     previousTableState = previousTableState,
                 ),
-                entry.components,
+                written = entry.components,
             )
             if (entryComponents != entry.components) discardPile = discardPile.replaceEntryComponents(index, entryComponents)
             if (!entry.isTaken) {
@@ -99,14 +99,14 @@ fun GameInitializationResult.initializeRuleComponents(
                 melds = hand.melds.map { meld ->
                     meld.copy(
                         components = registry.initializeRecordComponents(
-                            ComponentLifecycleContext(
+                            context = ComponentLifecycleContext(
                                 ruleModuleId = ruleModuleId,
                                 tableState = candidate,
                                 ownerType = BuiltInComponentOwners.MELD,
                                 owner = meld,
                                 previousTableState = previousTableState,
                             ),
-                            meld.components,
+                            written = meld.components,
                         ),
                         tiles = meld.tiles.map { tiles.getValue(it.id) },
                         sourceTile = meld.sourceTile?.let { tiles.getValue(it.id) },
@@ -114,7 +114,7 @@ fun GameInitializationResult.initializeRuleComponents(
                 },
             ),
             tileAreas = PlayerTileAreas(
-                player.tileAreas.areas.map { area ->
+                areas = player.tileAreas.areas.map { area ->
                     PlayerTileArea(area.id, area.tiles.map { tiles.getValue(it.id) })
                 },
             ),

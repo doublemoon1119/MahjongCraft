@@ -184,7 +184,7 @@ class MahjongCraftMod : ModInitializer {
                             tableLocationPersistence.attach(server)
                             if (!historyWriter.attach(server)) {
                                 dataStatus.report(
-                                    MahjongDataProblem(
+                                    problem = MahjongDataProblem(
                                         source = MahjongDataSource.HISTORY_DATABASE,
                                         file = FabricHistoryDatabasePath.displayPath,
                                         cause = MahjongDataLoadCause.Unreadable(historyWriter.lastError ?: "unknown"),

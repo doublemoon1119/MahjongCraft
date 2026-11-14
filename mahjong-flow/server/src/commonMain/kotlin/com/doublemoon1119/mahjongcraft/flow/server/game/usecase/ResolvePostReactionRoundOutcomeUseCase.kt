@@ -40,7 +40,7 @@ class ResolvePostReactionRoundOutcomeUseCase(
      */
     suspend operator fun invoke(gameId: Uuid): Outcome<ResolvedRoundOutcome?, GameError> {
         val result = gameRepository.updateGame(
-            gameId,
+            gameId = gameId,
             history = { previous, next, outcome ->
                 val resolved = (outcome as? Outcome.Success)?.value
                 if (previous == null || next == null || resolved == null) {
@@ -53,7 +53,7 @@ class ResolvePostReactionRoundOutcomeUseCase(
                         null
                     }
                     listOf(
-                        HistoryEventDraft(
+                        element = HistoryEventDraft(
                             actorPlayerId = null,
                             fact = HistoryFact.RuleEffectResolved(
                                 reasonId = resolved.id,

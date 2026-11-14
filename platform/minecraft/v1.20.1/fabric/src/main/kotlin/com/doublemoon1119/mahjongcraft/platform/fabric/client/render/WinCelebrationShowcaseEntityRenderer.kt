@@ -282,10 +282,10 @@ class WinCelebrationShowcaseEntityRenderer(
             val localZ = sin(phase) * radialDistance * SMOKE_DEPTH_SCALE
             val rise = (SMOKE_MIN_RISE + seededUnit(entity.animationSeed, 1600 + index * 31) * SMOKE_RISE_VARIANCE) * travel
             val position = horizontalRelative(
-                localX,
-                centerY + rise + sin(phase * 1.7) * radialDistance * 0.18,
-                localZ,
-                billboardRotation,
+                localX = localX,
+                y = centerY + rise + sin(phase * 1.7) * radialDistance * 0.18,
+                localZ = localZ,
+                billboardRotation = billboardRotation,
             )
             renderSmokePuff(position, progress, index, billboardRotation, matrices, consumers)
         }
@@ -717,16 +717,16 @@ class WinCelebrationShowcaseEntityRenderer(
                 val a = index * PI * 2.0 / RIPPLE_SEGMENTS
                 val b = (index + 1) * PI * 2.0 / RIPPLE_SEGMENTS
                 thinQuad(
-                    buffer,
-                    matrix,
-                    cos(a) * radius,
-                    RIPPLE_Y_OFFSET,
-                    sin(a) * radius,
-                    cos(b) * radius,
-                    RIPPLE_Y_OFFSET,
-                    sin(b) * radius,
-                    0.003,
-                    alpha,
+                    buffer = buffer,
+                    matrix = matrix,
+                    ax = cos(a) * radius,
+                    ay = RIPPLE_Y_OFFSET,
+                    az = sin(a) * radius,
+                    bx = cos(b) * radius,
+                    by = RIPPLE_Y_OFFSET,
+                    bz = sin(b) * radius,
+                    width = 0.003,
+                    alpha = alpha,
                 )
             }
         }
@@ -1126,23 +1126,23 @@ class WinCelebrationShowcaseEntityRenderer(
         entity.wings.forEachIndexed { index, wing ->
             val wingDefinition = showcaseRegistry.find(wing.cueKey) ?: return@forEachIndexed
             renderTitleImage(
-                wingDefinition,
-                elapsed,
-                fade,
-                formation.wingCenters[index],
-                billboardRotation,
-                matrices,
-                consumers,
+                definition = wingDefinition,
+                elapsed = elapsed,
+                fade = fade,
+                localCenterX = formation.wingCenters[index],
+                billboardRotation = billboardRotation,
+                matrices = matrices,
+                consumers = consumers,
             )
             renderTitleText(
-                wingDefinition,
-                elapsed,
-                fade,
-                formation.wingCenters[index],
-                billboardRotation,
-                matrices,
-                consumers,
-                light,
+                definition = wingDefinition,
+                elapsed = elapsed,
+                fade = fade,
+                localCenterX = formation.wingCenters[index],
+                billboardRotation = billboardRotation,
+                matrices = matrices,
+                consumers = consumers,
+                light = light,
             )
         }
     }
@@ -1316,17 +1316,17 @@ class WinCelebrationShowcaseEntityRenderer(
                 val a = index * twoPi / WINNING_RIPPLE_SEGMENTS
                 val b = (index + 1) * twoPi / WINNING_RIPPLE_SEGMENTS
                 thinQuad(
-                    buffer,
-                    matrix,
-                    cos(a) * radius,
-                    0.0,
-                    sin(a) * radius,
-                    cos(b) * radius,
-                    0.0,
-                    sin(b) * radius,
-                    WINNING_RIPPLE_WIDTH,
-                    alpha,
-                    WINNING_RIPPLE_COLOR,
+                    buffer = buffer,
+                    matrix = matrix,
+                    ax = cos(a) * radius,
+                    ay = 0.0,
+                    az = sin(a) * radius,
+                    bx = cos(b) * radius,
+                    by = 0.0,
+                    bz = sin(b) * radius,
+                    width = WINNING_RIPPLE_WIDTH,
+                    alpha = alpha,
+                    color = WINNING_RIPPLE_COLOR,
                 )
             }
         }

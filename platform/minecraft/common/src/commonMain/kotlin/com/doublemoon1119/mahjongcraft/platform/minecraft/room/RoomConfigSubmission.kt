@@ -83,7 +83,7 @@ object RoomConfigSubmission {
         val rebuilt = effectiveDefinition.fields
             .filter { it.categoryId == SharedGameFlowConfigPresentation.FLOW && it.isEditable }
             .fold(
-                rebuiltRule.copy(
+                initial = rebuiltRule.copy(
                     flowConfig = presentations.normalizeFlowConfig(
                         ruleModuleId = ruleModuleId,
                         ruleConfig = rebuiltRule.ruleConfig,

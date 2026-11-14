@@ -61,9 +61,9 @@ class TableStatePersistenceTest {
         val state = createTableState()
         val wallTiles = state.tileWall.getAllTiles()
         assertEncodedRoundTrip(
-            state.copy(
+            state = state.copy(
                 physicalWallLayout = TileWallPhysicalLayout(
-                    wallTiles.mapIndexed { index, tile ->
+                    placements = wallTiles.mapIndexed { index, tile ->
                         tile.id to TileWallPlacement(
                             position = TileWallPosition(1, index, index % 2),
                             offset = TileWallPlacementOffset(alongWallStacks = 0.25),
@@ -114,9 +114,9 @@ class TableStatePersistenceTest {
         val tileId = state.players.first().discardPile.entries.last().tile.id
 
         assertEncodedRoundTrip(
-            state.copy(
+            state = state.copy(
                 turnPhase = TurnPhase.AwaitingDiscardReaction(
-                    PendingReaction(
+                    reaction = PendingReaction(
                         discarderId = discarderId,
                         tileId = tileId,
                         eligiblePlayerIds = setOf(responderId),
@@ -143,9 +143,9 @@ class TableStatePersistenceTest {
         )
 
         assertEncodedRoundTrip(
-            state.copy(
+            state = state.copy(
                 turnPhase = TurnPhase.AwaitingRobbingReaction(
-                    PendingRobbingReaction(
+                    reaction = PendingRobbingReaction(
                         declarerId = declarerId,
                         declaredAction = kanAction,
                         robbedTile = robbedTile,
@@ -163,7 +163,7 @@ class TableStatePersistenceTest {
         val state = createTableState()
 
         assertEncodedRoundTrip(
-            state.copy(
+            state = state.copy(
                 wallOpening = WallOpening(wallSideOffsetFromDealer = 2, stacksFromRight = 7),
                 reservedWallTiles = listOf(identified(Tile.Honor.White), identified(Tile.Honor.Green)),
             ),
@@ -205,9 +205,9 @@ class TableStatePersistenceTest {
         val playerId = state.players.first().id
 
         assertEncodedRoundTrip(
-            state.copy(
+            state = state.copy(
                 revealedHandSettlements = listOf(
-                    RevealedHandSettlement(playerId, setOf(Tile.Honor.North)),
+                    element = RevealedHandSettlement(playerId, setOf(Tile.Honor.North)),
                 ),
             ),
         )
@@ -217,8 +217,8 @@ class TableStatePersistenceTest {
     @Test
     fun `missing revealed hand settlements field fails decoding`() {
         val encoded = persistenceJson.encodeToString(
-            TableStatePersistenceDto.serializer(),
-            createTableState().toPersistenceDto(),
+            serializer = TableStatePersistenceDto.serializer(),
+            value = createTableState().toPersistenceDto(),
         )
         val withoutField = encoded.replace(",\"revealedHandSettlements\":[]", "")
 
@@ -268,7 +268,7 @@ class TableStatePersistenceTest {
             players = listOf(human, ai),
             config = RiichiRuleConfig(),
             tileWall = TileWall(
-                listOf(
+                tiles = listOf(
                     identified(Tile.Honor.Red),
                     redFive(Tile.Suit.Dot),
                 ),
@@ -286,7 +286,7 @@ class TableStatePersistenceTest {
                     completedSupplementalDrawCount = 2,
                     revealedKanDoraCount = 1,
                     pendingKanDoraReveals = listOf(
-                        RiichiPendingKanDoraReveal(human.id, GameAction.KanType.OPEN_KAN, 2),
+                        element = RiichiPendingKanDoraReveal(human.id, GameAction.KanType.OPEN_KAN, 2),
                     ),
                 ),
             ),
@@ -314,20 +314,20 @@ class TableStatePersistenceTest {
 
     /** 使用所有內建 registry 將 [TableState] 轉換成 persistence DTO。 */
     private fun TableState.toPersistenceDto(): TableStatePersistenceDto = toPersistenceDto(
-        ruleConfigRegistry,
-        discardPileRegistry,
-        exhaustiveDrawReasonRegistry,
-        extensionGameActionRegistry,
-        bundledPersistenceRegistries().components,
+        ruleConfigRegistry = ruleConfigRegistry,
+        discardPileRegistry = discardPileRegistry,
+        exhaustiveDrawReasonRegistry = exhaustiveDrawReasonRegistry,
+        extensionGameActionRegistry = extensionGameActionRegistry,
+        componentRegistry = bundledPersistenceRegistries().components,
     )
 
     /** 使用所有內建 registry 將 persistence DTO 還原成 [TableState]。 */
     private fun TableStatePersistenceDto.toDomain(): TableState = toDomain(
-        ruleConfigRegistry,
-        discardPileRegistry,
-        exhaustiveDrawReasonRegistry,
-        extensionGameActionRegistry,
-        bundledPersistenceRegistries().components,
+        ruleConfigRegistry = ruleConfigRegistry,
+        discardPileRegistry = discardPileRegistry,
+        exhaustiveDrawReasonRegistry = exhaustiveDrawReasonRegistry,
+        extensionGameActionRegistry = extensionGameActionRegistry,
+        componentRegistry = bundledPersistenceRegistries().components,
     )
 
     /**

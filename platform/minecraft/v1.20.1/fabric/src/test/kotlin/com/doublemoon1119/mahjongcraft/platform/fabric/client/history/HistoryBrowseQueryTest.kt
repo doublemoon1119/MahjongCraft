@@ -27,14 +27,14 @@ class HistoryBrowseQueryTest {
             )
 
             assertEquals(
-                HistoryBrowseQuery(
+                expected = HistoryBrowseQuery(
                     scope = scope,
                     sortField = HistorySortFieldDto.ENDED_AT,
                     sortDirection = HistorySortDirectionDto.ASC,
                     filters = HistoryQueryFiltersDto.NONE.copy(ruleId = "mahjongcraft:riichi"),
                 ),
-                query.normalized(),
-                "$scope",
+                actual = query.normalized(),
+                message = "$scope",
             )
         }
     }
@@ -59,7 +59,7 @@ class HistoryBrowseQueryTest {
     @Test
     fun `test valid filters parse with local date bounds`() {
         val result = HistoryBrowseFilterValidation.parse(
-            HistoryBrowseFilterInput(
+            input = HistoryBrowseFilterInput(
                 ruleId = "mahjongcraft:riichi",
                 playerName = "Player777",
                 matchId = "a3b8c1d4-e5f6-7890-abcd-ef1234567890",
@@ -71,8 +71,8 @@ class HistoryBrowseQueryTest {
                 ownRankMin = "1",
                 ownRankMax = "10000",
             ),
-            ZoneId.of("UTC"),
-            HistoryQueryScopeDto.OWN,
+            zone = ZoneId.of("UTC"),
+            scope = HistoryQueryScopeDto.OWN,
         )
         val valid = assertIs<HistoryBrowseFilterResult.Valid>(result)
         assertEquals("mahjongcraft:riichi", valid.filters.ruleId)
@@ -87,9 +87,9 @@ class HistoryBrowseQueryTest {
     @Test
     fun `test invalid dates are reported`() {
         val result = HistoryBrowseFilterValidation.parse(
-            HistoryBrowseFilterInput(fromDate = "2023-02-29", throughDate = "+999999999-12-31"),
-            ZoneId.of("UTC"),
-            HistoryQueryScopeDto.OWN,
+            input = HistoryBrowseFilterInput(fromDate = "2023-02-29", throughDate = "+999999999-12-31"),
+            zone = ZoneId.of("UTC"),
+            scope = HistoryQueryScopeDto.OWN,
         )
         val invalid = assertIs<HistoryBrowseFilterResult.Invalid>(result)
         assertEquals(HistoryBrowseFilterError.INVALID_DATE, invalid.errors[HistoryBrowseFilterField.FROM_DATE])
@@ -101,10 +101,10 @@ class HistoryBrowseQueryTest {
     fun `test date bounds respect daylight saving time`() {
         val zone = ZoneId.of("America/New_York")
         val result = assertIs<HistoryBrowseFilterResult.Valid>(
-            HistoryBrowseFilterValidation.parse(
-                HistoryBrowseFilterInput(fromDate = "2024-03-10", throughDate = "2024-03-10"),
-                zone,
-                HistoryQueryScopeDto.OWN,
+            value = HistoryBrowseFilterValidation.parse(
+                input = HistoryBrowseFilterInput(fromDate = "2024-03-10", throughDate = "2024-03-10"),
+                zone = zone,
+                scope = HistoryQueryScopeDto.OWN,
             ),
         )
         val start = LocalDate.of(2024, 3, 10).atStartOfDay(zone).toInstant().toEpochMilli()
@@ -118,9 +118,9 @@ class HistoryBrowseQueryTest {
     @Test
     fun `test reversed date range is reported`() {
         val result = HistoryBrowseFilterValidation.parse(
-            HistoryBrowseFilterInput(fromDate = "2024-03-02", throughDate = "2024-03-01"),
-            ZoneId.of("UTC"),
-            HistoryQueryScopeDto.OWN,
+            input = HistoryBrowseFilterInput(fromDate = "2024-03-02", throughDate = "2024-03-01"),
+            zone = ZoneId.of("UTC"),
+            scope = HistoryQueryScopeDto.OWN,
         )
         val invalid = assertIs<HistoryBrowseFilterResult.Invalid>(result)
         assertEquals(HistoryBrowseFilterError.REVERSED_RANGE, invalid.errors[HistoryBrowseFilterField.FROM_DATE])
@@ -131,9 +131,9 @@ class HistoryBrowseQueryTest {
     @Test
     fun `test invalid rule and ranks are reported`() {
         val result = HistoryBrowseFilterValidation.parse(
-            HistoryBrowseFilterInput(ruleId = "Riichi", ownRankMin = "0", ownRankMax = "999999999999999999999"),
-            ZoneId.of("UTC"),
-            HistoryQueryScopeDto.OWN,
+            input = HistoryBrowseFilterInput(ruleId = "Riichi", ownRankMin = "0", ownRankMax = "999999999999999999999"),
+            zone = ZoneId.of("UTC"),
+            scope = HistoryQueryScopeDto.OWN,
         )
         val invalid = assertIs<HistoryBrowseFilterResult.Invalid>(result)
         assertEquals(HistoryBrowseFilterError.INVALID_RULE, invalid.errors[HistoryBrowseFilterField.RULE])
@@ -145,9 +145,9 @@ class HistoryBrowseQueryTest {
     @Test
     fun `test reversed rank range is reported`() {
         val result = HistoryBrowseFilterValidation.parse(
-            HistoryBrowseFilterInput(ownRankMin = "4", ownRankMax = "2"),
-            ZoneId.of("UTC"),
-            HistoryQueryScopeDto.OWN,
+            input = HistoryBrowseFilterInput(ownRankMin = "4", ownRankMax = "2"),
+            zone = ZoneId.of("UTC"),
+            scope = HistoryQueryScopeDto.OWN,
         )
         val invalid = assertIs<HistoryBrowseFilterResult.Invalid>(result)
         assertEquals(HistoryBrowseFilterError.REVERSED_RANGE, invalid.errors[HistoryBrowseFilterField.MIN_RANK])
@@ -159,9 +159,9 @@ class HistoryBrowseQueryTest {
     fun `test all match scopes ignore rank fields`() {
         listOf(HistoryQueryScopeDto.ALL, HistoryQueryScopeDto.STRESS_TEST).forEach { scope ->
             val result = HistoryBrowseFilterValidation.parse(
-                HistoryBrowseFilterInput(ownRankMin = "not-a-rank", ownRankMax = "0"),
-                ZoneId.of("UTC"),
-                scope,
+                input = HistoryBrowseFilterInput(ownRankMin = "not-a-rank", ownRankMax = "0"),
+                zone = ZoneId.of("UTC"),
+                scope = scope,
             )
             val valid = assertIs<HistoryBrowseFilterResult.Valid>(result)
             assertEquals(null, valid.filters.ownRankMin)
@@ -173,9 +173,9 @@ class HistoryBrowseQueryTest {
     @Test
     fun `test invalid match id is reported`() {
         val result = HistoryBrowseFilterValidation.parse(
-            HistoryBrowseFilterInput(matchId = "match-001"),
-            ZoneId.of("UTC"),
-            HistoryQueryScopeDto.OWN,
+            input = HistoryBrowseFilterInput(matchId = "match-001"),
+            zone = ZoneId.of("UTC"),
+            scope = HistoryQueryScopeDto.OWN,
         )
         val invalid = assertIs<HistoryBrowseFilterResult.Invalid>(result)
         assertEquals(HistoryBrowseFilterError.INVALID_MATCH_ID, invalid.errors[HistoryBrowseFilterField.MATCH_ID])
@@ -185,9 +185,9 @@ class HistoryBrowseQueryTest {
     @Test
     fun `test invalid player name is reported`() {
         val result = HistoryBrowseFilterValidation.parse(
-            HistoryBrowseFilterInput(playerName = "Player\nName"),
-            ZoneId.of("UTC"),
-            HistoryQueryScopeDto.OWN,
+            input = HistoryBrowseFilterInput(playerName = "Player\nName"),
+            zone = ZoneId.of("UTC"),
+            scope = HistoryQueryScopeDto.OWN,
         )
         val invalid = assertIs<HistoryBrowseFilterResult.Invalid>(result)
         assertEquals(HistoryBrowseFilterError.INVALID_PLAYER_NAME, invalid.errors[HistoryBrowseFilterField.PLAYER_NAME])

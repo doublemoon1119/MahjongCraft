@@ -78,8 +78,8 @@ class TaiwanPhysicalWallLayoutPolicyTest {
                 )
                 val action = if (index < MAX_FLOWER_DRAWS) TAIWAN_REVEAL_FLOWER_ACTION else kanAction()
                 val decision = assertIs<PhysicalWallLayoutTransitionDecision.Completed>(
-                    fixture.policy.resolveSupplementalTransition(
-                        PhysicalWallLayoutTransitionContext(
+                    value = fixture.policy.resolveSupplementalTransition(
+                        context = PhysicalWallLayoutTransitionContext(
                             tableStateBeforeAction = before,
                             tableStateAfterAction = after,
                             currentLayout = fixture.layout,
@@ -96,10 +96,10 @@ class TaiwanPhysicalWallLayoutPolicyTest {
                 assertEquals(if (index % 2 == 0) 2 else 1, decision.phases.size)
                 assertNoOverlap(fixture.layout, fixture.tableState, "draw ${index + 1} at $opening")
                 assertNoCornerTransition(
-                    fixture.layout,
-                    fixture.tableState,
-                    STACKS_PER_SIDE_WITH_FLOWERS,
-                    "draw ${index + 1} at $opening",
+                    layout = fixture.layout,
+                    state = fixture.tableState,
+                    stacksPerSide = STACKS_PER_SIDE_WITH_FLOWERS,
+                    stage = "draw ${index + 1} at $opening",
                 )
                 assertTrue(nearestGap(fixture.layout, fixture.tableState) >= MINIMUM_GAP)
             }
@@ -136,7 +136,7 @@ class TaiwanPhysicalWallLayoutPolicyTest {
                         }
                         val layout = when (
                             val result = fixture.policy.resolveTransitionValidated(
-                                PhysicalWallLayoutTransitionContext(
+                                context = PhysicalWallLayoutTransitionContext(
                                     tableStateBeforeAction = before,
                                     tableStateAfterAction = after,
                                     currentLayout = fixture.layout,
@@ -198,13 +198,13 @@ class TaiwanPhysicalWallLayoutPolicyTest {
                 physicalWallLayout = null,
             )
             val decision = assertIs<PhysicalWallLayoutTransitionDecision.Completed>(
-                fixture.policy.resolveSupplementalTransition(
-                    PhysicalWallLayoutTransitionContext(
-                        before,
-                        after,
-                        fixture.layout,
-                        before.currentPlayer.id,
-                        kanAction(),
+                value = fixture.policy.resolveSupplementalTransition(
+                    context = PhysicalWallLayoutTransitionContext(
+                        tableStateBeforeAction = before,
+                        tableStateAfterAction = after,
+                        currentLayout = fixture.layout,
+                        actorPlayerId = before.currentPlayer.id,
+                        action = kanAction(),
                     ),
                     drawNumber = index + 1,
                 ),
@@ -213,8 +213,8 @@ class TaiwanPhysicalWallLayoutPolicyTest {
         }
 
         assertEquals(
-            (fixture.tableState.tileWall.getAllTiles() + fixture.tableState.reservedWallTiles).map { it.id }.toSet(),
-            fixture.layout.placements.keys,
+            expected = (fixture.tableState.tileWall.getAllTiles() + fixture.tableState.reservedWallTiles).map { it.id }.toSet(),
+            actual = fixture.layout.placements.keys,
         )
         assertNoOverlap(fixture.layout, fixture.tableState, "four kan wall")
     }
@@ -238,8 +238,8 @@ class TaiwanPhysicalWallLayoutPolicyTest {
         )
 
         val decision = assertIs<PhysicalWallLayoutTransitionDecision.Completed>(
-            fixture.policy.resolveTransitionValidated(
-                PhysicalWallLayoutTransitionContext(
+            value = fixture.policy.resolveTransitionValidated(
+                context = PhysicalWallLayoutTransitionContext(
                     tableStateBeforeAction = before,
                     tableStateAfterAction = after,
                     currentLayout = fixture.layout,
@@ -282,13 +282,13 @@ class TaiwanPhysicalWallLayoutPolicyTest {
         val config = TaiwanRuleConfig(useFlowerTiles = useFlowerTiles)
         val tileCount = if (useFlowerTiles) 144 else 136
         val wallLayout = TaiwanWallLayout(config).resolve(
-            List(tileCount) { FakeIdentifiedTileFactory.create(Tile.Honor.East) },
-            opening,
+            shuffledTiles = List(tileCount) { FakeIdentifiedTileFactory.create(Tile.Honor.East) },
+            opening = opening,
         )
         val policy = TaiwanPhysicalWallLayoutPolicy(config)
         val completeLayout = assertIs<InitialPhysicalWallLayoutDecision.Completed>(
-            policy.createInitialLayoutValidated(
-                InitialPhysicalWallLayoutContext(
+            value = policy.createInitialLayoutValidated(
+                context = InitialPhysicalWallLayoutContext(
                     wallLayout = wallLayout,
                     wallOpening = opening,
                     occupiedTileIds = (wallLayout.drawOrder.drop(INITIAL_DEAL_TILE_COUNT) + wallLayout.reservedWallTiles)
@@ -343,8 +343,8 @@ class TaiwanPhysicalWallLayoutPolicyTest {
             }
 
         assertTrue(
-            cornerTiles.isEmpty(),
-            "Expected no reserved tiles in corner transition slots at $stage, but found ${cornerTiles.keys}.",
+            actual = cornerTiles.isEmpty(),
+            message = "Expected no reserved tiles in corner transition slots at $stage, but found ${cornerTiles.keys}.",
         )
     }
 

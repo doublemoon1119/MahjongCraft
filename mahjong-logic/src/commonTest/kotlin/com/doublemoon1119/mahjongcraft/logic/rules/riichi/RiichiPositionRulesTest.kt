@@ -123,9 +123,9 @@ class RiichiPositionRulesTest {
         val table = table(listOf(seat(Wind.EAST), winner))
 
         val value = rules.winValue(
-            view(table, winner),
-            winner.hand,
-            TileValue(FIVE_BAMBOO),
+            view = view(table, winner),
+            hand = winner.hand,
+            winningTile = TileValue(FIVE_BAMBOO),
             isTsumo = false,
             declarations = setOf(RIICHI_GAME_ACTION),
         )
@@ -160,8 +160,8 @@ class RiichiPositionRulesTest {
         val view = view(table(listOf(seat(Wind.EAST), self)), self)
 
         assertEquals(
-            DeclarationEffect(cost = RIICHI_STICK_POINTS, locksHand = true),
-            rules.declarationEffect(view, RIICHI_GAME_ACTION),
+            expected = DeclarationEffect(cost = RIICHI_STICK_POINTS, locksHand = true),
+            actual = rules.declarationEffect(view, RIICHI_GAME_ACTION),
         )
         assertEquals(DeclarationEffect.NONE, rules.declarationEffect(view, GameAction.Extension(OtherAction)))
     }
@@ -176,15 +176,15 @@ class RiichiPositionRulesTest {
         val redTable = table(listOf(discarder, red))
 
         val plainPoints = assertIs<WinValue.Points>(
-            rules.winValue(view(plainTable, plain), plain.hand, TileValue(TWO_BAMBOO), isTsumo = false),
+            value = rules.winValue(view(plainTable, plain), plain.hand, TileValue(TWO_BAMBOO), isTsumo = false),
         ).points
         val redPoints = assertIs<WinValue.Points>(
-            rules.winValue(view(redTable, red), red.hand, TileValue(TWO_BAMBOO), isTsumo = false),
+            value = rules.winValue(view(redTable, red), red.hand, TileValue(TWO_BAMBOO), isTsumo = false),
         ).points
         val redSettlement = module.declareRon(
-            redTable,
-            red,
-            FakeIdentifiedTileFactory.create(TWO_BAMBOO),
+            tableState = redTable,
+            player = red,
+            winningTile = FakeIdentifiedTileFactory.create(TWO_BAMBOO),
             discarderId = discarder.id,
         )?.settlement
 
@@ -235,8 +235,8 @@ class RiichiPositionRulesTest {
         )
 
         assertEquals(
-            RonExclusions(ownDiscards = setOf(character(5), dot(5))),
-            rules.ronExclusions(view(table(listOf(opponent, self)), self), opponent.id),
+            expected = RonExclusions(ownDiscards = setOf(character(5), dot(5))),
+            actual = rules.ronExclusions(view(table(listOf(opponent, self)), self), opponent.id),
         )
     }
 
@@ -256,7 +256,7 @@ class RiichiPositionRulesTest {
     fun `each call pushes the passed boundary back by two`() {
         val calledMeld = pon(dot(7))
         val caller = seat(
-            Wind.WEST,
+            wind = Wind.WEST,
             melds = listOf(calledMeld.copy(sourceTile = calledMeld.tiles.first())),
         )
         val self = seat(Wind.SOUTH, discards = (1..5).map(::character))
@@ -307,8 +307,8 @@ class RiichiPositionRulesTest {
         val marked = transparent.copy(
             snapshot = transparent.snapshot.copy(
                 tileWall = TileWallSnapshot(
-                    listOf(
-                        tile.copy(
+                    tiles = listOf(
+                        element = tile.copy(
                             face = tile.face!!.copy(views = ComponentViewSet.EMPTY.with(RiichiTileComponentViews.DORA_INDICATOR, Unit)),
                         ),
                     ),
@@ -383,7 +383,7 @@ class RiichiPositionRulesTest {
      * @return 三人與四人日麻皆可用的測試手牌。
      */
     private fun yakuhaiTankiOnTwoBamboo(): Hand = handOf(
-        listOf(character(2), character(3), character(4), dot(4), dot(5), dot(6), dot(7), dot(8), dot(9)) +
+        tiles = listOf(character(2), character(3), character(4), dot(4), dot(5), dot(6), dot(7), dot(8), dot(9)) +
             List(3) { Tile.Honor.Red } + TWO_BAMBOO,
     )
 
@@ -393,7 +393,7 @@ class RiichiPositionRulesTest {
      * @return 門前榮和無役的測試手牌。
      */
     private fun noYakuTankiOnFiveBamboo(): Hand = handOf(
-        listOf(character(2), character(3), character(4), dot(4), dot(5), dot(6), dot(7), dot(8), dot(9)) +
+        tiles = listOf(character(2), character(3), character(4), dot(4), dot(5), dot(6), dot(7), dot(8), dot(9)) +
             listOf(bamboo(2), bamboo(3), bamboo(4), FIVE_BAMBOO),
     )
 
@@ -418,7 +418,7 @@ class RiichiPositionRulesTest {
 
     /** 九九九萬、四五六筒、七八九筒、中中中、二條：單騎聽二條，中提供役牌役，只用三人麻將也有的牌。 */
     private fun threePlayerYakuhaiTanki(): Hand = handOf(
-        List(3) { character(9) } + listOf(dot(4), dot(5), dot(6), dot(7), dot(8), dot(9)) +
+        tiles = List(3) { character(9) } + listOf(dot(4), dot(5), dot(6), dot(7), dot(8), dot(9)) +
             List(3) { Tile.Honor.Red } + TWO_BAMBOO,
     )
 

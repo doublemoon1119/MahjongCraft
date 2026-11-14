@@ -25,7 +25,7 @@ class RiichiToitoiTest : RiichiHandValueCalculatorTestBase() {
     fun `test toitoi menzen`() {
         // 手牌：111m, 222m, 333p, 44s, 77z
         val hand = FakeHandFactory.create(
-            listOf(
+            tiles = listOf(
                 Tile.Numeric(Tile.Suit.Character, 1),
                 Tile.Numeric(Tile.Suit.Character, 1),
                 Tile.Numeric(Tile.Suit.Character, 1),
@@ -61,7 +61,7 @@ class RiichiToitoiTest : RiichiHandValueCalculatorTestBase() {
         // 手牌：222m, 333p, 444s, 77z (3 組刻子 + 1 雀頭)
         // 手牌 10 張 + 副露 3 張 + 自摸 1 張 = 14 張
         val hand = FakeHandFactory.create(
-            listOf(
+            tiles = listOf(
                 Tile.Numeric(Tile.Suit.Character, 2),
                 Tile.Numeric(Tile.Suit.Character, 2),
                 Tile.Numeric(Tile.Suit.Character, 2),
@@ -74,7 +74,7 @@ class RiichiToitoiTest : RiichiHandValueCalculatorTestBase() {
                 Tile.Honor.Red,
             ),
             melds = listOf(
-                FakeMeldFactory.create(
+                element = FakeMeldFactory.create(
                     type = MeldType.Pon,
                     tiles = listOf(
                         FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 1)),
@@ -105,7 +105,7 @@ class RiichiToitoiTest : RiichiHandValueCalculatorTestBase() {
         // 手牌：222m, 333p, 444s, 77z (3 組刻子 + 1 雀頭)
         // 手牌 10 張 + 副露 4 張 + 自摸 1 張 = 15 張（含槓多一張）
         val hand = FakeHandFactory.create(
-            listOf(
+            tiles = listOf(
                 Tile.Numeric(Tile.Suit.Character, 2),
                 Tile.Numeric(Tile.Suit.Character, 2),
                 Tile.Numeric(Tile.Suit.Character, 2),
@@ -118,7 +118,7 @@ class RiichiToitoiTest : RiichiHandValueCalculatorTestBase() {
                 Tile.Honor.Red,
             ),
             melds = listOf(
-                FakeMeldFactory.create(
+                element = FakeMeldFactory.create(
                     type = MeldType.OpenKan,
                     tiles = listOf(
                         FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 1)),
@@ -148,7 +148,7 @@ class RiichiToitoiTest : RiichiHandValueCalculatorTestBase() {
     fun `test toitoi with shuntsu returns null`() {
         // 手牌：123m (順子), 111m, 222p, 333s, 77z
         val hand = FakeHandFactory.create(
-            listOf(
+            tiles = listOf(
                 Tile.Numeric(Tile.Suit.Character, 1),
                 Tile.Numeric(Tile.Suit.Character, 2),
                 Tile.Numeric(Tile.Suit.Character, 3),

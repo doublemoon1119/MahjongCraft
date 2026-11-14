@@ -416,7 +416,7 @@ internal class HistoryRoundEventPresenter(
                 listOf(Text.translatable(text.translationKey, *text.arguments.toTypedArray()))
             }
             is HistoryWinDetailValueDto.Entries -> formatter.entries(
-                value.entries.map {
+                entries = value.entries.map {
                     WinSettlementDetailEntry(
                         id = it.id,
                         quantity = it.quantity?.toQuantity(),
@@ -680,12 +680,12 @@ private fun HistoryRoundOutcomeDto.toPresentation(identitySeats: List<Int>, reas
     nextDealerSeat = nextDealerSeat,
     rows = (identitySeats + beneficiarySeats + responsibleSeats + scoresBySeat.keys).distinct().sorted().map { seat ->
         HistoryOutcomeRowPresentation(
-            seat,
-            scoresBySeat[seat],
-            seat in beneficiarySeats,
-            seat in responsibleSeats,
-            scoreChangesBySeat[seat],
-            winnerDetails.firstOrNull { it.seatIndex == seat }?.detailFields.orEmpty(),
+            seatIndex = seat,
+            score = scoresBySeat[seat],
+            beneficiary = seat in beneficiarySeats,
+            responsible = seat in responsibleSeats,
+            scoreChange = scoreChangesBySeat[seat],
+            detailFields = winnerDetails.firstOrNull { it.seatIndex == seat }?.detailFields.orEmpty(),
         )
     },
     hasEarlierWinSettlement = hasEarlierWinSettlement,

@@ -46,7 +46,7 @@ internal object ActionScoringApplier {
         componentRegistry: ComponentRegistry,
     ): Applied {
         val scoring = module.createActionScoringPolicy().resolve(
-            ActionScoringContext(
+            context = ActionScoringContext(
                 tableStateBeforeAction = before,
                 tableStateAfterAction = after,
                 actorPlayerId = actorPlayerId,
@@ -56,8 +56,8 @@ internal object ActionScoringApplier {
         ) ?: return Applied(after, scoring = null)
 
         fun violation(detail: String): Nothing = throw RuleContractViolationException(
-            GameAbortReasonIds.RULE_EXECUTION_FAILED,
-            "Action scoring for $action is invalid: $detail",
+            reasonId = GameAbortReasonIds.RULE_EXECUTION_FAILED,
+            diagnostic = "Action scoring for $action is invalid: $detail",
         )
 
         val playerIds = after.players.mapTo(mutableSetOf()) { it.id }

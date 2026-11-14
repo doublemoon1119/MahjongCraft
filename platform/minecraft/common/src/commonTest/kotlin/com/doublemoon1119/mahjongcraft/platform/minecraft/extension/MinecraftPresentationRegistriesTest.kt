@@ -87,24 +87,24 @@ class MinecraftPresentationRegistriesTest {
         labelsOnly.register(reason)
 
         assertEquals(
-            listOf(
-                MinecraftPresentationRegistrationCategory(
+            expected = listOf(
+                element = MinecraftPresentationRegistrationCategory(
                     id = MinecraftExtensionRegistrationCategoryIds.EXHAUSTIVE_DRAW_SETTLEMENT_STATUS_LABEL,
                     displayName = "Exhaustive Draw Settlement Status Label",
                     registrationIds = listOf("example:draw"),
                 ),
             ),
-            reasonBaseline.additionsSince(createRegistries(reasonOnly).registrationSnapshot()),
+            actual = reasonBaseline.additionsSince(createRegistries(reasonOnly).registrationSnapshot()),
         )
         assertEquals(
-            listOf(
-                MinecraftPresentationRegistrationCategory(
+            expected = listOf(
+                element = MinecraftPresentationRegistrationCategory(
                     id = MinecraftExtensionRegistrationCategoryIds.EXHAUSTIVE_DRAW_REASON_DISPLAY_NAME,
                     displayName = "Exhaustive Draw Reason Display Name",
                     registrationIds = listOf("example:draw"),
                 ),
             ),
-            labelsBaseline.additionsSince(createRegistries(labelsOnly).registrationSnapshot()),
+            actual = labelsBaseline.additionsSince(createRegistries(labelsOnly).registrationSnapshot()),
         )
     }
 
@@ -141,7 +141,7 @@ class MinecraftPresentationRegistriesTest {
         publicPlayerIndicatorDisplayRegistry = PublicPlayerIndicatorDisplayRegistryImpl(),
         roomMemberAppearanceSourceRegistry = RoomMemberAppearanceSourceRegistryImpl(failurePolicy = ExtensionFailurePolicy.Default),
         gameConfigPresentationRegistry = GameConfigPresentationRegistryImpl(
-            RuleDecisionResolverRegistry(),
+            ruleDecisionResolvers = RuleDecisionResolverRegistry(),
         ),
         gameAchievementResolverRegistry = GameAchievementResolverRegistryImpl(),
     )

@@ -221,7 +221,7 @@ internal object SelfDeclarationApplier {
             tableState = stateAfterMeld,
             players = stateAfterMeld.players,
             patches = module.onMeldCompleted(
-                MeldCompletedContext(
+                context = MeldCompletedContext(
                     playersBefore = state.players,
                     playersAfter = stateAfterMeld.players,
                     actorPlayerId = declarerId,
@@ -338,23 +338,23 @@ internal object SelfDeclarationApplier {
             publicTileEvidenceIds = stateBeforeSupplementalDraw.publicTileEvidenceIds,
         )
         val decision = module.createSupplementalDrawPolicy().resolve(
-            SupplementalDrawContext(stateBeforeSupplementalDraw, candidateAfterBeforeReveal, actorPlayerId, action),
+            context = SupplementalDrawContext(stateBeforeSupplementalDraw, candidateAfterBeforeReveal, actorPlayerId, action),
         )
         return when (decision) {
             SupplementalDrawDecision.NotRequired -> Result.Applied(
-                candidateAfterBeforeReveal,
-                candidateAfterBeforeReveal,
-                emptyList(),
+                tableState = candidateAfterBeforeReveal,
+                declaredState = candidateAfterBeforeReveal,
+                drawnTiles = emptyList(),
             )
             is SupplementalDrawDecision.Rejected -> Result.Rejected(decision.reasonId)
             is SupplementalDrawDecision.Completed -> applyCompletedDecision(
-                stateBeforeSupplementalDraw,
-                candidateAfterBeforeReveal,
-                actorPlayerId,
-                decision,
-                action,
-                module,
-                componentRegistry,
+                originalState = stateBeforeSupplementalDraw,
+                candidateState = candidateAfterBeforeReveal,
+                actorPlayerId = actorPlayerId,
+                decision = decision,
+                action = action,
+                module = module,
+                componentRegistry = componentRegistry,
             ).completeWallReveal(module, actorPlayerId, action, componentRegistry)
         }
     }
@@ -369,11 +369,11 @@ internal object SelfDeclarationApplier {
         if (this is Result.Rejected) return this
         this as Result.Applied
         val afterReveal = WallRevealDecisionApplier.apply(
-            tableState,
-            WallRevealCheckpoint.AFTER_SUPPLEMENTAL_DRAW,
-            module,
-            actorPlayerId,
-            action,
+            tableState = tableState,
+            checkpoint = WallRevealCheckpoint.AFTER_SUPPLEMENTAL_DRAW,
+            module = module,
+            actorPlayerId = actorPlayerId,
+            sourceAction = action,
             componentRegistry = componentRegistry,
         )
         return when (afterReveal) {
@@ -419,7 +419,7 @@ internal object SelfDeclarationApplier {
         val currentPhysicalLayout = originalState.physicalWallLayout
             ?: return Result.Applied(stateWithoutResolvedPhysicalLayout, candidateState, decision.drawnTiles)
         val physicalDecision = module.createPhysicalWallLayoutPolicy().resolveTransitionValidated(
-            PhysicalWallLayoutTransitionContext(
+            context = PhysicalWallLayoutTransitionContext(
                 tableStateBeforeAction = originalState,
                 tableStateAfterAction = stateWithoutResolvedPhysicalLayout,
                 currentLayout = currentPhysicalLayout,

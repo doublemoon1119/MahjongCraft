@@ -75,9 +75,9 @@ class CompactReplayCodecTest {
         )
         val registries = bundledPersistenceRegistries()
         val document = CompactReplayCodec.encodeCompact(
-            events,
-            HistoryRecordingPersistenceMapper(registries),
-            registries,
+            events = events,
+            mapper = HistoryRecordingPersistenceMapper(registries),
+            registries = registries,
         )
 
         val transactions = CompactReplayCodec.decodeCompact(document).flatten()
@@ -85,26 +85,26 @@ class CompactReplayCodecTest {
             transaction.facts.count { it[ReplaySourceKeys.TYPE]?.jsonPrimitive?.content == HistoryFactTypeKeys.DICE_ROLLED } == 2
         }
         val identity = HistoryReplayIdentity(
-            matchId,
-            state.id,
-            state.players.map { player -> HistoryReplayPlayerIdentity(player.initialSeatIndex, player.id, null) },
+            matchId = matchId,
+            venueId = state.id,
+            players = state.players.map { player -> HistoryReplayPlayerIdentity(player.initialSeatIndex, player.id, null) },
         )
         val projected = HistoryReplayProjectionMapper.mapFacts(
-            diceTransaction.facts,
-            diceTransaction.actorSeats,
-            identity,
-            1,
-            HistoryRoundTileCatalog(emptyList()),
-            ReplayReadBudget(ReplayReadLimits()) {},
-            ComponentViewPersistenceRegistry(),
+            facts = diceTransaction.facts,
+            actorSeats = diceTransaction.actorSeats,
+            identity = identity,
+            roundNumber = 1,
+            tileCatalog = HistoryRoundTileCatalog(emptyList()),
+            budget = ReplayReadBudget(ReplayReadLimits()) {},
+            componentViews = ComponentViewPersistenceRegistry(),
         )
 
         assertEquals(
-            listOf(
+            expected = listOf(
                 HistoryReplayFact.DiceRolled(HistoryFactTypeKeys.DICE_ROLLED, 0, table.players[0].initialSeatIndex, listOf(2, 6)),
                 HistoryReplayFact.DiceRolled(HistoryFactTypeKeys.DICE_ROLLED, 1, table.players[2].initialSeatIndex, listOf(3, 4, 1)),
             ),
-            projected,
+            actual = projected,
         )
     }
 
@@ -121,7 +121,7 @@ class CompactReplayCodecTest {
         val responder = base.players[1]
         val state = base.copy(
             turnPhase = TurnPhase.AwaitingDiscardReaction(
-                PendingReaction(
+                reaction = PendingReaction(
                     discarderId = discarder.id,
                     tileId = discarder.hand.tiles.first().id,
                     eligiblePlayerIds = setOf(responder.id),
@@ -140,9 +140,9 @@ class CompactReplayCodecTest {
         )
         val registries = bundledPersistenceRegistries()
         val document = CompactReplayCodec.encodeCompact(
-            events,
-            HistoryRecordingPersistenceMapper(registries),
-            registries,
+            events = events,
+            mapper = HistoryRecordingPersistenceMapper(registries),
+            registries = registries,
         )
 
         val content = CompactReplayDictionary.decode(document.getValue(ReplayFormatKeys.PAYLOAD) as JsonObject)
@@ -172,9 +172,9 @@ class CompactReplayCodecTest {
         )
         val registries = bundledPersistenceRegistries()
         val document = CompactReplayCodec.encodeCompact(
-            events,
-            HistoryRecordingPersistenceMapper(registries),
-            registries,
+            events = events,
+            mapper = HistoryRecordingPersistenceMapper(registries),
+            registries = registries,
         )
 
         val content = CompactReplayDictionary.decode(document.getValue(ReplayFormatKeys.PAYLOAD) as JsonObject) as JsonObject
@@ -245,8 +245,8 @@ class CompactReplayCodecTest {
     fun `unknown top-level field is rejected`() {
         assertFailsWith<IllegalArgumentException> {
             CompactReplayCodec.decodeCompact(
-                JsonObject(
-                    mapOf(
+                document = JsonObject(
+                    content = mapOf(
                         ReplayFormatKeys.FORMAT_VERSION to JsonPrimitive(1),
                         ReplayFormatKeys.PAYLOAD to JsonObject(emptyMap()),
                         "extra" to JsonPrimitive(true),
@@ -261,7 +261,7 @@ class CompactReplayCodecTest {
     fun `unknown format version is rejected`() {
         assertFailsWith<IllegalArgumentException> {
             CompactReplayCodec.decodeCompact(
-                JsonObject(mapOf(ReplayFormatKeys.FORMAT_VERSION to JsonPrimitive(2), ReplayFormatKeys.PAYLOAD to JsonObject(emptyMap()))),
+                document = JsonObject(mapOf(ReplayFormatKeys.FORMAT_VERSION to JsonPrimitive(2), ReplayFormatKeys.PAYLOAD to JsonObject(emptyMap()))),
             )
         }
     }
@@ -271,7 +271,7 @@ class CompactReplayCodecTest {
     fun `missing replay payload is rejected`() {
         assertFailsWith<IllegalStateException> {
             CompactReplayCodec.decodeCompact(
-                JsonObject(mapOf(ReplayFormatKeys.FORMAT_VERSION to JsonPrimitive(1), ReplayFormatKeys.PAYLOAD to JsonArray(emptyList()))),
+                document = JsonObject(mapOf(ReplayFormatKeys.FORMAT_VERSION to JsonPrimitive(1), ReplayFormatKeys.PAYLOAD to JsonArray(emptyList()))),
             )
         }
     }
@@ -336,10 +336,10 @@ class CompactReplayCodecTest {
         val registries = bundledPersistenceRegistries()
         val matchId = Uuid.random()
         val document = settingsDocument(
-            matchId,
-            TypedPersistenceDto(
-                "unknown:rule",
-                JsonObject(emptyMap()),
+            matchId = matchId,
+            rule = TypedPersistenceDto(
+                typeKey = "unknown:rule",
+                payload = JsonObject(emptyMap()),
             ),
         )
 
@@ -365,8 +365,8 @@ class CompactReplayCodecTest {
         val registries = bundledPersistenceRegistries()
         val matchId = Uuid.random()
         val document = settingsDocument(
-            matchId,
-            registries.ruleConfigs.encode(RiichiRuleConfig()),
+            matchId = matchId,
+            rule = registries.ruleConfigs.encode(RiichiRuleConfig()),
             includeRule = false,
         )
 
@@ -392,8 +392,8 @@ class CompactReplayCodecTest {
         val registries = bundledPersistenceRegistries()
         val matchId = Uuid.random()
         val document = settingsDocument(
-            matchId,
-            registries.ruleConfigs.encode(RiichiRuleConfig()),
+            matchId = matchId,
+            rule = registries.ruleConfigs.encode(RiichiRuleConfig()),
             contentVersion = CompactReplayCodec.FORMAT_VERSION + 1,
         )
 
@@ -438,14 +438,14 @@ class CompactReplayCodecTest {
             if (includeFlow) put(ReplayFormatKeys.FLOW, flow)
         }
         val content = JsonObject(
-            mapOf(
+            content = mapOf(
                 ReplayFormatKeys.VERSION to JsonPrimitive(contentVersion),
                 ReplayFormatKeys.HEADER to JsonObject(header),
                 ReplayFormatKeys.ROUNDS to JsonPrimitive("Transactions are not decoded by this query"),
             ),
         )
         return JsonObject(
-            mapOf(
+            content = mapOf(
                 ReplayFormatKeys.FORMAT_VERSION to JsonPrimitive(CompactReplayCodec.FORMAT_VERSION),
                 ReplayFormatKeys.PAYLOAD to CompactReplayDictionary.encode(content),
             ),

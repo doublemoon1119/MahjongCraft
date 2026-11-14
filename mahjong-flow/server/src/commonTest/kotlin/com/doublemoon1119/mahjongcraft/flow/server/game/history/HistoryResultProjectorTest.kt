@@ -59,12 +59,12 @@ class HistoryResultProjectorTest {
         val second = tableWithScores(3000, 1000, first.id)
         val matchId = Uuid.random()
         val result = HistoryResultProjector.project(
-            listOf(
+            events = listOf(
                 event(matchId, 1, HistoryFact.MatchStarted(first, GameFlowConfig(), emptyMap())),
                 event(matchId, 2, HistoryFact.RoundStarted(second)),
                 event(matchId, 3, HistoryFact.MatchCompleted("test:completed", second.players.associate { it.id to it.score })),
             ),
-            riichiRegistry(),
+            moduleRegistry = riichiRegistry(),
         )
         assertEquals(3000, result.first { it.playerId == second.players[0].id }.finalScore)
     }

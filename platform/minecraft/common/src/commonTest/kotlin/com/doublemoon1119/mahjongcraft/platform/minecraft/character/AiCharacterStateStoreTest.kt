@@ -181,8 +181,8 @@ class AiCharacterStateStoreTest {
         val store = store()
         val game = Game(table, GameFlowConfig(), aiPlayerStrategyKeys = room.aiPlayerStrategyKeys)
         val saved = AiCharacterMetadata(
-            mapOf(room.id to mapOf(bot to alternate.id)),
-            mapOf(game.matchId to mapOf(bot to AiCharacterSnapshot(alternate.id, alternate))),
+            selections = mapOf(room.id to mapOf(bot to alternate.id)),
+            matches = mapOf(game.matchId to mapOf(bot to AiCharacterSnapshot(alternate.id, alternate))),
         )
         val changedRegistry = AiCharacterRegistryImpl().apply {
             register(BuiltInAiCharacters.TILE_MASCOT)

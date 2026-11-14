@@ -31,8 +31,8 @@ class NonBlockingPresentationLeaseCodecTest {
         val restored = NonBlockingPresentationLeaseCodec.read(nbt)
 
         assertFalse(
-            TablePresentationBusyPolicy.tileBlocksTableBusy(true, restored, 1_233L),
-            "A lease restored from the save file must still exempt the tile.",
+            actual = TablePresentationBusyPolicy.tileBlocksTableBusy(true, restored, 1_233L),
+            message = "A lease restored from the save file must still exempt the tile.",
         )
         assertTrue(TablePresentationBusyPolicy.tileBlocksTableBusy(true, restored, 1_234L))
     }

@@ -124,9 +124,9 @@ class RiichiOpponentModelTest {
     fun `a red five in an opponent meld raises the expected loss`() {
         val self = seat(Wind.SOUTH)
         val withRed = seat(
-            Wind.WEST,
+            wind = Wind.WEST,
             melds = listOf(
-                FakeMeldFactory.create(
+                element = FakeMeldFactory.create(
                     type = MeldType.Pon,
                     tiles = listOf(TileValue(dot(5)), TileValue(dot(5)), RED_FIVE_DOT).map { FakeIdentifiedTileFactory.create(it) },
                     sourceDirection = RelativeDirection.Across,

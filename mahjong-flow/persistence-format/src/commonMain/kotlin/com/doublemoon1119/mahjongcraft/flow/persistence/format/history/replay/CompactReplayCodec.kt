@@ -61,8 +61,8 @@ object CompactReplayCodec {
         }
         val payload = document[ReplayFormatKeys.PAYLOAD] as? JsonObject ?: error("Replay payload must be an object")
         val content = CompactReplayDictionary.decodeFields(
-            payload,
-            setOf(ReplayFormatKeys.VERSION, ReplayFormatKeys.HEADER),
+            encoded = payload,
+            fields = setOf(ReplayFormatKeys.VERSION, ReplayFormatKeys.HEADER),
         )
         require(content.keys == setOf(ReplayFormatKeys.VERSION, ReplayFormatKeys.HEADER)) {
             "Replay content lacks rule settings header"
@@ -479,14 +479,14 @@ object CompactReplayCodec {
         (gameplay[ReplaySourceKeys.TURN_PHASE] as? JsonObject)?.let { phase ->
             (phase[ReplaySourceKeys.TURN_PHASE_REACTION] as? JsonObject)?.let { reaction ->
                 gameplay[ReplaySourceKeys.TURN_PHASE] = JsonObject(
-                    phase + (ReplaySourceKeys.TURN_PHASE_REACTION to JsonObject(reaction.filterKeys { it != ReplaySourceKeys.ID })),
+                    content = phase + (ReplaySourceKeys.TURN_PHASE_REACTION to JsonObject(reaction.filterKeys { it != ReplaySourceKeys.ID })),
                 )
             }
         }
         val encodedPlayers = encoded[ReplayFormatKeys.PLAYERS] as JsonArray
         require(encodedPlayers.size == state.players.size) { "Replay player projection does not match the table" }
         gameplay[ReplayFormatKeys.PLAYERS] = JsonArray(
-            encodedPlayers.zip(state.players) { encodedPlayer, player ->
+            content = encodedPlayers.zip(state.players) { encodedPlayer, player ->
                 val projected = (encodedPlayer as JsonObject).filterKeys { it !in PROJECTION_EXCLUDED_PLAYER_KEYS }.toMutableMap()
                 projected[ReplayFormatKeys.DISCARDS] = JsonArray(player.discardPile.entries.map { projectDiscard(it, registries) })
                 JsonObject(projected)
@@ -503,7 +503,7 @@ object CompactReplayCodec {
      * @return 以牌 UUID 參照牌的牌河項目，之後由 [translate] 轉成局內索引。
      */
     private fun projectDiscard(entry: DiscardPile.DiscardEntry, registries: PersistenceRegistries): JsonObject = JsonObject(
-        buildMap {
+        content = buildMap {
             put(ReplayFormatKeys.DISCARD_TILE, persistenceJson.encodeToJsonElement(entry.tile.toPersistenceDto(registries.components)))
             if (entry.isTaken) put(ReplayFormatKeys.DISCARD_TAKEN, JsonPrimitive(true))
             val markers = entry.publicMarkerIds
@@ -603,7 +603,7 @@ object CompactReplayCodec {
                     reference
                 } else {
                     JsonObject(
-                        mapOf(
+                        content = mapOf(
                             ReplayFormatKeys.TILE_REFERENCE to reference,
                             ReplayFormatKeys.TILE_COMPONENTS to components,
                         ),
@@ -613,7 +613,7 @@ object CompactReplayCodec {
                 require(UUID_PATTERN.matches(tileId)) { "Invalid meld identity in replay" }
                 val meldIndex = index.meldIds.getOrPut(tileId) { index.meldIds.size }
                 JsonObject(
-                    element.mapValues { (key, value) ->
+                    content = element.mapValues { (key, value) ->
                         when (key) {
                             ReplaySourceKeys.ID -> JsonPrimitive(meldIndex)
                             ReplaySourceKeys.COMPONENTS -> value
@@ -623,7 +623,7 @@ object CompactReplayCodec {
                 )
             } else {
                 JsonObject(
-                    element.map { (key, value) ->
+                    content = element.map { (key, value) ->
                         val typeKey = (element[ReplaySourceKeys.TYPE_KEY] as? JsonPrimitive)?.content
                         val opaque = key == ReplaySourceKeys.COMPONENTS || (key == ReplayFormatKeys.PAYLOAD && typeKey != null && typeKey !in index.compactPayloadTypeKeys)
                         (if (opaque) key else translateKey(key, index)) to (if (opaque) value else translate(value, index))
@@ -754,9 +754,9 @@ object CompactReplayCodec {
                     before[before.lastIndex - offset] == after[after.lastIndex - offset]
                 }.count()
                 val splice = JsonObject(
-                    mapOf(
-                        ReplayPatchKeys.SPLICE to JsonArray(
-                            listOf(
+                    content = mapOf(
+                        pair = ReplayPatchKeys.SPLICE to JsonArray(
+                            content = listOf(
                                 JsonPrimitive(prefix),
                                 JsonPrimitive(before.size - prefix - suffix),
                                 JsonArray(after.subList(prefix, after.size - suffix)),
@@ -767,7 +767,7 @@ object CompactReplayCodec {
                 )
                 if (before.size == after.size) {
                     val changes = JsonObject(
-                        before.indices.mapNotNull { index ->
+                        content = before.indices.mapNotNull { index ->
                             diff(before[index], after[index])?.let { index.toString() to it }
                         }.toMap(),
                     )

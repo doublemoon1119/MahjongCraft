@@ -43,7 +43,7 @@ class MahjongSoundTimelineEntity(
         check(!world.isClient) { "Sound timeline must be configured by the server" }
         dataTracker.set(TABLE_ID, tableId.toString())
         enqueue(
-            AnimationStep.PlaySound(
+            step = AnimationStep.PlaySound(
                 soundId = soundId,
                 volume = volume,
                 pitch = pitch,

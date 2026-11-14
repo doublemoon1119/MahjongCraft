@@ -67,7 +67,7 @@ internal data class SimulationFailure(
         round?.let {
             appendLine("Round: ${it.start.roundPosition}, combo ${it.start.comboCount}, reproduced on replay: $reproducedOnReplay")
             appendLine(
-                "Last state: live wall ${it.final.tileWall.getAllTiles().size} tiles, reserved ${it.final.reservedWallTiles.size} tiles, " +
+                value = "Last state: live wall ${it.final.tileWall.getAllTiles().size} tiles, reserved ${it.final.reservedWallTiles.size} tiles, " +
                     "components ${it.final.components}",
             )
         }

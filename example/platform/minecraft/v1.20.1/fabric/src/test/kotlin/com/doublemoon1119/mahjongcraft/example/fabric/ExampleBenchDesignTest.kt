@@ -24,25 +24,25 @@ class ExampleBenchDesignTest {
             Direction.entries.forEach { side ->
                 val expected = side == facing.rotateYClockwise() || side == facing.rotateYCounterclockwise()
                 assertEquals(
-                    expected,
-                    ExampleBenchConnections.connects(
-                        facing,
-                        side,
-                        facing,
+                    expected = expected,
+                    actual = ExampleBenchConnections.connects(
+                        facing = facing,
+                        side = side,
+                        neighborFacing = facing,
                     ),
                 )
                 assertFalse(
-                    ExampleBenchConnections.connects(
-                        facing,
-                        side,
-                        null,
+                    actual = ExampleBenchConnections.connects(
+                        facing = facing,
+                        side = side,
+                        neighborFacing = null,
                     ),
                 )
                 assertFalse(
-                    ExampleBenchConnections.connects(
-                        facing,
-                        side,
-                        facing.opposite,
+                    actual = ExampleBenchConnections.connects(
+                        facing = facing,
+                        side = side,
+                        neighborFacing = facing.opposite,
                     ),
                 )
             }
@@ -67,24 +67,24 @@ class ExampleBenchDesignTest {
             Direction.WEST,
         ).forEach { facing ->
             val single = ExampleBenchGeometry.boxes(
-                facing,
-                false,
-                false,
+                facing = facing,
+                leftConnected = false,
+                rightConnected = false,
             )
             val left = ExampleBenchGeometry.boxes(
-                facing,
-                true,
-                false,
+                facing = facing,
+                leftConnected = true,
+                rightConnected = false,
             )
             val right = ExampleBenchGeometry.boxes(
-                facing,
-                false,
-                true,
+                facing = facing,
+                leftConnected = false,
+                rightConnected = true,
             )
             val middle = ExampleBenchGeometry.boxes(
-                facing,
-                true,
-                true,
+                facing = facing,
+                leftConnected = true,
+                rightConnected = true,
             )
             assertEquals(8, single.size)
             assertEquals(7, left.size)

@@ -53,7 +53,7 @@ class ExamplePairingRoundOpeningProcedure(
      * @return 下一輪要求。
      */
     private fun roll(playerId: Uuid): RoundOpeningStep.Roll = RoundOpeningStep.Roll(
-        OpeningDiceRollRequest(playerId = playerId, diceCount = 2),
+        request = OpeningDiceRollRequest(playerId = playerId, diceCount = 2),
     )
 
     /**
@@ -102,7 +102,7 @@ class ExamplePairingRoundOpeningProcedure(
         val sideCount = stacksPerSide.size
         val sideOffset = wallSideOffset(dice, sideCount)
         return RoundOpeningStep.Complete(
-            RoundOpeningCompletion(
+            result = RoundOpeningCompletion(
                 dealerPlayerId = dealerId,
                 wallOpening = WallOpening(
                     wallSideOffsetFromDealer = sideOffset,

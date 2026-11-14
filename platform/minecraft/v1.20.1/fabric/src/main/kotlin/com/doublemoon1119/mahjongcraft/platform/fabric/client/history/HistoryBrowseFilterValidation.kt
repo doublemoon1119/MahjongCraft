@@ -146,7 +146,7 @@ internal object HistoryBrowseFilterValidation {
         }
         if (errors.isNotEmpty()) return HistoryBrowseFilterResult.Invalid(errors)
         return HistoryBrowseFilterResult.Valid(
-            HistoryQueryFiltersDto(
+            filters = HistoryQueryFiltersDto(
                 ruleId = ruleId,
                 playerName = playerName,
                 matchId = matchId,

@@ -76,9 +76,9 @@ internal fun automaticControlStatusHudLayout(
     val rawWidth = 2 * PADDING + widths.sum() + (columns - 1) * COLUMN_GAP
     val rawHeight = 2 * PADDING + (minOf(usedCount, rowsPerColumn) - 1) * ROW_HEIGHT + textHeight
     val scale = minOf(
-        1.0,
-        (screenWidth - 2 * SCREEN_MARGIN).coerceAtLeast(1).toDouble() / rawWidth,
-        (screenHeight - 2 * SCREEN_MARGIN).coerceAtLeast(1).toDouble() / rawHeight,
+        a = 1.0,
+        b = (screenWidth - 2 * SCREEN_MARGIN).coerceAtLeast(1).toDouble() / rawWidth,
+        c = (screenHeight - 2 * SCREEN_MARGIN).coerceAtLeast(1).toDouble() / rawHeight,
     ).toFloat()
     val scaledWidth = ceil(rawWidth * scale).toInt().coerceAtMost(screenWidth)
     val scaledHeight = ceil(rawHeight * scale).toInt().coerceAtMost(screenHeight)

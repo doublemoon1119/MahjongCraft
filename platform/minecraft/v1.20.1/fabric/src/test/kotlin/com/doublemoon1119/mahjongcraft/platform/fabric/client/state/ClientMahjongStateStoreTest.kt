@@ -101,7 +101,7 @@ class ClientMahjongStateStoreTest {
             .toSnapshot(visibleHandPlayerIds = emptySet())
 
         store.apply(
-            GameUpdatePayloadDto(
+            payload = GameUpdatePayloadDto(
                 gameId = tableId.toString(),
                 actorId = human.id.toString(),
                 action = GameAction.Draw.toDto(registries),
@@ -125,8 +125,8 @@ class ClientMahjongStateStoreTest {
         val spectatedTableId = Uuid.random()
 
         store.applyRoomSnapshot(
-            seatedTableId,
-            RoomSnapshot(
+            roomId = seatedTableId,
+            snapshot = RoomSnapshot(
                 id = seatedTableId,
                 hostId = localPlayerId,
                 gameConfig = GameConfig(RiichiRuleConfig()),
@@ -174,7 +174,7 @@ class ClientMahjongStateStoreTest {
         store.applyRoomSnapshot(tableId, snapshot)
 
         store.apply(
-            RoomUpdatePayloadDto(
+            payload = RoomUpdatePayloadDto(
                 roomId = tableId.toString(),
                 event = RoomUpdateEventDto.Leave(memberId.toString(), LeaveReasonDto.Dissolved),
                 snapshot = snapshot.toDto(registries),
@@ -199,7 +199,7 @@ class ClientMahjongStateStoreTest {
         assertEquals(analysis, store.handReadinessAnalysis(tableId))
 
         store.apply(
-            GameUpdatePayloadDto(
+            payload = GameUpdatePayloadDto(
                 gameId = tableId.toString(),
                 actorId = player.id.toString(),
                 action = GameAction.Draw.toDto(registries),

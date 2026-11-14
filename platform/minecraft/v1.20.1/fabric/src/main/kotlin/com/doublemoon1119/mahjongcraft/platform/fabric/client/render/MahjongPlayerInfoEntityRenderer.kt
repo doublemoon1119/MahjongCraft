@@ -55,16 +55,16 @@ class MahjongPlayerInfoEntityRenderer(
         val names = players.associate { player ->
             player.playerId to playerInfoDisplayName(player) { id ->
                 displayNames.resolve(
-                    entity.managedTableId,
-                    id.toString(),
-                    true,
+                    tableId = entity.managedTableId,
+                    playerId = id.toString(),
+                    isAiHint = true,
                 )
             }
         }
         val width = measureSharedWidth(
-            players,
-            entity.dealerPlayerId,
-            names,
+            players = players,
+            dealerPlayerId = entity.dealerPlayerId,
+            names = names,
         )
         val scoreChanges = entity.scoreChanges
         val gameTime = entity.world.time
@@ -77,27 +77,27 @@ class MahjongPlayerInfoEntityRenderer(
             matrices.multiply(RotationAxis.POSITIVE_Y.rotationDegrees(sideYaw(side)))
             matrices.scale(-TEXT_SCALE, -TEXT_SCALE, TEXT_SCALE)
             renderFace(
-                player,
-                entity.dealerPlayerId == player.playerId,
-                shownDelta,
-                width,
-                light,
-                matrices,
-                vertexConsumers,
-                names,
+                player = player,
+                isDealer = entity.dealerPlayerId == player.playerId,
+                shownDelta = shownDelta,
+                width = width,
+                light = light,
+                matrices = matrices,
+                consumers = vertexConsumers,
+                names = names,
             )
             matrices.push()
             matrices.translate(0.0, 0.0, BACK_FACE_OFFSET.toDouble())
             matrices.multiply(RotationAxis.POSITIVE_Y.rotationDegrees(180f))
             renderFace(
-                player,
-                entity.dealerPlayerId == player.playerId,
-                shownDelta,
-                width,
-                light,
-                matrices,
-                vertexConsumers,
-                names,
+                player = player,
+                isDealer = entity.dealerPlayerId == player.playerId,
+                shownDelta = shownDelta,
+                width = width,
+                light = light,
+                matrices = matrices,
+                consumers = vertexConsumers,
+                names = names,
             )
             matrices.pop()
             matrices.pop()
@@ -155,14 +155,14 @@ class MahjongPlayerInfoEntityRenderer(
         WorldPanelRenderer.drawText(textRenderer, score, scoreX, scoreY, SCORE_COLOR, TEXT_Z, light, matrices, consumers)
         delta?.let { (text, color) ->
             WorldPanelRenderer.drawText(
-                textRenderer, text, scoreX + textRenderer.getWidth(score) + COLUMN_GAP,
-                scoreY, color, TEXT_Z, light, matrices, consumers,
+                renderer = textRenderer, text = text, x = scoreX + textRenderer.getWidth(score) + COLUMN_GAP,
+                y = scoreY, color = color, z = TEXT_Z, light = light, matrices = matrices, consumers = consumers,
             )
         }
         indicators.forEachIndexed { index, (text, color) ->
             WorldPanelRenderer.drawText(
-                textRenderer, text, left + (width - textRenderer.getWidth(text)) / 2f,
-                scoreY + SCORE_ROW_HEIGHT + index * INDICATOR_ROW_HEIGHT, color, TEXT_Z, light, matrices, consumers,
+                renderer = textRenderer, text = text, x = left + (width - textRenderer.getWidth(text)) / 2f,
+                y = scoreY + SCORE_ROW_HEIGHT + index * INDICATOR_ROW_HEIGHT, color = color, z = TEXT_Z, light = light, matrices = matrices, consumers = consumers,
             )
         }
     }

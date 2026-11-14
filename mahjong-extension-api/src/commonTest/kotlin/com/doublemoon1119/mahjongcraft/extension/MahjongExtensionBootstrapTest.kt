@@ -91,19 +91,19 @@ class MahjongExtensionBootstrapTest {
 
         assertEquals(listOf("rule", "tile", "network", "persistence", "strategy", "opponent", "public_marker"), calls)
         assertEquals(
-            setOf(
+            expected = setOf(
                 "mahjongcraft:rule_module",
                 "mahjongcraft:tile_type",
                 "mahjongcraft:ai_strategy",
                 "mahjongcraft:opponent_model",
             ),
-            sources.single { it.extensionId == extension.id }.categories.mapTo(mutableSetOf(), ExtensionRegistrationCategory::id),
+            actual = sources.single { it.extensionId == extension.id }.categories.mapTo(mutableSetOf(), ExtensionRegistrationCategory::id),
         )
         assertTrue(moduleRegistry.getModule(RiichiRuleConfig()) is RiichiRuleModule)
         assertIs<RandomAiStrategy>(aiStrategyRegistry.resolve(RecordingExtension.STRATEGY_KEY))
         assertEquals(
-            TileTypeId.parse("example:flower/spring"),
-            tileTypeRegistry.require(TileTypeId.parse("example:flower/spring")).id,
+            expected = TileTypeId.parse("example:flower/spring"),
+            actual = tileTypeRegistry.require(TileTypeId.parse("example:flower/spring")).id,
         )
         assertFailsWith<IllegalStateException> {
             moduleRegistry.register(
@@ -143,16 +143,16 @@ class MahjongExtensionBootstrapTest {
 
         assertEquals(listOf(null, "example:recording", "example:strategy_only", "example:empty"), sources.map { it.extensionId })
         assertEquals(
-            listOf("example:built_in_rule"),
-            sources[0].categories.single { it.id == "mahjongcraft:opponent_model" }.registrationIds,
+            expected = listOf("example:built_in_rule"),
+            actual = sources[0].categories.single { it.id == "mahjongcraft:opponent_model" }.registrationIds,
         )
         assertEquals(
-            listOf(RecordingExtension.RULE_MODULE_ID),
-            sources[1].categories.single { it.id == "mahjongcraft:opponent_model" }.registrationIds,
+            expected = listOf(RecordingExtension.RULE_MODULE_ID),
+            actual = sources[1].categories.single { it.id == "mahjongcraft:opponent_model" }.registrationIds,
         )
         assertEquals(
-            listOf(ExtensionRegistrationCategory("mahjongcraft:ai_strategy", "AI Strategy", listOf(StrategyExtension.STRATEGY_KEY))),
-            sources[2].categories,
+            expected = listOf(ExtensionRegistrationCategory("mahjongcraft:ai_strategy", "AI Strategy", listOf(StrategyExtension.STRATEGY_KEY))),
+            actual = sources[2].categories,
         )
         assertEquals(emptyList(), sources[3].categories)
     }

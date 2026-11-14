@@ -147,9 +147,9 @@ class FabricMahjongPlayerAreaPresenter(
                 )
                 tile.assignToTable(presentation.tableId)
                 TileAnimationSteps.scheduleInstantReorder(
-                    tile,
-                    placement,
-                    reorderStartGameTime,
+                    tile = tile,
+                    finalPlacement = placement,
+                    startGameTime = reorderStartGameTime,
                 )
             }
         } else {
@@ -286,11 +286,11 @@ class FabricMahjongPlayerAreaPresenter(
                     )
                     tile.assignToTable(presentation.tableId)
                     TileAnimationSteps.scheduleDealBatch(
-                        tile,
-                        placement,
-                        postFlipPlacement,
-                        liftAbsoluteGameTime,
-                        flipAbsoluteGameTime,
+                        tile = tile,
+                        finalPlacement = placement,
+                        postFlipPlacement = postFlipPlacement,
+                        liftAbsoluteGameTime = liftAbsoluteGameTime,
+                        flipAbsoluteGameTime = flipAbsoluteGameTime,
                         playDealSound = !dealSoundScheduled,
                         playFlipSound = seatIndex !in flipSoundSeatIndices,
                         endPose = poseFor(tileId, presentation.tilePoseStates),

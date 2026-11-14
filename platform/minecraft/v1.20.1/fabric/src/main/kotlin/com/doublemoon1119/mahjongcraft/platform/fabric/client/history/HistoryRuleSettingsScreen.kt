@@ -312,7 +312,7 @@ internal class HistoryRuleSettingsScreen(
                 }
                     ?: Text.translatable(MinecraftHistoryScreenKeys.RULE_SETTINGS_UNAVAILABLE)
                 add(
-                    Text.translatable(field.nameTranslationKey).append(": ").append(valueText.copy().formatted(Formatting.GRAY)),
+                    text = Text.translatable(field.nameTranslationKey).append(": ").append(valueText.copy().formatted(Formatting.GRAY)),
                     tooltip = fieldTooltip(field.editor, field.descriptionTranslationKey),
                 )
                 y += 3
@@ -334,7 +334,7 @@ internal class HistoryRuleSettingsScreen(
             add(Text.translatable(MinecraftHistoryScreenKeys.TOOLTIP_OPTIONS).formatted(Formatting.GOLD))
             editor.optionIds.forEach { optionId ->
                 add(
-                    Text.literal("• ").formatted(Formatting.DARK_GRAY).append(
+                    element = Text.literal("• ").formatted(Formatting.DARK_GRAY).append(
                         editor.translationKeyFor(optionId)?.let(Text::translatable) ?: Text.literal(optionId),
                     ),
                 )

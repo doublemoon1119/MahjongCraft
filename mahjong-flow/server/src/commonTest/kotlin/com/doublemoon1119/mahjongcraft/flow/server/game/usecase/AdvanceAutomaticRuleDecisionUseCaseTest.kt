@@ -66,7 +66,7 @@ class AdvanceAutomaticRuleDecisionUseCaseTest {
             config = RiichiRuleConfig(),
         )
         repository.setGame(
-            Game(
+            game = Game(
                 tableState = table,
                 flowConfig = GameFlowConfig(),
                 pendingRuleDecision = PendingRuleDecision.open(
@@ -84,9 +84,9 @@ class AdvanceAutomaticRuleDecisionUseCaseTest {
             moduleRegistry = moduleRegistry,
             resolverRegistry = resolverRegistry,
             snapshotSynchronizer = GameSnapshotSynchronizer(
-                repository,
-                snapshotRepository,
-                GameVisibilityPolicyImpl(moduleRegistry, componentRegistry = bundledCoreExtensionRegistries().componentRegistry),
+                gameRepository = repository,
+                snapshotRepository = snapshotRepository,
+                visibilityPolicy = GameVisibilityPolicyImpl(moduleRegistry, componentRegistry = bundledCoreExtensionRegistries().componentRegistry),
             ),
             presentationPublisher = presentationPublisher,
             winPresentationStager = RuleDecisionWinPresentationStager(WinPresentationHandoff(), WinSettlementDetailResolverRegistry(bundledCoreExtensionRegistries().componentRegistry)),
@@ -103,18 +103,18 @@ class AdvanceAutomaticRuleDecisionUseCaseTest {
         assertEquals(listOf(replacementTile.id), presented.players[1].hand.tiles.map { it.id })
         assertTrue(presentationPublisher.getPublishedInitialDeal(table.id) == null)
         assertEquals(
-            listOf(RuleDecisionTiming.WIN_CONTINUES, RuleDecisionTiming.WIN_CONTINUES),
-            repository.historyDrafts.map { it.fact }.filterIsInstance<HistoryFact.RuleDecisionAutomaticallyResolved>().map { it.timing },
+            expected = listOf(RuleDecisionTiming.WIN_CONTINUES, RuleDecisionTiming.WIN_CONTINUES),
+            actual = repository.historyDrafts.map { it.fact }.filterIsInstance<HistoryFact.RuleDecisionAutomaticallyResolved>().map { it.timing },
         )
         // 步驟中的換牌結果緊接在該步驟之後記錄，不歸屬任何玩家的操作。
         val replacement = repository.historyDrafts[1]
         assertEquals(null, replacement.actorPlayerId)
         assertEquals(
-            HistoryFact.TileReplacementRoundResolved(
-                RuleDecisionTiming.WIN_CONTINUES,
-                TileReplacementRound(round = 1, removals = listOf(TileReplacementRemoval(firstPlayerId, listOf(firstTile.id)))),
+            expected = HistoryFact.TileReplacementRoundResolved(
+                timing = RuleDecisionTiming.WIN_CONTINUES,
+                round = TileReplacementRound(round = 1, removals = listOf(TileReplacementRemoval(firstPlayerId, listOf(firstTile.id)))),
             ),
-            replacement.fact,
+            actual = replacement.fact,
         )
         assertEquals(3, repository.historyDrafts.size)
     }
@@ -128,7 +128,7 @@ class AdvanceAutomaticRuleDecisionUseCaseTest {
         val resolverRegistry = RuleDecisionResolverRegistry().apply { register(NoStepResolver) }
         val table = FakeTableStateFactory.create(config = RiichiRuleConfig())
         repository.setGame(
-            Game(
+            game = Game(
                 tableState = table,
                 flowConfig = GameFlowConfig(),
                 pendingRuleDecision = null,
@@ -139,9 +139,9 @@ class AdvanceAutomaticRuleDecisionUseCaseTest {
             moduleRegistry = moduleRegistry,
             resolverRegistry = resolverRegistry,
             snapshotSynchronizer = GameSnapshotSynchronizer(
-                repository,
-                FakeGameSnapshotRepository(),
-                GameVisibilityPolicyImpl(moduleRegistry, componentRegistry = bundledCoreExtensionRegistries().componentRegistry),
+                gameRepository = repository,
+                snapshotRepository = FakeGameSnapshotRepository(),
+                visibilityPolicy = GameVisibilityPolicyImpl(moduleRegistry, componentRegistry = bundledCoreExtensionRegistries().componentRegistry),
             ),
             presentationPublisher = presentationPublisher,
             winPresentationStager = RuleDecisionWinPresentationStager(WinPresentationHandoff(), WinSettlementDetailResolverRegistry(bundledCoreExtensionRegistries().componentRegistry)),
@@ -176,9 +176,9 @@ class AdvanceAutomaticRuleDecisionUseCaseTest {
             moduleRegistry = moduleRegistry,
             resolverRegistry = resolverRegistry,
             snapshotSynchronizer = GameSnapshotSynchronizer(
-                repository,
-                FakeGameSnapshotRepository(),
-                GameVisibilityPolicyImpl(moduleRegistry, componentRegistry = bundledCoreExtensionRegistries().componentRegistry),
+                gameRepository = repository,
+                snapshotRepository = FakeGameSnapshotRepository(),
+                visibilityPolicy = GameVisibilityPolicyImpl(moduleRegistry, componentRegistry = bundledCoreExtensionRegistries().componentRegistry),
             ),
             presentationPublisher = FakeGamePresentationPublisher(),
             winPresentationStager = RuleDecisionWinPresentationStager(WinPresentationHandoff(), WinSettlementDetailResolverRegistry(bundledCoreExtensionRegistries().componentRegistry)),
@@ -205,18 +205,18 @@ class AdvanceAutomaticRuleDecisionUseCaseTest {
             ruleModule: MahjongRuleModule<*>,
         ): RuleDecisionResolution = if (decision.stepIndex == 0) {
             RuleDecisionResolution(
-                tableState.copy(
+                tableState = tableState.copy(
                     players = tableState.players.mapIndexed { index, player ->
                         if (index == 0) player.copy(hand = Hand(tiles = listOf(replacementTile))) else player
                     },
                 ),
-                RuleDecisionStep(
+                nextStep = RuleDecisionStep(
                     stepId = "test:auto-1",
                     stepIndex = 1,
                     inputSpecsByPlayerId = emptyMap(),
                 ),
                 replacementRounds = listOf(
-                    TileReplacementRound(
+                    element = TileReplacementRound(
                         round = 1,
                         removals = listOf(TileReplacementRemoval(tableState.players[0].id, tableState.players[0].hand.tiles.map { it.id })),
                     ),
@@ -226,12 +226,12 @@ class AdvanceAutomaticRuleDecisionUseCaseTest {
             val first = tableState.players[0].hand.tiles.single()
             val second = tableState.players[1].hand.tiles.single()
             RuleDecisionResolution(
-                tableState.copy(
+                tableState = tableState.copy(
                     players = tableState.players.mapIndexed { index, player ->
                         player.copy(hand = Hand(tiles = listOf(if (index == 0) second else first)))
                     },
                 ),
-                null,
+                nextStep = null,
             )
         }
     }
@@ -264,8 +264,8 @@ class AdvanceAutomaticRuleDecisionUseCaseTest {
             decision: PendingRuleDecision,
             ruleModule: MahjongRuleModule<*>,
         ) = RuleDecisionResolution(
-            tableState,
-            RuleDecisionStep(
+            tableState = tableState,
+            nextStep = RuleDecisionStep(
                 stepId = "test:player",
                 stepIndex = decision.stepIndex + 1,
                 inputSpecsByPlayerId = mapOf(tableState.players.first().id to RuleDecisionInputSpec.Confirmation),

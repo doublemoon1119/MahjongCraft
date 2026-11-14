@@ -35,12 +35,12 @@ class MahjongStoolSeatGeometryTest {
     @Test
     fun `dismounting tries the front first then the sides and the back`() {
         assertEquals(
-            listOf(Direction.NORTH, Direction.EAST, Direction.WEST, Direction.SOUTH),
-            MahjongStoolSeatGeometry.dismountDirections(Direction.NORTH),
+            expected = listOf(Direction.NORTH, Direction.EAST, Direction.WEST, Direction.SOUTH),
+            actual = MahjongStoolSeatGeometry.dismountDirections(Direction.NORTH),
         )
         assertEquals(
-            listOf(Direction.EAST, Direction.SOUTH, Direction.NORTH, Direction.WEST),
-            MahjongStoolSeatGeometry.dismountDirections(Direction.EAST),
+            expected = listOf(Direction.EAST, Direction.SOUTH, Direction.NORTH, Direction.WEST),
+            actual = MahjongStoolSeatGeometry.dismountDirections(Direction.EAST),
         )
     }
 

@@ -175,9 +175,9 @@ internal class MultiChoiceScreen(
         context.drawCenteredTextWithShadow(
             textRenderer,
             fitClientText(
-                textRenderer,
-                Text.translatable(MinecraftRoomScreenKeys.SELECTION_LIMITS, selected.size, editor.minimumCount, editor.maximumCount),
-                layout.panelWidth,
+                textRenderer = textRenderer,
+                text = Text.translatable(MinecraftRoomScreenKeys.SELECTION_LIMITS, selected.size, editor.minimumCount, editor.maximumCount),
+                maximumWidth = layout.panelWidth,
             ),
             width / 2,
             31,

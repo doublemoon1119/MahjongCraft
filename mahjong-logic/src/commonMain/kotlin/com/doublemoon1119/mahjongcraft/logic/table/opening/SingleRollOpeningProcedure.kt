@@ -12,14 +12,14 @@ class SingleRollOpeningProcedure(
 
     override fun next(context: RoundOpeningContext): RoundOpeningStep = when (context.rolls.size) {
         0 -> RoundOpeningStep.Roll(
-            OpeningDiceRollRequest(
+            request = OpeningDiceRollRequest(
                 playerId = context.fixedDealerPlayerId ?: context.provisionalPlayerId,
                 diceCount = openingPolicy.diceCount,
             ),
         )
 
         1 -> RoundOpeningStep.Complete(
-            RoundOpeningCompletion(
+            result = RoundOpeningCompletion(
                 dealerPlayerId = context.fixedDealerPlayerId ?: context.provisionalPlayerId,
                 wallOpening = openingPolicy.resolve(context.rolls.single().dice),
             ),

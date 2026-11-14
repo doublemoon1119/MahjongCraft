@@ -21,7 +21,7 @@ fun examplePairingGameConfigPresentation(): GameConfigPresentationDefinition = G
     selectable = true,
     defaultRuleConfig = ::ExamplePairingRuleConfig,
     categories = listOf(
-        GameConfigCategoryDefinition(
+        element = GameConfigCategoryDefinition(
             id = ExampleMinecraftPresentationIds.RULE_CATEGORY,
             nameTranslationKey = ExampleMinecraftMessageKeys.CONFIG_CATEGORY_RULE,
         ),
@@ -50,7 +50,7 @@ fun examplePairingGameConfigPresentation(): GameConfigPresentationDefinition = G
             read = { config ->
                 val values = (config.ruleConfig as ExamplePairingRuleConfig).wallTileValues
                 GameConfigPresentationValue.MultiChoiceValue(
-                    ExamplePairingIds.WALL_TILE_VALUE_OPTIONS.filter { it.first in values }.map { it.second }.toSet(),
+                    optionIds = ExamplePairingIds.WALL_TILE_VALUE_OPTIONS.filter { it.first in values }.map { it.second }.toSet(),
                 )
             },
             update = { config, value ->

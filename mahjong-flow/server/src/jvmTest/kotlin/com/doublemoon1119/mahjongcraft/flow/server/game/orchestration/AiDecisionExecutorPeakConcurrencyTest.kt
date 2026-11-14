@@ -42,7 +42,7 @@ class AiDecisionExecutorPeakConcurrencyTest {
             (1..CALLERS).map {
                 async(Dispatchers.Default) {
                     repeat(DECISIONS_PER_CALLER) {
-                        executor.decide(Uuid.random(), playerId, null, decide = {
+                        executor.decide(gameId = Uuid.random(), playerId = playerId, strategyKey = null, decide = {
                             yield()
                             "decided"
                         }, fallback = { "fallback" })

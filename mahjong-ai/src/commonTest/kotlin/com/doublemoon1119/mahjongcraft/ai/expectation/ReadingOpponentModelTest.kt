@@ -54,7 +54,7 @@ class ReadingOpponentModelTest {
     fun `reading factors scale the rule model danger`() {
         val self = riichiSeat(Wind.SOUTH)
         val flush = riichiSeat(
-            Wind.EAST,
+            wind = Wind.EAST,
             discards = listOf(m(9), Tile.Honor.North, s(1), m(1), s(8)),
             melds = listOf(pon(p(3)), pon(p(7))),
         )

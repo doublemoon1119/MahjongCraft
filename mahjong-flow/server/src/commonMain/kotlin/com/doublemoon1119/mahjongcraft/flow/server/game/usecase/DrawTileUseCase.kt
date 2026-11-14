@@ -49,7 +49,7 @@ class DrawTileUseCase(
     suspend operator fun invoke(gameId: Uuid, playerId: Uuid): Outcome<Unit, GameError> {
         // 1. 以原子方式讀取桌況、驗證業務規則並寫回
         val outcome = gameRepository.update(
-            gameId,
+            gameId = gameId,
             history = { before, after, result ->
                 if (result is Outcome.Success && before != null && after != null) {
                     listOf(acceptedActionHistoryDraft(playerId, GameAction.Draw, before, after, listOf(result.value.drawnTile.id))) +

@@ -26,8 +26,8 @@ class DiscardAnalysisPresentationTest {
 
         assertEquals(listOf(tile("a"), tile("b")), content.cells.map { it.tile })
         assertEquals(
-            listOf(listOf(4), listOf(2)),
-            content.cells.map { assertIs<TranslatableTextContent>(it.countText.content).args.toList() },
+            expected = listOf(listOf(4), listOf(2)),
+            actual = content.cells.map { assertIs<TranslatableTextContent>(it.countText.content).args.toList() },
         )
     }
 
@@ -49,14 +49,14 @@ class DiscardAnalysisPresentationTest {
     @Test
     fun `puts the status indicator on its own line`() {
         val content = discardAnalysisContent(
-            texts,
-            BuiltInRuleModuleIds.RIICHI,
-            analysisOf(waiting("a", 4), statusIndicatorId = RiichiDiscardReadinessAnalyzer.StatusIds.DISCARD_FURITEN),
+            texts = texts,
+            ruleModuleId = BuiltInRuleModuleIds.RIICHI,
+            analysis = analysisOf(waiting("a", 4), statusIndicatorId = RiichiDiscardReadinessAnalyzer.StatusIds.DISCARD_FURITEN),
         )
 
         assertEquals(
-            listOf("mahjongcraft.riichi.hud.furiten.discard"),
-            content.statusTexts.map { assertIs<TranslatableTextContent>(it.content).key },
+            expected = listOf("mahjongcraft.riichi.hud.furiten.discard"),
+            actual = content.statusTexts.map { assertIs<TranslatableTextContent>(it.content).key },
         )
     }
 
@@ -64,14 +64,14 @@ class DiscardAnalysisPresentationTest {
     @Test
     fun `lifts a shared availability into the status line`() {
         val content = discardAnalysisContent(
-            texts,
-            BuiltInRuleModuleIds.RIICHI,
-            analysisOf(waiting("a", 4, RiichiDiscardReadinessAnalyzer.StatusIds.WIN_NO_YAKU), waiting("b", 2, RiichiDiscardReadinessAnalyzer.StatusIds.WIN_NO_YAKU)),
+            texts = texts,
+            ruleModuleId = BuiltInRuleModuleIds.RIICHI,
+            analysis = analysisOf(waiting("a", 4, RiichiDiscardReadinessAnalyzer.StatusIds.WIN_NO_YAKU), waiting("b", 2, RiichiDiscardReadinessAnalyzer.StatusIds.WIN_NO_YAKU)),
         )
 
         assertEquals(
-            listOf("mahjongcraft.riichi.hud.win_availability.no_yaku"),
-            content.statusTexts.map { assertIs<TranslatableTextContent>(it.content).key },
+            expected = listOf("mahjongcraft.riichi.hud.win_availability.no_yaku"),
+            actual = content.statusTexts.map { assertIs<TranslatableTextContent>(it.content).key },
         )
         assertFalse(content.hasAvailabilityRow)
         assertEquals(listOf(null, null), content.cells.map { it.availabilityText })
@@ -90,15 +90,15 @@ class DiscardAnalysisPresentationTest {
     @Test
     fun `marks each restricted tile when the availability differs`() {
         val content = discardAnalysisContent(
-            texts,
-            BuiltInRuleModuleIds.RIICHI,
-            analysisOf(waiting("a", 4, RiichiDiscardReadinessAnalyzer.StatusIds.WIN_TSUMO_ONLY), waiting("b", 2, WaitingTileAvailabilityIds.WIN_AVAILABLE)),
+            texts = texts,
+            ruleModuleId = BuiltInRuleModuleIds.RIICHI,
+            analysis = analysisOf(waiting("a", 4, RiichiDiscardReadinessAnalyzer.StatusIds.WIN_TSUMO_ONLY), waiting("b", 2, WaitingTileAvailabilityIds.WIN_AVAILABLE)),
         )
 
         assertTrue(content.hasAvailabilityRow)
         assertEquals(
-            "mahjongcraft.riichi.hud.win_availability.tsumo_only",
-            assertIs<TranslatableTextContent>(content.cells[0].availabilityText?.content).key,
+            expected = "mahjongcraft.riichi.hud.win_availability.tsumo_only",
+            actual = assertIs<TranslatableTextContent>(content.cells[0].availabilityText?.content).key,
         )
         assertNull(content.cells[1].availabilityText)
         assertEquals(emptyList(), content.statusTexts)
@@ -108,14 +108,14 @@ class DiscardAnalysisPresentationTest {
     @Test
     fun `stacks the status indicator above a shared availability`() {
         val content = discardAnalysisContent(
-            texts,
-            BuiltInRuleModuleIds.RIICHI,
-            analysisOf(waiting("a", 4, RiichiDiscardReadinessAnalyzer.StatusIds.WIN_NO_YAKU), statusIndicatorId = RiichiDiscardReadinessAnalyzer.StatusIds.TEMPORARY_FURITEN),
+            texts = texts,
+            ruleModuleId = BuiltInRuleModuleIds.RIICHI,
+            analysis = analysisOf(waiting("a", 4, RiichiDiscardReadinessAnalyzer.StatusIds.WIN_NO_YAKU), statusIndicatorId = RiichiDiscardReadinessAnalyzer.StatusIds.TEMPORARY_FURITEN),
         )
 
         assertEquals(
-            listOf("mahjongcraft.riichi.hud.furiten.temporary", "mahjongcraft.riichi.hud.win_availability.no_yaku"),
-            content.statusTexts.map { assertIs<TranslatableTextContent>(it.content).key },
+            expected = listOf("mahjongcraft.riichi.hud.furiten.temporary", "mahjongcraft.riichi.hud.win_availability.no_yaku"),
+            actual = content.statusTexts.map { assertIs<TranslatableTextContent>(it.content).key },
         )
     }
 
@@ -156,8 +156,8 @@ class DiscardAnalysisPresentationTest {
     @Test
     fun `grows the status area by one line at a time`() {
         assertEquals(
-            layout(cellCount = 3, statusLineCount = 1).statusHeight + DiscardAnalysisLayout.STATUS_TEXT_HEIGHT,
-            layout(cellCount = 3, statusLineCount = 2).statusHeight,
+            expected = layout(cellCount = 3, statusLineCount = 1).statusHeight + DiscardAnalysisLayout.STATUS_TEXT_HEIGHT,
+            actual = layout(cellCount = 3, statusLineCount = 2).statusHeight,
         )
     }
 
@@ -165,8 +165,8 @@ class DiscardAnalysisPresentationTest {
     @Test
     fun `grows the cell height for the availability row`() {
         assertEquals(
-            layout(cellCount = 3).cellHeight + DiscardAnalysisLayout.AVAILABILITY_HEIGHT,
-            layout(cellCount = 3, hasAvailabilityRow = true).cellHeight,
+            expected = layout(cellCount = 3).cellHeight + DiscardAnalysisLayout.AVAILABILITY_HEIGHT,
+            actual = layout(cellCount = 3, hasAvailabilityRow = true).cellHeight,
         )
     }
 

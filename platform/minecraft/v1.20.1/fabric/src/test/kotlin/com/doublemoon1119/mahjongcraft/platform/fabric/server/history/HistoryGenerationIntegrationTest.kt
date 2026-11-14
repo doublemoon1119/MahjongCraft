@@ -95,7 +95,7 @@ class HistoryGenerationIntegrationTest {
         val access = HistoryQueryAccess(Uuid.random(), isAdministrator = true)
         val entry = checkNotNull(
             database.readHistoryQueryPage(
-                HistoryListRequest(scope = HistoryQueryScope.ALL, pageSize = 1).toSqliteQuery(access, emptySet()).copy(matchId = matchId.toString()),
+                query = HistoryListRequest(scope = HistoryQueryScope.ALL, pageSize = 1).toSqliteQuery(access, emptySet()).copy(matchId = matchId.toString()),
             ).entries.singleOrNull(),
         )
         assertTrue(entry.rounds.size > 1, "The generated match should archive more than one round.")
@@ -127,7 +127,7 @@ class HistoryGenerationIntegrationTest {
         var begun = false
         var acknowledged = 0
         HeadlessHistoryMatchRunner(
-            runtime,
+            runtime = runtime,
             limits = HeadlessHistoryRunLimits(maxDuration = 5.minutes, transferWaitTimeout = 30.seconds),
         ).events().collect { progress ->
             if (!begun) {
@@ -150,8 +150,8 @@ class HistoryGenerationIntegrationTest {
         val liveStore = liveStore()
         val path = createTempDirectory("mahjongcraft-history-stress-").resolve("history.sqlite")
         val writer = writer(
-            liveStore,
-            MinecraftHistoryConfig(includeAiMatches = true, maxMatches = 100),
+            store = liveStore,
+            historyConfig = MinecraftHistoryConfig(includeAiMatches = true, maxMatches = 100),
         )
         var events = 0
         var replayBytes = 0L
@@ -196,8 +196,8 @@ class HistoryGenerationIntegrationTest {
         val liveStore = liveStore()
         val path = createTempDirectory("mahjongcraft-history-ai-policy-").resolve("history.sqlite")
         val writer = writer(
-            liveStore,
-            MinecraftHistoryConfig(includeAiMatches = false),
+            store = liveStore,
+            historyConfig = MinecraftHistoryConfig(includeAiMatches = false),
         )
         try {
             writer.attach(path)
@@ -267,8 +267,8 @@ class HistoryGenerationIntegrationTest {
             assertTrue(liveStore.snapshot().historyRecordingState.pendingEvents.isEmpty(), "Writer acknowledgement must follow SQLite commit.")
             runtime.store.acknowledgeHistoryEvents(transaction.map { it.matchId to it.sequence }.toSet())
             assertTrue(
-                runtime.store.snapshot().historyRecordingState.pendingEvents.none { it.sequence == first.sequence },
-                "The source event may be removed only after writer acceptance.",
+                actual = runtime.store.snapshot().historyRecordingState.pendingEvents.none { it.sequence == first.sequence },
+                message = "The source event may be removed only after writer acceptance.",
             )
         } finally {
             writer.detach()
@@ -290,8 +290,8 @@ class HistoryGenerationIntegrationTest {
             val result = checkNotNull(writer.beginGeneration(game, session) as? HistoryManagementResult.Success)
             assertTrue(result.value, "The active generation must be accepted before detaching.")
             assertTrue(
-                liveStore.snapshot().historyRecordingState.transfersByMatchId.containsKey(game.matchId),
-                "The generation must remain active until detach.",
+                actual = liveStore.snapshot().historyRecordingState.transfersByMatchId.containsKey(game.matchId),
+                message = "The generation must remain active until detach.",
             )
 
             writer.detach()
@@ -357,9 +357,9 @@ class HistoryGenerationIntegrationTest {
                 val terminal = progress.snapshot.historyRecordingState.terminalByMatchId[progress.matchId]
                 check(terminal?.completed == true) { "Completed generation must provide terminal proof." }
                 val result = writer.finishGeneration(
-                    progress.matchId,
-                    terminal,
-                    session,
+                    matchId = progress.matchId,
+                    terminal = terminal,
+                    sessionId = session,
                 )
                 check(result is HistoryManagementResult.Success) { "Terminal evidence must be durably archived." }
                 check(result.value.replayBytes[progress.matchId.toString()] != null) { "Completed replay must be present." }
@@ -391,9 +391,9 @@ class HistoryGenerationIntegrationTest {
             val terminal = progress.snapshot.historyRecordingState.terminalByMatchId[progress.matchId]
             check(terminal?.completed == true) { "Completed generation must provide terminal proof." }
             val finish = writer.finishGeneration(
-                progress.matchId,
-                terminal,
-                session,
+                matchId = progress.matchId,
+                terminal = terminal,
+                sessionId = session,
             )
             check(finish is HistoryManagementResult.Success) { "Terminal evidence must be durably archived." }
             check(finish.value.replayBytes[progress.matchId.toString()] != null) { "Completed replay must be present." }

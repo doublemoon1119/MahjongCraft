@@ -69,8 +69,8 @@ class GameEventChatNotifierTest {
     fun `a continuing win is titled as a win instead of a round end`() {
         assertEquals(MinecraftMessageKeys.ROUND_RESULT_BROADCAST, buildMessage(result(BuiltInRoundOutcomeIds.TSUMO)).titleKey())
         assertEquals(
-            MinecraftMessageKeys.CONTINUING_WIN_RESULT_BROADCAST,
-            buildMessage(result(BuiltInRoundOutcomeIds.TSUMO, roundContinues = true)).titleKey(),
+            expected = MinecraftMessageKeys.CONTINUING_WIN_RESULT_BROADCAST,
+            actual = buildMessage(result(BuiltInRoundOutcomeIds.TSUMO, roundContinues = true)).titleKey(),
         )
     }
 
@@ -93,8 +93,8 @@ class GameEventChatNotifierTest {
         assertEquals("test.special_outcome", buildMessage(result(SPECIAL_OUTCOME_ID)).outcomeKey())
         assertEquals("test.draw_reason", buildMessage(result(DRAW_REASON_ID, kind = RoundResultKindDto.DRAW)).outcomeKey())
         assertEquals(
-            MinecraftMessageKeys.GAME_ACTION_EXHAUSTIVE_DRAW,
-            buildMessage(result(UNKNOWN_OUTCOME_ID, kind = RoundResultKindDto.DRAW)).outcomeKey(),
+            expected = MinecraftMessageKeys.GAME_ACTION_EXHAUSTIVE_DRAW,
+            actual = buildMessage(result(UNKNOWN_OUTCOME_ID, kind = RoundResultKindDto.DRAW)).outcomeKey(),
         )
         assertEquals(UNKNOWN_OUTCOME_ID, buildMessage(result(UNKNOWN_OUTCOME_ID)).outcomeArgument().string)
     }
@@ -278,9 +278,9 @@ class GameEventChatNotifierTest {
         val orderedPlayerIdPrefixes = rankingLines.map { it.args[1].toString() }
 
         assertEquals(
-            listOf(eastId, southId, northId, westId).map { it.toString().take(4) },
-            orderedPlayerIdPrefixes.map { it.removePrefix("AI-") },
-            "Expected the second initial seat before the third when their final scores are tied.",
+            expected = listOf(eastId, southId, northId, westId).map { it.toString().take(4) },
+            actual = orderedPlayerIdPrefixes.map { it.removePrefix("AI-") },
+            message = "Expected the second initial seat before the third when their final scores are tied.",
         )
     }
 

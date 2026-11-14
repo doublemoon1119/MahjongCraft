@@ -46,7 +46,7 @@ class AiDecisionExecutorTest {
         val executor = AiDecisionExecutor(dispatcher, capacity = 1, failurePolicy = ExtensionFailurePolicy.Default)
         var interceptor: ContinuationInterceptor? = null
 
-        val result = executor.decide(gameId, playerId, STRATEGY_KEY, decide = {
+        val result = executor.decide(gameId = gameId, playerId = playerId, strategyKey = STRATEGY_KEY, decide = {
             interceptor = currentCoroutineContext()[ContinuationInterceptor]
             "decided"
         }, fallback = { "fallback" })
@@ -132,7 +132,7 @@ class AiDecisionExecutorTest {
         fixture.executor.decide(gameId, playerId, STRATEGY_KEY, decide = { fixture.uncooperative(gate) }, fallback = { "fallback" })
 
         var otherRan = false
-        val blocked = fixture.executor.decide(otherGameId, playerId, STRATEGY_KEY, decide = {
+        val blocked = fixture.executor.decide(gameId = otherGameId, playerId = playerId, strategyKey = STRATEGY_KEY, decide = {
             otherRan = true
             "decided"
         }, fallback = { "fallback" })
@@ -154,7 +154,7 @@ class AiDecisionExecutorTest {
         testScheduler.runCurrent()
 
         var secondCalled = false
-        val second = fixture.executor.decide(gameId, playerId, STRATEGY_KEY, decide = {
+        val second = fixture.executor.decide(gameId = gameId, playerId = playerId, strategyKey = STRATEGY_KEY, decide = {
             secondCalled = true
             "second"
         }, fallback = { "fallback" })
@@ -175,7 +175,7 @@ class AiDecisionExecutorTest {
 
         var called = 0
         repeat(2) {
-            val result = fixture.executor.decide(gameId, playerId, STRATEGY_KEY, decide = {
+            val result = fixture.executor.decide(gameId = gameId, playerId = playerId, strategyKey = STRATEGY_KEY, decide = {
                 called++
                 "decided"
             }, fallback = { "fallback" })
@@ -197,7 +197,7 @@ class AiDecisionExecutorTest {
         val executor = AiDecisionExecutor(held, capacity = 1, timeout = TIMEOUT, failurePolicy = ExtensionFailurePolicy.Default)
         var started = false
         val waiting = async(start = CoroutineStart.UNDISPATCHED) {
-            executor.decide(gameId, playerId, STRATEGY_KEY, decide = {
+            executor.decide(gameId = gameId, playerId = playerId, strategyKey = STRATEGY_KEY, decide = {
                 started = true
                 "decided"
             }, fallback = { "fallback" })
@@ -254,7 +254,7 @@ class AiDecisionExecutorTest {
     fun `decisions with a result are observed with their latency`() = runTest {
         val observed = mutableListOf<Pair<AiDecisionOutcome, Long>>()
         val executor = AiDecisionExecutor(
-            StandardTestDispatcher(testScheduler),
+            dispatcher = StandardTestDispatcher(testScheduler),
             capacity = 4,
             timeout = TIMEOUT,
             observer = { _, outcome, latency -> observed += outcome to latency.inWholeMilliseconds },
@@ -264,7 +264,7 @@ class AiDecisionExecutorTest {
         val gate = CompletableDeferred<Unit>()
 
         assertEquals("decided", executor.decide(gameId, playerId, STRATEGY_KEY, decide = { "decided" }, fallback = { "fallback" }))
-        executor.decide(gameId, playerId, STRATEGY_KEY, decide = {
+        executor.decide(gameId = gameId, playerId = playerId, strategyKey = STRATEGY_KEY, decide = {
             withContext(NonCancellable) { gate.await() }
             "late"
         }, fallback = { "fallback" })
@@ -272,8 +272,8 @@ class AiDecisionExecutorTest {
         executor.decide(gameId, playerId, STRATEGY_KEY, decide = { "decided" }, fallback = { "fallback" })
 
         assertEquals(
-            listOf(AiDecisionOutcome.DECIDED to 0L, AiDecisionOutcome.TIMED_OUT to TIMEOUT.inWholeMilliseconds, AiDecisionOutcome.PREVIOUS_STILL_RUNNING to 0L),
-            observed,
+            expected = listOf(AiDecisionOutcome.DECIDED to 0L, AiDecisionOutcome.TIMED_OUT to TIMEOUT.inWholeMilliseconds, AiDecisionOutcome.PREVIOUS_STILL_RUNNING to 0L),
+            actual = observed,
         )
         gate.complete(Unit)
         testScheduler.runCurrent()

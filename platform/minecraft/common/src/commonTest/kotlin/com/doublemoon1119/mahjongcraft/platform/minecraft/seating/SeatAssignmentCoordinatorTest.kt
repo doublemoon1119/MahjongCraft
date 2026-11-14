@@ -335,7 +335,7 @@ class SeatAssignmentCoordinatorTest {
         val environment = FakeEnvironment(canStand = true)
         val coordinator = SeatAssignmentCoordinator(
             providers = listOf(
-                provider("retry") { _, _ ->
+                element = provider("retry") { _, _ ->
                     attempts++
                     if (attempts == 1) throw IllegalStateException("temporary provider failure")
                     listOf(target)
@@ -480,16 +480,18 @@ class SeatAssignmentCoordinatorTest {
         val waitingRequest = SeatRequest.create(finalRequest.tableId, 1, finalRequest.dimensionId, SeatGeometry(2.0, 64.0, 0.0, 0.0f))
         val provider = provider("waiting") { _, request ->
             val position = if (request.seat.x == 2.0) 2 else 0
-            listOf(object : SeatTarget<FakeWorld, FakeRider> {
-                override val identity = SeatIdentity("minecraft:overworld", "test:seat", position.toString(), "main")
-                override fun geometry(world: FakeWorld, rider: FakeRider): SeatGeometry = request.seat
-                override fun inspect(world: FakeWorld, rider: FakeRider): SeatState = if (rider.seated && rider.position == position) SeatState.SEATED else SeatState.AVAILABLE
-                override fun trySit(world: FakeWorld, rider: FakeRider): SeatState {
-                    rider.position = position
-                    rider.seated = true
-                    return SeatState.SEATED
-                }
-            })
+            listOf(
+                element = object : SeatTarget<FakeWorld, FakeRider> {
+                    override val identity = SeatIdentity("minecraft:overworld", "test:seat", position.toString(), "main")
+                    override fun geometry(world: FakeWorld, rider: FakeRider): SeatGeometry = request.seat
+                    override fun inspect(world: FakeWorld, rider: FakeRider): SeatState = if (rider.seated && rider.position == position) SeatState.SEATED else SeatState.AVAILABLE
+                    override fun trySit(world: FakeWorld, rider: FakeRider): SeatState {
+                        rider.position = position
+                        rider.seated = true
+                        return SeatState.SEATED
+                    }
+                },
+            )
         }
         val coordinator = SeatAssignmentCoordinator(listOf(provider), FakeEnvironment(), ExtensionFailurePolicy.Default) { _, _, _ -> }
         assertEquals(listOf(SeatAssignmentResult.SEATED), coordinator.seatAll(world, listOf(rider), listOf(finalRequest), listOf(finalRequest, waitingRequest)))

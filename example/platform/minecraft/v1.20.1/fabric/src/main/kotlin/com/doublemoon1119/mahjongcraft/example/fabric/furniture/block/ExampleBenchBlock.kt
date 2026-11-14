@@ -68,10 +68,10 @@ class ExampleBenchBlock(settings: Settings) :
 
     /** 開口面向放置者，座位物品能力另外換算所需放置視角。 */
     override fun getPlacementState(context: ItemPlacementContext): BlockState = connected(
-        defaultState.with(Properties.HORIZONTAL_FACING, ExampleBenchPlacement.facing(context.horizontalPlayerFacing))
+        state = defaultState.with(Properties.HORIZONTAL_FACING, ExampleBenchPlacement.facing(context.horizontalPlayerFacing))
             .with(Properties.WATERLOGGED, context.world.getFluidState(context.blockPos).fluid == Fluids.WATER),
-        context.world,
-        context.blockPos,
+        world = context.world,
+        pos = context.blockPos,
     )
 
     /** 排程固定範圍的鄰格檢查；原生排程會隨區塊保存及恢復。 */
@@ -101,9 +101,9 @@ class ExampleBenchBlock(settings: Settings) :
         random: Random,
     ) {
         val next = connected(
-            state,
-            world,
-            pos,
+            state = state,
+            world = world,
+            pos = pos,
         )
         if (next != state) {
             world.setBlockState(
@@ -137,9 +137,9 @@ class ExampleBenchBlock(settings: Settings) :
             )
         }
         return connected(
-            state,
-            world,
-            pos,
+            state = state,
+            world = world,
+            pos = pos,
         )
     }
 
@@ -156,10 +156,10 @@ class ExampleBenchBlock(settings: Settings) :
         if (player.isSneaking || player.hasVehicle() || player.getStackInHand(hand).isOf(ExampleActors.item)) return ActionResult.PASS
         if (world is ServerWorld) {
             seats.sit(
-                world,
-                pos,
-                player,
-                state.get(Properties.HORIZONTAL_FACING).asRotation(),
+                world = world,
+                pos = pos,
+                rider = player,
+                yaw = state.get(Properties.HORIZONTAL_FACING).asRotation(),
             )
         }
         return ActionResult.success(world.isClient)
@@ -229,9 +229,9 @@ class ExampleBenchBlock(settings: Settings) :
             if (!world.isChunkLoaded(neighbor.x shr 4, neighbor.z shr 4)) return false
             val other = world.getBlockState(neighbor)
             return ExampleBenchConnections.connects(
-                facing,
-                side,
-                if (other.isOf(this)) other.get(Properties.HORIZONTAL_FACING) else null,
+                facing = facing,
+                side = side,
+                neighborFacing = if (other.isOf(this)) other.get(Properties.HORIZONTAL_FACING) else null,
             )
         }
         return state.with(LEFT, linked(facing.rotateYCounterclockwise())).with(RIGHT, linked(facing.rotateYClockwise()))

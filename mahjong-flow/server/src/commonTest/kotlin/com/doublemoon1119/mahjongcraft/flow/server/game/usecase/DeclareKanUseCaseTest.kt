@@ -129,9 +129,9 @@ class DeclareKanUseCaseTest {
         assertEquals(setOf(east1, east2, east3, east4), meld.tiles.toSet())
         assertEquals(rinshanTile, updated.hand.lastDrawn, "Should have drawn a replacement tile from the dead wall.")
         assertEquals(
-            listOf(GameAction.Kan(GameAction.KanType.CLOSED_KAN, east4.id, listOf(east1.id, east2.id, east3.id)), GameAction.Draw),
-            updated.actionHistory.takeLast(2),
-            "Kan must be recorded before Draw for rinshan kaihou detection to work.",
+            expected = listOf(GameAction.Kan(GameAction.KanType.CLOSED_KAN, east4.id, listOf(east1.id, east2.id, east3.id)), GameAction.Draw),
+            actual = updated.actionHistory.takeLast(2),
+            message = "Kan must be recorded before Draw for rinshan kaihou detection to work.",
         )
         assertEquals(table.tileWall.remainingCount - 1, newState.tileWall.remainingCount)
         assertEquals(TurnPhase.AwaitingAction, newState.turnPhase)
@@ -228,9 +228,9 @@ class DeclareKanUseCaseTest {
             hand = Hand(
                 tiles = eastTiles.take(3),
                 melds = listOf(
-                    Meld(
-                        MeldType.ClosedKan,
-                        previousKanTiles,
+                    element = Meld(
+                        type = MeldType.ClosedKan,
+                        tiles = previousKanTiles,
                         sourceDirection = RelativeDirection.Self,
                         publiclyRevealedTileIds = previousKanTiles.map { it.id }.toSet(),
                         faceDownTileIds = setOf(previousKanTiles.first().id, previousKanTiles.last().id),
@@ -341,8 +341,8 @@ class DeclareKanUseCaseTest {
         assertEquals(RelativeDirection.Left, meld.sourceDirection, "Added kan should preserve the original Pon's source direction.")
         assertEquals(rinshanTile, updated.hand.lastDrawn)
         assertEquals(
-            listOf(GameAction.Kan(GameAction.KanType.ADDED_KAN, south4.id, emptyList()), GameAction.Draw),
-            updated.actionHistory.takeLast(2),
+            expected = listOf(GameAction.Kan(GameAction.KanType.ADDED_KAN, south4.id, emptyList()), GameAction.Draw),
+            actual = updated.actionHistory.takeLast(2),
         )
     }
 
@@ -377,12 +377,12 @@ class DeclareKanUseCaseTest {
 
         assertTrue(result is Outcome.Error, "Expected Error but got $result")
         assertEquals(
-            GameError.IllegalAction(
-                playerId,
-                gameId,
-                GameAction.Kan(GameAction.KanType.CLOSED_KAN, fifthMan4.id, emptyList()),
+            expected = GameError.IllegalAction(
+                playerId = playerId,
+                gameId = gameId,
+                action = GameAction.Kan(GameAction.KanType.CLOSED_KAN, fifthMan4.id, emptyList()),
             ),
-            result.error,
+            actual = result.error,
         )
     }
 
@@ -431,8 +431,8 @@ class DeclareKanUseCaseTest {
 
         assertTrue(result is Outcome.Error)
         assertEquals(
-            GameError.IllegalAction(playerId, gameId, GameAction.Kan(GameAction.KanType.CLOSED_KAN, otherTileId, emptyList())),
-            result.error,
+            expected = GameError.IllegalAction(playerId, gameId, GameAction.Kan(GameAction.KanType.CLOSED_KAN, otherTileId, emptyList())),
+            actual = result.error,
         )
     }
 
@@ -492,8 +492,8 @@ class DeclareKanUseCaseTest {
 
         assertTrue(result is Outcome.Error)
         assertEquals(
-            GameError.IllegalAction(playerId, gameId, GameAction.Kan(GameAction.KanType.OPEN_KAN, lastDrawn.id, emptyList())),
-            result.error,
+            expected = GameError.IllegalAction(playerId, gameId, GameAction.Kan(GameAction.KanType.OPEN_KAN, lastDrawn.id, emptyList())),
+            actual = result.error,
         )
     }
 
@@ -583,8 +583,8 @@ class DeclareKanUseCaseTest {
         assertNotNull(fixtures.snapshotRepo.getSnapshot(gameId, otherId))
         val expectedKan = GameAction.Kan(GameAction.KanType.CLOSED_KAN, east4.id, listOf(east1.id, east2.id, east3.id))
         assertEquals(
-            listOf(expectedKan, GameAction.Draw),
-            fixtures.eventPublisher.getNotifiedActions(gameId, otherId, playerId),
+            expected = listOf(expectedKan, GameAction.Draw),
+            actual = fixtures.eventPublisher.getNotifiedActions(gameId, otherId, playerId),
         )
     }
 
@@ -652,9 +652,9 @@ class DeclareKanUseCaseTest {
 
         val expectedKan = GameAction.Kan(GameAction.KanType.ADDED_KAN, white4.id, emptyList())
         assertEquals(
-            listOf(expectedKan),
-            fixtures.eventPublisher.getNotifiedActions(gameId, robberId, playerId),
-            "Only the Kan declaration should be broadcast; Draw hasn't happened yet.",
+            expected = listOf(expectedKan),
+            actual = fixtures.eventPublisher.getNotifiedActions(gameId, robberId, playerId),
+            message = "Only the Kan declaration should be broadcast; Draw hasn't happened yet.",
         )
         // 先呈現加槓完成的候選桌況，權威桌況等反應結束才套用。
         val presented = fixtures.presentationPublisher.getPublishedTableStepBatches(gameId).single().single()
@@ -859,15 +859,15 @@ class DeclareKanUseCaseTest {
 
         newState.players.forEach { player ->
             assertEquals(
-                GameAction.ExhaustiveDraw(RiichiExhaustiveDrawReason.SanchaHou),
-                player.actionHistory.last(),
-                "Every player should have the abortive draw recorded.",
+                expected = GameAction.ExhaustiveDraw(RiichiExhaustiveDrawReason.SanchaHou),
+                actual = player.actionHistory.last(),
+                message = "Every player should have the abortive draw recorded.",
             )
         }
 
         assertEquals(
-            listOf(expectedKan, GameAction.ExhaustiveDraw(RiichiExhaustiveDrawReason.SanchaHou)),
-            fixtures.eventPublisher.getNotifiedActions(gameId, robber1Id, playerId),
+            expected = listOf(expectedKan, GameAction.ExhaustiveDraw(RiichiExhaustiveDrawReason.SanchaHou)),
+            actual = fixtures.eventPublisher.getNotifiedActions(gameId, robber1Id, playerId),
         )
     }
 
@@ -894,8 +894,8 @@ class DeclareKanUseCaseTest {
 
         assertTrue(result is Outcome.Error)
         assertEquals(
-            GameError.IllegalAction(playerId, gameId, GameAction.Kan(GameAction.KanType.CLOSED_KAN, lastDrawn.id, emptyList())),
-            result.error,
+            expected = GameError.IllegalAction(playerId, gameId, GameAction.Kan(GameAction.KanType.CLOSED_KAN, lastDrawn.id, emptyList())),
+            actual = result.error,
         )
     }
 

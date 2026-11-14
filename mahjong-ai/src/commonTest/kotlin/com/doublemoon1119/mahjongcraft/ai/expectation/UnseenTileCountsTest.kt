@@ -128,8 +128,8 @@ class UnseenTileCountsTest {
         val withKnownWall = base.copy(tileWall = TileWallSnapshot(listOf(liveTile)))
         val withIndicator = base.copy(
             tileWall = TileWallSnapshot(
-                listOf(
-                    liveTile.copy(
+                tiles = listOf(
+                    element = liveTile.copy(
                         face = face.copy(views = ComponentViewSet.EMPTY.with(RiichiTileComponentViews.DORA_INDICATOR, Unit)),
                     ),
                 ),

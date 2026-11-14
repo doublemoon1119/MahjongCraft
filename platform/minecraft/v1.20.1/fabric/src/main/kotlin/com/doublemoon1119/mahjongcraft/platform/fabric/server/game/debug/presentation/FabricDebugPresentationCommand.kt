@@ -197,9 +197,9 @@ class FabricDebugPresentationCommand(
                             .suggests(::suggestSingleShowcaseCue)
                             .executes { context ->
                                 previewShowcasePhase(
-                                    context.source,
-                                    StringArgumentType.getString(context, PHASE_NAME_ARGUMENT),
-                                    IdentifierArgumentType.getIdentifier(context, CUE_ARGUMENT).toString(),
+                                    source = context.source,
+                                    phase = StringArgumentType.getString(context, PHASE_NAME_ARGUMENT),
+                                    cue = IdentifierArgumentType.getIdentifier(context, CUE_ARGUMENT).toString(),
                                 )
                             },
                     ),
@@ -234,16 +234,16 @@ class FabricDebugPresentationCommand(
             literal(NORMAL_ARGUMENT).then(
                 argument(TENPAI_COUNT_ARGUMENT, IntegerArgumentType.integer(0, 4)).executes { context ->
                     previewSettlement(
-                        context.source,
-                        RiichiExhaustiveDrawReason.Normal.id,
-                        IntegerArgumentType.getInteger(context, TENPAI_COUNT_ARGUMENT),
+                        source = context.source,
+                        reasonId = RiichiExhaustiveDrawReason.Normal.id,
+                        tenpaiCount = IntegerArgumentType.getInteger(context, TENPAI_COUNT_ARGUMENT),
                     )
                 }.then(
                     argument(PLAYER_COUNT_ARGUMENT, IntegerArgumentType.integer(2, 4)).executes { context ->
                         previewSettlement(
-                            context.source,
-                            RiichiExhaustiveDrawReason.Normal.id,
-                            IntegerArgumentType.getInteger(context, TENPAI_COUNT_ARGUMENT),
+                            source = context.source,
+                            reasonId = RiichiExhaustiveDrawReason.Normal.id,
+                            tenpaiCount = IntegerArgumentType.getInteger(context, TENPAI_COUNT_ARGUMENT),
                             playerCount = IntegerArgumentType.getInteger(context, PLAYER_COUNT_ARGUMENT),
                         )
                     },
@@ -256,8 +256,8 @@ class FabricDebugPresentationCommand(
                     .suggests(::suggestDebugMeldCounts)
                     .executes { context ->
                         previewSettlement(
-                            context.source,
-                            RiichiExhaustiveDrawReason.Normal.id,
+                            source = context.source,
+                            reasonId = RiichiExhaustiveDrawReason.Normal.id,
                             tenpaiCount = 1,
                             meldCount = IntegerArgumentType.getInteger(context, MELD_COUNT_ARGUMENT),
                         )
@@ -271,9 +271,9 @@ class FabricDebugPresentationCommand(
                 .then(
                     argument(SCORE_DELTA_ARGUMENT, IntegerArgumentType.integer(1)).executes { context ->
                         previewSettlement(
-                            context.source,
-                            RiichiExhaustiveDrawReason.Normal.id,
-                            0,
+                            source = context.source,
+                            reasonId = RiichiExhaustiveDrawReason.Normal.id,
+                            tenpaiCount = 0,
                             scoreDelta = IntegerArgumentType.getInteger(context, SCORE_DELTA_ARGUMENT),
                         )
                     },
@@ -307,9 +307,9 @@ class FabricDebugPresentationCommand(
                 .then(
                     argument(WINNER_COUNT_ARGUMENT, IntegerArgumentType.integer(1, 3)).executes { context ->
                         previewWinSettlement(
-                            context.source,
-                            WinSettlementPreview.RON,
-                            IntegerArgumentType.getInteger(context, WINNER_COUNT_ARGUMENT),
+                            source = context.source,
+                            preview = WinSettlementPreview.RON,
+                            winnerCount = IntegerArgumentType.getInteger(context, WINNER_COUNT_ARGUMENT),
                         )
                     },
                 ),
@@ -329,8 +329,8 @@ class FabricDebugPresentationCommand(
             argument(PLAYER_COUNT_ARGUMENT, IntegerArgumentType.integer(2, 4))
                 .executes { context ->
                     previewMatchSettlement(
-                        context.source,
-                        IntegerArgumentType.getInteger(context, PLAYER_COUNT_ARGUMENT),
+                        source = context.source,
+                        playerCount = IntegerArgumentType.getInteger(context, PLAYER_COUNT_ARGUMENT),
                     )
                 },
         )
@@ -341,7 +341,7 @@ class FabricDebugPresentationCommand(
      * @return 已包含引數與執行處理的子指令節點，供上層指令註冊。
      */
     fun buildContinuingWinCommand(): LiteralArgumentBuilder<ServerCommandSource> = DebugWinRoundContinuationMode.entries.fold(
-        literal(CONTINUING_WIN_SUBCOMMAND)
+        initial = literal(CONTINUING_WIN_SUBCOMMAND)
             .executes { context -> reportContinuingWinMode(context.source) },
     ) { node, mode ->
         node.then(
@@ -357,7 +357,7 @@ class FabricDebugPresentationCommand(
      * @return 已包含引數與執行處理的子指令節點，供上層指令註冊。
      */
     fun buildWinShowcaseOverrideCommand(): LiteralArgumentBuilder<ServerCommandSource> = withOptionalCueArgument(
-        literal(WIN_SHOWCASE_OVERRIDE_SUBCOMMAND).then(
+        node = literal(WIN_SHOWCASE_OVERRIDE_SUBCOMMAND).then(
             literal(CLEAR_ARGUMENT).executes { context -> clearWinShowcaseOverride(context.source) },
         ),
         allowMultiple = false,
@@ -553,11 +553,11 @@ class FabricDebugPresentationCommand(
         val player = source.player ?: return COMMAND_FAILURE
         val world = player.serverWorld
         val layout = layoutFactory.create(
-            player.blockPos.x,
-            player.blockPos.y,
-            player.blockPos.z,
-            player.horizontalFacing.toMahjongTableFacing(),
-            MahjongTableSeatLayout.FOUR_PLAYER,
+            playerBlockX = player.blockPos.x,
+            playerBlockY = player.blockPos.y,
+            playerBlockZ = player.blockPos.z,
+            tableFacing = player.horizontalFacing.toMahjongTableFacing(),
+            seatLayout = MahjongTableSeatLayout.FOUR_PLAYER,
         )
         val controllerPos = BlockPos(layout.controllerX, layout.controllerY, layout.controllerZ)
         val tableId = Uuid.random()
@@ -610,11 +610,11 @@ class FabricDebugPresentationCommand(
         val player = source.player ?: return COMMAND_FAILURE
         val world = player.serverWorld
         val layout = layoutFactory.create(
-            player.blockPos.x,
-            player.blockPos.y,
-            player.blockPos.z,
-            player.horizontalFacing.toMahjongTableFacing(),
-            MahjongTableSeatLayout.FOUR_PLAYER,
+            playerBlockX = player.blockPos.x,
+            playerBlockY = player.blockPos.y,
+            playerBlockZ = player.blockPos.z,
+            tableFacing = player.horizontalFacing.toMahjongTableFacing(),
+            seatLayout = MahjongTableSeatLayout.FOUR_PLAYER,
         )
         // 單一贏家也使用四人桌預覽，不把贏家數當作對局人數。
         val isTsumo = cues.size == 1
@@ -739,11 +739,11 @@ class FabricDebugPresentationCommand(
         if (meldCount !in 0..MAX_DEBUG_MELD_COUNT) return COMMAND_FAILURE
         val player = source.player ?: return COMMAND_FAILURE
         val layout = layoutFactory.create(
-            player.blockPos.x,
-            player.blockPos.y,
-            player.blockPos.z,
-            player.horizontalFacing.toMahjongTableFacing(),
-            MahjongTableSeatLayout.forPlayerCount(playerCount),
+            playerBlockX = player.blockPos.x,
+            playerBlockY = player.blockPos.y,
+            playerBlockZ = player.blockPos.z,
+            tableFacing = player.horizontalFacing.toMahjongTableFacing(),
+            seatLayout = MahjongTableSeatLayout.forPlayerCount(playerCount),
         )
         val previousScores = if (scoreDelta == 0) List(playerCount) { 25_000 } else List(playerCount) { index -> 28_000 - index * 2_000 }
         val currentScores = previousScores.toMutableList()
@@ -765,10 +765,10 @@ class FabricDebugPresentationCommand(
         val previewMeldTiles = List(meldCount) { meldIndex ->
             List(DebugPreviewDefaults.MELD_TILE_COUNT) { tileIndex ->
                 tilePreviewSupport.spawnFreeTile(
-                    player.serverWorld,
-                    layout.handPlacement(handSize = DebugPreviewDefaults.RULE_CONFIG.initialHandSize, tileIndex = tileIndex),
-                    MahjongTilePose.FACE_UP,
-                    previewAssets[(meldIndex * DebugPreviewDefaults.MELD_TILE_COUNT + tileIndex) % previewAssets.size],
+                    world = player.serverWorld,
+                    placement = layout.handPlacement(handSize = DebugPreviewDefaults.RULE_CONFIG.initialHandSize, tileIndex = tileIndex),
+                    pose = MahjongTilePose.FACE_UP,
+                    assetKey = previewAssets[(meldIndex * DebugPreviewDefaults.MELD_TILE_COUNT + tileIndex) % previewAssets.size],
                 )
             }
         }
@@ -812,10 +812,10 @@ class FabricDebugPresentationCommand(
             }
             assets.mapIndexed { index, asset ->
                 tilePreviewSupport.spawnFreeTile(
-                    player.serverWorld,
-                    layout.handPlacement(seat, assets.size, index, handShift),
-                    MahjongTilePose.STANDING,
-                    asset,
+                    world = player.serverWorld,
+                    placement = layout.handPlacement(seat, assets.size, index, handShift),
+                    pose = MahjongTilePose.STANDING,
+                    assetKey = asset,
                 ) to asset
             }
         }
@@ -867,9 +867,9 @@ class FabricDebugPresentationCommand(
             handShiftsBySeat = handShifts,
         ) ?: return COMMAND_FAILURE
         entityLifecycle.schedule(
-            player.serverWorld,
-            end,
-            previewTilesBySeat.flatten().map(Pair<MahjongTileEntity, String>::first) + previewMeldTiles.flatten(),
+            world = player.serverWorld,
+            endGameTime = end,
+            entities = previewTilesBySeat.flatten().map(Pair<MahjongTileEntity, String>::first) + previewMeldTiles.flatten(),
         )
         source.sendFeedback({ Text.literal("Exhaustive draw settlement preview active until game time $end") }, false)
         return COMMAND_SUCCESS
@@ -886,11 +886,11 @@ class FabricDebugPresentationCommand(
         val player = source.player ?: return COMMAND_FAILURE
         val world = player.serverWorld
         val layout = layoutFactory.create(
-            player.blockX,
-            player.blockY,
-            player.blockZ,
-            player.horizontalFacing.toMahjongTableFacing(),
-            MahjongTableSeatLayout.forPlayerCount(playerCount),
+            playerBlockX = player.blockX,
+            playerBlockY = player.blockY,
+            playerBlockZ = player.blockZ,
+            tableFacing = player.horizontalFacing.toMahjongTableFacing(),
+            seatLayout = MahjongTableSeatLayout.forPlayerCount(playerCount),
         )
         val scores = listOf(120_000, 45_000, 25_000, -12_000).take(playerCount)
         val playerIds = List(playerCount) { index -> if (index == 0) player.uuid.toKotlinUuid() else Uuid.random() }
@@ -935,11 +935,11 @@ class FabricDebugPresentationCommand(
         val player = source.player ?: return COMMAND_FAILURE
         val world = player.serverWorld
         val layout = layoutFactory.create(
-            player.blockX,
-            player.blockY,
-            player.blockZ,
-            player.horizontalFacing.toMahjongTableFacing(),
-            MahjongTableSeatLayout.FOUR_PLAYER,
+            playerBlockX = player.blockX,
+            playerBlockY = player.blockY,
+            playerBlockZ = player.blockZ,
+            tableFacing = player.horizontalFacing.toMahjongTableFacing(),
+            seatLayout = MahjongTableSeatLayout.FOUR_PLAYER,
         )
         val playerIds = List(4) { index -> if (index == 0) player.uuid.toKotlinUuid() else Uuid.random() }
         val tileAssetsById = mutableMapOf<Uuid, String>()
@@ -994,10 +994,10 @@ class FabricDebugPresentationCommand(
                 winningTileId = winningTileId,
                 detailFields = buildList {
                     add(
-                        WinSettlementDetailField(
-                            RiichiWinSettlementIds.YAKU_FIELD,
-                            WinSettlementDetailValue.Entries(
-                                if (yakuman) {
+                        element = WinSettlementDetailField(
+                            id = RiichiWinSettlementIds.YAKU_FIELD,
+                            value = WinSettlementDetailValue.Entries(
+                                entries = if (yakuman) {
                                     listOf(
                                         RiichiWinSettlementIds.yakumanEntry(RiichiYakuType.KokushiMusou13, 2),
                                         RiichiWinSettlementIds.yakumanEntry(RiichiYakuType.Daisangen, 1),
@@ -1013,10 +1013,10 @@ class FabricDebugPresentationCommand(
                     if (!yakuman && preview != WinSettlementPreview.NAGASHI) {
                         val totalHan = regularYakuEntries.sumOf { (_, han) -> han }
                         add(
-                            WinSettlementDetailField(
-                                RiichiWinSettlementIds.HAN_FU_FIELD,
-                                WinSettlementDetailValue.Quantities(
-                                    listOf(
+                            element = WinSettlementDetailField(
+                                id = RiichiWinSettlementIds.HAN_FU_FIELD,
+                                value = WinSettlementDetailValue.Quantities(
+                                    quantities = listOf(
                                         WinSettlementQuantity(RiichiWinSettlementIds.HAN, totalHan),
                                         WinSettlementQuantity(RiichiWinSettlementIds.FU, PREVIEW_FU),
                                     ),
@@ -1025,9 +1025,9 @@ class FabricDebugPresentationCommand(
                         )
                     } else if (yakuman) {
                         add(
-                            WinSettlementDetailField(
-                                RiichiWinSettlementIds.YAKUMAN_TOTAL_FIELD,
-                                WinSettlementDetailValue.Quantities(listOf(WinSettlementQuantity(RiichiWinSettlementIds.YAKUMAN, PREVIEW_YAKUMAN_MULTIPLIER))),
+                            element = WinSettlementDetailField(
+                                id = RiichiWinSettlementIds.YAKUMAN_TOTAL_FIELD,
+                                value = WinSettlementDetailValue.Quantities(listOf(WinSettlementQuantity(RiichiWinSettlementIds.YAKUMAN, PREVIEW_YAKUMAN_MULTIPLIER))),
                             ),
                         )
                     }
@@ -1043,7 +1043,7 @@ class FabricDebugPresentationCommand(
             Triple(listOf(31_000, 28_000, 24_000, 17_000), listOf(26_000, 23_000, 19_000, 32_000), listOf(2, 3, 4, 1))
         }
         val ranking = ScoreRankingPresentation(
-            scoresBefore.zip(scoresAfter).mapIndexed { seatIndex, (before, after) ->
+            players = scoresBefore.zip(scoresAfter).mapIndexed { seatIndex, (before, after) ->
                 ScoreRankingPlayer(playerIds[seatIndex], seatIndex, seatIndex != 0, before, after, seatIndex + 1, ranksAfter[seatIndex])
             },
         )
@@ -1068,13 +1068,13 @@ class FabricDebugPresentationCommand(
         )
         return if (
             winSettlementScheduler.schedule(
-                world,
-                Uuid.random(),
-                BlockPos(layout.controllerX, layout.controllerY, layout.controllerZ),
-                layout.showcaseStagePlacement(),
-                world.time,
-                request,
-                tileAssetsById,
+                world = world,
+                tableId = Uuid.random(),
+                controllerPos = BlockPos(layout.controllerX, layout.controllerY, layout.controllerZ),
+                placement = layout.showcaseStagePlacement(),
+                earliestStartGameTime = world.time,
+                request = request,
+                tileAssetsById = tileAssetsById,
             ) != null
         ) {
             COMMAND_SUCCESS
@@ -1095,11 +1095,11 @@ class FabricDebugPresentationCommand(
         val player = source.player ?: return COMMAND_FAILURE
         val world = player.serverWorld
         val layout = layoutFactory.create(
-            player.blockX,
-            player.blockY,
-            player.blockZ,
-            player.horizontalFacing.toMahjongTableFacing(),
-            MahjongTableSeatLayout.FOUR_PLAYER,
+            playerBlockX = player.blockX,
+            playerBlockY = player.blockY,
+            playerBlockZ = player.blockZ,
+            tableFacing = player.horizontalFacing.toMahjongTableFacing(),
+            seatLayout = MahjongTableSeatLayout.FOUR_PLAYER,
         )
         val playerIds = List(4) { index -> if (index == 0) player.uuid.toKotlinUuid() else Uuid.random() }
         val tileAssetsById = mutableMapOf<Uuid, String>()
@@ -1151,18 +1151,18 @@ class FabricDebugPresentationCommand(
         val taiTotal = if (dealerEntry != null && !dealerPaysAlone) handTai + dealerTai else handTai
         val detailFields = flowerFields + listOfNotNull(
             WinSettlementDetailField(
-                TaiwanWinSettlementIds.TAI_FIELD,
-                WinSettlementDetailValue.Entries(
-                    taiResults.map { result -> TaiwanWinSettlementIds.taiEntry(result.type, result.tai) } + listOfNotNull(dealerEntry),
+                id = TaiwanWinSettlementIds.TAI_FIELD,
+                value = WinSettlementDetailValue.Entries(
+                    entries = taiResults.map { result -> TaiwanWinSettlementIds.taiEntry(result.type, result.tai) } + listOfNotNull(dealerEntry),
                 ),
             ),
             WinSettlementDetailField(
-                TaiwanWinSettlementIds.TAI_TOTAL_FIELD,
-                WinSettlementDetailValue.Quantities(listOf(WinSettlementQuantity(TaiwanWinSettlementIds.TAI_UNIT, taiTotal))),
+                id = TaiwanWinSettlementIds.TAI_TOTAL_FIELD,
+                value = WinSettlementDetailValue.Quantities(listOf(WinSettlementQuantity(TaiwanWinSettlementIds.TAI_UNIT, taiTotal))),
             ),
             WinSettlementDetailField(
-                TaiwanWinSettlementIds.DEALER_TAI_TOTAL_FIELD,
-                WinSettlementDetailValue.Quantities(listOf(WinSettlementQuantity(TaiwanWinSettlementIds.TAI_UNIT, handTai + dealerTai))),
+                id = TaiwanWinSettlementIds.DEALER_TAI_TOTAL_FIELD,
+                value = WinSettlementDetailValue.Quantities(listOf(WinSettlementQuantity(TaiwanWinSettlementIds.TAI_UNIT, handTai + dealerTai))),
             ).takeIf { dealerPaysAlone },
         )
         val isTsumo = preview == TaiwanWinSettlementPreview.TSUMO || preview == TaiwanWinSettlementPreview.EIGHT_FLOWERS
@@ -1176,7 +1176,7 @@ class FabricDebugPresentationCommand(
             ruleModuleId = BuiltInRuleModuleIds.TAIWAN,
             isTsumo = isTsumo,
             winners = listOf(
-                WinSettlementWinnerPresentation(
+                element = WinSettlementWinnerPresentation(
                     playerId = playerIds[0],
                     seatIndex = 0,
                     responsiblePlayerId = if (isTsumo) null else playerIds[1],
@@ -1188,7 +1188,7 @@ class FabricDebugPresentationCommand(
                 ),
             ),
             ranking = ScoreRankingPresentation(
-                listOf(31_000, 28_000, 24_000, 17_000).zip(listOf(31_340, 27_660, 24_000, 17_000)).mapIndexed { seatIndex, (before, after) ->
+                players = listOf(31_000, 28_000, 24_000, 17_000).zip(listOf(31_340, 27_660, 24_000, 17_000)).mapIndexed { seatIndex, (before, after) ->
                     ScoreRankingPlayer(playerIds[seatIndex], seatIndex, seatIndex != 0, before, after, seatIndex + 1, seatIndex + 1)
                 },
             ),
@@ -1196,13 +1196,13 @@ class FabricDebugPresentationCommand(
         )
         return if (
             winSettlementScheduler.schedule(
-                world,
-                Uuid.random(),
-                BlockPos(layout.controllerX, layout.controllerY, layout.controllerZ),
-                layout.showcaseStagePlacement(),
-                world.time,
-                request,
-                tileAssetsById,
+                world = world,
+                tableId = Uuid.random(),
+                controllerPos = BlockPos(layout.controllerX, layout.controllerY, layout.controllerZ),
+                placement = layout.showcaseStagePlacement(),
+                earliestStartGameTime = world.time,
+                request = request,
+                tileAssetsById = tileAssetsById,
             ) != null
         ) {
             COMMAND_SUCCESS
@@ -1224,11 +1224,11 @@ class FabricDebugPresentationCommand(
         val world = player.serverWorld
         val assetKey = tilePreviewSupport.resolveAssetKey(tileArg)
         val layout = layoutFactory.create(
-            player.blockPos.x,
-            player.blockPos.y,
-            player.blockPos.z,
-            player.horizontalFacing.toMahjongTableFacing(),
-            MahjongTableSeatLayout.FOUR_PLAYER,
+            playerBlockX = player.blockPos.x,
+            playerBlockY = player.blockPos.y,
+            playerBlockZ = player.blockPos.z,
+            tableFacing = player.horizontalFacing.toMahjongTableFacing(),
+            seatLayout = MahjongTableSeatLayout.FOUR_PLAYER,
         )
         val handSize = DebugPreviewDefaults.RULE_CONFIG.initialHandSize
         val handPlacements = (0 until handSize).map { slot -> layout.handPlacement(handSize = handSize, tileIndex = slot) }
@@ -1245,9 +1245,9 @@ class FabricDebugPresentationCommand(
         val reorderEndGameTime = reorderStartGameTime + MahjongTileTableLayout.WIN_POST_REORDER_DELAY_TICKS
         handTiles.forEachIndexed { index, tile ->
             TileAnimationSteps.scheduleInstantReorder(
-                tile,
-                sortedPlacements[index],
-                reorderStartGameTime,
+                tile = tile,
+                finalPlacement = sortedPlacements[index],
+                startGameTime = reorderStartGameTime,
             )
         }
 

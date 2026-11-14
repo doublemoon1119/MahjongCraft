@@ -70,12 +70,12 @@ class HistoryWinDetailPresentationTest {
         val first = HistoryWinDetailFieldDto("custom:points", HistoryWinDetailValueDto.Quantities(listOf(HistoryWinDetailQuantityDto("custom:point", 3))))
         val second = HistoryWinDetailFieldDto("custom:patterns", HistoryWinDetailValueDto.Entries(listOf(HistoryWinDetailValueDto.Entries.EntryDto("custom:pattern", quantity = null, nameQuantity = null, appliesToSomePayersOnly = false))))
         val outcome = HistoryRoundOutcomeDto(
-            "mahjongcraft:ron",
-            listOf(1, 2),
-            mapOf(0 to 20000, 1 to 28000, 2 to 27000),
-            RoundCompletionClassification.WIN.name,
-            listOf(0),
-            null,
+            reasonId = "mahjongcraft:ron",
+            beneficiarySeats = listOf(1, 2),
+            scoresBySeat = mapOf(0 to 20000, 1 to 28000, 2 to 27000),
+            classification = RoundCompletionClassification.WIN.name,
+            responsibleSeats = listOf(0),
+            transitionDirective = null,
             nextDealerSeat = null,
             scoreChangesBySeat = mapOf(0 to -5000, 1 to 3000, 2 to 2000),
             winnerDetails = listOf(HistoryWinnerDetailsDto(2, listOf(second), hand = null), HistoryWinnerDetailsDto(1, listOf(first), hand = null)),
@@ -104,7 +104,7 @@ class HistoryWinDetailPresentationTest {
             BundledMinecraftMahjongExtensions.all.forEach { it.registerWinSettlementPresentationTemplates(this) }
         }
         val yaku = HistoryWinDetailValueDto.Entries(
-            listOf(
+            entries = listOf(
                 HistoryWinDetailValueDto.Entries.EntryDto(RiichiWinSettlementIds.yaku(RiichiYakuType.Riichi), HistoryWinDetailQuantityDto(RiichiWinSettlementIds.HAN, 1), nameQuantity = null, appliesToSomePayersOnly = false),
                 HistoryWinDetailValueDto.Entries.EntryDto(RiichiWinSettlementIds.yaku(RiichiYakuType.Daisangen), HistoryWinDetailQuantityDto(RiichiWinSettlementIds.YAKUMAN, 2), nameQuantity = null, appliesToSomePayersOnly = false),
             ),
@@ -151,11 +151,11 @@ class HistoryWinDetailPresentationTest {
      */
     private fun present(outcome: HistoryRoundOutcomeDto): HistoryOutcomePresentation {
         val events = HistoryRoundEventsDto(
-            HistoryReplayIdentityDto("match", "table", (0..2).map { HistoryReplayPlayerIdentityDto(it, null, null) }),
-            1,
-            listOf(HistoryReplayTransactionDto(0, 100L, false, 0, listOf(HistoryReplayFactDto.Completion(HistoryFactTypeKeys.WIN_SETTLED, outcome)))),
-            null,
-            emptyList(),
+            identity = HistoryReplayIdentityDto("match", "table", (0..2).map { HistoryReplayPlayerIdentityDto(it, null, null) }),
+            roundNumber = 1,
+            transactions = listOf(HistoryReplayTransactionDto(0, 100L, false, 0, listOf(HistoryReplayFactDto.Completion(HistoryFactTypeKeys.WIN_SETTLED, outcome)))),
+            nextTransactionIndex = null,
+            tileCatalog = emptyList(),
         )
         val fact = presenter().present(events, "custom:rule").transactions.single().facts.single()
         assertEquals(MinecraftHistoryScreenKeys.ROUND_WIN_SETTLEMENT, (fact.text.content as TranslatableTextContent).key)

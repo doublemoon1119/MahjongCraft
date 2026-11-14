@@ -58,8 +58,8 @@ class HistoryGenerationRetentionStressTest {
                 assertTrue(status.storagePaused, "Storage must pause when the disk policy cannot be satisfied.")
                 val result = writer.beginGeneration(Game(tableState = FakeTableStateFactory.create(), flowConfig = GameFlowConfig()), session)
                 assertTrue(
-                    result is HistoryManagementResult.Success && !result.value,
-                    "A paused history store must reject a new generation.",
+                    actual = result is HistoryManagementResult.Success && !result.value,
+                    message = "A paused history store must reject a new generation.",
                 )
             }
         } finally {

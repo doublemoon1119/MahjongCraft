@@ -54,7 +54,7 @@ internal object SettlementExtrasResolver {
         val stickPot = module.collectStickPot(state)
         val stickPotAmount = stickPot?.points ?: 0
         val allocation = module.allocateSettlementExtras(
-            SettlementExtrasContext(
+            context = SettlementExtrasContext(
                 tableState = state,
                 occasion = occasion,
                 candidatePlayerIds = candidatePlayerIds,

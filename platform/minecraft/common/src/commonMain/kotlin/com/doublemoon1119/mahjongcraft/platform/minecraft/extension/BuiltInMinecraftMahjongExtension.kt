@@ -74,7 +74,7 @@ object BuiltInMinecraftMahjongExtension : MinecraftMahjongExtension {
 
     override fun registerRoomMemberAppearanceSources(registry: RoomMemberAppearanceSourceRegistrar) {
         registry.register(
-            RoomMemberAppearanceSourceDefinition(
+            definition = RoomMemberAppearanceSourceDefinition(
                 providerId = BuiltInAiCharacters.ROOM_MODEL_SOURCE_ID,
                 priority = -100,
                 provider = { context ->
@@ -90,7 +90,7 @@ object BuiltInMinecraftMahjongExtension : MinecraftMahjongExtension {
 
     override fun registerPlayerPortraitSources(registry: PlayerPortraitSourceRegistrar) {
         registry.register(
-            PlayerPortraitSourceDefinition(
+            definition = PlayerPortraitSourceDefinition(
                 providerId = BuiltInAiCharacters.PORTRAIT_SOURCE_ID,
                 priority = -100,
                 provider = { context ->

@@ -55,7 +55,7 @@ class RiichiPositionRules(
         if (!isTsumo && isFuriten(self, hand)) return WinValue.NotWinnable
 
         val result = handValueCalculator.calculate(
-            RiichiHandValueContext.forPlayer(
+            context = RiichiHandValueContext.forPlayer(
                 config = config,
                 declaration = declaration,
                 hand = hand,

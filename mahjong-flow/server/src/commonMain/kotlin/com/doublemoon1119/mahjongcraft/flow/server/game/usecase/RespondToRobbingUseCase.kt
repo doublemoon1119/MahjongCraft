@@ -93,7 +93,7 @@ class RespondToRobbingUseCase(
             history = { before, after, result ->
                 if (result is Outcome.Success && before != null && after != null) {
                     listOf(
-                        acceptedActionHistoryDraft(
+                        element = acceptedActionHistoryDraft(
                             actorPlayerId = playerId,
                             action = action,
                             before = before,
@@ -105,7 +105,7 @@ class RespondToRobbingUseCase(
                         val resolvedActor = resolution.declarerId ?: resolution.ronWinnerIds.singleOrNull()
                         buildList {
                             add(
-                                HistoryEventDraft(
+                                element = HistoryEventDraft(
                                     actorPlayerId = resolvedActor,
                                     fact = HistoryFact.ReactionResolved(
                                         resolvedAction = if (resolution.declarerId != null) {
@@ -121,12 +121,12 @@ class RespondToRobbingUseCase(
                                 resolution.scoring?.let { add(actionScoredHistoryDraft(it)) }
                                 if (resolution.drawnTiles.isNotEmpty()) {
                                     add(
-                                        acceptedActionHistoryDraft(
-                                            declarerId,
-                                            GameAction.Draw,
-                                            before,
-                                            after,
-                                            resolution.drawnTiles.map { it.id },
+                                        element = acceptedActionHistoryDraft(
+                                            actorPlayerId = declarerId,
+                                            action = GameAction.Draw,
+                                            before = before,
+                                            after = after,
+                                            affectedTileIds = resolution.drawnTiles.map { it.id },
                                         ),
                                     )
                                 }
@@ -134,7 +134,7 @@ class RespondToRobbingUseCase(
                             }
                             resolution.settlement?.let { settlement ->
                                 add(
-                                    HistoryEventDraft(
+                                    element = HistoryEventDraft(
                                         actorPlayerId = resolution.ronDiscarderId,
                                         fact = HistoryFact.WinSettled(
                                             outcomeId = settlement.outcomeId,
@@ -168,7 +168,7 @@ class RespondToRobbingUseCase(
                     val module = moduleRegistry.getModule(state.config)
                     val responder = state.players.first { it.id == playerId }
                     val legalActions = module.createLegalActionValidator().getLegalActions(
-                        LegalActionContext.declarationReaction(
+                        context = LegalActionContext.declarationReaction(
                             tableState = state,
                             playerId = playerId,
                             declarerId = pending.declarerId,
@@ -220,7 +220,7 @@ class RespondToRobbingUseCase(
                         )
                         if (revealResult is WallRevealDecisionApplier.Result.Rejected) {
                             return@update state to Outcome.Error(
-                                GameError.UnsupportedAction(gameId, playerId, revealResult.reasonId),
+                                error = GameError.UnsupportedAction(gameId, playerId, revealResult.reasonId),
                             )
                         }
                         revealResult as WallRevealDecisionApplier.Result.Applied
@@ -238,7 +238,7 @@ class RespondToRobbingUseCase(
                             detailResolverRegistry = winSettlementDetailResolverRegistry,
                         )
                         newState to Outcome.Success(
-                            RobbingResult(
+                            value = RobbingResult(
                                 tableState = newState,
                                 ronWinnerIds = ronWinnerIds,
                                 ronWinningTileId = pending.robbedTile.id,
@@ -266,11 +266,11 @@ class RespondToRobbingUseCase(
                         )
                         val applied = when (val declaredAction = pending.declaredAction) {
                             is GameAction.Kan -> SelfDeclarationApplier.apply(
-                                stateAfterPasses,
-                                pending.declarerId,
-                                declaredAction,
-                                pending.robbedTile,
-                                module,
+                                state = stateAfterPasses,
+                                declarerId = pending.declarerId,
+                                kanAction = declaredAction,
+                                incomingTile = pending.robbedTile,
+                                module = module,
                                 componentRegistry = componentRegistry,
                             )
                             is GameAction.Extension -> SelfDeclarationApplier.applyTileSetAside(
@@ -309,8 +309,8 @@ class RespondToRobbingUseCase(
                         }
                         val newState = followUp?.tableState ?: appliedState
                         newState to Outcome.Success(
-                            RobbingResult(
-                                newState,
+                            value = RobbingResult(
+                                tableState = newState,
                                 drawnTiles = applied.drawnTiles,
                                 scoring = applied.scoring,
                                 followUp = followUp,
@@ -341,10 +341,10 @@ class RespondToRobbingUseCase(
         when {
             ronWinningTileId != null -> result.ronWinnerIds.forEach { winnerId ->
                 eventPublisher.publishToAllObservers(
-                    gameId,
-                    seatedPlayerIds,
-                    winnerId,
-                    GameAction.Ron(ronWinningTileId),
+                    gameId = gameId,
+                    seatedPlayerIds = seatedPlayerIds,
+                    actorId = winnerId,
+                    action = GameAction.Ron(ronWinningTileId),
                 )
             }
         }
@@ -359,9 +359,9 @@ class RespondToRobbingUseCase(
 
         // 呈現回應的結果：全員放過時接續收付、補牌與補牌後的自動處理；搶和成立時宣告和牌。
         val steps = result.steps ?: listOf(
-            TableStep(
-                newState,
-                result.ronWinningTileId?.let { tileId ->
+            element = TableStep(
+                tableState = newState,
+                events = result.ronWinningTileId?.let { tileId ->
                     result.ronWinnerIds.map { winnerId -> TableStepEvent.ActionDeclared(winnerId, GameAction.Ron(tileId)) }
                 }.orEmpty(),
             ),
@@ -379,8 +379,8 @@ class RespondToRobbingUseCase(
                     revealsWinnerHands = true,
                     winners = result.ronWinnerIds.map { winnerId ->
                         WinCelebrationWinner(
-                            newState.players.indexOfFirst { it.id == winnerId },
-                            result.ronResolutions[winnerId]?.let {
+                            seatIndex = newState.players.indexOfFirst { it.id == winnerId },
+                            cueIds = result.ronResolutions[winnerId]?.let {
                                 winCelebrationCueResolverRegistry.resolve(result.ruleModuleId.orEmpty(), it.handValueResult)
                             }.orEmpty(),
                         )

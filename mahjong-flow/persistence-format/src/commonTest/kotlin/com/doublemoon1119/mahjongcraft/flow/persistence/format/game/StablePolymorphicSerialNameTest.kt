@@ -17,9 +17,9 @@ class StablePolymorphicSerialNameTest {
         assertRoundTrip(TilePersistenceDto.serializer(), TilePersistenceDto.Numeric(SuitPersistenceDto.DOT, 5), "numeric")
         assertRoundTrip(TilePersistenceDto.serializer(), TilePersistenceDto.Extension("taiwan.plum"), "extension")
         assertRoundTrip(
-            TilePersistenceDto.serializer(),
-            TilePersistenceDto.Honor(HonorPersistenceValue.WHITE),
-            "honor",
+            serializer = TilePersistenceDto.serializer(),
+            value = TilePersistenceDto.Honor(HonorPersistenceValue.WHITE),
+            serialName = "honor",
         )
     }
 

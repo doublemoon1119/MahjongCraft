@@ -111,13 +111,13 @@ class MahjongHudLayoutEditorModelTest {
             assertFalse(element.adjustsHorizontally, "$element must not be horizontally adjustable")
             assertEquals(initial.draft.compactPromptX, dragged.draft.compactPromptX)
             assertEquals(
-                centeredLeft,
-                dragged.bounds(
+                expected = centeredLeft,
+                actual = dragged.bounds(
                     element = element,
                     screenWidth = SCREEN_WIDTH,
                     screenHeight = SCREEN_HEIGHT,
                 ).left,
-                "$element left edge moved despite being centered",
+                message = "$element left edge moved despite being centered",
             )
         }
     }
@@ -342,16 +342,16 @@ class MahjongHudLayoutEditorModelTest {
         val insideCompactX = compactBounds.left + 1.0
         val insideCompactY = compactBounds.top + 1.0
         assertFalse(
-            initial.bounds(
+            actual = initial.bounds(
                 element = HudElement.DECISION,
                 screenWidth = SCREEN_WIDTH,
                 screenHeight = SCREEN_HEIGHT,
             ).contains(insideCompactX, insideCompactY),
-            "the probe point must lie outside the selected hud for this test to mean anything",
+            message = "the probe point must lie outside the selected hud for this test to mean anything",
         )
 
         assertNull(
-            initial.hitTest(
+            actual = initial.hitTest(
                 mouseX = insideCompactX,
                 mouseY = insideCompactY,
                 screenWidth = SCREEN_WIDTH,
@@ -359,8 +359,8 @@ class MahjongHudLayoutEditorModelTest {
             ),
         )
         assertEquals(
-            HudElement.COMPACT,
-            initial.selectVisibility(HudPreviewVisibility.OUTLINE).hitTest(
+            expected = HudElement.COMPACT,
+            actual = initial.selectVisibility(HudPreviewVisibility.OUTLINE).hitTest(
                 mouseX = insideCompactX,
                 mouseY = insideCompactY,
                 screenWidth = SCREEN_WIDTH,
@@ -382,8 +382,8 @@ class MahjongHudLayoutEditorModelTest {
         )
 
         assertEquals(
-            HudElement.ANALYSIS,
-            overlapping.hitTest(
+            expected = HudElement.ANALYSIS,
+            actual = overlapping.hitTest(
                 mouseX = analysisBounds.left + 1.0,
                 mouseY = analysisBounds.top + 1.0,
                 screenWidth = SCREEN_WIDTH,

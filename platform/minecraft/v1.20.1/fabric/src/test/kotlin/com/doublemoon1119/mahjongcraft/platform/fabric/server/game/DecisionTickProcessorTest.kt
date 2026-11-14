@@ -16,8 +16,8 @@ class DecisionTickProcessorTest {
         fixture.tick()
 
         assertEquals(
-            listOf("reconcile $first", "reconcile $second", "timeouts", "request $first", "request $second", "synchronize"),
-            fixture.events,
+            expected = listOf("reconcile $first", "reconcile $second", "timeouts", "request $first", "request $second", "synchronize"),
+            actual = fixture.events,
         )
     }
 

@@ -61,7 +61,7 @@ class AbortGameUseCase(
                 state = state.copy(games = state.games - gameId, rooms = state.rooms + (gameId to restored)),
                 result = restored,
                 historyDraftsByVenueId = mapOf(
-                    gameId to listOf(HistoryEventDraft(actorPlayerId = null, fact = HistoryFact.MatchAborted(reasonId))),
+                    pair = gameId to listOf(HistoryEventDraft(actorPlayerId = null, fact = HistoryFact.MatchAborted(reasonId))),
                 ),
             )
         } ?: return false

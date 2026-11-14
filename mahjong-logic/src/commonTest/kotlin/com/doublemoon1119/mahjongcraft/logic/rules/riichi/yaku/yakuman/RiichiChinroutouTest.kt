@@ -36,7 +36,7 @@ class RiichiChinroutouTest : RiichiHandValueCalculatorTestBase() {
     @Test
     fun `test chinroutou complete hand`() {
         val hand = FakeHandFactory.create(
-            listOf(
+            tiles = listOf(
                 // 1m 刻子
                 Tile.Numeric(Tile.Suit.Character, 1),
                 Tile.Numeric(Tile.Suit.Character, 1),
@@ -64,8 +64,8 @@ class RiichiChinroutouTest : RiichiHandValueCalculatorTestBase() {
 
         assertTrue(result.isYakuman, "Should be yakuman")
         assertTrue(
-            result.yakuResults.any { it.yaku == RiichiYakuType.Chinroutou },
-            "Should contain Chinroutou, got: ${result.yakuResults.map { it.yaku }}",
+            actual = result.yakuResults.any { it.yaku == RiichiYakuType.Chinroutou },
+            message = "Should contain Chinroutou, got: ${result.yakuResults.map { it.yaku }}",
         )
     }
 
@@ -81,7 +81,7 @@ class RiichiChinroutouTest : RiichiHandValueCalculatorTestBase() {
     @Test
     fun `test chinroutou with fuuro`() {
         val hand = FakeHandFactory.create(
-            listOf(
+            tiles = listOf(
                 // 9m 刻子
                 Tile.Numeric(Tile.Suit.Character, 9),
                 Tile.Numeric(Tile.Suit.Character, 9),
@@ -99,7 +99,7 @@ class RiichiChinroutouTest : RiichiHandValueCalculatorTestBase() {
             ),
             melds = listOf(
                 // 副露：1s 刻子
-                FakeMeldFactory.create(
+                element = FakeMeldFactory.create(
                     type = MeldType.Pon,
                     tiles = listOf(
                         FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Bamboo, 1)),
@@ -117,8 +117,8 @@ class RiichiChinroutouTest : RiichiHandValueCalculatorTestBase() {
 
         assertTrue(result.isYakuman, "Should be yakuman")
         assertTrue(
-            result.yakuResults.any { it.yaku == RiichiYakuType.Chinroutou },
-            "Should contain Chinroutou, got: ${result.yakuResults.map { it.yaku }}",
+            actual = result.yakuResults.any { it.yaku == RiichiYakuType.Chinroutou },
+            message = "Should contain Chinroutou, got: ${result.yakuResults.map { it.yaku }}",
         )
     }
 
@@ -134,7 +134,7 @@ class RiichiChinroutouTest : RiichiHandValueCalculatorTestBase() {
     @Test
     fun `test chinroutou with ankan`() {
         val hand = FakeHandFactory.create(
-            listOf(
+            tiles = listOf(
                 // 9m 刻子
                 Tile.Numeric(Tile.Suit.Character, 9),
                 Tile.Numeric(Tile.Suit.Character, 9),
@@ -152,7 +152,7 @@ class RiichiChinroutouTest : RiichiHandValueCalculatorTestBase() {
             ),
             melds = listOf(
                 // 暗槓：1p
-                FakeMeldFactory.create(
+                element = FakeMeldFactory.create(
                     type = MeldType.ClosedKan,
                     tiles = listOf(
                         FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 1)),
@@ -170,8 +170,8 @@ class RiichiChinroutouTest : RiichiHandValueCalculatorTestBase() {
 
         assertTrue(result.isYakuman, "Should be yakuman")
         assertTrue(
-            result.yakuResults.any { it.yaku == RiichiYakuType.Chinroutou },
-            "Should contain Chinroutou, got: ${result.yakuResults.map { it.yaku }}",
+            actual = result.yakuResults.any { it.yaku == RiichiYakuType.Chinroutou },
+            message = "Should contain Chinroutou, got: ${result.yakuResults.map { it.yaku }}",
         )
     }
 
@@ -186,7 +186,7 @@ class RiichiChinroutouTest : RiichiHandValueCalculatorTestBase() {
     @Test
     fun `test not chinroutou with honor tile`() {
         val hand = FakeHandFactory.create(
-            listOf(
+            tiles = listOf(
                 // 1m 刻子
                 Tile.Numeric(Tile.Suit.Character, 1),
                 Tile.Numeric(Tile.Suit.Character, 1),
@@ -213,8 +213,8 @@ class RiichiChinroutouTest : RiichiHandValueCalculatorTestBase() {
         val result = calculator.calculate(context)
 
         assertFalse(
-            result.yakuResults.any { it.yaku == RiichiYakuType.Chinroutou },
-            "Should not contain Chinroutou when hand contains honor tiles, got: ${result.yakuResults.map { it.yaku }}",
+            actual = result.yakuResults.any { it.yaku == RiichiYakuType.Chinroutou },
+            message = "Should not contain Chinroutou when hand contains honor tiles, got: ${result.yakuResults.map { it.yaku }}",
         )
     }
 
@@ -229,7 +229,7 @@ class RiichiChinroutouTest : RiichiHandValueCalculatorTestBase() {
     @Test
     fun `test not chinroutou with non-terminal tile`() {
         val hand = FakeHandFactory.create(
-            listOf(
+            tiles = listOf(
                 // 1m 刻子
                 Tile.Numeric(Tile.Suit.Character, 1),
                 Tile.Numeric(Tile.Suit.Character, 1),
@@ -256,8 +256,8 @@ class RiichiChinroutouTest : RiichiHandValueCalculatorTestBase() {
         val result = calculator.calculate(context)
 
         assertFalse(
-            result.yakuResults.any { it.yaku == RiichiYakuType.Chinroutou },
-            "Should not contain Chinroutou when hand contains non-terminal tiles, got: ${result.yakuResults.map { it.yaku }}",
+            actual = result.yakuResults.any { it.yaku == RiichiYakuType.Chinroutou },
+            message = "Should not contain Chinroutou when hand contains non-terminal tiles, got: ${result.yakuResults.map { it.yaku }}",
         )
     }
 
@@ -269,7 +269,7 @@ class RiichiChinroutouTest : RiichiHandValueCalculatorTestBase() {
     @Test
     fun `test chinroutou excludes honroutou`() {
         val hand = FakeHandFactory.create(
-            listOf(
+            tiles = listOf(
                 // 1m 刻子
                 Tile.Numeric(Tile.Suit.Character, 1),
                 Tile.Numeric(Tile.Suit.Character, 1),
@@ -296,12 +296,12 @@ class RiichiChinroutouTest : RiichiHandValueCalculatorTestBase() {
         val result = calculator.calculate(context)
 
         assertTrue(
-            result.yakuResults.any { it.yaku == RiichiYakuType.Chinroutou },
-            "Should contain Chinroutou",
+            actual = result.yakuResults.any { it.yaku == RiichiYakuType.Chinroutou },
+            message = "Should contain Chinroutou",
         )
         assertFalse(
-            result.yakuResults.any { it.yaku == RiichiYakuType.Honroutou },
-            "Should not contain Honroutou when hand is Chinroutou",
+            actual = result.yakuResults.any { it.yaku == RiichiYakuType.Honroutou },
+            message = "Should not contain Honroutou when hand is Chinroutou",
         )
     }
 }

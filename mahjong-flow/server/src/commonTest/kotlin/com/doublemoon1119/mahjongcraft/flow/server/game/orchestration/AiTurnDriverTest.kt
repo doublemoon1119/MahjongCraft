@@ -105,14 +105,14 @@ class AiTurnDriverTest {
         }
         val actionContextResolver = PlayerActionContextResolver()
         val driver = AiTurnDriver(
-            gameRepo,
-            GetLegalActionsUseCase(gameRepo, moduleRegistry, actionContextResolver),
-            strategyRegistry,
-            GameVisibilityPolicyImpl(moduleRegistry, componentRegistry = bundledCoreExtensionRegistries().componentRegistry),
-            moduleRegistry,
-            AiDecisionExecutor.direct(failurePolicy = ExtensionFailurePolicy.Default),
-            AutomaticGameCommandResolver(moduleRegistry, actionContextResolver),
-            actionContextResolver,
+            gameRepository = gameRepo,
+            getLegalActionsUseCase = GetLegalActionsUseCase(gameRepo, moduleRegistry, actionContextResolver),
+            aiStrategyRegistry = strategyRegistry,
+            visibilityPolicy = GameVisibilityPolicyImpl(moduleRegistry, componentRegistry = bundledCoreExtensionRegistries().componentRegistry),
+            moduleRegistry = moduleRegistry,
+            decisionExecutor = AiDecisionExecutor.direct(failurePolicy = ExtensionFailurePolicy.Default),
+            commandResolver = AutomaticGameCommandResolver(moduleRegistry, actionContextResolver),
+            actionContextResolver = actionContextResolver,
         )
     }
 
@@ -210,10 +210,10 @@ class AiTurnDriverTest {
             config = RiichiRuleConfig(),
             currentPlayerIndex = 0,
             pendingRobbingReaction = PendingRobbingReaction(
-                declarerId,
-                kanAction,
-                robbedTile,
-                setOf(aiId),
+                declarerId = declarerId,
+                declaredAction = kanAction,
+                robbedTile = robbedTile,
+                eligiblePlayerIds = setOf(aiId),
                 responses = mapOf(aiId to GameAction.Pass),
             ),
         )
@@ -261,13 +261,13 @@ class AiTurnDriverTest {
         val result = fixtures.driver.resolveNextAction(gameId)
 
         assertEquals(
-            aiId to GameCommand.RespondToDiscard(GameAction.Pass, checkNotNull(table.pendingReaction).id),
-            result?.let { it.playerId to it.command },
+            expected = aiId to GameCommand.RespondToDiscard(GameAction.Pass, checkNotNull(table.pendingReaction).id),
+            actual = result?.let { it.playerId to it.command },
         )
         assertEquals(AiDecisionPhase.RespondingToDiscard, fixtures.strategy.lastContext?.phase)
         val reactionCommands = fixtures.strategy.lastContext?.discardReactionCommands.orEmpty()
         assertTrue(
-            reactionCommands.any { command ->
+            actual = reactionCommands.any { command ->
                 command.action == GameAction.Pon(discardedTile.id, listOf(matchingTileA.id, matchingTileB.id)) &&
                     command.reactionId == table.pendingReaction?.id &&
                     command.selectedTileIds == listOf(matchingTileA.id, matchingTileB.id)
@@ -337,7 +337,7 @@ class AiTurnDriverTest {
             currentPlayerIndex = 0,
         )
         fixtures.gameRepo.setGame(
-            Game(
+            game = Game(
                 tableState = table,
                 flowConfig = GameFlowConfig(),
                 aiPlayerStrategyKeys = mapOf(aiId to strategyKey),

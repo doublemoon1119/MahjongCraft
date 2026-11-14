@@ -150,7 +150,7 @@ internal object HistoryRoundStatePresenter {
         maxWidth: Float,
         markerDisplays: HistoryDiscardMarkerDisplayRegistry,
     ): HistoryTileGroupLayout = HistoryTileGroupLayoutCalculator.hand(
-        player.discards.map { it.tile },
+        tiles = player.discards.map { it.tile },
         maxWidth = maxWidth,
         sidewaysTiles = player.discards
             .filter { discard -> discard.markers.any { markerDisplays.find(it)?.sideways == true } }

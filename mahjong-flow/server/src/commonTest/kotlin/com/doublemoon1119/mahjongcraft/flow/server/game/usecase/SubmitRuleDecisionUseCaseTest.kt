@@ -80,7 +80,7 @@ class SubmitRuleDecisionUseCaseTest {
             config = RiichiRuleConfig(),
         )
         repository.setGame(
-            Game(
+            game = Game(
                 tableState = table,
                 flowConfig = GameFlowConfig(ruleDecision = RuleDecisionConfig(30.seconds)),
                 pendingRuleDecision = PendingRuleDecision.open(
@@ -143,9 +143,9 @@ class SubmitRuleDecisionUseCaseTest {
         )
         repository.setGame(game)
         val snapshotSynchronizer = GameSnapshotSynchronizer(
-            repository,
-            snapshotRepository,
-            GameVisibilityPolicyImpl(moduleRegistry, componentRegistry = bundledCoreExtensionRegistries().componentRegistry),
+            gameRepository = repository,
+            snapshotRepository = snapshotRepository,
+            visibilityPolicy = GameVisibilityPolicyImpl(moduleRegistry, componentRegistry = bundledCoreExtensionRegistries().componentRegistry),
         )
         snapshotSynchronizer.sync(table.id, firstPlayerId)
         snapshotSynchronizer.sync(table.id, secondPlayerId)
@@ -170,41 +170,41 @@ class SubmitRuleDecisionUseCaseTest {
         assertIs<Outcome.Success<Unit>>(secondResult)
         assertEquals(2, repository.historyDrafts.size)
         assertEquals(
-            1,
-            presentationPublisher.getPublishedTableStepBatches(table.id).size,
+            expected = 1,
+            actual = presentationPublisher.getPublishedTableStepBatches(table.id).size,
         )
         assertEquals(
-            secondTile.id,
-            presentationPublisher.getLastPresentedTableState(table.id)?.players?.get(0)?.hand?.tiles?.single()?.id,
+            expected = secondTile.id,
+            actual = presentationPublisher.getLastPresentedTableState(table.id)?.players?.get(0)?.hand?.tiles?.single()?.id,
         )
         assertEquals(
-            firstTile.id,
-            presentationPublisher.getLastPresentedTableState(table.id)?.players?.get(1)?.hand?.tiles?.single()?.id,
+            expected = firstTile.id,
+            actual = presentationPublisher.getLastPresentedTableState(table.id)?.players?.get(1)?.hand?.tiles?.single()?.id,
         )
         assertNull(presentationPublisher.getPublishedInitialDeal(table.id))
         val firstObserverSnapshot = snapshotRepository.getSnapshot(table.id, firstPlayerId)!!
         val secondObserverSnapshot = snapshotRepository.getSnapshot(table.id, secondPlayerId)!!
         assertEquals(
-            listOf(secondTile.id),
-            firstObserverSnapshot.players.first { it.id == firstPlayerId }.hand.standingTiles.map { it.id },
+            expected = listOf(secondTile.id),
+            actual = firstObserverSnapshot.players.first { it.id == firstPlayerId }.hand.standingTiles.map { it.id },
         )
         assertTrue(
-            firstObserverSnapshot.players.first { it.id == secondPlayerId }.hand.standingTiles.all { it.tile == null },
+            actual = firstObserverSnapshot.players.first { it.id == secondPlayerId }.hand.standingTiles.all { it.tile == null },
         )
         assertEquals(
-            listOf(firstTile.id),
-            secondObserverSnapshot.players.first { it.id == secondPlayerId }.hand.standingTiles.map { it.id },
+            expected = listOf(firstTile.id),
+            actual = secondObserverSnapshot.players.first { it.id == secondPlayerId }.hand.standingTiles.map { it.id },
         )
         assertTrue(
-            secondObserverSnapshot.players.first { it.id == firstPlayerId }.hand.standingTiles.all { it.tile == null },
+            actual = secondObserverSnapshot.players.first { it.id == firstPlayerId }.hand.standingTiles.all { it.tile == null },
         )
         assertEquals(
-            listOf(secondTile.id),
-            repository.getGame(table.id)?.tableState?.players?.first { it.id == firstPlayerId }?.hand?.tiles?.map { it.id },
+            expected = listOf(secondTile.id),
+            actual = repository.getGame(table.id)?.tableState?.players?.first { it.id == firstPlayerId }?.hand?.tiles?.map { it.id },
         )
         assertEquals(
-            listOf(firstTile.id),
-            repository.getGame(table.id)?.tableState?.players?.first { it.id == secondPlayerId }?.hand?.tiles?.map { it.id },
+            expected = listOf(firstTile.id),
+            actual = repository.getGame(table.id)?.tableState?.players?.first { it.id == secondPlayerId }?.hand?.tiles?.map { it.id },
         )
     }
 
@@ -227,7 +227,7 @@ class SubmitRuleDecisionUseCaseTest {
             config = RiichiRuleConfig(),
         )
         repository.setGame(
-            Game(
+            game = Game(
                 tableState = table,
                 flowConfig = GameFlowConfig(ruleDecision = RuleDecisionConfig(30.seconds)),
                 pendingRuleDecision = PendingRuleDecision.open(
@@ -248,9 +248,9 @@ class SubmitRuleDecisionUseCaseTest {
             moduleRegistry = moduleRegistry,
             resolverRegistry = resolver,
             snapshotSynchronizer = GameSnapshotSynchronizer(
-                repository,
-                FakeGameSnapshotRepository(),
-                GameVisibilityPolicyImpl(moduleRegistry, componentRegistry = bundledCoreExtensionRegistries().componentRegistry),
+                gameRepository = repository,
+                snapshotRepository = FakeGameSnapshotRepository(),
+                visibilityPolicy = GameVisibilityPolicyImpl(moduleRegistry, componentRegistry = bundledCoreExtensionRegistries().componentRegistry),
             ),
             presentationPublisher = presentationPublisher,
             winPresentationStager = RuleDecisionWinPresentationStager(WinPresentationHandoff(), WinSettlementDetailResolverRegistry(bundledCoreExtensionRegistries().componentRegistry)),
@@ -275,7 +275,7 @@ class SubmitRuleDecisionUseCaseTest {
         val firstTile = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 1))
         val table = FakeTableStateFactory.create(
             players = listOf(
-                FakeMahjongPlayerFactory.create(id = firstPlayerId, hand = Hand(tiles = listOf(firstTile))),
+                element = FakeMahjongPlayerFactory.create(id = firstPlayerId, hand = Hand(tiles = listOf(firstTile))),
             ),
             config = RiichiRuleConfig(),
         )
@@ -287,7 +287,7 @@ class SubmitRuleDecisionUseCaseTest {
                     stepId = "test:exchange",
                     stepIndex = 0,
                     inputSpecsByPlayerId = mapOf(
-                        firstPlayerId to RuleDecisionInputSpec.TileSelection(setOf(firstTile.id), 1, 1),
+                        pair = firstPlayerId to RuleDecisionInputSpec.TileSelection(setOf(firstTile.id), 1, 1),
                     ),
                 ),
                 timing = RuleDecisionTiming.ROUND_START,
@@ -299,9 +299,9 @@ class SubmitRuleDecisionUseCaseTest {
             moduleRegistry = moduleRegistry,
             resolverRegistry = RuleDecisionResolverRegistry(),
             snapshotSynchronizer = GameSnapshotSynchronizer(
-                repository,
-                snapshotRepository,
-                GameVisibilityPolicyImpl(moduleRegistry, componentRegistry = bundledCoreExtensionRegistries().componentRegistry),
+                gameRepository = repository,
+                snapshotRepository = snapshotRepository,
+                visibilityPolicy = GameVisibilityPolicyImpl(moduleRegistry, componentRegistry = bundledCoreExtensionRegistries().componentRegistry),
             ),
             presentationPublisher = presentationPublisher,
             winPresentationStager = RuleDecisionWinPresentationStager(WinPresentationHandoff(), WinSettlementDetailResolverRegistry(bundledCoreExtensionRegistries().componentRegistry)),
@@ -310,15 +310,15 @@ class SubmitRuleDecisionUseCaseTest {
         val invalidTileId = Uuid.random()
 
         val result = useCase(
-            table.id,
-            firstPlayerId,
-            repository.openWindowId(table.id),
-            RuleDecisionSubmission.Tiles(setOf(invalidTileId)),
+            gameId = table.id,
+            playerId = firstPlayerId,
+            windowId = repository.openWindowId(table.id),
+            submission = RuleDecisionSubmission.Tiles(setOf(invalidTileId)),
         )
 
         assertEquals(
-            Outcome.Error(GameError.InvalidRuleDecisionSubmission(table.id, firstPlayerId)),
-            result,
+            expected = Outcome.Error(GameError.InvalidRuleDecisionSubmission(table.id, firstPlayerId)),
+            actual = result,
         )
         assertEquals(game, repository.getGame(table.id))
         assertTrue(repository.historyDrafts.isEmpty())
@@ -353,9 +353,9 @@ class SubmitRuleDecisionUseCaseTest {
             moduleRegistry = moduleRegistry,
             resolverRegistry = resolverRegistry,
             snapshotSynchronizer = GameSnapshotSynchronizer(
-                repository,
-                FakeGameSnapshotRepository(),
-                GameVisibilityPolicyImpl(moduleRegistry, componentRegistry = bundledCoreExtensionRegistries().componentRegistry),
+                gameRepository = repository,
+                snapshotRepository = FakeGameSnapshotRepository(),
+                visibilityPolicy = GameVisibilityPolicyImpl(moduleRegistry, componentRegistry = bundledCoreExtensionRegistries().componentRegistry),
             ),
             presentationPublisher = FakeGamePresentationPublisher(),
             winPresentationStager = RuleDecisionWinPresentationStager(WinPresentationHandoff(), WinSettlementDetailResolverRegistry(bundledCoreExtensionRegistries().componentRegistry)),
@@ -377,7 +377,7 @@ class SubmitRuleDecisionUseCaseTest {
             config = RiichiRuleConfig(),
         )
         repository.setGame(
-            Game(
+            game = Game(
                 tableState = table,
                 flowConfig = GameFlowConfig(),
                 pendingRuleDecision = PendingRuleDecision.open(
@@ -397,9 +397,9 @@ class SubmitRuleDecisionUseCaseTest {
             moduleRegistry = moduleRegistry,
             resolverRegistry = resolverRegistry,
             snapshotSynchronizer = GameSnapshotSynchronizer(
-                repository,
-                FakeGameSnapshotRepository(),
-                GameVisibilityPolicyImpl(moduleRegistry, componentRegistry = bundledCoreExtensionRegistries().componentRegistry),
+                gameRepository = repository,
+                snapshotRepository = FakeGameSnapshotRepository(),
+                visibilityPolicy = GameVisibilityPolicyImpl(moduleRegistry, componentRegistry = bundledCoreExtensionRegistries().componentRegistry),
             ),
             presentationPublisher = FakeGamePresentationPublisher(),
             winPresentationStager = RuleDecisionWinPresentationStager(WinPresentationHandoff(), WinSettlementDetailResolverRegistry(bundledCoreExtensionRegistries().componentRegistry)),
@@ -441,9 +441,9 @@ class SubmitRuleDecisionUseCaseTest {
             moduleRegistry = moduleRegistry,
             resolverRegistry = resolverRegistry,
             snapshotSynchronizer = GameSnapshotSynchronizer(
-                repository,
-                FakeGameSnapshotRepository(),
-                GameVisibilityPolicyImpl(moduleRegistry, componentRegistry = bundledCoreExtensionRegistries().componentRegistry),
+                gameRepository = repository,
+                snapshotRepository = FakeGameSnapshotRepository(),
+                visibilityPolicy = GameVisibilityPolicyImpl(moduleRegistry, componentRegistry = bundledCoreExtensionRegistries().componentRegistry),
             ),
             presentationPublisher = FakeGamePresentationPublisher(),
             winPresentationStager = RuleDecisionWinPresentationStager(WinPresentationHandoff(), WinSettlementDetailResolverRegistry(bundledCoreExtensionRegistries().componentRegistry)),
@@ -482,9 +482,9 @@ class SubmitRuleDecisionUseCaseTest {
             moduleRegistry = moduleRegistry,
             resolverRegistry = RuleDecisionResolverRegistry().apply { register(ConfirmationResolver) },
             snapshotSynchronizer = GameSnapshotSynchronizer(
-                repository,
-                FakeGameSnapshotRepository(),
-                GameVisibilityPolicyImpl(moduleRegistry, componentRegistry = bundledCoreExtensionRegistries().componentRegistry),
+                gameRepository = repository,
+                snapshotRepository = FakeGameSnapshotRepository(),
+                visibilityPolicy = GameVisibilityPolicyImpl(moduleRegistry, componentRegistry = bundledCoreExtensionRegistries().componentRegistry),
             ),
             presentationPublisher = FakeGamePresentationPublisher(),
             winPresentationStager = RuleDecisionWinPresentationStager(WinPresentationHandoff(), WinSettlementDetailResolverRegistry(bundledCoreExtensionRegistries().componentRegistry)),
@@ -590,7 +590,7 @@ class SubmitRuleDecisionUseCaseTest {
             decision: PendingRuleDecision,
             ruleModule: MahjongRuleModule<*>,
         ): RuleDecisionResolution = RuleDecisionResolution(
-            tableState.copy(players = tableState.players.map { it.copy(score = it.score + SCORE_CHANGE) }),
+            tableState = tableState.copy(players = tableState.players.map { it.copy(score = it.score + SCORE_CHANGE) }),
             nextStep = null,
         )
     }
@@ -629,8 +629,8 @@ class SubmitRuleDecisionUseCaseTest {
             decision: PendingRuleDecision,
             ruleModule: MahjongRuleModule<*>,
         ): RuleDecisionResolution = RuleDecisionResolution(
-            tableState,
-            RuleDecisionStep(
+            tableState = tableState,
+            nextStep = RuleDecisionStep(
                 stepId = "test:next",
                 stepIndex = decision.stepIndex + 1,
                 inputSpecsByPlayerId = mapOf(tableState.players.first().id to RuleDecisionInputSpec.Confirmation),

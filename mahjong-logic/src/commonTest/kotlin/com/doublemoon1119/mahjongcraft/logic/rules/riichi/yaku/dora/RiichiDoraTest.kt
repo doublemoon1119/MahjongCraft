@@ -26,9 +26,9 @@ class RiichiDoraTest : RiichiHandValueCalculatorTestBase() {
     fun `test red five indicators resolve to six of the same suit`() {
         Tile.Suit.entries.forEach { suit ->
             assertEquals(
-                Tile.Numeric(suit, 6),
-                riichiNextDora(RiichiTileValues.redFive(suit).tile),
-                "Red five indicator should resolve to six of the same suit",
+                expected = Tile.Numeric(suit, 6),
+                actual = riichiNextDora(RiichiTileValues.redFive(suit).tile),
+                message = "Red five indicator should resolve to six of the same suit",
             )
         }
     }
@@ -41,7 +41,7 @@ class RiichiDoraTest : RiichiHandValueCalculatorTestBase() {
     @Test
     fun `test dora calculation with single indicator`() {
         val hand = FakeHandFactory.create(
-            listOf(
+            tiles = listOf(
                 Tile.Numeric(Tile.Suit.Character, 1),
                 Tile.Numeric(Tile.Suit.Character, 2),
                 Tile.Numeric(Tile.Suit.Character, 3),
@@ -72,7 +72,7 @@ class RiichiDoraTest : RiichiHandValueCalculatorTestBase() {
     @Test
     fun `test dora calculation with red five indicator`() {
         val hand = FakeHandFactory.create(
-            listOf(
+            tiles = listOf(
                 Tile.Numeric(Tile.Suit.Bamboo, 1),
                 Tile.Numeric(Tile.Suit.Bamboo, 2),
                 Tile.Numeric(Tile.Suit.Bamboo, 3),
@@ -107,7 +107,7 @@ class RiichiDoraTest : RiichiHandValueCalculatorTestBase() {
     @Test
     fun `test dora calculation with multiple indicators`() {
         val hand = FakeHandFactory.create(
-            listOf(
+            tiles = listOf(
                 Tile.Numeric(Tile.Suit.Character, 2),
                 Tile.Numeric(Tile.Suit.Character, 2),
                 Tile.Numeric(Tile.Suit.Character, 3),
@@ -145,7 +145,7 @@ class RiichiDoraTest : RiichiHandValueCalculatorTestBase() {
     @Test
     fun `test dora calculation with wrap-around`() {
         val hand = FakeHandFactory.create(
-            listOf(
+            tiles = listOf(
                 Tile.Numeric(Tile.Suit.Character, 1),
                 Tile.Numeric(Tile.Suit.Character, 2),
                 Tile.Numeric(Tile.Suit.Character, 3),
@@ -180,7 +180,7 @@ class RiichiDoraTest : RiichiHandValueCalculatorTestBase() {
     @Test
     fun `test dora calculation with honor tile wrap-around`() {
         val hand = FakeHandFactory.create(
-            listOf(
+            tiles = listOf(
                 Tile.Honor.South,
                 Tile.Honor.South,
                 Tile.Numeric(Tile.Suit.Character, 2),
@@ -215,7 +215,7 @@ class RiichiDoraTest : RiichiHandValueCalculatorTestBase() {
     @Test
     fun `test aka dora calculation`() {
         val hand = FakeHandFactory.create(
-            listOf(
+            tiles = listOf(
                 Tile.Numeric(Tile.Suit.Character, 1),
                 Tile.Numeric(Tile.Suit.Character, 2),
                 Tile.Numeric(Tile.Suit.Character, 3),
@@ -248,7 +248,7 @@ class RiichiDoraTest : RiichiHandValueCalculatorTestBase() {
     @Test
     fun `test aka dora calculation with winning tile`() {
         val hand = FakeHandFactory.create(
-            listOf(
+            tiles = listOf(
                 Tile.Numeric(Tile.Suit.Character, 1),
                 Tile.Numeric(Tile.Suit.Character, 2),
                 Tile.Numeric(Tile.Suit.Character, 3),
@@ -281,7 +281,7 @@ class RiichiDoraTest : RiichiHandValueCalculatorTestBase() {
     @Test
     fun `test ura dora calculation with riichi`() {
         val hand = FakeHandFactory.create(
-            listOf(
+            tiles = listOf(
                 Tile.Numeric(Tile.Suit.Character, 1),
                 Tile.Numeric(Tile.Suit.Character, 2),
                 Tile.Numeric(Tile.Suit.Character, 3),
@@ -323,7 +323,7 @@ class RiichiDoraTest : RiichiHandValueCalculatorTestBase() {
     @Test
     fun `test ura dora calculation without riichi returns null`() {
         val hand = FakeHandFactory.create(
-            listOf(
+            tiles = listOf(
                 Tile.Numeric(Tile.Suit.Character, 1),
                 Tile.Numeric(Tile.Suit.Character, 2),
                 Tile.Numeric(Tile.Suit.Character, 3),
@@ -363,7 +363,7 @@ class RiichiDoraTest : RiichiHandValueCalculatorTestBase() {
     @Test
     fun `test aka dora calculation with exposed meld`() {
         val hand = FakeHandFactory.create(
-            listOf(
+            tiles = listOf(
                 Tile.Numeric(Tile.Suit.Character, 1),
                 Tile.Numeric(Tile.Suit.Character, 2),
                 Tile.Numeric(Tile.Suit.Character, 3),
@@ -376,7 +376,7 @@ class RiichiDoraTest : RiichiHandValueCalculatorTestBase() {
                 Tile.Numeric(Tile.Suit.Dot, 1),
             ),
             melds = listOf(
-                FakeMeldFactory.create(
+                element = FakeMeldFactory.create(
                     type = MeldType.Pon,
                     tiles = listOf(
                         FakeIdentifiedTileFactory.create(RiichiTileValues.redFive(Tile.Suit.Dot)),
@@ -404,7 +404,7 @@ class RiichiDoraTest : RiichiHandValueCalculatorTestBase() {
     @Test
     fun `test aka dora calculation with multiple`() {
         val hand = FakeHandFactory.create(
-            listOf(
+            tiles = listOf(
                 Tile.Numeric(Tile.Suit.Character, 1),
                 Tile.Numeric(Tile.Suit.Character, 2),
                 Tile.Numeric(Tile.Suit.Character, 3),
@@ -417,7 +417,7 @@ class RiichiDoraTest : RiichiHandValueCalculatorTestBase() {
                 Tile.Numeric(Tile.Suit.Bamboo, 4),
             ),
             melds = listOf(
-                FakeMeldFactory.create(
+                element = FakeMeldFactory.create(
                     type = MeldType.Pon,
                     tiles = listOf(
                         FakeIdentifiedTileFactory.create(RiichiTileValues.redFive(Tile.Suit.Character)),

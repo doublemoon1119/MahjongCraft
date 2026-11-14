@@ -15,7 +15,7 @@ class RiichiWinSettlementDetailTextsTest {
     @Test
     fun `yaku entries show han yakuman multipliers and plain entries`() {
         val entries = RiichiWinSettlementDetailTexts.yaku.entries(
-            listOf(
+            entries = listOf(
                 RiichiWinSettlementIds.yakuEntry(RiichiYakuType.Tanyao, 1),
                 RiichiWinSettlementIds.yakumanEntry(RiichiYakuType.Daisangen, 1),
                 RiichiWinSettlementIds.yakumanEntry(RiichiYakuType.KokushiMusou13, 2),
@@ -24,7 +24,7 @@ class RiichiWinSettlementDetailTextsTest {
         ).entries
 
         assertEquals(
-            listOf(
+            expected = listOf(
                 PresentationValue.EntryListValue.Entry(
                     translationKey = RiichiYakuTranslationKeys.keyFor(RiichiYakuType.Tanyao),
                     trailingTranslationKey = RiichiTranslationKeys.SETTLEMENT_HAN,
@@ -42,7 +42,7 @@ class RiichiWinSettlementDetailTextsTest {
                 ),
                 PresentationValue.EntryListValue.Entry(translationKey = RiichiYakuTranslationKeys.NAGASHI_MANGAN),
             ),
-            entries,
+            actual = entries,
         )
     }
 
@@ -58,14 +58,14 @@ class RiichiWinSettlementDetailTextsTest {
     @Test
     fun `han fu shows fu only when present`() {
         assertEquals(
-            PresentationValue.TextValue(RiichiTranslationKeys.SETTLEMENT_HAN_FU, listOf("3", "30")),
-            RiichiWinSettlementDetailTexts.hanFu.quantities(
-                listOf(WinSettlementQuantity(RiichiWinSettlementIds.HAN, 3), WinSettlementQuantity(RiichiWinSettlementIds.FU, 30)),
+            expected = PresentationValue.TextValue(RiichiTranslationKeys.SETTLEMENT_HAN_FU, listOf("3", "30")),
+            actual = RiichiWinSettlementDetailTexts.hanFu.quantities(
+                quantities = listOf(WinSettlementQuantity(RiichiWinSettlementIds.HAN, 3), WinSettlementQuantity(RiichiWinSettlementIds.FU, 30)),
             ),
         )
         assertEquals(
-            PresentationValue.TextValue(RiichiTranslationKeys.SETTLEMENT_HAN, listOf("6")),
-            RiichiWinSettlementDetailTexts.hanFu.quantities(listOf(WinSettlementQuantity(RiichiWinSettlementIds.HAN, 6))),
+            expected = PresentationValue.TextValue(RiichiTranslationKeys.SETTLEMENT_HAN, listOf("6")),
+            actual = RiichiWinSettlementDetailTexts.hanFu.quantities(listOf(WinSettlementQuantity(RiichiWinSettlementIds.HAN, 6))),
         )
     }
 
@@ -73,12 +73,12 @@ class RiichiWinSettlementDetailTextsTest {
     @Test
     fun `unrecognized units fall back to identifiers and raw amounts`() {
         assertEquals(
-            PresentationValue.TextValue("2 custom:point"),
-            RiichiWinSettlementDetailTexts.hanFu.quantities(listOf(WinSettlementQuantity("custom:point", 2))),
+            expected = PresentationValue.TextValue("2 custom:point"),
+            actual = RiichiWinSettlementDetailTexts.hanFu.quantities(listOf(WinSettlementQuantity("custom:point", 2))),
         )
         assertEquals(
-            PresentationValue.EntryListValue.Entry(translationKey = "custom:pattern", trailingText = "4 custom:point"),
-            RiichiWinSettlementDetailTexts.yaku.entries(listOf(WinSettlementDetailEntry("custom:pattern", WinSettlementQuantity("custom:point", 4)))).entries.single(),
+            expected = PresentationValue.EntryListValue.Entry(translationKey = "custom:pattern", trailingText = "4 custom:point"),
+            actual = RiichiWinSettlementDetailTexts.yaku.entries(listOf(WinSettlementDetailEntry("custom:pattern", WinSettlementQuantity("custom:point", 4)))).entries.single(),
         )
     }
 }

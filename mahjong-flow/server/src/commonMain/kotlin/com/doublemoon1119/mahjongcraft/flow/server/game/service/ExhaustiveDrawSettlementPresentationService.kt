@@ -38,8 +38,8 @@ class ExhaustiveDrawSettlementPresentationService(
         revealedHands: List<RevealedHandSettlement>,
     ) {
         presentationPublisher.publishExhaustiveDrawSettlement(
-            gameId,
-            ExhaustiveDrawSettlementPresentationRequestFactory.create(
+            gameId = gameId,
+            request = ExhaustiveDrawSettlementPresentationRequestFactory.create(
                 previousState = previousState,
                 currentState = currentState,
                 module = module,

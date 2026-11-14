@@ -80,7 +80,7 @@ class MatchSettlementPresentationEntity(
         dataTracker.set(READING_TICKS, template.readingTicks)
         dataTracker.set(END_GAME_TIME, startGameTime + durationTicks(players.size, template.rowRevealIntervalTicks, template.readingTicks))
         enqueueAll(
-            revealSequence().mapIndexed { index, player ->
+            steps = revealSequence().mapIndexed { index, player ->
                 val playAtGameTime = startGameTime + rowRevealTick(index, template.rowRevealIntervalTicks)
                 val champion = player.finalRank == 1
                 AnimationStep.PlaySound(

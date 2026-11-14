@@ -134,8 +134,8 @@ class OrphanedTableCleanupServiceTest {
         assertNull(fixture.gameRepository.getTableState(fixture.tableId))
         assertNull(fixture.locations.get(fixture.tableId))
         assertEquals(
-            listOf(HistoryFact.MatchAborted(MinecraftMatchAbortReasonIds.TABLE_BROKEN_BY_PLAYER)),
-            fixture.committedFacts.single().facts.map { it.fact },
+            expected = listOf(HistoryFact.MatchAborted(MinecraftMatchAbortReasonIds.TABLE_BROKEN_BY_PLAYER)),
+            actual = fixture.committedFacts.single().facts.map { it.fact },
         )
     }
 
@@ -162,14 +162,14 @@ class OrphanedTableCleanupServiceTest {
         assertEquals(OrphanedTableCleanupResult.REMOVED_GAME, result)
         assertEquals(1, fixture.committedFacts.size)
         assertEquals(
-            HistoryFact.MatchAborted(MinecraftMatchAbortReasonIds.TABLE_MISSING),
-            fixture.committedFacts.single().facts.single().fact,
+            expected = HistoryFact.MatchAborted(MinecraftMatchAbortReasonIds.TABLE_MISSING),
+            actual = fixture.committedFacts.single().facts.single().fact,
         )
         assertEquals(fixture.tableId, fixture.committedFacts.single().venueId)
         val recording = fixture.store.snapshot().historyRecordingState
         assertEquals(
-            listOf(HistoryFact.MatchStarted(game.tableState, game.flowConfig, emptyMap()), HistoryFact.MatchAborted(MinecraftMatchAbortReasonIds.TABLE_MISSING)),
-            recording.pendingEvents.map { it.fact },
+            expected = listOf(HistoryFact.MatchStarted(game.tableState, game.flowConfig, emptyMap()), HistoryFact.MatchAborted(MinecraftMatchAbortReasonIds.TABLE_MISSING)),
+            actual = recording.pendingEvents.map { it.fact },
         )
         assertEquals(false, recording.terminalByMatchId[game.matchId]?.completed)
     }
@@ -209,7 +209,7 @@ class OrphanedTableCleanupServiceTest {
     fun `test cleanup uses replaced config`() = runTest {
         val fixture = Fixture(OrphanedTablePolicy.KEEP_AND_WARN)
         fixture.roomRepository.setRoom(
-            Room(fixture.tableId, Uuid.random(), GameConfig(FakeMahjongRuleConfig())),
+            room = Room(fixture.tableId, Uuid.random(), GameConfig(FakeMahjongRuleConfig())),
         )
         fixture.configState.replace(MinecraftServerConfig(orphanedTablePolicy = OrphanedTablePolicy.REMOVE_ALL))
 
@@ -451,13 +451,13 @@ class OrphanedTableCleanupServiceTest {
 
         /** 受測清理服務。 */
         val service = OrphanedTableCleanupService(
-            store,
-            memberships,
-            roomSnapshots,
-            gameSnapshots,
-            locations,
-            configState,
-            removalNotifier,
+            store = store,
+            memberships = memberships,
+            roomSnapshots = roomSnapshots,
+            gameSnapshots = gameSnapshots,
+            locations = locations,
+            configState = configState,
+            removalNotifier = removalNotifier,
         )
 
         /** 已提交交易的事實通知。 */
@@ -465,13 +465,15 @@ class OrphanedTableCleanupServiceTest {
 
         /** 記錄本測試 fixture 的權威事實通知。 */
         fun captureCommittedFacts() {
-            store.setCommittedFactsListener(object : CommittedFactsListener {
-                override fun onCommitted(sequence: Long, facts: CommittedGameFacts) {
-                    committedFacts += facts
-                }
+            store.setCommittedFactsListener(
+                listener = object : CommittedFactsListener {
+                    override fun onCommitted(sequence: Long, facts: CommittedGameFacts) {
+                        committedFacts += facts
+                    }
 
-                override fun onReleased(sequence: Long) = Unit
-            })
+                    override fun onReleased(sequence: Long) = Unit
+                },
+            )
         }
     }
 

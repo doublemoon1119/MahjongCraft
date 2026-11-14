@@ -494,17 +494,17 @@ class PrivateHandLayout {
         fun sample(now: Double): TileDisplayTransform {
             val activeSpec = spec ?: return target
             val offset = DiceAnimationVector(
-                start.position.x - target.position.x,
-                start.position.y - target.position.y,
-                start.position.z - target.position.z,
+                x = start.position.x - target.position.x,
+                y = start.position.y - target.position.y,
+                z = start.position.z - target.position.z,
             )
             val yawDifference = ((start.yawDegrees - target.yawDegrees + 540.0f) % 360.0f) - 180.0f
             val motion = TileMotionAnimation(activeSpec).frame(now - startedAt, offset, yawDifference)
             return TileDisplayTransform(
                 position = DiceAnimationVector(
-                    target.position.x + motion.offset.x,
-                    target.position.y + motion.offset.y,
-                    target.position.z + motion.offset.z,
+                    x = target.position.x + motion.offset.x,
+                    y = target.position.y + motion.offset.y,
+                    z = target.position.z + motion.offset.z,
                 ),
                 yawDegrees = target.yawDegrees + motion.yawOffsetDegrees,
                 poseDegrees = motion.poseRotationDegrees,

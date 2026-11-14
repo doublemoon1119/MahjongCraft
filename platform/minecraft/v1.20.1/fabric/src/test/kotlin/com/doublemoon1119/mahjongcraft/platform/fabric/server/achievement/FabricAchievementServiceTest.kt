@@ -41,11 +41,11 @@ import kotlin.uuid.Uuid
 class FabricAchievementServiceTest {
     /** 提供四個座位與預設立直規則的測試對局。 */
     private val game = Game(
-        FakeTableStateFactory.create(
+        tableState = FakeTableStateFactory.create(
             players = listOf(Wind.EAST, Wind.SOUTH, Wind.WEST, Wind.NORTH).map { FakeMahjongPlayerFactory.create(initialSeat = it) },
             config = RiichiRuleConfig(),
         ),
-        GameFlowConfig(),
+        flowConfig = GameFlowConfig(),
     )
 
     /** 測試和牌事實使用的贏家。 */
@@ -86,21 +86,23 @@ class FabricAchievementServiceTest {
             condition = AchievementCondition(
                 achievementIds = setOf(BuiltInAchievementIds.WIN, BuiltInAchievementIds.FIRST_PLACE),
                 statistic = StatisticThreshold(
-                    AchievementStatisticIds.WINS,
-                    1,
+                    statisticId = AchievementStatisticIds.WINS,
+                    atLeast = 1,
                 ),
             ),
         )
         val registry = GameAchievementResolverRegistryImpl().apply {
-            register(object : GameAchievementResolver {
-                /** 測試使用的日麻規則模組識別碼。 */
-                override val ruleModuleId: String = BuiltInRuleModuleIds.RIICHI
+            register(
+                resolver = object : GameAchievementResolver {
+                    /** 測試使用的日麻規則模組識別碼。 */
+                    override val ruleModuleId: String = BuiltInRuleModuleIds.RIICHI
 
-                /** 提供一項規則成果，與通用自摸成果合併。 */
-                override fun resolve(batch: CommittedMatchEventBatch): Map<Uuid, Set<String>> = mapOf(
-                    winner.id to setOf(BuiltInAchievementIds.FIRST_PLACE),
-                )
-            })
+                    /** 提供一項規則成果，與通用自摸成果合併。 */
+                    override fun resolve(batch: CommittedMatchEventBatch): Map<Uuid, Set<String>> = mapOf(
+                        pair = winner.id to setOf(BuiltInAchievementIds.FIRST_PLACE),
+                    )
+                },
+            )
         }
         val service = service(gateway, registry)
         val facts = tsumo(winner.id)
@@ -111,8 +113,8 @@ class FabricAchievementServiceTest {
         assertEquals(1, gateway.statistics[AchievementStatisticIds.WINS])
         assertTrue(gateway.conditionMatched)
         assertEquals(
-            setOf(BuiltInAchievementIds.SELF_DRAW_WIN, BuiltInAchievementIds.WIN, BuiltInAchievementIds.FIRST_PLACE),
-            gateway.granted.single().achievementIds,
+            expected = setOf(BuiltInAchievementIds.SELF_DRAW_WIN, BuiltInAchievementIds.WIN, BuiltInAchievementIds.FIRST_PLACE),
+            actual = gateway.granted.single().achievementIds,
         )
     }
 
@@ -122,13 +124,15 @@ class FabricAchievementServiceTest {
     fun `queued rule achievements keep their snapshot`() = runTest {
         val ruleAchievements = linkedSetOf(BuiltInAchievementIds.FIRST_PLACE)
         val registry = GameAchievementResolverRegistryImpl().apply {
-            register(object : GameAchievementResolver {
-                /** 測試使用的日麻規則模組識別碼。 */
-                override val ruleModuleId: String = BuiltInRuleModuleIds.RIICHI
+            register(
+                resolver = object : GameAchievementResolver {
+                    /** 測試使用的日麻規則模組識別碼。 */
+                    override val ruleModuleId: String = BuiltInRuleModuleIds.RIICHI
 
-                /** 回傳可變的測試成果集合。 */
-                override fun resolve(batch: CommittedMatchEventBatch): Map<Uuid, Set<String>> = mapOf(winner.id to ruleAchievements)
-            })
+                    /** 回傳可變的測試成果集合。 */
+                    override fun resolve(batch: CommittedMatchEventBatch): Map<Uuid, Set<String>> = mapOf(winner.id to ruleAchievements)
+                },
+            )
         }
         val gateway = RecordingGateway()
         val service = service(gateway, registry, TestCoroutineDispatchers(main = StandardTestDispatcher(testScheduler)))
@@ -150,11 +154,11 @@ class FabricAchievementServiceTest {
         val gateway = RecordingGateway()
         val service = service(gateway)
         val facts = facts(
-            HistoryFact.WinSettled(
-                BuiltInRoundOutcomeIds.TSUMO,
-                listOf(HistoryWinDetails(ai.id, emptyList()), HistoryWinDetails(human.id, emptyList())),
+            fact = HistoryFact.WinSettled(
+                outcomeId = BuiltInRoundOutcomeIds.TSUMO,
+                winDetails = listOf(HistoryWinDetails(ai.id, emptyList()), HistoryWinDetails(human.id, emptyList())),
             ),
-            aiGame,
+            sourceGame = aiGame,
         )
 
         service.handleForTest(facts)
@@ -189,7 +193,7 @@ class FabricAchievementServiceTest {
         val gateway = RecordingGateway(failingPlayerId = winner.id)
 
         service(gateway).handleForTest(
-            facts(HistoryFact.WinSettled(BuiltInRoundOutcomeIds.RON, listOf(HistoryWinDetails(winner.id, emptyList())), listOf(dealer.id))),
+            facts = facts(HistoryFact.WinSettled(BuiltInRoundOutcomeIds.RON, listOf(HistoryWinDetails(winner.id, emptyList())), listOf(dealer.id))),
         )
 
         assertEquals(listOf(dealer.id), gateway.granted.map { it.playerId })
@@ -200,13 +204,15 @@ class FabricAchievementServiceTest {
     fun `excluded matches are not detected`() {
         var resolverCalls = 0
         val registry = GameAchievementResolverRegistryImpl().apply {
-            register(object : GameAchievementResolver {
-                /** 此測試使用的立直規則模組識別碼。 */
-                override val ruleModuleId: String = BuiltInRuleModuleIds.RIICHI
+            register(
+                resolver = object : GameAchievementResolver {
+                    /** 此測試使用的立直規則模組識別碼。 */
+                    override val ruleModuleId: String = BuiltInRuleModuleIds.RIICHI
 
-                /** 計算呼叫次數並回傳空的成果集合。 */
-                override fun resolve(batch: CommittedMatchEventBatch): Map<Uuid, Set<String>> = emptyMap<Uuid, Set<String>>().also { resolverCalls++ }
-            })
+                    /** 計算呼叫次數並回傳空的成果集合。 */
+                    override fun resolve(batch: CommittedMatchEventBatch): Map<Uuid, Set<String>> = emptyMap<Uuid, Set<String>>().also { resolverCalls++ }
+                },
+            )
         }
         val service = service(RecordingGateway(), registry)
         service.handleForTest(tsumo(winner.id))
@@ -230,13 +236,15 @@ class FabricAchievementServiceTest {
         val gateway = RecordingGateway()
         var failing = true
         val registry = GameAchievementResolverRegistryImpl().apply {
-            register(object : GameAchievementResolver {
-                /** 此測試使用的立直規則模組識別碼。 */
-                override val ruleModuleId: String = BuiltInRuleModuleIds.RIICHI
+            register(
+                resolver = object : GameAchievementResolver {
+                    /** 此測試使用的立直規則模組識別碼。 */
+                    override val ruleModuleId: String = BuiltInRuleModuleIds.RIICHI
 
-                /** 依測試狀態模擬判定失敗或回傳空的成果集合。 */
-                override fun resolve(batch: CommittedMatchEventBatch): Map<Uuid, Set<String>> = if (failing) fail() else emptyMap()
-            })
+                    /** 依測試狀態模擬判定失敗或回傳空的成果集合。 */
+                    override fun resolve(batch: CommittedMatchEventBatch): Map<Uuid, Set<String>> = if (failing) fail() else emptyMap()
+                },
+            )
         }
         val service = service(gateway, registry)
 
@@ -275,8 +283,8 @@ class FabricAchievementServiceTest {
      * @return 自摸交易事實。
      */
     private fun tsumo(winnerId: Uuid, sourceGame: Game = game) = facts(
-        HistoryFact.WinSettled(BuiltInRoundOutcomeIds.TSUMO, listOf(HistoryWinDetails(winnerId, emptyList()))),
-        sourceGame,
+        fact = HistoryFact.WinSettled(BuiltInRoundOutcomeIds.TSUMO, listOf(HistoryWinDetails(winnerId, emptyList()))),
+        sourceGame = sourceGame,
     )
 
     /**

@@ -100,7 +100,7 @@ class TaiwanHandValueCalculatorTest {
     @Test
     fun `heavenly win excludes specified awards but retains self draw`() {
         val result = calculator.calculate(
-            context(sequences()).copy(
+            context = context(sequences()).copy(
                 isTsumo = true,
                 situation = TaiwanWinSituation(
                     isReplacementWin = true,
@@ -172,8 +172,8 @@ class TaiwanHandValueCalculatorTest {
         val mixed = calculator.calculate(context(m(1, 2, 3, 2, 3, 4, 4, 5, 6, 7, 8, 9) + List(3) { Tile.Honor.Red } + List(2) { Tile.Honor.South }))
         assertTrue(TaiwanTaiType.HalfFlush in types(mixed))
         val winds = calculator.calculate(
-            context(
-                List(3) { Tile.Honor.East } + List(3) { Tile.Honor.South } + List(3) { Tile.Honor.West } +
+            context = context(
+                complete = List(3) { Tile.Honor.East } + List(3) { Tile.Honor.South } + List(3) { Tile.Honor.West } +
                     m(1, 2, 3) + p(4, 5, 6) + List(2) { Tile.Honor.North },
             ),
         )

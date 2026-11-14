@@ -35,8 +35,8 @@ class ClientHistoryQuerySettingsTest {
         settings.reset()
 
         assertEquals(
-            MinecraftHistoryConfig.DEFAULT_QUERY_MINIMUM_INTERVAL,
-            settings.minimumInterval.value,
+            expected = MinecraftHistoryConfig.DEFAULT_QUERY_MINIMUM_INTERVAL,
+            actual = settings.minimumInterval.value,
         )
     }
 
@@ -77,8 +77,8 @@ class ClientHistoryQuerySettingsTest {
 
         assertIs<ClientHistoryQueryState.Idle>(coordinator.state.value)
         assertEquals(
-            MinecraftHistoryConfig.DEFAULT_QUERY_MINIMUM_INTERVAL,
-            settings.minimumInterval.value,
+            expected = MinecraftHistoryConfig.DEFAULT_QUERY_MINIMUM_INTERVAL,
+            actual = settings.minimumInterval.value,
         )
     }
 }

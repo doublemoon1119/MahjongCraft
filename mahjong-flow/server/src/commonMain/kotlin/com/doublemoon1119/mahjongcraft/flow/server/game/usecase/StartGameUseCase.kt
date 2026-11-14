@@ -97,8 +97,8 @@ class StartGameUseCase(
                             ),
                             result = Outcome.Success(prepared),
                             historyDraftsByVenueId = mapOf(
-                                roomId to listOf(
-                                    HistoryEventDraft(
+                                pair = roomId to listOf(
+                                    element = HistoryEventDraft(
                                         actorPlayerId = null,
                                         fact = HistoryFact.MatchStarted(organizedState, room.gameConfig.flowConfig, room.aiPlayerStrategyKeys),
                                     ),
@@ -136,19 +136,19 @@ class StartGameUseCase(
             val openingDiceCounts = tableState.openingDiceRolls.map { it.dice.values.size }
             val revealedTileIds = moduleRegistry.getModule(tableState.config).publicFaceUpWallTileIds(tableState, componentRegistry)
             presentationPublisher.publishWallStructure(
-                roomId,
-                requireNotNull(initializationResult.wallStructure),
-                layout,
-                dealerSeatIndex,
-                reservedWallTileIds,
-                openingDiceCounts,
+                gameId = roomId,
+                assemblyStructure = requireNotNull(initializationResult.wallStructure),
+                layout = layout,
+                dealerSeatIndex = dealerSeatIndex,
+                reservedWallTileIds = reservedWallTileIds,
+                openingDiceCounts = openingDiceCounts,
                 revealedTileIds = revealedTileIds,
             )
         }
         if (tableState.openingDiceRolls.isNotEmpty()) {
             presentationPublisher.publishOpeningRolls(
-                roomId,
-                tableState.openingDiceRolls,
+                gameId = roomId,
+                rolls = tableState.openingDiceRolls,
             )
             tableState.openingDiceRolls.forEach { roll ->
                 eventPublisher.publishToAllObservers(roomId, seatedPlayerIds, roll.playerId, GameAction.DiceRolled(roll))
@@ -156,9 +156,9 @@ class StartGameUseCase(
         }
         // tableState 的立牌已是整理後的最終牌序，與發牌順序 startOutcome.dealOrderHandTileIdsBySeatIndex 分開。
         presentationPublisher.publishInitialDeal(
-            roomId,
-            tableState,
-            startOutcome.dealOrderHandTileIdsBySeatIndex,
+            gameId = roomId,
+            tableState = tableState,
+            handTileIdsBySeatIndex = startOutcome.dealOrderHandTileIdsBySeatIndex,
             dealBatchSizes = tableState.config.dealBatchSizes(),
             openingDiceCounts = tableState.openingDiceRolls.map { it.dice.values.size },
         )

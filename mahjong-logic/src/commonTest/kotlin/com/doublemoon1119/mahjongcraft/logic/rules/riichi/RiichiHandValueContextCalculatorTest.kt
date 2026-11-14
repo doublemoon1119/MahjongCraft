@@ -98,8 +98,8 @@ class RiichiHandValueContextCalculatorTest {
             melds.add(kanMeld)
         }
         val hand = Hand(
-            standingTiles.toMutableList(),
-            melds,
+            tiles = standingTiles.toMutableList(),
+            melds = melds,
         )
         return FakeMahjongPlayerFactory.create(
             hand = hand,
@@ -115,7 +115,7 @@ class RiichiHandValueContextCalculatorTest {
         val calculator = createCalculator()
 
         val hand = FakeHandFactory.create(
-            listOf(
+            tiles = listOf(
                 Tile.Numeric(Tile.Suit.Character, 1),
                 Tile.Numeric(Tile.Suit.Character, 1),
                 Tile.Numeric(Tile.Suit.Character, 1),
@@ -144,7 +144,7 @@ class RiichiHandValueContextCalculatorTest {
         val incomingTile = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 1))
 
         val context = calculator.calculate(
-            RiichiHandValueContextCalculator.Input(
+            input = RiichiHandValueContextCalculator.Input(
                 tableState = tableState,
                 player = player,
                 incomingTile = incomingTile,
@@ -164,7 +164,7 @@ class RiichiHandValueContextCalculatorTest {
         val calculator = createCalculator()
 
         val hand = FakeHandFactory.create(
-            listOf(
+            tiles = listOf(
                 Tile.Numeric(Tile.Suit.Character, 1),
                 Tile.Numeric(Tile.Suit.Character, 1),
                 Tile.Numeric(Tile.Suit.Character, 1),
@@ -193,7 +193,7 @@ class RiichiHandValueContextCalculatorTest {
         val incomingTile = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 9))
 
         val context = calculator.calculate(
-            RiichiHandValueContextCalculator.Input(
+            input = RiichiHandValueContextCalculator.Input(
                 tableState = tableState,
                 player = player,
                 incomingTile = incomingTile,
@@ -213,7 +213,7 @@ class RiichiHandValueContextCalculatorTest {
         val calculator = createCalculator()
 
         val hand = FakeHandFactory.create(
-            listOf(
+            tiles = listOf(
                 Tile.Numeric(Tile.Suit.Character, 1),
                 Tile.Numeric(Tile.Suit.Character, 1),
                 Tile.Numeric(Tile.Suit.Character, 1),
@@ -244,7 +244,7 @@ class RiichiHandValueContextCalculatorTest {
 
             listOf(true, false).forEach { isTsumo ->
                 val context = calculator.calculate(
-                    RiichiHandValueContextCalculator.Input(
+                    input = RiichiHandValueContextCalculator.Input(
                         tableState = tableState,
                         player = player,
                         incomingTile = incomingTile,
@@ -266,7 +266,7 @@ class RiichiHandValueContextCalculatorTest {
         val calculator = createCalculator()
 
         val hand = FakeHandFactory.create(
-            listOf(
+            tiles = listOf(
                 Tile.Numeric(Tile.Suit.Character, 1),
                 Tile.Numeric(Tile.Suit.Character, 1),
                 Tile.Numeric(Tile.Suit.Character, 1),
@@ -304,7 +304,7 @@ class RiichiHandValueContextCalculatorTest {
         val incomingTile = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 1))
 
         val context = calculator.calculate(
-            RiichiHandValueContextCalculator.Input(
+            input = RiichiHandValueContextCalculator.Input(
                 tableState = tableState,
                 player = player,
                 incomingTile = incomingTile,
@@ -333,7 +333,7 @@ class RiichiHandValueContextCalculatorTest {
             sourceDirection = RelativeDirection.Across,
         )
         val hand = Hand(
-            mutableListOf(
+            tiles = mutableListOf(
                 FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 1)),
                 FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 2)),
                 FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 3)),
@@ -345,7 +345,7 @@ class RiichiHandValueContextCalculatorTest {
                 FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 9)),
                 FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Bamboo, 1)),
             ),
-            mutableListOf(kanMeld),
+            melds = mutableListOf(kanMeld),
         )
         val player = createPlayer(hand)
 
@@ -369,7 +369,7 @@ class RiichiHandValueContextCalculatorTest {
         val incomingTile = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Bamboo, 1))
 
         val context = calculator.calculate(
-            RiichiHandValueContextCalculator.Input(
+            input = RiichiHandValueContextCalculator.Input(
                 tableState = tableState,
                 player = player,
                 incomingTile = incomingTile,
@@ -428,10 +428,10 @@ class RiichiHandValueContextCalculatorTest {
             sourceDirection = RelativeDirection.Across,
         )
         val hand = Hand(
-            mutableListOf(
+            tiles = mutableListOf(
                 FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 5)),
             ),
-            mutableListOf(kanMeld1, kanMeld2, kanMeld3, kanMeld4),
+            melds = mutableListOf(kanMeld1, kanMeld2, kanMeld3, kanMeld4),
         )
         val player = createPlayer(hand)
 
@@ -455,7 +455,7 @@ class RiichiHandValueContextCalculatorTest {
         val incomingTile = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 5))
 
         val context = calculator.calculate(
-            RiichiHandValueContextCalculator.Input(
+            input = RiichiHandValueContextCalculator.Input(
                 tableState = tableState,
                 player = player,
                 incomingTile = incomingTile,
@@ -474,7 +474,7 @@ class RiichiHandValueContextCalculatorTest {
         val calculator = createCalculator()
 
         val hand = FakeHandFactory.create(
-            listOf(
+            tiles = listOf(
                 Tile.Numeric(Tile.Suit.Character, 1),
                 Tile.Numeric(Tile.Suit.Character, 1),
                 Tile.Numeric(Tile.Suit.Character, 1),
@@ -508,7 +508,7 @@ class RiichiHandValueContextCalculatorTest {
         val incomingTile = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 1))
 
         val context = calculator.calculate(
-            RiichiHandValueContextCalculator.Input(
+            input = RiichiHandValueContextCalculator.Input(
                 tableState = tableState,
                 player = player,
                 incomingTile = incomingTile,
@@ -528,7 +528,7 @@ class RiichiHandValueContextCalculatorTest {
         val calculator = createCalculator()
 
         val hand = FakeHandFactory.create(
-            listOf(
+            tiles = listOf(
                 Tile.Numeric(Tile.Suit.Character, 1),
                 Tile.Numeric(Tile.Suit.Character, 1),
                 Tile.Numeric(Tile.Suit.Character, 1),
@@ -564,7 +564,7 @@ class RiichiHandValueContextCalculatorTest {
         val incomingTile = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 1))
 
         val context = calculator.calculate(
-            RiichiHandValueContextCalculator.Input(
+            input = RiichiHandValueContextCalculator.Input(
                 tableState = tableState,
                 player = player,
                 incomingTile = incomingTile,
@@ -585,7 +585,7 @@ class RiichiHandValueContextCalculatorTest {
         val calculator = createCalculator()
 
         val hand = FakeHandFactory.create(
-            listOf(
+            tiles = listOf(
                 Tile.Numeric(Tile.Suit.Character, 1),
                 Tile.Numeric(Tile.Suit.Character, 1),
                 Tile.Numeric(Tile.Suit.Character, 1),
@@ -614,7 +614,7 @@ class RiichiHandValueContextCalculatorTest {
         val incomingTile = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 1))
 
         val context = calculator.calculate(
-            RiichiHandValueContextCalculator.Input(
+            input = RiichiHandValueContextCalculator.Input(
                 tableState = tableState,
                 player = player,
                 incomingTile = incomingTile,
@@ -646,7 +646,7 @@ class RiichiHandValueContextCalculatorTest {
             sourceDirection = RelativeDirection.Across,
         )
         val hand = Hand(
-            mutableListOf(
+            tiles = mutableListOf(
                 FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 1)),
                 FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 2)),
                 FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 3)),
@@ -658,14 +658,14 @@ class RiichiHandValueContextCalculatorTest {
                 FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 9)),
                 FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Bamboo, 1)),
             ),
-            mutableListOf(kanMeld),
+            melds = mutableListOf(kanMeld),
         )
 
         val kanTile = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 1))
         val riichiState = riichiDeclarationComponents(declarationTile = kanTile)
         var player = createPlayer(hand, riichiState)
         player = player.recordAction(
-            GameAction.Kan(
+            action = GameAction.Kan(
                 type = GameAction.KanType.OPEN_KAN,
                 tileId = kanSourceTile.id,
                 withTiles = kanMeld.tiles.map { it.id },
@@ -687,7 +687,7 @@ class RiichiHandValueContextCalculatorTest {
         val incomingTile = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Bamboo, 1))
 
         val context = calculator.calculate(
-            RiichiHandValueContextCalculator.Input(
+            input = RiichiHandValueContextCalculator.Input(
                 tableState = tableState,
                 player = player,
                 incomingTile = incomingTile,
@@ -721,7 +721,7 @@ class RiichiHandValueContextCalculatorTest {
          * @return 依目前桌況計算的和牌上下文。
          */
         fun context(isTsumo: Boolean = false, isRobbingKan: Boolean = false, tile: IdentifiedTile = declared) = calculator.calculate(
-            RiichiHandValueContextCalculator.Input(tableState = tableState, player = winner, incomingTile = tile, isTsumo = isTsumo, isRobbingKan = isRobbingKan),
+            input = RiichiHandValueContextCalculator.Input(tableState = tableState, player = winner, incomingTile = tile, isTsumo = isTsumo, isRobbingKan = isRobbingKan),
         )
 
         assertTrue(context().isRiichiDeclarationDiscard)
@@ -746,7 +746,7 @@ class RiichiHandValueContextCalculatorTest {
          * @return 具有指定動作歷史與固定測試牌河的南家。
          */
         fun discarder(vararg history: GameAction): MahjongPlayer = history.fold(
-            FakeMahjongPlayerFactory.create(
+            initial = FakeMahjongPlayerFactory.create(
                 initialSeat = Wind.SOUTH,
                 discardPile = RiichiDiscardPile().discardTile(discard),
                 components = riichiDeclarationComponents(),
@@ -760,7 +760,7 @@ class RiichiHandValueContextCalculatorTest {
          * @return 依目前測試桌況計算的和牌上下文。
          */
         fun context(discarder: MahjongPlayer) = calculator.calculate(
-            RiichiHandValueContextCalculator.Input(
+            input = RiichiHandValueContextCalculator.Input(
                 tableState = FakeTableStateFactory.create(players = listOf(winner, discarder), tileWall = TileWall(List(20) { FakeIdentifiedTileFactory.create(Tile.Honor.Red) }), config = RiichiRuleConfig()),
                 player = winner,
                 incomingTile = discard,
@@ -792,7 +792,7 @@ class RiichiHandValueContextCalculatorTest {
         val calculator = createCalculator()
 
         val hand = FakeHandFactory.create(
-            listOf(
+            tiles = listOf(
                 Tile.Numeric(Tile.Suit.Character, 1),
                 Tile.Numeric(Tile.Suit.Character, 1),
                 Tile.Numeric(Tile.Suit.Character, 1),
@@ -857,7 +857,7 @@ class RiichiHandValueContextCalculatorTest {
 
         // 測試無槓：baseIndex = 4
         val context0Kan = calculator.calculate(
-            RiichiHandValueContextCalculator.Input(
+            input = RiichiHandValueContextCalculator.Input(
                 tableState = tableState,
                 player = player,
                 incomingTile = incomingTile,
@@ -870,8 +870,8 @@ class RiichiHandValueContextCalculatorTest {
 
         // 測試 1 槓
         val player1Kan = createPlayerWithKan(
-            hand.standingTiles.map { FakeIdentifiedTileFactory.create(id = it.id, tile = it.tile) },
-            1,
+            standingTiles = hand.standingTiles.map { FakeIdentifiedTileFactory.create(id = it.id, tile = it.tile) },
+            kanCount = 1,
         )
         val tableState1Kan = FakeTableStateFactory.create(
             players = listOf(player1Kan),
@@ -881,7 +881,7 @@ class RiichiHandValueContextCalculatorTest {
             reservedWallTiles = afterSupplementalDraws(wanPaiTiles, 1),
         )
         val context1Kan = calculator.calculate(
-            RiichiHandValueContextCalculator.Input(
+            input = RiichiHandValueContextCalculator.Input(
                 tableState = tableState1Kan,
                 player = player1Kan,
                 incomingTile = incomingTile,
@@ -895,8 +895,8 @@ class RiichiHandValueContextCalculatorTest {
 
         // 測試 2 槓
         val player2Kan = createPlayerWithKan(
-            hand.standingTiles.map { FakeIdentifiedTileFactory.create(id = it.id, tile = it.tile) },
-            2,
+            standingTiles = hand.standingTiles.map { FakeIdentifiedTileFactory.create(id = it.id, tile = it.tile) },
+            kanCount = 2,
         )
         val tableState2Kan = FakeTableStateFactory.create(
             players = listOf(player2Kan),
@@ -906,7 +906,7 @@ class RiichiHandValueContextCalculatorTest {
             reservedWallTiles = afterSupplementalDraws(wanPaiTiles, 2),
         )
         val context2Kan = calculator.calculate(
-            RiichiHandValueContextCalculator.Input(
+            input = RiichiHandValueContextCalculator.Input(
                 tableState = tableState2Kan,
                 player = player2Kan,
                 incomingTile = incomingTile,
@@ -921,8 +921,8 @@ class RiichiHandValueContextCalculatorTest {
 
         // 測試 3 槓
         val player3Kan = createPlayerWithKan(
-            hand.standingTiles.map { FakeIdentifiedTileFactory.create(id = it.id, tile = it.tile) },
-            3,
+            standingTiles = hand.standingTiles.map { FakeIdentifiedTileFactory.create(id = it.id, tile = it.tile) },
+            kanCount = 3,
         )
         val tableState3Kan = FakeTableStateFactory.create(
             players = listOf(player3Kan),
@@ -932,7 +932,7 @@ class RiichiHandValueContextCalculatorTest {
             reservedWallTiles = afterSupplementalDraws(wanPaiTiles, 3),
         )
         val context3Kan = calculator.calculate(
-            RiichiHandValueContextCalculator.Input(
+            input = RiichiHandValueContextCalculator.Input(
                 tableState = tableState3Kan,
                 player = player3Kan,
                 incomingTile = incomingTile,
@@ -948,8 +948,8 @@ class RiichiHandValueContextCalculatorTest {
 
         // 測試 4 槓
         val player4Kan = createPlayerWithKan(
-            hand.standingTiles.map { FakeIdentifiedTileFactory.create(id = it.id, tile = it.tile) },
-            4,
+            standingTiles = hand.standingTiles.map { FakeIdentifiedTileFactory.create(id = it.id, tile = it.tile) },
+            kanCount = 4,
         )
         val tableState4Kan = FakeTableStateFactory.create(
             players = listOf(player4Kan),
@@ -959,7 +959,7 @@ class RiichiHandValueContextCalculatorTest {
             reservedWallTiles = afterSupplementalDraws(wanPaiTiles, 4),
         )
         val context4Kan = calculator.calculate(
-            RiichiHandValueContextCalculator.Input(
+            input = RiichiHandValueContextCalculator.Input(
                 tableState = tableState4Kan,
                 player = player4Kan,
                 incomingTile = incomingTile,

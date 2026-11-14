@@ -131,7 +131,7 @@ object BundledRiichiExtension : MahjongExtension {
 
     override fun registerNetworkDtos(registries: NetworkDtoRegistrars) {
         registries.componentViews.register(
-            ComponentViewNetworkDefinition(
+            definition = ComponentViewNetworkDefinition(
                 viewType = RiichiTileComponentViews.DORA_INDICATOR,
                 dtoClass = RiichiDoraIndicatorViewDto::class,
                 serializer = RiichiDoraIndicatorViewDto.serializer(),
@@ -140,7 +140,7 @@ object BundledRiichiExtension : MahjongExtension {
             ),
         )
         registries.componentViews.register(
-            ComponentViewNetworkDefinition(
+            definition = ComponentViewNetworkDefinition(
                 viewType = RiichiTileComponentViews.RED_DORA,
                 dtoClass = RiichiRedDoraViewDto::class,
                 serializer = RiichiRedDoraViewDto.serializer(),
@@ -149,7 +149,7 @@ object BundledRiichiExtension : MahjongExtension {
             ),
         )
         registries.componentViews.register(
-            ComponentViewNetworkDefinition(
+            definition = ComponentViewNetworkDefinition(
                 viewType = RiichiTableComponentViews.POT_POINTS,
                 dtoClass = RiichiPotPointsViewDto::class,
                 serializer = RiichiPotPointsViewDto.serializer(),
@@ -158,7 +158,7 @@ object BundledRiichiExtension : MahjongExtension {
             ),
         )
         registries.componentViews.register(
-            ComponentViewNetworkDefinition(
+            definition = ComponentViewNetworkDefinition(
                 viewType = RiichiPlayerComponentViews.DECLARATION,
                 dtoClass = RiichiDeclarationViewDto::class,
                 serializer = RiichiDeclarationViewDto.serializer(),
@@ -167,7 +167,7 @@ object BundledRiichiExtension : MahjongExtension {
             ),
         )
         registries.componentViews.register(
-            ComponentViewNetworkDefinition(
+            definition = ComponentViewNetworkDefinition(
                 viewType = RiichiPlayerComponentViews.PERMANENT_FURITEN,
                 dtoClass = RiichiPermanentFuritenViewDto::class,
                 serializer = RiichiPermanentFuritenViewDto.serializer(),
@@ -176,7 +176,7 @@ object BundledRiichiExtension : MahjongExtension {
             ),
         )
         registries.componentViews.register(
-            ComponentViewNetworkDefinition(
+            definition = ComponentViewNetworkDefinition(
                 viewType = RiichiPlayerComponentViews.PAO_LIABILITY,
                 dtoClass = RiichiPaoLiabilityViewDto::class,
                 serializer = RiichiPaoLiabilityViewDto.serializer(),
@@ -339,7 +339,7 @@ object BundledRiichiExtension : MahjongExtension {
 
     override fun registerPersistenceDtos(registries: PersistenceRegistrars) {
         registries.componentViews.register(
-            ComponentViewPersistenceDefinition(
+            definition = ComponentViewPersistenceDefinition(
                 viewType = RiichiTileComponentViews.DORA_INDICATOR,
                 serializer = ComponentUnitPersistenceDto.serializer(),
                 toDto = { ComponentUnitPersistenceDto },
@@ -347,7 +347,7 @@ object BundledRiichiExtension : MahjongExtension {
             ),
         )
         registries.componentViews.register(
-            ComponentViewPersistenceDefinition(
+            definition = ComponentViewPersistenceDefinition(
                 viewType = RiichiTileComponentViews.RED_DORA,
                 serializer = ComponentUnitPersistenceDto.serializer(),
                 toDto = { ComponentUnitPersistenceDto },
@@ -355,7 +355,7 @@ object BundledRiichiExtension : MahjongExtension {
             ),
         )
         registries.components.register(
-            ComponentPersistenceDefinition(
+            definition = ComponentPersistenceDefinition(
                 component = RiichiTileComponents.DORA_INDICATOR,
                 serializer = ComponentUnitPersistenceDto.serializer(),
                 toDto = { ComponentUnitPersistenceDto },
@@ -363,7 +363,7 @@ object BundledRiichiExtension : MahjongExtension {
             ),
         )
         registries.components.register(
-            ComponentPersistenceDefinition(
+            definition = ComponentPersistenceDefinition(
                 component = RiichiTileComponents.RED_DORA,
                 serializer = ComponentUnitPersistenceDto.serializer(),
                 toDto = { ComponentUnitPersistenceDto },
@@ -371,7 +371,7 @@ object BundledRiichiExtension : MahjongExtension {
             ),
         )
         registries.components.register(
-            ComponentPersistenceDefinition(
+            definition = ComponentPersistenceDefinition(
                 component = RiichiTableComponents.POT_POINTS,
                 serializer = ComponentIntPersistenceDto.serializer(),
                 toDto = ::ComponentIntPersistenceDto,
@@ -379,7 +379,7 @@ object BundledRiichiExtension : MahjongExtension {
             ),
         )
         registries.components.register(
-            ComponentPersistenceDefinition(
+            definition = ComponentPersistenceDefinition(
                 component = RiichiTableComponents.WALL_PROGRESS,
                 serializer = RiichiWallProgressPersistenceDto.serializer(),
                 toDto = { it.toPersistenceDto() },
@@ -387,7 +387,7 @@ object BundledRiichiExtension : MahjongExtension {
             ),
         )
         registries.components.register(
-            ComponentPersistenceDefinition(
+            definition = ComponentPersistenceDefinition(
                 component = RiichiPlayerComponents.DECLARATION,
                 serializer = RiichiDeclarationPersistenceDto.serializer(),
                 toDto = { it.toPersistenceDto() },
@@ -395,7 +395,7 @@ object BundledRiichiExtension : MahjongExtension {
             ),
         )
         registries.components.register(
-            ComponentPersistenceDefinition(
+            definition = ComponentPersistenceDefinition(
                 component = RiichiPlayerComponents.PERMANENT_FURITEN,
                 serializer = ComponentUnitPersistenceDto.serializer(),
                 toDto = { ComponentUnitPersistenceDto },
@@ -403,7 +403,7 @@ object BundledRiichiExtension : MahjongExtension {
             ),
         )
         registries.components.register(
-            ComponentPersistenceDefinition(
+            definition = ComponentPersistenceDefinition(
                 component = RiichiPlayerComponents.PAO_LIABILITY,
                 serializer = RiichiPaoLiabilityPersistenceDto.serializer(),
                 toDto = { it.toPersistenceDto() },
@@ -411,7 +411,7 @@ object BundledRiichiExtension : MahjongExtension {
             ),
         )
         registries.components.register(
-            ComponentPersistenceDefinition(
+            definition = ComponentPersistenceDefinition(
                 component = RiichiDiscardComponents.RIICHI_DECLARED,
                 serializer = ComponentUnitPersistenceDto.serializer(),
                 toDto = { ComponentUnitPersistenceDto },

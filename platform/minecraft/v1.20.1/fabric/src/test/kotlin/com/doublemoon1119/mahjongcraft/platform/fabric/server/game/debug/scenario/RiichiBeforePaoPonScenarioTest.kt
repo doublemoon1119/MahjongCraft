@@ -65,7 +65,7 @@ class RiichiBeforePaoPonScenarioTest {
             },
         )
         val actions = module.createLegalActionValidator().getLegalActions(
-            LegalActionContext.discardReaction(contextState, invoking.id, discarder.id, calledTile),
+            context = LegalActionContext.discardReaction(contextState, invoking.id, discarder.id, calledTile),
         )
 
         assertTrue(actions.any { it is GameAction.Pon }, "Expected a pon among $actions.")
@@ -82,8 +82,8 @@ class RiichiBeforePaoPonScenarioTest {
         val claimed = module.beforeDiscardClaimed(invoking, MeldType.Pon, calledTile, direction)
 
         assertEquals(
-            listOf(Tile.Honor.Green, Tile.Honor.Red),
-            invoking.hand.exposedMelds.map { meld -> meld.tiles.map { it.tile }.distinct().single() },
+            expected = listOf(Tile.Honor.Green, Tile.Honor.Red),
+            actual = invoking.hand.exposedMelds.map { meld -> meld.tiles.map { it.tile }.distinct().single() },
         )
         assertEquals(RiichiPaoLiability(RiichiPaoYaku.Daisangen, direction), claimed.values[RiichiPlayerComponents.PAO_LIABILITY])
     }
@@ -94,8 +94,8 @@ class RiichiBeforePaoPonScenarioTest {
         val (state, _) = buildScenario(invokingSeat = 0)
 
         assertEquals(
-            listOf(4, 1, 4, 1, 4, 1).map { Tile.Numeric(Tile.Suit.Character, it) },
-            state.tileWall.getAllTiles().take(6).map { it.tile },
+            expected = listOf(4, 1, 4, 1, 4, 1).map { Tile.Numeric(Tile.Suit.Character, it) },
+            actual = state.tileWall.getAllTiles().take(6).map { it.tile },
         )
     }
 

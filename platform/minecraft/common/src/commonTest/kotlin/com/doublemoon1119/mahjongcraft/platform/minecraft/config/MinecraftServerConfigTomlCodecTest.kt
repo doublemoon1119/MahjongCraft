@@ -18,7 +18,7 @@ class MinecraftServerConfigTomlCodecTest {
     @Test
     fun `test complete toml decodes all policies`() {
         val config = codec.decode(
-            """
+            content = """
             [player-disconnection]
             policy = "leave_after_timeout"
             timeout-seconds = 45
@@ -67,7 +67,7 @@ class MinecraftServerConfigTomlCodecTest {
     @Test
     fun `test missing optional fields use defaults`() {
         val config = codec.decode(
-            """
+            content = """
             [player-disconnection]
             policy = "leave_immediately"
             """.trimIndent(),
@@ -86,7 +86,7 @@ class MinecraftServerConfigTomlCodecTest {
     fun `test unknown field fails decoding`() {
         val exception = assertFailsWith<InvalidMinecraftServerConfigException> {
             codec.decode(
-                """
+                content = """
                 [table]
                 break-policy = "deny_while_occupied"
                 misspelled-policy = "remove_all"
@@ -102,7 +102,7 @@ class MinecraftServerConfigTomlCodecTest {
     fun `test unsupported enum reports allowed values`() {
         val exception = assertFailsWith<InvalidMinecraftServerConfigException> {
             codec.decode(
-                """
+                content = """
                 [player-disconnection]
                 policy = "eventually"
                 """.trimIndent(),
@@ -119,7 +119,7 @@ class MinecraftServerConfigTomlCodecTest {
     fun `test timeout outside range fails validation`() {
         val belowMinimum = assertFailsWith<InvalidMinecraftServerConfigException> {
             codec.decode(
-                """
+                content = """
                 [player-disconnection]
                 timeout-seconds = 0
                 """.trimIndent(),
@@ -127,7 +127,7 @@ class MinecraftServerConfigTomlCodecTest {
         }
         val aboveMaximum = assertFailsWith<InvalidMinecraftServerConfigException> {
             codec.decode(
-                """
+                content = """
                 [player-disconnection]
                 timeout-seconds = 3601
                 """.trimIndent(),

@@ -96,8 +96,8 @@ class ServerSessionProjectionRecoveryTest {
         assertEquals(healthy, fixture.store.snapshot().games[healthy.id])
         assertFalse(fixture.store.isDirty())
         assertEquals(
-            fixture.timers.getStatuses(healthy.id).keys.map { id -> healthy.tableState.players.indexOfFirst { it.id == id } },
-            fixture.timers.getStatuses(broken.id).keys.map { id -> broken.tableState.players.indexOfFirst { it.id == id } },
+            expected = fixture.timers.getStatuses(healthy.id).keys.map { id -> healthy.tableState.players.indexOfFirst { it.id == id } },
+            actual = fixture.timers.getStatuses(broken.id).keys.map { id -> broken.tableState.players.indexOfFirst { it.id == id } },
         )
         assertTrue(fixture.timers.getStatuses(broken.id).isNotEmpty())
     }
@@ -239,7 +239,7 @@ class ServerSessionProjectionRecoveryTest {
         val store = AuthoritativeStateStore()
         private val registry = MahjongModuleRegistryImpl().apply {
             register(
-                MahjongModuleDefinition(RiichiRuleConfig::class, "test:restoration") { config, id ->
+                definition = MahjongModuleDefinition(RiichiRuleConfig::class, "test:restoration") { config, id ->
                     object : MahjongRuleModule<RiichiRuleConfig> by RiichiRuleModule(id, config) {
                         override fun describeTileComponents(tableState: TableState): List<TileComponentDescription> = describe(tableState)
                     }
@@ -258,9 +258,9 @@ class ServerSessionProjectionRecoveryTest {
             gameVisibilityPolicy = policy,
             decisionTimerManager = timers,
             decisionAvailabilityService = GameDecisionAvailabilityService(
-                FakeGamePresentationBusyGate(),
-                timers,
-                DecisionTimerSynchronizationService(timers, repository, FakeDecisionTimerUpdatePublisher()),
+                busyGate = FakeGamePresentationBusyGate(),
+                timerManager = timers,
+                synchronizationService = DecisionTimerSynchronizationService(timers, repository, FakeDecisionTimerUpdatePublisher()),
             ),
             moduleRegistry = registry,
             failurePolicy = ExtensionFailurePolicy.Default,

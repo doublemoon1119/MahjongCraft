@@ -88,7 +88,7 @@ class DeclareExhaustiveDrawUseCaseTest {
 
     // 十三張萬子立牌 1112345678999m；加入任一種萬子都能和牌。
     private fun tenpaiHand() = FakeHandFactory.create(
-        listOf(
+        tiles = listOf(
             Tile.Numeric(Tile.Suit.Character, 1),
             Tile.Numeric(Tile.Suit.Character, 1),
             Tile.Numeric(Tile.Suit.Character, 1),
@@ -107,7 +107,7 @@ class DeclareExhaustiveDrawUseCaseTest {
 
     // 三種數牌各取 1、4、7，再加四種風牌，建立未聽牌的十三張立牌。
     private fun notTenpaiHand() = FakeHandFactory.create(
-        listOf(
+        tiles = listOf(
             Tile.Numeric(Tile.Suit.Character, 1),
             Tile.Numeric(Tile.Suit.Character, 4),
             Tile.Numeric(Tile.Suit.Character, 7),
@@ -153,8 +153,8 @@ class DeclareExhaustiveDrawUseCaseTest {
         assertEquals(RiichiExhaustiveDrawReason.Normal, assertIs<Outcome.Success<DeclaredExhaustiveDraw>>(result).value.settlement.reason)
         val newState = fixtures.gameRepo.getTableState(gameId)!!
         assertEquals(
-            TurnPhase.RoundOver(RoundConclusion.ExhaustiveDraw(RiichiExhaustiveDrawReason.Normal, setOf(tenpaiPlayer.id))),
-            newState.turnPhase,
+            expected = TurnPhase.RoundOver(RoundConclusion.ExhaustiveDraw(RiichiExhaustiveDrawReason.Normal, setOf(tenpaiPlayer.id))),
+            actual = newState.turnPhase,
         )
         assertEquals(25000 + 3000, newState.players.first { it.id == tenpaiPlayer.id }.score)
         notenPlayers.forEach { player ->

@@ -12,13 +12,13 @@ class PlayerInfoDisplayNameTest {
     @Test
     fun `only unresolved AI names invoke the character resolver`() {
         val actor = MahjongPlayerInfoEntry(
-            Uuid.random(),
-            null,
-            true,
-            0,
-            Wind.EAST,
-            100,
-            emptyList(),
+            playerId = Uuid.random(),
+            playerName = null,
+            isAi = true,
+            seatIndex = 0,
+            seatWind = Wind.EAST,
+            score = 100,
+            indicators = emptyList(),
         )
         assertEquals("Localized actor", playerInfoDisplayName(actor) { "Localized actor" })
         assertEquals("AI 1", playerInfoDisplayName(actor.copy(playerName = "AI 1")) { error("Numbered name must be preserved") })

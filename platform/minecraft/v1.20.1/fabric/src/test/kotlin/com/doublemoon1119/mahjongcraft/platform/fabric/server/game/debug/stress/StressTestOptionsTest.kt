@@ -27,10 +27,10 @@ class StressTestOptionsTest {
         val parsed = parseStressRunOptions("pace fast history encode max_mspt 250 warmup 0")
 
         assertEquals(
-            StressOptionsParseResult.Parsed(
-                StressRunOptions(pace = StressTestPace.FAST, historyMode = StressHistoryMode.ENCODE, stutterLimitMillis = 250, warmupSeconds = 0),
+            expected = StressOptionsParseResult.Parsed(
+                options = StressRunOptions(pace = StressTestPace.FAST, historyMode = StressHistoryMode.ENCODE, stutterLimitMillis = 250, warmupSeconds = 0),
             ),
-            parsed,
+            actual = parsed,
         )
     }
 
