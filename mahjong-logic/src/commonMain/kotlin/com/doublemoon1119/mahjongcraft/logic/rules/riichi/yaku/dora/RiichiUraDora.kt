@@ -25,7 +25,11 @@ fun calculateRiichiUraDora(
     setAsideTiles: List<Tile> = emptyList(),
     usesThreePlayerTiles: Boolean = false,
 ): RiichiYakuResult {
-    val allTiles = hand.allTiles.map { it.tile } + winningTile + setAsideTiles
+    val allTiles = buildList {
+        hand.allTiles.mapTo(this) { it.tile }
+        add(winningTile)
+        addAll(setAsideTiles)
+    }
 
     val uraDoraCount = uraDoraIndicators.sumOf { indicator ->
         val doraTile = riichiNextDora(indicator, usesThreePlayerTiles)

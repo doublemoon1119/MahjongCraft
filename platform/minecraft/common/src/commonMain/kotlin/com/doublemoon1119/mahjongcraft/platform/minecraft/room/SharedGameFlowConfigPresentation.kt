@@ -48,7 +48,11 @@ internal object SharedGameFlowConfigPresentation {
         }
         return definition.copy(
             categories = definition.categories + GameConfigCategoryDefinition(FLOW, SharedGameFlowConfigTranslationKeys.CATEGORY_FLOW),
-            fields = definition.fields + fields + listOfNotNull(ruleDecisionTime),
+            fields = buildList {
+                addAll(definition.fields)
+                addAll(fields)
+                ruleDecisionTime?.let(::add)
+            },
         )
     }
 

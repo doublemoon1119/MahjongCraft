@@ -88,7 +88,11 @@ internal object CycleButtonInput {
         active: Boolean = true,
     ): List<Text> {
         if (!active || optionCount < MIN_OPTIONS_FOR_HINT) return lines
-        return lines + Text.empty() + hintTexts()
+        return buildList {
+            addAll(lines)
+            add(Text.empty())
+            addAll(hintTexts())
+        }
     }
 
     /**

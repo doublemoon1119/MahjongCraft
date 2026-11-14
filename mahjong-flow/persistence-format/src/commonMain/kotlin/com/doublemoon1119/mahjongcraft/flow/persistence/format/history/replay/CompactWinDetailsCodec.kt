@@ -122,10 +122,12 @@ internal object CompactWinDetailsCodec {
         val id = entry.getValue(ReplaySourceKeys.ID)
         if (nameQuantity == null && !partial) return JsonArray(listOf(id) + quantity.orEmpty())
         return JsonArray(
-            content = listOf(id) +
-                (quantity ?: JsonArray(listOf(JsonNull, JsonNull))) +
-                (nameQuantity ?: JsonArray(listOf(JsonNull, JsonNull))) +
-                JsonPrimitive(if (partial) 1 else 0),
+            content = buildList {
+                add(id)
+                addAll(quantity ?: JsonArray(listOf(JsonNull, JsonNull)))
+                addAll(nameQuantity ?: JsonArray(listOf(JsonNull, JsonNull)))
+                add(JsonPrimitive(if (partial) 1 else 0))
+            },
         )
     }
 

@@ -90,7 +90,11 @@ val STANDARD_TILE_ASSET_KEYS: List<String> = buildList {
  */
 fun MinecraftTileAssetRegistry.allTileAssetKeys(): List<String> {
     check(isFrozen) { "Tile asset keys are only complete after the tile asset registry is frozen" }
-    return STANDARD_TILE_ASSET_KEYS + registeredAssetKeys + UNKNOWN_TILE_ASSET_KEY
+    return buildList {
+        addAll(STANDARD_TILE_ASSET_KEYS)
+        addAll(registeredAssetKeys)
+        add(UNKNOWN_TILE_ASSET_KEY)
+    }
 }
 
 /**

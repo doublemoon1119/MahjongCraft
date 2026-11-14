@@ -31,8 +31,12 @@ data class PersistenceRegistries(
     PersistenceConverter {
     /** 所有 registry 中登記為可在精簡牌譜中壓縮的 type key。 */
     val replayCompactTypeKeys: Set<String>
-        get() = ruleConfigs.replayCompactTypeKeys + discardPiles.replayCompactTypeKeys +
-            exhaustiveDrawReasons.replayCompactTypeKeys + extensionGameActions.replayCompactTypeKeys
+        get() = buildSet {
+            addAll(ruleConfigs.replayCompactTypeKeys)
+            addAll(discardPiles.replayCompactTypeKeys)
+            addAll(exhaustiveDrawReasons.replayCompactTypeKeys)
+            addAll(extensionGameActions.replayCompactTypeKeys)
+        }
 
     /** 凍結所有 registry；凍結後不得新增 persistence mapper。 */
     fun freeze() {

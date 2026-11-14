@@ -126,33 +126,39 @@ class TaiwanHandValueCalculator(private val config: TaiwanRuleConfig) : HandValu
             }
         }
         val isAllExposed = exposed.size == 5 && exposed.none { it.type == MeldType.ClosedKan }
-        val results = calculateTaiwanSituationTai(
+        val situationTai = calculateTaiwanSituationTai(
             isMenzen = context.isMenzen,
             isTsumo = context.isTsumo,
             situation = context.situation,
             waitCount = waitCount,
             isSingleShape = isSingleShape,
             isAllExposed = isAllExposed,
-        ) + calculateTaiwanHonorTai(
+        )
+        val honorTai = calculateTaiwanHonorTai(
             triplets = triplets,
             pair = decomposition.pair,
             allFaces = allFaces,
             seatWind = context.seatWind,
             roundWind = context.roundWind,
-        ) + calculateTaiwanFlowerTai(context.flowers, context.seatWind) + listOfNotNull(
-            calculateTaiwanAllSequences(
-                decomposition = decomposition,
-                exposed = exposed,
-                allFaces = allFaces,
-                flowers = context.flowers,
-                isTsumo = context.isTsumo,
-                isSingleShape = isSingleShape,
-            ),
-            calculateTaiwanConcealedTriplets(decomposition, exposed, context.isTsumo),
-            calculateTaiwanAllExposed(isAllExposed, context.isTsumo),
-            calculateTaiwanAllTriplets(decomposition, exposed),
-            calculateTaiwanFlush(allFaces),
         )
+        val allSequences = calculateTaiwanAllSequences(
+            decomposition = decomposition,
+            exposed = exposed,
+            allFaces = allFaces,
+            flowers = context.flowers,
+            isTsumo = context.isTsumo,
+            isSingleShape = isSingleShape,
+        )
+        val results = buildList {
+            addAll(situationTai)
+            addAll(honorTai)
+            addAll(calculateTaiwanFlowerTai(context.flowers, context.seatWind))
+            allSequences?.let(::add)
+            calculateTaiwanConcealedTriplets(decomposition, exposed, context.isTsumo)?.let(::add)
+            calculateTaiwanAllExposed(isAllExposed, context.isTsumo)?.let(::add)
+            calculateTaiwanAllTriplets(decomposition, exposed)?.let(::add)
+            calculateTaiwanFlush(allFaces)?.let(::add)
+        }
         return results.sortedBy { it.type.ordinal }
     }
 

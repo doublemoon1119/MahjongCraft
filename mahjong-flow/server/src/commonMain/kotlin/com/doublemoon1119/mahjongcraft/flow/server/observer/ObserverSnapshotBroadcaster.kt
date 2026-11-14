@@ -123,7 +123,11 @@ class ObserverSnapshotBroadcaster(
             val next = current + (
                 id to PendingInvalidation(
                     requestId = requestId,
-                    additionalObserverIds = (capturedObservers + previousObservers + additionalObserverIds).toSet(),
+                    additionalObserverIds = buildSet {
+                        addAll(capturedObservers)
+                        addAll(previousObservers)
+                        addAll(additionalObserverIds)
+                    },
                     isStillValid = isStillValid,
                 )
                 )
@@ -163,7 +167,11 @@ class ObserverSnapshotBroadcaster(
         try {
             if (!request.isStillValid()) return false
             val recordObserverIds = recordsById[id]?.snapshots?.keys.orEmpty()
-            val observerIds = (recordObserverIds + currentObserverIds + request.additionalObserverIds).toSet()
+            val observerIds = buildSet {
+                addAll(recordObserverIds)
+                addAll(currentObserverIds)
+                addAll(request.additionalObserverIds)
+            }
             observerIds.forEach { observerId -> sender.invalidateVenue(id, observerId, request.requestId) }
             recordsById.remove(id)
             publishRecordObserversSnapshot()

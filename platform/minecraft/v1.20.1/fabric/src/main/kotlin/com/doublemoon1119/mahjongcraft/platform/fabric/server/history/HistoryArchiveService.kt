@@ -228,7 +228,14 @@ internal class HistoryArchiveService(
             database.readAllPending().groupBy(PendingHistoryRecord::matchId)
         } else {
             val ended = database.readTerminalIds() + snapshot.historyRecordingState.terminalByMatchId.keys.map { it.toString() }
-            (ended - staged - active - gaps - stopped - archived).associateWith(database::readPending).filterValues { it.isNotEmpty() }
+            buildSet {
+                addAll(ended)
+                removeAll(staged)
+                removeAll(active)
+                removeAll(gaps)
+                removeAll(stopped)
+                removeAll(archived)
+            }.associateWith(database::readPending).filterValues { it.isNotEmpty() }
         }
         pendingByMatch.forEach { (matchId, records) ->
             if (matchId in staged || matchId in active || matchId in gaps || matchId in stopped || matchId in archived) return@forEach

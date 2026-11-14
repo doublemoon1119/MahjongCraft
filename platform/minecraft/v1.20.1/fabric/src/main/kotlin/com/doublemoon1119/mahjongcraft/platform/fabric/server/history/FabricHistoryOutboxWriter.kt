@@ -1003,7 +1003,11 @@ class FabricHistoryOutboxWriter(
             knownGaps = knownGaps + gaps
         }
         val archived = activeDatabase.readReplayIds()
-        val completed = (recording.decisionsByMatchId.keys + recording.terminalByMatchId.keys + recording.nextSequenceByMatchId.keys)
+        val completed = buildSet {
+            addAll(recording.decisionsByMatchId.keys)
+            addAll(recording.terminalByMatchId.keys)
+            addAll(recording.nextSequenceByMatchId.keys)
+        }
             .filterTo(mutableSetOf()) { it.toString() in archived }
         val persistedPartial = activeDatabase.readTerminalPartialIds()
         val partial = recording.terminalByMatchId.keys.filterTo(mutableSetOf()) { it.toString() in persistedPartial }

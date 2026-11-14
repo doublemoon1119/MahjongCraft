@@ -944,9 +944,11 @@ class FabricGamePresentationPublisher(
             val openingEndGameTime = timelineAnchor + MahjongDiceRollTimeline.totalTicks(openingDiceCounts, wallDropTicks)
             val opening = openingState.consumeOpening(gameId)
             // 發牌途中牌牆還是發牌前的樣子，手牌讓開發牌前的完整牌牆；發完牌後空出的位置等之後的排位再讓回來。
-            val dealWallReach = roundWallReach(tableState) +
-                opening?.assemblyStructure?.values?.map { position -> TileWallPlacement(position) }.orEmpty() +
-                opening?.finalLayout?.placements?.values.orEmpty()
+            val dealWallReach = buildSet {
+                addAll(roundWallReach(tableState))
+                opening?.assemblyStructure?.values?.mapTo(this) { position -> TileWallPlacement(position) }
+                addAll(opening?.finalLayout?.placements?.values.orEmpty())
+            }
             val dealWallClearance = wallClearance(tableState, dealWallReach)
             val seatLayout = MahjongTableSeatLayout.forPlayerCount(tableState.players.size)
             val presentation = MahjongInitialDealPresentation(

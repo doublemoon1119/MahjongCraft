@@ -90,9 +90,15 @@ class DebugGameScenarioValidator(
      * @param module 提供移出手牌區牌張的規則模組。
      * @return 所有手牌、副露、牌河、移出手牌區、牌山與保留區的牌。
      */
-    private fun TableState.allTiles(module: MahjongRuleModule<*>): List<IdentifiedTile> = players.flatMap { player ->
-        player.hand.allTiles + player.discardPile.entries.map { entry -> entry.tile } + player.setAsideTiles
-    } + tileWall.getAllTiles() + reservedWallTiles
+    private fun TableState.allTiles(module: MahjongRuleModule<*>): List<IdentifiedTile> = buildList {
+        players.forEach { player ->
+            addAll(player.hand.allTiles)
+            player.discardPile.entries.mapTo(this) { entry -> entry.tile }
+            addAll(player.setAsideTiles)
+        }
+        addAll(tileWall.getAllTiles())
+        addAll(reservedWallTiles)
+    }
 
     /**
      * 驗證開局發牌清單涵蓋權威手牌，翻牌後順序與權威手牌完全一致。

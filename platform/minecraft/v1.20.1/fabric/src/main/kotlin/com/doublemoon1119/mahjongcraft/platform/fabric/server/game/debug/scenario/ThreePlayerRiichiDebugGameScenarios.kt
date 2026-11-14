@@ -81,7 +81,12 @@ object ThreePlayerRiichiDebugGameScenarios {
         SeatSetupScenario(
             id = "mahjongcraft:riichi_three_player/debug/kan_and_pull_north",
             invoker = SeatSpec(
-                standingTiles = List(KAN_SIZE) { ONE_DOT } + List(KAN_SIZE) { NINE_DOT } + List(KAN_SIZE) { ONE_BAMBOO } + NINE_BAMBOO,
+                standingTiles = buildList {
+                    addAll(List(KAN_SIZE) { ONE_DOT })
+                    addAll(List(KAN_SIZE) { NINE_DOT })
+                    addAll(List(KAN_SIZE) { ONE_BAMBOO })
+                    add(NINE_BAMBOO)
+                },
                 drawnTile = Tile.Honor.North,
                 discards = listOf(Tile.Honor.South, Tile.Honor.West),
             ),
@@ -172,7 +177,11 @@ object ThreePlayerRiichiDebugGameScenarios {
         SeatSetupScenario(
             id = "mahjongcraft:riichi_three_player/debug/auto_north_riichi_kan_payments",
             invoker = SeatSpec(
-                standingTiles = List(KAN_SIZE) { ONE_DOT } + List(KAN_SIZE - 1) { ONE_BAMBOO } + listOf(NINE_CHARACTER, NINE_CHARACTER, Tile.Honor.Red),
+                standingTiles = buildList {
+                    addAll(List(KAN_SIZE) { ONE_DOT })
+                    addAll(List(KAN_SIZE - 1) { ONE_BAMBOO })
+                    addAll(listOf(NINE_CHARACTER, NINE_CHARACTER, Tile.Honor.Red))
+                },
                 pons = listOf(ScenarioPon(tile = NINE_DOT, from = RelativeDirection.Left)),
                 drawnTile = Tile.Honor.West,
                 discards = listOf(Tile.Honor.South),

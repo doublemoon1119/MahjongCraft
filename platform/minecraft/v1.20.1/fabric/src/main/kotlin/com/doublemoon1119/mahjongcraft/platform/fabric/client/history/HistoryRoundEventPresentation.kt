@@ -678,7 +678,12 @@ private fun HistoryRoundOutcomeDto.toPresentation(identitySeats: List<Int>, reas
     classification = classification,
     transitionDirective = transitionDirective,
     nextDealerSeat = nextDealerSeat,
-    rows = (identitySeats + beneficiarySeats + responsibleSeats + scoresBySeat.keys).distinct().sorted().map { seat ->
+    rows = buildList {
+        addAll(identitySeats)
+        addAll(beneficiarySeats)
+        addAll(responsibleSeats)
+        addAll(scoresBySeat.keys)
+    }.distinct().sorted().map { seat ->
         HistoryOutcomeRowPresentation(
             seatIndex = seat,
             score = scoresBySeat[seat],

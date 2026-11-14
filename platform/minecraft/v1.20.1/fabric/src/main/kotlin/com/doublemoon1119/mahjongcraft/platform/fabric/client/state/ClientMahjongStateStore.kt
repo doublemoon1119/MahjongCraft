@@ -74,7 +74,13 @@ private data class ClientTableState(
                 player.setAsideTiles
             }
             // 已公開但仍在手牌中的牌（等待搶和的宣告牌、被搶和胡走的牌）對其他觀察者是隱藏的手牌；排在最後覆蓋成公開牌面。
-            return (wallTiles + handTiles + meldTiles + discardTiles + setAsideTiles).associateBy { it.id }
+            return buildList {
+                addAll(wallTiles)
+                addAll(handTiles)
+                addAll(meldTiles)
+                addAll(discardTiles)
+                addAll(setAsideTiles)
+            }.associateBy { it.id }
         }
     }
 }

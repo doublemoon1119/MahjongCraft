@@ -178,7 +178,12 @@ internal fun sortedLangFileText(original: String): String {
     val entries = lines.subList(1, lines.size - 2).map { it.removeSuffix(",") }
     val sortedEntries = entries.sortedBy { line -> line.substringAfter('"').substringBefore('"') }
     val body = sortedEntries.mapIndexed { index, line -> if (index == sortedEntries.lastIndex) line else "$line," }
-    return (listOf("{") + body + listOf("}", "")).joinToString("\n")
+    return buildList {
+        add("{")
+        addAll(body)
+        add("}")
+        add("")
+    }.joinToString("\n")
 }
 
 /** 將 CRLF 換行統一為 LF。 */

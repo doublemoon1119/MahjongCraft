@@ -24,7 +24,11 @@ class RuleCatalogueBrowser(
     private val catalogueRuleIds = catalogues.registrationKeys.toSet()
 
     /** 合併來源與原規則後的固定選項，按穩定 ID 排列。 */
-    private val ruleIds = (knownRuleIds + catalogueRuleIds + listOfNotNull(context.ruleModuleId)).distinct().sorted().also { ids ->
+    private val ruleIds = buildList {
+        addAll(knownRuleIds)
+        addAll(catalogueRuleIds)
+        context.ruleModuleId?.let(::add)
+    }.distinct().sorted().also { ids ->
         ids.forEach { id -> NamespacedId.requireValid(id) { "Invalid catalogue rule option ID: $id" } }
     }
 

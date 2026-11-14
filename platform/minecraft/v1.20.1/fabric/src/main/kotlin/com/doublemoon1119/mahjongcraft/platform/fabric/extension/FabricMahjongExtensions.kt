@@ -117,7 +117,11 @@ internal object FabricMahjongExtensions {
             emptyList()
         }
         val coreSources = MahjongExtensionBootstrap.registerAndFreeze(
-            extensions = BundledMahjongExtensions.all + debugExtensions + discoveredExtensions,
+            extensions = buildList {
+                addAll(BundledMahjongExtensions.all)
+                addAll(debugExtensions)
+                addAll(discoveredExtensions)
+            },
             registries = coreRegistries,
             builtIn = BuiltInMahjongExtension(
                 moduleRegistry = coreRegistries.moduleRegistry,
@@ -130,8 +134,11 @@ internal object FabricMahjongExtensions {
         // 同一個第三方類別可同時實作 MahjongExtension 與 MinecraftMahjongExtension，
         // 不需要在 fabric.mod.json 額外宣告第二個 entrypoint。
         val minecraftResult = MinecraftMahjongExtensionBootstrap.registerAndFreeze(
-            extensions = BundledMinecraftMahjongExtensions.all + debugExtensions +
-                discoveredExtensions.filterIsInstance<MinecraftMahjongExtension>(),
+            extensions = buildList {
+                addAll(BundledMinecraftMahjongExtensions.all)
+                addAll(debugExtensions)
+                discoveredExtensions.filterIsInstanceTo<MinecraftMahjongExtension, _>(this)
+            },
             registries = presentationRegistries,
             failurePolicy = failurePolicy,
         )

@@ -56,27 +56,28 @@ import kotlin.uuid.Uuid
 /** 內建的日麻權威情境；除了開局與三人日麻情境以外都只適用四人日麻。 */
 object RiichiDebugGameScenarios {
     /** 所有內建日麻 debug 情境。 */
-    val all: List<DebugGameScenario> = listOf(
-        RiichiBeforeAnkanScenario("mahjongcraft:riichi/debug/before_ankan_1", 0),
-        RiichiBeforeAnkanScenario("mahjongcraft:riichi/debug/before_ankan_2", 1),
-        RiichiBeforeAnkanScenario("mahjongcraft:riichi/debug/before_ankan_3", 2),
-        RiichiBeforeAnkanScenario("mahjongcraft:riichi/debug/before_ankan_4", 3),
-        RiichiBeforeAnkanScenario("mahjongcraft:riichi/debug/before_ankan_at_break_1", 0, AT_BREAK_WALL_OPENING),
-        RiichiBeforeAnkanScenario("mahjongcraft:riichi/debug/before_ankan_at_break_2", 1, AT_BREAK_WALL_OPENING),
-        RiichiBeforeAnkanScenario("mahjongcraft:riichi/debug/before_ankan_at_break_3", 2, AT_BREAK_WALL_OPENING),
-        RiichiBeforeAnkanScenario("mahjongcraft:riichi/debug/before_ankan_at_break_4", 3, AT_BREAK_WALL_OPENING),
-        RiichiBeforeMinkanScenario("mahjongcraft:riichi/debug/before_minkan_1"),
-        RiichiBeforeMinkanScenario("mahjongcraft:riichi/debug/before_minkan_at_break_1", AT_BREAK_WALL_OPENING),
-        RiichiBeforePaoPonScenario,
-        RiichiBeforeSuuchaRiichiScenario,
-        RiichiWallOpeningScenario,
-    ) + RiichiFuritenDebugGameScenarios.all +
-        RiichiIppatsuDebugGameScenarios.all +
-        RiichiAutomaticControlDebugGameScenarios.all +
-        RiichiMeldDebugGameScenarios.all +
-        RiichiSeatChangeDebugGameScenarios.all +
-        RiichiRuleDecisionDebugGameScenarios.all +
-        ThreePlayerRiichiDebugGameScenarios.all
+    val all: List<DebugGameScenario> = buildList {
+        add(RiichiBeforeAnkanScenario("mahjongcraft:riichi/debug/before_ankan_1", 0))
+        add(RiichiBeforeAnkanScenario("mahjongcraft:riichi/debug/before_ankan_2", 1))
+        add(RiichiBeforeAnkanScenario("mahjongcraft:riichi/debug/before_ankan_3", 2))
+        add(RiichiBeforeAnkanScenario("mahjongcraft:riichi/debug/before_ankan_4", 3))
+        add(RiichiBeforeAnkanScenario("mahjongcraft:riichi/debug/before_ankan_at_break_1", 0, AT_BREAK_WALL_OPENING))
+        add(RiichiBeforeAnkanScenario("mahjongcraft:riichi/debug/before_ankan_at_break_2", 1, AT_BREAK_WALL_OPENING))
+        add(RiichiBeforeAnkanScenario("mahjongcraft:riichi/debug/before_ankan_at_break_3", 2, AT_BREAK_WALL_OPENING))
+        add(RiichiBeforeAnkanScenario("mahjongcraft:riichi/debug/before_ankan_at_break_4", 3, AT_BREAK_WALL_OPENING))
+        add(RiichiBeforeMinkanScenario("mahjongcraft:riichi/debug/before_minkan_1"))
+        add(RiichiBeforeMinkanScenario("mahjongcraft:riichi/debug/before_minkan_at_break_1", AT_BREAK_WALL_OPENING))
+        add(RiichiBeforePaoPonScenario)
+        add(RiichiBeforeSuuchaRiichiScenario)
+        add(RiichiWallOpeningScenario)
+        addAll(RiichiFuritenDebugGameScenarios.all)
+        addAll(RiichiIppatsuDebugGameScenarios.all)
+        addAll(RiichiAutomaticControlDebugGameScenarios.all)
+        addAll(RiichiMeldDebugGameScenarios.all)
+        addAll(RiichiSeatChangeDebugGameScenarios.all)
+        addAll(RiichiRuleDecisionDebugGameScenarios.all)
+        addAll(ThreePlayerRiichiDebugGameScenarios.all)
+    }
 }
 
 /**
@@ -119,7 +120,12 @@ private object RiichiBeforeSuuchaRiichiScenario : DebugGameScenario {
         val invokingDrawnTile = takeTiles(availableTiles, listOf(Tile.Honor.North)).single()
         val opponentHands = List(PLAYER_COUNT - 1) { takeDistinctFillers(availableTiles, INITIAL_HAND_SIZE) }
         val opponentRiichiTiles = takeDistinctFillers(availableTiles, PLAYER_COUNT - 1)
-        val consumedTiles = invokingStandingTiles + opponentHands.flatten() + opponentRiichiTiles + invokingDrawnTile
+        val consumedTiles = buildList {
+            addAll(invokingStandingTiles)
+            addAll(opponentHands.flatten())
+            addAll(opponentRiichiTiles)
+            add(invokingDrawnTile)
+        }
         val initialReservedTiles = takeFirst(availableTiles, config.reservedTileCount)
         val initialLiveTiles = consumedTiles + availableTiles
         val templateLayout = requireNotNull(module.createWallLayout(module.config.maxPlayers)).resolve(inventory, opening)
@@ -239,7 +245,12 @@ private object RiichiBeforePaoPonScenario : DebugGameScenario {
             },
         )
         val opponentHands = List(PLAYER_COUNT - 1) { takeTiles(availableTiles, PAO_OPPONENT_TILES) }
-        val consumedTiles = invokingMelds.flatMap { it.tiles } + invokingStandingTiles + calledTile + opponentHands.flatten()
+        val consumedTiles = buildList {
+            invokingMelds.flatMapTo(this) { it.tiles }
+            addAll(invokingStandingTiles)
+            add(calledTile)
+            addAll(opponentHands.flatten())
+        }
         val initialReservedTiles = takeFirst(availableTiles, config.reservedTileCount)
         val liveTiles = winningDraws + availableTiles
         val initialLiveTiles = consumedTiles + liveTiles
@@ -406,7 +417,11 @@ private class RiichiBeforeAnkanScenario(
         val initialDealOrder = interleaveInitialDeal(initialHands, dealerIndex, config.dealBatchSizes())
         val priorNormalDraws = List(establishedKans.size) { takeFirst(availableTiles, 1).single() }
         val dealerDraw = targetKan.last()
-        val consumedFromFront = initialDealOrder + priorNormalDraws + dealerDraw
+        val consumedFromFront = buildList {
+            addAll(initialDealOrder)
+            addAll(priorNormalDraws)
+            add(dealerDraw)
+        }
         val initialReservedTiles = takeFirst(availableTiles, config.reservedTileCount)
         val initialLiveTiles = consumedFromFront + availableTiles
         val templateLayout = requireNotNull(module.createWallLayout(module.config.maxPlayers)).resolve(inventory, opening)

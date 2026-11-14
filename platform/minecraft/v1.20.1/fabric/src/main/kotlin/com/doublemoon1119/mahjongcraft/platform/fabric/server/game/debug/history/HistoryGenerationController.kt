@@ -183,7 +183,11 @@ class HistoryGenerationController(
                             generated = completed.size,
                             archived = archived.size,
                             pruned = pruned.size,
-                            pending = (completed - archived - pruned).size,
+                            pending = buildSet {
+                                addAll(completed)
+                                removeAll(archived)
+                                removeAll(pruned)
+                            }.size,
                             diskAfter = receipt.disk,
                             replayBytes = samples.values.sum(),
                             largestReplayBytes = samples.values.maxOrNull() ?: 0L,

@@ -416,7 +416,14 @@ object CompactReplayCodec {
         types: MutableMap<String, JsonElement>,
         compactPayloadTypeKeys: Set<String>,
     ): RoundIndex {
-        val tiles = state.tileWall.getAllTiles() + state.reservedWallTiles + state.players.flatMap { it.hand.allTiles + it.discardPile.entries.map { entry -> entry.tile } }
+        val tiles = buildList {
+            addAll(state.tileWall.getAllTiles())
+            addAll(state.reservedWallTiles)
+            state.players.forEach { player ->
+                addAll(player.hand.allTiles)
+                player.discardPile.entries.mapTo(this) { entry -> entry.tile }
+            }
+        }
         val tileIds = tiles.map { it.id.toString() }
         require(tileIds.size == tileIds.distinct().size) { "Replay opening contains duplicate tile identifiers" }
         val encoded = tiles.associate { it.id.toString() to persistenceJson.encodeToJsonElement(it.tile.toPersistenceDto()) }
@@ -440,7 +447,14 @@ object CompactReplayCodec {
      * @return 本次交易新宣告牌的牌種索引。
      */
     private fun declareNewTiles(state: TableState, index: RoundIndex, types: MutableMap<String, JsonElement>): List<Int> {
-        val visible = state.tileWall.getAllTiles() + state.reservedWallTiles + state.players.flatMap { it.hand.allTiles + it.discardPile.entries.map { entry -> entry.tile } }
+        val visible = buildList {
+            addAll(state.tileWall.getAllTiles())
+            addAll(state.reservedWallTiles)
+            state.players.forEach { player ->
+                addAll(player.hand.allTiles)
+                player.discardPile.entries.mapTo(this) { entry -> entry.tile }
+            }
+        }
         val result = mutableListOf<Int>()
         visible.forEach { identified ->
             val id = identified.id.toString()

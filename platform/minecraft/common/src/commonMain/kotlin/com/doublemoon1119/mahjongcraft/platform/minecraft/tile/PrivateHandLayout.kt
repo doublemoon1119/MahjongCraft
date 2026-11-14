@@ -392,7 +392,11 @@ class PrivateHandLayout {
         val stayed = current.filter { it in previousIndex }.sortedBy { previousIndex.getValue(it) }
         val kept = TableStepMotionPlanner.longestIncreasingSubsequence(stayed.map { currentIndex.getValue(it) }).mapTo(mutableSetOf()) { stayed[it] }
         val inserted = setOfNotNull(previousDrawnId?.takeIf { it in currentIndex })
-        return stayed.toSet() - kept + inserted
+        return buildSet {
+            addAll(stayed)
+            removeAll(kept)
+            addAll(inserted)
+        }
     }
 
     /**

@@ -1,6 +1,7 @@
 package com.doublemoon1119.mahjongcraft.logic.table
 
 import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
+import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTileSnapshot
 import com.doublemoon1119.mahjongcraft.logic.base.toKnownTile
 import com.doublemoon1119.mahjongcraft.logic.base.toSnapshot
 import com.doublemoon1119.mahjongcraft.logic.component.ComponentViewSet
@@ -139,8 +140,11 @@ fun TableStateSnapshot.visibleTiles(interpretation: TileInterpretationPolicy): L
  * @return 這位玩家快照中可見牌面的牌張，依牌張 ID 去重。
  */
 fun MahjongPlayerSnapshot.heldTiles(interpretation: TileInterpretationPolicy): List<IdentifiedTile> = buildList {
-    (hand.standingTiles + listOfNotNull(hand.lastDrawn) + hand.melds.flatMap { it.tiles }).forEach { snapshot ->
+    fun addKnown(snapshot: IdentifiedTileSnapshot) {
         snapshot.toKnownTile(interpretation)?.let(::add)
     }
-    setAsideTiles.forEach { snapshot -> snapshot.toKnownTile(interpretation)?.let(::add) }
+    hand.standingTiles.forEach(::addKnown)
+    hand.lastDrawn?.let(::addKnown)
+    hand.melds.forEach { meld -> meld.tiles.forEach(::addKnown) }
+    setAsideTiles.forEach(::addKnown)
 }.distinctBy { it.id }

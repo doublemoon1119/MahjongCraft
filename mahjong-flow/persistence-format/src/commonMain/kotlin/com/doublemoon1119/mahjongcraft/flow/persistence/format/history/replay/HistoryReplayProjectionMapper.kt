@@ -85,8 +85,15 @@ internal object HistoryReplayProjectionMapper {
         require(roundPosition.prevalentWind == wind) { "Replay round position is inconsistent" }
         val wall = refs(obj(root.getValue(ReplaySourceKeys.TILE_WALL)).getValue(ReplaySourceKeys.WALL_TILES), context)
         val reserved = refs(root.getValue(ReplaySourceKeys.RESERVED_WALL_TILES), context)
-        val held = wall + reserved + players.flatMap { player ->
-            player.handTiles + listOfNotNull(player.lastDrawn) + player.melds.flatMap { it.tiles } + player.discards.filterNot { it.isTaken }.map { it.tile }
+        val held = buildList {
+            addAll(wall)
+            addAll(reserved)
+            players.forEach { player ->
+                addAll(player.handTiles)
+                player.lastDrawn?.let(::add)
+                player.melds.flatMapTo(this) { it.tiles }
+                player.discards.filterNot { it.isTaken }.mapTo(this) { it.tile }
+            }
         }
         require(held.map { it.tileIndex }.distinct().size == held.size) { "Replay tile appears in multiple holding areas" }
         // 牌河的牌只會因為副露被取走，所以每張取走的牌都是某組副露的來源牌；副露牌不重複，對應的副露只有一組。

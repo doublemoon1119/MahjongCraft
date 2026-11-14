@@ -259,7 +259,12 @@ internal class ExpectedValueEvaluator(
     private fun decideOwnTurn(extensionRegistry: ExtensionGameActionAiRegistry): GameCommand {
         if (GameAction.Tsumo in context.legalActions) return GameCommand.Tsumo
         val best = choose(
-            candidates = setAsideCandidates(extensionRegistry) + discardCandidates() + declarationCandidates(extensionRegistry) + selfKanCandidates(),
+            candidates = buildList {
+                addAll(setAsideCandidates(extensionRegistry))
+                addAll(discardCandidates())
+                addAll(declarationCandidates(extensionRegistry))
+                addAll(selfKanCandidates())
+            },
         )
         val abortiveDraw = context.legalActions.filterIsInstance<GameAction.ExhaustiveDraw>().firstOrNull()
         if (abortiveDraw != null && best.winProbability < parameters.abortiveDrawWinProbability) {

@@ -121,7 +121,13 @@ object TaiwanFlowerRuleDecisionResolver : RuleDecisionResolver {
         val sortStep = (settled as? TaiwanFlowerFlow.Result.Completed)?.takeIf { isOpening }?.let { completed ->
             listOf(TableStep(completed.tableState, listOf(TableStepEvent.HandsSorted(completed.tableState.players.mapTo(mutableSetOf()) { it.id }))))
         }.orEmpty()
-        return resolution(settled, decision.stepIndex) { steps -> openingDrawStep + steps.toTableSteps(isOpening) + sortStep }
+        return resolution(settled, decision.stepIndex) { steps ->
+            buildList {
+                addAll(openingDrawStep)
+                addAll(steps.toTableSteps(isOpening))
+                addAll(sortStep)
+            }
+        }
     }
 
     /**
