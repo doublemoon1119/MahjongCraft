@@ -16,7 +16,6 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.RuleDecisi
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.WinRoundContinuationResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepository
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameSnapshotSynchronizer
-import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DeclareTsumoUseCase
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import com.doublemoon1119.mahjongcraft.logic.table.RoundCompletionClassification

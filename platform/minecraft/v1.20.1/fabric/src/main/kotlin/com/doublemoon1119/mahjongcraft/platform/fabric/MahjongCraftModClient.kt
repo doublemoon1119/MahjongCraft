@@ -5,7 +5,6 @@ import com.doublemoon1119.mahjongcraft.extension.ExtensionRegistrationReport
 import com.doublemoon1119.mahjongcraft.extension.ExtensionRegistrationReportFormatter
 import com.doublemoon1119.mahjongcraft.flow.client.game.ClientDecisionTimerStateStore
 import com.doublemoon1119.mahjongcraft.flow.network.dto.command.toDomain
-import com.doublemoon1119.mahjongcraft.flow.network.dto.message.toDomain
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkDtoRegistries
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkJson
 import com.doublemoon1119.mahjongcraft.flow.network.dto.snapshot.toDomain

@@ -3,7 +3,6 @@ package com.doublemoon1119.mahjongcraft.flow.server.game.history.generation
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryOutboxEvent
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.Game
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateSnapshot
-import kotlinx.coroutines.flow.flow
 import kotlin.uuid.Uuid
 
 /**

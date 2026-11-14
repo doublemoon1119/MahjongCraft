@@ -21,7 +21,6 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.riichi.RiichiYaku
 import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.taiwan.TaiwanTaiTranslationKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.taiwan.TaiwanTranslationKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.WinSettlementTextKeys
-import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftHudKeys
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive

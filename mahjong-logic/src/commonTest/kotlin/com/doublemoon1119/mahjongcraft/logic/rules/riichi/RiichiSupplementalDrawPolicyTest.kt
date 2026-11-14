@@ -4,11 +4,6 @@ import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.logic.component.BuiltInComponentOwners
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RIICHI_STICK_POINTS
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiTableComponents
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiWallProgress
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.riichiPotPoints
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.riichiWallProgress
 import com.doublemoon1119.mahjongcraft.logic.table.SupplementalDrawContext
 import com.doublemoon1119.mahjongcraft.logic.table.SupplementalDrawDecision
 import com.doublemoon1119.mahjongcraft.logic.table.SupplementalDrawReasonIds

@@ -15,7 +15,6 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.logging.mahjongCraftLogge
 import com.doublemoon1119.mahjongcraft.platform.minecraft.character.AiCharacterSnapshot
 import com.doublemoon1119.mahjongcraft.platform.minecraft.character.AiCharacterSnapshotCodec
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocationRegistry
-import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.JsonObject
 import kotlin.uuid.Uuid
 

@@ -26,7 +26,6 @@ import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledPersistenceRe
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.registerBundledRuleModules
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
 import java.sql.Connection

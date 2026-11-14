@@ -4,7 +4,6 @@ import com.doublemoon1119.mahjongcraft.logic.base.Hand
 import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.logic.component.ComponentSet
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDeclarationKind
 import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayer
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.logic.table.Wind

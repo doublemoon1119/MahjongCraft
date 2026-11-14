@@ -2,9 +2,7 @@ package com.doublemoon1119.mahjongcraft.logic.rules.riichi
 
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
-import com.doublemoon1119.mahjongcraft.logic.judgment.LegalActionContext
 import com.doublemoon1119.mahjongcraft.logic.judgment.ShantenResult
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDeclarationKind
 import com.doublemoon1119.mahjongcraft.logic.table.TileWall
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeHandFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeIdentifiedTileFactory

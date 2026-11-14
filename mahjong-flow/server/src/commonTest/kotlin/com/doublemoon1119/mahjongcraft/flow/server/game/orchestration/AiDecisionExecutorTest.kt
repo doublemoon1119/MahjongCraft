@@ -12,7 +12,6 @@ import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
-import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.withContext
 import kotlin.coroutines.ContinuationInterceptor

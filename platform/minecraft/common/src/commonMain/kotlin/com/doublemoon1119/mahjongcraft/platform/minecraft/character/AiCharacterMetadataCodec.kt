@@ -1,7 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.character
 
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import kotlin.uuid.Uuid
 

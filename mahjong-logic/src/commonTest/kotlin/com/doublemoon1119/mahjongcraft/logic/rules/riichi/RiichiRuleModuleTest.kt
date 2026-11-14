@@ -15,14 +15,9 @@ import com.doublemoon1119.mahjongcraft.logic.module.ExhaustiveDrawSettlementResu
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
 import com.doublemoon1119.mahjongcraft.logic.module.MeldCompletedContext
 import com.doublemoon1119.mahjongcraft.logic.module.WinSettlementResult
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RIICHI_STICK_POINTS
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDeclarationKind
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPlayerComponents
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiWallProgress
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.layout.RiichiPhysicalWallLayoutPolicy
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.layout.RiichiWallLayout
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.opening.RiichiWallOpeningPolicy
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.riichiDeclaration
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.RiichiTileInterpretationPolicy
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.RiichiYakuType
 import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayer

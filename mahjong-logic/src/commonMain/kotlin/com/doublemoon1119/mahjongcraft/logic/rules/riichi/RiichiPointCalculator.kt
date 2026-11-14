@@ -1,7 +1,6 @@
 package com.doublemoon1119.mahjongcraft.logic.rules.riichi
 
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPointCalculator.buildPointResult
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.RiichiYakuResult
 import kotlin.math.pow
 
 /**

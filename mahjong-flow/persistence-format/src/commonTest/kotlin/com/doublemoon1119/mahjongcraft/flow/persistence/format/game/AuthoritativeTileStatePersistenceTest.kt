@@ -1,6 +1,4 @@
 package com.doublemoon1119.mahjongcraft.flow.persistence.format.game
-import com.doublemoon1119.mahjongcraft.flow.persistence.format.game.HandPersistenceDto
-import com.doublemoon1119.mahjongcraft.flow.persistence.format.game.TileWallPersistenceDto
 import com.doublemoon1119.mahjongcraft.logic.base.Hand
 import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
 import com.doublemoon1119.mahjongcraft.logic.base.Meld

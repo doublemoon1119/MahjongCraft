@@ -5,7 +5,6 @@ import com.doublemoon1119.mahjongcraft.logic.base.Hand
 import com.doublemoon1119.mahjongcraft.logic.base.MeldType
 import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDeclarationKind
 import com.doublemoon1119.mahjongcraft.logic.table.TileWall
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeHandFactory

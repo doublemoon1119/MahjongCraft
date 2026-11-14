@@ -14,7 +14,6 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongPlayerSco
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableOverlayVisibility
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.mahjongTableFacingFromNameOrDefault
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import net.minecraft.entity.EntityType
 import net.minecraft.entity.data.DataTracker

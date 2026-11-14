@@ -12,7 +12,6 @@ import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateStore
 import com.doublemoon1119.mahjongcraft.platform.fabric.network.MahjongChannels
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.FabricServerHolder
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.ReadinessAnalysisDtoMapper
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.network.AiCharacterSnapshotDelivery
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.FabricTableStateDelivery
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableRemovedPayloadDto
 import net.minecraft.server.network.ServerPlayerEntity

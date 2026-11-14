@@ -3,7 +3,6 @@ package com.doublemoon1119.mahjongcraft.buildlogic
 import org.gradle.testkit.runner.GradleRunner
 import org.gradle.testkit.runner.TaskOutcome
 import java.io.File
-import kotlin.io.path.createDirectories
 import kotlin.io.path.createTempDirectory
 import kotlin.test.Test
 import kotlin.test.assertEquals

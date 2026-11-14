@@ -47,7 +47,6 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
-import kotlinx.serialization.encodeToString
 import net.minecraft.server.MinecraftServer
 import java.nio.file.Path
 import java.sql.SQLException

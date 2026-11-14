@@ -1,6 +1,5 @@
 package com.doublemoon1119.mahjongcraft.buildlogic
 
-import org.gradle.testkit.runner.BuildResult
 import org.gradle.testkit.runner.GradleRunner
 import org.gradle.testkit.runner.TaskOutcome
 import java.io.File

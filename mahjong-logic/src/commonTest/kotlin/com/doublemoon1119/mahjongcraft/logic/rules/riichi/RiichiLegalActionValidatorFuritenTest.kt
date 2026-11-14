@@ -4,9 +4,6 @@ import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.logic.component.ComponentSet
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDeclarationKind
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPlayerComponents
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.riichiDeclaration
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.RiichiTileValues
 import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayer
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeHandFactory

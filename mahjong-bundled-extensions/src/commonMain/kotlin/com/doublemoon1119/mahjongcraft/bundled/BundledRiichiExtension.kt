@@ -39,15 +39,12 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.riichi.toDomain
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.riichi.toDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.riichi.toRiichiDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.riichi.toThreePlayerRiichiDto
-import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.taiwan.toDomain
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.api.registration.PersistenceRegistrars
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.component.ComponentIntPersistenceDto
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.component.ComponentPersistenceDefinition
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.component.ComponentUnitPersistenceDto
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.component.ComponentViewPersistenceDefinition
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.core.PersistenceDtoDefinition
-import com.doublemoon1119.mahjongcraft.flow.persistence.format.game.toDomain
-import com.doublemoon1119.mahjongcraft.flow.persistence.format.game.toPersistenceDto
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.rule.BuiltInDiscardPilePersistenceKeys
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.rule.RiichiDeclarationPersistenceDto
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.rule.RiichiDiscardPilePersistenceDto

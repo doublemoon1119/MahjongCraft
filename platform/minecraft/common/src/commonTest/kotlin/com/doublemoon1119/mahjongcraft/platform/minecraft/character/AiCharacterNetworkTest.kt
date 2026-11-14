@@ -6,7 +6,6 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.api.character.AiCharac
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.character.AiCharacterLimits
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.character.AiCharacterPreview
 import kotlinx.serialization.SerializationException
-import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import kotlin.test.Test
 import kotlin.test.assertEquals
