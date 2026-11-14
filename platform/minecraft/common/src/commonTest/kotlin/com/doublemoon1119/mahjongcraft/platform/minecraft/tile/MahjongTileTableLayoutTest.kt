@@ -96,8 +96,8 @@ class MahjongTileTableLayoutTest {
             assertEquals(rightPlacement.z, leftPlacement.z, ABSOLUTE_TOLERANCE)
         }
         val band = MahjongTileTableLayout.handRowBand()
-        val rightSpan = MahjongTileTableLayout.rowSpan(right, STACKS_PER_SIDE, band.left, band.right)
-        val leftSpan = MahjongTileTableLayout.rowSpan(left, STACKS_PER_SIDE, band.left, band.right)
+        val rightSpan = MahjongTileTableLayout.rowSpan(fullWallClearance(right, STACKS_PER_SIDE), band.left, band.right)
+        val leftSpan = MahjongTileTableLayout.rowSpan(fullWallClearance(left, STACKS_PER_SIDE), band.left, band.right)
 
         assertEquals(-rightSpan.right, leftSpan.left, ABSOLUTE_TOLERANCE)
         assertEquals(-rightSpan.left, leftSpan.right, ABSOLUTE_TOLERANCE)

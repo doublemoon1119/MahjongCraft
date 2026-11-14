@@ -19,6 +19,7 @@ import kotlin.uuid.Uuid
  * @property cornerWidthBySeat 各座位副露角落被桌上物件占用的寬度；沒有列出的座位為 0。
  * @property handPoseStates 立牌與摸牌位的牌各自的姿態；沒有列出的牌直立。
  * @property wallProjection 牌牆格位投影到這張桌子的方式；沒有實體牌牆時為 null，牌牆的牌不擺放。
+ * @property wallClearance 牌牆在這一局剩下時間裡可能佔到的範圍，各座位的牌列依此讓開牌牆；沒有實體牌牆時為 null。
  * @property faceUpWallTileIds 牌牆中正面朝上的牌。
  * @property unsortedTileIds 直接補進立牌、還沒理過的牌，依補進的順序排列。
  */
@@ -33,6 +34,7 @@ data class TableTileArrangementInput(
     val cornerWidthBySeat: Map<Int, Double>,
     val handPoseStates: List<TilePoseState>,
     val wallProjection: MahjongTileWallProjectionContext?,
+    val wallClearance: MahjongTableWallClearance?,
     val faceUpWallTileIds: Set<Uuid>,
     val unsortedTileIds: List<Uuid> = emptyList(),
 ) {

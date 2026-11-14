@@ -122,6 +122,7 @@ class ScatteredDiscardLayoutTest {
                 cornerWidthBySeat = emptyMap(),
                 handPoseStates = emptyList(),
                 wallProjection = null,
+                wallClearance = null,
                 faceUpWallTileIds = emptySet(),
             ),
         )

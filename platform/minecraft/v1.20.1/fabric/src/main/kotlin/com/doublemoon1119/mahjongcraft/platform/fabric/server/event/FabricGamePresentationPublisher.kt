@@ -25,6 +25,7 @@ import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.logic.table.TurnPhase
 import com.doublemoon1119.mahjongcraft.logic.table.layout.PhysicalWallLayoutTransitionPhase
 import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPhysicalLayout
+import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPlacement
 import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPosition
 import com.doublemoon1119.mahjongcraft.logic.table.opening.OpeningDiceRoll
 import com.doublemoon1119.mahjongcraft.logic.tile.component.TilePoseState
@@ -97,6 +98,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongMeldTileGr
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongPlayerAreaLayout
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongPlayerAreaPresentationResult
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongPlayerAreaPresenter
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTableWallClearance
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileTableLayout
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileWallOpeningPresentation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileWallPresentation
@@ -349,7 +351,7 @@ class FabricGamePresentationPublisher(
                 tableState = tableState,
                 cornerWidthsBySeat = cornerWidthsBySeat(gameId, tableState),
                 tileLayout = tableState?.let(::tileLayoutFor) ?: TableTileLayoutProfile.STANDARD,
-                wallStacksPerSide = tableState?.let(::wallStacksPerSide),
+                wallClearance = tableState?.let(::roundWallClearance),
                 revealedTileFaces = tableState
                     ?.let { state -> visibilityPolicy.publicTileFaces(state, request.players.flatMap { it.revealedHandTileIds }) }
                     .orEmpty(),
@@ -660,9 +662,9 @@ class FabricGamePresentationPublisher(
     private fun presentStep(gameId: Uuid, resolved: ResolvedTableContext, step: TableStep, startGameTime: Long): Long {
         val state = step.tableState
         val presented = presentedTables[gameId]
-        val previous = presented?.let { it.arrangement ?: arrange(gameId, resolved, it.tableState, emptyList()) }
+        val previous = presented?.let { it.arrangement ?: arrange(resolved, it.tableState, emptyList(), roundWallReach(it.tableState)) }
         val sortedPlayerIds = step.events.filterIsInstance<TableStepEvent.HandsSorted>().flatMapTo(mutableSetOf()) { it.playerIds }
-        val arrangement = arrange(gameId, resolved, state, UnsortedHandTiles.after(previous, state, sortedPlayerIds))
+        val arrangement = arrange(resolved, state, UnsortedHandTiles.after(previous, state, sortedPlayerIds), roundWallReach(state))
         val rearrangements = step.events.filterIsInstance<TableStepEvent.WallRearranged>()
         val rearrangedTileIds = rearrangements.flatMapTo(mutableSetOf()) { event -> event.phases.flatMap { phase -> phase.moves.map { it.tileId } } }
         val motions = TableStepMotionPlanner.plan(previous, arrangement, rearrangedTileIds)
@@ -752,17 +754,17 @@ class FabricGamePresentationPublisher(
     /**
      * 依桌況算出整桌每張牌的擺放。
      *
-     * @param gameId 桌子識別碼。
      * @param resolved 已解析的桌子與世界。
      * @param state 要擺放的桌況。
      * @param unsortedTileIds 直接補進立牌、還沒理過的牌，依補進的順序排列。
+     * @param wallReach 手牌、副露與移出的牌要讓開的牌牆位置。
      * @return 依牌識別碼索引的擺放。
      */
     private fun arrange(
-        gameId: Uuid,
         resolved: ResolvedTableContext,
         state: TableState,
         unsortedTileIds: List<Uuid>,
+        wallReach: Collection<TileWallPlacement>,
     ): Map<Uuid, ArrangedTile> {
         val module = moduleRegistry.getModule(state.config)
         val stacksPerSide = wallStacksPerSide(state)
@@ -789,6 +791,7 @@ class FabricGamePresentationPublisher(
                 cornerWidthBySeat = describerFor(state).cornerWidthsBySeat(state),
                 handPoseStates = tilePoseStates(state, module),
                 wallProjection = projection,
+                wallClearance = projection?.clearance(wallReach),
                 faceUpWallTileIds = module.publicFaceUpWallTileIds(state, componentRegistry),
                 unsortedTileIds = unsortedTileIds,
             ),
@@ -939,11 +942,18 @@ class FabricGamePresentationPublisher(
             val timelineAnchor = openingState.awaitWallStartGameTime(gameId) ?: resolved.world.time
             if (!openingOperations.mayRun(openingOperation)) return@launchOpeningStage
             val openingEndGameTime = timelineAnchor + MahjongDiceRollTimeline.totalTicks(openingDiceCounts, wallDropTicks)
+            val opening = openingState.consumeOpening(gameId)
+            // 發牌途中牌牆還是發牌前的樣子，手牌讓開發牌前的完整牌牆；發完牌後空出的位置等之後的排位再讓回來。
+            val dealWallReach = roundWallReach(tableState) +
+                opening?.assemblyStructure?.values?.map { position -> TileWallPlacement(position) }.orEmpty() +
+                opening?.finalLayout?.placements?.values.orEmpty()
+            val dealWallClearance = wallClearance(tableState, dealWallReach)
+            val seatLayout = MahjongTableSeatLayout.forPlayerCount(tableState.players.size)
             val presentation = MahjongInitialDealPresentation(
                 tableId = gameId,
                 tableLocation = resolved.location,
                 tableFacing = resolved.facing,
-                seatLayout = MahjongTableSeatLayout.forPlayerCount(tableState.players.size),
+                seatLayout = seatLayout,
                 handTileIdsBySeatIndex = handTileIdsBySeatIndex,
                 postFlipHandTileIdsBySeatIndex = tableState.players.withIndex().associate { (seatIndex, player) ->
                     seatIndex to player.hand.tiles.map { it.id }
@@ -953,7 +963,7 @@ class FabricGamePresentationPublisher(
                     handTileIdsBySeatIndex.mapValues { (seatIndex, tileIds) ->
                         MahjongPlayerAreaLayout.handShift(
                             tileLayout = tileLayoutFor(tableState),
-                            wallStacksPerSide = wallStacksPerSide(tableState),
+                            wallClearance = dealWallClearance?.forSeat(seatLayout, seatIndex),
                             cornerWidth = cornerWidths[seatIndex] ?: 0.0,
                             melds = emptyList(),
                             setAsideTileCount = 0,
@@ -967,6 +977,14 @@ class FabricGamePresentationPublisher(
                 extraLeadDelayTicks = (openingEndGameTime - resolved.world.time).coerceAtLeast(0L).coerceAtMost(Int.MAX_VALUE.toLong()).toInt(),
             )
             val result = playerAreaPresenter.presentInitialDeal(presentation)
+            // 之後的步驟從手牌實際擺放的位置接續比較，整排手牌才會一起滑到依這一局牌牆範圍排出的位置。
+            presentedTables.computeIfPresent(gameId) { _, presented ->
+                if (presented.tableState === tableState && presented.arrangement == null) {
+                    presented.copy(arrangement = arrange(resolved, tableState, emptyList(), dealWallReach))
+                } else {
+                    presented
+                }
+            }
             val totalTurnCount = dealBatchSizes.size * tableState.players.size
             privateHandOrderSender.sendDeal(
                 tableId = gameId,
@@ -976,7 +994,6 @@ class FabricGamePresentationPublisher(
             )
             val handFlipEndGameTime = resolved.world.time + presentation.extraLeadDelayTicks +
                 MahjongTileTableLayout.dealAnimationTicks(totalTurnCount)
-            val opening = openingState.consumeOpening(gameId)
             if (opening != null && result != MahjongPlayerAreaPresentationResult.TABLE_NOT_FOUND) {
                 val openingResult = tileWallPresenter.presentOpening(
                     MahjongTileWallOpeningPresentation(opening, handFlipEndGameTime),
@@ -1307,7 +1324,7 @@ class FabricGamePresentationPublisher(
                 organizedStandingTileIds = organizedHand.tiles.map { it.id },
                 handShift = MahjongPlayerAreaLayout.handShift(
                     tileLayout = tileLayoutFor(state),
-                    wallStacksPerSide = wallStacksPerSide(state),
+                    wallClearance = roundWallClearance(state)?.forSeat(MahjongTableSeatLayout.forPlayerCount(state.players.size), requestedWinner.seatIndex),
                     cornerWidth = cornerWidthsBySeat[requestedWinner.seatIndex] ?: 0.0,
                     melds = melds,
                     setAsideTileCount = winner.setAsideTiles.size,
@@ -1512,6 +1529,41 @@ class FabricGamePresentationPublisher(
      * @return 第一面牌牆的墩數；規則沒有牌牆布局時為 null。
      */
     private fun wallStacksPerSide(tableState: TableState): Int? = MahjongTileTableLayout.wallStacksPerSide(moduleRegistry.getModule(tableState.config), tableState.playerCount)
+
+    /**
+     * 牌牆在這一局剩下時間裡可能佔到的範圍，依規則回報的位置建立。
+     *
+     * @param tableState 本局權威桌況。
+     * @return 讓位範圍；規則沒有牌牆布局時為 null。
+     */
+    private fun roundWallClearance(tableState: TableState): MahjongTableWallClearance? = wallClearance(tableState, roundWallReach(tableState))
+
+    /**
+     * 規則回報牌牆在這一局剩下時間裡可能佔到的位置。
+     *
+     * @param tableState 本局權威桌況。
+     * @return 牌牆可能佔到的位置；規則沒有牌牆布局時為空集合。
+     */
+    private fun roundWallReach(tableState: TableState): Set<TileWallPlacement> = moduleRegistry.getModule(tableState.config).createPhysicalWallLayoutPolicy().roundReach(tableState)
+
+    /**
+     * 依牌牆位置建立讓位範圍。
+     *
+     * @param tableState 本局權威桌況，提供牌牆尺寸與桌邊對應。
+     * @param placements 要讓開的牌牆位置。
+     * @return 讓位範圍；規則沒有牌牆布局時為 null。
+     */
+    private fun wallClearance(
+        tableState: TableState,
+        placements: Collection<TileWallPlacement>,
+    ): MahjongTableWallClearance? = wallStacksPerSide(tableState)?.let { stacksPerSide ->
+        MahjongTileTableLayout.wallClearance(
+            sideLayout = wallSideLayout(tableState, tableState.dealerIndex),
+            tileLayout = tileLayoutFor(tableState),
+            stacksPerSide = stacksPerSide,
+            placements = placements,
+        )
+    }
 
     /**
      * 取得目前桌面物件占用的座位角落寬度，優先使用最後呈現的桌況。

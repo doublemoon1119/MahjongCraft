@@ -15,7 +15,7 @@ import kotlin.uuid.Uuid
  * @property seatLayout 本局玩家座位 index 對應的標準桌面布局。
  * @property seatIndex 玩家在固定座位順序中的 index。
  * @property tileLayout 該規則的桌面牌位配置。
- * @property wallStacksPerSide 牌牆每面的墩數，用來避開其他牌牆；沒有實體牌牆時為 null。
+ * @property wallClearance 從這個座位看出去，牌牆在這一局剩下時間裡可能佔到的範圍，牌列依此讓開牌牆；沒有實體牌牆時為 null。
  * @property standingTileIds 玩家立牌順序，不含摸牌位；只有完整公開平放時才沿用於共享布局。
  * @property drawnTileId 摸牌位的牌 UUID；沒有時為 null。
  * @property melds 依宣告順序排列的副露。
@@ -32,7 +32,7 @@ data class MahjongPlayerAreaLayoutInput(
     val seatLayout: MahjongTableSeatLayout,
     val seatIndex: Int,
     val tileLayout: TableTileLayoutProfile,
-    val wallStacksPerSide: Int?,
+    val wallClearance: MahjongSeatWallClearance?,
     val standingTileIds: List<Uuid>,
     val drawnTileId: Uuid?,
     val melds: List<MahjongMeldTileGroup>,

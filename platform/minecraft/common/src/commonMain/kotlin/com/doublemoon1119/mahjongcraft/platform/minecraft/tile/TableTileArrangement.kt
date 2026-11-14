@@ -56,7 +56,7 @@ object TableTileArrangement {
                     seatLayout = input.seatLayout,
                     seatIndex = seatIndex,
                     tileLayout = input.tileLayout,
-                    wallStacksPerSide = input.wallProjection?.stacksPerSide,
+                    wallClearance = input.wallClearance?.forSeat(input.seatLayout, seatIndex),
                     standingTileIds = player.hand.tiles.map { it.id },
                     drawnTileId = player.hand.lastDrawn?.id,
                     melds = melds,

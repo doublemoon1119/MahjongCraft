@@ -27,6 +27,7 @@ import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeIdentifiedTileFact
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
 import kotlin.math.abs
 import kotlin.math.floor
+import kotlin.math.round
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
@@ -106,6 +107,81 @@ class TaiwanPhysicalWallLayoutPolicyTest {
             assertEquals(fixture.originalLiveTailIds, replenishmentIds)
             assertEquals(16, fixture.tableState.reservedWallTiles.size)
         }
+    }
+
+    /**
+     * 一般摸牌與補牌交錯到牌牆摸完，各種開門位置、有無花牌、補牌疏密都檢查：規則回報的本局剩餘範圍包含目前每張牌的位置，
+     * 而且只會變小。桌上其他牌依這份範圍讓開牌牆，所以一局之中牌牆讓出的空間只會變大。
+     */
+    @Test
+    fun `round reach covers the wall and only shrinks`() {
+        listOf(true, false).forEach { useFlowerTiles ->
+            val stacksPerSide = if (useFlowerTiles) STACKS_PER_SIDE_WITH_FLOWERS else STACKS_PER_SIDE_WITHOUT_FLOWERS
+            val maximumDraws = if (useFlowerTiles) MAX_FLOWER_AND_KAN_DRAWS else MAX_KAN_DRAWS
+            allOpenings(stacksPerSide).forEach { opening ->
+                LIVE_DRAWS_PER_SUPPLEMENT.forEach { liveDrawsPerSupplement ->
+                    val case = "$opening flowers=$useFlowerTiles every=$liveDrawsPerSupplement"
+                    var fixture = fixture(opening, useFlowerTiles)
+                    var reach = reachCoordinates(fixture.policy.roundReach(fixture.tableState), stacksPerSide)
+                    var supplementalDraws = 0
+                    var step = 0
+                    while (fixture.tableState.tileWall.getAllTiles().isNotEmpty()) {
+                        val before = fixture.tableState
+                        val supplemental = supplementalDraws < maximumDraws && step % liveDrawsPerSupplement == 0
+                        val after = if (supplemental) {
+                            supplementalDraws++
+                            withSupplementalDraw(before)
+                        } else {
+                            before.copy(tileWall = TileWall(before.tileWall.getAllTiles().drop(1)), physicalWallLayout = null)
+                        }
+                        val layout = when (
+                            val result = fixture.policy.resolveTransitionValidated(
+                                PhysicalWallLayoutTransitionContext(
+                                    tableStateBeforeAction = before,
+                                    tableStateAfterAction = after,
+                                    currentLayout = fixture.layout,
+                                    actorPlayerId = before.currentPlayer.id,
+                                    action = if (supplemental) TAIWAN_REVEAL_FLOWER_ACTION else GameAction.Draw,
+                                ),
+                            )
+                        ) {
+                            is PhysicalWallLayoutTransitionDecision.Completed -> result.layout
+                            PhysicalWallLayoutTransitionDecision.Unchanged -> fixture.layout
+                            is PhysicalWallLayoutTransitionDecision.Rejected -> error("Step $step rejected for $case: ${result.reasonId}")
+                        }
+                        fixture = fixture.copy(tableState = after.copy(physicalWallLayout = layout), layout = layout)
+                        val nextReach = reachCoordinates(fixture.policy.roundReach(fixture.tableState), stacksPerSide)
+                        val current = reachCoordinates(layout.placements.values, stacksPerSide)
+                        assertTrue(nextReach.containsAll(current), "Reach misses a wall tile at step $step for $case: ${current - nextReach}")
+                        assertTrue(reach.containsAll(nextReach), "Reach grew at step $step for $case: ${nextReach - reach}")
+                        reach = nextReach
+                        step++
+                    }
+                    assertEquals(maximumDraws, supplementalDraws, "Not every supplemental draw happened for $case")
+                }
+            }
+        }
+    }
+
+    /**
+     * 從保留區補一張牌，並在第一位玩家的花牌區多放一張牌，讓規則算出的補牌次數加一。
+     *
+     * @param state 補牌前的桌況。
+     * @return 補牌後、尚未套用實體布局的桌況。
+     */
+    private fun withSupplementalDraw(state: TableState): TableState {
+        val drawn = requireNotNull(drawFromReservedWall(state))
+        val player = state.players.first()
+        val flowers = player.tileAreas[TaiwanPlayerTileAreaIds.FLOWERS]?.tiles.orEmpty() +
+            FakeIdentifiedTileFactory.create(Tile.Extension(TaiwanTileTypes.ALL.first()))
+        return state.copy(
+            players = state.players.toMutableList().apply {
+                this[0] = player.copy(tileAreas = PlayerTileAreas.EMPTY.withArea(TaiwanPlayerTileAreaIds.FLOWERS, flowers))
+            },
+            tileWall = drawn.tileWall,
+            reservedWallTiles = drawn.reservedWallTiles,
+            physicalWallLayout = null,
+        )
     }
 
     /** 不使用花牌時只預留四次槓後補牌，第四次後仍保有完整布局。 */
@@ -286,6 +362,21 @@ class TaiwanPhysicalWallLayoutPolicyTest {
         }.minOrNull() ?: Double.POSITIVE_INFINITY
     }
 
+    /**
+     * 把位置換成繞牌牆一圈的座標，跨面的位移與相鄰面的基本格位得到相同座標。
+     *
+     * @param placements 牌牆位置。
+     * @param stacksPerSide 每面墩數。
+     * @return 層數與千分之一墩精度的環狀座標。
+     */
+    private fun reachCoordinates(placements: Collection<TileWallPlacement>, stacksPerSide: Int): Set<Pair<Int, Long>> {
+        val total = WALL_SIDE_COUNT * stacksPerSide * COORDINATE_SCALE
+        return placements.mapTo(mutableSetOf()) { placement ->
+            val coordinate = (placement.position.side * stacksPerSide + wallCoordinate(placement)) * COORDINATE_SCALE
+            placement.position.layer to round(coordinate).toLong().mod(total.toLong())
+        }
+    }
+
     /** Placement 沿牆方向的中心座標。 */
     private fun wallCoordinate(placement: TileWallPlacement): Double = placement.position.stack + placement.offset.alongWallStacks
 
@@ -320,6 +411,12 @@ class TaiwanPhysicalWallLayoutPolicyTest {
 
         /** 四面牌牆。 */
         const val WALL_SIDE_COUNT = 4
+
+        /** 模擬時每摸幾張活牌補一次牌；1 代表連續補牌。 */
+        val LIVE_DRAWS_PER_SUPPLEMENT: List<Int> = listOf(1, 2, 4)
+
+        /** 環狀座標的精度倍數。 */
+        const val COORDINATE_SCALE = 1000
 
         /** 不使用花牌時每面的墩數。 */
         const val STACKS_PER_SIDE_WITHOUT_FLOWERS = 17

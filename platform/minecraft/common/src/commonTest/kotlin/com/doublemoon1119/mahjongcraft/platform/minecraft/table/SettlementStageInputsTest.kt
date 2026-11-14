@@ -116,7 +116,7 @@ class SettlementStageInputsTest {
             tableState = null,
             cornerWidthsBySeat = emptyMap(),
             tileLayout = TableTileLayoutProfile.STANDARD,
-            wallStacksPerSide = null,
+            wallClearance = null,
             revealedTileFaces = emptyMap(),
             tileAssetRegistry = FakeTileAssetRegistry,
         )
@@ -142,7 +142,7 @@ class SettlementStageInputsTest {
             tableState = state,
             cornerWidthsBySeat = emptyMap(),
             tileLayout = TableTileLayoutProfile.STANDARD,
-            wallStacksPerSide = null,
+            wallClearance = null,
             revealedTileFaces = emptyMap(),
             tileAssetRegistry = FakeTileAssetRegistry,
         )
@@ -151,7 +151,7 @@ class SettlementStageInputsTest {
             assertEquals(
                 MahjongPlayerAreaLayout.handShift(
                     tileLayout = TableTileLayoutProfile.STANDARD,
-                    wallStacksPerSide = null,
+                    wallClearance = null,
                     cornerWidth = 0.0,
                     melds = emptyList(),
                     setAsideTileCount = player.setAsideTiles.size,
@@ -171,7 +171,7 @@ class SettlementStageInputsTest {
             tableState = stateWith(),
             cornerWidthsBySeat = emptyMap(),
             tileLayout = TableTileLayoutProfile.STANDARD,
-            wallStacksPerSide = null,
+            wallClearance = null,
             revealedTileFaces = emptyMap(),
             tileAssetRegistry = FakeTileAssetRegistry,
         )
@@ -188,7 +188,7 @@ class SettlementStageInputsTest {
         val with = handShifts(mapOf(0 to 2.0))
         val expected = MahjongPlayerAreaLayout.handShift(
             tileLayout = TableTileLayoutProfile.STANDARD,
-            wallStacksPerSide = null,
+            wallClearance = null,
             cornerWidth = 2.0,
             melds = emptyList(),
             setAsideTileCount = 0,
@@ -211,7 +211,7 @@ class SettlementStageInputsTest {
         tableState = stateWith(),
         cornerWidthsBySeat = cornerWidthsBySeat,
         tileLayout = TableTileLayoutProfile.STANDARD,
-        wallStacksPerSide = null,
+        wallClearance = null,
         revealedTileFaces = emptyMap(),
         tileAssetRegistry = FakeTileAssetRegistry,
     ).handShiftsBySeat

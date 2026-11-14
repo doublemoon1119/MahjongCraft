@@ -795,7 +795,7 @@ class FabricDebugPresentationCommand(
             }
             val handShift = MahjongPlayerAreaLayout.handShift(
                 tileLayout = layout.tileLayout,
-                wallStacksPerSide = null,
+                wallClearance = null,
                 cornerWidth = 0.0,
                 melds = if (seat == DebugVirtualTableLayout.DEBUG_SEAT_INDEX) previewMelds else emptyList(),
                 setAsideTileCount = 0,

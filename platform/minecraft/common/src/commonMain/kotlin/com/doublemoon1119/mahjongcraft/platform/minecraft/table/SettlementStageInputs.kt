@@ -8,6 +8,7 @@ import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.logic.tile.component.resolveTileAreas
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongMeldTileGroup
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongPlayerAreaLayout
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTableWallClearance
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TableTileLayoutProfile
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.toAssetKey
@@ -43,7 +44,7 @@ fun tileAssetKeysById(
  *
  * @param cornerWidthsBySeat 各座位副露角落被規則桌面物件佔用的寬度；沒有列出的座位視為 `0.0`。
  * @param tileLayout 該規則的桌面牌位配置。
- * @param wallStacksPerSide 牌牆每面的墩數；沒有實體牌牆時為 null。
+ * @param wallClearance 牌牆在這一局剩下時間裡可能佔到的範圍；沒有實體牌牆時為 null。
  * @param request 權威結算請求。
  * @param tableState 目前權威桌況；已不存在時傳 `null`。
  * @param revealedTileFaces 公開手牌經公共讀取者裁切的牌面。
@@ -55,7 +56,7 @@ fun exhaustiveDrawSettlementStageInputs(
     tableState: TableState?,
     cornerWidthsBySeat: Map<Int, Double>,
     tileLayout: TableTileLayoutProfile,
-    wallStacksPerSide: Int?,
+    wallClearance: MahjongTableWallClearance?,
     revealedTileFaces: Map<Uuid, TileFaceView>,
     tileAssetRegistry: MinecraftTileAssetRegistry,
 ): ExhaustiveDrawSettlementStageInputs = ExhaustiveDrawSettlementStageInputs(
@@ -63,7 +64,7 @@ fun exhaustiveDrawSettlementStageInputs(
         player.ranking.seatIndex to player.waitingTiles.map { it.toAssetKey(tileAssetRegistry) }
     },
     revealedTileAssetsById = tileAssetKeysById(revealedTileFaces, tileAssetRegistry),
-    handShiftsBySeat = tableState?.handShiftsBySeat(cornerWidthsBySeat, tileLayout, wallStacksPerSide).orEmpty(),
+    handShiftsBySeat = tableState?.handShiftsBySeat(cornerWidthsBySeat, tileLayout, wallClearance).orEmpty(),
 )
 
 /**
@@ -73,13 +74,13 @@ fun exhaustiveDrawSettlementStageInputs(
  *
  * @param cornerWidthsBySeat 各座位桌面物件佔用的角落寬度。
  * @param tileLayout 該規則的桌面牌位配置。
- * @param wallStacksPerSide 牌牆每面的墩數；沒有實體牌牆時為 null。
+ * @param wallClearance 牌牆在這一局剩下時間裡可能佔到的範圍；沒有實體牌牆時為 null。
  * @return 各座位立牌整排往玩家左手邊平移的距離。
  */
 private fun TableState.handShiftsBySeat(
     cornerWidthsBySeat: Map<Int, Double>,
     tileLayout: TableTileLayoutProfile,
-    wallStacksPerSide: Int?,
+    wallClearance: MahjongTableWallClearance?,
 ): Map<Int, Double> = players.mapIndexed { seatIndex, player ->
     val melds = player.hand.melds.map { meld ->
         val presentation = meld.toPresentation(config.revealsClosedKanTiles)
@@ -94,7 +95,7 @@ private fun TableState.handShiftsBySeat(
     }
     seatIndex to MahjongPlayerAreaLayout.handShift(
         tileLayout = tileLayout,
-        wallStacksPerSide = wallStacksPerSide,
+        wallClearance = wallClearance?.forSeat(MahjongTableSeatLayout.forPlayerCount(players.size), seatIndex),
         cornerWidth = cornerWidthsBySeat[seatIndex] ?: 0.0,
         melds = melds,
         setAsideTileCount = player.setAsideTiles.size,

@@ -22,7 +22,7 @@ object MahjongPlayerAreaLayout {
     fun compute(input: MahjongPlayerAreaLayoutInput): MahjongPlayerAreaLayoutResult {
         val plan = plan(
             tileLayout = input.tileLayout,
-            wallStacksPerSide = input.wallStacksPerSide,
+            wall = input.wallClearance,
             cornerWidth = input.cornerWidth,
             melds = input.melds,
             setAsideTileCount = input.setAsideTileIds.size,
@@ -103,10 +103,10 @@ object MahjongPlayerAreaLayout {
     /**
      * 立牌與摸牌位整排的平移；需要手牌位置但不需要整個牌區的呈現（例如發牌、胡牌、流局攤牌）用它，與 [compute] 結果一致。
      *
-     * 摸牌位一律預留，不論目前有沒有摸到的牌，所以摸牌與打牌時手牌不移動，只有立牌張數、副露或移出的牌改變時才重新平移。
+     * 摸牌位一律預留，不論目前有沒有摸到的牌，所以摸牌與打牌時手牌不移動，只有立牌張數、副露、移出的牌改變或牌牆讓出空間時才重新平移。
      *
      * @param tileLayout 該規則的桌面牌位配置。
-     * @param wallStacksPerSide 牌牆每面的墩數；沒有實體牌牆時為 null。
+     * @param wallClearance 從這個座位看出去，牌牆在這一局剩下時間裡可能佔到的範圍；沒有實體牌牆時為 null。
      * @param cornerWidth 桌角物件佔用的寬度。
      * @param melds 依宣告順序排列的副露。
      * @param setAsideTileCount 接在副露後面的移出牌張數。
@@ -116,13 +116,13 @@ object MahjongPlayerAreaLayout {
      */
     fun handShift(
         tileLayout: TableTileLayoutProfile,
-        wallStacksPerSide: Int?,
+        wallClearance: MahjongSeatWallClearance?,
         cornerWidth: Double,
         melds: List<MahjongMeldTileGroup>,
         setAsideTileCount: Int,
         standingTileCount: Int,
         playerCount: Int,
-    ): Double = plan(tileLayout, wallStacksPerSide, cornerWidth, melds, setAsideTileCount, standingTileCount, playerCount).handShift
+    ): Double = plan(tileLayout, wallClearance, cornerWidth, melds, setAsideTileCount, standingTileCount, playerCount).handShift
 
     /**
      * 依配置排出副露、移出的牌與手牌平移。
@@ -132,7 +132,7 @@ object MahjongPlayerAreaLayout {
     @Suppress("LongParameterList")
     private fun plan(
         tileLayout: TableTileLayoutProfile,
-        wallStacksPerSide: Int?,
+        wall: MahjongSeatWallClearance?,
         cornerWidth: Double,
         melds: List<MahjongMeldTileGroup>,
         setAsideTileCount: Int,
@@ -140,12 +140,12 @@ object MahjongPlayerAreaLayout {
         playerCount: Int,
     ): AreaPlan {
         val handBand = MahjongTileTableLayout.handRowBand()
-        val handSpan = MahjongTileTableLayout.rowSpan(tileLayout, wallStacksPerSide, handBand.left, handBand.right)
+        val handSpan = MahjongTileTableLayout.rowSpan(wall, handBand.left, handBand.right)
         val groups = melds.map { meld -> meldGroup(meld, tileLayout, playerCount) } +
             listOfNotNull(List(setAsideTileCount) { PlannedSlot(tileId = null, isSideways = false) }.takeIf { it.isNotEmpty() })
         return when (tileLayout.meldArea) {
             TableMeldArea.CORNER -> cornerPlan(groups, melds.size, cornerWidth, standingTileCount, handSpan)
-            TableMeldArea.BETWEEN_WALL_AND_HAND -> frontPlan(groups, melds.size, tileLayout, wallStacksPerSide, standingTileCount, handSpan)
+            TableMeldArea.BETWEEN_WALL_AND_HAND -> frontPlan(groups, melds.size, tileLayout, wall, standingTileCount, handSpan)
         }
     }
 
@@ -206,17 +206,17 @@ object MahjongPlayerAreaLayout {
         groups: List<List<PlannedSlot>>,
         meldCount: Int,
         tileLayout: TableTileLayoutProfile,
-        wallStacksPerSide: Int?,
+        wall: MahjongSeatWallClearance?,
         standingTileCount: Int,
         handSpan: RowSpan,
     ): AreaPlan {
         val rowZ = MahjongTileTableLayout.FRONT_MELD_ROW_Z
         val halfDepth = MahjongTileDimensions.TILE_HEIGHT / 2.0
-        val frontSpan = MahjongTileTableLayout.rowSpan(tileLayout, wallStacksPerSide, rowZ - halfDepth, rowZ + halfDepth)
+        val frontSpan = MahjongTileTableLayout.rowSpan(wall, rowZ - halfDepth, rowZ + halfDepth)
         val edgeZ = MahjongTileTableLayout.EDGE_ROW_Z
-        val edgeSpan = MahjongTileTableLayout.rowSpan(tileLayout, wallStacksPerSide, edgeZ - halfDepth, edgeZ + halfDepth)
-        if (wallStacksPerSide != null) {
-            val ownWallOuterFace = MahjongTileTableLayout.wallOuterFace(wallStacksPerSide, tileLayout)
+        val edgeSpan = MahjongTileTableLayout.rowSpan(wall, edgeZ - halfDepth, edgeZ + halfDepth)
+        if (wall != null) {
+            val ownWallOuterFace = MahjongTileTableLayout.wallOuterFace(wall.stacksPerSide, tileLayout)
             check(ownWallOuterFace < rowZ - halfDepth) {
                 "The wall must move toward the centre far enough to leave room for melds between the wall and the hand"
             }

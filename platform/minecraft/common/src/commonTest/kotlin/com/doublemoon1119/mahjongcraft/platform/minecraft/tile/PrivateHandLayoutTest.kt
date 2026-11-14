@@ -1059,7 +1059,7 @@ class PrivateHandLayoutTest {
         ): Map<Uuid, TileDisplayInput> {
             val shift = MahjongPlayerAreaLayout.handShift(
                 tileLayout = TableTileLayoutProfile.STANDARD,
-                wallStacksPerSide = null,
+                wallClearance = null,
                 cornerWidth = 0.0,
                 melds = melds,
                 setAsideTileCount = 0,

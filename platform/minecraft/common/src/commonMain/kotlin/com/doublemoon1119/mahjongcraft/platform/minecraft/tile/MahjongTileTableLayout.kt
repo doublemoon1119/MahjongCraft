@@ -20,6 +20,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileTableL
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileTableLayout.rotateForSide
 import kotlin.math.PI
 import kotlin.math.abs
+import kotlin.math.cos
 import kotlin.math.floor
 import kotlin.math.hypot
 import kotlin.math.sin
@@ -759,43 +760,87 @@ object MahjongTileTableLayout {
     }
 
     /**
-     * 一條沿排列方向的列在局部座標中可用的範圍：不超出桌面內框，也不碰到其他三面牌牆。
+     * 一條沿排列方向的列在局部座標中可用的範圍：不超出桌面內框，也不碰到牌牆。
      *
-     * 其他三面牌牆依同一份配置與墩數擺放；只檢查垂直方向與這條列重疊的牌牆牌，並在兩者之間保留
-     * [HAND_CORNER_GAP]。沒有實體牌牆時只受桌面內框限制。
+     * 只檢查垂直方向與這條列重疊的牌牆牌，並在兩者之間保留 [HAND_CORNER_GAP]。沒有實體牌牆時只受桌面內框限制。
      *
-     * @param tileLayout 該規則的桌面牌位配置。
-     * @param wallStacksPerSide 牌牆每面的墩數；沒有實體牌牆時為 null。
+     * @param wall 從這個座位看出去，牌牆在這一局剩下時間裡可能佔到的範圍；沒有實體牌牆時為 null。
      * @param nearZ 這條列離桌心較近的邊界（局部 Z）。
      * @param farZ 這條列離桌心較遠的邊界（局部 Z）。
      * @return 可用範圍，往玩家右手邊為正。
      */
     internal fun rowSpan(
-        tileLayout: TableTileLayoutProfile,
-        wallStacksPerSide: Int?,
+        wall: MahjongSeatWallClearance?,
         nearZ: Double,
         farZ: Double,
     ): RowSpan {
         var left = -MELD_AREA_CORNER_OFFSET
         var right = MELD_AREA_CORNER_OFFSET
-        if (wallStacksPerSide == null) return RowSpan(left, right)
-        listOf(MahjongTableSide.WEST, MahjongTableSide.NORTH, MahjongTableSide.EAST).forEach { side ->
-            val turned = side != MahjongTableSide.NORTH
-            val halfX = if (turned) MahjongTileDimensions.TILE_HEIGHT / 2.0 else MahjongTileDimensions.TILE_WIDTH / 2.0
-            val halfZ = if (turned) MahjongTileDimensions.TILE_WIDTH / 2.0 else MahjongTileDimensions.TILE_HEIGHT / 2.0
-            (0 until wallStacksPerSide).forEach { stack ->
-                val center = rotateForSide(localWallVector(wallStacksPerSide, stack, 0, tileLayout), side)
-                if (center.z + halfZ > nearZ && center.z - halfZ < farZ) {
-                    if (center.x < 0.0) {
-                        left = maxOf(left, center.x + halfX + HAND_CORNER_GAP)
-                    } else {
-                        right = minOf(right, center.x - halfX - HAND_CORNER_GAP)
-                    }
+        wall?.footprints?.forEach { footprint ->
+            if (footprint.z + footprint.halfZ > nearZ && footprint.z - footprint.halfZ < farZ) {
+                if (footprint.x < 0.0) {
+                    left = maxOf(left, footprint.x + footprint.halfX + HAND_CORNER_GAP)
+                } else {
+                    right = minOf(right, footprint.x - footprint.halfX - HAND_CORNER_GAP)
                 }
             }
         }
         return RowSpan(left, right)
     }
+
+    /**
+     * 依牌牆位置建立讓位範圍；位置通常是規則回報的這一局剩下時間裡牌牆可能佔到的位置。
+     *
+     * @param sideLayout 規則指定並已解析的牌牆面與桌邊對應。
+     * @param tileLayout 該規則的桌面牌位配置。
+     * @param stacksPerSide 牌牆每面的墩數。
+     * @param placements 牌牆位置。
+     * @return 以桌面座標保存的讓位範圍。
+     */
+    fun wallClearance(
+        sideLayout: MahjongTileWallSideLayout,
+        tileLayout: TableTileLayoutProfile,
+        stacksPerSide: Int,
+        placements: Collection<TileWallPlacement>,
+    ): MahjongTableWallClearance = MahjongTableWallClearance(
+        stacksPerSide = stacksPerSide,
+        footprints = placements.map { placement ->
+            val projected = wallPlacement(
+                controllerX = 0,
+                controllerY = 0,
+                controllerZ = 0,
+                tableFacing = MahjongTableFacing.NORTH,
+                sideLayout = sideLayout,
+                tileLayout = tileLayout,
+                stacksPerSide = stacksPerSide,
+                placement = placement,
+            )
+            TableWallFootprint(x = projected.x - BLOCK_CENTER, z = projected.z - BLOCK_CENTER, yaw = projected.yaw)
+        },
+    )
+
+    /**
+     * 把桌面座標的讓位範圍轉到指定桌邊座位的局部座標，並依牌的朝向算出佔用的軸對齊範圍。
+     *
+     * @param clearance 桌面座標的讓位範圍。
+     * @param side 座位所在的桌邊。
+     * @return 該座位局部座標的讓位範圍。
+     */
+    internal fun seatWallClearance(clearance: MahjongTableWallClearance, side: MahjongTableSide): MahjongSeatWallClearance = MahjongSeatWallClearance(
+        stacksPerSide = clearance.stacksPerSide,
+        footprints = clearance.footprints.map { footprint ->
+            val local = rotateFromSide(TileTableVector(footprint.x, 0.0, footprint.z), side)
+            val radians = (footprint.yaw - yawForSide(side)) * PI / HALF_TURN_DEGREES
+            val alongX = abs(cos(radians))
+            val alongZ = abs(sin(radians))
+            SeatWallFootprint(
+                x = local.x,
+                z = local.z,
+                halfX = (alongX * MahjongTileDimensions.TILE_WIDTH + alongZ * MahjongTileDimensions.TILE_HEIGHT) / 2.0,
+                halfZ = (alongZ * MahjongTileDimensions.TILE_WIDTH + alongX * MahjongTileDimensions.TILE_HEIGHT) / 2.0,
+            )
+        },
+    )
 
     /**
      * 自己這面牌牆靠桌緣那一側的局部 Z。
@@ -1099,6 +1144,20 @@ object MahjongTileTableLayout {
     }
 
     /**
+     * [rotateForSide] 的反向旋轉：把桌面座標轉回以指定側面為局部南側的座標。
+     *
+     * @param vector 桌面座標向量。
+     * @param side 作為局部南側的桌面側邊。
+     * @return 該側面的局部向量。
+     */
+    private fun rotateFromSide(vector: TileTableVector, side: MahjongTableSide): TileTableVector = when (side) {
+        MahjongTableSide.SOUTH -> vector
+        MahjongTableSide.WEST -> TileTableVector(vector.z, vector.y, -vector.x)
+        MahjongTableSide.NORTH -> TileTableVector(-vector.x, vector.y, -vector.z)
+        MahjongTableSide.EAST -> TileTableVector(-vector.z, vector.y, vector.x)
+    }
+
+    /**
      * 將朝北擺放桌子的局部向量旋轉至指定世界朝向。
      *
      * @param vector 局部座標向量。
@@ -1310,6 +1369,9 @@ object MahjongTileTableLayout {
 
     /** 世界 yaw 進行最短路徑內插時使用的半圈角度。 */
     private const val FULL_YAW_DEGREES: Float = 360.0f
+
+    /** 半圈的角度，用來把 yaw 換成弧度。 */
+    private const val HALF_TURN_DEGREES: Double = 180.0
 
     /** [HAND_EDGE_OFFSET] 額外扣除的桌緣留白，遊戲內驗證後調整的觀感參數（初版手牌幾乎貼到桌緣）。 */
     internal const val HAND_EDGE_MARGIN: Double = 0.15

@@ -46,4 +46,17 @@ data class MahjongTileWallProjectionContext(
         stacksPerSide = stacksPerSide,
         placement = placement,
     )
+
+    /**
+     * 依牌牆位置建立讓位範圍。
+     *
+     * @param placements 牌牆在這一局剩下時間裡可能佔到的位置。
+     * @return 此桌的讓位範圍。
+     */
+    fun clearance(placements: Collection<TileWallPlacement>): MahjongTableWallClearance = MahjongTileTableLayout.wallClearance(
+        sideLayout = sideLayout,
+        tileLayout = tileLayout,
+        stacksPerSide = stacksPerSide,
+        placements = placements,
+    )
 }

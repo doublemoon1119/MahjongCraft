@@ -2,6 +2,7 @@ package com.doublemoon1119.mahjongcraft.logic.rules.riichi.layout
 
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiTableComponents
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiWallProgress
+import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.logic.table.layout.InitialPhysicalWallLayoutContext
 import com.doublemoon1119.mahjongcraft.logic.table.layout.InitialPhysicalWallLayoutDecision
 import com.doublemoon1119.mahjongcraft.logic.table.layout.PhysicalWallLayoutPolicy
@@ -10,6 +11,7 @@ import com.doublemoon1119.mahjongcraft.logic.table.layout.PhysicalWallLayoutTran
 import com.doublemoon1119.mahjongcraft.logic.table.layout.ReplenishingReservedWallPhysicalLayoutPolicy
 import com.doublemoon1119.mahjongcraft.logic.table.layout.ReservedWallInitialShape
 import com.doublemoon1119.mahjongcraft.logic.table.layout.ReservedWallTrackScope
+import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPlacement
 
 /**
  * 日本麻將（四人或三人）的獨立王牌區、特殊嶺上牌位置與補牌後的補位布局。
@@ -55,6 +57,9 @@ class RiichiPhysicalWallLayoutPolicy(
 
     /** 依日麻補牌進度解析王牌區補位。 */
     override fun resolveTransition(context: PhysicalWallLayoutTransitionContext): PhysicalWallLayoutTransitionDecision = delegate.resolveTransition(context)
+
+    /** 目前牌牆位置加上保留區之後補牌可能用到的位置。 */
+    override fun roundReach(tableState: TableState): Set<TileWallPlacement> = delegate.roundReach(tableState)
 
     /** 本局已完成的補牌次數（槓與拔北合計）。 */
     private val RiichiWallProgress.totalSupplementalDrawCount: Int

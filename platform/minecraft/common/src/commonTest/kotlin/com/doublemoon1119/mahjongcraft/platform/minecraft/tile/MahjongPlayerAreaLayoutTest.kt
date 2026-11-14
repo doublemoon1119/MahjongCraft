@@ -104,7 +104,7 @@ class MahjongPlayerAreaLayoutTest {
     fun `standard walls never move the riichi player area`() {
         forEachLayout { input, layout ->
             listOf(17, 18).forEach { stacks ->
-                assertEquals(layout, MahjongPlayerAreaLayout.compute(input.copy(wallStacksPerSide = stacks)), "walls of $stacks stacks moved $input")
+                assertEquals(layout, MahjongPlayerAreaLayout.compute(input.copy(wallClearance = fullWallClearance(input.tileLayout, stacks))), "walls of $stacks stacks moved $input")
             }
         }
     }
@@ -136,7 +136,7 @@ class MahjongPlayerAreaLayoutTest {
                                         seatLayout = seatLayout,
                                         seatIndex = seatIndex,
                                         tileLayout = tileLayout,
-                                        wallStacksPerSide = TAIWAN_WALL_STACKS,
+                                        wallClearance = fullWallClearance(tileLayout, TAIWAN_WALL_STACKS),
                                         standingTileIds = ids,
                                         drawnTileId = drawn,
                                         melds = pattern.take(meldCount).map { it.create() },
@@ -181,7 +181,7 @@ class MahjongPlayerAreaLayoutTest {
                 seatLayout = MahjongTableSeatLayout.forPlayerCount(4),
                 seatIndex = 0,
                 tileLayout = taiwanTileLayout(),
-                wallStacksPerSide = TAIWAN_WALL_STACKS,
+                wallClearance = fullWallClearance(taiwanTileLayout(), TAIWAN_WALL_STACKS),
                 standingTileIds = List(10) { Uuid.random() },
                 drawnTileId = Uuid.random().takeIf { hasDrawnTile },
                 melds = listOf(pon, chi),
@@ -223,7 +223,7 @@ class MahjongPlayerAreaLayoutTest {
                         seatLayout = MahjongTableSeatLayout.forPlayerCount(4),
                         seatIndex = 0,
                         tileLayout = taiwanTileLayout(),
-                        wallStacksPerSide = TAIWAN_WALL_STACKS,
+                        wallClearance = fullWallClearance(taiwanTileLayout(), TAIWAN_WALL_STACKS),
                         standingTileIds = List(TAIWAN_HAND_SIZE - meldCount * MELD_HAND_TILES) { Uuid.random() },
                         drawnTileId = Uuid.random(),
                         melds = pattern.take(meldCount).map { it.create() },
@@ -253,7 +253,7 @@ class MahjongPlayerAreaLayoutTest {
             seatLayout = MahjongTableSeatLayout.forPlayerCount(4),
             seatIndex = 0,
             tileLayout = taiwanTileLayout(),
-            wallStacksPerSide = TAIWAN_WALL_STACKS,
+            wallClearance = fullWallClearance(taiwanTileLayout(), TAIWAN_WALL_STACKS),
             standingTileIds = List(13) { Uuid.random() },
             drawnTileId = null,
             melds = listOf(addedKan),
@@ -331,7 +331,7 @@ class MahjongPlayerAreaLayoutTest {
                                                 seatLayout = seatLayout,
                                                 seatIndex = seatIndex,
                                                 tileLayout = TableTileLayoutProfile.STANDARD,
-                                                wallStacksPerSide = null,
+                                                wallClearance = null,
                                                 standingTileIds = ids,
                                                 drawnTileId = drawn,
                                                 melds = pattern.take(meldCount).map { it.create() },
@@ -360,7 +360,7 @@ class MahjongPlayerAreaLayoutTest {
         seatLayout = MahjongTableSeatLayout.forPlayerCount(4),
         seatIndex = 0,
         tileLayout = TableTileLayoutProfile.STANDARD,
-        wallStacksPerSide = null,
+        wallClearance = null,
         standingTileIds = ids,
         drawnTileId = null,
         melds = emptyList(),

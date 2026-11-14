@@ -41,7 +41,7 @@ class TableTileArrangementTest {
                 seatLayout = MahjongTableSeatLayout.forPlayerCount(2),
                 seatIndex = 0,
                 tileLayout = TableTileLayoutProfile.STANDARD,
-                wallStacksPerSide = null,
+                wallClearance = null,
                 standingTileIds = standing.map { it.id },
                 drawnTileId = drawn.id,
                 melds = emptyList(),
@@ -178,6 +178,7 @@ class TableTileArrangementTest {
         cornerWidthBySeat = emptyMap(),
         handPoseStates = emptyList(),
         wallProjection = null,
+        wallClearance = null,
         faceUpWallTileIds = emptySet(),
     )
 }

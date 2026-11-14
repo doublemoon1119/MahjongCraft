@@ -128,6 +128,8 @@ class PhysicalWallLayoutPolicyTest {
             override fun resolveTransition(
                 context: PhysicalWallLayoutTransitionContext,
             ): PhysicalWallLayoutTransitionDecision = PhysicalWallLayoutTransitionDecision.Unchanged
+
+            override fun roundReach(tableState: TableState): Set<TileWallPlacement> = emptySet()
         }
 
         val decision = policy.createInitialLayoutValidated(
@@ -242,6 +244,8 @@ class PhysicalWallLayoutPolicyTest {
         override fun resolveTransition(
             context: PhysicalWallLayoutTransitionContext,
         ): PhysicalWallLayoutTransitionDecision = PhysicalWallLayoutTransitionDecision.Completed(layout, phases)
+
+        override fun roundReach(tableState: TableState): Set<TileWallPlacement> = layout.placements.values.toSet()
     }
 
     /**

@@ -6,6 +6,7 @@ import com.doublemoon1119.mahjongcraft.logic.component.BuiltInComponentOwners
 import com.doublemoon1119.mahjongcraft.logic.component.ComponentSet
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiSupplementalDrawPolicy
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.opening.RiichiWallOpeningPolicy
 import com.doublemoon1119.mahjongcraft.logic.table.SupplementalDrawContext
 import com.doublemoon1119.mahjongcraft.logic.table.SupplementalDrawDecision
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
@@ -20,11 +21,13 @@ import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPlacement
 import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPlacementOffset
 import com.doublemoon1119.mahjongcraft.logic.table.layout.createInitialLayoutValidated
 import com.doublemoon1119.mahjongcraft.logic.table.layout.resolveTransitionValidated
+import com.doublemoon1119.mahjongcraft.logic.table.opening.DiceRollResult
 import com.doublemoon1119.mahjongcraft.logic.table.opening.WallOpening
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeIdentifiedTileFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.rules.riichi.riichiTableComponents
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
 import kotlin.math.abs
+import kotlin.math.round
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
@@ -234,6 +237,92 @@ class RiichiPhysicalWallLayoutPolicyTest {
     }
 
     /**
+     * 一般摸牌與槓後補牌交錯到牌牆摸完，各種開門位置、補牌疏密都檢查：規則回報的本局剩餘範圍包含目前每張牌的位置，
+     * 而且只會變小。
+     */
+    @Test
+    fun `round reach covers the wall and only shrinks`() {
+        val policy = RiichiPhysicalWallLayoutPolicy(rinshanTileCount = KAN_COUNT)
+        allOpenings().forEach { opening ->
+            LIVE_DRAWS_PER_KAN.forEach { liveDrawsPerKan ->
+                val case = "$opening every=$liveDrawsPerKan"
+                val wallLayout = createWallLayout(opening)
+                var tableState = FakeTableStateFactory.create(
+                    config = RiichiRuleConfig(),
+                    tileWall = TileWall(wallLayout.drawOrder.drop(INITIAL_DEAL_TILE_COUNT)),
+                    reservedWallTiles = wallLayout.reservedWallTiles,
+                    components = riichiTableComponents(potPoints = 0),
+                )
+                var layout = TileWallPhysicalLayout(initialPhysicalLayout(wallLayout, opening).placements.filterKeys { it in presentTileIds(tableState) })
+                tableState = tableState.copy(physicalWallLayout = layout)
+                var reach = reachCoordinates(policy.roundReach(tableState))
+                var kans = 0
+                var step = 0
+                while (tableState.tileWall.getAllTiles().isNotEmpty()) {
+                    val kan = kans < KAN_COUNT && step % liveDrawsPerKan == 0
+                    val action = if (kan) kanAction() else GameAction.Draw
+                    val after = if (kan) {
+                        kans++
+                        val supplemental = assertIs<SupplementalDrawDecision.Completed>(
+                            RiichiSupplementalDrawPolicy.resolve(SupplementalDrawContext(tableState, tableState, tableState.currentPlayer.id, action)),
+                        )
+                        tableState.copy(
+                            tileWall = supplemental.tileWall,
+                            reservedWallTiles = supplemental.reservedWallTiles,
+                            components = supplemental.tableComponents.applyTo(tableState.components, BuiltInComponentOwners.TABLE),
+                            physicalWallLayout = null,
+                        )
+                    } else {
+                        tableState.copy(tileWall = tableState.tileWall.draw().wall, physicalWallLayout = null)
+                    }
+                    layout = when (
+                        val result = policy.resolveTransitionValidated(
+                            PhysicalWallLayoutTransitionContext(
+                                tableStateBeforeAction = tableState,
+                                tableStateAfterAction = after,
+                                currentLayout = layout,
+                                actorPlayerId = tableState.currentPlayer.id,
+                                action = action,
+                            ),
+                        )
+                    ) {
+                        is PhysicalWallLayoutTransitionDecision.Completed -> result.layout
+                        PhysicalWallLayoutTransitionDecision.Unchanged -> layout
+                        is PhysicalWallLayoutTransitionDecision.Rejected -> error("Step $step rejected for $case: ${result.reasonId}")
+                    }
+                    tableState = after.copy(physicalWallLayout = layout)
+                    val nextReach = reachCoordinates(policy.roundReach(tableState))
+                    val current = reachCoordinates(layout.placements.values)
+                    assertTrue(nextReach.containsAll(current), "Reach misses a wall tile at step $step for $case: ${current - nextReach}")
+                    assertTrue(reach.containsAll(nextReach), "Reach grew at step $step for $case: ${nextReach - reach}")
+                    reach = nextReach
+                    step++
+                }
+                assertEquals(KAN_COUNT, kans, "Not every kan happened for $case")
+            }
+        }
+    }
+
+    /**
+     * 把位置換成繞牌牆一圈的座標，跨面的位移與相鄰面的基本格位得到相同座標。
+     *
+     * @param placements 牌牆位置。
+     * @return 層數與千分之一墩精度的環狀座標。
+     */
+    private fun reachCoordinates(placements: Collection<TileWallPlacement>): Set<Pair<Int, Long>> {
+        val total = WALL_SIDE_COUNT * STACKS_PER_SIDE * COORDINATE_SCALE
+        return placements.mapTo(mutableSetOf()) { placement ->
+            val coordinate = (placement.position.side * STACKS_PER_SIDE + wallCoordinate(placement)) * COORDINATE_SCALE
+            placement.position.layer to round(coordinate).toLong().mod(total.toLong())
+        }
+    }
+
+    /** 列出擲骰可能得到的全部開門位置。 */
+    private fun allOpenings(): List<WallOpening> = (1..DIE_FACES).flatMap { first ->
+        (1..DIE_FACES).map { second -> RiichiWallOpeningPolicy.resolve(DiceRollResult.of(listOf(first, second))) }
+    }.distinct()
+
+    /**
      * 模擬開局發牌與四次槓，在每個時點以目前布局及仍在牌牆中的牌呼叫 [check]。
      *
      * 摸走的牌會同步從布局移除，比照 production 每次 `Draw` transition 的修剪行為；不修剪的話
@@ -411,5 +500,23 @@ class RiichiPhysicalWallLayoutPolicyTest {
 
         /** 奇數次槓把一張牌補進分界後仍必須留下的最小寬度（墩）。 */
         const val MINIMUM_GAP = 0.5
+
+        /** 四槓流局前最多完成的槓數。 */
+        const val KAN_COUNT = 4
+
+        /** 模擬時每摸幾張活牌槓一次；1 代表連續槓。 */
+        val LIVE_DRAWS_PER_KAN: List<Int> = listOf(1, 2, 4)
+
+        /** 四面牌牆。 */
+        const val WALL_SIDE_COUNT = 4
+
+        /** 骰子點數。 */
+        const val DIE_FACES = 6
+
+        /** 四人日麻每面墩數。 */
+        const val STACKS_PER_SIDE = 17
+
+        /** 環狀座標的精度倍數。 */
+        const val COORDINATE_SCALE = 1000
     }
 }
