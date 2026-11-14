@@ -18,7 +18,8 @@ kind of change you are making; the rules in them apply even when this file does 
 - [Build](docs/contributing/build.md): Gradle configuration, platform targets and release versions.
 - [Persistence](docs/contributing/persistence.md): anything stored on disk.
 - [Minecraft presentation](docs/contributing/minecraft-presentation.md): how tiles, melds and table props are
-  placed and animated on the Minecraft table, including the local player's own hand.
+  placed and animated on the Minecraft table, including the local player's own hand, and how screens
+  are laid out.
 
 ## Before Committing
 

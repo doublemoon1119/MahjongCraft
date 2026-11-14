@@ -475,6 +475,31 @@ attempt does not fall through to another provider.
   contain no game data and confer no authority. They are cleared on entity unload or disconnect;
   queued messages from a previous connection are ignored.
 
+## Screen design
+
+- Build settings screens from the shared components in `client/gui`: `SettingsScreenLayout` for
+  positions, `SettingsTabStripLayout` and `SettingsTabWidget` for category tabs, `SettingsFooterLayout`
+  for the footer, `DropdownOverlay` for selector lists and `SettingTooltip` for row tooltips. Do not place
+  widgets by hand or copy their sizes. Sizes and colours live in those components; change them there
+  and extend the layout tests.
+- Draw only the vanilla translucent background. Do not add a full-screen overlay or a panel behind the
+  content.
+- Mark the current page, or a selector whose list is open, with the white outline
+  (`RestartableMarqueeButtonWidget.outlined`). Keep the disabled look for buttons that cannot be pressed;
+  it does not mean "you are here".
+- Pages use ordinary buttons and categories use tabs. Do not give both the same look.
+- A selector that changes every category, such as the rule and variant on the room settings page, sits
+  above the tabs and belongs to no category.
+- An option that cannot be chosen stays in its place with its reason, in lists and in tooltips. Do not
+  move it to the end or hide it; a fixed order keeps the list from jumping when a setting changes.
+- Route every cycle button through `CycleButtonInput` and build it with `pressesOnSecondaryClick`:
+  left-click selects the next option, right-click or Shift+left-click the previous one.
+- A row that only performs an action and has no value is one button spanning the row, without a label.
+- Build setting tooltips with `SettingTooltip`. List every option and mark the current one instead of
+  adding a separate "current value" line. Write hints as the action and its result, such as
+  "Left-click: next option", not internal concepts; translations follow the same rule. Put a button's
+  label in square brackets when a hint mentions it, such as `[−]`.
+
 ## Public API Compatibility
 
 The [shared compatibility policy](extensions-and-registries.md#public-api-compatibility) defines how to

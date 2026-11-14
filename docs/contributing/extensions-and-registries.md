@@ -82,6 +82,25 @@ core extension behavior through one adapter. For example, see the Minecraft guid
 - For an optional setting, test both sides: rules that need it can change and save it; rules that do not
   need it have no field and the server rejects changes to that value.
 
+## Room Setting Variants
+
+- A variant is a named set of values for a few of a rule's settings, such as a house style that turns two
+  options on together. Players pick it from the variant selector next to the rule selector.
+- List variants in `GameConfigPresentationDefinition.variants`, in display order. Each one sets only the
+  fields that define it, with values the field's editor accepts. It may only name editable fields the
+  same rule declares; shared flow fields cannot be part of a variant.
+- Every rule has a "Standard" variant automatically. It sets the same fields to the rule's defaults; do
+  not register it, and do not use its reserved ID `mahjongcraft:standard`.
+- The fields any variant of the rule sets are the ones used to tell variants apart. A variant that does
+  not mention one of them means the rule's default for it. Two variants that set the same values, or one
+  that equals Standard, are rejected at registration.
+- Choosing a variant changes only those fields. Match length, timers and every other setting keep their
+  values, and "Reset to Defaults" still restores everything.
+- The current variant is derived from the settings and is never stored or sent. When those fields match
+  no variant the selector shows "Custom". Changing other settings does not affect it.
+- Use `GameConfigVariantResolver` to list, detect and apply variants instead of comparing fields in a
+  screen.
+
 ## Multi-choice Room Settings
 
 - Use `GameConfigEditorSpec.MultiChoice` when a rule setting selects a set of options.
