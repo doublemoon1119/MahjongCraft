@@ -15,6 +15,7 @@ import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledCoreExtension
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledHeadlessHistoryRegistries
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledPersistenceRegistries
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.registerBundledRuleModules
+import com.doublemoon1119.mahjongcraft.testing.flow.common.game.testMatchSeed
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -147,18 +148,22 @@ class StressTestEnvironmentTest {
     /**
      * 輪流推進多場三人對局至結束，待寫事件過多時暫停以等待背景寫入。
      *
+     * 各場以固定種子開局；初級 AI 遇到相同局面做相同選擇，因此結果每次相同。
+     *
      * @param environment 各場共用的測試資料環境。
      * @param count 要建立並完成的場數。
      * @return 已完成的各場推進器，保留其場次與場地識別碼供斷言使用。
      */
     private suspend fun playMatches(environment: StressTestEnvironment, count: Int) = withTimeout(2.minutes) {
-        val runtimes = List(count) {
+        val registries = bundledHeadlessHistoryRegistries()
+        val runtimes = List(count) { index ->
             HeadlessFlowHistoryRuntime.create(
                 scenario = HeadlessHistoryScenario.THREE_PLAYER_RIICHI_EAST,
-                registries = bundledHeadlessHistoryRegistries(),
+                registries = registries,
                 store = environment.store,
                 stepTimer = environment.historyTimer,
                 decisionExecutor = AiDecisionExecutor.direct(failurePolicy = ExtensionFailurePolicy.Default),
+                matchSeed = testMatchSeed(MATCH_SEED + index),
             )
         }
         while (runtimes.any { it.currentGame() != null }) {
@@ -199,5 +204,8 @@ class StressTestEnvironmentTest {
 
         /** 移除進行中桌子前推進的步數。 */
         const val RUNNING_STEPS = 10
+
+        /** 完整對局使用的固定種子；第 n 場使用此值加 n。 */
+        const val MATCH_SEED = 1
     }
 }

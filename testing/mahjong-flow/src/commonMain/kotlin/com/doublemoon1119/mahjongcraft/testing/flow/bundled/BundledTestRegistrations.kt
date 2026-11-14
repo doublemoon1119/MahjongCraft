@@ -119,18 +119,21 @@ fun bundledCoreExtensionRegistries(additionalExtensions: List<MahjongExtension> 
     return registries
 }
 
-/** 測試用：以 [bundledCoreExtensionRegistries] 建立無頭歷史生成使用的 registry。 */
-fun bundledHeadlessHistoryRegistries(): HeadlessHistoryRegistries = bundledCoreExtensionRegistries().let { registries ->
-    HeadlessHistoryRegistries(
-        moduleRegistry = registries.moduleRegistry,
-        componentRegistry = registries.componentRegistry,
-        aiStrategyRegistry = registries.aiStrategyRegistry,
-        winCelebrationCueResolverRegistry = registries.winCelebrationCueResolverRegistry,
-        postActionExhaustiveDrawResolverRegistry = registries.postActionExhaustiveDrawResolverRegistry,
-        postReactionRoundOutcomeResolverRegistry = registries.postReactionRoundOutcomeResolverRegistry,
-        winRoundContinuationResolverRegistry = registries.winRoundContinuationResolverRegistry,
-        winSettlementDetailResolverRegistry = registries.winSettlementDetailResolverRegistry,
-        gameCommandRegistry = registries.gameCommandRegistry,
-        ruleDecisionResolverRegistry = registries.ruleDecisionResolverRegistry,
-    )
-}
+/**
+ * 測試用：以 [bundledCoreExtensionRegistries] 建立無頭歷史生成使用的 registry。
+ *
+ * @param registries 已完成登記的內建 registry；預設建立新的一份。
+ * @return 無頭歷史生成使用的 registry。
+ */
+fun bundledHeadlessHistoryRegistries(registries: CoreExtensionRegistries = bundledCoreExtensionRegistries()): HeadlessHistoryRegistries = HeadlessHistoryRegistries(
+    moduleRegistry = registries.moduleRegistry,
+    componentRegistry = registries.componentRegistry,
+    aiStrategyRegistry = registries.aiStrategyRegistry,
+    winCelebrationCueResolverRegistry = registries.winCelebrationCueResolverRegistry,
+    postActionExhaustiveDrawResolverRegistry = registries.postActionExhaustiveDrawResolverRegistry,
+    postReactionRoundOutcomeResolverRegistry = registries.postReactionRoundOutcomeResolverRegistry,
+    winRoundContinuationResolverRegistry = registries.winRoundContinuationResolverRegistry,
+    winSettlementDetailResolverRegistry = registries.winSettlementDetailResolverRegistry,
+    gameCommandRegistry = registries.gameCommandRegistry,
+    ruleDecisionResolverRegistry = registries.ruleDecisionResolverRegistry,
+)

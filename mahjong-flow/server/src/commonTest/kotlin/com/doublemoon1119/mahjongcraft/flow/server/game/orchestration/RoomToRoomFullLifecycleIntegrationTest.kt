@@ -11,6 +11,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryOutboxEve
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.Game
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameCommand
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameConfig
+import com.doublemoon1119.mahjongcraft.flow.common.game.random.MatchSeed
 import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
 import com.doublemoon1119.mahjongcraft.flow.server.game.history.HistoryTilePresentationResolverImpl
 import com.doublemoon1119.mahjongcraft.flow.server.game.policy.GameVisibilityPolicyImpl
@@ -61,6 +62,7 @@ import com.doublemoon1119.mahjongcraft.testing.flow.common.game.service.FakeDeci
 import com.doublemoon1119.mahjongcraft.testing.flow.common.game.service.FakeGameEventPublisher
 import com.doublemoon1119.mahjongcraft.testing.flow.common.game.service.FakeGamePresentationBusyGate
 import com.doublemoon1119.mahjongcraft.testing.flow.common.game.service.FakeGamePresentationPublisher
+import com.doublemoon1119.mahjongcraft.testing.flow.common.game.testMatchSeed
 import com.doublemoon1119.mahjongcraft.testing.flow.common.room.repository.FakeRoomSnapshotRepository
 import com.doublemoon1119.mahjongcraft.testing.flow.common.room.service.FakeRoomEventPublisher
 import com.doublemoon1119.mahjongcraft.testing.flow.server.RuleDecisionTestUseCases
@@ -77,8 +79,8 @@ import kotlin.uuid.Uuid
  * 驗證創建房間、加入 AI、開局、完成對局、返回房間及再次開局的完整生命週期。
  * 房間與遊戲用例共用同一個 [AuthoritativeStateStore]，檢查房主、座位、準備狀態與新對局分數。
  *
- * 此測試未固定牌山與座位的隨機來源。固定的 [FakeAiStrategy] 只限制決策方式，
- * 不保證每次產生相同對局；斷言著重狀態轉換，不依賴特定牌序。
+ * 兩場對局都以固定種子開局，搭配固定決策的 [FakeAiStrategy]，每次執行產生相同對局；斷言著重狀態轉換，
+ * 不依賴特定牌序。
  */
 class RoomToRoomFullLifecycleIntegrationTest {
 
@@ -347,7 +349,7 @@ class RoomToRoomFullLifecycleIntegrationTest {
      */
     @Test
     fun `test full room to game to room to game lifecycle for east-only`() = runTest {
-        testFullLifecycle(RiichiGameLength.East)
+        testFullLifecycle(RiichiGameLength.East, matchSeeds = testMatchSeed(1) to testMatchSeed(2))
     }
 
     /**
@@ -357,18 +359,18 @@ class RoomToRoomFullLifecycleIntegrationTest {
      */
     @Test
     fun `test full room to game to room to game lifecycle for two-winds`() = runTest {
-        testFullLifecycle(RiichiGameLength.TwoWinds)
+        testFullLifecycle(RiichiGameLength.TwoWinds, matchSeeds = testMatchSeed(3) to testMatchSeed(4))
     }
 
     /**
-     * 執行兩場完整對局並收集各場的待寫歷史事件。
+     * 執行兩場完整對局並收集各場的待寫歷史事件；每次呼叫都是新洗的牌，用來統計容量分布。
      *
      * @param gameLength 兩場對局使用的賽程長度。
      * @return 依對局完成順序排列的事件清單。
      */
     internal suspend fun measureFullLifecycle(gameLength: RiichiGameLength): List<List<HistoryOutboxEvent>> {
         val measurements = mutableListOf<List<HistoryOutboxEvent>>()
-        testFullLifecycle(gameLength) { measurements += it }
+        testFullLifecycle(gameLength, matchSeeds = null to null) { measurements += it }
         return measurements
     }
 
@@ -376,10 +378,12 @@ class RoomToRoomFullLifecycleIntegrationTest {
      * 驗證同一房間連續完成兩場對局後仍可恢復房間狀態。
      *
      * @param gameLength 對局使用的賽程長度。
+     * @param matchSeeds 第一場與第二場的對局種子；null 時以安全亂數產生。
      * @param recordMatch 每場結束後接收待寫歷史事件；null 表示不啟用歷史記錄。
      */
     private suspend fun testFullLifecycle(
         gameLength: RiichiGameLength,
+        matchSeeds: Pair<MatchSeed?, MatchSeed?>,
         recordMatch: ((List<HistoryOutboxEvent>) -> Unit)? = null,
     ) {
         val fixtures = Fixtures(historyRecordingEnabled = recordMatch != null)
@@ -400,7 +404,7 @@ class RoomToRoomFullLifecycleIntegrationTest {
         assertNotNull(room)
         assertTrue(room.canStart, "Room should be startable once the host has 3 ready AI players.")
 
-        val startResult = fixtures.startGameUseCase(roomId, hostId)
+        val startResult = fixtures.startGameUseCase(roomId, hostId, matchSeed = matchSeeds.first)
         assertTrue(startResult is Outcome.Success, "Starting the game should succeed: $startResult")
         val gameId = startResult.value
         val firstMatchId = fixtures.store.getGame(gameId)!!.matchId
@@ -422,7 +426,7 @@ class RoomToRoomFullLifecycleIntegrationTest {
         assertTrue(roomAfterMatch.canStart, "Room must be immediately startable again (AI already ready, host doesn't need to ready).")
 
         // 重新開第二場對局，驗證真的能再打一次，不是卡在某個殘留狀態
-        val secondStartResult = fixtures.startGameUseCase(roomId, hostId)
+        val secondStartResult = fixtures.startGameUseCase(roomId, hostId, matchSeed = matchSeeds.second)
         assertTrue(secondStartResult is Outcome.Success, "Starting a second game at the same venue should succeed: $secondStartResult")
         val secondGameId = secondStartResult.value
         assertEquals(roomId, secondGameId)

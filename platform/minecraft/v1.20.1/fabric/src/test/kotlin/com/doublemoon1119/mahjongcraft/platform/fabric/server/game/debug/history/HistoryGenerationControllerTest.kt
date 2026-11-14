@@ -16,6 +16,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocationReg
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledHeadlessHistoryRegistries
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledPersistenceRegistries
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.registerBundledRuleModules
+import com.doublemoon1119.mahjongcraft.testing.flow.common.game.testMatchSeed
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
@@ -81,7 +82,12 @@ class HistoryGenerationControllerTest {
                 creations++
                 entered.complete(Unit)
                 release.await()
-                HeadlessFlowHistoryRuntime.create(scenario, bundledHeadlessHistoryRegistries(), decisionExecutor = AiDecisionExecutor.direct(failurePolicy = ExtensionFailurePolicy.Default))
+                HeadlessFlowHistoryRuntime.create(
+                    scenario = scenario,
+                    registries = bundledHeadlessHistoryRegistries(),
+                    decisionExecutor = AiDecisionExecutor.direct(failurePolicy = ExtensionFailurePolicy.Default),
+                    matchSeed = testMatchSeed(creations),
+                )
             },
             store = store,
             configState = config,

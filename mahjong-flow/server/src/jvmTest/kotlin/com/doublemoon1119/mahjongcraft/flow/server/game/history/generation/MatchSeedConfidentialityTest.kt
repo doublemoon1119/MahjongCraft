@@ -11,8 +11,9 @@ import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.HistoryOu
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.HistoryRecordingPersistenceMapper
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.replay.CompactReplayCodec
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.AiDecisionExecutor
-import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledHeadlessHistoryRegistries
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledPersistenceRegistries
+import com.doublemoon1119.mahjongcraft.testing.flow.bundled.seededRandomMoveHeadlessHistoryRegistries
+import com.doublemoon1119.mahjongcraft.testing.flow.common.game.testMatchSeed
 import kotlinx.coroutines.test.runTest
 import java.util.Base64
 import kotlin.test.Test
@@ -28,11 +29,11 @@ class MatchSeedConfidentialityTest {
     /** 驗證跑完一場對局後，牌譜與歷史事件都找不到種子，而伺服器存檔確實保存了種子。 */
     @Test
     fun `seed stays out of history replay and text output`() = runTest {
-        val seed = MatchSeed.fromByteArray(ByteArray(MatchSeed.SIZE_BYTES) { (it * 37 + 11).toByte() })
+        val seed = testMatchSeed(SEED)
         val forms = seedForms(seed)
         val runtime = HeadlessFlowHistoryRuntime.create(
             scenario = HeadlessHistoryScenario.RIICHI_EAST,
-            registries = bundledHeadlessHistoryRegistries(),
+            registries = seededRandomMoveHeadlessHistoryRegistries(SEED),
             decisionExecutor = AiDecisionExecutor.direct(failurePolicy = ExtensionFailurePolicy.Default),
             matchSeed = seed,
         )
@@ -79,5 +80,11 @@ class MatchSeedConfidentialityTest {
             Base64.getEncoder().encodeToString(bytes),
             bytes.joinToString(separator = ","),
         )
+    }
+
+    /** 測試固定使用的種子。 */
+    private companion object {
+        /** 決定對局種子與 AI 選擇的數字。 */
+        const val SEED = 7
     }
 }
