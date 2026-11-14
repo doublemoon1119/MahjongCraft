@@ -10,7 +10,7 @@ import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanDiscardPile
  * @return 依捨牌順序排列的保存資料。
  */
 fun TaiwanDiscardPile.toPersistenceDto(registry: ComponentPersistenceConverter): TaiwanDiscardPilePersistenceDto = TaiwanDiscardPilePersistenceDto(
-    entries.map { it.toPersistenceDto(registry) },
+    entries = entries.map { it.toPersistenceDto(registry) },
 )
 
 /**

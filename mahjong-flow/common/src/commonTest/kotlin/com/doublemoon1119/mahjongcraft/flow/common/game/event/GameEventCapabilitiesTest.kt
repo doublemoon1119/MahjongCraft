@@ -85,7 +85,7 @@ class GameEventCapabilitiesTest {
     @Test
     fun `discard groups retain separate responsible sets`() {
         val settled = projector().project(
-            facts(
+            facts = facts(
                 HistoryEventDraft(null, HistoryFact.ReactionResolved(GameAction.Ron(Uuid.random()), null)),
                 win("example:first", winner, listOf(other)),
                 win("example:second", other, listOf(winner)),
@@ -127,8 +127,8 @@ class GameEventCapabilitiesTest {
             override fun resolvePrevalentWindId(state: TableState) = "example:wind/north"
         }
         assertEquals(
-            "example:wind/north",
-            projector(registry(resolver)).project(completed).filterIsInstance<RoundCompletedEvent>().single().roundContext.prevalentWindId,
+            expected = "example:wind/north",
+            actual = projector(registry(resolver)).project(completed).filterIsInstance<RoundCompletedEvent>().single().roundContext.prevalentWindId,
         )
     }
 
@@ -183,7 +183,7 @@ class GameEventCapabilitiesTest {
     fun `match completion carries exact completed ids and end markers`() {
         val resolver = object : GameEventPublicMarkerResolver {
             override fun resolveMatchEndMarkers(context: MatchEndPublicMarkerContext) = listOf(
-                RulePublicEventMarker("example:threshold", quantity = RulePublicEventQuantity("example:points", -100)),
+                element = RulePublicEventMarker("example:threshold", quantity = RulePublicEventQuantity("example:points", -100)),
             )
         }
         val event = projector(registry(resolver)).project(facts(HistoryEventDraft(null, HistoryFact.MatchCompleted("example:end", mapOf(winner to 1)))))
@@ -211,8 +211,8 @@ class GameEventCapabilitiesTest {
 
     /** 建立不帶隱藏資料的測試動作。 */
     private fun accepted(action: GameAction) = HistoryEventDraft(
-        winner,
-        HistoryFact.ActionAccepted(action, HistoryActionResult(emptyList(), emptyList(), 1, emptyList(), emptyMap(), winner)),
+        actorPlayerId = winner,
+        fact = HistoryFact.ActionAccepted(action, HistoryActionResult(emptyList(), emptyList(), 1, emptyList(), emptyMap(), winner)),
     )
 
     /** 建立本局完成摘要。 */

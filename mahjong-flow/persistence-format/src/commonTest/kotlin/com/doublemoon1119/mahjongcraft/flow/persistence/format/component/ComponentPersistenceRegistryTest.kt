@@ -81,7 +81,7 @@ class ComponentPersistenceRegistryTest {
     private fun registry(): ComponentPersistenceRegistry = ComponentPersistenceRegistry().apply {
         registerBuiltInComponentPersistence(this)
         register(
-            ComponentPersistenceDefinition(
+            definition = ComponentPersistenceDefinition(
                 component = RiichiDiscardComponents.RIICHI_DECLARED,
                 serializer = ComponentUnitPersistenceDto.serializer(),
                 toDto = { ComponentUnitPersistenceDto },

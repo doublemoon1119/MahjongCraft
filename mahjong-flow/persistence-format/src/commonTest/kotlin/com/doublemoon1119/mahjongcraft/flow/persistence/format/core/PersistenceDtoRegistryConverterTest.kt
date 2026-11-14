@@ -15,7 +15,7 @@ class PersistenceDtoRegistryConverterTest {
         val received = mutableListOf<PersistenceConverter>()
         val registry = PersistenceDtoRegistry<Value> { registries }
         registry.register(
-            PersistenceDtoDefinition(
+            definition = PersistenceDtoDefinition(
                 typeKey = "test:value",
                 domainClass = Value::class,
                 serializer = ValueDto.serializer(),

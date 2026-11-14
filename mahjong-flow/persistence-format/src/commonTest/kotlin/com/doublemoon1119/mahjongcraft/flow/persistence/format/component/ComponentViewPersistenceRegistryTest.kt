@@ -79,7 +79,7 @@ class ComponentViewPersistenceRegistryTest {
     private fun registry(): ComponentViewPersistenceRegistry = ComponentViewPersistenceRegistry().apply {
         register(redDefinition())
         register(
-            ComponentViewPersistenceDefinition(
+            definition = ComponentViewPersistenceDefinition(
                 viewType = RiichiTableComponentViews.POT_POINTS,
                 serializer = ComponentIntPersistenceDto.serializer(),
                 toDto = ::ComponentIntPersistenceDto,

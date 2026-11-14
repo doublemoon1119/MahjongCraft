@@ -30,7 +30,7 @@ class HistoryRecordingTransferPersistenceTest {
         val state = HistoryRecordingState(
             nextSequenceByMatchId = mapOf(matchId to 2L),
             transfersByMatchId = mapOf(
-                matchId to HistoryRecordingTransfer(
+                pair = matchId to HistoryRecordingTransfer(
                     venueId = venueId,
                     lastAcceptedBatch = listOf(event),
                     matchCompleted = true,

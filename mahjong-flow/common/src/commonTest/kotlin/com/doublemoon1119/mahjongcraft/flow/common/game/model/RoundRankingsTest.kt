@@ -31,8 +31,8 @@ class RoundRankingsTest {
         )
 
         assertEquals(
-            mapOf(westId to 1, southId to 2, eastId to 3, northId to 4),
-            roundRanksByPlayer(state, module),
+            expected = mapOf(westId to 1, southId to 2, eastId to 3, northId to 4),
+            actual = roundRanksByPlayer(state, module),
         )
     }
 }

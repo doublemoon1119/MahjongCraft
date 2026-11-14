@@ -145,8 +145,8 @@ internal class ReplayReadBudget(
         while (index < value.length) {
             val character = value[index]
             bytes = checkedAdd(
-                bytes,
-                when {
+                left = bytes,
+                right = when {
                     character.code <= 0x7f -> 1L
                     character.code <= 0x7ff -> 2L
                     character.isHighSurrogate() && index + 1 < value.length && value[index + 1].isLowSurrogate() -> {

@@ -76,11 +76,11 @@ class HistoryQueryDtosTest {
         assertEquals(dto, restored)
         val win = restored.transactions.single().facts.single() as HistoryReplayFactDto.Completion
         assertEquals(
-            HistoryWinDetailValueDto.TileFaces(
-                listOf(TileDto.Extension("test:bonus"), TileDto.Numeric(SuitDto.CHARACTER, 3), TileDto.Numeric(SuitDto.CHARACTER, 3)).map { TileFaceViewDto(it, emptyList(), null) } +
+            expected = HistoryWinDetailValueDto.TileFaces(
+                faces = listOf(TileDto.Extension("test:bonus"), TileDto.Numeric(SuitDto.CHARACTER, 3), TileDto.Numeric(SuitDto.CHARACTER, 3)).map { TileFaceViewDto(it, emptyList(), null) } +
                     TileFaceViewDto(TileDto.Numeric(SuitDto.DOT, 5), emptyList(), "test:style"),
             ),
-            win.outcome?.winnerDetails?.single()?.detailFields?.single()?.value,
+            actual = win.outcome?.winnerDetails?.single()?.detailFields?.single()?.value,
         )
         assertTrue(restored.tileCatalog.isEmpty())
     }
@@ -218,7 +218,7 @@ class HistoryQueryDtosTest {
         val response = HistoryListResponseDto(
             requestId = "request-1",
             entries = listOf(
-                HistoryMatchSummaryDto(
+                element = HistoryMatchSummaryDto(
                     matchId = "match-1",
                     ruleId = "mahjongcraft:riichi",
                     startedAtEpochMillis = 1L,
@@ -254,8 +254,8 @@ class HistoryQueryDtosTest {
         }
         assertFailsWith<Exception> {
             Json.decodeFromString(
-                HistoryListRequestDto.serializer(),
-                """{"requestId":"r","sortField":"unknown"}""",
+                deserializer = HistoryListRequestDto.serializer(),
+                string = """{"requestId":"r","sortField":"unknown"}""",
             )
         }
     }

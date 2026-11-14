@@ -59,19 +59,19 @@ class MeldAndHistoryPersistenceRegressionTest {
         )
 
         val encoded = Json.encodeToString(
-            MahjongPlayerPersistenceDto.serializer(),
-            player.toPersistenceDto(
-                registries.discardPiles,
-                registries.exhaustiveDrawReasons,
-                registries.extensionGameActions,
-                registries.components,
+            serializer = MahjongPlayerPersistenceDto.serializer(),
+            value = player.toPersistenceDto(
+                discardPileRegistry = registries.discardPiles,
+                exhaustiveDrawReasonRegistry = registries.exhaustiveDrawReasons,
+                extensionGameActionRegistry = registries.extensionGameActions,
+                componentRegistry = registries.components,
             ),
         )
         val restored = Json.decodeFromString(MahjongPlayerPersistenceDto.serializer(), encoded).toDomain(
-            registries.discardPiles,
-            registries.exhaustiveDrawReasons,
-            registries.extensionGameActions,
-            registries.components,
+            discardPileRegistry = registries.discardPiles,
+            exhaustiveDrawReasonRegistry = registries.exhaustiveDrawReasons,
+            extensionGameActionRegistry = registries.extensionGameActions,
+            componentRegistry = registries.components,
         )
 
         assertEquals(player, restored)
@@ -100,10 +100,10 @@ class MeldAndHistoryPersistenceRegressionTest {
             val (publicIds, faceDownIds) = meldPresentation
             val after = before.copy(
                 players = listOf(
-                    before.players.single().copy(
+                    element = before.players.single().copy(
                         hand = Hand(
                             melds = listOf(
-                                baseMeld.copy(
+                                element = baseMeld.copy(
                                     publiclyRevealedTileIds = publicIds,
                                     faceDownTileIds = faceDownIds,
                                 ),

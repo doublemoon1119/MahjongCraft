@@ -35,9 +35,9 @@ class MatchEventSnapshotTest {
     @Test
     fun `all event collection properties are snapshots`() {
         val action = PerformedAction.create(
-            "test:discard",
-            playerId,
-            PerformedActionKind.DISCARD,
+            actionId = "test:discard",
+            actorPlayerId = playerId,
+            kind = PerformedActionKind.DISCARD,
             tiles = listOf(PublicTileFace.create("test:one")),
         )
         val actions = mutableListOf(action)
@@ -55,52 +55,52 @@ class MatchEventSnapshotTest {
         val groups = mutableListOf(group)
         val scoreChanges = mutableListOf(RoundScoreChange.create(playerId, 25_000, 26_000, 1, 1))
         val roundCompleted = RoundCompletedEvent.create(
-            eventId,
-            matchId,
-            venueId,
-            "test:rule",
-            EventRoundContext.create(1, "test:east"),
-            RoundCompletionKind.WIN,
-            "test:win",
-            scoreChanges,
+            eventId = eventId,
+            matchId = matchId,
+            venueId = venueId,
+            ruleModuleId = "test:rule",
+            roundContext = EventRoundContext.create(1, "test:east"),
+            classification = RoundCompletionKind.WIN,
+            outcomeId = "test:win",
+            players = scoreChanges,
         )
         val settled = RoundSettledEvent.create(
-            eventId,
-            matchId,
-            venueId,
-            "test:rule",
-            1,
-            "test:win",
-            RoundSettlementKind.WIN,
-            responsible,
-            discarders,
-            scoreChanges,
-            groups,
+            eventId = eventId,
+            matchId = matchId,
+            venueId = venueId,
+            ruleModuleId = "test:rule",
+            roundNumber = 1,
+            outcomeId = "test:win",
+            kind = RoundSettlementKind.WIN,
+            beneficiaryPlayerIds = responsible,
+            responsiblePlayerIds = discarders,
+            players = scoreChanges,
+            winGroups = groups,
         )
         val standings = mutableListOf(MatchStanding.create(playerId, false, 26_000, 1))
         val publicMarkers = mutableListOf(PublicEventMarker.create("test:bust", null, null))
         val completedPlayers = linkedSetOf(playerId)
         val ended = MatchEndedEvent.create(
-            eventId,
-            matchId,
-            venueId,
-            "test:rule",
-            MatchCompletion.COMPLETED,
-            "test:completed",
-            standings,
-            EventRoundContext.create(1, "test:east"),
-            publicMarkers,
-            completedPlayers,
+            eventId = eventId,
+            matchId = matchId,
+            venueId = venueId,
+            ruleModuleId = "test:rule",
+            completion = MatchCompletion.COMPLETED,
+            reasonId = "test:completed",
+            standings = standings,
+            roundContext = EventRoundContext.create(1, "test:east"),
+            publicMarkers = publicMarkers,
+            completedPlayerIds = completedPlayers,
         )
         val players = mutableListOf(MatchPlayer.create(playerId, false, 0))
         val events = mutableListOf<MatchEvent>(actionEvent, settled, roundCompleted, ended)
         val batch = CommittedMatchEventBatch.create(
-            Uuid.random(),
-            matchId,
-            venueId,
-            "test:rule",
-            players,
-            events,
+            batchId = Uuid.random(),
+            matchId = matchId,
+            venueId = venueId,
+            ruleModuleId = "test:rule",
+            players = players,
+            events = events,
         )
 
         actions.clear()
@@ -146,10 +146,10 @@ class MatchEventSnapshotTest {
         val detail = RoundWinDetail.create(playerId, WinMethod.UNKNOWN, listOf(field), listOf(marker))
         val group = RoundWinGroup.create("test:win", listOf(detail), emptySet(), emptySet())
         val action = PerformedAction.create(
-            "test:discard",
-            playerId,
-            PerformedActionKind.DISCARD,
-            listOf(null, PublicTileFace.create("test:one")),
+            actionId = "test:discard",
+            actorPlayerId = playerId,
+            kind = PerformedActionKind.DISCARD,
+            tiles = listOf(null, PublicTileFace.create("test:one")),
         )
 
         assertEquals(3, group.winners.single().detailFields.single().quantities.single().amount)

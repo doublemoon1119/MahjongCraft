@@ -51,7 +51,7 @@ interface HistoryQueryRepository {
         access: HistoryQueryAccess,
         request: HistoryRoundEventsRequest,
     ): HistoryQueryResult<HistoryRoundEvents> = HistoryQueryResult.Failure(
-        HistoryQueryError(HistoryQueryErrorCode.NOT_AVAILABLE, "Round event queries are not available"),
+        error = HistoryQueryError(HistoryQueryErrorCode.NOT_AVAILABLE, "Round event queries are not available"),
     )
 
     /**
@@ -65,6 +65,6 @@ interface HistoryQueryRepository {
         access: HistoryQueryAccess,
         request: HistoryRoundStateRequest,
     ): HistoryQueryResult<HistoryRoundState> = HistoryQueryResult.Failure(
-        HistoryQueryError(HistoryQueryErrorCode.NOT_AVAILABLE, "Round state queries are not available"),
+        error = HistoryQueryError(HistoryQueryErrorCode.NOT_AVAILABLE, "Round state queries are not available"),
     )
 }

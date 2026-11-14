@@ -78,7 +78,7 @@ class RuleDecisionTest {
         assertFalse(pending.isComplete)
         assertFalse(pending.copy(submissionsByPlayerId = mapOf(first to RuleDecisionSubmission.Confirmed)).isComplete)
         assertTrue(
-            pending.copy(
+            actual = pending.copy(
                 submissionsByPlayerId = mapOf(
                     first to RuleDecisionSubmission.Confirmed,
                     second to RuleDecisionSubmission.Confirmed,

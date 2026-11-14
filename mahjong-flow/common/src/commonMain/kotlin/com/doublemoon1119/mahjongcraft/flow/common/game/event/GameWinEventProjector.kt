@@ -51,13 +51,13 @@ internal object GameWinEventProjector {
                         outcomeId = fact.outcomeId,
                         winners = fact.winDetails.map { details ->
                             detail(
-                                details,
-                                when {
+                                details = details,
+                                method = when {
                                     details.playerId in tsumoPlayers || fallbackTsumo -> WinMethod.SELF_DRAW
                                     isRon -> WinMethod.DISCARD
                                     else -> WinMethod.UNKNOWN
                                 },
-                                markerProvider(fact.outcomeId, details.playerId, details.detailFields),
+                                markers = markerProvider(fact.outcomeId, details.playerId, details.detailFields),
                             )
                         },
                         responsiblePlayerIds = fact.responsiblePlayerIds.toSet(),

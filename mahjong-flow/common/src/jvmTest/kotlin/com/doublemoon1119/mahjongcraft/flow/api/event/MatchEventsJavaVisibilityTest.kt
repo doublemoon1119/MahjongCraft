@@ -88,12 +88,12 @@ class MatchEventsJavaVisibilityTest {
         val face = PublicTileFace.create("test:one")
         val action = PerformedAction.create("test:discard", playerId, PerformedActionKind.DISCARD, listOf(face))
         val actionEvent = ActionsPerformedEvent.create(
-            Uuid.random(),
-            Uuid.random(),
-            Uuid.random(),
-            "test:rule",
-            1,
-            listOf(action),
+            eventId = Uuid.random(),
+            matchId = Uuid.random(),
+            venueId = Uuid.random(),
+            ruleModuleId = "test:rule",
+            roundNumber = 1,
+            actions = listOf(action),
         )
         val quantity = EventQuantity.create("test:points", 1)
         val marker = PublicEventMarker.create("test:marker", playerId, quantity)
@@ -103,11 +103,11 @@ class MatchEventsJavaVisibilityTest {
         val completion = RuleResultCompletion.create("test:outcome", RoundCompletionKind.WIN, setOf(playerId))
         val ruleResult = RuleResultDetail.create("test:result", listOf(detail), completion)
         val ruleResults = RuleResultsResolvedEvent.create(
-            Uuid.random(),
-            Uuid.random(),
-            Uuid.random(),
-            "test:rule",
-            listOf(ruleResult),
+            eventId = Uuid.random(),
+            matchId = Uuid.random(),
+            venueId = Uuid.random(),
+            ruleModuleId = "test:rule",
+            results = listOf(ruleResult),
         )
         val ended = MatchEndedEvent.create(
             eventId = Uuid.random(),
@@ -120,22 +120,22 @@ class MatchEventsJavaVisibilityTest {
             completedScores = mutableMapOf(playerId to 25_000),
         )
         val roundCompleted = RoundCompletedEvent.create(
-            Uuid.random(),
-            Uuid.random(),
-            Uuid.random(),
-            "test:rule",
-            EventRoundContext.create(1, "test:east"),
-            RoundCompletionKind.WIN,
-            "test:win",
-            listOf(RoundScoreChange.create(playerId, 25_000, 26_000, 1, 1)),
+            eventId = Uuid.random(),
+            matchId = Uuid.random(),
+            venueId = Uuid.random(),
+            ruleModuleId = "test:rule",
+            roundContext = EventRoundContext.create(1, "test:east"),
+            classification = RoundCompletionKind.WIN,
+            outcomeId = "test:win",
+            players = listOf(RoundScoreChange.create(playerId, 25_000, 26_000, 1, 1)),
         )
         val batch = CommittedMatchEventBatch.create(
-            Uuid.random(),
-            Uuid.random(),
-            Uuid.random(),
-            "test:rule",
-            listOf(MatchPlayer.create(playerId, false, 0)),
-            listOf(actionEvent, roundCompleted),
+            batchId = Uuid.random(),
+            matchId = Uuid.random(),
+            venueId = Uuid.random(),
+            ruleModuleId = "test:rule",
+            players = listOf(MatchPlayer.create(playerId, false, 0)),
+            events = listOf(actionEvent, roundCompleted),
         )
 
         assertRejected { javaCall(action.tiles, "clear") }

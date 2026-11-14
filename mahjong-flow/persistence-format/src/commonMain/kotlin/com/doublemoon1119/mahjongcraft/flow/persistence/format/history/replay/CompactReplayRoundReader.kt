@@ -66,10 +66,10 @@ class CompactReplayRoundReader(
             val facts = HistoryReplayProjectionMapper.mapFacts(transaction.facts, transaction.actors, source.identity, round.number, catalog(cursor, budget), budget, componentViews)
                 .map { fact ->
                     val enriched = fact.withScoreChanges(
-                        beforeScores,
-                        afterScores,
-                        cursor.hasWinSettlement,
-                        cursor.exhaustiveDrawSettlement,
+                        beforeScores = beforeScores,
+                        afterScores = afterScores,
+                        hasPriorWinSettlement = cursor.hasWinSettlement,
+                        exhaustiveDrawSettlement = cursor.exhaustiveDrawSettlement,
                     )
                     if (fact.typeKey == HistoryFactTypeKeys.WIN_SETTLED ||
                         (fact is HistoryReplayFact.RuleEffect && fact.outcome?.classification == RoundCompletionClassification.WIN)
@@ -112,10 +112,10 @@ class CompactReplayRoundReader(
             val facts = HistoryReplayProjectionMapper.mapFacts(transaction.facts, transaction.actors, source.identity, round.number, catalog(cursor, budget), budget, componentViews)
                 .map { fact ->
                     val enriched = fact.withScoreChanges(
-                        beforeScores,
-                        afterScores,
-                        cursor.hasWinSettlement,
-                        cursor.exhaustiveDrawSettlement,
+                        beforeScores = beforeScores,
+                        afterScores = afterScores,
+                        hasPriorWinSettlement = cursor.hasWinSettlement,
+                        exhaustiveDrawSettlement = cursor.exhaustiveDrawSettlement,
                     )
                     if (fact.typeKey == HistoryFactTypeKeys.WIN_SETTLED ||
                         (fact is HistoryReplayFact.RuleEffect && fact.outcome?.classification == RoundCompletionClassification.WIN)
@@ -150,7 +150,7 @@ class CompactReplayRoundReader(
     private fun catalog(cursor: Cursor, budget: ReplayReadBudget): HistoryRoundTileCatalog {
         budget.charge(cursor.tiles.size.toLong())
         return HistoryRoundTileCatalog(
-            cursor.tiles.mapIndexed { index, tile ->
+            tiles = cursor.tiles.mapIndexed { index, tile ->
                 cursor.presentations[index]?.let { TileFaceView(tile, it.views, it.appearanceId) } ?: TileFaceView(tile)
             },
         )

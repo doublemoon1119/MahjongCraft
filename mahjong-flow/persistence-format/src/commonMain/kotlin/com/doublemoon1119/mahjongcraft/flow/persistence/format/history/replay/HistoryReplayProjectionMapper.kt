@@ -94,10 +94,10 @@ internal object HistoryReplayProjectionMapper {
         require(players.all { player -> player.discards.all { !it.isTaken || it.tile in meldSources } }) { "Replay taken discard must be the source of a meld" }
         val phaseType = string(obj(root.getValue(ReplaySourceKeys.TURN_PHASE)).getValue(ReplaySourceKeys.TYPE))
         return HistoryRoundState(
-            identity, roundNumber, position, tileCatalog, players, wall, reserved,
-            players.getOrNull(current)?.initialSeatIndex ?: invalid(), dealer, wind, roundPosition,
-            integer(root.getValue(ReplaySourceKeys.COMBO_COUNT)), root[ReplaySourceKeys.FINISHED_PLAYER_IDS]?.let { array(it).map { value -> context.seat(integer(value)) }.toSet() } ?: emptySet(),
-            phaseType == TurnPhaseSerialNames.AWAITING_DISCARD_REACTION, phaseType == TurnPhaseSerialNames.AWAITING_ROBBING_REACTION, null,
+            identity = identity, roundNumber = roundNumber, position = position, tileCatalog = tileCatalog, players = players, wallTiles = wall, reservedTiles = reserved,
+            currentPlayerSeat = players.getOrNull(current)?.initialSeatIndex ?: invalid(), dealerSeat = dealer, prevalentWind = wind, roundPosition = roundPosition,
+            comboCount = integer(root.getValue(ReplaySourceKeys.COMBO_COUNT)), finishedPlayerSeats = root[ReplaySourceKeys.FINISHED_PLAYER_IDS]?.let { array(it).map { value -> context.seat(integer(value)) }.toSet() } ?: emptySet(),
+            hasPendingReaction = phaseType == TurnPhaseSerialNames.AWAITING_DISCARD_REACTION, hasPendingRobbingReaction = phaseType == TurnPhaseSerialNames.AWAITING_ROBBING_REACTION, outcome = null,
         )
     }
 
@@ -187,25 +187,25 @@ internal object HistoryReplayProjectionMapper {
                         "Replay dice roll actor does not match its recorded player"
                     }
                     HistoryReplayFact.DiceRolled(
-                        type,
-                        integer(roll.getValue(ReplaySourceKeys.ROLL_INDEX)).also { require(it >= 0) { "Replay dice roll index must not be negative" } },
-                        actorSeat,
-                        values,
+                        typeKey = type,
+                        rollIndex = integer(roll.getValue(ReplaySourceKeys.ROLL_INDEX)).also { require(it >= 0) { "Replay dice roll index must not be negative" } },
+                        actorSeat = actorSeat,
+                        dice = values,
                     )
                 }
                 HistoryFactTypeKeys.ROUND_COMPLETED -> HistoryReplayFact.Completion(type, outcome(obj(fact.getValue(ReplaySourceKeys.SUMMARY)), context))
                 HistoryFactTypeKeys.WIN_SETTLED -> HistoryReplayFact.Completion(type, winSettledOutcome(fact, context))
                 HistoryFactTypeKeys.RULE_EFFECT_RESOLVED -> HistoryReplayFact.RuleEffect(
-                    type,
-                    string(fact.getValue(ReplaySourceKeys.REASON_ID)),
-                    fact.getValue(ReplaySourceKeys.ROUND_COMPLETION).takeUnless { it == JsonNull }?.let {
+                    typeKey = type,
+                    reasonId = string(fact.getValue(ReplaySourceKeys.REASON_ID)),
+                    outcome = fact.getValue(ReplaySourceKeys.ROUND_COMPLETION).takeUnless { it == JsonNull }?.let {
                         outcome(obj(it), context, winnerDetails(fact[ReplaySourceKeys.WIN_DETAILS], context))
                     },
                 )
                 HistoryFactTypeKeys.MATCH_COMPLETED -> HistoryReplayFact.Completion(type, HistoryRoundOutcome(string(fact.getValue(ReplaySourceKeys.REASON_ID)), emptyList(), scores(fact.getValue(ReplaySourceKeys.FINAL_SCORES_BY_PLAYER_ID), context)))
                 HistoryFactTypeKeys.MATCH_ABORTED -> HistoryReplayFact.Completion(
-                    type,
-                    HistoryRoundOutcome(string(fact.getValue(ReplaySourceKeys.REASON_ID)), emptyList(), emptyMap()),
+                    typeKey = type,
+                    outcome = HistoryRoundOutcome(string(fact.getValue(ReplaySourceKeys.REASON_ID)), emptyList(), emptyMap()),
                 )
                 else -> HistoryReplayFact.Opaque(type, actor, direct, revealed)
             }
@@ -296,14 +296,14 @@ internal object HistoryReplayProjectionMapper {
         }
         require(tileAreas.map { it.areaId }.distinct().size == tileAreas.size) { "Replay tile areas must be distinct" }
         return HistoryReplayPlayerState(
-            context.seat(integer(value.getValue(ReplaySourceKeys.INITIAL_SEAT_INDEX))),
-            tiles,
-            array(hand.getValue(ReplaySourceKeys.MELDS)).map { meld(obj(it), context) },
-            lastDrawn,
-            discards,
-            integer(value.getValue(ReplaySourceKeys.SCORE)),
-            Wind.valueOf(string(value.getValue(ReplaySourceKeys.SEAT_WIND))),
-            tileAreas,
+            initialSeatIndex = context.seat(integer(value.getValue(ReplaySourceKeys.INITIAL_SEAT_INDEX))),
+            handTiles = tiles,
+            melds = array(hand.getValue(ReplaySourceKeys.MELDS)).map { meld(obj(it), context) },
+            lastDrawn = lastDrawn,
+            discards = discards,
+            score = integer(value.getValue(ReplaySourceKeys.SCORE)),
+            seatWind = Wind.valueOf(string(value.getValue(ReplaySourceKeys.SEAT_WIND))),
+            tileAreas = tileAreas,
         )
     }
 
@@ -376,12 +376,12 @@ internal object HistoryReplayProjectionMapper {
         context: HistoryReplayProjectionContext,
         savedWinnerDetails: List<HistoryWinnerDetails>? = null,
     ): HistoryRoundOutcome = HistoryRoundOutcome(
-        string(value.getValue(ReplaySourceKeys.OUTCOME_ID)),
-        array(value.getValue(ReplaySourceKeys.BENEFICIARY_PLAYER_IDS)).map { context.seat(integer(it)) },
-        scores(value.getValue(ReplaySourceKeys.SETTLED_SCORES_BY_PLAYER_ID), context),
-        RoundCompletionClassification.valueOf(string(value.getValue(ReplaySourceKeys.CLASSIFICATION))),
-        array(value.getValue(ReplaySourceKeys.RESPONSIBLE_PLAYER_IDS)).map { context.seat(integer(it)) },
-        transitionDirective(obj(value.getValue(ReplaySourceKeys.TRANSITION_DIRECTIVE)), context),
+        reasonId = string(value.getValue(ReplaySourceKeys.OUTCOME_ID)),
+        beneficiarySeats = array(value.getValue(ReplaySourceKeys.BENEFICIARY_PLAYER_IDS)).map { context.seat(integer(it)) },
+        scoresBySeat = scores(value.getValue(ReplaySourceKeys.SETTLED_SCORES_BY_PLAYER_ID), context),
+        classification = RoundCompletionClassification.valueOf(string(value.getValue(ReplaySourceKeys.CLASSIFICATION))),
+        responsibleSeats = array(value.getValue(ReplaySourceKeys.RESPONSIBLE_PLAYER_IDS)).map { context.seat(integer(it)) },
+        transitionDirective = transitionDirective(obj(value.getValue(ReplaySourceKeys.TRANSITION_DIRECTIVE)), context),
         winnerDetails = savedWinnerDetails ?: emptyList(),
     )
 
@@ -469,13 +469,13 @@ internal object HistoryReplayProjectionMapper {
     private fun detailValue(value: JsonObject, context: HistoryReplayProjectionContext): HistoryWinDetailValue = when (string(value.getValue(ReplaySourceKeys.TYPE))) {
         HistoryDetailValueTypeKeys.QUANTITIES -> HistoryWinDetailValue.Quantities(array(value.getValue(ReplaySourceKeys.QUANTITIES)).map { quantity(obj(it)) })
         HistoryDetailValueTypeKeys.TILE_FACES -> HistoryWinDetailValue.TileFaces(
-            array(value.getValue(ReplaySourceKeys.TILE_FACES)).map { face ->
+            faces = array(value.getValue(ReplaySourceKeys.TILE_FACES)).map { face ->
                 context.charge()
                 persistenceJson.decodeFromJsonElement(TileFaceViewPersistenceDto.serializer(), face).toDomain(context.componentViews)
             },
         )
         HistoryDetailValueTypeKeys.ENTRIES -> HistoryWinDetailValue.Entries(
-            array(value.getValue(ReplaySourceKeys.ENTRIES)).map { raw ->
+            entries = array(value.getValue(ReplaySourceKeys.ENTRIES)).map { raw ->
                 val entry = obj(raw)
                 WinSettlementDetailEntry(
                     id = string(entry.getValue(ReplaySourceKeys.ID)),

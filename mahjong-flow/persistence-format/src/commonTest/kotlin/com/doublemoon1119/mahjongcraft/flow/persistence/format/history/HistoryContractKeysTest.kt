@@ -13,7 +13,7 @@ class HistoryContractKeysTest {
     @Test
     fun `history fact type keys preserve serialized contract`() {
         assertEquals(
-            listOf(
+            expected = listOf(
                 "match_started",
                 "round_started",
                 "dice_rolled",
@@ -32,7 +32,7 @@ class HistoryContractKeysTest {
                 "table_changed",
                 "returned_to_room",
             ),
-            listOf(
+            actual = listOf(
                 HistoryFactPersistenceDto.MatchStarted.serializer(),
                 HistoryFactPersistenceDto.RoundStarted.serializer(),
                 HistoryFactPersistenceDto.DiceRolled.serializer(),
@@ -62,8 +62,8 @@ class HistoryContractKeysTest {
         assertEquals("entries", HistoryDetailValueTypeKeys.ENTRIES)
 
         assertEquals(
-            listOf("quantities", "tile_faces", "entries"),
-            listOf(
+            expected = listOf("quantities", "tile_faces", "entries"),
+            actual = listOf(
                 HistoryWinDetailValuePersistenceDto.Quantities.serializer(),
                 HistoryWinDetailValuePersistenceDto.TileFaces.serializer(),
                 HistoryWinDetailValuePersistenceDto.Entries.serializer(),

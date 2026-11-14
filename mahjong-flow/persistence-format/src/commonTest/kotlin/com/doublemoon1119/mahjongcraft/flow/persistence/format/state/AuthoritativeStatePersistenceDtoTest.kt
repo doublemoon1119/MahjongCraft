@@ -49,8 +49,8 @@ class AuthoritativeStatePersistenceDtoTest {
         val envelope = expected.toEnvelope()
         val encoded = persistenceJson.encodeToString(PersistenceEnvelopeDto.serializer(), envelope)
         val decodedEnvelope = persistenceJson.decodeFromString(
-            PersistenceEnvelopeDto.serializer(),
-            encoded,
+            deserializer = PersistenceEnvelopeDto.serializer(),
+            string = encoded,
         )
         val restored = decodedEnvelope.decodeCurrentAuthoritativeState()
 
@@ -191,11 +191,11 @@ class AuthoritativeStatePersistenceDtoTest {
         )
 
         val restored = state.toGames(
-            ruleConfigRegistry,
-            discardPileRegistry,
-            exhaustiveDrawReasonRegistry,
-            extensionGameActionRegistry,
-            bundledPersistenceRegistries().components,
+            ruleConfigRegistry = ruleConfigRegistry,
+            discardPileRegistry = discardPileRegistry,
+            exhaustiveDrawReasonRegistry = exhaustiveDrawReasonRegistry,
+            extensionGameActionRegistry = extensionGameActionRegistry,
+            componentRegistry = bundledPersistenceRegistries().components,
         ).getValue(game.id)
 
         assertEquals(setOf(playerId), restored.forcedAutoPlayPlayerIds)
@@ -218,11 +218,11 @@ class AuthoritativeStatePersistenceDtoTest {
         )
 
         val restored = state.toGames(
-            ruleConfigRegistry,
-            discardPileRegistry,
-            exhaustiveDrawReasonRegistry,
-            extensionGameActionRegistry,
-            bundledPersistenceRegistries().components,
+            ruleConfigRegistry = ruleConfigRegistry,
+            discardPileRegistry = discardPileRegistry,
+            exhaustiveDrawReasonRegistry = exhaustiveDrawReasonRegistry,
+            extensionGameActionRegistry = extensionGameActionRegistry,
+            componentRegistry = bundledPersistenceRegistries().components,
         ).getValue(game.id)
 
         assertEquals(mapOf(playerId to "example:strategy"), restored.aiPlayerStrategyKeys)
@@ -246,16 +246,16 @@ class AuthoritativeStatePersistenceDtoTest {
         )
 
         val restored = state.toGames(
-            ruleConfigRegistry,
-            discardPileRegistry,
-            exhaustiveDrawReasonRegistry,
-            extensionGameActionRegistry,
-            bundledPersistenceRegistries().components,
+            ruleConfigRegistry = ruleConfigRegistry,
+            discardPileRegistry = discardPileRegistry,
+            exhaustiveDrawReasonRegistry = exhaustiveDrawReasonRegistry,
+            extensionGameActionRegistry = extensionGameActionRegistry,
+            componentRegistry = bundledPersistenceRegistries().components,
         ).getValue(game.id)
 
         assertEquals(
-            mapOf(playerId to setOf("example:auto_action")),
-            restored.enabledAutomaticControlIdsByPlayerId,
+            expected = mapOf(playerId to setOf("example:auto_action")),
+            actual = restored.enabledAutomaticControlIdsByPlayerId,
         )
         assertEquals(12L, restored.automaticControlRevision)
     }
@@ -277,11 +277,11 @@ class AuthoritativeStatePersistenceDtoTest {
         )
 
         val restored = state.toGames(
-            ruleConfigRegistry,
-            discardPileRegistry,
-            exhaustiveDrawReasonRegistry,
-            extensionGameActionRegistry,
-            bundledPersistenceRegistries().components,
+            ruleConfigRegistry = ruleConfigRegistry,
+            discardPileRegistry = discardPileRegistry,
+            exhaustiveDrawReasonRegistry = exhaustiveDrawReasonRegistry,
+            extensionGameActionRegistry = extensionGameActionRegistry,
+            componentRegistry = bundledPersistenceRegistries().components,
         ).getValue(game.id)
 
         assertEquals(mapOf(playerId to 3_500.milliseconds), restored.interruptedBaseByPlayerId)
@@ -372,10 +372,10 @@ class AuthoritativeStatePersistenceDtoTest {
 
     /** 使用所有內建註冊表還原遊戲，再取出以遊戲 ID 索引的桌況。 */
     private fun AuthoritativeStatePersistenceDto.toGames(): Map<Uuid, TableState> = toGames(
-        ruleConfigRegistry,
-        discardPileRegistry,
-        exhaustiveDrawReasonRegistry,
-        extensionGameActionRegistry,
-        bundledPersistenceRegistries().components,
+        ruleConfigRegistry = ruleConfigRegistry,
+        discardPileRegistry = discardPileRegistry,
+        exhaustiveDrawReasonRegistry = exhaustiveDrawReasonRegistry,
+        extensionGameActionRegistry = extensionGameActionRegistry,
+        componentRegistry = bundledPersistenceRegistries().components,
     ).mapValues { it.value.tableState }
 }

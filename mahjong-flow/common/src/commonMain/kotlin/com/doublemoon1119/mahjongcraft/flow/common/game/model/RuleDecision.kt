@@ -26,6 +26,6 @@ fun RuleDecisionInputSpec.defaultSubmission(): RuleDecisionSubmission = when (th
     RuleDecisionInputSpec.Confirmation -> RuleDecisionSubmission.Confirmed
     is RuleDecisionInputSpec.SingleChoice -> RuleDecisionSubmission.Choice(optionIds.first())
     is RuleDecisionInputSpec.TileSelection -> RuleDecisionSubmission.Tiles(
-        eligibleTileIds.sortedBy(Uuid::toString).take(minCount).toSet(),
+        tileIds = eligibleTileIds.sortedBy(Uuid::toString).take(minCount).toSet(),
     )
 }

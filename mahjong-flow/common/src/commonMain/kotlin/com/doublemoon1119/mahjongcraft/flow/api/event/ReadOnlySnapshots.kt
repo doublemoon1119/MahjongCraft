@@ -49,7 +49,7 @@ internal class ReadOnlySetSnapshot<T>(elements: Iterable<T>) : AbstractSet<T>() 
  */
 internal class ReadOnlyMapSnapshot<K, V>(source: Map<K, V>) : AbstractMap<K, V>() {
     override val entries: Set<Map.Entry<K, V>> = ReadOnlySetSnapshot(
-        source.map { (entryKey, entryValue) ->
+        elements = source.map { (entryKey, entryValue) ->
             object : Map.Entry<K, V> {
                 override val key: K = entryKey
 

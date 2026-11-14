@@ -41,7 +41,7 @@ fun GameActionDto.toDomain(registries: NetworkDtoConverter): GameAction = when (
     GameActionDto.RoundStarted -> GameAction.RoundStarted
     GameActionDto.MatchEnded -> GameAction.MatchEnded
     is GameActionDto.DiceRolled -> GameAction.DiceRolled(
-        OpeningDiceRoll(rollIndex, Uuid.parse(playerId), DiceRollResult.of(dice)),
+        roll = OpeningDiceRoll(rollIndex, Uuid.parse(playerId), DiceRollResult.of(dice)),
     )
     GameActionDto.Draw -> GameAction.Draw
     is GameActionDto.Discard -> GameAction.Discard(Uuid.parse(tileId))

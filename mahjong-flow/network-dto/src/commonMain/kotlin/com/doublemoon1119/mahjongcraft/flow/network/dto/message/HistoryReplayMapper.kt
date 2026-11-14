@@ -116,12 +116,12 @@ private fun HistoryReplayTransaction.toDto(registries: NetworkDtoConverter): His
 private fun HistoryReplayFact.toDto(registries: NetworkDtoConverter): HistoryReplayFactDto = when (this) {
     is HistoryReplayFact.KnownAction -> HistoryReplayFactDto.KnownAction(typeKey, actorSeat, actionType, directTiles.map { it.tileIndex }, revealedTiles.map { it.tileIndex }, extensionTypeId)
     is HistoryReplayFact.ActionScored -> HistoryReplayFactDto.ActionScored(
-        typeKey,
-        actorSeat,
-        actionType,
-        extensionTypeId,
-        scoreDeltasBySeat,
-        potDeposit,
+        typeKey = typeKey,
+        actorSeat = actorSeat,
+        actionType = actionType,
+        extensionTypeId = extensionTypeId,
+        scoreDeltasBySeat = scoreDeltasBySeat,
+        potDeposit = potDeposit,
     )
     is HistoryReplayFact.Reaction -> HistoryReplayFactDto.Reaction(typeKey, actionType, resolvedActorSeat)
     is HistoryReplayFact.RuleDecision -> HistoryReplayFactDto.RuleDecision(
@@ -204,7 +204,7 @@ private fun HistoryWinDetailField.toDto(registries: NetworkDtoConverter): Histor
 private fun HistoryWinDetailValue.toDto(registries: NetworkDtoConverter): HistoryWinDetailValueDto = when (this) {
     is HistoryWinDetailValue.Quantities -> HistoryWinDetailValueDto.Quantities(quantities.map { it.toDto() })
     is HistoryWinDetailValue.Entries -> HistoryWinDetailValueDto.Entries(
-        entries.map { entry ->
+        entries = entries.map { entry ->
             HistoryWinDetailValueDto.Entries.EntryDto(
                 id = entry.id,
                 quantity = entry.quantity?.toDto(),

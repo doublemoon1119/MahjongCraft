@@ -178,7 +178,7 @@ object FlatPatchCodec {
                 val inserted = splice[2] as? JsonArray ?: error("inserted must be an array")
                 val suffix = nonNegativeInt(splice[3], "suffix")
                 output.add(
-                    when {
+                    element = when {
                         removed == 0 && suffix == 0 && inserted.size == 1 -> JsonArray(listOf(pathId, JsonPrimitive(4), JsonPrimitive(prefix), inserted[0]))
                         prefix == 0 && removed == 1 && inserted.isEmpty() -> JsonArray(listOf(pathId, JsonPrimitive(3), JsonPrimitive(suffix)))
                         prefix == 0 && suffix == 0 && inserted.isEmpty() -> JsonArray(listOf(pathId, JsonPrimitive(5), JsonPrimitive(removed)))
@@ -266,7 +266,7 @@ object FlatPatchCodec {
         require(index in source.indices)
         budget?.charge(source.size.toLong())
         return JsonArray(
-            source.mapIndexed { position, entry ->
+            content = source.mapIndexed { position, entry ->
                 budget?.charge()
                 if (position == index) update(entry, tail, operation, budget) else entry
             },

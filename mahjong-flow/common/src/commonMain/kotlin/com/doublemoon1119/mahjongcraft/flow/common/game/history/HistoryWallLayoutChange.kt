@@ -21,6 +21,6 @@ data class HistoryWallLayoutChange(
      * @return 移除指定牌張並套用新位置後的布局。
      */
     fun applyTo(before: TileWallPhysicalLayout): TileWallPhysicalLayout = TileWallPhysicalLayout(
-        before.placements.filterKeys { it !in removedTileIds } + updatedPlacements,
+        placements = before.placements.filterKeys { it !in removedTileIds } + updatedPlacements,
     )
 }

@@ -49,8 +49,8 @@ class PendingReactionPersistenceTest {
         val serializer = ListSerializer(GameActionPersistenceDto.serializer())
 
         val encoded = json.encodeToString(
-            serializer,
-            actions.map { it.toPersistenceDto(exhaustiveDrawReasonRegistry, extensionGameActionRegistry) },
+            serializer = serializer,
+            value = actions.map { it.toPersistenceDto(exhaustiveDrawReasonRegistry, extensionGameActionRegistry) },
         )
         val restored = json.decodeFromString(serializer, encoded).map {
             it.toDomain(exhaustiveDrawReasonRegistry, extensionGameActionRegistry)
@@ -77,8 +77,8 @@ class PendingReactionPersistenceTest {
         )
 
         val encoded = json.encodeToString(
-            PendingReactionPersistenceDto.serializer(),
-            reaction.toPersistenceDto(exhaustiveDrawReasonRegistry, extensionGameActionRegistry),
+            serializer = PendingReactionPersistenceDto.serializer(),
+            value = reaction.toPersistenceDto(exhaustiveDrawReasonRegistry, extensionGameActionRegistry),
         )
         val restored = json.decodeFromString(PendingReactionPersistenceDto.serializer(), encoded)
             .toDomain(exhaustiveDrawReasonRegistry, extensionGameActionRegistry)
@@ -113,8 +113,8 @@ class PendingReactionPersistenceTest {
         )
 
         val encoded = json.encodeToString(
-            PendingRobbingReactionPersistenceDto.serializer(),
-            reaction.toPersistenceDto(exhaustiveDrawReasonRegistry, extensionGameActionRegistry, bundledPersistenceRegistries().components),
+            serializer = PendingRobbingReactionPersistenceDto.serializer(),
+            value = reaction.toPersistenceDto(exhaustiveDrawReasonRegistry, extensionGameActionRegistry, bundledPersistenceRegistries().components),
         )
         val restored = json.decodeFromString(PendingRobbingReactionPersistenceDto.serializer(), encoded)
             .toDomain(exhaustiveDrawReasonRegistry, extensionGameActionRegistry, bundledPersistenceRegistries().components)

@@ -18,7 +18,7 @@ class CompactWinDetailsCodecTest {
     @Test
     fun `all detail variants round trip for multiple winners`() {
         val details = json.parseToJsonElement(
-            """
+            string = """
             [
               {
                 "playerId": 0,
@@ -48,7 +48,7 @@ class CompactWinDetailsCodecTest {
     @Test
     fun `empty entries round trip`() {
         val details = json.parseToJsonElement(
-            """
+            string = """
             [{"playerId":0,"detailFields":[
               {"id":"test:entries","value":{"type":"entries","entries":[]}}
             ]}]
@@ -62,7 +62,7 @@ class CompactWinDetailsCodecTest {
     @Test
     fun `winning hand descriptor round trips`() {
         val details = json.parseToJsonElement(
-            """
+            string = """
             [{"playerId":0,"detailFields":[],
               "hand":{"standingTileIds":[2,1],"winningTileId":3}},
              {"playerId":1,"detailFields":[],
@@ -103,7 +103,7 @@ class CompactWinDetailsCodecTest {
     @Test
     fun `third party fact win details remain untouched`() {
         val fact = json.parseToJsonElement(
-            """
+            string = """
             {"type":"custom:fact","winDetails":[{"playerId":0,"detailFields":[]}]}
             """.trimIndent(),
         ) as JsonObject

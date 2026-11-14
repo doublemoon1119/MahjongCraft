@@ -161,7 +161,7 @@ internal object GameActionEventProjector {
 
     /** 建立牌面描述，不包含可追蹤實體牌的 UUID。 */
     private fun face(tile: Tile): PublicTileFace = PublicTileFace.create(
-        when (tile) {
+        typeId = when (tile) {
             is Tile.Extension -> tile.typeId.toString()
             is Tile.Numeric -> when (tile.suit) {
                 Tile.Suit.Character -> "mahjongcraft:tile/numeric/character/${tile.value}"

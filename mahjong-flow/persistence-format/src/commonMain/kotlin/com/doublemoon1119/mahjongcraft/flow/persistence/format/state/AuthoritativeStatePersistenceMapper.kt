@@ -50,11 +50,11 @@ fun createAuthoritativeStatePersistenceDto(
         rooms = rooms.associate { room -> room.id.toString() to room.toPersistenceDto(registries.ruleConfigs) },
         games = games.associate { game ->
             game.id.toString() to game.tableState.toPersistenceDto(
-                registries.ruleConfigs,
-                registries.discardPiles,
-                registries.exhaustiveDrawReasons,
-                registries.extensionGameActions,
-                registries.components,
+                ruleConfigRegistry = registries.ruleConfigs,
+                discardPileRegistry = registries.discardPiles,
+                exhaustiveDrawReasonRegistry = registries.exhaustiveDrawReasons,
+                extensionGameActionRegistry = registries.extensionGameActions,
+                componentRegistry = registries.components,
             )
         },
         gameFlowConfigs = games.associate { game -> game.id.toString() to game.flowConfig.toPersistenceDto() },
@@ -98,11 +98,11 @@ fun AuthoritativeStatePersistenceDto.toGames(
 ): Map<Uuid, Game> = games.values.associate { game ->
     val id = Uuid.parse(game.id)
     val tableState = game.toDomain(
-        ruleConfigRegistry,
-        discardPileRegistry,
-        exhaustiveDrawReasonRegistry,
-        extensionGameActionRegistry,
-        componentRegistry,
+        ruleConfigRegistry = ruleConfigRegistry,
+        discardPileRegistry = discardPileRegistry,
+        exhaustiveDrawReasonRegistry = exhaustiveDrawReasonRegistry,
+        extensionGameActionRegistry = extensionGameActionRegistry,
+        componentRegistry = componentRegistry,
     )
     val runtimeState = gameRuntimeStates.getValue(id.toString())
     id to Game(

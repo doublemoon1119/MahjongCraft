@@ -31,7 +31,7 @@ class PersistenceMigrationRegistryTest {
         )
 
         val migrated = registry.migrate(
-            PersistenceEnvelopeDto(schemaVersion = 1, state = buildJsonObject { put("original", "value") }),
+            envelope = PersistenceEnvelopeDto(schemaVersion = 1, state = buildJsonObject { put("original", "value") }),
         )
 
         assertEquals(3, migrated.schemaVersion)
@@ -45,7 +45,7 @@ class PersistenceMigrationRegistryTest {
         val registry = PersistenceMigrationRegistry(
             currentVersion = 2,
             migrations = mapOf(
-                1 to PersistenceMigration { state ->
+                pair = 1 to PersistenceMigration { state ->
                     val migratedRooms = state.getValue("rooms").jsonObject.mapValues { (_, roomElement) ->
                         buildJsonObject {
                             roomElement.jsonObject.forEach(::put)
@@ -74,8 +74,8 @@ class PersistenceMigrationRegistryTest {
 
         assertEquals(2, migrated.schemaVersion)
         assertEquals(
-            defaultFlowConfig,
-            migrated.state.getValue("rooms").jsonObject.getValue("room-1").jsonObject["flowConfig"],
+            expected = defaultFlowConfig,
+            actual = migrated.state.getValue("rooms").jsonObject.getValue("room-1").jsonObject["flowConfig"],
         )
         assertEquals(defaultFlowConfig, migrated.state.getValue("gameFlowConfigs").jsonObject["game-1"])
     }

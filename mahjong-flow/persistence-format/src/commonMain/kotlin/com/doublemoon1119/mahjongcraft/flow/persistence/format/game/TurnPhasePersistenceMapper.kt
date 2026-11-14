@@ -25,13 +25,13 @@ fun TurnPhase.toPersistenceDto(
     TurnPhase.AwaitingAction -> TurnPhasePersistenceDto.AwaitingAction
     TurnPhase.AwaitingDiscard -> TurnPhasePersistenceDto.AwaitingDiscard
     is TurnPhase.AwaitingDiscardReaction -> TurnPhasePersistenceDto.AwaitingDiscardReaction(
-        reaction.toPersistenceDto(exhaustiveDrawReasonRegistry, extensionGameActionRegistry),
+        reaction = reaction.toPersistenceDto(exhaustiveDrawReasonRegistry, extensionGameActionRegistry),
     )
     is TurnPhase.AwaitingRobbingReaction -> TurnPhasePersistenceDto.AwaitingRobbingReaction(
-        reaction.toPersistenceDto(exhaustiveDrawReasonRegistry, extensionGameActionRegistry, componentRegistry),
+        reaction = reaction.toPersistenceDto(exhaustiveDrawReasonRegistry, extensionGameActionRegistry, componentRegistry),
     )
     is TurnPhase.RoundOver -> TurnPhasePersistenceDto.RoundOver(
-        when (val ending = conclusion) {
+        conclusion = when (val ending = conclusion) {
             is RoundConclusion.Win -> RoundConclusionPersistenceDto.Win(ending.winnerPlayerIds.mapTo(mutableSetOf(), Uuid::toString))
             is RoundConclusion.ExhaustiveDraw -> RoundConclusionPersistenceDto.ExhaustiveDraw(
                 reason = exhaustiveDrawReasonRegistry.encode(ending.reason),
@@ -59,13 +59,13 @@ fun TurnPhasePersistenceDto.toDomain(
     TurnPhasePersistenceDto.AwaitingAction -> TurnPhase.AwaitingAction
     TurnPhasePersistenceDto.AwaitingDiscard -> TurnPhase.AwaitingDiscard
     is TurnPhasePersistenceDto.AwaitingDiscardReaction -> TurnPhase.AwaitingDiscardReaction(
-        reaction.toDomain(exhaustiveDrawReasonRegistry, extensionGameActionRegistry),
+        reaction = reaction.toDomain(exhaustiveDrawReasonRegistry, extensionGameActionRegistry),
     )
     is TurnPhasePersistenceDto.AwaitingRobbingReaction -> TurnPhase.AwaitingRobbingReaction(
-        reaction.toDomain(exhaustiveDrawReasonRegistry, extensionGameActionRegistry, componentRegistry),
+        reaction = reaction.toDomain(exhaustiveDrawReasonRegistry, extensionGameActionRegistry, componentRegistry),
     )
     is TurnPhasePersistenceDto.RoundOver -> TurnPhase.RoundOver(
-        when (val ending = conclusion) {
+        conclusion = when (val ending = conclusion) {
             is RoundConclusionPersistenceDto.Win -> RoundConclusion.Win(ending.winnerPlayerIds.mapTo(mutableSetOf(), Uuid::parse))
             is RoundConclusionPersistenceDto.ExhaustiveDraw -> RoundConclusion.ExhaustiveDraw(
                 reason = exhaustiveDrawReasonRegistry.decode(ending.reason),

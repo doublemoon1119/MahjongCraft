@@ -69,9 +69,9 @@ private fun RuleDecisionInputSpec.toPersistenceDto(): RuleDecisionInputSpecPersi
         passOptionId = passOptionId,
     )
     is RuleDecisionInputSpec.TileSelection -> RuleDecisionInputSpecPersistenceDto.TileSelection(
-        eligibleTileIds.mapTo(mutableSetOf(), Uuid::toString),
-        minCount,
-        maxCount,
+        eligibleTileIds = eligibleTileIds.mapTo(mutableSetOf(), Uuid::toString),
+        minCount = minCount,
+        maxCount = maxCount,
     )
 }
 
@@ -84,9 +84,9 @@ private fun RuleDecisionInputSpecPersistenceDto.toDomain(): RuleDecisionInputSpe
         passOptionId = passOptionId,
     )
     is RuleDecisionInputSpecPersistenceDto.TileSelection -> RuleDecisionInputSpec.TileSelection(
-        eligibleTileIds.mapTo(mutableSetOf(), Uuid::parse),
-        minCount,
-        maxCount,
+        eligibleTileIds = eligibleTileIds.mapTo(mutableSetOf(), Uuid::parse),
+        minCount = minCount,
+        maxCount = maxCount,
     )
 }
 

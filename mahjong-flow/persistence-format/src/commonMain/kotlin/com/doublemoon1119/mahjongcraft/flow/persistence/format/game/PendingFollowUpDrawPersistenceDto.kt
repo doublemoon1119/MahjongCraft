@@ -35,7 +35,7 @@ fun PendingFollowUpDraw.toPersistenceDto(
     source = when (val drawSource = source) {
         DrawSource.LiveWall -> DrawSourcePersistenceDto.LiveWall
         is DrawSource.Supplemental -> DrawSourcePersistenceDto.Supplemental(
-            drawSource.action.toPersistenceDto(exhaustiveDrawReasonRegistry, extensionGameActionRegistry),
+            action = drawSource.action.toPersistenceDto(exhaustiveDrawReasonRegistry, extensionGameActionRegistry),
         )
     },
 )
@@ -55,7 +55,7 @@ fun PendingFollowUpDrawPersistenceDto.toDomain(
     source = when (val drawSource = source) {
         DrawSourcePersistenceDto.LiveWall -> DrawSource.LiveWall
         is DrawSourcePersistenceDto.Supplemental -> DrawSource.Supplemental(
-            drawSource.action.toDomain(exhaustiveDrawReasonRegistry, extensionGameActionRegistry),
+            action = drawSource.action.toDomain(exhaustiveDrawReasonRegistry, extensionGameActionRegistry),
         )
     },
 )

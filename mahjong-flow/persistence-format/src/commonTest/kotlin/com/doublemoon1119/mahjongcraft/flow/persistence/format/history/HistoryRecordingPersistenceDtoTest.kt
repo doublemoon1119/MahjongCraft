@@ -64,7 +64,7 @@ class HistoryRecordingPersistenceDtoTest {
     fun `malformed terminal table ID fails decoding`() {
         val dto = HistoryRecordingPersistenceDto(
             terminalByMatchId = mapOf(
-                Uuid.random().toString() to HistoryRecordingTerminalPersistenceDto(1L, false, "not-a-uuid"),
+                pair = Uuid.random().toString() to HistoryRecordingTerminalPersistenceDto(1L, false, "not-a-uuid"),
             ),
             nextSequenceByMatchId = emptyMap(),
             pendingEvents = emptyList(),
@@ -87,7 +87,7 @@ class HistoryRecordingPersistenceDtoTest {
             publicTileEvidenceIds = setOf(Uuid.random()),
             appendedDiscards = listOf(Uuid.random()),
             revealedHandSettlements = listOf(
-                RevealedHandSettlement(
+                element = RevealedHandSettlement(
                     playerId = player.id,
                     waitingTiles = setOf(Tile.Honor.North),
                 ),
@@ -96,7 +96,7 @@ class HistoryRecordingPersistenceDtoTest {
         val state = HistoryRecordingState(
             nextSequenceByMatchId = mapOf(matchId to 2L),
             pendingEvents = listOf(
-                HistoryOutboxEvent(
+                element = HistoryOutboxEvent(
                     matchId = matchId,
                     venueId = Uuid.random(),
                     roundNumber = 1,
@@ -142,7 +142,7 @@ class HistoryRecordingPersistenceDtoTest {
         val state = HistoryRecordingState(
             nextSequenceByMatchId = mapOf(matchId to 2L),
             pendingEvents = listOf(
-                HistoryOutboxEvent(
+                element = HistoryOutboxEvent(
                     matchId = matchId,
                     venueId = tableState.id,
                     roundNumber = 1,
@@ -172,7 +172,7 @@ class HistoryRecordingPersistenceDtoTest {
         val state = HistoryRecordingState(
             nextSequenceByMatchId = mapOf(matchId to 2L),
             pendingEvents = listOf(
-                HistoryOutboxEvent(
+                element = HistoryOutboxEvent(
                     matchId = matchId,
                     venueId = Uuid.random(),
                     roundNumber = 1,
@@ -210,7 +210,7 @@ class HistoryRecordingPersistenceDtoTest {
         val state = HistoryRecordingState(
             nextSequenceByMatchId = mapOf(matchId to 2L),
             pendingEvents = listOf(
-                HistoryOutboxEvent(
+                element = HistoryOutboxEvent(
                     matchId = matchId,
                     venueId = Uuid.random(),
                     roundNumber = 1,
@@ -280,7 +280,7 @@ class HistoryRecordingPersistenceDtoTest {
         val payerId = Uuid.random()
         val state = HistoryRecordingState(
             pendingEvents = listOf(
-                HistoryOutboxEvent(
+                element = HistoryOutboxEvent(
                     matchId = matchId,
                     venueId = Uuid.random(),
                     roundNumber = 1,
@@ -307,7 +307,7 @@ class HistoryRecordingPersistenceDtoTest {
         val matchId = Uuid.random()
         val state = HistoryRecordingState(
             pendingEvents = listOf(
-                HistoryOutboxEvent(
+                element = HistoryOutboxEvent(
                     matchId = matchId,
                     venueId = Uuid.random(),
                     roundNumber = 1,
@@ -339,7 +339,7 @@ class HistoryRecordingPersistenceDtoTest {
         val state = HistoryRecordingState(
             nextSequenceByMatchId = mapOf(matchId to 4L),
             pendingEvents = listOf(
-                HistoryOutboxEvent(
+                element = HistoryOutboxEvent(
                     matchId = matchId,
                     venueId = venueId,
                     roundNumber = 1,
@@ -396,24 +396,24 @@ class HistoryRecordingPersistenceDtoTest {
             nextSequenceByMatchId = mapOf(matchId.toString() to 3L),
             pendingEvents = listOf(
                 HistoryOutboxEventPersistenceDto(
-                    matchId.toString(),
-                    venueId.toString(),
-                    1,
-                    1L,
-                    123L,
-                    null,
-                    HistoryFactPersistenceDto.MatchCompleted("test", mapOf("invalid-player-id" to 1)),
-                    1L,
+                    matchId = matchId.toString(),
+                    venueId = venueId.toString(),
+                    roundNumber = 1,
+                    sequence = 1L,
+                    occurredAtEpochMillis = 123L,
+                    actorPlayerId = null,
+                    fact = HistoryFactPersistenceDto.MatchCompleted("test", mapOf("invalid-player-id" to 1)),
+                    transactionFirstSequence = 1L,
                 ),
                 HistoryOutboxEventPersistenceDto(
-                    matchId.toString(),
-                    venueId.toString(),
-                    1,
-                    2L,
-                    124L,
-                    null,
-                    HistoryFactPersistenceDto.ReturnedToRoom,
-                    2L,
+                    matchId = matchId.toString(),
+                    venueId = venueId.toString(),
+                    roundNumber = 1,
+                    sequence = 2L,
+                    occurredAtEpochMillis = 124L,
+                    actorPlayerId = null,
+                    fact = HistoryFactPersistenceDto.ReturnedToRoom,
+                    transactionFirstSequence = 2L,
                 ),
             ),
             firstMissingSequenceByMatchId = emptyMap(),
@@ -437,16 +437,16 @@ class HistoryRecordingPersistenceDtoTest {
         val tile = Uuid.random()
         val standing = listOf(Uuid.random(), Uuid.random())
         val details = HistoryWinDetails(
-            winner,
-            listOf(
+            playerId = winner,
+            detailFields = listOf(
                 WinSettlementDetailField(
-                    "mahjongcraft:quantities",
-                    WinSettlementDetailValue.Quantities(listOf(WinSettlementQuantity("mahjongcraft:han", 3), WinSettlementQuantity("mahjongcraft:fu", 30))),
+                    id = "mahjongcraft:quantities",
+                    value = WinSettlementDetailValue.Quantities(listOf(WinSettlementQuantity("mahjongcraft:han", 3), WinSettlementQuantity("mahjongcraft:fu", 30))),
                 ),
                 WinSettlementDetailField(
-                    "mahjongcraft:entries",
-                    WinSettlementDetailValue.Entries(
-                        listOf(
+                    id = "mahjongcraft:entries",
+                    value = WinSettlementDetailValue.Entries(
+                        entries = listOf(
                             WinSettlementDetailEntry("mahjongcraft:yaku/test", WinSettlementQuantity("mahjongcraft:han", 1)),
                             WinSettlementDetailEntry("mahjongcraft:yaku/plain"),
                             WinSettlementDetailEntry(
@@ -464,11 +464,11 @@ class HistoryRecordingPersistenceDtoTest {
         )
         val state = HistoryRecordingState(
             pendingEvents = listOf(
-                HistoryOutboxEvent(
-                    matchId,
-                    Uuid.random(),
-                    1,
-                    1L,
+                element = HistoryOutboxEvent(
+                    matchId = matchId,
+                    venueId = Uuid.random(),
+                    roundNumber = 1,
+                    sequence = 1L,
                     occurredAtEpochMillis = 1L,
                     actorPlayerId = winner,
                     fact = HistoryFact.WinSettled("mahjongcraft:ron", listOf(details), listOf(Uuid.random())),

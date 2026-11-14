@@ -21,8 +21,8 @@ class ReplayCodecTest {
         assertEquals(value, CompactReplayDictionary.decode(CompactReplayDictionary.encode(value)))
         assertFailsWith<IllegalArgumentException> {
             CompactReplayDictionary.decode(
-                JsonObject(
-                    mapOf(
+                encoded = JsonObject(
+                    content = mapOf(
                         ReplayFormatKeys.KEY_DICTIONARY to JsonArray(emptyList()),
                         ReplayFormatKeys.STRING_DICTIONARY to JsonArray(emptyList()),
                         ReplayFormatKeys.DATA to JsonPrimitive("~0"),
@@ -37,13 +37,13 @@ class ReplayCodecTest {
     fun `flat patch round trips and rejects wrong list length`() {
         val before = json.parseToJsonElement("""{"items":[1,2],"name":"old"}""")
         val patch = JsonObject(
-            mapOf(
-                ReplayPatchKeys.OBJECT to JsonObject(
-                    mapOf(
-                        "items" to JsonObject(
-                            mapOf(
-                                ReplayPatchKeys.SPLICE to JsonArray(
-                                    listOf(JsonPrimitive(2), JsonPrimitive(0), JsonArray(listOf(JsonPrimitive(3))), JsonPrimitive(0)),
+            content = mapOf(
+                pair = ReplayPatchKeys.OBJECT to JsonObject(
+                    content = mapOf(
+                        pair = "items" to JsonObject(
+                            content = mapOf(
+                                pair = ReplayPatchKeys.SPLICE to JsonArray(
+                                    content = listOf(JsonPrimitive(2), JsonPrimitive(0), JsonArray(listOf(JsonPrimitive(3))), JsonPrimitive(0)),
                                 ),
                             ),
                         ),

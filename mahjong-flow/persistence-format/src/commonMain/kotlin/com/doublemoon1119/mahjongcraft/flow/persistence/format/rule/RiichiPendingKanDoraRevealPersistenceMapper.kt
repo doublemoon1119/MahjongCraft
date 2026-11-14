@@ -10,9 +10,9 @@ import kotlin.uuid.Uuid
  * @return 轉換後的待公開槓寶牌 persistence DTO。
  */
 fun RiichiPendingKanDoraReveal.toPersistenceDto(): RiichiPendingKanDoraRevealPersistenceDto = RiichiPendingKanDoraRevealPersistenceDto(
-    actorPlayerId.toString(),
-    sourceKanType.toPersistenceDto(),
-    supplementalDrawNumber,
+    actorPlayerId = actorPlayerId.toString(),
+    sourceKanType = sourceKanType.toPersistenceDto(),
+    supplementalDrawNumber = supplementalDrawNumber,
 )
 
 /**
@@ -21,9 +21,9 @@ fun RiichiPendingKanDoraReveal.toPersistenceDto(): RiichiPendingKanDoraRevealPer
  * @return 還原後的待公開槓寶牌狀態。
  */
 fun RiichiPendingKanDoraRevealPersistenceDto.toDomain(): RiichiPendingKanDoraReveal = RiichiPendingKanDoraReveal(
-    Uuid.parse(actorPlayerId),
-    sourceKanType.toDomain(),
-    supplementalDrawNumber,
+    actorPlayerId = Uuid.parse(actorPlayerId),
+    sourceKanType = sourceKanType.toDomain(),
+    supplementalDrawNumber = supplementalDrawNumber,
 )
 
 /** 將來源槓牌種類轉為 persistence DTO。 */
