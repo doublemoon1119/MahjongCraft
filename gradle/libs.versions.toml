@@ -53,6 +53,7 @@ kotlin-gradle-plugin = { group = "org.jetbrains.kotlin", name = "kotlin-gradle-p
 ktlint-gradle-plugin = { group = "org.jlleitschuh.gradle", name = "ktlint-gradle", version.ref = "ktlint-gradle" }
 detekt-gradle-plugin = { group = "dev.detekt", name = "detekt-gradle-plugin", version.ref = "detekt" }
 detekt-api = { group = "dev.detekt", name = "detekt-api", version.ref = "detekt" }
+detekt-kotlin-analysis-api = { group = "dev.detekt", name = "detekt-kotlin-analysis-api", version.ref = "detekt" }
 detekt-test = { group = "dev.detekt", name = "detekt-test", version.ref = "detekt" }
 
 # Kotlin ecosystem libraries

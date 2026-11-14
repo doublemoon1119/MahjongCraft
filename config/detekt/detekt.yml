@@ -11,6 +11,9 @@ mahjongcraft:
     active: true
   KDocTagSpacing:
     active: true
+  # Arguments of calls that span several lines must be named; enabled once every module names them.
+  MultilineCallArgumentName:
+    active: false
 
 style:
   active: true

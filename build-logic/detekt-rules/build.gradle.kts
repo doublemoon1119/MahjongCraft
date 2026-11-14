@@ -7,6 +7,7 @@ version = rootProject.version
 
 dependencies {
     compileOnly(libs.detekt.api)
+    compileOnly(libs.detekt.kotlin.analysis.api)
     testImplementation(libs.detekt.api)
     testImplementation(libs.detekt.test)
     testImplementation(kotlin("test"))
