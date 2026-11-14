@@ -26,6 +26,9 @@
 ## Kotlin Development Conventions
 
 - **Architecture**: Follow Clean Architecture principles. Keep code concise and well-structured.
+- **Line length**: Try to keep lines within about 140 characters. No tool enforces this. When a line grows
+  longer, wrap it where it reads naturally, for example by extracting a well-named local value, breaking
+  after `=`, or putting each condition on its own line. A long string literal may stay on a line of its own.
 - **Test Framework**: **JUnit is strictly forbidden**. Only `kotlin.test.Test` is allowed.
 - **Test Naming**: Test method names must use backtick format, e.g., ``
   `test sorting with different regional orders` ``.
