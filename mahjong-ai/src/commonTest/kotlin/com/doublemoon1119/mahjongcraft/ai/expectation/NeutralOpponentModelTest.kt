@@ -52,8 +52,8 @@ class NeutralOpponentModelTest {
     @Test
     fun `discard danger does not distinguish tiles`() {
         assertEquals(
-            model.discardDanger(view, active.id, Tile.Honor.Red),
-            model.discardDanger(view, active.id, Tile.Numeric(Tile.Suit.Bamboo, 5)),
+            expected = model.discardDanger(view, active.id, Tile.Honor.Red),
+            actual = model.discardDanger(view, active.id, Tile.Numeric(Tile.Suit.Bamboo, 5)),
         )
     }
 

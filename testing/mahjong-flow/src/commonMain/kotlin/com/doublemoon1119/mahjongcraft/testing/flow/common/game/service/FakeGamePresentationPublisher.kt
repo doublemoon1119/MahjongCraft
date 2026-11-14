@@ -97,11 +97,11 @@ class FakeGamePresentationPublisher : GamePresentationPublisher {
         wallStructures[gameId] = layout
         wallAssemblyStructures[gameId] = assemblyStructure
         wallStructureContexts[gameId] = WallStructureContext(
-            dealerSeatIndex,
-            reservedWallTileIds,
-            openingDiceCounts,
-            isNewOpening,
-            revealedTileIds,
+            dealerSeatIndex = dealerSeatIndex,
+            reservedWallTileIds = reservedWallTileIds,
+            openingDiceCounts = openingDiceCounts,
+            isNewOpening = isNewOpening,
+            revealedTileIds = revealedTileIds,
         )
     }
 
@@ -113,11 +113,11 @@ class FakeGamePresentationPublisher : GamePresentationPublisher {
         openingDiceCounts: List<Int>,
     ) {
         initialDeals[gameId] = InitialDealContext(
-            handTileIdsBySeatIndex,
-            tableState.players.withIndex().associate { (seatIndex, player) -> seatIndex to player.hand.tiles.map { it.id } },
-            tableState.dealerIndex,
-            dealBatchSizes,
-            openingDiceCounts,
+            handTileIdsBySeatIndex = handTileIdsBySeatIndex,
+            postFlipHandTileIdsBySeatIndex = tableState.players.withIndex().associate { (seatIndex, player) -> seatIndex to player.hand.tiles.map { it.id } },
+            dealerSeatIndex = tableState.dealerIndex,
+            dealBatchSizes = dealBatchSizes,
+            openingDiceCounts = openingDiceCounts,
         )
     }
 

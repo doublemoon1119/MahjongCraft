@@ -28,8 +28,8 @@ class BuiltInMahjongExtensionTest {
         }
 
         assertEquals(
-            listOf(BuiltInAiStrategyKeys.BEGINNER, BuiltInAiStrategyKeys.INTERMEDIATE, BuiltInAiStrategyKeys.ADVANCED, RandomAiStrategy.KEY),
-            registry.getAllStrategyKeys().toList(),
+            expected = listOf(BuiltInAiStrategyKeys.BEGINNER, BuiltInAiStrategyKeys.INTERMEDIATE, BuiltInAiStrategyKeys.ADVANCED, RandomAiStrategy.KEY),
+            actual = registry.getAllStrategyKeys().toList(),
         )
         assertIs<RandomAiStrategy>(registry.resolve(RandomAiStrategy.KEY))
         assertEquals(InformationLevel.BEGINNER, assertIs<ExpectedValueAiStrategy>(registry.resolve(BuiltInAiStrategyKeys.BEGINNER)).level)

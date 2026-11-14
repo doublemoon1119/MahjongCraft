@@ -72,14 +72,14 @@ class BundledMahjongExtensionsTest {
             "mahjongcraft:win_celebration_cue_resolver",
         ).forEach { categoryId -> assertTrue(riichi.ids(categoryId).isNotEmpty(), "Riichi should register $categoryId") }
         assertEquals(
-            listOf(BuiltInRuleModuleIds.RIICHI, BuiltInRuleModuleIds.RIICHI_THREE_PLAYER),
-            riichi.ids("mahjongcraft:game_event_public_marker_resolver"),
+            expected = listOf(BuiltInRuleModuleIds.RIICHI, BuiltInRuleModuleIds.RIICHI_THREE_PLAYER),
+            actual = riichi.ids("mahjongcraft:game_event_public_marker_resolver"),
         )
         assertTrue(riichi.ids("mahjongcraft:persistence_dto").any { "riichi/player/declaration" in it })
         assertTrue(riichi.ids("mahjongcraft:persistence_dto").none { "riichi/player_state" in it })
         assertTrue(
-            riichi.ids("mahjongcraft:component").containsAll(
-                listOf(
+            actual = riichi.ids("mahjongcraft:component").containsAll(
+                elements = listOf(
                     "value:mahjongcraft:riichi/player/declaration",
                     "value:mahjongcraft:riichi/player/permanent_furiten",
                     "value:mahjongcraft:riichi/player/pao_liability",

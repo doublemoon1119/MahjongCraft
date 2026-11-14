@@ -10,13 +10,13 @@ class ExtensionRegistrationReportTest {
     @Test
     fun `format summary`() {
         assertEquals(
-            """
+            expected = """
             Enabled 4 registration(s) from 3 source(s):
             ├── built-in (2)
             ├── ext_a (2)
             └── ext_b (0)
             """.trimIndent(),
-            ExtensionRegistrationReportFormatter.formatSummary(sampleReport()),
+            actual = ExtensionRegistrationReportFormatter.formatSummary(sampleReport()),
         )
     }
 
@@ -24,7 +24,7 @@ class ExtensionRegistrationReportTest {
     @Test
     fun `format details`() {
         assertEquals(
-            """
+            expected = """
             Enabled 4 registration(s) from 3 source(s):
             ├── built-in (2)
             │   └── Tile Asset (2): [asset_a, asset_b]
@@ -33,7 +33,7 @@ class ExtensionRegistrationReportTest {
             │   └── Rule Module Display Name (1): [rule_a]
             └── ext_b (0)
             """.trimIndent(),
-            ExtensionRegistrationReportFormatter.formatDetails(sampleReport()),
+            actual = ExtensionRegistrationReportFormatter.formatDetails(sampleReport()),
         )
     }
 
@@ -50,12 +50,12 @@ class ExtensionRegistrationReportTest {
         )
 
         assertEquals(
-            listOf(
+            expected = listOf(
                 ExtensionRegistrationSource(null, listOf(category("tile", "Tile", "built_in"), category("sound", "Sound", "built_in_sound"))),
                 ExtensionRegistrationSource("ext_a", listOf(category("sound", "Sound", "custom_sound"))),
                 ExtensionRegistrationSource("ext_b", emptyList()),
             ),
-            merged,
+            actual = merged,
         )
     }
 
@@ -71,13 +71,13 @@ class ExtensionRegistrationReportTest {
     @Test
     fun `snapshot lists categories and additions`() {
         val baseline = ExtensionRegistrationSnapshot(
-            listOf(
+            categories = listOf(
                 ExtensionRegistrationSnapshotCategory("tile", "Tile", setOf("built_in")),
                 ExtensionRegistrationSnapshotCategory("sound", "Sound", emptySet()),
             ),
         )
         val current = ExtensionRegistrationSnapshot(
-            listOf(
+            categories = listOf(
                 ExtensionRegistrationSnapshotCategory("tile", "Tile", setOf("built_in", "third_party")),
                 ExtensionRegistrationSnapshotCategory("sound", "Sound", setOf("custom_sound")),
             ),
@@ -85,21 +85,21 @@ class ExtensionRegistrationReportTest {
 
         assertEquals(listOf(category("tile", "Tile", "built_in")), baseline.toCategories())
         assertEquals(
-            listOf(
+            expected = listOf(
                 category("tile", "Tile", "third_party"),
                 category("sound", "Sound", "custom_sound"),
             ),
-            baseline.additionsSince(current),
+            actual = baseline.additionsSince(current),
         )
     }
 
     /** 內建來源與兩個 extension 的測試報告。 */
     private fun sampleReport(): ExtensionRegistrationReport = ExtensionRegistrationReport(
-        listOf(
+        sources = listOf(
             ExtensionRegistrationSource(null, listOf(category("tile_asset", "Tile Asset", "asset_a", "asset_b"))),
             ExtensionRegistrationSource(
-                "ext_a",
-                listOf(category("tile_asset", "Tile Asset", "asset_c"), category("rule_name", "Rule Module Display Name", "rule_a")),
+                extensionId = "ext_a",
+                categories = listOf(category("tile_asset", "Tile Asset", "asset_c"), category("rule_name", "Rule Module Display Name", "rule_a")),
             ),
             ExtensionRegistrationSource("ext_b", emptyList()),
         ),

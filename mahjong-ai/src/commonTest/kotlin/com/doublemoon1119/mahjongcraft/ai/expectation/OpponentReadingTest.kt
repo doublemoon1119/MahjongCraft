@@ -120,7 +120,7 @@ class OpponentReadingTest {
     @Test
     fun `a one-suit hand makes its suit dangerous and other suits safe`() {
         val opponent = snapshotOf(
-            player(
+            player = player(
                 discards = listOf(m(1), s(9), m(8), Tile.Honor.North, s(2), p(1), m(5)),
                 melds = listOf(pon(p(3)), chi(p(5), p(6), p(7))),
             ),
@@ -136,7 +136,7 @@ class OpponentReadingTest {
     @Test
     fun `an honor meld makes honors dangerous too`() {
         val opponent = snapshotOf(
-            player(
+            player = player(
                 discards = listOf(m(1), s(9), m(8), s(2), m(5)),
                 melds = listOf(pon(Tile.Honor.Red), pon(p(3))),
             ),
