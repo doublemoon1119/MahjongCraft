@@ -42,11 +42,11 @@ class GenericAchievementEventTest {
 
     /** 建立固定四座位的測試場次。 */
     private fun game(): Game = Game(
-        FakeTableStateFactory.create(
+        tableState = FakeTableStateFactory.create(
             players = listOf(Wind.EAST, Wind.SOUTH, Wind.WEST, Wind.NORTH).map { FakeMahjongPlayerFactory.create(initialSeat = it) },
             config = RiichiRuleConfig(),
         ),
-        GameFlowConfig(),
+        flowConfig = GameFlowConfig(),
     )
 
     /** 建立沒有計分詳情的贏家資料。 */

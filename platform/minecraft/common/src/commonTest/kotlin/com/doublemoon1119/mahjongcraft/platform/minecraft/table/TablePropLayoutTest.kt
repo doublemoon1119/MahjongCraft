@@ -28,7 +28,7 @@ class TablePropLayoutTest {
             ),
         )
         val definitions = mapOf(
-            "example:tile" to TablePropKindDefinition(
+            pair = "example:tile" to TablePropKindDefinition(
                 id = "example:tile",
                 dimensions = TablePropDimensions(width = 0.1, height = 0.1, depth = 0.1),
                 acceptsContent = { it == TablePropContent.CustomVariant("1") || it == TablePropContent.CustomVariant("2") },
@@ -54,8 +54,8 @@ class TablePropLayoutTest {
             ),
         )
         val result = presentation.targets(
-            mapOf(
-                "example:tile" to TablePropKindDefinition(
+            definitions = mapOf(
+                pair = "example:tile" to TablePropKindDefinition(
                     id = "example:tile",
                     dimensions = TablePropDimensions(0.1, 0.1, 0.1),
                     acceptsContent = { it == TablePropContent.CustomVariant("known") },
@@ -78,8 +78,8 @@ class TablePropLayoutTest {
             ),
         )
         val result = presentation.targets(
-            mapOf(
-                "example:oversized" to TablePropKindDefinition(
+            definitions = mapOf(
+                pair = "example:oversized" to TablePropKindDefinition(
                     id = "example:oversized",
                     dimensions = TablePropDimensions(0.8, 0.1, 0.8),
                 ),
@@ -117,11 +117,11 @@ class TablePropLayoutTest {
     @Test
     fun `center allocation stays inside the region for every table facing`() {
         val definition = mapOf(
-            "example:tile" to TablePropKindDefinition("example:tile", TablePropDimensions(0.12, 0.15, 0.08)),
+            pair = "example:tile" to TablePropKindDefinition("example:tile", TablePropDimensions(0.12, 0.15, 0.08)),
         )
         MahjongTableFacing.entries.forEach { facing ->
             val result = assertIs<TablePropLayoutResult.Success>(
-                presentation(placement("example:tile", 0), tableFacing = facing).targets(definition),
+                value = presentation(placement("example:tile", 0), tableFacing = facing).targets(definition),
             )
             val target = result.targets.single()
             val half = TablePropPresentation.CENTER_HALF_EXTENT
@@ -156,7 +156,7 @@ class TablePropLayoutTest {
         val seatTarget = result.targets.first { it.id == "example:seat-blocker" }
         assertTrue(centerTarget.x != seatTarget.x || centerTarget.z != seatTarget.z)
         assertTrue(
-            !TablePropBounds.of(centerTarget, definitions.getValue("example:center").dimensions)
+            actual = !TablePropBounds.of(centerTarget, definitions.getValue("example:center").dimensions)
                 .overlaps(TablePropBounds.of(seatTarget, definitions.getValue("example:blocker").dimensions)),
         )
     }
@@ -195,7 +195,7 @@ class TablePropLayoutTest {
     @Test
     fun `vertically separated seat props do not overlap`() {
         val definitions = mapOf(
-            "example:stick" to TablePropKindDefinition("example:stick", TablePropDimensions(0.1, 0.05, 0.1)),
+            pair = "example:stick" to TablePropKindDefinition("example:stick", TablePropDimensions(0.1, 0.05, 0.1)),
         )
         val result = presentation(
             TablePropPlacement("example:stick-low", "example:stick", TablePropContent.CustomVariant("a"), TablePropLocation.Seat(0, TableSeatAnchor.MELD_CORNER, TableSeatOffset(y = 0.0))),

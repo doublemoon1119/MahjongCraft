@@ -39,7 +39,7 @@ class RegistrationCollectionIsolationTest {
             GameConfigCategoryDefinition("example:other", "test.other"),
         )
         val registry = GameConfigPresentationRegistryImpl(
-            RuleDecisionResolverRegistry(),
+            ruleDecisionResolvers = RuleDecisionResolverRegistry(),
         )
         registry.register(
             definition = GameConfigPresentationDefinition(

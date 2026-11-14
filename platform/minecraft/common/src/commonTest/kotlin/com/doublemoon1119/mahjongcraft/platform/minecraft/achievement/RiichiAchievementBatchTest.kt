@@ -56,22 +56,22 @@ class RiichiAchievementBatchTest {
         val threePlayerGame = game(ThreePlayerRiichiRuleConfig())
         val threePlayerWinner = threePlayerGame.tableState.players.first()
         val fourPlayerWin = facts(
-            fourPlayerGame,
-            HistoryFact.WinSettled(
+            game = fourPlayerGame,
+            fact = HistoryFact.WinSettled(
                 outcomeId = BuiltInRoundOutcomeIds.TSUMO,
                 winDetails = listOf(HistoryWinDetails(fourPlayerWinner.id, nonYakumanFields(RiichiYakuType.Riichi))),
             ),
         )
         val threePlayerWin = facts(
-            threePlayerGame,
-            HistoryFact.WinSettled(
+            game = threePlayerGame,
+            fact = HistoryFact.WinSettled(
                 outcomeId = BuiltInRoundOutcomeIds.TSUMO,
                 winDetails = listOf(HistoryWinDetails(threePlayerWinner.id, yakumanFields(RiichiYakuType.Suuankou))),
             ),
         )
         val completedMatch = facts(
-            fourPlayerGame,
-            HistoryFact.MatchCompleted(
+            game = fourPlayerGame,
+            fact = HistoryFact.MatchCompleted(
                 reasonId = "mahjongcraft:completed",
                 finalScoresByPlayerId = fourPlayerGame.tableState.players.associateWith { it.score }.mapKeys { it.key.id },
             ),
@@ -81,7 +81,7 @@ class RiichiAchievementBatchTest {
             caseIndex = 0,
             facts = fourPlayerWin,
             expectedAchievements = mapOf(
-                fourPlayerWinner.id to setOf(
+                pair = fourPlayerWinner.id to setOf(
                     BuiltInAchievementIds.WIN,
                     BuiltInAchievementIds.SELF_DRAW_WIN,
                     RiichiAchievementIds.RIICHI_WIN,
@@ -93,7 +93,7 @@ class RiichiAchievementBatchTest {
             caseIndex = 1,
             facts = threePlayerWin,
             expectedAchievements = mapOf(
-                threePlayerWinner.id to setOf(
+                pair = threePlayerWinner.id to setOf(
                     BuiltInAchievementIds.WIN,
                     BuiltInAchievementIds.SELF_DRAW_WIN,
                     RiichiAchievementIds.YAKUMAN,
@@ -134,8 +134,8 @@ class RiichiAchievementBatchTest {
         )
         val game = game(RiichiRuleConfig(), winner)
         val facts = facts(
-            game,
-            HistoryFact.WinSettled(
+            game = game,
+            fact = HistoryFact.WinSettled(
                 outcomeId = BuiltInRoundOutcomeIds.TSUMO,
                 winDetails = listOf(HistoryWinDetails(winner.id, yakumanFields(RiichiYakuType.Suuankou))),
             ),
@@ -145,7 +145,7 @@ class RiichiAchievementBatchTest {
             caseIndex = 3,
             facts = facts,
             expectedAchievements = mapOf(
-                winner.id to setOf(
+                pair = winner.id to setOf(
                     BuiltInAchievementIds.WIN,
                     BuiltInAchievementIds.SELF_DRAW_WIN,
                     RiichiAchievementIds.RIICHI_WIN,
@@ -204,21 +204,21 @@ class RiichiAchievementBatchTest {
 
     /** 建立一番的一般日麻役種欄位。 */
     private fun nonYakumanFields(vararg yaku: RiichiYakuType) = listOf(
-        WinSettlementDetailField(
-            RiichiWinSettlementIds.YAKU_FIELD,
-            WinSettlementDetailValue.Entries(yaku.map { RiichiWinSettlementIds.yakuEntry(it, 1) }),
+        element = WinSettlementDetailField(
+            id = RiichiWinSettlementIds.YAKU_FIELD,
+            value = WinSettlementDetailValue.Entries(yaku.map { RiichiWinSettlementIds.yakuEntry(it, 1) }),
         ),
     )
 
     /** 建立自然役滿欄位。 */
     private fun yakumanFields(vararg yaku: RiichiYakuType) = listOf(
         WinSettlementDetailField(
-            RiichiWinSettlementIds.YAKU_FIELD,
-            WinSettlementDetailValue.Entries(yaku.map { RiichiWinSettlementIds.yakumanEntry(it, 1) }),
+            id = RiichiWinSettlementIds.YAKU_FIELD,
+            value = WinSettlementDetailValue.Entries(yaku.map { RiichiWinSettlementIds.yakumanEntry(it, 1) }),
         ),
         WinSettlementDetailField(
-            RiichiWinSettlementIds.YAKUMAN_TOTAL_FIELD,
-            WinSettlementDetailValue.Quantities(listOf(WinSettlementQuantity(RiichiWinSettlementIds.YAKUMAN, 1))),
+            id = RiichiWinSettlementIds.YAKUMAN_TOTAL_FIELD,
+            value = WinSettlementDetailValue.Quantities(listOf(WinSettlementQuantity(RiichiWinSettlementIds.YAKUMAN, 1))),
         ),
     )
 }

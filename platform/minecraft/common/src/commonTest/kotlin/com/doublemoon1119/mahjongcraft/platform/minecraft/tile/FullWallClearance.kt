@@ -30,6 +30,6 @@ internal fun fullWallPlacements(stacksPerSide: Int): List<TileWallPlacement> = (
  * @return 南側座位的讓位範圍。
  */
 internal fun fullWallClearance(tileLayout: TableTileLayoutProfile, stacksPerSide: Int): MahjongSeatWallClearance = MahjongTileTableLayout.seatWallClearance(
-    MahjongTileTableLayout.wallClearance(FULL_WALL_SIDE_LAYOUT, tileLayout, stacksPerSide, fullWallPlacements(stacksPerSide)),
-    MahjongTableSide.SOUTH,
+    clearance = MahjongTileTableLayout.wallClearance(FULL_WALL_SIDE_LAYOUT, tileLayout, stacksPerSide, fullWallPlacements(stacksPerSide)),
+    side = MahjongTableSide.SOUTH,
 )

@@ -14,8 +14,8 @@ class MinecraftAbortReasonTextTest {
     @Test
     fun `known missing table reason uses localized key`() {
         assertEquals(
-            MinecraftHistoryScreenKeys.ROUND_ABORT_REASON_TABLE_MISSING,
-            minecraftAbortReasonTranslationKey(MinecraftMatchAbortReasonIds.TABLE_MISSING),
+            expected = MinecraftHistoryScreenKeys.ROUND_ABORT_REASON_TABLE_MISSING,
+            actual = minecraftAbortReasonTranslationKey(MinecraftMatchAbortReasonIds.TABLE_MISSING),
         )
     }
 
@@ -23,8 +23,8 @@ class MinecraftAbortReasonTextTest {
     @Test
     fun `unknown reason uses generic localized key`() {
         assertEquals(
-            MinecraftMessageKeys.GAME_ABORT_REASON_UNKNOWN,
-            minecraftAbortReasonTranslationKey("test:unknown"),
+            expected = MinecraftMessageKeys.GAME_ABORT_REASON_UNKNOWN,
+            actual = minecraftAbortReasonTranslationKey("test:unknown"),
         )
     }
 

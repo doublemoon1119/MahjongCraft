@@ -36,8 +36,8 @@ class TableSpaceObstructionSyncTest {
         val deliveries = sync.update(TABLE, blocked, setOf(ALICE, CAROL))
 
         assertEquals(
-            setOf(TableSpaceObstructionDelivery(BOB, payload()), TableSpaceObstructionDelivery(CAROL, blocked)),
-            deliveries.toSet(),
+            expected = setOf(TableSpaceObstructionDelivery(BOB, payload()), TableSpaceObstructionDelivery(CAROL, blocked)),
+            actual = deliveries.toSet(),
         )
     }
 

@@ -136,13 +136,13 @@ class TablePropSyncTest {
             yawOffset = placement.location.yawOffset,
         )
         val result = assertIs<TablePropLayoutResult.Success>(
-            presentation.targets(
-                mapOf(BuiltInTablePropKinds.SCORING_STICK to TablePropKindDefinition(BuiltInTablePropKinds.SCORING_STICK, TablePropDimensions(0.4, 0.0125, 0.0625))),
+            value = presentation.targets(
+                definitions = mapOf(BuiltInTablePropKinds.SCORING_STICK to TablePropKindDefinition(BuiltInTablePropKinds.SCORING_STICK, TablePropDimensions(0.4, 0.0125, 0.0625))),
             ),
         )
         assertEquals(
-            listOf(TablePropTarget(ruleModuleId = "example:rule", id = "example:seat-prop", kind = BuiltInTablePropKinds.SCORING_STICK, content = TablePropContent.CustomVariant("100"), x = world.x, y = world.y, z = world.z, yaw = world.yaw)),
-            result.targets,
+            expected = listOf(TablePropTarget(ruleModuleId = "example:rule", id = "example:seat-prop", kind = BuiltInTablePropKinds.SCORING_STICK, content = TablePropContent.CustomVariant("100"), x = world.x, y = world.y, z = world.z, yaw = world.yaw)),
+            actual = result.targets,
         )
     }
 }

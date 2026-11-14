@@ -80,13 +80,13 @@ class RiichiCatalogueProviderTest {
         assertEquals(4, catalogue.entries.count { it.categoryId == RiichiCatalogueCategory.Bonus.id })
         assertTrue(catalogue.entries.any { it.id == RiichiCatalogueYaku.NukiDora.id })
         assertEquals(
-            listOf(RiichiCatalogueSpecial.Suukaikan.id, RiichiCatalogueSpecial.KyuushuKyuuhai.id),
-            catalogue.entries.filter { it.categoryId == RiichiCatalogueCategory.AbortiveDraw.id }.map { it.id },
+            expected = listOf(RiichiCatalogueSpecial.Suukaikan.id, RiichiCatalogueSpecial.KyuushuKyuuhai.id),
+            actual = catalogue.entries.filter { it.categoryId == RiichiCatalogueCategory.AbortiveDraw.id }.map { it.id },
         )
         listOf(RiichiCatalogueYaku.SanshokuDoujun, RiichiCatalogueYaku.Daisuurin).forEach { definition ->
             assertEquals(
-                RiichiCatalogueKeys.THREE_PLAYER_TILES_UNAVAILABLE,
-                catalogue.entries.single { it.id == definition.id }.unavailableReasonTranslationKey,
+                expected = RiichiCatalogueKeys.THREE_PLAYER_TILES_UNAVAILABLE,
+                actual = catalogue.entries.single { it.id == definition.id }.unavailableReasonTranslationKey,
             )
         }
     }
@@ -207,8 +207,8 @@ class RiichiCatalogueProviderTest {
             entry.examples.flatMap { it.groups }.forEach { group ->
                 assertTrue(group.tiles.all { it.tile in wallTiles }, "${entry.id} example uses a tile missing from three player mahjong: ${group.tiles}")
                 assertTrue(
-                    group.role != RuleCatalogueTileGroupRole.OPEN_MELD || group.tiles.map { it.tile }.distinct().size == 1,
-                    "${entry.id} example calls chi, which three player mahjong does not allow",
+                    actual = group.role != RuleCatalogueTileGroupRole.OPEN_MELD || group.tiles.map { it.tile }.distinct().size == 1,
+                    message = "${entry.id} example calls chi, which three player mahjong does not allow",
                 )
             }
         }

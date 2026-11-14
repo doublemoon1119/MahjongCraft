@@ -62,13 +62,13 @@ class MahjongTileWallSideLayoutTest {
         val layout = MahjongTileWallSideLayout.resolve(arrangement, MahjongTableSide.SOUTH)
 
         assertEquals(
-            listOf(
+            expected = listOf(
                 MahjongTableSide.SOUTH,
                 MahjongTableSide.WEST,
                 MahjongTableSide.NORTH,
                 MahjongTableSide.EAST,
             ),
-            (0 until 4).map(layout::sideOf),
+            actual = (0 until 4).map(layout::sideOf),
         )
     }
 

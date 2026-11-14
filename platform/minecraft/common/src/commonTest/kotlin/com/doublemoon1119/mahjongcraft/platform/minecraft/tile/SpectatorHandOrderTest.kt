@@ -74,8 +74,8 @@ class SpectatorHandOrderTest {
 
         assertEquals(emptyList(), SpectatorHandOrder.unsortedFromPositions(ids, standingTargets - ids.last()))
         assertEquals(
-            emptyList(),
-            SpectatorHandOrder.unsortedFromPositions(ids, standingTargets + (ids.last() to standingTargets.getValue(ids.last()).copy(poseDegrees = 90f))),
+            expected = emptyList(),
+            actual = SpectatorHandOrder.unsortedFromPositions(ids, standingTargets + (ids.last() to standingTargets.getValue(ids.last()).copy(poseDegrees = 90f))),
         )
     }
 

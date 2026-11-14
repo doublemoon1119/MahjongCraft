@@ -53,8 +53,8 @@ class AchievementConditionTest {
     @Test
     fun `generic achievements map to their statistics`() {
         assertEquals(
-            setOf(AchievementStatisticIds.WINS, AchievementStatisticIds.SELF_DRAW_WINS),
-            AchievementStatisticIds.statisticsFor(setOf(BuiltInAchievementIds.WIN, BuiltInAchievementIds.SELF_DRAW_WIN)),
+            expected = setOf(AchievementStatisticIds.WINS, AchievementStatisticIds.SELF_DRAW_WINS),
+            actual = AchievementStatisticIds.statisticsFor(setOf(BuiltInAchievementIds.WIN, BuiltInAchievementIds.SELF_DRAW_WIN)),
         )
         assertEquals(setOf(AchievementStatisticIds.DEAL_INS), AchievementStatisticIds.statisticsFor(setOf(BuiltInAchievementIds.DEAL_IN, BuiltInAchievementIds.DOUBLE_DEAL_IN)))
         assertEquals(emptySet(), AchievementStatisticIds.statisticsFor(setOf(BuiltInAchievementIds.LAST_PLACE, "mahjongcraft:riichi/ippatsu")))

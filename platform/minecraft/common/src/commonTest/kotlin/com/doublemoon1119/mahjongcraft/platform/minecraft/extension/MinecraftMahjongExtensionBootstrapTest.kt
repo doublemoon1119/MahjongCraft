@@ -195,7 +195,7 @@ class MinecraftMahjongExtensionBootstrapTest {
             publicPlayerIndicatorDisplayRegistry = PublicPlayerIndicatorDisplayRegistryImpl(),
             roomMemberAppearanceSourceRegistry = RoomMemberAppearanceSourceRegistryImpl(failurePolicy = ExtensionFailurePolicy.Default),
             gameConfigPresentationRegistry = GameConfigPresentationRegistryImpl(
-                RuleDecisionResolverRegistry(),
+                ruleDecisionResolvers = RuleDecisionResolverRegistry(),
             ),
             gameAchievementResolverRegistry = gameAchievementResolverRegistry,
         ),
@@ -252,16 +252,18 @@ class MinecraftMahjongExtensionBootstrapTest {
 
             /** 登記第三方目錄來源，驗證共用 bootstrap 可發現新 hook。 */
             override fun registerRuleCatalogues(registry: RuleCatalogueRegistrar) {
-                registry.register(object : RuleCatalogueProvider {
-                    /** 第三方規則識別碼。 */
-                    override val ruleModuleId: String = "example:my_rule"
+                registry.register(
+                    provider = object : RuleCatalogueProvider {
+                        /** 第三方規則識別碼。 */
+                        override val ruleModuleId: String = "example:my_rule"
 
-                    /** 一般說明配置。 */
-                    override fun defaultRuleConfig(): MahjongRuleConfig = RiichiRuleConfig()
+                        /** 一般說明配置。 */
+                        override fun defaultRuleConfig(): MahjongRuleConfig = RiichiRuleConfig()
 
-                    /** 空的說明目錄仍是有效來源，不執行權威規則判定。 */
-                    override fun catalogue(config: MahjongRuleConfig): RuleCatalogue = RuleCatalogue(emptyList(), emptyList())
-                })
+                        /** 空的說明目錄仍是有效來源，不執行權威規則判定。 */
+                        override fun catalogue(config: MahjongRuleConfig): RuleCatalogue = RuleCatalogue(emptyList(), emptyList())
+                    },
+                )
             }
         }
 
@@ -285,8 +287,8 @@ class MinecraftMahjongExtensionBootstrapTest {
         }
 
         assertEquals(
-            "example.ai_strategy.aggressive",
-            aiStrategyDisplayNameRegistry.find("example:aggressive"),
+            expected = "example.ai_strategy.aggressive",
+            actual = aiStrategyDisplayNameRegistry.find("example:aggressive"),
         )
         assertEquals(setOf("example:aggressive"), result.registrationKeys("mahjongcraft:ai_strategy_display_name"))
         assertTrue(aiStrategyDisplayNameRegistry.isFrozen)
@@ -296,8 +298,8 @@ class MinecraftMahjongExtensionBootstrapTest {
 
         assertEquals("example.auto_flower", automaticControlDisplayRegistry.find(null, "example:auto_flower")?.labelTranslationKey)
         assertEquals(
-            setOf("example:auto_flower"),
-            result.registrationKeys("mahjongcraft:automatic_control_display"),
+            expected = setOf("example:auto_flower"),
+            actual = result.registrationKeys("mahjongcraft:automatic_control_display"),
         )
         assertTrue(automaticControlDisplayRegistry.isFrozen)
 
@@ -311,8 +313,8 @@ class MinecraftMahjongExtensionBootstrapTest {
 
         assertTrue(ruleModuleDisplayNameRegistry.find("mahjongcraft:riichi") != null)
         assertEquals(
-            "example.rule_module.my_rule",
-            ruleModuleDisplayNameRegistry.find("example:my_rule"),
+            expected = "example.rule_module.my_rule",
+            actual = ruleModuleDisplayNameRegistry.find("example:my_rule"),
         )
         assertEquals(setOf("example:my_rule"), result.registrationKeys("mahjongcraft:rule_module_display_name"))
         assertTrue(ruleModuleDisplayNameRegistry.isFrozen)
@@ -398,12 +400,12 @@ class MinecraftMahjongExtensionBootstrapTest {
         assertNull(tileLabelRegistry.find("example_unregistered"))
         assertTrue(ruleCatalogueRegistry.isFrozen)
         assertEquals(
-            setOf(BuiltInRuleModuleIds.RIICHI, BuiltInRuleModuleIds.RIICHI_THREE_PLAYER, BuiltInRuleModuleIds.TAIWAN),
-            ruleCatalogueRegistry.registrationKeys,
+            expected = setOf(BuiltInRuleModuleIds.RIICHI, BuiltInRuleModuleIds.RIICHI_THREE_PLAYER, BuiltInRuleModuleIds.TAIWAN),
+            actual = ruleCatalogueRegistry.registrationKeys,
         )
         assertEquals(
-            TaiwanTranslationKeys.ACTION_REVEAL_FLOWER,
-            gameActionVocabularyRegistry.find(BuiltInRuleModuleIds.TAIWAN, TaiwanGameAction.RevealFlower.id)?.labelKey,
+            expected = TaiwanTranslationKeys.ACTION_REVEAL_FLOWER,
+            actual = gameActionVocabularyRegistry.find(BuiltInRuleModuleIds.TAIWAN, TaiwanGameAction.RevealFlower.id)?.labelKey,
         )
         // 共用預設是中立用語；台灣麻將把和說成胡牌，日本麻將登記榮和與自己的吃碰槓說法，三人日麻相同。
         assertEquals(TaiwanTranslationKeys.ACTION_HU_MESSAGE, gameActionVocabularyRegistry.find(BuiltInRuleModuleIds.TAIWAN, BuiltInGameActionIds.RON)?.messageKey)
@@ -415,14 +417,14 @@ class MinecraftMahjongExtensionBootstrapTest {
         assertTrue(TaiwanRoundOutcomeIds.EIGHT_FLOWERS.let(roundOutcomeDisplayNameRegistry::find) != null)
         assertTrue(TaiwanRoundOutcomeIds.SEVEN_FLOWERS.let(roundOutcomeDisplayNameRegistry::find) != null)
         assertEquals(
-            TaiwanWinSettlementTemplates.TEMPLATE_KEY,
-            winSettlementTemplateRegistry.findTemplateForRule(BuiltInRuleModuleIds.TAIWAN)?.key,
+            expected = TaiwanWinSettlementTemplates.TEMPLATE_KEY,
+            actual = winSettlementTemplateRegistry.findTemplateForRule(BuiltInRuleModuleIds.TAIWAN)?.key,
         )
         assertTrue(winSettlementTemplateRegistry.findDetailTextFormatter(TaiwanWinSettlementIds.TAI_FIELD) != null)
         assertEquals(listOf(null, BundledRiichiMinecraftExtension.id, BundledTaiwanMinecraftExtension.id), result.sources.map { it.extensionId })
         assertEquals(
-            setOf(BuiltInRuleModuleIds.RIICHI, BuiltInRuleModuleIds.RIICHI_THREE_PLAYER),
-            result.sources[1].categories.single { it.id == "mahjongcraft:rule_catalogue" }.registrationIds.toSet(),
+            expected = setOf(BuiltInRuleModuleIds.RIICHI, BuiltInRuleModuleIds.RIICHI_THREE_PLAYER),
+            actual = result.sources[1].categories.single { it.id == "mahjongcraft:rule_catalogue" }.registrationIds.toSet(),
         )
     }
 
@@ -491,13 +493,15 @@ class MinecraftMahjongExtensionBootstrapTest {
             override val id: String = "example:achievements"
 
             override fun registerGameAchievementResolvers(registry: GameAchievementResolverRegistrar) {
-                registry.register(object : GameAchievementResolver {
-                    /** 第三方規則識別碼。 */
-                    override val ruleModuleId: String = "example:my_rule"
+                registry.register(
+                    resolver = object : GameAchievementResolver {
+                        /** 第三方規則識別碼。 */
+                        override val ruleModuleId: String = "example:my_rule"
 
-                    /** 測試用判定不產生成果。 */
-                    override fun resolve(batch: CommittedMatchEventBatch): Map<Uuid, Set<String>> = emptyMap()
-                })
+                        /** 測試用判定不產生成果。 */
+                        override fun resolve(batch: CommittedMatchEventBatch): Map<Uuid, Set<String>> = emptyMap()
+                    },
+                )
             }
         }
 
@@ -566,9 +570,11 @@ class MinecraftMahjongExtensionBootstrapTest {
     @Test
     fun `no-op extension produces an empty source`() {
         val result = registerAndFreeze(
-            extensions = listOf(object : MinecraftMahjongExtension {
-                override val id: String = "example:noop"
-            }),
+            extensions = listOf(
+                element = object : MinecraftMahjongExtension {
+                    override val id: String = "example:noop"
+                },
+            ),
             tileAssetRegistry = MinecraftTileAssetRegistryImpl(),
             aiStrategyDisplayNameRegistry = AiStrategyDisplayNameRegistryImpl(),
             tileDisplayNameRegistry = TileDisplayNameRegistryImpl(),

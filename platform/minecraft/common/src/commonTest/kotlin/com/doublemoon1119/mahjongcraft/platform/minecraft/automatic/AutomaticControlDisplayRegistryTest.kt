@@ -24,8 +24,8 @@ class AutomaticControlDisplayRegistryTest {
         }
 
         assertEquals(
-            MinecraftClientConfigScreenKeys.AUTO_SORT_HAND,
-            registry.find(null, BuiltInMinecraftAutomaticControlIds.AUTO_SORT_HAND)?.labelTranslationKey,
+            expected = MinecraftClientConfigScreenKeys.AUTO_SORT_HAND,
+            actual = registry.find(null, BuiltInMinecraftAutomaticControlIds.AUTO_SORT_HAND)?.labelTranslationKey,
         )
         assertEquals(10, registry.find(null, BuiltInAutomaticControlIds.AUTO_WIN)?.displayOrder)
         assertEquals(20, registry.find(null, BuiltInAutomaticControlIds.DECLINE_CALLS)?.displayOrder)

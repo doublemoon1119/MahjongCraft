@@ -76,26 +76,26 @@ object MahjongTileTableLayout {
         val lowerCoordinate = floor(targetCoordinate).toInt()
         val interpolation = targetCoordinate - lowerCoordinate
         val lower = baseWallPlacement(
-            controllerX,
-            controllerY,
-            controllerZ,
-            tableFacing,
-            sideLayout,
-            tileLayout,
-            stacksPerSide,
-            lowerCoordinate,
-            position.layer,
+            controllerX = controllerX,
+            controllerY = controllerY,
+            controllerZ = controllerZ,
+            tableFacing = tableFacing,
+            sideLayout = sideLayout,
+            tileLayout = tileLayout,
+            stacksPerSide = stacksPerSide,
+            circularStack = lowerCoordinate,
+            layer = position.layer,
         )
         val upper = baseWallPlacement(
-            controllerX,
-            controllerY,
-            controllerZ,
-            tableFacing,
-            sideLayout,
-            tileLayout,
-            stacksPerSide,
-            lowerCoordinate + 1,
-            position.layer,
+            controllerX = controllerX,
+            controllerY = controllerY,
+            controllerZ = controllerZ,
+            tableFacing = tableFacing,
+            sideLayout = sideLayout,
+            tileLayout = tileLayout,
+            stacksPerSide = stacksPerSide,
+            circularStack = lowerCoordinate + 1,
+            layer = position.layer,
         )
         val centerX = controllerX + BLOCK_CENTER
         val centerZ = controllerZ + BLOCK_CENTER

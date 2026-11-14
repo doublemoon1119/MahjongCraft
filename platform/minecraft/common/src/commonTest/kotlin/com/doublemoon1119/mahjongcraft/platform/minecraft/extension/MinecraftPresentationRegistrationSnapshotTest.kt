@@ -54,11 +54,11 @@ class MinecraftPresentationRegistrationSnapshotTest {
         )
 
         assertEquals(
-            listOf(
+            expected = listOf(
                 presentationCategory("tile", "Tile", "third_party"),
                 presentationCategory("sound", "Sound", "custom_sound"),
             ),
-            baseline.additionsSince(current),
+            actual = baseline.additionsSince(current),
         )
     }
 
@@ -69,7 +69,7 @@ class MinecraftPresentationRegistrationSnapshotTest {
      * @return 以指定分類建立的快照。
      */
     private fun snapshot(vararg categories: MinecraftPresentationRegistrationSnapshotCategory) = MinecraftPresentationRegistrationSnapshot(
-        categories.toList(),
+        categories = categories.toList(),
     )
 
     /**
@@ -85,9 +85,9 @@ class MinecraftPresentationRegistrationSnapshotTest {
         displayName: String,
         vararg registrationKeys: String,
     ): MinecraftPresentationRegistrationSnapshotCategory = MinecraftPresentationRegistrationSnapshotCategory(
-        id,
-        displayName,
-        registrationKeys.toSet(),
+        id = id,
+        displayName = displayName,
+        registrationKeys = registrationKeys.toSet(),
     )
 
     /**

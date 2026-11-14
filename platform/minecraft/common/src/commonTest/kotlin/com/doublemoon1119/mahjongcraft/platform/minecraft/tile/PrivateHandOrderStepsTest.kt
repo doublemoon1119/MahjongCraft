@@ -34,11 +34,11 @@ class PrivateHandOrderStepsTest {
         )
 
         assertEquals(
-            listOf(
+            expected = listOf(
                 PrivateHandOrderEntry(effectiveAt = 10L, order = order(listOf(a, null, c), drawnId = d)),
                 PrivateHandOrderEntry(effectiveAt = 18L, order = order(listOf(a, d, c), drawnId = null)),
             ),
-            entries,
+            actual = entries,
         )
     }
 

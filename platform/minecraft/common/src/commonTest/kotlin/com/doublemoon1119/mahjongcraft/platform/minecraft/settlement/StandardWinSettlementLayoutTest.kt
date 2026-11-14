@@ -21,8 +21,8 @@ class StandardWinSettlementLayoutTest {
 
     /** 文字一律量成固定寬度，只關心牌列的高度。 */
     private val solver = PresentationLayoutSolver(
-        registry,
-        object : PresentationTextMeasurer {
+        templateRegistry = registry,
+        textMeasurer = object : PresentationTextMeasurer {
             override fun measure(text: PresentationValue.TextValue): Float = 10f
 
             override fun measurePlain(text: String): Float = 10f
@@ -50,8 +50,8 @@ class StandardWinSettlementLayoutTest {
         val tileRows = tileRows(TaiwanWinSettlementTemplates.TEMPLATE)
         val flowers = ExtensionPresentationField(TaiwanWinSettlementTemplates.FLOWERS, PresentationValue.TileListValue(listOf("flower_spring")))
         val tai = ExtensionPresentationField(
-            TaiwanWinSettlementTemplates.TAI,
-            PresentationValue.EntryListValue(listOf(PresentationValue.EntryListValue.Entry(translationKey = "test.tai"))),
+            id = TaiwanWinSettlementTemplates.TAI,
+            value = PresentationValue.EntryListValue(listOf(PresentationValue.EntryListValue.Entry(translationKey = "test.tai"))),
         )
 
         val flowersAndTai = solver.measure(tileRows, snapshot(tileGroups = emptyList(), extensionFields = listOf(flowers, tai)))
@@ -63,7 +63,7 @@ class StandardWinSettlementLayoutTest {
     @Test
     fun `taiwan tai entries use translated names`() {
         val entries = TaiwanWinSettlementDetailTexts.taiText.entries(
-            listOf(
+            entries = listOf(
                 WinSettlementDetailEntry(TaiwanWinSettlementIds.tai(TaiwanTaiType.FullFlush), WinSettlementQuantity(TaiwanWinSettlementIds.TAI_UNIT, 8)),
                 WinSettlementDetailEntry("mahjongcraft:taiwan/tai/test_unknown", null),
             ),
@@ -97,12 +97,12 @@ class StandardWinSettlementLayoutTest {
 
         assertEquals(BuiltInWinSettlementFieldIds.OUTCOME_TITLE, assertIs<PresentationLayout.Text>(title).fieldId)
         assertEquals(
-            PresentationValue.TextValue("test.win_action"),
-            registry.findFieldProvider(BuiltInWinSettlementFieldIds.OUTCOME_TITLE)?.provide(snapshot(emptyList(), emptyList())),
+            expected = PresentationValue.TextValue("test.win_action"),
+            actual = registry.findFieldProvider(BuiltInWinSettlementFieldIds.OUTCOME_TITLE)?.provide(snapshot(emptyList(), emptyList())),
         )
         assertEquals(
-            PresentationValue.TextValue(TaiwanTranslationKeys.SETTLEMENT_FLOWERS),
-            registry.findFieldProvider(TaiwanWinSettlementTemplates.FLOWERS_LABEL)?.provide(snapshot(emptyList(), emptyList())),
+            expected = PresentationValue.TextValue(TaiwanTranslationKeys.SETTLEMENT_FLOWERS),
+            actual = registry.findFieldProvider(TaiwanWinSettlementTemplates.FLOWERS_LABEL)?.provide(snapshot(emptyList(), emptyList())),
         )
         assertTrue(TaiwanWinSettlementTemplates.TEMPLATE.toString().contains("RepeatEntries"))
     }
@@ -111,7 +111,7 @@ class StandardWinSettlementLayoutTest {
     @Test
     fun `taiwan tai entries highlight eight tai or more`() {
         val entries = TaiwanWinSettlementDetailTexts.taiText.entries(
-            listOf(
+            entries = listOf(
                 WinSettlementDetailEntry("mahjongcraft:taiwan/tai/eight_flowers", WinSettlementQuantity(TaiwanWinSettlementIds.TAI_UNIT, 8)),
                 WinSettlementDetailEntry("mahjongcraft:taiwan/tai/test_small", WinSettlementQuantity(TaiwanWinSettlementIds.TAI_UNIT, 7)),
                 WinSettlementDetailEntry("mahjongcraft:taiwan/tai/test_unknown", null),
@@ -125,8 +125,8 @@ class StandardWinSettlementLayoutTest {
     @Test
     fun `dealer streak entry carries its count and conditional style`() {
         val entry = TaiwanWinSettlementDetailTexts.taiText.entries(
-            listOf(
-                WinSettlementDetailEntry(
+            entries = listOf(
+                element = WinSettlementDetailEntry(
                     id = TaiwanWinSettlementIds.DEALER_STREAK_ENTRY,
                     quantity = WinSettlementQuantity(TaiwanWinSettlementIds.TAI_UNIT, 9),
                     nameQuantity = WinSettlementQuantity(TaiwanWinSettlementIds.DEALER_STREAK_UNIT, 4),
@@ -140,8 +140,8 @@ class StandardWinSettlementLayoutTest {
         assertEquals("9", entry.trailingTranslationArgument)
         assertEquals(EntryEmphasis.CONDITIONAL, entry.emphasis)
         assertEquals(
-            PresentationValue.TextValue(TaiwanTranslationKeys.SETTLEMENT_DEALER_TAI_TOTAL, listOf("12")),
-            TaiwanWinSettlementDetailTexts.dealerTaiTotalText.quantities(listOf(WinSettlementQuantity(TaiwanWinSettlementIds.TAI_UNIT, 12))),
+            expected = PresentationValue.TextValue(TaiwanTranslationKeys.SETTLEMENT_DEALER_TAI_TOTAL, listOf("12")),
+            actual = TaiwanWinSettlementDetailTexts.dealerTaiTotalText.quantities(listOf(WinSettlementQuantity(TaiwanWinSettlementIds.TAI_UNIT, 12))),
         )
     }
 

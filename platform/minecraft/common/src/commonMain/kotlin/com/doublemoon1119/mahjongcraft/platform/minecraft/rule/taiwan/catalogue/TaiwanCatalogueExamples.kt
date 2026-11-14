@@ -72,36 +72,36 @@ internal fun taiwanCatalogueExamples(type: TaiwanTaiType): List<RuleCatalogueExa
     TaiwanTaiType.SelfDraw -> listOf(standardHand(TaiwanCatalogueExampleKeys.SELF_DRAW))
     TaiwanTaiType.FullyConcealedHand -> listOf(standardHand(TaiwanCatalogueExampleKeys.FULLY_CONCEALED_HAND))
     TaiwanTaiType.SeatWind -> listOf(
-        full(m1, m2, m3, p4, p5, p6, s7, s8, s9, east, east, east, red, red, s1, s2, winning = s3, description = TaiwanCatalogueExampleKeys.SEAT_WIND),
+        element = full(m1, m2, m3, p4, p5, p6, s7, s8, s9, east, east, east, red, red, s1, s2, winning = s3, description = TaiwanCatalogueExampleKeys.SEAT_WIND),
     )
     TaiwanTaiType.RoundWind -> listOf(
-        full(m1, m2, m3, p4, p5, p6, s7, s8, s9, south, south, south, red, red, s1, s2, winning = s3, description = TaiwanCatalogueExampleKeys.ROUND_WIND),
+        element = full(m1, m2, m3, p4, p5, p6, s7, s8, s9, south, south, south, red, red, s1, s2, winning = s3, description = TaiwanCatalogueExampleKeys.ROUND_WIND),
     )
     TaiwanTaiType.Dragon -> listOf(
-        full(m1, m2, m3, p4, p5, p6, s7, s8, s9, red, red, red, east, east, s1, s2, winning = s3),
+        element = full(m1, m2, m3, p4, p5, p6, s7, s8, s9, red, red, red, east, east, s1, s2, winning = s3),
     )
     TaiwanTaiType.SeatFlower -> listOf(illustration(spring, plum, description = TaiwanCatalogueExampleKeys.SEAT_FLOWER))
     TaiwanTaiType.FlowerSet -> listOf(illustration(spring, summer, autumn, winter))
     TaiwanTaiType.SingleWait -> listOf(
-        full(m1, m2, m3, m4, m5, m6, p1, p2, p3, p4, p5, p6, s1, s2, s3, east, winning = east, description = TaiwanCatalogueExampleKeys.SINGLE_WAIT),
+        element = full(m1, m2, m3, m4, m5, m6, p1, p2, p3, p4, p5, p6, s1, s2, s3, east, winning = east, description = TaiwanCatalogueExampleKeys.SINGLE_WAIT),
     )
     TaiwanTaiType.RobbingKong -> listOf(standardHand(TaiwanCatalogueExampleKeys.ROBBING_KONG))
     TaiwanTaiType.ReplacementWin -> listOf(standardHand(TaiwanCatalogueExampleKeys.REPLACEMENT_WIN))
     TaiwanTaiType.LastDraw -> listOf(standardHand(TaiwanCatalogueExampleKeys.LAST_DRAW))
     TaiwanTaiType.AllSequences -> listOf(
-        full(m1, m2, m3, m4, m5, m6, p1, p2, p3, p4, p5, p6, s2, s3, s8, s8, winning = s1),
+        element = full(m1, m2, m3, m4, m5, m6, p1, p2, p3, p4, p5, p6, s2, s3, s8, s8, winning = s1),
     )
     TaiwanTaiType.ThreeConcealedTriplets -> listOf(
-        full(m1, m1, m1, p2, p2, p2, s3, s3, s3, p4, p5, p6, s7, s8, s9, east, winning = east),
+        element = full(m1, m1, m1, p2, p2, p2, s3, s3, s3, p4, p5, p6, s7, s8, s9, east, winning = east),
     )
     TaiwanTaiType.FourConcealedTriplets -> listOf(
-        full(m1, m1, m1, p2, p2, p2, s3, s3, s3, east, east, east, p4, p5, p6, red, winning = red),
+        element = full(m1, m1, m1, p2, p2, p2, s3, s3, s3, east, east, east, p4, p5, p6, red, winning = red),
     )
     TaiwanTaiType.FiveConcealedTriplets -> listOf(
-        full(m1, m1, m1, p2, p2, p2, s3, s3, s3, east, east, east, red, red, red, white, winning = white),
+        element = full(m1, m1, m1, p2, p2, p2, s3, s3, s3, east, east, east, red, red, red, white, winning = white),
     )
     TaiwanTaiType.AllExposed -> listOf(
-        groupedFull(
+        element = groupedFull(
             group(RuleCatalogueTileGroupRole.OPEN_MELD, m1, m2, m3),
             group(RuleCatalogueTileGroupRole.OPEN_MELD, p1, p2, p3),
             group(RuleCatalogueTileGroupRole.OPEN_MELD, s7, s8, s9),
@@ -112,28 +112,28 @@ internal fun taiwanCatalogueExamples(type: TaiwanTaiType): List<RuleCatalogueExa
         ),
     )
     TaiwanTaiType.AllTriplets -> listOf(
-        full(m1, m1, m1, p2, p2, p2, s3, s3, s3, east, east, east, red, red, white, white, winning = red),
+        element = full(m1, m1, m1, p2, p2, p2, s3, s3, s3, east, east, east, red, red, white, white, winning = red),
     )
     TaiwanTaiType.LittleDragons -> listOf(
-        full(m1, m2, m3, p4, p5, p6, white, white, white, green, green, green, red, red, s7, s8, winning = s9),
+        element = full(m1, m2, m3, p4, p5, p6, white, white, white, green, green, green, red, red, s7, s8, winning = s9),
     )
     TaiwanTaiType.BigDragons -> listOf(
-        full(m1, m2, m3, white, white, white, green, green, green, red, red, red, s7, s8, east, east, winning = s9),
+        element = full(m1, m2, m3, white, white, white, green, green, green, red, red, red, s7, s8, east, east, winning = s9),
     )
     TaiwanTaiType.HalfFlush -> listOf(
-        full(p1, p2, p3, p4, p5, p6, p7, p8, p9, east, east, east, white, white, green, green, winning = white),
+        element = full(p1, p2, p3, p4, p5, p6, p7, p8, p9, east, east, east, white, white, green, green, winning = white),
     )
     TaiwanTaiType.FullFlush -> listOf(
-        full(p1, p2, p3, p2, p3, p4, p4, p5, p6, p7, p8, p9, p9, p9, p5, p5, winning = p5),
+        element = full(p1, p2, p3, p2, p3, p4, p4, p5, p6, p7, p8, p9, p9, p9, p5, p5, winning = p5),
     )
     TaiwanTaiType.LittleWinds -> listOf(
-        full(east, east, east, south, south, south, west, west, west, north, north, m1, m2, m3, p7, p8, winning = p9),
+        element = full(east, east, east, south, south, south, west, west, west, north, north, m1, m2, m3, p7, p8, winning = p9),
     )
     TaiwanTaiType.BigWinds -> listOf(
-        full(east, east, east, south, south, south, west, west, west, north, north, north, m1, m2, red, red, winning = m3),
+        element = full(east, east, east, south, south, south, west, west, west, north, north, north, m1, m2, red, red, winning = m3),
     )
     TaiwanTaiType.AllHonors -> listOf(
-        full(east, east, east, south, south, south, west, west, west, north, north, north, white, white, white, red, winning = red),
+        element = full(east, east, east, south, south, south, west, west, west, north, north, north, white, white, white, red, winning = red),
     )
     TaiwanTaiType.DeclaredReady -> listOf(standardHand(TaiwanCatalogueExampleKeys.DECLARED_READY))
     TaiwanTaiType.HeavenlyReady -> listOf(standardHand(TaiwanCatalogueExampleKeys.HEAVENLY_READY))

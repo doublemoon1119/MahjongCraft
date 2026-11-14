@@ -25,8 +25,8 @@ class RuleCatalogueScreenLanguageTest {
 
             MinecraftRuleCatalogueScreenKeys.ALL.forEach { key ->
                 assertTrue(
-                    translations[key]?.jsonPrimitive?.content?.isNotBlank() == true,
-                    "$locale is missing rule catalogue screen key: $key",
+                    actual = translations[key]?.jsonPrimitive?.content?.isNotBlank() == true,
+                    message = "$locale is missing rule catalogue screen key: $key",
                 )
             }
         }

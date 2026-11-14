@@ -62,8 +62,8 @@ class MahjongStoolResourceFilesTest {
             val variants = blockstate.getValue("variants").jsonObject
             assertEquals(setOf("facing=north", "facing=east", "facing=south", "facing=west"), variants.keys)
             assertEquals(
-                "mahjongcraft:block/mahjong_stool/$style",
-                variants.getValue("facing=north").jsonObject.getValue("model").jsonPrimitive.content,
+                expected = "mahjongcraft:block/mahjong_stool/$style",
+                actual = variants.getValue("facing=north").jsonObject.getValue("model").jsonPrimitive.content,
             )
             assertEquals(90, variants.rotation("facing=east"))
             assertEquals(180, variants.rotation("facing=south"))
@@ -76,7 +76,7 @@ class MahjongStoolResourceFilesTest {
     @Test
     fun `stool textures have their intended pixel dimensions`() {
         mapOf(
-            "red_plastic" to 16,
+            pair = "red_plastic" to 16,
         ).forEach { (texture, size) ->
             val resourcePath = "/assets/mahjongcraft/textures/block/mahjong_stool/$texture.png"
             val image = javaClass.getResourceAsStream(resourcePath)?.use(ImageIO::read)

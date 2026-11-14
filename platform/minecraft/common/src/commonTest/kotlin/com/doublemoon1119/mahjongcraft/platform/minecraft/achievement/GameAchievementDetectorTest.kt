@@ -35,8 +35,8 @@ class GameAchievementDetectorTest {
         val result = detector().detect(facts(game, HistoryFact.WinSettled(BuiltInRoundOutcomeIds.TSUMO, listOf(winDetails(winner.id)))))
 
         assertEquals(
-            mapOf(winner.id to setOf(BuiltInAchievementIds.WIN, BuiltInAchievementIds.SELF_DRAW_WIN)),
-            result.associate { it.playerId to it.achievementIds },
+            expected = mapOf(winner.id to setOf(BuiltInAchievementIds.WIN, BuiltInAchievementIds.SELF_DRAW_WIN)),
+            actual = result.associate { it.playerId to it.achievementIds },
         )
     }
 
@@ -47,15 +47,15 @@ class GameAchievementDetectorTest {
         val (winner, dealer) = game.tableState.players
 
         val result = detector().detect(
-            facts(game, HistoryFact.WinSettled(BuiltInRoundOutcomeIds.RON, listOf(winDetails(winner.id)), listOf(dealer.id))),
+            facts = facts(game, HistoryFact.WinSettled(BuiltInRoundOutcomeIds.RON, listOf(winDetails(winner.id)), listOf(dealer.id))),
         )
 
         assertEquals(
-            mapOf(
+            expected = mapOf(
                 winner.id to setOf(BuiltInAchievementIds.WIN, BuiltInAchievementIds.DISCARD_WIN),
                 dealer.id to setOf(BuiltInAchievementIds.DEAL_IN),
             ),
-            result.associate { it.playerId to it.achievementIds },
+            actual = result.associate { it.playerId to it.achievementIds },
         )
     }
 
@@ -66,9 +66,9 @@ class GameAchievementDetectorTest {
         val (winner, responsible) = game.tableState.players
 
         val result = detector().detect(
-            facts(
-                game,
-                HistoryFact.WinSettled(
+            facts = facts(
+                game = game,
+                fact = HistoryFact.WinSettled(
                     outcomeId = "example:custom_win",
                     winDetails = listOf(winDetails(winner.id)),
                     responsiblePlayerIds = listOf(responsible.id),
@@ -86,16 +86,16 @@ class GameAchievementDetectorTest {
         val game = fourPlayerGame()
         val (winner) = game.tableState.players
         val result = detector().detect(
-            CommittedGameFacts(
+            facts = CommittedGameFacts(
                 venueId = game.id,
                 previousGame = game,
                 game = game,
                 facts = listOf(
                     HistoryEventDraft(
-                        winner.id,
-                        HistoryFact.ActionAccepted(
-                            GameAction.Tsumo,
-                            HistoryActionResult(emptyList(), emptyList(), 0, emptyList(), emptyMap(), winner.id),
+                        actorPlayerId = winner.id,
+                        fact = HistoryFact.ActionAccepted(
+                            action = GameAction.Tsumo,
+                            result = HistoryActionResult(emptyList(), emptyList(), 0, emptyList(), emptyMap(), winner.id),
                         ),
                     ),
                     HistoryEventDraft(null, HistoryFact.WinSettled("example:custom_tsumo", listOf(winDetails(winner.id)))),
@@ -112,15 +112,15 @@ class GameAchievementDetectorTest {
         val game = fourPlayerGame()
         val (dealer, winner) = game.tableState.players
         val result = detector().detect(
-            CommittedGameFacts(
+            facts = CommittedGameFacts(
                 venueId = game.id,
                 previousGame = game,
                 game = game,
                 facts = listOf(
                     HistoryEventDraft(winner.id, HistoryFact.ReactionResolved(GameAction.Ron(Uuid.random()), winner.id)),
                     HistoryEventDraft(
-                        dealer.id,
-                        HistoryFact.WinSettled("example:custom_ron", listOf(winDetails(winner.id)), listOf(dealer.id)),
+                        actorPlayerId = dealer.id,
+                        fact = HistoryFact.WinSettled("example:custom_ron", listOf(winDetails(winner.id)), listOf(dealer.id)),
                     ),
                 ),
             ),
@@ -137,19 +137,19 @@ class GameAchievementDetectorTest {
         val (dealer, first, second) = game.tableState.players
 
         val result = detector().detect(
-            CommittedGameFacts(
+            facts = CommittedGameFacts(
                 venueId = game.id,
                 previousGame = game,
                 game = game,
                 facts = listOf(
                     HistoryEventDraft(first.id, HistoryFact.ReactionResolved(GameAction.Ron(Uuid.random()), first.id)),
                     HistoryEventDraft(
-                        dealer.id,
-                        HistoryFact.WinSettled("example:ron", listOf(winDetails(first.id)), listOf(dealer.id)),
+                        actorPlayerId = dealer.id,
+                        fact = HistoryFact.WinSettled("example:ron", listOf(winDetails(first.id)), listOf(dealer.id)),
                     ),
                     HistoryEventDraft(
-                        dealer.id,
-                        HistoryFact.WinSettled("example:ron", listOf(winDetails(second.id)), listOf(dealer.id)),
+                        actorPlayerId = dealer.id,
+                        fact = HistoryFact.WinSettled("example:ron", listOf(winDetails(second.id)), listOf(dealer.id)),
                     ),
                 ),
             ),
@@ -165,19 +165,19 @@ class GameAchievementDetectorTest {
         val (firstDealer, secondDealer, firstWinner, secondWinner) = game.tableState.players
 
         val result = detector().detect(
-            CommittedGameFacts(
+            facts = CommittedGameFacts(
                 venueId = game.id,
                 previousGame = game,
                 game = game,
                 facts = listOf(
                     HistoryEventDraft(firstWinner.id, HistoryFact.ReactionResolved(GameAction.Ron(Uuid.random()), firstWinner.id)),
                     HistoryEventDraft(
-                        firstDealer.id,
-                        HistoryFact.WinSettled("example:ron", listOf(winDetails(firstWinner.id)), listOf(firstDealer.id)),
+                        actorPlayerId = firstDealer.id,
+                        fact = HistoryFact.WinSettled("example:ron", listOf(winDetails(firstWinner.id)), listOf(firstDealer.id)),
                     ),
                     HistoryEventDraft(
-                        secondDealer.id,
-                        HistoryFact.WinSettled("example:ron", listOf(winDetails(secondWinner.id)), listOf(secondDealer.id)),
+                        actorPlayerId = secondDealer.id,
+                        fact = HistoryFact.WinSettled("example:ron", listOf(winDetails(secondWinner.id)), listOf(secondDealer.id)),
                     ),
                 ),
             ),
@@ -200,9 +200,9 @@ class GameAchievementDetectorTest {
         )
 
         val result = detector().detect(
-            facts(
-                game,
-                HistoryFact.RuleEffectResolved(
+            facts = facts(
+                game = game,
+                fact = HistoryFact.RuleEffectResolved(
                     reasonId = "example:custom_win",
                     roundCompletion = summary,
                     winDetails = emptyList(),
@@ -224,9 +224,9 @@ class GameAchievementDetectorTest {
         )
 
         val result = detector().detect(
-            facts(
-                game,
-                HistoryFact.RuleEffectResolved("example:extension", summary, listOf(winDetails(winner.id))),
+            facts = facts(
+                game = game,
+                fact = HistoryFact.RuleEffectResolved("example:extension", summary, listOf(winDetails(winner.id))),
             ),
         )
 
@@ -239,19 +239,19 @@ class GameAchievementDetectorTest {
         val game = fourPlayerGame()
         val (dealer, winner) = game.tableState.players
         val result = detector().detect(
-            CommittedGameFacts(
+            facts = CommittedGameFacts(
                 venueId = game.id,
                 previousGame = game,
                 game = game,
                 facts = listOf(
                     HistoryEventDraft(winner.id, HistoryFact.ReactionResolved(GameAction.Ron(Uuid.random()), winner.id)),
                     HistoryEventDraft(
-                        dealer.id,
-                        HistoryFact.WinSettled("example:ron", listOf(winDetails(winner.id)), listOf(dealer.id)),
+                        actorPlayerId = dealer.id,
+                        fact = HistoryFact.WinSettled("example:ron", listOf(winDetails(winner.id)), listOf(dealer.id)),
                     ),
                     HistoryEventDraft(
-                        dealer.id,
-                        HistoryFact.WinSettled("example:ron", listOf(winDetails(winner.id)), listOf(dealer.id)),
+                        actorPlayerId = dealer.id,
+                        fact = HistoryFact.WinSettled("example:ron", listOf(winDetails(winner.id)), listOf(dealer.id)),
                     ),
                 ),
             ),
@@ -268,12 +268,12 @@ class GameAchievementDetectorTest {
         val (dealer, first, second, third) = game.tableState.players
 
         val double = detector().detect(
-            facts(game, HistoryFact.WinSettled(BuiltInRoundOutcomeIds.RON, listOf(winDetails(first.id), winDetails(second.id)), listOf(dealer.id))),
+            facts = facts(game, HistoryFact.WinSettled(BuiltInRoundOutcomeIds.RON, listOf(winDetails(first.id), winDetails(second.id)), listOf(dealer.id))),
         )
         val triple = detector().detect(
-            facts(
-                game,
-                HistoryFact.WinSettled(
+            facts = facts(
+                game = game,
+                fact = HistoryFact.WinSettled(
                     outcomeId = BuiltInRoundOutcomeIds.RON,
                     winDetails = listOf(winDetails(first.id), winDetails(second.id), winDetails(third.id)),
                     responsiblePlayerIds = listOf(dealer.id),
@@ -282,12 +282,12 @@ class GameAchievementDetectorTest {
         )
 
         assertEquals(
-            setOf(BuiltInAchievementIds.DEAL_IN, BuiltInAchievementIds.DOUBLE_DEAL_IN),
-            double.single { it.playerId == dealer.id }.achievementIds,
+            expected = setOf(BuiltInAchievementIds.DEAL_IN, BuiltInAchievementIds.DOUBLE_DEAL_IN),
+            actual = double.single { it.playerId == dealer.id }.achievementIds,
         )
         assertEquals(
-            setOf(BuiltInAchievementIds.DEAL_IN, BuiltInAchievementIds.TRIPLE_DEAL_IN),
-            triple.single { it.playerId == dealer.id }.achievementIds,
+            expected = setOf(BuiltInAchievementIds.DEAL_IN, BuiltInAchievementIds.TRIPLE_DEAL_IN),
+            actual = triple.single { it.playerId == dealer.id }.achievementIds,
         )
     }
 
@@ -359,8 +359,8 @@ class GameAchievementDetectorTest {
         val result = detector(registry).detect(facts(game, HistoryFact.WinSettled(BuiltInRoundOutcomeIds.TSUMO, listOf(winDetails(winner.id)))))
 
         assertEquals(
-            setOf(BuiltInAchievementIds.WIN, BuiltInAchievementIds.SELF_DRAW_WIN, "example:rule_win"),
-            result.single().achievementIds,
+            expected = setOf(BuiltInAchievementIds.WIN, BuiltInAchievementIds.SELF_DRAW_WIN, "example:rule_win"),
+            actual = result.single().achievementIds,
         )
         assertEquals(BuiltInRuleModuleIds.RIICHI, result.single().ruleModuleId)
         assertEquals(game.matchId, result.single().matchId)

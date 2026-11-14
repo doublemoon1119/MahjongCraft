@@ -33,8 +33,8 @@ class MahjongDiceResourceFilesTest {
         assertEquals(listOf(4.0, 12.0, 0.0, 8.0), faces.faceUv("up"))
         assertEquals(listOf(12.0, 0.0, 8.0, 4.0), faces.faceUv("down"))
         assertEquals(
-            listOf(30.0, -135.0, 0.0),
-            model.getValue("display").jsonObject.getValue("gui").jsonObject.coordinates("rotation"),
+            expected = listOf(30.0, -135.0, 0.0),
+            actual = model.getValue("display").jsonObject.getValue("gui").jsonObject.coordinates("rotation"),
         )
         val fixedDisplay = model.getValue("display").jsonObject.getValue("fixed").jsonObject
         assertEquals(listOf(-90.0, 0.0, 0.0), fixedDisplay.coordinates("rotation"))
@@ -60,8 +60,8 @@ class MahjongDiceResourceFilesTest {
 
         assertNotNull(image, "Resource is not a readable image: $resourcePath")
         assertEquals(
-            mapOf(2 to 2, 5 to 5, 3 to 3, 4 to 4, 1 to 1, 6 to 6),
-            mapOf(
+            expected = mapOf(2 to 2, 5 to 5, 3 to 3, 4 to 4, 1 to 1, 6 to 6),
+            actual = mapOf(
                 2 to image.countPips(0, 0),
                 5 to image.countPips(16, 0),
                 3 to image.countPips(0, 16),
@@ -83,8 +83,8 @@ class MahjongDiceResourceFilesTest {
 
         assertEquals("minecraft:crafting_shapeless", recipe.getValue("type").jsonPrimitive.content)
         assertEquals(
-            setOf("minecraft:white_concrete", "minecraft:red_dye", "minecraft:black_dye"),
-            ingredients,
+            expected = setOf("minecraft:white_concrete", "minecraft:red_dye", "minecraft:black_dye"),
+            actual = ingredients,
         )
         assertEquals("mahjongcraft:mahjong_dice", result.getValue("item").jsonPrimitive.content)
         assertEquals(2, result.getValue("count").jsonPrimitive.content.toInt())

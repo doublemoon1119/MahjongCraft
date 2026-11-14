@@ -45,10 +45,10 @@ class RoundInfoLineDisplayRegistryTest {
         val registry = RoundInfoLineDisplayRegistryImpl().apply { BundledRiichiMinecraftExtension.registerRoundInfoPresentations(this) }
 
         assertEquals(
-            listOf(
+            expected = listOf(
                 RoundInfoLine(
-                    "mahjongcraft:riichi/round_title",
-                    listOf(
+                    key = "mahjongcraft:riichi/round_title",
+                    args = listOf(
                         RoundInfoArgument.WindValue(Wind.SOUTH),
                         RoundInfoArgument.Number(state.localRoundNumber),
                         RoundInfoArgument.Number(1),
@@ -57,7 +57,7 @@ class RoundInfoLineDisplayRegistryTest {
                 RoundInfoLine("mahjongcraft:riichi/stick_pot", listOf(RoundInfoArgument.Number(2))),
                 RoundInfoLine("mahjongcraft:riichi/wall_remaining", listOf(RoundInfoArgument.Number(50))),
             ),
-            registry.buildLines(BuiltInRuleModuleIds.RIICHI, state),
+            actual = registry.buildLines(BuiltInRuleModuleIds.RIICHI, state),
         )
     }
 
@@ -148,7 +148,7 @@ class RoundInfoLineDisplayRegistryTest {
         assertEquals("first.notice", registry.findMessage("first:notice")?.translationKey)
         assertEquals("second.notice", registry.findMessage("second:notice")?.translationKey)
         assertEquals(
-            setOf(
+            expected = setOf(
                 "line:first:round",
                 "line:second:round",
                 "message:first:notice",
@@ -156,7 +156,7 @@ class RoundInfoLineDisplayRegistryTest {
                 "provider:first:rule",
                 "provider:second:rule",
             ),
-            registry.registrationKeys,
+            actual = registry.registrationKeys,
         )
     }
 }

@@ -62,7 +62,7 @@ class ExhaustiveDrawReasonDisplayNameRegistryTest {
         val snapshot = registry.settlementStatusReasonIds
         registry.register(ExhaustiveDrawReasonDisplayNameDefinition("example:name", "example.name"))
         registry.register(
-            ExhaustiveDrawSettlementStatusLabelsDefinition(
+            definition = ExhaustiveDrawSettlementStatusLabelsDefinition(
                 reasonId = "example:status",
                 labels = ExhaustiveDrawSettlementStatusLabels("example.yes", "example.no"),
             ),

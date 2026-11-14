@@ -58,8 +58,8 @@ class SeatItemPlacementCoordinatorTest {
             valid = { true },
             place = {
                 assertEquals(
-                    SeatItemPlacementResult.BUSY,
-                    coordinator.attempt(
+                    expected = SeatItemPlacementResult.BUSY,
+                    actual = coordinator.attempt(
                         key = "actor",
                         valid = { error("Reentrant request must not validate") },
                         place = { error("Reentrant request must not place") },
@@ -67,8 +67,8 @@ class SeatItemPlacementCoordinatorTest {
                     ),
                 )
                 assertEquals(
-                    SeatItemPlacementResult.SEATED,
-                    coordinator.attempt(
+                    expected = SeatItemPlacementResult.SEATED,
+                    actual = coordinator.attempt(
                         key = "other",
                         valid = { true },
                         place = {
@@ -117,8 +117,8 @@ class SeatItemPlacementCoordinatorTest {
     fun `seating failure does not retry successful placement`() {
         var placed = 0
         assertEquals(
-            SeatItemPlacementResult.PLACED_UNSEATED,
-            SeatItemPlacementCoordinator<String>().attempt(
+            expected = SeatItemPlacementResult.PLACED_UNSEATED,
+            actual = SeatItemPlacementCoordinator<String>().attempt(
                 key = "actor",
                 valid = { true },
                 place = {
@@ -144,8 +144,8 @@ class SeatItemPlacementCoordinatorTest {
             )
         }
         assertEquals(
-            SeatItemPlacementResult.SEATED,
-            coordinator.attempt(
+            expected = SeatItemPlacementResult.SEATED,
+            actual = coordinator.attempt(
                 key = "actor",
                 valid = { true },
                 place = { true },

@@ -63,19 +63,19 @@ class TaiwanCatalogueProviderTest {
     @Test
     fun `disabled options keep entries with an unavailable reason`() {
         val catalogue = assertNotNull(
-            TaiwanCatalogueProvider().catalogue(TaiwanRuleConfig(useFlowerTiles = false, fourWindsAbortiveDraw = false)),
+            actual = TaiwanCatalogueProvider().catalogue(TaiwanRuleConfig(useFlowerTiles = false, fourWindsAbortiveDraw = false)),
         )
 
         listOf(TaiwanCatalogueTai.SeatFlower.id, TaiwanCatalogueTai.FlowerSet.id, TaiwanCatalogueTai.EightFlowers.id, TaiwanCatalogueTai.SevenFlowers.id).forEach { id ->
             assertEquals(TaiwanCatalogueKeys.FLOWERS_UNAVAILABLE, catalogue.entries.single { it.id == id }.unavailableReasonTranslationKey)
         }
         assertEquals(
-            TaiwanCatalogueKeys.FOUR_WINDS_UNAVAILABLE,
-            catalogue.entries.single { it.id == TaiwanCatalogueSpecial.FourWinds.id }.unavailableReasonTranslationKey,
+            expected = TaiwanCatalogueKeys.FOUR_WINDS_UNAVAILABLE,
+            actual = catalogue.entries.single { it.id == TaiwanCatalogueSpecial.FourWinds.id }.unavailableReasonTranslationKey,
         )
         assertEquals(
-            TaiwanCatalogueKeys.GENERAL_READY_DECLARATION_UNAVAILABLE,
-            catalogue.entries.single { it.id == TaiwanCatalogueTai.DeclaredReady.id }.unavailableReasonTranslationKey,
+            expected = TaiwanCatalogueKeys.GENERAL_READY_DECLARATION_UNAVAILABLE,
+            actual = catalogue.entries.single { it.id == TaiwanCatalogueTai.DeclaredReady.id }.unavailableReasonTranslationKey,
         )
         assertNull(catalogue.entries.single { it.id == TaiwanCatalogueTai.HeavenlyReady.id }.unavailableReasonTranslationKey)
         assertNull(catalogue.entries.single { it.id == TaiwanCatalogueTai.ConcealedHand.id }.unavailableReasonTranslationKey)
@@ -115,13 +115,13 @@ class TaiwanCatalogueProviderTest {
 
         TaiwanTaiType.entries.forEach { type ->
             assertEquals(
-                "mahjongcraft:taiwan/catalogue/category/tai_${EXPECTED_TAI.getValue(type)}",
-                catalogue.entries.single { it.id == type.catalogueId }.categoryId,
-                type.name,
+                expected = "mahjongcraft:taiwan/catalogue/category/tai_${EXPECTED_TAI.getValue(type)}",
+                actual = catalogue.entries.single { it.id == type.catalogueId }.categoryId,
+                message = type.name,
             )
         }
         assertTrue(
-            TaiwanCatalogueSpecial.entries.all { definition ->
+            actual = TaiwanCatalogueSpecial.entries.all { definition ->
                 catalogue.entries.single { it.id == definition.id }.categoryId == TaiwanCatalogueCategory.Draw.id
             },
         )

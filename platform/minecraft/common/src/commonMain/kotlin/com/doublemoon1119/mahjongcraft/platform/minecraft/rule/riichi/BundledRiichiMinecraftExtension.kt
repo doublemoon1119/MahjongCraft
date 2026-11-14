@@ -150,7 +150,7 @@ object BundledRiichiMinecraftExtension : MinecraftMahjongExtension {
     override fun registerRuleCatalogues(registry: RuleCatalogueRegistrar) {
         registry.register(RiichiCatalogueProvider())
         registry.register(
-            RiichiCatalogueProvider(
+            provider = RiichiCatalogueProvider(
                 ruleModuleId = BuiltInRuleModuleIds.RIICHI_THREE_PLAYER,
                 configClass = ThreePlayerRiichiRuleConfig::class,
                 defaultConfig = ::ThreePlayerRiichiRuleConfig,

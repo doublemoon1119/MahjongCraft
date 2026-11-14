@@ -579,7 +579,7 @@ class PrivateHandLayoutTest {
         layout.clear()
 
         assertTrue(
-            layout.update(
+            actual = layout.update(
                 time = 0.0,
                 standingOrder = emptyList(),
                 drawnId = null,
@@ -1165,9 +1165,9 @@ class PrivateHandLayoutTest {
             endPoseRotationDegrees = to.poseDegrees,
         ),
         startOffset = DiceAnimationVector(
-            from.position.x - to.position.x,
-            from.position.y - to.position.y,
-            from.position.z - to.position.z,
+            x = from.position.x - to.position.x,
+            y = from.position.y - to.position.y,
+            z = from.position.z - to.position.z,
         ),
         startYawOffset = from.yawDegrees - to.yawDegrees,
     )
@@ -1195,9 +1195,9 @@ class PrivateHandLayoutTest {
     /** 建立指定格位的直立牌，牌距採用正式牌寬加微小間距。 */
     private fun transform(slot: Double): TileDisplayTransform = TileDisplayTransform(
         position = DiceAnimationVector(
-            slot * (MahjongTileDimensions.TILE_WIDTH + MahjongTileDimensions.TILE_SMALL_PADDING),
-            0.0,
-            0.0,
+            x = slot * (MahjongTileDimensions.TILE_WIDTH + MahjongTileDimensions.TILE_SMALL_PADDING),
+            y = 0.0,
+            z = 0.0,
         ),
         yawDegrees = 0.0f,
         poseDegrees = 0.0f,

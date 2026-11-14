@@ -27,9 +27,9 @@ data class TileDisplayMotion(
         val frame = TileMotionAnimation(spec).frame(time - startedAt, startOffset, startYawOffset)
         return TileDisplayTransform(
             position = DiceAnimationVector(
-                target.position.x + frame.offset.x,
-                target.position.y + frame.offset.y,
-                target.position.z + frame.offset.z,
+                x = target.position.x + frame.offset.x,
+                y = target.position.y + frame.offset.y,
+                z = target.position.z + frame.offset.z,
             ),
             yawDegrees = target.yawDegrees + frame.yawOffsetDegrees,
             poseDegrees = frame.poseRotationDegrees,

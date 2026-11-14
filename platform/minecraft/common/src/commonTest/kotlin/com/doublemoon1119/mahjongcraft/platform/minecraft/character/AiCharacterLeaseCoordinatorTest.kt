@@ -118,7 +118,7 @@ class AiCharacterLeaseCoordinatorTest {
     fun `session changed during activation discards the old candidate`() {
         val lease = FakeLease()
         assertNull(
-            coordinator.ensure(key(), { lease }) {
+            actual = coordinator.ensure(key(), { lease }) {
                 coordinator.startSession()
                 true
             },
@@ -135,7 +135,7 @@ class AiCharacterLeaseCoordinatorTest {
         val old = FakeLease()
         val current = FakeLease()
         assertNull(
-            coordinator.ensure(
+            actual = coordinator.ensure(
                 key = key,
                 acquire = {
                     coordinator.startSession()

@@ -127,7 +127,7 @@ private fun sampleCatalogue(): RuleCatalogue = RuleCatalogue(
             descriptionTranslationKey = "example.dragon.description",
             labels = listOf(RuleCatalogueLabel("example:points")),
             examples = listOf(
-                RuleCatalogueExample(
+                element = RuleCatalogueExample(
                     completeHand = false,
                     groups = listOf(RuleCatalogueTileGroup(RuleCatalogueTileGroupRole.ILLUSTRATION, listOf(TileFaceView(Tile.Extension(TileTypeId("example", "dragon")))))),
                 ),

@@ -34,8 +34,8 @@ class MinecraftServerConfigTomlCodec {
             toml.decodeFromString<MinecraftServerConfigTomlDto>(content)
         } catch (exception: Exception) {
             throw InvalidMinecraftServerConfigException(
-                "Unable to parse server config TOML: ${exception.message ?: exception::class.simpleName}",
-                exception,
+                message = "Unable to parse server config TOML: ${exception.message ?: exception::class.simpleName}",
+                cause = exception,
             )
         }
         return dto.toConfig()
@@ -48,7 +48,7 @@ class MinecraftServerConfigTomlCodec {
      * @return 使用穩定欄位名稱的 TOML 文字；欄位值仍須符合解碼時的驗證規則。
      */
     fun encode(config: MinecraftServerConfig): String = toml.encodeToString(
-        MinecraftServerConfigTomlDto.fromConfig(config),
+        value = MinecraftServerConfigTomlDto.fromConfig(config),
     )
 }
 
@@ -87,7 +87,7 @@ private data class MinecraftServerConfigTomlDto(
         ),
         disconnectedPlayerTimeout = playerDisconnection.timeoutSeconds.seconds.also { timeout ->
             requireConfig(
-                timeout in MinecraftServerConfig.MIN_DISCONNECTED_PLAYER_TIMEOUT..MinecraftServerConfig.MAX_DISCONNECTED_PLAYER_TIMEOUT,
+                condition = timeout in MinecraftServerConfig.MIN_DISCONNECTED_PLAYER_TIMEOUT..MinecraftServerConfig.MAX_DISCONNECTED_PLAYER_TIMEOUT,
             ) {
                 "player-disconnection.timeout-seconds must be between " +
                     "${MinecraftServerConfig.MIN_DISCONNECTED_PLAYER_TIMEOUT.inWholeSeconds} and " +
@@ -289,7 +289,7 @@ private fun <T> enumValue(
     values: List<T>,
     configValue: (T) -> String,
 ): T = values.firstOrNull { configValue(it) == value } ?: throw InvalidMinecraftServerConfigException(
-    "$field has unsupported value '$value'; allowed values: ${values.joinToString { configValue(it) }}",
+    message = "$field has unsupported value '$value'; allowed values: ${values.joinToString { configValue(it) }}",
 )
 
 /**

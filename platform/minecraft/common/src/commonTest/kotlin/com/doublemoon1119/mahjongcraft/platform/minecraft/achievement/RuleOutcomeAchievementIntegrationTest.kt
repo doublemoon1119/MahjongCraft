@@ -59,9 +59,9 @@ class RuleOutcomeAchievementIntegrationTest {
         val store = AuthoritativeStateStore(historyRecordingEnabled = true)
         val repository = componentValidatedGameRepository(store)
         val snapshotSynchronizer = GameSnapshotSynchronizer(
-            repository,
-            FakeGameSnapshotRepository(),
-            GameVisibilityPolicyImpl(modules, componentRegistry = bundledCoreExtensionRegistries().componentRegistry),
+            gameRepository = repository,
+            snapshotRepository = FakeGameSnapshotRepository(),
+            visibilityPolicy = GameVisibilityPolicyImpl(modules, componentRegistry = bundledCoreExtensionRegistries().componentRegistry),
         )
         val outcomeResolvers = PostReactionRoundOutcomeResolverRegistry().apply {
             BundledRiichiExtension.registerPostReactionRoundOutcomeResolvers(this)
@@ -179,13 +179,15 @@ class RuleOutcomeAchievementIntegrationTest {
     /** 擷取 store 真正提交的事實，略過未產生事實的準備寫入。 */
     private fun captureCommittedFacts(store: AuthoritativeStateStore): MutableList<CommittedGameFacts> {
         val submitted = mutableListOf<CommittedGameFacts>()
-        store.setCommittedFactsListener(object : CommittedFactsListener {
-            override fun onCommitted(sequence: Long, facts: CommittedGameFacts) {
-                submitted += facts
-            }
+        store.setCommittedFactsListener(
+            listener = object : CommittedFactsListener {
+                override fun onCommitted(sequence: Long, facts: CommittedGameFacts) {
+                    submitted += facts
+                }
 
-            override fun onReleased(sequence: Long) = Unit
-        })
+                override fun onReleased(sequence: Long) = Unit
+            },
+        )
         return submitted
     }
 

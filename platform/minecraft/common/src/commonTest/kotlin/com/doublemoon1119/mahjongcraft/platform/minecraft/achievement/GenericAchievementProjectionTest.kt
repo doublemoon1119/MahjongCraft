@@ -46,7 +46,7 @@ class GenericAchievementProjectionTest {
             ExpectedCase(
                 label = "tsumo",
                 facts = committed(
-                    game,
+                    game = game,
                     HistoryFact.WinSettled(BuiltInRoundOutcomeIds.TSUMO, listOf(win(winner))),
                 ),
                 achievements = mapOf(winner to tsumo),
@@ -55,11 +55,11 @@ class GenericAchievementProjectionTest {
             ExpectedCase(
                 label = "ron",
                 facts = committed(
-                    game,
+                    game = game,
                     HistoryFact.WinSettled(
-                        BuiltInRoundOutcomeIds.RON,
-                        listOf(win(winner)),
-                        listOf(dealer),
+                        outcomeId = BuiltInRoundOutcomeIds.RON,
+                        winDetails = listOf(win(winner)),
+                        responsiblePlayerIds = listOf(dealer),
                     ),
                 ),
                 achievements = mapOf(winner to ron, dealer to setOf(BuiltInAchievementIds.DEAL_IN)),
@@ -74,14 +74,14 @@ class GenericAchievementProjectionTest {
             ExpectedCase(
                 label = "explicit tsumo",
                 facts = committedDrafts(
-                    game,
+                    game = game,
                     HistoryEventDraft(
-                        winner,
-                        HistoryFact.ActionAccepted(GameAction.Tsumo, emptyResult(winner)),
+                        actorPlayerId = winner,
+                        fact = HistoryFact.ActionAccepted(GameAction.Tsumo, emptyResult(winner)),
                     ),
                     HistoryEventDraft(
-                        null,
-                        HistoryFact.WinSettled("example:win", listOf(win(winner))),
+                        actorPlayerId = null,
+                        fact = HistoryFact.WinSettled("example:win", listOf(win(winner))),
                     ),
                 ),
                 achievements = mapOf(winner to tsumo),
@@ -90,14 +90,14 @@ class GenericAchievementProjectionTest {
             ExpectedCase(
                 label = "explicit ron",
                 facts = committedDrafts(
-                    game,
+                    game = game,
                     HistoryEventDraft(
-                        winner,
-                        HistoryFact.ReactionResolved(GameAction.Ron(Uuid.random()), winner),
+                        actorPlayerId = winner,
+                        fact = HistoryFact.ReactionResolved(GameAction.Ron(Uuid.random()), winner),
                     ),
                     HistoryEventDraft(
-                        null,
-                        HistoryFact.WinSettled("example:win", listOf(win(winner)), listOf(dealer)),
+                        actorPlayerId = null,
+                        fact = HistoryFact.WinSettled("example:win", listOf(win(winner)), listOf(dealer)),
                     ),
                 ),
                 achievements = mapOf(winner to ron, dealer to setOf(BuiltInAchievementIds.DEAL_IN)),
@@ -112,18 +112,18 @@ class GenericAchievementProjectionTest {
             ExpectedCase(
                 label = "contradictory methods",
                 facts = committedDrafts(
-                    game,
+                    game = game,
                     HistoryEventDraft(
-                        winner,
-                        HistoryFact.ActionAccepted(GameAction.Tsumo, emptyResult(winner)),
+                        actorPlayerId = winner,
+                        fact = HistoryFact.ActionAccepted(GameAction.Tsumo, emptyResult(winner)),
                     ),
                     HistoryEventDraft(
-                        winner,
-                        HistoryFact.ReactionResolved(GameAction.Ron(Uuid.random()), winner),
+                        actorPlayerId = winner,
+                        fact = HistoryFact.ReactionResolved(GameAction.Ron(Uuid.random()), winner),
                     ),
                     HistoryEventDraft(
-                        null,
-                        HistoryFact.WinSettled("example:win", listOf(win(winner)), listOf(dealer)),
+                        actorPlayerId = null,
+                        fact = HistoryFact.WinSettled("example:win", listOf(win(winner)), listOf(dealer)),
                     ),
                 ),
                 achievements = mapOf(winner to tsumo),
@@ -132,17 +132,17 @@ class GenericAchievementProjectionTest {
             ExpectedCase(
                 label = "two winners same responsibility",
                 facts = committed(
-                    game,
+                    game = game,
                     HistoryFact.ReactionResolved(GameAction.Ron(Uuid.random()), winner),
                     HistoryFact.WinSettled(
-                        BuiltInRoundOutcomeIds.RON,
-                        listOf(win(winner)),
-                        listOf(dealer),
+                        outcomeId = BuiltInRoundOutcomeIds.RON,
+                        winDetails = listOf(win(winner)),
+                        responsiblePlayerIds = listOf(dealer),
                     ),
                     HistoryFact.WinSettled(
-                        BuiltInRoundOutcomeIds.RON,
-                        listOf(win(second)),
-                        listOf(dealer),
+                        outcomeId = BuiltInRoundOutcomeIds.RON,
+                        winDetails = listOf(win(second)),
+                        responsiblePlayerIds = listOf(dealer),
                     ),
                 ),
                 achievements = mapOf(
@@ -168,17 +168,17 @@ class GenericAchievementProjectionTest {
             ExpectedCase(
                 label = "two winners split responsibility",
                 facts = committed(
-                    game,
+                    game = game,
                     HistoryFact.ReactionResolved(GameAction.Ron(Uuid.random()), winner),
                     HistoryFact.WinSettled(
-                        BuiltInRoundOutcomeIds.RON,
-                        listOf(win(winner)),
-                        listOf(dealer),
+                        outcomeId = BuiltInRoundOutcomeIds.RON,
+                        winDetails = listOf(win(winner)),
+                        responsiblePlayerIds = listOf(dealer),
                     ),
                     HistoryFact.WinSettled(
-                        BuiltInRoundOutcomeIds.RON,
-                        listOf(win(second)),
-                        listOf(players[3].id),
+                        outcomeId = BuiltInRoundOutcomeIds.RON,
+                        winDetails = listOf(win(second)),
+                        responsiblePlayerIds = listOf(players[3].id),
                     ),
                 ),
                 achievements = mapOf(
@@ -203,7 +203,7 @@ class GenericAchievementProjectionTest {
             ExpectedCase(
                 label = "zero winners with responsible player",
                 facts = committed(
-                    game,
+                    game = game,
                     HistoryFact.WinSettled(BuiltInRoundOutcomeIds.RON, emptyList(), listOf(dealer)),
                 ),
                 achievements = mapOf(dealer to setOf(BuiltInAchievementIds.DEAL_IN)),
@@ -212,26 +212,26 @@ class GenericAchievementProjectionTest {
             ExpectedCase(
                 label = "four winners no triple achievement",
                 facts = committed(
-                    game,
+                    game = game,
                     HistoryFact.WinSettled(
-                        BuiltInRoundOutcomeIds.RON,
-                        listOf(win(winner)),
-                        listOf(dealer),
+                        outcomeId = BuiltInRoundOutcomeIds.RON,
+                        winDetails = listOf(win(winner)),
+                        responsiblePlayerIds = listOf(dealer),
                     ),
                     HistoryFact.WinSettled(
-                        BuiltInRoundOutcomeIds.RON,
-                        listOf(win(second)),
-                        listOf(dealer),
+                        outcomeId = BuiltInRoundOutcomeIds.RON,
+                        winDetails = listOf(win(second)),
+                        responsiblePlayerIds = listOf(dealer),
                     ),
                     HistoryFact.WinSettled(
-                        BuiltInRoundOutcomeIds.RON,
-                        listOf(win(players[2].id)),
-                        listOf(dealer),
+                        outcomeId = BuiltInRoundOutcomeIds.RON,
+                        winDetails = listOf(win(players[2].id)),
+                        responsiblePlayerIds = listOf(dealer),
                     ),
                     HistoryFact.WinSettled(
-                        BuiltInRoundOutcomeIds.RON,
-                        listOf(win(players[3].id)),
-                        listOf(dealer),
+                        outcomeId = BuiltInRoundOutcomeIds.RON,
+                        winDetails = listOf(win(players[3].id)),
+                        responsiblePlayerIds = listOf(dealer),
                     ),
                 ),
                 achievements = players.associate { it.id to ron } + (dealer to ron + BuiltInAchievementIds.DEAL_IN),
@@ -245,16 +245,16 @@ class GenericAchievementProjectionTest {
             ExpectedCase(
                 label = "duplicate winner",
                 facts = committed(
-                    game,
+                    game = game,
                     HistoryFact.WinSettled(
-                        BuiltInRoundOutcomeIds.RON,
-                        listOf(win(winner)),
-                        listOf(dealer),
+                        outcomeId = BuiltInRoundOutcomeIds.RON,
+                        winDetails = listOf(win(winner)),
+                        responsiblePlayerIds = listOf(dealer),
                     ),
                     HistoryFact.WinSettled(
-                        BuiltInRoundOutcomeIds.RON,
-                        listOf(win(winner)),
-                        listOf(dealer),
+                        outcomeId = BuiltInRoundOutcomeIds.RON,
+                        winDetails = listOf(win(winner)),
+                        responsiblePlayerIds = listOf(dealer),
                     ),
                 ),
                 achievements = mapOf(winner to ron, dealer to setOf(BuiltInAchievementIds.DEAL_IN)),
@@ -269,7 +269,7 @@ class GenericAchievementProjectionTest {
             ExpectedCase(
                 label = "mixed builtin tsumo and custom",
                 facts = committed(
-                    game,
+                    game = game,
                     HistoryFact.WinSettled(BuiltInRoundOutcomeIds.TSUMO, listOf(win(winner))),
                     HistoryFact.WinSettled("example:custom", listOf(win(second))),
                 ),
@@ -288,12 +288,12 @@ class GenericAchievementProjectionTest {
             ExpectedCase(
                 label = "builtin tsumo and ron conflict",
                 facts = committed(
-                    game,
+                    game = game,
                     HistoryFact.WinSettled(BuiltInRoundOutcomeIds.TSUMO, listOf(win(winner))),
                     HistoryFact.WinSettled(
-                        BuiltInRoundOutcomeIds.RON,
-                        listOf(win(second)),
-                        listOf(dealer),
+                        outcomeId = BuiltInRoundOutcomeIds.RON,
+                        winDetails = listOf(win(second)),
+                        responsiblePlayerIds = listOf(dealer),
                     ),
                 ),
                 achievements = mapOf(winner to baseWin, second to baseWin),
@@ -305,11 +305,11 @@ class GenericAchievementProjectionTest {
             ExpectedCase(
                 label = "rule effect win",
                 facts = committed(
-                    game,
+                    game = game,
                     HistoryFact.RuleEffectResolved(
-                        "example:win",
-                        summary(game, RoundCompletionClassification.WIN),
-                        listOf(win(winner)),
+                        reasonId = "example:win",
+                        roundCompletion = summary(game, RoundCompletionClassification.WIN),
+                        winDetails = listOf(win(winner)),
                     ),
                 ),
                 achievements = mapOf(winner to baseWin),
@@ -318,11 +318,11 @@ class GenericAchievementProjectionTest {
             ExpectedCase(
                 label = "rule effect special",
                 facts = committed(
-                    game,
+                    game = game,
                     HistoryFact.RuleEffectResolved(
-                        "example:special",
-                        summary(game, RoundCompletionClassification.EXTENSION),
-                        listOf(win(winner)),
+                        reasonId = "example:special",
+                        roundCompletion = summary(game, RoundCompletionClassification.EXTENSION),
+                        winDetails = listOf(win(winner)),
                     ),
                 ),
                 achievements = emptyMap(),
@@ -331,7 +331,7 @@ class GenericAchievementProjectionTest {
             ExpectedCase(
                 label = "exhaustive round completion",
                 facts = committed(
-                    game,
+                    game = game,
                     HistoryFact.RoundCompleted(summary(game, RoundCompletionClassification.EXHAUSTIVE_DRAW)),
                 ),
                 achievements = players.associate { it.id to setOf(BuiltInAchievementIds.EXHAUSTIVE_DRAW) },
@@ -340,7 +340,7 @@ class GenericAchievementProjectionTest {
             ExpectedCase(
                 label = "abortive round completion",
                 facts = committed(
-                    game,
+                    game = game,
                     HistoryFact.RoundCompleted(summary(game, RoundCompletionClassification.ABORTIVE_DRAW)),
                 ),
                 achievements = emptyMap(),
@@ -349,10 +349,10 @@ class GenericAchievementProjectionTest {
             ExpectedCase(
                 label = "normal match completion",
                 facts = committed(
-                    game,
+                    game = game,
                     HistoryFact.MatchCompleted(
-                        "example:complete",
-                        players.associate { it.id to it.score },
+                        reasonId = "example:complete",
+                        finalScoresByPlayerId = players.associate { it.id to it.score },
                     ),
                 ),
                 achievements = players.associate { it.id to setOf(BuiltInAchievementIds.MATCH_COMPLETED) } + (winner to setOf(BuiltInAchievementIds.MATCH_COMPLETED, BuiltInAchievementIds.FIRST_PLACE)) + (players[3].id to setOf(BuiltInAchievementIds.MATCH_COMPLETED, BuiltInAchievementIds.LAST_PLACE)),
@@ -361,7 +361,7 @@ class GenericAchievementProjectionTest {
             ExpectedCase(
                 label = "partial completion keys",
                 facts = committed(
-                    game,
+                    game = game,
                     HistoryFact.MatchCompleted("example:complete", mapOf(winner to players[0].score)),
                 ),
                 achievements = mapOf(
@@ -419,8 +419,8 @@ class GenericAchievementProjectionTest {
         assertProjected(ExpectedCase("completed exhaustive draw", completed, game.tableState.players.associate { it.id to setOf(BuiltInAchievementIds.EXHAUSTIVE_DRAW) }, game.tableState.players.associate { it.id to setOf(AchievementStatisticIds.EXHAUSTIVE_DRAWS) }))
         val completedBatch = checkNotNull(GameEventProjector(modules).projectBatch(completed))
         assertEquals(
-            game.tableState.players.associate { it.id to setOf(BuiltInAchievementIds.EXHAUSTIVE_DRAW) },
-            GenericAchievementDetector.detect(completedBatch),
+            expected = game.tableState.players.associate { it.id to setOf(BuiltInAchievementIds.EXHAUSTIVE_DRAW) },
+            actual = GenericAchievementDetector.detect(completedBatch),
         )
     }
 
@@ -432,9 +432,9 @@ class GenericAchievementProjectionTest {
         val players = (case.statistics.keys + actual.keys).distinct()
         players.forEach { playerId ->
             assertEquals(
-                case.statistics[playerId].orEmpty(),
-                AchievementStatisticIds.statisticsFor(actual[playerId].orEmpty()),
-                "${case.label} statistics for $playerId",
+                expected = case.statistics[playerId].orEmpty(),
+                actual = AchievementStatisticIds.statisticsFor(actual[playerId].orEmpty()),
+                message = "${case.label} statistics for $playerId",
             )
         }
     }
@@ -456,11 +456,11 @@ class GenericAchievementProjectionTest {
 
     /** 建立四名真人參與的日麻對局。 */
     private fun game(): Game = Game(
-        FakeTableStateFactory.create(
+        tableState = FakeTableStateFactory.create(
             players = listOf(Wind.EAST, Wind.SOUTH, Wind.WEST, Wind.NORTH).map { FakeMahjongPlayerFactory.create(initialSeat = it) },
             config = RiichiRuleConfig(),
         ),
-        GameFlowConfig(),
+        flowConfig = GameFlowConfig(),
     )
 
     /** 建立不指定動作者的提交，適用於沒有動作來源的結果。 */

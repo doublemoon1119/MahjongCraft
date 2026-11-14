@@ -271,8 +271,8 @@ internal object ScatteredDiscardLayout {
 
     /** 加上縫隙後牌的半對角線長；兩張牌中心相距超過兩倍時不可能重疊。 */
     private val PADDED_HALF_DIAGONAL: Double = hypot(
-        MahjongTileDimensions.TILE_WIDTH / 2.0 + MahjongTileDimensions.TILE_SMALL_PADDING / 2.0,
-        MahjongTileDimensions.TILE_HEIGHT / 2.0 + MahjongTileDimensions.TILE_SMALL_PADDING / 2.0,
+        x = MahjongTileDimensions.TILE_WIDTH / 2.0 + MahjongTileDimensions.TILE_SMALL_PADDING / 2.0,
+        y = MahjongTileDimensions.TILE_HEIGHT / 2.0 + MahjongTileDimensions.TILE_SMALL_PADDING / 2.0,
     )
 
     /** 疊到上一層時每層的高度。 */

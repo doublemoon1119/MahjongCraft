@@ -214,8 +214,8 @@ object TileWallMotionPathPlanner {
      * @return 忽略高度後的直線距離。
      */
     private fun horizontalDistance(first: MahjongTileWallPlacement, second: MahjongTileWallPlacement): Double = hypot(
-        second.x - first.x,
-        second.z - first.z,
+        x = second.x - first.x,
+        y = second.z - first.z,
     )
 
     /** 控制方塊中心的座標偏移。 */

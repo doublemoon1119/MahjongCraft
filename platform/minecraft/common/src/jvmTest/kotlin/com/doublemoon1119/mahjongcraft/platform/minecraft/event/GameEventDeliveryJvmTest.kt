@@ -42,7 +42,7 @@ class GameEventDeliveryJvmTest {
         val mainThread = Thread.currentThread()
         val callbackThreads = mutableListOf<Thread>()
         endpoint.register(
-            MatchStartedListener { event, _ ->
+            listener = MatchStartedListener { event, _ ->
                 received += event.matchId
                 callbackThreads += Thread.currentThread()
             },

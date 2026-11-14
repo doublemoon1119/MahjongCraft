@@ -15,13 +15,13 @@ class BundledTaiwanMinecraftExtensionDrawReasonTest {
         val registry = ExhaustiveDrawReasonDisplayNameRegistryImpl().apply { BundledTaiwanMinecraftExtension.registerExhaustiveDrawReasonDisplayNames(this) }
 
         assertEquals(
-            mapOf(
+            expected = mapOf(
                 TaiwanExhaustiveDrawReason.Normal.id to MinecraftMessageKeys.EXHAUSTIVE_DRAW_REASON_NORMAL,
                 TaiwanExhaustiveDrawReason.NoSupplementalTile.id to TaiwanTranslationKeys.EXHAUSTIVE_DRAW_NO_SUPPLEMENTAL_TILE,
                 TaiwanExhaustiveDrawReason.FourKans.id to TaiwanTranslationKeys.EXHAUSTIVE_DRAW_FOUR_KANS,
                 TaiwanExhaustiveDrawReason.FourWinds.id to TaiwanTranslationKeys.EXHAUSTIVE_DRAW_FOUR_WINDS,
             ),
-            registry.reasonIds.associateWith { checkNotNull(registry.find(it)) },
+            actual = registry.reasonIds.associateWith { checkNotNull(registry.find(it)) },
         )
     }
 

@@ -79,7 +79,7 @@ class AchievementBatchRankingTest {
     fun `custom ranking comparator is used by event achievement projection`() {
         val registry = MahjongModuleRegistryImpl().apply {
             register(
-                MahjongModuleDefinition<RiichiRuleConfig>(
+                definition = MahjongModuleDefinition<RiichiRuleConfig>(
                     configClass = RiichiRuleConfig::class,
                     id = "example:low_score_first",
                     factory = { config, id ->
@@ -120,17 +120,17 @@ class AchievementBatchRankingTest {
         val actual = GameAchievementDetector(GameAchievementResolverRegistryImpl()).detect(batch)
 
         assertEquals(
-            expected.map { (playerId, achievementIds) ->
+            expected = expected.map { (playerId, achievementIds) ->
                 PlayerAchievements(playerId, batch.matchId, batch.ruleModuleId, achievementIds)
             },
-            actual,
-            label,
+            actual = actual,
+            message = label,
         )
         batch.players.filterNot { it.isAi }.forEach { player ->
             assertEquals(
-                expectedStatistics[player.playerId].orEmpty(),
-                AchievementStatisticIds.statisticsFor(actual.firstOrNull { it.playerId == player.playerId }?.achievementIds.orEmpty()),
-                "$label statistics for ${player.playerId}",
+                expected = expectedStatistics[player.playerId].orEmpty(),
+                actual = AchievementStatisticIds.statisticsFor(actual.firstOrNull { it.playerId == player.playerId }?.achievementIds.orEmpty()),
+                message = "$label statistics for ${player.playerId}",
             )
         }
     }
@@ -163,7 +163,7 @@ class AchievementBatchRankingTest {
         previousGame = game,
         game = game,
         facts = listOf(
-            HistoryEventDraft(
+            element = HistoryEventDraft(
                 actorPlayerId = null,
                 fact = HistoryFact.MatchCompleted(
                     reasonId = "mahjongcraft:completed",

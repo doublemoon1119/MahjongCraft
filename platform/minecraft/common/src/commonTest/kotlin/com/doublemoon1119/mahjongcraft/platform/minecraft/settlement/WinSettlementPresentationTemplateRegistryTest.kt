@@ -72,7 +72,7 @@ class WinSettlementPresentationTemplateRegistryTest {
             tileGroups = emptyList(),
             winningTileAssetKey = null,
             extensionFields = listOf(
-                ExtensionPresentationField(doraId, PresentationValue.TileListValue(listOf("man_1", "man_2"))),
+                element = ExtensionPresentationField(doraId, PresentationValue.TileListValue(listOf("man_1", "man_2"))),
             ),
         )
 
@@ -102,7 +102,7 @@ class WinSettlementPresentationTemplateRegistryTest {
             tileGroups = emptyList(),
             winningTileAssetKey = null,
             extensionFields = listOf(
-                ExtensionPresentationField(flowers, PresentationValue.TileListValue(listOf("spring", "summer"))),
+                element = ExtensionPresentationField(flowers, PresentationValue.TileListValue(listOf("spring", "summer"))),
             ),
         )
 

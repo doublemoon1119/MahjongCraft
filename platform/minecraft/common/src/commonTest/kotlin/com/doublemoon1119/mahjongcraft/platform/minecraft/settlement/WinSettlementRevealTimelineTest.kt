@@ -54,8 +54,8 @@ class WinSettlementRevealTimelineTest {
             children = listOf(
                 animated(PresentationLayout.Text(summaryId), PresentationTimelineAnchor.AFTER_ENTRIES),
                 animated(
-                    PresentationLayout.Text(BuiltInWinSettlementFieldIds.TOTAL_SCORE),
-                    PresentationTimelineAnchor.AFTER_ENTRIES,
+                    child = PresentationLayout.Text(BuiltInWinSettlementFieldIds.TOTAL_SCORE),
+                    anchor = PresentationTimelineAnchor.AFTER_ENTRIES,
                     offsetTicks = 12,
                     durationTicks = 18,
                 ),
@@ -85,16 +85,16 @@ class WinSettlementRevealTimelineTest {
         val layout = PresentationLayout.Column(
             children = listOf(
                 PresentationLayout.IfPresent(
-                    summaryId,
-                    animated(PresentationLayout.Text(summaryId), PresentationTimelineAnchor.AFTER_ENTRIES, offsetTicks = 4),
+                    fieldId = summaryId,
+                    child = animated(PresentationLayout.Text(summaryId), PresentationTimelineAnchor.AFTER_ENTRIES, offsetTicks = 4),
                 ),
                 PresentationLayout.IfPresent(
-                    otherId,
-                    animated(PresentationLayout.Text(otherId), PresentationTimelineAnchor.AFTER_ENTRIES, offsetTicks = 1),
+                    fieldId = otherId,
+                    child = animated(PresentationLayout.Text(otherId), PresentationTimelineAnchor.AFTER_ENTRIES, offsetTicks = 1),
                 ),
                 animated(
-                    PresentationLayout.Text(BuiltInWinSettlementFieldIds.TOTAL_SCORE),
-                    PresentationTimelineAnchor.AFTER_ENTRIES,
+                    child = PresentationLayout.Text(BuiltInWinSettlementFieldIds.TOTAL_SCORE),
+                    anchor = PresentationTimelineAnchor.AFTER_ENTRIES,
                     offsetTicks = 8,
                 ),
             ),

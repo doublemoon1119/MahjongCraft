@@ -33,10 +33,10 @@ class AnimationQueueDriverTest {
     @Test
     fun `test append extends adjacent wait to the later game time`() {
         assertEquals(
-            listOf(AnimationStep.WaitUntil(120L)),
-            AnimationQueueDriver.append(
-                listOf(AnimationStep.WaitUntil(100L)),
-                listOf(AnimationStep.WaitUntil(120L)),
+            expected = listOf(AnimationStep.WaitUntil(120L)),
+            actual = AnimationQueueDriver.append(
+                queue = listOf(AnimationStep.WaitUntil(100L)),
+                steps = listOf(AnimationStep.WaitUntil(120L)),
             ),
         )
     }
@@ -45,10 +45,10 @@ class AnimationQueueDriverTest {
     @Test
     fun `test append never shortens an adjacent wait`() {
         assertEquals(
-            listOf(AnimationStep.WaitUntil(120L)),
-            AnimationQueueDriver.append(
-                listOf(AnimationStep.WaitUntil(120L)),
-                listOf(AnimationStep.WaitUntil(100L)),
+            expected = listOf(AnimationStep.WaitUntil(120L)),
+            actual = AnimationQueueDriver.append(
+                queue = listOf(AnimationStep.WaitUntil(120L)),
+                steps = listOf(AnimationStep.WaitUntil(100L)),
             ),
         )
     }
@@ -60,8 +60,8 @@ class AnimationQueueDriverTest {
         val initial = listOf<AnimationStep<Nothing>>(AnimationStep.WaitUntil(100L), teleport)
 
         assertEquals(
-            initial + AnimationStep.WaitUntil(100L),
-            AnimationQueueDriver.append(initial, listOf(AnimationStep.WaitUntil(100L))),
+            expected = initial + AnimationStep.WaitUntil(100L),
+            actual = AnimationQueueDriver.append(initial, listOf(AnimationStep.WaitUntil(100L))),
         )
     }
 
@@ -239,16 +239,16 @@ class AnimationQueueDriverTest {
 
         val shortAfterMotion = AnimationQueueDriver.tick(shortQueue, activeStepEndGameTime = null, currentGameTime = 0L)
         val shortResult = AnimationQueueDriver.tick(
-            shortAfterMotion.remainingQueue,
-            shortAfterMotion.activeStepEndGameTime,
+            queue = shortAfterMotion.remainingQueue,
+            activeStepEndGameTime = shortAfterMotion.activeStepEndGameTime,
             currentGameTime = 199L,
         )
         assertEquals(listOf(AnimationStep.WaitUntil(sharedTarget)), shortResult.remainingQueue)
 
         val longAfterMotion = AnimationQueueDriver.tick(longQueue, activeStepEndGameTime = null, currentGameTime = 0L)
         val longResult = AnimationQueueDriver.tick(
-            longAfterMotion.remainingQueue,
-            longAfterMotion.activeStepEndGameTime,
+            queue = longAfterMotion.remainingQueue,
+            activeStepEndGameTime = longAfterMotion.activeStepEndGameTime,
             currentGameTime = 199L,
         )
         assertEquals(listOf(AnimationStep.WaitUntil(sharedTarget)), longResult.remainingQueue)

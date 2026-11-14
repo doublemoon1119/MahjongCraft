@@ -105,7 +105,7 @@ class RulePresentationRequirementsTest {
         assertNull(RulePresentationRequirements.unmetRequirement(module, playerCount = 4))
         assertNotNull(RulePresentationRequirements.unmetRequirement(module, playerCount = 3))
         assertTrue(
-            assertNotNull(RulePresentationRequirements.unmetRequirement(module, playerCount = 5))
+            actual = assertNotNull(RulePresentationRequirements.unmetRequirement(module, playerCount = 5))
                 .contains("standard table"),
         )
         assertNotNull(RulePresentationRequirements.unmetRequirement(adjustedModule(providesLayout = false), playerCount = 4))
@@ -134,7 +134,7 @@ class RulePresentationRequirementsTest {
      * @return 內建設定呈現 registry。
      */
     private fun bundledPresentations(): GameConfigPresentationRegistry = GameConfigPresentationRegistryImpl(
-        RuleDecisionResolverRegistry(),
+        ruleDecisionResolvers = RuleDecisionResolverRegistry(),
     ).apply {
         BundledMinecraftMahjongExtensions.all.forEach { it.registerGameConfigPresentations(this) }
     }
@@ -157,7 +157,7 @@ class RulePresentationRequirementsTest {
      * @return 設定呈現 registry。
      */
     private fun presentations(vararg definitions: GameConfigPresentationDefinition): GameConfigPresentationRegistry = GameConfigPresentationRegistryImpl(
-        RuleDecisionResolverRegistry(),
+        ruleDecisionResolvers = RuleDecisionResolverRegistry(),
     ).apply { definitions.forEach(::register) }
 
     /**

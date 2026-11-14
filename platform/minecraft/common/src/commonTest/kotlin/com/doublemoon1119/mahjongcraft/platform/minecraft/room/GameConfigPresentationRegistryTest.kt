@@ -38,13 +38,13 @@ class GameConfigPresentationRegistryTest {
         val definition = assertNotNull(registry.find("test:rule"))
         assertEquals(1, definition.categories.count { it.id == "mahjongcraft:flow" })
         assertEquals(
-            listOf(
+            expected = listOf(
                 "mahjongcraft:base_seconds",
                 "mahjongcraft:reserve_seconds",
                 "mahjongcraft:spectating_policy",
                 "mahjongcraft:spectator_hand_visibility",
             ),
-            definition.fields.filter { it.categoryId == "mahjongcraft:flow" }.map { it.id },
+            actual = definition.fields.filter { it.categoryId == "mahjongcraft:flow" }.map { it.id },
         )
     }
 
@@ -65,8 +65,8 @@ class GameConfigPresentationRegistryTest {
             flowConfig = config.flowConfig.copy(ruleDecision = RuleDecisionConfig(47.seconds)),
         )
         assertEquals(
-            47,
-            (ruleDecision.read(configWithRuleDecision) as GameConfigPresentationValue.IntegerValue).number,
+            expected = 47,
+            actual = (ruleDecision.read(configWithRuleDecision) as GameConfigPresentationValue.IntegerValue).number,
         )
     }
 
@@ -74,7 +74,7 @@ class GameConfigPresentationRegistryTest {
     @Test
     fun `config aware rule decision presentation follows the rule config`() {
         val registry = GameConfigPresentationRegistryImpl(
-            RuleDecisionResolverRegistry().apply { register(ConfigAwareRuleDecisionResolver) },
+            ruleDecisionResolvers = RuleDecisionResolverRegistry().apply { register(ConfigAwareRuleDecisionResolver) },
         )
         registry.register(minimalDefinition())
 
@@ -91,8 +91,8 @@ class GameConfigPresentationRegistryTest {
         )
         assertEquals(47.seconds, retained.ruleDecision?.base)
         assertEquals(
-            null,
-            registry.normalizeFlowConfig(
+            expected = null,
+            actual = registry.normalizeFlowConfig(
                 ruleModuleId = "test:rule",
                 ruleConfig = RiichiRuleConfig(redDoraCount = 0),
                 current = retained,
@@ -111,7 +111,7 @@ class GameConfigPresentationRegistryTest {
         )
         val fieldConflict = minimalDefinition().copy(
             fields = listOf(
-                GameConfigFieldDefinition(
+                element = GameConfigFieldDefinition(
                     id = "mahjongcraft:base_seconds",
                     categoryId = "test:category",
                     nameTranslationKey = "test.base_seconds",
@@ -141,7 +141,7 @@ class GameConfigPresentationRegistryTest {
     fun `reserved rule decision field is rejected with and without rule decision support`() {
         val conflict = minimalDefinition().copy(
             fields = listOf(
-                GameConfigFieldDefinition(
+                element = GameConfigFieldDefinition(
                     id = "mahjongcraft:rule_decision_base_seconds",
                     categoryId = "test:category",
                     nameTranslationKey = "test.rule_decision",
@@ -185,12 +185,12 @@ class GameConfigPresentationRegistryTest {
         assertTrue(riichi.fields.none { it.id == "mahjongcraft:rule_decision_base_seconds" })
         assertTrue(riichi.fields.any { it.id == RiichiGameConfigIds.INITIAL_SCORE && it.isEditable })
         assertEquals(
-            listOf(RiichiGameConfigIds.RED_DORA_COUNT_0, RiichiGameConfigIds.RED_DORA_COUNT_3, RiichiGameConfigIds.RED_DORA_COUNT_4),
-            (riichi.fields.single { it.id == RiichiGameConfigIds.RED_DORA_COUNT }.editor as GameConfigEditorSpec.SingleChoice).optionIds,
+            expected = listOf(RiichiGameConfigIds.RED_DORA_COUNT_0, RiichiGameConfigIds.RED_DORA_COUNT_3, RiichiGameConfigIds.RED_DORA_COUNT_4),
+            actual = (riichi.fields.single { it.id == RiichiGameConfigIds.RED_DORA_COUNT }.editor as GameConfigEditorSpec.SingleChoice).optionIds,
         )
         assertEquals(
-            RiichiGameConfigTranslationKeys.OPTION_RED_DORA_0,
-            (riichi.fields.single { it.id == RiichiGameConfigIds.RED_DORA_COUNT }.editor as GameConfigEditorSpec.SingleChoice)
+            expected = RiichiGameConfigTranslationKeys.OPTION_RED_DORA_0,
+            actual = (riichi.fields.single { it.id == RiichiGameConfigIds.RED_DORA_COUNT }.editor as GameConfigEditorSpec.SingleChoice)
                 .translationKeyFor(RiichiGameConfigIds.RED_DORA_COUNT_0),
         )
         assertTrue(riichi.categories.none { it.id == "mahjongcraft:technical" })
@@ -204,12 +204,12 @@ class GameConfigPresentationRegistryTest {
         assertTrue(taiwan.fields.any { it.id == TaiwanGameConfigIds.PAO_LIABILITY })
         val doubleWinResolution = taiwan.fields.single { it.id == TaiwanGameConfigIds.DOUBLE_WIN_RESOLUTION }
         assertEquals(
-            listOf(TaiwanGameConfigIds.DOUBLE_WIN_RESOLUTION_NEAREST_WINNER, TaiwanGameConfigIds.DOUBLE_WIN_RESOLUTION_ALL_WINNERS),
-            (doubleWinResolution.editor as GameConfigEditorSpec.SingleChoice).optionIds,
+            expected = listOf(TaiwanGameConfigIds.DOUBLE_WIN_RESOLUTION_NEAREST_WINNER, TaiwanGameConfigIds.DOUBLE_WIN_RESOLUTION_ALL_WINNERS),
+            actual = (doubleWinResolution.editor as GameConfigEditorSpec.SingleChoice).optionIds,
         )
         assertEquals(
-            TaiwanGameConfigTranslationKeys.OPTION_NEAREST_WINNER,
-            doubleWinResolution.editor.translationKeyFor(TaiwanGameConfigIds.DOUBLE_WIN_RESOLUTION_NEAREST_WINNER),
+            expected = TaiwanGameConfigTranslationKeys.OPTION_NEAREST_WINNER,
+            actual = doubleWinResolution.editor.translationKeyFor(TaiwanGameConfigIds.DOUBLE_WIN_RESOLUTION_NEAREST_WINNER),
         )
     }
 
@@ -311,7 +311,7 @@ class GameConfigPresentationRegistryTest {
         val translationKeys = mutableMapOf("test:option" to "test.option")
         val definition = minimalDefinition().copy(
             fields = listOf(
-                GameConfigFieldDefinition(
+                element = GameConfigFieldDefinition(
                     id = "test:choice",
                     categoryId = "test:category",
                     nameTranslationKey = "test.choice",
@@ -341,13 +341,13 @@ class GameConfigPresentationRegistryTest {
         val descriptionKeys = mutableMapOf("test:one" to "test.one.description")
         val definition = minimalDefinition().copy(
             fields = listOf(
-                GameConfigFieldDefinition(
+                element = GameConfigFieldDefinition(
                     id = "test:multi",
                     categoryId = "test:category",
                     nameTranslationKey = "test.multi",
                     descriptionTranslationKey = "test.multi.description",
                     editor = GameConfigEditorSpec.MultiChoice(
-                        optionIds,
+                        optionIds = optionIds,
                         optionTranslationKeys = translationKeys,
                         optionDescriptionTranslationKeys = descriptionKeys,
                     ),
@@ -381,7 +381,7 @@ class GameConfigPresentationRegistryTest {
         defaultRuleConfig = ::RiichiRuleConfig,
         categories = listOf(GameConfigCategoryDefinition("test:category", "test.category")),
         fields = listOf(
-            GameConfigFieldDefinition(
+            element = GameConfigFieldDefinition(
                 id = "test:field",
                 categoryId = "test:category",
                 nameTranslationKey = "test.field",

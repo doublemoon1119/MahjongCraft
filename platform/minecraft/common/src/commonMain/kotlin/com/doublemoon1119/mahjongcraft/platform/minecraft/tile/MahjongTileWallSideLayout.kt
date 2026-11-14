@@ -48,7 +48,7 @@ class MahjongTileWallSideLayout private constructor(private val sides: List<Mahj
                 TileWallSideReference.DEALER -> SIDE_ORDER.indexOf(dealerSide)
             }
             return MahjongTileWallSideLayout(
-                List(arrangement.sideCount) { side -> SIDE_ORDER[(anchor + arrangement.quarterTurnsOf(side)).mod(SIDE_ORDER.size)] },
+                sides = List(arrangement.sideCount) { side -> SIDE_ORDER[(anchor + arrangement.quarterTurnsOf(side)).mod(SIDE_ORDER.size)] },
             )
         }
     }

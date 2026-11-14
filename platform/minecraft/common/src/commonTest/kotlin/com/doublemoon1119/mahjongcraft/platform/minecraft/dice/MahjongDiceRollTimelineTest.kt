@@ -16,14 +16,14 @@ class MahjongDiceRollTimelineTest {
 
         assertEquals(7, segments[0].startOffsetTicks)
         assertEquals(
-            7 + MahjongDiceTableLayout.totalAnimationTicks(2),
-            segments[0].endOffsetTicks,
+            expected = 7 + MahjongDiceTableLayout.totalAnimationTicks(2),
+            actual = segments[0].endOffsetTicks,
         )
         assertEquals(segments[0].endOffsetTicks, segments[1].startOffsetTicks)
         assertEquals(segments[1].endOffsetTicks, segments[2].startOffsetTicks)
         assertEquals(
-            segments[2].endOffsetTicks,
-            MahjongDiceRollTimeline.totalTicks(listOf(2, 3, 2), initialDelayTicks = 7),
+            expected = segments[2].endOffsetTicks,
+            actual = MahjongDiceRollTimeline.totalTicks(listOf(2, 3, 2), initialDelayTicks = 7),
         )
     }
 

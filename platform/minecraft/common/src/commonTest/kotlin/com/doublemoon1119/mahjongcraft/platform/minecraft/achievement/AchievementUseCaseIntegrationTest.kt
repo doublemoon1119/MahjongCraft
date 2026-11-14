@@ -87,13 +87,15 @@ class AchievementUseCaseIntegrationTest {
         )
         val game = game(gameId, winnerId, config)
         val submitted = mutableListOf<CommittedGameFacts>()
-        store.setCommittedFactsListener(object : CommittedFactsListener {
-            override fun onCommitted(sequence: Long, facts: CommittedGameFacts) {
-                submitted += facts
-            }
+        store.setCommittedFactsListener(
+            listener = object : CommittedFactsListener {
+                override fun onCommitted(sequence: Long, facts: CommittedGameFacts) {
+                    submitted += facts
+                }
 
-            override fun onReleased(sequence: Long) = Unit
-        })
+                override fun onReleased(sequence: Long) = Unit
+            },
+        )
         repository.updateGame(gameId, history = { _, _, _ -> emptyList() }) { game to Unit }
 
         val result = useCase(gameId, winnerId)
@@ -112,7 +114,7 @@ class AchievementUseCaseIntegrationTest {
         assertEquals(listOf(winnerId), awards.map { it.playerId })
         val actual = awards.single().achievementIds
         assertEquals(
-            setOf(
+            expected = setOf(
                 BuiltInAchievementIds.WIN,
                 BuiltInAchievementIds.SELF_DRAW_WIN,
                 RiichiAchievementIds.YAKUMAN,
@@ -120,7 +122,7 @@ class AchievementUseCaseIntegrationTest {
                 RiichiAchievementIds.RIICHI_WIN,
                 RiichiAchievementIds.IPPATSU,
             ),
-            actual,
+            actual = actual,
         )
         assertEquals(setOf(AchievementStatisticIds.WINS, AchievementStatisticIds.SELF_DRAW_WINS), AchievementStatisticIds.statisticsFor(actual))
     }

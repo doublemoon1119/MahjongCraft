@@ -10,7 +10,7 @@ import kotlin.test.assertTrue
 class TileMotionAnimationTest {
     /** 共用 20 ticks、有拋物線高度與姿態旋轉變化的規格，讓所有效果都測得到。 */
     private val animation = TileMotionAnimation(
-        TileMotionAnimationSpec(
+        spec = TileMotionAnimationSpec(
             durationTicks = 20,
             arcHeight = 0.4,
             startPoseRotationDegrees = -90.0f,
@@ -92,7 +92,7 @@ class TileMotionAnimationTest {
     @Test
     fun `zero arc height eases out without an arc`() {
         val straightFallAnimation = TileMotionAnimation(
-            TileMotionAnimationSpec(durationTicks = 10, arcHeight = 0.0, startPoseRotationDegrees = -90.0f, endPoseRotationDegrees = -90.0f),
+            spec = TileMotionAnimationSpec(durationTicks = 10, arcHeight = 0.0, startPoseRotationDegrees = -90.0f, endPoseRotationDegrees = -90.0f),
         )
         val startOffset = DiceAnimationVector(0.0, 1.0, 0.0)
         val midpoint = straightFallAnimation.frame(elapsedTicks = 5.0, startOffset = startOffset)
@@ -104,7 +104,7 @@ class TileMotionAnimationTest {
     @Test
     fun `pose rotation stays constant when start and end are equal`() {
         val sameRotationAnimation = TileMotionAnimation(
-            TileMotionAnimationSpec(durationTicks = 10, arcHeight = 0.0, startPoseRotationDegrees = -90.0f, endPoseRotationDegrees = -90.0f),
+            spec = TileMotionAnimationSpec(durationTicks = 10, arcHeight = 0.0, startPoseRotationDegrees = -90.0f, endPoseRotationDegrees = -90.0f),
         )
         val midpoint = sameRotationAnimation.frame(elapsedTicks = 5.0, startOffset = DiceAnimationVector.ZERO)
 

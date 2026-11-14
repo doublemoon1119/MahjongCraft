@@ -48,7 +48,7 @@ class TileWallMotionPathPlannerTest {
         val directMidZ = (result.segments.first().start.z + result.segments.last().end.z) / 2.0
         val pathMiddle = result.segments[result.segments.size / 2].end
         assertTrue(
-            hypot(pathMiddle.x - centerX, pathMiddle.z - centerZ) >
+            actual = hypot(pathMiddle.x - centerX, pathMiddle.z - centerZ) >
                 hypot(directMidX - centerX, directMidZ - centerZ),
         )
     }
@@ -69,8 +69,8 @@ class TileWallMotionPathPlannerTest {
         val decision = TileWallMotionPathPlanner.plan(CONTEXT, position(0, 8, 0), position(2, 8, 0))
 
         assertEquals(
-            TileWallMotionPathDecision.Rejected(TileWallMotionPathRejection.NON_ADJACENT_SIDES),
-            decision,
+            expected = TileWallMotionPathDecision.Rejected(TileWallMotionPathRejection.NON_ADJACENT_SIDES),
+            actual = decision,
         )
     }
 
@@ -80,8 +80,8 @@ class TileWallMotionPathPlannerTest {
         val decision = TileWallMotionPathPlanner.plan(CONTEXT, position(0, 4, 0), position(0, 5, 1))
 
         assertEquals(
-            TileWallMotionPathDecision.Rejected(TileWallMotionPathRejection.MIXED_HORIZONTAL_AND_VERTICAL),
-            decision,
+            expected = TileWallMotionPathDecision.Rejected(TileWallMotionPathRejection.MIXED_HORIZONTAL_AND_VERTICAL),
+            actual = decision,
         )
     }
 
@@ -117,7 +117,7 @@ class TileWallMotionPathPlannerTest {
         end: TileWallPlacement,
         facing: MahjongTableFacing = MahjongTableFacing.NORTH,
     ): TileWallMotionPathDecision.Completed = assertIs(
-        TileWallMotionPathPlanner.plan(CONTEXT.copy(tableFacing = facing), start, end),
+        value = TileWallMotionPathPlanner.plan(CONTEXT.copy(tableFacing = facing), start, end),
     )
 
     /**

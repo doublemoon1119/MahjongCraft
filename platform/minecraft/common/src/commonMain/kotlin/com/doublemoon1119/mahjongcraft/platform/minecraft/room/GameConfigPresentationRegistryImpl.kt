@@ -24,8 +24,8 @@ class GameConfigPresentationRegistryImpl(
         val normalized = SharedGameFlowConfigPresentation.normalize(
             definition = definition,
             ruleDecisionConfig = ruleDecisionResolvers.findDefaultConfig(
-                definition.ruleModuleId,
-                definition.defaultRuleConfig(),
+                ruleModuleId = definition.ruleModuleId,
+                ruleConfig = definition.defaultRuleConfig(),
             ),
         )
         require(definitions.putIfAbsent(normalized.ruleModuleId, definition.snapshot()) == null) {

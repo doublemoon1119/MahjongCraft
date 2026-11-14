@@ -20,8 +20,8 @@ class BundledRiichiMinecraftExtensionHistoryTest {
         val registry = HistoryDiscardMarkerDisplayRegistryImpl().apply { BundledRiichiMinecraftExtension.registerHistoryDiscardMarkerDisplays(this) }
 
         assertEquals(
-            HistoryDiscardMarkerDisplay(labelTranslationKey = RiichiTranslationKeys.INDICATOR_RIICHI, sideways = true),
-            registry.find(RiichiHistoryDiscardMarkerIds.RIICHI_DECLARED),
+            expected = HistoryDiscardMarkerDisplay(labelTranslationKey = RiichiTranslationKeys.INDICATOR_RIICHI, sideways = true),
+            actual = registry.find(RiichiHistoryDiscardMarkerIds.RIICHI_DECLARED),
         )
     }
 
@@ -47,11 +47,11 @@ class BundledRiichiMinecraftExtensionHistoryTest {
         val registry = ExhaustiveDrawReasonDisplayNameRegistryImpl().apply { BundledRiichiMinecraftExtension.registerExhaustiveDrawReasonDisplayNames(this) }
 
         assertEquals(
-            ExhaustiveDrawSettlementStatusLabels(
+            expected = ExhaustiveDrawSettlementStatusLabels(
                 beneficiaryTranslationKey = RiichiTranslationKeys.EXHAUSTIVE_DRAW_TENPAI,
                 othersTranslationKey = RiichiTranslationKeys.EXHAUSTIVE_DRAW_NOTEN,
             ),
-            registry.findSettlementStatusLabels(RiichiExhaustiveDrawReason.Normal.id),
+            actual = registry.findSettlementStatusLabels(RiichiExhaustiveDrawReason.Normal.id),
         )
     }
 }

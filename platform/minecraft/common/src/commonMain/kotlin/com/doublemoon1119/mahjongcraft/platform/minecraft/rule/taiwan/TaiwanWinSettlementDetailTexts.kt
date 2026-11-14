@@ -22,7 +22,7 @@ internal object TaiwanWinSettlementDetailTexts {
         override fun quantities(quantities: List<WinSettlementQuantity>): PresentationValue.TextValue = FallbackWinSettlementDetailTextFormatter.quantities(quantities)
 
         override fun entries(entries: List<WinSettlementDetailEntry>): PresentationValue.EntryListValue = PresentationValue.EntryListValue(
-            entries.map { entry ->
+            entries = entries.map { entry ->
                 PresentationValue.EntryListValue.Entry(
                     translationKey = TaiwanTaiTranslationKeys.keyForEntry(entry.id) ?: entry.id,
                     translationArgument = entry.nameQuantity?.amount?.toString(),

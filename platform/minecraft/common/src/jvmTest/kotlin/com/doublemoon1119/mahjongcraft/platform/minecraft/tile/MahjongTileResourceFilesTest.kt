@@ -62,12 +62,12 @@ class MahjongTileResourceFilesTest {
     fun `every tile asset key has a model and texture resource`() {
         assetKeys.forEach { assetKey ->
             assertNotNull(
-                javaClass.getResource("/assets/mahjongcraft/models/item/mahjong_tile/mahjong_tile_$assetKey.json"),
-                "Missing item model for tile asset key: $assetKey",
+                actual = javaClass.getResource("/assets/mahjongcraft/models/item/mahjong_tile/mahjong_tile_$assetKey.json"),
+                message = "Missing item model for tile asset key: $assetKey",
             )
             assertNotNull(
-                javaClass.getResource("/assets/mahjongcraft/textures/item/mahjong_tile/mahjong_tile_$assetKey.png"),
-                "Missing texture for tile asset key: $assetKey",
+                actual = javaClass.getResource("/assets/mahjongcraft/textures/item/mahjong_tile/mahjong_tile_$assetKey.png"),
+                message = "Missing texture for tile asset key: $assetKey",
             )
         }
     }
@@ -117,8 +117,8 @@ class MahjongTileResourceFilesTest {
         assertEquals(listOf(" WG", "DWG", " WG"), assertIs<JsonArray>(recipe["pattern"]).map { it.jsonPrimitive.content })
         assertEquals("minecraft:white_concrete", key.getValue("W").jsonObject.getValue("item").jsonPrimitive.content)
         assertEquals(
-            "mahjongcraft:mahjong_tile_back_concretes",
-            key.getValue("G").jsonObject.getValue("tag").jsonPrimitive.content,
+            expected = "mahjongcraft:mahjong_tile_back_concretes",
+            actual = key.getValue("G").jsonObject.getValue("tag").jsonPrimitive.content,
         )
         assertEquals("mahjongcraft:dyes", key.getValue("D").jsonObject.getValue("tag").jsonPrimitive.content)
         assertEquals("mahjongcraft:mahjong_tile", result.getValue("item").jsonPrimitive.content)
