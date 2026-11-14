@@ -1,8 +1,10 @@
 package com.doublemoon1119.mahjongcraft.flow.server.game.simulation
 
 import com.doublemoon1119.mahjongcraft.ai.BuiltInAiStrategyKeys
+import com.doublemoon1119.mahjongcraft.ai.MahjongAiStrategy
 import com.doublemoon1119.mahjongcraft.ai.MahjongAiStrategyRegistry
 import com.doublemoon1119.mahjongcraft.ai.MahjongAiStrategyRegistryImpl
+import com.doublemoon1119.mahjongcraft.ai.RandomAiStrategy
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.PendingGameTransition
 import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.dispatchThenDrive
@@ -17,6 +19,8 @@ import com.doublemoon1119.mahjongcraft.logic.table.GameInitializer
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledCoreExtensionRegistries
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.registerBuiltInAiStrategies
+import com.doublemoon1119.mahjongcraft.testing.flow.common.game.testMatchSeed
+import kotlin.random.Random
 import kotlin.uuid.Uuid
 
 /**
@@ -47,14 +51,16 @@ internal data class SeatRoundResult(
  * @property round 發生問題的一局；無法判斷時為 null。
  * @property cause 造成問題的例外；沒有例外時為 null。
  * @property trace 發生問題前最近的 AI 決策。
- * @property reproducedOnReplay 從 [round] 的開局桌況重新推進時是否再次發生問題；沒有可重播的局時為 null。
+ * @property seed 這場對局的數字；以同一個數字與陣容重新呼叫 `MatchSimulator.play` 會重打同一場。
+ * @property reproducedOnReplay 以同一個數字從頭重打一次時是否再次發生同樣的問題。
  */
 internal data class SimulationFailure(
     val reason: String,
     val round: RecordedRound?,
     val cause: Throwable?,
     val trace: List<DecisionRecord>,
-    val reproducedOnReplay: Boolean?,
+    val seed: Int,
+    val reproducedOnReplay: Boolean,
 ) {
     /**
      * 供測試失敗訊息使用的完整描述。
@@ -63,9 +69,10 @@ internal data class SimulationFailure(
      */
     fun describe(): String = buildString {
         appendLine("Simulation failure: $reason")
+        appendLine("Seed: $seed, reproduced on replay: $reproducedOnReplay")
         cause?.let { appendLine("Cause: $it") }
         round?.let {
-            appendLine("Round: ${it.start.roundPosition}, combo ${it.start.comboCount}, reproduced on replay: $reproducedOnReplay")
+            appendLine("Round: ${it.start.roundPosition}, combo ${it.start.comboCount}")
             appendLine(
                 value = "Last state: live wall ${it.final.tileWall.getAllTiles().size} tiles, reserved ${it.final.reservedWallTiles.size} tiles, " +
                     "components ${it.final.components}",
@@ -98,8 +105,8 @@ internal data class MatchResult(
 /**
  * 以正式規則與流程讓 AI 打完一整場對局，並檢查：沒有送出不合法命令、流程沒有卡住、點數守恆、對局正常結束。
  *
- * 記錄每局開局桌況；偵測到問題時，從選定局的開局桌況重新推進，記錄是否再次出現問題。
- * 重新推進仍會繼續到後續各局；後續洗牌與隨機策略沒有固定亂數來源，因此不保證完整過程相同。
+ * 牌局與隨機出牌策略的選擇都由 `play` 收到的數字決定，同一個數字重現同一場對局。偵測到問題時，以同一個數字從頭重打一次，
+ * 記錄問題是否再次出現；失敗描述附上這個數字，之後可直接重打同一場來除錯。
  * 點數守恆以日麻計算：所有玩家的分數加上場上立直棒的點數，等於開局總分。
  *
  * @property config 對局規則設定。
@@ -120,30 +127,24 @@ internal class MatchSimulator(
      *
      * @param lineup 每位玩家使用的策略 key。
      * @param recorder 累計決策時間與最近決策的紀錄。
+     * @param seed 決定牌局與隨機出牌選擇的數字。
      * @return 對局結果，包含各局摘要、名次或診斷資料。
      */
-    suspend fun play(lineup: List<String>, recorder: DecisionRecorder = DecisionRecorder()): MatchResult {
-        val runtime = runtime(recorder)
-        val gameId = Uuid.random()
-        val playerIds = lineup.map { Uuid.random() }
-        val strategyKeysByPlayer = playerIds.zip(lineup).toMap()
-        val initial = GameInitializer.initialize(
-            id = gameId,
-            playerIds = playerIds,
-            module = runtime.moduleRegistry.getModule(config),
-        ).initializeRuleComponents(runtime.moduleRegistry.getModule(config).id, bundledCoreExtensionRegistries().componentRegistry).tableState
-        runtime.start(initial, strategyKeysByPlayer)
-
+    suspend fun play(lineup: List<String>, recorder: DecisionRecorder = DecisionRecorder(), seed: Int): MatchResult {
+        val match = startMatch(lineup, recorder, seed)
+        val runtime = match.runtime
+        val gameId = match.gameId
+        val strategyKeysByPlayer = match.strategyKeysByPlayer
         val problem = drive(runtime, gameId, recorder)
         val recordedRounds = runtime.gameRepository.rounds(gameId)
         val failure = problem?.let { (reason, cause) ->
-            val failingRound = recordedRounds.firstOrNull { !isConserved(it.start) || !isConserved(it.final) } ?: recordedRounds.lastOrNull()
             SimulationFailure(
                 reason = reason,
-                round = failingRound,
+                round = recordedRounds.firstOrNull { !isConserved(it.start) || !isConserved(it.final) } ?: recordedRounds.lastOrNull(),
                 cause = cause,
                 trace = recorder.recent,
-                reproducedOnReplay = failingRound?.let { replayFails(it.start, strategyKeysByPlayer) },
+                seed = seed,
+                reproducedOnReplay = replayFails(lineup, seed, reason),
             )
         }
         val finalState = recordedRounds.last().final
@@ -158,17 +159,43 @@ internal class MatchSimulator(
     }
 
     /**
-     * 從 [start] 以 [aiPlayerStrategyKeys] 重新推進一次，回傳是否再次發生問題。
+     * 建立新的對局環境，以 [seed] 開出第一局並寫入 AI 玩家。
      *
-     * @param start 要重播的開局桌況。
-     * @param aiPlayerStrategyKeys 玩家與策略 key 的對應。
-     * @return 是否再次偵測到問題。
+     * @param lineup 每位玩家使用的策略 key。
+     * @param recorder 決策紀錄器。
+     * @param seed 決定牌局與隨機出牌選擇的數字。
+     * @return 已開局、尚未推進的對局。
      */
-    private suspend fun replayFails(start: TableState, aiPlayerStrategyKeys: Map<Uuid, String>): Boolean {
+    private suspend fun startMatch(lineup: List<String>, recorder: DecisionRecorder, seed: Int): StartedMatch {
+        val runtime = runtime(recorder, seed)
+        val gameId = Uuid.random()
+        val playerIds = lineup.map { Uuid.random() }
+        val strategyKeysByPlayer = playerIds.zip(lineup).toMap()
+        val matchSeed = testMatchSeed(seed)
+        val randomness = matchSeed.roundRandomness(roundOrdinal = 0)
+        val module = runtime.moduleRegistry.getModule(config)
+        val initial = GameInitializer.initialize(
+            id = gameId,
+            playerIds = playerIds,
+            module = module,
+            randomness = randomness,
+        ).initializeRuleComponents(module.id, bundledCoreExtensionRegistries().componentRegistry, random = randomness.components).tableState
+        runtime.start(initial, strategyKeysByPlayer, matchSeed)
+        return StartedMatch(runtime, gameId, strategyKeysByPlayer)
+    }
+
+    /**
+     * 以同一個數字與陣容從頭重打一次，回傳是否再次以同樣原因停止。
+     *
+     * @param lineup 原對局的陣容。
+     * @param seed 原對局的數字。
+     * @param reason 原對局的問題說明。
+     * @return 重打時是否以相同原因停止。
+     */
+    private suspend fun replayFails(lineup: List<String>, seed: Int, reason: String): Boolean {
         val recorder = DecisionRecorder()
-        val runtime = runtime(recorder)
-        runtime.start(start, aiPlayerStrategyKeys)
-        return drive(runtime, start.id, recorder) != null
+        val match = startMatch(lineup, recorder, seed)
+        return drive(match.runtime, match.gameId, recorder)?.first == reason
     }
 
     /**
@@ -262,19 +289,37 @@ internal class MatchSimulator(
         .toMap()
 
     /**
-     * 建立一個新的對局環境，AI 策略包裝成記錄決策並檢查合法性的版本。
+     * 建立一個新的對局環境，AI 策略包裝成記錄決策並檢查合法性的版本；隨機出牌策略改用由 [seed] 決定選擇的版本。
      *
      * @param recorder 決策紀錄器。
+     * @param seed 決定隨機出牌選擇的數字。
      * @return 註冊好儀器化 AI 策略的新對局環境。
      */
-    private fun runtime(recorder: DecisionRecorder): SimulationRuntime = SimulationRuntime(defaultStrategyKey = BuiltInAiStrategyKeys.BEGINNER).also { runtime ->
+    private fun runtime(recorder: DecisionRecorder, seed: Int): SimulationRuntime = SimulationRuntime(defaultStrategyKey = BuiltInAiStrategyKeys.BEGINNER).also { runtime ->
         val source = MahjongAiStrategyRegistryImpl(defaultKey = BuiltInAiStrategyKeys.BEGINNER)
         registerStrategies(source, runtime)
+        val seededRandom = RandomAiStrategy(runtime.extensionActionRegistry, Random(seed))
+        val seededSource = object : MahjongAiStrategyRegistry by source {
+            override fun resolve(key: String?): MahjongAiStrategy = if (key == RandomAiStrategy.KEY) seededRandom else source.resolve(key)
+        }
         runtime.aiStrategyRegistry.registerInstrumented(
-            source = source,
+            source = seededSource,
             keys = source.getAllStrategyKeys(),
             extensionActionRegistry = runtime.extensionActionRegistry,
             recorder = recorder,
         )
     }
 }
+
+/**
+ * 已開局、尚未推進的模擬對局。
+ *
+ * @property runtime 對局使用的流程與倉庫。
+ * @property gameId 對局識別碼。
+ * @property strategyKeysByPlayer 玩家與策略 key 的對應。
+ */
+private class StartedMatch(
+    val runtime: SimulationRuntime,
+    val gameId: Uuid,
+    val strategyKeysByPlayer: Map<Uuid, String>,
+)

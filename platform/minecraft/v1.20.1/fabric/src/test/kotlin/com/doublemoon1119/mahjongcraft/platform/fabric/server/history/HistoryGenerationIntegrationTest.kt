@@ -24,6 +24,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocationReg
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledHeadlessHistoryRegistries
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledPersistenceRegistries
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.registerBundledRuleModules
+import com.doublemoon1119.mahjongcraft.testing.flow.common.game.testMatchSeed
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
@@ -222,7 +223,7 @@ class HistoryGenerationIntegrationTest {
                 writer.attach(path)
                 val session = checkNotNull(writer.currentSessionId)
                 val first = runtime()
-                val second = runtime()
+                val second = runtime(MATCH_SEED + 1)
                 generate(first, writer, liveStore, SqliteHistoryDatabase.open(path), session)
                 generate(second, writer, liveStore, SqliteHistoryDatabase.open(path), session)
 
@@ -308,11 +309,17 @@ class HistoryGenerationIntegrationTest {
     }
 
     /**
-     * 建立包含正式 Flow 與內建 AI 策略的隔離四 AI 對局。
+     * 建立包含正式 Flow 與內建 AI 策略的隔離四 AI 對局；以固定種子開局，初級 AI 遇到相同局面做相同選擇，因此結果每次相同。
      *
+     * @param seed 決定對局種子的數字；同一個測試需要多場不同對局時傳入不同數字。
      * @return 已建立且尚未推進的隔離歷史生成 runtime。
      */
-    private suspend fun runtime(): HeadlessFlowHistoryRuntime = HeadlessFlowHistoryRuntime.create(HeadlessHistoryScenario.RIICHI_EAST, bundledHeadlessHistoryRegistries(), decisionExecutor = AiDecisionExecutor.direct(failurePolicy = ExtensionFailurePolicy.Default))
+    private suspend fun runtime(seed: Int = MATCH_SEED): HeadlessFlowHistoryRuntime = HeadlessFlowHistoryRuntime.create(
+        scenario = HeadlessHistoryScenario.RIICHI_EAST,
+        registries = bundledHeadlessHistoryRegistries(),
+        decisionExecutor = AiDecisionExecutor.direct(failurePolicy = ExtensionFailurePolicy.Default),
+        matchSeed = testMatchSeed(seed),
+    )
 
     /**
      * 建立使用正式 persistence registry 與 SQLite writer 的測試實例。
@@ -414,5 +421,11 @@ class HistoryGenerationIntegrationTest {
         override val main = Dispatchers.Default
         override val aiDecision = Dispatchers.Default
         override val aiDecisionParallelism = 1
+    }
+
+    /** 測試固定使用的種子。 */
+    private companion object {
+        /** 決定對局種子的數字。 */
+        const val MATCH_SEED = 1
     }
 }

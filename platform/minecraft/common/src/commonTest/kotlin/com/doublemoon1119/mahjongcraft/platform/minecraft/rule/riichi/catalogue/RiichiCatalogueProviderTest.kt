@@ -31,6 +31,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.allTileAssetKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.toAssetKey
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeIdentifiedTileFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.rules.riichi.FakeRiichiHandValueContextFactory
+import kotlin.random.Random
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
@@ -198,7 +199,7 @@ class RiichiCatalogueProviderTest {
         val config = ThreePlayerRiichiRuleConfig()
         val wallTiles = ThreePlayerRiichiRuleModule(BuiltInRuleModuleIds.RIICHI_THREE_PLAYER, config)
             .createWallFactory(3)
-            .create()
+            .create(Random(0))
             .getAllTiles()
             .mapTo(mutableSetOf()) { it.tile }
         val catalogue = checkNotNull(provider.catalogue(config))

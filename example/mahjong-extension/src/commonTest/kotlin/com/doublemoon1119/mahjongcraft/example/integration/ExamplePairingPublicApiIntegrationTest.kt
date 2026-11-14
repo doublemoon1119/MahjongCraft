@@ -49,6 +49,7 @@ import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledCoreExtension
 import com.doublemoon1119.mahjongcraft.testing.flow.common.game.repository.FakeGameSnapshotRepository
 import com.doublemoon1119.mahjongcraft.testing.flow.common.game.service.FakeGameEventPublisher
 import com.doublemoon1119.mahjongcraft.testing.flow.common.game.service.FakeGamePresentationPublisher
+import com.doublemoon1119.mahjongcraft.testing.flow.common.game.testMatchSeed
 import com.doublemoon1119.mahjongcraft.testing.flow.common.room.repository.FakeRoomSnapshotRepository
 import com.doublemoon1119.mahjongcraft.testing.flow.common.room.service.FakeRoomEventPublisher
 import com.doublemoon1119.mahjongcraft.testing.flow.server.noRuleDecisionBeginUseCase
@@ -83,7 +84,7 @@ class ExamplePairingPublicApiIntegrationTest {
                 playerCount = playerCount,
             )
             val before = fixtures.store.snapshot()
-            val outcome = fixtures.startGameUseCase(roomId, fixtures.hostId(roomId))
+            val outcome = fixtures.startGameUseCase(roomId, fixtures.hostId(roomId), matchSeed = testMatchSeed(1))
             if (mayStart) {
                 assertIs<Outcome.Success<*>>(outcome)
                 val table = checkNotNull(fixtures.gameRepository.getGame(roomId)).tableState
@@ -122,7 +123,7 @@ class ExamplePairingPublicApiIntegrationTest {
             )
         }
 
-        assertIs<Outcome.Success<*>>(fixtures.startGameUseCase(roomId, hostId))
+        assertIs<Outcome.Success<*>>(fixtures.startGameUseCase(roomId, hostId, matchSeed = testMatchSeed(2)))
         val started = fixtures.gameRepository.getGame(roomId)!!
         val actor = started.tableState.currentPlayer.id
 
@@ -187,7 +188,7 @@ class ExamplePairingPublicApiIntegrationTest {
             )
         }
 
-        assertIs<Outcome.Success<*>>(fixtures.startGameUseCase(roomId, hostId))
+        assertIs<Outcome.Success<*>>(fixtures.startGameUseCase(roomId, hostId, matchSeed = testMatchSeed(3)))
         val actor = fixtures.gameRepository.getGame(roomId)!!.tableState.currentPlayer.id
         assertIs<Outcome.Success<*>>(fixtures.drawTileUseCase(roomId, actor))
 

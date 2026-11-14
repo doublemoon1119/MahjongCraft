@@ -9,7 +9,6 @@ import com.doublemoon1119.mahjongcraft.logic.component.ComponentSet
 import com.doublemoon1119.mahjongcraft.logic.tile.component.BuiltInTileComponents
 import com.doublemoon1119.mahjongcraft.logic.tile.component.TileFaceAccess
 import com.doublemoon1119.mahjongcraft.logic.tile.component.TilePose
-import kotlin.random.Random
 
 /**
  * 登記範例組件的建立、換局、攤牌與公開牌面效果；加分牌與攤牌狀態只供伺服器使用，不交付觀察者。
@@ -29,7 +28,8 @@ fun registerExamplePairingComponents(registry: ComponentRegistrar) {
             roundTransition = ComponentRoundTransition.RESET,
             initialValue = { context ->
                 val config = context.tableState.config as ExamplePairingRuleConfig
-                ExamplePairingBonusTiles(config.wallTileValues.shuffled(Random.Default).take(config.wallTileValues.size - 1).toSet())
+                val random = checkNotNull(context.random) { "Bonus tiles are only created when a round opens" }
+                ExamplePairingBonusTiles(config.wallTileValues.shuffled(random).take(config.wallTileValues.size - 1).toSet())
             },
         ),
     )

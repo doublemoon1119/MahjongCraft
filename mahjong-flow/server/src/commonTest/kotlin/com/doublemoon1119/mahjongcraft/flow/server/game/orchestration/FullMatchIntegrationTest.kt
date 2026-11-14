@@ -20,6 +20,7 @@ import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiGameLength
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.table.GameInitializer
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledCoreExtensionRegistries
+import com.doublemoon1119.mahjongcraft.testing.logic.table.testRoundRandomness
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -57,7 +58,8 @@ class FullMatchIntegrationTest {
             id = gameId,
             playerIds = playerIds,
             module = module,
-        ).initializeRuleComponents(module.id, bundledCoreExtensionRegistries().componentRegistry).tableState
+            randomness = testRoundRandomness(),
+        ).initializeRuleComponents(module.id, bundledCoreExtensionRegistries().componentRegistry, random = testRoundRandomness().components).tableState
         runtime.gameRepository.setTableState(initialState, playerIds.associateWith { FakeAiStrategy.KEY })
 
         runtime.coordinator.driveAutomatedPlayers(gameId)

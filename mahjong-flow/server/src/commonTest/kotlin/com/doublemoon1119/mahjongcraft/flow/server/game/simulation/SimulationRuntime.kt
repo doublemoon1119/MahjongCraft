@@ -9,6 +9,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.error.ExtensionFailurePolicy
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.PendingGameTransition
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionConfig
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionTiming
+import com.doublemoon1119.mahjongcraft.flow.common.game.random.MatchSeed
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.AiDecisionExecutor
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.AiTurnDriver
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.AutomaticGameCommandResolver
@@ -358,11 +359,12 @@ internal class SimulationRuntime(defaultStrategyKey: String) {
      *
      * @param state 開局桌況。
      * @param aiPlayerStrategyKeys 玩家與策略 key 的對應。
+     * @param matchSeed 產生開局桌況的種子，之後換局沿用。
      */
-    suspend fun start(state: TableState, aiPlayerStrategyKeys: Map<Uuid, String>) {
+    suspend fun start(state: TableState, aiPlayerStrategyKeys: Map<Uuid, String>, matchSeed: MatchSeed) {
         gameRepository.setTableState(state, aiPlayerStrategyKeys)
         gameRepository.updateGame(state.id) { game ->
-            checkNotNull(game).copy(flowConfig = game.flowConfig.copy(ruleDecision = RuleDecisionConfig(RULE_DECISION_TIME))) to Unit
+            checkNotNull(game).copy(flowConfig = game.flowConfig.copy(ruleDecision = RuleDecisionConfig(RULE_DECISION_TIME)), matchSeed = matchSeed) to Unit
         }
         beginRuleDecisionUseCase(state.id, RuleDecisionTiming.ROUND_START)
     }

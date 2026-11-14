@@ -26,6 +26,7 @@ import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledPersistenceRe
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.registerBundledNetworkDtos
 import com.doublemoon1119.mahjongcraft.testing.logic.rules.riichi.riichiTableComponents
 import kotlinx.serialization.PolymorphicSerializer
+import kotlin.random.Random
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
@@ -48,7 +49,7 @@ class DebugAutoNorthRiichiRuleModuleTest {
         assertEquals(DebugAutoNorthRiichiRuleModule.ID, module.id)
         assertSame(config, module.config)
         assertEquals(0, module.config.redDoraCount)
-        assertEquals(THREE_PLAYER_TILE_COUNT, module.createWallFactory(module.config.maxPlayers).create().getAllTiles().size)
+        assertEquals(THREE_PLAYER_TILE_COUNT, module.createWallFactory(module.config.maxPlayers).create(Random(0)).getAllTiles().size)
         assertIs<DebugAutoNorthDrawFollowUpPolicy>(module.createDrawFollowUpPolicy())
         assertSame(DebugAutoNorthActionScoringPolicy, module.createActionScoringPolicy())
     }

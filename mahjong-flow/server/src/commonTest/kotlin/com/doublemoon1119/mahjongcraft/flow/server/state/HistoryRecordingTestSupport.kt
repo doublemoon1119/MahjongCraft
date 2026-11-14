@@ -5,6 +5,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryFact
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.Game
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameFlowConfig
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
+import com.doublemoon1119.mahjongcraft.testing.flow.common.game.testMatchSeed
 
 /**
  * 以正式開局事實建立一場對局，讓記錄政策決定它的歷史資格；開局事實占用該場序號 1。
@@ -13,7 +14,7 @@ import com.doublemoon1119.mahjongcraft.logic.table.TableState
  * @return 已寫入權威狀態的對局。
  */
 internal suspend fun AuthoritativeStateStore.openGame(tableState: TableState): Game {
-    val game = Game(tableState, GameFlowConfig())
+    val game = Game(tableState, GameFlowConfig(), matchSeed = testMatchSeed(0))
     update { state ->
         AuthoritativeStateUpdate(
             state = state.copy(games = state.games + (game.id to game)),

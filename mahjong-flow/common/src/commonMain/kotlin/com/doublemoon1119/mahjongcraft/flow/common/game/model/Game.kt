@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.flow.common.game.model
 
+import com.doublemoon1119.mahjongcraft.flow.common.game.random.MatchSeed
 import com.doublemoon1119.mahjongcraft.flow.common.room.model.RoomAdmissionState
 import com.doublemoon1119.mahjongcraft.logic.module.requireValidAutomaticControlIds
 import com.doublemoon1119.mahjongcraft.logic.table.RoundCompletionSummary
@@ -46,6 +47,9 @@ import kotlin.uuid.Uuid
  *   完整基本思考時間。決策完成、階段改變或計時器重建後即清除，確保一次中斷只被接續一次。
  * @property matchId 整場對局的穩定識別碼；與場地本身的 [TableState.id] 分離，讓同一場地可承載多場對局歷史。
  * @property roomAdmission 開局前房間的加入限制，回房時原樣還原。
+ * @property matchSeed 整場對局衍生座位、牌山與骰子的不公開種子；只存在伺服器，不得送給任何客戶端。
+ * @property openedRoundCount 這場對局已經開過的局數，包含連莊與重新開局；下一次開局使用這個數值當局序，
+ *   確保每一局都使用不同的亂數。
  */
 data class Game(
     val tableState: TableState,
@@ -68,6 +72,8 @@ data class Game(
     val interruptedBaseByPlayerId: Map<Uuid, Duration> = emptyMap(),
     val matchId: Uuid = Uuid.random(),
     val roomAdmission: RoomAdmissionState = RoomAdmissionState(),
+    val matchSeed: MatchSeed = MatchSeed.generate(),
+    val openedRoundCount: Int = 1,
 ) {
     init {
         val playerIds = tableState.players.mapTo(mutableSetOf()) { it.id }
@@ -85,6 +91,7 @@ data class Game(
         }
         enabledAutomaticControlIdsByPlayerId.values.forEach(::requireValidAutomaticControlIds)
         require(automaticControlRevision >= 0L) { "Automatic control revision must not be negative" }
+        require(openedRoundCount >= 1) { "A game always has at least its first round opened" }
         require(pendingRuleDecision?.participantPlayerIds?.all { it in playerIds } != false) {
             "Rule decision participants must belong to the game"
         }

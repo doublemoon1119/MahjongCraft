@@ -22,6 +22,7 @@ import com.doublemoon1119.mahjongcraft.logic.table.GameInitializer
 import com.doublemoon1119.mahjongcraft.logic.table.opening.DiceRollResult
 import com.doublemoon1119.mahjongcraft.logic.table.opening.DiceRollSource
 import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionVocabularyRegistryImpl
+import com.doublemoon1119.mahjongcraft.testing.logic.table.testRoundRandomness
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -41,7 +42,7 @@ class ExamplePairingHistoryPresentationTest {
             id = Uuid.random(),
             playerIds = playerIds,
             module = ExamplePairingRuleModule(ExamplePairingIds.RULE_MODULE, ExamplePairingRuleConfig()),
-            diceRollSource = DiceRollSource { DiceRollResult.of(List(it) { 1 }) },
+            randomness = testRoundRandomness(dice = DiceRollSource { DiceRollResult.of(List(it) { 1 }) }),
         ).tableState
         val actor = table.currentPlayer.id
         val events = listOf(

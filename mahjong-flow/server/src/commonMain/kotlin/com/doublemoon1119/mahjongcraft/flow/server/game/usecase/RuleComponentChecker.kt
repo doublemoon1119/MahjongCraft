@@ -147,5 +147,6 @@ internal class RuleComponentChecker(
         ownerType = ownerType,
         owner = owner,
         previousTableState = null,
+        random = null,
     )
 }

@@ -20,6 +20,7 @@ kotlin {
 
         jvmTest.dependencies {
             implementation(project(":testing:testing-mahjong-flow"))
+            implementation(project(":testing:testing-mahjong-logic"))
             implementation(libs.kotlinx.coroutines.test)
             implementation(libs.kotlinx.serialization.json)
         }

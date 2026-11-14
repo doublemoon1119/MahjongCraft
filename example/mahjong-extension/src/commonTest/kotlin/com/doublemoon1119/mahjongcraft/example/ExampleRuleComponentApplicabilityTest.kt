@@ -17,6 +17,7 @@ import com.doublemoon1119.mahjongcraft.logic.table.GameInitializer
 import com.doublemoon1119.mahjongcraft.logic.table.RoundAdvancementResult
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledCoreExtensionRegistries
+import com.doublemoon1119.mahjongcraft.testing.logic.table.testRoundRandomness
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -37,8 +38,8 @@ class ExampleRuleComponentApplicabilityTest {
             Case(ExamplePairingRuleModule(ExamplePairingIds.RULE_MODULE, ExamplePairingRuleConfig()), 2, EXAMPLE_NAMESPACE),
         )
         cases.forEach { case ->
-            val opening = GameInitializer.initialize(Uuid.random(), List(case.playerCount) { Uuid.random() }, case.module)
-                .initializeRuleComponents(case.module.id, registry)
+            val opening = GameInitializer.initialize(Uuid.random(), List(case.playerCount) { Uuid.random() }, case.module, randomness = testRoundRandomness())
+                .initializeRuleComponents(case.module.id, registry, random = testRoundRandomness().components)
                 .tableState
             val next = GameInitializer.startNextRound(
                 gameId = opening.id,
@@ -51,7 +52,8 @@ class ExampleRuleComponentApplicabilityTest {
                     roundSerial = 1,
                 ),
                 module = case.module,
-            ).initializeRuleComponents(case.module.id, registry, opening).tableState
+                randomness = testRoundRandomness(),
+            ).initializeRuleComponents(case.module.id, registry, testRoundRandomness().components, opening).tableState
 
             listOf(opening, next).forEach { state ->
                 val ids = state.ruleComponentIds()

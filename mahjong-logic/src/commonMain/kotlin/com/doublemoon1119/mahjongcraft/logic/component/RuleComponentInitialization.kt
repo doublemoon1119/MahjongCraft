@@ -7,6 +7,7 @@ import com.doublemoon1119.mahjongcraft.logic.table.PlayerTileAreas
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.logic.table.TileWall
 import com.doublemoon1119.mahjongcraft.logic.tile.component.resolveTileAreas
+import kotlin.random.Random
 
 /**
  * 在正式開局或換局時，依登記規格建立組件；各定義都讀取同一份候選桌況。
@@ -17,12 +18,14 @@ import com.doublemoon1119.mahjongcraft.logic.tile.component.resolveTileAreas
  *
  * @param ruleModuleId 本局規則的完整識別碼。
  * @param registry 本次執行已完成登記的組件規格。
+ * @param random 這一局建立組件初值使用的亂數來源。
  * @param previousTableState 上一局結束時的桌況；第一局為 null。
  * @return 包含已驗證組件的開局結果，牌張身分與牌牆位置保持不變。
  */
 fun GameInitializationResult.initializeRuleComponents(
     ruleModuleId: String,
     registry: ComponentRegistry,
+    random: Random,
     previousTableState: TableState? = null,
 ): GameInitializationResult {
     val candidate = tableState.copy(
@@ -35,6 +38,7 @@ fun GameInitializationResult.initializeRuleComponents(
         ownerType = BuiltInComponentOwners.TABLE,
         owner = candidate,
         previousTableState = previousTableState,
+        random = random,
     )
     val tableComponents = if (previousTableState == null) {
         registry.initialize(tableContext)
@@ -51,6 +55,7 @@ fun GameInitializationResult.initializeRuleComponents(
                 ownerType = BuiltInComponentOwners.TILE,
                 owner = tile,
                 previousTableState = previousTableState,
+                random = random,
             ),
         )
         val values = initial.merge(tile.components)
@@ -64,6 +69,7 @@ fun GameInitializationResult.initializeRuleComponents(
             ownerType = BuiltInComponentOwners.PLAYER,
             owner = player,
             previousTableState = previousTableState,
+            random = random,
         )
         val values = if (previousPlayers == null) {
             registry.initialize(context)
@@ -81,6 +87,7 @@ fun GameInitializationResult.initializeRuleComponents(
                     ownerType = BuiltInComponentOwners.DISCARD_ENTRY,
                     owner = entry,
                     previousTableState = previousTableState,
+                    random = random,
                 ),
                 written = entry.components,
             )
@@ -105,6 +112,7 @@ fun GameInitializationResult.initializeRuleComponents(
                                 ownerType = BuiltInComponentOwners.MELD,
                                 owner = meld,
                                 previousTableState = previousTableState,
+                                random = random,
                             ),
                             written = meld.components,
                         ),

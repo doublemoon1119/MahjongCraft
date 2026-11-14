@@ -22,6 +22,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.STANDARD_TILE_ASS
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledComponentValidator
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledCoreExtensionRegistries
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledPersistenceRegistries
+import com.doublemoon1119.mahjongcraft.testing.logic.table.testRoundRandomness
 import kotlinx.coroutines.test.runTest
 import net.minecraft.nbt.NbtCompound
 import kotlin.test.Test
@@ -43,9 +44,10 @@ class AiCharacterPersistenceIntegrationTest {
         val players = List(4) { Uuid.random() }
         val room = Room(Uuid.random(), players.first(), GameConfig(RiichiRuleConfig()), players, players.drop(1), players.drop(1).associateWith { "example:strategy" })
         val core = bundledCoreExtensionRegistries()
-        val table = GameInitializer.initialize(room.id, players, core.moduleRegistry.getModule(room.gameConfig.ruleConfig)).initializeRuleComponents(
+        val table = GameInitializer.initialize(room.id, players, core.moduleRegistry.getModule(room.gameConfig.ruleConfig), randomness = testRoundRandomness()).initializeRuleComponents(
             ruleModuleId = core.moduleRegistry.getModule(room.gameConfig.ruleConfig).id,
             registry = core.componentRegistry,
+            random = testRoundRandomness().components,
         ).tableState
         val game = Game(table, GameFlowConfig(), aiPlayerStrategyKeys = room.aiPlayerStrategyKeys)
         val saved = MahjongAuthoritativePersistentState.create(codec, testCharacterRegistry())

@@ -204,22 +204,28 @@ internal class ReplenishingReservedWallPhysicalLayoutPolicy(
         }
     }
 
-    /** 奇數次補牌先移入下層補充牌，再讓同墩上層牌下降。 */
+    /**
+     * 奇數次補牌先移入下層補充牌，再讓同墩上層牌下降。
+     *
+     * 補充牌是一般摸牌區的最後一張時，同墩上層早已被摸走，只移入補充牌。
+     */
     private fun resolveOddDrawPhases(
         context: PhysicalWallLayoutTransitionContext,
         drawNumber: Int,
         replenishmentId: Uuid,
         placements: Map<Uuid, TileWallPlacement>,
     ): List<PhysicalWallLayoutTransitionPhase>? {
-        val loweredTile = context.tableStateAfterAction.tileWall.getAllTiles().lastOrNull() ?: return null
         val replenishmentPlacement = placements[replenishmentId] ?: return null
-        val loweredPlacement = placements[loweredTile.id] ?: return null
-        if (replenishmentPlacement.position.layer != 0 || loweredPlacement.position.layer != 1) return null
+        if (replenishmentPlacement.position.layer != 0) return null
         val replenishmentDestination = replenishmentDestination(context, drawNumber, layer = 0) ?: return null
+        val replenishmentPhase = PhysicalWallLayoutTransitionPhase(
+            moves = listOf(PhysicalWallTileMove(replenishmentId, replenishmentPlacement, replenishmentDestination)),
+        )
+        val loweredTile = context.tableStateAfterAction.tileWall.getAllTiles().lastOrNull() ?: return listOf(replenishmentPhase)
+        val loweredPlacement = placements[loweredTile.id] ?: return null
+        if (loweredPlacement.position.layer != 1) return null
         return listOf(
-            PhysicalWallLayoutTransitionPhase(
-                moves = listOf(PhysicalWallTileMove(replenishmentId, replenishmentPlacement, replenishmentDestination)),
-            ),
+            replenishmentPhase,
             PhysicalWallLayoutTransitionPhase(
                 moves = listOf(
                     element = PhysicalWallTileMove(

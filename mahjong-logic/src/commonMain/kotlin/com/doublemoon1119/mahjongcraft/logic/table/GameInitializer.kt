@@ -13,12 +13,12 @@ import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPosition
 import com.doublemoon1119.mahjongcraft.logic.table.layout.createInitialLayoutValidated
 import com.doublemoon1119.mahjongcraft.logic.table.opening.DiceRollSource
 import com.doublemoon1119.mahjongcraft.logic.table.opening.OpeningDiceRoll
-import com.doublemoon1119.mahjongcraft.logic.table.opening.RandomDiceRollSource
 import com.doublemoon1119.mahjongcraft.logic.table.opening.RoundOpeningContext
 import com.doublemoon1119.mahjongcraft.logic.table.opening.RoundOpeningStep
 import com.doublemoon1119.mahjongcraft.logic.table.opening.WallOpening
 import com.doublemoon1119.mahjongcraft.logic.table.seat.SeatWindAssignmentContext
 import com.doublemoon1119.mahjongcraft.logic.table.seat.assignValidated
+import kotlin.random.Random
 import kotlin.uuid.Uuid
 
 /**
@@ -34,7 +34,7 @@ object GameInitializer {
      * @param id 對局的唯一識別碼。
      * @param playerIds 參與對局的玩家 Uuid 列表（尚未分配座位，內部會隨機排序）。
      * @param module 該對局採用的規則模組，提供牌山工廠、牌河實作與規則配置。
-     * @param diceRollSource 權威擲骰來源；正式流程使用隨機六面骰，測試可注入固定來源。
+     * @param randomness 這一局的座位、牌山與擲骰亂數來源。
      * @return 已完成洗牌、（若規則支援）擲骰開門、發牌、分數初始化的新結果，含權威 [TableState] 與
      * 供呼叫端處理的牌牆結構資料；完整擲骰記錄保存在回傳桌況的
      * [TableState.openingDiceRolls]。
@@ -44,26 +44,26 @@ object GameInitializer {
         id: Uuid,
         playerIds: List<Uuid>,
         module: MahjongRuleModule<*>,
-        diceRollSource: DiceRollSource = RandomDiceRollSource,
+        randomness: RoundRandomness,
     ): GameInitializationResult {
         require(playerIds.size in module.config.minPlayers..module.config.maxPlayers) {
             "Player count ${playerIds.size} out of range for this rule config " +
                 "(${module.config.minPlayers}..${module.config.maxPlayers})"
         }
 
-        val shuffledPlayerIds = playerIds.shuffled()
+        val shuffledPlayerIds = playerIds.shuffled(randomness.seatOrder)
         val opening = module.resolveRoundOpening(
             playerIdsInTurnOrder = shuffledPlayerIds,
             firstRound = true,
             provisionalPlayerId = shuffledPlayerIds.first(),
             fixedDealerPlayerId = null,
-            diceRollSource = diceRollSource,
+            diceRollSource = randomness.dice,
         )
         val dealerIndex = shuffledPlayerIds.indexOf(opening.dealerPlayerId)
         val dealOrderPlayerIds = List(shuffledPlayerIds.size) { offset ->
             shuffledPlayerIds[(dealerIndex + offset) % shuffledPlayerIds.size]
         }
-        val openedWall = module.buildOpenedWall(shuffledPlayerIds.size, opening.wallOpening)
+        val openedWall = module.buildOpenedWall(shuffledPlayerIds.size, opening.wallOpening, randomness.wall)
         val seatWinds = module.assignSeatWinds(shuffledPlayerIds, opening.dealerPlayerId, openedWall, opening.diceRolls)
         val (hands, remainingWall) = module.dealInitialHands(openedWall.wall, dealOrderPlayerIds)
         val handsByPlayerId = dealOrderPlayerIds.zip(hands).toMap()
@@ -113,7 +113,7 @@ object GameInitializer {
      * @param roundAdvancement 連莊/過莊判定後的結果（見 [TableState.advanceRound]），提供下一局的
      *        玩家列表與局位資料；玩家自風會依規則 policy 重新指派。
      * @param module 該對局採用的規則模組。
-     * @param diceRollSource 權威擲骰來源；正式流程使用隨機六面骰，測試可注入固定來源。
+     * @param randomness 這一局的座位、牌山與擲骰亂數來源。
      * @return 已完成重新擲骰開門、重新建牌山、發牌，並套用連莊/過莊結果的新結果，代表下一局的起始
      * 狀態，含權威 [TableState] 與供呼叫端處理的牌牆結構資料；完整擲骰記錄保存在
      * 回傳桌況的 [TableState.openingDiceRolls]。
@@ -122,7 +122,7 @@ object GameInitializer {
         gameId: Uuid,
         roundAdvancement: RoundAdvancementResult,
         module: MahjongRuleModule<*>,
-        diceRollSource: DiceRollSource = RandomDiceRollSource,
+        randomness: RoundRandomness,
     ): GameInitializationResult {
         val playerIdsInTurnOrder = roundAdvancement.players.map { it.id }
         val opening = module.resolveRoundOpening(
@@ -130,9 +130,9 @@ object GameInitializer {
             firstRound = false,
             provisionalPlayerId = roundAdvancement.dealerPlayerId,
             fixedDealerPlayerId = roundAdvancement.dealerPlayerId,
-            diceRollSource = diceRollSource,
+            diceRollSource = randomness.dice,
         )
-        val openedWall = module.buildOpenedWall(roundAdvancement.players.size, opening.wallOpening)
+        val openedWall = module.buildOpenedWall(roundAdvancement.players.size, opening.wallOpening, randomness.wall)
         // TableState.players 依座位順序排列、不是從莊家開始排的，發牌輪轉順序需要另外把玩家
         // 列表依莊家旋轉過（見 dealInitialHands KDoc 對 playerIds 順序的要求），發完牌後再依原本的座位
         // 順序組回 players 列表，不能直接沿用旋轉過的順序。
@@ -300,13 +300,15 @@ object GameInitializer {
      *
      * @param playerCount 本局完整玩家名單的人數。
      * @param wallOpening 開局程序已決定的最終開門位置；未使用開門時為 null。
+     * @param random 建立牌山時產生牌張 ID 與洗牌的亂數來源。
      * @return 已整理的摸牌牌山，以及可用時的開門、保留牌和牌牆布局資料。
      */
     private fun MahjongRuleModule<*>.buildOpenedWall(
         playerCount: Int,
         wallOpening: WallOpening?,
+        random: Random,
     ): OpenedWall {
-        val shuffledWall = createWallFactory(playerCount).create()
+        val shuffledWall = createWallFactory(playerCount).create(random)
         val layout = createWallLayout(playerCount)
         if (wallOpening == null) {
             return OpenedWall(

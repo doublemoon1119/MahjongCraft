@@ -42,6 +42,7 @@ fun TableState.initializeCreatedRecords(
         ownerType = ownerType,
         owner = owner,
         previousTableState = null,
+        random = null,
     )
     return copy(
         players = players.map { player ->

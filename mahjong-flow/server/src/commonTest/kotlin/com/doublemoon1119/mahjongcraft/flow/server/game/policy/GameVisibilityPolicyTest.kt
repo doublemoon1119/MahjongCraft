@@ -61,6 +61,7 @@ import com.doublemoon1119.mahjongcraft.testing.logic.rules.riichi.riichiDeclarat
 import com.doublemoon1119.mahjongcraft.testing.logic.rules.riichi.riichiTableComponents
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
+import com.doublemoon1119.mahjongcraft.testing.logic.table.testRoundRandomness
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -237,7 +238,7 @@ class GameVisibilityPolicyTest {
         )
         for ((module, count) in cases) {
             val players = List(count) { Uuid.random() }
-            val table = GameInitializer.initialize(Uuid.random(), players, module).initializeRuleComponents(module.id, bundledCoreExtensionRegistries().componentRegistry).tableState
+            val table = GameInitializer.initialize(Uuid.random(), players, module, randomness = testRoundRandomness()).initializeRuleComponents(module.id, bundledCoreExtensionRegistries().componentRegistry, random = testRoundRandomness().components).tableState
             val config = table.config as RiichiFamilyRuleConfig
             val indicator = table.reservedWallTiles[config.rinshanTileCount]
             val ura = table.reservedWallTiles[config.rinshanTileCount + 1]

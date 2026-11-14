@@ -18,6 +18,8 @@ import com.doublemoon1119.mahjongcraft.testing.logic.rules.riichi.riichiDeclarat
 import com.doublemoon1119.mahjongcraft.testing.logic.rules.riichi.riichiTableComponents
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
+import com.doublemoon1119.mahjongcraft.testing.logic.table.testRoundRandomness
+import kotlin.random.Random
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -43,7 +45,7 @@ class GameInitializerTest {
         val playerIds = List(4) { Uuid.random() }
         val gameId = Uuid.random()
 
-        val table = GameInitializer.initialize(gameId, playerIds, module).tableState
+        val table = GameInitializer.initialize(gameId, playerIds, module, randomness = testRoundRandomness()).tableState
 
         assertEquals(4, table.players.size)
         assertEquals((0..3).toSet(), table.players.map { it.initialSeatIndex }.toSet())
@@ -56,7 +58,7 @@ class GameInitializerTest {
     @Test
     fun `test initialize deals initial hand size per rule config`() {
         val playerIds = List(4) { Uuid.random() }
-        val table = GameInitializer.initialize(Uuid.random(), playerIds, module).tableState
+        val table = GameInitializer.initialize(Uuid.random(), playerIds, module, randomness = testRoundRandomness()).tableState
 
         table.players.forEach { player ->
             assertEquals(module.config.initialHandSize, player.hand.tiles.size)
@@ -70,8 +72,8 @@ class GameInitializerTest {
     @Test
     fun `test initialize leaves correct remaining wall count`() {
         val playerIds = List(4) { Uuid.random() }
-        val totalTileCount = module.createWallFactory(module.config.maxPlayers).create().remainingCount
-        val table = GameInitializer.initialize(Uuid.random(), playerIds, module).tableState
+        val totalTileCount = module.createWallFactory(module.config.maxPlayers).create(Random(0)).remainingCount
+        val table = GameInitializer.initialize(Uuid.random(), playerIds, module, randomness = testRoundRandomness()).tableState
 
         val expectedRemaining = totalTileCount - module.config.reservedTileCount - playerIds.size * module.config.initialHandSize
         assertEquals(expectedRemaining, table.tileWall.remainingCount)
@@ -84,7 +86,7 @@ class GameInitializerTest {
     @Test
     fun `test initialize resolves wall opening and reserved wall for a rule that supports it`() {
         val playerIds = List(4) { Uuid.random() }
-        val result = GameInitializer.initialize(Uuid.random(), playerIds, module)
+        val result = GameInitializer.initialize(Uuid.random(), playerIds, module, randomness = testRoundRandomness())
         val table = result.tableState
 
         assertTrue(table.wallOpening != null, "Riichi supports wall opening, wallOpening should not be null")
@@ -103,8 +105,8 @@ class GameInitializerTest {
     @Test
     fun `test initialize accounts for every tile across hands, remaining wall, and reserved wall`() {
         val playerIds = List(4) { Uuid.random() }
-        val totalTileCount = module.createWallFactory(module.config.maxPlayers).create().remainingCount
-        val table = GameInitializer.initialize(Uuid.random(), playerIds, module).tableState
+        val totalTileCount = module.createWallFactory(module.config.maxPlayers).create(Random(0)).remainingCount
+        val table = GameInitializer.initialize(Uuid.random(), playerIds, module, randomness = testRoundRandomness()).tableState
 
         val dealtTileIds = table.players.flatMap { it.hand.tiles }.map { it.id }
         val remainingTileIds = table.tileWall.getAllTiles().map { it.id }
@@ -144,7 +146,7 @@ class GameInitializerTest {
     @Test
     fun `test initialize sets initial score from config`() {
         val playerIds = List(4) { Uuid.random() }
-        val table = GameInitializer.initialize(Uuid.random(), playerIds, module).tableState
+        val table = GameInitializer.initialize(Uuid.random(), playerIds, module, randomness = testRoundRandomness()).tableState
 
         table.players.forEach { player ->
             assertEquals(module.config.scoreConfig.initialScore, player.score)
@@ -158,8 +160,8 @@ class GameInitializerTest {
     fun `test initialize randomizes seat assignment across calls`() {
         val playerIds = List(4) { Uuid.random() }
 
-        val firstPlayerSeats = List(20) {
-            GameInitializer.initialize(Uuid.random(), playerIds, module)
+        val firstPlayerSeats = List(20) { seed ->
+            GameInitializer.initialize(Uuid.random(), playerIds, module, randomness = testRoundRandomness(seed))
                 .tableState.players.first { it.id == playerIds[0] }.initialSeatIndex
         }
 
@@ -174,14 +176,14 @@ class GameInitializerTest {
         val tooFewPlayerIds = listOf(Uuid.random())
 
         assertFailsWith<IllegalArgumentException> {
-            GameInitializer.initialize(Uuid.random(), tooFewPlayerIds, module)
+            GameInitializer.initialize(Uuid.random(), tooFewPlayerIds, module, randomness = testRoundRandomness())
         }
     }
 
     /** 正式組件建立後具有零供託與本局初始進度。 */
     @Test
     fun `initialization creates required riichi table components`() {
-        val table = initializeComponents(GameInitializer.initialize(Uuid.random(), List(4) { Uuid.random() }, module))
+        val table = initializeComponents(GameInitializer.initialize(Uuid.random(), List(4) { Uuid.random() }, module, randomness = testRoundRandomness()))
         assertEquals(0, table.riichiPotPoints())
         assertEquals(RiichiWallProgress(), table.riichiWallProgress())
     }
@@ -192,7 +194,7 @@ class GameInitializerTest {
     @Test
     fun `initial riichi players have no declaration or monolithic state`() {
         val playerIds = List(4) { Uuid.random() }
-        val table = GameInitializer.initialize(Uuid.random(), playerIds, module).tableState
+        val table = GameInitializer.initialize(Uuid.random(), playerIds, module, randomness = testRoundRandomness()).tableState
 
         table.players.forEach { player ->
             assertNull(player.riichiDeclaration)
@@ -202,7 +204,7 @@ class GameInitializerTest {
     /** 開局與換局後都從莊家等摸牌開始，不留上一局的階段。 */
     @Test
     fun `initialize and next round start awaiting the dealer draw`() {
-        val opened = GameInitializer.initialize(Uuid.random(), List(4) { Uuid.random() }, module).tableState
+        val opened = GameInitializer.initialize(Uuid.random(), List(4) { Uuid.random() }, module, randomness = testRoundRandomness()).tableState
         assertEquals(TurnPhase.AwaitingDraw, opened.turnPhase)
         assertEquals(opened.dealerIndex, opened.currentPlayerIndex)
 
@@ -212,7 +214,7 @@ class GameInitializerTest {
             config = module.config,
             turnPhase = TurnPhase.RoundOver(RoundConclusion.Win(setOf(advancement.players.first().id))),
         )
-        val next = GameInitializer.startNextRound(previous.id, advancement, module).tableState
+        val next = GameInitializer.startNextRound(previous.id, advancement, module, randomness = testRoundRandomness()).tableState
         assertEquals(TurnPhase.AwaitingDraw, next.turnPhase)
         assertEquals(next.dealerIndex, next.currentPlayerIndex)
     }
@@ -230,7 +232,7 @@ class GameInitializerTest {
             ),
         )
         val table = initializeComponents(
-            initialization = GameInitializer.startNextRound(previous.id, advancement, module),
+            initialization = GameInitializer.startNextRound(previous.id, advancement, module, randomness = testRoundRandomness()),
             previous = previous,
         )
         assertEquals(2000, table.riichiPotPoints())
@@ -250,11 +252,11 @@ class GameInitializerTest {
             ),
         )
         val afterKan = initializeComponents(
-            initialization = GameInitializer.startNextRound(previous.id, advancement, module),
+            initialization = GameInitializer.startNextRound(previous.id, advancement, module, randomness = testRoundRandomness()),
             previous = previous,
         )
         val withoutKan = initializeComponents(
-            initialization = GameInitializer.startNextRound(previous.id, advancement, module),
+            initialization = GameInitializer.startNextRound(previous.id, advancement, module, randomness = testRoundRandomness()),
             previous = previous.copy(components = riichiTableComponents()),
         )
         assertEquals(listOf(module.config.rinshanTileCount), indicatorPositions(afterKan))
@@ -307,7 +309,7 @@ class GameInitializerTest {
             roundSerial = 1,
         )
 
-        val table = GameInitializer.startNextRound(Uuid.random(), roundAdvancement, module).tableState
+        val table = GameInitializer.startNextRound(Uuid.random(), roundAdvancement, module, randomness = testRoundRandomness()).tableState
 
         assertEquals(32000, table.players.first { it.id == p1.id }.score)
         assertEquals(18000, table.players.first { it.id == p2.id }.score)
@@ -333,7 +335,7 @@ class GameInitializerTest {
             roundSerial = 1,
         )
 
-        val table = GameInitializer.startNextRound(Uuid.random(), roundAdvancement, module).tableState
+        val table = GameInitializer.startNextRound(Uuid.random(), roundAdvancement, module, randomness = testRoundRandomness()).tableState
 
         assertEquals(listOf(p1.id, p2.id, p3.id, p4.id), table.players.map { it.id })
     }
@@ -356,7 +358,7 @@ class GameInitializerTest {
             roundSerial = 1,
         )
 
-        val table = GameInitializer.startNextRound(Uuid.random(), roundAdvancement, module).tableState
+        val table = GameInitializer.startNextRound(Uuid.random(), roundAdvancement, module, randomness = testRoundRandomness()).tableState
 
         assertEquals(3, table.roundNumber)
         assertEquals(1, table.comboCount)
@@ -385,7 +387,7 @@ class GameInitializerTest {
             roundSerial = 1,
         )
 
-        val table = GameInitializer.startNextRound(Uuid.random(), roundAdvancement, module).tableState
+        val table = GameInitializer.startNextRound(Uuid.random(), roundAdvancement, module, randomness = testRoundRandomness()).tableState
 
         assertEquals(3, table.currentPlayerIndex, "P4 (index 3) holds East, so they are the new dealer.")
         assertEquals(p4.id, table.currentPlayer.id)
@@ -421,8 +423,8 @@ class GameInitializerTest {
 
         val previous = FakeTableStateFactory.create(players = roundAdvancement.players, config = module.config)
         val components = riichiComponentRegistryForTests()
-        val table = GameInitializer.startNextRound(Uuid.random(), roundAdvancement, module)
-            .initializeRuleComponents(module.id, components, previous).tableState
+        val table = GameInitializer.startNextRound(Uuid.random(), roundAdvancement, module, randomness = testRoundRandomness())
+            .initializeRuleComponents(module.id, components, testRoundRandomness().components, previous).tableState
 
         val updated = table.players.first { it.id == dirtyPlayer.id }
         assertEquals(module.config.initialHandSize, updated.hand.tiles.size)
@@ -442,7 +444,7 @@ class GameInitializerTest {
             components = riichiTableComponents(potPoints = 2000),
         )
         val table = initializeComponents(
-            initialization = GameInitializer.startNextRound(previous.id, advancement, module),
+            initialization = GameInitializer.startNextRound(previous.id, advancement, module, randomness = testRoundRandomness()),
             previous = previous,
         )
         assertEquals(2000, table.riichiPotPoints())
@@ -464,7 +466,7 @@ class GameInitializerTest {
             roundSerial = 1,
         )
 
-        val table = GameInitializer.startNextRound(Uuid.random(), roundAdvancement, module).tableState
+        val table = GameInitializer.startNextRound(Uuid.random(), roundAdvancement, module, randomness = testRoundRandomness()).tableState
 
         assertNull(table.pendingReaction)
     }
@@ -484,9 +486,9 @@ class GameInitializerTest {
             prevalentWind = Wind.EAST,
             roundSerial = 1,
         )
-        val totalTileCount = module.createWallFactory(module.config.maxPlayers).create().remainingCount
+        val totalTileCount = module.createWallFactory(module.config.maxPlayers).create(Random(0)).remainingCount
 
-        val table = GameInitializer.startNextRound(Uuid.random(), roundAdvancement, module).tableState
+        val table = GameInitializer.startNextRound(Uuid.random(), roundAdvancement, module, randomness = testRoundRandomness()).tableState
 
         val expectedRemaining = totalTileCount - module.config.reservedTileCount - players.size * module.config.initialHandSize
         assertEquals(expectedRemaining, table.tileWall.remainingCount)
@@ -508,7 +510,7 @@ class GameInitializerTest {
             roundSerial = 1,
         )
 
-        val table = GameInitializer.startNextRound(Uuid.random(), roundAdvancement, module).tableState
+        val table = GameInitializer.startNextRound(Uuid.random(), roundAdvancement, module, randomness = testRoundRandomness()).tableState
 
         assertTrue(table.wallOpening != null, "Riichi supports wall opening, wallOpening should not be null")
         assertEquals(module.config.reservedTileCount, table.reservedWallTiles.size)
@@ -523,6 +525,6 @@ class GameInitializerTest {
      */
     private fun initializeComponents(initialization: GameInitializationResult, previous: TableState? = null): TableState {
         val registry = riichiComponentRegistryForTests()
-        return initialization.initializeRuleComponents(module.id, registry, previous).tableState
+        return initialization.initializeRuleComponents(module.id, registry, testRoundRandomness().components, previous).tableState
     }
 }

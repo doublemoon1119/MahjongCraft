@@ -77,6 +77,7 @@ class RiichiPlayerComponentsTest {
             ownerType = BuiltInComponentOwners.PLAYER,
             owner = player,
             previousTableState = null,
+            random = null,
         )
         assertNull(registry.initialize(context)[RiichiPlayerComponents.PAO_LIABILITY])
         val previous = ComponentSet.EMPTY.with(RiichiPlayerComponents.PAO_LIABILITY, RiichiPaoLiability(RiichiPaoYaku.Daisuushii, RelativeDirection.Right))

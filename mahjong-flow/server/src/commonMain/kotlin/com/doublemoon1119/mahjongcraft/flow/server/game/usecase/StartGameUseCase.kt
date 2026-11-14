@@ -4,6 +4,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryEventDraf
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryFact
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.Game
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionTiming
+import com.doublemoon1119.mahjongcraft.flow.common.game.random.MatchSeed
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.GameEventPublisher
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.GamePresentationPublisher
 import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
@@ -56,6 +57,8 @@ class StartGameUseCase(
      * @param expectedRoom 接入端預檢的房間；有提供時拒絕預檢後的任何房間變更。
      * @param requireImmediateCommit 有外部預檢時只允許立即取得交易鎖，忙碌則拒絕本次開局。
      * @param preparedStart 預先建立的正式排位；只可用在其原房間，提交時再次確認房間未變。
+     * @param matchSeed 指定這場對局的種子，供重現對局使用；null 時以安全亂數產生。有 [preparedStart] 時種子已決定，
+     *   不可再指定。
      * @return 開局結果，成功時包含對局 Uuid（等同 [roomId]），失敗時為 [RoomError]。
      */
     suspend operator fun invoke(
@@ -64,7 +67,9 @@ class StartGameUseCase(
         expectedRoom: Room? = null,
         requireImmediateCommit: Boolean = false,
         preparedStart: PreparedGameStart? = null,
+        matchSeed: MatchSeed? = null,
     ): Outcome<Uuid, RoomError> {
+        require(preparedStart == null || matchSeed == null) { "A prepared start already decided its match seed" }
         // 1. 驗證房間狀態、初始化桌況、移除 Room 與新增 Game 都在同一次 store 交易內完成。
         val outcome = try {
             authoritativeStateStore.update(waitForLock = !requireImmediateCommit) { state ->
@@ -77,7 +82,7 @@ class StartGameUseCase(
                     !room.isPlayerCountValid -> AuthoritativeStateUpdate(state, Outcome.Error(RoomError.RoomPlayerCountInvalid(roomId)))
                     !room.canStart -> AuthoritativeStateUpdate(state, Outcome.Error(RoomError.RoomNotReadyToStart(roomId)))
                     else -> {
-                        val prepared = preparedStart ?: initialize(room)
+                        val prepared = preparedStart ?: initialize(room, matchSeed ?: MatchSeed.generate())
                         val organizedResult = prepared.initializationResult
                         val organizedState = organizedResult.tableState
                         AuthoritativeStateUpdate(
@@ -92,6 +97,8 @@ class StartGameUseCase(
                                         roomPlayerIds = room.playerIds,
                                         roomAdmission = room.admission,
                                         aiPlayerStrategyKeys = room.aiPlayerStrategyKeys,
+                                        matchSeed = prepared.matchSeed,
+                                        openedRoundCount = 1,
                                     )
                                     ),
                             ),
@@ -172,17 +179,21 @@ class StartGameUseCase(
      * 先計算正式排位與初始桌況，不寫入狀態或發布通知。
      *
      * @param room 經權限與準備狀態檢查的房間。
+     * @param matchSeed 這場對局的種子；開場使用第 0 局的亂數。
      * @return 可供接入端安排入座後提交的同一份開局資料。
      */
-    private fun initialize(room: Room): PreparedGameStart {
+    private fun initialize(room: Room, matchSeed: MatchSeed): PreparedGameStart {
         val module = moduleRegistry.getModule(room.gameConfig.ruleConfig)
+        val randomness = matchSeed.roundRandomness(roundOrdinal = 0)
         val initializationResult = GameInitializer.initialize(
             id = room.id,
             playerIds = room.playerIds,
             module = module,
+            randomness = randomness,
         ).initializeRuleComponents(
             ruleModuleId = module.id,
             registry = componentRegistry,
+            random = randomness.components,
         )
         val dealtState = initializationResult.tableState
         // 發牌順序（哪張牌在哪一批發出），只提供給呈現使用，不是實際寫回權威狀態
@@ -205,6 +216,7 @@ class StartGameUseCase(
             room = room,
             initializationResult = organizedResult,
             dealOrderHandTileIdsBySeatIndex = dealOrderHandTileIdsBySeatIndex,
+            matchSeed = matchSeed,
         )
     }
 
@@ -213,12 +225,13 @@ class StartGameUseCase(
      *
      * @param room 目前預檢的完整房間。
      * @param operatorId 提出開局的操作者。
+     * @param matchSeed 這場對局的種子；預設以安全亂數產生。
      * @return 已驗證的預備開局資料，或既有房間拒絕原因。
      */
-    fun prepare(room: Room, operatorId: Uuid): Outcome<PreparedGameStart, RoomError> = when {
+    fun prepare(room: Room, operatorId: Uuid, matchSeed: MatchSeed = MatchSeed.generate()): Outcome<PreparedGameStart, RoomError> = when {
         room.hostId != operatorId -> Outcome.Error(RoomError.NotHost(operatorId))
         !room.isPlayerCountValid -> Outcome.Error(RoomError.RoomPlayerCountInvalid(room.id))
         !room.canStart -> Outcome.Error(RoomError.RoomNotReadyToStart(room.id))
-        else -> Outcome.Success(initialize(room))
+        else -> Outcome.Success(initialize(room, matchSeed))
     }
 }

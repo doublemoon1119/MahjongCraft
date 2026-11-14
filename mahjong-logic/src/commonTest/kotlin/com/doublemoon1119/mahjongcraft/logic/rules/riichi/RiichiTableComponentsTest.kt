@@ -26,6 +26,7 @@ class RiichiTableComponentsTest {
             ownerType = BuiltInComponentOwners.TABLE,
             owner = state,
             previousTableState = null,
+            random = null,
         )
         val initial = registry.initialize(context)
         assertEquals(0, initial[RiichiTableComponents.POT_POINTS])
@@ -59,6 +60,7 @@ class RiichiTableComponentsTest {
                     ownerType = BuiltInComponentOwners.TABLE,
                     owner = state,
                     previousTableState = state,
+                    random = null,
                 ),
                 previous = ComponentSet.EMPTY.with(RiichiTableComponents.WALL_PROGRESS, RiichiWallProgress()),
             )

@@ -43,12 +43,12 @@ class TileComposition(entries: List<TileCompositionEntry>) {
     /**
      * 建立帶有原特性的實際牌張，再洗牌；純組成查詢不呼叫此方法。
      *
-     * @param random 洗牌使用的亂數來源。
+     * @param random 產生牌張 ID 與洗牌使用的亂數來源；同一個來源狀態產生同一副牌山。
      * @return 新建立的牌山。
      */
-    fun createWall(random: Random = Random.Default): TileWall {
+    fun createWall(random: Random): TileWall {
         val tiles = values.flatMap { entry ->
-            List(entry.count) { IdentifiedTile(Uuid.random(), entry.value.tile, entry.value.components) }
+            List(entry.count) { IdentifiedTile(Uuid.fromLongs(random.nextLong(), random.nextLong()), entry.value.tile, entry.value.components) }
         }
         return TileWall(tiles.shuffled(random))
     }

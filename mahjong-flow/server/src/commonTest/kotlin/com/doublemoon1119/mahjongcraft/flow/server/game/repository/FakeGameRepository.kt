@@ -5,6 +5,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryEventDraf
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.Game
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameFlowConfig
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
+import com.doublemoon1119.mahjongcraft.testing.flow.common.game.testMatchSeed
 import kotlinx.coroutines.currentCoroutineContext
 import kotlin.uuid.Uuid
 
@@ -52,7 +53,7 @@ class FakeGameRepository : GameRepository {
     override suspend fun setTableState(state: TableState) {
         expectedGameScopeFor(state.id)?.checkBeforeWrite(games[state.id])
         writeCount++
-        games[state.id] = games[state.id]?.copy(tableState = state) ?: Game(state, GameFlowConfig())
+        games[state.id] = games[state.id]?.copy(tableState = state) ?: Game(state, GameFlowConfig(), matchSeed = testMatchSeed(0))
     }
 
     /**
@@ -102,7 +103,7 @@ class FakeGameRepository : GameRepository {
         val (nextTableState, result) = block(current?.tableState)
         val nextGame = when {
             nextTableState == null -> null
-            current == null -> Game(nextTableState, GameFlowConfig())
+            current == null -> Game(nextTableState, GameFlowConfig(), matchSeed = testMatchSeed(0))
             else -> current.copy(tableState = nextTableState)
         }
         nextGame to result

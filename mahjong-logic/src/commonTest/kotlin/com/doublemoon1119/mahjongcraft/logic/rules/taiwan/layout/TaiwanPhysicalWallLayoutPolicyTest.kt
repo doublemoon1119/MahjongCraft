@@ -164,6 +164,61 @@ class TaiwanPhysicalWallLayoutPolicyTest {
     }
 
     /**
+     * 一般摸牌區只剩最後一張時補花，那張牌補入保留區後一般摸牌區就空了：同墩上層早已被摸走，只移入那一張，
+     * 不可因為沒有牌可以下降而拒絕補牌。
+     */
+    @Test
+    fun `replenishing the last live tile on an odd draw moves only that tile`() {
+        listOf(true, false).forEach { useFlowerTiles ->
+            openings().forEach { opening ->
+                val case = "$opening flowers=$useFlowerTiles"
+                var fixture = fixture(opening, useFlowerTiles)
+                while (fixture.tableState.tileWall.getAllTiles().size > 1) {
+                    val before = fixture.tableState
+                    val after = before.copy(tileWall = TileWall(before.tileWall.getAllTiles().drop(1)), physicalWallLayout = null)
+                    val layout = when (
+                        val result = fixture.policy.resolveTransitionValidated(
+                            context = PhysicalWallLayoutTransitionContext(
+                                tableStateBeforeAction = before,
+                                tableStateAfterAction = after,
+                                currentLayout = fixture.layout,
+                                actorPlayerId = before.currentPlayer.id,
+                                action = GameAction.Draw,
+                            ),
+                        )
+                    ) {
+                        is PhysicalWallLayoutTransitionDecision.Completed -> result.layout
+                        PhysicalWallLayoutTransitionDecision.Unchanged -> fixture.layout
+                        is PhysicalWallLayoutTransitionDecision.Rejected -> error("Live draw rejected for $case: ${result.reasonId}")
+                    }
+                    fixture = fixture.copy(tableState = after.copy(physicalWallLayout = layout), layout = layout)
+                }
+                val before = fixture.tableState
+                val lastLiveTile = before.tileWall.getAllTiles().single()
+                val after = withSupplementalDraw(before)
+
+                val decision = assertIs<PhysicalWallLayoutTransitionDecision.Completed>(
+                    value = fixture.policy.resolveTransitionValidated(
+                        context = PhysicalWallLayoutTransitionContext(
+                            tableStateBeforeAction = before,
+                            tableStateAfterAction = after,
+                            currentLayout = fixture.layout,
+                            actorPlayerId = before.currentPlayer.id,
+                            action = TAIWAN_REVEAL_FLOWER_ACTION,
+                        ),
+                    ),
+                    message = case,
+                )
+
+                assertTrue(after.tileWall.getAllTiles().isEmpty(), case)
+                assertEquals(listOf(lastLiveTile.id), decision.phases.flatMap { phase -> phase.moves.map { it.tileId } }, case)
+                assertEquals(16, after.reservedWallTiles.size, case)
+                assertNoOverlap(decision.layout, after.copy(physicalWallLayout = decision.layout), "last live tile at $case")
+            }
+        }
+    }
+
+    /**
      * 從保留區補一張牌，並在第一位玩家的花牌區多放一張牌，讓規則算出的補牌次數加一。
      *
      * @param state 補牌前的桌況。

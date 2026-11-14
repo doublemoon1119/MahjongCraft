@@ -4,6 +4,7 @@ import com.doublemoon1119.mahjongcraft.logic.table.opening.DiceRollResult
 import com.doublemoon1119.mahjongcraft.logic.table.opening.OpeningDiceRoll
 import com.doublemoon1119.mahjongcraft.logic.table.opening.RoundOpeningContext
 import com.doublemoon1119.mahjongcraft.logic.table.opening.RoundOpeningStep
+import kotlin.random.Random
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
@@ -68,7 +69,7 @@ class ExamplePairingRoundOpeningProcedureTest {
                             rolls = listOf(OpeningDiceRoll(0, players[0], DiceRollResult.of(listOf(firstDie, secondDie)))),
                         )
                         val complete = assertIs<RoundOpeningStep.Complete>(procedure.next(context))
-                        val tiles = ExamplePairingWallFactory(playerCount, (1..valueCount).toSet()).create().getAllTiles()
+                        val tiles = ExamplePairingWallFactory(playerCount, (1..valueCount).toSet()).create(Random(0)).getAllTiles()
                         ExamplePairingWallLayout(playerCount, valueCount).resolve(
                             shuffledTiles = tiles,
                             opening = checkNotNull(complete.result.wallOpening),

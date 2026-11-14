@@ -1,6 +1,8 @@
 package com.doublemoon1119.mahjongcraft.flow.server.game.simulation
 
 import com.doublemoon1119.mahjongcraft.ai.BuiltInAiStrategyKeys
+import com.doublemoon1119.mahjongcraft.ai.MahjongAiStrategyDefinition
+import com.doublemoon1119.mahjongcraft.ai.MahjongAiStrategyRegistryImpl
 import com.doublemoon1119.mahjongcraft.ai.RandomAiStrategy
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.PendingGameTransition
 import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
@@ -12,7 +14,10 @@ import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.logic.table.TileWall
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledCoreExtensionRegistries
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.registerBuiltInAiStrategies
+import com.doublemoon1119.mahjongcraft.testing.flow.common.game.testMatchSeed
+import com.doublemoon1119.mahjongcraft.testing.logic.table.testRoundRandomness
 import kotlinx.coroutines.test.runTest
+import kotlin.random.Random
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -64,14 +69,22 @@ class TaiwanFlowerWinSimulationTest {
      */
     private fun setUp(key: String): Pair<SimulationRuntime, TableState> {
         val runtime = SimulationRuntime(defaultStrategyKey = key)
-        runtime.aiStrategyRegistry.registerBuiltInAiStrategies(
-            moduleRegistry = runtime.moduleRegistry,
-            extensionActionRegistry = runtime.extensionActionRegistry,
-            opponentModelRegistry = runtime.opponentModelRegistry,
-        )
+        val source = MahjongAiStrategyRegistryImpl(defaultKey = key).apply {
+            registerBuiltInAiStrategies(
+                moduleRegistry = runtime.moduleRegistry,
+                extensionActionRegistry = runtime.extensionActionRegistry,
+                opponentModelRegistry = runtime.opponentModelRegistry,
+            )
+        }
+        // 隨機出牌策略改用固定種子，讓整場結果每次相同。
+        val seededRandom = RandomAiStrategy(runtime.extensionActionRegistry, Random(RANDOM_MOVE_SEED))
+        source.getAllStrategyKeys().forEach { strategyKey ->
+            val strategy = if (strategyKey == RandomAiStrategy.KEY) seededRandom else source.resolve(strategyKey)
+            runtime.aiStrategyRegistry.register(MahjongAiStrategyDefinition(strategyKey) { strategy })
+        }
         val module = runtime.moduleRegistry.getModule(TaiwanRuleConfig())
-        val dealt = GameInitializer.initialize(id = Uuid.random(), playerIds = List(4) { Uuid.random() }, module = module)
-            .initializeRuleComponents(module.id, bundledCoreExtensionRegistries().componentRegistry)
+        val dealt = GameInitializer.initialize(id = Uuid.random(), playerIds = List(4) { Uuid.random() }, module = module, randomness = testRoundRandomness())
+            .initializeRuleComponents(module.id, bundledCoreExtensionRegistries().componentRegistry, random = testRoundRandomness().components)
             .tableState
         return runtime to dealt
     }
@@ -89,7 +102,7 @@ class TaiwanFlowerWinSimulationTest {
         key: String,
         state: TableState,
     ): Map<Uuid, Int> {
-        runtime.start(state, state.players.associate { it.id to key })
+        runtime.start(state, state.players.associate { it.id to key }, testMatchSeed(1))
         runtime.driveLikeServer(state.id)
         val firstRound = runtime.gameRepository.rounds(state.id).first().final
         return firstRound.players.associate { player -> player.id to player.score - state.players.first { it.id == player.id }.score }
@@ -144,6 +157,9 @@ class TaiwanFlowerWinSimulationTest {
 
         /** 八仙過海需要的起手花牌張數。 */
         const val EIGHT = 8
+
+        /** 隨機出牌策略的固定種子。 */
+        const val RANDOM_MOVE_SEED = 1
 
         /** 受測的內建策略。 */
         val BUILT_IN_STRATEGIES = listOf(BuiltInAiStrategyKeys.BEGINNER, BuiltInAiStrategyKeys.INTERMEDIATE, BuiltInAiStrategyKeys.ADVANCED, RandomAiStrategy.KEY)

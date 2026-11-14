@@ -25,6 +25,8 @@ import kotlin.time.Duration
  * @property matchId 整場對局的穩定 UUID 字串。
  * @property aiPlayerStrategyKeys 以玩家 UUID 字串索引的 AI 策略 key，見 [Game.aiPlayerStrategyKeys]。
  * @property roomAdmission 開局前房間的加入限制及生命週期。
+ * @property matchSeed 對局種子的十六進位字串，見 [Game.matchSeed]；只存在伺服器存檔。
+ * @property openedRoundCount 已開過的局數，見 [Game.openedRoundCount]。
  */
 @Serializable
 data class GameRuntimeStatePersistenceDto(
@@ -44,4 +46,6 @@ data class GameRuntimeStatePersistenceDto(
     val matchId: String,
     val aiPlayerStrategyKeys: Map<String, String>,
     val roomAdmission: RoomAdmissionPersistenceDto,
+    val matchSeed: String,
+    val openedRoundCount: Int,
 )

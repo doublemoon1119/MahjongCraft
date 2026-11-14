@@ -7,6 +7,7 @@ import com.doublemoon1119.mahjongcraft.logic.tile.component.BuiltInTileComponent
 import com.doublemoon1119.mahjongcraft.logic.tile.component.TileFaceAccess
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
+import com.doublemoon1119.mahjongcraft.testing.logic.table.testRoundRandomness
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -45,7 +46,7 @@ class RuleComponentInitializationTest {
         val wall = original.tableState.tileWall.getAllTiles()
         val public = wall.first().copy(components = ComponentSet.EMPTY.with(BuiltInTileComponents.FACE_ACCESS, TileFaceAccess.Public))
         val input = original.copy(tableState = original.tableState.copy(tileWall = TileWall(listOf(public) + wall.drop(1))))
-        val initialized = input.initializeRuleComponents("test:rule", registry).tableState
+        val initialized = input.initializeRuleComponents("test:rule", registry, random = testRoundRandomness().components).tableState
         assertEquals(1, initialized.components[retained])
         assertEquals(2, initialized.components[reset])
         assertEquals(3, initialized.players.single().components[playerData])
@@ -59,7 +60,7 @@ class RuleComponentInitializationTest {
     @Test
     fun `round transition retains only explicitly retained values`() {
         val registry = registry()
-        val initial = candidate().initializeRuleComponents("test:rule", registry).tableState
+        val initial = candidate().initializeRuleComponents("test:rule", registry, random = testRoundRandomness().components).tableState
         val previous = initial.copy(
             components = initial.components.with(retained, 9).with(reset, 8),
             players = initial.players.map { it.copy(components = it.components.with(playerData, 7)) },
@@ -68,6 +69,7 @@ class RuleComponentInitializationTest {
             ruleModuleId = "test:rule",
             registry = registry,
             previousTableState = previous,
+            random = testRoundRandomness().components,
         ).tableState
         assertEquals(9, result.components[retained])
         assertEquals(2, result.components[reset])
@@ -79,10 +81,10 @@ class RuleComponentInitializationTest {
     @Test
     fun `round transition rejects missing required previous components`() {
         val registry = registry()
-        val previous = candidate().initializeRuleComponents("test:rule", registry).tableState
+        val previous = candidate().initializeRuleComponents("test:rule", registry, random = testRoundRandomness().components).tableState
         val missing = previous.copy(components = previous.components.without(retained))
         assertFailsWith<IllegalArgumentException> {
-            GameInitializationResult(previous, null, null).initializeRuleComponents("test:rule", registry, missing)
+            GameInitializationResult(previous, null, null).initializeRuleComponents("test:rule", registry, testRoundRandomness().components, missing)
         }
     }
 

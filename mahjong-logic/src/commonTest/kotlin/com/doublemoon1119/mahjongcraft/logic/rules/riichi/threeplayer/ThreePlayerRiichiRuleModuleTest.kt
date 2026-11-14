@@ -48,6 +48,7 @@ import com.doublemoon1119.mahjongcraft.testing.logic.rules.riichi.riichiDoraIndi
 import com.doublemoon1119.mahjongcraft.testing.logic.rules.riichi.riichiTableComponents
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
+import kotlin.random.Random
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -94,7 +95,7 @@ class ThreePlayerRiichiRuleModuleTest {
     /** 驗證牌山共 108 張，萬子只有一萬與九萬，赤牌為五筒與五條各一張。 */
     @Test
     fun `test wall has 108 tiles without middle characters`() {
-        val tiles = module.createWallFactory(module.config.maxPlayers).create().getAllTiles()
+        val tiles = module.createWallFactory(module.config.maxPlayers).create(Random(0)).getAllTiles()
 
         assertEquals(108, tiles.size)
         val characters = tiles.map { it.tile }.filterIsInstance<Tile.Numeric>().filter { it.suit == Tile.Suit.Character }
@@ -109,7 +110,7 @@ class ThreePlayerRiichiRuleModuleTest {
     /** 驗證不使用赤寶牌時牌山沒有赤牌。 */
     @Test
     fun `test wall without red dora has no red fives`() {
-        val tiles = ThreePlayerRiichiWallFactory(ThreePlayerRiichiRuleConfig(redDoraCount = 0)).create().getAllTiles()
+        val tiles = ThreePlayerRiichiWallFactory(ThreePlayerRiichiRuleConfig(redDoraCount = 0)).create(Random(0)).getAllTiles()
 
         assertTrue(tiles.none { it.components[RiichiTileComponents.RED_DORA] != null })
     }

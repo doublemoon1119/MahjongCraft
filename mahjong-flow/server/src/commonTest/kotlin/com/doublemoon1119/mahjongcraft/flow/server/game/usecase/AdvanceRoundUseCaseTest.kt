@@ -5,6 +5,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.BuiltInRoundOutcom
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.Game
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameError
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameFlowConfig
+import com.doublemoon1119.mahjongcraft.flow.common.game.random.MatchSeed
 import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
 import com.doublemoon1119.mahjongcraft.flow.server.game.policy.GameVisibilityPolicyImpl
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.FakeGameRepository
@@ -17,6 +18,7 @@ import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RIICHI_STICK_POINTS
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiExhaustiveDrawReason
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiGameLength
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiWallFactory
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.riichiPotPoints
 import com.doublemoon1119.mahjongcraft.logic.table.RoundCompletionClassification
 import com.doublemoon1119.mahjongcraft.logic.table.RoundCompletionSummary
@@ -29,6 +31,7 @@ import com.doublemoon1119.mahjongcraft.testing.flow.bundled.registerBundledRuleM
 import com.doublemoon1119.mahjongcraft.testing.flow.common.game.repository.FakeGameSnapshotRepository
 import com.doublemoon1119.mahjongcraft.testing.flow.common.game.service.FakeGameEventPublisher
 import com.doublemoon1119.mahjongcraft.testing.flow.common.game.service.FakeGamePresentationPublisher
+import com.doublemoon1119.mahjongcraft.testing.flow.common.game.testMatchSeed
 import com.doublemoon1119.mahjongcraft.testing.flow.server.noRuleDecisionBeginUseCase
 import com.doublemoon1119.mahjongcraft.testing.logic.rules.riichi.riichiTableComponents
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
@@ -134,6 +137,7 @@ class AdvanceRoundUseCaseTest {
                         ?: tableState.players.associate { it.id to GameFlowConfig().timeControl.reserve },
                     enabledAutomaticControlIdsByPlayerId = enabledAutomaticControlIdsByPlayerId,
                     roundCompletion = completion,
+                    matchSeed = testMatchSeed(0),
                 ),
             )
         }
@@ -252,6 +256,36 @@ class AdvanceRoundUseCaseTest {
             actual = newState.dealerPlayerId,
             message = "P2 (South) should become the new dealer.",
         )
+    }
+
+    /**
+     * 驗證下一局的牌山由對局種子與目前已開局數衍生，換局後已開局數加一，讓之後每一局都使用不同的亂數。
+     */
+    @Test
+    fun `test advance round deals the next round from the match seed`() = runTest {
+        val fixtures = Fixtures()
+        val config = RiichiRuleConfig(gameLength = RiichiGameLength.East)
+        val winner = FakeMahjongPlayerFactory.create(Wind.SOUTH).copy(actionHistory = listOf(GameAction.Ron(Uuid.random())))
+        val table = FakeTableStateFactory.create(
+            id = gameId,
+            players = listOf(FakeMahjongPlayerFactory.create(Wind.EAST), winner, FakeMahjongPlayerFactory.create(Wind.WEST), FakeMahjongPlayerFactory.create(Wind.NORTH)),
+            config = config,
+            roundNumber = 1,
+            prevalentWind = Wind.EAST,
+        )
+        fixtures.setCompletedState(table)
+        val seed = MatchSeed.fromByteArray(ByteArray(MatchSeed.SIZE_BYTES) { 9 })
+        fixtures.gameRepo.setGame(checkNotNull(fixtures.gameRepo.getGame(gameId)).copy(matchSeed = seed, openedRoundCount = 3))
+
+        val result = fixtures.useCase(gameId)
+
+        assertTrue(result is Outcome.Success, "Expected Success but got $result")
+        val newState = result.value.tableState
+        val dealtTileIds = (newState.tileWall.getAllTiles() + newState.reservedWallTiles + newState.players.flatMap { it.hand.allTiles }).map { it.id }.toSet()
+        val expectedTileIds = RiichiWallFactory(config).create(seed.roundRandomness(roundOrdinal = 3).wall).getAllTiles().map { it.id }.toSet()
+        assertEquals(expectedTileIds, dealtTileIds)
+        assertEquals(4, fixtures.gameRepo.getGame(gameId)?.openedRoundCount)
+        assertEquals(seed, fixtures.gameRepo.getGame(gameId)?.matchSeed)
     }
 
     /**
