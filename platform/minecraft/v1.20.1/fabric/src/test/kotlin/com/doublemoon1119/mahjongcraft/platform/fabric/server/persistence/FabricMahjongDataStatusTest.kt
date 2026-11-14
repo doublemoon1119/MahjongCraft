@@ -41,7 +41,7 @@ class FabricMahjongDataStatusTest {
     @Test
     fun `messages list each problem with its file and cause`() {
         val messages = dataProblemMessages(
-            listOf(
+            problems = listOf(
                 MahjongDataProblem(
                     source = MahjongDataSource.AUTHORITATIVE_STATE,
                     file = "data/state.dat",
@@ -91,8 +91,8 @@ class FabricMahjongDataStatusTest {
 
         val causes = typeKeys.map { typeKey ->
             dataProblemMessages(
-                listOf(
-                    MahjongDataProblem(
+                problems = listOf(
+                    element = MahjongDataProblem(
                         source = MahjongDataSource.HISTORY_DATABASE,
                         file = "history.sqlite",
                         cause = MahjongDataLoadCause.MissingExtension(typeKey),

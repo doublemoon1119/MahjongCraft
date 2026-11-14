@@ -52,20 +52,20 @@ class FabricDebugAnimationCommandTest {
 
         assertEquals(FabricDebugAnimationCommand.MELD_SUBCOMMAND, meld.name)
         assertEquals(
-            setOf(
+            expected = setOf(
                 FabricDebugAnimationCommand.CHI_ARGUMENT,
                 FabricDebugAnimationCommand.PON_ARGUMENT,
                 FabricDebugAnimationCommand.KAN_ARGUMENT,
                 FabricDebugAnimationCommand.ADDED_KAN_ARGUMENT,
             ),
-            meld.children.map(CommandNode<ServerCommandSource>::getName).toSet(),
+            actual = meld.children.map(CommandNode<ServerCommandSource>::getName).toSet(),
         )
         meld.children.forEach { claim ->
             assertNotNull(claim.command, "${claim.name} runs without a tile argument")
             assertEquals(
-                setOf(DebugTilePreviewSupport.TILE_ARGUMENT),
-                claim.children.map(CommandNode<ServerCommandSource>::getName).toSet(),
-                "${claim.name} exposes exactly one tile argument",
+                expected = setOf(DebugTilePreviewSupport.TILE_ARGUMENT),
+                actual = claim.children.map(CommandNode<ServerCommandSource>::getName).toSet(),
+                message = "${claim.name} exposes exactly one tile argument",
             )
         }
     }
@@ -91,9 +91,9 @@ class FabricDebugAnimationCommandTest {
         assertEquals(name, node.name)
         assertNotNull(node.command, "$name runs without a tile argument")
         assertEquals(
-            setOf(DebugTilePreviewSupport.TILE_ARGUMENT),
-            node.children.map(CommandNode<ServerCommandSource>::getName).toSet(),
-            "$name exposes exactly one tile argument",
+            expected = setOf(DebugTilePreviewSupport.TILE_ARGUMENT),
+            actual = node.children.map(CommandNode<ServerCommandSource>::getName).toSet(),
+            message = "$name exposes exactly one tile argument",
         )
     }
 }

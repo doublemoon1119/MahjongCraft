@@ -79,7 +79,7 @@ class MahjongClientConfigStoreTest {
         Files.writeString(path, invalid)
 
         assertIs<MahjongClientConfigUpdateResult.Failure>(
-            store.save(previous.copy(tileLabelsEnabled = !previous.tileLabelsEnabled)),
+            value = store.save(previous.copy(tileLabelsEnabled = !previous.tileLabelsEnabled)),
         )
 
         assertEquals(invalid, Files.readString(path))
@@ -97,7 +97,7 @@ class MahjongClientConfigStoreTest {
         Files.writeString(path, missingField)
 
         val result = assertIs<MahjongClientConfigUpdateResult.Failure>(
-            store.save(store.current.copy(tileLabelsEnabled = true)),
+            value = store.save(store.current.copy(tileLabelsEnabled = true)),
         )
 
         assertTrue(result.message.contains("tile-labels-enabled"))

@@ -71,8 +71,8 @@ class DebugAutoNorthRiichiRuleModuleTest {
 
         assertEquals(Tile.Honor.North, north.tile)
         assertEquals(
-            DrawFollowUpDecision.EndRound(RiichiExhaustiveDrawReason.Normal),
-            state.copy(tileWall = TileWall(emptyList()), physicalWallLayout = null).followUpAfterDrawing(north),
+            expected = DrawFollowUpDecision.EndRound(RiichiExhaustiveDrawReason.Normal),
+            actual = state.copy(tileWall = TileWall(emptyList()), physicalWallLayout = null).followUpAfterDrawing(north),
         )
     }
 
@@ -83,7 +83,7 @@ class DebugAutoNorthRiichiRuleModuleTest {
         val actorId = state.currentPlayer.id
 
         val scoring = assertNotNull(
-            DebugAutoNorthActionScoringPolicy.resolve(state.scoringContext(actorId, RIICHI_PULL_NORTH_GAME_ACTION, sourcePlayerId = null)),
+            actual = DebugAutoNorthActionScoringPolicy.resolve(state.scoringContext(actorId, RIICHI_PULL_NORTH_GAME_ACTION, sourcePlayerId = null)),
         )
         assertEquals(mapOf(actorId to -1000), scoring.scoreDeltas)
         assertEquals(1000, scoring.potDeposit)
@@ -100,9 +100,9 @@ class DebugAutoNorthRiichiRuleModuleTest {
         val kanTileId = state.currentPlayer.hand.tiles.first().id
 
         assertEquals(
-            mapOf(downstreamId to -1000, actorId to 1000),
-            DebugAutoNorthActionScoringPolicy.resolve(
-                state.scoringContext(actorId, GameAction.Kan(GameAction.KanType.OPEN_KAN, kanTileId, emptyList()), sourcePlayerId = downstreamId),
+            expected = mapOf(downstreamId to -1000, actorId to 1000),
+            actual = DebugAutoNorthActionScoringPolicy.resolve(
+                context = state.scoringContext(actorId, GameAction.Kan(GameAction.KanType.OPEN_KAN, kanTileId, emptyList()), sourcePlayerId = downstreamId),
             )?.scoreDeltas,
         )
         listOf(GameAction.KanType.CLOSED_KAN, GameAction.KanType.ADDED_KAN).forEach { type ->
@@ -162,7 +162,7 @@ class DebugAutoNorthRiichiRuleModuleTest {
         )
         val module = DebugAutoNorthRiichiRuleModule(DebugAutoNorthRiichiRuleModule.ID, config as DebugAutoNorthRiichiRuleConfig)
         return module.createDrawFollowUpPolicy().resolve(
-            DrawFollowUpContext(
+            context = DrawFollowUpContext(
                 tableState = drawnState,
                 playerId = player.id,
                 drawnTile = drawnTile,

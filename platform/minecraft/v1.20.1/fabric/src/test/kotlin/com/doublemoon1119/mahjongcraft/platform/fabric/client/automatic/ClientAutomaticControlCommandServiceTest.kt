@@ -28,8 +28,8 @@ class ClientAutomaticControlCommandServiceTest {
         fixture.coordinator.applySnapshot(snapshot(supported = setOf("test:auto_win", "test:no_calls")))
 
         assertEquals(
-            setOf(BuiltInMinecraftAutomaticControlIds.AUTO_SORT_HAND, "test:auto_win", "test:no_calls"),
-            fixture.service.availableControlIds(),
+            expected = setOf(BuiltInMinecraftAutomaticControlIds.AUTO_SORT_HAND, "test:auto_win", "test:no_calls"),
+            actual = fixture.service.availableControlIds(),
         )
     }
 
@@ -37,7 +37,7 @@ class ClientAutomaticControlCommandServiceTest {
     @Test
     fun `round control update preserves every other confirmed control`() = withFixture { fixture ->
         fixture.coordinator.applySnapshot(
-            snapshot(
+            snapshot = snapshot(
                 revision = 4L,
                 supported = setOf("test:auto_win", "test:no_calls", "test:auto_discard"),
                 enabled = setOf("test:auto_win", "test:auto_discard"),
@@ -45,14 +45,14 @@ class ClientAutomaticControlCommandServiceTest {
         )
 
         val submitted = assertIs<ClientAutomaticControlCommandResult.Submitted>(
-            fixture.service.execute("test:no_calls", AutomaticControlCommandMode.ON),
+            value = fixture.service.execute("test:no_calls", AutomaticControlCommandMode.ON),
         )
 
         assertTrue(submitted.enabled)
         assertFalse(submitted.previousEnabled)
         assertEquals(
-            setOf("test:auto_win", "test:no_calls", "test:auto_discard"),
-            fixture.roundSender.requests.single().enabledControlIds,
+            expected = setOf("test:auto_win", "test:no_calls", "test:auto_discard"),
+            actual = fixture.roundSender.requests.single().enabledControlIds,
         )
     }
 
@@ -60,17 +60,17 @@ class ClientAutomaticControlCommandServiceTest {
     @Test
     fun `off and toggle use confirmed state without optimistic mutation`() = withFixture { fixture ->
         fixture.coordinator.applySnapshot(
-            snapshot(
+            snapshot = snapshot(
                 supported = setOf("test:auto_win", "test:no_calls"),
                 enabled = setOf("test:auto_win", "test:no_calls"),
             ),
         )
 
         assertIs<ClientAutomaticControlCommandResult.Unchanged>(
-            fixture.service.execute("test:auto_win", AutomaticControlCommandMode.ON),
+            value = fixture.service.execute("test:auto_win", AutomaticControlCommandMode.ON),
         )
         val submitted = assertIs<ClientAutomaticControlCommandResult.Submitted>(
-            fixture.service.execute("test:no_calls", AutomaticControlCommandMode.TOGGLE),
+            value = fixture.service.execute("test:no_calls", AutomaticControlCommandMode.TOGGLE),
         )
 
         assertFalse(submitted.enabled)
@@ -83,17 +83,17 @@ class ClientAutomaticControlCommandServiceTest {
     @Test
     fun `round control reports unavailable unsupported pending and send failure`() = withFixture { fixture ->
         assertIs<ClientAutomaticControlCommandResult.Unavailable>(
-            fixture.service.execute("test:auto_win", AutomaticControlCommandMode.ON),
+            value = fixture.service.execute("test:auto_win", AutomaticControlCommandMode.ON),
         )
         fixture.coordinator.applySnapshot(snapshot(supported = setOf("test:auto_win")))
         assertIs<ClientAutomaticControlCommandResult.Unsupported>(
-            fixture.service.execute("test:unknown", AutomaticControlCommandMode.ON),
+            value = fixture.service.execute("test:unknown", AutomaticControlCommandMode.ON),
         )
         assertIs<ClientAutomaticControlCommandResult.Submitted>(
-            fixture.service.execute("test:auto_win", AutomaticControlCommandMode.ON),
+            value = fixture.service.execute("test:auto_win", AutomaticControlCommandMode.ON),
         )
         assertIs<ClientAutomaticControlCommandResult.Pending>(
-            fixture.service.execute("test:auto_win", AutomaticControlCommandMode.ON),
+            value = fixture.service.execute("test:auto_win", AutomaticControlCommandMode.ON),
         )
     }
 
@@ -105,7 +105,7 @@ class ClientAutomaticControlCommandServiceTest {
         fixture.coordinator.applySnapshot(snapshot(supported = setOf("test:auto_win")))
 
         assertIs<ClientAutomaticControlCommandResult.RoundControlSendFailed>(
-            fixture.service.execute("test:auto_win", AutomaticControlCommandMode.ON),
+            value = fixture.service.execute("test:auto_win", AutomaticControlCommandMode.ON),
         )
 
         assertNull(fixture.coordinator.pendingRequest())
@@ -116,7 +116,7 @@ class ClientAutomaticControlCommandServiceTest {
     fun `completion is request scoped and exposes authoritative final state`() = withFixture { fixture ->
         fixture.coordinator.applySnapshot(snapshot(supported = setOf("test:auto_win")))
         val submitted = assertIs<ClientAutomaticControlCommandResult.Submitted>(
-            fixture.service.execute("test:auto_win", AutomaticControlCommandMode.ON),
+            value = fixture.service.execute("test:auto_win", AutomaticControlCommandMode.ON),
         )
         val acceptedSnapshot = snapshot(
             gameId = fixture.coordinator.snapshot()!!.gameId,
@@ -125,7 +125,7 @@ class ClientAutomaticControlCommandServiceTest {
             enabled = setOf("test:auto_win"),
         )
         fixture.coordinator.applyResult(
-            AutomaticControlUpdateResultDto(
+            result = AutomaticControlUpdateResultDto(
                 requestId = submitted.requestId,
                 gameId = acceptedSnapshot.gameId,
                 result = AutomaticControlUpdateResultKindDto.ACCEPTED,
@@ -146,7 +146,7 @@ class ClientAutomaticControlCommandServiceTest {
         val controlId = BuiltInMinecraftAutomaticControlIds.AUTO_SORT_HAND
 
         val updated = assertIs<ClientAutomaticControlCommandResult.Updated>(
-            fixture.service.execute(controlId, AutomaticControlCommandMode.OFF),
+            value = fixture.service.execute(controlId, AutomaticControlCommandMode.OFF),
         )
 
         assertFalse(updated.enabled)

@@ -84,7 +84,7 @@ internal class HistoryBrowseSession(
     val archiveStatusController = HistoryArchiveStatusController(archiveStatus, scope, requestGate = requestGate)
 
     /** 列表、摘要、規則設定與單局內容共用的權威查詢結果。 */
-    val controller = HistoryBrowseController(transport, scope, json = NetworkJson(networkRegistries), requestGate = requestGate, beforeDetailQuery = {
+    val controller = HistoryBrowseController(transport = transport, parentScope = scope, json = NetworkJson(networkRegistries), requestGate = requestGate, beforeDetailQuery = {
         archiveMonitoringPaused = true
         archiveStatusController.pause()
     })

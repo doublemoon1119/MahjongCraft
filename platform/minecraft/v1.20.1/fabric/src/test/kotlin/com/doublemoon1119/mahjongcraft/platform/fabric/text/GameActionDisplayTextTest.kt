@@ -57,13 +57,13 @@ class GameActionDisplayTextTest {
     @Test
     fun `tsumo action does not require a reference tile`() {
         val content = GameAction.Tsumo.toDisplayText(
-            null,
-            ruleModuleId,
-            actionVocabulary,
-            displayNameRegistry,
-            assetRegistry,
-            emojiRegistry,
-            exhaustiveDrawReasonDisplayNameRegistry,
+            referenceTile = null,
+            ruleModuleId = ruleModuleId,
+            actionVocabularyRegistry = actionVocabulary,
+            displayNameRegistry = displayNameRegistry,
+            tileAssetRegistry = assetRegistry,
+            tileEmojiRegistry = emojiRegistry,
+            exhaustiveDrawReasonDisplayNameRegistry = exhaustiveDrawReasonDisplayNameRegistry,
         ).content as TranslatableTextContent
         assertEquals("mahjongcraft.riichi.action.tsumo.message", content.key)
     }

@@ -115,12 +115,12 @@ class MahjongClientConfigScreenController(
     private fun open(client: MinecraftClient, parent: Screen?) {
         client.setScreen(
             MahjongClientConfigScreen(
-                parent,
-                configStore,
-                automaticCoordinator,
-                displayResolver,
-                preferenceService,
-                hudPreviewRenderer,
+                parent = parent,
+                configStore = configStore,
+                automaticCoordinator = automaticCoordinator,
+                displayResolver = displayResolver,
+                preferenceService = preferenceService,
+                hudPreviewRenderer = hudPreviewRenderer,
             ),
         )
     }

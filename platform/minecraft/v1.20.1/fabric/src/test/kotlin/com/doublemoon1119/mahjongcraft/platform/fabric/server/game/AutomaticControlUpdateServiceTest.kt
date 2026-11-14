@@ -61,7 +61,7 @@ class AutomaticControlUpdateServiceTest {
     @Test
     fun `test rejected non member result does not expose snapshot`() {
         val dto = UpdatePlayerAutomaticControlsResult.Rejected(
-            AutomaticControlUpdateRejection.PLAYER_NOT_IN_GAME,
+            reason = AutomaticControlUpdateRejection.PLAYER_NOT_IN_GAME,
         ).toDto(request)
 
         assertEquals(AutomaticControlUpdateResultKindDto.REJECTED, dto.result)
@@ -72,7 +72,7 @@ class AutomaticControlUpdateServiceTest {
     @Test
     fun `test unavailable result does not contain snapshot`() {
         val dto = UpdatePlayerAutomaticControlsResult.Unavailable(
-            AutomaticControlUpdateUnavailableReason.GAME_NOT_FOUND,
+            reason = AutomaticControlUpdateUnavailableReason.GAME_NOT_FOUND,
         ).toDto(request)
 
         assertEquals(AutomaticControlUpdateResultKindDto.UNAVAILABLE, dto.result)

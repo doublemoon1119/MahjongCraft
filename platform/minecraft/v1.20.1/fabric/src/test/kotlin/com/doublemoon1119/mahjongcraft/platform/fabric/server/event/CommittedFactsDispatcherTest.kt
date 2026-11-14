@@ -100,7 +100,7 @@ class CommittedFactsDispatcherTest {
         val ownerThread = Thread.currentThread()
         var lastEndedContext: GameEventContext? = null
         subscriptions.matchStarted.register(
-            MatchStartedListener { _, context ->
+            listener = MatchStartedListener { _, context ->
                 received += "started"
                 callbackThread = Thread.currentThread()
                 observedContext = context
@@ -109,7 +109,7 @@ class CommittedFactsDispatcherTest {
         )
         subscriptions.roundSettled.register(RoundSettledListener { _, _ -> received += "settled" })
         subscriptions.matchEnded.register(
-            MatchEndedListener { _, context ->
+            listener = MatchEndedListener { _, context ->
                 received += "ended"
                 lastEndedContext = context
             },
@@ -136,9 +136,9 @@ class CommittedFactsDispatcherTest {
                     gameId = oldGame.id,
                     history = { _, _, _ ->
                         listOf(
-                            HistoryEventDraft(
-                                null,
-                                HistoryFact.MatchStarted(oldGame.tableState, oldGame.flowConfig, oldGame.aiPlayerStrategyKeys),
+                            element = HistoryEventDraft(
+                                actorPlayerId = null,
+                                fact = HistoryFact.MatchStarted(oldGame.tableState, oldGame.flowConfig, oldGame.aiPlayerStrategyKeys),
                             ),
                         )
                     },
@@ -149,11 +149,11 @@ class CommittedFactsDispatcherTest {
                     gameId = oldGame.id,
                     history = { _, _, _ ->
                         listOf(
-                            HistoryEventDraft(
-                                null,
-                                HistoryFact.WinSettled(
-                                    BuiltInRoundOutcomeIds.TSUMO,
-                                    listOf(HistoryWinDetails(oldGame.tableState.players.first().id, emptyList())),
+                            element = HistoryEventDraft(
+                                actorPlayerId = null,
+                                fact = HistoryFact.WinSettled(
+                                    outcomeId = BuiltInRoundOutcomeIds.TSUMO,
+                                    winDetails = listOf(HistoryWinDetails(oldGame.tableState.players.first().id, emptyList())),
                                 ),
                             ),
                         )
@@ -172,9 +172,9 @@ class CommittedFactsDispatcherTest {
                     gameId = activeGame.id,
                     history = { _, _, _ ->
                         listOf(
-                            HistoryEventDraft(
-                                null,
-                                HistoryFact.MatchStarted(activeGame.tableState, activeGame.flowConfig, activeGame.aiPlayerStrategyKeys),
+                            element = HistoryEventDraft(
+                                actorPlayerId = null,
+                                fact = HistoryFact.MatchStarted(activeGame.tableState, activeGame.flowConfig, activeGame.aiPlayerStrategyKeys),
                             ),
                         )
                     },
@@ -186,15 +186,15 @@ class CommittedFactsDispatcherTest {
                     history = { _, _, _ ->
                         listOf(
                             HistoryEventDraft(
-                                null,
-                                HistoryFact.WinSettled(
+                                actorPlayerId = null,
+                                fact = HistoryFact.WinSettled(
                                     outcomeId = BuiltInRoundOutcomeIds.TSUMO,
                                     winDetails = listOf(HistoryWinDetails(activeGame.tableState.players.first().id, emptyList())),
                                 ),
                             ),
                             HistoryEventDraft(
-                                null,
-                                HistoryFact.MatchCompleted("mahjongcraft:completed", emptyMap()),
+                                actorPlayerId = null,
+                                fact = HistoryFact.MatchCompleted("mahjongcraft:completed", emptyMap()),
                             ),
                         )
                     },
@@ -217,8 +217,8 @@ class CommittedFactsDispatcherTest {
             val winnerGrants = gateway.granted.filter { it.playerId == activeGame.tableState.players.first().id }
             assertEquals(1, winnerGrants.size)
             assertTrue(
-                winnerGrants.single().achievementIds.containsAll(
-                    setOf(
+                actual = winnerGrants.single().achievementIds.containsAll(
+                    elements = setOf(
                         BuiltInAchievementIds.WIN,
                         BuiltInAchievementIds.SELF_DRAW_WIN,
                         BuiltInAchievementIds.FIRST_PLACE,
@@ -233,9 +233,9 @@ class CommittedFactsDispatcherTest {
                 gameId = abortedGame.id,
                 history = { _, _, _ ->
                     listOf(
-                        HistoryEventDraft(
-                            null,
-                            HistoryFact.MatchStarted(abortedGame.tableState, abortedGame.flowConfig, emptyMap()),
+                        element = HistoryEventDraft(
+                            actorPlayerId = null,
+                            fact = HistoryFact.MatchStarted(abortedGame.tableState, abortedGame.flowConfig, emptyMap()),
                         ),
                     )
                 },
@@ -271,9 +271,9 @@ class CommittedFactsDispatcherTest {
                     gameId = activeGame.id,
                     history = { _, _, _ ->
                         listOf(
-                            HistoryEventDraft(
-                                null,
-                                HistoryFact.WinSettled(
+                            element = HistoryEventDraft(
+                                actorPlayerId = null,
+                                fact = HistoryFact.WinSettled(
                                     outcomeId = BuiltInRoundOutcomeIds.TSUMO,
                                     winDetails = listOf(HistoryWinDetails(activeGame.tableState.players.first().id, emptyList())),
                                 ),

@@ -46,13 +46,13 @@ class FabricMahjongTileSelectionConfirmPresenter(
         val spawned = mutableListOf<MahjongTileSelectionConfirmEntity>()
         repeat(MahjongTileTableLayout.TILE_SELECTION_CONFIRM_SEGMENT_COUNT) { segmentIndex ->
             val placement = MahjongTileTableLayout.tileSelectionConfirmPlacement(
-                controllerPos.x,
-                controllerPos.y,
-                controllerPos.z,
-                presentation.tableFacing,
-                presentation.seatLayout,
-                presentation.seatIndex,
-                segmentIndex,
+                controllerX = controllerPos.x,
+                controllerY = controllerPos.y,
+                controllerZ = controllerPos.z,
+                tableFacing = presentation.tableFacing,
+                seatLayout = presentation.seatLayout,
+                seatIndex = presentation.seatIndex,
+                segmentIndex = segmentIndex,
             )
             val panel = MahjongTileSelectionConfirmEntity(world = world).apply {
                 assignToHolder(

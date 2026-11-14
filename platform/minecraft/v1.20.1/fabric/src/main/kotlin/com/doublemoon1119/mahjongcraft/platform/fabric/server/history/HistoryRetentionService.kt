@@ -42,10 +42,10 @@ internal class HistoryRetentionService(
      * @return 以當前保護名單評估的清理計畫。
      */
     suspend fun preview(database: SqliteHistoryDatabase, policy: HistoryRetentionPolicy): HistoryCleanupPlan = evaluateHistoryCleanup(
-        database.readRetentionCandidates(),
-        protectedMatchIds(),
-        policy,
-        clock.now(),
+        candidates = database.readRetentionCandidates(),
+        protectedMatchIds = protectedMatchIds(),
+        policy = policy,
+        now = clock.now(),
     )
 
     /**

@@ -90,9 +90,9 @@ class FabricWinSettlementPresentationScheduler(
                         }
                         is WinSettlementDetailValue.TileFaces -> WinSettlementDetailSnapshot(field.id, WinSettlementPresentationEntity.DETAIL_TILES, value.faces.map { it.toAssetKey(tileAssetRegistry) })
                         is WinSettlementDetailValue.Entries -> WinSettlementDetailSnapshot(
-                            field.id,
-                            WinSettlementPresentationEntity.DETAIL_ENTRIES,
-                            formatter.entries(value.entries).entries.flatMap(::entrySnapshotValues),
+                            id = field.id,
+                            type = WinSettlementPresentationEntity.DETAIL_ENTRIES,
+                            values = formatter.entries(value.entries).entries.flatMap(::entrySnapshotValues),
                         )
                     }
                 },
@@ -115,10 +115,10 @@ class FabricWinSettlementPresentationScheduler(
         val reveal = template?.reveal ?: WinSettlementRevealSequence()
         val scoreRevealDelayTicks = WinSettlementPresentationEntity.scoreRevealDelayTicks(template?.root)
         val timing = WinSettlementRevealTimingSnapshot(
-            reveal.initialFadeTicks,
-            reveal.entryStaggerTicks,
-            reveal.scoreRevealTicks,
-            reveal.readingTicks,
+            initialFadeTicks = reveal.initialFadeTicks,
+            entryStaggerTicks = reveal.entryStaggerTicks,
+            scoreRevealTicks = reveal.scoreRevealTicks,
+            readingTicks = reveal.readingTicks,
         )
         val soundCues = buildSoundCues(winners, reveal, timing, scoreRevealDelayTicks)
         val stage = WinSettlementPresentationEntity(world = world).apply {
@@ -191,22 +191,22 @@ class FabricWinSettlementPresentationScheduler(
                 reveal.entrySoundId?.let { soundId ->
                     repeat(entries) { entryIndex ->
                         add(
-                            WinSettlementSoundCueSnapshot(
-                                winnerStart + timing.initialFadeTicks + entryIndex.toLong() * timing.entryStaggerTicks,
-                                soundId,
-                                reveal.soundVolume,
-                                reveal.soundPitch + entryIndex * 0.04f,
+                            element = WinSettlementSoundCueSnapshot(
+                                eventTick = winnerStart + timing.initialFadeTicks + entryIndex.toLong() * timing.entryStaggerTicks,
+                                soundId = soundId,
+                                volume = reveal.soundVolume,
+                                pitch = reveal.soundPitch + entryIndex * 0.04f,
                             ),
                         )
                     }
                 }
                 reveal.scoreSoundId?.let { soundId ->
                     add(
-                        WinSettlementSoundCueSnapshot(
-                            winnerStart + timing.initialFadeTicks + entries.toLong() * timing.entryStaggerTicks,
-                            soundId,
-                            reveal.soundVolume,
-                            reveal.soundPitch,
+                        element = WinSettlementSoundCueSnapshot(
+                            eventTick = winnerStart + timing.initialFadeTicks + entries.toLong() * timing.entryStaggerTicks,
+                            soundId = soundId,
+                            volume = reveal.soundVolume,
+                            pitch = reveal.soundPitch,
                         ),
                     )
                 }

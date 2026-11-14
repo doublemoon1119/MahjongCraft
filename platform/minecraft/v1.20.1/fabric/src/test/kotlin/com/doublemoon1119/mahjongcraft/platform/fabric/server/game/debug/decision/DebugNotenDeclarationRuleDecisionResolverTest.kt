@@ -29,8 +29,8 @@ class DebugNotenDeclarationRuleDecisionResolverTest {
 
     /** 對應的規則模組。 */
     private val module = DebugNotenDeclarationRiichiRuleModule(
-        DebugNotenDeclarationRiichiRuleModule.ID,
-        DebugNotenDeclarationRiichiRuleConfig(RiichiRuleConfig()),
+        id = DebugNotenDeclarationRiichiRuleModule.ID,
+        config = DebugNotenDeclarationRiichiRuleConfig(RiichiRuleConfig()),
     )
 
     /** 一般流局結算前只詢問沒有立直的聽牌玩家；已立直與不聽的玩家不參與。 */
@@ -43,10 +43,10 @@ class DebugNotenDeclarationRuleDecisionResolverTest {
         assertEquals(DebugNotenDeclarationRuleDecisionResolver.NOTEN_DECLARATION_STEP, step.stepId)
         assertEquals(setOf(state.players[0].id), step.inputSpecsByPlayerId.keys)
         assertEquals(
-            RuleDecisionInputSpec.SingleChoice(
-                listOf(DebugNotenDeclarationRuleDecisionResolver.REVEAL_TENPAI_OPTION, DebugNotenDeclarationRuleDecisionResolver.DECLARE_NOTEN_OPTION),
+            expected = RuleDecisionInputSpec.SingleChoice(
+                optionIds = listOf(DebugNotenDeclarationRuleDecisionResolver.REVEAL_TENPAI_OPTION, DebugNotenDeclarationRuleDecisionResolver.DECLARE_NOTEN_OPTION),
             ),
-            step.inputSpecsByPlayerId.getValue(state.players[0].id),
+            actual = step.inputSpecsByPlayerId.getValue(state.players[0].id),
         )
     }
 
@@ -89,8 +89,8 @@ class DebugNotenDeclarationRuleDecisionResolverTest {
         val resolved = resolver.resolve(withSecondTenpai, complete, module)
 
         assertEquals(
-            RuleDecisionSubmission.Choice(DebugNotenDeclarationRuleDecisionResolver.REVEAL_TENPAI_OPTION),
-            complete.submissionsByPlayerId.getValue(revealing.id),
+            expected = RuleDecisionSubmission.Choice(DebugNotenDeclarationRuleDecisionResolver.REVEAL_TENPAI_OPTION),
+            actual = complete.submissionsByPlayerId.getValue(revealing.id),
         )
         assertNull(resolved.nextStep)
         val declare = GameAction.Extension(DebugDeclareNotenAction)
@@ -128,7 +128,7 @@ class DebugNotenDeclarationRuleDecisionResolverTest {
      * @return 不聽的手牌。
      */
     private fun notenHand(): Hand = hand(
-        listOf(Tile.Suit.Character, Tile.Suit.Dot, Tile.Suit.Bamboo).flatMap { suit -> listOf(1, 4, 7).map { Tile.Numeric(suit, it) } } +
+        tiles = listOf(Tile.Suit.Character, Tile.Suit.Dot, Tile.Suit.Bamboo).flatMap { suit -> listOf(1, 4, 7).map { Tile.Numeric(suit, it) } } +
             listOf(Tile.Honor.East, Tile.Honor.South, Tile.Honor.West, Tile.Honor.North),
     )
 

@@ -39,10 +39,10 @@ class HandTileTargetingTest {
         val end = Vec3d(5.0, 0.5, 0.0)
 
         assertNull(
-            findNearestHandTileTarget(
-                start,
-                end,
-                listOf("far" to Box(3.0, 0.0, -0.5, 4.0, 1.0, 0.5)),
+            actual = findNearestHandTileTarget(
+                start = start,
+                end = end,
+                candidates = listOf("far" to Box(3.0, 0.0, -0.5, 4.0, 1.0, 0.5)),
                 maximumDistanceSquared = 2.0 * 2.0,
             ),
         )

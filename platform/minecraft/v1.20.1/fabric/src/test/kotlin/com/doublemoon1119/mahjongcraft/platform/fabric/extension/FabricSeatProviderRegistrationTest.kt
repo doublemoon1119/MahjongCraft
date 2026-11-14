@@ -74,7 +74,7 @@ class FabricSeatProviderRegistrationTest {
 
         val sources = register(
             extensions = listOf(
-                ProviderExtension(
+                element = ProviderExtension(
                     id = "example:chairs",
                     registrations = listOf(
                         Triple("example:low", provider, 1),

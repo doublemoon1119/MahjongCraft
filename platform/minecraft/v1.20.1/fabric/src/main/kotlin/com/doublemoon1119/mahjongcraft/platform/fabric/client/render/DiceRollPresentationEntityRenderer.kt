@@ -61,14 +61,14 @@ class DiceRollPresentationEntityRenderer(
         matrices.multiply(dispatcher.rotation)
         matrices.scale(-PIXEL_SCALE, -PIXEL_SCALE, PIXEL_SCALE)
         WorldPanelRenderer.drawBackground(
-            -panelWidth / 2f,
-            -PANEL_HEIGHT / 2f,
-            panelWidth / 2f,
-            PANEL_HEIGHT / 2f,
-            WorldPanelRenderer.withAlpha(PANEL_RGB, alpha * PANEL_BASE_ALPHA),
-            0f,
-            matrices,
-            vertexConsumers,
+            left = -panelWidth / 2f,
+            top = -PANEL_HEIGHT / 2f,
+            right = panelWidth / 2f,
+            bottom = PANEL_HEIGHT / 2f,
+            color = WorldPanelRenderer.withAlpha(PANEL_RGB, alpha * PANEL_BASE_ALPHA),
+            z = 0f,
+            matrices = matrices,
+            consumers = vertexConsumers,
         )
         renderDice(points, visualScale, matrices, vertexConsumers, light)
         renderTotal(points.sum(), alpha, matrices, vertexConsumers, light)
@@ -157,15 +157,15 @@ class DiceRollPresentationEntityRenderer(
         val text = Text.translatable(MinecraftMessageKeys.DICE_ROLL_TOTAL, total)
         val x = -textRenderer.getWidth(text) / 2f
         WorldPanelRenderer.drawText(
-            textRenderer,
-            text,
-            x,
-            TOTAL_TEXT_Y,
-            WorldPanelRenderer.withAlpha(TOTAL_TEXT_RGB, alpha),
-            TEXT_Z,
-            light,
-            matrices,
-            consumers,
+            renderer = textRenderer,
+            text = text,
+            x = x,
+            y = TOTAL_TEXT_Y,
+            color = WorldPanelRenderer.withAlpha(TOTAL_TEXT_RGB, alpha),
+            z = TEXT_Z,
+            light = light,
+            matrices = matrices,
+            consumers = consumers,
         )
     }
 
@@ -177,11 +177,11 @@ class DiceRollPresentationEntityRenderer(
      * @return 目前面板透明度。
      */
     private fun panelAlpha(elapsed: Double, duration: Double): Float = WorldPanelRenderer.phaseAlpha(
-        elapsed,
-        0.0,
-        DiceRollPresentationEntity.FADE_IN_TICKS,
-        duration - DiceRollPresentationEntity.FADE_OUT_TICKS,
-        duration,
+        value = elapsed,
+        inStart = 0.0,
+        inEnd = DiceRollPresentationEntity.FADE_IN_TICKS,
+        outStart = duration - DiceRollPresentationEntity.FADE_OUT_TICKS,
+        outEnd = duration,
     )
 
     /**

@@ -31,8 +31,8 @@ import kotlin.uuid.Uuid
 class DebugWinnerDealerRiichiRuleModuleTest {
     /** 受測規則模組。 */
     private val module = DebugWinnerDealerRiichiRuleModule(
-        DebugWinnerDealerRiichiRuleModule.ID,
-        DebugWinnerDealerRiichiRuleConfig(RiichiRuleConfig(gameLength = RiichiGameLength.East)),
+        id = DebugWinnerDealerRiichiRuleModule.ID,
+        config = DebugWinnerDealerRiichiRuleConfig(RiichiRuleConfig(gameLength = RiichiGameLength.East)),
     )
 
     /** 東一局的四人桌，第一位是莊家。 */
@@ -56,7 +56,7 @@ class DebugWinnerDealerRiichiRuleModuleTest {
     fun `a dealer win and draws keep riichi rules`() {
         val dealerWin = module.resolveRoundTransition(winContext(setOf(state.players[0].id), discarderId = state.players[1].id))
         val notenDraw = module.resolveRoundTransition(
-            RoundTransitionContext(
+            context = RoundTransitionContext(
                 tableState = state,
                 outcomeId = RiichiExhaustiveDrawReason.Normal.id,
                 classification = RoundCompletionClassification.EXHAUSTIVE_DRAW,
@@ -74,7 +74,7 @@ class DebugWinnerDealerRiichiRuleModuleTest {
     @Test
     fun `every next round rotates the seats by one`() {
         val decision = module.createMatchProgressionPolicy().decide(
-            MatchProgressionContext(
+            context = MatchProgressionContext(
                 tableState = state,
                 completion = RoundCompletionSummary(
                     outcomeId = BuiltInRoundOutcomeIds.RON,

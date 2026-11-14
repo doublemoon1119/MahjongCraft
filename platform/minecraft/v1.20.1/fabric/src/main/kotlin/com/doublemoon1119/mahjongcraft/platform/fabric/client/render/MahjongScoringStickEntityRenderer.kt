@@ -41,7 +41,7 @@ class MahjongScoringStickEntityRenderer(
         val elapsedAnimationTicks = entity.world.time.toDouble() + tickDelta - entity.animationStartGameTime
         val animationFrame = if (entity.animating) {
             TileMotionAnimation(
-                TileMotionAnimationSpec(
+                spec = TileMotionAnimationSpec(
                     durationTicks = entity.animationDurationTicks,
                     arcHeight = entity.animationArcHeight,
                     startPoseRotationDegrees = 0.0f,

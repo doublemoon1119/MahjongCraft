@@ -54,8 +54,8 @@ class MahjongHudToolbarLayoutTest {
         listOf(0.0, toolbar.maximumScroll / 2, toolbar.maximumScroll).forEach { scroll ->
             val restored = toolbar.scrollFromThumb(toolbar.thumb(scroll).left.toDouble())
             assertTrue(
-                abs(restored - scroll) <= pixelTolerance,
-                "scroll $scroll restored as $restored",
+                actual = abs(restored - scroll) <= pixelTolerance,
+                message = "scroll $scroll restored as $restored",
             )
         }
     }

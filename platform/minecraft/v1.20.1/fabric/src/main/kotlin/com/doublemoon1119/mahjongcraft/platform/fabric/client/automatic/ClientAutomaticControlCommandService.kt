@@ -100,17 +100,17 @@ class ClientAutomaticControlCommandService(
         val enabled = resolveEnabled(previousEnabled, mode)
         return when (val result = autoSortHandPreferenceService.set(enabled)) {
             is ClientAutoSortHandPreferenceUpdateResult.Updated -> ClientAutomaticControlCommandResult.Updated(
-                BuiltInMinecraftAutomaticControlIds.AUTO_SORT_HAND,
-                previousEnabled,
-                result.enabled,
+                controlId = BuiltInMinecraftAutomaticControlIds.AUTO_SORT_HAND,
+                previousEnabled = previousEnabled,
+                enabled = result.enabled,
             )
             is ClientAutoSortHandPreferenceUpdateResult.Unchanged -> ClientAutomaticControlCommandResult.Unchanged(
-                BuiltInMinecraftAutomaticControlIds.AUTO_SORT_HAND,
-                result.enabled,
+                controlId = BuiltInMinecraftAutomaticControlIds.AUTO_SORT_HAND,
+                enabled = result.enabled,
             )
             is ClientAutoSortHandPreferenceUpdateResult.SaveFailed -> ClientAutomaticControlCommandResult.SaveFailed(result.failure)
             is ClientAutoSortHandPreferenceUpdateResult.SyncFailed -> ClientAutomaticControlCommandResult.PreferenceSyncFailed(
-                result.enabled,
+                enabled = result.enabled,
             )
         }
     }

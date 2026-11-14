@@ -34,7 +34,7 @@ class MahjongStoolDesignTest {
         MahjongStoolDesign.entries.forEach { design ->
             design.cuboids.forEach { cuboid ->
                 assertTrue(
-                    !VoxelShapes.matchesAnywhere(
+                    actual = !VoxelShapes.matchesAnywhere(
                         cuboid.toVoxelShape(),
                         design.shape,
                         BooleanBiFunction.ONLY_FIRST,

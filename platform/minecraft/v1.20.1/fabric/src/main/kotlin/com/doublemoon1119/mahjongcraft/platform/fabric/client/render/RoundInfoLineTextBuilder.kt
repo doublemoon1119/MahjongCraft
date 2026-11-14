@@ -55,9 +55,9 @@ class RoundInfoLineTextBuilder(
         is RoundInfoArgument.Number -> argument.value
         is RoundInfoArgument.WindValue -> Text.translatable(argument.value.toMessageKey())
         is RoundInfoArgument.TileValue -> argument.tile.toDisplayText(
-            tileDisplayNameRegistry,
-            tileAssetRegistry,
-            tileEmojiRegistry,
+            displayNameRegistry = tileDisplayNameRegistry,
+            tileAssetRegistry = tileAssetRegistry,
+            tileEmojiRegistry = tileEmojiRegistry,
         )
         is RoundInfoArgument.Message -> roundInfoLineDisplayRegistry.findMessage(argument.id)
             ?.let { Text.translatable(it.translationKey) }

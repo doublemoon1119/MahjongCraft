@@ -18,7 +18,7 @@ internal fun winSettlementTileGroups(
     add(handAssetKeys.map(PresentationTile::Face))
     melds.forEach { meld ->
         add(
-            meld.assetKeys.mapIndexed { index, asset ->
+            element = meld.assetKeys.mapIndexed { index, asset ->
                 if (index in meld.faceDownIndices) PresentationTile.Back(backAppearanceOf(asset)) else PresentationTile.Face(asset)
             },
         )

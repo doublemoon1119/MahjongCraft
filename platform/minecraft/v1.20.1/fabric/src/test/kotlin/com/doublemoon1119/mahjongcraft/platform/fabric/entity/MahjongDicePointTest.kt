@@ -9,8 +9,8 @@ class MahjongDicePointTest {
     @Test
     fun `points cycle in numeric order`() {
         assertEquals(
-            listOf(2, 3, 4, 5, 6, 1),
-            MahjongDicePoint.entries.map { it.next().value },
+            expected = listOf(2, 3, 4, 5, 6, 1),
+            actual = MahjongDicePoint.entries.map { it.next().value },
         )
     }
 
@@ -28,20 +28,20 @@ class MahjongDicePointTest {
     @Test
     fun `opposite faces follow standard dice pairs`() {
         assertEquals(
-            setOf(MahjongDicePoint.ONE, MahjongDicePoint.SIX),
-            MahjongDicePoint.entries.filterTo(mutableSetOf()) {
+            expected = setOf(MahjongDicePoint.ONE, MahjongDicePoint.SIX),
+            actual = MahjongDicePoint.entries.filterTo(mutableSetOf()) {
                 it.yRotationDegrees == 0.0f && it.xRotationDegrees % 180.0f == 0.0f
             },
         )
         assertEquals(
-            setOf(MahjongDicePoint.TWO, MahjongDicePoint.FIVE),
-            MahjongDicePoint.entries.filterTo(mutableSetOf()) {
+            expected = setOf(MahjongDicePoint.TWO, MahjongDicePoint.FIVE),
+            actual = MahjongDicePoint.entries.filterTo(mutableSetOf()) {
                 it.yRotationDegrees == 0.0f && it.xRotationDegrees % 180.0f != 0.0f
             },
         )
         assertEquals(
-            setOf(MahjongDicePoint.THREE, MahjongDicePoint.FOUR),
-            MahjongDicePoint.entries.filterTo(mutableSetOf()) { it.yRotationDegrees != 0.0f },
+            expected = setOf(MahjongDicePoint.THREE, MahjongDicePoint.FOUR),
+            actual = MahjongDicePoint.entries.filterTo(mutableSetOf()) { it.yRotationDegrees != 0.0f },
         )
     }
 }

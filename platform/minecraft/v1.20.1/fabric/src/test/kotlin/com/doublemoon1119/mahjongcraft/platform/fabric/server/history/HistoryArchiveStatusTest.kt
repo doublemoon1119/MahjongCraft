@@ -11,8 +11,8 @@ class HistoryArchiveStatusTest {
     @Test
     fun `saved evidence reports saved`() {
         assertEquals(
-            HistoryArchiveStatusDto.SAVED,
-            evidence(saved = true).toDto(HistoryRecordingDecision.RECORDING, pendingOutbox = false, queryEnabled = true, authorized = true, active = false),
+            expected = HistoryArchiveStatusDto.SAVED,
+            actual = evidence(saved = true).toDto(HistoryRecordingDecision.RECORDING, pendingOutbox = false, queryEnabled = true, authorized = true, active = false),
         )
     }
 
@@ -20,8 +20,8 @@ class HistoryArchiveStatusTest {
     @Test
     fun `pending outbox reports pending`() {
         assertEquals(
-            HistoryArchiveStatusDto.PENDING,
-            evidence().toDto(HistoryRecordingDecision.RECORDING, pendingOutbox = true, queryEnabled = true, authorized = true, active = false),
+            expected = HistoryArchiveStatusDto.PENDING,
+            actual = evidence().toDto(HistoryRecordingDecision.RECORDING, pendingOutbox = true, queryEnabled = true, authorized = true, active = false),
         )
     }
 
@@ -29,8 +29,8 @@ class HistoryArchiveStatusTest {
     @Test
     fun `pruned evidence reports missing`() {
         assertEquals(
-            HistoryArchiveStatusDto.MISSING,
-            evidence(pruned = true).toDto(HistoryRecordingDecision.STOPPED_PRUNED, pendingOutbox = false, queryEnabled = true, authorized = true, active = false),
+            expected = HistoryArchiveStatusDto.MISSING,
+            actual = evidence(pruned = true).toDto(HistoryRecordingDecision.STOPPED_PRUNED, pendingOutbox = false, queryEnabled = true, authorized = true, active = false),
         )
     }
 
@@ -38,8 +38,8 @@ class HistoryArchiveStatusTest {
     @Test
     fun `unauthorized status reports denied`() {
         assertEquals(
-            HistoryArchiveStatusDto.DENIED,
-            evidence(saved = true).toDto(HistoryRecordingDecision.RECORDING, pendingOutbox = false, queryEnabled = true, authorized = false, active = false),
+            expected = HistoryArchiveStatusDto.DENIED,
+            actual = evidence(saved = true).toDto(HistoryRecordingDecision.RECORDING, pendingOutbox = false, queryEnabled = true, authorized = false, active = false),
         )
     }
 
@@ -47,8 +47,8 @@ class HistoryArchiveStatusTest {
     @Test
     fun `recording failure reports failed`() {
         assertEquals(
-            HistoryArchiveStatusDto.FAILED,
-            evidence(failed = true).toDto(HistoryRecordingDecision.STOPPED_TRANSFER_INTERRUPTED, pendingOutbox = false, queryEnabled = true, authorized = true, active = false),
+            expected = HistoryArchiveStatusDto.FAILED,
+            actual = evidence(failed = true).toDto(HistoryRecordingDecision.STOPPED_TRANSFER_INTERRUPTED, pendingOutbox = false, queryEnabled = true, authorized = true, active = false),
         )
     }
 
@@ -56,8 +56,8 @@ class HistoryArchiveStatusTest {
     @Test
     fun `externally modified match reports excluded`() {
         assertEquals(
-            HistoryArchiveStatusDto.EXCLUDED,
-            evidence(failed = true).toDto(HistoryRecordingDecision.STOPPED_EXTERNALLY_MODIFIED, pendingOutbox = true, queryEnabled = true, authorized = true, active = false),
+            expected = HistoryArchiveStatusDto.EXCLUDED,
+            actual = evidence(failed = true).toDto(HistoryRecordingDecision.STOPPED_EXTERNALLY_MODIFIED, pendingOutbox = true, queryEnabled = true, authorized = true, active = false),
         )
     }
 
@@ -65,8 +65,8 @@ class HistoryArchiveStatusTest {
     @Test
     fun `active match reports pending`() {
         assertEquals(
-            HistoryArchiveStatusDto.PENDING,
-            evidence(saved = true).toDto(HistoryRecordingDecision.RECORDING, pendingOutbox = false, queryEnabled = true, authorized = true, active = true),
+            expected = HistoryArchiveStatusDto.PENDING,
+            actual = evidence(saved = true).toDto(HistoryRecordingDecision.RECORDING, pendingOutbox = false, queryEnabled = true, authorized = true, active = true),
         )
     }
 
@@ -74,8 +74,8 @@ class HistoryArchiveStatusTest {
     @Test
     fun `excluded active match is not pending`() {
         assertEquals(
-            HistoryArchiveStatusDto.EXCLUDED,
-            evidence().toDto(HistoryRecordingDecision.EXCLUDED_AI, pendingOutbox = false, queryEnabled = true, authorized = true, active = true),
+            expected = HistoryArchiveStatusDto.EXCLUDED,
+            actual = evidence().toDto(HistoryRecordingDecision.EXCLUDED_AI, pendingOutbox = false, queryEnabled = true, authorized = true, active = true),
         )
     }
 

@@ -91,9 +91,9 @@ internal class FabricHistoryQueryRepository(
             is HistoryQueryResult.Success -> {
                 val entry = result.value ?: return queryFailure(HistoryQueryErrorCode.NOT_AVAILABLE)
                 HistoryQueryResult.Success(
-                    HistoryMatchDetail(
-                        entry.toDomainSummary(),
-                        entry.rounds.map { HistoryRoundSummary(it.roundNumber, it.startedAtEpochMillis, it.endedAtEpochMillis) },
+                    value = HistoryMatchDetail(
+                        summary = entry.toDomainSummary(),
+                        rounds = entry.rounds.map { HistoryRoundSummary(it.roundNumber, it.startedAtEpochMillis, it.endedAtEpochMillis) },
                     ),
                 )
             }
@@ -182,12 +182,12 @@ internal fun HistoryListRequest.toSqliteQuery(
  * @return 不含授權資格的 Flow 游標。
  */
 private fun SqliteHistoryCursor.toDomainCursor(request: HistoryListRequest): HistoryQueryCursor = HistoryQueryCursor(
-    HistorySortValue(sortValue, nullBucket),
-    Uuid.parse(matchId),
-    request.scope,
-    request.sortField,
-    request.sortDirection,
-    request.filters,
+    sortValue = HistorySortValue(sortValue, nullBucket),
+    matchId = Uuid.parse(matchId),
+    scope = request.scope,
+    sortField = request.sortField,
+    sortDirection = request.sortDirection,
+    filters = request.filters,
 )
 
 /**

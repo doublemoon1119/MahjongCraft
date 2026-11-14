@@ -519,8 +519,8 @@ class HistoryBrowseControllerTest {
         runCurrent()
         assertEquals(HistoryBrowsePage.RULE_SETTINGS, controller.state.value.page)
         assertEquals(
-            HistoryBrowseFailure.NOT_AVAILABLE,
-            assertIs<HistoryBrowseStatus.Failed>(controller.state.value.ruleSettings?.status).reason,
+            expected = HistoryBrowseFailure.NOT_AVAILABLE,
+            actual = assertIs<HistoryBrowseStatus.Failed>(controller.state.value.ruleSettings?.status).reason,
         )
         assertTrue(controller.backToSummary())
         assertEquals(HistoryBrowsePage.SUMMARY, controller.state.value.page)
@@ -810,7 +810,7 @@ class HistoryBrowseControllerTest {
      * @return 可用於驗證規則設定快取的 DTO。
      */
     private fun ruleSettingsConfig(): GameConfigDto = GameConfig(RiichiRuleConfig()).toDto(
-        DefaultNetworkDtoRegistries().apply { registerBundledNetworkDtos() },
+        registries = DefaultNetworkDtoRegistries().apply { registerBundledNetworkDtos() },
     )
 
     /**
@@ -960,17 +960,17 @@ class HistoryBrowseControllerTest {
          */
         fun respondRoundEvents(matchId: String, requestId: String = roundEventsRequests.last().requestId) {
             val identity = HistoryReplayIdentityDto(
-                matchId,
-                "00000000-0000-0000-0000-000000000002",
-                listOf(HistoryReplayPlayerIdentityDto(0, null, null)),
+                matchId = matchId,
+                venueId = "00000000-0000-0000-0000-000000000002",
+                players = listOf(HistoryReplayPlayerIdentityDto(0, null, null)),
             )
             mutableState.value = ClientHistoryQueryState.RoundEventsResult(
-                HistoryRoundEventsResponseDto(
-                    requestId,
-                    matchId,
-                    1,
-                    0,
-                    HistoryRoundEventsDto(identity, 1, emptyList(), null, emptyList()),
+                response = HistoryRoundEventsResponseDto(
+                    requestId = requestId,
+                    matchId = matchId,
+                    roundNumber = 1,
+                    startTransactionIndex = 0,
+                    events = HistoryRoundEventsDto(identity, 1, emptyList(), null, emptyList()),
                     errorCode = null,
                 ),
             )
@@ -984,9 +984,9 @@ class HistoryBrowseControllerTest {
          */
         fun respondRoundState(matchId: String, requestId: String = roundStateRequests.last().requestId) {
             val identity = HistoryReplayIdentityDto(
-                matchId,
-                "00000000-0000-0000-0000-000000000002",
-                listOf(HistoryReplayPlayerIdentityDto(0, null, null)),
+                matchId = matchId,
+                venueId = "00000000-0000-0000-0000-000000000002",
+                players = listOf(HistoryReplayPlayerIdentityDto(0, null, null)),
             )
             val state = HistoryRoundStateDto(
                 identity = identity,
@@ -1007,7 +1007,7 @@ class HistoryBrowseControllerTest {
                 outcome = null,
             )
             mutableState.value = ClientHistoryQueryState.RoundStateResult(
-                HistoryRoundStateResponseDto(requestId, matchId, 1, HistoryRoundPositionDto.Initial, state, errorCode = null),
+                response = HistoryRoundStateResponseDto(requestId, matchId, 1, HistoryRoundPositionDto.Initial, state, errorCode = null),
             )
         }
 

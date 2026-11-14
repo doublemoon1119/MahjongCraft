@@ -25,8 +25,8 @@ class ClientPlayerDisplayNameResolverTest {
         val match = Uuid.random()
         val state = ClientMahjongStateStore(DefaultNetworkDtoRegistries())
         state.applyRoomSnapshot(
-            table,
-            RoomSnapshot(
+            roomId = table,
+            snapshot = RoomSnapshot(
                 id = table,
                 hostId = host,
                 gameConfig = GameConfig(FakeMahjongRuleConfig()),
@@ -44,7 +44,7 @@ class ClientPlayerDisplayNameResolverTest {
         val session = Uuid.random()
         characters.beginSession(session)
         characters.apply(
-            AiCharacterSyncSnapshot(
+            snapshot = AiCharacterSyncSnapshot(
                 sessionId = session,
                 revision = 1,
                 tableId = table,
@@ -77,8 +77,8 @@ class ClientPlayerDisplayNameResolverTest {
         val state = ClientMahjongStateStore(DefaultNetworkDtoRegistries())
         val order = listOf(actor, firstBot, secondBot)
         state.applyRoomSnapshot(
-            table,
-            RoomSnapshot(
+            roomId = table,
+            snapshot = RoomSnapshot(
                 id = table,
                 hostId = host,
                 gameConfig = GameConfig(FakeMahjongRuleConfig()),
@@ -94,7 +94,7 @@ class ClientPlayerDisplayNameResolverTest {
         val session = Uuid.random()
         characters.beginSession(session)
         characters.apply(
-            AiCharacterSyncSnapshot(
+            snapshot = AiCharacterSyncSnapshot(
                 sessionId = session,
                 revision = 1,
                 tableId = table,
@@ -105,8 +105,8 @@ class ClientPlayerDisplayNameResolverTest {
         )
         // 歷史中第一台機器人當時有名字，與目前房間不同，必須依當場描述計數。
         characters.rememberHistory(
-            match,
-            mapOf(
+            matchId = match,
+            players = mapOf(
                 actor to AiCharacterSnapshot("example:actor", null, "Archived actor"),
                 firstBot to AiCharacterSnapshot("example:actor", null, "Archived robot"),
             ),

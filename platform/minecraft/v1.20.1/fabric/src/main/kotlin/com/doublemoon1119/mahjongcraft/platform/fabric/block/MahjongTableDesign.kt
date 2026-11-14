@@ -107,28 +107,28 @@ enum class MahjongTableDesign {
         val rotatedBoxes = shape.boundingBoxes.map { box ->
             when (facing) {
                 Direction.EAST -> cuboid(
-                    (1.0 - box.maxZ) * 16.0,
-                    box.minY * 16.0,
-                    box.minX * 16.0,
-                    (1.0 - box.minZ) * 16.0,
-                    box.maxY * 16.0,
-                    box.maxX * 16.0,
+                    minX = (1.0 - box.maxZ) * 16.0,
+                    minY = box.minY * 16.0,
+                    minZ = box.minX * 16.0,
+                    maxX = (1.0 - box.minZ) * 16.0,
+                    maxY = box.maxY * 16.0,
+                    maxZ = box.maxX * 16.0,
                 )
                 Direction.SOUTH -> cuboid(
-                    (1.0 - box.maxX) * 16.0,
-                    box.minY * 16.0,
-                    (1.0 - box.maxZ) * 16.0,
-                    (1.0 - box.minX) * 16.0,
-                    box.maxY * 16.0,
-                    (1.0 - box.minZ) * 16.0,
+                    minX = (1.0 - box.maxX) * 16.0,
+                    minY = box.minY * 16.0,
+                    minZ = (1.0 - box.maxZ) * 16.0,
+                    maxX = (1.0 - box.minX) * 16.0,
+                    maxY = box.maxY * 16.0,
+                    maxZ = (1.0 - box.minZ) * 16.0,
                 )
                 Direction.WEST -> cuboid(
-                    box.minZ * 16.0,
-                    box.minY * 16.0,
-                    (1.0 - box.maxX) * 16.0,
-                    box.maxZ * 16.0,
-                    box.maxY * 16.0,
-                    (1.0 - box.minX) * 16.0,
+                    minX = box.minZ * 16.0,
+                    minY = box.minY * 16.0,
+                    minZ = (1.0 - box.maxX) * 16.0,
+                    maxX = box.maxZ * 16.0,
+                    maxY = box.maxY * 16.0,
+                    maxZ = (1.0 - box.minX) * 16.0,
                 )
                 else -> error("Mahjong table facing must be horizontal")
             }

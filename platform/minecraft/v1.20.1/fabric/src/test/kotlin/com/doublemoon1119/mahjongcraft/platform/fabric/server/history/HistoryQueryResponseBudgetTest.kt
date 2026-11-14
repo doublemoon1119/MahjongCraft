@@ -45,10 +45,10 @@ class HistoryQueryResponseBudgetTest {
     @Test
     fun `missing rule network codec returns not available`() {
         val response = boundedHistoryRuleSettings(
-            "rules",
-            HistoryRuleSettings(GameConfig(RiichiRuleConfig())),
-            DefaultNetworkDtoRegistries(),
-            bundledNetworkJson(),
+            requestId = "rules",
+            settings = HistoryRuleSettings(GameConfig(RiichiRuleConfig())),
+            registries = DefaultNetworkDtoRegistries(),
+            json = bundledNetworkJson(),
         )
         assertEquals(HistoryQueryErrorCodeDto.NOT_AVAILABLE, response.errorCode)
         assertNull(response.config)

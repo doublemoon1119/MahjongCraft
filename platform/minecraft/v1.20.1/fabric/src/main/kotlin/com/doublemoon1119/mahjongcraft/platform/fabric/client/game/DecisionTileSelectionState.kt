@@ -122,7 +122,7 @@ internal class DecisionTileSelectionState {
         if (ruleDecisionDecisionKey == prompt.decisionKey) {
             val constraint = prompt.ruleDecisionConstraint() ?: return Outcome.Consumed(null)
             return Outcome.Consumed(
-                finalSelectionIfComplete(
+                selection = finalSelectionIfComplete(
                     selected = selectedRuleDecisionTileIds,
                     constraint = constraint,
                     kind = PlayerDecisionSelectionKindDto.DECISION_TILES,
@@ -134,7 +134,7 @@ internal class DecisionTileSelectionState {
         if (token != null && isActionSelectionActive) {
             val constraint = prompt.actionConstraint(token) ?: return Outcome.Consumed(null)
             return Outcome.Consumed(
-                finalSelectionIfComplete(
+                selection = finalSelectionIfComplete(
                     selected = selectedActionTileIds,
                     constraint = constraint,
                     kind = PlayerDecisionSelectionKindDto.ACTION,

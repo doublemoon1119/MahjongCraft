@@ -37,24 +37,24 @@ fun prefixedConfigMessage(message: Text, color: Formatting): MutableText = Text
  */
 fun clientConfigEntries(config: MahjongClientConfigState): List<ConfigPresentationEntry> = listOf(
     ConfigPresentationEntry(
-        Text.translatable(MinecraftClientConfigScreenKeys.AUTO_SORT_HAND),
-        clientBooleanText(config.autoSortHandEnabled),
+        name = Text.translatable(MinecraftClientConfigScreenKeys.AUTO_SORT_HAND),
+        displayedValue = clientBooleanText(config.autoSortHandEnabled),
     ),
     ConfigPresentationEntry(
-        Text.translatable(MinecraftClientConfigScreenKeys.TILE_LABELS),
-        clientBooleanText(config.tileLabelsEnabled),
+        name = Text.translatable(MinecraftClientConfigScreenKeys.TILE_LABELS),
+        displayedValue = clientBooleanText(config.tileLabelsEnabled),
     ),
     ConfigPresentationEntry(
-        Text.translatable(MinecraftClientConfigScreenKeys.HUD_LAYOUT_DECISION_PANEL),
-        Text.literal("Y ${config.hudLayout.decisionPanelY.asPercent()}%"),
+        name = Text.translatable(MinecraftClientConfigScreenKeys.HUD_LAYOUT_DECISION_PANEL),
+        displayedValue = Text.literal("Y ${config.hudLayout.decisionPanelY.asPercent()}%"),
     ),
     ConfigPresentationEntry(
-        Text.translatable(MinecraftClientConfigScreenKeys.HUD_LAYOUT_COMPACT_PROMPT),
-        Text.literal("X ${config.hudLayout.compactPromptX.asPercent()}%, Y ${config.hudLayout.compactPromptY.asPercent()}%"),
+        name = Text.translatable(MinecraftClientConfigScreenKeys.HUD_LAYOUT_COMPACT_PROMPT),
+        displayedValue = Text.literal("X ${config.hudLayout.compactPromptX.asPercent()}%, Y ${config.hudLayout.compactPromptY.asPercent()}%"),
     ),
     ConfigPresentationEntry(
-        Text.translatable(MinecraftClientConfigScreenKeys.HUD_LAYOUT_DISCARD_ANALYSIS),
-        Text.literal("Y ${config.hudLayout.discardAnalysisY.asPercent()}%"),
+        name = Text.translatable(MinecraftClientConfigScreenKeys.HUD_LAYOUT_DISCARD_ANALYSIS),
+        displayedValue = Text.literal("Y ${config.hudLayout.discardAnalysisY.asPercent()}%"),
     ),
 )
 
@@ -81,95 +81,95 @@ fun serverConfigEntries(config: MinecraftServerConfig): List<ConfigPresentationE
  */
 fun serverConfigSections(config: MinecraftServerConfig): List<ConfigPresentationSection> = listOf(
     ConfigPresentationSection(
-        Text.translatable(MinecraftConfigCommandKeys.SERVER_CONFIG_SECTION_PLAYER_DISCONNECTION),
-        listOf(
+        name = Text.translatable(MinecraftConfigCommandKeys.SERVER_CONFIG_SECTION_PLAYER_DISCONNECTION),
+        entries = listOf(
             ConfigPresentationEntry(
-                Text.translatable(MinecraftConfigCommandKeys.DISCONNECTED_PLAYER_POLICY),
-                Text.translatable(config.disconnectedPlayerPolicy.translationKey),
+                name = Text.translatable(MinecraftConfigCommandKeys.DISCONNECTED_PLAYER_POLICY),
+                displayedValue = Text.translatable(config.disconnectedPlayerPolicy.translationKey),
             ),
             ConfigPresentationEntry(
-                Text.translatable(MinecraftConfigCommandKeys.DISCONNECTED_PLAYER_TIMEOUT),
-                Text.literal(config.disconnectedPlayerTimeout.inWholeSeconds.toString()),
-            ),
-        ),
-    ),
-    ConfigPresentationSection(
-        Text.translatable(MinecraftConfigCommandKeys.SERVER_CONFIG_SECTION_AI_PLAYER),
-        listOf(
-            ConfigPresentationEntry(
-                Text.translatable(MinecraftConfigCommandKeys.MISSING_AI_PLAYER_POLICY),
-                Text.translatable(config.missingAiPlayerPolicy.translationKey),
+                name = Text.translatable(MinecraftConfigCommandKeys.DISCONNECTED_PLAYER_TIMEOUT),
+                displayedValue = Text.literal(config.disconnectedPlayerTimeout.inWholeSeconds.toString()),
             ),
         ),
     ),
     ConfigPresentationSection(
-        Text.translatable(MinecraftConfigCommandKeys.SERVER_CONFIG_SECTION_TABLE),
-        listOf(
-            ConfigPresentationEntry(
-                Text.translatable(MinecraftConfigCommandKeys.TABLE_BREAK_POLICY),
-                Text.translatable(config.tableBreakPolicy.translationKey),
-            ),
-            ConfigPresentationEntry(
-                Text.translatable(MinecraftConfigCommandKeys.ORPHANED_TABLE_POLICY),
-                Text.translatable(config.orphanedTablePolicy.translationKey),
+        name = Text.translatable(MinecraftConfigCommandKeys.SERVER_CONFIG_SECTION_AI_PLAYER),
+        entries = listOf(
+            element = ConfigPresentationEntry(
+                name = Text.translatable(MinecraftConfigCommandKeys.MISSING_AI_PLAYER_POLICY),
+                displayedValue = Text.translatable(config.missingAiPlayerPolicy.translationKey),
             ),
         ),
     ),
     ConfigPresentationSection(
-        Text.translatable(MinecraftConfigCommandKeys.SERVER_CONFIG_SECTION_MAHJONG_TILE),
-        listOf(
+        name = Text.translatable(MinecraftConfigCommandKeys.SERVER_CONFIG_SECTION_TABLE),
+        entries = listOf(
             ConfigPresentationEntry(
-                Text.translatable(MinecraftConfigCommandKeys.TILE_COLLISION),
-                clientBooleanText(config.mahjongTilePhysicalCollisionEnabled),
+                name = Text.translatable(MinecraftConfigCommandKeys.TABLE_BREAK_POLICY),
+                displayedValue = Text.translatable(config.tableBreakPolicy.translationKey),
+            ),
+            ConfigPresentationEntry(
+                name = Text.translatable(MinecraftConfigCommandKeys.ORPHANED_TABLE_POLICY),
+                displayedValue = Text.translatable(config.orphanedTablePolicy.translationKey),
             ),
         ),
     ),
     ConfigPresentationSection(
-        Text.translatable(MinecraftConfigCommandKeys.SERVER_CONFIG_SECTION_HISTORY),
-        listOf(
+        name = Text.translatable(MinecraftConfigCommandKeys.SERVER_CONFIG_SECTION_MAHJONG_TILE),
+        entries = listOf(
+            element = ConfigPresentationEntry(
+                name = Text.translatable(MinecraftConfigCommandKeys.TILE_COLLISION),
+                displayedValue = clientBooleanText(config.mahjongTilePhysicalCollisionEnabled),
+            ),
+        ),
+    ),
+    ConfigPresentationSection(
+        name = Text.translatable(MinecraftConfigCommandKeys.SERVER_CONFIG_SECTION_HISTORY),
+        entries = listOf(
             ConfigPresentationEntry(
-                Text.translatable(MinecraftConfigCommandKeys.HISTORY_ENABLED),
-                clientBooleanText(config.history.enabled),
+                name = Text.translatable(MinecraftConfigCommandKeys.HISTORY_ENABLED),
+                displayedValue = clientBooleanText(config.history.enabled),
             ),
             ConfigPresentationEntry(
-                Text.translatable(MinecraftConfigCommandKeys.HISTORY_INCLUDE_AI_MATCHES),
-                clientBooleanText(config.history.includeAiMatches),
+                name = Text.translatable(MinecraftConfigCommandKeys.HISTORY_INCLUDE_AI_MATCHES),
+                displayedValue = clientBooleanText(config.history.includeAiMatches),
             ),
             ConfigPresentationEntry(
-                Text.translatable(MinecraftConfigCommandKeys.HISTORY_INCLUDE_INTERRUPTED_MATCHES),
-                clientBooleanText(config.history.includeInterruptedMatches),
+                name = Text.translatable(MinecraftConfigCommandKeys.HISTORY_INCLUDE_INTERRUPTED_MATCHES),
+                displayedValue = clientBooleanText(config.history.includeInterruptedMatches),
             ),
             ConfigPresentationEntry(
-                Text.translatable(MinecraftConfigCommandKeys.HISTORY_QUERY_ENABLED),
-                clientBooleanText(config.history.queryEnabled),
+                name = Text.translatable(MinecraftConfigCommandKeys.HISTORY_QUERY_ENABLED),
+                displayedValue = clientBooleanText(config.history.queryEnabled),
             ),
             ConfigPresentationEntry(
-                Text.translatable(MinecraftConfigCommandKeys.HISTORY_ALLOW_ADMIN_QUERY),
-                clientBooleanText(config.history.allowAdminQuery),
+                name = Text.translatable(MinecraftConfigCommandKeys.HISTORY_ALLOW_ADMIN_QUERY),
+                displayedValue = clientBooleanText(config.history.allowAdminQuery),
             ),
             ConfigPresentationEntry(
-                Text.translatable(MinecraftConfigCommandKeys.HISTORY_QUERY_MINIMUM_INTERVAL),
-                Text.literal("${config.history.queryMinimumInterval.inWholeMilliseconds} ms"),
+                name = Text.translatable(MinecraftConfigCommandKeys.HISTORY_QUERY_MINIMUM_INTERVAL),
+                displayedValue = Text.literal("${config.history.queryMinimumInterval.inWholeMilliseconds} ms"),
             ),
             ConfigPresentationEntry(
-                Text.translatable(MinecraftConfigCommandKeys.HISTORY_QUERY_MAX_OUTSTANDING),
-                Text.literal(config.history.queryMaxOutstanding.toString()),
+                name = Text.translatable(MinecraftConfigCommandKeys.HISTORY_QUERY_MAX_OUTSTANDING),
+                displayedValue = Text.literal(config.history.queryMaxOutstanding.toString()),
             ),
             ConfigPresentationEntry(
-                Text.translatable(MinecraftConfigCommandKeys.HISTORY_QUERY_REJECTION_REPLY_INTERVAL),
-                Text.literal("${config.history.queryRejectionReplyInterval.inWholeMilliseconds} ms"),
+                name = Text.translatable(MinecraftConfigCommandKeys.HISTORY_QUERY_REJECTION_REPLY_INTERVAL),
+                displayedValue = Text.literal("${config.history.queryRejectionReplyInterval.inWholeMilliseconds} ms"),
             ),
             ConfigPresentationEntry(
-                Text.translatable(MinecraftConfigCommandKeys.HISTORY_MAX_MATCHES),
-                Text.literal(config.history.maxMatches.toString()),
+                name = Text.translatable(MinecraftConfigCommandKeys.HISTORY_MAX_MATCHES),
+                displayedValue = Text.literal(config.history.maxMatches.toString()),
             ),
             ConfigPresentationEntry(
-                Text.translatable(MinecraftConfigCommandKeys.HISTORY_RETENTION_DAYS),
-                Text.literal(config.history.retention.inWholeDays.toString()),
+                name = Text.translatable(MinecraftConfigCommandKeys.HISTORY_RETENTION_DAYS),
+                displayedValue = Text.literal(config.history.retention.inWholeDays.toString()),
             ),
             ConfigPresentationEntry(
-                Text.translatable(MinecraftConfigCommandKeys.HISTORY_MAX_DISK_MIB),
-                Text.literal(config.history.maxDiskMiB.toString()),
+                name = Text.translatable(MinecraftConfigCommandKeys.HISTORY_MAX_DISK_MIB),
+                displayedValue = Text.literal(config.history.maxDiskMiB.toString()),
             ),
         ),
     ),
@@ -183,12 +183,12 @@ fun serverConfigSections(config: MinecraftServerConfig): List<ConfigPresentation
  * @return 僅首行帶有 mod 前綴的完整訊息。
  */
 fun serverConfigShowMessage(displayPath: String, config: MinecraftServerConfig): MutableText = prefixedConfigMessage(
-    Text.translatable(
+    message = Text.translatable(
         MinecraftConfigCommandKeys.CURRENT,
         Text.translatable(MinecraftConfigCommandKeys.SERVER_CONFIG),
         bracketedInteractiveLabel(Text.translatable(MinecraftConfigCommandKeys.FILE_LOCATION), Text.literal(displayPath)),
     ),
-    Formatting.AQUA,
+    color = Formatting.AQUA,
 ).also { message ->
     serverConfigSections(config).forEach { section ->
         message.append(Text.literal("\n  • ").formatted(Formatting.GRAY))
@@ -196,8 +196,8 @@ fun serverConfigShowMessage(displayPath: String, config: MinecraftServerConfig):
             .append(" ")
             .append(
                 bracketedInteractiveLabel(
-                    Text.translatable(MinecraftConfigCommandKeys.SETTINGS),
-                    section.name.copy().formatted(Formatting.GOLD).append(presentationEntryLines(section.entries)),
+                    label = Text.translatable(MinecraftConfigCommandKeys.SETTINGS),
+                    hoverText = section.name.copy().formatted(Formatting.GOLD).append(presentationEntryLines(section.entries)),
                 ),
             )
     }
@@ -211,16 +211,16 @@ fun serverConfigShowMessage(displayPath: String, config: MinecraftServerConfig):
  * @return 帶錯誤顏色與細節 hover 的回饋訊息。
  */
 fun configReloadFailureMessage(configName: Text, details: String): MutableText = prefixedConfigMessage(
-    Text.translatable(
+    message = Text.translatable(
         MinecraftConfigCommandKeys.RELOAD_FAILED,
         configName,
         bracketedInteractiveLabel(
-            Text.translatable(MinecraftConfigCommandKeys.DETAILS),
-            Text.literal(details).formatted(Formatting.RED),
+            label = Text.translatable(MinecraftConfigCommandKeys.DETAILS),
+            hoverText = Text.literal(details).formatted(Formatting.RED),
             color = Formatting.RED,
         ),
     ),
-    Formatting.RED,
+    color = Formatting.RED,
 )
 
 /**
@@ -231,16 +231,16 @@ fun configReloadFailureMessage(configName: Text, details: String): MutableText =
  * @return 帶錯誤顏色與細節 hover 的回饋訊息。
  */
 fun configSaveFailureMessage(settingName: Text, details: String): MutableText = prefixedConfigMessage(
-    Text.translatable(
+    message = Text.translatable(
         MinecraftConfigCommandKeys.SAVE_FAILED,
         settingName,
         bracketedInteractiveLabel(
-            Text.translatable(MinecraftConfigCommandKeys.DETAILS),
-            Text.literal(details).formatted(Formatting.RED),
+            label = Text.translatable(MinecraftConfigCommandKeys.DETAILS),
+            hoverText = Text.literal(details).formatted(Formatting.RED),
             color = Formatting.RED,
         ),
     ),
-    Formatting.RED,
+    color = Formatting.RED,
 )
 
 /**
@@ -252,15 +252,15 @@ fun configSaveFailureMessage(settingName: Text, details: String): MutableText = 
  * @return 帶欄位 hover 的單行訊息。
  */
 fun configShowMessage(configName: Text, displayPath: String, entries: List<ConfigPresentationEntry>): MutableText = prefixedConfigMessage(
-    Text.translatable(
+    message = Text.translatable(
         MinecraftConfigCommandKeys.CURRENT,
         configName,
         bracketedInteractiveLabel(
-            Text.translatable(MinecraftConfigCommandKeys.DETAILS),
-            configShowHoverText(displayPath, entries),
+            label = Text.translatable(MinecraftConfigCommandKeys.DETAILS),
+            hoverText = configShowHoverText(displayPath, entries),
         ),
     ),
-    Formatting.AQUA,
+    color = Formatting.AQUA,
 )
 
 /**

@@ -29,14 +29,14 @@ class DecisionHudActionDisplayOrderTest {
         val sorted = shuffled.sortedBy { texts.actionOrder(BuiltInRuleModuleIds.RIICHI, it) }
 
         assertEquals(
-            listOf(
+            expected = listOf(
                 BuiltInGameActionIds.CHI,
                 BuiltInGameActionIds.PON,
                 BuiltInGameActionIds.KAN_OPEN,
                 BuiltInGameActionIds.RON,
                 BuiltInGameActionIds.TSUMO,
             ),
-            sorted,
+            actual = sorted,
         )
     }
 
@@ -53,21 +53,21 @@ class DecisionHudActionDisplayOrderTest {
     @Test
     fun `riichi actions sort after the built-in ones`() {
         val tsumo = assertNotNull(
-            texts.actionOrder(BuiltInRuleModuleIds.RIICHI, BuiltInGameActionIds.TSUMO),
-            "expected tsumo to be registered",
+            actual = texts.actionOrder(BuiltInRuleModuleIds.RIICHI, BuiltInGameActionIds.TSUMO),
+            message = "expected tsumo to be registered",
         )
         val riichi = assertNotNull(
-            texts.actionOrder(BuiltInRuleModuleIds.RIICHI, RiichiGameAction.Riichi.id),
-            "expected riichi to be registered",
+            actual = texts.actionOrder(BuiltInRuleModuleIds.RIICHI, RiichiGameAction.Riichi.id),
+            message = "expected riichi to be registered",
         )
         val kyuushuKyuuhai = assertNotNull(
-            texts.actionOrder(BuiltInRuleModuleIds.RIICHI, RiichiExhaustiveDrawReason.KyuushuKyuuhai.id),
-            "expected kyuushu kyuuhai to be registered",
+            actual = texts.actionOrder(BuiltInRuleModuleIds.RIICHI, RiichiExhaustiveDrawReason.KyuushuKyuuhai.id),
+            message = "expected kyuushu kyuuhai to be registered",
         )
 
         assertTrue(
-            tsumo < riichi && riichi < kyuushuKyuuhai,
-            "expected tsumo < riichi < kyuushu kyuuhai: $tsumo, $riichi, $kyuushuKyuuhai",
+            actual = tsumo < riichi && riichi < kyuushuKyuuhai,
+            message = "expected tsumo < riichi < kyuushu kyuuhai: $tsumo, $riichi, $kyuushuKyuuhai",
         )
     }
 

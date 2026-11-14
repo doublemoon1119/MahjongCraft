@@ -14,7 +14,7 @@ internal object BuiltInFabricMahjongClientExtension : FabricMahjongClientExtensi
 
     override fun registerCharacterPreviews(registry: FabricAiCharacterPreviewRegistrar) {
         registry.register(
-            FabricAiCharacterPreviewDefinition(BuiltInAiCharacters.TILE_MASCOT_CAPABILITY_ID) { world, character ->
+            definition = FabricAiCharacterPreviewDefinition(BuiltInAiCharacters.TILE_MASCOT_CAPABILITY_ID) { world, character ->
                 val model = MahjongBotEntity(world = world)
                 model.faceAssetKey = (character.face as? AiCharacterFace.Tile)?.assetKey ?: model.faceAssetKey
                 object : FabricAiCharacterPreviewHandle {

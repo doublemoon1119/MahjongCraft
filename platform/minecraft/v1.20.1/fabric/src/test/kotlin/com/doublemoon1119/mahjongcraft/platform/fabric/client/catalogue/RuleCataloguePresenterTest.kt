@@ -150,7 +150,7 @@ class RuleCataloguePresenterTest {
         val card = presenter().measure(
             entry = entry(
                 examples = listOf(
-                    RuleCatalogueExample(
+                    element = RuleCatalogueExample(
                         completeHand = false,
                         groups = listOf(RuleCatalogueTileGroup(RuleCatalogueTileGroupRole.ILLUSTRATION, listOf(Tile.Honor.East, custom).map(::TileFaceView))),
                     ),
@@ -171,7 +171,7 @@ class RuleCataloguePresenterTest {
         val card = presenter(extra = mapOf(MinecraftRuleCatalogueScreenKeys.GROUP_WINNING_TILE to "W".repeat(80))).measure(
             entry = entry(
                 examples = listOf(
-                    RuleCatalogueExample(
+                    element = RuleCatalogueExample(
                         completeHand = true,
                         groups = listOf(RuleCatalogueTileGroup(RuleCatalogueTileGroupRole.WINNING_TILE, listOf(TileFaceView(Tile.Honor.North)))),
                     ),
@@ -200,7 +200,7 @@ class RuleCataloguePresenterTest {
                     descriptionTranslationKey = "example.entry.season.description",
                     labels = listOf(RuleCatalogueLabel("example.label.one_point")),
                     examples = listOf(
-                        RuleCatalogueExample(
+                        element = RuleCatalogueExample(
                             completeHand = false,
                             groups = listOf(RuleCatalogueTileGroup(RuleCatalogueTileGroupRole.ILLUSTRATION, listOf(TileFaceView(custom)))),
                         ),

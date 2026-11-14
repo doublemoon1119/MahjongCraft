@@ -12,7 +12,7 @@ import kotlin.test.assertTrue
 class AutomaticControlStatusHudModelTest {
     /** 已註冊內建自動操作名稱的測試 resolver。 */
     private val displays = AutomaticControlDisplayResolver(
-        AutomaticControlDisplayRegistryImpl().apply {
+        registry = AutomaticControlDisplayRegistryImpl().apply {
             BuiltInMinecraftMahjongExtension.registerAutomaticControlDisplays(this)
             freeze()
         },
@@ -32,13 +32,13 @@ class AutomaticControlStatusHudModelTest {
         )
 
         assertEquals(
-            listOf(
+            expected = listOf(
                 BuiltInMinecraftAutomaticControlIds.AUTO_SORT_HAND,
                 "mahjongcraft:auto_win",
                 "mahjongcraft:auto_tsumogiri",
                 "example:custom",
             ),
-            rows.map { it.controlId },
+            actual = rows.map { it.controlId },
         )
         assertEquals(listOf(true, true, false, true), rows.map { it.enabled })
         assertEquals("example:custom", rows.last().label.string)

@@ -66,7 +66,7 @@ internal fun decisionEntriesFrom(texts: DecisionTextResolver, prompt: PlayerDeci
         .sortedBy { texts.actionOrder(prompt.ruleModuleId, it.actionId) ?: UNREGISTERED_ACTION_ORDER }
         .forEach { action ->
             add(
-                DecisionEntry(
+                element = DecisionEntry(
                     label = texts.actionLabel(prompt.ruleModuleId, action.actionId),
                     previewTileAssetKeys = action.previewTileAssetKeys,
                     claimedTileIndex = action.claimedTileIndex,
@@ -83,7 +83,7 @@ internal fun decisionEntriesFrom(texts: DecisionTextResolver, prompt: PlayerDeci
         }
     when (val ruleDecision = prompt.ruleDecision) {
         RuleDecisionPromptDto.Confirmation -> add(
-            DecisionEntry(
+            element = DecisionEntry(
                 label = Text.translatable(MinecraftHudKeys.ACTION_CONFIRM),
                 previewTileAssetKeys = emptyList(),
                 claimedTileIndex = null,
@@ -93,7 +93,7 @@ internal fun decisionEntriesFrom(texts: DecisionTextResolver, prompt: PlayerDeci
         // 代表跳過的選項由一般跳過按鈕呈現，不佔卡片位置。
         is RuleDecisionPromptDto.SingleChoice -> ruleDecision.optionIds.filterNot { it == ruleDecision.passOptionId }.forEach { option ->
             add(
-                DecisionEntry(
+                element = DecisionEntry(
                     label = texts.actionLabel(prompt.ruleModuleId, option),
                     previewTileAssetKeys = ruleDecision.previewTileAssetKeysByOptionId[option].orEmpty(),
                     claimedTileIndex = null,
@@ -102,7 +102,7 @@ internal fun decisionEntriesFrom(texts: DecisionTextResolver, prompt: PlayerDeci
             )
         }
         is RuleDecisionPromptDto.TileSelection -> add(
-            DecisionEntry(
+            element = DecisionEntry(
                 label = Text.translatable(MinecraftHudKeys.ACTION_SELECT_TILES, ruleDecision.maxCount),
                 previewTileAssetKeys = ruleDecision.eligibleTileAssetKeys,
                 claimedTileIndex = null,

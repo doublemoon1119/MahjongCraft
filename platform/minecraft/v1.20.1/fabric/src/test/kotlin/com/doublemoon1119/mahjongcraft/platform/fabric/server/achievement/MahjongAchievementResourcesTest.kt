@@ -85,7 +85,7 @@ class MahjongAchievementResourcesTest {
     @Test
     fun `condition json parses rule and statistic and rejects missing achievements`() {
         val condition = MahjongAchievementCriterion.conditionFromJson(
-            JsonParser.parseString(
+            obj = JsonParser.parseString(
                 """{"achievements": ["mahjongcraft:win"], "rule": "mahjongcraft:riichi", "statistic": "mahjongcraft:wins", "at_least": 100}""",
             ).asJsonObject,
         )

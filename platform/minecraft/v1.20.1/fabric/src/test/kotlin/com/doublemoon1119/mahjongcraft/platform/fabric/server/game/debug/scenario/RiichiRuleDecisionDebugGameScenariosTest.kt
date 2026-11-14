@@ -29,7 +29,7 @@ class RiichiRuleDecisionDebugGameScenariosTest {
         )
         val module = DebugNotenDeclarationRiichiRuleModule(DebugNotenDeclarationRiichiRuleModule.ID, config)
         val step = assertNotNull(
-            DebugNotenDeclarationRuleDecisionResolver().begin(RuleDecisionTiming.BEFORE_EXHAUSTIVE_DRAW, afterDiscard, module),
+            actual = DebugNotenDeclarationRuleDecisionResolver().begin(RuleDecisionTiming.BEFORE_EXHAUSTIVE_DRAW, afterDiscard, module),
         )
         assertEquals(setOf(state.seat(0).id, state.seat(1).id), step.inputSpecsByPlayerId.keys)
     }

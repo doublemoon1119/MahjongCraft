@@ -113,10 +113,10 @@ internal fun handAnalysisContent(
     texts: DecisionTextResolver,
     analysis: HandReadinessAnalysisDto,
 ): DiscardAnalysisContent = readinessAnalysisContent(
-    texts,
-    analysis.ruleModuleId,
-    analysis.waitingTiles,
-    analysis.statusIndicatorId,
+    texts = texts,
+    ruleModuleId = analysis.ruleModuleId,
+    waitingTiles = analysis.waitingTiles,
+    statusIndicatorId = analysis.statusIndicatorId,
 )
 
 /**

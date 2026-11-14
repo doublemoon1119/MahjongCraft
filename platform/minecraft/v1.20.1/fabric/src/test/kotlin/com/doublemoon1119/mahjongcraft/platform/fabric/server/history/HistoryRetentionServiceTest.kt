@@ -65,7 +65,7 @@ class HistoryRetentionServiceTest {
         database.archive(archive(game.matchId, 100L))
         val store = AuthoritativeStateStore(historyRecordingEnabled = true)
         store.load(
-            AuthoritativeStateSnapshot(
+            state = AuthoritativeStateSnapshot(
                 games = mapOf(game.id to game),
                 historyRecordingState = HistoryRecordingState(nextSequenceByMatchId = mapOf(game.matchId to 2L)),
             ),
@@ -125,7 +125,7 @@ class HistoryRetentionServiceTest {
      * @return 受測封存紀錄。
      */
     private fun archive(id: Uuid, ended: Long): HistoryArchiveRecord = HistoryArchiveRecord(
-        id.toString(), Uuid.random().toString(), "test:rule", null, 0L, ended,
-        emptyList(), emptyList(), "{}",
+        matchId = id.toString(), tableId = Uuid.random().toString(), ruleId = "test:rule", dimensionId = null, startedAtEpochMillis = 0L, endedAtEpochMillis = ended,
+        participants = emptyList(), rounds = emptyList(), replayPayload = "{}",
     )
 }

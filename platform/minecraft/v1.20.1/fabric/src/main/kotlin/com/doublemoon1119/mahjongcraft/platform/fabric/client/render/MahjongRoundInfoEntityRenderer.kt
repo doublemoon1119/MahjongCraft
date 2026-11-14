@@ -47,10 +47,10 @@ class MahjongRoundInfoEntityRenderer(
 
     /** 局況資料列文字組合器。 */
     private val lineTextBuilder = RoundInfoLineTextBuilder(
-        roundInfoLineDisplayRegistry,
-        tileDisplayNameRegistry,
-        tileAssetRegistry,
-        tileEmojiRegistry,
+        roundInfoLineDisplayRegistry = roundInfoLineDisplayRegistry,
+        tileDisplayNameRegistry = tileDisplayNameRegistry,
+        tileAssetRegistry = tileAssetRegistry,
+        tileEmojiRegistry = tileEmojiRegistry,
     ) { message -> logger.warn(message) }
 
     override fun render(
@@ -73,29 +73,29 @@ class MahjongRoundInfoEntityRenderer(
         val totalHeight = lineHeight * lines.size
         val maxWidth = lines.maxOfOrNull(textRenderer::getWidth) ?: 0
         WorldPanelRenderer.drawBackground(
-            -maxWidth / 2f - PANEL_PADDING,
-            -totalHeight / 2f - PANEL_PADDING,
-            maxWidth / 2f + PANEL_PADDING,
-            totalHeight / 2f + PANEL_PADDING,
-            BACKGROUND_COLOR,
-            0f,
-            matrices,
-            vertexConsumers,
+            left = -maxWidth / 2f - PANEL_PADDING,
+            top = -totalHeight / 2f - PANEL_PADDING,
+            right = maxWidth / 2f + PANEL_PADDING,
+            bottom = totalHeight / 2f + PANEL_PADDING,
+            color = BACKGROUND_COLOR,
+            z = 0f,
+            matrices = matrices,
+            consumers = vertexConsumers,
         )
         lines.forEachIndexed { index, line ->
             val width = textRenderer.getWidth(line)
             val x = -width / 2.0f
             val y = -totalHeight / 2.0f + index * lineHeight
             WorldPanelRenderer.drawText(
-                textRenderer,
-                line,
-                x,
-                y,
-                TEXT_COLOR,
-                TEXT_Z,
-                light,
-                matrices,
-                vertexConsumers,
+                renderer = textRenderer,
+                text = line,
+                x = x,
+                y = y,
+                color = TEXT_COLOR,
+                z = TEXT_Z,
+                light = light,
+                matrices = matrices,
+                consumers = vertexConsumers,
             )
         }
         matrices.pop()

@@ -106,10 +106,10 @@ class AuthoritativeStateRecoveryIntegrationTest {
 
         runtime.restore(AuthoritativeStateSnapshot(rooms = mapOf(room.id to room)))
         val result = JoinRoomUseCase(
-            runtime.roomRepository,
-            runtime.memberships,
-            runtime.roomSnapshots,
-            FakeRoomEventPublisher(),
+            roomRepository = runtime.roomRepository,
+            membershipRepository = runtime.memberships,
+            snapshotRepository = runtime.roomSnapshots,
+            eventPublisher = FakeRoomEventPublisher(),
         )(room.id, joiningPlayerId)
 
         assertIs<Outcome.Success<Unit>>(result)
@@ -159,7 +159,7 @@ class AuthoritativeStateRecoveryIntegrationTest {
             },
             discardOrder = state.discardOrder + discardedTile.id,
             turnPhase = TurnPhase.AwaitingDiscardReaction(
-                PendingReaction(
+                reaction = PendingReaction(
                     discarderId = discarder.id,
                     tileId = discardedTile.id,
                     eligiblePlayerIds = setOf(firstResponder.id, secondResponder.id),
@@ -174,8 +174,8 @@ class AuthoritativeStateRecoveryIntegrationTest {
 
         assertIs<Outcome.Success<Unit>>(result)
         assertEquals(
-            GameAction.Pass,
-            runtime.gameRepository.getTableState(pendingState.id)?.pendingReaction?.responses?.get(firstResponder.id),
+            expected = GameAction.Pass,
+            actual = runtime.gameRepository.getTableState(pendingState.id)?.pendingReaction?.responses?.get(firstResponder.id),
         )
     }
 
@@ -204,7 +204,7 @@ class AuthoritativeStateRecoveryIntegrationTest {
                 if (player.id == firstResponder.id) player.copy(hand = readyHand) else player
             },
             turnPhase = TurnPhase.AwaitingRobbingReaction(
-                PendingRobbingReaction(
+                reaction = PendingRobbingReaction(
                     declarerId = declarer.id,
                     declaredAction = GameAction.Kan(
                         type = GameAction.KanType.ADDED_KAN,
@@ -222,8 +222,8 @@ class AuthoritativeStateRecoveryIntegrationTest {
 
         assertIs<Outcome.Success<Unit>>(result)
         assertEquals(
-            GameAction.Pass,
-            runtime.gameRepository.getTableState(pendingState.id)?.pendingRobbingReaction?.responses?.get(firstResponder.id),
+            expected = GameAction.Pass,
+            actual = runtime.gameRepository.getTableState(pendingState.id)?.pendingRobbingReaction?.responses?.get(firstResponder.id),
         )
     }
 
@@ -268,7 +268,7 @@ class AuthoritativeStateRecoveryIntegrationTest {
         )
 
         runtime.restore(
-            runtime.snapshotWith(
+            source = runtime.snapshotWith(
                 state = state,
                 pendingRuleDecision = ruleDecision,
                 flowConfig = GameFlowConfig(ruleDecision = RuleDecisionConfig(47.seconds)),
@@ -277,12 +277,12 @@ class AuthoritativeStateRecoveryIntegrationTest {
         assertEquals(47.seconds, runtime.gameRepository.getGame(state.id)?.flowConfig?.ruleDecision?.base)
 
         val confirmingSnapshot = assertNotNull(
-            runtime.gameSnapshots.getRuleDecisionSnapshot(state.id, confirming.id),
-            "confirming participant lost its rule decision snapshot across the restart",
+            actual = runtime.gameSnapshots.getRuleDecisionSnapshot(state.id, confirming.id),
+            message = "confirming participant lost its rule decision snapshot across the restart",
         )
         val choosingSnapshot = assertNotNull(
-            runtime.gameSnapshots.getRuleDecisionSnapshot(state.id, choosing.id),
-            "choosing participant lost its rule decision snapshot across the restart",
+            actual = runtime.gameSnapshots.getRuleDecisionSnapshot(state.id, choosing.id),
+            message = "choosing participant lost its rule decision snapshot across the restart",
         )
 
         assertEquals(RuleDecisionSnapshot(ruleDecision.stepId, 0, RuleDecisionInputSpec.Confirmation, null), confirmingSnapshot)
@@ -310,9 +310,9 @@ class AuthoritativeStateRecoveryIntegrationTest {
         val bystanderSnapshot = assertNotNull(runtime.gameSnapshots.getRuleDecisionSnapshot(state.id, bystander.id))
 
         assertEquals(
-            RuleDecisionSnapshot(ruleDecision.stepId, 0, ownInputSpec = null, ownSubmission = null),
-            bystanderSnapshot,
-            "a non participant must learn nothing about who is asked or who has answered",
+            expected = RuleDecisionSnapshot(ruleDecision.stepId, 0, ownInputSpec = null, ownSubmission = null),
+            actual = bystanderSnapshot,
+            message = "a non participant must learn nothing about who is asked or who has answered",
         )
     }
 
@@ -364,17 +364,17 @@ class AuthoritativeStateRecoveryIntegrationTest {
         val visibleWallTiles = snapshot.tileWall.tiles.filter { it.tile != null }
 
         assertTrue(
-            snapshot.tileWall.tiles.filter { it.id in liveWallTileIds }.all { it.tile == null },
-            "undrawn wall tiles must stay concealed after a restart",
+            actual = snapshot.tileWall.tiles.filter { it.id in liveWallTileIds }.all { it.tile == null },
+            message = "undrawn wall tiles must stay concealed after a restart",
         )
         assertTrue(
-            visibleWallTiles.none { it.id in liveWallTileIds },
-            "no live wall tile may become visible after a restart",
+            actual = visibleWallTiles.none { it.id in liveWallTileIds },
+            message = "no live wall tile may become visible after a restart",
         )
         assertEquals(
-            state.riichiWallProgress().getDoraIndicators(state).first.mapTo(mutableSetOf()) { it.id },
-            visibleWallTiles.mapTo(mutableSetOf()) { it.id },
-            "only the rule's revealed dead wall indicators may stay visible",
+            expected = state.riichiWallProgress().getDoraIndicators(state).first.mapTo(mutableSetOf()) { it.id },
+            actual = visibleWallTiles.mapTo(mutableSetOf()) { it.id },
+            message = "only the rule's revealed dead wall indicators may stay visible",
         )
     }
 
@@ -459,35 +459,35 @@ class AuthoritativeStateRecoveryIntegrationTest {
 
         /** 遊戲 snapshot 同步服務。 */
         private val snapshotSynchronizer = GameSnapshotSynchronizer(
-            gameRepository,
-            gameSnapshots,
-            GameVisibilityPolicyImpl(moduleRegistry, componentRegistry = bundledCoreExtensionRegistries().componentRegistry),
+            gameRepository = gameRepository,
+            snapshotRepository = gameSnapshots,
+            visibilityPolicy = GameVisibilityPolicyImpl(moduleRegistry, componentRegistry = bundledCoreExtensionRegistries().componentRegistry),
         )
 
         /** 恢復後的 timer manager。 */
         private val timerManager = MonotonicClockImpl().let { clock ->
             GameDecisionTimerManager(
-                gameRepository,
-                GameDecisionAuthorityResolver(),
-                PlayerDecisionTimerFactory(clock),
-                clock,
+                gameRepository = gameRepository,
+                authorityResolver = GameDecisionAuthorityResolver(),
+                timerFactory = PlayerDecisionTimerFactory(clock),
+                clock = clock,
             )
         }
 
         /** 衍生 session 狀態恢復服務。 */
         private val restorer = ServerSessionStateRestorer(
-            roomSnapshots,
-            gameSnapshots,
-            memberships,
-            GameVisibilityPolicyImpl(moduleRegistry, componentRegistry = bundledCoreExtensionRegistries().componentRegistry),
-            timerManager,
-            GameDecisionAvailabilityService(
-                FakeGamePresentationBusyGate(),
-                timerManager,
-                DecisionTimerSynchronizationService(
-                    timerManager,
-                    gameRepository,
-                    FakeDecisionTimerUpdatePublisher(),
+            roomSnapshots = roomSnapshots,
+            gameSnapshots = gameSnapshots,
+            memberships = memberships,
+            gameVisibilityPolicy = GameVisibilityPolicyImpl(moduleRegistry, componentRegistry = bundledCoreExtensionRegistries().componentRegistry),
+            decisionTimerManager = timerManager,
+            decisionAvailabilityService = GameDecisionAvailabilityService(
+                busyGate = FakeGamePresentationBusyGate(),
+                timerManager = timerManager,
+                synchronizationService = DecisionTimerSynchronizationService(
+                    timerManager = timerManager,
+                    gameRepository = gameRepository,
+                    publisher = FakeDecisionTimerUpdatePublisher(),
                 ),
             ),
             moduleRegistry = moduleRegistry,
@@ -496,15 +496,15 @@ class AuthoritativeStateRecoveryIntegrationTest {
 
         /** AI 決策解析器。 */
         val aiTurnDriver = AiTurnDriver(
-            gameRepository,
-            GetLegalActionsUseCase(gameRepository, moduleRegistry),
-            MahjongAiStrategyRegistryImpl(RandomAiStrategy.KEY).apply {
+            gameRepository = gameRepository,
+            getLegalActionsUseCase = GetLegalActionsUseCase(gameRepository, moduleRegistry),
+            aiStrategyRegistry = MahjongAiStrategyRegistryImpl(RandomAiStrategy.KEY).apply {
                 registerBuiltInAiStrategies(moduleRegistry, ExtensionGameActionAiRegistry(moduleRegistry), OpponentModelRegistry().apply { BundledRiichiExtension.registerOpponentModels(this) })
             },
-            GameVisibilityPolicyImpl(moduleRegistry, componentRegistry = bundledCoreExtensionRegistries().componentRegistry),
-            moduleRegistry,
-            AiDecisionExecutor.direct(failurePolicy = ExtensionFailurePolicy.Default),
-            AutomaticGameCommandResolver(moduleRegistry),
+            visibilityPolicy = GameVisibilityPolicyImpl(moduleRegistry, componentRegistry = bundledCoreExtensionRegistries().componentRegistry),
+            moduleRegistry = moduleRegistry,
+            decisionExecutor = AiDecisionExecutor.direct(failurePolicy = ExtensionFailurePolicy.Default),
+            commandResolver = AutomaticGameCommandResolver(moduleRegistry),
         )
 
         /**
@@ -550,7 +550,7 @@ class AuthoritativeStateRecoveryIntegrationTest {
             flowConfig: GameFlowConfig = GameFlowConfig(),
         ): AuthoritativeStateSnapshot = AuthoritativeStateSnapshot(
             games = mapOf(
-                state.id to Game(
+                pair = state.id to Game(
                     tableState = state,
                     flowConfig = flowConfig,
                     pendingRuleDecision = pendingRuleDecision,
@@ -567,11 +567,11 @@ class AuthoritativeStateRecoveryIntegrationTest {
          * @return 摸牌 use case 的結果。
          */
         suspend fun drawTile(gameId: Uuid, playerId: Uuid): Outcome<Unit, *> = DrawTileUseCase(
-            gameRepository,
-            moduleRegistry,
-            snapshotSynchronizer,
-            FakeGameEventPublisher(),
-            FakeGamePresentationPublisher(),
+            gameRepository = gameRepository,
+            moduleRegistry = moduleRegistry,
+            snapshotSynchronizer = snapshotSynchronizer,
+            eventPublisher = FakeGameEventPublisher(),
+            presentationPublisher = FakeGamePresentationPublisher(),
 
             componentRegistry = bundledCoreExtensionRegistries().componentRegistry,
         )(gameId, playerId)
@@ -584,13 +584,13 @@ class AuthoritativeStateRecoveryIntegrationTest {
          * @return 捨牌反應 use case 的結果。
          */
         suspend fun respondToDiscard(gameId: Uuid, playerId: Uuid): Outcome<Unit, *> = RespondToDiscardUseCase(
-            gameRepository,
-            moduleRegistry,
-            snapshotSynchronizer,
-            HandSortPreferenceStore(),
-            FakeGameEventPublisher(),
-            FakeGamePresentationPublisher(),
-            WinPresentationHandoff(),
+            gameRepository = gameRepository,
+            moduleRegistry = moduleRegistry,
+            snapshotSynchronizer = snapshotSynchronizer,
+            handSortPreferenceStore = HandSortPreferenceStore(),
+            eventPublisher = FakeGameEventPublisher(),
+            presentationPublisher = FakeGamePresentationPublisher(),
+            winPresentationHandoff = WinPresentationHandoff(),
             winCelebrationCueResolverRegistry = bundledWinCelebrationCueResolverRegistry(),
             winSettlementDetailResolverRegistry = WinSettlementDetailResolverRegistry(bundledCoreExtensionRegistries().componentRegistry).apply {
                 BundledRiichiExtension.registerWinSettlementDetailResolvers(this)
@@ -614,12 +614,12 @@ class AuthoritativeStateRecoveryIntegrationTest {
          * @return 搶槓反應 use case 的結果。
          */
         suspend fun respondToRobbing(gameId: Uuid, playerId: Uuid): Outcome<Unit, *> = RespondToRobbingUseCase(
-            gameRepository,
-            moduleRegistry,
-            snapshotSynchronizer,
-            FakeGameEventPublisher(),
-            FakeGamePresentationPublisher(),
-            WinPresentationHandoff(),
+            gameRepository = gameRepository,
+            moduleRegistry = moduleRegistry,
+            snapshotSynchronizer = snapshotSynchronizer,
+            eventPublisher = FakeGameEventPublisher(),
+            presentationPublisher = FakeGamePresentationPublisher(),
+            winPresentationHandoff = WinPresentationHandoff(),
             winCelebrationCueResolverRegistry = bundledWinCelebrationCueResolverRegistry(),
             winSettlementDetailResolverRegistry = WinSettlementDetailResolverRegistry(bundledCoreExtensionRegistries().componentRegistry).apply {
                 BundledRiichiExtension.registerWinSettlementDetailResolvers(this)

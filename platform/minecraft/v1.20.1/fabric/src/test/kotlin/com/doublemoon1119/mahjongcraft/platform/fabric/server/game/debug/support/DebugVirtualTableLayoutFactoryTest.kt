@@ -55,12 +55,12 @@ class DebugVirtualTableLayoutFactoryTest {
         )
 
         assertEquals(
-            layout.handPlacement(
+            expected = layout.handPlacement(
                 seatIndex = DebugVirtualTableLayout.DEBUG_SEAT_INDEX,
                 handSize = 13,
                 tileIndex = 3,
             ),
-            layout.handPlacement(handSize = 13, tileIndex = 3),
+            actual = layout.handPlacement(handSize = 13, tileIndex = 3),
         )
     }
 
@@ -133,8 +133,8 @@ class DebugVirtualTableLayoutFactoryTest {
         assertNotEquals(nearSeat, otherSeat)
         otherSeat.values.forEach {
             assertEquals(
-                MahjongTileTableLayout.seatYaw(MahjongTableFacing.NORTH, MahjongTableSeatLayout.FOUR_PLAYER, 2),
-                it.yaw,
+                expected = MahjongTileTableLayout.seatYaw(MahjongTableFacing.NORTH, MahjongTableSeatLayout.FOUR_PLAYER, 2),
+                actual = it.yaw,
             )
         }
     }
@@ -151,8 +151,8 @@ class DebugVirtualTableLayoutFactoryTest {
         )
 
         assertNotEquals(
-            layout.handPlacement(handSize = 13, tileIndex = 0),
-            layout.handPlacement(handSize = 13, tileIndex = 1),
+            illegal = layout.handPlacement(handSize = 13, tileIndex = 0),
+            actual = layout.handPlacement(handSize = 13, tileIndex = 1),
         )
     }
 

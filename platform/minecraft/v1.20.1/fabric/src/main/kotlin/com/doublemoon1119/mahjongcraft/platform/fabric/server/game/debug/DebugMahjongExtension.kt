@@ -203,7 +203,7 @@ internal class DebugMahjongExtension(
 
     override fun registerGameActionVocabulary(registry: GameActionVocabularyRegistrar) {
         registry.register(
-            GameActionVocabularyDefaultDefinition(
+            definition = GameActionVocabularyDefaultDefinition(
                 actionId = DebugDecisionActionIds.TEXT_CARD,
                 vocabulary = GameActionVocabulary(
                     labelKey = MinecraftMessageKeys.DEBUG_DECISION_TEXT_CARD_LABEL,
@@ -217,7 +217,7 @@ internal class DebugMahjongExtension(
         RiichiFamilyMinecraftPresentation.registerGameActionVocabulary(registry, DebugWinnerDealerRiichiRuleModule.ID, includesPullNorth = false)
         RiichiFamilyMinecraftPresentation.registerGameActionVocabulary(registry, DebugNotenDeclarationRiichiRuleModule.ID, includesPullNorth = false)
         registry.register(
-            GameActionVocabularyDefinition(
+            definition = GameActionVocabularyDefinition(
                 ruleModuleId = DebugNotenDeclarationRiichiRuleModule.ID,
                 actionId = DebugNotenDeclarationRuleDecisionResolver.REVEAL_TENPAI_OPTION,
                 vocabulary = GameActionVocabulary(
@@ -227,7 +227,7 @@ internal class DebugMahjongExtension(
             ),
         )
         registry.register(
-            GameActionVocabularyDefinition(
+            definition = GameActionVocabularyDefinition(
                 ruleModuleId = DebugNotenDeclarationRiichiRuleModule.ID,
                 actionId = DebugNotenDeclarationRuleDecisionResolver.DECLARE_NOTEN_OPTION,
                 vocabulary = GameActionVocabulary(

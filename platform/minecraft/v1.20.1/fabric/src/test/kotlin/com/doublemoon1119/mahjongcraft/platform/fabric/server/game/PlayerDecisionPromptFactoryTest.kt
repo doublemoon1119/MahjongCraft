@@ -33,7 +33,7 @@ class PlayerDecisionPromptFactoryTest {
         )
 
         val prompt = assertIs<RuleDecisionPromptDto.SingleChoice>(
-            choice.toPrompt(handTileAssetKey = { null }, visibleTileAssetKey = { tileId -> "asset".takeIf { tileId == shown } }),
+            value = choice.toPrompt(handTileAssetKey = { null }, visibleTileAssetKey = { tileId -> "asset".takeIf { tileId == shown } }),
         )
 
         assertEquals(mapOf("mahjongcraft:accept" to listOf("asset")), prompt.previewTileAssetKeysByOptionId)
@@ -48,8 +48,8 @@ class PlayerDecisionPromptFactoryTest {
 
         assertNotEquals(before, after)
         assertNotEquals(
-            buildKey(before),
-            buildKey(after),
+            illegal = buildKey(before),
+            actual = buildKey(after),
         )
     }
 
@@ -60,8 +60,8 @@ class PlayerDecisionPromptFactoryTest {
         val declaration = candidate(GameAction.Extension(TestExtensionAction))
 
         assertEquals(
-            listOf(tsumo, declaration).decisionIdentity(),
-            listOf(declaration, tsumo).decisionIdentity(),
+            expected = listOf(tsumo, declaration).decisionIdentity(),
+            actual = listOf(declaration, tsumo).decisionIdentity(),
         )
     }
 

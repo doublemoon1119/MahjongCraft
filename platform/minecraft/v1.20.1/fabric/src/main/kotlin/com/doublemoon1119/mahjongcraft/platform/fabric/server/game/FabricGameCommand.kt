@@ -215,13 +215,13 @@ class FabricGameCommand(
                 builder.suggest(
                     StringArgumentType.escapeIfRequired(candidate.token),
                     candidate.action.toDisplayText(
-                        candidate.referenceTile,
-                        resolved?.ruleModuleId,
-                        actionVocabularyRegistry,
-                        tileDisplayNameRegistry,
-                        tileAssetRegistry,
-                        tileEmojiRegistry,
-                        exhaustiveDrawReasonDisplayNameRegistry,
+                        referenceTile = candidate.referenceTile,
+                        ruleModuleId = resolved?.ruleModuleId,
+                        actionVocabularyRegistry = actionVocabularyRegistry,
+                        displayNameRegistry = tileDisplayNameRegistry,
+                        tileAssetRegistry = tileAssetRegistry,
+                        tileEmojiRegistry = tileEmojiRegistry,
+                        exhaustiveDrawReasonDisplayNameRegistry = exhaustiveDrawReasonDisplayNameRegistry,
                     ),
                 )
             }

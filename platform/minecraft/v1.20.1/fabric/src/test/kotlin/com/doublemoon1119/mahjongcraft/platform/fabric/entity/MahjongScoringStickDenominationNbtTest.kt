@@ -28,12 +28,12 @@ class MahjongScoringStickDenominationNbtTest {
     fun `unknown values fall back to the smallest denomination`() {
         assertEquals(MahjongScoringStickDenomination.P100, MahjongScoringStickDenominationNbt.read(NbtCompound()))
         assertEquals(
-            MahjongScoringStickDenomination.P100,
-            MahjongScoringStickDenominationNbt.read(NbtCompound().apply { putString(key, "P999") }),
+            expected = MahjongScoringStickDenomination.P100,
+            actual = MahjongScoringStickDenominationNbt.read(NbtCompound().apply { putString(key, "P999") }),
         )
         assertEquals(
-            MahjongScoringStickDenomination.P100,
-            MahjongScoringStickDenominationNbt.read(NbtCompound().apply { putInt(key, 99) }),
+            expected = MahjongScoringStickDenomination.P100,
+            actual = MahjongScoringStickDenominationNbt.read(NbtCompound().apply { putInt(key, 99) }),
         )
     }
 }

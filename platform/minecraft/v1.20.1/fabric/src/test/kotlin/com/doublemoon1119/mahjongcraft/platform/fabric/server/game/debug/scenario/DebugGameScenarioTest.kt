@@ -60,9 +60,9 @@ class DebugGameScenarioTest {
         }
         EXPECTED_IDS.filterNot { it in INITIAL_ROUND_IDS }.forEach { id ->
             assertEquals(
-                DebugGameScenarioPresentation.StaticWall,
-                registry.get(id)!!.build(contextFor(id)).presentation,
-                id,
+                expected = DebugGameScenarioPresentation.StaticWall,
+                actual = registry.get(id)!!.build(contextFor(id)).presentation,
+                message = id,
             )
         }
     }
@@ -123,8 +123,8 @@ class DebugGameScenarioTest {
         assertEquals(allTileIds, result.wallStructure.keys)
         assertEquals(allTileIds, result.wallLayout.placements.keys)
         assertEquals(
-            (state.tileWall.getAllTiles() + state.reservedWallTiles).mapTo(mutableSetOf()) { tile -> tile.id },
-            assertNotNull(state.physicalWallLayout).placements.keys,
+            expected = (state.tileWall.getAllTiles() + state.reservedWallTiles).mapTo(mutableSetOf()) { tile -> tile.id },
+            actual = assertNotNull(state.physicalWallLayout).placements.keys,
         )
         state.players.forEachIndexed { seatIndex, player ->
             val dealOrderIds = presentation.dealOrderHandTileIdsBySeatIndex.getValue(seatIndex)
@@ -188,8 +188,8 @@ class DebugGameScenarioTest {
         assertEquals(first.game.tableState.players.map { it.id }, second.game.tableState.players.map { it.id })
         assertEquals(3, first.game.tableState.riichiWallProgress().completedSupplementalDrawCount)
         assertEquals(
-            3,
-            first.game.tableState.players.sumOf { player ->
+            expected = 3,
+            actual = first.game.tableState.players.sumOf { player ->
                 player.hand.melds.count { it.type == MeldType.ClosedKan }
             },
         )
@@ -245,11 +245,11 @@ class DebugGameScenarioTest {
                         },
                     )
                     val reactions = validator.getLegalActions(
-                        LegalActionContext.discardReaction(contextState, opponent.id, actor.id, discardedTile),
+                        context = LegalActionContext.discardReaction(contextState, opponent.id, actor.id, discardedTile),
                     )
                     assertFalse(
-                        reactions.any { it is GameAction.Kan && it.type == GameAction.KanType.OPEN_KAN },
-                        "Scenario $number gave an opponent an accidental open kan for ${discardedTile.tile}",
+                        actual = reactions.any { it is GameAction.Kan && it.type == GameAction.KanType.OPEN_KAN },
+                        message = "Scenario $number gave an opponent an accidental open kan for ${discardedTile.tile}",
                     )
                 }
             }
@@ -304,7 +304,7 @@ class DebugGameScenarioTest {
                 .filterIsInstance<GameAction.Kan>()
                 .single { it.type == GameAction.KanType.CLOSED_KAN }
             val decision = RiichiSupplementalDrawPolicy.resolve(
-                SupplementalDrawContext(state, state, state.currentPlayer.id, kanAction),
+                context = SupplementalDrawContext(state, state, state.currentPlayer.id, kanAction),
             ) as SupplementalDrawDecision.Completed
             val currentLayout = assertNotNull(state.physicalWallLayout)
             val afterState = state.copy(
@@ -314,9 +314,9 @@ class DebugGameScenarioTest {
                 physicalWallLayout = null,
             )
             val transition = assertIs<PhysicalWallLayoutTransitionDecision.Completed>(
-                fixture.moduleRegistry.getModule(state.config).createPhysicalWallLayoutPolicy()
+                value = fixture.moduleRegistry.getModule(state.config).createPhysicalWallLayoutPolicy()
                     .resolveTransitionValidated(
-                        PhysicalWallLayoutTransitionContext(
+                        context = PhysicalWallLayoutTransitionContext(
                             tableStateBeforeAction = state,
                             tableStateAfterAction = afterState,
                             currentLayout = currentLayout,
@@ -333,8 +333,8 @@ class DebugGameScenarioTest {
                 assertEquals(currentLayout.placements.getValue(move.tileId), move.source)
             }
             assertEquals(
-                (decision.tileWall.getAllTiles() + decision.reservedWallTiles).mapTo(mutableSetOf()) { it.id },
-                transition.layout.placements.keys,
+                expected = (decision.tileWall.getAllTiles() + decision.reservedWallTiles).mapTo(mutableSetOf()) { it.id },
+                actual = transition.layout.placements.keys,
             )
         }
     }
@@ -357,7 +357,7 @@ class DebugGameScenarioTest {
             },
         )
         val legalActions = fixture.moduleRegistry.getModule(state.config).createLegalActionValidator().getLegalActions(
-            LegalActionContext.discardReaction(contextState, claimant.id, discarder.id, discardedTile),
+            context = LegalActionContext.discardReaction(contextState, claimant.id, discarder.id, discardedTile),
         )
         val openKans = legalActions.filterIsInstance<GameAction.Kan>().filter {
             it.type == GameAction.KanType.OPEN_KAN
@@ -402,11 +402,11 @@ class DebugGameScenarioTest {
                 },
             )
             val reactions = validator.getLegalActions(
-                LegalActionContext.discardReaction(contextState, opponent.id, actor.id, declarationTile),
+                context = LegalActionContext.discardReaction(contextState, opponent.id, actor.id, declarationTile),
             )
             assertFalse(
-                reactions.any { action -> action is GameAction.Ron },
-                "Scenario must not let an opponent ron the fourth declaration tile",
+                actual = reactions.any { action -> action is GameAction.Ron },
+                message = "Scenario must not let an opponent ron the fourth declaration tile",
             )
         }
     }

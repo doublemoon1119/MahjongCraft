@@ -71,12 +71,12 @@ internal class FabricWorldParticipantPresenceService(
                                 !entity.isRemoved &&
                                 table.world.chunkManager.isChunkLoaded(entity.blockX shr 4, entity.blockZ shr 4) &&
                                 TableInteractionReach.distance(
-                                    entity.x,
-                                    entity.y,
-                                    entity.z,
-                                    table.location.x,
-                                    table.location.y,
-                                    table.location.z,
+                                    x = entity.x,
+                                    y = entity.y,
+                                    z = entity.z,
+                                    tableX = table.location.x,
+                                    tableY = table.location.y,
+                                    tableZ = table.location.z,
                                 ) <= TableInteractionReach.SURVIVAL
                         },
                         abortHandler = abortHandler,

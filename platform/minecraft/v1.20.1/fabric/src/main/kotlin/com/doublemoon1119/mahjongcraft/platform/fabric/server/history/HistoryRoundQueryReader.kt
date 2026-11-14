@@ -110,7 +110,7 @@ internal fun authorizedHistoryReplay(
  * @return 安全查詢失敗。
  */
 private fun ReplayReadError.toQueryFailure(): HistoryQueryResult.Failure = historyRoundFailure(
-    when (this) {
+    code = when (this) {
         ReplayReadError.SELECTION_NOT_FOUND -> HistoryQueryErrorCode.INVALID_REQUEST
         ReplayReadError.LIMIT_EXCEEDED -> HistoryQueryErrorCode.CONTENT_TOO_LARGE
         ReplayReadError.INVALID_DOCUMENT, ReplayReadError.UNSUPPORTED_CONTENT -> HistoryQueryErrorCode.NOT_AVAILABLE
@@ -124,5 +124,5 @@ private fun ReplayReadError.toQueryFailure(): HistoryQueryResult.Failure = histo
  * @return 安全失敗。
  */
 internal fun historyRoundFailure(code: HistoryQueryErrorCode): HistoryQueryResult.Failure = HistoryQueryResult.Failure(
-    HistoryQueryError(code, "History round query failed: ${code.name}"),
+    error = HistoryQueryError(code, "History round query failed: ${code.name}"),
 )

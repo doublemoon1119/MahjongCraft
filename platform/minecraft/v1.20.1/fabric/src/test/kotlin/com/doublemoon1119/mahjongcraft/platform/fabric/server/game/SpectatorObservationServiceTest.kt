@@ -116,10 +116,10 @@ class SpectatorObservationServiceTest {
         val gameSnapshotRepository = FakeGameSnapshotRepository()
         val networkRegistries = DefaultNetworkDtoRegistries()
         val service = SpectatorObservationService(
-            scope,
-            gameRepository,
-            SyncGameSnapshotUseCase(GameSnapshotSynchronizer(gameRepository, gameSnapshotRepository, GameVisibilityPolicyImpl(MahjongModuleRegistryImpl().apply { registerBundledRuleModules() }, componentRegistry = bundledCoreExtensionRegistries().componentRegistry))),
-            gameSnapshotRepository,
+            scope = scope,
+            gameRepository = gameRepository,
+            syncGame = SyncGameSnapshotUseCase(GameSnapshotSynchronizer(gameRepository, gameSnapshotRepository, GameVisibilityPolicyImpl(MahjongModuleRegistryImpl().apply { registerBundledRuleModules() }, componentRegistry = bundledCoreExtensionRegistries().componentRegistry))),
+            gameSnapshotRepository = gameSnapshotRepository,
         )
         return Fixture(service, gameRepository, gameSnapshotRepository, tableId, seatedPlayerId, spectatorId)
     }

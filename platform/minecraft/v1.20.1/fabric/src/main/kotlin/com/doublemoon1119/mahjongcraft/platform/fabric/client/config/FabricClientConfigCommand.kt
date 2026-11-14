@@ -93,11 +93,11 @@ class FabricClientConfigCommand(
             logger.info("Client config reloaded")
             source.sendFeedback(
                 prefixedConfigMessage(
-                    Text.translatable(
+                    message = Text.translatable(
                         MinecraftConfigCommandKeys.RELOADED,
                         Text.translatable(MinecraftConfigCommandKeys.CLIENT_CONFIG),
                     ),
-                    Formatting.GREEN,
+                    color = Formatting.GREEN,
                 ),
             )
             COMMAND_SUCCESS
@@ -132,9 +132,9 @@ class FabricClientConfigCommand(
 
     /** 使用 Client Config Screen 共用欄位建立目前設定訊息。 */
     private fun clientConfigShowMessage() = configShowMessage(
-        Text.translatable(MinecraftConfigCommandKeys.CLIENT_CONFIG),
-        configStore.displayPath,
-        clientConfigEntries(configStore.current),
+        configName = Text.translatable(MinecraftConfigCommandKeys.CLIENT_CONFIG),
+        displayPath = configStore.displayPath,
+        entries = clientConfigEntries(configStore.current),
     )
 
     private companion object {

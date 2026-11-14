@@ -132,12 +132,12 @@ class ThreePlayerRiichiDebugGameScenariosTest {
 
         assertTrue(RIICHI_PULL_NORTH_GAME_ACTION in actions)
         assertEquals(
-            setOf(ONE_DOT, NINE_DOT, ONE_BAMBOO),
-            actions.filterIsInstance<GameAction.Kan>().mapTo(mutableSetOf()) { kan -> handTiles.getValue(kan.tileId).tile },
+            expected = setOf(ONE_DOT, NINE_DOT, ONE_BAMBOO),
+            actual = actions.filterIsInstance<GameAction.Kan>().mapTo(mutableSetOf()) { kan -> handTiles.getValue(kan.tileId).tile },
         )
         assertEquals(
-            listOf(NINE_BAMBOO, Tile.Honor.North, NINE_BAMBOO, NINE_BAMBOO),
-            state.reservedWallTiles.take(4).map { it.tile },
+            expected = listOf(NINE_BAMBOO, Tile.Honor.North, NINE_BAMBOO, NINE_BAMBOO),
+            actual = state.reservedWallTiles.take(4).map { it.tile },
         )
         assertEquals(1, state.currentPlayer.hand.standingTiles.count { it.tile == NINE_BAMBOO })
     }
@@ -174,12 +174,12 @@ class ThreePlayerRiichiDebugGameScenariosTest {
         val state = build("mahjongcraft:riichi_three_player/debug/pull_north_with_melds")
 
         assertEquals(
-            listOf(Tile.Honor.White to RelativeDirection.Left, Tile.Honor.Green to RelativeDirection.Right),
-            state.currentPlayer.hand.melds.map { meld -> meld.tiles.first().tile to meld.sourceDirection },
+            expected = listOf(Tile.Honor.White to RelativeDirection.Left, Tile.Honor.Green to RelativeDirection.Right),
+            actual = state.currentPlayer.hand.melds.map { meld -> meld.tiles.first().tile to meld.sourceDirection },
         )
         assertEquals(
-            listOf(Tile.Honor.West, Tile.Honor.East, Tile.Honor.West, Tile.Honor.East),
-            state.tileWall.getAllTiles().map { it.tile },
+            expected = listOf(Tile.Honor.West, Tile.Honor.East, Tile.Honor.West, Tile.Honor.East),
+            actual = state.tileWall.getAllTiles().map { it.tile },
         )
         val riverSizes = (0..2).map { offset -> state.seat(offset).discardPile.entries.size }
         assertTrue(riverSizes.max() - riverSizes.min() <= 1, "rivers must be filled evenly: $riverSizes")
@@ -233,8 +233,8 @@ class ThreePlayerRiichiDebugGameScenariosTest {
         assertEquals(Tile.Honor.North, north.tile)
         assertEquals(DebugScriptedAiStrategy.TSUMOGIRI_KEY, result.game.aiPlayerStrategyKeys[state.seat(1).id])
         assertEquals(
-            listOf(Tile.Honor.Red to RelativeDirection.Left, Tile.Honor.White to RelativeDirection.Right),
-            state.seat(0).hand.melds.map { meld -> meld.tiles.first().tile to meld.sourceDirection },
+            expected = listOf(Tile.Honor.Red to RelativeDirection.Left, Tile.Honor.White to RelativeDirection.Right),
+            actual = state.seat(0).hand.melds.map { meld -> meld.tiles.first().tile to meld.sourceDirection },
         )
         assertTrue(state.canRobPulledNorth(offset = 0, north = north))
         assertFalse(state.canRobPulledNorth(offset = 2, north = north))
@@ -255,12 +255,12 @@ class ThreePlayerRiichiDebugGameScenariosTest {
         val handTiles = state.currentPlayer.hand.allTiles.associateBy { it.id }
 
         assertEquals(
-            setOf(ONE_DOT),
-            state.currentOwnTurnActions().filterIsInstance<GameAction.Kan>().mapTo(mutableSetOf()) { kan -> handTiles.getValue(kan.tileId).tile },
+            expected = setOf(ONE_DOT),
+            actual = state.currentOwnTurnActions().filterIsInstance<GameAction.Kan>().mapTo(mutableSetOf()) { kan -> handTiles.getValue(kan.tileId).tile },
         )
         assertEquals(
-            listOf(NINE_DOT to RelativeDirection.Left),
-            state.currentPlayer.hand.melds.map { meld -> meld.tiles.first().tile to meld.sourceDirection },
+            expected = listOf(NINE_DOT to RelativeDirection.Left),
+            actual = state.currentPlayer.hand.melds.map { meld -> meld.tiles.first().tile to meld.sourceDirection },
         )
         assertEquals(listOf(NINE_DOT, Tile.Honor.South, Tile.Honor.East), state.reservedWallTiles.take(3).map { it.tile })
         assertEquals(ONE_BAMBOO, state.liveWallTile(0).tile)
@@ -322,12 +322,12 @@ class ThreePlayerRiichiDebugGameScenariosTest {
             },
         )
         return contextState.scenarioValidator().getLegalActions(
-            LegalActionContext.declarationReaction(
-                contextState,
-                player.id,
-                declarer.id,
-                RIICHI_PULL_NORTH_GAME_ACTION,
-                north,
+            context = LegalActionContext.declarationReaction(
+                tableState = contextState,
+                playerId = player.id,
+                declarerId = declarer.id,
+                declaredAction = RIICHI_PULL_NORTH_GAME_ACTION,
+                declaredTile = north,
             ),
         ).any { it is GameAction.Ron }
     }

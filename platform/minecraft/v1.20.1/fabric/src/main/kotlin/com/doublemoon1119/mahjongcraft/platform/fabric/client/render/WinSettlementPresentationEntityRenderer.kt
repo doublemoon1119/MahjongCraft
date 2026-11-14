@@ -78,8 +78,8 @@ class WinSettlementPresentationEntityRenderer(
 
     /** 宣告式版面的量測與配置；文字寬度用本 renderer 的字型量測。 */
     private val layoutSolver = PresentationLayoutSolver(
-        templateRegistry,
-        object : PresentationTextMeasurer {
+        templateRegistry = templateRegistry,
+        textMeasurer = object : PresentationTextMeasurer {
             override fun measure(text: PresentationValue.TextValue): Float = textRenderer.getWidth(Text.translatable(text.translationKey, *text.arguments.toTypedArray())).toFloat()
 
             override fun measurePlain(text: String): Float = textRenderer.getWidth(text).toFloat()
@@ -194,7 +194,7 @@ class WinSettlementPresentationEntityRenderer(
                 WinSettlementPresentationEntity.DETAIL_TEXT -> PresentationValue.TextValue(detail.values.firstOrNull().orEmpty(), detail.values.drop(1))
                 WinSettlementPresentationEntity.DETAIL_TILES -> PresentationValue.TileListValue(detail.values)
                 WinSettlementPresentationEntity.DETAIL_ENTRIES -> PresentationValue.EntryListValue(
-                    detail.values.chunked(WinSettlementPresentationEntity.ENTRY_VALUE_COUNT)
+                    entries = detail.values.chunked(WinSettlementPresentationEntity.ENTRY_VALUE_COUNT)
                         .filter { it.size == WinSettlementPresentationEntity.ENTRY_VALUE_COUNT }
                         .map {
                             PresentationValue.EntryListValue.Entry(
@@ -230,7 +230,7 @@ class WinSettlementPresentationEntityRenderer(
             entryStaggerTicks = entity.revealTiming.entryStaggerTicks,
             scoreRevealTicks = entity.revealTiming.scoreRevealTicks,
             scoreRevealDelayTicks = WinSettlementPresentationEntity.scoreRevealDelayTicks(
-                WinSettlementPresentationEntity.layoutOf(entity.templateKey),
+                layout = WinSettlementPresentationEntity.layoutOf(entity.templateKey),
             ).toInt(),
         )
     }
@@ -281,14 +281,14 @@ class WinSettlementPresentationEntityRenderer(
                     }
                     val naturalWidth = textRenderer.getWidth(text).toFloat().coerceAtLeast(1f)
                     draw(
-                        text,
-                        anchorX,
-                        y,
-                        align,
-                        color(layout.argb and 0xFFFFFF, alpha * ((layout.argb ushr 24) / 255f)),
-                        minOf(layout.scale, allocatedWidth.coerceAtLeast(1f) / naturalWidth),
-                        matrices,
-                        consumers,
+                        text = text,
+                        x = anchorX,
+                        y = y,
+                        align = align,
+                        color = color(layout.argb and 0xFFFFFF, alpha * ((layout.argb ushr 24) / 255f)),
+                        scale = minOf(layout.scale, allocatedWidth.coerceAtLeast(1f) / naturalWidth),
+                        matrices = matrices,
+                        consumers = consumers,
                     )
                 }
             }
@@ -690,9 +690,9 @@ class WinSettlementPresentationEntityRenderer(
             val rowAlpha = alpha * reveal
             val snapshot = entity.rankings.first { it.playerId == row.player.playerId.toString() }
             val settledEffect = SettlementRankingSettledEffect.resolve(
-                local,
-                WinSettlementPresentationEntity.RANKING_SETTLED_SOUND_TICKS.toDouble(),
-                snapshot.previousRank != snapshot.currentRank,
+                elapsed = local,
+                settledTick = WinSettlementPresentationEntity.RANKING_SETTLED_SOUND_TICKS.toDouble(),
+                rankChanged = snapshot.previousRank != snapshot.currentRank,
             )
             renderRankingSettledHighlight(layout.panelHalfWidth, y, rowAlpha, settledEffect, matrices, consumers)
             matrices.push()
@@ -702,14 +702,14 @@ class WinSettlementPresentationEntityRenderer(
             matrices.translate(rankRightX, 0f, 0f)
             matrices.scale(settledEffect.rankScale, settledEffect.rankScale, 1f)
             draw(
-                Text.literal(ranks.getValue(row.player.playerId).toString()),
-                0f,
-                0f,
-                Align.RIGHT,
-                color(mixRgb(0xFFD45A, 0xFFFFFF, settledEffect.rankWhiteness), rowAlpha),
-                1f,
-                matrices,
-                consumers,
+                text = Text.literal(ranks.getValue(row.player.playerId).toString()),
+                x = 0f,
+                y = 0f,
+                align = Align.RIGHT,
+                color = color(mixRgb(0xFFD45A, 0xFFFFFF, settledEffect.rankWhiteness), rowAlpha),
+                scale = 1f,
+                matrices = matrices,
+                consumers = consumers,
             )
             matrices.pop()
             renderRankingPortrait(snapshot, faceLeftX, -1f, rowAlpha, matrices, consumers)
@@ -749,13 +749,13 @@ class WinSettlementPresentationEntityRenderer(
         renderHighlightQuad(left, right, y - 3f, y + 11f, alpha * effect.highlightAlpha, matrices, consumers)
         val sweepCenter = left + (right - left) * effect.sweepProgress
         renderHighlightQuad(
-            maxOf(left, sweepCenter - RANKING_SWEEP_HALF_WIDTH),
-            minOf(right, sweepCenter + RANKING_SWEEP_HALF_WIDTH),
-            y - 3f,
-            y + 11f,
-            alpha * effect.highlightAlpha * 1.6f,
-            matrices,
-            consumers,
+            left = maxOf(left, sweepCenter - RANKING_SWEEP_HALF_WIDTH),
+            right = minOf(right, sweepCenter + RANKING_SWEEP_HALF_WIDTH),
+            top = y - 3f,
+            bottom = y + 11f,
+            alpha = alpha * effect.highlightAlpha * 1.6f,
+            matrices = matrices,
+            consumers = consumers,
         )
     }
 

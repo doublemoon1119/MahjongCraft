@@ -17,12 +17,12 @@ class TablePresentationBusyPolicyTest {
     @Test
     fun `an ordinary deal or discard animation still makes the table busy`() {
         assertTrue(
-            TablePresentationBusyPolicy.tileBlocksTableBusy(
+            actual = TablePresentationBusyPolicy.tileBlocksTableBusy(
                 isAnimating = true,
                 nonBlockingUntilGameTime = NO_EXEMPTION,
                 currentGameTime = 1_000L,
             ),
-            "Deal/draw/discard animations carry no exemption, so they must keep blocking the table.",
+            message = "Deal/draw/discard animations carry no exemption, so they must keep blocking the table.",
         )
     }
 
@@ -30,14 +30,14 @@ class TablePresentationBusyPolicyTest {
     @Test
     fun `a tile that is not animating never makes the table busy`() {
         assertFalse(
-            TablePresentationBusyPolicy.tileBlocksTableBusy(
+            actual = TablePresentationBusyPolicy.tileBlocksTableBusy(
                 isAnimating = false,
                 nonBlockingUntilGameTime = NO_EXEMPTION,
                 currentGameTime = 1_000L,
             ),
         )
         assertFalse(
-            TablePresentationBusyPolicy.tileBlocksTableBusy(
+            actual = TablePresentationBusyPolicy.tileBlocksTableBusy(
                 isAnimating = false,
                 nonBlockingUntilGameTime = 2_000L,
                 currentGameTime = 1_000L,
@@ -55,12 +55,12 @@ class TablePresentationBusyPolicyTest {
         val exemptUntil = presentationEnd + MahjongTileTableLayout.WIN_LAYDOWN_DURATION_TICKS
         listOf(500L, presentationEnd - 1, presentationEnd, exemptUntil - 1).forEach { now ->
             assertFalse(
-                TablePresentationBusyPolicy.tileBlocksTableBusy(
+                actual = TablePresentationBusyPolicy.tileBlocksTableBusy(
                     isAnimating = true,
                     nonBlockingUntilGameTime = exemptUntil,
                     currentGameTime = now,
                 ),
-                "An ordinary continuing win must not block the table at game time $now.",
+                message = "An ordinary continuing win must not block the table at game time $now.",
             )
         }
     }
@@ -98,8 +98,8 @@ class TablePresentationBusyPolicyTest {
         assertTrue(tableBusyAt(showcaseEnd - 1), "Still inside the showcase window.")
         assertFalse(tableBusyAt(showcaseEnd), "Once the showcase ends the other players must be free again.")
         assertFalse(
-            tableBusyAt(presentationEnd),
-            "The settlement panel and the conceal animation must not keep blocking the table.",
+            actual = tableBusyAt(presentationEnd),
+            message = "The settlement panel and the conceal animation must not keep blocking the table.",
         )
         assertFalse(tableBusyAt(exemptUntil - 1), "The conceal animation is still playing but must not block.")
     }
@@ -109,11 +109,11 @@ class TablePresentationBusyPolicyTest {
     fun `the exemption expires and the tile blocks again afterwards`() {
         val exemptUntil = 1_000L
         assertFalse(
-            TablePresentationBusyPolicy.tileBlocksTableBusy(true, exemptUntil, exemptUntil - 1),
+            actual = TablePresentationBusyPolicy.tileBlocksTableBusy(true, exemptUntil, exemptUntil - 1),
         )
         assertTrue(
-            TablePresentationBusyPolicy.tileBlocksTableBusy(true, exemptUntil, exemptUntil),
-            "At the lease's expiry the tile is no longer exempt.",
+            actual = TablePresentationBusyPolicy.tileBlocksTableBusy(true, exemptUntil, exemptUntil),
+            message = "At the lease's expiry the tile is no longer exempt.",
         )
     }
 

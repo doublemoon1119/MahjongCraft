@@ -363,9 +363,9 @@ class FabricGamePresentationPublisher(
                 controllerPos = BlockPos(resolved.location.x, resolved.location.y, resolved.location.z),
                 tableFacing = resolved.facing,
                 placement = MahjongTileTableLayout.showcaseStagePlacement(
-                    resolved.location.x,
-                    resolved.location.y,
-                    resolved.location.z,
+                    controllerX = resolved.location.x,
+                    controllerY = resolved.location.y,
+                    controllerZ = resolved.location.z,
                 ),
                 request = request,
                 waitingTileAssetsBySeat = stageInputs.waitingTileAssetsBySeat,
@@ -596,7 +596,7 @@ class FabricGamePresentationPublisher(
         }
         val sideLayout = wallSideLayout(state, state.dealerIndex)
         val result = tileWallPresenter.presentTransition(
-            MahjongTileWallTransitionPresentation(
+            presentation = MahjongTileWallTransitionPresentation(
                 tableId = gameId,
                 tableLocation = resolved.location,
                 tableFacing = resolved.facing,
@@ -641,9 +641,9 @@ class FabricGamePresentationPublisher(
             pendingDeal?.join()
             val resolved = resolveTableContext(gameId, "publishTableSteps") ?: return@launchPendingPresentation
             var cursor = maxOf(
-                resolved.world.time,
-                resolved.tableState.presentationBusyUntilGameTime,
-                resolved.tableState.continuingWinPresentationBusyUntilGameTime,
+                a = resolved.world.time,
+                b = resolved.tableState.presentationBusyUntilGameTime,
+                c = resolved.tableState.continuingWinPresentationBusyUntilGameTime,
             )
             steps.forEach { step -> cursor = presentStep(gameId, resolved, step, cursor) }
             resolved.tableState.extendPresentationUntil(cursor)
@@ -780,7 +780,7 @@ class FabricGamePresentationPublisher(
             )
         }
         return TableTileArrangement.arrange(
-            TableTileArrangementInput(
+            input = TableTileArrangementInput(
                 controllerX = resolved.location.x,
                 controllerY = resolved.location.y,
                 controllerZ = resolved.location.z,
@@ -807,7 +807,7 @@ class FabricGamePresentationPublisher(
     private fun presentTableProps(gameId: Uuid, state: TableState) {
         val resolved = resolveTableContext(gameId, "presentTableProps") ?: return
         tablePropPresenter.present(
-            TablePropPresentation(
+            presentation = TablePropPresentation(
                 tableId = gameId,
                 ruleModuleId = moduleRegistry.getModule(state.config).id,
                 tableLocation = resolved.location,
@@ -877,7 +877,7 @@ class FabricGamePresentationPublisher(
             if (seatIndex < 0) return@launch
 
             tileSelectionConfirmPresenter.present(
-                MahjongTileSelectionConfirmPresentation(
+                presentation = MahjongTileSelectionConfirmPresentation(
                     tableId = gameId,
                     tableLocation = resolved.location,
                     tableFacing = resolved.facing,
@@ -903,7 +903,7 @@ class FabricGamePresentationPublisher(
         val ruleModuleId = moduleRegistry.getModule(tableState.config).id
         val lines = roundInfoLineDisplayRegistry.buildLines(ruleModuleId, tableState)
         roundInfoPresenter.present(
-            MahjongRoundInfoPresentation(
+            presentation = MahjongRoundInfoPresentation(
                 tableId = gameId,
                 tableLocation = resolved.location,
                 tableFacing = resolved.facing,
@@ -996,7 +996,7 @@ class FabricGamePresentationPublisher(
                 MahjongTileTableLayout.dealAnimationTicks(totalTurnCount)
             if (opening != null && result != MahjongPlayerAreaPresentationResult.TABLE_NOT_FOUND) {
                 val openingResult = tileWallPresenter.presentOpening(
-                    MahjongTileWallOpeningPresentation(opening, handFlipEndGameTime),
+                    presentation = MahjongTileWallOpeningPresentation(opening, handFlipEndGameTime),
                 )
                 if (openingResult != MahjongTileWallPresentationResult.PRESENTED) {
                     logger.warn("Initial wall opening gameId={} failed: result={}", gameId, openingResult)
@@ -1005,9 +1005,9 @@ class FabricGamePresentationPublisher(
             resolved.tableState.extendPresentationUntil(handFlipEndGameTime)
             presentTableProps(gameId, tableState)
             tableOverlayCoordinator.showNow(
-                resolved.world,
-                gameId,
-                BlockPos(resolved.location.x, resolved.location.y, resolved.location.z),
+                world = resolved.world,
+                tableId = gameId,
+                controllerPos = BlockPos(resolved.location.x, resolved.location.y, resolved.location.z),
             )
             presentAt(resolved.world, openingEndGameTime) {
                 if (!openingOperations.mayRun(openingOperation)) return@presentAt
@@ -1161,9 +1161,9 @@ class FabricGamePresentationPublisher(
                     val resolved = resolveTableContext(gameId, operation) ?: return@presentation
                     val state = gameRepository.getTableState(gameId) ?: return@presentation
                     val startAt = maxOf(
-                        resolved.world.time,
-                        resolved.tableState.presentationBusyUntilGameTime,
-                        resolved.tableState.continuingWinPresentationBusyUntilGameTime,
+                        a = resolved.world.time,
+                        b = resolved.tableState.presentationBusyUntilGameTime,
+                        c = resolved.tableState.continuingWinPresentationBusyUntilGameTime,
                     )
                     block(resolved, state, startAt)
                 } catch (cause: Exception) {
@@ -1383,9 +1383,9 @@ class FabricGamePresentationPublisher(
                     tableId = gameId,
                     controllerPos = BlockPos(resolved.location.x, resolved.location.y, resolved.location.z),
                     stagePlacement = MahjongTileTableLayout.showcaseStagePlacement(
-                        resolved.location.x,
-                        resolved.location.y,
-                        resolved.location.z,
+                        controllerX = resolved.location.x,
+                        controllerY = resolved.location.y,
+                        controllerZ = resolved.location.z,
                     ),
                     startGameTime = effectEndGameTime,
                     winningTileId = request.winningTileId,
@@ -1396,10 +1396,10 @@ class FabricGamePresentationPublisher(
                 null
             }
             tableOverlayCoordinator.hideUntil(
-                resolved.world,
-                gameId,
-                BlockPos(resolved.location.x, resolved.location.y, resolved.location.z),
-                showcaseEnd ?: effectEndGameTime,
+                world = resolved.world,
+                tableId = gameId,
+                controllerPos = BlockPos(resolved.location.x, resolved.location.y, resolved.location.z),
+                gameTime = showcaseEnd ?: effectEndGameTime,
             )
             return CelebrationSegment(
                 endGameTime = showcaseEnd ?: effectEndGameTime,
@@ -1478,7 +1478,7 @@ class FabricGamePresentationPublisher(
         // 先還原可見度再蓋牌：兩者排進同一條佇列，順序不能顛倒。
         plan.restoreVisibleTileIds.forEach { tileId ->
             resolved.findTile(tileId)?.enqueueAll(
-                listOf(AnimationStep.WaitUntil(endGameTime), AnimationStep.SetInvisible(false)),
+                steps = listOf(AnimationStep.WaitUntil(endGameTime), AnimationStep.SetInvisible(false)),
             )
         }
         plan.concealTileIds.forEach { tileId ->

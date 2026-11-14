@@ -37,20 +37,20 @@ internal fun boundedHistoryRoundEvents(
         val next = if (shortened) transactions.lastOrNull()?.index?.plus(1) else mapped.nextTransactionIndex
         val catalog = if (shortened) mapped.tileCatalog.take(checkNotNull(transactions.lastOrNull()).declaredTileCountAfter) else mapped.tileCatalog
         val response = HistoryRoundEventsResponseDto(
-            request.requestId,
-            request.matchId,
-            request.roundNumber,
-            request.startTransactionIndex,
+            requestId = request.requestId,
+            matchId = request.matchId,
+            roundNumber = request.roundNumber,
+            startTransactionIndex = request.startTransactionIndex,
             events = mapped.copy(transactions = transactions, nextTransactionIndex = next, tileCatalog = catalog),
             errorCode = null,
         )
         if (encodedHistoryResponseUtf8Size(json, HistoryRoundEventsResponseDto.serializer(), response) <= maximumBytes) return response
         if (count <= 1) {
             return HistoryRoundEventsResponseDto(
-                request.requestId,
-                request.matchId,
-                request.roundNumber,
-                request.startTransactionIndex,
+                requestId = request.requestId,
+                matchId = request.matchId,
+                roundNumber = request.roundNumber,
+                startTransactionIndex = request.startTransactionIndex,
                 errorCode = HistoryQueryErrorCodeDto.CONTENT_TOO_LARGE,
                 events = null,
             )

@@ -473,8 +473,8 @@ class HistoryBrowseRoundControllerTest {
      * @return 含局索引的摘要。
      */
     private fun detail() = HistoryMatchDetailDto(
-        summary(MATCH_ID),
-        listOf(HistoryRoundSummaryDto(1, 1, 2), HistoryRoundSummaryDto(2, 3, 4)),
+        summary = summary(MATCH_ID),
+        rounds = listOf(HistoryRoundSummaryDto(1, 1, 2), HistoryRoundSummaryDto(2, 3, 4)),
     )
 
     /**
@@ -643,7 +643,7 @@ class HistoryBrowseRoundControllerTest {
         ) {
             val indexes = transactionIndexes ?: if (next == null) listOf(start) else (start until next).toList()
             mutableState.value = ClientHistoryQueryState.RoundEventsResult(
-                HistoryRoundEventsResponseDto(requestId, MATCH_ID, roundNumber, start, events(roundNumber, indexes, next, tileCatalog), errorCode = null),
+                response = HistoryRoundEventsResponseDto(requestId, MATCH_ID, roundNumber, start, events(roundNumber, indexes, next, tileCatalog), errorCode = null),
             )
         }
 
@@ -656,7 +656,7 @@ class HistoryBrowseRoundControllerTest {
         fun respondEventsError(errorCode: HistoryQueryErrorCodeDto, requestId: String = roundEventsRequests.last().requestId) {
             val request = roundEventsRequests.last { it.requestId == requestId }
             mutableState.value = ClientHistoryQueryState.RoundEventsResult(
-                HistoryRoundEventsResponseDto(requestId, request.matchId, request.roundNumber, request.startTransactionIndex, errorCode = errorCode, events = null),
+                response = HistoryRoundEventsResponseDto(requestId, request.matchId, request.roundNumber, request.startTransactionIndex, errorCode = errorCode, events = null),
             )
         }
 
@@ -669,7 +669,7 @@ class HistoryBrowseRoundControllerTest {
          */
         fun respondState(roundNumber: Int, position: HistoryRoundPositionDto, requestId: String = roundStateRequests.last().requestId) {
             mutableState.value = ClientHistoryQueryState.RoundStateResult(
-                HistoryRoundStateResponseDto(requestId, MATCH_ID, roundNumber, position, state(roundNumber, position), errorCode = null),
+                response = HistoryRoundStateResponseDto(requestId, MATCH_ID, roundNumber, position, state(roundNumber, position), errorCode = null),
             )
         }
     }

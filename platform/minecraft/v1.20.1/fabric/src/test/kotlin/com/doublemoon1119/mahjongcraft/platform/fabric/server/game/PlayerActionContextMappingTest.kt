@@ -26,8 +26,8 @@ class PlayerActionContextMappingTest {
         val playerId = Uuid.random()
         val tile = IdentifiedTile(Uuid.random(), Tile.Honor.White)
         val kanContext = PlayerActionContext.RobbingReaction(
-            playerId,
-            PendingRobbingReaction(
+            playerId = playerId,
+            pending = PendingRobbingReaction(
                 declarerId = Uuid.random(),
                 declaredAction = GameAction.Kan(GameAction.KanType.ADDED_KAN, tile.id, emptyList()),
                 robbedTile = tile,
@@ -35,14 +35,14 @@ class PlayerActionContextMappingTest {
             ),
         )
         val discardContext = PlayerActionContext.DiscardReaction(
-            playerId,
-            PendingReaction(Uuid.random(), tile.id, setOf(playerId), ronPlayerIds = setOf(playerId), id = Uuid.random()),
+            playerId = playerId,
+            pending = PendingReaction(Uuid.random(), tile.id, setOf(playerId), ronPlayerIds = setOf(playerId), id = Uuid.random()),
         )
 
         assertEquals(GameCommand.RespondToRobbing(GameAction.Pass), commandMapper.toCommand(kanContext, GameAction.Pass))
         assertEquals(
-            GameCommand.RespondToDiscard(GameAction.Pass, discardContext.pending.id),
-            commandMapper.toCommand(discardContext, GameAction.Pass),
+            expected = GameCommand.RespondToDiscard(GameAction.Pass, discardContext.pending.id),
+            actual = commandMapper.toCommand(discardContext, GameAction.Pass),
         )
     }
 
@@ -61,17 +61,17 @@ class PlayerActionContextMappingTest {
         val playerId = Uuid.random()
         val tile = IdentifiedTile(Uuid.random(), Tile.Honor.White)
         val kanContext = PlayerActionContext.RobbingReaction(
-            playerId,
-            PendingRobbingReaction(
-                Uuid.random(),
-                GameAction.Kan(GameAction.KanType.ADDED_KAN, tile.id, emptyList()),
-                tile,
-                setOf(playerId),
+            playerId = playerId,
+            pending = PendingRobbingReaction(
+                declarerId = Uuid.random(),
+                declaredAction = GameAction.Kan(GameAction.KanType.ADDED_KAN, tile.id, emptyList()),
+                robbedTile = tile,
+                eligiblePlayerIds = setOf(playerId),
             ),
         )
         val discardContext = PlayerActionContext.DiscardReaction(
-            playerId,
-            PendingReaction(Uuid.random(), tile.id, setOf(playerId), ronPlayerIds = setOf(playerId), id = Uuid.random()),
+            playerId = playerId,
+            pending = PendingReaction(Uuid.random(), tile.id, setOf(playerId), ronPlayerIds = setOf(playerId), id = Uuid.random()),
         )
 
         assertEquals(GameTurnStatus.AWAITING_RESPONSE, kanContext.toTurnStatus())

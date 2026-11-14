@@ -45,7 +45,7 @@ class ClientAutomaticControlUpdateCoordinatorTest {
         assertIs<ClientAutomaticControlSubmitResult.Unavailable>(fixture.coordinator.submit(emptySet()))
         fixture.coordinator.applySnapshot(snapshot(supported = setOf("test:auto_a")))
         val unsupported = assertIs<ClientAutomaticControlSubmitResult.Unsupported>(
-            fixture.coordinator.submit(setOf("test:unknown")),
+            value = fixture.coordinator.submit(setOf("test:unknown")),
         )
         assertEquals(setOf("test:unknown"), unsupported.controlIds)
         val submitted = assertIs<ClientAutomaticControlSubmitResult.Submitted>(
@@ -89,8 +89,8 @@ class ClientAutomaticControlUpdateCoordinatorTest {
             enabled = setOf("test:auto_a"),
         )
         assertTrue(
-            fixture.coordinator.applyResult(
-                result(request, AutomaticControlUpdateResultKindDto.ACCEPTED, acceptedSnapshot),
+            actual = fixture.coordinator.applyResult(
+                result = result(request, AutomaticControlUpdateResultKindDto.ACCEPTED, acceptedSnapshot),
             ),
         )
         val completion = assertNotNull(fixture.coordinator.takeCompletion(request.requestId))
@@ -112,7 +112,7 @@ class ClientAutomaticControlUpdateCoordinatorTest {
         assertNotNull(fixture.coordinator.takeCompletion(request.requestId))
         fixture.coordinator.applySnapshot(snapshot(gameId = request.gameId, revision = 2L, supported = setOf("test:auto_a")))
         val nextRequest = assertIs<ClientAutomaticControlSubmitResult.Submitted>(
-            fixture.coordinator.submit(emptySet()),
+            value = fixture.coordinator.submit(emptySet()),
         ).request
         fixture.coordinator.applyResult(result(nextRequest, AutomaticControlUpdateResultKindDto.REJECTED))
 

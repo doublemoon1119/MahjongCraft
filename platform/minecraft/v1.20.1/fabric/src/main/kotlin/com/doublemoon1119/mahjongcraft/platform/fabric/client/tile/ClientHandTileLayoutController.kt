@@ -215,8 +215,8 @@ class ClientHandTileLayoutController(
         val height = abs(cos(angle)) * MahjongTileDimensions.TILE_HEIGHT + abs(sin(angle)) * MahjongTileDimensions.TILE_DEPTH
         // 沿用原生的正方形底面包圍方式，旋轉時仍包住整張牌。
         val width = max(
-            MahjongTileDimensions.TILE_WIDTH,
-            abs(sin(angle)) * MahjongTileDimensions.TILE_HEIGHT + abs(cos(angle)) * MahjongTileDimensions.TILE_DEPTH,
+            a = MahjongTileDimensions.TILE_WIDTH,
+            b = abs(sin(angle)) * MahjongTileDimensions.TILE_HEIGHT + abs(cos(angle)) * MahjongTileDimensions.TILE_DEPTH,
         )
         val position = transform.position
         return Box(
@@ -236,7 +236,7 @@ class ClientHandTileLayoutController(
      */
     fun receive(payload: PrivateHandOrderPayloadDto) {
         timelines.getOrPut(Uuid.parse(payload.tableId)) { PrivateHandOrderTimeline() }.add(
-            PrivateHandOrderEntry(
+            entry = PrivateHandOrderEntry(
                 effectiveAt = payload.effectiveGameTime,
                 order = PrivateHandOrder(
                     standing = payload.standingTileIds.map { id -> id?.let(Uuid::parse) },

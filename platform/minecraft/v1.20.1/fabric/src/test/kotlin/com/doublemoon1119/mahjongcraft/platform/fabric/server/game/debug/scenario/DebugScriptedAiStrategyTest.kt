@@ -42,12 +42,12 @@ class DebugScriptedAiStrategyTest {
         val ron = GameAction.Ron(Uuid.random())
 
         assertEquals(
-            GameCommand.RespondToDiscard(GameAction.Pass, discardReactionId),
-            strategy.decideGameCommand(context(AiDecisionPhase.RespondingToDiscard, listOf(ron, GameAction.Pass))),
+            expected = GameCommand.RespondToDiscard(GameAction.Pass, discardReactionId),
+            actual = strategy.decideGameCommand(context(AiDecisionPhase.RespondingToDiscard, listOf(ron, GameAction.Pass))),
         )
         assertEquals(
-            GameCommand.RespondToRobbing(GameAction.Pass),
-            strategy.decideGameCommand(context(AiDecisionPhase.RespondingToRobbing, listOf(ron, GameAction.Pass))),
+            expected = GameCommand.RespondToRobbing(GameAction.Pass),
+            actual = strategy.decideGameCommand(context(AiDecisionPhase.RespondingToRobbing, listOf(ron, GameAction.Pass))),
         )
     }
 
@@ -67,8 +67,8 @@ class DebugScriptedAiStrategyTest {
         val kan = GameAction.Kan(GameAction.KanType.ADDED_KAN, drawnTile.id, emptyList())
 
         assertEquals(
-            GameCommand.Kan(GameAction.KanType.ADDED_KAN, drawnTile.id),
-            strategy.decideGameCommand(context(AiDecisionPhase.OwnTurn, listOf(GameAction.Tsumo, kan))),
+            expected = GameCommand.Kan(GameAction.KanType.ADDED_KAN, drawnTile.id),
+            actual = strategy.decideGameCommand(context(AiDecisionPhase.OwnTurn, listOf(GameAction.Tsumo, kan))),
         )
     }
 
@@ -79,8 +79,8 @@ class DebugScriptedAiStrategyTest {
         val kan = GameAction.Kan(GameAction.KanType.CLOSED_KAN, drawnTile.id, emptyList())
 
         assertEquals(
-            GameCommand.Extension(RiichiPullNorthCommand),
-            strategy.decideGameCommand(context(AiDecisionPhase.OwnTurn, listOf(kan, RIICHI_PULL_NORTH_GAME_ACTION))),
+            expected = GameCommand.Extension(RiichiPullNorthCommand),
+            actual = strategy.decideGameCommand(context(AiDecisionPhase.OwnTurn, listOf(kan, RIICHI_PULL_NORTH_GAME_ACTION))),
         )
     }
 
@@ -98,8 +98,8 @@ class DebugScriptedAiStrategyTest {
         val strategy = DebugScriptedAiStrategy(declaresKanFirst = true)
 
         assertEquals(
-            GameCommand.Discard(standingTile.id),
-            strategy.decideGameCommand(context(AiDecisionPhase.OwnTurn, emptyList(), hand = Hand(tiles = listOf(standingTile)))),
+            expected = GameCommand.Discard(standingTile.id),
+            actual = strategy.decideGameCommand(context(AiDecisionPhase.OwnTurn, emptyList(), hand = Hand(tiles = listOf(standingTile)))),
         )
     }
 
@@ -111,9 +111,9 @@ class DebugScriptedAiStrategyTest {
         val passCommand = GameCommand.RespondToDiscard(GameAction.Pass, discardReactionId)
 
         assertEquals(
-            ronCommand,
-            strategy.decideGameCommand(
-                context(AiDecisionPhase.RespondingToDiscard, listOf(ronCommand.action, GameAction.Pass), reactionCommands = listOf(passCommand, ronCommand)),
+            expected = ronCommand,
+            actual = strategy.decideGameCommand(
+                context = context(AiDecisionPhase.RespondingToDiscard, listOf(ronCommand.action, GameAction.Pass), reactionCommands = listOf(passCommand, ronCommand)),
             ),
         )
         assertEquals(GameCommand.Tsumo, strategy.decideGameCommand(context(AiDecisionPhase.OwnTurn, listOf(GameAction.Tsumo))))
@@ -127,13 +127,13 @@ class DebugScriptedAiStrategyTest {
         DebugMahjongExtension(winRoundContinuationState = DebugWinRoundContinuationState()).registerAiStrategies(registry)
 
         assertEquals(
-            setOf(
+            expected = setOf(
                 DebugScriptedAiStrategy.TSUMOGIRI_KEY,
                 DebugScriptedAiStrategy.KAN_FIRST_KEY,
                 DebugScriptedAiStrategy.PULL_NORTH_FIRST_KEY,
                 DebugScriptedAiStrategy.WIN_FIRST_KEY,
             ),
-            registry.getAllStrategyKeys(),
+            actual = registry.getAllStrategyKeys(),
         )
         assertIs<DebugScriptedAiStrategy>(registry.resolve(DebugScriptedAiStrategy.KAN_FIRST_KEY))
         assertIs<DebugScriptedAiStrategy>(registry.resolve(DebugScriptedAiStrategy.PULL_NORTH_FIRST_KEY))

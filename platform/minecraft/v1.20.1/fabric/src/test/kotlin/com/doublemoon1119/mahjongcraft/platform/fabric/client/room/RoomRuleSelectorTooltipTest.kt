@@ -47,7 +47,7 @@ class RoomRuleSelectorTooltipTest {
 
         assertEquals(Formatting.RED.colorValue, tooltip.optionColor("closed"))
         assertTrue(
-            tooltip.siblings.any { sibling ->
+            actual = tooltip.siblings.any { sibling ->
                 (sibling.content as? TranslatableTextContent)?.key == "closed.reason" &&
                     sibling.style.color?.rgb == Formatting.RED.colorValue
             },

@@ -69,8 +69,8 @@ class HistoryManagementChatFormattingTest {
         assertTrue(message.string.contains("logical", ignoreCase = true) || message.string.contains("候選"))
         assertTrue(message.string.length < 1000, "Visible cleanup preview must remain concise")
         assertCleanupLabelColors(
-            message,
-            setOf(
+            message = message,
+            keys = setOf(
                 MinecraftConfigCommandKeys.HISTORY_CANDIDATE_MATCHES,
                 MinecraftConfigCommandKeys.HISTORY_LOGICAL_BYTES,
                 MinecraftConfigCommandKeys.HISTORY_ADDITIONAL_CANDIDATES,
@@ -100,8 +100,8 @@ class HistoryManagementChatFormattingTest {
         assertTrue(message.string.contains("2"))
         assertTrue(message.string.length < 800, "Visible cleanup result must remain concise")
         assertCleanupLabelColors(
-            message,
-            setOf(
+            message = message,
+            keys = setOf(
                 MinecraftConfigCommandKeys.HISTORY_REMOVED_MATCHES,
                 MinecraftConfigCommandKeys.HISTORY_NET_DISK_CHANGE,
                 MinecraftConfigCommandKeys.HISTORY_RESULT_STATE,

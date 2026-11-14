@@ -66,10 +66,10 @@ internal data class HistorySummaryLayout(
 
     /** 捲軸界線，固定為可見的六像素寬。 */
     fun scrollbarBounds(): HistoryScreenLayout.Bounds = HistoryScreenLayout.Bounds(
-        right - 6,
-        contentTop,
-        6,
-        (contentBottom - contentTop).coerceAtLeast(0),
+        x = right - 6,
+        y = contentTop,
+        width = 6,
+        height = (contentBottom - contentTop).coerceAtLeast(0),
     )
 
     /**

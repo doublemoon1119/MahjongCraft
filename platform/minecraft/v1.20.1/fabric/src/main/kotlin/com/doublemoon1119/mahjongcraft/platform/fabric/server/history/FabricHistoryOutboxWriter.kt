@@ -307,13 +307,13 @@ class FabricHistoryOutboxWriter(
             synchronizedStops = activeDatabase.readRecordingStops()
             refreshStorageSafely(activeDatabase, policy)
             val report = HistoryCleanupReport(
-                committed,
-                result.diskBefore,
-                result.diskAfter,
-                result.storageAvailable,
-                result.recoveryBusy,
-                result.incrementalSupported,
-                true,
+                removedMatches = committed,
+                diskBefore = result.diskBefore,
+                diskAfter = result.diskAfter,
+                storageAvailable = result.storageAvailable,
+                recoveryBusy = result.recoveryBusy,
+                incrementalSupported = result.incrementalSupported,
+                completed = true,
             )
             logger.info(
                 "History cleanup completed: removedMatches={}, diskBeforeBytes={}, diskAfterBytes={}, storageAvailable={}, recoveryBusy={}",
@@ -331,8 +331,8 @@ class FabricHistoryOutboxWriter(
             store.applyHistoryStorageAvailability(false)
             val after = runCatching { activeDatabase.measureDiskUsage() }.getOrNull()
             throw HistoryManagementFailure(
-                HistoryCleanupReport(committed, before, after, store.isHistoryStorageAvailable, null, null, false),
-                error,
+                report = HistoryCleanupReport(committed, before, after, store.isHistoryStorageAvailable, null, null, false),
+                cause = error,
             )
         }
     }
@@ -388,7 +388,7 @@ class FabricHistoryOutboxWriter(
         sessionId: Uuid?,
     ): HistoryManagementResult<SqliteHistoryQueryPage> = manage(sessionId) { activeDatabase, _ ->
         activeDatabase.readHistoryQueryPage(
-            HistoryListRequest(scope = request.scope, pageSize = 1)
+            query = HistoryListRequest(scope = request.scope, pageSize = 1)
                 .toSqliteQuery(access, excludedHistoryMatches()).copy(matchId = request.matchId.toString()),
         )
     }
@@ -467,10 +467,10 @@ class FabricHistoryOutboxWriter(
         sessionId: Uuid?,
     ): HistoryManagementResult<HistoryQueryResult<HistoryRoundEvents>> = manage(sessionId) { activeDatabase, _ ->
         readAuthorizedHistoryRound(
-            activeDatabase, access, historyQueryPolicy(), matchId, queryScope, excludedHistoryMatches(),
-            { parseBoundedReplayJson(it) },
-            { CompactReplayRoundReader(replayRegistries.componentViews).readEvents(it, matchId, roundNumber, startIndex, limit) },
-            { it.identity },
+            database = activeDatabase, access = access, policy = historyQueryPolicy(), matchId = matchId, scope = queryScope, excluded = excludedHistoryMatches(),
+            parse = { parseBoundedReplayJson(it) },
+            read = { CompactReplayRoundReader(replayRegistries.componentViews).readEvents(it, matchId, roundNumber, startIndex, limit) },
+            identity = { it.identity },
         )
     }
 
@@ -494,10 +494,10 @@ class FabricHistoryOutboxWriter(
         sessionId: Uuid?,
     ): HistoryManagementResult<HistoryQueryResult<HistoryRoundState>> = manage(sessionId) { activeDatabase, _ ->
         readAuthorizedHistoryRound(
-            activeDatabase, access, historyQueryPolicy(), matchId, queryScope, excludedHistoryMatches(),
-            { parseBoundedReplayJson(it) },
-            { CompactReplayRoundReader(replayRegistries.componentViews).readState(it, matchId, roundNumber, position) },
-            { it.identity },
+            database = activeDatabase, access = access, policy = historyQueryPolicy(), matchId = matchId, scope = queryScope, excluded = excludedHistoryMatches(),
+            parse = { parseBoundedReplayJson(it) },
+            read = { CompactReplayRoundReader(replayRegistries.componentViews).readState(it, matchId, roundNumber, position) },
+            identity = { it.identity },
         )
     }
 
@@ -974,7 +974,7 @@ class FabricHistoryOutboxWriter(
         store.acknowledgePrunedHistory(activeDatabase.readPruningConfirmations())
         val recording = store.snapshot().historyRecordingState
         activeDatabase.recordTerminals(
-            recording.terminalByMatchId.map { (id, terminal) ->
+            terminals = recording.terminalByMatchId.map { (id, terminal) ->
                 HistoryTerminalRecord(id.toString(), terminal.venueId.toString(), terminal.endedAtEpochMillis, terminal.completed)
             },
         )

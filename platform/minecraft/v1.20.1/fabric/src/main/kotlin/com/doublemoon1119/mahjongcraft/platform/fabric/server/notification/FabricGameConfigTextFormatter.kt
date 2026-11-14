@@ -96,8 +96,8 @@ class FabricGameConfigTextFormatter(
                 result.append("\n").append(Text.translatable(field.nameTranslationKey))
                     .append(Text.literal(": ")).append(
                         gameConfigPresentationText(
-                            requireNotNull(resolved.valuesByFieldId[field.id]),
-                            field.editor,
+                            value = requireNotNull(resolved.valuesByFieldId[field.id]),
+                            editor = field.editor,
                         ),
                     )
             }

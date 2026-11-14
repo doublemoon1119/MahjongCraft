@@ -299,8 +299,8 @@ class PlayerDecisionHudController(
     private fun sendSelection(prompt: PlayerDecisionPromptDto, kind: PlayerDecisionSelectionKindDto, token: String?, tileIds: List<String>) {
         val gameId = timerStore.state?.gameId ?: return
         MahjongChannels.decisionSelection.sendToServer(
-            json,
-            PlayerDecisionSelectionDto(gameId.toString(), prompt.decisionKey, kind, token, tileIds, submissionId = ""),
+            json = json,
+            value = PlayerDecisionSelectionDto(gameId.toString(), prompt.decisionKey, kind, token, tileIds, submissionId = ""),
         )
     }
 
@@ -324,8 +324,8 @@ class PlayerDecisionHudController(
         val submissionId = Uuid.random().toString()
         if (!submissionTracker.begin(gameId.toString(), prompt.decisionKey, submissionId)) return
         MahjongChannels.decisionSelection.sendToServer(
-            json,
-            PlayerDecisionSelectionDto(gameId.toString(), prompt.decisionKey, kind, token, tileIds, submissionId),
+            json = json,
+            value = PlayerDecisionSelectionDto(gameId.toString(), prompt.decisionKey, kind, token, tileIds, submissionId),
         )
         (MinecraftClient.getInstance().currentScreen as? PlayerDecisionScreen)?.refreshSubmissionState()
     }
@@ -503,20 +503,20 @@ class PlayerDecisionHudController(
             CompactDecisionHudContent.TimerOnly -> Unit
             is CompactDecisionHudContent.TileSelection -> {
                 renderCompactLines(
-                    context,
-                    layout,
-                    Text.translatable(MinecraftHudKeys.TILE_SELECTION_IN_PROGRESS),
-                    tileSelectionDetailText(content.progress),
+                    context = context,
+                    layout = layout,
+                    title = Text.translatable(MinecraftHudKeys.TILE_SELECTION_IN_PROGRESS),
+                    detail = tileSelectionDetailText(content.progress),
                 )
                 descriptionLines.forEachIndexed { index, line ->
                     context.drawCenteredTextWithShadow(renderer, line, layout.centerX, layout.descriptionLineTop(index), COMPACT_HUD_DETAIL_COLOR)
                 }
             }
             CompactDecisionHudContent.ReopenReminder -> renderCompactLines(
-                context,
-                layout,
-                Text.translatable(MinecraftHudKeys.WAITING_FOR_ACTION),
-                Text.translatable(MinecraftHudKeys.REOPEN_ACTION),
+                context = context,
+                layout = layout,
+                title = Text.translatable(MinecraftHudKeys.WAITING_FOR_ACTION),
+                detail = Text.translatable(MinecraftHudKeys.REOPEN_ACTION),
             )
         }
     }
@@ -689,9 +689,9 @@ class PlayerDecisionHudController(
             statusLineCount = content.statusTexts.size,
             widestCellContentWidth = content.cells.maxOfOrNull { cell ->
                 maxOf(
-                    DiscardAnalysisLayout.TILE_WIDTH,
-                    renderer.getWidth(cell.countText),
-                    cell.availabilityText?.let(renderer::getWidth) ?: 0,
+                    a = DiscardAnalysisLayout.TILE_WIDTH,
+                    b = renderer.getWidth(cell.countText),
+                    c = cell.availabilityText?.let(renderer::getWidth) ?: 0,
                 )
             } ?: DiscardAnalysisLayout.TILE_WIDTH,
             widestStatusTextWidth = content.statusTexts.maxOfOrNull(renderer::getWidth) ?: 0,

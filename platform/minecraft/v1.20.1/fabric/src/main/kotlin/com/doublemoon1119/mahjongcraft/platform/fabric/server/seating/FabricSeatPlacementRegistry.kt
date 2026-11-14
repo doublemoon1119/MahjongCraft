@@ -30,6 +30,6 @@ internal class FabricSeatPlacementRegistry : FabricSeatPlacementRegistrar {
      * @return 優先值由大到小，同值依識別碼排列的清單。
      */
     fun entries(): List<FabricSeatPlacementDefinition> = definitions.values.sortedWith(
-        compareByDescending<FabricSeatPlacementDefinition> { it.priority }.thenBy { it.id },
+        comparator = compareByDescending<FabricSeatPlacementDefinition> { it.priority }.thenBy { it.id },
     )
 }

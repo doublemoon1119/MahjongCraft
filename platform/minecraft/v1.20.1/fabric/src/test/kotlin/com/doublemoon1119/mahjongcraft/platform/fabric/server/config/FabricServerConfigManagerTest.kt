@@ -119,7 +119,7 @@ class FabricServerConfigManagerTest {
         Files.writeString(otherPath, "[player-disconnection]\npolicy = \"unknown\"")
 
         assertIs<MinecraftServerConfigUpdateResult.Failure>(
-            fixture.manager.attach(FabricServerConfigLocation(otherPath, "<world save>/serverconfig/other.toml")),
+            value = fixture.manager.attach(FabricServerConfigLocation(otherPath, "<world save>/serverconfig/other.toml")),
         )
 
         assertEquals(MinecraftServerConfig(), fixture.state.current)

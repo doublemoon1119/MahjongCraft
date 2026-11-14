@@ -118,11 +118,11 @@ private fun HistoryMatchSummary.cursorAfter(request: HistoryListRequest, princip
         HistorySortField.OWN_SCORE -> ownResult?.finalScore?.toLong()
     }
     return HistoryQueryCursor(
-        HistorySortValue(value, value == null),
-        matchId,
-        request.scope,
-        request.sortField,
-        request.sortDirection,
-        request.filters,
+        sortValue = HistorySortValue(value, value == null),
+        matchId = matchId,
+        scope = request.scope,
+        sortField = request.sortField,
+        sortDirection = request.sortDirection,
+        filters = request.filters,
     )
 }

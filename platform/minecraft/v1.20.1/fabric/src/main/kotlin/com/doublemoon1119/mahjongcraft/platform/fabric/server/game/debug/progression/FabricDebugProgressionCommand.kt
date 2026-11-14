@@ -81,7 +81,7 @@ class FabricDebugProgressionCommand(
             .sortedWith(compareByDescending<MahjongPlayer> { it.score }.thenBy { it.initialSeatIndex })
             .map { it.id }
         val decision = RiichiMatchProgressionPolicy(config).decide(
-            MatchProgressionContext(state, completion, rankedPlayerIds),
+            context = MatchProgressionContext(state, completion, rankedPlayerIds),
         )
         "${preview.commandName}: $decision"
     }
@@ -106,69 +106,69 @@ class FabricDebugProgressionCommand(
     ) {
         /** 東四未達返點，預期南入。 */
         EAST_OVERTIME(
-            "east_overtime",
-            RiichiGameLength.East,
-            MatchRoundPosition(3, Wind.EAST, 4),
-            RoundTransitionDirective.PassToNextSeat,
+            commandName = "east_overtime",
+            gameLength = RiichiGameLength.East,
+            position = MatchRoundPosition(3, Wind.EAST, 4),
+            directive = RoundTransitionDirective.PassToNextSeat,
         ),
 
         /** 東四已達返點，預期終局。 */
         EAST_END(
-            "east_end",
-            RiichiGameLength.East,
-            MatchRoundPosition(3, Wind.EAST, 4),
-            RoundTransitionDirective.PassToNextSeat,
+            commandName = "east_end",
+            gameLength = RiichiGameLength.East,
+            position = MatchRoundPosition(3, Wind.EAST, 4),
+            directive = RoundTransitionDirective.PassToNextSeat,
         ),
 
         /** 南四未達返點，預期西入。 */
         WEST_OVERTIME(
-            "west_overtime",
-            RiichiGameLength.TwoWinds,
-            MatchRoundPosition(7, Wind.SOUTH, 4),
-            RoundTransitionDirective.PassToNextSeat,
+            commandName = "west_overtime",
+            gameLength = RiichiGameLength.TwoWinds,
+            position = MatchRoundPosition(7, Wind.SOUTH, 4),
+            directive = RoundTransitionDirective.PassToNextSeat,
         ),
 
         /** 延長局達返點，預期驟死終局。 */
         EXTRA_SUDDEN_DEATH(
-            "extra_sudden_death",
-            RiichiGameLength.East,
-            MatchRoundPosition(4, Wind.SOUTH, 1, MatchRoundPhase.EXTRA),
-            RoundTransitionDirective.PassToNextSeat,
+            commandName = "extra_sudden_death",
+            gameLength = RiichiGameLength.East,
+            position = MatchRoundPosition(4, Wind.SOUTH, 1, MatchRoundPhase.EXTRA),
+            directive = RoundTransitionDirective.PassToNextSeat,
         ),
 
         /** 延長最後局未達返點，預期強制終局。 */
         EXTRA_LIMIT(
-            "extra_limit",
-            RiichiGameLength.East,
-            MatchRoundPosition(7, Wind.SOUTH, 4, MatchRoundPhase.EXTRA),
-            RoundTransitionDirective.PassToNextSeat,
+            commandName = "extra_limit",
+            gameLength = RiichiGameLength.East,
+            position = MatchRoundPosition(7, Wind.SOUTH, 4, MatchRoundPhase.EXTRA),
+            directive = RoundTransitionDirective.PassToNextSeat,
         ),
 
         /** 最後莊家胡牌且達成第一名返點，預期和了止め。 */
         DEALER_AGARI_YAME(
-            "dealer_agari_yame",
-            RiichiGameLength.East,
-            MatchRoundPosition(3, Wind.EAST, 4),
-            RoundTransitionDirective.RepeatDealer,
+            commandName = "dealer_agari_yame",
+            gameLength = RiichiGameLength.East,
+            position = MatchRoundPosition(3, Wind.EAST, 4),
+            directive = RoundTransitionDirective.RepeatDealer,
             dealerIsBeneficiary = true,
         ),
 
         /** 最後莊家流局聽牌且達成第一名返點，預期聽牌止め。 */
         DEALER_TENPAI_YAME(
-            "dealer_tenpai_yame",
-            RiichiGameLength.East,
-            MatchRoundPosition(3, Wind.EAST, 4),
-            RoundTransitionDirective.RepeatDealer,
-            RoundCompletionClassification.EXHAUSTIVE_DRAW,
+            commandName = "dealer_tenpai_yame",
+            gameLength = RiichiGameLength.East,
+            position = MatchRoundPosition(3, Wind.EAST, 4),
+            directive = RoundTransitionDirective.RepeatDealer,
+            classification = RoundCompletionClassification.EXHAUSTIVE_DRAW,
             dealerIsBeneficiary = true,
         ),
 
         /** 任一玩家低於擊飛門檻，預期立即終局。 */
         BUST(
-            "bust",
-            RiichiGameLength.East,
-            MatchRoundPosition(1, Wind.EAST, 2),
-            RoundTransitionDirective.PassToNextSeat,
+            commandName = "bust",
+            gameLength = RiichiGameLength.East,
+            position = MatchRoundPosition(1, Wind.EAST, 2),
+            directive = RoundTransitionDirective.PassToNextSeat,
         ),
         ;
 

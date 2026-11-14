@@ -22,9 +22,9 @@ class TileWallTransitionAnimationCompilerTest {
         val firstTileId = Uuid.random()
         val secondTileId = Uuid.random()
         val plan = TileWallTransitionMotionPlan(
-            listOf(
+            phases = listOf(
                 TileWallMotionPhasePlan(
-                    listOf(
+                    motions = listOf(
                         motion(firstTileId, segment(4)),
                         motion(secondTileId, segment(3), segment(5)),
                     ),
@@ -34,9 +34,9 @@ class TileWallTransitionAnimationCompilerTest {
         )
 
         val compiled = TileWallTransitionAnimationCompiler.compile(
-            plan,
-            START_GAME_TIME,
-            mapOf(firstTileId to MahjongTilePose.FACE_DOWN, secondTileId to MahjongTilePose.FACE_UP),
+            plan = plan,
+            startGameTime = START_GAME_TIME,
+            initialPoses = mapOf(firstTileId to MahjongTilePose.FACE_DOWN, secondTileId to MahjongTilePose.FACE_UP),
         )
 
         val firstWaits = compiled.getValue(firstTileId).filterIsInstance<AnimationStep.WaitUntil>()
@@ -52,13 +52,13 @@ class TileWallTransitionAnimationCompilerTest {
         val source = placement(1.0, 2.0, 3.0, 350.0f)
         val destination = placement(4.0, 5.0, 6.0, 10.0f)
         val plan = TileWallTransitionMotionPlan(
-            listOf(TileWallMotionPhasePlan(listOf(motion(tileId, TileWallMotionSegment(source, destination, 7))))),
+            phases = listOf(TileWallMotionPhasePlan(listOf(motion(tileId, TileWallMotionSegment(source, destination, 7))))),
         )
 
         val steps = TileWallTransitionAnimationCompiler.compile(
-            plan,
-            START_GAME_TIME,
-            mapOf(tileId to MahjongTilePose.STANDING),
+            plan = plan,
+            startGameTime = START_GAME_TIME,
+            initialPoses = mapOf(tileId to MahjongTilePose.STANDING),
         ).getValue(tileId)
 
         val teleport = assertIs<AnimationStep.Teleport>(steps[1])
@@ -79,10 +79,10 @@ class TileWallTransitionAnimationCompilerTest {
     @Test
     fun `empty plan compiles to empty schedule`() {
         assertTrue(
-            TileWallTransitionAnimationCompiler.compile(
-                TileWallTransitionMotionPlan(emptyList()),
-                START_GAME_TIME,
-                emptyMap(),
+            actual = TileWallTransitionAnimationCompiler.compile(
+                plan = TileWallTransitionMotionPlan(emptyList()),
+                startGameTime = START_GAME_TIME,
+                initialPoses = emptyMap(),
             ).isEmpty(),
         )
     }
@@ -92,7 +92,7 @@ class TileWallTransitionAnimationCompilerTest {
     fun `missing initial pose rejects whole plan`() {
         val tileId = Uuid.random()
         val plan = TileWallTransitionMotionPlan(
-            listOf(TileWallMotionPhasePlan(listOf(motion(tileId, segment(2))))),
+            phases = listOf(TileWallMotionPhasePlan(listOf(motion(tileId, segment(2))))),
         )
 
         assertFailsWith<IllegalArgumentException> {
@@ -117,9 +117,9 @@ class TileWallTransitionAnimationCompilerTest {
      * @return 從起點向正 X 軸移動一格的路徑段。
      */
     private fun segment(durationTicks: Int, startX: Double = 0.0): TileWallMotionSegment = TileWallMotionSegment(
-        placement(startX, 0.0, 0.0, 0.0f),
-        placement(startX + 1.0, 0.0, 0.0, 0.0f),
-        durationTicks,
+        start = placement(startX, 0.0, 0.0, 0.0f),
+        end = placement(startX + 1.0, 0.0, 0.0, 0.0f),
+        durationTicks = durationTicks,
     )
 
     /**

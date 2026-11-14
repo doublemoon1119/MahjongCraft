@@ -112,8 +112,8 @@ private object RiichiBeforeSuuchaRiichiScenario : DebugGameScenario {
         val inventory = module.createWallFactory(module.config.maxPlayers).create().getAllTiles().sortedBy { it.tile.stableSortKey() }
         val availableTiles = inventory.toMutableList()
         val invokingStandingTiles = takeTiles(
-            availableTiles,
-            listOf(1, 1, 1, 2, 3, 4, 5, 6, 7, 8, 9, 9, 9)
+            tiles = availableTiles,
+            requestedTiles = listOf(1, 1, 1, 2, 3, 4, 5, 6, 7, 8, 9, 9, 9)
                 .map { value -> Tile.Numeric(Tile.Suit.Character, value) },
         )
         val invokingDrawnTile = takeTiles(availableTiles, listOf(Tile.Honor.North)).single()
@@ -128,14 +128,14 @@ private object RiichiBeforeSuuchaRiichiScenario : DebugGameScenario {
         val visibleWallTileIds = (availableTiles + initialReservedTiles).mapTo(mutableSetOf()) { tile -> tile.id }
         val initialPhysicalLayout = when (
             val decision = module.createPhysicalWallLayoutPolicy().createInitialLayoutValidated(
-                InitialPhysicalWallLayoutContext(layoutResult, opening, visibleWallTileIds),
+                context = InitialPhysicalWallLayoutContext(layoutResult, opening, visibleWallTileIds),
             )
         ) {
             is InitialPhysicalWallLayoutDecision.Completed -> decision.layout
             is InitialPhysicalWallLayoutDecision.Rejected -> error(decision.reasonId)
         }
         val physicalLayout = TileWallPhysicalLayout(
-            initialPhysicalLayout.placements.filterKeys { tileId -> tileId in visibleWallTileIds },
+            placements = initialPhysicalLayout.placements.filterKeys { tileId -> tileId in visibleWallTileIds },
         )
 
         var opponentIndex = 0
@@ -233,8 +233,8 @@ private object RiichiBeforePaoPonScenario : DebugGameScenario {
         val invokingStandingTiles = takeTiles(availableTiles, PAO_INVOKING_TILES)
         val calledTile = takeTiles(availableTiles, listOf(Tile.Honor.White)).single()
         val winningDraws = takeTiles(
-            availableTiles,
-            List(PAO_WINNING_DRAW_COUNT) { index ->
+            tiles = availableTiles,
+            requestedTiles = List(PAO_WINNING_DRAW_COUNT) { index ->
                 Tile.Numeric(Tile.Suit.Character, if (index % 2 == 0) 4 else 1)
             },
         )
@@ -249,14 +249,14 @@ private object RiichiBeforePaoPonScenario : DebugGameScenario {
         val visibleWallTileIds = (liveTiles + initialReservedTiles).mapTo(mutableSetOf()) { tile -> tile.id }
         val initialPhysicalLayout = when (
             val decision = module.createPhysicalWallLayoutPolicy().createInitialLayoutValidated(
-                InitialPhysicalWallLayoutContext(layoutResult, opening, visibleWallTileIds),
+                context = InitialPhysicalWallLayoutContext(layoutResult, opening, visibleWallTileIds),
             )
         ) {
             is InitialPhysicalWallLayoutDecision.Completed -> decision.layout
             is InitialPhysicalWallLayoutDecision.Rejected -> error(decision.reasonId)
         }
         val physicalLayout = TileWallPhysicalLayout(
-            initialPhysicalLayout.placements.filterKeys { tileId -> tileId in visibleWallTileIds },
+            placements = initialPhysicalLayout.placements.filterKeys { tileId -> tileId in visibleWallTileIds },
         )
 
         var opponentIndex = 0
@@ -297,7 +297,7 @@ private object RiichiBeforePaoPonScenario : DebugGameScenario {
             components = ComponentSet.EMPTY.with(RiichiTableComponents.POT_POINTS, 0).with(RiichiTableComponents.WALL_PROGRESS, RiichiWallProgress()),
             discardOrder = scenarioDiscardOrder(players, last = calledTile.id),
             turnPhase = TurnPhase.AwaitingDiscardReaction(
-                PendingReaction(
+                reaction = PendingReaction(
                     discarderId = players[discarderIndex].id,
                     tileId = calledTile.id,
                     eligiblePlayerIds = setOf(context.invokingPlayerId),
@@ -414,10 +414,10 @@ private class RiichiBeforeAnkanScenario(
         val initialLayoutResult = TileWallLayoutResult(initialLiveTiles, initialReservedTiles, structure)
         val initialPhysicalLayout = when (
             val decision = module.createPhysicalWallLayoutPolicy().createInitialLayoutValidated(
-                InitialPhysicalWallLayoutContext(
-                    initialLayoutResult,
-                    opening,
-                    (initialLiveTiles.drop(consumedFromFront.size) + initialReservedTiles)
+                context = InitialPhysicalWallLayoutContext(
+                    wallLayout = initialLayoutResult,
+                    wallOpening = opening,
+                    occupiedTileIds = (initialLiveTiles.drop(consumedFromFront.size) + initialReservedTiles)
                         .mapTo(mutableSetOf()) { tile -> tile.id },
                 ),
             )
@@ -443,7 +443,7 @@ private class RiichiBeforeAnkanScenario(
             val establishedKan = establishedKans.getOrNull(establishedKanIndex)
             val melds = establishedKan?.let { tiles ->
                 listOf(
-                    Meld(
+                    element = Meld(
                         type = MeldType.ClosedKan,
                         tiles = tiles,
                         sourceDirection = RelativeDirection.Self,
@@ -485,15 +485,15 @@ private class RiichiBeforeAnkanScenario(
             reservedWallTiles = reservedTiles,
         )
         val currentPhysicalLayout = resolveCurrentPhysicalLayout(
-            module,
-            tableStateWithoutLayout,
-            initialPhysicalLayout,
-            wallStages,
+            module = module,
+            stateTemplate = tableStateWithoutLayout,
+            initialLayout = initialPhysicalLayout,
+            wallStages = wallStages,
         )
         val tableState = tableStateWithoutLayout.copy(physicalWallLayout = currentPhysicalLayout)
         val presentationLayout = TileWallPhysicalLayout(initialPhysicalLayout.placements + currentPhysicalLayout.placements)
         return DebugGameScenarioResult(
-            Game(
+            game = Game(
                 tableState = tableState,
                 flowConfig = currentGame.flowConfig,
                 matchId = currentGame.matchId,
@@ -501,8 +501,8 @@ private class RiichiBeforeAnkanScenario(
                 hostId = currentGame.hostId,
                 roomPlayerIds = currentGame.roomPlayerIds,
             ),
-            structure,
-            presentationLayout,
+            wallStructure = structure,
+            wallLayout = presentationLayout,
         )
     }
 
@@ -539,7 +539,7 @@ private class RiichiBeforeAnkanScenario(
             )
             val markerTile = beforeStage.reservedTiles.first()
             val decision = module.createPhysicalWallLayoutPolicy().resolveTransitionValidated(
-                PhysicalWallLayoutTransitionContext(
+                context = PhysicalWallLayoutTransitionContext(
                     tableStateBeforeAction = beforeState,
                     tableStateAfterAction = afterState,
                     currentLayout = currentLayout,
@@ -575,13 +575,13 @@ private class RiichiBeforeAnkanScenario(
         when {
             playerIndex == dealerIndex && targetKan != null ->
                 targetKan.take(TARGET_KAN_IN_HAND) + takeDistinctFillers(
-                    availableTiles,
-                    INITIAL_HAND_SIZE - TARGET_KAN_IN_HAND,
+                    tiles = availableTiles,
+                    count = INITIAL_HAND_SIZE - TARGET_KAN_IN_HAND,
                 )
 
             establishedKan != null -> establishedKan + takeDistinctFillers(
-                availableTiles,
-                INITIAL_HAND_SIZE - KAN_SIZE,
+                tiles = availableTiles,
+                count = INITIAL_HAND_SIZE - KAN_SIZE,
             )
 
             else -> takeDistinctFillers(availableTiles, INITIAL_HAND_SIZE)
@@ -697,7 +697,7 @@ private class RiichiBeforeMinkanScenario(
             currentPlayerIndex = discarderIndex,
             discardOrder = scenarioDiscardOrder(players, last = discardedTile.id),
             turnPhase = TurnPhase.AwaitingDiscardReaction(
-                PendingReaction(
+                reaction = PendingReaction(
                     discarderId = players[discarderIndex].id,
                     tileId = discardedTile.id,
                     eligiblePlayerIds = setOf(context.invokingPlayerId),

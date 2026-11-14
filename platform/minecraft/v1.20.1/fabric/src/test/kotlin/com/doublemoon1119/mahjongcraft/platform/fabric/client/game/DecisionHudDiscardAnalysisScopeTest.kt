@@ -20,7 +20,7 @@ class DecisionHudDiscardAnalysisScopeTest {
         val prompt = PlayerDecisionPromptDto(
             decisionKey = "decision",
             actions = listOf(
-                PlayerDecisionActionDto(
+                element = PlayerDecisionActionDto(
                     token = "riichi",
                     actionId = RiichiGameAction.Riichi.id,
                     tileSelection = PlayerDecisionActionTileSelectionDto(
@@ -55,7 +55,7 @@ class DecisionHudDiscardAnalysisScopeTest {
         val prompt = PlayerDecisionPromptDto(
             decisionKey = "decision",
             actions = listOf(
-                PlayerDecisionActionDto(
+                element = PlayerDecisionActionDto(
                     token = "action",
                     actionId = "mahjongcraft:action",
                     tileSelection = PlayerDecisionActionTileSelectionDto(
@@ -102,7 +102,7 @@ class DecisionHudDiscardAnalysisScopeTest {
         )
 
         val selected = assertIs<HandAnalysisSelection.AfterDiscard>(
-            selectHandAnalysis(prompt, null, "tile", current),
+            value = selectHandAnalysis(prompt, null, "tile", current),
         )
 
         assertEquals(projected, selected.analysis)
@@ -114,7 +114,7 @@ class DecisionHudDiscardAnalysisScopeTest {
         val current = HandReadinessAnalysisDto("mahjongcraft:riichi", emptyList(), statusIndicatorId = null)
 
         val selected = assertIs<HandAnalysisSelection.Current>(
-            selectHandAnalysis(null, null, null, current),
+            value = selectHandAnalysis(null, null, null, current),
         )
 
         assertEquals(current, selected.analysis)

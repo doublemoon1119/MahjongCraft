@@ -101,34 +101,34 @@ class FabricAutomaticControlCommand(
                 COMMAND_SUCCESS
             }
             ClientAutomaticControlCommandResult.Pending -> failure(
-                context.source,
-                Text.translatable(MinecraftMessageKeys.AUTOMATIC_CONTROL_PENDING),
+                source = context.source,
+                message = Text.translatable(MinecraftMessageKeys.AUTOMATIC_CONTROL_PENDING),
             )
             ClientAutomaticControlCommandResult.Unavailable -> failure(
-                context.source,
-                Text.translatable(MinecraftMessageKeys.AUTOMATIC_CONTROL_UNAVAILABLE),
+                source = context.source,
+                message = Text.translatable(MinecraftMessageKeys.AUTOMATIC_CONTROL_UNAVAILABLE),
             )
             is ClientAutomaticControlCommandResult.Unsupported -> failure(
-                context.source,
-                Text.translatable(
+                source = context.source,
+                message = Text.translatable(
                     MinecraftMessageKeys.AUTOMATIC_CONTROL_UNSUPPORTED,
                     displayResolver.resolve(commandService.ruleModuleId(), result.controlId).label,
                 ),
             )
             is ClientAutomaticControlCommandResult.SaveFailed -> failure(
-                context.source,
-                configSaveFailureMessage(
-                    Text.translatable(MinecraftClientConfigScreenKeys.AUTO_SORT_HAND),
-                    result.failure.message,
+                source = context.source,
+                message = configSaveFailureMessage(
+                    settingName = Text.translatable(MinecraftClientConfigScreenKeys.AUTO_SORT_HAND),
+                    details = result.failure.message,
                 ),
             )
             is ClientAutomaticControlCommandResult.PreferenceSyncFailed -> failure(
-                context.source,
-                Text.translatable(MinecraftMessageKeys.AUTOMATIC_CONTROL_PREFERENCE_SYNC_FAILED),
+                source = context.source,
+                message = Text.translatable(MinecraftMessageKeys.AUTOMATIC_CONTROL_PREFERENCE_SYNC_FAILED),
             )
             ClientAutomaticControlCommandResult.RoundControlSendFailed -> failure(
-                context.source,
-                Text.translatable(MinecraftMessageKeys.AUTOMATIC_CONTROL_SEND_FAILED),
+                source = context.source,
+                message = Text.translatable(MinecraftMessageKeys.AUTOMATIC_CONTROL_SEND_FAILED),
             )
         }
     }
@@ -171,9 +171,9 @@ class FabricAutomaticControlCommand(
         pendingFeedback = null
         val message = when (completion.result) {
             ClientAutomaticControlResultKind.ACCEPTED -> updatedMessage(
-                pending.controlId,
-                pending.previousEnabled,
-                completion.enabled ?: pending.requestedEnabled,
+                controlId = pending.controlId,
+                previousEnabled = pending.previousEnabled,
+                enabled = completion.enabled ?: pending.requestedEnabled,
             )
             ClientAutomaticControlResultKind.REJECTED -> Text.translatable(MinecraftMessageKeys.AUTOMATIC_CONTROL_REJECTED)
             ClientAutomaticControlResultKind.STALE -> Text.translatable(MinecraftMessageKeys.AUTOMATIC_CONTROL_STALE)

@@ -406,8 +406,8 @@ internal class SqliteHistoryDatabase private constructor(
         require(matchId.isNotBlank()) { "History match ID must not be blank" }
         require(maximumBytes > 0) { "History replay size limit must be positive" }
         val payloadBytes = TransactionManager.current().exec(
-            "SELECT length(CAST(payload AS BLOB)) FROM history_replay WHERE match_id = ?",
-            listOf(VarCharColumnType() to matchId),
+            stmt = "SELECT length(CAST(payload AS BLOB)) FROM history_replay WHERE match_id = ?",
+            args = listOf(VarCharColumnType() to matchId),
         ) { result ->
             if (result.next()) result.getLong(1) else null
         } ?: return@transaction HistoryReplayPayloadRead.Missing
@@ -942,9 +942,9 @@ internal class SqliteHistoryDatabase private constructor(
      */
     fun readCharacterAppearances(matchId: String): Map<String, String> = transaction(database) {
         TransactionManager.current().exec(
-            "SELECT player_id, CASE WHEN length(CAST(character_appearance AS BLOB)) <= ? THEN character_appearance ELSE NULL END " +
+            stmt = "SELECT player_id, CASE WHEN length(CAST(character_appearance AS BLOB)) <= ? THEN character_appearance ELSE NULL END " +
                 "FROM history_participant WHERE match_id = ? AND character_appearance IS NOT NULL LIMIT 4",
-            listOf(IntegerColumnType() to (AiCharacterSnapshotCodec.MAX_CHARACTERS * 3), VarCharColumnType() to matchId),
+            args = listOf(IntegerColumnType() to (AiCharacterSnapshotCodec.MAX_CHARACTERS * 3), VarCharColumnType() to matchId),
         ) { rows ->
             buildMap {
                 while (rows.next()) {

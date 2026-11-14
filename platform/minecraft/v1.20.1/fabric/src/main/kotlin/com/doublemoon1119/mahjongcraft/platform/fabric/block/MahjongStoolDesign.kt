@@ -14,15 +14,15 @@ enum class MahjongStoolDesign(
 ) {
     /** 狹長木座板、四隻外張斜腳與兩側橫向支撐。 */
     WOODEN(
-        listOf(
-            MahjongStoolCuboid(1.0, 0.0, 4.0, 15.0, 9.0, 12.0),
+        cuboids = listOf(
+            element = MahjongStoolCuboid(1.0, 0.0, 4.0, 15.0, 9.0, 12.0),
         ),
     ),
 
     /** 亮紅塑膠倒角座面、外擴腳墊與四面鏤空支架。 */
     PLASTIC(
-        listOf(
-            MahjongStoolCuboid(1.75, 0.0, 1.75, 14.25, 9.0, 14.25),
+        cuboids = listOf(
+            element = MahjongStoolCuboid(1.75, 0.0, 1.75, 14.25, 9.0, 14.25),
         ),
     ),
     ;

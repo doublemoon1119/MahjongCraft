@@ -56,7 +56,7 @@ class FabricDebugProgressionCommandTest {
         val children = riichi.children
 
         assertEquals(
-            setOf(
+            expected = setOf(
                 "east_overtime",
                 "east_end",
                 "west_overtime",
@@ -66,14 +66,14 @@ class FabricDebugProgressionCommandTest {
                 "dealer_tenpai_yame",
                 "bust",
             ),
-            children.map(CommandNode<ServerCommandSource>::getName).toSet(),
+            actual = children.map(CommandNode<ServerCommandSource>::getName).toSet(),
         )
         children.forEach { scenario ->
             assertNotNull(scenario.command, "${scenario.name} executes directly")
             assertEquals(
-                emptySet(),
-                scenario.children.map(CommandNode<ServerCommandSource>::getName).toSet(),
-                "${scenario.name} takes no argument",
+                expected = emptySet(),
+                actual = scenario.children.map(CommandNode<ServerCommandSource>::getName).toSet(),
+                message = "${scenario.name} takes no argument",
             )
         }
     }

@@ -22,13 +22,13 @@ class RiichiAutomaticControlDebugGameScenariosTest {
         val ids = RiichiAutomaticControlDebugGameScenarios.all.map { it.id }
 
         assertEquals(
-            listOf(
+            expected = listOf(
                 "mahjongcraft:riichi/debug/automatic_auto_win_tsumo",
                 "mahjongcraft:riichi/debug/automatic_auto_win_ron",
                 "mahjongcraft:riichi/debug/automatic_decline_calls_keeps_win",
                 "mahjongcraft:riichi/debug/automatic_tsumogiri_plain_draw",
             ),
-            ids,
+            actual = ids,
         )
         ids.forEach { id ->
             RED_DORA_COUNTS.forEach { redDoraCount ->
@@ -39,8 +39,8 @@ class RiichiAutomaticControlDebugGameScenariosTest {
                 scenarioValidator.validate(context, result)
                 assertEquals(context.invokingPlayerId, result.game.tableState.currentPlayer.id, id)
                 assertTrue(
-                    result.game.enabledAutomaticControlIdsByPlayerId.isEmpty(),
-                    "$id must not pre-enable any automatic control",
+                    actual = result.game.enabledAutomaticControlIdsByPlayerId.isEmpty(),
+                    message = "$id must not pre-enable any automatic control",
                 )
             }
         }
@@ -57,8 +57,8 @@ class RiichiAutomaticControlDebugGameScenariosTest {
             val reactions = state.reactionsOf(offset = 0, discarderOffset = index + 1, tile = discarded)
 
             assertTrue(
-                reactions.all { it == GameAction.Pass },
-                "${discarded.tile} must not interrupt the invoking player before the winning draw",
+                actual = reactions.all { it == GameAction.Pass },
+                message = "${discarded.tile} must not interrupt the invoking player before the winning draw",
             )
         }
         assertTrue(GameAction.Tsumo in state.ownTurnActions(offset = 0, drawnTile = state.liveWallTile(3)))
@@ -72,8 +72,8 @@ class RiichiAutomaticControlDebugGameScenariosTest {
         assertEquals(FOUR_CHARACTER, state.liveWallFront(1).single())
         assertTrue(state.canRon(offset = 0, discarderOffset = 1, tile = FOUR_CHARACTER))
         assertTrue(
-            state.seat(0).discardPile.entries.none { it.tile.tile == ONE_CHARACTER || it.tile.tile == FOUR_CHARACTER },
-            "the invoking player must not be furiten",
+            actual = state.seat(0).discardPile.entries.none { it.tile.tile == ONE_CHARACTER || it.tile.tile == FOUR_CHARACTER },
+            message = "the invoking player must not be furiten",
         )
     }
 
@@ -87,8 +87,8 @@ class RiichiAutomaticControlDebugGameScenariosTest {
         val reactions = state.reactionsOf(offset = 0, discarderOffset = 1, tile = discarded)
 
         assertTrue(
-            state.currentOwnTurnActions().isEmpty(),
-            "the invoking player must not be offered a riichi declaration that would forbid the pon",
+            actual = state.currentOwnTurnActions().isEmpty(),
+            message = "the invoking player must not be offered a riichi declaration that would forbid the pon",
         )
         assertTrue(reactions.any { it is GameAction.Pon }, "the scenario must offer a declinable pon")
         assertTrue(reactions.any { it is GameAction.Ron }, "reactions=$reactions hand=${state.seat(0).hand.standingTiles.map { it.tile }} discards=${state.seat(0).discardPile.entries.map { it.tile.tile }}")

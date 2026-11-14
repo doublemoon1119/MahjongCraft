@@ -164,13 +164,13 @@ class FabricTableLifecycleServiceTest {
 
         /** 初始位置索引項目。 */
         val entry = locations.put(
-            tableId,
-            TableLocation("minecraft:overworld", 0, 64, 0),
+            tableId = tableId,
+            location = TableLocation("minecraft:overworld", 0, 64, 0),
         )
 
         /** 測試設定 state。 */
         private val configState = MinecraftServerConfigState(
-            MinecraftServerConfig(orphanedTablePolicy = OrphanedTablePolicy.REMOVE_ALL),
+            initialConfig = MinecraftServerConfig(orphanedTablePolicy = OrphanedTablePolicy.REMOVE_ALL),
         )
 
         /** 記錄桌子移除通知生命週期。 */
@@ -178,13 +178,13 @@ class FabricTableLifecycleServiceTest {
 
         /** 實際 orphan cleanup 服務。 */
         val cleanupService = OrphanedTableCleanupService(
-            store,
-            memberships,
-            roomSnapshots,
-            gameSnapshots,
-            locations,
-            configState,
-            removalNotifier,
+            store = store,
+            memberships = memberships,
+            roomSnapshots = roomSnapshots,
+            gameSnapshots = gameSnapshots,
+            locations = locations,
+            configState = configState,
+            removalNotifier = removalNotifier,
         )
 
         /** 記錄清理呼叫的骰子 presenter fake。 */

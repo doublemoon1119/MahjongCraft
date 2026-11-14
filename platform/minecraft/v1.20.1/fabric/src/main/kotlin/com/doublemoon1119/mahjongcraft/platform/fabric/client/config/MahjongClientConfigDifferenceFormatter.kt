@@ -19,16 +19,16 @@ fun clientConfigDifferenceText(from: MahjongClientConfigState, to: MahjongClient
     val result = Text.translatable(MinecraftClientConfigScreenKeys.CONFIG_CHANGES).formatted(Formatting.GOLD)
     if (from.autoSortHandEnabled != to.autoSortHandEnabled) {
         result.appendValueChange(
-            MinecraftClientConfigScreenKeys.AUTO_SORT_HAND,
-            booleanText(from.autoSortHandEnabled),
-            booleanText(to.autoSortHandEnabled),
+            nameKey = MinecraftClientConfigScreenKeys.AUTO_SORT_HAND,
+            from = booleanText(from.autoSortHandEnabled),
+            to = booleanText(to.autoSortHandEnabled),
         )
     }
     if (from.tileLabelsEnabled != to.tileLabelsEnabled) {
         result.appendValueChange(
-            MinecraftClientConfigScreenKeys.TILE_LABELS,
-            booleanText(from.tileLabelsEnabled),
-            booleanText(to.tileLabelsEnabled),
+            nameKey = MinecraftClientConfigScreenKeys.TILE_LABELS,
+            from = booleanText(from.tileLabelsEnabled),
+            to = booleanText(to.tileLabelsEnabled),
         )
     }
     result.appendPresentationVisibilityChanges(from.presentationVisibility, to.presentationVisibility)
@@ -58,9 +58,9 @@ fun clientConfigDifferenceText(
     }
     displayResolver.resolveAll(baseline.ruleModuleId, changedIds).forEach { display ->
         result.appendValueChange(
-            display.label,
-            booleanText(display.controlId in baseline.enabledControlIds),
-            booleanText(display.controlId in automaticDraft.enabledControlIds),
+            name = display.label,
+            from = booleanText(display.controlId in baseline.enabledControlIds),
+            to = booleanText(display.controlId in automaticDraft.enabledControlIds),
         )
     }
     return result
@@ -73,9 +73,9 @@ private fun MutableText.appendPresentationVisibilityChanges(
 ) {
     MahjongPresentationToggle.entries.filter { it.read(from) != it.read(to) }.forEach { toggle ->
         appendValueChange(
-            toggle.nameKey,
-            booleanText(toggle.read(from)),
-            booleanText(toggle.read(to)),
+            nameKey = toggle.nameKey,
+            from = booleanText(toggle.read(from)),
+            to = booleanText(toggle.read(to)),
         )
     }
 }

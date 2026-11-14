@@ -456,8 +456,8 @@ class MahjongTableRoomService internal constructor(
             }
             if (gameRepository.getTableState(tableId) != null) {
                 feedbackPublisher.publish(
-                    playerId,
-                    MinecraftPlayerFeedback.GameLeaveDeniedWhilePlaying,
+                    playerId = playerId,
+                    feedback = MinecraftPlayerFeedback.GameLeaveDeniedWhilePlaying,
                 )
                 return@launch
             }
@@ -470,12 +470,12 @@ class MahjongTableRoomService internal constructor(
             val wasHost = room.hostId == playerId
             when (leaveRoom(tableId, playerId)) {
                 is Outcome.Success -> feedbackPublisher.publish(
-                    playerId,
-                    MinecraftRoomFeedbackResolver.successfulLeave(wasHost),
+                    playerId = playerId,
+                    feedback = MinecraftRoomFeedbackResolver.successfulLeave(wasHost),
                 )
                 is Outcome.Error -> feedbackPublisher.publish(
-                    playerId,
-                    MinecraftPlayerFeedback.GameLeaveFailed,
+                    playerId = playerId,
+                    feedback = MinecraftPlayerFeedback.GameLeaveFailed,
                 )
             }
         }
@@ -678,8 +678,8 @@ class MahjongTableRoomService internal constructor(
             }
             when (val result = addAiPlayer(tableId, playerId, strategyKey)) {
                 is Outcome.Success -> feedbackPublisher.publish(
-                    playerId,
-                    MinecraftPlayerFeedback.AiAdded(result.value.strategyKey),
+                    playerId = playerId,
+                    feedback = MinecraftPlayerFeedback.AiAdded(result.value.strategyKey),
                 )
                 is Outcome.Error -> feedbackPublisher.publish(playerId, MinecraftRoomFeedbackResolver.addAiError(result.error))
             }
@@ -757,8 +757,8 @@ class MahjongTableRoomService internal constructor(
                         ?.aiSequence
                         ?: 0
                     feedbackPublisher.publish(
-                        playerId,
-                        MinecraftPlayerFeedback.AiStrategyChanged(aiSequence, result.value, strategyKey),
+                        playerId = playerId,
+                        feedback = MinecraftPlayerFeedback.AiStrategyChanged(aiSequence, result.value, strategyKey),
                     )
                 }
                 is Outcome.Error ->
@@ -830,8 +830,8 @@ class MahjongTableRoomService internal constructor(
                     } else {
                         val oldConfigJson = json.encodeToString(oldConfig.toDto(networkRegistries))
                         feedbackPublisher.publish(
-                            playerId,
-                            MinecraftPlayerFeedback.GameConfigChanged(oldConfigJson, newConfigJson),
+                            playerId = playerId,
+                            feedback = MinecraftPlayerFeedback.GameConfigChanged(oldConfigJson, newConfigJson),
                         )
                     }
                 }

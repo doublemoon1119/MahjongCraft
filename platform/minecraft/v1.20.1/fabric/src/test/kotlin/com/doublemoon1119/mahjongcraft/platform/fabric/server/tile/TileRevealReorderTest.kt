@@ -45,8 +45,8 @@ class TileRevealReorderTest {
         val steps = TileAnimationSteps.instantReorderSteps(placement, startGameTime = 100L)
 
         assertEquals(
-            listOf(AnimationStep.WaitUntil(100L), AnimationStep.Teleport(1.0, 2.0, 3.0, 90.0f)),
-            steps,
+            expected = listOf(AnimationStep.WaitUntil(100L), AnimationStep.Teleport(1.0, 2.0, 3.0, 90.0f)),
+            actual = steps,
         )
         val waiting = AnimationQueueDriver.tick(steps, null, 99L)
         assertTrue(waiting.appliedInstantSteps.isEmpty())

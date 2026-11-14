@@ -171,16 +171,16 @@ class WinCelebrationEffectEntityRenderer(
             val start = points[index]
             val end = points[index + 1]
             lightningSegment(
-                buffer, positionMatrix, start, end, LIGHTNING_OUTER_WIDTH, LIGHTNING_OUTER_ALPHA,
-                LIGHTNING_OUTER_RED, LIGHTNING_OUTER_GREEN, LIGHTNING_OUTER_BLUE, flash,
+                buffer = buffer, positionMatrix = positionMatrix, start = start, end = end, width = LIGHTNING_OUTER_WIDTH, maxAlpha = LIGHTNING_OUTER_ALPHA,
+                red = LIGHTNING_OUTER_RED, green = LIGHTNING_OUTER_GREEN, blue = LIGHTNING_OUTER_BLUE, flash = flash,
             )
             lightningSegment(
-                buffer, positionMatrix, start, end, LIGHTNING_MIDDLE_WIDTH, LIGHTNING_MIDDLE_ALPHA,
-                LIGHTNING_MIDDLE_RED, LIGHTNING_MIDDLE_GREEN, LIGHTNING_MIDDLE_BLUE, flash,
+                buffer = buffer, positionMatrix = positionMatrix, start = start, end = end, width = LIGHTNING_MIDDLE_WIDTH, maxAlpha = LIGHTNING_MIDDLE_ALPHA,
+                red = LIGHTNING_MIDDLE_RED, green = LIGHTNING_MIDDLE_GREEN, blue = LIGHTNING_MIDDLE_BLUE, flash = flash,
             )
             lightningSegment(
-                buffer, positionMatrix, start, end, LIGHTNING_CORE_WIDTH, LIGHTNING_CORE_ALPHA,
-                LIGHTNING_CORE_RED, LIGHTNING_CORE_GREEN, LIGHTNING_CORE_BLUE, flash,
+                buffer = buffer, positionMatrix = positionMatrix, start = start, end = end, width = LIGHTNING_CORE_WIDTH, maxAlpha = LIGHTNING_CORE_ALPHA,
+                red = LIGHTNING_CORE_RED, green = LIGHTNING_CORE_GREEN, blue = LIGHTNING_CORE_BLUE, flash = flash,
             )
         }
     }
@@ -267,16 +267,16 @@ class WinCelebrationEffectEntityRenderer(
         blue: Int,
     ) {
         coloredQuad(
-            buffer,
-            positionMatrix,
-            LightningPoint(start.x - xWidth, start.y, start.z - zWidth),
-            LightningPoint(end.x - xWidth, end.y, end.z - zWidth),
-            LightningPoint(end.x + xWidth, end.y, end.z + zWidth),
-            LightningPoint(start.x + xWidth, start.y, start.z + zWidth),
-            alpha,
-            red,
-            green,
-            blue,
+            buffer = buffer,
+            positionMatrix = positionMatrix,
+            first = LightningPoint(start.x - xWidth, start.y, start.z - zWidth),
+            second = LightningPoint(end.x - xWidth, end.y, end.z - zWidth),
+            third = LightningPoint(end.x + xWidth, end.y, end.z + zWidth),
+            fourth = LightningPoint(start.x + xWidth, start.y, start.z + zWidth),
+            alpha = alpha,
+            red = red,
+            green = green,
+            blue = blue,
         )
     }
 
@@ -408,9 +408,9 @@ class WinCelebrationEffectEntityRenderer(
                 val branchStart = points[DISCHARGE_BRANCH_START_INDEX]
                 val branchAngle = baseAngle + seededOffset(seed, shapeIndex * 313 + rayIndex) * DISCHARGE_BRANCH_ANGLE
                 val branchEnd = LightningPoint(
-                    branchStart.x + cos(branchAngle) * DISCHARGE_BRANCH_LENGTH,
-                    branchStart.y + DISCHARGE_BRANCH_HEIGHT_OFFSET,
-                    branchStart.z + sin(branchAngle) * DISCHARGE_BRANCH_LENGTH,
+                    x = branchStart.x + cos(branchAngle) * DISCHARGE_BRANCH_LENGTH,
+                    y = branchStart.y + DISCHARGE_BRANCH_HEIGHT_OFFSET,
+                    z = branchStart.z + sin(branchAngle) * DISCHARGE_BRANCH_LENGTH,
                 )
                 drawDischargePath(buffer, positionMatrix, listOf(branchStart, branchEnd), intensity * DISCHARGE_BRANCH_ALPHA)
             }
@@ -461,14 +461,14 @@ class WinCelebrationEffectEntityRenderer(
     ) {
         for (index in 0 until points.lastIndex) {
             lightningSegment(
-                buffer, positionMatrix, points[index], points[index + 1],
-                DISCHARGE_OUTER_WIDTH, DISCHARGE_OUTER_ALPHA,
-                LIGHTNING_OUTER_RED, LIGHTNING_OUTER_GREEN, LIGHTNING_OUTER_BLUE, intensity,
+                buffer = buffer, positionMatrix = positionMatrix, start = points[index], end = points[index + 1],
+                width = DISCHARGE_OUTER_WIDTH, maxAlpha = DISCHARGE_OUTER_ALPHA,
+                red = LIGHTNING_OUTER_RED, green = LIGHTNING_OUTER_GREEN, blue = LIGHTNING_OUTER_BLUE, flash = intensity,
             )
             lightningSegment(
-                buffer, positionMatrix, points[index], points[index + 1],
-                DISCHARGE_CORE_WIDTH, DISCHARGE_CORE_ALPHA,
-                LIGHTNING_CORE_RED, LIGHTNING_CORE_GREEN, LIGHTNING_CORE_BLUE, intensity,
+                buffer = buffer, positionMatrix = positionMatrix, start = points[index], end = points[index + 1],
+                width = DISCHARGE_CORE_WIDTH, maxAlpha = DISCHARGE_CORE_ALPHA,
+                red = LIGHTNING_CORE_RED, green = LIGHTNING_CORE_GREEN, blue = LIGHTNING_CORE_BLUE, flash = intensity,
             )
         }
     }
@@ -510,11 +510,11 @@ class WinCelebrationEffectEntityRenderer(
             val endAngle = rotation + (segmentIndex + 1) * FULL_ROTATION_RADIANS / RING_SEGMENTS
             rippleSegment(buffer, positionMatrix, startAngle, endAngle, radius, height, RIPPLE_OUTER_WIDTH, alpha, red, green, blue)
             rippleSegment(
-                buffer, positionMatrix, startAngle, endAngle, radius, height,
-                RIPPLE_CORE_WIDTH, (alpha * RIPPLE_CORE_ALPHA_MULTIPLIER).toInt(),
-                if (rippleIndex == 0) LIGHTNING_CORE_RED else RIPPLE_CORE_RED,
-                if (rippleIndex == 0) LIGHTNING_CORE_GREEN else RIPPLE_CORE_GREEN,
-                if (rippleIndex == 0) LIGHTNING_CORE_BLUE else RIPPLE_CORE_BLUE,
+                buffer = buffer, positionMatrix = positionMatrix, startAngle = startAngle, endAngle = endAngle, radius = radius, height = height,
+                width = RIPPLE_CORE_WIDTH, alpha = (alpha * RIPPLE_CORE_ALPHA_MULTIPLIER).toInt(),
+                red = if (rippleIndex == 0) LIGHTNING_CORE_RED else RIPPLE_CORE_RED,
+                green = if (rippleIndex == 0) LIGHTNING_CORE_GREEN else RIPPLE_CORE_GREEN,
+                blue = if (rippleIndex == 0) LIGHTNING_CORE_BLUE else RIPPLE_CORE_BLUE,
             )
         }
     }

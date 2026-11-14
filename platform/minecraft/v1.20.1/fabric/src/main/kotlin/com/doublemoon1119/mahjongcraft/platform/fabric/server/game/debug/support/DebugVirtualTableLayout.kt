@@ -181,8 +181,8 @@ data class DebugVirtualTableLayout(
      */
     private fun singleMeld(sourceDirection: RelativeDirection, tileCount: Int): SingleMeldPlacements {
         val sidewaysSlot = MahjongTileTableLayout.sidewaysSlotIndex(
-            meldDisplayDirection(sourceDirection, seatLayout.playerCount),
-            tileCount,
+            direction = meldDisplayDirection(sourceDirection, seatLayout.playerCount),
+            tileCount = tileCount,
         )
         var cursorAlong = 0.0
         var sidewaysAlongOffset = 0.0

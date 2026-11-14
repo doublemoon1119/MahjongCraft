@@ -38,12 +38,12 @@ class RoomConfigIntegerControlTest {
         val editor = bounded()
 
         assertEquals(
-            editor.minimum,
-            RoomConfigIntegerControl.decrement(current = editor.minimum, editor = editor, shiftHeld = false),
+            expected = editor.minimum,
+            actual = RoomConfigIntegerControl.decrement(current = editor.minimum, editor = editor, shiftHeld = false),
         )
         assertEquals(
-            editor.maximum,
-            RoomConfigIntegerControl.increment(current = editor.maximum, editor = editor, shiftHeld = false),
+            expected = editor.maximum,
+            actual = RoomConfigIntegerControl.increment(current = editor.maximum, editor = editor, shiftHeld = false),
         )
     }
 
@@ -54,24 +54,24 @@ class RoomConfigIntegerControlTest {
         val middle = (editor.minimum + editor.maximum) / 2
 
         assertEquals(
-            middle - editor.step * RoomConfigIntegerControl.SHIFT_STEP_MULTIPLIER,
-            RoomConfigIntegerControl.decrement(current = middle, editor = editor, shiftHeld = true),
+            expected = middle - editor.step * RoomConfigIntegerControl.SHIFT_STEP_MULTIPLIER,
+            actual = RoomConfigIntegerControl.decrement(current = middle, editor = editor, shiftHeld = true),
         )
         assertEquals(
-            middle + editor.step * RoomConfigIntegerControl.SHIFT_STEP_MULTIPLIER,
-            RoomConfigIntegerControl.increment(current = middle, editor = editor, shiftHeld = true),
+            expected = middle + editor.step * RoomConfigIntegerControl.SHIFT_STEP_MULTIPLIER,
+            actual = RoomConfigIntegerControl.increment(current = middle, editor = editor, shiftHeld = true),
         )
         assertEquals(
-            editor.minimum,
-            RoomConfigIntegerControl.decrement(
+            expected = editor.minimum,
+            actual = RoomConfigIntegerControl.decrement(
                 current = editor.minimum + editor.step,
                 editor = editor,
                 shiftHeld = true,
             ),
         )
         assertEquals(
-            editor.maximum,
-            RoomConfigIntegerControl.increment(
+            expected = editor.maximum,
+            actual = RoomConfigIntegerControl.increment(
                 current = editor.maximum - editor.step,
                 editor = editor,
                 shiftHeld = true,
@@ -94,8 +94,8 @@ class RoomConfigIntegerControlTest {
             val current = value
             if (current != null) {
                 assertTrue(
-                    current in editor.minimum..editor.maximum,
-                    "step $index produced out-of-range value $current",
+                    actual = current in editor.minimum..editor.maximum,
+                    message = "step $index produced out-of-range value $current",
                 )
             }
         }
@@ -107,12 +107,12 @@ class RoomConfigIntegerControlTest {
         val editor = bounded()
 
         assertEquals(
-            editor.minimum,
-            RoomConfigIntegerControl.decrement(current = editor.minimum, editor = editor, shiftHeld = false),
+            expected = editor.minimum,
+            actual = RoomConfigIntegerControl.decrement(current = editor.minimum, editor = editor, shiftHeld = false),
         )
         assertEquals(
-            editor.minimum,
-            RoomConfigIntegerControl.decrement(current = editor.minimum, editor = editor, shiftHeld = true),
+            expected = editor.minimum,
+            actual = RoomConfigIntegerControl.decrement(current = editor.minimum, editor = editor, shiftHeld = true),
         )
     }
 
@@ -134,12 +134,12 @@ class RoomConfigIntegerControlTest {
 
         assertTrue(RoomConfigIntegerControl.canIncrease(current = null, editor = editor))
         assertEquals(
-            editor.minimum,
-            RoomConfigIntegerControl.increment(current = null, editor = editor, shiftHeld = false),
+            expected = editor.minimum,
+            actual = RoomConfigIntegerControl.increment(current = null, editor = editor, shiftHeld = false),
         )
         assertEquals(
-            editor.minimum,
-            RoomConfigIntegerControl.increment(current = null, editor = editor, shiftHeld = true),
+            expected = editor.minimum,
+            actual = RoomConfigIntegerControl.increment(current = null, editor = editor, shiftHeld = true),
         )
     }
 

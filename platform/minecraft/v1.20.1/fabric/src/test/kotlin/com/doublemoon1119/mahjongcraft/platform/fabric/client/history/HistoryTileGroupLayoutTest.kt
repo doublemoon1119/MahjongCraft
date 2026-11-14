@@ -39,8 +39,8 @@ class HistoryTileGroupLayoutTest {
 
         assertEquals(DecisionTileOrientationDto.ROTATED_RIGHT, aligned.placements.last().orientation)
         assertEquals(
-            aligned.placements.first().y + aligned.placements.first().height,
-            aligned.placements.last().y + aligned.placements.last().height,
+            expected = aligned.placements.first().y + aligned.placements.first().height,
+            actual = aligned.placements.last().y + aligned.placements.last().height,
         )
 
         val scaled = HistoryTileGroupLayoutCalculator.hand(
@@ -56,7 +56,7 @@ class HistoryTileGroupLayoutTest {
     @Test
     fun `meld keeps saved order with every tile upright`() {
         val layout = HistoryTileGroupLayoutCalculator.meld(
-            HistoryReplayMeldDto(MeldTypeDto.Pon, listOf(1, 2, 3), 3, RelativeDirectionDto.Left, emptySet(), emptySet()),
+            meld = HistoryReplayMeldDto(MeldTypeDto.Pon, listOf(1, 2, 3), 3, RelativeDirectionDto.Left, emptySet(), emptySet()),
             maxWidth = 100f,
         )
 
@@ -70,7 +70,7 @@ class HistoryTileGroupLayoutTest {
     @Test
     fun `added kan lays four tiles in a row`() {
         val layout = HistoryTileGroupLayoutCalculator.meld(
-            HistoryReplayMeldDto(MeldTypeDto.AddedKan, listOf(1, 2, 3, 4), 2, RelativeDirectionDto.Across, setOf(4), emptySet()),
+            meld = HistoryReplayMeldDto(MeldTypeDto.AddedKan, listOf(1, 2, 3, 4), 2, RelativeDirectionDto.Across, setOf(4), emptySet()),
             maxWidth = 100f,
         )
 
@@ -84,7 +84,7 @@ class HistoryTileGroupLayoutTest {
     @Test
     fun `malformed added kan keeps every saved tile`() {
         val layout = HistoryTileGroupLayoutCalculator.meld(
-            HistoryReplayMeldDto(MeldTypeDto.AddedKan, listOf(1, 2, 3, 4, 5), 1, RelativeDirectionDto.Across, emptySet(), emptySet()),
+            meld = HistoryReplayMeldDto(MeldTypeDto.AddedKan, listOf(1, 2, 3, 4, 5), 1, RelativeDirectionDto.Across, emptySet(), emptySet()),
             maxWidth = 200f,
         )
 
@@ -96,7 +96,7 @@ class HistoryTileGroupLayoutTest {
     @Test
     fun `closed kan hides only edge tiles`() {
         val layout = HistoryTileGroupLayoutCalculator.meld(
-            HistoryReplayMeldDto(MeldTypeDto.ClosedKan, listOf(1, 2, 3, 4), null, RelativeDirectionDto.Self, setOf(1, 4), emptySet()),
+            meld = HistoryReplayMeldDto(MeldTypeDto.ClosedKan, listOf(1, 2, 3, 4), null, RelativeDirectionDto.Self, setOf(1, 4), emptySet()),
             maxWidth = 100f,
         )
 
@@ -108,7 +108,7 @@ class HistoryTileGroupLayoutTest {
     @Test
     fun `meld scales as one group when width is limited`() {
         val layout = HistoryTileGroupLayoutCalculator.meld(
-            HistoryReplayMeldDto(MeldTypeDto.OpenKan, listOf(1, 2, 3, 4), 1, RelativeDirectionDto.Right, emptySet(), emptySet()),
+            meld = HistoryReplayMeldDto(MeldTypeDto.OpenKan, listOf(1, 2, 3, 4), 1, RelativeDirectionDto.Right, emptySet(), emptySet()),
             maxWidth = 30f,
         )
 

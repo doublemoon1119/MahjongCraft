@@ -101,8 +101,8 @@ internal class HistoryTileGroupRenderer(
             }
             if (mouseX >= x + placement.x && mouseX < x + placement.x + placement.width && mouseY >= y + placement.y && mouseY < y + placement.y + placement.height) {
                 hit = HistoryTileHit(
-                    placement.tile,
-                    historyTileTooltip(
+                    tile = placement.tile,
+                    tooltip = historyTileTooltip(
                         name = tile.toHistoryNameText(displayNames),
                         catalogIndex = placement.tile.takeIf { showCatalogIndex },
                         takenBy = taken[placement.tile],

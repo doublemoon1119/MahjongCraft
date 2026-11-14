@@ -93,7 +93,7 @@ class HistoryQueryLoadMeasurementTest {
             configurations.size * (WARMUP_ROUNDS + REPETITIONS) * WAVES * WRITE_OPERATIONS_PER_WAVE
         assertEquals(expectedStoredStates, database.readStatistics().matchStates.size)
         assertTrue(
-            results.all { result ->
+            actual = results.all { result ->
                 result.attempts == result.playerCount * WAVES &&
                     result.completed + result.gateBusy + result.managementBusy == result.attempts
             },
@@ -154,7 +154,7 @@ class HistoryQueryLoadMeasurementTest {
                 val timer = TimeSource.Monotonic.markNow()
                 policyLease.withLock {
                     database.appendPending(
-                        PendingHistoryRecord(
+                        record = PendingHistoryRecord(
                             matchId = "load-write-${configuration.cap}-${configuration.playerCount}-${configuration.mode.name}-$repetition-$operation",
                             sequence = 1L,
                             roundNumber = 1,
@@ -241,7 +241,7 @@ class HistoryQueryLoadMeasurementTest {
                 try {
                     policyLease.withLock {
                         database.readHistoryQueryPage(
-                            SqliteHistoryQuery(
+                            query = SqliteHistoryQuery(
                                 playerId = null,
                                 includeAll = true,
                                 sortField = SqliteHistorySortField.ENDED_AT,
@@ -257,8 +257,8 @@ class HistoryQueryLoadMeasurementTest {
             delay(SERVER_REPLY_DELAY)
             if (page != null) {
                 Json.encodeToString(
-                    HistoryListResponseDto.serializer(),
-                    HistoryListResponseDto(requestId = "load-request", entries = page.entries.map { it.toResponseDto() }, nextCursor = null, errorCode = null, allowAll = false, allowStressTest = false),
+                    serializer = HistoryListResponseDto.serializer(),
+                    value = HistoryListResponseDto(requestId = "load-request", entries = page.entries.map { it.toResponseDto() }, nextCursor = null, errorCode = null, allowAll = false, allowStressTest = false),
                 )
                 samples.completed++
                 samples.recordQuery(elapsedMillis(timer), collect)
@@ -279,8 +279,8 @@ class HistoryQueryLoadMeasurementTest {
      */
     private fun encodeErrorResponse(errorCode: HistoryQueryErrorCodeDto) {
         Json.encodeToString(
-            HistoryListResponseDto.serializer(),
-            HistoryListResponseDto(requestId = "load-request", entries = emptyList(), errorCode = errorCode, nextCursor = null, allowAll = false, allowStressTest = false),
+            serializer = HistoryListResponseDto.serializer(),
+            value = HistoryListResponseDto(requestId = "load-request", entries = emptyList(), errorCode = errorCode, nextCursor = null, allowAll = false, allowStressTest = false),
         )
     }
 

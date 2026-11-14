@@ -298,12 +298,12 @@ internal class PlayerDecisionScreen(
      */
     private fun drawTile(context: DrawContext, assetKey: String, x: Int, y: Int) {
         controller.renderTileFace(
-            context,
-            assetKey,
-            x,
-            y,
-            DecisionCardLayout.PREVIEW_TILE_WIDTH,
-            DecisionCardLayout.PREVIEW_TILE_HEIGHT,
+            context = context,
+            assetKey = assetKey,
+            x = x,
+            y = y,
+            tileWidth = DecisionCardLayout.PREVIEW_TILE_WIDTH,
+            tileHeight = DecisionCardLayout.PREVIEW_TILE_HEIGHT,
         )
     }
 

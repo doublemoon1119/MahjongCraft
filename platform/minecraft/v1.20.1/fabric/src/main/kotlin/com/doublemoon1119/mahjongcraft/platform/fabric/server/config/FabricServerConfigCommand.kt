@@ -84,11 +84,11 @@ class FabricServerConfigCommand(
             source.sendFeedback(
                 {
                     prefixedConfigMessage(
-                        Text.translatable(
+                        message = Text.translatable(
                             MinecraftConfigCommandKeys.RELOADED,
                             Text.translatable(MinecraftConfigCommandKeys.SERVER_CONFIG),
                         ),
-                        Formatting.GREEN,
+                        color = Formatting.GREEN,
                     )
                 },
                 false,

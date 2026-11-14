@@ -13,8 +13,8 @@ class MinecraftGameFeedbackResolverTest {
     @Test
     fun `wall exhausted feedback carries the rule of the match`() {
         assertEquals(
-            MinecraftPlayerFeedback.WallExhausted(BuiltInRuleModuleIds.RIICHI),
-            MinecraftGameFeedbackResolver.actionError(GameError.WallExhausted(Uuid.random()), BuiltInRuleModuleIds.RIICHI),
+            expected = MinecraftPlayerFeedback.WallExhausted(BuiltInRuleModuleIds.RIICHI),
+            actual = MinecraftGameFeedbackResolver.actionError(GameError.WallExhausted(Uuid.random()), BuiltInRuleModuleIds.RIICHI),
         )
     }
 }

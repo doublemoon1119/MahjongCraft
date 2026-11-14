@@ -106,8 +106,8 @@ class FabricTablePropKindRegistrationTest {
         assertEquals(listOf(BuiltInTablePropKinds.SCORING_STICK, "mahjongcraft:face_up_tile", "example:marker"), registry.kinds.map { it.id })
         assertSame(ScoringStickTablePropKind, registry.find(BuiltInTablePropKinds.SCORING_STICK))
         assertEquals(
-            listOf(null to listOf("mahjongcraft:face_up_tile", BuiltInTablePropKinds.SCORING_STICK), "example:kind" to listOf("example:marker")),
-            sources.map { source ->
+            expected = listOf(null to listOf("mahjongcraft:face_up_tile", BuiltInTablePropKinds.SCORING_STICK), "example:kind" to listOf("example:marker")),
+            actual = sources.map { source ->
                 source.extensionId to source.categories
                     .filter { it.id == "mahjongcraft:table_prop_kind" }
                     .flatMap { it.registrationIds }

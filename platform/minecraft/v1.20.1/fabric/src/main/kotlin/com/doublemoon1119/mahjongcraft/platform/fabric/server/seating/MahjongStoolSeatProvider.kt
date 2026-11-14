@@ -41,11 +41,11 @@ class MahjongStoolSeatProvider(
         if (!world.chunkManager.isChunkLoaded(stoolPos.x shr 4, stoolPos.z shr 4)) return emptyList()
         if (world.getBlockState(stoolPos).block !is MahjongStoolBlock) return emptyList()
         return listOf(
-            MahjongStoolSeatTarget(
-                world,
-                stoolPos,
-                request,
-                seatService,
+            element = MahjongStoolSeatTarget(
+                world = world,
+                stoolPos = stoolPos,
+                request = request,
+                seatService = seatService,
             ),
         )
     }
@@ -91,10 +91,10 @@ private class MahjongStoolSeatTarget(
         }
         val stool = world.getBlockState(stoolPos).block as? MahjongStoolBlock
             ?: return SeatGeometry(
-                stoolPos.x + HALF_BLOCK,
-                stoolPos.y.toDouble(),
-                stoolPos.z + HALF_BLOCK,
-                request.seat.yaw,
+                x = stoolPos.x + HALF_BLOCK,
+                y = stoolPos.y.toDouble(),
+                z = stoolPos.z + HALF_BLOCK,
+                yaw = request.seat.yaw,
             )
         val seatTopY = stoolPos.y + stool.design.seatHeight
         val seatY = MahjongStoolSeatGeometry.seatY(seatTopY)
@@ -123,9 +123,9 @@ private class MahjongStoolSeatTarget(
         if (SeatSupportCleanup.isOccupied(MahjongStoolSeatEntity.seatsAt(world, stoolPos), Entity::hasPassengers)) return SeatState.OCCUPIED
         if (rider.hasVehicle()) return SeatState.UNSUPPORTED
         return if (seatService.canSit(
-                world,
-                stoolPos,
-                rider,
+                world = world,
+                stoolPos = stoolPos,
+                entity = rider,
             )
         ) {
             SeatState.AVAILABLE
@@ -145,10 +145,10 @@ private class MahjongStoolSeatTarget(
         val current = inspect(world, rider)
         if (current != SeatState.AVAILABLE) return current
         return if (seatService.sit(
-                world,
-                stoolPos,
-                rider,
-                request.seat.yaw,
+                world = world,
+                stoolPos = stoolPos,
+                entity = rider,
+                seatYaw = request.seat.yaw,
             )
         ) {
             SeatState.SEATED

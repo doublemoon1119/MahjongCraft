@@ -30,28 +30,28 @@ class FabricSeatPlacementRegistrationTest {
     fun `definitions are ordered by descending priority and stable id`() {
         val registry = FabricSeatPlacementRegistry()
         registry.register(
-            FabricSeatPlacementDefinition(
+            definition = FabricSeatPlacementDefinition(
                 id = "example:z",
                 provider = provider,
                 priority = Int.MIN_VALUE,
             ),
         )
         registry.register(
-            FabricSeatPlacementDefinition(
+            definition = FabricSeatPlacementDefinition(
                 id = "example:b",
                 provider = provider,
                 priority = 0,
             ),
         )
         registry.register(
-            FabricSeatPlacementDefinition(
+            definition = FabricSeatPlacementDefinition(
                 id = "example:a",
                 provider = provider,
                 priority = 0,
             ),
         )
         registry.register(
-            FabricSeatPlacementDefinition(
+            definition = FabricSeatPlacementDefinition(
                 id = "example:first",
                 provider = provider,
                 priority = Int.MAX_VALUE,

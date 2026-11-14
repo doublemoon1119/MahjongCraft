@@ -153,7 +153,7 @@ internal fun TableState.reactionsOf(
     val discarder = seat(discarderOffset)
     val contextState = withHandFor(player.id, player.hand.copy(lastDrawn = null))
     return contextState.scenarioValidator().getLegalActions(
-        LegalActionContext.discardReaction(contextState, player.id, discarder.id, tile),
+        context = LegalActionContext.discardReaction(contextState, player.id, discarder.id, tile),
     )
 }
 
@@ -221,12 +221,12 @@ internal fun TableState.canRobKan(offset: Int, type: GameAction.KanType): Boolea
     val declarer = seat(1)
     val contextState = withHandFor(player.id, player.hand.copy(lastDrawn = null))
     return contextState.scenarioValidator().getLegalActions(
-        LegalActionContext.declarationReaction(
-            contextState,
-            player.id,
-            declarer.id,
-            GameAction.Kan(type, kanTile.id, emptyList()),
-            kanTile,
+        context = LegalActionContext.declarationReaction(
+            tableState = contextState,
+            playerId = player.id,
+            declarerId = declarer.id,
+            declaredAction = GameAction.Kan(type, kanTile.id, emptyList()),
+            declaredTile = kanTile,
         ),
     ).any { it is GameAction.Ron }
 }

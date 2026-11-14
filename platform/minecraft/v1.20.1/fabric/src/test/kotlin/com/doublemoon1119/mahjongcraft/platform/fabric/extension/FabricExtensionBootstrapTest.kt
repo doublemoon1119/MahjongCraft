@@ -190,7 +190,7 @@ class FabricExtensionBootstrapTest {
 
         override fun registerGameConfigPresentations(registry: GameConfigPresentationRegistrar) {
             registry.register(
-                GameConfigPresentationDefinition(
+                definition = GameConfigPresentationDefinition(
                     ruleModuleId = RULE_ID,
                     descriptionTranslationKey = "example.rule.description",
                     selectable = true,

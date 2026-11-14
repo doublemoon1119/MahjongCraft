@@ -100,19 +100,19 @@ internal fun UpdatePlayerAutomaticControlsResult.toDto(
     request: AutomaticControlUpdateRequestDto,
 ): AutomaticControlUpdateResultDto = when (this) {
     is UpdatePlayerAutomaticControlsResult.Accepted -> request.result(
-        AutomaticControlUpdateResultKindDto.ACCEPTED,
-        snapshot.toDto(),
+        result = AutomaticControlUpdateResultKindDto.ACCEPTED,
+        snapshot = snapshot.toDto(),
     )
     is UpdatePlayerAutomaticControlsResult.Stale -> request.result(
-        AutomaticControlUpdateResultKindDto.STALE,
-        snapshot.toDto(),
+        result = AutomaticControlUpdateResultKindDto.STALE,
+        snapshot = snapshot.toDto(),
     )
     is UpdatePlayerAutomaticControlsResult.Rejected -> request.result(
-        AutomaticControlUpdateResultKindDto.REJECTED,
-        snapshot?.toDto(),
+        result = AutomaticControlUpdateResultKindDto.REJECTED,
+        snapshot = snapshot?.toDto(),
     )
     is UpdatePlayerAutomaticControlsResult.Unavailable -> request.result(
-        AutomaticControlUpdateResultKindDto.UNAVAILABLE,
+        result = AutomaticControlUpdateResultKindDto.UNAVAILABLE,
     )
 }
 

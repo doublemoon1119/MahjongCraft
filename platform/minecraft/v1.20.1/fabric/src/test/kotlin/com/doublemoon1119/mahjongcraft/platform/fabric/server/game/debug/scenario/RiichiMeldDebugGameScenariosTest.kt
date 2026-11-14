@@ -39,12 +39,12 @@ class RiichiMeldDebugGameScenariosTest {
         val melds = build().currentPlayer.hand.melds
 
         assertEquals(
-            listOf(
+            expected = listOf(
                 Tile.Honor.White to RelativeDirection.Left,
                 Tile.Honor.East to RelativeDirection.Across,
                 Tile.Honor.Green to RelativeDirection.Right,
             ),
-            melds.map { meld -> meld.tiles.first().tile to meld.sourceDirection },
+            actual = melds.map { meld -> meld.tiles.first().tile to meld.sourceDirection },
         )
         melds.forEach { meld ->
             assertEquals(MeldType.Pon, meld.type)
@@ -62,7 +62,7 @@ class RiichiMeldDebugGameScenariosTest {
         assertEquals(listOf(EIGHT_DOT, NINE_CHARACTER), listOf(firstReplacement.tile, secondReplacement.tile))
         assertTrue(state.currentOwnTurnActions().filterIsInstance<GameAction.Kan>().any { it.type == GameAction.KanType.ADDED_KAN })
         assertTrue(
-            state.ownTurnActions(offset = 0, drawnTile = firstReplacement)
+            actual = state.ownTurnActions(offset = 0, drawnTile = firstReplacement)
                 .filterIsInstance<GameAction.Kan>()
                 .any { it.type == GameAction.KanType.CLOSED_KAN },
         )
@@ -85,7 +85,7 @@ class RiichiMeldDebugGameScenariosTest {
             ),
         )
         assertTrue(
-            GameAction.Tsumo in afterKans.scenarioValidator().getLegalActions(LegalActionContext.ownTurn(afterKans, invoker.id)),
+            actual = GameAction.Tsumo in afterKans.scenarioValidator().getLegalActions(LegalActionContext.ownTurn(afterKans, invoker.id)),
         )
     }
 

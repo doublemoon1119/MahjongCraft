@@ -83,11 +83,11 @@ class PlayerDecisionPromptFactory(
         return PlayerDecisionPromptDto(
             ruleModuleId = resolvedCandidates.ruleModuleId,
             decisionKey = buildPlayerDecisionKey(
-                gameId,
-                playerId,
-                phase,
-                ruleDecision,
-                when (phase) {
+                gameId = gameId,
+                playerId = playerId,
+                phase = phase,
+                ruleDecision = ruleDecision,
+                reference = when (phase) {
                     PlayerDecisionPhase.OWN_TURN -> player.hand.lastDrawn?.id ?: player.actionHistory.lastOrNull()?.hashCode()
                     PlayerDecisionPhase.DISCARD_REACTION -> state.pendingReaction?.tileId
                     PlayerDecisionPhase.ROBBING_REACTION -> state.pendingRobbingReaction?.robbedTile?.id
@@ -95,7 +95,7 @@ class PlayerDecisionPromptFactory(
                     PlayerDecisionPhase.RULE_ACTION,
                     -> game.pendingRuleDecision?.id
                 },
-                if (phase == PlayerDecisionPhase.OWN_TURN) actions.decisionIdentity() else null,
+                actionIdentity = if (phase == PlayerDecisionPhase.OWN_TURN) actions.decisionIdentity() else null,
             ),
             actions = actions.map { candidate ->
                 val setAsideTile = (candidate.action as? GameAction.Extension)?.let { module.tileSetAsideBy(player, it) }

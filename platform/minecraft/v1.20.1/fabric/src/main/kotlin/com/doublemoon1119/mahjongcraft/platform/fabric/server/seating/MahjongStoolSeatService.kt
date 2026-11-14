@@ -42,9 +42,9 @@ class MahjongStoolSeatService(
         if (!world.chunkManager.isChunkLoaded(stoolPos.x shr 4, stoolPos.z shr 4)) return false
         val stool = world.getBlockState(stoolPos).block as? MahjongStoolBlock ?: return false
         if (!canSit(
-                world,
-                stoolPos,
-                entity,
+                world = world,
+                stoolPos = stoolPos,
+                entity = entity,
             )
         ) {
             return false
@@ -72,19 +72,19 @@ class MahjongStoolSeatService(
         var seated = false
         return try {
             if (!hasRoomAbove(
-                    world,
-                    entity,
-                    seat.x,
-                    seat.y,
-                    seat.z,
-                    seatTopY,
+                    world = world,
+                    entity = entity,
+                    seatX = seat.x,
+                    seatY = seat.y,
+                    seatZ = seat.z,
+                    seatTopY = seatTopY,
                 )
             ) {
                 return false
             }
             if (!spawnGateway.spawn(
-                    world,
-                    seat,
+                    world = world,
+                    entity = seat,
                     source = SPAWN_SOURCE,
                     tableId = null,
                 )
@@ -152,12 +152,12 @@ class MahjongStoolSeatService(
         val seatZ = stoolPos.z + HALF_BLOCK
         val seatY = MahjongStoolSeatGeometry.seatY(seatTopY)
         return hasRoomAbove(
-            world,
-            entity,
-            seatX,
-            seatY,
-            seatZ,
-            seatTopY,
+            world = world,
+            entity = entity,
+            seatX = seatX,
+            seatY = seatY,
+            seatZ = seatZ,
+            seatTopY = seatTopY,
         )
     }
 

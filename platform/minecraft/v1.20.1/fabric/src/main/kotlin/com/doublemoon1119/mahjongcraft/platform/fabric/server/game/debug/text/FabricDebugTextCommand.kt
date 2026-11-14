@@ -160,9 +160,9 @@ class FabricDebugTextCommand(
     private fun previewGameCreatedLocationHoveredText(source: ServerCommandSource): Int {
         val player = source.player ?: return COMMAND_FAILURE
         feedbackPublisher.publish(
-            player.uuid.toKotlinUuid(),
-            MinecraftPlayerFeedback.GameCreated(
-                TableLocation(
+            playerId = player.uuid.toKotlinUuid(),
+            feedback = MinecraftPlayerFeedback.GameCreated(
+                location = TableLocation(
                     dimensionId = player.world.registryKey.value.toString(),
                     x = player.blockX,
                     y = player.blockY,
@@ -184,7 +184,7 @@ class FabricDebugTextCommand(
         val player = source.player ?: return COMMAND_FAILURE
         val current = json.encodeToString(GameConfig(DebugPreviewDefaults.RULE_CONFIG).toDto(networkRegistries))
         val changed = json.encodeToString(
-            GameConfig(DebugPreviewDefaults.RULE_CONFIG, GameFlowConfig(timeControl = ActionTimeControl.Short)).toDto(networkRegistries),
+            value = GameConfig(DebugPreviewDefaults.RULE_CONFIG, GameFlowConfig(timeControl = ActionTimeControl.Short)).toDto(networkRegistries),
         )
         val feedback = when (variant) {
             CHANGED_ARGUMENT -> MinecraftPlayerFeedback.GameConfigChanged(current, changed)
@@ -205,9 +205,9 @@ class FabricDebugTextCommand(
         source.sendFeedback(
             {
                 configShowMessage(
-                    Text.translatable(MinecraftConfigCommandKeys.SERVER_CONFIG),
-                    serverConfigManager.displayPath,
-                    serverConfigEntries(serverConfigManager.current),
+                    configName = Text.translatable(MinecraftConfigCommandKeys.SERVER_CONFIG),
+                    displayPath = serverConfigManager.displayPath,
+                    entries = serverConfigEntries(serverConfigManager.current),
                 )
             },
             false,

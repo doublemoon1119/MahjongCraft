@@ -31,9 +31,9 @@ fun gameConfigDifferenceText(
     val result = Text.translatable(MinecraftRoomScreenKeys.CONFIG_CHANGES).formatted(Formatting.GOLD)
     if (fromResolved.ruleModuleId != toResolved.ruleModuleId) {
         result.appendValueChange(
-            MinecraftRoomScreenKeys.RULE,
-            ruleNameText(ruleNames, fromResolved.ruleModuleId),
-            ruleNameText(ruleNames, toResolved.ruleModuleId),
+            nameKey = MinecraftRoomScreenKeys.RULE,
+            from = ruleNameText(ruleNames, fromResolved.ruleModuleId),
+            to = ruleNameText(ruleNames, toResolved.ruleModuleId),
         )
         return result
     }
@@ -43,9 +43,9 @@ fun gameConfigDifferenceText(
         val toValue = toResolved.valuesByFieldId[field.id] ?: return@forEach
         if (fromValue != toValue) {
             result.appendValueChange(
-                field.nameTranslationKey,
-                gameConfigPresentationText(fromValue, field.editor),
-                gameConfigPresentationText(toValue, field.editor),
+                nameKey = field.nameTranslationKey,
+                from = gameConfigPresentationText(fromValue, field.editor),
+                to = gameConfigPresentationText(toValue, field.editor),
             )
         }
     }

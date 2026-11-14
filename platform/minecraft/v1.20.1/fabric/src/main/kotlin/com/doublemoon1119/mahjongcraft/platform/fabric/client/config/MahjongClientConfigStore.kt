@@ -83,8 +83,8 @@ class MahjongClientConfigStore() {
             createDefaultFileIfMissing()
         } catch (exception: Exception) {
             return MahjongClientConfigUpdateResult.Failure(
-                "Unable to create client config at $displayPath: ${exception.message}",
-                exception,
+                message = "Unable to create client config at $displayPath: ${exception.message}",
+                cause = exception,
             )
         }
         return try {
@@ -94,8 +94,8 @@ class MahjongClientConfigStore() {
             MahjongClientConfigUpdateResult.Success(config, createdDefaultFile)
         } catch (exception: Exception) {
             MahjongClientConfigUpdateResult.Failure(
-                "Unable to load client config at $displayPath: ${exception.message}",
-                exception,
+                message = "Unable to load client config at $displayPath: ${exception.message}",
+                cause = exception,
             )
         }
     }
@@ -141,18 +141,18 @@ class MahjongClientConfigStore() {
                 .let { updateDouble(it, DISCARD_ANALYSIS_Y_KEY, DISCARD_ANALYSIS_Y_LINE, config.hudLayout.discardAnalysisY) }
                 .let {
                     updateDouble(
-                        it,
-                        AUTOMATIC_CONTROL_STATUS_X_KEY,
-                        AUTOMATIC_CONTROL_STATUS_X_LINE,
-                        config.hudLayout.automaticControlStatusX,
+                        content = it,
+                        key = AUTOMATIC_CONTROL_STATUS_X_KEY,
+                        lineRegex = AUTOMATIC_CONTROL_STATUS_X_LINE,
+                        number = config.hudLayout.automaticControlStatusX,
                     )
                 }
                 .let {
                     updateDouble(
-                        it,
-                        AUTOMATIC_CONTROL_STATUS_Y_KEY,
-                        AUTOMATIC_CONTROL_STATUS_Y_LINE,
-                        config.hudLayout.automaticControlStatusY,
+                        content = it,
+                        key = AUTOMATIC_CONTROL_STATUS_Y_KEY,
+                        lineRegex = AUTOMATIC_CONTROL_STATUS_Y_LINE,
+                        number = config.hudLayout.automaticControlStatusY,
                     )
                 }
                 .let { content ->
@@ -173,8 +173,8 @@ class MahjongClientConfigStore() {
         } catch (exception: Exception) {
             logger.warn("Unable to save client config at {}: {}", path, exception.message)
             MahjongClientConfigUpdateResult.Failure(
-                "Unable to save client config at $displayPath: ${exception.message}",
-                exception,
+                message = "Unable to save client config at $displayPath: ${exception.message}",
+                cause = exception,
             )
         } finally {
             temporaryPath?.let { runCatching { Files.deleteIfExists(it) } }
@@ -252,7 +252,7 @@ class MahjongClientConfigStore() {
 
         /** 比對檔案中 [TILE_LABELS_ENABLED_KEY] 那一行，用於 [setTileLabelsEnabled] 的原地替換。 */
         val TILE_LABELS_ENABLED_LINE = Regex(
-            """(?m)^(\s*$TILE_LABELS_ENABLED_KEY\s*=\s*)\S+(\s*(?:#.*)?)$""",
+            pattern = """(?m)^(\s*$TILE_LABELS_ENABLED_KEY\s*=\s*)\S+(\s*(?:#.*)?)$""",
         )
 
         /** [MahjongClientConfigState.autoSortHandEnabled] 對應的 TOML 欄位鍵，跟其 `@SerialName` 保持一致。 */
@@ -260,7 +260,7 @@ class MahjongClientConfigStore() {
 
         /** 比對檔案中 [AUTO_SORT_HAND_ENABLED_KEY] 那一行，用於 [setAutoSortHandEnabled] 的原地替換。 */
         val AUTO_SORT_HAND_ENABLED_LINE = Regex(
-            """(?m)^(\s*$AUTO_SORT_HAND_ENABLED_KEY\s*=\s*)\S+(\s*(?:#.*)?)$""",
+            pattern = """(?m)^(\s*$AUTO_SORT_HAND_ENABLED_KEY\s*=\s*)\S+(\s*(?:#.*)?)$""",
         )
 
         /** 自動操作狀態 HUD 開關的 TOML 欄位鍵。 */
@@ -268,7 +268,7 @@ class MahjongClientConfigStore() {
 
         /** 比對自動操作狀態 HUD 開關欄位。 */
         val AUTOMATIC_CONTROL_STATUS_ENABLED_LINE = Regex(
-            """(?m)^(\s*$AUTOMATIC_CONTROL_STATUS_ENABLED_KEY\s*=\s*)\S+(\s*(?:#.*)?)$""",
+            pattern = """(?m)^(\s*$AUTOMATIC_CONTROL_STATUS_ENABLED_KEY\s*=\s*)\S+(\s*(?:#.*)?)$""",
         )
 
         /** 操作面板垂直比例的 TOML 欄位鍵。 */
@@ -337,8 +337,8 @@ class MahjongClientConfigStore() {
             visibilityField("discard-popup-enabled", MahjongPresentationVisibilityConfig::discardPopupEnabled),
             visibilityField("meld-popup-enabled", MahjongPresentationVisibilityConfig::meldPopupEnabled),
             visibilityField(
-                AUTOMATIC_CONTROL_STATUS_ENABLED_KEY,
-                MahjongPresentationVisibilityConfig::automaticControlStatusEnabled,
+                key = AUTOMATIC_CONTROL_STATUS_ENABLED_KEY,
+                read = MahjongPresentationVisibilityConfig::automaticControlStatusEnabled,
             ),
         )
 
@@ -361,7 +361,7 @@ class MahjongClientConfigStore() {
          * @return 擷取欄位前段與行尾內容的比對式。
          */
         private fun booleanLine(key: String): Regex = Regex(
-            """(?m)^(\s*$key\s*=\s*)\S+(\s*(?:#.*)?)$""",
+            pattern = """(?m)^(\s*$key\s*=\s*)\S+(\s*(?:#.*)?)$""",
         )
 
         /**
@@ -371,7 +371,7 @@ class MahjongClientConfigStore() {
          * @return 擷取十進位數值前段與行尾內容的比對式。
          */
         private fun doubleLine(key: String): Regex = Regex(
-            """(?m)^(\s*$key\s*=\s*)[-+]?\d+(?:\.\d+)?(\s*(?:#.*)?)$""",
+            pattern = """(?m)^(\s*$key\s*=\s*)[-+]?\d+(?:\.\d+)?(\s*(?:#.*)?)$""",
         )
     }
 }

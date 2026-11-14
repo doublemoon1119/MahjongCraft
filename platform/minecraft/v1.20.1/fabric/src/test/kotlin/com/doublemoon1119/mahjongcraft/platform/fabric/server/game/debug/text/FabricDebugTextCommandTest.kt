@@ -48,7 +48,7 @@ class FabricDebugTextCommandTest {
 
         assertEquals("hovered_text", node.name)
         assertEquals(
-            setOf(
+            expected = setOf(
                 "exhaustive_draw_settlement",
                 "win_settlement",
                 "match_settlement",
@@ -56,7 +56,7 @@ class FabricDebugTextCommandTest {
                 "game_config",
                 "server_config",
             ),
-            node.children.map(CommandNode<ServerCommandSource>::getName).toSet(),
+            actual = node.children.map(CommandNode<ServerCommandSource>::getName).toSet(),
         )
     }
 
@@ -85,8 +85,8 @@ class FabricDebugTextCommandTest {
 
         assertNull(gameConfig.command, "game_config is not executable on its own")
         assertEquals(
-            setOf("show", "changed", "unchanged"),
-            gameConfig.children.map(CommandNode<ServerCommandSource>::getName).toSet(),
+            expected = setOf("show", "changed", "unchanged"),
+            actual = gameConfig.children.map(CommandNode<ServerCommandSource>::getName).toSet(),
         )
         gameConfig.children.forEach { variant ->
             assertNotNull(variant.command, "${variant.name} executes directly")

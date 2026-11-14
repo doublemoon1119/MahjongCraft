@@ -30,27 +30,27 @@ internal class FabricExtensionRegistries(
      * @return 目前各 registry 的登記快照。
      */
     fun registrationSnapshot(): ExtensionRegistrationSnapshot = ExtensionRegistrationSnapshot(
-        listOf(
+        categories = listOf(
             ExtensionRegistrationSnapshotCategory(FabricExtensionRegistrationCategoryIds.ROOM_PARTICIPANT, "Room Participant", roomParticipantRegistry.registrationKeys),
             ExtensionRegistrationSnapshotCategory(
-                FabricExtensionRegistrationCategoryIds.TABLE_PROP_KIND,
-                "Table Prop Kind",
-                tablePropKindRegistry.registrationKeys,
+                id = FabricExtensionRegistrationCategoryIds.TABLE_PROP_KIND,
+                displayName = "Table Prop Kind",
+                registrationKeys = tablePropKindRegistry.registrationKeys,
             ),
             ExtensionRegistrationSnapshotCategory(
-                FabricExtensionRegistrationCategoryIds.SEAT_PROVIDER,
-                "Seat Provider",
-                seatProviderRegistry.registrationKeys,
+                id = FabricExtensionRegistrationCategoryIds.SEAT_PROVIDER,
+                displayName = "Seat Provider",
+                registrationKeys = seatProviderRegistry.registrationKeys,
             ),
             ExtensionRegistrationSnapshotCategory(
-                FabricExtensionRegistrationCategoryIds.AI_CHARACTER_CAPABILITY,
-                "AI Character Capability",
-                characterCapabilityRegistry.registrationKeys,
+                id = FabricExtensionRegistrationCategoryIds.AI_CHARACTER_CAPABILITY,
+                displayName = "AI Character Capability",
+                registrationKeys = characterCapabilityRegistry.registrationKeys,
             ),
             ExtensionRegistrationSnapshotCategory(
-                FabricExtensionRegistrationCategoryIds.SEAT_PLACEMENT,
-                "Seat Placement",
-                seatPlacementRegistry.registrationKeys,
+                id = FabricExtensionRegistrationCategoryIds.SEAT_PLACEMENT,
+                displayName = "Seat Placement",
+                registrationKeys = seatPlacementRegistry.registrationKeys,
             ),
         ),
     )

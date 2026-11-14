@@ -49,8 +49,8 @@ class FabricHandSortCommand(
         is ClientAutoSortHandPreferenceUpdateResult.SaveFailed -> {
             MinecraftClient.getInstance().player?.sendMessage(
                 configSaveFailureMessage(
-                    Text.translatable(MinecraftClientConfigScreenKeys.AUTO_SORT_HAND),
-                    result.failure.message,
+                    settingName = Text.translatable(MinecraftClientConfigScreenKeys.AUTO_SORT_HAND),
+                    details = result.failure.message,
                 ),
                 false,
             )

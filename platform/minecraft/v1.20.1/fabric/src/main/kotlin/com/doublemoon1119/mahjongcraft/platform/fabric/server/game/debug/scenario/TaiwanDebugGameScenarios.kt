@@ -40,7 +40,7 @@ internal object TaiwanDebugGameScenarios {
             val dealer = dealt.dealerIndex
             val supplementalOrder = dealt.reservedWallTiles
             flowerFaces(
-                dealt.handTilesOf(dealer).take(2) +
+                targets = dealt.handTilesOf(dealer).take(2) +
                     dealt.handTilesOf(dealer + 1).take(1) +
                     dealt.handTilesOf(dealer + 3).take(1) +
                     supplementalOrder[0] +
@@ -222,7 +222,7 @@ private object TaiwanBeforePaoPonScenario : DebugGameScenario {
             currentPlayerIndex = discarderIndex,
             discardOrder = scenarioDiscardOrder(players, last = calledTile.id),
             turnPhase = TurnPhase.AwaitingDiscardReaction(
-                PendingReaction(
+                reaction = PendingReaction(
                     discarderId = players[discarderIndex].id,
                     tileId = calledTile.id,
                     eligiblePlayerIds = setOf(context.invokingPlayerId),
@@ -290,7 +290,7 @@ private object TaiwanCrowdedMeldsScenario : DebugGameScenario {
             initial.handTilesOf(seatIndex).zip(PAO_OPPONENT_HAND) { tile, face -> tile.id to face }
         }
         val dealt = initial.withFaces(
-            ownTiles.zip(ownFaces) { tile, face -> tile.id to face } +
+            assignments = ownTiles.zip(ownFaces) { tile, face -> tile.id to face } +
                 (calledTile.id to Tile.Honor.White) +
                 flowerFaces(flowerTiles) +
                 opponentFaces,
@@ -329,7 +329,7 @@ private object TaiwanCrowdedMeldsScenario : DebugGameScenario {
             currentPlayerIndex = discarderIndex,
             discardOrder = scenarioDiscardOrder(players, last = called.id),
             turnPhase = TurnPhase.AwaitingDiscardReaction(
-                PendingReaction(
+                reaction = PendingReaction(
                     discarderId = players[discarderIndex].id,
                     tileId = called.id,
                     eligiblePlayerIds = setOf(context.invokingPlayerId),

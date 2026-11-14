@@ -125,14 +125,14 @@ class CompactReplayCompletionTest {
         HistoryOutboxEvent(matchId, table.id, 1, 1, 1, 100, null, HistoryFact.MatchStarted(table, GameFlowConfig(), emptyMap())),
         completion(sequence = 2, transactionFirstSequence = 2, occurredAtEpochMillis = 200),
         HistoryOutboxEvent(
-            matchId,
-            table.id,
-            1,
-            3,
-            2,
-            200,
-            null,
-            HistoryFact.TableChanged(HistoryTableResult.Checkpoint("mahjongcraft:test", table)),
+            matchId = matchId,
+            venueId = table.id,
+            roundNumber = 1,
+            sequence = 3,
+            transactionFirstSequence = 2,
+            occurredAtEpochMillis = 200,
+            actorPlayerId = null,
+            fact = HistoryFact.TableChanged(HistoryTableResult.Checkpoint("mahjongcraft:test", table)),
         ),
         HistoryOutboxEvent(matchId, table.id, 1, 4, 4, 400, null, HistoryFact.ReturnedToRoom),
     )
@@ -163,8 +163,8 @@ class CompactReplayCompletionTest {
         occurredAtEpochMillis = occurredAtEpochMillis,
         actorPlayerId = null,
         fact = HistoryFact.MatchCompleted(
-            "mahjongcraft:test_complete",
-            table.players.associate { it.id to it.score },
+            reasonId = "mahjongcraft:test_complete",
+            finalScoresByPlayerId = table.players.associate { it.id to it.score },
         ),
     )
 }

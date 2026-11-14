@@ -43,14 +43,14 @@ class HistoryRoundStatePresentationTest {
     fun `winning hand preserves descriptor order for tsumo and ron`() {
         val player = player(handTiles = listOf(0, 1), lastDrawn = 2)
         val tsumo = HistoryRoundStatePresenter.winningHand(
-            state(players = listOf(player)),
-            winner(0, HistoryReplayWinningHandDto(listOf(1, 0), 2)),
-            200f,
+            state = state(players = listOf(player)),
+            winner = winner(0, HistoryReplayWinningHandDto(listOf(1, 0), 2)),
+            maxWidth = 200f,
         )
         val ron = HistoryRoundStatePresenter.winningHand(
-            state(players = listOf(player.copy(lastDrawn = null))),
-            winner(0, HistoryReplayWinningHandDto(listOf(1, 0), 2)),
-            200f,
+            state = state(players = listOf(player.copy(lastDrawn = null))),
+            winner = winner(0, HistoryReplayWinningHandDto(listOf(1, 0), 2)),
+            maxWidth = 200f,
         )
 
         assertEquals(listOf(1, 0, 2), tsumo?.placements?.map { it.tile })
@@ -115,16 +115,16 @@ class HistoryRoundStatePresentationTest {
     @Test
     fun `winning hand leaves melds to a separate row with sources and added kan tiles`() {
         val addedKan = HistoryReplayMeldDto(
-            MeldTypeDto.AddedKan,
-            listOf(3, 4, 5, 6),
+            type = MeldTypeDto.AddedKan,
+            tiles = listOf(3, 4, 5, 6),
             sourceTile = 4,
             sourceDirection = RelativeDirectionDto.Left,
             faceDownTileIds = emptySet(),
             publiclyRevealedTileIds = emptySet(),
         )
         val pon = HistoryReplayMeldDto(
-            MeldTypeDto.Pon,
-            listOf(7, 8, 9),
+            type = MeldTypeDto.Pon,
+            tiles = listOf(7, 8, 9),
             sourceTile = 9,
             sourceDirection = RelativeDirectionDto.Across,
             faceDownTileIds = emptySet(),
@@ -148,8 +148,8 @@ class HistoryRoundStatePresentationTest {
     @Test
     fun `exposed tiles put melds and set aside areas on one row`() {
         val pon = HistoryReplayMeldDto(
-            MeldTypeDto.Pon,
-            listOf(1, 2, 3),
+            type = MeldTypeDto.Pon,
+            tiles = listOf(1, 2, 3),
             sourceTile = 3,
             sourceDirection = RelativeDirectionDto.Left,
             faceDownTileIds = emptySet(),
@@ -177,16 +177,16 @@ class HistoryRoundStatePresentationTest {
     @Test
     fun `taken discards map to the player whose meld claimed them`() {
         val chi = HistoryReplayMeldDto(
-            MeldTypeDto.Chi,
-            listOf(1, 2, 3),
+            type = MeldTypeDto.Chi,
+            tiles = listOf(1, 2, 3),
             sourceTile = 2,
             sourceDirection = RelativeDirectionDto.Left,
             faceDownTileIds = emptySet(),
             publiclyRevealedTileIds = emptySet(),
         )
         val closedKan = HistoryReplayMeldDto(
-            MeldTypeDto.ClosedKan,
-            listOf(4, 5, 6, 0),
+            type = MeldTypeDto.ClosedKan,
+            tiles = listOf(4, 5, 6, 0),
             sourceTile = null,
             sourceDirection = RelativeDirectionDto.Self,
             faceDownTileIds = emptySet(),
@@ -267,9 +267,9 @@ class HistoryRoundStatePresentationTest {
         winners: List<HistoryWinnerDetailsDto>? = null,
     ) = HistoryRoundStateDto(
         identity = HistoryReplayIdentityDto(
-            TEST_MATCH_ID,
-            TEST_TABLE_ID,
-            players.map { HistoryReplayPlayerIdentityDto(it.initialSeatIndex, null, "test:ai") },
+            matchId = TEST_MATCH_ID,
+            venueId = TEST_TABLE_ID,
+            players = players.map { HistoryReplayPlayerIdentityDto(it.initialSeatIndex, null, "test:ai") },
         ),
         roundNumber = 1,
         position = HistoryRoundPositionDto.Initial,

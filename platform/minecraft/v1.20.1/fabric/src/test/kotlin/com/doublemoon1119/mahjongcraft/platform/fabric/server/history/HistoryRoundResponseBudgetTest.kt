@@ -74,9 +74,9 @@ class HistoryRoundResponseBudgetTest {
     fun `state response is atomic under byte budget`() {
         val identity = HistoryReplayIdentity(Uuid.random(), Uuid.random(), emptyList())
         val state = HistoryRoundState(
-            identity, 1, HistoryRoundPosition.Initial, HistoryRoundTileCatalog((listOf(Tile.Honor.East)).map(::TileFaceView)),
-            emptyList(), emptyList(), emptyList(), 0, 0, Wind.EAST, MatchRoundPosition.initial(),
-            0, emptySet(), false, false, null,
+            identity = identity, roundNumber = 1, position = HistoryRoundPosition.Initial, tileCatalog = HistoryRoundTileCatalog((listOf(Tile.Honor.East)).map(::TileFaceView)),
+            players = emptyList(), wallTiles = emptyList(), reservedTiles = emptyList(), currentPlayerSeat = 0, dealerSeat = 0, prevalentWind = Wind.EAST, roundPosition = MatchRoundPosition.initial(),
+            comboCount = 0, finishedPlayerSeats = emptySet(), hasPendingReaction = false, hasPendingRobbingReaction = false, outcome = null,
         )
         val request = HistoryRoundStateRequestDto("state", identity.matchId.toString(), roundNumber = 1, scope = HistoryQueryScopeDto.OWN, position = HistoryRoundPositionDto.Initial)
         assertNotNull(boundedHistoryRoundState(request, state, bundledNetworkJson(), DefaultNetworkDtoRegistries()).state)

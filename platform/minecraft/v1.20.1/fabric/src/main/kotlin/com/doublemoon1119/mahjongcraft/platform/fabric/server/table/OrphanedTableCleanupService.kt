@@ -97,8 +97,8 @@ class OrphanedTableCleanupService(
                 game != null && policy == OrphanedTablePolicy.REMOVE_WAITING_ROOM ->
                     AuthoritativeStateUpdate(state, CleanupDecision.retain())
                 room != null -> AuthoritativeStateUpdate(
-                    state.copy(rooms = state.rooms - tableId),
-                    CleanupDecision.removeRoom(room.playerIds.toSet()),
+                    state = state.copy(rooms = state.rooms - tableId),
+                    result = CleanupDecision.removeRoom(room.playerIds.toSet()),
                 )
                 else -> {
                     val removedGame = checkNotNull(game)
@@ -109,8 +109,8 @@ class OrphanedTableCleanupService(
                             emptyMap()
                         } else {
                             mapOf(
-                                tableId to listOf(
-                                    HistoryEventDraft(
+                                pair = tableId to listOf(
+                                    element = HistoryEventDraft(
                                         actorPlayerId = null,
                                         fact = HistoryFact.MatchAborted(abortReasonId),
                                     ),
@@ -213,8 +213,8 @@ class OrphanedTableCleanupService(
              * @param playerIds 需清除 membership 與快照的玩家 UUID。
              */
             fun removeRoom(playerIds: Set<Uuid>): CleanupDecision = CleanupDecision(
-                OrphanedTableCleanupResult.REMOVED_ROOM,
-                playerIds,
+                result = OrphanedTableCleanupResult.REMOVED_ROOM,
+                playerIds = playerIds,
             )
 
             /**
@@ -223,8 +223,8 @@ class OrphanedTableCleanupService(
              * @param playerIds 需清除 membership 與快照的玩家 UUID。
              */
             fun removeGame(playerIds: Set<Uuid>): CleanupDecision = CleanupDecision(
-                OrphanedTableCleanupResult.REMOVED_GAME,
-                playerIds,
+                result = OrphanedTableCleanupResult.REMOVED_GAME,
+                playerIds = playerIds,
             )
         }
     }

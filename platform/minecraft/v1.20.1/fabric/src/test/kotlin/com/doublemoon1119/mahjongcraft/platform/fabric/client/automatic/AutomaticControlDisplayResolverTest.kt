@@ -26,8 +26,8 @@ class AutomaticControlDisplayResolverTest {
         )
 
         assertEquals(
-            listOf("example:first", "example:second", "example:unknown_a", "example:unknown_b"),
-            resolved.map { it.controlId },
+            expected = listOf("example:first", "example:second", "example:unknown_a", "example:unknown_b"),
+            actual = resolved.map { it.controlId },
         )
         assertEquals("example:unknown_a", resolved[2].label.string)
         assertNull(resolved[2].description)

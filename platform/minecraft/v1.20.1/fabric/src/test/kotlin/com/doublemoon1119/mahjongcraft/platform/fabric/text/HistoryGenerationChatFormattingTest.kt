@@ -28,7 +28,7 @@ class HistoryGenerationChatFormattingTest {
     @Test
     fun `failure progress message hides raw errors and shows localized failure`() {
         val message = historyGenerationProgressMessage(
-            progress().copy(
+            progress = progress().copy(
                 running = false,
                 failure = HistoryGenerationFailure.STORAGE,
                 failed = 1,

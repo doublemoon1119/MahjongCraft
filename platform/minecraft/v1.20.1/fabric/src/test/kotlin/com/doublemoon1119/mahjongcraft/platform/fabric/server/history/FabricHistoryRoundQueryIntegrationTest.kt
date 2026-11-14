@@ -88,7 +88,7 @@ class FabricHistoryRoundQueryIntegrationTest {
             val value = assertIs<HistoryQueryResult.Success<*>>(assertIs<HistoryManagementResult.Success<*>>(state).value)
             assertEquals(table.players.size, assertIs<HistoryRoundState>(value.value).players.size)
             assertIs<HistoryQueryResult.Success<*>>(
-                assertIs<HistoryManagementResult.Success<*>>(writer.confirmRoundPublication(access, matchId, HistoryQueryScope.OWN, session)).value,
+                value = assertIs<HistoryManagementResult.Success<*>>(writer.confirmRoundPublication(access, matchId, HistoryQueryScope.OWN, session)).value,
             )
             // 讀取完成後出現清理收據，最後公開確認必須拒絕先前已讀入的內容。
             DriverManager.getConnection("jdbc:sqlite:$path").use { connection ->

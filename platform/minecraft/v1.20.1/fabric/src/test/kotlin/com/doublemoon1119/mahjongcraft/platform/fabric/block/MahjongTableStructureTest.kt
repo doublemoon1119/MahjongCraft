@@ -44,8 +44,8 @@ class MahjongTableStructureTest {
         val controller = BlockPos.ORIGIN
 
         assertEquals(
-            BlockPos(1, 0, 0),
-            MahjongTableStructure.position(controller, MahjongTablePart.BOTTOM_NORTH, Direction.EAST),
+            expected = BlockPos(1, 0, 0),
+            actual = MahjongTableStructure.position(controller, MahjongTablePart.BOTTOM_NORTH, Direction.EAST),
         )
     }
 }

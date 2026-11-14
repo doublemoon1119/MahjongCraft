@@ -30,7 +30,7 @@ class DebugPlayerTableScopeTest {
                 state = state.copy(games = state.games + (game.id to game)),
                 result = Unit,
                 historyDraftsByVenueId = mapOf(
-                    game.id to listOf(HistoryEventDraft(null, HistoryFact.MatchStarted(tableState, game.flowConfig, emptyMap()))),
+                    pair = game.id to listOf(HistoryEventDraft(null, HistoryFact.MatchStarted(tableState, game.flowConfig, emptyMap()))),
                 ),
             )
         }

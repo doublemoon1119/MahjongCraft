@@ -20,12 +20,12 @@ class DebugMahjongExtensionTest {
         DebugMahjongExtension(DebugWinRoundContinuationState()).registerGameEventPublicMarkerResolvers(registry)
 
         assertEquals(
-            setOf(
+            expected = setOf(
                 DebugAutoNorthRiichiRuleModule.ID,
                 DebugWinnerDealerRiichiRuleModule.ID,
                 DebugNotenDeclarationRiichiRuleModule.ID,
             ),
-            registry.registrationKeys,
+            actual = registry.registrationKeys,
         )
         assertSame(RiichiGameEventPublicMarkerResolver, registry.find(DebugAutoNorthRiichiRuleModule.ID))
         assertSame(RiichiGameEventPublicMarkerResolver, registry.find(DebugWinnerDealerRiichiRuleModule.ID))
