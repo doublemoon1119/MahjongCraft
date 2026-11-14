@@ -26,8 +26,8 @@ class RiichiRuleConfigTest {
         assertEquals(true, config.allowOpenTanyao)
         assertEquals(false, config.useLocalYaku)
         assertEquals(
-            MultiRonPolicy(doubleRonResolution = RonResolution.ALL_WINNERS, tripleRonResolution = RonResolution.ALL_WINNERS),
-            config.multiRonPolicy,
+            expected = MultiRonPolicy(doubleRonResolution = RonResolution.ALL_WINNERS, tripleRonResolution = RonResolution.ALL_WINNERS),
+            actual = config.multiRonPolicy,
         )
     }
 

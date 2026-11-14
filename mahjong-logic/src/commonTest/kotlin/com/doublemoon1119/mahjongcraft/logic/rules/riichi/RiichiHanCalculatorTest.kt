@@ -38,7 +38,7 @@ class RiichiHanCalculatorTest {
     @Test
     fun `test single yakuman returns -1`() {
         val results = listOf(
-            RiichiYakuResult.yakuman(RiichiYakuType.KokushiMusou),
+            element = RiichiYakuResult.yakuman(RiichiYakuType.KokushiMusou),
         )
         val result = RiichiHanCalculator.calculateTotalHan(results)
         assertEquals(-1, result)
@@ -50,7 +50,7 @@ class RiichiHanCalculatorTest {
     @Test
     fun `test double yakuman returns -2`() {
         val results = listOf(
-            RiichiYakuResult.doubleYakuman(RiichiYakuType.Daisuushii),
+            element = RiichiYakuResult.doubleYakuman(RiichiYakuType.Daisuushii),
         )
         val result = RiichiHanCalculator.calculateTotalHan(results)
         assertEquals(-2, result)
@@ -131,7 +131,7 @@ class RiichiHanCalculatorTest {
     @Test
     fun `test calculate yakuman multiplier single`() {
         val results = listOf(
-            RiichiYakuResult.yakuman(RiichiYakuType.KokushiMusou),
+            element = RiichiYakuResult.yakuman(RiichiYakuType.KokushiMusou),
         )
         val result = RiichiHanCalculator.calculateYakumanMultiplier(results)
         assertEquals(1, result)
@@ -143,7 +143,7 @@ class RiichiHanCalculatorTest {
     @Test
     fun `test calculate yakuman multiplier double`() {
         val results = listOf(
-            RiichiYakuResult.doubleYakuman(RiichiYakuType.Daisuushii),
+            element = RiichiYakuResult.doubleYakuman(RiichiYakuType.Daisuushii),
         )
         val result = RiichiHanCalculator.calculateYakumanMultiplier(results)
         assertEquals(2, result)

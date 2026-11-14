@@ -66,8 +66,8 @@ class RiichiTenhouChiihouTest : RiichiHandValueCalculatorTestBase() {
 
         assertTrue(result.isYakuman, "Should be yakuman")
         assertTrue(
-            result.yakuResults.any { it.yaku == RiichiYakuType.Tenhou },
-            "Should contain Tenhou, got: ${result.yakuResults.map { it.yaku }}",
+            actual = result.yakuResults.any { it.yaku == RiichiYakuType.Tenhou },
+            message = "Should contain Tenhou, got: ${result.yakuResults.map { it.yaku }}",
         )
     }
 
@@ -98,8 +98,8 @@ class RiichiTenhouChiihouTest : RiichiHandValueCalculatorTestBase() {
 
         assertTrue(result.isYakuman, "Should be yakuman")
         assertTrue(
-            result.yakuResults.any { it.yaku == RiichiYakuType.Chiihou },
-            "Should contain Chiihou, got: ${result.yakuResults.map { it.yaku }}",
+            actual = result.yakuResults.any { it.yaku == RiichiYakuType.Chiihou },
+            message = "Should contain Chiihou, got: ${result.yakuResults.map { it.yaku }}",
         )
     }
 
@@ -129,8 +129,8 @@ class RiichiTenhouChiihouTest : RiichiHandValueCalculatorTestBase() {
         val result = calculator.calculate(context)
 
         assertFalse(
-            result.yakuResults.any { it.yaku == RiichiYakuType.Tenhou },
-            "Should not contain Tenhou when not first turn, got: ${result.yakuResults.map { it.yaku }}",
+            actual = result.yakuResults.any { it.yaku == RiichiYakuType.Tenhou },
+            message = "Should not contain Tenhou when not first turn, got: ${result.yakuResults.map { it.yaku }}",
         )
     }
 
@@ -160,8 +160,8 @@ class RiichiTenhouChiihouTest : RiichiHandValueCalculatorTestBase() {
         val result = calculator.calculate(context)
 
         assertFalse(
-            result.yakuResults.any { it.yaku == RiichiYakuType.Chiihou },
-            "Should not contain Chiihou for Ron, got: ${result.yakuResults.map { it.yaku }}",
+            actual = result.yakuResults.any { it.yaku == RiichiYakuType.Chiihou },
+            message = "Should not contain Chiihou for Ron, got: ${result.yakuResults.map { it.yaku }}",
         )
     }
 
@@ -172,7 +172,7 @@ class RiichiTenhouChiihouTest : RiichiHandValueCalculatorTestBase() {
         val winningTile = Tile.Numeric(Tile.Suit.Character, 1)
 
         val dealer = calculator.calculate(
-            FakeRiichiHandValueContextFactory.create(
+            context = FakeRiichiHandValueContextFactory.create(
                 hand = hand,
                 winningTile = winningTile,
                 isTsumo = true,
@@ -183,7 +183,7 @@ class RiichiTenhouChiihouTest : RiichiHandValueCalculatorTestBase() {
             ),
         )
         val nonDealer = calculator.calculate(
-            FakeRiichiHandValueContextFactory.create(
+            context = FakeRiichiHandValueContextFactory.create(
                 hand = hand,
                 winningTile = winningTile,
                 isTsumo = true,

@@ -86,8 +86,8 @@ class TaiwanDiscardReadinessAnalyzer internal constructor(
             ) ?: return@analyzeWithProjection null
             hypotheticalPlayer.copy(
                 components = effect.playerComponents.applyTo(
-                    hypotheticalPlayer.components,
-                    BuiltInComponentOwners.PLAYER,
+                    original = hypotheticalPlayer.components,
+                    ownerType = BuiltInComponentOwners.PLAYER,
                 ),
             )
         }
@@ -117,8 +117,8 @@ class TaiwanDiscardReadinessAnalyzer internal constructor(
         )
         val hypotheticalPlayer = discardedPlayer.copy(
             components = onPlayerDiscarded(discardedPlayer).applyTo(
-                discardedPlayer.components,
-                BuiltInComponentOwners.PLAYER,
+                original = discardedPlayer.components,
+                ownerType = BuiltInComponentOwners.PLAYER,
             ),
         )
         val projectedPlayer = projectPlayer(discardResult, hypotheticalPlayer) ?: return@mapNotNull null

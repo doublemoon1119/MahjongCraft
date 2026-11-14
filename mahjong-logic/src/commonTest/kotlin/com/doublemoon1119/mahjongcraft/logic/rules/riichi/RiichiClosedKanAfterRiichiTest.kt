@@ -49,8 +49,8 @@ class RiichiClosedKanAfterRiichiTest {
     @Test
     fun `three player riichi allows the recorded red five closed kan`() {
         assertEquals(
-            1,
-            closedKans(recordedHand.map(::TileValue), RiichiTileValues.redFive(Tile.Suit.Dot), threePlayer = true).size,
+            expected = 1,
+            actual = closedKans(recordedHand.map(::TileValue), RiichiTileValues.redFive(Tile.Suit.Dot), threePlayer = true).size,
         )
     }
 
@@ -58,8 +58,8 @@ class RiichiClosedKanAfterRiichiTest {
     @Test
     fun `drawn tile stored in hand allows the recorded closed kan`() {
         assertEquals(
-            1,
-            closedKans(
+            expected = 1,
+            actual = closedKans(
                 standing = recordedHand.map(::TileValue),
                 incoming = RiichiTileValues.redFive(Tile.Suit.Dot),
                 incomingStoredInHand = true,

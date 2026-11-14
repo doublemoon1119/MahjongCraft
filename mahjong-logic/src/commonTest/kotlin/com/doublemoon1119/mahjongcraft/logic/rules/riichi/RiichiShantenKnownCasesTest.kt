@@ -18,7 +18,7 @@ class RiichiShantenKnownCasesTest {
     @Test
     fun `complete standard hand is complete`() {
         val hand = FakeHandFactory.create(
-            listOf(
+            tiles = listOf(
                 m(1), m(2), m(3), p(1), p(2), p(3), s(1), s(2), s(3),
                 Tile.Honor.East, Tile.Honor.East, Tile.Honor.East, Tile.Honor.Red, Tile.Honor.Red,
             ),
@@ -31,7 +31,7 @@ class RiichiShantenKnownCasesTest {
     @Test
     fun `standard tenpai preserves tile order in waits`() {
         val hand = FakeHandFactory.create(
-            listOf(
+            tiles = listOf(
                 m(1), m(2), m(3), p(1), p(2), p(3), s(1), s(2), s(3),
                 Tile.Honor.East, Tile.Honor.East, m(4), m(5),
             ),
@@ -53,10 +53,10 @@ class RiichiShantenKnownCasesTest {
     @Test
     fun `seven pairs and thirteen orphans are complete`() {
         val sevenPairs = FakeHandFactory.create(
-            listOf(m(1), m(1), m(2), m(2), m(3), m(3), m(4), m(4), m(5), m(5), m(6), m(6), m(7), m(7)),
+            tiles = listOf(m(1), m(1), m(2), m(2), m(3), m(3), m(4), m(4), m(5), m(5), m(6), m(6), m(7), m(7)),
         )
         val kokushi = FakeHandFactory.create(
-            listOf(
+            tiles = listOf(
                 m(1), m(9), p(1), p(9), s(1), s(9), Tile.Honor.East, Tile.Honor.South,
                 Tile.Honor.West, Tile.Honor.North, Tile.Honor.White, Tile.Honor.Green, Tile.Honor.Red, Tile.Honor.East,
             ),
@@ -70,7 +70,7 @@ class RiichiShantenKnownCasesTest {
     @Test
     fun `red five counts as a plain five for shanten and waits`() {
         val hand = FakeHandFactory.create(
-            listOf(
+            tiles = listOf(
                 m(1), m(2), m(3), p(1), p(2), p(3), s(1), s(2), s(3),
                 Tile.Honor.East, Tile.Honor.East, Tile.Honor.East, Tile.Numeric(Tile.Suit.Character, 5),
             ),
@@ -84,7 +84,7 @@ class RiichiShantenKnownCasesTest {
     @Test
     fun `three-player tile pool hand calculates normally`() {
         val hand = FakeHandFactory.create(
-            listOf(
+            tiles = listOf(
                 p(1), p(2), p(3), s(1), s(2), s(3), m(1), m(1), m(1),
                 Tile.Honor.East, Tile.Honor.East, p(4), p(5),
             ),
@@ -98,7 +98,7 @@ class RiichiShantenKnownCasesTest {
     @Test
     fun `two complete groups with one partial group is two shanten`() {
         val hand = FakeHandFactory.create(
-            listOf(
+            tiles = listOf(
                 m(1), m(2), m(3), p(1), p(2), p(3), s(1), s(1), m(4), m(5),
                 Tile.Honor.East, Tile.Honor.South, Tile.Honor.West,
             ),
@@ -111,7 +111,7 @@ class RiichiShantenKnownCasesTest {
     @Test
     fun `one complete group with two partial groups is three shanten`() {
         val hand = FakeHandFactory.create(
-            listOf(
+            tiles = listOf(
                 m(1), m(2), m(3), s(1), s(1), m(5), m(7), p(4), p(6),
                 Tile.Honor.East, Tile.Honor.South, Tile.Honor.West, Tile.Honor.North,
             ),

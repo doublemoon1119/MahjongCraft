@@ -36,7 +36,7 @@ class RiichiTsuuiisouTest : RiichiHandValueCalculatorTestBase() {
     @Test
     fun `test tsuuiisou all honor tiles`() {
         val hand = FakeHandFactory.create(
-            listOf(
+            tiles = listOf(
                 // 刻子：東東東
                 Tile.Honor.East,
                 Tile.Honor.East,
@@ -78,7 +78,7 @@ class RiichiTsuuiisouTest : RiichiHandValueCalculatorTestBase() {
     @Test
     fun `test tsuuiisou with fuuro`() {
         val hand = FakeHandFactory.create(
-            listOf(
+            tiles = listOf(
                 // 刻子：南南南
                 Tile.Honor.South,
                 Tile.Honor.South,
@@ -96,7 +96,7 @@ class RiichiTsuuiisouTest : RiichiHandValueCalculatorTestBase() {
             ),
             melds = listOf(
                 // 副露：東東東（碰）
-                FakeMeldFactory.create(
+                element = FakeMeldFactory.create(
                     type = MeldType.Pon,
                     tiles = listOf(
                         FakeIdentifiedTileFactory.create(Tile.Honor.East),
@@ -127,7 +127,7 @@ class RiichiTsuuiisouTest : RiichiHandValueCalculatorTestBase() {
     @Test
     fun `test non-tsuuiisou returns null`() {
         val hand = FakeHandFactory.create(
-            listOf(
+            tiles = listOf(
                 // 刻子：東東東
                 Tile.Honor.East,
                 Tile.Honor.East,
@@ -162,7 +162,7 @@ class RiichiTsuuiisouTest : RiichiHandValueCalculatorTestBase() {
     fun `test tsuuiisou via calculator`() {
         // 手牌: 七對子字一色
         val hand = FakeHandFactory.create(
-            listOf(
+            tiles = listOf(
                 Tile.Honor.East,
                 Tile.Honor.East,
                 Tile.Honor.South,
@@ -199,7 +199,7 @@ class RiichiTsuuiisouTest : RiichiHandValueCalculatorTestBase() {
     @Test
     fun `test tsuuiisou with fuuro via calculator`() {
         val hand = FakeHandFactory.create(
-            listOf(
+            tiles = listOf(
                 // 刻子：南南南
                 Tile.Honor.South,
                 Tile.Honor.South,
@@ -217,7 +217,7 @@ class RiichiTsuuiisouTest : RiichiHandValueCalculatorTestBase() {
             ),
             melds = listOf(
                 // 副露：東東東（碰）
-                FakeMeldFactory.create(
+                element = FakeMeldFactory.create(
                     type = MeldType.Pon,
                     tiles = listOf(
                         FakeIdentifiedTileFactory.create(Tile.Honor.East),

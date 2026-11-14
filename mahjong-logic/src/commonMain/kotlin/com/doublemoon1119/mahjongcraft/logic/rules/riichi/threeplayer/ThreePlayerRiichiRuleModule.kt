@@ -190,7 +190,7 @@ class ThreePlayerRiichiRuleModule(
         // 計算時的手牌不含和牌張，和牌張另以 incomingTile 傳入。
         val playerForCalculation = player.copy(hand = player.hand.copy(lastDrawn = null))
         val context = createHandValueContextCalculator().calculate(
-            RiichiHandValueContextCalculator.Input(
+            input = RiichiHandValueContextCalculator.Input(
                 tableState = tableState,
                 player = playerForCalculation,
                 incomingTile = winningTile,
@@ -211,7 +211,7 @@ class ThreePlayerRiichiRuleModule(
         isRobbingKan: Boolean,
     ): WinResolutionResult? {
         val context = createHandValueContextCalculator().calculate(
-            RiichiHandValueContextCalculator.Input(
+            input = RiichiHandValueContextCalculator.Input(
                 tableState = tableState,
                 player = player,
                 incomingTile = winningTile,

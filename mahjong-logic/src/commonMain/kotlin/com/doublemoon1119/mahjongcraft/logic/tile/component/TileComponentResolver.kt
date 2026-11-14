@@ -26,7 +26,7 @@ fun MahjongRuleModule<*>.resolveTileComponents(tableState: TableState, registry:
         val defaults = tileRegionComponents(tableState, area)
         val primary = derived[area.tile.id]?.components ?: ComponentSet.EMPTY
         val additional = registry.resolveEffects(
-            ComponentEffectContext(
+            context = ComponentEffectContext(
                 ruleModuleId = id,
                 tableState = tableState,
                 ownerType = BuiltInComponentOwners.TILE,

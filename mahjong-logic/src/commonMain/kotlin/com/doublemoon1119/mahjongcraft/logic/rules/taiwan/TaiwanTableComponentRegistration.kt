@@ -13,7 +13,7 @@ import com.doublemoon1119.mahjongcraft.logic.component.ComponentRoundTransition
 fun registerTaiwanTableComponents(registry: ComponentRegistrar) {
     registry.register(TaiwanTableComponents.PENDING_FLOWER_FOLLOW_UP)
     registry.registerLifecycle(
-        ComponentLifecycleDefinition(
+        definition = ComponentLifecycleDefinition(
             component = TaiwanTableComponents.PENDING_FLOWER_FOLLOW_UP,
             ownerType = BuiltInComponentOwners.TABLE,
             appliesTo = { _, config -> config is TaiwanRuleConfig },

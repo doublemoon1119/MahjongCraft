@@ -24,7 +24,7 @@ class RiichiHandValueCalculatorDealerTest : RiichiHandValueCalculatorTestBase() 
      * @return 大三元測試手牌。
      */
     private fun daisangenHand() = FakeHandFactory.create(
-        listOf(
+        tiles = listOf(
             Tile.Honor.Red, Tile.Honor.Red,
             Tile.Honor.Green, Tile.Honor.Green, Tile.Honor.Green,
             Tile.Honor.White, Tile.Honor.White, Tile.Honor.White,
@@ -72,8 +72,8 @@ class RiichiHandValueCalculatorDealerTest : RiichiHandValueCalculatorTestBase() 
         val result = calculator.calculate(context)
 
         assertEquals(
-            RiichiPointResult.NonDealerTsumo(dealerPayment = 16000, otherNonDealerPayment = 8000),
-            result.pointResult,
+            expected = RiichiPointResult.NonDealerTsumo(dealerPayment = 16000, otherNonDealerPayment = 8000),
+            actual = result.pointResult,
         )
     }
 }

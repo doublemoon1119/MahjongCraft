@@ -176,13 +176,13 @@ class GameInitializerPlayerCountTest {
      */
     private class VariableWallFactory(private val playerCount: Int) : TileWallFactory {
         override fun composition(): TileComposition = TileComposition(
-            (0 until playerCount * 8).groupingBy { (it % 9) + 1 }.eachCount().map { (value, count) ->
+            entries = (0 until playerCount * 8).groupingBy { (it % 9) + 1 }.eachCount().map { (value, count) ->
                 TileCompositionEntry(TileValue(Tile.Numeric(Tile.Suit.Character, value)), count)
             },
         )
 
         override fun create(): TileWall = TileWall(
-            List(playerCount * 8) { index ->
+            tiles = List(playerCount * 8) { index ->
                 IdentifiedTile(Uuid.random(), Tile.Numeric(Tile.Suit.Character, (index % 9) + 1))
             },
         )

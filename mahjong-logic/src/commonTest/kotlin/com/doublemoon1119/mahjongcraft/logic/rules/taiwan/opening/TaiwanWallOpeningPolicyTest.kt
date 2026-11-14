@@ -42,8 +42,8 @@ class TaiwanWallOpeningPolicyTest {
     @Test
     fun `dice total eleven resolves the documented opening`() {
         assertEquals(
-            WallOpening(wallSideOffsetFromDealer = 2, stacksFromRight = 11),
-            TaiwanWallOpeningPolicy.resolve(DiceRollResult.of(listOf(4, 4, 3))),
+            expected = WallOpening(wallSideOffsetFromDealer = 2, stacksFromRight = 11),
+            actual = TaiwanWallOpeningPolicy.resolve(DiceRollResult.of(listOf(4, 4, 3))),
         )
     }
 

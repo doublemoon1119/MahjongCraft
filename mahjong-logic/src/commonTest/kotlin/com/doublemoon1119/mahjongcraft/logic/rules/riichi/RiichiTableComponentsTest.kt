@@ -33,8 +33,8 @@ class RiichiTableComponentsTest {
         val previous = initial
             .with(RiichiTableComponents.POT_POINTS, 3000)
             .with(
-                RiichiTableComponents.WALL_PROGRESS,
-                RiichiWallProgress(
+                type = RiichiTableComponents.WALL_PROGRESS,
+                value = RiichiWallProgress(
                     completedSupplementalDrawCount = 1,
                     pendingKanDoraReveals = listOf(RiichiPendingKanDoraReveal(Uuid.random(), GameAction.KanType.ADDED_KAN, 1)),
                     completedNorthDrawCount = 2,
@@ -73,8 +73,8 @@ class RiichiTableComponentsTest {
         val components = ComponentSet.EMPTY
             .with(RiichiTableComponents.POT_POINTS, 2000)
             .with(
-                RiichiTableComponents.WALL_PROGRESS,
-                RiichiWallProgress(completedSupplementalDrawCount = 1, pendingKanDoraReveals = pending),
+                type = RiichiTableComponents.WALL_PROGRESS,
+                value = RiichiWallProgress(completedSupplementalDrawCount = 1, pendingKanDoraReveals = pending),
             )
         pending.clear()
         val state = FakeTableStateFactory.create(config = RiichiRuleConfig()).copy(components = components)
@@ -105,8 +105,8 @@ class RiichiTableComponentsTest {
         val pending = RiichiPendingKanDoraReveal(Uuid.random(), GameAction.KanType.ADDED_KAN, 1)
         assertFailsWith<IllegalArgumentException> {
             ComponentSet.EMPTY.with(
-                RiichiTableComponents.WALL_PROGRESS,
-                RiichiWallProgress(completedSupplementalDrawCount = 1, pendingKanDoraReveals = listOf(pending, pending)),
+                type = RiichiTableComponents.WALL_PROGRESS,
+                value = RiichiWallProgress(completedSupplementalDrawCount = 1, pendingKanDoraReveals = listOf(pending, pending)),
             )
         }
     }

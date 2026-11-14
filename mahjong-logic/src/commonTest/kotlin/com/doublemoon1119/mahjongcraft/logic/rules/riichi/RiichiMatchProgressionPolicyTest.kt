@@ -24,10 +24,10 @@ class RiichiMatchProgressionPolicyTest {
         val context = context(RiichiGameLength.East, 4, Wind.EAST, MatchRoundPhase.REGULAR, listOf(29_900, 25_100, 25_000, 20_000))
 
         assertEquals(
-            MatchProgressionDecision.ContinueMatch(
-                MatchRoundTransition.AdvanceTo(MatchRoundPosition(4, Wind.SOUTH, 1, MatchRoundPhase.EXTRA)),
+            expected = MatchProgressionDecision.ContinueMatch(
+                transition = MatchRoundTransition.AdvanceTo(MatchRoundPosition(4, Wind.SOUTH, 1, MatchRoundPhase.EXTRA)),
             ),
-            policy(context).decide(context),
+            actual = policy(context).decide(context),
         )
     }
 
@@ -37,8 +37,8 @@ class RiichiMatchProgressionPolicyTest {
         val context = context(RiichiGameLength.East, 4, Wind.EAST, MatchRoundPhase.REGULAR, listOf(30_000, 25_000, 25_000, 20_000))
 
         assertEquals(
-            MatchProgressionDecision.EndMatch(BuiltInMatchEndReasonIds.TARGET_SCORE_REACHED),
-            policy(context).decide(context),
+            expected = MatchProgressionDecision.EndMatch(BuiltInMatchEndReasonIds.TARGET_SCORE_REACHED),
+            actual = policy(context).decide(context),
         )
     }
 
@@ -48,10 +48,10 @@ class RiichiMatchProgressionPolicyTest {
         val context = context(RiichiGameLength.TwoWinds, 8, Wind.SOUTH, MatchRoundPhase.REGULAR, listOf(29_900, 25_100, 25_000, 20_000))
 
         assertEquals(
-            MatchProgressionDecision.ContinueMatch(
-                MatchRoundTransition.AdvanceTo(MatchRoundPosition(8, Wind.WEST, 1, MatchRoundPhase.EXTRA)),
+            expected = MatchProgressionDecision.ContinueMatch(
+                transition = MatchRoundTransition.AdvanceTo(MatchRoundPosition(8, Wind.WEST, 1, MatchRoundPhase.EXTRA)),
             ),
-            policy(context).decide(context),
+            actual = policy(context).decide(context),
         )
     }
 
@@ -61,8 +61,8 @@ class RiichiMatchProgressionPolicyTest {
         val context = context(RiichiGameLength.East, 5, Wind.SOUTH, MatchRoundPhase.EXTRA, listOf(30_100, 25_000, 24_900, 20_000))
 
         assertEquals(
-            MatchProgressionDecision.EndMatch(BuiltInMatchEndReasonIds.TARGET_SCORE_REACHED),
-            policy(context).decide(context),
+            expected = MatchProgressionDecision.EndMatch(BuiltInMatchEndReasonIds.TARGET_SCORE_REACHED),
+            actual = policy(context).decide(context),
         )
     }
 
@@ -72,8 +72,8 @@ class RiichiMatchProgressionPolicyTest {
         val context = context(RiichiGameLength.East, 8, Wind.SOUTH, MatchRoundPhase.EXTRA, listOf(29_900, 25_100, 25_000, 20_000))
 
         assertEquals(
-            MatchProgressionDecision.EndMatch(BuiltInMatchEndReasonIds.EXTRA_ROUND_LIMIT_REACHED),
-            policy(context).decide(context),
+            expected = MatchProgressionDecision.EndMatch(BuiltInMatchEndReasonIds.EXTRA_ROUND_LIMIT_REACHED),
+            actual = policy(context).decide(context),
         )
     }
 
@@ -81,19 +81,19 @@ class RiichiMatchProgressionPolicyTest {
     @Test
     fun `dealer top finish ends instead of repeating final regular round`() {
         val context = context(
-            RiichiGameLength.East,
-            4,
-            Wind.EAST,
-            MatchRoundPhase.REGULAR,
-            listOf(25_000, 24_000, 21_000, 30_000),
+            gameLength = RiichiGameLength.East,
+            roundNumber = 4,
+            prevalentWind = Wind.EAST,
+            phase = MatchRoundPhase.REGULAR,
+            scores = listOf(25_000, 24_000, 21_000, 30_000),
             directive = RoundTransitionDirective.RepeatDealer,
             dealerIndex = 3,
             rankedIndices = listOf(3, 0, 1, 2),
         )
 
         assertEquals(
-            MatchProgressionDecision.EndMatch(RiichiMatchEndReasonIds.DEALER_TOP_FINISH),
-            policy(context).decide(context),
+            expected = MatchProgressionDecision.EndMatch(RiichiMatchEndReasonIds.DEALER_TOP_FINISH),
+            actual = policy(context).decide(context),
         )
     }
 
@@ -101,19 +101,19 @@ class RiichiMatchProgressionPolicyTest {
     @Test
     fun `extra round double ron with the dealer repeats when only a non-dealer reaches the target`() {
         val context = context(
-            RiichiGameLength.East,
-            6,
-            Wind.SOUTH,
-            MatchRoundPhase.EXTRA,
-            listOf(24_000, 26_000, 32_000, 18_000),
+            gameLength = RiichiGameLength.East,
+            roundNumber = 6,
+            prevalentWind = Wind.SOUTH,
+            phase = MatchRoundPhase.EXTRA,
+            scores = listOf(24_000, 26_000, 32_000, 18_000),
             directive = RoundTransitionDirective.RepeatDealer,
             dealerIndex = 1,
             beneficiaryIndices = listOf(1, 2),
         )
 
         assertEquals(
-            MatchProgressionDecision.ContinueMatch(MatchRoundTransition.RepeatCurrentRound),
-            policy(context).decide(context),
+            expected = MatchProgressionDecision.ContinueMatch(MatchRoundTransition.RepeatCurrentRound),
+            actual = policy(context).decide(context),
         )
     }
 
@@ -121,11 +121,11 @@ class RiichiMatchProgressionPolicyTest {
     @Test
     fun `extra round dealer tenpai repeats when a non-dealer reaches the target through noten payments`() {
         val context = context(
-            RiichiGameLength.East,
-            6,
-            Wind.SOUTH,
-            MatchRoundPhase.EXTRA,
-            listOf(23_500, 26_500, 30_500, 19_500),
+            gameLength = RiichiGameLength.East,
+            roundNumber = 6,
+            prevalentWind = Wind.SOUTH,
+            phase = MatchRoundPhase.EXTRA,
+            scores = listOf(23_500, 26_500, 30_500, 19_500),
             directive = RoundTransitionDirective.RepeatDealer,
             dealerIndex = 1,
             classification = RoundCompletionClassification.EXHAUSTIVE_DRAW,
@@ -133,8 +133,8 @@ class RiichiMatchProgressionPolicyTest {
         )
 
         assertEquals(
-            MatchProgressionDecision.ContinueMatch(MatchRoundTransition.RepeatCurrentRound),
-            policy(context).decide(context),
+            expected = MatchProgressionDecision.ContinueMatch(MatchRoundTransition.RepeatCurrentRound),
+            actual = policy(context).decide(context),
         )
     }
 
@@ -142,18 +142,18 @@ class RiichiMatchProgressionPolicyTest {
     @Test
     fun `extra last round repeats while the dealer keeps the seat`() {
         val context = context(
-            RiichiGameLength.East,
-            8,
-            Wind.SOUTH,
-            MatchRoundPhase.EXTRA,
-            listOf(29_000, 25_000, 24_000, 22_000),
+            gameLength = RiichiGameLength.East,
+            roundNumber = 8,
+            prevalentWind = Wind.SOUTH,
+            phase = MatchRoundPhase.EXTRA,
+            scores = listOf(29_000, 25_000, 24_000, 22_000),
             directive = RoundTransitionDirective.RepeatDealer,
             dealerIndex = 3,
         )
 
         assertEquals(
-            MatchProgressionDecision.ContinueMatch(MatchRoundTransition.RepeatCurrentRound),
-            policy(context).decide(context),
+            expected = MatchProgressionDecision.ContinueMatch(MatchRoundTransition.RepeatCurrentRound),
+            actual = policy(context).decide(context),
         )
     }
 
@@ -161,18 +161,18 @@ class RiichiMatchProgressionPolicyTest {
     @Test
     fun `extra round dealer top finish ends the match`() {
         val context = context(
-            RiichiGameLength.East,
-            6,
-            Wind.SOUTH,
-            MatchRoundPhase.EXTRA,
-            listOf(22_000, 31_000, 27_000, 20_000),
+            gameLength = RiichiGameLength.East,
+            roundNumber = 6,
+            prevalentWind = Wind.SOUTH,
+            phase = MatchRoundPhase.EXTRA,
+            scores = listOf(22_000, 31_000, 27_000, 20_000),
             directive = RoundTransitionDirective.RepeatDealer,
             dealerIndex = 1,
         )
 
         assertEquals(
-            MatchProgressionDecision.EndMatch(RiichiMatchEndReasonIds.DEALER_TOP_FINISH),
-            policy(context).decide(context),
+            expected = MatchProgressionDecision.EndMatch(RiichiMatchEndReasonIds.DEALER_TOP_FINISH),
+            actual = policy(context).decide(context),
         )
     }
 
@@ -180,19 +180,19 @@ class RiichiMatchProgressionPolicyTest {
     @Test
     fun `final regular round double ron with the dealer repeats when only a non-dealer reaches the target`() {
         val context = context(
-            RiichiGameLength.East,
-            4,
-            Wind.EAST,
-            MatchRoundPhase.REGULAR,
-            listOf(31_000, 24_000, 20_000, 25_000),
+            gameLength = RiichiGameLength.East,
+            roundNumber = 4,
+            prevalentWind = Wind.EAST,
+            phase = MatchRoundPhase.REGULAR,
+            scores = listOf(31_000, 24_000, 20_000, 25_000),
             directive = RoundTransitionDirective.RepeatDealer,
             dealerIndex = 3,
             beneficiaryIndices = listOf(3, 0),
         )
 
         assertEquals(
-            MatchProgressionDecision.ContinueMatch(MatchRoundTransition.RepeatCurrentRound),
-            policy(context).decide(context),
+            expected = MatchProgressionDecision.ContinueMatch(MatchRoundTransition.RepeatCurrentRound),
+            actual = policy(context).decide(context),
         )
     }
 
@@ -200,11 +200,11 @@ class RiichiMatchProgressionPolicyTest {
     @Test
     fun `abortive draw does not trigger dealer top finish`() {
         val context = context(
-            RiichiGameLength.East,
-            4,
-            Wind.EAST,
-            MatchRoundPhase.REGULAR,
-            listOf(25_000, 24_000, 21_000, 30_000),
+            gameLength = RiichiGameLength.East,
+            roundNumber = 4,
+            prevalentWind = Wind.EAST,
+            phase = MatchRoundPhase.REGULAR,
+            scores = listOf(25_000, 24_000, 21_000, 30_000),
             directive = RoundTransitionDirective.RepeatDealer,
             dealerIndex = 3,
             rankedIndices = listOf(3, 0, 1, 2),
@@ -212,8 +212,8 @@ class RiichiMatchProgressionPolicyTest {
         )
 
         assertEquals(
-            MatchProgressionDecision.ContinueMatch(MatchRoundTransition.RepeatCurrentRound),
-            policy(context).decide(context),
+            expected = MatchProgressionDecision.ContinueMatch(MatchRoundTransition.RepeatCurrentRound),
+            actual = policy(context).decide(context),
         )
     }
 
@@ -222,14 +222,14 @@ class RiichiMatchProgressionPolicyTest {
     fun `custom minimum points controls overtime`() {
         val context = context(RiichiGameLength.East, 4, Wind.EAST, MatchRoundPhase.REGULAR, listOf(34_000, 25_000, 21_000, 20_000))
         val customPolicy = RiichiMatchProgressionPolicy(
-            RiichiRuleConfig(gameLength = RiichiGameLength.East, scoreConfig = RiichiScoreConfig(minPointsToWin = 35_000)),
+            config = RiichiRuleConfig(gameLength = RiichiGameLength.East, scoreConfig = RiichiScoreConfig(minPointsToWin = 35_000)),
         )
 
         assertEquals(
-            MatchProgressionDecision.ContinueMatch(
-                MatchRoundTransition.AdvanceTo(MatchRoundPosition(4, Wind.SOUTH, 1, MatchRoundPhase.EXTRA)),
+            expected = MatchProgressionDecision.ContinueMatch(
+                transition = MatchRoundTransition.AdvanceTo(MatchRoundPosition(4, Wind.SOUTH, 1, MatchRoundPhase.EXTRA)),
             ),
-            customPolicy.decide(context),
+            actual = customPolicy.decide(context),
         )
     }
 
@@ -238,22 +238,22 @@ class RiichiMatchProgressionPolicyTest {
     fun `draws that advance the dealer continue the combo`() {
         listOf(RoundCompletionClassification.EXHAUSTIVE_DRAW, RoundCompletionClassification.ABORTIVE_DRAW).forEach { classification ->
             val context = context(
-                RiichiGameLength.East,
-                2,
-                Wind.EAST,
-                MatchRoundPhase.REGULAR,
-                listOf(25_000, 25_000, 25_000, 25_000),
+                gameLength = RiichiGameLength.East,
+                roundNumber = 2,
+                prevalentWind = Wind.EAST,
+                phase = MatchRoundPhase.REGULAR,
+                scores = listOf(25_000, 25_000, 25_000, 25_000),
                 classification = classification,
             )
 
             assertEquals(
-                MatchProgressionDecision.ContinueMatch(
-                    MatchRoundTransition.AdvanceTo(
+                expected = MatchProgressionDecision.ContinueMatch(
+                    transition = MatchRoundTransition.AdvanceTo(
                         nextPosition = MatchRoundPosition(2, Wind.EAST, 3),
                         continuesCombo = true,
                     ),
                 ),
-                policy(context).decide(context),
+                actual = policy(context).decide(context),
             )
         }
     }
@@ -264,13 +264,13 @@ class RiichiMatchProgressionPolicyTest {
         val context = context(RiichiGameLength.East, 2, Wind.EAST, MatchRoundPhase.REGULAR, listOf(25_000, 25_000, 25_000, 25_000))
 
         assertEquals(
-            MatchProgressionDecision.ContinueMatch(
-                MatchRoundTransition.AdvanceTo(
+            expected = MatchProgressionDecision.ContinueMatch(
+                transition = MatchRoundTransition.AdvanceTo(
                     nextPosition = MatchRoundPosition(2, Wind.EAST, 3),
                     continuesCombo = false,
                 ),
             ),
-            policy(context).decide(context),
+            actual = policy(context).decide(context),
         )
     }
 
@@ -278,22 +278,22 @@ class RiichiMatchProgressionPolicyTest {
     @Test
     fun `final regular round draw into extra round continues the combo`() {
         val context = context(
-            RiichiGameLength.East,
-            4,
-            Wind.EAST,
-            MatchRoundPhase.REGULAR,
-            listOf(29_900, 25_100, 25_000, 20_000),
+            gameLength = RiichiGameLength.East,
+            roundNumber = 4,
+            prevalentWind = Wind.EAST,
+            phase = MatchRoundPhase.REGULAR,
+            scores = listOf(29_900, 25_100, 25_000, 20_000),
             classification = RoundCompletionClassification.EXHAUSTIVE_DRAW,
         )
 
         assertEquals(
-            MatchProgressionDecision.ContinueMatch(
-                MatchRoundTransition.AdvanceTo(
+            expected = MatchProgressionDecision.ContinueMatch(
+                transition = MatchRoundTransition.AdvanceTo(
                     nextPosition = MatchRoundPosition(4, Wind.SOUTH, 1, MatchRoundPhase.EXTRA),
                     continuesCombo = true,
                 ),
             ),
-            policy(context).decide(context),
+            actual = policy(context).decide(context),
         )
     }
 
@@ -303,8 +303,8 @@ class RiichiMatchProgressionPolicyTest {
         val context = context(RiichiGameLength.East, 2, Wind.EAST, MatchRoundPhase.REGULAR, listOf(50_000, 30_100, 20_000, -100))
 
         assertEquals(
-            MatchProgressionDecision.EndMatch(BuiltInMatchEndReasonIds.PLAYER_BUSTED),
-            policy(context).decide(context),
+            expected = MatchProgressionDecision.EndMatch(BuiltInMatchEndReasonIds.PLAYER_BUSTED),
+            actual = policy(context).decide(context),
         )
     }
 

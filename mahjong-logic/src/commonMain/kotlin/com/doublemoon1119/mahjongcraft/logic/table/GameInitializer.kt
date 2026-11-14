@@ -144,10 +144,10 @@ object GameInitializer {
         val physicalLayouts = openedWall.createPhysicalLayouts(module, remainingWall)
         val handsByPlayerId = dealOrderPlayerIds.zip(hands).toMap()
         val seatWinds = module.assignSeatWinds(
-            playerIdsInTurnOrder,
-            roundAdvancement.dealerPlayerId,
-            openedWall,
-            opening.diceRolls,
+            playerIdsInTurnOrder = playerIdsInTurnOrder,
+            dealerPlayerId = roundAdvancement.dealerPlayerId,
+            openedWall = openedWall,
+            diceRolls = opening.diceRolls,
         )
         val players = roundAdvancement.players.map { player ->
             player.copy(
@@ -212,7 +212,7 @@ object GameInitializer {
         for (stepIndex in 0..MAX_OPENING_ROLLS) {
             when (
                 val step = procedure.next(
-                    RoundOpeningContext(
+                    context = RoundOpeningContext(
                         playerIdsInTurnOrder = playerIdsInTurnOrder.toList(),
                         firstRound = firstRound,
                         provisionalPlayerId = provisionalPlayerId,
@@ -282,7 +282,7 @@ object GameInitializer {
         openedWall: OpenedWall,
         diceRolls: List<OpeningDiceRoll>,
     ): Map<Uuid, Wind> = createSeatWindAssignmentPolicy().assignValidated(
-        SeatWindAssignmentContext(
+        context = SeatWindAssignmentContext(
             playerIdsInTurnOrder = playerIdsInTurnOrder,
             dealerPlayerId = dealerPlayerId,
             diceRolls = diceRolls,
@@ -361,7 +361,7 @@ object GameInitializer {
             val opening = requireNotNull(wallOpening)
             val complete = when (
                 val decision = module.createPhysicalWallLayoutPolicy().createInitialLayoutValidated(
-                    InitialPhysicalWallLayoutContext(result, opening, retainedIds),
+                    context = InitialPhysicalWallLayoutContext(result, opening, retainedIds),
                 )
             ) {
                 is InitialPhysicalWallLayoutDecision.Completed -> decision.layout

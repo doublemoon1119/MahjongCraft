@@ -89,7 +89,7 @@ class TaiwanLegalActionValidatorTest {
         val declarer = state.players[0].id
 
         fun robbing(type: GameAction.KanType) = validator.getLegalActions(
-            LegalActionContext.declarationReaction(state, state.players[1].id, declarer, GameAction.Kan(type, winning.id, emptyList()), winning),
+            context = LegalActionContext.declarationReaction(state, state.players[1].id, declarer, GameAction.Kan(type, winning.id, emptyList()), winning),
         )
 
         assertTrue(robbing(GameAction.KanType.ADDED_KAN).any { it is GameAction.Ron })

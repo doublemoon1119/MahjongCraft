@@ -31,7 +31,7 @@ class RiichiHandValueCalculatorChiMeldOrderingTest : RiichiHandValueCalculatorTe
         // 手牌：234m (順子), 234p (順子), 55s (雀頭), 67p (餘牌)，胡 8p 組成 678p
         // 全部都是簡張（2~8），開立且無字牌／老頭牌，應成立斷么九 (Tanyao) 1 翻
         val hand = FakeHandFactory.create(
-            listOf(
+            tiles = listOf(
                 Tile.Numeric(Tile.Suit.Character, 2),
                 Tile.Numeric(Tile.Suit.Character, 3),
                 Tile.Numeric(Tile.Suit.Character, 4),
@@ -44,7 +44,7 @@ class RiichiHandValueCalculatorChiMeldOrderingTest : RiichiHandValueCalculatorTe
                 Tile.Numeric(Tile.Suit.Bamboo, 5),
             ),
             melds = listOf(
-                FakeMeldFactory.create(
+                element = FakeMeldFactory.create(
                     type = MeldType.Chi,
                     tiles = listOf(
                         FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Bamboo, 8)),

@@ -219,7 +219,7 @@ class RiichiHandValueCalculator(
 
         // 日本麻將適用高點法，選擇最終點數最高的結果。
         return handValueResults.maxWithOrNull(
-            compareBy<RiichiHandValueResult> { it.totalPoint } // 1. 點數最高優先
+            comparator = compareBy<RiichiHandValueResult> { it.totalPoint } // 1. 點數最高優先
                 .thenBy { it.isYakuman } // 2. 點數相同時，役滿役優先於數役滿 (避免`累計役滿`覆蓋掉`役滿`)
                 .thenBy { if (it.isYakuman) abs(it.totalHan) else it.totalHan } // 3. 翻數次之 (如果是役滿，其翻數以負數表示，這裡取其絕對值)
                 .thenBy { it.totalFu }, // 4. 最後才是符數

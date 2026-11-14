@@ -22,7 +22,7 @@ class TaiwanHandValueContextCalculatorTest {
         val flowers = mutableListOf<Tile>(Tile.Extension(TaiwanTileTypes.SPRING))
         val incoming = FakeIdentifiedTileFactory.create(Tile.Honor.Red)
         val result = TaiwanHandValueContextCalculator().calculate(
-            TaiwanHandValueContextCalculator.Input(
+            input = TaiwanHandValueContextCalculator.Input(
                 tableState = table,
                 player = table.players.single(),
                 incomingTile = incoming,

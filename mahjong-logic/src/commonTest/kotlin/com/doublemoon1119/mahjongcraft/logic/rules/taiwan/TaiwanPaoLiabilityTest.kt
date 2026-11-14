@@ -36,12 +36,12 @@ class TaiwanPaoLiabilityTest {
         val claimer = player(melds = listOf(pon(Tile.Honor.Red), pon(Tile.Honor.Green)), standing = List(3) { tile(Tile.Honor.White) })
 
         assertEquals(
-            TaiwanPaoLiability(TaiwanPaoHand.BIG_DRAGONS, RelativeDirection.Left),
-            liabilityAfterClaim(paoModule, claimer, MeldType.Pon, Tile.Honor.White, RelativeDirection.Left),
+            expected = TaiwanPaoLiability(TaiwanPaoHand.BIG_DRAGONS, RelativeDirection.Left),
+            actual = liabilityAfterClaim(paoModule, claimer, MeldType.Pon, Tile.Honor.White, RelativeDirection.Left),
         )
         assertEquals(
-            TaiwanPaoLiability(TaiwanPaoHand.BIG_DRAGONS, RelativeDirection.Across),
-            liabilityAfterClaim(paoModule, claimer, MeldType.OpenKan, Tile.Honor.White, RelativeDirection.Across),
+            expected = TaiwanPaoLiability(TaiwanPaoHand.BIG_DRAGONS, RelativeDirection.Across),
+            actual = liabilityAfterClaim(paoModule, claimer, MeldType.OpenKan, Tile.Honor.White, RelativeDirection.Across),
         )
     }
 
@@ -54,8 +54,8 @@ class TaiwanPaoLiabilityTest {
         )
 
         assertEquals(
-            TaiwanPaoLiability(TaiwanPaoHand.BIG_WINDS, RelativeDirection.Right),
-            liabilityAfterClaim(paoModule, claimer, MeldType.Pon, Tile.Honor.North, RelativeDirection.Right),
+            expected = TaiwanPaoLiability(TaiwanPaoHand.BIG_WINDS, RelativeDirection.Right),
+            actual = liabilityAfterClaim(paoModule, claimer, MeldType.Pon, Tile.Honor.North, RelativeDirection.Right),
         )
     }
 
@@ -165,7 +165,7 @@ class TaiwanPaoLiabilityTest {
         melds: List<Meld>,
         standing: List<IdentifiedTile>,
     ): MahjongPlayer = FakeMahjongPlayerFactory.create(
-        wind,
+        initialSeat = wind,
         hand = Hand(tiles = standing, melds = melds),
         discardPile = TaiwanDiscardPile().discardTile(tile(Tile.Numeric(Tile.Suit.Dot, 1))),
     )

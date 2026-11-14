@@ -68,7 +68,7 @@ class TaiwanPositionRulesTest {
 
         val plain = assertIs<WinValue.Points>(generalReadyRules.winValue(view(table, waiter), waiter.hand, WINNING_VALUE, isTsumo = false))
         val declared = assertIs<WinValue.Points>(
-            generalReadyRules.winValue(
+            value = generalReadyRules.winValue(
                 view = view(table, waiter),
                 hand = waiter.hand,
                 winningTile = WINNING_VALUE,

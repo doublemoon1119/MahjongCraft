@@ -48,7 +48,7 @@ class RiichiLegalActionValidatorFuritenTest {
         // 準備
         // 手牌已聽牌，聽普通5萬
         val playerHand = FakeHandFactory.create(
-            listOf(
+            tiles = listOf(
                 Tile.Numeric(Tile.Suit.Character, 1),
                 Tile.Numeric(Tile.Suit.Character, 1),
                 Tile.Numeric(Tile.Suit.Character, 1),
@@ -66,8 +66,8 @@ class RiichiLegalActionValidatorFuritenTest {
         ).withRedFives(Tile.Suit.Character)
         // 模擬玩家已經打了赤5萬（振聽）
         val fakeDiscardPile = FakeDiscardPile().discard(
-            FakeDiscardPile.FakeEntry(
-                FakeIdentifiedTileFactory.create(RiichiTileValues.redFive(Tile.Suit.Character)),
+            entry = FakeDiscardPile.FakeEntry(
+                tile = FakeIdentifiedTileFactory.create(RiichiTileValues.redFive(Tile.Suit.Character)),
             ),
         )
         val riichiState = riichiDeclarationComponents()
@@ -100,7 +100,7 @@ class RiichiLegalActionValidatorFuritenTest {
         // 準備
         // 手牌已聽牌，聽普通5萬
         val playerHand = FakeHandFactory.create(
-            listOf(
+            tiles = listOf(
                 Tile.Numeric(Tile.Suit.Character, 1),
                 Tile.Numeric(Tile.Suit.Character, 1),
                 Tile.Numeric(Tile.Suit.Character, 1),
@@ -118,8 +118,8 @@ class RiichiLegalActionValidatorFuritenTest {
         )
         // 模擬玩家已經打了普通5萬（振聽）
         val fakeDiscardPile = FakeDiscardPile().discard(
-            FakeDiscardPile.FakeEntry(
-                FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 5)),
+            entry = FakeDiscardPile.FakeEntry(
+                tile = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 5)),
             ),
         )
         val riichiState = riichiDeclarationComponents()
@@ -152,7 +152,7 @@ class RiichiLegalActionValidatorFuritenTest {
         // 手牌聽 5 萬／9 萬（雙碰），且手上有兩張 5 萬可以碰；清一色確保榮和本身有役，
         // 「不能榮和」才是振聽造成的，不是無役
         val playerHand = FakeHandFactory.create(
-            listOf(
+            tiles = listOf(
                 Tile.Numeric(Tile.Suit.Character, 1),
                 Tile.Numeric(Tile.Suit.Character, 1),
                 Tile.Numeric(Tile.Suit.Character, 1),
@@ -202,7 +202,7 @@ class RiichiLegalActionValidatorFuritenTest {
         // 手牌聽 5 萬／9 萬（雙碰），且手上有兩張 5 萬可以碰；清一色確保榮和本身有役，
         // 「不能榮和」才是振聽造成的，不是無役
         val playerHand = FakeHandFactory.create(
-            listOf(
+            tiles = listOf(
                 Tile.Numeric(Tile.Suit.Character, 1),
                 Tile.Numeric(Tile.Suit.Character, 1),
                 Tile.Numeric(Tile.Suit.Character, 1),
@@ -249,7 +249,7 @@ class RiichiLegalActionValidatorFuritenTest {
     @Test
     fun `test cannot ron when permanently furiten after riichi even without matching discard or passed tile`() {
         val playerHand = FakeHandFactory.create(
-            listOf(
+            tiles = listOf(
                 Tile.Numeric(Tile.Suit.Character, 1),
                 Tile.Numeric(Tile.Suit.Character, 1),
                 Tile.Numeric(Tile.Suit.Character, 1),
@@ -334,7 +334,7 @@ class RiichiLegalActionValidatorFuritenTest {
      */
     private fun twoSidedWaitPlayer(discardPile: FakeDiscardPile) = FakeMahjongPlayerFactory.create(
         hand = FakeHandFactory.create(
-            listOf(
+            tiles = listOf(
                 Tile.Numeric(Tile.Suit.Character, 2),
                 Tile.Numeric(Tile.Suit.Character, 3),
                 Tile.Numeric(Tile.Suit.Dot, 4),
@@ -372,11 +372,11 @@ class RiichiLegalActionValidatorFuritenTest {
     private fun canRon(player: MahjongPlayer, tile: Tile): Boolean {
         val incomingTile = FakeIdentifiedTileFactory.create(tile)
         return validator.getLegalActions(
-            LegalActionTestContexts.discard(
-                FakeTableStateFactory.create(players = listOf(player)),
-                player,
-                RelativeDirection.Across,
-                incomingTile,
+            context = LegalActionTestContexts.discard(
+                tableState = FakeTableStateFactory.create(players = listOf(player)),
+                player = player,
+                sourceDirection = RelativeDirection.Across,
+                discardedTile = incomingTile,
             ),
         ).any { it is GameAction.Ron }
     }

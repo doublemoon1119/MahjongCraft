@@ -24,7 +24,7 @@ class RiichiChiitoitsuTest : RiichiHandValueCalculatorTestBase() {
     @Test
     fun `test chiitoitsu menzen`() {
         val hand = FakeHandFactory.create(
-            listOf(
+            tiles = listOf(
                 Tile.Numeric(Tile.Suit.Character, 1),
                 Tile.Numeric(Tile.Suit.Character, 1),
                 Tile.Numeric(Tile.Suit.Character, 2),
@@ -59,7 +59,7 @@ class RiichiChiitoitsuTest : RiichiHandValueCalculatorTestBase() {
         // 七對子手牌：13 張手牌 + 1 張自摸 = 7 對子
         // 其中一對被副露消耗（副露 3 張 + 手牌 10 張 + 摸牌 1 張 = 14 張）
         val hand = FakeHandFactory.create(
-            listOf(
+            tiles = listOf(
                 Tile.Numeric(Tile.Suit.Character, 1),
                 Tile.Numeric(Tile.Suit.Character, 2),
                 Tile.Numeric(Tile.Suit.Character, 2),
@@ -75,7 +75,7 @@ class RiichiChiitoitsuTest : RiichiHandValueCalculatorTestBase() {
                 Tile.Numeric(Tile.Suit.Dot, 7),
             ),
             melds = listOf(
-                FakeMeldFactory.create(
+                element = FakeMeldFactory.create(
                     type = MeldType.Pon,
                     tiles = listOf(
                         FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Bamboo, 1)),
@@ -103,7 +103,7 @@ class RiichiChiitoitsuTest : RiichiHandValueCalculatorTestBase() {
     @Test
     fun `test chiitoitsu with more than seven pairs returns null`() {
         val hand = FakeHandFactory.create(
-            listOf(
+            tiles = listOf(
                 Tile.Numeric(Tile.Suit.Character, 1),
                 Tile.Numeric(Tile.Suit.Character, 1),
                 Tile.Numeric(Tile.Suit.Character, 1),

@@ -21,7 +21,7 @@ fun registerTaiwanPlayerComponents(registry: ComponentRegistrar) {
     registry.registerView(TaiwanPlayerComponentViews.READY_DECLARATION)
     registry.registerLifecycle(resetEachRound(TaiwanPlayerComponents.READY_DECLARATION))
     registry.registerProjection(
-        ComponentProjectionDefinition(
+        definition = ComponentProjectionDefinition(
             id = "mahjongcraft:taiwan/projection/ready_declaration",
             ownerType = BuiltInComponentOwners.PLAYER,
             component = TaiwanPlayerComponents.READY_DECLARATION,
@@ -36,7 +36,7 @@ fun registerTaiwanPlayerComponents(registry: ComponentRegistrar) {
     registry.registerView(TaiwanPlayerComponentViews.PASSED_WIN)
     registry.registerLifecycle(resetEachRound(TaiwanPlayerComponents.PASSED_WIN))
     registry.registerProjection(
-        ComponentProjectionDefinition(
+        definition = ComponentProjectionDefinition(
             id = "mahjongcraft:taiwan/projection/passed_win",
             ownerType = BuiltInComponentOwners.PLAYER,
             component = TaiwanPlayerComponents.PASSED_WIN,

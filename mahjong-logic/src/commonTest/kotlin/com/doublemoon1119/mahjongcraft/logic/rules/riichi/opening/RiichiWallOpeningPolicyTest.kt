@@ -37,8 +37,8 @@ class RiichiWallOpeningPolicyTest {
     @Test
     fun `dice total eight resolves the documented opening`() {
         assertEquals(
-            WallOpening(wallSideOffsetFromDealer = 3, stacksFromRight = 8),
-            RiichiWallOpeningPolicy.resolve(DiceRollResult.of(listOf(3, 5))),
+            expected = WallOpening(wallSideOffsetFromDealer = 3, stacksFromRight = 8),
+            actual = RiichiWallOpeningPolicy.resolve(DiceRollResult.of(listOf(3, 5))),
         )
     }
 

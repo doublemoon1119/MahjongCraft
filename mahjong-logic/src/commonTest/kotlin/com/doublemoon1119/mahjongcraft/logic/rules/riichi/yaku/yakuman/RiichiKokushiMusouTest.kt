@@ -149,7 +149,7 @@ class RiichiKokushiMusouTest : RiichiHandValueCalculatorTestBase() {
     @Test
     fun `test kokushi musou via calculator`() {
         val hand = FakeHandFactory.create(
-            listOf(
+            tiles = listOf(
                 // 對子：1m
                 Tile.Numeric(Tile.Suit.Character, 1),
                 Tile.Numeric(Tile.Suit.Character, 1),
@@ -186,7 +186,7 @@ class RiichiKokushiMusouTest : RiichiHandValueCalculatorTestBase() {
     @Test
     fun `test kokushi musou 13-men via calculator`() {
         val hand = FakeHandFactory.create(
-            listOf(
+            tiles = listOf(
                 // 單張：全部 13 種
                 Tile.Numeric(Tile.Suit.Character, 1),
                 Tile.Numeric(Tile.Suit.Character, 9),

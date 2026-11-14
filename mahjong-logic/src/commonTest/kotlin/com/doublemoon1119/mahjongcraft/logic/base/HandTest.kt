@@ -93,8 +93,8 @@ class HandTest {
         val updatedHand = result.hand
         assertNull(updatedHand.lastDrawn, "lastDrawn should be cleared because it was moved to standing tiles.")
         assertTrue(
-            updatedHand.standingTiles.contains(tileLastDrawn),
-            "The last drawn tile should now be in the standing tiles list.",
+            actual = updatedHand.standingTiles.contains(tileLastDrawn),
+            message = "The last drawn tile should now be in the standing tiles list.",
         )
         assertEquals(1, updatedHand.standingTiles.size)
     }

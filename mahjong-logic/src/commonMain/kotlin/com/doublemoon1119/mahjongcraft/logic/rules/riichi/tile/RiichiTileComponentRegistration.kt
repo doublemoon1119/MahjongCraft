@@ -16,7 +16,7 @@ fun registerRiichiTileComponents(registry: ComponentRegistrar) {
     registry.register(RiichiTileComponents.DORA_INDICATOR)
     registry.registerView(RiichiTileComponentViews.DORA_INDICATOR)
     registry.registerProjection(
-        ComponentProjectionDefinition(
+        definition = ComponentProjectionDefinition(
             id = "mahjongcraft:riichi/projection/dora_indicator",
             ownerType = BuiltInComponentOwners.TILE,
             component = RiichiTileComponents.DORA_INDICATOR,
@@ -28,7 +28,7 @@ fun registerRiichiTileComponents(registry: ComponentRegistrar) {
     registry.register(RiichiTileComponents.RED_DORA)
     registry.registerView(RiichiTileComponentViews.RED_DORA)
     registry.registerProjection(
-        ComponentProjectionDefinition(
+        definition = ComponentProjectionDefinition(
             id = "mahjongcraft:riichi/projection/red_dora",
             ownerType = BuiltInComponentOwners.TILE,
             component = RiichiTileComponents.RED_DORA,

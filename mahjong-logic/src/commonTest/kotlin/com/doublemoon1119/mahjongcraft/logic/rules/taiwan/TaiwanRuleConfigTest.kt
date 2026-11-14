@@ -28,8 +28,8 @@ class TaiwanRuleConfigTest {
         assertFalse(config.generalReadyDeclaration)
         assertFalse(config.paoLiability)
         assertEquals(
-            MultiRonPolicy(doubleRonResolution = RonResolution.NEAREST_WINNER, tripleRonResolution = RonResolution.NEAREST_WINNER),
-            config.multiRonPolicy,
+            expected = MultiRonPolicy(doubleRonResolution = RonResolution.NEAREST_WINNER, tripleRonResolution = RonResolution.NEAREST_WINNER),
+            actual = config.multiRonPolicy,
         )
     }
 }

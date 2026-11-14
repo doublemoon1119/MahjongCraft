@@ -27,7 +27,7 @@ class RiichiWallRevealPolicyTest {
         val fixture = fixture(GameAction.KanType.CLOSED_KAN)
 
         val result = assertIs<WallRevealDecision.Updated>(
-            RiichiWallRevealPolicy.resolve(fixture.context(WallRevealCheckpoint.AFTER_SUPPLEMENTAL_DRAW)),
+            value = RiichiWallRevealPolicy.resolve(fixture.context(WallRevealCheckpoint.AFTER_SUPPLEMENTAL_DRAW)),
         )
         val updated = requireNotNull(result.tableComponents.values[RiichiTableComponents.WALL_PROGRESS])
 
@@ -43,7 +43,7 @@ class RiichiWallRevealPolicyTest {
             val fixture = fixture(kanType)
 
             val result = assertIs<WallRevealDecision.Updated>(
-                RiichiWallRevealPolicy.resolve(fixture.context(WallRevealCheckpoint.AFTER_SUPPLEMENTAL_DRAW)),
+                value = RiichiWallRevealPolicy.resolve(fixture.context(WallRevealCheckpoint.AFTER_SUPPLEMENTAL_DRAW)),
             )
             val updated = requireNotNull(result.tableComponents.values[RiichiTableComponents.WALL_PROGRESS])
 
@@ -59,18 +59,18 @@ class RiichiWallRevealPolicyTest {
         val fixture = fixture(GameAction.KanType.OPEN_KAN)
         val pendingState = fixture.state.copy(
             components = fixture.state.components.with(
-                RiichiTableComponents.WALL_PROGRESS,
-                fixture.progress.copy(
+                type = RiichiTableComponents.WALL_PROGRESS,
+                value = fixture.progress.copy(
                     pendingKanDoraReveals = listOf(
-                        RiichiPendingKanDoraReveal(fixture.actorId, GameAction.KanType.OPEN_KAN, 1),
+                        element = RiichiPendingKanDoraReveal(fixture.actorId, GameAction.KanType.OPEN_KAN, 1),
                     ),
                 ),
             ),
         )
 
         val result = assertIs<WallRevealDecision.Updated>(
-            RiichiWallRevealPolicy.resolve(
-                WallRevealContext(WallRevealCheckpoint.AFTER_DISCARD_REACTIONS, pendingState),
+            value = RiichiWallRevealPolicy.resolve(
+                context = WallRevealContext(WallRevealCheckpoint.AFTER_DISCARD_REACTIONS, pendingState),
             ),
         )
         val updated = requireNotNull(result.tableComponents.values[RiichiTableComponents.WALL_PROGRESS])
@@ -86,17 +86,17 @@ class RiichiWallRevealPolicyTest {
         val fixture = fixture(GameAction.KanType.ADDED_KAN)
         val pendingState = fixture.state.copy(
             components = fixture.state.components.with(
-                RiichiTableComponents.WALL_PROGRESS,
-                fixture.progress.copy(
+                type = RiichiTableComponents.WALL_PROGRESS,
+                value = fixture.progress.copy(
                     pendingKanDoraReveals = listOf(
-                        RiichiPendingKanDoraReveal(fixture.actorId, GameAction.KanType.ADDED_KAN, 1),
+                        element = RiichiPendingKanDoraReveal(fixture.actorId, GameAction.KanType.ADDED_KAN, 1),
                     ),
                 ),
             ),
         )
 
         val result = assertIs<WallRevealDecision.Updated>(
-            RiichiWallRevealPolicy.resolve(WallRevealContext(WallRevealCheckpoint.WIN_CONFIRMED, pendingState)),
+            value = RiichiWallRevealPolicy.resolve(WallRevealContext(WallRevealCheckpoint.WIN_CONFIRMED, pendingState)),
         )
         val updated = requireNotNull(result.tableComponents.values[RiichiTableComponents.WALL_PROGRESS])
 
@@ -111,18 +111,18 @@ class RiichiWallRevealPolicyTest {
         val fixture = fixture(GameAction.KanType.OPEN_KAN)
         val pendingState = fixture.state.copy(
             components = fixture.state.components.with(
-                RiichiTableComponents.WALL_PROGRESS,
-                fixture.progress.copy(
+                type = RiichiTableComponents.WALL_PROGRESS,
+                value = fixture.progress.copy(
                     pendingKanDoraReveals = listOf(
-                        RiichiPendingKanDoraReveal(fixture.actorId, GameAction.KanType.OPEN_KAN, 1),
+                        element = RiichiPendingKanDoraReveal(fixture.actorId, GameAction.KanType.OPEN_KAN, 1),
                     ),
                 ),
             ),
         )
 
         val result = assertIs<WallRevealDecision.Updated>(
-            RiichiWallRevealPolicy.resolve(
-                WallRevealContext(WallRevealCheckpoint.BEFORE_SUPPLEMENTAL_DRAW, pendingState),
+            value = RiichiWallRevealPolicy.resolve(
+                context = WallRevealContext(WallRevealCheckpoint.BEFORE_SUPPLEMENTAL_DRAW, pendingState),
             ),
         )
 
@@ -135,18 +135,18 @@ class RiichiWallRevealPolicyTest {
         val fixture = fixture(GameAction.KanType.CLOSED_KAN)
         val invalidState = fixture.state.copy(
             components = fixture.state.components.with(
-                RiichiTableComponents.WALL_PROGRESS,
-                fixture.progress.copy(
+                type = RiichiTableComponents.WALL_PROGRESS,
+                value = fixture.progress.copy(
                     pendingKanDoraReveals = listOf(
-                        RiichiPendingKanDoraReveal(fixture.actorId, GameAction.KanType.CLOSED_KAN, 1),
+                        element = RiichiPendingKanDoraReveal(fixture.actorId, GameAction.KanType.CLOSED_KAN, 1),
                     ),
                 ),
             ),
         )
 
         assertEquals(
-            WallRevealDecision.Rejected(RiichiWallRevealPolicy.INVALID_STATE_REASON_ID),
-            RiichiWallRevealPolicy.resolve(WallRevealContext(WallRevealCheckpoint.WIN_CONFIRMED, invalidState)),
+            expected = WallRevealDecision.Rejected(RiichiWallRevealPolicy.INVALID_STATE_REASON_ID),
+            actual = RiichiWallRevealPolicy.resolve(WallRevealContext(WallRevealCheckpoint.WIN_CONFIRMED, invalidState)),
         )
     }
 
@@ -156,18 +156,18 @@ class RiichiWallRevealPolicyTest {
         val fixture = fixture(GameAction.KanType.OPEN_KAN)
         val invalidState = fixture.state.copy(
             components = fixture.state.components.with(
-                RiichiTableComponents.WALL_PROGRESS,
-                fixture.progress.copy(
+                type = RiichiTableComponents.WALL_PROGRESS,
+                value = fixture.progress.copy(
                     pendingKanDoraReveals = listOf(
-                        RiichiPendingKanDoraReveal(Uuid.random(), GameAction.KanType.OPEN_KAN, 1),
+                        element = RiichiPendingKanDoraReveal(Uuid.random(), GameAction.KanType.OPEN_KAN, 1),
                     ),
                 ),
             ),
         )
 
         assertEquals(
-            WallRevealDecision.Rejected(RiichiWallRevealPolicy.INVALID_STATE_REASON_ID),
-            RiichiWallRevealPolicy.resolve(WallRevealContext(WallRevealCheckpoint.WIN_CONFIRMED, invalidState)),
+            expected = WallRevealDecision.Rejected(RiichiWallRevealPolicy.INVALID_STATE_REASON_ID),
+            actual = RiichiWallRevealPolicy.resolve(WallRevealContext(WallRevealCheckpoint.WIN_CONFIRMED, invalidState)),
         )
     }
 
@@ -178,13 +178,13 @@ class RiichiWallRevealPolicyTest {
         val incompleteState = fixture.state.copy(reservedWallTiles = fixture.state.reservedWallTiles.take(5))
 
         assertEquals(
-            WallRevealDecision.Rejected(RiichiWallRevealPolicy.INVALID_STATE_REASON_ID),
-            RiichiWallRevealPolicy.resolve(
-                WallRevealContext(
-                    WallRevealCheckpoint.AFTER_SUPPLEMENTAL_DRAW,
-                    incompleteState,
-                    fixture.actorId,
-                    fixture.action,
+            expected = WallRevealDecision.Rejected(RiichiWallRevealPolicy.INVALID_STATE_REASON_ID),
+            actual = RiichiWallRevealPolicy.resolve(
+                context = WallRevealContext(
+                    checkpoint = WallRevealCheckpoint.AFTER_SUPPLEMENTAL_DRAW,
+                    tableState = incompleteState,
+                    actorPlayerId = fixture.actorId,
+                    sourceAction = fixture.action,
                 ),
             ),
         )

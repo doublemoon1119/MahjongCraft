@@ -63,12 +63,12 @@ class RiichiRuleModuleTest {
     @Test
     fun `test supported automatic controls contain built-in riichi controls`() {
         assertEquals(
-            setOf(
+            expected = setOf(
                 BuiltInAutomaticControlIds.AUTO_WIN,
                 BuiltInAutomaticControlIds.DECLINE_CALLS,
                 BuiltInAutomaticControlIds.AUTO_TSUMOGIRI,
             ),
-            module.getSupportedAutomaticControlIds(),
+            actual = module.getSupportedAutomaticControlIds(),
         )
     }
 
@@ -403,11 +403,11 @@ class RiichiRuleModuleTest {
         val result = module.declareTsumo(table, winner)
 
         assertEquals(
-            WinSettlementResult(
+            expected = WinSettlementResult(
                 totalGained = 48000,
                 paymentsByPlayerId = mapOf(south.id to 16000, west.id to 16000, north.id to 16000),
             ),
-            result?.settlement,
+            actual = result?.settlement,
         )
     }
 
@@ -432,11 +432,11 @@ class RiichiRuleModuleTest {
         val result = module.declareTsumo(table, winner)
 
         assertEquals(
-            WinSettlementResult(
+            expected = WinSettlementResult(
                 totalGained = 32000,
                 paymentsByPlayerId = mapOf(dealer.id to 16000, west.id to 8000, north.id to 8000),
             ),
-            result?.settlement,
+            actual = result?.settlement,
         )
     }
 
@@ -463,12 +463,12 @@ class RiichiRuleModuleTest {
         val result = module.declareTsumo(table, winner)
 
         assertEquals(
-            WinSettlementResult(
+            expected = WinSettlementResult(
                 totalGained = 32000,
                 paymentsByPlayerId = mapOf(paoPlayer.id to 32000),
                 paymentReasonIdsByPlayerId = mapOf(paoPlayer.id to BuiltInPaymentReasonIds.PAO),
             ),
-            result?.settlement,
+            actual = result?.settlement,
         )
     }
 
@@ -504,8 +504,8 @@ class RiichiRuleModuleTest {
         val result = module.declareRon(table, winner, winningTile, discarderId = discarder.id)
 
         assertEquals(
-            WinSettlementResult(totalGained = 48000, paymentsByPlayerId = mapOf(discarder.id to 48000)),
-            result?.settlement,
+            expected = WinSettlementResult(totalGained = 48000, paymentsByPlayerId = mapOf(discarder.id to 48000)),
+            actual = result?.settlement,
         )
     }
 
@@ -530,8 +530,8 @@ class RiichiRuleModuleTest {
         val result = module.declareRon(table, winner, winningTile, discarderId = discarder.id)
 
         assertEquals(
-            WinSettlementResult(totalGained = 32000, paymentsByPlayerId = mapOf(discarder.id to 32000)),
-            result?.settlement,
+            expected = WinSettlementResult(totalGained = 32000, paymentsByPlayerId = mapOf(discarder.id to 32000)),
+            actual = result?.settlement,
         )
     }
 
@@ -557,12 +557,12 @@ class RiichiRuleModuleTest {
         val result = module.declareRon(table, winner, winningTile, discarderId = discarder.id)
 
         assertEquals(
-            WinSettlementResult(
+            expected = WinSettlementResult(
                 totalGained = 32000,
                 paymentsByPlayerId = mapOf(discarder.id to 16000, paoPlayer.id to 16000),
                 paymentReasonIdsByPlayerId = mapOf(paoPlayer.id to BuiltInPaymentReasonIds.PAO),
             ),
-            result?.settlement,
+            actual = result?.settlement,
         )
     }
 
@@ -589,12 +589,12 @@ class RiichiRuleModuleTest {
         val result = module.declareRon(table, winner, winningTile, discarderId = paoPlayer.id)
 
         assertEquals(
-            WinSettlementResult(
+            expected = WinSettlementResult(
                 totalGained = 32000,
                 paymentsByPlayerId = mapOf(paoPlayer.id to 32000),
                 paymentReasonIdsByPlayerId = mapOf(paoPlayer.id to BuiltInPaymentReasonIds.PAO),
             ),
-            result?.settlement,
+            actual = result?.settlement,
         )
     }
 
@@ -638,12 +638,12 @@ class RiichiRuleModuleTest {
         val result = module.declareTsumo(table, winner)
 
         assertEquals(
-            WinSettlementResult(
+            expected = WinSettlementResult(
                 totalGained = 96000,
                 paymentsByPlayerId = mapOf(paoPlayer.id to 64000, other1.id to 16000, other2.id to 16000),
                 paymentReasonIdsByPlayerId = mapOf(paoPlayer.id to BuiltInPaymentReasonIds.PAO),
             ),
-            result?.settlement,
+            actual = result?.settlement,
         )
     }
 
@@ -669,12 +669,12 @@ class RiichiRuleModuleTest {
         val result = module.declareRon(table, winner, winningTile, discarderId = discarder.id)
 
         assertEquals(
-            WinSettlementResult(
+            expected = WinSettlementResult(
                 totalGained = 64000,
                 paymentsByPlayerId = mapOf(discarder.id to 48000, paoPlayer.id to 16000),
                 paymentReasonIdsByPlayerId = mapOf(paoPlayer.id to BuiltInPaymentReasonIds.PAO),
             ),
-            result?.settlement,
+            actual = result?.settlement,
         )
     }
 
@@ -715,12 +715,12 @@ class RiichiRuleModuleTest {
         // 大四喜榮和、贏家為閒家：基本點 8000 * 2 倍 = 16000，非莊家倍率 4 → 64000，
         // 包牌雙方各付一半 32000；沒有疊加其他役滿，totalGained 與過去簡化算法巧合相同。
         assertEquals(
-            WinSettlementResult(
+            expected = WinSettlementResult(
                 totalGained = 64000,
                 paymentsByPlayerId = mapOf(discarder.id to 32000, paoPlayer.id to 32000),
                 paymentReasonIdsByPlayerId = mapOf(paoPlayer.id to BuiltInPaymentReasonIds.PAO),
             ),
-            result?.settlement,
+            actual = result?.settlement,
         )
     }
 
@@ -762,8 +762,8 @@ class RiichiRuleModuleTest {
         assertNotNull(withoutChankan)
         assertNotNull(withChankan)
         assertTrue(
-            withChankan.totalGained > withoutChankan.totalGained,
-            "Chankan should add an extra han on top of the existing yakuhai, worth more points.",
+            actual = withChankan.totalGained > withoutChankan.totalGained,
+            message = "Chankan should add an extra han on top of the existing yakuhai, worth more points.",
         )
     }
 
@@ -875,14 +875,14 @@ class RiichiRuleModuleTest {
         val result = module.declareExhaustiveDraw(table)
 
         assertEquals(
-            setOf(activeTenpai.id),
-            result.tenpaiPlayerIds,
-            "A finished player must not be judged tenpai even with a tenpai hand.",
+            expected = setOf(activeTenpai.id),
+            actual = result.tenpaiPlayerIds,
+            message = "A finished player must not be judged tenpai even with a tenpai hand.",
         )
         assertEquals(
-            null,
-            result.scoreDeltas[finishedTenpai.id],
-            "A finished player must neither collect nor pay the noten penalty.",
+            expected = null,
+            actual = result.scoreDeltas[finishedTenpai.id],
+            message = "A finished player must neither collect nor pay the noten penalty.",
         )
         // 仍在局中的只有 3 人，因此總額是 1000 * (3 - 1) = 2000，由唯一聽牌者收取、兩位不聽者均分支付。
         assertEquals(2000, result.scoreDeltas[activeTenpai.id])
@@ -906,7 +906,7 @@ class RiichiRuleModuleTest {
      * 聽牌手牌：1112345678999m（聽 1m 對倒），供 [declareExhaustiveDraw] 測試共用。
      */
     private fun tenpaiHand() = FakeHandFactory.create(
-        listOf(
+        tiles = listOf(
             Tile.Numeric(Tile.Suit.Character, 1),
             Tile.Numeric(Tile.Suit.Character, 1),
             Tile.Numeric(Tile.Suit.Character, 1),
@@ -927,7 +927,7 @@ class RiichiRuleModuleTest {
      * 明顯遠離聽牌的手牌（13 張互不相干的孤立牌），供 [declareExhaustiveDraw] 測試共用。
      */
     private fun notTenpaiHand() = FakeHandFactory.create(
-        listOf(
+        tiles = listOf(
             Tile.Numeric(Tile.Suit.Character, 1),
             Tile.Numeric(Tile.Suit.Character, 4),
             Tile.Numeric(Tile.Suit.Character, 7),
@@ -963,13 +963,13 @@ class RiichiRuleModuleTest {
         val result = module.declareExhaustiveDraw(table)
 
         assertEquals(
-            ExhaustiveDrawSettlementResult(
+            expected = ExhaustiveDrawSettlementResult(
                 reason = RiichiExhaustiveDrawReason.Normal,
                 tenpaiPlayerIds = emptySet(),
                 stickPotCollectorPlayerIds = emptySet(),
                 scoreDeltas = emptyMap(),
             ),
-            result,
+            actual = result,
         )
     }
 

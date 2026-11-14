@@ -38,7 +38,7 @@ class RiichiPinfuTest : RiichiHandValueCalculatorTestBase() {
     fun `test pinfu menzen ryanmen`() {
         // 手牌：123m, 456m, 789m, 23m, 55m（兩面聽牌：1m, 4m）
         val hand = FakeHandFactory.create(
-            listOf(
+            tiles = listOf(
                 Tile.Numeric(Tile.Suit.Character, 1),
                 Tile.Numeric(Tile.Suit.Character, 2),
                 Tile.Numeric(Tile.Suit.Character, 3),
@@ -72,7 +72,7 @@ class RiichiPinfuTest : RiichiHandValueCalculatorTestBase() {
     @Test
     fun `test pinfu with fuuro returns null`() {
         val hand = FakeHandFactory.create(
-            listOf(
+            tiles = listOf(
                 Tile.Numeric(Tile.Suit.Character, 1),
                 Tile.Numeric(Tile.Suit.Character, 2),
                 Tile.Numeric(Tile.Suit.Character, 3),
@@ -85,7 +85,7 @@ class RiichiPinfuTest : RiichiHandValueCalculatorTestBase() {
                 Tile.Numeric(Tile.Suit.Dot, 2),
             ),
             melds = listOf(
-                FakeMeldFactory.create(
+                element = FakeMeldFactory.create(
                     type = MeldType.Pon,
                     tiles = listOf(
                         FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Bamboo, 1)),

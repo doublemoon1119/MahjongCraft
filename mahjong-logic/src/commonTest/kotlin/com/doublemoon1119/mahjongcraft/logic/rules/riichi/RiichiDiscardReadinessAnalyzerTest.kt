@@ -237,7 +237,7 @@ class RiichiDiscardReadinessAnalyzerTest {
         val player = FakeMahjongPlayerFactory.create(hand = hand)
         val otherPlayer = FakeMahjongPlayerFactory.create(
             discardPile = FakeDiscardPile().discardTile(
-                FakeIdentifiedTileFactory.create(RiichiTileValues.redFive(Tile.Suit.Dot)),
+                tile = FakeIdentifiedTileFactory.create(RiichiTileValues.redFive(Tile.Suit.Dot)),
             ),
         )
         val tableState = FakeTableStateFactory.create(players = listOf(player, otherPlayer), config = RiichiRuleConfig())
@@ -335,7 +335,7 @@ class RiichiDiscardReadinessAnalyzerTest {
     @Test
     fun `test riichi action analysis projects declaration yaku`() {
         val completedMelds = listOf(
-            FakeMeldFactory.create(
+            element = FakeMeldFactory.create(
                 type = MeldType.ClosedKan,
                 tiles = List(4) { FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 1)) },
             ),
@@ -455,12 +455,12 @@ class RiichiDiscardReadinessAnalyzerTest {
             val analysis = assertNotNull(analyzer.analyzeCurrentHand(tableState, player, visibleTiles = visibleTo(tableState, player)))
 
             assertEquals(
-                listOf(Tile.Numeric(Tile.Suit.Dot, 5)),
-                analysis.waitingTiles.map { it.tile },
+                expected = listOf(Tile.Numeric(Tile.Suit.Dot, 5)),
+                actual = analysis.waitingTiles.map { it.tile },
             )
             assertEquals(
-                RiichiDiscardReadinessAnalyzer.StatusIds.WIN_NO_YAKU,
-                analysis.waitingTiles.single().winAvailability,
+                expected = RiichiDiscardReadinessAnalyzer.StatusIds.WIN_NO_YAKU,
+                actual = analysis.waitingTiles.single().winAvailability,
             )
         }
     }
@@ -482,8 +482,8 @@ class RiichiDiscardReadinessAnalyzerTest {
             val analysis = assertNotNull(analyzer.analyzeCurrentHand(tableState, player, visibleTiles = visibleTo(tableState, player)))
 
             assertEquals(
-                WaitingTileAvailabilityIds.WIN_AVAILABLE,
-                analysis.waitingTiles.single().winAvailability,
+                expected = WaitingTileAvailabilityIds.WIN_AVAILABLE,
+                actual = analysis.waitingTiles.single().winAvailability,
             )
         }
     }
@@ -509,8 +509,8 @@ class RiichiDiscardReadinessAnalyzerTest {
             val analysis = analyzer.analyze(tableState, player, visibleTiles = visibleTo(tableState, player)).single { it.discardTileId == eastId }
 
             assertEquals(
-                RiichiDiscardReadinessAnalyzer.StatusIds.WIN_NO_YAKU,
-                analysis.waitingTiles.single().winAvailability,
+                expected = RiichiDiscardReadinessAnalyzer.StatusIds.WIN_NO_YAKU,
+                actual = analysis.waitingTiles.single().winAvailability,
             )
         }
     }
@@ -536,8 +536,8 @@ class RiichiDiscardReadinessAnalyzerTest {
             val analysis = analyzer.analyze(tableState, player, visibleTiles = visibleTo(tableState, player)).single { it.discardTileId == eastId }
 
             assertEquals(
-                WaitingTileAvailabilityIds.WIN_AVAILABLE,
-                analysis.waitingTiles.single().winAvailability,
+                expected = WaitingTileAvailabilityIds.WIN_AVAILABLE,
+                actual = analysis.waitingTiles.single().winAvailability,
             )
         }
     }
@@ -569,7 +569,7 @@ class RiichiDiscardReadinessAnalyzerTest {
         val analyzer = assertNotNull(module.createDiscardReadinessAnalyzer())
 
         val analysis = assertNotNull(
-            analyzer.analyzeCurrentHand(
+            actual = analyzer.analyzeCurrentHand(
                 tableState = tableState,
                 player = player,
                 visibleTiles = visibleTo(tableState = tableState, player = player, setAsideTiles = { it.setAsideTiles }),

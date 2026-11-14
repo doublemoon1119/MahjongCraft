@@ -61,8 +61,8 @@ class MahjongPlayerSnapshotTest {
         assertEquals(Wind.SOUTH.ordinal, snapshot.initialSeatIndex)
         assertEquals(2, snapshot.hand.standingTiles.size)
         assertEquals(
-            PublicHandOrder.arrange(listOf(tile1.id, tile2.id)),
-            snapshot.hand.standingTiles.map { it.id },
+            expected = PublicHandOrder.arrange(listOf(tile1.id, tile2.id)),
+            actual = snapshot.hand.standingTiles.map { it.id },
         )
         snapshot.hand.standingTiles.forEach { tile ->
             assertNull(tile.tile)

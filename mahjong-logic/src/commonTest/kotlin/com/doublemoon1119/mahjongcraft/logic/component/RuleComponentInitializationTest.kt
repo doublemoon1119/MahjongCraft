@@ -101,7 +101,7 @@ class RuleComponentInitializationTest {
         register(reset)
         register(playerData)
         registerLifecycle(
-            ComponentLifecycleDefinition(
+            definition = ComponentLifecycleDefinition(
                 component = retained,
                 ownerType = BuiltInComponentOwners.TABLE,
                 appliesTo = { _, _ -> true },
@@ -111,7 +111,7 @@ class RuleComponentInitializationTest {
             ),
         )
         registerLifecycle(
-            ComponentLifecycleDefinition(
+            definition = ComponentLifecycleDefinition(
                 component = reset,
                 ownerType = BuiltInComponentOwners.TABLE,
                 appliesTo = { _, _ -> true },
@@ -121,7 +121,7 @@ class RuleComponentInitializationTest {
             ),
         )
         registerLifecycle(
-            ComponentLifecycleDefinition(
+            definition = ComponentLifecycleDefinition(
                 component = playerData,
                 ownerType = BuiltInComponentOwners.PLAYER,
                 appliesTo = { _, _ -> true },

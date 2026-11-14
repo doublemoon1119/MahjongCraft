@@ -81,14 +81,14 @@ internal object ShantenTestFixtures {
         TILE_KINDS.filter { (held[it] ?: 0) < 4 }.forEach { tile ->
             val after = calculator.calculate(hand.addTile(FakeIdentifiedTileFactory.create(tile)))
             assertTrue(
-                shantenValue(after) in shantenValue(before) - 1..shantenValue(before),
-                "$label: drawing $tile changed $before to $after: ${describe(hand)}",
+                actual = shantenValue(after) in shantenValue(before) - 1..shantenValue(before),
+                message = "$label: drawing $tile changed $before to $after: ${describe(hand)}",
             )
             if (before is ShantenResult.Tenpai) {
                 assertEquals(
-                    tile in before.winningTiles,
-                    after == ShantenResult.Complete,
-                    "$label: drawing $tile gave $after for waits ${before.winningTiles}: ${describe(hand)}",
+                    expected = tile in before.winningTiles,
+                    actual = after == ShantenResult.Complete,
+                    message = "$label: drawing $tile gave $after for waits ${before.winningTiles}: ${describe(hand)}",
                 )
             }
         }

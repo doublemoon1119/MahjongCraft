@@ -32,8 +32,8 @@ internal class TaiwanWinEvaluation(private val config: TaiwanRuleConfig) {
         isTsumo: Boolean,
         isRobbingKong: Boolean,
     ): TaiwanHandValueResult = handValueCalculator.calculate(
-        contextCalculator.calculate(
-            TaiwanHandValueContextCalculator.Input(
+        context = contextCalculator.calculate(
+            input = TaiwanHandValueContextCalculator.Input(
                 tableState = tableState,
                 player = player,
                 incomingTile = winningTile,

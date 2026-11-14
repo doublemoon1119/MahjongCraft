@@ -229,7 +229,7 @@ class TableStateSnapshotTest {
             hand = Hand(
                 tiles = listOf(hiddenTile, revealedTile),
                 melds = listOf(
-                    Meld(
+                    element = Meld(
                         type = MeldType.Pon,
                         tiles = meldTiles,
                         sourceTile = claimedTile,
@@ -248,8 +248,8 @@ class TableStateSnapshotTest {
         val snapshot = table.toSnapshot(setOf(observer.id))
 
         assertEquals(
-            (listOf(ownTile, ownDrawn, riverTile, setAsideTile, revealedWallTile, revealedTile) + meldTiles).map { it.id }.toSet(),
-            snapshot.visibleTiles(IdentityTileInterpretationPolicy).map { it.id }.toSet(),
+            expected = (listOf(ownTile, ownDrawn, riverTile, setAsideTile, revealedWallTile, revealedTile) + meldTiles).map { it.id }.toSet(),
+            actual = snapshot.visibleTiles(IdentityTileInterpretationPolicy).map { it.id }.toSet(),
         )
         assertEquals(snapshot.visibleTiles(IdentityTileInterpretationPolicy).size, snapshot.visibleTiles(IdentityTileInterpretationPolicy).map { it.id }.distinct().size)
     }

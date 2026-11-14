@@ -52,7 +52,7 @@ class SingleSideReservedWallTrackTest {
         }
 
         assertNull(
-            SingleSideReservedWallTrackPlanner.plan(
+            actual = SingleSideReservedWallTrackPlanner.plan(
                 opening = WallOpening(0, 8),
                 stacksPerSide = 17,
                 stackCount = 8,

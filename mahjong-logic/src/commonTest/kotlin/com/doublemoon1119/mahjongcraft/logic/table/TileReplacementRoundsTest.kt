@@ -26,15 +26,15 @@ class TileReplacementRoundsTest {
 
         val replacementsRemaining = mutableListOf<Int>()
         val outcome = assertIs<TileReplacementRounds.Outcome.Completed>(
-            TileReplacementRounds.process(
-                table,
-                table.players.map { it.id },
-                Rules(observedReplacementsRemaining = replacementsRemaining),
+            value = TileReplacementRounds.process(
+                tableState = table,
+                playerOrderIds = table.players.map { it.id },
+                rules = Rules(observedReplacementsRemaining = replacementsRemaining),
             ),
         )
 
         assertEquals(
-            listOf(
+            expected = listOf(
                 setAside(p0, listOf(first, second)),
                 replaced(p0, listOf(chained, plainA)),
                 setAside(p2, listOf(third)),
@@ -42,7 +42,7 @@ class TileReplacementRoundsTest {
                 setAside(p0, listOf(chained)),
                 replaced(p0, listOf(plainC)),
             ),
-            outcome.steps.map { it.summary() },
+            actual = outcome.steps.map { it.summary() },
         )
         assertEquals(listOf(first, second, chained), outcome.tableState.setAsideOf(p0))
         // 每一步帶著當下的桌況：第一輪移出後只有前兩張在移出區，第二輪才移出補到的那張。
@@ -64,18 +64,18 @@ class TileReplacementRoundsTest {
         val order = table.players.map { it.id }
 
         val paused = assertIs<TileReplacementRounds.Outcome.Paused<String>>(
-            TileReplacementRounds.process(table, order, Rules(pauseAfterSetAsideBy = p0)),
+            value = TileReplacementRounds.process(table, order, Rules(pauseAfterSetAsideBy = p0)),
         )
         val resumed = assertIs<TileReplacementRounds.Outcome.Completed>(TileReplacementRounds.process(paused.tableState, order, Rules(), paused.position))
 
         assertEquals(TileReplacementRounds.Position(playerOrderIndex = 0, replacementsDue = 2, round = 1), paused.position)
         assertEquals(
-            listOf(
+            expected = listOf(
                 replaced(p0, listOf(plainA, plainB)),
                 setAside(p1, listOf(third)),
                 replaced(p1, listOf(plainC)),
             ),
-            resumed.steps.map { it.summary() },
+            actual = resumed.steps.map { it.summary() },
         )
     }
 
@@ -87,7 +87,7 @@ class TileReplacementRoundsTest {
         val order = table.players.map { it.id }
 
         val paused = assertIs<TileReplacementRounds.Outcome.Paused<String>>(
-            TileReplacementRounds.process(table, order, Rules(pauseAfterReplacementBy = order[0])),
+            value = TileReplacementRounds.process(table, order, Rules(pauseAfterReplacementBy = order[0])),
         )
 
         assertEquals(TileReplacementRounds.Position(playerOrderIndex = 1, replacementsDue = 0, round = 1), paused.position)
@@ -102,7 +102,7 @@ class TileReplacementRoundsTest {
         val order = table.players.map { it.id }.take(2)
 
         val paused = assertIs<TileReplacementRounds.Outcome.Paused<String>>(
-            TileReplacementRounds.process(table, order, Rules(pauseAfterReplacementBy = order[1])),
+            value = TileReplacementRounds.process(table, order, Rules(pauseAfterReplacementBy = order[1])),
         )
 
         assertEquals(TileReplacementRounds.Position(playerOrderIndex = 0, replacementsDue = 0, round = 2), paused.position)
@@ -120,8 +120,8 @@ class TileReplacementRoundsTest {
 
         assertEquals(p0, exhausted.playerId)
         assertEquals(
-            listOf(setAside(p0, listOf(first, second)), replaced(p0, listOf(only))),
-            exhausted.steps.map { it.summary() },
+            expected = listOf(setAside(p0, listOf(first, second)), replaced(p0, listOf(only))),
+            actual = exhausted.steps.map { it.summary() },
         )
     }
 

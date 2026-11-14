@@ -30,7 +30,7 @@ class RiichiTanyaoTest : RiichiHandValueCalculatorTestBase() {
     @Test
     fun `test tanyao menzen`() {
         val hand = FakeHandFactory.create(
-            listOf(
+            tiles = listOf(
                 Tile.Numeric(Tile.Suit.Character, 2),
                 Tile.Numeric(Tile.Suit.Character, 3),
                 Tile.Numeric(Tile.Suit.Character, 4),
@@ -63,7 +63,7 @@ class RiichiTanyaoTest : RiichiHandValueCalculatorTestBase() {
     @Test
     fun `test tanyao with terminal`() {
         val hand = FakeHandFactory.create(
-            listOf(
+            tiles = listOf(
                 Tile.Numeric(Tile.Suit.Character, 1),
                 Tile.Numeric(Tile.Suit.Character, 2),
                 Tile.Numeric(Tile.Suit.Character, 3),
@@ -96,7 +96,7 @@ class RiichiTanyaoTest : RiichiHandValueCalculatorTestBase() {
     @Test
     fun `test tanyao with honor`() {
         val hand = FakeHandFactory.create(
-            listOf(
+            tiles = listOf(
                 Tile.Numeric(Tile.Suit.Character, 2),
                 Tile.Numeric(Tile.Suit.Character, 3),
                 Tile.Numeric(Tile.Suit.Character, 4),
@@ -133,7 +133,7 @@ class RiichiTanyaoTest : RiichiHandValueCalculatorTestBase() {
         // 手牌：234m, 678m, 55m, 自摸 2m = 10張 + 1張 = 14張
         // 手牌與副露全部為 2-8 數牌，應獲得 1 翻（斷么九）
         val hand = FakeHandFactory.create(
-            listOf(
+            tiles = listOf(
                 Tile.Numeric(Tile.Suit.Character, 2),
                 Tile.Numeric(Tile.Suit.Character, 3),
                 Tile.Numeric(Tile.Suit.Character, 4),
@@ -146,7 +146,7 @@ class RiichiTanyaoTest : RiichiHandValueCalculatorTestBase() {
                 Tile.Numeric(Tile.Suit.Character, 2),
             ),
             melds = listOf(
-                FakeMeldFactory.create(
+                element = FakeMeldFactory.create(
                     type = MeldType.Pon,
                     tiles = listOf(
                         FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 5)),

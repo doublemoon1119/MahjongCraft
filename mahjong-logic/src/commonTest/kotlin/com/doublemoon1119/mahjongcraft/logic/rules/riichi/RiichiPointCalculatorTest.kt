@@ -512,11 +512,11 @@ class RiichiPointCalculatorTest {
             isPao = true,
         )
         assertEquals(
-            RiichiPointResult.PaoTsumo(
+            expected = RiichiPointResult.PaoTsumo(
                 paoPayment = 32000,
                 remainder = RiichiPointResult.NonDealerTsumo(dealerPayment = 16000, otherNonDealerPayment = 8000),
             ),
-            result,
+            actual = result,
         )
         assertEquals(64000, result.total)
     }
@@ -554,11 +554,11 @@ class RiichiPointCalculatorTest {
             paoYakuMultiplier = 2,
         )
         assertEquals(
-            RiichiPointResult.PaoTsumo(
+            expected = RiichiPointResult.PaoTsumo(
                 paoPayment = 64000,
                 remainder = RiichiPointResult.NonDealerTsumo(dealerPayment = 16000, otherNonDealerPayment = 8000),
             ),
-            result,
+            actual = result,
         )
         assertEquals(96000, result.total)
     }

@@ -267,8 +267,8 @@ class ThreePlayerRiichiRuleModuleTest {
         )
 
         val result = assertIs<SupplementalDrawDecision.Completed>(
-            module.createSupplementalDrawPolicy().resolve(
-                SupplementalDrawContext(state, state, state.currentPlayer.id, RIICHI_PULL_NORTH_GAME_ACTION),
+            value = module.createSupplementalDrawPolicy().resolve(
+                context = SupplementalDrawContext(state, state, state.currentPlayer.id, RIICHI_PULL_NORTH_GAME_ACTION),
             ),
         )
 
@@ -298,7 +298,7 @@ class ThreePlayerRiichiRuleModuleTest {
 
         actions.forEach { action ->
             val result = assertIs<SupplementalDrawDecision.Completed>(
-                module.createSupplementalDrawPolicy().resolve(SupplementalDrawContext(state, state, state.currentPlayer.id, action)),
+                value = module.createSupplementalDrawPolicy().resolve(SupplementalDrawContext(state, state, state.currentPlayer.id, action)),
             )
             drawn += result.drawnTiles
             state = state.copy(
@@ -332,7 +332,7 @@ class ThreePlayerRiichiRuleModuleTest {
         repeat(4) {
             val kan = GameAction.Kan(GameAction.KanType.CLOSED_KAN, Uuid.random(), emptyList())
             val result = assertIs<SupplementalDrawDecision.Completed>(
-                module.createSupplementalDrawPolicy().resolve(SupplementalDrawContext(state, state, state.currentPlayer.id, kan)),
+                value = module.createSupplementalDrawPolicy().resolve(SupplementalDrawContext(state, state, state.currentPlayer.id, kan)),
             )
             state = state.copy(
                 tileWall = result.tileWall,
@@ -347,12 +347,12 @@ class ThreePlayerRiichiRuleModuleTest {
         // 補進王牌的依序是活牌最後一張、倒數第二張……；每兩張組成一墩，後補的那張在上層。
         val replenished = liveWall.takeLast(4).reversed()
         assertEquals(
-            listOf(indicatorStacks[0], indicatorStacks[2], indicatorStacks[4], replenished[1], replenished[3]),
-            dora,
+            expected = listOf(indicatorStacks[0], indicatorStacks[2], indicatorStacks[4], replenished[1], replenished[3]),
+            actual = dora,
         )
         assertEquals(
-            listOf(indicatorStacks[1], indicatorStacks[3], indicatorStacks[5], replenished[0], replenished[2]),
-            ura,
+            expected = listOf(indicatorStacks[1], indicatorStacks[3], indicatorStacks[5], replenished[0], replenished[2]),
+            actual = ura,
         )
     }
 
@@ -367,8 +367,8 @@ class ThreePlayerRiichiRuleModuleTest {
         val result = module.declareTsumo(table, winner)
 
         assertEquals(
-            WinSettlementResult(totalGained = 24000, paymentsByPlayerId = mapOf(dealer.id to 16000, west.id to 8000)),
-            result?.settlement,
+            expected = WinSettlementResult(totalGained = 24000, paymentsByPlayerId = mapOf(dealer.id to 16000, west.id to 8000)),
+            actual = result?.settlement,
         )
     }
 
@@ -383,8 +383,8 @@ class ThreePlayerRiichiRuleModuleTest {
         val result = module.declareTsumo(table, winner)
 
         assertEquals(
-            WinSettlementResult(totalGained = 32000, paymentsByPlayerId = mapOf(south.id to 16000, west.id to 16000)),
-            result?.settlement,
+            expected = WinSettlementResult(totalGained = 32000, paymentsByPlayerId = mapOf(south.id to 16000, west.id to 16000)),
+            actual = result?.settlement,
         )
     }
 
@@ -395,7 +395,7 @@ class ThreePlayerRiichiRuleModuleTest {
         val winner = FakeMahjongPlayerFactory.create(
             initialSeat = Wind.SOUTH,
             hand = FakeHandFactory.create(
-                listOf(dot(2), dot(3), dot(4), dot(5), dot(6), dot(7), bamboo(3), bamboo(4), bamboo(5), bamboo(6), bamboo(7), bamboo(8), dot(9)),
+                tiles = listOf(dot(2), dot(3), dot(4), dot(5), dot(6), dot(7), bamboo(3), bamboo(4), bamboo(5), bamboo(6), bamboo(7), bamboo(8), dot(9)),
                 lastDrawn = dot(9),
             ),
             discardPile = RiichiDiscardPile().discardTile(FakeIdentifiedTileFactory.create(Tile.Honor.East)),
@@ -459,12 +459,12 @@ class ThreePlayerRiichiRuleModuleTest {
         val table = threePlayerTable(players, comboCount = 2)
 
         assertEquals(
-            mapOf(players[1].id to 400),
-            module.resolveComboBonusPayments(table, winnerId = players[0].id, discarderId = players[1].id, resolution = null),
+            expected = mapOf(players[1].id to 400),
+            actual = module.resolveComboBonusPayments(table, winnerId = players[0].id, discarderId = players[1].id, resolution = null),
         )
         assertEquals(
-            mapOf(players[1].id to 200, players[2].id to 200),
-            module.resolveComboBonusPayments(table, winnerId = players[0].id, discarderId = null, resolution = null),
+            expected = mapOf(players[1].id to 200, players[2].id to 200),
+            actual = module.resolveComboBonusPayments(table, winnerId = players[0].id, discarderId = null, resolution = null),
         )
     }
 
@@ -490,8 +490,8 @@ class ThreePlayerRiichiRuleModuleTest {
         val context = progressionContext(roundNumber = 3, scores = listOf(40_000, 35_000, 30_000))
 
         assertEquals(
-            MatchProgressionDecision.EndMatch(BuiltInMatchEndReasonIds.TARGET_SCORE_REACHED),
-            eastModule.createMatchProgressionPolicy().decide(context),
+            expected = MatchProgressionDecision.EndMatch(BuiltInMatchEndReasonIds.TARGET_SCORE_REACHED),
+            actual = eastModule.createMatchProgressionPolicy().decide(context),
         )
     }
 
@@ -501,10 +501,10 @@ class ThreePlayerRiichiRuleModuleTest {
         val context = progressionContext(roundNumber = 3, scores = listOf(39_900, 35_100, 30_000))
 
         assertEquals(
-            MatchProgressionDecision.ContinueMatch(
-                MatchRoundTransition.AdvanceTo(MatchRoundPosition(3, Wind.SOUTH, 1, MatchRoundPhase.EXTRA)),
+            expected = MatchProgressionDecision.ContinueMatch(
+                transition = MatchRoundTransition.AdvanceTo(MatchRoundPosition(3, Wind.SOUTH, 1, MatchRoundPhase.EXTRA)),
             ),
-            eastModule.createMatchProgressionPolicy().decide(context),
+            actual = eastModule.createMatchProgressionPolicy().decide(context),
         )
     }
 
@@ -514,10 +514,10 @@ class ThreePlayerRiichiRuleModuleTest {
         val context = progressionContext(roundNumber = 2, scores = listOf(45_000, 35_000, 25_000))
 
         assertEquals(
-            MatchProgressionDecision.ContinueMatch(
-                MatchRoundTransition.AdvanceTo(MatchRoundPosition(2, Wind.EAST, 3, MatchRoundPhase.REGULAR)),
+            expected = MatchProgressionDecision.ContinueMatch(
+                transition = MatchRoundTransition.AdvanceTo(MatchRoundPosition(2, Wind.EAST, 3, MatchRoundPhase.REGULAR)),
             ),
-            eastModule.createMatchProgressionPolicy().decide(context),
+            actual = eastModule.createMatchProgressionPolicy().decide(context),
         )
     }
 
@@ -605,7 +605,7 @@ class ThreePlayerRiichiRuleModuleTest {
     private fun daisangenTsumoPlayer(seat: Wind) = FakeMahjongPlayerFactory.create(
         initialSeat = seat,
         hand = FakeHandFactory.create(
-            listOf(
+            tiles = listOf(
                 Tile.Honor.White, Tile.Honor.White, Tile.Honor.White,
                 Tile.Honor.Green, Tile.Honor.Green, Tile.Honor.Green,
                 Tile.Honor.Red, Tile.Honor.Red,
@@ -620,12 +620,12 @@ class ThreePlayerRiichiRuleModuleTest {
 
     /** 聽一筒與四筒的手牌。 */
     private fun tenpaiHand() = FakeHandFactory.create(
-        listOf(dot(2), dot(3), bamboo(1), bamboo(2), bamboo(3), bamboo(4), bamboo(5), bamboo(6), bamboo(7), bamboo(8), bamboo(9), Tile.Honor.East, Tile.Honor.East),
+        tiles = listOf(dot(2), dot(3), bamboo(1), bamboo(2), bamboo(3), bamboo(4), bamboo(5), bamboo(6), bamboo(7), bamboo(8), bamboo(9), Tile.Honor.East, Tile.Honor.East),
     )
 
     /** 互不相關的孤立牌，明顯不聽。 */
     private fun notenHand() = FakeHandFactory.create(
-        listOf(character(1), character(9), dot(1), dot(4), dot(7), bamboo(1), bamboo(4), bamboo(7), Tile.Honor.East, Tile.Honor.South, Tile.Honor.West, Tile.Honor.White, Tile.Honor.Green),
+        tiles = listOf(character(1), character(9), dot(1), dot(4), dot(7), bamboo(1), bamboo(4), bamboo(7), Tile.Honor.East, Tile.Honor.South, Tile.Honor.West, Tile.Honor.White, Tile.Honor.Green),
     )
 
     /** 立直宣言牌。 */

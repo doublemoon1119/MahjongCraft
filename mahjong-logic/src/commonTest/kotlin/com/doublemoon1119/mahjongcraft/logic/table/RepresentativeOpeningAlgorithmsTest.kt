@@ -129,7 +129,7 @@ class RepresentativeOpeningAlgorithmsTest {
             ),
             module = module(twoRollSummedCutProcedure()) { drawOrder = it },
             diceRollSource = queuedDiceSource(
-                listOf(
+                values = listOf(
                     listOf(3, 3),
                     listOf(6, 6),
                 ),
@@ -266,11 +266,11 @@ class RepresentativeOpeningAlgorithmsTest {
             if (!context.firstRound) {
                 return if (context.rolls.isEmpty()) {
                     RoundOpeningStep.Roll(
-                        OpeningDiceRollRequest(requireNotNull(context.fixedDealerPlayerId), 2),
+                        request = OpeningDiceRollRequest(requireNotNull(context.fixedDealerPlayerId), 2),
                     )
                 } else {
                     RoundOpeningStep.Complete(
-                        RoundOpeningCompletion(
+                        result = RoundOpeningCompletion(
                             dealerPlayerId = requireNotNull(context.fixedDealerPlayerId),
                             wallOpening = WallOpening(
                                 wallSideOffsetFromDealer = countedIndex(
@@ -307,7 +307,7 @@ class RepresentativeOpeningAlgorithmsTest {
                         size = context.playerIdsInTurnOrder.size,
                     )
                     RoundOpeningStep.Complete(
-                        RoundOpeningCompletion(
+                        result = RoundOpeningCompletion(
                             dealerPlayerId = context.playerIdsInTurnOrder[dealerIndex],
                             wallOpening = WallOpening(
                                 wallSideOffsetFromDealer = 0,
@@ -327,15 +327,15 @@ class RepresentativeOpeningAlgorithmsTest {
         override fun next(context: RoundOpeningContext): RoundOpeningStep = when (context.rolls.size) {
             0 -> RoundOpeningStep.Roll(OpeningDiceRollRequest(requireNotNull(context.fixedDealerPlayerId), 2))
             1 -> RoundOpeningStep.Roll(
-                OpeningDiceRollRequest(
-                    context.playerIdsInTurnOrder[
+                request = OpeningDiceRollRequest(
+                    playerId = context.playerIdsInTurnOrder[
                         countedIndex(
                             startIndex = context.playerIdsInTurnOrder.indexOf(requireNotNull(context.fixedDealerPlayerId)),
                             count = context.rolls[0].dice.total,
                             size = context.playerIdsInTurnOrder.size,
                         ),
                     ],
-                    2,
+                    diceCount = 2,
                 ),
             )
             else -> {
@@ -347,7 +347,7 @@ class RepresentativeOpeningAlgorithmsTest {
                 val crossedSides = (total - 1) / 17
                 val side = (openerSide - crossedSides).mod(context.playerIdsInTurnOrder.size)
                 RoundOpeningStep.Complete(
-                    RoundOpeningCompletion(
+                    result = RoundOpeningCompletion(
                         dealerPlayerId = requireNotNull(context.fixedDealerPlayerId),
                         wallOpening = WallOpening(
                             wallSideOffsetFromDealer = side,
@@ -373,15 +373,15 @@ class RepresentativeOpeningAlgorithmsTest {
         private fun selectInitialDealer(context: RoundOpeningContext): RoundOpeningStep = when (context.rolls.size) {
             0 -> RoundOpeningStep.Roll(OpeningDiceRollRequest(context.playerIdsInTurnOrder[0], 2))
             1 -> RoundOpeningStep.Roll(
-                OpeningDiceRollRequest(
-                    context.playerIdsInTurnOrder[
+                request = OpeningDiceRollRequest(
+                    playerId = context.playerIdsInTurnOrder[
                         countedIndex(
                             startIndex = 0,
                             count = context.rolls[0].dice.total,
                             size = context.playerIdsInTurnOrder.size,
                         ),
                     ],
-                    2,
+                    diceCount = 2,
                 ),
             )
             2 -> {
@@ -409,7 +409,7 @@ class RepresentativeOpeningAlgorithmsTest {
                     size = context.playerIdsInTurnOrder.size,
                 )
                 RoundOpeningStep.Complete(
-                    RoundOpeningCompletion(
+                    result = RoundOpeningCompletion(
                         dealerPlayerId = context.playerIdsInTurnOrder[dealerIndex],
                         wallOpening = WallOpening(
                             wallSideOffsetFromDealer = countedIndex(

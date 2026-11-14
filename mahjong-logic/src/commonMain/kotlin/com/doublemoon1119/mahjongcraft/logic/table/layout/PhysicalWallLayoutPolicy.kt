@@ -85,8 +85,8 @@ sealed interface PhysicalWallLayoutTransitionDecision {
 object ContinuousPhysicalWallLayoutPolicy : PhysicalWallLayoutPolicy {
     /** 將既有拓樸格位直接轉成零位移 placement。 */
     override fun createInitialLayout(context: InitialPhysicalWallLayoutContext): InitialPhysicalWallLayoutDecision = InitialPhysicalWallLayoutDecision.Completed(
-        TileWallPhysicalLayout(
-            context.wallLayout.structure.mapValues { (_, position) -> TileWallPlacement(position) },
+        layout = TileWallPhysicalLayout(
+            placements = context.wallLayout.structure.mapValues { (_, position) -> TileWallPlacement(position) },
         ),
     )
 

@@ -35,7 +35,7 @@ class RiichiSuushiiTest : RiichiHandValueCalculatorTestBase() {
     @Test
     fun `test shousuushi with south pair`() {
         val hand = FakeHandFactory.create(
-            listOf(
+            tiles = listOf(
                 // 聽牌：南
                 Tile.Honor.South,
                 // 東刻子
@@ -63,8 +63,8 @@ class RiichiSuushiiTest : RiichiHandValueCalculatorTestBase() {
 
         assertTrue(result.isYakuman, "Should be yakuman")
         assertTrue(
-            result.yakuResults.any { it.yaku == RiichiYakuType.Shousuushi },
-            "Should contain Shousuushi, got: ${result.yakuResults.map { it.yaku }}",
+            actual = result.yakuResults.any { it.yaku == RiichiYakuType.Shousuushi },
+            message = "Should contain Shousuushi, got: ${result.yakuResults.map { it.yaku }}",
         )
     }
 
@@ -77,7 +77,7 @@ class RiichiSuushiiTest : RiichiHandValueCalculatorTestBase() {
     @Test
     fun `test shousuushi with north pair and fuuro`() {
         val hand = FakeHandFactory.create(
-            listOf(
+            tiles = listOf(
                 // 聽牌：北
                 Tile.Honor.North,
                 // 南刻子
@@ -95,7 +95,7 @@ class RiichiSuushiiTest : RiichiHandValueCalculatorTestBase() {
             ),
             melds = listOf(
                 // 副露：東刻子
-                FakeMeldFactory.create(
+                element = FakeMeldFactory.create(
                     type = MeldType.Pon,
                     tiles = listOf(
                         FakeIdentifiedTileFactory.create(Tile.Honor.East),
@@ -113,8 +113,8 @@ class RiichiSuushiiTest : RiichiHandValueCalculatorTestBase() {
 
         assertTrue(result.isYakuman, "Should be yakuman")
         assertTrue(
-            result.yakuResults.any { it.yaku == RiichiYakuType.Shousuushi },
-            "Should contain Shousuushi, got: ${result.yakuResults.map { it.yaku }}",
+            actual = result.yakuResults.any { it.yaku == RiichiYakuType.Shousuushi },
+            message = "Should contain Shousuushi, got: ${result.yakuResults.map { it.yaku }}",
         )
     }
 
@@ -127,7 +127,7 @@ class RiichiSuushiiTest : RiichiHandValueCalculatorTestBase() {
     @Test
     fun `test not shousuushi with three wind kotsu but non-wind pair`() {
         val hand = FakeHandFactory.create(
-            listOf(
+            tiles = listOf(
                 // 聽牌：南
                 Tile.Honor.South,
                 Tile.Honor.South,
@@ -155,8 +155,8 @@ class RiichiSuushiiTest : RiichiHandValueCalculatorTestBase() {
 
         assertFalse(result.isYakuman, "Should not be yakuman")
         assertFalse(
-            result.yakuResults.any { it.yaku == RiichiYakuType.Shousuushi },
-            "Should not contain Shousuushi, got: ${result.yakuResults.map { it.yaku }}",
+            actual = result.yakuResults.any { it.yaku == RiichiYakuType.Shousuushi },
+            message = "Should not contain Shousuushi, got: ${result.yakuResults.map { it.yaku }}",
         )
     }
 
@@ -169,7 +169,7 @@ class RiichiSuushiiTest : RiichiHandValueCalculatorTestBase() {
     @Test
     fun `test daisuushi`() {
         val hand = FakeHandFactory.create(
-            listOf(
+            tiles = listOf(
                 // 聽牌：南
                 Tile.Honor.South,
                 Tile.Honor.South,
@@ -197,8 +197,8 @@ class RiichiSuushiiTest : RiichiHandValueCalculatorTestBase() {
 
         assertTrue(result.isYakuman, "Should be yakuman")
         assertTrue(
-            result.yakuResults.any { it.yaku == RiichiYakuType.Daisuushii },
-            "Should contain Daisuushii, got: ${result.yakuResults.map { it.yaku }}",
+            actual = result.yakuResults.any { it.yaku == RiichiYakuType.Daisuushii },
+            message = "Should contain Daisuushii, got: ${result.yakuResults.map { it.yaku }}",
         )
     }
 
@@ -211,7 +211,7 @@ class RiichiSuushiiTest : RiichiHandValueCalculatorTestBase() {
     @Test
     fun `test daisuushi with fuuro`() {
         val hand = FakeHandFactory.create(
-            listOf(
+            tiles = listOf(
                 // 聽牌：北
                 Tile.Honor.North,
                 Tile.Honor.North,
@@ -229,7 +229,7 @@ class RiichiSuushiiTest : RiichiHandValueCalculatorTestBase() {
             ),
             melds = listOf(
                 // 副露：東刻子
-                FakeMeldFactory.create(
+                element = FakeMeldFactory.create(
                     type = MeldType.Pon,
                     tiles = listOf(
                         FakeIdentifiedTileFactory.create(Tile.Honor.East),
@@ -247,8 +247,8 @@ class RiichiSuushiiTest : RiichiHandValueCalculatorTestBase() {
 
         assertTrue(result.isYakuman, "Should be double yakuman")
         assertTrue(
-            result.yakuResults.any { it.yaku == RiichiYakuType.Daisuushii },
-            "Should contain Daisuushii, got: ${result.yakuResults.map { it.yaku }}",
+            actual = result.yakuResults.any { it.yaku == RiichiYakuType.Daisuushii },
+            message = "Should contain Daisuushii, got: ${result.yakuResults.map { it.yaku }}",
         )
     }
 
@@ -261,7 +261,7 @@ class RiichiSuushiiTest : RiichiHandValueCalculatorTestBase() {
     @Test
     fun `test daisuushi with ankan`() {
         val hand = FakeHandFactory.create(
-            listOf(
+            tiles = listOf(
                 // 聽牌：北
                 Tile.Honor.North,
                 Tile.Honor.North,
@@ -279,7 +279,7 @@ class RiichiSuushiiTest : RiichiHandValueCalculatorTestBase() {
             ),
             melds = listOf(
                 // 副露：東暗槓
-                FakeMeldFactory.create(
+                element = FakeMeldFactory.create(
                     type = MeldType.ClosedKan,
                     tiles = listOf(
                         FakeIdentifiedTileFactory.create(Tile.Honor.East),
@@ -297,8 +297,8 @@ class RiichiSuushiiTest : RiichiHandValueCalculatorTestBase() {
 
         assertTrue(result.isYakuman, "Should be double yakuman")
         assertTrue(
-            result.yakuResults.any { it.yaku == RiichiYakuType.Daisuushii },
-            "Should contain Daisuushii, got: ${result.yakuResults.map { it.yaku }}",
+            actual = result.yakuResults.any { it.yaku == RiichiYakuType.Daisuushii },
+            message = "Should contain Daisuushii, got: ${result.yakuResults.map { it.yaku }}",
         )
     }
 
@@ -328,8 +328,8 @@ class RiichiSuushiiTest : RiichiHandValueCalculatorTestBase() {
         val resultNorth = calculator.calculate(contextNorth)
 
         assertTrue(
-            resultNorth.yakuResults.any { it.yaku == RiichiYakuType.Daisuushii },
-            "Winning North should be Daisuushii, but got: ${resultNorth.yakuResults.map { it.yaku }}",
+            actual = resultNorth.yakuResults.any { it.yaku == RiichiYakuType.Daisuushii },
+            message = "Winning North should be Daisuushii, but got: ${resultNorth.yakuResults.map { it.yaku }}",
         )
 
         // 情境 2：胡「1m」 -> 變成 1m刻子 + 北雀頭 => 小四喜
@@ -339,8 +339,8 @@ class RiichiSuushiiTest : RiichiHandValueCalculatorTestBase() {
         val result1m = calculator.calculate(context1m)
 
         assertTrue(
-            result1m.yakuResults.any { it.yaku == RiichiYakuType.Shousuushi },
-            "Winning 1m should be Shousuushi, but got: ${result1m.yakuResults.map { it.yaku }}",
+            actual = result1m.yakuResults.any { it.yaku == RiichiYakuType.Shousuushi },
+            message = "Winning 1m should be Shousuushi, but got: ${result1m.yakuResults.map { it.yaku }}",
         )
     }
 }

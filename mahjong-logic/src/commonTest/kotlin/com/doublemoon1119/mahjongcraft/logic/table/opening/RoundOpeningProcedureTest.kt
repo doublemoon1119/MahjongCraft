@@ -32,8 +32,8 @@ class RoundOpeningProcedureTest {
         assertEquals(2, request.diceCount)
 
         val completed = assertIs<RoundOpeningStep.Complete>(
-            procedure.next(
-                context.copy(rolls = listOf(OpeningDiceRoll(0, players[0], DiceRollResult.of(listOf(3, 4))))),
+            value = procedure.next(
+                context = context.copy(rolls = listOf(OpeningDiceRoll(0, players[0], DiceRollResult.of(listOf(3, 4))))),
             ),
         ).result
         assertEquals(players[0], completed.dealerPlayerId)
@@ -49,8 +49,8 @@ class RoundOpeningProcedureTest {
         val request = assertIs<RoundOpeningStep.Roll>(procedure.next(context)).request
         assertEquals(players[2], request.playerId)
         val completed = assertIs<RoundOpeningStep.Complete>(
-            procedure.next(
-                context.copy(rolls = listOf(OpeningDiceRoll(0, players[2], DiceRollResult.of(listOf(1, 1))))),
+            value = procedure.next(
+                context = context.copy(rolls = listOf(OpeningDiceRoll(0, players[2], DiceRollResult.of(listOf(1, 1))))),
             ),
         ).result
         assertEquals(players[2], completed.dealerPlayerId)
@@ -61,11 +61,11 @@ class RoundOpeningProcedureTest {
     fun `context rejects non contiguous roll indexes`() {
         assertFailsWith<IllegalArgumentException> {
             RoundOpeningContext(
-                players,
-                true,
-                players[0],
-                null,
-                listOf(OpeningDiceRoll(1, players[0], DiceRollResult.of(listOf(1, 1)))),
+                playerIdsInTurnOrder = players,
+                firstRound = true,
+                provisionalPlayerId = players[0],
+                fixedDealerPlayerId = null,
+                rolls = listOf(OpeningDiceRoll(1, players[0], DiceRollResult.of(listOf(1, 1)))),
             )
         }
     }
@@ -81,7 +81,7 @@ class RoundOpeningProcedureTest {
                 1 -> RoundOpeningStep.Roll(OpeningDiceRollRequest(players[2], 3))
                 2 -> RoundOpeningStep.Roll(OpeningDiceRollRequest(players[3], 2))
                 else -> RoundOpeningStep.Complete(
-                    RoundOpeningCompletion(players[2], WallOpening(1, 5)),
+                    result = RoundOpeningCompletion(players[2], WallOpening(1, 5)),
                 )
             }
         }
@@ -105,7 +105,7 @@ class RoundOpeningProcedureTest {
             override val supportedDiceCounts: Set<Int> = emptySet()
 
             override fun next(context: RoundOpeningContext): RoundOpeningStep = RoundOpeningStep.Complete(
-                RoundOpeningCompletion(context.provisionalPlayerId, null),
+                result = RoundOpeningCompletion(context.provisionalPlayerId, null),
             )
         }
         val context = RoundOpeningContext(players, true, players[1], null)

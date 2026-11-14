@@ -43,7 +43,7 @@ class RiichiSuuankouTest : RiichiHandValueCalculatorTestBase() {
     @Test
     fun `test suuankou with four concealed triplets`() {
         val hand = FakeHandFactory.create(
-            listOf(
+            tiles = listOf(
                 // 暗刻 1：1m 1m 1m
                 Tile.Numeric(Tile.Suit.Character, 1),
                 Tile.Numeric(Tile.Suit.Character, 1),
@@ -86,7 +86,7 @@ class RiichiSuuankouTest : RiichiHandValueCalculatorTestBase() {
     @Test
     fun `test suuankou with ankan`() {
         val hand = FakeHandFactory.create(
-            listOf(
+            tiles = listOf(
                 // 暗刻 1：1m 1m 1m
                 Tile.Numeric(Tile.Suit.Character, 1),
                 Tile.Numeric(Tile.Suit.Character, 1),
@@ -104,7 +104,7 @@ class RiichiSuuankouTest : RiichiHandValueCalculatorTestBase() {
             ),
             melds = listOf(
                 // 暗槓：5s 5s 5s 5s
-                FakeMeldFactory.create(
+                element = FakeMeldFactory.create(
                     type = MeldType.ClosedKan,
                     tiles = listOf(
                         FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Bamboo, 5)),
@@ -138,7 +138,7 @@ class RiichiSuuankouTest : RiichiHandValueCalculatorTestBase() {
     @Test
     fun `test suuankou tanki with single wait`() {
         val hand = FakeHandFactory.create(
-            listOf(
+            tiles = listOf(
                 // 暗刻 1：1m 1m 1m
                 Tile.Numeric(Tile.Suit.Character, 1),
                 Tile.Numeric(Tile.Suit.Character, 1),
@@ -178,7 +178,7 @@ class RiichiSuuankouTest : RiichiHandValueCalculatorTestBase() {
     @Test
     fun `test non-suuankou with pon returns null`() {
         val hand = FakeHandFactory.create(
-            listOf(
+            tiles = listOf(
                 // 暗刻 1：1m 1m 1m
                 Tile.Numeric(Tile.Suit.Character, 1),
                 Tile.Numeric(Tile.Suit.Character, 1),
@@ -196,7 +196,7 @@ class RiichiSuuankouTest : RiichiHandValueCalculatorTestBase() {
             ),
             melds = listOf(
                 // 副露（碰）：白 白 白
-                FakeMeldFactory.create(
+                element = FakeMeldFactory.create(
                     type = MeldType.Pon,
                     tiles = listOf(
                         FakeIdentifiedTileFactory.create(Tile.Honor.White),
@@ -214,8 +214,8 @@ class RiichiSuuankouTest : RiichiHandValueCalculatorTestBase() {
 
         assertTrue(result.yakuResults.none { it.yaku == RiichiYakuType.Suuankou }, "Should not have Suuankou with pon")
         assertTrue(
-            result.yakuResults.none { it.yaku == RiichiYakuType.SuuankouTanki },
-            "Should not have Suuankou Tanki with pon",
+            actual = result.yakuResults.none { it.yaku == RiichiYakuType.SuuankouTanki },
+            message = "Should not have Suuankou Tanki with pon",
         )
     }
 
@@ -227,7 +227,7 @@ class RiichiSuuankouTest : RiichiHandValueCalculatorTestBase() {
     @Test
     fun `test non-suuankou only three kotsu returns null`() {
         val hand = FakeHandFactory.create(
-            listOf(
+            tiles = listOf(
                 // 暗刻 1：1m 1m 1m
                 Tile.Numeric(Tile.Suit.Character, 1),
                 Tile.Numeric(Tile.Suit.Character, 1),
@@ -272,7 +272,7 @@ class RiichiSuuankouTest : RiichiHandValueCalculatorTestBase() {
     @Test
     fun `test suuankou non-tanki with head formation`() {
         val hand = FakeHandFactory.create(
-            listOf(
+            tiles = listOf(
                 // 暗刻 1：1m 1m 1m
                 Tile.Numeric(Tile.Suit.Character, 1),
                 Tile.Numeric(Tile.Suit.Character, 1),

@@ -53,7 +53,7 @@ class RiichiLocalYakuWinAvailabilityTest {
                 contextCalculator = RiichiHandValueContextCalculator(config),
             )
             return validator.getLegalActions(
-                LegalActionTestContexts.discard(tableState, winner, RelativeDirection.Right, declared),
+                context = LegalActionTestContexts.discard(tableState, winner, RelativeDirection.Right, declared),
             ).any { it is GameAction.Ron && it.tileId == declared.id }
         }
 

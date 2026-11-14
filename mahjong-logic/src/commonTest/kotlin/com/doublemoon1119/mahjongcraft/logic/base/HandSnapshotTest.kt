@@ -138,14 +138,14 @@ class HandSnapshotTest {
         val changedHiddenFace = meld.copy(tiles = listOf(visible, hidden.copy(tile = Tile.Honor.Red)))
         for (revealsClosedKanTiles in listOf(false, true)) {
             assertEquals(
-                meld.toSnapshot(handIsVisible = false, revealsClosedKanTiles = revealsClosedKanTiles),
-                changedHiddenFace.toSnapshot(handIsVisible = false, revealsClosedKanTiles = revealsClosedKanTiles),
-                "Changing a concealed custom meld face must not change another observer's snapshot",
+                expected = meld.toSnapshot(handIsVisible = false, revealsClosedKanTiles = revealsClosedKanTiles),
+                actual = changedHiddenFace.toSnapshot(handIsVisible = false, revealsClosedKanTiles = revealsClosedKanTiles),
+                message = "Changing a concealed custom meld face must not change another observer's snapshot",
             )
         }
         assertEquals(
-            Tile.Honor.Red,
-            changedHiddenFace.toSnapshot(handIsVisible = true, revealsClosedKanTiles = false).tiles[1].tile,
+            expected = Tile.Honor.Red,
+            actual = changedHiddenFace.toSnapshot(handIsVisible = true, revealsClosedKanTiles = false).tiles[1].tile,
         )
     }
 

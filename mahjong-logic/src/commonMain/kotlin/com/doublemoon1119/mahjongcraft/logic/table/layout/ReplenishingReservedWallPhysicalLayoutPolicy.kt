@@ -81,8 +81,8 @@ internal class ReplenishingReservedWallPhysicalLayoutPolicy(
         } ?: return InitialPhysicalWallLayoutDecision.Rejected(noTrackReasonId)
         val reservedPlacements = createReservedPlacements(wallLayout, track)
         return InitialPhysicalWallLayoutDecision.Completed(
-            TileWallPhysicalLayout(
-                wallLayout.structure.mapValues { (tileId, position) ->
+            layout = TileWallPhysicalLayout(
+                placements = wallLayout.structure.mapValues { (tileId, position) ->
                     reservedPlacements[tileId] ?: TileWallPlacement(position)
                 },
             ),
@@ -218,14 +218,14 @@ internal class ReplenishingReservedWallPhysicalLayoutPolicy(
         val replenishmentDestination = replenishmentDestination(context, drawNumber, layer = 0) ?: return null
         return listOf(
             PhysicalWallLayoutTransitionPhase(
-                listOf(PhysicalWallTileMove(replenishmentId, replenishmentPlacement, replenishmentDestination)),
+                moves = listOf(PhysicalWallTileMove(replenishmentId, replenishmentPlacement, replenishmentDestination)),
             ),
             PhysicalWallLayoutTransitionPhase(
-                listOf(
-                    PhysicalWallTileMove(
-                        loweredTile.id,
-                        loweredPlacement,
-                        TileWallPlacement(loweredPlacement.position.copy(layer = 0)),
+                moves = listOf(
+                    element = PhysicalWallTileMove(
+                        tileId = loweredTile.id,
+                        source = loweredPlacement,
+                        destination = TileWallPlacement(loweredPlacement.position.copy(layer = 0)),
                     ),
                 ),
             ),
@@ -261,8 +261,8 @@ internal class ReplenishingReservedWallPhysicalLayoutPolicy(
         val trackHeadStack = floorMod(nextReservedGlobalStack + nextReservedTrackIndex, totalStacks)
         val globalStack = floorMod(trackHeadStack - trackIndex, totalStacks)
         return TileWallPlacement(
-            TileWallPosition(globalStack / stacksPerSide, globalStack % stacksPerSide, layer),
-            reservedWallGapOffset,
+            position = TileWallPosition(globalStack / stacksPerSide, globalStack % stacksPerSide, layer),
+            offset = reservedWallGapOffset,
         )
     }
 
@@ -277,8 +277,8 @@ internal class ReplenishingReservedWallPhysicalLayoutPolicy(
         }
         if (context.currentLayout.placements.keys == expectedIds) return PhysicalWallLayoutTransitionDecision.Unchanged
         return PhysicalWallLayoutTransitionDecision.Completed(
-            TileWallPhysicalLayout(context.currentLayout.placements.filterKeys { it in expectedIds }),
-            emptyList(),
+            layout = TileWallPhysicalLayout(context.currentLayout.placements.filterKeys { it in expectedIds }),
+            phases = emptyList(),
         )
     }
 

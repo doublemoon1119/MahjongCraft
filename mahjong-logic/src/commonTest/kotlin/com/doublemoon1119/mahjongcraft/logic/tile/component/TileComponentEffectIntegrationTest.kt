@@ -33,7 +33,7 @@ class TileComponentEffectIntegrationTest {
         val table = FakeTableStateFactory.create(players = players, config = config).copy(tileWall = TileWall(listOf(tile)))
         val rule = object : MahjongRuleModule<ThreePlayerRiichiRuleConfig> by base {
             override fun describeTileComponents(tableState: TableState): List<TileComponentDescription> = listOf(
-                TileComponentDescription(
+                element = TileComponentDescription(
                     tileId = tile.id,
                     components = ComponentSet.EMPTY.with(BuiltInTileComponents.FACE_ACCESS, TileFaceAccess.Players(setOf(players[0].id))),
                 ),
@@ -42,7 +42,7 @@ class TileComponentEffectIntegrationTest {
         val registry = registry()
         var calls = 0
         registry.registerEffect(
-            ComponentEffectDefinition(
+            definition = ComponentEffectDefinition(
                 id = "test:extra_access",
                 ownerType = BuiltInComponentOwners.TILE,
                 appliesTo = { ruleId, _ -> ruleId == rule.id },
@@ -72,7 +72,7 @@ class TileComponentEffectIntegrationTest {
         val table = FakeTableStateFactory.create(config = config).copy(tileWall = TileWall(listOf(tile)))
         val registry = registry()
         registry.registerEffect(
-            ComponentEffectDefinition(
+            definition = ComponentEffectDefinition(
                 id = "test:broken_source",
                 ownerType = BuiltInComponentOwners.TILE,
                 appliesTo = { _, _ -> true },

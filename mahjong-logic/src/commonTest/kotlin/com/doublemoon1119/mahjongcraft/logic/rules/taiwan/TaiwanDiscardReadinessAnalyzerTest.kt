@@ -68,7 +68,7 @@ class TaiwanDiscardReadinessAnalyzerTest {
         val visibleThree = FakeIdentifiedTileFactory.create(threeBamboo)
 
         val analysis = assertNotNull(
-            analyzer().analyzeCurrentHand(
+            actual = analyzer().analyzeCurrentHand(
                 tableState = table,
                 player = player,
                 visibleTiles = player.hand.allTiles + visibleThree,
@@ -92,7 +92,7 @@ class TaiwanDiscardReadinessAnalyzerTest {
         )
 
         val analysis = assertNotNull(
-            analyzer().analyzeCurrentHand(
+            actual = analyzer().analyzeCurrentHand(
                 tableState = table,
                 player = player,
                 visibleTiles = player.hand.allTiles,
@@ -110,8 +110,8 @@ class TaiwanDiscardReadinessAnalyzerTest {
         val analyses = analyzer().analyze(table, player, player.hand.allTiles)
 
         assertEquals(
-            listOf(player.hand.standingTiles.single { it.tile == floatingTile }.id),
-            analyses.map { it.discardTileId },
+            expected = listOf(player.hand.standingTiles.single { it.tile == floatingTile }.id),
+            actual = analyses.map { it.discardTileId },
         )
         assertEquals(tenpaiTiles + floatingTile, player.hand.standingTiles.map { it.tile })
         assertEquals(emptyList(), player.discardPile.entries)
@@ -136,14 +136,14 @@ class TaiwanDiscardReadinessAnalyzerTest {
         val player = playerAfterEarlierDiscard(mixedTenpaiTiles)
 
         val tsumoOnly = assertNotNull(
-            analyzer(TaiwanRuleConfig(minimumWinConstraint = 2)).analyzeCurrentHand(
+            actual = analyzer(TaiwanRuleConfig(minimumWinConstraint = 2)).analyzeCurrentHand(
                 tableState = table(player, TaiwanRuleConfig(minimumWinConstraint = 2)),
                 player = player,
                 visibleTiles = player.hand.allTiles,
             ),
         )
         val belowMinimum = assertNotNull(
-            analyzer(TaiwanRuleConfig(minimumWinConstraint = 4)).analyzeCurrentHand(
+            actual = analyzer(TaiwanRuleConfig(minimumWinConstraint = 4)).analyzeCurrentHand(
                 tableState = table(player, TaiwanRuleConfig(minimumWinConstraint = 4)),
                 player = player,
                 visibleTiles = player.hand.allTiles,
@@ -151,12 +151,12 @@ class TaiwanDiscardReadinessAnalyzerTest {
         )
 
         assertEquals(
-            setOf(TaiwanDiscardReadinessAnalyzer.StatusIds.WIN_TSUMO_ONLY),
-            tsumoOnly.waitingTiles.mapTo(linkedSetOf()) { it.winAvailability },
+            expected = setOf(TaiwanDiscardReadinessAnalyzer.StatusIds.WIN_TSUMO_ONLY),
+            actual = tsumoOnly.waitingTiles.mapTo(linkedSetOf()) { it.winAvailability },
         )
         assertEquals(
-            setOf(TaiwanDiscardReadinessAnalyzer.StatusIds.WIN_BELOW_MINIMUM),
-            belowMinimum.waitingTiles.mapTo(linkedSetOf()) { it.winAvailability },
+            expected = setOf(TaiwanDiscardReadinessAnalyzer.StatusIds.WIN_BELOW_MINIMUM),
+            actual = belowMinimum.waitingTiles.mapTo(linkedSetOf()) { it.winAvailability },
         )
     }
 
@@ -172,12 +172,12 @@ class TaiwanDiscardReadinessAnalyzerTest {
             .single { it.discardTileId == floatingId }
 
         assertEquals(
-            setOf(TaiwanDiscardReadinessAnalyzer.StatusIds.WIN_TSUMO_ONLY),
-            ordinary.waitingTiles.mapTo(linkedSetOf()) { it.winAvailability },
+            expected = setOf(TaiwanDiscardReadinessAnalyzer.StatusIds.WIN_TSUMO_ONLY),
+            actual = ordinary.waitingTiles.mapTo(linkedSetOf()) { it.winAvailability },
         )
         assertEquals(
-            setOf(WaitingTileAvailabilityIds.WIN_AVAILABLE),
-            declared.waitingTiles.mapTo(linkedSetOf()) { it.winAvailability },
+            expected = setOf(WaitingTileAvailabilityIds.WIN_AVAILABLE),
+            actual = declared.waitingTiles.mapTo(linkedSetOf()) { it.winAvailability },
         )
     }
 
@@ -185,7 +185,7 @@ class TaiwanDiscardReadinessAnalyzerTest {
     private fun playerAfterEarlierDiscard(tiles: List<Tile>): MahjongPlayer = player(tiles).let { player ->
         player.copy(
             discardPile = player.discardPile.discardTile(
-                FakeIdentifiedTileFactory.create(Tile.Honor.North),
+                tile = FakeIdentifiedTileFactory.create(Tile.Honor.North),
             ),
         )
     }

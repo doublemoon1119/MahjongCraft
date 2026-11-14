@@ -87,7 +87,7 @@ class TileComponentVisibilityTest {
             register(secret)
             registerView(view)
             registerProjection(
-                ComponentProjectionDefinition(
+                definition = ComponentProjectionDefinition(
                     id = "example:tile/weight_projection",
                     ownerType = BuiltInComponentOwners.TILE,
                     component = secret,

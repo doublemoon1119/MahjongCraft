@@ -28,7 +28,7 @@ class RiichiYakumanTest : RiichiHandValueCalculatorTestBase() {
     @Test
     fun `test yakuman calculation single`() {
         val hand = FakeHandFactory.create(
-            listOf(
+            tiles = listOf(
                 Tile.Numeric(Tile.Suit.Character, 1),
                 Tile.Numeric(Tile.Suit.Character, 1),
                 Tile.Numeric(Tile.Suit.Character, 1),
@@ -61,7 +61,7 @@ class RiichiYakumanTest : RiichiHandValueCalculatorTestBase() {
     @Test
     fun `test double yakuman calculation`() {
         val hand = FakeHandFactory.create(
-            listOf(
+            tiles = listOf(
                 Tile.Numeric(Tile.Suit.Character, 1),
                 Tile.Numeric(Tile.Suit.Character, 1),
                 Tile.Numeric(Tile.Suit.Character, 1),
@@ -94,7 +94,7 @@ class RiichiYakumanTest : RiichiHandValueCalculatorTestBase() {
     @Test
     fun `test two yakuman calculation`() {
         val hand = FakeHandFactory.create(
-            listOf(
+            tiles = listOf(
                 Tile.Honor.Red,
                 Tile.Honor.Red,
                 Tile.Honor.Red,
@@ -127,7 +127,7 @@ class RiichiYakumanTest : RiichiHandValueCalculatorTestBase() {
     @Test
     fun `test double yakuman plus yakuman calculation`() {
         val hand = FakeHandFactory.create(
-            listOf(
+            tiles = listOf(
                 Tile.Honor.East,
                 Tile.Honor.East,
                 Tile.Honor.East,
@@ -140,7 +140,7 @@ class RiichiYakumanTest : RiichiHandValueCalculatorTestBase() {
                 Tile.Honor.Green,
             ),
             melds = listOf(
-                FakeMeldFactory.create(
+                element = FakeMeldFactory.create(
                     type = MeldType.Pon,
                     tiles = listOf(
                         FakeIdentifiedTileFactory.create(Tile.Honor.North),

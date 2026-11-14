@@ -20,8 +20,8 @@ class TaiwanPublicIndicatorTest {
         val firstDealership = streak.copy(comboCount = 0)
 
         assertEquals(
-            listOf(PublicPlayerIndicator(TaiwanPublicIndicatorIds.DEALER_STREAK, PublicPlayerIndicatorValue.Count(2))),
-            module.getPublicPlayerIndicators(streak, dealer),
+            expected = listOf(PublicPlayerIndicator(TaiwanPublicIndicatorIds.DEALER_STREAK, PublicPlayerIndicatorValue.Count(2))),
+            actual = module.getPublicPlayerIndicators(streak, dealer),
         )
         assertEquals(emptyList(), module.getPublicPlayerIndicators(streak, other))
         assertEquals(emptyList(), module.getPublicPlayerIndicators(firstDealership, dealer))

@@ -33,7 +33,7 @@ class GameInitializerOpeningTest {
                 val dealer = context.playerIdsInTurnOrder[2]
                 selectedDealer = dealer
                 RoundOpeningStep.Complete(
-                    RoundOpeningCompletion(
+                    result = RoundOpeningCompletion(
                         dealerPlayerId = dealer,
                         wallOpening = WallOpening(wallSideOffsetFromDealer = 0, stacksFromRight = 1),
                     ),
@@ -53,8 +53,8 @@ class GameInitializerOpeningTest {
         assertEquals(selectedDealer, result.tableState.currentPlayer.id)
         assertEquals(2, result.tableState.openingDiceRolls.single().dice.values.size)
         assertEquals(
-            0,
-            result.tableState.players.single { it.id == selectedDealer }.initialSeatIndex,
+            expected = 0,
+            actual = result.tableState.players.single { it.id == selectedDealer }.initialSeatIndex,
         )
     }
 
@@ -113,7 +113,7 @@ class GameInitializerOpeningTest {
         val playerIds = List(4) { Uuid.random() }
         val procedure = procedureReturning { context ->
             RoundOpeningStep.Complete(
-                RoundOpeningCompletion(
+                result = RoundOpeningCompletion(
                     dealerPlayerId = context.provisionalPlayerId,
                     wallOpening = WallOpening(wallSideOffsetFromDealer = 0, stacksFromRight = 1),
                 ),
@@ -137,7 +137,7 @@ class GameInitializerOpeningTest {
         val dealerId = players.first().id
         val procedure = procedureReturning { context ->
             RoundOpeningStep.Complete(
-                RoundOpeningCompletion(
+                result = RoundOpeningCompletion(
                     dealerPlayerId = context.playerIdsInTurnOrder[1],
                     wallOpening = WallOpening(wallSideOffsetFromDealer = 0, stacksFromRight = 1),
                 ),

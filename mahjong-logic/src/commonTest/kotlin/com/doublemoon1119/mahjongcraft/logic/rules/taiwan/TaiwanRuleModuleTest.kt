@@ -54,8 +54,8 @@ class TaiwanRuleModuleTest {
     @Test
     fun `test automatic controls match riichi and use the shared policy`() {
         assertEquals(
-            setOf(BuiltInAutomaticControlIds.AUTO_WIN, BuiltInAutomaticControlIds.DECLINE_CALLS, BuiltInAutomaticControlIds.AUTO_TSUMOGIRI),
-            module.getSupportedAutomaticControlIds(),
+            expected = setOf(BuiltInAutomaticControlIds.AUTO_WIN, BuiltInAutomaticControlIds.DECLINE_CALLS, BuiltInAutomaticControlIds.AUTO_TSUMOGIRI),
+            actual = module.getSupportedAutomaticControlIds(),
         )
         assertSame(LegalActionAutomaticControlPolicy, module.createAutomaticControlPolicy())
     }
@@ -182,8 +182,8 @@ class TaiwanRuleModuleTest {
         val after = before.copy(hand = Hand(tiles = waitingTiles().dropLast(1) + tile(Tile.Honor.East)))
 
         assertTrue(
-            enabled.onMeldCompleted(
-                MeldCompletedContext(
+            actual = enabled.onMeldCompleted(
+                context = MeldCompletedContext(
                     playersBefore = listOf(before),
                     playersAfter = listOf(after),
                     actorPlayerId = before.id,
@@ -316,7 +316,7 @@ class TaiwanRuleModuleTest {
     fun `last round continues while the dealer repeats`() {
         val table = fourPlayerTable(waiterHand = Hand())
         val drawTransition = taiwanModule.resolveRoundTransition(
-            RoundTransitionContext(
+            context = RoundTransitionContext(
                 tableState = table,
                 outcomeId = "mahjongcraft:test_draw",
                 classification = RoundCompletionClassification.EXHAUSTIVE_DRAW,
@@ -329,8 +329,8 @@ class TaiwanRuleModuleTest {
 
         val policy = TaiwanMatchProgressionPolicy(totalRounds = 1)
         assertEquals(
-            MatchProgressionDecision.ContinueMatch(MatchRoundTransition.RepeatCurrentRound),
-            policy.decide(progression(table, RoundTransitionDirective.RepeatDealer)),
+            expected = MatchProgressionDecision.ContinueMatch(MatchRoundTransition.RepeatCurrentRound),
+            actual = policy.decide(progression(table, RoundTransitionDirective.RepeatDealer)),
         )
         assertIs<MatchProgressionDecision.EndMatch>(policy.decide(progression(table, RoundTransitionDirective.PassToNextSeat)))
     }

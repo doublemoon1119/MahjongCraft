@@ -32,9 +32,9 @@ class TileWallLayoutSideStackCountsTest {
 
             assertEquals(expected, reported, "$layout reports unexpected side sizes")
             assertEquals(
-                reported,
-                reported.indices.map { side -> structure.filter { it.side == side }.maxOf { it.stack } + 1 },
-                "$layout lays out a different wall than it reports",
+                expected = reported,
+                actual = reported.indices.map { side -> structure.filter { it.side == side }.maxOf { it.stack } + 1 },
+                message = "$layout lays out a different wall than it reports",
             )
         }
     }

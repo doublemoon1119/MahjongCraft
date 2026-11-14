@@ -78,10 +78,10 @@ class MahjongPlayerTest {
         player = player.recordAction(GameAction.Draw)
         player = player.recordAction(GameAction.Discard(Uuid.random()))
         player = player.recordAction(
-            GameAction.Kan(
-                KanType.OPEN_KAN,
-                Uuid.random(),
-                listOf(Uuid.random(), Uuid.random(), Uuid.random()),
+            action = GameAction.Kan(
+                type = KanType.OPEN_KAN,
+                tileId = Uuid.random(),
+                withTiles = listOf(Uuid.random(), Uuid.random(), Uuid.random()),
             ),
         )
 

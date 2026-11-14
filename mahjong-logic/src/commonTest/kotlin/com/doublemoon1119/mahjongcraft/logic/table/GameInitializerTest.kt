@@ -91,8 +91,8 @@ class GameInitializerTest {
         assertEquals(module.config.reservedTileCount, table.reservedWallTiles.size)
         assertEquals(136, result.initialPhysicalWallLayout?.placements?.size)
         assertEquals(
-            (table.tileWall.getAllTiles() + table.reservedWallTiles).map { it.id }.toSet(),
-            table.physicalWallLayout?.placements?.keys,
+            expected = (table.tileWall.getAllTiles() + table.reservedWallTiles).map { it.id }.toSet(),
+            actual = table.physicalWallLayout?.placements?.keys,
         )
     }
 
@@ -230,8 +230,8 @@ class GameInitializerTest {
             ),
         )
         val table = initializeComponents(
-            GameInitializer.startNextRound(previous.id, advancement, module),
-            previous,
+            initialization = GameInitializer.startNextRound(previous.id, advancement, module),
+            previous = previous,
         )
         assertEquals(2000, table.riichiPotPoints())
         assertEquals(RiichiWallProgress(), table.riichiWallProgress())
@@ -250,12 +250,12 @@ class GameInitializerTest {
             ),
         )
         val afterKan = initializeComponents(
-            GameInitializer.startNextRound(previous.id, advancement, module),
-            previous,
+            initialization = GameInitializer.startNextRound(previous.id, advancement, module),
+            previous = previous,
         )
         val withoutKan = initializeComponents(
-            GameInitializer.startNextRound(previous.id, advancement, module),
-            previous.copy(components = riichiTableComponents()),
+            initialization = GameInitializer.startNextRound(previous.id, advancement, module),
+            previous = previous.copy(components = riichiTableComponents()),
         )
         assertEquals(listOf(module.config.rinshanTileCount), indicatorPositions(afterKan))
         assertEquals(indicatorPositions(withoutKan), indicatorPositions(afterKan))
@@ -399,7 +399,7 @@ class GameInitializerTest {
     fun `test startNextRound resets per-hand player state`() {
         val declarationTile = FakeIdentifiedTileFactory.create(Tile.Honor.South)
         val dirtyPlayer = FakeMahjongPlayerFactory.create(
-            Wind.EAST,
+            initialSeat = Wind.EAST,
             hand = Hand(tiles = listOf(FakeIdentifiedTileFactory.create(Tile.Honor.East))),
             discardPile = RiichiDiscardPile().discardTile(declarationTile),
             components = riichiDeclarationComponents(declarationTile, isIppatsu = true),
@@ -442,8 +442,8 @@ class GameInitializerTest {
             components = riichiTableComponents(potPoints = 2000),
         )
         val table = initializeComponents(
-            GameInitializer.startNextRound(previous.id, advancement, module),
-            previous,
+            initialization = GameInitializer.startNextRound(previous.id, advancement, module),
+            previous = previous,
         )
         assertEquals(2000, table.riichiPotPoints())
         assertEquals(previous.players.associate { it.id to it.score }, table.players.associate { it.id to it.score })

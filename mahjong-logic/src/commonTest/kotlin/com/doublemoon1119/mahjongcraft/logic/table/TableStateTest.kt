@@ -30,7 +30,7 @@ class TableStateTest {
                 players = fourPlayers,
                 tileWall = TileWall(listOf(wallTile)),
                 physicalWallLayout = TileWallPhysicalLayout(
-                    mapOf(unrelatedTile.id to TileWallPlacement(TileWallPosition(0, 0, 0))),
+                    placements = mapOf(unrelatedTile.id to TileWallPlacement(TileWallPosition(0, 0, 0))),
                 ),
             )
         }
@@ -178,8 +178,8 @@ class TableStateTest {
 
         val repeated = state.advanceRound(MatchRoundTransition.RepeatCurrentRound, RoundTransitionDirective.RepeatDealer)
         val advanced = state.advanceRound(
-            MatchRoundTransition.AdvanceTo(MatchRoundPosition(1, Wind.EAST, 2)),
-            RoundTransitionDirective.PassToNextSeat,
+            transition = MatchRoundTransition.AdvanceTo(MatchRoundPosition(1, Wind.EAST, 2)),
+            directive = RoundTransitionDirective.PassToNextSeat,
         )
 
         assertEquals(players[0].id, repeated.dealerPlayerId)
@@ -195,12 +195,12 @@ class TableStateTest {
 
         val repeated = state.advanceRound(MatchRoundTransition.RepeatCurrentRound, RoundTransitionDirective.RepeatDealer)
         val continued = state.advanceRound(
-            MatchRoundTransition.AdvanceTo(nextPosition = nextPosition, continuesCombo = true),
-            RoundTransitionDirective.PassToNextSeat,
+            transition = MatchRoundTransition.AdvanceTo(nextPosition = nextPosition, continuesCombo = true),
+            directive = RoundTransitionDirective.PassToNextSeat,
         )
         val reset = state.advanceRound(
-            MatchRoundTransition.AdvanceTo(nextPosition = nextPosition, continuesCombo = false),
-            RoundTransitionDirective.PassToNextSeat,
+            transition = MatchRoundTransition.AdvanceTo(nextPosition = nextPosition, continuesCombo = false),
+            directive = RoundTransitionDirective.PassToNextSeat,
         )
 
         assertEquals(3, repeated.comboCount)
@@ -244,16 +244,16 @@ class TableStateTest {
         val newOrder = listOf(fourPlayers[2], fourPlayers[0], fourPlayers[3], fourPlayers[1]).map { it.id }
 
         val advanced = state.advanceRound(
-            MatchRoundTransition.AdvanceTo(MatchRoundPosition(1, Wind.EAST, 2)),
-            RoundTransitionDirective.PassToNextSeat,
+            transition = MatchRoundTransition.AdvanceTo(MatchRoundPosition(1, Wind.EAST, 2)),
+            directive = RoundTransitionDirective.PassToNextSeat,
             seatOrder = newOrder,
         )
 
         assertEquals(newOrder, advanced.players.map { it.id })
         assertEquals(fourPlayers[1].id, advanced.dealerPlayerId)
         assertEquals(
-            fourPlayers.associate { it.id to (it.initialSeatIndex to it.score) },
-            advanced.players.associate { it.id to (it.initialSeatIndex to it.score) },
+            expected = fourPlayers.associate { it.id to (it.initialSeatIndex to it.score) },
+            actual = advanced.players.associate { it.id to (it.initialSeatIndex to it.score) },
         )
     }
 

@@ -28,7 +28,7 @@ class RiichiHonorYakuTest : RiichiHandValueCalculatorTestBase() {
     @Test
     fun `test round wind east`() {
         val hand = FakeHandFactory.create(
-            listOf(
+            tiles = listOf(
                 Tile.Honor.East,
                 Tile.Honor.East,
                 Tile.Honor.East,
@@ -67,7 +67,7 @@ class RiichiHonorYakuTest : RiichiHandValueCalculatorTestBase() {
     @Test
     fun `test seat wind south`() {
         val hand = FakeHandFactory.create(
-            listOf(
+            tiles = listOf(
                 Tile.Honor.South,
                 Tile.Honor.South,
                 Tile.Honor.South,
@@ -106,7 +106,7 @@ class RiichiHonorYakuTest : RiichiHandValueCalculatorTestBase() {
     @Test
     fun `test dragon yakuhai`() {
         val hand = FakeHandFactory.create(
-            listOf(
+            tiles = listOf(
                 Tile.Honor.Red,
                 Tile.Honor.Red,
                 Tile.Honor.Red,
@@ -142,7 +142,7 @@ class RiichiHonorYakuTest : RiichiHandValueCalculatorTestBase() {
     @Test
     fun `test white dragon triplet scores the white dragon yakuhai`() {
         val hand = FakeHandFactory.create(
-            listOf(
+            tiles = listOf(
                 Tile.Honor.White,
                 Tile.Honor.White,
                 Tile.Honor.White,
@@ -179,7 +179,7 @@ class RiichiHonorYakuTest : RiichiHandValueCalculatorTestBase() {
     @Test
     fun `test round wind equals seat wind`() {
         val hand = FakeHandFactory.create(
-            listOf(
+            tiles = listOf(
                 Tile.Honor.East,
                 Tile.Honor.East,
                 Tile.Honor.East,
@@ -221,7 +221,7 @@ class RiichiHonorYakuTest : RiichiHandValueCalculatorTestBase() {
     @Test
     fun `test honor not enough returns null`() {
         val hand = FakeHandFactory.create(
-            listOf(
+            tiles = listOf(
                 Tile.Honor.East,
                 Tile.Honor.East,
                 Tile.Numeric(Tile.Suit.Character, 2),

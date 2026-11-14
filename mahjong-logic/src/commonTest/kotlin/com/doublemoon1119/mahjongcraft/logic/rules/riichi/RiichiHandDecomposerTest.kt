@@ -102,7 +102,7 @@ class RiichiHandDecomposerTest {
         )
 
         val fuuro = listOf(
-            RiichiFuuro(
+            element = RiichiFuuro(
                 mentsu = RiichiMentsu.Kotsu(Tile.Numeric(Tile.Suit.Dot, 1)),
                 from = RelativeDirection.Left,
             ),

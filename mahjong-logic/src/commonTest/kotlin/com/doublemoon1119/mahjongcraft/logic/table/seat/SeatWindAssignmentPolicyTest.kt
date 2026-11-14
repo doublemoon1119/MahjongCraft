@@ -35,7 +35,7 @@ class SeatWindAssignmentPolicyTest {
     fun `wall opening anchored policy assigns east to opening player`() {
         val players = List(4) { Uuid.random() }
         val assignment = FourPlayerWallOpeningAnchoredSeatWindAssignmentPolicy.assignValidated(
-            context(players, players[0], WallOpening(wallSideOffsetFromDealer = 2, stacksFromRight = 3)),
+            context = context(players, players[0], WallOpening(wallSideOffsetFromDealer = 2, stacksFromRight = 3)),
         )
 
         assertEquals(Wind.EAST, assignment[players[2]])
@@ -51,7 +51,7 @@ class SeatWindAssignmentPolicyTest {
 
         assertFailsWith<IllegalArgumentException> {
             FourPlayerWallOpeningAnchoredSeatWindAssignmentPolicy.assignValidated(
-                context(players, players[0], WallOpening(wallSideOffsetFromDealer = 1, stacksFromRight = 3)),
+                context = context(players, players[0], WallOpening(wallSideOffsetFromDealer = 1, stacksFromRight = 3)),
             )
         }
     }
@@ -68,7 +68,7 @@ class SeatWindAssignmentPolicyTest {
         }
 
         val assignment = policy.assignValidated(
-            context(players, players[0], WallOpening(wallSideOffsetFromDealer = 1, stacksFromRight = 3)),
+            context = context(players, players[0], WallOpening(wallSideOffsetFromDealer = 1, stacksFromRight = 3)),
         )
 
         assertEquals(Wind.EAST, assignment[players[1]])

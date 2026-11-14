@@ -28,7 +28,7 @@ class RiichiHonroutouTest : RiichiHandValueCalculatorTestBase() {
         // 手牌：11m, 99s (老頭牌)
         // 混老頭：2 翻
         val hand = FakeHandFactory.create(
-            listOf(
+            tiles = listOf(
                 Tile.Numeric(Tile.Suit.Character, 1),
                 Tile.Numeric(Tile.Suit.Character, 1),
                 Tile.Numeric(Tile.Suit.Bamboo, 9),
@@ -80,7 +80,7 @@ class RiichiHonroutouTest : RiichiHandValueCalculatorTestBase() {
         // 手牌：22m, 99s (老頭牌)
         // 含有非老頭牌
         val hand = FakeHandFactory.create(
-            listOf(
+            tiles = listOf(
                 Tile.Numeric(Tile.Suit.Character, 2),
                 Tile.Numeric(Tile.Suit.Character, 2),
                 Tile.Numeric(Tile.Suit.Bamboo, 9),

@@ -15,7 +15,7 @@ fun registerRiichiTableComponents(registry: ComponentRegistrar) {
     registry.register(RiichiTableComponents.POT_POINTS)
     registry.registerView(RiichiTableComponentViews.POT_POINTS)
     registry.registerLifecycle(
-        ComponentLifecycleDefinition(
+        definition = ComponentLifecycleDefinition(
             component = RiichiTableComponents.POT_POINTS,
             ownerType = BuiltInComponentOwners.TABLE,
             appliesTo = { _, config -> config is RiichiFamilyRuleConfig },
@@ -25,7 +25,7 @@ fun registerRiichiTableComponents(registry: ComponentRegistrar) {
         ),
     )
     registry.registerProjection(
-        ComponentProjectionDefinition(
+        definition = ComponentProjectionDefinition(
             id = "mahjongcraft:riichi/projection/pot_points",
             ownerType = BuiltInComponentOwners.TABLE,
             component = RiichiTableComponents.POT_POINTS,
@@ -36,7 +36,7 @@ fun registerRiichiTableComponents(registry: ComponentRegistrar) {
     )
     registry.register(RiichiTableComponents.WALL_PROGRESS)
     registry.registerLifecycle(
-        ComponentLifecycleDefinition(
+        definition = ComponentLifecycleDefinition(
             component = RiichiTableComponents.WALL_PROGRESS,
             ownerType = BuiltInComponentOwners.TABLE,
             appliesTo = { _, config -> config is RiichiFamilyRuleConfig },

@@ -33,7 +33,7 @@ class TaiwanFlowerFlowTest {
         )
 
         val result = assertIs<TaiwanFlowerFlow.Result.Completed>(
-            TaiwanFlowerFlow.processRevealed(table, table.players[0].id, first),
+            value = TaiwanFlowerFlow.processRevealed(table, table.players[0].id, first),
         )
 
         assertEquals(listOf(first, second), result.tableState.players[0].tileAreas[TaiwanPlayerTileAreaIds.FLOWERS]?.tiles)
@@ -65,18 +65,18 @@ class TaiwanFlowerFlowTest {
         val next = table.players[1].id
 
         val result = assertIs<TaiwanFlowerFlow.Result.Completed>(
-            TaiwanFlowerFlow.process(table, table.players.map { it.id }),
+            value = TaiwanFlowerFlow.process(table, table.players.map { it.id }),
         )
 
         assertEquals(
-            listOf(firstFlower, secondFlower, firstReplacement),
-            result.tableState.players[0].tileAreas[TaiwanPlayerTileAreaIds.FLOWERS]?.tiles,
+            expected = listOf(firstFlower, secondFlower, firstReplacement),
+            actual = result.tableState.players[0].tileAreas[TaiwanPlayerTileAreaIds.FLOWERS]?.tiles,
         )
         assertEquals(listOf(nextPlayerFlower), result.tableState.players[1].tileAreas[TaiwanPlayerTileAreaIds.FLOWERS]?.tiles)
         assertEquals(fourthReplacement, result.tableState.players[0].hand.lastDrawn)
         assertEquals(thirdReplacement, result.tableState.players[1].hand.lastDrawn)
         assertEquals(
-            listOf(
+            expected = listOf(
                 setAside(dealer, listOf(firstFlower, secondFlower)),
                 replaced(dealer, listOf(firstReplacement, secondReplacement)),
                 setAside(next, listOf(nextPlayerFlower)),
@@ -84,7 +84,7 @@ class TaiwanFlowerFlowTest {
                 setAside(dealer, listOf(firstReplacement)),
                 replaced(dealer, listOf(fourthReplacement)),
             ),
-            result.steps.map { it.summary() },
+            actual = result.steps.map { it.summary() },
         )
     }
 
@@ -100,7 +100,7 @@ class TaiwanFlowerFlowTest {
         )
 
         val result = assertIs<TaiwanFlowerFlow.Result.Exhausted>(
-            TaiwanFlowerFlow.process(table, listOf(table.players[0].id)),
+            value = TaiwanFlowerFlow.process(table, listOf(table.players[0].id)),
         )
 
         assertEquals(table.players[0].id, result.playerId)
@@ -120,7 +120,7 @@ class TaiwanFlowerFlowTest {
             publicFlowers = listOf(flowers.take(7), emptyList(), emptyList(), emptyList()),
         )
         val awaiting = assertIs<TaiwanFlowerFlow.Result.AwaitingDecision>(
-            TaiwanFlowerFlow.process(table, listOf(table.players[1].id)),
+            value = TaiwanFlowerFlow.process(table, listOf(table.players[1].id)),
         )
 
         val result = assertIs<TaiwanFlowerFlow.Result.Completed>(TaiwanFlowerFlow.resolve(awaiting.pending, accepted = false))
@@ -143,7 +143,7 @@ class TaiwanFlowerFlowTest {
             publicFlowers = listOf(flowers.take(7), emptyList(), emptyList(), emptyList()),
         )
         val awaiting = assertIs<TaiwanFlowerFlow.Result.AwaitingDecision>(
-            TaiwanFlowerFlow.process(table, listOf(table.players[1].id)),
+            value = TaiwanFlowerFlow.process(table, listOf(table.players[1].id)),
         )
 
         val result = assertIs<TaiwanFlowerFlow.Result.Won>(TaiwanFlowerFlow.resolve(awaiting.pending, accepted = true))

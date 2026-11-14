@@ -131,9 +131,9 @@ class LegalActionContext private constructor(
             declaredAction: GameAction,
             declaredTile: IdentifiedTile,
         ): LegalActionContext = LegalActionContext(
-            tableState,
-            playerId,
-            LegalActionSource.Declaration(declarerId, declaredAction, declaredTile),
+            tableState = tableState,
+            playerId = playerId,
+            source = LegalActionSource.Declaration(declarerId, declaredAction, declaredTile),
         )
     }
 }

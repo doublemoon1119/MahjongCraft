@@ -41,7 +41,7 @@ class LegalActionAutomaticControlPolicyTest {
         )
 
         val result = LegalActionAutomaticControlPolicy.evaluate(
-            context(actions, setOf(BuiltInAutomaticControlIds.DECLINE_CALLS)),
+            context = context(actions, setOf(BuiltInAutomaticControlIds.DECLINE_CALLS)),
         )
 
         assertEquals(actions.take(3).toSet(), result.hiddenActions)
@@ -53,9 +53,9 @@ class LegalActionAutomaticControlPolicyTest {
     fun `test decline calls immediately passes when no other choice remains`() {
         val incomingId = Uuid.random()
         val result = LegalActionAutomaticControlPolicy.evaluate(
-            context(
-                listOf(GameAction.Pon(incomingId, emptyList()), GameAction.Pass),
-                setOf(BuiltInAutomaticControlIds.DECLINE_CALLS),
+            context = context(
+                legalActions = listOf(GameAction.Pon(incomingId, emptyList()), GameAction.Pass),
+                enabledIds = setOf(BuiltInAutomaticControlIds.DECLINE_CALLS),
             ),
         )
 

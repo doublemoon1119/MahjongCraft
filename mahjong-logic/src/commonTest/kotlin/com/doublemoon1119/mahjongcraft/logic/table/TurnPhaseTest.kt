@@ -33,8 +33,8 @@ class TurnPhaseTest {
             }
         }
         assertEquals(
-            TurnPhase.AwaitingAction,
-            FakeTableStateFactory.create(players = listOf(holder, other), turnPhase = TurnPhase.AwaitingAction).turnPhase,
+            expected = TurnPhase.AwaitingAction,
+            actual = FakeTableStateFactory.create(players = listOf(holder, other), turnPhase = TurnPhase.AwaitingAction).turnPhase,
         )
     }
 
