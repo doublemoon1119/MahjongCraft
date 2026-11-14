@@ -473,10 +473,6 @@ class WinCelebrationShowcaseEntityRenderer(
             y = pose.position.y.toDouble()
             z = pose.position.z.toDouble()
             if (elapsed < returnStart + RETURN_DURATION_TICKS) renderFlightTrail(entity, card, wingIndex, startX, startY, startZ, localTargetX, returnStart, elapsed, billboardRotation, matrices, vertexConsumers, light, winningTile)
-        } else if (elapsed >= SHOWCASE_START_TICK) {
-            val target = Vector3f(localTargetX.toFloat(), 0.0f, 0.0f).rotate(billboardRotation)
-            x = target.x.toDouble()
-            z = target.z.toDouble()
         }
         val fade = fadeScale(elapsed, fadeStart)
         if (returnProgress >= 1.0) {

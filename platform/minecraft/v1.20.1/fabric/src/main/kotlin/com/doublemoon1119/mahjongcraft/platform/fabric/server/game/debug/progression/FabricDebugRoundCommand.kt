@@ -84,7 +84,7 @@ class FabricDebugRoundCommand(
      */
     private fun setComboCount(source: ServerCommandSource, comboCount: Int): Int = playerTableScope.runSuspending(source) { tableId, _ ->
         val state = gameRepository.updateGame(tableId) { game ->
-            val current = game?.tableState ?: return@updateGame game to null
+            val current = game?.tableState ?: return@updateGame null to null
             val updated = current.copy(comboCount = comboCount)
             game.copy(tableState = updated) to updated
         } ?: return@runSuspending "Game not found"

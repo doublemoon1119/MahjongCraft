@@ -84,7 +84,7 @@ class DeclareExhaustiveDrawUseCase(
         ) { game ->
             val state = game?.tableState
             when {
-                game == null || state == null -> game to Outcome.Error(GameError.GameNotFound(gameId))
+                game == null || state == null -> null to Outcome.Error(GameError.GameNotFound(gameId))
                 else -> {
                     val module = moduleRegistry.getModule(state.config)
 
