@@ -12,7 +12,7 @@ import kotlin.uuid.Uuid
  * 以 revision 保護的原子操作替換單一玩家在目前這一局啟用的自動操作集合。
  *
  * 本用例只接受完整集合，並在同一次 [GameRepository.updateGame] 中完成成員、規則支援清單及 revision
- * 驗證。呼叫端必須以可信任的連線身分提供 [playerId]，不得採用提交內容自行宣稱的玩家 ID。
+ * 驗證。呼叫端必須以可信任的連線身分提供 `playerId`，不得採用提交內容自行宣稱的玩家 ID。
  *
  * @property gameRepository 權威對局資料倉庫。
  * @property moduleRegistry 麻將規則模組註冊中心，用於取得支援的自動操作 ID。

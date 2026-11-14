@@ -28,7 +28,7 @@ class MahjongAiStrategyRegistryImplTest {
     }
 
     /**
-     * 驗證 [MahjongAiStrategyRegistryImpl.resolve] 對 null key 優雅退回 [defaultKey] 對應的策略。
+     * 驗證 [MahjongAiStrategyRegistryImpl.resolve] 對 null key 優雅退回 `defaultKey` 對應的策略。
      */
     @Test
     fun `test resolve with null key falls back to default`() {
@@ -41,7 +41,7 @@ class MahjongAiStrategyRegistryImplTest {
     }
 
     /**
-     * 驗證 [MahjongAiStrategyRegistryImpl.resolve] 對未知 key 優雅退回 [defaultKey] 對應的策略，
+     * 驗證 [MahjongAiStrategyRegistryImpl.resolve] 對未知 key 優雅退回 `defaultKey` 對應的策略，
      * 而不是拋出例外——避免在對局進行中因為 key 對應的策略消失（例如來源 mod 被移除）而中斷遊戲。
      */
     @Test

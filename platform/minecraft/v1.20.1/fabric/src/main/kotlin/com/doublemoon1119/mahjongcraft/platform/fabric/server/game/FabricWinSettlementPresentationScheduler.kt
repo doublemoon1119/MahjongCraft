@@ -146,15 +146,6 @@ class FabricWinSettlementPresentationScheduler(
     }
 
     /**
-     * 依贏家揭示時間軸建立聲音事件快照。
-     *
-     * @param winners 要顯示的贏家快照。
-     * @param reveal 版型的聲音與揭示設定。
-     * @param timing 舞台各階段的時間長度。
-     * @param scoreRevealDelayTicks 分數揭示延遲的 tick 數。
-     * @return 依時間軸排序的聲音快照。
-     */
-    /**
      * 這次和牌動作在規則中的名稱。
      *
      * @param ruleModuleId 對局規則。
@@ -166,6 +157,15 @@ class FabricWinSettlementPresentationScheduler(
         return requireNotNull(actionVocabularyRegistry.find(ruleModuleId, actionId)) { "$actionId has a built-in label" }.labelKey
     }
 
+    /**
+     * 依贏家揭示時間軸建立聲音事件快照。
+     *
+     * @param winners 要顯示的贏家快照。
+     * @param reveal 版型的聲音與揭示設定。
+     * @param timing 舞台各階段的時間長度。
+     * @param scoreRevealDelayTicks 分數揭示延遲的 tick 數。
+     * @return 依時間軸排序的聲音快照。
+     */
     private fun buildSoundCues(
         winners: List<WinSettlementWinnerSnapshot>,
         reveal: WinSettlementRevealSequence,

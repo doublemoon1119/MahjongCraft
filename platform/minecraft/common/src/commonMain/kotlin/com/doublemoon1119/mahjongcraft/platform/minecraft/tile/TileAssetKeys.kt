@@ -85,7 +85,7 @@ val STANDARD_TILE_ASSET_KEYS: List<String> = buildList {
  * 並作為循環換牌的順序；擴充牌種可在登記描述中提供自訂資源，省略時沿用內建資源路徑。
  *
  * @throws IllegalStateException registry 尚未凍結時拋出；擴充牌種要等所有 extension 登記完成才確定。
- * @param registry 已凍結的牌資產 registry。
+ * @receiver 已凍結的牌資產 registry。
  * @return 內建、已登記擴充與未知牌 key 的固定順序清單。
  */
 fun MinecraftTileAssetRegistry.allTileAssetKeys(): List<String> {

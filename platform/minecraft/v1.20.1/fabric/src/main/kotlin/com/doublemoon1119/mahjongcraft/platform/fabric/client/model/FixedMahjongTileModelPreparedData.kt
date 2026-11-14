@@ -140,12 +140,6 @@ data class FixedMahjongTileModelPreparedData(
 private fun ResourceManager.hasTexture(textureId: Identifier): Boolean = textureId.isFullTextureResource() && getResource(textureId).isPresent
 
 /**
- * 判斷模型是否存在且只覆寫固定基本模型的材質槽。
- *
- * @param modelId 要檢查的模型 ID。
- * @return 模型存在且符合固定模板契約時為 `true`。
- */
-/**
  * 檢查模型是否繼承固定基本模型，且沒有自行改變幾何或 display。
  *
  * @param modelId 要檢查的模型 ID。

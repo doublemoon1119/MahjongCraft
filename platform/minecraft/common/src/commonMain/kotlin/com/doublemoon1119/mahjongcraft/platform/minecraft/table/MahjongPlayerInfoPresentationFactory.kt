@@ -5,7 +5,7 @@ import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayer
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import kotlin.uuid.Uuid
 
-/** 集中建立玩家公開快照，避免 use case 或 loader adapter 各自挑選規則資料；[aiPlayerIds] 為由 AI 操控的玩家。 */
+/** 集中建立玩家公開快照，避免 use case 或 loader adapter 各自挑選規則資料；`aiPlayerIds` 為由 AI 操控的玩家。 */
 object MahjongPlayerInfoPresentationFactory {
     /**
      * 依權威桌況與規則模組建立玩家公開資訊快照。

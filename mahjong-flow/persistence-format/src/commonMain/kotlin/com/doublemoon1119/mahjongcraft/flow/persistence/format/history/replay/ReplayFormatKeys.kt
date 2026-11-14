@@ -245,8 +245,6 @@ internal object ReplaySourceKeys {
     /** 已完成玩家座位。 */
     const val FINISHED_PLAYER_IDS = "finishedPlayerIds"
 
-    /** 規則的動態桌況。 */
-
     /** 一局目前所處的階段。 */
     const val TURN_PHASE = "turnPhase"
 

@@ -47,8 +47,6 @@ class TableStatePersistenceTest {
     /** 內建牌河的 persistence registry。 */
     private val discardPileRegistry = bundledPersistenceRegistries().discardPiles
 
-    /** 內建動態牌桌狀態的 persistence registry。 */
-
     /** 內建擴充動作的 persistence registry。 */
     private val extensionGameActionRegistry = bundledPersistenceRegistries().extensionGameActions
 

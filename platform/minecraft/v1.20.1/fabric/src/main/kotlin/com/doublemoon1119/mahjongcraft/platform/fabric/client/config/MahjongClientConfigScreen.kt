@@ -689,13 +689,6 @@ class MahjongClientConfigScreen(
         if (value) MinecraftClientConfigScreenKeys.ENABLED else MinecraftClientConfigScreenKeys.DISABLED,
     )
 
-    /**
-     * 依實際像素寬度截斷過寬文字並補省略號。
-     *
-     * @param text 原始文字。
-     * @param maximumWidth 可使用的像素寬度。
-     * @return 原始文字或補上省略號的截斷文字；寬度不為正時為空文字。
-     */
     /** 在目前輸入事件完成後安全重建 widgets，避免舊 widget 被重新設為 focus。 */
     private fun rebuild() {
         rebuildRequested = true

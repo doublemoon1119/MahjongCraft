@@ -200,7 +200,7 @@ class C2SChannel<T>(
     /** Fabric 網路使用的頻道識別碼。 */
     val channelId: Identifier = Identifier(MinecraftModMetadata.MOD_ID, id)
 
-    /** 依 [rateLimit] 判斷要求是否接受；由接收端自行准入時為 null。 */
+    /** 依 `rateLimit` 判斷要求是否接受；由接收端自行准入時為 null。 */
     private val limiter: PlayerRequestRateLimiter? = (rateLimit as? C2SRateLimit.PerPlayer)
         ?.let(::PlayerRequestRateLimiter)
         ?.also(limiters::add)

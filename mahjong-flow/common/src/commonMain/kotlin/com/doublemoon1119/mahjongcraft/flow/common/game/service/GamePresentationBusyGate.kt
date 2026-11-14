@@ -3,7 +3,7 @@ package com.doublemoon1119.mahjongcraft.flow.common.game.service
 import kotlin.uuid.Uuid
 
 /**
- * 查詢平台是否仍在為 [gameId] 呈現需要等待的內容（例如擲骰）；呈現期間，自動操作流程
+ * 查詢平台是否仍在為 `gameId` 呈現需要等待的內容（例如擲骰）；呈現期間，自動操作流程
  * （`GameFlowCoordinator.driveAutomatedPlayers`）不驅動 AI 與強制自動操作玩家，避免遊戲流程搶在呈現之前推進。
  *
  * 與 [GamePresentationPublisher] 分工：後者是 flow 通知平台的單向出口；這個介面反過來讓 flow 查詢平台的呈現進度，flow

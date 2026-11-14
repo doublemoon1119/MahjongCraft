@@ -14,7 +14,7 @@ import kotlin.test.assertTrue
  * 針對 [MahjongModuleRegistryImpl] 進行單元測試。
  *
  * 驗證建構時是空的對照表，且只能透過 [MahjongModuleRegistry.register] 加入規則——
- * 連日麻/台麻這兩個內建規則都不是這個類別自己塞進去的，而是外部呼叫 [register] 註冊的
+ * 連日麻/台麻這兩個內建規則都不是這個類別自己塞進去的，而是外部呼叫 [MahjongModuleRegistry.register] 註冊的
  * （實際的呼叫端是各規則的 extension，例如日麻的 `BundledRiichiExtension`）。
  */
 class MahjongModuleRegistryImplTest {

@@ -1066,7 +1066,7 @@ class FabricGamePresentationPublisher(
     /**
      * 讀取贏家目前的權威手牌（[gameRepository]，唯讀，不寫回任何 `TableState`）算出強制理牌重排的目標
      * 順序（`Hand.organize`，不論贏家原本是否啟用自動整理手牌），委託
-     * [playerAreaPresenter.presentWinCelebration] 排定「重排 → （自摸牌單獨倒下 →）等待 → 立牌一起
+     * [MahjongPlayerAreaPresenter.presentWinCelebration] 排定「重排 → （自摸牌單獨倒下 →）等待 → 立牌一起
      * 倒下」序列，最後把算出來的「立牌全部倒下完成」絕對 game time 交給 [effectScheduler] 接續排定
      * 降臨特效——特效鎖定的目標位置固定是 [WinCelebrationRequest.winningTileId] 目前所在座標：自摸時它已經併入贏家手牌、
      * 停在整理後的格位；榮和／搶槓時它仍在放銃者的牌河或副露區，天然就是「胡牌張目前所在座標」，

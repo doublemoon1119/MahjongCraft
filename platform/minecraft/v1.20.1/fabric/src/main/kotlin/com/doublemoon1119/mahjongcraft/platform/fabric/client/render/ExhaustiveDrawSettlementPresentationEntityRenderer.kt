@@ -615,7 +615,7 @@ class ExhaustiveDrawSettlementPresentationEntityRenderer(
     /**
      * 將可持久化 Fabric snapshot 投影為 Flow 層共用的規則中立排行關鍵影格。
      *
-     * @param player 可持久化的流局結算玩家快照。
+     * @receiver 可持久化的流局結算玩家快照。
      * @return 共用排行動畫使用的玩家資料。
      */
     private fun ExhaustiveDrawSettlementPlayerSnapshot.toScoreRankingPlayer(): ScoreRankingPlayer = ScoreRankingPlayer(

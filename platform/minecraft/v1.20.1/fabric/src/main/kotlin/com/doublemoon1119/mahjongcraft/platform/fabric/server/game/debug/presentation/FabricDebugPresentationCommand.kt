@@ -1368,7 +1368,6 @@ class FabricDebugPresentationCommand(
         /** 清除覆寫的 literal。 */
         const val CLEAR_ARGUMENT: String = "clear"
 
-        /** `exhaustive_draw_settlement` 子指令 literal。 */
         /** 中途流局預覽不列出的流局原因：一般荒牌流局，以及由玩家宣告、另有預覽方式的九種九牌。 */
         val NON_ABORTIVE_DRAW_REASON_IDS: Set<String> = setOf(
             RiichiExhaustiveDrawReason.Normal.id,

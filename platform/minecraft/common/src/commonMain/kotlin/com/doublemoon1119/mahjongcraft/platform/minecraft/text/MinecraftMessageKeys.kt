@@ -399,22 +399,8 @@ object MinecraftMessageKeys {
 
     // ── 桌面中央局況顯示（見 `MahjongRoundInfoEntityRenderer`） ────────────────
 
-    /**
-     * 局況顯示標題行，依序帶場風顯示文字（一個 `%s`，見上方 `TILE_HONOR_*`）、場風內局數（一個
-     * `%d`）、本場數（一個 `%d`，對應 `TableState.comboCount`：日麻本場數、台麻連幾）三個參數——
-     * 局數與本場數刻意合併成同一個 key、同一句翻譯，不是各自獨立 key 再由程式碼串接，因為「局數跟
-     * 本場之間該用什麼分隔（頓號、逗號、還是單純空格）」本身就是語言慣例的一部分，不同語系的自然
-     * 表達方式不一定相同，必須讓每個語系檔自己決定，不能寫死在程式碼裡。
-     */
-
     /** 局況顯示牌山剩餘張數，帶一個張數參數（一個 `%d`）。 */
     const val ROUND_INFO_WALL_REMAINING = "mahjongcraft.message.round_info_wall_remaining"
-
-    /**
-     * 局況顯示的累積供託數量行，帶一個數量參數（一個 `%d`）——對應規則自訂顯示項目 key（日麻是
-     * `riichiStickPot`），只有支援供託概念的規則會貢獻這個項目，並由各自的 Minecraft 局況 provider
-     * 建立資料。
-     */
 
     /** 牌面角落輔助標籤（給非中文圈玩家看的數字/字母）切換訊息的前綴，後面接切換前後的狀態文字。 */
     const val TILE_LABELS_TOGGLE_PREFIX = "mahjongcraft.message.tile_labels_toggle_prefix"

@@ -42,9 +42,7 @@ class ShowcaseFormationLayout(
     /**
      * 爆炸後飛回編隊的順序：x 較大的先動；x 相同時和牌張排在後面。
      *
-     * 每張卡片各佔一個順位，同一翼中重複的 order 也不合併。
-     *
-     * @property returnOrder 每張手牌及（若納入）和牌張的歸位次序。
+     * 每張卡片各佔一個順位，同一翼中重複的 order 也不合併；包含每張手牌及（若納入）和牌張。
      */
     val returnOrder: List<ShowcaseCardSlot> = buildList {
         wingCardOrders.forEachIndexed { wingIndex, orders ->
