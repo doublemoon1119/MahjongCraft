@@ -244,6 +244,8 @@ class StressTestController(
                     intervalMillis = tickInterval?.toDouble(DurationUnit.MILLISECONDS),
                 )
                 if (stopReason != null) stopRun(stopReason)?.let { report -> notifyStarter(server, current.starterId, report) }
+            } catch (cancelled: CancellationException) {
+                throw cancelled
             } catch (error: Exception) {
                 logger.error("Stress test tick failed; stopping the stress test", error)
                 stopRun(StressStopReason.RUN_FAILED)?.let { report -> notifyStarter(server, current.starterId, report) }

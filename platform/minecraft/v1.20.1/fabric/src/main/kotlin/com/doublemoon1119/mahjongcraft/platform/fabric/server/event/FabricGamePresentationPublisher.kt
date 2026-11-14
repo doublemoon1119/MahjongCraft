@@ -1166,6 +1166,8 @@ class FabricGamePresentationPublisher(
                         c = resolved.tableState.continuingWinPresentationBusyUntilGameTime,
                     )
                     block(resolved, state, startAt)
+                } catch (cancelled: CancellationException) {
+                    throw cancelled
                 } catch (cause: Exception) {
                     logger.warn("Failed to run {} for gameId={}", operation, gameId, cause)
                 }
