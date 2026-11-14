@@ -29,6 +29,10 @@
 - **Line length**: Try to keep lines within about 140 characters. No tool enforces this. When a line grows
   longer, wrap it where it reads naturally, for example by extracting a well-named local value, breaking
   after `=`, or putting each condition on its own line. A long string literal may stay on a line of its own.
+- **Named arguments**: When a call's argument list spans several lines, name every argument. The
+  `MultilineCallArgumentName` detekt rule checks this. Vararg elements, trailing lambdas, calls to Java
+  functions and function types, and the single argument of `require`, `check`, `requireNotNull`,
+  `checkNotNull` and `error` are exempt.
 - **Test Framework**: **JUnit is strictly forbidden**. Only `kotlin.test.Test` is allowed.
 - **Test Naming**: Test method names must use backtick format, e.g., ``
   `test sorting with different regional orders` ``.
