@@ -128,6 +128,7 @@ class ComponentLifecycleTest {
                 ownerType = BuiltInComponentOwners.TILE,
                 owner = tile,
                 previousTableState = null,
+                random = null,
             ),
             components = ComponentSet.EMPTY.with(tileValue, 1),
         )
@@ -191,6 +192,7 @@ class ComponentLifecycleTest {
         ownerType = BuiltInComponentOwners.TABLE,
         owner = table,
         previousTableState = table.takeIf { previous },
+        random = null,
     )
 
     /**

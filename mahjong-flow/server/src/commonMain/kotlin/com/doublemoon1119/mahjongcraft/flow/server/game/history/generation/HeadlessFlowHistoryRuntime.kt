@@ -7,6 +7,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameConfig
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.MatchSettlementPresentationRequest
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinCelebrationRequest
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementPresentationRequest
+import com.doublemoon1119.mahjongcraft.flow.common.game.random.MatchSeed
 import com.doublemoon1119.mahjongcraft.flow.common.game.repository.GameSnapshotRepository
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.DecisionTimerUpdate
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.DecisionTimerUpdatePublisher
@@ -141,6 +142,7 @@ class HeadlessFlowHistoryRuntime private constructor(
          * @param stepTimer 累計 AI 視角快照、策略思考與快照同步耗時，以及過期 AI 決策數的計時器；null 時不量測。歷史記錄耗時由
          *   [store] 自己的觀察者量測。
          * @param decisionExecutor 呼叫 AI 策略的執行器，由呼叫端決定排程方式與擴充失敗判斷。
+         * @param matchSeed 指定對局種子以重現同一場對局；null 時以安全亂數產生。
          * @return 已開局且可逐步推進的 runtime。
          */
         suspend fun create(
@@ -152,6 +154,7 @@ class HeadlessFlowHistoryRuntime private constructor(
             ),
             stepTimer: HeadlessStepTimer? = null,
             decisionExecutor: AiDecisionExecutor,
+            matchSeed: MatchSeed? = null,
         ): HeadlessFlowHistoryRuntime {
             val gameRepository = GameRepositoryImpl(store, AuthoritativeComponentValidatorImpl(registries.moduleRegistry, registries.componentRegistry))
             val roomRepository = RoomRepositoryImpl(store)
@@ -321,7 +324,7 @@ class HeadlessFlowHistoryRuntime private constructor(
             val config = GameConfig(ruleConfig = scenario.ruleConfig)
             check(create(venueId, host, config, hostAiStrategyKey = BuiltInAiStrategyKeys.BEGINNER) is Outcome.Success)
             repeat(scenario.ruleConfig.maxPlayers - 1) { check(addAi(venueId, host, BuiltInAiStrategyKeys.BEGINNER) is Outcome.Success) }
-            val started = start(venueId, host)
+            val started = start(roomId = venueId, operatorId = host, matchSeed = matchSeed)
             check(started is Outcome.Success) { "Headless history runtime failed to start game: $started" }
             val id = started.value
             val game = checkNotNull(store.getGame(id))

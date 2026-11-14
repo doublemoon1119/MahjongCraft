@@ -15,6 +15,7 @@ import com.doublemoon1119.mahjongcraft.flow.persistence.format.game.toDomain
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.game.toEnabledAutomaticControlIdsByPlayerId
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.game.toForcedAutoPlayPlayerIds
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.game.toInterruptedBaseByPlayerId
+import com.doublemoon1119.mahjongcraft.flow.persistence.format.game.toMatchSeed
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.game.toPersistenceDto
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.game.toRemainingReserveByPlayerId
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.game.toRuntimeStatePersistenceDto
@@ -123,6 +124,8 @@ fun AuthoritativeStatePersistenceDto.toGames(
         interruptedBaseByPlayerId = runtimeState.toInterruptedBaseByPlayerId(),
         matchId = Uuid.parse(runtimeState.matchId),
         roomAdmission = runtimeState.roomAdmission.toDomain(),
+        matchSeed = runtimeState.toMatchSeed(),
+        openedRoundCount = runtimeState.openedRoundCount,
     )
 }
 

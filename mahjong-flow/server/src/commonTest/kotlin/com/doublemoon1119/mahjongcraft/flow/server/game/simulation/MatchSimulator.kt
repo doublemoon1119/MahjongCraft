@@ -4,6 +4,7 @@ import com.doublemoon1119.mahjongcraft.ai.BuiltInAiStrategyKeys
 import com.doublemoon1119.mahjongcraft.ai.MahjongAiStrategyRegistry
 import com.doublemoon1119.mahjongcraft.ai.MahjongAiStrategyRegistryImpl
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.PendingGameTransition
+import com.doublemoon1119.mahjongcraft.flow.common.game.random.MatchSeed
 import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.dispatchThenDrive
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
@@ -127,12 +128,15 @@ internal class MatchSimulator(
         val gameId = Uuid.random()
         val playerIds = lineup.map { Uuid.random() }
         val strategyKeysByPlayer = playerIds.zip(lineup).toMap()
+        val matchSeed = MatchSeed.generate()
+        val randomness = matchSeed.roundRandomness(roundOrdinal = 0)
         val initial = GameInitializer.initialize(
             id = gameId,
             playerIds = playerIds,
             module = runtime.moduleRegistry.getModule(config),
-        ).initializeRuleComponents(runtime.moduleRegistry.getModule(config).id, bundledCoreExtensionRegistries().componentRegistry).tableState
-        runtime.start(initial, strategyKeysByPlayer)
+            randomness = randomness,
+        ).initializeRuleComponents(runtime.moduleRegistry.getModule(config).id, bundledCoreExtensionRegistries().componentRegistry, random = randomness.components).tableState
+        runtime.start(initial, strategyKeysByPlayer, matchSeed)
 
         val problem = drive(runtime, gameId, recorder)
         val recordedRounds = runtime.gameRepository.rounds(gameId)
@@ -143,7 +147,7 @@ internal class MatchSimulator(
                 round = failingRound,
                 cause = cause,
                 trace = recorder.recent,
-                reproducedOnReplay = failingRound?.let { replayFails(it.start, strategyKeysByPlayer) },
+                reproducedOnReplay = failingRound?.let { replayFails(it.start, strategyKeysByPlayer, matchSeed) },
             )
         }
         val finalState = recordedRounds.last().final
@@ -162,12 +166,13 @@ internal class MatchSimulator(
      *
      * @param start 要重播的開局桌況。
      * @param aiPlayerStrategyKeys 玩家與策略 key 的對應。
+     * @param matchSeed 原對局的種子，讓之後換局的牌山與原對局相同。
      * @return 是否再次偵測到問題。
      */
-    private suspend fun replayFails(start: TableState, aiPlayerStrategyKeys: Map<Uuid, String>): Boolean {
+    private suspend fun replayFails(start: TableState, aiPlayerStrategyKeys: Map<Uuid, String>, matchSeed: MatchSeed): Boolean {
         val recorder = DecisionRecorder()
         val runtime = runtime(recorder)
-        runtime.start(start, aiPlayerStrategyKeys)
+        runtime.start(start, aiPlayerStrategyKeys, matchSeed)
         return drive(runtime, start.id, recorder) != null
     }
 

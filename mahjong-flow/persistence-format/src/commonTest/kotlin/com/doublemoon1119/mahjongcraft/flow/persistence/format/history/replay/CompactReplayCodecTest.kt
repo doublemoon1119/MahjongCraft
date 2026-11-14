@@ -31,6 +31,7 @@ import com.doublemoon1119.mahjongcraft.logic.table.opening.DiceRollSource
 import com.doublemoon1119.mahjongcraft.logic.table.opening.OpeningDiceRoll
 import com.doublemoon1119.mahjongcraft.logic.tile.component.TilePose
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledPersistenceRegistries
+import com.doublemoon1119.mahjongcraft.testing.logic.table.testRoundRandomness
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
@@ -57,9 +58,11 @@ class CompactReplayCodecTest {
             id = Uuid.random(),
             playerIds = playerIds,
             module = RiichiRuleModule("test:riichi", RiichiRuleConfig()),
-            diceRollSource = DiceRollSource {
-                DiceRollResult.of(List(it) { 1 })
-            },
+            randomness = testRoundRandomness(
+                dice = DiceRollSource {
+                    DiceRollResult.of(List(it) { 1 })
+                },
+            ),
         ).tableState
         val table = base.copy(players = base.players.reversed())
         val first = OpeningDiceRoll(0, table.players[0].id, DiceRollResult.of(listOf(2, 6)))
@@ -115,7 +118,7 @@ class CompactReplayCodecTest {
             id = Uuid.random(),
             playerIds = List(4) { Uuid.random() },
             module = RiichiRuleModule("test:riichi", RiichiRuleConfig()),
-            diceRollSource = DiceRollSource { DiceRollResult.of(List(it) { 1 }) },
+            randomness = testRoundRandomness(dice = DiceRollSource { DiceRollResult.of(List(it) { 1 }) }),
         ).tableState
         val discarder = base.players[0]
         val responder = base.players[1]
@@ -159,7 +162,7 @@ class CompactReplayCodecTest {
             id = Uuid.random(),
             playerIds = List(4) { Uuid.random() },
             module = RiichiRuleModule("test:riichi", RiichiRuleConfig()),
-            diceRollSource = DiceRollSource { DiceRollResult.of(List(it) { 1 }) },
+            randomness = testRoundRandomness(dice = DiceRollSource { DiceRollResult.of(List(it) { 1 }) }),
         ).tableState
         val tiles = state.players[0].hand.tiles.take(2)
         val shared = HistoryTilePresentation(null, ComponentViewSet.EMPTY, TilePose.UPRIGHT, HistoryTileAudience.Players(setOf(state.players[0].id)))
@@ -195,7 +198,7 @@ class CompactReplayCodecTest {
             id = Uuid.random(),
             playerIds = List(4) { Uuid.random() },
             module = RiichiRuleModule("test:riichi", RiichiRuleConfig()),
-            diceRollSource = DiceRollSource { DiceRollResult.of(List(it) { 1 }) },
+            randomness = testRoundRandomness(dice = DiceRollSource { DiceRollResult.of(List(it) { 1 }) }),
         ).tableState
         val (upright, faceDown) = state.players[0].hand.tiles.take(2)
         val audience = HistoryTileAudience.Players(setOf(state.players[0].id))

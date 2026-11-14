@@ -138,6 +138,10 @@ core extension behavior through one adapter. For example, see the Minecraft guid
 
 - Player seats and wall sides are separate. Use the complete match roster to place players; do not use
   online players, winners, a partial tile update, or the wall's side count as the player count.
+- A wall factory builds its wall, including every tile ID, only from the `Random` it receives. The same
+  source must produce the same wall, and other randomness would let players predict hidden tiles.
+- A component lifecycle that needs a random initial value uses `ComponentLifecycleContext.random`, which
+  exists only while a round opens or transitions. Records created during play get no randomness.
 - Wall creation and layout also receive the actual complete roster's player count. Use that same count
   when opening a round, starting the next one and reconstructing presentation. A rule's minimum or
   maximum allowed players is a constraint, not the number playing this match; do not add another room

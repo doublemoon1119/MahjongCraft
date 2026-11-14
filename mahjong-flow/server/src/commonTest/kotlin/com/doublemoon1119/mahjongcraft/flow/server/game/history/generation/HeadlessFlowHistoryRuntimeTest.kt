@@ -1,6 +1,7 @@
 package com.doublemoon1119.mahjongcraft.flow.server.game.history.generation
 
 import com.doublemoon1119.mahjongcraft.flow.common.error.ExtensionFailurePolicy
+import com.doublemoon1119.mahjongcraft.flow.common.game.random.MatchSeed
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.AiDecisionExecutor
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateStore
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanGameLength
@@ -17,11 +18,13 @@ import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertNotEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
+import kotlin.uuid.Uuid
 
 /** 驗證無頭真實 runtime 的完整場長流程與歷史背壓契約。 */
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -178,6 +181,17 @@ class HeadlessFlowHistoryRuntimeTest {
         assertEquals(before, runtime.store.snapshot().historyRecordingState.pendingEvents.size)
     }
 
+    /** 驗證同一個種子重現同一場對局：每一步的牌桌內容（牌張、牌河、分數）完全相同；只有房間與玩家 ID 每次不同。 */
+    @Test
+    fun `same match seed reproduces the whole match`() = runTest {
+        val seed = MatchSeed.fromByteArray(ByteArray(MatchSeed.SIZE_BYTES) { it.toByte() })
+        val first = recordMatch(seed)
+        val second = recordMatch(seed)
+        assertTrue(first.size > 1, "The match must advance through several steps.")
+        assertEquals(first, second)
+        assertNotEquals(openingWall(seed), openingWall(MatchSeed.fromByteArray(ByteArray(MatchSeed.SIZE_BYTES) { 1 })), "A different seed must deal a different wall.")
+    }
+
     /** 驗證收集取消不會確認或刪除尚未完成的來源批次。 */
     @Test
     fun `runner cancellation retains pending events`() = runTest {
@@ -195,6 +209,44 @@ class HeadlessFlowHistoryRuntimeTest {
         job.join()
         assertEquals(before, runtime.store.snapshot().historyRecordingState.pendingEvents.size)
     }
+
+    /**
+     * 以指定種子跑完一場東風戰，記下每一步的牌桌內容；玩家以座位表示，因為房間與玩家 ID 每次執行都不同。
+     *
+     * @param seed 對局種子。
+     * @return 依步驟排列的牌桌內容。
+     */
+    private suspend fun recordMatch(seed: MatchSeed): List<String> {
+        val runtime = HeadlessFlowHistoryRuntime.create(
+            scenario = HeadlessHistoryScenario.RIICHI_EAST,
+            registries = bundledHeadlessHistoryRegistries(),
+            decisionExecutor = AiDecisionExecutor.direct(failurePolicy = ExtensionFailurePolicy.Default),
+            matchSeed = seed,
+        )
+        val steps = mutableListOf<String>()
+        HeadlessHistoryMatchRunner(runtime).events().collect { progress ->
+            runtime.store.acknowledgeHistoryEvents(progress.events.map { it.matchId to it.sequence }.toSet())
+            runtime.currentGame()?.tableState?.let { table ->
+                steps += table.players.joinToString(separator = " | ") { player ->
+                    "${player.score}:${player.hand.allTiles.map { it.id }}:${player.discardPile.entries.map { it.tile.id }}"
+                } + " | wall=${table.tileWall.getAllTiles().map { it.id }}"
+            }
+        }
+        return steps
+    }
+
+    /**
+     * 以指定種子開局，取得第一局牌山的牌張 ID。
+     *
+     * @param seed 對局種子。
+     * @return 依摸牌順序排列的牌張 ID。
+     */
+    private suspend fun openingWall(seed: MatchSeed): List<Uuid> = HeadlessFlowHistoryRuntime.create(
+        scenario = HeadlessHistoryScenario.RIICHI_EAST,
+        registries = bundledHeadlessHistoryRegistries(),
+        decisionExecutor = AiDecisionExecutor.direct(failurePolicy = ExtensionFailurePolicy.Default),
+        matchSeed = seed,
+    ).currentGame().let(::checkNotNull).tableState.tileWall.getAllTiles().map { it.id }
 
     /**
      * 收集流程並在每批事件後確認完整事件交易。

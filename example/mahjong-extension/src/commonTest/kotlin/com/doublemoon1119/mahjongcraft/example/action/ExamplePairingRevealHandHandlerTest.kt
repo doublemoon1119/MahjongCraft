@@ -34,6 +34,7 @@ import com.doublemoon1119.mahjongcraft.testing.flow.common.game.service.FakeGame
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeIdentifiedTileFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
+import com.doublemoon1119.mahjongcraft.testing.logic.table.testRoundRandomness
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -146,7 +147,7 @@ class ExamplePairingRevealHandHandlerTest {
             players = listOf(player, other),
         )
         return GameInitializationResult(table, null, null)
-            .initializeRuleComponents(ExamplePairingIds.RULE_MODULE, exampleComponentRegistry()).tableState
+            .initializeRuleComponents(ExamplePairingIds.RULE_MODULE, exampleComponentRegistry(), random = testRoundRandomness().components).tableState
     }
 
     /**

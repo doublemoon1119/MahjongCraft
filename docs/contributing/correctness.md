@@ -32,6 +32,10 @@ build check for it.
   only in a way that keeps their relationships: whether two messages refer to the same tile, when an ID
   changes, and which position it is linked to, because a stable ID can itself reveal hidden information. This
   is a regression guard, not proof that nothing leaks.
+- Seat order, walls, tile IDs and dice come only from the round's `RoundRandomness`, which the server derives
+  from the match seed with HMAC-SHA256. Never use system randomness or `Uuid.random()` for them. The seed
+  stays in the authoritative game and the server save; it never enters table state, snapshots, network
+  data, events, history or log output, and no screen or command shows it.
 
 ## Progress and failure
 

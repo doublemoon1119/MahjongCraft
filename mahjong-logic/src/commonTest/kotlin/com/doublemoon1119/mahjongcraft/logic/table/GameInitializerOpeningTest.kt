@@ -12,6 +12,7 @@ import com.doublemoon1119.mahjongcraft.logic.table.opening.RoundOpeningProcedure
 import com.doublemoon1119.mahjongcraft.logic.table.opening.RoundOpeningStep
 import com.doublemoon1119.mahjongcraft.logic.table.opening.WallOpening
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
+import com.doublemoon1119.mahjongcraft.testing.logic.table.testRoundRandomness
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -45,7 +46,7 @@ class GameInitializerOpeningTest {
             id = Uuid.random(),
             playerIds = playerIds,
             module = module(procedure),
-            diceRollSource = fixedDiceSource,
+            randomness = testRoundRandomness(dice = fixedDiceSource),
         )
 
         assertEquals(playerIds.toSet(), result.tableState.players.map { it.id }.toSet())
@@ -68,7 +69,7 @@ class GameInitializerOpeningTest {
                 id = Uuid.random(),
                 playerIds = List(4) { Uuid.random() },
                 module = module(procedure),
-                diceRollSource = fixedDiceSource,
+                randomness = testRoundRandomness(dice = fixedDiceSource),
             )
         }
     }
@@ -85,7 +86,7 @@ class GameInitializerOpeningTest {
                 id = Uuid.random(),
                 playerIds = List(4) { Uuid.random() },
                 module = module(procedure),
-                diceRollSource = fixedDiceSource,
+                randomness = testRoundRandomness(dice = fixedDiceSource),
             )
         }
     }
@@ -102,7 +103,7 @@ class GameInitializerOpeningTest {
                 id = Uuid.random(),
                 playerIds = List(4) { Uuid.random() },
                 module = module(procedure),
-                diceRollSource = fixedDiceSource,
+                randomness = testRoundRandomness(dice = fixedDiceSource),
             )
         }
     }
@@ -124,7 +125,7 @@ class GameInitializerOpeningTest {
             id = Uuid.random(),
             playerIds = playerIds,
             module = module(procedure),
-            diceRollSource = DiceRollSource { error("zero-roll opening must not call the dice source") },
+            randomness = testRoundRandomness(dice = DiceRollSource { error("zero-roll opening must not call the dice source") }),
         )
 
         assertEquals(emptyList(), result.tableState.openingDiceRolls)
@@ -157,7 +158,7 @@ class GameInitializerOpeningTest {
                 gameId = Uuid.random(),
                 roundAdvancement = advancement,
                 module = module(procedure),
-                diceRollSource = fixedDiceSource,
+                randomness = testRoundRandomness(dice = fixedDiceSource),
             )
         }
     }

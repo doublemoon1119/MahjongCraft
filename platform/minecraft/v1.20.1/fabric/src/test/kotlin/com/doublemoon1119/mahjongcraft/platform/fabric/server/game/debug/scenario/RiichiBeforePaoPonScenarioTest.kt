@@ -19,6 +19,7 @@ import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledCoreExtension
 import com.doublemoon1119.mahjongcraft.testing.logic.rules.riichi.riichiDeclarationComponents
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
+import kotlin.random.Random
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -123,7 +124,7 @@ class RiichiBeforePaoPonScenarioTest {
             state.tileWall.getAllTiles() + state.reservedWallTiles
 
         assertEquals(placed.size, placed.map { it.id }.toSet().size)
-        assertEquals(module.createWallFactory(module.config.maxPlayers).create().getAllTiles().size, placed.size)
+        assertEquals(module.createWallFactory(module.config.maxPlayers).create(Random(0)).getAllTiles().size, placed.size)
     }
 
     /**

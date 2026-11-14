@@ -22,6 +22,7 @@ fun TableState.requireRegisteredComponents(ruleModuleId: String, registry: Compo
                 ownerType = ownerType,
                 owner = owner,
                 previousTableState = null,
+                random = null,
             ),
             components = values,
         )

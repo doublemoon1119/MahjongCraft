@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.scenario
 
+import com.doublemoon1119.mahjongcraft.flow.common.game.random.MatchSeed
 import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
@@ -59,7 +60,7 @@ class DebugGameScenarioValidator(
             validateInitialRoundPresentation(candidate.tableState, presentation)
         }
 
-        val expectedCounts = module.createWallFactory(module.config.maxPlayers).create().getAllTiles().groupingBy { it.tile }.eachCount()
+        val expectedCounts = module.createWallFactory(module.config.maxPlayers).create(MatchSeed.generate().roundRandomness(roundOrdinal = 0).wall).getAllTiles().groupingBy { it.tile }.eachCount()
         val actualCounts = allTiles.groupingBy { it.tile }.eachCount()
         require(actualCounts == expectedCounts) { "Debug scenario tile multiset does not match its rule config" }
 

@@ -30,6 +30,7 @@ import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
 import com.doublemoon1119.mahjongcraft.logic.table.GameInitializer
 import com.doublemoon1119.mahjongcraft.testing.flow.common.game.repository.FakeGameSnapshotRepository
 import com.doublemoon1119.mahjongcraft.testing.flow.common.game.service.FakeGamePresentationPublisher
+import com.doublemoon1119.mahjongcraft.testing.logic.table.testRoundRandomness
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -48,8 +49,8 @@ class ExamplePairingRuleDecisionUseCaseTest {
         val config = ExamplePairingRuleConfig(exchangeEnabled = true)
         val module = ExamplePairingRuleModule(ExamplePairingIds.RULE_MODULE, config)
         val componentRegistry = exampleComponentRegistry()
-        val initialTable = GameInitializer.initialize(Uuid.random(), playerIds, module)
-            .initializeRuleComponents(module.id, componentRegistry).tableState
+        val initialTable = GameInitializer.initialize(Uuid.random(), playerIds, module, randomness = testRoundRandomness())
+            .initializeRuleComponents(module.id, componentRegistry, random = testRoundRandomness().components).tableState
         val store = AuthoritativeStateStore(historyRecordingEnabled = true, maxPendingHistoryEvents = 100)
         val game = Game(
             tableState = initialTable,

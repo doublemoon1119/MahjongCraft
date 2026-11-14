@@ -1,6 +1,7 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.scenario
 
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.Game
+import com.doublemoon1119.mahjongcraft.flow.common.game.random.MatchSeed
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.base.Hand
 import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
@@ -122,7 +123,7 @@ internal class SeatSetupScenario(
         val module = riichiFamilyScenarioModule(currentGame, multiRonPolicy, rule)
         val config = module.config
         val opening = DEFAULT_WALL_OPENING
-        val inventory = module.createWallFactory(module.config.maxPlayers).create().getAllTiles()
+        val inventory = module.createWallFactory(module.config.maxPlayers).create(MatchSeed.generate().roundRandomness(roundOrdinal = 0).wall).getAllTiles()
             .map { tile -> if (tile.tile in publicFaceTiles) DebugPublicFaceTiles.mark(tile) else tile }
             .sortedBy { it.tile.stableSortKey() }
         val availableTiles = inventory.toMutableList()

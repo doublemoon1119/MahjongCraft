@@ -3,6 +3,7 @@ package com.doublemoon1119.mahjongcraft.flow.persistence.format.state
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.Game
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameConfig
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameFlowConfig
+import com.doublemoon1119.mahjongcraft.flow.common.game.random.MatchSeed
 import com.doublemoon1119.mahjongcraft.flow.common.room.model.Room
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.core.PersistenceEnvelopeDto
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.core.persistenceJson
@@ -224,6 +225,29 @@ class AuthoritativeStatePersistenceDtoTest {
         ).getValue(game.id)
 
         assertEquals(mapOf(playerId to "example:strategy"), restored.aiPlayerStrategyKeys)
+    }
+
+    /** 驗證對局種子與已開局數會隨權威遊戲保存及恢復，伺服器重開後接著打仍使用同一串亂數。 */
+    @Test
+    fun `match seed and opened round count round-trip`() {
+        val seed = MatchSeed.fromByteArray(ByteArray(MatchSeed.SIZE_BYTES) { (it * 3).toByte() })
+        val game = Game(tableState = createGame(), flowConfig = GameFlowConfig(), matchSeed = seed, openedRoundCount = 5)
+        val state = createAuthoritativeStatePersistenceDto(
+            rooms = emptyList(),
+            games = listOf(game),
+            registries = bundledPersistenceRegistries(),
+        )
+
+        val restored = state.toGames(
+            ruleConfigRegistry = ruleConfigRegistry,
+            discardPileRegistry = discardPileRegistry,
+            exhaustiveDrawReasonRegistry = exhaustiveDrawReasonRegistry,
+            extensionGameActionRegistry = extensionGameActionRegistry,
+            componentRegistry = bundledPersistenceRegistries().components,
+        ).getValue(game.id)
+
+        assertEquals(seed, restored.matchSeed)
+        assertEquals(5, restored.openedRoundCount)
     }
 
     /** 驗證本局自動操作控制會隨權威遊戲保存及恢復。 */

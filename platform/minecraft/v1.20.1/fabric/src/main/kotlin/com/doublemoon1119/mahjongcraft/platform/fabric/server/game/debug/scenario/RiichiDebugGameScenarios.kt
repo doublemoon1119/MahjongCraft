@@ -1,6 +1,7 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.scenario
 
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.Game
+import com.doublemoon1119.mahjongcraft.flow.common.game.random.MatchSeed
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.base.Hand
 import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
@@ -110,7 +111,7 @@ private object RiichiBeforeSuuchaRiichiScenario : DebugGameScenario {
         val config = scenarioConfig(currentGame)
         val module = RiichiRuleModule(BuiltInRuleModuleIds.RIICHI, config)
         val opening = DEFAULT_WALL_OPENING
-        val inventory = module.createWallFactory(module.config.maxPlayers).create().getAllTiles().sortedBy { it.tile.stableSortKey() }
+        val inventory = module.createWallFactory(module.config.maxPlayers).create(MatchSeed.generate().roundRandomness(roundOrdinal = 0).wall).getAllTiles().sortedBy { it.tile.stableSortKey() }
         val availableTiles = inventory.toMutableList()
         val invokingStandingTiles = takeTiles(
             tiles = availableTiles,
@@ -223,7 +224,7 @@ private object RiichiBeforePaoPonScenario : DebugGameScenario {
         val config = scenarioConfig(currentGame)
         val module = RiichiRuleModule(BuiltInRuleModuleIds.RIICHI, config)
         val opening = DEFAULT_WALL_OPENING
-        val inventory = module.createWallFactory(module.config.maxPlayers).create().getAllTiles().sortedBy { it.tile.stableSortKey() }
+        val inventory = module.createWallFactory(module.config.maxPlayers).create(MatchSeed.generate().roundRandomness(roundOrdinal = 0).wall).getAllTiles().sortedBy { it.tile.stableSortKey() }
         val availableTiles = inventory.toMutableList()
         val invokingMelds = PAO_INVOKING_MELD_TILES.map { tile ->
             val tiles = takeTiles(availableTiles, List(3) { tile })
@@ -406,7 +407,7 @@ private class RiichiBeforeAnkanScenario(
 
         val config = scenarioConfig(currentGame)
         val module = RiichiRuleModule(BuiltInRuleModuleIds.RIICHI, config)
-        val inventory = module.createWallFactory(module.config.maxPlayers).create().getAllTiles().sortedBy { it.tile.stableSortKey() }
+        val inventory = module.createWallFactory(module.config.maxPlayers).create(MatchSeed.generate().roundRandomness(roundOrdinal = 0).wall).getAllTiles().sortedBy { it.tile.stableSortKey() }
         val availableTiles = inventory.toMutableList()
         val requestedKanCount = completedKanCount + 1
         val kanGroups = selectCompleteGroups(availableTiles, requestedKanCount)

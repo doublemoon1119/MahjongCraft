@@ -32,6 +32,8 @@ import com.doublemoon1119.mahjongcraft.logic.table.opening.RoundOpeningStep
 import com.doublemoon1119.mahjongcraft.logic.table.opening.WallOpening
 import com.doublemoon1119.mahjongcraft.logic.tile.TileComposition
 import com.doublemoon1119.mahjongcraft.logic.tile.TileCompositionEntry
+import com.doublemoon1119.mahjongcraft.testing.logic.table.testRoundRandomness
+import kotlin.random.Random
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
@@ -48,6 +50,7 @@ class GameInitializerPlayerCountTest {
                 id = Uuid.random(),
                 playerIds = List(playerCount) { Uuid.random() },
                 module = module,
+                randomness = testRoundRandomness(),
             )
 
             assertEquals(expectedTileCount - playerCount, result.tableState.tileWall.remainingCount)
@@ -81,6 +84,7 @@ class GameInitializerPlayerCountTest {
                 gameId = Uuid.random(),
                 roundAdvancement = advancement,
                 module = module,
+                randomness = testRoundRandomness(),
             )
 
             assertEquals(expectedTileCount - playerCount, result.tableState.tileWall.remainingCount)
@@ -181,7 +185,7 @@ class GameInitializerPlayerCountTest {
             },
         )
 
-        override fun create(): TileWall = TileWall(
+        override fun create(random: Random): TileWall = TileWall(
             tiles = List(playerCount * 8) { index ->
                 IdentifiedTile(Uuid.random(), Tile.Numeric(Tile.Suit.Character, (index % 9) + 1))
             },

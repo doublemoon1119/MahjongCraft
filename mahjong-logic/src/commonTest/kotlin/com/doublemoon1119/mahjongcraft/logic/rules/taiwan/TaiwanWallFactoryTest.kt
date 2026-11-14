@@ -1,6 +1,7 @@
 package com.doublemoon1119.mahjongcraft.logic.rules.taiwan
 
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.tile.TaiwanTileTypes
+import kotlin.random.Random
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -21,7 +22,7 @@ class TaiwanWallFactoryTest {
     fun `test taiwan wall composition with flowers`() {
         val config = TaiwanRuleConfig(useFlowerTiles = true)
         val factory = TaiwanWallFactory(config)
-        val wall = factory.create()
+        val wall = factory.create(Random(0))
 
         // 136 (基礎) + 8 (花牌) = 144
         assertEquals(144, wall.remainingCount)
@@ -41,7 +42,7 @@ class TaiwanWallFactoryTest {
     fun `test taiwan wall composition without flowers`() {
         val config = TaiwanRuleConfig(useFlowerTiles = false)
         val factory = TaiwanWallFactory(config)
-        val wall = factory.create()
+        val wall = factory.create(Random(0))
 
         // 僅 136 張基礎牌
         assertEquals(136, wall.remainingCount)

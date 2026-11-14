@@ -77,6 +77,7 @@ import com.doublemoon1119.mahjongcraft.testing.flow.common.game.service.FakeGame
 import com.doublemoon1119.mahjongcraft.testing.flow.common.game.service.FakeGamePresentationPublisher
 import com.doublemoon1119.mahjongcraft.testing.flow.common.room.service.FakeRoomEventPublisher
 import com.doublemoon1119.mahjongcraft.testing.logic.rules.riichi.riichiDeclarationComponents
+import com.doublemoon1119.mahjongcraft.testing.logic.table.testRoundRandomness
 import kotlinx.coroutines.test.runTest
 import net.minecraft.nbt.NbtCompound
 import kotlin.test.Test
@@ -532,7 +533,8 @@ class AuthoritativeStateRecoveryIntegrationTest {
             id = Uuid.random(),
             playerIds = playerIds,
             module = moduleRegistry.getModule(RiichiRuleConfig()),
-        ).initializeRuleComponents(moduleRegistry.getModule(RiichiRuleConfig()).id, bundledCoreExtensionRegistries().componentRegistry).tableState
+            randomness = testRoundRandomness(),
+        ).initializeRuleComponents(moduleRegistry.getModule(RiichiRuleConfig()).id, bundledCoreExtensionRegistries().componentRegistry, random = testRoundRandomness().components).tableState
 
         /**
          * 將單一牌桌狀態包裝成權威 snapshot，可選帶上進行中的規則選擇步驟與 AI 玩家。

@@ -170,13 +170,16 @@ class AdvanceRoundUseCase(
                                 error = GameError.InvalidMatchProgression(gameId, error.message ?: error::class.simpleName.orEmpty()),
                             )
                         }
+                        val randomness = game.matchSeed.roundRandomness(roundOrdinal = game.openedRoundCount)
                         val initializationResult = GameInitializer.startNextRound(
                             gameId = gameId,
                             roundAdvancement = roundAdvancement,
                             module = module,
+                            randomness = randomness,
                         ).initializeRuleComponents(
                             ruleModuleId = module.id,
                             registry = componentRegistry,
+                            random = randomness.components,
                             previousTableState = state,
                         )
                         val dealtState = initializationResult.tableState
@@ -204,6 +207,7 @@ class AdvanceRoundUseCase(
                             tableState = newState,
                             enabledAutomaticControlIdsByPlayerId = emptyMap(),
                             automaticControlRevision = game.automaticControlRevision + 1L,
+                            openedRoundCount = game.openedRoundCount + 1,
                             pendingTransition = null,
                             roundCompletion = null,
                             matchEndReasonId = null,

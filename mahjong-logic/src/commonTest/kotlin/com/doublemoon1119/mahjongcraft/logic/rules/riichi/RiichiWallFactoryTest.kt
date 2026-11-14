@@ -4,6 +4,7 @@ import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.RiichiTileComponents
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.RiichiTileValues
 import com.doublemoon1119.mahjongcraft.logic.tile.component.BuiltInTileComponents
+import kotlin.random.Random
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
@@ -23,7 +24,7 @@ class RiichiWallFactoryTest {
     fun `test riichi wall composition with three red dora`() {
         val config = RiichiRuleConfig(redDoraCount = 3)
         val factory = RiichiWallFactory(config)
-        val wall = factory.create()
+        val wall = factory.create(Random(0))
 
         assertEquals(136, wall.remainingCount)
 
@@ -50,7 +51,7 @@ class RiichiWallFactoryTest {
     fun `test riichi wall composition with four red dora`() {
         val config = RiichiRuleConfig(redDoraCount = 4)
         val factory = RiichiWallFactory(config)
-        val wall = factory.create()
+        val wall = factory.create(Random(0))
 
         val allTiles = wall.getAllTiles()
         val redBySuit = allTiles.filter { it.components[RiichiTileComponents.RED_DORA] != null }

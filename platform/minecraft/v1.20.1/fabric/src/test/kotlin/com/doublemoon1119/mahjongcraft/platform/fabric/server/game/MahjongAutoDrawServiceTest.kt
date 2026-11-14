@@ -73,6 +73,7 @@ import com.doublemoon1119.mahjongcraft.testing.flow.common.room.repository.FakeR
 import com.doublemoon1119.mahjongcraft.testing.flow.common.room.service.FakeRoomEventPublisher
 import com.doublemoon1119.mahjongcraft.testing.flow.server.RuleDecisionTestUseCases
 import com.doublemoon1119.mahjongcraft.testing.flow.server.emptyRuleDecisionResolverRegistry
+import com.doublemoon1119.mahjongcraft.testing.logic.table.testRoundRandomness
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.test.runTest
@@ -330,8 +331,9 @@ class MahjongAutoDrawServiceTest {
             id = gameId,
             playerIds = playerIds,
             module = module,
+            randomness = testRoundRandomness(),
         )
-        gameRepo.setTableState(result.initializeRuleComponents(module.id, bundledCoreExtensionRegistries().componentRegistry).tableState)
+        gameRepo.setTableState(result.initializeRuleComponents(module.id, bundledCoreExtensionRegistries().componentRegistry, random = testRoundRandomness().components).tableState)
         if (dealerIsAi) {
             gameRepo.updateGame(gameId) { game -> game!!.copy(aiPlayerStrategyKeys = playerIds.associateWith { RandomAiStrategy.KEY }) to Unit }
         }
@@ -470,9 +472,10 @@ class MahjongAutoDrawServiceTest {
             id = gameId,
             playerIds = playerIds,
             module = module,
+            randomness = testRoundRandomness(),
         )
         val remainingReservedIds = initializationResult.tableState.reservedWallTiles.mapTo(mutableSetOf()) { it.id }
-        val initialized = initializationResult.initializeRuleComponents(module.id, bundledCoreExtensionRegistries().componentRegistry).tableState
+        val initialized = initializationResult.initializeRuleComponents(module.id, bundledCoreExtensionRegistries().componentRegistry, random = testRoundRandomness().components).tableState
         val emptyWallState = initialized.copy(
             tileWall = TileWall(emptyList()),
             physicalWallLayout = initializationResult.tableState.physicalWallLayout?.retainOnly(remainingReservedIds),

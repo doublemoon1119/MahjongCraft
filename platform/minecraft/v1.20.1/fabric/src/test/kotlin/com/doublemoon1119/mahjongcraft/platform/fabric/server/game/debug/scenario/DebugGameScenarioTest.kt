@@ -27,6 +27,8 @@ import com.doublemoon1119.mahjongcraft.logic.table.opening.WallOpening
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledCoreExtensionRegistries
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.registerBundledRuleModules
 import com.doublemoon1119.mahjongcraft.testing.flow.common.game.service.FakeGamePresentationPublisher
+import com.doublemoon1119.mahjongcraft.testing.logic.table.testRoundRandomness
+import kotlin.random.Random
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -262,7 +264,7 @@ class DebugGameScenarioTest {
         val fixture = createFixture()
         val registry = DebugGameScenarioRegistry()
         val templateModule = RiichiRuleModule("mahjongcraft:riichi", RiichiRuleConfig())
-        val templateTiles = templateModule.createWallFactory(templateModule.config.maxPlayers).create().getAllTiles()
+        val templateTiles = templateModule.createWallFactory(templateModule.config.maxPlayers).create(Random(0)).getAllTiles()
         val template = templateModule.createWallLayout(templateModule.config.maxPlayers).resolve(templateTiles, WallOpening(0, 8))
         val templateLivePositions = template.drawOrder.map { template.structure.getValue(it.id) }
         val templateReservedPositions = template.reservedWallTiles.map { template.structure.getValue(it.id) }
@@ -424,6 +426,7 @@ class DebugGameScenarioTest {
             id = Uuid.random(),
             playerIds = playerIds,
             module = module,
+            randomness = testRoundRandomness(),
         )
         val game = Game(
             tableState = initialized.tableState,

@@ -3,11 +3,9 @@ package com.doublemoon1119.mahjongcraft.example.pairing
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.logic.base.TileValue
 import com.doublemoon1119.mahjongcraft.logic.component.ComponentSet
-import com.doublemoon1119.mahjongcraft.logic.table.TileWall
 import com.doublemoon1119.mahjongcraft.logic.table.TileWallFactory
 import com.doublemoon1119.mahjongcraft.logic.tile.TileComposition
 import com.doublemoon1119.mahjongcraft.logic.tile.TileCompositionEntry
-import kotlin.random.Random
 
 /**
  * 以選中的萬子點數建立簡易配對牌山，並檢查牌數足夠供完整玩家名單起手及摸牌。
@@ -15,16 +13,12 @@ import kotlin.random.Random
  * @property playerCount 本局完整玩家人數。
  * @property wallTileValues 加入牌山的一萬至八萬點數，每種四張。
  * @property publicFacesEnabled 是否讓每種點數的前三張帶公開牌面標記；第四張（含倒置一萬）保持普通。
- * @property random 用來洗牌的亂數來源。
  */
 class ExamplePairingWallFactory(
     private val playerCount: Int,
     private val wallTileValues: Set<Int> = (1..8).toSet(),
     private val publicFacesEnabled: Boolean = false,
-    private val random: Random = Random.Default,
 ) : TileWallFactory {
-    override fun create(): TileWall = composition().createWall(random)
-
     override fun composition(): TileComposition {
         require(wallTileValues.all { it in 1..8 }) { "Pairing wall values must be between 1 and 8" }
         require(playerCount in 2..4) { "Example pairing supports two to four players" }

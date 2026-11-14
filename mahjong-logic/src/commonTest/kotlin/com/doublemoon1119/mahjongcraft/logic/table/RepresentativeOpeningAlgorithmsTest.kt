@@ -16,6 +16,7 @@ import com.doublemoon1119.mahjongcraft.logic.table.opening.RoundOpeningProcedure
 import com.doublemoon1119.mahjongcraft.logic.table.opening.RoundOpeningStep
 import com.doublemoon1119.mahjongcraft.logic.table.opening.WallOpening
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
+import com.doublemoon1119.mahjongcraft.testing.logic.table.testRoundRandomness
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -36,7 +37,7 @@ class RepresentativeOpeningAlgorithmsTest {
                 id = Uuid.random(),
                 playerIds = playerIds,
                 module = module,
-                diceRollSource = queuedDiceSource(listOf(listOf(first, second))),
+                randomness = testRoundRandomness(dice = queuedDiceSource(listOf(listOf(first, second)))),
             ).tableState
 
             assertEquals(1, table.openingDiceRolls.size)
@@ -128,10 +129,12 @@ class RepresentativeOpeningAlgorithmsTest {
                 roundSerial = 1,
             ),
             module = module(twoRollSummedCutProcedure()) { drawOrder = it },
-            diceRollSource = queuedDiceSource(
-                values = listOf(
-                    listOf(3, 3),
-                    listOf(6, 6),
+            randomness = testRoundRandomness(
+                dice = queuedDiceSource(
+                    values = listOf(
+                        listOf(3, 3),
+                        listOf(6, 6),
+                    ),
                 ),
             ),
         )
@@ -163,7 +166,7 @@ class RepresentativeOpeningAlgorithmsTest {
                     roundSerial = 1,
                 ),
                 module = module(procedure),
-                diceRollSource = queuedDiceSource(listOf(listOf(2, 2))),
+                randomness = testRoundRandomness(dice = queuedDiceSource(listOf(listOf(2, 2)))),
             ).tableState
 
             assertEquals(1, result.openingDiceRolls.size)
@@ -193,7 +196,7 @@ class RepresentativeOpeningAlgorithmsTest {
             id = Uuid.random(),
             playerIds = List(4) { Uuid.random() },
             module = module(recordingProcedure) { drawOrder = it },
-            diceRollSource = queuedDiceSource(dice),
+            randomness = testRoundRandomness(dice = queuedDiceSource(dice)),
         ).tableState
         assertEquals(roster, table.players.map { it.id })
         assertEquals(table.dealerPlayerId, table.currentPlayer.id)

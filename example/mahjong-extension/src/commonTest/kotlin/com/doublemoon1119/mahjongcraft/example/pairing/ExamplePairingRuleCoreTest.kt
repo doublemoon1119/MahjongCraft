@@ -24,6 +24,8 @@ import com.doublemoon1119.mahjongcraft.logic.tile.component.TileRegion
 import com.doublemoon1119.mahjongcraft.logic.tile.component.resolveTileComponents
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
+import com.doublemoon1119.mahjongcraft.testing.logic.table.testRoundRandomness
+import kotlin.random.Random
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -43,7 +45,8 @@ class ExamplePairingRuleCoreTest {
             id = Uuid.random(),
             playerIds = listOf(Uuid.random(), Uuid.random()),
             module = module,
-        ).initializeRuleComponents(module.id, exampleComponentRegistry()).tableState
+            randomness = testRoundRandomness(),
+        ).initializeRuleComponents(module.id, exampleComponentRegistry(), random = testRoundRandomness().components).tableState
         val revealedPlayers = initial.players.map { it.copy(components = it.components.with(ExamplePairingComponents.HAND_REVEALED, Unit)) }
         val next = GameInitializer.startNextRound(
             gameId = initial.id,
@@ -56,7 +59,8 @@ class ExamplePairingRuleCoreTest {
                 roundSerial = 1,
             ),
             module = module,
-        ).initializeRuleComponents(module.id, exampleComponentRegistry(), initial.copy(players = revealedPlayers)).tableState
+            randomness = testRoundRandomness(),
+        ).initializeRuleComponents(module.id, exampleComponentRegistry(), testRoundRandomness().components, initial.copy(players = revealedPlayers)).tableState
 
         assertTrue(next.players.all { it.components[ExamplePairingComponents.HAND_REVEALED] == null })
         assertTrue(module.resolveTileComponents(next, exampleComponentRegistry()).filter { it.area.region == TileRegion.HAND || it.area.region == TileRegion.DRAWN }.all { it.pose == TilePose.UPRIGHT && !it.isPublic })
@@ -95,9 +99,9 @@ class ExamplePairingRuleCoreTest {
     /** 公開牌面關閉時沒有標記；開啟時每種點數剛好三張帶標記，第四張與倒置一萬保持普通。 */
     @Test
     fun `public faces mark three of four copies only when enabled`() {
-        assertTrue(ExamplePairingWallFactory(2, setOf(1, 2)).create().getAllTiles().none { it.components[ExamplePairingComponents.PUBLIC_FACE] != null })
+        assertTrue(ExamplePairingWallFactory(2, setOf(1, 2)).create(Random(0)).getAllTiles().none { it.components[ExamplePairingComponents.PUBLIC_FACE] != null })
 
-        val tiles = ExamplePairingWallFactory(2, setOf(1, 2), publicFacesEnabled = true).create().getAllTiles()
+        val tiles = ExamplePairingWallFactory(2, setOf(1, 2), publicFacesEnabled = true).create(Random(0)).getAllTiles()
 
         val marked = tiles.filter { it.components[ExamplePairingComponents.PUBLIC_FACE] != null }
         assertEquals(mapOf<Tile, Int>(Tile.Numeric(Tile.Suit.Character, 1) to 3, Tile.Numeric(Tile.Suit.Character, 2) to 3), marked.groupingBy { it.tile }.eachCount())
@@ -168,7 +172,7 @@ class ExamplePairingRuleCoreTest {
     fun `default wall size and wall side count follow player count`() {
         for ((playerCount, expectedSides) in listOf(2 to 2, 3 to 4, 4 to 4)) {
             val expectedTileCount = 32
-            val tiles = ExamplePairingWallFactory(playerCount).create().getAllTiles()
+            val tiles = ExamplePairingWallFactory(playerCount).create(Random(0)).getAllTiles()
             assertEquals(expectedTileCount, tiles.size)
             val layout = ExamplePairingWallLayout(playerCount)
             assertEquals(expectedSides, layout.sideArrangement(0).sideCount)
@@ -185,7 +189,7 @@ class ExamplePairingRuleCoreTest {
     /** 選取的牌面才會加入牌山，且倒置一萬只在選取一萬時出現。 */
     @Test
     fun `selected wall values control tile contents`() {
-        val tiles = ExamplePairingWallFactory(2, setOf(3, 4)).create().getAllTiles()
+        val tiles = ExamplePairingWallFactory(2, setOf(3, 4)).create(Random(0)).getAllTiles()
         assertEquals(8, tiles.size)
         assertEquals(4, tiles.count { it.tile == Tile.Numeric(Tile.Suit.Character, 3) })
         assertEquals(4, tiles.count { it.tile == Tile.Numeric(Tile.Suit.Character, 4) })
@@ -195,7 +199,7 @@ class ExamplePairingRuleCoreTest {
     /** 四面牌牆可用奇數種類分配成相對兩面較長的牌牆。 */
     @Test
     fun `odd selected wall values distribute across four sides`() {
-        val tiles = ExamplePairingWallFactory(4, (1..5).toSet()).create().getAllTiles()
+        val tiles = ExamplePairingWallFactory(4, (1..5).toSet()).create(Random(0)).getAllTiles()
         val layout = ExamplePairingWallLayout(4, 5)
         val result = layout.resolve(tiles, WallOpening(0, 1))
         assertEquals(20, result.structure.size)
@@ -208,7 +212,7 @@ class ExamplePairingRuleCoreTest {
     fun `all valid selected counts resolve every wall side`() {
         for (playerCount in 2..4) {
             for (valueCount in playerCount..8) {
-                val tiles = ExamplePairingWallFactory(playerCount, (1..valueCount).toSet()).create().getAllTiles()
+                val tiles = ExamplePairingWallFactory(playerCount, (1..valueCount).toSet()).create(Random(0)).getAllTiles()
                 val layout = ExamplePairingWallLayout(playerCount, valueCount)
                 for (side in 0 until layout.sideArrangement(0).sideCount) {
                     val result = layout.resolve(tiles, WallOpening(side, 1))
@@ -270,6 +274,22 @@ class ExamplePairingRuleCoreTest {
         assertEquals(10, result.settlement.paymentsByPlayerId[otherId])
     }
 
+    /** 加分牌只由開局提供的組件亂數決定：同一個亂數來源選出相同的牌，不同來源可選出不同的牌。 */
+    @Test
+    fun `round bonus tiles come from the round component random`() {
+        val module = ExamplePairingRuleModule(
+            id = ExamplePairingIds.RULE_MODULE,
+            config = ExamplePairingRuleConfig(wallTileValues = (1..8).toSet()),
+        )
+        val players = listOf(Uuid.random(), Uuid.random())
+        fun bonusTiles(seed: Int) = GameInitializer.initialize(Uuid.random(), players, module, randomness = testRoundRandomness(seed))
+            .initializeRuleComponents(module.id, exampleComponentRegistry(), random = testRoundRandomness(seed).components)
+            .tableState.components[ExamplePairingComponents.BONUS_TILES]
+
+        assertEquals(bonusTiles(seed = 1), bonusTiles(seed = 1))
+        assertTrue((2..20).any { seed -> bonusTiles(seed) != bonusTiles(seed = 1) }, "Different round randomness must be able to choose other bonus tiles.")
+    }
+
     /** 每局選出牌種數量比牌山少一種，自摸時每種加分牌只計一次；加分牌資料不交付觀察者。 */
     @Test
     fun `round bonus tiles are distinct and counted once per kind`() {
@@ -277,8 +297,8 @@ class ExamplePairingRuleCoreTest {
             id = ExamplePairingIds.RULE_MODULE,
             config = ExamplePairingRuleConfig(wallTileValues = setOf(1, 2, 3, 4)),
         )
-        val initial = GameInitializer.initialize(Uuid.random(), listOf(Uuid.random(), Uuid.random()), module)
-            .initializeRuleComponents(module.id, exampleComponentRegistry()).tableState
+        val initial = GameInitializer.initialize(Uuid.random(), listOf(Uuid.random(), Uuid.random()), module, randomness = testRoundRandomness())
+            .initializeRuleComponents(module.id, exampleComponentRegistry(), random = testRoundRandomness().components).tableState
         val randomlySelectedState = assertNotNull(initial.components[ExamplePairingComponents.BONUS_TILES])
         assertEquals(3, randomlySelectedState.values.size)
         assertTrue(randomlySelectedState.values.all { it in 1..4 })
@@ -286,7 +306,8 @@ class ExamplePairingRuleCoreTest {
             gameId = initial.id,
             roundAdvancement = RoundAdvancementResult(initial.players, initial.dealerPlayerId, 2, 0, initial.prevalentWind, roundSerial = 1),
             module = module,
-        ).initializeRuleComponents(module.id, exampleComponentRegistry(), initial).tableState
+            randomness = testRoundRandomness(),
+        ).initializeRuleComponents(module.id, exampleComponentRegistry(), testRoundRandomness().components, initial).tableState
         val nextRandomlySelectedState = assertNotNull(next.components[ExamplePairingComponents.BONUS_TILES])
         assertEquals(3, nextRandomlySelectedState.values.size)
         assertTrue(nextRandomlySelectedState.values.all { it in 1..4 })
@@ -344,8 +365,8 @@ class ExamplePairingRuleCoreTest {
             id = ExamplePairingIds.RULE_MODULE,
             config = ExamplePairingRuleConfig(wallTileValues = setOf(1, 2)),
         )
-        val initial = GameInitializer.initialize(Uuid.random(), listOf(Uuid.random(), Uuid.random()), module)
-            .initializeRuleComponents(module.id, exampleComponentRegistry()).tableState
+        val initial = GameInitializer.initialize(Uuid.random(), listOf(Uuid.random(), Uuid.random()), module, randomness = testRoundRandomness())
+            .initializeRuleComponents(module.id, exampleComponentRegistry(), random = testRoundRandomness().components).tableState
         val randomlySelectedState = assertNotNull(initial.components[ExamplePairingComponents.BONUS_TILES])
         assertEquals(1, randomlySelectedState.values.size)
         assertTrue(randomlySelectedState.values.all { it in 1..2 })

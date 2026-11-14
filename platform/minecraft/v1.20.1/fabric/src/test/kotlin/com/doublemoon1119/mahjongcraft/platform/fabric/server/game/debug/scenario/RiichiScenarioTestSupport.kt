@@ -23,6 +23,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.DebugMa
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.presentation.DebugWinRoundContinuationState
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledCoreExtensionRegistries
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.registerBundledRuleModules
+import com.doublemoon1119.mahjongcraft.testing.logic.table.testRoundRandomness
 import kotlin.uuid.Uuid
 
 /**
@@ -82,6 +83,7 @@ private fun createScenarioContext(
         id = Uuid.random(),
         playerIds = playerIds,
         module = module,
+        randomness = testRoundRandomness(),
     )
     val game = Game(
         tableState = initialized.tableState,

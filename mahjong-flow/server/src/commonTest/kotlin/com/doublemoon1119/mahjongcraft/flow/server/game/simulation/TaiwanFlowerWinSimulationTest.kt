@@ -3,6 +3,7 @@ package com.doublemoon1119.mahjongcraft.flow.server.game.simulation
 import com.doublemoon1119.mahjongcraft.ai.BuiltInAiStrategyKeys
 import com.doublemoon1119.mahjongcraft.ai.RandomAiStrategy
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.PendingGameTransition
+import com.doublemoon1119.mahjongcraft.flow.common.game.random.MatchSeed
 import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
 import com.doublemoon1119.mahjongcraft.logic.component.initializeRuleComponents
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanRuleConfig
@@ -12,6 +13,7 @@ import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.logic.table.TileWall
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledCoreExtensionRegistries
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.registerBuiltInAiStrategies
+import com.doublemoon1119.mahjongcraft.testing.logic.table.testRoundRandomness
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -70,8 +72,8 @@ class TaiwanFlowerWinSimulationTest {
             opponentModelRegistry = runtime.opponentModelRegistry,
         )
         val module = runtime.moduleRegistry.getModule(TaiwanRuleConfig())
-        val dealt = GameInitializer.initialize(id = Uuid.random(), playerIds = List(4) { Uuid.random() }, module = module)
-            .initializeRuleComponents(module.id, bundledCoreExtensionRegistries().componentRegistry)
+        val dealt = GameInitializer.initialize(id = Uuid.random(), playerIds = List(4) { Uuid.random() }, module = module, randomness = testRoundRandomness())
+            .initializeRuleComponents(module.id, bundledCoreExtensionRegistries().componentRegistry, random = testRoundRandomness().components)
             .tableState
         return runtime to dealt
     }
@@ -89,7 +91,7 @@ class TaiwanFlowerWinSimulationTest {
         key: String,
         state: TableState,
     ): Map<Uuid, Int> {
-        runtime.start(state, state.players.associate { it.id to key })
+        runtime.start(state, state.players.associate { it.id to key }, MatchSeed.generate())
         runtime.driveLikeServer(state.id)
         val firstRound = runtime.gameRepository.rounds(state.id).first().final
         return firstRound.players.associate { player -> player.id to player.score - state.players.first { it.id == player.id }.score }
