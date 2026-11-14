@@ -101,8 +101,10 @@ internal class HistoryRetentionService(
      */
     private suspend fun protectedMatchIds(): Set<String> {
         val snapshot = store.snapshot()
-        return snapshot.games.values.mapTo(mutableSetOf()) { it.matchId.toString() } +
-            snapshot.historyRecordingState.transfersByMatchId.keys.map { it.toString() } +
-            snapshot.historyRecordingState.pendingEvents.map { it.matchId.toString() }
+        return buildSet {
+            snapshot.games.values.mapTo(this) { it.matchId.toString() }
+            snapshot.historyRecordingState.transfersByMatchId.keys.mapTo(this) { it.toString() }
+            snapshot.historyRecordingState.pendingEvents.mapTo(this) { it.matchId.toString() }
+        }
     }
 }

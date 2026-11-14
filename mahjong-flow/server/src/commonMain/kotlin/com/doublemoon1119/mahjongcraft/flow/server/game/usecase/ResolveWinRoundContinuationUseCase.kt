@@ -16,7 +16,6 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.RuleDecisi
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.WinRoundContinuationResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepository
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameSnapshotSynchronizer
-import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DeclareTsumoUseCase
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import com.doublemoon1119.mahjongcraft.logic.table.RoundCompletionClassification
@@ -30,7 +29,7 @@ import kotlin.uuid.Uuid
  *
  * 呼叫時機：[GameFlowCoordinator][GameFlowCoordinator]
  * 偵測到這次成功指令為某些玩家新增了 [GameAction.Tsumo]／[GameAction.Ron] 記錄後呼叫一次——
- * 一炮多響已經在 `RonSettlementResolver` 收斂成單一結算，因此 [winnerPlayerIds] 在此時已包含這次
+ * 一炮多響已經在 `RonSettlementResolver` 收斂成單一結算，因此 `winnerPlayerIds` 在此時已包含這次
  * 一起成立的所有贏家，本用例只呼叫一次 [WinRoundContinuationResolverRegistry.resolve]。
  *
  * 只負責「本局要不要繼續」這個權威決策，不碰任何呈現：[WinRoundDirective.EndRound] 不修改任何桌況；

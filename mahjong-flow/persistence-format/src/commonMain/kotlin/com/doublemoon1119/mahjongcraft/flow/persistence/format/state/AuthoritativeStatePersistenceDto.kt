@@ -7,6 +7,7 @@ import com.doublemoon1119.mahjongcraft.flow.persistence.format.game.TableStatePe
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.HistoryRecordingPersistenceDto
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.room.RoomPersistenceDto
 import com.doublemoon1119.mahjongcraft.logic.module.requireValidAutomaticControlIds
+import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import kotlinx.serialization.Serializable
 
 /**

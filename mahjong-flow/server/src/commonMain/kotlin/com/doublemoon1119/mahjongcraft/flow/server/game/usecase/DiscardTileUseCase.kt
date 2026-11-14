@@ -21,7 +21,6 @@ import com.doublemoon1119.mahjongcraft.logic.config.RonResolution
 import com.doublemoon1119.mahjongcraft.logic.judgment.LegalActionContext
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
-import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.logic.table.WallRevealCheckpoint
 import kotlin.uuid.Uuid
 
@@ -249,8 +248,5 @@ class DiscardTileUseCase(
      */
     private data class DiscardResult(
         val resolution: DiscardReactionResolver.Result,
-    ) {
-        /** 更新後的權威桌況。 */
-        val tableState: TableState get() = resolution.tableState
-    }
+    )
 }

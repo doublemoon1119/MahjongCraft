@@ -92,7 +92,11 @@ class TaiwanOpponentModel(
         }
         val flowers = player.tileAreas.firstOrNull { it.id == TaiwanPlayerTileAreaIds.FLOWERS }?.tiles.orEmpty().mapNotNull { it.tile }
         val flowerTai = calculateTaiwanFlowerTai(flowers, player.seatWind).sumOf { it.tai }
-        val valuedHonors = DRAGONS + windTile(player.seatWind) + windTile(view.snapshot.prevalentWind)
+        val valuedHonors = buildList {
+            addAll(DRAGONS)
+            add(windTile(player.seatWind))
+            add(windTile(view.snapshot.prevalentWind))
+        }
         val honorTai = player.hand.melds.sumOf { meld ->
             val tiles = meld.tiles.mapNotNull { it.tile }.distinct()
             val honor = tiles.singleOrNull()?.takeIf { meld.type != MeldType.Chi } ?: return@sumOf 0

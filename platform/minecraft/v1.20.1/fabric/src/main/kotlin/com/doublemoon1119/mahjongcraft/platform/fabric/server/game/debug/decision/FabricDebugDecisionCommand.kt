@@ -595,9 +595,11 @@ class FabricDebugDecisionCommand(
         private fun analysis(discardTileId: String): DiscardReadinessAnalysisDto {
             val tiles = when (this) {
                 DISCARD_MANY_WAITS ->
-                    (1..9).map { TileDto.Numeric(SuitDto.CHARACTER, it) } +
-                        listOf(1, 9).map { TileDto.Numeric(SuitDto.DOT, it) } +
-                        listOf(1, 9).map { TileDto.Numeric(SuitDto.BAMBOO, it) }
+                    buildList {
+                        (1..9).mapTo(this) { TileDto.Numeric(SuitDto.CHARACTER, it) }
+                        listOf(1, 9).mapTo(this) { TileDto.Numeric(SuitDto.DOT, it) }
+                        listOf(1, 9).mapTo(this) { TileDto.Numeric(SuitDto.BAMBOO, it) }
+                    }
                 TAIWAN_DISCARD_MIXED -> listOf(2, 4, 6, 8).map { TileDto.Numeric(SuitDto.CHARACTER, it) }
                 else -> listOf(2, 5, 8).map { TileDto.Numeric(SuitDto.CHARACTER, it) }
             }

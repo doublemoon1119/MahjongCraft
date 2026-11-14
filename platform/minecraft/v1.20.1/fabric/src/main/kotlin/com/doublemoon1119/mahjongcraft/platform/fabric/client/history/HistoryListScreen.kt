@@ -184,14 +184,6 @@ internal class HistoryListScreen(
     /** 取得目前排序方向的按鈕文字。 */
     private fun directionText(): Text = Text.translatable(session.controller.state.value.query.sortDirection.translationKey)
 
-    /**
-     * 建立列出目前值與可選值的 tooltip。
-     *
-     * @param title 選項名稱。
-     * @param current 目前選值。
-     * @param options 可選值。
-     * @return 格式化後的 tooltip 文字。
-     */
     /** 建立紀錄範圍按鈕的選項 tooltip。 */
     private fun scopeTooltip(): Text = historyOptionTooltip(Text.translatable(MinecraftHistoryScreenKeys.SCOPE_TITLE), scopeText(), availableScopes().indexOf(session.controller.state.value.query.scope), availableScopes().map { Text.translatable(it.translationKey) })
 

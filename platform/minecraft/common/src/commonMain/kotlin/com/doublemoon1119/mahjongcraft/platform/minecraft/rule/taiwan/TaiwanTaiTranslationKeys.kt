@@ -69,5 +69,9 @@ object TaiwanTaiTranslationKeys {
     }
 
     /** 平台語系資源必須提供的全部台種 translation key。 */
-    val ALL: Set<String> = KEYS.values.toSet() + DEALER + DEALER_STREAK
+    val ALL: Set<String> = buildSet {
+        addAll(KEYS.values)
+        add(DEALER)
+        add(DEALER_STREAK)
+    }
 }

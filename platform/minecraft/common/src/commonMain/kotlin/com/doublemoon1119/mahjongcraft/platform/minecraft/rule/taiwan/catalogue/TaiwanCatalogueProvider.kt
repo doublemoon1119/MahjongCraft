@@ -28,9 +28,11 @@ class TaiwanCatalogueProvider : RuleCatalogueProvider {
         if (config !is TaiwanRuleConfig) return null
         return RuleCatalogue(
             categories = TaiwanCatalogueCategory.entries.map { RuleCatalogueCategory(it.id, it.nameKey) },
-            entries = TaiwanCatalogueTai.entries.map { definition -> definition.toCatalogueEntry(config) } +
-                taiwanCatalogueSpecialEntries(config) +
-                taiwanCataloguePaoEntry(config),
+            entries = buildList {
+                TaiwanCatalogueTai.entries.mapTo(this) { definition -> definition.toCatalogueEntry(config) }
+                addAll(taiwanCatalogueSpecialEntries(config))
+                add(taiwanCataloguePaoEntry(config))
+            },
         )
     }
 }

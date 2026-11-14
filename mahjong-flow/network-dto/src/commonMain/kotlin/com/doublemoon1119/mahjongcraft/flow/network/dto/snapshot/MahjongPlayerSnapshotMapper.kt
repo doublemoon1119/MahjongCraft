@@ -2,8 +2,6 @@ package com.doublemoon1119.mahjongcraft.flow.network.dto.snapshot
 import com.doublemoon1119.mahjongcraft.flow.network.dto.model.toDomain
 import com.doublemoon1119.mahjongcraft.flow.network.dto.model.toDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.registry.NetworkDtoConverter
-import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.toDomain
-import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.toDto
 import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayerSnapshot
 import kotlin.uuid.Uuid
 

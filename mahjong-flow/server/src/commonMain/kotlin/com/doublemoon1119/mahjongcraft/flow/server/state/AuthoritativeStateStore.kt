@@ -208,7 +208,11 @@ class AuthoritativeStateStore(
      */
     suspend fun acknowledgeHistoryDecisions(matchIds: Set<Uuid>) = mutex.withLock {
         val recording = currentState.historyRecordingState
-        val protected = currentState.games.values.map { it.matchId }.toSet() + recording.pendingEvents.map { it.matchId } + recording.transfersByMatchId.keys
+        val protected = buildSet {
+            currentState.games.values.mapTo(this) { it.matchId }
+            recording.pendingEvents.mapTo(this) { it.matchId }
+            addAll(recording.transfersByMatchId.keys)
+        }
         val removable = matchIds - protected
         commit(currentState.copy(historyRecordingState = recording.copy(decisionsByMatchId = recording.decisionsByMatchId - removable)))
     }
@@ -220,7 +224,11 @@ class AuthoritativeStateStore(
      */
     suspend fun acknowledgeHistoryMetadata(matchIds: Set<Uuid>) = mutex.withLock {
         val recording = currentState.historyRecordingState
-        val protected = currentState.games.values.map { it.matchId }.toSet() + recording.pendingEvents.map { it.matchId } + recording.transfersByMatchId.keys
+        val protected = buildSet {
+            currentState.games.values.mapTo(this) { it.matchId }
+            recording.pendingEvents.mapTo(this) { it.matchId }
+            addAll(recording.transfersByMatchId.keys)
+        }
         val removable = matchIds - protected
         val next = recording.copy(
             nextSequenceByMatchId = recording.nextSequenceByMatchId - removable,

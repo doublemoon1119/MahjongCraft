@@ -28,7 +28,7 @@ import kotlin.uuid.toKotlinUuid
  *
  * 集中在 `game` 子分類、獨立於 `room`（見 `FabricRoomCommand` KDoc 早就預告的分工）——`room` 專屬
  * 房間等待階段，這裡專屬進行中的對局。摸牌不開放指令（全自動觸發，見 [MahjongTableGameActionService]
- * KDoc）；碰／吃／槓／胡／自摸／過統一透過 [action] 一個指令處理，候選項目由
+ * KDoc）；碰／吃／槓／胡／自摸／過統一透過 `action` 一個指令處理，候選項目由
  * [GameActionCandidateResolver] 依目前搶槓／回應捨牌／自己回合的情境動態算出，玩家不需要自己組
  * 動作內容。
  *

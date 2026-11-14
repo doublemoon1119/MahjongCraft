@@ -30,7 +30,7 @@ internal object TileAnimationSteps {
      *
      * [liftAbsoluteGameTime]／[flipAbsoluteGameTime] 是呼叫端算好、同一批牌共用同一份的絕對時刻
      * （[AnimationStep.WaitUntil]），不是相對等待——理由見 [AnimationStep.WaitUntil] KDoc：這批牌被
-     * [tile.enqueueAll] 疊加進去的既有佇列可能還殘留其他 step，用絕對時刻才能保證這批牌真正同時起飛／
+     * [AnimatedMahjongEntity.enqueueAll] 疊加進去的既有佇列可能還殘留其他 step，用絕對時刻才能保證這批牌真正同時起飛／
      * 同時翻牌。
      *
      * 起飛終點高度（`peakY`）是這張牌目前所在高度（`wallY`）加上 [DEAL_LIFT_HEIGHT]，不是統一對齊到

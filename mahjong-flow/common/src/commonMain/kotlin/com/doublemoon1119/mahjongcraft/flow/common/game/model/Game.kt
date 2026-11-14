@@ -44,7 +44,7 @@ import kotlin.uuid.Uuid
  *   決策，其尚未使用的基本思考時間，以玩家 Uuid 索引。`PlayerDecisionTimer.startedAt` 屬於
  *   runtime 單調時間、不得持久化，因此只寫回剩餘量；沒有這筆資料的玩家下一次取得決策權時重新取得
  *   完整基本思考時間。決策完成、階段改變或計時器重建後即清除，確保一次中斷只被接續一次。
- * @property matchId 整場對局的穩定識別碼；與場地本身的 [tableState.id] 分離，讓同一場地可承載多場對局歷史。
+ * @property matchId 整場對局的穩定識別碼；與場地本身的 [TableState.id] 分離，讓同一場地可承載多場對局歷史。
  * @property roomAdmission 開局前房間的加入限制，回房時原樣還原。
  */
 data class Game(

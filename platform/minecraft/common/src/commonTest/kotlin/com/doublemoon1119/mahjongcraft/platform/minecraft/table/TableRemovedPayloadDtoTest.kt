@@ -1,7 +1,5 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.table
 
-import kotlinx.serialization.decodeFromString
-import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import kotlin.test.Test
 import kotlin.test.assertEquals

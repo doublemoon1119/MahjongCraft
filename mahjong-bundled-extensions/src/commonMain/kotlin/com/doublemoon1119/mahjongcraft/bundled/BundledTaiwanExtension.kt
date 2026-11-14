@@ -13,7 +13,6 @@ import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
 import com.doublemoon1119.mahjongcraft.flow.network.dto.api.registration.NetworkDtoRegistrars
 import com.doublemoon1119.mahjongcraft.flow.network.dto.component.ComponentViewNetworkDefinition
 import com.doublemoon1119.mahjongcraft.flow.network.dto.registry.DtoDefinition
-import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.riichi.toDomain
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.taiwan.TaiwanDeclareReadyCommandDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.taiwan.TaiwanExhaustiveDrawReasonDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.taiwan.TaiwanGameActionDto
@@ -29,8 +28,6 @@ import com.doublemoon1119.mahjongcraft.flow.persistence.format.api.registration.
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.component.ComponentPersistenceDefinition
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.component.ComponentUnitPersistenceDto
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.core.PersistenceDtoDefinition
-import com.doublemoon1119.mahjongcraft.flow.persistence.format.game.toDomain
-import com.doublemoon1119.mahjongcraft.flow.persistence.format.game.toPersistenceDto
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.rule.BuiltInDiscardPilePersistenceKeys
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.rule.TaiwanDiscardPilePersistenceDto
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.rule.TaiwanExhaustiveDrawReasonPersistenceDto

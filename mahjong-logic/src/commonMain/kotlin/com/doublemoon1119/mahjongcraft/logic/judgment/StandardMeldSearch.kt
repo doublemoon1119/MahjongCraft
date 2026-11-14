@@ -31,7 +31,7 @@ class StandardMeldSearch(private val targetMelds: Int) {
     private val reachableByGroup = LongTable()
 
     /**
-     * 搜尋目前這組牌時，各搜尋狀態可達的組合，key 為狀態索引（見 [stateOf]）；每搜尋新的一組牌前清空，第一次需要時才建立。
+     * 搜尋目前這組牌時，各搜尋狀態可達的組合，key 為狀態索引（見 [GroupSearch.stateOf]）；每搜尋新的一組牌前清空，第一次需要時才建立。
      *
      * 處理到第 i 格時，只有第 i、i+1、i+2 格可能已被取走部分的牌，更後面的格子仍是原樣，
      * 因此以位置與這三格的剩餘張數表示狀態。

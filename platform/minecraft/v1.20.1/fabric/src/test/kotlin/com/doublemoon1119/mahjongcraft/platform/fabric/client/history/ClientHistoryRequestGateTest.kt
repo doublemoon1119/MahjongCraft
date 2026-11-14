@@ -34,7 +34,7 @@ class ClientHistoryRequestGateTest {
         runCurrent()
 
         now = 100.milliseconds
-        advanceTimeBy(100)
+        advanceTimeBy(100.milliseconds)
         runCurrent()
         assertEquals(listOf("foreground"), order)
 
@@ -60,7 +60,7 @@ class ClientHistoryRequestGateTest {
             gate.awaitSendSlot(ClientHistoryRequestPriority.BACKGROUND)
             sent = true
         }
-        advanceTimeBy(100)
+        advanceTimeBy(100.milliseconds)
         runCurrent()
         assertTrue(sent)
     }
@@ -85,12 +85,12 @@ class ClientHistoryRequestGateTest {
         runCurrent()
 
         now = 100.milliseconds
-        advanceTimeBy(100)
+        advanceTimeBy(100.milliseconds)
         runCurrent()
         assertEquals(listOf("foreground"), order)
 
         now = 200.milliseconds
-        advanceTimeBy(100)
+        advanceTimeBy(100.milliseconds)
         runCurrent()
         assertEquals(listOf("foreground", "background"), order)
         background.cancel()
@@ -139,7 +139,7 @@ class ClientHistoryRequestGateTest {
         runCurrent()
 
         now = 10.milliseconds
-        advanceTimeBy(10)
+        advanceTimeBy(10.milliseconds)
         revision++
         var backgroundSent = false
         launch {
@@ -151,7 +151,7 @@ class ClientHistoryRequestGateTest {
         assertEquals(false, backgroundSent)
 
         now = 110.milliseconds
-        advanceTimeBy(100)
+        advanceTimeBy(100.milliseconds)
         runCurrent()
         assertTrue(backgroundSent)
     }

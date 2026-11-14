@@ -198,8 +198,5 @@ class FabricDebugProgressionCommand(
 
         /** 內建日麻 progression debug 情境固定使用的玩家數。 */
         const val RIICHI_PLAYER_COUNT: Int = 4
-
-        /** Brigadier 成功回傳值。 */
-        const val COMMAND_SUCCESS: Int = 1
     }
 }

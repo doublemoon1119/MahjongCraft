@@ -42,11 +42,13 @@ object RiichiTableProps : TablePropDescriber {
     override fun describe(tableState: TableState): List<TablePropPlacement> {
         val pooledStickCount = pooledStickCount(tableState)
         val dealerSeatIndex = tableState.dealerIndex
-        return riichiSeatIndices(tableState).map(::riichiStick) +
-            List(tableState.comboCount) { stackIndex -> cornerStick(dealerSeatIndex, stackIndex, COMBO_STICK_VARIANT) } +
-            List(pooledStickCount) { poolIndex ->
-                cornerStick(dealerSeatIndex, tableState.comboCount + poolIndex, STICK_POT_VARIANT)
+        return buildList {
+            riichiSeatIndices(tableState).mapTo(this, ::riichiStick)
+            repeat(tableState.comboCount) { stackIndex -> add(cornerStick(dealerSeatIndex, stackIndex, COMBO_STICK_VARIANT)) }
+            repeat(pooledStickCount) { poolIndex ->
+                add(cornerStick(dealerSeatIndex, tableState.comboCount + poolIndex, STICK_POT_VARIANT))
             }
+        }
     }
 
     /**

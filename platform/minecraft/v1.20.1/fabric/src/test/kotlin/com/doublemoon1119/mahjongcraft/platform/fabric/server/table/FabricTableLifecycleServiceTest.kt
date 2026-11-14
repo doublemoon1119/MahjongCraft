@@ -199,8 +199,6 @@ class FabricTableLifecycleServiceTest {
         /** 記錄清理呼叫的規則桌面物件 presenter fake。 */
         private val tablePropPresenter = RecordingTablePropPresenter()
 
-        /** 記錄清理呼叫的牌河 presenter fake。 */
-
         /** 記錄清理呼叫的桌面局況顯示 presenter fake。 */
         private val roundInfoPresenter = RecordingRoundInfoPresenter()
 

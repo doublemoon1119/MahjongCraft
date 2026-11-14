@@ -1,7 +1,5 @@
 package com.doublemoon1119.mahjongcraft.flow.persistence.format.core
 
-import com.doublemoon1119.mahjongcraft.flow.persistence.format.core.PersistenceEnvelopeDto
-import com.doublemoon1119.mahjongcraft.flow.persistence.format.core.PersistenceSchema
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put

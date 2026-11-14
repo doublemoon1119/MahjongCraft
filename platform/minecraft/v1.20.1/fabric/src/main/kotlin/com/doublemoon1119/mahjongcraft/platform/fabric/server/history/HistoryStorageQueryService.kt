@@ -61,9 +61,12 @@ internal class HistoryStorageQueryService(
                 it == HistoryRecordingDecision.STOPPED_TRANSFER_INTERRUPTED ||
                 it == HistoryRecordingDecision.STOPPED_EXTERNALLY_MODIFIED
         }.keys
-        return (
-            recording.nextSequenceByMatchId.keys + recording.firstMissingSequenceByMatchId.keys +
-                recording.terminalByMatchId.keys + recording.pendingEvents.map { it.matchId } + decisions
-            ).mapTo(mutableSetOf()) { it.toString() }
+        return buildSet {
+            addAll(recording.nextSequenceByMatchId.keys)
+            addAll(recording.firstMissingSequenceByMatchId.keys)
+            addAll(recording.terminalByMatchId.keys)
+            recording.pendingEvents.mapTo(this) { it.matchId }
+            addAll(decisions)
+        }.mapTo(mutableSetOf()) { it.toString() }
     }
 }

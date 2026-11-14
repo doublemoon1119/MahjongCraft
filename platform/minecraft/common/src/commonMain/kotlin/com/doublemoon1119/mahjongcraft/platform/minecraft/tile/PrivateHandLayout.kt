@@ -366,17 +366,6 @@ class PrivateHandLayout {
         }
 
         /**
-         * 位置沿牌排方向離中心的距離，往摸牌位那一側為正。
-         *
-         * @param transform 要量的位置。
-         * @return 沿牌排方向的距離。
-         */
-        fun alongOf(transform: TileDisplayTransform): Double {
-            val angle = yaw * PI / 180.0
-            return (transform.position.x - center.x) * cos(angle) + (transform.position.z - center.z) * sin(angle)
-        }
-
-        /**
          * 允許封包座標量化的微小誤差，不接受仍混用新舊格位的牌排。
          *
          * @param other 另一張立牌推算的幾何。
@@ -403,7 +392,11 @@ class PrivateHandLayout {
         val stayed = current.filter { it in previousIndex }.sortedBy { previousIndex.getValue(it) }
         val kept = TableStepMotionPlanner.longestIncreasingSubsequence(stayed.map { currentIndex.getValue(it) }).mapTo(mutableSetOf()) { stayed[it] }
         val inserted = setOfNotNull(previousDrawnId?.takeIf { it in currentIndex })
-        return stayed.toSet() - kept + inserted
+        return buildSet {
+            addAll(stayed)
+            removeAll(kept)
+            addAll(inserted)
+        }
     }
 
     /**

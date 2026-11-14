@@ -469,7 +469,7 @@ class MahjongTileTableLayoutTest {
     /**
      * 不同座位 index 應落在不同的世界局部側面，且不經過莊家相對旋轉（跟牌牆不同）。座位 1 落在
      * EAST（`seatIndexToTableSide` 的順時針方向，跟牌牆自身組裝用的逆時針 `SIDE_ORDER` 是兩套獨立
-     * 方向，見 `seatIndexToTableSide` KDoc），對應 [rotateForSide] 的 EAST 公式 `(z, -x)`。
+     * 方向，見 `seatIndexToTableSide` KDoc），對應 `rotateForSide` 的 EAST 公式 `(z, -x)`。
      */
     @Test
     fun `hand seat index selects physical side directly`() {

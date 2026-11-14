@@ -179,8 +179,7 @@ internal object HistoryRoundResponseValidator {
         for (transaction in events.transactions) {
             if (transaction.index !in 0 until MAX_TRANSACTION_INDEX ||
                 transaction.index != previous + 1 ||
-                transaction.declaredTileCountAfter < previousDeclaredCount ||
-                transaction.declaredTileCountAfter < 0
+                transaction.declaredTileCountAfter < previousDeclaredCount
             ) {
                 return HistoryRoundValidationResult.Invalid(HistoryRoundValidationError.TRANSACTION_INDEX_INVALID)
             }

@@ -141,16 +141,16 @@ internal class HistoryTileGroupRenderer(
     /** 共用材質識別、牌面尺寸與配色。 */
     private companion object {
         /** 被取走牌張的空槽邊界。 */
-        val TAKEN_COLOR = 0x80666666.toInt()
+        const val TAKEN_COLOR = 0x80666666.toInt()
 
         /** 被鳴走空位的折角：與副露中被鳴的牌同色，透明度與空位外框一致。 */
-        val TAKEN_FOLD_COLOR = 0x80FFB13B.toInt()
+        const val TAKEN_FOLD_COLOR = 0x80FFB13B.toInt()
 
         /** 游標指向被鳴的牌或被鳴走的空位時，兩端一起蓋上的半透明色層；色調與被鳴的牌的折角相同。 */
-        val LINK_TINT_COLOR = 0x66FFB13B.toInt()
+        const val LINK_TINT_COLOR = 0x66FFB13B.toInt()
 
         /** 牌河公開標記的折角顏色。 */
-        val MARKER_COLOR = 0xffe07bff.toInt()
+        const val MARKER_COLOR = 0xffe07bff.toInt()
 
         /** 折角邊長相對於牌較短邊的比例。 */
         const val FOLD_RATIO = 0.4f

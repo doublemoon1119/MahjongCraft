@@ -207,8 +207,14 @@ class AiCharacterStateStore(
             players.associateWith { playerId -> participants[playerId]?.characterId ?: previousSelections[tableId]?.get(playerId) ?: BuiltInAiCharacters.TILE_MASCOT_ID }
         }
         val history = authoritative.historyRecordingState
-        val retained = authoritative.games.values.map { it.matchId }.toSet() + history.nextSequenceByMatchId.keys +
-            history.pendingEvents.map { it.matchId } + history.decisionsByMatchId.keys + history.terminalByMatchId.keys + history.transfersByMatchId.keys
+        val retained = buildSet {
+            authoritative.games.values.mapTo(this) { it.matchId }
+            addAll(history.nextSequenceByMatchId.keys)
+            history.pendingEvents.mapTo(this) { it.matchId }
+            addAll(history.decisionsByMatchId.keys)
+            addAll(history.terminalByMatchId.keys)
+            addAll(history.transfersByMatchId.keys)
+        }
         val matches = metadata.matches.filterKeys { it in retained }.toMutableMap()
         authoritative.games.values.forEach { game ->
             if (game.matchId !in matches) {

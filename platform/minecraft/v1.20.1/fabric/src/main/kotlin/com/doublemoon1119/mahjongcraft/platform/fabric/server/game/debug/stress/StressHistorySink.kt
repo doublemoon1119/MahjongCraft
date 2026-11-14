@@ -1,8 +1,10 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.stress
 
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.history.FabricHistoryOutboxWriter
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancelAndJoin
+import kotlinx.coroutines.withContext
 import java.nio.file.Files
 import java.nio.file.Path
 
@@ -27,7 +29,9 @@ sealed interface StressHistorySink {
         override suspend fun failed(): Boolean = writer.status().let { !it.databaseConnected || it.storagePaused || it.lastError != null }
         override suspend fun close() {
             writer.detach()
-            DATABASE_FILE_SUFFIXES.forEach { suffix -> Files.deleteIfExists(databasePath.resolveSibling(databasePath.fileName.toString() + suffix)) }
+            withContext(Dispatchers.IO) {
+                DATABASE_FILE_SUFFIXES.forEach { suffix -> Files.deleteIfExists(databasePath.resolveSibling(databasePath.fileName.toString() + suffix)) }
+            }
         }
         private companion object {
             /** 資料庫主檔與 SQLite WAL／SHM 附屬檔的檔名後綴。 */

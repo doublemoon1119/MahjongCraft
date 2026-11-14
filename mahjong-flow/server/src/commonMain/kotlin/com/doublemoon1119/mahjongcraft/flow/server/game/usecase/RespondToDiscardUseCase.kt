@@ -115,7 +115,11 @@ class RespondToDiscardUseCase(
                             action = action,
                             before = before,
                             after = after,
-                            affectedTileIds = (action.affectedTileIds() + selectedTileIds + listOfNotNull(before.pendingReaction?.tileId)).distinct(),
+                            affectedTileIds = buildList {
+                                addAll(action.affectedTileIds())
+                                addAll(selectedTileIds)
+                                before.pendingReaction?.tileId?.let(::add)
+                            }.distinct(),
                         ),
                     ) + if (before.pendingReaction != null && after.pendingReaction == null) {
                         val resolution = result.value

@@ -140,7 +140,6 @@ class FabricAutomaticControlCommand(
      * @param builder 累積補全建議的建構器。
      * @return 已加入控制項名稱提示的補全結果。
      */
-    @Suppress("UNUSED_PARAMETER")
     private fun suggestControlIds(
         context: CommandContext<FabricClientCommandSource>,
         builder: SuggestionsBuilder,

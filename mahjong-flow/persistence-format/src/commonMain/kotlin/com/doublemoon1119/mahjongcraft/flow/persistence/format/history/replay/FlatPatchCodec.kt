@@ -218,7 +218,13 @@ object FlatPatchCodec {
                     val inserted = operation[4] as? JsonArray ?: error("inserted must be an array")
                     budget?.charge(prefix.toLong() + suffix + inserted.size)
                     if (budget != null && prefix.toLong() + suffix + inserted.size > budget.limits.maxProjectionNodes) throw ReplayReadException(ReplayReadError.LIMIT_EXCEEDED)
-                    JsonArray(source.take(prefix) + inserted + source.takeLast(suffix))
+                    JsonArray(
+                        content = buildList {
+                            addAll(source.take(prefix))
+                            addAll(inserted)
+                            addAll(source.takeLast(suffix))
+                        },
+                    )
                 }
                 3 -> {
                     require(operation.size == 3)

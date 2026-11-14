@@ -42,9 +42,7 @@ class MahjongRoundInfoEntity(
     /**
      * 要顯示的完整內容，依序顯示——`DataTracker` 只能同步基本型別，這裡編碼成 JSON 存進一個
      * `TrackedData<String>`，client 端 renderer 解碼後才依認得的 key 翻譯成文字，見
-     * [MahjongRoundInfoEntity] KDoc 同一套分工。
-     *
-     * @property lines 依序顯示的局況行；各行語意由規則模組決定。
+     * [MahjongRoundInfoEntity] KDoc 同一套分工。各行語意由規則模組決定。
      */
     var lines: List<RoundInfoLine>
         get() = RoundInfoLineCodec.decode(dataTracker[LINES])

@@ -75,7 +75,7 @@ class DeclareAbortiveDrawUseCase(
         ) { game ->
             val state = game?.tableState
             when {
-                game == null || state == null -> game to Outcome.Error(GameError.GameNotFound(gameId))
+                game == null || state == null -> null to Outcome.Error(GameError.GameNotFound(gameId))
                 state.players.none { it.id == playerId } ->
                     game to Outcome.Error(GameError.PlayerNotInGame(playerId, gameId))
 

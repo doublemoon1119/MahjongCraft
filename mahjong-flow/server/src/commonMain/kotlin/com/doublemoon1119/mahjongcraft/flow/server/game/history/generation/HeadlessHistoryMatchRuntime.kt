@@ -2,7 +2,6 @@ package com.doublemoon1119.mahjongcraft.flow.server.game.history.generation
 
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.Game
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateStore
-import kotlinx.coroutines.flow.flow
 import kotlin.uuid.Uuid
 
 /** 真實 Flow 的隔離執行環境，每次只推進一個自動操作步驟。 */

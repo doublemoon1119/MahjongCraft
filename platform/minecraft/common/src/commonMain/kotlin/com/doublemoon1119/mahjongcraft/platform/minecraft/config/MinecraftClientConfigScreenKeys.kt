@@ -198,9 +198,6 @@ object MinecraftClientConfigScreenKeys {
     /** 繼續編輯按鈕。 */
     const val CONTINUE_EDITING: String = "mahjongcraft.settings.unsaved_changes.continue_editing"
 
-    /** HUD 百分比位置的 tooltip 標題。 */
-    const val HUD_LAYOUT_CHANGES: String = "mahjongcraft.hud_layout.changes"
-
     /** 單一 X、Y HUD 位置格式。 */
     const val HUD_LAYOUT_XY_CHANGE: String = "mahjongcraft.hud_layout.change.xy"
 

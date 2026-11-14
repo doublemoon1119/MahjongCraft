@@ -411,7 +411,7 @@ object GameInitializer {
      * [playerIds] 的順序即發牌輪轉順序，必須由呼叫端排成從莊家開始的固定順序；發牌完成後，呼叫端
      * 可以再依原本的固定座位順序組回玩家列表。
      *
-     * `internal` 而非 `private`：讓同模組的 [GameInitializerTest] 能直接用可控制的 [TileWall] 測試
+     * `internal` 而非 `private`：讓同模組的 `GameInitializerTest` 能直接用可控制的 [TileWall] 測試
      * 輪轉順序本身，不需要透過完整 [initialize] 流程（牌山來自
      * [MahjongRuleModule.createWallFactory] 的隨機洗牌，測試端無法控制牌張順序，驗證不了輪轉節奏）。
      *

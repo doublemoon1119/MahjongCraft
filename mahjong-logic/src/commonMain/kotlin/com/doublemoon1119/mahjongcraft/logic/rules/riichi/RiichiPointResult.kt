@@ -1,7 +1,5 @@
 package com.doublemoon1119.mahjongcraft.logic.rules.riichi
 
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.RiichiYakuResult
-
 /**
  * 立直麻將的點數結算結果。
  *

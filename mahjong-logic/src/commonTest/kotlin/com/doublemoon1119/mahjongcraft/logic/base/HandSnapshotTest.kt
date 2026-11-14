@@ -78,9 +78,9 @@ class HandSnapshotTest {
         val before = Hand(listOf(first, second), lastDrawn = drawn)
         val changed = Hand(listOf(second.copy(tile = first.tile), first.copy(tile = second.tile)), lastDrawn = drawn)
 
-        assertEquals(before.toSnapshot(false, true), changed.toSnapshot(false, true))
-        assertEquals(drawn.id, before.toSnapshot(false, true).lastDrawn?.id)
-        assertEquals(listOf(first.id, second.id, drawn.id), before.toSnapshot(true, true).standingTiles.map { it.id })
+        assertEquals(before.toSnapshot(isVisible = false, revealsClosedKanTiles = true), changed.toSnapshot(isVisible = false, revealsClosedKanTiles = true))
+        assertEquals(drawn.id, before.toSnapshot(isVisible = false, revealsClosedKanTiles = true).lastDrawn?.id)
+        assertEquals(listOf(first.id, second.id, drawn.id), before.toSnapshot(isVisible = true, revealsClosedKanTiles = true).standingTiles.map { it.id })
     }
 
     /**

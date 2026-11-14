@@ -567,13 +567,13 @@ class MahjongTileEntity(
 
     companion object {
         /** 麻將牌世界寬度；與 [MahjongTileTableLayout] 共用同一組數值來源。 */
-        val TILE_WIDTH = MahjongTileDimensions.TILE_WIDTH.toFloat()
+        const val TILE_WIDTH = MahjongTileDimensions.TILE_WIDTH.toFloat()
 
         /** 麻將牌世界高度。 */
-        val TILE_HEIGHT = MahjongTileDimensions.TILE_HEIGHT.toFloat()
+        const val TILE_HEIGHT = MahjongTileDimensions.TILE_HEIGHT.toFloat()
 
         /** 麻將牌世界深度。 */
-        val TILE_DEPTH = MahjongTileDimensions.TILE_DEPTH.toFloat()
+        const val TILE_DEPTH = MahjongTileDimensions.TILE_DEPTH.toFloat()
 
         /** 牌面世界存檔 key。 */
         private const val NBT_KEY_TILE = "Tile"

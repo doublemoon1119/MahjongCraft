@@ -8,7 +8,6 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.policy.GameVisibilityPol
 import com.doublemoon1119.mahjongcraft.flow.server.game.policy.HandReadinessVisibilityPolicy
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateSnapshot
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateStore
-import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlin.concurrent.atomics.AtomicReference
@@ -124,7 +123,11 @@ class ObserverSnapshotBroadcaster(
             val next = current + (
                 id to PendingInvalidation(
                     requestId = requestId,
-                    additionalObserverIds = (capturedObservers + previousObservers + additionalObserverIds).toSet(),
+                    additionalObserverIds = buildSet {
+                        addAll(capturedObservers)
+                        addAll(previousObservers)
+                        addAll(additionalObserverIds)
+                    },
                     isStillValid = isStillValid,
                 )
                 )
@@ -164,7 +167,11 @@ class ObserverSnapshotBroadcaster(
         try {
             if (!request.isStillValid()) return false
             val recordObserverIds = recordsById[id]?.snapshots?.keys.orEmpty()
-            val observerIds = (recordObserverIds + currentObserverIds + request.additionalObserverIds).toSet()
+            val observerIds = buildSet {
+                addAll(recordObserverIds)
+                addAll(currentObserverIds)
+                addAll(request.additionalObserverIds)
+            }
             observerIds.forEach { observerId -> sender.invalidateVenue(id, observerId, request.requestId) }
             recordsById.remove(id)
             publishRecordObserversSnapshot()

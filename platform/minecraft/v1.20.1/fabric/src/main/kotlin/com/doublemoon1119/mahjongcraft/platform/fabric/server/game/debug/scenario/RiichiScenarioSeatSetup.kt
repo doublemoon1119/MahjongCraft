@@ -227,7 +227,13 @@ internal data class SeatTiles(
 ) {
     /** 這個座位持有的全部實體牌。 */
     val allTiles: List<IdentifiedTile>
-        get() = standingTiles + melds.flatMap { it.tiles } + listOfNotNull(drawnTile) + discards + listOfNotNull(riichiTile)
+        get() = buildList {
+            addAll(standingTiles)
+            melds.flatMapTo(this) { it.tiles }
+            drawnTile?.let(::add)
+            addAll(discards)
+            riichiTile?.let(::add)
+        }
 
     /**
      * 預先捨牌依序放入牌河，立直宣告牌放在最後。

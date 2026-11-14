@@ -944,9 +944,11 @@ class FabricGamePresentationPublisher(
             val openingEndGameTime = timelineAnchor + MahjongDiceRollTimeline.totalTicks(openingDiceCounts, wallDropTicks)
             val opening = openingState.consumeOpening(gameId)
             // 發牌途中牌牆還是發牌前的樣子，手牌讓開發牌前的完整牌牆；發完牌後空出的位置等之後的排位再讓回來。
-            val dealWallReach = roundWallReach(tableState) +
-                opening?.assemblyStructure?.values?.map { position -> TileWallPlacement(position) }.orEmpty() +
-                opening?.finalLayout?.placements?.values.orEmpty()
+            val dealWallReach = buildSet {
+                addAll(roundWallReach(tableState))
+                opening?.assemblyStructure?.values?.mapTo(this) { position -> TileWallPlacement(position) }
+                addAll(opening?.finalLayout?.placements?.values.orEmpty())
+            }
             val dealWallClearance = wallClearance(tableState, dealWallReach)
             val seatLayout = MahjongTableSeatLayout.forPlayerCount(tableState.players.size)
             val presentation = MahjongInitialDealPresentation(
@@ -1066,7 +1068,7 @@ class FabricGamePresentationPublisher(
     /**
      * 讀取贏家目前的權威手牌（[gameRepository]，唯讀，不寫回任何 `TableState`）算出強制理牌重排的目標
      * 順序（`Hand.organize`，不論贏家原本是否啟用自動整理手牌），委託
-     * [playerAreaPresenter.presentWinCelebration] 排定「重排 → （自摸牌單獨倒下 →）等待 → 立牌一起
+     * [MahjongPlayerAreaPresenter.presentWinCelebration] 排定「重排 → （自摸牌單獨倒下 →）等待 → 立牌一起
      * 倒下」序列，最後把算出來的「立牌全部倒下完成」絕對 game time 交給 [effectScheduler] 接續排定
      * 降臨特效——特效鎖定的目標位置固定是 [WinCelebrationRequest.winningTileId] 目前所在座標：自摸時它已經併入贏家手牌、
      * 停在整理後的格位；榮和／搶槓時它仍在放銃者的牌河或副露區，天然就是「胡牌張目前所在座標」，
@@ -1166,6 +1168,8 @@ class FabricGamePresentationPublisher(
                         c = resolved.tableState.continuingWinPresentationBusyUntilGameTime,
                     )
                     block(resolved, state, startAt)
+                } catch (cancelled: CancellationException) {
+                    throw cancelled
                 } catch (cause: Exception) {
                     logger.warn("Failed to run {} for gameId={}", operation, gameId, cause)
                 }

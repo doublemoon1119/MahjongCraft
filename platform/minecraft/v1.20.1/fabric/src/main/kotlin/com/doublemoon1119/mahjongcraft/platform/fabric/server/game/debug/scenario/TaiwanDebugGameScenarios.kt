@@ -40,13 +40,15 @@ internal object TaiwanDebugGameScenarios {
             val dealer = dealt.dealerIndex
             val supplementalOrder = dealt.reservedWallTiles
             flowerFaces(
-                targets = dealt.handTilesOf(dealer).take(2) +
-                    dealt.handTilesOf(dealer + 1).take(1) +
-                    dealt.handTilesOf(dealer + 3).take(1) +
-                    supplementalOrder[0] +
-                    dealt.tileWall.getAllTiles()[DOWNSTREAM_FIRST_DRAW] +
-                    supplementalOrder[FIRST_MID_GAME_SUPPLEMENT] +
-                    dealt.tileWall.getAllTiles()[dealt.tileWall.remainingCount / 2],
+                targets = buildList {
+                    addAll(dealt.handTilesOf(dealer).take(2))
+                    addAll(dealt.handTilesOf(dealer + 1).take(1))
+                    addAll(dealt.handTilesOf(dealer + 3).take(1))
+                    add(supplementalOrder[0])
+                    add(dealt.tileWall.getAllTiles()[DOWNSTREAM_FIRST_DRAW])
+                    add(supplementalOrder[FIRST_MID_GAME_SUPPLEMENT])
+                    add(dealt.tileWall.getAllTiles()[dealt.tileWall.remainingCount / 2])
+                },
             )
         },
         // 七搶一：呼叫者起手七張花，呼叫者的下家起手一張花；下家亮出第八張花時，呼叫者可以選擇胡牌或放棄。
@@ -199,7 +201,14 @@ private object TaiwanBeforePaoPonScenario : DebugGameScenario {
         }
         val calledFace = liveTiles.first().id to Tile.Honor.White
         val winningFaces = liveTiles.drop(1).take(PAO_WINNING_DRAWS).mapIndexed { index, tile -> tile.id to PAO_WAITS[index % PAO_WAITS.size] }
-        val dealt = initial.withFaces(handFaces + calledFace + winningFaces + flowerFaces(liveTiles.takeLast(ALL_FLOWERS)))
+        val dealt = initial.withFaces(
+            assignments = buildList {
+                addAll(handFaces)
+                add(calledFace)
+                addAll(winningFaces)
+                addAll(flowerFaces(liveTiles.takeLast(ALL_FLOWERS)))
+            },
+        )
 
         val draw = dealt.tileWall.draw()
         val calledTile = requireNotNull(draw.tile) { "The live wall is empty" }
@@ -290,10 +299,12 @@ private object TaiwanCrowdedMeldsScenario : DebugGameScenario {
             initial.handTilesOf(seatIndex).zip(PAO_OPPONENT_HAND) { tile, face -> tile.id to face }
         }
         val dealt = initial.withFaces(
-            assignments = ownTiles.zip(ownFaces) { tile, face -> tile.id to face } +
-                (calledTile.id to Tile.Honor.White) +
-                flowerFaces(flowerTiles) +
-                opponentFaces,
+            assignments = buildList {
+                addAll(ownTiles.zip(ownFaces) { tile, face -> tile.id to face })
+                add(calledTile.id to Tile.Honor.White)
+                addAll(flowerFaces(flowerTiles))
+                addAll(opponentFaces)
+            },
         )
         val faceById = (dealt.players.flatMap { player -> player.hand.tiles + listOfNotNull(player.hand.lastDrawn) } + dealt.tileWall.getAllTiles())
             .associateBy { it.id }
@@ -305,7 +316,11 @@ private object TaiwanCrowdedMeldsScenario : DebugGameScenario {
         val pon = claimedMeld(MeldType.Pon, meldTiles.drop(CROWDED_KONG_COUNT * KONG_SIZE), RelativeDirection.Across)
         val called = faceById.getValue(calledTile.id)
         val flowers = flowerTiles.map { faceById.getValue(it.id) }
-        val removedIds = (own + called + flowers).mapTo(mutableSetOf()) { it.id }
+        val removedIds = buildList {
+            addAll(own)
+            add(called)
+            addAll(flowers)
+        }.mapTo(mutableSetOf()) { it.id }
         val wall = TileWall(dealt.tileWall.getAllTiles().filterNot { it.id in removedIds })
         val players = dealt.players.mapIndexed { seatIndex, player ->
             when (seatIndex) {
@@ -439,7 +454,14 @@ private fun TableState.handTilesOf(seatIndex: Int): List<IdentifiedTile> {
  */
 private fun TableState.withFaces(assignments: List<Pair<Uuid, Tile>>): TableState {
     require(assignments.map { it.first }.distinct().size == assignments.size) { "Each tile may receive one face" }
-    val allTiles = players.flatMap { player -> player.hand.tiles + listOfNotNull(player.hand.lastDrawn) } + tileWall.getAllTiles() + reservedWallTiles
+    val allTiles = buildList {
+        players.forEach { player ->
+            addAll(player.hand.tiles)
+            player.hand.lastDrawn?.let(::add)
+        }
+        addAll(tileWall.getAllTiles())
+        addAll(reservedWallTiles)
+    }
     val faces = allTiles.associateTo(mutableMapOf()) { it.id to it.tile }
     val assigned = mutableSetOf<Uuid>()
     assignments.forEach { (targetId, face) ->
@@ -480,20 +502,20 @@ private fun Game.withTableState(tableState: TableState): Game = Game(
 )
 
 /** 包牌情境呼叫者的十六張牌：前六張是發、中兩組碰，其餘為立牌，碰白並打出北後聽一、四萬。 */
-private val PAO_INVOKER_HAND: List<Tile> = List(PON_SIZE) { Tile.Honor.Green } +
-    List(PON_SIZE) { Tile.Honor.Red } +
-    listOf(
-        Tile.Honor.White,
-        Tile.Honor.White,
-        Tile.Numeric(Tile.Suit.Character, 2),
-        Tile.Numeric(Tile.Suit.Character, 3),
-        Tile.Numeric(Tile.Suit.Dot, 5),
-        Tile.Numeric(Tile.Suit.Dot, 5),
-        Tile.Numeric(Tile.Suit.Bamboo, 6),
-        Tile.Numeric(Tile.Suit.Bamboo, 7),
-        Tile.Numeric(Tile.Suit.Bamboo, 8),
-        Tile.Honor.North,
-    )
+private val PAO_INVOKER_HAND: List<Tile> = buildList {
+    addAll(List(PON_SIZE) { Tile.Honor.Green })
+    addAll(List(PON_SIZE) { Tile.Honor.Red })
+    add(Tile.Honor.White)
+    add(Tile.Honor.White)
+    add(Tile.Numeric(Tile.Suit.Character, 2))
+    add(Tile.Numeric(Tile.Suit.Character, 3))
+    add(Tile.Numeric(Tile.Suit.Dot, 5))
+    add(Tile.Numeric(Tile.Suit.Dot, 5))
+    add(Tile.Numeric(Tile.Suit.Bamboo, 6))
+    add(Tile.Numeric(Tile.Suit.Bamboo, 7))
+    add(Tile.Numeric(Tile.Suit.Bamboo, 8))
+    add(Tile.Honor.North)
+}
 
 /** 包牌情境其他三家的十六張牌：沒有對子，不含三元牌、北與一、四萬。 */
 private val PAO_OPPONENT_HAND: List<Tile> = listOf(
@@ -556,9 +578,11 @@ private const val PAO_INVOKER_MELD_TILES: Int = 6
 private const val PON_SIZE: Int = 3
 
 /** 一至九萬、一至六筒、九條：單吊九條的十六張聽牌。 */
-private val READY_HAND: List<Tile> = (1..9).map { Tile.Numeric(Tile.Suit.Character, it) } +
-    (1..6).map { Tile.Numeric(Tile.Suit.Dot, it) } +
-    Tile.Numeric(Tile.Suit.Bamboo, 9)
+private val READY_HAND: List<Tile> = buildList {
+    (1..9).mapTo(this) { Tile.Numeric(Tile.Suit.Character, it) }
+    (1..6).mapTo(this) { Tile.Numeric(Tile.Suit.Dot, it) }
+    add(Tile.Numeric(Tile.Suit.Bamboo, 9))
+}
 
 /** 花牌總數。 */
 private const val ALL_FLOWERS: Int = 8

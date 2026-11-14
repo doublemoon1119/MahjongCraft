@@ -394,7 +394,11 @@ internal object SelfDeclarationApplier {
     ): Result {
         if (decision.drawnTiles.isEmpty()) return Result.Rejected(SupplementalDrawReasonIds.INVALID_RESULT)
         val originalWallTiles = originalState.tileWall.getAllTiles() + originalState.reservedWallTiles
-        val resultingWallTiles = decision.tileWall.getAllTiles() + decision.reservedWallTiles + decision.drawnTiles
+        val resultingWallTiles = buildList {
+            addAll(decision.tileWall.getAllTiles())
+            addAll(decision.reservedWallTiles)
+            addAll(decision.drawnTiles)
+        }
         if (originalWallTiles.map { it.id }.toSet() != resultingWallTiles.map { it.id }.toSet() ||
             resultingWallTiles.map { it.id }.distinct().size != resultingWallTiles.size
         ) {

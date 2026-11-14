@@ -27,7 +27,7 @@ import kotlin.uuid.toKotlinUuid
  * 得到文字。半透明黑底風格跟其他世界空間面板（局況顯示、玩家資訊等）一致。
  *
  * 文字左右的 `>`／`<` 選取效果標記只在玩家目前準心正對著這組確認面板任一個 instance（見 [isHovered]）
- * 時才畫出來，暗示「現在可以互動」；但背景／可點擊寬度的量測**永遠把標記算進去**（[measurementLabel]），
+ * 時才畫出來，暗示「現在可以互動」；但背景／可點擊寬度的量測**永遠把標記算進去**（`measurementLabel`），
  * 不管當下有沒有畫出來，避免標記出現／消失的瞬間背景寬度跟著跳動。文字顏色則另外依
  * [PlayerDecisionHudController.isTileSelectionConfirmable] 表示已選數量是否落在合法範圍內：綠色代表
  * 右鍵真的會送出，灰色代表選太少還不行——跟標記是否顯示是不同的資訊，分開判斷。不直接寫「右鍵」文字：
@@ -194,7 +194,7 @@ class MahjongTileSelectionConfirmEntityRenderer(
          * 內容量測，用這個值當上限；不是 `const val`，運算式引用另一個模組的常數，讓兩邊調整拼湊面板
          * 尺寸時這個值自動保持一致。
          */
-        val MAX_PANEL_WIDTH_BLOCKS: Double =
+        const val MAX_PANEL_WIDTH_BLOCKS: Double =
             MahjongTileTableLayout.TILE_SELECTION_CONFIRM_SEGMENT_COUNT * MahjongTileTableLayout.TILE_SELECTION_CONFIRM_SEGMENT_SPACING
     }
 }

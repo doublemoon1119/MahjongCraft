@@ -280,13 +280,10 @@ class MahjongScoringStickEntity(
 
     companion object {
         /** 點棒世界寬度；與 [MahjongScoringStickDimensions] 共用同一組數值來源。 */
-        val STICK_WIDTH = MahjongScoringStickDimensions.STICK_WIDTH.toFloat()
+        const val STICK_WIDTH = MahjongScoringStickDimensions.STICK_WIDTH.toFloat()
 
         /** 點棒世界高度（厚度）。 */
-        val STICK_HEIGHT = MahjongScoringStickDimensions.STICK_HEIGHT.toFloat()
-
-        /** 點棒世界深度。 */
-        val STICK_DEPTH = MahjongScoringStickDimensions.STICK_DEPTH.toFloat()
+        const val STICK_HEIGHT = MahjongScoringStickDimensions.STICK_HEIGHT.toFloat()
 
         /** 點棒掉落動畫的半空起點高度，相對落點的世界 Y 偏移。 */
         const val DROP_HEIGHT: Double = 0.4

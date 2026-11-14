@@ -58,7 +58,7 @@ class MultilineCallArgumentNameRule(
             val call = element.resolveToCall()?.singleFunctionCallOrNull() ?: return
             if (!call.symbol.hasStableParameterNames) return
             if (call.symbol.callableId?.asSingleFqName()?.asString() in SELF_EXPLANATORY_CALLS) return
-            call.argumentMapping.mapNotNull { (expression, signature) ->
+            call.valueArgumentMapping.mapNotNull { (expression, signature) ->
                 if (signature.symbol.isVararg) null else expression to signature.name.asString()
             }.toMap()
         }

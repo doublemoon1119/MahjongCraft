@@ -1,6 +1,5 @@
 package com.doublemoon1119.mahjongcraft.flow.server.game.history.generation
 
-import kotlinx.coroutines.flow.flow
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds

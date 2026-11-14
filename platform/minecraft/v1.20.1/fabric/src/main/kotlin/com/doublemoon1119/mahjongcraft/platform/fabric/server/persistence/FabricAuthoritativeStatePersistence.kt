@@ -10,7 +10,6 @@ import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateUpdat
 import com.doublemoon1119.mahjongcraft.platform.fabric.logging.mahjongCraftLogger
 import com.doublemoon1119.mahjongcraft.platform.minecraft.character.AiCharacterParticipantCapture
 import com.doublemoon1119.mahjongcraft.platform.minecraft.character.AiCharacterRegistry
-import com.doublemoon1119.mahjongcraft.platform.minecraft.character.AiCharacterSelectionResult
 import com.doublemoon1119.mahjongcraft.platform.minecraft.character.AiCharacterStateSnapshot
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.NonCancellable
@@ -171,25 +170,6 @@ class FabricAuthoritativeStatePersistence(
         }
     } catch (_: AuthoritativeStateBusyException) {
         false
-    }
-
-    /**
-     * 以與開局相同的交易邊界處理角色切換；不提供原生實體或 NBT 選項。
-     *
-     * @param tableId 等待中的房間。
-     * @param playerId 房間內的 AI。
-     * @param operatorId 發起選擇的玩家。
-     * @param characterId 已登記的角色 ID。
-     * @return 驗證與套用結果。
-     */
-    suspend fun selectCharacter(
-        tableId: Uuid,
-        playerId: Uuid,
-        operatorId: Uuid,
-        characterId: String,
-    ): AiCharacterSelectionResult = store.update { current ->
-        val result = persistentState?.selectCharacter(current, tableId, playerId, operatorId, characterId) ?: AiCharacterSelectionResult.DATA_UNAVAILABLE
-        AuthoritativeStateUpdate(current, result)
     }
 
     /** 停止 dirty 轉送；Minecraft 仍持有 state，會在既有世界保存流程中寫入磁碟。 */

@@ -5,7 +5,6 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.ScoreRankingPresen
 import com.doublemoon1119.mahjongcraft.logic.module.PublicPlayerIndicator
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.config.MahjongClientConfigStore
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.player.ClientPlayerDisplayNameResolver
-import com.doublemoon1119.mahjongcraft.platform.fabric.entity.WinSettlementDetailSnapshot
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.WinSettlementPresentationEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.WinSettlementRankingSnapshot
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.WinSettlementWinnerSnapshot
@@ -848,13 +847,6 @@ class WinSettlementPresentationEntityRenderer(
      * @return 可放入名稱欄的文字。
      */
     private fun fitPlayerName(name: String): String = WorldPanelRenderer.fitText(textRenderer, name, SettlementRankingLayout.NAME_MAX_WIDTH)
-
-    /**
-     * 將詳情快照的第一個值當翻譯 key，其餘值作為翻譯參數。
-     *
-     * @return 依本機語系建立的詳情文字。
-     */
-    private fun WinSettlementDetailSnapshot.text(): Text = Text.translatable(values.firstOrNull().orEmpty(), *values.drop(1).toTypedArray())
 
     /**
      * 將同步排名快照轉成共用分數動畫模型。

@@ -101,7 +101,7 @@ class AuthoritativeStateStoreConcurrencyTest {
         update(repository, tableState.id, 1L)
 
         val snapshot = withTimeout(5.seconds) { released.await() }
-        assertTrue(snapshot.games.getValue(tableState.id).automaticControlRevision == 1L)
+        assertEquals(1L, snapshot.games.getValue(tableState.id).automaticControlRevision)
     }
 
     /** 提交 callback 取消目前協程後，已提交狀態仍保留且釋放通知仍會送出。 */

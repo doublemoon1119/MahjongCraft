@@ -136,7 +136,7 @@ class SqliteHistoryQueryTest {
         )
 
         assertEquals(listOf("owned"), first.entries.map { it.matchId })
-        assertTrue(first.nextCursor == null)
+        assertNull(first.nextCursor)
     }
 
     /** ALL 查詢可安全顯示沒有主表與參與者資料的終端診斷，但不應把它當作無 AI 對局。 */

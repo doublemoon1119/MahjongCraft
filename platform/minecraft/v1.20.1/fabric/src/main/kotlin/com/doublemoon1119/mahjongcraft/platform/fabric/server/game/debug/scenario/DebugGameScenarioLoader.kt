@@ -14,6 +14,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.server.event.GameEventExc
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.event.TablePresentationBusyTracker
 import com.doublemoon1119.mahjongcraft.platform.minecraft.environment.MinecraftEnvironment
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.GameConfigPresentationRegistry
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
@@ -105,7 +106,7 @@ class DebugGameScenarioLoader(
             ?: return DebugGameScenarioLoadResult.Rejected("Player is not in a Mahjong game")
         if (busyTracker.isBusy(tableId)) return DebugGameScenarioLoadResult.Rejected("Table presentation is still busy")
 
-        val loaded = runCatching {
+        val loaded = try {
             gameRepository.updateGame(tableId) { currentGame ->
                 requireNotNull(currentGame) { "The table does not have a running game" }
                 require(!currentGame.isMatchOver) { "The game has already ended" }
@@ -116,10 +117,14 @@ class DebugGameScenarioLoader(
                 validator.validate(context, result)
                 result.game to result
             }
-        }.getOrElse { error -> return DebugGameScenarioLoadResult.Rejected(error.message ?: "Scenario validation failed") }
+        } catch (cancelled: CancellationException) {
+            throw cancelled
+        } catch (error: Exception) {
+            return DebugGameScenarioLoadResult.Rejected(error.message ?: "Scenario validation failed")
+        }
         stateStore.stopHistoryRecording(loaded.game.matchId)
 
-        runCatching {
+        try {
             repeat(presentationCount) { iteration ->
                 if (iteration > 0) awaitPresentationAvailable(tableId)
                 withContext(dispatchers.main) { presentationSynchronizer.synchronize(loaded) }
@@ -128,7 +133,9 @@ class DebugGameScenarioLoader(
             if (loaded.presentation is DebugGameScenarioPresentation.InitialRound) {
                 beginRuleDecisionUseCase(tableId, RuleDecisionTiming.ROUND_START)
             }
-        }.getOrElse { error ->
+        } catch (cancelled: CancellationException) {
+            throw cancelled
+        } catch (error: Exception) {
             return DebugGameScenarioLoadResult.Rejected(error.message ?: "Scenario presentation failed")
         }
         decisionAvailabilityService.reconcile(tableId, completedPlayerId = playerId)

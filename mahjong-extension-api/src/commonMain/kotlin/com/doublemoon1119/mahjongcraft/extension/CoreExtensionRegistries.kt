@@ -70,7 +70,18 @@ class CoreExtensionRegistries(
         categories = listOf(
             snapshotCategory(CoreExtensionRegistrationCategoryIds.RULE_MODULE, "Rule Module", moduleRegistry.getAllModuleIds()),
             snapshotCategory(CoreExtensionRegistrationCategoryIds.TILE_TYPE, "Tile Type", tileTypeRegistry.getAll().map { it.id.toString() }),
-            snapshotCategory(CoreExtensionRegistrationCategoryIds.COMPONENT, "Component", componentRegistry.getAllOwners().map { "owner:${it.id}" } + componentRegistry.getAll().map { "value:${it.id}" } + componentRegistry.effectIds().map { "effect:$it" } + componentRegistry.getAllViews().map { "view:${it.id}" } + componentRegistry.projectionIds().map { "projection:$it" } + componentRegistry.lifecycleIds().map { "lifecycle:$it" }),
+            snapshotCategory(
+                id = CoreExtensionRegistrationCategoryIds.COMPONENT,
+                displayName = "Component",
+                registrationKeys = buildList {
+                    componentRegistry.getAllOwners().mapTo(this) { "owner:${it.id}" }
+                    componentRegistry.getAll().mapTo(this) { "value:${it.id}" }
+                    componentRegistry.effectIds().mapTo(this) { "effect:$it" }
+                    componentRegistry.getAllViews().mapTo(this) { "view:${it.id}" }
+                    componentRegistry.projectionIds().mapTo(this) { "projection:$it" }
+                    componentRegistry.lifecycleIds().mapTo(this) { "lifecycle:$it" }
+                },
+            ),
             snapshotCategory(CoreExtensionRegistrationCategoryIds.NETWORK_DTO, "Network DTO", networkRegistrationKeys()),
             snapshotCategory(CoreExtensionRegistrationCategoryIds.PERSISTENCE_DTO, "Persistence DTO", persistenceRegistrationKeys()),
             snapshotCategory(

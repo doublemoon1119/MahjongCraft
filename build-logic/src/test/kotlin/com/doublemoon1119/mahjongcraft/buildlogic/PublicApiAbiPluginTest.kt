@@ -6,6 +6,7 @@ import org.gradle.testkit.runner.TaskOutcome
 import java.io.File
 import kotlin.io.path.createTempDirectory
 import kotlin.test.Test
+import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
@@ -55,7 +56,7 @@ class PublicApiAbiPluginTest {
 
         val result = runner(root, "checkKotlinAbi").buildAndFail()
 
-        assertTrue(result.task(":checkKotlinAbi")?.outcome == TaskOutcome.FAILED, result.output)
+        assertEquals(TaskOutcome.FAILED, result.task(":checkKotlinAbi")?.outcome, result.output)
         assertTrue(result.output.contains("stable"), result.output)
     }
 

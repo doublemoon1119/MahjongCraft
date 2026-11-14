@@ -46,7 +46,7 @@ class MahjongTileResourceFilesTest {
     )
 
     /**
-     * 驗證主 item model 是 `builtin/entity` marker，實際牌面由 [MahjongTileItemRenderer]
+     * 驗證主 item model 是 `builtin/entity` marker，實際牌面由 `MahjongTileItemRenderer`
      * （`platform/minecraft/<version>/<loader>`）依 asset key 動態解析，不再依賴固定 predicate
      * override 清單。
      */

@@ -15,9 +15,11 @@ class RoundInfoLineDisplayRegistryImpl : RoundInfoLineDisplayRegistry {
     private val providers = mutableMapOf<String, RoundInfoLineProvider>()
 
     override val registrationKeys: Set<String>
-        get() = displays.keys.mapTo(mutableSetOf()) { "line:$it" } +
-            messages.keys.map { "message:$it" } +
-            providers.keys.map { "provider:$it" }
+        get() = buildSet {
+            displays.keys.mapTo(this) { "line:$it" }
+            messages.keys.mapTo(this) { "message:$it" }
+            providers.keys.mapTo(this) { "provider:$it" }
+        }
 
     override var isFrozen: Boolean = false
         private set

@@ -47,7 +47,6 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
-import kotlinx.serialization.encodeToString
 import net.minecraft.server.MinecraftServer
 import java.nio.file.Path
 import java.sql.SQLException
@@ -1004,7 +1003,11 @@ class FabricHistoryOutboxWriter(
             knownGaps = knownGaps + gaps
         }
         val archived = activeDatabase.readReplayIds()
-        val completed = (recording.decisionsByMatchId.keys + recording.terminalByMatchId.keys + recording.nextSequenceByMatchId.keys)
+        val completed = buildSet {
+            addAll(recording.decisionsByMatchId.keys)
+            addAll(recording.terminalByMatchId.keys)
+            addAll(recording.nextSequenceByMatchId.keys)
+        }
             .filterTo(mutableSetOf()) { it.toString() in archived }
         val persistedPartial = activeDatabase.readTerminalPartialIds()
         val partial = recording.terminalByMatchId.keys.filterTo(mutableSetOf()) { it.toString() in persistedPartial }

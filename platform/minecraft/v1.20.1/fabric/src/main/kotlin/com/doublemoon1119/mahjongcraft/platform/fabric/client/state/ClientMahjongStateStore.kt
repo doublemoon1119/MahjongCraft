@@ -74,7 +74,13 @@ private data class ClientTableState(
                 player.setAsideTiles
             }
             // 已公開但仍在手牌中的牌（等待搶和的宣告牌、被搶和胡走的牌）對其他觀察者是隱藏的手牌；排在最後覆蓋成公開牌面。
-            return (wallTiles + handTiles + meldTiles + discardTiles + setAsideTiles).associateBy { it.id }
+            return buildList {
+                addAll(wallTiles)
+                addAll(handTiles)
+                addAll(meldTiles)
+                addAll(discardTiles)
+                addAll(setAsideTiles)
+            }.associateBy { it.id }
         }
     }
 }
@@ -127,13 +133,6 @@ class ClientMahjongStateStore(
      * @param tableId 桌子 UUID。
      */
     fun gameAiPlayerIds(tableId: Uuid): Set<Uuid> = tables[tableId]?.gameAiPlayerIds.orEmpty()
-
-    /**
-     * 查詢指定桌子的規則選擇快照。
-     *
-     * @param tableId 桌子 UUID。
-     */
-    fun ruleDecisionSnapshot(tableId: Uuid): RuleDecisionSnapshot? = tables[tableId]?.ruleDecisionSnapshot
 
     /**
      * 取得只向該桌參與者本人同步的目前手牌分析。

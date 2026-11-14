@@ -29,7 +29,7 @@ class AutomaticControlStatusHudLayoutTest {
 
         assertTrue(layout.hiddenCount > 0)
         assertEquals(null, layout.placements.last().rowIndex)
-        assertTrue(layout.placements.map { it.x }.distinct().size == 2)
+        assertEquals(2, layout.placements.map { it.x }.distinct().size)
         assertTrue(layout.bounds.left >= 0)
         assertTrue(layout.bounds.top >= 0)
         assertTrue(layout.bounds.right <= 240)

@@ -15,15 +15,11 @@ import com.doublemoon1119.mahjongcraft.logic.module.ExhaustiveDrawSettlementResu
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
 import com.doublemoon1119.mahjongcraft.logic.module.MeldCompletedContext
 import com.doublemoon1119.mahjongcraft.logic.module.WinSettlementResult
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RIICHI_STICK_POINTS
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDeclarationKind
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPlayerComponents
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiWallProgress
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.layout.RiichiPhysicalWallLayoutPolicy
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.layout.RiichiWallLayout
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.opening.RiichiWallOpeningPolicy
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.riichiDeclaration
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.RiichiTileInterpretationPolicy
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.RiichiYakuType
 import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayer
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
@@ -809,7 +805,7 @@ class RiichiRuleModuleTest {
     }
 
     /**
-     * 驗證 [RiichiRuleModule.getStickPotCount] 純查詢場上目前立直棒數量，不像 [collectStickPot]
+     * 驗證 [RiichiRuleModule.getStickPotCount] 純查詢場上目前立直棒數量，不像 [RiichiRuleModule.collectStickPot]
      * 會連帶把狀態歸零。
      */
     @Test
@@ -903,7 +899,7 @@ class RiichiRuleModuleTest {
     }
 
     /**
-     * 聽牌手牌：1112345678999m（聽 1m 對倒），供 [declareExhaustiveDraw] 測試共用。
+     * 聽牌手牌：1112345678999m（聽 1m 對倒），供 [RiichiRuleModule.declareExhaustiveDraw] 測試共用。
      */
     private fun tenpaiHand() = FakeHandFactory.create(
         tiles = listOf(
@@ -924,7 +920,7 @@ class RiichiRuleModuleTest {
     )
 
     /**
-     * 明顯遠離聽牌的手牌（13 張互不相干的孤立牌），供 [declareExhaustiveDraw] 測試共用。
+     * 明顯遠離聽牌的手牌（13 張互不相干的孤立牌），供 [RiichiRuleModule.declareExhaustiveDraw] 測試共用。
      */
     private fun notTenpaiHand() = FakeHandFactory.create(
         tiles = listOf(
@@ -945,7 +941,7 @@ class RiichiRuleModuleTest {
     )
 
     /**
-     * 全為么九牌、皆未被鳴走的牌河，成立流局滿貫的必要條件，供 [resolveNagashiMangan] 測試共用。
+     * 全為么九牌、皆未被鳴走的牌河，成立流局滿貫的必要條件，供 [RiichiRuleModule.resolveNagashiMangan] 測試共用。
      */
     private fun allYaochuuDiscardPile() = RiichiDiscardPile()
         .discardTile(FakeIdentifiedTileFactory.create(Tile.Honor.East))
@@ -1183,7 +1179,7 @@ class RiichiRuleModuleTest {
     }
 
     /**
-     * 建立一份「全員恰好都打過一張牌」的桌況，供 [resolveSuufonRenda] 測試共用。
+     * 建立一份「全員恰好都打過一張牌」的桌況，供 [RiichiRuleModule.resolveSuufonRenda] 測試共用。
      *
      * @param discards 依座位順序（東南西北）各自的第一張捨牌。
      */

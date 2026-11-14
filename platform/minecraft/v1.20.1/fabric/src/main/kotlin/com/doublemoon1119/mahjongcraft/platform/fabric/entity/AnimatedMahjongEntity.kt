@@ -73,18 +73,6 @@ abstract class AnimatedMahjongEntity<C>(
      */
     fun enqueue(step: AnimationStep<C>) = enqueueAll(listOf(step))
 
-    /**
-     * 以 [steps] 完整取代尚未完成的佇列，供具有「較晚期限覆蓋較早期限」語意的子類別使用。
-     *
-     * @param steps 要取代成的新動畫步驟。
-     */
-    protected fun replaceAnimationQueue(steps: List<AnimationStep<C>>) {
-        check(!world.isClient) { "Animation steps must be replaced by the server" }
-        queue.clear()
-        queue.addAll(AnimationQueueDriver.append(emptyList(), steps))
-        activeStepEndGameTime = null
-    }
-
     /** 套用 [AnimationStep.Custom] 攜帶的實體專屬瞬間動作。 */
     protected abstract fun applyCustomStep(step: C)
 

@@ -11,7 +11,6 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongTileEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongTilePose
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MeldActionPopupTile
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.TileActionPopupKind
-import com.doublemoon1119.mahjongcraft.platform.fabric.entity.claimedTileOrientation
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.dice.toMahjongTableFacing
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.support.DebugPreviewDefaults
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.support.DebugPreviewEntityLifecycle
@@ -310,7 +309,6 @@ class FabricDebugAnimationCommand(
         )
         val sourceDirection = if (type == MeldType.Chi) RelativeDirection.Left else RelativeDirection.Across
         val sidewaysSlot = MahjongTileTableLayout.sidewaysSlotIndex(sourceDirection, tileCount)
-        val claimedOrientation = sourceDirection.claimedTileOrientation()
 
         val sourcePlacements = (0 until tileCount).map { slot ->
             layout.handPlacement(handSize = DebugPreviewDefaults.RULE_CONFIG.initialHandSize, tileIndex = slot)
@@ -393,8 +391,6 @@ class FabricDebugAnimationCommand(
             seatLayout = MahjongTableSeatLayout.FOUR_PLAYER,
         )
         val sourceDirection = RelativeDirection.Across
-        val claimedOrientation = sourceDirection.claimedTileOrientation()
-        val sidewaysSlot = MahjongTileTableLayout.sidewaysSlotIndex(sourceDirection, DebugPreviewDefaults.MELD_TILE_COUNT)
 
         val sourcePlacements = (0 until MELD_KAN_TILE_COUNT).map { slot ->
             layout.handPlacement(handSize = DebugPreviewDefaults.RULE_CONFIG.initialHandSize, tileIndex = slot)

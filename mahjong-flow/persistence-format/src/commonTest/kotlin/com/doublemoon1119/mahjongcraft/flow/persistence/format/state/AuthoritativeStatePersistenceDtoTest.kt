@@ -31,8 +31,6 @@ class AuthoritativeStatePersistenceDtoTest {
     /** 內建牌河的 persistence registry。 */
     private val discardPileRegistry = bundledPersistenceRegistries().discardPiles
 
-    /** 內建動態牌桌狀態的 persistence registry。 */
-
     /** 內建流局原因的 persistence registry。 */
     private val exhaustiveDrawReasonRegistry = bundledPersistenceRegistries().exhaustiveDrawReasons
 

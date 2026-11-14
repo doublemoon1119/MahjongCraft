@@ -27,6 +27,7 @@ import kotlin.coroutines.CoroutineContext
 import kotlin.io.path.createTempDirectory
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.milliseconds
@@ -56,7 +57,7 @@ class HistoryGenerationControllerTest {
                 expected = HistoryGenerationStartResult.PolicyRejected,
                 actual = controller.start("mahjongcraft:riichi/history_scenario/east", 1),
             )
-            assertTrue(controller.snapshot() == null)
+            assertNull(controller.snapshot())
         } finally {
             writer.detach()
         }

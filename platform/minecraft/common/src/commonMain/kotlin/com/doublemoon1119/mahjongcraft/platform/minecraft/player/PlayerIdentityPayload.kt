@@ -14,9 +14,6 @@ data class PlayerIdentityPayload(val entries: List<PlayerIdentityEntry>) {
         /** 單批最多同步的相關玩家數量。 */
         const val MAX_ENTRIES = 64
 
-        /** 普通玩家名稱的最大字元數。 */
-        const val MAX_NAME_LENGTH = 16
-
         /** 包含 JSON 包裝的單批線路大小上限。 */
         const val MAX_BYTES = 8192
     }

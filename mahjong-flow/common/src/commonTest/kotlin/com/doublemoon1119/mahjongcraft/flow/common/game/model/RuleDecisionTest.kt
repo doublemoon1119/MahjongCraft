@@ -1,7 +1,5 @@
 package com.doublemoon1119.mahjongcraft.flow.common.game.model
 
-import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionStep
-import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionTiming
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith

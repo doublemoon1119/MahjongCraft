@@ -142,7 +142,11 @@ class OrphanedTableCleanupService(
         try {
             val roomObserverIds = roomSnapshots.getAllObservers(tableId).toSet()
             val gameObserverIds = gameSnapshots.getAllObservers(tableId).toSet()
-            val additionalObserverIds = roomObserverIds + gameObserverIds + decision.playerIds
+            val additionalObserverIds = buildSet {
+                addAll(roomObserverIds)
+                addAll(gameObserverIds)
+                addAll(decision.playerIds)
+            }
 
             if (locations.get(tableId) !== entry ||
                 (notification != null && !removalNotifier.isCurrent(notification))

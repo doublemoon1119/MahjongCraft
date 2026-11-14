@@ -6,7 +6,6 @@ import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.threeplayer.ThreePlayerRiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanGameLength
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanRuleConfig
-import kotlinx.coroutines.flow.flow
 
 /**
  * 開發對局生成支援的規則與場長，其餘設定為該規則的預設值；開局仍沿用正式隨機初始化，座位全部由 AI 坐滿。

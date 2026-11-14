@@ -37,9 +37,13 @@ object MahjongTileModelLoadingPlugin : PreparableModelLoadingPlugin<FixedMahjong
         preparedData = data
         val registry = GlobalContext.get().get<MinecraftTileAssetRegistry>()
         pluginContext.addModels(
-            registry.allTileAssetKeys().map { assetKey ->
-                Identifier(tileModelResourceId(assetKey, registry))
-            } + data.variants.map { it.modelId } + Identifier(BuiltInAiCharacters.TILE_MASCOT_LIMB_MODEL_ID),
+            buildList {
+                registry.allTileAssetKeys().mapTo(this) { assetKey ->
+                    Identifier(tileModelResourceId(assetKey, registry))
+                }
+                data.variants.mapTo(this) { it.modelId }
+                add(Identifier(BuiltInAiCharacters.TILE_MASCOT_LIMB_MODEL_ID))
+            },
         )
         pluginContext.resolveModel().register(FixedMahjongTileModelVariantResolver(data.variants))
     }

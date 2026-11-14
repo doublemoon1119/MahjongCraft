@@ -184,7 +184,11 @@ class GameEventProjector(
                 results = results,
             )
         }
-        return listOfNotNull(started, actions, settled, ruleResults) + completed + listOfNotNull(ended)
+        return buildList {
+            addAll(listOfNotNull(started, actions, settled, ruleResults))
+            addAll(completed)
+            ended?.let(::add)
+        }
     }
 
     /**

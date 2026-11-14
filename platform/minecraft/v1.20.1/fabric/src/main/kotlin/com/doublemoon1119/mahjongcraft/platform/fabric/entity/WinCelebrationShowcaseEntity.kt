@@ -220,9 +220,6 @@ class WinCelebrationShowcaseEntity(
          */
         fun totalDurationTicks(showcaseDurationTicks: Int): Long = WinCelebrationCinematicTimeline.totalDurationTicks(showcaseDurationTicks)
 
-        /** 煙火推進正式發生的相對 tick。 */
-        const val FIREWORK_LAUNCH_TICK: Long = WinCelebrationCinematicTimeline.FIREWORK_LAUNCH_TICK
-
         /** 可接受的最短整段演出長度，包含前導與收束階段。 */
         private const val MINIMUM_VALID_DURATION_TICKS = SHOWCASE_CONTENT_START_TICK + 80L + FADE_OUT_TICKS
 

@@ -5,7 +5,6 @@ import com.doublemoon1119.mahjongcraft.extension.ExtensionRegistrationReport
 import com.doublemoon1119.mahjongcraft.extension.ExtensionRegistrationReportFormatter
 import com.doublemoon1119.mahjongcraft.flow.client.game.ClientDecisionTimerStateStore
 import com.doublemoon1119.mahjongcraft.flow.network.dto.command.toDomain
-import com.doublemoon1119.mahjongcraft.flow.network.dto.message.toDomain
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkDtoRegistries
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkJson
 import com.doublemoon1119.mahjongcraft.flow.network.dto.snapshot.toDomain
@@ -108,7 +107,6 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.table.RoundInfoLineDis
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileEmojiRegistry
-import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileLabelRegistry
 import net.fabricmc.api.ClientModInitializer
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 import net.fabricmc.fabric.api.client.model.loading.v1.PreparableModelLoadingPlugin
@@ -225,7 +223,6 @@ class MahjongCraftModClient : ClientModInitializer {
         val tileDisplayNames = koin.get<TileDisplayNameRegistry>()
         val tileAssetRegistry = koin.get<MinecraftTileAssetRegistry>()
         val tileEmojiRegistry = koin.get<TileEmojiRegistry>()
-        val tileLabelRegistry = koin.get<TileLabelRegistry>()
         val tileFaceRenderer = koin.get<MahjongTileFaceRenderer>()
         val tileAppearanceResolver = koin.get<ClientTileAppearanceResolver>()
         val actionVocabulary = koin.get<GameActionVocabularyRegistry>()

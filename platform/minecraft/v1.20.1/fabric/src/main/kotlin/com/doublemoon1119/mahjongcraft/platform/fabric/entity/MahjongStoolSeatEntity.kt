@@ -4,7 +4,6 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.block.MahjongStoolBlock
 import com.doublemoon1119.mahjongcraft.platform.fabric.registry.ModEntities
 import net.minecraft.entity.Dismounting
 import net.minecraft.entity.Entity
-import net.minecraft.entity.Entity.PositionUpdater
 import net.minecraft.entity.EntityType
 import net.minecraft.entity.LivingEntity
 import net.minecraft.entity.damage.DamageSource

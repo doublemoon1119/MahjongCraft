@@ -46,7 +46,7 @@ class DecisionHudActionDisplayOrderTest {
         val orders = listOf(BuiltInGameActionIds.KAN_OPEN, BuiltInGameActionIds.KAN_CLOSED, BuiltInGameActionIds.KAN_ADDED)
             .map { texts.actionOrder(BuiltInRuleModuleIds.RIICHI, it) }
 
-        assertTrue(orders.distinct().size == 1, "kan variants must share one order: $orders")
+        assertEquals(1, orders.distinct().size, "kan variants must share one order: $orders")
     }
 
     /** 日麻登記的動作排在核心動作之後，立直在九種九牌之前。 */

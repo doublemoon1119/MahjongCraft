@@ -207,7 +207,11 @@ class DeclareKanUseCase(
                                     eligiblePlayerIds = ronWinningPlayerIds,
                                 ),
                             ),
-                            publicTileEvidenceIds = state.publicTileEvidenceIds + kanAction.withTiles + kanAction.tileId,
+                            publicTileEvidenceIds = buildSet {
+                                addAll(state.publicTileEvidenceIds)
+                                addAll(kanAction.withTiles)
+                                add(kanAction.tileId)
+                            },
                         )
                         // 先呈現槓完成的樣子（牌移入副露、尚未補牌），其他玩家看到後才決定要不要搶；權威桌況要等反應結束才套用。
                         val declaredState = SelfDeclarationApplier.declaredState(state, playerId, kanAction, declaredTile, module, componentRegistry)

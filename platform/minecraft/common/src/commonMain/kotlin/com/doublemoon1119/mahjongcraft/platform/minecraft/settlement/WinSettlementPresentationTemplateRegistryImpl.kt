@@ -22,10 +22,12 @@ class WinSettlementPresentationTemplateRegistryImpl : WinSettlementPresentationT
     override val templateKeys: Set<String> get() = templates.keys.toSet()
 
     override val registrationKeys: Set<String>
-        get() = templates.keys.mapTo(mutableSetOf()) { "template:$it" } +
-            providers.keys.map { "field:$it" } +
-            ruleTemplateKeys.keys.map { "rule:$it" } +
-            detailTextFormatters.keys.map { "detail:$it" }
+        get() = buildSet {
+            templates.keys.mapTo(this) { "template:$it" }
+            providers.keys.mapTo(this) { "field:$it" }
+            ruleTemplateKeys.keys.mapTo(this) { "rule:$it" }
+            detailTextFormatters.keys.mapTo(this) { "detail:$it" }
+        }
 
     override fun register(template: WinSettlementPresentationTemplate) {
         check(!isFrozen) { "Win settlement template registry is frozen" }
