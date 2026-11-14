@@ -1589,7 +1589,7 @@ class WinCelebrationShowcaseEntityRenderer(
         const val WINNING_RIPPLE_SEGMENTS = 20
         const val WINNING_RIPPLE_WIDTH = 0.004
         const val WINNING_RIPPLE_ALPHA = 165.0
-        val WINNING_RIPPLE_COLOR = 0xFF8DDFFF.toInt()
+        const val WINNING_RIPPLE_COLOR = 0xFF8DDFFF.toInt()
         const val MULTI_WINNER_GROUP_GAP = 0.46
         const val TITLE_IMAGE_SCALE = 1.38f
         const val TITLE_IMAGE_HEIGHT = 0.65

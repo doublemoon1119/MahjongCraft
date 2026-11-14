@@ -3,6 +3,7 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.server.event
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.FabricServerHolder
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocationRegistry
 import kotlin.test.Test
+import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 import kotlin.uuid.Uuid
@@ -98,7 +99,7 @@ class TablePresentationBusyTrackerTest {
         val tracker = tracker()
         val lease = tracker.beginPending(Uuid.random(), "opening-deal")
 
-        assertTrue(lease.operation == "opening-deal")
+        assertEquals("opening-deal", lease.operation)
         lease.complete()
     }
 

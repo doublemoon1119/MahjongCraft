@@ -649,8 +649,8 @@ class HistoryRoundEventPresentationTest {
             nextDealerSeat = null,
             rows = emptyList(),
         )
-        val tenpai = HistoryOutcomeRowPresentation(0, 28000, true, false, 3000)
-        val noten = HistoryOutcomeRowPresentation(1, 24000, false, false, -1000)
+        val tenpai = HistoryOutcomeRowPresentation(seatIndex = 0, score = 28000, beneficiary = true, responsible = false, scoreChange = 3000)
+        val noten = HistoryOutcomeRowPresentation(seatIndex = 1, score = 24000, beneficiary = false, responsible = false, scoreChange = -1000)
         assertEquals(RiichiTranslationKeys.EXHAUSTIVE_DRAW_TENPAI, presenter.settlementStatusText(outcome, tenpai)?.string)
         assertEquals(RiichiTranslationKeys.EXHAUSTIVE_DRAW_NOTEN, presenter.settlementStatusText(outcome, noten)?.string)
         assertEquals(MinecraftHistoryScreenKeys.ROUND_BENEFICIARY, presenter.settlementStatusText(outcome.copy(reasonId = "custom:draw"), tenpai)?.string)

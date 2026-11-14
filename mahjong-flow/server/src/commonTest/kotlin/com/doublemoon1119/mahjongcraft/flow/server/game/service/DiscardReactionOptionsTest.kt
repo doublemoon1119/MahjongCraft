@@ -43,6 +43,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertIs
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 import kotlin.uuid.Uuid
 
@@ -77,7 +78,7 @@ class DiscardReactionOptionsTest {
             discardedTile = fixture.discarded,
         )
 
-        assertTrue(result.abortiveDrawReason == null)
+        assertNull(result.abortiveDrawReason)
         val pendingReaction = assertIs<PendingReaction>(result.tableState.pendingReaction)
         assertEquals(
             expected = PendingReaction(
@@ -140,8 +141,8 @@ class DiscardReactionOptionsTest {
             discardedTile = fixture.discarded,
         )
 
-        assertTrue(result.abortiveDrawReason == null)
-        assertTrue(result.tableState.pendingReaction == null)
+        assertNull(result.abortiveDrawReason)
+        assertNull(result.tableState.pendingReaction)
     }
 
     /** 真正的回應用例也必須拒絕規則回傳但共用流程不支援的擴充反應，且不留下任何副作用。 */

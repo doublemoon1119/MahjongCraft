@@ -4,6 +4,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
+import kotlin.test.assertSame
 import kotlin.test.assertTrue
 
 /** 驗證桌面物件場景更新在成功與失敗時都維持完整狀態。 */
@@ -129,7 +130,7 @@ class TablePropSceneUpdateTest {
             )
         }
 
-        assertTrue(thrown === failure)
+        assertSame(failure, thrown)
         assertEquals(setOf("prepared-first", "prepared-second", "old"), removed.toSet())
     }
 

@@ -18,6 +18,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertIs
+import kotlin.test.assertNotEquals
 import kotlin.test.assertTrue
 import kotlin.uuid.Uuid
 
@@ -139,7 +140,7 @@ class RoomAdmissionLifecycleTest {
         assertEquals(listOf(actor), next.toSnapshot(host).excludedAiPlayerIds)
         assertTrue(next.toSnapshot(Uuid.random()).excludedAiPlayerIds.isEmpty())
         assertTrue(RoomAdmissionState().excludedParticipants.isEmpty())
-        assertFalse(RoomAdmissionState().instanceId == room.admission.instanceId)
+        assertNotEquals(room.admission.instanceId, RoomAdmissionState().instanceId)
     }
 
     /** 主動離開只刪除本人成員記錄，保留其他角色來源與房間識別。 */

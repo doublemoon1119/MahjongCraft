@@ -60,7 +60,7 @@ class MahjongCraftEventsTest {
         val context = GameEventContext.create(location, sessionId)
 
         assertEquals(location, context.tableLocation)
-        assertTrue(context.sessionId == sessionId)
+        assertEquals(sessionId, context.sessionId)
         assertTrue(context.sessionId != Uuid.random())
     }
 }

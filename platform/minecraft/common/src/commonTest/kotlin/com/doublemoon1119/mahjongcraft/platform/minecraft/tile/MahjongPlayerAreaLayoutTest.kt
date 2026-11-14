@@ -61,7 +61,7 @@ class MahjongPlayerAreaLayoutTest {
         )
         val layout = MahjongPlayerAreaLayout.compute(input)
         assertEquals(PublicHandOrder.arrange(ids), layout.standing.map { it.tileId })
-        assertTrue(layout.standing.single { it.tileId == ids.first() }.footprint == MahjongTileFootprint.LYING)
+        assertEquals(MahjongTileFootprint.LYING, layout.standing.single { it.tileId == ids.first() }.footprint)
         assertTrue(layout.standing.filterNot { it.tileId == ids.first() }.all { it.footprint == MahjongTileFootprint.STANDING })
     }
 

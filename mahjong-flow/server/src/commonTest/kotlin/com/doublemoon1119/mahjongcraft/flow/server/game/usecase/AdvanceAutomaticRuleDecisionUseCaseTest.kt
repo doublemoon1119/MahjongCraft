@@ -40,6 +40,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 import kotlin.uuid.Uuid
 
@@ -101,7 +102,7 @@ class AdvanceAutomaticRuleDecisionUseCaseTest {
         val presented = batch.last().tableState
         assertEquals(listOf(secondTile.id), presented.players[0].hand.tiles.map { it.id })
         assertEquals(listOf(replacementTile.id), presented.players[1].hand.tiles.map { it.id })
-        assertTrue(presentationPublisher.getPublishedInitialDeal(table.id) == null)
+        assertNull(presentationPublisher.getPublishedInitialDeal(table.id))
         assertEquals(
             expected = listOf(RuleDecisionTiming.WIN_CONTINUES, RuleDecisionTiming.WIN_CONTINUES),
             actual = repository.historyDrafts.map { it.fact }.filterIsInstance<HistoryFact.RuleDecisionAutomaticallyResolved>().map { it.timing },

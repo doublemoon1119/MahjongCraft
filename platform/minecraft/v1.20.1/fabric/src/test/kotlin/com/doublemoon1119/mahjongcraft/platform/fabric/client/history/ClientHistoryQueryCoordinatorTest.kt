@@ -37,7 +37,7 @@ class ClientHistoryQueryCoordinatorTest {
         )
         val request = coordinator.queryList(HistoryListRequestDto("caller", HistoryQueryScopeDto.OWN, HistorySortFieldDto.ENDED_AT, HistorySortDirectionDto.DESC, HistoryQueryFiltersDto.NONE, 20, null))
         assertFalse(coordinator.acceptsCharacterAppearance(request, "first"))
-        coordinator.applyList(HistoryListResponseDto(request, listOf(entry), null, null, false, false))
+        coordinator.applyList(HistoryListResponseDto(requestId = request, entries = listOf(entry), nextCursor = null, errorCode = null, allowAll = false, allowStressTest = false))
         assertTrue(coordinator.acceptsCharacterAppearance(request, "first"))
         assertFalse(coordinator.acceptsCharacterAppearance(request, "unlisted"))
         assertFalse(coordinator.acceptsCharacterAppearance("stale", "first"))

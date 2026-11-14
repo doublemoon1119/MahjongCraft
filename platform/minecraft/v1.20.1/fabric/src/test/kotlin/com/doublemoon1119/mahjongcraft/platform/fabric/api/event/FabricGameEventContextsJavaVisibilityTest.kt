@@ -3,6 +3,7 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.api.event
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.event.GameEventContext
 import java.lang.reflect.Modifier
 import kotlin.test.Test
+import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
 /** 驗證 Fabric 原生轉換 facade 的 Java 對外邊界。 */
@@ -23,7 +24,7 @@ class FabricGameEventContextsJavaVisibilityTest {
             method.name.startsWith("install") || method.name.startsWith("clear")
         }
 
-        assertTrue(lifecycleMethods.size == 2)
+        assertEquals(2, lifecycleMethods.size)
         assertTrue(lifecycleMethods.all { method -> method.isSynthetic })
     }
 }

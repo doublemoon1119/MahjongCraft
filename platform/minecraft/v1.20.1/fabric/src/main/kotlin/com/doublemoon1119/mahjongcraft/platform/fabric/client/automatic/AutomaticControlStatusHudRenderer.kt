@@ -111,15 +111,15 @@ class AutomaticControlStatusHudRenderer(
 
     private companion object {
         /** 面板底色（ARGB）。 */
-        val BACKGROUND_COLOR = 0xB0182028.toInt()
+        const val BACKGROUND_COLOR = 0xB0182028.toInt()
 
         /** 已啟用項目的文字與圓點顏色（ARGB）。 */
-        val ENABLED_COLOR = 0xFFA8D8A0.toInt()
+        const val ENABLED_COLOR = 0xFFA8D8A0.toInt()
 
         /** 未啟用項目的文字與圓點顏色（ARGB）。 */
-        val DISABLED_COLOR = 0xFFB6B6B6.toInt()
+        const val DISABLED_COLOR = 0xFFB6B6B6.toInt()
 
         /** 隱藏項目數摘要的顏色（ARGB）。 */
-        val SUMMARY_COLOR = 0xFFB6B6B6.toInt()
+        const val SUMMARY_COLOR = 0xFFB6B6B6.toInt()
     }
 }

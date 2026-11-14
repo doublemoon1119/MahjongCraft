@@ -16,7 +16,7 @@ import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
-import kotlin.test.assertTrue
+import kotlin.test.assertSame
 import kotlin.uuid.Uuid
 
 /** [RiichiSupplementalDrawPolicy] 的純邏輯測試。 */
@@ -138,7 +138,7 @@ class RiichiSupplementalDrawPolicyTest {
         )
         val context = SupplementalDrawContext(state, state, state.currentPlayer.id, GameAction.Draw)
 
-        assertTrue(RiichiSupplementalDrawPolicy.resolve(context) === SupplementalDrawDecision.NotRequired)
+        assertSame(SupplementalDrawDecision.NotRequired, RiichiSupplementalDrawPolicy.resolve(context))
     }
 
     /** 驗證未提供補牌能力的規則預設會明確拒絕，而不套用日麻行為。 */

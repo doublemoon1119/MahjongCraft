@@ -3,7 +3,6 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.suppor
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
-import kotlin.test.assertTrue
 
 /** 驗證 debug 預覽臨時 entity 的到期清除與佇列移除語意。 */
 class DebugPreviewCleanupQueueTest {
@@ -81,6 +80,6 @@ class DebugPreviewCleanupQueueTest {
         queue.discardExpired()
 
         assertEquals(listOf("first"), discarded, "the other task is not expired in its own world time")
-        assertTrue(queue.pendingCount == 1)
+        assertEquals(1, queue.pendingCount)
     }
 }

@@ -22,7 +22,7 @@ internal object MahjongBotArmAnimation {
     private const val ROLL_RADIANS: Double = -0.4
 
     /** 弧度換算為角度。 */
-    private val degreesPerRadian = (180.0 / PI).toFloat()
+    private const val DEGREES_PER_RADIAN = (180.0 / PI).toFloat()
 
     /**
      * 原版右臂的水平轉向；只旋轉手臂，不扭動牌身。
@@ -32,7 +32,7 @@ internal object MahjongBotArmAnimation {
      */
     fun yawDegrees(progress: Float): Float {
         if (!progress.isFinite() || progress <= 0f || progress >= 1f) return 0f
-        return (sin(sqrt(progress.toDouble()) * 2.0 * PI) * YAW_RADIANS).toFloat() * degreesPerRadian
+        return (sin(sqrt(progress.toDouble()) * 2.0 * PI) * YAW_RADIANS).toFloat() * DEGREES_PER_RADIAN
     }
 
     /**
@@ -43,7 +43,7 @@ internal object MahjongBotArmAnimation {
      */
     fun rollDegrees(progress: Float): Float {
         if (!progress.isFinite() || progress <= 0f || progress >= 1f) return 0f
-        return (sin(progress * PI) * ROLL_RADIANS).toFloat() * degreesPerRadian
+        return (sin(progress * PI) * ROLL_RADIANS).toFloat() * DEGREES_PER_RADIAN
     }
 
     /**
@@ -59,6 +59,6 @@ internal object MahjongBotArmAnimation {
         val eased = 1f - squared * squared
         val forward = sin(eased * PI) * FORWARD_RADIANS
         val compensation = sin(progress * PI) * LEVEL_HEAD_COMPENSATION
-        return (forward + compensation).toFloat() * degreesPerRadian
+        return (forward + compensation).toFloat() * DEGREES_PER_RADIAN
     }
 }

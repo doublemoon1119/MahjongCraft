@@ -194,7 +194,7 @@ class MahjongTileSelectionConfirmEntityRenderer(
          * 內容量測，用這個值當上限；不是 `const val`，運算式引用另一個模組的常數，讓兩邊調整拼湊面板
          * 尺寸時這個值自動保持一致。
          */
-        val MAX_PANEL_WIDTH_BLOCKS: Double =
+        const val MAX_PANEL_WIDTH_BLOCKS: Double =
             MahjongTileTableLayout.TILE_SELECTION_CONFIRM_SEGMENT_COUNT * MahjongTileTableLayout.TILE_SELECTION_CONFIRM_SEGMENT_SPACING
     }
 }

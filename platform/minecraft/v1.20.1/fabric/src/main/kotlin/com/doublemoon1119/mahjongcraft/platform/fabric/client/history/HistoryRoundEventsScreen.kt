@@ -771,9 +771,9 @@ internal class HistoryRoundEventsScreen(
         const val ERROR_COLOR = 0xff6666
 
         /** 一般卡片。 */
-        val CARD_COLOR = 0xB0202020.toInt()
+        const val CARD_COLOR = 0xB0202020.toInt()
 
         /** 指向卡片。 */
-        val CARD_HOVER_COLOR = 0xB0343434.toInt()
+        const val CARD_HOVER_COLOR = 0xB0343434.toInt()
     }
 }

@@ -707,12 +707,12 @@ internal class HistoryRoundStateScreen(
         const val SORT_HOVER_COLOR = 0x8ed5df
 
         /** 牌組底色。 */
-        val CARD_COLOR = 0xB0202020.toInt()
+        const val CARD_COLOR = 0xB0202020.toInt()
 
         /** 指向牌組底色。 */
-        val HOVER_COLOR = 0xB0343434.toInt()
+        const val HOVER_COLOR = 0xB0343434.toInt()
 
         /** 將 RGB 配色轉為不透明 ARGB 的 alpha 位元。 */
-        val OPAQUE = 0xFF000000.toInt()
+        const val OPAQUE = 0xFF000000.toInt()
     }
 }
