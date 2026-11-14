@@ -1,0 +1,22 @@
+{
+  "replace": false,
+  "values": [
+    "mahjongcraft:mahjong_ruler",
+    "mahjongcraft:white_mahjong_ruler",
+    "mahjongcraft:light_gray_mahjong_ruler",
+    "mahjongcraft:gray_mahjong_ruler",
+    "mahjongcraft:black_mahjong_ruler",
+    "mahjongcraft:brown_mahjong_ruler",
+    "mahjongcraft:red_mahjong_ruler",
+    "mahjongcraft:orange_mahjong_ruler",
+    "mahjongcraft:yellow_mahjong_ruler",
+    "mahjongcraft:lime_mahjong_ruler",
+    "mahjongcraft:green_mahjong_ruler",
+    "mahjongcraft:cyan_mahjong_ruler",
+    "mahjongcraft:light_blue_mahjong_ruler",
+    "mahjongcraft:blue_mahjong_ruler",
+    "mahjongcraft:purple_mahjong_ruler",
+    "mahjongcraft:magenta_mahjong_ruler",
+    "mahjongcraft:pink_mahjong_ruler"
+  ]
+}

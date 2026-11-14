@@ -1,0 +1,15 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "group": "mahjong_ruler_dye",
+  "ingredients": [
+    {
+      "tag": "mahjongcraft:mahjong_rulers"
+    },
+    {
+      "item": "minecraft:light_gray_dye"
+    }
+  ],
+  "result": {
+    "item": "mahjongcraft:light_gray_mahjong_ruler"
+  }
+}

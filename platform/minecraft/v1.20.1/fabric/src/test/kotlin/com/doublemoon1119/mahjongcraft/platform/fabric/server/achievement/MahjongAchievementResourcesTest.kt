@@ -59,7 +59,7 @@ class MahjongAchievementResourcesTest {
                     condition.statistic?.let { assertTrue(it.statisticId in AchievementStatisticIds.ALL, "$id references unknown ${it.statisticId}") }
                     referenced += condition.achievementIds
                 } else {
-                    assertEquals("minecraft:inventory_changed", trigger, "$id uses an unexpected trigger")
+                    assertTrue(trigger in VANILLA_TRIGGERS, "$id uses an unexpected trigger $trigger")
                 }
             }
         }
@@ -127,5 +127,8 @@ class MahjongAchievementResourcesTest {
     private companion object {
         /** 內建進度 JSON 的資源根目錄。 */
         const val ADVANCEMENT_ROOT = "data/mahjongcraft/advancements"
+
+        /** 內建進度可以使用的原版觸發條件：取得物品，以及用牌尺打中其他玩家。 */
+        val VANILLA_TRIGGERS: Set<String> = setOf("minecraft:inventory_changed", "minecraft:player_hurt_entity")
     }
 }

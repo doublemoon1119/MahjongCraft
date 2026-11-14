@@ -22,6 +22,10 @@ object ModSounds {
     lateinit var scoringStickPlace: SoundEvent
         private set
 
+    /** 放下牌尺時播放的接觸聲音。 */
+    lateinit var rulerPlace: SoundEvent
+        private set
+
     /** 註冊全部自訂聲音事件並保存自由物品互動需要的實例。 */
     fun register() {
         tileDiscardLand = register(MahjongAnimationSounds.TILE_DISCARD_LAND)
@@ -33,6 +37,7 @@ object ModSounds {
         register(MahjongAnimationSounds.WALL_REVEAL)
         diceLand = register(MahjongAnimationSounds.DICE_LAND)
         scoringStickPlace = register(MahjongAnimationSounds.SCORING_STICK_PLACE)
+        rulerPlace = register(MahjongAnimationSounds.RULER_PLACE)
         register(MahjongAnimationSounds.WIN_LIGHTNING, fixedRange = LIGHTNING_RANGE)
         RiichiGameActionVoiceSoundIds.ALL.forEach(::register)
         TaiwanGameActionVoiceSoundIds.ALL.forEach(::register)

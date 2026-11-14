@@ -1,0 +1,42 @@
+{
+  "parent": "mahjongcraft:mahjong/root",
+  "display": {
+    "icon": {
+      "item": "mahjongcraft:mahjong_ruler"
+    },
+    "title": {
+      "translate": "advancements.mahjongcraft.mahjong.ruler_hit.title"
+    },
+    "description": {
+      "translate": "advancements.mahjongcraft.mahjong.ruler_hit.description"
+    },
+    "frame": "task",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": true
+  },
+  "criteria": {
+    "hit_player_with_ruler": {
+      "trigger": "minecraft:player_hurt_entity",
+      "conditions": {
+        "player": {
+          "equipment": {
+            "mainhand": {
+              "tag": "mahjongcraft:mahjong_rulers"
+            }
+          }
+        },
+        "damage": {
+          "type": {
+            "direct_entity": {
+              "type": "minecraft:player"
+            }
+          }
+        },
+        "entity": {
+          "type": "minecraft:player"
+        }
+      }
+    }
+  }
+}
