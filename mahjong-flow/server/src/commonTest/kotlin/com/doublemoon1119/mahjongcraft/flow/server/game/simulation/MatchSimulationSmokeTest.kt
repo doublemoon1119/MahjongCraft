@@ -95,7 +95,7 @@ class MatchSimulationSmokeTest {
         }
     }
 
-    /** 送出不合法命令的策略會被偵測，且從那一局的開局桌況重新推進時同樣發生。 */
+    /** 送出不合法命令的策略會被偵測，且以同一個數字從頭重打時同樣發生；失敗描述附上這個數字。 */
     @Test
     fun `an illegal command is detected and reproduced on replay`() = runTest(timeout = SMOKE_TIMEOUT) {
         val simulator = MatchSimulator(RiichiRuleConfig()) { registry, _ ->
@@ -106,7 +106,9 @@ class MatchSimulationSmokeTest {
 
         val failure = assertNotNull(result.failure)
         assertIs<IllegalAiCommandException>(failure.cause)
-        assertEquals(true, failure.reproducedOnReplay)
+        assertTrue(failure.reproducedOnReplay)
+        assertEquals(4, failure.seed)
+        assertTrue("Seed: 4" in failure.describe())
         assertTrue(failure.trace.isNotEmpty())
         assertTrue(result.placementsByPlayer.isEmpty())
     }
