@@ -83,7 +83,15 @@ class StrategyCalibrationTest {
                 val nextMatch = AtomicInteger(0)
                 coroutineScope {
                     List(parallelism) {
-                        async { buildList { while (nextMatch.getAndIncrement() < matches) add(simulator.play(lineup)) } }
+                        async {
+                            buildList {
+                                while (true) {
+                                    val matchIndex = nextMatch.getAndIncrement()
+                                    if (matchIndex >= matches) break
+                                    add(simulator.play(lineup, seed = matchIndex))
+                                }
+                            }
+                        }
                     }.awaitAll().flatten()
                 }
             }

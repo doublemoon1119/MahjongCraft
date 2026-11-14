@@ -104,6 +104,7 @@ import com.doublemoon1119.mahjongcraft.testing.flow.common.game.service.FakeGame
 import com.doublemoon1119.mahjongcraft.testing.flow.common.game.service.FakeGamePresentationBusyGate
 import com.doublemoon1119.mahjongcraft.testing.flow.common.game.service.FakeGamePresentationPublisher
 import com.doublemoon1119.mahjongcraft.testing.flow.common.game.service.WinPresentationSegment
+import com.doublemoon1119.mahjongcraft.testing.flow.common.game.testMatchSeed
 import com.doublemoon1119.mahjongcraft.testing.flow.common.room.repository.FakeRoomSnapshotRepository
 import com.doublemoon1119.mahjongcraft.testing.flow.common.room.service.FakeRoomEventPublisher
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeIdentifiedTileFactory
@@ -474,6 +475,7 @@ class GameFlowCoordinatorTest {
             ),
             flowConfig = GameFlowConfig(),
             forcedAutoPlayPlayerIds = setOf(playerId),
+            matchSeed = testMatchSeed(0),
         )
         fixtures.gameRepo.setGame(game)
 
@@ -512,6 +514,7 @@ class GameFlowCoordinatorTest {
             ),
             flowConfig = GameFlowConfig(),
             forcedAutoPlayPlayerIds = setOf(forcedPlayerId),
+            matchSeed = testMatchSeed(0),
         )
         fixtures.gameRepo.setGame(game)
 
@@ -553,6 +556,7 @@ class GameFlowCoordinatorTest {
                 flowConfig = GameFlowConfig(),
                 forcedAutoPlayPlayerIds = setOf(forcedPlayerId),
                 aiPlayerStrategyKeys = mapOf(ai.id to RandomAiStrategy.KEY),
+                matchSeed = testMatchSeed(0),
             ),
         )
 
@@ -651,7 +655,7 @@ class GameFlowCoordinatorTest {
             tileWall = TileWall(emptyList()),
             currentPlayerIndex = 0,
         )
-        fixtures.gameRepo.setGame(Game(tableState = table, flowConfig = GameFlowConfig(ruleDecision = RuleDecisionConfig(30.seconds))))
+        fixtures.gameRepo.setGame(Game(tableState = table, flowConfig = GameFlowConfig(ruleDecision = RuleDecisionConfig(30.seconds)), matchSeed = testMatchSeed(0)))
 
         val result = fixtures.coordinator.dispatchThenDrive(gameId, playerId, GameCommand.Draw)
 
@@ -698,7 +702,7 @@ class GameFlowCoordinatorTest {
             ruleDecisionResolvers = RuleDecisionResolverRegistry().apply { register(TimedConfirmationResolver(setOf(RuleDecisionTiming.BEFORE_EXHAUSTIVE_DRAW, RuleDecisionTiming.ROUND_END))) },
         )
         val playerId = Uuid.random()
-        fixtures.gameRepo.setGame(Game(tableState = exhaustedWallTable(playerId), flowConfig = GameFlowConfig(ruleDecision = RuleDecisionConfig(30.seconds))))
+        fixtures.gameRepo.setGame(Game(tableState = exhaustedWallTable(playerId), flowConfig = GameFlowConfig(ruleDecision = RuleDecisionConfig(30.seconds)), matchSeed = testMatchSeed(0)))
         fixtures.coordinator.dispatch(gameId, playerId, GameCommand.Draw)
         val drawWindow = assertNotNull(fixtures.gameRepo.getGame(gameId)?.pendingRuleDecision)
         fixtures.coordinator.dispatch(gameId, playerId, GameCommand.SubmitRuleDecision(drawWindow.id, RuleDecisionSubmission.Confirmed))
@@ -724,7 +728,7 @@ class GameFlowCoordinatorTest {
             ruleDecisionResolvers = RuleDecisionResolverRegistry().apply { register(TimedConfirmationResolver(setOf(RuleDecisionTiming.BEFORE_EXHAUSTIVE_DRAW))) },
         )
         val playerId = Uuid.random()
-        fixtures.gameRepo.setGame(Game(tableState = exhaustedWallTable(playerId), flowConfig = GameFlowConfig(ruleDecision = RuleDecisionConfig(30.seconds))))
+        fixtures.gameRepo.setGame(Game(tableState = exhaustedWallTable(playerId), flowConfig = GameFlowConfig(ruleDecision = RuleDecisionConfig(30.seconds)), matchSeed = testMatchSeed(0)))
         fixtures.coordinator.dispatch(gameId, playerId, GameCommand.Draw)
         assertNotNull(fixtures.gameRepo.getGame(gameId)?.pendingRuleDecision)
         fixtures.coordinator.driveAutomatedPlayers(gameId)
@@ -779,7 +783,7 @@ class GameFlowCoordinatorTest {
             tileWall = TileWall(emptyList()),
             currentPlayerIndex = 0,
         )
-        fixtures.gameRepo.setGame(Game(tableState = table, flowConfig = GameFlowConfig(ruleDecision = RuleDecisionConfig(30.seconds))))
+        fixtures.gameRepo.setGame(Game(tableState = table, flowConfig = GameFlowConfig(ruleDecision = RuleDecisionConfig(30.seconds)), matchSeed = testMatchSeed(0)))
 
         fixtures.coordinator.dispatchThenDrive(gameId, playerId, GameCommand.Draw)
 
@@ -1320,7 +1324,7 @@ class GameFlowCoordinatorTest {
             config = RiichiRuleConfig(gameLength = RiichiGameLength.East),
             currentPlayerIndex = 0,
         )
-        fixtures.gameRepo.setGame(Game(tableState = table, flowConfig = GameFlowConfig(ruleDecision = RuleDecisionConfig(30.seconds))))
+        fixtures.gameRepo.setGame(Game(tableState = table, flowConfig = GameFlowConfig(ruleDecision = RuleDecisionConfig(30.seconds)), matchSeed = testMatchSeed(0)))
 
         val result = fixtures.coordinator.dispatchThenDrive(gameId, winnerId, GameCommand.Tsumo)
         assertTrue(result is Outcome.Success, "Expected Success but got $result")
@@ -2055,6 +2059,7 @@ class GameFlowCoordinatorTest {
                     ),
                     timing = RuleDecisionTiming.ROUND_START,
                 ),
+                matchSeed = testMatchSeed(0),
             ),
         )
 
@@ -2084,6 +2089,7 @@ class GameFlowCoordinatorTest {
             game = Game(
                 tableState = table,
                 flowConfig = GameFlowConfig(ruleDecision = RuleDecisionConfig(30.seconds)),
+                matchSeed = testMatchSeed(0),
             ),
         )
 
@@ -2129,6 +2135,7 @@ class GameFlowCoordinatorTest {
                     ),
                     timing = RuleDecisionTiming.ROUND_START,
                 ),
+                matchSeed = testMatchSeed(0),
             ),
         )
 
@@ -2234,6 +2241,7 @@ class GameFlowCoordinatorTest {
                     ),
                     timing = RuleDecisionTiming.ROUND_START,
                 ),
+                matchSeed = testMatchSeed(0),
             ),
         )
 

@@ -36,7 +36,7 @@ class MatchSimulationSmokeTest {
         val lineup = listOf(BuiltInAiStrategyKeys.BEGINNER, BuiltInAiStrategyKeys.INTERMEDIATE, BuiltInAiStrategyKeys.ADVANCED, RandomAiStrategy.KEY)
 
         val config = RiichiRuleConfig(gameLength = RiichiGameLength.East)
-        val result = MatchSimulator(config).play(lineup)
+        val result = MatchSimulator(config).play(lineup, seed = 1)
         val diagnostic = "rounds played: ${result.rounds.size}; end reason: ${result.matchEndReasonId}; final scores: ${result.finalScoresByPlayer}"
 
         assertNull(result.failure, result.failure?.describe())
@@ -60,7 +60,7 @@ class MatchSimulationSmokeTest {
 
         val config = ThreePlayerRiichiRuleConfig(gameLength = RiichiGameLength.East)
         val recorder = DecisionRecorder(traceLimit = Int.MAX_VALUE)
-        val result = MatchSimulator(config).play(lineup, recorder)
+        val result = MatchSimulator(config).play(lineup, recorder, seed = 2)
         val diagnostic = "rounds played: ${result.rounds.size}; end reason: ${result.matchEndReasonId}; final scores: ${result.finalScoresByPlayer}"
 
         assertNull(result.failure, result.failure?.describe())
@@ -83,7 +83,7 @@ class MatchSimulationSmokeTest {
     fun `built-in strategies play a full taiwan match`() = runTest(timeout = SMOKE_TIMEOUT) {
         val lineup = listOf(BuiltInAiStrategyKeys.BEGINNER, BuiltInAiStrategyKeys.INTERMEDIATE, BuiltInAiStrategyKeys.ADVANCED, RandomAiStrategy.KEY)
 
-        val result = MatchSimulator(TaiwanRuleConfig(gameLength = TaiwanGameLength.East)).play(lineup)
+        val result = MatchSimulator(TaiwanRuleConfig(gameLength = TaiwanGameLength.East)).play(lineup, seed = 3)
         val diagnostic = "rounds played: ${result.rounds.size}; end reason: ${result.matchEndReasonId}; final scores: ${result.finalScoresByPlayer}"
 
         assertNull(result.failure, result.failure?.describe())
@@ -102,7 +102,7 @@ class MatchSimulationSmokeTest {
             registry.register(MahjongAiStrategyDefinition(ILLEGAL_KEY) { DiscardsForeignTileStrategy() })
         }
 
-        val result = simulator.play(List(4) { ILLEGAL_KEY })
+        val result = simulator.play(List(4) { ILLEGAL_KEY }, seed = 4)
 
         val failure = assertNotNull(result.failure)
         assertIs<IllegalAiCommandException>(failure.cause)

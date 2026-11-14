@@ -31,6 +31,7 @@ import com.doublemoon1119.mahjongcraft.testing.flow.bundled.registerBundledRuleM
 import com.doublemoon1119.mahjongcraft.testing.flow.common.game.repository.FakeGameSnapshotRepository
 import com.doublemoon1119.mahjongcraft.testing.flow.common.game.service.FakeGameEventPublisher
 import com.doublemoon1119.mahjongcraft.testing.flow.common.game.service.FakeGamePresentationPublisher
+import com.doublemoon1119.mahjongcraft.testing.flow.common.game.testMatchSeed
 import com.doublemoon1119.mahjongcraft.testing.flow.server.noRuleDecisionBeginUseCase
 import com.doublemoon1119.mahjongcraft.testing.logic.rules.riichi.riichiTableComponents
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
@@ -136,6 +137,7 @@ class AdvanceRoundUseCaseTest {
                         ?: tableState.players.associate { it.id to GameFlowConfig().timeControl.reserve },
                     enabledAutomaticControlIdsByPlayerId = enabledAutomaticControlIdsByPlayerId,
                     roundCompletion = completion,
+                    matchSeed = testMatchSeed(0),
                 ),
             )
         }

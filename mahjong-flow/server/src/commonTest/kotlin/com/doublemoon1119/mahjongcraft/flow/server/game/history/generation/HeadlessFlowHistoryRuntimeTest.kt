@@ -195,6 +195,28 @@ class HeadlessFlowHistoryRuntimeTest {
         assertNotEquals(openingWall(MATCH_SEED), openingWall(MATCH_SEED + 1), "A different seed must deal a different wall.")
     }
 
+    /**
+     * 驗證台灣麻將以隨機出牌 AI 推進固定步數時，對局不會被中止，每一步都有進展。
+     *
+     * 隨機出牌會大量吃、碰、槓與補花，走到一般對局少見的情況；台麻流局時莊家連莊，隨機出牌幾乎不和牌而打不完，
+     * 因此只推進固定步數，不要求整場結束。
+     */
+    @Test
+    fun `taiwan random moves advance without aborting`() = runTest {
+        val runtime = HeadlessFlowHistoryRuntime.create(
+            scenario = HeadlessHistoryScenario.TAIWAN_EAST,
+            registries = seededRandomMoveHeadlessHistoryRegistries(MATCH_SEED),
+            store = AuthoritativeStateStore(historyRecordingEnabled = false),
+            decisionExecutor = AiDecisionExecutor.direct(failurePolicy = ExtensionFailurePolicy.Default),
+            matchSeed = testMatchSeed(MATCH_SEED),
+        )
+        repeat(TAIWAN_RANDOM_MOVE_STEPS) { step ->
+            assertTrue(runtime.step(), "Taiwan random moves made no progress at step $step")
+            val game = assertNotNull(runtime.currentGame(), "The Taiwan match ended or was aborted at step $step")
+            assertNull(game.matchEndReasonId, "The Taiwan match ended at step $step")
+        }
+    }
+
     /** 驗證收集取消不會確認或刪除尚未完成的來源批次。 */
     @Test
     fun `runner cancellation retains pending events`() = runTest {
@@ -272,5 +294,8 @@ class HeadlessFlowHistoryRuntimeTest {
 
         /** 完整對局測試固定使用的種子。 */
         const val MATCH_SEED = 1
+
+        /** 台麻隨機出牌推進的步數，約涵蓋二十局。 */
+        const val TAIWAN_RANDOM_MOVE_STEPS = 3_000
     }
 }

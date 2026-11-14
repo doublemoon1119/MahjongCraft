@@ -39,6 +39,7 @@ import com.doublemoon1119.mahjongcraft.testing.flow.common.game.repository.FakeG
 import com.doublemoon1119.mahjongcraft.testing.flow.common.game.repository.componentValidatedGameRepository
 import com.doublemoon1119.mahjongcraft.testing.flow.common.game.service.FakeGameEventPublisher
 import com.doublemoon1119.mahjongcraft.testing.flow.common.game.service.FakeGamePresentationPublisher
+import com.doublemoon1119.mahjongcraft.testing.flow.common.game.testMatchSeed
 import com.doublemoon1119.mahjongcraft.testing.flow.server.noRuleDecisionBeginUseCase
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeIdentifiedTileFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
@@ -206,6 +207,7 @@ class RuleOutcomeAchievementIntegrationTest {
         return Game(
             tableState = FakeTableStateFactory.create(players = players, config = RiichiRuleConfig()),
             flowConfig = GameFlowConfig(),
+            matchSeed = testMatchSeed(0),
         )
     }
 

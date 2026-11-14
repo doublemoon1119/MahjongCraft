@@ -69,6 +69,7 @@ import com.doublemoon1119.mahjongcraft.testing.flow.common.game.service.FakeDeci
 import com.doublemoon1119.mahjongcraft.testing.flow.common.game.service.FakeGameEventPublisher
 import com.doublemoon1119.mahjongcraft.testing.flow.common.game.service.FakeGamePresentationBusyGate
 import com.doublemoon1119.mahjongcraft.testing.flow.common.game.service.FakeGamePresentationPublisher
+import com.doublemoon1119.mahjongcraft.testing.flow.common.game.testMatchSeed
 import com.doublemoon1119.mahjongcraft.testing.flow.common.room.repository.FakeRoomSnapshotRepository
 import com.doublemoon1119.mahjongcraft.testing.flow.common.room.service.FakeRoomEventPublisher
 import com.doublemoon1119.mahjongcraft.testing.flow.server.RuleDecisionTestUseCases
@@ -334,6 +335,7 @@ class MahjongAutoDrawServiceTest {
             randomness = testRoundRandomness(),
         )
         gameRepo.setTableState(result.initializeRuleComponents(module.id, bundledCoreExtensionRegistries().componentRegistry, random = testRoundRandomness().components).tableState)
+        gameRepo.updateGame(gameId) { game -> game!!.copy(matchSeed = testMatchSeed(0)) to Unit }
         if (dealerIsAi) {
             gameRepo.updateGame(gameId) { game -> game!!.copy(aiPlayerStrategyKeys = playerIds.associateWith { RandomAiStrategy.KEY }) to Unit }
         }
@@ -484,7 +486,7 @@ class MahjongAutoDrawServiceTest {
         // GameInitializer 依座位風重排玩家順序，setTableState 預設把 hostId 定成第一位玩家的 id，
         // 不保證真的是 hostId 這位玩家——比照 StartGameUseCase 實際上是明確從 Room.hostId 帶入，
         // 這裡也要明確蓋回去才是在測「hostId 有沒有被正確保留」，不是在測隨機湊巧對上。
-        fixtures.gameRepo.updateGame(gameId) { game -> game!!.copy(hostId = hostId, aiPlayerStrategyKeys = aiStrategyKeys) to Unit }
+        fixtures.gameRepo.updateGame(gameId) { game -> game!!.copy(hostId = hostId, aiPlayerStrategyKeys = aiStrategyKeys, matchSeed = testMatchSeed(0)) to Unit }
 
         fixtures.advance(this, gameId)
 

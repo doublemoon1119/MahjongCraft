@@ -1,10 +1,11 @@
 package com.doublemoon1119.mahjongcraft.flow.server.game.simulation
 
 import com.doublemoon1119.mahjongcraft.ai.BuiltInAiStrategyKeys
+import com.doublemoon1119.mahjongcraft.ai.MahjongAiStrategy
 import com.doublemoon1119.mahjongcraft.ai.MahjongAiStrategyRegistry
 import com.doublemoon1119.mahjongcraft.ai.MahjongAiStrategyRegistryImpl
+import com.doublemoon1119.mahjongcraft.ai.RandomAiStrategy
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.PendingGameTransition
-import com.doublemoon1119.mahjongcraft.flow.common.game.random.MatchSeed
 import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.dispatchThenDrive
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
@@ -18,6 +19,8 @@ import com.doublemoon1119.mahjongcraft.logic.table.GameInitializer
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledCoreExtensionRegistries
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.registerBuiltInAiStrategies
+import com.doublemoon1119.mahjongcraft.testing.flow.common.game.testMatchSeed
+import kotlin.random.Random
 import kotlin.uuid.Uuid
 
 /**
@@ -99,8 +102,9 @@ internal data class MatchResult(
 /**
  * 以正式規則與流程讓 AI 打完一整場對局，並檢查：沒有送出不合法命令、流程沒有卡住、點數守恆、對局正常結束。
  *
- * 記錄每局開局桌況；偵測到問題時，從選定局的開局桌況重新推進，記錄是否再次出現問題。
- * 重新推進仍會繼續到後續各局；後續洗牌與隨機策略沒有固定亂數來源，因此不保證完整過程相同。
+ * 牌局與隨機出牌策略的選擇都由 `play` 收到的數字決定，同一個數字重現同一場對局。
+ * 記錄每局開局桌況；偵測到問題時，從選定局的開局桌況重新推進，記錄是否再次出現問題。重新推進從中途某一局開始，
+ * 之後換局的局序與隨機策略的亂數進度都和原對局不同，因此不保證完整過程相同。
  * 點數守恆以日麻計算：所有玩家的分數加上場上立直棒的點數，等於開局總分。
  *
  * @property config 對局規則設定。
@@ -121,14 +125,15 @@ internal class MatchSimulator(
      *
      * @param lineup 每位玩家使用的策略 key。
      * @param recorder 累計決策時間與最近決策的紀錄。
+     * @param seed 決定牌局與隨機出牌選擇的數字。
      * @return 對局結果，包含各局摘要、名次或診斷資料。
      */
-    suspend fun play(lineup: List<String>, recorder: DecisionRecorder = DecisionRecorder()): MatchResult {
-        val runtime = runtime(recorder)
+    suspend fun play(lineup: List<String>, recorder: DecisionRecorder = DecisionRecorder(), seed: Int): MatchResult {
+        val runtime = runtime(recorder, seed)
         val gameId = Uuid.random()
         val playerIds = lineup.map { Uuid.random() }
         val strategyKeysByPlayer = playerIds.zip(lineup).toMap()
-        val matchSeed = MatchSeed.generate()
+        val matchSeed = testMatchSeed(seed)
         val randomness = matchSeed.roundRandomness(roundOrdinal = 0)
         val initial = GameInitializer.initialize(
             id = gameId,
@@ -147,7 +152,7 @@ internal class MatchSimulator(
                 round = failingRound,
                 cause = cause,
                 trace = recorder.recent,
-                reproducedOnReplay = failingRound?.let { replayFails(it.start, strategyKeysByPlayer, matchSeed) },
+                reproducedOnReplay = failingRound?.let { replayFails(it.start, strategyKeysByPlayer, seed) },
             )
         }
         val finalState = recordedRounds.last().final
@@ -166,13 +171,13 @@ internal class MatchSimulator(
      *
      * @param start 要重播的開局桌況。
      * @param aiPlayerStrategyKeys 玩家與策略 key 的對應。
-     * @param matchSeed 原對局的種子，讓之後換局的牌山與原對局相同。
+     * @param seed 原對局的數字，讓之後換局使用同一個種子。
      * @return 是否再次偵測到問題。
      */
-    private suspend fun replayFails(start: TableState, aiPlayerStrategyKeys: Map<Uuid, String>, matchSeed: MatchSeed): Boolean {
+    private suspend fun replayFails(start: TableState, aiPlayerStrategyKeys: Map<Uuid, String>, seed: Int): Boolean {
         val recorder = DecisionRecorder()
-        val runtime = runtime(recorder)
-        runtime.start(start, aiPlayerStrategyKeys, matchSeed)
+        val runtime = runtime(recorder, seed)
+        runtime.start(start, aiPlayerStrategyKeys, testMatchSeed(seed))
         return drive(runtime, start.id, recorder) != null
     }
 
@@ -267,16 +272,21 @@ internal class MatchSimulator(
         .toMap()
 
     /**
-     * 建立一個新的對局環境，AI 策略包裝成記錄決策並檢查合法性的版本。
+     * 建立一個新的對局環境，AI 策略包裝成記錄決策並檢查合法性的版本；隨機出牌策略改用由 [seed] 決定選擇的版本。
      *
      * @param recorder 決策紀錄器。
+     * @param seed 決定隨機出牌選擇的數字。
      * @return 註冊好儀器化 AI 策略的新對局環境。
      */
-    private fun runtime(recorder: DecisionRecorder): SimulationRuntime = SimulationRuntime(defaultStrategyKey = BuiltInAiStrategyKeys.BEGINNER).also { runtime ->
+    private fun runtime(recorder: DecisionRecorder, seed: Int): SimulationRuntime = SimulationRuntime(defaultStrategyKey = BuiltInAiStrategyKeys.BEGINNER).also { runtime ->
         val source = MahjongAiStrategyRegistryImpl(defaultKey = BuiltInAiStrategyKeys.BEGINNER)
         registerStrategies(source, runtime)
+        val seededRandom = RandomAiStrategy(runtime.extensionActionRegistry, Random(seed))
+        val seededSource = object : MahjongAiStrategyRegistry by source {
+            override fun resolve(key: String?): MahjongAiStrategy = if (key == RandomAiStrategy.KEY) seededRandom else source.resolve(key)
+        }
         runtime.aiStrategyRegistry.registerInstrumented(
-            source = source,
+            source = seededSource,
             keys = source.getAllStrategyKeys(),
             extensionActionRegistry = runtime.extensionActionRegistry,
             recorder = recorder,

@@ -67,9 +67,11 @@ class MatchSimulationStatisticsTest {
                 List(parallelism) {
                     async {
                         val batch = WorkerBatch()
-                        while (nextMatch.getAndIncrement() < matches) {
+                        while (true) {
+                            val matchIndex = nextMatch.getAndIncrement()
+                            if (matchIndex >= matches) break
                             val recorder = DecisionRecorder()
-                            batch.results += simulator.play(lineup, recorder)
+                            batch.results += simulator.play(lineup, recorder, seed = matchIndex)
                             batch.recorders += recorder
                         }
                         batch
