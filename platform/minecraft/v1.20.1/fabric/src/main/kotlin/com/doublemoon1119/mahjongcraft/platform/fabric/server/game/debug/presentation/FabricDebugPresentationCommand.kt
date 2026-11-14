@@ -512,7 +512,7 @@ class FabricDebugPresentationCommand(
      * @return 非同步補全結果。
      */
     private fun suggestDebugMeldCounts(
-        @Suppress("UNUSED_PARAMETER") context: CommandContext<ServerCommandSource>,
+        context: CommandContext<ServerCommandSource>,
         builder: SuggestionsBuilder,
     ): CompletableFuture<Suggestions> {
         (1..MAX_DEBUG_MELD_COUNT).forEach(builder::suggest)

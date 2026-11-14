@@ -76,7 +76,7 @@ class DebugTilePreviewSupport(private val tileAssetRegistry: MinecraftTileAssetR
      * @return 已建立的候選結果。
      */
     fun suggestTileAssetKeys(
-        @Suppress("UNUSED_PARAMETER") context: CommandContext<ServerCommandSource>,
+        context: CommandContext<ServerCommandSource>,
         builder: SuggestionsBuilder,
     ): CompletableFuture<Suggestions> {
         buildTileAssetKeySuggestions(builder.remaining, previewAssetKeys).forEach(builder::suggest)

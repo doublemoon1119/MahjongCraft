@@ -266,11 +266,6 @@ class MahjongClientConfigStore() {
         /** 自動操作狀態 HUD 開關的 TOML 欄位鍵。 */
         const val AUTOMATIC_CONTROL_STATUS_ENABLED_KEY: String = "automatic-control-status-enabled"
 
-        /** 比對自動操作狀態 HUD 開關欄位。 */
-        val AUTOMATIC_CONTROL_STATUS_ENABLED_LINE = Regex(
-            pattern = """(?m)^(\s*$AUTOMATIC_CONTROL_STATUS_ENABLED_KEY\s*=\s*)\S+(\s*(?:#.*)?)$""",
-        )
-
         /** 操作面板垂直比例的 TOML 欄位鍵。 */
         const val DECISION_PANEL_Y_KEY: String = "decision-panel-y"
 

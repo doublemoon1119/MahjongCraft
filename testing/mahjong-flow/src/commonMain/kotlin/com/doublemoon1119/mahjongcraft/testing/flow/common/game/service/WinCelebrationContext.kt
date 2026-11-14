@@ -9,8 +9,6 @@ import kotlin.uuid.Uuid
  * @property request 胡牌慶祝演出請求。
  */
 data class WinCelebrationContext(val request: WinCelebrationRequest) {
-    /** 單一贏家測試相容用座位；多家和時為第一位。 */
-    val winnerSeatIndex: Int get() = request.winners.first().seatIndex
 
     /** 共享胡牌張。 */
     val winningTileId: Uuid get() = request.winningTileId

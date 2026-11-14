@@ -120,7 +120,6 @@ class FabricDebugHistoryCommand(
      * @param builder 補全結果建構器。
      * @return 非同步補全結果。
      */
-    @Suppress("UNUSED_PARAMETER")
     private fun suggestScenarios(context: CommandContext<ServerCommandSource>, builder: SuggestionsBuilder): CompletableFuture<Suggestions> = CommandSource.suggestMatching(HeadlessHistoryScenario.entries.map { it.identifier }, builder)
 
     /**

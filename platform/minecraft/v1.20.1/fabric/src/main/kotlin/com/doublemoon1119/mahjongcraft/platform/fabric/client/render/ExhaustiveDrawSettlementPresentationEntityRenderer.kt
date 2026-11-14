@@ -721,8 +721,6 @@ class ExhaustiveDrawSettlementPresentationEntityRenderer(
         const val PANEL_Z = 0.5f
         const val FACE_Z = 0f
         const val FACE_SIZE = 10f
-        const val AI_PORTRAIT_TILE_WIDTH = 7.5f
-        const val AI_PORTRAIT_TILE_HEIGHT = 10f
         const val FACE_TEXT_CENTER_OFFSET = 0.5f
         const val NAME_MAX_WIDTH = 96
         const val PANEL_PADDING = 8f

@@ -129,13 +129,6 @@ class ClientMahjongStateStore(
     fun gameAiPlayerIds(tableId: Uuid): Set<Uuid> = tables[tableId]?.gameAiPlayerIds.orEmpty()
 
     /**
-     * 查詢指定桌子的規則選擇快照。
-     *
-     * @param tableId 桌子 UUID。
-     */
-    fun ruleDecisionSnapshot(tableId: Uuid): RuleDecisionSnapshot? = tables[tableId]?.ruleDecisionSnapshot
-
-    /**
      * 取得只向該桌參與者本人同步的目前手牌分析。
      *
      * @param tableId 桌子 UUID。

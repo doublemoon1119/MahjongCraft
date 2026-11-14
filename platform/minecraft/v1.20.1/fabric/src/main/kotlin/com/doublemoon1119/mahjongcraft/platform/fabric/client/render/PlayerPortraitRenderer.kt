@@ -136,18 +136,6 @@ class PlayerPortraitRenderer internal constructor(
     }
 
     /**
-     * 依保存描述直接繪製獨立模型，沒有模型時由原頭像流程備援。
-     *
-     * @param snapshot 當場已授權的外觀。
-     * @param context GUI 繪製來源。
-     * @param x 卡片左界。
-     * @param y 卡片頂端。
-     * @param size 卡片寬度。
-     * @return 已畫出模型時為 true。
-     */
-    fun renderCharacterModel(snapshot: AiCharacterSnapshot?, context: DrawContext, x: Int, y: Int, size: Int): Boolean = previews.renderModel(snapshot, context, x, y, size, x + size / 2, y + size / 2)
-
-    /**
      * 將宣告式頭像來源繪製於世界空間的正方形 slot；牌面保持 3:4 比例並水平置中。
      * 一般來源失敗時使用內建頭像；取消例外與致命錯誤直接外傳。
      *

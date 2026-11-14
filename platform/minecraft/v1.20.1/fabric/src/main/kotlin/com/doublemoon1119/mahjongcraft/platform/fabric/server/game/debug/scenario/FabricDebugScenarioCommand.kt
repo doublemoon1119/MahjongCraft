@@ -135,7 +135,6 @@ class FabricDebugScenarioCommand(
      * @param builder 接收符合目前輸入的建議項目。
      * @return 補全建議的非同步結果。
      */
-    @Suppress("UNUSED_PARAMETER")
     private fun suggestScenarioIds(
         context: CommandContext<ServerCommandSource>,
         builder: SuggestionsBuilder,

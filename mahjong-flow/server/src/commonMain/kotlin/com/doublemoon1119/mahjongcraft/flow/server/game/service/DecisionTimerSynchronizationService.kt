@@ -29,15 +29,6 @@ class DecisionTimerSynchronizationService(
     private val synchronizedPlayerIdsByGame = mutableMapOf<Uuid, Set<Uuid>>()
 
     /**
-     * 讀取 timer manager 並同步指定遊戲。
-     *
-     * @param gameId 欲同步計時狀態的對局。
-     */
-    suspend fun synchronize(gameId: Uuid) {
-        synchronize(gameId, timerManager.getStatuses(gameId))
-    }
-
-    /**
      * 使用已取得的 [statuses] 同步指定遊戲，避免命令完成後再次讀取不同時間點。
      *
      * @param gameId 欲同步的遊戲。

@@ -1484,7 +1484,6 @@ class WinCelebrationShowcaseEntityRenderer(
         const val FIREWORK_FLAME_END_TICK = 56.0
         const val FLIGHT_END_TICK = 260.0
         const val SHOWCASE_START_TICK = 300.0
-        const val ARRIVAL_TRANSITION_TICKS = SHOWCASE_START_TICK - FLIGHT_END_TICK
         const val ORBIT_BUILDUP_TICK = 80.0
         const val ORBIT_ENTRY_END_TICK = 124.0
         const val TNT_APPROACH_TICK = 124.0
@@ -1498,12 +1497,10 @@ class WinCelebrationShowcaseEntityRenderer(
         const val TITLE_TEXT_START_TICK = 288.0
         const val TITLE_TEXT_FADE_TICKS = 8.0
         const val FORMATION_RETURN_TICK = 214.0
-        const val FORMATION_RETURN_START_TICK = FORMATION_RETURN_TICK
         const val FLINT_FADE_TICK = 252.0
         const val WINNING_RETURN_TICK = 260.0
         const val LIFT_HEIGHT = 0.08
         const val SHOWCASE_HEIGHT = 1.25
-        const val FLIGHT_ARC_HEIGHT = 0.65
         const val RECOIL_DISTANCE = 0.025
         val RIGHT_HAND_X = MahjongTileEntity.TILE_WIDTH / 2.0 + 0.010
         val LEFT_HAND_X = -RIGHT_HAND_X
@@ -1579,7 +1576,6 @@ class WinCelebrationShowcaseEntityRenderer(
         const val WINNING_TILE_PITCH_SPEED = 0.075
         const val WINNING_TILE_PITCH_DEGREES = 2.5
         const val CARD_ENTRANCE_TICKS = 14.0
-        const val CARD_ENTRANCE_STAGGER_TICKS = 0.4
         const val CARD_ENTRANCE_DROP = 0.18
         const val CARD_ENTRANCE_BOUNCE = 0.05
         const val WINNING_TILE_HEIGHT_OFFSET = 0.04

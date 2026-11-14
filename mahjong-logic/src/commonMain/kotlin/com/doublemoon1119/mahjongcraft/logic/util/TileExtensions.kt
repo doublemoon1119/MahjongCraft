@@ -9,12 +9,6 @@ val Tile.isTerminal: Boolean
     get() = (this as? Tile.Numeric)?.let { it.value == 1 || it.value == 9 } ?: false
 
 /**
- * 檢查是否為數牌（不含字牌）。
- */
-val Tile.isNumeric: Boolean
-    get() = this is Tile.Numeric
-
-/**
  * 檢查是否為字牌。
  */
 val Tile.isHonor: Boolean

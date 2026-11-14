@@ -107,7 +107,6 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.table.RoundInfoLineDis
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileEmojiRegistry
-import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileLabelRegistry
 import net.fabricmc.api.ClientModInitializer
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 import net.fabricmc.fabric.api.client.model.loading.v1.PreparableModelLoadingPlugin
@@ -224,7 +223,6 @@ class MahjongCraftModClient : ClientModInitializer {
         val tileDisplayNames = koin.get<TileDisplayNameRegistry>()
         val tileAssetRegistry = koin.get<MinecraftTileAssetRegistry>()
         val tileEmojiRegistry = koin.get<TileEmojiRegistry>()
-        val tileLabelRegistry = koin.get<TileLabelRegistry>()
         val tileFaceRenderer = koin.get<MahjongTileFaceRenderer>()
         val tileAppearanceResolver = koin.get<ClientTileAppearanceResolver>()
         val actionVocabulary = koin.get<GameActionVocabularyRegistry>()

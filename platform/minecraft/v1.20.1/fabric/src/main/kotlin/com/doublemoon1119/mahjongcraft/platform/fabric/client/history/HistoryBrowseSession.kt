@@ -225,9 +225,6 @@ internal class HistoryBrowseSession(
         if (controller.state.value.list.status != HistoryBrowseStatus.Loading) controller.refresh()
     }
 
-    /** 目前聊天入口指定的對局，供列表呈現保存狀態提示。 */
-    fun requestedMatchId(): String? = requestedMatchId
-
     /** 重新查詢聊天入口指定對局的保存狀態。 */
     fun retryArchiveStatus() = archiveStatusController.retry()
 

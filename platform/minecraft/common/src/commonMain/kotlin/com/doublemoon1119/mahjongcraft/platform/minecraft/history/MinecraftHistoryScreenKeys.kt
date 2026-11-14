@@ -68,9 +68,6 @@ object MinecraftHistoryScreenKeys {
     /** 已中斷結果。 */
     const val OUTCOME_INTERRUPTED = "mahjongcraft.history_screen.outcome.interrupted"
 
-    /** 篩選日期格式提示。 */
-    const val FILTER_DATE_HINT = "mahjongcraft.history_screen.filter.date_hint"
-
     /** 篩選錯誤：規則無效。 */
     const val FILTER_ERROR_INVALID_RULE = "mahjongcraft.history_screen.filter.error.invalid_rule"
 
@@ -332,9 +329,6 @@ object MinecraftHistoryScreenKeys {
     /** 規則設定資料不可用提示。 */
     const val RULE_SETTINGS_UNAVAILABLE = "mahjongcraft.history_screen.rule_settings.unavailable"
 
-    /** 對局結果格式。 */
-    const val RESULT = "mahjongcraft.history_screen.result"
-
     /** 對局局數格式。 */
     const val ROUNDS = "mahjongcraft.history_screen.rounds"
 
@@ -394,9 +388,6 @@ object MinecraftHistoryScreenKeys {
 
     /** 規則沒有登記標題的移出牌區使用的中立標題。 */
     const val STATE_SET_ASIDE = "mahjongcraft.history_screen.state.set_aside"
-
-    /** 牌河區標籤。 */
-    const val STATE_DISCARDS = "mahjongcraft.history_screen.state.discards"
 
     /** 活牌區標籤。 */
     const val STATE_WALL = "mahjongcraft.history_screen.state.wall"

@@ -116,10 +116,3 @@ fun interleavedDiscardOrder(players: List<MahjongPlayer>): List<Uuid> {
     val piles = players.map { player -> player.discardPile.entries.map { it.tile.id } }
     return (0 until (piles.maxOfOrNull { it.size } ?: 0)).flatMap { index -> piles.mapNotNull { it.getOrNull(index) } }
 }
-
-/**
- * 換成依 [interleavedDiscardOrder] 排出的打牌順序；測試直接改了牌河之後用來補上順序。
- *
- * @return 打牌順序與牌河一致的桌況。
- */
-fun TableState.withInterleavedDiscardOrder(): TableState = copy(discardOrder = interleavedDiscardOrder(players))

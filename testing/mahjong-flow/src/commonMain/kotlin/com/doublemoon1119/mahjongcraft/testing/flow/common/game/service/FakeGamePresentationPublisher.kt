@@ -10,7 +10,6 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.service.TableStep
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.TableStepEvent
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.WinPresentationRequest
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
-import com.doublemoon1119.mahjongcraft.logic.table.layout.PhysicalWallLayoutTransitionPhase
 import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPhysicalLayout
 import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPosition
 import com.doublemoon1119.mahjongcraft.logic.table.opening.OpeningDiceRoll
@@ -171,12 +170,6 @@ class FakeGamePresentationPublisher : GamePresentationPublisher {
         .filterIsInstance<TableStepEvent.ActionScored>()
         .map { it.scoring }
 
-    /** 讀取所有步驟中依序完成的實體牌牆重排。 */
-    fun getPublishedWallRearrangements(gameId: Uuid): List<List<PhysicalWallLayoutTransitionPhase>> = getPublishedTableSteps(gameId)
-        .flatMap { it.events }
-        .filterIsInstance<TableStepEvent.WallRearranged>()
-        .map { it.phases }
-
     /** 讀取本局全部擲骰呈現記錄。 */
     fun getPublishedOpeningRolls(gameId: Uuid): List<OpeningDiceRoll> = diceRolls[gameId].orEmpty()
 
@@ -203,9 +196,6 @@ class FakeGamePresentationPublisher : GamePresentationPublisher {
 
     /** 取得指定對局收到的全部胡牌慶祝演出呼叫，依呼叫順序排列；若無紀錄則回傳空清單。 */
     fun getPublishedWinCelebrations(gameId: Uuid): List<WinCelebrationContext> = winCelebrations[gameId].orEmpty()
-
-    /** 取得指定對局收到的全部胡牌結算面板呼叫，依呼叫順序排列；若無紀錄則回傳空清單。 */
-    fun getPublishedWinSettlements(gameId: Uuid): List<WinSettlementContext> = winSettlements[gameId].orEmpty()
 
     /** 取得指定對局收到的全部完整胡牌呈現請求，依呼叫順序排列；若無紀錄則回傳空清單。 */
     fun getPublishedWinPresentations(gameId: Uuid): List<WinPresentationRequest> = winPresentations[gameId].orEmpty()

@@ -238,7 +238,6 @@ class RuleCatalogueLayoutTest {
      * @param role 牌組角色。
      * @return 標題寬度。
      */
-    @Suppress("UNUSED_PARAMETER")
     private fun headingWidth(role: RuleCatalogueTileGroupRole): Int = 12
 
     /** 測試門檻。 */
