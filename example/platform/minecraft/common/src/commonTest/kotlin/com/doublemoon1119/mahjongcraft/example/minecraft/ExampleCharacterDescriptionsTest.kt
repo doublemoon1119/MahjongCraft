@@ -18,13 +18,15 @@ class ExampleCharacterDescriptionsTest {
     @Test
     fun `character descriptions register before native initialization and preserve optional capabilities`() {
         val captured = mutableListOf<AiCharacterDefinition>()
-        ExampleMinecraftMahjongExtension().registerAiCharacters(object : AiCharacterRegistrar {
-            override val registrationKeys: Set<String> get() = captured.map { it.id }.toSet()
-            override val isFrozen: Boolean = false
-            override fun register(definition: AiCharacterDefinition) {
-                captured += definition
-            }
-        })
+        ExampleMinecraftMahjongExtension().registerAiCharacters(
+            registry = object : AiCharacterRegistrar {
+                override val registrationKeys: Set<String> get() = captured.map { it.id }.toSet()
+                override val isFrozen: Boolean = false
+                override fun register(definition: AiCharacterDefinition) {
+                    captured += definition
+                }
+            },
+        )
         assertEquals(ExampleCharacters.definitions(), captured)
         assertNull(ExampleCharacters.ACTOR.face)
         assertNotNull(ExampleCharacters.ACTOR.preview)
@@ -41,9 +43,9 @@ class ExampleCharacterDescriptionsTest {
         val codec = AiCharacterSnapshotCodec()
         ExampleCharacters.definitions().forEach { definition ->
             val original = AiCharacterSnapshot(
-                definition.id,
-                definition,
-                "Archived actor",
+                characterId = definition.id,
+                definition = definition,
+                displayName = "Archived actor",
             )
             val restored = codec.decode(codec.encode(original))
             assertEquals(original, restored)

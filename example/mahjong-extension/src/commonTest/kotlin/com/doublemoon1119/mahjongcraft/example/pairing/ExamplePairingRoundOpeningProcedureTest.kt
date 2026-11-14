@@ -27,8 +27,8 @@ class ExamplePairingRoundOpeningProcedureTest {
         assertEquals(players[3], second.request.playerId)
 
         val complete = assertIs<RoundOpeningStep.Complete>(
-            procedure.next(
-                afterFirst.copy(
+            value = procedure.next(
+                context = afterFirst.copy(
                     rolls = afterFirst.rolls + OpeningDiceRoll(1, players[3], DiceRollResult.of(listOf(3, 3))),
                 ),
             ),
@@ -46,8 +46,8 @@ class ExamplePairingRoundOpeningProcedureTest {
         val roll = assertIs<RoundOpeningStep.Roll>(procedure.next(context))
         assertEquals(players[1], roll.request.playerId)
         val complete = assertIs<RoundOpeningStep.Complete>(
-            procedure.next(
-                context.copy(
+            value = procedure.next(
+                context = context.copy(
                     rolls = listOf(OpeningDiceRoll(0, players[1], DiceRollResult.of(listOf(1, 4)))),
                 ),
             ),
@@ -70,8 +70,8 @@ class ExamplePairingRoundOpeningProcedureTest {
                         val complete = assertIs<RoundOpeningStep.Complete>(procedure.next(context))
                         val tiles = ExamplePairingWallFactory(playerCount, (1..valueCount).toSet()).create().getAllTiles()
                         ExamplePairingWallLayout(playerCount, valueCount).resolve(
-                            tiles,
-                            checkNotNull(complete.result.wallOpening),
+                            shuffledTiles = tiles,
+                            opening = checkNotNull(complete.result.wallOpening),
                         )
                     }
                 }

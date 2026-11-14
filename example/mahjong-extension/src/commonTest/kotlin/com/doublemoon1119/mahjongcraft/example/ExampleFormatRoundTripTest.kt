@@ -73,14 +73,14 @@ class ExampleFormatRoundTripTest {
         )
         val module = ExamplePairingRuleModule(ExamplePairingIds.RULE_MODULE, config)
         val projected = exampleComponentRegistry().project(
-            ComponentProjectionContext(
+            context = ComponentProjectionContext(
                 ruleModuleId = module.id,
                 tableState = restoredTable,
                 ownerType = BuiltInComponentOwners.PLAYER,
                 owner = restoredTable.players.single(),
                 reader = ComponentReadContext.Public,
             ),
-            restoredState,
+            components = restoredState,
         )
         assertTrue(projected.isEmpty)
     }

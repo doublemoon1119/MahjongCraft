@@ -57,10 +57,10 @@ object ExampleActors {
             if (world.isClient) return@register ActionResult.SUCCESS
             if (world !is ServerWorld) return@register ActionResult.FAIL
             if (ExampleActorPlacement.placeOnCushion(
-                    world,
-                    player,
-                    stack,
-                    entity,
+                    world = world,
+                    player = player,
+                    stack = stack,
+                    cushion = entity,
                 )
             ) {
                 ActionResult.CONSUME

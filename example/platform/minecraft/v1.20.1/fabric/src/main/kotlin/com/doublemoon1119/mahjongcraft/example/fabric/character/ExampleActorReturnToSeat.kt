@@ -29,12 +29,12 @@ internal object ExampleActorReturnToSeat {
         if (!actor.control.isActive || !actor.isAlive || actor.hasVehicle() || world.registryKey.value.toString() != request.dimensionId) return
         val seat = request.seat
         if (!isNear(
-                actor.x,
-                actor.y,
-                actor.z,
-                seat.x,
-                seat.y,
-                seat.z,
+                x = actor.x,
+                y = actor.y,
+                z = actor.z,
+                seatX = seat.x,
+                seatY = seat.y,
+                seatZ = seat.z,
             )
         ) {
             return
@@ -49,10 +49,10 @@ internal object ExampleActorReturnToSeat {
         if (ExampleFurnitureBlocks.isSeat(state)) {
             if (state.isOf(ExampleFurnitureBlocks.bench) && abs(MathHelper.wrapDegrees(state.get(Properties.HORIZONTAL_FACING).asRotation() - seat.yaw)) > 15f) return
             ExampleChairSeatService().sit(
-                world,
-                pos,
-                actor,
-                seat.yaw,
+                world = world,
+                pos = pos,
+                rider = actor,
+                yaw = seat.yaw,
             )
             return
         }
@@ -72,10 +72,10 @@ internal object ExampleActorReturnToSeat {
         if (candidates.isNotEmpty()) {
             val cushion = candidates.singleOrNull() ?: return
             ExampleCushionSeatService.sit(
-                world,
-                cushion,
-                actor,
-                seat.yaw,
+                world = world,
+                cushion = cushion,
+                rider = actor,
+                yaw = seat.yaw,
             )
             return
         }
@@ -89,9 +89,9 @@ internal object ExampleActorReturnToSeat {
             body = body,
             isClear = { bounds ->
                 ExampleFurnitureSpace.isClear(
-                    world,
-                    actor,
-                    bounds,
+                    world = world,
+                    actor = actor,
+                    box = bounds,
                 )
             },
             hasSupport = { bounds ->

@@ -29,8 +29,8 @@ class ExampleGameEventChatTest {
         (listOf(message) + message.siblings).forEach { part ->
             assertEquals(Formatting.AQUA.colorValue, part.style.color?.rgb)
             assertEquals(
-                "event details",
-                assertIs<Text>(part.style.hoverEvent?.getValue(HoverEvent.Action.SHOW_TEXT)).string,
+                expected = "event details",
+                actual = assertIs<Text>(part.style.hoverEvent?.getValue(HoverEvent.Action.SHOW_TEXT)).string,
             )
             assertEquals(null, part.style.clickEvent)
         }
@@ -52,8 +52,8 @@ class ExampleGameEventChatTest {
 
         assertEquals(ExampleEventMessageKeys.UNKNOWN_LOCATION, assertIs<TranslatableTextContent>(locationText(null).content).key)
         assertEquals(
-            listOf("Alice ($first)", "$second ($second)"),
-            formatPlayerLabels(setOf(second, first)) { id -> if (id == first) "Alice" else id.toString() },
+            expected = listOf("Alice ($first)", "$second ($second)"),
+            actual = formatPlayerLabels(setOf(second, first)) { id -> if (id == first) "Alice" else id.toString() },
         )
     }
 
@@ -100,7 +100,7 @@ class ExampleGameEventChatTest {
     fun `settlement and standing lines keep every value`() {
         val id = Uuid.parse("00000000-0000-0000-0000-000000000004")
         val score = assertIs<TranslatableTextContent>(
-            scoreChangeValue(id, 100, 120, 2, 1, Text.literal("Alice")).content,
+            value = scoreChangeValue(id, 100, 120, 2, 1, Text.literal("Alice")).content,
         )
         assertEquals(ExampleEventMessageKeys.SCORE_CHANGE, score.key)
         assertEquals("Alice", assertIs<Text>(score.args[0]).string)

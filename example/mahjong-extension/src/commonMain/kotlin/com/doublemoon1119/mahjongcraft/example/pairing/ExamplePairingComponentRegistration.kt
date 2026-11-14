@@ -21,7 +21,7 @@ fun registerExamplePairingComponents(registry: ComponentRegistrar) {
     registry.register(ExamplePairingComponents.HAND_REVEALED)
     registry.register(ExamplePairingComponents.PUBLIC_FACE)
     registry.registerLifecycle(
-        ComponentLifecycleDefinition(
+        definition = ComponentLifecycleDefinition(
             component = ExamplePairingComponents.BONUS_TILES,
             ownerType = BuiltInComponentOwners.TABLE,
             appliesTo = { _, config -> config is ExamplePairingRuleConfig },
@@ -34,7 +34,7 @@ fun registerExamplePairingComponents(registry: ComponentRegistrar) {
         ),
     )
     registry.registerLifecycle(
-        ComponentLifecycleDefinition(
+        definition = ComponentLifecycleDefinition(
             component = ExamplePairingComponents.HAND_REVEALED,
             ownerType = BuiltInComponentOwners.PLAYER,
             appliesTo = { _, config -> config is ExamplePairingRuleConfig },
@@ -44,7 +44,7 @@ fun registerExamplePairingComponents(registry: ComponentRegistrar) {
         ),
     )
     registry.registerEffect(
-        ComponentEffectDefinition(
+        definition = ComponentEffectDefinition(
             id = "${ExamplePairingIds.RULE_MODULE}/effect/revealed_hand",
             ownerType = BuiltInComponentOwners.TILE,
             appliesTo = { _, config -> config is ExamplePairingRuleConfig },
@@ -59,7 +59,7 @@ fun registerExamplePairingComponents(registry: ComponentRegistrar) {
         ),
     )
     registry.registerEffect(
-        ComponentEffectDefinition(
+        definition = ComponentEffectDefinition(
             id = "${ExamplePairingIds.RULE_MODULE}/effect/public_face",
             ownerType = BuiltInComponentOwners.TILE,
             appliesTo = { _, config -> config is ExamplePairingRuleConfig },

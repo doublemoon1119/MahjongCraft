@@ -15,7 +15,7 @@ import com.doublemoon1119.mahjongcraft.flow.persistence.format.component.Compone
  */
 fun registerExampleComponentPersistenceDtos(registries: PersistenceRegistrars) {
     registries.components.register(
-        ComponentPersistenceDefinition(
+        definition = ComponentPersistenceDefinition(
             component = ExamplePairingComponents.BONUS_TILES,
             serializer = ExamplePairingBonusTilesPersistenceDto.serializer(),
             toDto = { ExamplePairingBonusTilesPersistenceDto(it.values.toSet()) },
@@ -23,7 +23,7 @@ fun registerExampleComponentPersistenceDtos(registries: PersistenceRegistrars) {
         ),
     )
     registries.components.register(
-        ComponentPersistenceDefinition(
+        definition = ComponentPersistenceDefinition(
             component = ExamplePairingComponents.HAND_REVEALED,
             serializer = ExamplePairingHandRevealedPersistenceDto.serializer(),
             toDto = { ExamplePairingHandRevealedPersistenceDto },
@@ -31,7 +31,7 @@ fun registerExampleComponentPersistenceDtos(registries: PersistenceRegistrars) {
         ),
     )
     registries.components.register(
-        ComponentPersistenceDefinition(
+        definition = ComponentPersistenceDefinition(
             component = ExamplePairingComponents.PUBLIC_FACE,
             serializer = ExamplePairingPublicFacePersistenceDto.serializer(),
             toDto = { ExamplePairingPublicFacePersistenceDto },

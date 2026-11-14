@@ -68,29 +68,29 @@ class ExamplePairingRuleDecisionResolverTest {
 
         assertEquals(30.seconds, resolver.ruleDecisionConfig(config)?.base)
         assertFalse(
-            resolver.accepts(
-                tableState,
-                ruleDecision,
-                tableState.players[0].id,
-                RuleDecisionSubmission.Tiles(first - first.first()),
-                module,
+            actual = resolver.accepts(
+                tableState = tableState,
+                decision = ruleDecision,
+                playerId = tableState.players[0].id,
+                submission = RuleDecisionSubmission.Tiles(first - first.first()),
+                ruleModule = module,
             ),
         )
         assertFalse(
-            resolver.accepts(
-                tableState,
-                ruleDecision,
-                tableState.players[0].id,
-                RuleDecisionSubmission.Tiles(setOf(first.first(), Uuid.random())),
-                module,
+            actual = resolver.accepts(
+                tableState = tableState,
+                decision = ruleDecision,
+                playerId = tableState.players[0].id,
+                submission = RuleDecisionSubmission.Tiles(setOf(first.first(), Uuid.random())),
+                ruleModule = module,
             ),
         )
         val resolved = resolver.resolve(tableState, complete, module).tableState
         assertEquals(second, resolved.players[0].hand.standingTiles.takeLast(2).map { it.id }.toSet())
         assertEquals(first, resolved.players[1].hand.standingTiles.takeLast(2).map { it.id }.toSet())
         assertEquals(
-            tableState.players.flatMap { it.hand.standingTiles }.map { it.id }.toSet(),
-            resolved.players.flatMap { it.hand.standingTiles }.map { it.id }.toSet(),
+            expected = tableState.players.flatMap { it.hand.standingTiles }.map { it.id }.toSet(),
+            actual = resolved.players.flatMap { it.hand.standingTiles }.map { it.id }.toSet(),
         )
     }
 

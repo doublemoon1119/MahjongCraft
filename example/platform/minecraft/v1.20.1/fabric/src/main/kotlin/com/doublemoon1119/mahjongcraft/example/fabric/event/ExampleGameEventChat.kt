@@ -181,8 +181,8 @@ object ExampleGameEventChat {
         .append(line(ExampleEventMessageKeys.RULE_MODULE_ID, ruleModuleId))
         .append(
             line(
-                ExampleEventMessageKeys.TABLE_LOCATION,
-                locationText(tableLocation),
+                key = ExampleEventMessageKeys.TABLE_LOCATION,
+                value = locationText(tableLocation),
             ),
         )
 

@@ -25,7 +25,7 @@ import kotlin.uuid.Uuid
  */
 fun registerExamplePairingRevealHandFactory(registry: ExtensionGameActionCommandFactoryRegistrar) {
     registry.register(
-        ExtensionGameActionCommandFactoryDefinition(ExamplePairingRevealHandAction::class) { _, selectedTileIds ->
+        definition = ExtensionGameActionCommandFactoryDefinition(ExamplePairingRevealHandAction::class) { _, selectedTileIds ->
             ExamplePairingRevealHandCommand.takeIf { selectedTileIds.isEmpty() }
         },
     )
@@ -38,7 +38,7 @@ fun registerExamplePairingRevealHandFactory(registry: ExtensionGameActionCommand
  */
 fun registerExamplePairingRevealHandHandler(registry: ExtensionGameCommandExecutorRegistrar) {
     registry.register(
-        ExtensionGameCommandHandlerDefinition(ExamplePairingRevealHandCommand::class) { context ->
+        definition = ExtensionGameCommandHandlerDefinition(ExamplePairingRevealHandCommand::class) { context ->
             ExamplePairingRevealHandHandler(context)
         },
     )
@@ -69,15 +69,15 @@ private class ExamplePairingRevealHandHandler(
         command: ExamplePairingRevealHandCommand,
     ): Outcome<Unit, GameError> {
         val result = context.gameRepository.updateGame(
-            gameId,
+            gameId = gameId,
             history = { before, after, update ->
                 if (update.outcome is Outcome.Success && before != null && after != null) {
                     listOf(
-                        acceptedActionHistoryDraft(
-                            playerId,
-                            GameAction.Extension(ExamplePairingRevealHandAction),
-                            before.tableState,
-                            after.tableState,
+                        element = acceptedActionHistoryDraft(
+                            actorPlayerId = playerId,
+                            action = GameAction.Extension(ExamplePairingRevealHandAction),
+                            before = before.tableState,
+                            after = after.tableState,
                         ),
                     )
                 } else {
@@ -140,14 +140,14 @@ private class ExamplePairingRevealHandHandler(
         val action = GameAction.Extension(ExamplePairingRevealHandAction)
         context.snapshotSynchronizer.syncAll(gameId)
         context.eventPublisher.publishToAllObservers(
-            gameId,
-            tableState.players.map { it.id },
-            playerId,
-            action,
+            gameId = gameId,
+            seatedPlayerIds = tableState.players.map { it.id },
+            actorId = playerId,
+            action = action,
         )
         context.presentationPublisher.publishTableSteps(
-            gameId,
-            listOf(TableStep(tableState, listOf(TableStepEvent.ActionDeclared(playerId, action)))),
+            gameId = gameId,
+            steps = listOf(TableStep(tableState, listOf(TableStepEvent.ActionDeclared(playerId, action)))),
         )
         return Outcome.Success(Unit)
     }

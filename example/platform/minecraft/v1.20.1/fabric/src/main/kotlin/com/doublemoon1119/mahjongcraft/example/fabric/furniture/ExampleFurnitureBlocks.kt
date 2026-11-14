@@ -34,7 +34,7 @@ object ExampleFurnitureBlocks {
             Registries.BLOCK,
             Identifier(ExampleFurnitureIds.CHAIR),
             ExampleChairBlock(
-                AbstractBlock.Settings.copy(Blocks.OAK_PLANKS).strength(1.5f).solid(),
+                settings = AbstractBlock.Settings.copy(Blocks.OAK_PLANKS).strength(1.5f).solid(),
             ),
         )
         Registry.register(

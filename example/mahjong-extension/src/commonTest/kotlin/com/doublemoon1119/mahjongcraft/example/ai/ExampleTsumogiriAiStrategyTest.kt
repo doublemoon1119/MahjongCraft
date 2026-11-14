@@ -67,7 +67,7 @@ class ExampleTsumogiriAiStrategyTest {
         val drawn = FakeIdentifiedTileFactory.create(Tile.Honor.South)
 
         val command = strategy.decideGameCommand(
-            context(
+            context = context(
                 hand = Hand(tiles = listOf(standing), lastDrawn = drawn),
                 discardableTileIds = setOf(standing.id),
             ),
@@ -103,7 +103,7 @@ class ExampleTsumogiriAiStrategyTest {
     fun `reactions prefer legal pass`() = runTest {
         val reactionId = Uuid.random()
         val command = strategy.decideGameCommand(
-            context(
+            context = context(
                 hand = Hand(),
                 phase = AiDecisionPhase.RespondingToDiscard,
                 legalActions = listOf(GameAction.Ron(Uuid.random()), GameAction.Pass),
@@ -119,7 +119,7 @@ class ExampleTsumogiriAiStrategyTest {
     fun `reactions choose first legal action when pass is unavailable`() = runTest {
         val action = GameAction.Ron(Uuid.random())
         val command = strategy.decideGameCommand(
-            context(hand = Hand(), phase = AiDecisionPhase.RespondingToRobbing, legalActions = listOf(action)),
+            context = context(hand = Hand(), phase = AiDecisionPhase.RespondingToRobbing, legalActions = listOf(action)),
         )
 
         assertEquals(GameCommand.RespondToRobbing(action), command)

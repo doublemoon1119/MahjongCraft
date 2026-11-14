@@ -73,7 +73,7 @@ class ExamplePairingLegalActionValidatorTest {
             turnPhase = TurnPhase.AwaitingAction,
         )
         return ExamplePairingLegalActionValidator().getLegalActions(
-            LegalActionContext.ownTurn(table, player.id),
+            context = LegalActionContext.ownTurn(table, player.id),
         )
     }
 

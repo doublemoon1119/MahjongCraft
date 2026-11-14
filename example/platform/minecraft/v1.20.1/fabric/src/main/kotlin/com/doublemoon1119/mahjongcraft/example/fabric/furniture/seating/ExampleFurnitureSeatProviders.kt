@@ -65,11 +65,11 @@ private class ExampleChairSeatProvider(
         val expected = if (furnitureId == ExampleFurnitureIds.BENCH) ExampleFurnitureBlocks.bench else ExampleFurnitureBlocks.chair
         if (world.getBlockState(pos).block !== expected) return emptyList()
         return listOf(
-            ExampleChairSeatTarget(
-                world,
-                pos,
-                request,
-                service,
+            element = ExampleChairSeatTarget(
+                world = world,
+                pos = pos,
+                request = request,
+                service = service,
             ),
         )
     }
@@ -97,10 +97,10 @@ private class ExampleChairSeatTarget(
 
     /** 回報椅子實際乘坐者腳底與標準席位面向。 */
     override fun geometry(world: ServerWorld, rider: Entity): SeatGeometry = SeatGeometry(
-        pos.x + 0.5,
-        ExampleSeatGeometry.passengerFeetY(ExampleSeatGeometry.chairSeatY(pos.y)),
-        pos.z + 0.5,
-        if (world.getBlockState(pos).isOf(ExampleFurnitureBlocks.bench)) world.getBlockState(pos).get(Properties.HORIZONTAL_FACING).asRotation() else request.seat.yaw,
+        x = pos.x + 0.5,
+        y = ExampleSeatGeometry.passengerFeetY(ExampleSeatGeometry.chairSeatY(pos.y)),
+        z = pos.z + 0.5,
+        yaw = if (world.getBlockState(pos).isOf(ExampleFurnitureBlocks.bench)) world.getBlockState(pos).get(Properties.HORIZONTAL_FACING).asRotation() else request.seat.yaw,
     )
 
     /** 查詢椅子是否有效、占用或可用。 */
@@ -112,9 +112,9 @@ private class ExampleChairSeatTarget(
         if (ExampleSeatSupportCleanup.isOccupied(ExampleChairSeatEntity.seatsAt(world, pos), Entity::hasPassengers)) return SeatState.OCCUPIED
         if (rider.hasVehicle()) return SeatState.UNSUPPORTED
         return if (service.canSit(
-                world,
-                pos,
-                rider,
+                world = world,
+                pos = pos,
+                rider = rider,
             )
         ) {
             SeatState.AVAILABLE
@@ -128,10 +128,10 @@ private class ExampleChairSeatTarget(
         val current = inspect(world, rider)
         return when (current) {
             SeatState.AVAILABLE -> if (service.sit(
-                    world,
-                    pos,
-                    rider,
-                    geometry(world, rider).yaw,
+                    world = world,
+                    pos = pos,
+                    rider = rider,
+                    yaw = geometry(world, rider).yaw,
                 )
             ) {
                 SeatState.SEATED
@@ -161,9 +161,9 @@ private class ExampleCushionSeatProvider : SeatProvider<ServerWorld, Entity> {
         return world.getEntitiesByClass(ExampleCushionEntity::class.java, box) { !it.isRemoved }
             .map {
                 ExampleCushionSeatTarget(
-                    world,
-                    it,
-                    request,
+                    world = world,
+                    cushion = it,
+                    request = request,
                 )
             }
     }
@@ -188,10 +188,10 @@ private class ExampleCushionSeatTarget(
 
     /** 回報坐墊目前實際位置與標準席位面向。 */
     override fun geometry(world: ServerWorld, rider: Entity): SeatGeometry = SeatGeometry(
-        cushion.x,
-        ExampleSeatGeometry.cushionFeetY(cushion.y),
-        cushion.z,
-        request.seat.yaw,
+        x = cushion.x,
+        y = ExampleSeatGeometry.cushionFeetY(cushion.y),
+        z = cushion.z,
+        yaw = request.seat.yaw,
     )
 
     /** 查詢與其他入口相同的占用與碰撞規則。 */
@@ -199,9 +199,9 @@ private class ExampleCushionSeatTarget(
         SeatState.INVALID
     } else {
         ExampleCushionSeatService.inspect(
-            world,
-            cushion,
-            rider,
+            world = world,
+            cushion = cushion,
+            rider = rider,
         )
     }
 
@@ -210,10 +210,10 @@ private class ExampleCushionSeatTarget(
         val current = inspect(world, rider)
         if (current != SeatState.AVAILABLE) return current
         return if (ExampleCushionSeatService.sit(
-                world,
-                cushion,
-                rider,
-                request.seat.yaw,
+                world = world,
+                cushion = cushion,
+                rider = rider,
+                yaw = request.seat.yaw,
             )
         ) {
             SeatState.SEATED

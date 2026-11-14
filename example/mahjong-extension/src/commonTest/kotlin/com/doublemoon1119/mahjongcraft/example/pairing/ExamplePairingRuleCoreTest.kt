@@ -131,7 +131,7 @@ class ExamplePairingRuleCoreTest {
         val one = Tile.Numeric(Tile.Suit.Character, 1)
         assertIs<ShantenResult.Complete>(calculator.calculate(Hand(tiles = List(4) { identified(one) })))
         assertIs<ShantenResult.NotTenpai>(
-            calculator.calculate(Hand(tiles = (1..4).map { identified(Tile.Numeric(Tile.Suit.Character, it)) })),
+            value = calculator.calculate(Hand(tiles = (1..4).map { identified(Tile.Numeric(Tile.Suit.Character, it)) })),
         )
         assertIs<ShantenResult.NotTenpai>(calculator.calculate(Hand(tiles = List(4) { identified(Tile.Honor.East) })))
         assertIs<ShantenResult.Tenpai>(calculator.calculate(Hand(tiles = List(3) { identified(one) })))
@@ -159,7 +159,7 @@ class ExamplePairingRuleCoreTest {
         )
 
         assertIs<ShantenResult.Complete>(
-            ExamplePairingShantenCalculator().calculate(Hand(tiles = tiles)),
+            value = ExamplePairingShantenCalculator().calculate(Hand(tiles = tiles)),
         )
     }
 
@@ -274,8 +274,8 @@ class ExamplePairingRuleCoreTest {
     @Test
     fun `round bonus tiles are distinct and counted once per kind`() {
         val module = ExamplePairingRuleModule(
-            ExamplePairingIds.RULE_MODULE,
-            ExamplePairingRuleConfig(wallTileValues = setOf(1, 2, 3, 4)),
+            id = ExamplePairingIds.RULE_MODULE,
+            config = ExamplePairingRuleConfig(wallTileValues = setOf(1, 2, 3, 4)),
         )
         val initial = GameInitializer.initialize(Uuid.random(), listOf(Uuid.random(), Uuid.random()), module)
             .initializeRuleComponents(module.id, exampleComponentRegistry()).tableState
@@ -331,8 +331,8 @@ class ExamplePairingRuleCoreTest {
         assertEquals(2, (result.handValueResult as ExamplePairingHandValueResult).bonusTileCount)
         assertEquals(12, result.settlement.paymentsByPlayerId[otherId])
         val projected = exampleComponentRegistry().project(
-            ComponentProjectionContext(module.id, table, BuiltInComponentOwners.TABLE, table, ComponentReadContext.Player(winnerId)),
-            table.components,
+            context = ComponentProjectionContext(module.id, table, BuiltInComponentOwners.TABLE, table, ComponentReadContext.Player(winnerId)),
+            components = table.components,
         )
         assertTrue(projected.isEmpty)
     }
@@ -341,8 +341,8 @@ class ExamplePairingRuleCoreTest {
     @Test
     fun `minimum wall selects one bonus kind and inverted one man matches`() {
         val module = ExamplePairingRuleModule(
-            ExamplePairingIds.RULE_MODULE,
-            ExamplePairingRuleConfig(wallTileValues = setOf(1, 2)),
+            id = ExamplePairingIds.RULE_MODULE,
+            config = ExamplePairingRuleConfig(wallTileValues = setOf(1, 2)),
         )
         val initial = GameInitializer.initialize(Uuid.random(), listOf(Uuid.random(), Uuid.random()), module)
             .initializeRuleComponents(module.id, exampleComponentRegistry()).tableState

@@ -42,12 +42,12 @@ class ExampleBenchResourcesTest {
                     }
                 }
                 assertEquals(
-                    ExampleBenchGeometry.boxes(
-                        Direction.NORTH,
-                        left,
-                        right,
+                    expected = ExampleBenchGeometry.boxes(
+                        facing = Direction.NORTH,
+                        leftConnected = left,
+                        rightConnected = right,
                     ).toSet(),
-                    boxes.toSet(),
+                    actual = boxes.toSet(),
                 )
             }
         }
@@ -99,7 +99,7 @@ class ExampleBenchResourcesTest {
         for (left in listOf(false, true)) {
             for (right in listOf(false, true)) {
                 assertNoOverlappingFaces(
-                    buildList {
+                    models = buildList {
                         add("bench")
                         if (!left) add("bench_left")
                         if (!right) add("bench_right")

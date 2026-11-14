@@ -22,13 +22,13 @@ fun examplePairingCatalogue(): RuleCatalogueProvider = object : RuleCataloguePro
     override fun catalogue(config: MahjongRuleConfig): RuleCatalogue? = if (config is ExamplePairingRuleConfig) {
         RuleCatalogue(
             categories = listOf(
-                RuleCatalogueCategory(
+                element = RuleCatalogueCategory(
                     id = ExampleMinecraftPresentationIds.RULE_CATEGORY,
                     nameTranslationKey = ExampleMinecraftMessageKeys.CATALOGUE_CATEGORY,
                 ),
             ),
             entries = listOf(
-                RuleCatalogueEntry(
+                element = RuleCatalogueEntry(
                     id = ExampleMinecraftPresentationIds.CATALOGUE_ENTRY,
                     categoryId = ExampleMinecraftPresentationIds.RULE_CATEGORY,
                     nameTranslationKey = ExampleMinecraftMessageKeys.CATALOGUE_ENTRY,

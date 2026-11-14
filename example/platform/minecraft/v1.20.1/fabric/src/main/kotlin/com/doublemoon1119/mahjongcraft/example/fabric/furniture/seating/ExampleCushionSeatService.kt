@@ -38,10 +38,10 @@ internal object ExampleCushionSeatService {
             cushion.z + rider.width / 2.0,
         )
         return if (ExampleFurnitureSpace.isClear(
-                world,
-                rider,
-                body,
-                cushion,
+                world = world,
+                actor = rider,
+                box = body,
+                ignoredSeat = cushion,
             )
         ) {
             SeatState.AVAILABLE
@@ -66,9 +66,9 @@ internal object ExampleCushionSeatService {
         yaw: Float,
     ): Boolean {
         if (inspect(
-                world,
-                cushion,
-                rider,
+                world = world,
+                cushion = cushion,
+                rider = rider,
             ) != SeatState.AVAILABLE
         ) {
             return false

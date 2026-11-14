@@ -30,9 +30,9 @@ class ExampleChairSeatService {
     ): Boolean {
         if (!ExampleFurnitureEntities.isRegistered()) return false
         if (!canSit(
-                world,
-                pos,
-                rider,
+                world = world,
+                pos = pos,
+                rider = rider,
             )
         ) {
             return false
@@ -128,9 +128,9 @@ class ExampleChairSeatService {
             pos.z + 0.5 + rider.width / 2.0,
         )
         return ExampleFurnitureSpace.isClear(
-            world,
-            rider,
-            body,
+            world = world,
+            actor = rider,
+            box = body,
         )
     }
 

@@ -25,10 +25,10 @@ class ExampleActorItem(settings: Settings) : Item(settings) {
         val hit = context.blockPos
         val pos = if (ExampleFurnitureBlocks.isSeat(world.getBlockState(hit))) hit else hit.offset(context.side)
         return if (ExampleActorPlacement.placeAtBlock(
-                world,
-                player,
-                context.stack,
-                pos,
+                world = world,
+                player = player,
+                stack = context.stack,
+                pos = pos,
             )
         ) {
             ActionResult.CONSUME

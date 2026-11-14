@@ -185,9 +185,9 @@ class ExamplePairingRevealHandHandlerTest {
             extension.registerRuleModules(moduleRegistry)
             moduleRegistry.freeze()
             snapshotSynchronizer = GameSnapshotSynchronizer(
-                repository,
-                snapshotRepository,
-                GameVisibilityPolicyImpl(moduleRegistry, componentRegistry = componentRegistry),
+                gameRepository = repository,
+                snapshotRepository = snapshotRepository,
+                visibilityPolicy = GameVisibilityPolicyImpl(moduleRegistry, componentRegistry = componentRegistry),
             )
             val handlers = ExtensionGameCommandExecutorRegistry().also {
                 extension.registerGameCommandHandlers(it)
@@ -198,23 +198,23 @@ class ExamplePairingRevealHandHandlerTest {
             val events = FakeGameEventPublisher()
             val presentations = FakeGamePresentationPublisher()
             executor = ExtensionGameCommandExecutor(
-                handlers,
-                ExtensionGameCommandContext(
-                    repository,
-                    moduleRegistry,
-                    snapshotSynchronizer,
-                    handSort,
-                    postActionResolvers,
-                    events,
-                    presentations,
-                    DeclareAndDiscardUseCase(
-                        repository,
-                        moduleRegistry,
-                        snapshotSynchronizer,
-                        handSort,
-                        postActionResolvers,
-                        events,
-                        presentations,
+                registry = handlers,
+                context = ExtensionGameCommandContext(
+                    gameRepository = repository,
+                    moduleRegistry = moduleRegistry,
+                    snapshotSynchronizer = snapshotSynchronizer,
+                    handSortPreferenceStore = handSort,
+                    postActionExhaustiveDrawResolverRegistry = postActionResolvers,
+                    eventPublisher = events,
+                    presentationPublisher = presentations,
+                    declareAndDiscardUseCase = DeclareAndDiscardUseCase(
+                        gameRepository = repository,
+                        moduleRegistry = moduleRegistry,
+                        snapshotSynchronizer = snapshotSynchronizer,
+                        handSortPreferenceStore = handSort,
+                        postActionExhaustiveDrawResolverRegistry = postActionResolvers,
+                        eventPublisher = events,
+                        presentationPublisher = presentations,
 
                         componentRegistry = componentRegistry,
                     ),
@@ -228,8 +228,8 @@ class ExamplePairingRevealHandHandlerTest {
         suspend fun install() {
             store.update { state ->
                 AuthoritativeStateUpdate(
-                    state.copy(games = state.games + (tableState.id to Game(tableState, GameFlowConfig()))),
-                    Unit,
+                    state = state.copy(games = state.games + (tableState.id to Game(tableState, GameFlowConfig()))),
+                    result = Unit,
                 )
             }
         }

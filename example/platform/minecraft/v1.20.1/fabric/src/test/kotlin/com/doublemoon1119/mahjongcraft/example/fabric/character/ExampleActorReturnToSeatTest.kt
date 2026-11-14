@@ -14,53 +14,53 @@ class ExampleActorReturnToSeatTest {
     @Test
     fun `a nearby safe dismount can return but a distant actor cannot`() {
         assertTrue(
-            ExampleActorReturnToSeat.isNear(
-                1.5,
-                64.0,
-                0.5,
-                0.5,
-                64.0,
-                0.5,
+            actual = ExampleActorReturnToSeat.isNear(
+                x = 1.5,
+                y = 64.0,
+                z = 0.5,
+                seatX = 0.5,
+                seatY = 64.0,
+                seatZ = 0.5,
             ),
         )
         assertTrue(
-            ExampleActorReturnToSeat.isNear(
-                6.5,
-                64.0,
-                0.5,
-                0.5,
-                64.0,
-                0.5,
+            actual = ExampleActorReturnToSeat.isNear(
+                x = 6.5,
+                y = 64.0,
+                z = 0.5,
+                seatX = 0.5,
+                seatY = 64.0,
+                seatZ = 0.5,
             ),
         )
         assertFalse(
-            ExampleActorReturnToSeat.isNear(
-                6.6,
-                64.0,
-                0.5,
-                0.5,
-                64.0,
-                0.5,
+            actual = ExampleActorReturnToSeat.isNear(
+                x = 6.6,
+                y = 64.0,
+                z = 0.5,
+                seatX = 0.5,
+                seatY = 64.0,
+                seatZ = 0.5,
             ),
         )
         assertFalse(
-            ExampleActorReturnToSeat.isNear(
-                Double.NaN,
-                64.0,
-                0.5,
-                0.5,
-                64.0,
-                0.5,
+            actual = ExampleActorReturnToSeat.isNear(
+                x = Double.NaN,
+                y = 64.0,
+                z = 0.5,
+                seatX = 0.5,
+                seatY = 64.0,
+                seatZ = 0.5,
             ),
         )
         assertFalse(
-            ExampleActorReturnToSeat.isNear(
-                0.5,
-                Double.POSITIVE_INFINITY,
-                0.5,
-                0.5,
-                64.0,
-                0.5,
+            actual = ExampleActorReturnToSeat.isNear(
+                x = 0.5,
+                y = Double.POSITIVE_INFINITY,
+                z = 0.5,
+                seatX = 0.5,
+                seatY = 64.0,
+                seatZ = 0.5,
             ),
         )
     }
@@ -69,41 +69,41 @@ class ExampleActorReturnToSeatTest {
     @Test
     fun `only changed seat values trigger the example relocation behavior`() {
         val previous = SeatGeometry(
-            0.5,
-            64.0,
-            2.5,
-            0f,
+            x = 0.5,
+            y = 64.0,
+            z = 2.5,
+            yaw = 0f,
         )
         assertTrue(
-            ExampleActorReturnToSeat.sameSeat(
-                previous,
-                SeatGeometry(
-                    0.5,
-                    64.0,
-                    2.5,
-                    360f,
+            actual = ExampleActorReturnToSeat.sameSeat(
+                previous = previous,
+                current = SeatGeometry(
+                    x = 0.5,
+                    y = 64.0,
+                    z = 2.5,
+                    yaw = 360f,
                 ),
             ),
         )
         assertFalse(
-            ExampleActorReturnToSeat.sameSeat(
-                previous,
-                SeatGeometry(
-                    2.5,
-                    64.0,
-                    0.5,
-                    90f,
+            actual = ExampleActorReturnToSeat.sameSeat(
+                previous = previous,
+                current = SeatGeometry(
+                    x = 2.5,
+                    y = 64.0,
+                    z = 0.5,
+                    yaw = 90f,
                 ),
             ),
         )
         assertFalse(
-            ExampleActorReturnToSeat.sameSeat(
-                previous,
-                SeatGeometry(
-                    0.5,
-                    64.0,
-                    2.5,
-                    180f,
+            actual = ExampleActorReturnToSeat.sameSeat(
+                previous = previous,
+                current = SeatGeometry(
+                    x = 0.5,
+                    y = 64.0,
+                    z = 2.5,
+                    yaw = 180f,
                 ),
             ),
         )
@@ -113,41 +113,41 @@ class ExampleActorReturnToSeatTest {
     @Test
     fun `restored seated positions use public seat tolerances without requiring the exact feet height`() {
         val seat = SeatGeometry(
-            0.5,
-            64.0,
-            2.5,
-            0f,
+            x = 0.5,
+            y = 64.0,
+            z = 2.5,
+            yaw = 0f,
         )
         assertTrue(
-            ExampleActorReturnToSeat.isAtSeat(
-                0.5,
-                63.9765,
-                2.5,
-                seat,
+            actual = ExampleActorReturnToSeat.isAtSeat(
+                x = 0.5,
+                y = 63.9765,
+                z = 2.5,
+                seat = seat,
             ),
         )
         assertFalse(
-            ExampleActorReturnToSeat.isAtSeat(
-                2.5,
-                64.0,
-                0.5,
-                seat,
+            actual = ExampleActorReturnToSeat.isAtSeat(
+                x = 2.5,
+                y = 64.0,
+                z = 0.5,
+                seat = seat,
             ),
         )
         assertFalse(
-            ExampleActorReturnToSeat.isAtSeat(
-                0.75,
-                64.0,
-                2.75,
-                seat,
+            actual = ExampleActorReturnToSeat.isAtSeat(
+                x = 0.75,
+                y = 64.0,
+                z = 2.75,
+                seat = seat,
             ),
         )
         assertFalse(
-            ExampleActorReturnToSeat.isAtSeat(
-                0.5,
-                65.1,
-                2.5,
-                seat,
+            actual = ExampleActorReturnToSeat.isAtSeat(
+                x = 0.5,
+                y = 65.1,
+                z = 2.5,
+                seat = seat,
             ),
         )
     }
@@ -158,7 +158,7 @@ class ExampleActorReturnToSeatTest {
         var supportChecks = 0
         var movements = 0
         assertFalse(
-            ExampleActorReturnToSeat.standIfSafe(
+            actual = ExampleActorReturnToSeat.standIfSafe(
                 body = standingBody(),
                 isClear = { false },
                 hasSupport = {
@@ -177,7 +177,7 @@ class ExampleActorReturnToSeatTest {
     fun `empty standing space without ground support does not move the actor`() {
         var movements = 0
         assertFalse(
-            ExampleActorReturnToSeat.standIfSafe(
+            actual = ExampleActorReturnToSeat.standIfSafe(
                 body = standingBody(),
                 isClear = { true },
                 hasSupport = { false },
@@ -193,7 +193,7 @@ class ExampleActorReturnToSeatTest {
         val body = standingBody()
         val events = mutableListOf<String>()
         assertTrue(
-            ExampleActorReturnToSeat.standIfSafe(
+            actual = ExampleActorReturnToSeat.standIfSafe(
                 body = body,
                 isClear = { checked ->
                     assertSame(body, checked)

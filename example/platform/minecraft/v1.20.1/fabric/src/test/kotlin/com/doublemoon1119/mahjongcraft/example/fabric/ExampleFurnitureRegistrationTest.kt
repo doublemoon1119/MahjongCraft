@@ -22,8 +22,8 @@ class ExampleFurnitureRegistrationTest {
         val second = secondRegistry.definitions
 
         assertEquals(
-            listOf(ExampleFurnitureIds.CHAIR, ExampleFurnitureIds.BENCH, ExampleFurnitureIds.CUSHION),
-            first.map { it.id },
+            expected = listOf(ExampleFurnitureIds.CHAIR, ExampleFurnitureIds.BENCH, ExampleFurnitureIds.CUSHION),
+            actual = first.map { it.id },
         )
         assertNotSame(first[0].provider, second[0].provider)
         assertNotSame(first[1].provider, second[1].provider)

@@ -51,25 +51,25 @@ internal object ExampleActorPlacement {
             canUse = { actor ->
                 if (isSeat) {
                     seats.canSit(
-                        world,
-                        pos,
-                        actor,
+                        world = world,
+                        pos = pos,
+                        rider = actor,
                     )
                 } else {
                     ExampleFurnitureSpace.isClear(
-                        world,
-                        actor,
-                        actor.boundingBox,
+                        world = world,
+                        actor = actor,
+                        box = actor.boundingBox,
                     )
                 }
             },
             mount = { actor ->
                 !isSeat ||
                     seats.sit(
-                        world,
-                        pos,
-                        actor,
-                        yaw,
+                        world = world,
+                        pos = pos,
+                        rider = actor,
+                        yaw = yaw,
                     )
             },
         )
@@ -101,17 +101,17 @@ internal object ExampleActorPlacement {
         yaw = cushion.yaw,
         canUse = { actor ->
             ExampleCushionSeatService.inspect(
-                world,
-                cushion,
-                actor,
+                world = world,
+                cushion = cushion,
+                rider = actor,
             ) == SeatState.AVAILABLE
         },
         mount = { actor ->
             ExampleCushionSeatService.sit(
-                world,
-                cushion,
-                actor,
-                cushion.yaw,
+                world = world,
+                cushion = cushion,
+                rider = actor,
+                yaw = cushion.yaw,
             )
         },
     )

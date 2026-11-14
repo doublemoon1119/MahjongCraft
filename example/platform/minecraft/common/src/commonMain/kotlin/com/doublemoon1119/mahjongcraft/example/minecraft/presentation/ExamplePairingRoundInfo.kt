@@ -19,43 +19,43 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.table.RoundInfoMessage
  */
 fun registerExamplePairingRoundInfo(registry: RoundInfoLineDisplayRegistrar) {
     registry.register(
-        RoundInfoLineDisplayDefinition(
+        definition = RoundInfoLineDisplayDefinition(
             key = ExampleMinecraftPresentationIds.WALL_REMAINING_INFO,
             display = RoundInfoLineDisplay(ExampleMinecraftMessageKeys.ROUND_INFO_WALL_REMAINING),
         ),
     )
     registry.register(
-        RoundInfoLineDisplayDefinition(
+        definition = RoundInfoLineDisplayDefinition(
             key = ExampleMinecraftPresentationIds.ROUND_COUNT_INFO,
             display = RoundInfoLineDisplay(ExampleMinecraftMessageKeys.ROUND_INFO_ROUND_COUNT),
         ),
     )
     registry.register(
-        RoundInfoLineDisplayDefinition(
+        definition = RoundInfoLineDisplayDefinition(
             key = ExampleMinecraftPresentationIds.LATEST_DISCARD_INFO,
             display = RoundInfoLineDisplay(ExampleMinecraftMessageKeys.ROUND_INFO_LATEST_DISCARD),
         ),
     )
     registry.register(
-        RoundInfoLineDisplayDefinition(
+        definition = RoundInfoLineDisplayDefinition(
             key = ExampleMinecraftPresentationIds.EXCHANGE_STATUS_INFO,
             display = RoundInfoLineDisplay(ExampleMinecraftMessageKeys.ROUND_INFO_EXCHANGE),
         ),
     )
     registry.register(
-        RoundInfoMessageDefinition(
-            ExampleMinecraftPresentationIds.EXCHANGE_ENABLED_MESSAGE,
-            ExampleMinecraftMessageKeys.ROUND_INFO_EXCHANGE_ENABLED,
+        definition = RoundInfoMessageDefinition(
+            id = ExampleMinecraftPresentationIds.EXCHANGE_ENABLED_MESSAGE,
+            translationKey = ExampleMinecraftMessageKeys.ROUND_INFO_EXCHANGE_ENABLED,
         ),
     )
     registry.register(
-        RoundInfoMessageDefinition(
-            ExampleMinecraftPresentationIds.EXCHANGE_DISABLED_MESSAGE,
-            ExampleMinecraftMessageKeys.ROUND_INFO_EXCHANGE_DISABLED,
+        definition = RoundInfoMessageDefinition(
+            id = ExampleMinecraftPresentationIds.EXCHANGE_DISABLED_MESSAGE,
+            translationKey = ExampleMinecraftMessageKeys.ROUND_INFO_EXCHANGE_DISABLED,
         ),
     )
     registry.register(
-        RoundInfoLineProviderDefinition(
+        definition = RoundInfoLineProviderDefinition(
             ruleModuleId = ExamplePairingIds.RULE_MODULE,
             provider = RoundInfoLineProvider { tableState ->
                 val ruleConfig = tableState.config as ExamplePairingRuleConfig
@@ -64,13 +64,13 @@ fun registerExamplePairingRoundInfo(registry: RoundInfoLineDisplayRegistrar) {
                 }?.discardPile?.entries?.lastOrNull()?.tile?.tile
                 buildList {
                     add(
-                        RoundInfoLine(
+                        element = RoundInfoLine(
                             key = ExampleMinecraftPresentationIds.WALL_REMAINING_INFO,
                             args = listOf(RoundInfoArgument.Number(tableState.tileWall.remainingCount)),
                         ),
                     )
                     add(
-                        RoundInfoLine(
+                        element = RoundInfoLine(
                             key = ExampleMinecraftPresentationIds.ROUND_COUNT_INFO,
                             args = listOf(
                                 RoundInfoArgument.Number(tableState.roundNumber),
@@ -80,18 +80,18 @@ fun registerExamplePairingRoundInfo(registry: RoundInfoLineDisplayRegistrar) {
                     )
                     latestDiscard?.let { tile ->
                         add(
-                            RoundInfoLine(
+                            element = RoundInfoLine(
                                 key = ExampleMinecraftPresentationIds.LATEST_DISCARD_INFO,
                                 args = listOf(RoundInfoArgument.TileValue(tile)),
                             ),
                         )
                     }
                     add(
-                        RoundInfoLine(
+                        element = RoundInfoLine(
                             key = ExampleMinecraftPresentationIds.EXCHANGE_STATUS_INFO,
                             args = listOf(
-                                RoundInfoArgument.Message(
-                                    if (ruleConfig.exchangeEnabled) {
+                                element = RoundInfoArgument.Message(
+                                    id = if (ruleConfig.exchangeEnabled) {
                                         ExampleMinecraftPresentationIds.EXCHANGE_ENABLED_MESSAGE
                                     } else {
                                         ExampleMinecraftPresentationIds.EXCHANGE_DISABLED_MESSAGE

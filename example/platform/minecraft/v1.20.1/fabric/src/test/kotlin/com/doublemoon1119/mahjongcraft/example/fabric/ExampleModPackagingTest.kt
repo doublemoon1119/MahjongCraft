@@ -80,8 +80,8 @@ class ExampleModPackagingTest {
             assertTrue("mahjongcraft" in metadata.getValue("depends").jsonObject)
             assertFabricDependencyRequirements(metadata)
             assertEquals(
-                "com.doublemoon1119.mahjongcraft.example.fabric.ExampleModClient",
-                metadata.getValue("entrypoints").jsonObject.getValue("client").jsonArray.single().jsonPrimitive.content,
+                expected = "com.doublemoon1119.mahjongcraft.example.fabric.ExampleModClient",
+                actual = metadata.getValue("entrypoints").jsonObject.getValue("client").jsonArray.single().jsonPrimitive.content,
             )
         }
     }
@@ -114,8 +114,8 @@ class ExampleModPackagingTest {
             assertEquals(requirement, dependencies.getValue(id).jsonPrimitive.content, id)
         }
         assertFalse(
-            dependencies.values.any { it.jsonPrimitive.content.contains("\${") },
-            dependencies.toString(),
+            actual = dependencies.values.any { it.jsonPrimitive.content.contains("\${") },
+            message = dependencies.toString(),
         )
     }
 
