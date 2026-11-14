@@ -82,7 +82,7 @@ class WinSettlementPresentationRequestFactoryTest {
         meldTiles.forEach { meldTile ->
             assertTrue(
                 meldTile.id !in winnerPresentation.standingTileIds,
-                "A meld tile must never be duplicated into the hand tile group.",
+                message = "A meld tile must never be duplicated into the hand tile group.",
             )
         }
     }
@@ -133,7 +133,7 @@ class WinSettlementPresentationRequestFactoryTest {
         )
         val registry = WinSettlementDetailResolverRegistry(bundledCoreExtensionRegistries().componentRegistry).apply {
             register(
-                WinSettlementDetailResolverDefinition(
+                definition = WinSettlementDetailResolverDefinition(
                     ruleModuleId = module.id,
                     resolver = object : WinSettlementDetailResolver {
                         override fun resolve(
@@ -199,8 +199,8 @@ class WinSettlementPresentationRequestFactoryTest {
         )
 
         assertEquals(
-            listOf(oneCharacters.id, nineCharacters.id, twoDots.id, east.id),
-            request.winners.single().standingTileIds,
+            expected = listOf(oneCharacters.id, nineCharacters.id, twoDots.id, east.id),
+            actual = request.winners.single().standingTileIds,
         )
     }
 
@@ -215,7 +215,7 @@ class WinSettlementPresentationRequestFactoryTest {
                 tiles = emptyList(),
                 lastDrawn = winningTile,
                 melds = listOf(
-                    Meld(
+                    element = Meld(
                         type = MeldType.ClosedKan,
                         tiles = kanTiles,
                         sourceTile = null,

@@ -42,7 +42,7 @@ class AuthoritativeStateStoreConcurrencyTest {
         val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
         store.setCommittedFactsListener(
-            object : CommittedFactsListener {
+            listener = object : CommittedFactsListener {
                 override fun onCommitted(sequence: Long, facts: CommittedGameFacts) {
                     committed.countDown()
                     check(release.await(5, TimeUnit.SECONDS)) { "Timed out waiting to release the first callback" }
@@ -89,7 +89,7 @@ class AuthoritativeStateStoreConcurrencyTest {
         repository.setTableState(tableState)
         val released = CompletableDeferred<AuthoritativeStateSnapshot>()
         store.setCommittedFactsListener(
-            object : CommittedFactsListener {
+            listener = object : CommittedFactsListener {
                 override fun onCommitted(sequence: Long, facts: CommittedGameFacts) = Unit
 
                 override fun onReleased(sequence: Long) {
@@ -114,7 +114,7 @@ class AuthoritativeStateStoreConcurrencyTest {
         val released = CountDownLatch(1)
         lateinit var submittingJob: Job
         store.setCommittedFactsListener(
-            object : CommittedFactsListener {
+            listener = object : CommittedFactsListener {
                 override fun onCommitted(sequence: Long, facts: CommittedGameFacts) {
                     submittingJob.cancel()
                 }

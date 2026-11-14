@@ -79,17 +79,17 @@ class DeclareTsumoUseCase(
         // AI 名單整場對局不變，先取出供結算呈現使用。
         val aiPlayerIds = gameRepository.getGame(gameId)?.aiPlayerIds.orEmpty()
         val outcome = gameRepository.update(
-            gameId,
+            gameId = gameId,
             history = { before, after, result ->
                 if (result is Outcome.Success && before != null && after != null) {
                     val settled = result.value
                     listOf(
                         acceptedActionHistoryDraft(
-                            playerId,
-                            GameAction.Tsumo,
-                            before,
-                            after,
-                            listOfNotNull(before.players.first { it.id == playerId }.hand.lastDrawn?.id),
+                            actorPlayerId = playerId,
+                            action = GameAction.Tsumo,
+                            before = before,
+                            after = after,
+                            affectedTileIds = listOfNotNull(before.players.first { it.id == playerId }.hand.lastDrawn?.id),
                         ),
                         HistoryEventDraft(
                             actorPlayerId = playerId,
@@ -119,7 +119,7 @@ class DeclareTsumoUseCase(
                     val module = moduleRegistry.getModule(state.config)
 
                     val legalActions = module.createLegalActionValidator().getLegalActions(
-                        LegalActionContext.ownTurn(state, playerId),
+                        context = LegalActionContext.ownTurn(state, playerId),
                     )
                     if (legalActions.none { it is GameAction.Tsumo }) {
                         return@update state to Outcome.Error(GameError.IllegalAction(playerId, gameId, GameAction.Tsumo))
@@ -135,7 +135,7 @@ class DeclareTsumoUseCase(
                     )
                     if (revealResult is WallRevealDecisionApplier.Result.Rejected) {
                         return@update state to Outcome.Error(
-                            GameError.UnsupportedAction(gameId, playerId, revealResult.reasonId),
+                            error = GameError.UnsupportedAction(gameId, playerId, revealResult.reasonId),
                         )
                     }
                     revealResult as WallRevealDecisionApplier.Result.Applied
@@ -144,8 +144,8 @@ class DeclareTsumoUseCase(
                     // 已驗證的和牌卻缺少結算是規則矛盾，不能改當一般非法請求或零分和牌。
                     val tsumoResult = module.declareTsumo(stateForSettlement, stateForSettlement.currentPlayer)
                         ?: throw RuleContractViolationException(
-                            GameAbortReasonIds.MISSING_WIN_SETTLEMENT,
-                            "Rule ${module.id} offered tsumo but returned no settlement for $playerId",
+                            reasonId = GameAbortReasonIds.MISSING_WIN_SETTLEMENT,
+                            diagnostic = "Rule ${module.id} offered tsumo but returned no settlement for $playerId",
                         )
 
                     // 場上供託與連莊點數的歸屬交給規則決定；自摸時唯一的候選者是和牌者。
@@ -182,7 +182,7 @@ class DeclareTsumoUseCase(
                     )
 
                     newState to Outcome.Success(
-                        TsumoResult(
+                        value = TsumoResult(
                             tableState = newState,
                             resolution = tsumoResult,
                             ruleModuleId = module.id,
@@ -203,8 +203,8 @@ class DeclareTsumoUseCase(
         // 3. 通知在場玩家與旁觀者：廣播自摸事件
         eventPublisher.publishToAllObservers(gameId, newState.players.map { it.id }, playerId, GameAction.Tsumo)
         presentationPublisher.publishTableSteps(
-            gameId,
-            listOf(TableStep(newState, listOf(TableStepEvent.ActionDeclared(playerId, GameAction.Tsumo)))),
+            gameId = gameId,
+            steps = listOf(TableStep(newState, listOf(TableStepEvent.ActionDeclared(playerId, GameAction.Tsumo)))),
         )
 
         // 4. 建構胡牌演出內容並寫進交接槽——手牌不受這個 use case 影響（只改分數與 actionHistory），
@@ -219,9 +219,9 @@ class DeclareTsumoUseCase(
                     isTsumo = true,
                     revealsWinnerHands = true,
                     winners = listOf(
-                        WinCelebrationWinner(
-                            winnerSeatIndex,
-                            winCelebrationCueResolverRegistry.resolve(result.ruleModuleId, result.handValueResult),
+                        element = WinCelebrationWinner(
+                            seatIndex = winnerSeatIndex,
+                            cueIds = winCelebrationCueResolverRegistry.resolve(result.ruleModuleId, result.handValueResult),
                         ),
                     ),
                 ),

@@ -66,15 +66,15 @@ class DeclareExhaustiveDrawUseCase(
     suspend operator fun invoke(gameId: Uuid): Outcome<DeclaredExhaustiveDraw, GameError> {
         // 1. 以原子方式讀取桌況、計算流局結算並寫回
         val outcome = gameRepository.updateGame(
-            gameId,
+            gameId = gameId,
             history = { before, after, result ->
                 if (result is Outcome.Success && before != null && after != null) {
                     listOf(
-                        acceptedActionHistoryDraft(
-                            null,
-                            GameAction.ExhaustiveDraw(result.value.settlement.reason),
-                            before.tableState,
-                            after.tableState,
+                        element = acceptedActionHistoryDraft(
+                            actorPlayerId = null,
+                            action = GameAction.ExhaustiveDraw(result.value.settlement.reason),
+                            before = before.tableState,
+                            after = after.tableState,
                         ),
                     )
                 } else {
@@ -126,7 +126,7 @@ class DeclareExhaustiveDrawUseCase(
                     ).revealHandsOf(settlement.revealedHands.map { it.playerId })
 
                     val transitionDirective = module.resolveRoundTransition(
-                        RoundTransitionContext(
+                        context = RoundTransitionContext(
                             tableState = newState,
                             outcomeId = settlement.reason.id,
                             classification = RoundCompletionClassification.EXHAUSTIVE_DRAW,
@@ -161,14 +161,14 @@ class DeclareExhaustiveDrawUseCase(
         // 3. 廣播流局事件；跟 GameAction.RoundStarted 一樣沒有實際執行者，比照既有慣例填入莊家 Uuid
         val dealerId = newState.dealerPlayerId
         eventPublisher.publishToAllObservers(
-            gameId,
-            newState.players.map { it.id },
-            dealerId,
-            GameAction.ExhaustiveDraw(result.settlement.reason),
+            gameId = gameId,
+            seatedPlayerIds = newState.players.map { it.id },
+            actorId = dealerId,
+            action = GameAction.ExhaustiveDraw(result.settlement.reason),
         )
 
         return Outcome.Success(
-            DeclaredExhaustiveDraw(
+            value = DeclaredExhaustiveDraw(
                 tableState = result.tableState,
                 settlement = result.settlement,
             ),

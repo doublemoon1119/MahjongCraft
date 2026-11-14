@@ -29,8 +29,8 @@ import kotlin.uuid.Uuid
 class AutomaticDecisionEvaluatorTaiwanTest {
     private val moduleRegistry = MahjongModuleRegistryImpl().apply { registerBundledRuleModules() }
     private val evaluator = AutomaticDecisionEvaluator(
-        moduleRegistry,
-        GameVisibilityPolicyImpl(moduleRegistry, componentRegistry = bundledCoreExtensionRegistries().componentRegistry),
+        moduleRegistry = moduleRegistry,
+        visibilityPolicy = GameVisibilityPolicyImpl(moduleRegistry, componentRegistry = bundledCoreExtensionRegistries().componentRegistry),
     )
 
     /** 輪到自己、沒有其他可做的動作時，自動打出剛摸到的牌。 */

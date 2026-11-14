@@ -33,15 +33,15 @@ class AutomaticGameCommandResolverTest {
         val other = FakeIdentifiedTileFactory.create(Tile.Honor.White)
         val playerId = Uuid.random()
         val state = ownTurnState(
-            FakeMahjongPlayerFactory.create(
+            player = FakeMahjongPlayerFactory.create(
                 id = playerId,
                 hand = Hand(tiles = listOf(required, other)),
             ).recordAction(GameAction.Pon(Uuid.random(), listOf(Uuid.random(), Uuid.random()))),
         )
 
         assertEquals(
-            GameCommand.Discard(required.id),
-            resolver(setOf(required.id)).resolve(state, playerId),
+            expected = GameCommand.Discard(required.id),
+            actual = resolver(setOf(required.id)).resolve(state, playerId),
         )
     }
 
@@ -50,7 +50,7 @@ class AutomaticGameCommandResolverTest {
     fun `missing allowed discard returns no command`() {
         val playerId = Uuid.random()
         val state = ownTurnState(
-            FakeMahjongPlayerFactory.create(
+            player = FakeMahjongPlayerFactory.create(
                 id = playerId,
                 hand = Hand(tiles = listOf(FakeIdentifiedTileFactory.create(Tile.Honor.Red))),
             ).recordAction(GameAction.Pon(Uuid.random(), listOf(Uuid.random(), Uuid.random()))),
@@ -125,7 +125,7 @@ class AutomaticGameCommandResolverTest {
     ): AutomaticGameCommandResolver {
         val registry = MahjongModuleRegistryImpl().apply {
             register(
-                MahjongModuleDefinition(RiichiRuleConfig::class, "test:discard_restriction") { config, id ->
+                definition = MahjongModuleDefinition(RiichiRuleConfig::class, "test:discard_restriction") { config, id ->
                     DiscardRestrictionRuleModule(RiichiRuleModule(id, config), discardableTileIds, rejectPass)
                 },
             )

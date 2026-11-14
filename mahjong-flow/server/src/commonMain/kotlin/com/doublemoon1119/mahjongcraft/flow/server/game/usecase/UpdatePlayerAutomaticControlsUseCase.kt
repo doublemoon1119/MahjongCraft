@@ -38,17 +38,17 @@ class UpdatePlayerAutomaticControlsUseCase(
     ): UpdatePlayerAutomaticControlsResult = gameRepository.updateGame(gameId) { game ->
         if (game == null) {
             return@updateGame null to UpdatePlayerAutomaticControlsResult.Unavailable(
-                AutomaticControlUpdateUnavailableReason.GAME_NOT_FOUND,
+                reason = AutomaticControlUpdateUnavailableReason.GAME_NOT_FOUND,
             )
         }
         if (game.isMatchOver) {
             return@updateGame game to UpdatePlayerAutomaticControlsResult.Unavailable(
-                AutomaticControlUpdateUnavailableReason.MATCH_OVER,
+                reason = AutomaticControlUpdateUnavailableReason.MATCH_OVER,
             )
         }
         if (game.tableState.players.none { player -> player.id == playerId }) {
             return@updateGame game to UpdatePlayerAutomaticControlsResult.Rejected(
-                AutomaticControlUpdateRejection.PLAYER_NOT_IN_GAME,
+                reason = AutomaticControlUpdateRejection.PLAYER_NOT_IN_GAME,
             )
         }
 
@@ -59,14 +59,14 @@ class UpdatePlayerAutomaticControlsUseCase(
 
         if (enabledControlIds.any { controlId -> !NamespacedId.isValid(controlId) }) {
             return@updateGame game to UpdatePlayerAutomaticControlsResult.Rejected(
-                AutomaticControlUpdateRejection.INVALID_CONTROL_ID,
-                currentSnapshot,
+                reason = AutomaticControlUpdateRejection.INVALID_CONTROL_ID,
+                snapshot = currentSnapshot,
             )
         }
         if (enabledControlIds.any { controlId -> controlId !in supportedControlIds }) {
             return@updateGame game to UpdatePlayerAutomaticControlsResult.Rejected(
-                AutomaticControlUpdateRejection.UNSUPPORTED_CONTROL_ID,
-                currentSnapshot,
+                reason = AutomaticControlUpdateRejection.UNSUPPORTED_CONTROL_ID,
+                snapshot = currentSnapshot,
             )
         }
         if (expectedRevision != game.automaticControlRevision) {
@@ -86,7 +86,7 @@ class UpdatePlayerAutomaticControlsUseCase(
             automaticControlRevision = game.automaticControlRevision + 1L,
         )
         updatedGame to UpdatePlayerAutomaticControlsResult.Accepted(
-            updatedGame.toAutomaticControlSnapshot(playerId, module.id, supportedControlIds),
+            snapshot = updatedGame.toAutomaticControlSnapshot(playerId, module.id, supportedControlIds),
             changed = true,
         )
     }

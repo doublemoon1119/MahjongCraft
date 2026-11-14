@@ -80,7 +80,7 @@ class DrawTileUseCaseTest {
             tileWall = TileWall(listOf(drawnTile)),
             currentPlayerIndex = 0,
             physicalWallLayout = TileWallPhysicalLayout(
-                mapOf(drawnTile.id to TileWallPlacement(TileWallPosition(0, 0, 0))),
+                placements = mapOf(drawnTile.id to TileWallPlacement(TileWallPosition(0, 0, 0))),
             ),
         )
         fixtures.gameRepo.setTableState(table)
@@ -156,8 +156,8 @@ class DrawTileUseCaseTest {
         assertNotNull(fixtures.snapshotRepo.getSnapshot(gameId, currentPlayerId))
         assertNotNull(fixtures.snapshotRepo.getSnapshot(gameId, otherPlayerId))
         assertEquals(
-            GameAction.Draw,
-            fixtures.eventPublisher.getNotifiedAction(gameId, currentPlayerId, currentPlayerId),
+            expected = GameAction.Draw,
+            actual = fixtures.eventPublisher.getNotifiedAction(gameId, currentPlayerId, currentPlayerId),
         )
         assertEquals(GameAction.Draw, fixtures.eventPublisher.getNotifiedAction(gameId, otherPlayerId, currentPlayerId))
     }
@@ -266,8 +266,8 @@ class DrawTileUseCaseTest {
 
         assertTrue(result is Outcome.Error)
         assertEquals(
-            GameError.IllegalAction(currentPlayerId, gameId, GameAction.Draw),
-            result.error,
+            expected = GameError.IllegalAction(currentPlayerId, gameId, GameAction.Draw),
+            actual = result.error,
         )
     }
 
@@ -290,7 +290,7 @@ class DrawTileUseCaseTest {
             base.copy(turnPhase = TurnPhase.AwaitingDiscardReaction(PendingReaction(currentPlayerId, discarded.id, setOf(otherPlayerId), ronPlayerIds = setOf(otherPlayerId), id = Uuid.random()))),
             base.copy(
                 turnPhase = TurnPhase.AwaitingRobbingReaction(
-                    PendingRobbingReaction(
+                    reaction = PendingRobbingReaction(
                         declarerId = otherPlayerId,
                         declaredAction = GameAction.Kan(GameAction.KanType.ADDED_KAN, discarded.id, emptyList()),
                         robbedTile = discarded,

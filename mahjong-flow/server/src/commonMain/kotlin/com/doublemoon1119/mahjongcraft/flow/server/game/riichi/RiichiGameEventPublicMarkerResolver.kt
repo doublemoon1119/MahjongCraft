@@ -30,7 +30,7 @@ object RiichiGameEventPublicMarkerResolver : GameEventPublicMarkerResolver {
         val threshold = context.previousState.config.scoreConfig.bustThreshold ?: return emptyList()
         return buildList {
             add(
-                RulePublicEventMarker(
+                element = RulePublicEventMarker(
                     id = RiichiGameEventPublicMarkerIds.BUST_THRESHOLD,
                     quantity = RulePublicEventQuantity(RiichiGameEventPublicMarkerIds.POINTS_UNIT, threshold),
                 ),

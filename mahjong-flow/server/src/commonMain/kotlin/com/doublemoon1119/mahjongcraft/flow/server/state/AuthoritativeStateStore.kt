@@ -193,7 +193,7 @@ class AuthoritativeStateStore(
         val game = currentState.games.values.firstOrNull { it.matchId == matchId } ?: return@withLock
         if (recording.decisionsByMatchId[matchId] != HistoryRecordingDecision.RECORDING) return@withLock
         commit(
-            currentState.copy(
+            nextState = currentState.copy(
                 historyRecordingState = recording.recordMissing(game).copy(
                     decisionsByMatchId = recording.decisionsByMatchId + (matchId to HistoryRecordingDecision.STOPPED_EXTERNALLY_MODIFIED),
                 ),
@@ -248,7 +248,7 @@ class AuthoritativeStateStore(
         val decisions = (recording.decisionsByMatchId - removable).toMutableMap()
         (confirmed intersect active).forEach { decisions[it] = HistoryRecordingDecision.STOPPED_PRUNED }
         commit(
-            currentState.copy(
+            nextState = currentState.copy(
                 historyRecordingState = recording.copy(
                     pendingEvents = recording.pendingEvents.filterNot { it.matchId in removable },
                     nextSequenceByMatchId = recording.nextSequenceByMatchId - removable,
@@ -350,7 +350,7 @@ class AuthoritativeStateStore(
         require(recording.transfersByMatchId.values.none { it.venueId == game.id }) { "History transfer venue already exists" }
         if (!isHistoryStorageAvailable || recordingPolicy.decide(game) != HistoryRecordingDecision.RECORDING) return@withLock false
         commit(
-            currentState.copy(
+            nextState = currentState.copy(
                 historyRecordingState = recording.copy(
                     nextSequenceByMatchId = recording.nextSequenceByMatchId + (game.matchId to 1L),
                     decisionsByMatchId = recording.decisionsByMatchId + (game.matchId to HistoryRecordingDecision.RECORDING),
@@ -395,7 +395,7 @@ class AuthoritativeStateStore(
         val transferCapacity = minOf(MAX_TRANSFER_BATCH * 2, maxPendingHistoryEvents / 2)
         if (recording.pendingEvents.size + events.size > transferCapacity) return@withLock HistoryTransferResult.WAITING_FOR_CAPACITY
         commit(
-            currentState.copy(
+            nextState = currentState.copy(
                 historyRecordingState = recording.copy(
                     pendingEvents = recording.pendingEvents + events,
                     nextSequenceByMatchId = recording.nextSequenceByMatchId + (matchId to events.last().sequence + 1L),
@@ -427,7 +427,7 @@ class AuthoritativeStateStore(
         }
         val stopped = if (completed) recording else stopTransfer(recording, matchId, HistoryRecordingDecision.STOPPED_TRANSFER_INTERRUPTED)
         commit(
-            currentState.copy(
+            nextState = currentState.copy(
                 historyRecordingState = stopped.copy(
                     transfersByMatchId = stopped.transfersByMatchId - matchId,
                     terminalByMatchId = stopped.terminalByMatchId + (matchId to terminal.copy(completed = completed)),
@@ -547,7 +547,7 @@ class AuthoritativeStateStore(
                             HistoryEventDraft(
                                 actorPlayerId = null,
                                 fact = HistoryFact.TableChanged(
-                                    change?.let(HistoryTableResult::Change)
+                                    result = change?.let(HistoryTableResult::Change)
                                         ?: HistoryTableResult.Checkpoint("mahjongcraft:unsupported_structural_change", after),
                                 ),
                             )

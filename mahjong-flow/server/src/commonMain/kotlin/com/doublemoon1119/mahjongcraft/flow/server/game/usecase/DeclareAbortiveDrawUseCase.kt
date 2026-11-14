@@ -57,15 +57,15 @@ class DeclareAbortiveDrawUseCase(
     ): Outcome<Unit, GameError> {
         // 1. 以原子方式讀取桌況、驗證業務規則並寫回
         val outcome = gameRepository.updateGame(
-            gameId,
+            gameId = gameId,
             history = { before, after, result ->
                 if (result is Outcome.Success && before != null && after != null) {
                     listOf(
-                        acceptedActionHistoryDraft(
-                            playerId,
-                            GameAction.ExhaustiveDraw(result.value.reason),
-                            before.tableState,
-                            after.tableState,
+                        element = acceptedActionHistoryDraft(
+                            actorPlayerId = playerId,
+                            action = GameAction.ExhaustiveDraw(result.value.reason),
+                            before = before.tableState,
+                            after = after.tableState,
                         ),
                     )
                 } else {
@@ -89,7 +89,7 @@ class DeclareAbortiveDrawUseCase(
                     val module = moduleRegistry.getModule(state.config)
 
                     val legalActions = module.createLegalActionValidator().getLegalActions(
-                        LegalActionContext.ownTurn(state, playerId),
+                        context = LegalActionContext.ownTurn(state, playerId),
                     )
                     val exhaustiveDraw = legalActions.filterIsInstance<GameAction.ExhaustiveDraw>()
                         .firstOrNull { it.reason == reason }
@@ -100,7 +100,7 @@ class DeclareAbortiveDrawUseCase(
                     val newState = state.recordAbortiveDraw(exhaustiveDraw.reason, declarerId = playerId, module = module)
 
                     val transitionDirective = module.resolveRoundTransition(
-                        RoundTransitionContext(
+                        context = RoundTransitionContext(
                             tableState = newState,
                             outcomeId = exhaustiveDraw.reason.id,
                             classification = RoundCompletionClassification.ABORTIVE_DRAW,

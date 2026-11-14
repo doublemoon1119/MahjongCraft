@@ -71,8 +71,8 @@ class CreateRoomUseCase(
                         aiPlayerStrategyKeys = if (hostAiStrategyKey == null) emptyMap() else mapOf(hostId to hostAiStrategyKey),
                     )
                     AuthoritativeStateUpdate(
-                        state.copy(rooms = state.rooms + (roomId to newRoom)),
-                        Outcome.Success(newRoom),
+                        state = state.copy(rooms = state.rooms + (roomId to newRoom)),
+                        result = Outcome.Success(newRoom),
                     )
                 }
             }

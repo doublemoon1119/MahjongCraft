@@ -138,15 +138,15 @@ class CompactReplayRoundReaderGenuineTest {
             event(matchId, base.id, 1, 0L, HistoryFact.MatchStarted(base, GameFlowConfig(), emptyMap())),
             event(matchId, base.id, 2, 50L, HistoryFact.TableChanged(HistoryTableResult.Checkpoint("test:pull_north", pulled))),
             event(
-                matchId,
-                base.id,
-                3,
-                100L,
-                HistoryFact.RoundCompleted(
-                    RoundCompletionSummary(
-                        "test:round_completed",
-                        RoundCompletionClassification.EXHAUSTIVE_DRAW,
-                        emptySet(),
+                matchId = matchId,
+                venueId = base.id,
+                sequence = 3,
+                time = 100L,
+                fact = HistoryFact.RoundCompleted(
+                    summary = RoundCompletionSummary(
+                        outcomeId = "test:round_completed",
+                        classification = RoundCompletionClassification.EXHAUSTIVE_DRAW,
+                        beneficiaryPlayerIds = emptySet(),
                         transitionDirective = RoundTransitionDirective.PassToNextSeat,
                         settledScoresByPlayerId = pulled.players.associate { it.id to it.score },
                     ),
@@ -185,11 +185,11 @@ class CompactReplayRoundReaderGenuineTest {
         val events = listOf(
             event(matchId, base.id, 1, 0L, HistoryFact.MatchStarted(base, GameFlowConfig(), emptyMap())),
             event(
-                matchId,
-                base.id,
-                2,
-                50L,
-                HistoryFact.TileReplacementRoundResolved(
+                matchId = matchId,
+                venueId = base.id,
+                sequence = 2,
+                time = 50L,
+                fact = HistoryFact.TileReplacementRoundResolved(
                     timing = RuleDecisionTiming.ROUND_START,
                     round = TileReplacementRound(
                         round = 1,
@@ -201,14 +201,14 @@ class CompactReplayRoundReaderGenuineTest {
                 ),
             ),
             HistoryOutboxEvent(
-                matchId,
-                base.id,
-                1,
-                3,
-                3,
-                100L,
-                second.id,
-                HistoryFact.RuleDecisionSubmitted(
+                matchId = matchId,
+                venueId = base.id,
+                roundNumber = 1,
+                sequence = 3,
+                transactionFirstSequence = 3,
+                occurredAtEpochMillis = 100L,
+                actorPlayerId = second.id,
+                fact = HistoryFact.RuleDecisionSubmitted(
                     timing = RuleDecisionTiming.ROUND_START,
                     stepId = "test:step",
                     stepIndex = 0,
@@ -218,15 +218,15 @@ class CompactReplayRoundReaderGenuineTest {
                 ),
             ),
             event(
-                matchId,
-                base.id,
-                4,
-                150L,
-                HistoryFact.RoundCompleted(
-                    RoundCompletionSummary(
-                        "test:round_completed",
-                        RoundCompletionClassification.EXHAUSTIVE_DRAW,
-                        emptySet(),
+                matchId = matchId,
+                venueId = base.id,
+                sequence = 4,
+                time = 150L,
+                fact = HistoryFact.RoundCompleted(
+                    summary = RoundCompletionSummary(
+                        outcomeId = "test:round_completed",
+                        classification = RoundCompletionClassification.EXHAUSTIVE_DRAW,
+                        beneficiaryPlayerIds = emptySet(),
                         transitionDirective = RoundTransitionDirective.PassToNextSeat,
                         settledScoresByPlayerId = base.players.associate { it.id to it.score },
                     ),
@@ -244,8 +244,8 @@ class CompactReplayRoundReaderGenuineTest {
         assertEquals(1, round.round)
         assertEquals(listOf(first.initialSeatIndex, second.initialSeatIndex), round.removals.map { it.seat })
         assertEquals(
-            listOf(firstRemoved.map { it.tile }, secondRemoved.map { it.tile }),
-            round.removals.map { removal -> removal.tiles.map { read.tileCatalog.tiles[it.tileIndex].tile } },
+            expected = listOf(firstRemoved.map { it.tile }, secondRemoved.map { it.tile }),
+            actual = round.removals.map { removal -> removal.tiles.map { read.tileCatalog.tiles[it.tileIndex].tile } },
         )
         val choice = facts.filterIsInstance<HistoryReplayFact.RuleDecision>().single()
         assertEquals(second.initialSeatIndex, choice.actorSeat)
@@ -297,7 +297,7 @@ class CompactReplayRoundReaderGenuineTest {
         val document = CompactReplayCodec.encodeCompact(events, HistoryRecordingPersistenceMapper(registries), registries)
 
         val state = assertIs<ReplayReadResult.Success<HistoryRoundState>>(
-            reader().readState(document, matchId, 1, HistoryRoundPosition.Initial),
+            value = reader().readState(document, matchId, 1, HistoryRoundPosition.Initial),
         ).value
 
         val holder = state.players.single { it.initialSeatIndex == base.players.first().initialSeatIndex }
@@ -415,14 +415,14 @@ class CompactReplayRoundReaderGenuineTest {
     fun `reader derives settlement delta from transaction before state`() = runTest {
         val fixture = fixture()
         val events = assertIs<ReplayReadResult.Success<HistoryRoundEvents>>(
-            reader().readEvents(fixture.document, fixture.matchId, 1, 2, 1),
+            value = reader().readEvents(fixture.document, fixture.matchId, 1, 2, 1),
         ).value
         val completion = events.transactions.single().facts.filterIsInstance<HistoryReplayFact.Completion>().single { it.typeKey == HistoryFactTypeKeys.ROUND_COMPLETED }
         assertEquals(
-            fixture.settled.players.associate { settledPlayer ->
+            expected = fixture.settled.players.associate { settledPlayer ->
                 settledPlayer.initialSeatIndex to settledPlayer.score - fixture.changed.players.single { player -> player.initialSeatIndex == settledPlayer.initialSeatIndex }.score
             },
-            completion.outcome?.scoreChangesBySeat,
+            actual = completion.outcome?.scoreChangesBySeat,
         )
     }
 
@@ -431,13 +431,13 @@ class CompactReplayRoundReaderGenuineTest {
     fun `reader preserves exhaustive draw settlement delta across transactions`() = runTest {
         val fixture = exhaustiveDrawFixture(listOf(26_000, 24_000))
         val page = assertIs<ReplayReadResult.Success<HistoryRoundEvents>>(
-            reader().readEvents(fixture.document, fixture.matchId, 1, 2, 1),
+            value = reader().readEvents(fixture.document, fixture.matchId, 1, 2, 1),
         ).value
         val completion = page.transactions.single().facts.filterIsInstance<HistoryReplayFact.Completion>().single()
         assertEquals(mapOf(0 to 1_000, 1 to -1_000), completion.outcome?.scoreChangesBySeat)
 
         val state = assertIs<ReplayReadResult.Success<HistoryRoundState>>(
-            reader().readState(fixture.document, fixture.matchId, 1, HistoryRoundPosition.AfterTransaction(2)),
+            value = reader().readState(fixture.document, fixture.matchId, 1, HistoryRoundPosition.AfterTransaction(2)),
         ).value
         assertEquals(mapOf(0 to 1_000, 1 to -1_000), state.outcome?.scoreChangesBySeat)
     }
@@ -447,7 +447,7 @@ class CompactReplayRoundReaderGenuineTest {
     fun `reader preserves legitimate zero exhaustive draw settlement delta`() = runTest {
         val fixture = exhaustiveDrawFixture(listOf(25_000, 25_000))
         val completion = assertIs<ReplayReadResult.Success<HistoryRoundEvents>>(
-            reader().readEvents(fixture.document, fixture.matchId, 1, 2, 1),
+            value = reader().readEvents(fixture.document, fixture.matchId, 1, 2, 1),
         ).value.transactions.single().facts.filterIsInstance<HistoryReplayFact.Completion>().single()
         assertEquals(mapOf(0 to 0, 1 to 0), completion.outcome?.scoreChangesBySeat)
     }
@@ -457,7 +457,7 @@ class CompactReplayRoundReaderGenuineTest {
     fun `reader preserves post reaction abortive draw action and zero settlement delta`() = runTest {
         val fixture = postReactionAbortiveDrawFixture()
         val events = assertIs<ReplayReadResult.Success<HistoryRoundEvents>>(
-            reader().readEvents(fixture.document, fixture.matchId, 1, 0, 20),
+            value = reader().readEvents(fixture.document, fixture.matchId, 1, 0, 20),
         ).value
         val drawActions = events.transactions.flatMap { transaction ->
             transaction.facts.filterIsInstance<HistoryReplayFact.KnownAction>()
@@ -470,12 +470,12 @@ class CompactReplayRoundReaderGenuineTest {
             .single { it.typeKey == HistoryFactTypeKeys.ROUND_COMPLETED }
         assertEquals(RoundCompletionClassification.ABORTIVE_DRAW, completion.outcome?.classification)
         assertEquals(
-            fixture.table.players.associate { it.initialSeatIndex to 0 },
-            completion.outcome?.scoreChangesBySeat,
+            expected = fixture.table.players.associate { it.initialSeatIndex to 0 },
+            actual = completion.outcome?.scoreChangesBySeat,
         )
 
         val state = assertIs<ReplayReadResult.Success<HistoryRoundState>>(
-            reader().readState(fixture.document, fixture.matchId, 1, HistoryRoundPosition.AfterTransaction(1)),
+            value = reader().readState(fixture.document, fixture.matchId, 1, HistoryRoundPosition.AfterTransaction(1)),
         ).value
         assertEquals(fixture.table.players.associate { it.initialSeatIndex to it.score }, state.players.associate { it.initialSeatIndex to it.score })
         assertEquals(null, state.outcome)
@@ -486,13 +486,13 @@ class CompactReplayRoundReaderGenuineTest {
     fun `reader ignores later score change when deriving exhaustive draw delta`() = runTest {
         val fixture = exhaustiveDrawFixture(listOf(26_000, 24_000), listOf(25_500, 24_500))
         val page = assertIs<ReplayReadResult.Success<HistoryRoundEvents>>(
-            reader().readEvents(fixture.document, fixture.matchId, 1, 3, 1),
+            value = reader().readEvents(fixture.document, fixture.matchId, 1, 3, 1),
         ).value
         val completion = page.transactions.single().facts.filterIsInstance<HistoryReplayFact.Completion>().single()
         assertEquals(mapOf(0 to 1_000, 1 to -1_000), completion.outcome?.scoreChangesBySeat)
 
         val state = assertIs<ReplayReadResult.Success<HistoryRoundState>>(
-            reader().readState(fixture.document, fixture.matchId, 1, HistoryRoundPosition.AfterTransaction(3)),
+            value = reader().readState(fixture.document, fixture.matchId, 1, HistoryRoundPosition.AfterTransaction(3)),
         ).value
         assertEquals(mapOf(0 to 1_000, 1 to -1_000), state.outcome?.scoreChangesBySeat)
     }
@@ -502,7 +502,7 @@ class CompactReplayRoundReaderGenuineTest {
     fun `reader does not derive delta for match completion`() = runTest {
         val fixture = fixture()
         val events = assertIs<ReplayReadResult.Success<HistoryRoundEvents>>(
-            reader().readEvents(fixture.document, fixture.matchId, 1, 2, 1),
+            value = reader().readEvents(fixture.document, fixture.matchId, 1, 2, 1),
         ).value
         val completion = events.transactions.single().facts.filterIsInstance<HistoryReplayFact.Completion>().single { it.typeKey == HistoryFactTypeKeys.MATCH_COMPLETED }
         assertEquals(emptyMap(), completion.outcome?.scoreChangesBySeat)
@@ -513,7 +513,7 @@ class CompactReplayRoundReaderGenuineTest {
     fun `reader preserves win settlement snapshot across continuation`() = runTest {
         val fixture = continuingWinFixture()
         val page = assertIs<ReplayReadResult.Success<HistoryRoundEvents>>(
-            reader().readEvents(fixture.document, fixture.matchId, 1, 2, 1),
+            value = reader().readEvents(fixture.document, fixture.matchId, 1, 2, 1),
         ).value
         val win = page.transactions.single().facts.filterIsInstance<HistoryReplayFact.Completion>().single().outcome
         assertEquals(mapOf(0 to 26000, 1 to 24000), win?.scoresBySeat)
@@ -522,20 +522,20 @@ class CompactReplayRoundReaderGenuineTest {
         assertEquals(3, win?.winnerDetails?.single()?.detailFields?.size)
         val faces = assertIs<HistoryWinDetailValue.TileFaces>(win?.winnerDetails?.single()?.detailFields?.single { it.id == "test:bonus_faces" }?.value)
         assertEquals(
-            listOf(Tile.Honor.North, Tile.Extension(TileTypeId.parse("test:bonus_face")), Tile.Numeric(Tile.Suit.Character, 9), Tile.Honor.North).map(::TileFaceView) +
+            expected = listOf(Tile.Honor.North, Tile.Extension(TileTypeId.parse("test:bonus_face")), Tile.Numeric(Tile.Suit.Character, 9), Tile.Honor.North).map(::TileFaceView) +
                 TileFaceView(Tile.Numeric(Tile.Suit.Dot, 5), appearanceId = "test:style"),
-            faces.faces,
+            actual = faces.faces,
         )
         val tiles = assertIs<HistoryWinDetailValue.TileFaces>(win?.winnerDetails?.single()?.detailFields?.last()?.value)
         assertEquals(listOf(TileFaceView(Tile.Numeric(Tile.Suit.Character, 9))), tiles.faces)
 
         val state = assertIs<ReplayReadResult.Success<HistoryRoundState>>(
-            reader().readState(fixture.document, fixture.matchId, 1, HistoryRoundPosition.AfterTransaction(2)),
+            value = reader().readState(fixture.document, fixture.matchId, 1, HistoryRoundPosition.AfterTransaction(2)),
         ).value
         assertEquals(mapOf(0 to 26000, 1 to 24000), state.outcome?.scoresBySeat)
 
         val summary = assertIs<ReplayReadResult.Success<HistoryRoundEvents>>(
-            reader().readEvents(fixture.document, fixture.matchId, 1, 4, 1),
+            value = reader().readEvents(fixture.document, fixture.matchId, 1, 4, 1),
         ).value.transactions.single().facts.filterIsInstance<HistoryReplayFact.Completion>().single { it.typeKey == HistoryFactTypeKeys.ROUND_COMPLETED }.outcome
         assertEquals(emptyMap(), summary?.scoreChangesBySeat)
         assertEquals(true, summary?.hasEarlierWinSettlement)
@@ -546,7 +546,7 @@ class CompactReplayRoundReaderGenuineTest {
     fun `reader marks earlier win rule effect before round completion`() = runTest {
         val fixture = continuingWinFixture(useWinRuleEffect = true)
         val summary = assertIs<ReplayReadResult.Success<HistoryRoundEvents>>(
-            reader().readEvents(fixture.document, fixture.matchId, 1, 4, 1),
+            value = reader().readEvents(fixture.document, fixture.matchId, 1, 4, 1),
         ).value.transactions.single().facts.filterIsInstance<HistoryReplayFact.Completion>().single { it.typeKey == HistoryFactTypeKeys.ROUND_COMPLETED }.outcome
         assertEquals(true, summary?.hasEarlierWinSettlement)
         assertEquals(emptyMap(), summary?.scoreChangesBySeat)
@@ -557,7 +557,7 @@ class CompactReplayRoundReaderGenuineTest {
     fun `reader does not fabricate zero win delta from completion summary`() = runTest {
         val fixture = continuingWinFixture(recordWinSettlement = false)
         val summary = assertIs<ReplayReadResult.Success<HistoryRoundEvents>>(
-            reader().readEvents(fixture.document, fixture.matchId, 1, 4, 1),
+            value = reader().readEvents(fixture.document, fixture.matchId, 1, 4, 1),
         ).value.transactions.single().facts.filterIsInstance<HistoryReplayFact.Completion>().single { it.typeKey == HistoryFactTypeKeys.ROUND_COMPLETED }.outcome
         assertEquals(emptyMap(), summary?.scoreChangesBySeat)
         assertEquals(false, summary?.hasEarlierWinSettlement)
@@ -598,7 +598,7 @@ class CompactReplayRoundReaderGenuineTest {
             players = listOf(
                 FakeMahjongPlayerFactory.create(
                     discardPile = RiichiDiscardPile(
-                        listOf(
+                        _entries = listOf(
                             DiscardEntry(tile = declared, components = RiichiDiscardComponents.declaration()),
                             DiscardEntry(tile = taken),
                         ),
@@ -616,7 +616,7 @@ class CompactReplayRoundReaderGenuineTest {
                     else -> player.copy(
                         hand = Hand(
                             melds = listOf(
-                                FakeMeldFactory.create(
+                                element = FakeMeldFactory.create(
                                     type = MeldType.Pon,
                                     tiles = pair + taken,
                                     sourceTile = taken,
@@ -634,15 +634,15 @@ class CompactReplayRoundReaderGenuineTest {
             event(matchId, base.id, 1, 0L, HistoryFact.MatchStarted(base, GameFlowConfig(), emptyMap())),
             event(matchId, base.id, 2, 50L, HistoryFact.TableChanged(HistoryTableResult.Checkpoint("test:pon", claimed))),
             event(
-                matchId,
-                base.id,
-                3,
-                100L,
-                HistoryFact.RoundCompleted(
-                    RoundCompletionSummary(
-                        "test:round_completed",
-                        RoundCompletionClassification.EXHAUSTIVE_DRAW,
-                        emptySet(),
+                matchId = matchId,
+                venueId = base.id,
+                sequence = 3,
+                time = 100L,
+                fact = HistoryFact.RoundCompleted(
+                    summary = RoundCompletionSummary(
+                        outcomeId = "test:round_completed",
+                        classification = RoundCompletionClassification.EXHAUSTIVE_DRAW,
+                        beneficiaryPlayerIds = emptySet(),
                         transitionDirective = RoundTransitionDirective.PassToNextSeat,
                         settledScoresByPlayerId = scores,
                     ),
@@ -713,9 +713,9 @@ class CompactReplayRoundReaderGenuineTest {
          * @return 含指定分數的流局摘要。
          */
         fun completion(settled: TableState) = RoundCompletionSummary(
-            "test:round_completed",
-            RoundCompletionClassification.EXHAUSTIVE_DRAW,
-            emptySet(),
+            outcomeId = "test:round_completed",
+            classification = RoundCompletionClassification.EXHAUSTIVE_DRAW,
+            beneficiaryPlayerIds = emptySet(),
             transitionDirective = RoundTransitionDirective.RepeatDealer,
             settledScoresByPlayerId = settled.players.associate { it.id to it.score },
         )
@@ -733,7 +733,7 @@ class CompactReplayRoundReaderGenuineTest {
         listOf(25_000, 26_000, 27_000).forEachIndexed { index, score ->
             val roundNumber = index + 1
             val state = assertIs<ReplayReadResult.Success<HistoryRoundState>>(
-                reader().readState(document, matchId, roundNumber, HistoryRoundPosition.Initial),
+                value = reader().readState(document, matchId, roundNumber, HistoryRoundPosition.Initial),
             ).value
             assertEquals(roundNumber, state.roundNumber)
             assertEquals(listOf(score, score), state.players.map { it.score })
@@ -816,16 +816,16 @@ class CompactReplayRoundReaderGenuineTest {
                 add(event(matchId, table.id, 4, 150L, HistoryFact.TableChanged(HistoryTableResult.Checkpoint("test:intermediate_change", intermediate))))
             }
             add(
-                event(
-                    matchId,
-                    table.id,
-                    if (intermediate == null) 4 else 5,
-                    200L,
-                    HistoryFact.RoundCompleted(
-                        RoundCompletionSummary(
-                            "test:exhaustive_draw",
-                            RoundCompletionClassification.EXHAUSTIVE_DRAW,
-                            emptySet(),
+                element = event(
+                    matchId = matchId,
+                    venueId = table.id,
+                    sequence = if (intermediate == null) 4 else 5,
+                    time = 200L,
+                    fact = HistoryFact.RoundCompleted(
+                        summary = RoundCompletionSummary(
+                            outcomeId = "test:exhaustive_draw",
+                            classification = RoundCompletionClassification.EXHAUSTIVE_DRAW,
+                            beneficiaryPlayerIds = emptySet(),
                             transitionDirective = RoundTransitionDirective.PassToNextSeat,
                             settledScoresByPlayerId = settledScores,
                         ),
@@ -864,22 +864,22 @@ class CompactReplayRoundReaderGenuineTest {
             event(matchId, table.id, 3, 100L, HistoryFact.ReactionResolved(null, null)).copy(transactionFirstSequence = 2),
             event(matchId, table.id, 4, 100L, HistoryFact.ActionAccepted(abortiveAction, actionResult)).copy(transactionFirstSequence = 2),
             event(
-                matchId,
-                table.id,
-                5,
-                100L,
-                HistoryFact.TableChanged(HistoryTableResult.Checkpoint("test:post_reaction_abortive_draw", abortiveState)),
+                matchId = matchId,
+                venueId = table.id,
+                sequence = 5,
+                time = 100L,
+                fact = HistoryFact.TableChanged(HistoryTableResult.Checkpoint("test:post_reaction_abortive_draw", abortiveState)),
             ).copy(transactionFirstSequence = 2),
             event(
-                matchId,
-                table.id,
-                6,
-                200L,
-                HistoryFact.RoundCompleted(
-                    RoundCompletionSummary(
-                        RiichiExhaustiveDrawReason.SuuchaRiichi.id,
-                        RoundCompletionClassification.ABORTIVE_DRAW,
-                        emptySet(),
+                matchId = matchId,
+                venueId = table.id,
+                sequence = 6,
+                time = 200L,
+                fact = HistoryFact.RoundCompleted(
+                    summary = RoundCompletionSummary(
+                        outcomeId = RiichiExhaustiveDrawReason.SuuchaRiichi.id,
+                        classification = RoundCompletionClassification.ABORTIVE_DRAW,
+                        beneficiaryPlayerIds = emptySet(),
                         transitionDirective = RoundTransitionDirective.RepeatDealer,
                         settledScoresByPlayerId = scores,
                     ),
@@ -906,16 +906,16 @@ class CompactReplayRoundReaderGenuineTest {
         val changed = beforeWin.copy(players = beforeWin.players.map { player -> if (player.initialSeatIndex == winner.initialSeatIndex) player.copy(score = 26000) else player })
         val continued = changed.copy(players = changed.players.map { player -> if (player.initialSeatIndex == winner.initialSeatIndex) player.copy(score = 23000) else player })
         val details = HistoryWinDetails(
-            winner.id,
-            listOf(
+            playerId = winner.id,
+            detailFields = listOf(
                 WinSettlementDetailField(
-                    "mahjongcraft:yaku",
-                    WinSettlementDetailValue.Entries(listOf(WinSettlementDetailEntry("mahjongcraft:yaku/test", WinSettlementQuantity("mahjongcraft:han", 1)))),
+                    id = "mahjongcraft:yaku",
+                    value = WinSettlementDetailValue.Entries(listOf(WinSettlementDetailEntry("mahjongcraft:yaku/test", WinSettlementQuantity("mahjongcraft:han", 1)))),
                 ),
                 WinSettlementDetailField(
-                    "test:bonus_faces",
-                    WinSettlementDetailValue.TileFaces(
-                        listOf(Tile.Honor.North, Tile.Extension(TileTypeId.parse("test:bonus_face")), Tile.Numeric(Tile.Suit.Character, 9), Tile.Honor.North).map(::TileFaceView) +
+                    id = "test:bonus_faces",
+                    value = WinSettlementDetailValue.TileFaces(
+                        faces = listOf(Tile.Honor.North, Tile.Extension(TileTypeId.parse("test:bonus_face")), Tile.Numeric(Tile.Suit.Character, 9), Tile.Honor.North).map(::TileFaceView) +
                             TileFaceView(Tile.Numeric(Tile.Suit.Dot, 5), appearanceId = "test:style"),
                     ),
                 ),
@@ -928,23 +928,23 @@ class CompactReplayRoundReaderGenuineTest {
             event(matchId, table.id, 2, 100L, HistoryFact.TableChanged(HistoryTableResult.Checkpoint("test:riichi", beforeWin))),
             event(matchId, table.id, 3, 200L, HistoryFact.TableChanged(HistoryTableResult.Checkpoint("test:win", changed))),
             event(
-                matchId,
-                table.id,
-                4,
-                200L,
-                if (!recordWinSettlement) {
+                matchId = matchId,
+                venueId = table.id,
+                sequence = 4,
+                time = 200L,
+                fact = if (!recordWinSettlement) {
                     HistoryFact.ReactionResolved(null, null)
                 } else if (useWinRuleEffect) {
                     HistoryFact.RuleEffectResolved(
-                        "test:win_effect",
-                        RoundCompletionSummary(
-                            "test:ron",
-                            RoundCompletionClassification.WIN,
-                            setOf(winner.id),
+                        reasonId = "test:win_effect",
+                        roundCompletion = RoundCompletionSummary(
+                            outcomeId = "test:ron",
+                            classification = RoundCompletionClassification.WIN,
+                            beneficiaryPlayerIds = setOf(winner.id),
                             transitionDirective = RoundTransitionDirective.PassToNextSeat,
                             settledScoresByPlayerId = changed.players.associate { it.id to it.score },
                         ),
-                        listOf(details),
+                        winDetails = listOf(details),
                     )
                 } else {
                     HistoryFact.WinSettled("test:ron", listOf(details))

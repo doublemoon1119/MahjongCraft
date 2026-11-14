@@ -131,7 +131,7 @@ class ResolveWinRoundContinuationUseCaseTest {
         )
         gameRepo.setTableState(settledState)
         gameRepo.setGame(
-            checkNotNull(gameRepo.getGame(gameId)).copy(
+            game = checkNotNull(gameRepo.getGame(gameId)).copy(
                 ruleDecisionWin = RuleDecisionWinOutcome(
                     outcomeId = "test:special_flower_win",
                     winnerPlayerIds = setOf(winner.id),
@@ -145,7 +145,7 @@ class ResolveWinRoundContinuationUseCaseTest {
         var observedDiscarderId: Uuid? = Uuid.random()
         val registry = WinRoundContinuationResolverRegistry().apply {
             register(
-                object : WinRoundContinuationResolver {
+                resolver = object : WinRoundContinuationResolver {
                     override val id: String = "test:special"
                     override val ruleModuleId: String = this@ResolveWinRoundContinuationUseCaseTest.ruleModuleId
                     override val priority: Int = 0
@@ -193,8 +193,8 @@ class ResolveWinRoundContinuationUseCaseTest {
         gameRepo.setTableState(settledState)
         val registry = WinRoundContinuationResolverRegistry().apply {
             register(
-                fixedDirectiveResolver(
-                    WinRoundDirective.ContinueRound(
+                resolver = fixedDirectiveResolver(
+                    directive = WinRoundDirective.ContinueRound(
                         newlyFinishedPlayerIds = setOf(winner.id),
                         nextPlayerId = nextPlayer.id,
                         settlementDetail = ContinuingWinSettlementDetail.WINNER_DETAILS,
@@ -225,7 +225,7 @@ class ResolveWinRoundContinuationUseCaseTest {
         var observed: WinRoundContinuationContext? = null
         val registry = WinRoundContinuationResolverRegistry().apply {
             register(
-                object : WinRoundContinuationResolver {
+                resolver = object : WinRoundContinuationResolver {
                     override val id: String = "test:observe"
                     override val ruleModuleId: String = this@ResolveWinRoundContinuationUseCaseTest.ruleModuleId
                     override val priority: Int = 0

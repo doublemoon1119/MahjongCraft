@@ -34,7 +34,7 @@ internal object RobbingEligibility {
             .filter { it.id != declarerId && tableState.isPlayerActive(it.id) }
             .filter { candidate ->
                 validator.getLegalActions(
-                    LegalActionContext.declarationReaction(
+                    context = LegalActionContext.declarationReaction(
                         tableState = tableState,
                         playerId = candidate.id,
                         declarerId = declarerId,

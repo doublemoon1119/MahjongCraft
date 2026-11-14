@@ -93,29 +93,29 @@ class RiichiWinSettlementDetailResolverTest {
     fun `regular win lists yaku with han and the han fu total`() {
         val state = FakeTableStateFactory.create(config = config)
         val result = RiichiHandValueResult(
-            listOf(RiichiYakuResult.han(RiichiYakuType.Riichi, 1), RiichiYakuResult.han(RiichiYakuType.Tanyao, 1), RiichiYakuResult.han(RiichiYakuType.Honitsu, 3)),
-            5,
-            40,
-            RiichiPointResult.Ron(8000),
+            yakuResults = listOf(RiichiYakuResult.han(RiichiYakuType.Riichi, 1), RiichiYakuResult.han(RiichiYakuType.Tanyao, 1), RiichiYakuResult.han(RiichiYakuType.Honitsu, 3)),
+            totalHan = 5,
+            totalFu = 40,
+            pointResult = RiichiPointResult.Ron(8000),
         )
 
         val fields = RiichiWinSettlementDetailResolver.riichiDetails(state, result, publicFace(state))
 
         assertEquals(
-            WinSettlementDetailValue.Entries(
-                listOf(
+            expected = WinSettlementDetailValue.Entries(
+                entries = listOf(
                     RiichiWinSettlementIds.yakuEntry(RiichiYakuType.Riichi, 1),
                     RiichiWinSettlementIds.yakuEntry(RiichiYakuType.Tanyao, 1),
                     RiichiWinSettlementIds.yakuEntry(RiichiYakuType.Honitsu, 3),
                 ),
             ),
-            fields.value(RiichiWinSettlementIds.YAKU_FIELD),
+            actual = fields.value(RiichiWinSettlementIds.YAKU_FIELD),
         )
         assertEquals(
-            WinSettlementDetailValue.Quantities(
-                listOf(WinSettlementQuantity(RiichiWinSettlementIds.HAN, 5), WinSettlementQuantity(RiichiWinSettlementIds.FU, 40)),
+            expected = WinSettlementDetailValue.Quantities(
+                quantities = listOf(WinSettlementQuantity(RiichiWinSettlementIds.HAN, 5), WinSettlementQuantity(RiichiWinSettlementIds.FU, 40)),
             ),
-            fields.value(RiichiWinSettlementIds.HAN_FU_FIELD),
+            actual = fields.value(RiichiWinSettlementIds.HAN_FU_FIELD),
         )
         assertFalse(fields.any { it.id == RiichiWinSettlementIds.YAKUMAN_TOTAL_FIELD })
     }
@@ -125,26 +125,26 @@ class RiichiWinSettlementDetailResolverTest {
     fun `yakuman win lists multipliers and the yakuman total`() {
         val state = FakeTableStateFactory.create(config = config)
         val result = RiichiHandValueResult(
-            listOf(RiichiYakuResult.doubleYakuman(RiichiYakuType.KokushiMusou13), RiichiYakuResult.yakuman(RiichiYakuType.Tenhou)),
-            -3,
-            0,
-            RiichiPointResult.Ron(96000),
+            yakuResults = listOf(RiichiYakuResult.doubleYakuman(RiichiYakuType.KokushiMusou13), RiichiYakuResult.yakuman(RiichiYakuType.Tenhou)),
+            totalHan = -3,
+            totalFu = 0,
+            pointResult = RiichiPointResult.Ron(96000),
         )
 
         val fields = RiichiWinSettlementDetailResolver.riichiDetails(state, result, publicFace(state))
 
         assertEquals(
-            WinSettlementDetailValue.Entries(
-                listOf(
+            expected = WinSettlementDetailValue.Entries(
+                entries = listOf(
                     RiichiWinSettlementIds.yakumanEntry(RiichiYakuType.KokushiMusou13, 2),
                     RiichiWinSettlementIds.yakumanEntry(RiichiYakuType.Tenhou, 1),
                 ),
             ),
-            fields.value(RiichiWinSettlementIds.YAKU_FIELD),
+            actual = fields.value(RiichiWinSettlementIds.YAKU_FIELD),
         )
         assertEquals(
-            WinSettlementDetailValue.Quantities(listOf(WinSettlementQuantity(RiichiWinSettlementIds.YAKUMAN, 3))),
-            fields.value(RiichiWinSettlementIds.YAKUMAN_TOTAL_FIELD),
+            expected = WinSettlementDetailValue.Quantities(listOf(WinSettlementQuantity(RiichiWinSettlementIds.YAKUMAN, 3))),
+            actual = fields.value(RiichiWinSettlementIds.YAKUMAN_TOTAL_FIELD),
         )
         assertFalse(fields.any { it.id == RiichiWinSettlementIds.HAN_FU_FIELD })
     }
@@ -155,8 +155,8 @@ class RiichiWinSettlementDetailResolverTest {
         val value = RiichiWinSettlementDetailResolver.riichiHanFuValue(totalHan = 3, totalFu = 30)
 
         assertEquals(
-            listOf(WinSettlementQuantity(RiichiWinSettlementIds.HAN, 3), WinSettlementQuantity(RiichiWinSettlementIds.FU, 30)),
-            value.quantities,
+            expected = listOf(WinSettlementQuantity(RiichiWinSettlementIds.HAN, 3), WinSettlementQuantity(RiichiWinSettlementIds.FU, 30)),
+            actual = value.quantities,
         )
     }
 
@@ -185,13 +185,13 @@ class RiichiWinSettlementDetailResolverTest {
         val fields = RiichiWinSettlementDetailResolver.resolveSpecialOutcome(state, outcome, publicFace(state))
 
         assertEquals(
-            listOf(
-                WinSettlementDetailField(
-                    RiichiWinSettlementIds.YAKU_FIELD,
-                    WinSettlementDetailValue.Entries(listOf(WinSettlementDetailEntry(RiichiWinSettlementIds.NAGASHI_MANGAN))),
+            expected = listOf(
+                element = WinSettlementDetailField(
+                    id = RiichiWinSettlementIds.YAKU_FIELD,
+                    value = WinSettlementDetailValue.Entries(listOf(WinSettlementDetailEntry(RiichiWinSettlementIds.NAGASHI_MANGAN))),
                 ),
             ),
-            fields,
+            actual = fields,
         )
     }
 

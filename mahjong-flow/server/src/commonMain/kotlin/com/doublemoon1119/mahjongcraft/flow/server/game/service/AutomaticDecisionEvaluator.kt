@@ -48,7 +48,7 @@ class AutomaticDecisionEvaluator(
         val enabledIds = game.enabledAutomaticControlIdsByPlayerId[playerId].orEmpty().intersect(supportedIds)
         val legalActions = options.actions.map(PlayerDecisionActionOption::action)
         val result = module.createAutomaticControlPolicy().evaluate(
-            AutomaticControlContext(state, player, legalActions, enabledIds),
+            context = AutomaticControlContext(state, player, legalActions, enabledIds),
         )
         require(result.hiddenActions.all { it in legalActions }) {
             "Automatic control policy hid an action that is not currently legal"

@@ -68,7 +68,7 @@ class ResolveWinRoundContinuationUseCase(
         winnerPlayerIds: Set<Uuid>,
     ): Outcome<WinRoundDirective, GameError> {
         val result = gameRepository.updateGame(
-            gameId,
+            gameId = gameId,
             history = { previous, next, outcome ->
                 if (previous == null || next == null || outcome !is Outcome.Success) {
                     emptyList()
@@ -111,7 +111,7 @@ class ResolveWinRoundContinuationUseCase(
                         BuiltInRoundOutcomeIds.RON
                     }
                     val transitionDirective = module.resolveRoundTransition(
-                        RoundTransitionContext(
+                        context = RoundTransitionContext(
                             tableState = settledTableState,
                             outcomeId = outcomeId,
                             classification = RoundCompletionClassification.WIN,

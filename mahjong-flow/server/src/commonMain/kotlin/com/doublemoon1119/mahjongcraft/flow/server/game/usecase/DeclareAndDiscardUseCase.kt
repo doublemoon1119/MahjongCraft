@@ -67,7 +67,7 @@ class DeclareAndDiscardUseCase(
         tileId: Uuid,
     ): Outcome<Unit, GameError> {
         val outcome = gameRepository.update(
-            gameId,
+            gameId = gameId,
             history = { before, after, result ->
                 if (result is Outcome.Success && before != null && after != null) {
                     listOf(
@@ -153,8 +153,8 @@ class DeclareAndDiscardUseCase(
                 ?: return@update state to Outcome.Error(GameError.IllegalAction(playerId, gameId, action))
             if (effect.cost > 0 && effect.cost > declaringPlayer.score) {
                 throw RuleContractViolationException(
-                    GameAbortReasonIds.RULE_EXECUTION_FAILED,
-                    "Declaration cost exceeds the player's score: $action",
+                    reasonId = GameAbortReasonIds.RULE_EXECUTION_FAILED,
+                    diagnostic = "Declaration cost exceeds the player's score: $action",
                 )
             }
             val playerWithEffect = ruleComponents.applyPlayerPatch(
@@ -200,8 +200,8 @@ class DeclareAndDiscardUseCase(
             val stateAfterReveal = revealResult.tableState
             val abortive = if (resolved.abortiveDrawReason == null && resolved.tableState.pendingReaction == null) {
                 postActionExhaustiveDrawResolverRegistry.resolve(
-                    CompletedGameActionContext(playerId, GameAction.Discard(tileId), stateAfterReveal),
-                    module,
+                    context = CompletedGameActionContext(playerId, GameAction.Discard(tileId), stateAfterReveal),
+                    ruleModule = module,
                 )
             } else {
                 null
@@ -210,7 +210,7 @@ class DeclareAndDiscardUseCase(
                 stateAfterReveal.recordAbortiveDraw(it, declarerId = null, module = module)
             } ?: stateAfterReveal
             finalState to Outcome.Success(
-                InvocationResult(
+                value = InvocationResult(
                     tableState = finalState,
                     abortiveDrawReason = resolved.abortiveDrawReason ?: abortive,
                 ),
@@ -223,8 +223,8 @@ class DeclareAndDiscardUseCase(
         eventPublisher.publishToAllObservers(gameId, result.tableState.players.map { it.id }, playerId, GameAction.Discard(tileId))
         result.abortiveDrawReason?.let { eventPublisher.publishToAllObservers(gameId, result.tableState.players.map { it.id }, playerId, GameAction.ExhaustiveDraw(it)) }
         presentationPublisher.publishTableSteps(
-            gameId,
-            listOf(TableStep(result.tableState, listOf(TableStepEvent.ActionDeclared(playerId, action)))),
+            gameId = gameId,
+            steps = listOf(TableStep(result.tableState, listOf(TableStepEvent.ActionDeclared(playerId, action)))),
         )
         return Outcome.Success(Unit)
     }

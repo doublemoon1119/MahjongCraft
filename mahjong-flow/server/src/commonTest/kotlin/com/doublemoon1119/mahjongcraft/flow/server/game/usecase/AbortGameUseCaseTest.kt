@@ -67,8 +67,8 @@ class AbortGameUseCaseTest {
         val events = GameEventProjector(fixtures.moduleRegistry).project(fixtures.abortedFacts(game).single())
         assertEquals(1, events.count { it is MatchEndedEvent })
         assertEquals(
-            game.tableState.players.associate { it.id to it.score },
-            fixtures.abortedFacts(game).single().previousGame?.tableState?.players?.associate { it.id to it.score },
+            expected = game.tableState.players.associate { it.id to it.score },
+            actual = fixtures.abortedFacts(game).single().previousGame?.tableState?.players?.associate { it.id to it.score },
         )
         assertTrue(events.none { it is RoundSettledEvent })
     }
@@ -201,8 +201,8 @@ class AbortGameUseCaseTest {
                     state = state.copy(games = state.games + (game.id to game)),
                     result = game,
                     historyDraftsByVenueId = mapOf(
-                        game.id to listOf(
-                            HistoryEventDraft(
+                        pair = game.id to listOf(
+                            element = HistoryEventDraft(
                                 actorPlayerId = null,
                                 fact = HistoryFact.MatchStarted(game.tableState, game.flowConfig, game.aiPlayerStrategyKeys),
                             ),
@@ -225,13 +225,15 @@ class AbortGameUseCaseTest {
         private val committedFacts = mutableListOf<CommittedGameFacts>()
 
         init {
-            store.setCommittedFactsListener(object : CommittedFactsListener {
-                override fun onCommitted(sequence: Long, facts: CommittedGameFacts) {
-                    committedFacts += facts
-                }
+            store.setCommittedFactsListener(
+                listener = object : CommittedFactsListener {
+                    override fun onCommitted(sequence: Long, facts: CommittedGameFacts) {
+                        committedFacts += facts
+                    }
 
-                override fun onReleased(sequence: Long) = Unit
-            })
+                    override fun onReleased(sequence: Long) = Unit
+                },
+            )
         }
 
         private fun availabilityService(): GameDecisionAvailabilityService {
@@ -239,9 +241,9 @@ class AbortGameUseCaseTest {
             val clock = MonotonicClockImpl()
             val manager = GameDecisionTimerManager(repository, GameDecisionAuthorityResolver(), PlayerDecisionTimerFactory(clock), clock)
             return GameDecisionAvailabilityService(
-                FakeGamePresentationBusyGate(),
-                manager,
-                DecisionTimerSynchronizationService(manager, repository, FakeDecisionTimerUpdatePublisher()),
+                busyGate = FakeGamePresentationBusyGate(),
+                timerManager = manager,
+                synchronizationService = DecisionTimerSynchronizationService(manager, repository, FakeDecisionTimerUpdatePublisher()),
             )
         }
     }

@@ -27,7 +27,7 @@ class PlayerActionContextResolverTest {
         val robbedTile = IdentifiedTile(Uuid.random(), Tile.Honor.White)
         val state = FakeTableStateFactory.create(
             players = listOf(
-                FakeMahjongPlayerFactory.create(
+                element = FakeMahjongPlayerFactory.create(
                     id = playerId,
                     hand = Hand(lastDrawn = IdentifiedTile(Uuid.random(), Tile.Honor.East)),
                 ),
@@ -73,7 +73,7 @@ class PlayerActionContextResolverTest {
         val playerId = Uuid.random()
         val state = FakeTableStateFactory.create(
             players = listOf(
-                FakeMahjongPlayerFactory.create(
+                element = FakeMahjongPlayerFactory.create(
                     id = playerId,
                     hand = Hand(lastDrawn = IdentifiedTile(Uuid.random(), Tile.Honor.East)),
                 ),

@@ -155,25 +155,25 @@ internal object DrawFollowUpApplier {
             val result = mutableListOf(TableStep(drawnState, drawEvents))
             steps.forEach { step ->
                 result += TableStep(
-                    step.applied.declaredState,
-                    listOfNotNull(
+                    tableState = step.applied.declaredState,
+                    events = listOfNotNull(
                         TableStepEvent.ActionDeclared(playerId, step.action),
                         step.applied.scoring?.let(TableStepEvent::ActionScored),
                     ),
                 )
                 result += TableStep(
-                    step.applied.tableState,
-                    listOfNotNull(step.applied.physicalWallTransitionPhases.takeIf { it.isNotEmpty() }?.let(TableStepEvent::WallRearranged)),
+                    tableState = step.applied.tableState,
+                    events = listOfNotNull(step.applied.physicalWallTransitionPhases.takeIf { it.isNotEmpty() }?.let(TableStepEvent::WallRearranged)),
                 )
             }
             when (val end = ending) {
                 is Ending.RobbingWindowOpened -> result += TableStep(
-                    end.declaredState ?: tableState,
-                    listOf(TableStepEvent.ActionDeclared(playerId, end.action)),
+                    tableState = end.declaredState ?: tableState,
+                    events = listOf(TableStepEvent.ActionDeclared(playerId, end.action)),
                 )
                 is Ending.RuleDecisionRequired -> result += TableStep(
-                    tableState,
-                    listOfNotNull(TableStepEvent.ActionDeclared(playerId, end.action), end.scoring?.let(TableStepEvent::ActionScored)),
+                    tableState = tableState,
+                    events = listOfNotNull(TableStepEvent.ActionDeclared(playerId, end.action), end.scoring?.let(TableStepEvent::ActionScored)),
                 )
                 Ending.PlayerTurn, is Ending.RoundEnded -> if (result.last().tableState != tableState) result += TableStep(tableState, emptyList())
             }
@@ -216,7 +216,7 @@ internal object DrawFollowUpApplier {
             current = current.withDrawnSlot(playerId, drawnTile)
             val player = current.players.first { it.id == playerId }
             val decision = policy.resolve(
-                DrawFollowUpContext(
+                context = DrawFollowUpContext(
                     tableState = current,
                     playerId = playerId,
                     drawnTile = drawnTile,
@@ -327,7 +327,7 @@ internal object DrawFollowUpApplier {
 
     /** 以規則錯誤中止這串處理。 */
     private fun violation(detail: String): Nothing = throw RuleContractViolationException(
-        GameAbortReasonIds.RULE_EXECUTION_FAILED,
-        "Draw follow-up failed: $detail",
+        reasonId = GameAbortReasonIds.RULE_EXECUTION_FAILED,
+        diagnostic = "Draw follow-up failed: $detail",
     )
 }

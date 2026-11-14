@@ -115,7 +115,7 @@ class TaiwanOpeningFlowerResolutionTest {
         assertEquals(0, after.currentPlayerIndex, "Replacing other players' flowers must not pass the turn.")
         assertEquals(TurnPhase.AwaitingAction, after.turnPhase, "The dealer already drew and must not draw again.")
         assertEquals(
-            listOf(
+            expected = listOf(
                 TileReplacementRound(
                     round = 1,
                     removals = listOf(
@@ -125,8 +125,8 @@ class TaiwanOpeningFlowerResolutionTest {
                 ),
                 TileReplacementRound(round = 2, removals = listOf(TileReplacementRemoval(dealer, listOf(flowers[3].id)))),
             ),
-            resolution.replacementRounds,
-            "Each round records the flowers every player set aside.",
+            actual = resolution.replacementRounds,
+            message = "Each round records the flowers every player set aside.",
         )
     }
 
@@ -164,9 +164,9 @@ class TaiwanOpeningFlowerResolutionTest {
         assertEquals(TileArea(TileRegion.DRAWN, revealer), steps.last().tableState.areaOf(finalReplacement))
         assertEquals(finalReplacement, resolution.tableState.players[0].hand.lastDrawn)
         assertEquals(
-            listOf(TileReplacementRound(round = 2, removals = listOf(TileReplacementRemoval(revealer, listOf(chainedFlower.id))))),
-            resolution.replacementRounds,
-            "The drawn flower was declared as an action in the first round; only the chained flower is a replacement record.",
+            expected = listOf(TileReplacementRound(round = 2, removals = listOf(TileReplacementRemoval(revealer, listOf(chainedFlower.id))))),
+            actual = resolution.replacementRounds,
+            message = "The drawn flower was declared as an action in the first round; only the chained flower is a replacement record.",
         )
     }
 

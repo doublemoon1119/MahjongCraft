@@ -62,7 +62,7 @@ class DeclareTileSetAsideUseCase(
         action: GameAction.Extension,
     ): Outcome<Unit, GameError> {
         val outcome = gameRepository.update(
-            gameId,
+            gameId = gameId,
             history = { before, after, result ->
                 if (result is Outcome.Success && before != null && after != null) {
                     val value = result.value
@@ -128,14 +128,14 @@ class DeclareTileSetAsideUseCase(
         if (declarer.hand.lastDrawn == null) return illegal
         val module = moduleRegistry.getModule(state.config)
         val legalActions = module.createLegalActionValidator().getLegalActions(
-            LegalActionContext.ownTurn(state, playerId),
+            context = LegalActionContext.ownTurn(state, playerId),
         )
         if (action !in legalActions) return illegal
         val setAsideTile = module.tileSetAsideBy(declarer, action) ?: return illegal
 
         return when (val resolution = TileSetAsideResolver.resolve(state, playerId, action, setAsideTile, module, componentRegistry = componentRegistry)) {
             is TileSetAsideResolver.Resolution.AbortiveDraw -> resolution.tableState to Outcome.Success(
-                SetAsideResult(
+                value = SetAsideResult(
                     tableState = resolution.tableState,
                     setAsideTile = setAsideTile,
                     abortiveDrawReason = resolution.reason,
@@ -144,12 +144,12 @@ class DeclareTileSetAsideUseCase(
             )
 
             is TileSetAsideResolver.Resolution.RobbingWindowOpened -> resolution.tableState to Outcome.Success(
-                SetAsideResult(
+                value = SetAsideResult(
                     tableState = resolution.tableState,
                     setAsideTile = setAsideTile,
                     // 先呈現移出完成的樣子（牌擺到桌上、尚未補牌），其他玩家看到後才決定要不要搶；權威桌況要等反應結束才套用。
                     steps = listOf(
-                        TableStep(resolution.declaredState ?: resolution.tableState, listOf(TableStepEvent.ActionDeclared(playerId, action))),
+                        element = TableStep(resolution.declaredState ?: resolution.tableState, listOf(TableStepEvent.ActionDeclared(playerId, action))),
                     ),
                 ),
             )
@@ -172,7 +172,7 @@ class DeclareTileSetAsideUseCase(
                 }
                 val committed = followUp?.tableState ?: applied.tableState
                 committed to Outcome.Success(
-                    SetAsideResult(
+                    value = SetAsideResult(
                         tableState = committed,
                         setAsideTile = setAsideTile,
                         applied = true,

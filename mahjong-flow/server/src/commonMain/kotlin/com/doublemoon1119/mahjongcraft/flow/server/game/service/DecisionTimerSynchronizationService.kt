@@ -51,8 +51,8 @@ class DecisionTimerSynchronizationService(
 
         activeHumanStatuses.forEach { (playerId, status) ->
             publisher.publish(
-                playerId,
-                DecisionTimerUpdate.Active(
+                targetPlayerId = playerId,
+                update = DecisionTimerUpdate.Active(
                     gameId = gameId,
                     phase = status.phase,
                     baseRemaining = status.time.baseRemaining,

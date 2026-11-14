@@ -49,7 +49,7 @@ class BeginRuleDecisionUseCase(
         var contractBasis: Game? = null
         val result = try {
             gameRepository.updateGame(
-                gameId,
+                gameId = gameId,
                 history = { _, _, update -> update.historyDrafts },
             ) { game ->
                 if (game == null) {

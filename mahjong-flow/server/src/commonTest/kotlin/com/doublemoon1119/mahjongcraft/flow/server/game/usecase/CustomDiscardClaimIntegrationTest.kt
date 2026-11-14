@@ -73,17 +73,17 @@ class CustomDiscardClaimIntegrationTest {
             fixture.repository.setTableState(fixture.table)
             val context = PlayerActionContext.DiscardReaction(fixture.first.id, fixture.pending)
             val command = assertIs<GameCommand.RespondToDiscard>(
-                fixture.mapper.toCommand(context, CLAIM, fixture.selected(fixture.first.id)),
+                value = fixture.mapper.toCommand(context, CLAIM, fixture.selected(fixture.first.id)),
             )
             assertEquals(fixture.pending.id, command.reactionId)
             assertIs<Outcome.Success<Unit>>(
-                fixture.repository.runAsSingleWrite(fixture.table.id) {
+                value = fixture.repository.runAsSingleWrite(fixture.table.id) {
                     fixture.useCase(fixture.table.id, fixture.first.id, command.action, command.reactionId, command.selectedTileIds)
                 },
             )
             assertTrue(fixture.events.getNotifiedActions(fixture.table.id, fixture.discarder.id, fixture.first.id).isEmpty())
             assertIs<Outcome.Success<Unit>>(
-                fixture.useCase(fixture.table.id, fixture.second.id, GameAction.Pass, fixture.pending.id),
+                value = fixture.useCase(fixture.table.id, fixture.second.id, GameAction.Pass, fixture.pending.id),
             )
             val state = assertNotNull(fixture.repository.getTableState(fixture.table.id))
             val meld = state.players.first { it.id == fixture.first.id }.hand.melds.single()
@@ -129,10 +129,10 @@ class CustomDiscardClaimIntegrationTest {
             val fixture = Fixture(3, priorities)
             fixture.repository.setTableState(fixture.table)
             assertIs<Outcome.Success<Unit>>(
-                fixture.useCase(fixture.table.id, fixture.second.id, CLAIM, fixture.pending.id, fixture.selected(fixture.second.id)),
+                value = fixture.useCase(fixture.table.id, fixture.second.id, CLAIM, fixture.pending.id, fixture.selected(fixture.second.id)),
             )
             assertIs<Outcome.Success<Unit>>(
-                fixture.useCase(fixture.table.id, fixture.first.id, CLAIM, fixture.pending.id, fixture.selected(fixture.first.id)),
+                value = fixture.useCase(fixture.table.id, fixture.first.id, CLAIM, fixture.pending.id, fixture.selected(fixture.first.id)),
             )
             val state = assertNotNull(fixture.repository.getTableState(fixture.table.id))
             assertEquals(fixture.first.id, state.currentPlayer.id)
@@ -148,7 +148,7 @@ class CustomDiscardClaimIntegrationTest {
         var factoryCalls = 0
         val registry = ExtensionGameActionCommandFactoryRegistry().apply {
             register(
-                ExtensionGameActionCommandFactoryDefinition(ClaimAction::class) { _, _ ->
+                definition = ExtensionGameActionCommandFactoryDefinition(ClaimAction::class) { _, _ ->
                     factoryCalls++
                     OwnCommand
                 },
@@ -157,7 +157,7 @@ class CustomDiscardClaimIntegrationTest {
         }
         val mapper = GameActionCommandMapper(registry)
         assertIs<GameCommand.RespondToDiscard>(
-            mapper.toCommand(PlayerActionContext.DiscardReaction(fixture.first.id, fixture.pending), CLAIM, fixture.selected(fixture.first.id)),
+            value = mapper.toCommand(PlayerActionContext.DiscardReaction(fixture.first.id, fixture.pending), CLAIM, fixture.selected(fixture.first.id)),
         )
         assertEquals(0, factoryCalls)
         assertIs<GameCommand.Extension>(mapper.toCommand(PlayerActionContext.OwnTurn(fixture.first.id), CLAIM))
@@ -198,7 +198,7 @@ class CustomDiscardClaimIntegrationTest {
         /** 提供自訂規則的公開登記表。 */
         val modules = bundledCoreExtensionRegistries(
             additionalExtensions = listOf(
-                ClaimExtension(count, mapOf(first.id to priorities.first, second.id to priorities.second)),
+                element = ClaimExtension(count, mapOf(first.id to priorities.first, second.id to priorities.second)),
             ),
         ).moduleRegistry
 
@@ -266,7 +266,7 @@ class CustomDiscardClaimIntegrationTest {
 
         override fun registerRuleModules(registry: MahjongModuleRegistrar) {
             registry.register(
-                MahjongModuleDefinition(ClaimRuleConfig::class, id) { config, moduleId ->
+                definition = MahjongModuleDefinition(ClaimRuleConfig::class, id) { config, moduleId ->
                     ClaimRule(RiichiRuleModule(moduleId, config.delegate), count, priorities)
                 },
             )

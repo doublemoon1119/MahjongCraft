@@ -179,7 +179,7 @@ internal class SimulationStatistics {
         appendLine("strategy | player-rounds | win rate | deal-in rate | average placement | decisions | avg ms | max ms")
         statistics.forEach { stats ->
             appendLine(
-                listOf(
+                value = listOf(
                     stats.strategyKey,
                     stats.playerRounds.toString(),
                     stats.winRate.format(),
@@ -193,12 +193,12 @@ internal class SimulationStatistics {
         }
         appendLine()
         appendLine(
-            "strategy | score delta per round | score delta per win | ron win rate | " +
+            value = "strategy | score delta per round | score delta per win | ron win rate | " +
                 "rounds with opponent riichi | win rate vs riichi | deal-in rate vs riichi",
         )
         statistics.forEach { stats ->
             appendLine(
-                listOf(
+                value = listOf(
                     stats.strategyKey,
                     stats.averageScoreDelta.format(),
                     stats.averageWinScoreDelta.format(),

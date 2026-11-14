@@ -155,12 +155,12 @@ class RoomToRoomFullLifecycleIntegrationTest {
             visibilityPolicy = GameVisibilityPolicyImpl(moduleRegistry, componentRegistry = bundledCoreExtensionRegistries().componentRegistry),
         )
         val startGameUseCase = StartGameUseCase(
-            store,
-            moduleRegistry,
-            snapshotSynchronizer,
-            handSortPreferenceStore,
-            gameEventPublisher,
-            presentationPublisher,
+            authoritativeStateStore = store,
+            moduleRegistry = moduleRegistry,
+            snapshotSynchronizer = snapshotSynchronizer,
+            handSortPreferenceStore = handSortPreferenceStore,
+            eventPublisher = gameEventPublisher,
+            presentationPublisher = presentationPublisher,
             componentRegistry = bundledCoreExtensionRegistries().componentRegistry,
             beginRuleDecisionUseCase = ruleDecisions.begin,
         )
@@ -201,23 +201,23 @@ class RoomToRoomFullLifecycleIntegrationTest {
         val router = GameActionRouter(
             drawTileUseCase = DrawTileUseCase(gameRepo, moduleRegistry, snapshotSynchronizer, gameEventPublisher, presentationPublisher, componentRegistry = bundledCoreExtensionRegistries().componentRegistry),
             discardTileUseCase = DiscardTileUseCase(
-                gameRepo,
-                moduleRegistry,
-                snapshotSynchronizer,
-                handSortPreferenceStore,
-                postActionExhaustiveDrawResolverRegistry,
-                gameEventPublisher,
-                presentationPublisher,
+                gameRepository = gameRepo,
+                moduleRegistry = moduleRegistry,
+                snapshotSynchronizer = snapshotSynchronizer,
+                handSortPreferenceStore = handSortPreferenceStore,
+                postActionExhaustiveDrawResolverRegistry = postActionExhaustiveDrawResolverRegistry,
+                eventPublisher = gameEventPublisher,
+                presentationPublisher = presentationPublisher,
 
                 componentRegistry = bundledCoreExtensionRegistries().componentRegistry,
             ),
             declareTsumoUseCase = DeclareTsumoUseCase(
-                gameRepo,
-                moduleRegistry,
-                snapshotSynchronizer,
-                gameEventPublisher,
-                presentationPublisher,
-                winPresentationHandoff,
+                gameRepository = gameRepo,
+                moduleRegistry = moduleRegistry,
+                snapshotSynchronizer = snapshotSynchronizer,
+                eventPublisher = gameEventPublisher,
+                presentationPublisher = presentationPublisher,
+                winPresentationHandoff = winPresentationHandoff,
                 winCelebrationCueResolverRegistry = bundledWinCelebrationCueResolverRegistry(),
                 winSettlementDetailResolverRegistry = winSettlementDetailResolverRegistry,
 
@@ -225,13 +225,13 @@ class RoomToRoomFullLifecycleIntegrationTest {
             ),
             declareKanUseCase = DeclareKanUseCase(gameRepo, moduleRegistry, snapshotSynchronizer, gameEventPublisher, presentationPublisher, componentRegistry = bundledCoreExtensionRegistries().componentRegistry),
             respondToDiscardUseCase = RespondToDiscardUseCase(
-                gameRepo,
-                moduleRegistry,
-                snapshotSynchronizer,
-                handSortPreferenceStore,
-                gameEventPublisher,
-                presentationPublisher,
-                winPresentationHandoff,
+                gameRepository = gameRepo,
+                moduleRegistry = moduleRegistry,
+                snapshotSynchronizer = snapshotSynchronizer,
+                handSortPreferenceStore = handSortPreferenceStore,
+                eventPublisher = gameEventPublisher,
+                presentationPublisher = presentationPublisher,
+                winPresentationHandoff = winPresentationHandoff,
                 winCelebrationCueResolverRegistry = bundledWinCelebrationCueResolverRegistry(),
                 winSettlementDetailResolverRegistry = winSettlementDetailResolverRegistry,
                 postActionExhaustiveDrawResolverRegistry = postActionExhaustiveDrawResolverRegistry,
@@ -239,12 +239,12 @@ class RoomToRoomFullLifecycleIntegrationTest {
                 componentRegistry = bundledCoreExtensionRegistries().componentRegistry,
             ),
             respondToRobbingUseCase = RespondToRobbingUseCase(
-                gameRepo,
-                moduleRegistry,
-                snapshotSynchronizer,
-                gameEventPublisher,
-                presentationPublisher,
-                winPresentationHandoff,
+                gameRepository = gameRepo,
+                moduleRegistry = moduleRegistry,
+                snapshotSynchronizer = snapshotSynchronizer,
+                eventPublisher = gameEventPublisher,
+                presentationPublisher = presentationPublisher,
+                winPresentationHandoff = winPresentationHandoff,
                 winCelebrationCueResolverRegistry = bundledWinCelebrationCueResolverRegistry(),
                 winSettlementDetailResolverRegistry = winSettlementDetailResolverRegistry,
 
@@ -256,13 +256,13 @@ class RoomToRoomFullLifecycleIntegrationTest {
         )
         val getLegalActionsUseCase = GetLegalActionsUseCase(gameRepo, moduleRegistry)
         val aiTurnDriver = AiTurnDriver(
-            gameRepo,
-            getLegalActionsUseCase,
-            aiStrategyRegistry,
-            GameVisibilityPolicyImpl(moduleRegistry, componentRegistry = bundledCoreExtensionRegistries().componentRegistry),
-            moduleRegistry,
-            AiDecisionExecutor.direct(failurePolicy = ExtensionFailurePolicy.Default),
-            AutomaticGameCommandResolver(moduleRegistry),
+            gameRepository = gameRepo,
+            getLegalActionsUseCase = getLegalActionsUseCase,
+            aiStrategyRegistry = aiStrategyRegistry,
+            visibilityPolicy = GameVisibilityPolicyImpl(moduleRegistry, componentRegistry = bundledCoreExtensionRegistries().componentRegistry),
+            moduleRegistry = moduleRegistry,
+            decisionExecutor = AiDecisionExecutor.direct(failurePolicy = ExtensionFailurePolicy.Default),
+            commandResolver = AutomaticGameCommandResolver(moduleRegistry),
         )
         val clock = MonotonicClockImpl()
         val decisionTimerManager = GameDecisionTimerManager(
@@ -272,12 +272,12 @@ class RoomToRoomFullLifecycleIntegrationTest {
             clock = clock,
         )
         val decisionAvailabilityService = GameDecisionAvailabilityService(
-            presentationBusyGate,
-            decisionTimerManager,
-            DecisionTimerSynchronizationService(
-                decisionTimerManager,
-                gameRepo,
-                FakeDecisionTimerUpdatePublisher(),
+            busyGate = presentationBusyGate,
+            timerManager = decisionTimerManager,
+            synchronizationService = DecisionTimerSynchronizationService(
+                timerManager = decisionTimerManager,
+                gameRepository = gameRepo,
+                publisher = FakeDecisionTimerUpdatePublisher(),
             ),
         )
         val coordinator = GameFlowCoordinator(
@@ -287,34 +287,34 @@ class RoomToRoomFullLifecycleIntegrationTest {
             winSettlementDetailResolverRegistry = winSettlementDetailResolverRegistry,
             declareExhaustiveDrawUseCase = DeclareExhaustiveDrawUseCase(gameRepo, moduleRegistry, snapshotSynchronizer, gameEventPublisher),
             resolvePostReactionRoundOutcomeUseCase = ResolvePostReactionRoundOutcomeUseCase(
-                gameRepo,
-                moduleRegistry,
-                PostReactionRoundOutcomeResolverRegistry().apply { freeze() },
-                snapshotSynchronizer,
-                winSettlementDetailResolverRegistry,
+                gameRepository = gameRepo,
+                moduleRegistry = moduleRegistry,
+                resolverRegistry = PostReactionRoundOutcomeResolverRegistry().apply { freeze() },
+                snapshotSynchronizer = snapshotSynchronizer,
+                winSettlementDetailResolverRegistry = winSettlementDetailResolverRegistry,
             ),
             resolveWinRoundContinuationUseCase = ResolveWinRoundContinuationUseCase(
-                gameRepo,
-                moduleRegistry,
-                WinRoundContinuationResolverRegistry().apply { freeze() },
-                snapshotSynchronizer,
+                gameRepository = gameRepo,
+                moduleRegistry = moduleRegistry,
+                resolverRegistry = WinRoundContinuationResolverRegistry().apply { freeze() },
+                snapshotSynchronizer = snapshotSynchronizer,
                 ruleDecisionResolverRegistry = emptyRuleDecisionResolverRegistry(),
             ),
             advanceRoundUseCase = AdvanceRoundUseCase(
-                gameRepo,
-                moduleRegistry,
-                snapshotSynchronizer,
-                handSortPreferenceStore,
-                gameEventPublisher,
-                presentationPublisher,
+                gameRepository = gameRepo,
+                moduleRegistry = moduleRegistry,
+                snapshotSynchronizer = snapshotSynchronizer,
+                handSortPreferenceStore = handSortPreferenceStore,
+                eventPublisher = gameEventPublisher,
+                presentationPublisher = presentationPublisher,
                 componentRegistry = bundledCoreExtensionRegistries().componentRegistry,
                 beginRuleDecisionUseCase = ruleDecisions.begin,
             ),
             returnToRoomUseCase = ReturnToRoomUseCase(
-                store,
-                roomSnapshotRepo,
-                roomEventPublisher,
-                presentationPublisher,
+                authoritativeStateStore = store,
+                roomSnapshotRepository = roomSnapshotRepo,
+                eventPublisher = roomEventPublisher,
+                presentationPublisher = presentationPublisher,
             ),
             aiTurnDriver = aiTurnDriver,
             forcedAutoPlayDriver = ForcedAutoPlayDriver(gameRepo, AutomaticGameCommandResolver(moduleRegistry)),
@@ -560,8 +560,8 @@ class RoomToRoomFullLifecycleIntegrationTest {
         override suspend fun decideGameCommand(context: AiDecisionContext): GameCommand = when (context.phase) {
             AiDecisionPhase.RespondingToDiscard ->
                 GameCommand.RespondToDiscard(
-                    context.legalActions.firstOrNull { it is GameAction.Ron } ?: GameAction.Pass,
-                    checkNotNull(context.discardReactionId),
+                    action = context.legalActions.firstOrNull { it is GameAction.Ron } ?: GameAction.Pass,
+                    reactionId = checkNotNull(context.discardReactionId),
                 )
 
             AiDecisionPhase.RespondingToRobbing ->

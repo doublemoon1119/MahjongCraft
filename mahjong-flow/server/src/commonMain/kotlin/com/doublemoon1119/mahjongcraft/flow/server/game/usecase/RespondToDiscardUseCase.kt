@@ -110,7 +110,7 @@ class RespondToDiscardUseCase(
             history = { before, after, result ->
                 if (result is Outcome.Success && before != null && after != null) {
                     listOf(
-                        acceptedActionHistoryDraft(
+                        element = acceptedActionHistoryDraft(
                             actorPlayerId = playerId,
                             action = action,
                             before = before,
@@ -121,7 +121,7 @@ class RespondToDiscardUseCase(
                         val resolution = result.value
                         buildList {
                             add(
-                                HistoryEventDraft(
+                                element = HistoryEventDraft(
                                     actorPlayerId = resolution.winnerId ?: resolution.ronWinnerIds.singleOrNull(),
                                     fact = HistoryFact.ReactionResolved(
                                         resolvedAction = resolution.resolvedAction
@@ -134,7 +134,7 @@ class RespondToDiscardUseCase(
                                 resolution.scoring?.let { add(actionScoredHistoryDraft(it)) }
                                 if (resolution.drawnTiles.isNotEmpty()) {
                                     add(
-                                        acceptedActionHistoryDraft(
+                                        element = acceptedActionHistoryDraft(
                                             actorPlayerId = winnerId,
                                             action = GameAction.Draw,
                                             before = before,
@@ -147,7 +147,7 @@ class RespondToDiscardUseCase(
                             }
                             resolution.abortiveDrawReason?.let { reason ->
                                 add(
-                                    acceptedActionHistoryDraft(
+                                    element = acceptedActionHistoryDraft(
                                         actorPlayerId = resolution.abortiveDrawActorId,
                                         action = GameAction.ExhaustiveDraw(reason),
                                         before = before,
@@ -157,7 +157,7 @@ class RespondToDiscardUseCase(
                             }
                             resolution.settlement?.let { settlement ->
                                 add(
-                                    HistoryEventDraft(
+                                    element = HistoryEventDraft(
                                         actorPlayerId = resolution.ronDiscarderId,
                                         fact = HistoryFact.WinSettled(
                                             outcomeId = settlement.outcomeId,
@@ -293,26 +293,26 @@ class RespondToDiscardUseCase(
         val resolvedAction = result.resolvedAction
         when {
             abortiveDrawReason != null -> eventPublisher.publishToAllObservers(
-                gameId,
-                seatedPlayerIds,
-                requireNotNull(result.abortiveDrawActorId),
-                GameAction.ExhaustiveDraw(abortiveDrawReason),
+                gameId = gameId,
+                seatedPlayerIds = seatedPlayerIds,
+                actorId = requireNotNull(result.abortiveDrawActorId),
+                action = GameAction.ExhaustiveDraw(abortiveDrawReason),
             )
 
             ronWinningTileId != null -> result.ronWinnerIds.forEach { winnerId ->
                 eventPublisher.publishToAllObservers(
-                    gameId,
-                    seatedPlayerIds,
-                    winnerId,
-                    GameAction.Ron(ronWinningTileId),
+                    gameId = gameId,
+                    seatedPlayerIds = seatedPlayerIds,
+                    actorId = winnerId,
+                    action = GameAction.Ron(ronWinningTileId),
                 )
             }
 
             resolvedAction != null -> eventPublisher.publishToAllObservers(
-                gameId,
-                seatedPlayerIds,
-                requireNotNull(result.winnerId),
-                resolvedAction,
+                gameId = gameId,
+                seatedPlayerIds = seatedPlayerIds,
+                actorId = requireNotNull(result.winnerId),
+                action = resolvedAction,
             )
         }
         result.followUp?.let { followUp ->
@@ -325,9 +325,9 @@ class RespondToDiscardUseCase(
 
         // 呈現回應的結果：鳴牌時牌從牌河移入副露，明槓再接著補牌與補牌後的自動處理；榮和時宣告和牌。
         val steps = result.steps ?: listOf(
-            TableStep(
-                newState,
-                buildList {
+            element = TableStep(
+                tableState = newState,
+                events = buildList {
                     result.ronWinningTileId?.let { tileId ->
                         result.ronWinnerIds.forEach { winnerId -> add(TableStepEvent.ActionDeclared(winnerId, GameAction.Ron(tileId))) }
                     }
@@ -350,11 +350,11 @@ class RespondToDiscardUseCase(
                     revealsWinnerHands = true,
                     winners = result.ronWinnerIds.map { winnerId ->
                         WinCelebrationWinner(
-                            newState.players.indexOfFirst { it.id == winnerId },
-                            result.ronResolutions[winnerId]?.let {
+                            seatIndex = newState.players.indexOfFirst { it.id == winnerId },
+                            cueIds = result.ronResolutions[winnerId]?.let {
                                 winCelebrationCueResolverRegistry.resolve(
-                                    result.ruleModuleId.orEmpty(),
-                                    it.handValueResult,
+                                    ruleModuleId = result.ruleModuleId.orEmpty(),
+                                    result = it.handValueResult,
                                 )
                             }.orEmpty(),
                         )
@@ -452,13 +452,13 @@ class RespondToDiscardUseCase(
                 action = action,
                 selectedTileIds = pendingReaction.selectedTileIds[playerId].orEmpty(),
             ) ?: throw RuleContractViolationException(
-                GameAbortReasonIds.RULE_EXECUTION_FAILED,
-                "Accepted discard reaction cannot be resolved for $playerId: $action",
+                reasonId = GameAbortReasonIds.RULE_EXECUTION_FAILED,
+                diagnostic = "Accepted discard reaction cannot be resolved for $playerId: $action",
             )
         }
         val discarderIndex = state.players.indexOfFirst { it.id == pendingReaction.discarderId }
         val rankedResponses = responses.entries.sortedWith(
-            compareByDescending<Map.Entry<Uuid, DiscardReactionCandidate>> { it.value.priority }
+            comparator = compareByDescending<Map.Entry<Uuid, DiscardReactionCandidate>> { it.value.priority }
                 .thenByDescending { it.value.tieBreakPriority }
                 .thenBy { entry ->
                     (state.players.indexOfFirst { it.id == entry.key } - discarderIndex + state.players.size) % state.players.size
@@ -506,12 +506,12 @@ class RespondToDiscardUseCase(
         val stateAfterResponses = state.copy(players = players, turnPhase = TurnPhase.AwaitingDraw)
         val completedDiscard = GameAction.Discard(pendingReaction.tileId)
         val abortiveDrawReason = postActionExhaustiveDrawResolverRegistry.resolve(
-            CompletedGameActionContext(
+            context = CompletedGameActionContext(
                 actorPlayerId = pendingReaction.discarderId,
                 action = completedDiscard,
                 tableState = stateAfterResponses,
             ),
-            module,
+            ruleModule = module,
         )
         if (abortiveDrawReason != null) {
             return RespondResult(
@@ -528,7 +528,7 @@ class RespondToDiscardUseCase(
             val stateWithPlayers = state.copy(players = players)
             val nextPlayer = stateWithPlayers.nextActivePlayerAfter(pendingReaction.discarderId)
             return RespondResult(
-                stateWithPlayers.copy(
+                tableState = stateWithPlayers.copy(
                     currentPlayerIndex = players.indexOf(nextPlayer),
                     turnPhase = TurnPhase.AwaitingDraw,
                 ),
@@ -546,8 +546,8 @@ class RespondToDiscardUseCase(
         val winnerDirection = state.relativeDirectionOf(winnerId, pendingReaction.discarderId)
 
         val effect = winningEntry.value.claimEffect ?: throw RuleContractViolationException(
-            GameAbortReasonIds.RULE_EXECUTION_FAILED,
-            "Winning discard claim has no meld effect: $winnerAction",
+            reasonId = GameAbortReasonIds.RULE_EXECUTION_FAILED,
+            diagnostic = "Winning discard claim has no meld effect: $winnerAction",
         )
         val meldType = effect.meldType
         val handTilesUsed = effect.handTileIds.map { id -> winner.hand.standingTiles.first { it.id == id } }
@@ -598,7 +598,7 @@ class RespondToDiscardUseCase(
             tableState = stateAfterMeld,
             players = stateAfterMeld.players,
             patches = module.onMeldCompleted(
-                MeldCompletedContext(
+                context = MeldCompletedContext(
                     playersBefore = state.copy(players = players).players,
                     playersAfter = stateAfterMeld.players,
                     actorPlayerId = winnerId,
@@ -660,8 +660,8 @@ class RespondToDiscardUseCase(
             is SelfDeclarationApplier.Result.Rejected -> {
                 if (applied.reasonId == SupplementalDrawReasonIds.INVALID_RESULT) {
                     throw RuleContractViolationException(
-                        GameAbortReasonIds.RULE_EXECUTION_FAILED,
-                        "Claim supplemental draw failed validation: $winnerAction",
+                        reasonId = GameAbortReasonIds.RULE_EXECUTION_FAILED,
+                        diagnostic = "Claim supplemental draw failed validation: $winnerAction",
                     )
                 }
                 RespondResult(tableState = state, rejectionReasonId = applied.reasonId)
@@ -670,8 +670,8 @@ class RespondToDiscardUseCase(
             is SelfDeclarationApplier.Result.Applied -> {
                 if (applied.drawnTiles.isEmpty()) {
                     throw RuleContractViolationException(
-                        GameAbortReasonIds.RULE_EXECUTION_FAILED,
-                        "Claim requires a supplemental draw but the rule did not provide one: $winnerAction",
+                        reasonId = GameAbortReasonIds.RULE_EXECUTION_FAILED,
+                        diagnostic = "Claim requires a supplemental draw but the rule did not provide one: $winnerAction",
                     )
                 }
                 val followUp = DrawFollowUpApplier.run(

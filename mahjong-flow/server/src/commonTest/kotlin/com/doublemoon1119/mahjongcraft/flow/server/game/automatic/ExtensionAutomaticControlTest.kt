@@ -53,8 +53,8 @@ class ExtensionAutomaticControlTest {
         repository.setGame(game)
 
         val outcome = useCase(
-            game.id,
-            playerId,
+            gameId = game.id,
+            playerId = playerId,
             expectedRevision = 0L,
             enabledControlIds = setOf(EXTENSION_CONTROL_ID),
         )
@@ -72,15 +72,15 @@ class ExtensionAutomaticControlTest {
         repository.setGame(game)
         val contextResolver = PlayerActionContextResolver()
         val driver = AutomaticDecisionDriver(
-            repository,
-            AutomaticDecisionEvaluator(extensionModuleRegistry(), GameVisibilityPolicyImpl(extensionModuleRegistry(), componentRegistry = bundledCoreExtensionRegistries().componentRegistry), contextResolver),
-            GameActionCommandMapper(ExtensionGameActionCommandFactoryRegistry()),
-            contextResolver,
+            gameRepository = repository,
+            evaluator = AutomaticDecisionEvaluator(extensionModuleRegistry(), GameVisibilityPolicyImpl(extensionModuleRegistry(), componentRegistry = bundledCoreExtensionRegistries().componentRegistry), contextResolver),
+            commandMapper = GameActionCommandMapper(ExtensionGameActionCommandFactoryRegistry()),
+            actionContextResolver = contextResolver,
         )
 
         assertEquals(
-            playerId to GameCommand.RespondToDiscard(GameAction.Pass, checkNotNull(game.tableState.pendingReaction).id),
-            driver.resolveNextAction(game.id),
+            expected = playerId to GameCommand.RespondToDiscard(GameAction.Pass, checkNotNull(game.tableState.pendingReaction).id),
+            actual = driver.resolveNextAction(game.id),
         )
     }
 

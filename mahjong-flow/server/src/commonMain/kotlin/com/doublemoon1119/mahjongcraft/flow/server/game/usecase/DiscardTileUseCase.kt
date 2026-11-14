@@ -71,7 +71,7 @@ class DiscardTileUseCase(
     suspend operator fun invoke(gameId: Uuid, playerId: Uuid, tileId: Uuid): Outcome<Unit, GameError> {
         // 1. 以原子方式讀取桌況、驗證業務規則並寫回
         val outcome = gameRepository.update(
-            gameId,
+            gameId = gameId,
             history = { before, after, result ->
                 if (result is Outcome.Success && before != null && after != null) {
                     listOf(acceptedActionHistoryDraft(playerId, GameAction.Discard(tileId), before, after, listOf(tileId))) +
@@ -119,7 +119,7 @@ class DiscardTileUseCase(
                         // 摸牌後原本可以自摸卻選擇捨牌，視為放棄和牌，後果交給規則決定。
                         val playerAfterDeclineCheck = if (lastDrawn != null) {
                             val ownTurnActions = module.createLegalActionValidator().getLegalActions(
-                                LegalActionContext.ownTurn(state, playerId),
+                                context = LegalActionContext.ownTurn(state, playerId),
                             )
                             if (ownTurnActions.any { it is GameAction.Tsumo }) {
                                 ruleComponents.applyPlayerPatch(
@@ -178,7 +178,7 @@ class DiscardTileUseCase(
                         }
                         if (revealResult is WallRevealDecisionApplier.Result.Rejected) {
                             return@update state to Outcome.Error(
-                                GameError.UnsupportedAction(gameId, playerId, revealResult.reasonId),
+                                error = GameError.UnsupportedAction(gameId, playerId, revealResult.reasonId),
                             )
                         }
                         revealResult as WallRevealDecisionApplier.Result.Applied
@@ -191,12 +191,12 @@ class DiscardTileUseCase(
                                 resolvedAfterReveal.tableState.pendingReaction == null
                             ) {
                                 postActionExhaustiveDrawResolverRegistry.resolve(
-                                    CompletedGameActionContext(
+                                    context = CompletedGameActionContext(
                                         actorPlayerId = playerId,
                                         action = GameAction.Discard(tileId),
                                         tableState = resolvedAfterReveal.tableState,
                                     ),
-                                    module,
+                                    ruleModule = module,
                                 )
                             } else {
                                 null
@@ -215,7 +215,7 @@ class DiscardTileUseCase(
                         }
 
                         finalResult.tableState to Outcome.Success(
-                            DiscardResult(finalResult),
+                            value = DiscardResult(finalResult),
                         )
                     }
                 }

@@ -44,15 +44,15 @@ class DecisionTimerSynchronizationServiceTest {
         fixtures.service.synchronize(game.id, statuses)
 
         assertEquals(
-            listOf<Pair<Uuid, DecisionTimerUpdate>>(
-                humanId to DecisionTimerUpdate.Active(
-                    game.id,
-                    PlayerDecisionPhase.OWN_TURN,
-                    4_000.milliseconds,
-                    20_000.milliseconds,
+            expected = listOf<Pair<Uuid, DecisionTimerUpdate>>(
+                element = humanId to DecisionTimerUpdate.Active(
+                    gameId = game.id,
+                    phase = PlayerDecisionPhase.OWN_TURN,
+                    baseRemaining = 4_000.milliseconds,
+                    reserveRemaining = 20_000.milliseconds,
                 ),
             ),
-            fixtures.publisher.updates,
+            actual = fixtures.publisher.updates,
         )
     }
 
@@ -74,8 +74,8 @@ class DecisionTimerSynchronizationServiceTest {
         fixtures.service.synchronize(game.id, emptyMap())
 
         assertEquals(
-            listOf<Pair<Uuid, DecisionTimerUpdate>>(playerId to DecisionTimerUpdate.Stopped(game.id)),
-            fixtures.publisher.updates,
+            expected = listOf<Pair<Uuid, DecisionTimerUpdate>>(playerId to DecisionTimerUpdate.Stopped(game.id)),
+            actual = fixtures.publisher.updates,
         )
     }
 
@@ -93,10 +93,10 @@ class DecisionTimerSynchronizationServiceTest {
         init {
             val clock = FixedSynchronizationClock()
             val manager = GameDecisionTimerManager(
-                repository,
-                GameDecisionAuthorityResolver(),
-                PlayerDecisionTimerFactory(clock),
-                clock,
+                gameRepository = repository,
+                authorityResolver = GameDecisionAuthorityResolver(),
+                timerFactory = PlayerDecisionTimerFactory(clock),
+                clock = clock,
             )
             service = DecisionTimerSynchronizationService(manager, repository, publisher)
         }
@@ -111,9 +111,9 @@ class DecisionTimerSynchronizationServiceTest {
          * @return 自己回合、基本時間四秒與保留時間二十秒的狀態。
          */
         fun status(playerId: Uuid) = ActivePlayerDecisionStatus(
-            playerId,
-            PlayerDecisionPhase.OWN_TURN,
-            DecisionTimeStatus(4_000.milliseconds, 20_000.milliseconds, false),
+            playerId = playerId,
+            phase = PlayerDecisionPhase.OWN_TURN,
+            time = DecisionTimeStatus(4_000.milliseconds, 20_000.milliseconds, false),
         )
     }
 }

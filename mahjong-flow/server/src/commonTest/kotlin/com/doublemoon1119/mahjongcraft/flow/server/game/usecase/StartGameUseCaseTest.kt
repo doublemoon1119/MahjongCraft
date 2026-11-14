@@ -117,12 +117,12 @@ class StartGameUseCaseTest {
 
         /** 受測開局用例。 */
         val useCase = StartGameUseCase(
-            store,
-            moduleRegistry,
-            snapshotSynchronizer,
-            handSortPreferenceStore,
-            eventPublisher,
-            presentationPublisher,
+            authoritativeStateStore = store,
+            moduleRegistry = moduleRegistry,
+            snapshotSynchronizer = snapshotSynchronizer,
+            handSortPreferenceStore = handSortPreferenceStore,
+            eventPublisher = eventPublisher,
+            presentationPublisher = presentationPublisher,
             componentRegistry = bundledCoreExtensionRegistries().componentRegistry,
             beginRuleDecisionUseCase = noRuleDecisionBeginUseCase(gameRepo, moduleRegistry, snapshotSynchronizer),
         )
@@ -133,7 +133,7 @@ class StartGameUseCaseTest {
     fun `multi roll opening records actors and results in one authoritative transaction`() = runTest {
         val registry = MahjongModuleRegistryImpl().apply {
             register(
-                MahjongModuleDefinition(
+                definition = MahjongModuleDefinition(
                     configClass = RiichiRuleConfig::class,
                     id = "example:multi_roll",
                     factory = { config, id ->
@@ -145,7 +145,7 @@ class StartGameUseCaseTest {
                                     0 -> RoundOpeningStep.Roll(OpeningDiceRollRequest(context.playerIdsInTurnOrder[0], 2))
                                     1 -> RoundOpeningStep.Roll(OpeningDiceRollRequest(context.playerIdsInTurnOrder[1], 3))
                                     else -> RoundOpeningStep.Complete(
-                                        RoundOpeningCompletion(
+                                        result = RoundOpeningCompletion(
                                             dealerPlayerId = context.playerIdsInTurnOrder[1],
                                             wallOpening = RiichiWallOpeningPolicy.resolve(context.rolls[0].dice),
                                         ),
@@ -189,7 +189,7 @@ class StartGameUseCaseTest {
     fun `invalid opening leaves the room intact without partial history or notifications`() = runTest {
         val registry = MahjongModuleRegistryImpl().apply {
             register(
-                MahjongModuleDefinition(
+                definition = MahjongModuleDefinition(
                     configClass = RiichiRuleConfig::class,
                     id = "example:invalid_opening",
                     factory = { config, id ->
@@ -262,10 +262,10 @@ class StartGameUseCaseTest {
     fun `test start game initializes reserve time for all players`() = runTest {
         val fixtures = Fixtures()
         fixtures.roomRepo.setRoom(
-            readyRoom(
-                GameConfig(
-                    RiichiRuleConfig(),
-                    GameFlowConfig(
+            room = readyRoom(
+                gameConfig = GameConfig(
+                    ruleConfig = RiichiRuleConfig(),
+                    flowConfig = GameFlowConfig(
                         timeControl = ActionTimeControl.Custom(base = 5.seconds, reserve = 37.seconds),
                     ),
                 ),

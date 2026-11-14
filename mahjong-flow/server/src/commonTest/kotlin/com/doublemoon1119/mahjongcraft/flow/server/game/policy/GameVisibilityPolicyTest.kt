@@ -97,7 +97,7 @@ class GameVisibilityPolicyTest {
             register(component)
             registerView(view)
             registerProjection(
-                ComponentProjectionDefinition(
+                definition = ComponentProjectionDefinition(
                     id = "test:meld_projection",
                     ownerType = BuiltInComponentOwners.MELD,
                     component = component,
@@ -291,7 +291,7 @@ class GameVisibilityPolicyTest {
             id = hiddenPlayerId,
             initialSeat = Wind.SOUTH,
             hand = Hand(
-                mutableListOf(
+                tiles = mutableListOf(
                     FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 1), firstId),
                     FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 2), secondId),
                 ),
@@ -310,7 +310,7 @@ class GameVisibilityPolicyTest {
         )
         val changedHiddenPlayer = hiddenPlayer.copy(
             hand = Hand(
-                mutableListOf(
+                tiles = mutableListOf(
                     FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 9), secondId),
                     FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 8), firstId),
                 ),
@@ -331,8 +331,8 @@ class GameVisibilityPolicyTest {
         assertEquals(firstSnapshot, changedSnapshot)
         assertEquals(observerTile.tile, changedSnapshot.players.first { it.id == observerId }.hand.standingTiles.single().tile)
         assertEquals(
-            firstSnapshot.players.first { it.id == hiddenPlayerId }.hand.standingTiles.map { it.id },
-            changedSnapshot.players.first { it.id == hiddenPlayerId }.hand.standingTiles.map { it.id },
+            expected = firstSnapshot.players.first { it.id == hiddenPlayerId }.hand.standingTiles.map { it.id },
+            actual = changedSnapshot.players.first { it.id == hiddenPlayerId }.hand.standingTiles.map { it.id },
         )
     }
 
@@ -534,7 +534,7 @@ class GameVisibilityPolicyTest {
         val config = RiichiRuleConfig()
         val registry = MahjongModuleRegistryImpl().apply {
             register(
-                MahjongModuleDefinition(RiichiRuleConfig::class, "test:default-projection") { moduleConfig, id ->
+                definition = MahjongModuleDefinition(RiichiRuleConfig::class, "test:default-projection") { moduleConfig, id ->
                     DefaultProjectionRuleModule(RiichiRuleModule(id, moduleConfig))
                 },
             )
@@ -575,7 +575,7 @@ class GameVisibilityPolicyTest {
                     FakeMahjongPlayerFactory.create(
                         id = playerId,
                         components = ComponentSet.EMPTY.with(RiichiPlayerComponents.PERMANENT_FURITEN, Unit).merge(
-                            riichiDeclarationComponents(
+                            higher = riichiDeclarationComponents(
                                 declarationTile = riichiTile,
                                 isIppatsu = true,
                             ),
@@ -585,7 +585,7 @@ class GameVisibilityPolicyTest {
                         id = otherPlayerId,
                         initialSeat = Wind.SOUTH,
                         components = ComponentSet.EMPTY.with(RiichiPlayerComponents.PERMANENT_FURITEN, Unit).merge(
-                            riichiDeclarationComponents(
+                            higher = riichiDeclarationComponents(
                                 declarationTile = riichiTile,
                                 isIppatsu = true,
                             ),
@@ -620,7 +620,7 @@ class GameVisibilityPolicyTest {
                             completedSupplementalDrawCount = 1,
                             revealedKanDoraCount = 0,
                             pendingKanDoraReveals = listOf(
-                                RiichiPendingKanDoraReveal(
+                                element = RiichiPendingKanDoraReveal(
                                     actorPlayerId = Uuid.random(),
                                     sourceKanType = GameAction.KanType.CLOSED_KAN,
                                     supplementalDrawNumber = 1,
@@ -644,8 +644,8 @@ class GameVisibilityPolicyTest {
         val game = createGame(*playerIds.toTypedArray())
 
         assertEquals(
-            playerIds.toSet(),
-            policy.snapshotFor(game, Uuid.random()).players
+            expected = playerIds.toSet(),
+            actual = policy.snapshotFor(game, Uuid.random()).players
                 .filter { it.hand.standingTiles.single().tile != null }
                 .mapTo(mutableSetOf()) { it.id },
         )
@@ -660,8 +660,8 @@ class GameVisibilityPolicyTest {
         )
 
         assertEquals(
-            emptyList(),
-            policy.snapshotFor(game, Uuid.random()).players
+            expected = emptyList(),
+            actual = policy.snapshotFor(game, Uuid.random()).players
                 .filter { it.hand.standingTiles.single().tile != null },
         )
     }
@@ -675,8 +675,8 @@ class GameVisibilityPolicyTest {
         )
 
         assertEquals(
-            emptyList(),
-            policy.snapshotFor(game, Uuid.random()).players
+            expected = emptyList(),
+            actual = policy.snapshotFor(game, Uuid.random()).players
                 .filter { it.hand.standingTiles.single().tile != null },
         )
     }
@@ -757,7 +757,7 @@ class GameVisibilityPolicyTest {
     ): GameVisibilityPolicyImpl {
         val registry = MahjongModuleRegistryImpl().apply {
             register(
-                MahjongModuleDefinition(RiichiRuleConfig::class, "test:visibility") { moduleConfig, id ->
+                definition = MahjongModuleDefinition(RiichiRuleConfig::class, "test:visibility") { moduleConfig, id ->
                     VisibilityRuleModule(RiichiRuleModule(id, moduleConfig), descriptions)
                 },
             )
@@ -770,7 +770,7 @@ class GameVisibilityPolicyTest {
     private fun taiwanPolicyFor(descriptions: List<TileComponentDescription>): GameVisibilityPolicyImpl {
         val registry = MahjongModuleRegistryImpl().apply {
             register(
-                MahjongModuleDefinition(TaiwanRuleConfig::class, "test:taiwan-visibility") { moduleConfig, id ->
+                definition = MahjongModuleDefinition(TaiwanRuleConfig::class, "test:taiwan-visibility") { moduleConfig, id ->
                     TaiwanVisibilityRuleModule(TaiwanRuleModule(id, moduleConfig), descriptions)
                 },
             )

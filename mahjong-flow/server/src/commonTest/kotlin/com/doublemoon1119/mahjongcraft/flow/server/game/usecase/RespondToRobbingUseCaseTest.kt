@@ -99,12 +99,12 @@ class RespondToRobbingUseCaseTest {
 
         /** 受測搶槓反應用例。 */
         val useCase = RespondToRobbingUseCase(
-            gameRepo,
-            moduleRegistry,
-            snapshotSynchronizer,
-            eventPublisher,
-            presentationPublisher,
-            winPresentationHandoff,
+            gameRepository = gameRepo,
+            moduleRegistry = moduleRegistry,
+            snapshotSynchronizer = snapshotSynchronizer,
+            eventPublisher = eventPublisher,
+            presentationPublisher = presentationPublisher,
+            winPresentationHandoff = winPresentationHandoff,
             winCelebrationCueResolverRegistry = bundledWinCelebrationCueResolverRegistry(),
             winSettlementDetailResolverRegistry = winSettlementDetailResolverRegistry,
 
@@ -136,8 +136,8 @@ class RespondToRobbingUseCaseTest {
      * @return 由三張測試白板組成、來源為上家的碰子。
      */
     private fun existingPon() = Meld(
-        MeldType.Pon,
-        listOf(whiteTile1, whiteTile2, whiteTile3),
+        type = MeldType.Pon,
+        tiles = listOf(whiteTile1, whiteTile2, whiteTile3),
         sourceTile = whiteTile3,
         sourceDirection = RelativeDirection.Left,
         publiclyRevealedTileIds = listOf(whiteTile1, whiteTile2, whiteTile3).map { it.id }.toSet(),
@@ -219,9 +219,9 @@ class RespondToRobbingUseCaseTest {
         assertEquals(robbedWhiteTile, declarer.hand.lastDrawn, "The declarer's hand should remain untouched.")
 
         assertEquals(
-            listOf(GameAction.Ron(robbedWhiteTile.id)),
-            fixtures.eventPublisher.getNotifiedActions(gameId, declarerId, robberId),
-            "Only the Ron response should be broadcast; no rinshan draw happened.",
+            expected = listOf(GameAction.Ron(robbedWhiteTile.id)),
+            actual = fixtures.eventPublisher.getNotifiedActions(gameId, declarerId, robberId),
+            message = "Only the Ron response should be broadcast; no rinshan draw happened.",
         )
         // 搶槓成立只宣告和牌，槓沒有成立，也沒有補牌。
         val ronStep = fixtures.presentationPublisher.getPublishedTableStepBatches(gameId).single().single()
@@ -235,8 +235,8 @@ class RespondToRobbingUseCaseTest {
         val staged = assertNotNull(fixtures.winPresentationHandoff.take(gameId, setOf(robberId)))
         assertEquals(setOf(robberId), staged.winnerPlayerIds)
         assertEquals(
-            listOf(newState.players.indexOfFirst { it.id == robberId }),
-            staged.celebration.winners.map { it.seatIndex },
+            expected = listOf(newState.players.indexOfFirst { it.id == robberId }),
+            actual = staged.celebration.winners.map { it.seatIndex },
         )
         assertEquals(robbedWhiteTile.id, staged.celebration.winningTileId)
         assertFalse(staged.celebration.isTsumo)
@@ -249,14 +249,14 @@ class RespondToRobbingUseCaseTest {
         val otherEligibleId = Uuid.random()
         val base = setUpTable()
         fixtures.gameRepo.setTableState(
-            base.copy(
+            state = base.copy(
                 players = base.players + FakeMahjongPlayerFactory.create(
                     id = otherEligibleId,
                     initialSeat = Wind.WEST,
                     hand = robberHand(),
                 ),
                 turnPhase = TurnPhase.AwaitingRobbingReaction(
-                    requireNotNull(base.pendingRobbingReaction).copy(
+                    reaction = requireNotNull(base.pendingRobbingReaction).copy(
                         eligiblePlayerIds = setOf(robberId, otherEligibleId),
                     ),
                 ),
@@ -267,12 +267,12 @@ class RespondToRobbingUseCaseTest {
 
         assertTrue(result is Outcome.Success, "Expected Success but got $result")
         assertTrue(
-            fixtures.eventPublisher.getNotifiedActions(gameId, otherEligibleId, robberId).isEmpty(),
-            "A provisional Pass must not be broadcast to another eligible player.",
+            actual = fixtures.eventPublisher.getNotifiedActions(gameId, otherEligibleId, robberId).isEmpty(),
+            message = "A provisional Pass must not be broadcast to another eligible player.",
         )
         assertTrue(
-            fixtures.eventPublisher.getNotifiedActions(gameId, robberId, robberId).isEmpty(),
-            "A provisional Pass does not need a game action event for its actor.",
+            actual = fixtures.eventPublisher.getNotifiedActions(gameId, robberId, robberId).isEmpty(),
+            message = "A provisional Pass does not need a game action event for its actor.",
         )
     }
 
@@ -301,8 +301,8 @@ class RespondToRobbingUseCaseTest {
         assertEquals(TurnPhase.AwaitingAction, newState.turnPhase)
 
         assertEquals(
-            listOf(GameAction.Draw),
-            fixtures.eventPublisher.getNotifiedActions(gameId, robberId, declarerId),
+            expected = listOf(GameAction.Draw),
+            actual = fixtures.eventPublisher.getNotifiedActions(gameId, robberId, declarerId),
         )
         // 加槓在開啟視窗時已經呈現，這裡接續加槓成立與補牌，不再宣告一次。
         val (declared, drawn) = fixtures.presentationPublisher.getPublishedTableStepBatches(gameId).single()
@@ -312,12 +312,12 @@ class RespondToRobbingUseCaseTest {
         assertEquals(newState, drawn.tableState)
         assertEquals(TileRegion.DRAWN, drawn.tableState.tileRegion(rinshanTile.id))
         assertTrue(
-            fixtures.presentationPublisher.getPublishedWinCelebrations(gameId).isEmpty(),
-            "A completed kan (not robbed) should never trigger a win celebration.",
+            actual = fixtures.presentationPublisher.getPublishedWinCelebrations(gameId).isEmpty(),
+            message = "A completed kan (not robbed) should never trigger a win celebration.",
         )
         assertNull(
-            fixtures.winPresentationHandoff.take(gameId, setOf(robberId)),
-            "A completed kan (not robbed) should never stage a win presentation either.",
+            actual = fixtures.winPresentationHandoff.take(gameId, setOf(robberId)),
+            message = "A completed kan (not robbed) should never stage a win presentation either.",
         )
         drawn.events.filterIsInstance<TableStepEvent.WallRearranged>().single().phases.flatMap { it.moves }.forEach { move ->
             assertEquals(newState.physicalWallLayout?.placements?.get(move.tileId), move.destination)
@@ -439,10 +439,10 @@ class RespondToRobbingUseCaseTest {
             tileWall = TileWall(listOf(rinshanTile)),
             currentPlayerIndex = 0,
             pendingRobbingReaction = PendingRobbingReaction(
-                declarerId,
-                kanAction,
-                robbedWhiteTile,
-                setOf(robberId, otherEligibleId),
+                declarerId = declarerId,
+                declaredAction = kanAction,
+                robbedTile = robbedWhiteTile,
+                eligiblePlayerIds = setOf(robberId, otherEligibleId),
                 responses = mapOf(robberId to GameAction.Pass),
             ),
         )
@@ -472,7 +472,7 @@ class RespondToRobbingUseCaseTest {
     fun `passing a robbable kan while in riichi marks permanent furiten`() = runTest {
         val fixtures = Fixtures()
         fixtures.gameRepo.setTableState(
-            setUpTable(robberRuleState = riichiDeclarationComponents(declarationTile = FakeIdentifiedTileFactory.create(Tile.Honor.East))),
+            state = setUpTable(robberRuleState = riichiDeclarationComponents(declarationTile = FakeIdentifiedTileFactory.create(Tile.Honor.East))),
         )
 
         val result = fixtures.useCase(gameId, robberId, GameAction.Pass)
@@ -480,8 +480,8 @@ class RespondToRobbingUseCaseTest {
         assertTrue(result is Outcome.Success, "Expected Success but got $result")
         val robber = fixtures.gameRepo.getTableState(gameId)!!.players.first { it.id == robberId }
         assertTrue(
-            robber.components[RiichiPlayerComponents.PERMANENT_FURITEN] != null,
-            "Passing a robbable kan while in riichi should mark permanent furiten.",
+            actual = robber.components[RiichiPlayerComponents.PERMANENT_FURITEN] != null,
+            message = "Passing a robbable kan while in riichi should mark permanent furiten.",
         )
     }
 

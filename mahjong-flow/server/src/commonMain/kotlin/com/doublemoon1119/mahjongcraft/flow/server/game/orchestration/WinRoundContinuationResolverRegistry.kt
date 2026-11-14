@@ -42,7 +42,7 @@ class WinRoundContinuationResolverRegistry : WinRoundContinuationResolverRegistr
     fun freeze() {
         if (frozen) return
         resolvers.sortWith(
-            compareByDescending<WinRoundContinuationResolver> { it.priority }
+            comparator = compareByDescending<WinRoundContinuationResolver> { it.priority }
                 .thenBy { registrationKey(it.ruleModuleId, it.id) },
         )
         frozen = true

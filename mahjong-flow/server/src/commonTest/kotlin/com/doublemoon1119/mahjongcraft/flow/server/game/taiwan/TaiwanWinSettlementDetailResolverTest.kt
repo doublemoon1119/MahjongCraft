@@ -72,8 +72,8 @@ class TaiwanWinSettlementDetailResolverTest {
         assertEquals(faces(flowers - winningFlower), fields[TaiwanWinSettlementIds.FLOWERS_FIELD])
         assertEquals(faces(listOf(winningFlower)), fields[TaiwanWinSettlementIds.WINNING_FLOWER_FIELD])
         assertEquals(
-            setOf(TaiwanWinSettlementIds.FLOWERS_FIELD, TaiwanWinSettlementIds.WINNING_FLOWER_FIELD, TaiwanWinSettlementIds.TAI_FIELD, TaiwanWinSettlementIds.TAI_TOTAL_FIELD),
-            fields.keys,
+            expected = setOf(TaiwanWinSettlementIds.FLOWERS_FIELD, TaiwanWinSettlementIds.WINNING_FLOWER_FIELD, TaiwanWinSettlementIds.TAI_FIELD, TaiwanWinSettlementIds.TAI_TOTAL_FIELD),
+            actual = fields.keys,
         )
         assertEquals(tai(calculateTaiwanEightFlowers().tai + 1), fields[TaiwanWinSettlementIds.TAI_TOTAL_FIELD])
     }
@@ -87,8 +87,8 @@ class TaiwanWinSettlementDetailResolverTest {
         val fields = TaiwanWinSettlementDetailResolver.resolve(state, dealer.id, discarder.id, taiwanHand, publicFace).associate { it.id to it.value }
 
         assertEquals(
-            WinSettlementDetailValue.Entries(handEntries + WinSettlementDetailEntry(TaiwanWinSettlementIds.DEALER_ENTRY, WinSettlementQuantity(TaiwanWinSettlementIds.TAI_UNIT, 1))),
-            fields[TaiwanWinSettlementIds.TAI_FIELD],
+            expected = WinSettlementDetailValue.Entries(handEntries + WinSettlementDetailEntry(TaiwanWinSettlementIds.DEALER_ENTRY, WinSettlementQuantity(TaiwanWinSettlementIds.TAI_UNIT, 1))),
+            actual = fields[TaiwanWinSettlementIds.TAI_FIELD],
         )
         assertEquals(tai(HAND_TAI + 1), fields[TaiwanWinSettlementIds.TAI_TOTAL_FIELD])
         assertEquals(null, fields[TaiwanWinSettlementIds.DEALER_TAI_TOTAL_FIELD])

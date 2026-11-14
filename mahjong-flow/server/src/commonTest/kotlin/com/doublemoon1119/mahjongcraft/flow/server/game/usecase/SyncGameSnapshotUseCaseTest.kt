@@ -42,7 +42,7 @@ class SyncGameSnapshotUseCaseTest {
         val gameRepo = FakeGameRepository()
         val snapshotRepo = FakeGameSnapshotRepository()
         val useCase = SyncGameSnapshotUseCase(
-            GameSnapshotSynchronizer(gameRepo, snapshotRepo, GameVisibilityPolicyImpl(MahjongModuleRegistryImpl().apply { registerBundledRuleModules() }, componentRegistry = bundledCoreExtensionRegistries().componentRegistry)),
+            snapshotSynchronizer = GameSnapshotSynchronizer(gameRepo, snapshotRepo, GameVisibilityPolicyImpl(MahjongModuleRegistryImpl().apply { registerBundledRuleModules() }, componentRegistry = bundledCoreExtensionRegistries().componentRegistry)),
         )
 
         val player = FakeMahjongPlayerFactory.create(id = playerId, initialSeat = Wind.EAST)
@@ -66,7 +66,7 @@ class SyncGameSnapshotUseCaseTest {
         val gameRepo = FakeGameRepository()
         val snapshotRepo = FakeGameSnapshotRepository()
         val useCase = SyncGameSnapshotUseCase(
-            GameSnapshotSynchronizer(gameRepo, snapshotRepo, GameVisibilityPolicyImpl(MahjongModuleRegistryImpl().apply { registerBundledRuleModules() }, componentRegistry = bundledCoreExtensionRegistries().componentRegistry)),
+            snapshotSynchronizer = GameSnapshotSynchronizer(gameRepo, snapshotRepo, GameVisibilityPolicyImpl(MahjongModuleRegistryImpl().apply { registerBundledRuleModules() }, componentRegistry = bundledCoreExtensionRegistries().componentRegistry)),
         )
 
         val result = useCase(gameId, playerId)
@@ -81,13 +81,13 @@ class SyncGameSnapshotUseCaseTest {
         val gameRepo = FakeGameRepository()
         val snapshotRepo = FakeGameSnapshotRepository()
         val useCase = SyncGameSnapshotUseCase(
-            GameSnapshotSynchronizer(gameRepo, snapshotRepo, GameVisibilityPolicyImpl(MahjongModuleRegistryImpl().apply { registerBundledRuleModules() }, componentRegistry = bundledCoreExtensionRegistries().componentRegistry)),
+            snapshotSynchronizer = GameSnapshotSynchronizer(gameRepo, snapshotRepo, GameVisibilityPolicyImpl(MahjongModuleRegistryImpl().apply { registerBundledRuleModules() }, componentRegistry = bundledCoreExtensionRegistries().componentRegistry)),
         )
         val player = FakeMahjongPlayerFactory.create(id = playerId, initialSeat = Wind.EAST)
         val table = FakeTableStateFactory.create(id = gameId, players = listOf(player), config = RiichiRuleConfig())
         val observerId = Uuid.random()
         gameRepo.setGame(
-            Game(
+            game = Game(
                 tableState = table,
                 flowConfig = GameFlowConfig(spectatingPolicy = SpectatingPolicy.DISABLED),
             ),

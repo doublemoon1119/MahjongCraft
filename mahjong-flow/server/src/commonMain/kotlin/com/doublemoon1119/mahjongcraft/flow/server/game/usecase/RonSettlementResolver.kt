@@ -63,8 +63,8 @@ internal object RonSettlementResolver {
             val winner = players.first { it.id == winnerId }
             module.declareRon(state, winner, winningTile, discarderId, isRobbingKan)
                 ?: throw RuleContractViolationException(
-                    GameAbortReasonIds.MISSING_WIN_SETTLEMENT,
-                    "Rule ${module.id} offered ron but returned no settlement for $winnerId",
+                    reasonId = GameAbortReasonIds.MISSING_WIN_SETTLEMENT,
+                    diagnostic = "Rule ${module.id} offered ron but returned no settlement for $winnerId",
                 )
         }
 

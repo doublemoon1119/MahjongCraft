@@ -130,13 +130,13 @@ class RespondToDiscardUseCaseTest {
 
         /** 受測捨牌反應用例。 */
         private val useCaseDelegate = RespondToDiscardUseCase(
-            gameRepo,
-            moduleRegistry,
-            snapshotSynchronizer,
-            handSortPreferenceStore,
-            eventPublisher,
-            presentationPublisher,
-            winPresentationHandoff,
+            gameRepository = gameRepo,
+            moduleRegistry = moduleRegistry,
+            snapshotSynchronizer = snapshotSynchronizer,
+            handSortPreferenceStore = handSortPreferenceStore,
+            eventPublisher = eventPublisher,
+            presentationPublisher = presentationPublisher,
+            winPresentationHandoff = winPresentationHandoff,
             winCelebrationCueResolverRegistry = bundledWinCelebrationCueResolverRegistry(),
             winSettlementDetailResolverRegistry = winSettlementDetailResolverRegistry,
             postActionExhaustiveDrawResolverRegistry = postActionExhaustiveDrawResolverRegistry,
@@ -181,7 +181,7 @@ class RespondToDiscardUseCaseTest {
      */
     private fun alwaysAbortAfterDiscardRegistry(): PostActionExhaustiveDrawResolverRegistry = PostActionExhaustiveDrawResolverRegistry().apply {
         register(
-            object : PostActionExhaustiveDrawResolver {
+            resolver = object : PostActionExhaustiveDrawResolver {
                 override val id: String = "mahjongcraft:test_abort_after_discard"
                 override val ruleModuleId: String = BuiltInRuleModuleIds.RIICHI
                 override val priority: Int = 0
@@ -232,15 +232,15 @@ class RespondToDiscardUseCaseTest {
         val newState = fixtures.gameRepo.getTableState(gameId)!!
         assertNull(newState.pendingReaction, "Everyone eligible has responded, so the reaction window should close.")
         assertTrue(
-            fixtures.gameRepo.historyDrafts.none { (it.fact as? HistoryFact.ActionAccepted)?.action is GameAction.ExhaustiveDraw },
-            "An ordinary pass must not record an exhaustive draw action.",
+            actual = fixtures.gameRepo.historyDrafts.none { (it.fact as? HistoryFact.ActionAccepted)?.action is GameAction.ExhaustiveDraw },
+            message = "An ordinary pass must not record an exhaustive draw action.",
         )
         assertEquals(1, newState.currentPlayerIndex, "No one acted, so turn should advance like the normal discard flow.")
         assertEquals(TurnPhase.AwaitingDraw, newState.turnPhase)
         val updatedResponder = newState.players.first { it.id == responderId }
         assertTrue(
-            Tile.Honor.White in updatedResponder.passedTilesInRound,
-            "Passing on an available Pon should record the tile for the rules to judge (temporary furiten in riichi).",
+            actual = Tile.Honor.White in updatedResponder.passedTilesInRound,
+            message = "Passing on an available Pon should record the tile for the rules to judge (temporary furiten in riichi).",
         )
     }
 
@@ -261,7 +261,7 @@ class RespondToDiscardUseCaseTest {
             hand = Hand(tiles = handTiles),
         )
         fixtures.gameRepo.setTableState(
-            FakeTableStateFactory.create(
+            state = FakeTableStateFactory.create(
                 id = gameId,
                 players = listOf(discarder, responder),
                 config = RiichiRuleConfig(),
@@ -271,9 +271,9 @@ class RespondToDiscardUseCaseTest {
         )
 
         val result = fixtures.useCase(
-            gameId,
-            responderId,
-            GameAction.Pon(discardedTile.id, handTiles.map { it.id }),
+            gameId = gameId,
+            playerId = responderId,
+            action = GameAction.Pon(discardedTile.id, handTiles.map { it.id }),
         )
 
         assertTrue(result is Outcome.Success, "Expected Success but got $result")
@@ -327,7 +327,7 @@ class RespondToDiscardUseCaseTest {
             }
         }
         fixtures.gameRepo.setTableState(
-            FakeTableStateFactory.create(
+            state = FakeTableStateFactory.create(
                 id = gameId,
                 players = players,
                 config = RiichiRuleConfig(),
@@ -604,9 +604,9 @@ class RespondToDiscardUseCaseTest {
         assertEquals(setOf(handTile1, handTile2, handTile3, discardedTile), meld.tiles.toSet())
         assertEquals(rinshanTile, winner.hand.lastDrawn, "Should have drawn a replacement tile from the dead wall, not the front of the wall.")
         assertEquals(
-            listOf(kanAction, GameAction.Draw),
-            winner.actionHistory.takeLast(2),
-            "Kan must be recorded before Draw for rinshan kaihou detection to work.",
+            expected = listOf(kanAction, GameAction.Draw),
+            actual = winner.actionHistory.takeLast(2),
+            message = "Kan must be recorded before Draw for rinshan kaihou detection to work.",
         )
 
         val newDiscarder = newState.players.first { it.id == discarderId }
@@ -661,9 +661,9 @@ class RespondToDiscardUseCaseTest {
 
         assertTrue(result is Outcome.Success, "Expected Success but got $result")
         assertEquals(
-            listOf(kanAction, GameAction.Draw),
-            fixtures.eventPublisher.getNotifiedActions(gameId, responderId, responderId),
-            "Both the Kan declaration and the rinshan draw should be broadcast, in that order.",
+            expected = listOf(kanAction, GameAction.Draw),
+            actual = fixtures.eventPublisher.getNotifiedActions(gameId, responderId, responderId),
+            message = "Both the Kan declaration and the rinshan draw should be broadcast, in that order.",
         )
     }
 
@@ -760,12 +760,12 @@ class RespondToDiscardUseCaseTest {
         assertNotNull(stateAfterChiResponse.pendingReaction, "Should still wait for the Pon-eligible player to respond.")
         assertEquals(0, stateAfterChiResponse.currentPlayerIndex, "Turn should not advance until resolution.")
         assertTrue(
-            fixtures.eventPublisher.getNotifiedActions(gameId, bystander.id, chiPlayerId).isEmpty(),
-            "A provisional Chi response must not be broadcast to other players.",
+            actual = fixtures.eventPublisher.getNotifiedActions(gameId, bystander.id, chiPlayerId).isEmpty(),
+            message = "A provisional Chi response must not be broadcast to other players.",
         )
         assertTrue(
-            fixtures.eventPublisher.getNotifiedActions(gameId, chiPlayerId, chiPlayerId).isEmpty(),
-            "A provisional Chi response does not need a game action event for its actor.",
+            actual = fixtures.eventPublisher.getNotifiedActions(gameId, chiPlayerId, chiPlayerId).isEmpty(),
+            message = "A provisional Chi response does not need a game action event for its actor.",
         )
 
         // 碰的玩家回應：資格齊全，開始結算，碰優先於吃
@@ -781,14 +781,14 @@ class RespondToDiscardUseCaseTest {
         val finalPonPlayer = finalState.players.first { it.id == ponPlayerId }
         assertEquals(MeldType.Pon, finalPonPlayer.hand.melds.single().type)
         assertEquals(
-            listOf(GameAction.Pon(discardedTile.id, listOf(ponTile1.id, ponTile2.id))),
-            fixtures.eventPublisher.getNotifiedActions(gameId, bystander.id, ponPlayerId),
-            "Only the realized Pon should be broadcast after the reaction window resolves.",
+            expected = listOf(GameAction.Pon(discardedTile.id, listOf(ponTile1.id, ponTile2.id))),
+            actual = fixtures.eventPublisher.getNotifiedActions(gameId, bystander.id, ponPlayerId),
+            message = "Only the realized Pon should be broadcast after the reaction window resolves.",
         )
         assertEquals(
-            finalState.players.indexOfFirst { it.id == ponPlayerId },
-            finalState.currentPlayerIndex,
-            "Turn should go to the player who claimed the meld.",
+            expected = finalState.players.indexOfFirst { it.id == ponPlayerId },
+            actual = finalState.currentPlayerIndex,
+            message = "Turn should go to the player who claimed the meld.",
         )
     }
 
@@ -833,8 +833,8 @@ class RespondToDiscardUseCaseTest {
         val newState = fixtures.gameRepo.getTableState(gameId)!!
         val winner = newState.players.first { it.id == responderId }
         assertEquals(
-            RiichiPaoLiability(RiichiPaoYaku.Daisangen, newState.relativeDirectionOf(responderId, discarderId)),
-            winner.components[RiichiPlayerComponents.PAO_LIABILITY],
+            expected = RiichiPaoLiability(RiichiPaoYaku.Daisangen, newState.relativeDirectionOf(responderId, discarderId)),
+            actual = winner.components[RiichiPlayerComponents.PAO_LIABILITY],
         )
     }
 
@@ -992,12 +992,12 @@ class RespondToDiscardUseCaseTest {
         assertEquals(TurnPhase.RoundOver(RoundConclusion.Win(setOf(responderId))), newState.turnPhase)
         assertEquals(-32000, newDiscarder.score, "The sole discarder should pay the full amount.")
         assertTrue(
-            newState.players.none { player -> player.actionHistory.any { it is GameAction.ExhaustiveDraw } },
-            "A resolved Ron must take priority over the post-action abortive draw resolver.",
+            actual = newState.players.none { player -> player.actionHistory.any { it is GameAction.ExhaustiveDraw } },
+            message = "A resolved Ron must take priority over the post-action abortive draw resolver.",
         )
         assertTrue(
-            fixtures.gameRepo.historyDrafts.none { (it.fact as? HistoryFact.ActionAccepted)?.action is GameAction.ExhaustiveDraw },
-            "A winning reaction must not record an exhaustive draw action.",
+            actual = fixtures.gameRepo.historyDrafts.none { (it.fact as? HistoryFact.ActionAccepted)?.action is GameAction.ExhaustiveDraw },
+            message = "A winning reaction must not record an exhaustive draw action.",
         )
 
         val ronStep = fixtures.presentationPublisher.getPublishedTableStepBatches(gameId).single().single()
@@ -1011,8 +1011,8 @@ class RespondToDiscardUseCaseTest {
         val staged = assertNotNull(fixtures.winPresentationHandoff.take(gameId, setOf(responderId)))
         assertEquals(setOf(responderId), staged.winnerPlayerIds)
         assertEquals(
-            listOf(newState.players.indexOfFirst { it.id == responderId }),
-            staged.celebration.winners.map { it.seatIndex },
+            expected = listOf(newState.players.indexOfFirst { it.id == responderId }),
+            actual = staged.celebration.winners.map { it.seatIndex },
         )
         assertEquals(discardedTile.id, staged.celebration.winningTileId)
         assertFalse(staged.celebration.isTsumo)
@@ -1212,8 +1212,8 @@ class RespondToDiscardUseCaseTest {
 
         // 演出寫進交接槽而非直接發布，理由見 DeclareTsumoUseCaseTest 對應案例的 KDoc。
         val staged = assertNotNull(
-            fixtures.winPresentationHandoff.take(gameId, setOf(dealerWinnerId, responderId)),
-            "Multi-ron winners should share one authoritative staged presentation.",
+            actual = fixtures.winPresentationHandoff.take(gameId, setOf(dealerWinnerId, responderId)),
+            message = "Multi-ron winners should share one authoritative staged presentation.",
         )
         assertEquals(setOf(dealerWinnerId, responderId), staged.winnerPlayerIds)
         assertEquals(discardedTile.id, staged.celebration.winningTileId)
@@ -1221,8 +1221,8 @@ class RespondToDiscardUseCaseTest {
         val dealerWinnerSeatIndex = finalState.players.indexOfFirst { it.id == dealerWinnerId }
         val nonDealerWinnerSeatIndex = finalState.players.indexOfFirst { it.id == responderId }
         assertEquals(
-            setOf(dealerWinnerSeatIndex, nonDealerWinnerSeatIndex),
-            staged.celebration.winners.map { it.seatIndex }.toSet(),
+            expected = setOf(dealerWinnerSeatIndex, nonDealerWinnerSeatIndex),
+            actual = staged.celebration.winners.map { it.seatIndex }.toSet(),
         )
     }
 
@@ -1268,9 +1268,9 @@ class RespondToDiscardUseCaseTest {
             config = RiichiRuleConfig(),
             currentPlayerIndex = 0,
             pendingReaction = PendingReaction(
-                discarderId,
-                discardedTile.id,
-                setOf(dealerWinnerId, responderId, nonDealerWinner2Id),
+                discarderId = discarderId,
+                tileId = discardedTile.id,
+                eligiblePlayerIds = setOf(dealerWinnerId, responderId, nonDealerWinner2Id),
                 ronPlayerIds = setOf(dealerWinnerId, responderId, nonDealerWinner2Id),
                 id = Uuid.random(),
             ),
@@ -1292,9 +1292,9 @@ class RespondToDiscardUseCaseTest {
         assertEquals(32000, finalState.players.first { it.id == responderId }.score)
         assertEquals(32000, finalState.players.first { it.id == nonDealerWinner2Id }.score)
         assertEquals(
-            -112000,
-            finalState.players.first { it.id == discarderId }.score,
-            "The discarder should pay the sum of all three winners' totals.",
+            expected = -112000,
+            actual = finalState.players.first { it.id == discarderId }.score,
+            message = "The discarder should pay the sum of all three winners' totals.",
         )
     }
 
@@ -1332,9 +1332,9 @@ class RespondToDiscardUseCaseTest {
         assertTrue(result is Outcome.Success, "Expected Success but got $result")
         val newState = fixtures.gameRepo.getTableState(gameId)!!
         assertEquals(
-            32000 + 3000,
-            newState.players.first { it.id == responderId }.score,
-            "Winner's score should include both the Ron total and the 3 sticks (1000 each).",
+            expected = 32000 + 3000,
+            actual = newState.players.first { it.id == responderId }.score,
+            message = "Winner's score should include both the Ron total and the 3 sticks (1000 each).",
         )
         assertEquals(0, (newState.riichiPotPoints() / RIICHI_STICK_POINTS))
     }
@@ -1385,14 +1385,14 @@ class RespondToDiscardUseCaseTest {
         assertTrue(result is Outcome.Success, "Expected Success but got $result")
         val finalState = fixtures.gameRepo.getTableState(gameId)!!
         assertEquals(
-            48000 + 2000,
-            finalState.players.first { it.id == dealerWinnerId }.score,
-            "The nearest winner (immediately after the discarder) should collect the sticks.",
+            expected = 48000 + 2000,
+            actual = finalState.players.first { it.id == dealerWinnerId }.score,
+            message = "The nearest winner (immediately after the discarder) should collect the sticks.",
         )
         assertEquals(
-            32000,
-            finalState.players.first { it.id == responderId }.score,
-            "The farther winner should not receive any of the stick pot.",
+            expected = 32000,
+            actual = finalState.players.first { it.id == responderId }.score,
+            message = "The farther winner should not receive any of the stick pot.",
         )
         assertEquals(0, (finalState.riichiPotPoints() / RIICHI_STICK_POINTS))
     }
@@ -1531,8 +1531,8 @@ class RespondToDiscardUseCaseTest {
         assertNull(newState.pendingReaction, "Everyone eligible has responded, so the reaction window should close.")
         val updatedResponder = newState.players.first { it.id == responderId }
         assertTrue(
-            Tile.Honor.Red in updatedResponder.passedTilesInRound,
-            "Passing on an available Ron should be recorded for same-go-around furiten (同巡振聽).",
+            actual = Tile.Honor.Red in updatedResponder.passedTilesInRound,
+            message = "Passing on an available Ron should be recorded for same-go-around furiten (同巡振聽).",
         )
     }
 
@@ -1579,8 +1579,8 @@ class RespondToDiscardUseCaseTest {
         assertTrue(result is Outcome.Success, "Expected Success but got $result")
         val updatedResponder = fixtures.gameRepo.getTableState(gameId)!!.players.first { it.id == responderId }
         assertTrue(
-            updatedResponder.components[RiichiPlayerComponents.PERMANENT_FURITEN] != null,
-            "Passing on an available Ron while riichi-locked should mark permanent furiten.",
+            actual = updatedResponder.components[RiichiPlayerComponents.PERMANENT_FURITEN] != null,
+            message = "Passing on an available Ron while riichi-locked should mark permanent furiten.",
         )
     }
 
@@ -1778,9 +1778,9 @@ class RespondToDiscardUseCaseTest {
             players = listOf(discarder, responder, otherEligible),
             config = RiichiRuleConfig(),
             pendingReaction = PendingReaction(
-                discarderId,
-                discardedTile.id,
-                setOf(responderId, otherEligibleId),
+                discarderId = discarderId,
+                tileId = discardedTile.id,
+                eligiblePlayerIds = setOf(responderId, otherEligibleId),
                 responses = mapOf(responderId to GameAction.Pass),
                 ronPlayerIds = setOf(responderId, otherEligibleId),
                 id = Uuid.random(),
@@ -2044,8 +2044,8 @@ class RespondToDiscardUseCaseTest {
         val result = fixtures.useCase(gameId, responderId, GameAction.Extension(TestReactionAction))
 
         assertEquals(
-            Outcome.Error(GameError.IllegalAction(responderId, gameId, GameAction.Extension(TestReactionAction))),
-            result,
+            expected = Outcome.Error(GameError.IllegalAction(responderId, gameId, GameAction.Extension(TestReactionAction))),
+            actual = result,
         )
         assertEquals(table, fixtures.gameRepo.getTableState(gameId))
         assertTrue(fixtures.gameRepo.historyDrafts.isEmpty())

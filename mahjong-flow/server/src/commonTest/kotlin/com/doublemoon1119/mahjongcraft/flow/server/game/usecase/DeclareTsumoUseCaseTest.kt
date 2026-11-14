@@ -88,12 +88,12 @@ class DeclareTsumoUseCaseTest {
             freeze()
         }
         val useCase = DeclareTsumoUseCase(
-            gameRepo,
-            moduleRegistry,
-            snapshotSynchronizer,
-            eventPublisher,
-            presentationPublisher,
-            winPresentationHandoff,
+            gameRepository = gameRepo,
+            moduleRegistry = moduleRegistry,
+            snapshotSynchronizer = snapshotSynchronizer,
+            eventPublisher = eventPublisher,
+            presentationPublisher = presentationPublisher,
+            winPresentationHandoff = winPresentationHandoff,
             winCelebrationCueResolverRegistry = winCelebrationCueResolverRegistry,
             winSettlementDetailResolverRegistry = winSettlementDetailResolverRegistry,
 
@@ -151,7 +151,7 @@ class DeclareTsumoUseCaseTest {
                     completedSupplementalDrawCount = 1,
                     revealedKanDoraCount = 0,
                     pendingKanDoraReveals = listOf(
-                        RiichiPendingKanDoraReveal(winnerId, GameAction.KanType.ADDED_KAN, 1),
+                        element = RiichiPendingKanDoraReveal(winnerId, GameAction.KanType.ADDED_KAN, 1),
                     ),
                 ),
             ),
@@ -168,8 +168,8 @@ class DeclareTsumoUseCaseTest {
         assertEquals(25000 - 16000, newState.players.first { it.id == north.id }.score)
         assertTrue(newState.riichiWallProgress().pendingKanDoraReveals.isEmpty())
         assertEquals(
-            listOf(DeclaredGameActionContext(winnerId, GameAction.Tsumo)),
-            fixtures.presentationPublisher.getDeclaredGameActions(gameId),
+            expected = listOf(DeclaredGameActionContext(winnerId, GameAction.Tsumo)),
+            actual = fixtures.presentationPublisher.getDeclaredGameActions(gameId),
         )
         val settled = fixtures.gameRepo.historyDrafts.map { it.fact }.filterIsInstance<HistoryFact.WinSettled>().single()
         assertEquals(winnerId, settled.winDetails.single().playerId)
@@ -308,9 +308,9 @@ class DeclareTsumoUseCaseTest {
         assertEquals(TurnPhase.RoundOver(RoundConclusion.Win(setOf(winnerId))), newState.turnPhase)
         assertEquals(0, (newState.riichiPotPoints() / RIICHI_STICK_POINTS), "The winner should collect all sticks on the table.")
         assertEquals(
-            32000 + 2000,
-            newState.players.first { it.id == winnerId }.score,
-            "Winner's score should include both the tsumo total and the 2 sticks (1000 each).",
+            expected = 32000 + 2000,
+            actual = newState.players.first { it.id == winnerId }.score,
+            message = "Winner's score should include both the tsumo total and the 2 sticks (1000 each).",
         )
     }
 
@@ -411,8 +411,8 @@ class DeclareTsumoUseCaseTest {
 
         assertTrue(result is Outcome.Success, "Expected Success but got $result")
         assertTrue(
-            fixtures.presentationPublisher.getPublishedWinCelebrations(gameId).isEmpty(),
-            "The use case must stage the presentation, not publish it directly.",
+            actual = fixtures.presentationPublisher.getPublishedWinCelebrations(gameId).isEmpty(),
+            message = "The use case must stage the presentation, not publish it directly.",
         )
         val staged = assertNotNull(fixtures.winPresentationHandoff.take(gameId, setOf(winnerId)))
         assertEquals(setOf(winnerId), staged.winnerPlayerIds)
@@ -439,7 +439,7 @@ class DeclareTsumoUseCaseTest {
         )
         val dealer = FakeMahjongPlayerFactory.create(initialSeat = Wind.EAST)
         fixtures.gameRepo.setTableState(
-            FakeTableStateFactory.create(
+            state = FakeTableStateFactory.create(
                 id = gameId,
                 players = listOf(dealer, winner),
                 config = RiichiRuleConfig(),

@@ -131,7 +131,7 @@ class DeclareAndDiscardUseCaseTest {
         /** 登記第三方宣告規則的正式模組註冊表。 */
         private val modules = MahjongModuleRegistryImpl().apply {
             register(
-                MahjongModuleDefinition(RiichiRuleConfig::class, DECLARATION_RULE_ID) { config, _ ->
+                definition = MahjongModuleDefinition(RiichiRuleConfig::class, DECLARATION_RULE_ID) { config, _ ->
                     DeclarationRule(
                         delegate = RiichiRuleModule(DECLARATION_RULE_ID, config),
                         malicious = malicious,
@@ -163,9 +163,9 @@ class DeclareAndDiscardUseCaseTest {
 
         /** 使用正式可見性投影的同步服務。 */
         private val snapshotSynchronizer = GameSnapshotSynchronizer(
-            repository,
-            snapshots,
-            GameVisibilityPolicyImpl(modules, componentRegistry = componentRegistry),
+            gameRepository = repository,
+            snapshotRepository = snapshots,
+            visibilityPolicy = GameVisibilityPolicyImpl(modules, componentRegistry = componentRegistry),
         )
 
         /** 受測的共用宣告用例。 */
@@ -188,8 +188,8 @@ class DeclareAndDiscardUseCaseTest {
         val fixture = Fixture(cost = 15)
         fixture.repository.setTableState(fixture.table)
         fixture.snapshots.setSnapshot(
-            fixture.playerId,
-            fixture.table.toSnapshot(setOf(fixture.playerId)),
+            observerId = fixture.playerId,
+            snapshot = fixture.table.toSnapshot(setOf(fixture.playerId)),
         )
 
         val result = fixture.repository.runAsSingleWrite(fixture.gameId) {
@@ -255,8 +255,8 @@ class DeclareAndDiscardUseCaseTest {
 
         assertIs<Outcome.Success<Unit>>(result)
         assertEquals(
-            setOf(fixture.table.tileWall.getAllTiles().first().id),
-            fixture.repository.getTableState(fixture.gameId)!!.publicTileEvidenceIds - fixture.table.publicTileEvidenceIds - fixture.tile.id,
+            expected = setOf(fixture.table.tileWall.getAllTiles().first().id),
+            actual = fixture.repository.getTableState(fixture.gameId)!!.publicTileEvidenceIds - fixture.table.publicTileEvidenceIds - fixture.tile.id,
         )
         assertEquals(fixture.repository.getTableState(fixture.gameId), fixture.presentationPublisher.getLastPresentedTableState(fixture.gameId))
     }
@@ -499,7 +499,7 @@ class DeclareAndDiscardUseCaseTest {
                 registry.registerLifecycle(lifecycle(hookTrailComponent, BuiltInComponentOwners.PLAYER, appliesToDeclarationRule = true))
                 registry.registerLifecycle(lifecycle(wallRevealComponent, BuiltInComponentOwners.TABLE, appliesToDeclarationRule = true))
                 registry.registerLifecycle(
-                    lifecycle(
+                    definition = lifecycle(
                         component = discardNoteComponent,
                         ownerType = BuiltInComponentOwners.DISCARD_ENTRY,
                         appliesToDeclarationRule = true,

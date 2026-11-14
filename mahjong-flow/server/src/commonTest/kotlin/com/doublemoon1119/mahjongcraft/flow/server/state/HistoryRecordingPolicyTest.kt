@@ -145,7 +145,7 @@ class HistoryRecordingPolicyTest {
         val game = Game(table, GameFlowConfig())
         val store = AuthoritativeStateStore(historyRecordingEnabled = true)
         store.load(
-            AuthoritativeStateSnapshot(
+            state = AuthoritativeStateSnapshot(
                 games = mapOf(game.id to game),
                 historyRecordingState = HistoryRecordingState(
                     decisionsByMatchId = mapOf(game.matchId to HistoryRecordingDecision.EXCLUDED_AI),
@@ -220,9 +220,9 @@ class HistoryRecordingPolicyTest {
         val game = checkNotNull(store.getGame(table.id))
         val decision = store.snapshot().historyRecordingState.decisionsByMatchId[game.matchId]
         assertTrue(
-            decision == HistoryRecordingDecision.EXCLUDED_CONFIG_DISABLED ||
+            actual = decision == HistoryRecordingDecision.EXCLUDED_CONFIG_DISABLED ||
                 decision == HistoryRecordingDecision.STOPPED_CONFIG_DISABLED,
-            "Concurrent operations must leave one complete policy decision",
+            message = "Concurrent operations must leave one complete policy decision",
         )
     }
 
@@ -233,7 +233,7 @@ class HistoryRecordingPolicyTest {
         val table = FakeTableStateFactory.create()
         val game = Game(table, GameFlowConfig(), isMatchOver = true)
         store.load(
-            AuthoritativeStateSnapshot(
+            state = AuthoritativeStateSnapshot(
                 games = mapOf(game.id to game),
                 historyRecordingState = HistoryRecordingState(
                     nextSequenceByMatchId = mapOf(game.matchId to 2L),
@@ -244,8 +244,8 @@ class HistoryRecordingPolicyTest {
         store.applyHistoryRecordingPolicy(HistoryRecordingPolicy(enabled = false))
         store.update { snapshot ->
             AuthoritativeStateUpdate(
-                snapshot.copy(games = emptyMap()),
-                Unit,
+                state = snapshot.copy(games = emptyMap()),
+                result = Unit,
                 historyDraftsByVenueId = mapOf(game.id to listOf(HistoryEventDraft(null, HistoryFact.ReturnedToRoom))),
             )
         }

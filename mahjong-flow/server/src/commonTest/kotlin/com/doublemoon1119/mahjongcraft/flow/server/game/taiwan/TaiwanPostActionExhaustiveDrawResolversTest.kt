@@ -77,8 +77,8 @@ class TaiwanPostActionExhaustiveDrawResolversTest {
         val discard = GameAction.Discard(Uuid.random())
 
         assertEquals(
-            TaiwanExhaustiveDrawReason.FourKans,
-            resolver.resolve(context(table, listOf(kan, GameAction.Draw, discard)), module),
+            expected = TaiwanExhaustiveDrawReason.FourKans,
+            actual = resolver.resolve(context(table, listOf(kan, GameAction.Draw, discard)), module),
         )
         assertNull(resolver.resolve(context(table, listOf(kan)), module))
         assertNull(resolver.resolve(context(table, listOf(kan, GameAction.Draw)), module))
@@ -93,11 +93,11 @@ class TaiwanPostActionExhaustiveDrawResolversTest {
         val discard = GameAction.Discard(Uuid.random())
 
         assertEquals(
-            TaiwanExhaustiveDrawReason.FourKans,
-            TaiwanFourKansResolver().resolve(
-                context(
-                    table,
-                    listOf(
+            expected = TaiwanExhaustiveDrawReason.FourKans,
+            actual = TaiwanFourKansResolver().resolve(
+                context = context(
+                    table = table,
+                    actions = listOf(
                         kanAction(),
                         GameAction.Draw,
                         TAIWAN_REVEAL_FLOWER_ACTION,
@@ -105,7 +105,7 @@ class TaiwanPostActionExhaustiveDrawResolversTest {
                         discard,
                     ),
                 ),
-                module,
+                ruleModule = module,
             ),
         )
     }
@@ -121,8 +121,8 @@ class TaiwanPostActionExhaustiveDrawResolversTest {
         val resolver = TaiwanFourWindsResolver()
 
         assertEquals(
-            TaiwanExhaustiveDrawReason.FourWinds,
-            resolver.resolve(context(enabledTable, listOf(discard)), enabled),
+            expected = TaiwanExhaustiveDrawReason.FourWinds,
+            actual = resolver.resolve(context(enabledTable, listOf(discard)), enabled),
         )
         assertNull(resolver.resolve(context(disabledTable, listOf(discard)), disabled))
         assertNull(resolver.resolve(context(enabledTable, listOf(kanAction())), enabled))
@@ -136,15 +136,15 @@ class TaiwanPostActionExhaustiveDrawResolversTest {
         val discard = GameAction.Discard(Uuid.random())
 
         assertNull(
-            TaiwanFourKansResolver().resolve(
-                context(fourKanTable(taiwanConfig), listOf(kanAction(), GameAction.Draw, discard)),
-                riichiModule,
+            actual = TaiwanFourKansResolver().resolve(
+                context = context(fourKanTable(taiwanConfig), listOf(kanAction(), GameAction.Draw, discard)),
+                ruleModule = riichiModule,
             ),
         )
         assertNull(
-            TaiwanFourWindsResolver().resolve(
-                context(fourWindTable(taiwanConfig), listOf(discard)),
-                riichiModule,
+            actual = TaiwanFourWindsResolver().resolve(
+                context = context(fourWindTable(taiwanConfig), listOf(discard)),
+                ruleModule = riichiModule,
             ),
         )
     }

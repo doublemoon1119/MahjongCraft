@@ -196,7 +196,7 @@ class GameVisibilityPolicyImpl(
 
     /** 以規則契約錯誤中止投影，避免輸出錯誤的公開範圍。 */
     private fun violation(diagnostic: String): Nothing = throw RuleContractViolationException(
-        GameAbortReasonIds.RULE_EXECUTION_FAILED,
-        diagnostic,
+        reasonId = GameAbortReasonIds.RULE_EXECUTION_FAILED,
+        diagnostic = diagnostic,
     )
 }

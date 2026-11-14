@@ -27,7 +27,7 @@ class AuthoritativeHistoryRetentionTest {
         val game = Game(table, GameFlowConfig())
         val store = AuthoritativeStateStore()
         store.load(
-            AuthoritativeStateSnapshot(
+            state = AuthoritativeStateSnapshot(
                 games = mapOf(table.id to game),
                 historyRecordingState = HistoryRecordingState(nextSequenceByMatchId = mapOf(game.matchId to 2L)),
             ),
@@ -48,7 +48,7 @@ class AuthoritativeHistoryRetentionTest {
         val newGame = oldGame.copy(matchId = Uuid.random())
         val store = AuthoritativeStateStore()
         store.load(
-            AuthoritativeStateSnapshot(
+            state = AuthoritativeStateSnapshot(
                 games = mapOf(table.id to oldGame),
                 historyRecordingState = HistoryRecordingState(nextSequenceByMatchId = mapOf(oldGame.matchId to 2L)),
             ),
@@ -63,18 +63,18 @@ class AuthoritativeHistoryRetentionTest {
         val table = FakeTableStateFactory.create()
         val game = Game(table, GameFlowConfig())
         val event = HistoryOutboxEvent(
-            game.matchId,
-            game.id,
-            1,
-            1L,
-            1L,
-            1L,
-            null,
-            HistoryFact.ReturnedToRoom,
+            matchId = game.matchId,
+            venueId = game.id,
+            roundNumber = 1,
+            sequence = 1L,
+            transactionFirstSequence = 1L,
+            occurredAtEpochMillis = 1L,
+            actorPlayerId = null,
+            fact = HistoryFact.ReturnedToRoom,
         )
         val store = AuthoritativeStateStore()
         store.load(
-            AuthoritativeStateSnapshot(
+            state = AuthoritativeStateSnapshot(
                 games = mapOf(game.id to game),
                 historyRecordingState = HistoryRecordingState(pendingEvents = listOf(event)),
             ),
@@ -93,18 +93,18 @@ class AuthoritativeHistoryRetentionTest {
         val second = Uuid.random()
         val table = Uuid.random()
         fun event(match: Uuid) = HistoryOutboxEvent(
-            match,
-            table,
-            1,
-            1L,
-            1L,
-            1L,
-            null,
-            HistoryFact.ReturnedToRoom,
+            matchId = match,
+            venueId = table,
+            roundNumber = 1,
+            sequence = 1L,
+            transactionFirstSequence = 1L,
+            occurredAtEpochMillis = 1L,
+            actorPlayerId = null,
+            fact = HistoryFact.ReturnedToRoom,
         )
         val store = AuthoritativeStateStore()
         store.load(
-            AuthoritativeStateSnapshot(
+            state = AuthoritativeStateSnapshot(
                 historyRecordingState = HistoryRecordingState(
                     pendingEvents = listOf(event(first), event(second)),
                 ),
@@ -123,7 +123,7 @@ class AuthoritativeHistoryRetentionTest {
         val table = FakeTableStateFactory.create()
         val activeGame = Game(table, GameFlowConfig(), matchId = active)
         store.load(
-            AuthoritativeStateSnapshot(
+            state = AuthoritativeStateSnapshot(
                 historyRecordingState = HistoryRecordingState(
                     nextSequenceByMatchId = mapOf(active to 2L, terminal to 3L),
                     firstMissingSequenceByMatchId = mapOf(terminal to 2L),
@@ -149,7 +149,7 @@ class AuthoritativeHistoryRetentionTest {
         val second = Uuid.random()
         val store = AuthoritativeStateStore()
         store.load(
-            AuthoritativeStateSnapshot(
+            state = AuthoritativeStateSnapshot(
                 historyRecordingState = HistoryRecordingState(
                     nextSequenceByMatchId = mapOf(first to 2L, second to 4L),
                     terminalByMatchId = mapOf(
@@ -190,8 +190,8 @@ class AuthoritativeHistoryRetentionTest {
         val changed = game.copy(remainingReserveByPlayerId = game.remainingReserveByPlayerId.mapValues { 1_000.milliseconds })
         store.update { state ->
             AuthoritativeStateUpdate(
-                state.copy(games = state.games + (game.id to changed)),
-                Unit,
+                state = state.copy(games = state.games + (game.id to changed)),
+                result = Unit,
                 historyDraftsByVenueId = mapOf(game.id to listOf(HistoryEventDraft(null, HistoryFact.ReturnedToRoom))),
             )
         }
@@ -199,8 +199,8 @@ class AuthoritativeHistoryRetentionTest {
         val before = store.snapshot().historyRecordingState
         store.update { state ->
             AuthoritativeStateUpdate(
-                state.copy(games = state.games + (game.id to changed.copy(automaticControlRevision = 1L))),
-                Unit,
+                state = state.copy(games = state.games + (game.id to changed.copy(automaticControlRevision = 1L))),
+                result = Unit,
                 historyDraftsByVenueId = mapOf(game.id to listOf(HistoryEventDraft(null, HistoryFact.ReturnedToRoom))),
             )
         }

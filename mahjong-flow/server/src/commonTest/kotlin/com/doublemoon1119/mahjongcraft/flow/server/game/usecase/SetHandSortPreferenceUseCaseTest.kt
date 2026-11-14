@@ -138,7 +138,7 @@ class SetHandSortPreferenceUseCaseTest {
             hand = Hand(tiles = unsortedTiles),
         )
         fixtures.gameRepo.setTableState(
-            FakeTableStateFactory.create(
+            state = FakeTableStateFactory.create(
                 id = gameId,
                 players = listOf(player),
                 config = RiichiRuleConfig(),

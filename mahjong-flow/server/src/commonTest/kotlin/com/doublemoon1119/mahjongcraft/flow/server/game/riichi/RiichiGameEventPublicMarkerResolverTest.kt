@@ -36,7 +36,7 @@ class RiichiGameEventPublicMarkerResolverTest {
         val settledState = state.copy(players = state.players.map { it.copy(components = riichiDeclarationComponents()) })
 
         val markers = RiichiGameEventPublicMarkerResolver.resolveWinMarkers(
-            WinPublicMarkerContext(
+            context = WinPublicMarkerContext(
                 ruleModuleId = "mahjongcraft:riichi",
                 matchId = Uuid.random(),
                 outcomeId = "mahjongcraft:win",
@@ -48,8 +48,8 @@ class RiichiGameEventPublicMarkerResolverTest {
         )
 
         assertEquals(
-            setOf(RiichiGameEventPublicMarkerIds.RIICHI, RiichiGameEventPublicMarkerIds.IPPATSU),
-            markers.map { it.id }.toSet(),
+            expected = setOf(RiichiGameEventPublicMarkerIds.RIICHI, RiichiGameEventPublicMarkerIds.IPPATSU),
+            actual = markers.map { it.id }.toSet(),
         )
         assertTrue(markers.all { it.playerId == winner.id })
     }
@@ -65,7 +65,7 @@ class RiichiGameEventPublicMarkerResolverTest {
         )
 
         val markers = RiichiGameEventPublicMarkerResolver.resolveMatchEndMarkers(
-            MatchEndPublicMarkerContext(
+            context = MatchEndPublicMarkerContext(
                 ruleModuleId = "mahjongcraft:riichi",
                 matchId = Uuid.random(),
                 completion = MatchCompletion.COMPLETED,
@@ -89,7 +89,7 @@ class RiichiGameEventPublicMarkerResolverTest {
         val scores = state.players.associate { it.id to 0 }
 
         val atThreshold = RiichiGameEventPublicMarkerResolver.resolveMatchEndMarkers(
-            MatchEndPublicMarkerContext(
+            context = MatchEndPublicMarkerContext(
                 ruleModuleId = "mahjongcraft:riichi",
                 matchId = Uuid.random(),
                 completion = MatchCompletion.COMPLETED,
@@ -102,7 +102,7 @@ class RiichiGameEventPublicMarkerResolverTest {
         assertFalse(atThreshold.any { it.id == RiichiGameEventPublicMarkerIds.BUSTED })
 
         val aborted = RiichiGameEventPublicMarkerResolver.resolveMatchEndMarkers(
-            MatchEndPublicMarkerContext(
+            context = MatchEndPublicMarkerContext(
                 ruleModuleId = "mahjongcraft:riichi",
                 matchId = Uuid.random(),
                 completion = MatchCompletion.ABORTED,
@@ -115,7 +115,7 @@ class RiichiGameEventPublicMarkerResolverTest {
         assertFalse(aborted.any { it.id == RiichiGameEventPublicMarkerIds.BUSTED })
 
         val otherReason = RiichiGameEventPublicMarkerResolver.resolveMatchEndMarkers(
-            MatchEndPublicMarkerContext(
+            context = MatchEndPublicMarkerContext(
                 ruleModuleId = "mahjongcraft:riichi",
                 matchId = Uuid.random(),
                 completion = MatchCompletion.COMPLETED,
@@ -136,7 +136,7 @@ class RiichiGameEventPublicMarkerResolverTest {
         )
 
         val markers = RiichiGameEventPublicMarkerResolver.resolveMatchEndMarkers(
-            MatchEndPublicMarkerContext(
+            context = MatchEndPublicMarkerContext(
                 ruleModuleId = "mahjongcraft:riichi",
                 matchId = Uuid.random(),
                 completion = MatchCompletion.COMPLETED,

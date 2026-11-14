@@ -65,8 +65,8 @@ class GameRepositoryImpl(
         }
         val drafts = recording.getOrDefault(emptyList())
         AuthoritativeStateUpdate(
-            state.copy(games = games),
-            result,
+            state = state.copy(games = games),
+            result = result,
             historyDraftsByVenueId = if (drafts.isEmpty()) emptyMap() else mapOf(gameId to drafts),
             historyRecordingFailures = if (recording.isFailure) setOf(gameId) else emptySet(),
         )
@@ -77,7 +77,7 @@ class GameRepositoryImpl(
         history: (TableState?, TableState?, T) -> List<HistoryEventDraft>,
         block: suspend (TableState?) -> Pair<TableState?, T>,
     ): T = updateGame(
-        gameId,
+        gameId = gameId,
         history = { previous, next, result -> history(previous?.tableState, next?.tableState, result) },
     ) { currentGame ->
         val (nextTableState, result) = block(currentGame?.tableState)
@@ -99,8 +99,8 @@ class GameRepositoryImpl(
             componentValidator.validate(state)
         } catch (failure: IllegalArgumentException) {
             throw RuleContractViolationException(
-                GameAbortReasonIds.RULE_EXECUTION_FAILED,
-                "Invalid authoritative components for game ${state.id}: ${failure.message}",
+                reasonId = GameAbortReasonIds.RULE_EXECUTION_FAILED,
+                diagnostic = "Invalid authoritative components for game ${state.id}: ${failure.message}",
             )
         }
     }

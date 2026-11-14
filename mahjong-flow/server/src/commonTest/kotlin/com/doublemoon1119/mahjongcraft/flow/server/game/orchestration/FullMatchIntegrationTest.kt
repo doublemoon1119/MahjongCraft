@@ -64,16 +64,16 @@ class FullMatchIntegrationTest {
         val finalState = runtime.gameRepository.getTableState(gameId)
 
         assertTrue(
-            finalState!!.roundNumber >= RiichiGameLength.East.totalRounds,
-            "The match should have progressed through all ${RiichiGameLength.East.totalRounds} rounds, " +
+            actual = finalState!!.roundNumber >= RiichiGameLength.East.totalRounds,
+            message = "The match should have progressed through all ${RiichiGameLength.East.totalRounds} rounds, " +
                 "not stalled early (actual roundNumber: ${finalState.roundNumber}).",
         )
 
         val totalScore = finalState.players.sumOf { it.score }
         assertEquals(
-            4 * config.scoreConfig.initialScore,
-            totalScore,
-            "Points only move between players (nobody declares riichi in this test, so no sticks leave the " +
+            expected = 4 * config.scoreConfig.initialScore,
+            actual = totalScore,
+            message = "Points only move between players (nobody declares riichi in this test, so no sticks leave the " +
                 "table either); the total should be conserved across the whole match.",
         )
 
@@ -103,14 +103,14 @@ class FullMatchIntegrationTest {
         override suspend fun decideGameCommand(context: AiDecisionContext): GameCommand = when (context.phase) {
             AiDecisionPhase.RespondingToDiscard ->
                 GameCommand.RespondToDiscard(
-                    context.legalActions.firstOrNull { it is GameAction.Ron }
+                    action = context.legalActions.firstOrNull { it is GameAction.Ron }
                         ?: GameAction.Pass,
-                    checkNotNull(context.discardReactionId),
+                    reactionId = checkNotNull(context.discardReactionId),
                 )
 
             AiDecisionPhase.RespondingToRobbing ->
                 GameCommand.RespondToRobbing(
-                    context.legalActions.firstOrNull { it is GameAction.Ron }
+                    action = context.legalActions.firstOrNull { it is GameAction.Ron }
                         ?: GameAction.Pass,
                 )
 

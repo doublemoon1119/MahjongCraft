@@ -20,7 +20,7 @@ class HistoryWinningHandRecordingTest {
         val winning = Uuid.random()
 
         val details = winSettlementHistoryDetails(
-            request(
+            request = request(
                 outcomeId = "mahjongcraft:tsumo",
                 winners = listOf(winnerPresentation(winner, 0, standing, winning)),
             ),
@@ -39,7 +39,7 @@ class HistoryWinningHandRecordingTest {
         val secondStanding = listOf(Uuid.random(), Uuid.random(), Uuid.random())
 
         val details = winSettlementHistoryDetails(
-            request(
+            request = request(
                 outcomeId = "mahjongcraft:ron",
                 winners = listOf(
                     winnerPresentation(first, 0, firstStanding, winning),
@@ -61,7 +61,7 @@ class HistoryWinningHandRecordingTest {
         val standing = listOf(Uuid.random(), Uuid.random())
 
         val details = winSettlementHistoryDetails(
-            request(
+            request = request(
                 outcomeId = "mahjongcraft:special",
                 winners = listOf(winnerPresentation(winner, 0, standing, null)),
             ),

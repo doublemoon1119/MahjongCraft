@@ -46,7 +46,7 @@ class WallRevealDecisionApplierTest {
         val expectedIds = updated.getDoraIndicators(table).first.map { it.id }.toSet() -
             original.getDoraIndicators(table).first.map { it.id }.toSet()
         val result = assertIs<WallRevealDecisionApplier.Result.Applied>(
-            WallRevealDecisionApplier.applyUpdatedDecision(
+            value = WallRevealDecisionApplier.applyUpdatedDecision(
                 tableState = table,
                 decision = WallRevealDecision.Updated(updated.toTableComponentPatch(original), expectedIds),
                 module = module,

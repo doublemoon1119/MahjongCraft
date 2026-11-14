@@ -35,9 +35,9 @@ object RiichiWinSettlementDetailResolver : WinSettlementDetailResolver {
     ): List<WinSettlementDetailField>? {
         if (outcome.id != RiichiRoundOutcomeIds.NAGASHI_MANGAN) return null
         return listOf(
-            WinSettlementDetailField(
-                RiichiWinSettlementIds.YAKU_FIELD,
-                WinSettlementDetailValue.Entries(listOf(WinSettlementDetailEntry(RiichiWinSettlementIds.NAGASHI_MANGAN))),
+            element = WinSettlementDetailField(
+                id = RiichiWinSettlementIds.YAKU_FIELD,
+                value = WinSettlementDetailValue.Entries(listOf(WinSettlementDetailEntry(RiichiWinSettlementIds.NAGASHI_MANGAN))),
             ),
         )
     }
@@ -59,10 +59,10 @@ object RiichiWinSettlementDetailResolver : WinSettlementDetailResolver {
         val indicators = state.riichiWallProgress().getDoraIndicators(state)
         return buildList {
             add(
-                WinSettlementDetailField(
-                    RiichiWinSettlementIds.YAKU_FIELD,
-                    WinSettlementDetailValue.Entries(
-                        result.yakuResults.map { yaku ->
+                element = WinSettlementDetailField(
+                    id = RiichiWinSettlementIds.YAKU_FIELD,
+                    value = WinSettlementDetailValue.Entries(
+                        entries = result.yakuResults.map { yaku ->
                             if (result.isYakuman) {
                                 RiichiWinSettlementIds.yakumanEntry(yaku.yaku, -yaku.han)
                             } else {
@@ -76,9 +76,9 @@ object RiichiWinSettlementDetailResolver : WinSettlementDetailResolver {
                 add(WinSettlementDetailField(RiichiWinSettlementIds.HAN_FU_FIELD, riichiHanFuValue(result.totalHan, result.totalFu)))
             } else {
                 add(
-                    WinSettlementDetailField(
-                        RiichiWinSettlementIds.YAKUMAN_TOTAL_FIELD,
-                        WinSettlementDetailValue.Quantities(listOf(WinSettlementQuantity(RiichiWinSettlementIds.YAKUMAN, -result.totalHan))),
+                    element = WinSettlementDetailField(
+                        id = RiichiWinSettlementIds.YAKUMAN_TOTAL_FIELD,
+                        value = WinSettlementDetailValue.Quantities(listOf(WinSettlementQuantity(RiichiWinSettlementIds.YAKUMAN, -result.totalHan))),
                     ),
                 )
             }
@@ -98,7 +98,7 @@ object RiichiWinSettlementDetailResolver : WinSettlementDetailResolver {
      * @return 翻數與可用符數組成的詳情值。
      */
     internal fun riichiHanFuValue(totalHan: Int, totalFu: Int): WinSettlementDetailValue.Quantities = WinSettlementDetailValue.Quantities(
-        listOfNotNull(
+        quantities = listOfNotNull(
             WinSettlementQuantity(RiichiWinSettlementIds.HAN, totalHan),
             WinSettlementQuantity(RiichiWinSettlementIds.FU, totalFu).takeIf { totalFu > 0 },
         ),

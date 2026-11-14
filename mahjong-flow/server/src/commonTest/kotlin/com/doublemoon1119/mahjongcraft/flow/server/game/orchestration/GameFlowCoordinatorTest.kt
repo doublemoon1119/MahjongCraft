@@ -191,7 +191,7 @@ class GameFlowCoordinatorTest {
                 registerBundledRuleModules()
             } else {
                 register(
-                    MahjongModuleDefinition(RiichiRuleConfig::class, "test:coordinator-rule") { config, id ->
+                    definition = MahjongModuleDefinition(RiichiRuleConfig::class, "test:coordinator-rule") { config, id ->
                         ruleModuleDecorator(RiichiRuleModule(id, config))
                     },
                 )
@@ -244,23 +244,23 @@ class GameFlowCoordinatorTest {
         val router = GameActionRouter(
             drawTileUseCase = DrawTileUseCase(gameRepo, moduleRegistry, snapshotSynchronizer, eventPublisher, presentationPublisher, componentRegistry = bundledCoreExtensionRegistries().componentRegistry),
             discardTileUseCase = DiscardTileUseCase(
-                gameRepo,
-                moduleRegistry,
-                snapshotSynchronizer,
-                handSortPreferenceStore,
-                postActionExhaustiveDrawResolverRegistry,
-                eventPublisher,
-                presentationPublisher,
+                gameRepository = gameRepo,
+                moduleRegistry = moduleRegistry,
+                snapshotSynchronizer = snapshotSynchronizer,
+                handSortPreferenceStore = handSortPreferenceStore,
+                postActionExhaustiveDrawResolverRegistry = postActionExhaustiveDrawResolverRegistry,
+                eventPublisher = eventPublisher,
+                presentationPublisher = presentationPublisher,
 
                 componentRegistry = bundledCoreExtensionRegistries().componentRegistry,
             ),
             declareTsumoUseCase = DeclareTsumoUseCase(
-                gameRepo,
-                moduleRegistry,
-                snapshotSynchronizer,
-                eventPublisher,
-                presentationPublisher,
-                winPresentationHandoff,
+                gameRepository = gameRepo,
+                moduleRegistry = moduleRegistry,
+                snapshotSynchronizer = snapshotSynchronizer,
+                eventPublisher = eventPublisher,
+                presentationPublisher = presentationPublisher,
+                winPresentationHandoff = winPresentationHandoff,
                 winCelebrationCueResolverRegistry = bundledWinCelebrationCueResolverRegistry(),
                 winSettlementDetailResolverRegistry = winSettlementDetailResolverRegistry,
 
@@ -268,13 +268,13 @@ class GameFlowCoordinatorTest {
             ),
             declareKanUseCase = DeclareKanUseCase(gameRepo, moduleRegistry, snapshotSynchronizer, eventPublisher, presentationPublisher, componentRegistry = bundledCoreExtensionRegistries().componentRegistry),
             respondToDiscardUseCase = RespondToDiscardUseCase(
-                gameRepo,
-                moduleRegistry,
-                snapshotSynchronizer,
-                handSortPreferenceStore,
-                eventPublisher,
-                presentationPublisher,
-                winPresentationHandoff,
+                gameRepository = gameRepo,
+                moduleRegistry = moduleRegistry,
+                snapshotSynchronizer = snapshotSynchronizer,
+                handSortPreferenceStore = handSortPreferenceStore,
+                eventPublisher = eventPublisher,
+                presentationPublisher = presentationPublisher,
+                winPresentationHandoff = winPresentationHandoff,
                 winCelebrationCueResolverRegistry = bundledWinCelebrationCueResolverRegistry(),
                 winSettlementDetailResolverRegistry = winSettlementDetailResolverRegistry,
                 postActionExhaustiveDrawResolverRegistry = postActionExhaustiveDrawResolverRegistry,
@@ -282,12 +282,12 @@ class GameFlowCoordinatorTest {
                 componentRegistry = bundledCoreExtensionRegistries().componentRegistry,
             ),
             respondToRobbingUseCase = RespondToRobbingUseCase(
-                gameRepo,
-                moduleRegistry,
-                snapshotSynchronizer,
-                eventPublisher,
-                presentationPublisher,
-                winPresentationHandoff,
+                gameRepository = gameRepo,
+                moduleRegistry = moduleRegistry,
+                snapshotSynchronizer = snapshotSynchronizer,
+                eventPublisher = eventPublisher,
+                presentationPublisher = presentationPublisher,
+                winPresentationHandoff = winPresentationHandoff,
                 winCelebrationCueResolverRegistry = bundledWinCelebrationCueResolverRegistry(),
                 winSettlementDetailResolverRegistry = winSettlementDetailResolverRegistry,
 
@@ -313,13 +313,13 @@ class GameFlowCoordinatorTest {
             }
         }
         val aiTurnDriver = AiTurnDriver(
-            gameRepo,
-            getLegalActionsUseCase,
-            aiStrategyRegistry,
-            GameVisibilityPolicyImpl(moduleRegistry, componentRegistry = bundledCoreExtensionRegistries().componentRegistry),
-            moduleRegistry,
-            AiDecisionExecutor.direct(failurePolicy = ExtensionFailurePolicy.Default),
-            AutomaticGameCommandResolver(moduleRegistry),
+            gameRepository = gameRepo,
+            getLegalActionsUseCase = getLegalActionsUseCase,
+            aiStrategyRegistry = aiStrategyRegistry,
+            visibilityPolicy = GameVisibilityPolicyImpl(moduleRegistry, componentRegistry = bundledCoreExtensionRegistries().componentRegistry),
+            moduleRegistry = moduleRegistry,
+            decisionExecutor = AiDecisionExecutor.direct(failurePolicy = ExtensionFailurePolicy.Default),
+            commandResolver = AutomaticGameCommandResolver(moduleRegistry),
         )
         val clock = MutableMonotonicClock()
         val decisionTimerManager = GameDecisionTimerManager(
@@ -355,11 +355,11 @@ class GameFlowCoordinatorTest {
             winSettlementDetailResolverRegistry = winSettlementDetailResolverRegistry,
             declareExhaustiveDrawUseCase = DeclareExhaustiveDrawUseCase(gameRepo, moduleRegistry, snapshotSynchronizer, eventPublisher),
             resolvePostReactionRoundOutcomeUseCase = ResolvePostReactionRoundOutcomeUseCase(
-                gameRepo,
-                moduleRegistry,
-                PostReactionRoundOutcomeResolverRegistry().apply { freeze() },
-                snapshotSynchronizer,
-                winSettlementDetailResolverRegistry,
+                gameRepository = gameRepo,
+                moduleRegistry = moduleRegistry,
+                resolverRegistry = PostReactionRoundOutcomeResolverRegistry().apply { freeze() },
+                snapshotSynchronizer = snapshotSynchronizer,
+                winSettlementDetailResolverRegistry = winSettlementDetailResolverRegistry,
             ),
             resolveWinRoundContinuationUseCase = ResolveWinRoundContinuationUseCase(
                 gameRepository = gameRepo,
@@ -369,12 +369,12 @@ class GameFlowCoordinatorTest {
                 ruleDecisionResolverRegistry = ruleDecisionResolvers,
             ),
             advanceRoundUseCase = AdvanceRoundUseCase(
-                gameRepo,
-                moduleRegistry,
-                snapshotSynchronizer,
-                handSortPreferenceStore,
-                eventPublisher,
-                presentationPublisher,
+                gameRepository = gameRepo,
+                moduleRegistry = moduleRegistry,
+                snapshotSynchronizer = snapshotSynchronizer,
+                handSortPreferenceStore = handSortPreferenceStore,
+                eventPublisher = eventPublisher,
+                presentationPublisher = presentationPublisher,
                 componentRegistry = bundledCoreExtensionRegistries().componentRegistry,
                 beginRuleDecisionUseCase = beginRuleDecisionUseCase,
             ),
@@ -383,20 +383,20 @@ class GameFlowCoordinatorTest {
             // Game → Room 轉移的整合測試見 ReturnToRoomUseCaseTest／MahjongAutoDrawServiceTest 那種
             // 共用真正 AuthoritativeStateStore 的 Fixtures 寫法。
             returnToRoomUseCase = ReturnToRoomUseCase(
-                AuthoritativeStateStore(),
-                FakeRoomSnapshotRepository(),
-                FakeRoomEventPublisher(),
-                presentationPublisher,
+                authoritativeStateStore = AuthoritativeStateStore(),
+                roomSnapshotRepository = FakeRoomSnapshotRepository(),
+                eventPublisher = FakeRoomEventPublisher(),
+                presentationPublisher = presentationPublisher,
             ),
             aiTurnDriver = aiTurnDriver,
             forcedAutoPlayDriver = ForcedAutoPlayDriver(gameRepo, AutomaticGameCommandResolver(moduleRegistry)),
             decisionAvailabilityService = GameDecisionAvailabilityService(
-                presentationBusyGate,
-                decisionTimerManager,
-                DecisionTimerSynchronizationService(
-                    decisionTimerManager,
-                    gameRepo,
-                    FakeDecisionTimerUpdatePublisher(),
+                busyGate = presentationBusyGate,
+                timerManager = decisionTimerManager,
+                synchronizationService = DecisionTimerSynchronizationService(
+                    timerManager = decisionTimerManager,
+                    gameRepository = gameRepo,
+                    publisher = FakeDecisionTimerUpdatePublisher(),
                 ),
             ),
             presentationBusyGate = presentationBusyGate,
@@ -406,12 +406,12 @@ class GameFlowCoordinatorTest {
             abortGameUseCase = abortGameHandler,
             automaticCommandResolver = AutomaticGameCommandResolver(moduleRegistry),
             ruleDecisionAiDriver = RuleDecisionAiDriver(
-                gameRepo,
-                moduleRegistry,
-                ruleDecisionResolvers,
-                aiStrategyRegistry,
-                GameVisibilityPolicyImpl(moduleRegistry, componentRegistry = bundledCoreExtensionRegistries().componentRegistry),
-                AiDecisionExecutor.direct(failurePolicy = ExtensionFailurePolicy.Default),
+                gameRepository = gameRepo,
+                moduleRegistry = moduleRegistry,
+                resolverRegistry = ruleDecisionResolvers,
+                aiStrategyRegistry = aiStrategyRegistry,
+                visibilityPolicy = GameVisibilityPolicyImpl(moduleRegistry, componentRegistry = bundledCoreExtensionRegistries().componentRegistry),
+                decisionExecutor = AiDecisionExecutor.direct(failurePolicy = ExtensionFailurePolicy.Default),
             ),
             advanceAutomaticRuleDecisionUseCase = AdvanceAutomaticRuleDecisionUseCase(
                 gameRepository = gameRepo,
@@ -480,8 +480,8 @@ class GameFlowCoordinatorTest {
         val result = fixtures.coordinator.dispatchThenDrive(gameId, playerId, GameCommand.Draw)
 
         assertEquals(
-            Outcome.Error(GameError.ForcedAutoPlayActive(playerId, gameId)),
-            result,
+            expected = Outcome.Error(GameError.ForcedAutoPlayActive(playerId, gameId)),
+            actual = result,
         )
         assertEquals(game.tableState, fixtures.gameRepo.getTableState(gameId))
     }
@@ -520,7 +520,7 @@ class GameFlowCoordinatorTest {
         val updatedGame = fixtures.gameRepo.getGame(gameId)!!
         assertTrue(
             forcedPlayerId !in updatedGame.forcedAutoPlayPlayerIds,
-            "Player must regain control after their single missed decision is auto-played.",
+            message = "Player must regain control after their single missed decision is auto-played.",
         )
         assertEquals(lastDrawn, updatedGame.tableState.players.first { it.id == forcedPlayerId }.discardPile.entries.single().tile)
     }
@@ -548,7 +548,7 @@ class GameFlowCoordinatorTest {
             currentPlayerIndex = 0,
         )
         fixtures.gameRepo.setGame(
-            Game(
+            game = Game(
                 tableState = table,
                 flowConfig = GameFlowConfig(),
                 forcedAutoPlayPlayerIds = setOf(forcedPlayerId),
@@ -562,8 +562,8 @@ class GameFlowCoordinatorTest {
         assertTrue(forcedPlayerId !in updated.forcedAutoPlayPlayerIds, "The forced decision should be cleared.")
         assertEquals(1, updated.tableState.players.first { it.id == forcedPlayerId }.discardPile.entries.size)
         assertTrue(
-            updated.tableState.players.first { it.id == ai.id }.discardPile.entries.isEmpty(),
-            "A single step must not execute the following AI decision.",
+            actual = updated.tableState.players.first { it.id == ai.id }.discardPile.entries.isEmpty(),
+            message = "A single step must not execute the following AI decision.",
         )
     }
 
@@ -664,7 +664,7 @@ class GameFlowCoordinatorTest {
         assertEquals(0, settlementCalls, "The draw must not be settled while the window is open.")
 
         assertIs<Outcome.Success<Unit>>(
-            fixtures.coordinator.dispatch(gameId, playerId, GameCommand.SubmitRuleDecision(drawWindow.id, RuleDecisionSubmission.Confirmed)),
+            value = fixtures.coordinator.dispatch(gameId, playerId, GameCommand.SubmitRuleDecision(drawWindow.id, RuleDecisionSubmission.Confirmed)),
         )
         assertEquals(PendingGameTransition.SettleExhaustiveDraw, fixtures.gameRepo.getGame(gameId)?.pendingTransition)
         assertTrue(fixtures.coordinator.resumePendingGameTransition(gameId))
@@ -680,7 +680,7 @@ class GameFlowCoordinatorTest {
         assertEquals(0, fixtures.gameRepo.getTableState(gameId)!!.tileWall.remainingCount)
 
         assertIs<Outcome.Success<Unit>>(
-            fixtures.coordinator.dispatch(gameId, playerId, GameCommand.SubmitRuleDecision(roundEndWindow.id, RuleDecisionSubmission.Confirmed)),
+            value = fixtures.coordinator.dispatch(gameId, playerId, GameCommand.SubmitRuleDecision(roundEndWindow.id, RuleDecisionSubmission.Confirmed)),
         )
         assertTrue(fixtures.coordinator.resumePendingGameTransition(gameId))
 
@@ -807,8 +807,8 @@ class GameFlowCoordinatorTest {
         val result = fixtures.coordinator.dispatchThenDrive(gameId, playerId, GameCommand.Draw)
 
         assertEquals(
-            Outcome.Error(GameError.MatchAborted(gameId, GameAbortReasonIds.MISSING_DRAW_SETTLEMENT)),
-            result,
+            expected = Outcome.Error(GameError.MatchAborted(gameId, GameAbortReasonIds.MISSING_DRAW_SETTLEMENT)),
+            actual = result,
         )
         assertEquals(GameAbortReasonIds.MISSING_DRAW_SETTLEMENT, fixtures.abortReason)
         assertNull(fixtures.gameRepo.getGame(gameId))
@@ -935,13 +935,13 @@ class GameFlowCoordinatorTest {
             components = riichiDeclarationComponents(),
         )
         fixtures.gameRepo.setTableState(
-            FakeTableStateFactory.create(
+            state = FakeTableStateFactory.create(
                 id = gameId,
                 config = RiichiRuleConfig(),
                 players = listOf(player, FakeMahjongPlayerFactory.create(initialSeat = Wind.SOUTH, components = riichiDeclarationComponents())),
                 currentPlayerIndex = 0,
             ),
-            mapOf(player.id to FIXED_STRATEGY_KEY),
+            aiPlayerStrategyKeys = mapOf(player.id to FIXED_STRATEGY_KEY),
         )
 
         assertTrue(fixtures.coordinator.advanceAutomatedPlayerStep(gameId))
@@ -1050,9 +1050,9 @@ class GameFlowCoordinatorTest {
         val published = fixtures.presentationPublisher.getPublishedWinPresentations(gameId).single()
         assertTrue(!published.roundContinues, "The round ended, so the whole presentation blocks every player.")
         assertEquals(
-            listOf(listOf(WinPresentationSegment.CELEBRATION, WinPresentationSegment.SETTLEMENT)),
-            fixtures.presentationPublisher.getWinPresentationSegmentOrder(gameId),
-            "Celebration must always be ordered before settlement.",
+            expected = listOf(listOf(WinPresentationSegment.CELEBRATION, WinPresentationSegment.SETTLEMENT)),
+            actual = fixtures.presentationPublisher.getWinPresentationSegmentOrder(gameId),
+            message = "Celebration must always be ordered before settlement.",
         )
         assertEquals(null, fixtures.winPresentationHandoff.take(gameId, setOf(winnerId)), "The handoff must be consumed.")
         fixtures.assertSingleSettlement(RoundSettlementKind.WIN)
@@ -1079,8 +1079,8 @@ class GameFlowCoordinatorTest {
         assertEquals(null, game.pendingTransition, "ContinueRound must not chain AdvanceRound.")
         val newState = game.tableState
         assertTrue(
-            newState.players.first { it.id == winnerId }.actionHistory.any { it is GameAction.Tsumo },
-            "The hand did not end, so the Tsumo record must not be reset by a fresh deal.",
+            actual = newState.players.first { it.id == winnerId }.actionHistory.any { it is GameAction.Tsumo },
+            message = "The hand did not end, so the Tsumo record must not be reset by a fresh deal.",
         )
         assertEquals(setOf(winnerId), newState.finishedPlayerIds)
         assertEquals(1, newState.currentPlayerIndex, "Turn should be handed to nextPlayerId from the directive.")
@@ -1090,14 +1090,14 @@ class GameFlowCoordinatorTest {
         val published = fixtures.presentationPublisher.getPublishedWinPresentations(gameId).single()
         assertTrue(published.roundContinues, "A continuing win must tell the platform the round goes on.")
         assertTrue(
-            published.celebration.winners.any { it.cueIds.isNotEmpty() },
-            "Daisangen is a yakuman, so this continuing win still carries a showcase reason.",
+            actual = published.celebration.winners.any { it.cueIds.isNotEmpty() },
+            message = "Daisangen is a yakuman, so this continuing win still carries a showcase reason.",
         )
         assertEquals(setOf(winnerId), published.winnerPlayerIds)
         assertEquals(
-            listOf(listOf(WinPresentationSegment.CELEBRATION, WinPresentationSegment.SETTLEMENT)),
-            fixtures.presentationPublisher.getWinPresentationSegmentOrder(gameId),
-            "Celebration must always be ordered before settlement.",
+            expected = listOf(listOf(WinPresentationSegment.CELEBRATION, WinPresentationSegment.SETTLEMENT)),
+            actual = fixtures.presentationPublisher.getWinPresentationSegmentOrder(gameId),
+            message = "Celebration must always be ordered before settlement.",
         )
         assertEquals(null, fixtures.winPresentationHandoff.take(gameId, setOf(winnerId)), "The handoff must be consumed.")
 
@@ -1109,8 +1109,8 @@ class GameFlowCoordinatorTest {
         assertTrue(!fixtures.coordinator.resumePendingGameTransition(gameId))
         fixtures.presentationBusyGate.setPresentingContinuingWin(gameId, false)
         assertTrue(
-            fixtures.coordinator.resumePendingGameTransition(gameId),
-            "Once the queue drains, the pending round transition should finally run.",
+            actual = fixtures.coordinator.resumePendingGameTransition(gameId),
+            message = "Once the queue drains, the pending round transition should finally run.",
         )
     }
 
@@ -1131,15 +1131,15 @@ class GameFlowCoordinatorTest {
         val window = assertNotNull(game.pendingRuleDecision)
         assertEquals(RuleDecisionTiming.WIN_CONTINUES, window.timing)
         assertEquals(
-            RuleDecisionTiming.WIN_CONTINUES,
-            fixtures.gameRepo.historyDrafts.map { it.fact }.filterIsInstance<HistoryFact.RuleDecisionStarted>().single().timing,
+            expected = RuleDecisionTiming.WIN_CONTINUES,
+            actual = fixtures.gameRepo.historyDrafts.map { it.fact }.filterIsInstance<HistoryFact.RuleDecisionStarted>().single().timing,
         )
         assertEquals(setOf(winnerId), game.tableState.finishedPlayerIds)
         assertNull(game.pendingTransition)
         assertEquals(
-            Outcome.Error(GameError.UnsupportedAction(gameId, otherId)),
-            fixtures.coordinator.dispatch(gameId, otherId, GameCommand.Draw),
-            "Play must wait for the window to close.",
+            expected = Outcome.Error(GameError.UnsupportedAction(gameId, otherId)),
+            actual = fixtures.coordinator.dispatch(gameId, otherId, GameCommand.Draw),
+            message = "Play must wait for the window to close.",
         )
     }
 
@@ -1157,14 +1157,14 @@ class GameFlowCoordinatorTest {
         assertFalse(published.settlement.includesWinnerDetails, "SCORE_CHANGES_ONLY must leave out the winner details.")
         assertTrue(published.roundContinues)
         assertEquals(
-            listOf(listOf(WinPresentationSegment.CELEBRATION, WinPresentationSegment.SETTLEMENT)),
-            fixtures.presentationPublisher.getWinPresentationSegmentOrder(gameId),
-            "The win celebration is never skipped, whatever the settlement mode.",
+            expected = listOf(listOf(WinPresentationSegment.CELEBRATION, WinPresentationSegment.SETTLEMENT)),
+            actual = fixtures.presentationPublisher.getWinPresentationSegmentOrder(gameId),
+            message = "The win celebration is never skipped, whatever the settlement mode.",
         )
         // 手牌是大三元役滿：即使面板精簡，仍帶著展示理由。
         assertTrue(
-            published.celebration.winners.any { it.cueIds.isNotEmpty() },
-            "A yakuman showcase reason must still be published even when the panel is brief.",
+            actual = published.celebration.winners.any { it.cueIds.isNotEmpty() },
+            message = "A yakuman showcase reason must still be published even when the panel is brief.",
         )
     }
 
@@ -1192,8 +1192,8 @@ class GameFlowCoordinatorTest {
         assertTrue(published.roundContinues)
         val celebration = assertNotNull(published.celebration)
         assertTrue(
-            celebration.winners.all { it.cueIds.isEmpty() },
-            "Tanyao is not a yakuman, so no showcase reason should be resolved.",
+            actual = celebration.winners.all { it.cueIds.isEmpty() },
+            message = "Tanyao is not a yakuman, so no showcase reason should be resolved.",
         )
     }
 
@@ -1211,9 +1211,9 @@ class GameFlowCoordinatorTest {
         assertTrue(published.roundContinues, "The round continues, so most of this presentation must not block.")
         val celebration = assertNotNull(published.celebration)
         assertEquals(
-            listOf("mahjongcraft:riichi/yakuman/daisangen"),
-            celebration.winners.single().cueIds,
-            "Daisangen is a yakuman, so the celebration must carry its showcase reason.",
+            expected = listOf("mahjongcraft:riichi/yakuman/daisangen"),
+            actual = celebration.winners.single().cueIds,
+            message = "Daisangen is a yakuman, so the celebration must carry its showcase reason.",
         )
     }
 
@@ -1253,9 +1253,9 @@ class GameFlowCoordinatorTest {
         assertEquals(setOf(firstWinnerId), published[0].winnerPlayerIds)
         assertEquals(setOf(secondWinnerId), published[1].winnerPlayerIds)
         assertEquals(
-            List(2) { listOf(WinPresentationSegment.CELEBRATION, WinPresentationSegment.SETTLEMENT) },
-            fixtures.presentationPublisher.getWinPresentationSegmentOrder(gameId),
-            "Celebration must precede settlement within every publish.",
+            expected = List(2) { listOf(WinPresentationSegment.CELEBRATION, WinPresentationSegment.SETTLEMENT) },
+            actual = fixtures.presentationPublisher.getWinPresentationSegmentOrder(gameId),
+            message = "Celebration must precede settlement within every publish.",
         )
     }
 
@@ -1280,7 +1280,7 @@ class GameFlowCoordinatorTest {
         val ruleModuleId = MahjongModuleRegistryImpl().apply { registerBundledRuleModules() }.getModule(RiichiRuleConfig()).id
         val continuationRegistry = WinRoundContinuationResolverRegistry().apply {
             register(
-                object : WinRoundContinuationResolver {
+                resolver = object : WinRoundContinuationResolver {
                     override val id: String = "test:continue"
                     override val ruleModuleId: String = ruleModuleId
                     override val priority: Int = 0
@@ -1367,8 +1367,8 @@ class GameFlowCoordinatorTest {
         fixtures.assertSingleSettlement(RoundSettlementKind.DRAW)
         val presentation = assertNotNull(fixtures.presentationPublisher.getPublishedExhaustiveDrawSettlement(gameId))
         assertEquals(
-            ExhaustiveDrawHandDisclosure.PROOF,
-            presentation.players.first { it.ranking.playerId == playerId }.handDisclosure,
+            expected = ExhaustiveDrawHandDisclosure.PROOF,
+            actual = presentation.players.first { it.ranking.playerId == playerId }.handDisclosure,
         )
     }
 
@@ -1481,9 +1481,9 @@ class GameFlowCoordinatorTest {
         val whiteTileId = table.pendingReaction!!.tileId
 
         val result = fixtures.coordinator.dispatchThenDrive(
-            gameId,
-            respondentId,
-            GameCommand.RespondToDiscard(GameAction.Ron(whiteTileId), checkNotNull(table.pendingReaction).id),
+            gameId = gameId,
+            playerId = respondentId,
+            command = GameCommand.RespondToDiscard(GameAction.Ron(whiteTileId), checkNotNull(table.pendingReaction).id),
         )
 
         assertTrue(result is Outcome.Success, "Expected Success but got $result")
@@ -1518,15 +1518,15 @@ class GameFlowCoordinatorTest {
         fixtures.gameRepo.setTableState(table)
 
         fixtures.coordinator.dispatchThenDrive(
-            gameId,
-            firstWinnerId,
-            GameCommand.RespondToDiscard(GameAction.Ron(discardedTile.id), checkNotNull(table.pendingReaction).id),
+            gameId = gameId,
+            playerId = firstWinnerId,
+            command = GameCommand.RespondToDiscard(GameAction.Ron(discardedTile.id), checkNotNull(table.pendingReaction).id),
         )
         assertTrue(fixtures.presentationPublisher.getPublishedWinPresentations(gameId).isEmpty(), "The window waits for the other winner.")
         val result = fixtures.coordinator.dispatchThenDrive(
-            gameId,
-            secondWinnerId,
-            GameCommand.RespondToDiscard(GameAction.Ron(discardedTile.id), checkNotNull(table.pendingReaction).id),
+            gameId = gameId,
+            playerId = secondWinnerId,
+            command = GameCommand.RespondToDiscard(GameAction.Ron(discardedTile.id), checkNotNull(table.pendingReaction).id),
         )
 
         assertTrue(result is Outcome.Success, "Expected Success but got $result")
@@ -1552,9 +1552,9 @@ class GameFlowCoordinatorTest {
         val whiteTileId = table.pendingReaction!!.tileId
 
         val result = fixtures.coordinator.dispatchThenDrive(
-            gameId,
-            respondentId,
-            GameCommand.RespondToDiscard(GameAction.Ron(whiteTileId), checkNotNull(table.pendingReaction).id),
+            gameId = gameId,
+            playerId = respondentId,
+            command = GameCommand.RespondToDiscard(GameAction.Ron(whiteTileId), checkNotNull(table.pendingReaction).id),
         )
 
         val error = assertIs<Outcome.Error<GameError>>(result).error
@@ -1573,13 +1573,13 @@ class GameFlowCoordinatorTest {
         val whiteTileId = table.pendingReaction!!.tileId
 
         val settlement = fixtures.router(
-            gameId,
-            respondentId,
-            GameCommand.RespondToDiscard(GameAction.Ron(whiteTileId), checkNotNull(table.pendingReaction).id),
+            gameId = gameId,
+            playerId = respondentId,
+            command = GameCommand.RespondToDiscard(GameAction.Ron(whiteTileId), checkNotNull(table.pendingReaction).id),
         )
         assertTrue(settlement is Outcome.Success)
         assertTrue(
-            fixtures.gameRepo.getTableState(gameId)!!.players
+            actual = fixtures.gameRepo.getTableState(gameId)!!.players
                 .first { it.id == respondentId }
                 .actionHistory
                 .any { it is GameAction.Ron },
@@ -1627,9 +1627,9 @@ class GameFlowCoordinatorTest {
 
         val ponAction = GameAction.Pon(whiteTileId, listOf(whiteTile1.id, whiteTile2.id))
         val result = fixtures.coordinator.dispatchThenDrive(
-            gameId,
-            respondentId,
-            GameCommand.RespondToDiscard(ponAction, checkNotNull(table.pendingReaction).id),
+            gameId = gameId,
+            playerId = respondentId,
+            command = GameCommand.RespondToDiscard(ponAction, checkNotNull(table.pendingReaction).id),
         )
 
         assertTrue(result is Outcome.Success, "Expected Success but got $result")
@@ -1742,8 +1742,8 @@ class GameFlowCoordinatorTest {
         assertEquals(0, newState.comboCount)
         assertEquals(drawnTile, newState.players.first { it.id == playerId }.hand.lastDrawn)
         assertEquals(
-            PlayerDecisionPhase.OWN_TURN,
-            fixtures.decisionTimerManager.getStatuses(gameId).getValue(playerId).phase,
+            expected = PlayerDecisionPhase.OWN_TURN,
+            actual = fixtures.decisionTimerManager.getStatuses(gameId).getValue(playerId).phase,
         )
     }
 
@@ -1815,7 +1815,7 @@ class GameFlowCoordinatorTest {
         )
         val otherPlayer = FakeMahjongPlayerFactory.create(id = otherPlayerId, initialSeat = Wind.SOUTH)
         fixtures.gameRepo.setTableState(
-            FakeTableStateFactory.create(
+            state = FakeTableStateFactory.create(
                 id = gameId,
                 players = listOf(currentPlayer, otherPlayer),
                 config = RiichiRuleConfig(gameLength = RiichiGameLength.East),
@@ -1828,8 +1828,8 @@ class GameFlowCoordinatorTest {
 
         assertTrue(result is Outcome.Error)
         assertEquals(
-            3_000.milliseconds,
-            fixtures.decisionTimerManager.getStatuses(gameId).getValue(currentPlayerId).time.baseRemaining,
+            expected = 3_000.milliseconds,
+            actual = fixtures.decisionTimerManager.getStatuses(gameId).getValue(currentPlayerId).time.baseRemaining,
         )
     }
 
@@ -1943,8 +1943,8 @@ class GameFlowCoordinatorTest {
         fixtures.coordinator.driveAutomatedPlayers(gameId)
 
         assertTrue(
-            fixtures.gameRepo.getTableStateCallCount < 20,
-            "Should stop after detecting no progress on the first iteration, not loop anywhere near the " +
+            actual = fixtures.gameRepo.getTableStateCallCount < 20,
+            message = "Should stop after detecting no progress on the first iteration, not loop anywhere near the " +
                 "100-iteration cap (actual call count: ${fixtures.gameRepo.getTableStateCallCount}).",
         )
     }
@@ -2043,7 +2043,7 @@ class GameFlowCoordinatorTest {
             currentPlayerIndex = 0,
         )
         fixtures.gameRepo.setGame(
-            Game(
+            game = Game(
                 tableState = table,
                 aiPlayerStrategyKeys = mapOf(aiId to CHANGING_STRATEGY_KEY),
                 flowConfig = GameFlowConfig(ruleDecision = RuleDecisionConfig(30.seconds)),
@@ -2081,7 +2081,7 @@ class GameFlowCoordinatorTest {
             config = RiichiRuleConfig(),
         )
         fixtures.gameRepo.setGame(
-            Game(
+            game = Game(
                 tableState = table,
                 flowConfig = GameFlowConfig(ruleDecision = RuleDecisionConfig(30.seconds)),
             ),
@@ -2114,7 +2114,7 @@ class GameFlowCoordinatorTest {
             currentPlayerIndex = 1,
         )
         fixtures.gameRepo.setGame(
-            Game(
+            game = Game(
                 tableState = table,
                 aiPlayerStrategyKeys = mapOf(aiId to FIXED_RULE_DECISION_STRATEGY_KEY),
                 flowConfig = GameFlowConfig(ruleDecision = RuleDecisionConfig(30.seconds)),
@@ -2139,9 +2139,9 @@ class GameFlowCoordinatorTest {
         assertTrue(waitingGame.pendingRuleDecision?.completedPlayerIds?.contains(aiId) == true)
         assertNull(waitingGame.tableState.players.first { it.id == aiId }.hand.lastDrawn)
         val humanResult = fixtures.coordinator.dispatch(
-            gameId,
-            humanId,
-            GameCommand.SubmitRuleDecision(assertNotNull(waitingGame.pendingRuleDecision).id, RuleDecisionSubmission.Confirmed),
+            gameId = gameId,
+            playerId = humanId,
+            command = GameCommand.SubmitRuleDecision(assertNotNull(waitingGame.pendingRuleDecision).id, RuleDecisionSubmission.Confirmed),
         )
         assertTrue(humanResult is Outcome.Success)
         fixtures.coordinator.driveAutomatedPlayers(gameId)
@@ -2149,7 +2149,7 @@ class GameFlowCoordinatorTest {
         assertNull(fixtures.abortedGame)
         assertNull(fixtures.gameRepo.getGame(gameId)?.pendingRuleDecision)
         assertTrue(
-            fixtures.gameRepo.getTableState(gameId)!!.players.first { it.id == aiId }.discardPile.entries.isNotEmpty(),
+            actual = fixtures.gameRepo.getTableState(gameId)!!.players.first { it.id == aiId }.discardPile.entries.isNotEmpty(),
         )
     }
 
@@ -2222,7 +2222,7 @@ class GameFlowCoordinatorTest {
             currentPlayerIndex = 0,
         )
         fixtures.gameRepo.setGame(
-            Game(
+            game = Game(
                 tableState = table,
                 aiPlayerStrategyKeys = mapOf(aiId to HANGING_STRATEGY_KEY),
                 flowConfig = GameFlowConfig(ruleDecision = RuleDecisionConfig(30.seconds)),

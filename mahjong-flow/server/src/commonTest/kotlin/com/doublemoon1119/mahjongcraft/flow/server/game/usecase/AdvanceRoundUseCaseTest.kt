@@ -74,12 +74,12 @@ class AdvanceRoundUseCaseTest {
         val eventPublisher = FakeGameEventPublisher()
         val presentationPublisher = FakeGamePresentationPublisher()
         val useCase = AdvanceRoundUseCase(
-            gameRepo,
-            moduleRegistry,
-            snapshotSynchronizer,
-            handSortPreferenceStore,
-            eventPublisher,
-            presentationPublisher,
+            gameRepository = gameRepo,
+            moduleRegistry = moduleRegistry,
+            snapshotSynchronizer = snapshotSynchronizer,
+            handSortPreferenceStore = handSortPreferenceStore,
+            eventPublisher = eventPublisher,
+            presentationPublisher = presentationPublisher,
             componentRegistry = bundledCoreExtensionRegistries().componentRegistry,
             beginRuleDecisionUseCase = noRuleDecisionBeginUseCase(gameRepo, moduleRegistry, snapshotSynchronizer),
         )
@@ -127,7 +127,7 @@ class AdvanceRoundUseCaseTest {
                 settledScoresByPlayerId = tableState.players.associate { it.id to it.score },
             )
             gameRepo.setGame(
-                Game(
+                game = Game(
                     tableState = tableState,
                     flowConfig = GameFlowConfig(),
                     remainingReserveByPlayerId = remainingReserveByPlayerId
@@ -165,8 +165,8 @@ class AdvanceRoundUseCaseTest {
         )
         val remainingReserveByPlayerId = players.associate { it.id to 12_345.milliseconds }
         fixtures.setCompletedState(
-            table,
-            remainingReserveByPlayerId,
+            tableState = table,
+            remainingReserveByPlayerId = remainingReserveByPlayerId,
             enabledAutomaticControlIdsByPlayerId = mapOf(dealerId to setOf("example:auto_action")),
         )
 
@@ -189,21 +189,21 @@ class AdvanceRoundUseCaseTest {
         assertEquals(1, newState.roundNumber)
         assertEquals(Wind.EAST, newState.prevalentWind)
         assertEquals(
-            remainingReserveByPlayerId,
-            fixtures.gameRepo.getGame(gameId)?.remainingReserveByPlayerId,
+            expected = remainingReserveByPlayerId,
+            actual = fixtures.gameRepo.getGame(gameId)?.remainingReserveByPlayerId,
         )
         assertTrue(fixtures.gameRepo.getGame(gameId)?.enabledAutomaticControlIdsByPlayerId.isNullOrEmpty())
         assertEquals(1L, fixtures.gameRepo.getGame(gameId)?.automaticControlRevision)
         assertEquals(
-            dealerId,
-            newState.dealerPlayerId,
-            "Dealer should stay the same on a repeat.",
+            expected = dealerId,
+            actual = newState.dealerPlayerId,
+            message = "Dealer should stay the same on a repeat.",
         )
         newState.players.forEach { player ->
             assertEquals(
-                config.initialHandSize,
-                player.hand.tiles.size,
-                "A fresh hand should be dealt for the new round.",
+                expected = config.initialHandSize,
+                actual = player.hand.tiles.size,
+                message = "A fresh hand should be dealt for the new round.",
             )
             assertTrue(player.actionHistory.isEmpty(), "actionHistory should be reset for the new round.")
         }
@@ -248,9 +248,9 @@ class AdvanceRoundUseCaseTest {
         assertEquals(2, newState.roundNumber)
         assertEquals(Wind.EAST, newState.prevalentWind)
         assertEquals(
-            nextDealerId,
-            newState.dealerPlayerId,
-            "P2 (South) should become the new dealer.",
+            expected = nextDealerId,
+            actual = newState.dealerPlayerId,
+            message = "P2 (South) should become the new dealer.",
         )
     }
 
@@ -287,9 +287,9 @@ class AdvanceRoundUseCaseTest {
         assertEquals(1, newState.comboCount)
         assertEquals(1, newState.roundNumber)
         assertEquals(
-            dealerId,
-            newState.dealerPlayerId,
-            "Dealer should stay the same when tenpai at exhaustive draw.",
+            expected = dealerId,
+            actual = newState.dealerPlayerId,
+            message = "Dealer should stay the same when tenpai at exhaustive draw.",
         )
         assertEquals(emptySet(), newState.publicTileEvidenceIds, "Hands revealed at the draw are concealed again in the new round.")
     }
@@ -326,9 +326,9 @@ class AdvanceRoundUseCaseTest {
         assertEquals(0, newState.comboCount)
         assertEquals(2, newState.roundNumber)
         assertEquals(
-            nextDealerId,
-            newState.dealerPlayerId,
-            "P2 (South) should become the new dealer.",
+            expected = nextDealerId,
+            actual = newState.dealerPlayerId,
+            message = "P2 (South) should become the new dealer.",
         )
     }
 
@@ -361,17 +361,17 @@ class AdvanceRoundUseCaseTest {
         val matchSettlement = assertNotNull(fixtures.presentationPublisher.getPublishedMatchSettlement(gameId))
         assertEquals(advanceResult.tableState.players.size, matchSettlement.players.size)
         assertEquals(
-            advanceResult.tableState.players.map { it.score },
-            matchSettlement.players.map { it.finalScore },
+            expected = advanceResult.tableState.players.map { it.score },
+            actual = matchSettlement.players.map { it.finalScore },
         )
         assertEquals(
-            (1..advanceResult.tableState.players.size).toList(),
-            matchSettlement.players.map { it.finalRank }.sorted(),
+            expected = (1..advanceResult.tableState.players.size).toList(),
+            actual = matchSettlement.players.map { it.finalRank }.sorted(),
         )
         assertEquals(
-            table,
-            advanceResult.tableState,
-            "Table state should be left completely untouched when the match is over.",
+            expected = table,
+            actual = advanceResult.tableState,
+            message = "Table state should be left completely untouched when the match is over.",
         )
         assertEquals(table, fixtures.gameRepo.getTableState(gameId), "Repository should not have been mutated either.")
     }
@@ -406,9 +406,9 @@ class AdvanceRoundUseCaseTest {
         val finalTopPlayer = advanceResult.tableState.players.first { it.id == topPlayer.id }
         assertEquals(32000, finalTopPlayer.score, "The final 1st place player should collect all leftover riichi sticks (2 * 1000).")
         assertEquals(
-            0,
-            (advanceResult.tableState.riichiPotPoints() / RIICHI_STICK_POINTS),
-            "The stick pot should be reset once collected.",
+            expected = 0,
+            actual = (advanceResult.tableState.riichiPotPoints() / RIICHI_STICK_POINTS),
+            message = "The stick pot should be reset once collected.",
         )
         assertEquals(advanceResult.tableState, fixtures.gameRepo.getTableState(gameId), "Repository should reflect the swept state.")
     }

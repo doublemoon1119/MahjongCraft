@@ -60,16 +60,16 @@ object WinSettlementPresentationRequestFactory {
                 )
             },
             ranking = ScoreRankingPresentation(
-                currentState.players.mapIndexed { seatIndex, player ->
+                players = currentState.players.mapIndexed { seatIndex, player ->
                     val previous = previousState.players.first { it.id == player.id }
                     ScoreRankingPlayer(
-                        player.id,
-                        seatIndex,
-                        player.id in aiPlayerIds,
-                        previous.score,
-                        player.score,
-                        previousRanks.getValue(player.id),
-                        currentRanks.getValue(player.id),
+                        playerId = player.id,
+                        seatIndex = seatIndex,
+                        isAi = player.id in aiPlayerIds,
+                        previousScore = previous.score,
+                        currentScore = player.score,
+                        previousRank = previousRanks.getValue(player.id),
+                        currentRank = currentRanks.getValue(player.id),
                     )
                 },
             ),
@@ -128,16 +128,16 @@ object WinSettlementPresentationRequestFactory {
                 )
             },
             ranking = ScoreRankingPresentation(
-                currentState.players.mapIndexed { seatIndex, player ->
+                players = currentState.players.mapIndexed { seatIndex, player ->
                     val previous = previousState.players.first { it.id == player.id }
                     ScoreRankingPlayer(
-                        player.id,
-                        seatIndex,
-                        player.id in aiPlayerIds,
-                        previous.score,
-                        player.score,
-                        previousRanks.getValue(player.id),
-                        currentRanks.getValue(player.id),
+                        playerId = player.id,
+                        seatIndex = seatIndex,
+                        isAi = player.id in aiPlayerIds,
+                        previousScore = previous.score,
+                        currentScore = player.score,
+                        previousRank = previousRanks.getValue(player.id),
+                        currentRank = currentRanks.getValue(player.id),
                     )
                 },
             ),

@@ -48,15 +48,15 @@ class ServerSessionStateCleanerTest {
             clock = clock,
         )
         val cleaner = ServerSessionStateCleaner(
-            store,
-            roomSnapshots,
-            gameSnapshots,
-            memberships,
-            decisionTimerManager,
-            DecisionTimerSynchronizationService(
-                decisionTimerManager,
-                gameRepository,
-                FakeDecisionTimerUpdatePublisher(),
+            authoritativeStateStore = store,
+            roomSnapshots = roomSnapshots,
+            gameSnapshots = gameSnapshots,
+            membershipRepository = memberships,
+            decisionTimerManager = decisionTimerManager,
+            decisionTimerSynchronizationService = DecisionTimerSynchronizationService(
+                timerManager = decisionTimerManager,
+                gameRepository = gameRepository,
+                publisher = FakeDecisionTimerUpdatePublisher(),
             ),
         )
         val observerId = Uuid.random()
@@ -69,7 +69,7 @@ class ServerSessionStateCleanerTest {
         )
         val game = FakeTableStateFactory.create()
         store.load(
-            AuthoritativeStateSnapshot(
+            state = AuthoritativeStateSnapshot(
                 rooms = mapOf(room.id to room),
                 games = mapOf(game.id to Game(game, GameFlowConfig())),
             ),

@@ -35,7 +35,7 @@ class SimulationStatisticsTest {
         val b = Uuid.random()
         val statistics = SimulationStatistics()
         statistics.add(
-            MatchResult(
+            match = MatchResult(
                 strategyKeysByPlayer = mapOf(a to "a", b to "b"),
                 rounds = listOf(
                     listOf(seat(a, "a", won = true), seat(b, "b", dealtIn = true)),
@@ -67,7 +67,7 @@ class SimulationStatisticsTest {
         val b = Uuid.random()
         val statistics = SimulationStatistics()
         statistics.add(
-            MatchResult(
+            match = MatchResult(
                 strategyKeysByPlayer = mapOf(a to "a", b to "b"),
                 rounds = listOf(
                     listOf(

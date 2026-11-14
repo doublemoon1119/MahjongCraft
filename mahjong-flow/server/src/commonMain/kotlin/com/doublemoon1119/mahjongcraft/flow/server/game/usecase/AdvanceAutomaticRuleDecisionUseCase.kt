@@ -42,7 +42,7 @@ class AdvanceAutomaticRuleDecisionUseCase(
      */
     suspend operator fun invoke(gameId: Uuid): Boolean {
         val update = gameRepository.updateGame(
-            gameId,
+            gameId = gameId,
             history = { _, _, result -> result.historyDrafts },
         ) { game ->
             val currentGame = game
@@ -68,7 +68,7 @@ class AdvanceAutomaticRuleDecisionUseCase(
                     updated = RuleDecisionWindows.advance(updated, currentRuleDecision, resolution, module, resolverRegistry, handSortPreferenceStore::isEnabled)
                     presentationSteps += resolution.steps + TableStep(updated.tableState, emptyList())
                     add(
-                        HistoryEventDraft(
+                        element = HistoryEventDraft(
                             actorPlayerId = null,
                             fact = HistoryFact.RuleDecisionAutomaticallyResolved(
                                 timing = currentRuleDecision.timing,

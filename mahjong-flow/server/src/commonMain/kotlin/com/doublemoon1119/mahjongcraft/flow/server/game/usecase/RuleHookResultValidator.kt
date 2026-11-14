@@ -34,8 +34,8 @@ internal object RuleHookResultValidator {
         val actor = state.players.first { it.id == actorPlayerId }
         if (setAsideTile !in actor.hand.standingTiles) {
             throw RuleContractViolationException(
-                GameAbortReasonIds.RULE_EXECUTION_FAILED,
-                "Tile set-aside action ${action.value.id} chose a tile the actor does not hold: ${setAsideTile.id}",
+                reasonId = GameAbortReasonIds.RULE_EXECUTION_FAILED,
+                diagnostic = "Tile set-aside action ${action.value.id} chose a tile the actor does not hold: ${setAsideTile.id}",
             )
         }
         return setAsideTile
@@ -49,8 +49,8 @@ internal object RuleHookResultValidator {
      */
     fun requireMultiRonAbortiveDrawReason(module: MahjongRuleModule<*>): ExhaustiveDrawReason = module.resolveMultiRonAbortiveDraw()
         ?: throw RuleContractViolationException(
-            GameAbortReasonIds.RULE_EXECUTION_FAILED,
-            "Rule ${module.id} configured multi-Ron abortive draw without an abortive draw reason",
+            reasonId = GameAbortReasonIds.RULE_EXECUTION_FAILED,
+            diagnostic = "Rule ${module.id} configured multi-Ron abortive draw without an abortive draw reason",
         )
 
     /**
@@ -75,8 +75,8 @@ internal object RuleHookResultValidator {
         components: RuleComponentChecker,
     ): TableState {
         fun violation(detail: String): Nothing = throw RuleContractViolationException(
-            GameAbortReasonIds.RULE_EXECUTION_FAILED,
-            "Tile set-aside action ${action.value.id} returned an unauthorized result: $detail",
+            reasonId = GameAbortReasonIds.RULE_EXECUTION_FAILED,
+            diagnostic = "Tile set-aside action ${action.value.id} returned an unauthorized result: $detail",
         )
 
         if (after.copy(players = before.players, components = before.components) != before) {

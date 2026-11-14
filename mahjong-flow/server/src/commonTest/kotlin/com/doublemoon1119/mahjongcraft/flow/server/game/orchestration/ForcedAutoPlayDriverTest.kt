@@ -34,8 +34,8 @@ class ForcedAutoPlayDriverTest {
 
     /** 建立與正式代操作共用合法命令解析器的驅動器。 */
     private fun driver(repository: FakeGameRepository): ForcedAutoPlayDriver = ForcedAutoPlayDriver(
-        repository,
-        AutomaticGameCommandResolver(moduleRegistry),
+        gameRepository = repository,
+        commandResolver = AutomaticGameCommandResolver(moduleRegistry),
     )
 
     /** 驗證捨牌反應視窗中的強制自動操作玩家固定選擇跳過。 */
@@ -75,8 +75,8 @@ class ForcedAutoPlayDriverTest {
         repository.setGame(game)
 
         assertEquals(
-            playerId to GameCommand.RespondToDiscard(GameAction.Pass, checkNotNull(game.tableState.pendingReaction).id),
-            driver(repository).resolveNextAction(game.id),
+            expected = playerId to GameCommand.RespondToDiscard(GameAction.Pass, checkNotNull(game.tableState.pendingReaction).id),
+            actual = driver(repository).resolveNextAction(game.id),
         )
     }
 
@@ -90,7 +90,7 @@ class ForcedAutoPlayDriverTest {
             tableState = FakeTableStateFactory.create(
                 config = RiichiRuleConfig(),
                 players = listOf(
-                    FakeMahjongPlayerFactory.create(
+                    element = FakeMahjongPlayerFactory.create(
                         id = playerId,
                         hand = Hand(lastDrawn = lastDrawn),
                         components = riichiDeclarationComponents(),
@@ -103,8 +103,8 @@ class ForcedAutoPlayDriverTest {
         repository.setGame(game)
 
         assertEquals(
-            playerId to GameCommand.Discard(lastDrawn.id),
-            driver(repository).resolveNextAction(game.id),
+            expected = playerId to GameCommand.Discard(lastDrawn.id),
+            actual = driver(repository).resolveNextAction(game.id),
         )
     }
 
@@ -117,7 +117,7 @@ class ForcedAutoPlayDriverTest {
             tableState = FakeTableStateFactory.create(
                 config = RiichiRuleConfig(),
                 players = listOf(
-                    FakeMahjongPlayerFactory.create(id = playerId, initialSeat = Wind.EAST),
+                    element = FakeMahjongPlayerFactory.create(id = playerId, initialSeat = Wind.EAST),
                 ),
             ),
             flowConfig = GameFlowConfig(),
@@ -149,7 +149,7 @@ class ForcedAutoPlayDriverTest {
                 initialSeat = Wind.EAST,
                 hand = Hand(lastDrawn = lastDrawn),
                 discardPile = FakeDiscardPile().discardTile(
-                    IdentifiedTile(Uuid.random(), Tile.Honor.South),
+                    tile = IdentifiedTile(Uuid.random(), Tile.Honor.South),
                 ),
                 components = riichiDeclarationComponents(),
             ),
@@ -169,7 +169,7 @@ class ForcedAutoPlayDriverTest {
         val discardedTile = players.first().discardPile.entries.single().tile
         val reaction = ownTurn.copy(
             turnPhase = TurnPhase.AwaitingDiscardReaction(
-                PendingReaction(
+                reaction = PendingReaction(
                     discarderId = currentId,
                     tileId = discardedTile.id,
                     eligiblePlayerIds = setOf(reactorId),
@@ -191,8 +191,8 @@ class ForcedAutoPlayDriverTest {
         }
         assertEquals(GameCommand.Discard(lastDrawn.id), AutomaticGameCommandResolver(moduleRegistry).resolve(ownTurn, currentId))
         assertEquals(
-            GameCommand.RespondToDiscard(GameAction.Pass, checkNotNull(reaction.pendingReaction).id),
-            AutomaticGameCommandResolver(moduleRegistry).resolve(reaction, reactorId),
+            expected = GameCommand.RespondToDiscard(GameAction.Pass, checkNotNull(reaction.pendingReaction).id),
+            actual = AutomaticGameCommandResolver(moduleRegistry).resolve(reaction, reactorId),
         )
         assertEquals(null, AutomaticGameCommandResolver(moduleRegistry).resolve(reaction, bystanderId))
     }

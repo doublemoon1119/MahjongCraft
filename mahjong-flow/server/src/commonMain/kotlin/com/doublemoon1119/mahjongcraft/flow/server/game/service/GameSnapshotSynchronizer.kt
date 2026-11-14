@@ -28,9 +28,9 @@ class GameSnapshotSynchronizer(
         val game = gameRepository.getGame(gameId) ?: return false
         snapshotRepository.setSnapshot(observerId, visibilityPolicy.snapshotFor(game, observerId))
         snapshotRepository.setRuleDecisionSnapshot(
-            gameId,
-            observerId,
-            visibilityPolicy.ruleDecisionSnapshotFor(game, observerId),
+            gameId = gameId,
+            observerId = observerId,
+            snapshot = visibilityPolicy.ruleDecisionSnapshotFor(game, observerId),
         )
         return true
     }

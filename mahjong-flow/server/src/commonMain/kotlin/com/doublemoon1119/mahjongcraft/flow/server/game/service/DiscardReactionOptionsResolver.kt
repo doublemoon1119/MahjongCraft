@@ -46,12 +46,12 @@ internal object DiscardReactionOptionsResolver {
             val player = state.players.first { it.id == playerId }
             val requirement = validator.tileSelectionRequirement(state, player, candidate.action)
             requireRuleResult(
-                requirement == null ||
+                condition = requirement == null ||
                     (
                         candidate.selectedTileIds.size in requirement.minCount..requirement.maxCount &&
                             requirement.eligibleTileIds.containsAll(candidate.selectedTileIds)
                         ),
-                "Reaction policy offered a selection outside its declared requirement: ${candidate.action}",
+                diagnostic = "Reaction policy offered a selection outside its declared requirement: ${candidate.action}",
             )
         }
     }
@@ -69,8 +69,8 @@ internal object DiscardReactionOptionsResolver {
     ): List<DiscardReactionCandidate> = policy.resolve(context).onEach { candidate ->
         requireRuleResult(candidate.action in context.legalActions, "Reaction policy offered an action outside legal actions")
         requireRuleResult(
-            candidate.claimEffect != null || candidate.action == GameAction.Pass || candidate.action is GameAction.Ron,
-            "Reaction policy offered a claim without an effect: ${candidate.action}",
+            condition = candidate.claimEffect != null || candidate.action == GameAction.Pass || candidate.action is GameAction.Ron,
+            diagnostic = "Reaction policy offered a claim without an effect: ${candidate.action}",
         )
         requireRuleResult(isSafeCandidate(context, candidate), "Reaction policy offered an invalid claim effect: ${candidate.action}")
     }
@@ -173,7 +173,7 @@ internal object DiscardReactionOptionsResolver {
         discardedTile: IdentifiedTile,
     ): List<GameAction> {
         val legalActions = validator.getLegalActions(
-            LegalActionContext.discardReaction(state, playerId, discarderId, discardedTile),
+            context = LegalActionContext.discardReaction(state, playerId, discarderId, discardedTile),
         )
         val window = state.pendingReaction ?: return legalActions
         if (playerId in window.ronPlayerIds) return legalActions

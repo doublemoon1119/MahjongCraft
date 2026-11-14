@@ -133,10 +133,10 @@ class LeaveRoomUseCaseTest {
         roomRepo.setRoom(Room(id = roomId, hostId = hostId, gameConfig = GameConfig(config), playerIds = listOf(hostId, guestId)))
         memberships.claim(guestId, roomId)
         val useCase = LeaveRoomUseCase(
-            roomRepo,
-            memberships,
-            FakeRoomSnapshotRepository(),
-            FakeRoomEventPublisher(),
+            roomRepository = roomRepo,
+            membershipRepository = memberships,
+            snapshotRepository = FakeRoomSnapshotRepository(),
+            eventPublisher = FakeRoomEventPublisher(),
         )
 
         val result = useCase(roomId, guestId)

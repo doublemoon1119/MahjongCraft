@@ -24,8 +24,8 @@ internal fun SelfDeclarationApplier.Result.Applied.tableSteps(
     drawnState: TableState = tableState,
 ): List<TableStep> {
     val declared = TableStep(
-        declaredState,
-        listOfNotNull(
+        tableState = declaredState,
+        events = listOfNotNull(
             TableStepEvent.ActionDeclared(playerId, action).takeUnless { announced },
             scoring?.let(TableStepEvent::ActionScored),
         ),

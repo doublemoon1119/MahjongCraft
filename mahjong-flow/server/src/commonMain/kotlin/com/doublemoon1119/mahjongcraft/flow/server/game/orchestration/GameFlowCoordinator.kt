@@ -370,15 +370,15 @@ class GameFlowCoordinator(
             val fallback = automaticCommandResolver.resolve(expectedGame.tableState, playerId)
             if (fallback == null || fallback == command || command is GameCommand.SubmitRuleDecision) {
                 throw RuleContractViolationException(
-                    GameAbortReasonIds.AUTOMATIC_DECISION_FAILED,
-                    "Automatic command ${command::class.simpleName} was rejected: ${first.error::class.simpleName}; no safe distinct fallback",
+                    reasonId = GameAbortReasonIds.AUTOMATIC_DECISION_FAILED,
+                    diagnostic = "Automatic command ${command::class.simpleName} was rejected: ${first.error::class.simpleName}; no safe distinct fallback",
                 )
             }
             val retried = dispatchExpectedCommand(gameId, playerId, fallback, expectedGame)
             if (retried is Outcome.Error && gameRepository.getGame(gameId) == expectedGame) {
                 throw RuleContractViolationException(
-                    GameAbortReasonIds.AUTOMATIC_DECISION_FAILED,
-                    "Fallback ${fallback::class.simpleName} was rejected: ${retried.error::class.simpleName}",
+                    reasonId = GameAbortReasonIds.AUTOMATIC_DECISION_FAILED,
+                    diagnostic = "Fallback ${fallback::class.simpleName} was rejected: ${retried.error::class.simpleName}",
                 )
             }
             retried
@@ -405,8 +405,8 @@ class GameFlowCoordinator(
             gameRepository.withExpectedGame(gameId, expectedGame) { gameActionRouter(gameId, playerId, command) }
         } catch (violation: ExpectedGameWrittenTwiceException) {
             throw RuleContractViolationException(
-                GameAbortReasonIds.AUTOMATIC_DECISION_FAILED,
-                "Automated command ${command::class.simpleName} by $playerId attempted a second authoritative write; first write may be committed: ${violation.message}",
+                reasonId = GameAbortReasonIds.AUTOMATIC_DECISION_FAILED,
+                diagnostic = "Automated command ${command::class.simpleName} by $playerId attempted a second authoritative write; first write may be committed: ${violation.message}",
             )
         }
         when (conditional) {
@@ -428,8 +428,8 @@ class GameFlowCoordinator(
         val progressionError = (result as? Outcome.Error)?.error as? GameError.InvalidMatchProgression
         if (progressionError != null) {
             abortAfterFailure(
-                basis,
-                RuleContractViolationException(GameAbortReasonIds.INVALID_PROGRESSION, progressionError.reason),
+                basis = basis,
+                failure = RuleContractViolationException(GameAbortReasonIds.INVALID_PROGRESSION, progressionError.reason),
             )
         } else {
             result
@@ -526,16 +526,16 @@ class GameFlowCoordinator(
             val specialOutcome = resolvePostReactionRoundOutcomeUseCase(gameId)
             if (specialOutcome is Outcome.Error) {
                 throw RuleContractViolationException(
-                    GameAbortReasonIds.MISSING_DRAW_SETTLEMENT,
-                    "Special outcome resolution failed after wall exhaustion: ${specialOutcome.error::class.simpleName}",
+                    reasonId = GameAbortReasonIds.MISSING_DRAW_SETTLEMENT,
+                    diagnostic = "Special outcome resolution failed after wall exhaustion: ${specialOutcome.error::class.simpleName}",
                 )
             }
             if (specialOutcome is Outcome.Success && specialOutcome.value != null) {
                 val resolved = requireNotNull(specialOutcome.value)
                 if (resolved.presentationClassification == RoundOutcomePresentationClassification.WIN_EQUIVALENT) {
                     presentationPublisher.publishWinSettlement(
-                        gameId,
-                        WinSettlementPresentationRequestFactory.createSpecialOutcome(
+                        gameId = gameId,
+                        request = WinSettlementPresentationRequestFactory.createSpecialOutcome(
                             previousState = previousState,
                             outcome = resolved,
                             module = moduleRegistry.getModule(previousState.config),
@@ -590,8 +590,8 @@ class GameFlowCoordinator(
         val exhaustiveDraw = declareExhaustiveDrawUseCase(gameId)
         if (exhaustiveDraw is Outcome.Error) {
             throw RuleContractViolationException(
-                GameAbortReasonIds.MISSING_DRAW_SETTLEMENT,
-                "Exhaustive draw settlement failed: ${exhaustiveDraw.error::class.simpleName}",
+                reasonId = GameAbortReasonIds.MISSING_DRAW_SETTLEMENT,
+                diagnostic = "Exhaustive draw settlement failed: ${exhaustiveDraw.error::class.simpleName}",
             )
         }
         exhaustiveDraw as Outcome.Success
@@ -679,8 +679,8 @@ class GameFlowCoordinator(
         val result = resolveWinRoundContinuationUseCase(gameId, previousState, newWinnerPlayerIds)
         if (result is Outcome.Error) {
             throw RuleContractViolationException(
-                GameAbortReasonIds.INVALID_PROGRESSION,
-                "Win continuation failed: ${result.error::class.simpleName}",
+                reasonId = GameAbortReasonIds.INVALID_PROGRESSION,
+                diagnostic = "Win continuation failed: ${result.error::class.simpleName}",
             )
         }
         val directive = (result as? Outcome.Success)?.value
@@ -691,8 +691,8 @@ class GameFlowCoordinator(
             // 決定（見 WinPresentationRequest KDoc），兩者互不牽連。
             val detail = continuing?.settlementDetail ?: ContinuingWinSettlementDetail.WINNER_DETAILS
             presentationPublisher.publishWinPresentation(
-                gameId,
-                WinPresentationRequest(
+                gameId = gameId,
+                request = WinPresentationRequest(
                     winnerPlayerIds = presentation.winnerPlayerIds,
                     // 胡牌呈現在任何模式下都完整提供（見 ContinuingWinSettlementDetail KDoc）；模式
                     // 只決定結算提供的資訊範圍。
@@ -726,7 +726,7 @@ class GameFlowCoordinator(
                 ?: throw RuleContractViolationException(GameAbortReasonIds.INVALID_PROGRESSION, "The round did not conclude with a draw")
             val module = moduleRegistry.getModule(state.config)
             val directive = module.resolveRoundTransition(
-                RoundTransitionContext(
+                context = RoundTransitionContext(
                     tableState = state,
                     outcomeId = outcome.outcomeId,
                     classification = outcome.classification,

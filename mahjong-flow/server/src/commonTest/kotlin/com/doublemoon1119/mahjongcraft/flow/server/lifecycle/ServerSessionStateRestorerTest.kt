@@ -48,24 +48,24 @@ class ServerSessionStateRestorerTest {
         val gameRepository = componentValidatedGameRepository(store)
         val clock = MonotonicClockImpl()
         val decisionTimerManager = GameDecisionTimerManager(
-            gameRepository,
-            GameDecisionAuthorityResolver(),
-            PlayerDecisionTimerFactory(clock),
-            clock,
+            gameRepository = gameRepository,
+            authorityResolver = GameDecisionAuthorityResolver(),
+            timerFactory = PlayerDecisionTimerFactory(clock),
+            clock = clock,
         )
         val restorer = ServerSessionStateRestorer(
-            roomSnapshots,
-            gameSnapshots,
-            memberships,
-            GameVisibilityPolicyImpl(MahjongModuleRegistryImpl().apply { registerBundledRuleModules() }, componentRegistry = bundledCoreExtensionRegistries().componentRegistry),
-            decisionTimerManager,
-            GameDecisionAvailabilityService(
-                FakeGamePresentationBusyGate(),
-                decisionTimerManager,
-                DecisionTimerSynchronizationService(
-                    decisionTimerManager,
-                    gameRepository,
-                    FakeDecisionTimerUpdatePublisher(),
+            roomSnapshots = roomSnapshots,
+            gameSnapshots = gameSnapshots,
+            memberships = memberships,
+            gameVisibilityPolicy = GameVisibilityPolicyImpl(MahjongModuleRegistryImpl().apply { registerBundledRuleModules() }, componentRegistry = bundledCoreExtensionRegistries().componentRegistry),
+            decisionTimerManager = decisionTimerManager,
+            decisionAvailabilityService = GameDecisionAvailabilityService(
+                busyGate = FakeGamePresentationBusyGate(),
+                timerManager = decisionTimerManager,
+                synchronizationService = DecisionTimerSynchronizationService(
+                    timerManager = decisionTimerManager,
+                    gameRepository = gameRepository,
+                    publisher = FakeDecisionTimerUpdatePublisher(),
                 ),
             ),
             moduleRegistry = MahjongModuleRegistryImpl().apply { registerBundledRuleModules() },
@@ -122,24 +122,24 @@ class ServerSessionStateRestorerTest {
         val gameRepository = componentValidatedGameRepository(store)
         val clock = MonotonicClockImpl()
         val decisionTimerManager = GameDecisionTimerManager(
-            gameRepository,
-            GameDecisionAuthorityResolver(),
-            PlayerDecisionTimerFactory(clock),
-            clock,
+            gameRepository = gameRepository,
+            authorityResolver = GameDecisionAuthorityResolver(),
+            timerFactory = PlayerDecisionTimerFactory(clock),
+            clock = clock,
         )
         val restorer = ServerSessionStateRestorer(
-            roomSnapshots,
-            gameSnapshots,
-            memberships,
-            GameVisibilityPolicyImpl(MahjongModuleRegistryImpl().apply { registerBundledRuleModules() }, componentRegistry = bundledCoreExtensionRegistries().componentRegistry),
-            decisionTimerManager,
-            GameDecisionAvailabilityService(
-                FakeGamePresentationBusyGate(),
-                decisionTimerManager,
-                DecisionTimerSynchronizationService(
-                    decisionTimerManager,
-                    gameRepository,
-                    FakeDecisionTimerUpdatePublisher(),
+            roomSnapshots = roomSnapshots,
+            gameSnapshots = gameSnapshots,
+            memberships = memberships,
+            gameVisibilityPolicy = GameVisibilityPolicyImpl(MahjongModuleRegistryImpl().apply { registerBundledRuleModules() }, componentRegistry = bundledCoreExtensionRegistries().componentRegistry),
+            decisionTimerManager = decisionTimerManager,
+            decisionAvailabilityService = GameDecisionAvailabilityService(
+                busyGate = FakeGamePresentationBusyGate(),
+                timerManager = decisionTimerManager,
+                synchronizationService = DecisionTimerSynchronizationService(
+                    timerManager = decisionTimerManager,
+                    gameRepository = gameRepository,
+                    publisher = FakeDecisionTimerUpdatePublisher(),
                 ),
             ),
             moduleRegistry = MahjongModuleRegistryImpl().apply { registerBundledRuleModules() },
@@ -159,8 +159,8 @@ class ServerSessionStateRestorerTest {
         val result = restorer.restore(state)
 
         assertEquals(
-            listOf(PlayerMembershipConflict(playerId, setOf(firstRoom.id, secondRoom.id))),
-            result.membershipConflicts,
+            expected = listOf(PlayerMembershipConflict(playerId, setOf(firstRoom.id, secondRoom.id))),
+            actual = result.membershipConflicts,
         )
         assertNull(memberships.getVenueId(playerId))
         assertNotNull(roomSnapshots.getSnapshot(firstRoom.id, playerId))

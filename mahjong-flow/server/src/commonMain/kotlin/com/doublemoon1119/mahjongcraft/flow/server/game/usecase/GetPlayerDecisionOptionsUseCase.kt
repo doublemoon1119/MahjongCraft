@@ -30,7 +30,7 @@ class GetPlayerDecisionOptionsUseCase(
         val player = game.tableState.players.firstOrNull { it.id == playerId }
             ?: return Outcome.Error(GameError.PlayerNotInGame(playerId, gameId))
         return Outcome.Success(
-            requireNotNull(automaticDecisionEvaluator.evaluate(game, player.id)).options,
+            value = requireNotNull(automaticDecisionEvaluator.evaluate(game, player.id)).options,
         )
     }
 }

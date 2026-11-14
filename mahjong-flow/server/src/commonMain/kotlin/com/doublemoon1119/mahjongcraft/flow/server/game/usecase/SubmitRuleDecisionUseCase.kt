@@ -58,36 +58,36 @@ class SubmitRuleDecisionUseCase(
         submission: RuleDecisionSubmission,
     ): Outcome<Unit, GameError> {
         val result = gameRepository.updateGame(
-            gameId,
+            gameId = gameId,
             history = { _, _, update -> update.historyDrafts },
         ) { game ->
             if (game == null) {
                 return@updateGame null to RuleDecisionSubmissionUpdate(
-                    Outcome.Error(GameError.GameNotFound(gameId)),
-                    emptyList(),
+                    outcome = Outcome.Error(GameError.GameNotFound(gameId)),
+                    historyDrafts = emptyList(),
                 )
             }
             val ruleDecision = game.pendingRuleDecision?.takeIf { it.id == windowId }
                 ?: return@updateGame game to RuleDecisionSubmissionUpdate(
-                    Outcome.Error(GameError.RuleDecisionUnavailable(gameId, playerId)),
-                    emptyList(),
+                    outcome = Outcome.Error(GameError.RuleDecisionUnavailable(gameId, playerId)),
+                    historyDrafts = emptyList(),
                 )
             val input = ruleDecision.inputSpecsByPlayerId[playerId]
                 ?: return@updateGame game to RuleDecisionSubmissionUpdate(
-                    Outcome.Error(GameError.RuleDecisionUnavailable(gameId, playerId)),
-                    emptyList(),
+                    outcome = Outcome.Error(GameError.RuleDecisionUnavailable(gameId, playerId)),
+                    historyDrafts = emptyList(),
                 )
             if (playerId in ruleDecision.completedPlayerIds || !input.accepts(submission)) {
                 return@updateGame game to RuleDecisionSubmissionUpdate(
-                    Outcome.Error(GameError.InvalidRuleDecisionSubmission(gameId, playerId)),
-                    emptyList(),
+                    outcome = Outcome.Error(GameError.InvalidRuleDecisionSubmission(gameId, playerId)),
+                    historyDrafts = emptyList(),
                 )
             }
             val module = moduleRegistry.getModule(game.tableState.config)
             val resolver = resolverRegistry.find(module.id)
                 ?: return@updateGame game to RuleDecisionSubmissionUpdate(
-                    Outcome.Error(GameError.InvalidRuleDecisionSubmission(gameId, playerId)),
-                    emptyList(),
+                    outcome = Outcome.Error(GameError.InvalidRuleDecisionSubmission(gameId, playerId)),
+                    historyDrafts = emptyList(),
                 )
             val usesIndependentTime = ruleDecision.step.timeSource == RuleDecisionTimeSource.RULE_DECISION_TIME
             if (
@@ -95,14 +95,14 @@ class SubmitRuleDecisionUseCase(
                 (resolverRegistry.findDefaultConfig(module.id, game.tableState.config) == null || game.flowConfig.ruleDecision == null)
             ) {
                 throw RuleContractViolationException(
-                    GameAbortReasonIds.RULE_EXECUTION_FAILED,
-                    "Rule decision requires a time configuration for player input",
+                    reasonId = GameAbortReasonIds.RULE_EXECUTION_FAILED,
+                    diagnostic = "Rule decision requires a time configuration for player input",
                 )
             }
             if (!resolver.accepts(game.tableState, ruleDecision, playerId, submission, module)) {
                 return@updateGame game to RuleDecisionSubmissionUpdate(
-                    Outcome.Error(GameError.InvalidRuleDecisionSubmission(gameId, playerId)),
-                    emptyList(),
+                    outcome = Outcome.Error(GameError.InvalidRuleDecisionSubmission(gameId, playerId)),
+                    historyDrafts = emptyList(),
                 )
             }
             val submitted = ruleDecision.copy(
@@ -116,9 +116,9 @@ class SubmitRuleDecisionUseCase(
                 updated = RuleDecisionWindows.advance(game, submitted, resolution, module, resolverRegistry, handSortPreferenceStore::isEnabled)
             }
             updated to RuleDecisionSubmissionUpdate(
-                Outcome.Success(Unit),
-                listOf(
-                    HistoryEventDraft(
+                outcome = Outcome.Success(Unit),
+                historyDrafts = listOf(
+                    element = HistoryEventDraft(
                         actorPlayerId = playerId,
                         fact = HistoryFact.RuleDecisionSubmitted(
                             timing = ruleDecision.timing,

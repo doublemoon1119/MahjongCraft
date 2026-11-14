@@ -85,7 +85,7 @@ class RuleComponentCheckerTest {
         val otherNote = ComponentType("test:other_note", String::class, { it }, target = BuiltInComponentOwners.PLAYER)
         val registry = bundledCoreExtensionRegistries(
             additionalExtensions = listOf(
-                object : MahjongExtension {
+                element = object : MahjongExtension {
                     override val id: String = "test:other_extension"
                     override fun registerRuleModules(registry: MahjongModuleRegistrar) = Unit
                     override fun registerNetworkDtos(registries: NetworkDtoRegistrars) = Unit
@@ -93,7 +93,7 @@ class RuleComponentCheckerTest {
                     override fun registerComponents(registry: ComponentRegistrar) {
                         registry.register(otherNote)
                         registry.registerLifecycle(
-                            ComponentLifecycleDefinition(
+                            definition = ComponentLifecycleDefinition(
                                 component = otherNote,
                                 ownerType = BuiltInComponentOwners.PLAYER,
                                 appliesTo = { _, config -> config is RiichiFamilyRuleConfig },

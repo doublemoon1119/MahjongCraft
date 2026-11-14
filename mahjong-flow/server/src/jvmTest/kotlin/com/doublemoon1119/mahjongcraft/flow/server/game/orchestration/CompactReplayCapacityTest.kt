@@ -219,11 +219,11 @@ class CompactReplayCapacityTest {
         index: RoundIndex,
     ): JsonElement {
         val dto = state.toPersistenceDto(
-            registries.ruleConfigs,
-            registries.discardPiles,
-            registries.exhaustiveDrawReasons,
-            registries.extensionGameActions,
-            registries.components,
+            ruleConfigRegistry = registries.ruleConfigs,
+            discardPileRegistry = registries.discardPiles,
+            exhaustiveDrawReasonRegistry = registries.exhaustiveDrawReasons,
+            extensionGameActionRegistry = registries.extensionGameActions,
+            componentRegistry = registries.components,
         )
         val encoded = json.encodeToJsonElement(dto) as JsonObject
         val gameplay = encoded.filterKeys { it !in setOf("id", "config", "physicalWallLayout", "roundSerial", "discardOrder") }.toMutableMap()
@@ -234,12 +234,12 @@ class CompactReplayCapacityTest {
             }
         }
         gameplay["players"] = JsonArray(
-            (encoded.getValue("players") as JsonArray).zip(state.players) { playerElement, player ->
+            content = (encoded.getValue("players") as JsonArray).zip(state.players) { playerElement, player ->
                 val projected = (playerElement as JsonObject).filterKeys { it !in setOf("id", "actionHistory", "discardPile") }.toMutableMap()
                 projected["discards"] = JsonArray(
-                    player.discardPile.entries.map { entry ->
+                    content = player.discardPile.entries.map { entry ->
                         JsonObject(
-                            buildMap {
+                            content = buildMap {
                                 put("tile", json.encodeToJsonElement(entry.tile.toPersistenceDto(registries.components)))
                                 if (entry.isTaken) put("taken", JsonPrimitive(true))
                                 if (entry.publicMarkerIds.isNotEmpty()) put("markers", JsonArray(entry.publicMarkerIds.sorted().map(::JsonPrimitive)))

@@ -86,27 +86,27 @@ class DeclareKanUseCase(
     ): Outcome<Unit, GameError> {
         // 1. 以原子方式讀取桌況、驗證業務規則並寫回
         val outcome = gameRepository.update(
-            gameId,
+            gameId = gameId,
             history = { before, after, result ->
                 if (result is Outcome.Success && before != null && after != null) {
                     val kan = result.value.kanAction
                     val drafts = mutableListOf(
                         acceptedActionHistoryDraft(
-                            playerId,
-                            kan,
-                            before,
-                            after,
-                            kan.withTiles + kan.tileId,
+                            actorPlayerId = playerId,
+                            action = kan,
+                            before = before,
+                            after = after,
+                            affectedTileIds = kan.withTiles + kan.tileId,
                         ),
                     )
                     result.value.scoring?.let { drafts += actionScoredHistoryDraft(it) }
                     if (result.value.drawnTiles.isNotEmpty()) {
                         drafts += acceptedActionHistoryDraft(
-                            playerId,
-                            GameAction.Draw,
-                            before,
-                            after,
-                            result.value.drawnTiles.map { it.id },
+                            actorPlayerId = playerId,
+                            action = GameAction.Draw,
+                            before = before,
+                            after = after,
+                            affectedTileIds = result.value.drawnTiles.map { it.id },
                         )
                     }
                     result.value.followUp?.let { drafts += it.historyDrafts(playerId, before, after) }
@@ -129,24 +129,24 @@ class DeclareKanUseCase(
 
                 !state.isOwnTurnWindowOpenFor(playerId) || state.currentPlayer.hand.lastDrawn == null ->
                     state to Outcome.Error(
-                        GameError.IllegalAction(playerId, gameId, GameAction.Kan(kanType, tileId, emptyList())),
+                        error = GameError.IllegalAction(playerId, gameId, GameAction.Kan(kanType, tileId, emptyList())),
                     )
 
                 else -> {
                     val module = moduleRegistry.getModule(state.config)
 
                     val legalActions = module.createLegalActionValidator().getLegalActions(
-                        LegalActionContext.ownTurn(state, playerId),
+                        context = LegalActionContext.ownTurn(state, playerId),
                     )
                     val kanAction = legalActions.filterIsInstance<GameAction.Kan>().firstOrNull {
                         it.type == kanType && it.tileId == tileId
                     }
                         ?: return@update state to Outcome.Error(
-                            GameError.IllegalAction(playerId, gameId, GameAction.Kan(kanType, tileId, emptyList())),
+                            error = GameError.IllegalAction(playerId, gameId, GameAction.Kan(kanType, tileId, emptyList())),
                         )
                     val declaredTile = state.currentPlayer.hand.standingTiles.firstOrNull { it.id == kanAction.tileId }
                         ?: return@update state to Outcome.Error(
-                            GameError.IllegalAction(playerId, gameId, GameAction.Kan(kanType, tileId, emptyList())),
+                            error = GameError.IllegalAction(playerId, gameId, GameAction.Kan(kanType, tileId, emptyList())),
                         )
 
                     val ronEligiblePlayerIds = RobbingEligibility.ronEligiblePlayerIds(
@@ -168,9 +168,9 @@ class DeclareKanUseCase(
                     val ronWinningPlayerIds = when (ronResolution) {
                         null, RonResolution.ALL_WINNERS -> ronEligiblePlayerIds
                         RonResolution.NEAREST_WINNER -> setOf(
-                            state.nearestPlayerInTurnOrder(
-                                playerId,
-                                ronEligiblePlayerIds,
+                            element = state.nearestPlayerInTurnOrder(
+                                fromPlayerId = playerId,
+                                candidateIds = ronEligiblePlayerIds,
                             ),
                         )
 
@@ -188,9 +188,9 @@ class DeclareKanUseCase(
                         // 嶺上牌，直接記錄流局。
                         val newState = state.recordAbortiveDraw(abortiveDrawReason, declarerId = null, module = module)
                         return@update newState to Outcome.Success(
-                            KanResult(
-                                newState,
-                                kanAction,
+                            value = KanResult(
+                                tableState = newState,
+                                kanAction = kanAction,
                                 abortiveDrawReason = abortiveDrawReason,
                                 steps = listOf(TableStep(newState, listOf(TableStepEvent.ActionDeclared(playerId, kanAction)))),
                             ),
@@ -200,11 +200,11 @@ class DeclareKanUseCase(
                     if (ronWinningPlayerIds.isNotEmpty()) {
                         val newState = state.copy(
                             turnPhase = TurnPhase.AwaitingRobbingReaction(
-                                PendingRobbingReaction(
-                                    playerId,
-                                    kanAction,
-                                    declaredTile,
-                                    ronWinningPlayerIds,
+                                reaction = PendingRobbingReaction(
+                                    declarerId = playerId,
+                                    declaredAction = kanAction,
+                                    robbedTile = declaredTile,
+                                    eligiblePlayerIds = ronWinningPlayerIds,
                                 ),
                             ),
                             publicTileEvidenceIds = state.publicTileEvidenceIds + kanAction.withTiles + kanAction.tileId,
@@ -212,7 +212,7 @@ class DeclareKanUseCase(
                         // 先呈現槓完成的樣子（牌移入副露、尚未補牌），其他玩家看到後才決定要不要搶；權威桌況要等反應結束才套用。
                         val declaredState = SelfDeclarationApplier.declaredState(state, playerId, kanAction, declaredTile, module, componentRegistry)
                         return@update newState to Outcome.Success(
-                            KanResult(
+                            value = KanResult(
                                 tableState = newState,
                                 kanAction = kanAction,
                                 steps = listOf(TableStep(declaredState ?: newState, listOf(TableStepEvent.ActionDeclared(playerId, kanAction)))),
@@ -237,9 +237,9 @@ class DeclareKanUseCase(
                     }
                     val committed = followUp?.tableState ?: applied.tableState
                     committed to Outcome.Success(
-                        KanResult(
-                            committed,
-                            kanAction,
+                        value = KanResult(
+                            tableState = committed,
+                            kanAction = kanAction,
                             applied = true,
                             drawnTiles = applied.drawnTiles,
                             scoring = applied.scoring,
