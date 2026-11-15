@@ -2,7 +2,7 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.client.gui
 
 import net.minecraft.client.gui.DrawContext
 
-/** 各畫面共用的垂直捲軸外觀。 */
+/** 各畫面共用的垂直捲軸外觀；水平捲軸 [HorizontalScrollbar] 使用同樣的顏色。 */
 internal object VerticalScrollbar {
     /** 軌道與滑塊的寬度。 */
     const val WIDTH: Int = 3
@@ -11,10 +11,10 @@ internal object VerticalScrollbar {
     const val MINIMUM_THUMB_HEIGHT: Int = 12
 
     /** 軌道的 ARGB 顏色。 */
-    private const val TRACK_COLOR: Int = 0x80505050.toInt()
+    const val TRACK_COLOR: Int = 0x80505050.toInt()
 
     /** 滑塊的 ARGB 顏色。 */
-    private const val THUMB_COLOR: Int = 0xFFD0D0D0.toInt()
+    const val THUMB_COLOR: Int = 0xFFD0D0D0.toInt()
 
     /**
      * 在畫面保留給捲軸的水平範圍內置中繪製捲軸；內容不需要捲動時不繪製。

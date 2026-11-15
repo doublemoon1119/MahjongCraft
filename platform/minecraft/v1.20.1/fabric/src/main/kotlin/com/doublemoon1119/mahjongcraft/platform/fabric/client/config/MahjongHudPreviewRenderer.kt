@@ -23,10 +23,10 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.client.game.decisionTimer
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.game.discardAnalysisContent
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.game.drawDecisionPanel
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.game.drawDecisionTimer
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.RestartableMarqueeButtonWidget
 import com.mojang.blaze3d.systems.RenderSystem
 import net.minecraft.client.MinecraftClient
 import net.minecraft.client.gui.DrawContext
-import net.minecraft.client.gui.widget.ButtonWidget
 import net.minecraft.text.Text
 import kotlin.time.Duration.Companion.seconds
 
@@ -134,7 +134,7 @@ class MahjongHudPreviewRenderer(
 
         /** 以預覽不透明度繪製按鈕，並恢復後續內容使用的著色。 */
         fun renderButton(label: Text, bounds: DecisionBounds) {
-            val button = ButtonWidget.builder(label) {}.dimensions(bounds.x, bounds.y, bounds.width, bounds.height).build()
+            val button = RestartableMarqueeButtonWidget.builder(label) {}.dimensions(bounds.x, bounds.y, bounds.width, bounds.height).build()
             button.setAlpha(opacity)
             button.render(context, NO_POINTER, NO_POINTER, 0f)
             context.draw()

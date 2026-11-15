@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.client.game
 
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.RestartableMarqueeButtonWidget
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.PlayerDecisionPromptDto
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.PlayerDecisionSelectionKindDto
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.RuleDecisionPromptDto
@@ -74,13 +75,13 @@ internal class PlayerDecisionScreen(
         val placements = layout.cardPlacements(horizontalScroll)
         cardButtons = visibleEntries.mapIndexed { index, entry ->
             val bounds = layout.cardButtonBounds(placements[index])
-            ButtonWidget.builder(entry.label) { onEntryClicked(entry) }
+            RestartableMarqueeButtonWidget.builder(entry.label) { onEntryClicked(entry) }
                 .dimensions(bounds.x, bounds.y, bounds.width, bounds.height)
                 .build()
         }
         skipButton = if (prompt.ruleDecision == null || rulePassOptionId != null) {
             val bounds = layout.skipButtonBounds
-            ButtonWidget.builder(controller.decisionTexts.skipLabel(prompt.ruleModuleId)) { onSkipClicked() }
+            RestartableMarqueeButtonWidget.builder(controller.decisionTexts.skipLabel(prompt.ruleModuleId)) { onSkipClicked() }
                 .dimensions(bounds.x, bounds.y, bounds.width, bounds.height)
                 .build()
         } else {

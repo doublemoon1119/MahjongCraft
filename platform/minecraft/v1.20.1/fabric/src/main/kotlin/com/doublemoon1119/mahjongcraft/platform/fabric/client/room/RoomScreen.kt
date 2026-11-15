@@ -13,6 +13,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.client.catalogue.RuleCata
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.character.GuiEntityModelRenderer
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.character.RoomFigureArea
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.fitClientText
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.CardBackground
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.ControlTooltip
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.DropdownOption
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.DropdownOverlay
@@ -653,7 +654,7 @@ class RoomScreen(
             if (gridRow !in grid.visibleGridRows) return@forEachIndexed
             val x = grid.cardLeft(index)
             val y = grid.cardTop(gridRow)
-            context.fill(x + 2, y, x + grid.cardWidth - RoomMemberGridLayout.CARD_RIGHT_INSET, y + grid.cardHeight, MEMBER_CARD_BACKGROUND)
+            context.fill(x + 2, y, x + grid.cardWidth - RoomMemberGridLayout.CARD_RIGHT_INSET, y + grid.cardHeight, CardBackground.COLOR)
             val infoTop = grid.infoTop(gridRow)
             renderMemberAppearance(context, player.playerId, player.isAi, figureArea(grid, x, y, infoTop), mouseX, mouseY)
             context.drawCenteredTextWithShadow(
@@ -753,7 +754,7 @@ class RoomScreen(
             if (row !in visibleRows) return@forEachIndexed
             val x = grid.cardLeft(index)
             val y = grid.cardTop(row)
-            context.fill(x + 2, y, x + grid.cardWidth - RoomMemberGridLayout.CARD_RIGHT_INSET, y + grid.cardHeight, MEMBER_CARD_BACKGROUND)
+            context.fill(x + 2, y, x + grid.cardWidth - RoomMemberGridLayout.CARD_RIGHT_INSET, y + grid.cardHeight, CardBackground.COLOR)
             val ai = playerId in aiIds
             val statusTop = grid.statusTop(row)
             renderMemberAppearance(context, playerId, ai, figureArea(grid, x, y, statusTop), mouseX, mouseY)
@@ -1068,9 +1069,6 @@ class RoomScreen(
     }
 
     private companion object {
-        /** 成員卡片的 ARGB 背景顏色。 */
-        const val MEMBER_CARD_BACKGROUND = 0xA0202838.toInt()
-
         /** [resolvePlayerPreview] 為找不到 player-list profile 的玩家組出佔位 [GameProfile] 時使用的名稱。 */
         const val OFFLINE_PLAYER_PROFILE_NAME = "Offline"
 
