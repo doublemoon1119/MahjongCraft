@@ -11,6 +11,7 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkJson
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.catalogue.RuleCatalogueScreenController
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.character.GuiEntityModelRenderer
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.character.RoomFigureArea
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.fitClientText
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.ControlTooltip
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.DropdownOption
@@ -303,7 +304,7 @@ class RoomScreen(
                     current = room.aiPlayerStrategyKeys[targetId],
                     editable = room.isHost,
                     x = cardX + 8,
-                    y = cardY + RoomMemberGridLayout.INFO_OFFSET - AI_STRATEGY_BUTTON_LIFT,
+                    y = grid.statusTop(row) - AI_STRATEGY_BUTTON_LIFT,
                     width = grid.cardWidth - 20,
                 )
             }
@@ -632,7 +633,7 @@ class RoomScreen(
 
     /**
      * 進行中對局依權威自風排序，固定呈現東、南、西、北——卡片本身的大小與位置跟等待室
-     * （[renderMembers]）共用同一套固定尺寸 grid 與捲動機制（[memberScroll]），差異只在名稱下方
+     * （[renderMembers]）共用同一套 grid、放大規則與捲動機制（[memberScroll]），差異只在名稱下方
      * 顯示的是 player info（[resolvePlayingPlayerInfo]）而不是加入狀態；資訊放不下時捲軸畫在該卡片內，每張卡片各自捲動。
      *
      * @param context 畫面繪製情境。
@@ -652,13 +653,14 @@ class RoomScreen(
             if (gridRow !in grid.visibleGridRows) return@forEachIndexed
             val x = grid.cardLeft(index)
             val y = grid.cardTop(gridRow)
-            context.fill(x + 2, y, x + grid.cardWidth - RoomMemberGridLayout.CARD_RIGHT_INSET, y + RoomMemberGridLayout.CARD_HEIGHT, MEMBER_CARD_BACKGROUND)
-            renderMemberAppearance(context, player.playerId, player.isAi, x, y, grid.cardWidth, mouseX, mouseY)
+            context.fill(x + 2, y, x + grid.cardWidth - RoomMemberGridLayout.CARD_RIGHT_INSET, y + grid.cardHeight, MEMBER_CARD_BACKGROUND)
+            val infoTop = grid.infoTop(gridRow)
+            renderMemberAppearance(context, player.playerId, player.isAi, figureArea(grid, x, y, infoTop), mouseX, mouseY)
             context.drawCenteredTextWithShadow(
                 textRenderer,
                 fitClientText(textRenderer, Text.literal(playerInfoDisplayName(player) { id -> displayNames.resolve(tableId, id.toString(), true) }), grid.cardWidth - 12),
                 x + grid.cardWidth / 2,
-                y + MEMBER_NAME_OFFSET,
+                grid.nameTop(infoTop),
                 0xFFFFFF,
             )
             val rows = infoRows(player)
@@ -666,7 +668,6 @@ class RoomScreen(
             scroll.clamp(grid.maximumInfoScroll(rows.size))
             val scrollable = grid.maximumInfoScroll(rows.size) > 0
             val textWidth = grid.cardWidth - 12 - if (scrollable) INFO_SCROLLBAR_RESERVED_WIDTH * 2 else 0
-            val infoTop = y + RoomMemberGridLayout.INFO_OFFSET
             rows.drop(scroll.index).take(grid.visibleInfoRows).forEachIndexed { infoRowIndex, row ->
                 context.drawCenteredTextWithShadow(
                     textRenderer,
@@ -752,14 +753,15 @@ class RoomScreen(
             if (row !in visibleRows) return@forEachIndexed
             val x = grid.cardLeft(index)
             val y = grid.cardTop(row)
-            context.fill(x + 2, y, x + grid.cardWidth - RoomMemberGridLayout.CARD_RIGHT_INSET, y + RoomMemberGridLayout.CARD_HEIGHT, MEMBER_CARD_BACKGROUND)
+            context.fill(x + 2, y, x + grid.cardWidth - RoomMemberGridLayout.CARD_RIGHT_INSET, y + grid.cardHeight, MEMBER_CARD_BACKGROUND)
             val ai = playerId in aiIds
-            renderMemberAppearance(context, playerId, ai, x, y, grid.cardWidth, mouseX, mouseY)
+            val statusTop = grid.statusTop(row)
+            renderMemberAppearance(context, playerId, ai, figureArea(grid, x, y, statusTop), mouseX, mouseY)
             context.drawCenteredTextWithShadow(
                 textRenderer,
                 fitClientText(textRenderer, memberName(playerId, ai), grid.cardWidth - 12),
                 x + grid.cardWidth / 2,
-                y + MEMBER_NAME_OFFSET,
+                grid.nameTop(statusTop),
                 0xFFFFFF,
             )
             val status = when (memberStatus) {
@@ -773,7 +775,7 @@ class RoomScreen(
             }
             status?.let {
                 val highlighted = memberStatus is MemberStatus.Waiting && playerId in memberStatus.readyPlayerIds
-                context.drawCenteredTextWithShadow(textRenderer, it, x + grid.cardWidth / 2, y + RoomMemberGridLayout.INFO_OFFSET, if (highlighted) 0x88FF88 else 0xAAAAAA)
+                context.drawCenteredTextWithShadow(textRenderer, it, x + grid.cardWidth / 2, statusTop, if (highlighted) 0x88FF88 else 0xAAAAAA)
             }
         }
         renderMemberGridScrollbar(context, grid)
@@ -785,9 +787,7 @@ class RoomScreen(
      * @param context 畫面繪製情境。
      * @param playerId 成員識別碼。
      * @param ai 是否由 AI 操控。
-     * @param x 卡片左界。
-     * @param y 卡片頂端。
-     * @param cardWidth 卡片寬度。
+     * @param area 卡片上畫人物的範圍與放大倍數。
      * @param mouseX 游標水平座標，用於模型朝向。
      * @param mouseY 游標垂直座標，用於模型朝向。
      */
@@ -795,9 +795,7 @@ class RoomScreen(
         context: DrawContext,
         playerId: Uuid,
         ai: Boolean,
-        x: Int,
-        y: Int,
-        cardWidth: Int,
+        area: RoomFigureArea,
         mouseX: Int,
         mouseY: Int,
     ) {
@@ -821,9 +819,7 @@ class RoomScreen(
                 snapshot = character,
                 id = resolution.actorKey,
                 context = context,
-                x = x,
-                y = y,
-                size = cardWidth,
+                area = area,
                 mouseX = mouseX,
                 mouseY = mouseY,
                 worldEntityId = worldEntityId,
@@ -837,15 +833,13 @@ class RoomScreen(
             null
         }
         if (entity == null) {
-            renderPortrait(context, playerId, ai, x, y, cardWidth)
+            renderPortrait(context, playerId, ai, area)
             return
         }
         GuiEntityModelRenderer.render(
             entity = entity,
             context = context,
-            x = x,
-            y = y,
-            size = cardWidth,
+            area = area,
             mouseX = mouseX,
             mouseY = mouseY,
         )
@@ -866,23 +860,37 @@ class RoomScreen(
     }
 
     /**
-     * 在卡片上方置中繪製成員頭像。
+     * 建立成員卡片上畫人物的範圍，腳底在成員名稱上方。
+     *
+     * @param grid 成員卡片版面幾何。
+     * @param x 卡片左界。
+     * @param y 卡片頂端。
+     * @param labelTop 名稱下方第一行的頂端。
+     * @return 人物範圍與卡片放大倍數。
+     */
+    private fun figureArea(grid: RoomMemberGridLayout, x: Int, y: Int, labelTop: Int): RoomFigureArea = RoomFigureArea(
+        left = x,
+        top = y,
+        width = grid.cardWidth,
+        feetY = grid.figureFeetY(labelTop),
+        scale = grid.cardScale,
+    )
+
+    /**
+     * 在卡片人物範圍內置中繪製成員頭像。
      *
      * @param context 畫面繪製情境。
      * @param playerId 成員識別碼。
      * @param isAi 是否使用 AI 外觀。
-     * @param x 卡片左界。
-     * @param y 卡片頂端。
-     * @param cardWidth 卡片寬度，用於計算頭像大小與位置。
+     * @param area 卡片上畫人物的範圍與放大倍數。
      */
-    private fun renderPortrait(context: DrawContext, playerId: Uuid, isAi: Boolean, x: Int, y: Int, cardWidth: Int) {
-        val portraitSize = (cardWidth - 24).coerceIn(28, 38)
+    private fun renderPortrait(context: DrawContext, playerId: Uuid, isAi: Boolean, area: RoomFigureArea) {
         portraitRenderer.render(
             playerId = playerId,
             isAi = isAi,
-            x = (x + (cardWidth - portraitSize) / 2).toFloat(),
-            y = (y + 24).toFloat(),
-            size = portraitSize.toFloat(),
+            x = area.portraitLeft.toFloat(),
+            y = area.portraitTop.toFloat(),
+            size = area.portraitSize.toFloat(),
             alpha = 1f,
             z = 200f,
             matrices = context.matrices,
@@ -1060,9 +1068,6 @@ class RoomScreen(
     }
 
     private companion object {
-        /** 成員名稱相對卡片頂端的垂直偏移。 */
-        const val MEMBER_NAME_OFFSET = 96
-
         /** 成員卡片的 ARGB 背景顏色。 */
         const val MEMBER_CARD_BACKGROUND = 0xA0202838.toInt()
 
