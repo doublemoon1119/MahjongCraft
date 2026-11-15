@@ -9,8 +9,9 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.VerticalScroll
  * 房間成員頁的版面：成員卡片 grid、底部按鈕列上方的狀態列與底部按鈕列。
  *
  * 內容寬度與設定頁相同，最多 [FormScreenLayout.MAX_CONTENT_WIDTH] 並置中；卡片在內容寬度內置中排列，列數超出可見
- * 範圍時以內容右側邊距內的捲軸捲動。等待室與進行中對局共用同一套換欄規則、固定列高與捲動機制。進行中對局的
- * 卡片內另有一段資訊清單，放不下時捲軸畫在該卡片內，每張卡片各自捲動。
+ * 範圍時以內容右側邊距內的捲軸捲動。只有一列卡片時，卡片依可用高度放大並上下置中；兩列以上維持固定列高。
+ * 卡片內的名稱與下方各行從卡片底端往上算，人物畫在名稱上方。等待室與進行中對局共用同一套換欄規則、放大規則與
+ * 捲動機制。進行中對局的卡片內另有一段資訊清單，放不下時捲軸畫在該卡片內，每張卡片各自捲動。
  *
  * 純資料，不依賴任何 Minecraft 型別；視窗尺寸、玩家數與捲動位置都由呼叫端傳入。
  *
@@ -77,8 +78,26 @@ internal data class RoomMemberGridLayout(
     /** 目前螢幕上實際看得到的列範圍；捲動超出視窗的列不參與繪製與命中判定。 */
     val visibleGridRows: IntRange = scrollIndex until minOf(scrollIndex + visibleRows, rows)
 
-    /** 卡片內資訊清單一次能顯示幾行。 */
-    val visibleInfoRows: Int = ((CARD_HEIGHT - INFO_OFFSET) / INFO_ROW_HEIGHT).coerceAtLeast(1)
+    /** 卡片區可用的高度，從 [CARD_TOP] 到 [gridBottom]。 */
+    private val availableHeight: Int = gridBottom - CARD_TOP
+
+    /**
+     * 卡片放大倍數。只有一列卡片時，依可用高度把卡片放大到最多 [MAX_CARD_SCALE] 倍；兩列以上維持 1 倍，
+     * 由捲軸捲動。
+     */
+    val cardScale: Float = if (rows == 1) (availableHeight.toFloat() / CARD_HEIGHT).coerceIn(1f, MAX_CARD_SCALE) else 1f
+
+    /** 單張卡片高度。 */
+    val cardHeight: Int = (CARD_HEIGHT * cardScale).toInt()
+
+    /** 第一個可見列的頂端；只有一列時整列在可用高度內上下置中。 */
+    private val firstRowTop: Int = if (rows == 1) CARD_TOP + ((availableHeight - cardHeight) / 2).coerceAtLeast(0) else CARD_TOP
+
+    /** 卡片內資訊清單一次能顯示幾行；卡片放大時行數跟著增加。 */
+    val visibleInfoRows: Int = (((CARD_HEIGHT - INFO_OFFSET) * cardScale - INFO_BOTTOM_PADDING) / INFO_ROW_HEIGHT).toInt().coerceAtLeast(1)
+
+    /** 資訊清單區從頂端到卡片底端的高度。 */
+    private val infoAreaHeight: Int = visibleInfoRows * INFO_ROW_HEIGHT + INFO_BOTTOM_PADDING
 
     /** 底部四格按鈕列；離開畫面的按鈕在最右一格。 */
     val footer: ButtonRowLayout = frame.footer(buttonCount = FOOTER_SLOTS)
@@ -97,7 +116,7 @@ internal data class RoomMemberGridLayout(
      * @param row 從零開始的完整清單列索引。
      * @return 扣除捲動偏移後的頂端 Y 座標。
      */
-    fun cardTop(row: Int): Int = CARD_TOP + (row - scrollIndex) * ROW_HEIGHT
+    fun cardTop(row: Int): Int = firstRowTop + (row - scrollIndex) * ROW_HEIGHT
 
     /**
      * 計算指定列的卡片底端。
@@ -105,15 +124,39 @@ internal data class RoomMemberGridLayout(
      * @param row 從零開始的完整清單列索引。
      * @return 卡片底端的 Y 座標。
      */
-    fun cardBottom(row: Int): Int = cardTop(row) + CARD_HEIGHT
+    fun cardBottom(row: Int): Int = cardTop(row) + cardHeight
 
     /**
-     * 計算指定列資訊清單的起點。
+     * 計算進行中對局卡片資訊清單的起點，從卡片底端往上算，資訊行數增加時往上延伸。
      *
      * @param row 從零開始的完整清單列索引。
      * @return 資訊清單頂端的 Y 座標。
      */
-    fun infoTop(row: Int): Int = cardTop(row) + INFO_OFFSET
+    fun infoTop(row: Int): Int = cardBottom(row) - infoAreaHeight
+
+    /**
+     * 計算等待室卡片狀態列的起點，例如遊戲建立者、準備狀態或 AI 策略選擇器；與卡片底端保持固定距離。
+     *
+     * @param row 從零開始的完整清單列索引。
+     * @return 狀態列頂端的 Y 座標。
+     */
+    fun statusTop(row: Int): Int = cardBottom(row) - (CARD_HEIGHT - INFO_OFFSET)
+
+    /**
+     * 計算成員名稱的位置，在名稱下方第一行（[statusTop] 或 [infoTop]）之上。
+     *
+     * @param labelTop 名稱下方第一行的頂端。
+     * @return 名稱頂端的 Y 座標。
+     */
+    fun nameTop(labelTop: Int): Int = labelTop - NAME_GAP
+
+    /**
+     * 計算人物腳底基線，在成員名稱之上。
+     *
+     * @param labelTop 名稱下方第一行的頂端。
+     * @return 人物腳底的 Y 座標。
+     */
+    fun figureFeetY(labelTop: Int): Int = nameTop(labelTop) - FIGURE_GAP
 
     /**
      * 計算資訊清單的最大合法捲動位置。
@@ -210,11 +253,23 @@ internal data class RoomMemberGridLayout(
         /** 卡片 grid 的起始 Y。 */
         const val CARD_TOP: Int = 58
 
-        /** 單張卡片高度。 */
+        /** 未放大時的單張卡片高度。 */
         const val CARD_HEIGHT: Int = 146
 
-        /** 卡片內資訊清單相對卡片頂端的偏移。 */
+        /** 只有一列卡片時的最大放大倍數。 */
+        const val MAX_CARD_SCALE: Float = 1.5f
+
+        /** 未放大時，名稱下方第一行相對卡片頂端的偏移。 */
         const val INFO_OFFSET: Int = 111
+
+        /** 資訊清單最後一行下方保留的高度。 */
+        const val INFO_BOTTOM_PADDING: Int = 11
+
+        /** 成員名稱頂端與下方第一行頂端的距離。 */
+        const val NAME_GAP: Int = 15
+
+        /** 人物腳底與成員名稱頂端的距離。 */
+        const val FIGURE_GAP: Int = 12
 
         /** 單張卡片的最大寬度。 */
         const val CARD_MAX_WIDTH: Int = 126

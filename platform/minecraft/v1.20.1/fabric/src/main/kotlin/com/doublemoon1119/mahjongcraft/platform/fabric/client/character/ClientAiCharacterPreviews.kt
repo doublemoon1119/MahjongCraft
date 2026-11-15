@@ -144,28 +144,26 @@ internal class ClientAiCharacterPreviews(
      *
      * @param snapshot 當場描述；歷史僅使用這份資料。
      * @param context GUI 繪製上下文。
-     * @param x 卡片左界。
-     * @param y 卡片頂端。
-     * @param size 卡片寬度。
+     * @param area 卡片上畫人物的範圍與放大倍數。
      * @param mouseX 游標水平座標。
      * @param mouseY 游標垂直座標。
      * @param worldEntityId 目前已授權的即時參照；歷史必須為 null。
      * @return 成功繪製模型時為 true，否則由頭像備援。
      */
-    fun renderModel(snapshot: AiCharacterSnapshot?, context: DrawContext, x: Int, y: Int, size: Int, mouseX: Int, mouseY: Int, worldEntityId: Uuid? = null): Boolean {
+    fun renderModel(snapshot: AiCharacterSnapshot?, context: DrawContext, area: RoomFigureArea, mouseX: Int, mouseY: Int, worldEntityId: Uuid? = null): Boolean {
         val current = MinecraftClient.getInstance().world ?: return false
         if (world !== current) return false
         val character = snapshot?.definition
         val live = worldEntityId?.let { id -> current.entities.firstOrNull { it.uuid == id.toJavaUuid() && !it.isRemoved } }
         if (live != null && ticks >= liveRetryAt.getOrElse(worldEntityId) { 0L }) {
-            if (attempt(null) { GuiEntityModelRenderer.render(live, context, x, y, size, mouseX, mouseY) } == true) return true
+            if (attempt(null) { GuiEntityModelRenderer.render(live, context, area, mouseX, mouseY) } == true) return true
             if (liveRetryAt.size >= 64 && worldEntityId !in liveRetryAt) liveRetryAt.remove(liveRetryAt.keys.first())
             liveRetryAt[worldEntityId] = ticks + 40L
         }
         character ?: return false
         if (!hasFactory(character.preview?.capabilityId ?: return false)) return false
         val model = models.request(character) ?: return false
-        return attempt(character) { GuiEntityModelRenderer.render(model.handle.entity, context, x, y, size, mouseX, mouseY) } == true
+        return attempt(character) { GuiEntityModelRenderer.render(model.handle.entity, context, area, mouseX, mouseY) } == true
     }
 
     /**

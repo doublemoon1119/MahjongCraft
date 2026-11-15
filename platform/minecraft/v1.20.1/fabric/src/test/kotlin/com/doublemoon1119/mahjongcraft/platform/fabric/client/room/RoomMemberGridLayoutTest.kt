@@ -74,7 +74,7 @@ class RoomMemberGridLayoutTest {
         assertEquals(300 - 8 - 20, grid.footerY)
     }
 
-    /** 卡片座標依捲動位置位移，資訊區在卡片內固定偏移處。 */
+    /** 兩列以上時卡片座標依捲動位置位移，資訊區在卡片內固定偏移處。 */
     @Test
     fun `offsets card coordinates by the scroll position`() {
         val grid = grid(width = 640, playerCount = 20, scrollIndex = 2)
@@ -83,6 +83,72 @@ class RoomMemberGridLayoutTest {
         assertEquals(RoomMemberGridLayout.CARD_TOP + RoomMemberGridLayout.ROW_HEIGHT, grid.cardTop(3))
         assertEquals(grid.cardTop(2) + RoomMemberGridLayout.CARD_HEIGHT, grid.cardBottom(2))
         assertEquals(grid.cardTop(2) + RoomMemberGridLayout.INFO_OFFSET, grid.infoTop(2))
+    }
+
+    /** 只有一列且可用高度足夠時，卡片放大到 1.5 倍並在可用高度內上下置中。 */
+    @Test
+    fun `scales a single row up to the cap and centres it`() {
+        val grid = grid(width = 960, height = 516, playerCount = 4)
+
+        assertEquals(RoomMemberGridLayout.MAX_CARD_SCALE, grid.cardScale)
+        assertEquals(219, grid.cardHeight)
+        assertTrue(abs((grid.cardTop(0) - RoomMemberGridLayout.CARD_TOP) - (grid.gridBottom - grid.cardBottom(0))) <= 1)
+    }
+
+    /** 可用高度介於 1 倍與 1.5 倍之間時，卡片依比例填滿可用高度。 */
+    @Test
+    fun `scales a single row in proportion to a medium window`() {
+        val grid = grid(width = 640, height = 300, playerCount = 4)
+
+        assertTrue(grid.cardScale > 1f && grid.cardScale < RoomMemberGridLayout.MAX_CARD_SCALE)
+        assertEquals(grid.gridBottom - RoomMemberGridLayout.CARD_TOP, grid.cardHeight)
+        assertEquals(RoomMemberGridLayout.CARD_TOP, grid.cardTop(0))
+    }
+
+    /** 可用高度不足 1 倍時不放大，卡片從頂端開始排。 */
+    @Test
+    fun `does not scale a single row in a small window`() {
+        val grid = grid(width = 640, height = 240, playerCount = 4)
+
+        assertEquals(1f, grid.cardScale)
+        assertEquals(RoomMemberGridLayout.CARD_HEIGHT, grid.cardHeight)
+        assertEquals(RoomMemberGridLayout.CARD_TOP, grid.cardTop(0))
+    }
+
+    /** 兩列以上維持 1 倍高度，從頂端開始排並以捲軸捲動。 */
+    @Test
+    fun `does not scale two or more rows`() {
+        val grid = grid(width = 640, height = 2000, playerCount = 20)
+
+        assertEquals(1f, grid.cardScale)
+        assertEquals(RoomMemberGridLayout.CARD_HEIGHT, grid.cardHeight)
+        assertEquals(RoomMemberGridLayout.CARD_TOP, grid.cardTop(0))
+    }
+
+    /** 未放大時，名稱、狀態列、資訊區與人物腳底維持原本相對卡片頂端的位置。 */
+    @Test
+    fun `keeps the unscaled card positions`() {
+        val grid = grid(width = 640, height = 240, playerCount = 4)
+        val top = grid.cardTop(0)
+
+        assertEquals(top + RoomMemberGridLayout.INFO_OFFSET, grid.statusTop(0))
+        assertEquals(top + RoomMemberGridLayout.INFO_OFFSET, grid.infoTop(0))
+        assertEquals(top + 96, grid.nameTop(grid.statusTop(0)))
+        assertEquals(top + 84, grid.figureFeetY(grid.statusTop(0)))
+        assertEquals(2, grid.visibleInfoRows)
+    }
+
+    /** 放大後，狀態列與底部的距離不變，資訊區行數增加並從底部往上延伸。 */
+    @Test
+    fun `measures the card positions from the bottom when scaled`() {
+        val small = grid(width = 960, height = 240, playerCount = 4)
+        val large = grid(width = 960, height = 516, playerCount = 4)
+
+        assertEquals(small.cardBottom(0) - small.statusTop(0), large.cardBottom(0) - large.statusTop(0))
+        assertEquals(3, large.visibleInfoRows)
+        assertTrue(large.cardBottom(0) - large.infoTop(0) >= large.visibleInfoRows * RoomMemberGridLayout.INFO_ROW_HEIGHT)
+        assertTrue(large.infoTop(0) < large.statusTop(0))
+        assertTrue(large.figureFeetY(large.infoTop(0)) > large.cardTop(0))
     }
 
     /** 可見列範圍從捲動位置起算，且不超過總列數。 */

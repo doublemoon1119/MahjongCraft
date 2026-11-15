@@ -1,6 +1,7 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.client.render
 
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.character.ClientAiCharacterPreviews
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.character.RoomFigureArea
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.player.ClientPlayerProfileResolver
 import com.doublemoon1119.mahjongcraft.platform.fabric.logging.mahjongCraftLogger
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.character.AiCharacterFace
@@ -122,17 +123,15 @@ class PlayerPortraitRenderer internal constructor(
      * @param snapshot 已授權的完整角色描述。
      * @param id 選定的備援能力；優先使用本人時可為 null。
      * @param context GUI 繪製來源。
-     * @param x 卡片左界。
-     * @param y 卡片頂端。
-     * @param size 卡片寬度。
+     * @param area 卡片上畫人物的範圍與放大倍數。
      * @param mouseX 游標水平座標。
      * @param mouseY 游標垂直座標。
      * @param worldEntityId 同一授權快照中的即時實體 UUID。
      * @return 已直接畫出模型時為 true。
      */
-    fun renderActorModel(snapshot: AiCharacterSnapshot?, id: String?, context: DrawContext, x: Int, y: Int, size: Int, mouseX: Int, mouseY: Int, worldEntityId: Uuid?): Boolean {
+    internal fun renderActorModel(snapshot: AiCharacterSnapshot?, id: String?, context: DrawContext, area: RoomFigureArea, mouseX: Int, mouseY: Int, worldEntityId: Uuid?): Boolean {
         if (id != null && snapshot?.definition?.preview?.capabilityId != id) return false
-        return previews.renderModel(snapshot, context, x, y, size, mouseX, mouseY, worldEntityId)
+        return previews.renderModel(snapshot, context, area, mouseX, mouseY, worldEntityId)
     }
 
     /**

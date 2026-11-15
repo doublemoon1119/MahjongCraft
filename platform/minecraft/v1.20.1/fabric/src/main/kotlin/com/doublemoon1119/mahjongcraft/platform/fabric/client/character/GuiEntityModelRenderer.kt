@@ -17,17 +17,15 @@ internal object GuiEntityModelRenderer {
      *
      * @param entity 已載入的本人或獨立預覽模型。
      * @param context GUI 繪製上下文。
-     * @param x 卡片左界。
-     * @param y 卡片頂端。
-     * @param size 卡片寬度，不是模型填滿區域。
+     * @param area 卡片上畫人物的範圍與放大倍數。
      * @param mouseX 游標水平位置。
      * @param mouseY 游標垂直位置。
      * @return 尺寸有效並完成繪製時為 true。
      */
-    fun render(entity: Entity, context: DrawContext, x: Int, y: Int, size: Int, mouseX: Int, mouseY: Int): Boolean {
-        if (size <= 0 || !entity.height.isFinite() || !entity.width.isFinite() || entity.height <= 0f || entity.width <= 0f || entity.height > 128f || entity.width > 128f) return false
-        val view = RoomModelPreviewLayout.forCard(x, y, size, mouseX, mouseY)
-        val scale = if (entity is PlayerEntity) view.scale else (view.scale * minOf(1f, 1.8f / maxOf(entity.height, entity.width))).toInt().coerceAtLeast(1)
+    fun render(entity: Entity, context: DrawContext, area: RoomFigureArea, mouseX: Int, mouseY: Int): Boolean {
+        if (area.width <= 0 || !entity.height.isFinite() || !entity.width.isFinite() || entity.height <= 0f || entity.width <= 0f || entity.height > 128f || entity.width > 128f) return false
+        val view = RoomModelPreviewLayout.forCard(area, mouseX, mouseY)
+        val scale = if (entity is PlayerEntity) view.scale else (view.scale * minOf(1f, RoomFigureArea.MODEL_EXTENT / maxOf(entity.height, entity.width))).toInt().coerceAtLeast(1)
         val client = MinecraftClient.getInstance()
         val matrices = context.matrices
         val originalEntry = matrices.peek()
