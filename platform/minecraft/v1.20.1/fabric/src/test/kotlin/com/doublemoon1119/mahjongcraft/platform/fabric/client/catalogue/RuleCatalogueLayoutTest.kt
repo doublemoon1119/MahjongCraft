@@ -2,9 +2,9 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.client.catalogue
 
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.logic.base.TileFaceView
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.TabStripLayout
 import com.doublemoon1119.mahjongcraft.platform.minecraft.catalogue.RuleCatalogueTileGroup
 import com.doublemoon1119.mahjongcraft.platform.minecraft.catalogue.RuleCatalogueTileGroupRole
-import kotlin.math.abs
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -12,14 +12,15 @@ import kotlin.test.assertTrue
 
 /** 驗證規則一覽的畫面幾何與範例牌組排列。 */
 class RuleCatalogueLayoutTest {
-    /** 最小畫面（320×240）下控制項排成兩列，控制項、內容區與底部按鈕都不重疊且留在畫面內，內容區比原本三列排法更高。 */
+    /** 最小畫面（320×240）下規則選擇器獨佔一列，搜尋與清除在下一列；各區域不重疊且留在畫面內。 */
     @Test
-    fun `smallest screen uses two rows and keeps every area apart`() {
-        listOf(false, true).forEach { sourceToggle ->
-            val layout = measure(width = 320, height = 240, sourceToggle = sourceToggle)
+    fun `smallest screen gives the rule selector its own row`() {
+        listOf<Int?>(null, 60).forEach { sourceLabelWidth ->
+            val layout = measure(width = 320, height = 240, sourceLabelWidth = sourceLabelWidth)
 
             assertFalse(layout.singleRow)
-            assertEquals(layout.rule.y, layout.category.y)
+            assertEquals(layout.contentLeft, layout.rule.x)
+            assertEquals(layout.contentWidth, layout.rule.width)
             assertEquals(layout.search.y, layout.clear.y)
             assertTrue(layout.rule.bottom <= layout.search.y)
             assertAreasApart(layout)
@@ -27,48 +28,59 @@ class RuleCatalogueLayoutTest {
         }
     }
 
-    /** 寬畫面時規則、分類、搜尋與清除排成一列，由左到右不重疊且不超出畫面。 */
+    /** 寬畫面時規則選擇器（寬 150）、搜尋與清除排成一列，由左到右不重疊並填滿內容寬度。 */
     @Test
-    fun `wide screens put every control on one row`() {
+    fun `wide screens put the rule selector search and clear on one row`() {
         listOf(427, 960).forEach { width ->
             val layout = measure(width = width, height = 240)
-            val controls = listOf(layout.rule, layout.category, layout.search, layout.clear)
+            val controls = listOf(layout.rule, layout.search, layout.clear)
 
             assertTrue(layout.singleRow)
             assertEquals(1, controls.map { it.y }.distinct().size)
             controls.zipWithNext().forEach { (left, right) -> assertEquals(left.right + RuleCatalogueScreenLayout.GAP, right.x) }
-            assertEquals(RuleCatalogueScreenLayout.MARGIN, layout.rule.x)
-            assertEquals(layout.width - RuleCatalogueScreenLayout.MARGIN, layout.clear.right)
-            assertEquals(layout.rule.width, layout.category.width)
-            assertTrue(layout.rule.width <= RuleCatalogueScreenLayout.MAX_SELECTOR_WIDTH)
+            assertEquals(150, layout.rule.width)
+            assertEquals(layout.contentLeft, layout.rule.x)
+            assertEquals(layout.contentLeft + layout.contentWidth, layout.clear.right)
             assertAreasApart(layout)
         }
     }
 
-    /** 兩列排法時，兩列都填滿可用寬度。 */
+    /** 內容寬度最多 456 並水平置中，和設定類畫面一致。 */
     @Test
-    fun `two row controls fill the available width`() {
-        val layout = measure(width = 320, height = 240)
+    fun `content width is capped and centred`() {
+        val layout = measure(width = 960, height = 540)
 
-        assertEquals(RuleCatalogueScreenLayout.MARGIN, layout.rule.x)
-        assertEquals(layout.width - RuleCatalogueScreenLayout.MARGIN, layout.category.right)
-        assertEquals(RuleCatalogueScreenLayout.MARGIN, layout.search.x)
-        assertEquals(layout.width - RuleCatalogueScreenLayout.MARGIN, layout.clear.right)
+        assertEquals(456, layout.contentWidth)
+        assertEquals((960 - 456) / 2, layout.contentLeft)
+        assertEquals(layout.contentWidth, layout.contentBounds.width)
+        assertEquals(layout.contentWidth, layout.tabStrip(tabCount = 12, scroll = 0).width)
     }
 
-    /** 從房間或歷史開啟時，設定來源切換按鈕放在關閉按鈕左側，兩者一起置中；一般開啟時只有置中的關閉按鈕。 */
+    /** 分類頁籤在控制項下方，內容區從頁籤底線下方開始。 */
     @Test
-    fun `footer places the source toggle beside the close button`() {
-        val general = measure(width = 427, height = 240)
-        val withToggle = measure(width = 427, height = 240, sourceToggle = true)
-        val toggle = checkNotNull(withToggle.sourceToggle)
+    fun `category tabs sit between the controls and the content`() {
+        val layout = measure(width = 480, height = 270)
+        val strip = layout.tabStrip(tabCount = 12, scroll = 0)
 
-        assertEquals(null, general.sourceToggle)
-        assertTrue(abs(general.close.x - (general.width - general.close.right)) <= 1)
-        assertEquals(withToggle.close.y, toggle.y)
-        assertEquals(toggle.right + RuleCatalogueScreenLayout.GAP, withToggle.close.x)
-        assertTrue(abs(toggle.x - (withToggle.width - withToggle.close.right)) <= 1)
-        assertTrue(toggle.x >= RuleCatalogueScreenLayout.MARGIN)
+        assertTrue(strip.top >= layout.search.bottom)
+        assertTrue(strip.lineY < layout.contentBounds.y)
+        assertTrue(strip.maximumScroll > 0)
+    }
+
+    /** 返回或關閉固定在底部最右一格；設定來源選擇器在標籤右側，不與返回按鈕重疊。 */
+    @Test
+    fun `footer keeps close in the last slot and the source selector after its label`() {
+        val general = measure(width = 480, height = 270)
+        val withSource = measure(width = 480, height = 270, sourceLabelWidth = 60)
+        val selector = checkNotNull(withSource.sourceSelector)
+
+        assertEquals(null, general.sourceSelector)
+        assertEquals(general.close, withSource.close)
+        assertEquals(general.contentLeft + general.contentWidth, general.close.right)
+        assertEquals(withSource.contentLeft + 60 + RuleCatalogueScreenLayout.LABEL_GAP, selector.x)
+        assertEquals(150, selector.width)
+        assertEquals(withSource.close.y, selector.y)
+        assertTrue(selector.right + RuleCatalogueScreenLayout.GAP <= withSource.close.x)
     }
 
     /** 清除按鈕依文字寬度變寬，但至少與按鈕同高。 */
@@ -78,10 +90,20 @@ class RuleCatalogueLayoutTest {
         assertEquals(44, measure(width = 320, height = 240, clearWidth = 44).clear.width)
     }
 
+    /** 畫面建立前的 1×1 佔位尺寸也能算出版面，不會因按鈕列太窄而拋出例外。 */
+    @Test
+    fun `placeholder size before the first init still measures`() {
+        listOf<Int?>(null, 60).forEach { sourceLabelWidth ->
+            val layout = measure(width = 1, height = 1, clearWidth = 0, sourceLabelWidth = sourceLabelWidth)
+
+            assertTrue(layout.contentBounds.height >= 0)
+        }
+    }
+
     /** 畫面太矮時底部按鈕仍留在畫面內，只縮小內容區。 */
     @Test
     fun `very short screens keep the footer on screen`() {
-        val layout = measure(width = 320, height = 120, sourceToggle = true)
+        val layout = measure(width = 320, height = 120, sourceLabelWidth = 60)
 
         assertTrue(layout.close.bottom <= layout.height)
         assertTrue(layout.contentBounds.height >= 0)
@@ -190,13 +212,14 @@ class RuleCatalogueLayoutTest {
      * @param layout 受測畫面幾何。
      */
     private fun assertAreasApart(layout: RuleCatalogueScreenLayout) {
-        val controlsBottom = listOf(layout.rule, layout.category, layout.search, layout.clear).maxOf { it.bottom }
-        assertTrue(controlsBottom <= layout.contentBounds.y)
+        val controlsBottom = listOf(layout.rule, layout.search, layout.clear).maxOf { it.bottom }
+        assertTrue(controlsBottom <= layout.tabsTop)
+        assertTrue(layout.tabsTop + TabStripLayout.SELECTED_HEIGHT < layout.contentBounds.y)
         assertTrue(layout.contentBounds.bottom <= layout.close.y)
         assertTrue(layout.close.bottom <= layout.height)
         assertTrue(layout.scrollbarBounds.x >= layout.contentBounds.right)
         assertTrue(layout.scrollbarBounds.right <= layout.width)
-        listOf(layout.rule, layout.category, layout.search, layout.clear, layout.close).forEach { assertTrue(it.right <= layout.width) }
+        listOfNotNull(layout.rule, layout.search, layout.clear, layout.close, layout.sourceSelector).forEach { assertTrue(it.right <= layout.width) }
     }
 
     /**
@@ -205,19 +228,19 @@ class RuleCatalogueLayoutTest {
      * @param width 畫面寬度。
      * @param height 畫面高度。
      * @param clearWidth 清除按鈕寬度。
-     * @param sourceToggle 是否顯示設定來源切換按鈕。
+     * @param sourceLabelWidth 設定來源標籤寬度；不顯示設定來源時為 null。
      * @return 畫面幾何。
      */
     private fun measure(
         width: Int,
         height: Int,
         clearWidth: Int = 36,
-        sourceToggle: Boolean = false,
+        sourceLabelWidth: Int? = null,
     ): RuleCatalogueScreenLayout = RuleCatalogueScreenLayout.measure(
         width = width,
         height = height,
         clearWidth = clearWidth,
-        sourceToggle = sourceToggle,
+        sourceLabelWidth = sourceLabelWidth,
     )
 
     /**
@@ -243,6 +266,6 @@ class RuleCatalogueLayoutTest {
     /** 測試門檻。 */
     private companion object {
         /** 最小畫面上內容區至少要能顯示的高度。 */
-        const val MINIMUM_VISIBLE_CONTENT = 130
+        const val MINIMUM_VISIBLE_CONTENT = 100
     }
 }

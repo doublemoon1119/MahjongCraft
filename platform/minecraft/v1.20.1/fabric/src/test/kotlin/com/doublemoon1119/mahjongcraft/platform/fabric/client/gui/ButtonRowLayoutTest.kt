@@ -51,4 +51,14 @@ class ButtonRowLayoutTest {
         assertFailsWith<IllegalArgumentException> { ButtonRowLayout(left = 0, width = 18, buttonCount = 4) }
         assertFailsWith<IllegalArgumentException> { ButtonRowLayout(left = 0, width = 200, buttonCount = 4).buttonWidth(4) }
     }
+
+    /** 最小寬度剛好讓每顆按鈕寬 1 像素。 */
+    @Test
+    fun `minimum width fits one pixel per button`() {
+        (1..6).forEach { count ->
+            val layout = ButtonRowLayout(left = 0, width = ButtonRowLayout.minimumWidth(count), buttonCount = count)
+
+            assertEquals(List(count) { 1 }, (0 until count).map(layout::buttonWidth))
+        }
+    }
 }

@@ -499,6 +499,8 @@ attempt does not fall through to another provider.
 - Route every cycle button through `CycleButtonInput` and build it with `pressesOnSecondaryClick`:
   left-click selects the next option, right-click or Shift+left-click the previous one.
 - A row that only performs an action and has no value is one button spanning the row, without a label.
+- Footer buttons are equal in width and span the content width. The bottom-right slot always holds the
+  button that leaves the screen (Back, Done or Close), so players find it in the same place everywhere.
 - Build control tooltips with `ControlTooltip`. List every option and mark the current one instead of
   adding a separate "current value" line. Write hints as the action and its result, such as
   "Left-click: next option", not internal concepts; translations follow the same rule. Put a button's

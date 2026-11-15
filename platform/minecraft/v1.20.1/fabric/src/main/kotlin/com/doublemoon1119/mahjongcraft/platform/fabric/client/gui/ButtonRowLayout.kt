@@ -46,5 +46,13 @@ internal data class ButtonRowLayout(
     internal companion object {
         /** 相鄰按鈕的預設間距。 */
         const val BUTTON_GAP: Int = 6
+
+        /**
+         * 取得能容納指定顆數按鈕的最小寬度：每顆至少 1 像素，加上預設間距。
+         *
+         * @param buttonCount 按鈕數量。
+         * @return 最小寬度。
+         */
+        fun minimumWidth(buttonCount: Int): Int = BUTTON_GAP * (buttonCount - 1) + buttonCount
     }
 }

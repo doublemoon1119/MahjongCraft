@@ -78,7 +78,11 @@ class MahjongHudLayoutEditorScreen(
 
     /** 建立工具列按鈕與等寬排成一列的重設、復原、套用與返回按鈕。 */
     override fun init() {
-        val footer = ButtonRowLayout(left = FOOTER_MARGIN, width = width - FOOTER_MARGIN * 2, buttonCount = SettingsFooterButtons.COUNT)
+        val footer = ButtonRowLayout(
+            left = FOOTER_MARGIN,
+            width = (width - FOOTER_MARGIN * 2).coerceAtLeast(ButtonRowLayout.minimumWidth(SettingsFooterButtons.COUNT)),
+            buttonCount = SettingsFooterButtons.COUNT,
+        )
         val y = height - 28
         addToolbarButtons()
         resetButton = addDrawableChild(

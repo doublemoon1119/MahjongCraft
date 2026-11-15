@@ -1,11 +1,13 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.client.gui
 
 /**
- * 選擇器展開清單的版面：清單在按鈕正下方、與按鈕同寬，每個選項一列，底部可附一段說明。
+ * 選擇器展開清單的版面：清單與按鈕同寬，每個選項一列，底部可附一段說明。
  *
- * 選項多到超出視窗底部時只顯示放得下的幾列，其餘在清單內捲動。純資料，不依賴任何 Minecraft 型別。
+ * 清單通常在按鈕正下方；下方放不下完整清單、而上方空間比下方大時，改在按鈕正上方展開，例如畫面底部的選擇器。
+ * 選擇的那一側仍放不下時只顯示放得下的幾列，其餘在清單內捲動。純資料，不依賴任何 Minecraft 型別。
  *
  * @property anchorLeft 選擇器按鈕的左界。
+ * @property anchorTop 選擇器按鈕的上界。
  * @property anchorBottom 選擇器按鈕的下界。
  * @property width 選擇器按鈕的寬度。
  * @property optionCount 選項數量。
@@ -15,6 +17,7 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.client.gui
  */
 internal data class DropdownListLayout(
     val anchorLeft: Int,
+    val anchorTop: Int,
     val anchorBottom: Int,
     val width: Int,
     val optionCount: Int,
@@ -25,8 +28,20 @@ internal data class DropdownListLayout(
     /** 底部說明區所佔的高度，含分隔線與上下內距；沒有說明時為 0。 */
     val footnoteBlockHeight: Int = if (footnoteHeight > 0) 1 + FOOTNOTE_PADDING * 2 + footnoteHeight else 0
 
+    /** 清單全部展開所需的高度，含外框與底部說明。 */
+    private val fullHeight: Int = BORDER * 2 + optionCount.coerceAtLeast(1) * OPTION_HEIGHT + footnoteBlockHeight
+
+    /** 按鈕下方可用的高度。 */
+    private val spaceBelow: Int = windowHeight - WINDOW_MARGIN - anchorBottom
+
+    /** 按鈕上方可用的高度。 */
+    private val spaceAbove: Int = anchorTop - WINDOW_MARGIN
+
+    /** 清單是否在按鈕上方展開。 */
+    val opensUpward: Boolean = fullHeight > spaceBelow && spaceAbove > spaceBelow
+
     /** 同時顯示的選項數。 */
-    val visibleCount: Int = ((windowHeight - WINDOW_BOTTOM_MARGIN - anchorBottom - BORDER * 2 - footnoteBlockHeight) / OPTION_HEIGHT)
+    val visibleCount: Int = (((if (opensUpward) spaceAbove else spaceBelow) - BORDER * 2 - footnoteBlockHeight) / OPTION_HEIGHT)
         .coerceIn(1, optionCount.coerceAtLeast(1))
 
     /** 最大合法捲動位置。 */
@@ -42,7 +57,7 @@ internal data class DropdownListLayout(
     val right: Int = anchorLeft + width
 
     /** 清單上界，含外框。 */
-    val top: Int = anchorBottom
+    val top: Int = if (opensUpward) anchorTop - (BORDER * 2 + visibleCount * OPTION_HEIGHT + footnoteBlockHeight) else anchorBottom
 
     /** 第一列選項的上界。 */
     val optionsTop: Int = top + BORDER
@@ -109,7 +124,7 @@ internal data class DropdownListLayout(
         /** 底部說明文字上下的內距。 */
         const val FOOTNOTE_PADDING: Int = 4
 
-        /** 清單下界與視窗底部至少保留的距離。 */
-        const val WINDOW_BOTTOM_MARGIN: Int = 4
+        /** 清單與視窗上下緣至少保留的距離。 */
+        const val WINDOW_MARGIN: Int = 4
     }
 }

@@ -186,4 +186,12 @@ class FormScreenLayoutTest {
         assertFalse(layout.isOverScrollbar(layout.contentRight - 1.0, layout.fieldsTop + 1.0))
         assertFalse(layout.isOverScrollbar(layout.scrollbarLeft + 1.0, layout.fieldsBottom + 1.0))
     }
+
+    /** 視窗極小時底部按鈕列仍能建立，不因內容寬度不足而拋出例外。 */
+    @Test
+    fun `footer survives a placeholder window size`() {
+        val footer = FormScreenLayout(windowWidth = 1, windowHeight = 1, hasPageSwitch = false, hasRuleRow = false).footer(4)
+
+        assertEquals(4, (0 until 4).count { footer.buttonWidth(it) >= 1 })
+    }
 }

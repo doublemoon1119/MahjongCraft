@@ -106,9 +106,13 @@ internal data class FormScreenLayout(
      * 建立橫跨內容寬度的底部按鈕列。
      *
      * @param buttonCount 按鈕數量。
-     * @return 等寬排成一列的按鈕位置。
+     * @return 等寬排成一列的按鈕位置；內容寬度連最小按鈕都放不下時，按鈕列會超出內容寬度。
      */
-    fun footer(buttonCount: Int): ButtonRowLayout = ButtonRowLayout(left = contentLeft, width = contentWidth, buttonCount = buttonCount)
+    fun footer(buttonCount: Int): ButtonRowLayout = ButtonRowLayout(
+        left = contentLeft,
+        width = contentWidth.coerceAtLeast(ButtonRowLayout.minimumWidth(buttonCount)),
+        buttonCount = buttonCount,
+    )
 
     /**
      * 取得第幾個可見欄位的上界。

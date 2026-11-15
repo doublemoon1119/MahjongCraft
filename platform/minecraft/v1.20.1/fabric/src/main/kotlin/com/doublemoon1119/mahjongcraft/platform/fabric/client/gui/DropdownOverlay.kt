@@ -24,7 +24,7 @@ internal data class DropdownOption(
 /**
  * 一個畫面同時最多展開一份的選擇器清單。
  *
- * 清單展開期間畫面上其他元件不可操作。使用清單的畫面要做五件事：建立元件時呼叫 [close]；繪製其他內容時
+ * 清單通常在選擇器下方展開，下方空間不足時改往上方展開。清單展開期間畫面上其他元件不可操作。使用清單的畫面要做五件事：建立元件時呼叫 [close]；繪製其他內容時
  * 以 [pointer] 取代游標座標，並在最後呼叫 [render]；`mouseClicked`、`mouseScrolled`、`keyPressed` 先交給這裡，
  * 回傳 true 就不再往下處理；清單展開時（[isOpen]）不處理拖曳與文字輸入。點選
  * 可選的選項、點清單以外的地方或按 Esc 都會收合；選項太多時以滾輪或方向鍵在清單內捲動。選項名稱放不下時截斷，
@@ -78,6 +78,7 @@ internal class DropdownOverlay {
         open = OpenList(
             key = key,
             anchorLeft = anchor.x,
+            anchorTop = anchor.y,
             anchorBottom = anchor.y + anchor.height,
             width = anchor.width,
             options = options,
@@ -267,6 +268,7 @@ internal class DropdownOverlay {
         windowHeight: Int,
     ): DropdownListLayout = DropdownListLayout(
         anchorLeft = list.anchorLeft,
+        anchorTop = list.anchorTop,
         anchorBottom = list.anchorBottom,
         width = list.width,
         optionCount = list.options.size,
@@ -280,6 +282,7 @@ internal class DropdownOverlay {
      *
      * @property key 選擇器的識別值。
      * @property anchorLeft 選擇器按鈕的左界。
+     * @property anchorTop 選擇器按鈕的上界。
      * @property anchorBottom 選擇器按鈕的下界。
      * @property width 選擇器按鈕的寬度。
      * @property options 依顯示順序排列的選項。
@@ -292,6 +295,7 @@ internal class DropdownOverlay {
     private class OpenList(
         val key: Any,
         val anchorLeft: Int,
+        val anchorTop: Int,
         val anchorBottom: Int,
         val width: Int,
         val options: List<DropdownOption>,
