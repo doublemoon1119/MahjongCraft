@@ -1,6 +1,9 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.client.game
 
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.CardBackground
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.ClaimedTileMarker
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.HorizontalScrollbar
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.wrapLinesBalanced
 import com.doublemoon1119.mahjongcraft.platform.minecraft.action.BuiltInGameActionIds
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.DecisionPlayerRelationDto
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.PlayerDecisionPromptDto
@@ -114,8 +117,8 @@ internal fun decisionPanelLayout(
             )
             val textWidth = (base.cardWidth(draft) - DecisionCardLayout.CARD_PADDING * 2).coerceAtLeast(1)
             draft.copy(
-                bodyLineCount = entry.cardBody?.let { renderer.wrapLines(it, textWidth).size } ?: 0,
-                hintLineCount = entry.cardHint?.let { renderer.wrapLines(it, textWidth).size } ?: 0,
+                bodyLineCount = entry.cardBody?.let { renderer.wrapLinesBalanced(it, textWidth).size } ?: 0,
+                hintLineCount = entry.cardHint?.let { renderer.wrapLinesBalanced(it, textWidth).size } ?: 0,
             )
         },
     )
@@ -165,11 +168,14 @@ internal fun DrawContext.drawDecisionPanel(
     renderCardButtons()
     disableScissor()
     if (layout.hasOverflow) {
-        val top = layout.scrollbarTop
-        val bottom = top + DecisionCardLayout.SCROLLBAR_HEIGHT
-        fill(layout.viewportLeft, top, layout.viewportRight, bottom, SCROLLBAR_TRACK_COLOR)
-        val thumb = layout.scrollbarThumb(scroll)
-        fill(thumb.left, top, thumb.right, bottom, SCROLLBAR_THUMB_COLOR)
+        HorizontalScrollbar.render(
+            context = this,
+            left = layout.viewportLeft,
+            right = layout.viewportRight,
+            top = layout.scrollbarTop,
+            height = DecisionCardLayout.SCROLLBAR_HEIGHT,
+            thumb = layout.scrollbarThumb(scroll),
+        )
     }
 }
 
@@ -202,7 +208,7 @@ private fun DrawContext.drawDecisionCard(
         placement.y,
         placement.x + placement.width,
         placement.y + placement.height,
-        if (hovered) CARD_HOVER_BACKGROUND else CARD_BACKGROUND,
+        if (hovered) CardBackground.HOVER_COLOR else CardBackground.COLOR,
     )
     val tiles = entry.previewTileAssetKeys
     layout.previewTilePlacements(placement, tiles.size, card).forEachIndexed { index, tile ->
@@ -213,7 +219,7 @@ private fun DrawContext.drawDecisionCard(
     }
     val textWidth = (placement.width - DecisionCardLayout.CARD_PADDING * 2).coerceAtLeast(1)
     entry.cardBody?.let { body ->
-        renderer.wrapLines(body, textWidth).forEachIndexed { index, line ->
+        renderer.wrapLinesBalanced(body, textWidth).forEachIndexed { index, line ->
             drawCenteredTextWithShadow(
                 renderer,
                 line,
@@ -224,7 +230,7 @@ private fun DrawContext.drawDecisionCard(
         }
     }
     entry.cardHint?.let { hint ->
-        renderer.wrapLines(hint, textWidth).forEachIndexed { index, line ->
+        renderer.wrapLinesBalanced(hint, textWidth).forEachIndexed { index, line ->
             drawCenteredTextWithShadow(
                 renderer,
                 line,
@@ -262,20 +268,8 @@ private const val HEADER_TEXT_COLOR = 0xFFD54F
 /** 觸發玩家及觸發動作文字顏色。 */
 private const val TRIGGER_TEXT_COLOR = 0xFFFFFF
 
-/** 一般卡片底色 ARGB。 */
-private const val CARD_BACKGROUND = 0xCC2A3844.toInt()
-
-/** 游標懸停卡片時的底色 ARGB。 */
-private const val CARD_HOVER_BACKGROUND = 0xDD3A4B59.toInt()
-
 /** 卡片中央說明顏色。 */
 private const val CARD_BODY_COLOR = 0xDDDDDD
 
 /** 按鈕旁補充提示的淡色文字。 */
 private const val CARD_HINT_COLOR = 0x999999
-
-/** 水平捲軸軌道顏色。 */
-private const val SCROLLBAR_TRACK_COLOR = 0xFF26333D.toInt()
-
-/** 水平捲軸滑塊顏色。 */
-private const val SCROLLBAR_THUMB_COLOR = 0xFF8796A3.toInt()

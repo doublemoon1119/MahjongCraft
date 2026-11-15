@@ -485,11 +485,13 @@ attempt does not fall through to another provider.
 - Build screens from the shared components in `client/gui`. They are not specific to settings screens:
   `FormScreenLayout` for screens made of category tabs, rows and a footer, `TabStripLayout` and
   `TabWidget` for tabs, `ButtonRowLayout` for a row of equal-width buttons, `DropdownOverlay` for
-  selector lists, `ControlTooltip` for control tooltips, `VerticalScrollbar` for scrollbars and
+  selector lists, `ControlTooltip` for control tooltips, `VerticalScrollbar` and `HorizontalScrollbar`
+  for scrollbars, `CardBackground` for card colours, `wrapLinesBalanced` for card text that wraps and
   `ScreenRendering` for titles, labels and status lines. Do not place widgets by hand or copy their
   sizes. Sizes and colours live in those components; change them there and extend the layout tests.
 - Draw only the vanilla translucent background. Do not add a full-screen overlay or a panel behind the
-  content.
+  content. The exception is the decision panel, which opens over the table during a match without
+  pausing it: it keeps its own background so its cards stay readable over the world behind them.
 - Mark the current page, or a selector whose list is open, with the white outline
   (`RestartableMarqueeButtonWidget.outlined`). Keep the disabled look for buttons that cannot be pressed;
   it does not mean "you are here".
