@@ -251,9 +251,6 @@ object MinecraftHistoryScreenKeys {
     /** 下一頁按鈕。 */
     const val NEXT = "mahjongcraft.history_screen.next"
 
-    /** 頁碼格式。 */
-    const val PAGE = "mahjongcraft.history_screen.page"
-
     /** 當前頁實際包含的紀錄索引範圍。 */
     const val PAGE_RANGE = "mahjongcraft.history_screen.page_range"
 
@@ -272,8 +269,14 @@ object MinecraftHistoryScreenKeys {
     /** 對局摘要排名區段。 */
     const val SUMMARY_RANKING = "mahjongcraft.history_screen.summary.ranking"
 
-    /** 對局摘要局索引標籤。 */
-    const val SUMMARY_ROUND_INDEX = "mahjongcraft.history_screen.summary.round_index"
+    /** 對局摘要每局一列的局數標籤。 */
+    const val SUMMARY_ROUND_LABEL = "mahjongcraft.history_screen.summary.round_label"
+
+    /** 對局摘要每局一列的起訖時間與時長。 */
+    const val SUMMARY_ROUND_TIMES = "mahjongcraft.history_screen.summary.round_times"
+
+    /** 對局 ID 旁的複製按鈕。 */
+    const val SUMMARY_COPY = "mahjongcraft.history_screen.summary.copy"
 
     /** 對局摘要對局識別碼標籤。 */
     const val SUMMARY_MATCH_ID = "mahjongcraft.history_screen.summary.match_id"
@@ -281,7 +284,7 @@ object MinecraftHistoryScreenKeys {
     /** 摘要所用規則的標籤。 */
     const val SUMMARY_RULE = "mahjongcraft.history_screen.summary.rule"
 
-    /** 點擊複製對局 ID 的提示。 */
+    /** 複製按鈕的操作提示。 */
     const val SUMMARY_COPY_MATCH_ID = "mahjongcraft.history_screen.summary.copy_match_id"
 
     /** 複製成功的短暫提示。 */
@@ -299,9 +302,6 @@ object MinecraftHistoryScreenKeys {
     /** 對局摘要結果標籤。 */
     const val SUMMARY_OUTCOME = "mahjongcraft.history_screen.summary.outcome"
 
-    /** 對局摘要完整性標籤。 */
-    const val SUMMARY_INTEGRITY = "mahjongcraft.history_screen.summary.integrity"
-
     /** 對局摘要局數標籤。 */
     const val SUMMARY_ROUND_COUNT = "mahjongcraft.history_screen.summary.round_count"
 
@@ -310,9 +310,6 @@ object MinecraftHistoryScreenKeys {
 
     /** 對局摘要沒有局資料提示。 */
     const val SUMMARY_ROUNDS_EMPTY = "mahjongcraft.history_screen.summary.rounds_empty"
-
-    /** 對局摘要單列格式。 */
-    const val SUMMARY_ROUND_ROW = "mahjongcraft.history_screen.summary.round_row"
 
     /** 對局摘要排名欄標題。 */
     const val SUMMARY_RANK_HEADER = "mahjongcraft.history_screen.summary.rank_header"
@@ -368,6 +365,9 @@ object MinecraftHistoryScreenKeys {
     /** 開啟交易完成後完整牌面提示。 */
     const val STATE_OPEN_TOOLTIP = "mahjongcraft.history_screen.state.open_tooltip"
 
+    /** 查看局面按鈕的操作提示。 */
+    const val STATE_OPEN_HINT = "mahjongcraft.history_screen.state.open_hint"
+
     /** 開啟初始牌面。 */
     const val STATE_INITIAL_OPEN = "mahjongcraft.history_screen.state.initial_open"
 
@@ -380,8 +380,8 @@ object MinecraftHistoryScreenKeys {
     /** 理牌順序的可點擊狀態文字。 */
     const val STATE_SORT_SORTED = "mahjongcraft.history_screen.state.sort_sorted"
 
-    /** 點擊後切換目標的操作提示。 */
-    const val STATE_SORT_TOOLTIP = "mahjongcraft.history_screen.state.sort_tooltip"
+    /** 手牌順序切換按鈕的說明。 */
+    const val STATE_SORT_DESCRIPTION = "mahjongcraft.history_screen.state.sort_description"
 
     /** 無法解析規則牌序時的保留順序提示。 */
     const val STATE_SORT_UNAVAILABLE = "mahjongcraft.history_screen.state.sort_unavailable"
@@ -688,4 +688,31 @@ object MinecraftHistoryScreenKeys {
 
     /** 排序方向 tooltip 標題。 */
     const val DIRECTION_TITLE = "mahjongcraft.history_screen.direction"
+
+    /** 頁碼範圍下方的總數。 */
+    const val RANGE_TOTAL = "mahjongcraft.history_screen.range_total"
+
+    /** 上一頁按鈕的操作提示。 */
+    const val HINT_PREVIOUS_PAGE = "mahjongcraft.history_screen.hint.previous_page"
+
+    /** 上一頁按鈕按住 Shift 的操作提示。 */
+    const val HINT_FIRST_PAGE = "mahjongcraft.history_screen.hint.first_page"
+
+    /** 下一頁按鈕的操作提示。 */
+    const val HINT_NEXT_PAGE = "mahjongcraft.history_screen.hint.next_page"
+
+    /** 下一頁按鈕按住 Shift 的操作提示。 */
+    const val HINT_LAST_PAGE = "mahjongcraft.history_screen.hint.last_page"
+
+    /** 局面頁上一步按鈕的操作提示。 */
+    const val HINT_PREVIOUS_TRANSACTION = "mahjongcraft.history_screen.hint.previous_transaction"
+
+    /** 局面頁上一步按鈕按住 Shift 的操作提示。 */
+    const val HINT_INITIAL_STATE = "mahjongcraft.history_screen.hint.initial_state"
+
+    /** 局面頁下一步按鈕的操作提示。 */
+    const val HINT_NEXT_TRANSACTION = "mahjongcraft.history_screen.hint.next_transaction"
+
+    /** 局面頁下一步按鈕按住 Shift 的操作提示。 */
+    const val HINT_LAST_TRANSACTION = "mahjongcraft.history_screen.hint.last_transaction"
 }

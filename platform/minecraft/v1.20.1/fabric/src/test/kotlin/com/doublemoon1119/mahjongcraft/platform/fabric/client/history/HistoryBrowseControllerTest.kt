@@ -9,6 +9,7 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryListRespo
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryMatchDetailDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryMatchSummaryDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryOutcomeFilterDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryPageDirectionDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryParticipantSummaryDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryQueryErrorCodeDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryQueryScopeDto
@@ -69,19 +70,21 @@ class HistoryBrowseControllerTest {
         assertTrue(controller.nextPage())
         advanceTimeBy(250.milliseconds)
         runCurrent()
-        transport.respondList(entries = List(3) { summary("second-$it") }, nextCursor = "third")
+        transport.respondList(entries = List(3) { summary("second-$it") }, nextCursor = "third", previousCursor = "before-second")
         runCurrent()
         assertEquals(8, controller.state.value.list.firstEntryIndex)
         assertTrue(controller.nextPage())
         advanceTimeBy(250.milliseconds)
         runCurrent()
-        transport.respondList(entries = List(2) { summary("third-$it") })
+        transport.respondList(entries = List(2) { summary("third-$it") }, previousCursor = "before-third")
         runCurrent()
         assertEquals(11, controller.state.value.list.firstEntryIndex)
         assertTrue(controller.previousPage())
         advanceTimeBy(250.milliseconds)
         runCurrent()
-        transport.respondList(entries = List(3) { summary("second-$it") }, nextCursor = "third")
+        assertEquals("before-third", transport.listRequests.last().cursor)
+        assertEquals(HistoryPageDirectionDto.BEFORE, transport.listRequests.last().direction)
+        transport.respondList(entries = List(3) { summary("second-$it") }, nextCursor = "third", previousCursor = "before-second")
         runCurrent()
         assertEquals(8, controller.state.value.list.firstEntryIndex)
         advanceTimeBy(250.milliseconds)
@@ -200,18 +203,17 @@ class HistoryBrowseControllerTest {
         transport.respondList(errorCode = HistoryQueryErrorCodeDto.BUSY)
         runCurrent()
         assertEquals(HistoryBrowseStatus.Failed(HistoryBrowseFailure.BUSY), controller.state.value.list.status)
-        assertEquals(1, controller.state.value.list.pageNumber)
+        assertEquals(1, controller.state.value.list.firstEntryIndex)
         assertTrue(controller.retry())
         advanceTimeBy(250.milliseconds)
         runCurrent()
-        transport.respondList(entries = listOf(summary("two")), nextCursor = null)
+        transport.respondList(entries = listOf(summary("two")), nextCursor = null, previousCursor = "before-two")
         runCurrent()
-        assertEquals(2, controller.state.value.list.pageNumber)
         assertEquals(2, controller.state.value.list.firstEntryIndex)
         assertEquals(listOf("two"), controller.state.value.list.entries.map { it.matchId })
     }
 
-    /** 上一頁失敗時保留原游標堆疊，成功重試後才返回上一頁。 */
+    /** 上一頁失敗時保留目前頁，成功重試後才返回上一頁。 */
     @Test
     fun `test previous page failure preserves stack until retry succeeds`() = runTest {
         val transport = FakeHistoryQueryTransport()
@@ -223,7 +225,7 @@ class HistoryBrowseControllerTest {
         assertTrue(controller.nextPage())
         advanceTimeBy(250.milliseconds)
         runCurrent()
-        transport.respondList(entries = listOf(summary("two")), nextCursor = null)
+        transport.respondList(entries = listOf(summary("two")), nextCursor = null, previousCursor = "before-two")
         runCurrent()
 
         assertTrue(controller.previousPage())
@@ -231,14 +233,48 @@ class HistoryBrowseControllerTest {
         runCurrent()
         transport.respondList(errorCode = HistoryQueryErrorCodeDto.BUSY)
         runCurrent()
-        assertEquals(2, controller.state.value.list.pageNumber)
+        assertEquals(2, controller.state.value.list.firstEntryIndex)
+        assertEquals(listOf("two"), controller.state.value.list.entries.map { it.matchId })
         assertTrue(controller.retry())
         advanceTimeBy(250.milliseconds)
         runCurrent()
-        assertEquals(null, transport.listRequests.last().cursor)
+        assertEquals("before-two", transport.listRequests.last().cursor)
         transport.respondList(entries = listOf(summary("one")), nextCursor = "cursor-1")
         runCurrent()
-        assertEquals(1, controller.state.value.list.pageNumber)
+        assertEquals(1, controller.state.value.list.firstEntryIndex)
+        assertFalse(controller.previousPage())
+    }
+
+    /** 最後一頁從尾端往前取，第一筆位置由總數推算；第一頁從頭開始。 */
+    @Test
+    fun `test first and last page jump to both ends`() = runTest {
+        val transport = FakeHistoryQueryTransport()
+        val controller = controller(transport)
+        controller.open()
+        runCurrent()
+        transport.respondList(entries = List(20) { summary("first-$it") }, nextCursor = "after-first", totalCount = 45)
+        runCurrent()
+        assertFalse(controller.firstPage())
+
+        assertTrue(controller.lastPage())
+        advanceTimeBy(250.milliseconds)
+        runCurrent()
+        assertEquals(null, transport.listRequests.last().cursor)
+        assertEquals(HistoryPageDirectionDto.BEFORE, transport.listRequests.last().direction)
+        transport.respondList(entries = List(20) { summary("last-$it") }, previousCursor = "before-last", totalCount = 45)
+        runCurrent()
+        assertEquals(26, controller.state.value.list.firstEntryIndex)
+        assertEquals(45, controller.state.value.list.totalCount)
+        assertFalse(controller.lastPage())
+
+        assertTrue(controller.firstPage())
+        advanceTimeBy(250.milliseconds)
+        runCurrent()
+        assertEquals(null, transport.listRequests.last().cursor)
+        assertEquals(HistoryPageDirectionDto.AFTER, transport.listRequests.last().direction)
+        transport.respondList(entries = List(20) { summary("first-$it") }, nextCursor = "after-first", totalCount = 45)
+        runCurrent()
+        assertEquals(1, controller.state.value.list.firstEntryIndex)
     }
 
     /** 摘要在途返回列表後不可刷新，完成並經過冷卻後才接受新清單要求。 */
@@ -747,7 +783,7 @@ class HistoryBrowseControllerTest {
         runCurrent()
         assertTrue(controller.state.value.closed)
         assertEquals(HistoryBrowseFailure.DISCONNECTED, assertIs<HistoryBrowseStatus.Failed>(controller.state.value.list.status).reason)
-        transport.emit(ClientHistoryQueryState.ListResult(HistoryListResponseDto(requestId, listOf(summary("late")), nextCursor = null, errorCode = null, allowAll = false, allowStressTest = false)))
+        transport.emit(ClientHistoryQueryState.ListResult(HistoryListResponseDto(requestId, listOf(summary("late")), nextCursor = null, previousCursor = null, totalCount = 0, errorCode = null, allowAll = false, allowStressTest = false)))
         runCurrent()
         assertTrue(controller.state.value.list.entries.isEmpty())
     }
@@ -761,7 +797,7 @@ class HistoryBrowseControllerTest {
         runCurrent()
         val requestId = transport.listRequests.single().requestId
         controller.close()
-        transport.emit(ClientHistoryQueryState.ListResult(HistoryListResponseDto(requestId, listOf(summary("late")), nextCursor = null, errorCode = null, allowAll = false, allowStressTest = false)))
+        transport.emit(ClientHistoryQueryState.ListResult(HistoryListResponseDto(requestId, listOf(summary("late")), nextCursor = null, previousCursor = null, totalCount = 0, errorCode = null, allowAll = false, allowStressTest = false)))
         runCurrent()
         assertTrue(controller.state.value.closed)
         assertTrue(controller.state.value.list.entries.isEmpty())
@@ -927,6 +963,8 @@ class HistoryBrowseControllerTest {
          * @param requestId 回應所配對的要求識別碼。
          * @param entries 回應中的清單摘要。
          * @param nextCursor 下一頁游標。
+         * @param previousCursor 上一頁游標。
+         * @param totalCount 符合條件的對局總數。
          * @param errorCode 回應中的穩定錯誤碼。
          * @param allowAll 伺服器目前允許全部紀錄查詢。
          * @param allowStressTest 伺服器目前允許壓力測試紀錄查詢。
@@ -938,8 +976,21 @@ class HistoryBrowseControllerTest {
             errorCode: HistoryQueryErrorCodeDto? = null,
             allowAll: Boolean = false,
             allowStressTest: Boolean = false,
+            previousCursor: String? = null,
+            totalCount: Int = entries.size,
         ) {
-            mutableState.value = ClientHistoryQueryState.ListResult(HistoryListResponseDto(requestId, entries, nextCursor, errorCode, allowAll, allowStressTest))
+            mutableState.value = ClientHistoryQueryState.ListResult(
+                response = HistoryListResponseDto(
+                    requestId = requestId,
+                    entries = entries,
+                    nextCursor = nextCursor,
+                    previousCursor = previousCursor,
+                    totalCount = totalCount,
+                    errorCode = errorCode,
+                    allowAll = allowAll,
+                    allowStressTest = allowStressTest,
+                ),
+            )
         }
 
         /**
@@ -970,7 +1021,7 @@ class HistoryBrowseControllerTest {
                     matchId = matchId,
                     roundNumber = 1,
                     startTransactionIndex = 0,
-                    events = HistoryRoundEventsDto(identity, 1, emptyList(), null, emptyList()),
+                    events = HistoryRoundEventsDto(identity, 1, emptyList(), null, 0, emptyList()),
                     errorCode = null,
                 ),
             )

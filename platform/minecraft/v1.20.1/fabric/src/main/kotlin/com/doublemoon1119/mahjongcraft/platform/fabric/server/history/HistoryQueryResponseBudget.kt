@@ -3,6 +3,7 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.server.history
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.query.HistoryListPage
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.query.HistoryListRequest
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.query.HistoryMatchSummary
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.query.HistoryPageDirection
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.query.HistoryQueryCursor
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.query.HistoryRuleSettings
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.query.HistorySortField
@@ -42,6 +43,8 @@ internal fun boundedHistorySummary(
 /**
  * 將清單縮減為能以完整項目傳送的頁面，不切割單筆摘要。
  *
+ * 往後取頁時保留前面的項目，往前取頁時保留後面的項目，讓留下的項目緊接著原游標；被捨棄那一側的游標改為最後保留的項目。
+ *
  * @param requestId 回應配對識別碼。
  * @param page 已授權的原始頁面。
  * @param request 原查詢條件。
@@ -60,13 +63,36 @@ internal fun boundedHistoryPage(
     encodeCursor: (HistoryQueryCursor) -> String,
     limit: Int = HistoryQueryLimits.RESPONSE_BYTES,
 ): HistoryListResponseDto {
+    val backward = request.direction == HistoryPageDirection.BEFORE
     var count = page.entries.size
     while (true) {
-        val entries = page.entries.take(count)
-        val cursor = if (count < page.entries.size) entries.lastOrNull()?.cursorAfter(request, principalId) else page.nextCursor
-        val response = HistoryListResponseDto(requestId, entries.map { it.toDto() }, cursor?.let(encodeCursor), errorCode = null, allowAll = false, allowStressTest = false)
+        val trimmed = count < page.entries.size
+        val entries = if (backward) page.entries.takeLast(count) else page.entries.take(count)
+        val next = if (trimmed && !backward) entries.lastOrNull()?.positionIn(request, principalId) else page.nextCursor
+        val previous = if (trimmed && backward) entries.firstOrNull()?.positionIn(request, principalId) else page.previousCursor
+        val response = HistoryListResponseDto(
+            requestId = requestId,
+            entries = entries.map { it.toDto() },
+            nextCursor = next?.let(encodeCursor),
+            previousCursor = previous?.let(encodeCursor),
+            totalCount = page.totalCount,
+            errorCode = null,
+            allowAll = false,
+            allowStressTest = false,
+        )
         if (encodedHistoryResponseUtf8Size(json, HistoryListResponseDto.serializer(), response) <= limit) return response
-        if (count <= 1) return HistoryListResponseDto(requestId, emptyList(), nextCursor = null, errorCode = HistoryQueryErrorCodeDto.CONTENT_TOO_LARGE, allowAll = false, allowStressTest = false)
+        if (count <= 1) {
+            return HistoryListResponseDto(
+                requestId = requestId,
+                entries = emptyList(),
+                nextCursor = null,
+                previousCursor = null,
+                totalCount = 0,
+                errorCode = HistoryQueryErrorCodeDto.CONTENT_TOO_LARGE,
+                allowAll = false,
+                allowStressTest = false,
+            )
+        }
         count--
     }
 }
@@ -103,13 +129,13 @@ internal fun boundedHistoryRuleSettings(
 }
 
 /**
- * 以實際傳出的最後一筆建立游標，避免縮頁後漏掉未傳項目。
+ * 以實際傳出的項目建立游標，避免縮頁後漏掉未傳項目。
  *
  * @param request 完整查詢上下文。
  * @param principalId 本人排序的可信身分。
  * @return 僅含排序位置、不含授權資格的游標。
  */
-private fun HistoryMatchSummary.cursorAfter(request: HistoryListRequest, principalId: Uuid): HistoryQueryCursor {
+private fun HistoryMatchSummary.positionIn(request: HistoryListRequest, principalId: Uuid): HistoryQueryCursor {
     val ownResult = results.firstOrNull { it.playerId == principalId }
     val value = when (request.sortField) {
         HistorySortField.ENDED_AT -> endedAtEpochMillis

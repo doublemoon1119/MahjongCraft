@@ -173,34 +173,42 @@ class HistoryBrowseRoundControllerTest {
         assertEquals(0, controller.state.value.rounds.getValue(1).eventStartIndices.last())
     }
 
-    /** 相鄰牌面位置會先確認跨頁交易，再查詢該交易後的桌況。 */
+    /** 局面頁依交易總數直接查詢相鄰與首末位置的牌面，不為了確認交易存在而讀事件頁。 */
     @Test
-    fun `test state navigation chains event existence across pages`() = runTest {
+    fun `test state navigation uses the transaction count`() = runTest {
         val transport = FakeRoundHistoryTransport()
         val controller = openRound(transport)
-        transport.respondEvents(roundNumber = 1, start = 0, next = 2, transactionIndexes = listOf(0, 1))
+        transport.respondEvents(roundNumber = 1, start = 0, next = 2, transactionIndexes = listOf(0, 1), transactionCount = 3)
         runCurrent()
+        val eventRequests = transport.roundEventsRequests.size
+
         assertTrue(controller.showRoundState(HistoryRoundPositionDto.Initial))
         advanceTimeBy(250.milliseconds)
         runCurrent()
         transport.respondState(roundNumber = 1, position = HistoryRoundPositionDto.Initial)
         runCurrent()
-        assertTrue(controller.nextRoundState())
+        listOf(0, 1, 2).forEach { index ->
+            assertTrue(controller.nextRoundState())
+            advanceTimeBy(250.milliseconds)
+            runCurrent()
+            assertEquals(HistoryRoundPositionDto.AfterTransaction(index), transport.roundStateRequests.last().position)
+            transport.respondState(roundNumber = 1, position = HistoryRoundPositionDto.AfterTransaction(index))
+            runCurrent()
+        }
+        assertFalse(controller.nextRoundState())
+        assertFalse(controller.lastRoundState())
+
+        assertTrue(controller.firstRoundState())
         advanceTimeBy(250.milliseconds)
         runCurrent()
-        transport.respondState(roundNumber = 1, position = HistoryRoundPositionDto.AfterTransaction(0))
-        runCurrent()
-        assertEquals(HistoryRoundPositionDto.AfterTransaction(0), controller.state.value.rounds.getValue(1).confirmedPosition)
-        assertTrue(controller.nextRoundState())
+        assertEquals(HistoryRoundPositionDto.Initial, controller.state.value.rounds.getValue(1).confirmedPosition)
+        assertFalse(controller.firstRoundState())
+
+        assertTrue(controller.lastRoundState())
         advanceTimeBy(250.milliseconds)
         runCurrent()
-        transport.respondState(roundNumber = 1, position = HistoryRoundPositionDto.AfterTransaction(1))
-        runCurrent()
-        assertEquals(HistoryRoundPositionDto.AfterTransaction(1), controller.state.value.rounds.getValue(1).confirmedPosition)
-        assertTrue(controller.nextRoundState())
-        advanceTimeBy(250.milliseconds)
-        runCurrent()
-        assertEquals(2, transport.roundEventsRequests.last().startTransactionIndex)
+        assertEquals(HistoryRoundPositionDto.AfterTransaction(2), controller.state.value.rounds.getValue(1).confirmedPosition)
+        assertEquals(eventRequests, transport.roundEventsRequests.size)
     }
 
     /** 和牌明細僅接受已確認交易，並保持事件頁與捲動位置。 */
@@ -407,31 +415,29 @@ class HistoryBrowseRoundControllerTest {
         assertEquals(2, transport.roundEventsRequests.size)
     }
 
-    /** 牌面跨頁探測失敗時，只標記牌面要求失敗並保留已成功事件頁。 */
+    /** 事件頁可以直接跳到最後一頁再逐頁往前翻，也可以直接回到第一頁。 */
     @Test
-    fun `test state probe failure preserves ready events`() = runTest {
+    fun `test event pages jump to the first and last page`() = runTest {
         val transport = FakeRoundHistoryTransport()
         val controller = openRound(transport)
-        transport.respondEvents(roundNumber = 1, start = 0, next = 1, transactionIndexes = listOf(0))
+        transport.respondEvents(roundNumber = 1, start = 0, next = 20, transactionCount = 45)
         runCurrent()
-        assertTrue(controller.showRoundState(HistoryRoundPositionDto.Initial))
+        assertFalse(controller.firstRoundPage())
+
+        assertTrue(controller.lastRoundPage())
         advanceTimeBy(250.milliseconds)
         runCurrent()
-        transport.respondState(1, HistoryRoundPositionDto.Initial)
+        assertEquals(40, transport.roundEventsRequests.last().startTransactionIndex)
+        transport.respondEvents(roundNumber = 1, start = 40, next = null, transactionIndexes = (40 until 45).toList(), transactionCount = 45)
         runCurrent()
-        assertTrue(controller.nextRoundState())
+        assertEquals(listOf(0, 20, 40), controller.state.value.rounds.getValue(1).eventStartIndices)
+        assertFalse(controller.lastRoundPage())
+
+        assertTrue(controller.firstRoundPage())
         advanceTimeBy(250.milliseconds)
         runCurrent()
-        transport.respondState(1, HistoryRoundPositionDto.AfterTransaction(0))
-        runCurrent()
-        assertTrue(controller.nextRoundState())
-        advanceTimeBy(250.milliseconds)
-        runCurrent()
-        transport.respondEventsError(HistoryQueryErrorCodeDto.NOT_AVAILABLE)
-        runCurrent()
-        val round = controller.state.value.rounds.getValue(1)
-        assertEquals(HistoryBrowseStatus.Ready, round.eventsStatus)
-        assertIs<HistoryBrowseStatus.Failed>(round.stateStatus)
+        assertEquals(listOf(0), controller.state.value.rounds.getValue(1).eventStartIndices)
+        assertEquals(HistoryBrowseStatus.Ready, controller.state.value.rounds.getValue(1).eventsStatus)
     }
 
     /** 關閉控制器會清除局選擇與所有單局狀態。 */
@@ -484,6 +490,7 @@ class HistoryBrowseRoundControllerTest {
      * @param indexes 此頁交易索引。
      * @param next 下一頁起始交易索引。
      * @param tileCatalog 本頁的牌面目錄；每筆交易都宣告到目錄的全部牌。
+     * @param transactionCount 本局交易總數；預設為剛好涵蓋本頁與下一頁起點。
      * @return 事件頁 DTO。
      */
     private fun events(
@@ -491,11 +498,13 @@ class HistoryBrowseRoundControllerTest {
         indexes: List<Int>,
         next: Int?,
         tileCatalog: List<TileFaceViewDto> = emptyList(),
+        transactionCount: Int = next?.plus(1) ?: (indexes.lastOrNull()?.plus(1) ?: 0),
     ) = HistoryRoundEventsDto(
         identity = HistoryReplayIdentityDto(MATCH_ID, TABLE_ID, listOf(HistoryReplayPlayerIdentityDto(0, PLAYER_ID, null))),
         roundNumber = roundNumber,
         transactions = indexes.map { HistoryReplayTransactionDto(it, it.toLong(), it == 0, tileCatalog.size, emptyList()) },
         nextTransactionIndex = next,
+        transactionCount = transactionCount,
         tileCatalog = tileCatalog,
     )
 
@@ -612,7 +621,7 @@ class HistoryBrowseRoundControllerTest {
          * @param entries 列表摘要。
          */
         fun respondList(entries: List<HistoryMatchSummaryDto>) {
-            mutableState.value = ClientHistoryQueryState.ListResult(HistoryListResponseDto("list-1", entries, nextCursor = null, errorCode = null, allowAll = false, allowStressTest = false))
+            mutableState.value = ClientHistoryQueryState.ListResult(HistoryListResponseDto("list-1", entries, nextCursor = null, previousCursor = null, totalCount = 0, errorCode = null, allowAll = false, allowStressTest = false))
         }
 
         /**
@@ -632,6 +641,8 @@ class HistoryBrowseRoundControllerTest {
          * @param start 事件頁起點。
          * @param next 下一頁起點。
          * @param transactionIndexes 此頁交易索引；null 時依起點與下一頁推導。
+         * @param tileCatalog 此頁的牌面目錄。
+         * @param transactionCount 本局交易總數；null 時剛好涵蓋本頁與下一頁起點。
          */
         fun respondEvents(
             requestId: String = roundEventsRequests.last().requestId,
@@ -640,10 +651,12 @@ class HistoryBrowseRoundControllerTest {
             next: Int? = null,
             transactionIndexes: List<Int>? = null,
             tileCatalog: List<TileFaceViewDto> = emptyList(),
+            transactionCount: Int? = null,
         ) {
             val indexes = transactionIndexes ?: if (next == null) listOf(start) else (start until next).toList()
+            val events = if (transactionCount == null) events(roundNumber, indexes, next, tileCatalog) else events(roundNumber, indexes, next, tileCatalog, transactionCount)
             mutableState.value = ClientHistoryQueryState.RoundEventsResult(
-                response = HistoryRoundEventsResponseDto(requestId, MATCH_ID, roundNumber, start, events(roundNumber, indexes, next, tileCatalog), errorCode = null),
+                response = HistoryRoundEventsResponseDto(requestId, MATCH_ID, roundNumber, start, events, errorCode = null),
             )
         }
 

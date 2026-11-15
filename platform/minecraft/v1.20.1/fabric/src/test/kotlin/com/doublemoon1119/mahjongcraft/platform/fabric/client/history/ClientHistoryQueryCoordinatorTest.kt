@@ -5,6 +5,7 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryListReque
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryListResponseDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryMatchDetailDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryMatchSummaryDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryPageDirectionDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryQueryFiltersDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryQueryScopeDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryRoundEventsRequestDto
@@ -35,9 +36,9 @@ class ClientHistoryQueryCoordinatorTest {
             outcome = null, integrity = HistoryIntegrityFilterDto.COMPLETE, integrityDiagnostic = null,
             duration = null, participants = emptyList(), roundCount = null, resultsAvailable = false, results = emptyList(),
         )
-        val request = coordinator.queryList(HistoryListRequestDto("caller", HistoryQueryScopeDto.OWN, HistorySortFieldDto.ENDED_AT, HistorySortDirectionDto.DESC, HistoryQueryFiltersDto.NONE, 20, null))
+        val request = coordinator.queryList(HistoryListRequestDto("caller", HistoryQueryScopeDto.OWN, HistorySortFieldDto.ENDED_AT, HistorySortDirectionDto.DESC, HistoryQueryFiltersDto.NONE, 20, null, HistoryPageDirectionDto.AFTER))
         assertFalse(coordinator.acceptsCharacterAppearance(request, "first"))
-        coordinator.applyList(HistoryListResponseDto(requestId = request, entries = listOf(entry), nextCursor = null, errorCode = null, allowAll = false, allowStressTest = false))
+        coordinator.applyList(HistoryListResponseDto(requestId = request, entries = listOf(entry), nextCursor = null, previousCursor = null, totalCount = 0, errorCode = null, allowAll = false, allowStressTest = false))
         assertTrue(coordinator.acceptsCharacterAppearance(request, "first"))
         assertFalse(coordinator.acceptsCharacterAppearance(request, "unlisted"))
         assertFalse(coordinator.acceptsCharacterAppearance("stale", "first"))
@@ -56,11 +57,11 @@ class ClientHistoryQueryCoordinatorTest {
         val sender = FakeHistoryQuerySender()
         val coordinator = ClientHistoryQueryCoordinator(sender, ClientHistoryQuerySettings())
 
-        val requestId = coordinator.queryList(HistoryListRequestDto("caller-id", scope = HistoryQueryScopeDto.OWN, sortField = HistorySortFieldDto.ENDED_AT, sortDirection = HistorySortDirectionDto.DESC, filters = HistoryQueryFiltersDto.NONE, pageSize = 20, cursor = null))
+        val requestId = coordinator.queryList(HistoryListRequestDto("caller-id", scope = HistoryQueryScopeDto.OWN, sortField = HistorySortFieldDto.ENDED_AT, sortDirection = HistorySortDirectionDto.DESC, filters = HistoryQueryFiltersDto.NONE, pageSize = 20, cursor = null, direction = HistoryPageDirectionDto.AFTER))
 
         assertEquals(requestId, sender.listRequest?.requestId)
         assertIs<ClientHistoryQueryState.Loading>(coordinator.state.value)
-        coordinator.applyList(HistoryListResponseDto(requestId, emptyList(), nextCursor = null, errorCode = null, allowAll = false, allowStressTest = false))
+        coordinator.applyList(HistoryListResponseDto(requestId, emptyList(), nextCursor = null, previousCursor = null, totalCount = 0, errorCode = null, allowAll = false, allowStressTest = false))
         assertIs<ClientHistoryQueryState.ListResult>(coordinator.state.value)
     }
 
@@ -81,7 +82,7 @@ class ClientHistoryQueryCoordinatorTest {
     fun `test matching cancellation returns idle without session change`() {
         val sender = FakeHistoryQuerySender()
         val coordinator = ClientHistoryQueryCoordinator(sender, ClientHistoryQuerySettings())
-        val requestId = coordinator.queryList(HistoryListRequestDto("caller-id", scope = HistoryQueryScopeDto.OWN, sortField = HistorySortFieldDto.ENDED_AT, sortDirection = HistorySortDirectionDto.DESC, filters = HistoryQueryFiltersDto.NONE, pageSize = 20, cursor = null))
+        val requestId = coordinator.queryList(HistoryListRequestDto("caller-id", scope = HistoryQueryScopeDto.OWN, sortField = HistorySortFieldDto.ENDED_AT, sortDirection = HistorySortDirectionDto.DESC, filters = HistoryQueryFiltersDto.NONE, pageSize = 20, cursor = null, direction = HistoryPageDirectionDto.AFTER))
         val revision = coordinator.sessionRevision.value
 
         assertFalse(coordinator.cancel("different-id"))
@@ -95,11 +96,11 @@ class ClientHistoryQueryCoordinatorTest {
     fun `test wrong response kind does not consume pending request`() {
         val sender = FakeHistoryQuerySender()
         val coordinator = ClientHistoryQueryCoordinator(sender, ClientHistoryQuerySettings())
-        val requestId = coordinator.queryList(HistoryListRequestDto("caller-id", scope = HistoryQueryScopeDto.OWN, sortField = HistorySortFieldDto.ENDED_AT, sortDirection = HistorySortDirectionDto.DESC, filters = HistoryQueryFiltersDto.NONE, pageSize = 20, cursor = null))
+        val requestId = coordinator.queryList(HistoryListRequestDto("caller-id", scope = HistoryQueryScopeDto.OWN, sortField = HistorySortFieldDto.ENDED_AT, sortDirection = HistorySortDirectionDto.DESC, filters = HistoryQueryFiltersDto.NONE, pageSize = 20, cursor = null, direction = HistoryPageDirectionDto.AFTER))
 
         coordinator.applySummary(HistorySummaryResponseDto(requestId, detail = null, errorCode = null))
         assertIs<ClientHistoryQueryState.Loading>(coordinator.state.value)
-        coordinator.applyList(HistoryListResponseDto(requestId, emptyList(), nextCursor = null, errorCode = null, allowAll = false, allowStressTest = false))
+        coordinator.applyList(HistoryListResponseDto(requestId, emptyList(), nextCursor = null, previousCursor = null, totalCount = 0, errorCode = null, allowAll = false, allowStressTest = false))
         assertIs<ClientHistoryQueryState.ListResult>(coordinator.state.value)
     }
 
@@ -154,14 +155,14 @@ class ClientHistoryQueryCoordinatorTest {
     fun `test clear advances session and rejects stale response`() {
         val sender = FakeHistoryQuerySender()
         val coordinator = ClientHistoryQueryCoordinator(sender, ClientHistoryQuerySettings())
-        val requestId = coordinator.queryList(HistoryListRequestDto("caller-id", scope = HistoryQueryScopeDto.OWN, sortField = HistorySortFieldDto.ENDED_AT, sortDirection = HistorySortDirectionDto.DESC, filters = HistoryQueryFiltersDto.NONE, pageSize = 20, cursor = null))
+        val requestId = coordinator.queryList(HistoryListRequestDto("caller-id", scope = HistoryQueryScopeDto.OWN, sortField = HistorySortFieldDto.ENDED_AT, sortDirection = HistorySortDirectionDto.DESC, filters = HistoryQueryFiltersDto.NONE, pageSize = 20, cursor = null, direction = HistoryPageDirectionDto.AFTER))
         val previousRevision = coordinator.sessionRevision.value
 
         coordinator.clear()
 
         assertEquals(previousRevision + 1, coordinator.sessionRevision.value)
         assertEquals(ClientHistoryQueryState.Idle, coordinator.state.value)
-        coordinator.applyList(HistoryListResponseDto(requestId, emptyList(), nextCursor = null, errorCode = null, allowAll = false, allowStressTest = false))
+        coordinator.applyList(HistoryListResponseDto(requestId, emptyList(), nextCursor = null, previousCursor = null, totalCount = 0, errorCode = null, allowAll = false, allowStressTest = false))
         assertEquals(ClientHistoryQueryState.Idle, coordinator.state.value)
     }
 

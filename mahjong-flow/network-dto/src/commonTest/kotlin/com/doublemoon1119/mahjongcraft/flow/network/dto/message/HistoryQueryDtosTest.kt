@@ -44,6 +44,7 @@ class HistoryQueryDtosTest {
             roundNumber = 1,
             transactions = listOf(HistoryReplayTransaction(0, 0L, false, listOf(fact), 0)),
             nextTransactionIndex = null,
+            transactionCount = 1,
             tileCatalog = HistoryRoundTileCatalog(emptyList()),
         )
 
@@ -68,6 +69,7 @@ class HistoryQueryDtosTest {
             roundNumber = 1,
             transactions = listOf(HistoryReplayTransaction(0, 0L, false, listOf(HistoryReplayFact.Completion(HistoryFactTypeKeys.WIN_SETTLED, outcome)), 0)),
             nextTransactionIndex = null,
+            transactionCount = 1,
             tileCatalog = HistoryRoundTileCatalog(emptyList()),
         )
         val dto = events.toDto(DefaultNetworkDtoRegistries())
@@ -204,12 +206,14 @@ class HistoryQueryDtosTest {
             ),
             pageSize = 50,
             cursor = "cursor-1",
+            direction = HistoryPageDirectionDto.BEFORE,
         )
 
         val encoded = Json.encodeToString(HistoryListRequestDto.serializer(), expected)
 
         assertEquals(expected, Json.decodeFromString(HistoryListRequestDto.serializer(), encoded))
         assertEquals("own_score", Json.parseToJsonElement(encoded).jsonObject["sortField"]?.toString()?.trim('"'))
+        assertEquals("before", Json.parseToJsonElement(encoded).jsonObject["direction"]?.toString()?.trim('"'))
     }
 
     /** 回覆只包含安全摘要，不應出現手牌、牌山或事件 payload 欄位。 */
@@ -234,6 +238,8 @@ class HistoryQueryDtosTest {
                 ),
             ),
             nextCursor = null,
+            previousCursor = null,
+            totalCount = 1,
             errorCode = null,
             allowAll = false,
             allowStressTest = false,

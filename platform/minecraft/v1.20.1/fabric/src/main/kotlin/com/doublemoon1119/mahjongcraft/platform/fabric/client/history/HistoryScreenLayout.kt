@@ -1,6 +1,5 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.client.history
 
-import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.ButtonRowLayout
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.FormScreenLayout
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.ScrollbarLayout
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.VerticalScrollbar
@@ -8,7 +7,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.VerticalScroll
 /**
  * 牌譜列表畫面的版面：標題下方的工具列、可捲動的對局卡片區與底部按鈕列。
  *
- * 內容寬度最多 [FormScreenLayout.MAX_CONTENT_WIDTH] 並水平置中，左右邊距與設定類畫面相同。工具列由左到右為
+ * 內容寬度、底部四格與捲軸位置沿用 [HistoryPageFrame]。工具列由左到右為
  * 篩選、「顯示」標籤與紀錄範圍、「排序」標籤與排序欄位、排序方向，重新查詢靠右；內容寬度放不下時改排兩列：
  * 第一列為篩選與重新查詢，第二列為紀錄範圍與排序。
  *
@@ -25,16 +24,17 @@ internal data class HistoryScreenLayout(
     val showLabelWidth: Int,
     val sortLabelWidth: Int,
 ) {
+    /** 內容寬度、底部四格與捲軸位置。 */
+    val frame: HistoryPageFrame = HistoryPageFrame(windowWidth = windowWidth, windowHeight = windowHeight)
+
     /** 內容寬度。 */
-    val contentWidth: Int = (windowWidth - (if (windowWidth < FormScreenLayout.COMPACT_MIN_WIDTH) FormScreenLayout.COMPACT_MARGIN else FormScreenLayout.REGULAR_MARGIN) * 2)
-        .coerceAtMost(FormScreenLayout.MAX_CONTENT_WIDTH)
-        .coerceAtLeast(1)
+    val contentWidth: Int = frame.contentWidth
 
     /** 內容左界。 */
-    val contentLeft: Int = (windowWidth - contentWidth) / 2
+    val contentLeft: Int = frame.contentLeft
 
     /** 內容右界。 */
-    val contentRight: Int = contentLeft + contentWidth
+    val contentRight: Int = frame.contentRight
 
     /** 工具列是否排成一列。 */
     val singleRowToolbar: Boolean = FILTERS_WIDTH + GROUP_GAP + showLabelWidth + LABEL_GAP + SCOPE_WIDTH + GROUP_GAP + sortLabelWidth + LABEL_GAP +
@@ -95,7 +95,7 @@ internal data class HistoryScreenLayout(
     val labelY: Int = scope.y + (BUTTON_HEIGHT - FormScreenLayout.VISIBLE_TEXT_HEIGHT) / 2
 
     /** 底部按鈕列上界。 */
-    val footerTop: Int = (windowHeight - FormScreenLayout.FOOTER_BOTTOM_MARGIN - BUTTON_HEIGHT).coerceAtLeast(0)
+    val footerTop: Int = frame.footerTop
 
     /** 工具列下方存檔狀態文字的 Y 座標。 */
     val statusY: Int = (toolbarBottom + STATUS_GAP).coerceAtMost(footerTop)
@@ -104,25 +104,18 @@ internal data class HistoryScreenLayout(
     val contentTop: Int = (toolbarBottom + STATUS_HEIGHT).coerceAtMost(footerTop)
 
     /** 捲動內容下界。 */
-    val contentBottom: Int = (footerTop - FOOTER_GAP).coerceAtLeast(contentTop)
+    val contentBottom: Int = (footerTop - HistoryPageFrame.FOOTER_GAP).coerceAtLeast(contentTop)
 
     /** 內容區是否有正高度。 */
     val hasContent: Boolean get() = contentBottom > contentTop
 
-    /** 底部按鈕列：上一頁、頁碼、下一頁與關閉；頁碼佔一格但不是按鈕。 */
-    val footer: ButtonRowLayout = ButtonRowLayout(
-        left = contentLeft,
-        width = contentWidth.coerceAtLeast(ButtonRowLayout.minimumWidth(FOOTER_SLOTS)),
-        buttonCount = FOOTER_SLOTS,
-    )
-
     /**
-     * 取得底部按鈕列中一格的範圍。
+     * 取得底部按鈕列中一格的範圍：上一頁、筆數範圍、下一頁與關閉；筆數範圍佔一格但不是按鈕。
      *
      * @param index 由左至右的順序，從 0 開始。
      * @return 這一格的範圍。
      */
-    fun footerSlot(index: Int): Bounds = Bounds(footer.buttonX(index), footerTop, footer.buttonWidth(index), BUTTON_HEIGHT)
+    fun footerSlot(index: Int): Bounds = frame.footerSlot(index)
 
     /**
      * 將捲動偏移限制於內容可見範圍，供輸入與繪製前共用。
@@ -143,7 +136,7 @@ internal data class HistoryScreenLayout(
 
     /** 捲軸軌道的範圍，畫在內容右側的邊距內，不佔用卡片寬度。 */
     val scrollbarBounds: Bounds
-        get() = Bounds(contentRight + FormScreenLayout.SCROLLBAR_GAP, contentTop, VerticalScrollbar.WIDTH, (contentBottom - contentTop).coerceAtLeast(0))
+        get() = frame.scrollbarBounds(top = contentTop, bottom = contentBottom)
 
     /**
      * 判斷游標是否落在捲軸的命中範圍內；命中範圍比繪製範圍稍寬。
@@ -152,13 +145,7 @@ internal data class HistoryScreenLayout(
      * @param mouseY 游標的垂直座標。
      * @return 位於命中範圍內時為 true。
      */
-    fun isOverScrollbar(mouseX: Double, mouseY: Double): Boolean {
-        val bounds = scrollbarBounds
-        return mouseX >= bounds.x - FormScreenLayout.SCROLLBAR_HIT_PADDING &&
-            mouseX < bounds.right + FormScreenLayout.SCROLLBAR_HIT_PADDING &&
-            mouseY >= bounds.y &&
-            mouseY < bounds.bottom
-    }
+    fun isOverScrollbar(mouseX: Double, mouseY: Double): Boolean = frame.isOverScrollbar(mouseX = mouseX, mouseY = mouseY, top = contentTop, bottom = contentBottom)
 
     /**
      * 計算單張對局卡片的背景範圍：橫跨內容寬度，下方保留卡片間距。
@@ -265,14 +252,8 @@ internal data class HistoryScreenLayout(
         /** 工具列與內容區之間保留給存檔狀態文字的高度。 */
         const val STATUS_HEIGHT: Int = 14
 
-        /** 內容區與底部按鈕列之間的垂直間距。 */
-        const val FOOTER_GAP: Int = 4
-
         /** 卡片之間的垂直間距。 */
         const val CARD_GAP: Int = 4
-
-        /** 底部按鈕列的格數。 */
-        const val FOOTER_SLOTS: Int = 4
 
         /**
          * 依畫面尺寸建立版面。

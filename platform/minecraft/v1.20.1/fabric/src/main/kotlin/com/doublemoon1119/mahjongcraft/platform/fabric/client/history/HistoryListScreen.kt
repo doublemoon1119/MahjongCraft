@@ -111,9 +111,13 @@ internal class HistoryListScreen(
                 session.controller.retry()
             }
         }
-        previousButton = button(Text.translatable(MinecraftHistoryScreenKeys.PREVIOUS), layout.footerSlot(0)) { session.controller.previousPage() }
-        nextButton = button(Text.translatable(MinecraftHistoryScreenKeys.NEXT), layout.footerSlot(2)) { session.controller.nextPage() }
-        button(Text.translatable(MinecraftHistoryScreenKeys.CLOSE), layout.footerSlot(HistoryScreenLayout.FOOTER_SLOTS - 1)) { close() }
+        previousButton = button(Text.translatable(MinecraftHistoryScreenKeys.PREVIOUS), layout.footerSlot(0)) {
+            if (HistoryPaging.jumpsToEnd()) session.controller.firstPage() else session.controller.previousPage()
+        }
+        nextButton = button(Text.translatable(MinecraftHistoryScreenKeys.NEXT), layout.footerSlot(2)) {
+            if (HistoryPaging.jumpsToEnd()) session.controller.lastPage() else session.controller.nextPage()
+        }
+        button(Text.translatable(MinecraftHistoryScreenKeys.CLOSE), layout.footerSlot(HistoryPageFrame.LAST_SLOT)) { close() }
     }
 
     /**
@@ -386,7 +390,7 @@ internal class HistoryListScreen(
                 },
             ),
         )
-        previousButton?.active = canQuery && list.pageNumber > 1
+        previousButton?.active = canQuery && list.previousCursor != null
         nextButton?.active = canQuery && list.nextCursor != null
         refreshButton?.active = session.controller.canRefresh()
         val archiveStatus = session.archiveStatusController.view.value
@@ -401,8 +405,8 @@ internal class HistoryListScreen(
         listOf(scopeButton to scopeTooltip(), sortButton to sortTooltip(), directionButton to directionTooltip()).forEach { (button, tooltip) ->
             button?.tooltip = Tooltip.of(tooltip.copy().also { text -> queryHint?.let { text.append("\n").append(it.copy().formatted(Formatting.YELLOW)) } })
         }
-        previousButton?.tooltip = queryHint?.let(Tooltip::of)
-        nextButton?.tooltip = queryHint?.let(Tooltip::of)
+        previousButton?.tooltip = Tooltip.of(HistoryPaging.buttonTooltip(MinecraftHistoryScreenKeys.HINT_PREVIOUS_PAGE, MinecraftHistoryScreenKeys.HINT_FIRST_PAGE, queryHint))
+        nextButton?.tooltip = Tooltip.of(HistoryPaging.buttonTooltip(MinecraftHistoryScreenKeys.HINT_NEXT_PAGE, MinecraftHistoryScreenKeys.HINT_LAST_PAGE, queryHint))
         retryButton?.tooltip = queryHint?.let(Tooltip::of)
         HistoryScreenText.archiveStatus(archiveStatus)?.let { message ->
             context.drawCenteredTextWithShadow(textRenderer, message, width / 2, layout.statusY, 0xffff55)
@@ -428,20 +432,16 @@ internal class HistoryListScreen(
         }
         context.disableScissor()
         renderScrollbar(context, displayEntries)
-        val pageBounds = layout.footerSlot(1)
-        val pageLabel = Text.translatable(MinecraftHistoryScreenKeys.PAGE, list.pageNumber)
-        val pageText = HistoryScreenText.trim(pageLabel.string, pageBounds.width, textRenderer::getWidth)
-        val showRange = list.status == HistoryBrowseStatus.Ready && list.entries.isNotEmpty()
-        val rangeLabel = if (showRange) Text.translatable(MinecraftHistoryScreenKeys.PAGE_RANGE, list.firstEntryIndex, list.firstEntryIndex + list.entries.size - 1) else null
-        context.drawCenteredTextWithShadow(textRenderer, Text.literal(pageText), pageBounds.x + pageBounds.width / 2, pageBounds.y + if (showRange) 1 else 6, 0xffffff)
-        rangeLabel?.let {
-            val rangeText = HistoryScreenText.trim(it.string, pageBounds.width, textRenderer::getWidth)
-            context.drawCenteredTextWithShadow(textRenderer, Text.literal(rangeText), pageBounds.x + pageBounds.width / 2, pageBounds.y + 11, 0xaaaaaa)
+        if (list.status == HistoryBrowseStatus.Ready && list.entries.isNotEmpty()) {
+            HistoryPaging.renderRange(
+                context = context,
+                textRenderer = textRenderer,
+                bounds = layout.footerSlot(1),
+                primary = Text.translatable(MinecraftHistoryScreenKeys.PAGE_RANGE, list.firstEntryIndex, list.firstEntryIndex + list.entries.size - 1),
+                secondary = HistoryPaging.totalText(list.totalCount),
+            )
         }
         super.render(context, pointerX, pointerY, delta)
-        if (rangeLabel != null && pointerX in pageBounds.x until pageBounds.right && pointerY in pageBounds.y until pageBounds.bottom) {
-            context.drawTooltip(textRenderer, listOf(pageLabel, rangeLabel), mouseX, mouseY)
-        }
         hoveredEntry?.let { context.drawTooltip(textRenderer, it, mouseX, mouseY) }
         dropdown.render(context, textRenderer, height, mouseX, mouseY)
     }

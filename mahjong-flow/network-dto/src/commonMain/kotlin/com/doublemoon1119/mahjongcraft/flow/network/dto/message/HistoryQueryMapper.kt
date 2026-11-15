@@ -6,6 +6,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.history.query.HistoryLis
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.query.HistoryMatchDetail
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.query.HistoryMatchSummary
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.query.HistoryOutcomeFilter
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.query.HistoryPageDirection
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.query.HistoryParticipantSummary
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.query.HistoryQueryCursor
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.query.HistoryQueryErrorCode
@@ -57,6 +58,16 @@ fun HistorySortFieldDto.toDomain(): HistorySortField = when (this) {
 fun HistorySortDirectionDto.toDomain(): HistorySortDirection = when (this) {
     HistorySortDirectionDto.ASC -> HistorySortDirection.ASC
     HistorySortDirectionDto.DESC -> HistorySortDirection.DESC
+}
+
+/**
+ * 將網路翻頁方向映射為 Flow 翻頁方向。
+ *
+ * @return 對應的 Flow 翻頁方向。
+ */
+fun HistoryPageDirectionDto.toDomain(): HistoryPageDirection = when (this) {
+    HistoryPageDirectionDto.AFTER -> HistoryPageDirection.AFTER
+    HistoryPageDirectionDto.BEFORE -> HistoryPageDirection.BEFORE
 }
 
 /**
@@ -119,6 +130,7 @@ fun HistoryListRequestDto.toDomain(decodeCursor: (String?) -> HistoryQueryCursor
     filters = filters.toDomain(),
     pageSize = pageSize,
     cursor = decodeCursor(cursor),
+    direction = direction.toDomain(),
 )
 
 /**

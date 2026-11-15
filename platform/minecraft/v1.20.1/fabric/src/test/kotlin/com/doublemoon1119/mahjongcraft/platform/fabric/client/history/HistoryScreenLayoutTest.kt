@@ -52,7 +52,7 @@ class HistoryScreenLayoutTest {
     fun `footer spans the content with close in the last slot`() {
         listOf(200, 320, 450, 800).forEach { width ->
             val layout = measure(width = width, height = 240)
-            val slots = List(HistoryScreenLayout.FOOTER_SLOTS) { layout.footerSlot(it) }
+            val slots = List(HistoryPageFrame.FOOTER_SLOTS) { layout.footerSlot(it) }
             slots.zipWithNext().forEach { (left, right) -> assertTrue(left.right < right.x) }
             assertEquals(layout.contentLeft, slots.first().x)
             assertEquals(layout.contentRight, slots.last().right)

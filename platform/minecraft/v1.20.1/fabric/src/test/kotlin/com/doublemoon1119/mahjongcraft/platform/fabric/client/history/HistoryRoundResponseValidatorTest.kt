@@ -61,6 +61,23 @@ class HistoryRoundResponseValidatorTest {
         assertIs<HistoryRoundValidationResult.Success<*>>(HistoryRoundResponseValidator.validateEvents(request, response))
     }
 
+    /** 交易總數必須涵蓋本頁與下一頁起點；沒有下一頁時本頁剛好到最後一筆。 */
+    @Test
+    fun `test transaction count must match the page`() {
+        val request = HistoryRoundEventsRequestDto("request", TEST_MATCH_ID, roundNumber = 1, scope = HistoryQueryScopeDto.OWN, startTransactionIndex = 0, limit = 20)
+        fun validate(events: HistoryRoundEventsDto) = HistoryRoundResponseValidator.validateEvents(request, HistoryRoundEventsResponseDto("request", TEST_MATCH_ID, 1, 0, events, errorCode = null))
+
+        assertIs<HistoryRoundValidationResult.Success<*>>(validate(events().copy(transactionCount = 30)))
+        assertIs<HistoryRoundValidationResult.Success<*>>(validate(events().copy(nextTransactionIndex = null, transactionCount = 1)))
+        listOf(
+            events().copy(transactionCount = 1),
+            events().copy(transactionCount = -1),
+            events().copy(nextTransactionIndex = null, transactionCount = 2),
+        ).forEach { invalid ->
+            assertEquals(HistoryRoundValidationError.TRANSACTION_INDEX_INVALID, assertIs<HistoryRoundValidationResult.Invalid>(validate(invalid)).reason)
+        }
+    }
+
     /** 過期或不同要求的回覆不得通過。 */
     @Test
     fun `test mismatched event request is rejected`() {
@@ -634,6 +651,7 @@ class HistoryRoundResponseValidatorTest {
             ),
         ),
         nextTransactionIndex = 1,
+        transactionCount = 2,
         tileCatalog = listOf(TileFaceViewDto(TileDto.Numeric(SuitDto.CHARACTER, 1), emptyList(), null)),
     )
 

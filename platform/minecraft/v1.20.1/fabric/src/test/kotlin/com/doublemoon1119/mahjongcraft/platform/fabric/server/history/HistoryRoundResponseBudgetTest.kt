@@ -37,7 +37,7 @@ class HistoryRoundResponseBudgetTest {
             HistoryReplayTransaction(0, 0L, true, emptyList(), 1),
             HistoryReplayTransaction(1, 1L, false, listOf(HistoryReplayFact.Opaque("測".repeat(1000))), 2),
         )
-        val page = HistoryRoundEvents(identity, 1, transactions, null, HistoryRoundTileCatalog((listOf(Tile.Honor.East, Tile.Honor.South)).map(::TileFaceView)))
+        val page = HistoryRoundEvents(identity, 1, transactions, null, transactions.size, HistoryRoundTileCatalog((listOf(Tile.Honor.East, Tile.Honor.South)).map(::TileFaceView)))
         val single = boundedHistoryRoundEvents(request, page.copy(transactions = transactions.take(1), nextTransactionIndex = 1, tileCatalog = HistoryRoundTileCatalog((listOf(Tile.Honor.East)).map(::TileFaceView))), bundledNetworkJson(), DefaultNetworkDtoRegistries())
         val maximum = Json.encodeToString(HistoryRoundEventsResponseDto.serializer(), single).encodeToByteArray().size
         val response = boundedHistoryRoundEvents(request, page, bundledNetworkJson(), DefaultNetworkDtoRegistries(), maximum)
@@ -53,7 +53,7 @@ class HistoryRoundResponseBudgetTest {
     fun `one oversized transaction returns failure without partial catalog`() {
         val identity = HistoryReplayIdentity(Uuid.random(), Uuid.random(), emptyList())
         val request = HistoryRoundEventsRequestDto("events", identity.matchId.toString(), roundNumber = 1, scope = HistoryQueryScopeDto.OWN, startTransactionIndex = 0, limit = 20)
-        val page = HistoryRoundEvents(identity, 1, listOf(HistoryReplayTransaction(0, 0L, false, emptyList(), 1)), 1, HistoryRoundTileCatalog((listOf(Tile.Honor.East)).map(::TileFaceView)))
+        val page = HistoryRoundEvents(identity, 1, listOf(HistoryReplayTransaction(0, 0L, false, emptyList(), 1)), 1, 2, HistoryRoundTileCatalog((listOf(Tile.Honor.East)).map(::TileFaceView)))
         val response = boundedHistoryRoundEvents(request, page, bundledNetworkJson(), DefaultNetworkDtoRegistries(), 1)
         assertEquals(HistoryQueryErrorCodeDto.CONTENT_TOO_LARGE, response.errorCode)
         assertNull(response.events)
@@ -63,7 +63,7 @@ class HistoryRoundResponseBudgetTest {
     @Test
     fun `empty terminal page remains complete`() {
         val identity = HistoryReplayIdentity(Uuid.random(), Uuid.random(), emptyList())
-        val page = HistoryRoundEvents(identity, 1, emptyList(), null, HistoryRoundTileCatalog(emptyList()))
+        val page = HistoryRoundEvents(identity, 1, emptyList(), null, 0, HistoryRoundTileCatalog(emptyList()))
         val response = boundedHistoryRoundEvents(HistoryRoundEventsRequestDto("events", identity.matchId.toString(), roundNumber = 1, scope = HistoryQueryScopeDto.OWN, startTransactionIndex = 0, limit = 20), page, bundledNetworkJson(), DefaultNetworkDtoRegistries())
         assertEquals(emptyList(), assertNotNull(response.events).transactions)
         assertNull(response.events?.nextTransactionIndex)

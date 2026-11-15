@@ -17,6 +17,38 @@ internal enum class PixelIcon(
 
     /** 由大到小排序：向下的箭頭。 */
     SORT_DESCENDING(width = 6, height = 7, rows = SortArrowRows.DOWN),
+
+    /** 進入下一層畫面：向右的實心三角形。 */
+    OPEN_RIGHT(
+        width = 4,
+        height = 7,
+        rows = listOf(
+            listOf(0 to 1),
+            listOf(0 to 2),
+            listOf(0 to 3),
+            listOf(0 to 4),
+            listOf(0 to 3),
+            listOf(0 to 2),
+            listOf(0 to 1),
+        ),
+    ),
+
+    /** 查看詳細內容：放大鏡。 */
+    MAGNIFIER(
+        width = 9,
+        height = 9,
+        rows = listOf(
+            listOf(1 to 4),
+            listOf(0 to 1, 5 to 1),
+            listOf(0 to 1, 5 to 1),
+            listOf(0 to 1, 5 to 1),
+            listOf(0 to 1, 5 to 1),
+            listOf(1 to 4, 6 to 1),
+            listOf(6 to 2),
+            listOf(7 to 2),
+            listOf(8 to 1),
+        ),
+    ),
 }
 
 /** 排序箭頭的像素範圍。 */

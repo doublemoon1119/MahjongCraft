@@ -3,7 +3,11 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.client.history
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryIntegrityFilterDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryMatchDetailDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryParticipantSummaryDto
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.ControlTooltip
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.PixelIcon
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.PixelIcons
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.RestartableMarqueeButtonWidget
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.RowStripe
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.ScreenRendering
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.VerticalScrollbar
 import com.doublemoon1119.mahjongcraft.platform.minecraft.history.MinecraftHistoryScreenKeys
@@ -12,15 +16,20 @@ import net.minecraft.client.gui.DrawContext
 import net.minecraft.client.gui.screen.Screen
 import net.minecraft.client.gui.tooltip.Tooltip
 import net.minecraft.client.gui.widget.ButtonWidget
+import net.minecraft.client.sound.PositionedSoundInstance
+import net.minecraft.sound.SoundEvents
 import net.minecraft.text.OrderedText
 import net.minecraft.text.Text
 import net.minecraft.util.Formatting
+import org.lwjgl.glfw.GLFW
 import kotlin.time.Duration.Companion.seconds
 import kotlin.time.TimeMark
 import kotlin.time.TimeSource
 
 /**
- * 顯示單場歷史對局的安全摘要與局級索引。
+ * 顯示單場牌譜的基本資訊、排名與各局列表。
+ *
+ * 基本資訊為名稱與值兩欄對齊，對局 ID 旁有複製按鈕、規則旁有查看規則設定的按鈕；每局一列，點整列開啟該局紀錄。
  *
  * @property session 共用歷史瀏覽 session。
  */
@@ -39,38 +48,55 @@ internal class HistorySummaryScreen(
     /** 捲軸拖曳時游標相對滑塊上界的偏移。 */
     private var grabOffset = 0.0
 
-    /** 返回按鈕；只有它顯示時置中。 */
-    private var backButton: ButtonWidget? = null
-
     /** 重試按鈕。 */
     private var retryButton: ButtonWidget? = null
+
+    /** 對局 ID 旁的複製按鈕；隨內容捲動，由本畫面在內容裁切範圍內繪製。 */
+    private lateinit var copyButton: RestartableMarqueeButtonWidget
+
+    /** 規則旁查看規則設定的按鈕；隨內容捲動，由本畫面在內容裁切範圍內繪製。 */
+    private lateinit var ruleSettingsButton: RestartableMarqueeButtonWidget
+
+    /** 各局列的局數欄寬度；建立列時依實際文字更新。 */
+    private var roundLabelWidth = 0
 
     /** 複製成功提示的單調時間起點。 */
     private var copiedAt: TimeMark? = null
 
-    /** 建立固定 footer 與摘要內容的版面控制項。 */
+    /** 建立固定 footer。 */
     override fun init() {
         layout = HistorySummaryLayout.measure(width, height)
         scroll = session.controller.state.value.summary?.scrollOffset ?: 0.0
         dragging = false
         clearChildren()
-        val (backBounds, retryBounds) = layout.footerButtons(width, secondVisible = true)
-        backButton = RestartableMarqueeButtonWidget.builder(Text.translatable(MinecraftHistoryScreenKeys.BACK)) { session.backToList() }
-            .dimensions(backBounds.x, backBounds.y, backBounds.width, backBounds.height).build().also(::addDrawableChild)
-        retryButton = RestartableMarqueeButtonWidget.builder(Text.translatable(MinecraftHistoryScreenKeys.RETRY)) { if (session.controller.canRetry()) session.controller.retry() }
-            .dimensions(checkNotNull(retryBounds).x, retryBounds.y, retryBounds.width, retryBounds.height).build().also(::addDrawableChild)
+        val retry = layout.footerSlot(HistoryPageFrame.LAST_SLOT - 1)
+        retryButton = addDrawableChild(
+            RestartableMarqueeButtonWidget.builder(Text.translatable(MinecraftHistoryScreenKeys.RETRY)) { if (session.controller.canRetry()) session.controller.retry() }
+                .dimensions(retry.x, retry.y, retry.width, retry.height)
+                .build(),
+        )
+        val back = layout.footerSlot(HistoryPageFrame.LAST_SLOT)
+        addDrawableChild(
+            RestartableMarqueeButtonWidget.builder(Text.translatable(MinecraftHistoryScreenKeys.BACK)) { session.backToList() }
+                .dimensions(back.x, back.y, back.width, back.height)
+                .build(),
+        )
+        copyButton = miniButton(Text.translatable(MinecraftHistoryScreenKeys.SUMMARY_COPY)) { copyMatchId() }
+        ruleSettingsButton = miniButton(Text.translatable(MinecraftHistoryScreenKeys.RULE_SETTINGS_TITLE)) { session.openRuleSettings() }.also {
+            it.tooltip = Tooltip.of(ControlTooltip.description(Text.translatable(MinecraftHistoryScreenKeys.RULE_SETTINGS_OPEN_HINT)))
+        }
     }
 
     /**
-     * 依重試按鈕是否顯示調整底部按鈕位置：只有返回按鈕時置中，兩顆時並排置中。
+     * 建立列上的小按鈕；寬度依文字決定，位置由 [placeContentButtons] 決定。不加入畫面元件，由本畫面在內容裁切範圍內繪製與處理點擊。
      *
-     * @param retryVisible 是否顯示重試按鈕。
+     * @param label 按鈕文字。
+     * @param action 按下後的行為。
+     * @return 建立的按鈕。
      */
-    private fun placeFooter(retryVisible: Boolean) {
-        val (back, retry) = layout.footerButtons(width, secondVisible = retryVisible)
-        backButton?.x = back.x
-        retry?.let { retryButton?.x = it.x }
-    }
+    private fun miniButton(label: Text, action: () -> Unit): RestartableMarqueeButtonWidget = RestartableMarqueeButtonWidget.builder(label) { action() }
+        .dimensions(0, 0, textRenderer.getWidth(label) + MINI_BUTTON_PADDING * 2, MINI_BUTTON_HEIGHT)
+        .build()
 
     /** Minecraft 移除此畫面時通知 session。 */
     override fun removed() {
@@ -84,6 +110,13 @@ internal class HistorySummaryScreen(
     /** 摘要與其他歷史畫面一致，不暫停整合伺服器。 */
     override fun shouldPause(): Boolean = false
 
+    /** 將對局 ID 複製到剪貼簿，並在複製按鈕的提示中短暫顯示已複製。 */
+    private fun copyMatchId() {
+        val detail = detail() ?: return
+        MinecraftClient.getInstance().keyboard.clipboard = detail.summary.matchId
+        copiedAt = TimeSource.Monotonic.markNow()
+    }
+
     /**
      * 處理內容區滾輪。
      *
@@ -94,13 +127,13 @@ internal class HistorySummaryScreen(
      */
     override fun mouseScrolled(mouseX: Double, mouseY: Double, amount: Double): Boolean {
         if (mouseY < layout.contentTop || mouseY >= layout.contentBottom) return super.mouseScrolled(mouseX, mouseY, amount)
-        scroll = layout.clampScroll(scroll - amount * 18.0, contentHeight(detail()))
+        scroll = layout.clampScroll(scroll - amount * SCROLL_STEP, contentHeight(detail()))
         session.controller.rememberSummaryPosition(scroll)
         return true
     }
 
     /**
-     * 開始捲軸拖曳。
+     * 開始捲軸拖曳，或點擊內容區內的按鈕與局列。
      *
      * @param mouseX 游標水平座標。
      * @param mouseY 游標垂直座標。
@@ -108,33 +141,32 @@ internal class HistorySummaryScreen(
      * @return 是否處理此輸入。
      */
     override fun mouseClicked(mouseX: Double, mouseY: Double, button: Int): Boolean {
-        val bar = layout.scrollbar(contentHeight(detail()), scroll)
-        val bounds = layout.scrollbarBounds()
-        if (button == 0 && bar.maximumScroll > 0 && mouseX >= bounds.x && mouseX < bounds.x + bounds.width && mouseY >= bounds.y && mouseY < bounds.y + bounds.height) {
+        val detail = detail()
+        val bar = layout.scrollbar(contentHeight(detail), scroll)
+        if (button == GLFW.GLFW_MOUSE_BUTTON_LEFT && bar.maximumScroll > 0 && layout.isOverScrollbar(mouseX, mouseY)) {
             dragging = true
-            grabOffset = layout.grabOffset(contentHeight(detail()), scroll, mouseY)
+            grabOffset = layout.grabOffset(contentHeight(detail), scroll, mouseY)
             updateDrag(mouseY)
             return true
         }
-        val detail = detail()
-        if (button == 0 && !dragging && detail != null) {
-            val offset = layout.clampScroll(scroll, contentHeight(detail)).toInt()
-            if (buildLines(detail).any { it.copyMatchId && layout.containsContentRow(mouseX, mouseY, it.x, it.y - offset, 11) }) {
-                MinecraftClient.getInstance().keyboard.clipboard = detail.summary.matchId
-                copiedAt = TimeSource.Monotonic.markNow()
-                return true
-            }
-            if (buildLines(detail).any { it.openRuleSettings && layout.containsContentRow(mouseX, mouseY, it.x, it.y - offset, 11) }) {
-                session.openRuleSettings()
-                return true
-            }
-            val links = buildLines(detail).mapNotNull { line -> line.roundNumber?.let { HistorySummaryLayout.RoundLink(line.x, line.y, it) } }
-            layout.roundAt(mouseX, mouseY, offset.toDouble(), links)?.let { roundNumber ->
-                session.openRound(roundNumber)
-                return true
+        if (detail != null && layout.containsContent(mouseX, mouseY)) {
+            placeContentButtons(detail)
+            if (copyButton.mouseClicked(mouseX, mouseY, button) || ruleSettingsButton.mouseClicked(mouseX, mouseY, button)) return true
+            if (button == GLFW.GLFW_MOUSE_BUTTON_LEFT) {
+                val offset = scrollOffset(detail)
+                rows(detail).filterIsInstance<RoundRow>().firstOrNull { layout.containsRow(mouseX, mouseY, rowTop(it, offset), it.height) }?.let { row ->
+                    playClickSound()
+                    session.openRound(row.roundNumber)
+                    return true
+                }
             }
         }
         return super.mouseClicked(mouseX, mouseY, button)
+    }
+
+    /** 播放與按鈕相同的點擊音效。 */
+    private fun playClickSound() {
+        MinecraftClient.getInstance().soundManager.play(PositionedSoundInstance.master(SoundEvents.UI_BUTTON_CLICK, 1.0f))
     }
 
     /**
@@ -157,7 +189,7 @@ internal class HistorySummaryScreen(
      * @param deltaY 垂直位移。
      * @return 是否處理此輸入。
      */
-    override fun mouseDragged(mouseX: Double, mouseY: Double, button: Int, deltaX: Double, deltaY: Double): Boolean = if (dragging && button == 0) {
+    override fun mouseDragged(mouseX: Double, mouseY: Double, button: Int, deltaX: Double, deltaY: Double): Boolean = if (dragging && button == GLFW.GLFW_MOUSE_BUTTON_LEFT) {
         updateDrag(mouseY)
         true
     } else {
@@ -173,7 +205,7 @@ internal class HistorySummaryScreen(
      * @return 是否處理此輸入。
      */
     override fun mouseReleased(mouseX: Double, mouseY: Double, button: Int): Boolean {
-        val handled = dragging && button == 0
+        val handled = dragging && button == GLFW.GLFW_MOUSE_BUTTON_LEFT
         dragging = false
         return handled || super.mouseReleased(mouseX, mouseY, button)
     }
@@ -187,18 +219,15 @@ internal class HistorySummaryScreen(
         scroll = layout.clampScroll(scroll, contentHeight(detail()))
         var hoveredTooltip: List<Text>? = null
         retryButton?.active = session.controller.canRetry()
-        val retryVisible = status is HistoryBrowseStatus.Failed
-        retryButton?.visible = retryVisible
-        placeFooter(retryVisible)
+        retryButton?.visible = status is HistoryBrowseStatus.Failed
         retryButton?.tooltip = if (session.controller.isRefreshCoolingDown()) Tooltip.of(Text.translatable(MinecraftHistoryScreenKeys.QUERY_COOLDOWN_TOOLTIP)) else null
-        context.enableScissor(8, layout.contentTop, width - 8, layout.contentBottom)
+        context.enableScissor(layout.left, layout.contentTop, layout.right, layout.contentBottom)
         when (status) {
-            HistoryBrowseStatus.Idle, HistoryBrowseStatus.Loading -> centered(context, Text.translatable(MinecraftHistoryScreenKeys.LOADING), layout.contentTop + 12, 0xffffff)
-            is HistoryBrowseStatus.Failed -> centered(context, Text.translatable(status.reason.translationKey), layout.contentTop + 12, 0xff6666)
-            HistoryBrowseStatus.Ready -> summary?.detail?.let { hoveredTooltip = renderDetail(context, it, mouseX, mouseY) }
+            HistoryBrowseStatus.Idle, HistoryBrowseStatus.Loading -> message(context, Text.translatable(MinecraftHistoryScreenKeys.LOADING), STATUS_COLOR)
+            is HistoryBrowseStatus.Failed -> message(context, Text.translatable(status.reason.translationKey), ERROR_COLOR)
+            HistoryBrowseStatus.Ready -> summary?.detail?.let { hoveredTooltip = renderDetail(context, it, mouseX, mouseY, delta) }
         }
         context.disableScissor()
-        scroll = layout.clampScroll(scroll, contentHeight(detail()))
         renderScrollbar(context, contentHeight(detail()))
         super.render(context, mouseX, mouseY, delta)
         hoveredTooltip?.let { context.drawTooltip(textRenderer, it, mouseX, mouseY) }
@@ -211,124 +240,289 @@ internal class HistorySummaryScreen(
      * @param detail 權威摘要。
      * @param mouseX 游標水平座標。
      * @param mouseY 游標垂直座標。
-     * @return 實際指向且可見資訊的 tooltip。
+     * @param delta 畫面更新比例。
+     * @return 游標所指且可見內容的提示。
      */
-    private fun renderDetail(context: DrawContext, detail: HistoryMatchDetailDto, mouseX: Int, mouseY: Int): List<Text>? {
-        val lines = buildLines(detail)
-        val contentHeight = contentHeight(detail)
-        val offset = layout.clampScroll(scroll, contentHeight).toInt()
-        val faceX = layout.left + 8 + rankColumnWidth(detail)
-        val nameX = faceX + 14
+    private fun renderDetail(context: DrawContext, detail: HistoryMatchDetailDto, mouseX: Int, mouseY: Int, delta: Float): List<Text>? {
+        val offset = scrollOffset(detail)
+        val pointerInside = !dragging && layout.containsContent(mouseX.toDouble(), mouseY.toDouble())
+        val keyWidth = keyColumnWidth(detail)
+        val rankWidth = rankColumnWidth(detail)
         var tooltip: List<Text>? = null
-        lines.forEach { line ->
-            val y = line.y - offset
-            if (y + 10 >= layout.contentTop && y <= layout.contentBottom) {
-                line.participant?.let { row ->
-                    session.participants.render(row.participant, context, faceX, y - 1, 10, matchId = session.controller.state.value.summary?.detail?.summary?.matchId)
-                    context.drawTextWithShadow(textRenderer, row.rank, layout.left + 8, y, 0xcccccc)
-                    val scoreRight = layout.right - 14
-                    val nameWidth = (scoreRight - textRenderer.getWidth(row.score) - 12 - nameX).coerceAtLeast(1)
-                    val name = HistoryScreenText.trim(row.name.string, nameWidth, textRenderer::getWidth)
-                    context.drawTextWithShadow(textRenderer, Text.literal(name), nameX, y, row.nameColor)
-                    context.drawTextWithShadow(textRenderer, row.score, scoreRight - textRenderer.getWidth(row.score), y, 0xdddddd)
-                    if (name != row.name.string && !dragging && layout.containsContentRow(mouseX.toDouble(), mouseY.toDouble(), nameX, y, 11)) tooltip = listOf(row.name)
-                } ?: context.drawTextWithShadow(textRenderer, line.text, line.x, y, if ((line.copyMatchId || line.openRuleSettings || line.roundNumber != null) && !dragging && layout.containsContentRow(mouseX.toDouble(), mouseY.toDouble(), line.x, y, 11)) 0x8ed5df else line.color)
-                if (line.tooltip != null && !dragging && layout.containsContentRow(mouseX.toDouble(), mouseY.toDouble(), line.x, y, 11)) {
-                    tooltip = if (line.copyMatchId) {
-                        val copied = copiedAt?.elapsedNow()?.let { it < 2.seconds } == true
-                        listOf(line.tooltip, Text.translatable(if (copied) MinecraftHistoryScreenKeys.SUMMARY_MATCH_ID_COPIED else MinecraftHistoryScreenKeys.SUMMARY_COPY_MATCH_ID).formatted(if (copied) Formatting.GREEN else Formatting.AQUA))
-                    } else {
-                        listOf(line.tooltip)
-                    }
+        rows(detail).forEach { row ->
+            val top = rowTop(row, offset)
+            if (top + row.height < layout.contentTop || top > layout.contentBottom) return@forEach
+            val hovered = pointerInside && layout.containsRow(mouseX.toDouble(), mouseY.toDouble(), top, row.height)
+            when (row) {
+                is HeadingRow -> context.drawTextWithShadow(textRenderer, row.text, layout.left, top + 2, HEADING_COLOR)
+                is FieldRow -> tooltip = renderField(context, row, top, keyWidth, hovered) ?: tooltip
+                is RankHeaderRow -> renderRankHeader(context, top, rankWidth)
+                is ParticipantRow -> tooltip = renderParticipant(context, row, top, rankWidth, hovered, mouseX) ?: tooltip
+                is NoteRow -> context.drawTextWithShadow(textRenderer, row.text, layout.left + ROW_INSET, top + 2, NOTE_COLOR)
+                is RoundRow -> {
+                    renderRound(context, row, top, hovered)
+                    if (hovered) tooltip = listOf(Text.translatable(MinecraftHistoryScreenKeys.ROUND_OPEN_HINT).formatted(Formatting.GRAY))
                 }
             }
         }
+        placeContentButtons(detail)
+        val pointerX = if (pointerInside) mouseX else OFFSCREEN_POINTER
+        val pointerY = if (pointerInside) mouseY else OFFSCREEN_POINTER
+        val copied = copiedAt?.elapsedNow()?.let { it < COPIED_NOTICE } == true
+        copyButton.tooltip = Tooltip.of(
+            if (copied) {
+                Text.translatable(MinecraftHistoryScreenKeys.SUMMARY_MATCH_ID_COPIED).formatted(Formatting.GREEN)
+            } else {
+                Text.translatable(MinecraftHistoryScreenKeys.SUMMARY_COPY_MATCH_ID).formatted(Formatting.GRAY)
+            },
+        )
+        copyButton.render(context, pointerX, pointerY, delta)
+        ruleSettingsButton.render(context, pointerX, pointerY, delta)
         return tooltip
     }
 
     /**
-     * 建立依實際字寬換行的摘要內容，不假設固定玩家數。
+     * 繪製基本資訊的一列：名稱在左欄、值在右欄，有按鈕時值讓出按鈕的寬度。
      *
-     * @param detail 權威摘要與局索引。
-     * @return 含排名與資訊的有序繪製行。
+     * @param context 繪製上下文。
+     * @param row 要繪製的列。
+     * @param top 捲動後的列上界。
+     * @param keyWidth 名稱欄寬度。
+     * @param hovered 游標是否在這一列上。
+     * @return 游標所指時的提示；沒有時為 null。
      */
-    private fun buildLines(detail: HistoryMatchDetailDto): List<Line> {
-        val summary = detail.summary
-        val lines = mutableListOf<Line>()
-        var y = layout.contentTop + 4
-
-        /**
-         * 按可用字寬加入資訊行，並附上可選完整值提示。
-         *
-         * @param text 完整資訊文字。
-         * @param color 行文字色。
-         * @param x 行左界。
-         * @param tooltip 可選的完整值或說明。
-         * @param copyMatchId 是否可複製對局 ID。
-         * @param openRuleSettings 是否可開啟唯讀歷史規則設定。
-         * @param roundNumber 可開啟的局序號；其他資訊行為 null。
-         */
-        fun add(text: Text, color: Int = 0xffffff, x: Int = layout.left + 8, tooltip: Text? = null, copyMatchId: Boolean = false, openRuleSettings: Boolean = false, roundNumber: Int? = null) {
-            val wrapped = textRenderer.wrapLines(text, (layout.right - x - 14).coerceAtLeast(1))
-            wrapped.forEach { line ->
-                lines += Line(x, y, line, color, tooltip = tooltip, copyMatchId = copyMatchId, openRuleSettings = openRuleSettings, roundNumber = roundNumber)
-                y += 11
-            }
+    private fun renderField(context: DrawContext, row: FieldRow, top: Int, keyWidth: Int, hovered: Boolean): List<Text>? {
+        stripe(top, row.height).renderIfStriped(context, row.stripeIndex)
+        val textY = top + (row.height - VISIBLE_TEXT_HEIGHT) / 2
+        context.drawTextWithShadow(textRenderer, row.key, layout.left + ROW_INSET, textY, KEY_COLOR)
+        val valueLeft = layout.left + ROW_INSET + keyWidth
+        val valueRight = layout.right - ROW_INSET - (actionButton(row.action)?.let { it.width + BUTTON_GAP } ?: 0)
+        val shown = HistoryScreenText.trim(row.value.string, (valueRight - valueLeft).coerceAtLeast(1), textRenderer::getWidth)
+        context.drawTextWithShadow(textRenderer, Text.literal(shown), valueLeft, textY, VALUE_COLOR)
+        if (!hovered) return null
+        return when {
+            row.tooltip != null -> row.tooltip
+            shown != row.value.string -> listOf(row.value)
+            else -> null
         }
-        add(Text.translatable(MinecraftHistoryScreenKeys.SUMMARY_BASIC), 0x8ed5df, layout.left)
-        y += 4
-        add(Text.translatable(MinecraftHistoryScreenKeys.SUMMARY_MATCH_ID).append(": ").append(summary.matchId), tooltip = Text.literal(summary.matchId), copyMatchId = true)
-        add(Text.translatable(MinecraftHistoryScreenKeys.SUMMARY_RULE).copy().append(": ").append(HistoryScreenText.rule(summary.ruleId, session.ruleNames)), tooltip = Text.translatable(MinecraftHistoryScreenKeys.RULE_SETTINGS_OPEN_HINT).formatted(Formatting.AQUA), openRuleSettings = true)
-        add(Text.translatable(MinecraftHistoryScreenKeys.SUMMARY_STARTED_AT).append(": ").append(HistoryScreenText.endedAt(summary.startedAtEpochMillis)))
-        add(Text.translatable(MinecraftHistoryScreenKeys.SUMMARY_ENDED_AT).append(": ").append(HistoryScreenText.endedAt(summary.endedAtEpochMillis)))
-        add(Text.translatable(MinecraftHistoryScreenKeys.SUMMARY_DURATION).append(": ").append(HistoryScreenText.duration(summary.duration)))
-        add(Text.translatable(MinecraftHistoryScreenKeys.SUMMARY_OUTCOME).copy().append(": ").append(HistoryScreenText.outcome(summary.outcome)))
-        val integrityKey = if (summary.integrity == HistoryIntegrityFilterDto.COMPLETE) MinecraftHistoryScreenKeys.INTEGRITY_COMPLETE else MinecraftHistoryScreenKeys.INTEGRITY_INCOMPLETE
-        add(Text.translatable(MinecraftHistoryScreenKeys.SUMMARY_INTEGRITY).copy().append(": ").append(Text.translatable(integrityKey)), tooltip = Text.translatable(MinecraftHistoryScreenKeys.SUMMARY_INTEGRITY_TOOLTIP, Text.translatable(integrityKey)))
-        y += 8
-        add(Text.translatable(MinecraftHistoryScreenKeys.SUMMARY_RANKING), 0x8ed5df, layout.left)
-        y += 4
-        val headerY = y
-        val rankWidth = rankColumnWidth(detail)
-        val nameX = layout.left + 8 + rankWidth + 14
-        val scoreHeader = Text.translatable(MinecraftHistoryScreenKeys.SUMMARY_SCORE_HEADER)
-        val playerWidth = (layout.right - 14 - textRenderer.getWidth(scoreHeader) - 12 - nameX).coerceAtLeast(1)
-        lines += Line(layout.left + 8, headerY, Text.translatable(MinecraftHistoryScreenKeys.SUMMARY_RANK_HEADER).asOrderedText(), 0xcccccc)
-        lines += Line(nameX, headerY, Text.literal(HistoryScreenText.trim(Text.translatable(MinecraftHistoryScreenKeys.SUMMARY_PLAYER_HEADER).string, playerWidth, textRenderer::getWidth)).asOrderedText(), 0xcccccc)
-        lines += Line(layout.right - 14 - textRenderer.getWidth(Text.translatable(MinecraftHistoryScreenKeys.SUMMARY_SCORE_HEADER)), headerY, Text.translatable(MinecraftHistoryScreenKeys.SUMMARY_SCORE_HEADER).asOrderedText(), 0xcccccc)
-        y += 11
-        val results = summary.results.associateBy { it.playerId }
-        val ownId = MinecraftClient.getInstance().player?.uuid?.toString()
-        HistoryScreenText.rankedParticipants(summary).forEach { participant ->
-            val result = results[participant.playerId]
-            val name = session.participants.name(participant, summary.participants, summary.matchId)
-            val rank = Text.literal(result?.finalRank?.toString() ?: "—")
-            val score = Text.literal(result?.finalScore?.toString() ?: "—")
-            lines += Line(layout.left, y, Text.empty().asOrderedText(), 0xffffff, ParticipantRow(participant, rank, name, score, if (participant.playerId == ownId) 0x8ed5df else 0xffffff))
-            y += 14
-        }
-        if (!summary.resultsAvailable || summary.results.isEmpty()) add(Text.translatable(MinecraftHistoryScreenKeys.SUMMARY_RESULTS_UNAVAILABLE), 0xcccccc)
-        y += 8
-        add(Text.translatable(MinecraftHistoryScreenKeys.SUMMARY_ROUND_INDEX), 0x8ed5df, layout.left)
-        y += 4
-        add(Text.translatable(MinecraftHistoryScreenKeys.SUMMARY_ROUND_COUNT).append(": ").append(summary.roundCount?.toString() ?: "—"))
-        if (detail.rounds.isEmpty()) {
-            add(Text.translatable(MinecraftHistoryScreenKeys.SUMMARY_ROUNDS_EMPTY), 0xcccccc)
-        } else {
-            detail.rounds.sortedBy { it.roundNumber }.forEach { round ->
-                val duration = HistoryScreenText.intervalDuration(round.startedAtEpochMillis, round.endedAtEpochMillis)
-                add(
-                    text = Text.translatable(MinecraftHistoryScreenKeys.SUMMARY_ROUND_ROW, round.roundNumber, HistoryScreenText.endedAt(round.startedAtEpochMillis), HistoryScreenText.endedAt(round.endedAtEpochMillis), duration),
-                    tooltip = Text.translatable(MinecraftHistoryScreenKeys.ROUND_OPEN_HINT).formatted(Formatting.AQUA),
-                    roundNumber = round.roundNumber,
-                )
-            }
-        }
-        return lines
     }
 
     /**
-     * 以名次標題及權威數值的實際字寬決定排名欄寬。
+     * 繪製排名表的欄位標題。
+     *
+     * @param context 繪製上下文。
+     * @param top 捲動後的列上界。
+     * @param rankWidth 名次欄寬度。
+     */
+    private fun renderRankHeader(context: DrawContext, top: Int, rankWidth: Int) {
+        val y = top + 2
+        context.drawTextWithShadow(textRenderer, Text.translatable(MinecraftHistoryScreenKeys.SUMMARY_RANK_HEADER), layout.left + ROW_INSET, y, KEY_COLOR)
+        context.drawTextWithShadow(textRenderer, Text.translatable(MinecraftHistoryScreenKeys.SUMMARY_PLAYER_HEADER), layout.left + ROW_INSET + rankWidth + FACE_WIDTH, y, KEY_COLOR)
+        val score = Text.translatable(MinecraftHistoryScreenKeys.SUMMARY_SCORE_HEADER)
+        context.drawTextWithShadow(textRenderer, score, layout.right - ROW_INSET - textRenderer.getWidth(score), y, KEY_COLOR)
+    }
+
+    /**
+     * 繪製排名表的一列：名次、頭像、名稱與分數。
+     *
+     * @param context 繪製上下文。
+     * @param row 要繪製的列。
+     * @param top 捲動後的列上界。
+     * @param rankWidth 名次欄寬度。
+     * @param hovered 游標是否在這一列上。
+     * @param mouseX 游標水平座標。
+     * @return 名稱被截斷且游標停在名稱上時的完整名稱；沒有時為 null。
+     */
+    private fun renderParticipant(context: DrawContext, row: ParticipantRow, top: Int, rankWidth: Int, hovered: Boolean, mouseX: Int): List<Text>? {
+        stripe(top, row.height).renderIfStriped(context, row.stripeIndex)
+        val textY = top + (row.height - VISIBLE_TEXT_HEIGHT) / 2
+        val faceX = layout.left + ROW_INSET + rankWidth
+        val nameX = faceX + FACE_WIDTH
+        context.drawTextWithShadow(textRenderer, row.rank, layout.left + ROW_INSET, textY, KEY_COLOR)
+        session.participants.render(row.participant, context, faceX, textY - 1, FACE_SIZE, matchId = detail()?.summary?.matchId)
+        val scoreRight = layout.right - ROW_INSET
+        val nameWidth = (scoreRight - textRenderer.getWidth(row.score) - COLUMN_GAP - nameX).coerceAtLeast(1)
+        val name = HistoryScreenText.trim(row.name.string, nameWidth, textRenderer::getWidth)
+        context.drawTextWithShadow(textRenderer, Text.literal(name), nameX, textY, row.nameColor)
+        context.drawTextWithShadow(textRenderer, row.score, scoreRight - textRenderer.getWidth(row.score), textY, VALUE_COLOR)
+        return if (hovered && name != row.name.string && mouseX >= nameX && mouseX < nameX + nameWidth) listOf(row.name) else null
+    }
+
+    /**
+     * 繪製一局的列：卡片底色，游標停留時加亮並加白框；右端畫進入箭頭。
+     *
+     * @param context 繪製上下文。
+     * @param row 要繪製的列。
+     * @param top 捲動後的列上界。
+     * @param hovered 游標是否在這一列上。
+     */
+    private fun renderRound(context: DrawContext, row: RoundRow, top: Int, hovered: Boolean) {
+        val bottom = top + row.height - ROUND_GAP
+        context.fill(layout.left, top, layout.right, bottom, if (hovered) ROUND_HOVER_BACKGROUND else ROUND_BACKGROUND)
+        if (hovered) context.drawBorder(layout.left, top, layout.right - layout.left, bottom - top, OUTLINE_COLOR)
+        val textY = top + (bottom - top - VISIBLE_TEXT_HEIGHT) / 2
+        context.drawTextWithShadow(textRenderer, row.label, layout.left + ROW_INSET, textY, VALUE_COLOR)
+        val timesLeft = layout.left + ROW_INSET + roundLabelWidth
+        val arrowX = layout.right - ROW_INSET - PixelIcon.OPEN_RIGHT.width
+        val times = HistoryScreenText.trim(row.times.string, (arrowX - COLUMN_GAP - timesLeft).coerceAtLeast(1), textRenderer::getWidth)
+        context.drawTextWithShadow(textRenderer, Text.literal(times), timesLeft, textY, NOTE_COLOR)
+        PixelIcons.icon(context, PixelIcon.OPEN_RIGHT, arrowX, top + (bottom - top - PixelIcon.OPEN_RIGHT.height) / 2, VALUE_COLOR)
+    }
+
+    /**
+     * 將對局 ID 與規則兩列的按鈕放到列的右端；所在列捲出內容區時隱藏。
+     *
+     * @param detail 權威摘要。
+     */
+    private fun placeContentButtons(detail: HistoryMatchDetailDto) {
+        val offset = scrollOffset(detail)
+        listOf(FieldAction.COPY_MATCH_ID to copyButton, FieldAction.RULE_SETTINGS to ruleSettingsButton).forEach { (action, button) ->
+            val row = rows(detail).filterIsInstance<FieldRow>().firstOrNull { it.action == action }
+            if (row == null) {
+                button.visible = false
+                return@forEach
+            }
+            val top = rowTop(row, offset)
+            button.x = layout.right - ROW_INSET - button.width
+            button.y = top + (row.height - button.height) / 2
+            button.visible = button.y + button.height > layout.contentTop && button.y < layout.contentBottom
+        }
+    }
+
+    /**
+     * 取得列上的按鈕。
+     *
+     * @param action 列的按鈕種類；沒有按鈕時為 null。
+     * @return 對應的按鈕；沒有按鈕時為 null。
+     */
+    private fun actionButton(action: FieldAction?): RestartableMarqueeButtonWidget? = when (action) {
+        FieldAction.COPY_MATCH_ID -> copyButton
+        FieldAction.RULE_SETTINGS -> ruleSettingsButton
+        null -> null
+    }
+
+    /**
+     * 建立隔列底色的範圍：橫跨內容寬度。
+     *
+     * @param top 捲動後的列上界。
+     * @param height 列高度。
+     * @return 底色範圍。
+     */
+    private fun stripe(top: Int, height: Int): RowStripe = RowStripe(left = layout.left, top = top, right = layout.right, bottom = top + height)
+
+    /**
+     * 依序建立摘要的每一列，不假設固定玩家數。
+     *
+     * @param detail 權威摘要與各局列表。
+     * @return 由上到下排列、上界相對內容區頂端的列。
+     */
+    private fun rows(detail: HistoryMatchDetailDto): List<SummaryRow> {
+        val summary = detail.summary
+        val rows = mutableListOf<SummaryRow>()
+        var top = 0
+
+        /**
+         * 加入一列並往下推進。
+         *
+         * @param row 要加入的列。
+         */
+        fun add(row: SummaryRow) {
+            rows += row
+            top += row.height
+        }
+
+        /**
+         * 加入一段標題；不是第一段時上方先留白。
+         *
+         * @param key 標題翻譯鍵。
+         */
+        fun heading(key: String) {
+            if (rows.isNotEmpty()) top += SECTION_GAP
+            add(HeadingRow(top = top, text = Text.translatable(key)))
+        }
+
+        /**
+         * 加入可能換行的說明文字。
+         *
+         * @param text 說明文字。
+         */
+        fun note(text: Text) {
+            textRenderer.wrapLines(text, (layout.right - layout.left - ROW_INSET * 2).coerceAtLeast(1)).forEach { line ->
+                add(NoteRow(top = top, text = line))
+            }
+        }
+
+        heading(MinecraftHistoryScreenKeys.SUMMARY_BASIC)
+        val integrityKey = if (summary.integrity == HistoryIntegrityFilterDto.COMPLETE) MinecraftHistoryScreenKeys.INTEGRITY_COMPLETE else MinecraftHistoryScreenKeys.INTEGRITY_INCOMPLETE
+        val fields = listOf(
+            FieldContent(MinecraftHistoryScreenKeys.SUMMARY_MATCH_ID, Text.literal(summary.matchId), action = FieldAction.COPY_MATCH_ID),
+            FieldContent(MinecraftHistoryScreenKeys.SUMMARY_RULE, HistoryScreenText.rule(summary.ruleId, session.ruleNames), action = FieldAction.RULE_SETTINGS),
+            FieldContent(MinecraftHistoryScreenKeys.SUMMARY_STARTED_AT, Text.literal(HistoryScreenText.endedAt(summary.startedAtEpochMillis))),
+            FieldContent(MinecraftHistoryScreenKeys.SUMMARY_ENDED_AT, Text.literal(HistoryScreenText.endedAt(summary.endedAtEpochMillis))),
+            FieldContent(MinecraftHistoryScreenKeys.SUMMARY_DURATION, Text.literal(HistoryScreenText.duration(summary.duration))),
+            FieldContent(
+                keyId = MinecraftHistoryScreenKeys.SUMMARY_OUTCOME,
+                value = HistoryScreenText.outcome(summary.outcome).copy().append(VALUE_SEPARATOR).append(Text.translatable(integrityKey)),
+                tooltip = listOf(Text.translatable(MinecraftHistoryScreenKeys.SUMMARY_INTEGRITY_TOOLTIP, Text.translatable(integrityKey))),
+            ),
+        )
+        fields.forEachIndexed { index, field ->
+            add(FieldRow(top = top, stripeIndex = index, key = Text.translatable(field.keyId), value = field.value, tooltip = field.tooltip, action = field.action))
+        }
+        heading(MinecraftHistoryScreenKeys.SUMMARY_RANKING)
+        add(RankHeaderRow(top = top))
+        val results = summary.results.associateBy { it.playerId }
+        val ownId = MinecraftClient.getInstance().player?.uuid?.toString()
+        HistoryScreenText.rankedParticipants(summary).forEachIndexed { index, participant ->
+            val result = results[participant.playerId]
+            add(
+                row = ParticipantRow(
+                    top = top,
+                    stripeIndex = index,
+                    participant = participant,
+                    rank = Text.literal(result?.finalRank?.toString() ?: "—"),
+                    name = session.participants.name(participant, summary.participants, summary.matchId),
+                    score = Text.literal(result?.finalScore?.toString() ?: "—"),
+                    nameColor = if (participant.playerId == ownId) OWN_NAME_COLOR else VALUE_COLOR,
+                ),
+            )
+        }
+        if (!summary.resultsAvailable || summary.results.isEmpty()) note(Text.translatable(MinecraftHistoryScreenKeys.SUMMARY_RESULTS_UNAVAILABLE))
+        heading(MinecraftHistoryScreenKeys.SUMMARY_ROUND_COUNT)
+        if (detail.rounds.isEmpty()) {
+            note(Text.translatable(MinecraftHistoryScreenKeys.SUMMARY_ROUNDS_EMPTY))
+        } else {
+            val rounds = detail.rounds.sortedBy { it.roundNumber }.map { round ->
+                RoundRow(
+                    top = 0,
+                    roundNumber = round.roundNumber,
+                    label = Text.translatable(MinecraftHistoryScreenKeys.SUMMARY_ROUND_LABEL, round.roundNumber),
+                    times = Text.translatable(
+                        MinecraftHistoryScreenKeys.SUMMARY_ROUND_TIMES,
+                        HistoryScreenText.endedAt(round.startedAtEpochMillis),
+                        HistoryScreenText.endedAt(round.endedAtEpochMillis),
+                        HistoryScreenText.intervalDuration(round.startedAtEpochMillis, round.endedAtEpochMillis),
+                    ),
+                )
+            }
+            roundLabelWidth = (rounds.maxOfOrNull { textRenderer.getWidth(it.label) } ?: 0) + COLUMN_GAP
+            rounds.forEach { add(it.copy(top = top)) }
+        }
+        return rows
+    }
+
+    /**
+     * 基本資訊的名稱欄寬度：最長名稱加上欄距，最多內容寬度的一半。
+     *
+     * @param detail 權威摘要。
+     * @return 名稱欄寬度。
+     */
+    private fun keyColumnWidth(detail: HistoryMatchDetailDto): Int = (
+        rows(detail).filterIsInstance<FieldRow>().maxOfOrNull { textRenderer.getWidth(it.key) }?.plus(COLUMN_GAP) ?: 0
+        ).coerceAtMost((layout.right - layout.left) / 2)
+
+    /**
+     * 以名次標題及名次數值的實際字寬決定排名欄寬。
      *
      * @param detail 權威摘要。
      * @return 含欄間距的像素寬度。
@@ -336,18 +530,32 @@ internal class HistorySummaryScreen(
     private fun rankColumnWidth(detail: HistoryMatchDetailDto): Int = maxOf(
         a = textRenderer.getWidth(Text.translatable(MinecraftHistoryScreenKeys.SUMMARY_RANK_HEADER)),
         b = detail.summary.results.maxOfOrNull { textRenderer.getWidth(it.finalRank?.toString() ?: "—") } ?: textRenderer.getWidth("—"),
-    ) + 8
+    ) + COLUMN_GAP
 
     /**
-     * 計算摘要總高度，與繪製列數保持一致。
+     * 計算摘要總高度，與繪製的列保持一致。
      *
      * @param detail 成功摘要；null 表示尚無內容。
-     * @return 含首尾間距的總像素高度。
+     * @return 總像素高度。
      */
-    private fun contentHeight(detail: HistoryMatchDetailDto?): Int = detail?.let {
-        val lines = buildLines(it)
-        (lines.maxOfOrNull { line -> line.y - layout.contentTop + if (line.participant == null) 11 else 14 } ?: 0).plus(4).coerceAtLeast(layout.viewportHeight)
-    } ?: layout.viewportHeight
+    private fun contentHeight(detail: HistoryMatchDetailDto?): Int = detail?.let { rows(it).lastOrNull()?.let { row -> row.top + row.height } } ?: 0
+
+    /**
+     * 取得限制後的捲動偏移。
+     *
+     * @param detail 權威摘要。
+     * @return 像素偏移。
+     */
+    private fun scrollOffset(detail: HistoryMatchDetailDto): Int = layout.clampScroll(scroll, contentHeight(detail)).toInt()
+
+    /**
+     * 取得列捲動後的上界。
+     *
+     * @param row 摘要的一列。
+     * @param offset 像素捲動偏移。
+     * @return 畫面上的上界。
+     */
+    private fun rowTop(row: SummaryRow, offset: Int): Int = layout.contentTop + row.top - offset
 
     /**
      * 繪製與拖曳共用幾何的捲軸。
@@ -358,66 +566,241 @@ internal class HistorySummaryScreen(
     private fun renderScrollbar(context: DrawContext, height: Int) {
         val bar = layout.scrollbar(height, scroll)
         if (bar.maximumScroll <= 0 || layout.contentBottom <= layout.contentTop) return
-        val bounds = layout.scrollbarBounds()
-        VerticalScrollbar.renderWithin(context, bounds.x, bounds.x + bounds.width, bar)
+        VerticalScrollbar.render(context, layout.scrollbarBounds().x, bar)
     }
 
     /** 取得目前成功摘要，不使用失敗時殘留的舊內容計算捲軸。 */
     private fun detail(): HistoryMatchDetailDto? = session.controller.state.value.summary?.takeIf { it.status == HistoryBrowseStatus.Ready }?.detail
 
     /**
-     * 依可用字寬顯示安全的載入或失敗訊息。
+     * 在內容區頂端顯示載入或失敗訊息，依可用字寬換行。
      *
      * @param context 繪製上下文。
      * @param text 已翻譯的訊息。
-     * @param y 文字上界。
      * @param color 文字顏色。
      */
-    private fun centered(context: DrawContext, text: Text, y: Int, color: Int) {
-        textRenderer.wrapLines(text, (layout.right - layout.left - 14).coerceAtLeast(1)).forEachIndexed { index, line ->
-            context.drawTextWithShadow(textRenderer, line, layout.left, y + index * 11, color)
+    private fun message(context: DrawContext, text: Text, color: Int) {
+        textRenderer.wrapLines(text, (layout.right - layout.left).coerceAtLeast(1)).forEachIndexed { index, line ->
+            context.drawTextWithShadow(textRenderer, line, layout.left, layout.contentTop + MESSAGE_OFFSET + index * textRenderer.fontHeight, color)
         }
     }
 
-    /**
-     * 摘要畫面的一行繪製資料。
-     *
-     * @property x 行左界。
-     * @property y 未捲動的上界。
-     * @property text 已換行文字。
-     * @property color 行顏色。
-     * @property participant 可選排名列。
-     * @property tooltip 可見行的完整值或用途說明。
-     * @property copyMatchId 此行是否提供對局 ID 複製。
-     * @property openRuleSettings 此行是否開啟規則設定。
-     * @property roundNumber 此行可開啟的局序號；其他資訊行為 null。
-     */
-    private data class Line(
-        val x: Int,
-        val y: Int,
-        val text: OrderedText,
-        val color: Int,
-        val participant: ParticipantRow? = null,
-        val tooltip: Text? = null,
-        val copyMatchId: Boolean = false,
-        val openRuleSettings: Boolean = false,
-        val roundNumber: Int? = null,
-    )
+    /** 基本資訊列上的按鈕種類。 */
+    private enum class FieldAction {
+        /** 複製對局 ID。 */
+        COPY_MATCH_ID,
+
+        /** 查看規則設定。 */
+        RULE_SETTINGS,
+    }
 
     /**
-     * 排名欄位的單一資料列。
+     * 基本資訊一列的內容。
      *
+     * @property keyId 名稱翻譯鍵。
+     * @property value 值。
+     * @property tooltip 游標停在這一列上時的提示；沒有時值被截斷才顯示完整值。
+     * @property action 列右端的按鈕；沒有時為 null。
+     */
+    private data class FieldContent(
+        val keyId: String,
+        val value: Text,
+        val tooltip: List<Text>? = null,
+        val action: FieldAction? = null,
+    )
+
+    /** 摘要內容的一列；上界相對內容區頂端，尚未套用捲動。 */
+    private sealed interface SummaryRow {
+        /** 列上界。 */
+        val top: Int
+
+        /** 列高度，含與下一列的間距。 */
+        val height: Int
+    }
+
+    /**
+     * 段落標題。
+     *
+     * @property top 列上界。
+     * @property text 標題文字。
+     */
+    private data class HeadingRow(override val top: Int, val text: Text) : SummaryRow {
+        override val height: Int get() = HEADING_HEIGHT
+    }
+
+    /**
+     * 基本資訊的一列。
+     *
+     * @property top 列上界。
+     * @property stripeIndex 在基本資訊中的順序，決定隔列底色。
+     * @property key 名稱。
+     * @property value 值。
+     * @property tooltip 游標停在這一列上時的提示。
+     * @property action 列右端的按鈕。
+     */
+    private data class FieldRow(
+        override val top: Int,
+        val stripeIndex: Int,
+        val key: Text,
+        val value: Text,
+        val tooltip: List<Text>?,
+        val action: FieldAction?,
+    ) : SummaryRow {
+        override val height: Int get() = FIELD_HEIGHT
+    }
+
+    /**
+     * 排名表的欄位標題。
+     *
+     * @property top 列上界。
+     */
+    private data class RankHeaderRow(override val top: Int) : SummaryRow {
+        override val height: Int get() = RANK_HEADER_HEIGHT
+    }
+
+    /**
+     * 排名表的一列。
+     *
+     * @property top 列上界。
+     * @property stripeIndex 在排名表中的順序，決定隔列底色。
      * @property participant 參與者資料。
-     * @property rank 權威名次或未知佔位。
+     * @property rank 名次或未知佔位。
      * @property name 共用來源解析的名稱。
-     * @property score 權威分數或未知佔位。
-     * @property nameColor 自己的名稱提示色；不改變其他欄位顏色。
+     * @property score 分數或未知佔位。
+     * @property nameColor 名稱顏色；自己的名稱另外上色。
      */
     private data class ParticipantRow(
+        override val top: Int,
+        val stripeIndex: Int,
         val participant: HistoryParticipantSummaryDto,
         val rank: Text,
         val name: Text,
         val score: Text,
         val nameColor: Int,
-    )
+    ) : SummaryRow {
+        override val height: Int get() = PARTICIPANT_HEIGHT
+    }
+
+    /**
+     * 一行說明文字。
+     *
+     * @property top 列上界。
+     * @property text 已換行的文字。
+     */
+    private data class NoteRow(override val top: Int, val text: OrderedText) : SummaryRow {
+        override val height: Int get() = NOTE_HEIGHT
+    }
+
+    /**
+     * 一局的列，點整列開啟該局紀錄。
+     *
+     * @property top 列上界。
+     * @property roundNumber 局序號。
+     * @property label 局數文字。
+     * @property times 起訖時間與時長。
+     */
+    private data class RoundRow(
+        override val top: Int,
+        val roundNumber: Int,
+        val label: Text,
+        val times: Text,
+    ) : SummaryRow {
+        override val height: Int get() = ROUND_HEIGHT
+    }
+
+    /** 列高、間距與顏色。 */
+    private companion object {
+        /** 段落標題的列高。 */
+        const val HEADING_HEIGHT = 14
+
+        /** 段落之間的留白。 */
+        const val SECTION_GAP = 6
+
+        /** 基本資訊的列高，容得下列上的小按鈕。 */
+        const val FIELD_HEIGHT = 18
+
+        /** 排名表欄位標題的列高。 */
+        const val RANK_HEADER_HEIGHT = 12
+
+        /** 排名表每一列的列高。 */
+        const val PARTICIPANT_HEIGHT = 14
+
+        /** 說明文字的行高。 */
+        const val NOTE_HEIGHT = 11
+
+        /** 各局列含下方間距的高度。 */
+        const val ROUND_HEIGHT = 20
+
+        /** 各局列之間的間距。 */
+        const val ROUND_GAP = 2
+
+        /** 列內文字與內容左右緣的距離。 */
+        const val ROW_INSET = 6
+
+        /** 欄與欄之間的距離。 */
+        const val COLUMN_GAP = 8
+
+        /** 頭像寬度含與名稱的間距。 */
+        const val FACE_WIDTH = 14
+
+        /** 頭像邊長。 */
+        const val FACE_SIZE = 10
+
+        /** 列上小按鈕的高度。 */
+        const val MINI_BUTTON_HEIGHT = 16
+
+        /** 列上小按鈕文字左右的留白。 */
+        const val MINI_BUTTON_PADDING = 6
+
+        /** 值與列上按鈕之間的距離。 */
+        const val BUTTON_GAP = 4
+
+        /** 垂直置中文字使用的可見字高。 */
+        const val VISIBLE_TEXT_HEIGHT = 8
+
+        /** 載入或失敗訊息與內容區頂端的距離。 */
+        const val MESSAGE_OFFSET = 12
+
+        /** 每次滾輪捲動的像素數。 */
+        const val SCROLL_STEP = 18.0
+
+        /** 游標不在內容區時交給內容區按鈕的座標。 */
+        const val OFFSCREEN_POINTER = -1
+
+        /** 結果與完整性之間的分隔。 */
+        const val VALUE_SEPARATOR = " · "
+
+        /** 複製成功提示的顯示時間。 */
+        val COPIED_NOTICE = 2.seconds
+
+        /** 段落標題顏色。 */
+        const val HEADING_COLOR = 0x8ED5DF
+
+        /** 名稱欄與表頭顏色。 */
+        const val KEY_COLOR = 0xBBBBBB
+
+        /** 值的顏色。 */
+        const val VALUE_COLOR = 0xFFFFFF
+
+        /** 自己名稱的顏色。 */
+        const val OWN_NAME_COLOR = 0x8ED5DF
+
+        /** 說明文字與次要資訊的顏色。 */
+        const val NOTE_COLOR = 0xAAAAAA
+
+        /** 載入中訊息的顏色。 */
+        const val STATUS_COLOR = 0xFFFFFF
+
+        /** 失敗訊息的顏色。 */
+        const val ERROR_COLOR = 0xFF6666
+
+        /** 各局列的底色。 */
+        const val ROUND_BACKGROUND = 0x88333333.toInt()
+
+        /** 游標停留時各局列的底色。 */
+        const val ROUND_HOVER_BACKGROUND = 0xB25A5A5A.toInt()
+
+        /** 游標停留時各局列的外框顏色。 */
+        const val OUTLINE_COLOR = 0xFFFFFFFF.toInt()
+    }
 }

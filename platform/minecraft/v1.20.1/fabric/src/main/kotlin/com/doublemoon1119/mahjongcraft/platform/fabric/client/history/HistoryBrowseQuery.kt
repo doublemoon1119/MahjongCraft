@@ -1,6 +1,7 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.client.history
 
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryListRequestDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryPageDirectionDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryQueryFiltersDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryQueryScopeDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistorySortDirectionDto
@@ -38,12 +39,13 @@ internal data class HistoryBrowseQuery(
     }
 
     /**
-     * 將查詢條件轉成第一頁或指定游標的線路請求。
+     * 將查詢條件轉成指定游標與方向的線路請求。
      *
-     * @param cursor 前一頁回覆提供的不透明游標，第一頁為 `null`。
+     * @param cursor 回覆提供的不透明游標；沒有游標時從第一筆或最後一筆開始。
+     * @param direction 從游標往哪一邊取一頁。
      * @return 使用固定頁大小及空配對識別碼的歷史清單請求。
      */
-    fun toRequest(cursor: String?): HistoryListRequestDto = HistoryListRequestDto(
+    fun toRequest(cursor: String?, direction: HistoryPageDirectionDto): HistoryListRequestDto = HistoryListRequestDto(
         requestId = "",
         scope = scope,
         sortField = sortField,
@@ -51,6 +53,7 @@ internal data class HistoryBrowseQuery(
         filters = filters,
         pageSize = 20,
         cursor = cursor,
+        direction = direction,
     )
 }
 

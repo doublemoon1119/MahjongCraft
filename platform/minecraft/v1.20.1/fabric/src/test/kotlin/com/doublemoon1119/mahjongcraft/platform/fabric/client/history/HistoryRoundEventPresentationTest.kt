@@ -51,7 +51,8 @@ class HistoryRoundEventPresentationTest {
     fun `round translations use matching argument counts`() {
         val counts = mapOf(
             MinecraftHistoryScreenKeys.ROUND_TIMING to 3,
-            MinecraftHistoryScreenKeys.ROUND_PAGE_RANGE to 3,
+            MinecraftHistoryScreenKeys.ROUND_PAGE_RANGE to 2,
+            MinecraftHistoryScreenKeys.RANGE_TOTAL to 1,
             MinecraftHistoryScreenKeys.ROUND_REACTION to 1,
             MinecraftHistoryScreenKeys.ROUND_ACTION_SCORED to 1,
             MinecraftHistoryScreenKeys.ROUND_ACTION_SCORED_POT_DEPOSIT to 2,
@@ -596,6 +597,7 @@ class HistoryRoundEventPresentationTest {
         roundNumber = 1,
         transactions = facts.mapIndexed { index, transactionFacts -> HistoryReplayTransactionDto(index, 100L + index, false, tileCatalog.size, transactionFacts) },
         nextTransactionIndex = null,
+        transactionCount = facts.size,
         tileCatalog = tileCatalog,
     )
 
@@ -681,6 +683,7 @@ class HistoryRoundEventPresentationTest {
         roundNumber = 1,
         transactions = listOf(HistoryReplayTransactionDto(0, 100L, false, tileCatalog.size, facts)),
         nextTransactionIndex = null,
+        transactionCount = 1,
         tileCatalog = tileCatalog,
     )
 }

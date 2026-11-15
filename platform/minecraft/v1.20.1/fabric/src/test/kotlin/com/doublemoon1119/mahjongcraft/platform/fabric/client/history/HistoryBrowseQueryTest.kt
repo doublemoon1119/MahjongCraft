@@ -3,6 +3,7 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.client.history
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryAiFilterDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryIntegrityFilterDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryOutcomeFilterDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryPageDirectionDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryQueryFiltersDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryQueryScopeDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistorySortDirectionDto
@@ -48,10 +49,11 @@ class HistoryBrowseQueryTest {
             filters = HistoryQueryFiltersDto.NONE.copy(outcome = HistoryOutcomeFilterDto.COMPLETED),
         )
 
-        val request = query.toRequest("next")
+        val request = query.toRequest("next", HistoryPageDirectionDto.BEFORE)
         assertEquals("", request.requestId)
         assertEquals(20, request.pageSize)
         assertEquals("next", request.cursor)
+        assertEquals(HistoryPageDirectionDto.BEFORE, request.direction)
         assertEquals(query.filters, request.filters)
     }
 

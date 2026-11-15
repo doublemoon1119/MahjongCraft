@@ -102,18 +102,20 @@ internal fun HistoryQueryErrorCodeDto.toBrowseFailure(): HistoryBrowseFailure = 
  * 最近成功列表與其導航位置；失敗時仍保留原頁資訊，不把新頁視為已完成。
  *
  * @property entries 最近成功取得的安全摘要。
- * @property pageNumber 已成功到達的瀏覽頁次，從 1 開始，不代表總頁數。
  * @property firstEntryIndex 此頁第一筆資料的 1-based 位置；空頁為 0。
- * @property nextCursor 最近成功回應提供的下一頁游標。
+ * @property totalCount 符合條件的對局總數。
+ * @property nextCursor 最近成功回應提供的下一頁游標；沒有下一頁時為 null。
+ * @property previousCursor 最近成功回應提供的上一頁游標；沒有上一頁時為 null。
  * @property status 目前列表查詢結果。
  * @property scrollOffset 返回列表時保留的非負捲動位置。
  * @property selectedMatchId 最近選取的列表對局。
  */
 internal data class HistoryBrowseListState(
     val entries: List<HistoryMatchSummaryDto> = emptyList(),
-    val pageNumber: Int = 1,
     val firstEntryIndex: Int = 0,
+    val totalCount: Int = 0,
     val nextCursor: String? = null,
+    val previousCursor: String? = null,
     val status: HistoryBrowseStatus = HistoryBrowseStatus.Idle,
     val scrollOffset: Double = 0.0,
     val selectedMatchId: String? = null,

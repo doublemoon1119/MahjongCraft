@@ -33,7 +33,7 @@ class HistoryRoundCacheTest {
         val cache = HistoryRoundCache(maxEventEntries = 1)
         val first = HistoryRoundCacheKey.Events(1, TEST_MATCH_ID, 1, HistoryQueryScopeDto.OWN, 0, 1)
         val second = first.copy(startTransactionIndex = 1)
-        val value = HistoryRoundEventsDto(HistoryReplayIdentityDto(TEST_MATCH_ID, TEST_TABLE_ID, listOf(HistoryReplayPlayerIdentityDto(0, null, "test:ai"))), 1, emptyList(), null, emptyList())
+        val value = HistoryRoundEventsDto(HistoryReplayIdentityDto(TEST_MATCH_ID, TEST_TABLE_ID, listOf(HistoryReplayPlayerIdentityDto(0, null, "test:ai"))), 1, emptyList(), null, 0, emptyList())
 
         cache.putEvents(first, value, 1)
         cache.putEvents(second, value, 1)
@@ -48,7 +48,7 @@ class HistoryRoundCacheTest {
         val first = HistoryRoundCacheKey.Events(1, TEST_MATCH_ID, 1, HistoryQueryScopeDto.OWN, 0, 1)
         val second = first.copy(startTransactionIndex = 1)
         val third = first.copy(startTransactionIndex = 2)
-        val value = HistoryRoundEventsDto(HistoryReplayIdentityDto(TEST_MATCH_ID, TEST_TABLE_ID, listOf(HistoryReplayPlayerIdentityDto(0, null, "test:ai"))), 1, emptyList(), null, emptyList())
+        val value = HistoryRoundEventsDto(HistoryReplayIdentityDto(TEST_MATCH_ID, TEST_TABLE_ID, listOf(HistoryReplayPlayerIdentityDto(0, null, "test:ai"))), 1, emptyList(), null, 0, emptyList())
 
         cache.putEvents(first, value, 1)
         cache.putEvents(second, value, 1)
@@ -63,7 +63,7 @@ class HistoryRoundCacheTest {
     fun `test session invalidation removes old entries`() {
         val cache = HistoryRoundCache()
         val key = HistoryRoundCacheKey.Events(1, TEST_MATCH_ID, 1, HistoryQueryScopeDto.OWN, 0, 1)
-        val value = HistoryRoundEventsDto(HistoryReplayIdentityDto(TEST_MATCH_ID, TEST_TABLE_ID, listOf(HistoryReplayPlayerIdentityDto(0, null, "test:ai"))), 1, emptyList(), null, emptyList())
+        val value = HistoryRoundEventsDto(HistoryReplayIdentityDto(TEST_MATCH_ID, TEST_TABLE_ID, listOf(HistoryReplayPlayerIdentityDto(0, null, "test:ai"))), 1, emptyList(), null, 0, emptyList())
 
         cache.putEvents(key, value, 1)
         cache.invalidateOtherSessions(2)
@@ -75,7 +75,7 @@ class HistoryRoundCacheTest {
     fun `test oversized entry is rejected`() {
         val cache = HistoryRoundCache(maxBytes = 2)
         val key = HistoryRoundCacheKey.Events(1, TEST_MATCH_ID, 1, HistoryQueryScopeDto.OWN, 0, 1)
-        val value = HistoryRoundEventsDto(HistoryReplayIdentityDto(TEST_MATCH_ID, TEST_TABLE_ID, listOf(HistoryReplayPlayerIdentityDto(0, null, "test:ai"))), 1, emptyList(), null, emptyList())
+        val value = HistoryRoundEventsDto(HistoryReplayIdentityDto(TEST_MATCH_ID, TEST_TABLE_ID, listOf(HistoryReplayPlayerIdentityDto(0, null, "test:ai"))), 1, emptyList(), null, 0, emptyList())
 
         assertEquals(false, cache.putEvents(key, value, 3))
         assertNull(cache.getEvents(key))
@@ -88,7 +88,7 @@ class HistoryRoundCacheTest {
         val cache = HistoryRoundCache(now = { elapsed }, ttl = 30.seconds)
         val key = HistoryRoundCacheKey.Events(1, TEST_MATCH_ID, 1, HistoryQueryScopeDto.OWN, 0, 1)
         val second = key.copy(startTransactionIndex = 1)
-        val value = HistoryRoundEventsDto(HistoryReplayIdentityDto(TEST_MATCH_ID, TEST_TABLE_ID, listOf(HistoryReplayPlayerIdentityDto(0, null, "test:ai"))), 1, emptyList(), null, emptyList())
+        val value = HistoryRoundEventsDto(HistoryReplayIdentityDto(TEST_MATCH_ID, TEST_TABLE_ID, listOf(HistoryReplayPlayerIdentityDto(0, null, "test:ai"))), 1, emptyList(), null, 0, emptyList())
 
         cache.putEvents(key, value, 1)
         cache.putEvents(second, value, 1)
@@ -117,7 +117,7 @@ class HistoryRoundCacheTest {
         val cache = HistoryRoundCache(maxBytes = 3)
         val eventKey = HistoryRoundCacheKey.Events(1, TEST_MATCH_ID, 1, HistoryQueryScopeDto.OWN, 0, 1)
         val stateKey = HistoryRoundCacheKey.State(1, TEST_MATCH_ID, 1, HistoryQueryScopeDto.OWN, HistoryRoundPositionDto.Initial)
-        val event = HistoryRoundEventsDto(HistoryReplayIdentityDto(TEST_MATCH_ID, TEST_TABLE_ID, listOf(HistoryReplayPlayerIdentityDto(0, null, "test:ai"))), 1, emptyList(), null, emptyList())
+        val event = HistoryRoundEventsDto(HistoryReplayIdentityDto(TEST_MATCH_ID, TEST_TABLE_ID, listOf(HistoryReplayPlayerIdentityDto(0, null, "test:ai"))), 1, emptyList(), null, 0, emptyList())
 
         cache.putEvents(eventKey, event, 2)
         cache.putState(stateKey, cacheState(), 2)

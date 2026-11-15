@@ -1,6 +1,7 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.client.history
 
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryListResponseDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryPageDirectionDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryQueryScopeDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryRoundEventsDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryRoundEventsRequestDto
@@ -59,12 +60,6 @@ internal class HistoryBrowseController(
 
     /** 從有效條件及導航意圖產生的世代。 */
     private var generation = 0L
-
-    /** 已成功到達各頁的請求游標；第一頁固定為 null。 */
-    private var cursors: List<String?> = listOf(null)
-
-    /** 已成功到達各頁的累積資料偏移；不以固定 page size 推算。 */
-    private var entryOffsets: List<Int> = listOf(0)
 
     /** 是否已要求首次列表；子頁重建不重送。 */
     private var opened = false
@@ -216,28 +211,50 @@ internal class HistoryBrowseController(
     }
 
     /**
-     * 查詢下一頁，只有成功才加入已到達的游標堆疊。
+     * 查詢下一頁；失敗時保留目前頁。
      *
-     * @return 是否接受下一頁查詢。
+     * @return 是否接受下一頁查詢；沒有下一頁時為 false。
      */
     fun nextPage(): Boolean {
         if (!canNavigateList()) return false
-        val cursor = state.value.list.nextCursor ?: return false
-        generation++
-        val nextOffset = entryOffsets.last() + state.value.list.entries.size
-        requestList(cursors + cursor, entryOffsets + nextOffset)
+        val list = state.value.list
+        val cursor = list.nextCursor ?: return false
+        requestList(cursor, HistoryPageDirectionDto.AFTER, ListPosition.StartsAt(list.firstEntryIndex + list.entries.size))
         return true
     }
 
     /**
-     * 重新查詢上一頁，失敗時保留目前頁及原游標堆疊。
+     * 查詢上一頁；失敗時保留目前頁。
      *
-     * @return 是否接受上一頁查詢。
+     * @return 是否接受上一頁查詢；沒有上一頁時為 false。
      */
     fun previousPage(): Boolean {
-        if (!canNavigateList() || cursors.size <= 1) return false
-        generation++
-        requestList(cursors.dropLast(1), entryOffsets.dropLast(1))
+        if (!canNavigateList()) return false
+        val list = state.value.list
+        val cursor = list.previousCursor ?: return false
+        requestList(cursor, HistoryPageDirectionDto.BEFORE, ListPosition.EndsAt(list.firstEntryIndex - 1))
+        return true
+    }
+
+    /**
+     * 跳到第一頁。
+     *
+     * @return 是否接受查詢；已在第一頁時為 false。
+     */
+    fun firstPage(): Boolean {
+        if (!canNavigateList() || state.value.list.previousCursor == null) return false
+        requestList(null, HistoryPageDirectionDto.AFTER, ListPosition.StartsAt(1))
+        return true
+    }
+
+    /**
+     * 跳到最後一頁。
+     *
+     * @return 是否接受查詢；已在最後一頁時為 false。
+     */
+    fun lastPage(): Boolean {
+        if (!canNavigateList() || state.value.list.nextCursor == null) return false
+        requestList(null, HistoryPageDirectionDto.BEFORE, ListPosition.EndsAt(null))
         return true
     }
 
@@ -347,6 +364,33 @@ internal class HistoryBrowseController(
     }
 
     /**
+     * 跳到第一個事件頁。
+     *
+     * @return 是否接受查詢；已在第一頁時為 false。
+     */
+    fun firstRoundPage(): Boolean {
+        val round = currentRound() ?: return false
+        if (state.value.page != HistoryBrowsePage.ROUND_EVENTS || round.eventStartIndices.size <= 1) return false
+        abandonPending()
+        requestRoundEvents(listOf(0))
+        return true
+    }
+
+    /**
+     * 跳到最後一個事件頁；需要已知本局交易總數。
+     *
+     * @return 是否接受查詢；已在最後一頁或尚未取得總數時為 false。
+     */
+    fun lastRoundPage(): Boolean {
+        val round = currentRound() ?: return false
+        if (state.value.page != HistoryBrowsePage.ROUND_EVENTS || round.eventsStatus != HistoryBrowseStatus.Ready || round.events?.nextTransactionIndex == null) return false
+        val count = round.transactionCount ?: return false
+        abandonPending()
+        requestRoundEvents(HistoryRoundNavigation.lastPageStarts(count))
+        return true
+    }
+
+    /**
      * 返回已到達的上一個事件頁。
      *
      * @return 是否接受上一頁查詢。
@@ -368,7 +412,7 @@ internal class HistoryBrowseController(
     fun showRoundState(position: HistoryRoundPositionDto): Boolean {
         val round = currentRound() ?: return false
         if (state.value.page !in setOf(HistoryBrowsePage.ROUND_EVENTS, HistoryBrowsePage.ROUND_STATE)) return false
-        if (position is HistoryRoundPositionDto.AfterTransaction && position.index !in round.knownTransactionIndices) return false
+        if (position is HistoryRoundPositionDto.AfterTransaction && !round.hasTransaction(position.index)) return false
         abandonPending()
         mutableState.value = state.value.copy(page = HistoryBrowsePage.ROUND_STATE)
         requestRoundState(position)
@@ -383,6 +427,32 @@ internal class HistoryBrowseController(
     fun nextRoundState(): Boolean = navigateRoundState(1)
 
     /**
+     * 跳到開局牌面。
+     *
+     * @return 是否接受查詢；已在開局時為 false。
+     */
+    fun firstRoundState(): Boolean {
+        val round = currentRound() ?: return false
+        if (state.value.page != HistoryBrowsePage.ROUND_STATE || round.stateStatus != HistoryBrowseStatus.Ready) return false
+        if (round.confirmedPosition == HistoryRoundPositionDto.Initial) return false
+        return showRoundState(HistoryRoundPositionDto.Initial)
+    }
+
+    /**
+     * 跳到最後一筆交易之後的牌面；需要已知本局交易總數。
+     *
+     * @return 是否接受查詢；已在最後一筆或尚未取得總數時為 false。
+     */
+    fun lastRoundState(): Boolean {
+        val round = currentRound() ?: return false
+        if (state.value.page != HistoryBrowsePage.ROUND_STATE || round.stateStatus != HistoryBrowseStatus.Ready) return false
+        val last = round.lastTransactionIndex ?: return false
+        val target = HistoryRoundPositionDto.AfterTransaction(last)
+        if (round.confirmedPosition == target) return false
+        return showRoundState(target)
+    }
+
+    /**
      * 查詢事件明細的完整牌組而不離開事件頁，沿用相同在途限制與快取。
      *
      * @param transactionIndex 已確認存在的交易索引。
@@ -390,7 +460,7 @@ internal class HistoryBrowseController(
      */
     fun loadRoundStateForDetails(transactionIndex: Int): Boolean {
         val round = currentRound() ?: return false
-        if (state.value.page != HistoryBrowsePage.ROUND_EVENTS || !canQueryRound() || transactionIndex !in round.knownTransactionIndices) return false
+        if (state.value.page != HistoryBrowsePage.ROUND_EVENTS || !canQueryRound() || !round.hasTransaction(transactionIndex)) return false
         abandonPending()
         requestRoundState(HistoryRoundPositionDto.AfterTransaction(transactionIndex))
         return true
@@ -473,36 +543,20 @@ internal class HistoryBrowseController(
         val round = currentRound() ?: return false
         if (state.value.page != HistoryBrowsePage.ROUND_STATE || round.stateStatus != HistoryBrowseStatus.Ready) return false
         val position = round.confirmedPosition ?: return false
-        if (direction > 0 && round.events?.let { it.transactions.isEmpty() && it.nextTransactionIndex == null } == true) return false
-        val index = when (position) {
-            HistoryRoundPositionDto.Initial -> if (direction < 0) return false else 0
-            is HistoryRoundPositionDto.AfterTransaction -> {
-                if (direction > 0 && position.index == Int.MAX_VALUE) return false
-                position.index + direction
-            }
-        }
-        val knownTarget = HistoryRoundNavigation.nextPosition(round, position, direction)
-        if (knownTarget != null) return showRoundState(knownTarget)
-        if (index < 0) return false
-        if (round.lastTransactionIndex?.let { index > it } == true) return false
-        val target = HistoryRoundPositionDto.AfterTransaction(index)
-        abandonPending()
-        updateRound(round.roundNumber) { it.copy(requestedPosition = target, stateStatus = HistoryBrowseStatus.Loading) }
-        requestRoundEvents(listOf(index), target)
-        return true
+        val target = HistoryRoundNavigation.nextPosition(round, position, direction) ?: return false
+        return showRoundState(target)
     }
 
     /**
-     * 排程事件頁或相鄰牌面的交易存在性確認。
+     * 排程事件頁。
      *
      * @param starts 欲提交的事件頁堆疊。
-     * @param afterEvents 確認交易後的牌面需求；不改事件列表位置。
      */
-    private fun requestRoundEvents(starts: List<Int>, afterEvents: HistoryRoundPositionDto? = null) {
+    private fun requestRoundEvents(starts: List<Int>) {
         val round = currentRound() ?: return
         val matchId = state.value.summary?.matchId ?: return
-        if (afterEvents == null) updateRound(round.roundNumber) { it.copy(eventsStatus = HistoryBrowseStatus.Loading) }
-        enqueue(Intent.RoundEvents(generation, matchId, state.value.query, round.roundNumber, starts, afterEvents), Duration.ZERO)
+        updateRound(round.roundNumber) { it.copy(eventsStatus = HistoryBrowseStatus.Loading) }
+        enqueue(Intent.RoundEvents(generation, matchId, state.value.query, round.roundNumber, starts), Duration.ZERO)
     }
 
     /**
@@ -601,9 +655,7 @@ internal class HistoryBrowseController(
             is Intent.ListQuery -> mutableState.value = state.value.copy(list = state.value.list.copy(status = HistoryBrowseStatus.Loading))
             is Intent.Summary -> mutableState.value = state.value.copy(summary = state.value.summary?.copy(status = HistoryBrowseStatus.Loading))
             is Intent.RuleSettings -> mutableState.value = state.value.copy(ruleSettings = state.value.ruleSettings?.copy(status = HistoryBrowseStatus.Loading))
-            is Intent.RoundEvents -> updateRound(intent.roundNumber) {
-                if (intent.afterEvents == null) it.copy(eventsStatus = HistoryBrowseStatus.Loading) else it.copy(stateStatus = HistoryBrowseStatus.Loading)
-            }
+            is Intent.RoundEvents -> updateRound(intent.roundNumber) { it.copy(eventsStatus = HistoryBrowseStatus.Loading) }
             is Intent.RoundState -> updateRound(intent.roundNumber) { it.copy(stateStatus = HistoryBrowseStatus.Loading) }
         }
         enqueue(intent, Duration.ZERO)
@@ -643,22 +695,22 @@ internal class HistoryBrowseController(
      * @param debounce 條件合併等待；刷新為零。
      */
     private fun requestFirstPage(debounce: Duration) {
-        cursors = listOf(null)
-        entryOffsets = listOf(0)
         roundCache.clear()
         mutableState.value = state.value.copy(list = HistoryBrowseListState(status = HistoryBrowseStatus.Loading), summary = null, ruleSettings = null, rounds = emptyMap(), selectedRoundNumber = null)
-        enqueue(Intent.ListQuery(generation, state.value.query, cursors, entryOffsets), debounce)
+        enqueue(Intent.ListQuery(generation, state.value.query, cursor = null, direction = HistoryPageDirectionDto.AFTER, position = ListPosition.StartsAt(1)), debounce)
     }
 
     /**
-     * 準備指定分頁，成功前不修改已到達堆疊。
+     * 準備指定分頁；成功前不修改目前頁。
      *
-     * @param requestedCursors 欲成功到達的游標堆疊。
-     * @param requestedEntryOffsets 依實際回應筆數累積的各頁偏移。
+     * @param cursor 回覆提供的游標；沒有游標時從第一筆或最後一筆開始。
+     * @param direction 從游標往哪一邊取一頁。
+     * @param position 新頁在全部對局中的位置。
      */
-    private fun requestList(requestedCursors: List<String?>, requestedEntryOffsets: List<Int>) {
+    private fun requestList(cursor: String?, direction: HistoryPageDirectionDto, position: ListPosition) {
+        generation++
         mutableState.value = state.value.copy(list = state.value.list.copy(status = HistoryBrowseStatus.Loading), summary = null, ruleSettings = null, rounds = emptyMap(), selectedRoundNumber = null)
-        enqueue(Intent.ListQuery(generation, state.value.query, requestedCursors, requestedEntryOffsets), Duration.ZERO)
+        enqueue(Intent.ListQuery(generation, state.value.query, cursor, direction, position), Duration.ZERO)
     }
 
     /**
@@ -705,7 +757,7 @@ internal class HistoryBrowseController(
         if (!available() || intent.generation != generation) return
         lastSentAt = now()
         val requestId = when (intent) {
-            is Intent.ListQuery -> transport.queryList(intent.query.toRequest(intent.cursors.last()))
+            is Intent.ListQuery -> transport.queryList(intent.query.toRequest(intent.cursor, intent.direction))
             is Intent.Summary -> transport.querySummary(HistorySummaryRequestDto("", intent.matchId, intent.query.scope))
             is Intent.RuleSettings -> transport.queryRuleSettings(HistoryRuleSettingsRequestDto("", intent.matchId, intent.query.scope))
             is Intent.RoundEvents -> transport.queryRoundEvents(intent.request())
@@ -782,15 +834,16 @@ internal class HistoryBrowseController(
             fail(it.toBrowseFailure())
             return
         }
-        val changedPage = cursors != intent.cursors
-        cursors = intent.cursors
-        entryOffsets = intent.entryOffsets
+        val previous = state.value.list
+        val firstEntryIndex = intent.position.firstEntryIndex(count = response.entries.size, totalCount = response.totalCount, atStart = response.previousCursor == null)
+        val changedPage = firstEntryIndex != previous.firstEntryIndex || response.entries.map { it.matchId } != previous.entries.map { it.matchId }
         mutableState.value = state.value.copy(
             list = state.value.list.copy(
                 entries = response.entries.toList(),
-                pageNumber = cursors.size,
-                firstEntryIndex = if (response.entries.isEmpty()) 0 else intent.entryOffsets.last() + 1,
+                firstEntryIndex = firstEntryIndex,
+                totalCount = response.totalCount,
                 nextCursor = response.nextCursor,
+                previousCursor = response.previousCursor,
                 status = HistoryBrowseStatus.Ready,
                 scrollOffset = if (changedPage) 0.0 else state.value.list.scrollOffset,
                 selectedMatchId = state.value.list.selectedMatchId?.takeIf { id -> response.entries.any { it.matchId == id } },
@@ -873,39 +926,19 @@ internal class HistoryBrowseController(
     }
 
     /**
-     * 套用成功事件頁；牌面查找不覆蓋事件列表位置。
+     * 套用成功事件頁。
      *
      * @param events 已驗證的事件頁。
-     * @param intent 原始頁面或交易存在性查詢。
+     * @param intent 原始頁面查詢。
      */
     private fun applyRoundEvents(events: HistoryRoundEventsDto, intent: Intent.RoundEvents) {
         updateRound(intent.roundNumber) { round ->
-            val recorded = HistoryRoundNavigation.recordEvents(round, events)
-            val last = if (events.nextTransactionIndex == null) {
-                events.transactions.lastOrNull()?.index ?: (intent.starts.last() - 1).takeIf { it in round.knownTransactionIndices } ?: round.lastTransactionIndex
-            } else {
-                round.lastTransactionIndex
-            }
-            val updated = round.copy(knownTransactionIndices = recorded.knownTransactionIndices, lastTransactionIndex = last)
-            if (intent.afterEvents != null) {
-                updated
-            } else {
-                updated.copy(
-                    events = events,
-                    nextTransactionIndex = events.nextTransactionIndex,
-                    eventStartIndices = intent.starts,
-                    eventPageNumber = intent.starts.size,
-                    eventsStatus = HistoryBrowseStatus.Ready,
-                    eventScrollOffset = if (round.eventStartIndices == intent.starts) round.eventScrollOffset else 0.0,
-                )
-            }
+            HistoryRoundNavigation.recordEvents(round, events).copy(
+                eventStartIndices = intent.starts,
+                eventPageNumber = intent.starts.size,
+                eventScrollOffset = if (round.eventStartIndices == intent.starts) round.eventScrollOffset else 0.0,
+            )
         }
-        val target = intent.afterEvents ?: return
-        if (target is HistoryRoundPositionDto.AfterTransaction && events.transactions.none { it.index == target.index }) {
-            updateRound(intent.roundNumber) { it.copy(requestedPosition = it.confirmedPosition ?: HistoryRoundPositionDto.Initial, stateStatus = if (it.state == null) HistoryBrowseStatus.Idle else HistoryBrowseStatus.Ready) }
-            return
-        }
-        requestRoundState(target)
     }
 
     /**
@@ -990,9 +1023,7 @@ internal class HistoryBrowseController(
             is Intent.ListQuery -> state.value.copy(list = state.value.list.copy(status = status))
             is Intent.Summary -> state.value.copy(summary = state.value.summary?.copy(status = status))
             is Intent.RuleSettings -> state.value.copy(ruleSettings = state.value.ruleSettings?.copy(status = status))
-            is Intent.RoundEvents -> state.value.withRound(intent.roundNumber) {
-                if (intent.afterEvents == null) it.copy(eventsStatus = status) else it.copy(stateStatus = status)
-            }
+            is Intent.RoundEvents -> state.value.withRound(intent.roundNumber) { it.copy(eventsStatus = status) }
             is Intent.RoundState -> state.value.withRound(intent.roundNumber) { it.copy(stateStatus = status) }
         }
     }
@@ -1021,8 +1052,6 @@ internal class HistoryBrowseController(
         active = null
         pending = null
         retryIntent = null
-        cursors = listOf(null)
-        entryOffsets = listOf(0)
         roundCache.clear()
         scope.cancel()
     }
@@ -1033,18 +1062,20 @@ internal class HistoryBrowseController(
         val generation: Long
 
         /**
-         * 列表的查詢及欲提交游標堆疊。
+         * 列表的一頁查詢。
          *
          * @property generation 提出意圖時的條件世代。
          * @property query 有效且正規化的查詢條件。
-         * @property cursors 只有成功回應才提交的分頁目標。
-         * @property entryOffsets 各頁第一筆資料前的累積數量，依實際回應筆數計算。
+         * @property cursor 回覆提供的游標；沒有游標時從第一筆或最後一筆開始。
+         * @property direction 從游標往哪一邊取一頁。
+         * @property position 新頁在全部對局中的位置。
          */
         data class ListQuery(
             override val generation: Long,
             val query: HistoryBrowseQuery,
-            val cursors: List<String?>,
-            val entryOffsets: List<Int>,
+            val cursor: String?,
+            val direction: HistoryPageDirectionDto,
+            val position: ListPosition,
         ) : Intent
 
         /**
@@ -1066,14 +1097,13 @@ internal class HistoryBrowseController(
         data class RuleSettings(override val generation: Long, val matchId: String, val query: HistoryBrowseQuery) : Intent
 
         /**
-         * 單局事件頁及成功後的可選牌面導航。
+         * 單局事件頁。
          *
          * @property generation 導航世代。
          * @property matchId 對局識別碼。
          * @property query 有效查閱範圍。
          * @property roundNumber 局序號。
          * @property starts 成功後才提交的事件頁起點堆疊。
-         * @property afterEvents 取得事件頁後欲確認的牌面位置；null 為一般事件翻頁。
          */
         data class RoundEvents(
             override val generation: Long,
@@ -1081,7 +1111,6 @@ internal class HistoryBrowseController(
             val query: HistoryBrowseQuery,
             val roundNumber: Int,
             val starts: List<Int>,
-            val afterEvents: HistoryRoundPositionDto? = null,
         ) : Intent {
             /**
              * 建立本次查詢封套。
@@ -1089,7 +1118,7 @@ internal class HistoryBrowseController(
              * @param requestId 傳輸配對鍵。
              * @return 事件頁要求。
              */
-            fun request(requestId: String = ""): HistoryRoundEventsRequestDto = HistoryRoundEventsRequestDto(requestId, matchId, query.scope, roundNumber, starts.last(), limit = 20)
+            fun request(requestId: String = ""): HistoryRoundEventsRequestDto = HistoryRoundEventsRequestDto(requestId, matchId, query.scope, roundNumber, starts.last(), limit = HistoryRoundNavigation.EVENTS_PAGE_SIZE)
         }
 
         /**
