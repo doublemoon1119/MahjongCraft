@@ -1,28 +1,34 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.client.history
 
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.ScrollbarLayout
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.VerticalScrollbar
 
 /**
- * 單局事件畫面的固定標題、事件內容與底列幾何。
+ * 單局事件與局面畫面的版面：標題下方的固定區、捲動的卡片區與底部四格。
  *
+ * 內容寬度、底部四格與捲軸位置沿用 [HistoryPageFrame]；卡片橫跨內容寬度。
+ *
+ * @property frame 內容寬度、底部四格與捲軸位置。
  * @property contentTop 捲動內容上界。
- * @property contentBottom 捲動內容下界。
- * @property footerTop 固定底列上界。
- * @property left 內容左界。
- * @property right 內容右界。
  */
 internal data class HistoryRoundEventsLayout(
+    val frame: HistoryPageFrame,
     val contentTop: Int,
-    val contentBottom: Int,
-    val footerTop: Int,
-    val left: Int,
-    val right: Int,
 ) {
-    /** 保留右側捲軸後可供卡片使用的右界。 */
-    val cardRight: Int get() = (right - 10).coerceAtLeast(left)
+    /** 捲動內容下界。 */
+    val contentBottom: Int = (frame.footerTop - HistoryPageFrame.FOOTER_GAP).coerceAtLeast(contentTop)
 
-    /** 保留捲軸後卡片可用寬度。 */
-    val contentWidth: Int get() = (cardRight - left).coerceAtLeast(0)
+    /** 底部按鈕列上界。 */
+    val footerTop: Int get() = frame.footerTop
+
+    /** 內容左界。 */
+    val left: Int get() = frame.contentLeft
+
+    /** 內容右界，也是卡片右界。 */
+    val right: Int get() = frame.contentRight
+
+    /** 卡片可用寬度。 */
+    val contentWidth: Int get() = frame.contentWidth
 
     /** 可視內容高度。 */
     val viewportHeight: Int get() = (contentBottom - contentTop).coerceAtLeast(1)
@@ -57,16 +63,20 @@ internal data class HistoryRoundEventsLayout(
         itemCount = contentHeight.coerceAtLeast(0),
         visibleItemCount = viewportHeight,
         scrollIndex = clampScroll(offset, contentHeight).toInt(),
-        minimumThumbHeight = 8.coerceAtMost(viewportHeight),
+        minimumThumbHeight = VerticalScrollbar.MINIMUM_THUMB_HEIGHT.coerceAtMost(viewportHeight),
     )
 
-    /** 捲軸界線。 */
-    fun scrollbarBounds(): HistoryScreenLayout.Bounds = HistoryScreenLayout.Bounds(
-        x = right - 6,
-        y = contentTop,
-        width = 6,
-        height = (contentBottom - contentTop).coerceAtLeast(0),
-    )
+    /** 捲軸範圍。 */
+    fun scrollbarBounds(): HistoryScreenLayout.Bounds = frame.scrollbarBounds(top = contentTop, bottom = contentBottom)
+
+    /**
+     * 判斷游標是否落在捲軸的命中範圍內。
+     *
+     * @param mouseX 游標的水平座標。
+     * @param mouseY 游標的垂直座標。
+     * @return 位於命中範圍內時為 true。
+     */
+    fun isOverScrollbar(mouseX: Double, mouseY: Double): Boolean = frame.isOverScrollbar(mouseX = mouseX, mouseY = mouseY, top = contentTop, bottom = contentBottom)
 
     /**
      * 判斷游標是否位於內容區內指定卡片，並排除捲軸與裁切範圍。
@@ -78,7 +88,7 @@ internal data class HistoryRoundEventsLayout(
      * @return 是否指向卡片可見區域。
      */
     fun containsCard(mouseX: Double, mouseY: Double, top: Int, height: Int): Boolean = mouseX >= left &&
-        mouseX < cardRight &&
+        mouseX < right &&
         mouseY >= contentTop &&
         mouseY < contentBottom &&
         mouseY >= top &&
@@ -104,27 +114,12 @@ internal data class HistoryRoundEventsLayout(
     fun tileRowCount(count: Int, tileWidth: Int = DEFAULT_TILE_WIDTH, tileStep: Int = DEFAULT_TILE_STEP): Int = if (count <= 0) 0 else (count + tilesPerRow(tileWidth, tileStep) - 1) / tilesPerRow(tileWidth, tileStep)
 
     /**
-     * 依寬度配置返回、上一頁、頁碼、下一頁四個底列槽位。
+     * 取得底部按鈕列中一格的範圍：上一頁、範圍文字、下一頁與返回。
      *
-     * @param width 畫面寬度。
-     * @return 依控制項順序排列的槽位；頁碼保留兩列文字高度。
+     * @param index 由左至右的順序，從 0 開始。
+     * @return 這一格的範圍。
      */
-    fun footerBounds(width: Int): List<HistoryScreenLayout.Bounds> {
-        val gap = 4
-        if (width < NARROW_WIDTH) {
-            val topWidth = ((width - 16 - gap * 2) / 3).coerceAtLeast(1)
-            return listOf(
-                HistoryScreenLayout.Bounds(8, footerTop + FOOTER_ROW_HEIGHT + gap, width - 16, 20),
-                HistoryScreenLayout.Bounds(8, footerTop, topWidth, 20),
-                HistoryScreenLayout.Bounds(8 + topWidth + gap, footerTop, topWidth, FOOTER_ROW_HEIGHT),
-                HistoryScreenLayout.Bounds(8 + (topWidth + gap) * 2, footerTop, topWidth, 20),
-            )
-        }
-        val buttonWidth = ((width - 24 - gap * 3) / 4).coerceAtLeast(1)
-        val total = buttonWidth * 4 + gap * 3
-        val left = ((width - total) / 2).coerceAtLeast(8)
-        return List(4) { index -> HistoryScreenLayout.Bounds(left + index * (buttonWidth + gap), footerTop, buttonWidth, if (index == 2) FOOTER_ROW_HEIGHT else 20) }
-    }
+    fun footerSlot(index: Int): HistoryScreenLayout.Bounds = frame.footerSlot(index)
 
     /**
      * 保留捲軸滑塊內的抓取位置。
@@ -148,23 +143,13 @@ internal data class HistoryRoundEventsLayout(
          *
          * @param width 畫面寬度。
          * @param height 畫面高度。
-         * @param headerHeight 換行後固定標題區高度。
+         * @param contentTop 捲動內容上界，也就是固定區的下界。
          * @return 對應尺寸的版面。
          */
-        fun measure(width: Int, height: Int, headerHeight: Int = 48): HistoryRoundEventsLayout {
-            val rows = if (width < NARROW_WIDTH) 2 else 1
-            val footer = (height - rows * FOOTER_ROW_HEIGHT - 4).coerceAtLeast(0)
-            val top = headerHeight.coerceAtMost(footer)
-            val left = 10
-            val right = (width - 10).coerceAtLeast(left + 6)
-            return HistoryRoundEventsLayout(top, (footer - 4).coerceAtLeast(top), footer, left, right)
+        fun measure(width: Int, height: Int, contentTop: Int): HistoryRoundEventsLayout {
+            val frame = HistoryPageFrame(windowWidth = width, windowHeight = height)
+            return HistoryRoundEventsLayout(frame = frame, contentTop = contentTop.coerceAtMost(frame.footerTop))
         }
-
-        /** 使用雙列底部控制項的寬度界線。 */
-        private const val NARROW_WIDTH = 360
-
-        /** 底列及兩列頁碼文字所需高度。 */
-        private const val FOOTER_ROW_HEIGHT = 24
 
         /** 牌面列左右內距總和。 */
         private const val TILE_ROW_PADDING = 24

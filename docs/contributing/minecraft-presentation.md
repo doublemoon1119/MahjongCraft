@@ -83,6 +83,11 @@ rules come from collisions that only showed up in game, so check them even when 
   `mahjongcraft_example`.
 - Map every registered ID to an explicit translation key; see [Correctness](correctness.md) for why keys are
   never derived from an ID path.
+- Chinese and Japanese text does not end with a full stop (。). Text of more than one sentence puts each
+  sentence on its own line with `\n` wherever it wraps, such as tooltips, catalogue cards, chat and
+  confirmation screens. Text shown on a single line, such as the action bar and status lines, stays one line:
+  join the sentences with a comma (，) in Chinese and a full-width space in Japanese. Question and
+  exclamation marks stay. English keeps its full stops.
 
 ## Rule wording
 
@@ -474,6 +479,52 @@ attempt does not fall through to another provider.
 - Client input is intercepted only for supported items and publicly tracked AI actors. Tracking markers
   contain no game data and confer no authority. They are cleared on entity unload or disconnect;
   queued messages from a previous connection are ignored.
+
+## Screen design
+
+- Build screens from the shared components in `client/gui`. They are not specific to settings screens:
+  `FormScreenLayout` for screens made of category tabs, rows and a footer, `TabStripLayout` and
+  `TabWidget` for tabs, `ButtonRowLayout` for a row of equal-width buttons, `DropdownOverlay` for
+  selector lists, `ControlTooltip` for control tooltips, `VerticalScrollbar` for scrollbars and
+  `ScreenRendering` for titles, labels and status lines. Do not place widgets by hand or copy their
+  sizes. Sizes and colours live in those components; change them there and extend the layout tests.
+- Draw only the vanilla translucent background. Do not add a full-screen overlay or a panel behind the
+  content.
+- Mark the current page, or a selector whose list is open, with the white outline
+  (`RestartableMarqueeButtonWidget.outlined`). Keep the disabled look for buttons that cannot be pressed;
+  it does not mean "you are here".
+- Pages use ordinary buttons and categories use tabs. Do not give both the same look.
+- A selector that changes every category, such as the rule and variant on the room settings page, sits
+  above the tabs and belongs to no category.
+- A selector shows only its current value. Name the control with a label beside it or in its tooltip,
+  never as a prefix on the button: a prefix leaves too little room for the value, which is the part
+  players need to read.
+- An option that cannot be chosen stays in its place with its reason, in lists and in tooltips. Do not
+  move it to the end or hide it; a fixed order keeps the list from jumping when a setting changes.
+- Route every cycle button through `CycleButtonInput` and build it with `pressesOnSecondaryClick`:
+  left-click selects the next option, right-click or Shift+left-click the previous one.
+- A row that only performs an action and has no value is one button spanning the row, without a label.
+- Footer buttons are equal in width and span the content width. The bottom-right slot always holds the
+  button that leaves the screen (Back, Done or Close), so players find it in the same place everywhere.
+- Offer Cancel only where leaving can discard something:
+  - A screen that only shows information has Back or Close.
+  - A screen whose controls take effect at once has Done.
+  - A sub-screen that edits a temporary copy for its parent has Cancel and Done: Done writes the copy
+    back, and Cancel and Esc discard it.
+  - A full settings page has Reset, Undo, Apply and Done, and asks before Esc discards unapplied
+    changes.
+  - A confirmation names its action on one button and has Cancel on the other.
+- Content is at most `FormScreenLayout.MAX_CONTENT_WIDTH` wide and centred on every screen except
+  editors that need the whole window, such as the HUD layout editor. Stripe every other row on screens
+  made of rows, and put scrollbars in the margin to the right of the content.
+- Draw icons with `PixelIcons` and `PixelIcon`, not with text symbols, so their size and weight do not
+  depend on the font. A button that shows only an icon still names its action in its tooltip.
+- Text that acts as a control is a button or a whole clickable row, never underlined text. Controls
+  inside scrolling content are drawn and clipped with that content, and respond only inside it.
+- Build control tooltips with `ControlTooltip`. List every option and mark the current one instead of
+  adding a separate "current value" line. Write hints as the action and its result, such as
+  "Left-click: next option", not internal concepts; translations follow the same rule. Put a button's
+  label in square brackets when a hint mentions it, such as `[−]`.
 
 ## Public API Compatibility
 

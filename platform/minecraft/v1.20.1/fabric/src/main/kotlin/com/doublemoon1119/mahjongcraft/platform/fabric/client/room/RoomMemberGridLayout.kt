@@ -1,12 +1,16 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.client.room
 
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.ButtonRowLayout
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.FormScreenLayout
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.ScrollbarLayout
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.VerticalScrollbar
 
 /**
- * 房間成員卡片 grid 的版面幾何。
+ * 房間成員頁的版面：成員卡片 grid、底部按鈕列上方的狀態列與底部按鈕列。
  *
- * 等待室與進行中對局共用同一套換欄規則、固定列高與捲動機制，差別只在卡片內容，因此兩者都用這個類別
- * 計算座標。進行中對局的卡片內另有一段可捲動的資訊清單，它的幾何由 [infoScrollbar] 與相關成員提供。
+ * 內容寬度與設定頁相同，最多 [FormScreenLayout.MAX_CONTENT_WIDTH] 並置中；卡片在內容寬度內置中排列，列數超出可見
+ * 範圍時以內容右側邊距內的捲軸捲動。等待室與進行中對局共用同一套換欄規則、固定列高與捲動機制。進行中對局的
+ * 卡片內另有一段資訊清單，放不下時捲軸畫在該卡片內，每張卡片各自捲動。
  *
  * 純資料，不依賴任何 Minecraft 型別；視窗尺寸、玩家數與捲動位置都由呼叫端傳入。
  *
@@ -21,38 +25,53 @@ internal data class RoomMemberGridLayout(
     val playerCount: Int,
     val scrollIndex: Int,
 ) {
+    /** 內容寬度與底部按鈕列沿用設定頁版面。 */
+    private val frame = FormScreenLayout(windowWidth = windowWidth, windowHeight = windowHeight, hasPageSwitch = true, hasRuleRow = false)
+
+    /** 內容左界。 */
+    val contentLeft: Int = frame.contentLeft
+
+    /** 內容右界。 */
+    val contentRight: Int = frame.contentRight
+
     /** 排版時至少視為一位玩家，避免空清單算出零欄。 */
     private val effectiveCount: Int = playerCount.coerceAtLeast(1)
 
-    /** 扣掉左右邊距後可用的寬度。 */
-    private val availableWidth: Int = windowWidth - GRID_MARGIN * 2
-
-    /** 目前欄數；不額外限制欄數，完全依可用寬度決定。 */
-    val columns: Int = minOf(effectiveCount, (availableWidth / CARD_MIN_WIDTH).coerceAtLeast(1))
+    /** 目前欄數；依內容寬度決定。 */
+    val columns: Int = minOf(effectiveCount, (frame.contentWidth / CARD_MIN_WIDTH).coerceAtLeast(1))
 
     /** 單張卡片寬度。 */
-    val cardWidth: Int = minOf(CARD_MAX_WIDTH, availableWidth / columns)
+    val cardWidth: Int = minOf(CARD_MAX_WIDTH, frame.contentWidth / columns)
+
+    /** 卡片 grid 的左界，整組在內容寬度內置中。 */
+    private val gridLeft: Int = windowWidth / 2 - columns * cardWidth / 2
 
     /** 目前列數。 */
     val rows: Int = (effectiveCount + columns - 1) / columns
 
-    /** 保留底部操作列後 grid 可用的下界。 */
-    val gridBottom: Int = windowHeight - GRID_BOTTOM_RESERVED_HEIGHT
+    /** 底部按鈕列上界。 */
+    val footerY: Int = frame.footerY
+
+    /** 底部按鈕列上方狀態文字的 Y 座標，例如對局進行中的唯讀說明。 */
+    val statusY: Int = frame.statusY
+
+    /** 卡片 grid 可用的下界，在狀態列上方。 */
+    val gridBottom: Int = frame.fieldsBottom
 
     /** 目前視窗高度能完整顯示幾列卡片。 */
     val visibleRows: Int = ((gridBottom - CARD_TOP) / ROW_HEIGHT).coerceAtLeast(1)
 
-    /** 右側 scrollbar 的水平座標。 */
-    val scrollbarColumn: RoomScrollbarColumn = RoomScrollbarColumn(windowWidth)
+    /** 卡片 grid 捲軸的左界，在內容右側的邊距內。 */
+    val scrollbarLeft: Int = frame.scrollbarLeft
 
-    /** 卡片 grid scrollbar 的垂直幾何。 */
+    /** 卡片 grid 捲軸的垂直幾何。 */
     val scrollbar: ScrollbarLayout = ScrollbarLayout(
         trackTop = CARD_TOP,
         trackBottom = gridBottom,
         itemCount = rows,
         visibleItemCount = visibleRows,
         scrollIndex = scrollIndex,
-        minimumThumbHeight = MINIMUM_THUMB_HEIGHT,
+        minimumThumbHeight = VerticalScrollbar.MINIMUM_THUMB_HEIGHT,
     )
 
     /** 目前螢幕上實際看得到的列範圍；捲動超出視窗的列不參與繪製與命中判定。 */
@@ -60,6 +79,17 @@ internal data class RoomMemberGridLayout(
 
     /** 卡片內資訊清單一次能顯示幾行。 */
     val visibleInfoRows: Int = ((CARD_HEIGHT - INFO_OFFSET) / INFO_ROW_HEIGHT).coerceAtLeast(1)
+
+    /** 底部四格按鈕列；離開畫面的按鈕在最右一格。 */
+    val footer: ButtonRowLayout = frame.footer(buttonCount = FOOTER_SLOTS)
+
+    /**
+     * 計算指定成員卡片的左界。
+     *
+     * @param index 成員在完整清單中的順序。
+     * @return 卡片左界。
+     */
+    fun cardLeft(index: Int): Int = gridLeft + (index % columns) * cardWidth
 
     /**
      * 計算指定列的卡片頂端。
@@ -94,21 +124,74 @@ internal data class RoomMemberGridLayout(
     fun maximumInfoScroll(totalInfoRows: Int): Int = (totalInfoRows - visibleInfoRows).coerceAtLeast(0)
 
     /**
-     * 建立指定列資訊清單捲軸的垂直幾何。
+     * 計算成員卡片內資訊捲軸的左界，在卡片右緣內側。
      *
-     * @param row 從零開始的完整清單列索引。
-     * @param totalInfoRows 完整資訊清單的行數。
-     * @param infoScrollIndex 資訊清單第一個可見行的索引。
-     * @return 該列資訊區的捲軸幾何。
+     * @param index 成員在完整清單中的順序。
+     * @return 捲軸左界。
      */
-    fun infoScrollbar(row: Int, totalInfoRows: Int, infoScrollIndex: Int): ScrollbarLayout = ScrollbarLayout(
-        trackTop = infoTop(row),
-        trackBottom = cardBottom(row),
-        itemCount = totalInfoRows,
-        visibleItemCount = visibleInfoRows,
-        scrollIndex = infoScrollIndex,
-        minimumThumbHeight = MINIMUM_THUMB_HEIGHT,
-    )
+    fun infoScrollbarLeft(index: Int): Int = cardLeft(index) + cardWidth - CARD_RIGHT_INSET - INFO_SCROLLBAR_INSET - VerticalScrollbar.WIDTH
+
+    /**
+     * 建立指定成員卡片內資訊捲軸的垂直幾何。
+     *
+     * @param index 成員在完整清單中的順序。
+     * @param totalInfoRows 這位成員資訊清單的完整行數。
+     * @param infoScrollIndex 這位成員資訊清單第一個可見行的索引。
+     * @return 該卡片資訊區的捲軸幾何。
+     */
+    fun infoScrollbar(index: Int, totalInfoRows: Int, infoScrollIndex: Int): ScrollbarLayout {
+        val row = index / columns
+        return ScrollbarLayout(
+            trackTop = infoTop(row),
+            trackBottom = cardBottom(row) - INFO_SCROLLBAR_INSET,
+            itemCount = totalInfoRows,
+            visibleItemCount = visibleInfoRows,
+            scrollIndex = infoScrollIndex,
+            minimumThumbHeight = INFO_MINIMUM_THUMB_HEIGHT,
+        )
+    }
+
+    /**
+     * 找出游標所在的可見成員卡片。
+     *
+     * @param mouseX 游標水平座標。
+     * @param mouseY 游標垂直座標。
+     * @return 成員在完整清單中的順序；不在任何可見卡片上時為 null。
+     */
+    fun cardIndexAt(mouseX: Double, mouseY: Double): Int? {
+        if (mouseX < gridLeft || mouseX >= gridLeft + columns * cardWidth) return null
+        val column = ((mouseX - gridLeft) / cardWidth).toInt()
+        val row = visibleGridRows.firstOrNull { mouseY >= cardTop(it) && mouseY < cardBottom(it) } ?: return null
+        return (row * columns + column).takeIf { it in 0 until playerCount }
+    }
+
+    /**
+     * 判斷游標是否在指定卡片的資訊區內，用於以滾輪捲動該卡片的資訊。
+     *
+     * @param index 成員在完整清單中的順序。
+     * @param mouseX 游標水平座標。
+     * @param mouseY 游標垂直座標。
+     * @return 游標在這張卡片的資訊區內時為 true。
+     */
+    fun isOverInfo(index: Int, mouseX: Double, mouseY: Double): Boolean {
+        val row = index / columns
+        return cardIndexAt(mouseX, mouseY) == index && mouseY >= infoTop(row)
+    }
+
+    /**
+     * 判斷游標是否落在指定卡片的資訊捲軸上；命中範圍比繪製範圍稍寬。
+     *
+     * @param index 成員在完整清單中的順序。
+     * @param mouseX 游標水平座標。
+     * @param mouseY 游標垂直座標。
+     * @return 游標在這張卡片的資訊捲軸上時為 true。
+     */
+    fun isOverInfoScrollbar(index: Int, mouseX: Double, mouseY: Double): Boolean {
+        val left = infoScrollbarLeft(index)
+        return isOverInfo(index, mouseX, mouseY) &&
+            mouseX >= left - INFO_SCROLLBAR_HIT_PADDING &&
+            mouseX < left + VerticalScrollbar.WIDTH + INFO_SCROLLBAR_HIT_PADDING
+    }
 
     /**
      * 判斷游標是否落在成員卡片捲軸的命中範圍內；內容未超出可見範圍時回傳 false。
@@ -118,23 +201,10 @@ internal data class RoomMemberGridLayout(
      * @return 需要捲動且游標位於命中範圍內時為 true。
      */
     fun isOverGridScrollbar(mouseX: Double, mouseY: Double): Boolean = rows > visibleRows &&
-        scrollbarColumn.containsHorizontally(mouseX) &&
+        mouseX >= scrollbarLeft - FormScreenLayout.SCROLLBAR_HIT_PADDING &&
+        mouseX < scrollbarLeft + VerticalScrollbar.WIDTH + FormScreenLayout.SCROLLBAR_HIT_PADDING &&
         mouseY >= CARD_TOP &&
-        mouseY <= gridBottom
-
-    /**
-     * 尋找游標所在的可見資訊捲軸列。
-     *
-     * @param mouseX 游標水平座標。
-     * @param mouseY 游標垂直座標。
-     * @param totalInfoRows 每列資訊清單的完整行數。
-     * @return 完整清單中的列索引；不需捲動或未命中任何可見列時為 null。
-     */
-    fun infoScrollbarRowAt(mouseX: Double, mouseY: Double, totalInfoRows: Int): Int? {
-        if (maximumInfoScroll(totalInfoRows) <= 0) return null
-        if (!scrollbarColumn.containsHorizontally(mouseX)) return null
-        return visibleGridRows.firstOrNull { row -> mouseY >= infoTop(row) && mouseY <= cardBottom(row) }
-    }
+        mouseY < gridBottom
 
     internal companion object {
         /** 卡片 grid 的起始 Y。 */
@@ -146,9 +216,6 @@ internal data class RoomMemberGridLayout(
         /** 卡片內資訊清單相對卡片頂端的偏移。 */
         const val INFO_OFFSET: Int = 111
 
-        /** 卡片 grid 的左右邊距。 */
-        const val GRID_MARGIN: Int = 8
-
         /** 單張卡片的最大寬度。 */
         const val CARD_MAX_WIDTH: Int = 126
 
@@ -158,13 +225,22 @@ internal data class RoomMemberGridLayout(
         /** 含間距的單列高度。 */
         const val ROW_HEIGHT: Int = 156
 
-        /** 保留給底部操作列的高度。 */
-        const val GRID_BOTTOM_RESERVED_HEIGHT: Int = 40
+        /** 卡片底色右緣與卡片範圍右界的距離。 */
+        const val CARD_RIGHT_INSET: Int = 4
+
+        /** 卡片內資訊捲軸與卡片底色邊緣的距離。 */
+        const val INFO_SCROLLBAR_INSET: Int = 2
+
+        /** 卡片內資訊捲軸左右各加寬的命中範圍。 */
+        const val INFO_SCROLLBAR_HIT_PADDING: Int = 2
+
+        /** 卡片內資訊捲軸滑塊的最小高度。 */
+        const val INFO_MINIMUM_THUMB_HEIGHT: Int = 6
 
         /** 卡片內資訊清單的單行高度。 */
         const val INFO_ROW_HEIGHT: Int = 12
 
-        /** Scrollbar thumb 最小高度。 */
-        const val MINIMUM_THUMB_HEIGHT: Int = 12
+        /** 底部按鈕列的格數。 */
+        const val FOOTER_SLOTS: Int = 4
     }
 }

@@ -219,23 +219,29 @@ object MinecraftClientConfigScreenKeys {
     /** 九種九牌預覽情境。 */
     const val HUD_LAYOUT_SCENARIO_ABORTIVE_DRAW: String = "mahjongcraft.hud_layout.scenario.abortive_draw"
 
-    /** HUD 選擇下拉欄位格式。 */
+    /** HUD 選擇器上方的標籤。 */
     const val HUD_LAYOUT_SELECTOR_HUD: String = "mahjongcraft.hud_layout.selector.hud"
 
-    /** 預覽模式下拉欄位格式。 */
+    /** HUD 選擇器的說明。 */
+    const val HUD_LAYOUT_SELECTOR_HUD_DESCRIPTION: String = "mahjongcraft.hud_layout.selector.hud.description"
+
+    /** 其他 HUD 顯示方式按鈕上方的標籤。 */
     const val HUD_LAYOUT_SELECTOR_VISIBILITY: String = "mahjongcraft.hud_layout.selector.visibility"
 
-    /** 操作情境下拉欄位格式。 */
+    /** 其他 HUD 顯示方式按鈕的說明。 */
+    const val HUD_LAYOUT_SELECTOR_VISIBILITY_DESCRIPTION: String = "mahjongcraft.hud_layout.selector.visibility.description"
+
+    /** 預覽情境按鈕上方的標籤。 */
     const val HUD_LAYOUT_SELECTOR_SCENARIO: String = "mahjongcraft.hud_layout.selector.scenario"
+
+    /** 預覽情境按鈕的說明。 */
+    const val HUD_LAYOUT_SELECTOR_SCENARIO_DESCRIPTION: String = "mahjongcraft.hud_layout.selector.scenario.description"
+
+    /** 選取的 HUD 沒有情境時，預覽情境按鈕停用的原因；參數為 HUD 名稱。 */
+    const val HUD_LAYOUT_SELECTOR_SCENARIO_UNAVAILABLE: String = "mahjongcraft.hud_layout.selector.scenario.unavailable"
 
     /** 隱藏 editor 控制項按鈕。 */
     const val HUD_LAYOUT_HIDE_CONTROLS: String = "mahjongcraft.hud_layout.hide_controls"
-
-    /** 循環切換按鈕 tooltip 的目前值列。 */
-    const val CURRENT_VALUE: String = "mahjongcraft.settings.current_value"
-
-    /** 循環切換按鈕 tooltip 的可用選項標題。 */
-    const val AVAILABLE_OPTIONS: String = "mahjongcraft.settings.available_options"
 
     /** 恢復 editor 控制項提示。 */
     const val HUD_LAYOUT_SHOW_CONTROLS_HINT: String = "mahjongcraft.hud_layout.show_controls_hint"

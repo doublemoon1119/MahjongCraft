@@ -1,7 +1,12 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.client.catalogue
 
-import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.CycleButtonInput
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.ControlTooltip
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.DropdownOption
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.DropdownOverlay
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.RestartableMarqueeButtonWidget
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.ScreenRendering
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.TabWidget
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.VerticalScrollbar
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.MahjongTileFaceRenderer
 import com.doublemoon1119.mahjongcraft.platform.minecraft.catalogue.MinecraftRuleCatalogueScreenKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.catalogue.RuleCatalogueBrowseContext
@@ -18,7 +23,7 @@ import net.minecraft.util.Formatting
 import net.minecraft.util.Language
 
 /**
- * 可切換規則、分類與搜尋的唯讀規則一覽；上方控制區與底部按鈕固定，只有中間的條目會捲動。
+ * 可切換規則、分類與搜尋的唯讀規則一覽；上方控制區、分類頁籤與底部按鈕固定，只有中間的條目會捲動。
  *
  * @property browser 規則、分類、搜尋與設定來源的瀏覽狀態。
  * @property presenter 條目 card 的文字與牌例測量。
@@ -44,7 +49,7 @@ internal class RuleCatalogueScreen(
         width = 1,
         height = 1,
         clearWidth = 0,
-        sourceToggle = false,
+        sourceLabelWidth = null,
     )
 
     /** 目前條目的 card；只在內容、語言或尺寸改變時重新測量。 */
@@ -59,6 +64,15 @@ internal class RuleCatalogueScreen(
     /** 上次建立畫面時的語言，用於偵測語言切換。 */
     private var language: Language = Language.getInstance()
 
+    /** 規則與設定來源選擇器共用的展開清單。 */
+    private val dropdown = DropdownOverlay()
+
+    /** 分類頁籤列向左捲動的像素數。 */
+    private var tabScroll = 0
+
+    /** 下次建立控制項時是否捲動頁籤列，讓選中的頁籤完整顯示。 */
+    private var revealSelectedTab = true
+
     /** 搜尋輸入框。 */
     private lateinit var search: TextFieldWidget
 
@@ -71,6 +85,7 @@ internal class RuleCatalogueScreen(
      * 資源重新載入後畫面會重新初始化，因此在這裡丟棄牌面圖案的快取，補上或移除的貼圖立即反映。
      */
     override fun init() {
+        dropdown.close()
         presenter.clearResourceCaches()
         language = Language.getInstance()
         state = browser.snapshot(presenter::translation)
@@ -78,12 +93,12 @@ internal class RuleCatalogueScreen(
             width = width,
             height = height,
             clearWidth = textRenderer.getWidth(presenter.text(MinecraftRuleCatalogueScreenKeys.CLEAR)) + CLEAR_PADDING,
-            sourceToggle = openingContext.source != RuleCatalogueConfigSource.GENERAL,
+            sourceLabelWidth = sourceLabel().takeIf { openingContext.source != RuleCatalogueConfigSource.GENERAL }?.let(textRenderer::getWidth),
         )
-        addRuleButton()
-        addCategoryButton()
+        addRuleSelector()
+        addCategoryTabs()
         addSearchControls()
-        layout.sourceToggle?.let(::addSourceToggle)
+        layout.sourceSelector?.let(::addSourceSelector)
         button(
             label = presenter.text(if (exit.returnScreen == null) MinecraftRuleCatalogueScreenKeys.CLOSE else MinecraftRuleCatalogueScreenKeys.BACK),
             bounds = layout.close,
@@ -92,8 +107,8 @@ internal class RuleCatalogueScreen(
         scroll.relayout(layout = layout, contentHeight = contentHeight)
     }
 
-    /** 規則切換按鈕；只有一個規則時停用。依一般說明顯示時，提示會說明沒有套用對局設定。 */
-    private fun addRuleButton() {
+    /** 規則選擇器，點擊展開規則清單；只有一個規則時停用。依一般說明顯示時，提示會說明沒有套用對局設定。 */
+    private fun addRuleSelector() {
         val options = state.ruleOptions
         val selected = options.firstOrNull { it.ruleModuleId == state.selectedRuleModuleId }
         val name = selected?.displayName ?: NO_SELECTION
@@ -101,48 +116,54 @@ internal class RuleCatalogueScreen(
             MinecraftRuleCatalogueScreenKeys.RULE_TOOLTIP,
             MinecraftRuleCatalogueScreenKeys.GENERAL_NOTE.takeIf { state.configSource == RuleCatalogueConfigSource.GENERAL },
         )
-        button(label = presenter.format(MinecraftRuleCatalogueScreenKeys.RULE_BUTTON, name), bounds = layout.rule) {
-            val next = options[CycleButtonInput.nextIndex(currentIndex = options.indexOf(selected), size = options.size, step = CycleButtonInput.step())]
-            changed(browser.selectRule(next.ruleModuleId))
-        }.apply {
-            active = options.size > 1
-            tooltip = Tooltip.of(
-                CycleButtonInput.withHint(
-                    tooltip = optionTooltip(
-                        descriptionKeys = description,
-                        current = name,
-                        options = options.map { it.displayName },
-                    ),
-                    optionCount = options.size,
-                    active = active,
+        lateinit var selector: RestartableMarqueeButtonWidget
+        selector = button(label = name, bounds = layout.rule) {
+            dropdown.toggle(
+                key = RULE_SELECTOR_KEY,
+                anchor = selector,
+                options = options.map { DropdownOption(label = Text.literal(it.displayName)) },
+                selectedIndex = options.indexOf(selected).takeIf { it >= 0 },
+            ) { index -> changed(browser.selectRule(options[index].ruleModuleId)) }
+        }
+        selector.active = options.size > 1
+        selector.selectorExpanded = { dropdown.isOpenFor(RULE_SELECTOR_KEY) }
+        selector.tooltip = Tooltip.of(optionTooltip(descriptionKeys = description, current = name, options = options.map { it.displayName }))
+    }
+
+    /** 分類頁籤，「全部分類」排第一；頁籤放不下時可左右捲動，選中的頁籤保持看得見。 */
+    private fun addCategoryTabs() {
+        val options = categoryOptions()
+        val selectedIndex = options.indexOfFirst { it.first == state.categoryId }.coerceAtLeast(0)
+        if (revealSelectedTab) {
+            tabScroll = layout.tabStrip(tabCount = options.size, scroll = tabScroll).scrollRevealing(selectedIndex)
+            revealSelectedTab = false
+        }
+        val strip = layout.tabStrip(tabCount = options.size, scroll = tabScroll)
+        tabScroll = strip.effectiveScroll
+        options.forEachIndexed { index, (categoryId, nameKey) ->
+            val selected = index == selectedIndex
+            addDrawableChild(
+                TabWidget(
+                    x = strip.tabX(index),
+                    y = strip.tabY(selected),
+                    width = strip.tabWidth,
+                    height = strip.tabHeight(selected),
+                    message = Text.literal(presenter.text(nameKey)),
+                    selected = selected,
+                    clipLeft = strip.left,
+                    clipRight = strip.right,
+                    onSelect = {
+                        revealSelectedTab = true
+                        changed(browser.selectCategory(categoryId))
+                    },
                 ),
             )
         }
     }
 
-    /** 分類切換按鈕；沒有分類時停用。 */
-    private fun addCategoryButton() {
-        val categories = state.catalogue?.categories.orEmpty()
-        val options = listOf(null to MinecraftRuleCatalogueScreenKeys.ALL_CATEGORIES) + categories.map { it.id to it.nameTranslationKey }
-        val current = options.firstOrNull { it.first == state.categoryId } ?: options.first()
-        val name = presenter.text(current.second)
-        button(label = presenter.format(MinecraftRuleCatalogueScreenKeys.CATEGORY_BUTTON, name), bounds = layout.category) {
-            changed(browser.selectCategory(CycleButtonInput.next(options = options, current = current).first))
-        }.apply {
-            active = categories.isNotEmpty()
-            tooltip = Tooltip.of(
-                CycleButtonInput.withHint(
-                    tooltip = optionTooltip(
-                        descriptionKeys = listOf(MinecraftRuleCatalogueScreenKeys.CATEGORY_TOOLTIP),
-                        current = name,
-                        options = options.map { presenter.text(it.second) },
-                    ),
-                    optionCount = options.size,
-                    active = active,
-                ),
-            )
-        }
-    }
+    /** 分類頁籤的選項：分類識別碼（全部分類為 null）與名稱翻譯鍵。 */
+    private fun categoryOptions(): List<Pair<String?, String>> = listOf<Pair<String?, String>>(null to MinecraftRuleCatalogueScreenKeys.ALL_CATEGORIES) +
+        state.catalogue?.categories.orEmpty().map { it.id to it.nameTranslationKey }
 
     /** 搜尋輸入框與清除按鈕。 */
     private fun addSearchControls() {
@@ -166,53 +187,58 @@ internal class RuleCatalogueScreen(
     }
 
     /**
-     * 在開啟時的設定與一般說明之間切換的按鈕，只在從房間或歷史開啟時出現；切換到其他規則後停用。
+     * 設定來源選擇器，點擊展開「開啟時的設定」與「一般說明」；只在從房間或歷史開啟時出現，切換到其他規則後停用。
      *
-     * @param bounds 按鈕範圍。
+     * @param bounds 選擇器範圍。
      */
-    private fun addSourceToggle(bounds: CatalogueRect) {
+    private fun addSourceSelector(bounds: CatalogueRect) {
         val onOpeningRule = state.selectedRuleModuleId == openingContext.ruleModuleId
+        val sources = listOf(openingContext.source, RuleCatalogueConfigSource.GENERAL)
+        val names = sources.map { presenter.text(catalogueSourceKey(it)) }
         val current = presenter.text(catalogueSourceKey(state.configSource))
         val description = listOfNotNull(
             MinecraftRuleCatalogueScreenKeys.SOURCE_TOOLTIP,
             MinecraftRuleCatalogueScreenKeys.SOURCE_OTHER_RULE.takeUnless { onOpeningRule },
         )
-        button(label = presenter.format(MinecraftRuleCatalogueScreenKeys.SOURCE_BUTTON, current), bounds = bounds) {
-            changed(if (state.configSource == RuleCatalogueConfigSource.GENERAL) browser.restoreOpeningConfig() else browser.useGeneralExplanation())
-        }.apply {
-            active = onOpeningRule
-            tooltip = Tooltip.of(
-                optionTooltip(
-                    descriptionKeys = description,
-                    current = current,
-                    options = listOf(openingContext.source, RuleCatalogueConfigSource.GENERAL).map { presenter.text(catalogueSourceKey(it)) },
-                ),
-            )
+        lateinit var selector: RestartableMarqueeButtonWidget
+        selector = button(label = current, bounds = bounds) {
+            dropdown.toggle(
+                key = SOURCE_SELECTOR_KEY,
+                anchor = selector,
+                options = names.map { DropdownOption(label = Text.literal(it)) },
+                selectedIndex = sources.indexOf(state.configSource).takeIf { it >= 0 },
+            ) { index ->
+                changed(if (sources[index] == RuleCatalogueConfigSource.GENERAL) browser.useGeneralExplanation() else browser.restoreOpeningConfig())
+            }
         }
+        selector.active = onOpeningRule
+        selector.selectorExpanded = { dropdown.isOpenFor(SOURCE_SELECTOR_KEY) }
+        selector.tooltip = Tooltip.of(optionTooltip(descriptionKeys = description, current = current, options = names))
     }
 
+    /** 設定來源選擇器左側的標籤。 */
+    private fun sourceLabel(): Text = Text.literal(presenter.text(MinecraftRuleCatalogueScreenKeys.SOURCE_LABEL))
+
     /**
-     * 建立選項按鈕的提示：灰色說明、綠色目前選項、金色選項標題，以及逐項列出的選項（目前選項為綠色）。
+     * 建立選項按鈕的提示：說明、全部選項與目前選項，以及可操作時的操作提示。
      *
      * @param descriptionKeys 說明文字的翻譯鍵，每個一行。
      * @param current 目前選項名稱。
      * @param options 所有選項名稱。
+     * @param hints 操作提示；不需要提示時為空。
      * @return 提示文字。
      */
     private fun optionTooltip(
         descriptionKeys: List<String>,
         current: String,
         options: List<String>,
-    ): Text {
-        val result = Text.empty()
-        descriptionKeys.forEach { key -> result.append(Text.literal(presenter.text(key)).formatted(Formatting.GRAY)).append("\n") }
-        result.append(Text.literal(presenter.format(MinecraftRuleCatalogueScreenKeys.TOOLTIP_CURRENT, current)).formatted(Formatting.GREEN))
-        result.append("\n").append(Text.literal(presenter.text(MinecraftRuleCatalogueScreenKeys.TOOLTIP_OPTIONS)).formatted(Formatting.GOLD))
-        options.forEach { option ->
-            result.append("\n• ").append(Text.literal(option).formatted(if (option == current) Formatting.GREEN else Formatting.WHITE))
-        }
-        return result
-    }
+        hints: List<Text> = emptyList(),
+    ): Text = ControlTooltip.options(
+        description = Text.literal(descriptionKeys.joinToString("\n") { presenter.text(it) }),
+        labels = options.map { Text.literal(it) },
+        currentIndex = options.indexOf(current),
+        hints = hints,
+    )
 
     /**
      * 加入沿用跑馬燈行為的按鈕。
@@ -226,7 +252,7 @@ internal class RuleCatalogueScreen(
         label: String,
         bounds: CatalogueRect,
         action: () -> Unit,
-    ): ButtonWidget = addDrawableChild(
+    ): RestartableMarqueeButtonWidget = addDrawableChild(
         RestartableMarqueeButtonWidget.builder(Text.literal(label)) { action() }
             .dimensions(bounds.x, bounds.y, bounds.width, bounds.height)
             .build(),
@@ -273,11 +299,18 @@ internal class RuleCatalogueScreen(
     override fun render(context: DrawContext, mouseX: Int, mouseY: Int, delta: Float) {
         if (language !== Language.getInstance()) clearAndInit()
         renderBackground(context)
-        context.drawCenteredTextWithShadow(textRenderer, title, width / 2, layout.titleY, TITLE_COLOR)
-        val contentTooltip = renderContent(context = context, mouseX = mouseX, mouseY = mouseY)
+        ScreenRendering.title(context, textRenderer, title, width)
+        val pointerX = dropdown.pointer(mouseX)
+        val pointerY = dropdown.pointer(mouseY)
+        val contentTooltip = renderContent(context = context, mouseX = pointerX, mouseY = pointerY)
         renderScrollbar(context)
-        super.render(context, mouseX, mouseY, delta)
+        ScreenRendering.tabLine(context, layout.tabStrip(tabCount = categoryOptions().size, scroll = tabScroll))
+        if (layout.sourceSelector != null) {
+            context.drawTextWithShadow(textRenderer, sourceLabel(), layout.contentLeft, layout.sourceLabelY, SOURCE_LABEL_COLOR)
+        }
+        super.render(context, pointerX, pointerY, delta)
         if (contentTooltip.isNotEmpty() && !scroll.isDragging) context.drawTooltip(textRenderer, contentTooltip, mouseX, mouseY)
+        dropdown.render(context, textRenderer, height, mouseX, mouseY)
     }
 
     /**
@@ -343,8 +376,7 @@ internal class RuleCatalogueScreen(
         val bar = layout.scrollbar(contentHeight = contentHeight, scroll = scroll.offset)
         if (bar.maximumScroll == 0) return
         val track = layout.scrollbarBounds
-        context.fill(track.x, track.y, track.right, track.bottom, TRACK_COLOR)
-        context.fill(track.x, bar.thumbTop, track.right, bar.thumbTop + bar.thumbHeight, THUMB_COLOR)
+        VerticalScrollbar.renderWithin(context, track.x, track.right, bar)
     }
 
     /**
@@ -356,6 +388,16 @@ internal class RuleCatalogueScreen(
      * @return 是否處理事件。
      */
     override fun mouseScrolled(mouseX: Double, mouseY: Double, amount: Double): Boolean {
+        if (dropdown.mouseScrolled(textRenderer, height, amount)) return true
+        val strip = layout.tabStrip(tabCount = categoryOptions().size, scroll = tabScroll)
+        if (strip.contains(mouseX, mouseY) && strip.maximumScroll > 0) {
+            val next = strip.scrollByWheel(amount)
+            if (next != tabScroll) {
+                tabScroll = next
+                clearAndInit()
+            }
+            return true
+        }
         if (layout.contentBounds.contains(mouseX, mouseY) || layout.scrollbarBounds.contains(mouseX, mouseY)) {
             scroll.scrollBy(amount = amount, layout = layout, contentHeight = contentHeight)
             return true
@@ -372,6 +414,7 @@ internal class RuleCatalogueScreen(
      * @return 是否處理事件。
      */
     override fun mouseClicked(mouseX: Double, mouseY: Double, button: Int): Boolean {
+        if (dropdown.mouseClicked(textRenderer, height, mouseX, mouseY, button)) return true
         if (button == 0 && layout.scrollbarBounds.contains(mouseX, mouseY) && scroll.press(mouseY = mouseY, layout = layout, contentHeight = contentHeight)) {
             return true
         }
@@ -389,6 +432,7 @@ internal class RuleCatalogueScreen(
      * @return 是否處理事件。
      */
     override fun mouseDragged(mouseX: Double, mouseY: Double, button: Int, deltaX: Double, deltaY: Double): Boolean {
+        if (dropdown.isOpen) return true
         if (button == 0 && scroll.drag(mouseY = mouseY, layout = layout, contentHeight = contentHeight)) return true
         return super.mouseDragged(mouseX, mouseY, button, deltaX, deltaY)
     }
@@ -407,6 +451,13 @@ internal class RuleCatalogueScreen(
     }
 
     /** 依開啟來源返回原畫面或回到遊戲。 */
+    override fun keyPressed(keyCode: Int, scanCode: Int, modifiers: Int): Boolean {
+        if (dropdown.keyPressed(textRenderer, height, keyCode)) return true
+        return super.keyPressed(keyCode, scanCode, modifiers)
+    }
+
+    override fun charTyped(chr: Char, modifiers: Int): Boolean = dropdown.isOpen || super.charTyped(chr, modifiers)
+
     override fun close() {
         client?.let(exit::back)
     }
@@ -432,6 +483,15 @@ internal class RuleCatalogueScreen(
         /** 沒有任何規則可選時按鈕上顯示的值。 */
         const val NO_SELECTION = "-"
 
+        /** 規則選擇器展開清單的識別值。 */
+        const val RULE_SELECTOR_KEY = "rule"
+
+        /** 設定來源選擇器展開清單的識別值。 */
+        const val SOURCE_SELECTOR_KEY = "source"
+
+        /** 設定來源標籤的文字顏色。 */
+        const val SOURCE_LABEL_COLOR = 0xCCCCCC
+
         /** 搜尋字數上限。 */
         const val MAX_SEARCH_LENGTH = 256
 
@@ -447,9 +507,6 @@ internal class RuleCatalogueScreen(
         /** 一行文字的命中高度。 */
         const val LINE_HIT_HEIGHT = 10
 
-        /** 標題。 */
-        const val TITLE_COLOR = 0xffffff
-
         /** 沒有條目時的說明。 */
         const val STATUS_COLOR = 0xaaaaaa
 
@@ -458,11 +515,5 @@ internal class RuleCatalogueScreen(
 
         /** 游標指向 card 時的背景。 */
         const val CARD_HOVER_BACKGROUND = 0x90404040.toInt()
-
-        /** 捲軸軌道。 */
-        const val TRACK_COLOR = 0x80505050.toInt()
-
-        /** 捲軸滑塊。 */
-        const val THUMB_COLOR = 0xffd0d0d0.toInt()
     }
 }

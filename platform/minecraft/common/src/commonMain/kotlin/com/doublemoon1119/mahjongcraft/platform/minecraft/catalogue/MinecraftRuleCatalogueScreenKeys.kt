@@ -5,17 +5,8 @@ object MinecraftRuleCatalogueScreenKeys {
     /** 規則一覽標題。 */
     const val TITLE: String = "mahjongcraft.rule_catalogue.screen.title"
 
-    /** 規則切換按鈕文字，參數為目前規則名稱。 */
-    const val RULE_BUTTON: String = "mahjongcraft.rule_catalogue.screen.rule_button"
-
     /** 規則切換按鈕提示的說明。 */
     const val RULE_TOOLTIP: String = "mahjongcraft.rule_catalogue.screen.rule_tooltip"
-
-    /** 分類切換按鈕文字，參數為目前分類名稱。 */
-    const val CATEGORY_BUTTON: String = "mahjongcraft.rule_catalogue.screen.category_button"
-
-    /** 分類切換按鈕提示的說明。 */
-    const val CATEGORY_TOOLTIP: String = "mahjongcraft.rule_catalogue.screen.category_tooltip"
 
     /** 顯示全部分類的選項。 */
     const val ALL_CATEGORIES: String = "mahjongcraft.rule_catalogue.screen.all_categories"
@@ -38,8 +29,8 @@ object MinecraftRuleCatalogueScreenKeys {
     /** 返回按鈕。 */
     const val BACK: String = "mahjongcraft.rule_catalogue.screen.back"
 
-    /** 設定來源切換按鈕文字，參數為目前設定來源名稱。 */
-    const val SOURCE_BUTTON: String = "mahjongcraft.rule_catalogue.screen.source_button"
+    /** 底部設定來源選擇器左側的標籤。 */
+    const val SOURCE_LABEL: String = "mahjongcraft.rule_catalogue.screen.source_label"
 
     /** 設定來源切換按鈕提示的說明。 */
     const val SOURCE_TOOLTIP: String = "mahjongcraft.rule_catalogue.screen.source_tooltip"
@@ -61,12 +52,6 @@ object MinecraftRuleCatalogueScreenKeys {
 
     /** 歷史對局設定的設定來源名稱。 */
     const val SOURCE_HISTORY: String = "mahjongcraft.rule_catalogue.screen.source.history"
-
-    /** 選項提示中目前選項的格式，參數為選項名稱。 */
-    const val TOOLTIP_CURRENT: String = "mahjongcraft.rule_catalogue.screen.tooltip.current"
-
-    /** 選項提示中選項清單的標題。 */
-    const val TOOLTIP_OPTIONS: String = "mahjongcraft.rule_catalogue.screen.tooltip.options"
 
     /** 沒有規則可顯示的狀態。 */
     const val STATUS_NO_RULES: String = "mahjongcraft.rule_catalogue.screen.status.no_rules"
@@ -118,9 +103,9 @@ object MinecraftRuleCatalogueScreenKeys {
 
     /** 所有規則一覽畫面翻譯鍵。 */
     val ALL: Set<String> = setOf(
-        TITLE, RULE_BUTTON, RULE_TOOLTIP, CATEGORY_BUTTON, CATEGORY_TOOLTIP, ALL_CATEGORIES, SEARCH, SEARCH_HINT,
-        SEARCH_TOOLTIP, CLEAR, CLOSE, BACK, SOURCE_BUTTON, SOURCE_TOOLTIP, SOURCE_OTHER_RULE, GENERAL_NOTE,
-        SOURCE_GENERAL, SOURCE_ROOM, SOURCE_ROOM_DRAFT, SOURCE_HISTORY, TOOLTIP_CURRENT, TOOLTIP_OPTIONS,
+        TITLE, RULE_TOOLTIP, ALL_CATEGORIES, SEARCH, SEARCH_HINT,
+        SEARCH_TOOLTIP, CLEAR, CLOSE, BACK, SOURCE_LABEL, SOURCE_TOOLTIP, SOURCE_OTHER_RULE, GENERAL_NOTE,
+        SOURCE_GENERAL, SOURCE_ROOM, SOURCE_ROOM_DRAFT, SOURCE_HISTORY,
         STATUS_NO_RULES, STATUS_CONFIG_UNAVAILABLE, STATUS_MISSING_PROVIDER, STATUS_UNSUPPORTED_CONFIG,
         STATUS_EMPTY_CATALOGUE, STATUS_NO_RESULTS, EXAMPLE_COMPLETE, EXAMPLE_PARTIAL, GROUP_HAND,
         GROUP_WINNING_TILE, GROUP_OPEN_MELD, GROUP_OPEN_KAN, GROUP_CLOSED_KAN, GROUP_ILLUSTRATION,

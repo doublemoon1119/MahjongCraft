@@ -39,6 +39,17 @@ internal object HistoryScreenText {
     } ?: "—"
 
     /**
+     * 格式化時刻，不含日期；用在日期已寫在別處的地方。
+     *
+     * @param value epoch milliseconds；未知時為 null。
+     * @param zone 顯示使用的時區。
+     * @return 「時:分:秒」或未知佔位。
+     */
+    fun timeOfDay(value: Long?, zone: ZoneId = ZoneId.systemDefault()): String = value?.let {
+        DateTimeFormatter.ofPattern("HH:mm:ss").format(Instant.ofEpochMilli(it).atZone(zone))
+    } ?: "—"
+
+    /**
      * 格式化完整起訖時間的間隔；缺少任一端點或反向時間時保留未知。
      *
      * @param start 開始時間的 epoch milliseconds。

@@ -227,11 +227,29 @@ internal object HistoryRoundResponseValidator {
         ) {
             return HistoryRoundValidationResult.Invalid(HistoryRoundValidationError.TRANSACTION_INDEX_INVALID)
         }
+        if (!validTransactionCount(events, startIndex)) return HistoryRoundValidationResult.Invalid(HistoryRoundValidationError.TRANSACTION_INDEX_INVALID)
         if (!events.tileCatalog.all { it.isDisplayableHistoryFace() }) return HistoryRoundValidationResult.Invalid(HistoryRoundValidationError.CONTENT_MISMATCH)
         if (events.transactions.size > 0 && previousDeclaredCount != events.tileCatalog.size) {
             return HistoryRoundValidationResult.Invalid(HistoryRoundValidationError.TILE_INDEX_INVALID)
         }
         return null
+    }
+
+    /**
+     * 驗證交易總數與本頁內容一致：總數涵蓋本頁每一筆交易；有下一頁時下一筆在總數內，沒有下一頁時本頁剛好到最後一筆。
+     *
+     * @param events 待驗證的事件頁，交易索引已確認連續。
+     * @param startIndex 要求的起始交易索引。
+     * @return 一致時為 true。
+     */
+    private fun validTransactionCount(events: HistoryRoundEventsDto, startIndex: Int): Boolean {
+        val count = events.transactionCount
+        if (count !in 0..MAX_TRANSACTION_INDEX) return false
+        val end = events.transactions.lastOrNull()?.index?.plus(1) ?: startIndex
+        return when (val next = events.nextTransactionIndex) {
+            null -> end == count
+            else -> next < count
+        }
     }
 
     /**

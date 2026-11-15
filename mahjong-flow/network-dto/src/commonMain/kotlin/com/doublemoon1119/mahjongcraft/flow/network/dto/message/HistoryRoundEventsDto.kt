@@ -10,6 +10,7 @@ import kotlinx.serialization.Serializable
  * @property roundNumber 局序號。
  * @property transactions 有界交易序列。
  * @property nextTransactionIndex 下一頁起點。
+ * @property transactionCount 本局的交易總數，不受回傳範圍影響。
  * @property tileCatalog 回覆末端已宣告的牌目錄。
  */
 @Serializable
@@ -18,5 +19,6 @@ data class HistoryRoundEventsDto(
     val roundNumber: Int,
     val transactions: List<HistoryReplayTransactionDto>,
     val nextTransactionIndex: Int?,
+    val transactionCount: Int,
     val tileCatalog: List<TileFaceViewDto>,
 )

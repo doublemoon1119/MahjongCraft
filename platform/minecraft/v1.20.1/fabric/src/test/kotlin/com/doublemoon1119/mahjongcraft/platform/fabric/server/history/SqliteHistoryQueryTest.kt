@@ -299,6 +299,26 @@ class SqliteHistoryQueryTest {
                     assertTrue(paged.size <= expected.size, "Keyset pagination must not repeat rows")
                 } while (cursor != null)
                 assertEquals(expected, paged)
+                assertEquals(expected.size, page.totalCount)
+
+                val lastPage = database.readHistoryQueryPage(
+                    query = SqliteHistoryQuery("owner", false, field, direction, pageSize = 2, direction = SqliteHistoryPageDirection.BEFORE),
+                )
+                assertEquals(expected.takeLast(2), lastPage.entries.map { it.matchId })
+                assertNull(lastPage.nextCursor)
+                assertEquals(expected.size, lastPage.totalCount)
+                val pagedBackward = lastPage.entries.map { it.matchId }.toMutableList()
+                var before = lastPage.previousCursor
+                while (before != null) {
+                    val previous = database.readHistoryQueryPage(
+                        query = SqliteHistoryQuery("owner", false, field, direction, pageSize = 1, cursor = before, direction = SqliteHistoryPageDirection.BEFORE),
+                    )
+                    pagedBackward.addAll(0, previous.entries.map { it.matchId })
+                    assertTrue(previous.nextCursor != null, "A page before a cursor always has a next page")
+                    before = previous.previousCursor
+                    assertTrue(pagedBackward.size <= expected.size, "Backward keyset pagination must not repeat rows")
+                }
+                assertEquals(expected, pagedBackward)
             }
         }
 

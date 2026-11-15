@@ -1,7 +1,11 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.client.catalogue
 
 import com.doublemoon1119.mahjongcraft.logic.base.TileFaceView
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.ButtonRowLayout
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.FormScreenLayout
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.ScrollbarLayout
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.TabStripLayout
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.VerticalScrollbar
 import com.doublemoon1119.mahjongcraft.platform.minecraft.catalogue.RuleCatalogueTileGroup
 import com.doublemoon1119.mahjongcraft.platform.minecraft.catalogue.RuleCatalogueTileGroupRole
 
@@ -47,18 +51,21 @@ internal data class CatalogueRect(
 /**
  * 規則一覽畫面的固定區域與可捲動內容區域。
  *
- * 寬畫面時規則、分類、搜尋與清除排成一列；寬度不足時規則與分類並排一列、搜尋與清除另一列。
- * 底部固定關閉或返回按鈕；從房間或歷史開啟時，設定來源切換按鈕放在它旁邊。
+ * 內容寬度與設定類畫面相同，最多 [FormScreenLayout.MAX_CONTENT_WIDTH] 並水平置中。標題下方是規則選擇器、搜尋與
+ * 清除，寬度不足時規則選擇器獨佔一列；其下是分類頁籤；底部是等寬按鈕列，返回或關閉固定在最右一格。從房間或歷史
+ * 開啟時，底部左側另有「說明依據」標籤與設定來源選擇器。
  *
  * @property width 畫面寬度。
  * @property height 畫面高度。
- * @property titleY 標題的上界。
- * @property singleRow 控制項是否排成一列。
- * @property rule 規則切換按鈕範圍。
- * @property category 分類切換按鈕範圍。
+ * @property singleRow 規則選擇器、搜尋與清除是否排成一列。
+ * @property contentLeft 內容左界。
+ * @property contentWidth 內容寬度。
+ * @property rule 規則選擇器範圍。
  * @property search 搜尋輸入框外框範圍。
  * @property clear 清除搜尋按鈕範圍。
- * @property sourceToggle 設定來源切換按鈕範圍；不顯示時為 null。
+ * @property tabsTop 分類頁籤列上界。
+ * @property sourceLabelY 設定來源標籤文字的 Y 座標；不顯示時仍有值但不使用。
+ * @property sourceSelector 設定來源選擇器範圍；不顯示時為 null。
  * @property close 關閉或返回按鈕範圍。
  * @property contentBounds 可捲動內容區域。
  * @property scrollbarBounds 內容捲軸區域。
@@ -66,19 +73,36 @@ internal data class CatalogueRect(
 internal data class RuleCatalogueScreenLayout(
     val width: Int,
     val height: Int,
-    val titleY: Int,
     val singleRow: Boolean,
+    val contentLeft: Int,
+    val contentWidth: Int,
     val rule: CatalogueRect,
-    val category: CatalogueRect,
     val search: CatalogueRect,
     val clear: CatalogueRect,
-    val sourceToggle: CatalogueRect?,
+    val tabsTop: Int,
+    val sourceLabelY: Int,
+    val sourceSelector: CatalogueRect?,
     val close: CatalogueRect,
     val contentBounds: CatalogueRect,
     val scrollbarBounds: CatalogueRect,
 ) {
     /** 卡片寬度，與內容區同寬。 */
     val cardWidth: Int get() = contentBounds.width
+
+    /**
+     * 依目前捲動位置建立分類頁籤列版面。
+     *
+     * @param tabCount 頁籤數量。
+     * @param scroll 頁籤列向左捲動的像素數。
+     * @return 頁籤列版面。
+     */
+    fun tabStrip(tabCount: Int, scroll: Int): TabStripLayout = TabStripLayout(
+        left = contentLeft,
+        width = contentWidth,
+        top = tabsTop,
+        tabCount = tabCount,
+        scroll = scroll,
+    )
 
     /**
      * 依內容總高度與目前像素偏移建立垂直捲軸。
@@ -95,7 +119,7 @@ internal data class RuleCatalogueScreenLayout(
             itemCount = contentHeight.coerceAtLeast(viewportHeight),
             visibleItemCount = viewportHeight,
             scrollIndex = clampScroll(scroll = scroll, contentHeight = contentHeight).toInt(),
-            minimumThumbHeight = MINIMUM_THUMB_HEIGHT.coerceAtMost(viewportHeight),
+            minimumThumbHeight = VerticalScrollbar.MINIMUM_THUMB_HEIGHT.coerceAtMost(viewportHeight),
         )
     }
 
@@ -118,41 +142,35 @@ internal data class RuleCatalogueScreenLayout(
 
     /** 畫面幾何的建立入口與共用尺寸。 */
     internal companion object {
-        /** 外側留白。 */
-        const val MARGIN: Int = 8
-
         /** 元件之間的間距。 */
         const val GAP: Int = 4
 
         /** 按鈕與輸入框高度。 */
         const val ROW_HEIGHT: Int = 20
 
-        /** 一行文字所佔高度。 */
-        const val TEXT_HEIGHT: Int = 10
+        /** 規則選擇器與設定來源選擇器的寬度上限。 */
+        const val SELECTOR_WIDTH: Int = FormScreenLayout.CONTROL_WIDTH
 
-        /** 控制項排成一列所需的最小可用寬度。 */
-        const val SINGLE_ROW_MIN_WIDTH: Int = 400
+        /** 搜尋框與規則選擇器同列時至少保留的寬度。 */
+        const val MIN_SEARCH_WIDTH: Int = 100
 
-        /** 排成一列時規則與分類按鈕各自佔剩餘寬度的比例（十分之幾）。 */
-        const val SELECTOR_SHARE_TENTHS: Int = 3
+        /** 頁籤列與上方控制項之間的間距。 */
+        const val TABS_GAP: Int = 6
 
-        /** 排成一列時規則與分類按鈕的最大寬度。 */
-        const val MAX_SELECTOR_WIDTH: Int = 160
+        /** 頁籤底線與內容區之間的間距。 */
+        const val CONTENT_GAP: Int = 5
 
-        /** 捲軸寬度。 */
-        const val SCROLLBAR_WIDTH: Int = 6
+        /** 設定來源標籤與選擇器之間的間距。 */
+        const val LABEL_GAP: Int = 6
 
-        /** 捲軸滑塊最小高度。 */
-        const val MINIMUM_THUMB_HEIGHT: Int = 10
+        /** 內容區與捲軸保留範圍之間的間距。 */
+        const val SCROLLBAR_GAP: Int = 1
 
-        /** 單獨顯示時關閉按鈕的寬度。 */
-        const val CLOSE_WIDTH: Int = 120
+        /** 捲軸保留的寬度；捲軸畫在其中央，命中範圍比繪製範圍寬。 */
+        const val SCROLLBAR_AREA_WIDTH: Int = 9
 
-        /** 與設定來源切換按鈕並排時關閉按鈕的寬度。 */
-        const val PAIRED_CLOSE_WIDTH: Int = 100
-
-        /** 設定來源切換按鈕的最大寬度。 */
-        const val SOURCE_TOGGLE_WIDTH: Int = 180
+        /** 底部按鈕列的按鈕數；返回或關閉固定在最後一格。 */
+        const val FOOTER_SLOTS: Int = 4
 
         /**
          * 建立畫面幾何；底部按鈕一律留在畫面內，空間不足時先縮小內容區。
@@ -160,100 +178,63 @@ internal data class RuleCatalogueScreenLayout(
          * @param width 畫面寬度。
          * @param height 畫面高度。
          * @param clearWidth 清除搜尋按鈕依文字算出的寬度。
-         * @param sourceToggle 是否顯示設定來源切換按鈕。
+         * @param sourceLabelWidth 設定來源標籤的文字寬度；不顯示設定來源時為 null。
          * @return 計算後的畫面幾何。
          */
         fun measure(
             width: Int,
             height: Int,
             clearWidth: Int,
-            sourceToggle: Boolean,
+            sourceLabelWidth: Int?,
         ): RuleCatalogueScreenLayout {
             val safeWidth = width.coerceAtLeast(1)
             val safeHeight = height.coerceAtLeast(1)
-            val available = (safeWidth - MARGIN * 2).coerceAtLeast(1)
-            val titleY = MARGIN
-            val controlsTop = titleY + TEXT_HEIGHT + GAP + 2
-            val singleRow = available >= SINGLE_ROW_MIN_WIDTH
+            val frame = FormScreenLayout(windowWidth = safeWidth, windowHeight = safeHeight, hasPageSwitch = false, hasRuleRow = false)
+            val left = frame.contentLeft
+            val available = frame.contentWidth
+            val controlsTop = FormScreenLayout.TITLE_BOTTOM
             val clear = clearWidth.coerceIn(ROW_HEIGHT, (available / 4).coerceAtLeast(ROW_HEIGHT))
-            val controls = if (singleRow) {
-                val rest = available - clear - GAP * 3
-                val selector = (rest * SELECTOR_SHARE_TENTHS / 10).coerceAtMost(MAX_SELECTOR_WIDTH)
-                val rule = CatalogueRect(x = MARGIN, y = controlsTop, width = selector, height = ROW_HEIGHT)
-                val category = CatalogueRect(x = rule.right + GAP, y = controlsTop, width = selector, height = ROW_HEIGHT)
-                val search = CatalogueRect(x = category.right + GAP, y = controlsTop, width = rest - selector * 2, height = ROW_HEIGHT)
-                listOf(rule, category, search, CatalogueRect(x = search.right + GAP, y = controlsTop, width = clear, height = ROW_HEIGHT))
-            } else {
-                val half = (available - GAP) / 2
-                val searchTop = controlsTop + ROW_HEIGHT + GAP
-                val search = CatalogueRect(x = MARGIN, y = searchTop, width = (available - GAP - clear).coerceAtLeast(1), height = ROW_HEIGHT)
-                listOf(
-                    CatalogueRect(x = MARGIN, y = controlsTop, width = half, height = ROW_HEIGHT),
-                    CatalogueRect(x = MARGIN + half + GAP, y = controlsTop, width = available - half - GAP, height = ROW_HEIGHT),
-                    search,
-                    CatalogueRect(x = search.right + GAP, y = searchTop, width = clear, height = ROW_HEIGHT),
-                )
+            val ruleWidth = SELECTOR_WIDTH.coerceAtMost(available)
+            val singleRow = available >= ruleWidth + GAP + MIN_SEARCH_WIDTH + GAP + clear
+            val rule = CatalogueRect(x = left, y = controlsTop, width = if (singleRow) ruleWidth else available, height = ROW_HEIGHT)
+            val searchTop = if (singleRow) controlsTop else rule.bottom + GAP
+            val searchLeft = if (singleRow) rule.right + GAP else left
+            val clearRect = CatalogueRect(x = left + available - clear, y = searchTop, width = clear, height = ROW_HEIGHT)
+            val search = CatalogueRect(x = searchLeft, y = searchTop, width = (clearRect.x - GAP - searchLeft).coerceAtLeast(1), height = ROW_HEIGHT)
+            val tabsTop = search.bottom + TABS_GAP
+            val contentTop = tabsTop + TabStripLayout.SELECTED_HEIGHT + 1 + CONTENT_GAP
+            val footerTop = (safeHeight - FormScreenLayout.FOOTER_BOTTOM_MARGIN - ROW_HEIGHT).coerceAtLeast(0)
+            val footer = ButtonRowLayout(left = left, width = available.coerceAtLeast(ButtonRowLayout.minimumWidth(FOOTER_SLOTS)), buttonCount = FOOTER_SLOTS)
+            val closeIndex = FOOTER_SLOTS - 1
+            val close = CatalogueRect(x = footer.buttonX(closeIndex), y = footerTop, width = footer.buttonWidth(closeIndex), height = ROW_HEIGHT)
+            val sourceSelector = sourceLabelWidth?.let { labelWidth ->
+                val selectorLeft = left + labelWidth + LABEL_GAP
+                val selectorWidth = SELECTOR_WIDTH.coerceAtMost(close.x - GAP - selectorLeft).coerceAtLeast(1)
+                CatalogueRect(x = selectorLeft, y = footerTop, width = selectorWidth, height = ROW_HEIGHT)
             }
-            val footerTop = (safeHeight - MARGIN - ROW_HEIGHT).coerceAtLeast(0)
-            val (toggle, close) = footer(
-                width = safeWidth,
-                available = available,
-                top = footerTop,
-                sourceToggle = sourceToggle,
-            )
-            val contentTop = controls.maxOf { it.bottom } + GAP
             val contentBottom = (footerTop - GAP).coerceAtLeast(contentTop)
-            val contentBounds = CatalogueRect(
-                x = MARGIN,
-                y = contentTop,
-                width = (available - SCROLLBAR_WIDTH - GAP).coerceAtLeast(1),
-                height = contentBottom - contentTop,
-            )
+            val contentBounds = CatalogueRect(x = left, y = contentTop, width = available, height = contentBottom - contentTop)
             return RuleCatalogueScreenLayout(
                 width = safeWidth,
                 height = safeHeight,
-                titleY = titleY,
                 singleRow = singleRow,
-                rule = controls[0],
-                category = controls[1],
-                search = controls[2],
-                clear = controls[3],
-                sourceToggle = toggle,
+                contentLeft = left,
+                contentWidth = available,
+                rule = rule,
+                search = search,
+                clear = clearRect,
+                tabsTop = tabsTop,
+                sourceLabelY = footerTop + (ROW_HEIGHT - FormScreenLayout.VISIBLE_TEXT_HEIGHT) / 2,
+                sourceSelector = sourceSelector,
                 close = close,
                 contentBounds = contentBounds,
                 scrollbarBounds = CatalogueRect(
-                    x = safeWidth - MARGIN - SCROLLBAR_WIDTH,
+                    x = contentBounds.right + SCROLLBAR_GAP,
                     y = contentTop,
-                    width = SCROLLBAR_WIDTH,
+                    width = SCROLLBAR_AREA_WIDTH,
                     height = contentBounds.height,
                 ),
             )
-        }
-
-        /**
-         * 置中排列底部按鈕。
-         *
-         * @param width 畫面寬度。
-         * @param available 扣除外側留白的可用寬度。
-         * @param top 按鈕上界。
-         * @param sourceToggle 是否在關閉按鈕左側放設定來源切換按鈕。
-         * @return 設定來源切換按鈕（不顯示時為 null）與關閉按鈕的範圍。
-         */
-        private fun footer(
-            width: Int,
-            available: Int,
-            top: Int,
-            sourceToggle: Boolean,
-        ): Pair<CatalogueRect?, CatalogueRect> {
-            if (!sourceToggle) {
-                val closeWidth = CLOSE_WIDTH.coerceAtMost(available)
-                return null to CatalogueRect(x = (width - closeWidth) / 2, y = top, width = closeWidth, height = ROW_HEIGHT)
-            }
-            val closeWidth = PAIRED_CLOSE_WIDTH.coerceAtMost((available - GAP) / 3)
-            val toggleWidth = SOURCE_TOGGLE_WIDTH.coerceAtMost(available - GAP - closeWidth)
-            val left = (width - toggleWidth - GAP - closeWidth) / 2
-            val toggle = CatalogueRect(x = left, y = top, width = toggleWidth, height = ROW_HEIGHT)
-            return toggle to CatalogueRect(x = toggle.right + GAP, y = top, width = closeWidth, height = ROW_HEIGHT)
         }
     }
 }

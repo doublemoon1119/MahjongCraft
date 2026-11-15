@@ -715,6 +715,8 @@ internal class SqliteHistoryDatabase private constructor(
     /**
      * 依已驗證的 Flow 查詢要求讀取安全摘要，不解碼 Replay 內容。
      *
+     * 往前取一頁時以相反順序查詢再反轉，回傳的列一律依顯示順序排列；另以相同篩選條件計算總列數。
+     *
      * @param query 已完成權限驗證、範圍限制與游標驗證的查詢。
      * @return 有界 keyset 摘要頁。
      */
@@ -828,37 +830,41 @@ internal class SqliteHistoryDatabase private constructor(
             SqliteHistorySortField.OWN_RANK -> ownRank
             SqliteHistorySortField.OWN_SCORE -> ownScore
         }
+        val filterConditions = conditions.toList()
+        val filterArguments = arguments.toList()
+        val backward = query.direction == SqliteHistoryPageDirection.BEFORE
+        val ascending = query.sortDirection == SqliteHistorySortDirection.ASC
         query.cursor?.let { cursor ->
-            val direction = if (query.sortDirection == SqliteHistorySortDirection.ASC) ">" else "<"
             require(cursor.nullBucket == (cursor.sortValue == null)) { "History cursor null bucket does not match sort value" }
-            val valueCondition = if (cursor.sortValue == null) {
-                "($sortExpression IS NULL)"
+            // 顯示順序：有排序值的列在前、依排序方向排列，同值再以升序的對局 ID 排列；沒有排序值的列最後。
+            if (!backward) {
+                val later = if (ascending) ">" else "<"
+                if (cursor.sortValue != null) {
+                    bindLong(cursor.sortValue)
+                    bindLong(cursor.sortValue)
+                    bindString(cursor.matchId)
+                    conditions += "($sortExpression IS NULL OR $sortExpression $later ? OR ($sortExpression = ? AND m.match_id > ?))"
+                } else {
+                    bindString(cursor.matchId)
+                    conditions += "($sortExpression IS NULL AND m.match_id > ?)"
+                }
             } else {
-                bindLong(cursor.sortValue)
-                "($sortExpression $direction ? OR ($sortExpression = ? AND m.match_id > ?))"
-            }
-            if (cursor.sortValue != null) {
-                // 同值分支使用相同排序值，再以固定升序的對局 ID 接續。
-                bindLong(cursor.sortValue)
-                bindString(cursor.matchId)
-                conditions += "($sortExpression IS NULL OR $valueCondition)"
-            } else {
-                bindString(cursor.matchId)
-                conditions += "($sortExpression IS NULL AND m.match_id > ?)"
+                val earlier = if (ascending) "<" else ">"
+                if (cursor.sortValue != null) {
+                    bindLong(cursor.sortValue)
+                    bindLong(cursor.sortValue)
+                    bindString(cursor.matchId)
+                    conditions += "($sortExpression IS NOT NULL AND ($sortExpression $earlier ? OR ($sortExpression = ? AND m.match_id < ?)))"
+                } else {
+                    bindString(cursor.matchId)
+                    conditions += "($sortExpression IS NOT NULL OR m.match_id < ?)"
+                }
             }
         }
-        val nullOrder = "CASE WHEN $sortExpression IS NULL THEN 1 ELSE 0 END ASC"
-        val valueOrder = if (query.sortDirection == SqliteHistorySortDirection.ASC) "$sortExpression ASC" else "$sortExpression DESC"
-        val sql = """
-            SELECT m.match_id, m.table_id, m.status, m.started_at_epoch_millis, m.ended_at_epoch_millis, m.rule_id,
-                $endedExpression AS ended_value,
-                $sortExpression AS sort_value,
-                $durationExpression AS duration_value,
-                $ownRank AS own_rank, $ownScore AS own_score,
-                CASE WHEN EXISTS (SELECT 1 FROM history_replay r WHERE r.match_id = m.match_id)
-                    THEN 'COMPLETE' ELSE 'INCOMPLETE' END AS integrity,
-                $outcomeExpression AS outcome,
-                owner.player_id AS owner_player_id, owner.seat_index AS owner_seat_index
+        val nullOrder = "CASE WHEN $sortExpression IS NULL THEN 1 ELSE 0 END ${if (backward) "DESC" else "ASC"}"
+        val valueOrder = "$sortExpression ${if (ascending != backward) "ASC" else "DESC"}"
+        val idOrder = "m.match_id ${if (backward) "DESC" else "ASC"}"
+        val source = """
             FROM (
                 SELECT match_id, table_id, rule_id, dimension_id, status,
                     started_at_epoch_millis, ended_at_epoch_millis
@@ -874,16 +880,33 @@ internal class SqliteHistoryDatabase private constructor(
             LEFT JOIN history_participant owner ON owner.match_id = m.match_id
                 ${if (query.includeAll) "AND owner.seat_index = (SELECT MIN(seat_index) FROM history_participant first_owner WHERE first_owner.match_id = m.match_id)" else "AND owner.player_id = ?"}
             $resultJoin
+        """.trimIndent()
+        val ownerArguments = if (query.includeAll) emptyList() else listOf(VarCharColumnType() to (query.playerId ?: error("Own history query requires a player ID")))
+        var totalCount = 0
+        exec(
+            stmt = "SELECT COUNT(*) AS total $source WHERE ${filterConditions.joinToString(" AND ")}",
+            args = ownerArguments + filterArguments,
+            explicitStatementType = StatementType.SELECT,
+        ) { result ->
+            if (result.next()) totalCount = result.getInt("total")
+        }
+        val sql = """
+            SELECT m.match_id, m.table_id, m.status, m.started_at_epoch_millis, m.ended_at_epoch_millis, m.rule_id,
+                $endedExpression AS ended_value,
+                $sortExpression AS sort_value,
+                $durationExpression AS duration_value,
+                $ownRank AS own_rank, $ownScore AS own_score,
+                CASE WHEN EXISTS (SELECT 1 FROM history_replay r WHERE r.match_id = m.match_id)
+                    THEN 'COMPLETE' ELSE 'INCOMPLETE' END AS integrity,
+                $outcomeExpression AS outcome,
+                owner.player_id AS owner_player_id, owner.seat_index AS owner_seat_index
+            $source
             WHERE ${conditions.joinToString(" AND ")}
-            ORDER BY $nullOrder, $valueOrder, m.match_id ASC
+            ORDER BY $nullOrder, $valueOrder, $idOrder
             LIMIT ${query.pageSize + 1}
         """.trimIndent()
-        if (!query.includeAll) {
-            val playerId = query.playerId ?: error("Own history query requires a player ID")
-            arguments.add(0, VarCharColumnType() to playerId)
-        }
         val rows = mutableListOf<SqliteHistoryQueryEntry>()
-        exec(sql, arguments, explicitStatementType = StatementType.SELECT) { result ->
+        exec(sql, ownerArguments + arguments, explicitStatementType = StatementType.SELECT) { result ->
             while (result.next()) {
                 val matchId = result.getString("match_id")
                 val participants = queryParticipants(matchId)
@@ -914,22 +937,33 @@ internal class SqliteHistoryDatabase private constructor(
                 )
             }
         }
-        val hasNext = rows.size > query.pageSize
-        val entries = rows.take(query.pageSize)
-        val next = if (hasNext) {
-            entries.lastOrNull()?.let { entry ->
-                val sortValue = when (query.sortField) {
-                    SqliteHistorySortField.ENDED_AT -> entry.endedAtEpochMillis
-                    SqliteHistorySortField.DURATION -> entry.durationMillis
-                    SqliteHistorySortField.OWN_RANK -> entry.ownFinalRank?.toLong()
-                    SqliteHistorySortField.OWN_SCORE -> entry.ownFinalScore?.toLong()
-                }
-                SqliteHistoryCursor(sortValue, entry.matchId, sortValue == null)
+        val hasMore = rows.size > query.pageSize
+        val entries = rows.take(query.pageSize).let { if (backward) it.asReversed().toList() else it }
+
+        /**
+         * 取得一列在排序中的位置。
+         *
+         * @param entry 本頁的一列。
+         * @return 可從這一列往前或往後接續的游標。
+         */
+        fun positionOf(entry: SqliteHistoryQueryEntry): SqliteHistoryCursor {
+            val sortValue = when (query.sortField) {
+                SqliteHistorySortField.ENDED_AT -> entry.endedAtEpochMillis
+                SqliteHistorySortField.DURATION -> entry.durationMillis
+                SqliteHistorySortField.OWN_RANK -> entry.ownFinalRank?.toLong()
+                SqliteHistorySortField.OWN_SCORE -> entry.ownFinalScore?.toLong()
             }
-        } else {
-            null
+            return SqliteHistoryCursor(sortValue, entry.matchId, sortValue == null)
         }
-        SqliteHistoryQueryPage(entries, next)
+        // 從游標往一邊取頁時，游標本身就在另一邊，因此另一邊一定還有列；本頁沒有列時沿用原游標。
+        val towardCursor = query.cursor?.let { cursor -> (if (backward) entries.lastOrNull() else entries.firstOrNull())?.let(::positionOf) ?: cursor }
+        val awayFromCursor = if (hasMore) (if (backward) entries.firstOrNull() else entries.lastOrNull())?.let(::positionOf) else null
+        SqliteHistoryQueryPage(
+            entries = entries,
+            nextCursor = if (backward) towardCursor else awayFromCursor,
+            previousCursor = if (backward) awayFromCursor else towardCursor,
+            totalCount = totalCount,
+        )
     }
 
     /**

@@ -83,7 +83,14 @@ class CompactReplayRoundReader(
             }
             if (index >= startIndex) events += HistoryReplayTransaction(index, cursor.time, transaction.opening, facts, cursor.tiles.size)
         }
-        HistoryRoundEvents(source.identity, round.number, events.toList(), end.takeIf { it < round.transactions.size }, catalog(cursor, budget))
+        HistoryRoundEvents(
+            identity = source.identity,
+            roundNumber = round.number,
+            transactions = events.toList(),
+            nextTransactionIndex = end.takeIf { it < round.transactions.size },
+            transactionCount = round.transactions.size,
+            tileCatalog = catalog(cursor, budget),
+        )
     }
 
     /**

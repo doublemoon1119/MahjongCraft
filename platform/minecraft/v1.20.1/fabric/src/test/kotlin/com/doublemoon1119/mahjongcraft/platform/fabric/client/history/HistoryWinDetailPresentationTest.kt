@@ -155,6 +155,7 @@ class HistoryWinDetailPresentationTest {
             roundNumber = 1,
             transactions = listOf(HistoryReplayTransactionDto(0, 100L, false, 0, listOf(HistoryReplayFactDto.Completion(HistoryFactTypeKeys.WIN_SETTLED, outcome)))),
             nextTransactionIndex = null,
+            transactionCount = 1,
             tileCatalog = emptyList(),
         )
         val fact = presenter().present(events, "custom:rule").transactions.single().facts.single()

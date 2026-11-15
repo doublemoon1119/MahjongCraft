@@ -79,6 +79,7 @@ fun HistoryRoundEvents.toDto(registries: NetworkDtoConverter): HistoryRoundEvent
     roundNumber = roundNumber,
     transactions = transactions.map { it.toDto(registries) },
     nextTransactionIndex = nextTransactionIndex,
+    transactionCount = transactionCount,
     tileCatalog = tileCatalog.tiles.map { it.toDto(registries) },
 )
 

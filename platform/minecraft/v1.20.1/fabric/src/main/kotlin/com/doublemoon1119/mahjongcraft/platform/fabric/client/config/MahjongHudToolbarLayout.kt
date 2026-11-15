@@ -1,111 +1,143 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.client.config
 
-import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.HorizontalScrollLayout
-import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.HorizontalScrollThumb
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.ButtonRowLayout
 
 /**
- * HUD 位置編輯器頂部工具列的版位計算，與原版 widget 完全分離。
+ * HUD 位置編輯器的工具列與底部按鈕列版面，與原版 widget 完全分離。
  *
- * 只計算第二行選項的水平捲動幾何，例如操作面板的預覽情境。第一行三顆全域按鈕由畫面另外配置。
- * 第二行內容超出可見寬度時顯示水平捲軸。
+ * 工具列有四個控制項：HUD、預覽情境、其他 HUD 的顯示方式與隱藏控制項，每個控制項上方留一行標籤。寬度足夠時四個排成
+ * 一列；不夠時改成兩欄兩列，底部四顆按鈕也同樣改成兩欄兩列，離開畫面的按鈕都在右下角。編輯器橫跨整個視窗，不限制內容寬度。
  *
  * @property screenWidth 目前 GUI scaled 畫面寬度。
- * @property contentWidth 這一行全部按鈕與間距所需的內容寬度。
+ * @property screenHeight 目前 GUI scaled 畫面高度。
  */
 internal data class MahjongHudToolbarLayout(
     val screenWidth: Int,
-    val contentWidth: Int,
+    val screenHeight: Int,
 ) {
-    /** 可捲動 viewport 的可見寬度。 */
-    val viewportWidth: Int
-        get() = (screenWidth - MARGIN * 2).coerceAtLeast(1)
+    /** 工具列與底部按鈕列可用的寬度。 */
+    private val contentWidth: Int = (screenWidth - MARGIN * 2).coerceAtLeast(ButtonRowLayout.minimumWidth(CONTROL_COUNT))
 
-    /** 內容是否超出可見寬度，決定是否需要 scrollbar。 */
-    val hasOverflow: Boolean
-        get() = contentWidth > viewportWidth
+    /** 每一列放幾個控制項：寬度足夠時四個，否則兩個。 */
+    val columns: Int = if ((contentWidth - ButtonRowLayout.BUTTON_GAP * (CONTROL_COUNT - 1)) / CONTROL_COUNT >= MIN_CONTROL_WIDTH) CONTROL_COUNT else 2
 
-    /** 這一行的水平捲動幾何。 */
-    private val scroll: HorizontalScrollLayout
-        get() = HorizontalScrollLayout(
-            viewportLeft = MARGIN,
-            viewportWidth = viewportWidth,
-            contentWidth = contentWidth,
-            minimumThumbWidth = MIN_THUMB_WIDTH,
+    /** 工具列與底部按鈕列的列數。 */
+    val rows: Int = CONTROL_COUNT / columns
+
+    /** 每一列的欄位分配。 */
+    private val grid = ButtonRowLayout(left = MARGIN, width = contentWidth, buttonCount = columns)
+
+    /** 工具列下界。 */
+    val toolbarBottom: Int = TOP + rows * (CAPTION_HEIGHT + BUTTON_HEIGHT) + (rows - 1) * ROW_GAP
+
+    /** 底部按鈕列第一列的上界。 */
+    val footerTop: Int = (screenHeight - FOOTER_BOTTOM_MARGIN - rows * BUTTON_HEIGHT - (rows - 1) * ROW_GAP).coerceAtLeast(toolbarBottom)
+
+    /**
+     * 取得工具列控制項的範圍。
+     *
+     * @param index 控制項順序：[HUD]、[SCENARIO]、[VISIBILITY]、[HIDE_CONTROLS]。
+     * @return 控制項本身的範圍，不含上方的標籤。
+     */
+    fun control(index: Int): Area {
+        require(index in 0 until CONTROL_COUNT) { "HUD toolbar has no control at index $index" }
+        val row = index / columns
+        val column = index % columns
+        return Area(
+            x = grid.buttonX(column),
+            y = TOP + row * (CAPTION_HEIGHT + BUTTON_HEIGHT + ROW_GAP) + CAPTION_HEIGHT,
+            width = grid.buttonWidth(column),
+            height = BUTTON_HEIGHT,
         )
-
-    /** 最大水平捲動量；沒有溢出時為零。 */
-    val maximumScroll: Double
-        get() = scroll.maximumScroll
+    }
 
     /**
-     * 依捲動量計算內容起始 X；內容一律靠左對齊。
+     * 取得控制項上方標籤文字的 Y 座標。
      *
-     * @param scroll 呼叫端已限制在合法範圍內的捲動量；未溢出時應為零。
-     * @return 扣除捲動量後的內容左界。
+     * @param index 控制項順序。
+     * @return 標籤文字的 Y 座標。
      */
-    fun contentOffset(scroll: Double): Int = MARGIN - scroll.toInt()
+    fun captionY(index: Int): Int = control(index).y - CAPTION_HEIGHT + 1
 
     /**
-     * 依可見比例與目前捲動量計算捲軸滑塊邊界。
+     * 取得底部按鈕的範圍；兩列時前兩顆在上、後兩顆在下。
      *
-     * @param scroll 目前水平捲動量。
-     * @return 捲軸滑塊的水平範圍。
+     * @param index 按鈕順序，與設定頁底部按鈕相同。
+     * @return 按鈕的範圍。
      */
-    fun thumb(scroll: Double): HorizontalScrollThumb = this.scroll.thumb(scroll)
+    fun footerButton(index: Int): Area {
+        require(index in 0 until CONTROL_COUNT) { "HUD editor footer has no button at index $index" }
+        val row = index / columns
+        val column = index % columns
+        return Area(
+            x = grid.buttonX(column),
+            y = footerTop + row * (BUTTON_HEIGHT + ROW_GAP),
+            width = grid.buttonWidth(column),
+            height = BUTTON_HEIGHT,
+        )
+    }
 
     /**
-     * 將滑塊左界轉換成捲動量。
+     * 矩形範圍。
      *
-     * @param thumbLeft 滑塊左界座標。
-     * @return 對應的合法內容捲動量。
+     * @property x 左界。
+     * @property y 上界。
+     * @property width 寬度。
+     * @property height 高度。
      */
-    fun scrollFromThumb(thumbLeft: Double): Double = scroll.scrollFromThumbLeft(thumbLeft)
+    data class Area(val x: Int, val y: Int, val width: Int, val height: Int) {
+        /** 右界。 */
+        val right: Int get() = x + width
 
-    /**
-     * 依滑塊拖曳位移計算新的合法捲動量。
-     *
-     * @param startScroll 拖曳開始時的內容捲動量。
-     * @param pointerDelta 游標水平位移。
-     * @return 限制在合法範圍內的新捲動量。
-     */
-    fun scrollFromDrag(startScroll: Double, pointerDelta: Double): Double = scroll.scrollFromDrag(startScroll, pointerDelta)
+        /** 下界。 */
+        val bottom: Int get() = y + height
 
-    /**
-     * 依滾輪量計算新的合法捲動量。
-     *
-     * @param currentScroll 目前內容捲動量。
-     * @param amount 滾輪位移量。
-     * @return 限制在合法範圍內的新捲動量。
-     */
-    fun scrollFromWheel(currentScroll: Double, amount: Double): Double = scroll.scrollFromWheel(currentScroll, amount, SCROLL_STEP)
+        /**
+         * 判斷座標是否落在範圍內。
+         *
+         * @param pointX 水平座標。
+         * @param pointY 垂直座標。
+         * @return 落在範圍內時為 true。
+         */
+        fun contains(pointX: Double, pointY: Double): Boolean = pointX >= x && pointX < right && pointY >= y && pointY < bottom
+    }
 
-    /** 版位常數。 */
+    /** 版位常數與控制項順序。 */
     internal companion object {
         /** 左右邊距。 */
-        internal const val MARGIN = 12
+        const val MARGIN = 12
 
-        /** 第一行（HUD、其他 HUD 預覽、隱藏控制項）上界。 */
-        internal const val TOP = 26
+        /** 工具列上界，位於標題下方。 */
+        const val TOP = 22
+
+        /** 控制項上方標籤所佔的高度。 */
+        const val CAPTION_HEIGHT = 11
 
         /** 按鈕高度。 */
-        internal const val BUTTON_HEIGHT = 20
+        const val BUTTON_HEIGHT = 20
 
-        /** 按鈕間距。 */
-        internal const val GAP = 4
+        /** 兩列之間的垂直間距。 */
+        const val ROW_GAP = 4
 
-        /** 兩行按鈕之間、以及按鈕行與 scrollbar 之間的間距。 */
-        internal const val ROW_GAP = 4
+        /** 四個控制項排成一列時，每個控制項至少要有的寬度。 */
+        const val MIN_CONTROL_WIDTH = 90
 
-        /** scrollbar 高度。 */
-        internal const val SCROLLBAR_HEIGHT = 4
+        /** 底部按鈕列與視窗底部的距離。 */
+        const val FOOTER_BOTTOM_MARGIN = 8
 
-        /** scrollbar thumb 最小寬度。 */
-        internal const val MIN_THUMB_WIDTH = 18
+        /** 工具列控制項與底部按鈕的數量。 */
+        const val CONTROL_COUNT = 4
 
-        /** 滾輪每格移動距離。 */
-        internal const val SCROLL_STEP = 48.0
+        /** HUD 選擇器。 */
+        const val HUD = 0
 
-        /** 第二行情境選擇按鈕寬度；第一行三顆全域按鈕改為三等分整行寬度，不使用固定寬度。 */
-        internal const val SELECTOR_WIDTH = 132
+        /** 預覽情境按鈕。 */
+        const val SCENARIO = 1
+
+        /** 其他 HUD 顯示方式按鈕。 */
+        const val VISIBILITY = 2
+
+        /** 隱藏控制項按鈕。 */
+        const val HIDE_CONTROLS = 3
     }
 }

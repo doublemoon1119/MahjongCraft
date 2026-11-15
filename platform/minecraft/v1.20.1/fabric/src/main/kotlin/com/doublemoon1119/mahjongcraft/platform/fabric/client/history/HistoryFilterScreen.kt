@@ -4,41 +4,54 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryAiFilterD
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryIntegrityFilterDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryOutcomeFilterDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryQueryFiltersDto
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.ControlTooltip
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.CycleButtonInput
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.DropdownOption
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.DropdownOverlay
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.FormScreenLayout
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.RestartableMarqueeButtonWidget
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.ScreenRendering
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.VerticalScrollbar
 import com.doublemoon1119.mahjongcraft.platform.minecraft.history.MinecraftHistoryScreenKeys
 import net.minecraft.client.gui.DrawContext
 import net.minecraft.client.gui.screen.Screen
 import net.minecraft.client.gui.tooltip.Tooltip
 import net.minecraft.client.gui.widget.ButtonWidget
+import net.minecraft.client.gui.widget.ClickableWidget
 import net.minecraft.client.gui.widget.TextFieldWidget
 import net.minecraft.text.Text
 import net.minecraft.util.Formatting
+import org.lwjgl.glfw.GLFW
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 
 /**
- * 歷史條件編輯子頁；輸入驗證失敗時保留最近一次有效查詢。
+ * 牌譜篩選子頁：一列一個條件，標籤在左、控制項在右，日期與名次的起訖放在同一列；輸入驗證失敗時保留最近一次
+ * 有效查詢。
  *
  * @property session 此畫面所屬的共用瀏覽 session。
  */
 internal class HistoryFilterScreen(
     private val session: HistoryBrowseSession,
 ) : Screen(Text.translatable(MinecraftHistoryScreenKeys.FILTERS)) {
-    /** 日期及 ID 文字欄位。 */
+    /** 文字輸入欄位。 */
     private val fields = mutableMapOf<HistoryBrowseFilterField, TextFieldWidget>()
 
-    /** 目前畫面的響應式版面。 */
-    private val layout: HistoryFilterLayout get() = HistoryFilterLayout.create(height, visibleRowCount())
+    /** 每一列的控制項，依列的順序排列。 */
+    private val rowWidgets = mutableMapOf<FilterRow, List<ClickableWidget>>()
 
-    /** 內容區目前的捲動距離。 */
-    private var contentScroll = 0
+    /** 第一個可見列的索引。 */
+    private var scrollIndex = 0
 
-    /** 規則選項清單是否展開。 */
-    private var rulePickerOpen = false
+    /** 是否正在拖曳捲軸。 */
+    private var scrollDragging = false
 
-    /** 規則選項清單的垂直捲動索引。 */
-    private var rulePickerScroll = 0
+    /** 拖曳時游標在捲軸滑塊內的抓取偏移。 */
+    private var scrollGrabOffset = 0.0
+
+    /** 規則選擇器的展開清單。 */
+    private val dropdown = DropdownOverlay()
 
     /** 結果篩選按鈕。 */
     private var outcomeButton: ButtonWidget? = null
@@ -52,29 +65,85 @@ internal class HistoryFilterScreen(
     /** 規則篩選按鈕。 */
     private var ruleButton: ButtonWidget? = null
 
+    /** 重設按鈕。 */
+    private var resetButton: ButtonWidget? = null
+
+    /** 目前畫面的版面。 */
+    private val layout: FormScreenLayout
+        get() = FormScreenLayout(windowWidth = width, windowHeight = height, hasPageSwitch = false, hasRuleRow = false, hasTabs = false)
+
     override fun init() {
+        dropdown.close()
         seedFromQueryIfNeeded()
         fields.clear()
-        val all = session.controller.state.value.query.scope.coversAllMatches
-        val fieldsToShow = listOf(
-            HistoryBrowseFilterField.PLAYER_NAME,
-            HistoryBrowseFilterField.MATCH_ID,
-            HistoryBrowseFilterField.FROM_DATE,
-            HistoryBrowseFilterField.THROUGH_DATE,
-            HistoryBrowseFilterField.MIN_RANK,
-            HistoryBrowseFilterField.MAX_RANK,
-        ).filterNot { all && (it == HistoryBrowseFilterField.MIN_RANK || it == HistoryBrowseFilterField.MAX_RANK) }
-        fieldsToShow.forEachIndexed { index, field ->
-            addField(field, fieldLabelKey(field), rowTop(index + 1))
+        rowWidgets.clear()
+        scrollDragging = false
+        rows().forEach { row ->
+            rowWidgets[row] = when (row) {
+                FilterRow.RULE -> listOf(addDrawableChild(ruleSelector()).also { ruleButton = it })
+                FilterRow.PLAYER_NAME -> listOf(addField(HistoryBrowseFilterField.PLAYER_NAME, MinecraftHistoryScreenKeys.FILTER_PLACEHOLDER_PLAYER_NAME))
+                FilterRow.MATCH_ID -> listOf(addField(HistoryBrowseFilterField.MATCH_ID, MinecraftHistoryScreenKeys.FILTER_PLACEHOLDER_MATCH_ID))
+                FilterRow.DATE -> listOf(
+                    addField(HistoryBrowseFilterField.FROM_DATE, MinecraftHistoryScreenKeys.FILTER_PLACEHOLDER_DATE),
+                    addField(HistoryBrowseFilterField.THROUGH_DATE, MinecraftHistoryScreenKeys.FILTER_PLACEHOLDER_DATE),
+                )
+                FilterRow.OWN_RANK -> listOf(
+                    addField(HistoryBrowseFilterField.MIN_RANK, MinecraftHistoryScreenKeys.FILTER_ANY),
+                    addField(HistoryBrowseFilterField.MAX_RANK, MinecraftHistoryScreenKeys.FILTER_ANY),
+                )
+                FilterRow.OUTCOME -> listOf(addChoiceButton { cycleOutcome() }.also { outcomeButton = it })
+                FilterRow.INTEGRITY -> listOf(addChoiceButton { cycleIntegrity() }.also { integrityButton = it })
+                FilterRow.AI -> listOf(addChoiceButton { cycleAi() }.also { aiButton = it })
+            }
         }
-        ruleButton = ButtonWidget.builder(Text.translatable(MinecraftHistoryScreenKeys.FILTER_RULE_SELECT)) { rulePickerOpen = !rulePickerOpen }
-            .dimensions(controlLeft(), rowTop(0), controlWidth(), layout.rowHeight).build().also(::addDrawableChild)
-        val choiceRow = fieldsToShow.size + 1
-        outcomeButton = addChoiceButton(MinecraftHistoryScreenKeys.FILTER_OUTCOME, rowTop(choiceRow)) { cycleOutcome() }
-        integrityButton = addChoiceButton(MinecraftHistoryScreenKeys.FILTER_INTEGRITY, rowTop(choiceRow + 1)) { cycleIntegrity() }
-        aiButton = addChoiceButton(MinecraftHistoryScreenKeys.FILTER_AI, rowTop(choiceRow + 2)) { cycleAi() }
-        addDrawableChild(ButtonWidget.builder(Text.translatable(MinecraftHistoryScreenKeys.BACK)) { back() }.dimensions(width / 2 - 80, layout.footerTop, 70, 20).build())
-        addDrawableChild(ButtonWidget.builder(Text.translatable(MinecraftHistoryScreenKeys.RESET)) { reset() }.dimensions(width / 2 + 10, layout.footerTop, 70, 20).build())
+        scrollIndex = scrollIndex.coerceIn(0, maximumScroll())
+        val footer = layout.footer(buttonCount = 2)
+        resetButton = addDrawableChild(
+            RestartableMarqueeButtonWidget.builder(Text.translatable(MinecraftHistoryScreenKeys.RESET)) { reset() }
+                .dimensions(footer.buttonX(0), layout.footerY, footer.buttonWidth(0), FormScreenLayout.BUTTON_HEIGHT)
+                .build(),
+        )
+        addDrawableChild(
+            RestartableMarqueeButtonWidget.builder(Text.translatable(MinecraftHistoryScreenKeys.BACK)) { back() }
+                .dimensions(footer.buttonX(1), layout.footerY, footer.buttonWidth(1), FormScreenLayout.BUTTON_HEIGHT)
+                .build(),
+        )
+        placeRows()
+    }
+
+    /** 目前範圍顯示的列；全部紀錄沒有自己的名次，不顯示名次列。 */
+    private fun rows(): List<FilterRow> = FilterRow.entries.filterNot {
+        it == FilterRow.OWN_RANK && session.controller.state.value.query.scope.coversAllMatches
+    }
+
+    /** 最多可捲動的列數。 */
+    private fun maximumScroll(): Int = (rows().size - layout.visibleFieldCount).coerceAtLeast(0)
+
+    /** 依捲動位置擺放每一列的控制項，捲出可見範圍的列隱藏。 */
+    private fun placeRows() {
+        val layout = layout
+        rows().forEachIndexed { index, row ->
+            val visibleIndex = index - scrollIndex
+            val visible = visibleIndex in 0 until layout.visibleFieldCount
+            val controlY = layout.fieldControlY(layout.fieldRowTop(visibleIndex.coerceAtLeast(0)))
+            val widgets = rowWidgets[row].orEmpty()
+            val rangeWidth = ((layout.controlWidth - RANGE_GAP) / 2).coerceAtLeast(1)
+            widgets.forEachIndexed { widgetIndex, widget ->
+                val left = layout.controlLeft + if (widgets.size == 2 && widgetIndex == 1) layout.controlWidth - rangeWidth else 0
+                val controlWidth = if (widgets.size == 2) rangeWidth else layout.controlWidth
+                widget.visible = visible
+                if (widget is TextFieldWidget) {
+                    // 原版文字框的邊框畫在內容範圍外一個像素，內縮後可見外框與按鈕對齊。
+                    widget.x = left + TEXT_FIELD_BORDER
+                    widget.y = controlY + TEXT_FIELD_BORDER
+                    widget.width = (controlWidth - TEXT_FIELD_BORDER * 2).coerceAtLeast(1)
+                } else {
+                    widget.x = left
+                    widget.y = controlY
+                    widget.width = controlWidth
+                }
+            }
+        }
     }
 
     /** 以目前已套用的查詢條件初始化草稿輸入。 */
@@ -97,24 +166,21 @@ internal class HistoryFilterScreen(
     }
 
     /**
-     * 建立並註冊一個文字輸入欄位。
+     * 建立並註冊一個文字輸入欄位；位置由 [placeRows] 決定。
      *
      * @param field 欄位種類。
-     * @param labelKey 欄位提示的翻譯鍵。
-     * @param y 欄位垂直座標。
+     * @param placeholderKey 欄位沒有內容時灰色提示的翻譯鍵。
+     * @return 已加入畫面的輸入欄位。
      */
-    private fun addField(field: HistoryBrowseFilterField, labelKey: String, y: Int) {
-        addDrawableChild(
-            // 原版文字框邊框向外延伸一個像素，內縮內容範圍後使可見外框與按鈕一致。
-            TextFieldWidget(textRenderer, controlLeft() + TEXT_FIELD_BORDER, y + TEXT_FIELD_BORDER, (controlWidth() - TEXT_FIELD_BORDER * 2).coerceAtLeast(1), controlHeight(), Text.translatable(labelKey)).also {
-                it.setMaxLength(field.maxLength())
-                it.text = fieldValue(field)
-                it.tooltip = Tooltip.of(inputTooltip(field, labelKey))
-                it.setChangedListener { value -> updateField(field, value) }
-                fields[field] = it
-            },
-        )
-    }
+    private fun addField(field: HistoryBrowseFilterField, placeholderKey: String): TextFieldWidget = addDrawableChild(
+        TextFieldWidget(textRenderer, 0, 0, 1, FormScreenLayout.BUTTON_HEIGHT - TEXT_FIELD_BORDER * 2, Text.translatable(fieldLabelKey(field))).also {
+            it.setMaxLength(field.maxLength())
+            it.text = fieldValue(field)
+            it.setPlaceholder(Text.translatable(placeholderKey).formatted(Formatting.DARK_GRAY))
+            it.setChangedListener { value -> updateField(field, value) }
+            fields[field] = it
+        },
+    )
 
     /**
      * 取得欄位輸入長度上限。
@@ -130,64 +196,22 @@ internal class HistoryFilterScreen(
     }
 
     /**
-     * 建立與文字輸入欄位同一排版語言的選項按鈕。
+     * 建立循環選項按鈕；左鍵選下一項，右鍵或 Shift＋左鍵選上一項。位置由 [placeRows] 決定。
      *
-     * @param labelKey 按鈕標題翻譯鍵。
-     * @param y 按鈕垂直座標。
      * @param action 點擊後執行的變更動作。
-     * @return 建立的按鈕。
+     * @return 已加入畫面的按鈕。
      */
-    private fun addChoiceButton(labelKey: String, y: Int, action: () -> Unit): ButtonWidget = ButtonWidget.builder(Text.translatable(labelKey)) { action() }
-        .dimensions(controlLeft(), y, controlWidth(), layout.rowHeight).build().also(::addDrawableChild)
+    private fun addChoiceButton(action: () -> Unit): ButtonWidget = addDrawableChild(
+        RestartableMarqueeButtonWidget.builder(Text.empty()) { action() }
+            .pressesOnSecondaryClick()
+            .build(),
+    )
 
     /**
-     * 取得控制項高度。
-     *
-     * @return 控制項高度。
-     */
-    private fun controlHeight(): Int = (layout.rowHeight - TEXT_FIELD_BORDER * 2).coerceAtLeast(1)
-
-    /**
-     * 取得右側控制項可用寬度。
-     *
-     * @return 控制項寬度。
-     */
-    private fun controlWidth(): Int = (width - controlLeft() - 14).coerceAtLeast(1)
-
-    /**
-     * 依可用寬度配置標題與控制項分界。
-     *
-     * @return 控制項左界。
-     */
-    private fun controlLeft(): Int = (width * 0.4).toInt().coerceIn(70, 160)
-
-    /**
-     * 取得目前可見的文字欄位數量。
-     *
-     * @return 文字欄位數量。
-     */
-    private fun visibleFieldCount(): Int = if (session.controller.state.value.query.scope.coversAllMatches) 4 else 6
-
-    /**
-     * 取得包含規則及選項列的內容列數。
-     *
-     * @return 內容列數。
-     */
-    private fun visibleRowCount(): Int = visibleFieldCount() + 4
-
-    /**
-     * 取得內容列位置。
-     *
-     * @param index 從零開始的內容列索引。
-     * @return 依目前捲動狀態計算的控制項上界。
-     */
-    private fun rowTop(index: Int): Int = layout.rowTop(index, contentScroll)
-
-    /**
-     * 取得篩選欄位標題翻譯鍵。
+     * 取得篩選欄位名稱的翻譯鍵。
      *
      * @param field 欄位種類。
-     * @return 欄位標題翻譯鍵。
+     * @return 欄位名稱翻譯鍵。
      */
     private fun fieldLabelKey(field: HistoryBrowseFilterField): String = when (field) {
         HistoryBrowseFilterField.PLAYER_NAME -> MinecraftHistoryScreenKeys.FILTER_PLAYER_NAME
@@ -200,18 +224,32 @@ internal class HistoryFilterScreen(
     }
 
     /**
-     * 建立文字欄位的用途與格式範例提示。
+     * 建立文字欄位的提示：用途、格式範例，輸入有誤時再加上錯誤原因。
      *
      * @param field 欄位種類。
-     * @param labelKey 欄位標題翻譯鍵。
-     * @return 包含用途及範例的提示文字。
+     * @return 提示文字。
      */
-    private fun inputTooltip(field: HistoryBrowseFilterField, labelKey: String): Text = Text.empty()
-        .append(Text.translatable(requireNotNull(field.inputDescriptionKey) { "Filter field has no text input: $field" }, Text.translatable(labelKey)).formatted(Formatting.GRAY))
-        .append("\n")
-        .append(Text.translatable(MinecraftHistoryScreenKeys.FILTER_INPUT_EXAMPLE_LABEL).formatted(Formatting.GOLD))
-        .append(" ")
-        .append(Text.translatable(requireNotNull(field.inputExampleKey) { "Filter field has no text input: $field" }).formatted(Formatting.WHITE))
+    private fun inputTooltip(field: HistoryBrowseFilterField): Text {
+        val labelKey = fieldLabelKey(field)
+        val text = Text.empty()
+            .append(Text.translatable(requireNotNull(field.inputDescriptionKey) { "Filter field has no text input: $field" }, Text.translatable(labelKey)).formatted(Formatting.GRAY))
+            .append("\n")
+            .append(Text.translatable(MinecraftHistoryScreenKeys.FILTER_INPUT_EXAMPLE_LABEL).formatted(Formatting.GOLD))
+            .append(" ")
+            .append(Text.translatable(requireNotNull(field.inputExampleKey) { "Filter field has no text input: $field" }).formatted(Formatting.WHITE))
+        fieldError(field)?.let { text.append("\n\n").append(it) }
+        return text
+    }
+
+    /**
+     * 取得欄位目前的錯誤原因。
+     *
+     * @param field 欄位種類。
+     * @return 紅色的錯誤原因；沒有錯誤時為 null。
+     */
+    private fun fieldError(field: HistoryBrowseFilterField): Text? = session.filterDraft.errors[field]?.let {
+        Text.translatable(it.translationKey).formatted(Formatting.RED)
+    }
 
     /**
      * 更新欄位草稿並嘗試套用有效查詢。
@@ -286,49 +324,41 @@ internal class HistoryFilterScreen(
     }
 
     /**
-     * 選取已註冊規則，最後一項回到不限。
+     * 建立規則選擇器，點擊展開「不限」與所有已登記規則的清單；位置由 [placeRows] 決定。
      *
-     * @param step 選取方向及步數。
+     * @return 尚未加入畫面的選擇器按鈕。
      */
-    private fun cycleRule(step: Int = 1) {
-        val options = ruleOptions()
-        val current = session.filterDraft.input.ruleId
-        val index = options.indexOf(current).coerceAtLeast(0)
-        val nextIndex = (index + step).mod(options.size)
-        session.filterDraft.input = session.filterDraft.input.copy(
-            ruleId = options[nextIndex],
-        )
-        validateAndApply()
+    private fun ruleSelector(): RestartableMarqueeButtonWidget {
+        lateinit var selector: RestartableMarqueeButtonWidget
+        selector = RestartableMarqueeButtonWidget.builder(ruleDisplayLabel()) {
+            val options = ruleOptions()
+            dropdown.toggle(
+                key = RULE_SELECTOR_KEY,
+                anchor = selector,
+                options = options.map { DropdownOption(label = ruleLabel(it)) },
+                selectedIndex = options.indexOf(session.filterDraft.input.ruleId).takeIf { it >= 0 },
+            ) { index ->
+                session.filterDraft.input = session.filterDraft.input.copy(ruleId = options[index])
+                validateAndApply()
+            }
+        }.build()
+        selector.selectorExpanded = { dropdown.isOpenFor(RULE_SELECTOR_KEY) }
+        return selector
     }
 
-    /** 建立包含不限值在內的排序規則選項。 */
+    /** 建立包含不限值在內的排序規則選項；空字串代表不限。 */
     private fun ruleOptions(): List<String> = listOf("") + session.ruleNames.registrationKeys.sorted()
 
-    /** 展開選項清單最多可顯示的列數。 */
-    private fun rulePickerVisibleRows(): Int = minOf(ruleOptions().size, ((layout.contentBottom - rowTop(0) - layout.rowHeight - 2) / RULE_OPTION_HEIGHT).coerceAtLeast(1))
-
-    /** 展開選項清單的實際高度。 */
-    private fun rulePickerHeight(): Int = rulePickerVisibleRows() * RULE_OPTION_HEIGHT
-
-    /** 展開選項清單的最大捲動索引。 */
-    private fun rulePickerMaximumScroll(): Int = (ruleOptions().size - rulePickerVisibleRows()).coerceAtLeast(0)
-
-    /** 展開清單在目前視窗中的下界。 */
-    private fun rulePickerBottom(): Double = (rowTop(0) + layout.rowHeight + 2 + rulePickerHeight()).toDouble()
-        .coerceAtMost(layout.contentBottom.toDouble())
-        .coerceAtLeast((rowTop(0) + layout.rowHeight + 2 + RULE_OPTION_HEIGHT).toDouble())
-
     /**
-     * 判斷游標是否位於規則選項清單範圍；不檢查選單是否展開。
+     * 將規則篩選值轉成顯示文字。
      *
-     * @param mouseX 游標水平座標。
-     * @param mouseY 游標垂直座標。
-     * @return 游標是否落在選項清單範圍內。
+     * @param ruleId 規則識別碼；空字串代表不限。
+     * @return 「不限」、規則名稱加識別碼，或沒有名稱時的識別碼。
      */
-    private fun isInsideRulePicker(mouseX: Double, mouseY: Double): Boolean = mouseX >= controlLeft() &&
-        mouseX < controlLeft() + controlWidth() &&
-        mouseY >= rowTop(0) + layout.rowHeight + 2 &&
-        mouseY < rulePickerBottom()
+    private fun ruleLabel(ruleId: String): Text = ruleId.takeUnless(String::isEmpty)?.let { id ->
+        session.ruleNames.find(id)?.let(Text::translatable)?.let { Text.empty().append(it).append(" (").append(id).append(")") }
+            ?: Text.literal(id)
+    } ?: Text.translatable(MinecraftHistoryScreenKeys.FILTER_ANY)
 
     /**
      * 建立規則選擇器的 tooltip。
@@ -336,48 +366,41 @@ internal class HistoryFilterScreen(
      * @return 顯示目前規則與可選規則的 tooltip。
      */
     private fun ruleTooltip(): Text {
-        val current = session.filterDraft.input.ruleId.takeUnless(String::isEmpty)?.let { Text.literal(it) }
-            ?: Text.translatable(MinecraftHistoryScreenKeys.FILTER_ANY)
-        val options = listOf(Text.translatable(MinecraftHistoryScreenKeys.FILTER_ANY)) + session.ruleNames.registrationKeys.sorted().map { id ->
-            session.ruleNames.find(id)?.let(Text::translatable)?.let { Text.empty().append(it).append(" (").append(id).append(")") } ?: Text.literal(id)
-        }
-        val selectedIndex = session.filterDraft.input.ruleId.takeUnless(String::isEmpty)?.let { id ->
-            session.ruleNames.registrationKeys.sorted().indexOf(id).takeIf { it >= 0 }?.plus(1)
-        } ?: 0
-        return historyOptionTooltip(
-            title = Text.translatable(MinecraftHistoryScreenKeys.FILTER_RULE),
-            current = current,
-            selectedIndex = selectedIndex,
-            options = options,
+        val options = ruleOptions()
+        return ControlTooltip.options(
+            description = Text.translatable(MinecraftHistoryScreenKeys.FILTER_RULE),
+            labels = options.map(::ruleLabel),
+            currentIndex = options.indexOf(session.filterDraft.input.ruleId),
         )
     }
 
     /**
-     * 將結果篩選值轉成顯示文字。
+     * 將篩選值轉成顯示文字。
      *
-     * @param value 篩選值；null 表示不限。
+     * @param translationKey 篩選值的翻譯鍵；null 表示不限。
      * @return 本地化選項文字。
      */
-    private fun outcomeLabel(value: HistoryOutcomeFilterDto?): Text = value?.let { Text.translatable(it.translationKey) }
-        ?: Text.translatable(MinecraftHistoryScreenKeys.FILTER_ANY)
+    private fun choiceLabel(translationKey: String?): Text = Text.translatable(translationKey ?: MinecraftHistoryScreenKeys.FILTER_ANY)
 
     /**
-     * 將完整性篩選值轉成顯示文字。
+     * 建立循環選項按鈕的 tooltip，「不限」排在第一項。
      *
-     * @param value 篩選值；null 表示不限。
-     * @return 本地化選項文字。
+     * @param descriptionKey 欄位說明的翻譯鍵。
+     * @param optionKeys 不含「不限」的選項翻譯鍵。
+     * @param currentIndex 目前選項在不含「不限」清單中的索引；不限時為 null。
+     * @return 提示文字。
      */
-    private fun integrityLabel(value: HistoryIntegrityFilterDto?): Text = value?.let { Text.translatable(it.translationKey) }
-        ?: Text.translatable(MinecraftHistoryScreenKeys.FILTER_ANY)
-
-    /**
-     * 將 AI 篩選值轉成顯示文字。
-     *
-     * @param value 篩選值；null 表示不限。
-     * @return 本地化選項文字。
-     */
-    private fun aiLabel(value: HistoryAiFilterDto?): Text = value?.let { Text.translatable(it.translationKey) }
-        ?: Text.translatable(MinecraftHistoryScreenKeys.FILTER_ANY)
+    private fun choiceTooltip(descriptionKey: String, optionKeys: List<String>, currentIndex: Int?): Tooltip {
+        val labels = listOf(choiceLabel(null)) + optionKeys.map(::choiceLabel)
+        return Tooltip.of(
+            ControlTooltip.options(
+                description = Text.translatable(descriptionKey),
+                labels = labels,
+                currentIndex = currentIndex?.plus(1) ?: 0,
+                hints = CycleButtonInput.hintTexts(optionCount = labels.size),
+            ),
+        )
+    }
 
     /**
      * 取得循環選項中的下一個值；「不限」排在第一項，按住 Shift 時往回選。
@@ -405,200 +428,139 @@ internal class HistoryFilterScreen(
         HistoryBrowseFilterField.MAX_RANK -> session.filterDraft.input.ownRankMax
     }
 
-    /** 滾輪在規則選擇按鈕上時，依方向移動已註冊規則清單。 */
+    /**
+     * 取得一列的名稱翻譯鍵。
+     *
+     * @param row 篩選列。
+     * @return 名稱翻譯鍵。
+     */
+    private fun rowLabelKey(row: FilterRow): String = when (row) {
+        FilterRow.RULE -> MinecraftHistoryScreenKeys.FILTER_RULE
+        FilterRow.PLAYER_NAME -> MinecraftHistoryScreenKeys.FILTER_PLAYER_NAME
+        FilterRow.MATCH_ID -> MinecraftHistoryScreenKeys.FILTER_MATCH_ID
+        FilterRow.DATE -> MinecraftHistoryScreenKeys.FILTER_DATE
+        FilterRow.OWN_RANK -> MinecraftHistoryScreenKeys.FILTER_OWN_RANK
+        FilterRow.OUTCOME -> MinecraftHistoryScreenKeys.FILTER_OUTCOME
+        FilterRow.INTEGRITY -> MinecraftHistoryScreenKeys.FILTER_INTEGRITY
+        FilterRow.AI -> MinecraftHistoryScreenKeys.FILTER_AI
+    }
+
+    /**
+     * 判斷一列是否有輸入錯誤。
+     *
+     * @param row 篩選列。
+     * @return 這一列的任一個輸入欄位有錯誤時為 true。
+     */
+    private fun rowHasError(row: FilterRow): Boolean = rowWidgets[row].orEmpty().any { widget ->
+        fields.entries.any { (field, input) -> input === widget && session.filterDraft.errors.containsKey(field) }
+    }
+
+    /** 清單展開時在清單內捲動，否則逐列捲動篩選欄位。 */
     override fun mouseScrolled(mouseX: Double, mouseY: Double, amount: Double): Boolean {
-        if (rulePickerOpen && isInsideRulePicker(mouseX, mouseY)) {
-            rulePickerScroll = (rulePickerScroll - amount.toInt()).coerceIn(0, rulePickerMaximumScroll())
-            return true
-        }
-        if (rulePickerOpen) return true
-        if (mouseX >= controlLeft().toDouble() && mouseY in rowTop(0).toDouble()..(rowTop(0) + layout.rowHeight).toDouble()) {
-            cycleRule(if (amount < 0.0) 1 else -1)
-            return true
-        }
-        if (mouseY in layout.contentTop.toDouble()..layout.contentBottom.toDouble()) {
-            rulePickerOpen = false
-            contentScroll = (contentScroll - amount.toInt() * layout.rowSpacing).coerceIn(0, layout.scrollableHeight)
+        if (dropdown.mouseScrolled(textRenderer, height, amount)) return true
+        val layout = layout
+        if (mouseY >= layout.fieldsTop && mouseY < layout.fieldsBottom && amount != 0.0) {
+            scrollTo(scrollIndex + if (amount < 0) 1 else -1)
             return true
         }
         return super.mouseScrolled(mouseX, mouseY, amount)
     }
 
-    /** 選取展開清單中的規則，或點擊外部關閉清單。 */
+    /**
+     * 捲動到指定的第一個可見列。
+     *
+     * @param index 第一個可見列的索引。
+     */
+    private fun scrollTo(index: Int) {
+        val next = index.coerceIn(0, maximumScroll())
+        if (next == scrollIndex) return
+        scrollIndex = next
+        dropdown.close()
+        placeRows()
+    }
+
     override fun mouseClicked(mouseX: Double, mouseY: Double, button: Int): Boolean {
-        if (rulePickerOpen) {
-            if (button != 0) return true
-            val left = controlLeft().toDouble()
-            val top = (rowTop(0) + layout.rowHeight + 2).toDouble()
-            val right = (controlLeft() + controlWidth()).toDouble()
-            val bottom = rulePickerBottom()
-            if (mouseX >= left && mouseX < right && mouseY >= top && mouseY < bottom) {
-                val index = rulePickerScroll + ((mouseY - top) / RULE_OPTION_HEIGHT).toInt()
-                val options = ruleOptions()
-                if (index in options.indices) {
-                    session.filterDraft.input = session.filterDraft.input.copy(ruleId = options[index])
-                    validateAndApply()
-                    rulePickerOpen = false
-                }
-                return true
-            }
-            rulePickerOpen = false
+        if (dropdown.mouseClicked(textRenderer, height, mouseX, mouseY, button)) return true
+        val layout = layout
+        val scrollbar = layout.scrollbar(fieldCount = rows().size, scrollIndex = scrollIndex)
+        if (button == GLFW.GLFW_MOUSE_BUTTON_LEFT && scrollbar.maximumScroll > 0 && layout.isOverScrollbar(mouseX, mouseY)) {
+            scrollDragging = true
+            scrollGrabOffset = scrollbar.grabOffset(mouseY)
+            scrollTo(scrollbar.scrollIndexFor(mouseY, scrollGrabOffset))
             return true
         }
         return super.mouseClicked(mouseX, mouseY, button)
     }
 
-    override fun render(context: DrawContext, mouseX: Int, mouseY: Int, delta: Float) {
-        renderBackground(context)
-        val labels = listOf(
-            HistoryBrowseFilterField.PLAYER_NAME to MinecraftHistoryScreenKeys.FILTER_PLAYER_NAME,
-            HistoryBrowseFilterField.MATCH_ID to MinecraftHistoryScreenKeys.FILTER_MATCH_ID,
-            HistoryBrowseFilterField.FROM_DATE to MinecraftHistoryScreenKeys.FILTER_FROM,
-            HistoryBrowseFilterField.THROUGH_DATE to MinecraftHistoryScreenKeys.FILTER_THROUGH,
-            HistoryBrowseFilterField.MIN_RANK to MinecraftHistoryScreenKeys.FILTER_MIN_RANK,
-            HistoryBrowseFilterField.MAX_RANK to MinecraftHistoryScreenKeys.FILTER_MAX_RANK,
-        ).filterNot {
-            session.controller.state.value.query.scope.coversAllMatches &&
-                (it.first == HistoryBrowseFilterField.MIN_RANK || it.first == HistoryBrowseFilterField.MAX_RANK)
-        }
-        if (layout.isVisible(0, contentScroll)) drawLabel(context, MinecraftHistoryScreenKeys.FILTER_RULE, rowTop(0), 0xffffff)
-        labels.forEachIndexed { index, (field, key) ->
-            val y = rowTop(index + 1)
-            val visible = layout.isVisible(index + 1, contentScroll)
-            fields[field]?.y = y + TEXT_FIELD_BORDER
-            fields[field]?.visible = visible
-            if (!visible) return@forEachIndexed
-            val error = session.filterDraft.errors[field]?.let {
-                Text.translatable(it.translationKey).formatted(Formatting.RED)
-            }
-            drawLabel(context, key, y, if (error == null) 0xffffff else 0xff5555)
-            fields[field]?.tooltip = if (rulePickerOpen) {
-                null
-            } else {
-                Tooltip.of(
-                    Text.empty().append(inputTooltip(field, key)).also { text -> error?.let { text.append("\n").append(it) } },
-                )
-            }
-        }
-        ruleButton?.y = rowTop(0)
-        ruleButton?.visible = layout.isVisible(0, contentScroll)
-        outcomeButton?.y = rowTop(visibleFieldCount() + 1)
-        integrityButton?.y = rowTop(visibleFieldCount() + 2)
-        aiButton?.y = rowTop(visibleFieldCount() + 3)
-        outcomeButton?.visible = layout.isVisible(visibleFieldCount() + 1, contentScroll)
-        integrityButton?.visible = layout.isVisible(visibleFieldCount() + 2, contentScroll)
-        aiButton?.visible = layout.isVisible(visibleFieldCount() + 3, contentScroll)
-        listOf(MinecraftHistoryScreenKeys.FILTER_OUTCOME, MinecraftHistoryScreenKeys.FILTER_INTEGRITY, MinecraftHistoryScreenKeys.FILTER_AI).forEachIndexed { index, key ->
-            val row = visibleFieldCount() + 1 + index
-            if (layout.isVisible(row, contentScroll)) drawLabel(context, key, rowTop(row), 0xffffff)
-        }
-        context.drawCenteredTextWithShadow(textRenderer, title, width / 2, 8, 0xffffff)
-        outcomeButton?.message = outcomeLabel(session.filterDraft.input.outcome)
-        integrityButton?.message = integrityLabel(session.filterDraft.input.integrity)
-        aiButton?.message = aiLabel(session.filterDraft.input.ai)
-        val outcomeOptions = listOf(Text.translatable(MinecraftHistoryScreenKeys.FILTER_ANY)) + HistoryOutcomeFilterDto.entries.map(::outcomeLabel)
-        val integrityOptions = listOf(Text.translatable(MinecraftHistoryScreenKeys.FILTER_ANY)) + HistoryIntegrityFilterDto.entries.map(::integrityLabel)
-        val aiOptions = listOf(Text.translatable(MinecraftHistoryScreenKeys.FILTER_ANY)) + HistoryAiFilterDto.entries.map(::aiLabel)
-        outcomeButton?.tooltip = Tooltip.of(CycleButtonInput.withHint(tooltip = historyOptionTooltip(Text.translatable(MinecraftHistoryScreenKeys.FILTER_OUTCOME), outcomeLabel(session.filterDraft.input.outcome), session.filterDraft.input.outcome?.ordinal?.plus(1) ?: 0, outcomeOptions), optionCount = outcomeOptions.size))
-        integrityButton?.tooltip = Tooltip.of(CycleButtonInput.withHint(tooltip = historyOptionTooltip(Text.translatable(MinecraftHistoryScreenKeys.FILTER_INTEGRITY), integrityLabel(session.filterDraft.input.integrity), session.filterDraft.input.integrity?.ordinal?.plus(1) ?: 0, integrityOptions), optionCount = integrityOptions.size))
-        aiButton?.tooltip = Tooltip.of(CycleButtonInput.withHint(tooltip = historyOptionTooltip(Text.translatable(MinecraftHistoryScreenKeys.FILTER_AI), aiLabel(session.filterDraft.input.ai), session.filterDraft.input.ai?.ordinal?.plus(1) ?: 0, aiOptions), optionCount = aiOptions.size))
-        ruleButton?.tooltip = Tooltip.of(ruleTooltip())
-        ruleButton?.message = ruleDisplayLabel()
-        if (layout.scrollableHeight > 0) {
-            val trackLeft = width - 5
-            context.fill(trackLeft, layout.contentTop, width - 2, layout.contentBottom, 0xff303030.toInt())
-            val trackHeight = layout.contentBottom - layout.contentTop
-            val thumbHeight = (trackHeight.toDouble() * trackHeight / (trackHeight + layout.scrollableHeight)).toInt().coerceAtLeast(8)
-            val thumbTop = layout.contentTop + ((trackHeight - thumbHeight) * contentScroll / layout.scrollableHeight)
-            context.fill(trackLeft, thumbTop, width - 2, thumbTop + thumbHeight, 0xffaaaaaa.toInt())
-        }
-        if (rulePickerOpen) {
-            listOf(ruleButton, outcomeButton, integrityButton, aiButton).forEach { it?.tooltip = null }
-        }
-        super.render(context, if (rulePickerOpen) -1 else mouseX, if (rulePickerOpen) -1 else mouseY, delta)
-        if (rulePickerOpen) renderRulePicker(context, mouseX, mouseY)
-    }
-
-    /**
-     * 在左欄繪製經字寬限制的標題，不侵入右側控制項。
-     *
-     * @param context 畫面繪製上下文。
-     * @param key 標題翻譯鍵。
-     * @param y 控制項列起點。
-     * @param color 標題 RGB 顏色。
-     */
-    private fun drawLabel(context: DrawContext, key: String, y: Int, color: Int) {
-        val value = HistoryScreenText.trim(Text.translatable(key).string, controlLeft() - 16, textRenderer::getWidth)
-        context.drawTextWithShadow(textRenderer, Text.literal(value), 8, y + (layout.rowHeight - textRenderer.fontHeight) / 2, color)
-    }
-
-    /**
-     * 繪製可捲動的規則選項清單。
-     *
-     * @param context 畫面繪製上下文。
-     * @param mouseX 游標水平座標。
-     * @param mouseY 游標垂直座標。
-     */
-    private fun renderRulePicker(context: DrawContext, mouseX: Int, mouseY: Int) {
-        val left = controlLeft()
-        val top = rowTop(0) + layout.rowHeight + 2
-        val right = left + controlWidth()
-        val bottom = rulePickerBottom().toInt()
-        val options = ruleOptions()
-        context.matrices.push()
-        context.matrices.translate(0.0, 0.0, RULE_PICKER_Z)
-        context.fill(left, top, right, bottom, 0xff101010.toInt())
-        context.enableScissor(left, top, right, bottom)
-        options.drop(rulePickerScroll).take(rulePickerVisibleRows()).forEachIndexed { row, option ->
-            val y = top + row * RULE_OPTION_HEIGHT
-            val selected = option == session.filterDraft.input.ruleId
-            if (mouseX in left until right && mouseY in y until y + RULE_OPTION_HEIGHT) {
-                context.fill(left, y, right, y + RULE_OPTION_HEIGHT, 0xff505050.toInt())
-            }
-            val label = option.takeUnless(String::isEmpty)?.let { id ->
-                session.ruleNames.find(id)?.let(Text::translatable)?.let { Text.empty().append(it).append(" (").append(id).append(")") }
-                    ?: Text.literal(id)
-            } ?: Text.translatable(MinecraftHistoryScreenKeys.FILTER_ANY)
-            context.drawTextWithShadow(textRenderer, label, left + 4, y + 4, if (selected) 0x55ff55 else 0xffffff)
-        }
-        if (rulePickerMaximumScroll() > 0) {
-            val trackLeft = right - 3
-            context.fill(trackLeft, top, right, bottom, 0xff303030.toInt())
-            val thumbHeight = (bottom - top).toDouble() * rulePickerVisibleRows() / options.size
-            val thumbTop = top + ((bottom - top - thumbHeight) * rulePickerScroll / rulePickerMaximumScroll()).toInt()
-            context.fill(trackLeft, thumbTop, right, thumbTop + thumbHeight.toInt().coerceAtLeast(4), 0xffaaaaaa.toInt())
-        }
-        context.disableScissor()
-        context.matrices.pop()
-    }
-
-    /** 將目前規則篩選值轉成按鈕文字。 */
-    private fun ruleDisplayLabel(): Text = session.filterDraft.input.ruleId.takeUnless(String::isEmpty)?.let { id ->
-        session.ruleNames.find(id)?.let(Text::translatable)?.let { Text.empty().append(it).append(" (").append(id).append(")") }
-            ?: Text.literal(id)
-    } ?: Text.translatable(MinecraftHistoryScreenKeys.FILTER_ANY)
-
-    override fun keyPressed(keyCode: Int, scanCode: Int, modifiers: Int): Boolean {
-        if (rulePickerOpen) {
-            if (keyCode == 256) rulePickerOpen = false
+    /** 規則清單展開時不將拖曳傳遞至背景控制項；拖曳捲軸時逐列捲動。 */
+    override fun mouseDragged(mouseX: Double, mouseY: Double, button: Int, deltaX: Double, deltaY: Double): Boolean {
+        if (dropdown.isOpen) return true
+        if (scrollDragging && button == GLFW.GLFW_MOUSE_BUTTON_LEFT) {
+            scrollTo(layout.scrollbar(fieldCount = rows().size, scrollIndex = scrollIndex).scrollIndexFor(mouseY, scrollGrabOffset))
             return true
         }
-        if (keyCode == 256) {
+        return super.mouseDragged(mouseX, mouseY, button, deltaX, deltaY)
+    }
+
+    /** 規則清單展開時不將放開滑鼠事件傳遞至背景控制項；放開左鍵時結束拖曳。 */
+    override fun mouseReleased(mouseX: Double, mouseY: Double, button: Int): Boolean {
+        if (dropdown.isOpen) return true
+        if (scrollDragging && button == GLFW.GLFW_MOUSE_BUTTON_LEFT) {
+            scrollDragging = false
+            return true
+        }
+        return super.mouseReleased(mouseX, mouseY, button)
+    }
+
+    override fun render(context: DrawContext, mouseX: Int, mouseY: Int, delta: Float) {
+        renderBackground(context)
+        ScreenRendering.title(context, textRenderer, title, width)
+        val layout = layout
+        val input = session.filterDraft.input
+        rows().forEachIndexed { index, row ->
+            val visibleIndex = index - scrollIndex
+            if (visibleIndex !in 0 until layout.visibleFieldCount) return@forEachIndexed
+            val rowTop = layout.fieldRowTop(visibleIndex)
+            layout.fieldStripe(visibleIndex).renderIfStriped(context, index)
+            val label = HistoryScreenText.trim(Text.translatable(rowLabelKey(row)).string, layout.labelWidth, textRenderer::getWidth)
+            context.drawTextWithShadow(textRenderer, Text.literal(label), layout.contentLeft, layout.fieldLabelY(rowTop), if (rowHasError(row)) ERROR_COLOR else LABEL_COLOR)
+            val widgets = rowWidgets[row].orEmpty()
+            if (widgets.size == 2) {
+                val dashX = layout.controlLeft + layout.controlWidth / 2 - textRenderer.getWidth(RANGE_DASH) / 2
+                val controlY = layout.fieldControlY(rowTop)
+                context.drawTextWithShadow(textRenderer, RANGE_DASH, dashX, controlY + (FormScreenLayout.BUTTON_HEIGHT - FormScreenLayout.VISIBLE_TEXT_HEIGHT) / 2, LABEL_COLOR)
+            }
+        }
+        fields.forEach { (field, widget) -> widget.tooltip = Tooltip.of(inputTooltip(field)) }
+        outcomeButton?.message = choiceLabel(input.outcome?.translationKey)
+        integrityButton?.message = choiceLabel(input.integrity?.translationKey)
+        aiButton?.message = choiceLabel(input.ai?.translationKey)
+        outcomeButton?.tooltip = choiceTooltip(MinecraftHistoryScreenKeys.FILTER_OUTCOME, HistoryOutcomeFilterDto.entries.map { it.translationKey }, input.outcome?.ordinal)
+        integrityButton?.tooltip = choiceTooltip(MinecraftHistoryScreenKeys.FILTER_INTEGRITY, HistoryIntegrityFilterDto.entries.map { it.translationKey }, input.integrity?.ordinal)
+        aiButton?.tooltip = choiceTooltip(MinecraftHistoryScreenKeys.FILTER_AI, HistoryAiFilterDto.entries.map { it.translationKey }, input.ai?.ordinal)
+        ruleButton?.tooltip = Tooltip.of(ruleTooltip())
+        ruleButton?.message = ruleDisplayLabel()
+        resetButton?.active = input != HistoryBrowseFilterInput()
+        VerticalScrollbar.render(context, layout.scrollbarLeft, layout.scrollbar(fieldCount = rows().size, scrollIndex = scrollIndex))
+        super.render(context, dropdown.pointer(mouseX), dropdown.pointer(mouseY), delta)
+        dropdown.render(context, textRenderer, height, mouseX, mouseY)
+    }
+
+    /** 將目前規則篩選值轉成選擇器上的文字。 */
+    private fun ruleDisplayLabel(): Text = ruleLabel(session.filterDraft.input.ruleId)
+
+    override fun keyPressed(keyCode: Int, scanCode: Int, modifiers: Int): Boolean {
+        if (dropdown.keyPressed(textRenderer, height, keyCode)) return true
+        if (keyCode == GLFW.GLFW_KEY_ESCAPE) {
             session.backToList()
             return true
         }
-        if (keyCode == 257) validateAndApply()
+        if (keyCode == GLFW.GLFW_KEY_ENTER) validateAndApply()
         return super.keyPressed(keyCode, scanCode, modifiers)
     }
 
-    /** 規則選單展開時不將文字輸入傳遞至背景欄位。 */
-    override fun charTyped(chr: Char, modifiers: Int): Boolean = rulePickerOpen || super.charTyped(chr, modifiers)
-
-    /** 規則選單展開時不將拖曳傳遞至背景控制項。 */
-    override fun mouseDragged(mouseX: Double, mouseY: Double, button: Int, deltaX: Double, deltaY: Double): Boolean = rulePickerOpen || super.mouseDragged(mouseX, mouseY, button, deltaX, deltaY)
-
-    /** 規則選單展開時不將放開滑鼠事件傳遞至背景控制項。 */
-    override fun mouseReleased(mouseX: Double, mouseY: Double, button: Int): Boolean = rulePickerOpen || super.mouseReleased(mouseX, mouseY, button)
+    /** 規則清單展開時不將文字輸入傳遞至背景欄位。 */
+    override fun charTyped(chr: Char, modifiers: Int): Boolean = dropdown.isOpen || super.charTyped(chr, modifiers)
 
     override fun shouldPause(): Boolean = false
 
@@ -609,15 +571,51 @@ internal class HistoryFilterScreen(
         super.removed()
     }
 
-    /** 規則選單與輸入框的固定繪製尺寸。 */
+    /** 篩選頁的列，依畫面由上到下的順序排列。 */
+    private enum class FilterRow {
+        /** 規則選擇器。 */
+        RULE,
+
+        /** 玩家名稱輸入框。 */
+        PLAYER_NAME,
+
+        /** 對局 UUID 輸入框。 */
+        MATCH_ID,
+
+        /** 結束日期起訖兩個輸入框。 */
+        DATE,
+
+        /** 自己的名次上下限兩個輸入框；只在自己的紀錄出現。 */
+        OWN_RANK,
+
+        /** 結果循環按鈕。 */
+        OUTCOME,
+
+        /** 完整性循環按鈕。 */
+        INTEGRITY,
+
+        /** AI 對局循環按鈕。 */
+        AI,
+    }
+
+    /** 輸入框與標籤的固定繪製尺寸與顏色。 */
     private companion object {
-        /** 高於背景控制項與其文字的選單繪製深度。 */
-        const val RULE_PICKER_Z = 400.0
+        /** 規則選擇器展開清單的識別值。 */
+        const val RULE_SELECTOR_KEY = "rule"
 
         /** 原版文字輸入框向內容範圍外延伸的邊框厚度。 */
         const val TEXT_FIELD_BORDER = 1
 
-        /** 選項列的固定高度。 */
-        const val RULE_OPTION_HEIGHT = 18
+        /** 起訖兩個輸入框之間的距離，中間畫連接號。 */
+        const val RANGE_GAP = 12
+
+        /** 起訖兩個輸入框之間的連接號。 */
+        const val RANGE_DASH = "–"
+
+        /** 標籤的文字顏色。 */
+        const val LABEL_COLOR = 0xFFFFFF
+
+        /** 有輸入錯誤的標籤文字顏色。 */
+        const val ERROR_COLOR = 0xFF5555
     }
 }

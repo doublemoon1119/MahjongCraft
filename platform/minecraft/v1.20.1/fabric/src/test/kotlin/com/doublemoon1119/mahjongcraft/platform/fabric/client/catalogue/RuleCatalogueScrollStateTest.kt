@@ -12,7 +12,7 @@ class RuleCatalogueScrollStateTest {
         width = 320,
         height = 240,
         clearWidth = 36,
-        sourceToggle = false,
+        sourceLabelWidth = null,
     )
 
     /** 超出一頁的內容高度。 */
@@ -101,7 +101,7 @@ class RuleCatalogueScrollStateTest {
             width = 320,
             height = 480,
             clearWidth = 36,
-            sourceToggle = false,
+            sourceLabelWidth = null,
         )
 
         state.relayout(layout = taller, contentHeight = contentHeight)

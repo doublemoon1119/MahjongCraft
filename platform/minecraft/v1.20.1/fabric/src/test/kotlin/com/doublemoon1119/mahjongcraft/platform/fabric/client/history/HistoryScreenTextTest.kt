@@ -44,6 +44,13 @@ class HistoryScreenTextTest {
         assertEquals("1970-01-01 08:00:50", HistoryScreenText.endedAt(50000, ZoneId.of("Asia/Taipei")))
     }
 
+    /** 時刻只顯示時分秒，未知時刻使用佔位。 */
+    @Test
+    fun `time of day omits the date`() {
+        assertEquals("08:00:50", HistoryScreenText.timeOfDay(50000, ZoneId.of("Asia/Taipei")))
+        assertEquals("—", HistoryScreenText.timeOfDay(null))
+    }
+
     /** 最終名次優先，未知名次放最後且同名次按座位排序。 */
     @Test
     fun `participants use authoritative ranks instead of scores or seats`() {

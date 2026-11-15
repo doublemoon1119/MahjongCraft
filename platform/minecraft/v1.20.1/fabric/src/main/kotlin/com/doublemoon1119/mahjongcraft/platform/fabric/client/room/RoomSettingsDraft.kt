@@ -146,6 +146,19 @@ internal class RoomSettingsDraft {
     }
 
     /**
+     * 以套用玩法後的設定取代草稿內容，並清除玩法所設定欄位的無效標記；其他欄位的驗證狀態不變。
+     *
+     * @param updated 套用玩法後的草稿設定。
+     * @param variantFieldIds 玩法設定的欄位識別碼。
+     */
+    fun applyVariant(updated: GameConfig, variantFieldIds: Set<String>) {
+        if (config != null) {
+            config = updated
+            invalidFieldIds.removeAll(variantFieldIds)
+        }
+    }
+
+    /**
      * 直接輸入整數時的第一段驗證：判定輸入字串本身是否落在編輯器允許的範圍。
      *
      * 與 [applyNumericInput] 分成兩段，是因為超出範圍的輸入必須標記欄位無效但不得改動草稿——直接交給

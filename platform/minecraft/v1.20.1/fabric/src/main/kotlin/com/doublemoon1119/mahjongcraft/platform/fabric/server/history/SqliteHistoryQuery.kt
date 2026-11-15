@@ -24,6 +24,15 @@ internal enum class SqliteHistorySortDirection {
     DESC,
 }
 
+/** SQLite 查詢從游標往哪一邊取一頁。 */
+internal enum class SqliteHistoryPageDirection {
+    /** 取游標之後的列；沒有游標時從第一列開始。 */
+    AFTER,
+
+    /** 取游標之前的列；沒有游標時取最後一頁。 */
+    BEFORE,
+}
+
 /** 對局是否正常完成或由終端證據確認中斷。 */
 internal enum class SqliteHistoryOutcomeFilter {
     /** 只包含正常完成的對局。 */
@@ -76,7 +85,8 @@ internal enum class SqliteHistoryIntegrityFilter {
  * @property minimumRank 名次下界，包含此值。
  * @property maximumRank 名次上界，包含此值。
  * @property pageSize 單頁筆數。
- * @property cursor 上一頁最後一列的 keyset 游標。
+ * @property cursor 延續的 keyset 游標；沒有游標時從第一列或最後一列開始。
+ * @property direction 從游標往哪一邊取一頁。
  * @property excludedMatchIds 不可公開的活動或轉移中對局。
  * @property matchId 僅查詢指定對局時使用的 UUID；清單查詢為 null。
  * @property participantIds 名稱篩選解析出的玩家 UUID；null 表示不限制參與者名稱。
@@ -96,6 +106,7 @@ internal data class SqliteHistoryQuery(
     val maximumRank: Int? = null,
     val pageSize: Int = 20,
     val cursor: SqliteHistoryCursor? = null,
+    val direction: SqliteHistoryPageDirection = SqliteHistoryPageDirection.AFTER,
     val excludedMatchIds: Set<String> = emptySet(),
     val matchId: String? = null,
     val participantIds: Set<String>? = null,
@@ -176,12 +187,16 @@ internal data class HistoryQueryRound(
 )
 
 /**
- * 有界的 SQLite 對局摘要頁。
+ * 有界的 SQLite 對局摘要頁，依顯示順序排列。
  *
  * @property entries 本頁安全摘要。
- * @property nextCursor 尚有下一頁時的 keyset 游標。
+ * @property nextCursor 尚有下一頁時，本頁最後一列的位置。
+ * @property previousCursor 尚有上一頁時，本頁第一列的位置。
+ * @property totalCount 符合篩選條件的總列數，不受游標影響。
  */
 internal data class SqliteHistoryQueryPage(
     val entries: List<SqliteHistoryQueryEntry>,
     val nextCursor: SqliteHistoryCursor?,
+    val previousCursor: SqliteHistoryCursor?,
+    val totalCount: Int,
 )

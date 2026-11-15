@@ -12,7 +12,8 @@ import kotlinx.serialization.Serializable
  * @property sortDirection 清單排序方向。
  * @property filters 清單篩選條件。
  * @property pageSize 每頁要求的資料筆數。
- * @property cursor 前一頁回覆提供的不透明 keyset cursor。
+ * @property cursor 前一頁回覆提供的不透明 keyset cursor；沒有時從第一筆或最後一筆開始。
+ * @property direction 從游標往哪一邊取一頁。
  */
 @Serializable
 data class HistoryListRequestDto(
@@ -23,4 +24,5 @@ data class HistoryListRequestDto(
     val filters: HistoryQueryFiltersDto,
     val pageSize: Int,
     val cursor: String?,
+    val direction: HistoryPageDirectionDto,
 )

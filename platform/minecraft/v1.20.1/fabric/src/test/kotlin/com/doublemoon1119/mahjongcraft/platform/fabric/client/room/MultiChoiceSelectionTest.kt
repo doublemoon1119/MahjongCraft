@@ -34,4 +34,14 @@ class MultiChoiceSelectionTest {
         assertEquals(emptySet(), MultiChoiceSelection.toggle(emptySet(), "unknown:a", editor))
         assertFalse(MultiChoiceSelection.canApply(setOf("unknown:a"), editor))
     }
+
+    /** 最多可選數量不少於選項總數時才能全選。 */
+    @Test
+    fun `select all needs room for every option`() {
+        val options = listOf("example:a", "example:b", "example:c")
+
+        assertTrue(MultiChoiceSelection.canSelectAll(GameConfigEditorSpec.MultiChoice(options)))
+        assertTrue(MultiChoiceSelection.canSelectAll(GameConfigEditorSpec.MultiChoice(options, maximumCount = 3)))
+        assertFalse(MultiChoiceSelection.canSelectAll(GameConfigEditorSpec.MultiChoice(options, maximumCount = 2)))
+    }
 }

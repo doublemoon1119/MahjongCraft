@@ -1,76 +1,72 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.client.history
 
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.FormScreenLayout
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.ScrollbarLayout
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.VerticalScrollbar
 
 /**
- * 歷史摘要固定標題、捲動內容與底列的版面幾何。
+ * 牌譜摘要與其他一頁捲動內容畫面的版面：標題下方的捲動內容區與底部四格。
  *
+ * 內容寬度、底部四格與捲軸位置沿用 [HistoryPageFrame]。
+ *
+ * @property frame 內容寬度、底部四格與捲軸位置。
  * @property contentTop 捲動內容上界。
- * @property contentBottom 捲動內容下界。
- * @property footerTop 固定底列上界。
- * @property left 內容左界。
- * @property right 內容右界。
  */
 internal data class HistorySummaryLayout(
+    val frame: HistoryPageFrame,
     val contentTop: Int,
-    val contentBottom: Int,
-    val footerTop: Int,
-    val left: Int,
-    val right: Int,
 ) {
+    /** 捲動內容下界。 */
+    val contentBottom: Int = (frame.footerTop - HistoryPageFrame.FOOTER_GAP).coerceAtLeast(contentTop)
+
+    /** 底部按鈕列上界。 */
+    val footerTop: Int get() = frame.footerTop
+
+    /** 內容左界。 */
+    val left: Int get() = frame.contentLeft
+
+    /** 內容右界。 */
+    val right: Int get() = frame.contentRight
+
     /** 內容可視高度。 */
     val viewportHeight: Int get() = (contentBottom - contentTop).coerceAtLeast(1)
 
     /**
-     * 判斷游標是否位於可見資訊列，排除裁切區與捲軸。
+     * 判斷游標是否位於內容區內的一列，排除裁切區與捲軸。
      *
      * @param mouseX 游標水平座標。
      * @param mouseY 游標垂直座標。
-     * @param rowLeft 資訊列左界。
-     * @param rowTop 捲動後的資訊列上界。
-     * @param rowHeight 資訊列高度。
-     * @return 是否指向資訊列的可見部分。
+     * @param rowTop 捲動後的列上界。
+     * @param rowHeight 列高度。
+     * @return 是否指向這一列的可見部分。
      */
-    fun containsContentRow(mouseX: Double, mouseY: Double, rowLeft: Int, rowTop: Int, rowHeight: Int): Boolean = mouseX >= rowLeft &&
-        mouseX < right - 14 &&
+    fun containsRow(mouseX: Double, mouseY: Double, rowTop: Int, rowHeight: Int): Boolean = mouseX >= left &&
+        mouseX < right &&
         mouseY >= contentTop &&
         mouseY < contentBottom &&
         mouseY >= rowTop &&
         mouseY < rowTop + rowHeight
 
     /**
-     * 從摘要換行後的可見局列取得欲開啟的局序號。
+     * 判斷游標是否位於內容區的可見範圍內。
      *
      * @param mouseX 游標水平座標。
      * @param mouseY 游標垂直座標。
-     * @param scrollOffset 已限制範圍的內容捲動偏移。
-     * @param links 各局每個換行列的點擊位置。
-     * @return 可見局列的局序號；裁切區、列間隙或捲軸均為 null。
+     * @return 位於內容區內時為 true。
      */
-    fun roundAt(mouseX: Double, mouseY: Double, scrollOffset: Double, links: List<RoundLink>): Int? = links.firstOrNull {
-        containsContentRow(mouseX, mouseY, it.x, it.y - scrollOffset.toInt(), 11)
-    }?.roundNumber
+    fun containsContent(mouseX: Double, mouseY: Double): Boolean = mouseX >= left && mouseX < right && mouseY >= contentTop && mouseY < contentBottom
+
+    /** 捲軸範圍。 */
+    fun scrollbarBounds(): HistoryScreenLayout.Bounds = frame.scrollbarBounds(top = contentTop, bottom = contentBottom)
 
     /**
-     * 同一局的一個已換行摘要列。
+     * 判斷游標是否落在捲軸的命中範圍內。
      *
-     * @property x 列的左界。
-     * @property y 未捲動的列上界。
-     * @property roundNumber 該列所屬局序號。
+     * @param mouseX 游標的水平座標。
+     * @param mouseY 游標的垂直座標。
+     * @return 位於命中範圍內時為 true。
      */
-    data class RoundLink(
-        val x: Int,
-        val y: Int,
-        val roundNumber: Int,
-    )
-
-    /** 捲軸界線，固定為可見的六像素寬。 */
-    fun scrollbarBounds(): HistoryScreenLayout.Bounds = HistoryScreenLayout.Bounds(
-        x = right - 6,
-        y = contentTop,
-        width = 6,
-        height = (contentBottom - contentTop).coerceAtLeast(0),
-    )
+    fun isOverScrollbar(mouseX: Double, mouseY: Double): Boolean = frame.isOverScrollbar(mouseX = mouseX, mouseY = mouseY, top = contentTop, bottom = contentBottom)
 
     /**
      * 依內容高度建立像素捲軸。
@@ -85,7 +81,7 @@ internal data class HistorySummaryLayout(
         itemCount = contentHeight.coerceAtLeast(0),
         visibleItemCount = viewportHeight,
         scrollIndex = clampScroll(scrollOffset, contentHeight).toInt(),
-        minimumThumbHeight = 8.coerceAtMost(viewportHeight),
+        minimumThumbHeight = VerticalScrollbar.MINIMUM_THUMB_HEIGHT.coerceAtMost(viewportHeight),
     )
 
     /**
@@ -121,44 +117,25 @@ internal data class HistorySummaryLayout(
     fun maximumScroll(contentHeight: Int): Int = (contentHeight - viewportHeight).coerceAtLeast(0)
 
     /**
-     * 底部按鈕位置：只有返回按鈕時置中；需要顯示第二顆按鈕（例如重試或規則一覽）時兩顆並排置中，返回在左。
+     * 取得底部按鈕列中一格的範圍。
      *
-     * @param width 畫面寬度。
-     * @param secondVisible 是否顯示第二顆按鈕。
-     * @return 返回按鈕與第二顆按鈕的界線；不顯示第二顆時第二項為 null。
+     * @param index 由左至右的順序，從 0 開始。
+     * @return 這一格的範圍。
      */
-    fun footerButtons(width: Int, secondVisible: Boolean): Pair<HistoryScreenLayout.Bounds, HistoryScreenLayout.Bounds?> {
-        val buttonWidth = ((width - FOOTER_MARGIN * 2 - FOOTER_GAP) / 2).coerceAtLeast(1)
-        if (!secondVisible) return HistoryScreenLayout.Bounds((width - buttonWidth) / 2, footerTop, buttonWidth, FOOTER_BUTTON_HEIGHT) to null
-        val left = ((width - buttonWidth * 2 - FOOTER_GAP) / 2).coerceAtLeast(FOOTER_MARGIN)
-        return HistoryScreenLayout.Bounds(left, footerTop, buttonWidth, FOOTER_BUTTON_HEIGHT) to
-            HistoryScreenLayout.Bounds(left + buttonWidth + FOOTER_GAP, footerTop, buttonWidth, FOOTER_BUTTON_HEIGHT)
-    }
+    fun footerSlot(index: Int): HistoryScreenLayout.Bounds = frame.footerSlot(index)
 
-    /** 摘要版面建立入口。 */
+    /** 版面建立入口。 */
     companion object {
         /**
-         * 依畫面尺寸建立摘要版面。
+         * 依畫面尺寸建立版面；內容從標題下方開始。
          *
          * @param width 畫面寬度。
          * @param height 畫面高度。
-         * @return 對應尺寸的幾何資料。
+         * @return 對應尺寸的版面。
          */
         fun measure(width: Int, height: Int): HistorySummaryLayout {
-            val footer = (height - 28).coerceAtLeast(0)
-            val top = 24.coerceAtMost(footer)
-            val left = 10
-            val right = (width - 10).coerceAtLeast(left + 6)
-            return HistorySummaryLayout(top, (footer - 4).coerceAtLeast(top), footer, left, right)
+            val frame = HistoryPageFrame(windowWidth = width, windowHeight = height)
+            return HistorySummaryLayout(frame = frame, contentTop = FormScreenLayout.TITLE_BOTTOM.coerceAtMost(frame.footerTop))
         }
-
-        /** 底部按鈕與畫面左右邊緣的最小距離。 */
-        private const val FOOTER_MARGIN = 12
-
-        /** 兩顆底部按鈕之間的距離。 */
-        private const val FOOTER_GAP = 4
-
-        /** 底部按鈕高度。 */
-        private const val FOOTER_BUTTON_HEIGHT = 20
     }
 }

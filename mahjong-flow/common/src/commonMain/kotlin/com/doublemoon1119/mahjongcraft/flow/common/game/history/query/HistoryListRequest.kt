@@ -8,7 +8,8 @@ package com.doublemoon1119.mahjongcraft.flow.common.game.history.query
  * @property sortDirection 排序方向。
  * @property filters 條件篩選。
  * @property pageSize 每頁筆數。
- * @property cursor 延續上一頁的游標。
+ * @property cursor 延續的游標；沒有游標時從第一筆或最後一筆開始。
+ * @property direction 從游標往哪一邊取一頁。
  */
 data class HistoryListRequest(
     val scope: HistoryQueryScope = HistoryQueryScope.OWN,
@@ -17,6 +18,7 @@ data class HistoryListRequest(
     val filters: HistoryQueryFilters = HistoryQueryFilters(),
     val pageSize: Int = HistoryQueryLimits.DEFAULT_PAGE_SIZE,
     val cursor: HistoryQueryCursor? = null,
+    val direction: HistoryPageDirection = HistoryPageDirection.AFTER,
 ) {
     init {
         require(pageSize in HistoryQueryLimits.MIN_PAGE_SIZE..HistoryQueryLimits.MAX_PAGE_SIZE) {

@@ -4,7 +4,6 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftClient
 import net.minecraft.client.gui.DrawContext
 import net.minecraft.client.gui.screen.Screen
 import net.minecraft.client.gui.tooltip.Tooltip
-import net.minecraft.client.gui.widget.ButtonWidget
 import net.minecraft.text.Text
 
 /**
@@ -27,17 +26,17 @@ internal class UnsavedChangesConfirmationScreen(
         val buttonWidth = minOf(160, width - 24)
         val left = (width - buttonWidth) / 2
         addDrawableChild(
-            ButtonWidget.builder(Text.translatable(MinecraftClientConfigScreenKeys.APPLY_AND_BACK)) { onApply() }
+            RestartableMarqueeButtonWidget.builder(Text.translatable(MinecraftClientConfigScreenKeys.APPLY_AND_BACK)) { onApply() }
                 .dimensions(left, height / 2, buttonWidth, 20).build().also {
                     it.tooltip = changesPreview?.let(Tooltip::of)
                 },
         )
         addDrawableChild(
-            ButtonWidget.builder(Text.translatable(MinecraftClientConfigScreenKeys.DISCARD_CHANGES)) { onDiscard() }
+            RestartableMarqueeButtonWidget.builder(Text.translatable(MinecraftClientConfigScreenKeys.DISCARD_CHANGES)) { onDiscard() }
                 .dimensions(left, height / 2 + 24, buttonWidth, 20).build(),
         )
         addDrawableChild(
-            ButtonWidget.builder(Text.translatable(MinecraftClientConfigScreenKeys.CONTINUE_EDITING)) { client?.setScreen(previousScreen) }
+            RestartableMarqueeButtonWidget.builder(Text.translatable(MinecraftClientConfigScreenKeys.CONTINUE_EDITING)) { client?.setScreen(previousScreen) }
                 .dimensions(left, height / 2 + 48, buttonWidth, 20).build(),
         )
     }
@@ -52,8 +51,8 @@ internal class UnsavedChangesConfirmationScreen(
 
     /** 繪製確認標題與說明。 */
     override fun render(context: DrawContext, mouseX: Int, mouseY: Int, delta: Float) {
-        context.fill(0, 0, width, height, 0xAA000000.toInt())
-        context.drawCenteredTextWithShadow(textRenderer, title, width / 2, height / 2 - 42, 0xFFD54F)
+        renderBackground(context)
+        context.drawCenteredTextWithShadow(textRenderer, title, width / 2, height / 2 - 42, FormScreenLayout.TITLE_COLOR)
         context.drawCenteredTextWithShadow(
             textRenderer,
             Text.translatable(MinecraftClientConfigScreenKeys.UNSAVED_CHANGES_MESSAGE),

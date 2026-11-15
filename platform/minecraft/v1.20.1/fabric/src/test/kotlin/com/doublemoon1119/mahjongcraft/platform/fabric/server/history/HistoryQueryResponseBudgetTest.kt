@@ -5,6 +5,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.history.query.HistoryLis
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.query.HistoryListRequest
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.query.HistoryMatchSummary
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.query.HistoryOutcomeFilter
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.query.HistoryPageDirection
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.query.HistoryParticipantSummary
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.query.HistoryResultSummary
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.query.HistoryRuleSettings
@@ -63,7 +64,7 @@ class HistoryQueryResponseBudgetTest {
         val request = HistoryListRequest(sortField = HistorySortField.OWN_SCORE)
         val response = boundedHistoryPage(
             requestId = "request",
-            page = HistoryListPage(listOf(first, second, third), null),
+            page = HistoryListPage(listOf(first, second, third), nextCursor = null, previousCursor = null, totalCount = 0),
             request = request,
             principalId = PLAYER_ID,
             json = bundledNetworkJson(),
@@ -77,12 +78,33 @@ class HistoryQueryResponseBudgetTest {
         assertNull(response.errorCode)
     }
 
+    /** 往前取頁時縮頁保留最靠近原游標的後面幾筆，上一頁游標改為第一筆留下的項目。 */
+    @Test
+    fun `backward budget truncation keeps the entries next to the cursor`() {
+        val first = summary(Uuid.random(), score = 1000)
+        val second = summary(Uuid.random(), score = 900)
+        val third = summary(Uuid.random(), score = 800)
+        val response = boundedHistoryPage(
+            requestId = "request",
+            page = HistoryListPage(listOf(first, second, third), nextCursor = null, previousCursor = null, totalCount = 3),
+            request = HistoryListRequest(sortField = HistorySortField.OWN_SCORE, direction = HistoryPageDirection.BEFORE),
+            principalId = PLAYER_ID,
+            json = bundledNetworkJson(),
+            encodeCursor = { it.matchId.toString() },
+            limit = 900,
+        )
+
+        assertEquals(listOf(third.matchId.toString()), response.entries.map { it.matchId })
+        assertEquals(third.matchId.toString(), response.previousCursor)
+        assertEquals(3, response.totalCount)
+    }
+
     /** 單筆摘要超過 UTF-8 限制時應回報穩定錯誤。 */
     @Test
     fun `single oversized entry returns content too large`() {
         val response = boundedHistoryPage(
             requestId = "request",
-            page = HistoryListPage(listOf(summary(Uuid.random(), diagnostic = "é".repeat(200))), null),
+            page = HistoryListPage(listOf(summary(Uuid.random(), diagnostic = "é".repeat(200))), nextCursor = null, previousCursor = null, totalCount = 1),
             request = HistoryListRequest(),
             principalId = PLAYER_ID,
             json = bundledNetworkJson(),
@@ -99,7 +121,7 @@ class HistoryQueryResponseBudgetTest {
     fun `budget counts utf8 bytes`() {
         val response = boundedHistoryPage(
             requestId = "request",
-            page = HistoryListPage(listOf(summary(Uuid.random(), diagnostic = "界".repeat(20))), null),
+            page = HistoryListPage(listOf(summary(Uuid.random(), diagnostic = "界".repeat(20))), nextCursor = null, previousCursor = null, totalCount = 1),
             request = HistoryListRequest(),
             principalId = PLAYER_ID,
             json = bundledNetworkJson(),

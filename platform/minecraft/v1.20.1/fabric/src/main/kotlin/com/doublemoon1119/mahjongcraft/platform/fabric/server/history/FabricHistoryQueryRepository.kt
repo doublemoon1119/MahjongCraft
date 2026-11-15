@@ -7,6 +7,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.history.query.HistoryLis
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.query.HistoryMatchDetail
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.query.HistoryMatchSummary
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.query.HistoryOutcomeFilter
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.query.HistoryPageDirection
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.query.HistoryParticipantSummary
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.query.HistoryQueryAccess
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.query.HistoryQueryCursor
@@ -74,7 +75,12 @@ internal class FabricHistoryQueryRepository(
         val participantIds = request.filters.playerName?.let { playerIdentities.findPlayerIdsByName(it).mapTo(mutableSetOf()) { id -> id.toString() } }
         if (participantIds != null && participantIds.size > MAX_HISTORY_NAME_MATCHES) return queryFailure(HistoryQueryErrorCode.CONTENT_TOO_LARGE)
         return writer.queryList(access, request, sessionId, participantIds).mapQueryResult { page ->
-            HistoryListPage(page.entries.map { it.toDomainSummary() }, page.nextCursor?.toDomainCursor(request))
+            HistoryListPage(
+                entries = page.entries.map { it.toDomainSummary() },
+                nextCursor = page.nextCursor?.toDomainCursor(request),
+                previousCursor = page.previousCursor?.toDomainCursor(request),
+                totalCount = page.totalCount,
+            )
         }
     }
 
@@ -170,6 +176,10 @@ internal fun HistoryListRequest.toSqliteQuery(
     maximumRank = filters.ownRank?.maximum,
     pageSize = pageSize,
     cursor = cursor?.let { SqliteHistoryCursor(it.sortValue.numericValue, it.matchId.toString(), it.sortValue.nullBucket) },
+    direction = when (direction) {
+        HistoryPageDirection.AFTER -> SqliteHistoryPageDirection.AFTER
+        HistoryPageDirection.BEFORE -> SqliteHistoryPageDirection.BEFORE
+    },
     excludedMatchIds = excluded,
     matchId = filters.matchId?.let { Uuid.parse(it).toString() },
     participantIds = participantIds,

@@ -8,6 +8,12 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryRoundPosi
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryWinDetailValueDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.model.TileFaceViewDto
 import com.doublemoon1119.mahjongcraft.logic.table.RoundCompletionClassification
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.ControlTooltip
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.FormScreenLayout
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.PixelIcon
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.RestartableMarqueeButtonWidget
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.ScreenRendering
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.VerticalScrollbar
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.MahjongTileFaceRenderer
 import com.doublemoon1119.mahjongcraft.platform.minecraft.history.MinecraftHistoryScreenKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.WinSettlementPresentationTemplateRegistry
@@ -38,7 +44,7 @@ internal class HistoryRoundEventsScreen(
     private val settlementTemplates: WinSettlementPresentationTemplateRegistry,
 ) : Screen(Text.translatable(MinecraftHistoryScreenKeys.ROUND_TITLE)) {
     /** 固定區與內容區共用幾何。 */
-    private var layout = HistoryRoundEventsLayout.measure(0, 0)
+    private var layout = HistoryRoundEventsLayout.measure(width = 0, height = 0, contentTop = 0)
 
     /** 目前事件頁的捲動偏移。 */
     private var scroll = 0.0
@@ -64,38 +70,89 @@ internal class HistoryRoundEventsScreen(
     /** 初始牌面導航。 */
     private var initialButton: ButtonWidget? = null
 
+    /** 卡片內查看局面與載入和牌手牌的按鈕，依交易索引與是否為和牌手牌建立；隨內容捲動，由本畫面在內容裁切範圍內繪製。 */
+    private val stateButtons = mutableMapOf<Pair<Int, Boolean>, RestartableMarqueeButtonWidget>()
+
     /** 完整手牌與狀態頁共用的牌組繪製。 */
     private val tileGroups = HistoryTileGroupRenderer(tileFaceRenderer, tileAssetRegistry, session.discardMarkers, session.tileDisplayNames)
 
     /** 建立固定控制項並恢復此局位置。 */
     override fun init() {
-        val timingLines = textRenderer.wrapLines(timingText(), (width - 112).coerceAtLeast(1)).size
-        layout = HistoryRoundEventsLayout.measure(width, height, 52 + timingLines * LINE_HEIGHT)
+        val frame = HistoryPageFrame(windowWidth = width, windowHeight = height)
+        val timingLines = textRenderer.wrapLines(timingText(), frame.contentWidth).size
+        layout = HistoryRoundEventsLayout.measure(width = width, height = height, contentTop = TIMING_TOP + timingLines * LINE_HEIGHT + TIMING_BOTTOM_GAP)
         scroll = currentRound()?.eventScrollOffset ?: 0.0
         displayedStart = currentRound()?.events?.transactions?.firstOrNull()?.index
         dragging = false
+        stateButtons.clear()
         clearChildren()
-        val bounds = layout.footerBounds(width)
-        addDrawableChild(
-            ButtonWidget.builder(Text.translatable(MinecraftHistoryScreenKeys.BACK)) { session.backToSummary() }
-                .dimensions(bounds[0].x, bounds[0].y, bounds[0].width, bounds[0].height).build(),
+        val previous = layout.footerSlot(0)
+        previousButton = addDrawableChild(
+            RestartableMarqueeButtonWidget.builder(Text.translatable(MinecraftHistoryScreenKeys.PREVIOUS)) {
+                if (session.controller.canQueryRound()) {
+                    if (HistoryPaging.jumpsToEnd()) session.controller.firstRoundPage() else session.controller.previousRoundPage()
+                }
+            }.dimensions(previous.x, previous.y, previous.width, previous.height).build(),
         )
-        previousButton = ButtonWidget.builder(Text.translatable(MinecraftHistoryScreenKeys.PREVIOUS)) {
-            if (session.controller.canQueryRound()) session.controller.previousRoundPage()
-        }.dimensions(bounds[1].x, bounds[1].y, bounds[1].width, bounds[1].height).build().also(::addDrawableChild)
-        nextButton = ButtonWidget.builder(Text.translatable(MinecraftHistoryScreenKeys.NEXT)) {
-            if (session.controller.canQueryRound()) session.controller.nextRoundPage()
-        }.dimensions(bounds[3].x, bounds[3].y, bounds[3].width, bounds[3].height).build().also(::addDrawableChild)
-        refreshButton = ButtonWidget.builder(Text.translatable(MinecraftHistoryScreenKeys.REFRESH)) {
-            if (currentRound()?.eventsStatus is HistoryBrowseStatus.Failed) {
-                if (session.controller.canRetry()) session.controller.retry()
-            } else if (session.controller.canQueryRound()) {
-                session.controller.refreshRound()
+        val next = layout.footerSlot(2)
+        nextButton = addDrawableChild(
+            RestartableMarqueeButtonWidget.builder(Text.translatable(MinecraftHistoryScreenKeys.NEXT)) {
+                if (session.controller.canQueryRound()) {
+                    if (HistoryPaging.jumpsToEnd()) session.controller.lastRoundPage() else session.controller.nextRoundPage()
+                }
+            }.dimensions(next.x, next.y, next.width, next.height).build(),
+        )
+        val back = layout.footerSlot(HistoryPageFrame.LAST_SLOT)
+        addDrawableChild(
+            RestartableMarqueeButtonWidget.builder(Text.translatable(MinecraftHistoryScreenKeys.BACK)) { session.backToSummary() }
+                .dimensions(back.x, back.y, back.width, back.height)
+                .build(),
+        )
+        val headerButtonWidth = ((layout.contentWidth - HEADER_BUTTON_GAP) / 2).coerceAtMost(HEADER_BUTTON_WIDTH).coerceAtLeast(1)
+        refreshButton = addDrawableChild(
+            RestartableMarqueeButtonWidget.builder(Text.translatable(MinecraftHistoryScreenKeys.REFRESH)) {
+                if (currentRound()?.eventsStatus is HistoryBrowseStatus.Failed) {
+                    if (session.controller.canRetry()) session.controller.retry()
+                } else if (session.controller.canQueryRound()) {
+                    session.controller.refreshRound()
+                }
+            }.dimensions(layout.right - headerButtonWidth, HEADER_BUTTON_TOP, headerButtonWidth, FormScreenLayout.BUTTON_HEIGHT).build(),
+        )
+        initialButton = addDrawableChild(
+            RestartableMarqueeButtonWidget.builder(Text.translatable(MinecraftHistoryScreenKeys.STATE_INITIAL_OPEN)) {
+                if (session.controller.canQueryRound()) session.openRoundState(HistoryRoundPositionDto.Initial)
+            }.dimensions(layout.left, HEADER_BUTTON_TOP, headerButtonWidth, FormScreenLayout.BUTTON_HEIGHT).build(),
+        )
+    }
+
+    /**
+     * 取得卡片內的查看局面或載入和牌手牌按鈕；同一筆交易重複使用同一顆按鈕。
+     *
+     * @param index 交易索引。
+     * @param inline 是否為留在事件頁展開和牌手牌的按鈕；否則為開啟局面頁的放大鏡按鈕。
+     * @return 按鈕；位置由繪製時決定。
+     */
+    private fun stateButton(index: Int, inline: Boolean): RestartableMarqueeButtonWidget = stateButtons.getOrPut(index to inline) {
+        if (inline) {
+            val label = Text.translatable(MinecraftHistoryScreenKeys.STATE_LOAD_WINNING_HAND)
+            RestartableMarqueeButtonWidget.builder(label) {
+                if (session.controller.canQueryRound()) session.controller.loadRoundStateForDetails(index)
+            }.dimensions(0, 0, textRenderer.getWidth(label) + MINI_BUTTON_PADDING * 2, MINI_BUTTON_SIZE).build().also {
+                it.tooltip = Tooltip.of(ControlTooltip.description(Text.translatable(MinecraftHistoryScreenKeys.STATE_LOAD_WINNING_HAND_TOOLTIP)))
             }
-        }.dimensions((width - 88).coerceAtLeast(8), 16, 80.coerceAtMost((width - 16).coerceAtLeast(1)), 20).build().also(::addDrawableChild)
-        initialButton = ButtonWidget.builder(Text.translatable(MinecraftHistoryScreenKeys.STATE_INITIAL_OPEN)) {
-            if (session.controller.canQueryRound()) session.openRoundState(HistoryRoundPositionDto.Initial)
-        }.dimensions(8, 16, (width - 104).coerceIn(1, 100), 20).build().also(::addDrawableChild)
+        } else {
+            RestartableMarqueeButtonWidget.builder(Text.translatable(MinecraftHistoryScreenKeys.STATE_OPEN)) {
+                if (session.controller.canQueryRound()) session.openRoundState(HistoryRoundPositionDto.AfterTransaction(index))
+            }.dimensions(0, 0, MINI_BUTTON_SIZE, MINI_BUTTON_SIZE).build().also {
+                it.icon = PixelIcon.MAGNIFIER
+                it.tooltip = Tooltip.of(
+                    Text.empty()
+                        .append(Text.translatable(MinecraftHistoryScreenKeys.STATE_OPEN_TOOLTIP).formatted(Formatting.GRAY))
+                        .append("\n\n")
+                        .append(Text.translatable(MinecraftHistoryScreenKeys.STATE_OPEN_HINT).formatted(Formatting.GRAY)),
+                )
+            }
+        }
     }
 
     /** 歷史瀏覽不暫停整合伺服器。 */
@@ -125,9 +182,9 @@ internal class HistoryRoundEventsScreen(
         val round = currentRound()
         val status = round?.eventsStatus ?: HistoryBrowseStatus.Failed(HistoryBrowseFailure.NOT_AVAILABLE)
         val heading = title.copy().append(" • ").append(Text.translatable(MinecraftHistoryScreenKeys.ROUND_NUMBER, round?.roundNumber ?: "—"))
-        context.drawCenteredTextWithShadow(textRenderer, heading, width / 2, 2, TEXT_COLOR)
-        textRenderer.wrapLines(timingText(), (width - 112).coerceAtLeast(1)).forEachIndexed { index, line ->
-            context.drawTextWithShadow(textRenderer, line, 10, 40 + index * LINE_HEIGHT, MUTED_COLOR)
+        ScreenRendering.title(context, textRenderer, heading, width)
+        textRenderer.wrapLines(timingText(), layout.contentWidth).forEachIndexed { index, line ->
+            context.drawTextWithShadow(textRenderer, line, layout.left, TIMING_TOP + index * LINE_HEIGHT, MUTED_COLOR)
         }
         updateButtons(status)
         val events = round?.events?.takeIf { status == HistoryBrowseStatus.Ready }
@@ -145,12 +202,13 @@ internal class HistoryRoundEventsScreen(
             session.controller.rememberRoundPosition(scroll)
         }
         var tooltip: List<Text>? = null
-        context.enableScissor(8, layout.contentTop, (width - 8).coerceAtLeast(8), layout.contentBottom)
+        stateButtons.values.forEach { it.visible = false }
+        context.enableScissor(layout.left, layout.contentTop, layout.right, layout.contentBottom)
         when (status) {
             HistoryBrowseStatus.Idle, HistoryBrowseStatus.Loading -> drawNotice(context, Text.translatable(MinecraftHistoryScreenKeys.LOADING), layout.contentTop + 12, TEXT_COLOR)
             is HistoryBrowseStatus.Failed -> drawNotice(context, Text.translatable(status.reason.translationKey), layout.contentTop + 12, ERROR_COLOR)
             HistoryBrowseStatus.Ready -> {
-                tooltip = renderCards(context, cards, mouseX, mouseY)
+                tooltip = renderCards(context, cards, mouseX, mouseY, delta)
                 val bottom = layout.contentTop + 4 + cards.sumOf { it.height } - scroll.toInt()
                 if (cards.isEmpty()) drawNotice(context, Text.translatable(MinecraftHistoryScreenKeys.ROUND_NO_EVENTS), bottom, MUTED_COLOR)
                 hint?.let { drawNotice(context, it, bottom + if (cards.isEmpty()) 16 else 4, MUTED_COLOR) }
@@ -158,9 +216,9 @@ internal class HistoryRoundEventsScreen(
         }
         context.disableScissor()
         if (events != null) renderScrollbar(context, height)
-        val pageTooltip = renderPage(context, round, mouseX, mouseY)
+        renderPage(context, round)
         super.render(context, mouseX, mouseY, delta)
-        if (!dragging) (pageTooltip ?: tooltip)?.let { context.drawTooltip(textRenderer, it, mouseX, mouseY) }
+        if (!dragging) tooltip?.let { context.drawTooltip(textRenderer, it, mouseX, mouseY) }
     }
 
     /**
@@ -176,13 +234,14 @@ internal class HistoryRoundEventsScreen(
         val failed = status is HistoryBrowseStatus.Failed
         refreshButton?.active = if (failed) session.controller.canRetry() else canQuery
         refreshButton?.message = Text.translatable(if (failed) MinecraftHistoryScreenKeys.RETRY else MinecraftHistoryScreenKeys.REFRESH)
-        val tooltip = when {
-            session.controller.isRefreshCoolingDown() -> Tooltip.of(Text.translatable(MinecraftHistoryScreenKeys.QUERY_COOLDOWN_TOOLTIP))
-            !canQuery -> Tooltip.of(Text.translatable(MinecraftHistoryScreenKeys.QUERY_LOADING_TOOLTIP))
+        val queryStatus = when {
+            session.controller.isRefreshCoolingDown() -> Text.translatable(MinecraftHistoryScreenKeys.QUERY_COOLDOWN_TOOLTIP)
+            !canQuery -> Text.translatable(MinecraftHistoryScreenKeys.QUERY_LOADING_TOOLTIP)
             else -> null
         }
-        previousButton?.tooltip = tooltip
-        nextButton?.tooltip = tooltip
+        val tooltip = queryStatus?.let(Tooltip::of)
+        previousButton?.tooltip = Tooltip.of(HistoryPaging.buttonTooltip(MinecraftHistoryScreenKeys.HINT_PREVIOUS_PAGE, MinecraftHistoryScreenKeys.HINT_FIRST_PAGE, queryStatus))
+        nextButton?.tooltip = Tooltip.of(HistoryPaging.buttonTooltip(MinecraftHistoryScreenKeys.HINT_NEXT_PAGE, MinecraftHistoryScreenKeys.HINT_LAST_PAGE, queryStatus))
         refreshButton?.tooltip = tooltip
         initialButton?.active = canQuery && status == HistoryBrowseStatus.Ready
         initialButton?.tooltip = tooltip
@@ -226,11 +285,10 @@ internal class HistoryRoundEventsScreen(
                 addText(Text.translatable(labelKey), MUTED_COLOR, 16)
                 tiles.chunked(layout.tilesPerRow()).forEach { rows += Row.Tiles(it) }
             }
-            val heading = Text.translatable(MinecraftHistoryScreenKeys.ROUND_TRANSACTION, transaction.index + 1, HistoryScreenText.endedAt(transaction.occurredAtEpochMillis))
-            if (transaction.isOpening) heading.append(" • ").append(Text.translatable(MinecraftHistoryScreenKeys.ROUND_OPENING))
-            addText(heading, ACCENT_COLOR)
-            rows += Row.StateLink(transaction.index, inline = false)
-            rows += Row.Space(4)
+            val heading = Text.translatable(MinecraftHistoryScreenKeys.ROUND_TRANSACTION, transaction.index + 1, HistoryScreenText.timeOfDay(transaction.occurredAtEpochMillis))
+            if (transaction.isOpening) heading.append(" · ").append(Text.translatable(MinecraftHistoryScreenKeys.ROUND_OPENING))
+            rows += Row.Heading(heading, transaction.index)
+            rows += Row.Space(2)
             if (transaction.facts.isEmpty()) addText(Text.translatable(MinecraftHistoryScreenKeys.ROUND_EMPTY_FACTS), MUTED_COLOR, 16)
             transaction.facts.forEachIndexed { factIndex, fact ->
                 val savedOutcome = when (val savedFact = fact.source) {
@@ -296,7 +354,7 @@ internal class HistoryRoundEventsScreen(
                                     if (round?.requestedPosition == position && failure != null) {
                                         addText(Text.translatable(failure.reason.translationKey), ERROR_COLOR, 46)
                                     }
-                                    rows += Row.StateLink(transaction.index, inline = true)
+                                    rows += Row.StateLink(transaction.index)
                                 }
                             }
                         }
@@ -358,15 +416,19 @@ internal class HistoryRoundEventsScreen(
      * @param cards 卡片。
      * @param mouseX 游標水平座標。
      * @param mouseY 游標垂直座標。
+     * @param delta 畫面更新比例。
      * @return 可見列 tooltip。
      */
-    private fun renderCards(context: DrawContext, cards: List<Card>, mouseX: Int, mouseY: Int): List<Text>? {
-        var top = layout.contentTop + 4 - scroll.toInt()
+    private fun renderCards(context: DrawContext, cards: List<Card>, mouseX: Int, mouseY: Int, delta: Float): List<Text>? {
+        var top = layout.contentTop - scroll.toInt()
+        val pointerInside = !dragging && mouseX >= layout.left && mouseX < layout.right && mouseY >= layout.contentTop && mouseY < layout.contentBottom
+        val pointerX = if (pointerInside) mouseX else OFFSCREEN_POINTER
+        val pointerY = if (pointerInside) mouseY else OFFSCREEN_POINTER
         var tooltip: List<Text>? = null
         cards.forEach { card ->
             if (top + card.height >= layout.contentTop && top < layout.contentBottom) {
                 val hovered = !dragging && layout.containsCard(mouseX.toDouble(), mouseY.toDouble(), top, card.height - 4)
-                context.fill(layout.left, top, layout.cardRight, top + card.height - 4, if (hovered) CARD_HOVER_COLOR else CARD_COLOR)
+                context.fill(layout.left, top, layout.right, top + card.height - 4, if (hovered) CARD_HOVER_COLOR else CARD_COLOR)
                 var y = top + 4
                 card.rows.forEach { row ->
                     when (row) {
@@ -394,22 +456,19 @@ internal class HistoryRoundEventsScreen(
                             }
                         }
                         is Row.Space -> Unit
+                        is Row.Heading -> {
+                            val button = stateButton(row.index, inline = false)
+                            button.x = layout.right - CARD_PADDING - button.width
+                            button.y = y + (row.height - button.height) / 2
+                            val text = HistoryScreenText.trim(row.text.string, (button.x - CARD_PADDING - layout.left - CARD_PADDING).coerceAtLeast(1), textRenderer::getWidth)
+                            context.drawTextWithShadow(textRenderer, Text.literal(text), layout.left + CARD_PADDING, y + (row.height - FormScreenLayout.VISIBLE_TEXT_HEIGHT) / 2, ACCENT_COLOR)
+                            renderCardButton(context, button, pointerX, pointerY, delta)
+                        }
                         is Row.StateLink -> {
-                            val enabled = session.controller.canQueryRound()
-                            val linkHover = hovered && mouseY >= y && mouseY < y + row.height
-                            val text = Text.translatable(if (row.inline) MinecraftHistoryScreenKeys.STATE_LOAD_WINNING_HAND else MinecraftHistoryScreenKeys.STATE_OPEN).styled { it.withUnderline(true) }
-                            context.drawTextWithShadow(
-                                textRenderer,
-                                text,
-                                layout.left + row.indent,
-                                y,
-                                when {
-                                    !enabled -> MUTED_COLOR
-                                    linkHover -> LINK_HOVER_COLOR
-                                    else -> LINK_COLOR
-                                },
-                            )
-                            if (linkHover) tooltip = listOf(Text.translatable(if (row.inline) MinecraftHistoryScreenKeys.STATE_LOAD_WINNING_HAND_TOOLTIP else MinecraftHistoryScreenKeys.STATE_OPEN_TOOLTIP))
+                            val button = stateButton(row.index, inline = true)
+                            button.x = layout.left + row.indent
+                            button.y = y + (row.height - button.height) / 2
+                            renderCardButton(context, button, pointerX, pointerY, delta)
                         }
                         is Row.Hand -> {
                             val hit = tileGroups.render(context, row.layout, row.catalog, layout.left + 46, y, mouseX, mouseY, notes = row.notes, appearance = session.tileAppearance())
@@ -422,6 +481,21 @@ internal class HistoryRoundEventsScreen(
             top += card.height
         }
         return tooltip
+    }
+
+    /**
+     * 繪製卡片內的按鈕；按鈕有任何部分在內容區內就顯示，點擊只在內容區內有效。
+     *
+     * @param context 繪製上下文。
+     * @param button 要繪製的按鈕。
+     * @param pointerX 交給按鈕的游標水平座標；游標不在內容區時在畫面外。
+     * @param pointerY 交給按鈕的游標垂直座標；游標不在內容區時在畫面外。
+     * @param delta 畫面更新比例。
+     */
+    private fun renderCardButton(context: DrawContext, button: RestartableMarqueeButtonWidget, pointerX: Int, pointerY: Int, delta: Float) {
+        button.active = session.controller.canQueryRound()
+        button.visible = button.y + button.height > layout.contentTop && button.y < layout.contentBottom
+        button.render(context, pointerX, pointerY, delta)
     }
 
     /**
@@ -444,7 +518,7 @@ internal class HistoryRoundEventsScreen(
      * @return 不小於可視區的高度。
      */
     private fun contentHeight(cards: List<Card>, hint: Text?): Int = (
-        8 + cards.sumOf { it.height } + (if (cards.isEmpty()) 16 else 0) +
+        4 + cards.sumOf { it.height } + (if (cards.isEmpty()) 16 else 0) +
             (hint?.let { textRenderer.wrapLines(it, layout.contentWidth.coerceAtLeast(1)).size * LINE_HEIGHT + 4 } ?: 0)
         ).coerceAtLeast(layout.viewportHeight)
 
@@ -464,32 +538,22 @@ internal class HistoryRoundEventsScreen(
     }
 
     /**
-     * 顯示已確認頁碼與本頁交易範圍，不猜總數。
+     * 在底部中間一格顯示本頁的交易範圍與本局的交易總數。
      *
      * @param context 繪製上下文。
      * @param round 已確認局狀態。
-     * @param mouseX 游標水平座標。
-     * @param mouseY 游標垂直座標。
-     * @return 指向頁碼時的完整範圍提示。
      */
-    private fun renderPage(context: DrawContext, round: HistoryBrowseRoundState?, mouseX: Int, mouseY: Int): List<Text>? {
-        val bounds = layout.footerBounds(width)[2]
+    private fun renderPage(context: DrawContext, round: HistoryBrowseRoundState?) {
         val events = round?.takeIf { it.eventsStatus == HistoryBrowseStatus.Ready }?.events
         val first = events?.transactions?.firstOrNull()?.index?.plus(1)?.toString() ?: "—"
         val last = events?.transactions?.lastOrNull()?.index?.plus(1)?.toString() ?: "—"
-        val text = Text.translatable(MinecraftHistoryScreenKeys.ROUND_PAGE_RANGE, round?.eventPageNumber ?: 1, first, last)
-        val lines = listOf(Text.translatable(MinecraftHistoryScreenKeys.PAGE, round?.eventPageNumber ?: 1), Text.literal("$first–$last"))
-        context.enableScissor(bounds.x, bounds.y, bounds.x + bounds.width, bounds.y + bounds.height)
-        lines.forEachIndexed { index, line ->
-            val scale = (bounds.width.toFloat() / textRenderer.getWidth(line).coerceAtLeast(1)).coerceAtMost(1f)
-            context.matrices.push()
-            context.matrices.translate((bounds.x + bounds.width / 2).toDouble(), (bounds.y + index * LINE_HEIGHT).toDouble(), 0.0)
-            context.matrices.scale(scale, scale, 1f)
-            context.drawCenteredTextWithShadow(textRenderer, line, 0, 0, TEXT_COLOR)
-            context.matrices.pop()
-        }
-        context.disableScissor()
-        return listOf(text).takeIf { mouseX >= bounds.x && mouseX < bounds.x + bounds.width && mouseY >= bounds.y && mouseY < bounds.y + bounds.height }
+        HistoryPaging.renderRange(
+            context = context,
+            textRenderer = textRenderer,
+            bounds = layout.footerSlot(1),
+            primary = Text.translatable(MinecraftHistoryScreenKeys.ROUND_PAGE_RANGE, first, last),
+            secondary = HistoryPaging.totalText(round?.transactionCount),
+        )
     }
 
     /**
@@ -501,9 +565,7 @@ internal class HistoryRoundEventsScreen(
     private fun renderScrollbar(context: DrawContext, contentHeight: Int) {
         val bar = layout.scrollbar(contentHeight, scroll)
         if (bar.maximumScroll <= 0 || layout.contentBottom <= layout.contentTop) return
-        val bounds = layout.scrollbarBounds()
-        context.fill(bounds.x, bounds.y, bounds.x + bounds.width, bounds.y + bounds.height, 0x80505050.toInt())
-        context.fill(bounds.x, bar.thumbTop, bounds.x + bounds.width, bar.thumbTop + bar.thumbHeight, 0xffd0d0d0.toInt())
+        VerticalScrollbar.render(context, layout.scrollbarBounds().x, bar)
     }
 
     /**
@@ -546,27 +608,15 @@ internal class HistoryRoundEventsScreen(
     override fun mouseClicked(mouseX: Double, mouseY: Double, button: Int): Boolean {
         val height = readyContentHeight()
         val bar = layout.scrollbar(height, scroll)
-        val bounds = layout.scrollbarBounds()
-        if (button == 0 && currentRound()?.eventsStatus == HistoryBrowseStatus.Ready && bar.maximumScroll > 0 && mouseX >= bounds.x && mouseX < bounds.x + bounds.width && mouseY >= bounds.y && mouseY < bounds.y + bounds.height) {
+        if (button == 0 && currentRound()?.eventsStatus == HistoryBrowseStatus.Ready && bar.maximumScroll > 0 && layout.isOverScrollbar(mouseX, mouseY)) {
             dragging = true
             grabOffset = layout.grabOffset(height, scroll, mouseY)
             updateDrag(mouseY)
             return true
         }
-        val events = currentRound()?.takeIf { it.eventsStatus == HistoryBrowseStatus.Ready }?.events
-        if (button == 0 && events != null && session.controller.canQueryRound()) {
-            var top = layout.contentTop + 4 - scroll.toInt()
-            buildCards(events).forEach { card ->
-                var y = top + 4
-                card.rows.forEach { row ->
-                    if (row is Row.StateLink && layout.containsCard(mouseX, mouseY, y, row.height)) {
-                        val handled = if (row.inline) session.controller.loadRoundStateForDetails(row.index) else session.openRoundState(HistoryRoundPositionDto.AfterTransaction(row.index))
-                        if (handled) return true
-                    }
-                    y += row.height
-                }
-                top += card.height
-            }
+        val insideContent = mouseX >= layout.left && mouseX < layout.right && mouseY >= layout.contentTop && mouseY < layout.contentBottom
+        if (insideContent && currentRound()?.eventsStatus == HistoryBrowseStatus.Ready) {
+            stateButtons.values.firstOrNull { it.visible && it.mouseClicked(mouseX, mouseY, button) }?.let { return true }
         }
         return super.mouseClicked(mouseX, mouseY, button)
     }
@@ -699,20 +749,32 @@ internal class HistoryRoundEventsScreen(
         ) : Row
 
         /**
-         * 完整狀態或和牌手牌的單筆查詢入口。
+         * 交易標題列：左邊是交易序號與時間，右端是查看局面的放大鏡按鈕。
+         *
+         * @property text 標題文字。
+         * @property index 已確認交易索引。
+         */
+        data class Heading(
+            val text: Text,
+            val index: Int,
+        ) : Row {
+            /** 容得下放大鏡按鈕的列高。 */
+            override val height: Int = MINI_BUTTON_SIZE + 2
+        }
+
+        /**
+         * 載入和牌手牌的按鈕列，留在事件頁展開手牌。
          *
          * @property index 已確認交易索引。
-         * @property inline 是否留在事件頁展開手牌。
          */
         data class StateLink(
             val index: Int,
-            val inline: Boolean,
         ) : Row {
-            /** 控制列高度。 */
-            override val height: Int = LINE_HEIGHT + 4
+            /** 容得下按鈕的列高。 */
+            override val height: Int = MINI_BUTTON_SIZE + 2
 
-            /** 控制列縮排。 */
-            val indent: Int = if (inline) 46 else 16
+            /** 按鈕縮排。 */
+            val indent: Int = 46
         }
 
         /**
@@ -734,6 +796,33 @@ internal class HistoryRoundEventsScreen(
 
     /** 共用尺寸與配色。 */
     private companion object {
+        /** 標題下方「開局狀態」與「重新整理」按鈕的上界。 */
+        const val HEADER_BUTTON_TOP = FormScreenLayout.TITLE_BOTTOM
+
+        /** 標題下方兩顆按鈕的最大寬度。 */
+        const val HEADER_BUTTON_WIDTH = 100
+
+        /** 標題下方兩顆按鈕之間至少保留的距離。 */
+        const val HEADER_BUTTON_GAP = 6
+
+        /** 按鈕下方時間資訊第一行的 Y 座標。 */
+        const val TIMING_TOP = HEADER_BUTTON_TOP + FormScreenLayout.BUTTON_HEIGHT + 4
+
+        /** 時間資訊與卡片區之間的距離。 */
+        const val TIMING_BOTTOM_GAP = 3
+
+        /** 卡片內小按鈕的高度，也是放大鏡按鈕的邊長。 */
+        const val MINI_BUTTON_SIZE = 16
+
+        /** 卡片內文字按鈕左右的留白。 */
+        const val MINI_BUTTON_PADDING = 6
+
+        /** 卡片內標題與卡片左右緣的距離。 */
+        const val CARD_PADDING = 6
+
+        /** 游標不在內容區時交給卡片內按鈕的座標。 */
+        const val OFFSCREEN_POINTER = -1
+
         /** 文字列高度。 */
         const val LINE_HEIGHT = 11
 
@@ -760,12 +849,6 @@ internal class HistoryRoundEventsScreen(
 
         /** 重要資訊。 */
         const val ACCENT_COLOR = 0x8ed5df
-
-        /** 牌面狀態連結。 */
-        const val LINK_COLOR = 0xe8c878
-
-        /** 牌面狀態連結游標提示。 */
-        const val LINK_HOVER_COLOR = 0xffe7a8
 
         /** 失敗訊息。 */
         const val ERROR_COLOR = 0xff6666

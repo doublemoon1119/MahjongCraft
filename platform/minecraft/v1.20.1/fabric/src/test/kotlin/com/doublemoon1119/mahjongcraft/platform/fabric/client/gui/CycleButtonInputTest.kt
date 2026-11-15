@@ -30,25 +30,43 @@ class CycleButtonInputTest {
         assertFailsWith<IllegalArgumentException> { CycleButtonInput.nextIndex(currentIndex = 0, size = 0, step = 1) }
     }
 
-    /** 選項至少三個時，提示框原內容後空一行，再接兩行操作說明。 */
+    /** 右鍵或按住 Shift 往上一項，其餘往下一項。 */
+    @Test
+    fun `right click or shift selects the previous option`() {
+        assertEquals(1, CycleButtonInput.direction(shiftHeld = false, secondaryClick = false))
+        assertEquals(-1, CycleButtonInput.direction(shiftHeld = true, secondaryClick = false))
+        assertEquals(-1, CycleButtonInput.direction(shiftHeld = false, secondaryClick = true))
+        assertEquals(-1, CycleButtonInput.direction(shiftHeld = true, secondaryClick = true))
+    }
+
+    /** 選項至少三個時，提示框原內容後空一行，再接往下與往上兩行操作說明。 */
     @Test
     fun `hint follows the tooltip after a blank line`() {
         val tooltip = CycleButtonInput.withHint(tooltip = Text.literal("Options"), optionCount = 3)
 
-        assertEquals(listOf("Options", "", MinecraftCycleButtonKeys.CLICK_NEXT, MinecraftCycleButtonKeys.SHIFT_CLICK_PREVIOUS), tooltip.string.split("\n"))
+        assertEquals(listOf("Options", "", MinecraftCycleButtonKeys.CLICK_NEXT, MinecraftCycleButtonKeys.CLICK_PREVIOUS), tooltip.string.split("\n"))
         val lines = CycleButtonInput.withHintLines(lines = listOf(Text.literal("A"), Text.literal("B")), optionCount = 3)
-        assertEquals(listOf("A", "B", "", MinecraftCycleButtonKeys.CLICK_NEXT, MinecraftCycleButtonKeys.SHIFT_CLICK_PREVIOUS), lines.map { it.string })
+        assertEquals(listOf("A", "B", "", MinecraftCycleButtonKeys.CLICK_NEXT, MinecraftCycleButtonKeys.CLICK_PREVIOUS), lines.map { it.string })
     }
 
-    /** 只有兩個選項或按鈕停用時，提示框維持原樣。 */
+    /** 只有兩個選項時往前往後結果相同，只說明左鍵。 */
     @Test
-    fun `two options or inactive buttons get no hint`() {
+    fun `two options only explain the left click`() {
+        val tooltip = CycleButtonInput.withHint(tooltip = Text.literal("Options"), optionCount = 2)
+
+        assertEquals(listOf("Options", "", MinecraftCycleButtonKeys.CLICK_NEXT), tooltip.string.split("\n"))
+        assertEquals(listOf(MinecraftCycleButtonKeys.CLICK_NEXT), CycleButtonInput.hintTexts(optionCount = 2).map { it.string })
+    }
+
+    /** 只有一個選項或按鈕停用時，提示框維持原樣。 */
+    @Test
+    fun `single option or inactive buttons get no hint`() {
         val tooltip = Text.literal("Options")
         val lines = listOf(Text.literal("A"))
 
-        assertSame(tooltip, CycleButtonInput.withHint(tooltip = tooltip, optionCount = 2))
+        assertSame(tooltip, CycleButtonInput.withHint(tooltip = tooltip, optionCount = 1))
         assertSame(tooltip, CycleButtonInput.withHint(tooltip = tooltip, optionCount = 5, active = false))
-        assertSame(lines, CycleButtonInput.withHintLines(lines = lines, optionCount = 2))
+        assertSame(lines, CycleButtonInput.withHintLines(lines = lines, optionCount = 1))
         assertSame(lines, CycleButtonInput.withHintLines(lines = lines, optionCount = 5, active = false))
     }
 }
