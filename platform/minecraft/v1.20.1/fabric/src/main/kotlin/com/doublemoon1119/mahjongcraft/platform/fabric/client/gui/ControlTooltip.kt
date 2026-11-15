@@ -50,7 +50,45 @@ internal object ControlTooltip {
         hints: List<Text> = emptyList(),
         title: Text = Text.translatable(MinecraftControlTooltipKeys.OPTIONS),
         notice: Text? = null,
-    ): Text = compose(
+    ): Text = joinLines(optionLines(description = description, options = options, hints = hints, title = title, notice = notice))
+
+    /**
+     * 建立只需要標出目前是第幾個選項的提示框，用於全部選項都可選的循環按鈕。
+     *
+     * @param description 控制項說明；沒有說明時為 null。
+     * @param labels 依顯示順序排列的全部選項名稱。
+     * @param currentIndex 目前選項的索引；沒有目前選項時為負值。
+     * @param hints 操作提示；不需要提示時為空。
+     * @return 以換行分隔各行的提示文字。
+     */
+    fun options(
+        description: Text?,
+        labels: List<Text>,
+        currentIndex: Int,
+        hints: List<Text> = emptyList(),
+    ): Text = options(
+        description = description,
+        options = labels.mapIndexed { index, label -> Option(label = label, current = index == currentIndex) },
+        hints = hints,
+    )
+
+    /**
+     * 建立選項提示框的每一行，供逐行繪製提示框的畫面使用；內容與 [options] 相同。
+     *
+     * @param description 控制項說明；沒有說明時為 null。
+     * @param options 依顯示順序排列的全部選項。
+     * @param hints 操作提示；不需要提示時為空。
+     * @param title 選項清單的標題。
+     * @param notice 提醒文字；沒有提醒時為 null。
+     * @return 提示框的每一行；段落之間以空行分隔。
+     */
+    fun optionLines(
+        description: Text?,
+        options: List<Option>,
+        hints: List<Text> = emptyList(),
+        title: Text = Text.translatable(MinecraftControlTooltipKeys.OPTIONS),
+        notice: Text? = null,
+    ): List<Text> = composeLines(
         description = description,
         status = listOf<Text>(title.copy().formatted(Formatting.GOLD)) + options.map(::optionLine),
         notice = notice,
@@ -76,7 +114,7 @@ internal object ControlTooltip {
             .append(Text.translatable(MinecraftControlTooltipKeys.RANGE).formatted(Formatting.GOLD))
             .append("  ")
             .append(range.copy().formatted(Formatting.WHITE))
-        return compose(description = description, status = listOf(status), notice = notice, hints = hints)
+        return joinLines(composeLines(description = description, status = listOf(status), notice = notice, hints = hints))
     }
 
     /**
@@ -85,7 +123,10 @@ internal object ControlTooltip {
      * @param description 按鈕說明。
      * @return 灰色的說明文字。
      */
-    fun description(description: Text): Text = compose(description = description, status = emptyList(), notice = null, hints = emptyList())
+    fun description(description: Text): Text {
+        val lines = composeLines(description = description, status = emptyList(), notice = null, hints = emptyList())
+        return joinLines(lines)
+    }
 
     /**
      * 建立數值範圍文字。
@@ -150,28 +191,40 @@ internal object ControlTooltip {
     }
 
     /**
-     * 將各段落組成提示文字，段落之間空一行。
+     * 將各段落排成提示框的每一行，段落之間空一行，沒有內容的段落省略。
      *
      * @param description 說明；沒有時為 null。
      * @param status 狀態區的每一行。
      * @param notice 提醒；沒有時為 null。
      * @param hints 操作提示的每一行。
-     * @return 以換行分隔各行的提示文字。
+     * @return 提示框的每一行。
      */
-    private fun compose(description: Text?, status: List<Text>, notice: Text?, hints: List<Text>): Text {
+    private fun composeLines(description: Text?, status: List<Text>, notice: Text?, hints: List<Text>): List<Text> {
         val sections = listOf(
             listOfNotNull(description?.copy()?.formatted(Formatting.GRAY)),
             status,
             listOfNotNull(notice?.copy()?.formatted(Formatting.RED)),
             hints,
         ).filter { it.isNotEmpty() }
-        val result = Text.empty()
-        sections.forEachIndexed { sectionIndex, lines ->
-            if (sectionIndex > 0) result.append("\n\n")
-            lines.forEachIndexed { lineIndex, line ->
-                if (lineIndex > 0) result.append("\n")
-                result.append(line)
+        return buildList {
+            sections.forEachIndexed { index, lines ->
+                if (index > 0) add(Text.empty())
+                addAll(lines)
             }
+        }
+    }
+
+    /**
+     * 將每一行以換行串成一段提示文字。
+     *
+     * @param lines 提示框的每一行。
+     * @return 以換行分隔各行的提示文字。
+     */
+    private fun joinLines(lines: List<Text>): Text {
+        val result = Text.empty()
+        lines.forEachIndexed { index, line ->
+            if (index > 0) result.append("\n")
+            result.append(line)
         }
         return result
     }

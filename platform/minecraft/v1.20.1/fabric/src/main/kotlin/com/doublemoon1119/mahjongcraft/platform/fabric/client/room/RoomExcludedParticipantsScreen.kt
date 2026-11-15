@@ -3,8 +3,11 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.client.room
 import com.doublemoon1119.mahjongcraft.flow.common.room.model.RoomSnapshot
 import com.doublemoon1119.mahjongcraft.flow.common.time.MonotonicClock
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.fitClientText
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.RestartableMarqueeButtonWidget
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.ScreenRendering
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.ScrollState
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.ScrollbarLayout
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.VerticalScrollbar
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.ExcludedParticipantIdentity
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.MinecraftRoomScreenKeys
 import net.minecraft.client.gui.DrawContext
@@ -98,11 +101,11 @@ internal class RoomExcludedParticipantsScreen(
         }
         addDrawableChild(search)
         clearAll = addDrawableChild(
-            ButtonWidget.builder(Text.translatable(MinecraftRoomScreenKeys.ALLOW_ALL_REJOINING)) { confirmClearAll() }
+            RestartableMarqueeButtonWidget.builder(Text.translatable(MinecraftRoomScreenKeys.ALLOW_ALL_REJOINING)) { confirmClearAll() }
                 .dimensions(left, height - 30, (listWidth - 8) / 2, 20).build(),
         )
         addDrawableChild(
-            ButtonWidget.builder(Text.translatable(MinecraftRoomScreenKeys.DONE)) { close() }
+            RestartableMarqueeButtonWidget.builder(Text.translatable(MinecraftRoomScreenKeys.DONE)) { close() }
                 .dimensions(left + (listWidth + 8) / 2, height - 30, (listWidth - 8) / 2, 20).build(),
         )
         refreshRows()
@@ -182,7 +185,7 @@ internal class RoomExcludedParticipantsScreen(
         // 網路快照可能在兩次 tick 之間更新，繪製前先移除已不在名單上的卡片。
         if (room.excludedPlayerIds != entries) refreshRows()
         renderBackground(context)
-        context.drawCenteredTextWithShadow(textRenderer, title, width / 2, 16, 0xFFFFFF)
+        ScreenRendering.title(context, textRenderer, title, width)
         filtered.drop(scroll.index).take(rows).forEachIndexed { index, id ->
             val y = top + index * ROW_HEIGHT
             val hovered = mouseX in left until left + listWidth && mouseY in y until y + ROW_HEIGHT - 4
@@ -206,8 +209,7 @@ internal class RoomExcludedParticipantsScreen(
         }
         val bar = scrollbar
         if (bar.maximumScroll > 0 && rows > 0) {
-            context.fill(left + listWidth + 4, bar.trackTop, left + listWidth + 10, bar.trackBottom, 0x80505050.toInt())
-            context.fill(left + listWidth + 4, bar.thumbTop, left + listWidth + 10, bar.thumbTop + bar.thumbHeight, 0xFFD0D0D0.toInt())
+            VerticalScrollbar.renderWithin(context, left + listWidth + 4, left + listWidth + 10, bar)
         }
         super.render(context, mouseX, mouseY, delta)
         filtered.drop(scroll.index).take(rows).forEachIndexed { index, id ->

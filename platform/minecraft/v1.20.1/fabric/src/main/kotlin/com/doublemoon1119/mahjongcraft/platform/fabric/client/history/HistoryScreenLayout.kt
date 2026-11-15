@@ -130,13 +130,13 @@ internal data class HistoryScreenLayout(
             return List(5) { index ->
                 val row = index / 3
                 val column = index % 3
-                Bounds(8 + column * (buttonWidth + gap), 12 + row * 24, buttonWidth, 20)
+                Bounds(8 + column * (buttonWidth + gap), TOOLBAR_TOP + row * 24, buttonWidth, 20)
             }
         }
         val gap = 4
         val count = 5
         val buttonWidth = ((width - 16 - gap * (count - 1)) / count).coerceAtLeast(40)
-        return List(count) { index -> Bounds(8 + index * (buttonWidth + gap), 12, buttonWidth, 20) }
+        return List(count) { index -> Bounds(8 + index * (buttonWidth + gap), TOOLBAR_TOP, buttonWidth, 20) }
     }
 
     /**
@@ -159,6 +159,9 @@ internal data class HistoryScreenLayout(
 
     /** 計算窄視窗仍不重疊的版面。 */
     companion object {
+        /** 工具列第一列的上界，位於畫面標題下方。 */
+        const val TOOLBAR_TOP: Int = 20
+
         /**
          * 依畫面尺寸建立版面；最小高度仍保留固定底列。
          *
@@ -168,7 +171,7 @@ internal data class HistoryScreenLayout(
          */
         fun measure(width: Int, height: Int): HistoryScreenLayout {
             val footer = (height - 28).coerceAtLeast(0)
-            val toolbar = if (width < 450) 72 else 48
+            val toolbar = TOOLBAR_TOP + if (width < 450) 60 else 36
             val top = toolbar.coerceAtMost(footer)
             return HistoryScreenLayout(top - 1, top, (footer - 4).coerceAtLeast(top), footer, (width - 24).coerceAtLeast(0))
         }

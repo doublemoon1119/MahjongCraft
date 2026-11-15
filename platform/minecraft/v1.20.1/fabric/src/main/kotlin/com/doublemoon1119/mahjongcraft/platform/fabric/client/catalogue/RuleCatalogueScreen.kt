@@ -1,7 +1,10 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.client.catalogue
 
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.ControlTooltip
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.CycleButtonInput
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.RestartableMarqueeButtonWidget
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.ScreenRendering
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.VerticalScrollbar
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.MahjongTileFaceRenderer
 import com.doublemoon1119.mahjongcraft.platform.minecraft.catalogue.MinecraftRuleCatalogueScreenKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.catalogue.RuleCatalogueBrowseContext
@@ -107,14 +110,11 @@ internal class RuleCatalogueScreen(
         }.apply {
             active = options.size > 1
             tooltip = Tooltip.of(
-                CycleButtonInput.withHint(
-                    tooltip = optionTooltip(
-                        descriptionKeys = description,
-                        current = name,
-                        options = options.map { it.displayName },
-                    ),
-                    optionCount = options.size,
-                    active = active,
+                optionTooltip(
+                    descriptionKeys = description,
+                    current = name,
+                    options = options.map { it.displayName },
+                    hints = CycleButtonInput.hintTexts(optionCount = options.size, active = active),
                 ),
             )
         }
@@ -131,14 +131,11 @@ internal class RuleCatalogueScreen(
         }.apply {
             active = categories.isNotEmpty()
             tooltip = Tooltip.of(
-                CycleButtonInput.withHint(
-                    tooltip = optionTooltip(
-                        descriptionKeys = listOf(MinecraftRuleCatalogueScreenKeys.CATEGORY_TOOLTIP),
-                        current = name,
-                        options = options.map { presenter.text(it.second) },
-                    ),
-                    optionCount = options.size,
-                    active = active,
+                optionTooltip(
+                    descriptionKeys = listOf(MinecraftRuleCatalogueScreenKeys.CATEGORY_TOOLTIP),
+                    current = name,
+                    options = options.map { presenter.text(it.second) },
+                    hints = CycleButtonInput.hintTexts(optionCount = options.size, active = active),
                 ),
             )
         }
@@ -192,27 +189,25 @@ internal class RuleCatalogueScreen(
     }
 
     /**
-     * 建立選項按鈕的提示：灰色說明、綠色目前選項、金色選項標題，以及逐項列出的選項（目前選項為綠色）。
+     * 建立選項按鈕的提示：說明、全部選項與目前選項，以及可操作時的操作提示。
      *
      * @param descriptionKeys 說明文字的翻譯鍵，每個一行。
      * @param current 目前選項名稱。
      * @param options 所有選項名稱。
+     * @param hints 操作提示；不需要提示時為空。
      * @return 提示文字。
      */
     private fun optionTooltip(
         descriptionKeys: List<String>,
         current: String,
         options: List<String>,
-    ): Text {
-        val result = Text.empty()
-        descriptionKeys.forEach { key -> result.append(Text.literal(presenter.text(key)).formatted(Formatting.GRAY)).append("\n") }
-        result.append(Text.literal(presenter.format(MinecraftRuleCatalogueScreenKeys.TOOLTIP_CURRENT, current)).formatted(Formatting.GREEN))
-        result.append("\n").append(Text.literal(presenter.text(MinecraftRuleCatalogueScreenKeys.TOOLTIP_OPTIONS)).formatted(Formatting.GOLD))
-        options.forEach { option ->
-            result.append("\n• ").append(Text.literal(option).formatted(if (option == current) Formatting.GREEN else Formatting.WHITE))
-        }
-        return result
-    }
+        hints: List<Text> = emptyList(),
+    ): Text = ControlTooltip.options(
+        description = Text.literal(descriptionKeys.joinToString("\n") { presenter.text(it) }),
+        labels = options.map { Text.literal(it) },
+        currentIndex = options.indexOf(current),
+        hints = hints,
+    )
 
     /**
      * 加入沿用跑馬燈行為的按鈕。
@@ -276,7 +271,7 @@ internal class RuleCatalogueScreen(
     override fun render(context: DrawContext, mouseX: Int, mouseY: Int, delta: Float) {
         if (language !== Language.getInstance()) clearAndInit()
         renderBackground(context)
-        context.drawCenteredTextWithShadow(textRenderer, title, width / 2, layout.titleY, TITLE_COLOR)
+        ScreenRendering.title(context, textRenderer, title, width)
         val contentTooltip = renderContent(context = context, mouseX = mouseX, mouseY = mouseY)
         renderScrollbar(context)
         super.render(context, mouseX, mouseY, delta)
@@ -346,8 +341,7 @@ internal class RuleCatalogueScreen(
         val bar = layout.scrollbar(contentHeight = contentHeight, scroll = scroll.offset)
         if (bar.maximumScroll == 0) return
         val track = layout.scrollbarBounds
-        context.fill(track.x, track.y, track.right, track.bottom, TRACK_COLOR)
-        context.fill(track.x, bar.thumbTop, track.right, bar.thumbTop + bar.thumbHeight, THUMB_COLOR)
+        VerticalScrollbar.renderWithin(context, track.x, track.right, bar)
     }
 
     /**
@@ -450,9 +444,6 @@ internal class RuleCatalogueScreen(
         /** 一行文字的命中高度。 */
         const val LINE_HIT_HEIGHT = 10
 
-        /** 標題。 */
-        const val TITLE_COLOR = 0xffffff
-
         /** 沒有條目時的說明。 */
         const val STATUS_COLOR = 0xaaaaaa
 
@@ -461,11 +452,5 @@ internal class RuleCatalogueScreen(
 
         /** 游標指向 card 時的背景。 */
         const val CARD_HOVER_BACKGROUND = 0x90404040.toInt()
-
-        /** 捲軸軌道。 */
-        const val TRACK_COLOR = 0x80505050.toInt()
-
-        /** 捲軸滑塊。 */
-        const val THUMB_COLOR = 0xffd0d0d0.toInt()
     }
 }

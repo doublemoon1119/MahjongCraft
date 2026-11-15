@@ -8,6 +8,9 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryRoundPosi
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryWinDetailValueDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.model.TileFaceViewDto
 import com.doublemoon1119.mahjongcraft.logic.table.RoundCompletionClassification
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.RestartableMarqueeButtonWidget
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.ScreenRendering
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.VerticalScrollbar
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.MahjongTileFaceRenderer
 import com.doublemoon1119.mahjongcraft.platform.minecraft.history.MinecraftHistoryScreenKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.WinSettlementPresentationTemplateRegistry
@@ -70,32 +73,32 @@ internal class HistoryRoundEventsScreen(
     /** 建立固定控制項並恢復此局位置。 */
     override fun init() {
         val timingLines = textRenderer.wrapLines(timingText(), (width - 112).coerceAtLeast(1)).size
-        layout = HistoryRoundEventsLayout.measure(width, height, 52 + timingLines * LINE_HEIGHT)
+        layout = HistoryRoundEventsLayout.measure(width, height, TIMING_TOP + 12 + timingLines * LINE_HEIGHT)
         scroll = currentRound()?.eventScrollOffset ?: 0.0
         displayedStart = currentRound()?.events?.transactions?.firstOrNull()?.index
         dragging = false
         clearChildren()
         val bounds = layout.footerBounds(width)
         addDrawableChild(
-            ButtonWidget.builder(Text.translatable(MinecraftHistoryScreenKeys.BACK)) { session.backToSummary() }
+            RestartableMarqueeButtonWidget.builder(Text.translatable(MinecraftHistoryScreenKeys.BACK)) { session.backToSummary() }
                 .dimensions(bounds[0].x, bounds[0].y, bounds[0].width, bounds[0].height).build(),
         )
-        previousButton = ButtonWidget.builder(Text.translatable(MinecraftHistoryScreenKeys.PREVIOUS)) {
+        previousButton = RestartableMarqueeButtonWidget.builder(Text.translatable(MinecraftHistoryScreenKeys.PREVIOUS)) {
             if (session.controller.canQueryRound()) session.controller.previousRoundPage()
         }.dimensions(bounds[1].x, bounds[1].y, bounds[1].width, bounds[1].height).build().also(::addDrawableChild)
-        nextButton = ButtonWidget.builder(Text.translatable(MinecraftHistoryScreenKeys.NEXT)) {
+        nextButton = RestartableMarqueeButtonWidget.builder(Text.translatable(MinecraftHistoryScreenKeys.NEXT)) {
             if (session.controller.canQueryRound()) session.controller.nextRoundPage()
         }.dimensions(bounds[3].x, bounds[3].y, bounds[3].width, bounds[3].height).build().also(::addDrawableChild)
-        refreshButton = ButtonWidget.builder(Text.translatable(MinecraftHistoryScreenKeys.REFRESH)) {
+        refreshButton = RestartableMarqueeButtonWidget.builder(Text.translatable(MinecraftHistoryScreenKeys.REFRESH)) {
             if (currentRound()?.eventsStatus is HistoryBrowseStatus.Failed) {
                 if (session.controller.canRetry()) session.controller.retry()
             } else if (session.controller.canQueryRound()) {
                 session.controller.refreshRound()
             }
-        }.dimensions((width - 88).coerceAtLeast(8), 16, 80.coerceAtMost((width - 16).coerceAtLeast(1)), 20).build().also(::addDrawableChild)
-        initialButton = ButtonWidget.builder(Text.translatable(MinecraftHistoryScreenKeys.STATE_INITIAL_OPEN)) {
+        }.dimensions((width - 88).coerceAtLeast(8), HEADER_BUTTON_TOP, 80.coerceAtMost((width - 16).coerceAtLeast(1)), 20).build().also(::addDrawableChild)
+        initialButton = RestartableMarqueeButtonWidget.builder(Text.translatable(MinecraftHistoryScreenKeys.STATE_INITIAL_OPEN)) {
             if (session.controller.canQueryRound()) session.openRoundState(HistoryRoundPositionDto.Initial)
-        }.dimensions(8, 16, (width - 104).coerceIn(1, 100), 20).build().also(::addDrawableChild)
+        }.dimensions(8, HEADER_BUTTON_TOP, (width - 104).coerceIn(1, 100), 20).build().also(::addDrawableChild)
     }
 
     /** 歷史瀏覽不暫停整合伺服器。 */
@@ -125,9 +128,9 @@ internal class HistoryRoundEventsScreen(
         val round = currentRound()
         val status = round?.eventsStatus ?: HistoryBrowseStatus.Failed(HistoryBrowseFailure.NOT_AVAILABLE)
         val heading = title.copy().append(" • ").append(Text.translatable(MinecraftHistoryScreenKeys.ROUND_NUMBER, round?.roundNumber ?: "—"))
-        context.drawCenteredTextWithShadow(textRenderer, heading, width / 2, 2, TEXT_COLOR)
+        ScreenRendering.title(context, textRenderer, heading, width)
         textRenderer.wrapLines(timingText(), (width - 112).coerceAtLeast(1)).forEachIndexed { index, line ->
-            context.drawTextWithShadow(textRenderer, line, 10, 40 + index * LINE_HEIGHT, MUTED_COLOR)
+            context.drawTextWithShadow(textRenderer, line, 10, TIMING_TOP + index * LINE_HEIGHT, MUTED_COLOR)
         }
         updateButtons(status)
         val events = round?.events?.takeIf { status == HistoryBrowseStatus.Ready }
@@ -502,8 +505,7 @@ internal class HistoryRoundEventsScreen(
         val bar = layout.scrollbar(contentHeight, scroll)
         if (bar.maximumScroll <= 0 || layout.contentBottom <= layout.contentTop) return
         val bounds = layout.scrollbarBounds()
-        context.fill(bounds.x, bounds.y, bounds.x + bounds.width, bounds.y + bounds.height, 0x80505050.toInt())
-        context.fill(bounds.x, bar.thumbTop, bounds.x + bounds.width, bar.thumbTop + bar.thumbHeight, 0xffd0d0d0.toInt())
+        VerticalScrollbar.renderWithin(context, bounds.x, bounds.x + bounds.width, bar)
     }
 
     /**
@@ -734,6 +736,12 @@ internal class HistoryRoundEventsScreen(
 
     /** 共用尺寸與配色。 */
     private companion object {
+        /** 標題下方「回到開局」與「重新整理」按鈕的上界。 */
+        const val HEADER_BUTTON_TOP = 22
+
+        /** 按鈕下方時間資訊第一行的 Y 座標。 */
+        const val TIMING_TOP = 46
+
         /** 文字列高度。 */
         const val LINE_HEIGHT = 11
 

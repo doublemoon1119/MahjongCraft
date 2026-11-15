@@ -447,7 +447,7 @@ internal class RoomSettingsPage(
         }
         host.addWidget(ruleSelector)
         host.addWidget(
-            widget = ButtonWidget.builder(Text.literal(RULE_CATALOGUE_BUTTON_LABEL)) { openRuleCatalogue() }
+            widget = RestartableMarqueeButtonWidget.builder(Text.literal(RULE_CATALOGUE_BUTTON_LABEL)) { openRuleCatalogue() }
                 .dimensions(row.catalogueX, row.catalogueY, row.catalogueSize, row.catalogueSize)
                 .build()
                 .also {

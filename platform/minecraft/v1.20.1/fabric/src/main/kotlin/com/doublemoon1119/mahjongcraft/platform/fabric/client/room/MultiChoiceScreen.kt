@@ -1,7 +1,10 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.client.room
 
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.fitClientText
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.RestartableMarqueeButtonWidget
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.ScreenRendering
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.ScrollState
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.VerticalScrollbar
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.GameConfigEditorSpec
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.MinecraftRoomScreenKeys
 import net.minecraft.client.gui.DrawContext
@@ -96,12 +99,12 @@ internal class MultiChoiceScreen(
             checkboxes[optionId] = addDrawableChild(checkbox)
         }
         applyButton = addDrawableChild(
-            ButtonWidget.builder(Text.translatable(MinecraftRoomScreenKeys.APPLY)) {
+            RestartableMarqueeButtonWidget.builder(Text.translatable(MinecraftRoomScreenKeys.APPLY)) {
                 if (MultiChoiceSelection.canApply(selected, editor)) onApply(selected.toSet())
             }.dimensions(layout.applyX, layout.footerY, layout.buttonWidth, 20).build(),
         )
         addDrawableChild(
-            ButtonWidget.builder(ScreenTexts.CANCEL) { close() }
+            RestartableMarqueeButtonWidget.builder(ScreenTexts.CANCEL) { close() }
                 .dimensions(layout.cancelX, layout.footerY, layout.buttonWidth, 20).build(),
         )
         refreshSelectionControls()
@@ -171,7 +174,7 @@ internal class MultiChoiceScreen(
     override fun render(context: DrawContext, mouseX: Int, mouseY: Int, delta: Float) {
         renderBackground(context)
         val layout = layout()
-        context.drawCenteredTextWithShadow(textRenderer, fitClientText(textRenderer, title, layout.panelWidth), width / 2, 15, 0xFFFFFF)
+        ScreenRendering.title(context, textRenderer, fitClientText(textRenderer, title, layout.panelWidth), width)
         context.drawCenteredTextWithShadow(
             textRenderer,
             fitClientText(
@@ -200,8 +203,7 @@ internal class MultiChoiceScreen(
         }
         val bar = layout.scrollbar
         if (bar.maximumScroll > 0) {
-            context.fill(layout.scrollbarX, bar.trackTop, layout.right, bar.trackBottom, 0x80505050.toInt())
-            context.fill(layout.scrollbarX, bar.thumbTop, layout.right, bar.thumbTop + bar.thumbHeight, 0xFFD0D0D0.toInt())
+            VerticalScrollbar.renderWithin(context, layout.scrollbarX, layout.right, bar)
         }
         super.render(context, mouseX, mouseY, delta)
         if (hoveredIndex != null) {

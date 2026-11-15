@@ -18,6 +18,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.FormScreenLayo
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.RestartableMarqueeButtonWidget
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.ScreenRendering
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.ScrollState
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.VerticalScrollbar
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.player.ClientPlayerDisplayNameResolver
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.player.ClientPlayerProfileResolver
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.player.playerInfoDisplayName
@@ -799,8 +800,7 @@ class RoomScreen(
         if (grid.rows <= grid.visibleRows) return
         val column = grid.scrollbarColumn
         val layout = grid.scrollbar
-        context.fill(column.trackLeft, layout.trackTop, column.trackRight, layout.trackBottom, 0x80505050.toInt())
-        context.fill(column.trackLeft, layout.thumbTop, column.trackRight, layout.thumbTop + layout.thumbHeight, 0xFFD0D0D0.toInt())
+        VerticalScrollbar.renderWithin(context, column.trackLeft, column.trackRight, layout)
     }
 
     /**
@@ -815,8 +815,7 @@ class RoomScreen(
         val column = grid.scrollbarColumn
         grid.visibleGridRows.forEach { row ->
             val layout = grid.infoScrollbar(row, totalInfoRows, playingInfoScroll.index)
-            context.fill(column.trackLeft, layout.trackTop, column.trackRight, layout.trackBottom, 0x80505050.toInt())
-            context.fill(column.trackLeft, layout.thumbTop, column.trackRight, layout.thumbTop + layout.thumbHeight, 0xFFD0D0D0.toInt())
+            VerticalScrollbar.renderWithin(context, column.trackLeft, column.trackRight, layout)
         }
     }
 

@@ -4,8 +4,12 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryAiFilterD
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryIntegrityFilterDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryOutcomeFilterDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryQueryFiltersDto
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.ControlTooltip
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.CycleButtonInput
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.RestartableMarqueeButtonWidget
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.ScreenRendering
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.ScrollbarLayout
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.VerticalScrollbar
 import com.doublemoon1119.mahjongcraft.platform.minecraft.history.MinecraftHistoryScreenKeys
 import net.minecraft.client.gui.DrawContext
 import net.minecraft.client.gui.screen.Screen
@@ -68,14 +72,14 @@ internal class HistoryFilterScreen(
         fieldsToShow.forEachIndexed { index, field ->
             addField(field, fieldLabelKey(field), rowTop(index + 1))
         }
-        ruleButton = ButtonWidget.builder(Text.translatable(MinecraftHistoryScreenKeys.FILTER_RULE_SELECT)) { rulePickerOpen = !rulePickerOpen }
+        ruleButton = RestartableMarqueeButtonWidget.builder(Text.translatable(MinecraftHistoryScreenKeys.FILTER_RULE_SELECT)) { rulePickerOpen = !rulePickerOpen }
             .dimensions(controlLeft(), rowTop(0), controlWidth(), layout.rowHeight).build().also(::addDrawableChild)
         val choiceRow = fieldsToShow.size + 1
         outcomeButton = addChoiceButton(MinecraftHistoryScreenKeys.FILTER_OUTCOME, rowTop(choiceRow)) { cycleOutcome() }
         integrityButton = addChoiceButton(MinecraftHistoryScreenKeys.FILTER_INTEGRITY, rowTop(choiceRow + 1)) { cycleIntegrity() }
         aiButton = addChoiceButton(MinecraftHistoryScreenKeys.FILTER_AI, rowTop(choiceRow + 2)) { cycleAi() }
-        addDrawableChild(ButtonWidget.builder(Text.translatable(MinecraftHistoryScreenKeys.BACK)) { back() }.dimensions(width / 2 - 80, layout.footerTop, 70, 20).build())
-        addDrawableChild(ButtonWidget.builder(Text.translatable(MinecraftHistoryScreenKeys.RESET)) { reset() }.dimensions(width / 2 + 10, layout.footerTop, 70, 20).build())
+        addDrawableChild(RestartableMarqueeButtonWidget.builder(Text.translatable(MinecraftHistoryScreenKeys.BACK)) { back() }.dimensions(width / 2 - 80, layout.footerTop, 70, 20).build())
+        addDrawableChild(RestartableMarqueeButtonWidget.builder(Text.translatable(MinecraftHistoryScreenKeys.RESET)) { reset() }.dimensions(width / 2 + 10, layout.footerTop, 70, 20).build())
     }
 
     /** 以目前已套用的查詢條件初始化草稿輸入。 */
@@ -340,19 +344,16 @@ internal class HistoryFilterScreen(
      * @return 顯示目前規則與可選規則的 tooltip。
      */
     private fun ruleTooltip(): Text {
-        val current = session.filterDraft.input.ruleId.takeUnless(String::isEmpty)?.let { Text.literal(it) }
-            ?: Text.translatable(MinecraftHistoryScreenKeys.FILTER_ANY)
         val options = listOf(Text.translatable(MinecraftHistoryScreenKeys.FILTER_ANY)) + session.ruleNames.registrationKeys.sorted().map { id ->
             session.ruleNames.find(id)?.let(Text::translatable)?.let { Text.empty().append(it).append(" (").append(id).append(")") } ?: Text.literal(id)
         }
         val selectedIndex = session.filterDraft.input.ruleId.takeUnless(String::isEmpty)?.let { id ->
             session.ruleNames.registrationKeys.sorted().indexOf(id).takeIf { it >= 0 }?.plus(1)
         } ?: 0
-        return historyOptionTooltip(
-            title = Text.translatable(MinecraftHistoryScreenKeys.FILTER_RULE),
-            current = current,
-            selectedIndex = selectedIndex,
-            options = options,
+        return ControlTooltip.options(
+            description = Text.translatable(MinecraftHistoryScreenKeys.FILTER_RULE),
+            labels = options,
+            currentIndex = selectedIndex,
         )
     }
 
@@ -496,26 +497,52 @@ internal class HistoryFilterScreen(
             val row = visibleFieldCount() + 1 + index
             if (layout.isVisible(row, contentScroll)) drawLabel(context, key, rowTop(row), 0xffffff)
         }
-        context.drawCenteredTextWithShadow(textRenderer, title, width / 2, 8, 0xffffff)
+        ScreenRendering.title(context, textRenderer, title, width)
         outcomeButton?.message = outcomeLabel(session.filterDraft.input.outcome)
         integrityButton?.message = integrityLabel(session.filterDraft.input.integrity)
         aiButton?.message = aiLabel(session.filterDraft.input.ai)
         val outcomeOptions = listOf(Text.translatable(MinecraftHistoryScreenKeys.FILTER_ANY)) + HistoryOutcomeFilterDto.entries.map(::outcomeLabel)
         val integrityOptions = listOf(Text.translatable(MinecraftHistoryScreenKeys.FILTER_ANY)) + HistoryIntegrityFilterDto.entries.map(::integrityLabel)
         val aiOptions = listOf(Text.translatable(MinecraftHistoryScreenKeys.FILTER_ANY)) + HistoryAiFilterDto.entries.map(::aiLabel)
-        outcomeButton?.tooltip = Tooltip.of(CycleButtonInput.withHint(tooltip = historyOptionTooltip(Text.translatable(MinecraftHistoryScreenKeys.FILTER_OUTCOME), outcomeLabel(session.filterDraft.input.outcome), session.filterDraft.input.outcome?.ordinal?.plus(1) ?: 0, outcomeOptions), optionCount = outcomeOptions.size))
-        integrityButton?.tooltip = Tooltip.of(CycleButtonInput.withHint(tooltip = historyOptionTooltip(Text.translatable(MinecraftHistoryScreenKeys.FILTER_INTEGRITY), integrityLabel(session.filterDraft.input.integrity), session.filterDraft.input.integrity?.ordinal?.plus(1) ?: 0, integrityOptions), optionCount = integrityOptions.size))
-        aiButton?.tooltip = Tooltip.of(CycleButtonInput.withHint(tooltip = historyOptionTooltip(Text.translatable(MinecraftHistoryScreenKeys.FILTER_AI), aiLabel(session.filterDraft.input.ai), session.filterDraft.input.ai?.ordinal?.plus(1) ?: 0, aiOptions), optionCount = aiOptions.size))
+        outcomeButton?.tooltip = Tooltip.of(
+            ControlTooltip.options(
+                description = Text.translatable(MinecraftHistoryScreenKeys.FILTER_OUTCOME),
+                labels = outcomeOptions,
+                currentIndex = session.filterDraft.input.outcome?.ordinal?.plus(1) ?: 0,
+                hints = CycleButtonInput.hintTexts(optionCount = outcomeOptions.size),
+            ),
+        )
+        integrityButton?.tooltip = Tooltip.of(
+            ControlTooltip.options(
+                description = Text.translatable(MinecraftHistoryScreenKeys.FILTER_INTEGRITY),
+                labels = integrityOptions,
+                currentIndex = session.filterDraft.input.integrity?.ordinal?.plus(1) ?: 0,
+                hints = CycleButtonInput.hintTexts(optionCount = integrityOptions.size),
+            ),
+        )
+        aiButton?.tooltip = Tooltip.of(
+            ControlTooltip.options(
+                description = Text.translatable(MinecraftHistoryScreenKeys.FILTER_AI),
+                labels = aiOptions,
+                currentIndex = session.filterDraft.input.ai?.ordinal?.plus(1) ?: 0,
+                hints = CycleButtonInput.hintTexts(optionCount = aiOptions.size),
+            ),
+        )
         ruleButton?.tooltip = Tooltip.of(ruleTooltip())
         ruleButton?.message = ruleDisplayLabel()
-        if (layout.scrollableHeight > 0) {
-            val trackLeft = width - 5
-            context.fill(trackLeft, layout.contentTop, width - 2, layout.contentBottom, 0xff303030.toInt())
-            val trackHeight = layout.contentBottom - layout.contentTop
-            val thumbHeight = (trackHeight.toDouble() * trackHeight / (trackHeight + layout.scrollableHeight)).toInt().coerceAtLeast(8)
-            val thumbTop = layout.contentTop + ((trackHeight - thumbHeight) * contentScroll / layout.scrollableHeight)
-            context.fill(trackLeft, thumbTop, width - 2, thumbTop + thumbHeight, 0xffaaaaaa.toInt())
-        }
+        val viewportHeight = layout.contentBottom - layout.contentTop
+        VerticalScrollbar.render(
+            context = context,
+            left = width - CONTENT_SCROLLBAR_RIGHT_INSET,
+            layout = ScrollbarLayout(
+                trackTop = layout.contentTop,
+                trackBottom = layout.contentBottom,
+                itemCount = viewportHeight + layout.scrollableHeight,
+                visibleItemCount = viewportHeight,
+                scrollIndex = contentScroll,
+                minimumThumbHeight = VerticalScrollbar.MINIMUM_THUMB_HEIGHT,
+            ),
+        )
         if (rulePickerOpen) {
             listOf(ruleButton, outcomeButton, integrityButton, aiButton).forEach { it?.tooltip = null }
         }
@@ -617,6 +644,9 @@ internal class HistoryFilterScreen(
     private companion object {
         /** 高於背景控制項與其文字的選單繪製深度。 */
         const val RULE_PICKER_Z = 400.0
+
+        /** 內容捲軸左界與視窗右界的距離。 */
+        const val CONTENT_SCROLLBAR_RIGHT_INSET = 5
 
         /** 原版文字輸入框向內容範圍外延伸的邊框厚度。 */
         const val TEXT_FIELD_BORDER = 1

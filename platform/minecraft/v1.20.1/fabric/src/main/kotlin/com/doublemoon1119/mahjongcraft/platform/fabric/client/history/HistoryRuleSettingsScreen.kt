@@ -2,11 +2,15 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.client.history
 
 import com.doublemoon1119.mahjongcraft.flow.network.dto.config.GameConfigDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.config.toDomain
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.RestartableMarqueeButtonWidget
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.ScreenRendering
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.VerticalScrollbar
 import com.doublemoon1119.mahjongcraft.platform.fabric.text.gameConfigPresentationText
 import com.doublemoon1119.mahjongcraft.platform.minecraft.catalogue.RuleCatalogueBrowseContext
 import com.doublemoon1119.mahjongcraft.platform.minecraft.history.MinecraftHistoryScreenKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.GameConfigEditorSpec
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.ResolvedGameConfigPresentation
+import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftControlTooltipKeys
 import net.minecraft.client.gui.DrawContext
 import net.minecraft.client.gui.screen.Screen
 import net.minecraft.client.gui.tooltip.Tooltip
@@ -62,12 +66,12 @@ internal class HistoryRuleSettingsScreen(
         dragging = false
         clearChildren()
         val (backBounds, retryBounds) = layout.footerButtons(width, secondVisible = true)
-        backButton = ButtonWidget.builder(Text.translatable(MinecraftHistoryScreenKeys.BACK)) { session.backToSummary() }
+        backButton = RestartableMarqueeButtonWidget.builder(Text.translatable(MinecraftHistoryScreenKeys.BACK)) { session.backToSummary() }
             .dimensions(backBounds.x, backBounds.y, backBounds.width, backBounds.height).build().also(::addDrawableChild)
         val second = checkNotNull(retryBounds)
-        retryButton = ButtonWidget.builder(Text.translatable(MinecraftHistoryScreenKeys.RETRY)) { session.controller.retry() }
+        retryButton = RestartableMarqueeButtonWidget.builder(Text.translatable(MinecraftHistoryScreenKeys.RETRY)) { session.controller.retry() }
             .dimensions(second.x, second.y, second.width, second.height).build().also(::addDrawableChild)
-        catalogueButton = ButtonWidget.builder(Text.translatable(MinecraftHistoryScreenKeys.RULE_CATALOGUE)) {
+        catalogueButton = RestartableMarqueeButtonWidget.builder(Text.translatable(MinecraftHistoryScreenKeys.RULE_CATALOGUE)) {
             catalogueContext?.let { session.openRuleCatalogue(settings = this, context = it) }
         }.dimensions(second.x, second.y, second.width, second.height).build().also {
             it.tooltip = Tooltip.of(Text.translatable(MinecraftHistoryScreenKeys.RULE_CATALOGUE_TOOLTIP).formatted(Formatting.GRAY))
@@ -198,7 +202,7 @@ internal class HistoryRuleSettingsScreen(
     /** 繪製唯讀規則設定。 */
     override fun render(context: DrawContext, mouseX: Int, mouseY: Int, delta: Float) {
         renderBackground(context)
-        context.drawCenteredTextWithShadow(textRenderer, title, width / 2, 2, 0xffffff)
+        ScreenRendering.title(context, textRenderer, title, width)
         val status = session.controller.state.value.ruleSettings?.status ?: HistoryBrowseStatus.Loading
         retryButton?.active = session.controller.canRetry()
         val retryVisible = status is HistoryBrowseStatus.Failed
@@ -331,7 +335,7 @@ internal class HistoryRuleSettingsScreen(
     private fun fieldTooltip(editor: GameConfigEditorSpec, descriptionKey: String): List<Text> = buildList {
         add(Text.translatable(descriptionKey).formatted(Formatting.GRAY))
         if (editor is GameConfigEditorSpec.ChoiceEditor) {
-            add(Text.translatable(MinecraftHistoryScreenKeys.TOOLTIP_OPTIONS).formatted(Formatting.GOLD))
+            add(Text.translatable(MinecraftControlTooltipKeys.OPTIONS).formatted(Formatting.GOLD))
             editor.optionIds.forEach { optionId ->
                 add(
                     element = Text.literal("• ").formatted(Formatting.DARK_GRAY).append(
@@ -353,8 +357,7 @@ internal class HistoryRuleSettingsScreen(
         val bar = layout.scrollbar(contentHeight(), scroll)
         if (bar.maximumScroll <= 0 || layout.contentBottom <= layout.contentTop) return
         val bounds = layout.scrollbarBounds()
-        context.fill(bounds.x, bounds.y, bounds.x + bounds.width, bounds.y + bounds.height, 0x80505050.toInt())
-        context.fill(bounds.x, bar.thumbTop, bounds.x + bounds.width, bar.thumbTop + bar.thumbHeight, 0xFFD0D0D0.toInt())
+        VerticalScrollbar.renderWithin(context, bounds.x, bounds.x + bounds.width, bar)
     }
 
     /**

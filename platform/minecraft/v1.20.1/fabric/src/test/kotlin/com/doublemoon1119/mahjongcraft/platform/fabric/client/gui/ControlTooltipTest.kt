@@ -184,6 +184,39 @@ class ControlTooltipTest {
         assertEquals(Formatting.GRAY, colorOf(tooltip, "Move the HUD elements."))
     }
 
+    /** 只給選項名稱與目前索引時，標出該選項；索引不在範圍內時沒有任何選項被標示。 */
+    @Test
+    fun `indexed options mark the option at the current index`() {
+        val labels = listOf(Text.literal("Any"), Text.literal("Won"), Text.literal("Lost"))
+
+        assertEquals(
+            expected = listOf("Outcome", "", MinecraftControlTooltipKeys.OPTIONS, "   Any", "▶ Won", "   Lost"),
+            actual = lines(ControlTooltip.options(description = Text.literal("Outcome"), labels = labels, currentIndex = 1)),
+        )
+        assertEquals(
+            expected = listOf(MinecraftControlTooltipKeys.OPTIONS, "   Any", "   Won", "   Lost"),
+            actual = lines(ControlTooltip.options(description = null, labels = labels, currentIndex = -1)),
+        )
+    }
+
+    /** 逐行版本與單一文字版本內容相同，段落之間以空行分隔，每一行都不含換行字元。 */
+    @Test
+    fun `option lines match the joined tooltip`() {
+        val options = listOf(
+            ControlTooltip.Option(label = Text.literal("Decision Panel"), current = true),
+            ControlTooltip.Option(label = Text.literal("Hand Analysis"), current = false),
+        )
+        val hints = listOf(Text.literal("Left-click: next option"))
+
+        val optionLines = ControlTooltip.optionLines(description = null, options = options, hints = hints)
+
+        assertEquals(
+            expected = listOf(MinecraftControlTooltipKeys.OPTIONS, "▶ Decision Panel", "   Hand Analysis", "", "Left-click: next option"),
+            actual = optionLines.map { it.string },
+        )
+        assertEquals(lines(ControlTooltip.options(description = null, options = options, hints = hints)), optionLines.map { it.string })
+    }
+
     /**
      * 將提示文字拆成每一行的內容。
      *

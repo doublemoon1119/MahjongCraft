@@ -1,6 +1,7 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.client.config
 
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.ButtonRowLayout
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.ControlTooltip
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.CycleButtonInput
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.RestartableMarqueeButtonWidget
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.SettingsFooterButtons
@@ -206,27 +207,21 @@ class MahjongHudLayoutEditorScreen(
      * @param width 按鈕寬度。
      * @return 點擊後隱藏編輯控制項的按鈕。
      */
-    private fun hideControlsButtonWidget(width: Int): ButtonWidget = ButtonWidget.builder(Text.translatable(MinecraftClientConfigScreenKeys.HUD_LAYOUT_HIDE_CONTROLS)) {
+    private fun hideControlsButtonWidget(width: Int): ButtonWidget = RestartableMarqueeButtonWidget.builder(Text.translatable(MinecraftClientConfigScreenKeys.HUD_LAYOUT_HIDE_CONTROLS)) {
         model = model.withControlsHidden(true)
         updateControlVisibility()
     }.dimensions(0, 0, width, MahjongHudToolbarLayout.BUTTON_HEIGHT).build()
 
     /**
-     * 建立「目前值＋可用選項」清單 tooltip（每行一個元素），補足循環切換按鈕無法一次看到所有選項的缺點；選項至少三個時附上點擊操作說明。
+     * 建立循環切換按鈕的提示（每個元素一行）：全部選項與目前選項，以及操作提示。
      *
-     * @param options 選項名稱與是否選取，須有一個已選取項目。
-     * @return 目前值、全部選項與適用操作提示，每個元素各占一行。
+     * @param options 選項名稱與是否選取。
+     * @return 提示框的每一行。
      */
-    private fun selectionTooltip(options: List<Pair<Text, Boolean>>): List<Text> = CycleButtonInput.withHintLines(
-        lines = buildList {
-            val current = options.first { it.second }.first
-            add(Text.translatable(MinecraftClientConfigScreenKeys.CURRENT_VALUE, current).formatted(Formatting.GREEN))
-            add(Text.translatable(MinecraftClientConfigScreenKeys.AVAILABLE_OPTIONS).formatted(Formatting.GOLD))
-            options.forEach { (label, selected) ->
-                add(Text.literal("• ").append(label.copy().formatted(if (selected) Formatting.GREEN else Formatting.WHITE)))
-            }
-        },
-        optionCount = options.size,
+    private fun selectionTooltip(options: List<Pair<Text, Boolean>>): List<Text> = ControlTooltip.optionLines(
+        description = null,
+        options = options.map { (label, selected) -> ControlTooltip.Option(label = label, current = selected) },
+        hints = CycleButtonInput.hintTexts(optionCount = options.size),
     )
 
     /** 第二行內容總寬度，供水平捲動幾何使用。 */

@@ -86,15 +86,6 @@ object MinecraftHistoryScreenKeys {
     /** 篩選錯誤：範圍起訖顛倒。 */
     const val FILTER_ERROR_REVERSED_RANGE = "mahjongcraft.history_screen.filter.error.reversed_range"
 
-    /** 選項 tooltip 說明格式。 */
-    const val TOOLTIP_DESCRIPTION = "mahjongcraft.history_screen.tooltip.description"
-
-    /** 選項 tooltip 目前值格式。 */
-    const val TOOLTIP_CURRENT = "mahjongcraft.history_screen.tooltip.current"
-
-    /** 選項 tooltip 可用選項標題。 */
-    const val TOOLTIP_OPTIONS = "mahjongcraft.history_screen.tooltip.options"
-
     /** 篩選按鈕 tooltip。 */
     const val TOOLTIP_FILTERS = "mahjongcraft.history_screen.tooltip.filters"
 

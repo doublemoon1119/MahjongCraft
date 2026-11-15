@@ -62,12 +62,6 @@ object MinecraftRuleCatalogueScreenKeys {
     /** 歷史對局設定的設定來源名稱。 */
     const val SOURCE_HISTORY: String = "mahjongcraft.rule_catalogue.screen.source.history"
 
-    /** 選項提示中目前選項的格式，參數為選項名稱。 */
-    const val TOOLTIP_CURRENT: String = "mahjongcraft.rule_catalogue.screen.tooltip.current"
-
-    /** 選項提示中選項清單的標題。 */
-    const val TOOLTIP_OPTIONS: String = "mahjongcraft.rule_catalogue.screen.tooltip.options"
-
     /** 沒有規則可顯示的狀態。 */
     const val STATUS_NO_RULES: String = "mahjongcraft.rule_catalogue.screen.status.no_rules"
 
@@ -120,7 +114,7 @@ object MinecraftRuleCatalogueScreenKeys {
     val ALL: Set<String> = setOf(
         TITLE, RULE_BUTTON, RULE_TOOLTIP, CATEGORY_BUTTON, CATEGORY_TOOLTIP, ALL_CATEGORIES, SEARCH, SEARCH_HINT,
         SEARCH_TOOLTIP, CLEAR, CLOSE, BACK, SOURCE_BUTTON, SOURCE_TOOLTIP, SOURCE_OTHER_RULE, GENERAL_NOTE,
-        SOURCE_GENERAL, SOURCE_ROOM, SOURCE_ROOM_DRAFT, SOURCE_HISTORY, TOOLTIP_CURRENT, TOOLTIP_OPTIONS,
+        SOURCE_GENERAL, SOURCE_ROOM, SOURCE_ROOM_DRAFT, SOURCE_HISTORY,
         STATUS_NO_RULES, STATUS_CONFIG_UNAVAILABLE, STATUS_MISSING_PROVIDER, STATUS_UNSUPPORTED_CONFIG,
         STATUS_EMPTY_CATALOGUE, STATUS_NO_RESULTS, EXAMPLE_COMPLETE, EXAMPLE_PARTIAL, GROUP_HAND,
         GROUP_WINNING_TILE, GROUP_OPEN_MELD, GROUP_OPEN_KAN, GROUP_CLOSED_KAN, GROUP_ILLUSTRATION,

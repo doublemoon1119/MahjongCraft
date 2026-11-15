@@ -5,6 +5,9 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryReplayPla
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryRoundPositionDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryRoundStateDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryWinDetailValueDto
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.RestartableMarqueeButtonWidget
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.ScreenRendering
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.VerticalScrollbar
 import com.doublemoon1119.mahjongcraft.platform.minecraft.history.MinecraftHistoryScreenKeys
 import net.minecraft.client.gui.DrawContext
 import net.minecraft.client.gui.screen.Screen
@@ -64,18 +67,18 @@ internal class HistoryRoundStateScreen(
         clearChildren()
         val bounds = layout.footerBounds(width)
         addDrawableChild(
-            ButtonWidget.builder(Text.translatable(MinecraftHistoryScreenKeys.BACK)) { session.backToRound() }
+            RestartableMarqueeButtonWidget.builder(Text.translatable(MinecraftHistoryScreenKeys.BACK)) { session.backToRound() }
                 .dimensions(bounds[0].x, bounds[0].y, bounds[0].width, 20).build(),
         )
         queryButtons += addDrawableChild(
-            ButtonWidget.builder(Text.translatable(MinecraftHistoryScreenKeys.PREVIOUS)) { session.controller.previousRoundState() }
+            RestartableMarqueeButtonWidget.builder(Text.translatable(MinecraftHistoryScreenKeys.PREVIOUS)) { session.controller.previousRoundState() }
                 .dimensions(bounds[1].x, bounds[1].y, bounds[1].width, 20).build(),
         )
         queryButtons += addDrawableChild(
-            ButtonWidget.builder(Text.translatable(MinecraftHistoryScreenKeys.NEXT)) { session.controller.nextRoundState() }
+            RestartableMarqueeButtonWidget.builder(Text.translatable(MinecraftHistoryScreenKeys.NEXT)) { session.controller.nextRoundState() }
                 .dimensions(bounds[3].x, bounds[3].y, bounds[3].width, 20).build(),
         )
-        retryButton = ButtonWidget.builder(Text.translatable(MinecraftHistoryScreenKeys.RETRY)) { session.controller.retry() }
+        retryButton = RestartableMarqueeButtonWidget.builder(Text.translatable(MinecraftHistoryScreenKeys.RETRY)) { session.controller.retry() }
             .dimensions(0, 0, 1, 20).build()
         retryButton.visible = false
         addDrawableChild(retryButton)
@@ -114,7 +117,7 @@ internal class HistoryRoundStateScreen(
         val round = currentRound()
         val status = round?.stateStatus ?: HistoryBrowseStatus.Failed(HistoryBrowseFailure.NOT_AVAILABLE)
         val state = round?.state?.takeIf { status == HistoryBrowseStatus.Ready && it.position == round.confirmedPosition }
-        context.drawCenteredTextWithShadow(textRenderer, title, width / 2, 2, TEXT_COLOR)
+        ScreenRendering.title(context, textRenderer, title, width)
         val canQuery = session.controller.canQueryRound()
         queryButtons[0].active = canQuery && state != null && state.position != HistoryRoundPositionDto.Initial
         queryButtons[1].active = canQuery &&
@@ -267,8 +270,7 @@ internal class HistoryRoundStateScreen(
         val bar = layout.scrollbar(contentHeight, scroll)
         val track = layout.scrollbarBounds()
         if (state != null && bar.maximumScroll > 0) {
-            context.fill(track.x, track.y, track.x + track.width, track.y + track.height, 0x80505050.toInt())
-            context.fill(track.x, bar.thumbTop, track.x + track.width, bar.thumbTop + bar.thumbHeight, 0xffd0d0d0.toInt())
+            VerticalScrollbar.renderWithin(context, track.x, track.x + track.width, bar)
         }
         val middle = layout.footerBounds(width)[2]
         val position = round?.requestedPosition ?: HistoryRoundPositionDto.Initial

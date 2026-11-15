@@ -17,6 +17,20 @@ internal object VerticalScrollbar {
     private const val THUMB_COLOR: Int = 0xFFD0D0D0.toInt()
 
     /**
+     * 在畫面保留給捲軸的水平範圍內置中繪製捲軸；內容不需要捲動時不繪製。
+     *
+     * 保留的範圍通常比捲軸寬，讓游標不必精確壓在捲軸上就能拖曳。
+     *
+     * @param context 畫面繪製情境。
+     * @param left 保留範圍的左界。
+     * @param right 保留範圍的右界。
+     * @param layout 捲軸的軌道與滑塊位置。
+     */
+    fun renderWithin(context: DrawContext, left: Int, right: Int, layout: ScrollbarLayout) {
+        render(context, left + (right - left - WIDTH).coerceAtLeast(0) / 2, layout)
+    }
+
+    /**
      * 繪製捲軸；內容不需要捲動時不繪製。
      *
      * @param context 畫面繪製情境。

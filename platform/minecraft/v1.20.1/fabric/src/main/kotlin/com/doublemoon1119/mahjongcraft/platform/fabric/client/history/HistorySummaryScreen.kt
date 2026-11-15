@@ -3,6 +3,9 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.client.history
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryIntegrityFilterDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryMatchDetailDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryParticipantSummaryDto
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.RestartableMarqueeButtonWidget
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.ScreenRendering
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.VerticalScrollbar
 import com.doublemoon1119.mahjongcraft.platform.minecraft.history.MinecraftHistoryScreenKeys
 import net.minecraft.client.MinecraftClient
 import net.minecraft.client.gui.DrawContext
@@ -52,9 +55,9 @@ internal class HistorySummaryScreen(
         dragging = false
         clearChildren()
         val (backBounds, retryBounds) = layout.footerButtons(width, secondVisible = true)
-        backButton = ButtonWidget.builder(Text.translatable(MinecraftHistoryScreenKeys.BACK)) { session.backToList() }
+        backButton = RestartableMarqueeButtonWidget.builder(Text.translatable(MinecraftHistoryScreenKeys.BACK)) { session.backToList() }
             .dimensions(backBounds.x, backBounds.y, backBounds.width, backBounds.height).build().also(::addDrawableChild)
-        retryButton = ButtonWidget.builder(Text.translatable(MinecraftHistoryScreenKeys.RETRY)) { if (session.controller.canRetry()) session.controller.retry() }
+        retryButton = RestartableMarqueeButtonWidget.builder(Text.translatable(MinecraftHistoryScreenKeys.RETRY)) { if (session.controller.canRetry()) session.controller.retry() }
             .dimensions(checkNotNull(retryBounds).x, retryBounds.y, retryBounds.width, retryBounds.height).build().also(::addDrawableChild)
     }
 
@@ -178,7 +181,7 @@ internal class HistorySummaryScreen(
     /** 繪製摘要畫面。 */
     override fun render(context: DrawContext, mouseX: Int, mouseY: Int, delta: Float) {
         renderBackground(context)
-        context.drawCenteredTextWithShadow(textRenderer, title, width / 2, 2, 0xffffff)
+        ScreenRendering.title(context, textRenderer, title, width)
         val summary = session.controller.state.value.summary
         val status = summary?.status ?: HistoryBrowseStatus.Loading
         scroll = layout.clampScroll(scroll, contentHeight(detail()))
@@ -356,8 +359,7 @@ internal class HistorySummaryScreen(
         val bar = layout.scrollbar(height, scroll)
         if (bar.maximumScroll <= 0 || layout.contentBottom <= layout.contentTop) return
         val bounds = layout.scrollbarBounds()
-        context.fill(bounds.x, bounds.y, bounds.x + bounds.width, bounds.y + bounds.height, 0x80505050.toInt())
-        context.fill(bounds.x, bar.thumbTop, bounds.x + bounds.width, bar.thumbTop + bar.thumbHeight, 0xFFD0D0D0.toInt())
+        VerticalScrollbar.renderWithin(context, bounds.x, bounds.x + bounds.width, bar)
     }
 
     /** 取得目前成功摘要，不使用失敗時殘留的舊內容計算捲軸。 */
