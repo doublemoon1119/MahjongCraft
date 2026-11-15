@@ -111,7 +111,7 @@ internal class RuleCatalogueScreen(
             MinecraftRuleCatalogueScreenKeys.GENERAL_NOTE.takeIf { state.configSource == RuleCatalogueConfigSource.GENERAL },
         )
         lateinit var selector: RestartableMarqueeButtonWidget
-        selector = button(label = presenter.format(MinecraftRuleCatalogueScreenKeys.RULE_BUTTON, name), bounds = layout.rule) {
+        selector = button(label = name, bounds = layout.rule) {
             dropdown.toggle(
                 key = RULE_SELECTOR_KEY,
                 anchor = selector,

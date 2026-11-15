@@ -76,7 +76,6 @@ object MinecraftRoomScreenKeys {
     const val UNDO = "mahjongcraft.room.screen.undo"
     const val HOST = "mahjongcraft.room.screen.host"
     const val AI = "mahjongcraft.room.screen.ai"
-    const val AI_STRATEGY = "mahjongcraft.room.screen.ai_strategy"
     const val AI_STRATEGY_TITLE = "mahjongcraft.room.screen.ai_strategy_title"
     const val MEMBER_READY = "mahjongcraft.room.screen.member_ready"
     const val MEMBER_NOT_READY = "mahjongcraft.room.screen.member_not_ready"

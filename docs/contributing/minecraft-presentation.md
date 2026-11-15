@@ -491,6 +491,9 @@ attempt does not fall through to another provider.
 - Pages use ordinary buttons and categories use tabs. Do not give both the same look.
 - A selector that changes every category, such as the rule and variant on the room settings page, sits
   above the tabs and belongs to no category.
+- A selector shows only its current value. Name the control with a label beside it or in its tooltip,
+  never as a prefix on the button: a prefix leaves too little room for the value, which is the part
+  players need to read.
 - An option that cannot be chosen stays in its place with its reason, in lists and in tooltips. Do not
   move it to the end or hide it; a fixed order keeps the list from jumping when a setting changes.
 - Route every cycle button through `CycleButtonInput` and build it with `pressesOnSecondaryClick`:

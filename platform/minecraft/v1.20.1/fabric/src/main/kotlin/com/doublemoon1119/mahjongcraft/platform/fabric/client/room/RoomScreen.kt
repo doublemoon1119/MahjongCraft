@@ -367,7 +367,7 @@ class RoomScreen(
         val keys = aiStrategies.getAllStrategyKeys().toList()
         val selectorKey = AiStrategySelectorKey(targetId)
         lateinit var selector: RestartableMarqueeButtonWidget
-        selector = RestartableMarqueeButtonWidget.builder(Text.translatable(MinecraftRoomScreenKeys.AI_STRATEGY, aiStrategyText(current))) {
+        selector = RestartableMarqueeButtonWidget.builder(aiStrategyText(current)) {
             dropdown.toggle(
                 key = selectorKey,
                 anchor = selector,

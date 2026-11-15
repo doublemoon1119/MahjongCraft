@@ -5,9 +5,6 @@ object MinecraftRuleCatalogueScreenKeys {
     /** 規則一覽標題。 */
     const val TITLE: String = "mahjongcraft.rule_catalogue.screen.title"
 
-    /** 規則切換按鈕文字，參數為目前規則名稱。 */
-    const val RULE_BUTTON: String = "mahjongcraft.rule_catalogue.screen.rule_button"
-
     /** 規則切換按鈕提示的說明。 */
     const val RULE_TOOLTIP: String = "mahjongcraft.rule_catalogue.screen.rule_tooltip"
 
@@ -112,7 +109,7 @@ object MinecraftRuleCatalogueScreenKeys {
 
     /** 所有規則一覽畫面翻譯鍵。 */
     val ALL: Set<String> = setOf(
-        TITLE, RULE_BUTTON, RULE_TOOLTIP, CATEGORY_BUTTON, CATEGORY_TOOLTIP, ALL_CATEGORIES, SEARCH, SEARCH_HINT,
+        TITLE, RULE_TOOLTIP, CATEGORY_BUTTON, CATEGORY_TOOLTIP, ALL_CATEGORIES, SEARCH, SEARCH_HINT,
         SEARCH_TOOLTIP, CLEAR, CLOSE, BACK, SOURCE_BUTTON, SOURCE_TOOLTIP, SOURCE_OTHER_RULE, GENERAL_NOTE,
         SOURCE_GENERAL, SOURCE_ROOM, SOURCE_ROOM_DRAFT, SOURCE_HISTORY,
         STATUS_NO_RULES, STATUS_CONFIG_UNAVAILABLE, STATUS_MISSING_PROVIDER, STATUS_UNSUPPORTED_CONFIG,
