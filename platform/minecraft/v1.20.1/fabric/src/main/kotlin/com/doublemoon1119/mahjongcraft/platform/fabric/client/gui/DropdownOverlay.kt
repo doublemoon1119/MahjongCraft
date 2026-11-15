@@ -1,6 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.client.gui
 
-import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftSettingTooltipKeys
+import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftControlTooltipKeys
 import net.minecraft.client.font.TextRenderer
 import net.minecraft.client.gui.DrawContext
 import net.minecraft.client.gui.widget.ClickableWidget
@@ -100,7 +100,7 @@ internal class DropdownOverlay {
         context.fill(layout.left, layout.top, layout.right, layout.bottom, BORDER_COLOR)
         context.fill(layout.left + 1, layout.top + 1, layout.right - 1, layout.bottom - 1, BACKGROUND_COLOR)
         val scrollable = layout.maximumScroll > 0
-        val textRight = layout.right - 1 - TEXT_PADDING - if (scrollable) SettingsScrollbar.WIDTH + 1 else 0
+        val textRight = layout.right - 1 - TEXT_PADDING - if (scrollable) VerticalScrollbar.WIDTH + 1 else 0
         repeat(layout.visibleCount) { visibleIndex ->
             val index = layout.effectiveScroll + visibleIndex
             val option = list.options.getOrNull(index) ?: return@repeat
@@ -108,18 +108,18 @@ internal class DropdownOverlay {
             if (index == list.highlightedIndex || index == list.selectedIndex) {
                 context.fill(layout.left + 1, rowTop, layout.right - 1, rowTop + DropdownListLayout.OPTION_HEIGHT, HIGHLIGHT_COLOR)
             }
-            val textY = rowTop + (DropdownListLayout.OPTION_HEIGHT - SettingsScreenLayout.VISIBLE_TEXT_HEIGHT) / 2
+            val textY = rowTop + (DropdownListLayout.OPTION_HEIGHT - FormScreenLayout.VISIBLE_TEXT_HEIGHT) / 2
             if (index == list.selectedIndex) {
-                SettingsIcons.check(
+                PixelIcons.check(
                     context = context,
                     x = layout.left + 1 + TEXT_PADDING,
-                    y = rowTop + (DropdownListLayout.OPTION_HEIGHT - SettingsIcons.CHECK_HEIGHT) / 2,
+                    y = rowTop + (DropdownListLayout.OPTION_HEIGHT - PixelIcons.CHECK_HEIGHT) / 2,
                     color = TEXT_COLOR,
                 )
             }
             val labelLeft = layout.left + 1 + TEXT_PADDING + CHECK_COLUMN_WIDTH
             val label = option.unavailableReason?.let { reason ->
-                Text.translatable(MinecraftSettingTooltipKeys.UNAVAILABLE_OPTION, option.label, reason)
+                Text.translatable(MinecraftControlTooltipKeys.UNAVAILABLE_OPTION, option.label, reason)
             } ?: option.label
             MarqueeText.draw(
                 context = context,
@@ -133,7 +133,7 @@ internal class DropdownOverlay {
                 subject = Unit.takeIf { index == list.highlightedIndex },
             )
         }
-        SettingsScrollbar.render(context, layout.scrollbarLeft, layout.scrollbar)
+        VerticalScrollbar.render(context, layout.scrollbarLeft, layout.scrollbar)
         if (layout.footnoteBlockHeight > 0) {
             context.fill(layout.left + 1, layout.optionsBottom, layout.right - 1, layout.optionsBottom + 1, DIVIDER_COLOR)
             val shown = list.highlightedIndex ?: list.selectedIndex
@@ -320,6 +320,6 @@ internal class DropdownOverlay {
         const val TEXT_PADDING = 5
 
         /** 選項名稱左側保留給打勾標示的寬度。 */
-        const val CHECK_COLUMN_WIDTH = SettingsIcons.CHECK_WIDTH + 4
+        const val CHECK_COLUMN_WIDTH = PixelIcons.CHECK_WIDTH + 4
     }
 }

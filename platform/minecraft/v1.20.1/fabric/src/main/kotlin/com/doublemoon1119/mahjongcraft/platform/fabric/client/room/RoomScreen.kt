@@ -12,12 +12,12 @@ import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.catalogue.RuleCatalogueScreenController
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.character.GuiEntityModelRenderer
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.fitClientText
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.ControlTooltip
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.CycleButtonInput
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.FormScreenLayout
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.RestartableMarqueeButtonWidget
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.ScreenRendering
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.ScrollState
-import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.SettingTooltip
-import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.SettingsScreenLayout
-import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.SettingsScreenRenderer
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.player.ClientPlayerDisplayNameResolver
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.player.ClientPlayerProfileResolver
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.player.playerInfoDisplayName
@@ -162,11 +162,11 @@ class RoomScreen(
     internal fun isForTable(tableId: Uuid): Boolean = this.tableId == tableId
 
     override fun init() {
-        val pageSwitchLeft = width / 2 - SettingsScreenLayout.PAGE_SWITCH_WIDTH - SettingsScreenLayout.PAGE_SWITCH_GAP / 2
+        val pageSwitchLeft = width / 2 - FormScreenLayout.PAGE_SWITCH_WIDTH - FormScreenLayout.PAGE_SWITCH_GAP / 2
         addDrawableChild(pageButton(pageSwitchLeft, MinecraftRoomScreenKeys.PAGE_ROOM, Page.ROOM))
         addDrawableChild(
             pageButton(
-                x = pageSwitchLeft + SettingsScreenLayout.PAGE_SWITCH_WIDTH + SettingsScreenLayout.PAGE_SWITCH_GAP,
+                x = pageSwitchLeft + FormScreenLayout.PAGE_SWITCH_WIDTH + FormScreenLayout.PAGE_SWITCH_GAP,
                 key = MinecraftRoomScreenKeys.PAGE_SETTINGS,
                 target = Page.SETTINGS,
             ).also { it.active = currentConfig() != null },
@@ -174,8 +174,8 @@ class RoomScreen(
         if (stateStore.roomSnapshot(tableId)?.isHost == true) {
             addDrawableChild(
                 RoomExcludedParticipantsButton(
-                    x = width / 2 + SettingsScreenLayout.PAGE_SWITCH_WIDTH + SettingsScreenLayout.PAGE_SWITCH_GAP * 3 / 2,
-                    y = SettingsScreenLayout.PAGE_SWITCH_Y,
+                    x = width / 2 + FormScreenLayout.PAGE_SWITCH_WIDTH + FormScreenLayout.PAGE_SWITCH_GAP * 3 / 2,
+                    y = FormScreenLayout.PAGE_SWITCH_Y,
                     count = { stateStore.roomSnapshot(tableId)?.excludedPlayerIds?.size ?: 0 },
                     open = {
                         client?.setScreen(
@@ -212,7 +212,7 @@ class RoomScreen(
             page = target
             rebuild()
         }
-    }.dimensions(x, SettingsScreenLayout.PAGE_SWITCH_Y, SettingsScreenLayout.PAGE_SWITCH_WIDTH, SettingsScreenLayout.BUTTON_HEIGHT).build().also {
+    }.dimensions(x, FormScreenLayout.PAGE_SWITCH_Y, FormScreenLayout.PAGE_SWITCH_WIDTH, FormScreenLayout.BUTTON_HEIGHT).build().also {
         it.outlined = page == target
     }
 
@@ -351,9 +351,9 @@ class RoomScreen(
      */
     private fun aiStrategyTooltip(current: String?, active: Boolean): Text {
         val keys = aiStrategies.getAllStrategyKeys()
-        return SettingTooltip.options(
+        return ControlTooltip.options(
             description = Text.translatable(MinecraftRoomScreenKeys.AI_STRATEGY_TITLE),
-            options = keys.map { SettingTooltip.Option(label = aiStrategyText(it), current = it == current) },
+            options = keys.map { ControlTooltip.Option(label = aiStrategyText(it), current = it == current) },
             hints = CycleButtonInput.hintTexts(optionCount = keys.size, active = active),
         )
     }
@@ -396,7 +396,7 @@ class RoomScreen(
 
     override fun render(context: DrawContext, mouseX: Int, mouseY: Int, delta: Float) {
         renderBackground(context)
-        SettingsScreenRenderer.title(context, textRenderer, title, width)
+        ScreenRendering.title(context, textRenderer, title, width)
         if (page == Page.ROOM) {
             renderRoom(context, mouseX, mouseY)
             super.render(context, mouseX, mouseY, delta)

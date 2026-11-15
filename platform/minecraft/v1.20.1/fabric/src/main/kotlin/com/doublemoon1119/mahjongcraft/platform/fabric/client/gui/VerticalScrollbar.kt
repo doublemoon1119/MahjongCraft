@@ -2,8 +2,8 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.client.gui
 
 import net.minecraft.client.gui.DrawContext
 
-/** 設定類畫面共用的垂直捲軸外觀。 */
-internal object SettingsScrollbar {
+/** 各畫面共用的垂直捲軸外觀。 */
+internal object VerticalScrollbar {
     /** 軌道與滑塊的寬度。 */
     const val WIDTH: Int = 3
 

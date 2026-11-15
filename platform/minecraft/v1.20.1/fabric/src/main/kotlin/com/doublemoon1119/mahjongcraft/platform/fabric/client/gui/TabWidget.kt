@@ -24,7 +24,7 @@ import net.minecraft.text.Text
  * @property clipRight 頁籤列可見範圍的右界。
  * @property onSelect 點擊頁籤時執行的動作。
  */
-internal class SettingsTabWidget(
+internal class TabWidget(
     x: Int,
     y: Int,
     width: Int,
@@ -66,7 +66,7 @@ internal class SettingsTabWidget(
             text = message,
             left = x + TEXT_PADDING,
             width = (width - TEXT_PADDING * 2).coerceAtLeast(1),
-            y = y + (height - SettingsScreenLayout.VISIBLE_TEXT_HEIGHT) / 2,
+            y = y + (height - FormScreenLayout.VISIBLE_TEXT_HEIGHT) / 2,
             color = if (selected || hoveredNow) SELECTED_TEXT_COLOR else UNSELECTED_TEXT_COLOR,
             state = labelMarquee,
             subject = Unit.takeIf { hoveredNow || isFocused },

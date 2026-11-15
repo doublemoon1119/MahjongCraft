@@ -1,8 +1,9 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.client.config
 
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.ButtonRowLayout
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.CycleButtonInput
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.RestartableMarqueeButtonWidget
-import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.SettingsFooterLayout
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.SettingsFooterButtons
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.UnsavedChangesConfirmationScreen
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftClientConfigScreenKeys
 import net.minecraft.client.gui.DrawContext
@@ -76,7 +77,7 @@ class MahjongHudLayoutEditorScreen(
 
     /** 建立工具列按鈕與等寬排成一列的重設、復原、套用與返回按鈕。 */
     override fun init() {
-        val footer = SettingsFooterLayout(left = FOOTER_MARGIN, width = width - FOOTER_MARGIN * 2)
+        val footer = ButtonRowLayout(left = FOOTER_MARGIN, width = width - FOOTER_MARGIN * 2, buttonCount = SettingsFooterButtons.COUNT)
         val y = height - 28
         addToolbarButtons()
         resetButton = addDrawableChild(
@@ -84,24 +85,24 @@ class MahjongHudLayoutEditorScreen(
                 model = model.reset()
                 saveFailed = false
                 refreshButtons()
-            }.dimensions(footer.buttonX(SettingsFooterLayout.RESET), y, footer.buttonWidth(SettingsFooterLayout.RESET), 20).build(),
+            }.dimensions(footer.buttonX(SettingsFooterButtons.RESET), y, footer.buttonWidth(SettingsFooterButtons.RESET), 20).build(),
         )
         undoButton = addDrawableChild(
             RestartableMarqueeButtonWidget.builder(Text.translatable(MinecraftClientConfigScreenKeys.UNDO)) {
                 model = model.undo()
                 saveFailed = false
                 refreshButtons()
-            }.dimensions(footer.buttonX(SettingsFooterLayout.UNDO), y, footer.buttonWidth(SettingsFooterLayout.UNDO), 20).build(),
+            }.dimensions(footer.buttonX(SettingsFooterButtons.UNDO), y, footer.buttonWidth(SettingsFooterButtons.UNDO), 20).build(),
         )
         applyButton = addDrawableChild(
             RestartableMarqueeButtonWidget.builder(Text.translatable(MinecraftClientConfigScreenKeys.APPLY)) {
                 apply(returnAfterSave = false)
-            }.dimensions(footer.buttonX(SettingsFooterLayout.APPLY), y, footer.buttonWidth(SettingsFooterLayout.APPLY), 20).build(),
+            }.dimensions(footer.buttonX(SettingsFooterButtons.APPLY), y, footer.buttonWidth(SettingsFooterButtons.APPLY), 20).build(),
         )
         addDrawableChild(
             RestartableMarqueeButtonWidget.builder(Text.translatable(MinecraftClientConfigScreenKeys.BACK)) {
                 requestReturn()
-            }.dimensions(footer.buttonX(SettingsFooterLayout.DONE), y, footer.buttonWidth(SettingsFooterLayout.DONE), 20).build(),
+            }.dimensions(footer.buttonX(SettingsFooterButtons.DONE), y, footer.buttonWidth(SettingsFooterButtons.DONE), 20).build(),
         )
         refreshButtons()
         updateControlVisibility()

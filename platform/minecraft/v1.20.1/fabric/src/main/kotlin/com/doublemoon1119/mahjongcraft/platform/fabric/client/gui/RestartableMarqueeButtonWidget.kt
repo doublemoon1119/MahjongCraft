@@ -79,10 +79,10 @@ internal class RestartableMarqueeButtonWidget private constructor(
      * @param expanded 清單是否展開；展開時箭頭向上。
      */
     private fun renderSelectorArrow(context: DrawContext, expanded: Boolean) {
-        SettingsIcons.arrow(
+        PixelIcons.arrow(
             context = context,
-            x = x + width - SELECTOR_ARROW_RIGHT_INSET - SettingsIcons.ARROW_WIDTH,
-            y = y + (height - SettingsIcons.ARROW_HEIGHT) / 2,
+            x = x + width - SELECTOR_ARROW_RIGHT_INSET - PixelIcons.ARROW_WIDTH,
+            y = y + (height - PixelIcons.ARROW_HEIGHT) / 2,
             pointsUp = expanded,
             color = if (active) 0xFFFFFF else 0xA0A0A0,
         )

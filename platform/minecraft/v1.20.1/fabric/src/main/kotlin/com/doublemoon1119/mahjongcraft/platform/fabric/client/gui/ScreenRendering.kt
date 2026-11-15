@@ -5,8 +5,8 @@ import net.minecraft.client.font.TextRenderer
 import net.minecraft.client.gui.DrawContext
 import net.minecraft.text.Text
 
-/** 設定類畫面共用的文字與線條繪製。 */
-internal object SettingsScreenRenderer {
+/** 各畫面共用的文字與線條繪製：標題、頁籤底線、分隔線、標籤與狀態文字。 */
+internal object ScreenRendering {
     /** 一般文字顏色。 */
     const val TEXT_COLOR: Int = 0xFFFFFF
 
@@ -31,7 +31,7 @@ internal object SettingsScreenRenderer {
      * @param windowWidth 視窗寬度。
      */
     fun title(context: DrawContext, textRenderer: TextRenderer, title: Text, windowWidth: Int) {
-        context.drawCenteredTextWithShadow(textRenderer, title, windowWidth / 2, SettingsScreenLayout.TITLE_Y, SettingsScreenLayout.TITLE_COLOR)
+        context.drawCenteredTextWithShadow(textRenderer, title, windowWidth / 2, FormScreenLayout.TITLE_Y, FormScreenLayout.TITLE_COLOR)
     }
 
     /**
@@ -40,7 +40,7 @@ internal object SettingsScreenRenderer {
      * @param context 畫面繪製情境。
      * @param strip 頁籤列版面。
      */
-    fun tabLine(context: DrawContext, strip: SettingsTabStripLayout) {
+    fun tabLine(context: DrawContext, strip: TabStripLayout) {
         context.fill(strip.left, strip.lineY, strip.right, strip.lineY + 1, TAB_LINE_COLOR)
     }
 
@@ -48,10 +48,10 @@ internal object SettingsScreenRenderer {
      * 繪製規則列下方的分隔線。
      *
      * @param context 畫面繪製情境。
-     * @param layout 設定頁版面。
+     * @param layout 畫面版面。
      * @param y 分隔線的 Y 座標。
      */
-    fun divider(context: DrawContext, layout: SettingsScreenLayout, y: Int) {
+    fun divider(context: DrawContext, layout: FormScreenLayout, y: Int) {
         context.fill(layout.contentLeft, y, layout.contentRight, y + 1, DIVIDER_COLOR)
     }
 
@@ -92,7 +92,7 @@ internal object SettingsScreenRenderer {
      *
      * @param context 畫面繪製情境。
      * @param textRenderer 文字繪製器。
-     * @param layout 設定頁版面。
+     * @param layout 畫面版面。
      * @param message 狀態文字。
      * @param color 文字顏色。
      * @param marquee 狀態文字的跑馬燈進度。
@@ -102,7 +102,7 @@ internal object SettingsScreenRenderer {
     fun status(
         context: DrawContext,
         textRenderer: TextRenderer,
-        layout: SettingsScreenLayout,
+        layout: FormScreenLayout,
         message: Text,
         color: Int,
         marquee: MarqueeState,

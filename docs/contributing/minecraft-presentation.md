@@ -477,11 +477,12 @@ attempt does not fall through to another provider.
 
 ## Screen design
 
-- Build settings screens from the shared components in `client/gui`: `SettingsScreenLayout` for
-  positions, `SettingsTabStripLayout` and `SettingsTabWidget` for category tabs, `SettingsFooterLayout`
-  for the footer, `DropdownOverlay` for selector lists and `SettingTooltip` for row tooltips. Do not place
-  widgets by hand or copy their sizes. Sizes and colours live in those components; change them there
-  and extend the layout tests.
+- Build screens from the shared components in `client/gui`. They are not specific to settings screens:
+  `FormScreenLayout` for screens made of category tabs, rows and a footer, `TabStripLayout` and
+  `TabWidget` for tabs, `ButtonRowLayout` for a row of equal-width buttons, `DropdownOverlay` for
+  selector lists, `ControlTooltip` for control tooltips, `VerticalScrollbar` for scrollbars and
+  `ScreenRendering` for titles, labels and status lines. Do not place widgets by hand or copy their
+  sizes. Sizes and colours live in those components; change them there and extend the layout tests.
 - Draw only the vanilla translucent background. Do not add a full-screen overlay or a panel behind the
   content.
 - Mark the current page, or a selector whose list is open, with the white outline
@@ -495,7 +496,7 @@ attempt does not fall through to another provider.
 - Route every cycle button through `CycleButtonInput` and build it with `pressesOnSecondaryClick`:
   left-click selects the next option, right-click or Shift+left-click the previous one.
 - A row that only performs an action and has no value is one button spanning the row, without a label.
-- Build setting tooltips with `SettingTooltip`. List every option and mark the current one instead of
+- Build control tooltips with `ControlTooltip`. List every option and mark the current one instead of
   adding a separate "current value" line. Write hints as the action and its result, such as
   "Left-click: next option", not internal concepts; translations follow the same rule. Put a button's
   label in square brackets when a hint mentions it, such as `[−]`.

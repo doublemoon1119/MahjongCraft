@@ -8,17 +8,17 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.client.automatic.ClientAu
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.automatic.ClientAutomaticControlResultKind
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.automatic.ClientAutomaticControlSubmitResult
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.automatic.ClientAutomaticControlUpdateCoordinator
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.ControlTooltip
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.FormScreenLayout
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.MarqueeState
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.RestartableMarqueeButtonWidget
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.ScreenRendering
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.ScrollState
-import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.SettingTooltip
-import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.SettingsFooterLayout
-import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.SettingsScreenLayout
-import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.SettingsScreenRenderer
-import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.SettingsScrollbar
-import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.SettingsTabStripLayout
-import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.SettingsTabWidget
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.SettingsFooterButtons
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.TabStripLayout
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.TabWidget
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.UnsavedChangesConfirmationScreen
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.VerticalScrollbar
 import com.doublemoon1119.mahjongcraft.platform.minecraft.automatic.BuiltInMinecraftAutomaticControlIds
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftClientConfigScreenKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftMessageKeys
@@ -168,11 +168,11 @@ class MahjongClientConfigScreen(
     override fun render(context: DrawContext, mouseX: Int, mouseY: Int, delta: Float) {
         renderBackground(context)
         val layout = layout()
-        SettingsScreenRenderer.title(context, textRenderer, title, width)
-        SettingsScreenRenderer.tabLine(context, tabStrip(layout))
+        ScreenRendering.title(context, textRenderer, title, width)
+        ScreenRendering.tabLine(context, tabStrip(layout))
         val hoveredLabel = renderFieldLabels(context, layout, mouseX, mouseY)
         renderStatus(context, layout, mouseX, mouseY)
-        SettingsScrollbar.render(context, layout.scrollbarLeft, layout.scrollbar(rows().size, rowScroll.index))
+        VerticalScrollbar.render(context, layout.scrollbarLeft, layout.scrollbar(rows().size, rowScroll.index))
         super.render(context, mouseX, mouseY, delta)
         hoveredLabel?.let { context.drawTooltip(textRenderer, it, mouseX, mouseY) }
     }
@@ -223,7 +223,7 @@ class MahjongClientConfigScreen(
      *
      * @param layout 設定頁版面。
      */
-    private fun addTabs(layout: SettingsScreenLayout) {
+    private fun addTabs(layout: FormScreenLayout) {
         if (revealSelectedTab) {
             tabScroll = tabStrip(layout).scrollRevealing(category.ordinal)
             revealSelectedTab = false
@@ -233,7 +233,7 @@ class MahjongClientConfigScreen(
         Category.entries.forEachIndexed { index, entry ->
             val selected = entry == category
             addDrawableChild(
-                SettingsTabWidget(
+                TabWidget(
                     x = strip.tabX(index),
                     y = strip.tabY(selected),
                     width = strip.tabWidth,
@@ -258,7 +258,7 @@ class MahjongClientConfigScreen(
      *
      * @param layout 設定頁版面。
      */
-    private fun addFieldButtons(layout: SettingsScreenLayout) {
+    private fun addFieldButtons(layout: FormScreenLayout) {
         val rows = rows()
         rowScroll.clamp(rows.size - layout.visibleFieldCount)
         rows.drop(rowScroll.index).take(layout.visibleFieldCount).forEachIndexed { index, row ->
@@ -268,11 +268,11 @@ class MahjongClientConfigScreen(
                 is ConfigRow.Information -> Unit
                 is ConfigRow.Action -> addDrawableChild(
                     RestartableMarqueeButtonWidget.builder(row.name) { row.activate() }
-                        .dimensions(layout.contentLeft, y, layout.contentWidth, SettingsScreenLayout.BUTTON_HEIGHT)
+                        .dimensions(layout.contentLeft, y, layout.contentWidth, FormScreenLayout.BUTTON_HEIGHT)
                         .build()
                         .also {
                             it.active = active
-                            it.tooltip = Tooltip.of(SettingTooltip.description(row.description))
+                            it.tooltip = Tooltip.of(ControlTooltip.description(row.description))
                         },
                 )
                 is ConfigRow.Toggle -> {
@@ -280,18 +280,18 @@ class MahjongClientConfigScreen(
                     addDrawableChild(
                         RestartableMarqueeButtonWidget.builder(booleanText(enabled)) { row.toggle() }
                             .pressesOnSecondaryClick()
-                            .dimensions(layout.controlLeft, y, layout.controlWidth, SettingsScreenLayout.BUTTON_HEIGHT)
+                            .dimensions(layout.controlLeft, y, layout.controlWidth, FormScreenLayout.BUTTON_HEIGHT)
                             .build()
                             .also {
                                 it.active = active
                                 it.tooltip = Tooltip.of(
-                                    SettingTooltip.options(
+                                    ControlTooltip.options(
                                         description = row.description,
                                         options = listOf(
-                                            SettingTooltip.Option(label = booleanText(true), current = enabled),
-                                            SettingTooltip.Option(label = booleanText(false), current = !enabled),
+                                            ControlTooltip.Option(label = booleanText(true), current = enabled),
+                                            ControlTooltip.Option(label = booleanText(false), current = !enabled),
                                         ),
-                                        hints = if (active) SettingTooltip.toggleHints() else emptyList(),
+                                        hints = if (active) ControlTooltip.toggleHints() else emptyList(),
                                     ),
                                 )
                             },
@@ -306,8 +306,8 @@ class MahjongClientConfigScreen(
      *
      * @param layout 設定頁版面。
      */
-    private fun addBottomButtons(layout: SettingsScreenLayout) {
-        val footer = layout.footer
+    private fun addBottomButtons(layout: FormScreenLayout) {
+        val footer = layout.footer(SettingsFooterButtons.COUNT)
 
         /**
          * 建立底部按鈕。
@@ -319,18 +319,18 @@ class MahjongClientConfigScreen(
          */
         fun button(index: Int, key: String, action: () -> Unit): ButtonWidget = addDrawableChild(
             RestartableMarqueeButtonWidget.builder(Text.translatable(key)) { action() }
-                .dimensions(footer.buttonX(index), layout.footerY, footer.buttonWidth(index), SettingsScreenLayout.BUTTON_HEIGHT)
+                .dimensions(footer.buttonX(index), layout.footerY, footer.buttonWidth(index), FormScreenLayout.BUTTON_HEIGHT)
                 .build(),
         )
-        resetButton = button(SettingsFooterLayout.RESET, MinecraftClientConfigScreenKeys.RESET_DEFAULTS) {
+        resetButton = button(SettingsFooterButtons.RESET, MinecraftClientConfigScreenKeys.RESET_DEFAULTS) {
             draft = MahjongClientConfigState()
             automaticDraft.reset()
             saveFailed = false
             rebuild()
         }
-        undoButton = button(SettingsFooterLayout.UNDO, MinecraftClientConfigScreenKeys.UNDO) { undoDraft() }
-        applyButton = button(SettingsFooterLayout.APPLY, MinecraftClientConfigScreenKeys.APPLY) { applyDraft(closeAfterSave = false) }
-        doneButton = button(SettingsFooterLayout.DONE, MinecraftClientConfigScreenKeys.DONE) {
+        undoButton = button(SettingsFooterButtons.UNDO, MinecraftClientConfigScreenKeys.UNDO) { undoDraft() }
+        applyButton = button(SettingsFooterButtons.APPLY, MinecraftClientConfigScreenKeys.APPLY) { applyDraft(closeAfterSave = false) }
+        doneButton = button(SettingsFooterButtons.DONE, MinecraftClientConfigScreenKeys.DONE) {
             if (draftStale || (!hasChanges() && !preferenceService.hasPendingSync)) {
                 close()
             } else {
@@ -470,24 +470,24 @@ class MahjongClientConfigScreen(
      * @param mouseY 游標垂直座標。
      * @return 游標下被截斷的文字全文；游標不在被截斷的文字上時為 null。
      */
-    private fun renderFieldLabels(context: DrawContext, layout: SettingsScreenLayout, mouseX: Int, mouseY: Int): Text? {
+    private fun renderFieldLabels(context: DrawContext, layout: FormScreenLayout, mouseX: Int, mouseY: Int): Text? {
         var hoveredLabel: Text? = null
         rows().drop(rowScroll.index).take(layout.visibleFieldCount).forEachIndexed { index, row ->
             val rowTop = layout.fieldRowTop(index)
             val hovered = when (row) {
                 is ConfigRow.Action -> null
-                is ConfigRow.Information -> SettingsScreenRenderer.label(
+                is ConfigRow.Information -> ScreenRendering.label(
                     context = context,
                     textRenderer = textRenderer,
                     label = row.name,
                     x = layout.contentLeft,
-                    y = rowTop + (SettingsScreenLayout.BUTTON_HEIGHT - SettingsScreenLayout.VISIBLE_TEXT_HEIGHT) / 2,
+                    y = rowTop + (FormScreenLayout.BUTTON_HEIGHT - FormScreenLayout.VISIBLE_TEXT_HEIGHT) / 2,
                     maximumWidth = layout.contentWidth,
                     mouseX = mouseX,
                     mouseY = mouseY,
-                    color = SettingsScreenRenderer.MUTED_TEXT_COLOR,
+                    color = ScreenRendering.MUTED_TEXT_COLOR,
                 )
-                is ConfigRow.Toggle -> SettingsScreenRenderer.label(
+                is ConfigRow.Toggle -> ScreenRendering.label(
                     context = context,
                     textRenderer = textRenderer,
                     label = row.name,
@@ -511,20 +511,20 @@ class MahjongClientConfigScreen(
      * @param mouseX 游標水平座標。
      * @param mouseY 游標垂直座標。
      */
-    private fun renderStatus(context: DrawContext, layout: SettingsScreenLayout, mouseX: Int, mouseY: Int) {
+    private fun renderStatus(context: DrawContext, layout: FormScreenLayout, mouseX: Int, mouseY: Int) {
         val remote = automaticDraft.state()
-        val error = SettingsScreenRenderer.ERROR_TEXT_COLOR
+        val error = ScreenRendering.ERROR_TEXT_COLOR
         val (status, color) = when {
             draftStale -> Text.translatable(MinecraftClientConfigScreenKeys.DRAFT_STALE) to error
             saveFailed -> Text.translatable(MinecraftClientConfigScreenKeys.SAVE_FAILED) to error
             preferenceSyncFailed -> Text.translatable(MinecraftMessageKeys.AUTOMATIC_CONTROL_PREFERENCE_SYNC_FAILED) to error
-            remote.pending -> Text.translatable(pendingStatusKey(checkNotNull(remote.pendingRequestId))) to SettingsScreenRenderer.TEXT_COLOR
+            remote.pending -> Text.translatable(pendingStatusKey(checkNotNull(remote.pendingRequestId))) to ScreenRendering.TEXT_COLOR
             automaticError == AutomaticControlError.UNCONFIRMED -> Text.translatable(AutomaticControlError.UNCONFIRMED.translationKey) to error
             remote.stale -> Text.translatable(MinecraftClientConfigScreenKeys.AUTOMATIC_STALE) to error
             automaticError != null -> Text.translatable(checkNotNull(automaticError).translationKey) to error
             else -> return
         }
-        SettingsScreenRenderer.status(
+        ScreenRendering.status(
             context = context,
             textRenderer = textRenderer,
             layout = layout,
@@ -690,7 +690,7 @@ class MahjongClientConfigScreen(
      *
      * @return 沒有頁面切換與規則列的設定頁版面。
      */
-    private fun layout(): SettingsScreenLayout = SettingsScreenLayout(
+    private fun layout(): FormScreenLayout = FormScreenLayout(
         windowWidth = width,
         windowHeight = height,
         hasPageSwitch = false,
@@ -703,7 +703,7 @@ class MahjongClientConfigScreen(
      * @param layout 設定頁版面。
      * @return 頁籤列版面。
      */
-    private fun tabStrip(layout: SettingsScreenLayout): SettingsTabStripLayout = SettingsTabStripLayout(
+    private fun tabStrip(layout: FormScreenLayout): TabStripLayout = TabStripLayout(
         left = layout.contentLeft,
         width = layout.contentWidth,
         top = layout.tabsTop,

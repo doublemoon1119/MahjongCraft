@@ -1,7 +1,8 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.client.gui
 
 /**
- * 設定類畫面的版面：標題、頁面切換、規則列、分類頁籤、欄位區與底部按鈕列由上到下的位置。
+ * 由分類頁籤、一列列欄位與底部按鈕列組成的畫面版面，例如設定頁：標題、頁面切換、選擇器列、分類頁籤、
+ * 欄位區與底部按鈕列由上到下的位置。
  *
  * 視窗寬度低於 [COMPACT_MIN_WIDTH] 時改用窄版：欄位的標籤在上、控制項在下並佔滿內容寬度，規則列改為
  * 兩欄並排。內容寬度最多 [MAX_CONTENT_WIDTH] 並水平置中，所有區塊共用同一組左右邊界。
@@ -15,7 +16,7 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.client.gui
  * @property ruleLabelWidth 規則列「規則」標籤的文字寬度。
  * @property variantLabelWidth 規則列「玩法」標籤的文字寬度。
  */
-internal data class SettingsScreenLayout(
+internal data class FormScreenLayout(
     val windowWidth: Int,
     val windowHeight: Int,
     val hasPageSwitch: Boolean,
@@ -38,8 +39,8 @@ internal data class SettingsScreenLayout(
     val contentRight: Int = contentLeft + contentWidth
 
     /** 規則列；畫面沒有規則列時為 null。 */
-    val ruleRow: SettingsRuleRowLayout? = if (hasRuleRow) {
-        SettingsRuleRowLayout(
+    val ruleRow: SelectorRowLayout? = if (hasRuleRow) {
+        SelectorRowLayout(
             top = if (hasPageSwitch) PAGE_SWITCH_Y + BUTTON_HEIGHT + SECTION_GAP else TITLE_BOTTOM,
             contentLeft = contentLeft,
             contentWidth = contentWidth,
@@ -59,7 +60,7 @@ internal data class SettingsScreenLayout(
     }
 
     /** 欄位區上界。 */
-    val fieldsTop: Int = tabsTop + SettingsTabStripLayout.SELECTED_HEIGHT + 1 + FIELDS_TOP_GAP
+    val fieldsTop: Int = tabsTop + TabStripLayout.SELECTED_HEIGHT + 1 + FIELDS_TOP_GAP
 
     /** 底部按鈕列上界。 */
     val footerY: Int = windowHeight - FOOTER_BOTTOM_MARGIN - BUTTON_HEIGHT
@@ -101,8 +102,13 @@ internal data class SettingsScreenLayout(
     /** 欄位捲軸的左界；捲軸畫在內容右側的邊距內，不佔用控制項的寬度。 */
     val scrollbarLeft: Int = contentRight + SCROLLBAR_GAP
 
-    /** 底部按鈕列。 */
-    val footer: SettingsFooterLayout = SettingsFooterLayout(left = contentLeft, width = contentWidth)
+    /**
+     * 建立橫跨內容寬度的底部按鈕列。
+     *
+     * @param buttonCount 按鈕數量。
+     * @return 等寬排成一列的按鈕位置。
+     */
+    fun footer(buttonCount: Int): ButtonRowLayout = ButtonRowLayout(left = contentLeft, width = contentWidth, buttonCount = buttonCount)
 
     /**
      * 取得第幾個可見欄位的上界。
@@ -141,7 +147,7 @@ internal data class SettingsScreenLayout(
         itemCount = fieldCount,
         visibleItemCount = visibleFieldCount,
         scrollIndex = scrollIndex,
-        minimumThumbHeight = SettingsScrollbar.MINIMUM_THUMB_HEIGHT,
+        minimumThumbHeight = VerticalScrollbar.MINIMUM_THUMB_HEIGHT,
     )
 
     /**
@@ -152,7 +158,7 @@ internal data class SettingsScreenLayout(
      * @return 位於命中範圍內時為 true。
      */
     fun isOverScrollbar(mouseX: Double, mouseY: Double): Boolean = mouseX >= scrollbarLeft - SCROLLBAR_HIT_PADDING &&
-        mouseX < scrollbarLeft + SettingsScrollbar.WIDTH + SCROLLBAR_HIT_PADDING &&
+        mouseX < scrollbarLeft + VerticalScrollbar.WIDTH + SCROLLBAR_HIT_PADDING &&
         mouseY >= fieldsTop &&
         mouseY < fieldsBottom
 
@@ -252,7 +258,7 @@ internal data class SettingsScreenLayout(
  * @property ruleLabelWidth 「規則」標籤的文字寬度。
  * @property variantLabelWidth 「玩法」標籤的文字寬度。
  */
-internal data class SettingsRuleRowLayout(
+internal data class SelectorRowLayout(
     val top: Int,
     val contentLeft: Int,
     val contentWidth: Int,
@@ -268,14 +274,14 @@ internal data class SettingsRuleRowLayout(
         columnWidth
     } else {
         val fixed = ruleLabelWidth + variantLabelWidth + LABEL_GAP * 2 + CATALOGUE_GAP + CATALOGUE_SIZE + MINIMUM_MIDDLE_GAP
-        ((contentWidth - fixed) / 2).coerceIn(1, SettingsScreenLayout.CONTROL_WIDTH)
+        ((contentWidth - fixed) / 2).coerceIn(1, FormScreenLayout.CONTROL_WIDTH)
     }
 
     /** 兩個標籤文字的 Y 座標。 */
     val labelY: Int = if (compact) {
-        top + (COMPACT_LABEL_ROW_HEIGHT - SettingsScreenLayout.VISIBLE_TEXT_HEIGHT) / 2
+        top + (COMPACT_LABEL_ROW_HEIGHT - FormScreenLayout.VISIBLE_TEXT_HEIGHT) / 2
     } else {
-        top + (SettingsScreenLayout.BUTTON_HEIGHT - SettingsScreenLayout.VISIBLE_TEXT_HEIGHT) / 2
+        top + (FormScreenLayout.BUTTON_HEIGHT - FormScreenLayout.VISIBLE_TEXT_HEIGHT) / 2
     }
 
     /** 兩個選擇器的上界。 */
@@ -303,7 +309,7 @@ internal data class SettingsRuleRowLayout(
     val variantLabelX: Int = if (compact) variantSelectorX else variantSelectorX - LABEL_GAP - variantLabelWidth
 
     /** 規則列下方分隔線的 Y 座標。 */
-    val dividerY: Int = selectorY + SettingsScreenLayout.BUTTON_HEIGHT + DIVIDER_GAP
+    val dividerY: Int = selectorY + FormScreenLayout.BUTTON_HEIGHT + DIVIDER_GAP
 
     internal companion object {
         /** 標籤與選擇器之間的水平間距。 */

@@ -6,11 +6,11 @@ import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 /** 驗證分類頁籤列的寬度縮放、置中與左右捲動。 */
-class SettingsTabStripLayoutTest {
+class TabStripLayoutTest {
     /** 放得下時每個頁籤寬 90、間距 2，整排置中且不能捲動。 */
     @Test
     fun `tabs keep the preferred width and stay centred when they fit`() {
-        val strip = SettingsTabStripLayout(left = 12, width = 456, top = 77, tabCount = 3)
+        val strip = TabStripLayout(left = 12, width = 456, top = 77, tabCount = 3)
 
         assertEquals(90, strip.tabWidth)
         assertEquals(274, strip.totalWidth)
@@ -23,7 +23,7 @@ class SettingsTabStripLayoutTest {
     /** 放不下時平均縮窄，最窄 60；縮窄後整排仍在頁籤列範圍內。 */
     @Test
     fun `tabs shrink evenly down to the minimum width`() {
-        val strip = SettingsTabStripLayout(left = 18, width = 284, top = 77, tabCount = 4)
+        val strip = TabStripLayout(left = 18, width = 284, top = 77, tabCount = 4)
 
         assertEquals(69, strip.tabWidth)
         assertEquals(0, strip.maximumScroll)
@@ -34,7 +34,7 @@ class SettingsTabStripLayoutTest {
     /** 縮到最窄仍放不下時整排靠左，可以向左捲動到最後一個頁籤對齊右界。 */
     @Test
     fun `tabs scroll once the minimum width no longer fits`() {
-        val strip = SettingsTabStripLayout(left = 18, width = 284, top = 77, tabCount = 6)
+        val strip = TabStripLayout(left = 18, width = 284, top = 77, tabCount = 6)
 
         assertEquals(60, strip.tabWidth)
         assertEquals(370, strip.totalWidth)
@@ -49,7 +49,7 @@ class SettingsTabStripLayoutTest {
     /** 選中的頁籤高 21 並向上突出，其他頁籤高 18；兩者底邊都貼著底線。 */
     @Test
     fun `selected tab is taller and both kinds end at the line`() {
-        val strip = SettingsTabStripLayout(left = 12, width = 456, top = 77, tabCount = 3)
+        val strip = TabStripLayout(left = 12, width = 456, top = 77, tabCount = 3)
 
         assertEquals(21, strip.tabHeight(selected = true))
         assertEquals(18, strip.tabHeight(selected = false))
@@ -63,7 +63,7 @@ class SettingsTabStripLayoutTest {
     /** 選中的頁籤被捲出範圍時，捲動到剛好完整顯示；已完整顯示時不動。 */
     @Test
     fun `reveals a tab that is scrolled out of view`() {
-        val strip = SettingsTabStripLayout(left = 18, width = 284, top = 77, tabCount = 6)
+        val strip = TabStripLayout(left = 18, width = 284, top = 77, tabCount = 6)
 
         assertEquals(0, strip.scrollRevealing(0))
         assertEquals(0, strip.scrollRevealing(3))
@@ -78,7 +78,7 @@ class SettingsTabStripLayoutTest {
     /** 滾輪一次捲動一個頁籤的距離，並停在兩端。 */
     @Test
     fun `wheel scrolls one tab at a time within bounds`() {
-        val strip = SettingsTabStripLayout(left = 18, width = 284, top = 77, tabCount = 6)
+        val strip = TabStripLayout(left = 18, width = 284, top = 77, tabCount = 6)
 
         assertEquals(62, strip.scrollByWheel(-1.0))
         assertEquals(86, strip.copy(scroll = 62).scrollByWheel(-1.0))
@@ -90,7 +90,7 @@ class SettingsTabStripLayoutTest {
     /** 命中範圍只涵蓋頁籤列本身，不含底線以下。 */
     @Test
     fun `contains only the strip area`() {
-        val strip = SettingsTabStripLayout(left = 12, width = 456, top = 77, tabCount = 3)
+        val strip = TabStripLayout(left = 12, width = 456, top = 77, tabCount = 3)
 
         assertTrue(strip.contains(12.0, 77.0))
         assertTrue(strip.contains(467.0, 97.0))

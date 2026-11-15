@@ -63,11 +63,11 @@ internal data class DropdownListLayout(
         itemCount = optionCount,
         visibleItemCount = visibleCount,
         scrollIndex = effectiveScroll,
-        minimumThumbHeight = SettingsScrollbar.MINIMUM_THUMB_HEIGHT.coerceAtMost(visibleCount * OPTION_HEIGHT),
+        minimumThumbHeight = VerticalScrollbar.MINIMUM_THUMB_HEIGHT.coerceAtMost(visibleCount * OPTION_HEIGHT),
     )
 
     /** 清單內捲軸的左界。 */
-    val scrollbarLeft: Int = right - BORDER - SettingsScrollbar.WIDTH
+    val scrollbarLeft: Int = right - BORDER - VerticalScrollbar.WIDTH
 
     /**
      * 取得可見選項列的上界。

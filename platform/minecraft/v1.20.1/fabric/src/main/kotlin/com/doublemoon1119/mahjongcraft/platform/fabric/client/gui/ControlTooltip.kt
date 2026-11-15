@@ -1,12 +1,12 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.client.gui
 
-import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftSettingTooltipKeys
+import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftControlTooltipKeys
 import net.minecraft.text.MutableText
 import net.minecraft.text.Text
 import net.minecraft.util.Formatting
 
 /**
- * 設定欄位提示框的共用格式，由上到下為說明、狀態區、提醒與操作提示，各段之間空一行，沒有內容的段落省略。
+ * 控制項提示框的共用格式，由上到下為說明、狀態區、提醒與操作提示，各段之間空一行，沒有內容的段落省略。
  *
  * - 說明：灰色。
  * - 狀態區：選項欄位列出全部選項，目前選項為綠色並以「▶」標示，其他可選的選項為白色，不可選的選項
@@ -14,7 +14,7 @@ import net.minecraft.util.Formatting
  * - 提醒：紅色，例如欄位被其他設定停用。
  * - 操作提示：灰色，寫玩家要做的動作與結果；提到畫面上的按鈕時用方括號標出按鈕上的字。
  */
-internal object SettingTooltip {
+internal object ControlTooltip {
     /** 目前選項行首的標示。 */
     private const val CURRENT_MARKER = "▶ "
 
@@ -48,7 +48,7 @@ internal object SettingTooltip {
         description: Text?,
         options: List<Option>,
         hints: List<Text> = emptyList(),
-        title: Text = Text.translatable(MinecraftSettingTooltipKeys.OPTIONS),
+        title: Text = Text.translatable(MinecraftControlTooltipKeys.OPTIONS),
         notice: Text? = null,
     ): Text = compose(
         description = description,
@@ -73,7 +73,7 @@ internal object SettingTooltip {
         notice: Text? = null,
     ): Text {
         val status = Text.empty()
-            .append(Text.translatable(MinecraftSettingTooltipKeys.RANGE).formatted(Formatting.GOLD))
+            .append(Text.translatable(MinecraftControlTooltipKeys.RANGE).formatted(Formatting.GOLD))
             .append("  ")
             .append(range.copy().formatted(Formatting.WHITE))
         return compose(description = description, status = listOf(status), notice = notice, hints = hints)
@@ -96,16 +96,16 @@ internal object SettingTooltip {
      * @return 範圍文字，例如「1 – 13」或「不限制, 1000 – 100000」。
      */
     fun rangeText(minimum: Text, maximum: Text, unsetLabel: Text? = null): Text = if (unsetLabel == null) {
-        Text.translatable(MinecraftSettingTooltipKeys.RANGE_VALUES, minimum, maximum)
+        Text.translatable(MinecraftControlTooltipKeys.RANGE_VALUES, minimum, maximum)
     } else {
-        Text.translatable(MinecraftSettingTooltipKeys.RANGE_VALUES_OPTIONAL, unsetLabel, minimum, maximum)
+        Text.translatable(MinecraftControlTooltipKeys.RANGE_VALUES_OPTIONAL, unsetLabel, minimum, maximum)
     }
 
     /** 開關的操作提示。 */
-    fun toggleHints(): List<Text> = listOf(hint(Text.translatable(MinecraftSettingTooltipKeys.HINT_TOGGLE)))
+    fun toggleHints(): List<Text> = listOf(hint(Text.translatable(MinecraftControlTooltipKeys.HINT_TOGGLE)))
 
     /** 點擊後開啟選項畫面的操作提示。 */
-    fun chooseHints(): List<Text> = listOf(hint(Text.translatable(MinecraftSettingTooltipKeys.HINT_CHOOSE)))
+    fun chooseHints(): List<Text> = listOf(hint(Text.translatable(MinecraftControlTooltipKeys.HINT_CHOOSE)))
 
     /**
      * 建立數值欄位的操作提示。
@@ -117,10 +117,10 @@ internal object SettingTooltip {
      * @return 加減按鈕、按住 Shift、直接輸入的提示；欄位可以不設定時再加一行改為不設定的方法。
      */
     fun integerHints(step: Text, shiftStep: Text, minimum: Text, unsetLabel: Text? = null): List<Text> = buildList {
-        add(hint(Text.translatable(MinecraftSettingTooltipKeys.HINT_STEP, step)))
-        add(hint(Text.translatable(MinecraftSettingTooltipKeys.HINT_SHIFT_STEP, shiftStep)))
-        add(hint(Text.translatable(MinecraftSettingTooltipKeys.HINT_TYPE_NUMBER)))
-        if (unsetLabel != null) add(hint(Text.translatable(MinecraftSettingTooltipKeys.HINT_CLEAR, minimum, unsetLabel)))
+        add(hint(Text.translatable(MinecraftControlTooltipKeys.HINT_STEP, step)))
+        add(hint(Text.translatable(MinecraftControlTooltipKeys.HINT_SHIFT_STEP, shiftStep)))
+        add(hint(Text.translatable(MinecraftControlTooltipKeys.HINT_TYPE_NUMBER)))
+        if (unsetLabel != null) add(hint(Text.translatable(MinecraftControlTooltipKeys.HINT_CLEAR, minimum, unsetLabel)))
     }
 
     /**
@@ -139,7 +139,7 @@ internal object SettingTooltip {
      */
     private fun optionLine(option: Option): Text {
         val label = option.unavailableReason?.let { reason ->
-            Text.translatable(MinecraftSettingTooltipKeys.UNAVAILABLE_OPTION, option.label, reason)
+            Text.translatable(MinecraftControlTooltipKeys.UNAVAILABLE_OPTION, option.label, reason)
         } ?: option.label.copy()
         val color = when {
             option.current -> Formatting.GREEN

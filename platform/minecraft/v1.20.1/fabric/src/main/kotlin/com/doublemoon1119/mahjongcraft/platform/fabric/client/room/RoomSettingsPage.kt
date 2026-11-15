@@ -5,20 +5,20 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.config.toDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.RoomActionDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkDtoRegistries
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkJson
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.ControlTooltip
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.CycleButtonInput
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.DropdownOption
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.DropdownOverlay
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.FormScreenLayout
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.MarqueeState
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.RestartableMarqueeButtonWidget
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.ScreenRendering
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.ScrollState
-import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.SettingTooltip
-import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.SettingsFooterLayout
-import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.SettingsScreenLayout
-import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.SettingsScreenRenderer
-import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.SettingsScrollbar
-import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.SettingsTabStripLayout
-import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.SettingsTabWidget
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.SettingsFooterButtons
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.TabStripLayout
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.TabWidget
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.UnsavedChangesConfirmationScreen
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.VerticalScrollbar
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.state.ClientMahjongStateStore
 import com.doublemoon1119.mahjongcraft.platform.fabric.network.MahjongChannels
 import com.doublemoon1119.mahjongcraft.platform.minecraft.catalogue.RuleCatalogueBrowseContext
@@ -33,7 +33,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.room.GameConfigVariant
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.MinecraftRoomScreenKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.TableOccupancyDto
 import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.RuleModuleDisplayNameRegistry
-import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftSettingTooltipKeys
+import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftControlTooltipKeys
 import net.minecraft.client.font.TextRenderer
 import net.minecraft.client.gui.DrawContext
 import net.minecraft.client.gui.Drawable
@@ -205,20 +205,20 @@ internal class RoomSettingsPage(
                 Text.translatable(MinecraftRoomScreenKeys.READ_ONLY),
                 host.screen.width / 2,
                 layout.fieldsTop,
-                SettingsScreenRenderer.MUTED_TEXT_COLOR,
+                ScreenRendering.MUTED_TEXT_COLOR,
             )
             return null
         }
         layout.ruleRow?.let { row ->
-            context.drawTextWithShadow(textRenderer, ruleLabel(), row.ruleLabelX, row.labelY, SettingsScreenRenderer.TEXT_COLOR)
-            context.drawTextWithShadow(textRenderer, variantLabel(), row.variantLabelX, row.labelY, SettingsScreenRenderer.TEXT_COLOR)
-            SettingsScreenRenderer.divider(context, layout, row.dividerY)
+            context.drawTextWithShadow(textRenderer, ruleLabel(), row.ruleLabelX, row.labelY, ScreenRendering.TEXT_COLOR)
+            context.drawTextWithShadow(textRenderer, variantLabel(), row.variantLabelX, row.labelY, ScreenRendering.TEXT_COLOR)
+            ScreenRendering.divider(context, layout, row.dividerY)
         }
-        SettingsScreenRenderer.tabLine(context, tabStrip(layout, definition.categories.size))
+        ScreenRendering.tabLine(context, tabStrip(layout, definition.categories.size))
         var hoveredLabel: Text? = null
         val fields = definition.fields.filter { it.categoryId == selectedCategoryId }
         fields.drop(fieldScroll.index).take(layout.visibleFieldCount).forEachIndexed { index, field ->
-            SettingsScreenRenderer.label(
+            ScreenRendering.label(
                 context = context,
                 textRenderer = textRenderer,
                 label = Text.translatable(field.nameTranslationKey),
@@ -229,7 +229,7 @@ internal class RoomSettingsPage(
                 mouseY = mouseY,
             )?.let { hoveredLabel = it }
         }
-        SettingsScrollbar.render(context, layout.scrollbarLeft, layout.scrollbar(fields.size, fieldScroll.index))
+        VerticalScrollbar.render(context, layout.scrollbarLeft, layout.scrollbar(fields.size, fieldScroll.index))
         val roomPlayerCount = roomPlayerCount()
         val status = when {
             !definition.selectable -> Text.translatable(definition.unavailableReasonTranslationKey!!)
@@ -239,12 +239,12 @@ internal class RoomSettingsPage(
             else -> null
         }
         status?.let { message ->
-            SettingsScreenRenderer.status(
+            ScreenRendering.status(
                 context = context,
                 textRenderer = textRenderer,
                 layout = layout,
                 message = message,
-                color = SettingsScreenRenderer.ERROR_TEXT_COLOR,
+                color = ScreenRendering.ERROR_TEXT_COLOR,
                 marquee = statusMarquee,
                 mouseX = if (dropdown.isOpen) OFFSCREEN_POINTER else mouseX,
                 mouseY = if (dropdown.isOpen) OFFSCREEN_POINTER else mouseY,
@@ -407,7 +407,7 @@ internal class RoomSettingsPage(
      * @param editable 是否可以修改目前規則的設定。
      */
     private fun addRuleRow(
-        layout: SettingsScreenLayout,
+        layout: FormScreenLayout,
         config: GameConfig,
         moduleId: String,
         definition: GameConfigPresentationDefinition,
@@ -429,14 +429,14 @@ internal class RoomSettingsPage(
             dropdown.toggle(key = RULE_SELECTOR_KEY, anchor = ruleSelector, options = ruleOptions, selectedIndex = ruleIndex) { index ->
                 selectRule(config, candidates[index])
             }
-        }.dimensions(row.ruleSelectorX, row.selectorY, row.selectorWidth, SettingsScreenLayout.BUTTON_HEIGHT).build().also { button ->
+        }.dimensions(row.ruleSelectorX, row.selectorY, row.selectorWidth, FormScreenLayout.BUTTON_HEIGHT).build().also { button ->
             button.active = canEditRoom
             button.selectorExpanded = { dropdown.isOpenFor(RULE_SELECTOR_KEY) }
             button.tooltip = Tooltip.of(
-                SettingTooltip.options(
+                ControlTooltip.options(
                     description = Text.translatable(MinecraftRoomScreenKeys.RULE_SELECTOR_DESCRIPTION),
                     options = candidates.zip(ruleOptions).map { (candidate, option) ->
-                        SettingTooltip.Option(
+                        ControlTooltip.Option(
                             label = option.label,
                             current = candidate.ruleModuleId == moduleId,
                             unavailableReason = option.unavailableReason,
@@ -483,16 +483,16 @@ internal class RoomSettingsPage(
                 normalizeDraftFlowConfig()
                 host.requestRebuild()
             }
-        }.dimensions(row.variantSelectorX, row.selectorY, row.selectorWidth, SettingsScreenLayout.BUTTON_HEIGHT).build().also { button ->
+        }.dimensions(row.variantSelectorX, row.selectorY, row.selectorWidth, FormScreenLayout.BUTTON_HEIGHT).build().also { button ->
             button.active = editable
             button.selectorExpanded = { dropdown.isOpenFor(VARIANT_SELECTOR_KEY) }
             button.tooltip = Tooltip.of(
-                SettingTooltip.options(
+                ControlTooltip.options(
                     description = Text.translatable(
                         currentVariant?.descriptionTranslationKey ?: MinecraftRoomScreenKeys.VARIANT_CUSTOM_DESCRIPTION,
                     ),
                     options = variants.zip(variantOptions).map { (variant, option) ->
-                        SettingTooltip.Option(label = option.label, current = variant.id == currentVariant?.id)
+                        ControlTooltip.Option(label = option.label, current = variant.id == currentVariant?.id)
                     },
                 ),
             )
@@ -541,7 +541,7 @@ internal class RoomSettingsPage(
      * @param layout 設定頁版面。
      * @param categories 依顯示順序排列的分類。
      */
-    private fun addTabs(layout: SettingsScreenLayout, categories: List<GameConfigCategoryDefinition>) {
+    private fun addTabs(layout: FormScreenLayout, categories: List<GameConfigCategoryDefinition>) {
         val selectedIndex = categories.indexOfFirst { it.id == selectedCategoryId }
         if (revealSelectedTab) {
             tabScroll = tabStrip(layout, categories.size).scrollRevealing(selectedIndex)
@@ -552,7 +552,7 @@ internal class RoomSettingsPage(
         categories.forEachIndexed { index, category ->
             val selected = index == selectedIndex
             host.addWidget(
-                widget = SettingsTabWidget(
+                widget = TabWidget(
                     x = strip.tabX(index),
                     y = strip.tabY(selected),
                     width = strip.tabWidth,
@@ -582,7 +582,7 @@ internal class RoomSettingsPage(
      * @param editable 是否允許修改此欄位。
      */
     private fun addFieldControls(
-        layout: SettingsScreenLayout,
+        layout: FormScreenLayout,
         field: GameConfigFieldDefinition,
         config: GameConfig,
         y: Int,
@@ -596,7 +596,7 @@ internal class RoomSettingsPage(
                 host.addWidget(
                     widget = RestartableMarqueeButtonWidget.builder(booleanText(enabled)) {
                         updateDraft(field, GameConfigPresentationValue.BooleanValue(!enabled))
-                    }.pressesOnSecondaryClick().dimensions(layout.controlLeft, y, layout.controlWidth, SettingsScreenLayout.BUTTON_HEIGHT).build().also {
+                    }.pressesOnSecondaryClick().dimensions(layout.controlLeft, y, layout.controlWidth, FormScreenLayout.BUTTON_HEIGHT).build().also {
                         it.active = editable
                         it.tooltip = tooltip
                     },
@@ -612,7 +612,7 @@ internal class RoomSettingsPage(
                             step = CycleButtonInput.step(),
                         )
                         updateDraft(field, GameConfigPresentationValue.ChoiceValue(editor.optionIds[index]))
-                    }.pressesOnSecondaryClick().dimensions(layout.controlLeft, y, layout.controlWidth, SettingsScreenLayout.BUTTON_HEIGHT).build().also {
+                    }.pressesOnSecondaryClick().dimensions(layout.controlLeft, y, layout.controlWidth, FormScreenLayout.BUTTON_HEIGHT).build().also {
                         it.active = editable
                         it.tooltip = tooltip
                     },
@@ -623,7 +623,7 @@ internal class RoomSettingsPage(
                 host.addWidget(
                     widget = RestartableMarqueeButtonWidget.builder(Text.translatable(MinecraftRoomScreenKeys.SELECTED_COUNT, selected.size)) {
                         openMultiChoice(field, editor, config, selected)
-                    }.dimensions(layout.controlLeft, y, layout.controlWidth, SettingsScreenLayout.BUTTON_HEIGHT).build().also {
+                    }.dimensions(layout.controlLeft, y, layout.controlWidth, FormScreenLayout.BUTTON_HEIGHT).build().also {
                         it.active = editable
                         it.tooltip = tooltip
                     },
@@ -635,7 +635,7 @@ internal class RoomSettingsPage(
                     widget = RestartableMarqueeButtonWidget.builder(Text.literal("−")) {
                         val next = RoomConfigIntegerControl.decrement(current = number, editor = editor, shiftHeld = Screen.hasShiftDown())
                         updateDraft(field, GameConfigPresentationValue.IntegerValue(next))
-                    }.dimensions(layout.integerMinusX, y, SettingsScreenLayout.INTEGER_BUTTON_WIDTH, SettingsScreenLayout.BUTTON_HEIGHT).build().also {
+                    }.dimensions(layout.integerMinusX, y, FormScreenLayout.INTEGER_BUTTON_WIDTH, FormScreenLayout.BUTTON_HEIGHT).build().also {
                         it.active = editable && RoomConfigIntegerControl.canDecrease(current = number, editor = editor)
                         it.tooltip = tooltip
                     },
@@ -646,20 +646,20 @@ internal class RoomSettingsPage(
                         x = layout.integerTextX,
                         y = y,
                         width = layout.integerTextWidth,
-                        height = SettingsScreenLayout.BUTTON_HEIGHT,
+                        height = FormScreenLayout.BUTTON_HEIGHT,
                         narration = Text.translatable(field.nameTranslationKey),
                     ).also { widget ->
                         widget.text = number?.toString().orEmpty()
                         widget.setMaxLength(11)
                         widget.setEditable(editable)
                         widget.active = editable
-                        widget.setEditableColor(SettingsScreenRenderer.TEXT_COLOR)
-                        widget.setUneditableColor(SettingsScreenRenderer.MUTED_TEXT_COLOR)
+                        widget.setEditableColor(ScreenRendering.TEXT_COLOR)
+                        widget.setUneditableColor(ScreenRendering.MUTED_TEXT_COLOR)
                         widget.tooltip = tooltip
                         widget.setChangedListener { raw ->
                             updateNumericDraft(field, editor, raw)
                             widget.setEditableColor(
-                                if (draft.isFieldInvalid(field.id)) SettingsScreenRenderer.ERROR_TEXT_COLOR else SettingsScreenRenderer.TEXT_COLOR,
+                                if (draft.isFieldInvalid(field.id)) ScreenRendering.ERROR_TEXT_COLOR else ScreenRendering.TEXT_COLOR,
                             )
                         }
                     },
@@ -668,7 +668,7 @@ internal class RoomSettingsPage(
                     widget = RestartableMarqueeButtonWidget.builder(Text.literal("+")) {
                         val next = RoomConfigIntegerControl.increment(current = number, editor = editor, shiftHeld = Screen.hasShiftDown())
                         updateDraft(field, GameConfigPresentationValue.IntegerValue(next))
-                    }.dimensions(layout.integerPlusX, y, SettingsScreenLayout.INTEGER_BUTTON_WIDTH, SettingsScreenLayout.BUTTON_HEIGHT).build().also {
+                    }.dimensions(layout.integerPlusX, y, FormScreenLayout.INTEGER_BUTTON_WIDTH, FormScreenLayout.BUTTON_HEIGHT).build().also {
                         it.active = editable && RoomConfigIntegerControl.canIncrease(current = number, editor = editor)
                         it.tooltip = tooltip
                     },
@@ -725,13 +725,13 @@ internal class RoomSettingsPage(
      * @param editable 是否可以修改設定。
      */
     private fun addFooter(
-        layout: SettingsScreenLayout,
+        layout: FormScreenLayout,
         definition: GameConfigPresentationDefinition,
         config: GameConfig,
         authoritative: GameConfig,
         editable: Boolean,
     ) {
-        val footer = layout.footer
+        val footer = layout.footer(SettingsFooterButtons.COUNT)
 
         /**
          * 建立底部按鈕。
@@ -743,24 +743,24 @@ internal class RoomSettingsPage(
          */
         fun button(index: Int, key: String, action: () -> Unit): ButtonWidget = host.addWidget(
             widget = RestartableMarqueeButtonWidget.builder(Text.translatable(key)) { action() }
-                .dimensions(footer.buttonX(index), layout.footerY, footer.buttonWidth(index), SettingsScreenLayout.BUTTON_HEIGHT)
+                .dimensions(footer.buttonX(index), layout.footerY, footer.buttonWidth(index), FormScreenLayout.BUTTON_HEIGHT)
                 .build(),
         )
         if (!editable) {
-            button(SettingsFooterLayout.DONE, MinecraftRoomScreenKeys.DONE) { host.showRoomPage() }
+            button(SettingsFooterButtons.DONE, MinecraftRoomScreenKeys.DONE) { host.showRoomPage() }
             return
         }
         val defaults = defaultConfig(definition)
-        resetButton = button(SettingsFooterLayout.RESET, MinecraftRoomScreenKeys.RESET_DEFAULTS_BUTTON) {
+        resetButton = button(SettingsFooterButtons.RESET, MinecraftRoomScreenKeys.RESET_DEFAULTS_BUTTON) {
             draft.resetTo(defaults)
             host.requestRebuild()
         }.also { it.tooltip = Tooltip.of(resetTooltip()) }
-        undoButton = button(SettingsFooterLayout.UNDO, MinecraftRoomScreenKeys.UNDO) {
+        undoButton = button(SettingsFooterButtons.UNDO, MinecraftRoomScreenKeys.UNDO) {
             draft.restoreAuthoritative(authoritative)
             host.requestRebuild()
         }
-        applyButton = button(SettingsFooterLayout.APPLY, MinecraftRoomScreenKeys.APPLY) { applyDraft() }
-        doneButton = button(SettingsFooterLayout.DONE, MinecraftRoomScreenKeys.DONE) { finishSettings() }
+        applyButton = button(SettingsFooterButtons.APPLY, MinecraftRoomScreenKeys.APPLY) { applyDraft() }
+        doneButton = button(SettingsFooterButtons.DONE, MinecraftRoomScreenKeys.DONE) { finishSettings() }
         refreshDraftButtons(config, authoritative, defaults)
     }
 
@@ -904,33 +904,33 @@ internal class RoomSettingsPage(
         return when (val editor = field.editor) {
             GameConfigEditorSpec.BooleanToggle -> {
                 val enabled = (field.read(config) as GameConfigPresentationValue.BooleanValue).enabled
-                SettingTooltip.options(
+                ControlTooltip.options(
                     description = description,
                     options = listOf(
-                        SettingTooltip.Option(label = booleanText(true), current = enabled),
-                        SettingTooltip.Option(label = booleanText(false), current = !enabled),
+                        ControlTooltip.Option(label = booleanText(true), current = enabled),
+                        ControlTooltip.Option(label = booleanText(false), current = !enabled),
                     ),
-                    hints = if (editable) SettingTooltip.toggleHints() else emptyList(),
+                    hints = if (editable) ControlTooltip.toggleHints() else emptyList(),
                     notice = notice,
                 )
             }
             is GameConfigEditorSpec.SingleChoice -> {
                 val current = (field.read(config) as GameConfigPresentationValue.ChoiceValue).optionId
-                SettingTooltip.options(
+                ControlTooltip.options(
                     description = description,
-                    options = editor.optionIds.map { SettingTooltip.Option(label = optionText(it, editor), current = it == current) },
+                    options = editor.optionIds.map { ControlTooltip.Option(label = optionText(it, editor), current = it == current) },
                     hints = CycleButtonInput.hintTexts(optionCount = editor.optionIds.size, active = editable),
                     notice = notice,
                 )
             }
             is GameConfigEditorSpec.MultiChoice -> {
                 val selected = (field.read(config) as GameConfigPresentationValue.MultiChoiceValue).optionIds
-                SettingTooltip.options(
+                ControlTooltip.options(
                     description = description,
-                    options = editor.optionIds.map { SettingTooltip.Option(label = optionText(it, editor), current = it in selected) },
-                    hints = if (editable) SettingTooltip.chooseHints() else emptyList(),
+                    options = editor.optionIds.map { ControlTooltip.Option(label = optionText(it, editor), current = it in selected) },
+                    hints = if (editable) ControlTooltip.chooseHints() else emptyList(),
                     title = Text.translatable(
-                        MinecraftSettingTooltipKeys.OPTIONS_SELECTED,
+                        MinecraftControlTooltipKeys.OPTIONS_SELECTED,
                         selected.size,
                         editor.minimumCount,
                         editor.maximumCount,
@@ -941,15 +941,15 @@ internal class RoomSettingsPage(
             is GameConfigEditorSpec.IntegerInput -> {
                 val minimum = Text.literal(formatRoomInteger(editor.minimum))
                 val unsetLabel = Text.translatable(MinecraftRoomScreenKeys.NONE).takeIf { editor.nullable }
-                SettingTooltip.range(
+                ControlTooltip.range(
                     description = description,
-                    range = SettingTooltip.rangeText(
+                    range = ControlTooltip.rangeText(
                         minimum = minimum,
                         maximum = Text.literal(formatRoomInteger(editor.maximum)),
                         unsetLabel = unsetLabel,
                     ),
                     hints = if (editable) {
-                        SettingTooltip.integerHints(
+                        ControlTooltip.integerHints(
                             step = Text.literal(formatRoomInteger(editor.step)),
                             shiftStep = Text.literal(formatRoomInteger(editor.step * RoomConfigIntegerControl.SHIFT_STEP_MULTIPLIER)),
                             minimum = minimum,
@@ -998,7 +998,7 @@ internal class RoomSettingsPage(
      *
      * @return 含頁面切換與規則列的設定頁版面。
      */
-    private fun layout(): SettingsScreenLayout = SettingsScreenLayout(
+    private fun layout(): FormScreenLayout = FormScreenLayout(
         windowWidth = host.screen.width,
         windowHeight = host.screen.height,
         hasPageSwitch = true,
@@ -1014,7 +1014,7 @@ internal class RoomSettingsPage(
      * @param categoryCount 分類數量。
      * @return 頁籤列版面。
      */
-    private fun tabStrip(layout: SettingsScreenLayout, categoryCount: Int): SettingsTabStripLayout = SettingsTabStripLayout(
+    private fun tabStrip(layout: FormScreenLayout, categoryCount: Int): TabStripLayout = TabStripLayout(
         left = layout.contentLeft,
         width = layout.contentWidth,
         top = layout.tabsTop,

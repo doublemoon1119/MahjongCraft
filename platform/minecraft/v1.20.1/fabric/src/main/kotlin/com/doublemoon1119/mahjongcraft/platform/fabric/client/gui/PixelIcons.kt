@@ -3,12 +3,12 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.client.gui
 import net.minecraft.client.gui.DrawContext
 
 /**
- * 設定類畫面用像素直接繪製的小圖示：選擇器箭頭與目前選項的打勾。
+ * 用像素直接繪製的小圖示：選擇器箭頭與目前選項的打勾。
  *
  * 不使用文字符號，圖示的大小與粗細因此固定，不受目前語言或資源包使用的字型影響；筆畫粗細與遊戲文字相近，
  * 並和文字一樣在右下方帶一像素的陰影。
  */
-internal object SettingsIcons {
+internal object PixelIcons {
     /** 選擇器箭頭的寬度。 */
     const val ARROW_WIDTH: Int = 7
 

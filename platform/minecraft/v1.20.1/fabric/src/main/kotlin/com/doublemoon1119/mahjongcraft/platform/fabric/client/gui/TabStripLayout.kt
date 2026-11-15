@@ -12,7 +12,7 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.client.gui
  * @property tabCount 頁籤數量。
  * @property scroll 向左捲動的像素數；超出合法範圍的部分不採用。
  */
-internal data class SettingsTabStripLayout(
+internal data class TabStripLayout(
     val left: Int,
     val width: Int,
     val top: Int,
