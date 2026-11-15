@@ -24,7 +24,9 @@ internal data class DropdownOption(
 /**
  * 一個畫面同時最多展開一份的選擇器清單。
  *
- * 清單展開期間畫面上其他元件不可操作：畫面必須先把滑鼠與鍵盤事件交給這裡，並在最後才繪製清單。點選
+ * 清單展開期間畫面上其他元件不可操作。使用清單的畫面要做五件事：建立元件時呼叫 [close]；繪製其他內容時
+ * 以 [pointer] 取代游標座標，並在最後呼叫 [render]；`mouseClicked`、`mouseScrolled`、`keyPressed` 先交給這裡，
+ * 回傳 true 就不再往下處理；清單展開時（[isOpen]）不處理拖曳與文字輸入。點選
  * 可選的選項、點清單以外的地方或按 Esc 都會收合；選項太多時以滾輪或方向鍵在清單內捲動。選項名稱放不下時截斷，
  * 游標或方向鍵停留在上面時以跑馬燈顯示全名。
  */
@@ -35,6 +37,15 @@ internal class DropdownOverlay {
     /** 是否有清單展開。 */
     val isOpen: Boolean
         get() = open != null
+
+    /**
+     * 取得畫面繪製其他元件時應使用的游標座標：清單展開時回傳畫面外的座標，讓底下的元件不顯示游標停留效果
+     * 與提示框。
+     *
+     * @param coordinate 游標實際的水平或垂直座標。
+     * @return 清單展開時為畫面外的座標，否則為原座標。
+     */
+    fun pointer(coordinate: Int): Int = if (isOpen) OFFSCREEN_POINTER else coordinate
 
     /**
      * 判斷指定的選擇器是否正展開清單。
@@ -292,6 +303,9 @@ internal class DropdownOverlay {
     )
 
     private companion object {
+        /** 清單展開時交給其他元件的游標座標。 */
+        const val OFFSCREEN_POINTER = -1
+
         /** 清單繪製的 Z 位移，讓清單蓋過畫面上的其他元件。 */
         const val OVERLAY_Z = 300f
 

@@ -13,7 +13,8 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.client.catalogue.RuleCata
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.character.GuiEntityModelRenderer
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.fitClientText
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.ControlTooltip
-import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.CycleButtonInput
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.DropdownOption
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.DropdownOverlay
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.FormScreenLayout
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.RestartableMarqueeButtonWidget
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.ScreenRendering
@@ -112,6 +113,9 @@ class RoomScreen(
     /** 目前顯示的房間或設定頁。 */
     private var page = if (openSettings) Page.SETTINGS else Page.ROOM
 
+    /** 兩個頁面共用的選擇器展開清單。 */
+    private val dropdown = DropdownOverlay()
+
     /** 規則與流程設定頁。 */
     private val settingsPage = RoomSettingsPage(
         host = SettingsPageHost(),
@@ -163,6 +167,7 @@ class RoomScreen(
     internal fun isForTable(tableId: Uuid): Boolean = this.tableId == tableId
 
     override fun init() {
+        dropdown.close()
         val pageSwitchLeft = width / 2 - FormScreenLayout.PAGE_SWITCH_WIDTH - FormScreenLayout.PAGE_SWITCH_GAP / 2
         addDrawableChild(pageButton(pageSwitchLeft, MinecraftRoomScreenKeys.PAGE_ROOM, Page.ROOM))
         addDrawableChild(
@@ -295,18 +300,14 @@ class RoomScreen(
             val cardX = width / 2 - gridWidth / 2 + (index % grid.columns) * grid.cardWidth
             val cardY = grid.cardTop(row)
             if (targetId in room.aiPlayerIds) {
-                val current = room.aiPlayerStrategyKeys[targetId]
-                addDrawableChild(
-                    RestartableMarqueeButtonWidget.builder(Text.translatable(MinecraftRoomScreenKeys.AI_STRATEGY, aiStrategyText(current))) {
-                        val keys = aiStrategies.getAllStrategyKeys().toList()
-                        if (keys.isNotEmpty()) {
-                            val next = keys[CycleButtonInput.nextIndex(currentIndex = keys.indexOf(current), size = keys.size, step = CycleButtonInput.step())]
-                            send(RoomActionDto.ChangeAiStrategy(tableIdText, targetId.toString(), next))
-                        }
-                    }.pressesOnSecondaryClick().dimensions(cardX + 8, cardY + AI_STRATEGY_BUTTON_OFFSET_Y, grid.cardWidth - 20, 18).build().also {
-                        it.active = room.isHost
-                        it.tooltip = Tooltip.of(aiStrategyTooltip(current, it.active))
-                    },
+                addAiStrategySelector(
+                    tableIdText = tableIdText,
+                    targetId = targetId,
+                    current = room.aiPlayerStrategyKeys[targetId],
+                    editable = room.isHost,
+                    x = cardX + 8,
+                    y = cardY + AI_STRATEGY_BUTTON_OFFSET_Y,
+                    width = grid.cardWidth - 20,
                 )
             }
             if (!room.isHost) return@forEachIndexed
@@ -344,19 +345,46 @@ class RoomScreen(
     }
 
     /**
-     * 建立 AI 策略按鈕的提示：全部可選策略與目前策略，可操作時附上操作提示。
+     * 在 AI 成員卡片上加入策略選擇器，點擊展開可選策略的清單；非房主只能檢視。
      *
+     * @param tableIdText 傳送房間操作使用的牌桌識別碼。
+     * @param targetId AI 成員的識別碼。
      * @param current 目前策略識別碼；未知時為 null。
-     * @param active 按鈕是否可以操作。
-     * @return 多行提示文字。
+     * @param editable 是否可以變更策略。
+     * @param x 選擇器左界。
+     * @param y 選擇器上界。
+     * @param width 選擇器寬度。
      */
-    private fun aiStrategyTooltip(current: String?, active: Boolean): Text {
-        val keys = aiStrategies.getAllStrategyKeys()
-        return ControlTooltip.options(
-            description = Text.translatable(MinecraftRoomScreenKeys.AI_STRATEGY_TITLE),
-            options = keys.map { ControlTooltip.Option(label = aiStrategyText(it), current = it == current) },
-            hints = CycleButtonInput.hintTexts(optionCount = keys.size, active = active),
+    private fun addAiStrategySelector(
+        tableIdText: String,
+        targetId: Uuid,
+        current: String?,
+        editable: Boolean,
+        x: Int,
+        y: Int,
+        width: Int,
+    ) {
+        val keys = aiStrategies.getAllStrategyKeys().toList()
+        val selectorKey = AiStrategySelectorKey(targetId)
+        lateinit var selector: RestartableMarqueeButtonWidget
+        selector = RestartableMarqueeButtonWidget.builder(Text.translatable(MinecraftRoomScreenKeys.AI_STRATEGY, aiStrategyText(current))) {
+            dropdown.toggle(
+                key = selectorKey,
+                anchor = selector,
+                options = keys.map { DropdownOption(label = aiStrategyText(it)) },
+                selectedIndex = keys.indexOf(current).takeIf { it >= 0 },
+            ) { index -> send(RoomActionDto.ChangeAiStrategy(tableIdText, targetId.toString(), keys[index])) }
+        }.dimensions(x, y, width, AI_STRATEGY_BUTTON_HEIGHT).build()
+        selector.active = editable && keys.isNotEmpty()
+        selector.selectorExpanded = { dropdown.isOpenFor(selectorKey) }
+        selector.tooltip = Tooltip.of(
+            ControlTooltip.options(
+                description = Text.translatable(MinecraftRoomScreenKeys.AI_STRATEGY_TITLE),
+                labels = keys.map(::aiStrategyText),
+                currentIndex = keys.indexOf(current),
+            ),
         )
+        addDrawableChild(selector)
     }
 
     /**
@@ -398,19 +426,22 @@ class RoomScreen(
     override fun render(context: DrawContext, mouseX: Int, mouseY: Int, delta: Float) {
         renderBackground(context)
         ScreenRendering.title(context, textRenderer, title, width)
-        if (page == Page.ROOM) {
-            renderRoom(context, mouseX, mouseY)
-            super.render(context, mouseX, mouseY, delta)
-            return
+        val pointerX = dropdown.pointer(mouseX)
+        val pointerY = dropdown.pointer(mouseY)
+        val labelTooltip = when (page) {
+            Page.ROOM -> {
+                renderRoom(context, pointerX, pointerY)
+                null
+            }
+            Page.SETTINGS -> settingsPage.renderContent(context, pointerX, pointerY)
         }
-        val labelTooltip = settingsPage.renderContent(context, mouseX, mouseY)
-        val pointerBlocked = settingsPage.blocksPointer
-        super.render(context, if (pointerBlocked) OFFSCREEN_POINTER else mouseX, if (pointerBlocked) OFFSCREEN_POINTER else mouseY, delta)
-        settingsPage.renderOverlay(context, mouseX, mouseY)
+        super.render(context, pointerX, pointerY, delta)
         labelTooltip?.let { context.drawTooltip(textRenderer, it, mouseX, mouseY) }
+        dropdown.render(context, textRenderer, height, mouseX, mouseY)
     }
 
     override fun mouseScrolled(mouseX: Double, mouseY: Double, amount: Double): Boolean {
+        if (dropdown.mouseScrolled(textRenderer, height, amount)) return true
         if (amount == 0.0) return super.mouseScrolled(mouseX, mouseY, amount)
         if (page == Page.SETTINGS) return settingsPage.mouseScrolled(mouseX, mouseY, amount)
         val playingInfoScrollMaximum = playingGrid().maximumInfoScroll(totalPlayingInfoRows())
@@ -427,6 +458,7 @@ class RoomScreen(
     }
 
     override fun mouseClicked(mouseX: Double, mouseY: Double, button: Int): Boolean {
+        if (dropdown.mouseClicked(textRenderer, height, mouseX, mouseY, button)) return true
         if (page == Page.SETTINGS && settingsPage.mouseClicked(mouseX, mouseY, button)) return true
         if (page == Page.ROOM && button == 0) {
             val playingGrid = playingGrid()
@@ -447,6 +479,7 @@ class RoomScreen(
     }
 
     override fun mouseDragged(mouseX: Double, mouseY: Double, button: Int, deltaX: Double, deltaY: Double): Boolean {
+        if (dropdown.isOpen) return true
         if (page == Page.SETTINGS && settingsPage.mouseDragged(mouseY, button)) return true
         if (playingInfoScroll.dragging && button == 0) {
             playingInfoScroll.dragTo(mouseY, playingGrid().infoScrollbar(playingInfoDragRow, totalPlayingInfoRows(), playingInfoScroll.index))
@@ -468,14 +501,11 @@ class RoomScreen(
     }
 
     override fun keyPressed(keyCode: Int, scanCode: Int, modifiers: Int): Boolean {
-        if (page == Page.SETTINGS && settingsPage.keyPressed(keyCode)) return true
+        if (dropdown.keyPressed(textRenderer, height, keyCode)) return true
         return super.keyPressed(keyCode, scanCode, modifiers)
     }
 
-    override fun charTyped(chr: Char, modifiers: Int): Boolean {
-        if (page == Page.SETTINGS && settingsPage.blocksPointer) return true
-        return super.charTyped(chr, modifiers)
-    }
+    override fun charTyped(chr: Char, modifiers: Int): Boolean = dropdown.isOpen || super.charTyped(chr, modifiers)
 
     override fun tick() {
         super.tick()
@@ -960,7 +990,17 @@ class RoomScreen(
         }
 
         override fun currentConfig(): GameConfig? = this@RoomScreen.currentConfig()
+
+        override val dropdown: DropdownOverlay
+            get() = this@RoomScreen.dropdown
     }
+
+    /**
+     * 某個 AI 成員的策略選擇器在展開清單中的識別值。
+     *
+     * @property playerId AI 成員的識別碼。
+     */
+    private data class AiStrategySelectorKey(val playerId: Uuid)
 
     /** 桌級畫面目前顯示的頁面。 */
     private enum class Page {
@@ -1004,9 +1044,6 @@ class RoomScreen(
     }
 
     private companion object {
-        /** 展開清單開啟時交給其他元件的游標座標，讓它們不顯示游標停留效果與提示框。 */
-        const val OFFSCREEN_POINTER = -1
-
         /** 成員名稱相對卡片頂端的垂直偏移。 */
         const val MEMBER_NAME_OFFSET = 96
 
@@ -1015,6 +1052,9 @@ class RoomScreen(
 
         /** [resolvePlayerPreview] 為找不到 player-list profile 的玩家組出佔位 [GameProfile] 時使用的名稱。 */
         const val OFFLINE_PLAYER_PROFILE_NAME = "Offline"
+
+        /** AI 策略選擇器的高度。 */
+        const val AI_STRATEGY_BUTTON_HEIGHT = 18
 
         /** AI 策略按鈕相對卡片頂端（[RoomMemberGridLayout.CARD_TOP]）的垂直偏移。 */
         const val AI_STRATEGY_BUTTON_OFFSET_Y = 126

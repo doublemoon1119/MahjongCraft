@@ -6,6 +6,8 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryOutcomeFi
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryQueryFiltersDto
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.ControlTooltip
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.CycleButtonInput
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.DropdownOption
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.DropdownOverlay
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.RestartableMarqueeButtonWidget
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.ScreenRendering
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.ScrollbarLayout
@@ -39,11 +41,8 @@ internal class HistoryFilterScreen(
     /** 內容區目前的捲動距離。 */
     private var contentScroll = 0
 
-    /** 規則選項清單是否展開。 */
-    private var rulePickerOpen = false
-
-    /** 規則選項清單的垂直捲動索引。 */
-    private var rulePickerScroll = 0
+    /** 規則選擇器的展開清單。 */
+    private val dropdown = DropdownOverlay()
 
     /** 結果篩選按鈕。 */
     private var outcomeButton: ButtonWidget? = null
@@ -58,6 +57,7 @@ internal class HistoryFilterScreen(
     private var ruleButton: ButtonWidget? = null
 
     override fun init() {
+        dropdown.close()
         seedFromQueryIfNeeded()
         fields.clear()
         val all = session.controller.state.value.query.scope.coversAllMatches
@@ -72,8 +72,7 @@ internal class HistoryFilterScreen(
         fieldsToShow.forEachIndexed { index, field ->
             addField(field, fieldLabelKey(field), rowTop(index + 1))
         }
-        ruleButton = RestartableMarqueeButtonWidget.builder(Text.translatable(MinecraftHistoryScreenKeys.FILTER_RULE_SELECT)) { rulePickerOpen = !rulePickerOpen }
-            .dimensions(controlLeft(), rowTop(0), controlWidth(), layout.rowHeight).build().also(::addDrawableChild)
+        ruleButton = addDrawableChild(ruleSelector())
         val choiceRow = fieldsToShow.size + 1
         outcomeButton = addChoiceButton(MinecraftHistoryScreenKeys.FILTER_OUTCOME, rowTop(choiceRow)) { cycleOutcome() }
         integrityButton = addChoiceButton(MinecraftHistoryScreenKeys.FILTER_INTEGRITY, rowTop(choiceRow + 1)) { cycleIntegrity() }
@@ -294,49 +293,41 @@ internal class HistoryFilterScreen(
     }
 
     /**
-     * 選取已註冊規則，最後一項回到不限。
+     * 建立規則選擇器，點擊展開「不限」與所有已登記規則的清單。
      *
-     * @param step 選取方向及步數。
+     * @return 尚未加入畫面的選擇器按鈕。
      */
-    private fun cycleRule(step: Int = 1) {
-        val options = ruleOptions()
-        val current = session.filterDraft.input.ruleId
-        val index = options.indexOf(current).coerceAtLeast(0)
-        val nextIndex = (index + step).mod(options.size)
-        session.filterDraft.input = session.filterDraft.input.copy(
-            ruleId = options[nextIndex],
-        )
-        validateAndApply()
+    private fun ruleSelector(): RestartableMarqueeButtonWidget {
+        lateinit var selector: RestartableMarqueeButtonWidget
+        selector = RestartableMarqueeButtonWidget.builder(ruleDisplayLabel()) {
+            val options = ruleOptions()
+            dropdown.toggle(
+                key = RULE_SELECTOR_KEY,
+                anchor = selector,
+                options = options.map { DropdownOption(label = ruleLabel(it)) },
+                selectedIndex = options.indexOf(session.filterDraft.input.ruleId).takeIf { it >= 0 },
+            ) { index ->
+                session.filterDraft.input = session.filterDraft.input.copy(ruleId = options[index])
+                validateAndApply()
+            }
+        }.dimensions(controlLeft(), rowTop(0), controlWidth(), layout.rowHeight).build()
+        selector.selectorExpanded = { dropdown.isOpenFor(RULE_SELECTOR_KEY) }
+        return selector
     }
 
-    /** 建立包含不限值在內的排序規則選項。 */
+    /** 建立包含不限值在內的排序規則選項；空字串代表不限。 */
     private fun ruleOptions(): List<String> = listOf("") + session.ruleNames.registrationKeys.sorted()
 
-    /** 展開選項清單最多可顯示的列數。 */
-    private fun rulePickerVisibleRows(): Int = minOf(ruleOptions().size, ((layout.contentBottom - rowTop(0) - layout.rowHeight - 2) / RULE_OPTION_HEIGHT).coerceAtLeast(1))
-
-    /** 展開選項清單的實際高度。 */
-    private fun rulePickerHeight(): Int = rulePickerVisibleRows() * RULE_OPTION_HEIGHT
-
-    /** 展開選項清單的最大捲動索引。 */
-    private fun rulePickerMaximumScroll(): Int = (ruleOptions().size - rulePickerVisibleRows()).coerceAtLeast(0)
-
-    /** 展開清單在目前視窗中的下界。 */
-    private fun rulePickerBottom(): Double = (rowTop(0) + layout.rowHeight + 2 + rulePickerHeight()).toDouble()
-        .coerceAtMost(layout.contentBottom.toDouble())
-        .coerceAtLeast((rowTop(0) + layout.rowHeight + 2 + RULE_OPTION_HEIGHT).toDouble())
-
     /**
-     * 判斷游標是否位於規則選項清單範圍；不檢查選單是否展開。
+     * 將規則篩選值轉成顯示文字。
      *
-     * @param mouseX 游標水平座標。
-     * @param mouseY 游標垂直座標。
-     * @return 游標是否落在選項清單範圍內。
+     * @param ruleId 規則識別碼；空字串代表不限。
+     * @return 「不限」、規則名稱加識別碼，或沒有名稱時的識別碼。
      */
-    private fun isInsideRulePicker(mouseX: Double, mouseY: Double): Boolean = mouseX >= controlLeft() &&
-        mouseX < controlLeft() + controlWidth() &&
-        mouseY >= rowTop(0) + layout.rowHeight + 2 &&
-        mouseY < rulePickerBottom()
+    private fun ruleLabel(ruleId: String): Text = ruleId.takeUnless(String::isEmpty)?.let { id ->
+        session.ruleNames.find(id)?.let(Text::translatable)?.let { Text.empty().append(it).append(" (").append(id).append(")") }
+            ?: Text.literal(id)
+    } ?: Text.translatable(MinecraftHistoryScreenKeys.FILTER_ANY)
 
     /**
      * 建立規則選擇器的 tooltip。
@@ -344,16 +335,11 @@ internal class HistoryFilterScreen(
      * @return 顯示目前規則與可選規則的 tooltip。
      */
     private fun ruleTooltip(): Text {
-        val options = listOf(Text.translatable(MinecraftHistoryScreenKeys.FILTER_ANY)) + session.ruleNames.registrationKeys.sorted().map { id ->
-            session.ruleNames.find(id)?.let(Text::translatable)?.let { Text.empty().append(it).append(" (").append(id).append(")") } ?: Text.literal(id)
-        }
-        val selectedIndex = session.filterDraft.input.ruleId.takeUnless(String::isEmpty)?.let { id ->
-            session.ruleNames.registrationKeys.sorted().indexOf(id).takeIf { it >= 0 }?.plus(1)
-        } ?: 0
+        val options = ruleOptions()
         return ControlTooltip.options(
             description = Text.translatable(MinecraftHistoryScreenKeys.FILTER_RULE),
-            labels = options,
-            currentIndex = selectedIndex,
+            labels = options.map(::ruleLabel),
+            currentIndex = options.indexOf(session.filterDraft.input.ruleId),
         )
     }
 
@@ -410,46 +396,18 @@ internal class HistoryFilterScreen(
         HistoryBrowseFilterField.MAX_RANK -> session.filterDraft.input.ownRankMax
     }
 
-    /** 滾輪在規則選擇按鈕上時，依方向移動已註冊規則清單。 */
+    /** 清單展開時在清單內捲動，否則捲動篩選欄位。 */
     override fun mouseScrolled(mouseX: Double, mouseY: Double, amount: Double): Boolean {
-        if (rulePickerOpen && isInsideRulePicker(mouseX, mouseY)) {
-            rulePickerScroll = (rulePickerScroll - amount.toInt()).coerceIn(0, rulePickerMaximumScroll())
-            return true
-        }
-        if (rulePickerOpen) return true
-        if (mouseX >= controlLeft().toDouble() && mouseY in rowTop(0).toDouble()..(rowTop(0) + layout.rowHeight).toDouble()) {
-            cycleRule(if (amount < 0.0) 1 else -1)
-            return true
-        }
+        if (dropdown.mouseScrolled(textRenderer, height, amount)) return true
         if (mouseY in layout.contentTop.toDouble()..layout.contentBottom.toDouble()) {
-            rulePickerOpen = false
             contentScroll = (contentScroll - amount.toInt() * layout.rowSpacing).coerceIn(0, layout.scrollableHeight)
             return true
         }
         return super.mouseScrolled(mouseX, mouseY, amount)
     }
 
-    /** 選取展開清單中的規則，或點擊外部關閉清單。 */
     override fun mouseClicked(mouseX: Double, mouseY: Double, button: Int): Boolean {
-        if (rulePickerOpen) {
-            if (button != 0) return true
-            val left = controlLeft().toDouble()
-            val top = (rowTop(0) + layout.rowHeight + 2).toDouble()
-            val right = (controlLeft() + controlWidth()).toDouble()
-            val bottom = rulePickerBottom()
-            if (mouseX >= left && mouseX < right && mouseY >= top && mouseY < bottom) {
-                val index = rulePickerScroll + ((mouseY - top) / RULE_OPTION_HEIGHT).toInt()
-                val options = ruleOptions()
-                if (index in options.indices) {
-                    session.filterDraft.input = session.filterDraft.input.copy(ruleId = options[index])
-                    validateAndApply()
-                    rulePickerOpen = false
-                }
-                return true
-            }
-            rulePickerOpen = false
-            return true
-        }
+        if (dropdown.mouseClicked(textRenderer, height, mouseX, mouseY, button)) return true
         return super.mouseClicked(mouseX, mouseY, button)
     }
 
@@ -477,13 +435,9 @@ internal class HistoryFilterScreen(
                 Text.translatable(it.translationKey).formatted(Formatting.RED)
             }
             drawLabel(context, key, y, if (error == null) 0xffffff else 0xff5555)
-            fields[field]?.tooltip = if (rulePickerOpen) {
-                null
-            } else {
-                Tooltip.of(
-                    Text.empty().append(inputTooltip(field, key)).also { text -> error?.let { text.append("\n").append(it) } },
-                )
-            }
+            fields[field]?.tooltip = Tooltip.of(
+                Text.empty().append(inputTooltip(field, key)).also { text -> error?.let { text.append("\n").append(it) } },
+            )
         }
         ruleButton?.y = rowTop(0)
         ruleButton?.visible = layout.isVisible(0, contentScroll)
@@ -543,11 +497,8 @@ internal class HistoryFilterScreen(
                 minimumThumbHeight = VerticalScrollbar.MINIMUM_THUMB_HEIGHT,
             ),
         )
-        if (rulePickerOpen) {
-            listOf(ruleButton, outcomeButton, integrityButton, aiButton).forEach { it?.tooltip = null }
-        }
-        super.render(context, if (rulePickerOpen) -1 else mouseX, if (rulePickerOpen) -1 else mouseY, delta)
-        if (rulePickerOpen) renderRulePicker(context, mouseX, mouseY)
+        super.render(context, dropdown.pointer(mouseX), dropdown.pointer(mouseY), delta)
+        dropdown.render(context, textRenderer, height, mouseX, mouseY)
     }
 
     /**
@@ -563,57 +514,11 @@ internal class HistoryFilterScreen(
         context.drawTextWithShadow(textRenderer, Text.literal(value), 8, y + (layout.rowHeight - textRenderer.fontHeight) / 2, color)
     }
 
-    /**
-     * 繪製可捲動的規則選項清單。
-     *
-     * @param context 畫面繪製上下文。
-     * @param mouseX 游標水平座標。
-     * @param mouseY 游標垂直座標。
-     */
-    private fun renderRulePicker(context: DrawContext, mouseX: Int, mouseY: Int) {
-        val left = controlLeft()
-        val top = rowTop(0) + layout.rowHeight + 2
-        val right = left + controlWidth()
-        val bottom = rulePickerBottom().toInt()
-        val options = ruleOptions()
-        context.matrices.push()
-        context.matrices.translate(0.0, 0.0, RULE_PICKER_Z)
-        context.fill(left, top, right, bottom, 0xff101010.toInt())
-        context.enableScissor(left, top, right, bottom)
-        options.drop(rulePickerScroll).take(rulePickerVisibleRows()).forEachIndexed { row, option ->
-            val y = top + row * RULE_OPTION_HEIGHT
-            val selected = option == session.filterDraft.input.ruleId
-            if (mouseX in left until right && mouseY in y until y + RULE_OPTION_HEIGHT) {
-                context.fill(left, y, right, y + RULE_OPTION_HEIGHT, 0xff505050.toInt())
-            }
-            val label = option.takeUnless(String::isEmpty)?.let { id ->
-                session.ruleNames.find(id)?.let(Text::translatable)?.let { Text.empty().append(it).append(" (").append(id).append(")") }
-                    ?: Text.literal(id)
-            } ?: Text.translatable(MinecraftHistoryScreenKeys.FILTER_ANY)
-            context.drawTextWithShadow(textRenderer, label, left + 4, y + 4, if (selected) 0x55ff55 else 0xffffff)
-        }
-        if (rulePickerMaximumScroll() > 0) {
-            val trackLeft = right - 3
-            context.fill(trackLeft, top, right, bottom, 0xff303030.toInt())
-            val thumbHeight = (bottom - top).toDouble() * rulePickerVisibleRows() / options.size
-            val thumbTop = top + ((bottom - top - thumbHeight) * rulePickerScroll / rulePickerMaximumScroll()).toInt()
-            context.fill(trackLeft, thumbTop, right, thumbTop + thumbHeight.toInt().coerceAtLeast(4), 0xffaaaaaa.toInt())
-        }
-        context.disableScissor()
-        context.matrices.pop()
-    }
-
-    /** 將目前規則篩選值轉成按鈕文字。 */
-    private fun ruleDisplayLabel(): Text = session.filterDraft.input.ruleId.takeUnless(String::isEmpty)?.let { id ->
-        session.ruleNames.find(id)?.let(Text::translatable)?.let { Text.empty().append(it).append(" (").append(id).append(")") }
-            ?: Text.literal(id)
-    } ?: Text.translatable(MinecraftHistoryScreenKeys.FILTER_ANY)
+    /** 將目前規則篩選值轉成選擇器上的文字。 */
+    private fun ruleDisplayLabel(): Text = ruleLabel(session.filterDraft.input.ruleId)
 
     override fun keyPressed(keyCode: Int, scanCode: Int, modifiers: Int): Boolean {
-        if (rulePickerOpen) {
-            if (keyCode == 256) rulePickerOpen = false
-            return true
-        }
+        if (dropdown.keyPressed(textRenderer, height, keyCode)) return true
         if (keyCode == 256) {
             session.backToList()
             return true
@@ -622,14 +527,14 @@ internal class HistoryFilterScreen(
         return super.keyPressed(keyCode, scanCode, modifiers)
     }
 
-    /** 規則選單展開時不將文字輸入傳遞至背景欄位。 */
-    override fun charTyped(chr: Char, modifiers: Int): Boolean = rulePickerOpen || super.charTyped(chr, modifiers)
+    /** 規則清單展開時不將文字輸入傳遞至背景欄位。 */
+    override fun charTyped(chr: Char, modifiers: Int): Boolean = dropdown.isOpen || super.charTyped(chr, modifiers)
 
-    /** 規則選單展開時不將拖曳傳遞至背景控制項。 */
-    override fun mouseDragged(mouseX: Double, mouseY: Double, button: Int, deltaX: Double, deltaY: Double): Boolean = rulePickerOpen || super.mouseDragged(mouseX, mouseY, button, deltaX, deltaY)
+    /** 規則清單展開時不將拖曳傳遞至背景控制項。 */
+    override fun mouseDragged(mouseX: Double, mouseY: Double, button: Int, deltaX: Double, deltaY: Double): Boolean = dropdown.isOpen || super.mouseDragged(mouseX, mouseY, button, deltaX, deltaY)
 
-    /** 規則選單展開時不將放開滑鼠事件傳遞至背景控制項。 */
-    override fun mouseReleased(mouseX: Double, mouseY: Double, button: Int): Boolean = rulePickerOpen || super.mouseReleased(mouseX, mouseY, button)
+    /** 規則清單展開時不將放開滑鼠事件傳遞至背景控制項。 */
+    override fun mouseReleased(mouseX: Double, mouseY: Double, button: Int): Boolean = dropdown.isOpen || super.mouseReleased(mouseX, mouseY, button)
 
     override fun shouldPause(): Boolean = false
 
@@ -640,18 +545,15 @@ internal class HistoryFilterScreen(
         super.removed()
     }
 
-    /** 規則選單與輸入框的固定繪製尺寸。 */
+    /** 輸入框與捲軸的固定繪製尺寸。 */
     private companion object {
-        /** 高於背景控制項與其文字的選單繪製深度。 */
-        const val RULE_PICKER_Z = 400.0
+        /** 規則選擇器展開清單的識別值。 */
+        const val RULE_SELECTOR_KEY = "rule"
 
         /** 內容捲軸左界與視窗右界的距離。 */
         const val CONTENT_SCROLLBAR_RIGHT_INSET = 5
 
         /** 原版文字輸入框向內容範圍外延伸的邊框厚度。 */
         const val TEXT_FIELD_BORDER = 1
-
-        /** 選項列的固定高度。 */
-        const val RULE_OPTION_HEIGHT = 18
     }
 }

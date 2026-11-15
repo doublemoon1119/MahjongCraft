@@ -87,6 +87,9 @@ internal interface RoomSettingsPageHost {
 
     /** 取得房間設定，沒有房間時改用進行中對局的設定；兩者皆無時為 null。 */
     fun currentConfig(): GameConfig?
+
+    /** 所屬畫面的展開清單；清單的繪製與輸入由所屬畫面處理。 */
+    val dropdown: DropdownOverlay
 }
 
 /**
@@ -128,8 +131,9 @@ internal class RoomSettingsPage(
     /** 尚未送出或等待權威確認的設定草稿。 */
     private val draft = RoomSettingsDraft()
 
-    /** 規則與玩法選擇器共用的展開清單。 */
-    private val dropdown = DropdownOverlay()
+    /** 規則與玩法選擇器使用的展開清單，由所屬畫面提供。 */
+    private val dropdown: DropdownOverlay
+        get() = host.dropdown
 
     /** 底部狀態文字的跑馬燈進度。 */
     private val statusMarquee = MarqueeState()
@@ -146,17 +150,12 @@ internal class RoomSettingsPage(
     /** 完成按鈕；唯讀時為 null。 */
     private var doneButton: ButtonWidget? = null
 
-    /** 展開清單是否開啟；開啟時所屬畫面不得讓其他元件回應游標。 */
-    val blocksPointer: Boolean
-        get() = dropdown.isOpen
-
     /** 依目前草稿建立規則列、分類頁籤、欄位與底部操作列；非房主只提供唯讀控制項。 */
     fun init() {
         applyButton = null
         undoButton = null
         resetButton = null
         doneButton = null
-        dropdown.close()
         val authoritative = host.currentConfig() ?: return
         draft.beginIfAbsent(authoritative)
         val config = draft.config ?: authoritative
@@ -192,7 +191,7 @@ internal class RoomSettingsPage(
      * @param context 畫面繪製情境。
      * @param mouseX 游標的水平座標。
      * @param mouseY 游標的垂直座標。
-     * @return 被截斷且正被游標指向的標籤全文；沒有或展開清單開啟時為 null。
+     * @return 被截斷且正被游標指向的標籤全文；沒有時為 null。
      */
     fun renderContent(context: DrawContext, mouseX: Int, mouseY: Int): Text? {
         val textRenderer = host.textRenderer
@@ -246,26 +245,15 @@ internal class RoomSettingsPage(
                 message = message,
                 color = ScreenRendering.ERROR_TEXT_COLOR,
                 marquee = statusMarquee,
-                mouseX = if (dropdown.isOpen) OFFSCREEN_POINTER else mouseX,
-                mouseY = if (dropdown.isOpen) OFFSCREEN_POINTER else mouseY,
+                mouseX = mouseX,
+                mouseY = mouseY,
             )
         }
-        return hoveredLabel.takeUnless { dropdown.isOpen }
+        return hoveredLabel
     }
 
     /**
-     * 在所有元件之上繪製展開的清單。
-     *
-     * @param context 畫面繪製情境。
-     * @param mouseX 游標的水平座標。
-     * @param mouseY 游標的垂直座標。
-     */
-    fun renderOverlay(context: DrawContext, mouseX: Int, mouseY: Int) {
-        dropdown.render(context, host.textRenderer, host.screen.height, mouseX, mouseY)
-    }
-
-    /**
-     * 處理滾輪：清單展開時在清單內捲動，游標在頁籤列上時左右捲動頁籤，其餘捲動欄位。
+     * 處理滾輪：游標在頁籤列上時左右捲動頁籤，其餘捲動欄位。
      *
      * @param mouseX 游標的水平座標。
      * @param mouseY 游標的垂直座標。
@@ -273,7 +261,6 @@ internal class RoomSettingsPage(
      * @return 一律為 true；設定頁不把滾輪交給其他元件。
      */
     fun mouseScrolled(mouseX: Double, mouseY: Double, amount: Double): Boolean {
-        if (dropdown.mouseScrolled(host.textRenderer, host.screen.height, amount)) return true
         val layout = layout()
         val strip = tabStrip(layout, resolvedDefinition()?.categories?.size ?: 0)
         if (strip.contains(mouseX, mouseY) && strip.maximumScroll > 0) {
@@ -290,7 +277,7 @@ internal class RoomSettingsPage(
     }
 
     /**
-     * 處理元件之前的滑鼠點擊：展開的清單，以及欄位捲軸的拖曳起點。
+     * 處理元件之前的滑鼠點擊：欄位捲軸的拖曳起點。
      *
      * @param mouseX 游標的水平座標。
      * @param mouseY 游標的垂直座標。
@@ -298,7 +285,6 @@ internal class RoomSettingsPage(
      * @return 點擊已由設定頁處理時為 true。
      */
     fun mouseClicked(mouseX: Double, mouseY: Double, button: Int): Boolean {
-        if (dropdown.mouseClicked(host.textRenderer, host.screen.height, mouseX, mouseY, button)) return true
         val layout = layout()
         val scrollbar = layout.scrollbar(currentFieldCount(), fieldScroll.index)
         if (button == 0 && scrollbar.maximumScroll > 0 && layout.isOverScrollbar(mouseX, mouseY)) {
@@ -325,14 +311,6 @@ internal class RoomSettingsPage(
     fun mouseReleased() {
         fieldScroll.endDrag()
     }
-
-    /**
-     * 處理元件之前的按鍵：清單展開時所有按鍵都由清單處理。
-     *
-     * @param keyCode 按鍵代碼。
-     * @return 按鍵已由展開的清單處理時為 true。
-     */
-    fun keyPressed(keyCode: Int): Boolean = dropdown.keyPressed(host.textRenderer, host.screen.height, keyCode)
 
     /**
      * 房間或牌桌狀態改變後，確認等待中的套用是否已經生效。
@@ -1060,9 +1038,6 @@ internal class RoomSettingsPage(
     private fun optionText(optionId: String, editor: GameConfigEditorSpec.ChoiceEditor): Text = editor.translationKeyFor(optionId)?.let(Text::translatable) ?: Text.literal(optionId)
 
     private companion object {
-        /** 展開清單開啟時用來判斷游標停留的座標，讓清單底下的文字不回應游標。 */
-        const val OFFSCREEN_POINTER = -1
-
         /** 規則選擇器展開清單的識別值。 */
         const val RULE_SELECTOR_KEY = "rule"
 

@@ -439,7 +439,6 @@
   "mahjongcraft.history_screen.filter.outcome.interrupted": "中断",
   "mahjongcraft.history_screen.filter.player_name": "プレイヤー名",
   "mahjongcraft.history_screen.filter.rule": "ルール ID",
-  "mahjongcraft.history_screen.filter.rule_select": "ルールを選択",
   "mahjongcraft.history_screen.filter.through": "終了日",
   "mahjongcraft.history_screen.filters": "履歴フィルター",
   "mahjongcraft.history_screen.loading": "読み込み中…",

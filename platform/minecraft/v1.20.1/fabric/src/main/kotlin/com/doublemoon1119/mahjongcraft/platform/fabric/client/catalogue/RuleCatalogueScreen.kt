@@ -2,6 +2,8 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.client.catalogue
 
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.ControlTooltip
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.CycleButtonInput
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.DropdownOption
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.DropdownOverlay
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.RestartableMarqueeButtonWidget
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.ScreenRendering
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.VerticalScrollbar
@@ -62,6 +64,9 @@ internal class RuleCatalogueScreen(
     /** 上次建立畫面時的語言，用於偵測語言切換。 */
     private var language: Language = Language.getInstance()
 
+    /** 規則選擇器的展開清單。 */
+    private val dropdown = DropdownOverlay()
+
     /** 搜尋輸入框。 */
     private lateinit var search: TextFieldWidget
 
@@ -74,6 +79,7 @@ internal class RuleCatalogueScreen(
      * 資源重新載入後畫面會重新初始化，因此在這裡丟棄牌面圖案的快取，補上或移除的貼圖立即反映。
      */
     override fun init() {
+        dropdown.close()
         presenter.clearResourceCaches()
         language = Language.getInstance()
         state = browser.snapshot(presenter::translation)
@@ -83,7 +89,7 @@ internal class RuleCatalogueScreen(
             clearWidth = textRenderer.getWidth(presenter.text(MinecraftRuleCatalogueScreenKeys.CLEAR)) + CLEAR_PADDING,
             sourceToggle = openingContext.source != RuleCatalogueConfigSource.GENERAL,
         )
-        addRuleButton()
+        addRuleSelector()
         addCategoryButton()
         addSearchControls()
         layout.sourceToggle?.let(::addSourceToggle)
@@ -95,8 +101,8 @@ internal class RuleCatalogueScreen(
         scroll.relayout(layout = layout, contentHeight = contentHeight)
     }
 
-    /** 規則切換按鈕；只有一個規則時停用。依一般說明顯示時，提示會說明沒有套用對局設定。 */
-    private fun addRuleButton() {
+    /** 規則選擇器，點擊展開規則清單；只有一個規則時停用。依一般說明顯示時，提示會說明沒有套用對局設定。 */
+    private fun addRuleSelector() {
         val options = state.ruleOptions
         val selected = options.firstOrNull { it.ruleModuleId == state.selectedRuleModuleId }
         val name = selected?.displayName ?: NO_SELECTION
@@ -104,20 +110,18 @@ internal class RuleCatalogueScreen(
             MinecraftRuleCatalogueScreenKeys.RULE_TOOLTIP,
             MinecraftRuleCatalogueScreenKeys.GENERAL_NOTE.takeIf { state.configSource == RuleCatalogueConfigSource.GENERAL },
         )
-        button(label = presenter.format(MinecraftRuleCatalogueScreenKeys.RULE_BUTTON, name), bounds = layout.rule, cycles = true) {
-            val next = options[CycleButtonInput.nextIndex(currentIndex = options.indexOf(selected), size = options.size, step = CycleButtonInput.step())]
-            changed(browser.selectRule(next.ruleModuleId))
-        }.apply {
-            active = options.size > 1
-            tooltip = Tooltip.of(
-                optionTooltip(
-                    descriptionKeys = description,
-                    current = name,
-                    options = options.map { it.displayName },
-                    hints = CycleButtonInput.hintTexts(optionCount = options.size, active = active),
-                ),
-            )
+        lateinit var selector: RestartableMarqueeButtonWidget
+        selector = button(label = presenter.format(MinecraftRuleCatalogueScreenKeys.RULE_BUTTON, name), bounds = layout.rule) {
+            dropdown.toggle(
+                key = RULE_SELECTOR_KEY,
+                anchor = selector,
+                options = options.map { DropdownOption(label = Text.literal(it.displayName)) },
+                selectedIndex = options.indexOf(selected).takeIf { it >= 0 },
+            ) { index -> changed(browser.selectRule(options[index].ruleModuleId)) }
         }
+        selector.active = options.size > 1
+        selector.selectorExpanded = { dropdown.isOpenFor(RULE_SELECTOR_KEY) }
+        selector.tooltip = Tooltip.of(optionTooltip(descriptionKeys = description, current = name, options = options.map { it.displayName }))
     }
 
     /** 分類切換按鈕；沒有分類時停用。 */
@@ -223,7 +227,7 @@ internal class RuleCatalogueScreen(
         bounds: CatalogueRect,
         cycles: Boolean = false,
         action: () -> Unit,
-    ): ButtonWidget = addDrawableChild(
+    ): RestartableMarqueeButtonWidget = addDrawableChild(
         RestartableMarqueeButtonWidget.builder(Text.literal(label)) { action() }
             .dimensions(bounds.x, bounds.y, bounds.width, bounds.height)
             .build()
@@ -272,10 +276,13 @@ internal class RuleCatalogueScreen(
         if (language !== Language.getInstance()) clearAndInit()
         renderBackground(context)
         ScreenRendering.title(context, textRenderer, title, width)
-        val contentTooltip = renderContent(context = context, mouseX = mouseX, mouseY = mouseY)
+        val pointerX = dropdown.pointer(mouseX)
+        val pointerY = dropdown.pointer(mouseY)
+        val contentTooltip = renderContent(context = context, mouseX = pointerX, mouseY = pointerY)
         renderScrollbar(context)
-        super.render(context, mouseX, mouseY, delta)
+        super.render(context, pointerX, pointerY, delta)
         if (contentTooltip.isNotEmpty() && !scroll.isDragging) context.drawTooltip(textRenderer, contentTooltip, mouseX, mouseY)
+        dropdown.render(context, textRenderer, height, mouseX, mouseY)
     }
 
     /**
@@ -353,6 +360,7 @@ internal class RuleCatalogueScreen(
      * @return 是否處理事件。
      */
     override fun mouseScrolled(mouseX: Double, mouseY: Double, amount: Double): Boolean {
+        if (dropdown.mouseScrolled(textRenderer, height, amount)) return true
         if (layout.contentBounds.contains(mouseX, mouseY) || layout.scrollbarBounds.contains(mouseX, mouseY)) {
             scroll.scrollBy(amount = amount, layout = layout, contentHeight = contentHeight)
             return true
@@ -369,6 +377,7 @@ internal class RuleCatalogueScreen(
      * @return 是否處理事件。
      */
     override fun mouseClicked(mouseX: Double, mouseY: Double, button: Int): Boolean {
+        if (dropdown.mouseClicked(textRenderer, height, mouseX, mouseY, button)) return true
         if (button == 0 && layout.scrollbarBounds.contains(mouseX, mouseY) && scroll.press(mouseY = mouseY, layout = layout, contentHeight = contentHeight)) {
             return true
         }
@@ -386,6 +395,7 @@ internal class RuleCatalogueScreen(
      * @return 是否處理事件。
      */
     override fun mouseDragged(mouseX: Double, mouseY: Double, button: Int, deltaX: Double, deltaY: Double): Boolean {
+        if (dropdown.isOpen) return true
         if (button == 0 && scroll.drag(mouseY = mouseY, layout = layout, contentHeight = contentHeight)) return true
         return super.mouseDragged(mouseX, mouseY, button, deltaX, deltaY)
     }
@@ -404,6 +414,13 @@ internal class RuleCatalogueScreen(
     }
 
     /** 依開啟來源返回原畫面或回到遊戲。 */
+    override fun keyPressed(keyCode: Int, scanCode: Int, modifiers: Int): Boolean {
+        if (dropdown.keyPressed(textRenderer, height, keyCode)) return true
+        return super.keyPressed(keyCode, scanCode, modifiers)
+    }
+
+    override fun charTyped(chr: Char, modifiers: Int): Boolean = dropdown.isOpen || super.charTyped(chr, modifiers)
+
     override fun close() {
         client?.let(exit::back)
     }
@@ -428,6 +445,9 @@ internal class RuleCatalogueScreen(
     private companion object {
         /** 沒有任何規則可選時按鈕上顯示的值。 */
         const val NO_SELECTION = "-"
+
+        /** 規則選擇器展開清單的識別值。 */
+        const val RULE_SELECTOR_KEY = "rule"
 
         /** 搜尋字數上限。 */
         const val MAX_SEARCH_LENGTH = 256

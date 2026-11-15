@@ -56,9 +56,6 @@ object MinecraftHistoryScreenKeys {
     /** AI 篩選：不含 AI。 */
     const val FILTER_AI_NO_AI = "mahjongcraft.history_screen.filter.ai.no_ai"
 
-    /** 篩選規則選擇按鈕。 */
-    const val FILTER_RULE_SELECT = "mahjongcraft.history_screen.filter.rule_select"
-
     /** 篩選不限值。 */
     const val FILTER_ANY = "mahjongcraft.history_screen.filter.any"
 
