@@ -3,7 +3,7 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.client.gui
 import net.minecraft.client.gui.DrawContext
 
 /**
- * 用像素直接繪製的小圖示：選擇器箭頭與目前選項的打勾。
+ * 用像素直接繪製的小圖示：選擇器箭頭、目前選項的打勾，以及 [PixelIcon] 列出的按鈕圖示。
  *
  * 不使用文字符號，圖示的大小與粗細因此固定，不受目前語言或資源包使用的字型影響；筆畫粗細與遊戲文字相近，
  * 並和文字一樣在右下方帶一像素的陰影。
@@ -58,6 +58,19 @@ internal object PixelIcons {
      */
     fun check(context: DrawContext, x: Int, y: Int, color: Int) {
         draw(context, x, y, CHECK_ROWS, color)
+    }
+
+    /**
+     * 繪製只有圖示的按鈕上使用的圖示。
+     *
+     * @param context 畫面繪製情境。
+     * @param icon 要繪製的圖示。
+     * @param x 圖示左界。
+     * @param y 圖示上界。
+     * @param color 不含透明度的 RGB 顏色。
+     */
+    fun icon(context: DrawContext, icon: PixelIcon, x: Int, y: Int, color: Int) {
+        draw(context, x, y, icon.rows, color)
     }
 
     /**

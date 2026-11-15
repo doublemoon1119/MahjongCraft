@@ -474,6 +474,7 @@ class MahjongClientConfigScreen(
         var hoveredLabel: Text? = null
         rows().drop(rowScroll.index).take(layout.visibleFieldCount).forEachIndexed { index, row ->
             val rowTop = layout.fieldRowTop(index)
+            layout.fieldStripe(index).renderIfStriped(context, rowScroll.index + index)
             val hovered = when (row) {
                 is ConfigRow.Action -> null
                 is ConfigRow.Information -> ScreenRendering.label(

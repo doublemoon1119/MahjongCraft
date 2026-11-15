@@ -86,8 +86,35 @@ object MinecraftHistoryScreenKeys {
     /** 篩選按鈕 tooltip。 */
     const val TOOLTIP_FILTERS = "mahjongcraft.history_screen.tooltip.filters"
 
+    /** 篩選按鈕 tooltip 中已套用條件清單的標題。 */
+    const val TOOLTIP_FILTERS_APPLIED = "mahjongcraft.history_screen.tooltip.filters.applied"
+
+    /** 篩選按鈕 tooltip 的操作提示。 */
+    const val TOOLTIP_FILTERS_HINT = "mahjongcraft.history_screen.tooltip.filters.hint"
+
+    /** 篩選按鈕文字。 */
+    const val FILTERS_BUTTON = "mahjongcraft.history_screen.filters_button"
+
+    /** 紀錄範圍按鈕左側的標籤。 */
+    const val SHOW_LABEL = "mahjongcraft.history_screen.show_label"
+
     /** 未套用任何篩選條件。 */
     const val FILTER_NONE = "mahjongcraft.history_screen.filter.none"
+
+    /** 結束日期範圍篩選欄位。 */
+    const val FILTER_DATE = "mahjongcraft.history_screen.filter.date"
+
+    /** 自己的名次範圍篩選欄位。 */
+    const val FILTER_OWN_RANK = "mahjongcraft.history_screen.filter.own_rank"
+
+    /** 玩家名稱輸入框沒有內容時的灰色提示。 */
+    const val FILTER_PLACEHOLDER_PLAYER_NAME = "mahjongcraft.history_screen.filter.placeholder.player_name"
+
+    /** 對局 UUID 輸入框沒有內容時的灰色提示。 */
+    const val FILTER_PLACEHOLDER_MATCH_ID = "mahjongcraft.history_screen.filter.placeholder.match_id"
+
+    /** 日期輸入框沒有內容時的灰色提示。 */
+    const val FILTER_PLACEHOLDER_DATE = "mahjongcraft.history_screen.filter.placeholder.date"
 
     /** 玩家名稱篩選欄位。 */
     const val FILTER_PLAYER_NAME = "mahjongcraft.history_screen.filter.player_name"

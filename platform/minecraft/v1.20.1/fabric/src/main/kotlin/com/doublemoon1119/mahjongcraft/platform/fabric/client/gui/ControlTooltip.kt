@@ -10,7 +10,8 @@ import net.minecraft.util.Formatting
  *
  * - 說明：灰色。
  * - 狀態區：選項欄位列出全部選項，目前選項為綠色並以「▶」標示，其他可選的選項為白色，不可選的選項
- *   為紅色並附上原因；數值欄位顯示金色標題與範圍。目前值不另外重複一行。
+ *   為紅色並附上原因；數值欄位顯示金色標題與範圍；開啟其他畫面編輯的按鈕顯示金色標題與目前內容。
+ *   目前值不另外重複一行。
  * - 提醒：紅色，例如欄位被其他設定停用。
  * - 操作提示：灰色，寫玩家要做的動作與結果；提到畫面上的按鈕時用方括號標出按鈕上的字。
  */
@@ -115,6 +116,26 @@ internal object ControlTooltip {
             .append("  ")
             .append(range.copy().formatted(Formatting.WHITE))
         return joinLines(composeLines(description = description, status = listOf(status), notice = notice, hints = hints))
+    }
+
+    /**
+     * 建立列出目前內容的提示框，用於開啟其他畫面編輯多項內容的按鈕，例如列出已套用的篩選條件。
+     *
+     * @param description 按鈕說明；沒有說明時為 null。
+     * @param title 內容清單的標題。
+     * @param lines 內容清單的每一行，以白色縮排列出。
+     * @param hints 操作提示；不需要提示時為空。
+     * @return 以換行分隔各行的提示文字。
+     */
+    fun list(
+        description: Text?,
+        title: Text,
+        lines: List<Text>,
+        hints: List<Text> = emptyList(),
+    ): Text {
+        val status = listOf<Text>(title.copy().formatted(Formatting.GOLD)) +
+            lines.map { Text.literal(OPTION_INDENT).append(it).formatted(Formatting.WHITE) }
+        return joinLines(composeLines(description = description, status = status, notice = null, hints = hints))
     }
 
     /**

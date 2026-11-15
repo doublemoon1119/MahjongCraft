@@ -217,6 +217,7 @@ internal class RoomSettingsPage(
         var hoveredLabel: Text? = null
         val fields = definition.fields.filter { it.categoryId == selectedCategoryId }
         fields.drop(fieldScroll.index).take(layout.visibleFieldCount).forEachIndexed { index, field ->
+            layout.fieldStripe(index).renderIfStriped(context, fieldScroll.index + index)
             ScreenRendering.label(
                 context = context,
                 textRenderer = textRenderer,

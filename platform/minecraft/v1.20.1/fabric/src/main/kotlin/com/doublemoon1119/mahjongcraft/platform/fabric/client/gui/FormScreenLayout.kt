@@ -1,7 +1,7 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.client.gui
 
 /**
- * 由分類頁籤、一列列欄位與底部按鈕列組成的畫面版面，例如設定頁：標題、頁面切換、選擇器列、分類頁籤、
+ * 由分類頁籤（可省略）、一列列欄位與底部按鈕列組成的畫面版面，例如設定頁：標題、頁面切換、選擇器列、分類頁籤、
  * 欄位區與底部按鈕列由上到下的位置。
  *
  * 視窗寬度低於 [COMPACT_MIN_WIDTH] 時改用窄版：欄位的標籤在上、控制項在下並佔滿內容寬度，規則列改為
@@ -15,6 +15,8 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.client.gui
  * @property hasRuleRow 分類頁籤上方是否有規則列。
  * @property ruleLabelWidth 規則列「規則」標籤的文字寬度。
  * @property variantLabelWidth 規則列「玩法」標籤的文字寬度。
+ * @property hasTabs 欄位區上方是否有分類頁籤；沒有時欄位區緊接在上一個區塊下方。
+ * @property headerHeight 分類頁籤上方保留給說明文字的高度，從 [headerTop] 開始；不需要時為 0。
  */
 internal data class FormScreenLayout(
     val windowWidth: Int,
@@ -23,6 +25,8 @@ internal data class FormScreenLayout(
     val hasRuleRow: Boolean,
     val ruleLabelWidth: Int = 0,
     val variantLabelWidth: Int = 0,
+    val hasTabs: Boolean = true,
+    val headerHeight: Int = 0,
 ) {
     /** 是否使用窄版。 */
     val isCompact: Boolean = windowWidth < COMPACT_MIN_WIDTH
@@ -52,15 +56,18 @@ internal data class FormScreenLayout(
         null
     }
 
-    /** 分類頁籤列上界。 */
-    val tabsTop: Int = when {
+    /** 說明文字區上界；說明文字區之後接著分類頁籤列。 */
+    val headerTop: Int = when {
         ruleRow != null -> ruleRow.dividerY + 1 + RULE_DIVIDER_GAP
         hasPageSwitch -> PAGE_SWITCH_Y + BUTTON_HEIGHT + SECTION_GAP
         else -> TITLE_BOTTOM
     }
 
+    /** 分類頁籤列上界。 */
+    val tabsTop: Int = headerTop + headerHeight
+
     /** 欄位區上界。 */
-    val fieldsTop: Int = tabsTop + TabStripLayout.SELECTED_HEIGHT + 1 + FIELDS_TOP_GAP
+    val fieldsTop: Int = if (hasTabs) tabsTop + TabStripLayout.SELECTED_HEIGHT + 1 + FIELDS_TOP_GAP else tabsTop
 
     /** 底部按鈕列上界。 */
     val footerY: Int = windowHeight - FOOTER_BOTTOM_MARGIN - BUTTON_HEIGHT
@@ -121,6 +128,17 @@ internal data class FormScreenLayout(
      * @return 欄位列的上界。
      */
     fun fieldRowTop(visibleIndex: Int): Int = fieldsTop + visibleIndex * fieldRowHeight
+
+    /**
+     * 取得欄位列的隔列底色範圍：上下各延伸到相鄰列的中間，相鄰兩列的底色剛好銜接；左右比內容寬一點，不碰到捲軸。
+     *
+     * @param visibleIndex 欄位在可見範圍內的順序，從 0 開始。
+     * @return 底色的左、上、右、下界。
+     */
+    fun fieldStripe(visibleIndex: Int): RowStripe {
+        val top = fieldRowTop(visibleIndex) - (fieldRowHeight - BUTTON_HEIGHT - if (isCompact) COMPACT_LABEL_HEIGHT else 0) / 2
+        return RowStripe(left = contentLeft - STRIPE_INSET, top = top, right = contentRight + STRIPE_INSET, bottom = top + fieldRowHeight)
+    }
 
     /**
      * 取得欄位標籤文字的 Y 座標。
@@ -244,6 +262,9 @@ internal data class FormScreenLayout(
 
         /** 內容右界與欄位捲軸之間的水平間距。 */
         const val SCROLLBAR_GAP: Int = 4
+
+        /** 隔列底色左右超出內容範圍的寬度；必須小於 [SCROLLBAR_GAP]。 */
+        const val STRIPE_INSET: Int = 3
 
         /** 欄位捲軸左右各加寬的命中範圍。 */
         const val SCROLLBAR_HIT_PADDING: Int = 3

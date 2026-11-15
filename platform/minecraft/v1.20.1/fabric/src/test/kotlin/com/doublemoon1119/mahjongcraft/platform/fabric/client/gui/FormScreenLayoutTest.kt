@@ -194,4 +194,49 @@ class FormScreenLayoutTest {
 
         assertEquals(4, (0 until 4).count { footer.buttonWidth(it) >= 1 })
     }
+
+    /** 隔列底色上下銜接、包住整列的標籤與控制項，左右不碰到捲軸。 */
+    @Test
+    fun `row stripes join up and cover each row`() {
+        listOf(480 to 270, 320 to 360).forEach { (width, height) ->
+            val layout = FormScreenLayout(windowWidth = width, windowHeight = height, hasPageSwitch = true, hasRuleRow = true)
+            val first = layout.fieldStripe(0)
+            val second = layout.fieldStripe(1)
+            val rowTop = layout.fieldRowTop(0)
+
+            assertEquals(first.bottom, second.top)
+            assertTrue(first.top <= layout.fieldLabelY(rowTop))
+            assertTrue(first.bottom >= layout.fieldControlY(rowTop) + FormScreenLayout.BUTTON_HEIGHT)
+            assertTrue(first.right < layout.scrollbarLeft)
+            assertTrue(first.left >= 0)
+        }
+    }
+
+    /** 底色從第二列開始隔列出現，以完整清單的列號計算。 */
+    @Test
+    fun `stripes alternate starting from the second row`() {
+        assertEquals(listOf(false, true, false, true), (0 until 4).map(RowStripe::isStriped))
+    }
+
+    /** 沒有分類頁籤時欄位區緊接在標題下方，第一列的底色不碰到標題。 */
+    @Test
+    fun `fields start under the title without tabs`() {
+        val layout = FormScreenLayout(windowWidth = 480, windowHeight = 270, hasPageSwitch = false, hasRuleRow = false, hasTabs = false)
+        val withTabs = layout.copy(hasTabs = true)
+
+        assertEquals(FormScreenLayout.TITLE_BOTTOM, layout.fieldsTop)
+        assertTrue(layout.visibleFieldCount > withTabs.visibleFieldCount)
+        assertTrue(layout.fieldStripe(0).top > FormScreenLayout.TITLE_Y + FormScreenLayout.VISIBLE_TEXT_HEIGHT)
+    }
+
+    /** 頁籤上方的說明區把頁籤與欄位往下推，說明區從原本頁籤的位置開始。 */
+    @Test
+    fun `header area pushes the tabs down`() {
+        val plain = FormScreenLayout(windowWidth = 480, windowHeight = 270, hasPageSwitch = false, hasRuleRow = false)
+        val withHeader = plain.copy(headerHeight = 26)
+
+        assertEquals(plain.tabsTop, withHeader.headerTop)
+        assertEquals(plain.tabsTop + 26, withHeader.tabsTop)
+        assertEquals(plain.fieldsTop + 26, withHeader.fieldsTop)
+    }
 }
