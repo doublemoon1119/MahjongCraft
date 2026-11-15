@@ -83,6 +83,11 @@ rules come from collisions that only showed up in game, so check them even when 
   `mahjongcraft_example`.
 - Map every registered ID to an explicit translation key; see [Correctness](correctness.md) for why keys are
   never derived from an ID path.
+- Chinese and Japanese text does not end with a full stop (。). Text of more than one sentence puts each
+  sentence on its own line with `\n` wherever it wraps, such as tooltips, catalogue cards, chat and
+  confirmation screens. Text shown on a single line, such as the action bar and status lines, stays one line:
+  join the sentences with a comma (，) in Chinese and a full-width space in Japanese. Question and
+  exclamation marks stay. English keeps its full stops.
 
 ## Rule wording
 
