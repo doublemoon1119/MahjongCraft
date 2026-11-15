@@ -33,6 +33,35 @@ internal enum class PixelIcon(
         ),
     ),
 
+    /** 已勾選：與下拉清單目前選項相同的打勾。 */
+    CHECK(
+        width = PixelIcons.CHECK_WIDTH,
+        height = PixelIcons.CHECK_HEIGHT,
+        rows = listOf(
+            listOf(6 to 1),
+            listOf(5 to 2),
+            listOf(0 to 1, 4 to 2),
+            listOf(0 to 2, 3 to 2),
+            listOf(1 to 3),
+            listOf(2 to 1),
+        ),
+    ),
+
+    /** 移除：粗體叉號。 */
+    CROSS(
+        width = 7,
+        height = 7,
+        rows = listOf(
+            listOf(0 to 2, 5 to 2),
+            listOf(0 to 3, 4 to 3),
+            listOf(1 to 5),
+            listOf(2 to 3),
+            listOf(1 to 5),
+            listOf(0 to 3, 4 to 3),
+            listOf(0 to 2, 5 to 2),
+        ),
+    ),
+
     /** 查看詳細內容：放大鏡。 */
     MAGNIFIER(
         width = 9,

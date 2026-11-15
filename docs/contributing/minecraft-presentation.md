@@ -501,6 +501,21 @@ attempt does not fall through to another provider.
 - A row that only performs an action and has no value is one button spanning the row, without a label.
 - Footer buttons are equal in width and span the content width. The bottom-right slot always holds the
   button that leaves the screen (Back, Done or Close), so players find it in the same place everywhere.
+- Offer Cancel only where leaving can discard something:
+  - A screen that only shows information has Back or Close.
+  - A screen whose controls take effect at once has Done.
+  - A sub-screen that edits a temporary copy for its parent has Cancel and Done: Done writes the copy
+    back, and Cancel and Esc discard it.
+  - A full settings page has Reset, Undo, Apply and Done, and asks before Esc discards unapplied
+    changes.
+  - A confirmation names its action on one button and has Cancel on the other.
+- Content is at most `FormScreenLayout.MAX_CONTENT_WIDTH` wide and centred on every screen except
+  editors that need the whole window, such as the HUD layout editor. Stripe every other row on screens
+  made of rows, and put scrollbars in the margin to the right of the content.
+- Draw icons with `PixelIcons` and `PixelIcon`, not with text symbols, so their size and weight do not
+  depend on the font. A button that shows only an icon still names its action in its tooltip.
+- Text that acts as a control is a button or a whole clickable row, never underlined text. Controls
+  inside scrolling content are drawn and clipped with that content, and respond only inside it.
 - Build control tooltips with `ControlTooltip`. List every option and mark the current one instead of
   adding a separate "current value" line. Write hints as the action and its result, such as
   "Left-click: next option", not internal concepts; translations follow the same rule. Put a button's

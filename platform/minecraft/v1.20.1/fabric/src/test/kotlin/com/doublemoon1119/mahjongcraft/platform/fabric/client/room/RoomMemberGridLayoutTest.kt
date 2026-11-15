@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.client.room
 
+import kotlin.math.abs
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -17,13 +18,14 @@ class RoomMemberGridLayoutTest {
         assertEquals(1, grid.rows)
     }
 
-    /** 玩家數超過可用寬度時換列，欄數由可用寬度決定。 */
+    /** 玩家數超過內容寬度時換列，欄數由內容寬度決定；內容寬度最多 456 並置中。 */
     @Test
-    fun `wraps to more rows once the width is used up`() {
+    fun `wraps to more rows once the content width is used up`() {
         val grid = grid(width = 640, playerCount = 20)
 
-        val availableWidth = 640 - RoomMemberGridLayout.GRID_MARGIN * 2
-        assertEquals(availableWidth / RoomMemberGridLayout.CARD_MIN_WIDTH, grid.columns)
+        assertEquals(456, grid.contentRight - grid.contentLeft)
+        assertEquals((640 - 456) / 2, grid.contentLeft)
+        assertEquals(456 / RoomMemberGridLayout.CARD_MIN_WIDTH, grid.columns)
         assertEquals((20 + grid.columns - 1) / grid.columns, grid.rows)
     }
 
@@ -48,8 +50,28 @@ class RoomMemberGridLayoutTest {
         assertEquals(RoomMemberGridLayout.CARD_MAX_WIDTH, grid(width = 640, playerCount = 1).cardWidth)
 
         val crowded = grid(width = 640, playerCount = 20)
-        val availableWidth = 640 - RoomMemberGridLayout.GRID_MARGIN * 2
-        assertEquals(availableWidth / crowded.columns, crowded.cardWidth)
+        assertEquals(456 / crowded.columns, crowded.cardWidth)
+    }
+
+    /** 卡片整組在內容寬度內置中，同一列的卡片左右相接。 */
+    @Test
+    fun `centres the cards inside the content`() {
+        val grid = grid(width = 640, playerCount = 4)
+
+        assertEquals(grid.cardLeft(0) + grid.cardWidth, grid.cardLeft(1))
+        assertTrue(abs(grid.cardLeft(0) - grid.contentLeft - (grid.contentRight - grid.cardLeft(3) - grid.cardWidth)) <= 1)
+    }
+
+    /** 底部四格橫跨內容寬度，狀態列在卡片區與底部按鈕列之間。 */
+    @Test
+    fun `footer spans the content with the status line above it`() {
+        val grid = grid(width = 640, height = 300, playerCount = 4)
+
+        assertEquals(grid.contentLeft, grid.footer.buttonX(0))
+        assertEquals(grid.contentRight, grid.footer.buttonX(3) + grid.footer.buttonWidth(3))
+        assertTrue(grid.gridBottom < grid.statusY)
+        assertTrue(grid.statusY < grid.footerY)
+        assertEquals(300 - 8 - 20, grid.footerY)
     }
 
     /** 卡片座標依捲動位置位移，資訊區在卡片內固定偏移處。 */
@@ -79,42 +101,50 @@ class RoomMemberGridLayoutTest {
     fun `does not hit test the grid scrollbar when everything fits`() {
         val grid = grid(width = 640, height = 2000, playerCount = 3)
 
-        assertFalse(grid.isOverGridScrollbar((640 - 10).toDouble(), RoomMemberGridLayout.CARD_TOP.toDouble()))
+        assertFalse(grid.isOverGridScrollbar(grid.scrollbarLeft + 1.0, RoomMemberGridLayout.CARD_TOP.toDouble()))
     }
 
     /** 列數超出可見範圍時，命中判定涵蓋整段軌道。 */
     @Test
     fun `hit tests the grid scrollbar over the whole track`() {
         val grid = grid(width = 640, height = 300, playerCount = 40)
-        val insideX = (640 - 10).toDouble()
+        val insideX = grid.scrollbarLeft + 1.0
 
+        assertTrue(grid.scrollbarLeft > grid.contentRight)
         assertTrue(grid.rows > grid.visibleRows)
         assertTrue(grid.isOverGridScrollbar(insideX, RoomMemberGridLayout.CARD_TOP.toDouble()))
-        assertTrue(grid.isOverGridScrollbar(insideX, grid.gridBottom.toDouble()))
+        assertTrue(grid.isOverGridScrollbar(insideX, grid.gridBottom - 1.0))
         assertFalse(grid.isOverGridScrollbar(insideX, (RoomMemberGridLayout.CARD_TOP - 1).toDouble()))
         assertFalse(grid.isOverGridScrollbar(0.0, RoomMemberGridLayout.CARD_TOP.toDouble()))
     }
 
-    /** 資訊清單未超出卡片高度時不可捲動，也沒有可拖曳的列。 */
+    /** 資訊清單未超出卡片高度時不可捲動。 */
     @Test
     fun `reports no info scroll when the rows fit inside the card`() {
         val grid = grid(width = 640, playerCount = 4)
 
         assertEquals(0, grid.maximumInfoScroll(grid.visibleInfoRows))
-        assertNull(grid.infoScrollbarRowAt((640 - 10).toDouble(), grid.infoTop(0).toDouble(), grid.visibleInfoRows))
+        assertEquals(5, grid.maximumInfoScroll(grid.visibleInfoRows + 5))
     }
 
-    /** 資訊清單超出卡片高度時，命中判定回傳游標所在的那一列。 */
+    /** 資訊捲軸畫在各自卡片內的右緣，只有游標在那張卡片的資訊區時才算命中。 */
     @Test
-    fun `resolves the info scrollbar row under the cursor`() {
+    fun `info scrollbars sit inside each card`() {
         val grid = grid(width = 640, playerCount = 4)
-        val totalInfoRows = grid.visibleInfoRows + 5
-        val insideX = (640 - 10).toDouble()
+        val infoY = grid.infoTop(0) + 2.0
 
-        assertEquals(5, grid.maximumInfoScroll(totalInfoRows))
-        assertEquals(0, grid.infoScrollbarRowAt(insideX, grid.infoTop(0).toDouble(), totalInfoRows))
-        assertNull(grid.infoScrollbarRowAt(insideX, (grid.infoTop(0) - 1).toDouble(), totalInfoRows))
-        assertNull(grid.infoScrollbarRowAt(0.0, grid.infoTop(0).toDouble(), totalInfoRows))
+        (0 until 4).forEach { index ->
+            val left = grid.infoScrollbarLeft(index)
+            assertTrue(left > grid.cardLeft(index))
+            assertTrue(left < grid.cardLeft(index) + grid.cardWidth)
+            assertTrue(grid.isOverInfoScrollbar(index, left + 1.0, infoY))
+            assertTrue(grid.isOverInfo(index, grid.cardLeft(index) + 4.0, infoY))
+        }
+        assertFalse(grid.isOverInfoScrollbar(1, grid.infoScrollbarLeft(0) + 1.0, infoY))
+        assertFalse(grid.isOverInfo(0, grid.cardLeft(0) + 4.0, grid.infoTop(0) - 1.0))
+        assertEquals(2, grid.cardIndexAt(grid.cardLeft(2) + 1.0, infoY))
+        assertNull(grid.cardIndexAt(grid.contentLeft - 1.0, infoY))
+        assertEquals(grid.infoTop(0), grid.infoScrollbar(3, 10, 0).trackTop)
     }
 
     /**

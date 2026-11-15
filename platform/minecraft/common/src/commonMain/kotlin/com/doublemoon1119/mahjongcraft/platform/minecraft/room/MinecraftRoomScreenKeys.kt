@@ -75,7 +75,6 @@ object MinecraftRoomScreenKeys {
     const val DONE = "mahjongcraft.room.screen.done"
     const val UNDO = "mahjongcraft.room.screen.undo"
     const val HOST = "mahjongcraft.room.screen.host"
-    const val AI = "mahjongcraft.room.screen.ai"
     const val AI_STRATEGY_TITLE = "mahjongcraft.room.screen.ai_strategy_title"
     const val MEMBER_READY = "mahjongcraft.room.screen.member_ready"
     const val MEMBER_NOT_READY = "mahjongcraft.room.screen.member_not_ready"
@@ -102,6 +101,27 @@ object MinecraftRoomScreenKeys {
 
     /** 多選畫面的選取數量與允許範圍。 */
     const val SELECTION_LIMITS = "mahjongcraft.room.screen.selection_limits"
+
+    /** 多選畫面的全選按鈕。 */
+    const val SELECT_ALL = "mahjongcraft.room.screen.select_all"
+
+    /** 最多可選數量少於選項總數時，全選按鈕停用的原因；參數為最多可選數量。 */
+    const val SELECT_ALL_UNAVAILABLE = "mahjongcraft.room.screen.select_all_unavailable"
+
+    /** 多選畫面的清除按鈕。 */
+    const val CLEAR_SELECTION = "mahjongcraft.room.screen.clear_selection"
+
+    /** 已選到上限時，未選選項停用的原因；參數為最多可選數量。 */
+    const val OPTION_AT_MAXIMUM = "mahjongcraft.room.screen.option_at_maximum"
+
+    /** 選取數量不在範圍內時，完成按鈕停用的原因；參數為最少與最多數量。 */
+    const val SELECTION_OUT_OF_RANGE = "mahjongcraft.room.screen.selection_out_of_range"
+
+    /** 多選畫面完成按鈕的操作提示。 */
+    const val MULTI_CHOICE_DONE_HINT = "mahjongcraft.room.screen.multi_choice_done_hint"
+
+    /** 多選畫面取消按鈕的操作提示。 */
+    const val MULTI_CHOICE_CANCEL_HINT = "mahjongcraft.room.screen.multi_choice_cancel_hint"
 
     const val NONE = "mahjongcraft.room.config.value.none"
     const val TRUE = "mahjongcraft.room.config.value.true"

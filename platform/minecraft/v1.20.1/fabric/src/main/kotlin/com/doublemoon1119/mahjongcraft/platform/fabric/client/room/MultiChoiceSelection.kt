@@ -27,6 +27,14 @@ internal object MultiChoiceSelection {
         return next
     }
 
+    /**
+     * 判斷能否一次選取全部選項：最多可選數量不少於選項總數時才可以。
+     *
+     * @param editor 欄位的選項與數量限制。
+     * @return 可以全選時為 true。
+     */
+    fun canSelectAll(editor: GameConfigEditorSpec.MultiChoice): Boolean = editor.maximumCount >= editor.optionIds.size
+
     /** 判斷目前選取是否能套用。 */
     fun canApply(selected: Set<String>, editor: GameConfigEditorSpec.MultiChoice): Boolean = selected.size in editor.minimumCount..editor.maximumCount && selected.all { it in editor.optionIds }
 }

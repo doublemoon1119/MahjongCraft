@@ -24,16 +24,6 @@ internal object PixelIcons {
     /** 向下箭頭每一列的像素範圍：起點與長度，由上到下。 */
     private val ARROW_DOWN_ROWS: List<Pair<Int, Int>> = listOf(0 to 7, 1 to 5, 2 to 3, 3 to 1)
 
-    /** 打勾每一列的像素範圍：起點與長度，由上到下；一列可以有多段。 */
-    private val CHECK_ROWS: List<List<Pair<Int, Int>>> = listOf(
-        listOf(6 to 1),
-        listOf(5 to 2),
-        listOf(0 to 1, 4 to 2),
-        listOf(0 to 2, 3 to 2),
-        listOf(1 to 3),
-        listOf(2 to 1),
-    )
-
     /**
      * 繪製選擇器的實心三角形箭頭。
      *
@@ -57,7 +47,7 @@ internal object PixelIcons {
      * @param color 不含透明度的 RGB 顏色。
      */
     fun check(context: DrawContext, x: Int, y: Int, color: Int) {
-        draw(context, x, y, CHECK_ROWS, color)
+        draw(context, x, y, PixelIcon.CHECK.rows, color)
     }
 
     /**

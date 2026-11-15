@@ -12,8 +12,8 @@ import kotlin.time.Duration
  *
  * 提示框超出畫面上下緣時推回畫面內；比畫面還高時上下捲動，游標重新進入或重新取得焦點後從頂端開始。
  *
- * 可另外設定四種外觀與操作：標示選中狀態的白色外框、展開清單用的選擇器箭頭、取代文字的像素圖示，以及讓右鍵
- * 也觸發動作（供循環切換按鈕往回選）。
+ * 可另外設定五種外觀與操作：標示選中狀態的白色外框、展開清單用的選擇器箭頭、取代文字的像素圖示、不繪製文字
+ * （文字只供旁白），以及讓右鍵也觸發動作（供循環切換按鈕往回選）。
  *
  * @param x 按鈕左界。
  * @param y 按鈕上界。
@@ -41,6 +41,9 @@ internal class RestartableMarqueeButtonWidget private constructor(
 
     /** 取代按鈕文字置中繪製的圖示；設定後按鈕文字只供旁白使用。沒有圖示時為 null。 */
     var icon: PixelIcon? = null
+
+    /** 是否在按鈕上繪製文字；關閉時按鈕文字只供旁白使用，例如沒有勾選時是空方塊的勾選方塊。 */
+    var showsMessage: Boolean = true
 
     /** 上一幀游標是否位於按鈕上，用於偵測重新進入。 */
     private var hoveredLastFrame = false
@@ -71,7 +74,7 @@ internal class RestartableMarqueeButtonWidget private constructor(
         selectedLastFrame = selectedNow
         val currentIcon = icon
         if (currentIcon == null) {
-            renderMessage(context, originalMessage, hoveredNow)
+            if (showsMessage) renderMessage(context, originalMessage, hoveredNow)
         } else {
             PixelIcons.icon(
                 context = context,

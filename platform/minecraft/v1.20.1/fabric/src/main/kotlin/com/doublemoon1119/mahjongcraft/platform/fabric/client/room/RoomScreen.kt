@@ -16,6 +16,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.ControlTooltip
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.DropdownOption
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.DropdownOverlay
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.FormScreenLayout
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.PixelIcon
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.RestartableMarqueeButtonWidget
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.ScreenRendering
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.ScrollState
@@ -128,11 +129,11 @@ class RoomScreen(
         networkRegistries = networkRegistries,
     )
 
-    /** 對局成員卡片內資訊列共用的捲動狀態。 */
-    private val playingInfoScroll = ScrollState()
+    /** 對局成員卡片內資訊清單的捲動狀態，每位玩家各自一份。 */
+    private val playingInfoScrolls = mutableMapOf<Uuid, ScrollState>()
 
-    /** 目前正在拖曳哪一列（grid row）的對局資訊 scrollbar；兩列共用同一個捲動位置，但幾何各自獨立。 */
-    private var playingInfoDragRow = 0
+    /** 正在拖曳資訊捲軸的玩家；沒有拖曳時為 null。 */
+    private var playingInfoDragPlayer: Uuid? = null
 
     /** 等待室玩家卡片 grid 換列時的垂直捲動狀態，避免超出範圍的列疊在底部操作列上。 */
     private val memberScroll = ScrollState()
@@ -177,7 +178,8 @@ class RoomScreen(
                 target = Page.SETTINGS,
             ).also { it.active = currentConfig() != null },
         )
-        if (stateStore.roomSnapshot(tableId)?.isHost == true) {
+        val room = stateStore.roomSnapshot(tableId)
+        if (room?.isHost == true && room.excludedPlayerIds.isNotEmpty()) {
             addDrawableChild(
                 RoomExcludedParticipantsButton(
                     x = width / 2 + FormScreenLayout.PAGE_SWITCH_WIDTH + FormScreenLayout.PAGE_SWITCH_GAP * 3 / 2,
@@ -226,13 +228,9 @@ class RoomScreen(
     private fun initRoomPage() {
         val table = stateStore.tableOccupancy(tableId) ?: return
         val room = stateStore.roomSnapshot(tableId)
-        val bottom = height - 30
         when (table.occupancy) {
-            TableOccupancyDto.VACANT -> addCenteredActions(
-                actions = listOf(ActionButton(MinecraftRoomScreenKeys.CREATE, RoomActionDto.Create(table.tableId), true)),
-                y = bottom,
-            )
-            TableOccupancyDto.GAME -> addCenteredActions(emptyList(), bottom)
+            TableOccupancyDto.VACANT -> addFooterActions(listOf(ActionButton(MinecraftRoomScreenKeys.CREATE, RoomActionDto.Create(table.tableId), true)))
+            TableOccupancyDto.GAME -> addFooterActions(emptyList())
             TableOccupancyDto.ROOM -> {
                 if (room == null) return
                 val actions = mutableListOf<ActionButton>()
@@ -274,7 +272,7 @@ class RoomScreen(
                     button(MinecraftRoomScreenKeys.LEAVE, RoomActionDto.Leave(table.tableId))
                 }
                 addMemberCardWidgets(table.tableId, room)
-                addCenteredActions(actions, bottom)
+                addFooterActions(actions)
             }
         }
     }
@@ -292,12 +290,11 @@ class RoomScreen(
         val grid = memberGrid(room.playerIds.size)
         memberScroll.clamp(grid.rows - grid.visibleRows)
         val visibleRows = grid.visibleGridRows
-        val gridWidth = grid.columns * grid.cardWidth
         room.playerIds.forEachIndexed { index, targetId ->
             if (targetId == room.hostId) return@forEachIndexed
             val row = index / grid.columns
             if (row !in visibleRows) return@forEachIndexed
-            val cardX = width / 2 - gridWidth / 2 + (index % grid.columns) * grid.cardWidth
+            val cardX = grid.cardLeft(index)
             val cardY = grid.cardTop(row)
             if (targetId in room.aiPlayerIds) {
                 addAiStrategySelector(
@@ -306,15 +303,16 @@ class RoomScreen(
                     current = room.aiPlayerStrategyKeys[targetId],
                     editable = room.isHost,
                     x = cardX + 8,
-                    y = cardY + AI_STRATEGY_BUTTON_OFFSET_Y,
+                    y = cardY + RoomMemberGridLayout.INFO_OFFSET - AI_STRATEGY_BUTTON_LIFT,
                     width = grid.cardWidth - 20,
                 )
             }
             if (!room.isHost) return@forEachIndexed
             addDrawableChild(
-                RestartableMarqueeButtonWidget.builder(Text.literal("×")) {
+                RestartableMarqueeButtonWidget.builder(Text.translatable(MinecraftRoomScreenKeys.KICK)) {
                     send(RoomActionDto.Kick(tableIdText, targetId.toString()))
-                }.dimensions(cardX + grid.cardWidth - 23, cardY + KICK_BUTTON_OFFSET_Y, 16, 16).build().also {
+                }.dimensions(cardX + grid.cardWidth - RoomMemberGridLayout.CARD_RIGHT_INSET - KICK_BUTTON_SIZE - KICK_BUTTON_INSET, cardY + KICK_BUTTON_INSET, KICK_BUTTON_SIZE, KICK_BUTTON_SIZE).build().also {
+                    it.icon = PixelIcon.CROSS
                     it.tooltip = Tooltip.of(Text.translatable(MinecraftRoomScreenKeys.KICK))
                 },
             )
@@ -322,25 +320,22 @@ class RoomScreen(
     }
 
     /**
-     * 將房間操作與關閉按鈕整組置中。
+     * 在底部四格按鈕列放入房間操作，關閉固定在最右一格，操作依序緊接在關閉左邊，主要操作因此靠近關閉。
      *
-     * @param actions 依顯示順序排列的房間操作。
-     * @param y 按鈕列頂端座標。
+     * @param actions 依顯示順序排列的房間操作，最多三個。
      */
-    private fun addCenteredActions(actions: List<ActionButton>, y: Int) {
-        val buttonCount = actions.size + 1
-        val gap = 6
-        val buttonWidth = minOf(88, (width - 16 - (buttonCount - 1) * gap) / buttonCount)
-        val totalWidth = buttonCount * buttonWidth + (buttonCount - 1) * gap
-        var x = width / 2 - totalWidth / 2
-        actions.forEach { action ->
-            addActionButton(x, y, buttonWidth, action)
-            x += buttonWidth + gap
+    private fun addFooterActions(actions: List<ActionButton>) {
+        val grid = memberGrid(stateStore.roomSnapshot(tableId)?.playerIds?.size ?: 0)
+        require(actions.size < RoomMemberGridLayout.FOOTER_SLOTS) { "Room footer has no slot left for Close" }
+        val close = RoomMemberGridLayout.FOOTER_SLOTS - 1
+        actions.forEachIndexed { index, action ->
+            val slot = close - actions.size + index
+            addActionButton(grid.footer.buttonX(slot), grid.footerY, grid.footer.buttonWidth(slot), action)
         }
         addDrawableChild(
             RestartableMarqueeButtonWidget.builder(Text.translatable(MinecraftRoomScreenKeys.CLOSE)) {
                 closeEntireScreen()
-            }.dimensions(x, y, buttonWidth, 20).build(),
+            }.dimensions(grid.footer.buttonX(close), grid.footerY, grid.footer.buttonWidth(close), FormScreenLayout.BUTTON_HEIGHT).build(),
         )
     }
 
@@ -444,10 +439,18 @@ class RoomScreen(
         if (dropdown.mouseScrolled(textRenderer, height, amount)) return true
         if (amount == 0.0) return super.mouseScrolled(mouseX, mouseY, amount)
         if (page == Page.SETTINGS) return settingsPage.mouseScrolled(mouseX, mouseY, amount)
-        val playingInfoScrollMaximum = playingGrid().maximumInfoScroll(totalPlayingInfoRows())
-        if (page == Page.ROOM && stateStore.tableOccupancy(tableId)?.occupancy == TableOccupancyDto.GAME && playingInfoScrollMaximum > 0) {
-            playingInfoScroll.scrollBy(amount, playingInfoScrollMaximum)
-            return true
+        if (page == Page.ROOM && stateStore.tableOccupancy(tableId)?.occupancy == TableOccupancyDto.GAME) {
+            val grid = playingGrid()
+            val players = sortedPlayingPlayers()
+            val index = grid.cardIndexAt(mouseX, mouseY)
+            val player = index?.let(players::getOrNull)
+            if (index != null && player != null && grid.isOverInfo(index, mouseX, mouseY)) {
+                val maximum = grid.maximumInfoScroll(infoRows(player).size)
+                if (maximum > 0) {
+                    infoScroll(player.playerId).scrollBy(amount, maximum)
+                    return true
+                }
+            }
         }
         val grid = currentMemberGrid()
         if (page == Page.ROOM && grid != null) {
@@ -461,13 +464,20 @@ class RoomScreen(
         if (dropdown.mouseClicked(textRenderer, height, mouseX, mouseY, button)) return true
         if (page == Page.SETTINGS && settingsPage.mouseClicked(mouseX, mouseY, button)) return true
         if (page == Page.ROOM && button == 0) {
-            val playingGrid = playingGrid()
-            val totalInfoRows = totalPlayingInfoRows()
-            val row = playingGrid.infoScrollbarRowAt(mouseX, mouseY, totalInfoRows)
-            if (row != null) {
-                playingInfoDragRow = row
-                playingInfoScroll.beginDrag(mouseY, playingGrid.infoScrollbar(row, totalInfoRows, playingInfoScroll.index))
-                return true
+            if (stateStore.tableOccupancy(tableId)?.occupancy == TableOccupancyDto.GAME) {
+                val playingGrid = playingGrid()
+                val players = sortedPlayingPlayers()
+                val index = playingGrid.cardIndexAt(mouseX, mouseY)
+                val player = index?.let(players::getOrNull)
+                if (index != null && player != null && playingGrid.isOverInfoScrollbar(index, mouseX, mouseY)) {
+                    val total = infoRows(player).size
+                    if (playingGrid.maximumInfoScroll(total) > 0) {
+                        val scroll = infoScroll(player.playerId)
+                        playingInfoDragPlayer = player.playerId
+                        scroll.beginDrag(mouseY, playingGrid.infoScrollbar(index, total, scroll.index))
+                        return true
+                    }
+                }
             }
             val grid = currentMemberGrid()
             if (grid != null && grid.isOverGridScrollbar(mouseX, mouseY)) {
@@ -481,8 +491,14 @@ class RoomScreen(
     override fun mouseDragged(mouseX: Double, mouseY: Double, button: Int, deltaX: Double, deltaY: Double): Boolean {
         if (dropdown.isOpen) return true
         if (page == Page.SETTINGS && settingsPage.mouseDragged(mouseY, button)) return true
-        if (playingInfoScroll.dragging && button == 0) {
-            playingInfoScroll.dragTo(mouseY, playingGrid().infoScrollbar(playingInfoDragRow, totalPlayingInfoRows(), playingInfoScroll.index))
+        val draggedPlayer = playingInfoDragPlayer
+        if (draggedPlayer != null && button == 0) {
+            val players = sortedPlayingPlayers()
+            val index = players.indexOfFirst { it.playerId == draggedPlayer }
+            if (index >= 0) {
+                val scroll = infoScroll(draggedPlayer)
+                scroll.dragTo(mouseY, playingGrid().infoScrollbar(index, infoRows(players[index]).size, scroll.index))
+            }
             return true
         }
         if (memberScroll.dragging && button == 0) {
@@ -495,7 +511,8 @@ class RoomScreen(
 
     override fun mouseReleased(mouseX: Double, mouseY: Double, button: Int): Boolean {
         settingsPage.mouseReleased()
-        playingInfoScroll.endDrag()
+        playingInfoDragPlayer?.let { infoScroll(it).endDrag() }
+        playingInfoDragPlayer = null
         memberScroll.endDrag()
         return super.mouseReleased(mouseX, mouseY, button)
     }
@@ -590,8 +607,15 @@ class RoomScreen(
         when (table.occupancy) {
             TableOccupancyDto.VACANT -> context.drawCenteredTextWithShadow(textRenderer, Text.translatable(MinecraftRoomScreenKeys.EMPTY), width / 2, 70, 0xFFFFFF)
             TableOccupancyDto.GAME -> {
-                context.drawCenteredTextWithShadow(textRenderer, Text.translatable(MinecraftRoomScreenKeys.PLAYING), width / 2, 50, 0xFFCC55)
-                renderPlayingMembers(context, resolvePlayingPlayerInfo(), mouseX, mouseY)
+                renderPlayingMembers(context, mouseX, mouseY)
+                val grid = playingGrid()
+                context.drawCenteredTextWithShadow(
+                    textRenderer,
+                    fitClientText(textRenderer, Text.translatable(MinecraftRoomScreenKeys.PLAYING), grid.contentRight - grid.contentLeft),
+                    width / 2,
+                    grid.statusY,
+                    STATUS_COLOR,
+                )
             }
             TableOccupancyDto.ROOM -> stateStore.roomSnapshot(tableId)?.let { room ->
                 renderMembers(
@@ -609,33 +633,26 @@ class RoomScreen(
     /**
      * 進行中對局依權威自風排序，固定呈現東、南、西、北——卡片本身的大小與位置跟等待室
      * （[renderMembers]）共用同一套固定尺寸 grid 與捲動機制（[memberScroll]），差異只在名稱下方
-     * 顯示的是 player info（[resolvePlayingPlayerInfo]）而不是加入狀態，且該區塊內容過長時另外用
-     * [playingInfoScroll] 捲動。
+     * 顯示的是 player info（[resolvePlayingPlayerInfo]）而不是加入狀態；資訊放不下時捲軸畫在該卡片內，每張卡片各自捲動。
      *
      * @param context 畫面繪製情境。
-     * @param players 對局玩家的公開資訊。
      * @param mouseX 游標水平座標，用於模型預覽朝向。
      * @param mouseY 游標垂直座標，用於模型預覽朝向。
      */
     private fun renderPlayingMembers(
         context: DrawContext,
-        players: List<MahjongPlayerInfoEntry>,
         mouseX: Int,
         mouseY: Int,
     ) {
-        val sortedPlayers = players.sortedBy { WIND_ORDER.getValue(it.seatWind) }
-        val dealerPlayerId = resolvePlayerInfoEntity()?.dealerPlayerId ?: stateStore.gameSnapshot(tableId)?.dealerPlayerId
+        val sortedPlayers = sortedPlayingPlayers()
         val grid = playingGrid()
         memberScroll.clamp(grid.rows - grid.visibleRows)
-        val totalInfoRows = totalPlayingInfoRows()
-        playingInfoScroll.clamp(grid.maximumInfoScroll(totalInfoRows))
-        val gridWidth = grid.columns * grid.cardWidth
         sortedPlayers.forEachIndexed { index, player ->
             val gridRow = index / grid.columns
             if (gridRow !in grid.visibleGridRows) return@forEachIndexed
-            val x = width / 2 - gridWidth / 2 + (index % grid.columns) * grid.cardWidth
+            val x = grid.cardLeft(index)
             val y = grid.cardTop(gridRow)
-            context.fill(x + 2, y, x + grid.cardWidth - 4, y + RoomMemberGridLayout.CARD_HEIGHT, MEMBER_CARD_BACKGROUND)
+            context.fill(x + 2, y, x + grid.cardWidth - RoomMemberGridLayout.CARD_RIGHT_INSET, y + RoomMemberGridLayout.CARD_HEIGHT, MEMBER_CARD_BACKGROUND)
             renderMemberAppearance(context, player.playerId, player.isAi, x, y, grid.cardWidth, mouseX, mouseY)
             context.drawCenteredTextWithShadow(
                 textRenderer,
@@ -644,20 +661,44 @@ class RoomScreen(
                 y + MEMBER_NAME_OFFSET,
                 0xFFFFFF,
             )
+            val rows = infoRows(player)
+            val scroll = infoScroll(player.playerId)
+            scroll.clamp(grid.maximumInfoScroll(rows.size))
+            val scrollable = grid.maximumInfoScroll(rows.size) > 0
+            val textWidth = grid.cardWidth - 12 - if (scrollable) INFO_SCROLLBAR_RESERVED_WIDTH * 2 else 0
             val infoTop = y + RoomMemberGridLayout.INFO_OFFSET
-            memberPresentation.infoRows(player, dealerPlayerId).drop(playingInfoScroll.index).take(grid.visibleInfoRows).forEachIndexed { infoRowIndex, row ->
+            rows.drop(scroll.index).take(grid.visibleInfoRows).forEachIndexed { infoRowIndex, row ->
                 context.drawCenteredTextWithShadow(
                     textRenderer,
-                    fitClientText(textRenderer, row.first, grid.cardWidth - 12),
+                    fitClientText(textRenderer, row.first, textWidth),
                     x + grid.cardWidth / 2,
                     infoTop + infoRowIndex * RoomMemberGridLayout.INFO_ROW_HEIGHT,
                     row.second,
                 )
             }
+            if (scrollable) VerticalScrollbar.render(context, grid.infoScrollbarLeft(index), grid.infoScrollbar(index, rows.size, scroll.index))
         }
         renderMemberGridScrollbar(context, grid)
-        renderPlayingInfoScrollbar(context, grid, totalInfoRows)
     }
+
+    /** 依權威自風排成東、南、西、北的進行中對局玩家。 */
+    private fun sortedPlayingPlayers(): List<MahjongPlayerInfoEntry> = resolvePlayingPlayerInfo().sortedBy { WIND_ORDER.getValue(it.seatWind) }
+
+    /**
+     * 取得玩家卡片內的資訊清單：自風、分數與公開指標。
+     *
+     * @param player 對局玩家。
+     * @return 每一行的文字與顏色。
+     */
+    private fun infoRows(player: MahjongPlayerInfoEntry) = memberPresentation.infoRows(player, resolvePlayerInfoEntity()?.dealerPlayerId ?: stateStore.gameSnapshot(tableId)?.dealerPlayerId)
+
+    /**
+     * 取得玩家卡片資訊清單的捲動狀態；第一次使用時建立。
+     *
+     * @param playerId 玩家識別碼。
+     * @return 這位玩家的捲動狀態。
+     */
+    private fun infoScroll(playerId: Uuid): ScrollState = playingInfoScrolls.getOrPut(playerId) { ScrollState() }
 
     /** 優先使用 Player Info entity 的完整公開快照；同步尚未抵達時以遊戲快照安全降級。 */
     private fun resolvePlayingPlayerInfo(): List<MahjongPlayerInfoEntry> {
@@ -706,13 +747,12 @@ class RoomScreen(
         val grid = memberGrid(playerIds.size)
         memberScroll.clamp(grid.rows - grid.visibleRows)
         val visibleRows = grid.visibleGridRows
-        val gridWidth = grid.columns * grid.cardWidth
         playerIds.forEachIndexed { index, playerId ->
             val row = index / grid.columns
             if (row !in visibleRows) return@forEachIndexed
-            val x = width / 2 - gridWidth / 2 + (index % grid.columns) * grid.cardWidth
+            val x = grid.cardLeft(index)
             val y = grid.cardTop(row)
-            context.fill(x + 2, y, x + grid.cardWidth - 4, y + RoomMemberGridLayout.CARD_HEIGHT, MEMBER_CARD_BACKGROUND)
+            context.fill(x + 2, y, x + grid.cardWidth - RoomMemberGridLayout.CARD_RIGHT_INSET, y + RoomMemberGridLayout.CARD_HEIGHT, MEMBER_CARD_BACKGROUND)
             val ai = playerId in aiIds
             renderMemberAppearance(context, playerId, ai, x, y, grid.cardWidth, mouseX, mouseY)
             context.drawCenteredTextWithShadow(
@@ -726,13 +766,13 @@ class RoomScreen(
                 MemberStatus.Playing -> null
                 is MemberStatus.Waiting -> when {
                     playerId == memberStatus.hostId -> Text.translatable(MinecraftRoomScreenKeys.HOST)
-                    ai -> Text.translatable(MinecraftRoomScreenKeys.AI)
+                    ai -> null
                     playerId in memberStatus.readyPlayerIds -> Text.translatable(MinecraftRoomScreenKeys.MEMBER_READY)
                     else -> Text.translatable(MinecraftRoomScreenKeys.MEMBER_NOT_READY)
                 }
             }
             status?.let {
-                val highlighted = memberStatus is MemberStatus.Waiting && (playerId in memberStatus.readyPlayerIds || ai)
+                val highlighted = memberStatus is MemberStatus.Waiting && playerId in memberStatus.readyPlayerIds
                 context.drawCenteredTextWithShadow(textRenderer, it, x + grid.cardWidth / 2, y + RoomMemberGridLayout.INFO_OFFSET, if (highlighted) 0x88FF88 else 0xAAAAAA)
             }
         }
@@ -814,12 +854,6 @@ class RoomScreen(
     /** 對局中面板的卡片版面；跟等待室共用同一套換欄規則與捲動機制。 */
     private fun playingGrid(): RoomMemberGridLayout = memberGrid(resolvePlayingPlayerInfo().size)
 
-    /** 目前進行中對局資訊清單的完整行數，供 scrollbar 幾何與捲動上限共用。 */
-    private fun totalPlayingInfoRows(): Int {
-        val dealerPlayerId = resolvePlayerInfoEntity()?.dealerPlayerId ?: stateStore.gameSnapshot(tableId)?.dealerPlayerId
-        return resolvePlayingPlayerInfo().maxOfOrNull { memberPresentation.infoRows(it, dealerPlayerId).size } ?: 0
-    }
-
     /**
      * 只在卡片列超出可見範圍時繪製捲軸。
      *
@@ -828,25 +862,7 @@ class RoomScreen(
      */
     private fun renderMemberGridScrollbar(context: DrawContext, grid: RoomMemberGridLayout) {
         if (grid.rows <= grid.visibleRows) return
-        val column = grid.scrollbarColumn
-        val layout = grid.scrollbar
-        VerticalScrollbar.renderWithin(context, column.trackLeft, column.trackRight, layout)
-    }
-
-    /**
-     * 為每個可見成員列繪製資訊捲軸，所有列共用資訊捲動位置。
-     *
-     * @param context 畫面繪製情境。
-     * @param grid 成員卡片版面幾何。
-     * @param totalInfoRows 完整資訊清單的最大行數。
-     */
-    private fun renderPlayingInfoScrollbar(context: DrawContext, grid: RoomMemberGridLayout, totalInfoRows: Int) {
-        if (grid.maximumInfoScroll(totalInfoRows) == 0) return
-        val column = grid.scrollbarColumn
-        grid.visibleGridRows.forEach { row ->
-            val layout = grid.infoScrollbar(row, totalInfoRows, playingInfoScroll.index)
-            VerticalScrollbar.renderWithin(context, column.trackLeft, column.trackRight, layout)
-        }
+        VerticalScrollbar.render(context, grid.scrollbarLeft, grid.scrollbar)
     }
 
     /**
@@ -1056,11 +1072,20 @@ class RoomScreen(
         /** AI 策略選擇器的高度。 */
         const val AI_STRATEGY_BUTTON_HEIGHT = 18
 
-        /** AI 策略按鈕相對卡片頂端（[RoomMemberGridLayout.CARD_TOP]）的垂直偏移。 */
-        const val AI_STRATEGY_BUTTON_OFFSET_Y = 126
+        /** AI 策略選擇器上界在卡片資訊區上界之上的距離；選擇器放在名稱正下方。 */
+        const val AI_STRATEGY_BUTTON_LIFT = 2
 
-        /** 踢出按鈕相對卡片頂端（[RoomMemberGridLayout.CARD_TOP]）的垂直偏移。 */
-        const val KICK_BUTTON_OFFSET_Y = 4
+        /** 踢除按鈕的邊長。 */
+        const val KICK_BUTTON_SIZE = 16
+
+        /** 踢除按鈕與卡片底色右上角的距離。 */
+        const val KICK_BUTTON_INSET = 4
+
+        /** 卡片資訊可捲動時，文字左右各讓出的寬度，避免碰到卡片內的捲軸。 */
+        const val INFO_SCROLLBAR_RESERVED_WIDTH = 6
+
+        /** 底部按鈕列上方狀態文字的顏色。 */
+        const val STATUS_COLOR = 0xAAAAAA
 
         /** 對局成員卡片依東、南、西、北排列的自風順序。 */
         val WIND_ORDER = mapOf(Wind.EAST to 0, Wind.SOUTH to 1, Wind.WEST to 2, Wind.NORTH to 3)

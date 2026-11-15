@@ -3,6 +3,8 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.client.room
 import com.doublemoon1119.mahjongcraft.flow.common.room.model.RoomSnapshot
 import com.doublemoon1119.mahjongcraft.flow.common.time.MonotonicClock
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.fitClientText
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.FormScreenLayout
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.PixelIcon
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.RestartableMarqueeButtonWidget
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.ScreenRendering
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.ScrollState
@@ -71,17 +73,21 @@ internal class RoomExcludedParticipantsScreen(
     /** 等待中不能重複送出全部解除。 */
     private lateinit var clearAll: ButtonWidget
 
-    /** 清單寬度不隨大螢幕無限伸展。 */
-    private val listWidth: Int get() = minOf(320, width - 36).coerceAtLeast(80)
+    /** 內容寬度、底部按鈕列與捲軸位置沿用設定頁版面。 */
+    private val frame: FormScreenLayout
+        get() = FormScreenLayout(windowWidth = width, windowHeight = height, hasPageSwitch = false, hasRuleRow = false, hasTabs = false)
+
+    /** 清單寬度，與設定頁內容同寬。 */
+    private val listWidth: Int get() = frame.contentWidth
 
     /** 清單左界。 */
-    private val left: Int get() = (width - listWidth) / 2
+    private val left: Int get() = frame.contentLeft
 
     /** 清單上界，位於搜尋欄下方。 */
-    private val top: Int get() = 66
+    private val top: Int get() = SEARCH_Y + FormScreenLayout.BUTTON_HEIGHT + SEARCH_GAP
 
-    /** 清單下界，保留底部操作空間。 */
-    private val bottom: Int get() = (height - 42).coerceAtLeast(top)
+    /** 清單下界，在底部按鈕列上方。 */
+    private val bottom: Int get() = frame.fieldsBottom.coerceAtLeast(top)
 
     /** 只建立能完整放進可用高度的列。 */
     private val rows: Int get() = (bottom - top) / ROW_HEIGHT
@@ -90,7 +96,7 @@ internal class RoomExcludedParticipantsScreen(
     private val scrollbar: ScrollbarLayout get() = ScrollbarLayout(top, bottom, filtered.size, rows, scroll.index, minOf(12, (bottom - top).coerceAtLeast(0)))
 
     override fun init() {
-        search = TextFieldWidget(textRenderer, left, 38, listWidth, 20, Text.translatable(MinecraftRoomScreenKeys.EXCLUDED_SEARCH))
+        search = TextFieldWidget(textRenderer, left + 1, SEARCH_Y + 1, listWidth - 2, FormScreenLayout.BUTTON_HEIGHT - 2, Text.translatable(MinecraftRoomScreenKeys.EXCLUDED_SEARCH))
         search.setMaxLength(128)
         search.text = query
         search.setPlaceholder(Text.translatable(MinecraftRoomScreenKeys.EXCLUDED_SEARCH))
@@ -100,13 +106,14 @@ internal class RoomExcludedParticipantsScreen(
             refreshRows()
         }
         addDrawableChild(search)
+        val footer = frame.footer(buttonCount = FOOTER_SLOTS)
         clearAll = addDrawableChild(
             RestartableMarqueeButtonWidget.builder(Text.translatable(MinecraftRoomScreenKeys.ALLOW_ALL_REJOINING)) { confirmClearAll() }
-                .dimensions(left, height - 30, (listWidth - 8) / 2, 20).build(),
+                .dimensions(footer.buttonX(0), frame.footerY, footer.buttonWidth(0), FormScreenLayout.BUTTON_HEIGHT).build(),
         )
         addDrawableChild(
             RestartableMarqueeButtonWidget.builder(Text.translatable(MinecraftRoomScreenKeys.DONE)) { close() }
-                .dimensions(left + (listWidth + 8) / 2, height - 30, (listWidth - 8) / 2, 20).build(),
+                .dimensions(footer.buttonX(FOOTER_SLOTS - 1), frame.footerY, footer.buttonWidth(FOOTER_SLOTS - 1), FormScreenLayout.BUTTON_HEIGHT).build(),
         )
         refreshRows()
     }
@@ -132,13 +139,13 @@ internal class RoomExcludedParticipantsScreen(
         }
         scroll.clamp((filtered.size - rows).coerceAtLeast(0))
         filtered.drop(scroll.index).take(rows).forEachIndexed { index, id ->
-            val button = ButtonWidget.builder(Text.literal("X")) {
+            val button = RestartableMarqueeButtonWidget.builder(Text.translatable(MinecraftRoomScreenKeys.ALLOW_REJOINING).append(": ").append(Text.literal(labels[id].orEmpty()))) {
                 pending[id] = clock.now() + CONFIRMATION_TIMEOUT
                 allow(id)
                 refreshRows()
-            }.dimensions(left + listWidth - 24, top + index * ROW_HEIGHT + 8, 20, 20)
-                .narrationSupplier { Text.translatable(MinecraftRoomScreenKeys.ALLOW_REJOINING).append(": ").append(Text.literal(labels[id].orEmpty())) }
+            }.dimensions(left + listWidth - FormScreenLayout.BUTTON_HEIGHT - ROW_BUTTON_INSET, top + index * ROW_HEIGHT + 8, FormScreenLayout.BUTTON_HEIGHT, FormScreenLayout.BUTTON_HEIGHT)
                 .build().also {
+                    it.icon = PixelIcon.CROSS
                     it.tooltip = Tooltip.of(Text.translatable(MinecraftRoomScreenKeys.ALLOW_REJOINING))
                     it.active = id !in pending
                 }
@@ -209,7 +216,7 @@ internal class RoomExcludedParticipantsScreen(
         }
         val bar = scrollbar
         if (bar.maximumScroll > 0 && rows > 0) {
-            VerticalScrollbar.renderWithin(context, left + listWidth + 4, left + listWidth + 10, bar)
+            VerticalScrollbar.render(context, frame.scrollbarLeft, bar)
         }
         super.render(context, mouseX, mouseY, delta)
         filtered.drop(scroll.index).take(rows).forEachIndexed { index, id ->
@@ -236,7 +243,15 @@ internal class RoomExcludedParticipantsScreen(
     }
 
     override fun mouseClicked(mouseX: Double, mouseY: Double, button: Int): Boolean {
-        if (button == 0 && rows > 0 && scrollbar.maximumScroll > 0 && mouseX >= left + listWidth + 4 && mouseX < left + listWidth + 10 && mouseY >= top && mouseY < bottom) {
+        val scrollbarLeft = frame.scrollbarLeft
+        if (button == 0 &&
+            rows > 0 &&
+            scrollbar.maximumScroll > 0 &&
+            mouseX >= scrollbarLeft - FormScreenLayout.SCROLLBAR_HIT_PADDING &&
+            mouseX < scrollbarLeft + VerticalScrollbar.WIDTH + FormScreenLayout.SCROLLBAR_HIT_PADDING &&
+            mouseY >= top &&
+            mouseY < bottom
+        ) {
             scroll.beginDrag(mouseY, scrollbar)
             refreshRows()
             return true
@@ -267,6 +282,18 @@ internal class RoomExcludedParticipantsScreen(
     private companion object {
         /** 頭像與角落按鈕不與下一列重疊。 */
         const val ROW_HEIGHT: Int = 40
+
+        /** 搜尋欄的上界。 */
+        const val SEARCH_Y: Int = FormScreenLayout.TITLE_BOTTOM
+
+        /** 搜尋欄與清單之間的距離。 */
+        const val SEARCH_GAP: Int = 6
+
+        /** 解除按鈕與列右緣的距離。 */
+        const val ROW_BUTTON_INSET: Int = 4
+
+        /** 底部按鈕列的格數；完成固定在最右一格。 */
+        const val FOOTER_SLOTS: Int = 4
 
         /** 只解除本地等待，不假裝伺服器已成功。 */
         val CONFIRMATION_TIMEOUT: Duration = 10.seconds
