@@ -48,6 +48,30 @@ class RoomConfigSubmissionTest {
         assertEquals(RoomConfigSubmission.Result.Accepted(edited), review(edited))
     }
 
+    /** 選擇鷲巢麻將時一起改變識別欄位與鎖定的赤寶牌，可以接受；四人與三人日麻相同。 */
+    @Test
+    fun `switching to the washizu variant is accepted`() {
+        val washizu = current.copy(ruleConfig = RiichiRuleConfig(transparentTiles = true, buildsWall = false, redDoraCount = 0))
+        val threePlayer = GameConfig(ThreePlayerRiichiRuleConfig())
+        val threePlayerWashizu = GameConfig(ThreePlayerRiichiRuleConfig(transparentTiles = true, buildsWall = false, redDoraCount = 0))
+
+        assertEquals(RoomConfigSubmission.Result.Accepted(washizu), review(washizu))
+        assertEquals(RoomConfigSubmission.Result.Accepted(threePlayerWashizu), review(threePlayerWashizu, threePlayer, presentations, modules))
+    }
+
+    /** 識別欄位不符合任何玩法，或鷲巢麻將的赤寶牌不是 0 時整份拒絕。 */
+    @Test
+    fun `configs that match no variant or break a lock are rejected`() {
+        val transparentOnly = current.copy(ruleConfig = RiichiRuleConfig(transparentTiles = true, redDoraCount = 0))
+        val washizuWithRedFives = current.copy(ruleConfig = RiichiRuleConfig(transparentTiles = true, buildsWall = false, redDoraCount = 3))
+        val threePlayer = GameConfig(ThreePlayerRiichiRuleConfig())
+        val threePlayerWithRedFives = GameConfig(ThreePlayerRiichiRuleConfig(transparentTiles = true, buildsWall = false))
+
+        assertEquals(RoomConfigSubmission.Result.Invalid, review(transparentOnly))
+        assertEquals(RoomConfigSubmission.Result.Invalid, review(washizuWithRedFives))
+        assertEquals(RoomConfigSubmission.Result.Invalid, review(threePlayerWithRedFives, threePlayer, presentations, modules))
+    }
+
     /** 數值超出編輯器範圍或選項不在清單內時整份拒絕。 */
     @Test
     fun `values the room screen cannot produce are rejected`() {

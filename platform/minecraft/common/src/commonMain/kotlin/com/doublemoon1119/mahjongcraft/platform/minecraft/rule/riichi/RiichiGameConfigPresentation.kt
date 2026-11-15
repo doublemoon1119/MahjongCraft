@@ -13,7 +13,10 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.room.BuiltInGameConfig
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.BuiltInGameConfigFields.choiceField
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.BuiltInGameConfigFields.intField
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.BuiltInGameConfigOption
+import com.doublemoon1119.mahjongcraft.platform.minecraft.room.GameConfigLockedField
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.GameConfigPresentationDefinition
+import com.doublemoon1119.mahjongcraft.platform.minecraft.room.GameConfigPresentationValue
+import com.doublemoon1119.mahjongcraft.platform.minecraft.room.GameConfigVariantDefinition
 
 /** 日麻設定畫面的 schema：規則與分數欄位可編輯；共用流程欄位由 registry 登記時附加。 */
 internal fun riichiGameConfigPresentation(): GameConfigPresentationDefinition = GameConfigPresentationDefinition(
@@ -52,6 +55,14 @@ internal fun riichiGameConfigPresentation(): GameConfigPresentationDefinition = 
             descriptionKey = RiichiGameConfigTranslationKeys.ALLOW_OPEN_TANYAO_DESCRIPTION,
             read = { (it.ruleConfig as RiichiRuleConfig).allowOpenTanyao },
             update = { config, enabled -> config.withRiichi { copy(allowOpenTanyao = enabled) } },
+        ),
+        riichiTransparentTilesField(
+            read = { (it.ruleConfig as RiichiRuleConfig).transparentTiles },
+            update = { config, enabled -> config.withRiichi { copy(transparentTiles = enabled) } },
+        ),
+        riichiBuildsWallField(
+            read = { (it.ruleConfig as RiichiRuleConfig).buildsWall },
+            update = { config, enabled -> config.withRiichi { copy(buildsWall = enabled) } },
         ),
         boolField(
             id = RiichiGameConfigIds.USE_LOCAL_YAKU,
@@ -150,6 +161,61 @@ internal fun riichiGameConfigPresentation(): GameConfigPresentationDefinition = 
             update = { config, resolution -> config.withRiichi { copy(multiRonPolicy = multiRonPolicy.copy(tripleRonResolution = resolution)) } },
         ),
     ),
+    variants = listOf(riichiWashizuVariant()),
+)
+
+/**
+ * 四人與三人日麻共用的透明牌欄位；只由玩法決定，不顯示在設定頁。
+ *
+ * @param read 讀取規則設定中的透明牌旗標。
+ * @param update 更新規則設定中的透明牌旗標。
+ * @return 透明牌欄位。
+ */
+internal fun riichiTransparentTilesField(read: (GameConfig) -> Boolean, update: (GameConfig, Boolean) -> GameConfig) = boolField(
+    id = RiichiGameConfigIds.TRANSPARENT_TILES,
+    category = RULE,
+    nameKey = RiichiGameConfigTranslationKeys.TRANSPARENT_TILES,
+    descriptionKey = RiichiGameConfigTranslationKeys.TRANSPARENT_TILES_DESCRIPTION,
+    read = read,
+    update = update,
+)
+
+/**
+ * 四人與三人日麻共用的砌牌牆欄位；只由玩法決定，不顯示在設定頁。
+ *
+ * @param read 讀取規則設定中的砌牌牆旗標。
+ * @param update 更新規則設定中的砌牌牆旗標。
+ * @return 砌牌牆欄位。
+ */
+internal fun riichiBuildsWallField(read: (GameConfig) -> Boolean, update: (GameConfig, Boolean) -> GameConfig) = boolField(
+    id = RiichiGameConfigIds.BUILDS_WALL,
+    category = RULE,
+    nameKey = RiichiGameConfigTranslationKeys.BUILDS_WALL,
+    descriptionKey = RiichiGameConfigTranslationKeys.BUILDS_WALL_DESCRIPTION,
+    read = read,
+    update = update,
+)
+
+/**
+ * 四人與三人日麻共用的鷲巢麻將玩法：使用透明牌、不砌牌牆，並固定不使用赤寶牌。
+ *
+ * @return 鷲巢麻將玩法。
+ */
+internal fun riichiWashizuVariant(): GameConfigVariantDefinition = GameConfigVariantDefinition(
+    id = RiichiGameConfigIds.WASHIZU_VARIANT,
+    nameTranslationKey = RiichiGameConfigTranslationKeys.WASHIZU_VARIANT,
+    descriptionTranslationKey = RiichiGameConfigTranslationKeys.WASHIZU_VARIANT_DESCRIPTION,
+    identifyingValues = mapOf(
+        RiichiGameConfigIds.TRANSPARENT_TILES to GameConfigPresentationValue.BooleanValue(true),
+        RiichiGameConfigIds.BUILDS_WALL to GameConfigPresentationValue.BooleanValue(false),
+    ),
+    lockedFields = mapOf(RiichiGameConfigIds.RED_DORA_COUNT to WASHIZU_NO_RED_DORA),
+)
+
+/** 鷲巢麻將把赤寶牌固定為 0 張。 */
+private val WASHIZU_NO_RED_DORA = GameConfigLockedField(
+    value = GameConfigPresentationValue.ChoiceValue(RiichiGameConfigIds.RED_DORA_COUNT_0),
+    reasonTranslationKey = RiichiGameConfigTranslationKeys.WASHIZU_NO_RED_DORA,
 )
 
 /** 四人與三人日麻共用的局長選項。 */

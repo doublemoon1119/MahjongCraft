@@ -29,6 +29,8 @@ fun RiichiRuleConfig.toRiichiDto(registries: NetworkDtoConverter): RiichiRuleCon
     allowOpenTanyao = allowOpenTanyao,
     useLocalYaku = useLocalYaku,
     revealsClosedKanTiles = revealsClosedKanTiles,
+    transparentTiles = transparentTiles,
+    buildsWall = buildsWall,
 )
 
 /**
@@ -45,6 +47,8 @@ fun RiichiRuleConfigDto.toDomain(registries: NetworkDtoConverter): RiichiRuleCon
     scoreConfig = scoreConfig.toDomain(),
     gameLength = requireNotNull(gameLength.toRuleDomain(registries) as? RiichiGameLength) { "Riichi config requires a riichi game length" },
     multiRonPolicy = multiRonPolicy.toRuleDomain(),
+    transparentTiles = transparentTiles,
+    buildsWall = buildsWall,
 )
 
 /**
@@ -66,6 +70,8 @@ fun ThreePlayerRiichiRuleConfig.toThreePlayerRiichiDto(registries: NetworkDtoCon
     allowOpenTanyao = allowOpenTanyao,
     useLocalYaku = useLocalYaku,
     revealsClosedKanTiles = revealsClosedKanTiles,
+    transparentTiles = transparentTiles,
+    buildsWall = buildsWall,
 )
 
 /**
@@ -82,6 +88,8 @@ fun ThreePlayerRiichiRuleConfigDto.toDomain(registries: NetworkDtoConverter): Th
     scoreConfig = scoreConfig.toDomain(),
     gameLength = requireNotNull(gameLength.toRuleDomain(registries) as? RiichiGameLength) { "Riichi config requires a riichi game length" },
     multiRonPolicy = multiRonPolicy.toRuleDomain(),
+    transparentTiles = transparentTiles,
+    buildsWall = buildsWall,
 )
 
 /**

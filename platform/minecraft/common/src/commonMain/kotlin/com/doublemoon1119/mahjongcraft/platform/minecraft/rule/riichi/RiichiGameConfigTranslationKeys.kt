@@ -20,6 +20,27 @@ internal object RiichiGameConfigTranslationKeys {
     /** 赤寶牌數量欄位說明。 */
     const val RED_DORA_COUNT_DESCRIPTION: String = "mahjongcraft.riichi.room.config.field.red_dora_count.description"
 
+    /** 透明牌欄位名稱。 */
+    const val TRANSPARENT_TILES: String = "mahjongcraft.riichi.room.config.field.transparent_tiles"
+
+    /** 透明牌欄位說明。 */
+    const val TRANSPARENT_TILES_DESCRIPTION: String = "mahjongcraft.riichi.room.config.field.transparent_tiles.description"
+
+    /** 砌牌牆欄位名稱。 */
+    const val BUILDS_WALL: String = "mahjongcraft.riichi.room.config.field.builds_wall"
+
+    /** 砌牌牆欄位說明。 */
+    const val BUILDS_WALL_DESCRIPTION: String = "mahjongcraft.riichi.room.config.field.builds_wall.description"
+
+    /** 鷲巢麻將玩法名稱。 */
+    const val WASHIZU_VARIANT: String = "mahjongcraft.riichi.room.config.variant.washizu"
+
+    /** 鷲巢麻將玩法說明。 */
+    const val WASHIZU_VARIANT_DESCRIPTION: String = "mahjongcraft.riichi.room.config.variant.washizu.description"
+
+    /** 鷲巢麻將固定不使用赤寶牌的原因。 */
+    const val WASHIZU_NO_RED_DORA: String = "mahjongcraft.riichi.room.config.variant.washizu.no_red_dora"
+
     /** 食斷欄位名稱。 */
     const val ALLOW_OPEN_TANYAO: String = "mahjongcraft.riichi.room.config.field.allow_open_tanyao"
 

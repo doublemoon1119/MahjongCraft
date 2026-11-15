@@ -25,6 +25,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.catalogue.RuleCatalogu
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.GameConfigCategoryDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.GameConfigEditorSpec
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.GameConfigFieldDefinition
+import com.doublemoon1119.mahjongcraft.platform.minecraft.room.GameConfigLockedField
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.GameConfigPresentationDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.GameConfigPresentationRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.GameConfigPresentationResolver
@@ -171,15 +172,17 @@ internal class RoomSettingsPage(
         val layout = layout()
         addRuleRow(layout, config, resolved.ruleModuleId, definition, canEditRoom, editable)
         addTabs(layout, categories)
-        val fields = definition.fields.filter { it.categoryId == selectedCategoryId }
+        val fields = GameConfigVariantResolver.visibleFields(definition).filter { it.categoryId == selectedCategoryId }
         fieldScroll.clamp(fields.size - layout.visibleFieldCount)
         fields.drop(fieldScroll.index).take(layout.visibleFieldCount).forEachIndexed { index, field ->
+            val locked = GameConfigVariantResolver.lockedField(definition, config, field.id)
             addFieldControls(
                 layout = layout,
                 field = field,
                 config = config,
                 y = layout.fieldControlY(layout.fieldRowTop(index)),
-                editable = editable && field.isEditable && field.isEnabled(config),
+                editable = editable && field.isEditable && field.isEnabled(config) && locked == null,
+                locked = locked,
             )
         }
         addFooter(layout, definition, config, authoritative, editable)
@@ -215,7 +218,7 @@ internal class RoomSettingsPage(
         }
         ScreenRendering.tabLine(context, tabStrip(layout, definition.categories.size))
         var hoveredLabel: Text? = null
-        val fields = definition.fields.filter { it.categoryId == selectedCategoryId }
+        val fields = GameConfigVariantResolver.visibleFields(definition).filter { it.categoryId == selectedCategoryId }
         fields.drop(fieldScroll.index).take(layout.visibleFieldCount).forEachIndexed { index, field ->
             layout.fieldStripe(index).renderIfStriped(context, fieldScroll.index + index)
             ScreenRendering.label(
@@ -446,14 +449,13 @@ internal class RoomSettingsPage(
                 description = Text.translatable(variant.descriptionTranslationKey),
             )
         }
-        val variantName = currentVariant?.let { Text.translatable(it.nameTranslationKey) } ?: Text.translatable(MinecraftRoomScreenKeys.VARIANT_CUSTOM)
         lateinit var variantSelector: RestartableMarqueeButtonWidget
-        variantSelector = RestartableMarqueeButtonWidget.builder(variantName) {
+        variantSelector = RestartableMarqueeButtonWidget.builder(Text.translatable(currentVariant.nameTranslationKey)) {
             dropdown.toggle(
                 key = VARIANT_SELECTOR_KEY,
                 anchor = variantSelector,
                 options = variantOptions,
-                selectedIndex = variants.indexOfFirst { it.id == currentVariant?.id }.takeIf { it >= 0 },
+                selectedIndex = variants.indexOfFirst { it.id == currentVariant.id },
             ) { index ->
                 draft.applyVariant(
                     updated = GameConfigVariantResolver.apply(definition, config, variants[index].id),
@@ -467,11 +469,9 @@ internal class RoomSettingsPage(
             button.selectorExpanded = { dropdown.isOpenFor(VARIANT_SELECTOR_KEY) }
             button.tooltip = Tooltip.of(
                 ControlTooltip.options(
-                    description = Text.translatable(
-                        currentVariant?.descriptionTranslationKey ?: MinecraftRoomScreenKeys.VARIANT_CUSTOM_DESCRIPTION,
-                    ),
+                    description = Text.translatable(currentVariant.descriptionTranslationKey),
                     options = variants.zip(variantOptions).map { (variant, option) ->
-                        ControlTooltip.Option(label = option.label, current = variant.id == currentVariant?.id)
+                        ControlTooltip.Option(label = option.label, current = variant.id == currentVariant.id)
                     },
                 ),
             )
@@ -559,6 +559,7 @@ internal class RoomSettingsPage(
      * @param config 用於讀取目前值與提示內容的設定。
      * @param y 控制項上界。
      * @param editable 是否允許修改此欄位。
+     * @param locked 目前玩法鎖定這個欄位時的鎖定內容；沒有鎖定時為 null。
      */
     private fun addFieldControls(
         layout: FormScreenLayout,
@@ -566,9 +567,10 @@ internal class RoomSettingsPage(
         config: GameConfig,
         y: Int,
         editable: Boolean,
+        locked: GameConfigLockedField?,
     ) {
         val value = field.read(config)
-        val tooltip = Tooltip.of(fieldTooltip(field, config, editable))
+        val tooltip = Tooltip.of(fieldTooltip(field, config, editable, locked))
         when (val editor = field.editor) {
             GameConfigEditorSpec.BooleanToggle -> {
                 val enabled = (value as GameConfigPresentationValue.BooleanValue).enabled
@@ -729,7 +731,7 @@ internal class RoomSettingsPage(
             button(SettingsFooterButtons.DONE, MinecraftRoomScreenKeys.DONE) { host.showRoomPage() }
             return
         }
-        val defaults = defaultConfig(definition)
+        val defaults = defaultConfig(definition, config)
         resetButton = button(SettingsFooterButtons.RESET, MinecraftRoomScreenKeys.RESET_DEFAULTS_BUTTON) {
             draft.resetTo(defaults)
             host.requestRebuild()
@@ -744,20 +746,23 @@ internal class RoomSettingsPage(
     }
 
     /**
-     * 建立規則的預設設定，套用與草稿相同的一致性約束。
+     * 建立規則的預設設定並保留目前的玩法，套用與草稿相同的一致性約束。
      *
      * @param definition 規則的設定呈現定義。
+     * @param current 目前顯示的設定，用來取得要保留的玩法。
      * @return 「重設為預設」採用的設定。
      */
-    private fun defaultConfig(definition: GameConfigPresentationDefinition): GameConfig = draft.normalized(
-        config = GameConfig(
+    private fun defaultConfig(definition: GameConfigPresentationDefinition, current: GameConfig): GameConfig {
+        val defaults = GameConfig(
             ruleConfig = definition.defaultRuleConfig(),
             flowConfig = configPresentations.defaultFlowConfig(
                 ruleModuleId = definition.ruleModuleId,
                 ruleConfig = definition.defaultRuleConfig(),
             ),
-        ),
-    )
+        )
+        val variantId = GameConfigVariantResolver.current(definition, current).id
+        return draft.normalized(config = GameConfigVariantResolver.apply(definition, defaults, variantId))
+    }
 
     /**
      * 更新草稿欄位並要求重建控制項。
@@ -849,7 +854,7 @@ internal class RoomSettingsPage(
     private fun refreshDraftButtons(
         current: GameConfig? = draft.config,
         authoritative: GameConfig? = host.currentConfig(),
-        defaults: GameConfig? = current?.let { configResolver.resolve(it).definition }?.let(::defaultConfig),
+        defaults: GameConfig? = current?.let { config -> configResolver.resolve(config).definition?.let { defaultConfig(it, config) } },
     ) {
         val roomPlayerCount = roomPlayerCount()
         applyButton?.active = draft.canApply(authoritative, roomPlayerCount)
@@ -875,31 +880,41 @@ internal class RoomSettingsPage(
      * @param field 欄位呈現定義。
      * @param config 讀取目前值及相依條件使用的設定。
      * @param editable 是否允許修改此欄位；不可修改時不顯示操作提示。
+     * @param locked 目前玩法鎖定這個欄位時的鎖定內容：選項類欄位把其他選項標為不可選並附上原因，其他欄位以提醒
+     *   顯示原因。沒有鎖定時為 null。
      * @return 完整的多行欄位提示文字。
      */
-    private fun fieldTooltip(field: GameConfigFieldDefinition, config: GameConfig, editable: Boolean): Text {
+    private fun fieldTooltip(field: GameConfigFieldDefinition, config: GameConfig, editable: Boolean, locked: GameConfigLockedField?): Text {
         val description = Text.translatable(field.descriptionTranslationKey)
-        val notice = Text.translatable(MinecraftRoomScreenKeys.DISABLED_BY_DEPENDENCY).takeUnless { field.isEnabled(config) }
+        val lockReason = locked?.let { Text.translatable(it.reasonTranslationKey) }
+        val dependencyNotice = Text.translatable(MinecraftRoomScreenKeys.DISABLED_BY_DEPENDENCY).takeUnless { field.isEnabled(config) }
+        val notice = lockReason ?: dependencyNotice
         return when (val editor = field.editor) {
             GameConfigEditorSpec.BooleanToggle -> {
                 val enabled = (field.read(config) as GameConfigPresentationValue.BooleanValue).enabled
                 ControlTooltip.options(
                     description = description,
                     options = listOf(
-                        ControlTooltip.Option(label = booleanText(true), current = enabled),
-                        ControlTooltip.Option(label = booleanText(false), current = !enabled),
+                        ControlTooltip.Option(label = booleanText(true), current = enabled, unavailableReason = lockReason.takeUnless { enabled }),
+                        ControlTooltip.Option(label = booleanText(false), current = !enabled, unavailableReason = lockReason.takeIf { enabled }),
                     ),
                     hints = if (editable) ControlTooltip.toggleHints() else emptyList(),
-                    notice = notice,
+                    notice = dependencyNotice,
                 )
             }
             is GameConfigEditorSpec.SingleChoice -> {
                 val current = (field.read(config) as GameConfigPresentationValue.ChoiceValue).optionId
                 ControlTooltip.options(
                     description = description,
-                    options = editor.optionIds.map { ControlTooltip.Option(label = optionText(it, editor), current = it == current) },
+                    options = editor.optionIds.map { optionId ->
+                        ControlTooltip.Option(
+                            label = optionText(optionId, editor),
+                            current = optionId == current,
+                            unavailableReason = lockReason.takeUnless { optionId == current },
+                        )
+                    },
                     hints = CycleButtonInput.hintTexts(optionCount = editor.optionIds.size, active = editable),
-                    notice = notice,
+                    notice = dependencyNotice,
                 )
             }
             is GameConfigEditorSpec.MultiChoice -> {
@@ -1005,7 +1020,7 @@ internal class RoomSettingsPage(
     private fun resolvedDefinition(): GameConfigPresentationDefinition? = (draft.config ?: host.currentConfig())?.let(configResolver::resolve)?.definition
 
     /** 目前分類的完整欄位數，供捲軸幾何與捲動上限共用。 */
-    private fun currentFieldCount(): Int = resolvedDefinition()?.fields?.count { it.categoryId == selectedCategoryId } ?: 0
+    private fun currentFieldCount(): Int = resolvedDefinition()?.let(GameConfigVariantResolver::visibleFields)?.count { it.categoryId == selectedCategoryId } ?: 0
 
     /** 規則選擇器的標籤。 */
     private fun ruleLabel(): Text = Text.translatable(MinecraftRoomScreenKeys.RULE)

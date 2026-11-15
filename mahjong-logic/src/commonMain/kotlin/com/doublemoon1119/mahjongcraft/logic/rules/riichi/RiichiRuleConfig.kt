@@ -22,6 +22,8 @@ import com.doublemoon1119.mahjongcraft.logic.config.validate
  * @property gameLength 遊戲長度配置，預設為 [RiichiGameLength.OneGame]。
  * @property minPlayers 該規則要求的最小玩家人數
  * @property maxPlayers 該規則允許的最大玩家人數
+ * @property transparentTiles 是否使用透明牌，預設為 false。
+ * @property buildsWall 是否砌牌牆，預設為 true。
  * @property multiRonPolicy 一炮多響時的結算方式，預設雙響、三響皆為多家和。此欄位刻意不依循上述
  *   M League 基準，預設採用多家和以貼近多數玩家熟悉的體驗，可依需求另行設定。
  * @property revealsClosedKanTiles 暗槓身份是否公開，恆為 true。
@@ -39,6 +41,8 @@ data class RiichiRuleConfig(
         doubleRonResolution = RonResolution.ALL_WINNERS,
         tripleRonResolution = RonResolution.ALL_WINNERS,
     ),
+    override val transparentTiles: Boolean = false,
+    override val buildsWall: Boolean = true,
 ) : RiichiFamilyRuleConfig {
     override val initialHandSize: Int = 13
     override val reservedTileCount: Int = 14

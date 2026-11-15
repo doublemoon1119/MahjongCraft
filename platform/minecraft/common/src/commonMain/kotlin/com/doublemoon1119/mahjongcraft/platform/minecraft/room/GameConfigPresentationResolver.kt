@@ -26,6 +26,7 @@ class GameConfigPresentationResolver(
             ruleModuleId = moduleId,
             definition = definition,
             valuesByFieldId = definition?.fields?.associate { it.id to it.read(config) }.orEmpty(),
+            variant = definition?.let { GameConfigVariantResolver.find(it, config) },
         )
     }
 }

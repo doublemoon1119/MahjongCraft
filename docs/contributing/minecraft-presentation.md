@@ -503,6 +503,9 @@ attempt does not fall through to another provider.
   players need to read.
 - An option that cannot be chosen stays in its place with its reason, in lists and in tooltips. Do not
   move it to the end or hide it; a fixed order keeps the list from jumping when a setting changes.
+- A setting that the selected variant fixes stays in its place, disabled. Its tooltip lists every option,
+  marks the fixed one as current and gives the variant's reason on the others. A rule flag that only a
+  variant changes is not a setting and does not appear on the screen.
 - Route every cycle button through `CycleButtonInput` and build it with `pressesOnSecondaryClick`:
   left-click selects the next option, right-click or Shift+left-click the previous one.
 - A row that only performs an action and has no value is one button spanning the row, without a label.

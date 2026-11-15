@@ -9,6 +9,8 @@ import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import com.doublemoon1119.mahjongcraft.platform.fabric.text.gameConfigPresentationText
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.GameConfigPresentationRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.GameConfigPresentationResolver
+import com.doublemoon1119.mahjongcraft.platform.minecraft.room.GameConfigVariantResolver
+import com.doublemoon1119.mahjongcraft.platform.minecraft.room.MinecraftRoomScreenKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.RuleModuleDisplayNameRegistry
 import kotlinx.serialization.decodeFromString
 import net.minecraft.text.MutableText
@@ -63,14 +65,22 @@ class FabricGameConfigTextFormatter(
         if (definition.fields.any { it.id !in oldFieldsById } || oldDefinition.fields.any { it.id !in definition.fields.map { field -> field.id } }) {
             return@runCatching full(new)
         }
-        val changed = definition.fields.filter { field ->
+        val changed = GameConfigVariantResolver.visibleFields(definition).filter { field ->
             val oldField = oldFieldsById.getValue(field.id)
             oldField.read(old) != field.read(new)
         }
-        if (changed.isEmpty()) return@runCatching full(new)
+        val oldVariant = GameConfigVariantResolver.find(oldDefinition, old)
+        val newVariant = GameConfigVariantResolver.find(definition, new)
+        val variantChange = if (oldVariant != null && newVariant != null && oldVariant.id != newVariant.id) oldVariant to newVariant else null
+        if (changed.isEmpty() && variantChange == null) return@runCatching full(new)
         Text.empty().also { result ->
+            variantChange?.let { (from, to) ->
+                result.append(Text.translatable(MinecraftRoomScreenKeys.VARIANT_SELECTOR)).append(Text.literal(": "))
+                    .append(Text.translatable(from.nameTranslationKey)).append(Text.literal(" → "))
+                    .append(Text.translatable(to.nameTranslationKey))
+            }
             changed.forEachIndexed { index, field ->
-                if (index > 0) result.append("\n")
+                if (index > 0 || variantChange != null) result.append("\n")
                 val oldField = oldFieldsById.getValue(field.id)
                 result.append(Text.translatable(field.nameTranslationKey)).append(Text.literal(": "))
                     .append(gameConfigPresentationText(oldField.read(old), oldField.editor)).append(Text.literal(" → "))
@@ -90,9 +100,14 @@ class FabricGameConfigTextFormatter(
         val moduleId = resolved.ruleModuleId
         val result = Text.empty().append(ruleName(moduleId))
         val definition = resolved.definition ?: return result.append("\n").append(Text.literal(moduleId))
+        resolved.variant?.takeIf { definition.variants.isNotEmpty() }?.let { variant ->
+            result.append("\n").append(Text.translatable(MinecraftRoomScreenKeys.VARIANT_SELECTOR)).append(Text.literal(": "))
+                .append(Text.translatable(variant.nameTranslationKey))
+        }
+        val fields = GameConfigVariantResolver.visibleFields(definition)
         definition.categories.forEach { category ->
             result.append("\n\n").append(Text.translatable(category.nameTranslationKey))
-            definition.fields.filter { it.categoryId == category.id }.forEach { field ->
+            fields.filter { it.categoryId == category.id }.forEach { field ->
                 result.append("\n").append(Text.translatable(field.nameTranslationKey))
                     .append(Text.literal(": ")).append(
                         gameConfigPresentationText(

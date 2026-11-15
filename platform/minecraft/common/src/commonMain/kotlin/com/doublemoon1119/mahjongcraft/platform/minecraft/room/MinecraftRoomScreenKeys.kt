@@ -51,11 +51,6 @@ object MinecraftRoomScreenKeys {
     /** 標準玩法的說明。 */
     const val VARIANT_STANDARD_DESCRIPTION = "mahjongcraft.room.variant.standard.description"
 
-    /** 設定不符合任何玩法時，玩法選擇器顯示的名稱。 */
-    const val VARIANT_CUSTOM = "mahjongcraft.room.variant.custom"
-
-    /** 設定不符合任何玩法時的說明。 */
-    const val VARIANT_CUSTOM_DESCRIPTION = "mahjongcraft.room.variant.custom.description"
     const val EMPTY = "mahjongcraft.room.screen.empty"
     const val PLAYING = "mahjongcraft.room.screen.playing"
     const val CREATE = "mahjongcraft.room.screen.create"

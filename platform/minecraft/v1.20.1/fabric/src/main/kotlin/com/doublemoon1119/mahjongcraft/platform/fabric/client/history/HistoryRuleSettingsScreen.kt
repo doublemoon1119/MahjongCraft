@@ -15,6 +15,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.history.MinecraftHisto
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.GameConfigEditorSpec
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.GameConfigFieldDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.GameConfigPresentationValue
+import com.doublemoon1119.mahjongcraft.platform.minecraft.room.GameConfigVariantResolver
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.ResolvedGameConfigPresentation
 import net.minecraft.client.gui.DrawContext
 import net.minecraft.client.gui.screen.Screen
@@ -160,7 +161,7 @@ internal class HistoryRuleSettingsScreen(
     private fun currentFields(): List<GameConfigFieldDefinition> {
         val definition = builtFor?.definition ?: return emptyList()
         val categoryId = definition.categories.firstOrNull { it.id == selectedCategoryId }?.id ?: definition.categories.firstOrNull()?.id
-        return definition.fields.filter { it.categoryId == categoryId }
+        return GameConfigVariantResolver.visibleFields(definition).filter { it.categoryId == categoryId }
     }
 
     /** 最多可捲動的欄位數。 */
@@ -329,14 +330,16 @@ internal class HistoryRuleSettingsScreen(
     }
 
     /**
-     * 繪製頁籤上方的規則名稱、規則識別碼與唯讀說明。
+     * 繪製頁籤上方的規則名稱、玩法、規則識別碼與唯讀說明；規則沒有登記玩法時不顯示玩法。
      *
      * @param context 繪製上下文。
      * @param layout 目前版面。
      */
     private fun renderHeader(context: DrawContext, layout: FormScreenLayout) {
         val ruleId = session.controller.state.value.summary?.detail?.summary?.ruleId ?: resolved?.ruleModuleId
-        val name = HistoryScreenText.rule(ruleId, session.ruleNames)
+        val ruleName = HistoryScreenText.rule(ruleId, session.ruleNames)
+        val variant = resolved?.takeIf { it.definition?.variants?.isNotEmpty() == true }?.variant
+        val name = variant?.let { ruleName.copy().append(VARIANT_SEPARATOR).append(Text.translatable(it.nameTranslationKey)) } ?: ruleName
         val nameText = HistoryScreenText.trim(name.string, layout.contentWidth, textRenderer::getWidth)
         context.drawTextWithShadow(textRenderer, Text.literal(nameText), layout.contentLeft, layout.headerTop, RULE_NAME_COLOR)
         val idLeft = layout.contentLeft + textRenderer.getWidth(nameText) + ID_GAP
@@ -431,6 +434,9 @@ internal class HistoryRuleSettingsScreen(
 
         /** 規則名稱與規則識別碼之間的距離。 */
         const val ID_GAP = 6
+
+        /** 規則名稱與玩法名稱之間的分隔。 */
+        const val VARIANT_SEPARATOR = " · "
 
         /** 狀態說明與欄位區上界的距離。 */
         const val STATUS_OFFSET = 12

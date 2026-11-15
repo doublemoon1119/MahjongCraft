@@ -19,6 +19,8 @@ import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiScoreConfig
  * @property scoreConfig 積分配置；預設起始 35000 點、一位必要點數 40000 點。
  * @property gameLength 遊戲長度，預設為 [RiichiGameLength.OneGame]。
  * @property multiRonPolicy 一炮多響時的結算方式；三人對局最多兩家同時榮和，預設兩家都和。
+ * @property transparentTiles 是否使用透明牌，預設為 false。
+ * @property buildsWall 是否砌牌牆，預設為 true。
  */
 data class ThreePlayerRiichiRuleConfig(
     override val redDoraCount: Int = THREE_PLAYER_RED_DORA_COUNT,
@@ -31,6 +33,8 @@ data class ThreePlayerRiichiRuleConfig(
         doubleRonResolution = RonResolution.ALL_WINNERS,
         tripleRonResolution = RonResolution.ALL_WINNERS,
     ),
+    override val transparentTiles: Boolean = false,
+    override val buildsWall: Boolean = true,
 ) : RiichiFamilyRuleConfig {
     override val initialHandSize: Int = 13
 

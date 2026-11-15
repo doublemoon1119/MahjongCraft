@@ -26,6 +26,8 @@ fun RiichiRuleConfig.toPersistenceDto(): RiichiRuleConfigPersistenceDto = Riichi
     notenPenaltyUnit = scoreConfig.notenPenaltyUnit,
     gameLength = gameLength.toPersistenceDto(),
     multiRonPolicy = multiRonPolicy.toPersistenceDto(),
+    transparentTiles = transparentTiles,
+    buildsWall = buildsWall,
 )
 
 /**
@@ -41,6 +43,8 @@ fun RiichiRuleConfigPersistenceDto.toDomain(): RiichiRuleConfig = RiichiRuleConf
     scoreConfig = RiichiScoreConfig(initialScore, bustThreshold, minPointsToWin, notenPenaltyUnit),
     gameLength = gameLength.toDomain(),
     multiRonPolicy = multiRonPolicy.toDomain(),
+    transparentTiles = transparentTiles,
+    buildsWall = buildsWall,
 )
 
 /**
@@ -59,6 +63,8 @@ fun ThreePlayerRiichiRuleConfig.toPersistenceDto(): ThreePlayerRiichiRuleConfigP
     notenPenaltyUnit = scoreConfig.notenPenaltyUnit,
     gameLength = gameLength.toPersistenceDto(),
     multiRonPolicy = multiRonPolicy.toPersistenceDto(),
+    transparentTiles = transparentTiles,
+    buildsWall = buildsWall,
 )
 
 /**
@@ -74,6 +80,8 @@ fun ThreePlayerRiichiRuleConfigPersistenceDto.toDomain(): ThreePlayerRiichiRuleC
     scoreConfig = RiichiScoreConfig(initialScore, bustThreshold, minPointsToWin, notenPenaltyUnit),
     gameLength = gameLength.toDomain(),
     multiRonPolicy = multiRonPolicy.toDomain(),
+    transparentTiles = transparentTiles,
+    buildsWall = buildsWall,
 )
 
 /**
