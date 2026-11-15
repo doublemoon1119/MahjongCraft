@@ -1,130 +1,75 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.client.config
 
-import kotlin.math.abs
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.SettingsFooterButtons
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
-/** 驗證 HUD 位置編輯器第二行（二級選項）的水平捲動幾何。 */
+/** 驗證 HUD 編輯器工具列與底部按鈕列在寬窄視窗的排列。 */
 class MahjongHudToolbarLayoutTest {
-    /** 內容未超出可見寬度時不出現 scrollbar，也沒有可捲動距離。 */
+    /** 寬視窗四個控制項排成一列，由左到右不重疊並填滿內容寬度。 */
     @Test
-    fun `scrollbar only appears once the row content overflows`() {
-        val fitting = layout(contentWidth = 200)
-        assertFalse(fitting.hasOverflow)
-        assertEquals(0.0, fitting.maximumScroll)
+    fun `wide screens put the four controls on one row`() {
+        val layout = MahjongHudToolbarLayout(screenWidth = 480, screenHeight = 270)
+        val controls = (0 until MahjongHudToolbarLayout.CONTROL_COUNT).map(layout::control)
 
-        val overflowing = layout(contentWidth = fitting.viewportWidth + 1)
-        assertTrue(overflowing.hasOverflow)
-        assertEquals(1.0, overflowing.maximumScroll)
+        assertEquals(4, layout.columns)
+        assertEquals(1, controls.map { it.y }.distinct().size)
+        controls.zipWithNext().forEach { (left, right) -> assertTrue(left.right < right.x) }
+        assertEquals(MahjongHudToolbarLayout.MARGIN, controls.first().x)
+        assertEquals(480 - MahjongHudToolbarLayout.MARGIN, controls.last().right)
+        assertTrue(controls.all { it.width >= MahjongHudToolbarLayout.MIN_CONTROL_WIDTH })
     }
 
-    /** 內容一律靠左對齊，不論是否溢出；溢出時再依捲動量往左捲動。 */
+    /** 窄視窗改成兩欄兩列：HUD 與情境在上，其他 HUD 與隱藏控制項在下。 */
     @Test
-    fun `content is left-aligned whether or not it overflows`() {
-        val fitting = layout(contentWidth = 200)
-        assertEquals(MahjongHudToolbarLayout.MARGIN, fitting.contentOffset(0.0))
+    fun `narrow screens use two columns and two rows`() {
+        val layout = MahjongHudToolbarLayout(screenWidth = 320, screenHeight = 240)
 
-        val overflowing = layout(contentWidth = 2_000)
-        assertEquals(MahjongHudToolbarLayout.MARGIN, overflowing.contentOffset(0.0))
-        assertEquals(MahjongHudToolbarLayout.MARGIN - 30, overflowing.contentOffset(30.0))
+        assertEquals(2, layout.columns)
+        assertEquals(layout.control(MahjongHudToolbarLayout.HUD).y, layout.control(MahjongHudToolbarLayout.SCENARIO).y)
+        assertEquals(layout.control(MahjongHudToolbarLayout.VISIBILITY).y, layout.control(MahjongHudToolbarLayout.HIDE_CONTROLS).y)
+        assertTrue(layout.control(MahjongHudToolbarLayout.SCENARIO).bottom < layout.captionY(MahjongHudToolbarLayout.VISIBILITY))
+        assertEquals(layout.control(MahjongHudToolbarLayout.HUD).x, layout.control(MahjongHudToolbarLayout.VISIBILITY).x)
+        assertTrue(layout.toolbarBottom >= layout.control(MahjongHudToolbarLayout.HIDE_CONTROLS).bottom)
     }
 
-    /** thumb 在兩端分別貼齊軌道起點與終點，且寬度不小於最小可視寬度。 */
+    /** 標籤在控制項正上方，不和上一列的控制項重疊。 */
     @Test
-    fun `scrollbar thumb spans the track from end to end`() {
-        val toolbar = layout(contentWidth = 2_000)
-        val atStart = toolbar.thumb(0.0)
-        val atEnd = toolbar.thumb(toolbar.maximumScroll)
-
-        assertEquals(MahjongHudToolbarLayout.MARGIN, atStart.left)
-        assertTrue(atStart.width >= MahjongHudToolbarLayout.MIN_THUMB_WIDTH)
-        assertEquals(atStart.width, atEnd.width)
-        assertEquals(MahjongHudToolbarLayout.MARGIN + toolbar.viewportWidth, atEnd.right)
-    }
-
-    /** 由 thumb 位置換算回的捲動量與原捲動量一致，只允許整數像素造成的誤差。 */
-    @Test
-    fun `thumb position round trips back to the same scroll amount`() {
-        val toolbar = layout(contentWidth = 2_000)
-        val travel = (toolbar.viewportWidth - toolbar.thumb(0.0).width).coerceAtLeast(1)
-        val pixelTolerance = toolbar.maximumScroll / travel
-
-        listOf(0.0, toolbar.maximumScroll / 2, toolbar.maximumScroll).forEach { scroll ->
-            val restored = toolbar.scrollFromThumb(toolbar.thumb(scroll).left.toDouble())
-            assertTrue(
-                actual = abs(restored - scroll) <= pixelTolerance,
-                message = "scroll $scroll restored as $restored",
-            )
+    fun `captions sit above their controls`() {
+        listOf(320 to 240, 480 to 270).forEach { (width, height) ->
+            val layout = MahjongHudToolbarLayout(screenWidth = width, screenHeight = height)
+            (0 until MahjongHudToolbarLayout.CONTROL_COUNT).forEach { index ->
+                val caption = layout.captionY(index)
+                assertTrue(caption < layout.control(index).y)
+                assertTrue(caption >= MahjongHudToolbarLayout.TOP)
+            }
         }
     }
 
-    /** 拖曳與滾輪換算出的捲動量都被限制在合法範圍內。 */
+    /** 底部按鈕和工具列用同樣的欄數，返回固定在右下角，最後一列貼近視窗底部。 */
     @Test
-    fun `drag and wheel scrolling stay within the legal range`() {
-        val toolbar = layout(contentWidth = 2_000)
+    fun `footer follows the toolbar columns with back in the bottom right`() {
+        listOf(320 to 240, 480 to 270).forEach { (width, height) ->
+            val layout = MahjongHudToolbarLayout(screenWidth = width, screenHeight = height)
+            val buttons = (0 until SettingsFooterButtons.COUNT).map(layout::footerButton)
+            val back = layout.footerButton(SettingsFooterButtons.DONE)
 
-        assertEquals(0.0, toolbar.scrollFromDrag(startScroll = 0.0, pointerDelta = -10_000.0))
-        assertEquals(toolbar.maximumScroll, toolbar.scrollFromDrag(startScroll = 0.0, pointerDelta = 10_000.0))
-        assertEquals(0.0, toolbar.scrollFromWheel(currentScroll = 0.0, amount = 1.0))
-        assertEquals(toolbar.maximumScroll, toolbar.scrollFromWheel(currentScroll = 0.0, amount = -10_000.0))
-    }
-
-    /**
-     * 最小支援解析度搭配高 GUI scale 時，可捲動 viewport 會窄於 thumb 最小寬度；此時 thumb 計算
-     * 仍必須產生合法範圍，不得因為下界大於上界而丟出例外。
-     */
-    @Test
-    fun `high gui scales at the smallest resolution keep the scrollbar computable`() {
-        listOf(SCREEN_WIDTH, SCREEN_WIDTH / 2, SCREEN_WIDTH / 3, SCREEN_WIDTH / 4).forEach { scaledWidth ->
-            val toolbar = MahjongHudToolbarLayout(screenWidth = scaledWidth, contentWidth = OVERFLOWING_CONTENT_WIDTH)
-            val thumb = toolbar.thumb(toolbar.maximumScroll)
-
-            assertTrue(thumb.width >= 1, "scaled width $scaledWidth produced thumb width ${thumb.width}")
-            assertTrue(thumb.width <= toolbar.viewportWidth, "scaled width $scaledWidth produced a thumb wider than its viewport")
-            assertTrue(thumb.right <= MahjongHudToolbarLayout.MARGIN + toolbar.viewportWidth, "scaled width $scaledWidth pushed the thumb past its track")
+            assertEquals(buttons.maxOf { it.right }, back.right)
+            assertEquals(buttons.maxOf { it.bottom }, back.bottom)
+            assertEquals(height - MahjongHudToolbarLayout.FOOTER_BOTTOM_MARGIN, back.bottom)
+            assertEquals(layout.rows, buttons.map { it.y }.distinct().size)
+            assertTrue(layout.footerTop > layout.toolbarBottom)
         }
     }
 
-    /** 極窄畫面下 viewport 仍保留正寬度，scrollbar 計算不得產生非法數值。 */
+    /** 極小的視窗仍能建立版面，底部按鈕不會跑到工具列上方。 */
     @Test
-    fun `narrow screens still produce a usable viewport`() {
-        val toolbar = MahjongHudToolbarLayout(screenWidth = 200, contentWidth = 400)
+    fun `tiny screens stay computable`() {
+        val layout = MahjongHudToolbarLayout(screenWidth = 1, screenHeight = 1)
 
-        assertTrue(toolbar.viewportWidth >= 1)
-        assertTrue(toolbar.maximumScroll >= 0.0)
-        assertTrue(toolbar.thumb(0.0).width >= 1)
-        assertTrue(toolbar.scrollFromThumb(0.0) in 0.0..toolbar.maximumScroll)
-    }
-
-    /** 沒有任何二級選項按鈕時不得因為除以零而算出非法 thumb。 */
-    @Test
-    fun `an empty row reports no overflow and a full width thumb`() {
-        val toolbar = layout(contentWidth = 0)
-
-        assertFalse(toolbar.hasOverflow)
-        assertEquals(0.0, toolbar.maximumScroll)
-        assertEquals(toolbar.viewportWidth, toolbar.thumb(0.0).width)
-    }
-
-    /**
-     * 建立使用支援畫面寬度的工具列版面。
-     *
-     * @param contentWidth 二級選項行的內容寬度。
-     * @return 使用指定內容寬度的版面。
-     */
-    private fun layout(contentWidth: Int): MahjongHudToolbarLayout = MahjongHudToolbarLayout(
-        screenWidth = SCREEN_WIDTH,
-        contentWidth = contentWidth,
-    )
-
-    /** 測試使用的支援畫面尺寸與內容。 */
-    private companion object {
-        /** 測試使用的最小支援畫面寬度。 */
-        const val SCREEN_WIDTH = 854
-
-        /** 實際二級選項行在任何支援解析度下都會溢出的內容寬度。 */
-        const val OVERFLOWING_CONTENT_WIDTH = MahjongHudToolbarLayout.SELECTOR_WIDTH * 5
+        assertEquals(2, layout.columns)
+        assertTrue(layout.footerTop >= layout.toolbarBottom)
+        assertTrue((0 until MahjongHudToolbarLayout.CONTROL_COUNT).all { layout.control(it).width > 0 })
     }
 }

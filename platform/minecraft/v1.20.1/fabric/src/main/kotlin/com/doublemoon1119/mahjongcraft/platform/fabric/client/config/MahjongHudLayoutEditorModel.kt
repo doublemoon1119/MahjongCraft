@@ -19,15 +19,18 @@ import kotlin.math.roundToInt
  * @property translationKey 區塊名稱翻譯鍵。
  * @property adjustsHorizontally 這個區塊是否可調整水平位置；固定水平置中的動態寬度面板為 `false`，
  * 拖曳時只更新垂直比例。
+ * @property hasScenarios 編輯器能否切換這個 HUD 的預覽情境；目前只有操作面板有情境。
  */
 internal enum class HudElement(
     val translationKey: String,
     val adjustsHorizontally: Boolean,
+    val hasScenarios: Boolean = false,
 ) {
     /** 操作面板；寬度隨候選動作數量變動，固定水平置中。 */
     DECISION(
         translationKey = MinecraftClientConfigScreenKeys.HUD_LAYOUT_DECISION_PANEL,
         adjustsHorizontally = false,
+        hasScenarios = true,
     ),
 
     /** 一般倒數與等待提醒；兩軸皆可調整。 */
