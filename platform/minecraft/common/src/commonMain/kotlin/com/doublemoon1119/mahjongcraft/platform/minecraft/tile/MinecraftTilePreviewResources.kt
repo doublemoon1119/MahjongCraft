@@ -45,7 +45,7 @@ fun tilePreviewTexture(
     )
 
     else -> MinecraftTilePreviewTexture(
-        resourceId = tileTextureResourceId(assetKey, registry),
+        resourceId = registry.findResources(assetKey.normalizedTileAssetKey(registry))?.previewTextureId ?: tileTextureResourceId(assetKey, registry),
         u0 = 0f,
         v0 = 0f,
         u1 = 1f,

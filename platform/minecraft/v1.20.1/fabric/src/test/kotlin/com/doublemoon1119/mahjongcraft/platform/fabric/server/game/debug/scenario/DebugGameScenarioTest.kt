@@ -444,15 +444,15 @@ class DebugGameScenarioTest {
     }
 
     /**
-     * 依情境適用的人數建立四人或三人日麻的情境輸入。
+     * 依情境適用的人數與規則建立四人或三人日麻的情境輸入；鷲巢麻將情境使用透明牌的桌子。
      *
      * @param id 情境完整識別碼。
-     * @return 符合該情境人數規則的輸入。
+     * @return 符合該情境人數與規則的輸入。
      */
-    private fun contextFor(id: String): DebugGameScenarioContext = if (id in THREE_PLAYER_IDS) {
-        createThreePlayerRiichiScenarioContext()
-    } else {
-        createFixture().context
+    private fun contextFor(id: String): DebugGameScenarioContext = when (id) {
+        in THREE_PLAYER_IDS -> createThreePlayerRiichiScenarioContext()
+        WASHIZU_TILES_ID -> createFixture(RiichiRuleConfig(transparentTiles = true, buildsWall = false, redDoraCount = 0)).context
+        else -> createFixture().context
     }
 
     /**
@@ -544,6 +544,7 @@ class DebugGameScenarioTest {
             "mahjongcraft:riichi/debug/meld_showcase",
             "mahjongcraft:riichi/debug/noten_declaration_exhaustive_draw",
             "mahjongcraft:riichi/debug/wall_opening",
+            "mahjongcraft:riichi/debug/washizu_tiles",
             "mahjongcraft:riichi/debug/winner_dealer_seat_rotation",
             "mahjongcraft:riichi_three_player/debug/auto_north_riichi_chain",
             "mahjongcraft:riichi_three_player/debug/auto_north_riichi_kan_payments",
@@ -577,6 +578,9 @@ class DebugGameScenarioTest {
 
         /** 只能在三人日麻的桌子載入的情境。 */
         val THREE_PLAYER_IDS: Set<String> = ThreePlayerRiichiDebugGameScenarios.all.mapTo(mutableSetOf()) { it.id }
+
+        /** 只能在鷲巢麻將桌子載入的情境。 */
+        const val WASHIZU_TILES_ID: String = "mahjongcraft:riichi/debug/washizu_tiles"
     }
 }
 

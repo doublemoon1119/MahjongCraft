@@ -32,6 +32,7 @@ import com.doublemoon1119.mahjongcraft.logic.table.layout.InitialPhysicalWallLay
 import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallLayoutResult
 import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPhysicalLayout
 import com.doublemoon1119.mahjongcraft.logic.table.layout.createInitialLayoutValidated
+import com.doublemoon1119.mahjongcraft.logic.tile.component.BuiltInTileComponents
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.DebugPublicFaceTiles
 
 /**
@@ -86,6 +87,8 @@ internal data class ScenarioPon(
  *   接在各家預先捨牌之後，讓牌局在幾次摸牌後流局。
  * @property rule 情境載入後使用的規則模組。
  * @property publicFaceTiles 這些牌種的每一張都讓所有人看得到牌面並使用 debug 公開牌面樣式。
+ * @property requiresTransparentTiles 情境只能在使用透明牌的桌子（例如鷲巢麻將）載入。各情境取牌時同種牌一律先取
+ *   不透明的那張，所以手上有兩張以上同種牌時會同時有透明與不透明的牌。
  */
 internal class SeatSetupScenario(
     override val id: String,
@@ -101,6 +104,7 @@ internal class SeatSetupScenario(
     private val liveWallIsFrontOnly: Boolean = false,
     private val rule: DebugScenarioRule = DebugScenarioRule.STANDARD,
     private val publicFaceTiles: Set<Tile> = emptySet(),
+    private val requiresTransparentTiles: Boolean = false,
 ) : DebugGameScenario {
     override fun build(context: DebugGameScenarioContext): DebugGameScenarioResult {
         val currentGame = context.currentGame
@@ -122,10 +126,11 @@ internal class SeatSetupScenario(
 
         val module = riichiFamilyScenarioModule(currentGame, multiRonPolicy, rule)
         val config = module.config
+        require(!requiresTransparentTiles || config.transparentTiles) { "This debug scenario requires a table that uses transparent tiles" }
         val opening = DEFAULT_WALL_OPENING
         val inventory = module.createWallFactory(module.config.maxPlayers).create(MatchSeed.generate().roundRandomness(roundOrdinal = 0).wall).getAllTiles()
             .map { tile -> if (tile.tile in publicFaceTiles) DebugPublicFaceTiles.mark(tile) else tile }
-            .sortedBy { it.tile.stableSortKey() }
+            .sortedWith(compareBy({ it.tile.stableSortKey() }, { it.components[BuiltInTileComponents.TRANSPARENT] != null }))
         val availableTiles = inventory.toMutableList()
 
         val explicitSeats = seatSpecs.map { spec -> spec.takeExplicitTiles(availableTiles) }

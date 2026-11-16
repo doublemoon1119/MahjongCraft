@@ -13,6 +13,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileLabelRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileLabelText
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.findFor
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.tilePreviewTexture
+import com.mojang.blaze3d.systems.RenderSystem
 import net.minecraft.client.MinecraftClient
 import net.minecraft.client.font.TextRenderer
 import net.minecraft.client.gui.DrawContext
@@ -256,6 +257,9 @@ class MahjongTileFaceRenderer(
         appearance: MinecraftTileSetAppearanceDefinition,
     ) {
         val preview = resolvePreviewTexture(assetKey, appearance)
+        // 平面預覽貼圖可帶半透明像素（例如透明牌墊的白底），繪製時開啟混合；不透明貼圖不受影響。
+        RenderSystem.enableBlend()
+        RenderSystem.defaultBlendFunc()
         context.drawTexture(
             Identifier(preview.resourceId),
             x,
@@ -269,6 +273,7 @@ class MahjongTileFaceRenderer(
             UV_DRAW_SCALE,
             UV_DRAW_SCALE,
         )
+        RenderSystem.disableBlend()
         val label = tileLabelRegistry.findFor(assetKey, tileAssetRegistry) ?: return
         if (!clientConfigStore.current.tileLabelsEnabled && !label.forced) return
         label.topLeft?.let { renderGuiLabel(context, it, x, y, width, height, alignRight = false) }
@@ -390,6 +395,7 @@ class MahjongTileFaceRenderer(
     private companion object {
         /** 將正規化 UV 換算為原版繪圖 API 的參考刻度；不限制實際貼圖解析度。 */
         const val UV_DRAW_SCALE = 1024
+
         const val LABEL_Z = 10.0
         const val WORLD_LABEL_Z_OFFSET = 0.001f
         const val MODEL_LABEL_SURFACE_OFFSET = 0.0005

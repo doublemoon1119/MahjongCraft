@@ -12,12 +12,12 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongTileEntity
 import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.DiceAnimationVector
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.LocalHandRelease
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileDimensions
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.ObservedHandOrder
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.PrivateHandLayout
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.PrivateHandOrder
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.PrivateHandOrderEntry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.PrivateHandOrderPayloadDto
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.PrivateHandOrderTimeline
-import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.SpectatorHandOrder
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileDisplayInput
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileDisplayMotion
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileDisplayTransform
@@ -35,8 +35,9 @@ import kotlin.uuid.toKotlinUuid
 /**
  * 在每幀開始時讀取原生牌張資料，為渲染與命中建立同一份本機手牌布局。
  *
- * 本人所坐的桌子只排本人的手牌，排列取自伺服器送來的時間軸，與共享呈現的牌張動作同時生效；快照的手牌是交易結束時的結果，
- * 只在還沒收到時間軸時使用。旁觀的桌子則替每一家看得到牌面的手牌依規則牌序排列，見 [SpectatorHandOrder]。
+ * 本人的手牌排列取自伺服器送來的時間軸，與共享呈現的牌張動作同時生效；快照的手牌是交易結束時的結果，只在還沒收到
+ * 時間軸時使用。別人的手牌有看得到牌面的立牌時，看得到的牌排在左邊並依規則牌序排列，見 [ObservedHandOrder]；
+ * 本人所坐的桌子與旁觀的桌子都適用。
  *
  * @property stateStore 已按本人視角裁切的對局快照。
  * @property moduleRegistry 取得各桌規則牌序。
@@ -87,13 +88,20 @@ class ClientHandTileLayoutController(
             val snapshot = stateStore.gameSnapshot(tableId) ?: return@forEach
             val inputs = tilesByTable[tableId].orEmpty().associate { tile -> tile.uuid.toKotlinUuid() to tile.displayInput() }
             val faceUpIds = snapshot.tilePoseStates.filter { it.pose == TilePose.FACE_UP }.mapTo(mutableSetOf()) { it.tileId }
-            val arranged = if (tableId == seatedTableId) {
-                listOfNotNull(snapshot.players.firstOrNull { it.id == localId }?.let { it to seatedOrder(tableId, it, time) })
+            val own = if (tableId == seatedTableId) {
+                snapshot.players.firstOrNull { it.id == localId }?.let { it to seatedOrder(tableId, it, time) }
             } else {
-                val tileOrder = tileOrder(snapshot.config) ?: return@forEach
-                val targets = inputs.mapValues { it.value.target }
-                snapshot.players.mapNotNull { player -> SpectatorHandOrder.arrange(player.hand, tileOrder, targets)?.let { player to it } }
+                null
             }
+            val tileOrder = tileOrder(snapshot.config)
+            val targets = inputs.mapValues { it.value.target }
+            val observed = if (tileOrder == null) {
+                emptyList()
+            } else {
+                snapshot.players.filterNot { it.id == own?.first?.id }
+                    .mapNotNull { player -> ObservedHandOrder.arrange(player.hand, tileOrder, targets)?.let { player to it } }
+            }
+            val arranged = listOfNotNull(own) + observed
             arranged.forEach { (player, order) ->
                 val key = SlotKey(tableId, player.id)
                 active += key

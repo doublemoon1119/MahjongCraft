@@ -11,7 +11,7 @@ import com.doublemoon1119.mahjongcraft.logic.tile.TileCompositionEntry
  * 日本麻將牌山生成工廠。
  *
  * 負責根據 [RiichiRuleConfig] 的設定生成符合日本麻將規範的 136 張牌。
- * 赤牌總數為三張時各花色一張；四張時五筒兩張、五萬與五索各一張。
+ * 赤牌總數為三張時各花色一張；四張時五筒兩張、五萬與五索各一張。使用透明牌時，每種牌四張中三張帶透明牌組件。
  *
  * @property config 日本麻將的規則配置。
  */
@@ -43,7 +43,7 @@ class RiichiWallFactory(private val config: RiichiRuleConfig) : TileWallFactory 
                     } else {
                         TileValue(Tile.Numeric(suit, value))
                     }
-                    tiles.add(tile)
+                    tiles.add(RiichiTileValues.withTransparency(tile, count, config.transparentTiles))
                 }
             }
         }
@@ -59,8 +59,8 @@ class RiichiWallFactory(private val config: RiichiRuleConfig) : TileWallFactory 
             Tile.Honor.Red,
         )
         honors.forEach { honor ->
-            repeat(4) {
-                tiles.add(TileValue(honor))
+            repeat(4) { count ->
+                tiles.add(RiichiTileValues.withTransparency(TileValue(honor), count, config.transparentTiles))
             }
         }
 

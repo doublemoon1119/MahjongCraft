@@ -23,4 +23,21 @@ object RiichiTileValues {
             .with(RiichiTileComponents.RED_DORA, Unit)
             .with(BuiltInTileComponents.APPEARANCE, RED_FIVE_APPEARANCE_ID),
     )
+
+    /** 使用透明牌時，每種牌四張中透明的張數；最後一張保持不透明。 */
+    const val TRANSPARENT_COPIES: Int = 3
+
+    /**
+     * 使用透明牌時，為同一種牌的第 [copyIndex] 張加上透明牌組件。
+     *
+     * @param value 原本的牌值。
+     * @param copyIndex 這張牌在同一種牌四張中的順序，從 0 開始；洗牌前的順序，不影響牌山位置。
+     * @param transparentTiles 規則是否使用透明牌。
+     * @return 前 [TRANSPARENT_COPIES] 張在使用透明牌時帶透明牌組件，其他維持原牌值。
+     */
+    fun withTransparency(value: TileValue, copyIndex: Int, transparentTiles: Boolean): TileValue = if (transparentTiles && copyIndex < TRANSPARENT_COPIES) {
+        value.copy(components = value.components.with(BuiltInTileComponents.TRANSPARENT, Unit))
+    } else {
+        value
+    }
 }

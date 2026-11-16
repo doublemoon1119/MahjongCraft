@@ -151,6 +151,28 @@ class ExpectedValueAiStrategyTest {
         assertEquals(GameCommand.RespondToDiscard(pon, discardReactionId, pon.withTiles), command)
     }
 
+    /** 吃有兩個用牌選項時（例如透明與不透明的五萬），策略從合法選項中挑一個吃，不因選項變多而放棄。 */
+    @Test
+    fun `a chi with several tile choices takes one of them`() = runTest {
+        val self = player(Wind.SOUTH, hand = hand(listOf(m(5), m(5), m(6), p(2), p(3), p(4), s(6), s(7), s(8), s(3), s(4), p(6), p(6))))
+        val east = player(Wind.EAST, discards = listOf(m(4)))
+        val table = table(listOf(east, self, player(Wind.WEST), player(Wind.NORTH)))
+        val seatedSelf = table.players.first { it.id == self.id }
+        val claimed = table.players.first { it.id == east.id }.discardPile.entries.last().tile
+        val fives = seatedSelf.hand.tiles.filter { it.tile == m(5) }
+        val six = seatedSelf.hand.tiles.first { it.tile == m(6) }
+        val choices = fives.map { five -> GameAction.Chi(tileId = claimed.id, withTiles = listOf(five.id, six.id)) }
+
+        val command = strategy(InformationLevel.INTERMEDIATE).decideGameCommand(
+            context = context(table, seatedSelf, phase = AiDecisionPhase.RespondingToDiscard, legalActions = choices + GameAction.Pass),
+        )
+
+        assertTrue(
+            actual = command in choices.map { GameCommand.RespondToDiscard(it, discardReactionId, it.withTiles) },
+            message = "$command",
+        )
+    }
+
     /** 碰牌後沒有任何役可以和牌時，所有等級都不碰。 */
     @Test
     fun `a pon that leaves no yaku is declined`() = runTest {

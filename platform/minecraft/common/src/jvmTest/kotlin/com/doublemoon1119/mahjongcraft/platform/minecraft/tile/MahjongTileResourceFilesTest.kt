@@ -73,6 +73,35 @@ class MahjongTileResourceFilesTest {
     }
 
     /** 驗證牌面及共用牌體貼圖維持模型 UV 所依賴的像素尺寸。 */
+    /**
+     * 每種標準牌面都有尺寸相同的透明版貼圖與平面預覽貼圖，透明牌身與一般牌身尺寸相同；新增或改動標準牌面後須以
+     * Gradle 任務 `generateTransparentTileTextures` 重新產生。
+     */
+    @Test
+    fun `every standard face has a transparent texture of the same size`() {
+        BuiltInMinecraftTileStyles.TRANSPARENT_TILES.forEach { tile ->
+            val standard = texture(tile.toAssetKey(MinecraftTileAssetRegistryImpl()))
+            val transparentKey = BuiltInMinecraftTileStyles.transparentAssetKey(tile)
+            listOf(texture(transparentKey), texture("${transparentKey}_preview")).forEach { transparent ->
+                assertEquals(standard.width to standard.height, transparent.width to transparent.height, "$tile")
+            }
+        }
+        val cover = texture("cover")
+        val transparentCover = texture("cover_transparent")
+        assertEquals(cover.width to cover.height, transparentCover.width to transparentCover.height)
+    }
+
+    /**
+     * 讀取內建牌面貼圖。
+     *
+     * @param key 貼圖檔名中 `mahjong_tile_` 之後的部分。
+     * @return 讀到的圖片。
+     */
+    private fun texture(key: String) = assertNotNull(
+        actual = javaClass.getResourceAsStream("/assets/mahjongcraft/textures/item/mahjong_tile/mahjong_tile_$key.png")?.use(ImageIO::read),
+        message = "Missing texture for $key",
+    )
+
     @Test
     fun `tile textures retain dimensions required by the base model`() {
         assetKeys.forEach { assetKey ->

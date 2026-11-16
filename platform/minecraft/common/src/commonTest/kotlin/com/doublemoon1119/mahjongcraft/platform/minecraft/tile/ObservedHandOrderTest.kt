@@ -11,8 +11,8 @@ import kotlin.test.assertEquals
 import kotlin.test.assertNull
 import kotlin.uuid.Uuid
 
-/** 驗證旁觀者本機的手牌排列只用看得到的牌面，並從共享牌排位置找出還沒理過的牌。 */
-class SpectatorHandOrderTest {
+/** 驗證本機替別人排手牌時只依看得到的牌面排序，看不到的牌維持身分順序，並從共享牌排位置找出還沒理過的牌。 */
+class ObservedHandOrderTest {
     /** 看得到牌面的立牌依規則牌序排列，剛摸的牌留在摸牌位。 */
     @Test
     fun `visible standing tiles follow the rule order and the drawn tile stays apart`() {
@@ -23,7 +23,7 @@ class SpectatorHandOrderTest {
         val drawn = tile(Tile.Honor.Red)
         val hand = HandSnapshot(standingTiles = listOf(east, nineCharacters, oneDots, oneCharacters, drawn), lastDrawn = drawn)
 
-        val order = SpectatorHandOrder.arrange(hand, RiichiTileOrder, sharedTargets = emptyMap())
+        val order = ObservedHandOrder.arrange(hand, RiichiTileOrder, sharedTargets = emptyMap())
 
         val expected = listOf(oneCharacters, nineCharacters, oneDots, east)
             .sortedWith(compareBy<IdentifiedTileSnapshot, Tile>(RiichiTileOrder) { checkNotNull(it.tile) })
@@ -32,15 +32,30 @@ class SpectatorHandOrderTest {
         assertEquals(drawn.id, order?.drawnId)
     }
 
-    /** 有任何一張看不到牌面的手牌不由旁觀者排列。 */
+    /** 看得到牌面的立牌排在左邊並依規則牌序排列，看不到的立牌接在右邊並依牌張身分排列，看不到的摸牌仍在摸牌位。 */
     @Test
-    fun `hands with hidden faces are left to the shared layout`() {
-        val hidden = IdentifiedTileSnapshot(Uuid.random(), face = null)
-        val visible = tile(Tile.Honor.East)
+    fun `visible tiles go left in rule order and hidden tiles keep the identity order`() {
+        val east = tile(Tile.Honor.East)
+        val oneCharacters = tile(Tile.Numeric(Tile.Suit.Character, 1))
+        val hidden = List(3) { IdentifiedTileSnapshot(Uuid.random(), face = null) }
+        val hiddenDrawn = IdentifiedTileSnapshot(Uuid.random(), face = null)
+        val hand = HandSnapshot(standingTiles = listOf(hidden[0], east, hidden[1], oneCharacters, hidden[2], hiddenDrawn), lastDrawn = hiddenDrawn)
 
-        assertNull(SpectatorHandOrder.arrange(HandSnapshot(listOf(visible, hidden)), RiichiTileOrder, emptyMap()))
-        assertNull(SpectatorHandOrder.arrange(HandSnapshot(listOf(visible, hidden), lastDrawn = hidden), RiichiTileOrder, emptyMap()))
-        assertNull(SpectatorHandOrder.arrange(HandSnapshot(emptyList()), RiichiTileOrder, emptyMap()))
+        val order = ObservedHandOrder.arrange(hand, RiichiTileOrder, sharedTargets = emptyMap())
+
+        assertEquals(listOf(oneCharacters.id, east.id) + hidden.map { it.id }.sortedBy(Uuid::toString), order?.standing)
+        assertEquals(hiddenDrawn.id, order?.drawnId)
+    }
+
+    /** 沒有任何一張看得到牌面的立牌時交給共享牌排。 */
+    @Test
+    fun `hands without visible standing tiles are left to the shared layout`() {
+        val hidden = IdentifiedTileSnapshot(Uuid.random(), face = null)
+        val visibleDrawn = tile(Tile.Honor.East)
+
+        assertNull(ObservedHandOrder.arrange(HandSnapshot(listOf(hidden)), RiichiTileOrder, emptyMap()))
+        assertNull(ObservedHandOrder.arrange(HandSnapshot(listOf(hidden, visibleDrawn), lastDrawn = visibleDrawn), RiichiTileOrder, emptyMap()))
+        assertNull(ObservedHandOrder.arrange(HandSnapshot(emptyList()), RiichiTileOrder, emptyMap()))
     }
 
     /** 沿牌排方向依牌張身分排列的開頭是已理好的牌，之後接上的牌是還沒理過的牌。 */
@@ -51,8 +66,8 @@ class SpectatorHandOrderTest {
         val row = ids + appended
         val targets = row.withIndex().associate { (index, id) -> id to standing(x = index.toDouble(), yaw = 0f) }
 
-        assertEquals(listOf(appended), SpectatorHandOrder.unsortedFromPositions(row.shuffled(), targets))
-        assertEquals(emptyList(), SpectatorHandOrder.unsortedFromPositions(ids, targets))
+        assertEquals(listOf(appended), ObservedHandOrder.unsortedFromPositions(row.shuffled(), targets))
+        assertEquals(emptyList(), ObservedHandOrder.unsortedFromPositions(ids, targets))
     }
 
     /** 牌排轉向時沿牌排方向計算順序，不依世界座標軸。 */
@@ -63,7 +78,7 @@ class SpectatorHandOrderTest {
         val row = ids + appended
         val targets = row.withIndex().associate { (index, id) -> id to standing(z = index.toDouble(), yaw = 90f) }
 
-        assertEquals(listOf(appended), SpectatorHandOrder.unsortedFromPositions(row, targets))
+        assertEquals(listOf(appended), ObservedHandOrder.unsortedFromPositions(row, targets))
     }
 
     /** 有牌不在立起的牌排上時，不推算還沒理過的牌。 */
@@ -72,10 +87,10 @@ class SpectatorHandOrderTest {
         val ids = List(3) { Uuid.random() }
         val standingTargets = ids.withIndex().associate { (index, id) -> id to standing(x = index.toDouble(), yaw = 0f) }
 
-        assertEquals(emptyList(), SpectatorHandOrder.unsortedFromPositions(ids, standingTargets - ids.last()))
+        assertEquals(emptyList(), ObservedHandOrder.unsortedFromPositions(ids, standingTargets - ids.last()))
         assertEquals(
             expected = emptyList(),
-            actual = SpectatorHandOrder.unsortedFromPositions(ids, standingTargets + (ids.last() to standingTargets.getValue(ids.last()).copy(poseDegrees = 90f))),
+            actual = ObservedHandOrder.unsortedFromPositions(ids, standingTargets + (ids.last() to standingTargets.getValue(ids.last()).copy(poseDegrees = 90f))),
         )
     }
 

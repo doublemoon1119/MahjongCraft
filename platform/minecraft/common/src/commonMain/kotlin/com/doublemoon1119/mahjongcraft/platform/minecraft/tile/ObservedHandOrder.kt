@@ -1,6 +1,7 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.tile
 
 import com.doublemoon1119.mahjongcraft.logic.base.HandSnapshot
+import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTileSnapshot
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import kotlin.math.PI
 import kotlin.math.cos
@@ -8,18 +9,20 @@ import kotlin.math.sin
 import kotlin.uuid.Uuid
 
 /**
- * 旁觀者在本機替看得到牌面的手牌排出的順序：立牌依規則牌序，剛摸的牌留在獨立的摸牌位。
+ * 在本機替別人的手牌排出的順序：看得到牌面的立牌排在左邊並依規則牌序排列，看不到的立牌接在右邊並維持共享牌排的
+ * 牌張身分順序，剛摸的牌留在獨立的摸牌位。例如鷲巢麻將中，對手手上的透明牌集中在左邊。
  *
- * 只改變旁觀者自己看到的位置；共享牌排仍依牌張身分排列，不洩漏玩家的私人理牌。
+ * 只改變本機看到的位置；共享牌排仍依牌張身分排列。看得到的牌本來就是公開的，看不到的牌維持與牌面無關的順序，
+ * 所以不洩漏玩家的私人理牌，也不透露看不到的牌。
  */
-object SpectatorHandOrder {
+object ObservedHandOrder {
     /**
-     * 依規則牌序排出手牌。
+     * 排出別人的手牌。
      *
-     * @param hand 旁觀者收到的手牌快照。
+     * @param hand 本機收到的手牌快照。
      * @param tileOrder 該桌規則的牌序。
      * @param sharedTargets 共享牌排上各牌的位置，用來找出共享牌排接在最右邊、還沒理過的牌。
-     * @return 手牌排列；有任何一張手牌看不到牌面，或沒有手牌時為 null。
+     * @return 手牌排列；沒有任何一張看得到牌面的立牌時為 null，交給共享牌排。
      */
     fun arrange(
         hand: HandSnapshot,
@@ -27,14 +30,14 @@ object SpectatorHandOrder {
         sharedTargets: Map<Uuid, TileDisplayTransform>,
     ): PrivateHandOrder? {
         val drawn = hand.lastDrawn
-        if (drawn != null && drawn.tile == null) return null
-        val standing = hand.standingTiles.filterNot { it.id == drawn?.id }.map { tile -> tile.id to (tile.tile ?: return null) }
-        if (standing.isEmpty() && drawn == null) return null
-        val sorted = standing.sortedWith(compareBy<Pair<Uuid, Tile>, Tile>(tileOrder) { it.second }.thenBy { it.first.toString() }).map { it.first }
+        val standing = hand.standingTiles.filterNot { it.id == drawn?.id }
+        val (visible, hidden) = standing.partition { it.tile != null }
+        if (visible.isEmpty()) return null
+        val sortedVisible = visible.sortedWith(compareBy<IdentifiedTileSnapshot, Tile>(tileOrder) { checkNotNull(it.tile) }.thenBy { it.id.toString() })
         return PrivateHandOrder(
-            standing = sorted,
+            standing = sortedVisible.map { it.id } + hidden.map { it.id }.sortedBy(Uuid::toString),
             drawnId = drawn?.id,
-            unsortedIds = unsortedFromPositions(standing.map { it.first }, sharedTargets),
+            unsortedIds = unsortedFromPositions(standing.map { it.id }, sharedTargets),
         )
     }
 

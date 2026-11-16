@@ -55,4 +55,12 @@ fun registerBuiltInComponentPersistence(registry: ComponentPersistenceRegistrar)
             toDomain = { it.value },
         ),
     )
+    registry.register(
+        definition = ComponentPersistenceDefinition(
+            component = BuiltInTileComponents.TRANSPARENT,
+            serializer = ComponentUnitPersistenceDto.serializer(),
+            toDto = { ComponentUnitPersistenceDto },
+            toDomain = {},
+        ),
+    )
 }

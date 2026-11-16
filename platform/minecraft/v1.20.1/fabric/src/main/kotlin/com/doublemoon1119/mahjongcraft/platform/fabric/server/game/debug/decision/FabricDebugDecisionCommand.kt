@@ -449,6 +449,7 @@ class FabricDebugDecisionCommand(
         PULL_NORTH("pull_north", selfDrawTileAssetKey = "north", ruleGroup = DecisionHudRuleGroup.RIICHI_THREE_PLAYER),
         TEXT_CARD("text_card"),
         MIXED("mixed", PlayerDecisionPhaseDto.DISCARD_REACTION),
+        TRANSPARENT_CALLS("transparent_calls", PlayerDecisionPhaseDto.DISCARD_REACTION),
         DISCARD_ANALYSIS("discard_analysis", isDiscardAnalysis = true),
         DISCARD_FURITEN("discard_furiten", isDiscardAnalysis = true),
         DISCARD_PERMANENT_FURITEN("discard_permanent_furiten", isDiscardAnalysis = true),
@@ -480,7 +481,11 @@ class FabricDebugDecisionCommand(
             decisionKey = decisionKey,
             ruleModuleId = ruleGroup.ruleModuleId,
             actions = actions(),
-            triggerTileAssetKey = if (phase == PlayerDecisionPhaseDto.DISCARD_REACTION) "s5" else selfDrawTileAssetKey,
+            triggerTileAssetKey = when {
+                this == TRANSPARENT_CALLS -> "transparent_s5"
+                phase == PlayerDecisionPhaseDto.DISCARD_REACTION -> "s5"
+                else -> selfDrawTileAssetKey
+            },
             triggerPlayerId = if (phase == PlayerDecisionPhaseDto.DISCARD_REACTION) Uuid.random().toString() else null,
             triggerPlayerName = if (phase == PlayerDecisionPhaseDto.DISCARD_REACTION) "AI 1" else null,
             triggerPlayerRelation = if (phase == PlayerDecisionPhaseDto.DISCARD_REACTION) DecisionPlayerRelationDto.LEFT else null,
@@ -561,6 +566,14 @@ class FabricDebugDecisionCommand(
                     action("ron", BuiltInGameActionIds.RON, listOf("s5")),
                     riichiAction(),
                     textCardAction(),
+                    action("pass", BuiltInGameActionIds.PASS, emptyList()),
+                )
+                // 同種牌中透明與不透明的張各成一個選項：吃與碰都各有兩種用牌，透明牌只畫圖案並墊半透明白底。
+                TRANSPARENT_CALLS -> listOf(
+                    action("chi_transparent", BuiltInGameActionIds.CHI, listOf("transparent_s4", "transparent_s5", "transparent_s6"), claimedIndex = 1),
+                    action("chi_mixed", BuiltInGameActionIds.CHI, listOf("s4", "transparent_s5", "transparent_s6"), claimedIndex = 1),
+                    action("pon_transparent", BuiltInGameActionIds.PON, listOf("transparent_s5", "transparent_s5", "transparent_s5")),
+                    action("pon_mixed", BuiltInGameActionIds.PON, listOf("transparent_s5", "transparent_s5", "s5")),
                     action("pass", BuiltInGameActionIds.PASS, emptyList()),
                 )
                 else -> emptyList()

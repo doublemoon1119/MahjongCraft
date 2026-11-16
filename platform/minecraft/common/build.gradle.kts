@@ -59,3 +59,12 @@ kotlin {
         }
     }
 }
+
+// 從標準牌面與牌身貼圖產生透明牌的牌面、平面預覽、模型與牌身。改動標準牌面或牌身後手動執行，檢查並視需要修圖；
+// 產生的檔案與其他資源一起保存在 src 底下，一般建置不會執行這個任務。
+tasks.register<com.doublemoon1119.mahjongcraft.buildlogic.GenerateTransparentTileTexturesTask>("generateTransparentTileTextures") {
+    group = "mahjongcraft"
+    description = "Regenerates the transparent tile textures and models from the standard tile textures."
+    textureDirectory.set(layout.projectDirectory.dir("src/jvmMain/resources/assets/mahjongcraft/textures/item/mahjong_tile"))
+    modelDirectory.set(layout.projectDirectory.dir("src/jvmMain/resources/assets/mahjongcraft/models/item/mahjong_tile"))
+}

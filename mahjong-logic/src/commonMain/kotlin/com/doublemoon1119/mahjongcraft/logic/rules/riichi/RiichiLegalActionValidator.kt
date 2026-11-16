@@ -254,9 +254,8 @@ class RiichiLegalActionValidator(
             // 放過碰之後同巡仍然可以碰：日麻沒有過水碰的限制，放過清單只用於同巡振聽（見 Ron 的判定）
             val matchingForPon = player.hand.standingTiles.filter { it.tile == incomingBaseTile }
             if (matchingForPon.size >= 2 && !isRiichi && wallHasMoreTiles) {
-                // 優先用普通五組成刻子，赤五只在數量不足時才會被選中，讓玩家自然保留手上的赤寶牌。
-                val ponTiles = matchingForPon.sortedBy { it.components[RiichiTileComponents.RED_DORA] != null }.take(2)
-                legalActions.add(GameAction.Pon(incomingTile.id, ponTiles.map { it.id }))
+                distinctCallTileChoices(matchingForPon.indices.flatMap { first -> (first + 1..matchingForPon.lastIndex).map { listOf(matchingForPon[first], matchingForPon[it]) } })
+                    .forEach { ponTiles -> legalActions.add(GameAction.Pon(incomingTile.id, ponTiles.map { it.id })) }
             }
 
             // 3. 檢查是否可以吃 (Chi)
@@ -270,33 +269,21 @@ class RiichiLegalActionValidator(
                 if (iTile.value > 2) {
                     val t1 = Tile.Numeric(iTile.suit, iTile.value - 1)
                     val t2 = Tile.Numeric(iTile.suit, iTile.value - 2)
-                    val id1 = handTiles.find { it.tile == t1 }?.id
-                    val id2 = handTiles.find { it.tile == t2 }?.id
-                    if (id1 != null && id2 != null) {
-                        legalActions.add(GameAction.Chi(incomingTile.id, listOf(id1, id2)))
-                    }
+                    chiTileChoices(handTiles, t1, t2).forEach { chiTiles -> legalActions.add(GameAction.Chi(incomingTile.id, chiTiles.map { it.id })) }
                 }
 
                 // 3b. 檢查 (tile - 1, tile + 1) 的組合
                 if (iTile.value in 2..<9) {
                     val t1 = Tile.Numeric(iTile.suit, iTile.value - 1)
                     val t2 = Tile.Numeric(iTile.suit, iTile.value + 1)
-                    val id1 = handTiles.find { it.tile == t1 }?.id
-                    val id2 = handTiles.find { it.tile == t2 }?.id
-                    if (id1 != null && id2 != null) {
-                        legalActions.add(GameAction.Chi(incomingTile.id, listOf(id1, id2)))
-                    }
+                    chiTileChoices(handTiles, t1, t2).forEach { chiTiles -> legalActions.add(GameAction.Chi(incomingTile.id, chiTiles.map { it.id })) }
                 }
 
                 // 3c. 檢查 (tile + 1, tile + 2) 的組合
                 if (iTile.value < 8) {
                     val t1 = Tile.Numeric(iTile.suit, iTile.value + 1)
                     val t2 = Tile.Numeric(iTile.suit, iTile.value + 2)
-                    val id1 = handTiles.find { it.tile == t1 }?.id
-                    val id2 = handTiles.find { it.tile == t2 }?.id
-                    if (id1 != null && id2 != null) {
-                        legalActions.add(GameAction.Chi(incomingTile.id, listOf(id1, id2)))
-                    }
+                    chiTileChoices(handTiles, t1, t2).forEach { chiTiles -> legalActions.add(GameAction.Chi(incomingTile.id, chiTiles.map { it.id })) }
                 }
             }
 
@@ -328,6 +315,31 @@ class RiichiLegalActionValidator(
         val wallProgress = tableState.components[RiichiTableComponents.WALL_PROGRESS] ?: return false
         return wallProgress.completedNorthDrawCount < RiichiSupplementalDrawPolicy.MAX_SUPPLEMENTAL_DRAWS
     }
+
+    /**
+     * 列出吃牌時可用的手牌組合：兩種牌各取一張，同種牌中組件不同（例如赤五與普通五、透明與不透明）的張各成一個選項。
+     *
+     * @param handTiles 玩家的立牌。
+     * @param first 順子需要的第一種牌。
+     * @param second 順子需要的第二種牌。
+     * @return 不重複的組合，依 [distinctCallTileChoices] 的順序排列；缺少任一種牌時為空。
+     */
+    private fun chiTileChoices(handTiles: List<IdentifiedTile>, first: Tile, second: Tile): List<List<IdentifiedTile>> {
+        val firstCopies = handTiles.filter { it.tile == first }.distinctBy { it.components }
+        val secondCopies = handTiles.filter { it.tile == second }.distinctBy { it.components }
+        return distinctCallTileChoices(firstCopies.flatMap { a -> secondCopies.map { b -> listOf(a, b) } })
+    }
+
+    /**
+     * 把用來吃碰的手牌組合依各張的組件去除重複：組件相同的牌對規則與玩家沒有差別，只保留第一個組合。
+     * 用到較少赤寶牌的組合排在前面，讓預設選項保留手上的赤寶牌。
+     *
+     * @param choices 候選的手牌組合。
+     * @return 不重複的組合。
+     */
+    private fun distinctCallTileChoices(choices: List<List<IdentifiedTile>>): List<List<IdentifiedTile>> = choices
+        .distinctBy { choice -> choice.groupingBy { it.components }.eachCount() }
+        .sortedBy { choice -> choice.count { it.components[RiichiTileComponents.RED_DORA] != null } }
 
     /**
      * 立直宣告需要玩家從立牌中另外指定打哪張牌，候選牌為「打出後手牌仍然聽牌」的立牌；其他日麻動作
