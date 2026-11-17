@@ -16,8 +16,10 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.catalogue.RuleCatalogu
 import net.minecraft.client.gui.DrawContext
 import net.minecraft.client.gui.screen.Screen
 import net.minecraft.client.gui.tooltip.Tooltip
+import net.minecraft.client.gui.tooltip.TooltipPositioner
 import net.minecraft.client.gui.widget.ButtonWidget
 import net.minecraft.client.gui.widget.TextFieldWidget
+import net.minecraft.text.OrderedText
 import net.minecraft.text.Text
 import net.minecraft.util.Formatting
 import net.minecraft.util.Language
@@ -450,7 +452,11 @@ internal class RuleCatalogueScreen(
         return super.mouseReleased(mouseX, mouseY, button)
     }
 
-    /** 依開啟來源返回原畫面或回到遊戲。 */
+    /** 下拉清單展開時不讓底層元件排入提示框。 */
+    override fun setTooltip(lines: List<OrderedText>, positioner: TooltipPositioner, focused: Boolean) {
+        if (!dropdown.isOpen) super.setTooltip(lines, positioner, focused)
+    }
+
     override fun keyPressed(keyCode: Int, scanCode: Int, modifiers: Int): Boolean {
         if (dropdown.keyPressed(textRenderer, height, keyCode)) return true
         return super.keyPressed(keyCode, scanCode, modifiers)
@@ -458,6 +464,7 @@ internal class RuleCatalogueScreen(
 
     override fun charTyped(chr: Char, modifiers: Int): Boolean = dropdown.isOpen || super.charTyped(chr, modifiers)
 
+    /** 依開啟來源返回原畫面或回到遊戲。 */
     override fun close() {
         client?.let(exit::back)
     }

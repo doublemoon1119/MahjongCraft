@@ -22,6 +22,7 @@ class DropdownListLayoutTest {
         assertEquals(68 + 1 + 60 + 1, layout.bottom)
         assertEquals(0, layout.maximumScroll)
         assertEquals(0, layout.footnoteBlockHeight)
+        assertEquals(0, layout.optionIndexAt(layout.scrollbarLeft.toDouble(), layout.optionsTop.toDouble()))
     }
 
     /** 底部說明加上分隔線與上下內距，接在選項下方。 */
@@ -73,7 +74,11 @@ class DropdownListLayoutTest {
 
         assertEquals(3, layout.optionIndexAt(20.0, 41.0))
         assertEquals(4, layout.optionIndexAt(20.0, 61.0))
-        assertEquals(6, layout.optionIndexAt(158.0, 120.9))
+        val scrollbarX = layout.scrollbarLeft.toDouble()
+        assertEquals(6, layout.optionIndexAt(scrollbarX - 0.1, 120.9))
+        assertNull(layout.optionIndexAt(scrollbarX, 120.9))
+        assertNull(layout.optionIndexAt(158.0, 120.9))
+        assertTrue(layout.contains(scrollbarX, 120.9))
         assertNull(layout.optionIndexAt(10.0, 50.0))
         assertNull(layout.optionIndexAt(20.0, 40.5))
         assertNull(layout.optionIndexAt(20.0, 121.0))

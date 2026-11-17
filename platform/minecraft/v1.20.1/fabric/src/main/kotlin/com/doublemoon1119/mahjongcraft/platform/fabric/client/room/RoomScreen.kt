@@ -54,8 +54,10 @@ import net.minecraft.client.gui.Element
 import net.minecraft.client.gui.Selectable
 import net.minecraft.client.gui.screen.Screen
 import net.minecraft.client.gui.tooltip.Tooltip
+import net.minecraft.client.gui.tooltip.TooltipPositioner
 import net.minecraft.client.network.OtherClientPlayerEntity
 import net.minecraft.entity.LivingEntity
+import net.minecraft.text.OrderedText
 import net.minecraft.text.Text
 import net.minecraft.util.math.BlockPos
 import net.minecraft.util.math.Box
@@ -517,6 +519,11 @@ class RoomScreen(
         playingInfoDragPlayer = null
         memberScroll.endDrag()
         return super.mouseReleased(mouseX, mouseY, button)
+    }
+
+    /** 下拉清單展開時不讓底層元件排入提示框。 */
+    override fun setTooltip(lines: List<OrderedText>, positioner: TooltipPositioner, focused: Boolean) {
+        if (!dropdown.isOpen) super.setTooltip(lines, positioner, focused)
     }
 
     override fun keyPressed(keyCode: Int, scanCode: Int, modifiers: Int): Boolean {

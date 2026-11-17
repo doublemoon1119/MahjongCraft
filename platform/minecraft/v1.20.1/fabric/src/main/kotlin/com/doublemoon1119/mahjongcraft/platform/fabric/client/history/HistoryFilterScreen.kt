@@ -16,9 +16,11 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.history.MinecraftHisto
 import net.minecraft.client.gui.DrawContext
 import net.minecraft.client.gui.screen.Screen
 import net.minecraft.client.gui.tooltip.Tooltip
+import net.minecraft.client.gui.tooltip.TooltipPositioner
 import net.minecraft.client.gui.widget.ButtonWidget
 import net.minecraft.client.gui.widget.ClickableWidget
 import net.minecraft.client.gui.widget.TextFieldWidget
+import net.minecraft.text.OrderedText
 import net.minecraft.text.Text
 import net.minecraft.util.Formatting
 import org.lwjgl.glfw.GLFW
@@ -548,6 +550,11 @@ internal class HistoryFilterScreen(
 
     /** 將目前規則篩選值轉成選擇器上的文字。 */
     private fun ruleDisplayLabel(): Text = ruleLabel(session.filterDraft.input.ruleId)
+
+    /** 下拉清單展開時不讓底層元件排入提示框。 */
+    override fun setTooltip(lines: List<OrderedText>, positioner: TooltipPositioner, focused: Boolean) {
+        if (!dropdown.isOpen) super.setTooltip(lines, positioner, focused)
+    }
 
     override fun keyPressed(keyCode: Int, scanCode: Int, modifiers: Int): Boolean {
         if (dropdown.keyPressed(textRenderer, height, keyCode)) return true

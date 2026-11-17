@@ -100,7 +100,8 @@ internal data class DropdownListLayout(
      * @return 選項在完整清單中的索引；游標不在任何選項上時為 null。
      */
     fun optionIndexAt(mouseX: Double, mouseY: Double): Int? {
-        if (mouseX < left + BORDER || mouseX >= right - BORDER || mouseY < optionsTop || mouseY >= optionsBottom) return null
+        val optionRight = if (maximumScroll > 0) scrollbarLeft else right - BORDER
+        if (mouseX < left + BORDER || mouseX >= optionRight || mouseY < optionsTop || mouseY >= optionsBottom) return null
         val index = effectiveScroll + ((mouseY - optionsTop) / OPTION_HEIGHT).toInt()
         return index.takeIf { it in 0 until optionCount }
     }

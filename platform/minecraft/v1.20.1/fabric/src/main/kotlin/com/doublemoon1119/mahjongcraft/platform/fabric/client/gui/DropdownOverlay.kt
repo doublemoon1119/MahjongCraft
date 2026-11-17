@@ -25,7 +25,7 @@ internal data class DropdownOption(
  * 一個畫面同時最多展開一份的選擇器清單。
  *
  * 清單通常在選擇器下方展開，下方空間不足時改往上方展開。清單展開期間畫面上其他元件不可操作。使用清單的畫面要做五件事：建立元件時呼叫 [close]；繪製其他內容時
- * 以 [pointer] 取代游標座標，並在最後呼叫 [render]；`mouseClicked`、`mouseScrolled`、`keyPressed` 先交給這裡，
+ * 以 [pointer] 取代游標座標，清單展開時略過底層元件的提示框，並在最後呼叫 [render]；`mouseClicked`、`mouseScrolled`、`keyPressed` 先交給這裡，
  * 回傳 true 就不再往下處理；清單展開時（[isOpen]）不處理拖曳與文字輸入。點選
  * 可選的選項、點清單以外的地方或按 Esc 都會收合；選項太多時以滾輪或方向鍵在清單內捲動。選項名稱放不下時截斷，
  * 游標或方向鍵停留在上面時以跑馬燈顯示全名。
@@ -33,6 +33,9 @@ internal data class DropdownOption(
 internal class DropdownOverlay {
     /** 目前展開的清單；沒有展開時為 null。 */
     private var open: OpenList? = null
+
+    private var lastMouseX: Int? = null
+    private var lastMouseY: Int? = null
 
     /** 是否有清單展開。 */
     val isOpen: Boolean
@@ -103,10 +106,15 @@ internal class DropdownOverlay {
      * @param mouseY 游標的垂直座標。
      */
     fun render(context: DrawContext, textRenderer: TextRenderer, windowHeight: Int, mouseX: Int, mouseY: Int) {
+        val mouseMoved = mouseX != lastMouseX || mouseY != lastMouseY
+        lastMouseX = mouseX
+        lastMouseY = mouseY
         val list = open ?: return
         val footnotes = footnotes(list, textRenderer)
         val layout = layout(list, footnotes, textRenderer, windowHeight)
-        layout.optionIndexAt(mouseX.toDouble(), mouseY.toDouble())?.let { list.highlightedIndex = it }
+        if (mouseMoved) {
+            layout.optionIndexAt(mouseX.toDouble(), mouseY.toDouble())?.let { list.highlightedIndex = it }
+        }
         context.matrices.push()
         context.matrices.translate(0f, 0f, OVERLAY_Z)
         context.fill(layout.left, layout.top, layout.right, layout.bottom, BORDER_COLOR)
@@ -118,7 +126,13 @@ internal class DropdownOverlay {
             val option = list.options.getOrNull(index) ?: return@repeat
             val rowTop = layout.optionTop(visibleIndex)
             if (index == list.highlightedIndex || index == list.selectedIndex) {
-                context.fill(layout.left + 1, rowTop, layout.right - 1, rowTop + DropdownListLayout.OPTION_HEIGHT, HIGHLIGHT_COLOR)
+                context.fill(
+                    layout.left + 1,
+                    rowTop,
+                    layout.right - 1,
+                    rowTop + DropdownListLayout.OPTION_HEIGHT,
+                    if (index == list.highlightedIndex) HIGHLIGHT_COLOR else SELECTED_COLOR,
+                )
             }
             val textY = rowTop + (DropdownListLayout.OPTION_HEIGHT - FormScreenLayout.VISIBLE_TEXT_HEIGHT) / 2
             if (index == list.selectedIndex) {
@@ -320,7 +334,10 @@ internal class DropdownOverlay {
         const val BACKGROUND_COLOR = 0xFF101010.toInt()
 
         /** 目前選項與游標停留選項的底色。 */
-        const val HIGHLIGHT_COLOR = 0x1FFFFFFF
+        const val HIGHLIGHT_COLOR = 0x40FFFFFF
+
+        /** 已套用的選項底色，與目前停留的項目區分。 */
+        const val SELECTED_COLOR = 0x1FFFFFFF
 
         /** 選項與底部說明之間的分隔線顏色。 */
         const val DIVIDER_COLOR = 0x33FFFFFF

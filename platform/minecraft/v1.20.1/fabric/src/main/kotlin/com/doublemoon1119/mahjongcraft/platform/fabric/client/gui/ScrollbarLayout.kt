@@ -10,7 +10,7 @@ import kotlin.math.roundToInt
  * @property itemCount 全部項目數。
  * @property visibleItemCount 同時可見的項目數。
  * @property scrollIndex 第一個可見項目的索引。
- * @property minimumThumbHeight 滑塊最小高度；應介於 0 與軌道高度之間。
+ * @property minimumThumbHeight 偏好的滑塊最小高度，會限制在軌道實際高度內。
  */
 internal data class ScrollbarLayout(
     val trackTop: Int,
@@ -30,7 +30,7 @@ internal data class ScrollbarLayout(
     val thumbHeight: Int = if (maximumScroll == 0) {
         trackHeight
     } else {
-        (trackHeight * visibleItemCount / itemCount).coerceIn(minimumThumbHeight, trackHeight)
+        (trackHeight * visibleItemCount / itemCount).coerceIn(minimumThumbHeight.coerceIn(0, trackHeight), trackHeight)
     }
 
     /** Thumb 上界。 */

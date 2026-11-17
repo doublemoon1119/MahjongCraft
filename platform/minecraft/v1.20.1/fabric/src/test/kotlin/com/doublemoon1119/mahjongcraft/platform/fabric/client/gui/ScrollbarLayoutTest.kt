@@ -15,6 +15,23 @@ class ScrollbarLayoutTest {
         assertEquals(5, initial.scrollIndexFor(80.0, grabOffset))
     }
 
+    /** 軌道比最小滑塊短時，滑塊仍限制在軌道內。 */
+    @Test
+    fun `short scroll tracks bound the minimum thumb height`() {
+        val layout = ScrollbarLayout(
+            trackTop = 20,
+            trackBottom = 27,
+            itemCount = 10,
+            visibleItemCount = 1,
+            scrollIndex = 3,
+            minimumThumbHeight = 12,
+        )
+
+        assertEquals(9, layout.maximumScroll)
+        assertEquals(7, layout.thumbHeight)
+        assertEquals(20, layout.thumbTop)
+    }
+
     /** 軌道兩端必須穩定映射到合法範圍。 */
     @Test
     fun `drag clamps to both ends of the track`() {
