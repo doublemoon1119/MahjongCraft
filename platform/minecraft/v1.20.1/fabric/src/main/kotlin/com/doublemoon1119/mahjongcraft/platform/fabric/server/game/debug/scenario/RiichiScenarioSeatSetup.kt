@@ -154,17 +154,17 @@ internal class SeatSetupScenario(
         val structure = remapStructure(templateLayout, initialLiveTiles, initialReservedTiles)
         val layoutResult = TileWallLayoutResult(initialLiveTiles, initialReservedTiles, structure)
         val visibleWallTileIds = (liveTiles + initialReservedTiles).mapTo(mutableSetOf()) { tile -> tile.id }
-        val initialPhysicalLayout = when (
-            val decision = module.createPhysicalWallLayoutPolicy().createInitialLayoutValidated(
-                context = InitialPhysicalWallLayoutContext(layoutResult, opening, visibleWallTileIds),
-            )
-        ) {
-            is InitialPhysicalWallLayoutDecision.Completed -> decision.layout
-            is InitialPhysicalWallLayoutDecision.Rejected -> error(decision.reasonId)
+        // 不砌牌牆的桌子沒有實體牌牆布局，牌只在離開牌池時才出現在桌上。
+        val initialPhysicalLayout = module.createPhysicalWallLayoutPolicy()?.let { policy ->
+            when (
+                val decision = policy.createInitialLayoutValidated(
+                    context = InitialPhysicalWallLayoutContext(layoutResult, opening, visibleWallTileIds),
+                )
+            ) {
+                is InitialPhysicalWallLayoutDecision.Completed -> decision.layout
+                is InitialPhysicalWallLayoutDecision.Rejected -> error(decision.reasonId)
+            }
         }
-        val physicalLayout = TileWallPhysicalLayout(
-            placements = initialPhysicalLayout.placements.filterKeys { tileId -> tileId in visibleWallTileIds },
-        )
 
         val players = tableState.players.mapIndexed { index, oldPlayer ->
             val seatOffset = (index - invokingPlayerIndex + playerCount) % playerCount
@@ -198,7 +198,9 @@ internal class SeatSetupScenario(
             components = ComponentSet.EMPTY.with(RiichiTableComponents.POT_POINTS, seats.count { it.riichiTile != null } * RIICHI_STICK_POINTS).with(RiichiTableComponents.WALL_PROGRESS, RiichiWallProgress()),
             wallOpening = opening,
             reservedWallTiles = initialReservedTiles,
-            physicalWallLayout = physicalLayout,
+            physicalWallLayout = initialPhysicalLayout?.let { layout ->
+                TileWallPhysicalLayout(placements = layout.placements.filterKeys { tileId -> tileId in visibleWallTileIds })
+            },
         )
         return DebugGameScenarioResult(
             game = Game(
@@ -209,7 +211,7 @@ internal class SeatSetupScenario(
                 roomPlayerIds = currentGame.roomPlayerIds,
                 aiPlayerStrategyKeys = aiPlayerStrategyKeys,
             ),
-            wallStructure = structure,
+            wallStructure = if (initialPhysicalLayout == null) emptyMap() else structure,
             wallLayout = initialPhysicalLayout,
         )
     }

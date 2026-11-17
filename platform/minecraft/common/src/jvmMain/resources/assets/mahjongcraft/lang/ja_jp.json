@@ -905,7 +905,7 @@
   "mahjongcraft.riichi.room.config.option.two_winds": "半荘戦",
   "mahjongcraft.riichi.room.config.three_player_description": "日本リーチ麻雀（三人）の設定です",
   "mahjongcraft.riichi.room.config.variant.washizu": "鷲巣麻雀",
-  "mahjongcraft.riichi.room.config.variant.washizu.description": "鷲巣麻雀：各牌の4枚のうち3枚が透明牌です\n山を積まず、牌の袋からツモります\n赤ドラは使いません",
+  "mahjongcraft.riichi.room.config.variant.washizu.description": "鷲巣麻雀：各牌の4枚のうち3枚が透明牌です\n山を積まず、牌の袋からツモります\n赤ドラは使いません\nサイコロを振らずに配牌し、表ドラ表示牌を卓の中央に並べます",
   "mahjongcraft.riichi.room.config.variant.washizu.no_red_dora": "鷲巣麻雀では赤ドラを使いません",
   "mahjongcraft.riichi.round_info.stick_pot": "供託：%d",
   "mahjongcraft.riichi.round_info.title": "%s%d局、%d本場",

@@ -905,7 +905,7 @@
   "mahjongcraft.riichi.room.config.option.two_winds": "Two-Wind Game",
   "mahjongcraft.riichi.room.config.three_player_description": "Japanese riichi mahjong (3-player) settings.",
   "mahjongcraft.riichi.room.config.variant.washizu": "Washizu Mahjong",
-  "mahjongcraft.riichi.room.config.variant.washizu.description": "Washizu Mahjong: three of the four copies of every tile are transparent, tiles are drawn from a pool instead of a wall, and red fives are not used.",
+  "mahjongcraft.riichi.room.config.variant.washizu.description": "Washizu Mahjong: three of the four copies of every tile are transparent, tiles are drawn from a pool instead of a wall, and red fives are not used. There is no opening roll. Visible dora indicators are shown in the center of the table.",
   "mahjongcraft.riichi.room.config.variant.washizu.no_red_dora": "Washizu Mahjong does not use red fives.",
   "mahjongcraft.riichi.round_info.stick_pot": "Stick Pot: %d",
   "mahjongcraft.riichi.round_info.title": "%s %d, %d Repeat Counter",

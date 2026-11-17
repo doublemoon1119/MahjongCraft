@@ -58,7 +58,7 @@ class DebugGameScenarioTest {
         val registry = DebugGameScenarioRegistry()
 
         INITIAL_ROUND_IDS.forEach { id ->
-            assertIs<DebugGameScenarioPresentation.InitialRound>(registry.get(id)!!.build(createFixture().context).presentation, id)
+            assertIs<DebugGameScenarioPresentation.InitialRound>(registry.get(id)!!.build(contextFor(id)).presentation, id)
         }
         EXPECTED_IDS.filterNot { it in INITIAL_ROUND_IDS }.forEach { id ->
             assertEquals(
@@ -75,7 +75,7 @@ class DebugGameScenarioTest {
         val registry = DebugGameScenarioRegistry()
 
         INITIAL_ROUND_IDS.forEach { id ->
-            val context = createFixture().context
+            val context = contextFor(id)
             val before = context.currentGame.tableState
             val state = registry.get(id)!!.build(context).game.tableState
 
@@ -121,9 +121,9 @@ class DebugGameScenarioTest {
         val presentation = assertIs<DebugGameScenarioPresentation.InitialRound>(result.presentation)
         val allTileIds = allTileIds(result)
 
-        assertEquals(2, presentation.diceRoll.values.size)
+        assertEquals(2, assertNotNull(presentation.diceRoll).values.size)
         assertEquals(allTileIds, result.wallStructure.keys)
-        assertEquals(allTileIds, result.wallLayout.placements.keys)
+        assertEquals(allTileIds, assertNotNull(result.wallLayout).placements.keys)
         assertEquals(
             expected = (state.tileWall.getAllTiles() + state.reservedWallTiles).mapTo(mutableSetOf()) { tile -> tile.id },
             actual = assertNotNull(state.physicalWallLayout).placements.keys,
@@ -151,7 +151,7 @@ class DebugGameScenarioTest {
         val initialDeal = assertNotNull(publisher.getPublishedInitialDeal(gameId))
         assertTrue(publisher.werePlayerTilesCleared(gameId))
         assertTrue(wallContext.isNewOpening)
-        assertEquals(listOf(presentation.diceRoll.values.size), wallContext.openingDiceCounts)
+        assertEquals(listOf(assertNotNull(presentation.diceRoll).values.size), wallContext.openingDiceCounts)
         assertEquals(presentation.diceRoll, publisher.getPublishedOpeningRolls(gameId).single().dice)
         assertEquals(presentation.dealOrderHandTileIdsBySeatIndex, initialDeal.handTileIdsBySeatIndex)
         assertEquals(presentation.postFlipHandTileIdsBySeatIndex, initialDeal.postFlipHandTileIdsBySeatIndex)
@@ -316,7 +316,7 @@ class DebugGameScenarioTest {
                 physicalWallLayout = null,
             )
             val transition = assertIs<PhysicalWallLayoutTransitionDecision.Completed>(
-                value = fixture.moduleRegistry.getModule(state.config).createPhysicalWallLayoutPolicy()
+                value = assertNotNull(fixture.moduleRegistry.getModule(state.config).createPhysicalWallLayoutPolicy())
                     .resolveTransitionValidated(
                         context = PhysicalWallLayoutTransitionContext(
                             tableStateBeforeAction = state,
@@ -419,6 +419,22 @@ class DebugGameScenarioTest {
      * @param config 情境使用的日麻規則設定。
      * @return 同時持有遊戲輸入、模組 registry 與驗證器的 fixture。
      */
+    @Test
+    fun `washizu opening and kan scenarios have no wall layout`() {
+        val fixture = createFixture(RiichiRuleConfig(transparentTiles = true, buildsWall = false, redDoraCount = 0))
+        val registry = DebugGameScenarioRegistry()
+        val opening = requireNotNull(registry.get("mahjongcraft:riichi/debug/washizu_opening")).build(fixture.context)
+        val kan = requireNotNull(registry.get("mahjongcraft:riichi/debug/before_ankan_1")).build(fixture.context)
+
+        for (result in listOf(opening, kan)) {
+            assertEquals(null, result.wallLayout)
+            assertTrue(result.wallStructure.isEmpty())
+            assertEquals(null, result.game.tableState.physicalWallLayout)
+        }
+        assertEquals(null, assertIs<DebugGameScenarioPresentation.InitialRound>(opening.presentation).diceRoll)
+        assertEquals(DebugGameScenarioPresentation.StaticWall, kan.presentation)
+    }
+
     private fun createFixture(config: RiichiRuleConfig = RiichiRuleConfig()): Fixture {
         val playerIds = List(4) { Uuid.random() }
         val module = RiichiRuleModule("mahjongcraft:riichi", config)
@@ -451,7 +467,7 @@ class DebugGameScenarioTest {
      */
     private fun contextFor(id: String): DebugGameScenarioContext = when (id) {
         in THREE_PLAYER_IDS -> createThreePlayerRiichiScenarioContext()
-        WASHIZU_TILES_ID -> createFixture(RiichiRuleConfig(transparentTiles = true, buildsWall = false, redDoraCount = 0)).context
+        WASHIZU_TILES_ID, "mahjongcraft:riichi/debug/washizu_opening" -> createFixture(RiichiRuleConfig(transparentTiles = true, buildsWall = false, redDoraCount = 0)).context
         else -> createFixture().context
     }
 
@@ -544,6 +560,7 @@ class DebugGameScenarioTest {
             "mahjongcraft:riichi/debug/meld_showcase",
             "mahjongcraft:riichi/debug/noten_declaration_exhaustive_draw",
             "mahjongcraft:riichi/debug/wall_opening",
+            "mahjongcraft:riichi/debug/washizu_opening",
             "mahjongcraft:riichi/debug/washizu_tiles",
             "mahjongcraft:riichi/debug/winner_dealer_seat_rotation",
             "mahjongcraft:riichi_three_player/debug/auto_north_riichi_chain",
@@ -569,6 +586,7 @@ class DebugGameScenarioTest {
         /** 以正式開局呈現的情境。 */
         val INITIAL_ROUND_IDS: Set<String> = setOf(
             "mahjongcraft:riichi/debug/wall_opening",
+            "mahjongcraft:riichi/debug/washizu_opening",
             "mahjongcraft:taiwan/debug/dealer_flower",
             "mahjongcraft:taiwan/debug/eight_flowers",
             "mahjongcraft:taiwan/debug/flower_replacement",

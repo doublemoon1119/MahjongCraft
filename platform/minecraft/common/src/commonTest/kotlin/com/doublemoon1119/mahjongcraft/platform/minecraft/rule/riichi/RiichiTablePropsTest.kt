@@ -2,15 +2,21 @@ package com.doublemoon1119.mahjongcraft.platform.minecraft.rule.riichi
 
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RIICHI_STICK_POINTS
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiWallProgress
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.table.MahjongTableFacing
 import com.doublemoon1119.mahjongcraft.platform.minecraft.stick.MahjongScoringStickDimensions
+import com.doublemoon1119.mahjongcraft.platform.minecraft.table.BuiltInTablePropDefinitions
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.BuiltInTablePropKinds
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongTableSeatLayout
+import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TablePropContent
+import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TablePropLayoutResult
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TablePropLocation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TablePropPlacement
+import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TablePropPresentation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableSeatAnchor
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileDimensions
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileTableLayout
@@ -23,10 +29,58 @@ import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
 import kotlin.math.abs
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertIs
 import kotlin.test.assertTrue
+import kotlin.uuid.Uuid
 
 /** 驗證日麻桌上點棒的描述內容，以及換算出的世界位置與朝向。 */
 class RiichiTablePropsTest {
+    /** 驗證只有表寶牌呈現，並依公開順序面向各座位、在桌面中央成列。 */
+    @Test
+    fun `wallless dora indicators center the row facing the dealer`() {
+        val faces = listOf(Tile.Honor.East, Tile.Honor.South, Tile.Honor.West, Tile.Honor.North, Tile.Honor.White)
+        val tiles = List(14) { index ->
+            val face = if (index % 2 == 0) faces.getOrElse(index / 2) { Tile.Honor.Green } else Tile.Honor.Red
+            FakeIdentifiedTileFactory.create(face)
+        }
+        val config = RiichiRuleConfig(buildsWall = false)
+        val definitions = listOf(BuiltInTablePropDefinitions.FACE_UP_TILE, BuiltInTablePropDefinitions.SCORING_STICK).associateBy { it.id }
+        for (count in 1..5) {
+            for (seatIndex in 0..3) {
+                val table = state(riichiSeatIndices = setOf(0, 1, 2, 3), dealerSeatIndex = seatIndex).copy(
+                    config = config,
+                    reservedWallTiles = tiles,
+                    components = riichiTableComponents(wallProgress = RiichiWallProgress(completedSupplementalDrawCount = 4, revealedKanDoraCount = count - 1)),
+                )
+                val props = RiichiTableProps.describe(table)
+                assertEquals(faces.take(count).map(TablePropContent::FaceUpTile), props.filter { it.kind == BuiltInTablePropKinds.FACE_UP_TILE }.map { it.content })
+                val seats = MahjongTableSeatLayout.FOUR_PLAYER
+                val presentation = TablePropPresentation(
+                    tableId = Uuid.random(),
+                    ruleModuleId = "mahjongcraft:riichi",
+                    tableLocation = TableLocation("minecraft:overworld", 0, 0, 0),
+                    tableFacing = MahjongTableFacing.NORTH,
+                    seatLayout = seats,
+                    placements = props,
+                )
+                val targets = assertIs<TablePropLayoutResult.Success>(presentation.targets(definitions)).targets.filter { it.kind == BuiltInTablePropKinds.FACE_UP_TILE }
+                assertEquals(count, targets.size)
+                assertEquals(0.5, targets.map { it.x }.average(), EPSILON)
+                assertEquals(0.5, targets.map { it.z }.average(), EPSILON)
+                val yaw = MahjongTileTableLayout.seatYaw(seats, seatIndex)
+                assertTrue(targets.all { it.yaw == yaw })
+                targets.zipWithNext().forEach { (left, right) ->
+                    when (seatIndex) {
+                        0 -> assertTrue(right.x > left.x && abs(right.z - left.z) < EPSILON)
+                        1 -> assertTrue(right.z < left.z && abs(right.x - left.x) < EPSILON)
+                        2 -> assertTrue(right.x < left.x && abs(right.z - left.z) < EPSILON)
+                        3 -> assertTrue(right.z > left.z && abs(right.x - left.x) < EPSILON)
+                    }
+                }
+            }
+        }
+    }
+
     /**
      * 建立可指定立直、莊家、本場與供託數的四人日麻桌況。
      *

@@ -27,11 +27,13 @@ sealed interface TablePropLocation {
      * 依平台提供的中央區域順序擺放物件。
      *
      * @property order 同一批中央物件的穩定順序，從零開始。
+     * @property offsetAlongYaw 偏好的局部橫向位移，正值往朝向座位的右方。
      * @property yaw 相對桌子標準擺放方向的水平轉角（度）；平台會再加上桌子本身的轉角，不是世界絕對角度。
      */
     data class Center(
         val order: Int,
         val yaw: Float = 0f,
+        val offsetAlongYaw: Double = 0.0,
     ) : TablePropLocation {
         init {
             require(order >= 0) { "Table prop center order must not be negative: $order" }

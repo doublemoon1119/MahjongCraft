@@ -57,6 +57,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.server.player.ServerPlaye
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.FabricTableLifecycleService
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.PersistentTableOverlayCoordinator
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.tile.TileAnimationSteps
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.tile.spawnTableTile
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.time.FabricWorldTickWaiter
 import com.doublemoon1119.mahjongcraft.platform.minecraft.animation.AnimationStep
 import com.doublemoon1119.mahjongcraft.platform.minecraft.animation.WinPresentationCleanupPlan
@@ -667,13 +668,15 @@ class FabricGamePresentationPublisher(
         val arrangement = arrange(resolved, state, UnsortedHandTiles.after(previous, state, sortedPlayerIds), roundWallReach(state))
         val rearrangements = step.events.filterIsInstance<TableStepEvent.WallRearranged>()
         val rearrangedTileIds = rearrangements.flatMapTo(mutableSetOf()) { event -> event.phases.flatMap { phase -> phase.moves.map { it.tileId } } }
-        val motions = TableStepMotionPlanner.plan(previous, arrangement, rearrangedTileIds)
+        val motions = TableStepMotionPlanner.plan(previous, arrangement, rearrangedTileIds, dropNewTiles = state.physicalWallLayout == null)
         // 一起落到同一排的牌只播一次落地聲。
         val soundTileIds = motions.groupBy { it.kind to it.toRow }.values.mapTo(mutableSetOf()) { group -> group.first().tileId }
         // 先離開、再讓位、最後從牌牆摸進來；後一段等前一段完成。
         val phaseStarts = TableStepMotionPlanner.phaseStartTicks(motions)
         motions.forEach { motion ->
-            val tile = resolved.findTile(motion.tileId) ?: return@forEach
+            val tile = resolved.findTile(motion.tileId) ?: (
+                if (motion.kind == TileMotionKind.DROP) spawnTableTile(spawnGateway, resolved.world, gameId, motion.tileId, motion.to) else null
+                ) ?: return@forEach
             tile.assignToTable(gameId)
             val motionStart = startGameTime + phaseStarts.getValue(TableStepMotionPlanner.phaseOf(motion.kind))
             TileAnimationSteps.schedulePlannedMotion(tile, motion, motionStart, playLandingSound = motion.tileId in soundTileIds)
@@ -943,6 +946,7 @@ class FabricGamePresentationPublisher(
             if (!openingOperations.mayRun(openingOperation)) return@launchOpeningStage
             val openingEndGameTime = timelineAnchor + MahjongDiceRollTimeline.totalTicks(openingDiceCounts, wallDropTicks)
             val opening = openingState.consumeOpening(gameId)
+            if (tableState.physicalWallLayout == null) playerAreaPresenter.clear(gameId, resolved.location)
             // 發牌途中牌牆還是發牌前的樣子，手牌讓開發牌前的完整牌牆；發完牌後空出的位置等之後的排位再讓回來。
             val dealWallReach = buildSet {
                 addAll(roundWallReach(tableState))
@@ -976,6 +980,7 @@ class FabricGamePresentationPublisher(
                 },
                 tilePoseStates = tilePoseStates(tableState, moduleRegistry.getModule(tableState.config)),
                 dealBatchSizes = dealBatchSizes,
+                hasPhysicalWall = tableState.physicalWallLayout != null,
                 extraLeadDelayTicks = (openingEndGameTime - resolved.world.time).coerceAtLeast(0L).coerceAtMost(Int.MAX_VALUE.toLong()).toInt(),
             )
             val result = playerAreaPresenter.presentInitialDeal(presentation)
@@ -1546,9 +1551,9 @@ class FabricGamePresentationPublisher(
      * 規則回報牌牆在這一局剩下時間裡可能佔到的位置。
      *
      * @param tableState 本局權威桌況。
-     * @return 牌牆可能佔到的位置；規則沒有牌牆布局時為空集合。
+     * @return 牌牆可能佔到的位置；規則沒有牌牆布局或不砌牌牆時為空集合。
      */
-    private fun roundWallReach(tableState: TableState): Set<TileWallPlacement> = moduleRegistry.getModule(tableState.config).createPhysicalWallLayoutPolicy().roundReach(tableState)
+    private fun roundWallReach(tableState: TableState): Set<TileWallPlacement> = moduleRegistry.getModule(tableState.config).createPhysicalWallLayoutPolicy()?.roundReach(tableState).orEmpty()
 
     /**
      * 依牌牆位置建立讓位範圍。

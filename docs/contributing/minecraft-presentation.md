@@ -199,13 +199,20 @@ rules come from collisions that only showed up in game, so check them even when 
 - Positions that stand for a seat, such as where a declaration sound plays or where an AI character looks,
   use the seat geometry or a `TableSeatAnchor`, not a tile placement that happens to sit nearby.
 
+- The rule always supplies the draw order. Its physical wall layout may be absent. In that case dealt
+  tiles, regular draws and replacement draws first appear in their destination and share the existing
+  drop animation. Once on the table, each tile keeps its authoritative UUID for later moves.
+  With a physical wall, presentation continues to claim existing wall entities by UUID.
+- Fixed openings can deal without dice; the centre is reserved only for an opening that rolls dice.
+
 ## Rule-owned table props
 
 - A rule supplies the complete scene through `TablePropDescriber`. Give every object a stable,
   namespaced ID. Keep that ID when its content or position changes; do not generate a new UUID on
   each refresh. Objects missing from the next description are removed.
 - Use `TablePropLocation.Seat` for a standard seat anchor, or `Center(order)` for the shared centre.
-  The adapter chooses central coordinates. The centre comes from the four discard rows, independently
+  The adapter chooses central coordinates. For a row facing the same direction, each prop can prefer a
+  lateral offset relative to its own yaw. The centre comes from the four discard rows, independently
   of the number of players or wall faces; no rule receives reserved space by default.
 - A native prop kind owns one `TablePropKindDefinition`: its ID, actual model dimensions and pure
   content validator. Register that kind once through the existing extension callback. Use the same

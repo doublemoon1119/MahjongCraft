@@ -91,6 +91,24 @@ class ThreePlayerRiichiDebugGameScenariosTest {
         assertTrue(GameAction.Tsumo in afterSecondPull.currentOwnTurnActions())
     }
 
+    /** 三人鷲巢麻將的拔北情境沿用正式規則，王牌與手牌可驗證，不必建立牌牆。 */
+    @Test
+    fun `washizu north scenario uses the reserved draw pool`() {
+        val context = createThreePlayerRiichiScenarioContext(
+            config = ThreePlayerRiichiRuleConfig(transparentTiles = true, buildsWall = false, redDoraCount = 0),
+        )
+        val result = requireNotNull(registry.get("mahjongcraft:riichi_three_player/debug/pull_north")).build(context)
+        scenarioValidator.validate(context, result)
+        val state = result.game.tableState
+
+        assertEquals(null, state.physicalWallLayout)
+        assertEquals(null, result.wallLayout)
+        assertTrue(RIICHI_PULL_NORTH_GAME_ACTION in state.currentOwnTurnActions())
+        assertEquals(NINE_CHARACTER, state.reservedWallTiles.first().tile)
+        val after = state.pullNorthThenDraw(state.reservedWallTiles.first())
+        assertEquals(NINE_CHARACTER, after.currentPlayer.hand.lastDrawn?.tile)
+    }
+
     /** 立直中拔的是剛摸到的北；手上那對北在之後摸到別的牌時不能拔，補到的四條可以自摸。 */
     @Test
     fun `pull north in riichi only sets aside the drawn north`() {

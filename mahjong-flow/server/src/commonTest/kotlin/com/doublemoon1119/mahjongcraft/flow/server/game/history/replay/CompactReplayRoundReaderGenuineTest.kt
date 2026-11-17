@@ -44,16 +44,19 @@ import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiExhaustiveDrawRe
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiHistoryDiscardMarkerIds
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPlayerTileAreaIds
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleModule
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.threeplayer.ThreePlayerRiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.RiichiTileComponentViews
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.RiichiTileValues
 import com.doublemoon1119.mahjongcraft.logic.table.DiscardPile.DiscardEntry
+import com.doublemoon1119.mahjongcraft.logic.table.GameInitializer
 import com.doublemoon1119.mahjongcraft.logic.table.MatchRoundPosition
 import com.doublemoon1119.mahjongcraft.logic.table.PlayerTileAreas
 import com.doublemoon1119.mahjongcraft.logic.table.RoundCompletionClassification
 import com.doublemoon1119.mahjongcraft.logic.table.RoundCompletionSummary
 import com.doublemoon1119.mahjongcraft.logic.table.RoundTransitionDirective
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
+import com.doublemoon1119.mahjongcraft.logic.table.TurnPhase
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import com.doublemoon1119.mahjongcraft.logic.tile.component.TilePose
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledPersistenceRegistries
@@ -62,6 +65,7 @@ import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeMeldFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.rules.riichi.riichiDeclarationComponents
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
+import com.doublemoon1119.mahjongcraft.testing.logic.table.testRoundRandomness
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
@@ -381,6 +385,39 @@ class CompactReplayRoundReaderGenuineTest {
         assertEquals(listOf(1), events.transactions.map { it.index })
         assertEquals(125L, events.transactions.single().occurredAtEpochMillis)
         assertEquals(2, events.nextTransactionIndex)
+    }
+
+    /** 沒有實體牌牆的正式開局仍可編碼並重建手牌、活牌及保留牌。 */
+    @Test
+    fun `reader restores a wallless riichi round`() = runTest {
+        val config = RiichiRuleConfig(transparentTiles = true, buildsWall = false, redDoraCount = 0)
+        val module = RiichiRuleModule("mahjongcraft:riichi", config)
+        val table = GameInitializer.initialize(Uuid.random(), List(4) { Uuid.random() }, module, randomness = testRoundRandomness()).tableState
+        val draw = table.tileWall.draw()
+        val changed = table.copy(
+            players = table.players.map { player ->
+                if (player.id == table.currentPlayer.id) player.copy(hand = player.hand.copy(lastDrawn = draw.tile)) else player
+            },
+            tileWall = draw.wall,
+            turnPhase = TurnPhase.AwaitingAction,
+        )
+        val matchId = Uuid.random()
+        val events = listOf(
+            event(matchId, table.id, 1, 0L, HistoryFact.MatchStarted(table, GameFlowConfig(), emptyMap())),
+            event(matchId, table.id, 2, 125L, HistoryFact.TableChanged(HistoryTableResult.Checkpoint("test:draw", changed))),
+            event(matchId, table.id, 3, 250L, HistoryFact.MatchCompleted("test:completed", changed.players.associate { it.id to it.score })),
+        )
+        val registries = bundledPersistenceRegistries()
+        val document = CompactReplayCodec.encodeCompact(events, HistoryRecordingPersistenceMapper(registries), registries)
+        val initial = assertIs<ReplayReadResult.Success<HistoryRoundState>>(reader().readState(document, matchId, 1, HistoryRoundPosition.Initial)).value
+        val after = assertIs<ReplayReadResult.Success<HistoryRoundState>>(reader().readState(document, matchId, 1, HistoryRoundPosition.AfterTransaction(1))).value
+
+        assertEquals(table.tileWall.remainingCount, initial.wallTiles.size)
+        assertEquals(table.reservedWallTiles.map { it.tile }, initial.reservedTiles.map { initial.tileCatalog.tiles[it.tileIndex].tile })
+        assertEquals(table.players.map { it.hand.tiles.size }, initial.players.map { it.handTiles.size })
+        val drawn = after.players.single { it.initialSeatIndex == after.currentPlayerSeat }.lastDrawn
+        assertEquals(draw.tile?.tile, drawn?.let { after.tileCatalog.tiles[it.tileIndex].tile })
+        assertEquals(initial.wallTiles.size - 1, after.wallTiles.size)
     }
 
     /** 驗證真實桌況檢查點產生的差異能重建玩家分數與牌參照。 */

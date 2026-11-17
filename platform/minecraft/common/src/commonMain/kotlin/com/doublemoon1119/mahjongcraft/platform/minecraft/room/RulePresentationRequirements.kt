@@ -8,7 +8,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongDiceTableL
 /**
  * 規則要在 Minecraft 麻將桌上進行對局必須滿足的條件。
  *
- * 桌上的牌只從牌山產生，因此規則必須提供牌山布局與開局程序；若程序使用擲骰，每一輪的骰子數量也必須是
+ * 規則必須提供摸牌順序與開局程序。實體牌牆布局可省略，牌會在進入桌面區域時出現。若開局程序使用擲骰，每一輪的骰子數量必須是
  * 桌上能擺放的數量（[MahjongDiceTableLayout.supportedDiceCounts]）。只有設定呈現標為可選、且滿足這些條件的規則，
  * 才能用於房間設定與開局。
  */
@@ -37,9 +37,9 @@ object RulePresentationRequirements {
         } else {
             playerCount..playerCount
         }
-        val missingWallLayouts = supportedPlayerCounts.filter { module.createWallLayout(it) == null }
-        if (missingWallLayouts.isNotEmpty()) {
-            return "rule ${module.id} provides no wall layout for player counts ${missingWallLayouts.joinToString()}"
+        val missingDrawLayouts = supportedPlayerCounts.filter { module.createWallLayout(it) == null }
+        if (missingDrawLayouts.isNotEmpty()) {
+            return "rule ${module.id} provides no wall layout for player counts ${missingDrawLayouts.joinToString()}"
         }
         val openingProcedures = supportedPlayerCounts.mapNotNull { module.createRoundOpeningProcedure(it) }
         if (openingProcedures.size != supportedPlayerCounts.count()) {

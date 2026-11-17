@@ -39,6 +39,7 @@ import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiTileOrder
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiWallRevealPolicy
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.collectRiichiPot
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.layout.RiichiPhysicalWallLayoutPolicy
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.opening.RIICHI_WITHOUT_WALL_OPENING_PROCEDURE
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.riichiAbortiveDrawRevealedHands
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.riichiComboBonusPayments
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.riichiDeclaration
@@ -64,6 +65,7 @@ import com.doublemoon1119.mahjongcraft.logic.table.SupplementalDrawPolicy
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.logic.table.WallRevealPolicy
 import com.doublemoon1119.mahjongcraft.logic.table.layout.PhysicalWallLayoutPolicy
+import com.doublemoon1119.mahjongcraft.logic.table.opening.RoundOpeningProcedure
 import com.doublemoon1119.mahjongcraft.logic.tile.TileInterpretationPolicy
 import com.doublemoon1119.mahjongcraft.logic.tile.component.TileComponentDescription
 import kotlin.uuid.Uuid
@@ -115,15 +117,22 @@ class ThreePlayerRiichiRuleModule(
     /** 建立在三面牌牆之間數骰子的開門 policy。 */
     override fun createWallOpeningPolicy(): ThreePlayerRiichiWallOpeningPolicy = ThreePlayerRiichiWallOpeningPolicy
 
+    /** 砌牌牆時由莊家擲骰決定開門；不砌牌牆時不擲骰，使用固定開門位置切分摸牌序列與王牌。 */
+    override fun createRoundOpeningProcedure(playerCount: Int): RoundOpeningProcedure? = if (config.buildsWall) super.createRoundOpeningProcedure(playerCount) else RIICHI_WITHOUT_WALL_OPENING_PROCEDURE
+
     /** 建立三面、每面 18 墩的牌牆布局。 */
     override fun createWallLayout(playerCount: Int): ThreePlayerRiichiWallLayout = ThreePlayerRiichiWallLayout(config)
 
-    /** 與四人日麻共用的王牌區布局；嶺上牌為 8 張。 */
-    override fun createPhysicalWallLayoutPolicy(): PhysicalWallLayoutPolicy = RiichiPhysicalWallLayoutPolicy(
-        rinshanTileCount = config.rinshanTileCount,
-        sideCount = ThreePlayerRiichiWallLayout.SIDE_COUNT,
-        stacksPerSide = ThreePlayerRiichiWallLayout.STACKS_PER_SIDE,
-    )
+    /** 與四人日麻共用的王牌區布局；嶺上牌為 8 張。不砌牌牆時沒有實體牌牆。 */
+    override fun createPhysicalWallLayoutPolicy(): PhysicalWallLayoutPolicy? = if (config.buildsWall) {
+        RiichiPhysicalWallLayoutPolicy(
+            rinshanTileCount = config.rinshanTileCount,
+            sideCount = ThreePlayerRiichiWallLayout.SIDE_COUNT,
+            stacksPerSide = ThreePlayerRiichiWallLayout.STACKS_PER_SIDE,
+        )
+    } else {
+        null
+    }
 
     /** 將赤五解讀為普通五的牌面 policy。 */
     override fun createTileInterpretationPolicy(): TileInterpretationPolicy = RiichiTileInterpretationPolicy

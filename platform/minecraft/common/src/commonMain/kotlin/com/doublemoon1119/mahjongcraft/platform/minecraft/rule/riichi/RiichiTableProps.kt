@@ -1,15 +1,19 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.rule.riichi
 
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RIICHI_STICK_POINTS
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiFamilyRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.riichiDeclaration
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.riichiPotPoints
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.riichiWallProgress
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.platform.minecraft.stick.MahjongScoringStickDimensions
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.BuiltInTablePropKinds
+import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongTableSeatLayout
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TablePropContent
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TablePropDescriber
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TablePropLocation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TablePropPlacement
+import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TablePropPresentation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableSeatAnchor
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableSeatOffset
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileDimensions
@@ -33,6 +37,9 @@ object RiichiTableProps : TablePropDescriber {
     /** 立直棒與牌河之間留下的縫隙，讓兩者看得出是分開的（單位：方塊）。 */
     internal const val RIICHI_STICK_CLEARANCE_GAP: Double = 0.05
 
+    /** 無牌牆時立直棒靠近牌河，保留中央指示牌的空間。 */
+    private const val WALLLESS_STICK_GAP: Double = TablePropPresentation.CENTER_GAP
+
     /** 角落一疊每排最多的根數，排滿往上疊一層。 */
     internal const val STICKS_PER_ROW: Int = 4
 
@@ -43,7 +50,9 @@ object RiichiTableProps : TablePropDescriber {
         val pooledStickCount = pooledStickCount(tableState)
         val dealerSeatIndex = tableState.dealerIndex
         return buildList {
-            riichiSeatIndices(tableState).mapTo(this, ::riichiStick)
+            addAll(doraIndicators(tableState))
+            val stickGap = if (tableState.isWalllessRiichi()) WALLLESS_STICK_GAP else RIICHI_STICK_CLEARANCE_GAP
+            riichiSeatIndices(tableState).mapTo(this) { seat -> riichiStick(seat, stickGap) }
             repeat(tableState.comboCount) { stackIndex -> add(cornerStick(dealerSeatIndex, stackIndex, COMBO_STICK_VARIANT)) }
             repeat(pooledStickCount) { poolIndex ->
                 add(cornerStick(dealerSeatIndex, tableState.comboCount + poolIndex, STICK_POT_VARIANT))
@@ -61,6 +70,27 @@ object RiichiTableProps : TablePropDescriber {
         return cornerStickCount.coerceAtMost(STICKS_PER_ROW) * CORNER_STICK_STEP
     }
 
+    /** 無實體牌牆時，表寶牌依公開順序從莊家視角左至右排列，整列置中。 */
+    private fun doraIndicators(state: TableState): List<TablePropPlacement> {
+        if (!state.isWalllessRiichi()) return emptyList()
+        val indicators = state.riichiWallProgress().getDoraIndicators(state).first
+        val seats = MahjongTableSeatLayout.forPlayerCount(state.players.size)
+        val yaw = MahjongTileTableLayout.seatYaw(seats, state.dealerIndex)
+        val step = MahjongTileDimensions.TILE_WIDTH + TablePropPresentation.CENTER_GAP + MahjongTileDimensions.TILE_SMALL_PADDING
+        val centerIndex = indicators.lastIndex / 2.0
+        return indicators.mapIndexed { index, indicator ->
+            TablePropPlacement(
+                id = "mahjongcraft:riichi/dora_indicator/$index",
+                kind = BuiltInTablePropKinds.FACE_UP_TILE,
+                content = TablePropContent.FaceUpTile(indicator.tile),
+                location = TablePropLocation.Center(index, yaw, (index - centerIndex) * step),
+            )
+        }
+    }
+
+    /** 只有不砌牌牆的日麻玩法使用中央指示牌。 */
+    private fun TableState.isWalllessRiichi(): Boolean = (config as? RiichiFamilyRuleConfig)?.buildsWall == false && physicalWallLayout == null
+
     /** 目前立直中的座位。 */
     private fun riichiSeatIndices(tableState: TableState): List<Int> = tableState.players.withIndex()
         .filter { (_, player) -> player.riichiDeclaration != null }
@@ -73,14 +103,14 @@ object RiichiTableProps : TablePropDescriber {
     }
 
     /** 立直棒：從牌河內緣再往桌子中心退半根棒子厚度與一道縫隙，沿排列方向置中。 */
-    private fun riichiStick(seatIndex: Int) = TablePropPlacement(
+    private fun riichiStick(seatIndex: Int, gap: Double) = TablePropPlacement(
         id = "mahjongcraft:riichi/sticks/seat/$seatIndex",
         kind = BuiltInTablePropKinds.SCORING_STICK,
         content = TablePropContent.CustomVariant(STICK_POT_VARIANT),
         location = TablePropLocation.Seat(
             seatIndex = seatIndex,
             anchor = TableSeatAnchor.DISCARD_INNER_EDGE,
-            offset = TableSeatOffset(z = -(MahjongScoringStickDimensions.STICK_DEPTH / 2.0 + RIICHI_STICK_CLEARANCE_GAP)),
+            offset = TableSeatOffset(z = -(MahjongScoringStickDimensions.STICK_DEPTH / 2.0 + gap)),
         ),
     )
 

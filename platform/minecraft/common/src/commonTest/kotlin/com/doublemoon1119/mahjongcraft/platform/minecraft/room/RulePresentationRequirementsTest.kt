@@ -35,9 +35,23 @@ class RulePresentationRequirementsTest {
         RulePresentationRequirements.verifySelectableRules(bundledPresentations(), modules)
     }
 
+    /** 無骰且沒有實體位置的玩法仍可在房間選取並開局。 */
+    @Test
+    fun `wallless riichi variants can be played`() {
+        val modules = bundledModules()
+        val presentations = bundledPresentations()
+        val configs = listOf(
+            RiichiRuleConfig(transparentTiles = true, buildsWall = false, redDoraCount = 0),
+            ThreePlayerRiichiRuleConfig(transparentTiles = true, buildsWall = false, redDoraCount = 0),
+        )
+        configs.forEach { config ->
+            assertTrue(RulePresentationRequirements.isPlayable(config, presentations, modules, config.maxPlayers))
+        }
+    }
+
     /** 缺少牌山布局或開局程序的規則無法呈現，原因帶出規則 ID。 */
     @Test
-    fun `rules without a wall cannot be presented`() {
+    fun `rules without a draw order or opening cannot be presented`() {
         val noLayout = RulePresentationRequirements.unmetRequirement(adjustedModule(providesLayout = false))
         val noOpening = RulePresentationRequirements.unmetRequirement(adjustedModule(diceCount = null))
 

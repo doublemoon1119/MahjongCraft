@@ -88,6 +88,24 @@ class TableStepMotionPlannerTest {
         assertEquals(listOf(placed to TileMotionKind.PLACE), motions.map { it.tileId to it.kind })
     }
 
+    /** 無牌牆時，只有首次出現的牌在其他牌讓位後落下。 */
+    @Test
+    fun `new tiles drop after the existing tiles make room`() {
+        val existing = Uuid.random()
+        val added = Uuid.random()
+        val previous = arrangement(arranged(existing, hand, 0, x = 0.0))
+        val next = arrangement(arranged(added, hand, 0, x = 0.0), arranged(existing, hand, 1, x = 1.0))
+
+        val motions = TableStepMotionPlanner.plan(previous, next, dropNewTiles = true)
+
+        assertEquals(TileMotionKind.DROP, motions.single { it.tileId == added }.kind)
+        val existingMotion = motions.single { it.tileId == existing }
+        val arrivalStart = TableStepMotionPlanner.phaseStartTicks(motions).getValue(TileMotionPhase.ARRIVE)
+        assertEquals(TableStepMotionPlanner.durationTicks(existingMotion.kind), arrivalStart)
+        assertEquals(arrivalStart + MahjongTileTableLayout.DRAW_DROP_DURATION_TICKS, TableStepMotionPlanner.stepDurationTicks(motions))
+        assertEquals(emptyList(), TableStepMotionPlanner.plan(next, next, dropNewTiles = true))
+    }
+
     /** 先離開、再讓位、最後摸進來，三段依序：每一段等前一段最長的動作完成；沒有動作的段落不佔時間。 */
     @Test
     fun `phases play in order and the step lasts the sum of their longest motions`() {

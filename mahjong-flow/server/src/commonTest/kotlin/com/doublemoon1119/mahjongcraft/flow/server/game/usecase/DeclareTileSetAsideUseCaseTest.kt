@@ -129,6 +129,28 @@ class DeclareTileSetAsideUseCaseTest {
         assertEquals(state, drawn.tableState)
     }
 
+    /** 無實體牌牆時，拔北仍透過正式入口補牌並更新權威活牌與保留牌。 */
+    @Test
+    fun `wallless north replacement draws and replenishes the reserve`() = runTest {
+        val fixtures = Fixtures()
+        val before = table(waiter = bystander(waiterId, Wind.SOUTH)).copy(
+            config = ThreePlayerRiichiRuleConfig(transparentTiles = true, buildsWall = false, redDoraCount = 0),
+            physicalWallLayout = null,
+        )
+        fixtures.gameRepo.setTableState(before)
+
+        val result = fixtures.gameRepo.runAsSingleWrite(gameId) { fixtures.useCase(gameId, pullerId, RIICHI_PULL_NORTH_GAME_ACTION) }
+
+        assertIs<Outcome.Success<Unit>>(result)
+        val after = assertNotNull(fixtures.gameRepo.getTableState(gameId))
+        assertEquals(rinshan, after.players.first { it.id == pullerId }.hand.lastDrawn)
+        assertEquals(before.tileWall.remainingCount - 1, after.tileWall.remainingCount)
+        assertEquals(before.reservedWallTiles.drop(1) + before.tileWall.getAllTiles().last(), after.reservedWallTiles)
+        assertNull(after.physicalWallLayout)
+        val drawn = fixtures.presentationPublisher.getPublishedTableStepBatches(gameId).single().last()
+        assertEquals(TileRegion.DRAWN, drawn.tableState.tileRegion(rinshan.id))
+    }
+
     /** 驗證手中沒有北時拒絕拔北。 */
     @Test
     fun `pulling north without a north is illegal`() = runTest {

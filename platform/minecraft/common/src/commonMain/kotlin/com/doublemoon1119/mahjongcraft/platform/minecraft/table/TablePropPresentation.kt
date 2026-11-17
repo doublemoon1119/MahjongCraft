@@ -4,7 +4,10 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.api.table.MahjongTable
 import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftResourceIds
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileDimensions
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileTableLayout
+import kotlin.math.PI
 import kotlin.math.abs
+import kotlin.math.cos
+import kotlin.math.sin
 import kotlin.uuid.Uuid
 
 /**
@@ -77,15 +80,18 @@ data class TablePropPresentation(
             .sortedWith(compareBy<TablePropPlacement> { (it.location as TablePropLocation.Center).order }.thenBy { it.id })
         ) {
             val location = placement.location as TablePropLocation.Center
-            if (!location.yaw.isFinite()) return TablePropLayoutResult.Invalid(TablePropLayoutFailure.INVALID_PLACEMENT, "Invalid center angle: ${placement.id}")
+            if (!location.yaw.isFinite() || !location.offsetAlongYaw.isFinite()) return TablePropLayoutResult.Invalid(TablePropLayoutFailure.INVALID_PLACEMENT, "Invalid center angle: ${placement.id}")
             val dimensions = definitions.getValue(placement.kind).dimensions
             val origin = TablePropTarget(placement.id, ruleModuleId, placement.kind, placement.content, 0.0, 0.0, 0.0, location.yaw)
             val size = TablePropBounds.of(origin, dimensions)
             val halfX = size.maxX
             val halfZ = size.maxZ
             if (halfX > CENTER_HALF_EXTENT || halfZ > CENTER_HALF_EXTENT) return TablePropLayoutResult.Invalid(TablePropLayoutFailure.NO_SPACE, "No center space for ${placement.id}")
-            val xs = candidates(halfX, occupied.flatMap { listOf(it.minX - CENTER_GAP - halfX, it.maxX + CENTER_GAP + halfX) })
-            val zs = candidates(halfZ, occupied.flatMap { listOf(it.minZ - CENTER_GAP - halfZ, it.maxZ + CENTER_GAP + halfZ) })
+            val angle = location.yaw * (PI / 180.0)
+            val preferredX = location.offsetAlongYaw * cos(angle)
+            val preferredZ = location.offsetAlongYaw * sin(angle)
+            val xs = candidates(halfX, preferredX, occupied.flatMap { listOf(it.minX - CENTER_GAP - halfX, it.maxX + CENTER_GAP + halfX) })
+            val zs = candidates(halfZ, preferredZ, occupied.flatMap { listOf(it.minZ - CENTER_GAP - halfZ, it.maxZ + CENTER_GAP + halfZ) })
             var attempts = 0
             var selected: TablePropTarget? = null
             search@ for (z in zs) {
@@ -111,12 +117,13 @@ data class TablePropPresentation(
      * 產生中央、邊緣及已占用邊界旁的有限候選位置。
      *
      * @param halfSize 物件在此方向的半尺寸。
+     * @param preferred 偏好的座標。
      * @param edges 既有物件邊緣旁的候選位置。
-     * @return 中央優先、同距離時座標小者優先的合法位置。
+     * @return 最接近偏好座標優先、同距離時座標小者優先的合法位置。
      */
-    private fun candidates(halfSize: Double, edges: List<Double>): List<Double> = (listOf(0.0, -CENTER_HALF_EXTENT + halfSize, CENTER_HALF_EXTENT - halfSize) + edges)
+    private fun candidates(halfSize: Double, preferred: Double, edges: List<Double>): List<Double> = (listOf(preferred, 0.0, -CENTER_HALF_EXTENT + halfSize, CENTER_HALF_EXTENT - halfSize) + edges)
         .filter { it >= -CENTER_HALF_EXTENT + halfSize && it <= CENTER_HALF_EXTENT - halfSize }
-        .distinct().sortedWith(compareBy<Double> { abs(it) }.thenBy { it })
+        .distinct().sortedWith(compareBy<Double> { abs(it - preferred) }.thenBy { it })
 
     /**
      * 將世界位置轉回以桌心為原點的局部座標。
