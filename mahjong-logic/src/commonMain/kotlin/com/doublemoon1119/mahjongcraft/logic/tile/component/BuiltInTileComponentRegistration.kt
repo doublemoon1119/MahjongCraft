@@ -28,9 +28,10 @@ fun registerBuiltInTileComponents(registry: ComponentRegistrar) {
             appliesTo = { _, _ -> true },
             resolve = { context ->
                 val tile = context.owner
+                if (tile.components[BuiltInTileComponents.TRANSPARENT] == null) return@ComponentEffectDefinition ComponentSet.EMPTY
                 val undrawn = context.tableState.tileWall.getAllTiles().any { it.id == tile.id } ||
                     context.tableState.reservedWallTiles.any { it.id == tile.id }
-                if (tile.components[BuiltInTileComponents.TRANSPARENT] != null && !undrawn) {
+                if (!undrawn) {
                     ComponentSet.EMPTY.with(BuiltInTileComponents.FACE_ACCESS, TileFaceAccess.Public)
                 } else {
                     ComponentSet.EMPTY
