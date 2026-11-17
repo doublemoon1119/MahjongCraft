@@ -173,7 +173,7 @@ internal class RoomSettingsPage(
         addRuleRow(layout, config, resolved.ruleModuleId, definition, canEditRoom, editable)
         addTabs(layout, categories)
         val fields = GameConfigVariantResolver.visibleFields(definition).filter { it.categoryId == selectedCategoryId }
-        fieldScroll.clamp(fields.size - layout.visibleFieldCount)
+        fieldScroll.clamp(layout.scrollbar(fields.size, fieldScroll.index).maximumScroll)
         fields.drop(fieldScroll.index).take(layout.visibleFieldCount).forEachIndexed { index, field ->
             val locked = GameConfigVariantResolver.lockedField(definition, config, field.id)
             addFieldControls(

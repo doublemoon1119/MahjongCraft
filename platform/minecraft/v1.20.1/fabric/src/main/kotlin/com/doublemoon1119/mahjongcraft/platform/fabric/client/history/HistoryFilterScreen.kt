@@ -119,7 +119,7 @@ internal class HistoryFilterScreen(
     }
 
     /** 最多可捲動的列數。 */
-    private fun maximumScroll(): Int = (rows().size - layout.visibleFieldCount).coerceAtLeast(0)
+    private fun maximumScroll(): Int = if (layout.visibleFieldCount == 0) 0 else (rows().size - layout.visibleFieldCount).coerceAtLeast(0)
 
     /** 依捲動位置擺放每一列的控制項，捲出可見範圍的列隱藏。 */
     private fun placeRows() {

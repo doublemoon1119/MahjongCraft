@@ -1,16 +1,18 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.client.game
 
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.MarqueeState
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.RestartableMarqueeButtonWidget
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.drawWrappedDescription
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.wrapDescription
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.PlayerDecisionPromptDto
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.PlayerDecisionSelectionKindDto
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.RuleDecisionPromptDto
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftHudKeys
 import net.minecraft.client.gui.DrawContext
 import net.minecraft.client.gui.screen.Screen
-import net.minecraft.client.gui.tooltip.TooltipPositioner
+import net.minecraft.client.gui.tooltip.TooltipBackgroundRenderer
 import net.minecraft.client.gui.widget.ButtonWidget
 import net.minecraft.text.Text
-import org.joml.Vector2i
 
 /**
  * 透明且不暫停遊戲的權威操作選擇介面。
@@ -236,6 +238,8 @@ internal class PlayerDecisionScreen(
         renderDescriptionTooltip(context, layout, placements, mouseX, mouseY)
     }
 
+    private val descriptionMarquee = MarqueeState()
+
     /**
      * 游標停在有說明的卡片上時，在面板外緣對齊該卡片顯示說明，不覆蓋卡片列。
      *
@@ -252,18 +256,44 @@ internal class PlayerDecisionScreen(
         mouseX: Int,
         mouseY: Int,
     ) {
-        if (mouseX !in layout.viewportLeft until layout.viewportRight) return
         val index = placements.indexOfFirst { placement ->
-            mouseX in placement.x until placement.x + placement.width && mouseY in placement.y until placement.y + placement.height
+            mouseX in layout.viewportLeft until layout.viewportRight &&
+                mouseX in placement.x until placement.x + placement.width &&
+                mouseY in placement.y until placement.y + placement.height
         }
-        if (index < 0) return
-        val description = visibleEntries[index].description ?: return
-        val card = placements[index]
-        val positioner = TooltipPositioner { _, _, _, _, width, height ->
-            val position = layout.descriptionTooltipPosition(card, width, height)
-            Vector2i(position.x, position.y)
+        val description = visibleEntries.getOrNull(index)?.description
+        val maximumWidth = layout.descriptionTooltipWidth
+        val maximumLines = layout.descriptionTooltipHeight / textRenderer.fontHeight
+        if (description == null || maximumWidth == 0 || maximumLines == 0) {
+            descriptionMarquee.offset(subject = null, overflow = 0)
+            return
         }
-        context.drawTooltip(textRenderer, textRenderer.wrapLines(description, DecisionCardLayout.TOOLTIP_MAX_WIDTH), positioner, mouseX, mouseY)
+        val lines = textRenderer.wrapDescription(description, maximumWidth)
+        val lineCount = minOf(lines.size, maximumLines)
+        if (lineCount == 0) {
+            descriptionMarquee.offset(subject = null, overflow = 0)
+            return
+        }
+        val width = if (lines.size > lineCount) maximumWidth else lines.maxOf(textRenderer::getWidth).coerceIn(1, maximumWidth)
+        val height = lineCount * textRenderer.fontHeight
+        val position = layout.descriptionTooltipPosition(card = placements[index], width = width, height = height)
+        val tooltipZ = 400
+        TooltipBackgroundRenderer.render(context, position.x, position.y, width, height, tooltipZ)
+        context.matrices.push()
+        context.matrices.translate(0f, 0f, tooltipZ.toFloat())
+        drawWrappedDescription(
+            context = context,
+            renderer = textRenderer,
+            lines = lines,
+            visibleLines = lineCount,
+            left = position.x,
+            top = position.y,
+            width = width,
+            color = 0xFFFFFF,
+            marquee = descriptionMarquee,
+            subject = index,
+        )
+        context.matrices.pop()
     }
 
     /** 目前畫面寬度下的面板內容；觸發文字依畫面寬度換行。 */

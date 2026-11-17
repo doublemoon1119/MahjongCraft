@@ -56,6 +56,50 @@ class DropdownListLayoutTest {
 
         assertEquals(1, layout.visibleCount)
         assertEquals(4, layout.maximumScroll)
+        assertEquals(0, layout.visibleFootnoteLines)
+        assertTrue(layout.bottom <= 60 - DropdownListLayout.WINDOW_MARGIN)
+    }
+
+    /** 說明再長也先保留可操作的選項列，且清單上下緣都在視窗內。 */
+    @Test
+    fun `long footnotes use only the space left after two options`() {
+        for (anchorTop in listOf(16, 84)) {
+            val layout = DropdownListLayout(
+                anchorLeft = 10,
+                anchorTop = anchorTop,
+                anchorBottom = anchorTop + 20,
+                width = 150,
+                optionCount = 5,
+                footnoteHeight = 90,
+                windowHeight = 120,
+            )
+
+            assertEquals(anchorTop == 84, layout.opensUpward)
+            assertEquals(2, layout.visibleCount)
+            assertEquals(3, layout.visibleFootnoteLines)
+            assertTrue(layout.top >= DropdownListLayout.WINDOW_MARGIN)
+            assertTrue(layout.bottom <= 120 - DropdownListLayout.WINDOW_MARGIN)
+            assertEquals(2, layout.copy(scrollIndex = 2).effectiveScroll)
+        }
+    }
+
+    /** 按鈕上下都不足一列時，清單改在視窗內覆蓋按鈕。 */
+    @Test
+    fun `list can overlap the button when neither side fits an option`() {
+        val layout = DropdownListLayout(
+            anchorLeft = 10,
+            anchorTop = 16,
+            anchorBottom = 36,
+            width = 150,
+            optionCount = 5,
+            footnoteHeight = 90,
+            windowHeight = 52,
+        )
+
+        assertEquals(2, layout.visibleCount)
+        assertEquals(0, layout.visibleFootnoteLines)
+        assertTrue(layout.top >= DropdownListLayout.WINDOW_MARGIN)
+        assertEquals(52 - DropdownListLayout.WINDOW_MARGIN, layout.bottom)
     }
 
     /** 游標位置換算成完整清單中的選項索引，計入捲動位置；外框與底部說明不算選項。 */

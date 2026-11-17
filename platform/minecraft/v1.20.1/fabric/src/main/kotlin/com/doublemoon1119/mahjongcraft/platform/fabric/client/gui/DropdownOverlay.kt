@@ -4,7 +4,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftControlT
 import net.minecraft.client.font.TextRenderer
 import net.minecraft.client.gui.DrawContext
 import net.minecraft.client.gui.widget.ClickableWidget
-import net.minecraft.text.OrderedText
+import net.minecraft.text.StringVisitable
 import net.minecraft.text.Text
 import org.lwjgl.glfw.GLFW
 
@@ -113,6 +113,7 @@ internal class DropdownOverlay {
         val footnotes = footnotes(list, textRenderer)
         val layout = layout(list, footnotes, textRenderer, windowHeight)
         if (mouseMoved) {
+            list.keyboardHighlight = false
             layout.optionIndexAt(mouseX.toDouble(), mouseY.toDouble())?.let { list.highlightedIndex = it }
         }
         context.matrices.push()
@@ -160,20 +161,24 @@ internal class DropdownOverlay {
             )
         }
         VerticalScrollbar.render(context, layout.scrollbarLeft, layout.scrollbar)
-        if (layout.footnoteBlockHeight > 0) {
+        val shown = list.highlightedIndex ?: list.selectedIndex
+        val shownLines = footnotes.getOrNull(shown ?: -1).orEmpty()
+        if (layout.visibleFootnoteLines > 0) {
             context.fill(layout.left + 1, layout.optionsBottom, layout.right - 1, layout.optionsBottom + 1, DIVIDER_COLOR)
-            val shown = list.highlightedIndex ?: list.selectedIndex
-            footnotes.getOrNull(shown ?: -1)?.forEachIndexed { lineIndex, line ->
-                context.drawText(
-                    textRenderer,
-                    line,
-                    layout.left + 1 + TEXT_PADDING,
-                    layout.footnoteTop + lineIndex * textRenderer.fontHeight,
-                    FOOTNOTE_COLOR,
-                    false,
-                )
-            }
         }
+        val activated = list.keyboardHighlight || layout.optionIndexAt(mouseX.toDouble(), mouseY.toDouble()) == shown
+        drawWrappedDescription(
+            context = context,
+            renderer = textRenderer,
+            lines = shownLines,
+            visibleLines = layout.visibleFootnoteLines,
+            left = layout.left + 1 + TEXT_PADDING,
+            top = layout.footnoteTop,
+            width = footnoteWidth(list),
+            color = FOOTNOTE_COLOR,
+            marquee = list.footnoteMarquee,
+            subject = shown.takeIf { activated },
+        )
         context.matrices.pop()
     }
 
@@ -230,6 +235,7 @@ internal class DropdownOverlay {
                 val step = if (keyCode == GLFW.GLFW_KEY_DOWN) 1 else -1
                 val next = ((list.highlightedIndex ?: if (step > 0) -1 else list.options.size) + step).coerceIn(0, list.options.lastIndex)
                 list.highlightedIndex = next
+                list.keyboardHighlight = true
                 val layout = layout(list, footnotes(list, textRenderer), textRenderer, windowHeight)
                 list.scrollIndex = when {
                     next < layout.effectiveScroll -> next
@@ -262,9 +268,12 @@ internal class DropdownOverlay {
      * @param textRenderer 文字繪製器。
      * @return 依選項順序排列的說明行；沒有說明的選項為空清單。
      */
-    private fun footnotes(list: OpenList, textRenderer: TextRenderer): List<List<OrderedText>> = list.options.map { option ->
-        option.description?.let { textRenderer.wrapLines(it, (list.width - 2 - TEXT_PADDING * 2).coerceAtLeast(1)) }.orEmpty()
+    private fun footnotes(list: OpenList, textRenderer: TextRenderer): List<List<StringVisitable>> = list.options.map { option ->
+        option.description?.let { textRenderer.wrapDescription(it, footnoteWidth(list)) }.orEmpty()
     }
+
+    /** 說明各行共用的水平寬度。 */
+    private fun footnoteWidth(list: OpenList): Int = (list.width - DropdownListLayout.BORDER * 2 - TEXT_PADDING * 2).coerceAtLeast(1)
 
     /**
      * 建立清單版面；底部說明區的高度取所有選項中最高的說明，停留的選項改變時清單大小不變。
@@ -277,7 +286,7 @@ internal class DropdownOverlay {
      */
     private fun layout(
         list: OpenList,
-        footnotes: List<List<OrderedText>>,
+        footnotes: List<List<StringVisitable>>,
         textRenderer: TextRenderer,
         windowHeight: Int,
     ): DropdownListLayout = DropdownListLayout(
@@ -289,6 +298,7 @@ internal class DropdownOverlay {
         footnoteHeight = (footnotes.maxOfOrNull { it.size } ?: 0) * textRenderer.fontHeight,
         windowHeight = windowHeight,
         scrollIndex = list.scrollIndex,
+        footnoteLineHeight = textRenderer.fontHeight,
     )
 
     /**
@@ -304,6 +314,8 @@ internal class DropdownOverlay {
      * @property highlightedIndex 游標或方向鍵停留的選項索引。
      * @property onSelect 玩家選定選項時的回呼。
      * @property scrollIndex 第一個可見選項的索引。
+     * @property keyboardHighlight 是否由方向鍵移到目前的選項。
+     * @property footnoteMarquee 說明末行的跑馬燈進度。
      * @property labelMarquees 每個選項名稱的跑馬燈進度；游標或方向鍵停留在放不下的名稱上時捲動顯示全名。
      */
     private class OpenList(
@@ -317,6 +329,8 @@ internal class DropdownOverlay {
         var highlightedIndex: Int?,
         val onSelect: (Int) -> Unit,
         var scrollIndex: Int = 0,
+        var keyboardHighlight: Boolean = false,
+        val footnoteMarquee: MarqueeState = MarqueeState(),
         val labelMarquees: List<MarqueeState> = options.map { MarqueeState() },
     )
 

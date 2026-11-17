@@ -369,6 +369,12 @@ internal data class DecisionCardLayout(
      */
     fun scrollFromWheel(currentScroll: Double, amount: Double): Double = scroll.scrollFromWheel(currentScroll, amount, SCROLL_STEP)
 
+    /** 扣掉提示框外緣後可供說明換行的寬度。 */
+    val descriptionTooltipWidth: Int get() = minOf(TOOLTIP_MAX_WIDTH, (screenWidth - TOOLTIP_FRAME * 2).coerceAtLeast(0))
+
+    /** 扣掉提示框外緣後可供說明使用的高度。 */
+    val descriptionTooltipHeight: Int get() = (screenHeight - TOOLTIP_FRAME * 2).coerceAtLeast(0)
+
     /**
      * 卡片說明 tooltip 內容區的左上角，[width]、[height] 為內容區尺寸（不含 tooltip 外框）。
      *
