@@ -83,6 +83,23 @@ class RuleCatalogueLayoutTest {
         assertTrue(selector.right + RuleCatalogueScreenLayout.GAP <= withSource.close.x)
     }
 
+    /** 長標籤優先隱藏，窄版將來源選擇器放到返回按鈕上方。 */
+    @Test
+    fun `test source selector stays clear of close as the viewport narrows`() {
+        val inline = measure(width = 320, height = 240, sourceLabelWidth = 180)
+        val inlineSelector = checkNotNull(inline.sourceSelector)
+        assertEquals(null, inline.sourceLabelY)
+        assertEquals(inline.close.y, inlineSelector.y)
+        assertTrue(inlineSelector.right + RuleCatalogueScreenLayout.GAP <= inline.close.x)
+
+        val stacked = measure(width = 160, height = 240, sourceLabelWidth = 180)
+        val stackedSelector = checkNotNull(stacked.sourceSelector)
+        assertEquals(null, stacked.sourceLabelY)
+        assertTrue(stackedSelector.bottom + RuleCatalogueScreenLayout.GAP <= stacked.close.y)
+        assertTrue(stackedSelector.right <= stacked.width)
+        assertTrue(stacked.contentBounds.bottom <= stackedSelector.y)
+    }
+
     /** 清除按鈕依文字寬度變寬，但至少與按鈕同高。 */
     @Test
     fun `clear button follows its text width`() {

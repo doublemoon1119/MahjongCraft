@@ -9,6 +9,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.ScreenRenderin
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.TabStripLayout
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.TabWidget
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.VerticalScrollbar
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.applyTabScroll
 import com.doublemoon1119.mahjongcraft.platform.fabric.text.gameConfigPresentationText
 import com.doublemoon1119.mahjongcraft.platform.minecraft.catalogue.RuleCatalogueBrowseContext
 import com.doublemoon1119.mahjongcraft.platform.minecraft.history.MinecraftHistoryScreenKeys
@@ -131,6 +132,10 @@ internal class HistoryRuleSettingsScreen(
                     selected = selected,
                     clipLeft = strip.left,
                     clipRight = strip.right,
+                    onFocus = {
+                        tabScroll = tabStrip(layout, categories.size).scrollRevealing(index)
+                        children().filterIsInstance<TabWidget>().applyTabScroll(tabStrip(layout, categories.size))
+                    },
                     onSelect = {
                         selectedCategoryId = category.id
                         revealSelectedTab = true
@@ -238,7 +243,7 @@ internal class HistoryRuleSettingsScreen(
             val next = strip.scrollByWheel(amount)
             if (next != tabScroll) {
                 tabScroll = next
-                clearAndInit()
+                children().filterIsInstance<TabWidget>().applyTabScroll(strip.copy(scroll = next))
             }
             return true
         }

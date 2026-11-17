@@ -64,7 +64,7 @@ internal data class CatalogueRect(
  * @property search 搜尋輸入框外框範圍。
  * @property clear 清除搜尋按鈕範圍。
  * @property tabsTop 分類頁籤列上界。
- * @property sourceLabelY 設定來源標籤文字的 Y 座標；不顯示時仍有值但不使用。
+ * @property sourceLabelY 設定來源標籤文字的 Y 座標；隱藏標籤時為 null。
  * @property sourceSelector 設定來源選擇器範圍；不顯示時為 null。
  * @property close 關閉或返回按鈕範圍。
  * @property contentBounds 可捲動內容區域。
@@ -80,7 +80,7 @@ internal data class RuleCatalogueScreenLayout(
     val search: CatalogueRect,
     val clear: CatalogueRect,
     val tabsTop: Int,
-    val sourceLabelY: Int,
+    val sourceLabelY: Int?,
     val sourceSelector: CatalogueRect?,
     val close: CatalogueRect,
     val contentBounds: CatalogueRect,
@@ -207,12 +207,17 @@ internal data class RuleCatalogueScreenLayout(
             val footer = ButtonRowLayout(left = left, width = available.coerceAtLeast(ButtonRowLayout.minimumWidth(FOOTER_SLOTS)), buttonCount = FOOTER_SLOTS)
             val closeIndex = FOOTER_SLOTS - 1
             val close = CatalogueRect(x = footer.buttonX(closeIndex), y = footerTop, width = footer.buttonWidth(closeIndex), height = ROW_HEIGHT)
+            val sourceSpace = close.x - GAP - left
+            val sourceWidth = SELECTOR_WIDTH.coerceAtMost(available)
+            val sourceAboveFooter = sourceLabelWidth != null && sourceSpace < sourceWidth && footerTop >= ROW_HEIGHT + GAP
+            val sourceTop = if (sourceAboveFooter) footerTop - ROW_HEIGHT - GAP else footerTop
+            val showSourceLabel = sourceLabelWidth != null && sourceLabelWidth + LABEL_GAP + sourceWidth <= sourceSpace
             val sourceSelector = sourceLabelWidth?.let { labelWidth ->
-                val selectorLeft = left + labelWidth + LABEL_GAP
-                val selectorWidth = SELECTOR_WIDTH.coerceAtMost(close.x - GAP - selectorLeft).coerceAtLeast(1)
-                CatalogueRect(x = selectorLeft, y = footerTop, width = selectorWidth, height = ROW_HEIGHT)
+                val selectorLeft = if (showSourceLabel) left + labelWidth + LABEL_GAP else left
+                val selectorSpace = if (sourceAboveFooter) available else close.x - GAP - selectorLeft
+                CatalogueRect(x = selectorLeft, y = sourceTop, width = sourceWidth.coerceAtMost(selectorSpace.coerceAtLeast(1)), height = ROW_HEIGHT)
             }
-            val contentBottom = (footerTop - GAP).coerceAtLeast(contentTop)
+            val contentBottom = (sourceTop - GAP).coerceAtLeast(contentTop)
             val contentBounds = CatalogueRect(x = left, y = contentTop, width = available, height = contentBottom - contentTop)
             return RuleCatalogueScreenLayout(
                 width = safeWidth,
@@ -224,7 +229,7 @@ internal data class RuleCatalogueScreenLayout(
                 search = search,
                 clear = clearRect,
                 tabsTop = tabsTop,
-                sourceLabelY = footerTop + (ROW_HEIGHT - FormScreenLayout.VISIBLE_TEXT_HEIGHT) / 2,
+                sourceLabelY = (footerTop + (ROW_HEIGHT - FormScreenLayout.VISIBLE_TEXT_HEIGHT) / 2).takeIf { showSourceLabel },
                 sourceSelector = sourceSelector,
                 close = close,
                 contentBounds = contentBounds,
