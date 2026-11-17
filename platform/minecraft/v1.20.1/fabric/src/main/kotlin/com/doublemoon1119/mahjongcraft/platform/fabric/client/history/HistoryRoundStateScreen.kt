@@ -248,13 +248,13 @@ internal class HistoryRoundStateScreen(
                                         if (nestedHover) tooltip = listOf(nested.fullText)
                                     }
                                     is Row.HandHeading -> {
-                                        val textX = layout.left + nested.indent + 8
+                                        val textX = layout.left + nested.inset
                                         val textY = nestedY + (nested.height - FormScreenLayout.VISIBLE_TEXT_HEIGHT) / 2
-                                        context.drawTextWithShadow(textRenderer, nested.label, textX, textY, nested.color)
+                                        nested.label?.let { context.drawTextWithShadow(textRenderer, it, textX, textY, MUTED_COLOR) }
                                         val button = sortButton(nested.seat)
                                         button.message = nested.action
-                                        button.width = textRenderer.getWidth(nested.action) + MINI_BUTTON_PADDING * 2
-                                        button.x = textX + textRenderer.getWidth(nested.label) + 4
+                                        button.width = nested.buttonWidth
+                                        button.x = textX + nested.buttonOffset
                                         button.y = nestedY + (nested.height - button.height) / 2
                                         button.active = nested.actionEnabled
                                         button.tooltip = Tooltip.of(nested.tooltip)
@@ -416,11 +416,17 @@ internal class HistoryRoundStateScreen(
             if (handSorted) MinecraftHistoryScreenKeys.STATE_SORT_SORTED else MinecraftHistoryScreenKeys.STATE_SORT_ORIGINAL,
         )
         val handHeading = Text.translatable(MinecraftHistoryScreenKeys.STATE_HAND)
+        val inset = 16.coerceAtMost((layout.contentWidth - 1) / 2)
+        val availableWidth = layout.contentWidth - inset * 2
+        val preferredWidth = textRenderer.getWidth(currentMode) + MINI_BUTTON_PADDING * 2
+        val labelWidth = textRenderer.getWidth(handHeading) + 4
+        val inline = labelWidth + preferredWidth <= availableWidth
+        if (!inline) line(handHeading, MUTED_COLOR)
         val modes = listOf(MinecraftHistoryScreenKeys.STATE_SORT_MODE_ORIGINAL, MinecraftHistoryScreenKeys.STATE_SORT_MODE_SORTED).map { Text.translatable(it) }
         add(
             element = Row.HandHeading(
                 seat = player.initialSeatIndex,
-                label = handHeading,
+                label = handHeading.takeIf { inline },
                 action = currentMode,
                 tooltip = if (canSortHand) {
                     ControlTooltip.options(
@@ -432,8 +438,9 @@ internal class HistoryRoundStateScreen(
                 } else {
                     ControlTooltip.description(Text.translatable(MinecraftHistoryScreenKeys.STATE_SORT_UNAVAILABLE))
                 },
-                color = MUTED_COLOR,
-                indent = 8,
+                inset = inset,
+                buttonOffset = if (inline) labelWidth else 0,
+                buttonWidth = preferredWidth.coerceAtMost(availableWidth),
                 actionEnabled = canSortHand,
             ),
         )
@@ -656,20 +663,23 @@ internal class HistoryRoundStateScreen(
         /**
          * 可單獨切換一位玩家手牌排序的標題列。
          *
-         * @property label 顯示中的手牌標題。
+         * @property seat 玩家座位。
+         * @property label 同列顯示的手牌標題；標題移至上一列時為 null。
          * @property action 顯示目前排列方式的可點擊文字。
          * @property tooltip 點擊後的目標排序模式說明。
-         * @property color 文字色。
-         * @property indent 左側縮排。
+         * @property inset 內容區到標題列左側的縮排。
+         * @property buttonOffset 按鈕相對於標題列左側的位置。
+         * @property buttonWidth 按鈕在內容區內的寬度。
          * @property actionEnabled 是否允許切換排序。
          */
         data class HandHeading(
             val seat: Int,
-            val label: Text,
+            val label: Text?,
             val action: Text,
             val tooltip: Text,
-            val color: Int,
-            val indent: Int,
+            val inset: Int,
+            val buttonOffset: Int,
+            val buttonWidth: Int,
             val actionEnabled: Boolean,
         ) : Row {
             /** 容得下切換按鈕的列高。 */
