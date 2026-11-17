@@ -80,6 +80,25 @@ private fun decisionTriggerText(
 }
 
 /**
+ * 同一次量測得出的幾何與可直接繪製的文字行。
+ *
+ * @property geometry 操作面板版面幾何。
+ * @property cardTextLines 依卡片順序排列的正文與提示。
+ */
+internal data class MeasuredDecisionPanel(
+    val geometry: DecisionCardLayout,
+    val cardTextLines: List<DecisionCardTextLines>,
+)
+
+/**
+ * 卡片量測與繪製共用的換行結果。
+ *
+ * @property body 正文各行。
+ * @property hint 補充提示各行。
+ */
+internal data class DecisionCardTextLines(val body: List<OrderedText>, val hint: List<OrderedText>)
+
+/**
  * [content] 在指定畫面、玩家設定的位置比例與倒數保留寬度下的版面幾何。
  *
  * @param content 操作面板繪製內容。
@@ -88,7 +107,7 @@ private fun decisionTriggerText(
  * @param screenHeight 畫面高度。
  * @param panelRatioY 玩家設定的面板垂直位置比例。
  * @param timerWidth 標題列保留的倒數寬度。
- * @return 面板版面幾何。
+ * @return 面板版面幾何與換行結果。
  */
 internal fun decisionPanelLayout(
     content: DecisionPanelContent,
@@ -97,7 +116,7 @@ internal fun decisionPanelLayout(
     screenHeight: Int,
     panelRatioY: Double,
     timerWidth: Int,
-): DecisionCardLayout {
+): MeasuredDecisionPanel {
     val base = DecisionCardLayout(
         screenWidth = screenWidth,
         screenHeight = screenHeight,
@@ -109,18 +128,25 @@ internal fun decisionPanelLayout(
         panelRatioY = panelRatioY,
         timerWidth = timerWidth,
     )
-    return base.copy(
-        cards = content.entries.map { entry ->
-            val draft = entry.layoutCard().copy(
-                bodyLineCount = if (entry.cardBody != null) 1 else 0,
-                hintLineCount = if (entry.cardHint != null) 1 else 0,
-            )
-            val textWidth = (base.cardWidth(draft) - DecisionCardLayout.CARD_PADDING * 2).coerceAtLeast(1)
-            draft.copy(
-                bodyLineCount = entry.cardBody?.let { renderer.wrapLinesBalanced(it, textWidth).size } ?: 0,
-                hintLineCount = entry.cardHint?.let { renderer.wrapLinesBalanced(it, textWidth).size } ?: 0,
-            )
-        },
+    val cardTextLines = content.entries.mapIndexed { index, entry ->
+        val draft = base.cards[index].copy(
+            bodyLineCount = if (entry.cardBody != null) 1 else 0,
+            hintLineCount = if (entry.cardHint != null) 1 else 0,
+        )
+        val textWidth = (base.cardWidth(draft) - DecisionCardLayout.CARD_PADDING * 2).coerceAtLeast(1)
+        DecisionCardTextLines(
+            body = entry.cardBody?.let { renderer.wrapLinesBalanced(it, textWidth) }.orEmpty(),
+            hint = entry.cardHint?.let { renderer.wrapLinesBalanced(it, textWidth) }.orEmpty(),
+        )
+    }
+    return MeasuredDecisionPanel(
+        geometry = base.copy(
+            cards = base.cards.mapIndexed { index, card ->
+                val lines = cardTextLines[index]
+                card.copy(bodyLineCount = lines.body.size, hintLineCount = lines.hint.size)
+            },
+        ),
+        cardTextLines = cardTextLines,
     )
 }
 
@@ -130,9 +156,9 @@ internal fun decisionPanelLayout(
  * 卡片按鈕由 [renderCardButtons] 在卡片列的裁切範圍內畫出；跳過按鈕、倒數與卡片說明由呼叫端另外畫。
  *
  * @param renderer Minecraft 文字繪製器。
- * @param layout 面板版面幾何。
+ * @param measured 本次版面幾何與已換行的卡片文字。
  * @param content 要繪製的面板內容。
- * @param placements [layout] 依目前捲動量算出的卡片版位。
+ * @param placements 版面 依目前捲動量算出的卡片版位。
  * @param scroll 目前捲動量，決定 scrollbar thumb 的位置。
  * @param mouseX 游標水平座標；傳入畫面外座標可停用 hover。
  * @param mouseY 游標垂直座標；傳入畫面外座標可停用 hover。
@@ -141,7 +167,7 @@ internal fun decisionPanelLayout(
  */
 internal fun DrawContext.drawDecisionPanel(
     renderer: TextRenderer,
-    layout: DecisionCardLayout,
+    measured: MeasuredDecisionPanel,
     content: DecisionPanelContent,
     placements: List<DecisionBounds>,
     scroll: Double,
@@ -150,6 +176,7 @@ internal fun DrawContext.drawDecisionPanel(
     drawTile: (assetKey: String, x: Int, y: Int) -> Unit,
     renderCardButtons: () -> Unit,
 ) {
+    val layout = measured.geometry
     fill(layout.panelLeft, layout.panelTop, layout.panelRight, layout.panelBottom, DECISION_PANEL_BACKGROUND)
     drawCenteredTextWithShadow(renderer, content.title, layout.screenWidth / 2, layout.headerTextTop(renderer.fontHeight), HEADER_TEXT_COLOR)
     content.triggerTileAssetKey?.let { assetKey ->
@@ -163,7 +190,17 @@ internal fun DrawContext.drawDecisionPanel(
     }
     enableScissor(layout.viewportLeft, layout.cardTop, layout.viewportRight, layout.cardBottom)
     content.entries.forEachIndexed { index, entry ->
-        drawDecisionCard(renderer, layout, layout.cards[index], entry, placements[index], mouseX, mouseY, drawTile)
+        drawDecisionCard(
+            renderer = renderer,
+            layout = layout,
+            card = layout.cards[index],
+            entry = entry,
+            lines = measured.cardTextLines[index],
+            placement = placements[index],
+            mouseX = mouseX,
+            mouseY = mouseY,
+            drawTile = drawTile,
+        )
     }
     renderCardButtons()
     disableScissor()
@@ -186,6 +223,7 @@ internal fun DrawContext.drawDecisionPanel(
  * @param layout 操作面板版面幾何。
  * @param card 已量測文字行數的卡片特徵。
  * @param entry 卡片內容。
+ * @param lines 已量測的正文與提示。
  * @param placement 卡片目前的畫面範圍。
  * @param mouseX 游標水平座標。
  * @param mouseY 游標垂直座標。
@@ -196,6 +234,7 @@ private fun DrawContext.drawDecisionCard(
     layout: DecisionCardLayout,
     card: DecisionCard,
     entry: DecisionEntry,
+    lines: DecisionCardTextLines,
     placement: DecisionBounds,
     mouseX: Int,
     mouseY: Int,
@@ -217,28 +256,23 @@ private fun DrawContext.drawDecisionCard(
             drawClaimedTileMarker(tile.x + tile.width / 2, layout.claimedTileMarkerTop(tile))
         }
     }
-    val textWidth = (placement.width - DecisionCardLayout.CARD_PADDING * 2).coerceAtLeast(1)
-    entry.cardBody?.let { body ->
-        renderer.wrapLinesBalanced(body, textWidth).forEachIndexed { index, line ->
-            drawCenteredTextWithShadow(
-                renderer,
-                line,
-                placement.x + placement.width / 2,
-                layout.bodyTextTop(placement, card) + index * DecisionCardLayout.TEXT_LINE_HEIGHT,
-                CARD_BODY_COLOR,
-            )
-        }
+    lines.body.forEachIndexed { index, line ->
+        drawCenteredTextWithShadow(
+            renderer,
+            line,
+            placement.x + placement.width / 2,
+            layout.bodyTextTop(placement, card) + index * DecisionCardLayout.TEXT_LINE_HEIGHT,
+            CARD_BODY_COLOR,
+        )
     }
-    entry.cardHint?.let { hint ->
-        renderer.wrapLinesBalanced(hint, textWidth).forEachIndexed { index, line ->
-            drawCenteredTextWithShadow(
-                renderer,
-                line,
-                placement.x + placement.width / 2,
-                layout.hintTextTop(placement, card) + index * DecisionCardLayout.TEXT_LINE_HEIGHT,
-                CARD_HINT_COLOR,
-            )
-        }
+    lines.hint.forEachIndexed { index, line ->
+        drawCenteredTextWithShadow(
+            renderer,
+            line,
+            placement.x + placement.width / 2,
+            layout.hintTextTop(placement, card) + index * DecisionCardLayout.TEXT_LINE_HEIGHT,
+            CARD_HINT_COLOR,
+        )
     }
 }
 

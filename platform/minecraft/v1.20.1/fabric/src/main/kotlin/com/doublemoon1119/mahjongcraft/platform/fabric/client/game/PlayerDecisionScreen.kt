@@ -208,12 +208,13 @@ internal class PlayerDecisionScreen(
     override fun render(context: DrawContext, mouseX: Int, mouseY: Int, delta: Float) {
         reservedTimerWidth = maxOf(reservedTimerWidth, controller.timerOverlayWidth(HEADER_TIMER_SCALE) ?: 0)
         val content = panelContent()
-        val layout = layout(content)
+        val measured = measurePanel(content)
+        val layout = measured.geometry
         val placements = layout.cardPlacements(horizontalScroll)
         updateCardButtonPositions(layout, placements)
         context.drawDecisionPanel(
             renderer = textRenderer,
-            layout = layout,
+            measured = measured,
             content = content,
             placements = placements,
             scroll = horizontalScroll,
@@ -277,10 +278,17 @@ internal class PlayerDecisionScreen(
     /**
      * 依目前畫面尺寸、玩家設定與實際文字量測結果計算版面位置。
      *
-     * @param content 面板內容；預設重新取得目前內容。
      * @return 操作面板與各控制項的版面資訊。
      */
-    private fun layout(content: DecisionPanelContent = panelContent()): DecisionCardLayout = decisionPanelLayout(
+    private fun layout(): DecisionCardLayout = measurePanel(panelContent()).geometry
+
+    /**
+     * 一次量測操作面板的幾何與卡片文字。
+     *
+     * @param content 此次繪製的面板內容。
+     * @return 幾何與已換行的卡片文字。
+     */
+    private fun measurePanel(content: DecisionPanelContent): MeasuredDecisionPanel = decisionPanelLayout(
         content = content,
         renderer = textRenderer,
         screenWidth = width,

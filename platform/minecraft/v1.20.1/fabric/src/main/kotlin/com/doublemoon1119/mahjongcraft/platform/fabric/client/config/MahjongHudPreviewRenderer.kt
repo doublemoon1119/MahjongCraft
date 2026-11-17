@@ -15,6 +15,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.client.game.DecisionBound
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.game.DecisionCardLayout
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.game.DecisionPanelContent
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.game.HEADER_TIMER_SCALE
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.game.MeasuredDecisionPanel
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.game.PlayerDecisionHudController
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.game.decisionPanelContent
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.game.decisionPanelLayout
@@ -128,7 +129,8 @@ class MahjongHudPreviewRenderer(
     private fun renderDecisionPanel(context: DrawContext, scenario: HudPreviewScenario, panelRatioY: Double, opacity: Float) {
         val renderer = MinecraftClient.getInstance().textRenderer
         val content = decisionContent(scenario, context.scaledWindowWidth)
-        val layout = decisionLayout(content, context.scaledWindowWidth, context.scaledWindowHeight, panelRatioY)
+        val measured = measureDecisionPanel(content, context.scaledWindowWidth, context.scaledWindowHeight, panelRatioY)
+        val layout = measured.geometry
         val scroll = layout.maximumScroll
         val placements = layout.cardPlacements(scroll)
 
@@ -142,7 +144,7 @@ class MahjongHudPreviewRenderer(
         }
         context.drawDecisionPanel(
             renderer = renderer,
-            layout = layout,
+            measured = measured,
             content = content,
             placements = placements,
             scroll = scroll,
@@ -193,7 +195,7 @@ class MahjongHudPreviewRenderer(
         screenWidth: Int,
         screenHeight: Int,
         panelRatioY: Double,
-    ): DecisionCardLayout = decisionLayout(decisionContent(scenario, screenWidth), screenWidth, screenHeight, panelRatioY)
+    ): DecisionCardLayout = measureDecisionPanel(decisionContent(scenario, screenWidth), screenWidth, screenHeight, panelRatioY).geometry
 
     /**
      * 建立 [content] 的操作面板版面；倒數保留寬度依範例倒數量測。
@@ -202,14 +204,14 @@ class MahjongHudPreviewRenderer(
      * @param screenWidth 畫面寬度。
      * @param screenHeight 畫面高度。
      * @param panelRatioY 面板垂直位置比例。
-     * @return 對應的操作面板版面幾何。
+     * @return 對應的操作面板版面幾何與已換行文字。
      */
-    private fun decisionLayout(
+    private fun measureDecisionPanel(
         content: DecisionPanelContent,
         screenWidth: Int,
         screenHeight: Int,
         panelRatioY: Double,
-    ): DecisionCardLayout {
+    ): MeasuredDecisionPanel {
         val renderer = MinecraftClient.getInstance().textRenderer
         return decisionPanelLayout(
             content = content,
