@@ -139,7 +139,7 @@ internal class HistoryRoundEventsScreen(
      * @return 按鈕；位置由繪製時決定。
      */
     private fun stateButton(index: Int, inline: Boolean): RestartableMarqueeButtonWidget = stateButtons.getOrPut(index to inline) {
-        if (inline) {
+        val widget = if (inline) {
             val label = Text.translatable(MinecraftHistoryScreenKeys.STATE_LOAD_WINNING_HAND)
             RestartableMarqueeButtonWidget.builder(label) {
                 if (session.controller.canQueryRound()) session.controller.loadRoundStateForDetails(index)
@@ -159,6 +159,9 @@ internal class HistoryRoundEventsScreen(
                 )
             }
         }
+        widget.visible = false
+        widget.clickClip = { x, y -> layout.containsCard(x, y, layout.contentTop, layout.viewportHeight) }
+        addSelectableChild(widget)
     }
 
     /** 歷史瀏覽不暫停整合伺服器。 */

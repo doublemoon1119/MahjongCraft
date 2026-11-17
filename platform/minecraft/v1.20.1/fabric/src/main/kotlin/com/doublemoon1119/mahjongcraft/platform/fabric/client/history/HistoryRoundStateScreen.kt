@@ -112,9 +112,14 @@ internal class HistoryRoundStateScreen(
      * @return 按鈕；文字、位置與提示由繪製時決定。
      */
     private fun sortButton(seat: Int): RestartableMarqueeButtonWidget = sortButtons.getOrPut(seat) {
-        RestartableMarqueeButtonWidget.builder(Text.empty()) {
-            currentRound()?.state?.let { session.toggleHandSorting(it, seat) }
-        }.dimensions(0, 0, 1, MINI_BUTTON_SIZE).build()
+        addSelectableChild(
+            RestartableMarqueeButtonWidget.builder(Text.empty()) {
+                currentRound()?.state?.let { session.toggleHandSorting(it, seat) }
+            }.dimensions(0, 0, 1, MINI_BUTTON_SIZE).build().also {
+                it.visible = false
+                it.clickClip = { x, y -> layout.containsCard(x, y, layout.contentTop, layout.viewportHeight) }
+            },
+        )
     }
 
     /** 歷史瀏覽不暫停整合伺服器。 */
@@ -341,10 +346,14 @@ internal class HistoryRoundStateScreen(
             add(Row.PlayerCard(player.initialSeatIndex, playerRows, playerRows.sumOf(Row::height) + 16, scoreChange))
             add(Row.Space(8))
         }
-        val wallGroups = listOf(
-            Row.Group(HistoryTileGroupLayoutCalculator.hand(state.wallTiles, maxWidth = maxWidth)),
-            Row.Group(HistoryTileGroupLayoutCalculator.hand(state.reservedTiles, maxWidth = maxWidth)),
-        )
+        val wallGroups = if (wallExpanded) {
+            listOf(
+                Row.Group(HistoryTileGroupLayoutCalculator.hand(state.wallTiles, maxWidth = maxWidth)),
+                Row.Group(HistoryTileGroupLayoutCalculator.hand(state.reservedTiles, maxWidth = maxWidth)),
+            )
+        } else {
+            emptyList()
+        }
         val wallLabel = Text.translatable(MinecraftHistoryScreenKeys.STATE_WALL_SECTION, state.wallTiles.size, state.reservedTiles.size)
         val wallHeaderHeight = textRenderer.wrapLines(wallLabel, (layout.contentWidth - 40).coerceAtLeast(1)).size * LINE_HEIGHT
         add(Row.WallSection(wallExpanded, state.wallTiles.size, state.reservedTiles.size, wallGroups, wallHeaderHeight))

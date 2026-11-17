@@ -19,10 +19,12 @@ import net.minecraft.client.MinecraftClient
 import net.minecraft.client.gui.DrawContext
 import net.minecraft.client.gui.screen.Screen
 import net.minecraft.client.gui.tooltip.Tooltip
+import net.minecraft.client.gui.tooltip.TooltipPositioner
 import net.minecraft.client.gui.widget.ButtonWidget
 import net.minecraft.text.OrderedText
 import net.minecraft.text.Text
 import net.minecraft.util.Formatting
+import net.minecraft.util.Language
 
 /**
  * 歷史對局分頁列表；查詢生命週期由共用瀏覽 session 管理。
@@ -39,7 +41,7 @@ internal class HistoryListScreen(
     private val dropdown = DropdownOverlay()
 
     /** 目前列表捲動位置。 */
-    private var scroll = 0.0
+    private val scroll: Double get() = session.controller.state.value.list.scrollOffset
 
     /** 上一頁按鈕。 */
     private var previousButton: ButtonWidget? = null
@@ -88,7 +90,6 @@ internal class HistoryListScreen(
             showLabelWidth = textRenderer.getWidth(showLabel()),
             sortLabelWidth = textRenderer.getWidth(sortLabel()),
         )
-        scroll = session.controller.state.value.list.scrollOffset
         scrollDragging = false
         clearChildren()
         filterButton = button(Text.translatable(MinecraftHistoryScreenKeys.FILTERS_BUTTON), layout.filters) { session.openFilters() }
@@ -105,10 +106,10 @@ internal class HistoryListScreen(
         directionButton = button(directionText(), layout.direction) { toggleDirection() }.also { it.icon = directionIcon() }
         refreshButton = button(Text.translatable(MinecraftHistoryScreenKeys.REFRESH), layout.refresh) { session.controller.refresh() }
         retryButton = button(Text.translatable(MinecraftHistoryScreenKeys.RETRY), layout.refresh) {
-            if (session.archiveStatusController.view.value is HistoryArchiveStatusView.Failed) {
-                session.retryArchiveStatus()
-            } else {
+            if (session.controller.state.value.list.status is HistoryBrowseStatus.Failed) {
                 session.controller.retry()
+            } else if (session.archiveStatusController.view.value is HistoryArchiveStatusView.Failed) {
+                session.retryArchiveStatus()
             }
         }
         previousButton = button(Text.translatable(MinecraftHistoryScreenKeys.PREVIOUS), layout.footerSlot(0)) {
@@ -163,8 +164,7 @@ internal class HistoryListScreen(
     override fun mouseScrolled(mouseX: Double, mouseY: Double, amount: Double): Boolean {
         if (dropdown.mouseScrolled(textRenderer, height, amount)) return true
         if (mouseY < layout.contentTop || mouseY > layout.contentBottom) return super.mouseScrolled(mouseX, mouseY, amount)
-        scroll = layout.clampScroll(scroll - amount * 18.0, contentHeight(displayEntries()))
-        session.controller.rememberListPosition(scroll)
+        session.controller.rememberListPosition(layout.clampScroll(scroll - amount * 18.0, contentHeight(displayEntries())))
         return true
     }
 
@@ -216,8 +216,7 @@ internal class HistoryListScreen(
      */
     private fun updateDragScroll(mouseY: Double) {
         val scrollbar = layout.scrollbar(contentHeight(displayEntries()), scroll)
-        scroll = scrollbar.scrollIndexFor(mouseY, scrollGrabOffset).toDouble()
-        session.controller.rememberListPosition(scroll)
+        session.controller.rememberListPosition(scrollbar.scrollIndexFor(mouseY, scrollGrabOffset).toDouble())
     }
 
     /** 取得目前顯示的資料，讓繪製、滾輪與拖曳使用相同的內容高度。 */
@@ -236,7 +235,10 @@ internal class HistoryListScreen(
      * @param entries 目前顯示的對局摘要。
      * @return 捲動內容的總像素高度。
      */
-    private fun contentHeight(entries: List<HistoryMatchSummaryDto>): Int = entries.sumOf(::entryHeight)
+    private fun contentHeight(entries: List<HistoryMatchSummaryDto>): Int {
+        measureCards(entries)
+        return cardMeasurements.values.sumOf(CardMeasurement::height)
+    }
 
     /** 取得目前紀錄範圍的按鈕文字。 */
     private fun scopeText(): Text = Text.translatable(session.controller.state.value.query.scope.translationKey)
@@ -366,8 +368,7 @@ internal class HistoryListScreen(
         val displayEntries = displayEntries()
         val clampedScroll = layout.clampScroll(scroll, contentHeight(displayEntries))
         if (clampedScroll != scroll) {
-            scroll = clampedScroll
-            session.controller.rememberListPosition(scroll)
+            session.controller.rememberListPosition(clampedScroll)
         }
         scopeButton?.message = scopeText()
         val canQuery = session.controller.canRefresh()
@@ -396,7 +397,7 @@ internal class HistoryListScreen(
         val archiveStatus = session.archiveStatusController.view.value
         retryButton?.visible = list.status is HistoryBrowseStatus.Failed || archiveStatus is HistoryArchiveStatusView.Failed
         refreshButton?.visible = retryButton?.visible != true
-        retryButton?.active = canQuery
+        retryButton?.active = if (list.status is HistoryBrowseStatus.Failed) session.controller.canRetry() else canQuery
         val queryHint = when {
             loading -> Text.translatable(MinecraftHistoryScreenKeys.QUERY_LOADING_TOOLTIP)
             session.controller.isRefreshCoolingDown() -> Text.translatable(MinecraftHistoryScreenKeys.QUERY_COOLDOWN_TOOLTIP)
@@ -472,12 +473,12 @@ internal class HistoryListScreen(
                         Text.translatable(MinecraftHistoryScreenKeys.CARD_OPEN_HINT).formatted(Formatting.AQUA),
                     )
                 }
-                val metadata = metadataLines(entry)
+                val measurement = cardMeasurements.getValue(entry)
+                val metadata = measurement.lines
                 metadata.forEachIndexed { index, line ->
                     context.drawTextWithShadow(textRenderer, line, bounds.x + CARD_PADDING, y + 4 + index * 10, 0xdddddd)
                 }
-                if (inlineHeader(entry)) {
-                    val date = HistoryScreenText.endedAt(entry.endedAtEpochMillis)
+                measurement.inlineDate?.let { date ->
                     context.drawTextWithShadow(textRenderer, Text.literal(date), bounds.right - CARD_PADDING - textRenderer.getWidth(date), y + 4, 0xaaaaaa)
                 }
                 val participantTop = y + 6 + metadata.size * 10
@@ -531,36 +532,65 @@ internal class HistoryListScreen(
      * @param entry 對局摘要。
      * @return 卡片所需的垂直高度。
      */
-    private fun entryHeight(entry: HistoryMatchSummaryDto): Int = CARD_VERTICAL_PADDING + metadataLines(entry).size * 10 + entry.participants.size * PARTICIPANT_ROW_HEIGHT + HistoryScreenLayout.CARD_GAP
+    private fun entryHeight(entry: HistoryMatchSummaryDto): Int = cardMeasurements.getValue(entry).height
+
+    /** 同一頁、版面寬度與語言共用已量測的卡片文字。 */
+    private var cardMeasurements: Map<HistoryMatchSummaryDto, CardMeasurement> = emptyMap()
+
+    /** 上次量測所用的語言。 */
+    private var measurementLanguage: Language? = null
+
+    /** 上次量測所用的卡片文字寬度。 */
+    private var measurementWidth = 0
+
+    /** 依目前內容重用卡片量測，翻頁時釋放上一頁的資料。 */
+    private fun measureCards(entries: List<HistoryMatchSummaryDto>) {
+        val language = Language.getInstance()
+        val textWidth = cardTextWidth()
+        if (measurementLanguage === language &&
+            measurementWidth == textWidth &&
+            cardMeasurements.keys.containsAll(entries) &&
+            cardMeasurements.size == entries.size
+        ) {
+            return
+        }
+        measurementLanguage = language
+        measurementWidth = textWidth
+        cardMeasurements = entries.associateWith(::measureCard)
+    }
+
+    /**
+     * 已量測的卡片資訊。
+     *
+     * @property lines 換行後的文字。
+     * @property inlineDate 同列顯示的日期，另起一列時為 null。
+     * @property height 卡片及列間距的高度。
+     */
+    private data class CardMeasurement(val lines: List<OrderedText>, val inlineDate: String?, val height: Int)
 
     /** 卡片內文字可用的寬度。 */
     private fun cardTextWidth(): Int = (layout.contentWidth - CARD_PADDING * 2).coerceAtLeast(1)
 
-    /**
-     * 判斷規則與日期是否可在同一列左右對齊。
-     *
-     * @param entry 已保存對局摘要。
-     * @return 是否有足夠寬度保留標題與日期間距。
-     */
-    private fun inlineHeader(entry: HistoryMatchSummaryDto): Boolean = textRenderer.getWidth(HistoryScreenText.rule(entry.ruleId, session.ruleNames)) + textRenderer.getWidth(HistoryScreenText.endedAt(entry.endedAtEpochMillis)) + 24 <= cardTextWidth()
-
-    /**
-     * 按實際字寬換行規則、日期、局數、時長與結果資訊。
-     *
-     * @param entry 對局摘要。
-     * @return 已按目前可用寬度排列的資訊文字行。
-     */
-    private fun metadataLines(entry: HistoryMatchSummaryDto): List<OrderedText> {
+    /** 量測卡片文字與高度。 */
+    private fun measureCard(entry: HistoryMatchSummaryDto): CardMeasurement {
         val status = Text.literal(HistoryScreenText.duration(entry.duration)).append(" • ")
             .append(HistoryScreenText.outcome(entry.outcome))
         if (entry.integrity == HistoryIntegrityFilterDto.INCOMPLETE) {
             status.append(" • ").append(Text.translatable(MinecraftHistoryScreenKeys.INTEGRITY_INCOMPLETE).formatted(Formatting.YELLOW))
         }
         val rule = HistoryScreenText.rule(entry.ruleId, session.ruleNames)
-        val date = Text.literal(HistoryScreenText.endedAt(entry.endedAtEpochMillis)).formatted(Formatting.GRAY)
-        val header = if (inlineHeader(entry)) listOf(rule) else listOf(rule, date)
+        val date = HistoryScreenText.endedAt(entry.endedAtEpochMillis)
+        val inline = textRenderer.getWidth(rule) + textRenderer.getWidth(date) + 24 <= cardTextWidth()
+        val header = if (inline) listOf(rule) else listOf(rule, Text.literal(date).formatted(Formatting.GRAY))
         val details = Text.translatable(MinecraftHistoryScreenKeys.ROUNDS, entry.roundCount ?: "—").append(" • ").append(status)
-        return (header + details).flatMap { textRenderer.wrapLines(it, cardTextWidth()) }
+        val lines = (header + details).flatMap { textRenderer.wrapLines(it, cardTextWidth()) }
+        val height = CARD_VERTICAL_PADDING + lines.size * 10 + entry.participants.size * PARTICIPANT_ROW_HEIGHT + HistoryScreenLayout.CARD_GAP
+        return CardMeasurement(lines = lines, inlineDate = date.takeIf { inline }, height = height)
+    }
+
+    /** 下拉清單展開時，暫停底層控制項的提示框。 */
+    override fun setTooltip(lines: List<OrderedText>, positioner: TooltipPositioner, focused: Boolean) {
+        if (!dropdown.isOpen) super.setTooltip(lines, positioner, focused)
     }
 
     override fun shouldPause(): Boolean = false

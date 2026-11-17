@@ -36,6 +36,9 @@ internal class RestartableMarqueeButtonWidget private constructor(
     /** 作為選擇器時回報清單是否展開；不是選擇器時為 null。展開時顯示向上箭頭與白色外框。 */
     var selectorExpanded: (() -> Boolean)? = null
 
+    /** 捲動內容中額外限制滑鼠可點擊的區域。 */
+    var clickClip: ((Double, Double) -> Boolean)? = null
+
     /** 右鍵點擊是否也觸發按鈕動作。 */
     var pressesOnSecondaryClick: Boolean = false
 
@@ -104,6 +107,8 @@ internal class RestartableMarqueeButtonWidget private constructor(
             color = if (active) 0xFFFFFF else 0xA0A0A0,
         )
     }
+
+    override fun clicked(mouseX: Double, mouseY: Double): Boolean = clickClip?.invoke(mouseX, mouseY) != false && super.clicked(mouseX, mouseY)
 
     override fun mouseClicked(mouseX: Double, mouseY: Double, button: Int): Boolean {
         if (button != SECONDARY_MOUSE_BUTTON || !pressesOnSecondaryClick) return super.mouseClicked(mouseX, mouseY, button)
