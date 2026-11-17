@@ -61,7 +61,13 @@ internal class HistoryRoundStateScreen(
     private lateinit var retryButton: ButtonWidget
 
     /** 共用牌面 renderer。 */
-    private val groups = HistoryTileGroupRenderer(session.tileFaces, session.tileAssets, session.discardMarkers, session.tileDisplayNames)
+    private val groups = HistoryTileGroupRenderer(
+        faces = session.tileFaces,
+        assets = session.tileAssets,
+        markerDisplays = session.discardMarkers,
+        displayNames = session.tileDisplayNames,
+        networkRegistries = session.networkRegistries,
+    )
 
     /** 共用規則欄位標題與文字呈現。 */
     private val events = session.eventPresenter

@@ -2,6 +2,7 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.client.history
 
 import com.doublemoon1119.mahjongcraft.flow.network.dto.model.TileFaceViewDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.model.toDomain
+import com.doublemoon1119.mahjongcraft.flow.network.dto.registry.NetworkDtoConverter
 import com.doublemoon1119.mahjongcraft.logic.base.NamespacedId
 import com.doublemoon1119.mahjongcraft.logic.base.TileFaceView
 import com.doublemoon1119.mahjongcraft.platform.fabric.text.toNameText
@@ -11,14 +12,20 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.toAssetKey
 import net.minecraft.text.Text
 
 /**
- * 依牌譜回覆的牌面與外觀取得素材 key；只讀基本牌面與外觀，不解碼其他特徵。
+ * 依牌譜回覆的牌面、外觀及特徵取得素材 key；特徵無法解碼時沿用基本牌面與外觀。
  *
  * 呼叫前須先經 [isDisplayableHistoryFace] 驗證。
  *
  * @param registry 牌面與外觀樣式的素材 registry。
+ * @param registries 已登記的公開牌面特徵轉換。
  * @return 對應的素材 key。
  */
-internal fun TileFaceViewDto.toHistoryAssetKey(registry: MinecraftTileAssetRegistry): String = TileFaceView(tile.toDomain(), appearanceId = appearanceId).toAssetKey(registry)
+internal fun TileFaceViewDto.toHistoryAssetKey(
+    registry: MinecraftTileAssetRegistry,
+    registries: NetworkDtoConverter,
+): String = runCatching { toDomain(registries) }
+    .getOrElse { TileFaceView(tile = tile.toDomain(), appearanceId = appearanceId) }
+    .toAssetKey(registry)
 
 /**
  * 依牌譜回覆的牌面與外觀取得本地化牌名，用於滑鼠提示；只讀基本牌面與外觀，不解碼其他特徵。

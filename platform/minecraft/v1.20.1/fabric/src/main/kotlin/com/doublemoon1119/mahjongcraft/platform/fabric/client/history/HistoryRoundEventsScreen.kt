@@ -74,7 +74,13 @@ internal class HistoryRoundEventsScreen(
     private val stateButtons = mutableMapOf<Pair<Int, Boolean>, RestartableMarqueeButtonWidget>()
 
     /** 完整手牌與狀態頁共用的牌組繪製。 */
-    private val tileGroups = HistoryTileGroupRenderer(tileFaceRenderer, tileAssetRegistry, session.discardMarkers, session.tileDisplayNames)
+    private val tileGroups = HistoryTileGroupRenderer(
+        faces = tileFaceRenderer,
+        assets = tileAssetRegistry,
+        markerDisplays = session.discardMarkers,
+        displayNames = session.tileDisplayNames,
+        networkRegistries = session.networkRegistries,
+    )
 
     /** 建立固定控制項並恢復此局位置。 */
     override fun init() {
@@ -438,7 +444,10 @@ internal class HistoryRoundEventsScreen(
                             if (hovered && mouseY >= y && mouseY < y + row.height) tooltip = row.tooltip
                         }
                         is Row.Tiles -> row.tiles.forEachIndexed { index, tile ->
-                            val asset = tile.toHistoryAssetKey(tileAssetRegistry)
+                            val asset = tile.toHistoryAssetKey(
+                                registry = tileAssetRegistry,
+                                registries = session.networkRegistries,
+                            )
                             val x = layout.left + row.indent + index * TILE_STEP
                             tileFaceRenderer.renderGui(context, asset, x, y, TILE_WIDTH, TILE_HEIGHT, appearance = session.tileAppearance())
                             if (hovered && mouseX >= x && mouseX < x + TILE_WIDTH && mouseY >= y && mouseY < y + TILE_HEIGHT) tooltip = historyTileTooltip(tile.toHistoryNameText(session.tileDisplayNames), catalogIndex = null, takenBy = null, markerLabels = emptyList())
@@ -449,7 +458,10 @@ internal class HistoryRoundEventsScreen(
                             row.participant?.let { session.participants.render(it, context, layout.left + row.portraitIndent, textY - 1, 10, matchId = session.controller.state.value.summary?.detail?.summary?.matchId) }
                             context.drawTextWithShadow(textRenderer, row.label, layout.left + row.labelIndent, textY, TEXT_COLOR)
                             row.tiles.forEachIndexed { index, tile ->
-                                val asset = tile.toHistoryAssetKey(tileAssetRegistry)
+                                val asset = tile.toHistoryAssetKey(
+                                    registry = tileAssetRegistry,
+                                    registries = session.networkRegistries,
+                                )
                                 val x = layout.left + row.tileIndent + index * TILE_STEP
                                 tileFaceRenderer.renderGui(context, asset, x, y, TILE_WIDTH, TILE_HEIGHT, appearance = session.tileAppearance())
                                 if (hovered && mouseX >= x && mouseX < x + TILE_WIDTH && mouseY >= y && mouseY < y + TILE_HEIGHT) tooltip = historyTileTooltip(tile.toHistoryNameText(session.tileDisplayNames), catalogIndex = null, takenBy = null, markerLabels = emptyList())
