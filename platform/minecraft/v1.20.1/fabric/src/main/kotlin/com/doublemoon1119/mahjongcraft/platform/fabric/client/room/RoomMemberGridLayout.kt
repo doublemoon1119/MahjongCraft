@@ -9,7 +9,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.VerticalScroll
  * 房間成員頁的版面：成員卡片 grid、底部按鈕列上方的狀態列與底部按鈕列。
  *
  * 內容寬度與設定頁相同，最多 [FormScreenLayout.MAX_CONTENT_WIDTH] 並置中；卡片在內容寬度內置中排列，列數超出可見
- * 範圍時以內容右側邊距內的捲軸捲動。只有一列卡片時，卡片依可用高度放大並上下置中；兩列以上維持固定列高。
+ * 範圍時以內容右側邊距內的捲軸捲動。只有一列卡片時，卡片依可用高度放大並上下置中；兩列以上以固定列高為上限；短視窗優先縮小人物範圍。
  * 卡片內的名稱與下方各行從卡片底端往上算，人物畫在名稱上方。等待室與進行中對局共用同一套換欄規則、放大規則與
  * 捲動機制。進行中對局的卡片內另有一段資訊清單，放不下時捲軸畫在該卡片內，每張卡片各自捲動。
  *
@@ -59,8 +59,27 @@ internal data class RoomMemberGridLayout(
     /** 卡片 grid 可用的下界，在狀態列上方。 */
     val gridBottom: Int = frame.fieldsBottom
 
+    /** 卡片區可用的高度，從 [CARD_TOP] 到 [gridBottom]。 */
+    private val availableHeight: Int = (gridBottom - CARD_TOP).coerceAtLeast(0)
+
+    /** 卡片高度優先讓出頁尾空間。卡片至少要能容納名稱及下方的資訊與操作。 */
+    val cardHeight: Int = when {
+        availableHeight < MINIMUM_CARD_HEIGHT -> 0
+        rows == 1 -> minOf(availableHeight, (CARD_HEIGHT * MAX_CARD_SCALE).toInt())
+        else -> minOf(availableHeight, CARD_HEIGHT)
+    }
+
+    /** 人物依卡片高度縮放，文字和控制項使用原尺寸。 */
+    val cardScale: Float = cardHeight.toFloat() / CARD_HEIGHT
+
+    /** 含間距的實際列高。 */
+    private val rowHeight: Int = cardHeight + (ROW_HEIGHT - CARD_HEIGHT)
+
     /** 目前視窗高度能完整顯示幾列卡片。 */
-    val visibleRows: Int = ((gridBottom - CARD_TOP) / ROW_HEIGHT).coerceAtLeast(1)
+    val visibleRows: Int = if (cardHeight == 0) 0 else minOf(rows, 1 + (availableHeight - cardHeight) / rowHeight)
+
+    /** 將視窗大小變動前的捲動位置收斂到目前可用的範圍。 */
+    private val firstVisibleRow: Int = scrollIndex.coerceIn(0, if (visibleRows == 0) 0 else rows - visibleRows)
 
     /** 卡片 grid 捲軸的左界，在內容右側的邊距內。 */
     val scrollbarLeft: Int = frame.scrollbarLeft
@@ -69,32 +88,20 @@ internal data class RoomMemberGridLayout(
     val scrollbar: ScrollbarLayout = ScrollbarLayout(
         trackTop = CARD_TOP,
         trackBottom = gridBottom,
-        itemCount = rows,
+        itemCount = if (visibleRows == 0) 0 else rows,
         visibleItemCount = visibleRows,
-        scrollIndex = scrollIndex,
+        scrollIndex = firstVisibleRow,
         minimumThumbHeight = VerticalScrollbar.MINIMUM_THUMB_HEIGHT,
     )
 
     /** 目前螢幕上實際看得到的列範圍；捲動超出視窗的列不參與繪製與命中判定。 */
-    val visibleGridRows: IntRange = scrollIndex until minOf(scrollIndex + visibleRows, rows)
-
-    /** 卡片區可用的高度，從 [CARD_TOP] 到 [gridBottom]。 */
-    private val availableHeight: Int = gridBottom - CARD_TOP
-
-    /**
-     * 卡片放大倍數。只有一列卡片時，依可用高度把卡片放大到最多 [MAX_CARD_SCALE] 倍；兩列以上維持 1 倍，
-     * 由捲軸捲動。
-     */
-    val cardScale: Float = if (rows == 1) (availableHeight.toFloat() / CARD_HEIGHT).coerceIn(1f, MAX_CARD_SCALE) else 1f
-
-    /** 單張卡片高度。 */
-    val cardHeight: Int = (CARD_HEIGHT * cardScale).toInt()
+    val visibleGridRows: IntRange = firstVisibleRow until firstVisibleRow + visibleRows
 
     /** 第一個可見列的頂端；只有一列時整列在可用高度內上下置中。 */
     private val firstRowTop: Int = if (rows == 1) CARD_TOP + ((availableHeight - cardHeight) / 2).coerceAtLeast(0) else CARD_TOP
 
     /** 卡片內資訊清單一次能顯示幾行；卡片放大時行數跟著增加。 */
-    val visibleInfoRows: Int = (((CARD_HEIGHT - INFO_OFFSET) * cardScale - INFO_BOTTOM_PADDING) / INFO_ROW_HEIGHT).toInt().coerceAtLeast(1)
+    val visibleInfoRows: Int = (((CARD_HEIGHT - INFO_OFFSET) * cardScale.coerceAtLeast(1f) - INFO_BOTTOM_PADDING) / INFO_ROW_HEIGHT).toInt().coerceAtLeast(1)
 
     /** 資訊清單區從頂端到卡片底端的高度。 */
     private val infoAreaHeight: Int = visibleInfoRows * INFO_ROW_HEIGHT + INFO_BOTTOM_PADDING
@@ -116,7 +123,7 @@ internal data class RoomMemberGridLayout(
      * @param row 從零開始的完整清單列索引。
      * @return 扣除捲動偏移後的頂端 Y 座標。
      */
-    fun cardTop(row: Int): Int = firstRowTop + (row - scrollIndex) * ROW_HEIGHT
+    fun cardTop(row: Int): Int = firstRowTop + (row - firstVisibleRow) * rowHeight
 
     /**
      * 計算指定列的卡片底端。
@@ -194,6 +201,13 @@ internal data class RoomMemberGridLayout(
         )
     }
 
+    /** 游標是否位於可捲動的成員區，包含卡片之間的留白。 */
+    fun isOverGrid(mouseX: Double, mouseY: Double): Boolean = visibleRows > 0 &&
+        mouseX >= contentLeft &&
+        mouseX < contentRight &&
+        mouseY >= CARD_TOP &&
+        mouseY < gridBottom
+
     /**
      * 找出游標所在的可見成員卡片。
      *
@@ -202,6 +216,7 @@ internal data class RoomMemberGridLayout(
      * @return 成員在完整清單中的順序；不在任何可見卡片上時為 null。
      */
     fun cardIndexAt(mouseX: Double, mouseY: Double): Int? {
+        if (!isOverGrid(mouseX, mouseY)) return null
         if (mouseX < gridLeft || mouseX >= gridLeft + columns * cardWidth) return null
         val column = ((mouseX - gridLeft) / cardWidth).toInt()
         val row = visibleGridRows.firstOrNull { mouseY >= cardTop(it) && mouseY < cardBottom(it) } ?: return null
@@ -243,7 +258,7 @@ internal data class RoomMemberGridLayout(
      * @param mouseY 游標垂直座標。
      * @return 需要捲動且游標位於命中範圍內時為 true。
      */
-    fun isOverGridScrollbar(mouseX: Double, mouseY: Double): Boolean = rows > visibleRows &&
+    fun isOverGridScrollbar(mouseX: Double, mouseY: Double): Boolean = scrollbar.maximumScroll > 0 &&
         mouseX >= scrollbarLeft - FormScreenLayout.SCROLLBAR_HIT_PADDING &&
         mouseX < scrollbarLeft + VerticalScrollbar.WIDTH + FormScreenLayout.SCROLLBAR_HIT_PADDING &&
         mouseY >= CARD_TOP &&
@@ -267,6 +282,9 @@ internal data class RoomMemberGridLayout(
 
         /** 成員名稱頂端與下方第一行頂端的距離。 */
         const val NAME_GAP: Int = 15
+
+        /** 名稱與資訊區所需的最小高度。 */
+        private const val MINIMUM_CARD_HEIGHT: Int = CARD_HEIGHT - INFO_OFFSET + NAME_GAP
 
         /** 人物腳底與成員名稱頂端的距離。 */
         const val FIGURE_GAP: Int = 12

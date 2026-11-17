@@ -40,6 +40,17 @@ class RoomFigureAreaTest {
         assertTrue(area.portraitLeft >= 7)
     }
 
+    /** 短卡片的人物縮到可用空間，以免遮住名稱或越過卡片頂端。 */
+    @Test
+    fun `shrinks the figure to the space in a short card`() {
+        val area = RoomFigureArea(left = 0, top = 58, width = 126, feetY = 114, scale = 0.8f)
+
+        assertTrue(area.modelScale in 1 until 36)
+        assertTrue(area.portraitSize in 1 until 38)
+        assertTrue(area.feetY - area.modelScale * 1.8f >= area.top + 4)
+        assertTrue(area.portraitTop >= area.top + 4)
+    }
+
     /** 人物頂端不超出卡片頂端。 */
     @Test
     fun `keeps the figure below the card top`() {

@@ -105,14 +105,39 @@ class RoomMemberGridLayoutTest {
         assertEquals(RoomMemberGridLayout.CARD_TOP, grid.cardTop(0))
     }
 
-    /** 可用高度不足 1 倍時不放大，卡片從頂端開始排。 */
+    /** 短視窗保留文字與控制項空間，卡片畫面及命中範圍都在頁尾上方。 */
     @Test
-    fun `does not scale a single row in a small window`() {
-        val grid = grid(width = 640, height = 240, playerCount = 4)
+    fun `short windows fit the visible member cards above the footer`() {
+        val singleRow = grid(width = 640, height = 220, playerCount = 4)
+        val multipleRows = grid(width = 200, height = 220, playerCount = 4, scrollIndex = 99)
 
-        assertEquals(1f, grid.cardScale)
-        assertEquals(RoomMemberGridLayout.CARD_HEIGHT, grid.cardHeight)
-        assertEquals(RoomMemberGridLayout.CARD_TOP, grid.cardTop(0))
+        for (grid in listOf(singleRow, multipleRows)) {
+            val row = grid.visibleGridRows.single()
+            val memberIndex = row * grid.columns
+            val x = grid.cardLeft(memberIndex) + 4.0
+            assertTrue(grid.cardScale < 1f)
+            assertEquals(RoomMemberGridLayout.CARD_TOP, grid.cardTop(row))
+            assertEquals(grid.gridBottom, grid.cardBottom(row))
+            assertTrue(grid.cardBottom(row) < grid.statusY)
+            assertEquals(2, grid.visibleInfoRows)
+            assertEquals(memberIndex, grid.cardIndexAt(x, grid.gridBottom - 1.0))
+            assertNull(grid.cardIndexAt(x, grid.gridBottom.toDouble()))
+            assertNull(grid.cardIndexAt(x, grid.footerY.toDouble()))
+            assertFalse(grid.isOverGridScrollbar(grid.scrollbarLeft + 1.0, grid.footerY.toDouble()))
+        }
+
+        assertEquals(multipleRows.rows - 1, multipleRows.visibleGridRows.single())
+        assertTrue(multipleRows.isOverGridScrollbar(multipleRows.scrollbarLeft + 1.0, multipleRows.gridBottom - 1.0))
+    }
+
+    /** 高度連一張卡片的文字與控制項都放不下時，隱藏卡片和捲軸。 */
+    @Test
+    fun `very short windows have no interactive member cards`() {
+        val grid = grid(width = 200, height = 102, playerCount = 4)
+
+        assertTrue(grid.visibleGridRows.isEmpty())
+        assertEquals(0, grid.scrollbar.maximumScroll)
+        assertNull(grid.cardIndexAt(grid.cardLeft(0) + 4.0, RoomMemberGridLayout.CARD_TOP.toDouble()))
     }
 
     /** 兩列以上維持 1 倍高度，從頂端開始排並以捲軸捲動。 */
@@ -128,7 +153,7 @@ class RoomMemberGridLayoutTest {
     /** 未放大時，名稱、狀態列、資訊區與人物腳底維持原本相對卡片頂端的位置。 */
     @Test
     fun `keeps the unscaled card positions`() {
-        val grid = grid(width = 640, height = 240, playerCount = 4)
+        val grid = grid(width = 640, height = 247, playerCount = 4)
         val top = grid.cardTop(0)
 
         assertEquals(top + RoomMemberGridLayout.INFO_OFFSET, grid.statusTop(0))
