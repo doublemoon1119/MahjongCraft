@@ -834,32 +834,33 @@ internal class SqliteHistoryDatabase private constructor(
         val filterArguments = arguments.toList()
         val backward = query.direction == SqliteHistoryPageDirection.BEFORE
         val ascending = query.sortDirection == SqliteHistorySortDirection.ASC
-        query.cursor?.let { cursor ->
+
+        /**
+         * 建立游標一側的條件；讀頁與計算第一筆的位置共用相同的排序比較。
+         *
+         * @param cursor 排序值及對局 ID。
+         * @param before 是否篩選顯示順序中在游標之前的列。
+         * @return 條件與其參數。
+         */
+        fun cursorPredicate(cursor: SqliteHistoryCursor, before: Boolean): Pair<String, List<Pair<ColumnType<*>, Any?>>> {
             require(cursor.nullBucket == (cursor.sortValue == null)) { "History cursor null bucket does not match sort value" }
-            // 顯示順序：有排序值的列在前、依排序方向排列，同值再以升序的對局 ID 排列；沒有排序值的列最後。
-            if (!backward) {
-                val later = if (ascending) ">" else "<"
-                if (cursor.sortValue != null) {
-                    bindLong(cursor.sortValue)
-                    bindLong(cursor.sortValue)
-                    bindString(cursor.matchId)
-                    conditions += "($sortExpression IS NULL OR $sortExpression $later ? OR ($sortExpression = ? AND m.match_id > ?))"
-                } else {
-                    bindString(cursor.matchId)
-                    conditions += "($sortExpression IS NULL AND m.match_id > ?)"
-                }
-            } else {
-                val earlier = if (ascending) "<" else ">"
-                if (cursor.sortValue != null) {
-                    bindLong(cursor.sortValue)
-                    bindLong(cursor.sortValue)
-                    bindString(cursor.matchId)
-                    conditions += "($sortExpression IS NOT NULL AND ($sortExpression $earlier ? OR ($sortExpression = ? AND m.match_id < ?)))"
-                } else {
-                    bindString(cursor.matchId)
-                    conditions += "($sortExpression IS NOT NULL OR m.match_id < ?)"
-                }
+            val matchId = VarCharColumnType() to cursor.matchId
+            val value = cursor.sortValue
+            if (value == null) {
+                val condition = if (before) "($sortExpression IS NOT NULL OR m.match_id < ?)" else "($sortExpression IS NULL AND m.match_id > ?)"
+                return condition to listOf(matchId)
             }
+            val comparator = if (ascending != before) ">" else "<"
+            val idComparator = if (before) "<" else ">"
+            val comparison = "$sortExpression $comparator ? OR ($sortExpression = ? AND m.match_id $idComparator ?)"
+            val condition = if (before) "($sortExpression IS NOT NULL AND ($comparison))" else "($sortExpression IS NULL OR $comparison)"
+            val sortValue = LongColumnType() to value
+            return condition to listOf(sortValue, sortValue, matchId)
+        }
+        query.cursor?.let { cursor ->
+            val (predicate, bindings) = cursorPredicate(cursor, before = backward)
+            conditions += predicate
+            arguments += bindings
         }
         val nullOrder = "CASE WHEN $sortExpression IS NULL THEN 1 ELSE 0 END ${if (backward) "DESC" else "ASC"}"
         val valueOrder = "$sortExpression ${if (ascending != backward) "ASC" else "DESC"}"
@@ -882,14 +883,26 @@ internal class SqliteHistoryDatabase private constructor(
             $resultJoin
         """.trimIndent()
         val ownerArguments = if (query.includeAll) emptyList() else listOf(VarCharColumnType() to (query.playerId ?: error("Own history query requires a player ID")))
-        var totalCount = 0
-        exec(
-            stmt = "SELECT COUNT(*) AS total $source WHERE ${filterConditions.joinToString(" AND ")}",
-            args = ownerArguments + filterArguments,
-            explicitStatementType = StatementType.SELECT,
-        ) { result ->
-            if (result.next()) totalCount = result.getInt("total")
+
+        /**
+         * 計算這次資料庫交易中符合篩選及額外位置條件的筆數。
+         *
+         * @param extraPredicate 選擇性的位置條件與參數。
+         * @return 符合條件的筆數。
+         */
+        fun countMatching(extraPredicate: Pair<String, List<Pair<ColumnType<*>, Any?>>>? = null): Int {
+            val predicates = filterConditions + listOfNotNull(extraPredicate?.first)
+            var count = 0
+            exec(
+                stmt = "SELECT COUNT(*) AS total $source WHERE ${predicates.joinToString(" AND ")}",
+                args = ownerArguments + filterArguments + extraPredicate?.second.orEmpty(),
+                explicitStatementType = StatementType.SELECT,
+            ) { result ->
+                if (result.next()) count = result.getInt("total")
+            }
+            return count
         }
+        val totalCount = countMatching()
         val sql = """
             SELECT m.match_id, m.table_id, m.status, m.started_at_epoch_millis, m.ended_at_epoch_millis, m.rule_id,
                 $endedExpression AS ended_value,
@@ -958,8 +971,14 @@ internal class SqliteHistoryDatabase private constructor(
         // 從游標往一邊取頁時，游標本身就在另一邊，因此另一邊一定還有列；本頁沒有列時沿用原游標。
         val towardCursor = query.cursor?.let { cursor -> (if (backward) entries.lastOrNull() else entries.firstOrNull())?.let(::positionOf) ?: cursor }
         val awayFromCursor = if (hasMore) (if (backward) entries.firstOrNull() else entries.lastOrNull())?.let(::positionOf) else null
+        val firstEntryIndex = when {
+            entries.isEmpty() -> 0
+            query.cursor == null -> if (backward) totalCount - entries.size + 1 else 1
+            else -> countMatching(cursorPredicate(positionOf(entries.first()), before = true)) + 1
+        }
         SqliteHistoryQueryPage(
             entries = entries,
+            firstEntryIndex = firstEntryIndex,
             nextCursor = if (backward) towardCursor else awayFromCursor,
             previousCursor = if (backward) awayFromCursor else towardCursor,
             totalCount = totalCount,

@@ -76,6 +76,7 @@ internal fun boundedHistoryPage(
             nextCursor = next?.let(encodeCursor),
             previousCursor = previous?.let(encodeCursor),
             totalCount = page.totalCount,
+            firstEntryIndex = page.firstEntryIndex + if (backward) page.entries.size - count else 0,
             errorCode = null,
             allowAll = false,
             allowStressTest = false,

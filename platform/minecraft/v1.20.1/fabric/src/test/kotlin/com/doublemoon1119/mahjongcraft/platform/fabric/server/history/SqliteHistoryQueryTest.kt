@@ -6,11 +6,44 @@ import kotlin.io.path.createTempDirectory
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
+import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 /** 驗證歷史資料庫的 SQL 分類、摘要分頁與 payload 大小查詢。 */
 class SqliteHistoryQueryTest {
+    /** 翻頁前插入較新的牌譜時，原游標仍接續原紀錄，起始位置則依最新資料計算。 */
+    @Test
+    fun `history cursor continues at the current rank after a match is inserted`() {
+        val database = openDatabase()
+        for (index in 1..45) {
+            val id = "match-$index"
+            insertMatch(database.path, id, 1L, index.toLong() + 1L)
+            insertReplay(database.path, id, "{}")
+            insertParticipant(database.path, id, 0, "owner")
+        }
+        val query = SqliteHistoryQuery(
+            playerId = "owner",
+            includeAll = false,
+            sortField = SqliteHistorySortField.ENDED_AT,
+            sortDirection = SqliteHistorySortDirection.DESC,
+            pageSize = 20,
+        )
+        val first = database.readHistoryQueryPage(query)
+        assertEquals(1, first.firstEntryIndex)
+        assertEquals("match-26", first.entries.last().matchId)
+
+        insertMatch(database.path, "new-match", 1L, 100L)
+        insertReplay(database.path, "new-match", "{}")
+        insertParticipant(database.path, "new-match", 0, "owner")
+
+        val next = database.readHistoryQueryPage(query.copy(cursor = assertNotNull(first.nextCursor)))
+        assertEquals((25 downTo 6).map { "match-$it" }, next.entries.map { it.matchId })
+        assertEquals(22, next.firstEntryIndex)
+        assertEquals(41, next.firstEntryIndex + next.entries.lastIndex)
+        assertEquals(46, next.totalCount)
+    }
+
     /** 混合完整、部分、未知、子表孤兒與墓碑資料時分類必須互斥且正確。 */
     @Test
     fun `test statistics classifies mixed stored evidence`() {
@@ -294,6 +327,7 @@ class SqliteHistoryQueryTest {
                     val next = database.readHistoryQueryPage(
                         query = SqliteHistoryQuery("owner", false, field, direction, pageSize = 1, cursor = cursor),
                     )
+                    assertEquals(paged.size + 1, next.firstEntryIndex)
                     paged += next.entries.map { it.matchId }
                     cursor = next.nextCursor
                     assertTrue(paged.size <= expected.size, "Keyset pagination must not repeat rows")
@@ -305,6 +339,7 @@ class SqliteHistoryQueryTest {
                     query = SqliteHistoryQuery("owner", false, field, direction, pageSize = 2, direction = SqliteHistoryPageDirection.BEFORE),
                 )
                 assertEquals(expected.takeLast(2), lastPage.entries.map { it.matchId })
+                assertEquals(expected.size - 1, lastPage.firstEntryIndex)
                 assertNull(lastPage.nextCursor)
                 assertEquals(expected.size, lastPage.totalCount)
                 val pagedBackward = lastPage.entries.map { it.matchId }.toMutableList()
@@ -313,6 +348,7 @@ class SqliteHistoryQueryTest {
                     val previous = database.readHistoryQueryPage(
                         query = SqliteHistoryQuery("owner", false, field, direction, pageSize = 1, cursor = before, direction = SqliteHistoryPageDirection.BEFORE),
                     )
+                    assertEquals(expected.size - pagedBackward.size, previous.firstEntryIndex)
                     pagedBackward.addAll(0, previous.entries.map { it.matchId })
                     assertTrue(previous.nextCursor != null, "A page before a cursor always has a next page")
                     before = previous.previousCursor

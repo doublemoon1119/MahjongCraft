@@ -56,9 +56,9 @@ import kotlin.time.Duration.Companion.milliseconds
 /** 驗證歷史瀏覽控制器的查詢排程、導覽快取、失敗處理與生命週期。 */
 @OptIn(ExperimentalCoroutinesApi::class)
 class HistoryBrowseControllerTest {
-    /** 短頁依實際筆數累計範圍，返回上一頁及刷新後不沿用錯誤偏移。 */
+    /** 頁尾使用伺服器目前的起始位置，翻頁期間插入新紀錄時也能更新。 */
     @Test
-    fun `test page ranges count actual short pages and reset on refresh`() = runTest {
+    fun `test page ranges use the current server position and reset on refresh`() = runTest {
         val transport = FakeHistoryQueryTransport()
         val controller = controller(transport)
         controller.open()
@@ -70,23 +70,23 @@ class HistoryBrowseControllerTest {
         assertTrue(controller.nextPage())
         advanceTimeBy(250.milliseconds)
         runCurrent()
-        transport.respondList(entries = List(3) { summary("second-$it") }, nextCursor = "third", previousCursor = "before-second")
+        transport.respondList(entries = List(3) { summary("second-$it") }, nextCursor = "third", previousCursor = "before-second", totalCount = 13, firstEntryIndex = 9)
         runCurrent()
-        assertEquals(8, controller.state.value.list.firstEntryIndex)
+        assertEquals(9, controller.state.value.list.firstEntryIndex)
         assertTrue(controller.nextPage())
         advanceTimeBy(250.milliseconds)
         runCurrent()
-        transport.respondList(entries = List(2) { summary("third-$it") }, previousCursor = "before-third")
+        transport.respondList(entries = List(2) { summary("third-$it") }, previousCursor = "before-third", totalCount = 13, firstEntryIndex = 12)
         runCurrent()
-        assertEquals(11, controller.state.value.list.firstEntryIndex)
+        assertEquals(12, controller.state.value.list.firstEntryIndex)
         assertTrue(controller.previousPage())
         advanceTimeBy(250.milliseconds)
         runCurrent()
         assertEquals("before-third", transport.listRequests.last().cursor)
         assertEquals(HistoryPageDirectionDto.BEFORE, transport.listRequests.last().direction)
-        transport.respondList(entries = List(3) { summary("second-$it") }, nextCursor = "third", previousCursor = "before-second")
+        transport.respondList(entries = List(3) { summary("second-$it") }, nextCursor = "third", previousCursor = "before-second", totalCount = 13, firstEntryIndex = 9)
         runCurrent()
-        assertEquals(8, controller.state.value.list.firstEntryIndex)
+        assertEquals(9, controller.state.value.list.firstEntryIndex)
         advanceTimeBy(250.milliseconds)
         runCurrent()
         assertTrue(controller.refresh())
@@ -207,7 +207,7 @@ class HistoryBrowseControllerTest {
         assertTrue(controller.retry())
         advanceTimeBy(250.milliseconds)
         runCurrent()
-        transport.respondList(entries = listOf(summary("two")), nextCursor = null, previousCursor = "before-two")
+        transport.respondList(entries = listOf(summary("two")), nextCursor = null, previousCursor = "before-two", totalCount = 2, firstEntryIndex = 2)
         runCurrent()
         assertEquals(2, controller.state.value.list.firstEntryIndex)
         assertEquals(listOf("two"), controller.state.value.list.entries.map { it.matchId })
@@ -225,7 +225,7 @@ class HistoryBrowseControllerTest {
         assertTrue(controller.nextPage())
         advanceTimeBy(250.milliseconds)
         runCurrent()
-        transport.respondList(entries = listOf(summary("two")), nextCursor = null, previousCursor = "before-two")
+        transport.respondList(entries = listOf(summary("two")), nextCursor = null, previousCursor = "before-two", totalCount = 2, firstEntryIndex = 2)
         runCurrent()
 
         assertTrue(controller.previousPage())
@@ -245,7 +245,7 @@ class HistoryBrowseControllerTest {
         assertFalse(controller.previousPage())
     }
 
-    /** 最後一頁從尾端往前取，第一筆位置由總數推算；第一頁從頭開始。 */
+    /** 最後一頁從尾端往前取，使用回應的第一筆位置；第一頁從頭開始。 */
     @Test
     fun `test first and last page jump to both ends`() = runTest {
         val transport = FakeHistoryQueryTransport()
@@ -261,7 +261,7 @@ class HistoryBrowseControllerTest {
         runCurrent()
         assertEquals(null, transport.listRequests.last().cursor)
         assertEquals(HistoryPageDirectionDto.BEFORE, transport.listRequests.last().direction)
-        transport.respondList(entries = List(20) { summary("last-$it") }, previousCursor = "before-last", totalCount = 45)
+        transport.respondList(entries = List(20) { summary("last-$it") }, previousCursor = "before-last", totalCount = 45, firstEntryIndex = 26)
         runCurrent()
         assertEquals(26, controller.state.value.list.firstEntryIndex)
         assertEquals(45, controller.state.value.list.totalCount)
@@ -965,6 +965,7 @@ class HistoryBrowseControllerTest {
          * @param nextCursor 下一頁游標。
          * @param previousCursor 上一頁游標。
          * @param totalCount 符合條件的對局總數。
+         * @param firstEntryIndex 回應頁在完整結果中的起始位置。
          * @param errorCode 回應中的穩定錯誤碼。
          * @param allowAll 伺服器目前允許全部紀錄查詢。
          * @param allowStressTest 伺服器目前允許壓力測試紀錄查詢。
@@ -978,6 +979,7 @@ class HistoryBrowseControllerTest {
             allowStressTest: Boolean = false,
             previousCursor: String? = null,
             totalCount: Int = entries.size,
+            firstEntryIndex: Int = if (entries.isEmpty()) 0 else 1,
         ) {
             mutableState.value = ClientHistoryQueryState.ListResult(
                 response = HistoryListResponseDto(
@@ -986,6 +988,7 @@ class HistoryBrowseControllerTest {
                     nextCursor = nextCursor,
                     previousCursor = previousCursor,
                     totalCount = totalCount,
+                    firstEntryIndex = firstEntryIndex,
                     errorCode = errorCode,
                     allowAll = allowAll,
                     allowStressTest = allowStressTest,
