@@ -331,14 +331,14 @@ class RiichiLegalActionValidator(
     }
 
     /**
-     * 把用來吃碰的手牌組合依各張的組件去除重複：組件相同的牌對規則與玩家沒有差別，只保留第一個組合。
+     * 以每張牌的牌面與組件配對去除重複，只保留每種組合的第一個選項。
      * 用到較少赤寶牌的組合排在前面，讓預設選項保留手上的赤寶牌。
      *
      * @param choices 候選的手牌組合。
      * @return 不重複的組合。
      */
     private fun distinctCallTileChoices(choices: List<List<IdentifiedTile>>): List<List<IdentifiedTile>> = choices
-        .distinctBy { choice -> choice.groupingBy { it.components }.eachCount() }
+        .distinctBy { choice -> choice.groupingBy { it.tile to it.components }.eachCount() }
         .sortedBy { choice -> choice.count { it.components[RiichiTileComponents.RED_DORA] != null } }
 
     /**

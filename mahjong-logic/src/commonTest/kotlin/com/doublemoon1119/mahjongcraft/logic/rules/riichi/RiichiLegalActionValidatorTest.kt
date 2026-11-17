@@ -1146,7 +1146,8 @@ class RiichiLegalActionValidatorTest {
         val opaque = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 2))
         val transparentTiles = List(2) { transparent(Tile.Numeric(Tile.Suit.Character, 2)) }
         val three = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 3))
-        val hand = Hand(tiles = listOf(opaque) + transparentTiles + three)
+        val transparentThree = transparent(three.tile)
+        val hand = Hand(tiles = listOf(opaque) + transparentTiles + listOf(three, transparentThree))
         val player = FakeMahjongPlayerFactory.create(hand = hand)
         val tableState = FakeTableStateFactory.create(players = listOf(player), tileWall = nonEmptyWall)
 
@@ -1158,7 +1159,14 @@ class RiichiLegalActionValidatorTest {
         ).filterIsInstance<GameAction.Chi>()
 
         assertEquals(setOf(setOf(opaque.id, transparentTiles[0].id), transparentTiles.map { it.id }.toSet()), ponActions.map { it.withTiles.toSet() }.toSet())
-        assertEquals(setOf(setOf(opaque.id, three.id), setOf(transparentTiles[0].id, three.id)), chiActions.map { it.withTiles.toSet() }.toSet())
+        val expectedChiTiles = setOf(
+            setOf(opaque.id, three.id),
+            setOf(opaque.id, transparentThree.id),
+            setOf(transparentTiles[0].id, three.id),
+            setOf(transparentTiles[0].id, transparentThree.id),
+        )
+        assertEquals(expectedChiTiles.size, chiActions.size)
+        assertEquals(expectedChiTiles, chiActions.map { it.withTiles.toSet() }.toSet())
     }
 
     /**
