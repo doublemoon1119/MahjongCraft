@@ -19,6 +19,7 @@ import doublemoon.mahjongcraft.registry.SoundRegistry
 import doublemoon.mahjongcraft.scheduler.client.ScoreSettleHandler
 import doublemoon.mahjongcraft.scheduler.client.YakuSettleHandler
 import doublemoon.mahjongcraft.scheduler.server.ServerScheduler
+import doublemoon.mahjongcraft.util.coroutineDispatcher
 import doublemoon.mahjongcraft.util.delayOnServer
 import doublemoon.mahjongcraft.util.plus
 import doublemoon.mahjongcraft.util.sendTitles
@@ -111,6 +112,27 @@ class MahjongGame(
      * 等待遊戲開始的 [Job]
      * */
     private var jobWaitForStart: Job? = null
+
+    /**
+     * Game coroutines run on the server thread, because they spawn, move and remove entities.
+     * Running them on a worker thread breaks with mods that check for it, such as C2ME (issue #21).
+     */
+    private val gameScope: CoroutineScope
+        get() = CoroutineScope(world.server.coroutineDispatcher())
+
+    /**
+     * A failed round used to only log a warning and leave the table frozen.
+     * Now it logs the error, tells the players, and puts the table back to waiting.
+     */
+    private val roundErrorHandler = CoroutineExceptionHandler { _, exception ->
+        logger.error("A MahjongCraft game at $pos failed and was ended. Please report this.", exception)
+        world.server.execute {
+            if (status != GameStatus.PLAYING) return@execute
+            val message = PREFIX + Text.translatable("$MOD_ID.game.message.game_ended_by_error")
+            realPlayers.forEach { it.sendMessage(message) }
+            end(sync = true)
+        }
+    }
 
     /**
      * 當前骰子點數
@@ -250,11 +272,8 @@ class MahjongGame(
      * */
     private fun startRound(clearRiichiSticks: Boolean = true) {
         if (status != GameStatus.PLAYING) return
-        val handler = CoroutineExceptionHandler { _, exception -> //目前遊戲過程中的例外, 異常情況都暫時先無視
-            logger.warn("Something happened, I hope you can report it.", exception)
-        }
         jobRound?.cancel()
-        jobRound = CoroutineScope(Dispatchers.IO).launch(handler) {
+        jobRound = gameScope.launch(roundErrorHandler) {
             clearStuffs(clearRiichiSticks = clearRiichiSticks)
             showRoundsTitle()
             syncMahjongTable() //每個 Round 開始時同步
@@ -1424,8 +1443,7 @@ class MahjongGame(
         }
         if (sync) syncMahjongTable()  //開始遊戲同步麻將桌
         //延遲 0.5 秒後再開始
-        val handler = CoroutineExceptionHandler { _, _ -> } //通常只有中途拆了麻將桌才會導致這的錯誤, 目前先直接無視
-        jobWaitForStart = CoroutineScope(Dispatchers.IO).launch(handler) {
+        jobWaitForStart = gameScope.launch(roundErrorHandler) {
             delayOnServer(500)
             startRound()
         }

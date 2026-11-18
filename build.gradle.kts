@@ -54,6 +54,8 @@ dependencies {
     // Mod Menu (https://www.curseforge.com/minecraft/mc-mods/modmenu)
     val modMenuVersion: String by project
     modImplementation("com.terraformersmc:modmenu:$modMenuVersion")
+
+    testImplementation(kotlin("test"))
 }
 
 tasks {
@@ -62,6 +64,8 @@ tasks {
         options.encoding = "UTF-8"
         options.release.set(javaVersion.toString().toInt())
     }
+
+    test { useJUnitPlatform() }
 
     jar { from("LICENSE") { rename { "${it}_${base.archivesName}" } } }
     processResources {

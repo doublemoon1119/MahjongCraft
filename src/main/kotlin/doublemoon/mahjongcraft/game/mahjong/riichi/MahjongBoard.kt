@@ -15,8 +15,6 @@ import doublemoon.mahjongcraft.game.mahjong.riichi.model.*
 import doublemoon.mahjongcraft.game.mahjong.riichi.player.MahjongPlayerBase
 import doublemoon.mahjongcraft.scheduler.server.ServerScheduler
 import doublemoon.mahjongcraft.util.delayOnServer
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
 import net.minecraft.entity.Entity
 import net.minecraft.sound.SoundEvents
 import net.minecraft.util.math.Direction
@@ -352,38 +350,36 @@ class MahjongBoard(
      * 這裡並沒有一次發 4 張牌, 都是直接把整副牌發完的
      **/
     suspend fun assignWallAndHands(dicePoints: Int) {
-        withContext(Dispatchers.Default) {
-            val directionIndex = (4 - ((dicePoints % 4 - 1) + game.round.round) % 4) //從哪邊開始拿牌
-            val startingStackIndex = 2 * dicePoints //從開始處數第幾張牌開始拿
-            val dealer = game.seat[game.round.round] //莊家
-            val newWall = MutableList(wall.size) {
-                //按照摸牌的順序, 建立 newWall
-                val tileIndex = (directionIndex * 34 + startingStackIndex + it) % wall.size
-                wall[tileIndex]
+        val directionIndex = (4 - ((dicePoints % 4 - 1) + game.round.round) % 4) //從哪邊開始拿牌
+        val startingStackIndex = 2 * dicePoints //從開始處數第幾張牌開始拿
+        val dealer = game.seat[game.round.round] //莊家
+        val newWall = MutableList(wall.size) {
+            //按照摸牌的順序, 建立 newWall
+            val tileIndex = (directionIndex * 34 + startingStackIndex + it) % wall.size
+            wall[tileIndex]
+        }
+        //分配玩家的手牌
+        game.seat.forEach { mjPlayer ->
+            //莊家 14 張,剩下每個人 13 張牌, 共 13 * 3 + 14 = 53
+            val tileAmount = if (mjPlayer == dealer) 14 else 13
+            repeat(tileAmount) {
+                val tile = newWall.removeFirst() //摸走最前面的牌
+                tile.isInvisible = true //先暫時隱形一下
+                mjPlayer.drawTile(tile)
+                if (it == 13) sortHands(player = mjPlayer, lastTile = tile)
+                else sortHands(player = mjPlayer)
             }
-            //分配玩家的手牌
-            game.seat.forEach { mjPlayer ->
-                //莊家 14 張,剩下每個人 13 張牌, 共 13 * 3 + 14 = 53
-                val tileAmount = if (mjPlayer == dealer) 14 else 13
-                repeat(tileAmount) {
-                    val tile = newWall.removeFirst() //摸走最前面的牌
-                    tile.isInvisible = true //先暫時隱形一下
-                    mjPlayer.drawTile(tile)
-                    if (it == 13) sortHands(player = mjPlayer, lastTile = tile)
-                    else sortHands(player = mjPlayer)
-                }
-            }
-            //將牌山替換成新的牌山
-            wall.clear()
-            wall += newWall
-            //從莊家開始顯示牌, 這樣看起來比較牛逼
-            repeat(4) { times ->
-                if (game.seat.size == 0) return@repeat //可能是遊戲中途消失了
-                val seatIndex = (game.round.round + times) % 4
-                game.seat[seatIndex].hands.forEach { it.isInvisible = false }
-                game.playSound(soundEvent = SoundEvents.ENTITY_ITEM_PICKUP, volume = 0.3f, pitch = 2.0f)
-                delayOnServer(250)
-            }
+        }
+        //將牌山替換成新的牌山
+        wall.clear()
+        wall += newWall
+        //從莊家開始顯示牌, 這樣看起來比較牛逼
+        repeat(4) { times ->
+            if (game.seat.size == 0) return@repeat //可能是遊戲中途消失了
+            val seatIndex = (game.round.round + times) % 4
+            game.seat[seatIndex].hands.forEach { it.isInvisible = false }
+            game.playSound(soundEvent = SoundEvents.ENTITY_ITEM_PICKUP, volume = 0.3f, pitch = 2.0f)
+            delayOnServer(250)
         }
     }
 

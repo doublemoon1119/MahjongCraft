@@ -20,6 +20,7 @@ class WPlayerFace(
 ) : WWidget() {
     private val coroutineScope = CoroutineScope(Dispatchers.Default)
 
+    @Volatile
     private var gameProfile = GameProfile(uuid, name)
 
     // constructor 不能含有 private set 只好這樣用
@@ -42,10 +43,13 @@ class WPlayerFace(
     override fun canResize(): Boolean = true
 
     private fun loadGameProfileProperties() {
+        val requestedUuid = uuid
+        val requestedName = name
         coroutineScope.launch(Dispatchers.IO) {
-            val profile = SkullBlockEntity.fetchProfileByUuid(uuid).get().getOrNull()
-                ?: SkullBlockEntity.fetchProfileByName(name).get().getOrNull()
-            if (profile != null) gameProfile = profile
+            val profile = SkullBlockEntity.fetchProfileByUuid(requestedUuid).get().getOrNull()
+                ?: SkullBlockEntity.fetchProfileByName(requestedName).get().getOrNull()
+            // A slower, older fetch must not overwrite the face of a newer setUuidAndName call.
+            if (profile != null && uuid == requestedUuid) gameProfile = profile
         }
     }
 

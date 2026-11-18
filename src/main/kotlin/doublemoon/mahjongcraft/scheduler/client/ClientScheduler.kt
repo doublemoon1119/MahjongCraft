@@ -4,6 +4,7 @@ import doublemoon.mahjongcraft.scheduler.ActionBase
 import doublemoon.mahjongcraft.scheduler.DelayAction
 import doublemoon.mahjongcraft.scheduler.LoopAction
 import doublemoon.mahjongcraft.scheduler.RepeatAction
+import java.util.concurrent.CopyOnWriteArrayList
 import net.fabricmc.api.EnvType
 import net.fabricmc.api.Environment
 import net.minecraft.client.MinecraftClient
@@ -14,8 +15,9 @@ import net.minecraft.client.MinecraftClient
 @Environment(EnvType.CLIENT)
 object ClientScheduler {
 
-    private val queuedActions = mutableListOf<ActionBase>()
-    private val loopActions = mutableListOf<LoopAction>()
+    // Thread-safe: actions are scheduled from coroutines on other threads while tick() iterates.
+    private val queuedActions = CopyOnWriteArrayList<ActionBase>()
+    private val loopActions = CopyOnWriteArrayList<LoopAction>()
 
     //用來 trace world 改變的事件
     private var doesWorldExist: Boolean = false

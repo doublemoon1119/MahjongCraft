@@ -151,6 +151,7 @@
   "mahjongcraft.game.message.already_started": "This game has already started",
   "mahjongcraft.game.message.be_kick": "You were kicked by the game host",
   "mahjongcraft.game.message.game_block_is_destroyed": "The game block is destroyed",
+  "mahjongcraft.game.message.game_ended_by_error": "Something went wrong, so this game was ended. Please report it with your game log.",
   "mahjongcraft.game.message.you_changed_the_rules": "You changed the rules",
   "mahjongcraft.game.message.host_changed_the_rules": "The host has changed the rules, please review the rules again and get ready for the game",
   "mahjongcraft.game.message.player_is_not_in_this_world": "Player %s is NOT in this world",

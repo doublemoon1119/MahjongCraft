@@ -151,6 +151,7 @@
   "mahjongcraft.game.message.already_started": "這個遊戲已經開始了",
   "mahjongcraft.game.message.be_kick": "你被遊戲主持人剔除了",
   "mahjongcraft.game.message.game_block_is_destroyed": "遊戲方塊被破壞",
+  "mahjongcraft.game.message.game_ended_by_error": "發生錯誤，本局遊戲已結束。請附上遊戲記錄回報。",
   "mahjongcraft.game.message.you_changed_the_rules": "你更改了規則",
   "mahjongcraft.game.message.host_changed_the_rules": "遊戲主持人改變了規則, 請重新查看規則, 並準備好進行遊戲",
   "mahjongcraft.game.message.player_is_not_in_this_world": "玩家 %s 不在這個世界",

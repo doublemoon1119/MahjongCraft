@@ -19,6 +19,7 @@ class PlayerFaceIcon(
 ) : Icon {
     private val coroutineScope = CoroutineScope(Dispatchers.Default)
 
+    @Volatile
     private var gameProfile = GameProfile(uuid, name)
 
     init {
