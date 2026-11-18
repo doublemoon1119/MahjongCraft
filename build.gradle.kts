@@ -24,6 +24,7 @@ repositories {
         metadataSources { artifact() }
         content { includeModule("io.github.cottonmc", "LibGui") }
     }
+    mavenCentral() // libninepatch (LibGui dependency, dev runtime)
     maven(url = "https://jitpack.io")  //Mahjong4j
     maven(url = "https://maven.shedaniel.me/") //Cloth Config
     maven(url = "https://maven.terraformersmc.com/") //Mod Menu
@@ -55,7 +56,30 @@ dependencies {
     val modMenuVersion: String by project
     modImplementation("com.terraformersmc:modmenu:$modMenuVersion")
 
+    // LibGui ships Jankson-Fabric and libninepatch nested inside its jar, so players get them.
+    // Loom drops nested jars in the dev environment, and Jankson-Fabric's only maven host is gone,
+    // so for runClient take it out of the LibGui release jar.
+    modLocalRuntime(files(libguiNestedJar("Jankson-Fabric")))
+    localRuntime("io.github.juuxel:libninepatch:1.2.0")
+
     testImplementation(kotlin("test"))
+}
+
+/** Extracts the nested jar whose name starts with [prefix] from the LibGui release jar. */
+fun libguiNestedJar(prefix: String): File {
+    val libguiVersion: String by project
+    val libguiMinecraftVersion: String by project
+    val libgui = configurations.detachedConfiguration(
+        dependencies.create("io.github.cottonmc:LibGui:$libguiVersion:$libguiMinecraftVersion")
+    ).apply { isTransitive = false }.singleFile
+    val outDir = layout.buildDirectory.dir("libgui-nested").get().asFile
+    copy {
+        from(zipTree(libgui)) { include("META-INF/jars/$prefix-*.jar") }
+        eachFile { path = name }
+        includeEmptyDirs = false
+        into(outDir)
+    }
+    return outDir.listFiles { f -> f.name.startsWith(prefix) }!!.single()
 }
 
 tasks {
