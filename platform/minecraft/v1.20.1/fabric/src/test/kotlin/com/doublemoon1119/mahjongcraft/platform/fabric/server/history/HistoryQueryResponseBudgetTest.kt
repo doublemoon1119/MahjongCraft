@@ -64,7 +64,7 @@ class HistoryQueryResponseBudgetTest {
         val request = HistoryListRequest(sortField = HistorySortField.OWN_SCORE)
         val response = boundedHistoryPage(
             requestId = "request",
-            page = HistoryListPage(listOf(first, second, third), nextCursor = null, previousCursor = null, totalCount = 0),
+            page = HistoryListPage(listOf(first, second, third), nextCursor = null, previousCursor = null, totalCount = 12, firstEntryIndex = 10),
             request = request,
             principalId = PLAYER_ID,
             json = bundledNetworkJson(),
@@ -75,6 +75,7 @@ class HistoryQueryResponseBudgetTest {
         assertEquals(1, response.entries.size)
         assertEquals(first.matchId.toString(), response.entries.single().matchId)
         assertEquals(first.matchId.toString(), response.nextCursor)
+        assertEquals(10, response.firstEntryIndex)
         assertNull(response.errorCode)
     }
 
@@ -86,7 +87,7 @@ class HistoryQueryResponseBudgetTest {
         val third = summary(Uuid.random(), score = 800)
         val response = boundedHistoryPage(
             requestId = "request",
-            page = HistoryListPage(listOf(first, second, third), nextCursor = null, previousCursor = null, totalCount = 3),
+            page = HistoryListPage(listOf(first, second, third), nextCursor = null, previousCursor = null, totalCount = 12, firstEntryIndex = 10),
             request = HistoryListRequest(sortField = HistorySortField.OWN_SCORE, direction = HistoryPageDirection.BEFORE),
             principalId = PLAYER_ID,
             json = bundledNetworkJson(),
@@ -96,7 +97,8 @@ class HistoryQueryResponseBudgetTest {
 
         assertEquals(listOf(third.matchId.toString()), response.entries.map { it.matchId })
         assertEquals(third.matchId.toString(), response.previousCursor)
-        assertEquals(3, response.totalCount)
+        assertEquals(12, response.firstEntryIndex)
+        assertEquals(12, response.totalCount)
     }
 
     /** 單筆摘要超過 UTF-8 限制時應回報穩定錯誤。 */

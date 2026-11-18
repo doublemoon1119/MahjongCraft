@@ -98,6 +98,17 @@ class DeclareKanUseCaseTest {
      */
     @Test
     fun `test closed kan success applies meld and draws replacement tile`() = runTest {
+        assertClosedKanReplacement(buildsWall = true)
+    }
+
+    /** 無實體牌牆時仍透過正式暗槓入口補牌，但不發布牌牆重排。 */
+    @Test
+    fun `wallless closed kan draws replacement tile without moving a wall`() = runTest {
+        assertClosedKanReplacement(buildsWall = false)
+    }
+
+    /** 驗證同一套暗槓補牌流程在有牆與無牆對局的效果。 */
+    private suspend fun assertClosedKanReplacement(buildsWall: Boolean) {
         val fixtures = Fixtures()
         val east1 = FakeIdentifiedTileFactory.create(Tile.Honor.East)
         val east2 = FakeIdentifiedTileFactory.create(Tile.Honor.East)
@@ -108,14 +119,15 @@ class DeclareKanUseCaseTest {
             initialSeat = Wind.EAST,
             hand = Hand(tiles = listOf(east1, east2, east3), lastDrawn = east4),
         )
-        val table = FakeTableStateFactory.create(
+        val initial = FakeTableStateFactory.create(
             id = gameId,
             players = listOf(declarer),
-            config = RiichiRuleConfig(),
+            config = RiichiRuleConfig(buildsWall = buildsWall),
             reservedWallTiles = completeDeadWall(rinshanTile),
             currentPlayerIndex = 0,
             components = riichiTableComponents(potPoints = 0),
-        ).withFirstKanPhysicalWallLayout()
+        )
+        val table = if (buildsWall) initial.withFirstKanPhysicalWallLayout() else initial
         fixtures.gameRepo.setTableState(table)
 
         val result = fixtures.gameRepo.runAsSingleWrite(gameId) { fixtures.useCase(gameId, playerId, GameAction.KanType.CLOSED_KAN, east4.id) }
@@ -144,8 +156,14 @@ class DeclareKanUseCaseTest {
         assertEquals(TableStepEvent.ActionDeclared(playerId, GameAction.Kan(GameAction.KanType.CLOSED_KAN, east4.id, listOf(east1.id, east2.id, east3.id))), declared.events.first())
         assertEquals(newState, drawn.tableState)
         assertEquals(TileRegion.DRAWN, drawn.tableState.tileRegion(rinshanTile.id))
-        drawn.events.filterIsInstance<TableStepEvent.WallRearranged>().single().phases.flatMap { it.moves }.forEach { move ->
-            assertEquals(newState.physicalWallLayout?.placements?.get(move.tileId), move.destination)
+        val wallEvents = drawn.events.filterIsInstance<TableStepEvent.WallRearranged>()
+        if (buildsWall) {
+            wallEvents.single().phases.flatMap { it.moves }.forEach { move ->
+                assertEquals(newState.physicalWallLayout?.placements?.get(move.tileId), move.destination)
+            }
+        } else {
+            assertTrue(wallEvents.isEmpty())
+            assertEquals(null, newState.physicalWallLayout)
         }
     }
 

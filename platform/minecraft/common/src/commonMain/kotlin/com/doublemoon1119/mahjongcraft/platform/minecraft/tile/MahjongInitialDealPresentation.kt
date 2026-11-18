@@ -29,6 +29,7 @@ import kotlin.uuid.Uuid
  * 掉落動畫、擲骰動畫都播完才輪到發牌），折算進每一張牌自己的佇列（一個 `AnimationStep.WaitUntil` step），
  * 不是外層再包一層延遲呼叫本身——理由見 `AnimatedMahjongEntity` KDoc：呼叫端延遲呼叫這個方法本身
  * 沒辦法撐過伺服器重啟，只有掛在 entity 自己身上的佇列才可以。
+ * @property hasPhysicalWall 本局是否先建立實體牌牆。
  * @property tilePoseStates 規則要求的逐張手牌姿態，發牌落位時套用。
  */
 data class MahjongInitialDealPresentation(
@@ -43,4 +44,5 @@ data class MahjongInitialDealPresentation(
     val dealBatchSizes: List<Int>,
     val extraLeadDelayTicks: Int = 0,
     val tilePoseStates: List<TilePoseState> = emptyList(),
+    val hasPhysicalWall: Boolean = true,
 )

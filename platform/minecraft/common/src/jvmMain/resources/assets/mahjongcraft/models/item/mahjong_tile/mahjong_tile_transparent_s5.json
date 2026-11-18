@@ -1,0 +1,8 @@
+{
+	"parent": "mahjongcraft:item/mahjong_tile_base",
+	"textures": {
+		"0": "mahjongcraft:item/mahjong_tile/mahjong_tile_transparent_s5",
+		"1": "mahjongcraft:item/mahjong_tile/mahjong_tile_cover_transparent",
+		"particle": "mahjongcraft:item/mahjong_tile/mahjong_tile_cover_transparent"
+	}
+}

@@ -47,13 +47,13 @@ class DebugGameScenarioValidator(
         val module = moduleRegistry.getModule(candidate.tableState.config)
         val allTiles = candidate.tableState.allTiles(module)
         require(allTiles.map { it.id }.distinct().size == allTiles.size) { "Debug scenario contains duplicate tile UUIDs" }
-        require(result.wallStructure.keys == allTiles.mapTo(mutableSetOf()) { it.id }) {
+        require(result.wallStructure.keys == if (result.wallLayout == null) emptySet() else allTiles.mapTo(mutableSetOf()) { it.id }) {
             "Debug scenario wall structure must contain every tile UUID exactly once"
         }
-        require(result.wallLayout.placements.keys == result.wallStructure.keys) {
+        require(result.wallLayout?.placements.orEmpty().keys == result.wallStructure.keys) {
             "Debug scenario presentation layout must contain every wall structure UUID exactly once"
         }
-        requireNotNull(candidate.tableState.physicalWallLayout) {
+        require((candidate.tableState.physicalWallLayout == null) == (result.wallLayout == null)) {
             "Debug scenario must provide the current authoritative physical wall layout"
         }
         (result.presentation as? DebugGameScenarioPresentation.InitialRound)?.let { presentation ->
@@ -112,7 +112,9 @@ class DebugGameScenarioValidator(
         state: TableState,
         presentation: DebugGameScenarioPresentation.InitialRound,
     ) {
-        require(presentation.diceRoll.values.isNotEmpty()) { "Initial round presentation must provide dice" }
+        require(state.openingDiceRolls.map { it.dice } == listOfNotNull(presentation.diceRoll)) {
+            "Initial round presentation must match the authoritative dice rolls"
+        }
         val expectedSeatIndices = state.players.indices.toSet()
         require(presentation.dealOrderHandTileIdsBySeatIndex.keys == expectedSeatIndices) {
             "Initial round deal order must contain every seat"

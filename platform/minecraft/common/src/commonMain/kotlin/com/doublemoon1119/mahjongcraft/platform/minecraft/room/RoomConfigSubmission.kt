@@ -9,7 +9,8 @@ import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
  * 同一規則以房間目前設定為基礎，切換規則則先換成目標規則的預設值。先驗證並套用規則專屬欄位，
  * 再依重建後的規則設定決定哪些共用欄位可以修改，最後驗證並套用流程欄位。
  * 每個值都須符合欄位編輯器的限制（[GameConfigEditorSpec.accepts]）；重建結果與送來的設定不同時，
- * 代表客戶端改了不可編輯的內容，整份拒絕。
+ * 代表客戶端改了不可編輯的內容，整份拒絕。識別欄位必須整組符合某個玩法，且該玩法的鎖定欄位必須是固定的值
+ * （[GameConfigVariantResolver.isConsistent]），否則同樣整份拒絕。
  */
 object RoomConfigSubmission {
     /** 審查送來的房間設定的結果。 */
@@ -99,6 +100,7 @@ object RoomConfigSubmission {
                     return Result.Invalid
                 }
             }
-        return if (rebuilt == submitted) Result.Accepted(rebuilt) else Result.Invalid
+        if (rebuilt != submitted) return Result.Invalid
+        return if (GameConfigVariantResolver.isConsistent(effectiveDefinition, rebuilt)) Result.Accepted(rebuilt) else Result.Invalid
     }
 }

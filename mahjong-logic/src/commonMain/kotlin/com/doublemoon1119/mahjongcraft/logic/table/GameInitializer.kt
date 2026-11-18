@@ -354,15 +354,16 @@ object GameInitializer {
          *
          * @param module 提供牌牆實體布局 policy 的規則模組。
          * @param remainingWall 發牌後的一般摸牌牌山。
-         * @return 完整初始牌牆布局與只保留仍在牌牆牌張的目前布局；沒有牌牆布局結果時為 null。
+         * @return 完整初始牌牆布局與只保留仍在牌牆牌張的目前布局；沒有牌牆布局結果或規則不砌牌牆時為 null。
          * @throws IllegalStateException 規則拒絕建立初始布局時拋出。
          */
         fun createPhysicalLayouts(module: MahjongRuleModule<*>, remainingWall: TileWall): PhysicalLayouts? {
             val result = layoutResult ?: return null
+            val policy = module.createPhysicalWallLayoutPolicy() ?: return null
             val retainedIds = (remainingWall.getAllTiles() + reservedWallTiles).mapTo(mutableSetOf()) { it.id }
             val opening = requireNotNull(wallOpening)
             val complete = when (
-                val decision = module.createPhysicalWallLayoutPolicy().createInitialLayoutValidated(
+                val decision = policy.createInitialLayoutValidated(
                     context = InitialPhysicalWallLayoutContext(result, opening, retainedIds),
                 )
             ) {

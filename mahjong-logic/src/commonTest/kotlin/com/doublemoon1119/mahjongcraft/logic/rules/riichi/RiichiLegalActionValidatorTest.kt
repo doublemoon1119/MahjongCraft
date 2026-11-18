@@ -5,8 +5,10 @@ import com.doublemoon1119.mahjongcraft.logic.base.Hand
 import com.doublemoon1119.mahjongcraft.logic.base.MeldType
 import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.RiichiTileComponents
 import com.doublemoon1119.mahjongcraft.logic.table.TileWall
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
+import com.doublemoon1119.mahjongcraft.logic.tile.component.BuiltInTileComponents
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeHandFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeIdentifiedTileFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeMeldFactory
@@ -1122,4 +1124,69 @@ class RiichiLegalActionValidatorTest {
         // 驗證：非國士無雙手牌不可搶暗槓榮和
         assertFalse(actions.any { it is GameAction.Ron })
     }
+
+    /** 手上同種牌有赤五與普通五時，碰有兩個選項，沒用到赤五的排在前面；完全相同的牌只給一個選項。 */
+    @Test
+    fun `pon offers one option per distinct tile combination`() {
+        val redHand = FakeHandFactory.create(tiles = List(3) { Tile.Numeric(Tile.Suit.Dot, 5) }).withRedFives(Tile.Suit.Dot)
+        val plainHand = FakeHandFactory.create(tiles = List(3) { Tile.Numeric(Tile.Suit.Dot, 5) })
+
+        val redOptions = ponOptions(redHand)
+        val plainOptions = ponOptions(plainHand)
+
+        assertEquals(2, redOptions.size)
+        assertTrue(redOptions.first().withTiles.none { id -> redHand.tiles.single { it.id == id }.components[RiichiTileComponents.RED_DORA] != null })
+        assertTrue(redOptions.last().withTiles.any { id -> redHand.tiles.single { it.id == id }.components[RiichiTileComponents.RED_DORA] != null })
+        assertEquals(1, plainOptions.size)
+    }
+
+    /** 手上同種牌有透明與不透明的張時，碰與吃都依組合各給一個選項。 */
+    @Test
+    fun `calls offer separate options for transparent and opaque copies`() {
+        val opaque = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 2))
+        val transparentTiles = List(2) { transparent(Tile.Numeric(Tile.Suit.Character, 2)) }
+        val three = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 3))
+        val transparentThree = transparent(three.tile)
+        val hand = Hand(tiles = listOf(opaque) + transparentTiles + listOf(three, transparentThree))
+        val player = FakeMahjongPlayerFactory.create(hand = hand)
+        val tableState = FakeTableStateFactory.create(players = listOf(player), tileWall = nonEmptyWall)
+
+        val ponActions = validator.getLegalActions(
+            context = LegalActionTestContexts.discard(tableState, player, RelativeDirection.Across, transparent(Tile.Numeric(Tile.Suit.Character, 2))),
+        ).filterIsInstance<GameAction.Pon>()
+        val chiActions = validator.getLegalActions(
+            context = LegalActionTestContexts.discard(tableState, player, RelativeDirection.Left, FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 1))),
+        ).filterIsInstance<GameAction.Chi>()
+
+        assertEquals(setOf(setOf(opaque.id, transparentTiles[0].id), transparentTiles.map { it.id }.toSet()), ponActions.map { it.withTiles.toSet() }.toSet())
+        val expectedChiTiles = setOf(
+            setOf(opaque.id, three.id),
+            setOf(opaque.id, transparentThree.id),
+            setOf(transparentTiles[0].id, three.id),
+            setOf(transparentTiles[0].id, transparentThree.id),
+        )
+        assertEquals(expectedChiTiles.size, chiActions.size)
+        assertEquals(expectedChiTiles, chiActions.map { it.withTiles.toSet() }.toSet())
+    }
+
+    /**
+     * 取得他家打出五筒時的碰選項。
+     *
+     * @param hand 碰牌者的手牌。
+     * @return 碰的合法動作。
+     */
+    private fun ponOptions(hand: Hand): List<GameAction.Pon> {
+        val player = FakeMahjongPlayerFactory.create(hand = hand)
+        val tableState = FakeTableStateFactory.create(players = listOf(player), tileWall = nonEmptyWall)
+        val incoming = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 5))
+        return validator.getLegalActions(LegalActionTestContexts.discard(tableState, player, RelativeDirection.Across, incoming)).filterIsInstance<GameAction.Pon>()
+    }
+
+    /**
+     * 建立透明牌。
+     *
+     * @param tile 牌面。
+     * @return 帶透明牌組件的牌張。
+     */
+    private fun transparent(tile: Tile) = FakeIdentifiedTileFactory.create(tile).let { it.copy(components = it.components.with(BuiltInTileComponents.TRANSPARENT, Unit)) }
 }

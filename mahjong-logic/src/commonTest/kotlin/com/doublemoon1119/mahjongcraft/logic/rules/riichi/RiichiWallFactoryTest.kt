@@ -1,12 +1,15 @@
 package com.doublemoon1119.mahjongcraft.logic.rules.riichi
 
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.threeplayer.ThreePlayerRiichiRuleConfig
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.threeplayer.ThreePlayerRiichiWallFactory
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.RiichiTileComponents
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.RiichiTileValues
 import com.doublemoon1119.mahjongcraft.logic.tile.component.BuiltInTileComponents
 import kotlin.random.Random
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 
 /**
  * 針對 [RiichiWallFactory] 進行的單元測試。
@@ -59,5 +62,20 @@ class RiichiWallFactoryTest {
 
         // 驗證筒子 (Dot) 應有兩張赤牌
         assertEquals(2, redBySuit[Tile.Suit.Dot]?.size)
+    }
+
+    /** 使用透明牌時，四人與三人日麻每種牌四張中都有三張透明；不使用時沒有透明牌。 */
+    @Test
+    fun `transparent tiles mark three of every four copies`() {
+        val fourPlayer = RiichiWallFactory(RiichiRuleConfig(transparentTiles = true, buildsWall = false, redDoraCount = 0)).create(Random(0)).getAllTiles()
+        val threePlayer = ThreePlayerRiichiWallFactory(ThreePlayerRiichiRuleConfig(transparentTiles = true, buildsWall = false, redDoraCount = 0))
+            .create(Random(0)).getAllTiles()
+
+        listOf(fourPlayer, threePlayer).forEach { tiles ->
+            val transparentByTile = tiles.filter { it.components[BuiltInTileComponents.TRANSPARENT] != null }.groupingBy { it.tile }.eachCount()
+            assertEquals(tiles.map { it.tile }.toSet(), transparentByTile.keys)
+            assertTrue(transparentByTile.values.all { it == RiichiTileValues.TRANSPARENT_COPIES })
+        }
+        assertTrue(RiichiWallFactory(RiichiRuleConfig()).create(Random(0)).getAllTiles().none { it.components[BuiltInTileComponents.TRANSPARENT] != null })
     }
 }

@@ -3,6 +3,7 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.client.room
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameConfig
 import com.doublemoon1119.mahjongcraft.platform.fabric.text.gameConfigPresentationText
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.GameConfigPresentationResolver
+import com.doublemoon1119.mahjongcraft.platform.minecraft.room.GameConfigVariantResolver
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.MinecraftRoomScreenKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.RuleModuleDisplayNameRegistry
 import net.minecraft.text.MutableText
@@ -12,7 +13,8 @@ import net.minecraft.util.Formatting
 /**
  * 建立房間設定頁與未套用變更確認畫面共用的本地化差異清單。
  *
- * 規則不同時只列規則變更；相同時只列兩邊都有值且內容不同的已登記欄位。
+ * 規則不同時只列規則變更；相同時先列玩法變更，再列兩邊都有值且內容不同的顯示欄位。識別欄位由玩法決定，
+ * 不另外列出。
  *
  * @param resolver 將設定解析成可顯示欄位的解析器。
  * @param ruleNames 規則顯示名稱登錄表。
@@ -38,7 +40,16 @@ fun gameConfigDifferenceText(
         return result
     }
     val definition = toResolved.definition ?: return result
-    definition.fields.forEach { field ->
+    val fromVariant = fromResolved.variant
+    val toVariant = toResolved.variant
+    if (fromVariant != null && toVariant != null && fromVariant.id != toVariant.id) {
+        result.appendValueChange(
+            nameKey = MinecraftRoomScreenKeys.VARIANT_SELECTOR,
+            from = Text.translatable(fromVariant.nameTranslationKey),
+            to = Text.translatable(toVariant.nameTranslationKey),
+        )
+    }
+    GameConfigVariantResolver.visibleFields(definition).forEach { field ->
         val fromValue = fromResolved.valuesByFieldId[field.id] ?: return@forEach
         val toValue = toResolved.valuesByFieldId[field.id] ?: return@forEach
         if (fromValue != toValue) {

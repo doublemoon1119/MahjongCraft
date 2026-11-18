@@ -523,7 +523,7 @@ class FabricApplicationModuleTest {
         )
         assertTrue(
             actual = decisionHudNode.getChild("riichi").children.map { it.name }
-                .containsAll(listOf("timer", "chi", "pon", "kan", "ron", "text_card", "mixed")),
+                .containsAll(listOf("timer", "chi", "pon", "kan", "ron", "text_card", "mixed", "transparent_calls")),
             message = "decision_hud riichi keeps its preview literals",
         )
         assertEquals(setOf("pull_north"), decisionHudNode.getChild("riichi_three_player").children.map { it.name }.toSet())

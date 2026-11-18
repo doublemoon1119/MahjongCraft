@@ -34,6 +34,7 @@ class ComponentPersistenceRegistryTest {
             .with(BuiltInTileComponents.FACE_ACCESS, TileFaceAccess.Players(setOf(playerId)))
             .with(BuiltInTileComponents.POSE, TilePose.FACE_DOWN)
             .with(BuiltInTileComponents.APPEARANCE, "example:readable")
+            .with(BuiltInTileComponents.TRANSPARENT, Unit)
         val encoded = registry.encode(original)
         val restored = encoded.map { dto -> persistenceJson.decodeFromString(TypedPersistenceDto.serializer(), persistenceJson.encodeToString(TypedPersistenceDto.serializer(), dto)) }
         assertEquals(original, registry.decode(restored))

@@ -18,6 +18,7 @@ import com.doublemoon1119.mahjongcraft.logic.module.RevealedHandSettlement
 import com.doublemoon1119.mahjongcraft.logic.module.WinResolutionResult
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.layout.RiichiPhysicalWallLayoutPolicy
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.layout.RiichiWallLayout
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.opening.RIICHI_WITHOUT_WALL_OPENING_PROCEDURE
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.opening.RiichiWallOpeningPolicy
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.RiichiTileInterpretationPolicy
 import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayer
@@ -29,6 +30,7 @@ import com.doublemoon1119.mahjongcraft.logic.table.SupplementalDrawPolicy
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.logic.table.WallRevealPolicy
 import com.doublemoon1119.mahjongcraft.logic.table.layout.PhysicalWallLayoutPolicy
+import com.doublemoon1119.mahjongcraft.logic.table.opening.RoundOpeningProcedure
 import com.doublemoon1119.mahjongcraft.logic.tile.TileInterpretationPolicy
 import com.doublemoon1119.mahjongcraft.logic.tile.component.TileComponentDescription
 import com.doublemoon1119.mahjongcraft.logic.util.isWind
@@ -87,11 +89,14 @@ class RiichiRuleModule(
     /** 建立四人日本麻將的雙骰牌牆開門 policy。 */
     override fun createWallOpeningPolicy(): RiichiWallOpeningPolicy = RiichiWallOpeningPolicy
 
+    /** 砌牌牆時由莊家擲骰決定開門；不砌牌牆時不擲骰，使用固定開門位置切分摸牌序列與王牌。 */
+    override fun createRoundOpeningProcedure(playerCount: Int): RoundOpeningProcedure? = if (config.buildsWall) super.createRoundOpeningProcedure(playerCount) else RIICHI_WITHOUT_WALL_OPENING_PROCEDURE
+
     /** 建立四人日本麻將固定 136 張的牌牆布局。 */
     override fun createWallLayout(playerCount: Int): RiichiWallLayout = RiichiWallLayout(config)
 
-    /** 建立日本麻將獨立王牌區與槓後補位所使用的抽象實體布局 policy。 */
-    override fun createPhysicalWallLayoutPolicy(): PhysicalWallLayoutPolicy = RiichiPhysicalWallLayoutPolicy(rinshanTileCount = config.rinshanTileCount)
+    /** 建立日本麻將獨立王牌區與槓後補位所使用的抽象實體布局 policy；不砌牌牆時沒有實體牌牆。 */
+    override fun createPhysicalWallLayoutPolicy(): PhysicalWallLayoutPolicy? = if (config.buildsWall) RiichiPhysicalWallLayoutPolicy(rinshanTileCount = config.rinshanTileCount) else null
 
     /** 建立將日麻赤五解讀為普通五的牌面 policy。 */
     override fun createTileInterpretationPolicy(): TileInterpretationPolicy = RiichiTileInterpretationPolicy

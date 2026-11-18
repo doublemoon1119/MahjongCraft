@@ -84,22 +84,31 @@ core extension behavior through one adapter. For example, see the Minecraft guid
 
 ## Room Setting Variants
 
-- A variant is a named set of values for a few of a rule's settings, such as a house style that turns two
-  options on together. Players pick it from the variant selector next to the rule selector.
-- List variants in `GameConfigPresentationDefinition.variants`, in display order. Each one sets only the
-  fields that define it, with values the field's editor accepts. It may only name editable fields the
-  same rule declares; shared flow fields cannot be part of a variant.
-- Every rule has a "Standard" variant automatically. It sets the same fields to the rule's defaults; do
-  not register it, and do not use its reserved ID `mahjongcraft:standard`.
-- The fields any variant of the rule sets are the ones used to tell variants apart. A variant that does
-  not mention one of them means the rule's default for it. Two variants that set the same values, or one
-  that equals Standard, are rejected at registration.
-- Choosing a variant changes only those fields. Match length, timers and every other setting keep their
-  values, and "Reset to Defaults" still restores everything.
-- The current variant is derived from the settings and is never stored or sent. When those fields match
-  no variant the selector shows "Custom". Changing other settings does not affect it.
-- Use `GameConfigVariantResolver` to list, detect and apply variants instead of comparing fields in a
-  screen.
+- A variant is a way to play a rule that players pick from the variant selector next to the rule
+  selector, such as a house style that changes how tiles are dealt. It fixes a few settings; every
+  other setting stays free.
+- List variants in `GameConfigPresentationDefinition.variants`, in display order. A variant has two kinds
+  of fields, both limited to editable fields the same rule declares, with values the field's editor
+  accepts. Shared flow fields cannot be part of a variant.
+  - Identifying fields (`identifyingValues`) tell variants apart. They are rule flags, such as whether
+    tiles are transparent, that only a variant changes: the settings screen hides them, and the server
+    accepts them only as a whole set that matches a variant. Every variant of a rule sets the same
+    identifying fields, and no two variants set the same values.
+  - Locked fields (`lockedFields`) are settings the variant fixes but players still see, such as the red
+    five count in a variant that never uses them. Each one gives its value and a reason translation key.
+    The screen shows the control disabled, lists the other options as unavailable with that reason, and
+    the server rejects any other value. A field cannot be both identifying and locked.
+- Every rule has a "Standard" variant automatically. It sets the identifying fields to the rule's
+  defaults and locks nothing; do not register it, and do not use its reserved ID
+  `mahjongcraft:standard`.
+- Choosing a variant changes only its identifying and locked fields, and returns a field the previous
+  variant locked, but the new one does not, to the rule's default, since that value was the old
+  variant's, not the player's. "Reset to Defaults" restores every other setting and keeps the current
+  variant.
+- The current variant is derived from the identifying fields and is never stored or sent. Because only
+  a variant changes those fields, every room and match setting matches exactly one variant.
+- Use `GameConfigVariantResolver` to list, detect, apply and query variants, and its `visibleFields` to
+  list the settings a screen or summary shows, instead of comparing fields in a screen.
 
 ## Multi-choice Room Settings
 

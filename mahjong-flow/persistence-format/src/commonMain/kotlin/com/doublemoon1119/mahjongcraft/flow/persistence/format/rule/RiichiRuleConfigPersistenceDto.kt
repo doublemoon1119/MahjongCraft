@@ -16,6 +16,8 @@ import kotlinx.serialization.Serializable
  * @property notenPenaltyUnit 流局未聽罰符的單位分數。
  * @property gameLength 對局長度。
  * @property multiRonPolicy 一炮多響的處理方式。
+ * @property transparentTiles 是否使用透明牌。
+ * @property buildsWall 是否砌牌牆。
  */
 @Serializable
 data class RiichiRuleConfigPersistenceDto(
@@ -29,4 +31,6 @@ data class RiichiRuleConfigPersistenceDto(
     val notenPenaltyUnit: Int,
     val gameLength: RiichiGameLengthPersistenceDto,
     val multiRonPolicy: MultiRonPolicyPersistenceDto,
+    val transparentTiles: Boolean,
+    val buildsWall: Boolean,
 )

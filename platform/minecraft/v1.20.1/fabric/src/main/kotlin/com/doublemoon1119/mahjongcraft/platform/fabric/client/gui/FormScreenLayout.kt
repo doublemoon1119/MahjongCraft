@@ -82,8 +82,22 @@ internal data class FormScreenLayout(
     val fieldRowHeight: Int = if (isCompact) COMPACT_FIELD_ROW_HEIGHT else REGULAR_FIELD_ROW_HEIGHT
 
     /** 目前視窗能完整容納的欄位數。 */
-    val visibleFieldCount: Int = ((fieldsBottom - fieldsTop + (fieldRowHeight - BUTTON_HEIGHT - if (isCompact) COMPACT_LABEL_HEIGHT else 0)) / fieldRowHeight)
-        .coerceAtLeast(1)
+    val visibleFieldCount: Int = completeRowCount(
+        rowHeight = fieldRowHeight,
+        controlHeight = BUTTON_HEIGHT + if (isCompact) COMPACT_LABEL_HEIGHT else 0,
+    )
+
+    /**
+     * 計算欄位區內能放下的完整列數。
+     *
+     * @param rowHeight 相鄰列的間距。
+     * @param controlHeight 單列實際需要的高度。
+     * @return 完整可見列數；不夠一列時為 0。
+     */
+    fun completeRowCount(rowHeight: Int, controlHeight: Int): Int {
+        val remaining = fieldsBottom - fieldsTop - controlHeight
+        return if (remaining < 0) 0 else 1 + remaining / rowHeight
+    }
 
     /** 控制項寬度。 */
     val controlWidth: Int = if (isCompact) contentWidth else CONTROL_WIDTH.coerceAtMost(contentWidth)
@@ -166,7 +180,7 @@ internal data class FormScreenLayout(
     fun scrollbar(fieldCount: Int, scrollIndex: Int): ScrollbarLayout = ScrollbarLayout(
         trackTop = fieldsTop,
         trackBottom = fieldsBottom,
-        itemCount = fieldCount,
+        itemCount = if (visibleFieldCount > 0) fieldCount else 0,
         visibleItemCount = visibleFieldCount,
         scrollIndex = scrollIndex,
         minimumThumbHeight = VerticalScrollbar.MINIMUM_THUMB_HEIGHT,

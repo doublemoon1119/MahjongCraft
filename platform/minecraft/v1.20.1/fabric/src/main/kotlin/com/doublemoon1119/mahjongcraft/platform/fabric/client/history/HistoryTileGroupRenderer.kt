@@ -1,6 +1,7 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.client.history
 
 import com.doublemoon1119.mahjongcraft.flow.network.dto.model.TileFaceViewDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.registry.NetworkDtoConverter
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.MahjongTileFaceRenderer
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.DecisionTileOrientationDto
 import com.doublemoon1119.mahjongcraft.platform.minecraft.history.HistoryDiscardMarkerDisplayRegistry
@@ -22,12 +23,14 @@ import net.minecraft.util.Formatting
  * @property assets 牌種素材註冊表。
  * @property markerDisplays 牌河公開標記的提示文字來源。
  * @property displayNames 提示中牌名的查詢來源。
+ * @property networkRegistries 牌面特徵的網路轉換。
  */
 internal class HistoryTileGroupRenderer(
     private val faces: MahjongTileFaceRenderer,
     private val assets: MinecraftTileAssetRegistry,
     private val markerDisplays: HistoryDiscardMarkerDisplayRegistry,
     private val displayNames: TileDisplayNameRegistry,
+    private val networkRegistries: NetworkDtoConverter,
 ) {
     /**
      * 繪製已測量群組並取得指向牌張的索引提示。
@@ -65,7 +68,7 @@ internal class HistoryTileGroupRenderer(
         var hit: HistoryTileHit? = null
         layout.placements.forEach { placement ->
             val tile = catalog.getOrNull(placement.tile) ?: return@forEach
-            val faceAsset = tile.toHistoryAssetKey(assets)
+            val faceAsset = tile.toHistoryAssetKey(registry = assets, registries = networkRegistries)
             val asset = if (placement.faceDown) TILE_BACK_PREVIEW_ASSET_KEY else faceAsset
             // 蓋著的牌依牌面樣式指定的牌身畫牌背；看不到牌面時就是規則外觀。
             val tileAppearance = if (placement.faceDown) assets.backAppearance(faceAsset, appearance) else appearance

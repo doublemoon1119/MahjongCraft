@@ -11,6 +11,8 @@ import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiWallProgress
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.riichiDeclaration
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.riichiPotPoints
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.riichiWallProgress
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.threeplayer.ThreePlayerRiichiRuleConfig
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.threeplayer.ThreePlayerRiichiRuleModule
 import com.doublemoon1119.mahjongcraft.logic.table.GameInitializer.dealInitialHands
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeIdentifiedTileFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.rules.riichi.riichiComponentRegistryForTests
@@ -33,6 +35,27 @@ import kotlin.uuid.Uuid
  * 驗證開局時座位分配、初始手牌張數、牌山剩餘數量與初始分數是否正確。
  */
 class GameInitializerTest {
+
+    @Test
+    fun `wallless riichi deals hands and reserves tiles without rolling dice`() {
+        val walllessModules = listOf(
+            RiichiRuleModule(id = "mahjongcraft:riichi", config = RiichiRuleConfig(buildsWall = false)),
+            ThreePlayerRiichiRuleModule(id = "mahjongcraft:riichi_three_player", config = ThreePlayerRiichiRuleConfig(buildsWall = false)),
+        )
+        walllessModules.forEach { rule ->
+            val playerIds = List(rule.config.maxPlayers) { Uuid.random() }
+            val result = GameInitializer.initialize(Uuid.random(), playerIds, rule, randomness = testRoundRandomness())
+            val table = result.tableState
+
+            assertTrue(table.openingDiceRolls.isEmpty())
+            assertNull(result.initialPhysicalWallLayout)
+            assertNull(table.physicalWallLayout)
+            assertEquals(rule.config.reservedTileCount, table.reservedWallTiles.size)
+            assertTrue(table.players.all { it.hand.tiles.size == rule.config.initialHandSize })
+            val total = rule.createWallFactory(playerIds.size).create(Random(0)).remainingCount
+            assertEquals(total - rule.config.reservedTileCount - playerIds.size * rule.config.initialHandSize, table.tileWall.remainingCount)
+        }
+    }
 
     /** 提供開局與換局政策的日麻規則模組。 */
     private val module = RiichiRuleModule(id = "mahjongcraft:riichi", config = RiichiRuleConfig())

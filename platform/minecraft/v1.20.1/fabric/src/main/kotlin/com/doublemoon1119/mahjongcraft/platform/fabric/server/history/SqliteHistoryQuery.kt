@@ -192,6 +192,7 @@ internal data class HistoryQueryRound(
  * @property entries 本頁安全摘要。
  * @property nextCursor 尚有下一頁時，本頁最後一列的位置。
  * @property previousCursor 尚有上一頁時，本頁第一列的位置。
+ * @property firstEntryIndex 本頁第一筆在所有符合列中的位置，從 1 開始；空頁為 0。
  * @property totalCount 符合篩選條件的總列數，不受游標影響。
  */
 internal data class SqliteHistoryQueryPage(
@@ -199,4 +200,5 @@ internal data class SqliteHistoryQueryPage(
     val nextCursor: SqliteHistoryCursor?,
     val previousCursor: SqliteHistoryCursor?,
     val totalCount: Int,
+    val firstEntryIndex: Int,
 )

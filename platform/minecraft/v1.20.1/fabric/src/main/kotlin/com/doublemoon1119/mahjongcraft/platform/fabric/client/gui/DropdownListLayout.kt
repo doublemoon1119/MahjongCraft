@@ -13,6 +13,7 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.client.gui
  * @property optionCount 選項數量。
  * @property footnoteHeight 底部說明文字的高度；沒有說明時為 0。
  * @property windowHeight 視窗高度。
+ * @property footnoteLineHeight 說明的單行高度。
  * @property scrollIndex 第一個可見選項的索引；超出合法範圍的部分不採用。
  */
 internal data class DropdownListLayout(
@@ -24,25 +25,49 @@ internal data class DropdownListLayout(
     val footnoteHeight: Int,
     val windowHeight: Int,
     val scrollIndex: Int = 0,
+    val footnoteLineHeight: Int = 9,
 ) {
-    /** 底部說明區所佔的高度，含分隔線與上下內距；沒有說明時為 0。 */
-    val footnoteBlockHeight: Int = if (footnoteHeight > 0) 1 + FOOTNOTE_PADDING * 2 + footnoteHeight else 0
+    /** 有說明區時的分隔線及上下內距。 */
+    private val footnotePadding = 1 + FOOTNOTE_PADDING * 2
 
-    /** 清單全部展開所需的高度，含外框與底部說明。 */
-    private val fullHeight: Int = BORDER * 2 + optionCount.coerceAtLeast(1) * OPTION_HEIGHT + footnoteBlockHeight
+    /** 清單全部展開所需的高度。 */
+    private val fullHeight = BORDER * 2 + optionCount * OPTION_HEIGHT +
+        if (footnoteHeight > 0) footnotePadding + footnoteHeight else 0
 
-    /** 按鈕下方可用的高度。 */
-    private val spaceBelow: Int = windowHeight - WINDOW_MARGIN - anchorBottom
-
-    /** 按鈕上方可用的高度。 */
-    private val spaceAbove: Int = anchorTop - WINDOW_MARGIN
+    /** 按鈕兩側的可用高度。 */
+    private val spaceBelow = windowHeight - WINDOW_MARGIN - anchorBottom
+    private val spaceAbove = anchorTop - WINDOW_MARGIN
 
     /** 清單是否在按鈕上方展開。 */
     val opensUpward: Boolean = fullHeight > spaceBelow && spaceAbove > spaceBelow
 
+    /** 兩側都無法放下一列時，容許清單覆蓋按鈕以保留操作空間。 */
+    private val overlapsAnchor = maxOf(spaceAbove, spaceBelow) < BORDER * 2 + OPTION_HEIGHT
+
+    /** 清單可用的總高度。 */
+    private val availableHeight = when {
+        overlapsAnchor -> windowHeight - WINDOW_MARGIN * 2
+        opensUpward -> spaceAbove
+        else -> spaceBelow
+    }
+
+    /** 可分配給選項與說明的高度，外框已扣除。 */
+    private val contentHeight = (availableHeight - BORDER * 2).coerceAtLeast(0)
+
+    /** 有空間時優先保留至少兩列選項。 */
+    private val reservedOptions = minOf(2, optionCount, contentHeight / OPTION_HEIGHT)
+
+    /** 保留選項與說明內距後，說明文字能使用的高度。 */
+    private val footnoteSpace = (contentHeight - reservedOptions * OPTION_HEIGHT - footnotePadding).coerceAtLeast(0)
+
+    /** 可完整繪製的說明行數，各選項共用同一份空間。 */
+    val visibleFootnoteLines: Int = minOf(footnoteHeight, footnoteSpace) / footnoteLineHeight
+
+    /** 底部說明區所佔的高度，含分隔線與上下內距。 */
+    val footnoteBlockHeight: Int = if (visibleFootnoteLines > 0) footnotePadding + visibleFootnoteLines * footnoteLineHeight else 0
+
     /** 同時顯示的選項數。 */
-    val visibleCount: Int = (((if (opensUpward) spaceAbove else spaceBelow) - BORDER * 2 - footnoteBlockHeight) / OPTION_HEIGHT)
-        .coerceIn(1, optionCount.coerceAtLeast(1))
+    val visibleCount: Int = minOf(optionCount, (contentHeight - footnoteBlockHeight) / OPTION_HEIGHT)
 
     /** 最大合法捲動位置。 */
     val maximumScroll: Int = (optionCount - visibleCount).coerceAtLeast(0)
@@ -57,7 +82,15 @@ internal data class DropdownListLayout(
     val right: Int = anchorLeft + width
 
     /** 清單上界，含外框。 */
-    val top: Int = if (opensUpward) anchorTop - (BORDER * 2 + visibleCount * OPTION_HEIGHT + footnoteBlockHeight) else anchorBottom
+    val top: Int = run {
+        val height = BORDER * 2 + visibleCount * OPTION_HEIGHT + footnoteBlockHeight
+        val anchoredTop = if (opensUpward) anchorTop - height else anchorBottom
+        if (overlapsAnchor) {
+            anchoredTop.coerceIn(WINDOW_MARGIN, (windowHeight - WINDOW_MARGIN - height).coerceAtLeast(WINDOW_MARGIN))
+        } else {
+            anchoredTop
+        }
+    }
 
     /** 第一列選項的上界。 */
     val optionsTop: Int = top + BORDER
@@ -100,7 +133,8 @@ internal data class DropdownListLayout(
      * @return 選項在完整清單中的索引；游標不在任何選項上時為 null。
      */
     fun optionIndexAt(mouseX: Double, mouseY: Double): Int? {
-        if (mouseX < left + BORDER || mouseX >= right - BORDER || mouseY < optionsTop || mouseY >= optionsBottom) return null
+        val optionRight = if (maximumScroll > 0) scrollbarLeft else right - BORDER
+        if (mouseX < left + BORDER || mouseX >= optionRight || mouseY < optionsTop || mouseY >= optionsBottom) return null
         val index = effectiveScroll + ((mouseY - optionsTop) / OPTION_HEIGHT).toInt()
         return index.takeIf { it in 0 until optionCount }
     }

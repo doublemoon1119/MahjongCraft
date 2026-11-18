@@ -2,8 +2,10 @@ package com.doublemoon1119.mahjongcraft.platform.minecraft.tile
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.logic.base.TileFaceView
 import com.doublemoon1119.mahjongcraft.logic.base.TileTypeId
+import com.doublemoon1119.mahjongcraft.logic.component.ComponentViewSet
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.RiichiTileValues
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.tile.TaiwanTileTypes
+import com.doublemoon1119.mahjongcraft.logic.tile.component.BuiltInTileComponentViews
 import com.doublemoon1119.mahjongcraft.platform.minecraft.extension.BuiltInMinecraftMahjongExtension
 import com.doublemoon1119.mahjongcraft.platform.minecraft.extension.BundledMinecraftMahjongExtensions
 import kotlin.test.Test
@@ -43,6 +45,28 @@ class TileAssetKeysTest {
         assertEquals("white_dragon", Tile.Honor.White.standardAssetKey())
     }
 
+    /** 帶透明牌特性的已知牌面使用透明版素材；沒有透明版的牌面退回基本牌面的素材。 */
+    @Test
+    fun `test transparent faces use the transparent style`() {
+        val views = ComponentViewSet.EMPTY.with(BuiltInTileComponentViews.TRANSPARENT, Unit)
+
+        assertEquals("transparent_m1", TileFaceView(Tile.Numeric(Tile.Suit.Character, 1), views).toAssetKey(registry))
+        assertEquals("transparent_east", TileFaceView(Tile.Honor.East, views).toAssetKey(registry))
+        assertEquals("flower_spring", TileFaceView(Tile.Extension(TaiwanTileTypes.SPRING), views).toAssetKey(registry))
+        assertEquals(BuiltInMinecraftTileAppearances.TRANSPARENT, registry.findBodyAppearance("transparent_m1"))
+        assertEquals(true, registry.findBodyAppearance("transparent_m1")?.translucent)
+    }
+
+    /** 透明牌的平面預覽使用墊了白底的預覽貼圖；沒有另外指定預覽貼圖的牌面沿用牌面貼圖。 */
+    @Test
+    fun `test flat previews use the dedicated preview texture when registered`() {
+        assertEquals(
+            expected = "mahjongcraft:textures/item/mahjong_tile/mahjong_tile_transparent_m1_preview.png",
+            actual = tilePreviewTexture("transparent_m1", registry).resourceId,
+        )
+        assertEquals("mahjongcraft:textures/item/mahjong_tile/mahjong_tile_m1.png", tilePreviewTexture("m1", registry).resourceId)
+    }
+
     /** 赤五樣式有登記時使用赤五素材；同一樣式套在沒有登記的牌面上，退回基本牌面的素材。 */
     @Test
     fun `test face asset key uses a registered style and falls back to the base face`() {
@@ -71,7 +95,7 @@ class TileAssetKeysTest {
     fun `all tile asset keys list standard tiles, registered tiles, then unknown`() {
         val keys = registry.allTileAssetKeys()
 
-        assertEquals(46, keys.size)
+        assertEquals(80, keys.size)
         assertEquals(keys.size, keys.toSet().size, "Asset keys must be unique.")
         assertEquals(STANDARD_TILE_ASSET_KEYS, keys.take(STANDARD_TILE_ASSET_KEYS.size))
         assertEquals(registry.registeredAssetKeys.toList(), keys.drop(STANDARD_TILE_ASSET_KEYS.size).dropLast(1))

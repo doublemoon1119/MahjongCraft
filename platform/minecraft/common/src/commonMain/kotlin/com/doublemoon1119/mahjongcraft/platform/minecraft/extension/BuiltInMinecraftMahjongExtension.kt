@@ -52,6 +52,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftHudKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftMessageKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.RuleWordingDefaultDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.BuiltInMinecraftTileAppearances
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.BuiltInMinecraftTileStyles
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileEmojiDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileLabelDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileLabelRegistry
@@ -106,6 +107,8 @@ object BuiltInMinecraftMahjongExtension : MinecraftMahjongExtension {
 
     override fun registerTileAssets(registry: MinecraftTileAssetRegistrar) {
         registry.register(BuiltInMinecraftTileAppearances.DEFAULT)
+        registry.register(BuiltInMinecraftTileAppearances.TRANSPARENT)
+        BuiltInMinecraftTileStyles.TRANSPARENT.forEach(registry::register)
     }
 
     override fun registerAiStrategyDisplayNames(registry: AiStrategyDisplayNameRegistrar) {

@@ -94,9 +94,14 @@ internal class HistorySummaryScreen(
      * @param action 按下後的行為。
      * @return 建立的按鈕。
      */
-    private fun miniButton(label: Text, action: () -> Unit): RestartableMarqueeButtonWidget = RestartableMarqueeButtonWidget.builder(label) { action() }
-        .dimensions(0, 0, textRenderer.getWidth(label) + MINI_BUTTON_PADDING * 2, MINI_BUTTON_HEIGHT)
-        .build()
+    private fun miniButton(label: Text, action: () -> Unit): RestartableMarqueeButtonWidget = addSelectableChild(
+        RestartableMarqueeButtonWidget.builder(label) { action() }
+            .dimensions(0, 0, textRenderer.getWidth(label) + MINI_BUTTON_PADDING * 2, MINI_BUTTON_HEIGHT)
+            .build().also {
+                it.visible = false
+                it.clickClip = { x, y -> layout.containsContent(x, y) }
+            },
+    )
 
     /** Minecraft 移除此畫面時通知 session。 */
     override fun removed() {
@@ -217,6 +222,8 @@ internal class HistorySummaryScreen(
         val summary = session.controller.state.value.summary
         val status = summary?.status ?: HistoryBrowseStatus.Loading
         scroll = layout.clampScroll(scroll, contentHeight(detail()))
+        copyButton.visible = false
+        ruleSettingsButton.visible = false
         var hoveredTooltip: List<Text>? = null
         retryButton?.active = session.controller.canRetry()
         retryButton?.visible = status is HistoryBrowseStatus.Failed

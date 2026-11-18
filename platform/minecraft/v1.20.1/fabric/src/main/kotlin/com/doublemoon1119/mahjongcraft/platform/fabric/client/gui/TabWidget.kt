@@ -22,6 +22,7 @@ import net.minecraft.text.Text
  * @property selected 是否為目前選中的頁籤。
  * @property clipLeft 頁籤列可見範圍的左界。
  * @property clipRight 頁籤列可見範圍的右界。
+ * @property onFocus 取得焦點時執行的動作。
  * @property onSelect 點擊頁籤時執行的動作。
  */
 internal class TabWidget(
@@ -33,10 +34,17 @@ internal class TabWidget(
     private val selected: Boolean,
     private val clipLeft: Int,
     private val clipRight: Int,
+    private val onFocus: () -> Unit = {},
     private val onSelect: () -> Unit,
 ) : PressableWidget(x, y, width, height, message) {
     /** 頁籤名稱的跑馬燈進度。 */
     private val labelMarquee = MarqueeState()
+
+    override fun setFocused(focused: Boolean) {
+        val gainedFocus = focused && !isFocused
+        super.setFocused(focused)
+        if (gainedFocus) onFocus()
+    }
 
     override fun onPress() {
         if (!selected) onSelect()
@@ -109,4 +117,9 @@ internal class TabWidget(
         /** 未選中的頁籤文字顏色。 */
         const val UNSELECTED_TEXT_COLOR = 0xC8C8C8
     }
+}
+
+/** 依頁籤列的捲動位置更新現有按鈕，保留鍵盤焦點。 */
+internal fun List<TabWidget>.applyTabScroll(strip: TabStripLayout) {
+    forEachIndexed { index, widget -> widget.x = strip.tabX(index) }
 }

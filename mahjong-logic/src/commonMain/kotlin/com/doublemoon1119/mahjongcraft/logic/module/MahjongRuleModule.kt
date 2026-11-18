@@ -183,11 +183,13 @@ interface MahjongRuleModule<T : MahjongRuleConfig> {
      * 建立本規則的抽象實體牌牆布局 policy。
      *
      * 未覆寫的規則維持 [TileWallLayout] 產生的基本格位，只移除已離開牌牆的牌，不建立特定玩法的
-     * 王牌分界、特殊嶺上牌位置或補牌重排。
+     * 王牌分界、特殊嶺上牌位置或補牌重排。不把牌排成牌牆的規則（例如不砌牌牆的玩法）回傳 null：
+     * 摸牌順序與保留牌照常由 [TileWallLayout] 決定，但牌在離開牌池之前沒有桌面位置，桌況的
+     * [TableState.physicalWallLayout] 也為 null。
      *
-     * @return 此規則的實體牌牆布局 policy。
+     * @return 此規則的實體牌牆布局 policy；不砌牌牆時為 null。
      */
-    fun createPhysicalWallLayoutPolicy(): PhysicalWallLayoutPolicy = ContinuousPhysicalWallLayoutPolicy
+    fun createPhysicalWallLayoutPolicy(): PhysicalWallLayoutPolicy? = ContinuousPhysicalWallLayoutPolicy
 
     /**
      * 建立目前規則用於一般牌面比較的解讀 policy。

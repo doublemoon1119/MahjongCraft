@@ -98,13 +98,11 @@ class RiichiLegalActionValidatorRedDoraTest {
     }
 
     /**
-     * 測試赤寶牌之情況：手牌同時有普通5萬與赤5萬時，碰牌優先用普通牌組成刻子，赤寶牌留在手上。
-     *
-     * 手牌有兩張普通5萬、一張赤5萬（共 3 張符合），碰只需要 2 張，withTiles 必須是兩張普通牌，
-     * 讓玩家自然保留赤寶牌在手上。
+     * 測試赤寶牌之情況：手牌同時有普通5萬與赤5萬時，碰有「兩張普通牌」與「普通牌加赤牌」兩個選項，
+     * 由玩家選擇；不用赤牌的選項排在前面。
      */
     @Test
-    fun `test pon prefers plain tiles over red dora when both are available`() {
+    fun `test pon offers plain and red dora choices with plain first`() {
         // 準備
         val plainFive1 = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 5))
         val plainFive2 = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 5))
@@ -121,8 +119,8 @@ class RiichiLegalActionValidatorRedDoraTest {
         val actions = validator.getLegalActions(LegalActionTestContexts.discard(tableState, player, RelativeDirection.Across, incomingTile))
 
         // 驗證
-        val ponAction = actions.filterIsInstance<GameAction.Pon>().single()
-        assertEquals(listOf(plainFive1.id, plainFive2.id), ponAction.withTiles)
+        val ponActions = actions.filterIsInstance<GameAction.Pon>()
+        assertEquals(listOf(listOf(plainFive1.id, plainFive2.id), listOf(redFive.id, plainFive1.id)), ponActions.map { it.withTiles })
     }
 
     /**

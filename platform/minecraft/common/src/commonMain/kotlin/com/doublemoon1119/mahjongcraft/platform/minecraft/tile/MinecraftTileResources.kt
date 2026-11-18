@@ -13,10 +13,13 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModM
  *
  * @property textureId 平面正面預覽與缺少模型時使用的貼圖完整 `namespace:path` ID，不代表六面材質圖集。
  * @property modelId 模型資源的完整 `namespace:path` ID；模型自行指定各面材質，不強制繼承內建基本模型。
+ * @property previewTextureId 平面預覽專用貼圖的完整 `namespace:path` ID，例如墊了底色的透明牌面；省略時與 [textureId] 相同。
+ *   世界中的立體牌不使用它。
  */
 data class MinecraftTileResources(
     val textureId: String,
     val modelId: String,
+    val previewTextureId: String = textureId,
 ) {
     /** 內建牌面資源所使用的預設描述。 */
     companion object {
@@ -38,6 +41,9 @@ data class MinecraftTileResources(
         }
         NamespacedId.requireValid(modelId) {
             "Tile model resource ID must be a full namespaced ID: $modelId"
+        }
+        NamespacedId.requireValid(previewTextureId) {
+            "Tile preview texture resource ID must be a full namespaced ID: $previewTextureId"
         }
     }
 }

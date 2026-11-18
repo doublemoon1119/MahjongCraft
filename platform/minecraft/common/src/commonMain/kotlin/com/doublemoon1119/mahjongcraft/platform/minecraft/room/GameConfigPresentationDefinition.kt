@@ -16,8 +16,9 @@ import com.doublemoon1119.mahjongcraft.logic.config.MahjongRuleConfig
  * @property defaultRuleConfig 建立預設規則設定。
  * @property categories 規則提供的設定分類。
  * @property fields 規則提供的設定欄位。
- * @property variants 規則提供的玩法，依顯示順序排列；標準玩法自動提供，不需要列出。玩法只能指定本規則
- *   宣告的可編輯欄位，且值必須是該欄位編輯器能產生的值。
+ * @property variants 規則提供的玩法，依顯示順序排列；標準玩法自動提供，不需要列出。每個玩法都指定同一組識別欄位；
+ *   識別欄位與鎖定欄位都只能是本規則宣告的可編輯欄位，值必須是該欄位編輯器能產生的值，且識別欄位不可同時是
+ *   鎖定欄位。
  */
 data class GameConfigPresentationDefinition(
     val ruleModuleId: String,
@@ -44,13 +45,38 @@ data class GameConfigPresentationDefinition(
             "Config variant must not use the reserved ID ${GameConfigVariantDefinition.STANDARD_ID} in $ruleModuleId"
         }
         val fieldsById = fields.associateBy { it.id }
+        val identifyingFieldIds = variants.firstOrNull()?.identifyingValues?.keys.orEmpty()
         variants.forEach { variant ->
-            require(variant.fieldValues.isNotEmpty()) { "Config variant ${variant.id} must set at least one field" }
-            variant.fieldValues.forEach { (fieldId, value) ->
-                val field = requireNotNull(fieldsById[fieldId]) { "Config variant ${variant.id} references an unknown field: $fieldId" }
-                require(field.isEditable) { "Config variant ${variant.id} sets a read-only field: $fieldId" }
-                require(field.editor.accepts(value)) { "Config variant ${variant.id} sets an invalid value for field: $fieldId" }
+            require(variant.identifyingValues.isNotEmpty()) { "Config variant ${variant.id} must set at least one identifying field" }
+            require(variant.identifyingValues.keys == identifyingFieldIds) {
+                "Config variant ${variant.id} must set the same identifying fields as the other variants of $ruleModuleId"
+            }
+            variant.identifyingValues.forEach { (fieldId, value) ->
+                requireVariantValue(fieldsById, variant.id, fieldId, value)
+            }
+            variant.lockedFields.forEach { (fieldId, locked) ->
+                require(fieldId !in identifyingFieldIds) { "Config variant ${variant.id} locks an identifying field: $fieldId" }
+                requireVariantValue(fieldsById, variant.id, fieldId, locked.value)
             }
         }
+    }
+
+    /**
+     * 確認玩法指定的欄位存在、可編輯，且值是欄位編輯器能產生的值。
+     *
+     * @param fieldsById 本規則宣告的欄位。
+     * @param variantId 玩法 ID，用於錯誤訊息。
+     * @param fieldId 玩法指定的欄位 ID。
+     * @param value 玩法指定的值。
+     */
+    private fun requireVariantValue(
+        fieldsById: Map<String, GameConfigFieldDefinition>,
+        variantId: String,
+        fieldId: String,
+        value: GameConfigPresentationValue,
+    ) {
+        val field = requireNotNull(fieldsById[fieldId]) { "Config variant $variantId references an unknown field: $fieldId" }
+        require(field.isEditable) { "Config variant $variantId sets a read-only field: $fieldId" }
+        require(field.editor.accepts(value)) { "Config variant $variantId sets an invalid value for field: $fieldId" }
     }
 }

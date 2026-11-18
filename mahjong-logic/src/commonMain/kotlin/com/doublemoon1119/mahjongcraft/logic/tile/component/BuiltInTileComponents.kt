@@ -25,6 +25,17 @@ object BuiltInTileComponents {
         mergeValues = { _, higher -> higher },
     )
 
+    /**
+     * 透明牌：牌離開摸牌序列與保留牌後，牌面對所有人公開，平台以透明牌身呈現。沒有此組件表示不是透明牌。
+     * 效果與投影由 [registerBuiltInTileComponents] 登記。
+     */
+    val TRANSPARENT = ComponentType(
+        target = BuiltInComponentOwners.TILE,
+        id = "mahjongcraft:tile/transparent",
+        valueClass = Unit::class,
+        copyValue = {},
+    )
+
     /** 可公開的外觀樣式 ID；對應平台須另行登記素材。 */
     val APPEARANCE = ComponentType(
         target = BuiltInComponentOwners.TILE,

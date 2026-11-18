@@ -9,6 +9,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongTileEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongTilePose
 import com.doublemoon1119.mahjongcraft.platform.fabric.logging.mahjongCraftLogger
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.FabricServerHolder
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.entity.FabricEntitySpawnGateway
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TablePropPresenter
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongInitialDealPresentation
@@ -32,9 +33,11 @@ import kotlin.uuid.toJavaUuid
  * [MahjongPlayerAreaPresenter] KDoc——手牌讓開副露／積棒的偏移量，只有在同一次呼叫裡同時拿到立牌、
  * 摸牌、副露、積棒支數四種狀態才算得出來。
  *
+ * @property spawnGateway 主執行緒實體生成閘道。
  * @property serverHolder 取得目前伺服器世界與既有麻將牌 entity。
  */
 class FabricMahjongPlayerAreaPresenter(
+    private val spawnGateway: FabricEntitySpawnGateway,
     private val serverHolder: FabricServerHolder,
 ) : MahjongPlayerAreaPresenter {
     private val logger = mahjongCraftLogger(FabricMahjongPlayerAreaPresenter::class)
@@ -259,7 +262,6 @@ class FabricMahjongPlayerAreaPresenter(
                     MahjongTileTableLayout.dealBatchStartDelayTicks(globalTurnIndex)
                 var dealSoundScheduled = false
                 tileIds.drop(batchStart).take(batchSize).forEachIndexed { indexInBatch, tileId ->
-                    val tile = claimTile(tileId) ?: return@forEachIndexed
                     val orderIndex = batchStart + indexInBatch
                     val placement = MahjongTileTableLayout.handPlacement(
                         controllerX = controllerPos.x,
@@ -272,6 +274,13 @@ class FabricMahjongPlayerAreaPresenter(
                         tileIndex = tileIds.size - 1 - orderIndex,
                         handShift = handShiftBySeat.getValue(seatIndex),
                     )
+                    val tile = if (presentation.hasPhysicalWall) {
+                        claimTile(tileId)
+                    } else {
+                        (world.getEntity(tileId.toJavaUuid()) as? MahjongTileEntity)
+                            ?: spawnTableTile(spawnGateway, world, presentation.tableId, tileId, placement)
+                                .also { if (it == null) missingTileCount++ }
+                    } ?: return@forEachIndexed
                     val postFlipOrderIndex = postFlipOrderIndexBySeat.getValue(seatIndex).getValue(tileId)
                     val postFlipPlacement = MahjongTileTableLayout.handPlacement(
                         controllerX = controllerPos.x,
@@ -294,6 +303,7 @@ class FabricMahjongPlayerAreaPresenter(
                         playDealSound = !dealSoundScheduled,
                         playFlipSound = seatIndex !in flipSoundSeatIndices,
                         endPose = poseFor(tileId, presentation.tilePoseStates),
+                        fromWall = presentation.hasPhysicalWall,
                     )
                     dealSoundScheduled = true
                     flipSoundSeatIndices += seatIndex

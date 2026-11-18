@@ -80,6 +80,7 @@ internal class FabricHistoryQueryRepository(
                 nextCursor = page.nextCursor?.toDomainCursor(request),
                 previousCursor = page.previousCursor?.toDomainCursor(request),
                 totalCount = page.totalCount,
+                firstEntryIndex = page.firstEntryIndex,
             )
         }
     }

@@ -73,6 +73,17 @@ class TableStatePersistenceTest {
         )
     }
 
+    /** 驗證無實體牌牆時仍保存權威摸牌順序、保留牌與玩法設定。 */
+    @Test
+    fun `wallless riichi round-trips with the draw pool`() {
+        val state = createTableState().copy(
+            config = RiichiRuleConfig(transparentTiles = true, buildsWall = false, redDoraCount = 0),
+            physicalWallLayout = null,
+            openingDiceRolls = emptyList(),
+        )
+        assertEncodedRoundTrip(state)
+    }
+
     /** 驗證沒有附帶資料的回合階段都能原樣保存。 */
     @Test
     fun `turn phases without reactions round-trip in complete game state`() {

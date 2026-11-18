@@ -9,12 +9,14 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModM
  * @property id 外觀的完整 `namespace:path` 識別碼。
  * @property coverTextureId 固定布局的牌體材質圖集完整資源 ID；牌背預覽亦取用其中的背面區域。
  * @property unknownFaceTextureId 未知牌正面材質的完整資源 ID；亦供缺失正面資源回退使用，省略時使用內建未知牌材質。
+ * @property translucent 貼圖是否帶半透明像素，例如透明牌；為 true 時以半透明方式繪製，牌面從背面也看得到。
  */
 data class MinecraftTileSetAppearanceDefinition(
     val id: String,
     val coverTextureId: String,
     val unknownFaceTextureId: String =
         "${MinecraftModMetadata.MOD_ID}:${tileTextureAssetPath("unknown")}",
+    val translucent: Boolean = false,
 ) {
     init {
         NamespacedId.requireValid(id) { "Invalid tile set appearance ID: $id" }

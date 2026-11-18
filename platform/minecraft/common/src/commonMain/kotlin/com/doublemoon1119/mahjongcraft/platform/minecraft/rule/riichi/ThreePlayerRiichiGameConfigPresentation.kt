@@ -53,6 +53,14 @@ internal fun threePlayerRiichiGameConfigPresentation(): GameConfigPresentationDe
             read = { (it.ruleConfig as ThreePlayerRiichiRuleConfig).allowOpenTanyao },
             update = { config, enabled -> config.withThreePlayerRiichi { copy(allowOpenTanyao = enabled) } },
         ),
+        riichiTransparentTilesField(
+            read = { (it.ruleConfig as ThreePlayerRiichiRuleConfig).transparentTiles },
+            update = { config, enabled -> config.withThreePlayerRiichi { copy(transparentTiles = enabled) } },
+        ),
+        riichiBuildsWallField(
+            read = { (it.ruleConfig as ThreePlayerRiichiRuleConfig).buildsWall },
+            update = { config, enabled -> config.withThreePlayerRiichi { copy(buildsWall = enabled) } },
+        ),
         boolField(
             id = RiichiGameConfigIds.USE_LOCAL_YAKU,
             category = RULE,
@@ -125,6 +133,7 @@ internal fun threePlayerRiichiGameConfigPresentation(): GameConfigPresentationDe
             update = { config, resolution -> config.withThreePlayerRiichi { copy(multiRonPolicy = multiRonPolicy.copy(doubleRonResolution = resolution)) } },
         ),
     ),
+    variants = listOf(riichiWashizuVariant()),
 )
 
 /** 將 [transform] 套用到三人日麻規則配置並回傳新的遊戲配置。 */

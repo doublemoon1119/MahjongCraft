@@ -11,7 +11,7 @@ import kotlin.math.roundToInt
  * @property top 卡片頂端。
  * @property width 卡片寬度。
  * @property feetY 人物腳底基線。
- * @property scale 卡片放大倍數，至少為 1。
+ * @property scale 卡片縮放倍數。
  */
 internal data class RoomFigureArea(
     val left: Int,
@@ -38,7 +38,7 @@ internal data class RoomFigureArea(
      * 模型的每單位繪製比例：未放大比例乘上放大倍數，再限制模型在卡片寬度與卡片頂端之內；不小於未放大比例。
      */
     val modelScale: Int = minOf((baseModelScale * scale).roundToInt(), (minOf(maximumFigureWidth, maximumFigureHeight) / MODEL_EXTENT).toInt())
-        .coerceAtLeast(baseModelScale)
+        .coerceAtLeast(0)
 
     /** 未放大時的頭像邊長，依卡片寬度決定。 */
     private val basePortraitSize: Int = (width - PORTRAIT_WIDTH_INSET).coerceIn(MINIMUM_PORTRAIT_SIZE, MAXIMUM_PORTRAIT_SIZE)
@@ -48,7 +48,7 @@ internal data class RoomFigureArea(
 
     /** 頭像邊長：未放大邊長乘上放大倍數，再限制在卡片寬度與卡片頂端之內；不小於未放大邊長。 */
     val portraitSize: Int = minOf((basePortraitSize * scale).roundToInt(), maximumFigureWidth, maximumFigureHeight - portraitGap)
-        .coerceAtLeast(basePortraitSize)
+        .coerceAtLeast(0)
 
     /** 頭像左界，在卡片內水平置中。 */
     val portraitLeft: Int = left + (width - portraitSize) / 2

@@ -9,6 +9,22 @@ import kotlin.test.assertTrue
 
 /** 驗證操作介面的版面幾何。 */
 class DecisionCardLayoutTest {
+    /** 窄且矮的視窗仍保留提示框的四邊。 */
+    @Test
+    fun `tooltip content limits keep the frame inside a small window`() {
+        val layout = layout(cardCount = 1, screenWidth = 120, screenHeight = 64)
+        val frame = DecisionCardLayout.TOOLTIP_FRAME
+        val width = layout.descriptionTooltipWidth
+        val height = layout.descriptionTooltipHeight
+        val card = layout.cardPlacements(0.0).single()
+        val position = layout.descriptionTooltipPosition(card = card, width = width, height = height)
+
+        assertEquals(120 - frame * 2, width)
+        assertEquals(64 - frame * 2, height)
+        assertTrue(position.x >= frame && position.x + width + frame <= 120)
+        assertTrue(position.y >= frame && position.y + height + frame <= 64)
+    }
+
     /** 多行說明與淡色提示均保留在按鈕上方，不覆蓋其他內容。 */
     @Test
     fun `keeps wrapped card text above its button`() {

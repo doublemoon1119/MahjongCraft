@@ -7,17 +7,21 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.RestartableMar
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.ScreenRendering
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.TabWidget
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.VerticalScrollbar
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.applyTabScroll
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.MahjongTileFaceRenderer
 import com.doublemoon1119.mahjongcraft.platform.minecraft.catalogue.MinecraftRuleCatalogueScreenKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.catalogue.RuleCatalogueBrowseContext
 import com.doublemoon1119.mahjongcraft.platform.minecraft.catalogue.RuleCatalogueBrowseState
 import com.doublemoon1119.mahjongcraft.platform.minecraft.catalogue.RuleCatalogueBrowser
 import com.doublemoon1119.mahjongcraft.platform.minecraft.catalogue.RuleCatalogueConfigSource
+import net.minecraft.client.MinecraftClient
 import net.minecraft.client.gui.DrawContext
 import net.minecraft.client.gui.screen.Screen
 import net.minecraft.client.gui.tooltip.Tooltip
+import net.minecraft.client.gui.tooltip.TooltipPositioner
 import net.minecraft.client.gui.widget.ButtonWidget
 import net.minecraft.client.gui.widget.TextFieldWidget
+import net.minecraft.text.OrderedText
 import net.minecraft.text.Text
 import net.minecraft.util.Formatting
 import net.minecraft.util.Language
@@ -84,6 +88,15 @@ internal class RuleCatalogueScreen(
      *
      * 資源重新載入後畫面會重新初始化，因此在這裡丟棄牌面圖案的快取，補上或移除的貼圖立即反映。
      */
+    override fun resize(client: MinecraftClient, width: Int, height: Int) {
+        val focusedIndex = children().filterIsInstance<TabWidget>().indexOfFirst { it === focused }
+        revealSelectedTab = true
+        super.resize(client, width, height)
+        children().filterIsInstance<TabWidget>().getOrNull(focusedIndex)?.let { tab ->
+            setFocused(tab)
+        }
+    }
+
     override fun init() {
         dropdown.close()
         presenter.clearResourceCaches()
@@ -152,6 +165,10 @@ internal class RuleCatalogueScreen(
                     selected = selected,
                     clipLeft = strip.left,
                     clipRight = strip.right,
+                    onFocus = {
+                        tabScroll = layout.tabStrip(tabCount = options.size, scroll = tabScroll).scrollRevealing(index)
+                        children().filterIsInstance<TabWidget>().applyTabScroll(layout.tabStrip(tabCount = options.size, scroll = tabScroll))
+                    },
                     onSelect = {
                         revealSelectedTab = true
                         changed(browser.selectCategory(categoryId))
@@ -305,8 +322,8 @@ internal class RuleCatalogueScreen(
         val contentTooltip = renderContent(context = context, mouseX = pointerX, mouseY = pointerY)
         renderScrollbar(context)
         ScreenRendering.tabLine(context, layout.tabStrip(tabCount = categoryOptions().size, scroll = tabScroll))
-        if (layout.sourceSelector != null) {
-            context.drawTextWithShadow(textRenderer, sourceLabel(), layout.contentLeft, layout.sourceLabelY, SOURCE_LABEL_COLOR)
+        layout.sourceLabelY?.let { labelY ->
+            context.drawTextWithShadow(textRenderer, sourceLabel(), layout.contentLeft, labelY, SOURCE_LABEL_COLOR)
         }
         super.render(context, pointerX, pointerY, delta)
         if (contentTooltip.isNotEmpty() && !scroll.isDragging) context.drawTooltip(textRenderer, contentTooltip, mouseX, mouseY)
@@ -394,7 +411,7 @@ internal class RuleCatalogueScreen(
             val next = strip.scrollByWheel(amount)
             if (next != tabScroll) {
                 tabScroll = next
-                clearAndInit()
+                children().filterIsInstance<TabWidget>().applyTabScroll(strip.copy(scroll = next))
             }
             return true
         }
@@ -450,7 +467,11 @@ internal class RuleCatalogueScreen(
         return super.mouseReleased(mouseX, mouseY, button)
     }
 
-    /** 依開啟來源返回原畫面或回到遊戲。 */
+    /** 下拉清單展開時不讓底層元件排入提示框。 */
+    override fun setTooltip(lines: List<OrderedText>, positioner: TooltipPositioner, focused: Boolean) {
+        if (!dropdown.isOpen) super.setTooltip(lines, positioner, focused)
+    }
+
     override fun keyPressed(keyCode: Int, scanCode: Int, modifiers: Int): Boolean {
         if (dropdown.keyPressed(textRenderer, height, keyCode)) return true
         return super.keyPressed(keyCode, scanCode, modifiers)
@@ -458,6 +479,7 @@ internal class RuleCatalogueScreen(
 
     override fun charTyped(chr: Char, modifiers: Int): Boolean = dropdown.isOpen || super.charTyped(chr, modifiers)
 
+    /** 依開啟來源返回原畫面或回到遊戲。 */
     override fun close() {
         client?.let(exit::back)
     }

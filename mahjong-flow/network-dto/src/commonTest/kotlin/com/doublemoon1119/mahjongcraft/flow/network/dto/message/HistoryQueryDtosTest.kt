@@ -239,7 +239,8 @@ class HistoryQueryDtosTest {
             ),
             nextCursor = null,
             previousCursor = null,
-            totalCount = 1,
+            totalCount = 22,
+            firstEntryIndex = 22,
             errorCode = null,
             allowAll = false,
             allowStressTest = false,
@@ -247,6 +248,7 @@ class HistoryQueryDtosTest {
 
         val encoded = Json.encodeToString(HistoryListResponseDto.serializer(), response)
 
+        assertEquals(22, Json.decodeFromString(HistoryListResponseDto.serializer(), encoded).firstEntryIndex)
         assertFalse("hands" in encoded)
         assertFalse("wall" in encoded)
         assertFalse("payload" in encoded)

@@ -17,21 +17,24 @@ object TableStepMotionPlanner {
     /**
      * 規劃這一步每張牌的動作。
      *
-     * @param previous 這一步開始時的擺放；呈現端還沒有任何擺放時為 null，所有牌直接擺到新位置。
+     * @param previous 這一步開始時的擺放；呈現端還沒有任何擺放時為 null，所有牌視為首次出現。
      * @param next 這一步結束時的擺放。
      * @param excludedTileIds 由其他方式呈現的牌，例如依規則分階段重排的牌牆；不規劃動作。
+     * @param dropNewTiles 首次出現的牌是否從目的地上方落下。
      * @return 位置或姿態有改變的牌的動作。
      */
     fun plan(
         previous: Map<Uuid, ArrangedTile>?,
         next: Map<Uuid, ArrangedTile>,
         excludedTileIds: Set<Uuid> = emptySet(),
+        dropNewTiles: Boolean = false,
     ): List<PlannedTileMotion> {
+        val arrivalKind = if (dropNewTiles) TileMotionKind.DROP else TileMotionKind.PLACE
         val sliding = previous?.let { slidingTileIds(it, next) }.orEmpty()
         return next.values.mapNotNull { after ->
             if (after.tileId in excludedTileIds) return@mapNotNull null
             val before = previous?.get(after.tileId)
-                ?: return@mapNotNull PlannedTileMotion(after.tileId, TileMotionKind.PLACE, null, after.row, null, after.placement, null, after.pose)
+                ?: return@mapNotNull PlannedTileMotion(after.tileId, arrivalKind, null, after.row, null, after.placement, null, after.pose)
             val kind = kindOf(before, after, after.tileId in sliding) ?: return@mapNotNull null
             PlannedTileMotion(after.tileId, kind, before.row, after.row, before.placement, after.placement, before.pose, after.pose)
         }
@@ -45,6 +48,7 @@ object TableStepMotionPlanner {
      */
     fun durationTicks(kind: TileMotionKind): Int = when (kind) {
         TileMotionKind.PLACE -> 0
+        TileMotionKind.DROP -> MahjongTileTableLayout.DRAW_DROP_DURATION_TICKS
         TileMotionKind.DRAW ->
             MahjongTileTableLayout.DRAW_LIFT_DURATION_TICKS + MahjongTileTableLayout.DRAW_SNAP_GAP_TICKS +
                 MahjongTileTableLayout.DRAW_DROP_DURATION_TICKS
@@ -63,7 +67,7 @@ object TableStepMotionPlanner {
     fun phaseOf(kind: TileMotionKind): TileMotionPhase = when (kind) {
         TileMotionKind.PLACE, TileMotionKind.FLIGHT -> TileMotionPhase.DEPART
         TileMotionKind.SLIDE, TileMotionKind.ARC, TileMotionKind.TURN -> TileMotionPhase.MAKE_ROOM
-        TileMotionKind.DRAW -> TileMotionPhase.ARRIVE
+        TileMotionKind.DRAW, TileMotionKind.DROP -> TileMotionPhase.ARRIVE
     }
 
     /**

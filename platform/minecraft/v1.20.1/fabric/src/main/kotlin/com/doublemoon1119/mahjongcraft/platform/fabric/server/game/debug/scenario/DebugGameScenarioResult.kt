@@ -10,12 +10,12 @@ import kotlin.uuid.Uuid
  *
  * @property game 應原子寫入 repository 的新遊戲。
  * @property wallStructure 新桌況所有牌的實體牌牆結構座標。
- * @property wallLayout 所有實體牌生成時採用的權威最終 placement。
+ * @property wallLayout 所有實體牌生成時採用的權威最終 placement；沒有實體牌牆時為 null。
  * @property presentation 本次載入後重建桌面的呈現方式。
  */
 data class DebugGameScenarioResult(
     val game: Game,
     val wallStructure: Map<Uuid, TileWallPosition>,
-    val wallLayout: TileWallPhysicalLayout,
+    val wallLayout: TileWallPhysicalLayout?,
     val presentation: DebugGameScenarioPresentation = DebugGameScenarioPresentation.StaticWall,
 )

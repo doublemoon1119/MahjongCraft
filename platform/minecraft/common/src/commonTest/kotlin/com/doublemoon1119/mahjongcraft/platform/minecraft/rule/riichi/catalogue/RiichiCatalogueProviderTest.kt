@@ -66,6 +66,18 @@ class RiichiCatalogueProviderTest {
         assertTrue(catalogue.entries.all { it.descriptionTranslationKey.isNotBlank() })
     }
 
+    /** 寶牌一覽只在鷲巢麻將顯示無牌牆玩法的說明。 */
+    @Test
+    fun `dora entry describes washizu when the wall is disabled`() {
+        val provider = RiichiCatalogueProvider()
+        val standard = checkNotNull(provider.catalogue(RiichiRuleConfig()))
+        val washizu = checkNotNull(provider.catalogue(RiichiRuleConfig(transparentTiles = true, buildsWall = false, redDoraCount = 0)))
+        val dora = washizu.entries.single { it.id == RiichiCatalogueYaku.Dora.id }
+        val standardDora = standard.entries.single { it.id == RiichiCatalogueYaku.Dora.id }
+        val additionalLabel = (dora.labels - standardDora.labels.toSet()).single()
+        assertEquals("mahjongcraft.riichi.room.config.variant.washizu.description", additionalLabel.descriptionTranslationKey)
+    }
+
     /** 三人日麻目錄多列拔北寶牌、省略四風連打與四家立直，並標出需要二～八萬的役種無法成立。 */
     @Test
     fun `three player catalogue lists nuki dora and omits four player abortive draws`() {

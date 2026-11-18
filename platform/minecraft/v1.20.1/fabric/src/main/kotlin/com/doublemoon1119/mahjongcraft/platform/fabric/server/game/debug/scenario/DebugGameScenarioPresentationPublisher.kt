@@ -5,6 +5,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.service.TableStep
 import com.doublemoon1119.mahjongcraft.logic.component.ComponentRegistry
 import com.doublemoon1119.mahjongcraft.logic.config.dealBatchSizes
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
+import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPhysicalLayout
 import com.doublemoon1119.mahjongcraft.logic.table.opening.OpeningDiceRoll
 import com.doublemoon1119.mahjongcraft.logic.tile.component.publicFaceUpWallTileIds
 import kotlin.uuid.Uuid
@@ -37,17 +38,19 @@ class DebugGameScenarioPresentationPublisher(
                 publisher.publishWallStructure(
                     gameId = game.id,
                     assemblyStructure = result.wallStructure,
-                    layout = result.wallLayout,
+                    layout = result.wallLayout ?: TileWallPhysicalLayout(emptyMap()),
                     dealerSeatIndex = state.dealerIndex,
                     reservedWallTileIds = state.reservedWallTiles.mapTo(mutableSetOf()) { tile -> tile.id },
-                    openingDiceCounts = listOf(presentation.diceRoll.values.size),
+                    openingDiceCounts = listOfNotNull(presentation.diceRoll?.values?.size),
                     isNewOpening = true,
                     revealedTileIds = revealedTileIds,
                 )
-                publisher.publishOpeningRolls(
-                    gameId = game.id,
-                    rolls = listOf(OpeningDiceRoll(0, state.players[state.dealerIndex].id, presentation.diceRoll)),
-                )
+                presentation.diceRoll?.let { dice ->
+                    publisher.publishOpeningRolls(
+                        gameId = game.id,
+                        rolls = listOf(OpeningDiceRoll(0, state.players[state.dealerIndex].id, dice)),
+                    )
+                }
             }
         }
         (result.presentation as? DebugGameScenarioPresentation.InitialRound)?.let { presentation ->
@@ -56,7 +59,7 @@ class DebugGameScenarioPresentationPublisher(
                 tableState = state,
                 handTileIdsBySeatIndex = presentation.dealOrderHandTileIdsBySeatIndex,
                 dealBatchSizes = state.config.dealBatchSizes(),
-                openingDiceCounts = listOf(presentation.diceRoll.values.size),
+                openingDiceCounts = listOfNotNull(presentation.diceRoll?.values?.size),
             )
         }
     }
@@ -73,7 +76,7 @@ class DebugGameScenarioPresentationPublisher(
         publisher.publishWallStructure(
             gameId = game.id,
             assemblyStructure = result.wallStructure,
-            layout = result.wallLayout,
+            layout = result.wallLayout ?: TileWallPhysicalLayout(emptyMap()),
             dealerSeatIndex = state.dealerIndex,
             reservedWallTileIds = state.reservedWallTiles.mapTo(mutableSetOf()) { tile -> tile.id },
             openingDiceCounts = emptyList(),

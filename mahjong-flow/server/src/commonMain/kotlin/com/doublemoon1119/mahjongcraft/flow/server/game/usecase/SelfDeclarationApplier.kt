@@ -422,7 +422,9 @@ internal object SelfDeclarationApplier {
         )
         val currentPhysicalLayout = originalState.physicalWallLayout
             ?: return Result.Applied(stateWithoutResolvedPhysicalLayout, candidateState, decision.drawnTiles)
-        val physicalDecision = module.createPhysicalWallLayoutPolicy().resolveTransitionValidated(
+        val physicalPolicy = module.createPhysicalWallLayoutPolicy()
+            ?: return Result.Applied(stateWithoutResolvedPhysicalLayout, candidateState, decision.drawnTiles)
+        val physicalDecision = physicalPolicy.resolveTransitionValidated(
             context = PhysicalWallLayoutTransitionContext(
                 tableStateBeforeAction = originalState,
                 tableStateAfterAction = stateWithoutResolvedPhysicalLayout,

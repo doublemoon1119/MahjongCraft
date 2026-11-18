@@ -11,13 +11,15 @@ import com.doublemoon1119.mahjongcraft.ai.expectation.OpponentModelRegistry
 import com.doublemoon1119.mahjongcraft.extension.MahjongExtension
 import com.doublemoon1119.mahjongcraft.extension.MahjongExtensionBootstrap
 import com.doublemoon1119.mahjongcraft.flow.network.dto.api.registration.NetworkDtoRegistrars
+import com.doublemoon1119.mahjongcraft.flow.network.dto.component.registerBuiltInComponentViewNetworkDtos
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.api.registration.PersistenceRegistrars
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.component.registerBuiltInComponentPersistence
+import com.doublemoon1119.mahjongcraft.flow.persistence.format.component.registerBuiltInComponentViewPersistence
 import com.doublemoon1119.mahjongcraft.logic.api.registration.ComponentRegistrar
 import com.doublemoon1119.mahjongcraft.logic.api.registration.MahjongModuleRegistrar
 import com.doublemoon1119.mahjongcraft.logic.component.BuiltInComponentOwners
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
-import com.doublemoon1119.mahjongcraft.logic.tile.component.BuiltInTileComponents
+import com.doublemoon1119.mahjongcraft.logic.tile.component.registerBuiltInTileComponents
 import com.doublemoon1119.mahjongcraft.metadata.MahjongCraftMetadata
 
 /**
@@ -39,17 +41,18 @@ class BuiltInMahjongExtension(
 
     override fun registerRuleModules(registry: MahjongModuleRegistrar) = Unit
 
-    override fun registerNetworkDtos(registries: NetworkDtoRegistrars) = Unit
+    override fun registerNetworkDtos(registries: NetworkDtoRegistrars) {
+        registerBuiltInComponentViewNetworkDtos(registries.componentViews)
+    }
 
     override fun registerPersistenceDtos(registries: PersistenceRegistrars) {
         registerBuiltInComponentPersistence(registries.components)
+        registerBuiltInComponentViewPersistence(registries.componentViews)
     }
 
     override fun registerComponents(registry: ComponentRegistrar) {
         BuiltInComponentOwners.ALL.forEach(registry::registerOwner)
-        registry.register(BuiltInTileComponents.FACE_ACCESS)
-        registry.register(BuiltInTileComponents.POSE)
-        registry.register(BuiltInTileComponents.APPEARANCE)
+        registerBuiltInTileComponents(registry)
     }
 
     /** 依初級、中級、高級、隨機出牌的順序登記；列出策略時依此順序呈現。 */

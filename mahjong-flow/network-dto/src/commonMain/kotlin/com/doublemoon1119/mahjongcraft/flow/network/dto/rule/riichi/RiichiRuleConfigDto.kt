@@ -21,6 +21,8 @@ import kotlinx.serialization.Serializable
  * @property allowOpenTanyao 是否允許副露斷么九。
  * @property useLocalYaku 是否使用本地役種。
  * @property revealsClosedKanTiles 暗槓時是否揭示牌面。
+ * @property transparentTiles 是否使用透明牌。
+ * @property buildsWall 是否砌牌牆。
  */
 @Serializable
 data class RiichiRuleConfigDto(
@@ -36,4 +38,6 @@ data class RiichiRuleConfigDto(
     val allowOpenTanyao: Boolean,
     val useLocalYaku: Boolean,
     val revealsClosedKanTiles: Boolean,
+    val transparentTiles: Boolean,
+    val buildsWall: Boolean,
 ) : MahjongRuleConfigDto

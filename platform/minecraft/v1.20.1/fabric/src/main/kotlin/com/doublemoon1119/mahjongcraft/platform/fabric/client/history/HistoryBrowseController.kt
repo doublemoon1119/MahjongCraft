@@ -219,7 +219,7 @@ internal class HistoryBrowseController(
         if (!canNavigateList()) return false
         val list = state.value.list
         val cursor = list.nextCursor ?: return false
-        requestList(cursor, HistoryPageDirectionDto.AFTER, ListPosition.StartsAt(list.firstEntryIndex + list.entries.size))
+        requestList(cursor, HistoryPageDirectionDto.AFTER)
         return true
     }
 
@@ -232,7 +232,7 @@ internal class HistoryBrowseController(
         if (!canNavigateList()) return false
         val list = state.value.list
         val cursor = list.previousCursor ?: return false
-        requestList(cursor, HistoryPageDirectionDto.BEFORE, ListPosition.EndsAt(list.firstEntryIndex - 1))
+        requestList(cursor, HistoryPageDirectionDto.BEFORE)
         return true
     }
 
@@ -243,7 +243,7 @@ internal class HistoryBrowseController(
      */
     fun firstPage(): Boolean {
         if (!canNavigateList() || state.value.list.previousCursor == null) return false
-        requestList(null, HistoryPageDirectionDto.AFTER, ListPosition.StartsAt(1))
+        requestList(null, HistoryPageDirectionDto.AFTER)
         return true
     }
 
@@ -254,7 +254,7 @@ internal class HistoryBrowseController(
      */
     fun lastPage(): Boolean {
         if (!canNavigateList() || state.value.list.nextCursor == null) return false
-        requestList(null, HistoryPageDirectionDto.BEFORE, ListPosition.EndsAt(null))
+        requestList(null, HistoryPageDirectionDto.BEFORE)
         return true
     }
 
@@ -697,7 +697,7 @@ internal class HistoryBrowseController(
     private fun requestFirstPage(debounce: Duration) {
         roundCache.clear()
         mutableState.value = state.value.copy(list = HistoryBrowseListState(status = HistoryBrowseStatus.Loading), summary = null, ruleSettings = null, rounds = emptyMap(), selectedRoundNumber = null)
-        enqueue(Intent.ListQuery(generation, state.value.query, cursor = null, direction = HistoryPageDirectionDto.AFTER, position = ListPosition.StartsAt(1)), debounce)
+        enqueue(Intent.ListQuery(generation, state.value.query, cursor = null, direction = HistoryPageDirectionDto.AFTER), debounce)
     }
 
     /**
@@ -705,12 +705,11 @@ internal class HistoryBrowseController(
      *
      * @param cursor 回覆提供的游標；沒有游標時從第一筆或最後一筆開始。
      * @param direction 從游標往哪一邊取一頁。
-     * @param position 新頁在全部對局中的位置。
      */
-    private fun requestList(cursor: String?, direction: HistoryPageDirectionDto, position: ListPosition) {
+    private fun requestList(cursor: String?, direction: HistoryPageDirectionDto) {
         generation++
         mutableState.value = state.value.copy(list = state.value.list.copy(status = HistoryBrowseStatus.Loading), summary = null, ruleSettings = null, rounds = emptyMap(), selectedRoundNumber = null)
-        enqueue(Intent.ListQuery(generation, state.value.query, cursor, direction, position), Duration.ZERO)
+        enqueue(Intent.ListQuery(generation, state.value.query, cursor, direction), Duration.ZERO)
     }
 
     /**
@@ -786,7 +785,7 @@ internal class HistoryBrowseController(
         when (result) {
             is ClientHistoryQueryState.ListResult -> {
                 if (result.response.requestId != request.requestId || request.intent !is Intent.ListQuery) return
-                if (request.intent.generation == generation) acceptList(result.response, request.intent)
+                if (request.intent.generation == generation) acceptList(result.response)
             }
             is ClientHistoryQueryState.SummaryResult -> {
                 if (result.response.requestId != request.requestId || request.intent !is Intent.Summary) return
@@ -817,9 +816,8 @@ internal class HistoryBrowseController(
      * 成功時才提交頁次及堆疊；空集合是有效結果。
      *
      * @param response 已配對的列表回應。
-     * @param intent 此次分頁目標。
      */
-    private fun acceptList(response: HistoryListResponseDto, intent: Intent.ListQuery) {
+    private fun acceptList(response: HistoryListResponseDto) {
         mutableState.value = state.value.copy(allowAll = response.allowAll, allowStressTest = response.allowStressTest)
         val scopeAllowed = when (state.value.query.scope) {
             HistoryQueryScopeDto.OWN -> true
@@ -835,7 +833,7 @@ internal class HistoryBrowseController(
             return
         }
         val previous = state.value.list
-        val firstEntryIndex = intent.position.firstEntryIndex(count = response.entries.size, totalCount = response.totalCount, atStart = response.previousCursor == null)
+        val firstEntryIndex = response.firstEntryIndex
         val changedPage = firstEntryIndex != previous.firstEntryIndex || response.entries.map { it.matchId } != previous.entries.map { it.matchId }
         mutableState.value = state.value.copy(
             list = state.value.list.copy(
@@ -1068,14 +1066,12 @@ internal class HistoryBrowseController(
          * @property query 有效且正規化的查詢條件。
          * @property cursor 回覆提供的游標；沒有游標時從第一筆或最後一筆開始。
          * @property direction 從游標往哪一邊取一頁。
-         * @property position 新頁在全部對局中的位置。
          */
         data class ListQuery(
             override val generation: Long,
             val query: HistoryBrowseQuery,
             val cursor: String?,
             val direction: HistoryPageDirectionDto,
-            val position: ListPosition,
         ) : Intent
 
         /**

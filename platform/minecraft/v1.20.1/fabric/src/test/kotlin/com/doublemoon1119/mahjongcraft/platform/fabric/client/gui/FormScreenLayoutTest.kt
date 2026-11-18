@@ -9,6 +9,21 @@ import kotlin.test.assertTrue
 
 /** 驗證設定類畫面寬版與窄版的版面計算。 */
 class FormScreenLayoutTest {
+    /** 一列正好放得下時可見，少一像素時欄位與捲軸都隱藏。 */
+    @Test
+    fun `requires the full height of a field before exposing it`() {
+        for (width in listOf(200, 640)) {
+            val frame = FormScreenLayout(windowWidth = width, windowHeight = 400, hasPageSwitch = true, hasRuleRow = true)
+            val height = frame.windowHeight - frame.fieldsBottom + frame.fieldControlY(frame.fieldsTop) + FormScreenLayout.BUTTON_HEIGHT
+            val fits = frame.copy(windowHeight = height)
+            val short = frame.copy(windowHeight = height - 1)
+
+            assertEquals(1, fits.visibleFieldCount)
+            assertEquals(0, short.visibleFieldCount)
+            assertEquals(0, short.scrollbar(fieldCount = 10, scrollIndex = 0).maximumScroll)
+        }
+    }
+
     /** 視窗寬 480 時與設計稿相同：左右邊距 12、內容寬 456。 */
     @Test
     fun `regular layout uses twelve pixel margins`() {

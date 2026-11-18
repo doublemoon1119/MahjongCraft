@@ -8,6 +8,20 @@ import kotlin.test.assertTrue
 
 /** 驗證多選畫面與設定頁表單同寬，名稱、勾選方塊、捲軸與底部按鈕不重疊。 */
 class MultiChoiceLayoutTest {
+    /** 短視窗沒有完整列時，選項不可命中，也不顯示捲軸。 */
+    @Test
+    fun `requires the full height of a choice before exposing it`() {
+        val frame = MultiChoiceLayout(windowWidth = 640, windowHeight = 400, optionCount = 10, scrollIndex = 0)
+        val shortHeight = (60..400).last { frame.copy(windowHeight = it).visibleCount == 0 }
+        val short = frame.copy(windowHeight = shortHeight)
+        val fits = frame.copy(windowHeight = shortHeight + 1)
+
+        assertEquals(1, fits.visibleCount)
+        assertEquals(0, short.maximumScroll)
+        assertEquals(0, short.scrollbar.maximumScroll)
+        assertNull(short.optionAt(short.checkboxX + 1.0, short.rowsTop + 1.0))
+    }
+
     /** 內容寬度最多 456 並置中；名稱在勾選方塊左邊，捲軸在內容右側的邊距內，清單在底部按鈕上方。 */
     @Test
     fun `content matches the settings form across window sizes`() {

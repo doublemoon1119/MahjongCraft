@@ -2,6 +2,7 @@ package com.doublemoon1119.mahjongcraft.platform.minecraft.tile
 
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.logic.base.TileFaceView
+import com.doublemoon1119.mahjongcraft.logic.tile.component.BuiltInTileComponentViews
 
 /**
  * 未知/佔位牌（正面朝下、無法辨識）在 Minecraft 資源裡使用的素材識別字串。
@@ -48,13 +49,15 @@ fun Tile.Honor.standardAssetKey(): String = when (this) {
 }
 
 /**
- * 將已知牌面轉成素材 key：外觀樣式有登記時使用該樣式的素材，否則使用基本牌面的素材。
+ * 將已知牌面轉成素材 key：依序使用外觀樣式的素材、透明牌的透明版素材（[BuiltInMinecraftTileStyles]），
+ * 都沒有登記時使用基本牌面的素材。
  *
  * @param registry 牌面與外觀樣式的素材 registry。
  * @return 對應的 Minecraft 素材 key。
  */
 fun TileFaceView.toAssetKey(registry: MinecraftTileAssetRegistry): String = appearanceId
     ?.let { registry.findStyle(it, tile) }
+    ?: views[BuiltInTileComponentViews.TRANSPARENT]?.let { registry.findStyle(BuiltInMinecraftTileStyles.TRANSPARENT_STYLE_ID, tile) }
     ?: tile.toAssetKey(registry)
 
 /**

@@ -46,6 +46,9 @@ object MahjongTileItemRenderer : BuiltinItemRendererRegistry.DynamicItemRenderer
     /** vanilla 供已烘焙模型使用的共用材質 atlas，item／block model 的 sprite 皆繪製於此。 */
     private val BLOCK_ATLAS_TEXTURE: Identifier = PlayerScreenHandler.BLOCK_ATLAS_TEXTURE
 
+    /** 半透明牌繪製時的縮放倍率；略小於 1，避免貼著桌面的面與桌面重疊閃爍，肉眼看不出大小差異。 */
+    private const val TRANSLUCENT_TILE_SCALE: Float = 0.995f
+
     override fun render(
         stack: ItemStack,
         mode: ModelTransformationMode,
@@ -196,6 +199,7 @@ object MahjongTileItemRenderer : BuiltinItemRendererRegistry.DynamicItemRenderer
             light = light,
             overlay = overlay,
             assetKey = assetKey,
+            translucent = appearance?.translucent == true,
         )
     }
 
@@ -212,6 +216,7 @@ object MahjongTileItemRenderer : BuiltinItemRendererRegistry.DynamicItemRenderer
      * @param light 世界光照值。
      * @param overlay 覆蓋貼圖座標。
      * @param assetKey 用於缺少資源警告的素材 key。
+     * @param translucent 是否以半透明方式繪製，牌面從背面也看得到；用於帶半透明貼圖的牌身外觀。
      */
     private fun renderModel(
         model: BakedModel?,
@@ -224,6 +229,7 @@ object MahjongTileItemRenderer : BuiltinItemRendererRegistry.DynamicItemRenderer
         light: Int,
         overlay: Int,
         assetKey: String = UNKNOWN_TILE_ASSET_KEY,
+        translucent: Boolean = false,
     ) {
         val client = MinecraftClient.getInstance()
 
@@ -240,15 +246,17 @@ object MahjongTileItemRenderer : BuiltinItemRendererRegistry.DynamicItemRenderer
         // transform，避免手動抄寫 mahjong_tile_base.json 的 8 組數值造成打字誤差。
         val referenceTransform = (model ?: fallbackModel ?: findBakedModel(UNKNOWN_TILE_ASSET_KEY))?.transformation
         referenceTransform?.getTransformation(mode)?.apply(false, matrices)
+        // 半透明牌貼著桌面的面若與桌面同一平面會閃爍；以模型中心略微縮小，讓每一面都離開所接觸的平面。
+        if (translucent) matrices.scale(TRANSLUCENT_TILE_SCALE, TRANSLUCENT_TILE_SCALE, TRANSLUCENT_TILE_SCALE)
         matrices.translate(-0.5, -0.5, -0.5)
 
         if (model != null) {
-            drawBakedModel(model, matrices, vertexConsumers, light, overlay)
+            drawBakedModel(model, matrices, vertexConsumers, light, overlay, translucent)
         } else if (fallbackModel != null && !client.resourceManager.getResource(fallbackTextureId).isPresent) {
-            drawBakedModel(fallbackModel, matrices, vertexConsumers, light, overlay)
+            drawBakedModel(fallbackModel, matrices, vertexConsumers, light, overlay, translucent)
         } else {
             if (client.resourceManager.getResource(fallbackTextureId).isPresent) {
-                drawDynamicCuboid(fallbackTextureId, coverTextureId, matrices, vertexConsumers, light, overlay)
+                drawDynamicCuboid(fallbackTextureId, coverTextureId, matrices, vertexConsumers, light, overlay, translucent)
             } else {
                 if (reportedMissingTextureKeys.add(assetKey)) {
                     logger.warn("No mahjong tile texture found for asset key '{}'; falling back to unknown", assetKey)
@@ -261,6 +269,15 @@ object MahjongTileItemRenderer : BuiltinItemRendererRegistry.DynamicItemRenderer
 
         matrices.pop()
     }
+
+    /**
+     * 牌使用的繪製圖層：一般牌用鏤空圖層；半透明牌用不剔除背面的半透明圖層，讓牌面從背面也看得到。
+     *
+     * @param texture 圖層使用的貼圖。
+     * @param translucent 是否為半透明牌。
+     * @return 繪製圖層。
+     */
+    private fun tileLayer(texture: Identifier, translucent: Boolean): RenderLayer = if (translucent) RenderLayer.getEntityTranslucent(texture) else RenderLayer.getEntityCutout(texture)
 
     /**
      * 依 asset key 查詢 [MahjongTileModelLoadingPlugin] 登記的已烘焙模型。
@@ -293,6 +310,7 @@ object MahjongTileItemRenderer : BuiltinItemRendererRegistry.DynamicItemRenderer
      * @param vertexConsumers 提供 atlas 頂點緩衝。
      * @param light 世界光照值。
      * @param overlay 覆蓋貼圖座標。
+     * @param translucent 是否以不剔除背面的半透明圖層繪製。
      */
     private fun drawBakedModel(
         model: BakedModel,
@@ -300,8 +318,9 @@ object MahjongTileItemRenderer : BuiltinItemRendererRegistry.DynamicItemRenderer
         vertexConsumers: VertexConsumerProvider,
         light: Int,
         overlay: Int,
+        translucent: Boolean = false,
     ) {
-        val buffer = vertexConsumers.getBuffer(RenderLayer.getEntityCutout(BLOCK_ATLAS_TEXTURE))
+        val buffer = vertexConsumers.getBuffer(tileLayer(BLOCK_ATLAS_TEXTURE, translucent))
         val entry = matrices.peek()
         model.getQuads(null, null, quadRandom).forEach { quad ->
             buffer.quad(entry, quad, 1.0f, 1.0f, 1.0f, light, overlay)
@@ -317,6 +336,7 @@ object MahjongTileItemRenderer : BuiltinItemRendererRegistry.DynamicItemRenderer
      * @param vertexConsumers 提供正面貼圖與牌體材質圖集的頂點緩衝。
      * @param light 世界光照值。
      * @param overlay 覆蓋貼圖座標。
+     * @param translucent 是否以半透明圖層繪製。
      */
     private fun drawDynamicCuboid(
         faceTextureId: Identifier,
@@ -325,12 +345,13 @@ object MahjongTileItemRenderer : BuiltinItemRendererRegistry.DynamicItemRenderer
         vertexConsumers: VertexConsumerProvider,
         light: Int,
         overlay: Int,
+        translucent: Boolean = false,
     ) {
         // 此處只處理缺少有效模型的回退立方體，非正面五面沿用牌組共用 cover 牌體材質圖集。
         // 有效的自訂模型不經此流程，其各面材質與 UV 由模型 JSON 定義。
         val entry = matrices.peek()
-        val faceBuffer = vertexConsumers.getBuffer(RenderLayer.getEntityCutout(faceTextureId))
-        val coverBuffer = vertexConsumers.getBuffer(RenderLayer.getEntityCutout(coverTextureId))
+        val faceBuffer = vertexConsumers.getBuffer(tileLayer(faceTextureId, translucent))
+        val coverBuffer = vertexConsumers.getBuffer(tileLayer(coverTextureId, translucent))
 
         CUBOID_FACES.forEach { face ->
             val buffer = if (face.usesFaceTexture) faceBuffer else coverBuffer

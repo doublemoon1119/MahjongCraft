@@ -54,8 +54,10 @@ import net.minecraft.client.gui.Element
 import net.minecraft.client.gui.Selectable
 import net.minecraft.client.gui.screen.Screen
 import net.minecraft.client.gui.tooltip.Tooltip
+import net.minecraft.client.gui.tooltip.TooltipPositioner
 import net.minecraft.client.network.OtherClientPlayerEntity
 import net.minecraft.entity.LivingEntity
+import net.minecraft.text.OrderedText
 import net.minecraft.text.Text
 import net.minecraft.util.math.BlockPos
 import net.minecraft.util.math.Box
@@ -290,7 +292,7 @@ class RoomScreen(
      */
     private fun addMemberCardWidgets(tableIdText: String, room: RoomSnapshot) {
         val grid = memberGrid(room.playerIds.size)
-        memberScroll.clamp(grid.rows - grid.visibleRows)
+        memberScroll.clamp(grid.scrollbar.maximumScroll)
         val visibleRows = grid.visibleGridRows
         room.playerIds.forEachIndexed { index, targetId ->
             if (targetId == room.hostId) return@forEachIndexed
@@ -455,8 +457,8 @@ class RoomScreen(
             }
         }
         val grid = currentMemberGrid()
-        if (page == Page.ROOM && grid != null) {
-            if (memberScroll.scrollBy(amount, (grid.rows - grid.visibleRows).coerceAtLeast(0))) rebuild()
+        if (page == Page.ROOM && grid != null && (grid.isOverGrid(mouseX, mouseY) || grid.isOverGridScrollbar(mouseX, mouseY))) {
+            if (memberScroll.scrollBy(amount, grid.scrollbar.maximumScroll)) rebuild()
             return true
         }
         return super.mouseScrolled(mouseX, mouseY, amount)
@@ -517,6 +519,11 @@ class RoomScreen(
         playingInfoDragPlayer = null
         memberScroll.endDrag()
         return super.mouseReleased(mouseX, mouseY, button)
+    }
+
+    /** 下拉清單展開時不讓底層元件排入提示框。 */
+    override fun setTooltip(lines: List<OrderedText>, positioner: TooltipPositioner, focused: Boolean) {
+        if (!dropdown.isOpen) super.setTooltip(lines, positioner, focused)
     }
 
     override fun keyPressed(keyCode: Int, scanCode: Int, modifiers: Int): Boolean {
@@ -648,7 +655,7 @@ class RoomScreen(
     ) {
         val sortedPlayers = sortedPlayingPlayers()
         val grid = playingGrid()
-        memberScroll.clamp(grid.rows - grid.visibleRows)
+        memberScroll.clamp(grid.scrollbar.maximumScroll)
         sortedPlayers.forEachIndexed { index, player ->
             val gridRow = index / grid.columns
             if (gridRow !in grid.visibleGridRows) return@forEachIndexed
@@ -747,7 +754,7 @@ class RoomScreen(
         mouseY: Int,
     ) {
         val grid = memberGrid(playerIds.size)
-        memberScroll.clamp(grid.rows - grid.visibleRows)
+        memberScroll.clamp(grid.scrollbar.maximumScroll)
         val visibleRows = grid.visibleGridRows
         playerIds.forEachIndexed { index, playerId ->
             val row = index / grid.columns
@@ -800,6 +807,10 @@ class RoomScreen(
         mouseX: Int,
         mouseY: Int,
     ) {
+        if (area.modelScale == 0) {
+            renderPortrait(context, playerId, ai, area)
+            return
+        }
         val character = characters.find(tableId)?.players?.get(playerId)
         val worldEntityId = characters.find(tableId)?.worldEntityIds?.get(playerId)
         val liveAvailable = if (ai) {
@@ -856,7 +867,7 @@ class RoomScreen(
      * @param grid 成員卡片版面幾何。
      */
     private fun renderMemberGridScrollbar(context: DrawContext, grid: RoomMemberGridLayout) {
-        if (grid.rows <= grid.visibleRows) return
+        if (grid.scrollbar.maximumScroll == 0) return
         VerticalScrollbar.render(context, grid.scrollbarLeft, grid.scrollbar)
     }
 
@@ -886,6 +897,7 @@ class RoomScreen(
      * @param area 卡片上畫人物的範圍與放大倍數。
      */
     private fun renderPortrait(context: DrawContext, playerId: Uuid, isAi: Boolean, area: RoomFigureArea) {
+        if (area.portraitSize == 0) return
         portraitRenderer.render(
             playerId = playerId,
             isAi = isAi,
@@ -939,7 +951,7 @@ class RoomScreen(
     )
 
     /**
-     * 目前畫面上實際顯示的卡片 grid 版面（等待室或進行中對局）；兩者共用同一套固定列高與
+     * 目前畫面上實際顯示的卡片 grid 版面（等待室或進行中對局）；兩者共用同一套卡片版面與
      * [memberScroll] 捲動機制，不在這兩種狀態時為 null。
      */
     private fun currentMemberGrid(): RoomMemberGridLayout? = when (stateStore.tableOccupancy(tableId)?.occupancy) {

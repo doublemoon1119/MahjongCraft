@@ -50,10 +50,10 @@ internal data class MultiChoiceLayout(
     val rowHeight: Int = FormScreenLayout.REGULAR_FIELD_ROW_HEIGHT
 
     /** 視窗內可完整顯示的列數。 */
-    val visibleCount: Int = ((frame.fieldsBottom - rowsTop + rowHeight - FormScreenLayout.BUTTON_HEIGHT) / rowHeight).coerceAtLeast(1)
+    val visibleCount: Int = frame.completeRowCount(rowHeight = rowHeight, controlHeight = FormScreenLayout.BUTTON_HEIGHT)
 
     /** 清單可捲動的最大索引。 */
-    val maximumScroll: Int = (optionCount - visibleCount).coerceAtLeast(0)
+    val maximumScroll: Int = if (visibleCount == 0) 0 else (optionCount - visibleCount).coerceAtLeast(0)
 
     /** 勾選方塊的邊長。 */
     val checkboxSize: Int = FormScreenLayout.BUTTON_HEIGHT
@@ -70,8 +70,8 @@ internal data class MultiChoiceLayout(
     /** 清單的捲軸幾何。 */
     val scrollbar: ScrollbarLayout = ScrollbarLayout(
         trackTop = rowsTop,
-        trackBottom = rowsTop + visibleCount * rowHeight - (rowHeight - FormScreenLayout.BUTTON_HEIGHT),
-        itemCount = optionCount,
+        trackBottom = rowsTop + ((visibleCount - 1) * rowHeight + FormScreenLayout.BUTTON_HEIGHT).coerceAtLeast(0),
+        itemCount = if (visibleCount > 0) optionCount else 0,
         visibleItemCount = visibleCount,
         scrollIndex = scrollIndex,
         minimumThumbHeight = VerticalScrollbar.MINIMUM_THUMB_HEIGHT,
@@ -99,7 +99,7 @@ internal data class MultiChoiceLayout(
      */
     fun rowArea(visibleIndex: Int): RowStripe {
         val top = rowTop(visibleIndex) - (rowHeight - FormScreenLayout.BUTTON_HEIGHT) / 2
-        return RowStripe(left = contentLeft - FormScreenLayout.STRIPE_INSET, top = top, right = contentRight + FormScreenLayout.STRIPE_INSET, bottom = top + rowHeight)
+        return RowStripe(left = contentLeft - FormScreenLayout.STRIPE_INSET, top = top, right = contentRight + FormScreenLayout.STRIPE_INSET, bottom = minOf(top + rowHeight, frame.fieldsBottom))
     }
 
     /**
@@ -111,7 +111,7 @@ internal data class MultiChoiceLayout(
      */
     fun optionAt(mouseX: Double, mouseY: Double): Int? {
         val first = rowArea(0)
-        if (mouseX < first.left || mouseX >= first.right || mouseY < first.top) return null
+        if (mouseX < first.left || mouseX >= first.right || mouseY < first.top || mouseY >= frame.fieldsBottom) return null
         val row = ((mouseY - first.top) / rowHeight).toInt()
         if (row !in 0 until visibleCount) return null
         return (scrollIndex + row).takeIf { it in 0 until optionCount }
