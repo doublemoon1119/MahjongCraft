@@ -17,7 +17,13 @@ val mavenGroup: String by project
 group = mavenGroup
 
 repositories {
-    maven(url = "https://server.bbkr.space/artifactory/libs-release") { name = "CottonMC" }
+    // CottonMC's maven (server.bbkr.space) is gone; LibGui jars come from its GitHub releases.
+    ivy("https://github.com/CottonMC/LibGui/releases/download/") {
+        name = "LibGui GitHub releases"
+        patternLayout { artifact("[revision]/[module]-[revision]+[classifier].[ext]") }
+        metadataSources { artifact() }
+        content { includeModule("io.github.cottonmc", "LibGui") }
+    }
     maven(url = "https://jitpack.io")  //Mahjong4j
     maven(url = "https://maven.shedaniel.me/") //Cloth Config
     maven(url = "https://maven.terraformersmc.com/") //Mod Menu
@@ -38,7 +44,8 @@ dependencies {
     include("com.github.mahjong4j:mahjong4j:0.3.2")?.let { modImplementation(it) }
     // LibGui (https://github.com/cottonmc/libgui)
     val libguiVersion: String by project
-    include("io.github.cottonmc:LibGui:$libguiVersion")?.let { modImplementation(it) }
+    val libguiMinecraftVersion: String by project
+    include("io.github.cottonmc:LibGui:$libguiVersion:$libguiMinecraftVersion")?.let { modImplementation(it) }
     val clothConfigVersion: String by project
     // Cloth Config API (https://www.curseforge.com/minecraft/mc-mods/cloth-config)
     modApi("me.shedaniel.cloth:cloth-config-fabric:$clothConfigVersion") {
@@ -54,8 +61,6 @@ tasks {
     compileJava {
         options.encoding = "UTF-8"
         options.release.set(javaVersion.toString().toInt())
-        sourceCompatibility = "$javaVersion"
-        targetCompatibility = "$javaVersion"
     }
 
     jar { from("LICENSE") { rename { "${it}_${base.archivesName}" } } }
@@ -63,9 +68,11 @@ tasks {
         inputs.property("version", project.version)
         filesMatching("fabric.mod.json") { expand(mutableMapOf("version" to project.version)) }
     }
-    java {
-        sourceCompatibility = javaVersion
-        targetCompatibility = javaVersion
-        withSourcesJar()
-    }
 }
+
+java {
+    toolchain { languageVersion.set(JavaLanguageVersion.of(21)) }
+    withSourcesJar()
+}
+
+kotlin { jvmToolchain(21) }

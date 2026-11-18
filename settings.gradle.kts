@@ -10,3 +10,7 @@ pluginManagement {
         kotlin("jvm").version(kotlinVersion)
     }
 }
+
+plugins {
+    id("org.gradle.toolchains.foojay-resolver-convention") version "1.0.0"
+}
