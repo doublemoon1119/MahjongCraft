@@ -1,0 +1,29 @@
+{
+  "parent": "mahjongcraft:taiwan/root",
+  "display": {
+    "icon": {
+      "item": "mahjongcraft:mahjong_tile",
+      "nbt": "{tile:\"p1\"}"
+    },
+    "title": {
+      "translate": "mahjongcraft.taiwan.tai.full_flush"
+    },
+    "description": {
+      "translate": "advancements.mahjongcraft.taiwan.full_flush.description"
+    },
+    "frame": "goal",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "achieved": {
+      "trigger": "mahjongcraft:mahjong_achievement",
+      "conditions": {
+        "achievements": [
+          "mahjongcraft:taiwan/full_flush"
+        ]
+      }
+    }
+  }
+}

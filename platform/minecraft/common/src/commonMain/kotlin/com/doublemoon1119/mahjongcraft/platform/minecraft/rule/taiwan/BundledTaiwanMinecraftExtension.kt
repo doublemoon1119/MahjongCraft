@@ -18,6 +18,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionVocab
 import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionVocabularyDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.DecisionStatusDisplayNameRegistrar
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.ExhaustiveDrawReasonDisplayNameRegistrar
+import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.GameAchievementResolverRegistrar
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.GameActionSoundPresentationRegistrar
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.GameActionVocabularyRegistrar
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.GameConfigPresentationRegistrar
@@ -40,6 +41,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.history.HistoryTileRep
 import com.doublemoon1119.mahjongcraft.platform.minecraft.player.PublicPlayerIndicatorDisplay
 import com.doublemoon1119.mahjongcraft.platform.minecraft.player.PublicPlayerIndicatorDisplayDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.RuleModuleDisplayNameDefinition
+import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.taiwan.achievement.TaiwanGameAchievementResolver
 import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.taiwan.catalogue.TaiwanCatalogueProvider
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.ExhaustiveDrawReasonDisplayNameDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.PresentationValue
@@ -178,6 +180,10 @@ object BundledTaiwanMinecraftExtension : MinecraftMahjongExtension {
     }
 
     /** 花牌區在牌譜上標示為「花牌」，補花流程稱為「補花」。 */
+    override fun registerGameAchievementResolvers(registry: GameAchievementResolverRegistrar) {
+        registry.register(TaiwanGameAchievementResolver())
+    }
+
     override fun registerHistoryTileSetAsideDisplays(registry: HistoryTileSetAsideDisplayRegistrar) {
         registry.register(HistoryTileAreaDisplayDefinition(TaiwanPlayerTileAreaIds.FLOWERS, TaiwanTranslationKeys.HISTORY_TILE_AREA_FLOWERS))
         registry.register(HistoryTileReplacementDisplayDefinition(BuiltInRuleModuleIds.TAIWAN, TaiwanTranslationKeys.HISTORY_REPLACEMENT))

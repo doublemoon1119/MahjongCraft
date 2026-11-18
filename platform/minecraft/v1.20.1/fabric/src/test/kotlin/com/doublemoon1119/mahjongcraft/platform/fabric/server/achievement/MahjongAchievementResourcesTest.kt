@@ -3,6 +3,7 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.server.achievement
 import com.doublemoon1119.mahjongcraft.platform.minecraft.achievement.AchievementStatisticIds
 import com.doublemoon1119.mahjongcraft.platform.minecraft.achievement.BuiltInAchievementIds
 import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.riichi.achievement.RiichiAchievementIds
+import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.taiwan.achievement.TaiwanAchievementIds
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import java.io.File
@@ -41,6 +42,18 @@ class MahjongAchievementResourcesTest {
         RiichiAchievementIds.YAKUMAN,
         RiichiAchievementIds.DOUBLE_YAKUMAN,
         RiichiAchievementIds.MULTIPLE_YAKUMAN,
+        TaiwanAchievementIds.MATCH_COMPLETED,
+        TaiwanAchievementIds.ALL_EXPOSED,
+        TaiwanAchievementIds.FULL_FLUSH,
+        TaiwanAchievementIds.FIVE_CONCEALED_TRIPLETS,
+        TaiwanAchievementIds.BIG_DRAGONS,
+        TaiwanAchievementIds.BIG_WINDS,
+        TaiwanAchievementIds.ALL_HONORS,
+        TaiwanAchievementIds.HEAVENLY_WIN,
+        TaiwanAchievementIds.EARTHLY_WIN,
+        TaiwanAchievementIds.HUMAN_WIN,
+        TaiwanAchievementIds.EIGHT_FLOWERS,
+        TaiwanAchievementIds.SEVEN_FLOWERS,
     ) + (RiichiAchievementIds.yakumanTypes + RiichiAchievementIds.doubleYakumanTypes).mapNotNull(RiichiAchievementIds::yakuman)
 
     /** 每個進度的上一層存在、條件引用的成果與統計都存在，且每個內建成果都有對應的進度。 */
@@ -65,6 +78,27 @@ class MahjongAchievementResourcesTest {
         }
 
         assertEquals(knownAchievementIds, referenced)
+    }
+
+    /** 台麻分支的層級與隱藏設定符合核定的成就清單。 */
+    @Test
+    fun `only flower challenges are hidden in the taiwan advancement branch`() {
+        val branch = loadAdvancements().filterKeys { it.startsWith("mahjongcraft:taiwan/") }
+        val root = "mahjongcraft:taiwan/root"
+        val goals = setOf("mahjongcraft:taiwan/all_exposed", "mahjongcraft:taiwan/full_flush")
+        val hidden = setOf("mahjongcraft:taiwan/eight_flowers", "mahjongcraft:taiwan/seven_flowers")
+        assertEquals(12, branch.size)
+        branch.forEach { (id, json) ->
+            val display = json.getAsJsonObject("display")
+            val frame = when (id) {
+                root -> "task"
+                in goals -> "goal"
+                else -> "challenge"
+            }
+            assertEquals(frame, display.get("frame").asString, id)
+            assertEquals(id in hidden, display.get("hidden").asBoolean, id)
+            assertEquals(root.takeUnless { id == root }, json.get("parent")?.asString, id)
+        }
     }
 
     /** 進度標題、說明與統計名稱在四種語言都有翻譯。 */
