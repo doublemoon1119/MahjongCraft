@@ -54,7 +54,8 @@ KMP module structure does not mean every Kotlin target is currently configured o
 
 ## 📄 License
 
-MahjongCraft is available under the [MIT License](LICENSE).
+MahjongCraft is available under the [MIT License](LICENSE), except for files explicitly identified
+in an applicable `NOTICE.txt`.
 
 ## 💬 Support
 Please report any issues to

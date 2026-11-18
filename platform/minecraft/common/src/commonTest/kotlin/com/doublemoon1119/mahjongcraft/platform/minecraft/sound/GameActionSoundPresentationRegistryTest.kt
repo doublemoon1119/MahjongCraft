@@ -13,7 +13,7 @@ import kotlin.test.assertTrue
 
 /** 驗證規則動作語音的映射、凍結與安全靜音行為。 */
 class GameActionSoundPresentationRegistryTest {
-    /** 內建日麻的立直與自摸應解析至各自語音。 */
+    /** 內建日麻的立直與自摸應解析至各自語音，拔北語音只登記於三人日麻。 */
     @Test
     fun `built-in riichi actions resolve their voice sounds`() {
         val registry = GameActionSoundPresentationRegistryImpl().apply {
@@ -29,6 +29,12 @@ class GameActionSoundPresentationRegistryTest {
             expected = RiichiGameActionVoiceSoundIds.TSUMO,
             actual = registry.find(BuiltInRuleModuleIds.RIICHI, GameAction.Tsumo)?.soundId,
         )
+        val pullNorth = GameAction.Extension(RiichiGameAction.PullNorth)
+        assertEquals(
+            expected = RiichiGameActionVoiceSoundIds.PULL_NORTH,
+            actual = registry.find(BuiltInRuleModuleIds.RIICHI_THREE_PLAYER, pullNorth)?.soundId,
+        )
+        assertNull(registry.find(BuiltInRuleModuleIds.RIICHI, pullNorth))
         assertNull(registry.find(BuiltInRuleModuleIds.TAIWAN, GameAction.Tsumo))
     }
 

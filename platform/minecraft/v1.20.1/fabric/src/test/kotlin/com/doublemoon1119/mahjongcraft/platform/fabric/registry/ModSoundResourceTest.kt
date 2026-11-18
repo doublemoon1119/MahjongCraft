@@ -76,6 +76,7 @@ class ModSoundResourceTest {
         RiichiGameActionVoiceSoundIds.CHII to "mahjongcraft:voice/riichi/chii",
         RiichiGameActionVoiceSoundIds.KAN to "mahjongcraft:voice/riichi/kan",
         RiichiGameActionVoiceSoundIds.PON to "mahjongcraft:voice/riichi/pon",
+        RiichiGameActionVoiceSoundIds.PULL_NORTH to "mahjongcraft:voice/riichi/pull_north",
         RiichiGameActionVoiceSoundIds.RIICHI to "mahjongcraft:voice/riichi/riichi",
         RiichiGameActionVoiceSoundIds.RON to "mahjongcraft:voice/riichi/ron",
         RiichiGameActionVoiceSoundIds.TSUMO to "mahjongcraft:voice/riichi/tsumo",

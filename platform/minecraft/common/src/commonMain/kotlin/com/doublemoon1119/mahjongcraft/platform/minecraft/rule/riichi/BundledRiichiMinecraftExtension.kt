@@ -6,6 +6,7 @@ import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.logic.module.BuiltInAutomaticControlIds
 import com.doublemoon1119.mahjongcraft.logic.module.BuiltInRuleModuleIds
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiExhaustiveDrawReason
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiGameAction
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiHistoryDiscardMarkerIds
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiMatchEndReasonIds
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPlayerTileAreaIds
@@ -57,6 +58,8 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.RoundOutcom
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.WinSettlementDetailTextFormatterDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.WinSettlementPresentationFieldProviderDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.WinSettlementTextKeys
+import com.doublemoon1119.mahjongcraft.platform.minecraft.sound.GameActionSoundDefinition
+import com.doublemoon1119.mahjongcraft.platform.minecraft.sound.GameActionSoundPresentation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.RoundInfoLineDisplay
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.RoundInfoLineDisplayDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.BuiltInRuleWordingIds
@@ -263,6 +266,13 @@ object BundledRiichiMinecraftExtension : MinecraftMahjongExtension {
     /** 六種暫用宣告語音，依動作 ID 對應；三人日麻沿用同一組。 */
     override fun registerGameActionSounds(registry: GameActionSoundPresentationRegistrar) {
         RIICHI_FAMILY_RULE_MODULE_IDS.forEach { ruleModuleId -> RiichiFamilyMinecraftPresentation.registerGameActionSounds(registry, ruleModuleId) }
+        registry.register(
+            definition = GameActionSoundDefinition(
+                ruleModuleId = BuiltInRuleModuleIds.RIICHI_THREE_PLAYER,
+                actionId = RiichiGameAction.PullNorth.id,
+                presentation = GameActionSoundPresentation(RiichiGameActionVoiceSoundIds.PULL_NORTH),
+            ),
+        )
     }
 
     override fun registerRoundInfoPresentations(registry: RoundInfoLineDisplayRegistrar) {

@@ -58,7 +58,7 @@ object RiichiFamilyMinecraftPresentation {
     }
 
     /**
-     * 登記六種暫用宣告語音，依動作 ID 對應。
+     * 依動作 ID 登記宣告語音。
      *
      * @param registry 動作語音 registry。
      * @param ruleModuleId 要登記的規則模組 ID。

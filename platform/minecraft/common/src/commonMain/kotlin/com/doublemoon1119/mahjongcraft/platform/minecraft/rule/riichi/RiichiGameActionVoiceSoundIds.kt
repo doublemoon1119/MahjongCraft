@@ -20,6 +20,9 @@ object RiichiGameActionVoiceSoundIds {
     /** 自摸語音。 */
     const val TSUMO: String = "mahjongcraft:voice.riichi.tsumo"
 
+    /** 拔北語音。 */
+    const val PULL_NORTH: String = "mahjongcraft:voice.riichi.pull_north"
+
     /** 全部日本麻將宣告語音 ID。 */
-    val ALL: List<String> = listOf(CHII, PON, KAN, RIICHI, RON, TSUMO)
+    val ALL: List<String> = listOf(CHII, PON, KAN, RIICHI, RON, TSUMO, PULL_NORTH)
 }

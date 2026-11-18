@@ -51,6 +51,10 @@
     "subtitle": "subtitles.mahjongcraft.voice.riichi.pon",
     "sounds": ["mahjongcraft:voice/riichi/pon"]
   },
+  "voice.riichi.pull_north": {
+    "subtitle": "subtitles.mahjongcraft.voice.riichi.pull_north",
+    "sounds": ["mahjongcraft:voice/riichi/pull_north"]
+  },
   "voice.riichi.riichi": {
     "subtitle": "subtitles.mahjongcraft.voice.riichi.riichi",
     "sounds": ["mahjongcraft:voice/riichi/riichi"]
