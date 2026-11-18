@@ -11,13 +11,16 @@ import net.minecraft.registry.Registries
 import net.minecraft.registry.Registry
 import net.minecraft.util.Identifier
 
-/** 麻將骰子、牌張、點棒與牌尺物品的實例及登錄入口。 */
+/** MahjongCraft 一般物品的實例及登錄入口。 */
 object ModItems {
     /** 可放置自由測試骰子的麻將骰子 item。 */
     val MAHJONG_DICE: Item = MahjongDiceItem(Item.Settings())
 
     /** 單一物品類型表示所有麻將牌面的 item。 */
     val MAHJONG_TILE: Item = MahjongTileItem(Item.Settings())
+
+    /** 可由原版書與麻將牌合成的手冊。 */
+    val MAHJONG_HANDBOOK: Item = Item(Item.Settings())
 
     /** 單一物品類型表示所有點棒面額的 item。 */
     val MAHJONG_SCORING_STICK: Item = MahjongScoringStickItem(Item.Settings())
@@ -29,6 +32,7 @@ object ModItems {
     fun register() {
         Registry.register(Registries.ITEM, Identifier(MinecraftModMetadata.MOD_ID, "mahjong_dice"), MAHJONG_DICE)
         Registry.register(Registries.ITEM, Identifier(MinecraftModMetadata.MOD_ID, "mahjong_tile"), MAHJONG_TILE)
+        Registry.register(Registries.ITEM, Identifier(MinecraftModMetadata.MOD_ID, "mahjong_handbook"), MAHJONG_HANDBOOK)
         Registry.register(
             Registries.ITEM,
             Identifier(MinecraftModMetadata.MOD_ID, "mahjong_scoring_stick"),
