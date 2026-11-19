@@ -3,7 +3,6 @@ package com.doublemoon1119.mahjongcraft.platform.minecraft.rule.riichi
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RIICHI_STICK_POINTS
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiWallProgress
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.table.MahjongTableFacing
@@ -12,6 +11,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.table.BuiltInTableProp
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.BuiltInTablePropKinds
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongTableSeatLayout
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocation
+import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TablePropBounds
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TablePropContent
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TablePropLayoutResult
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TablePropLocation
@@ -35,49 +35,39 @@ import kotlin.uuid.Uuid
 
 /** 驗證日麻桌上點棒的描述內容，以及換算出的世界位置與朝向。 */
 class RiichiTablePropsTest {
-    /** 驗證只有表寶牌呈現，並依公開順序面向各座位、在桌面中央成列。 */
+    /** 不砌牌牆時，四家立直棒都避開桌子中央那排五張寶牌指示牌，不論莊家是誰。 */
     @Test
-    fun `wallless dora indicators center the row facing the dealer`() {
-        val faces = listOf(Tile.Honor.East, Tile.Honor.South, Tile.Honor.West, Tile.Honor.North, Tile.Honor.White)
-        val tiles = List(14) { index ->
-            val face = if (index % 2 == 0) faces.getOrElse(index / 2) { Tile.Honor.Green } else Tile.Honor.Red
-            FakeIdentifiedTileFactory.create(face)
-        }
-        val config = RiichiRuleConfig(buildsWall = false)
-        val definitions = listOf(BuiltInTablePropDefinitions.FACE_UP_TILE, BuiltInTablePropDefinitions.SCORING_STICK).associateBy { it.id }
-        for (count in 1..5) {
-            for (seatIndex in 0..3) {
-                val table = state(riichiSeatIndices = setOf(0, 1, 2, 3), dealerSeatIndex = seatIndex).copy(
-                    config = config,
-                    reservedWallTiles = tiles,
-                    components = riichiTableComponents(wallProgress = RiichiWallProgress(completedSupplementalDrawCount = 4, revealedKanDoraCount = count - 1)),
-                )
-                val props = RiichiTableProps.describe(table)
-                assertEquals(faces.take(count).map(TablePropContent::FaceUpTile), props.filter { it.kind == BuiltInTablePropKinds.FACE_UP_TILE }.map { it.content })
-                val seats = MahjongTableSeatLayout.FOUR_PLAYER
-                val presentation = TablePropPresentation(
-                    tableId = Uuid.random(),
-                    ruleModuleId = "mahjongcraft:riichi",
-                    tableLocation = TableLocation("minecraft:overworld", 0, 0, 0),
+    fun `wallless riichi sticks leave the center row clear`() {
+        val seats = MahjongTableSeatLayout.FOUR_PLAYER
+        val definitions = listOf(BuiltInTablePropDefinitions.SCORING_STICK).associateBy { it.id }
+        val dimensions = BuiltInTablePropDefinitions.FACE_UP_TILE.dimensions
+        for (dealerSeatIndex in 0..3) {
+            val table = state(riichiSeatIndices = setOf(0, 1, 2, 3), dealerSeatIndex = dealerSeatIndex).copy(config = RiichiRuleConfig(buildsWall = false))
+            val centerTiles = List(MAXIMUM_DORA_INDICATORS) { index ->
+                MahjongTileTableLayout.centerRowPlacement(
+                    controllerX = 0,
+                    controllerY = 0,
+                    controllerZ = 0,
                     tableFacing = MahjongTableFacing.NORTH,
                     seatLayout = seats,
-                    placements = props,
+                    seatIndex = dealerSeatIndex,
+                    index = index,
+                    count = MAXIMUM_DORA_INDICATORS,
                 )
-                val targets = assertIs<TablePropLayoutResult.Success>(presentation.targets(definitions)).targets.filter { it.kind == BuiltInTablePropKinds.FACE_UP_TILE }
-                assertEquals(count, targets.size)
-                assertEquals(0.5, targets.map { it.x }.average(), EPSILON)
-                assertEquals(0.5, targets.map { it.z }.average(), EPSILON)
-                val yaw = MahjongTileTableLayout.seatYaw(seats, seatIndex)
-                assertTrue(targets.all { it.yaw == yaw })
-                targets.zipWithNext().forEach { (left, right) ->
-                    when (seatIndex) {
-                        0 -> assertTrue(right.x > left.x && abs(right.z - left.z) < EPSILON)
-                        1 -> assertTrue(right.z < left.z && abs(right.x - left.x) < EPSILON)
-                        2 -> assertTrue(right.x < left.x && abs(right.z - left.z) < EPSILON)
-                        3 -> assertTrue(right.z > left.z && abs(right.x - left.x) < EPSILON)
-                    }
-                }
             }
+            val presentation = TablePropPresentation(
+                tableId = Uuid.random(),
+                ruleModuleId = "mahjongcraft:riichi",
+                tableLocation = TableLocation("minecraft:overworld", 0, 0, 0),
+                tableFacing = MahjongTableFacing.NORTH,
+                seatLayout = seats,
+                placements = RiichiTableProps.describe(table) { null },
+                centerTilePlacements = centerTiles,
+            )
+            val sticks = assertIs<TablePropLayoutResult.Success>(presentation.targets(definitions)).targets
+            val stickBounds = sticks.map { TablePropBounds.of(it, BuiltInTablePropDefinitions.SCORING_STICK.dimensions) }
+            val tileBounds = centerTiles.map { TablePropBounds.of(it.x, it.y, it.z, it.yaw, dimensions) }
+            assertTrue(stickBounds.none { stick -> tileBounds.any(stick::overlaps) }, "riichi sticks overlap the center row for dealer $dealerSeatIndex")
         }
     }
 
@@ -150,7 +140,7 @@ class RiichiTablePropsTest {
     /** 立直中的玩家各一根千點棒，放在自己的牌河內緣。 */
     @Test
     fun `each riichi player gets a thousand stick at their discards`() {
-        val props = RiichiTableProps.describe(state(riichiSeatIndices = setOf(1, 3), stickPotCount = 2))
+        val props = RiichiTableProps.describe(state(riichiSeatIndices = setOf(1, 3), stickPotCount = 2)) { null }
 
         assertEquals(listOf(1, 3), props.map { (it.location as TablePropLocation.Seat).seatIndex })
         assertTrue(props.all { (it.location as TablePropLocation.Seat).anchor == TableSeatAnchor.DISCARD_INNER_EDGE && it.content == TablePropContent.CustomVariant("1000") })
@@ -160,7 +150,7 @@ class RiichiTablePropsTest {
     /** 莊家角落先疊本場棒、再接延續的供託；延續支數是供託總數扣掉這局立直中的人數。 */
     @Test
     fun `the dealer corner stacks combo sticks before the carried-over pot`() {
-        val props = RiichiTableProps.describe(state(riichiSeatIndices = setOf(0), dealerSeatIndex = 2, comboCount = 2, stickPotCount = 3))
+        val props = RiichiTableProps.describe(state(riichiSeatIndices = setOf(0), dealerSeatIndex = 2, comboCount = 2, stickPotCount = 3)) { null }
         val corner = props.filter { (it.location as TablePropLocation.Seat).anchor == TableSeatAnchor.MELD_CORNER }
 
         assertTrue(corner.all { (it.location as TablePropLocation.Seat).seatIndex == 2 })
@@ -170,7 +160,7 @@ class RiichiTablePropsTest {
     /** 沒有連莊、沒有供託、沒有人立直時，桌上沒有任何點棒。 */
     @Test
     fun `an empty table has no sticks`() {
-        assertEquals(emptyList(), RiichiTableProps.describe(state()))
+        assertEquals(emptyList(), RiichiTableProps.describe(state()) { null })
     }
 
     /** 只有莊家角落佔寬度；寬度隨角落棒子支數成長，一整排之後往上疊不再加寬。 */
@@ -226,7 +216,7 @@ class RiichiTablePropsTest {
         )
         expected.forEach { (key, placement) ->
             val (facing, seatIndex) = key
-            val stick = RiichiTableProps.describe(state(riichiSeatIndices = setOf(seatIndex), stickPotCount = 1)).single()
+            val stick = RiichiTableProps.describe(state(riichiSeatIndices = setOf(seatIndex), stickPotCount = 1)) { null }.single()
             assertSamePlacement(placement, stick.place(facing), "facing=$facing seat=$seatIndex")
         }
     }
@@ -246,7 +236,7 @@ class RiichiTablePropsTest {
             MahjongTileWallPlacement(13.6875, 65.015, -7.855, 0.0f),
             MahjongTileWallPlacement(13.6875, 65.015, -7.79, 0.0f),
         )
-        val corner = RiichiTableProps.describe(state(dealerSeatIndex = 1, comboCount = 3, stickPotCount = 3))
+        val corner = RiichiTableProps.describe(state(dealerSeatIndex = 1, comboCount = 3, stickPotCount = 3)) { null }
 
         assertEquals(expected.size, corner.size)
         corner.zip(expected).forEachIndexed { stackIndex, (stick, placement) ->
@@ -263,6 +253,9 @@ class RiichiTablePropsTest {
 
         /** 測試桌面 controller 的 Z 座標。 */
         const val CONTROLLER_Z = -7
+
+        /** 四次開槓後同時公開的寶牌指示牌張數。 */
+        const val MAXIMUM_DORA_INDICATORS = 5
 
         /** 世界位置與朝向比較使用的誤差容許值。 */
         const val EPSILON = 1.0e-6

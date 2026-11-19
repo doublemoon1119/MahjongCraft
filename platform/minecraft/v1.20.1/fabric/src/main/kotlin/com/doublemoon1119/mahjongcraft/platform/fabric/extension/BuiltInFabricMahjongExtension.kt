@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.extension
 
+import com.doublemoon1119.mahjongcraft.flow.persistence.format.component.ComponentViewPersistenceRegistry
 import com.doublemoon1119.mahjongcraft.metadata.MahjongCraftMetadata
 import com.doublemoon1119.mahjongcraft.platform.fabric.api.character.FabricAiCharacterCapabilityDefinition
 import com.doublemoon1119.mahjongcraft.platform.fabric.api.registration.FabricAiCharacterCapabilityRegistrar
@@ -12,6 +13,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.server.seating.BuiltInFab
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.seating.MahjongStoolPlacementProvider
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.prop.FaceUpTileTablePropKind
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.prop.ScoringStickTablePropKind
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.prop.TablePropTileFaceCodec
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.seating.RegisteredSeatProvider
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.seating.SeatProvider
 import com.doublemoon1119.mahjongcraft.platform.minecraft.character.BuiltInAiCharacters
@@ -22,12 +24,14 @@ import net.minecraft.server.world.ServerWorld
 /**
  * 提供 Fabric 平台內建桌面物件與座位 provider 的 extension。
  *
- * @property tileAssets 公開展示牌的資源與規則外觀。
  * @property seatProvider 內建麻將凳座位 provider。
+ * @property tileAssets 公開展示牌的資源與規則外觀。
+ * @property componentViews 公開展示牌保存組件公開效果所用的轉換。
  */
 internal class BuiltInFabricMahjongExtension(
     private val seatProvider: SeatProvider<ServerWorld, Entity>,
     private val tileAssets: MinecraftTileAssetRegistry,
+    private val componentViews: ComponentViewPersistenceRegistry,
 ) : FabricMahjongExtension {
     /** 內建 Fabric extension 的穩定識別碼。 */
     override val id: String = MahjongCraftMetadata.id("builtin")
@@ -35,7 +39,7 @@ internal class BuiltInFabricMahjongExtension(
     /** 登記點棒與公開展示牌，兩者共用桌面物件規劃流程。 */
     override fun registerTablePropKinds(registry: FabricTablePropKindRegistrar) {
         registry.register(ScoringStickTablePropKind)
-        registry.register(FaceUpTileTablePropKind(tileAssets))
+        registry.register(FaceUpTileTablePropKind(tileAssets, TablePropTileFaceCodec(componentViews)))
     }
 
     /** 登記內建麻將凳座位 provider。 */

@@ -203,6 +203,10 @@ rules come from collisions that only showed up in game, so check them even when 
   tiles, regular draws and replacement draws first appear in their destination and share the existing
   drop animation. Once on the table, each tile keeps its authoritative UUID for later moves.
   With a physical wall, presentation continues to claim existing wall entities by UUID.
+- Without a physical wall, public face-up tiles from the wall or the reserved tiles, such as riichi
+  dora indicators, are the real tile entities. They line up in one row at the table centre, in wall
+  and reserved order, facing the dealer. A newly revealed tile drops in and the row re-centres. Rules
+  do not describe these tiles as table props.
 - Fixed openings can deal without dice; the centre is reserved only for an opening that rolls dice.
 
 ## Rule-owned table props
@@ -211,9 +215,9 @@ rules come from collisions that only showed up in game, so check them even when 
   namespaced ID. Keep that ID when its content or position changes; do not generate a new UUID on
   each refresh. Objects missing from the next description are removed.
 - Use `TablePropLocation.Seat` for a standard seat anchor, or `Center(order)` for the shared centre.
-  The adapter chooses central coordinates. For a row facing the same direction, each prop can prefer a
-  lateral offset relative to its own yaw. The centre comes from the four discard rows, independently
-  of the number of players or wall faces; no rule receives reserved space by default.
+  The adapter chooses central coordinates. The centre comes from the four discard rows, independently
+  of the number of players or wall faces; no rule receives reserved space by default. Tiles lying in
+  the centre, such as the face-up row of a table without a physical wall, count as occupied space.
 - A native prop kind owns one `TablePropKindDefinition`: its ID, actual model dimensions and pure
   content validator. Register that kind once through the existing extension callback. Use the same
   dimensions for rendering and occupancy; an entity's selection box is not its model size.
@@ -222,8 +226,12 @@ rules come from collisions that only showed up in game, so check them even when 
   optimal packing solver. An invalid scene or failed spawn clears the failed scene and reports the
   problem; do not silently keep stale rule indicators or drop selected objects.
 - `FaceUpTile` creates a public display copy. It never borrows an actual hand, discard or wall tile's
-  UUID and never participates in tile selection. Choose its appearance from the public rule context,
-  while keeping the normal tile visibility policy unchanged.
+  UUID and never participates in tile selection. It carries a `TileFaceView`, so the public effects
+  of its components, such as transparency, look the same as on the real tile. To copy a tile from the
+  table, ask the describer's `TablePropTileFaces` for its public face; it returns nothing for a tile
+  that is not public yet. Build a `TileFaceView` directly for a face that is not on the table.
+- Do not use a display copy for a real tile that should be visible. Show the real tile entity instead,
+  so it keeps one UUID, can move later and keeps matching-tile highlights.
 - A rule selects and saves any score-affecting bonus tiles in authoritative state. Presentation only
   reads that state; refreshes, reconnection and loading never reroll it or decide scoring.
 - Reserve the centre before opening dice work is queued. Release it after the whole multi-roll

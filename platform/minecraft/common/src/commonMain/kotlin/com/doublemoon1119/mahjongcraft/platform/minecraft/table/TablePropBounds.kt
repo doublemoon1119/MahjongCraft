@@ -60,11 +60,23 @@ internal data class TablePropBounds(
          * @param dimensions 未旋轉前的實際尺寸。
          * @return 旋轉後的水平包圍盒與實際垂直範圍。
          */
-        fun of(target: TablePropTarget, dimensions: TablePropDimensions): TablePropBounds {
-            val radians = target.yaw.toDouble() * PI / 180.0
+        fun of(target: TablePropTarget, dimensions: TablePropDimensions): TablePropBounds = of(target.x, target.y, target.z, target.yaw, dimensions)
+
+        /**
+         * 由位置、朝向與實際尺寸建立占用盒。
+         *
+         * @param x 水平中心 X。
+         * @param y 底部高度。
+         * @param z 水平中心 Z。
+         * @param yaw 水平朝向（度）。
+         * @param dimensions 未旋轉前的實際尺寸。
+         * @return 旋轉後的水平包圍盒與實際垂直範圍。
+         */
+        fun of(x: Double, y: Double, z: Double, yaw: Float, dimensions: TablePropDimensions): TablePropBounds {
+            val radians = yaw.toDouble() * PI / 180.0
             val halfX = (abs(cos(radians)) * dimensions.width + abs(sin(radians)) * dimensions.depth) / 2
             val halfZ = (abs(sin(radians)) * dimensions.width + abs(cos(radians)) * dimensions.depth) / 2
-            return TablePropBounds(target.x - halfX, target.x + halfX, target.y, target.y + dimensions.height, target.z - halfZ, target.z + halfZ)
+            return TablePropBounds(x - halfX, x + halfX, y, y + dimensions.height, z - halfZ, z + halfZ)
         }
     }
 }

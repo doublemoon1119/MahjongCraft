@@ -167,6 +167,48 @@ class TableTileArrangementTest {
     )
 
     /** 北向、兩人桌、沒有牌牆投影的擺放輸入。 */
+    /** 沒有實體牌牆時，正面朝上的公開保留牌依保留區順序在桌子中央排成一排，面向莊家；朝下的牌不擺。 */
+    @Test
+    fun `wallless face-up reserved tiles line up in the center facing the dealer`() {
+        val reserved = List(6) { FakeIdentifiedTileFactory.create(HONORS[it]) }
+        val players = Wind.entries.map { FakeMahjongPlayerFactory.create(it) }
+        val faceUp = listOf(reserved[0], reserved[2], reserved[4])
+        for (dealer in players.indices) {
+            val state = FakeTableStateFactory.create(players = players, dealerPlayerId = players[dealer].id, reservedWallTiles = reserved)
+
+            val arrangement = TableTileArrangement.arrange(input(state).copy(faceUpWallTileIds = faceUp.mapTo(linkedSetOf()) { it.id }))
+
+            val row = faceUp.map { arrangement.getValue(it.id) }
+            assertTrue(reserved.filterNot { it in faceUp }.none { it.id in arrangement })
+            row.forEachIndexed { index, arranged ->
+                assertEquals(TileRowKey(TileRegion.RESERVED, null, TableTileArrangement.CENTER_ROW_GROUP), arranged.row)
+                assertEquals(index, arranged.orderInRow)
+                assertEquals(TilePose.FACE_UP, arranged.pose)
+                assertEquals(MahjongTileTableLayout.seatYaw(MahjongTableFacing.NORTH, MahjongTableSeatLayout.FOUR_PLAYER, dealer), arranged.placement.yaw)
+            }
+            assertEquals(0.5, row.map { it.placement.x }.average(), CENTER_EPSILON)
+            assertEquals(0.5, row.map { it.placement.z }.average(), CENTER_EPSILON)
+            // 從莊家看由左至右：南側莊家（座位 0）面向北，右手邊是東方（X 增加）。
+            if (dealer == 0) assertTrue(row.zipWithNext().all { (left, right) -> right.placement.x > left.placement.x })
+        }
+    }
+
+    /** 新公開的牌加入中央那一排時，原有的牌在同一排內平移重新置中，新牌從桌上沒有的狀態落下。 */
+    @Test
+    fun `a newly revealed tile re-centers the row`() {
+        val reserved = List(4) { FakeIdentifiedTileFactory.create(HONORS[it]) }
+        val state = FakeTableStateFactory.create(players = Wind.entries.map { FakeMahjongPlayerFactory.create(it) }, reservedWallTiles = reserved)
+        val before = TableTileArrangement.arrange(input(state).copy(faceUpWallTileIds = setOf(reserved[0].id)))
+        val after = TableTileArrangement.arrange(input(state).copy(faceUpWallTileIds = setOf(reserved[0].id, reserved[2].id)))
+
+        val motions = TableStepMotionPlanner.plan(before, after, dropsOnArrival = { it !in before })
+
+        assertEquals(
+            expected = setOf(reserved[0].id to TileMotionKind.SLIDE, reserved[2].id to TileMotionKind.DROP),
+            actual = motions.mapTo(mutableSetOf()) { it.tileId to it.kind },
+        )
+    }
+
     private fun input(state: TableState) = TableTileArrangementInput(
         controllerX = 0,
         controllerY = 64,
@@ -181,4 +223,12 @@ class TableTileArrangementTest {
         wallClearance = null,
         faceUpWallTileIds = emptySet(),
     )
+
+    private companion object {
+        /** 中央位置比較使用的誤差容許值。 */
+        const val CENTER_EPSILON = 1.0e-9
+
+        /** 互相可以區分的字牌，用來建立保留區的牌。 */
+        val HONORS: List<Tile> = listOf(Tile.Honor.East, Tile.Honor.South, Tile.Honor.West, Tile.Honor.North, Tile.Honor.Red, Tile.Honor.Green)
+    }
 }

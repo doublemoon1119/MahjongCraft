@@ -1,6 +1,7 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.extension
 
 import com.doublemoon1119.mahjongcraft.flow.common.error.ExtensionFailurePolicy
+import com.doublemoon1119.mahjongcraft.flow.persistence.format.component.ComponentViewPersistenceRegistry
 import com.doublemoon1119.mahjongcraft.platform.fabric.api.registration.FabricSeatProviderRegistrar
 import com.doublemoon1119.mahjongcraft.platform.fabric.api.registration.FabricTablePropKindRegistrar
 import com.doublemoon1119.mahjongcraft.platform.fabric.api.tableprop.FabricTablePropKind
@@ -60,7 +61,7 @@ class FabricTablePropKindRegistrationTest {
             seatPlacementRegistry = FabricSeatPlacementRegistry(),
             roomParticipantRegistry = FabricRoomParticipantRegistry(),
         ),
-        builtIn = BuiltInFabricMahjongExtension(FakeProvider(), MinecraftTileAssetRegistryImpl()),
+        builtIn = BuiltInFabricMahjongExtension(FakeProvider(), MinecraftTileAssetRegistryImpl(), ComponentViewPersistenceRegistry()),
         failurePolicy = ExtensionFailurePolicy.Default,
     )
 
@@ -173,7 +174,7 @@ class FabricTablePropKindRegistrationTest {
                 seatPlacementRegistry = FabricSeatPlacementRegistry(),
                 roomParticipantRegistry = FabricRoomParticipantRegistry(),
             ),
-            builtIn = BuiltInFabricMahjongExtension(FakeProvider(), MinecraftTileAssetRegistryImpl()),
+            builtIn = BuiltInFabricMahjongExtension(FakeProvider(), MinecraftTileAssetRegistryImpl(), ComponentViewPersistenceRegistry()),
             failurePolicy = ExtensionFailurePolicy.Default,
         )
 
