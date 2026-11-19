@@ -342,7 +342,10 @@ internal class HistoryBrowseSession(
         }
     }
 
-    /** 關閉整個瀏覽並返回原設定頁或遊戲。 */
+    /** 關閉整個瀏覽時是否回到開啟它的畫面；從指令、快捷鍵或聊天開啟時直接回到遊戲。 */
+    val returnsToScreen: Boolean get() = parent != null
+
+    /** 關閉整個瀏覽並返回開啟它的畫面或遊戲。 */
     fun close() {
         if (closed) return
         dispose()

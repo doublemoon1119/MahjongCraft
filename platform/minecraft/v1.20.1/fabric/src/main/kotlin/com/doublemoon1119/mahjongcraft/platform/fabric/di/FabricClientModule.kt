@@ -25,6 +25,8 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.client.game.ClientDecisio
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.game.DecisionTextResolver
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.game.DecisionTimerDisplay
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.game.PlayerDecisionHudController
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.handbook.FabricHandbookScreenCommand
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.handbook.MahjongHandbookScreenController
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.history.ClientHistoryArchiveStatusCoordinator
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.history.ClientHistoryChatEntryStore
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.history.ClientHistoryQueryCoordinator
@@ -96,6 +98,8 @@ val fabricClientModule = module {
 
     single<FabricClientConfigCommand>()
     single<MahjongClientConfigScreenController>()
+    single<FabricHandbookScreenCommand>()
+    single<MahjongHandbookScreenController>()
     single<MahjongClientConfigStore>()
     single<MahjongHudPreviewRenderer>()
 

@@ -49,6 +49,17 @@ class RuleCatalogueScreenController internal constructor(
     }
 
     /**
+     * 立即開啟一般說明的規則一覽，返回時回到 [returnScreen]。
+     *
+     * @param returnScreen 開啟規則一覽的畫面。
+     */
+    fun openFrom(returnScreen: Screen) {
+        MinecraftClient.getInstance().setScreen(
+            createScreen(context = RuleCatalogueBrowseContext(), exit = ReturnRuleCatalogueToScreen(returnScreen)),
+        )
+    }
+
+    /**
      * 建立規則一覽畫面，供房間或歷史畫面立即切換。
      *
      * @param context 開啟時的規則與設定來源。

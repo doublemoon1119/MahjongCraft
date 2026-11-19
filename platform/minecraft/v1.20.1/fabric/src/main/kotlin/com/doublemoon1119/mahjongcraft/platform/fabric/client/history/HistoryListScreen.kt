@@ -118,7 +118,8 @@ internal class HistoryListScreen(
         nextButton = button(Text.translatable(MinecraftHistoryScreenKeys.NEXT), layout.footerSlot(2)) {
             if (HistoryPaging.jumpsToEnd()) session.controller.lastPage() else session.controller.nextPage()
         }
-        button(Text.translatable(MinecraftHistoryScreenKeys.CLOSE), layout.footerSlot(HistoryPageFrame.LAST_SLOT)) { close() }
+        val leaveLabel = if (session.returnsToScreen) MinecraftHistoryScreenKeys.BACK else MinecraftHistoryScreenKeys.CLOSE
+        button(Text.translatable(leaveLabel), layout.footerSlot(HistoryPageFrame.LAST_SLOT)) { close() }
     }
 
     /**

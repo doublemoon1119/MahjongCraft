@@ -31,6 +31,17 @@ internal interface RuleCatalogueExit {
     fun isValid(client: MinecraftClient): Boolean = true
 }
 
+/**
+ * 從其他畫面開啟的一般說明：返回時回到開啟它的畫面。
+ *
+ * @property returnScreen 開啟規則一覽的畫面。
+ */
+internal class ReturnRuleCatalogueToScreen(override val returnScreen: Screen) : RuleCatalogueExit {
+    override fun back(client: MinecraftClient) {
+        client.setScreen(returnScreen)
+    }
+}
+
 /** 一般說明入口：返回時關回遊戲。 */
 internal object CloseRuleCatalogueToGame : RuleCatalogueExit {
     override val returnScreen: Screen? = null
