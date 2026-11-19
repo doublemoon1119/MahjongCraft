@@ -33,6 +33,21 @@ internal enum class PixelIcon(
         ),
     ),
 
+    /** 上一個：向左的實心三角形，與 [OPEN_RIGHT] 左右對稱。 */
+    PREVIOUS_LEFT(
+        width = 4,
+        height = 7,
+        rows = listOf(
+            listOf(3 to 1),
+            listOf(2 to 2),
+            listOf(1 to 3),
+            listOf(0 to 4),
+            listOf(1 to 3),
+            listOf(2 to 2),
+            listOf(3 to 1),
+        ),
+    ),
+
     /** 已勾選：與下拉清單目前選項相同的打勾。 */
     CHECK(
         width = PixelIcons.CHECK_WIDTH,

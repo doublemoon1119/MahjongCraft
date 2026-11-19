@@ -8,6 +8,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftConfig
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.StressDebugKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.extension.BuiltInMinecraftMahjongExtension
 import com.doublemoon1119.mahjongcraft.platform.minecraft.extension.BundledMinecraftMahjongExtensions
+import com.doublemoon1119.mahjongcraft.platform.minecraft.guide.MinecraftGuideScreenKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.handbook.MinecraftHandbookScreenKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.history.MinecraftHistoryScreenKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModMetadata
@@ -246,6 +247,7 @@ class MinecraftLanguageFilesTest {
         MinecraftClientConfigScreenKeys::class,
         MinecraftConfigCommandKeys::class,
         MinecraftHistoryScreenKeys::class,
+        MinecraftGuideScreenKeys::class,
         MinecraftHandbookScreenKeys::class,
         MinecraftCycleButtonKeys::class,
         MinecraftHudKeys::class,

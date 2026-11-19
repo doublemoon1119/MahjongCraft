@@ -25,6 +25,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.client.game.discardAnalys
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.game.drawDecisionPanel
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.game.drawDecisionTimer
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.RestartableMarqueeButtonWidget
+import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.PlayerDecisionPromptDto
 import com.mojang.blaze3d.systems.RenderSystem
 import net.minecraft.client.MinecraftClient
 import net.minecraft.client.gui.DrawContext
@@ -61,7 +62,7 @@ class MahjongHudPreviewRenderer(
         screenWidth: Int,
         screenHeight: Int,
     ): MahjongHudPreviewSize? = when (element) {
-        HudElement.DECISION -> decisionLayout(scenario, screenWidth, screenHeight, panelRatioY = 0.0).let { layout ->
+        HudElement.DECISION -> decisionLayout(scenario.prompt, screenWidth, screenHeight, panelRatioY = 0.0).let { layout ->
             MahjongHudPreviewSize(width = layout.panelWidth, height = layout.groupHeight)
         }
         HudElement.COMPACT -> decisionHud.compactHudLayout(screenWidth, screenHeight, COMPACT_PREVIEW_CONTENT, ratioX = 0.0, ratioY = 0.0).let { layout ->
@@ -97,7 +98,14 @@ class MahjongHudPreviewRenderer(
         RenderSystem.enableBlend()
         context.setShaderColor(1f, 1f, 1f, opacity)
         when (element) {
-            HudElement.DECISION -> renderDecisionPanel(context, scenario, layout.decisionPanelY, opacity)
+            HudElement.DECISION -> renderDecisionPanel(
+                context = context,
+                prompt = scenario.prompt,
+                screenWidth = context.scaledWindowWidth,
+                screenHeight = context.scaledWindowHeight,
+                panelRatioY = layout.decisionPanelY,
+                opacity = opacity,
+            )
             HudElement.COMPACT -> decisionHud.renderCompactHud(
                 context = context,
                 content = COMPACT_PREVIEW_CONTENT,
@@ -119,17 +127,53 @@ class MahjongHudPreviewRenderer(
     }
 
     /**
+     * 範例操作面板在 [width] 寬的範圍內所需的高度，包含上方的觸發框。
+     *
+     * @param prompt 範例決策提示。
+     * @param width 可用寬度。
+     * @return 操作面板連同觸發框的高度。
+     */
+    internal fun decisionPanelHeight(prompt: PlayerDecisionPromptDto, width: Int): Int = decisionLayout(prompt, width, MEASURE_HEIGHT, panelRatioY = 0.0).groupHeight
+
+    /**
+     * 在從 ([left], [top]) 起、[width] 寬的範圍內畫出範例操作面板，面板連同觸發框貼齊範圍上緣並水平置中。
+     * 繪製方式與遊戲中的操作面板相同，例如「如何開始」畫面用來說明操作面板。
+     *
+     * @param context 畫面繪製環境。
+     * @param prompt 範例決策提示。
+     * @param left 範圍左界。
+     * @param top 範圍上界。
+     * @param width 範圍寬度。
+     */
+    internal fun renderDecisionPanelAt(context: DrawContext, prompt: PlayerDecisionPromptDto, left: Int, top: Int, width: Int) {
+        val layout = decisionLayout(prompt, width, MEASURE_HEIGHT, panelRatioY = 0.0)
+        context.matrices.push()
+        context.matrices.translate(left.toDouble(), (top - layout.groupTop).toDouble(), 0.0)
+        renderDecisionPanel(context, prompt, width, MEASURE_HEIGHT, panelRatioY = 0.0, opacity = 1f)
+        context.matrices.pop()
+    }
+
+    /**
      * 畫出操作面板與它的按鈕及倒數；原版按鈕繪製時會重設著色，因此每顆按鈕畫完後重新套用 [opacity]。
      *
      * @param context 畫面繪製環境。
-     * @param scenario 操作面板預覽情境。
+     * @param prompt 範例決策提示。
+     * @param screenWidth 面板所在範圍的寬度。
+     * @param screenHeight 面板所在範圍的高度。
      * @param panelRatioY 面板垂直位置比例。
      * @param opacity 預覽不透明度。
      */
-    private fun renderDecisionPanel(context: DrawContext, scenario: HudPreviewScenario, panelRatioY: Double, opacity: Float) {
+    private fun renderDecisionPanel(
+        context: DrawContext,
+        prompt: PlayerDecisionPromptDto,
+        screenWidth: Int,
+        screenHeight: Int,
+        panelRatioY: Double,
+        opacity: Float,
+    ) {
         val renderer = MinecraftClient.getInstance().textRenderer
-        val content = decisionContent(scenario, context.scaledWindowWidth)
-        val measured = measureDecisionPanel(content, context.scaledWindowWidth, context.scaledWindowHeight, panelRatioY)
+        val content = decisionContent(prompt, screenWidth)
+        val measured = measureDecisionPanel(content, screenWidth, screenHeight, panelRatioY)
         val layout = measured.geometry
         val scroll = layout.maximumScroll
         val placements = layout.cardPlacements(scroll)
@@ -167,14 +211,14 @@ class MahjongHudPreviewRenderer(
     }
 
     /**
-     * 建立 [scenario] 的操作面板內容。
+     * 建立 [prompt] 的操作面板內容。
      *
-     * @param scenario 操作面板預覽情境。
+     * @param prompt 範例決策提示。
      * @param screenWidth 畫面寬度。
      * @return 可供版面計算與繪製使用的面板內容。
      */
-    private fun decisionContent(scenario: HudPreviewScenario, screenWidth: Int): DecisionPanelContent = decisionPanelContent(
-        prompt = scenario.prompt,
+    private fun decisionContent(prompt: PlayerDecisionPromptDto, screenWidth: Int): DecisionPanelContent = decisionPanelContent(
+        prompt = prompt,
         texts = decisionHud.decisionTexts,
         resolvePlayerName = decisionHud::resolveTriggerPlayerName,
         renderer = MinecraftClient.getInstance().textRenderer,
@@ -182,20 +226,20 @@ class MahjongHudPreviewRenderer(
     )
 
     /**
-     * 建立 [scenario] 的操作面板版面。
+     * 建立 [prompt] 的操作面板版面。
      *
-     * @param scenario 操作面板預覽情境。
+     * @param prompt 範例決策提示。
      * @param screenWidth 畫面寬度。
      * @param screenHeight 畫面高度。
      * @param panelRatioY 面板垂直位置比例。
      * @return 對應的操作面板版面幾何。
      */
     private fun decisionLayout(
-        scenario: HudPreviewScenario,
+        prompt: PlayerDecisionPromptDto,
         screenWidth: Int,
         screenHeight: Int,
         panelRatioY: Double,
-    ): DecisionCardLayout = measureDecisionPanel(decisionContent(scenario, screenWidth), screenWidth, screenHeight, panelRatioY).geometry
+    ): DecisionCardLayout = measureDecisionPanel(decisionContent(prompt, screenWidth), screenWidth, screenHeight, panelRatioY).geometry
 
     /**
      * 建立 [content] 的操作面板版面；倒數保留寬度依範例倒數量測。
@@ -278,6 +322,9 @@ class MahjongHudPreviewRenderer(
     private companion object {
         /** 預覽不跟隨游標，以畫面外的座標畫出沒有 hover 效果的按鈕與卡片。 */
         const val NO_POINTER = -1
+
+        /** 在指定範圍內繪製時計算版面所用的高度；面板貼齊上緣，高度只需足夠容納面板。 */
+        const val MEASURE_HEIGHT = 1000
 
         /** 範例倒數：基本 5 秒加保留 20 秒。 */
         val PREVIEW_TIMER_PARTS = decisionTimerParts(base = 5.seconds, reserve = 20.seconds)

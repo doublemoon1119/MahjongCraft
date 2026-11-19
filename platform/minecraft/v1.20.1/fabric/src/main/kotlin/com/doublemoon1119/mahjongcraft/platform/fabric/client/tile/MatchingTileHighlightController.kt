@@ -37,9 +37,9 @@ class MatchingTileHighlightController(
         val snapshot = stateStore.gameSnapshot(tableId) ?: return
         val interpretation = moduleRegistry.getModule(snapshot.config).createTileInterpretationPolicy()
         val canonicalTarget = interpretation.canonicalize(targetTile)
-        val wave = ((sin((target.world.time + client.tickDelta) * PULSE_SPEED) + 1.0) / 2.0).toFloat()
-        val targetColor = interpolateColor(TARGET_PULSE_DARK_COLOR, TARGET_PULSE_BRIGHT_COLOR, wave)
-        val otherMatchColor = interpolateColor(OTHER_MATCH_PULSE_DARK_COLOR, OTHER_MATCH_PULSE_BRIGHT_COLOR, wave)
+        val time = target.world.time + client.tickDelta.toDouble()
+        val targetColor = targetColor(time)
+        val otherMatchColor = otherMatchColor(time)
         tiles.asSequence()
             .filter { tile -> tile.managedTableId == tableId && tile.canParticipate() }
             .filter { tile ->
@@ -53,23 +53,8 @@ class MatchingTileHighlightController(
         !animating &&
         managedTableId?.let { tableId -> stateStore.findManagedTileSnapshot(tableId, uuid.toKotlinUuid())?.tile != null } == true
 
-    /**
-     * 在兩個 RGB 色彩之間線性內插。
-     *
-     * @param from 起始 RGB 色彩。
-     * @param to 結束 RGB 色彩。
-     * @param progress 內插比例；計算後的色彩通道會限制在 0–255。
-     */
-    private fun interpolateColor(from: Int, to: Int, progress: Float): Int {
-        fun component(shift: Int): Int {
-            val start = from shr shift and 0xFF
-            val end = to shr shift and 0xFF
-            return (start + (end - start) * progress).toInt().coerceIn(0, 255)
-        }
-        return component(16) shl 16 or (component(8) shl 8) or component(0)
-    }
-
-    private companion object {
+    /** 呼吸光的顏色與速度；其他畫面重現同種牌提示時共用。 */
+    internal companion object {
         /** 準星目標呼吸效果最低亮度。 */
         const val TARGET_PULSE_DARK_COLOR: Int = 0x1A6B63
 
@@ -84,5 +69,45 @@ class MatchingTileHighlightController(
 
         /** 呼吸效果每 tick 的相位增量。 */
         const val PULSE_SPEED: Double = 0.16
+
+        /**
+         * 準星指著的牌在 [time] 時的呼吸光顏色。
+         *
+         * @param time 遊戲時間，以 tick 為單位，可含本幀進度。
+         * @return RGB 顏色。
+         */
+        fun targetColor(time: Double): Int = interpolateColor(TARGET_PULSE_DARK_COLOR, TARGET_PULSE_BRIGHT_COLOR, wave(time))
+
+        /**
+         * 其他同種牌在 [time] 時的呼吸光顏色。
+         *
+         * @param time 遊戲時間，以 tick 為單位，可含本幀進度。
+         * @return RGB 顏色。
+         */
+        fun otherMatchColor(time: Double): Int = interpolateColor(OTHER_MATCH_PULSE_DARK_COLOR, OTHER_MATCH_PULSE_BRIGHT_COLOR, wave(time))
+
+        /**
+         * 呼吸效果在 [time] 時的亮度比例。
+         *
+         * @param time 遊戲時間，以 tick 為單位，可含本幀進度。
+         * @return 介於 0 與 1。
+         */
+        private fun wave(time: Double): Float = ((sin(time * PULSE_SPEED) + 1.0) / 2.0).toFloat()
+
+        /**
+         * 在兩個 RGB 色彩之間線性內插。
+         *
+         * @param from 起始 RGB 色彩。
+         * @param to 結束 RGB 色彩。
+         * @param progress 內插比例；計算後的色彩通道會限制在 0–255。
+         */
+        private fun interpolateColor(from: Int, to: Int, progress: Float): Int {
+            fun component(shift: Int): Int {
+                val start = from shr shift and 0xFF
+                val end = to shr shift and 0xFF
+                return (start + (end - start) * progress).toInt().coerceIn(0, 255)
+            }
+            return component(16) shl 16 or (component(8) shl 8) or component(0)
+        }
     }
 }

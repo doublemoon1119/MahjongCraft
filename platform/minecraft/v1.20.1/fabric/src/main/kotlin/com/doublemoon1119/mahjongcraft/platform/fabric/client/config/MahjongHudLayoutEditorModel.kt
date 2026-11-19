@@ -157,19 +157,23 @@ private val RIICHI_PREVIEW_TILES: List<String> = listOf("m1", "m4", "m7", "p2", 
  * @param triggerTileAssetKey 觸發決策的牌面素材鍵。
  * @param fromLeftPlayer 是否由左手邊玩家打出觸發牌。
  * @param actions 範例決策動作。
+ * @param ruleModuleId 決定動作用語的規則；null 時使用中立用語。
+ * @param triggerPlayerName 打出觸發牌的範例玩家名稱。
  * @return 用於預覽的決策提示 DTO。
  */
-private fun previewPrompt(
+internal fun previewPrompt(
     triggerTileAssetKey: String,
     fromLeftPlayer: Boolean,
     actions: List<PlayerDecisionActionDto>,
+    ruleModuleId: String? = BuiltInRuleModuleIds.RIICHI,
+    triggerPlayerName: String = PREVIEW_TRIGGER_PLAYER_NAME,
 ): PlayerDecisionPromptDto = PlayerDecisionPromptDto(
     decisionKey = "hud_layout_preview",
-    ruleModuleId = BuiltInRuleModuleIds.RIICHI,
+    ruleModuleId = ruleModuleId,
     actions = actions,
     triggerTileAssetKey = triggerTileAssetKey,
     triggerPlayerId = if (fromLeftPlayer) PREVIEW_TRIGGER_PLAYER_ID else null,
-    triggerPlayerName = if (fromLeftPlayer) PREVIEW_TRIGGER_PLAYER_NAME else null,
+    triggerPlayerName = if (fromLeftPlayer) triggerPlayerName else null,
     triggerPlayerRelation = if (fromLeftPlayer) DecisionPlayerRelationDto.LEFT else null,
     triggerActionId = if (fromLeftPlayer) BuiltInGameActionIds.DISCARD else null,
     ruleDecision = null,
@@ -184,7 +188,7 @@ private fun previewPrompt(
  * @param claimedTileIndex 被鳴取牌在牌列中的索引；沒有鳴取牌時為 null。
  * @return 用於預覽的動作 DTO。
  */
-private fun previewAction(
+internal fun previewAction(
     actionId: String,
     previewTileAssetKeys: List<String>,
     claimedTileIndex: Int? = null,

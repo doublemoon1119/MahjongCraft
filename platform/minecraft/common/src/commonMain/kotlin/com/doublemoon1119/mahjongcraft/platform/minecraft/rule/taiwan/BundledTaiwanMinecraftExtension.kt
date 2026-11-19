@@ -52,6 +52,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.WinSettleme
 import com.doublemoon1119.mahjongcraft.platform.minecraft.sound.BuiltInGameActionSoundIds
 import com.doublemoon1119.mahjongcraft.platform.minecraft.sound.GameActionSoundDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.sound.GameActionSoundPresentation
+import com.doublemoon1119.mahjongcraft.platform.minecraft.table.BuiltInRoundInfoLineKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.RoundInfoArgument
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.RoundInfoLine
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.RoundInfoLineDisplay
@@ -157,11 +158,10 @@ object BundledTaiwanMinecraftExtension : MinecraftMahjongExtension {
         registry.register(PublicPlayerIndicatorDisplayDefinition(TaiwanPublicIndicatorIds.DEALER_STREAK, PublicPlayerIndicatorDisplay(TaiwanTranslationKeys.INDICATOR_DEALER_STREAK)))
     }
 
-    /** 局況資訊：圈風與局數、連莊一次以上時的連莊次數，以及活牌剩餘張數。 */
+    /** 局況資訊：圈風與局數、連莊一次以上時的連莊次數，以及活牌剩餘張數；剩餘張數使用內建的 [BuiltInRoundInfoLineKeys.WALL_REMAINING]。 */
     override fun registerRoundInfoPresentations(registry: RoundInfoLineDisplayRegistrar) {
         registry.register(RoundInfoLineDisplayDefinition(TAIWAN_ROUND_TITLE_LINE, RoundInfoLineDisplay(TaiwanTranslationKeys.ROUND_INFO_TITLE)))
         registry.register(RoundInfoLineDisplayDefinition(TAIWAN_DEALER_STREAK_LINE, RoundInfoLineDisplay(TaiwanTranslationKeys.ROUND_INFO_DEALER_STREAK)))
-        registry.register(RoundInfoLineDisplayDefinition(TAIWAN_WALL_REMAINING_LINE, RoundInfoLineDisplay(MinecraftMessageKeys.ROUND_INFO_WALL_REMAINING)))
         registry.register(RoundInfoLineProviderDefinition(BuiltInRuleModuleIds.TAIWAN, RoundInfoLineProvider(::taiwanRoundInfoLines)))
     }
 
@@ -332,7 +332,7 @@ private fun plantFlower(chinese: String, order: String): TileLabel = TileLabel(
 internal fun taiwanRoundInfoLines(tableState: TableState): List<RoundInfoLine> = listOfNotNull(
     RoundInfoLine(TAIWAN_ROUND_TITLE_LINE, listOf(RoundInfoArgument.WindValue(tableState.prevalentWind), RoundInfoArgument.Number(tableState.localRoundNumber))),
     RoundInfoLine(TAIWAN_DEALER_STREAK_LINE, listOf(RoundInfoArgument.Number(tableState.comboCount))).takeIf { tableState.comboCount > 0 },
-    RoundInfoLine(TAIWAN_WALL_REMAINING_LINE, listOf(RoundInfoArgument.Number(tableState.tileWall.remainingCount))),
+    RoundInfoLine(BuiltInRoundInfoLineKeys.WALL_REMAINING, listOf(RoundInfoArgument.Number(tableState.tileWall.remainingCount))),
 )
 
 /** 圈風與局數行。 */
@@ -340,9 +340,6 @@ internal const val TAIWAN_ROUND_TITLE_LINE: String = "mahjongcraft:taiwan/round_
 
 /** 連莊次數行。 */
 internal const val TAIWAN_DEALER_STREAK_LINE: String = "mahjongcraft:taiwan/dealer_streak"
-
-/** 活牌剩餘張數行。 */
-internal const val TAIWAN_WALL_REMAINING_LINE: String = "mahjongcraft:taiwan/wall_remaining"
 
 /** 宣告聽牌在操作卡中的順序，與日麻立直相同。 */
 private const val DECLARE_READY_ACTION_ORDER: Int = 5

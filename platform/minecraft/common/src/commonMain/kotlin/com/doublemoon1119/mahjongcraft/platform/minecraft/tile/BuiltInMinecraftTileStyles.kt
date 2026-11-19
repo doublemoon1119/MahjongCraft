@@ -8,7 +8,7 @@ object BuiltInMinecraftTileStyles {
     /** 透明牌的外觀樣式 ID。 */
     const val TRANSPARENT_STYLE_ID: String = "${MinecraftModMetadata.MOD_ID}:transparent"
 
-    /** 有透明版貼圖的標準牌面：萬、筒、條一到九與七種字牌。 */
+    /** 有透明版貼圖的標準牌面：萬、筒、索一到九與七種字牌。 */
     val TRANSPARENT_TILES: List<Tile> = Tile.Suit.entries.flatMap { suit -> (1..9).map { Tile.Numeric(suit, it) } } + listOf(
         Tile.Honor.East,
         Tile.Honor.South,

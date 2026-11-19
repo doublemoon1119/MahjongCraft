@@ -49,6 +49,26 @@ class MahjongPlayerInfoEntityRenderer(
         if (!configStore.current.presentationVisibility.playerInfoEnabled) return
         if (entity.isInvisible) return
         super.render(entity, yaw, tickDelta, matrices, vertexConsumers, light)
+        renderPanels(entity, matrices, vertexConsumers, light) { true }
+    }
+
+    /**
+     * 繪製指定座位的資訊面板；例如教學畫面的示意場景不畫鏡頭所在座位、會擋住視線的那一面。
+     *
+     * @param entity 提供公開玩家資訊的實體。
+     * @param matrices 目前模型矩陣，原點在桌子中心。
+     * @param vertexConsumers 頂點緩衝。
+     * @param light 光照。
+     * @param shownSeat 依座位 index 判斷是否繪製該座位的面板。
+     */
+    fun renderPanels(
+        entity: MahjongPlayerInfoEntity,
+        matrices: MatrixStack,
+        vertexConsumers: VertexConsumerProvider,
+        light: Int,
+        shownSeat: (Int) -> Boolean,
+    ) {
+        if (!configStore.current.presentationVisibility.playerInfoEnabled) return
         val players = entity.players.sortedBy { it.seatIndex }
         if (players.isEmpty()) return
         val seatLayout = MahjongTableSeatLayout.forPlayerCount(players.size)
@@ -68,7 +88,7 @@ class MahjongPlayerInfoEntityRenderer(
         )
         val scoreChanges = entity.scoreChanges
         val gameTime = entity.world.time
-        players.forEach { player ->
+        players.filter { shownSeat(it.seatIndex) }.forEach { player ->
             val shownDelta = scoreChanges.shownDeltaFor(player.seatIndex, gameTime)
             val side = rotateSide(seatLayout.sideOf(player.seatIndex), entity.tableFacing.ordinal)
             matrices.push()

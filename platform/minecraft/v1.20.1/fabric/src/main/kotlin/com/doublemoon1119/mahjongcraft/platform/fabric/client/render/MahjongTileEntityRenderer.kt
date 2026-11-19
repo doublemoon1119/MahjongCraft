@@ -431,21 +431,6 @@ class MahjongTileEntityRenderer(
     }
 
     /**
-     * 依姿態旋轉角換算原點補償位移，讓 [MahjongTilePose] 三種姿態各自「牌底」都貼齊 render() 套用
-     * 姿態旋轉前的錨點位置（entity 世界座標，經過動畫位移後的位置）——這個位移是套用在姿態旋轉
-     * *之後* 的局部座標系（[render] 呼叫順序：先轉姿態、後位移），效果等同讓姿態旋轉的軸心落在牌底
-     * 而非模型幾何中心，理由見 [lerpPoseOriginOffset] KDoc。
-     *
-     * @param rotationDegrees 姿態旋轉角度。
-     * @return 將旋轉軸對齊牌底所需的補償位移。
-     */
-    private fun poseOriginOffset(rotationDegrees: Float): Triple<Double, Double, Double> = when (rotationDegrees) {
-        MahjongTilePose.STANDING.rotationDegrees -> Triple(0.0, MahjongTileEntity.TILE_HEIGHT / 2.0, 0.0)
-        MahjongTilePose.FACE_UP.rotationDegrees -> Triple(0.0, 0.0, -MahjongTileEntity.TILE_DEPTH / 2.0)
-        else -> Triple(0.0, 0.0, MahjongTileEntity.TILE_DEPTH / 2.0) // MahjongTilePose.FACE_DOWN
-    }
-
-    /**
      * 本人過渡使用連續翻轉角補償牌底，模型組裝時只套用一次。
      *
      * @param rotationDegrees 本幀的絕對翻轉角。
@@ -550,6 +535,21 @@ class MahjongTileEntityRenderer(
     private fun VertexConsumerProvider.glintOnly(): VertexConsumerProvider = VertexConsumerProvider { _ -> this.getBuffer(RenderLayer.getDirectEntityGlint()) }
 
     companion object {
+        /**
+         * 依姿態旋轉角換算原點補償位移，讓 [MahjongTilePose] 三種姿態各自「牌底」都貼齊 render() 套用
+         * 姿態旋轉前的錨點位置（entity 世界座標，經過動畫位移後的位置）——這個位移是套用在姿態旋轉
+         * *之後* 的局部座標系（[render] 呼叫順序：先轉姿態、後位移），效果等同讓姿態旋轉的軸心落在牌底
+         * 而非模型幾何中心，理由見 [lerpPoseOriginOffset] KDoc。
+         *
+         * @param rotationDegrees 姿態旋轉角度。
+         * @return 將旋轉軸對齊牌底所需的補償位移。
+         */
+        internal fun poseOriginOffset(rotationDegrees: Float): Triple<Double, Double, Double> = when (rotationDegrees) {
+            MahjongTilePose.STANDING.rotationDegrees -> Triple(0.0, MahjongTileEntity.TILE_HEIGHT / 2.0, 0.0)
+            MahjongTilePose.FACE_UP.rotationDegrees -> Triple(0.0, 0.0, -MahjongTileEntity.TILE_DEPTH / 2.0)
+            else -> Triple(0.0, 0.0, MahjongTileEntity.TILE_DEPTH / 2.0) // MahjongTilePose.FACE_DOWN
+        }
+
         /** 保留牌面可辨識度的低光照 packed value。 */
         private const val DIMMED_LIGHT = 0x00300030
 

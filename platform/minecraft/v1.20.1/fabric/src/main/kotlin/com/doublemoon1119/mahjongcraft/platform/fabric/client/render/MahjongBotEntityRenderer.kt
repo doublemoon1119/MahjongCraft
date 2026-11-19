@@ -60,8 +60,38 @@ class MahjongBotEntityRenderer(
         vertexConsumers: VertexConsumerProvider,
         light: Int,
     ) {
+        renderPose(
+            entity = entity,
+            yaw = yaw,
+            tickDelta = tickDelta,
+            matrices = matrices,
+            vertexConsumers = vertexConsumers,
+            light = light,
+            seated = entity.hasVehicle(),
+        )
+    }
+
+    /**
+     * 以指定姿勢繪製機器人；不在世界中的預覽實體不能乘坐，由呼叫端直接決定是否坐著。
+     *
+     * @param entity 要繪製的機器人。
+     * @param yaw 水平朝向。
+     * @param tickDelta 本幀 tick 進度。
+     * @param matrices 目前模型矩陣，原點在腳底。
+     * @param vertexConsumers 頂點緩衝。
+     * @param light 光照。
+     * @param seated 是否以坐姿繪製。
+     */
+    fun renderPose(
+        entity: MahjongBotEntity,
+        yaw: Float,
+        tickDelta: Float,
+        matrices: MatrixStack,
+        vertexConsumers: VertexConsumerProvider,
+        light: Int,
+        seated: Boolean,
+    ) {
         if (entity.isInvisible) return
-        val seated = entity.hasVehicle()
         val hipY = if (seated) MahjongStoolSeatGeometry.SEATED_BOTTOM_HEIGHT.toFloat() else LEG_LENGTH
         val swingProgress = entity.swingProgress(tickDelta)
         val swing = MahjongBotArmAnimation.swingDegrees(swingProgress)

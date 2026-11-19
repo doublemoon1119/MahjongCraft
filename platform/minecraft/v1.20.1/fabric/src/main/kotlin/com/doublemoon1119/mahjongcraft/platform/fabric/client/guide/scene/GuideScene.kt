@@ -1,0 +1,211 @@
+package com.doublemoon1119.mahjongcraft.platform.fabric.client.guide.scene
+
+import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongTilePose
+import com.doublemoon1119.mahjongcraft.platform.minecraft.guide.MinecraftGuideScreenKeys
+import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongPlayerInfoEntry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.table.RoundInfoLine
+import net.minecraft.block.BlockState
+import net.minecraft.util.math.BlockPos
+import kotlin.uuid.Uuid
+
+/**
+ * 教學畫面中的一小塊示意場景：以方塊狀態與角色描述，交給遊戲自己的繪製器畫出。
+ *
+ * 場景座標與世界座標相同：一格等於一個方塊，Y 朝上；場景不放進任何世界，也不執行 tick。
+ *
+ * @property blocks 場景中的方塊。
+ * @property figures 場景中的角色。
+ * @property tiles 場景中的麻將牌。
+ * @property view 觀看場景的斜上方視角。
+ * @property focus 縮放、置中與顯示的範圍，範圍外的部分不顯示；`null` 時以所有方塊、角色與牌為準，整個場景都顯示。
+ * @property rotatable 玩家能否用滑鼠拖曳轉動場景的水平方向。
+ * @property roundInfo 浮在桌子中央上方的局況；沒有時為 null。
+ * @property playerInfo 各座位後上方的玩家資訊；沒有時為 null。
+ */
+internal data class GuideScene(
+    val blocks: List<GuideSceneBlock>,
+    val figures: List<GuideSceneFigure>,
+    val tiles: List<GuideSceneTile>,
+    val view: GuideSceneView,
+    val focus: GuideSceneBox? = null,
+    val rotatable: Boolean = false,
+    val roundInfo: GuideSceneRoundInfo? = null,
+    val playerInfo: GuideScenePlayerInfo? = null,
+)
+
+/**
+ * 場景中的一個方塊。
+ *
+ * @property state 要繪製的方塊狀態。
+ * @property position 方塊所在的格子。
+ */
+internal data class GuideSceneBlock(
+    val state: BlockState,
+    val position: BlockPos,
+)
+
+/**
+ * 場景中的一位麻將機器人。
+ *
+ * @property faceAssetKey 牌體正面的牌面資源鍵。
+ * @property x 腳底中心的 X 座標。
+ * @property y 腳底的 Y 座標。
+ * @property z 腳底中心的 Z 座標。
+ * @property yaw Minecraft 慣例的水平朝向（0 度朝南）。
+ * @property seated 是否以坐姿繪製。
+ * @property region 滑鼠指著時說明的區塊；不說明時為 null。
+ */
+internal data class GuideSceneFigure(
+    val faceAssetKey: String,
+    val x: Double,
+    val y: Double,
+    val z: Double,
+    val yaw: Float,
+    val seated: Boolean,
+    val region: GuideSceneRegion? = null,
+)
+
+/**
+ * 場景中的一張麻將牌，畫法與對局中的牌相同。
+ *
+ * @property assetKey 牌面資源鍵；看不到牌面（例如別人的手牌）時為 null。
+ * @property x 牌底中心的 X 座標。
+ * @property y 牌底的 Y 座標。
+ * @property z 牌底中心的 Z 座標。
+ * @property yaw Minecraft 慣例的水平朝向，與牌在桌上的擺放朝向相同。
+ * @property pose 直立、牌面朝上或牌面朝下。
+ * @property glow 外框發光的種類；`null` 時不發光。
+ * @property region 滑鼠指著時說明的區塊；不說明時為 null。
+ */
+internal data class GuideSceneTile(
+    val assetKey: String?,
+    val x: Double,
+    val y: Double,
+    val z: Double,
+    val yaw: Float,
+    val pose: MahjongTilePose = MahjongTilePose.STANDING,
+    val glow: GuideSceneTileGlow? = null,
+    val region: GuideSceneRegion? = null,
+)
+
+/**
+ * 滑鼠指著時會說明的牌桌區塊；同一區塊的牌一起畫上外框。
+ *
+ * @property nameKey 區塊名稱的翻譯鍵。
+ * @property descriptionKey 區塊說明的翻譯鍵。
+ */
+internal enum class GuideSceneRegion(val nameKey: String, val descriptionKey: String) {
+    /** 還沒被摸走的牌。 */
+    WALL(MinecraftGuideScreenKeys.REGION_WALL, MinecraftGuideScreenKeys.REGION_WALL_DESCRIPTION),
+
+    /** 自己的手牌。 */
+    OWN_HAND(MinecraftGuideScreenKeys.REGION_OWN_HAND, MinecraftGuideScreenKeys.REGION_OWN_HAND_DESCRIPTION),
+
+    /** 別人的手牌。 */
+    OTHER_HAND(MinecraftGuideScreenKeys.REGION_OTHER_HAND, MinecraftGuideScreenKeys.REGION_OTHER_HAND_DESCRIPTION),
+
+    /** 打出的牌。 */
+    RIVER(MinecraftGuideScreenKeys.REGION_RIVER, MinecraftGuideScreenKeys.REGION_RIVER_DESCRIPTION),
+
+    /** 吃、碰、槓亮出的牌組。 */
+    MELD(MinecraftGuideScreenKeys.REGION_MELD, MinecraftGuideScreenKeys.REGION_MELD_DESCRIPTION),
+
+    /** 桌子中央上方的局況。 */
+    ROUND_INFO(MinecraftGuideScreenKeys.REGION_ROUND_INFO, MinecraftGuideScreenKeys.REGION_ROUND_INFO_DESCRIPTION),
+
+    /** 各座位後上方的玩家資訊。 */
+    PLAYER_INFO(MinecraftGuideScreenKeys.REGION_PLAYER_INFO, MinecraftGuideScreenKeys.REGION_PLAYER_INFO_DESCRIPTION),
+
+    /** 坐在座位上的 AI。 */
+    AI_PLAYER(MinecraftGuideScreenKeys.REGION_AI_PLAYER, MinecraftGuideScreenKeys.REGION_AI_PLAYER_DESCRIPTION),
+}
+
+/**
+ * 浮在桌子中央上方的局況，交給遊戲的局況繪製器畫出。
+ *
+ * @property lines 局況的資訊行。
+ * @property x 局況中心的 X 座標。
+ * @property y 局況中心的 Y 座標。
+ * @property z 局況中心的 Z 座標。
+ */
+internal data class GuideSceneRoundInfo(
+    val lines: List<RoundInfoLine>,
+    val x: Double,
+    val y: Double,
+    val z: Double,
+)
+
+/**
+ * 各座位後上方的玩家資訊，交給遊戲的玩家資訊繪製器畫出。
+ *
+ * @property players 各座位的公開資訊。
+ * @property dealerPlayerId 莊家；沒有時為 null。
+ * @property shownSeats 要畫出面板的座位 index；鏡頭所在座位的面板會擋住視線，不畫。
+ * @property x 桌子中心的 X 座標。
+ * @property y 桌子底部的 Y 座標。
+ * @property z 桌子中心的 Z 座標。
+ */
+internal data class GuideScenePlayerInfo(
+    val players: List<MahjongPlayerInfoEntry>,
+    val dealerPlayerId: Uuid?,
+    val shownSeats: Set<Int>,
+    val x: Double,
+    val y: Double,
+    val z: Double,
+)
+
+/** 對局中麻將牌外框發光的種類。 */
+internal enum class GuideSceneTileGlow {
+    /** 準星指著的牌。 */
+    TARGET,
+
+    /** 與準星指著的牌相同的其他牌。 */
+    MATCHING,
+}
+
+/**
+ * 場景座標中的長方體範圍。
+ *
+ * @property minX 最小 X。
+ * @property minY 最小 Y。
+ * @property minZ 最小 Z。
+ * @property maxX 最大 X。
+ * @property maxY 最大 Y。
+ * @property maxZ 最大 Z。
+ */
+internal data class GuideSceneBox(
+    val minX: Double,
+    val minY: Double,
+    val minZ: Double,
+    val maxX: Double,
+    val maxY: Double,
+    val maxZ: Double,
+)
+
+/**
+ * 從斜上方觀看場景的固定視角；縮放由畫面可用空間決定。
+ *
+ * @property yawDegrees 場景繞垂直軸旋轉的角度。
+ * @property pitchDegrees 鏡頭往下俯視的角度。
+ */
+internal data class GuideSceneView(
+    val yawDegrees: Float,
+    val pitchDegrees: Float,
+)
+
+/**
+ * 滑鼠指著的東西：所屬的區塊與它在畫面上的範圍，供提示框避開。
+ *
+ * @property region 所屬的區塊。
+ * @property left 左界。
+ * @property top 上界。
+ * @property right 右界。
+ * @property bottom 下界。
+ */
+internal data class GuideSceneHover(
+    val region: GuideSceneRegion,
+    val left: Int,
+    val top: Int,
+    val right: Int,
+    val bottom: Int,
+)
