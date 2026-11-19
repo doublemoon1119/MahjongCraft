@@ -10,7 +10,6 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.catalogue.RuleCatalogu
 import com.doublemoon1119.mahjongcraft.platform.minecraft.catalogue.RuleCatalogueEntry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.catalogue.RuleCatalogueLabel
 import com.doublemoon1119.mahjongcraft.platform.minecraft.catalogue.RuleCatalogueProvider
-import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.riichi.RiichiGameConfigTranslationKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.riichi.RiichiYakuTranslationKeys
 import kotlin.reflect.KClass
 
@@ -55,7 +54,6 @@ class RiichiCatalogueProvider(
                             definition.conditionKey?.let(::add)
                             if (definition.type == RiichiYakuType.Tanyao && !config.allowOpenTanyao) add(RiichiCatalogueKeys.CLOSED_ONLY)
                             if (definition.type.isLocal) add(RiichiCatalogueKeys.LOCAL_YAKU)
-                            if (definition.type == RiichiYakuType.Dora && !config.buildsWall) add(RiichiGameConfigTranslationKeys.WASHIZU_VARIANT)
                         }.map(::riichiCatalogueLabel),
                         unavailableReasonTranslationKey = when {
                             definition.type in MIDDLE_CHARACTER_YAKU && config.usesThreePlayerTiles -> RiichiCatalogueKeys.THREE_PLAYER_TILES_UNAVAILABLE
@@ -101,7 +99,6 @@ private fun riichiCatalogueSpecialEntries(config: RiichiFamilyRuleConfig): List<
 private fun riichiCatalogueLabel(key: String): RuleCatalogueLabel = RuleCatalogueLabel(
     nameTranslationKey = key,
     descriptionTranslationKey = when (key) {
-        RiichiGameConfigTranslationKeys.WASHIZU_VARIANT -> RiichiGameConfigTranslationKeys.WASHIZU_VARIANT_DESCRIPTION
         RiichiCatalogueKeys.BONUS_ONLY -> RiichiCatalogueKeys.BONUS_ONLY_DESCRIPTION
         RiichiCatalogueKeys.CLOSED_ONLY -> RiichiCatalogueKeys.CLOSED_ONLY_DESCRIPTION
         RiichiCatalogueKeys.LOCAL_YAKU -> RiichiCatalogueKeys.LOCAL_YAKU_DESCRIPTION
