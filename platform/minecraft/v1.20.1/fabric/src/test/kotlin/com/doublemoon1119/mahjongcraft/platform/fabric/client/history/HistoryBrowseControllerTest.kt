@@ -783,7 +783,18 @@ class HistoryBrowseControllerTest {
         runCurrent()
         assertTrue(controller.state.value.closed)
         assertEquals(HistoryBrowseFailure.DISCONNECTED, assertIs<HistoryBrowseStatus.Failed>(controller.state.value.list.status).reason)
-        transport.emit(ClientHistoryQueryState.ListResult(HistoryListResponseDto(requestId, listOf(summary("late")), nextCursor = null, previousCursor = null, totalCount = 0, errorCode = null, allowAll = false, allowStressTest = false)))
+        val listResponse = HistoryListResponseDto(
+            requestId = requestId,
+            entries = listOf(summary("late")),
+            nextCursor = null,
+            previousCursor = null,
+            totalCount = 0,
+            firstEntryIndex = 1,
+            errorCode = null,
+            allowAll = false,
+            allowStressTest = false,
+        )
+        transport.emit(ClientHistoryQueryState.ListResult(listResponse))
         runCurrent()
         assertTrue(controller.state.value.list.entries.isEmpty())
     }
@@ -797,7 +808,18 @@ class HistoryBrowseControllerTest {
         runCurrent()
         val requestId = transport.listRequests.single().requestId
         controller.close()
-        transport.emit(ClientHistoryQueryState.ListResult(HistoryListResponseDto(requestId, listOf(summary("late")), nextCursor = null, previousCursor = null, totalCount = 0, errorCode = null, allowAll = false, allowStressTest = false)))
+        val listResponse = HistoryListResponseDto(
+            requestId = requestId,
+            entries = listOf(summary("late")),
+            nextCursor = null,
+            previousCursor = null,
+            totalCount = 0,
+            firstEntryIndex = 1,
+            errorCode = null,
+            allowAll = false,
+            allowStressTest = false,
+        )
+        transport.emit(ClientHistoryQueryState.ListResult(listResponse))
         runCurrent()
         assertTrue(controller.state.value.closed)
         assertTrue(controller.state.value.list.entries.isEmpty())

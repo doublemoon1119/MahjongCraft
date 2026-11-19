@@ -263,7 +263,7 @@ object BundledRiichiMinecraftExtension : MinecraftMahjongExtension {
         registry.register(threePlayerRiichiGameConfigPresentation())
     }
 
-    /** 六種暫用宣告語音，依動作 ID 對應；三人日麻沿用同一組。 */
+    /** 宣告語音依動作 ID 對應；三人日麻沿用同一組，另有拔北語音。 */
     override fun registerGameActionSounds(registry: GameActionSoundPresentationRegistrar) {
         RIICHI_FAMILY_RULE_MODULE_IDS.forEach { ruleModuleId -> RiichiFamilyMinecraftPresentation.registerGameActionSounds(registry, ruleModuleId) }
         registry.register(

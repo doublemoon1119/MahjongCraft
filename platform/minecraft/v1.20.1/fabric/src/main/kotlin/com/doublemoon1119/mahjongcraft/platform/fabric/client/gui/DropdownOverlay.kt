@@ -34,7 +34,10 @@ internal class DropdownOverlay {
     /** 目前展開的清單；沒有展開時為 null。 */
     private var open: OpenList? = null
 
+    /** 上一幀的游標水平座標；游標移動後才改用游標停留的選項取代方向鍵選擇。 */
     private var lastMouseX: Int? = null
+
+    /** 上一幀的游標垂直座標。 */
     private var lastMouseY: Int? = null
 
     /** 是否有清單展開。 */
@@ -297,8 +300,8 @@ internal class DropdownOverlay {
         optionCount = list.options.size,
         footnoteHeight = (footnotes.maxOfOrNull { it.size } ?: 0) * textRenderer.fontHeight,
         windowHeight = windowHeight,
-        scrollIndex = list.scrollIndex,
         footnoteLineHeight = textRenderer.fontHeight,
+        scrollIndex = list.scrollIndex,
     )
 
     /**

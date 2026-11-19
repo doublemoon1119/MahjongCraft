@@ -20,21 +20,29 @@ object TableStepMotionPlanner {
      * @param previous 這一步開始時的擺放；呈現端還沒有任何擺放時為 null，所有牌視為首次出現。
      * @param next 這一步結束時的擺放。
      * @param excludedTileIds 由其他方式呈現的牌，例如依規則分階段重排的牌牆；不規劃動作。
-     * @param dropNewTiles 首次出現的牌是否從目的地上方落下。
+     * @param dropsOnArrival 沒有先前位置的牌是否從目的地上方落下；只有桌上還沒有這張牌時才應落下，已在桌上的牌直接擺到新位置。
      * @return 位置或姿態有改變的牌的動作。
      */
     fun plan(
         previous: Map<Uuid, ArrangedTile>?,
         next: Map<Uuid, ArrangedTile>,
         excludedTileIds: Set<Uuid> = emptySet(),
-        dropNewTiles: Boolean = false,
+        dropsOnArrival: (Uuid) -> Boolean = { false },
     ): List<PlannedTileMotion> {
-        val arrivalKind = if (dropNewTiles) TileMotionKind.DROP else TileMotionKind.PLACE
         val sliding = previous?.let { slidingTileIds(it, next) }.orEmpty()
         return next.values.mapNotNull { after ->
             if (after.tileId in excludedTileIds) return@mapNotNull null
             val before = previous?.get(after.tileId)
-                ?: return@mapNotNull PlannedTileMotion(after.tileId, arrivalKind, null, after.row, null, after.placement, null, after.pose)
+                ?: return@mapNotNull PlannedTileMotion(
+                    tileId = after.tileId,
+                    kind = if (dropsOnArrival(after.tileId)) TileMotionKind.DROP else TileMotionKind.PLACE,
+                    fromRow = null,
+                    toRow = after.row,
+                    from = null,
+                    to = after.placement,
+                    fromPose = null,
+                    toPose = after.pose,
+                )
             val kind = kindOf(before, after, after.tileId in sliding) ?: return@mapNotNull null
             PlannedTileMotion(after.tileId, kind, before.row, after.row, before.placement, after.placement, before.pose, after.pose)
         }

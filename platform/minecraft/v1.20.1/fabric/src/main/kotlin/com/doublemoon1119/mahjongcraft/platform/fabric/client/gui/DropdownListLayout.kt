@@ -13,7 +13,7 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.client.gui
  * @property optionCount 選項數量。
  * @property footnoteHeight 底部說明文字的高度；沒有說明時為 0。
  * @property windowHeight 視窗高度。
- * @property footnoteLineHeight 說明的單行高度。
+ * @property footnoteLineHeight 說明的單行高度，即文字繪製器的字高。
  * @property scrollIndex 第一個可見選項的索引；超出合法範圍的部分不採用。
  */
 internal data class DropdownListLayout(
@@ -24,8 +24,8 @@ internal data class DropdownListLayout(
     val optionCount: Int,
     val footnoteHeight: Int,
     val windowHeight: Int,
+    val footnoteLineHeight: Int,
     val scrollIndex: Int = 0,
-    val footnoteLineHeight: Int = 9,
 ) {
     /** 有說明區時的分隔線及上下內距。 */
     private val footnotePadding = 1 + FOOTNOTE_PADDING * 2
@@ -34,8 +34,10 @@ internal data class DropdownListLayout(
     private val fullHeight = BORDER * 2 + optionCount * OPTION_HEIGHT +
         if (footnoteHeight > 0) footnotePadding + footnoteHeight else 0
 
-    /** 按鈕兩側的可用高度。 */
+    /** 按鈕下方可用的高度。 */
     private val spaceBelow = windowHeight - WINDOW_MARGIN - anchorBottom
+
+    /** 按鈕上方可用的高度。 */
     private val spaceAbove = anchorTop - WINDOW_MARGIN
 
     /** 清單是否在按鈕上方展開。 */

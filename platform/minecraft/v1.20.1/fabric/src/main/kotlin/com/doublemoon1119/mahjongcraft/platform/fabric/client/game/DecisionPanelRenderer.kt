@@ -158,7 +158,7 @@ internal fun decisionPanelLayout(
  * @param renderer Minecraft 文字繪製器。
  * @param measured 本次版面幾何與已換行的卡片文字。
  * @param content 要繪製的面板內容。
- * @param placements 版面 依目前捲動量算出的卡片版位。
+ * @param placements 依目前捲動量算出的卡片版位。
  * @param scroll 目前捲動量，決定 scrollbar thumb 的位置。
  * @param mouseX 游標水平座標；傳入畫面外座標可停用 hover。
  * @param mouseY 游標垂直座標；傳入畫面外座標可停用 hover。

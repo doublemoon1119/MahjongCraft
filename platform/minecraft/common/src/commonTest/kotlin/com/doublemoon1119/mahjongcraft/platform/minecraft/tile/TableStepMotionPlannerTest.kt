@@ -96,14 +96,29 @@ class TableStepMotionPlannerTest {
         val previous = arrangement(arranged(existing, hand, 0, x = 0.0))
         val next = arrangement(arranged(added, hand, 0, x = 0.0), arranged(existing, hand, 1, x = 1.0))
 
-        val motions = TableStepMotionPlanner.plan(previous, next, dropNewTiles = true)
+        val motions = TableStepMotionPlanner.plan(previous, next, dropsOnArrival = { true })
 
         assertEquals(TileMotionKind.DROP, motions.single { it.tileId == added }.kind)
         val existingMotion = motions.single { it.tileId == existing }
         val arrivalStart = TableStepMotionPlanner.phaseStartTicks(motions).getValue(TileMotionPhase.ARRIVE)
         assertEquals(TableStepMotionPlanner.durationTicks(existingMotion.kind), arrivalStart)
         assertEquals(arrivalStart + MahjongTileTableLayout.DRAW_DROP_DURATION_TICKS, TableStepMotionPlanner.stepDurationTicks(motions))
-        assertEquals(emptyList(), TableStepMotionPlanner.plan(next, next, dropNewTiles = true))
+        assertEquals(emptyList(), TableStepMotionPlanner.plan(next, next, dropsOnArrival = { true }))
+    }
+
+    /** 沒有先前擺放時（例如伺服器重開後），桌上已有的牌直接擺放，只有桌上還沒有的牌落下。 */
+    @Test
+    fun `tiles already on the table are placed instead of dropped`() {
+        val onTable = Uuid.random()
+        val missing = Uuid.random()
+        val next = arrangement(arranged(onTable, hand, 0, x = 0.0), arranged(missing, hand, 1, x = 1.0))
+
+        val motions = TableStepMotionPlanner.plan(null, next, dropsOnArrival = { tileId -> tileId != onTable })
+
+        assertEquals(
+            expected = setOf(onTable to TileMotionKind.PLACE, missing to TileMotionKind.DROP),
+            actual = motions.mapTo(mutableSetOf()) { it.tileId to it.kind },
+        )
     }
 
     /** 先離開、再讓位、最後摸進來，三段依序：每一段等前一段最長的動作完成；沒有動作的段落不佔時間。 */

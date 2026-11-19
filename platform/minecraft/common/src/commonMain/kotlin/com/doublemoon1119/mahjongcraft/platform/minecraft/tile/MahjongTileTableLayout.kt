@@ -624,6 +624,43 @@ object MahjongTileTableLayout {
     }
 
     /**
+     * 桌子正中央一排平放牌中第 [index] 張的位置：整排以桌心為中點，牌面朝向 [seatIndex] 的玩家，
+     * 從該玩家看由左至右排列，間距與牌河相同。
+     *
+     * @param controllerX 麻將桌 controller 的世界 X 座標。
+     * @param controllerY 麻將桌 controller 的世界 Y 座標。
+     * @param controllerZ 麻將桌 controller 的世界 Z 座標。
+     * @param tableFacing 麻將桌的世界朝向。
+     * @param seatLayout 本局玩家座位 index 對應的標準桌面布局。
+     * @param seatIndex 牌面朝向的玩家座位 index。
+     * @param index 這張牌在這一排的零基底順序。
+     * @param count 這一排的總張數。
+     * @return 中央格位的世界座標與 yaw。
+     */
+    fun centerRowPlacement(
+        controllerX: Int,
+        controllerY: Int,
+        controllerZ: Int,
+        tableFacing: MahjongTableFacing,
+        seatLayout: MahjongTableSeatLayout,
+        seatIndex: Int,
+        index: Int,
+        count: Int,
+    ): MahjongTileWallPlacement {
+        require(index in 0 until count) { "Center row index $index is outside a row of $count tiles" }
+        val physicalSide = seatLayout.sideOf(seatIndex)
+        val step = MahjongTileDimensions.TILE_WIDTH + MahjongTileDimensions.TILE_SMALL_PADDING
+        val local = TileTableVector(x = (index - (count - 1) / 2.0) * step, y = 0.0, z = 0.0)
+        val worldOffset = rotateForFacing(rotateForSide(local, physicalSide), tableFacing)
+        return MahjongTileWallPlacement(
+            x = controllerX + BLOCK_CENTER + worldOffset.x,
+            y = controllerY + TABLETOP_HEIGHT + worldOffset.y,
+            z = controllerZ + BLOCK_CENTER + worldOffset.z,
+            yaw = (yawForSide(physicalSide) + yawForFacing(tableFacing)).mod(FULL_YAW_DEGREES),
+        )
+    }
+
+    /**
      * 以局部南側玩家為基準的單張牌河牌位置：前 [DISCARD_SAFE_ROWS] 排（`row` 0 起算到
      * `DISCARD_SAFE_ROWS - 1`）依 [DISCARD_TILES_PER_ROW] 張正常換行，列沿排列方向（局部 X 軸）
      * 對稱置中——`column` 遞增時往玩家右手邊移動，符合玩家由左至右的捨牌排列順序；行往桌緣方向（局部 Z 軸正向）堆疊，起始距離

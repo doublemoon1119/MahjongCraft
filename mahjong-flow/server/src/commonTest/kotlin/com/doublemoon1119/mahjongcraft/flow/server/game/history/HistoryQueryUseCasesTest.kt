@@ -329,7 +329,15 @@ class HistoryQueryUseCasesTest {
         ): HistoryQueryResult<HistoryListPage> {
             listCalls++
             lastListAccess = access
-            return HistoryQueryResult.Success(HistoryListPage(emptyList(), nextCursor = null, previousCursor = null, totalCount = 0))
+            return HistoryQueryResult.Success(
+                value = HistoryListPage(
+                    entries = emptyList(),
+                    nextCursor = null,
+                    previousCursor = null,
+                    totalCount = 0,
+                    firstEntryIndex = 0,
+                ),
+            )
         }
 
         /**

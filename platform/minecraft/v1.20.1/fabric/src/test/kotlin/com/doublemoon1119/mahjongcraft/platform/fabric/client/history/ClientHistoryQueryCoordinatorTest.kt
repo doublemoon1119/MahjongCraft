@@ -38,7 +38,18 @@ class ClientHistoryQueryCoordinatorTest {
         )
         val request = coordinator.queryList(HistoryListRequestDto("caller", HistoryQueryScopeDto.OWN, HistorySortFieldDto.ENDED_AT, HistorySortDirectionDto.DESC, HistoryQueryFiltersDto.NONE, 20, null, HistoryPageDirectionDto.AFTER))
         assertFalse(coordinator.acceptsCharacterAppearance(request, "first"))
-        coordinator.applyList(HistoryListResponseDto(requestId = request, entries = listOf(entry), nextCursor = null, previousCursor = null, totalCount = 0, errorCode = null, allowAll = false, allowStressTest = false))
+        val listResponse = HistoryListResponseDto(
+            requestId = request,
+            entries = listOf(entry),
+            nextCursor = null,
+            previousCursor = null,
+            totalCount = 0,
+            firstEntryIndex = 1,
+            errorCode = null,
+            allowAll = false,
+            allowStressTest = false,
+        )
+        coordinator.applyList(listResponse)
         assertTrue(coordinator.acceptsCharacterAppearance(request, "first"))
         assertFalse(coordinator.acceptsCharacterAppearance(request, "unlisted"))
         assertFalse(coordinator.acceptsCharacterAppearance("stale", "first"))
@@ -61,7 +72,18 @@ class ClientHistoryQueryCoordinatorTest {
 
         assertEquals(requestId, sender.listRequest?.requestId)
         assertIs<ClientHistoryQueryState.Loading>(coordinator.state.value)
-        coordinator.applyList(HistoryListResponseDto(requestId, emptyList(), nextCursor = null, previousCursor = null, totalCount = 0, errorCode = null, allowAll = false, allowStressTest = false))
+        val listResponse = HistoryListResponseDto(
+            requestId = requestId,
+            entries = emptyList(),
+            nextCursor = null,
+            previousCursor = null,
+            totalCount = 0,
+            firstEntryIndex = 0,
+            errorCode = null,
+            allowAll = false,
+            allowStressTest = false,
+        )
+        coordinator.applyList(listResponse)
         assertIs<ClientHistoryQueryState.ListResult>(coordinator.state.value)
     }
 
@@ -100,7 +122,18 @@ class ClientHistoryQueryCoordinatorTest {
 
         coordinator.applySummary(HistorySummaryResponseDto(requestId, detail = null, errorCode = null))
         assertIs<ClientHistoryQueryState.Loading>(coordinator.state.value)
-        coordinator.applyList(HistoryListResponseDto(requestId, emptyList(), nextCursor = null, previousCursor = null, totalCount = 0, errorCode = null, allowAll = false, allowStressTest = false))
+        val listResponse = HistoryListResponseDto(
+            requestId = requestId,
+            entries = emptyList(),
+            nextCursor = null,
+            previousCursor = null,
+            totalCount = 0,
+            firstEntryIndex = 0,
+            errorCode = null,
+            allowAll = false,
+            allowStressTest = false,
+        )
+        coordinator.applyList(listResponse)
         assertIs<ClientHistoryQueryState.ListResult>(coordinator.state.value)
     }
 
@@ -162,7 +195,18 @@ class ClientHistoryQueryCoordinatorTest {
 
         assertEquals(previousRevision + 1, coordinator.sessionRevision.value)
         assertEquals(ClientHistoryQueryState.Idle, coordinator.state.value)
-        coordinator.applyList(HistoryListResponseDto(requestId, emptyList(), nextCursor = null, previousCursor = null, totalCount = 0, errorCode = null, allowAll = false, allowStressTest = false))
+        val listResponse = HistoryListResponseDto(
+            requestId = requestId,
+            entries = emptyList(),
+            nextCursor = null,
+            previousCursor = null,
+            totalCount = 0,
+            firstEntryIndex = 0,
+            errorCode = null,
+            allowAll = false,
+            allowStressTest = false,
+        )
+        coordinator.applyList(listResponse)
         assertEquals(ClientHistoryQueryState.Idle, coordinator.state.value)
     }
 

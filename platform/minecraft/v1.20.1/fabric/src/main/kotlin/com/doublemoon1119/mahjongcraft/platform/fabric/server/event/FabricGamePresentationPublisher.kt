@@ -29,6 +29,7 @@ import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPlacement
 import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPosition
 import com.doublemoon1119.mahjongcraft.logic.table.opening.OpeningDiceRoll
 import com.doublemoon1119.mahjongcraft.logic.tile.component.TilePoseState
+import com.doublemoon1119.mahjongcraft.logic.tile.component.TileReadContext
 import com.doublemoon1119.mahjongcraft.logic.tile.component.TileRegion
 import com.doublemoon1119.mahjongcraft.logic.tile.component.publicFaceUpWallTileIds
 import com.doublemoon1119.mahjongcraft.logic.tile.component.resolveTileComponents
@@ -88,6 +89,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TablePropDescrib
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TablePropDescriberRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TablePropPresentation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TablePropPresenter
+import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TablePropTileFaces
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.cornerWidthsBySeat
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.exhaustiveDrawSettlementStageInputs
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.findTile
@@ -668,7 +670,13 @@ class FabricGamePresentationPublisher(
         val arrangement = arrange(resolved, state, UnsortedHandTiles.after(previous, state, sortedPlayerIds), roundWallReach(state))
         val rearrangements = step.events.filterIsInstance<TableStepEvent.WallRearranged>()
         val rearrangedTileIds = rearrangements.flatMapTo(mutableSetOf()) { event -> event.phases.flatMap { phase -> phase.moves.map { it.tileId } } }
-        val motions = TableStepMotionPlanner.plan(previous, arrangement, rearrangedTileIds, dropNewTiles = state.physicalWallLayout == null)
+        // 沒有實體牌牆時，只有桌上還沒有實體的牌落下出現；例如伺服器重開後已在桌上的牌直接擺回位置。
+        val motions = TableStepMotionPlanner.plan(
+            previous = previous,
+            next = arrangement,
+            excludedTileIds = rearrangedTileIds,
+            dropsOnArrival = { tileId -> state.physicalWallLayout == null && resolved.findTile(tileId) == null },
+        )
         // 一起落到同一排的牌只播一次落地聲。
         val soundTileIds = motions.groupBy { it.kind to it.toRow }.values.mapTo(mutableSetOf()) { group -> group.first().tileId }
         // 先離開、再讓位、最後從牌牆摸進來；後一段等前一段完成。
@@ -816,7 +824,10 @@ class FabricGamePresentationPublisher(
                 tableLocation = resolved.location,
                 tableFacing = resolved.facing,
                 seatLayout = MahjongTableSeatLayout.forPlayerCount(state.players.size),
-                placements = describerFor(state)?.describe(state).orEmpty(),
+                placements = describerFor(state)?.describe(state, publicTileFaces(state)).orEmpty(),
+                centerTilePlacements = arrange(resolved, state, emptyList(), roundWallReach(state)).values
+                    .filter { it.row.group == TableTileArrangement.CENTER_ROW_GROUP }
+                    .map { it.placement },
             ),
         )
     }
@@ -985,9 +996,10 @@ class FabricGamePresentationPublisher(
             )
             val result = playerAreaPresenter.presentInitialDeal(presentation)
             // 之後的步驟從手牌實際擺放的位置接續比較，整排手牌才會一起滑到依這一局牌牆範圍排出的位置。
+            val dealArrangement = arrange(resolved, tableState, emptyList(), dealWallReach)
             presentedTables.computeIfPresent(gameId) { _, presented ->
                 if (presented.tableState === tableState && presented.arrangement == null) {
-                    presented.copy(arrangement = arrange(resolved, tableState, emptyList(), dealWallReach))
+                    presented.copy(arrangement = dealArrangement)
                 } else {
                     presented
                 }
@@ -1008,6 +1020,9 @@ class FabricGamePresentationPublisher(
                 if (openingResult != MahjongTileWallPresentationResult.PRESENTED) {
                     logger.warn("Initial wall opening gameId={} failed: result={}", gameId, openingResult)
                 }
+            }
+            if (result != MahjongPlayerAreaPresentationResult.TABLE_NOT_FOUND) {
+                presentCenterRowArrival(gameId, resolved, dealArrangement, handFlipEndGameTime)
             }
             resolved.tableState.extendPresentationUntil(handFlipEndGameTime)
             presentTableProps(gameId, tableState)
@@ -1516,6 +1531,18 @@ class FabricGamePresentationPublisher(
     }
 
     /**
+     * 以不代表任何玩家的公共讀取者查詢牌張公開牌面；同一次描述只解析一次桌況，沒有用到時不解析。
+     *
+     * @param state 描述桌上物件時的桌況。
+     * @return 牌張識別碼到公開牌面的查詢。
+     */
+    private fun publicTileFaces(state: TableState): TablePropTileFaces {
+        val module = moduleRegistry.getModule(state.config)
+        val resolved by lazy { module.resolveTileComponents(state, componentRegistry).associateBy { it.area.tile.id } }
+        return TablePropTileFaces { tileId -> resolved[tileId]?.faceViewFor(TileReadContext.Public(), module.id, state, componentRegistry) }
+    }
+
+    /**
      * 查詢桌況所採用規則的桌面物件描述。
      *
      * @param tableState 決定規則模組的桌況。
@@ -1546,6 +1573,38 @@ class FabricGamePresentationPublisher(
      * @return 讓位範圍；規則沒有牌牆布局時為 null。
      */
     private fun roundWallClearance(tableState: TableState): MahjongTableWallClearance? = wallClearance(tableState, roundWallReach(tableState))
+
+    /**
+     * 沒有實體牌牆時，開局就公開的牌（例如寶牌指示牌）在翻完手牌後落到桌子中央；砌牌牆時這些牌由牌牆翻開，不經過這裡。
+     *
+     * @param gameId 桌子識別碼。
+     * @param resolved 已解析的桌子與世界。
+     * @param arrangement 開局的整桌擺放。
+     * @param startGameTime 落下開始的遊戲時間。
+     */
+    private fun presentCenterRowArrival(
+        gameId: Uuid,
+        resolved: ResolvedTableContext,
+        arrangement: Map<Uuid, ArrangedTile>,
+        startGameTime: Long,
+    ) {
+        arrangement.values.filter { it.row.group == TableTileArrangement.CENTER_ROW_GROUP }.forEachIndexed { index, arranged ->
+            val existing = resolved.findTile(arranged.tileId)
+            val tile = existing ?: spawnTableTile(spawnGateway, resolved.world, gameId, arranged.tileId, arranged.placement) ?: return@forEachIndexed
+            tile.assignToTable(gameId)
+            val motion = PlannedTileMotion(
+                tileId = arranged.tileId,
+                kind = if (existing == null) TileMotionKind.DROP else TileMotionKind.PLACE,
+                fromRow = null,
+                toRow = arranged.row,
+                from = null,
+                to = arranged.placement,
+                fromPose = null,
+                toPose = arranged.pose,
+            )
+            TileAnimationSteps.schedulePlannedMotion(tile, motion, startGameTime, playLandingSound = index == 0)
+        }
+    }
 
     /**
      * 規則回報牌牆在這一局剩下時間裡可能佔到的位置。

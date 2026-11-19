@@ -13,9 +13,10 @@ fun interface TablePropDescriber {
      * 依目前的權威桌況描述桌上應有的物件。
      *
      * @param tableState 目前的權威桌況。
+     * @param tileFaces 查詢桌況中牌張的公開牌面，用來展示牌張副本。
      * @return 桌上應有的全部物件；沒有任何物件時為空清單。
      */
-    fun describe(tableState: TableState): List<TablePropPlacement>
+    fun describe(tableState: TableState, tileFaces: TablePropTileFaces): List<TablePropPlacement>
 
     /**
      * 這個座位的副露角落被自己描述的物件佔用的寬度（單位：方塊），沿副露往手牌排列的方向量測。

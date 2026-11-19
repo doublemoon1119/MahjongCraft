@@ -157,7 +157,11 @@ internal object FabricMahjongExtensions {
         val fabricSources = FabricMahjongExtensionBootstrap.registerAndFreeze(
             extensions = debugExtensions.filterIsInstance<FabricMahjongExtension>() + discoveredExtensions.filterIsInstance<FabricMahjongExtension>(),
             registries = fabricRegistries,
-            builtIn = BuiltInFabricMahjongExtension(mahjongStoolSeatProvider, presentationRegistries.tileAssetRegistry),
+            builtIn = BuiltInFabricMahjongExtension(
+                seatProvider = mahjongStoolSeatProvider,
+                tileAssets = presentationRegistries.tileAssetRegistry,
+                componentViews = coreRegistries.persistenceRegistries.componentViews,
+            ),
             failurePolicy = failurePolicy,
         )
         return FabricExtensionRegistrationResult(

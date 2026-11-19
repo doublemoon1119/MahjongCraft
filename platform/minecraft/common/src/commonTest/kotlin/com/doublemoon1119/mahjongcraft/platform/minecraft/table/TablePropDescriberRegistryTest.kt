@@ -14,7 +14,7 @@ class TablePropDescriberRegistryTest {
     /** 驗證內建日麻與第三方規則的描述都透過同一個 registry 查到。 */
     @Test
     fun `built-in and third-party describers resolve by rule module id`() {
-        val custom = TablePropDescriber { emptyList() }
+        val custom = TablePropDescriber { _, _ -> emptyList() }
         val registry = TablePropDescriberRegistryImpl().apply {
             BundledRiichiMinecraftExtension.registerTablePropDescribers(this)
             register(TablePropDescriberDefinition("example:custom", custom))
@@ -32,7 +32,7 @@ class TablePropDescriberRegistryTest {
         val registry = TablePropDescriberRegistryImpl().apply { freeze() }
 
         assertFailsWith<IllegalStateException> {
-            registry.register(TablePropDescriberDefinition("example:late", TablePropDescriber { emptyList() }))
+            registry.register(TablePropDescriberDefinition("example:late", TablePropDescriber { _, _ -> emptyList() }))
         }
     }
 
@@ -42,7 +42,7 @@ class TablePropDescriberRegistryTest {
         val registry = TablePropDescriberRegistryImpl().apply { BundledRiichiMinecraftExtension.registerTablePropDescribers(this) }
 
         assertFailsWith<IllegalArgumentException> {
-            registry.register(TablePropDescriberDefinition(BuiltInRuleModuleIds.RIICHI, TablePropDescriber { emptyList() }))
+            registry.register(TablePropDescriberDefinition(BuiltInRuleModuleIds.RIICHI, TablePropDescriber { _, _ -> emptyList() }))
         }
     }
 

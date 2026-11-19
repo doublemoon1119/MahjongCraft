@@ -12,6 +12,7 @@ import com.doublemoon1119.mahjongcraft.example.pairing.ExamplePairingTileType
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementQuantity
 import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
+import com.doublemoon1119.mahjongcraft.logic.base.TileFaceView
 import com.doublemoon1119.mahjongcraft.logic.component.ComponentSet
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.table.DiscardPile
@@ -259,7 +260,7 @@ class ExamplePairingPresentationTest {
             turnPhase = TurnPhase.AwaitingDraw,
         )
 
-        val props = ExamplePairingTableProps.describe(table)
+        val props = ExamplePairingTableProps.describe(table) { null }
 
         assertEquals(
             expected = listOf(0, 1),
@@ -267,8 +268,8 @@ class ExamplePairingPresentationTest {
         )
         assertEquals(
             expected = listOf(
-                TablePropContent.FaceUpTile(ExamplePairingTileType.invertedOneMan()),
-                TablePropContent.FaceUpTile(Tile.Numeric(Tile.Suit.Character, 3)),
+                TablePropContent.FaceUpTile(TileFaceView(ExamplePairingTileType.invertedOneMan())),
+                TablePropContent.FaceUpTile(TileFaceView(Tile.Numeric(Tile.Suit.Character, 3))),
             ),
             actual = props.map { it.content },
         )
@@ -302,7 +303,7 @@ class ExamplePairingPresentationTest {
             turnPhase = TurnPhase.AwaitingDraw,
         )
 
-        val props = ExamplePairingTableProps.describe(table)
+        val props = ExamplePairingTableProps.describe(table) { null }
 
         assertEquals(2, props.size)
         assertEquals("mahjongcraft:face_up_tile", props.first().kind)
@@ -330,7 +331,7 @@ class ExamplePairingPresentationTest {
             components = ComponentSet.EMPTY.with(ExamplePairingComponents.BONUS_TILES, ExamplePairingBonusTiles((1..7).toSet())),
             turnPhase = TurnPhase.AwaitingDraw,
         )
-        val placements = ExamplePairingTableProps.describe(table)
+        val placements = ExamplePairingTableProps.describe(table) { null }
         val presentation = TablePropPresentation(
             tableId = table.id,
             ruleModuleId = ExamplePairingIds.RULE_MODULE,
@@ -374,7 +375,7 @@ class ExamplePairingPresentationTest {
                     components = ComponentSet.EMPTY.with(ExamplePairingComponents.BONUS_TILES, ExamplePairingBonusTiles((1..7).toSet())),
                     turnPhase = TurnPhase.AwaitingDraw,
                 )
-                val props = ExamplePairingTableProps.describe(state)
+                val props = ExamplePairingTableProps.describe(state) { null }
                 assertTrue(props.filter { it.kind == BuiltInTablePropKinds.FACE_UP_TILE }.all { (it.location as TablePropLocation.Center).yaw == seatYaws[dealer] })
                 for ((facing, facingYaw) in facingYaws) {
                     val scene = TablePropPresentation(

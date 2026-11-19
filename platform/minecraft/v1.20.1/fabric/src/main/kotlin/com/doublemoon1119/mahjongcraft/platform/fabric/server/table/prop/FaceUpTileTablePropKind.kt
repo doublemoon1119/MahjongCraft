@@ -15,9 +15,15 @@ import kotlin.uuid.Uuid
 /**
  * 公開牌面展示種類；副本不具有正式牌張身分或互動能力。
  *
+ * 牌面依組件的公開效果選擇素材，與同樣牌面的正式牌張一致。
+ *
  * @property tileAssets 牌種資源與規則外觀的唯一查詢來源。
+ * @property faceCodec 保存與還原展示牌面的格式。
  */
-class FaceUpTileTablePropKind(private val tileAssets: MinecraftTileAssetRegistry) : FabricTablePropKind {
+internal class FaceUpTileTablePropKind(
+    private val tileAssets: MinecraftTileAssetRegistry,
+    private val faceCodec: TablePropTileFaceCodec,
+) : FabricTablePropKind {
     override val definition = BuiltInTablePropDefinitions.FACE_UP_TILE
 
     override fun ruleModuleIdOf(entity: Entity): String? = (entity as? TablePropTileEntity)?.tablePropRuleModuleId?.takeIf(String::isNotBlank)
@@ -29,7 +35,9 @@ class FaceUpTileTablePropKind(private val tileAssets: MinecraftTileAssetRegistry
 
     override fun placementIdOf(entity: Entity): String? = (entity as? TablePropTileEntity)?.placementId?.takeIf { it.isNotBlank() }
 
-    override fun contentOf(entity: Entity): TablePropContent? = (entity as? TablePropTileEntity)?.tile?.let(TablePropContent::FaceUpTile)
+    override fun contentOf(entity: Entity): TablePropContent? = (entity as? TablePropTileEntity)
+        ?.let { prop -> faceCodec.decode(prop.faceData) }
+        ?.let(TablePropContent::FaceUpTile)
 
     override fun create(world: ServerWorld, tableId: Uuid, target: TablePropTarget): Entity? {
         val content = target.content as? TablePropContent.FaceUpTile ?: return null
@@ -37,8 +45,8 @@ class FaceUpTileTablePropKind(private val tileAssets: MinecraftTileAssetRegistry
         return TablePropTileEntity(world = world).apply {
             managedTableId = tableId
             placementId = target.id
-            tile = content.tile
-            assetKey = content.tile.toAssetKey(tileAssets)
+            faceData = faceCodec.encode(content.face)
+            assetKey = content.face.toAssetKey(tileAssets)
             appearanceId = appearance.id
             tablePropRuleModuleId = target.ruleModuleId
             refreshPositionAndAngles(target.x, target.y, target.z, target.yaw, 0f)
