@@ -229,7 +229,7 @@ class GetLegalActionsUseCaseTest {
         val respondent = FakeMahjongPlayerFactory.create(
             id = respondentId,
             initialSeat = Wind.SOUTH,
-            hand = Hand(tiles = listOf(southTile1, southTile2)),
+            hand = Hand(tiles = listOf(southTile1, southTile2) + FakeIdentifiedTileFactory.create(Tile.Honor.North)),
             components = riichiDeclarationComponents(),
         )
         val table = FakeTableStateFactory.create(

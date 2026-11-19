@@ -224,7 +224,7 @@ class GameDecisionAuthorityResolverTest {
         val discarded = IdentifiedTile(Uuid.random(), Tile.Honor.South)
         val discarder = FakeMahjongPlayerFactory.create(discardPile = FakeDiscardPile().discardTile(discarded))
         val respondent = FakeMahjongPlayerFactory.create(
-            hand = Hand(tiles = List(2) { IdentifiedTile(Uuid.random(), Tile.Honor.South) }),
+            hand = Hand(tiles = List(2) { IdentifiedTile(Uuid.random(), Tile.Honor.South) } + IdentifiedTile(Uuid.random(), Tile.Honor.North)),
             components = riichiDeclarationComponents(),
         )
         val game = Game(

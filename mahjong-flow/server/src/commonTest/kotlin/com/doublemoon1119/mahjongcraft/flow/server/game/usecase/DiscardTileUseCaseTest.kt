@@ -493,6 +493,7 @@ class DiscardTileUseCaseTest {
                 tiles = listOf(
                     FakeIdentifiedTileFactory.create(Tile.Honor.East),
                     FakeIdentifiedTileFactory.create(Tile.Honor.East),
+                    FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Bamboo, 9)),
                 ),
             ),
         )
@@ -1229,6 +1230,7 @@ class DiscardTileUseCaseTest {
                 tiles = listOf(
                     FakeIdentifiedTileFactory.create(Tile.Honor.East),
                     FakeIdentifiedTileFactory.create(Tile.Honor.East),
+                    FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Bamboo, 9)),
                 ),
             ),
         )
@@ -1277,6 +1279,7 @@ class DiscardTileUseCaseTest {
                 tiles = listOf(
                     FakeIdentifiedTileFactory.create(Tile.Honor.East),
                     FakeIdentifiedTileFactory.create(Tile.Honor.East),
+                    FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Bamboo, 9)),
                 ),
             ),
         )

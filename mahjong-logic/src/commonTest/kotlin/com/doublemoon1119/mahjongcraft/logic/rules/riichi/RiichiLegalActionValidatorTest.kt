@@ -53,6 +53,7 @@ class RiichiLegalActionValidatorTest {
             tiles = listOf(
                 Tile.Numeric(Tile.Suit.Character, 1),
                 Tile.Numeric(Tile.Suit.Character, 1),
+                Tile.Honor.North,
             ),
         )
         val player = FakeMahjongPlayerFactory.create(
@@ -70,7 +71,7 @@ class RiichiLegalActionValidatorTest {
         // 驗證：withTiles 記錄實際要消耗的兩張手牌實例，供 UI 預覽與實際執行共用同一份決定。
         val ponAction = actions.filterIsInstance<GameAction.Pon>().single()
         assertEquals(incomingTile.id, ponAction.tileId)
-        assertEquals(playerHand.standingTiles.map { it.id }, ponAction.withTiles)
+        assertEquals(playerHand.standingTiles.take(2).map { it.id }, ponAction.withTiles)
     }
 
     /**
@@ -85,6 +86,7 @@ class RiichiLegalActionValidatorTest {
             tiles = listOf(
                 Tile.Numeric(Tile.Suit.Character, 2),
                 Tile.Numeric(Tile.Suit.Character, 3),
+                Tile.Honor.North,
             ),
         )
         val player = FakeMahjongPlayerFactory.create(
@@ -212,7 +214,7 @@ class RiichiLegalActionValidatorTest {
             sourceDirection = RelativeDirection.Left,
         )
         val player = FakeMahjongPlayerFactory.create(
-            hand = FakeHandFactory.create(List(3) { Tile.Numeric(Tile.Suit.Character, 1) }).copy(melds = listOf(ponMeld)),
+            hand = FakeHandFactory.create(List(3) { Tile.Numeric(Tile.Suit.Character, 1) } + Tile.Honor.North).copy(melds = listOf(ponMeld)),
         )
         val tableState = FakeTableStateFactory.create(players = listOf(player), tileWall = oneTileWall)
 
@@ -1128,8 +1130,8 @@ class RiichiLegalActionValidatorTest {
     /** 手上同種牌有赤五與普通五時，碰有兩個選項，沒用到赤五的排在前面；完全相同的牌只給一個選項。 */
     @Test
     fun `pon offers one option per distinct tile combination`() {
-        val redHand = FakeHandFactory.create(tiles = List(3) { Tile.Numeric(Tile.Suit.Dot, 5) }).withRedFives(Tile.Suit.Dot)
-        val plainHand = FakeHandFactory.create(tiles = List(3) { Tile.Numeric(Tile.Suit.Dot, 5) })
+        val redHand = FakeHandFactory.create(tiles = List(3) { Tile.Numeric(Tile.Suit.Dot, 5) } + Tile.Honor.North).withRedFives(Tile.Suit.Dot)
+        val plainHand = FakeHandFactory.create(tiles = List(3) { Tile.Numeric(Tile.Suit.Dot, 5) } + Tile.Honor.North)
 
         val redOptions = ponOptions(redHand)
         val plainOptions = ponOptions(plainHand)

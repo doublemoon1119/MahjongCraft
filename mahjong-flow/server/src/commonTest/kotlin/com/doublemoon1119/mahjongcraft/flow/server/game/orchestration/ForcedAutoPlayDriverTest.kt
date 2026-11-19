@@ -57,7 +57,7 @@ class ForcedAutoPlayDriverTest {
                     FakeMahjongPlayerFactory.create(
                         id = playerId,
                         initialSeat = Wind.SOUTH,
-                        hand = Hand(tiles = List(2) { IdentifiedTile(Uuid.random(), Tile.Honor.Red) }),
+                        hand = Hand(tiles = List(2) { IdentifiedTile(Uuid.random(), Tile.Honor.Red) } + IdentifiedTile(Uuid.random(), Tile.Honor.North)),
                         components = riichiDeclarationComponents(),
                     ),
                 ),
@@ -156,7 +156,7 @@ class ForcedAutoPlayDriverTest {
             FakeMahjongPlayerFactory.create(
                 id = reactorId,
                 initialSeat = Wind.SOUTH,
-                hand = Hand(tiles = List(2) { IdentifiedTile(Uuid.random(), Tile.Honor.South) }),
+                hand = Hand(tiles = List(2) { IdentifiedTile(Uuid.random(), Tile.Honor.South) } + IdentifiedTile(Uuid.random(), Tile.Honor.North)),
                 components = riichiDeclarationComponents(),
             ),
             FakeMahjongPlayerFactory.create(id = bystanderId, initialSeat = Wind.WEST),

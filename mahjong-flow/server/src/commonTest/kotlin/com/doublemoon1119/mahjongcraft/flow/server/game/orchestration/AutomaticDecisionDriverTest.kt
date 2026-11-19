@@ -67,7 +67,7 @@ class AutomaticDecisionDriverTest {
         )
         val matchingTiles = List(2) { FakeIdentifiedTileFactory.create(Tile.Honor.South) }
         val respondent = FakeMahjongPlayerFactory.create(
-            hand = Hand(tiles = matchingTiles),
+            hand = Hand(tiles = matchingTiles + FakeIdentifiedTileFactory.create(Tile.Honor.North)),
             components = riichiDeclarationComponents(),
         )
         val state = FakeTableStateFactory.create(

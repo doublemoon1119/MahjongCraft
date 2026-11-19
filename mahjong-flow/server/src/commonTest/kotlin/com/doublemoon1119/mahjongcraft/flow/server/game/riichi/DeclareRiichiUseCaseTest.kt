@@ -564,6 +564,7 @@ class DeclareRiichiUseCaseTest {
                 tiles = listOf(
                     FakeIdentifiedTileFactory.create(Tile.Honor.North),
                     FakeIdentifiedTileFactory.create(Tile.Honor.North),
+                    FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Bamboo, 9)),
                 ),
             ),
         )

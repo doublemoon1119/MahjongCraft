@@ -118,7 +118,7 @@ class GetPlayerDecisionOptionsUseCaseTest {
         val respondent = FakeMahjongPlayerFactory.create(
             id = respondentId,
             initialSeat = Wind.SOUTH,
-            hand = Hand(tiles = matchingTiles),
+            hand = Hand(tiles = matchingTiles + FakeIdentifiedTileFactory.create(Tile.Honor.North)),
             components = riichiDeclarationComponents(),
         )
         fixtures.gameRepository.setTableState(
@@ -154,7 +154,7 @@ class GetPlayerDecisionOptionsUseCaseTest {
         val matchingTiles = List(2) { FakeIdentifiedTileFactory.create(Tile.Honor.South) }
         val respondent = FakeMahjongPlayerFactory.create(
             initialSeat = Wind.SOUTH,
-            hand = Hand(tiles = matchingTiles),
+            hand = Hand(tiles = matchingTiles + FakeIdentifiedTileFactory.create(Tile.Honor.North)),
             components = riichiDeclarationComponents(),
         )
         val state = FakeTableStateFactory.create(
