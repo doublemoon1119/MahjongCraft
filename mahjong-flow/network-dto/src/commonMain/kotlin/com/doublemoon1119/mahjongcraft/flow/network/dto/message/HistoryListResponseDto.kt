@@ -10,8 +10,8 @@ import kotlinx.serialization.Serializable
  * @property entries 可安全顯示的對局摘要。
  * @property nextCursor 往後取下一頁的 keyset cursor；null 表示沒有下一頁。
  * @property previousCursor 往前取上一頁的 keyset cursor；null 表示沒有上一頁。
- * @property firstEntryIndex 本頁第一筆在完整查詢結果中的位置，從 1 開始；空頁為 0。
  * @property totalCount 符合條件的對局總數；查詢失敗時為 0。
+ * @property firstEntryIndex 本頁第一筆在完整查詢結果中的位置，從 1 開始；空頁為 0。
  * @property errorCode 安全的查詢錯誤代碼。
  * @property allowAll 是否允許查詢全部已保存歷史。
  * @property allowStressTest 是否允許查詢壓力測試資料（[HistoryQueryScopeDto.STRESS_TEST]）。
@@ -23,8 +23,8 @@ data class HistoryListResponseDto(
     val nextCursor: String?,
     val previousCursor: String?,
     val totalCount: Int,
+    val firstEntryIndex: Int,
     val errorCode: HistoryQueryErrorCodeDto?,
     val allowAll: Boolean,
     val allowStressTest: Boolean,
-    val firstEntryIndex: Int = if (entries.isEmpty()) 0 else 1,
 )

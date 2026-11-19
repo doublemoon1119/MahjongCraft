@@ -64,7 +64,13 @@ class HistoryQueryResponseBudgetTest {
         val request = HistoryListRequest(sortField = HistorySortField.OWN_SCORE)
         val response = boundedHistoryPage(
             requestId = "request",
-            page = HistoryListPage(listOf(first, second, third), nextCursor = null, previousCursor = null, totalCount = 12, firstEntryIndex = 10),
+            page = HistoryListPage(
+                entries = listOf(first, second, third),
+                nextCursor = null,
+                previousCursor = null,
+                totalCount = 12,
+                firstEntryIndex = 10,
+            ),
             request = request,
             principalId = PLAYER_ID,
             json = bundledNetworkJson(),
@@ -87,7 +93,13 @@ class HistoryQueryResponseBudgetTest {
         val third = summary(Uuid.random(), score = 800)
         val response = boundedHistoryPage(
             requestId = "request",
-            page = HistoryListPage(listOf(first, second, third), nextCursor = null, previousCursor = null, totalCount = 12, firstEntryIndex = 10),
+            page = HistoryListPage(
+                entries = listOf(first, second, third),
+                nextCursor = null,
+                previousCursor = null,
+                totalCount = 12,
+                firstEntryIndex = 10,
+            ),
             request = HistoryListRequest(sortField = HistorySortField.OWN_SCORE, direction = HistoryPageDirection.BEFORE),
             principalId = PLAYER_ID,
             json = bundledNetworkJson(),
@@ -106,7 +118,13 @@ class HistoryQueryResponseBudgetTest {
     fun `single oversized entry returns content too large`() {
         val response = boundedHistoryPage(
             requestId = "request",
-            page = HistoryListPage(listOf(summary(Uuid.random(), diagnostic = "é".repeat(200))), nextCursor = null, previousCursor = null, totalCount = 1),
+            page = HistoryListPage(
+                entries = listOf(summary(Uuid.random(), diagnostic = "é".repeat(200))),
+                nextCursor = null,
+                previousCursor = null,
+                totalCount = 1,
+                firstEntryIndex = 1,
+            ),
             request = HistoryListRequest(),
             principalId = PLAYER_ID,
             json = bundledNetworkJson(),
@@ -123,7 +141,13 @@ class HistoryQueryResponseBudgetTest {
     fun `budget counts utf8 bytes`() {
         val response = boundedHistoryPage(
             requestId = "request",
-            page = HistoryListPage(listOf(summary(Uuid.random(), diagnostic = "界".repeat(20))), nextCursor = null, previousCursor = null, totalCount = 1),
+            page = HistoryListPage(
+                entries = listOf(summary(Uuid.random(), diagnostic = "界".repeat(20))),
+                nextCursor = null,
+                previousCursor = null,
+                totalCount = 1,
+                firstEntryIndex = 1,
+            ),
             request = HistoryListRequest(),
             principalId = PLAYER_ID,
             json = bundledNetworkJson(),

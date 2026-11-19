@@ -83,20 +83,37 @@ internal fun boundedHistoryPage(
         )
         if (encodedHistoryResponseUtf8Size(json, HistoryListResponseDto.serializer(), response) <= limit) return response
         if (count <= 1) {
-            return HistoryListResponseDto(
-                requestId = requestId,
-                entries = emptyList(),
-                nextCursor = null,
-                previousCursor = null,
-                totalCount = 0,
-                errorCode = HistoryQueryErrorCodeDto.CONTENT_TOO_LARGE,
-                allowAll = false,
-                allowStressTest = false,
-            )
+            return emptyHistoryListResponse(requestId = requestId, errorCode = HistoryQueryErrorCodeDto.CONTENT_TOO_LARGE)
         }
         count--
     }
 }
+
+/**
+ * 建立沒有對局摘要的清單回覆，用於查詢失敗、被拒絕或回覆超出大小上限。
+ *
+ * @param requestId 回應配對識別碼。
+ * @param errorCode 安全的查詢錯誤代碼。
+ * @param allowAll 是否允許查詢全部已保存歷史。
+ * @param allowStressTest 是否允許查詢壓力測試資料。
+ * @return 空的清單回覆。
+ */
+internal fun emptyHistoryListResponse(
+    requestId: String,
+    errorCode: HistoryQueryErrorCodeDto,
+    allowAll: Boolean = false,
+    allowStressTest: Boolean = false,
+): HistoryListResponseDto = HistoryListResponseDto(
+    requestId = requestId,
+    entries = emptyList(),
+    nextCursor = null,
+    previousCursor = null,
+    totalCount = 0,
+    firstEntryIndex = 0,
+    errorCode = errorCode,
+    allowAll = allowAll,
+    allowStressTest = allowStressTest,
+)
 
 /**
  * 將已授權的開局設定編碼為有界回應；缺少網路 codec 不視為玩家要求無效。

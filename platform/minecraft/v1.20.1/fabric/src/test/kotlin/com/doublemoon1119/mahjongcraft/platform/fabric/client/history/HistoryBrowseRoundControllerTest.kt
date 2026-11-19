@@ -621,7 +621,18 @@ class HistoryBrowseRoundControllerTest {
          * @param entries 列表摘要。
          */
         fun respondList(entries: List<HistoryMatchSummaryDto>) {
-            mutableState.value = ClientHistoryQueryState.ListResult(HistoryListResponseDto("list-1", entries, nextCursor = null, previousCursor = null, totalCount = 0, errorCode = null, allowAll = false, allowStressTest = false))
+            val listResponse = HistoryListResponseDto(
+                requestId = "list-1",
+                entries = entries,
+                nextCursor = null,
+                previousCursor = null,
+                totalCount = 0,
+                firstEntryIndex = 1,
+                errorCode = null,
+                allowAll = false,
+                allowStressTest = false,
+            )
+            mutableState.value = ClientHistoryQueryState.ListResult(listResponse)
         }
 
         /**

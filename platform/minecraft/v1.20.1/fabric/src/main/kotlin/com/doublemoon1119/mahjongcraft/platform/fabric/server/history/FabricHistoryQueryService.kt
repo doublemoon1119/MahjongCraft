@@ -338,12 +338,8 @@ class FabricHistoryQueryService(
         val source = sourceFor(request.scope) ?: return MahjongChannels.historyListResponse.sendTo(
             player = player,
             json = json,
-            value = HistoryListResponseDto(
+            value = emptyHistoryListResponse(
                 requestId = request.requestId,
-                entries = emptyList(),
-                nextCursor = null,
-                previousCursor = null,
-                totalCount = 0,
                 errorCode = HistoryQueryErrorCodeDto.NOT_AVAILABLE,
                 allowAll = canQueryAll(access, policy()),
                 allowStressTest = canQueryStressTest(access, policy()),
@@ -356,12 +352,8 @@ class FabricHistoryQueryService(
                 MahjongChannels.historyListResponse.sendTo(
                     player = player,
                     json = json,
-                    value = HistoryListResponseDto(
+                    value = emptyHistoryListResponse(
                         requestId = request.requestId,
-                        entries = emptyList(),
-                        nextCursor = null,
-                        previousCursor = null,
-                        totalCount = 0,
                         errorCode = accepted.errorCode(),
                         allowAll = canQueryAll(access, policy()),
                         allowStressTest = canQueryStressTest(access, policy()),
@@ -380,11 +372,11 @@ class FabricHistoryQueryService(
                     val domain = request.toDomain { it?.decodeHistoryCursor(json) }
                     val repository = FabricHistoryQueryRepository(source.writer, sessionId, identityStore)
                     when (val result = ListHistoryUseCase(repository, ::policy)(access, domain)) {
-                        is HistoryQueryResult.Failure -> HistoryListResponseDto(request.requestId, emptyList(), nextCursor = null, previousCursor = null, totalCount = 0, errorCode = result.error.code.toDto(), allowAll = false, allowStressTest = false)
+                        is HistoryQueryResult.Failure -> emptyHistoryListResponse(request.requestId, result.error.code.toDto())
                         is HistoryQueryResult.Success -> boundedHistoryPage(request.requestId, result.value, domain, access.principalId, json, { it.encode(json) })
                     }
                 } catch (_: IllegalArgumentException) {
-                    HistoryListResponseDto(request.requestId, emptyList(), nextCursor = null, previousCursor = null, totalCount = 0, errorCode = HistoryQueryErrorCodeDto.INVALID_REQUEST, allowAll = false, allowStressTest = false)
+                    emptyHistoryListResponse(request.requestId, HistoryQueryErrorCodeDto.INVALID_REQUEST)
                 }
                 val appearances = linkedMapOf<String, AiCharacterHistoryPayload>()
                 var remainingBytes = AiCharacterSyncPayload.MAX_BYTES
@@ -405,18 +397,33 @@ class FabricHistoryQueryService(
                 }
                 PreparedCharacterList(response, appearances)
             },
-            timeoutResponse = { PreparedCharacterList(HistoryListResponseDto(request.requestId, emptyList(), nextCursor = null, previousCursor = null, totalCount = 0, errorCode = HistoryQueryErrorCodeDto.TIMEOUT, allowAll = false, allowStressTest = false), emptyMap()) },
+            timeoutResponse = {
+                PreparedCharacterList(
+                    response = emptyHistoryListResponse(request.requestId, HistoryQueryErrorCodeDto.TIMEOUT),
+                    appearances = emptyMap(),
+                )
+            },
             failureResponse = { error ->
                 logger.error("History list query failed", error)
-                PreparedCharacterList(HistoryListResponseDto(request.requestId, emptyList(), nextCursor = null, previousCursor = null, totalCount = 0, errorCode = HistoryQueryErrorCodeDto.NOT_AVAILABLE, allowAll = canQueryAll(player.queryAccess(), policy()), allowStressTest = canQueryStressTest(player.queryAccess(), policy())), emptyMap())
+                PreparedCharacterList(
+                    response = emptyHistoryListResponse(
+                        requestId = request.requestId,
+                        errorCode = HistoryQueryErrorCodeDto.NOT_AVAILABLE,
+                        allowAll = canQueryAll(player.queryAccess(), policy()),
+                        allowStressTest = canQueryStressTest(player.queryAccess(), policy()),
+                    ),
+                    appearances = emptyMap(),
+                )
             },
             isCurrentSession = { sameConnection(server, player, source, sessionId) },
             send = { initialResponse ->
                 var response = initialResponse.response
                 val invalid = replyError(player.queryAccess(), policy(), request.scope.toDomain())
-                if (invalid != null) response = HistoryListResponseDto(request.requestId, emptyList(), nextCursor = null, previousCursor = null, totalCount = 0, errorCode = invalid, allowAll = false, allowStressTest = false)
+                if (invalid != null) response = emptyHistoryListResponse(request.requestId, invalid)
                 val active = activeMatches(source)
-                if (response.entries.any { it.matchId in active }) response = HistoryListResponseDto(request.requestId, emptyList(), nextCursor = null, previousCursor = null, totalCount = 0, errorCode = HistoryQueryErrorCodeDto.NOT_AVAILABLE, allowAll = false, allowStressTest = false)
+                if (response.entries.any { it.matchId in active }) {
+                    response = emptyHistoryListResponse(request.requestId, HistoryQueryErrorCodeDto.NOT_AVAILABLE)
+                }
                 response = response.copy(
                     allowAll = canQueryAll(player.queryAccess(), policy()),
                     allowStressTest = canQueryStressTest(player.queryAccess(), policy()),
