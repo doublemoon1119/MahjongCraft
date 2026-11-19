@@ -60,6 +60,9 @@ internal class PlayerDecisionScreen(
     /** 開始拖曳時的內容水平捲動量。 */
     private var scrollbarDragStartScroll = 0.0
 
+    /** 卡片說明放不下時，末行的跑馬燈進度。 */
+    private val descriptionMarquee = MarqueeState()
+
     /** 讓多人遊戲與 integrated server 在畫面開啟時持續推進。 */
     override fun shouldPause(): Boolean = false
 
@@ -238,8 +241,6 @@ internal class PlayerDecisionScreen(
         renderDescriptionTooltip(context, layout, placements, mouseX, mouseY)
     }
 
-    private val descriptionMarquee = MarqueeState()
-
     /**
      * 游標停在有說明的卡片上時，在面板外緣對齊該卡片顯示說明，不覆蓋卡片列。
      *
@@ -277,10 +278,9 @@ internal class PlayerDecisionScreen(
         val width = if (lines.size > lineCount) maximumWidth else lines.maxOf(textRenderer::getWidth).coerceIn(1, maximumWidth)
         val height = lineCount * textRenderer.fontHeight
         val position = layout.descriptionTooltipPosition(card = placements[index], width = width, height = height)
-        val tooltipZ = 400
-        TooltipBackgroundRenderer.render(context, position.x, position.y, width, height, tooltipZ)
+        TooltipBackgroundRenderer.render(context, position.x, position.y, width, height, DESCRIPTION_TOOLTIP_Z)
         context.matrices.push()
-        context.matrices.translate(0f, 0f, tooltipZ.toFloat())
+        context.matrices.translate(0f, 0f, DESCRIPTION_TOOLTIP_Z.toFloat())
         drawWrappedDescription(
             context = context,
             renderer = textRenderer,
@@ -289,7 +289,7 @@ internal class PlayerDecisionScreen(
             left = position.x,
             top = position.y,
             width = width,
-            color = 0xFFFFFF,
+            color = DESCRIPTION_TEXT_COLOR,
             marquee = descriptionMarquee,
             subject = index,
         )
@@ -358,5 +358,13 @@ internal class PlayerDecisionScreen(
             button.x = bounds.x
             button.y = bounds.y
         }
+    }
+
+    private companion object {
+        /** 卡片說明提示框的繪製深度，與原生提示框相同，蓋在畫面其他內容上方。 */
+        const val DESCRIPTION_TOOLTIP_Z: Int = 400
+
+        /** 卡片說明文字顏色，與原生提示框文字相同。 */
+        const val DESCRIPTION_TEXT_COLOR: Int = 0xFFFFFF
     }
 }

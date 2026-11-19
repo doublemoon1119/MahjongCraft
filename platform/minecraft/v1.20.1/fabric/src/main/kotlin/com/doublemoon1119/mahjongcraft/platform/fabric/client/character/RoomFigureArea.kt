@@ -35,7 +35,7 @@ internal data class RoomFigureArea(
     private val baseModelScale: Int = (width / 3).coerceIn(MINIMUM_MODEL_SCALE, MAXIMUM_MODEL_SCALE)
 
     /**
-     * 模型的每單位繪製比例：未放大比例乘上放大倍數，再限制模型在卡片寬度與卡片頂端之內；不小於未放大比例。
+     * 模型的每單位繪製比例：未放大比例乘上縮放倍數，再限制模型在卡片寬度與卡片頂端之內；放不下任何模型時為 0。
      */
     val modelScale: Int = minOf((baseModelScale * scale).roundToInt(), (minOf(maximumFigureWidth, maximumFigureHeight) / MODEL_EXTENT).toInt())
         .coerceAtLeast(0)
@@ -46,7 +46,7 @@ internal data class RoomFigureArea(
     /** 頭像與腳底基線的距離。 */
     private val portraitGap: Int = (PORTRAIT_FEET_GAP * scale).roundToInt()
 
-    /** 頭像邊長：未放大邊長乘上放大倍數，再限制在卡片寬度與卡片頂端之內；不小於未放大邊長。 */
+    /** 頭像邊長：未放大邊長乘上縮放倍數，再限制在卡片寬度與卡片頂端之內；放不下頭像時為 0。 */
     val portraitSize: Int = minOf((basePortraitSize * scale).roundToInt(), maximumFigureWidth, maximumFigureHeight - portraitGap)
         .coerceAtLeast(0)
 

@@ -83,11 +83,7 @@ internal class RuleCatalogueScreen(
     /** 清除搜尋按鈕。 */
     private lateinit var clear: ButtonWidget
 
-    /**
-     * 依目前尺寸、語言與資源建立控制項並重新測量內容；保留規則、分類、搜尋與捲動位置。
-     *
-     * 資源重新載入後畫面會重新初始化，因此在這裡丟棄牌面圖案的快取，補上或移除的貼圖立即反映。
-     */
+    /** 視窗大小改變後重建控制項，捲到選中的頁籤，並保留原本有鍵盤焦點的頁籤。 */
     override fun resize(client: MinecraftClient, width: Int, height: Int) {
         val focusedIndex = children().filterIsInstance<TabWidget>().indexOfFirst { it === focused }
         revealSelectedTab = true
@@ -97,6 +93,11 @@ internal class RuleCatalogueScreen(
         }
     }
 
+    /**
+     * 依目前尺寸、語言與資源建立控制項並重新測量內容；保留規則、分類、搜尋與捲動位置。
+     *
+     * 資源重新載入後畫面會重新初始化，因此在這裡丟棄牌面圖案的快取，補上或移除的貼圖立即反映。
+     */
     override fun init() {
         dropdown.close()
         presenter.clearResourceCaches()

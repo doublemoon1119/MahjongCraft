@@ -179,11 +179,12 @@ object BundledTaiwanMinecraftExtension : MinecraftMahjongExtension {
         }
     }
 
-    /** 花牌區在牌譜上標示為「花牌」，補花流程稱為「補花」。 */
+    /** 依正式結算與花牌結果判定台灣麻將專屬進度。 */
     override fun registerGameAchievementResolvers(registry: GameAchievementResolverRegistrar) {
         registry.register(TaiwanGameAchievementResolver())
     }
 
+    /** 花牌區在牌譜上標示為「花牌」，補花流程稱為「補花」。 */
     override fun registerHistoryTileSetAsideDisplays(registry: HistoryTileSetAsideDisplayRegistrar) {
         registry.register(HistoryTileAreaDisplayDefinition(TaiwanPlayerTileAreaIds.FLOWERS, TaiwanTranslationKeys.HISTORY_TILE_AREA_FLOWERS))
         registry.register(HistoryTileReplacementDisplayDefinition(BuiltInRuleModuleIds.TAIWAN, TaiwanTranslationKeys.HISTORY_REPLACEMENT))
