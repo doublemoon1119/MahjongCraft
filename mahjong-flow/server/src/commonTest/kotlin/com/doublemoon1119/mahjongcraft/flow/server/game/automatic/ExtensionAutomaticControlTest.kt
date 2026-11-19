@@ -94,7 +94,7 @@ class ExtensionAutomaticControlTest {
         val discarded = FakeIdentifiedTileFactory.create(Tile.Honor.South)
         val discarder = FakeMahjongPlayerFactory.create(discardPile = FakeDiscardPile().discardTile(discarded))
         val respondent = FakeMahjongPlayerFactory.create(
-            hand = Hand(tiles = List(2) { FakeIdentifiedTileFactory.create(Tile.Honor.South) }),
+            hand = Hand(tiles = List(2) { FakeIdentifiedTileFactory.create(Tile.Honor.South) } + FakeIdentifiedTileFactory.create(Tile.Honor.North)),
             components = riichiDeclarationComponents(),
         )
         val state: TableState = FakeTableStateFactory.create(

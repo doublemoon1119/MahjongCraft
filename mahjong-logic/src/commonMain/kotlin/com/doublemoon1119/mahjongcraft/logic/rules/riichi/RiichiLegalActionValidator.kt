@@ -250,16 +250,17 @@ class RiichiLegalActionValidator(
             }
 
             // 2. 檢查是否可以碰 (Pon)
-            // 立直後不能碰、河底牌不能碰
+            // 立直後不能碰、河底牌不能碰；碰後只剩食替限制的牌可打時不能碰
             // 放過碰之後同巡仍然可以碰：日麻沒有過水碰的限制，放過清單只用於同巡振聽（見 Ron 的判定）
             val matchingForPon = player.hand.standingTiles.filter { it.tile == incomingBaseTile }
             if (matchingForPon.size >= 2 && !isRiichi && wallHasMoreTiles) {
                 distinctCallTileChoices(matchingForPon.indices.flatMap { first -> (first + 1..matchingForPon.lastIndex).map { listOf(matchingForPon[first], matchingForPon[it]) } })
+                    .filter { ponTiles -> RiichiDiscardRestriction.leavesDiscard(player.hand.standingTiles, ponTiles, incomingBaseTile, isPon = true) }
                     .forEach { ponTiles -> legalActions.add(GameAction.Pon(incomingTile.id, ponTiles.map { it.id })) }
             }
 
             // 3. 檢查是否可以吃 (Chi)
-            // 立直後不能吃、河底牌不能吃
+            // 立直後不能吃、河底牌不能吃；吃後只剩食替限制的牌可打時不能吃
             val incomingNumeric = incomingBaseTile as? Tile.Numeric
             if (allowsChi && sourceDirection == RelativeDirection.Left && incomingNumeric != null && !isRiichi && wallHasMoreTiles) {
                 val iTile = incomingNumeric
@@ -269,21 +270,27 @@ class RiichiLegalActionValidator(
                 if (iTile.value > 2) {
                     val t1 = Tile.Numeric(iTile.suit, iTile.value - 1)
                     val t2 = Tile.Numeric(iTile.suit, iTile.value - 2)
-                    chiTileChoices(handTiles, t1, t2).forEach { chiTiles -> legalActions.add(GameAction.Chi(incomingTile.id, chiTiles.map { it.id })) }
+                    chiTileChoices(handTiles, t1, t2)
+                        .filter { chiTiles -> RiichiDiscardRestriction.leavesDiscard(handTiles, chiTiles, iTile, isPon = false) }
+                        .forEach { chiTiles -> legalActions.add(GameAction.Chi(incomingTile.id, chiTiles.map { it.id })) }
                 }
 
                 // 3b. 檢查 (tile - 1, tile + 1) 的組合
                 if (iTile.value in 2..<9) {
                     val t1 = Tile.Numeric(iTile.suit, iTile.value - 1)
                     val t2 = Tile.Numeric(iTile.suit, iTile.value + 1)
-                    chiTileChoices(handTiles, t1, t2).forEach { chiTiles -> legalActions.add(GameAction.Chi(incomingTile.id, chiTiles.map { it.id })) }
+                    chiTileChoices(handTiles, t1, t2)
+                        .filter { chiTiles -> RiichiDiscardRestriction.leavesDiscard(handTiles, chiTiles, iTile, isPon = false) }
+                        .forEach { chiTiles -> legalActions.add(GameAction.Chi(incomingTile.id, chiTiles.map { it.id })) }
                 }
 
                 // 3c. 檢查 (tile + 1, tile + 2) 的組合
                 if (iTile.value < 8) {
                     val t1 = Tile.Numeric(iTile.suit, iTile.value + 1)
                     val t2 = Tile.Numeric(iTile.suit, iTile.value + 2)
-                    chiTileChoices(handTiles, t1, t2).forEach { chiTiles -> legalActions.add(GameAction.Chi(incomingTile.id, chiTiles.map { it.id })) }
+                    chiTileChoices(handTiles, t1, t2)
+                        .filter { chiTiles -> RiichiDiscardRestriction.leavesDiscard(handTiles, chiTiles, iTile, isPon = false) }
+                        .forEach { chiTiles -> legalActions.add(GameAction.Chi(incomingTile.id, chiTiles.map { it.id })) }
                 }
             }
 

@@ -215,7 +215,7 @@ class RespondToDiscardUseCaseTest {
         val responder = FakeMahjongPlayerFactory.create(
             id = responderId,
             initialSeat = Wind.SOUTH,
-            hand = Hand(tiles = listOf(FakeIdentifiedTileFactory.create(Tile.Honor.White), FakeIdentifiedTileFactory.create(Tile.Honor.White))),
+            hand = Hand(tiles = listOf(FakeIdentifiedTileFactory.create(Tile.Honor.White), FakeIdentifiedTileFactory.create(Tile.Honor.White)) + FakeIdentifiedTileFactory.create(Tile.Honor.North)),
         )
         val table = FakeTableStateFactory.create(
             id = gameId,
@@ -258,7 +258,7 @@ class RespondToDiscardUseCaseTest {
         val responder = FakeMahjongPlayerFactory.create(
             id = responderId,
             initialSeat = Wind.SOUTH,
-            hand = Hand(tiles = handTiles),
+            hand = Hand(tiles = handTiles + FakeIdentifiedTileFactory.create(Tile.Honor.North)),
         )
         fixtures.gameRepo.setTableState(
             state = FakeTableStateFactory.create(
@@ -366,7 +366,7 @@ class RespondToDiscardUseCaseTest {
         val responder = FakeMahjongPlayerFactory.create(
             id = responderId,
             initialSeat = Wind.WEST,
-            hand = Hand(tiles = listOf(FakeIdentifiedTileFactory.create(Tile.Honor.White), FakeIdentifiedTileFactory.create(Tile.Honor.White))),
+            hand = Hand(tiles = listOf(FakeIdentifiedTileFactory.create(Tile.Honor.White), FakeIdentifiedTileFactory.create(Tile.Honor.White)) + FakeIdentifiedTileFactory.create(Tile.Honor.North)),
         )
         val table = FakeTableStateFactory.create(
             id = gameId,
@@ -403,7 +403,7 @@ class RespondToDiscardUseCaseTest {
         val responder = FakeMahjongPlayerFactory.create(
             id = responderId,
             initialSeat = Wind.SOUTH,
-            hand = Hand(tiles = listOf(handTile1, handTile2)),
+            hand = Hand(tiles = listOf(handTile1, handTile2) + FakeIdentifiedTileFactory.create(Tile.Honor.North)),
         )
         val table = FakeTableStateFactory.create(
             id = gameId,
@@ -423,7 +423,7 @@ class RespondToDiscardUseCaseTest {
         assertEquals(TurnPhase.AwaitingDiscard, newState.turnPhase, "A claimed pon must be followed by a discard, not a draw.")
 
         val winner = newState.players.first { it.id == responderId }
-        assertTrue(winner.hand.tiles.isEmpty(), "Both matching hand tiles should be consumed into the meld.")
+        assertEquals(listOf<Tile>(Tile.Honor.North), winner.hand.tiles.map { it.tile }, "Both matching hand tiles should be consumed into the meld.")
         val meld = winner.hand.melds.single()
         assertEquals(MeldType.Pon, meld.type)
         assertEquals(setOf(handTile1, handTile2, discardedTile), meld.tiles.toSet())
@@ -449,7 +449,7 @@ class RespondToDiscardUseCaseTest {
         val responder = FakeMahjongPlayerFactory.create(
             id = responderId,
             initialSeat = Wind.SOUTH,
-            hand = Hand(tiles = listOf(handTile1, handTile2)),
+            hand = Hand(tiles = listOf(handTile1, handTile2) + FakeIdentifiedTileFactory.create(Tile.Honor.North)),
         )
         val table = FakeTableStateFactory.create(
             id = gameId,
@@ -493,7 +493,7 @@ class RespondToDiscardUseCaseTest {
         val responder = FakeMahjongPlayerFactory.create(
             id = responderId,
             initialSeat = Wind.SOUTH,
-            hand = Hand(tiles = listOf(redFive, plainFive1, plainFive2)),
+            hand = Hand(tiles = listOf(redFive, plainFive1, plainFive2) + FakeIdentifiedTileFactory.create(Tile.Honor.North)),
         )
         val table = FakeTableStateFactory.create(
             id = gameId,
@@ -508,7 +508,7 @@ class RespondToDiscardUseCaseTest {
 
         assertTrue(result is Outcome.Success, "Expected Success but got $result")
         val winner = fixtures.gameRepo.getTableState(gameId)!!.players.first { it.id == responderId }
-        assertEquals(listOf(redFive), winner.hand.tiles, "The red five was not in withTiles, so it should remain in hand.")
+        assertEquals(listOf(redFive), winner.hand.tiles.filter { it.tile != Tile.Honor.North }, "The red five was not in withTiles, so it should remain in hand.")
         val meld = winner.hand.melds.single()
         assertEquals(setOf(plainFive1, plainFive2, discardedTile), meld.tiles.toSet())
     }
@@ -530,7 +530,7 @@ class RespondToDiscardUseCaseTest {
         val responder = FakeMahjongPlayerFactory.create(
             id = responderId,
             initialSeat = Wind.SOUTH,
-            hand = Hand(tiles = listOf(handTile4, handTile6)),
+            hand = Hand(tiles = listOf(handTile4, handTile6) + FakeIdentifiedTileFactory.create(Tile.Honor.North)),
         )
         val table = FakeTableStateFactory.create(
             id = gameId,
@@ -546,7 +546,7 @@ class RespondToDiscardUseCaseTest {
         assertTrue(result is Outcome.Success, "Expected Success but got $result")
         val newState = fixtures.gameRepo.getTableState(gameId)!!
         val winner = newState.players.first { it.id == responderId }
-        assertTrue(winner.hand.tiles.isEmpty())
+        assertEquals(listOf<Tile>(Tile.Honor.North), winner.hand.tiles.map { it.tile })
         val meld = winner.hand.melds.single()
         assertEquals(MeldType.Chi, meld.type)
         assertEquals(setOf(handTile4, handTile6, discardedTile), meld.tiles.toSet())
@@ -732,7 +732,7 @@ class RespondToDiscardUseCaseTest {
         val chiPlayer = FakeMahjongPlayerFactory.create(
             id = chiPlayerId,
             initialSeat = Wind.SOUTH,
-            hand = Hand(tiles = listOf(chiTile4, chiTile6)),
+            hand = Hand(tiles = listOf(chiTile4, chiTile6) + FakeIdentifiedTileFactory.create(Tile.Honor.North)),
         )
         // 另一位玩家：可以碰（兩張 5萬）
         val ponTile1 = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 5))
@@ -741,7 +741,7 @@ class RespondToDiscardUseCaseTest {
         val ponPlayer = FakeMahjongPlayerFactory.create(
             id = ponPlayerId,
             initialSeat = Wind.WEST,
-            hand = Hand(tiles = listOf(ponTile1, ponTile2)),
+            hand = Hand(tiles = listOf(ponTile1, ponTile2) + FakeIdentifiedTileFactory.create(Tile.Honor.North)),
         )
         val bystander = FakeMahjongPlayerFactory.create(id = Uuid.random(), initialSeat = Wind.NORTH)
         val table = FakeTableStateFactory.create(
@@ -776,7 +776,7 @@ class RespondToDiscardUseCaseTest {
 
         val finalChiPlayer = finalState.players.first { it.id == chiPlayerId }
         assertTrue(finalChiPlayer.hand.melds.isEmpty(), "The Chi response should not be applied since Pon takes priority.")
-        assertEquals(listOf(chiTile4, chiTile6), finalChiPlayer.hand.tiles, "The Chi player's hand should remain untouched.")
+        assertEquals(listOf(chiTile4, chiTile6), finalChiPlayer.hand.tiles.take(2), "The Chi player's hand should remain untouched.")
 
         val finalPonPlayer = finalState.players.first { it.id == ponPlayerId }
         assertEquals(MeldType.Pon, finalPonPlayer.hand.melds.single().type)
@@ -815,7 +815,7 @@ class RespondToDiscardUseCaseTest {
         val responder = FakeMahjongPlayerFactory.create(
             id = responderId,
             initialSeat = Wind.SOUTH,
-            hand = Hand(tiles = handTiles, melds = dragonMelds),
+            hand = Hand(tiles = handTiles + FakeIdentifiedTileFactory.create(Tile.Honor.North), melds = dragonMelds),
             components = riichiDeclarationComponents(),
         )
         val table = FakeTableStateFactory.create(
@@ -901,7 +901,7 @@ class RespondToDiscardUseCaseTest {
         val responder = FakeMahjongPlayerFactory.create(
             id = responderId,
             initialSeat = Wind.SOUTH,
-            hand = Hand(tiles = listOf(responderHandTile1, responderHandTile2)),
+            hand = Hand(tiles = listOf(responderHandTile1, responderHandTile2) + FakeIdentifiedTileFactory.create(Tile.Honor.North)),
         )
         val bystanderId = Uuid.random()
         val bystander = FakeMahjongPlayerFactory.create(
@@ -1038,7 +1038,7 @@ class RespondToDiscardUseCaseTest {
         val chiPlayer = FakeMahjongPlayerFactory.create(
             id = chiPlayerId,
             initialSeat = Wind.SOUTH,
-            hand = Hand(tiles = listOf(chiTile4, chiTile6)),
+            hand = Hand(tiles = listOf(chiTile4, chiTile6) + FakeIdentifiedTileFactory.create(Tile.Honor.North)),
         )
         // 另一位玩家：可以碰（兩張 5萬）
         val ponTile1 = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 5))
@@ -1047,7 +1047,7 @@ class RespondToDiscardUseCaseTest {
         val ponPlayer = FakeMahjongPlayerFactory.create(
             id = ponPlayerId,
             initialSeat = Wind.WEST,
-            hand = Hand(tiles = listOf(ponTile1, ponTile2)),
+            hand = Hand(tiles = listOf(ponTile1, ponTile2) + FakeIdentifiedTileFactory.create(Tile.Honor.North)),
         )
         // 第三位玩家：役牌白＋役牌發已成立，單騎聽 5萬，可榮和
         val ronPlayerId = Uuid.random()
@@ -1094,11 +1094,11 @@ class RespondToDiscardUseCaseTest {
 
         val finalChiPlayer = finalState.players.first { it.id == chiPlayerId }
         assertTrue(finalChiPlayer.hand.melds.isEmpty(), "The Chi response should not be applied since Ron takes priority.")
-        assertEquals(listOf(chiTile4, chiTile6), finalChiPlayer.hand.tiles)
+        assertEquals(listOf(chiTile4, chiTile6), finalChiPlayer.hand.tiles.take(2))
 
         val finalPonPlayer = finalState.players.first { it.id == ponPlayerId }
         assertTrue(finalPonPlayer.hand.melds.isEmpty(), "The Pon response should not be applied since Ron takes priority.")
-        assertEquals(listOf(ponTile1, ponTile2), finalPonPlayer.hand.tiles)
+        assertEquals(listOf(ponTile1, ponTile2), finalPonPlayer.hand.tiles.take(2))
 
         val finalRonPlayer = finalState.players.first { it.id == ronPlayerId }
         assertEquals(GameAction.Ron(discardedTile.id), finalRonPlayer.actionHistory.last())
@@ -1617,7 +1617,7 @@ class RespondToDiscardUseCaseTest {
         val ponPlayer = FakeMahjongPlayerFactory.create(
             id = ponPlayerId,
             initialSeat = Wind.WEST,
-            hand = Hand(tiles = listOf(ponTile1, ponTile2)),
+            hand = Hand(tiles = listOf(ponTile1, ponTile2) + FakeIdentifiedTileFactory.create(Tile.Honor.North)),
         )
         val table = FakeTableStateFactory.create(
             id = gameId,
@@ -1911,7 +1911,7 @@ class RespondToDiscardUseCaseTest {
                 FakeMahjongPlayerFactory.create(
                     id = responderId,
                     initialSeat = Wind.SOUTH,
-                    hand = Hand(tiles = List(2) { FakeIdentifiedTileFactory.create(Tile.Honor.White) }),
+                    hand = Hand(tiles = List(2) { FakeIdentifiedTileFactory.create(Tile.Honor.White) } + FakeIdentifiedTileFactory.create(Tile.Honor.North)),
                 ),
                 FakeMahjongPlayerFactory.create(id = bystanderId, initialSeat = Wind.WEST),
             ),
@@ -1948,7 +1948,7 @@ class RespondToDiscardUseCaseTest {
                 FakeMahjongPlayerFactory.create(
                     id = responderId,
                     initialSeat = Wind.SOUTH,
-                    hand = Hand(tiles = handTiles),
+                    hand = Hand(tiles = handTiles + FakeIdentifiedTileFactory.create(Tile.Honor.North)),
                 ).addPassedTile(Tile.Honor.North),
                 FakeMahjongPlayerFactory.create(id = bystanderId, initialSeat = Wind.WEST),
             ),

@@ -48,6 +48,7 @@ class RiichiLegalActionValidatorRedDoraTest {
             tiles = listOf(
                 Tile.Numeric(Tile.Suit.Character, 5), // 普通5萬
                 Tile.Numeric(Tile.Suit.Character, 5), // 普通5萬
+                Tile.Honor.North,
             ),
         )
         val player = FakeMahjongPlayerFactory.create(
@@ -78,6 +79,7 @@ class RiichiLegalActionValidatorRedDoraTest {
             tiles = listOf(
                 Tile.Numeric(Tile.Suit.Character, 5), // 赤5萬
                 Tile.Numeric(Tile.Suit.Character, 5), // 赤5萬
+                Tile.Honor.North,
             ),
         ).withRedFives(Tile.Suit.Character, 2)
         val player = FakeMahjongPlayerFactory.create(
@@ -107,7 +109,7 @@ class RiichiLegalActionValidatorRedDoraTest {
         val plainFive1 = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 5))
         val plainFive2 = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 5))
         val redFive = FakeIdentifiedTileFactory.create(RiichiTileValues.redFive(Tile.Suit.Character))
-        val playerHand = Hand(tiles = listOf(redFive, plainFive1, plainFive2))
+        val playerHand = Hand(tiles = listOf(redFive, plainFive1, plainFive2, FakeIdentifiedTileFactory.create(Tile.Honor.North)))
         val player = FakeMahjongPlayerFactory.create(hand = playerHand)
         val tableState = FakeTableStateFactory.create(
             players = listOf(player),
@@ -231,6 +233,7 @@ class RiichiLegalActionValidatorRedDoraTest {
             tiles = listOf(
                 Tile.Numeric(Tile.Suit.Character, 4),
                 Tile.Numeric(Tile.Suit.Character, 6),
+                Tile.Honor.North,
             ),
         )
         val player = FakeMahjongPlayerFactory.create(

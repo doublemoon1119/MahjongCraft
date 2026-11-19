@@ -22,6 +22,7 @@ import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RIICHI_PULL_NORTH_GAME
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RIICHI_STICK_POINTS
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDiscardPile
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDiscardReadinessAnalyzer
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDiscardRestriction
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiExhaustiveDrawReason
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiFamilyRuleModule
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiHandValueCalculator
@@ -285,8 +286,8 @@ class ThreePlayerRiichiRuleModule(
     /** 這位玩家目前是否立直中。 */
     fun isPlayerInRiichi(player: MahjongPlayer): Boolean = player.riichiDeclaration != null
 
-    /** 立直後只能摸切。 */
-    override fun discardableTileIds(tableState: TableState, player: MahjongPlayer): Set<Uuid>? = player.hand.lastDrawn?.id?.takeIf { isPlayerInRiichi(player) }?.let(::setOf)
+    /** 立直後只能摸切；碰牌後不能食替。 */
+    override fun discardableTileIds(tableState: TableState, player: MahjongPlayer): Set<Uuid>? = RiichiDiscardRestriction.discardableTileIds(player = player, inRiichi = isPlayerInRiichi(player))
 
     /** 場上尚未被收下的立直棒支數。 */
     fun getStickPotCount(tableState: TableState): Int = tableState.riichiPotPoints() / RIICHI_STICK_POINTS

@@ -245,7 +245,7 @@ class AiTurnDriverTest {
         val ai = FakeMahjongPlayerFactory.create(
             id = aiId,
             initialSeat = Wind.SOUTH,
-            hand = Hand(tiles = listOf(matchingTileA, matchingTileB)),
+            hand = Hand(tiles = listOf(matchingTileA, matchingTileB) + FakeIdentifiedTileFactory.create(Tile.Honor.North)),
             components = riichiDeclarationComponents(),
         )
         val table = FakeTableStateFactory.create(
