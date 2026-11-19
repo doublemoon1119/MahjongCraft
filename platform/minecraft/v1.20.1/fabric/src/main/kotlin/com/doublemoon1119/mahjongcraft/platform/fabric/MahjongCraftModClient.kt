@@ -27,6 +27,8 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.client.game.ClientDecisio
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.game.PlayerDecisionHudController
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.game.buildMatchResultChatMessage
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.game.buildRoundResultChatMessage
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.handbook.FabricHandbookScreenCommand
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.handbook.MahjongHandbookScreenController
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.history.ClientHistoryArchiveStatusCoordinator
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.history.ClientHistoryChatEntryStore
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.history.ClientHistoryQueryCoordinator
@@ -181,6 +183,8 @@ class MahjongCraftModClient : ClientModInitializer {
         koin.get<FabricHistoryScreenCommand>().register()
         val ruleCatalogueController = koin.get<RuleCatalogueScreenController>().also { it.register() }
         koin.get<FabricRuleCatalogueScreenCommand>().register()
+        koin.get<MahjongHandbookScreenController>().register()
+        koin.get<FabricHandbookScreenCommand>().register()
         val decisionHudController = koin.get<PlayerDecisionHudController>()
         decisionHudController.registerEvents()
         koin.get<MatchingTileHighlightController>().register()

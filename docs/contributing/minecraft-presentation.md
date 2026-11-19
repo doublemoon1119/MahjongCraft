@@ -536,6 +536,10 @@ attempt does not fall through to another provider.
 - Route every cycle button through `CycleButtonInput` and build it with `pressesOnSecondaryClick`:
   left-click selects the next option, right-click or Shift+left-click the previous one.
 - A row that only performs an action and has no value is one button spanning the row, without a label.
+- A screen opened from another screen goes back to it on Back, Done, Close or Esc. A screen opened by
+  its own key, a command or a chat link goes back to the game. The Mahjong Handbook quick screen
+  (`client/handbook`) is the shared entry point to the built-in screens; its entries are fixed, not
+  registered by extensions.
 - Footer buttons are equal in width and span the content width. The bottom-right slot always holds the
   button that leaves the screen (Back, Done or Close), so players find it in the same place everywhere.
 - Offer Cancel only where leaving can discard something:

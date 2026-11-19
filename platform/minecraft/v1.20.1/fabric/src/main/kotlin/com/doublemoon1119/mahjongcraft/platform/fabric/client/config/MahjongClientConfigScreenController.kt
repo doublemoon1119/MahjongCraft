@@ -12,7 +12,6 @@ import net.minecraft.client.MinecraftClient
 import net.minecraft.client.gui.screen.Screen
 import net.minecraft.client.option.KeyBinding
 import net.minecraft.client.util.InputUtil
-import org.lwjgl.glfw.GLFW
 
 /**
  * 集中註冊並處理 Client Config Screen 的快捷鍵與程式化開啟入口。
@@ -34,7 +33,7 @@ class MahjongClientConfigScreenController(
     private val ruleCatalogueScreenController: RuleCatalogueScreenController,
     private val hudPreviewRenderer: MahjongHudPreviewRenderer,
 ) {
-    /** 預設以分號開啟 Client Config Screen 的按鍵綁定。 */
+    /** 開啟 Client Config Screen 的按鍵綁定，預設不綁定；分號預設開啟麻將手冊。 */
     private lateinit var openKeyBinding: KeyBinding
 
     /** 開啟對局歷史的快捷鍵。 */
@@ -46,6 +45,9 @@ class MahjongClientConfigScreenController(
     /** 是否已完成事件註冊。 */
     private var registered = false
 
+    /** 指令要求開啟、等待下一個 client tick 開啟。 */
+    private var openRequested = false
+
     /** 註冊按鍵綁定與 client tick listener；只能在 client entrypoint 呼叫一次。 */
     fun register() {
         if (registered) return
@@ -54,7 +56,7 @@ class MahjongClientConfigScreenController(
             KeyBinding(
                 MinecraftClientConfigScreenKeys.OPEN_KEY,
                 InputUtil.Type.KEYSYM,
-                GLFW.GLFW_KEY_SEMICOLON,
+                InputUtil.UNKNOWN_KEY.code,
                 MinecraftClientConfigScreenKeys.KEY_CATEGORY,
             ),
         )
@@ -77,18 +79,30 @@ class MahjongClientConfigScreenController(
         ClientTickEvents.END_CLIENT_TICK.register(::tick)
     }
 
-    /** 從指令開啟設定畫面，取代目前的聊天畫面。 */
+    /**
+     * 立即開啟設定畫面，返回時回到 [returnScreen]。
+     *
+     * @param returnScreen 開啟設定畫面的畫面。
+     */
+    fun openFrom(returnScreen: Screen) {
+        open(MinecraftClient.getInstance(), returnScreen)
+    }
+
+    /** 從指令開啟設定畫面；延到下一個 client tick，避免指令執行後關閉聊天畫面時一併關掉設定畫面。 */
     fun openFromCommand() {
-        val client = MinecraftClient.getInstance()
-        client.execute { open(client, null) }
+        openRequested = true
     }
 
     /**
-     * 消耗快捷鍵事件；其他畫面開啟時不搶占使用者輸入。
+     * 開啟指令要求的設定畫面，並消耗快捷鍵事件；其他畫面開啟時快捷鍵不搶占使用者輸入。
      *
      * @param client 本次 tick 的客戶端。
      */
     private fun tick(client: MinecraftClient) {
+        if (openRequested) {
+            openRequested = false
+            open(client, null)
+        }
         while (openKeyBinding.wasPressed()) {
             if (client.currentScreen == null) {
                 open(client, null)

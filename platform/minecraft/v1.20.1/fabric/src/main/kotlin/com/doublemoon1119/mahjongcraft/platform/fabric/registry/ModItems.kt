@@ -1,6 +1,7 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.registry
 
 import com.doublemoon1119.mahjongcraft.platform.fabric.item.MahjongDiceItem
+import com.doublemoon1119.mahjongcraft.platform.fabric.item.MahjongHandbookItem
 import com.doublemoon1119.mahjongcraft.platform.fabric.item.MahjongRulerItem
 import com.doublemoon1119.mahjongcraft.platform.fabric.item.MahjongScoringStickItem
 import com.doublemoon1119.mahjongcraft.platform.fabric.item.MahjongTileItem
@@ -19,8 +20,8 @@ object ModItems {
     /** 單一物品類型表示所有麻將牌面的 item。 */
     val MAHJONG_TILE: Item = MahjongTileItem(Item.Settings())
 
-    /** 可由原版書與麻將牌合成的手冊。 */
-    val MAHJONG_HANDBOOK: Item = Item(Item.Settings())
+    /** 可由原版書與麻將牌合成的手冊，拿在手上按右鍵開啟麻將手冊快捷畫面。 */
+    val MAHJONG_HANDBOOK: Item = MahjongHandbookItem(Item.Settings())
 
     /** 單一物品類型表示所有點棒面額的 item。 */
     val MAHJONG_SCORING_STICK: Item = MahjongScoringStickItem(Item.Settings())
