@@ -562,6 +562,24 @@ attempt does not fall through to another provider.
   "Left-click: next option", not internal concepts; translations follow the same rule. Put a button's
   label in square brackets when a hint mentions it, such as `[−]`.
 
+## Getting started guide
+
+- The guide screen (`client/guide`) describes each page as a list of `GuideBlock`s in `GuidePages`.
+  `GuideContentLayout` places them for the current width, so new content is a new block in that list,
+  not hand-placed drawing code. Every string is a translation key in `MinecraftGuideScreenKeys`.
+- Content states only what holds in every rule. When an example needs a specific rule, such as
+  riichi in Japanese mahjong, the text says it is an example from that rule.
+- Pictures of the world are scenes (`client/guide/scene`): a `GuideScene` lists blocks, figures, tiles,
+  round info and player info, and `GuideSceneRenderer` draws them with the game's own block, entity,
+  tile and info renderers. Place tiles with the table layouts the game uses (`MahjongTileTableLayout`,
+  `MahjongTileWallSideLayout`, `MahjongSeatingTableLayout`) so a scene matches what players see at a
+  real table. Scenes are never added to a world.
+- Example decision panels use `MahjongHudPreviewRenderer.renderDecisionPanelAt`, the same drawing as
+  the in-game panel. Do not draw a copy of the panel.
+- Recipes come from the world's recipe manager when the screen opens, so data packs that change the
+  table or stool recipes are shown as they are. They are drawn on the vanilla crafting table texture,
+  so resource packs that restyle it restyle the guide too.
+
 ## Public API Compatibility
 
 The [shared compatibility policy](extensions-and-registries.md#public-api-compatibility) defines how to

@@ -399,8 +399,11 @@ object MinecraftMessageKeys {
 
     // ── 桌面中央局況顯示（見 `MahjongRoundInfoEntityRenderer`） ────────────────
 
-    /** 局況顯示牌山剩餘張數，帶一個張數參數（一個 `%d`）。 */
+    /** 局況顯示牌牆剩餘張數，帶一個張數參數（一個 `%d`）。 */
     const val ROUND_INFO_WALL_REMAINING = "mahjongcraft.message.round_info_wall_remaining"
+
+    /** 局況顯示目前是第幾局，不帶場風或圈風，帶一個局數參數（一個 `%d`）。 */
+    const val ROUND_INFO_ROUND_NUMBER = "mahjongcraft.message.round_info_round_number"
 
     /** 牌面角落輔助標籤（給非中文圈玩家看的數字/字母）切換訊息的前綴，後面接切換前後的狀態文字。 */
     const val TILE_LABELS_TOGGLE_PREFIX = "mahjongcraft.message.tile_labels_toggle_prefix"
@@ -660,6 +663,7 @@ object MinecraftMessageKeys {
         HAND_NO_RESPONSE_AVAILABLE,
         HAND_WAITING,
         ROUND_INFO_WALL_REMAINING,
+        ROUND_INFO_ROUND_NUMBER,
         TILE_LABELS_TOGGLE_PREFIX,
         TILE_LABELS_STATE_ON,
         TILE_LABELS_STATE_OFF,

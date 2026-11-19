@@ -2,7 +2,9 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.client.handbook
 
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.catalogue.RuleCatalogueScreenController
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.config.MahjongClientConfigScreenController
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.guide.GuideScreenController
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.history.HistoryScreenController
+import com.doublemoon1119.mahjongcraft.platform.fabric.registry.ModBlocks
 import com.doublemoon1119.mahjongcraft.platform.fabric.registry.ModItems
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftClientConfigScreenKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.handbook.MinecraftHandbookScreenKeys
@@ -28,11 +30,13 @@ import org.lwjgl.glfw.GLFW
  * @property configScreens 客戶端設定畫面的開啟入口。
  * @property historyScreens 對局歷史畫面的開啟入口。
  * @property ruleCatalogueScreens 規則一覽畫面的開啟入口。
+ * @property guideScreens 「如何開始」畫面的開啟入口。
  */
 class MahjongHandbookScreenController(
     private val configScreens: MahjongClientConfigScreenController,
     private val historyScreens: HistoryScreenController,
     private val ruleCatalogueScreens: RuleCatalogueScreenController,
+    private val guideScreens: GuideScreenController,
 ) {
     /** 開啟麻將手冊的按鍵，預設分號。 */
     private lateinit var openKeyBinding: KeyBinding
@@ -98,6 +102,12 @@ class MahjongHandbookScreenController(
 
     /** 依顯示順序排列的入口。 */
     private fun entries(): List<HandbookEntry> = listOf(
+        HandbookEntry(
+            icon = ItemStack(ModBlocks.woodenMahjongTable),
+            titleKey = MinecraftHandbookScreenKeys.GUIDE,
+            descriptionKey = MinecraftHandbookScreenKeys.GUIDE_DESCRIPTION,
+            open = guideScreens::openFrom,
+        ),
         HandbookEntry(
             icon = ItemStack(ModItems.MAHJONG_RULERS.getValue(MahjongRulerColor.CLEAR)),
             titleKey = MinecraftHandbookScreenKeys.RULE_CATALOGUE,

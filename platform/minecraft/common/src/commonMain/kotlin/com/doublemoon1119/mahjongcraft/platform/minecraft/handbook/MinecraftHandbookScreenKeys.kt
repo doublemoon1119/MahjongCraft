@@ -5,6 +5,12 @@ object MinecraftHandbookScreenKeys {
     /** 畫面標題。 */
     const val TITLE: String = "mahjongcraft.handbook_screen.title"
 
+    /** 如何開始入口名稱。 */
+    const val GUIDE: String = "mahjongcraft.handbook_screen.entry.guide"
+
+    /** 如何開始入口說明。 */
+    const val GUIDE_DESCRIPTION: String = "mahjongcraft.handbook_screen.entry.guide.description"
+
     /** 規則一覽入口名稱。 */
     const val RULE_CATALOGUE: String = "mahjongcraft.handbook_screen.entry.rule_catalogue"
 

@@ -3,6 +3,7 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.client.catalogue
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.ControlTooltip
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.DropdownOption
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.DropdownOverlay
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.PixelScrollState
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.RestartableMarqueeButtonWidget
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.ScreenRendering
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.TabWidget
@@ -63,7 +64,7 @@ internal class RuleCatalogueScreen(
     private var contentHeight = 0
 
     /** 內容捲動與捲軸拖曳。 */
-    private val scroll = RuleCatalogueScrollState()
+    private val scroll = PixelScrollState()
 
     /** 上次建立畫面時的語言，用於偵測語言切換。 */
     private var language: Language = Language.getInstance()

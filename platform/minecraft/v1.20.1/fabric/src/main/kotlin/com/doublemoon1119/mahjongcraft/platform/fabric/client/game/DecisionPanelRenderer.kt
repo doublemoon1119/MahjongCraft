@@ -12,6 +12,8 @@ import net.minecraft.client.font.TextRenderer
 import net.minecraft.client.gui.DrawContext
 import net.minecraft.text.OrderedText
 import net.minecraft.text.Text
+import org.joml.Vector3f
+import kotlin.math.roundToInt
 
 /**
  * 操作面板一次繪製所需的內容。
@@ -154,6 +156,7 @@ internal fun decisionPanelLayout(
  * 畫出操作面板的背景、標題、觸發牌、卡片與 scrollbar。
  *
  * 卡片按鈕由 [renderCardButtons] 在卡片列的裁切範圍內畫出；跳過按鈕、倒數與卡片說明由呼叫端另外畫。
+ * 呼叫端可以先平移矩陣，把整個面板畫在其他位置，例如「如何開始」畫面中的範例面板。
  *
  * @param renderer Minecraft 文字繪製器。
  * @param measured 本次版面幾何與已換行的卡片文字。
@@ -188,7 +191,11 @@ internal fun DrawContext.drawDecisionPanel(
         val tile = layout.triggerTileBounds
         drawTile(assetKey, tile.x, tile.y)
     }
-    enableScissor(layout.viewportLeft, layout.cardTop, layout.viewportRight, layout.cardBottom)
+    // 裁切範圍以畫面座標指定，不受矩陣影響；面板平移到其他位置繪製時，裁切範圍跟著平移。
+    val offset = matrices.peek().positionMatrix.getTranslation(Vector3f())
+    val offsetX = offset.x.roundToInt()
+    val offsetY = offset.y.roundToInt()
+    enableScissor(layout.viewportLeft + offsetX, layout.cardTop + offsetY, layout.viewportRight + offsetX, layout.cardBottom + offsetY)
     content.entries.forEachIndexed { index, entry ->
         drawDecisionCard(
             renderer = renderer,

@@ -20,7 +20,7 @@ sealed class Tile {
     data class Extension(val typeId: TileTypeId) : Tile()
 
     /**
-     * 代表萬、筒、條等具有數值的有序牌。
+     * 代表萬、筒、索等具有數值的有序牌。
      *
      * @property suit 數牌的花色類型，參考 [Suit]。
      * @property value 牌面數值，限定於 1 至 9 之間。
@@ -81,7 +81,7 @@ sealed class Tile {
         Dot,
 
         /**
-         * * 條子 (Bamboo)。
+         * * 索子 (Bamboo)。
          * 日文：索子 (Sozu)。
          */
         Bamboo,

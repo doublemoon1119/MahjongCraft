@@ -21,6 +21,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.Minec
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.PlayerPortraitSourceRegistrar
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.PublicPlayerIndicatorDisplayRegistrar
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.RoomMemberAppearanceSourceRegistrar
+import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.RoundInfoLineDisplayRegistrar
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.RuleWordingRegistrar
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.TileEmojiRegistrar
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.TileLabelRegistrar
@@ -47,6 +48,9 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.MatchSettle
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.PresentationValue
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.WinSettlementPresentationFieldProviderDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.WinSettlementTextKeys
+import com.doublemoon1119.mahjongcraft.platform.minecraft.table.BuiltInRoundInfoLineKeys
+import com.doublemoon1119.mahjongcraft.platform.minecraft.table.RoundInfoLineDisplay
+import com.doublemoon1119.mahjongcraft.platform.minecraft.table.RoundInfoLineDisplayDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.BuiltInRuleWordingIds
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftHudKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftMessageKeys
@@ -336,6 +340,12 @@ object BuiltInMinecraftMahjongExtension : MinecraftMahjongExtension {
                 titleTranslationKey = MinecraftMessageKeys.MATCH_SETTLEMENT_TITLE,
             ),
         )
+    }
+
+    /** 不屬於任何規則的局況行：第幾局與牌牆剩餘張數。 */
+    override fun registerRoundInfoPresentations(registry: RoundInfoLineDisplayRegistrar) {
+        registry.register(RoundInfoLineDisplayDefinition(BuiltInRoundInfoLineKeys.ROUND_NUMBER, RoundInfoLineDisplay(MinecraftMessageKeys.ROUND_INFO_ROUND_NUMBER)))
+        registry.register(RoundInfoLineDisplayDefinition(BuiltInRoundInfoLineKeys.WALL_REMAINING, RoundInfoLineDisplay(MinecraftMessageKeys.ROUND_INFO_WALL_REMAINING)))
     }
 
     override fun registerPublicPlayerIndicatorDisplays(registry: PublicPlayerIndicatorDisplayRegistrar) {

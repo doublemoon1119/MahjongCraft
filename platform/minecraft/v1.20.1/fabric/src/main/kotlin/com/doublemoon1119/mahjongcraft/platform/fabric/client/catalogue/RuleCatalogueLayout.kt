@@ -3,6 +3,7 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.client.catalogue
 import com.doublemoon1119.mahjongcraft.logic.base.TileFaceView
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.ButtonRowLayout
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.FormScreenLayout
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.PixelScrollViewport
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.ScrollbarLayout
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.TabStripLayout
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.VerticalScrollbar
@@ -85,7 +86,7 @@ internal data class RuleCatalogueScreenLayout(
     val close: CatalogueRect,
     val contentBounds: CatalogueRect,
     val scrollbarBounds: CatalogueRect,
-) {
+) : PixelScrollViewport {
     /** 卡片寬度，與內容區同寬。 */
     val cardWidth: Int get() = contentBounds.width
 
@@ -111,7 +112,7 @@ internal data class RuleCatalogueScreenLayout(
      * @param scroll 目前內容偏移，單位為像素。
      * @return 以像素為單位的捲軸幾何。
      */
-    fun scrollbar(contentHeight: Int, scroll: Double): ScrollbarLayout {
+    override fun scrollbar(contentHeight: Int, scroll: Double): ScrollbarLayout {
         val viewportHeight = contentBounds.height.coerceAtLeast(1)
         return ScrollbarLayout(
             trackTop = scrollbarBounds.y,
@@ -130,7 +131,7 @@ internal data class RuleCatalogueScreenLayout(
      * @param contentHeight 內容總高度，單位為像素。
      * @return 限制後的內容偏移。
      */
-    fun clampScroll(scroll: Double, contentHeight: Int): Double = scroll.coerceIn(0.0, maximumScroll(contentHeight).toDouble())
+    override fun clampScroll(scroll: Double, contentHeight: Int): Double = scroll.coerceIn(0.0, maximumScroll(contentHeight).toDouble())
 
     /**
      * 內容可捲動的最大像素偏移。
