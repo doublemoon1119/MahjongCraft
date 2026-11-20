@@ -14,6 +14,7 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryRuleSetti
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryRuleSettingsResponseDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistorySummaryRequestDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistorySummaryResponseDto
+import com.doublemoon1119.mahjongcraft.platform.fabric.logging.mahjongCraftLogger
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
@@ -27,7 +28,9 @@ import kotlinx.coroutines.launch
 import kotlinx.serialization.StringFormat
 import kotlinx.serialization.encodeToString
 import kotlin.time.Duration
+import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.nanoseconds
+import kotlin.time.Duration.Companion.seconds
 
 /**
  * 管理一個 client 歷史瀏覽 session 的查詢、分頁與導航，不訂閱資料庫變更。
@@ -84,6 +87,15 @@ internal class HistoryBrowseController(
 
     /** 唯一在途要求的等待上限工作。 */
     private var timeoutJob: Job? = null
+
+    /** 回放暫時失敗後等待自動重試的工作。 */
+    private var autoRetryJob: Job? = null
+
+    /** 回放連續暫時失敗後已自動重試的次數；任何查詢成功或手動重試時歸零。 */
+    private var replayAutoRetries = 0
+
+    /** 查詢失敗原因的診斷紀錄，不含牌局內容。 */
+    private val logger = mahjongCraftLogger(HistoryBrowseController::class)
 
     /** 內部可寫快照。 */
     private val mutableState = MutableStateFlow(HistoryBrowseState())
@@ -787,28 +799,37 @@ internal class HistoryBrowseController(
 
     /**
      * 接受仍屬於目前條件的手動重試；冷卻期間沿用有界排程，不提前傳送。
-     * 不自動重試伺服器忙碌或頻率限制，呈現端以 [canRetry] 控制立即重試的可用狀態。
+     * 列表、摘要與局內頁面不自動重試；回放的暫時失敗先由控制器自動重試，次數用完才顯示失敗。
+     * 呈現端以 [canRetry] 控制立即重試的可用狀態。
      *
      * @return 是否接受重試。
      */
     fun retry(): Boolean {
         if (!available() || active != null || pending != null) return false
         val intent = retryIntent?.takeIf { it.generation == generation } ?: return false
+        replayAutoRetries = 0
         when (intent) {
             is Intent.ListQuery -> mutableState.value = state.value.copy(list = state.value.list.copy(status = HistoryBrowseStatus.Loading))
             is Intent.Summary -> mutableState.value = state.value.copy(summary = state.value.summary?.copy(status = HistoryBrowseStatus.Loading))
             is Intent.RuleSettings -> mutableState.value = state.value.copy(ruleSettings = state.value.ruleSettings?.copy(status = HistoryBrowseStatus.Loading))
             is Intent.RoundEvents -> updateRound(intent.roundNumber) { it.copy(eventsStatus = HistoryBrowseStatus.Loading) }
             is Intent.RoundState -> updateRound(intent.roundNumber) { it.copy(stateStatus = HistoryBrowseStatus.Loading) }
-            is Intent.ReplayStates, is Intent.ReplayEvents -> {
-                retryIntent = null
-                if (replayRound == null) return false
-                publishReplay(HistoryBrowseStatus.Loading)
-                requestReplay()
-                return true
-            }
+            is Intent.ReplayStates, is Intent.ReplayEvents -> return retryReplay()
         }
         enqueue(intent, Duration.ZERO)
+        return true
+    }
+
+    /**
+     * 重新要回放目前缺少的資料。
+     *
+     * @return 仍在回放時為 true。
+     */
+    private fun retryReplay(): Boolean {
+        retryIntent = null
+        if (replayRound == null) return false
+        publishReplay(HistoryBrowseStatus.Loading)
+        requestReplay()
         return true
     }
 
@@ -1223,6 +1244,18 @@ internal class HistoryBrowseController(
     private fun fail(reason: HistoryBrowseFailure) {
         val intent = active?.intent?.takeIf { it.generation == generation } ?: return
         retryIntent = intent
+        val replay = intent is Intent.ReplayStates || intent is Intent.ReplayEvents
+        logger.debug("History query failed reason={} request={} autoRetries={}", reason, intent::class.simpleName, if (replay) replayAutoRetries else 0)
+        if (replay && reason in TRANSIENT_FAILURES && replayAutoRetries < REPLAY_RETRY_DELAYS.size) {
+            val wait = REPLAY_RETRY_DELAYS[replayAutoRetries++]
+            replayRound?.releaseRequest()
+            autoRetryJob?.cancel()
+            autoRetryJob = scope.launch {
+                delay(wait)
+                if (retryIntent === intent && active == null && pending == null) retryReplay()
+            }
+            return
+        }
         val status = HistoryBrowseStatus.Failed(reason)
         when (reason) {
             HistoryBrowseFailure.ACCESS_DENIED, HistoryBrowseFailure.QUERY_DISABLED -> roundCache.clear()
@@ -1254,6 +1287,7 @@ internal class HistoryBrowseController(
         timeoutJob?.cancel()
         timeoutJob = null
         active = null
+        if (retryIntent == null) replayAutoRetries = 0
         schedule()
         if (state.value.page == HistoryBrowsePage.ROUND_REPLAY && retryIntent !is Intent.ReplayStates && retryIntent !is Intent.ReplayEvents) requestReplay()
     }
@@ -1434,4 +1468,19 @@ internal class HistoryBrowseController(
      * @property intent 該要求對應的條件及分頁目標。
      */
     private data class Active(val requestId: String, val intent: Intent)
+
+    /** 回放自動重試的條件。 */
+    private companion object {
+        /** 稍後再試可能成功的失敗：伺服器忙碌、查詢太頻繁、逾時或送不出去。 */
+        val TRANSIENT_FAILURES: Set<HistoryBrowseFailure> = setOf(
+            HistoryBrowseFailure.BUSY,
+            HistoryBrowseFailure.RATE_LIMITED,
+            HistoryBrowseFailure.SERVER_TIMEOUT,
+            HistoryBrowseFailure.CLIENT_TIMEOUT,
+            HistoryBrowseFailure.SEND_FAILED,
+        )
+
+        /** 回放連續暫時失敗後各次自動重試前的等待；用完後才顯示失敗。 */
+        val REPLAY_RETRY_DELAYS: List<Duration> = listOf(500.milliseconds, 1.seconds, 2.seconds)
+    }
 }

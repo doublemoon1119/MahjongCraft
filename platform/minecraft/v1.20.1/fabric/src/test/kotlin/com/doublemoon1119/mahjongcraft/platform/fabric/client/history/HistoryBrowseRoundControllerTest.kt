@@ -54,6 +54,7 @@ import kotlin.test.assertIs
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 import kotlin.time.Duration.Companion.milliseconds
+import kotlin.time.Duration.Companion.seconds
 
 /** 驗證單局歷史瀏覽的局選擇、事件分頁、牌面導航、快取與過期回應隔離。 */
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -521,19 +522,33 @@ class HistoryBrowseRoundControllerTest {
         assertEquals(HistoryBrowseStatus.Ready, controller.state.value.replay?.status)
     }
 
-    /** 目前這一步讀取失敗時顯示失敗，重試會再要同一段；失敗後不自動接著讀。 */
+    /** 暫時失敗先自動重試同一段三次（0.5、1、2 秒後），都失敗才顯示失敗；手動重試再要同一段。 */
     @Test
-    fun `test failed replay request can retry the same range`() = runTest {
+    fun `test replay retries temporary failures before showing them`() = runTest {
         val transport = FakeRoundHistoryTransport()
         val controller = openReplay(transport)
         val failed = transport.roundStateRequests.last()
+        listOf(500.milliseconds, 1.seconds, 2.seconds).forEach { wait ->
+            transport.respondStatesError(HistoryQueryErrorCodeDto.BUSY)
+            runCurrent()
+            assertEquals(HistoryBrowseStatus.Loading, controller.state.value.replay?.status)
+            val sent = transport.roundStateRequests.size
+            advanceTimeBy(wait - 1.milliseconds)
+            runCurrent()
+            assertEquals(sent, transport.roundStateRequests.size)
+            advanceTimeBy(1.milliseconds)
+            runCurrent()
+            assertEquals(sent + 1, transport.roundStateRequests.size)
+            assertEquals(failed.position, transport.roundStateRequests.last().position)
+            assertEquals(failed.count, transport.roundStateRequests.last().count)
+        }
         transport.respondStatesError(HistoryQueryErrorCodeDto.BUSY)
         runCurrent()
         assertIs<HistoryBrowseStatus.Failed>(controller.state.value.replay?.status)
 
-        advanceTimeBy(250.milliseconds)
+        advanceTimeBy(5.seconds)
         runCurrent()
-        assertEquals(failed, transport.roundStateRequests.last())
+        assertEquals(4, transport.roundStateRequests.size)
         assertEquals(1, transport.roundEventsRequests.size)
         assertTrue(controller.retry())
         runCurrent()
@@ -541,6 +556,48 @@ class HistoryBrowseRoundControllerTest {
         assertEquals(failed.position, retried.position)
         assertEquals(failed.count, retried.count)
         assertEquals(HistoryBrowseStatus.Loading, controller.state.value.replay?.status)
+    }
+
+    /** 重試也不會好的失敗立即顯示，不自動重試。 */
+    @Test
+    fun `test replay shows lasting failures immediately`() = runTest {
+        val transport = FakeRoundHistoryTransport()
+        val controller = openReplay(transport)
+        transport.respondStatesError(HistoryQueryErrorCodeDto.ACCESS_DENIED)
+        runCurrent()
+        assertIs<HistoryBrowseStatus.Failed>(controller.state.value.replay?.status)
+
+        advanceTimeBy(5.seconds)
+        runCurrent()
+        assertEquals(1, transport.roundStateRequests.size)
+    }
+
+    /** 自動重試成功後次數歸零，之後的暫時失敗又能自動重試。 */
+    @Test
+    fun `test replay retry count resets after success`() = runTest {
+        val transport = FakeRoundHistoryTransport()
+        val controller = openReplay(transport)
+        transport.respondStatesError(HistoryQueryErrorCodeDto.BUSY)
+        runCurrent()
+        advanceTimeBy(500.milliseconds)
+        runCurrent()
+        transport.respondStatesError(HistoryQueryErrorCodeDto.BUSY)
+        runCurrent()
+        advanceTimeBy(1.seconds)
+        runCurrent()
+        transport.respondStates()
+        runCurrent()
+        assertEquals(HistoryBrowseStatus.Ready, controller.state.value.replay?.status)
+
+        advanceTimeBy(250.milliseconds)
+        runCurrent()
+        val events = transport.roundEventsRequests.size
+        transport.respondEventsError(HistoryQueryErrorCodeDto.BUSY)
+        runCurrent()
+        advanceTimeBy(500.milliseconds)
+        runCurrent()
+        assertEquals(events + 1, transport.roundEventsRequests.size)
+        assertEquals(HistoryBrowseStatus.Loading, controller.state.value.replay?.eventsStatus)
     }
 
     /** 結束回放回到事件頁，之後才到的回放回覆不會再寫回。 */

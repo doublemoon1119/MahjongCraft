@@ -18,7 +18,7 @@ class ClientHistoryRequestGateTest {
     @Test
     fun `foreground request takes priority over archive polling`() = runTest {
         var now = Duration.ZERO
-        val gate = ClientHistoryRequestGate(minimumInterval = { 100.milliseconds }, now = { now }, sessionRevision = { 0L })
+        val gate = ClientHistoryRequestGate(minimumInterval = { 100.milliseconds }, processingMargin = Duration.ZERO, now = { now }, sessionRevision = { 0L })
         gate.awaitSendSlot(ClientHistoryRequestPriority.FOREGROUND)
 
         val order = mutableListOf<String>()
@@ -42,11 +42,36 @@ class ClientHistoryRequestGateTest {
         background.cancel()
     }
 
+    /** 兩次送出之間在公布的間隔外再多等處理餘裕。 */
+    @Test
+    fun `next request waits the interval plus the processing margin`() = runTest {
+        var now = Duration.ZERO
+        val gate = ClientHistoryRequestGate(minimumInterval = { 100.milliseconds }, processingMargin = 50.milliseconds, now = { now }, sessionRevision = { 0L })
+        gate.awaitSendSlot(ClientHistoryRequestPriority.FOREGROUND)
+
+        var sent = false
+        val next = launch {
+            gate.awaitSendSlot(ClientHistoryRequestPriority.FOREGROUND)
+            sent = true
+        }
+        runCurrent()
+        now = 100.milliseconds
+        advanceTimeBy(100.milliseconds)
+        runCurrent()
+        assertEquals(false, sent)
+
+        now = 150.milliseconds
+        advanceTimeBy(50.milliseconds)
+        runCurrent()
+        assertEquals(true, sent)
+        next.cancel()
+    }
+
     /** 取得名額前取消時，前景等待者會被移除，後續背景輪詢仍可送出。 */
     @Test
     fun `cancelling foreground waiter releases its priority`() = runTest {
         var now = Duration.ZERO
-        val gate = ClientHistoryRequestGate(minimumInterval = { 100.milliseconds }, now = { now }, sessionRevision = { 0L })
+        val gate = ClientHistoryRequestGate(minimumInterval = { 100.milliseconds }, processingMargin = Duration.ZERO, now = { now }, sessionRevision = { 0L })
         gate.awaitSendSlot(ClientHistoryRequestPriority.FOREGROUND)
 
         val foreground = launch { gate.awaitSendSlot(ClientHistoryRequestPriority.FOREGROUND) }
@@ -69,7 +94,7 @@ class ClientHistoryRequestGateTest {
     @Test
     fun `background remains blocked until foreground request completes`() = runTest {
         var now = Duration.ZERO
-        val gate = ClientHistoryRequestGate(minimumInterval = { 100.milliseconds }, now = { now }, sessionRevision = { 0L })
+        val gate = ClientHistoryRequestGate(minimumInterval = { 100.milliseconds }, processingMargin = Duration.ZERO, now = { now }, sessionRevision = { 0L })
         gate.awaitSendSlot(ClientHistoryRequestPriority.FOREGROUND)
 
         val order = mutableListOf<String>()
@@ -103,6 +128,7 @@ class ClientHistoryRequestGateTest {
         var revision = 0L
         val gate = ClientHistoryRequestGate(
             minimumInterval = { 100.milliseconds },
+            processingMargin = Duration.ZERO,
             now = { now },
             sessionRevision = { revision },
         )
@@ -127,6 +153,7 @@ class ClientHistoryRequestGateTest {
         var revision = 0L
         val gate = ClientHistoryRequestGate(
             minimumInterval = { 100.milliseconds },
+            processingMargin = Duration.ZERO,
             now = { now },
             sessionRevision = { revision },
         )

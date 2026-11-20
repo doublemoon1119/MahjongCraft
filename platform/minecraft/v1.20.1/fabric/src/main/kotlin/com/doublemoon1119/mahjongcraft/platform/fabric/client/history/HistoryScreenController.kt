@@ -84,6 +84,7 @@ class HistoryScreenController internal constructor(
     /** 同一 client 連線共用的歷史查詢送出 gate。 */
     private val requestGate = ClientHistoryRequestGate(
         minimumInterval = { transport.minimumInterval.value },
+        processingMargin = ClientHistoryRequestGate.SERVER_TICK,
         now = { System.nanoTime().nanoseconds },
         sessionRevision = { transport.sessionRevision.value },
     )
