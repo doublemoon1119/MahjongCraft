@@ -1,10 +1,14 @@
 package com.doublemoon1119.mahjongcraft.flow.server.game.service
 
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryEventDraft
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryFact
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.ResolvedRoundOutcome
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.RoundOutcomePresentationClassification
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.SettledWinPresentation
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinCelebrationRequest
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinCelebrationWinner
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementPresentationRequest
+import com.doublemoon1119.mahjongcraft.flow.server.game.history.winSettlementHistoryDetails
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.RuleDecisionWin
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
 import com.doublemoon1119.mahjongcraft.logic.table.RoundCompletionClassification
@@ -43,6 +47,73 @@ class RuleDecisionWinPresentationStager(
         win: RuleDecisionWin,
     ) {
         val outcome = win.outcome
+        handoff.stage(
+            gameId = gameId,
+            presentation = SettledWinPresentation(
+                winnerPlayerIds = outcome.winnerPlayerIds,
+                celebration = WinCelebrationRequest(
+                    winningTileId = outcome.winningTileId,
+                    isTsumo = outcome.responsiblePlayerIds.isEmpty(),
+                    revealsWinnerHands = outcome.revealsWinnerHands,
+                    winners = outcome.winnerPlayerIds.map { winnerId ->
+                        WinCelebrationWinner(currentState.players.indexOfFirst { it.id == winnerId })
+                    },
+                ),
+                settlement = settlement(previousState, currentState, module, aiPlayerIds, win),
+            ),
+        )
+    }
+
+    /**
+     * 建立這次和牌的歷史紀錄，寫法與自摸、榮和相同：贏家的結算詳情，以及規則要求攤牌時的立牌順序與和牌張；
+     * 不攤牌的和牌不記錄手牌。
+     *
+     * @param previousState 結算前的權威桌況。
+     * @param currentState 結算後的權威桌況。
+     * @param module 本局使用的規則模組。
+     * @param aiPlayerIds 由 AI 操控的玩家。
+     * @param win 規則選擇步驟直接成立的和牌。
+     * @return 和牌的歷史事件草稿。
+     */
+    fun historyDraft(
+        previousState: TableState,
+        currentState: TableState,
+        module: MahjongRuleModule<*>,
+        aiPlayerIds: Set<Uuid>,
+        win: RuleDecisionWin,
+    ): HistoryEventDraft {
+        val outcome = win.outcome
+        val details = winSettlementHistoryDetails(settlement(previousState, currentState, module, aiPlayerIds, win)).map { details ->
+            details.copy(hand = details.hand?.takeIf { outcome.revealsWinnerHands }?.copy(winningTileId = outcome.winningTileId))
+        }
+        return HistoryEventDraft(
+            actorPlayerId = null,
+            fact = HistoryFact.WinSettled(
+                outcomeId = outcome.outcomeId,
+                winDetails = details,
+                responsiblePlayerIds = outcome.responsiblePlayerIds.toList(),
+            ),
+        )
+    }
+
+    /**
+     * 建立這次和牌的共用結算呈現。
+     *
+     * @param previousState 結算前的權威桌況。
+     * @param currentState 結算後的權威桌況。
+     * @param module 本局使用的規則模組。
+     * @param aiPlayerIds 由 AI 操控的玩家。
+     * @param win 規則選擇步驟直接成立的和牌。
+     * @return 結算呈現。
+     */
+    private fun settlement(
+        previousState: TableState,
+        currentState: TableState,
+        module: MahjongRuleModule<*>,
+        aiPlayerIds: Set<Uuid>,
+        win: RuleDecisionWin,
+    ): WinSettlementPresentationRequest {
+        val outcome = win.outcome
         val transitionDirective = module.resolveRoundTransition(
             context = RoundTransitionContext(
                 tableState = currentState,
@@ -62,27 +133,13 @@ class RuleDecisionWinPresentationStager(
             presentationClassification = RoundOutcomePresentationClassification.WIN_EQUIVALENT,
             extensionDetail = win.extensionDetail,
         )
-        handoff.stage(
-            gameId = gameId,
-            presentation = SettledWinPresentation(
-                winnerPlayerIds = outcome.winnerPlayerIds,
-                celebration = WinCelebrationRequest(
-                    winningTileId = outcome.winningTileId,
-                    isTsumo = outcome.responsiblePlayerIds.isEmpty(),
-                    revealsWinnerHands = outcome.revealsWinnerHands,
-                    winners = outcome.winnerPlayerIds.map { winnerId ->
-                        WinCelebrationWinner(currentState.players.indexOfFirst { it.id == winnerId })
-                    },
-                ),
-                settlement = WinSettlementPresentationRequestFactory.createSpecialOutcome(
-                    previousState = previousState,
-                    outcome = resolvedOutcome,
-                    module = module,
-                    aiPlayerIds = aiPlayerIds,
-                    detailResolverRegistry = detailResolverRegistry,
-                    revealsWinnerHands = outcome.revealsWinnerHands,
-                ),
-            ),
+        return WinSettlementPresentationRequestFactory.createSpecialOutcome(
+            previousState = previousState,
+            outcome = resolvedOutcome,
+            module = module,
+            aiPlayerIds = aiPlayerIds,
+            detailResolverRegistry = detailResolverRegistry,
+            revealsWinnerHands = outcome.revealsWinnerHands,
         )
     }
 }

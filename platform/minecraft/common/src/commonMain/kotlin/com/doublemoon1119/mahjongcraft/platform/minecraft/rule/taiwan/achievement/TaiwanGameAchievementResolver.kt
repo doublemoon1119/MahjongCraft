@@ -5,15 +5,13 @@ import com.doublemoon1119.mahjongcraft.flow.api.event.MatchCompletion
 import com.doublemoon1119.mahjongcraft.flow.api.event.MatchEndedEvent
 import com.doublemoon1119.mahjongcraft.flow.api.event.RoundSettledEvent
 import com.doublemoon1119.mahjongcraft.flow.api.event.RoundSettlementKind
-import com.doublemoon1119.mahjongcraft.flow.api.event.RuleResultsResolvedEvent
 import com.doublemoon1119.mahjongcraft.flow.api.event.WinGroupSource
-import com.doublemoon1119.mahjongcraft.flow.common.game.model.taiwan.TaiwanRoundOutcomeIds
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.taiwan.TaiwanWinSettlementIds
 import com.doublemoon1119.mahjongcraft.logic.module.BuiltInRuleModuleIds
 import com.doublemoon1119.mahjongcraft.platform.minecraft.achievement.GameAchievementResolver
 import kotlin.uuid.Uuid
 
-/** 依正式結算及特殊花牌結果判定台灣麻將專屬成果。 */
+/** 依胡牌結算的台種（包含花胡）及終局事實判定台灣麻將專屬成果。 */
 internal class TaiwanGameAchievementResolver : GameAchievementResolver {
     override val ruleModuleId: String = BuiltInRuleModuleIds.TAIWAN
 
@@ -39,17 +37,6 @@ internal class TaiwanGameAchievementResolver : GameAchievementResolver {
                                 .forEach { add(winner.playerId, it) }
                         }
                     }
-                }
-
-                is RuleResultsResolvedEvent -> event.results.forEach resultLoop@{ result ->
-                    val id = when (result.reasonId) {
-                        TaiwanRoundOutcomeIds.EIGHT_FLOWERS -> TaiwanAchievementIds.EIGHT_FLOWERS
-                        TaiwanRoundOutcomeIds.SEVEN_FLOWERS -> TaiwanAchievementIds.SEVEN_FLOWERS
-                        else -> return@resultLoop
-                    }
-                    val winners = result.winDetails.map { it.playerId }
-                        .ifEmpty { result.completion?.beneficiaryPlayerIds.orEmpty().toList() }
-                    winners.forEach { add(it, id) }
                 }
 
                 else -> Unit

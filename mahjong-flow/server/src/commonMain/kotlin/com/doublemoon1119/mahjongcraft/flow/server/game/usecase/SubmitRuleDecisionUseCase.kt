@@ -129,7 +129,17 @@ class SubmitRuleDecisionUseCase(
                             passed = submission.isPassFor(ruleDecision.inputSpecsByPlayerId[playerId]),
                         ),
                     ),
-                ) + completedResolution?.replacementHistoryDrafts(ruleDecision.timing).orEmpty(),
+                ) + completedResolution?.replacementHistoryDrafts(ruleDecision.timing).orEmpty() + listOfNotNull(
+                    element = completedResolution?.win?.let { win ->
+                        winPresentationStager.historyDraft(
+                            previousState = game.tableState,
+                            currentState = updated.tableState,
+                            module = module,
+                            aiPlayerIds = game.aiPlayerIds,
+                            win = win,
+                        )
+                    },
+                ),
                 presentationUpdate = if (submitted.isComplete) {
                     RuleDecisionPresentationUpdate(
                         previous = game.tableState,

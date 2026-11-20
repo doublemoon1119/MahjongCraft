@@ -79,6 +79,17 @@ class AdvanceAutomaticRuleDecisionUseCase(
                         ),
                     )
                     addAll(resolution.replacementHistoryDrafts(currentRuleDecision.timing))
+                    resolution.win?.let { win ->
+                        add(
+                            element = winPresentationStager.historyDraft(
+                                previousState = currentGame.tableState,
+                                currentState = updated.tableState,
+                                module = module,
+                                aiPlayerIds = currentGame.aiPlayerIds,
+                                win = win,
+                            ),
+                        )
+                    }
                 }
             }
             if (updated.pendingRuleDecision?.participantPlayerIds?.isEmpty() == true) {
