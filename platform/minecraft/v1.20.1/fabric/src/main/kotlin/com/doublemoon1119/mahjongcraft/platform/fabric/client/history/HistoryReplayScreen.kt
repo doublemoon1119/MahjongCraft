@@ -170,6 +170,15 @@ internal class HistoryReplayScreen(
     /** 手牌選擇器。 */
     private lateinit var handButton: RestartableMarqueeButtonWidget
 
+    /** 開啟可見性子頁的按鈕。 */
+    private lateinit var visibilityButton: RestartableMarqueeButtonWidget
+
+    /** 各家人物目前的不透明度，依初始座位；切換顯示方式或轉動鏡頭時往新的值淡入淡出。 */
+    private val figureAlpha = mutableMapOf<Int, Float>()
+
+    /** 上一幀到這一幀經過的時間，供淡入淡出使用。 */
+    private var frameElapsed = Duration.ZERO
+
     /** 窄視窗叫出交易列表的按鈕。 */
     private var listButton: RestartableMarqueeButtonWidget? = null
 
@@ -212,6 +221,8 @@ internal class HistoryReplayScreen(
         viewButton.selectorExpanded = { dropdown.isOpenFor(VIEW_KEY) }
         handButton = addDrawableChild(button(Text.empty(), layout.handSelector) { toggleHandList() })
         handButton.selectorExpanded = { dropdown.isOpenFor(HAND_KEY) }
+        visibilityButton = addDrawableChild(button(Text.translatable(MinecraftHistoryScreenKeys.REPLAY_VISIBILITY), layout.visibilityButton) { openVisibility() })
+        visibilityButton.tooltip = Tooltip.of(Text.translatable(MinecraftHistoryScreenKeys.REPLAY_VISIBILITY_TOOLTIP))
         listButton = layout.listToggle?.let { bounds ->
             addDrawableChild(button(Text.translatable(MinecraftHistoryScreenKeys.REPLAY_LIST), bounds) { listOpen = !listOpen })
         }
@@ -224,7 +235,7 @@ internal class HistoryReplayScreen(
         fullscreenButton = addDrawableChild(button(Text.empty(), layout.fullscreenToggle) { toggleFullscreen() })
         if (fullscreen) {
             // 全螢幕只留播放控制；視角、手牌、交易列表與底部按鈕回到一般版面才出現。
-            listOfNotNull(viewButton, handButton, listButton, previousRoundButton, nextRoundButton, backButton).forEach { it.visible = false }
+            listOfNotNull(viewButton, handButton, visibilityButton, listButton, previousRoundButton, nextRoundButton, backButton).forEach { it.visible = false }
         }
     }
 
@@ -410,6 +421,7 @@ internal class HistoryReplayScreen(
         )
         val players = replay?.state?.players.orEmpty()
         if (viewSeat != null && players.isNotEmpty() && players.none { it.initialSeatIndex == viewSeat }) viewSeat = null
+        visibilityButton.active = players.isNotEmpty()
         viewButton.message = viewText(replay?.state, viewSeat)
         viewButton.active = players.isNotEmpty()
         val seats = viewSeats(replay?.state)
@@ -561,6 +573,7 @@ internal class HistoryReplayScreen(
         state.players.forEachIndexed { index, player ->
             val seat = seats.getOrNull(index) ?: return@forEachIndexed
             val swing = animation?.swingProgress(player.initialSeatIndex) ?: 0f
+            val alpha = figureAlpha(player.initialSeatIndex, seat.yaw)
             val playerId = state.identity.players.firstOrNull { it.initialSeatIndex == player.initialSeatIndex }?.playerId
             val participant = playerId?.let { id -> summary?.participants?.firstOrNull { it.playerId.equals(id, ignoreCase = true) } }
             val uuid = playerId?.let { runCatching { Uuid.parse(it) }.getOrNull() }
@@ -577,17 +590,86 @@ internal class HistoryReplayScreen(
                         seated = true,
                         guard = CharacterModelGuard(session.characterPreviews, character),
                         swingProgress = swing,
+                        alpha = alpha,
                     )
                 } else {
                     val face = HistoryReplayCharacterAppearance.botFace(character?.definition)
-                    figures += GuideSceneFigure(faceAssetKey = face, x = seat.x, y = feetY, z = seat.z, yaw = seat.yaw, seated = true, swingProgress = swing)
+                    figures += GuideSceneFigure(
+                        faceAssetKey = face,
+                        x = seat.x,
+                        y = feetY,
+                        z = seat.z,
+                        yaw = seat.yaw,
+                        seated = true,
+                        swingProgress = swing,
+                        alpha = alpha,
+                    )
                 }
             } else {
                 val entity = playerEntities.getOrPut(playerId) { playerEntity(world, uuid) }
-                entities += GuideSceneEntity(entity = entity, x = seat.x, y = feetY, z = seat.z, yaw = seat.yaw, seated = true, swingProgress = swing)
+                entities += GuideSceneEntity(
+                    entity = entity,
+                    x = seat.x,
+                    y = feetY,
+                    z = seat.z,
+                    yaw = seat.yaw,
+                    seated = true,
+                    swingProgress = swing,
+                    alpha = alpha,
+                )
             }
         }
         return figures to entities
+    }
+
+    /**
+     * 一家人物這一幀的不透明度：依可見性設定、視角與鏡頭方向得到目標值，再從上一幀的值淡入淡出過去。
+     *
+     * @param initialSeat 初始座位。
+     * @param seatYaw 座位面向桌子的朝向。
+     * @return 0 到 1 之間的不透明度。
+     */
+    private fun figureAlpha(initialSeat: Int, seatYaw: Float): Float {
+        val target = HistoryReplayFigureOpacity.target(
+            visibility = session.replayVisibility.figure(initialSeat),
+            viewed = initialSeat == viewSeat,
+            seatYaw = seatYaw,
+            cameraYaw = cameraYaw(),
+        )
+        val alpha = figureAlpha[initialSeat]?.let { HistoryReplayFigureOpacity.approach(it, target, frameElapsed) } ?: target
+        figureAlpha[initialSeat] = alpha
+        return alpha
+    }
+
+    /**
+     * 場景鏡頭目前的水平角度：選某一家視角時是那一家座位朝向轉半圈，自由視角是預設角度加上拖曳轉動的角度。
+     *
+     * @return 水平角度。
+     */
+    private fun cameraYaw(): Float {
+        val state = session.controller.state.value.replay?.state ?: return HistoryReplayScene.VIEW_YAW + yawOffset
+        val index = state.players.indexOfFirst { it.initialSeatIndex == viewSeat }
+        if (index < 0) return HistoryReplayScene.VIEW_YAW + yawOffset
+        val seats = MahjongSeatingTableLayout.seatPlacements(
+            layout = MahjongTableSeatLayout.forPlayerCount(state.players.size),
+            controllerX = 0,
+            controllerY = 0,
+            controllerZ = 0,
+            tableFacing = MahjongTableFacing.NORTH,
+        )
+        return seats.getOrNull(index)?.yaw?.minus(HALF_TURN) ?: (HistoryReplayScene.VIEW_YAW + yawOffset)
+    }
+
+    /** 開啟可見性子頁，帶入目前各家的名稱與視角。 */
+    private fun openVisibility() {
+        val state = session.controller.state.value.replay?.state ?: return
+        val seats = state.players.sortedBy { it.initialSeatIndex }.map { player ->
+            HistoryReplayVisibilityContext.Seat(initialSeat = player.initialSeatIndex, label = viewText(state, player.initialSeatIndex))
+        }
+        session.openReplayVisibility(
+            replay = this,
+            context = HistoryReplayVisibilityContext(seats = seats, viewedSeat = viewSeat, viewLabel = viewText(state, viewSeat)),
+        )
     }
 
     /**
@@ -675,6 +757,7 @@ internal class HistoryReplayScreen(
     private fun updateAnimation(replay: HistoryBrowseReplayState?, now: Duration) {
         val elapsed = lastFrameAt?.let { now - it } ?: Duration.ZERO
         lastFrameAt = now
+        frameElapsed = elapsed
         animation?.let { running ->
             running.advance(elapsed.toDouble(DurationUnit.SECONDS) * TICKS_PER_SECOND * playback.speed.multiplier).forEach(::playSound)
             if (running.finished || running.roundNumber != replay?.roundNumber || running.toStep != replay.step) animation = null

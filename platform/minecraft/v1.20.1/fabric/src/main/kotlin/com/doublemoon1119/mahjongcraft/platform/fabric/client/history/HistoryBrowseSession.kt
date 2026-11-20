@@ -357,6 +357,35 @@ internal class HistoryBrowseSession(
     /** 瀏覽是否仍在進行；結束後不再接受導航。 */
     val isOpen: Boolean get() = !closed
 
+    /** 回放場景各項顯示的設定，在這次瀏覽中沿用。 */
+    val replayVisibility = HistoryReplayVisibility()
+
+    /**
+     * 從回放畫面開啟可見性子頁；回放畫面保留原狀，完成後回到它。
+     *
+     * @param replay 目前的回放畫面。
+     * @param context 回放場景的座位與視角。
+     * @return 是否已開啟。
+     */
+    fun openReplayVisibility(replay: HistoryReplayScreen, context: HistoryReplayVisibilityContext): Boolean {
+        if (closed || screen !== replay) return false
+        navigate(HistoryReplayVisibilityScreen(this, replay, context))
+        return true
+    }
+
+    /**
+     * 從可見性子頁回到原回放畫面；瀏覽已結束時關回遊戲。
+     *
+     * @param replay 開啟可見性子頁的回放畫面。
+     */
+    fun backToReplay(replay: HistoryReplayScreen) {
+        if (closed) {
+            MinecraftClient.getInstance().setScreen(null)
+            return
+        }
+        navigate(replay)
+    }
+
     /**
      * 從規則設定頁開啟規則一覽；切換期間不結束瀏覽，規則一覽成為此瀏覽目前的畫面。
      *

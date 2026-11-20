@@ -87,7 +87,7 @@ internal object HistoryReplayScene {
     private const val TILE_HEADROOM: Double = 0.25
 
     /** 場景一開始的水平角度。 */
-    private const val VIEW_YAW: Float = 20f
+    const val VIEW_YAW: Float = 20f
 
     /** 場景的俯視角度，看得清楚桌面上的牌。 */
     private const val VIEW_PITCH: Float = 50f

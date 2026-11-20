@@ -47,6 +47,7 @@ internal class HistoryReplayTableDisplays(private val session: HistoryBrowseSess
      * @return 以原版繪製器畫出的物件。
      */
     fun tableProps(state: HistoryRoundStateDto, arranged: Map<Int, ArrangedTile>): List<GuideSceneEntity> {
+        if (!session.replayVisibility.tableProps) return emptyList()
         val placements = notes(state)?.tableProps.orEmpty()
         if (placements.isEmpty()) return emptyList()
         val module = session.ruleModule(state) ?: return emptyList()
@@ -76,23 +77,28 @@ internal class HistoryReplayTableDisplays(private val session: HistoryBrowseSess
      * 桌子中央上方的本局資訊。
      *
      * @param state 牌面。
-     * @return 本局資訊；牌譜沒有記下內容時為 null。
+     * @return 本局資訊；設定為不畫或牌譜沒有記下內容時為 null。
      */
     fun roundInfo(state: HistoryRoundStateDto): GuideSceneRoundInfo? {
+        if (!session.replayVisibility.roundInfo) return null
         val lines = notes(state)?.roundInfo?.takeIf { it.isNotEmpty() } ?: return null
         val placement = MahjongTileTableLayout.roundInfoDisplayPlacement(0, 0, 0)
         return GuideSceneRoundInfo(lines = lines, x = placement.x, y = placement.y, z = placement.z)
     }
 
     /**
-     * 各家後上方的玩家資訊：分數與風位取自這一步的牌面，公開標記取自牌譜記下的資料。
+     * 各家後上方的玩家資訊：分數與風位取自這一步的牌面，公開標記取自牌譜記下的資料；只畫設定為顯示的座位。
      *
      * @param state 牌面。
-     * @param hiddenSeat 不畫面板的座位，例如鏡頭所在的座位；都畫時為 null。
+     * @param hiddenSeat 一律不畫面板的座位，例如鏡頭所在的座位；沒有時為 null。
      * @param name 依初始座位取得玩家名稱。
-     * @return 玩家資訊。
+     * @return 玩家資訊；沒有要畫的座位時為 null。
      */
-    fun playerInfo(state: HistoryRoundStateDto, hiddenSeat: Int?, name: (Int) -> Text): GuideScenePlayerInfo {
+    fun playerInfo(state: HistoryRoundStateDto, hiddenSeat: Int?, name: (Int) -> Text): GuideScenePlayerInfo? {
+        val shownSeats = state.players.indices.filter { index ->
+            index != hiddenSeat && session.replayVisibility.playerInfo(state.players[index].initialSeatIndex)
+        }.toSet()
+        if (shownSeats.isEmpty()) return null
         val summary = session.controller.state.value.summary?.detail?.summary
         val indicators = notes(state)?.playerIndicators.orEmpty()
         val players = state.players.mapIndexed { index, player ->
@@ -111,7 +117,7 @@ internal class HistoryReplayTableDisplays(private val session: HistoryBrowseSess
         return GuideScenePlayerInfo(
             players = players,
             dealerPlayerId = players.getOrNull(state.dealerSeat)?.playerId,
-            shownSeats = players.indices.toSet() - setOfNotNull(hiddenSeat),
+            shownSeats = shownSeats,
             x = TABLE_CENTER,
             y = 0.0,
             z = TABLE_CENTER,

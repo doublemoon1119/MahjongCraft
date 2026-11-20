@@ -808,4 +808,64 @@ object MinecraftHistoryScreenKeys {
 
     /** 結束全螢幕的按鈕說明。 */
     const val REPLAY_EXIT_FULLSCREEN = "mahjongcraft.history_screen.replay.exit_fullscreen"
+
+    /** 回放場景可見性的按鈕與畫面標題。 */
+    const val REPLAY_VISIBILITY = "mahjongcraft.history_screen.replay.visibility"
+
+    /** 可見性按鈕的說明。 */
+    const val REPLAY_VISIBILITY_TOOLTIP = "mahjongcraft.history_screen.replay.visibility.tooltip"
+
+    /** 可見性畫面標題下的目前視角，參數為視角名稱。 */
+    const val REPLAY_VISIBILITY_CURRENT_VIEW = "mahjongcraft.history_screen.replay.visibility.current_view"
+
+    /** 可見性畫面「人物」段落的標題。 */
+    const val REPLAY_VISIBILITY_FIGURES = "mahjongcraft.history_screen.replay.visibility.figures"
+
+    /** 可見性畫面「遊戲面板」段落的標題。 */
+    const val REPLAY_VISIBILITY_PANELS = "mahjongcraft.history_screen.replay.visibility.panels"
+
+    /** 可見性畫面「桌上物件」段落與該列的名稱。 */
+    const val REPLAY_VISIBILITY_TABLE_PROPS = "mahjongcraft.history_screen.replay.visibility.table_props"
+
+    /** 可見性畫面「本局資訊」列的名稱。 */
+    const val REPLAY_VISIBILITY_ROUND_INFO = "mahjongcraft.history_screen.replay.visibility.round_info"
+
+    /** 可見性畫面一家玩家資訊列的名稱，參數為座位與玩家名稱。 */
+    const val REPLAY_VISIBILITY_PLAYER_INFO = "mahjongcraft.history_screen.replay.visibility.player_info"
+
+    /** 人物顯示方式「自動」。 */
+    const val REPLAY_VISIBILITY_AUTO = "mahjongcraft.history_screen.replay.visibility.auto"
+
+    /** 顯示方式「顯示」。 */
+    const val REPLAY_VISIBILITY_SHOWN = "mahjongcraft.history_screen.replay.visibility.shown"
+
+    /** 人物顯示方式「半透明」。 */
+    const val REPLAY_VISIBILITY_TRANSLUCENT = "mahjongcraft.history_screen.replay.visibility.translucent"
+
+    /** 顯示方式「隱藏」。 */
+    const val REPLAY_VISIBILITY_HIDDEN = "mahjongcraft.history_screen.replay.visibility.hidden"
+
+    /** 人物選擇器的說明。 */
+    const val REPLAY_VISIBILITY_FIGURE_DESCRIPTION = "mahjongcraft.history_screen.replay.visibility.figure.description"
+
+    /** 視角所在那一家的人物固定隱藏的原因。 */
+    const val REPLAY_VISIBILITY_FIGURE_VIEWED = "mahjongcraft.history_screen.replay.visibility.figure.viewed"
+
+    /** 視角所在那一家的玩家資訊固定隱藏的原因。 */
+    const val REPLAY_VISIBILITY_PLAYER_INFO_VIEWED = "mahjongcraft.history_screen.replay.visibility.player_info.viewed"
+
+    /** 本局資訊選擇器的說明。 */
+    const val REPLAY_VISIBILITY_ROUND_INFO_DESCRIPTION = "mahjongcraft.history_screen.replay.visibility.round_info.description"
+
+    /** 玩家資訊選擇器的說明。 */
+    const val REPLAY_VISIBILITY_PLAYER_INFO_DESCRIPTION = "mahjongcraft.history_screen.replay.visibility.player_info.description"
+
+    /** 桌上物件選擇器的說明。 */
+    const val REPLAY_VISIBILITY_TABLE_PROPS_DESCRIPTION = "mahjongcraft.history_screen.replay.visibility.table_props.description"
+
+    /** 可見性畫面的「恢復預設值」按鈕。 */
+    const val REPLAY_VISIBILITY_RESET = "mahjongcraft.history_screen.replay.visibility.reset"
+
+    /** 可見性畫面的「完成」按鈕。 */
+    const val REPLAY_VISIBILITY_DONE = "mahjongcraft.history_screen.replay.visibility.done"
 }

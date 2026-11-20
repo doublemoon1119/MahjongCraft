@@ -4,6 +4,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.MahjongBotE
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.MahjongPlayerInfoEntityRenderer
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.MahjongTileEntityRenderer
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.MahjongTileItemRenderer
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.SceneEntityTranslucency
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.tile.MatchingTileHighlightController
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongBotEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongPlayerInfoEntity
@@ -26,6 +27,7 @@ import net.minecraft.client.render.VertexConsumerProvider
 import net.minecraft.client.render.VertexFormat
 import net.minecraft.client.render.VertexFormats
 import net.minecraft.client.render.entity.EntityRenderDispatcher
+import net.minecraft.client.render.entity.LivingEntityRenderer
 import net.minecraft.client.render.model.json.ModelTransformationMode
 import net.minecraft.client.world.ClientWorld
 import net.minecraft.entity.Entity
@@ -141,10 +143,14 @@ internal class GuideSceneRenderer : AutoCloseable {
                     client.blockRenderManager.renderBlockAsEntity(block.state, matrices, consumers, FULL_LIGHT, OverlayTexture.DEFAULT_UV)
                     matrices.pop()
                 }
-                renderFigures(client, scene.figures, context, consumers)
-                renderEntities(client, scene.entities, context, consumers)
+                renderFigures(client, scene.figures.filter { it.alpha >= 1f }, context, consumers)
+                renderEntities(client, scene.entities.filter { it.alpha >= 1f }, context, consumers)
                 scene.tiles.forEach { tile -> renderTile(tile, context, consumers) }
                 renderInfo(client, scene, rotation, context, consumers)
+                // 半透明的人物最後畫：不透明的東西先全部畫進畫面，半透明的部分才透得出它後面的牌。
+                consumers.draw()
+                renderFigures(client, scene.figures.filter { it.alpha < 1f }, context, consumers)
+                renderEntities(client, scene.entities.filter { it.alpha < 1f }, context, consumers)
             } finally {
                 consumers.draw()
             }
@@ -255,6 +261,7 @@ internal class GuideSceneRenderer : AutoCloseable {
         val renderer = client.entityRenderDispatcher.getRenderer(entity) as? MahjongBotEntityRenderer ?: return
         val matrices = context.matrices
         figures.forEach { figure ->
+            if (figure.alpha <= 0f) return@forEach
             entity.faceAssetKey = figure.faceAssetKey
             matrices.push()
             matrices.translate(figure.x, figure.y, figure.z)
@@ -267,6 +274,7 @@ internal class GuideSceneRenderer : AutoCloseable {
                 light = FULL_LIGHT,
                 seated = figure.seated,
                 swingProgress = figure.swingProgress,
+                alpha = figure.alpha,
             )
             matrices.pop()
         }
@@ -510,6 +518,7 @@ internal class GuideSceneRenderer : AutoCloseable {
         dispatcher.setRenderShadows(false)
         try {
             entities.forEach { figure ->
+                if (!canDraw(figure, dispatcher)) return@forEach
                 val draw = { renderEntity(figure, seat, dispatcher, context, consumers) }
                 val guard = figure.guard
                 if (guard == null) draw() else guard.run(draw)
@@ -517,6 +526,19 @@ internal class GuideSceneRenderer : AutoCloseable {
         } finally {
             dispatcher.setRenderShadows(true)
         }
+    }
+
+    /**
+     * 判斷一個實體這一幀要不要畫：不透明度為 0 時不畫；半透明時只有原版生物繪製器畫的生物能畫，其他不畫。
+     *
+     * @param figure 要畫的實體與不透明度。
+     * @param dispatcher 原版實體繪製器。
+     * @return 要畫時為 true。
+     */
+    private fun canDraw(figure: GuideSceneEntity, dispatcher: EntityRenderDispatcher): Boolean = when {
+        figure.alpha <= 0f -> false
+        figure.alpha >= 1f -> true
+        else -> figure.entity is LivingEntity && dispatcher.getRenderer(figure.entity) is LivingEntityRenderer<*, *>
     }
 
     /**
@@ -553,7 +575,8 @@ internal class GuideSceneRenderer : AutoCloseable {
             entity.prevYaw = figure.yaw
             entity.pitch = 0f
             entity.prevPitch = 0f
-            dispatcher.render(entity, figure.x, figure.y, figure.z, figure.yaw, 1f, context.matrices, consumers, FULL_LIGHT)
+            val render = { dispatcher.render(entity, figure.x, figure.y, figure.z, figure.yaw, 1f, context.matrices, consumers, FULL_LIGHT) }
+            if (figure.alpha < 1f) SceneEntityTranslucency.render(figure.alpha, render) else render()
         } finally {
             entity.stopRiding()
             if (entity is LivingEntity) {

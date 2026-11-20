@@ -62,6 +62,7 @@ internal data class GuideSceneBlock(
  * @property seated 是否以坐姿繪製。
  * @property region 滑鼠指著時說明的區塊；不說明時為 null。
  * @property swingProgress 揮手進度，0 到 1；0 表示沒有揮手。
+ * @property alpha 0 到 1 之間的不透明度；0 時不畫。
  */
 internal data class GuideSceneFigure(
     val faceAssetKey: String,
@@ -72,6 +73,7 @@ internal data class GuideSceneFigure(
     val seated: Boolean,
     val region: GuideSceneRegion? = null,
     val swingProgress: Float = 0f,
+    val alpha: Float = 1f,
 )
 
 /**
@@ -88,6 +90,8 @@ internal data class GuideSceneFigure(
  * @property seated 是否以坐姿繪製。
  * @property guard 包住這個實體繪製工作的隔離方式，例如第三方模型繪製失敗時改用備援；不需要時為 null。
  * @property swingProgress 生物主手的揮手進度，0 到 1；0 表示沒有揮手，不是生物時不使用。
+ * @property alpha 0 到 1 之間的不透明度；0 時不畫。小於 1 時生物以原版半透明的方式畫出，不畫附加圖層；
+ * 不是生物或繪製器不是原版生物繪製器時不畫。
  */
 internal data class GuideSceneEntity(
     val entity: Entity,
@@ -98,6 +102,7 @@ internal data class GuideSceneEntity(
     val seated: Boolean,
     val guard: GuideSceneRenderGuard? = null,
     val swingProgress: Float = 0f,
+    val alpha: Float = 1f,
 )
 
 /** 包住場景中一個實體繪製工作的隔離方式。 */

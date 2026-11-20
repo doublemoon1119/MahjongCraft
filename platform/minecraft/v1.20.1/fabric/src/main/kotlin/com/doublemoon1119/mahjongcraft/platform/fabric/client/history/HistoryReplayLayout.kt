@@ -16,6 +16,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.VerticalScroll
  * @property caption 目前交易說明。
  * @property viewSelector 視角選擇器。
  * @property handSelector 手牌選擇器。
+ * @property visibilityButton 開啟可見性子頁的按鈕。
  * @property selectorLabelWidth 選擇器左側標籤的寬度。
  * @property list 交易列表範圍，不含捲軸；窄視窗為疊在場景上的範圍。
  * @property listScrollbarX 交易列表捲軸的左界。
@@ -34,6 +35,7 @@ internal data class HistoryReplayLayout(
     val caption: HistoryScreenLayout.Bounds,
     val viewSelector: HistoryScreenLayout.Bounds,
     val handSelector: HistoryScreenLayout.Bounds,
+    val visibilityButton: HistoryScreenLayout.Bounds,
     val selectorLabelWidth: Int,
     val list: HistoryScreenLayout.Bounds,
     val listScrollbarX: Int,
@@ -112,6 +114,9 @@ internal data class HistoryReplayLayout(
         /** 寬視窗右欄寬度佔內容寬度的比例。 */
         const val SIDE_RATIO: Double = 0.32
 
+        /** 寬視窗右欄上方、交易列表之前的控制項列數：視角、手牌、可見性。 */
+        const val SIDE_CONTROL_ROWS: Int = 3
+
         /** 寬視窗右欄的最小寬度。 */
         const val SIDE_MIN_WIDTH: Int = 130
 
@@ -170,6 +175,7 @@ internal data class HistoryReplayLayout(
                 caption = hidden,
                 viewSelector = hidden,
                 handSelector = hidden,
+                visibilityButton = hidden,
                 selectorLabelWidth = 0,
                 list = hidden,
                 listScrollbarX = 0,
@@ -207,7 +213,7 @@ internal data class HistoryReplayLayout(
                 val sideWidth = ((right - left) * SIDE_RATIO).toInt().coerceIn(SIDE_MIN_WIDTH, SIDE_MAX_WIDTH)
                 val sideLeft = right - sideWidth
                 val sceneRight = sideLeft - GAP * 2
-                val listTop = top + (FormScreenLayout.BUTTON_HEIGHT + GAP) * 2
+                val listTop = top + (FormScreenLayout.BUTTON_HEIGHT + GAP) * SIDE_CONTROL_ROWS
                 val scrollbarX = right - VerticalScrollbar.WIDTH
                 val scene = HistoryScreenLayout.Bounds(x = left, y = top, width = sceneRight - left, height = (captionY - top).coerceAtLeast(0))
                 HistoryReplayLayout(
@@ -220,6 +226,12 @@ internal data class HistoryReplayLayout(
                         x = sideLeft + labelSpace,
                         y = top + FormScreenLayout.BUTTON_HEIGHT + GAP,
                         width = sideWidth - labelSpace,
+                        height = FormScreenLayout.BUTTON_HEIGHT,
+                    ),
+                    visibilityButton = HistoryScreenLayout.Bounds(
+                        x = sideLeft,
+                        y = top + (FormScreenLayout.BUTTON_HEIGHT + GAP) * 2,
+                        width = sideWidth,
                         height = FormScreenLayout.BUTTON_HEIGHT,
                     ),
                     selectorLabelWidth = labelWidth,
@@ -254,6 +266,12 @@ internal data class HistoryReplayLayout(
                         x = left + GAP + labelSpace,
                         y = top + GAP * 2 + COMPACT_SELECTOR_HEIGHT,
                         width = COMPACT_SELECTOR_WIDTH,
+                        height = COMPACT_SELECTOR_HEIGHT,
+                    ),
+                    visibilityButton = HistoryScreenLayout.Bounds(
+                        x = left + GAP,
+                        y = top + GAP * 3 + COMPACT_SELECTOR_HEIGHT * 2,
+                        width = labelSpace + COMPACT_SELECTOR_WIDTH,
                         height = COMPACT_SELECTOR_HEIGHT,
                     ),
                     selectorLabelWidth = labelWidth,
