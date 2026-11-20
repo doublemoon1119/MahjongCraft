@@ -54,6 +54,15 @@ internal class HistoryReplayPlayback {
         stepStartedAt = now
     }
 
+    /**
+     * 牌還在動畫中：這一步的停留從動畫播完才開始計算。
+     *
+     * @param now 目前時間。
+     */
+    fun hold(now: Duration) {
+        stepStartedAt = now
+    }
+
     /** 玩家自己捲動交易列表，列表停止跟隨，直到下一次播放或換步。 */
     fun scrolled() {
         following = false

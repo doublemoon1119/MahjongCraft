@@ -315,9 +315,18 @@ internal class GuideSceneRenderer : AutoCloseable {
         val matrices = context.matrices
         matrices.push()
         matrices.translate(tile.x, tile.y, tile.z)
+        // 往前進方向的傾斜繞牌底、以世界水平軸旋轉，在朝向之前套用，與對局中的牌相同。
+        if (tile.lean.degrees != 0.0f) {
+            matrices.multiply(Quaternionf().rotateAxis(Math.toRadians(tile.lean.degrees.toDouble()).toFloat(), tile.lean.axisX.toFloat(), 0.0f, tile.lean.axisZ.toFloat()))
+        }
         matrices.multiply(RotationAxis.POSITIVE_Y.rotationDegrees(-tile.yaw + HALF_TURN_DEGREES))
-        matrices.multiply(RotationAxis.POSITIVE_X.rotationDegrees(tile.pose.rotationDegrees))
-        val (offsetX, offsetY, offsetZ) = MahjongTileEntityRenderer.poseOriginOffset(tile.pose.rotationDegrees)
+        val poseDegrees = tile.poseDegrees ?: tile.pose.rotationDegrees
+        matrices.multiply(RotationAxis.POSITIVE_X.rotationDegrees(poseDegrees))
+        val (offsetX, offsetY, offsetZ) = if (tile.poseDegrees != null) {
+            MahjongTileEntityRenderer.displayPoseOriginOffset(poseDegrees)
+        } else {
+            MahjongTileEntityRenderer.poseOriginOffset(poseDegrees)
+        }
         matrices.translate(offsetX, offsetY, offsetZ)
         val assetKey = tile.assetKey
         if (assetKey == null) {

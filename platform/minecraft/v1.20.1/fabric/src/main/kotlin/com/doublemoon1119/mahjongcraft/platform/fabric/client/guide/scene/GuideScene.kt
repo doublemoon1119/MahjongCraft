@@ -4,6 +4,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongTilePose
 import com.doublemoon1119.mahjongcraft.platform.minecraft.guide.MinecraftGuideScreenKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongPlayerInfoEntry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.RoundInfoLine
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileLean
 import net.minecraft.block.BlockState
 import net.minecraft.util.math.BlockPos
 import kotlin.uuid.Uuid
@@ -77,6 +78,8 @@ internal data class GuideSceneFigure(
  * @property z 牌底中心的 Z 座標。
  * @property yaw Minecraft 慣例的水平朝向，與牌在桌上的擺放朝向相同。
  * @property pose 直立、牌面朝上或牌面朝下。
+ * @property poseDegrees 動畫中介於兩個姿態之間的翻轉角度，取代 [pose] 的角度；不在動畫中時為 null。
+ * @property lean 動畫中往前進方向的傾斜。
  * @property glow 外框發光的種類；`null` 時不發光。
  * @property region 滑鼠指著時說明的區塊；不說明時為 null。
  */
@@ -87,6 +90,8 @@ internal data class GuideSceneTile(
     val z: Double,
     val yaw: Float,
     val pose: MahjongTilePose = MahjongTilePose.STANDING,
+    val poseDegrees: Float? = null,
+    val lean: TileLean = TileLean.NONE,
     val glow: GuideSceneTileGlow? = null,
     val region: GuideSceneRegion? = null,
 )

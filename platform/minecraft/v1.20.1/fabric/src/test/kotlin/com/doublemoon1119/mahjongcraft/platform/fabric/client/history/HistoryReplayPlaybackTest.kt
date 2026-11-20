@@ -78,6 +78,17 @@ class HistoryReplayPlaybackTest {
         assertFalse(playback.playing)
     }
 
+    /** 牌還在動畫中時停留不計時，動畫播完才開始算這一步停多久。 */
+    @Test
+    fun `holding restarts the dwell until the animation ends`() {
+        val playback = HistoryReplayPlayback()
+        playback.play(step = 0, stepCount = STEP_COUNT, now = Duration.ZERO)
+        playback.hold(now = 2.seconds)
+
+        assertNull(playback.advance(step = 0, stepCount = STEP_COUNT, now = 2.5.seconds, nextReady = true, marked = false))
+        assertEquals(1, playback.advance(step = 0, stepCount = STEP_COUNT, now = 3.seconds, nextReady = true, marked = false))
+    }
+
     /** 測試共用的總步數。 */
     private companion object {
         /** 測試共用的總步數。 */

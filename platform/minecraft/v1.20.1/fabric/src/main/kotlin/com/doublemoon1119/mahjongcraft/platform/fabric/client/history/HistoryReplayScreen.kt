@@ -5,7 +5,6 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryRoundEven
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryRoundStateDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.model.TileFaceViewDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.model.WindDto
-import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.CardBackground
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.ControlTooltip
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.DropdownOption
@@ -21,15 +20,21 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.client.guide.scene.GuideS
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.guide.scene.GuideSceneRenderer
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.guide.scene.GuideSceneView
 import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionReplayMarker
+import com.doublemoon1119.mahjongcraft.platform.minecraft.animation.AnimationStep
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.table.MahjongTableFacing
+import com.doublemoon1119.mahjongcraft.platform.minecraft.history.HistoryReplayArrangement
 import com.doublemoon1119.mahjongcraft.platform.minecraft.history.MinecraftHistoryScreenKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.history.ReplayTableNotes
 import com.doublemoon1119.mahjongcraft.platform.minecraft.seating.MahjongSeatingTableLayout
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongTableSeatLayout
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.ArrangedTile
 import net.minecraft.client.gui.DrawContext
 import net.minecraft.client.gui.screen.Screen
 import net.minecraft.client.gui.tooltip.Tooltip
+import net.minecraft.client.sound.PositionedSoundInstance
+import net.minecraft.registry.Registries
 import net.minecraft.text.Text
+import net.minecraft.util.Identifier
 import net.minecraft.util.Language
 import org.lwjgl.glfw.GLFW
 import kotlin.math.pow
@@ -37,6 +42,7 @@ import kotlin.math.roundToInt
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
+import kotlin.time.DurationUnit
 
 /**
  * 牌譜回放畫面：把一局的每一筆交易依序擺成牌桌場景，可以播放、暫停、逐筆前後移動、拖曳進度條與換局。
@@ -113,6 +119,21 @@ internal class HistoryReplayScreen(
 
     /** 上次建立場景的條件與結果。 */
     private var sceneCache: Pair<SceneKey, GuideScene?>? = null
+
+    /** 最近擺好的牌桌，依條件索引；只留動畫前後兩步需要的份量。 */
+    private val arrangements = LinkedHashMap<ArrangementKey, Map<Int, ArrangedTile>?>()
+
+    /** 正在播放的牌動畫；沒有時為 null。 */
+    private var animation: HistoryReplayAnimation? = null
+
+    /** 上一幀顯示的局序號與步數。 */
+    private var shownStep: Pair<Int, Int>? = null
+
+    /** 上一幀顯示的牌面。 */
+    private var shownState: HistoryRoundStateDto? = null
+
+    /** 上一幀的時間，用來推進動畫。 */
+    private var lastFrameAt: Duration? = null
 
     /** 上次整理的交易列與它所根據的事件頁。 */
     private var rowsCache: Pair<List<HistoryRoundEventsDto>, List<TransactionRow>>? = null
@@ -244,6 +265,7 @@ internal class HistoryReplayScreen(
         }
         controlsAlpha = controlsAlpha(now, mouseX, mouseY)
         val replay = session.controller.state.value.replay
+        updateAnimation(replay, now)
         if (!layout.fullscreen) {
             val heading = title.copy().append(TITLE_SEPARATOR).append(Text.translatable(MinecraftHistoryScreenKeys.ROUND_NUMBER, replay?.roundNumber ?: "—"))
             ScreenRendering.title(context, textRenderer, heading, width)
@@ -460,40 +482,69 @@ internal class HistoryReplayScreen(
     }
 
     /**
-     * 依目前牌面、視角與手牌選擇建立場景；條件相同時沿用上次的結果。
+     * 依目前牌面、視角與手牌選擇建立場景；牌在動畫中時每一幀依動畫重畫，否則條件相同時沿用上次的結果。
      *
      * @param state 目前牌面。
      * @return 場景；規則設定還沒讀到或牌譜缺少擺牌資料時為 null。
      */
     private fun scene(state: HistoryRoundStateDto): GuideScene? {
-        val module = session.ruleModule(state)
-        val key = SceneKey(state = state, moduleId = module?.id, viewSeat = viewSeat, handsOpen = handsOpen)
+        val arranged = arrangement(state) ?: return null
+        animation?.let { return withView(HistoryReplayScene.build(state.players.size, arranged, it.samples()) { index -> assetKey(state, index) }, state) }
+        val key = SceneKey(state = state, arranged = arranged, viewSeat = viewSeat)
         sceneCache?.takeIf { it.first == key }?.let { return it.second }
-        val built = module?.let { buildScene(session.replayState(state), it) }
+        val built = withView(HistoryReplayScene.build(state.players.size, arranged, emptyMap()) { index -> assetKey(state, index) }, state)
         sceneCache = key to built
         return built
     }
 
     /**
-     * 擺出場景並套用視角。
+     * 局內牌索引對應的牌面素材。
      *
      * @param state 目前牌面。
-     * @param module 這場對局的規則模組。
-     * @return 場景；牌譜缺少擺牌資料時為 null。
+     * @param index 局內牌索引。
+     * @return 素材；看不到牌面時為 null。
      */
-    private fun buildScene(state: HistoryRoundStateDto, module: MahjongRuleModule<*>): GuideScene? {
-        if (state.wallPlacements == null) return null
-        val notes = ReplayTableNotes.decode(state.presentationNotes) ?: return null
-        val scene = runCatching {
-            HistoryReplayScene.build(
-                state = state,
-                notes = notes,
-                module = module,
-                tileLayout = session.tileLayoutProfiles.profileFor(module.id),
-                sidewaysMarker = { session.discardMarkers.find(it)?.sideways == true },
-                openHands = handsOpen,
-            ) { index -> state.tileCatalog.getOrNull(index)?.toHistoryAssetKey(session.tileAssets, session.networkRegistries) }
-        }.getOrNull() ?: return null
+    private fun assetKey(state: HistoryRoundStateDto, index: Int): String? = state.tileCatalog.getOrNull(index)?.toHistoryAssetKey(session.tileAssets, session.networkRegistries)
+
+    /**
+     * 擺出整桌的牌：手牌依規則排好，依目前的手牌選擇立著或攤開；最近兩份牌面的結果留著，動畫的前後兩步不必重算。
+     *
+     * @param state 牌面。
+     * @return 依局內牌索引的擺放；規則設定還沒讀到或牌譜缺少擺牌資料時為 null。
+     */
+    private fun arrangement(state: HistoryRoundStateDto): Map<Int, ArrangedTile>? {
+        val module = session.ruleModule(state) ?: return null
+        val key = ArrangementKey(state = state, moduleId = module.id, handsOpen = handsOpen)
+        if (key in arrangements) return arrangements[key]
+        val sorted = session.replayState(state)
+        val notes = ReplayTableNotes.decode(sorted.presentationNotes)
+        val built = if (sorted.wallPlacements == null || notes == null) {
+            null
+        } else {
+            runCatching {
+                HistoryReplayArrangement.arrange(
+                    state = sorted,
+                    notes = notes,
+                    module = module,
+                    tileLayout = session.tileLayoutProfiles.profileFor(module.id),
+                    openHands = handsOpen,
+                    sidewaysMarker = { session.discardMarkers.find(it)?.sideways == true },
+                )
+            }.getOrNull()
+        }
+        arrangements[key] = built
+        while (arrangements.size > ARRANGEMENT_CACHE_SIZE) arrangements.remove(arrangements.keys.first())
+        return built
+    }
+
+    /**
+     * 套用視角：選某一家時鏡頭在那個座位後方朝桌子中央看。
+     *
+     * @param scene 場景。
+     * @param state 目前牌面。
+     * @return 套用視角後的場景。
+     */
+    private fun withView(scene: GuideScene, state: HistoryRoundStateDto): GuideScene {
         val seatIndex = state.players.indexOfFirst { it.initialSeatIndex == viewSeat }
         if (seatIndex < 0) return scene
         val seats = MahjongSeatingTableLayout.seatPlacements(
@@ -506,6 +557,56 @@ internal class HistoryReplayScreen(
         val seatYaw = seats.getOrNull(seatIndex)?.yaw ?: return scene
         // 鏡頭在座位後方朝桌子中央看：座位面向桌子的朝向轉半圈，就是讓這個座位落在畫面下方的場景角度。
         return scene.copy(view = GuideSceneView(yawDegrees = seatYaw - HALF_TURN, pitchDegrees = SEAT_VIEW_PITCH), rotatable = false)
+    }
+
+    /**
+     * 推進牌的動畫：顯示的牌面往後一步時播放這一步的動畫，其他換步直接切換；動畫中播放計時暫停，動畫播完才開始停留。
+     *
+     * @param replay 目前回放。
+     * @param now 目前時間。
+     */
+    private fun updateAnimation(replay: HistoryBrowseReplayState?, now: Duration) {
+        val elapsed = lastFrameAt?.let { now - it } ?: Duration.ZERO
+        lastFrameAt = now
+        animation?.let { running ->
+            running.advance(elapsed.toDouble(DurationUnit.SECONDS) * TICKS_PER_SECOND * playback.speed.multiplier).forEach(::playSound)
+            if (running.finished || running.roundNumber != replay?.roundNumber || running.toStep != replay.step) animation = null
+        }
+        val state = replay?.state ?: return
+        val shown = replay.roundNumber to replay.step
+        val previous = shownState
+        if (shown != shownStep) {
+            val forward = shownStep?.first == replay.roundNumber && replay.step == (shownStep?.second ?: 0) + 1
+            animation = previous?.takeIf { forward }?.let { startAnimation(replay.roundNumber, replay.step, it, state) }
+            shownStep = shown
+            shownState = state
+        }
+        if (animation != null) playback.hold(now)
+    }
+
+    /**
+     * 建立往後一步的動畫。
+     *
+     * @param roundNumber 局序號。
+     * @param toStep 動畫結束時的步數。
+     * @param before 這一步開始時的牌面。
+     * @param after 這一步結束時的牌面。
+     * @return 動畫；擺不出牌桌或沒有牌要動時為 null。
+     */
+    private fun startAnimation(roundNumber: Int, toStep: Int, before: HistoryRoundStateDto, after: HistoryRoundStateDto): HistoryReplayAnimation? {
+        val from = arrangement(before) ?: return null
+        val to = arrangement(after) ?: return null
+        return HistoryReplayAnimation(roundNumber = roundNumber, toStep = toStep, before = from, after = to).takeIf { it.durationTicks > 0 }
+    }
+
+    /**
+     * 在客戶端播放動畫的聲音，不屬於任何位置。
+     *
+     * @param sound 聲音步驟。
+     */
+    private fun playSound(sound: AnimationStep.PlaySound) {
+        val event = Identifier.tryParse(sound.soundId)?.let(Registries.SOUND_EVENT::get) ?: return
+        client?.soundManager?.play(PositionedSoundInstance.master(event, sound.pitch, sound.volume))
     }
 
     /**
@@ -815,7 +916,10 @@ internal class HistoryReplayScreen(
             anchor = handButton,
             options = HAND_KEYS.map { DropdownOption(label = Text.translatable(it)) },
             selectedIndex = if (handsOpen) 1 else 0,
-        ) { index -> handsOpen = index == 1 }
+        ) { index ->
+            handsOpen = index == 1
+            animation = null
+        }
     }
 
     /** 展開或收合速度清單。 */
@@ -1105,14 +1209,25 @@ internal class HistoryReplayScreen(
      * 決定場景內容的條件；相同時沿用上次建立的場景。
      *
      * @property state 牌面。
-     * @property moduleId 規則模組 ID；規則設定還沒讀到時為 null。
+     * @property arranged 擺好的牌桌。
      * @property viewSeat 觀看的玩家初始座位；自由視角為 null。
-     * @property handsOpen 手牌是否面朝上攤開。
      */
     private data class SceneKey(
         val state: HistoryRoundStateDto,
-        val moduleId: String?,
+        val arranged: Map<Int, ArrangedTile>,
         val viewSeat: Int?,
+    )
+
+    /**
+     * 決定牌桌擺法的條件。
+     *
+     * @property state 牌面。
+     * @property moduleId 規則模組 ID。
+     * @property handsOpen 手牌是否面朝上攤開。
+     */
+    private data class ArrangementKey(
+        val state: HistoryRoundStateDto,
+        val moduleId: String,
         val handsOpen: Boolean,
     )
 
@@ -1189,6 +1304,12 @@ internal class HistoryReplayScreen(
 
         /** 進度條上下可點擊的額外範圍。 */
         const val PROGRESS_HIT_MARGIN = 3
+
+        /** 一秒的遊戲 tick 數，動畫依此換算時間。 */
+        const val TICKS_PER_SECOND = 20.0
+
+        /** 留著的擺好牌桌份數：動畫前後兩步。 */
+        const val ARRANGEMENT_CACHE_SIZE = 2
 
         /** 全螢幕時滑鼠沒動多久後控制區開始淡出。 */
         val CONTROLS_HIDE_DELAY: Duration = 2.seconds

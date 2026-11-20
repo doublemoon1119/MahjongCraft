@@ -114,6 +114,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileWallTr
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongWinCelebrationPresentation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.PlannedTileMotion
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.PlannedTileMotionSteps
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TableStepMotionPlanner
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TableTileArrangement
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TableTileArrangementInput
@@ -678,17 +679,14 @@ class FabricGamePresentationPublisher(
             excludedTileIds = rearrangedTileIds,
             dropsOnArrival = { tileId -> state.physicalWallLayout == null && resolved.findTile(tileId) == null },
         )
-        // 一起落到同一排的牌只播一次落地聲。
-        val soundTileIds = motions.groupBy { it.kind to it.toRow }.values.mapTo(mutableSetOf()) { group -> group.first().tileId }
-        // 先離開、再讓位、最後從牌牆摸進來；後一段等前一段完成。
         val phaseStarts = TableStepMotionPlanner.phaseStartTicks(motions)
+        val tileSteps = PlannedTileMotionSteps.forStep(motions, startGameTime)
         motions.forEach { motion ->
             val tile = resolved.findTile(motion.tileId) ?: (
                 if (motion.kind == TileMotionKind.DROP) spawnTableTile(spawnGateway, resolved.world, gameId, motion.tileId, motion.to) else null
                 ) ?: return@forEach
             tile.assignToTable(gameId)
-            val motionStart = startGameTime + phaseStarts.getValue(TableStepMotionPlanner.phaseOf(motion.kind))
-            TileAnimationSteps.schedulePlannedMotion(tile, motion, motionStart, playLandingSound = motion.tileId in soundTileIds)
+            TileAnimationSteps.schedule(tile, tileSteps.getValue(motion.tileId))
         }
         privateHandOrderSender.sendStep(
             tableId = gameId,

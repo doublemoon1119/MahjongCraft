@@ -1,7 +1,5 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.client.history
 
-import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryRoundStateDto
-import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
 import com.doublemoon1119.mahjongcraft.logic.tile.component.TilePose
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.guide.scene.GuideScene
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.guide.scene.GuideSceneBox
@@ -11,58 +9,50 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.client.guide.scene.GuideS
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongTilePose
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.table.MahjongTableFacing
 import com.doublemoon1119.mahjongcraft.platform.minecraft.history.HistoryReplayArrangement
-import com.doublemoon1119.mahjongcraft.platform.minecraft.history.ReplayTableNotes
 import com.doublemoon1119.mahjongcraft.platform.minecraft.seating.MahjongSeatingTableLayout
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongTableSeatLayout
-import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TableTileLayoutProfile
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.ArrangedTile
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileAnimationSample
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileLean
 
 /** 把牌譜保存的一份桌況擺成可以轉動的牌桌場景，牌的位置與對局中相同。 */
 internal object HistoryReplayScene {
     /**
      * 建立場景。
      *
-     * @param state 牌譜保存的桌況。
-     * @param notes 牌譜保存的擺放附註。
-     * @param module 這場對局的規則模組。
-     * @param tileLayout 規則的桌面牌位配置。
-     * @param sidewaysMarker 牌河標記是否代表橫放。
-     * @param openHands 是否把每一家的手牌面朝上攤開。
+     * @param playerCount 這一局的人數，決定凳子的位置。
+     * @param arranged 依局內牌索引排列的牌桌擺放，例如 [HistoryReplayArrangement.arrange] 的結果。
+     * @param samples 正在播放動畫的牌在這一刻的樣子，取代擺放中的位置；隱形的牌不畫。
      * @param assetKey 局內牌索引對應的牌面素材；看不到牌面時為 null。
      * @return 牌桌場景。
      */
     fun build(
-        state: HistoryRoundStateDto,
-        notes: ReplayTableNotes,
-        module: MahjongRuleModule<*>,
-        tileLayout: TableTileLayoutProfile,
-        sidewaysMarker: (String) -> Boolean,
-        openHands: Boolean,
+        playerCount: Int,
+        arranged: Map<Int, ArrangedTile>,
+        samples: Map<Int, TileAnimationSample>,
         assetKey: (Int) -> String?,
     ): GuideScene {
-        val arranged = HistoryReplayArrangement.arrange(
-            state = state,
-            notes = notes,
-            module = module,
-            tileLayout = tileLayout,
-            openHands = openHands,
-            sidewaysMarker = sidewaysMarker,
-        )
-        val tiles = arranged.map { (index, tile) ->
+        val tiles = arranged.mapNotNull { (index, tile) ->
+            val sample = samples[index]
+            if (sample?.invisible == true) return@mapNotNull null
+            val placement = sample?.placement ?: tile.placement
             GuideSceneTile(
                 assetKey = assetKey(index),
-                x = tile.placement.x,
-                y = tile.placement.y,
-                z = tile.placement.z,
-                yaw = tile.placement.yaw,
+                x = placement.x,
+                y = placement.y,
+                z = placement.z,
+                yaw = placement.yaw,
                 pose = when (tile.pose) {
                     TilePose.UPRIGHT -> MahjongTilePose.STANDING
                     TilePose.FACE_UP -> MahjongTilePose.FACE_UP
                     TilePose.FACE_DOWN -> MahjongTilePose.FACE_DOWN
                 },
+                poseDegrees = sample?.poseDegrees,
+                lean = sample?.lean ?: TileLean.NONE,
             )
         }
         val seats = MahjongSeatingTableLayout.seatPlacements(
-            layout = MahjongTableSeatLayout.forPlayerCount(state.players.size),
+            layout = MahjongTableSeatLayout.forPlayerCount(playerCount),
             controllerX = 0,
             controllerY = 0,
             controllerZ = 0,
