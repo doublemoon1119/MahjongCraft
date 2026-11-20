@@ -77,6 +77,7 @@ class HistoryRoundResponseBudgetTest {
             identity = identity, roundNumber = 1, position = HistoryRoundPosition.Initial, tileCatalog = HistoryRoundTileCatalog((listOf(Tile.Honor.East)).map(::TileFaceView)),
             players = emptyList(), wallTiles = emptyList(), reservedTiles = emptyList(), currentPlayerSeat = 0, dealerSeat = 0, prevalentWind = Wind.EAST, roundPosition = MatchRoundPosition.initial(),
             comboCount = 0, finishedPlayerSeats = emptySet(), hasPendingReaction = false, hasPendingRobbingReaction = false, outcome = null,
+            wallPlacements = null, discardOrder = emptyList(), tilePoses = emptyMap(), presentationNotes = null,
         )
         val request = HistoryRoundStateRequestDto("state", identity.matchId.toString(), roundNumber = 1, scope = HistoryQueryScopeDto.OWN, position = HistoryRoundPositionDto.Initial)
         assertNotNull(boundedHistoryRoundState(request, state, bundledNetworkJson(), DefaultNetworkDtoRegistries()).state)

@@ -33,7 +33,7 @@ fun TileWallPhysicalLayoutDto.toDomain(): TileWallPhysicalLayout = TileWallPhysi
  *
  * @return 轉換後的資料。
  */
-private fun TileWallPlacement.toDto(): TileWallPlacementDto = TileWallPlacementDto(
+fun TileWallPlacement.toDto(): TileWallPlacementDto = TileWallPlacementDto(
     side = position.side,
     stack = position.stack,
     layer = position.layer,
@@ -48,7 +48,7 @@ private fun TileWallPlacement.toDto(): TileWallPlacementDto = TileWallPlacementD
  *
  * @return 轉換後的資料。
  */
-private fun TileWallPlacementDto.toDomain(): TileWallPlacement = TileWallPlacement(
+fun TileWallPlacementDto.toDomain(): TileWallPlacement = TileWallPlacement(
     position = TileWallPosition(side, stack, layer),
     offset = TileWallPlacementOffset(alongWallStacks, towardTableCenterTiles, upwardLayers),
     orientation = TileWallPlacementOrientation.valueOf(orientation.name),

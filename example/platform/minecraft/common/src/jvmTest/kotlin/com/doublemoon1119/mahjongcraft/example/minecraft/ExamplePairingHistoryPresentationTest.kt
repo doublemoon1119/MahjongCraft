@@ -15,6 +15,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameFlowConfig
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.HistoryRecordingPersistenceMapper
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.replay.CompactReplayCodec
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.replay.CompactReplayRoundReader
+import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.replay.ReplayPresentationNotes
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.replay.ReplayReadResult
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.registry.emptyPersistenceRegistries
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
@@ -98,6 +99,7 @@ class ExamplePairingHistoryPresentationTest {
             events = events,
             mapper = HistoryRecordingPersistenceMapper(registries),
             registries = registries,
+            presentationNotes = ReplayPresentationNotes.NONE,
         )
 
         val read = CompactReplayRoundReader(registries.componentViews).readEvents(

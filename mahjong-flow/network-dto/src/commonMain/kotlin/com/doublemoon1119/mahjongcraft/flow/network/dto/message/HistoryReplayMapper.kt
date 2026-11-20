@@ -247,6 +247,10 @@ fun HistoryRoundState.toDto(registries: NetworkDtoConverter): HistoryRoundStateD
     hasPendingReaction = hasPendingReaction,
     hasPendingRobbingReaction = hasPendingRobbingReaction,
     outcome = outcome?.toDto(registries),
+    wallPlacements = wallPlacements?.entries?.associate { (tile, placement) -> tile.tileIndex to placement.toDto() },
+    discardOrder = discardOrder.map { it.tileIndex },
+    tilePoses = tilePoses.entries.associate { (tile, pose) -> tile.tileIndex to pose.toDto() },
+    presentationNotes = presentationNotes,
 )
 
 /**

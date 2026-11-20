@@ -3,6 +3,7 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.histor
 import com.doublemoon1119.mahjongcraft.flow.common.concurrency.AppCoroutineScope
 import com.doublemoon1119.mahjongcraft.flow.common.concurrency.CoroutineDispatchers
 import com.doublemoon1119.mahjongcraft.flow.common.error.ExtensionFailurePolicy
+import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.replay.ReplayPresentationNotes
 import com.doublemoon1119.mahjongcraft.flow.server.game.history.generation.HeadlessFlowHistoryRuntime
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.AiDecisionExecutor
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateStore
@@ -133,6 +134,7 @@ class HistoryGenerationControllerTest {
         dispatchers = TestDispatchers,
         moduleRegistry = MahjongModuleRegistryImpl().apply { registerBundledRuleModules() },
         locations = TableLocationRegistry(),
+        presentationNotes = ReplayPresentationNotes.NONE,
         configState = configState,
         retentionCoordinator = HistoryRetentionCoordinator(),
     )

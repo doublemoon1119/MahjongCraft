@@ -6,6 +6,8 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryTableResu
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.game.toPersistenceDto
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.HistoryRecordingPersistenceMapper
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.replay.CompactReplayCodec
+import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.replay.ReplayPresentationNotes
+import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.replay.ReplayWallLayoutFormat
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiGameLength
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledPersistenceRegistries
@@ -13,6 +15,7 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.encodeToJsonElement
@@ -44,7 +47,7 @@ class CompactReplayCapacityTest {
     fun `fixed matches stay within replay capacity and decode every transaction`() {
         for (fixture in ReplayCapacityFixtures.all) {
             val measurement = verifyMatch(fixture.events)
-            assertTrue(measurement.jsonBytes <= MAX_JSON_BYTES, "Compact Replay JSON exceeds 230 KB: ${measurement.jsonBytes} bytes")
+            assertTrue(measurement.jsonBytes <= MAX_JSON_BYTES, "Compact Replay JSON exceeds 250 KB: ${measurement.jsonBytes} bytes")
             assertTrue(measurement.gzipBytes <= MAX_GZIP_BYTES, "Compact Replay gzip exceeds 35 KB: ${measurement.gzipBytes} bytes")
         }
     }
@@ -53,8 +56,8 @@ class CompactReplayCapacityTest {
     @Test
     fun `repeated encoding of the same match is identical`() {
         val events = ReplayCapacityFixtures.east1.events
-        val first = CompactReplayCodec.encodeCompact(events, mapper, registries).toString()
-        val second = CompactReplayCodec.encodeCompact(events, mapper, registries).toString()
+        val first = CompactReplayCodec.encodeCompact(events, mapper, registries, ReplayPresentationNotes.NONE).toString()
+        val second = CompactReplayCodec.encodeCompact(events, mapper, registries, ReplayPresentationNotes.NONE).toString()
         assertEquals(first, second)
     }
 
@@ -89,7 +92,7 @@ class CompactReplayCapacityTest {
      */
     private fun verifyMatch(events: List<HistoryOutboxEvent>): Measurement {
         val expected = expectedProjections(events)
-        val production = CompactReplayCodec.encodeCompact(events, mapper, registries)
+        val production = CompactReplayCodec.encodeCompact(events, mapper, registries, ReplayPresentationNotes.NONE)
         val productionText = production.toString()
         val decoded = CompactReplayCodec.decodeCompact(production)
         assertEquals(expected, decoded.map { round -> round.map { it.projection } })
@@ -226,7 +229,11 @@ class CompactReplayCapacityTest {
             componentRegistry = registries.components,
         )
         val encoded = json.encodeToJsonElement(dto) as JsonObject
-        val gameplay = encoded.filterKeys { it !in setOf("id", "config", "physicalWallLayout", "roundSerial", "discardOrder") }.toMutableMap()
+        val gameplay = encoded.filterKeys { it !in setOf("id", "config", "roundSerial") }.toMutableMap()
+        gameplay["physicalWallLayout"] = index.wallLayout.project(
+            layout = state.physicalWallLayout,
+            wallTileIds = state.tileWall.getAllTiles().map { it.id } + state.reservedWallTiles.map { it.id },
+        ) { tileId -> index.tileIds.getValue(tileId.toString()) }
         // 即時提交的視窗身分不參與歷史內容投影。
         (gameplay["turnPhase"] as? JsonObject)?.let { phase ->
             (phase["reaction"] as? JsonObject)?.let { reaction ->
@@ -250,7 +257,7 @@ class CompactReplayCapacityTest {
                 JsonObject(projected)
             },
         )
-        return translate(JsonObject(gameplay), index)
+        return JsonObject((translate(JsonObject(gameplay), index) as JsonObject) + ("presentationNotes" to JsonNull))
     }
 
     /**
@@ -364,6 +371,7 @@ class CompactReplayCapacityTest {
      * @property encodedTiles 實體牌 UUID 對應的原始牌種 DTO，用於檢查種類不變。
      * @property playerIds 玩家 UUID 到座位索引的對照。
      * @property typeDictionary 跨局共用的牌種 DTO 字典。
+     * @property wallLayout 本局逐筆交易保存的實體牌牆格位。
      */
     private data class RoundIndex(
         val tileIds: MutableMap<String, Int>,
@@ -371,6 +379,7 @@ class CompactReplayCapacityTest {
         val encodedTiles: MutableMap<String, JsonElement>,
         val playerIds: Map<String, Int>,
         val typeDictionary: MutableMap<String, JsonElement>,
+        val wallLayout: ReplayWallLayoutFormat.RoundLayout = ReplayWallLayoutFormat.RoundLayout(),
     ) {
         /** 建立查詢快取時的牌種數量；牌種字典只會增加，數量不同就重建快取。 */
         private var cachedTypeCount = -1
@@ -427,7 +436,7 @@ class CompactReplayCapacityTest {
         const val MAX_MEASUREMENT_BATCHES = 25
 
         /** 正式牌譜 JSON 的位元組上限。 */
-        const val MAX_JSON_BYTES = 230_000
+        const val MAX_JSON_BYTES = 250_000
 
         /** 正式牌譜 GZIP 後的位元組上限。 */
         const val MAX_GZIP_BYTES = 35_000

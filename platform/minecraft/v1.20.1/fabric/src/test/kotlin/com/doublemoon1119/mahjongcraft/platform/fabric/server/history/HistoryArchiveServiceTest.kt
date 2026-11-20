@@ -11,6 +11,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameFlowConfig
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.HistoryOutboxEventPersistenceDto
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.HistoryRecordingPersistenceMapper
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.replay.CompactReplayCodec
+import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.replay.ReplayPresentationNotes
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateSnapshot
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateStore
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateUpdate
@@ -160,7 +161,7 @@ class HistoryArchiveServiceTest {
         val registries = bundledPersistenceRegistries()
         val mapper = HistoryRecordingPersistenceMapper(registries)
         val modules = MahjongModuleRegistryImpl().apply { registerBundledRuleModules() }
-        val service = HistoryArchiveService(mapper, registries, modules, TableLocationRegistry())
+        val service = HistoryArchiveService(mapper, registries, modules, TableLocationRegistry(), ReplayPresentationNotes.NONE)
         val path = createTempDirectory("mahjongcraft-history-repeated-round-").resolve("history.sqlite")
         val database = SqliteHistoryDatabase.open(path)
         database.appendPendingBatch(
@@ -217,7 +218,7 @@ class HistoryArchiveServiceTest {
         val registries = bundledPersistenceRegistries()
         val mapper = HistoryRecordingPersistenceMapper(registries)
         val modules = MahjongModuleRegistryImpl().apply { registerBundledRuleModules() }
-        val service = HistoryArchiveService(mapper, registries, modules, TableLocationRegistry())
+        val service = HistoryArchiveService(mapper, registries, modules, TableLocationRegistry(), ReplayPresentationNotes.NONE)
         val path = createTempDirectory("mahjongcraft-history-archive-").resolve("history.sqlite")
         val database = SqliteHistoryDatabase.open(path)
         database.appendPendingBatch(
@@ -335,7 +336,7 @@ class HistoryArchiveServiceTest {
         val registries = bundledPersistenceRegistries()
         val mapper = HistoryRecordingPersistenceMapper(registries)
         val modules = MahjongModuleRegistryImpl().apply { registerBundledRuleModules() }
-        val service = HistoryArchiveService(mapper, registries, modules, TableLocationRegistry())
+        val service = HistoryArchiveService(mapper, registries, modules, TableLocationRegistry(), ReplayPresentationNotes.NONE)
         val path = createTempDirectory("mahjongcraft-history-generated-table-change-").resolve("history.sqlite")
         val database = SqliteHistoryDatabase.open(path)
         database.appendPendingBatch(
@@ -556,6 +557,7 @@ class HistoryArchiveServiceTest {
             registries = registries,
             moduleRegistry = MahjongModuleRegistryImpl().apply { registerBundledRuleModules() },
             locations = TableLocationRegistry(),
+            presentationNotes = ReplayPresentationNotes.NONE,
             appearanceFor = appearanceFor,
         )
 

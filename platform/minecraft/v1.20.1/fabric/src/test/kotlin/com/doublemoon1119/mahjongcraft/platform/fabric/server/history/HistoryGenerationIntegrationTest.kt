@@ -8,6 +8,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.history.query.HistoryQue
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.query.HistoryQueryResult
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.query.HistoryQueryScope
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryRoundPosition
+import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.replay.ReplayPresentationNotes
 import com.doublemoon1119.mahjongcraft.flow.server.game.history.generation.HeadlessFlowHistoryRuntime
 import com.doublemoon1119.mahjongcraft.flow.server.game.history.generation.HeadlessHistoryMatchRunner
 import com.doublemoon1119.mahjongcraft.flow.server.game.history.generation.HeadlessHistoryProgress
@@ -337,6 +338,7 @@ class HistoryGenerationIntegrationTest {
         dispatchers = TestDispatchers,
         moduleRegistry = MahjongModuleRegistryImpl().apply { registerBundledRuleModules() },
         locations = TableLocationRegistry(),
+        presentationNotes = ReplayPresentationNotes.NONE,
         configState = MinecraftServerConfigState(MinecraftServerConfig(history = historyConfig)),
         retentionCoordinator = HistoryRetentionCoordinator(),
     )

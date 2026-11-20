@@ -532,6 +532,10 @@ class HistoryBrowseRoundControllerTest {
         hasPendingReaction = false,
         hasPendingRobbingReaction = false,
         outcome = null,
+        wallPlacements = null,
+        discardOrder = emptyList(),
+        tilePoses = emptyMap(),
+        presentationNotes = null,
     )
 
     /** 模擬局內查詢傳輸，只暴露要求與手動回覆。 */

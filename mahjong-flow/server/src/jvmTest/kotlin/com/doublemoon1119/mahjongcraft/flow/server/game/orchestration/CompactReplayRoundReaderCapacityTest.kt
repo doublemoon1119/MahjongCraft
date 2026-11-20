@@ -8,6 +8,7 @@ import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.HistoryRe
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.replay.CompactReplayCodec
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.replay.CompactReplayRoundReader
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.replay.ReplayJsonParseLimits
+import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.replay.ReplayPresentationNotes
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.replay.ReplayReadResult
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.replay.parseBoundedReplayJson
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledPersistenceRegistries
@@ -31,7 +32,7 @@ class CompactReplayRoundReaderCapacityTest {
         val registries = bundledPersistenceRegistries()
         val reader = CompactReplayRoundReader(registries.componentViews)
         for (fixture in ReplayCapacityFixtures.all) {
-            val document = CompactReplayCodec.encodeCompact(fixture.events, HistoryRecordingPersistenceMapper(registries), registries)
+            val document = CompactReplayCodec.encodeCompact(fixture.events, HistoryRecordingPersistenceMapper(registries), registries, ReplayPresentationNotes.NONE)
             val parsed = assertIs<ReplayReadResult.Success<JsonObject>>(
                 value = parseBoundedReplayJson(document.toString(), ReplayJsonParseLimits(maximumUtf8Bytes = 8 * 1024 * 1024)),
             ).value

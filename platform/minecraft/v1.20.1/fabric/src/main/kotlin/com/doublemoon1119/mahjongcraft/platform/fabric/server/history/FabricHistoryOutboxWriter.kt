@@ -24,6 +24,7 @@ import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.HistoryRe
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.replay.CompactReplayCodec
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.replay.CompactReplayRoundReader
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.replay.ReplayJsonParseLimits
+import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.replay.ReplayPresentationNotes
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.replay.ReplayReadResult
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.replay.parseBoundedReplayJson
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.registry.PersistenceRegistries
@@ -65,6 +66,7 @@ import kotlin.uuid.Uuid
  * @property dispatchers 平台提供的 I/O dispatcher。
  * @param moduleRegistry 解析開局使用的規則模組；只交給封存服務。
  * @param locations 取得牌桌位置摘要；只交給封存服務。
+ * @param presentationNotes 為牌譜每份桌況附上擺放附註的來源；只交給封存服務。
  * @property configState 目前有效的不可變設定，供 session 初始化使用。
  * @property retentionCoordinator 將清理與有效政策更新排序的協調邊界。
  * @property observer 接收背景工作各環節耗時與寫入事件數；null 時不量測。
@@ -76,6 +78,7 @@ class FabricHistoryOutboxWriter(
     private val dispatchers: CoroutineDispatchers,
     moduleRegistry: MahjongModuleRegistry,
     locations: TableLocationRegistry,
+    presentationNotes: ReplayPresentationNotes,
     private val configState: MinecraftServerConfigState,
     private val retentionCoordinator: HistoryRetentionCoordinator,
     private val observer: HistoryWriterObserver? = null,
@@ -91,7 +94,7 @@ class FabricHistoryOutboxWriter(
     private val replayRegistries: PersistenceRegistries = registries
 
     /** 對帳待寫事件並建立完整 Replay 的服務。 */
-    private val archiveService = HistoryArchiveService(mapper, registries, moduleRegistry, locations, characterAppearance)
+    private val archiveService = HistoryArchiveService(mapper, registries, moduleRegistry, locations, presentationNotes, characterAppearance)
 
     /** 共用唯讀 preview 與清理政策的 I/O 維護服務。 */
     private val retentionService = HistoryRetentionService(store)

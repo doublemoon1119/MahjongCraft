@@ -3,6 +3,7 @@ package com.doublemoon1119.mahjongcraft.flow.persistence.format.history.replay
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryTileReference
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.component.ComponentViewPersistenceRegistry
 import com.doublemoon1119.mahjongcraft.logic.tile.component.TilePose
+import kotlinx.serialization.json.JsonElement
 
 /**
  * 回放讀取的受限上下文，驗證局內牌與座位索引並扣除工作預算。
@@ -42,4 +43,11 @@ internal class HistoryReplayProjectionContext(
      * @param units 工作單位數。
      */
     fun charge(units: Long = 1L) = budget.charge(units)
+
+    /**
+     * 依節點數與內容大小扣除走訪一段原樣保存資料的預算。
+     *
+     * @param element 待走訪的資料。
+     */
+    fun inspect(element: JsonElement) = budget.inspectProjection(element)
 }

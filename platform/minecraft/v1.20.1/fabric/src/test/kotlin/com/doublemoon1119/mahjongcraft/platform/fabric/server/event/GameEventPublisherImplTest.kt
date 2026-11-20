@@ -4,6 +4,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.Game
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameConfig
 import com.doublemoon1119.mahjongcraft.flow.common.game.repository.GameSnapshotRepositoryImpl
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.DefaultNetworkDtoRegistries
+import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.replay.ReplayPresentationNotes
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateSnapshot
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateStore
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
@@ -108,6 +109,7 @@ class GameEventPublisherImplTest {
         registries = bundledPersistenceRegistries(),
         moduleRegistry = MahjongModuleRegistryImpl(),
         locations = TableLocationRegistry(),
+        presentationNotes = ReplayPresentationNotes.NONE,
         configState = MinecraftServerConfigState(),
         retentionCoordinator = HistoryRetentionCoordinator(),
         dispatchers = TestCoroutineDispatchers(),

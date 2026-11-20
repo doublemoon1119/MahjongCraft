@@ -95,12 +95,14 @@ object CompactReplayCodec {
      * @param events 同一場對局的完整權威事件。
      * @param mapper 將權威事件轉為持久化 DTO 的映射器。
      * @param registries 將桌況與牌種轉為持久化資料所需的註冊表。
+     * @param presentationNotes 為每份桌況附上呈現附註的外層來源。
      * @return 不包含逐張牌 UUID 的精簡 Replay 文件。
      */
     fun encodeCompact(
         events: List<HistoryOutboxEvent>,
         mapper: HistoryRecordingPersistenceMapper,
         registries: PersistenceRegistries,
+        presentationNotes: ReplayPresentationNotes,
     ): JsonObject {
         require(events.isNotEmpty()) { "Replay requires at least one history event" }
         validateDomainEvents(events)
@@ -164,7 +166,7 @@ object CompactReplayCodec {
                         rounds += MutableRound(
                             number = rounds.size + 1,
                             tileTypes = openingIndex.tileTypes.toList(),
-                            initial = project(openingState, openingIndex, registries),
+                            initial = project(openingState, openingIndex, registries, presentationNotes),
                             transactions = mutableListOf(),
                         )
                         parts[ReplayFormatKeys.ROUND_OPENING] = JsonPrimitive(true)
@@ -198,7 +200,7 @@ object CompactReplayCodec {
             if (facts.isNotEmpty()) putFacts(parts, facts, index, factTypes, actionTypes, presentationTypes)
             val round = rounds.last()
             if (tableChanged) {
-                val after = project(state, index, registries)
+                val after = project(state, index, registries, presentationNotes)
                 val before = if (openedRound) round.initial else round.replayed
                 val delta = JsonDelta.diff(before, after)
                 val patch = delta?.let { FlatPatchCodec.encode(it, patchPaths) }
@@ -480,15 +482,22 @@ object CompactReplayCodec {
      * @param state 待投影的權威桌況。
      * @param index 本局牌與玩家的索引。
      * @param registries 桌況 DTO 編碼所需的擴充 registry。
+     * @param presentationNotes 外層附上的呈現附註來源。
      * @return 已將牌與玩家參照轉為索引的內容投影。
      */
     private fun project(
         state: TableState,
         index: RoundIndex,
         registries: PersistenceRegistries,
+        presentationNotes: ReplayPresentationNotes,
     ): JsonElement {
         val encoded = persistenceJson.encodeToJsonElement(state.toPersistenceDto(registries.ruleConfigs, registries.discardPiles, registries.exhaustiveDrawReasons, registries.extensionGameActions, registries.components)).jsonObject
         val gameplay = encoded.filterKeys { it !in PROJECTION_EXCLUDED_TABLE_KEYS }.toMutableMap()
+        gameplay[ReplaySourceKeys.PHYSICAL_WALL_LAYOUT] = index.wallLayout.project(
+            layout = state.physicalWallLayout,
+            wallTileIds = state.tileWall.getAllTiles().map { it.id } + state.reservedWallTiles.map { it.id },
+        ) { tileId -> index.tileIds.getValue(tileId.toString()) }
+        val notes = presentationNotes.notesFor(state)
         // 視窗身分只用於驗證即時提交，不屬於可回放的牌局內容。
         (gameplay[ReplaySourceKeys.TURN_PHASE] as? JsonObject)?.let { phase ->
             (phase[ReplaySourceKeys.TURN_PHASE_REACTION] as? JsonObject)?.let { reaction ->
@@ -506,7 +515,8 @@ object CompactReplayCodec {
                 JsonObject(projected)
             },
         )
-        return translate(JsonObject(gameplay), index)
+        // 附註由外層定義且不含 UUID，放在轉換之後，不改動其中的值。
+        return JsonObject(translate(JsonObject(gameplay), index).jsonObject + (ReplayFormatKeys.PRESENTATION_NOTES to (notes ?: JsonNull)))
     }
 
     /**
@@ -681,6 +691,7 @@ object CompactReplayCodec {
      * @property typeDictionary 跨局共用的牌種資料字典。
      * @property compactPayloadTypeKeys 登記為可壓縮的資料 type key；其他帶 type key 的資料保留原始內容。
      * @property meldIds 本局副露穩定身分的獨立索引，不與牌張索引混用。
+     * @property wallLayout 本局逐筆交易保存的實體牌牆格位。
      */
     private data class RoundIndex(
         val tileIds: MutableMap<String, Int>,
@@ -690,6 +701,7 @@ object CompactReplayCodec {
         val typeDictionary: MutableMap<String, JsonElement>,
         val compactPayloadTypeKeys: Set<String>,
         val meldIds: MutableMap<String, Int> = linkedMapOf(),
+        val wallLayout: ReplayWallLayoutFormat.RoundLayout = ReplayWallLayoutFormat.RoundLayout(),
     ) {
         /** 建立查詢快取時的牌種數量；牌種字典只會增加，數量不同就重建快取。 */
         private var cachedTypeCount = -1
@@ -795,14 +807,14 @@ object CompactReplayCodec {
     }
 
     /**
-     * 桌況投影不保存的桌級欄位：桌子身分、規則設定、實體布局與規則桌況，以及只供呈現使用的本場局序與可由捨牌事實得知的打牌順序。
+     * 桌況投影不保存的桌級欄位：桌子身分、規則設定與只供即時呈現使用的本場局序。
+     *
+     * 實體牌牆格位與打牌順序會保存，回放才能照對局中的位置擺出牌牆與散放的牌河。
      */
     private val PROJECTION_EXCLUDED_TABLE_KEYS = setOf(
         ReplaySourceKeys.ID,
         ReplaySourceKeys.CONFIG,
-        ReplaySourceKeys.PHYSICAL_WALL_LAYOUT,
         ReplaySourceKeys.ROUND_SERIAL,
-        ReplaySourceKeys.DISCARD_ORDER,
     )
 
     /** 玩家投影不保存的欄位：玩家身分、AI 策略、動作歷史、規則格式的牌河與規則狀態。 */

@@ -2,6 +2,7 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.stress
 
 import com.doublemoon1119.mahjongcraft.flow.common.concurrency.CoroutineDispatchers
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.HistoryRecordingPersistenceMapper
+import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.replay.ReplayPresentationNotes
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.registry.PersistenceRegistries
 import com.doublemoon1119.mahjongcraft.flow.server.game.history.HistoryTilePresentationResolver
 import com.doublemoon1119.mahjongcraft.flow.server.game.history.generation.HeadlessStepTimer
@@ -38,6 +39,7 @@ import kotlin.time.TimeSource
  * @property dispatchers 背景工作使用的 dispatcher。
  * @property moduleRegistry 封存 Replay 時解析規則用。
  * @property locations 封存 Replay 時解析場地用。
+ * @property presentationNotes 封存 Replay 時為每份桌況附上擺放附註。
  * @property tilePresentationResolver 解算牌譜保存的牌張呈現。
  */
 class StressTestEnvironmentFactory(
@@ -45,6 +47,7 @@ class StressTestEnvironmentFactory(
     private val dispatchers: CoroutineDispatchers,
     private val moduleRegistry: MahjongModuleRegistry,
     private val locations: TableLocationRegistry,
+    private val presentationNotes: ReplayPresentationNotes,
     private val tilePresentationResolver: HistoryTilePresentationResolver,
 ) {
     private val logger = mahjongCraftLogger(StressTestEnvironmentFactory::class)
@@ -103,6 +106,7 @@ class StressTestEnvironmentFactory(
             dispatchers = dispatchers,
             moduleRegistry = moduleRegistry,
             locations = locations,
+            presentationNotes = presentationNotes,
             configState = MinecraftServerConfigState(MinecraftServerConfig(history = STRESS_HISTORY_CONFIG)),
             retentionCoordinator = retention,
             observer = writerTimer,

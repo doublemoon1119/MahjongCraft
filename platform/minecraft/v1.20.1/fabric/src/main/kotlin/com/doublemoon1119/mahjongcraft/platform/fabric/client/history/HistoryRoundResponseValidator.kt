@@ -135,7 +135,15 @@ internal object HistoryRoundResponseValidator {
             return HistoryRoundValidationResult.Invalid(HistoryRoundValidationError.SEAT_INDEX_INVALID)
         }
         if (!state.tileCatalog.all { it.isDisplayableHistoryFace() }) return HistoryRoundValidationResult.Invalid(HistoryRoundValidationError.CONTENT_MISMATCH)
-        if (!validTileIndexes(state.tileCatalog.size, state.wallTiles) || !validTileIndexes(state.tileCatalog.size, state.reservedTiles)) {
+        val wallAndReserved = (state.wallTiles + state.reservedTiles).toSet()
+        val discarded = state.players.flatMap { player -> player.discards.map { it.tile } }.toSet()
+        if (!validTileIndexes(state.tileCatalog.size, state.wallTiles) ||
+            !validTileIndexes(state.tileCatalog.size, state.reservedTiles) ||
+            state.wallPlacements?.keys?.all(wallAndReserved::contains) == false ||
+            !discarded.containsAll(state.discardOrder) ||
+            state.discardOrder.distinct().size != state.discardOrder.size ||
+            !validTileIndexes(state.tileCatalog.size, state.tilePoses.keys.toList())
+        ) {
             return HistoryRoundValidationResult.Invalid(HistoryRoundValidationError.TILE_INDEX_INVALID)
         }
         for (player in state.players) {

@@ -299,5 +299,9 @@ class HistoryRoundStatePresentationTest {
                 hasEarlierWinSettlement = false,
             )
         },
+        wallPlacements = null,
+        discardOrder = emptyList(),
+        tilePoses = emptyMap(),
+        presentationNotes = null,
     )
 }

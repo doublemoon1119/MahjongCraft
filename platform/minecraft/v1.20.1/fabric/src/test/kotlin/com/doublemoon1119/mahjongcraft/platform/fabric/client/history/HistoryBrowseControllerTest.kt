@@ -1081,6 +1081,10 @@ class HistoryBrowseControllerTest {
                 hasPendingReaction = false,
                 hasPendingRobbingReaction = false,
                 outcome = null,
+                wallPlacements = null,
+                discardOrder = emptyList(),
+                tilePoses = emptyMap(),
+                presentationNotes = null,
             )
             mutableState.value = ClientHistoryQueryState.RoundStateResult(
                 response = HistoryRoundStateResponseDto(requestId, matchId, 1, HistoryRoundPositionDto.Initial, state, errorCode = null),

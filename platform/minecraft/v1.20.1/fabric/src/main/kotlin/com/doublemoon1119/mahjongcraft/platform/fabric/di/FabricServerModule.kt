@@ -285,6 +285,7 @@ val fabricServerModule = module {
             dispatchers = get(),
             moduleRegistry = get(),
             locations = get(),
+            presentationNotes = get(),
             configState = get(),
             retentionCoordinator = get(),
             characterAppearance = { matchId, playerId -> get<FabricAuthoritativeStatePersistence>().characterSnapshot()?.characters?.matchPlayers(matchId)?.get(playerId) },

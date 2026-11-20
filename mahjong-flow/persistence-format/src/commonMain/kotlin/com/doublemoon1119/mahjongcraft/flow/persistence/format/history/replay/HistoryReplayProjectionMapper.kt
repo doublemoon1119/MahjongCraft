@@ -38,6 +38,7 @@ import com.doublemoon1119.mahjongcraft.logic.base.NamespacedId
 import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.logic.table.RoundCompletionClassification
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
+import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPlacement
 import com.doublemoon1119.mahjongcraft.logic.tile.component.TilePose
 import kotlinx.serialization.builtins.ListSerializer
 import kotlinx.serialization.json.JsonArray
@@ -100,12 +101,43 @@ internal object HistoryReplayProjectionMapper {
         val meldSources = players.flatMap { player -> player.melds.mapNotNull { it.sourceTile } }.toSet()
         require(players.all { player -> player.discards.all { !it.isTaken || it.tile in meldSources } }) { "Replay taken discard must be the source of a meld" }
         val phaseType = string(obj(root.getValue(ReplaySourceKeys.TURN_PHASE)).getValue(ReplaySourceKeys.TYPE))
+        val wallPlacements = wallPlacements(root.getValue(ReplaySourceKeys.PHYSICAL_WALL_LAYOUT), wall + reserved, context)
+        val discardOrder = refs(root.getValue(ReplaySourceKeys.DISCARD_ORDER), context)
+        val discarded = players.flatMap { player -> player.discards.map { it.tile } }.toSet()
+        require(discarded.containsAll(discardOrder) && discardOrder.distinct().size == discardOrder.size) { "Replay discard order must list discards at most once" }
         return HistoryRoundState(
             identity = identity, roundNumber = roundNumber, position = position, tileCatalog = tileCatalog, players = players, wallTiles = wall, reservedTiles = reserved,
             currentPlayerSeat = players.getOrNull(current)?.initialSeatIndex ?: invalid(), dealerSeat = dealer, prevalentWind = wind, roundPosition = roundPosition,
             comboCount = integer(root.getValue(ReplaySourceKeys.COMBO_COUNT)), finishedPlayerSeats = root[ReplaySourceKeys.FINISHED_PLAYER_IDS]?.let { array(it).map { value -> context.seat(integer(value)) }.toSet() } ?: emptySet(),
             hasPendingReaction = phaseType == TurnPhaseSerialNames.AWAITING_DISCARD_REACTION, hasPendingRobbingReaction = phaseType == TurnPhaseSerialNames.AWAITING_ROBBING_REACTION, outcome = null,
+            wallPlacements = wallPlacements, discardOrder = discardOrder, tilePoses = poses.mapKeys { (tileIndex, _) -> context.tile(tileIndex) },
+            presentationNotes = root.getValue(ReplayFormatKeys.PRESENTATION_NOTES).takeUnless { it == JsonNull }?.let { notes ->
+                context.inspect(obj(notes))
+                notes.toString()
+            },
         )
+    }
+
+    /**
+     * 讀取依局內牌索引保存的實體牌牆格位，只取當時仍在牌牆與保留區的牌。
+     *
+     * @param value 以 [ReplayWallLayoutFormat] 保存的格位；規則沒有實體牌牆時為 JSON null。
+     * @param tiles 當時仍在牌牆與保留區的牌。
+     * @param context 讀取預算。
+     * @return 依牌參照索引的格位；沒有實體牌牆時為 null。
+     */
+    private fun wallPlacements(
+        value: JsonElement,
+        tiles: List<HistoryTileReference>,
+        context: HistoryReplayProjectionContext,
+    ): Map<HistoryTileReference, TileWallPlacement>? {
+        if (value == JsonNull) return null
+        val placements = array(value)
+        return tiles.mapNotNull { tile ->
+            context.charge()
+            val placement = placements.getOrNull(tile.tileIndex) ?: invalid()
+            if (placement == JsonNull) null else tile to (ReplayWallLayoutFormat.decodePlacement(placement) ?: invalid())
+        }.toMap()
     }
 
     /**
