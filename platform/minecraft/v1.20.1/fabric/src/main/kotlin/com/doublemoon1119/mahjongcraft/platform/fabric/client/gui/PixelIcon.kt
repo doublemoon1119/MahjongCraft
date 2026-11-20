@@ -161,6 +161,36 @@ internal enum class PixelIcon(
         ),
     ),
 
+    /** 進入全螢幕：四個朝外的角。 */
+    FULLSCREEN_ENTER(
+        width = 7,
+        height = 7,
+        rows = listOf(
+            listOf(0 to 3, 4 to 3),
+            listOf(0 to 1, 6 to 1),
+            listOf(0 to 1, 6 to 1),
+            emptyList(),
+            listOf(0 to 1, 6 to 1),
+            listOf(0 to 1, 6 to 1),
+            listOf(0 to 3, 4 to 3),
+        ),
+    ),
+
+    /** 結束全螢幕：四個朝內的角，與 [FULLSCREEN_ENTER] 相反。 */
+    FULLSCREEN_EXIT(
+        width = 7,
+        height = 7,
+        rows = listOf(
+            listOf(2 to 1, 4 to 1),
+            listOf(2 to 1, 4 to 1),
+            listOf(0 to 3, 4 to 3),
+            emptyList(),
+            listOf(0 to 3, 4 to 3),
+            listOf(2 to 1, 4 to 1),
+            listOf(2 to 1, 4 to 1),
+        ),
+    ),
+
     /** 跳到最後一個：向右的三角形加右側直條，與 [SKIP_FIRST] 左右對稱。 */
     SKIP_LAST(
         width = 7,

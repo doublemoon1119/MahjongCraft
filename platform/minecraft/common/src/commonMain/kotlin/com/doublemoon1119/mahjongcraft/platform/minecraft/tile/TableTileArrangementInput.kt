@@ -21,6 +21,7 @@ import kotlin.uuid.Uuid
  * @property wallClearance 牌牆在這一局剩下時間裡可能佔到的範圍，各座位的牌列依此讓開牌牆；沒有實體牌牆時為 null。
  * @property faceUpWallTileIds 牌牆與保留區中正面朝上的公開牌。
  * @property unsortedTileIds 直接補進立牌、還沒理過的牌，依補進的順序排列。
+ * @property standingOrderPublic 立牌順序是否可以公開，例如牌譜回放；為 true 時直立的牌也照桌況中的立牌順序排列。
  */
 data class TableTileArrangementInput(
     val controllerX: Int,
@@ -36,6 +37,7 @@ data class TableTileArrangementInput(
     val wallClearance: MahjongTableWallClearance?,
     val faceUpWallTileIds: Set<Uuid>,
     val unsortedTileIds: List<Uuid> = emptyList(),
+    val standingOrderPublic: Boolean = false,
 ) {
     init {
         require(wallProjection == null || wallProjection.tileLayout == tileLayout) { "The wall and the player areas must use the same table tile layout" }

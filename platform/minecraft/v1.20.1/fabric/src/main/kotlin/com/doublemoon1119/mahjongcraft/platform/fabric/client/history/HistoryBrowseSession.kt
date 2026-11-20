@@ -150,6 +150,17 @@ internal class HistoryBrowseSession(
     }
 
     /**
+     * 回放用的桌況：每一家立著的手牌都依該場規則的牌序排好，最近摸的牌仍獨立放在摸牌位；規則牌序還不能用時照原本順序。
+     *
+     * @param state 目前歷史桌況與牌目錄。
+     * @return 手牌排好的桌況。
+     */
+    fun replayState(state: HistoryRoundStateDto): HistoryRoundStateDto {
+        val order = handOrder(state) ?: return state
+        return state.copy(players = state.players.map { handSorting.sortedPlayer(it, state.tileCatalog, order) })
+    }
+
+    /**
      * 確認同場規則牌序已可使用。
      *
      * @param state 目前歷史桌況。

@@ -64,6 +64,18 @@ class HistoryHandSortingTest {
         assertEquals(listOf(1, 2), HistoryHandSorting().orderedTiles(player, catalog, RiichiTileOrder))
     }
 
+    /** 回放用的排好手牌只排立著的牌，最近摸的牌不動；原本列在手牌中的摸牌排在最後。 */
+    @Test
+    fun `sorted player keeps the drawn tile apart`() {
+        val catalog = listOf(tile(9), tile(1), tile(2), tile(5))
+        val separate = player(handTiles = listOf(2, 1, 3), lastDrawn = 0)
+        val listed = player(handTiles = listOf(0, 2, 1), lastDrawn = 0)
+
+        assertEquals(listOf(1, 2, 3), HistoryHandSorting().sortedPlayer(separate, catalog, RiichiTileOrder).handTiles)
+        assertEquals(0, HistoryHandSorting().sortedPlayer(separate, catalog, RiichiTileOrder).lastDrawn)
+        assertEquals(listOf(1, 2, 0), HistoryHandSorting().sortedPlayer(listed, catalog, RiichiTileOrder).handTiles)
+    }
+
     /** 沒有排序策略時完整保留來源立牌順序。 */
     @Test
     fun `null order preserves original standing order`() {

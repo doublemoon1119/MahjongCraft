@@ -802,4 +802,10 @@ object MinecraftHistoryScreenKeys {
 
     /** 視角選項中的北家。 */
     const val REPLAY_WIND_NORTH = "mahjongcraft.history_screen.replay.wind.north"
+
+    /** 場景切換成全螢幕的按鈕說明。 */
+    const val REPLAY_FULLSCREEN = "mahjongcraft.history_screen.replay.fullscreen"
+
+    /** 結束全螢幕的按鈕說明。 */
+    const val REPLAY_EXIT_FULLSCREEN = "mahjongcraft.history_screen.replay.exit_fullscreen"
 }

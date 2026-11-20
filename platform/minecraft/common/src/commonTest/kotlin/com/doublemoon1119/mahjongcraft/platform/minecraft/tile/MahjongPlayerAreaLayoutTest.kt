@@ -35,6 +35,18 @@ class MahjongPlayerAreaLayoutTest {
         assertEquals(ids, laidDown.standing.map { it.tileId })
     }
 
+    /** 立牌順序可以公開時，直立的牌也照傳入順序排列，位置與公開順序共用同一組格位。 */
+    @Test
+    fun `public standing order keeps the supplied order for upright tiles`() {
+        val ids = List(13) { Uuid.random() }
+        val hidden = MahjongPlayerAreaLayout.compute(inputForPose(ids, handIsLaidDown = false))
+        val public = MahjongPlayerAreaLayout.compute(inputForPose(ids, handIsLaidDown = false).copy(standingOrderPublic = true))
+
+        assertTrue(public.standing.all { it.footprint == MahjongTileFootprint.STANDING })
+        assertEquals(ids, public.standing.map { it.tileId })
+        assertEquals(hidden.standing.map { it.placement }, public.standing.map { it.placement })
+    }
+
     /** 已攤牌的立牌遵循傳入牌序，關閉排序時不自作主張重排；摸牌位不加入立牌列。 */
     @Test
     fun `face up hand respects both supplied sorted and manual orders`() {

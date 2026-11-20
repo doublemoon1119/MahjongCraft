@@ -62,6 +62,7 @@ object TableTileArrangement {
                     cornerWidth = input.cornerWidthBySeat[seatIndex] ?: 0.0,
                     tilePoseStates = input.handPoseStates,
                     unsortedTileIds = input.unsortedTileIds,
+                    standingOrderPublic = input.standingOrderPublic,
                 ),
             )
             val unsorted = input.unsortedTileIds.toSet()

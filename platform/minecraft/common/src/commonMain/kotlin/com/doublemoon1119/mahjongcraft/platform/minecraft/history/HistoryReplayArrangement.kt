@@ -85,6 +85,8 @@ object HistoryReplayArrangement {
                 wallProjection = projection,
                 wallClearance = projection?.clearance(table.wallPlacements.orEmpty().values + notes.extraWallReach),
                 faceUpWallTileIds = state.tilePoses.filter { (index, pose) -> index in wallTiles && pose == TilePoseDto.FACE_UP }.keys.map(::tileId).toSet(),
+                // 牌譜回放看得到每一家的牌面，立著的手牌也照桌況中的順序排。
+                standingOrderPublic = true,
             ),
         )
         return arranged.entries.associate { (id, tile) -> tileIndex(id) to tile }

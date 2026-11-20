@@ -34,6 +34,9 @@ import net.minecraft.util.Language
 import org.lwjgl.glfw.GLFW
 import kotlin.math.pow
 import kotlin.math.roundToInt
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.milliseconds
+import kotlin.time.Duration.Companion.seconds
 
 /**
  * 牌譜回放畫面：把一局的每一筆交易依序擺成牌桌場景，可以播放、暫停、逐筆前後移動、拖曳進度條與換局。
@@ -81,6 +84,18 @@ internal class HistoryReplayScreen(
     /** 是否正在拖曳平移場景。 */
     private var draggingPan = false
 
+    /** 場景是否全螢幕。 */
+    private var fullscreen = false
+
+    /** 全螢幕時最近一次移動滑鼠或換步的時間，決定控制區何時淡出。 */
+    private var lastActivity = Duration.ZERO
+
+    /** 上一幀的游標位置，用來偵測滑鼠移動。 */
+    private var lastPointer: Pair<Int, Int>? = null
+
+    /** 控制區目前的不透明度；一般版面固定為 1。 */
+    private var controlsAlpha = 1f
+
     /** 是否正在拖曳進度條。 */
     private var draggingProgress = false
 
@@ -126,11 +141,18 @@ internal class HistoryReplayScreen(
     /** 讀取或回放失敗時的重試按鈕。 */
     private lateinit var retryButton: RestartableMarqueeButtonWidget
 
+    /** 場景右上角切換全螢幕的按鈕。 */
+    private lateinit var fullscreenButton: RestartableMarqueeButtonWidget
+
     /** 建立控制項。 */
     override fun init() {
         val labelWidth = listOf(MinecraftHistoryScreenKeys.REPLAY_VIEW, MinecraftHistoryScreenKeys.REPLAY_HAND).maxOf { textRenderer.getWidth(Text.translatable(it)) }
         val speedWidth = RestartableMarqueeButtonWidget.selectorWidth(HistoryReplaySpeed.entries.maxOf { textRenderer.getWidth(speedText(it)) })
-        layout = HistoryReplayLayout.measure(width = width, height = height, labelWidth = labelWidth, speedSelectorWidth = speedWidth)
+        layout = if (fullscreen) {
+            HistoryReplayLayout.fullscreen(width = width, height = height, speedSelectorWidth = speedWidth)
+        } else {
+            HistoryReplayLayout.measure(width = width, height = height, labelWidth = labelWidth, speedSelectorWidth = speedWidth)
+        }
         clampPan()
         dropdown.close()
         clearChildren()
@@ -155,9 +177,22 @@ internal class HistoryReplayScreen(
         val frame = HistoryPageFrame(windowWidth = width, windowHeight = height)
         previousRoundButton = addDrawableChild(button(Text.translatable(MinecraftHistoryScreenKeys.REPLAY_PREVIOUS_ROUND), frame.footerSlot(0)) { changeRound(-1) })
         nextRoundButton = addDrawableChild(button(Text.translatable(MinecraftHistoryScreenKeys.REPLAY_NEXT_ROUND), frame.footerSlot(2)) { changeRound(1) })
-        addDrawableChild(button(Text.translatable(MinecraftHistoryScreenKeys.BACK), frame.footerSlot(HistoryPageFrame.LAST_SLOT)) { session.backFromReplay() })
+        val backButton = addDrawableChild(button(Text.translatable(MinecraftHistoryScreenKeys.BACK), frame.footerSlot(HistoryPageFrame.LAST_SLOT)) { session.backFromReplay() })
         retryButton = addDrawableChild(button(Text.translatable(MinecraftHistoryScreenKeys.RETRY), HistoryScreenLayout.Bounds(0, 0, RETRY_WIDTH, FormScreenLayout.BUTTON_HEIGHT)) { session.controller.retry() })
         retryButton.visible = false
+        fullscreenButton = addDrawableChild(button(Text.empty(), layout.fullscreenToggle) { toggleFullscreen() })
+        if (fullscreen) {
+            // 全螢幕只留播放控制；視角、手牌、交易列表與底部按鈕回到一般版面才出現。
+            listOfNotNull(viewButton, handButton, listButton, previousRoundButton, nextRoundButton, backButton).forEach { it.visible = false }
+        }
+    }
+
+    /** 切換全螢幕，重新排版；進入時控制區先顯示，滑鼠一段時間沒動才淡出。 */
+    private fun toggleFullscreen() {
+        fullscreen = !fullscreen
+        listOpen = false
+        lastActivity = measuringTimeNow()
+        clearAndInit()
     }
 
     /**
@@ -202,24 +237,76 @@ internal class HistoryReplayScreen(
     override fun render(context: DrawContext, mouseX: Int, mouseY: Int, delta: Float) {
         renderBackground(context)
         advancePlayback()
+        val now = measuringTimeNow()
+        if (lastPointer != mouseX to mouseY) {
+            lastPointer = mouseX to mouseY
+            lastActivity = now
+        }
+        controlsAlpha = controlsAlpha(now, mouseX, mouseY)
         val replay = session.controller.state.value.replay
-        val heading = title.copy().append(TITLE_SEPARATOR).append(Text.translatable(MinecraftHistoryScreenKeys.ROUND_NUMBER, replay?.roundNumber ?: "—"))
-        ScreenRendering.title(context, textRenderer, heading, width)
+        if (!layout.fullscreen) {
+            val heading = title.copy().append(TITLE_SEPARATOR).append(Text.translatable(MinecraftHistoryScreenKeys.ROUND_NUMBER, replay?.roundNumber ?: "—"))
+            ScreenRendering.title(context, textRenderer, heading, width)
+        }
         val rows = replay?.let(::rows).orEmpty()
         val pointerX = dropdown.pointer(mouseX)
         val pointerY = dropdown.pointer(mouseY)
         var tooltip: List<Text>? = null
         updateControls(replay)
         renderScene(context, replay, pointerX, pointerY)
-        renderCaption(context, replay, rows)
-        if (layout.wide || listOpen) tooltip = renderList(context, replay, rows, pointerX, pointerY)
-        renderSelectorLabels(context)
-        renderProgress(context, replay, rows, pointerX, pointerY)?.let { tooltip = it }
-        renderCounter(context, replay)
-        renderRoundNumber(context, replay)
+        layout.controlBar?.let { bar -> context.fill(bar.x, bar.y, bar.right, bar.bottom, faded(CONTROL_BAR_BACKGROUND)) }
+        if (!layout.fullscreen) {
+            renderCaption(context, replay, rows)
+            if (layout.wide || listOpen) tooltip = renderList(context, replay, rows, pointerX, pointerY)
+            renderSelectorLabels(context)
+            renderRoundNumber(context, replay)
+        }
+        if (controlsShown()) {
+            renderSpeedLabel(context)
+            renderProgress(context, replay, rows, pointerX, pointerY)?.let { tooltip = it }
+            renderCounter(context, replay)
+        }
         super.render(context, pointerX, pointerY, delta)
         dropdown.render(context, textRenderer, height, mouseX, mouseY)
         if (!dropdown.isOpen && !draggingProgress && !draggingListBar) tooltip?.let { context.drawTooltip(textRenderer, it, mouseX, mouseY) }
+    }
+
+    /**
+     * 控制區的不透明度：一般版面固定顯示；全螢幕時暫停中、游標在控制區或全螢幕按鈕上、拖曳進度條或清單展開時
+     * 一直顯示，否則滑鼠一段時間沒動就淡出。
+     *
+     * @param now 目前時間。
+     * @param mouseX 游標水平座標。
+     * @param mouseY 游標垂直座標。
+     * @return 0 到 1 的不透明度。
+     */
+    private fun controlsAlpha(now: Duration, mouseX: Int, mouseY: Int): Float {
+        if (!layout.fullscreen) return 1f
+        val bar = layout.controlBar
+        val toggle = layout.fullscreenToggle
+        val overControls = (bar != null && mouseY >= bar.y) ||
+            (mouseX >= toggle.x && mouseX < toggle.right && mouseY >= toggle.y && mouseY < toggle.bottom)
+        if (!playback.playing || draggingProgress || dropdown.isOpen || overControls) return 1f
+        val idle = now - lastActivity
+        return ((CONTROLS_HIDE_DELAY + CONTROLS_FADE - idle) / CONTROLS_FADE).toFloat().coerceIn(0f, 1f)
+    }
+
+    /**
+     * 控制區是否看得見、可以操作。
+     *
+     * @return 不透明度高到看得見時為 true。
+     */
+    private fun controlsShown(): Boolean = controlsAlpha >= MIN_VISIBLE_ALPHA
+
+    /**
+     * 依控制區的不透明度淡化一個顏色。
+     *
+     * @param argb 原本的 ARGB 顏色；沒有 alpha 位元時視為不透明。
+     * @return 淡化後的 ARGB 顏色。
+     */
+    private fun faded(argb: Int): Int {
+        val alpha = if (argb ushr ALPHA_SHIFT == 0) FULL_ALPHA else argb ushr ALPHA_SHIFT
+        return ((alpha * controlsAlpha).toInt() shl ALPHA_SHIFT) or (argb and RGB_MASK)
     }
 
     /** 播放中時間到了就前進一步。 */
@@ -251,6 +338,14 @@ internal class HistoryReplayScreen(
         controlButtons[3].active = step < stepCount - 1
         controlButtons[4].active = step < stepCount - 1
         controlButtons[2].icon = if (playback.playing) PixelIcon.PAUSE else PixelIcon.PLAY
+        (controlButtons + speedButton + fullscreenButton).forEach {
+            it.visible = controlsShown()
+            it.setAlpha(controlsAlpha)
+        }
+        fullscreenButton.icon = if (fullscreen) PixelIcon.FULLSCREEN_EXIT else PixelIcon.FULLSCREEN_ENTER
+        val fullscreenLabel = Text.translatable(if (fullscreen) MinecraftHistoryScreenKeys.REPLAY_EXIT_FULLSCREEN else MinecraftHistoryScreenKeys.REPLAY_FULLSCREEN)
+        fullscreenButton.message = fullscreenLabel
+        fullscreenButton.tooltip = Tooltip.of(ControlTooltip.description(fullscreenLabel))
         val labels = listOf(
             MinecraftHistoryScreenKeys.REPLAY_FIRST,
             MinecraftHistoryScreenKeys.REPLAY_PREVIOUS,
@@ -349,7 +444,7 @@ internal class HistoryReplayScreen(
                 retryButton.y = top + lines.size * LINE_HEIGHT + NOTICE_PADDING
             }
         } else if (retryButton.visible) {
-            retryButton.x = layout.caption.right - retryButton.width
+            retryButton.x = bounds.right - NOTICE_PADDING - retryButton.width
             retryButton.y = bounds.y + NOTICE_PADDING
         }
     }
@@ -374,7 +469,7 @@ internal class HistoryReplayScreen(
         val module = session.ruleModule(state)
         val key = SceneKey(state = state, moduleId = module?.id, viewSeat = viewSeat, handsOpen = handsOpen)
         sceneCache?.takeIf { it.first == key }?.let { return it.second }
-        val built = module?.let { buildScene(state, it) }
+        val built = module?.let { buildScene(session.replayState(state), it) }
         sceneCache = key to built
         return built
     }
@@ -503,7 +598,7 @@ internal class HistoryReplayScreen(
     )
 
     /**
-     * 繪製選擇器左側的標籤，以及速度選擇器左側的標籤。
+     * 繪製視角與手牌選擇器左側的標籤。
      *
      * @param context 繪製上下文。
      */
@@ -513,9 +608,17 @@ internal class HistoryReplayScreen(
             val y = bounds.y + (bounds.height - FormScreenLayout.VISIBLE_TEXT_HEIGHT) / 2
             context.drawTextWithShadow(textRenderer, label, bounds.x - layout.selectorLabelWidth - LABEL_GAP, y, MUTED_COLOR)
         }
+    }
+
+    /**
+     * 繪製速度選擇器左側的標籤，隨控制區淡出。
+     *
+     * @param context 繪製上下文。
+     */
+    private fun renderSpeedLabel(context: DrawContext) {
         val speed = layout.speedSelector()
         val speedLabel = Text.translatable(MinecraftHistoryScreenKeys.REPLAY_SPEED)
-        context.drawTextWithShadow(textRenderer, speedLabel, speed.x - LABEL_GAP - textRenderer.getWidth(speedLabel), speed.y + (speed.height - FormScreenLayout.VISIBLE_TEXT_HEIGHT) / 2, MUTED_COLOR)
+        context.drawTextWithShadow(textRenderer, speedLabel, speed.x - LABEL_GAP - textRenderer.getWidth(speedLabel), speed.y + (speed.height - FormScreenLayout.VISIBLE_TEXT_HEIGHT) / 2, faded(MUTED_COLOR))
     }
 
     /**
@@ -531,18 +634,18 @@ internal class HistoryReplayScreen(
     private fun renderProgress(context: DrawContext, replay: HistoryBrowseReplayState?, rows: List<TransactionRow>, mouseX: Int, mouseY: Int): List<Text>? {
         val bounds = layout.progress
         val trackTop = bounds.y + (bounds.height - TRACK_HEIGHT) / 2
-        context.fill(bounds.x, trackTop, bounds.right, trackTop + TRACK_HEIGHT, TRACK_COLOR)
+        context.fill(bounds.x, trackTop, bounds.right, trackTop + TRACK_HEIGHT, faded(TRACK_COLOR))
         val stepCount = replay?.stepCount ?: return null
         val lastStep = (stepCount - 1).coerceAtLeast(1)
         val currentX = bounds.x + bounds.width * replay.step / lastStep
-        context.fill(bounds.x, trackTop, currentX, trackTop + TRACK_HEIGHT, PLAYED_COLOR)
+        context.fill(bounds.x, trackTop, currentX, trackTop + TRACK_HEIGHT, faded(PLAYED_COLOR))
         rows.forEachIndexed { index, row ->
             val marker = row.marker ?: return@forEachIndexed
             val x = bounds.x + bounds.width * (index + 1) / lastStep
-            context.fill(x - 1, bounds.y, x + 1, bounds.bottom, OPAQUE or markerColor(marker))
+            context.fill(x - 1, bounds.y, x + 1, bounds.bottom, faded(markerColor(marker)))
         }
-        context.fill(currentX - KNOB_HALF_WIDTH, bounds.y, currentX + KNOB_HALF_WIDTH, bounds.bottom, KNOB_BORDER)
-        context.fill(currentX - KNOB_HALF_WIDTH + 1, bounds.y + 1, currentX + KNOB_HALF_WIDTH - 1, bounds.bottom - 1, KNOB_COLOR)
+        context.fill(currentX - KNOB_HALF_WIDTH, bounds.y, currentX + KNOB_HALF_WIDTH, bounds.bottom, faded(KNOB_BORDER))
+        context.fill(currentX - KNOB_HALF_WIDTH + 1, bounds.y + 1, currentX + KNOB_HALF_WIDTH - 1, bounds.bottom - 1, faded(KNOB_COLOR))
         if (mouseY < bounds.y - PROGRESS_HIT_MARGIN || mouseY >= bounds.bottom + PROGRESS_HIT_MARGIN || mouseX < bounds.x || mouseX > bounds.right) return null
         val step = stepAt(mouseX.toDouble(), stepCount)
         val row = rows.getOrNull(step - 1)
@@ -566,7 +669,7 @@ internal class HistoryReplayScreen(
         val available = (right - layout.counterX).coerceAtLeast(0)
         if (available <= 0) return
         val line = textRenderer.trimToWidth(text, available)
-        context.drawTextWithShadow(textRenderer, Language.getInstance().reorder(line), layout.counterX, layout.controls.y + (layout.controls.height - FormScreenLayout.VISIBLE_TEXT_HEIGHT) / 2, TEXT_COLOR)
+        context.drawTextWithShadow(textRenderer, Language.getInstance().reorder(line), layout.counterX, layout.controls.y + (layout.controls.height - FormScreenLayout.VISIBLE_TEXT_HEIGHT) / 2, faded(TEXT_COLOR))
     }
 
     /**
@@ -734,7 +837,8 @@ internal class HistoryReplayScreen(
             playback.pause()
             return
         }
-        val start = playback.play(step = replay.step, stepCount = stepCount, now = measuringTimeNow())
+        lastActivity = measuringTimeNow()
+        val start = playback.play(step = replay.step, stepCount = stepCount, now = lastActivity)
         if (start != replay.step) session.controller.replayTo(start)
     }
 
@@ -826,12 +930,12 @@ internal class HistoryReplayScreen(
         val replay = session.controller.state.value.replay ?: return false
         val progress = layout.progress
         val stepCount = replay.stepCount
-        if (stepCount != null && mouseX >= progress.x && mouseX <= progress.right && mouseY >= progress.y - PROGRESS_HIT_MARGIN && mouseY < progress.bottom + PROGRESS_HIT_MARGIN) {
+        if (stepCount != null && controlsShown() && mouseX >= progress.x && mouseX <= progress.right && mouseY >= progress.y - PROGRESS_HIT_MARGIN && mouseY < progress.bottom + PROGRESS_HIT_MARGIN) {
             draggingProgress = true
             moveTo(stepAt(mouseX, stepCount))
             return true
         }
-        if (layout.wide || listOpen) {
+        if (!layout.fullscreen && (layout.wide || listOpen)) {
             val list = layout.list
             val contentHeight = rows(replay).size * ROW_STEP
             val bar = listScrollbar(contentHeight)
@@ -955,7 +1059,7 @@ internal class HistoryReplayScreen(
     override fun mouseScrolled(mouseX: Double, mouseY: Double, amount: Double): Boolean {
         if (dropdown.mouseScrolled(textRenderer, height, amount)) return true
         val list = layout.list
-        if ((layout.wide || listOpen) && mouseX >= list.x && mouseX < layout.listScrollbarX + VerticalScrollbar.WIDTH && mouseY >= list.y && mouseY < list.bottom) {
+        if (!layout.fullscreen && (layout.wide || listOpen) && mouseX >= list.x && mouseX < layout.listScrollbarX + VerticalScrollbar.WIDTH && mouseY >= list.y && mouseY < list.bottom) {
             listScroll -= amount * ROW_STEP
             playback.scrolled()
             return true
@@ -968,7 +1072,8 @@ internal class HistoryReplayScreen(
     }
 
     /**
-     * 空白鍵播放或暫停，左右方向鍵上一筆、下一筆，Home、End 第一筆、最後一筆；先於按鈕焦點處理。
+     * 空白鍵播放或暫停，左右方向鍵上一筆、下一筆，Home、End 第一筆、最後一筆，F 切換全螢幕，全螢幕時 Esc 只結束
+     * 全螢幕；先於按鈕焦點處理。
      *
      * @param keyCode 按鍵碼。
      * @param scanCode 掃描碼。
@@ -979,10 +1084,18 @@ internal class HistoryReplayScreen(
         if (dropdown.keyPressed(textRenderer, height, keyCode)) return true
         when (keyCode) {
             GLFW.GLFW_KEY_SPACE -> togglePlay()
-            GLFW.GLFW_KEY_LEFT -> previous()
-            GLFW.GLFW_KEY_RIGHT -> next()
-            GLFW.GLFW_KEY_HOME -> first()
-            GLFW.GLFW_KEY_END -> last()
+            GLFW.GLFW_KEY_LEFT, GLFW.GLFW_KEY_RIGHT, GLFW.GLFW_KEY_HOME, GLFW.GLFW_KEY_END -> {
+                // 換步時讓全螢幕的控制區短暫出現，看得到進度。
+                lastActivity = measuringTimeNow()
+                when (keyCode) {
+                    GLFW.GLFW_KEY_LEFT -> previous()
+                    GLFW.GLFW_KEY_RIGHT -> next()
+                    GLFW.GLFW_KEY_HOME -> first()
+                    else -> last()
+                }
+            }
+            GLFW.GLFW_KEY_F -> toggleFullscreen()
+            GLFW.GLFW_KEY_ESCAPE -> if (fullscreen) toggleFullscreen() else return super.keyPressed(keyCode, scanCode, modifiers)
             else -> return super.keyPressed(keyCode, scanCode, modifiers)
         }
         return true
@@ -1076,6 +1189,27 @@ internal class HistoryReplayScreen(
 
         /** 進度條上下可點擊的額外範圍。 */
         const val PROGRESS_HIT_MARGIN = 3
+
+        /** 全螢幕時滑鼠沒動多久後控制區開始淡出。 */
+        val CONTROLS_HIDE_DELAY: Duration = 2.seconds
+
+        /** 控制區淡出所需的時間。 */
+        val CONTROLS_FADE: Duration = 250.milliseconds
+
+        /** 控制區看得見、可以操作的最低不透明度。 */
+        const val MIN_VISIBLE_ALPHA = 0.05f
+
+        /** ARGB 顏色中 alpha 位元的位移。 */
+        const val ALPHA_SHIFT = 24
+
+        /** 完全不透明的 alpha 值。 */
+        const val FULL_ALPHA = 0xFF
+
+        /** ARGB 顏色中 RGB 的位元。 */
+        const val RGB_MASK = 0xFFFFFF
+
+        /** 全螢幕控制區的底色。 */
+        const val CONTROL_BAR_BACKGROUND = 0x99000000.toInt()
 
         /** 最小放大倍數：剛好放得下桌椅。 */
         const val MIN_ZOOM = 1f
