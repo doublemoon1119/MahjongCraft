@@ -265,8 +265,10 @@ internal class HistoryReplayVisibilityScreen(
                 lockedReason(row) != null -> LOCKED_COLOR
                 else -> LABEL_COLOR
             }
-            val labelWidth = if (heading) layout.contentWidth else layout.labelWidth
-            ScreenRendering.label(context, textRenderer, label(row), layout.contentLeft, layout.fieldLabelY(rowTop), labelWidth, mouseX, mouseY, color)
+            // 選項列比段落標題縮排一點，與對局摘要相同。
+            val inset = if (heading) 0 else ROW_INSET
+            val labelWidth = (if (heading) layout.contentWidth else layout.labelWidth) - inset
+            ScreenRendering.label(context, textRenderer, label(row), layout.contentLeft + inset, layout.fieldLabelY(rowTop), labelWidth, mouseX, mouseY, color)
                 ?.let { truncatedLabel = it }
         }
         selectors.forEach { (row, selector) ->
@@ -406,6 +408,9 @@ internal class HistoryReplayVisibilityScreen(
          * @return 顯示或隱藏。
          */
         fun shownOrHidden(shown: Boolean): HistoryReplayVisibilityOption = if (shown) HistoryReplayVisibilityOption.SHOWN else HistoryReplayVisibilityOption.HIDDEN
+
+        /** 選項列名稱相對段落標題的縮排。 */
+        const val ROW_INSET = 6
 
         /** 標題下目前視角那一行的高度。 */
         const val HEADER_HEIGHT = 14
