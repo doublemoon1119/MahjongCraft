@@ -70,6 +70,12 @@ internal class HistoryRoundEventsScreen(
     /** 初始牌面導航。 */
     private var initialButton: ButtonWidget? = null
 
+    /** 從初始牌面開始回放。 */
+    private var replayButton: ButtonWidget? = null
+
+    /** 卡片標題列從該筆交易後開始回放的按鈕，依交易索引建立；隨內容捲動，由本畫面在內容裁切範圍內繪製。 */
+    private val replayButtons = mutableMapOf<Int, RestartableMarqueeButtonWidget>()
+
     /** 卡片內查看局面與載入和牌手牌的按鈕，依交易索引與是否為和牌手牌建立；隨內容捲動，由本畫面在內容裁切範圍內繪製。 */
     private val stateButtons = mutableMapOf<Pair<Int, Boolean>, RestartableMarqueeButtonWidget>()
 
@@ -91,6 +97,7 @@ internal class HistoryRoundEventsScreen(
         displayedStart = currentRound()?.events?.transactions?.firstOrNull()?.index
         dragging = false
         stateButtons.clear()
+        replayButtons.clear()
         clearChildren()
         val previous = layout.footerSlot(0)
         previousButton = addDrawableChild(
@@ -114,7 +121,7 @@ internal class HistoryRoundEventsScreen(
                 .dimensions(back.x, back.y, back.width, back.height)
                 .build(),
         )
-        val headerButtonWidth = ((layout.contentWidth - HEADER_BUTTON_GAP) / 2).coerceAtMost(HEADER_BUTTON_WIDTH).coerceAtLeast(1)
+        val headerButtonWidth = ((layout.contentWidth - HEADER_BUTTON_GAP * 2) / HEADER_BUTTONS).coerceAtMost(HEADER_BUTTON_WIDTH).coerceAtLeast(1)
         refreshButton = addDrawableChild(
             RestartableMarqueeButtonWidget.builder(Text.translatable(MinecraftHistoryScreenKeys.REFRESH)) {
                 if (currentRound()?.eventsStatus is HistoryBrowseStatus.Failed) {
@@ -129,6 +136,31 @@ internal class HistoryRoundEventsScreen(
                 if (session.controller.canQueryRound()) session.openRoundState(HistoryRoundPositionDto.Initial)
             }.dimensions(layout.left, HEADER_BUTTON_TOP, headerButtonWidth, FormScreenLayout.BUTTON_HEIGHT).build(),
         )
+        replayButton = addDrawableChild(
+            RestartableMarqueeButtonWidget.builder(Text.translatable(MinecraftHistoryScreenKeys.REPLAY_OPEN)) { session.openReplay(0) }
+                .dimensions(layout.left + headerButtonWidth + HEADER_BUTTON_GAP, HEADER_BUTTON_TOP, headerButtonWidth, FormScreenLayout.BUTTON_HEIGHT)
+                .build()
+                .also { it.tooltip = Tooltip.of(ControlTooltip.description(Text.translatable(MinecraftHistoryScreenKeys.REPLAY_OPEN_TOOLTIP))) },
+        )
+    }
+
+    /**
+     * 取得卡片標題列從該筆交易後開始回放的按鈕；同一筆交易重複使用同一顆按鈕。
+     *
+     * @param index 交易索引。
+     * @return 按鈕；位置由繪製時決定。
+     */
+    private fun replayButton(index: Int): RestartableMarqueeButtonWidget = replayButtons.getOrPut(index) {
+        RestartableMarqueeButtonWidget.builder(Text.translatable(MinecraftHistoryScreenKeys.REPLAY_OPEN)) { session.openReplay(index + 1) }
+            .dimensions(0, 0, MINI_BUTTON_SIZE, MINI_BUTTON_SIZE)
+            .build()
+            .also {
+                it.icon = PixelIcon.PLAY
+                it.tooltip = Tooltip.of(ControlTooltip.description(Text.translatable(MinecraftHistoryScreenKeys.REPLAY_OPEN_HERE_TOOLTIP)))
+                it.visible = false
+                it.clickClip = { x, y -> layout.containsCard(x, y, layout.contentTop, layout.viewportHeight) }
+                addSelectableChild(it)
+            }
     }
 
     /**
@@ -212,6 +244,7 @@ internal class HistoryRoundEventsScreen(
         }
         var tooltip: List<Text>? = null
         stateButtons.values.forEach { it.visible = false }
+        replayButtons.values.forEach { it.visible = false }
         context.enableScissor(layout.left, layout.contentTop, layout.right, layout.contentBottom)
         when (status) {
             HistoryBrowseStatus.Idle, HistoryBrowseStatus.Loading -> drawNotice(context, Text.translatable(MinecraftHistoryScreenKeys.LOADING), layout.contentTop + 12, TEXT_COLOR)
@@ -254,6 +287,7 @@ internal class HistoryRoundEventsScreen(
         refreshButton?.tooltip = tooltip
         initialButton?.active = canQuery && status == HistoryBrowseStatus.Ready
         initialButton?.tooltip = tooltip
+        replayButton?.active = status == HistoryBrowseStatus.Ready
     }
 
     /**
@@ -475,8 +509,12 @@ internal class HistoryRoundEventsScreen(
                             val button = stateButton(row.index, inline = false)
                             button.x = layout.right - CARD_PADDING - button.width
                             button.y = y + (row.height - button.height) / 2
-                            val text = HistoryScreenText.trim(row.text.string, (button.x - CARD_PADDING - layout.left - CARD_PADDING).coerceAtLeast(1), textRenderer::getWidth)
+                            val replay = replayButton(row.index)
+                            replay.x = button.x - CARD_BUTTON_GAP - replay.width
+                            replay.y = button.y
+                            val text = HistoryScreenText.trim(row.text.string, (replay.x - CARD_PADDING - layout.left - CARD_PADDING).coerceAtLeast(1), textRenderer::getWidth)
                             context.drawTextWithShadow(textRenderer, Text.literal(text), layout.left + CARD_PADDING, y + (row.height - FormScreenLayout.VISIBLE_TEXT_HEIGHT) / 2, ACCENT_COLOR)
+                            renderCardButton(context, replay, pointerX, pointerY, delta)
                             renderCardButton(context, button, pointerX, pointerY, delta)
                         }
                         is Row.StateLink -> {
@@ -631,7 +669,7 @@ internal class HistoryRoundEventsScreen(
         }
         val insideContent = mouseX >= layout.left && mouseX < layout.right && mouseY >= layout.contentTop && mouseY < layout.contentBottom
         if (insideContent && currentRound()?.eventsStatus == HistoryBrowseStatus.Ready) {
-            stateButtons.values.firstOrNull { it.visible && it.mouseClicked(mouseX, mouseY, button) }?.let { return true }
+            (stateButtons.values + replayButtons.values).firstOrNull { it.visible && it.mouseClicked(mouseX, mouseY, button) }?.let { return true }
         }
         return super.mouseClicked(mouseX, mouseY, button)
     }
@@ -819,6 +857,12 @@ internal class HistoryRoundEventsScreen(
 
         /** 標題下方兩顆按鈕之間至少保留的距離。 */
         const val HEADER_BUTTON_GAP = 6
+
+        /** 標題列的按鈕數：初始牌面、回放、重新整理。 */
+        const val HEADER_BUTTONS = 3
+
+        /** 卡片標題列兩顆小按鈕之間的距離。 */
+        const val CARD_BUTTON_GAP = 2
 
         /** 按鈕下方時間資訊第一行的 Y 座標。 */
         const val TIMING_TOP = HEADER_BUTTON_TOP + FormScreenLayout.BUTTON_HEIGHT + 4

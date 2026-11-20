@@ -579,11 +579,22 @@ internal class HistoryBrowseController(
         )
     }
 
-    /** 沒有其他查詢在途或待送時，向伺服器要回放缺少的下一項；快取裡已有的事件頁直接收下。 */
+    /**
+     * 沒有其他查詢在途或待送時，向伺服器要回放缺少的下一項；快取裡已有的事件頁直接收下。
+     *
+     * 擺牌需要規則設定，還沒有這場對局的規則設定時先要規則設定；載入中卻沒有在途查詢代表先前的查詢已因換局等操作作廢，
+     * 重新要一次。
+     */
     private fun requestReplay() {
         if (active != null || pending != null) return
         val round = replayRound ?: return
         val matchId = state.value.summary?.matchId ?: return
+        val settings = state.value.ruleSettings
+        if (settings?.matchId != matchId || settings.status == HistoryBrowseStatus.Loading) {
+            mutableState.value = state.value.copy(ruleSettings = HistoryBrowseRuleSettingsState(matchId, status = HistoryBrowseStatus.Loading))
+            enqueue(Intent.RuleSettings(generation, matchId, state.value.query), Duration.ZERO)
+            return
+        }
         while (true) {
             val fetch = round.nextRequest() ?: return
             if (fetch is HistoryReplayFetch.Events) {

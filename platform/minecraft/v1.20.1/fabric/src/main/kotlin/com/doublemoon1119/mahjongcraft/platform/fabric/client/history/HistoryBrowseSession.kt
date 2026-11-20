@@ -295,6 +295,34 @@ internal class HistoryBrowseSession(
         return true
     }
 
+    /** 回放的播放狀態；同一次瀏覽中換局或重開回放時沿用速度。 */
+    val replayPlayback = HistoryReplayPlayback()
+
+    /**
+     * 從單局事件頁開始回放，停在指定步數並暫停。
+     *
+     * @param step 開始的步數：0 是初始牌面，k 是第 k - 1 筆交易完成後。
+     * @return 是否接受導航。
+     */
+    fun openReplay(step: Int): Boolean {
+        if (closed || !controller.showReplay(step)) return false
+        replayPlayback.roundChanged()
+        navigate(HistoryReplayScreen(this))
+        return true
+    }
+
+    /**
+     * 結束回放，回到目前局的事件頁。
+     *
+     * @return 是否接受返回。
+     */
+    fun backFromReplay(): Boolean {
+        if (closed || !controller.backFromReplay()) return false
+        replayPlayback.pause()
+        navigate(HistoryRoundEventsScreen(this, tileFaces, tileAssets, eventPresenter, settlementTemplates))
+        return true
+    }
+
     /**
      * 返回原單局事件頁，不重送已成功的事件查詢。
      *

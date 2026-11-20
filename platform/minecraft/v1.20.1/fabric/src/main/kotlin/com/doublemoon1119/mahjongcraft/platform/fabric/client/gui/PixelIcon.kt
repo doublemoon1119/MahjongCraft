@@ -93,6 +93,88 @@ internal enum class PixelIcon(
             listOf(8 to 1),
         ),
     ),
+
+    /** 跳到第一個：左側直條加向左的三角形。 */
+    SKIP_FIRST(
+        width = 7,
+        height = 7,
+        rows = listOf(
+            listOf(0 to 2, 6 to 1),
+            listOf(0 to 2, 5 to 2),
+            listOf(0 to 2, 4 to 3),
+            listOf(0 to 2, 3 to 4),
+            listOf(0 to 2, 4 to 3),
+            listOf(0 to 2, 5 to 2),
+            listOf(0 to 2, 6 to 1),
+        ),
+    ),
+
+    /** 往前一個：兩個向左的三角形。 */
+    STEP_BACKWARD(
+        width = 8,
+        height = 7,
+        rows = listOf(
+            listOf(3 to 1, 7 to 1),
+            listOf(2 to 2, 6 to 2),
+            listOf(1 to 3, 5 to 3),
+            listOf(0 to 8),
+            listOf(1 to 3, 5 to 3),
+            listOf(2 to 2, 6 to 2),
+            listOf(3 to 1, 7 to 1),
+        ),
+    ),
+
+    /** 播放：向右的實心三角形。 */
+    PLAY(
+        width = 4,
+        height = 7,
+        rows = listOf(
+            listOf(0 to 1),
+            listOf(0 to 2),
+            listOf(0 to 3),
+            listOf(0 to 4),
+            listOf(0 to 3),
+            listOf(0 to 2),
+            listOf(0 to 1),
+        ),
+    ),
+
+    /** 暫停：兩條直條。 */
+    PAUSE(
+        width = 5,
+        height = 7,
+        rows = List(size = 7) { listOf(0 to 2, 3 to 2) },
+    ),
+
+    /** 往後一個：兩個向右的三角形，與 [STEP_BACKWARD] 左右對稱。 */
+    STEP_FORWARD(
+        width = 8,
+        height = 7,
+        rows = listOf(
+            listOf(0 to 1, 4 to 1),
+            listOf(0 to 2, 4 to 2),
+            listOf(0 to 3, 4 to 3),
+            listOf(0 to 8),
+            listOf(0 to 3, 4 to 3),
+            listOf(0 to 2, 4 to 2),
+            listOf(0 to 1, 4 to 1),
+        ),
+    ),
+
+    /** 跳到最後一個：向右的三角形加右側直條，與 [SKIP_FIRST] 左右對稱。 */
+    SKIP_LAST(
+        width = 7,
+        height = 7,
+        rows = listOf(
+            listOf(0 to 1, 5 to 2),
+            listOf(0 to 2, 5 to 2),
+            listOf(0 to 3, 5 to 2),
+            listOf(0 to 4, 5 to 2),
+            listOf(0 to 3, 5 to 2),
+            listOf(0 to 2, 5 to 2),
+            listOf(0 to 1, 5 to 2),
+        ),
+    ),
 }
 
 /** 排序箭頭的像素範圍。 */

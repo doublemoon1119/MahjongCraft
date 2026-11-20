@@ -18,6 +18,8 @@ import kotlin.uuid.Uuid
  * @property tiles 場景中的麻將牌。
  * @property view 觀看場景的斜上方視角。
  * @property focus 縮放、置中與顯示的範圍，範圍外的部分不顯示；`null` 時以所有方塊、角色與牌為準，整個場景都顯示。
+ * @property frame 只決定縮放與置中的範圍，範圍外的部分照樣顯示，例如只框住牌桌而地板延伸到畫面外；
+ * 有 [focus] 時不使用，兩者都沒有時以所有方塊、角色與牌為準。
  * @property rotatable 玩家能否用滑鼠拖曳轉動場景的水平方向。
  * @property roundInfo 浮在桌子中央上方的局況；沒有時為 null。
  * @property playerInfo 各座位後上方的玩家資訊；沒有時為 null。
@@ -28,6 +30,7 @@ internal data class GuideScene(
     val tiles: List<GuideSceneTile>,
     val view: GuideSceneView,
     val focus: GuideSceneBox? = null,
+    val frame: GuideSceneBox? = null,
     val rotatable: Boolean = false,
     val roundInfo: GuideSceneRoundInfo? = null,
     val playerInfo: GuideScenePlayerInfo? = null,

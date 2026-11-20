@@ -715,4 +715,91 @@ object MinecraftHistoryScreenKeys {
 
     /** 局面頁下一步按鈕按住 Shift 的操作提示。 */
     const val HINT_LAST_TRANSACTION = "mahjongcraft.history_screen.hint.last_transaction"
+
+    /** 牌譜回放畫面標題。 */
+    const val REPLAY_TITLE = "mahjongcraft.history_screen.replay.title"
+
+    /** 事件頁標題列開啟回放的按鈕。 */
+    const val REPLAY_OPEN = "mahjongcraft.history_screen.replay.open"
+
+    /** 從初始牌面開始回放的提示。 */
+    const val REPLAY_OPEN_TOOLTIP = "mahjongcraft.history_screen.replay.open_tooltip"
+
+    /** 交易卡片上從該筆交易後開始回放的提示。 */
+    const val REPLAY_OPEN_HERE_TOOLTIP = "mahjongcraft.history_screen.replay.open_here_tooltip"
+
+    /** 視角選擇器的標籤。 */
+    const val REPLAY_VIEW = "mahjongcraft.history_screen.replay.view"
+
+    /** 可拖曳轉動的自由視角。 */
+    const val REPLAY_VIEW_FREE = "mahjongcraft.history_screen.replay.view.free"
+
+    /** 某一家座位的視角：座位風與玩家名稱。 */
+    const val REPLAY_VIEW_SEAT = "mahjongcraft.history_screen.replay.view.seat"
+
+    /** 手牌顯示選擇器的標籤。 */
+    const val REPLAY_HAND = "mahjongcraft.history_screen.replay.hand"
+
+    /** 手牌和對局中一樣立著。 */
+    const val REPLAY_HAND_STANDING = "mahjongcraft.history_screen.replay.hand.standing"
+
+    /** 每一家的手牌面朝上攤開。 */
+    const val REPLAY_HAND_OPEN = "mahjongcraft.history_screen.replay.hand.open"
+
+    /** 播放速度選擇器的標籤。 */
+    const val REPLAY_SPEED = "mahjongcraft.history_screen.replay.speed"
+
+    /** 播放速度的倍數。 */
+    const val REPLAY_SPEED_VALUE = "mahjongcraft.history_screen.replay.speed.value"
+
+    /** 跳到初始牌面的按鈕說明。 */
+    const val REPLAY_FIRST = "mahjongcraft.history_screen.replay.first"
+
+    /** 上一筆交易的按鈕說明。 */
+    const val REPLAY_PREVIOUS = "mahjongcraft.history_screen.replay.previous"
+
+    /** 播放按鈕說明。 */
+    const val REPLAY_PLAY = "mahjongcraft.history_screen.replay.play"
+
+    /** 暫停按鈕說明。 */
+    const val REPLAY_PAUSE = "mahjongcraft.history_screen.replay.pause"
+
+    /** 下一筆交易的按鈕說明。 */
+    const val REPLAY_NEXT = "mahjongcraft.history_screen.replay.next"
+
+    /** 跳到最後一筆交易的按鈕說明。 */
+    const val REPLAY_LAST = "mahjongcraft.history_screen.replay.last"
+
+    /** 控制列上目前交易與總交易數。 */
+    const val REPLAY_COUNTER = "mahjongcraft.history_screen.replay.counter"
+
+    /** 場景下方說明目前交易的編號。 */
+    const val REPLAY_CAPTION = "mahjongcraft.history_screen.replay.caption"
+
+    /** 窄視窗叫出交易列表的按鈕。 */
+    const val REPLAY_LIST = "mahjongcraft.history_screen.replay.list"
+
+    /** 回放上一局。 */
+    const val REPLAY_PREVIOUS_ROUND = "mahjongcraft.history_screen.replay.previous_round"
+
+    /** 回放下一局。 */
+    const val REPLAY_NEXT_ROUND = "mahjongcraft.history_screen.replay.next_round"
+
+    /** 對局的總局數。 */
+    const val REPLAY_ROUND_TOTAL = "mahjongcraft.history_screen.replay.round_total"
+
+    /** 牌譜缺少擺放牌桌所需資料時的說明。 */
+    const val REPLAY_UNAVAILABLE = "mahjongcraft.history_screen.replay.unavailable"
+
+    /** 視角選項中的東家。 */
+    const val REPLAY_WIND_EAST = "mahjongcraft.history_screen.replay.wind.east"
+
+    /** 視角選項中的南家。 */
+    const val REPLAY_WIND_SOUTH = "mahjongcraft.history_screen.replay.wind.south"
+
+    /** 視角選項中的西家。 */
+    const val REPLAY_WIND_WEST = "mahjongcraft.history_screen.replay.wind.west"
+
+    /** 視角選項中的北家。 */
+    const val REPLAY_WIND_NORTH = "mahjongcraft.history_screen.replay.wind.north"
 }

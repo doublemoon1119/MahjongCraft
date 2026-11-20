@@ -67,6 +67,9 @@ internal class GuideSceneRenderer : AutoCloseable {
      * @param mouseX 滑鼠水平位置。
      * @param mouseY 滑鼠垂直位置。
      * @param yawOffset 玩家拖曳轉動的水平角度，加在場景視角上；只有可轉動的場景使用。
+     * @param zoom 在放得下整個範圍的大小上再放大的倍數。
+     * @param panX 放大後場景中心往右移動的像素。
+     * @param panY 放大後場景中心往下移動的像素。
      * @return 滑鼠指著、離鏡頭最近的東西所屬的區塊與它在畫面上的範圍；沒有指著任何區塊時為 null。
      */
     fun render(
@@ -79,15 +82,18 @@ internal class GuideSceneRenderer : AutoCloseable {
         mouseX: Int,
         mouseY: Int,
         yawOffset: Float = 0f,
+        zoom: Float = 1f,
+        panX: Float = 0f,
+        panY: Float = 0f,
     ): GuideSceneHover? {
         if (width <= 0 || height <= 0 || scene.blocks.isEmpty() && scene.figures.isEmpty() && scene.tiles.isEmpty()) return null
         val client = MinecraftClient.getInstance()
         val yaw = scene.view.yawDegrees + if (scene.rotatable) yawOffset else 0f
         val rotation = rotation(scene.view.pitchDegrees, yaw)
         val bounds = if (scene.rotatable) rotatableBounds(scene, rotation) else projectedBounds(scene, rotation)
-        val scale = min(width / bounds.width, height / bounds.height) * FILL_RATIO
-        val centerX = left + width / 2.0
-        val centerY = top + height / 2.0
+        val scale = min(width / bounds.width, height / bounds.height) * FILL_RATIO * zoom
+        val centerX = left + width / 2.0 + panX
+        val centerY = top + height / 2.0 + panY
         val clip = if (scene.focus == null) {
             ScreenRect(left, top, left + width, top + height)
         } else {
@@ -544,12 +550,13 @@ internal class GuideSceneRenderer : AutoCloseable {
     }
 
     /**
-     * 場景中所有方塊、角色與牌在 Z 方向的中心。
+     * 場景在 Z 方向的中心：有顯示或框住的範圍時取該範圍，否則取所有方塊、角色與牌。
      *
      * @param scene 場景。
      * @return Z 方向範圍的中點。
      */
     private fun sceneCenterZ(scene: GuideScene): Float {
+        (scene.focus ?: scene.frame)?.let { return ((it.minZ + it.maxZ) / 2.0).toFloat() }
         val zs = scene.blocks.flatMap { listOf(it.position.z.toDouble(), it.position.z + 1.0) } +
             scene.figures.map { it.z } +
             scene.tiles.map { it.z }
@@ -586,7 +593,7 @@ internal class GuideSceneRenderer : AutoCloseable {
                 }
             }
         }
-        val focus = scene.focus
+        val focus = scene.focus ?: scene.frame
         if (focus != null) {
             includeBox(
                 minCorner = Vector3f(focus.minX.toFloat(), focus.minY.toFloat(), focus.minZ.toFloat()),

@@ -514,11 +514,12 @@ attempt does not fall through to another provider.
   `TabWidget` for tabs, `ButtonRowLayout` for a row of equal-width buttons, `DropdownOverlay` for
   selector lists, `ControlTooltip` for control tooltips, `VerticalScrollbar` and `HorizontalScrollbar`
   for scrollbars, `CardBackground` for card colours, `wrapLinesBalanced` for card text that wraps and
-  `ScreenRendering` for titles, labels and status lines. Do not place widgets by hand or copy their
-  sizes. Sizes and colours live in those components; change them there and extend the layout tests.
-- Draw only the vanilla translucent background. Do not add a full-screen overlay or a panel behind the
-  content. The exception is the decision panel, which opens over the table during a match without
-  pausing it: it keeps its own background so its cards stay readable over the world behind them.
+  `ScreenRendering` for titles, labels and status lines. Start from their sizes and colours. A screen
+  that needs a different look may choose its own; when other screens could use it too, add it to the
+  shared component instead, as `CardBackground` does with its neutral colours.
+- Use the vanilla translucent background by default. A part of the content that needs to stand apart
+  from what is behind it may have its own backing, such as the decision panel over the world during a
+  match or a table scene drawn in a screen. Do not cover the whole screen with an overlay.
 - Mark the current page, or a selector whose list is open, with the white outline
   (`RestartableMarqueeButtonWidget.outlined`). Keep the disabled look for buttons that cannot be pressed;
   it does not mean "you are here".
@@ -550,9 +551,10 @@ attempt does not fall through to another provider.
   - A full settings page has Reset, Undo, Apply and Done, and asks before Esc discards unapplied
     changes.
   - A confirmation names its action on one button and has Cancel on the other.
-- Content is at most `FormScreenLayout.MAX_CONTENT_WIDTH` wide and centred on every screen except
-  editors that need the whole window, such as the HUD layout editor. Stripe every other row on screens
-  made of rows, and put scrollbars in the margin to the right of the content.
+- Content on form and list screens is at most `FormScreenLayout.MAX_CONTENT_WIDTH` wide and centred.
+  Screens built around one view, such as the HUD layout editor and the round replay, may use the whole
+  window. Stripe every other row on screens made of rows, and put scrollbars in the margin to the right
+  of the content.
 - Draw icons with `PixelIcons` and `PixelIcon`, not with text symbols, so their size and weight do not
   depend on the font. A button that shows only an icon still names its action in its tooltip.
 - Text that acts as a control is a button or a whole clickable row, never underlined text. Controls

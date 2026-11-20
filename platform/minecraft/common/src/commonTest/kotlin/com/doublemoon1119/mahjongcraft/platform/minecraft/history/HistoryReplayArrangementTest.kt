@@ -41,11 +41,12 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
 import kotlin.test.assertNotNull
+import kotlin.test.assertTrue
 import kotlin.uuid.Uuid
 
 /** 驗證牌譜回放擺出的牌桌與對局中同一份桌況擺出的位置相同。 */
 class HistoryReplayArrangementTest {
-    /** 標準牌河：開局與打出一張牌後，牌譜擺出的每個位置都和對局中相同。 */
+    /** 標準牌河：開局與打出一張牌後，牌譜擺出的每個位置都和對局中相同；攤開手牌只改變手牌。 */
     @Test
     fun `replay arrangement matches the live table`() = runTest {
         assertMatchesLive(TableTileLayoutProfile.STANDARD)
@@ -98,6 +99,11 @@ class HistoryReplayArrangementTest {
             val replayed = HistoryReplayArrangement.arrange(dto, notes, module, profile) { false }
 
             assertEquals(placements(live(live, module, profile)), placements(replayed.values.map { it.placement to it.pose }))
+            // 攤開手牌只改變手牌，其他牌的位置與姿態不變。
+            val opened = HistoryReplayArrangement.arrange(dto, notes, module, profile, sidewaysMarker = { false }, openHands = true)
+            val handTiles = dto.players.flatMap { it.handTiles + listOfNotNull(it.lastDrawn) }.toSet()
+            assertTrue(handTiles.isNotEmpty() && handTiles.all { opened.getValue(it).pose == TilePose.FACE_UP })
+            assertEquals(replayed.filterKeys { it !in handTiles }, opened.filterKeys { it !in handTiles })
         }
     }
 

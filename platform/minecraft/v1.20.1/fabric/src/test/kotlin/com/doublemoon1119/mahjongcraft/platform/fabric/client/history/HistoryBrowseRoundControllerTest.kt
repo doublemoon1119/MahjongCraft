@@ -1,6 +1,8 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.client.history
 
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.query.HistoryQueryLimits
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameConfig
+import com.doublemoon1119.mahjongcraft.flow.network.dto.config.toDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryIntegrityFilterDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryListRequestDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryListResponseDto
@@ -23,16 +25,20 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryRoundStat
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryRoundStateResponseDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryRoundSummaryDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryRuleSettingsRequestDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryRuleSettingsResponseDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistorySummaryRequestDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistorySummaryResponseDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.model.SuitDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.model.TileDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.model.TileFaceViewDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.model.WindDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.DefaultNetworkDtoRegistries
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.riichi.RiichiRedDoraViewDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.snapshot.MatchRoundPhaseDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.snapshot.MatchRoundPositionDto
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledNetworkJson
+import com.doublemoon1119.mahjongcraft.testing.flow.bundled.registerBundledNetworkDtos
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -567,6 +573,10 @@ class HistoryBrowseRoundControllerTest {
         assertEquals(null, controller.state.value.replay?.stepCount)
         advanceTimeBy(250.milliseconds)
         runCurrent()
+        transport.respondRuleSettings()
+        runCurrent()
+        advanceTimeBy(250.milliseconds)
+        runCurrent()
         assertEquals(2, transport.roundEventsRequests.size)
         assertEquals(null, controller.state.value.replay?.stepCount)
 
@@ -624,6 +634,12 @@ class HistoryBrowseRoundControllerTest {
         transport.respondEvents(roundNumber = 1, start = 0, next = EVENTS_PAGE, transactionCount = TRANSACTION_COUNT)
         runCurrent()
         assertTrue(controller.showReplay(0))
+        advanceTimeBy(250.milliseconds)
+        runCurrent()
+        // 擺牌需要規則設定，回放先要規則設定。
+        assertEquals(1, transport.ruleSettingsRequests.size)
+        transport.respondRuleSettings()
+        runCurrent()
         advanceTimeBy(250.milliseconds)
         runCurrent()
         return controller
@@ -771,12 +787,24 @@ class HistoryBrowseRoundControllerTest {
         }
 
         /**
-         * 產生規則設定要求的測試用識別碼；此替身不需保留其 payload。
+         * 記錄規則設定要求並回報等待狀態。
          *
          * @param request 規則設定要求。
          * @return 模擬配對識別碼。
          */
-        override fun queryRuleSettings(request: HistoryRuleSettingsRequestDto): String = "rules-${++nextId}"
+        override fun queryRuleSettings(request: HistoryRuleSettingsRequestDto): String = "rules-${++nextId}".also {
+            ruleSettingsRequests += it
+            mutableState.value = ClientHistoryQueryState.Loading(it)
+        }
+
+        /** 已送出的規則設定要求識別碼。 */
+        val ruleSettingsRequests = mutableListOf<String>()
+
+        /** 回覆最後一筆規則設定要求。 */
+        fun respondRuleSettings() {
+            val config = GameConfig(RiichiRuleConfig()).toDto(registries = DefaultNetworkDtoRegistries().apply { registerBundledNetworkDtos() })
+            mutableState.value = ClientHistoryQueryState.RuleSettingsResult(HistoryRuleSettingsResponseDto(ruleSettingsRequests.last(), config, errorCode = null))
+        }
 
         /**
          * 記錄事件頁查詢。

@@ -4,6 +4,7 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryRoundStat
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
 import com.doublemoon1119.mahjongcraft.logic.tile.component.TilePose
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.guide.scene.GuideScene
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.guide.scene.GuideSceneBox
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.guide.scene.GuideSceneTile
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.guide.scene.GuideSceneView
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.guide.scene.GuideScenes
@@ -25,6 +26,7 @@ internal object HistoryReplayScene {
      * @param module 這場對局的規則模組。
      * @param tileLayout 規則的桌面牌位配置。
      * @param sidewaysMarker 牌河標記是否代表橫放。
+     * @param openHands 是否把每一家的手牌面朝上攤開。
      * @param assetKey 局內牌索引對應的牌面素材；看不到牌面時為 null。
      * @return 牌桌場景。
      */
@@ -34,9 +36,17 @@ internal object HistoryReplayScene {
         module: MahjongRuleModule<*>,
         tileLayout: TableTileLayoutProfile,
         sidewaysMarker: (String) -> Boolean,
+        openHands: Boolean,
         assetKey: (Int) -> String?,
     ): GuideScene {
-        val arranged = HistoryReplayArrangement.arrange(state, notes, module, tileLayout, sidewaysMarker)
+        val arranged = HistoryReplayArrangement.arrange(
+            state = state,
+            notes = notes,
+            module = module,
+            tileLayout = tileLayout,
+            openHands = openHands,
+            sidewaysMarker = sidewaysMarker,
+        )
         val tiles = arranged.map { (index, tile) ->
             GuideSceneTile(
                 assetKey = assetKey(index),
@@ -58,14 +68,26 @@ internal object HistoryReplayScene {
             controllerZ = 0,
             tableFacing = MahjongTableFacing.NORTH,
         )
+        val furniture = GuideScenes.tableBlocks() + GuideScenes.stools(seats)
         return GuideScene(
-            blocks = GuideScenes.floor() + GuideScenes.tableBlocks() + GuideScenes.stools(seats),
+            blocks = GuideScenes.floor() + furniture,
             figures = emptyList(),
             tiles = tiles,
             view = GuideSceneView(yawDegrees = VIEW_YAW, pitchDegrees = VIEW_PITCH),
+            frame = GuideSceneBox(
+                minX = furniture.minOf { it.position.x }.toDouble(),
+                minY = furniture.minOf { it.position.y }.toDouble(),
+                minZ = furniture.minOf { it.position.z }.toDouble(),
+                maxX = furniture.maxOf { it.position.x } + 1.0,
+                maxY = furniture.maxOf { it.position.y } + 1.0 + TILE_HEADROOM,
+                maxZ = furniture.maxOf { it.position.z } + 1.0,
+            ),
             rotatable = true,
         )
     }
+
+    /** 框住桌椅時在桌面上方多留的高度，容得下立著的牌。 */
+    private const val TILE_HEADROOM: Double = 0.25
 
     /** 場景一開始的水平角度。 */
     private const val VIEW_YAW: Float = 20f
