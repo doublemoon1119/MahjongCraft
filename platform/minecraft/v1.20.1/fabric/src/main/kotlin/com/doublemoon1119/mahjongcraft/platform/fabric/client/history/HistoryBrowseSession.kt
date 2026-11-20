@@ -12,6 +12,7 @@ import com.doublemoon1119.mahjongcraft.logic.base.TileOrder
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.catalogue.RuleCatalogueScreenController
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.character.ClientAiCharacterPreviews
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.concurrency.ClientThreadCoroutineDispatcher
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.player.ClientPlayerProfileResolver
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.MahjongTileFaceRenderer
@@ -54,6 +55,7 @@ import kotlin.time.TimeSource
  * @property ruleCatalogue 從規則設定頁開啟規則一覽。
  * @property tileLayoutProfiles 規則的桌面牌位配置，供牌桌場景擺牌。
  * @property playerProfiles 牌桌場景中真人玩家模型的皮膚來源。
+ * @property characterPreviews 牌桌場景中 AI 角色預覽模型的來源。
  * @param dispatcher 客戶端主執行緒排程。
  * @property parent 關閉後返回的原畫面，指令入口為 null。
  * @param initialMatchId 聊天入口指定的對局；null 表示一般列表。
@@ -78,6 +80,7 @@ internal class HistoryBrowseSession(
     private val ruleCatalogue: RuleCatalogueScreenController,
     val tileLayoutProfiles: TableTileLayoutProfileRegistry,
     val playerProfiles: ClientPlayerProfileResolver,
+    val characterPreviews: ClientAiCharacterPreviews,
     dispatcher: ClientThreadCoroutineDispatcher,
     private val parent: Screen?,
     initialMatchId: String?,

@@ -6,7 +6,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongPlayerInf
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.RoundInfoLine
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileLean
 import net.minecraft.block.BlockState
-import net.minecraft.entity.LivingEntity
+import net.minecraft.entity.Entity
 import net.minecraft.util.math.BlockPos
 import kotlin.uuid.Uuid
 
@@ -73,25 +73,38 @@ internal data class GuideSceneFigure(
 )
 
 /**
- * 場景中用原版繪製器畫出的一個生物。
+ * 場景中用原版繪製器畫出的一個實體。
  *
- * 生物不在任何世界中，由呼叫端建立與保留；坐姿時繪製器讓它暫時騎在一個不在世界中的座位上，套用原版的坐姿。
+ * 實體不在任何世界中，由呼叫端建立與保留；坐姿時繪製器在繪製期間讓它騎在一個不在世界中的座位上，套用原版的坐姿，
+ * 畫完即離開座位。
  *
- * @property entity 要畫的生物。
+ * @property entity 要畫的實體。
  * @property x 腳底中心的 X 座標。
  * @property y 腳底的 Y 座標。
  * @property z 腳底中心的 Z 座標。
  * @property yaw Minecraft 慣例的水平朝向（0 度朝南），身體與頭都朝這個方向。
  * @property seated 是否以坐姿繪製。
+ * @property guard 包住這個實體繪製工作的隔離方式，例如第三方模型繪製失敗時改用備援；不需要時為 null。
  */
 internal data class GuideSceneEntity(
-    val entity: LivingEntity,
+    val entity: Entity,
     val x: Double,
     val y: Double,
     val z: Double,
     val yaw: Float,
     val seated: Boolean,
+    val guard: GuideSceneRenderGuard? = null,
 )
+
+/** 包住場景中一個實體繪製工作的隔離方式。 */
+internal fun interface GuideSceneRenderGuard {
+    /**
+     * 執行繪製工作，並依自己的規則處理失敗。
+     *
+     * @param draw 繪製工作。
+     */
+    fun run(draw: () -> Unit)
+}
 
 /**
  * 場景中的一張麻將牌，畫法與對局中的牌相同。

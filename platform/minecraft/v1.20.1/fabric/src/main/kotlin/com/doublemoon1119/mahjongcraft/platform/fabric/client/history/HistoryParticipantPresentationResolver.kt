@@ -3,6 +3,8 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.client.history
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryParticipantSummaryDto
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.player.ClientPlayerDisplayNameResolver
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.PlayerPortraitRenderer
+import com.doublemoon1119.mahjongcraft.platform.minecraft.character.AiCharacterClientStateStore
+import com.doublemoon1119.mahjongcraft.platform.minecraft.character.AiCharacterSnapshot
 import com.doublemoon1119.mahjongcraft.platform.minecraft.history.MinecraftHistoryScreenKeys
 import net.minecraft.client.gui.DrawContext
 import net.minecraft.text.Text
@@ -13,11 +15,22 @@ import kotlin.uuid.Uuid
  *
  * @property names 目前與歷史共用的名稱解析器。
  * @property portraits 既有 portrait source 的 GUI 繪製器。
+ * @property characters 各場保存的 AI 角色外觀。
  */
 class HistoryParticipantPresentationResolver(
     private val names: ClientPlayerDisplayNameResolver,
     private val portraits: PlayerPortraitRenderer,
+    private val characters: AiCharacterClientStateStore,
 ) {
+    /**
+     * 取得 AI 參與者在該場保存的角色外觀，不以目前世界中的角色代替。
+     *
+     * @param playerId AI 識別碼。
+     * @param matchId 歷史場次。
+     * @return 保存的外觀；沒有時為 null。
+     */
+    fun character(playerId: Uuid, matchId: String?): AiCharacterSnapshot? = matchId?.let(::parseUuid)?.let { characters.history(it, playerId) }
+
     /**
      * 取得參與者顯示名稱；profile 不在快取時使用穩定的未知玩家翻譯文字。
      *

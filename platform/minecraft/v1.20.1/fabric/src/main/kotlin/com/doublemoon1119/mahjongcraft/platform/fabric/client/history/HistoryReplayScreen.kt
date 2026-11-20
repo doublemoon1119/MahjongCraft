@@ -6,6 +6,7 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryRoundStat
 import com.doublemoon1119.mahjongcraft.flow.network.dto.model.TileFaceViewDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.model.WindDto
 import com.doublemoon1119.mahjongcraft.platform.fabric.block.MahjongStoolBlock
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.character.ClientAiCharacterPreviews
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.CardBackground
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.ControlTooltip
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.DropdownOption
@@ -20,6 +21,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.measuringTimeN
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.guide.scene.GuideScene
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.guide.scene.GuideSceneEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.guide.scene.GuideSceneFigure
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.guide.scene.GuideSceneRenderGuard
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.guide.scene.GuideSceneRenderer
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.guide.scene.GuideSceneView
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongStoolSeatGeometry
@@ -27,7 +29,9 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.registry.ModBlocks
 import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionReplayMarker
 import com.doublemoon1119.mahjongcraft.platform.minecraft.animation.AnimationStep
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.table.MahjongTableFacing
+import com.doublemoon1119.mahjongcraft.platform.minecraft.character.AiCharacterSnapshot
 import com.doublemoon1119.mahjongcraft.platform.minecraft.history.HistoryReplayArrangement
+import com.doublemoon1119.mahjongcraft.platform.minecraft.history.HistoryReplayCharacterAppearance
 import com.doublemoon1119.mahjongcraft.platform.minecraft.history.MinecraftHistoryScreenKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.history.ReplayTableNotes
 import com.doublemoon1119.mahjongcraft.platform.minecraft.seating.MahjongSeatingTableLayout
@@ -505,7 +509,7 @@ internal class HistoryReplayScreen(
         val arranged = arrangement(state) ?: return null
         val (figures, entities) = seatedPlayers(state)
         animation?.let { return withView(HistoryReplayScene.build(state.players.size, arranged, it.samples(), figures, entities) { index -> assetKey(state, index) }, state) }
-        val key = SceneKey(state = state, arranged = arranged, viewSeat = viewSeat)
+        val key = SceneKey(state = state, arranged = arranged, viewSeat = viewSeat, figures = figures, entities = entities)
         sceneCache?.takeIf { it.first == key }?.let { return it.second }
         val built = withView(HistoryReplayScene.build(state.players.size, arranged, emptyMap(), figures, entities) { index -> assetKey(state, index) }, state)
         sceneCache = key to built
@@ -513,10 +517,13 @@ internal class HistoryReplayScreen(
     }
 
     /**
-     * 坐在桌邊的各家：AI 以內建機器人外觀畫出，真人玩家以玩家模型畫出，都坐在自己的凳子上面向桌子。
+     * 坐在桌邊的各家，都坐在自己的凳子上面向桌子。
+     *
+     * AI 照該場保存的角色外觀畫出：內建機器人用保存的牌面；其他角色用該角色的預覽模型，模型還沒建立、沒有對應的預覽能力或
+     * 繪製失敗時改畫內建機器人。真人玩家以玩家模型畫出。
      *
      * @param state 目前牌面。
-     * @return 內建機器人外觀的角色與以原版繪製器畫出的玩家。
+     * @return 內建機器人外觀的角色與以原版繪製器畫出的模型。
      */
     private fun seatedPlayers(state: HistoryRoundStateDto): Pair<List<GuideSceneFigure>, List<GuideSceneEntity>> {
         val world = client?.world ?: return emptyList<GuideSceneFigure>() to emptyList()
@@ -538,7 +545,22 @@ internal class HistoryReplayScreen(
             val participant = playerId?.let { id -> summary?.participants?.firstOrNull { it.playerId.equals(id, ignoreCase = true) } }
             val uuid = playerId?.let { runCatching { Uuid.parse(it) }.getOrNull() }
             if (participant?.aiStrategyId != null || uuid == null) {
-                figures += GuideSceneFigure(faceAssetKey = BOT_FACE, x = seat.x, y = feetY, z = seat.z, yaw = seat.yaw, seated = true)
+                val character = uuid?.let { session.participants.character(it, summary?.matchId) }
+                val model = character?.takeIf { HistoryReplayCharacterAppearance.usesPreviewModel(it.definition) }?.let(session.characterPreviews::sceneModel)
+                if (character != null && model != null) {
+                    entities += GuideSceneEntity(
+                        entity = model,
+                        x = seat.x,
+                        y = feetY,
+                        z = seat.z,
+                        yaw = seat.yaw,
+                        seated = true,
+                        guard = CharacterModelGuard(session.characterPreviews, character),
+                    )
+                } else {
+                    val face = HistoryReplayCharacterAppearance.botFace(character?.definition)
+                    figures += GuideSceneFigure(faceAssetKey = face, x = seat.x, y = feetY, z = seat.z, yaw = seat.yaw, seated = true)
+                }
             } else {
                 val entity = playerEntities.getOrPut(playerId) { playerEntity(world, uuid) }
                 entities += GuideSceneEntity(entity = entity, x = seat.x, y = feetY, z = seat.z, yaw = seat.yaw, seated = true)
@@ -558,10 +580,7 @@ internal class HistoryReplayScreen(
         val profiles = session.playerProfiles
         profiles.requestResolve(playerId)
         val profile = profiles.knownProfile(playerId) ?: GameProfile(playerId.toJavaUuid(), UNKNOWN_PROFILE_NAME)
-        val entity = HistoryReplayPlayerEntity(world, playerId, profile, profiles)
-        // 原版依實體與鏡頭的距離決定是否畫名牌；模型不在世界中，放到遠離鏡頭的位置，名牌就不會出現。
-        entity.setPosition(0.0, DETACHED_Y, 0.0)
-        return entity
+        return HistoryReplayPlayerEntity(world, playerId, profile, profiles)
     }
 
     /**
@@ -1278,12 +1297,31 @@ internal class HistoryReplayScreen(
      * @property state 牌面。
      * @property arranged 擺好的牌桌。
      * @property viewSeat 觀看的玩家初始座位；自由視角為 null。
+     * @property figures 內建機器人外觀的角色。
+     * @property entities 以原版繪製器畫出的模型。
      */
     private data class SceneKey(
         val state: HistoryRoundStateDto,
         val arranged: Map<Int, ArrangedTile>,
         val viewSeat: Int?,
+        val figures: List<GuideSceneFigure>,
+        val entities: List<GuideSceneEntity>,
     )
+
+    /**
+     * 隔離角色預覽模型的繪製失敗；失敗後該角色在等待重試期間改畫內建機器人。
+     *
+     * @property previews 角色預覽模型來源。
+     * @property character 模型所屬的外觀。
+     */
+    private data class CharacterModelGuard(
+        private val previews: ClientAiCharacterPreviews,
+        private val character: AiCharacterSnapshot,
+    ) : GuideSceneRenderGuard {
+        override fun run(draw: () -> Unit) {
+            previews.guardSceneModel(character, draw)
+        }
+    }
 
     /**
      * 決定牌桌擺法的條件。
@@ -1371,12 +1409,6 @@ internal class HistoryReplayScreen(
 
         /** 進度條上下可點擊的額外範圍。 */
         const val PROGRESS_HIT_MARGIN = 3
-
-        /** 內建機器人外觀的 AI 臉上的牌面。 */
-        const val BOT_FACE = "east"
-
-        /** 不在世界中的模型放置的高度，遠離鏡頭。 */
-        const val DETACHED_Y = -10_000.0
 
         /** 還不知道玩家名稱時，模型 profile 使用的名稱；名牌不會畫出，只用來建立模型。 */
         const val UNKNOWN_PROFILE_NAME = "player"

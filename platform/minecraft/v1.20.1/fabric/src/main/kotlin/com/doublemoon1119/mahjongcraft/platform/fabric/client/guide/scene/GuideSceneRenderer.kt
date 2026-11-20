@@ -25,9 +25,11 @@ import net.minecraft.client.render.Tessellator
 import net.minecraft.client.render.VertexConsumerProvider
 import net.minecraft.client.render.VertexFormat
 import net.minecraft.client.render.VertexFormats
+import net.minecraft.client.render.entity.EntityRenderDispatcher
 import net.minecraft.client.render.model.json.ModelTransformationMode
 import net.minecraft.client.world.ClientWorld
 import net.minecraft.entity.Entity
+import net.minecraft.entity.LivingEntity
 import net.minecraft.util.math.RotationAxis
 import org.joml.Matrix4f
 import org.joml.Quaternionf
@@ -484,7 +486,9 @@ internal class GuideSceneRenderer : AutoCloseable {
     }
 
     /**
-     * 用原版繪製器畫出生物；坐姿的生物暫時騎在不在世界中的座位上，站姿的生物離開座位。
+     * 用原版繪製器畫出實體；坐姿的實體在繪製期間騎在不在世界中的座位上。
+     *
+     * 原版依實體與鏡頭的距離決定是否畫名牌；實體不在世界中，繪製前放到遠離鏡頭的位置，名牌就不會出現。
      *
      * @param client 目前客戶端。
      * @param entities 要畫的生物。
@@ -504,21 +508,49 @@ internal class GuideSceneRenderer : AutoCloseable {
         dispatcher.setRenderShadows(false)
         try {
             entities.forEach { figure ->
-                val entity = figure.entity
-                if (figure.seated && entity.vehicle == null) entity.startRiding(seat, true)
-                if (!figure.seated && entity.vehicle != null) entity.stopRiding()
+                val draw = { renderEntity(figure, seat, dispatcher, context, consumers) }
+                val guard = figure.guard
+                if (guard == null) draw() else guard.run(draw)
+            }
+        } finally {
+            dispatcher.setRenderShadows(true)
+        }
+    }
+
+    /**
+     * 畫出一個實體，畫完後離開座位，不影響同一個實體在其他畫面的繪製。
+     *
+     * @param figure 要畫的實體與位置。
+     * @param seat 坐姿使用的座位。
+     * @param dispatcher 原版實體繪製器。
+     * @param context GUI 繪製上下文，矩陣已套用場景視角。
+     * @param consumers 繪製用的頂點緩衝。
+     */
+    private fun renderEntity(
+        figure: GuideSceneEntity,
+        seat: Entity,
+        dispatcher: EntityRenderDispatcher,
+        context: DrawContext,
+        consumers: VertexConsumerProvider,
+    ) {
+        val entity = figure.entity
+        entity.stopRiding()
+        if (figure.seated) entity.startRiding(seat, true)
+        try {
+            entity.setPosition(0.0, DETACHED_Y, 0.0)
+            if (entity is LivingEntity) {
                 entity.bodyYaw = figure.yaw
                 entity.prevBodyYaw = figure.yaw
                 entity.headYaw = figure.yaw
                 entity.prevHeadYaw = figure.yaw
-                entity.yaw = figure.yaw
-                entity.prevYaw = figure.yaw
-                entity.pitch = 0f
-                entity.prevPitch = 0f
-                dispatcher.render(entity, figure.x, figure.y, figure.z, figure.yaw, 1f, context.matrices, consumers, FULL_LIGHT)
             }
+            entity.yaw = figure.yaw
+            entity.prevYaw = figure.yaw
+            entity.pitch = 0f
+            entity.prevPitch = 0f
+            dispatcher.render(entity, figure.x, figure.y, figure.z, figure.yaw, 1f, context.matrices, consumers, FULL_LIGHT)
         } finally {
-            dispatcher.setRenderShadows(true)
+            entity.stopRiding()
         }
     }
 
@@ -754,6 +786,9 @@ internal class GuideSceneRenderer : AutoCloseable {
 
         /** 最亮的方塊與天空光照。 */
         const val FULL_LIGHT: Int = LightmapTextureManager.MAX_LIGHT_COORDINATE
+
+        /** 繪製實體前放置的高度，遠離鏡頭，名牌不會出現。 */
+        const val DETACHED_Y: Double = -10_000.0
 
         /** 計算範圍時，角色的半寬。 */
         const val FIGURE_HALF_WIDTH: Double = 0.45
