@@ -347,6 +347,18 @@ object MinecraftGuideScreenKeys {
     /** 和牌：自己摸到的說明。 */
     const val BASICS_TSUMO_HINT: String = "mahjongcraft.guide_screen.basics.tsumo.hint"
 
+    /** 「各規則的玩法」標題。 */
+    const val BASICS_VARIANTS_HEADING: String = "mahjongcraft.guide_screen.basics.variants.heading"
+
+    /** 各規則的玩法不同的說明。 */
+    const val BASICS_VARIANTS_TEXT: String = "mahjongcraft.guide_screen.basics.variants.text"
+
+    /** 到規則一覽查看各規則玩法的說明。 */
+    const val BASICS_VARIANTS_HINT: String = "mahjongcraft.guide_screen.basics.variants.hint"
+
+    /** 開啟規則一覽「基本玩法」的按鈕。 */
+    const val BASICS_VARIANTS_BUTTON: String = "mahjongcraft.guide_screen.basics.variants.button"
+
     /** 結果：和牌。 */
     const val BASICS_RESULT_WIN: String = "mahjongcraft.guide_screen.basics.result.win"
 

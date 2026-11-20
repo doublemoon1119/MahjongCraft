@@ -77,6 +77,42 @@ object MinecraftRuleCatalogueScreenKeys {
     /** 局部示意範例的標題。 */
     const val EXAMPLE_PARTIAL: String = "mahjongcraft.rule_catalogue.screen.example.partial"
 
+    /** 範例種類接上範例小標題，參數依序為範例種類與小標題。 */
+    const val EXAMPLE_TITLE_WITH_SUBTITLE: String = "mahjongcraft.rule_catalogue.screen.example.titled"
+
+    /** 條目下方列出可在房間設定調整的欄位，參數為欄位名稱清單。 */
+    const val ADJUSTABLE_SETTINGS: String = "mahjongcraft.rule_catalogue.screen.adjustable_settings"
+
+    /** 欄位名稱清單的分隔符號。 */
+    const val LIST_SEPARATOR: String = "mahjongcraft.rule_catalogue.screen.list_separator"
+
+    /** 各規則共用的「基本玩法」分類名稱。 */
+    const val CATEGORY_BASICS: String = "mahjongcraft.rule_catalogue.category.basics"
+
+    /** 牌組標籤：自己打過的牌（牌河）。 */
+    const val GROUP_DISCARDS: String = "mahjongcraft.rule_catalogue.screen.group.discards"
+
+    /** 牌組標籤：上家打出的牌。 */
+    const val GROUP_LEFT_DISCARD: String = "mahjongcraft.rule_catalogue.screen.group.left_discard"
+
+    /** 牌組標籤：別人打出的牌。 */
+    const val GROUP_OTHER_DISCARD: String = "mahjongcraft.rule_catalogue.screen.group.other_discard"
+
+    /** 牌組標籤：手上已有的牌。 */
+    const val GROUP_IN_HAND: String = "mahjongcraft.rule_catalogue.screen.group.in_hand"
+
+    /** 牌組標籤：吃完之後不能馬上打出的牌。 */
+    const val GROUP_NO_DISCARD_AFTER_CHI: String = "mahjongcraft.rule_catalogue.screen.group.no_discard_after_chi"
+
+    /** 牌組標籤：碰完之後不能馬上打出的牌。 */
+    const val GROUP_NO_DISCARD_AFTER_PON: String = "mahjongcraft.rule_catalogue.screen.group.no_discard_after_pon"
+
+    /** 範例小標題：吃。 */
+    const val EXAMPLE_CHI: String = "mahjongcraft.rule_catalogue.screen.example.chi"
+
+    /** 範例小標題：碰。 */
+    const val EXAMPLE_PON: String = "mahjongcraft.rule_catalogue.screen.example.pon"
+
     /** 手牌群組標籤。 */
     const val GROUP_HAND: String = "mahjongcraft.rule_catalogue.screen.group.hand"
 
@@ -109,6 +145,8 @@ object MinecraftRuleCatalogueScreenKeys {
         STATUS_NO_RULES, STATUS_CONFIG_UNAVAILABLE, STATUS_MISSING_PROVIDER, STATUS_UNSUPPORTED_CONFIG,
         STATUS_EMPTY_CATALOGUE, STATUS_NO_RESULTS, EXAMPLE_COMPLETE, EXAMPLE_PARTIAL, GROUP_HAND,
         GROUP_WINNING_TILE, GROUP_OPEN_MELD, GROUP_OPEN_KAN, GROUP_CLOSED_KAN, GROUP_ILLUSTRATION,
-        MISSING_TRANSLATION, MISSING_ASSET,
+        MISSING_TRANSLATION, MISSING_ASSET, EXAMPLE_TITLE_WITH_SUBTITLE, ADJUSTABLE_SETTINGS, LIST_SEPARATOR,
+        CATEGORY_BASICS, GROUP_DISCARDS, GROUP_LEFT_DISCARD, GROUP_OTHER_DISCARD, GROUP_IN_HAND, GROUP_NO_DISCARD_AFTER_CHI,
+        GROUP_NO_DISCARD_AFTER_PON, EXAMPLE_CHI, EXAMPLE_PON,
     )
 }

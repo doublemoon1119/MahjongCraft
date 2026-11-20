@@ -5,6 +5,8 @@ import com.doublemoon1119.mahjongcraft.logic.module.BuiltInRuleModuleIds
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiFamilyRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.RiichiYakuType
+import com.doublemoon1119.mahjongcraft.platform.minecraft.catalogue.BuiltInRuleCatalogueCategoryIds
+import com.doublemoon1119.mahjongcraft.platform.minecraft.catalogue.MinecraftRuleCatalogueScreenKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.catalogue.RuleCatalogue
 import com.doublemoon1119.mahjongcraft.platform.minecraft.catalogue.RuleCatalogueCategory
 import com.doublemoon1119.mahjongcraft.platform.minecraft.catalogue.RuleCatalogueEntry
@@ -40,8 +42,9 @@ class RiichiCatalogueProvider(
         if (!configClass.isInstance(config)) return null
         config as RiichiFamilyRuleConfig
         return RuleCatalogue(
-            categories = RiichiCatalogueCategory.entries.map { RuleCatalogueCategory(it.id, it.nameKey) },
-            entries = RiichiCatalogueYaku.entries
+            categories = listOf(RuleCatalogueCategory(BuiltInRuleCatalogueCategoryIds.BASICS, MinecraftRuleCatalogueScreenKeys.CATEGORY_BASICS)) +
+                RiichiCatalogueCategory.entries.map { RuleCatalogueCategory(it.id, it.nameKey) },
+            entries = riichiCatalogueBasicsEntries(config) + RiichiCatalogueYaku.entries
                 .filter { definition -> definition.type != RiichiYakuType.NukiDora || config.usesThreePlayerTiles }
                 .map { definition ->
                     RuleCatalogueEntry(

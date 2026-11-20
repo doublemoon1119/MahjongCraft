@@ -56,6 +56,14 @@ class GuidePagesTest {
         assertTrue(ron.last().size == 1)
     }
 
+    /** 麻將基礎頁最後是開啟規則一覽「基本玩法」的按鈕。 */
+    @Test
+    fun `basics page ends with the rule basics button`() {
+        val button = basics.last() as GuideBlock.Button
+
+        assertEquals(GuideAction.RULE_BASICS, button.action)
+    }
+
     /**
      * 以標題的翻譯鍵找出分隔段落或卡片的內容。
      *

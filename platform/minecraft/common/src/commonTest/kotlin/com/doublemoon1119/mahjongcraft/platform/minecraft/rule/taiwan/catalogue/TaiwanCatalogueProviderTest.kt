@@ -12,6 +12,7 @@ import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanWinSituation
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.tai.TaiwanTaiType
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
+import com.doublemoon1119.mahjongcraft.platform.minecraft.catalogue.BuiltInRuleCatalogueCategoryIds
 import com.doublemoon1119.mahjongcraft.platform.minecraft.catalogue.RuleCatalogueExample
 import com.doublemoon1119.mahjongcraft.platform.minecraft.catalogue.RuleCatalogueTileGroup
 import com.doublemoon1119.mahjongcraft.platform.minecraft.catalogue.RuleCatalogueTileGroupRole
@@ -38,11 +39,27 @@ class TaiwanCatalogueProviderTest {
         assertTrue(ids.all { it.startsWith("mahjongcraft:taiwan/catalogue/") }, ids.toString())
     }
 
+    /** 「基本玩法」排在第一個分類，依序列出各條目，包牌接在最後；不使用花牌時花牌條目標示原因。 */
+    @Test
+    fun `basics come first and end with liability payment`() {
+        val catalogue = assertNotNull(TaiwanCatalogueProvider().catalogue(TaiwanRuleConfig()))
+        val noFlowers = assertNotNull(TaiwanCatalogueProvider().catalogue(TaiwanRuleConfig(useFlowerTiles = false)))
+
+        assertEquals(BuiltInRuleCatalogueCategoryIds.BASICS, catalogue.categories.first().id)
+        val basics = catalogue.entries.filter { BuiltInRuleCatalogueCategoryIds.BASICS in it.categoryIds }
+        assertEquals(TaiwanCatalogueBasic.entries.map { it.nameKey } + TaiwanCatalogueKeys.PAO_NAME, basics.map { it.nameTranslationKey })
+        assertEquals(null, basics.single { it.nameTranslationKey == TaiwanCatalogueBasic.Flowers.nameKey }.unavailableReasonTranslationKey)
+        assertEquals(
+            expected = TaiwanCatalogueKeys.FLOWERS_UNAVAILABLE,
+            actual = noFlowers.entries.single { it.nameTranslationKey == TaiwanCatalogueBasic.Flowers.nameKey }.unavailableReasonTranslationKey,
+        )
+    }
+
     /** 每個計台項目恰有一筆條目，並列出所有流局與包牌。 */
     @Test
     fun `catalogue covers every tai type, draw reason and payment rule`() {
         val catalogue = assertNotNull(TaiwanCatalogueProvider().catalogue(TaiwanRuleConfig()))
-        val otherCategories = setOf(TaiwanCatalogueCategory.Draw.id, TaiwanCatalogueCategory.Payment.id)
+        val otherCategories = setOf(TaiwanCatalogueCategory.Draw.id, TaiwanCatalogueCategory.Payment.id, BuiltInRuleCatalogueCategoryIds.BASICS)
 
         assertEquals(TaiwanCatalogueTai.entries.map { it.id }.toSet(), catalogue.entries.filter { it.categoryId !in otherCategories }.map { it.id }.toSet())
         assertEquals(TaiwanCatalogueSpecial.entries.map { it.id }, catalogue.entries.filter { it.categoryId == TaiwanCatalogueCategory.Draw.id }.map { it.id })
@@ -55,7 +72,7 @@ class TaiwanCatalogueProviderTest {
         val catalogue = assertNotNull(TaiwanCatalogueProvider().catalogue(TaiwanRuleConfig()))
 
         assertEquals(TaiwanTaiType.entries, TaiwanCatalogueTai.entries.map { it.type })
-        assertEquals(TaiwanCatalogueTai.entries.size + TaiwanCatalogueSpecial.entries.size + 1, catalogue.entries.size)
+        assertEquals(TaiwanCatalogueBasic.entries.size + TaiwanCatalogueTai.entries.size + TaiwanCatalogueSpecial.entries.size + 1, catalogue.entries.size)
         assertEquals(catalogue.entries.size, catalogue.entries.map { it.id }.distinct().size)
     }
 

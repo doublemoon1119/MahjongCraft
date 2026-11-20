@@ -9,8 +9,8 @@ import com.doublemoon1119.mahjongcraft.logic.base.NamespacedId
  * 呼叫 [freeze]。
  */
 class RuleModuleDisplayNameRegistryImpl : RuleModuleDisplayNameRegistry {
-    /** 依規則模組 ID 保存顯示名稱 translation key。 */
-    private val translationKeysByRuleModuleId = mutableMapOf<String, String>()
+    /** 依規則模組 ID 保存顯示名稱 translation key，保留登記順序，供規則選單依登記順序排列。 */
+    private val translationKeysByRuleModuleId = linkedMapOf<String, String>()
 
     override val registrationKeys: Set<String> get() = translationKeysByRuleModuleId.keys.toSet()
 

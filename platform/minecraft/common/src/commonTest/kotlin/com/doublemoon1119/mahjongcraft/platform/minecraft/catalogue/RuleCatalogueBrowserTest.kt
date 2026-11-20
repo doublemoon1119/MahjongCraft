@@ -16,18 +16,18 @@ import kotlin.test.assertTrue
 
 /** 驗證規則目錄瀏覽器的選擇、搜尋、分類、配置來源與失敗狀態。 */
 class RuleCatalogueBrowserTest {
-    /** 規則選項合併已知來源與目前規則，且以穩定 ID 排序去重。 */
+    /** 規則選項依登記順序合併：先是已知規則，接著是只提供目錄的規則，最後是原規則，重複的只留第一次出現的位置。 */
     @Test
-    fun `rule options merge known provider and context ids in stable order`() {
+    fun `rule options keep registration order of known catalogue and context ids`() {
         val registry = registry(
-            RecordingProvider(PROVIDER_B, TaiwanRuleConfig()),
             RecordingProvider(PROVIDER_C, TaiwanRuleConfig()),
+            RecordingProvider(PROVIDER_B, TaiwanRuleConfig()),
         )
-        val knownIds = mutableListOf(PROVIDER_A, PROVIDER_B, PROVIDER_B, PROVIDER_D)
+        val knownIds = mutableListOf(PROVIDER_D, PROVIDER_B, PROVIDER_B, PROVIDER_A)
         val browser = RuleCatalogueBrowser(registry, names(), knownIds, RuleCatalogueBrowseContext(PROVIDER_E))
         knownIds.clear()
 
-        assertEquals(listOf(PROVIDER_A, PROVIDER_B, PROVIDER_C, PROVIDER_D, PROVIDER_E), browser.snapshot(::translate).ruleOptions.map { it.ruleModuleId })
+        assertEquals(listOf(PROVIDER_D, PROVIDER_B, PROVIDER_A, PROVIDER_C, PROVIDER_E), browser.snapshot(::translate).ruleOptions.map { it.ruleModuleId })
     }
 
     /** 沒有開啟脈絡時優先選擇有目錄來源的規則；完全沒有來源時才使用已知 ID。 */
@@ -160,9 +160,9 @@ class RuleCatalogueBrowserTest {
         assertEquals(listOf("example:text"), browser.snapshot(::translate).entries.map { it.id })
     }
 
-    /** 分類只接受目前目錄的分類；切換規則清除分類但保留搜尋文字。 */
+    /** 分類只接受目前目錄的分類；切換到也有同一分類的規則時保留分類與搜尋文字。 */
     @Test
-    fun `category selection intersects search and selection resets category`() {
+    fun `category selection intersects search and switching rules keeps a shared category`() {
         val first = RecordingProvider(PROVIDER_A, TaiwanRuleConfig())
         val second = RecordingProvider(PROVIDER_B, TaiwanRuleConfig())
         val browser = RuleCatalogueBrowser(registry(first, second), names(), listOf(PROVIDER_A, PROVIDER_B))
@@ -176,8 +176,57 @@ class RuleCatalogueBrowserTest {
         assertEquals(listOf("example:second", "example:text"), browser.snapshot(::translate).entries.map { it.id })
         assertTrue(browser.selectRule(PROVIDER_B))
         val state = browser.snapshot(::translate)
-        assertEquals(null, state.categoryId)
+        assertEquals(CATEGORY_B, state.categoryId)
         assertEquals("entry", state.searchText)
+    }
+
+    /** 切換到沒有目前分類的規則時改為全部分類。 */
+    @Test
+    fun `switching to a rule without the category resets it`() {
+        val first = RecordingProvider(PROVIDER_A, TaiwanRuleConfig())
+        val second = RecordingProvider(PROVIDER_B, TaiwanRuleConfig()) { sampleCatalogue().let { it.copy(categories = it.categories.filter { category -> category.id != CATEGORY_B }, entries = it.entries.filter { entry -> CATEGORY_B !in entry.categoryIds }) } }
+        val browser = RuleCatalogueBrowser(registry(first, second), names(), listOf(PROVIDER_A, PROVIDER_B))
+
+        assertTrue(browser.selectCategory(CATEGORY_B))
+        assertTrue(browser.selectRule(PROVIDER_B))
+        assertEquals(null, browser.snapshot(::translate).categoryId)
+    }
+
+    /** 全部分類平常不列只屬於「基本玩法」的條目，搜尋時才列出；同時屬於其他分類的條目照常列出。 */
+    @Test
+    fun `all categories hide basics only entries unless searching`() {
+        val base = sampleCatalogue()
+        val provider = RecordingProvider(PROVIDER_A, TaiwanRuleConfig()) {
+            base.copy(
+                categories = listOf(RuleCatalogueCategory(BuiltInRuleCatalogueCategoryIds.BASICS, "example.basics")) + base.categories,
+                entries = listOf(
+                    element = RuleCatalogueEntry(id = "example:basic", categoryId = BuiltInRuleCatalogueCategoryIds.BASICS, nameTranslationKey = "example:basic.name", descriptionTranslationKey = "example:basic.description"),
+                ) + base.entries.map { if (it.id == "example:first") it.copy(additionalCategoryIds = listOf(BuiltInRuleCatalogueCategoryIds.BASICS)) else it },
+            )
+        }
+        val browser = RuleCatalogueBrowser(registry(provider), names(), listOf(PROVIDER_A))
+
+        val all = browser.snapshot(::translate).entries.map { it.id }
+        assertTrue("example:basic" !in all)
+        assertTrue("example:first" in all)
+        assertTrue(browser.setSearch("basic"))
+        assertTrue("example:basic" in browser.snapshot(::translate).entries.map { it.id })
+        assertTrue(browser.setSearch(""))
+        assertTrue(browser.selectCategory(BuiltInRuleCatalogueCategoryIds.BASICS))
+        assertEquals(listOf("example:basic", "example:first"), browser.snapshot(::translate).entries.map { it.id })
+    }
+
+    /** 開啟時指定的分類存在就選擇它，不存在就維持全部分類。 */
+    @Test
+    fun `initial category is selected only when the catalogue has it`() {
+        val provider = RecordingProvider(PROVIDER_A, TaiwanRuleConfig())
+
+        val selected = RuleCatalogueBrowser(registry(provider), names(), listOf(PROVIDER_A), initialCategoryId = CATEGORY_B)
+        val unknown = RuleCatalogueBrowser(registry(provider), names(), listOf(PROVIDER_A), initialCategoryId = "example:unknown")
+
+        assertEquals(CATEGORY_B, selected.snapshot(::translate).categoryId)
+        assertTrue(selected.snapshot(::translate).entries.all { CATEGORY_B in it.categoryIds })
+        assertEquals(null, unknown.snapshot(::translate).categoryId)
     }
 
     /** 條目也會列在額外分類中；全部分類與搜尋時每個條目只出現一次。 */

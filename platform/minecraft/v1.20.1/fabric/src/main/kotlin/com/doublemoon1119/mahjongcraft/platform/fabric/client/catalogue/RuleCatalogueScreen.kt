@@ -10,6 +10,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.TabWidget
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.VerticalScrollbar
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.applyTabScroll
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.MahjongTileFaceRenderer
+import com.doublemoon1119.mahjongcraft.platform.minecraft.catalogue.BuiltInRuleCatalogueCategoryIds
 import com.doublemoon1119.mahjongcraft.platform.minecraft.catalogue.MinecraftRuleCatalogueScreenKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.catalogue.RuleCatalogueBrowseContext
 import com.doublemoon1119.mahjongcraft.platform.minecraft.catalogue.RuleCatalogueBrowseState
@@ -180,9 +181,17 @@ internal class RuleCatalogueScreen(
         }
     }
 
-    /** 分類頁籤的選項：分類識別碼（全部分類為 null）與名稱翻譯鍵。 */
-    private fun categoryOptions(): List<Pair<String?, String>> = listOf<Pair<String?, String>>(null to MinecraftRuleCatalogueScreenKeys.ALL_CATEGORIES) +
-        state.catalogue?.categories.orEmpty().map { it.id to it.nameTranslationKey }
+    /**
+     * 分類頁籤的選項：分類識別碼（全部分類為 null）與名稱翻譯鍵。
+     *
+     * 各規則共用的「基本玩法」分類排在「全部分類」之前，其他分類照目錄順序排在後面。
+     */
+    private fun categoryOptions(): List<Pair<String?, String>> {
+        val (basics, others) = state.catalogue?.categories.orEmpty().partition { it.id == BuiltInRuleCatalogueCategoryIds.BASICS }
+        return basics.map { it.id to it.nameTranslationKey } +
+            listOf<Pair<String?, String>>(null to MinecraftRuleCatalogueScreenKeys.ALL_CATEGORIES) +
+            others.map { it.id to it.nameTranslationKey }
+    }
 
     /** 搜尋輸入框與清除按鈕。 */
     private fun addSearchControls() {

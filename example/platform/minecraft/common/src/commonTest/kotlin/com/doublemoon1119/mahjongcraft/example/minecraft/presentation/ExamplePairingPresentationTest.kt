@@ -22,6 +22,7 @@ import com.doublemoon1119.mahjongcraft.logic.table.TileWall
 import com.doublemoon1119.mahjongcraft.logic.table.TurnPhase
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.table.MahjongTableFacing
+import com.doublemoon1119.mahjongcraft.platform.minecraft.catalogue.BuiltInRuleCatalogueCategoryIds
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.GameConfigEditorSpec
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.BuiltInWinSettlementFieldIds
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.ExtensionPresentationField
@@ -85,6 +86,23 @@ class ExamplePairingPresentationTest {
 
         assertNotNull(provider.catalogue(provider.defaultRuleConfig()))
         assertEquals(null, provider.catalogue(RiichiRuleConfig()))
+    }
+
+    /** 「基本玩法」排在第一個分類；沒有開啟換牌或公開牌面時，對應條目保留並寫出原因。 */
+    @Test
+    fun `catalogue offers pairing basics`() {
+        val provider = examplePairingCatalogue()
+        val standard = assertNotNull(provider.catalogue(ExamplePairingRuleConfig()))
+        val enabled = assertNotNull(provider.catalogue(ExamplePairingRuleConfig(exchangeEnabled = true, publicFacesEnabled = true)))
+
+        assertEquals(BuiltInRuleCatalogueCategoryIds.BASICS, standard.categories.first().id)
+        val basics = standard.entries.filter { it.categoryId == BuiltInRuleCatalogueCategoryIds.BASICS }
+        assertEquals(7, basics.size)
+        assertEquals(
+            expected = setOf(ExampleMinecraftMessageKeys.BASICS_EXCHANGE_UNAVAILABLE, ExampleMinecraftMessageKeys.BASICS_PUBLIC_FACES_UNAVAILABLE),
+            actual = basics.mapNotNull { it.unavailableReasonTranslationKey }.toSet(),
+        )
+        assertTrue(enabled.entries.none { it.unavailableReasonTranslationKey != null })
     }
 
     /** 局況 registry 註冊牌參數、規則文字與範例規則 provider。 */

@@ -279,6 +279,35 @@ class RuleCataloguePresenterTest {
         }
     }
 
+    /** 牌例有小標題時接在範例種類之後；牌組自訂標籤取代角色標題；可調整的房間設定欄位列在說明之後。 */
+    @Test
+    fun `subtitles group labels and adjustable settings are shown`() {
+        val texts = mapOf(
+            MinecraftRuleCatalogueScreenKeys.EXAMPLE_TITLE_WITH_SUBTITLE to "%s: %s",
+            "test.subtitle" to "Pairs",
+            "test.group" to "River",
+            MinecraftRuleCatalogueScreenKeys.ADJUSTABLE_SETTINGS to "Room: %s",
+            MinecraftRuleCatalogueScreenKeys.LIST_SEPARATOR to ", ",
+            "test.setting.a" to "A",
+            "test.setting.b" to "B",
+        )
+        val example = RuleCatalogueExample(
+            completeHand = false,
+            groups = listOf(RuleCatalogueTileGroup(RuleCatalogueTileGroupRole.ILLUSTRATION, listOf(TileFaceView(Tile.Honor.East)), labelTranslationKey = "test.group")),
+            titleTranslationKey = "test.subtitle",
+        )
+        val card = presenter(texts).measure(
+            entry = entry(examples = listOf(example)).copy(adjustableSettingNameKeys = listOf("test.setting.a", "test.setting.b")),
+            width = CARD_WIDTH,
+        )
+        val lines = card.lines.map { it.text }
+
+        assertTrue("Room: A, B" in lines, lines.toString())
+        assertTrue("${TEXT.getValue(MinecraftRuleCatalogueScreenKeys.EXAMPLE_PARTIAL)}: Pairs" in lines, lines.toString())
+        assertTrue("River" in lines, lines.toString())
+        assertTrue(lines.indexOf("Room: A, B") < lines.indexOf("River"))
+    }
+
     /**
      * 建立使用固定字寬與測試翻譯的 presenter。
      *

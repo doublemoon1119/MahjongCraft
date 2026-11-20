@@ -562,6 +562,21 @@ attempt does not fall through to another provider.
   "Left-click: next option", not internal concepts; translations follow the same rule. Put a button's
   label in square brackets when a hint mentions it, such as `[−]`.
 
+## Rule catalogue
+
+- A rule registers a `RuleCatalogueProvider` that builds its categories and entries from a rule config.
+  The catalogue only explains; examples are illustrations and never go through win or scoring checks.
+- Each rule should offer a Basics category under `BuiltInRuleCatalogueCategoryIds.BASICS`, named with
+  `MinecraftRuleCatalogueScreenKeys.CATEGORY_BASICS`. The screen shows it before All categories, keeps it
+  selected when the player switches to another rule that has it, and other screens can open the catalogue
+  straight on it, as the getting started guide does.
+- Write Basics text in general terms. Values a room can change say what the standard value is, and the
+  entry lists the room setting fields in `adjustableSettingNameKeys`, using the fields' own name keys.
+  The config only decides whether an entry applies; an entry that does not apply keeps its place with an
+  unavailable reason.
+- Examples can carry a subtitle (`titleTranslationKey`), and tile groups can carry their own label
+  (`labelTranslationKey`) instead of the role's, such as Discards or Can't discard after chi.
+
 ## Getting started guide
 
 - The guide screen (`client/guide`) describes each page as a list of `GuideBlock`s in `GuidePages`.

@@ -1,9 +1,11 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.client.guide
 
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.catalogue.RuleCatalogueScreenController
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.config.MahjongClientConfigScreenController
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.config.MahjongHudPreviewRenderer
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.history.HistoryScreenController
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.MahjongTileFaceRenderer
+import com.doublemoon1119.mahjongcraft.platform.minecraft.catalogue.BuiltInRuleCatalogueCategoryIds
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftClientConfigScreenKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.guide.MinecraftGuideScreenKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistry
@@ -26,6 +28,7 @@ import net.minecraft.client.util.InputUtil
  * @property tileAssets 牌面素材鍵的查詢來源。
  * @property historyScreens 對局歷史畫面的開啟入口。
  * @property configScreens 客戶端設定畫面的開啟入口。
+ * @property ruleCatalogueScreens 規則一覽畫面的開啟入口。
  */
 class GuideScreenController internal constructor(
     private val tileFaces: MahjongTileFaceRenderer,
@@ -34,6 +37,7 @@ class GuideScreenController internal constructor(
     private val tileAssets: MinecraftTileAssetRegistry,
     private val historyScreens: HistoryScreenController,
     private val configScreens: MahjongClientConfigScreenController,
+    private val ruleCatalogueScreens: RuleCatalogueScreenController,
 ) {
     /** 開啟畫面的按鍵，預設未綁定。 */
     private lateinit var openKeyBinding: KeyBinding
@@ -122,6 +126,7 @@ class GuideScreenController internal constructor(
         when (action) {
             GuideAction.HISTORY -> historyScreens.openFrom(returnScreen)
             GuideAction.CLIENT_CONFIG -> configScreens.openFrom(returnScreen)
+            GuideAction.RULE_BASICS -> ruleCatalogueScreens.openFrom(returnScreen = returnScreen, categoryId = BuiltInRuleCatalogueCategoryIds.BASICS)
         }
     }
 }

@@ -121,7 +121,7 @@ internal object GuidePages {
         GuideBlock.Button(text(MinecraftGuideScreenKeys.PLAY_SETTINGS_BUTTON), GuideAction.CLIENT_CONFIG),
     )
 
-    /** 麻將基礎：牌種、組牌、和牌牌型、輪流摸打與鳴牌和牌。 */
+    /** 麻將基礎：牌種、組牌、和牌牌型、輪流摸打、鳴牌和牌，最後連到規則一覽的各規則玩法。 */
     private fun basics(): List<GuideBlock> = listOf(
         heading(MinecraftGuideScreenKeys.BASICS_TILES_HEADING),
         paragraph(MinecraftGuideScreenKeys.BASICS_TILES_CHARACTERS),
@@ -240,6 +240,10 @@ internal object GuidePages {
             sourceKey = MinecraftGuideScreenKeys.LABEL_SELF_DRAWN,
             resultKey = MinecraftGuideScreenKeys.BASICS_RESULT_SELF_DRAW,
         ),
+        heading(MinecraftGuideScreenKeys.BASICS_VARIANTS_HEADING),
+        paragraph(MinecraftGuideScreenKeys.BASICS_VARIANTS_TEXT),
+        hint(MinecraftGuideScreenKeys.BASICS_VARIANTS_HINT),
+        GuideBlock.Button(text(MinecraftGuideScreenKeys.BASICS_VARIANTS_BUTTON), GuideAction.RULE_BASICS),
     )
 
     /**

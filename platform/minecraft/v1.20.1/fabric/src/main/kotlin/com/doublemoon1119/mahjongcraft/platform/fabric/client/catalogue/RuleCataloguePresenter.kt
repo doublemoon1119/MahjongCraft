@@ -6,6 +6,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.catalogue.RuleCatalogu
 import com.doublemoon1119.mahjongcraft.platform.minecraft.catalogue.RuleCatalogueConfigSource
 import com.doublemoon1119.mahjongcraft.platform.minecraft.catalogue.RuleCatalogueEntry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.catalogue.RuleCatalogueLabel
+import com.doublemoon1119.mahjongcraft.platform.minecraft.catalogue.RuleCatalogueTileGroup
 import com.doublemoon1119.mahjongcraft.platform.minecraft.catalogue.RuleCatalogueTileGroupRole
 
 /** 目錄文字的寬度測量與換行；畫面與測試各自提供實作。 */
@@ -258,19 +259,38 @@ internal class RuleCataloguePresenter(
             y += PARAGRAPH_GAP
             translated(key = key, color = UNAVAILABLE_COLOR)
         }
+        if (entry.adjustableSettingNameKeys.isNotEmpty()) {
+            y += PARAGRAPH_GAP
+            val names = entry.adjustableSettingNameKeys.joinToString(text(MinecraftRuleCatalogueScreenKeys.LIST_SEPARATOR), transform = ::text)
+            paragraph(
+                content = format(MinecraftRuleCatalogueScreenKeys.ADJUSTABLE_SETTINGS, names),
+                color = SETTINGS_COLOR,
+                tooltip = missingTranslations(keys = entry.adjustableSettingNameKeys),
+            )
+        }
         entry.examples.forEach { example ->
             y += EXAMPLE_GAP
-            val titleKey = if (example.completeHand) MinecraftRuleCatalogueScreenKeys.EXAMPLE_COMPLETE else MinecraftRuleCatalogueScreenKeys.EXAMPLE_PARTIAL
-            translated(key = titleKey, color = EXAMPLE_TITLE_COLOR)
+            val kindKey = if (example.completeHand) MinecraftRuleCatalogueScreenKeys.EXAMPLE_COMPLETE else MinecraftRuleCatalogueScreenKeys.EXAMPLE_PARTIAL
+            val subtitleKey = example.titleTranslationKey
+            if (subtitleKey == null) {
+                translated(key = kindKey, color = EXAMPLE_TITLE_COLOR)
+            } else {
+                paragraph(
+                    content = formatTwo(MinecraftRuleCatalogueScreenKeys.EXAMPLE_TITLE_WITH_SUBTITLE, text(kindKey), text(subtitleKey)),
+                    color = EXAMPLE_TITLE_COLOR,
+                    tooltip = missingTranslations(kindKey, subtitleKey),
+                )
+            }
             example.descriptionTranslationKey?.let { translated(key = it, color = DESCRIPTION_COLOR) }
             y += LINE_GAP
             val tileLayout = RuleCatalogueTileLayout.measure(
                 groups = example.groups,
                 width = innerWidth,
-                headingWidth = { role -> metrics.width(text(roleKey(role))) },
+                headingKey = ::groupHeadingKey,
+                headingWidth = { key -> metrics.width(text(key)) },
             )
             tileLayout.headings.forEach { heading ->
-                val label = metrics.trim(text(roleKey(heading.role)), heading.maxWidth)
+                val label = metrics.trim(text(heading.key), heading.maxWidth)
                 lines += CatalogueCardLine(
                     text = label,
                     x = PADDING + heading.x,
@@ -291,6 +311,32 @@ internal class RuleCataloguePresenter(
         }
         return CatalogueCard(height = y + PADDING, lines = lines, tiles = tiles)
     }
+
+    /**
+     * 取得帶兩個參數的文字。
+     *
+     * @param key 含兩個 `%s` 的翻譯鍵。
+     * @param first 第一個參數。
+     * @param second 第二個參數。
+     * @return 依序代入參數後的文字；缺少翻譯時為翻譯鍵與參數。
+     */
+    private fun formatTwo(key: String, first: String, second: String): String = translation(key)?.replaceFirst("%s", first)?.replaceFirst("%s", second) ?: "$key: $first, $second"
+
+    /**
+     * 缺少翻譯的提示，每個缺少的翻譯鍵一行。
+     *
+     * @param keys 要檢查的翻譯鍵。
+     * @return 提示的每一行；全部都有翻譯時為空集合。
+     */
+    private fun missingTranslations(keys: List<String>): List<String> = keys.filter { translation(it) == null }.map { format(MinecraftRuleCatalogueScreenKeys.MISSING_TRANSLATION, it) }
+
+    /**
+     * 缺少翻譯的提示，每個缺少的翻譯鍵一行。
+     *
+     * @param keys 要檢查的翻譯鍵。
+     * @return 提示的每一行；全部都有翻譯時為空集合。
+     */
+    private fun missingTranslations(vararg keys: String): List<String> = missingTranslations(keys = keys.toList())
 
     /**
      * 標籤的提示：標籤說明，以及缺少翻譯時的提示。
@@ -342,8 +388,19 @@ internal class RuleCataloguePresenter(
 
         /** 牌組標題。 */
         const val HEADING_COLOR: Int = 0x8a8a8a
+
+        /** 可在房間設定調整的欄位。 */
+        const val SETTINGS_COLOR: Int = 0x8a8a8a
     }
 }
+
+/**
+ * 取得牌組標題的翻譯鍵：牌組自訂的標籤優先，沒有時使用角色的標題。
+ *
+ * @param group 牌組。
+ * @return 翻譯鍵。
+ */
+internal fun groupHeadingKey(group: RuleCatalogueTileGroup): String = group.labelTranslationKey ?: roleKey(group.role)
 
 /**
  * 取得牌組角色的標題翻譯鍵。

@@ -16,6 +16,8 @@ import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.RiichiTileValues
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.RiichiYakuType
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
+import com.doublemoon1119.mahjongcraft.platform.minecraft.catalogue.BuiltInRuleCatalogueCategoryIds
+import com.doublemoon1119.mahjongcraft.platform.minecraft.catalogue.MinecraftRuleCatalogueScreenKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.catalogue.RuleCatalogueExample
 import com.doublemoon1119.mahjongcraft.platform.minecraft.catalogue.RuleCatalogueLabel
 import com.doublemoon1119.mahjongcraft.platform.minecraft.catalogue.RuleCatalogueRegistryImpl
@@ -25,6 +27,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.catalogue.RuleCatalogu
 import com.doublemoon1119.mahjongcraft.platform.minecraft.extension.BuiltInMinecraftMahjongExtension
 import com.doublemoon1119.mahjongcraft.platform.minecraft.extension.BundledMinecraftMahjongExtensions
 import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.riichi.BundledRiichiMinecraftExtension
+import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.riichi.RiichiGameConfigTranslationKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.UNKNOWN_TILE_ASSET_KEY
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.allTileAssetKeys
@@ -40,6 +43,46 @@ import kotlin.test.assertTrue
 
 /** 驗證日麻目錄覆蓋、配置邊界、範例牌面與既有計算器一致。 */
 class RiichiCatalogueProviderTest {
+    /** 「基本玩法」排在第一個分類；四人日麻 12 條，三人日麻多出拔北共 13 條。 */
+    @Test
+    fun `basics come first and differ between four and three players`() {
+        val provider = RiichiCatalogueProvider()
+        val four = checkNotNull(provider.catalogue(RiichiRuleConfig()))
+        val three = checkNotNull(threePlayerProvider().catalogue(ThreePlayerRiichiRuleConfig()))
+
+        listOf(four, three).forEach { catalogue -> assertEquals(BuiltInRuleCatalogueCategoryIds.BASICS, catalogue.categories.first().id) }
+        val fourBasics = four.entries.filter { it.categoryId == BuiltInRuleCatalogueCategoryIds.BASICS }
+        val threeBasics = three.entries.filter { it.categoryId == BuiltInRuleCatalogueCategoryIds.BASICS }
+        assertEquals(RiichiCatalogueBasic.entries.filter { it != RiichiCatalogueBasic.PullNorth }.map { it.nameKey }, fourBasics.map { it.nameTranslationKey })
+        assertEquals(RiichiCatalogueBasic.entries.map { it.nameKey }, threeBasics.map { it.nameTranslationKey })
+        assertEquals(RiichiCatalogueBasic.Tiles.threePlayerDescriptionKey, threeBasics.first().descriptionTranslationKey)
+        assertEquals(RiichiCatalogueBasic.Tiles.descriptionKey, fourBasics.first().descriptionTranslationKey)
+        assertEquals(listOf(RiichiGameConfigTranslationKeys.MINIMUM_WIN_CONSTRAINT), fourBasics.single { it.nameTranslationKey == RiichiCatalogueBasic.Winning.nameKey }.adjustableSettingNameKeys)
+    }
+
+    /** 三人日麻「基本玩法」的牌例不使用二到八萬，鳴牌只有碰的牌例。 */
+    @Test
+    fun `three player basics examples avoid middle characters and chi`() {
+        val three = checkNotNull(threePlayerProvider().catalogue(ThreePlayerRiichiRuleConfig()))
+        val basics = three.entries.filter { it.categoryId == BuiltInRuleCatalogueCategoryIds.BASICS }
+        val tiles = basics.flatMap { entry -> entry.examples.flatMap { example -> example.groups.flatMap { it.tiles } } }.map { it.tile }
+
+        assertTrue(tiles.none { it is Tile.Numeric && it.suit == Tile.Suit.Character && it.value in 2..8 }, tiles.toString())
+        val calls = basics.single { it.nameTranslationKey == RiichiCatalogueBasic.Calls.nameKey }
+        assertEquals(listOf(MinecraftRuleCatalogueScreenKeys.EXAMPLE_PON), calls.examples.map { it.titleTranslationKey })
+    }
+
+    /** 不是鷲巢玩法時「鷲巢麻將」條目留在原位並標示原因，鷲巢玩法時可以使用。 */
+    @Test
+    fun `washizu basics entry is unavailable outside the washizu variant`() {
+        val provider = RiichiCatalogueProvider()
+        val standard = checkNotNull(provider.catalogue(RiichiRuleConfig()))
+        val washizu = checkNotNull(provider.catalogue(RiichiRuleConfig(transparentTiles = true, buildsWall = false, redDoraCount = 0)))
+
+        assertEquals(RiichiCatalogueBasicsKeys.WASHIZU_UNAVAILABLE, standard.entries.single { it.nameTranslationKey == RiichiCatalogueBasic.Washizu.nameKey }.unavailableReasonTranslationKey)
+        assertEquals(null, washizu.entries.single { it.nameTranslationKey == RiichiCatalogueBasic.Washizu.nameKey }.unavailableReasonTranslationKey)
+    }
+
     /** 目錄的分類與條目都是日麻專屬 ID，放在日麻的路徑底下。 */
     @Test
     fun `catalogue ids live under the riichi path`() {
@@ -54,8 +97,9 @@ class RiichiCatalogueProviderTest {
         assertEquals(RiichiYakuType.entries.toSet(), RiichiCatalogueYaku.entries.flatMap { it.coveredTypes }.toSet())
         assertEquals(RiichiYakuType.entries.size, RiichiCatalogueYaku.entries.sumOf { it.coveredTypes.size }, "Each yaku belongs to exactly one entry")
         val catalogue = checkNotNull(RiichiCatalogueProvider().catalogue(RiichiRuleConfig()))
-        // 四人日麻不列拔北寶牌。
-        assertEquals(RiichiCatalogueYaku.entries.size - 1 + RiichiCatalogueSpecial.entries.size, catalogue.entries.size)
+        // 四人日麻不列拔北寶牌；「基本玩法」另外驗證。
+        val rules = catalogue.entries.filter { it.categoryId != BuiltInRuleCatalogueCategoryIds.BASICS }
+        assertEquals(RiichiCatalogueYaku.entries.size - 1 + RiichiCatalogueSpecial.entries.size, rules.size)
         assertTrue(catalogue.entries.none { it.id == RiichiCatalogueYaku.NukiDora.id })
         assertEquals(catalogue.entries.size, catalogue.entries.map { it.id }.distinct().size)
         assertEquals(3, catalogue.entries.count { it.categoryId == RiichiCatalogueCategory.Bonus.id })
@@ -314,3 +358,14 @@ private fun exampleMeld(group: RuleCatalogueTileGroup): Meld {
         faceDownTileIds = if (type == MeldType.ClosedKan) setOf(tiles.first().id, tiles.last().id) else emptySet(),
     )
 }
+
+/**
+ * 與內建登記相同的三人日麻目錄來源。
+ *
+ * @return 三人日麻目錄來源。
+ */
+private fun threePlayerProvider(): RiichiCatalogueProvider = RiichiCatalogueProvider(
+    ruleModuleId = BuiltInRuleModuleIds.RIICHI_THREE_PLAYER,
+    configClass = ThreePlayerRiichiRuleConfig::class,
+    defaultConfig = ::ThreePlayerRiichiRuleConfig,
+)

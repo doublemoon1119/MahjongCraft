@@ -107,6 +107,9 @@ internal enum class GuideAction {
 
     /** 客戶端設定。 */
     CLIENT_CONFIG,
+
+    /** 規則一覽的「基本玩法」分類。 */
+    RULE_BASICS,
 }
 
 /** 平面牌列中的一個項目。 */
