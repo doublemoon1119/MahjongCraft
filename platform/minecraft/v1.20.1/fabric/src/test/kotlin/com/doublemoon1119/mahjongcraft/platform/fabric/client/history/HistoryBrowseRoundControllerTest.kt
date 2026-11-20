@@ -442,9 +442,9 @@ class HistoryBrowseRoundControllerTest {
         assertEquals(HistoryBrowseStatus.Ready, controller.state.value.rounds.getValue(1).eventsStatus)
     }
 
-    /** 回放從指定步數一次要一段連續牌面，收到後接著預先要後面的步數。 */
+    /** 回放先要目前這一步起的一段牌面，再在背景讀完整局事件（快取裡的事件頁直接沿用），最後預先要後面的牌面。 */
     @Test
-    fun `test replay requests consecutive states and prefetches ahead`() = runTest {
+    fun `test replay reads the current state then the whole round then states ahead`() = runTest {
         val transport = FakeRoundHistoryTransport()
         val controller = openReplay(transport)
 
@@ -460,6 +460,18 @@ class HistoryBrowseRoundControllerTest {
         assertEquals(HistoryBrowseStatus.Ready, ready.status)
         assertEquals(HistoryRoundPositionDto.Initial, ready.state?.position)
         assertEquals(TRANSACTION_COUNT + 1, ready.stepCount)
+        assertTrue(controller.isReplayStepReady(HistoryQueryLimits.MAX_ROUND_STATES - 1))
+        assertFalse(controller.isReplayStepReady(HistoryQueryLimits.MAX_ROUND_STATES))
+
+        advanceTimeBy(250.milliseconds)
+        runCurrent()
+        assertEquals(EVENTS_PAGE, transport.roundEventsRequests.last().startTransactionIndex)
+        assertEquals(1, controller.state.value.replay?.eventPages?.size)
+        transport.respondEvents(roundNumber = 1, start = EVENTS_PAGE, transactionIndexes = (EVENTS_PAGE until TRANSACTION_COUNT).toList(), transactionCount = TRANSACTION_COUNT)
+        runCurrent()
+        val complete = assertNotNull(controller.state.value.replay)
+        assertEquals(HistoryBrowseStatus.Ready, complete.eventsStatus)
+        assertEquals(TRANSACTION_COUNT, complete.eventPages.sumOf { it.transactions.size })
 
         advanceTimeBy(250.milliseconds)
         runCurrent()
@@ -468,7 +480,7 @@ class HistoryBrowseRoundControllerTest {
         assertEquals(HistoryQueryLimits.MAX_ROUND_STATES, second.count)
     }
 
-    /** 移到已取得的步數立即顯示且不另外查詢；跳到沒取得的步數時從該步開始要。 */
+    /** 移到已取得的步數立即顯示且不另外查詢；跳到沒取得的步數時，還沒送出的預先讀取改從該步開始要。 */
     @Test
     fun `test replay moves use received states and request missing steps`() = runTest {
         val transport = FakeRoundHistoryTransport()
@@ -480,6 +492,10 @@ class HistoryBrowseRoundControllerTest {
         assertEquals(HistoryBrowseStatus.Ready, nearby.status)
         assertEquals(HistoryRoundPositionDto.AfterTransaction(4), nearby.state?.position)
 
+        advanceTimeBy(250.milliseconds)
+        runCurrent()
+        transport.respondEvents(roundNumber = 1, start = EVENTS_PAGE, transactionIndexes = (EVENTS_PAGE until TRANSACTION_COUNT).toList(), transactionCount = TRANSACTION_COUNT)
+        runCurrent()
         advanceTimeBy(250.milliseconds)
         runCurrent()
         transport.respondStates()
@@ -499,7 +515,7 @@ class HistoryBrowseRoundControllerTest {
         assertEquals(HistoryBrowseStatus.Ready, controller.state.value.replay?.status)
     }
 
-    /** 目前這一步讀取失敗時顯示失敗，重試會再要同一段；失敗後不自動預先讀取。 */
+    /** 目前這一步讀取失敗時顯示失敗，重試會再要同一段；失敗後不自動接著讀。 */
     @Test
     fun `test failed replay request can retry the same range`() = runTest {
         val transport = FakeRoundHistoryTransport()
@@ -512,6 +528,7 @@ class HistoryBrowseRoundControllerTest {
         advanceTimeBy(250.milliseconds)
         runCurrent()
         assertEquals(failed, transport.roundStateRequests.last())
+        assertEquals(1, transport.roundEventsRequests.size)
         assertTrue(controller.retry())
         runCurrent()
         val retried = transport.roundStateRequests.last()
@@ -537,16 +554,63 @@ class HistoryBrowseRoundControllerTest {
         assertFalse(controller.replayTo(1))
     }
 
-    /** 不知道交易總數或不在事件頁時不接受回放。 */
+    /** 還不知道交易總數時，等原本在途的事件頁回來後先要第一頁事件，知道後才從指定步數要牌面；不在事件頁時不接受回放。 */
     @Test
-    fun `test replay needs the event page and the transaction count`() = runTest {
+    fun `test replay without a known count reads the first event page first`() = runTest {
         val transport = FakeRoundHistoryTransport()
         val controller = openRound(transport)
+        assertFalse(controller.replayRound(2))
+        assertTrue(controller.showReplay(3))
         assertFalse(controller.showReplay(0))
-        transport.respondEvents(roundNumber = 1, start = 0, next = 2, transactionIndexes = listOf(0, 1), transactionCount = TRANSACTION_COUNT)
+        transport.respondEvents(roundNumber = 1, start = 0, next = EVENTS_PAGE, transactionCount = TRANSACTION_COUNT)
         runCurrent()
-        assertTrue(controller.showRoundState(HistoryRoundPositionDto.Initial))
-        assertFalse(controller.showReplay(0))
+        assertEquals(null, controller.state.value.replay?.stepCount)
+        advanceTimeBy(250.milliseconds)
+        runCurrent()
+        assertEquals(2, transport.roundEventsRequests.size)
+        assertEquals(null, controller.state.value.replay?.stepCount)
+
+        transport.respondEvents(roundNumber = 1, start = 0, next = EVENTS_PAGE, transactionCount = TRANSACTION_COUNT)
+        runCurrent()
+        advanceTimeBy(250.milliseconds)
+        runCurrent()
+
+        assertEquals(TRANSACTION_COUNT + 1, controller.state.value.replay?.stepCount)
+        assertEquals(3, controller.state.value.replay?.step)
+        assertEquals(HistoryRoundPositionDto.AfterTransaction(2), transport.roundStateRequests.single().position)
+    }
+
+    /** 回放換局停在新一局的初始牌面；返回事件頁時讀取新一局的事件頁。 */
+    @Test
+    fun `test replay changes round and returns to the new round events`() = runTest {
+        val transport = FakeRoundHistoryTransport()
+        val controller = openReplay(transport)
+        transport.respondStates()
+        runCurrent()
+
+        assertTrue(controller.replayRound(2))
+        val changed = assertNotNull(controller.state.value.replay)
+        assertEquals(2, changed.roundNumber)
+        assertEquals(0, changed.step)
+        assertEquals(null, changed.state)
+        assertEquals(2, controller.state.value.selectedRoundNumber)
+        advanceTimeBy(250.milliseconds)
+        runCurrent()
+        assertEquals(2, transport.roundEventsRequests.last().roundNumber)
+        transport.respondEvents(roundNumber = 2, start = 0, transactionIndexes = listOf(0, 1, 2), transactionCount = 3)
+        runCurrent()
+        advanceTimeBy(250.milliseconds)
+        runCurrent()
+        val request = transport.roundStateRequests.last()
+        assertEquals(2, request.roundNumber)
+        assertEquals(HistoryRoundPositionDto.Initial, request.position)
+        assertEquals(4, request.count)
+
+        assertTrue(controller.backFromReplay())
+        advanceTimeBy(250.milliseconds)
+        runCurrent()
+        assertEquals(HistoryBrowsePage.ROUND_EVENTS, controller.state.value.page)
+        assertNotNull(controller.state.value.rounds.getValue(2).events)
     }
 
     /**
@@ -557,7 +621,7 @@ class HistoryBrowseRoundControllerTest {
      */
     private suspend fun TestScope.openReplay(transport: FakeRoundHistoryTransport): HistoryBrowseController {
         val controller = openRound(transport)
-        transport.respondEvents(roundNumber = 1, start = 0, next = 2, transactionIndexes = listOf(0, 1), transactionCount = TRANSACTION_COUNT)
+        transport.respondEvents(roundNumber = 1, start = 0, next = EVENTS_PAGE, transactionCount = TRANSACTION_COUNT)
         runCurrent()
         assertTrue(controller.showReplay(0))
         advanceTimeBy(250.milliseconds)
@@ -870,5 +934,8 @@ class HistoryBrowseRoundControllerTest {
 
         /** 回放測試的本局交易總數。 */
         const val TRANSACTION_COUNT = 40
+
+        /** 回放測試的事件頁大小。 */
+        const val EVENTS_PAGE = HistoryRoundNavigation.EVENTS_PAGE_SIZE
     }
 }

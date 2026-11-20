@@ -14,6 +14,7 @@ import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.tile.TaiwanTileTypes
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.metadata.MahjongCraftMetadata
 import com.doublemoon1119.mahjongcraft.platform.minecraft.action.BuiltInGameActionIds
+import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionReplayMarker
 import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionVocabulary
 import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionVocabularyDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.DecisionStatusDisplayNameRegistrar
@@ -109,6 +110,7 @@ object BundledTaiwanMinecraftExtension : MinecraftMahjongExtension {
                     labelKey = TaiwanTranslationKeys.ACTION_REVEAL_FLOWER,
                     order = REVEAL_FLOWER_ACTION_ORDER,
                     descriptionKey = TaiwanTranslationKeys.ACTION_REVEAL_FLOWER_DESCRIPTION,
+                    replayMarker = GameActionReplayMarker.MELD,
                 ),
             ),
         )
@@ -120,6 +122,7 @@ object BundledTaiwanMinecraftExtension : MinecraftMahjongExtension {
                     labelKey = TaiwanTranslationKeys.ACTION_DECLARE_READY,
                     order = DECLARE_READY_ACTION_ORDER,
                     descriptionKey = TaiwanTranslationKeys.ACTION_DECLARE_READY_DESCRIPTION,
+                    replayMarker = GameActionReplayMarker.DECLARATION,
                 ),
             ),
         )

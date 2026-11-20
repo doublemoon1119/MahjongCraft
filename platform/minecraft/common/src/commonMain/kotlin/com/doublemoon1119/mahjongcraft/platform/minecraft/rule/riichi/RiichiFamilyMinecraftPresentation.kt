@@ -7,6 +7,7 @@ import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiGameAction
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.riichiPotPoints
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.platform.minecraft.action.BuiltInGameActionIds
+import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionReplayMarker
 import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionVocabulary
 import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionVocabularyDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.registration.DecisionStatusDisplayNameRegistrar
@@ -112,6 +113,7 @@ object RiichiFamilyMinecraftPresentation {
                     labelKey = RiichiTranslationKeys.ACTION_RIICHI,
                     order = RIICHI_ACTION_ORDER,
                     descriptionKey = RiichiTranslationKeys.ACTION_RIICHI_DESCRIPTION,
+                    replayMarker = GameActionReplayMarker.DECLARATION,
                 ),
             ),
         )
@@ -152,6 +154,7 @@ object RiichiFamilyMinecraftPresentation {
                     labelKey = RiichiTranslationKeys.ACTION_PULL_NORTH,
                     order = PULL_NORTH_ACTION_ORDER,
                     descriptionKey = RiichiTranslationKeys.ACTION_PULL_NORTH_DESCRIPTION,
+                    replayMarker = GameActionReplayMarker.MELD,
                 ),
             ),
         )
