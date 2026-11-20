@@ -15,5 +15,8 @@ kotlin {
             implementation(project(":mahjong-flow:mahjong-flow-common"))
             api(project(":mahjong-bundled-extensions"))
         }
+        jvmMain.dependencies {
+            implementation(libs.kotlinx.serialization.json)
+        }
     }
 }

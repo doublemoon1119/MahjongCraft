@@ -1,4 +1,4 @@
-package com.doublemoon1119.mahjongcraft.flow.server.game.orchestration
+package com.doublemoon1119.mahjongcraft.testing.flow.replay
 
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryOutboxEvent
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.HistoryOutboxEventPersistenceDto
@@ -16,7 +16,7 @@ import java.util.zip.GZIPInputStream
  *
  * 事件以 classpath 資源保存，避免容量測試依賴即時洗牌、擲骰、座位分配或 UUID 生成。
  */
-internal object ReplayCapacityFixtures {
+object ReplayCapacityFixtures {
     /** 東風戰第一場固定權威歷史事件。 */
     val east1: Fixture = load("capacity/east-1.history.json.gz.base64", RiichiGameLength.East)
 

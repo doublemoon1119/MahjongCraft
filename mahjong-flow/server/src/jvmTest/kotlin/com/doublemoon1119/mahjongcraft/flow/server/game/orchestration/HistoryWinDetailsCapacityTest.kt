@@ -14,6 +14,7 @@ import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.replay.Co
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.replay.ReplayPresentationNotes
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledPersistenceRegistries
+import com.doublemoon1119.mahjongcraft.testing.flow.replay.ReplayCapacityFixtures
 import java.io.ByteArrayOutputStream
 import java.util.logging.Logger
 import java.util.zip.GZIPOutputStream

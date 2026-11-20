@@ -517,7 +517,7 @@ internal class HistoryReplayScreen(
         val key = ArrangementKey(state = state, moduleId = module.id, handsOpen = handsOpen)
         if (key in arrangements) return arrangements[key]
         val sorted = session.replayState(state)
-        val notes = ReplayTableNotes.decode(sorted.presentationNotes)
+        val notes = ReplayTableNotes.decode(sorted.presentationNotes, session.networkRegistries)
         val built = if (sorted.wallPlacements == null || notes == null) {
             null
         } else {

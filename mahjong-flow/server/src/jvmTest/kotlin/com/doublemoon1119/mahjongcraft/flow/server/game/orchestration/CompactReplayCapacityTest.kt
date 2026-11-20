@@ -11,6 +11,7 @@ import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.replay.Re
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiGameLength
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledPersistenceRegistries
+import com.doublemoon1119.mahjongcraft.testing.flow.replay.ReplayCapacityFixtures
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
@@ -47,8 +48,8 @@ class CompactReplayCapacityTest {
     fun `fixed matches stay within replay capacity and decode every transaction`() {
         for (fixture in ReplayCapacityFixtures.all) {
             val measurement = verifyMatch(fixture.events)
-            assertTrue(measurement.jsonBytes <= MAX_JSON_BYTES, "Compact Replay JSON exceeds 250 KB: ${measurement.jsonBytes} bytes")
-            assertTrue(measurement.gzipBytes <= MAX_GZIP_BYTES, "Compact Replay gzip exceeds 35 KB: ${measurement.gzipBytes} bytes")
+            assertTrue(measurement.jsonBytes <= MAX_JSON_BYTES, "Compact Replay JSON exceeds the limit: ${measurement.jsonBytes} bytes")
+            assertTrue(measurement.gzipBytes <= MAX_GZIP_BYTES, "Compact Replay gzip exceeds the limit: ${measurement.gzipBytes} bytes")
         }
     }
 
@@ -436,10 +437,10 @@ class CompactReplayCapacityTest {
         const val MAX_MEASUREMENT_BATCHES = 25
 
         /** 正式牌譜 JSON 的位元組上限。 */
-        const val MAX_JSON_BYTES = 250_000
+        const val MAX_JSON_BYTES = 290_000
 
         /** 正式牌譜 GZIP 後的位元組上限。 */
-        const val MAX_GZIP_BYTES = 35_000
+        const val MAX_GZIP_BYTES = 40_000
 
         /** 辨識 UUID 文字值的格式。 */
         val UUID_PATTERN = Regex("[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}")

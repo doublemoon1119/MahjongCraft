@@ -12,6 +12,7 @@ import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.HistoryRe
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.replay.CompactReplayCodec
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.replay.CompactReplayRoundReader
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.replay.ReplayReadResult
+import com.doublemoon1119.mahjongcraft.logic.component.ComponentRegistryImpl
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleDefinition
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
@@ -21,6 +22,7 @@ import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.logic.tile.component.TilePose
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.table.MahjongTableFacing
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongTableSeatLayout
+import com.doublemoon1119.mahjongcraft.platform.minecraft.table.RoundInfoLineDisplayRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TablePropDescriberRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileTableLayout
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileWallPlacement
@@ -34,6 +36,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TableTileLayoutPr
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TableTileLayoutProfileRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.toArrangementState
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledPersistenceRegistries
+import com.doublemoon1119.mahjongcraft.testing.flow.bundled.registerBundledNetworkDtos
 import com.doublemoon1119.mahjongcraft.testing.logic.table.testRoundRandomness
 import kotlinx.coroutines.test.runTest
 import kotlin.math.round
@@ -69,7 +72,8 @@ class HistoryReplayArrangementTest {
             register(MahjongModuleDefinition(RiichiRuleConfig::class, RULE_MODULE_ID) { config, id -> RiichiRuleModule(id, config) })
         }
         val profiles = TableTileLayoutProfileRegistryImpl().apply { register(TableTileLayoutProfileDefinition(RULE_MODULE_ID, profile)) }
-        val recorder = ReplayTableNotesRecorder(modules, profiles, TablePropDescriberRegistryImpl())
+        val networkRegistries = DefaultNetworkDtoRegistries().apply { registerBundledNetworkDtos() }
+        val recorder = ReplayTableNotesRecorder(modules, profiles, TablePropDescriberRegistryImpl(), RoundInfoLineDisplayRegistryImpl(), ComponentRegistryImpl(), networkRegistries)
         val table = GameInitializer.initialize(Uuid.random(), List(PLAYERS) { Uuid.random() }, module, randomness = testRoundRandomness()).tableState
         val discarder = table.currentPlayer
         val discarded = discarder.hand.tiles.first()
@@ -95,7 +99,7 @@ class HistoryReplayArrangementTest {
         listOf(HistoryRoundPosition.Initial to table, HistoryRoundPosition.AfterTransaction(1) to changed).forEach { (position, live) ->
             val saved = assertIs<ReplayReadResult.Success<HistoryRoundState>>(reader.readState(document, matchId, 1, position)).value
             val dto = saved.toDto(DefaultNetworkDtoRegistries())
-            val notes = assertNotNull(ReplayTableNotes.decode(dto.presentationNotes))
+            val notes = assertNotNull(ReplayTableNotes.decode(dto.presentationNotes, networkRegistries))
             val replayed = HistoryReplayArrangement.arrange(dto, notes, module, profile) { false }
 
             assertEquals(placements(live(live, module, profile)), placements(replayed.values.map { it.placement to it.pose }))
