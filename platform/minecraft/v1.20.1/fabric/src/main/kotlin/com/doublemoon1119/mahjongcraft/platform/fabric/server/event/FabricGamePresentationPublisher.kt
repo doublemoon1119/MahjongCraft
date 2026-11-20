@@ -126,6 +126,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileWallTransitio
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.UNKNOWN_TILE_ASSET_KEY
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.UnsortedHandTiles
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.backAppearance
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.toArrangementState
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.toAssetKey
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
@@ -797,7 +798,7 @@ class FabricGamePresentationPublisher(
                 controllerZ = resolved.location.z,
                 tableFacing = resolved.facing,
                 seatLayout = MahjongTableSeatLayout.forPlayerCount(state.players.size),
-                tableState = state,
+                table = state.toArrangementState(),
                 tileLayout = tileLayoutFor(state),
                 cornerWidthBySeat = describerFor(state).cornerWidthsBySeat(state),
                 handPoseStates = tilePoseStates(state, module),
@@ -1649,15 +1650,9 @@ class FabricGamePresentationPublisher(
      * @param dealerSeatIndex 此次牌牆呈現使用的莊家座位。
      * @return 與砌牆、開門及後續更新共用的桌邊對應。
      */
-    private fun wallSideLayout(state: TableState, dealerSeatIndex: Int): MahjongTileWallSideLayout {
-        val arrangement = checkNotNull(moduleRegistry.getModule(state.config).createWallLayout(state.players.size)) {
-            "Rule provides no wall layout"
-        }.sideArrangement(dealerSeatIndex)
-        return MahjongTileWallSideLayout.resolve(
-            arrangement = arrangement,
-            dealerSide = MahjongTableSeatLayout.forPlayerCount(state.players.size).sideOf(dealerSeatIndex),
-        )
-    }
+    private fun wallSideLayout(state: TableState, dealerSeatIndex: Int): MahjongTileWallSideLayout = checkNotNull(
+        MahjongTileWallSideLayout.forRule(moduleRegistry.getModule(state.config), state.players.size, dealerSeatIndex),
+    ) { "Rule provides no wall layout" }
 
     /**
      * 在伺服器主執行緒解析位置、世界、水平朝向及對應的麻將桌方塊實體。

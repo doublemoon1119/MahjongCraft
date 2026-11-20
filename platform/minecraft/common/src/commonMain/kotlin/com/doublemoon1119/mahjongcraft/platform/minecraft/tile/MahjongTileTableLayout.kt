@@ -523,8 +523,7 @@ object MahjongTileTableLayout {
      * @param seatLayout 本局玩家座位 index 對應的標準桌面布局。
      * @param tileLayout 該規則的桌面牌位配置，決定牌牆內側的位置。
      * @param wallStacksPerSide 牌牆每面的墩數；沒有實體牌牆時為 null，以標準牌牆計算範圍。
-     * @param tableId 桌子，與 [roundSerial] 一起決定這一局的位置表。
-     * @param roundSerial 本場第幾局。
+     * @param patternSeed 這一局使用的位置表種子，見 [ScatteredDiscardLayout.roundPatternSeed]。
      * @param discards 依全桌打出先後排列的牌，包含被鳴走的牌。
      * @return 每張牌的世界座標與 yaw。
      */
@@ -537,17 +536,16 @@ object MahjongTileTableLayout {
         seatLayout: MahjongTableSeatLayout,
         tileLayout: TableTileLayoutProfile,
         wallStacksPerSide: Int?,
-        tableId: Uuid,
-        roundSerial: Int,
+        patternSeed: Int,
         discards: List<ScatteredDiscardEntry>,
     ): Map<Uuid, MahjongTileWallPlacement> {
-        val slots = ScatteredDiscardLayout.roundPattern(tableId, roundSerial, scatterReach(tileLayout, wallStacksPerSide))
+        val slots = ScatteredDiscardLayout.pattern(patternSeed, scatterReach(tileLayout, wallStacksPerSide))
         val towards = discards.map { discard ->
             val toward = rotateForSide(TileTableVector(0.0, 0.0, 1.0), seatLayout.sideOf(discard.seatIndex))
             ScatterRequest(discard.tileId, toward.x, toward.z, discard.isTaken)
         }
         val baseYaw = yawForFacing(tableFacing)
-        return ScatteredDiscardLayout.assign(slots, towards).mapValues { (_, scatter) ->
+        return ScatteredDiscardLayout.assign(slots, patternSeed, towards).mapValues { (_, scatter) ->
             val worldOffset = rotateForFacing(TileTableVector(scatter.x, scatter.y, scatter.z), tableFacing)
             MahjongTileWallPlacement(
                 x = controllerX + BLOCK_CENTER + worldOffset.x,

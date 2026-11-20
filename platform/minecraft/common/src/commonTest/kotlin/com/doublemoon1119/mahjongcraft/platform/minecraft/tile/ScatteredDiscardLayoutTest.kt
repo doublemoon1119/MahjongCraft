@@ -62,8 +62,8 @@ class ScatteredDiscardLayoutTest {
             val tableId = Uuid.fromLongs(random.nextLong(), random.nextLong())
             (0 until ROUNDS).forEach { roundSerial ->
                 assertNotEquals(
-                    illegal = ScatteredDiscardLayout.roundPattern(tableId, roundSerial, reach()),
-                    actual = ScatteredDiscardLayout.roundPattern(tableId, roundSerial + 1, reach()),
+                    illegal = ScatteredDiscardLayout.pattern(ScatteredDiscardLayout.roundPatternSeed(tableId, roundSerial), reach()),
+                    actual = ScatteredDiscardLayout.pattern(ScatteredDiscardLayout.roundPatternSeed(tableId, roundSerial + 1), reach()),
                     message = "Round $roundSerial and the next share a pattern",
                 )
             }
@@ -77,7 +77,7 @@ class ScatteredDiscardLayoutTest {
     fun `a full taiwan round never stacks discards`() {
         val slots = ScatteredDiscardLayout.pattern(ScatteredDiscardLayout.PATTERN_SEEDS.first(), reach())
         val requests = fullRound(Random(SEED))
-        val placed = ScatteredDiscardLayout.assign(slots, requests)
+        val placed = ScatteredDiscardLayout.assign(slots, ScatteredDiscardLayout.PATTERN_SEEDS.first(), requests)
         val inRiver = requests.filterNot { it.isTaken }.map { placed.getValue(it.tileId) }
 
         assertTrue(inRiver.all { it.y == 0.0 }, "A discard was stacked")
@@ -93,10 +93,10 @@ class ScatteredDiscardLayoutTest {
     fun `discards keep their place as the round goes on`() {
         val slots = ScatteredDiscardLayout.pattern(ScatteredDiscardLayout.PATTERN_SEEDS.first(), reach())
         val requests = fullRound(Random(SEED))
-        val all = ScatteredDiscardLayout.assign(slots, requests)
+        val all = ScatteredDiscardLayout.assign(slots, ScatteredDiscardLayout.PATTERN_SEEDS.first(), requests)
 
         (1 until requests.size).forEach { count ->
-            val prefix = ScatteredDiscardLayout.assign(slots, requests.take(count))
+            val prefix = ScatteredDiscardLayout.assign(slots, ScatteredDiscardLayout.PATTERN_SEEDS.first(), requests.take(count))
             requests.take(count - 1).forEach { request -> assertEquals(all.getValue(request.tileId), prefix.getValue(request.tileId)) }
         }
     }
@@ -114,10 +114,10 @@ class ScatteredDiscardLayoutTest {
                 controllerZ = 0,
                 tableFacing = MahjongTableFacing.NORTH,
                 seatLayout = MahjongTableSeatLayout.forPlayerCount(2),
-                tableState = FakeTableStateFactory.create(
+                table = FakeTableStateFactory.create(
                     id = tableId,
                     players = listOf(FakeMahjongPlayerFactory.create(Wind.EAST, discardPile = discardPile), FakeMahjongPlayerFactory.create(Wind.SOUTH)),
-                ),
+                ).toArrangementState(),
                 tileLayout = taiwanTileLayout(),
                 cornerWidthBySeat = emptyMap(),
                 handPoseStates = emptyList(),

@@ -1,8 +1,10 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.tile
 
+import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
 import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallSideArrangement
 import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallSideReference
 import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongTableSide
+import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongTableSeatLayout
 
 /**
  * 已解析的邏輯牌牆面與桌子局部側面的對應，不依玩家人數推算牌牆面數。
@@ -34,6 +36,19 @@ class MahjongTileWallSideLayout private constructor(private val sides: List<Mahj
     companion object {
         /** 標準側面依逆時針四分之一圈排列。 */
         private val SIDE_ORDER = listOf(MahjongTableSide.SOUTH, MahjongTableSide.EAST, MahjongTableSide.NORTH, MahjongTableSide.WEST)
+
+        /**
+         * 依規則的牌牆配置與莊家座位建立桌邊對應，對局中與回放共用。
+         *
+         * @param module 規則模組。
+         * @param playerCount 玩家人數。
+         * @param dealerSeatIndex 莊家座位。
+         * @return 桌邊對應；規則沒有牌牆配置時為 null。
+         */
+        fun forRule(module: MahjongRuleModule<*>, playerCount: Int, dealerSeatIndex: Int): MahjongTileWallSideLayout? {
+            val arrangement = module.createWallLayout(playerCount)?.sideArrangement(dealerSeatIndex) ?: return null
+            return resolve(arrangement = arrangement, dealerSide = MahjongTableSeatLayout.forPlayerCount(playerCount).sideOf(dealerSeatIndex))
+        }
 
         /**
          * 依規則指定的基準解析牌牆位置。
