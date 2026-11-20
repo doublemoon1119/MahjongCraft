@@ -5,6 +5,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.MahjongPlay
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.MahjongTileEntityRenderer
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.MahjongTileItemRenderer
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.SceneEntityTranslucency
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.tile.LatestDiscardHighlightController
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.tile.MatchingTileHighlightController
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongBotEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongPlayerInfoEntity
@@ -64,6 +65,10 @@ internal class GuideSceneRenderer : AutoCloseable {
 
     /** 讓坐著的生物騎乘的凳子座位，與遊戲中坐凳子時相同；不在世界中，也不是生物，不影響乘客的朝向。 */
     private var seatEntity: Entity? = null
+
+    /** 上一次繪製時滑鼠指著、離鏡頭最近的牌的 [GuideSceneTile.key]；沒有指著牌時為 null。 */
+    var hoveredTileKey: Int? = null
+        private set
 
     /**
      * 在指定範圍內繪製場景，並回傳滑鼠指著的區塊。
@@ -130,6 +135,7 @@ internal class GuideSceneRenderer : AutoCloseable {
             matrices.multiply(Quaternionf().setFromNormalized(rotation))
             val sceneToScreen = Matrix4f(matrices.peek().positionMatrix)
             val hovered = if (clip.contains(mouseX, mouseY)) hoveredRegion(scene, sceneToScreen, scale, mouseX, mouseY) else null
+            hoveredTileKey = if (clip.contains(mouseX, mouseY)) hoveredTile(scene, sceneToScreen, mouseX, mouseY) else null
             RenderSystem.setShaderLights(
                 Vector3f(-SIDE_LIGHT, UP_LIGHT, FRONT_LIGHT).normalize(),
                 Vector3f(SIDE_LIGHT, UP_LIGHT, FRONT_LIGHT).normalize(),
@@ -160,6 +166,7 @@ internal class GuideSceneRenderer : AutoCloseable {
                     hovered != null && tile.region == hovered.region -> tile to HOVER_COLOR
                     tile.glow == GuideSceneTileGlow.TARGET -> tile to MatchingTileHighlightController.targetColor(time)
                     tile.glow == GuideSceneTileGlow.MATCHING -> tile to MatchingTileHighlightController.otherMatchColor(time)
+                    tile.glow == GuideSceneTileGlow.LATEST_DISCARD -> tile to LatestDiscardHighlightController.HIGHLIGHT_COLOR
                     else -> null
                 }
             }
@@ -222,6 +229,21 @@ internal class GuideSceneRenderer : AutoCloseable {
                 )
             }
     }
+
+    /**
+     * 找出滑鼠指著、離鏡頭最近且有 [GuideSceneTile.key] 的牌。
+     *
+     * @param scene 場景。
+     * @param sceneToScreen 場景座標換算成畫面座標的矩陣。
+     * @param mouseX 滑鼠水平位置。
+     * @param mouseY 滑鼠垂直位置。
+     * @return 牌的識別值；沒有指著這樣的牌時為 null。
+     */
+    private fun hoveredTile(scene: GuideScene, sceneToScreen: Matrix4f, mouseX: Int, mouseY: Int): Int? = scene.tiles
+        .mapNotNull { tile -> tile.key?.let { key -> key to projectBox(tileModelMatrix(sceneToScreen, tile), tileModelMin(), tileModelMax()) } }
+        .filter { (_, box) -> mouseX >= box.minX && mouseX <= box.maxX && mouseY >= box.minY && mouseY <= box.maxY }
+        .maxByOrNull { (_, box) -> box.depth }
+        ?.first
 
     /**
      * 玩家資訊面板在場景座標中的大略範圍，與遊戲中面板的位置相同。

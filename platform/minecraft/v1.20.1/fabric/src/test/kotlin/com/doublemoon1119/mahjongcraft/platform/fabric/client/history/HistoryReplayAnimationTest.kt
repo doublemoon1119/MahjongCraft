@@ -32,6 +32,7 @@ class HistoryReplayAnimationTest {
         // 這一步打出牌的玩家會揮手，動畫至少持續到揮手做完。
         assertEquals(maxOf(MahjongTileTableLayout.DISCARD_FLIGHT_DURATION_TICKS, MahjongBotArmAnimation.DURATION_TICKS).toDouble(), animation.durationTicks)
         assertEquals(setOf(0), middle.keys)
+        assertEquals(setOf(0), animation.movingTiles)
         assertNotEquals(RIVER, middle.getValue(0).placement)
         assertTrue(firstSounds.isEmpty())
         assertEquals(listOf(MahjongAnimationSounds.TILE_DISCARD_LAND), lastSounds.map { it.soundId })

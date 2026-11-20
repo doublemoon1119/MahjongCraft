@@ -128,6 +128,7 @@ internal fun interface GuideSceneRenderGuard {
  * @property lean 動畫中往前進方向的傾斜。
  * @property glow 外框發光的種類；`null` 時不發光。
  * @property region 滑鼠指著時說明的區塊；不說明時為 null。
+ * @property key 呼叫端用來辨認滑鼠指著哪一張牌的識別值，例如局內牌索引；不需要辨認時為 null。
  */
 internal data class GuideSceneTile(
     val assetKey: String?,
@@ -140,6 +141,7 @@ internal data class GuideSceneTile(
     val lean: TileLean = TileLean.NONE,
     val glow: GuideSceneTileGlow? = null,
     val region: GuideSceneRegion? = null,
+    val key: Int? = null,
 )
 
 /**
@@ -215,6 +217,9 @@ internal enum class GuideSceneTileGlow {
 
     /** 與準星指著的牌相同的其他牌。 */
     MATCHING,
+
+    /** 最後打出、仍留在牌河的牌。 */
+    LATEST_DISCARD,
 }
 
 /**

@@ -28,7 +28,7 @@ internal object HistoryReplayScene {
      * @param figures 坐在桌邊、以內建機器人外觀畫出的角色。
      * @param entities 坐在桌邊、以原版繪製器畫出的生物，例如真人玩家。
      * @param assetKey 局內牌索引對應的牌面素材；看不到牌面時為 null。
-     * @return 牌桌場景。
+     * @return 牌桌場景；每張牌的 [GuideSceneTile.key] 是局內牌索引。
      */
     fun build(
         playerCount: Int,
@@ -55,6 +55,7 @@ internal object HistoryReplayScene {
                 },
                 poseDegrees = sample?.poseDegrees,
                 lean = sample?.lean ?: TileLean.NONE,
+                key = index,
             )
         }
         val seats = MahjongSeatingTableLayout.seatPlacements(

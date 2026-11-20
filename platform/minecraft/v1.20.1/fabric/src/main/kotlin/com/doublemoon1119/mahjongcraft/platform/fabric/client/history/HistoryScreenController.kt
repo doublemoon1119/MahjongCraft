@@ -5,6 +5,7 @@ import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.catalogue.RuleCatalogueScreenController
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.character.ClientAiCharacterPreviews
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.concurrency.ClientThreadCoroutineDispatcher
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.config.MahjongClientConfigStore
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.player.ClientPlayerProfileResolver
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.MahjongTileFaceRenderer
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.tableprop.ClientTablePropPreviews
@@ -54,6 +55,7 @@ import kotlin.uuid.Uuid
  * @property playerProfiles 牌桌場景中真人玩家模型的皮膚來源。
  * @property characterPreviews 牌桌場景中 AI 角色預覽模型的來源。
  * @property tablePropPreviews 牌桌場景中桌上物件的實體來源。
+ * @property clientConfig 玩家的顯示設定，例如牌桌場景的最新捨牌與同種牌提示。
  */
 class HistoryScreenController internal constructor(
     private val transport: HistoryQueryTransport,
@@ -80,6 +82,7 @@ class HistoryScreenController internal constructor(
     private val playerProfiles: ClientPlayerProfileResolver,
     private val characterPreviews: ClientAiCharacterPreviews,
     private val tablePropPreviews: ClientTablePropPreviews,
+    private val clientConfig: MahjongClientConfigStore,
 ) {
     /** 同一 client 連線共用的歷史查詢送出 gate。 */
     private val requestGate = ClientHistoryRequestGate(
@@ -184,6 +187,7 @@ class HistoryScreenController internal constructor(
             playerProfiles = playerProfiles,
             characterPreviews = characterPreviews,
             tablePropPreviews = tablePropPreviews,
+            clientConfig = clientConfig,
             dispatcher = dispatcher,
             parent = request.parent,
             initialMatchId = request.matchId,

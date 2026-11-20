@@ -51,7 +51,8 @@ class LatestDiscardHighlightController(
             .forEach { tile -> tile.setLatestDiscardHighlight(HIGHLIGHT_COLOR) }
     }
 
-    private companion object {
+    /** 外框顏色；其他畫面重現最新捨牌標示時共用。 */
+    internal companion object {
         /** 最新捨牌的外框色彩：固定不閃爍的珊瑚紅，與準星同種牌提示的青色、金色呼吸光區隔。 */
         const val HIGHLIGHT_COLOR: Int = 0xFF6B4A
     }

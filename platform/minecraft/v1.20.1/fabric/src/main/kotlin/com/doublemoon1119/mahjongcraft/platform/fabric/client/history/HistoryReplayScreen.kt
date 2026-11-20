@@ -5,6 +5,8 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryRoundEven
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryRoundStateDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.model.TileFaceViewDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.model.WindDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.model.toDomain
+import com.doublemoon1119.mahjongcraft.logic.tile.component.TilePose
 import com.doublemoon1119.mahjongcraft.platform.fabric.block.MahjongStoolBlock
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.character.ClientAiCharacterPreviews
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.CardBackground
@@ -23,6 +25,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.client.guide.scene.GuideS
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.guide.scene.GuideSceneFigure
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.guide.scene.GuideSceneRenderGuard
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.guide.scene.GuideSceneRenderer
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.guide.scene.GuideSceneTileGlow
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.guide.scene.GuideSceneView
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongStoolSeatGeometry
 import com.doublemoon1119.mahjongcraft.platform.fabric.registry.ModBlocks
@@ -32,6 +35,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.api.table.MahjongTable
 import com.doublemoon1119.mahjongcraft.platform.minecraft.character.AiCharacterSnapshot
 import com.doublemoon1119.mahjongcraft.platform.minecraft.history.HistoryReplayArrangement
 import com.doublemoon1119.mahjongcraft.platform.minecraft.history.HistoryReplayCharacterAppearance
+import com.doublemoon1119.mahjongcraft.platform.minecraft.history.HistoryReplayHighlights
 import com.doublemoon1119.mahjongcraft.platform.minecraft.history.MinecraftHistoryScreenKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.history.ReplayTableNotes
 import com.doublemoon1119.mahjongcraft.platform.minecraft.seating.MahjongSeatingTableLayout
@@ -524,12 +528,59 @@ internal class HistoryReplayScreen(
         val arranged = arrangement(state) ?: return null
         val (figures, players) = seatedPlayers(state)
         val entities = players + tableDisplays.tableProps(state, arranged)
-        animation?.let { return withPanels(withView(HistoryReplayScene.build(state.players.size, arranged, it.samples(), figures, entities) { index -> assetKey(state, index) }, state), state) }
+        animation?.let { return withGlows(withPanels(withView(HistoryReplayScene.build(state.players.size, arranged, it.samples(), figures, entities) { index -> assetKey(state, index) }, state), state), state, arranged) }
         val key = SceneKey(state = state, arranged = arranged, viewSeat = viewSeat, figures = figures, entities = entities)
         val built = sceneCache?.takeIf { it.first == key }?.second
             ?: withView(HistoryReplayScene.build(state.players.size, arranged, emptyMap(), figures, entities) { index -> assetKey(state, index) }, state)
         sceneCache = key to built
-        return withPanels(built, state)
+        return withGlows(withPanels(built, state), state, arranged)
+    }
+
+    /**
+     * 讓牌發光，條件與顏色與對局中相同：
+     *
+     * - 最後打出、仍留在牌河的牌：規則開啟這項標示、玩家的顯示設定也開著時，牌落地後持續發光。
+     * - 滑鼠指著的牌與相同的牌：玩家的同種牌提示開著時以呼吸光發亮；看不到牌面的牌不算，拖曳場景時不亮。
+     *
+     * 動畫播放中只有正在移動的牌不參與，其他牌照常發光，播放時不會每一步閃一下。
+     *
+     * @param scene 場景。
+     * @param state 目前牌面。
+     * @param arranged 擺好的牌桌。
+     * @return 套上發光的場景。
+     */
+    private fun withGlows(scene: GuideScene, state: HistoryRoundStateDto, arranged: Map<Int, ArrangedTile>): GuideScene {
+        val module = session.ruleModule(state) ?: return scene
+        val visibility = session.clientConfig.current.presentationVisibility
+        val moving = animation?.movingTiles.orEmpty()
+        val latest = HistoryReplayHighlights.latestDiscard(
+            discardOrder = state.discardOrder,
+            discards = state.players.flatMap { it.discards },
+            roundOver = state.outcome != null,
+        )?.takeIf { it !in moving && visibility.latestDiscardHighlightEnabled && session.tileLayoutProfiles.profileFor(module.id).highlightsLatestDiscard }
+        val target = renderer.hoveredTileKey.takeIf {
+            !draggingScene && !draggingPan && !dropdown.isOpen && visibility.matchingTileHighlightEnabled
+        }
+        val interpretation = module.createTileInterpretationPolicy()
+        val visible = arranged.filterValues { it.pose != TilePose.FACE_DOWN }.keys - moving
+        val canonical = { index: Int ->
+            state.tileCatalog.getOrNull(index)?.takeIf { it.isDisplayableHistoryFace() }?.let { interpretation.canonicalize(it.tile.toDomain()) }
+        }
+        val matching = target?.takeIf { it in visible }?.let { HistoryReplayHighlights.matching(it, visible, canonical) }
+        if (latest == null && matching == null) return scene
+        val lit = target?.takeIf { matching != null && canonical(it) != null }
+        return scene.copy(
+            tiles = scene.tiles.map { tile ->
+                val glow = when (tile.key) {
+                    null -> null
+                    lit -> GuideSceneTileGlow.TARGET
+                    in matching.orEmpty() -> GuideSceneTileGlow.MATCHING
+                    latest -> GuideSceneTileGlow.LATEST_DISCARD
+                    else -> null
+                }
+                if (glow == null) tile else tile.copy(glow = glow)
+            },
+        )
     }
 
     /**

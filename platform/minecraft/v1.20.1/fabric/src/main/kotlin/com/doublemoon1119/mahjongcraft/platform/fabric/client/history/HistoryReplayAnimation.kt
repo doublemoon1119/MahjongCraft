@@ -73,6 +73,10 @@ internal class HistoryReplayAnimation(
     val finished: Boolean
         get() = elapsedTicks >= durationTicks
 
+    /** 這一步有動作的牌，依局內牌索引；與對局中相同，動畫播放中這些牌不參與發光。 */
+    val movingTiles: Set<Int>
+        get() = tileSteps.keys
+
     /**
      * 往前播放一段時間。
      *
