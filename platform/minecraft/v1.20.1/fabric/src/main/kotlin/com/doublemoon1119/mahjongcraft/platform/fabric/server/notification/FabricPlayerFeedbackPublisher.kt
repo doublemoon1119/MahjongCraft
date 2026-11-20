@@ -11,7 +11,6 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.text.bracketedInteractive
 import com.doublemoon1119.mahjongcraft.platform.fabric.text.toDisplayText
 import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionVocabularyRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.ai.AiStrategyDisplayNameRegistry
-import com.doublemoon1119.mahjongcraft.platform.minecraft.history.MinecraftHistoryScreenKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.ExhaustiveDrawReasonDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.BuiltInRuleWordingIds
@@ -19,6 +18,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.text.GameTurnStatus
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftMessageKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftPlayerFeedback
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftPlayerFeedbackPublisher
+import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftPlayerKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.RuleWordingRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.minecraftAbortReasonTranslationKey
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistry
@@ -265,7 +265,7 @@ class FabricPlayerFeedbackPublisher(
      * @return 以逗號分隔的名稱文字。
      */
     private fun joinPlayerNames(playerIds: List<Uuid>): String = playerIds.joinToString {
-        playerIdentities.resolveKnownName(it) ?: Text.translatable(MinecraftHistoryScreenKeys.PLAYER_UNKNOWN).string
+        playerIdentities.resolveKnownName(it) ?: Text.translatable(MinecraftPlayerKeys.UNKNOWN).string
     }
 
     /**

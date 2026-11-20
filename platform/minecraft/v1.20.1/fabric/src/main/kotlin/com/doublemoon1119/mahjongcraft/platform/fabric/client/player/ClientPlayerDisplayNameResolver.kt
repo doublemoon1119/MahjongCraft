@@ -4,8 +4,8 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.client.state.ClientMahjon
 import com.doublemoon1119.mahjongcraft.platform.minecraft.character.AiCharacterClientStateStore
 import com.doublemoon1119.mahjongcraft.platform.minecraft.character.AiCharacterSnapshot
 import com.doublemoon1119.mahjongcraft.platform.minecraft.character.BuiltInAiCharacters
-import com.doublemoon1119.mahjongcraft.platform.minecraft.history.MinecraftHistoryScreenKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.player.aiPlayerDisplayName
+import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftPlayerKeys
 import net.minecraft.client.resource.language.I18n
 import net.minecraft.text.Text
 import kotlin.uuid.Uuid
@@ -48,6 +48,15 @@ class ClientPlayerDisplayNameResolver(
     }
 
     /**
+     * 決策面板上觸發動作的玩家名稱：在本地玩家所坐的桌子內解析，由桌況判斷是否為 AI，例如名稱需要本地翻譯的 AI 角色。
+     *
+     * @param localPlayerId 本地玩家 UUID；不在遊戲中時為 null。
+     * @param playerId 觸發動作的玩家 UUID 字串。
+     * @return AI 座位名稱、已快取真人名稱或未知玩家文字。
+     */
+    fun decisionTrigger(localPlayerId: Uuid?, playerId: String): String = resolve(localPlayerId?.let(stateStore::findTableWhereSeated), playerId)
+
+    /**
      * 只依指定歷史場次解析名稱，不借用目前世界角色。
      *
      * @param playerId 該場成員。
@@ -81,7 +90,7 @@ class ClientPlayerDisplayNameResolver(
      *
      * @return 本地化的未知玩家文字。
      */
-    private fun unknownName(): String = Text.translatable(MinecraftHistoryScreenKeys.PLAYER_UNKNOWN).string
+    private fun unknownName(): String = Text.translatable(MinecraftPlayerKeys.UNKNOWN).string
 
     /**
      * 依桌況資料優先順序取得房間內 AI 的座位排列。

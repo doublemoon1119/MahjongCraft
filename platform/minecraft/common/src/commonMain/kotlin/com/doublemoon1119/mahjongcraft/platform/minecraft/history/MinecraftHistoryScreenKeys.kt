@@ -644,9 +644,6 @@ object MinecraftHistoryScreenKeys {
     /** 中立摸牌動作名稱。 */
     const val ROUND_ACTION_DRAW = "mahjongcraft.history_screen.round.action.draw"
 
-    /** 對局未知玩家文字。 */
-    const val PLAYER_UNKNOWN = "mahjongcraft.history_screen.player_unknown"
-
     /** 結算聊天訊息開啟歷史提示。 */
     const val OPEN_HINT = "mahjongcraft.history_screen.open_hint"
 

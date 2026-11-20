@@ -123,4 +123,45 @@ class ClientPlayerDisplayNameResolverTest {
         assertEquals("AI 3", names.historical(secondBot, Uuid.random(), true, order))
         assertNull(profiles.resolvedProfile(actor))
     }
+
+    /** 決策面板的觸發玩家在本地玩家所坐的桌子內解析，AI 角色不被當成真人查詢。 */
+    @Test
+    fun `decision triggers resolve AI characters at the seated table`() {
+        val table = Uuid.random()
+        val local = Uuid.random()
+        val actor = Uuid.random()
+        val state = ClientMahjongStateStore(DefaultNetworkDtoRegistries())
+        state.applyRoomSnapshot(
+            roomId = table,
+            snapshot = RoomSnapshot(
+                id = table,
+                hostId = local,
+                gameConfig = GameConfig(FakeMahjongRuleConfig()),
+                playerIds = listOf(local, actor),
+                readyPlayerIds = listOf(actor),
+                aiPlayerIds = listOf(actor),
+                canStart = true,
+                isHost = true,
+                isInRoom = true,
+            ),
+        )
+        val characters = AiCharacterClientStateStore()
+        val session = Uuid.random()
+        characters.beginSession(session)
+        characters.apply(
+            snapshot = AiCharacterSyncSnapshot(
+                sessionId = session,
+                revision = 1,
+                tableId = table,
+                isAvailable = true,
+                catalogue = emptyList(),
+                players = mapOf(actor to AiCharacterSnapshot("example:actor", null, "Actor")),
+            ),
+        )
+        val profiles = ClientPlayerProfileResolver()
+        val names = ClientPlayerDisplayNameResolver(state, profiles, characters)
+
+        assertEquals("Actor", names.decisionTrigger(local, actor.toString()))
+        assertNull(profiles.resolvedProfile(actor))
+    }
 }

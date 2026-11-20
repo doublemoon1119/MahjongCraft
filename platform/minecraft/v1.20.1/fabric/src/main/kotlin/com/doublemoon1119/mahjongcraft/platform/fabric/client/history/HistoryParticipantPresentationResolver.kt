@@ -5,7 +5,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.client.player.ClientPlaye
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.PlayerPortraitRenderer
 import com.doublemoon1119.mahjongcraft.platform.minecraft.character.AiCharacterClientStateStore
 import com.doublemoon1119.mahjongcraft.platform.minecraft.character.AiCharacterSnapshot
-import com.doublemoon1119.mahjongcraft.platform.minecraft.history.MinecraftHistoryScreenKeys
+import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftPlayerKeys
 import net.minecraft.client.gui.DrawContext
 import net.minecraft.text.Text
 import kotlin.uuid.Uuid
@@ -40,7 +40,7 @@ class HistoryParticipantPresentationResolver(
      * @return 原生玩家名稱、AI 名稱或未知玩家文字。
      */
     fun name(participant: HistoryParticipantSummaryDto, participants: List<HistoryParticipantSummaryDto>, matchId: String? = null): Text {
-        val id = parseUuid(participant.playerId) ?: return Text.translatable(UNKNOWN_PLAYER_KEY)
+        val id = parseUuid(participant.playerId) ?: return Text.translatable(MinecraftPlayerKeys.UNKNOWN)
         val aiIds = participants.filter { it.aiStrategyId != null }.sortedBy { it.seatIndex }.mapNotNull { parseUuid(it.playerId) }
         return Text.literal(names.historical(id, matchId?.let(::parseUuid), participant.aiStrategyId != null, aiIds))
     }
@@ -82,8 +82,5 @@ class HistoryParticipantPresentationResolver(
     private companion object {
         /** 避免無效 UUID 使 GUI portrait 缺席。 */
         val FALLBACK_UUID: Uuid = Uuid.parse("00000000-0000-0000-0000-000000000000")
-
-        /** 真人名稱未知時使用的翻譯鍵。 */
-        const val UNKNOWN_PLAYER_KEY = MinecraftHistoryScreenKeys.PLAYER_UNKNOWN
     }
 }
