@@ -8,6 +8,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.client.tile.MatchingTileH
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongBotEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongPlayerInfoEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongRoundInfoEntity
+import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongStoolSeatEntity
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.table.MahjongTableFacing
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.BuiltInMinecraftTileAppearances
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileDimensions
@@ -26,6 +27,7 @@ import net.minecraft.client.render.VertexFormat
 import net.minecraft.client.render.VertexFormats
 import net.minecraft.client.render.model.json.ModelTransformationMode
 import net.minecraft.client.world.ClientWorld
+import net.minecraft.entity.Entity
 import net.minecraft.util.math.RotationAxis
 import org.joml.Matrix4f
 import org.joml.Quaternionf
@@ -54,6 +56,9 @@ internal class GuideSceneRenderer : AutoCloseable {
 
     /** 繪製玩家資訊的預覽實體。 */
     private var playerInfoEntity: MahjongPlayerInfoEntity? = null
+
+    /** 讓坐著的生物騎乘的凳子座位，與遊戲中坐凳子時相同；不在世界中，也不是生物，不影響乘客的朝向。 */
+    private var seatEntity: Entity? = null
 
     /**
      * 在指定範圍內繪製場景，並回傳滑鼠指著的區塊。
@@ -134,6 +139,7 @@ internal class GuideSceneRenderer : AutoCloseable {
                     matrices.pop()
                 }
                 renderFigures(client, scene.figures, context, consumers)
+                renderEntities(client, scene.entities, context, consumers)
                 scene.tiles.forEach { tile -> renderTile(tile, context, consumers) }
                 renderInfo(client, scene, rotation, context, consumers)
             } finally {
@@ -478,6 +484,57 @@ internal class GuideSceneRenderer : AutoCloseable {
     }
 
     /**
+     * 用原版繪製器畫出生物；坐姿的生物暫時騎在不在世界中的座位上，站姿的生物離開座位。
+     *
+     * @param client 目前客戶端。
+     * @param entities 要畫的生物。
+     * @param context GUI 繪製上下文，矩陣已套用場景視角。
+     * @param consumers 繪製用的頂點緩衝。
+     */
+    private fun renderEntities(
+        client: MinecraftClient,
+        entities: List<GuideSceneEntity>,
+        context: DrawContext,
+        consumers: VertexConsumerProvider,
+    ) {
+        if (entities.isEmpty()) return
+        val world = client.world ?: return
+        val dispatcher = client.entityRenderDispatcher
+        val seat = seatEntity(world)
+        dispatcher.setRenderShadows(false)
+        try {
+            entities.forEach { figure ->
+                val entity = figure.entity
+                if (figure.seated && entity.vehicle == null) entity.startRiding(seat, true)
+                if (!figure.seated && entity.vehicle != null) entity.stopRiding()
+                entity.bodyYaw = figure.yaw
+                entity.prevBodyYaw = figure.yaw
+                entity.headYaw = figure.yaw
+                entity.prevHeadYaw = figure.yaw
+                entity.yaw = figure.yaw
+                entity.prevYaw = figure.yaw
+                entity.pitch = 0f
+                entity.prevPitch = 0f
+                dispatcher.render(entity, figure.x, figure.y, figure.z, figure.yaw, 1f, context.matrices, consumers, FULL_LIGHT)
+            }
+        } finally {
+            dispatcher.setRenderShadows(true)
+        }
+    }
+
+    /**
+     * 取得屬於 [world] 的座位實體；世界改變時重建。
+     *
+     * @param world 目前客戶端世界。
+     * @return 不在世界中的座位實體。
+     */
+    private fun seatEntity(world: ClientWorld): Entity {
+        seatEntity?.takeIf { it.world === world }?.let { return it }
+        seatEntity?.discard()
+        return MahjongStoolSeatEntity(world = world).also { seatEntity = it }
+    }
+
+    /**
      * 取得屬於 [world] 的角色預覽實體；世界改變時重建。
      *
      * @param world 目前客戶端世界。
@@ -515,6 +572,8 @@ internal class GuideSceneRenderer : AutoCloseable {
 
     /** 釋放預覽實體。 */
     override fun close() {
+        seatEntity?.discard()
+        seatEntity = null
         figureEntity?.discard()
         figureEntity = null
         roundInfoEntity?.discard()

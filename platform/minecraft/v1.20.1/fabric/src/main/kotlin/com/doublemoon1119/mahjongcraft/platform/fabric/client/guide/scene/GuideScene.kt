@@ -6,6 +6,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongPlayerInf
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.RoundInfoLine
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileLean
 import net.minecraft.block.BlockState
+import net.minecraft.entity.LivingEntity
 import net.minecraft.util.math.BlockPos
 import kotlin.uuid.Uuid
 
@@ -16,6 +17,7 @@ import kotlin.uuid.Uuid
  *
  * @property blocks 場景中的方塊。
  * @property figures 場景中的角色。
+ * @property entities 場景中用原版繪製器畫出的生物，例如牌譜回放中的玩家與第三方角色。
  * @property tiles 場景中的麻將牌。
  * @property view 觀看場景的斜上方視角。
  * @property focus 縮放、置中與顯示的範圍，範圍外的部分不顯示；`null` 時以所有方塊、角色與牌為準，整個場景都顯示。
@@ -28,6 +30,7 @@ import kotlin.uuid.Uuid
 internal data class GuideScene(
     val blocks: List<GuideSceneBlock>,
     val figures: List<GuideSceneFigure>,
+    val entities: List<GuideSceneEntity> = emptyList(),
     val tiles: List<GuideSceneTile>,
     val view: GuideSceneView,
     val focus: GuideSceneBox? = null,
@@ -67,6 +70,27 @@ internal data class GuideSceneFigure(
     val yaw: Float,
     val seated: Boolean,
     val region: GuideSceneRegion? = null,
+)
+
+/**
+ * 場景中用原版繪製器畫出的一個生物。
+ *
+ * 生物不在任何世界中，由呼叫端建立與保留；坐姿時繪製器讓它暫時騎在一個不在世界中的座位上，套用原版的坐姿。
+ *
+ * @property entity 要畫的生物。
+ * @property x 腳底中心的 X 座標。
+ * @property y 腳底的 Y 座標。
+ * @property z 腳底中心的 Z 座標。
+ * @property yaw Minecraft 慣例的水平朝向（0 度朝南），身體與頭都朝這個方向。
+ * @property seated 是否以坐姿繪製。
+ */
+internal data class GuideSceneEntity(
+    val entity: LivingEntity,
+    val x: Double,
+    val y: Double,
+    val z: Double,
+    val yaw: Float,
+    val seated: Boolean,
 )
 
 /**

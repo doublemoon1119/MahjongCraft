@@ -4,6 +4,7 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkDtoRegistrie
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.catalogue.RuleCatalogueScreenController
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.concurrency.ClientThreadCoroutineDispatcher
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.player.ClientPlayerProfileResolver
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.MahjongTileFaceRenderer
 import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionVocabularyRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.RuleDecisionDisplayNameRegistry
@@ -71,6 +72,7 @@ class HistoryScreenController internal constructor(
     private val archiveStatus: HistoryArchiveStatusTransport,
     private val dispatcher: ClientThreadCoroutineDispatcher,
     private val tileLayoutProfiles: TableTileLayoutProfileRegistry,
+    private val playerProfiles: ClientPlayerProfileResolver,
 ) {
     /** 同一 client 連線共用的歷史查詢送出 gate。 */
     private val requestGate = ClientHistoryRequestGate(
@@ -171,6 +173,7 @@ class HistoryScreenController internal constructor(
             tileDisplayNames = tileDisplayNames,
             ruleCatalogue = ruleCatalogue,
             tileLayoutProfiles = tileLayoutProfiles,
+            playerProfiles = playerProfiles,
             dispatcher = dispatcher,
             parent = request.parent,
             initialMatchId = request.matchId,

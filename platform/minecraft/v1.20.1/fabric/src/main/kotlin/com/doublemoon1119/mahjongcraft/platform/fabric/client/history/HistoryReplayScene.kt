@@ -3,6 +3,8 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.client.history
 import com.doublemoon1119.mahjongcraft.logic.tile.component.TilePose
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.guide.scene.GuideScene
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.guide.scene.GuideSceneBox
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.guide.scene.GuideSceneEntity
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.guide.scene.GuideSceneFigure
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.guide.scene.GuideSceneTile
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.guide.scene.GuideSceneView
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.guide.scene.GuideScenes
@@ -23,6 +25,8 @@ internal object HistoryReplayScene {
      * @param playerCount 這一局的人數，決定凳子的位置。
      * @param arranged 依局內牌索引排列的牌桌擺放，例如 [HistoryReplayArrangement.arrange] 的結果。
      * @param samples 正在播放動畫的牌在這一刻的樣子，取代擺放中的位置；隱形的牌不畫。
+     * @param figures 坐在桌邊、以內建機器人外觀畫出的角色。
+     * @param entities 坐在桌邊、以原版繪製器畫出的生物，例如真人玩家。
      * @param assetKey 局內牌索引對應的牌面素材；看不到牌面時為 null。
      * @return 牌桌場景。
      */
@@ -30,6 +34,8 @@ internal object HistoryReplayScene {
         playerCount: Int,
         arranged: Map<Int, ArrangedTile>,
         samples: Map<Int, TileAnimationSample>,
+        figures: List<GuideSceneFigure>,
+        entities: List<GuideSceneEntity>,
         assetKey: (Int) -> String?,
     ): GuideScene {
         val tiles = arranged.mapNotNull { (index, tile) ->
@@ -61,7 +67,8 @@ internal object HistoryReplayScene {
         val furniture = GuideScenes.tableBlocks() + GuideScenes.stools(seats)
         return GuideScene(
             blocks = GuideScenes.floor() + furniture,
-            figures = emptyList(),
+            figures = figures,
+            entities = entities,
             tiles = tiles,
             view = GuideSceneView(yawDegrees = VIEW_YAW, pitchDegrees = VIEW_PITCH),
             frame = GuideSceneBox(

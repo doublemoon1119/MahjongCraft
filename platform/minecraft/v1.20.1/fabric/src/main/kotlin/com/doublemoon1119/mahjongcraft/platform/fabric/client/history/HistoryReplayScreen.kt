@@ -5,6 +5,7 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryRoundEven
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryRoundStateDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.model.TileFaceViewDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.model.WindDto
+import com.doublemoon1119.mahjongcraft.platform.fabric.block.MahjongStoolBlock
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.CardBackground
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.ControlTooltip
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.DropdownOption
@@ -17,8 +18,12 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.ScrollbarLayou
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.VerticalScrollbar
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.measuringTimeNow
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.guide.scene.GuideScene
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.guide.scene.GuideSceneEntity
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.guide.scene.GuideSceneFigure
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.guide.scene.GuideSceneRenderer
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.guide.scene.GuideSceneView
+import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongStoolSeatGeometry
+import com.doublemoon1119.mahjongcraft.platform.fabric.registry.ModBlocks
 import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionReplayMarker
 import com.doublemoon1119.mahjongcraft.platform.minecraft.animation.AnimationStep
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.table.MahjongTableFacing
@@ -28,10 +33,13 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.history.ReplayTableNot
 import com.doublemoon1119.mahjongcraft.platform.minecraft.seating.MahjongSeatingTableLayout
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongTableSeatLayout
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.ArrangedTile
+import com.mojang.authlib.GameProfile
 import net.minecraft.client.gui.DrawContext
 import net.minecraft.client.gui.screen.Screen
 import net.minecraft.client.gui.tooltip.Tooltip
 import net.minecraft.client.sound.PositionedSoundInstance
+import net.minecraft.client.world.ClientWorld
+import net.minecraft.entity.LivingEntity
 import net.minecraft.registry.Registries
 import net.minecraft.text.Text
 import net.minecraft.util.Identifier
@@ -43,6 +51,8 @@ import kotlin.time.Duration
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
 import kotlin.time.DurationUnit
+import kotlin.uuid.Uuid
+import kotlin.uuid.toJavaUuid
 
 /**
  * 牌譜回放畫面：把一局的每一筆交易依序擺成牌桌場景，可以播放、暫停、逐筆前後移動、拖曳進度條與換局。
@@ -119,6 +129,9 @@ internal class HistoryReplayScreen(
 
     /** 上次建立場景的條件與結果。 */
     private var sceneCache: Pair<SceneKey, GuideScene?>? = null
+
+    /** 真人玩家的模型，依玩家識別碼保留；換世界時重建。 */
+    private val playerEntities = mutableMapOf<String, LivingEntity>()
 
     /** 最近擺好的牌桌，依條件索引；只留動畫前後兩步需要的份量。 */
     private val arrangements = LinkedHashMap<ArrangementKey, Map<Int, ArrangedTile>?>()
@@ -466,8 +479,9 @@ internal class HistoryReplayScreen(
                 retryButton.y = top + lines.size * LINE_HEIGHT + NOTICE_PADDING
             }
         } else if (retryButton.visible) {
-            retryButton.x = bounds.right - NOTICE_PADDING - retryButton.width
-            retryButton.y = bounds.y + NOTICE_PADDING
+            // 場景右上角是全螢幕按鈕，重試按鈕排在它左邊。
+            retryButton.x = layout.fullscreenToggle.x - NOTICE_PADDING - retryButton.width
+            retryButton.y = layout.fullscreenToggle.y
         }
     }
 
@@ -489,12 +503,65 @@ internal class HistoryReplayScreen(
      */
     private fun scene(state: HistoryRoundStateDto): GuideScene? {
         val arranged = arrangement(state) ?: return null
-        animation?.let { return withView(HistoryReplayScene.build(state.players.size, arranged, it.samples()) { index -> assetKey(state, index) }, state) }
+        val (figures, entities) = seatedPlayers(state)
+        animation?.let { return withView(HistoryReplayScene.build(state.players.size, arranged, it.samples(), figures, entities) { index -> assetKey(state, index) }, state) }
         val key = SceneKey(state = state, arranged = arranged, viewSeat = viewSeat)
         sceneCache?.takeIf { it.first == key }?.let { return it.second }
-        val built = withView(HistoryReplayScene.build(state.players.size, arranged, emptyMap()) { index -> assetKey(state, index) }, state)
+        val built = withView(HistoryReplayScene.build(state.players.size, arranged, emptyMap(), figures, entities) { index -> assetKey(state, index) }, state)
         sceneCache = key to built
         return built
+    }
+
+    /**
+     * 坐在桌邊的各家：AI 以內建機器人外觀畫出，真人玩家以玩家模型畫出，都坐在自己的凳子上面向桌子。
+     *
+     * @param state 目前牌面。
+     * @return 內建機器人外觀的角色與以原版繪製器畫出的玩家。
+     */
+    private fun seatedPlayers(state: HistoryRoundStateDto): Pair<List<GuideSceneFigure>, List<GuideSceneEntity>> {
+        val world = client?.world ?: return emptyList<GuideSceneFigure>() to emptyList()
+        if (playerEntities.values.any { it.world !== world }) playerEntities.clear()
+        val seats = MahjongSeatingTableLayout.seatPlacements(
+            layout = MahjongTableSeatLayout.forPlayerCount(state.players.size),
+            controllerX = 0,
+            controllerY = 0,
+            controllerZ = 0,
+            tableFacing = MahjongTableFacing.NORTH,
+        )
+        val feetY = (ModBlocks.woodenMahjongStool as MahjongStoolBlock).design.seatHeight - MahjongStoolSeatGeometry.SEATED_BOTTOM_HEIGHT
+        val summary = session.controller.state.value.summary?.detail?.summary
+        val figures = mutableListOf<GuideSceneFigure>()
+        val entities = mutableListOf<GuideSceneEntity>()
+        state.players.forEachIndexed { index, player ->
+            val seat = seats.getOrNull(index) ?: return@forEachIndexed
+            val playerId = state.identity.players.firstOrNull { it.initialSeatIndex == player.initialSeatIndex }?.playerId
+            val participant = playerId?.let { id -> summary?.participants?.firstOrNull { it.playerId.equals(id, ignoreCase = true) } }
+            val uuid = playerId?.let { runCatching { Uuid.parse(it) }.getOrNull() }
+            if (participant?.aiStrategyId != null || uuid == null) {
+                figures += GuideSceneFigure(faceAssetKey = BOT_FACE, x = seat.x, y = feetY, z = seat.z, yaw = seat.yaw, seated = true)
+            } else {
+                val entity = playerEntities.getOrPut(playerId) { playerEntity(world, uuid) }
+                entities += GuideSceneEntity(entity = entity, x = seat.x, y = feetY, z = seat.z, yaw = seat.yaw, seated = true)
+            }
+        }
+        return figures to entities
+    }
+
+    /**
+     * 建立不在世界中的玩家模型，外觀與牌譜頭像相同，並開始載入玩家的皮膚。
+     *
+     * @param world 目前客戶端世界。
+     * @param playerId 玩家識別碼。
+     * @return 玩家模型。
+     */
+    private fun playerEntity(world: ClientWorld, playerId: Uuid): LivingEntity {
+        val profiles = session.playerProfiles
+        profiles.requestResolve(playerId)
+        val profile = profiles.knownProfile(playerId) ?: GameProfile(playerId.toJavaUuid(), UNKNOWN_PROFILE_NAME)
+        val entity = HistoryReplayPlayerEntity(world, playerId, profile, profiles)
+        // 原版依實體與鏡頭的距離決定是否畫名牌；模型不在世界中，放到遠離鏡頭的位置，名牌就不會出現。
+        entity.setPosition(0.0, DETACHED_Y, 0.0)
+        return entity
     }
 
     /**
@@ -1304,6 +1371,15 @@ internal class HistoryReplayScreen(
 
         /** 進度條上下可點擊的額外範圍。 */
         const val PROGRESS_HIT_MARGIN = 3
+
+        /** 內建機器人外觀的 AI 臉上的牌面。 */
+        const val BOT_FACE = "east"
+
+        /** 不在世界中的模型放置的高度，遠離鏡頭。 */
+        const val DETACHED_Y = -10_000.0
+
+        /** 還不知道玩家名稱時，模型 profile 使用的名稱；名牌不會畫出，只用來建立模型。 */
+        const val UNKNOWN_PROFILE_NAME = "player"
 
         /** 一秒的遊戲 tick 數，動畫依此換算時間。 */
         const val TICKS_PER_SECOND = 20.0
