@@ -137,6 +137,9 @@ internal class HistoryReplayScreen(
     /** 真人玩家的模型，依玩家識別碼保留；換世界時重建。 */
     private val playerEntities = mutableMapOf<String, LivingEntity>()
 
+    /** 依牌譜記下的資料畫出的本局資訊、玩家資訊與桌上物件。 */
+    private val tableDisplays = HistoryReplayTableDisplays(session)
+
     /** 最近擺好的牌桌，依條件索引；只留動畫前後兩步需要的份量。 */
     private val arrangements = LinkedHashMap<ArrangementKey, Map<Int, ArrangedTile>?>()
 
@@ -507,13 +510,29 @@ internal class HistoryReplayScreen(
      */
     private fun scene(state: HistoryRoundStateDto): GuideScene? {
         val arranged = arrangement(state) ?: return null
-        val (figures, entities) = seatedPlayers(state)
-        animation?.let { return withView(HistoryReplayScene.build(state.players.size, arranged, it.samples(), figures, entities) { index -> assetKey(state, index) }, state) }
+        val (figures, players) = seatedPlayers(state)
+        val entities = players + tableDisplays.tableProps(state, arranged)
+        animation?.let { return withPanels(withView(HistoryReplayScene.build(state.players.size, arranged, it.samples(), figures, entities) { index -> assetKey(state, index) }, state), state) }
         val key = SceneKey(state = state, arranged = arranged, viewSeat = viewSeat, figures = figures, entities = entities)
-        sceneCache?.takeIf { it.first == key }?.let { return it.second }
-        val built = withView(HistoryReplayScene.build(state.players.size, arranged, emptyMap(), figures, entities) { index -> assetKey(state, index) }, state)
+        val built = sceneCache?.takeIf { it.first == key }?.second
+            ?: withView(HistoryReplayScene.build(state.players.size, arranged, emptyMap(), figures, entities) { index -> assetKey(state, index) }, state)
         sceneCache = key to built
-        return built
+        return withPanels(built, state)
+    }
+
+    /**
+     * 加上本局資訊與玩家資訊；選某一家視角時不畫那一家的玩家資訊，免得擋住視線。
+     *
+     * @param scene 場景。
+     * @param state 目前牌面。
+     * @return 加上面板的場景。
+     */
+    private fun withPanels(scene: GuideScene, state: HistoryRoundStateDto): GuideScene {
+        val hiddenSeat = state.players.indexOfFirst { it.initialSeatIndex == viewSeat }.takeIf { it >= 0 }
+        return scene.copy(
+            roundInfo = tableDisplays.roundInfo(state),
+            playerInfo = tableDisplays.playerInfo(state, hiddenSeat) { seat -> actorText(state.identity, seat) },
+        )
     }
 
     /**

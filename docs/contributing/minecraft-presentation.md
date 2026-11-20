@@ -221,6 +221,12 @@ rules come from collisions that only showed up in game, so check them even when 
 - A native prop kind owns one `TablePropKindDefinition`: its ID, actual model dimensions and pure
   content validator. Register that kind once through the existing extension callback. Use the same
   dimensions for rendering and occupancy; an entity's selection box is not its model size.
+- Client scenes that are not part of the world, such as round replays, draw props from the same
+  description. A client cannot use the server kind, so register a client preview with the same
+  `TablePropKindDefinition` and a factory that builds a detached entity from the public content. For
+  example, the Fabric client extension registers `FabricTablePropPreviewDefinition` values through
+  `FabricTablePropPreviewRegistrar`. The framework owns and discards the entity and sets its position.
+  A kind without a client preview is not drawn there and takes no space.
 - The layout checks rotated bounds in all three dimensions, including collisions between seat and
   central props. Touching layers are allowed. Central allocation is deterministic and bounded, not an
   optimal packing solver. An invalid scene or failed spawn clears the failed scene and reports the
