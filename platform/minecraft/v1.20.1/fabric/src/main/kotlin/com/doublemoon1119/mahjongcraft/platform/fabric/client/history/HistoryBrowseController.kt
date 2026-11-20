@@ -76,6 +76,9 @@ internal class HistoryBrowseController(
     /** 最近失敗且仍可重試的同一查詢。 */
     private var retryIntent: Intent? = null
 
+    /** 回放中的牌面暫存；不在回放時為 null。 */
+    private var replayBuffer: HistoryReplayBuffer? = null
+
     /** 尚未開始傳送的條件合併／間隔等待。 */
     private var sendJob: Job? = null
 
@@ -121,9 +124,11 @@ internal class HistoryBrowseController(
         val normalized = query.normalized()
         if (normalized == state.value.query) return false
         generation++
+        replayBuffer = null
         mutableState.value = state.value.copy(
             query = normalized,
             page = if (state.value.page != HistoryBrowsePage.FILTERS) HistoryBrowsePage.LIST else state.value.page,
+            replay = null,
         )
         opened = true
         requestFirstPage(HistoryBrowseTiming.conditionDebounce)
@@ -474,6 +479,91 @@ internal class HistoryBrowseController(
     fun previousRoundState(): Boolean = navigateRoundState(-1)
 
     /**
+     * 從事件頁開始回放目前局，停在指定步數；需要已知本局交易總數。
+     *
+     * @param step 開始的步數：0 是初始牌面，k 是第 k - 1 筆交易完成後。
+     * @return 是否接受回放。
+     */
+    fun showReplay(step: Int): Boolean {
+        val round = currentRound() ?: return false
+        if (state.value.page != HistoryBrowsePage.ROUND_EVENTS) return false
+        val transactionCount = round.transactionCount ?: return false
+        abandonPending()
+        val buffer = HistoryReplayBuffer(stepCount = transactionCount + 1).also { it.moveTo(step) }
+        replayBuffer = buffer
+        mutableState.value = state.value.copy(page = HistoryBrowsePage.ROUND_REPLAY)
+        publishReplay(round.roundNumber, buffer, HistoryBrowseStatus.Loading)
+        requestReplay()
+        return true
+    }
+
+    /**
+     * 回放移到指定步數；牌面已取得時立即顯示，否則讀取，並預先讀取後面的步數。
+     *
+     * @param step 新的步數，超出範圍時夾到第一步或最後一步。
+     * @return 是否接受移動。
+     */
+    fun replayTo(step: Int): Boolean {
+        val replay = state.value.replay ?: return false
+        if (!available() || state.value.page != HistoryBrowsePage.ROUND_REPLAY) return false
+        val buffer = replayBuffer ?: return false
+        buffer.moveTo(step)
+        if (pending?.intent is Intent.ReplayStates) {
+            // 還沒送出的預先讀取以舊位置決定範圍，換成以新位置決定的下一段。
+            pending = null
+            sendJob?.cancel()
+            buffer.releaseRequest()
+        }
+        publishReplay(replay.roundNumber, buffer, HistoryBrowseStatus.Loading)
+        requestReplay()
+        return true
+    }
+
+    /**
+     * 結束回放，回到目前局的事件列表。
+     *
+     * @return 是否接受返回。
+     */
+    fun backFromReplay(): Boolean {
+        if (!available() || state.value.page != HistoryBrowsePage.ROUND_REPLAY) return false
+        abandonPending()
+        replayBuffer = null
+        mutableState.value = state.value.copy(page = HistoryBrowsePage.ROUND_EVENTS, replay = null)
+        return true
+    }
+
+    /**
+     * 更新回放快照；目前這一步的牌面已取得時為就緒，否則沿用指定狀態。
+     *
+     * @param roundNumber 回放的局序號。
+     * @param buffer 回放暫存。
+     * @param status 目前這一步還沒取得時的讀取狀態。
+     */
+    private fun publishReplay(roundNumber: Int, buffer: HistoryReplayBuffer, status: HistoryBrowseStatus) {
+        val current = buffer.stateAt(buffer.current)
+        mutableState.value = state.value.copy(
+            replay = HistoryBrowseReplayState(
+                roundNumber = roundNumber,
+                step = buffer.current,
+                stepCount = buffer.stepCount,
+                state = current,
+                status = if (current != null) HistoryBrowseStatus.Ready else status,
+            ),
+        )
+    }
+
+    /** 沒有其他查詢在途或待送時，向伺服器要回放暫存缺少的下一段。 */
+    private fun requestReplay() {
+        if (active != null || pending != null) return
+        val buffer = replayBuffer ?: return
+        val replay = state.value.replay ?: return
+        val matchId = state.value.summary?.matchId ?: return
+        val request = buffer.nextRequest() ?: return
+        buffer.markRequested(request)
+        enqueue(Intent.ReplayStates(generation, matchId, state.value.query, replay.roundNumber, request.start, request.count), Duration.ZERO)
+    }
+
+    /**
      * 返回目前局的事件列表，保留事件頁與捲動位置。
      *
      * @return 是否接受返回。
@@ -606,7 +696,8 @@ internal class HistoryBrowseController(
             sendJob?.cancel()
             retryIntent = null
         }
-        mutableState.value = state.value.copy(page = HistoryBrowsePage.LIST)
+        replayBuffer = null
+        mutableState.value = state.value.copy(page = HistoryBrowsePage.LIST, replay = null)
         return true
     }
 
@@ -657,6 +748,13 @@ internal class HistoryBrowseController(
             is Intent.RuleSettings -> mutableState.value = state.value.copy(ruleSettings = state.value.ruleSettings?.copy(status = HistoryBrowseStatus.Loading))
             is Intent.RoundEvents -> updateRound(intent.roundNumber) { it.copy(eventsStatus = HistoryBrowseStatus.Loading) }
             is Intent.RoundState -> updateRound(intent.roundNumber) { it.copy(stateStatus = HistoryBrowseStatus.Loading) }
+            is Intent.ReplayStates -> {
+                retryIntent = null
+                val buffer = replayBuffer ?: return false
+                publishReplay(intent.roundNumber, buffer, HistoryBrowseStatus.Loading)
+                requestReplay()
+                return true
+            }
         }
         enqueue(intent, Duration.ZERO)
         return true
@@ -761,6 +859,7 @@ internal class HistoryBrowseController(
             is Intent.RuleSettings -> transport.queryRuleSettings(HistoryRuleSettingsRequestDto("", intent.matchId, intent.query.scope))
             is Intent.RoundEvents -> transport.queryRoundEvents(intent.request())
             is Intent.RoundState -> transport.queryRoundState(intent.request())
+            is Intent.ReplayStates -> transport.queryRoundState(intent.request())
         }
         active = Active(requestId, intent)
         timeoutJob = scope.launch {
@@ -800,8 +899,12 @@ internal class HistoryBrowseController(
                 if (request.intent.generation == generation) acceptRoundEvents(result.response, request.intent)
             }
             is ClientHistoryQueryState.RoundStateResult -> {
-                if (result.response.requestId != request.requestId || request.intent !is Intent.RoundState) return
-                if (request.intent.generation == generation) acceptRoundState(result.response, request.intent)
+                if (result.response.requestId != request.requestId) return
+                when (val intent = request.intent) {
+                    is Intent.RoundState -> if (intent.generation == generation) acceptRoundState(result.response, intent)
+                    is Intent.ReplayStates -> if (intent.generation == generation) acceptReplayStates(result.response, intent)
+                    else -> return
+                }
             }
             is ClientHistoryQueryState.SendFailed -> {
                 if (result.requestId != request.requestId) return
@@ -925,6 +1028,24 @@ internal class HistoryBrowseController(
     }
 
     /**
+     * 收下回放的連續牌面，更新目前這一步；之後的預先讀取由 [finish] 接著排程。
+     *
+     * @param response 已配對的牌面回覆。
+     * @param intent 原始回放意圖。
+     */
+    private fun acceptReplayStates(response: HistoryRoundStateResponseDto, intent: Intent.ReplayStates) {
+        val buffer = replayBuffer ?: return
+        when (val result = HistoryRoundResponseValidator.validateStates(intent.request(response.requestId), response)) {
+            is HistoryRoundValidationResult.Success -> {
+                buffer.accept(intent.start, result.value)
+                publishReplay(intent.roundNumber, buffer, HistoryBrowseStatus.Loading)
+            }
+            is HistoryRoundValidationResult.Error -> fail(result.code.toBrowseFailure())
+            is HistoryRoundValidationResult.Invalid -> fail(HistoryBrowseFailure.NOT_AVAILABLE)
+        }
+    }
+
+    /**
      * 套用成功事件頁。
      *
      * @param events 已驗證的事件頁。
@@ -1024,15 +1145,20 @@ internal class HistoryBrowseController(
             is Intent.RuleSettings -> state.value.copy(ruleSettings = state.value.ruleSettings?.copy(status = status))
             is Intent.RoundEvents -> state.value.withRound(intent.roundNumber) { it.copy(eventsStatus = status) }
             is Intent.RoundState -> state.value.withRound(intent.roundNumber) { it.copy(stateStatus = status) }
+            is Intent.ReplayStates -> {
+                replayBuffer?.releaseRequest()
+                state.value.replay?.let { replay -> state.value.copy(replay = if (replay.state == null) replay.copy(status = status) else replay) } ?: state.value
+            }
         }
     }
 
-    /** 解除唯一工作；不是失敗重試，只送出使用者另外提出的最新意圖。 */
+    /** 解除唯一工作；不是失敗重試，只送出使用者另外提出的最新意圖；回放中且沒有失敗時接著預先讀取。 */
     private fun finish() {
         timeoutJob?.cancel()
         timeoutJob = null
         active = null
         schedule()
+        if (state.value.page == HistoryBrowsePage.ROUND_REPLAY && retryIntent !is Intent.ReplayStates) requestReplay()
     }
 
     /** 原世界／連線已失效時清除全部資料，並保留可辨識的斷線結果。 */
@@ -1141,6 +1267,33 @@ internal class HistoryBrowseController(
              * @return 牌面要求。
              */
             fun request(requestId: String = ""): HistoryRoundStateRequestDto = HistoryRoundStateRequestDto(requestId, matchId, query.scope, roundNumber, position, count = 1)
+        }
+
+        /**
+         * 回放暫存一次要的一段連續牌面。
+         *
+         * @property generation 提出意圖時的條件世代。
+         * @property matchId 對局識別碼。
+         * @property query 有效查閱範圍。
+         * @property roundNumber 局序號。
+         * @property start 第一步：0 是初始牌面，k 是第 k - 1 筆交易完成後。
+         * @property count 連續幾步。
+         */
+        data class ReplayStates(
+            override val generation: Long,
+            val matchId: String,
+            val query: HistoryBrowseQuery,
+            val roundNumber: Int,
+            val start: Int,
+            val count: Int,
+        ) : Intent {
+            /**
+             * 建立本次查詢封套。
+             *
+             * @param requestId 傳輸配對鍵。
+             * @return 連續牌面要求。
+             */
+            fun request(requestId: String = ""): HistoryRoundStateRequestDto = HistoryRoundStateRequestDto(requestId, matchId, query.scope, roundNumber, HistoryReplayBuffer.positionOf(start), count)
         }
     }
 

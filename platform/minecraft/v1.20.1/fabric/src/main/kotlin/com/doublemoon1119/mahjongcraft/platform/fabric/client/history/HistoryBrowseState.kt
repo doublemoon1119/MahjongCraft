@@ -4,6 +4,7 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.config.GameConfigDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryMatchDetailDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryMatchSummaryDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryQueryErrorCodeDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryRoundStateDto
 
 /** 同一歷史瀏覽 session 的導航位置。 */
 internal enum class HistoryBrowsePage {
@@ -24,6 +25,9 @@ internal enum class HistoryBrowsePage {
 
     /** 已選局的桌況頁。 */
     ROUND_STATE,
+
+    /** 已選局的回放。 */
+    ROUND_REPLAY,
 }
 
 /** 歷史瀏覽資料的載入結果，不將失敗當成空資料。 */
@@ -162,6 +166,7 @@ internal data class HistoryBrowseRuleSettingsState(
  * @property allowStressTest 最近一次已配對伺服器回應是否允許查閱壓力測試資料。
  * @property rounds 各局獨立保存的導航位置；僅選取局保留呈現資料，其他局保留游標與捲動位置。
  * @property selectedRoundNumber 目前選取的局序號。
+ * @property replay 目前回放的位置與牌面；不在回放時為 null。
  */
 internal data class HistoryBrowseState(
     val query: HistoryBrowseQuery = HistoryBrowseQuery(),
@@ -174,4 +179,22 @@ internal data class HistoryBrowseState(
     val allowStressTest: Boolean = false,
     val rounds: Map<Int, HistoryBrowseRoundState> = emptyMap(),
     val selectedRoundNumber: Int? = null,
+    val replay: HistoryBrowseReplayState? = null,
+)
+
+/**
+ * 一局回放目前的位置與牌面。
+ *
+ * @property roundNumber 回放的局序號。
+ * @property step 目前步數：0 是初始牌面，k 是第 k - 1 筆交易完成後。
+ * @property stepCount 這一局的總步數。
+ * @property state 目前這一步的牌面；還沒取得時為 null。
+ * @property status 目前這一步的讀取狀態。
+ */
+internal data class HistoryBrowseReplayState(
+    val roundNumber: Int,
+    val step: Int,
+    val stepCount: Int,
+    val state: HistoryRoundStateDto?,
+    val status: HistoryBrowseStatus,
 )
