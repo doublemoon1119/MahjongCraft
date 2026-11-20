@@ -12,6 +12,7 @@ import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.doubleOrNull
 import kotlinx.serialization.json.intOrNull
 
@@ -26,6 +27,8 @@ import kotlinx.serialization.json.intOrNull
  * @property roundInfo 本局資訊面板的內容，由規則提供。
  * @property playerIndicators 各座位玩家資訊上的公開標記，例如立直；沒有列出的座位沒有標記。
  * @property tableProps 規則描述的桌上物件，例如點棒。
+ * @property drawHandReveals 流局結束時各座位的手牌是否公開：公開的倒下、其他的蓋起來；本局先胡牌退場的座位與不是流局
+ * 結束的桌況不列出。
  */
 data class ReplayTableNotes(
     val extraWallReach: Set<TileWallPlacement>,
@@ -34,6 +37,7 @@ data class ReplayTableNotes(
     val roundInfo: List<RoundInfoLine>,
     val playerIndicators: Map<Int, List<PublicPlayerIndicator>>,
     val tableProps: List<TablePropPlacement>,
+    val drawHandReveals: Map<Int, Boolean>,
 ) {
     /**
      * 寫成牌譜保存的 JSON 物件；空的項目不寫。
@@ -51,6 +55,7 @@ data class ReplayTableNotes(
             val indicators = playerIndicators.filterValues { it.isNotEmpty() }
             if (indicators.isNotEmpty()) put(INDICATORS, ReplayPanelNotesFormat.encodeIndicators(indicators))
             if (tableProps.isNotEmpty()) put(TABLE_PROPS, JsonArray(tableProps.map { ReplayPanelNotesFormat.encodeProp(it, registries) }))
+            if (drawHandReveals.isNotEmpty()) put(DRAW_HANDS, JsonObject(drawHandReveals.entries.associate { (seat, revealed) -> seat.toString() to JsonPrimitive(revealed) }))
         }
         return fields.takeIf { it.isNotEmpty() }?.let(::JsonObject)
     }
@@ -75,8 +80,11 @@ data class ReplayTableNotes(
         /** 桌上物件欄位。 */
         private const val TABLE_PROPS: String = "props"
 
+        /** 流局手牌公開欄位。 */
+        private const val DRAW_HANDS: String = "drawHands"
+
         /** 所有欄位名稱。 */
-        private val FIELDS: Set<String> = setOf(WALL_REACH, SCATTER_SEED, CORNER_WIDTHS, ROUND_INFO, INDICATORS, TABLE_PROPS)
+        private val FIELDS: Set<String> = setOf(WALL_REACH, SCATTER_SEED, CORNER_WIDTHS, ROUND_INFO, INDICATORS, TABLE_PROPS, DRAW_HANDS)
 
         /** 沒有任何附註時的內容。 */
         val EMPTY: ReplayTableNotes = ReplayTableNotes(
@@ -86,6 +94,7 @@ data class ReplayTableNotes(
             roundInfo = emptyList(),
             playerIndicators = emptyMap(),
             tableProps = emptyList(),
+            drawHandReveals = emptyMap(),
         )
 
         /**
@@ -124,6 +133,14 @@ data class ReplayTableNotes(
                 is JsonArray -> value.map { ReplayPanelNotesFormat.decodeProp(it, registries) ?: return null }
                 else -> return null
             }
+            val drawHands = when (val value = root[DRAW_HANDS]) {
+                null -> emptyMap()
+                is JsonObject -> value.entries.associate { (seat, revealed) ->
+                    val seatIndex = seat.toIntOrNull()?.takeIf { it >= 0 && seat == it.toString() } ?: return null
+                    seatIndex to ((revealed as? JsonPrimitive)?.takeUnless { it.isString }?.booleanOrNull ?: return null)
+                }
+                else -> return null
+            }
             return ReplayTableNotes(
                 extraWallReach = reach,
                 scatterPatternSeed = seed,
@@ -131,6 +148,7 @@ data class ReplayTableNotes(
                 roundInfo = roundInfo,
                 playerIndicators = indicators,
                 tableProps = props,
+                drawHandReveals = drawHands,
             )
         }
 

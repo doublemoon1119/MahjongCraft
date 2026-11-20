@@ -4,11 +4,14 @@ import com.doublemoon1119.mahjongcraft.logic.tile.component.TilePose
 import com.doublemoon1119.mahjongcraft.logic.tile.component.TileRegion
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongBotArmAnimation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.animation.MahjongAnimationSounds
+import com.doublemoon1119.mahjongcraft.platform.minecraft.history.HandReveal
 import com.doublemoon1119.mahjongcraft.platform.minecraft.history.HistoryReplayArrangement
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.ArrangedTile
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.HandRevealSteps
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileTableLayout
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileWallPlacement
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileRowKey
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.rotationDegrees
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotEquals
@@ -70,6 +73,27 @@ class HistoryReplayAnimationTest {
 
         animation.advance(1.0)
         assertEquals(0f, animation.swingProgress(0))
+    }
+
+    /** 榮和時贏家的手牌照對局中的倒牌步驟一起倒下，整組只播一次翻牌聲，動畫等倒完才結束。 */
+    @Test
+    fun `a ron win lays the hand down like the live table`() {
+        val first = tile(index = 0, region = TileRegion.HAND, placement = HAND, pose = TilePose.UPRIGHT)
+        val second = tile(index = 1, region = TileRegion.HAND, placement = OTHER, pose = TilePose.UPRIGHT)
+        val before = mapOf(0 to first, 1 to second)
+        val after = mapOf(0 to first.copy(pose = TilePose.FACE_UP), 1 to second.copy(pose = TilePose.FACE_UP))
+        val animation = HistoryReplayAnimation(
+            roundNumber = 1,
+            toStep = 5,
+            before = before,
+            after = after,
+            reveals = listOf(HistoryReplayHandRevealMotion(tiles = listOf(0, 1), reveal = HandReveal.Win(winningTile = null))),
+        )
+
+        assertEquals(HandRevealSteps.winTimings(isTsumo = false).end.toDouble(), animation.durationTicks)
+        val sounds = animation.advance(animation.durationTicks)
+        assertEquals(listOf(MahjongAnimationSounds.TILE_HAND_TURN), sounds.map { it.soundId })
+        assertEquals(TilePose.FACE_UP.rotationDegrees, animation.samples().getValue(0).poseDegrees)
     }
 
     /** 前後擺放相同時沒有動作，動畫立刻結束。 */

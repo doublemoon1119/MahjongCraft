@@ -868,4 +868,16 @@ object MinecraftHistoryScreenKeys {
 
     /** 可見性畫面的「完成」按鈕。 */
     const val REPLAY_VISIBILITY_DONE = "mahjongcraft.history_screen.replay.visibility.done"
+
+    /** 回放結算卡片的標題與重新顯示按鈕。 */
+    const val REPLAY_SETTLEMENT = "mahjongcraft.history_screen.replay.settlement"
+
+    /** 收起回放結算卡片的按鈕。 */
+    const val REPLAY_SETTLEMENT_HIDE = "mahjongcraft.history_screen.replay.settlement.hide"
+
+    /** 收起回放結算卡片按鈕的說明。 */
+    const val REPLAY_SETTLEMENT_HIDE_TOOLTIP = "mahjongcraft.history_screen.replay.settlement.hide_tooltip"
+
+    /** 重新顯示回放結算卡片按鈕的說明。 */
+    const val REPLAY_SETTLEMENT_SHOW_TOOLTIP = "mahjongcraft.history_screen.replay.settlement.show_tooltip"
 }

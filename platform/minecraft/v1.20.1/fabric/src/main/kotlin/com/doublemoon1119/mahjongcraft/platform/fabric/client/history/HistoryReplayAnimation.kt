@@ -6,6 +6,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongBotArmAnima
 import com.doublemoon1119.mahjongcraft.platform.minecraft.animation.AnimationStep
 import com.doublemoon1119.mahjongcraft.platform.minecraft.history.HistoryReplayArrangement
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.ArrangedTile
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.HandRevealSteps
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileWallPlacement
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.PlannedTileMotionSteps
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TableStepMotionPlanner
@@ -16,18 +17,21 @@ import kotlin.uuid.Uuid
 /**
  * 回放往後一步時牌的動畫：比較前後兩步的擺放，用對局中同一套規劃與動畫步驟播放，時間以遊戲 tick 計。
  *
- * 有牌從手上打進牌河的玩家在動畫開頭揮一次手，與遊戲中打牌時相同。
+ * 有牌從手上打進牌河的玩家在動畫開頭揮一次手，與遊戲中打牌時相同。這一步開始攤牌的手牌不跟著一般的牌動作，等其他牌
+ * 動完後照對局中同一套倒牌步驟（[HandRevealSteps]）理牌、倒下或蓋下。
  *
  * @property roundNumber 局序號。
  * @property toStep 動畫結束時的步數。
  * @param before 這一步開始時的擺放，依局內牌索引。
  * @param after 這一步結束時的擺放，依局內牌索引。
+ * @param reveals 這一步開始攤牌的手牌。
  */
 internal class HistoryReplayAnimation(
     val roundNumber: Int,
     val toStep: Int,
     private val before: Map<Int, ArrangedTile>,
     after: Map<Int, ArrangedTile>,
+    reveals: List<HistoryReplayHandRevealMotion> = emptyList(),
 ) {
     /** 有動作的牌依序播放的步驟，依局內牌索引。 */
     private val tileSteps: Map<Int, List<AnimationStep<TilePose>>>
@@ -43,18 +47,24 @@ internal class HistoryReplayAnimation(
         private set
 
     init {
+        val revealing = reveals.flatMapTo(mutableSetOf()) { it.tiles }
         val motions = TableStepMotionPlanner.plan(
             previous = before.entries.associate { (index, tile) -> HistoryReplayArrangement.tileId(index) to tile },
             next = after.entries.associate { (index, tile) -> HistoryReplayArrangement.tileId(index) to tile },
+            excludedTileIds = revealing.mapTo(mutableSetOf(), HistoryReplayArrangement::tileId),
         )
         val indexById = after.keys.associateBy(HistoryReplayArrangement::tileId)
-        tileSteps = PlannedTileMotionSteps.forStep(motions, startGameTime = 0L).entries.associate { (id, steps) -> indexById.getValue(id) to steps }
+        val motionTicks = TableStepMotionPlanner.stepDurationTicks(motions).toDouble()
+        val revealStart = motionTicks.toLong()
+        val revealSteps = reveals.map { it.steps(before, after, revealStart) }
+        tileSteps = PlannedTileMotionSteps.forStep(motions, startGameTime = 0L).entries.associate { (id, steps) -> indexById.getValue(id) to steps } +
+            revealSteps.flatMap { it.steps.entries }.associate { it.key to it.value }
         swingingPlayers = after.entries.mapNotNull { (index, tile) ->
             val from = before[index]?.row ?: return@mapNotNull null
             tile.row.ownerId.takeIf { from.region in HAND_REGIONS && tile.row.region == TileRegion.DISCARD && from.ownerId == it }
         }.toSet()
-        val motionTicks = TableStepMotionPlanner.stepDurationTicks(motions).toDouble()
-        durationTicks = if (swingingPlayers.isEmpty()) motionTicks else maxOf(motionTicks, MahjongBotArmAnimation.DURATION_TICKS.toDouble())
+        val swingTicks = if (swingingPlayers.isEmpty()) 0.0 else MahjongBotArmAnimation.DURATION_TICKS.toDouble()
+        durationTicks = maxOf(motionTicks, swingTicks, revealSteps.maxOfOrNull { it.endTick.toDouble() } ?: 0.0)
     }
 
     /**

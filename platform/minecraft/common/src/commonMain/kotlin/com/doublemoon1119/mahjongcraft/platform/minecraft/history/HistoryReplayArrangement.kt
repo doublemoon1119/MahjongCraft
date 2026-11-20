@@ -35,6 +35,7 @@ object HistoryReplayArrangement {
      * @param module 這場對局的規則模組，提供牌牆的墩數與桌邊對應。
      * @param tileLayout 規則的桌面牌位配置。
      * @param openHands 是否把每一家的手牌面朝上攤開，與結算攤牌用同一套擺法；否則照保存的姿態。
+     * @param handPoses 取代上述姿態的手牌姿態，依局內牌索引，例如胡牌倒牌與流局蓋牌。
      * @param sidewaysMarker 牌河標記是否代表橫放。
      * @return 依局內牌索引排列的擺放；沒有桌面位置的牌（例如沒有實體牌牆時的牌牆牌）不列入。
      */
@@ -44,6 +45,7 @@ object HistoryReplayArrangement {
         module: MahjongRuleModule<*>,
         tileLayout: TableTileLayoutProfile,
         openHands: Boolean = false,
+        handPoses: Map<Int, TilePose> = emptyMap(),
         sidewaysMarker: (String) -> Boolean,
     ): Map<Int, ArrangedTile> {
         val playerCount = state.players.size
@@ -77,11 +79,13 @@ object HistoryReplayArrangement {
                 table = table,
                 tileLayout = tileLayout,
                 cornerWidthBySeat = notes.cornerWidthBySeat,
-                handPoseStates = if (openHands) {
-                    handTiles.map { TilePoseState(tileId(it), TilePose.FACE_UP) }
-                } else {
-                    state.tilePoses.filterKeys(handTiles::contains).map { (index, pose) -> TilePoseState(tileId(index), pose.toDomain()) }
-                },
+                handPoseStates = (
+                    if (openHands) {
+                        handTiles.associateWith { TilePose.FACE_UP }
+                    } else {
+                        state.tilePoses.filterKeys(handTiles::contains).mapValues { (_, pose) -> pose.toDomain() }
+                    } + handPoses.filterKeys(handTiles::contains)
+                    ).map { (index, pose) -> TilePoseState(tileId(index), pose) },
                 wallProjection = projection,
                 wallClearance = projection?.clearance(table.wallPlacements.orEmpty().values + notes.extraWallReach),
                 faceUpWallTileIds = state.tilePoses.filter { (index, pose) -> index in wallTiles && pose == TilePoseDto.FACE_UP }.keys.map(::tileId).toSet(),

@@ -75,6 +75,7 @@ class ReplayTableNotesTest {
                     location = TablePropLocation.Center(order = 1, yaw = 180f),
                 ),
             ),
+            drawHandReveals = mapOf(0 to true, 1 to false),
         )
 
         val decoded = ReplayTableNotes.decode(assertNotNull(notes.encode(registries)).toString(), registries)
@@ -98,6 +99,7 @@ class ReplayTableNotesTest {
             """{"scatterSeed":"1"}""",
             """{"cornerWidths":{"-1":0.5}}""",
             """{"wallReach":[-1]}""",
+            """{"drawHands":{"0":"yes"}}""",
             """{"indicators":{"0":[["mahjongcraft:test/count","c",-1]]}}""",
             """{"indicators":{"x":[]}}""",
             """{"props":[["mahjongcraft:test/a","mahjongcraft:test/b",["v","x"],["s",0,"NOWHERE",0,0,0,0]]]}""",

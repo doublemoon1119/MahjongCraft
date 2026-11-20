@@ -2,10 +2,13 @@ package com.doublemoon1119.mahjongcraft.platform.minecraft.history
 
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkDtoRegistries
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.replay.ReplayPresentationNotes
+import com.doublemoon1119.mahjongcraft.flow.server.game.service.ExhaustiveDrawSettlementPresentationRequestFactory
 import com.doublemoon1119.mahjongcraft.logic.component.ComponentRegistry
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
+import com.doublemoon1119.mahjongcraft.logic.table.RoundConclusion
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
+import com.doublemoon1119.mahjongcraft.logic.table.TurnPhase
 import com.doublemoon1119.mahjongcraft.logic.tile.component.TileReadContext
 import com.doublemoon1119.mahjongcraft.logic.tile.component.resolveTileComponents
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.RoundInfoLineDisplayRegistry
@@ -56,7 +59,22 @@ class ReplayTableNotesRecorder(
             roundInfo = roundInfoLines.buildLines(module.id, state),
             playerIndicators = state.players.withIndex().associate { (seat, player) -> seat to module.getPublicPlayerIndicators(state, player) }.filterValues { it.isNotEmpty() },
             tableProps = describer?.describe(state, publicTileFaces(state, module)).orEmpty(),
+            drawHandReveals = drawHandReveals(state),
         )
+    }
+
+    /**
+     * 流局結束時各座位的手牌是否公開，與對局中的流局演出相同；本局先胡牌退場的座位不列出。
+     *
+     * @param state 權威桌況。
+     * @return 依座位的公開與否；不是流局結束的桌況為空。
+     */
+    private fun drawHandReveals(state: TableState): Map<Int, Boolean> {
+        if ((state.turnPhase as? TurnPhase.RoundOver)?.conclusion !is RoundConclusion.ExhaustiveDraw) return emptyMap()
+        val revealed = ExhaustiveDrawSettlementPresentationRequestFactory.revealedHandPlayerIds(state, state.revealedHandSettlements)
+        return state.players.withIndex()
+            .filter { (_, player) -> player.id !in state.finishedPlayerIds }
+            .associate { (seat, player) -> seat to (player.id in revealed) }
     }
 
     /**

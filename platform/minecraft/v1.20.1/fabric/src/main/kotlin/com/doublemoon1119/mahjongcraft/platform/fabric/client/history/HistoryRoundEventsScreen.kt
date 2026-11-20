@@ -5,9 +5,7 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryReplayFac
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryReplayIdentityDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryRoundEventsDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryRoundPositionDto
-import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryWinDetailValueDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.model.TileFaceViewDto
-import com.doublemoon1119.mahjongcraft.logic.table.RoundCompletionClassification
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.ControlTooltip
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.FormScreenLayout
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.PixelIcon
@@ -22,10 +20,8 @@ import net.minecraft.client.gui.DrawContext
 import net.minecraft.client.gui.screen.Screen
 import net.minecraft.client.gui.tooltip.Tooltip
 import net.minecraft.client.gui.widget.ButtonWidget
-import net.minecraft.text.OrderedText
 import net.minecraft.text.Text
 import net.minecraft.util.Formatting
-import kotlin.math.ceil
 
 /**
  * 顯示已授權的單局交易及保存結果，不在客戶端重算規則或計分。
@@ -34,14 +30,14 @@ import kotlin.math.ceil
  * @property tileFaceRenderer 共用 GUI 牌面 renderer。
  * @property tileAssetRegistry 牌種素材映射來源。
  * @property eventPresenter 已驗證事件的呈現 helper。
- * @property settlementTemplates 明細欄位標題的規則模板來源。
+ * @param settlementTemplates 明細欄位標題的規則模板來源。
  */
 internal class HistoryRoundEventsScreen(
     private val session: HistoryBrowseSession,
     private val tileFaceRenderer: MahjongTileFaceRenderer,
     private val tileAssetRegistry: MinecraftTileAssetRegistry,
     private val eventPresenter: HistoryRoundEventPresenter,
-    private val settlementTemplates: WinSettlementPresentationTemplateRegistry,
+    settlementTemplates: WinSettlementPresentationTemplateRegistry,
 ) : Screen(Text.translatable(MinecraftHistoryScreenKeys.ROUND_TITLE)) {
     /** 固定區與內容區共用幾何。 */
     private var layout = HistoryRoundEventsLayout.measure(width = 0, height = 0, contentTop = 0)
@@ -79,6 +75,12 @@ internal class HistoryRoundEventsScreen(
     /** 卡片內查看局面與載入和牌手牌的按鈕，依交易索引與是否為和牌手牌建立；隨內容捲動，由本畫面在內容裁切範圍內繪製。 */
     private val stateButtons = mutableMapOf<Pair<Int, Boolean>, RestartableMarqueeButtonWidget>()
 
+    /** 交易卡片中保存結算的各列，與回放的結算卡片共用。 */
+    private val outcomeRows = HistoryOutcomeCardRows(eventPresenter, settlementTemplates, session.setAsideDisplays)
+
+    /** 卡片中文字、牌列與和牌手牌的繪製，與回放的結算卡片共用。 */
+    private val rowRenderer by lazy { HistoryCardRowRenderer(session, textRenderer, tileFaceRenderer, tileAssetRegistry, tileGroups) }
+
     /** 完整手牌與狀態頁共用的牌組繪製。 */
     private val tileGroups = HistoryTileGroupRenderer(
         faces = tileFaceRenderer,
@@ -92,7 +94,7 @@ internal class HistoryRoundEventsScreen(
     override fun init() {
         val frame = HistoryPageFrame(windowWidth = width, windowHeight = height)
         val timingLines = textRenderer.wrapLines(timingText(), frame.contentWidth).size
-        layout = HistoryRoundEventsLayout.measure(width = width, height = height, contentTop = TIMING_TOP + timingLines * LINE_HEIGHT + TIMING_BOTTOM_GAP)
+        layout = HistoryRoundEventsLayout.measure(width = width, height = height, contentTop = TIMING_TOP + timingLines * HistoryCardStyle.LINE_HEIGHT + TIMING_BOTTOM_GAP)
         scroll = currentRound()?.eventScrollOffset ?: 0.0
         displayedStart = currentRound()?.events?.transactions?.firstOrNull()?.index
         dragging = false
@@ -152,7 +154,7 @@ internal class HistoryRoundEventsScreen(
      */
     private fun replayButton(index: Int): RestartableMarqueeButtonWidget = replayButtons.getOrPut(index) {
         RestartableMarqueeButtonWidget.builder(Text.translatable(MinecraftHistoryScreenKeys.REPLAY_OPEN)) { session.openReplay(index + 1) }
-            .dimensions(0, 0, MINI_BUTTON_SIZE, MINI_BUTTON_SIZE)
+            .dimensions(0, 0, HistoryCardStyle.MINI_BUTTON_SIZE, HistoryCardStyle.MINI_BUTTON_SIZE)
             .build()
             .also {
                 it.icon = PixelIcon.PLAY
@@ -175,13 +177,13 @@ internal class HistoryRoundEventsScreen(
             val label = Text.translatable(MinecraftHistoryScreenKeys.STATE_LOAD_WINNING_HAND)
             RestartableMarqueeButtonWidget.builder(label) {
                 if (session.controller.canQueryRound()) session.controller.loadRoundStateForDetails(index)
-            }.dimensions(0, 0, textRenderer.getWidth(label) + MINI_BUTTON_PADDING * 2, MINI_BUTTON_SIZE).build().also {
+            }.dimensions(0, 0, textRenderer.getWidth(label) + MINI_BUTTON_PADDING * 2, HistoryCardStyle.MINI_BUTTON_SIZE).build().also {
                 it.tooltip = Tooltip.of(ControlTooltip.description(Text.translatable(MinecraftHistoryScreenKeys.STATE_LOAD_WINNING_HAND_TOOLTIP)))
             }
         } else {
             RestartableMarqueeButtonWidget.builder(Text.translatable(MinecraftHistoryScreenKeys.STATE_OPEN)) {
                 if (session.controller.canQueryRound()) session.openRoundState(HistoryRoundPositionDto.AfterTransaction(index))
-            }.dimensions(0, 0, MINI_BUTTON_SIZE, MINI_BUTTON_SIZE).build().also {
+            }.dimensions(0, 0, HistoryCardStyle.MINI_BUTTON_SIZE, HistoryCardStyle.MINI_BUTTON_SIZE).build().also {
                 it.icon = PixelIcon.MAGNIFIER
                 it.tooltip = Tooltip.of(
                     Text.empty()
@@ -225,7 +227,7 @@ internal class HistoryRoundEventsScreen(
         val heading = title.copy().append(" • ").append(Text.translatable(MinecraftHistoryScreenKeys.ROUND_NUMBER, round?.roundNumber ?: "—"))
         ScreenRendering.title(context, textRenderer, heading, width)
         textRenderer.wrapLines(timingText(), layout.contentWidth).forEachIndexed { index, line ->
-            context.drawTextWithShadow(textRenderer, line, layout.left, TIMING_TOP + index * LINE_HEIGHT, MUTED_COLOR)
+            context.drawTextWithShadow(textRenderer, line, layout.left, TIMING_TOP + index * HistoryCardStyle.LINE_HEIGHT, HistoryCardStyle.MUTED_COLOR)
         }
         updateButtons(status)
         val events = round?.events?.takeIf { status == HistoryBrowseStatus.Ready }
@@ -247,13 +249,13 @@ internal class HistoryRoundEventsScreen(
         replayButtons.values.forEach { it.visible = false }
         context.enableScissor(layout.left, layout.contentTop, layout.right, layout.contentBottom)
         when (status) {
-            HistoryBrowseStatus.Idle, HistoryBrowseStatus.Loading -> drawNotice(context, Text.translatable(MinecraftHistoryScreenKeys.LOADING), layout.contentTop + 12, TEXT_COLOR)
-            is HistoryBrowseStatus.Failed -> drawNotice(context, Text.translatable(status.reason.translationKey), layout.contentTop + 12, ERROR_COLOR)
+            HistoryBrowseStatus.Idle, HistoryBrowseStatus.Loading -> drawNotice(context, Text.translatable(MinecraftHistoryScreenKeys.LOADING), layout.contentTop + 12, HistoryCardStyle.TEXT_COLOR)
+            is HistoryBrowseStatus.Failed -> drawNotice(context, Text.translatable(status.reason.translationKey), layout.contentTop + 12, HistoryCardStyle.ERROR_COLOR)
             HistoryBrowseStatus.Ready -> {
                 tooltip = renderCards(context, cards, mouseX, mouseY, delta)
                 val bottom = layout.contentTop + 4 + cards.sumOf { it.height } - scroll.toInt()
-                if (cards.isEmpty()) drawNotice(context, Text.translatable(MinecraftHistoryScreenKeys.ROUND_NO_EVENTS), bottom, MUTED_COLOR)
-                hint?.let { drawNotice(context, it, bottom + if (cards.isEmpty()) 16 else 4, MUTED_COLOR) }
+                if (cards.isEmpty()) drawNotice(context, Text.translatable(MinecraftHistoryScreenKeys.ROUND_NO_EVENTS), bottom, HistoryCardStyle.MUTED_COLOR)
+                hint?.let { drawNotice(context, it, bottom + if (cards.isEmpty()) 16 else 4, HistoryCardStyle.MUTED_COLOR) }
             }
         }
         context.disableScissor()
@@ -299,7 +301,8 @@ internal class HistoryRoundEventsScreen(
     private fun buildCards(events: HistoryRoundEventsDto): List<Card> {
         val ruleId = session.controller.state.value.summary?.detail?.summary?.ruleId
         return eventPresenter.present(events, ruleId).transactions.map { transaction ->
-            val rows = mutableListOf<Row>()
+            val builder = HistoryCardRowsBuilder(textRenderer, layout.contentWidth)
+            val rows = builder.rows
 
             /**
              * 加入換行文字，頭像僅放於第一列。
@@ -310,11 +313,8 @@ internal class HistoryRoundEventsScreen(
              * @param participant 可選頭像來源。
              * @param identifiers 僅供 tooltip 查閱的原始識別碼。
              */
-            fun addText(text: Text, color: Int = TEXT_COLOR, indent: Int = 8, participant: HistoryParticipantSummaryDto? = null, identifiers: List<String> = emptyList()) {
-                val left = indent + if (participant != null) 14 else 0
-                textRenderer.wrapLines(text, (layout.contentWidth - left - 8).coerceAtLeast(1)).forEachIndexed { index, line ->
-                    rows += Row.TextLine(line, listOf(text) + identifiers.map { Text.literal(it).formatted(Formatting.GRAY) }, left, color, participant.takeIf { index == 0 }, indent)
-                }
+            fun addText(text: Text, color: Int = HistoryCardStyle.TEXT_COLOR, indent: Int = 8, participant: HistoryParticipantSummaryDto? = null, identifiers: List<String> = emptyList()) {
+                builder.addText(text, color, indent, participant, identifiers)
             }
 
             /**
@@ -325,14 +325,14 @@ internal class HistoryRoundEventsScreen(
              */
             fun addTiles(tiles: List<TileFaceViewDto>, labelKey: String) {
                 if (tiles.isEmpty()) return
-                addText(Text.translatable(labelKey), MUTED_COLOR, 16)
-                tiles.chunked(layout.tilesPerRow()).forEach { rows += Row.Tiles(it) }
+                addText(Text.translatable(labelKey), HistoryCardStyle.MUTED_COLOR, 16)
+                tiles.chunked(layout.tilesPerRow()).forEach { rows += HistoryCardRow.Tiles(it) }
             }
             val heading = Text.translatable(MinecraftHistoryScreenKeys.ROUND_TRANSACTION, transaction.index + 1, HistoryScreenText.timeOfDay(transaction.occurredAtEpochMillis))
             if (transaction.isOpening) heading.append(" · ").append(Text.translatable(MinecraftHistoryScreenKeys.ROUND_OPENING))
-            rows += Row.Heading(heading, transaction.index)
-            rows += Row.Space(2)
-            if (transaction.facts.isEmpty()) addText(Text.translatable(MinecraftHistoryScreenKeys.ROUND_EMPTY_FACTS), MUTED_COLOR, 16)
+            rows += HistoryCardRow.Heading(heading, transaction.index)
+            rows += HistoryCardRow.Space(2)
+            if (transaction.facts.isEmpty()) addText(Text.translatable(MinecraftHistoryScreenKeys.ROUND_EMPTY_FACTS), HistoryCardStyle.MUTED_COLOR, 16)
             transaction.facts.forEachIndexed { factIndex, fact ->
                 val savedOutcome = when (val savedFact = fact.source) {
                     is HistoryReplayFactDto.Completion -> savedFact.outcome
@@ -341,91 +341,61 @@ internal class HistoryRoundEventsScreen(
                 }
                 val participant = fact.actorSeat?.let { participant(events.identity, it) }
                 val label = fact.actorSeat?.let { actorText(events.identity, it).copy().append(": ").append(fact.text) } ?: fact.text
-                addText(label, TEXT_COLOR, 16, participant, fact.identifiers)
+                addText(label, HistoryCardStyle.TEXT_COLOR, 16, participant, fact.identifiers)
                 addTiles(fact.directTiles, MinecraftHistoryScreenKeys.ROUND_DIRECT_TILES)
                 addTiles(fact.revealedTiles, MinecraftHistoryScreenKeys.ROUND_REVEALED_TILES)
                 fact.seatLines.forEach { line ->
                     val label = Text.translatable(MinecraftHistoryScreenKeys.ROUND_SEAT_LINE, actorText(events.identity, line.seat))
                     val seatParticipant = participant(events.identity, line.seat)
-                    val portraitIndent = 24 + textRenderer.getWidth(SEAT_LINE_BULLET)
-                    val labelIndent = portraitIndent + if (seatParticipant != null) PORTRAIT_STEP else 0
+                    val portraitIndent = 24 + textRenderer.getWidth(HistoryCardStyle.SEAT_LINE_BULLET)
+                    val labelIndent = portraitIndent + if (seatParticipant != null) HistoryCardStyle.PORTRAIT_STEP else 0
                     val tileIndent = labelIndent + textRenderer.getWidth(label) + 4
-                    val perRow = ((layout.contentWidth - tileIndent - 8) / TILE_STEP).coerceAtLeast(1)
+                    val perRow = ((layout.contentWidth - tileIndent - 8) / HistoryCardStyle.TILE_STEP).coerceAtLeast(1)
                     line.tiles.chunked(perRow).forEachIndexed { index, chunk ->
                         rows += if (index == 0) {
-                            Row.LabeledTiles(label, seatParticipant, chunk, bulletIndent = 24, portraitIndent = portraitIndent, labelIndent = labelIndent, tileIndent = tileIndent)
+                            HistoryCardRow.LabeledTiles(label, seatParticipant, chunk, bulletIndent = 24, portraitIndent = portraitIndent, labelIndent = labelIndent, tileIndent = tileIndent)
                         } else {
-                            Row.Tiles(chunk, tileIndent)
+                            HistoryCardRow.Tiles(chunk, tileIndent)
                         }
                     }
                 }
                 fact.scoreChanges.forEach { (seat, change) ->
                     val line = Text.translatable(MinecraftHistoryScreenKeys.ROUND_SCORE, actorText(events.identity, seat), eventPresenter.scoreChangeText(change))
-                    addText(line, TEXT_COLOR, 24, participant(events.identity, seat))
+                    addText(line, HistoryCardStyle.TEXT_COLOR, 24, participant(events.identity, seat))
                 }
                 fact.outcome?.let { outcome ->
-                    addText(Text.translatable(MinecraftHistoryScreenKeys.ROUND_OUTCOME_REASON, outcome.reasonText), ACCENT_COLOR, 24, identifiers = listOf(outcome.reasonId))
-                    outcome.classification?.let { addText(Text.translatable(MinecraftHistoryScreenKeys.ROUND_OUTCOME_CLASSIFICATION, eventPresenter.classificationText(it)), MUTED_COLOR, 24, identifiers = listOf(it)) }
-                    outcome.rows.forEach { row ->
-                        val score = Text.translatable(MinecraftHistoryScreenKeys.ROUND_SCORE, actorText(events.identity, row.seatIndex), row.score?.toString() ?: "—")
-                        row.scoreChange?.let { score.append(" (").append(eventPresenter.scoreChangeText(it)).append(")") }
-                        eventPresenter.settlementStatusText(outcome, row)?.let { score.append(" • ").append(it) }
-                        if (row.responsible) score.append(" • ").append(Text.translatable(MinecraftHistoryScreenKeys.ROUND_RESPONSIBLE))
-                        val scoreColor = if (row.beneficiary && outcome.classification != RoundCompletionClassification.EXHAUSTIVE_DRAW.name) ACCENT_COLOR else TEXT_COLOR
-                        addText(score, scoreColor, 24, participant(events.identity, row.seatIndex))
-                        savedOutcome?.winnerDetails?.firstOrNull { it.seatIndex == row.seatIndex }?.let { winner ->
-                            addText(Text.translatable(MinecraftHistoryScreenKeys.STATE_WINNING_HAND), MUTED_COLOR, 38)
-                            val round = currentRound()
-                            val position = HistoryRoundPositionDto.AfterTransaction(transaction.index)
-                            val state = round?.state?.takeIf { round.stateStatus == HistoryBrowseStatus.Ready && it.position == position }
-                            val handWidth = (layout.contentWidth - 54).coerceAtLeast(1).toFloat()
-                            val hand = state?.let { HistoryRoundStatePresenter.winningHand(it, winner, handWidth) }
-                            when {
-                                winner.hand == null -> addText(Text.translatable(MinecraftHistoryScreenKeys.STATE_WINNING_HAND_UNAVAILABLE), MUTED_COLOR, 46)
-                                hand != null -> {
-                                    rows += Row.Hand(hand, state.tileCatalog)
-                                    val winnerState = state.players.firstOrNull { it.initialSeatIndex == winner.seatIndex }
-                                    winnerState?.let { HistoryRoundStatePresenter.exposedTiles(state, it, handWidth) }?.let { exposed ->
-                                        addText(exposed.heading(session.setAsideDisplays::findAreaName), MUTED_COLOR, 38)
-                                        rows += Row.Hand(exposed.layout, state.tileCatalog, exposed.notes { seat -> actorText(events.identity, seat) })
-                                    }
-                                }
-                                state != null -> addText(Text.translatable(MinecraftHistoryScreenKeys.STATE_WINNING_HAND_UNAVAILABLE), MUTED_COLOR, 46)
-                                round?.requestedPosition == position && round.stateStatus == HistoryBrowseStatus.Loading -> addText(Text.translatable(MinecraftHistoryScreenKeys.LOADING), MUTED_COLOR, 46)
-                                else -> {
-                                    val failure = round?.stateStatus as? HistoryBrowseStatus.Failed
-                                    if (round?.requestedPosition == position && failure != null) {
-                                        addText(Text.translatable(failure.reason.translationKey), ERROR_COLOR, 46)
-                                    }
-                                    rows += Row.StateLink(transaction.index)
-                                }
-                            }
-                        }
-                        if (row.detailFields.isNotEmpty()) {
-                            addText(Text.translatable(MinecraftHistoryScreenKeys.ROUND_WIN_DETAILS), MUTED_COLOR, 38)
-                            row.detailFields.forEach detailField@{ field ->
-                                val tileValue = field.value as? HistoryWinDetailValueDto.TileFaces
-                                if (tileValue != null && tileValue.faces.isEmpty()) return@detailField
-                                // 只列贏家自己公開牌的欄位，展開的和牌區已在副露旁畫出這些牌。
-                                if (tileValue != null && eventPresenter.isWinnerTileDetailField(ruleId, field.id, settlementTemplates)) return@detailField
-                                eventPresenter.detailLabel(ruleId, field.id, settlementTemplates)?.let {
-                                    addText(it, MUTED_COLOR, 46, identifiers = listOf(field.id))
-                                }
-                                eventPresenter.detailText(field.id, field.value, settlementTemplates).forEach { addText(it, TEXT_COLOR, 46, identifiers = listOf(field.id)) }
-                                val faces = when (val value = field.value) {
-                                    is HistoryWinDetailValueDto.TileFaces -> value.faces
-                                    else -> emptyList()
-                                }
-                                faces.takeIf { it.isNotEmpty() }?.chunked(((layout.contentWidth - 54) / TILE_STEP).coerceAtLeast(1))?.forEach { rows += Row.Tiles(it, 46) }
-                            }
-                        } else if (row.beneficiary && outcome.classification == RoundCompletionClassification.WIN.name && !outcome.hasEarlierWinSettlement) {
-                            addText(Text.translatable(MinecraftHistoryScreenKeys.ROUND_WIN_DETAILS_UNAVAILABLE), MUTED_COLOR, 38)
-                        }
-                    }
+                    outcomeRows.add(
+                        builder = builder,
+                        outcome = outcome,
+                        savedOutcome = savedOutcome,
+                        ruleId = ruleId,
+                        transactionIndex = transaction.index,
+                        actorText = { seat -> actorText(events.identity, seat) },
+                        participant = { seat -> participant(events.identity, seat) },
+                        winningHand = { winningHandSource(transaction.index) },
+                    )
                 }
-                rows += Row.Space(4)
+                rows += HistoryCardRow.Space(4)
             }
             Card(rows, rows.sumOf { it.height } + 12)
+        }
+    }
+
+    /**
+     * 交易卡片畫出和牌手牌所需的牌面：已讀到該筆交易後的牌面時直接使用，正在讀取或讀取失敗時如實顯示，否則畫出讀取按鈕。
+     *
+     * @param transactionIndex 交易索引。
+     * @return 牌面來源。
+     */
+    private fun winningHandSource(transactionIndex: Int): HistoryWinningHandSource {
+        val round = currentRound()
+        val position = HistoryRoundPositionDto.AfterTransaction(transactionIndex)
+        round?.state?.takeIf { round.stateStatus == HistoryBrowseStatus.Ready && it.position == position }?.let { return HistoryWinningHandSource.Ready(it) }
+        if (round?.requestedPosition != position) return HistoryWinningHandSource.NotLoaded
+        return when (val status = round.stateStatus) {
+            HistoryBrowseStatus.Loading -> HistoryWinningHandSource.Loading
+            is HistoryBrowseStatus.Failed -> HistoryWinningHandSource.Failed(status.reason)
+            else -> HistoryWinningHandSource.NotLoaded
         }
     }
 
@@ -475,37 +445,10 @@ internal class HistoryRoundEventsScreen(
                 var y = top + 4
                 card.rows.forEach { row ->
                     when (row) {
-                        is Row.TextLine -> {
-                            row.participant?.let { session.participants.render(it, context, layout.left + row.portraitIndent, y - 1, 10, matchId = session.controller.state.value.summary?.detail?.summary?.matchId) }
-                            context.drawTextWithShadow(textRenderer, row.text, layout.left + row.indent, y, row.color)
-                            if (hovered && mouseY >= y && mouseY < y + row.height) tooltip = row.tooltip
+                        is HistoryCardRow.TextLine, is HistoryCardRow.Tiles, is HistoryCardRow.LabeledTiles, is HistoryCardRow.Space, is HistoryCardRow.Hand -> {
+                            rowRenderer.render(context, row, layout.left, y, hovered, mouseX, mouseY)?.let { tooltip = it }
                         }
-                        is Row.Tiles -> row.tiles.forEachIndexed { index, tile ->
-                            val asset = tile.toHistoryAssetKey(
-                                registry = tileAssetRegistry,
-                                registries = session.networkRegistries,
-                            )
-                            val x = layout.left + row.indent + index * TILE_STEP
-                            tileFaceRenderer.renderGui(context, asset, x, y, TILE_WIDTH, TILE_HEIGHT, appearance = session.tileAppearance())
-                            if (hovered && mouseX >= x && mouseX < x + TILE_WIDTH && mouseY >= y && mouseY < y + TILE_HEIGHT) tooltip = historyTileTooltip(tile.toHistoryNameText(session.tileDisplayNames), catalogIndex = null, takenBy = null, markerLabels = emptyList())
-                        }
-                        is Row.LabeledTiles -> {
-                            val textY = y + (TILE_HEIGHT - LINE_HEIGHT) / 2 + 1
-                            context.drawTextWithShadow(textRenderer, SEAT_LINE_BULLET, layout.left + row.bulletIndent, textY, TEXT_COLOR)
-                            row.participant?.let { session.participants.render(it, context, layout.left + row.portraitIndent, textY - 1, 10, matchId = session.controller.state.value.summary?.detail?.summary?.matchId) }
-                            context.drawTextWithShadow(textRenderer, row.label, layout.left + row.labelIndent, textY, TEXT_COLOR)
-                            row.tiles.forEachIndexed { index, tile ->
-                                val asset = tile.toHistoryAssetKey(
-                                    registry = tileAssetRegistry,
-                                    registries = session.networkRegistries,
-                                )
-                                val x = layout.left + row.tileIndent + index * TILE_STEP
-                                tileFaceRenderer.renderGui(context, asset, x, y, TILE_WIDTH, TILE_HEIGHT, appearance = session.tileAppearance())
-                                if (hovered && mouseX >= x && mouseX < x + TILE_WIDTH && mouseY >= y && mouseY < y + TILE_HEIGHT) tooltip = historyTileTooltip(tile.toHistoryNameText(session.tileDisplayNames), catalogIndex = null, takenBy = null, markerLabels = emptyList())
-                            }
-                        }
-                        is Row.Space -> Unit
-                        is Row.Heading -> {
+                        is HistoryCardRow.Heading -> {
                             val button = stateButton(row.index, inline = false)
                             button.x = layout.right - CARD_PADDING - button.width
                             button.y = y + (row.height - button.height) / 2
@@ -513,19 +456,15 @@ internal class HistoryRoundEventsScreen(
                             replay.x = button.x - CARD_BUTTON_GAP - replay.width
                             replay.y = button.y
                             val text = HistoryScreenText.trim(row.text.string, (replay.x - CARD_PADDING - layout.left - CARD_PADDING).coerceAtLeast(1), textRenderer::getWidth)
-                            context.drawTextWithShadow(textRenderer, Text.literal(text), layout.left + CARD_PADDING, y + (row.height - FormScreenLayout.VISIBLE_TEXT_HEIGHT) / 2, ACCENT_COLOR)
+                            context.drawTextWithShadow(textRenderer, Text.literal(text), layout.left + CARD_PADDING, y + (row.height - FormScreenLayout.VISIBLE_TEXT_HEIGHT) / 2, HistoryCardStyle.ACCENT_COLOR)
                             renderCardButton(context, replay, pointerX, pointerY, delta)
                             renderCardButton(context, button, pointerX, pointerY, delta)
                         }
-                        is Row.StateLink -> {
+                        is HistoryCardRow.StateLink -> {
                             val button = stateButton(row.index, inline = true)
                             button.x = layout.left + row.indent
                             button.y = y + (row.height - button.height) / 2
                             renderCardButton(context, button, pointerX, pointerY, delta)
-                        }
-                        is Row.Hand -> {
-                            val hit = tileGroups.render(context, row.layout, row.catalog, layout.left + 46, y, mouseX, mouseY, notes = row.notes, appearance = session.tileAppearance())
-                            if (hovered) hit?.let { tooltip = it.tooltip }
                         }
                     }
                     y += row.height
@@ -572,7 +511,7 @@ internal class HistoryRoundEventsScreen(
      */
     private fun contentHeight(cards: List<Card>, hint: Text?): Int = (
         4 + cards.sumOf { it.height } + (if (cards.isEmpty()) 16 else 0) +
-            (hint?.let { textRenderer.wrapLines(it, layout.contentWidth.coerceAtLeast(1)).size * LINE_HEIGHT + 4 } ?: 0)
+            (hint?.let { textRenderer.wrapLines(it, layout.contentWidth.coerceAtLeast(1)).size * HistoryCardStyle.LINE_HEIGHT + 4 } ?: 0)
         ).coerceAtLeast(layout.viewportHeight)
 
     /** 成功頁面高度，不使用載入或失敗時的殘留資料。 */
@@ -630,7 +569,7 @@ internal class HistoryRoundEventsScreen(
      * @param color 文字色。
      */
     private fun drawNotice(context: DrawContext, text: Text, y: Int, color: Int) {
-        textRenderer.wrapLines(text, layout.contentWidth.coerceAtLeast(1)).forEachIndexed { index, line -> context.drawTextWithShadow(textRenderer, line, layout.left, y + index * LINE_HEIGHT, color) }
+        textRenderer.wrapLines(text, layout.contentWidth.coerceAtLeast(1)).forEachIndexed { index, line -> context.drawTextWithShadow(textRenderer, line, layout.left, y + index * HistoryCardStyle.LINE_HEIGHT, color) }
     }
 
     /**
@@ -723,129 +662,9 @@ internal class HistoryRoundEventsScreen(
      * @property height 包含內距及卡片間距的高度。
      */
     private data class Card(
-        val rows: List<Row>,
+        val rows: List<HistoryCardRow>,
         val height: Int,
     )
-
-    /** 卡片列共用幾何。 */
-    private sealed interface Row {
-        /** 此列完整高度。 */
-        val height: Int
-
-        /**
-         * 已換行文字列。
-         *
-         * @property text 繪製文字。
-         * @property tooltip 完整文字。
-         * @property indent 文字縮排。
-         * @property color 文字色。
-         * @property participant 可選頭像。
-         * @property portraitIndent 頭像縮排。
-         */
-        data class TextLine(
-            val text: OrderedText,
-            val tooltip: List<Text>,
-            val indent: Int,
-            val color: Int,
-            val participant: HistoryParticipantSummaryDto?,
-            val portraitIndent: Int,
-        ) : Row {
-            /** 共用文字列高度。 */
-            override val height: Int = LINE_HEIGHT
-        }
-
-        /**
-         * 已分組的一列牌。
-         *
-         * @property tiles 保留順序與重複的牌張。
-         * @property indent 相對卡片左側的牌面縮排。
-         */
-        data class Tiles(
-            val tiles: List<TileFaceViewDto>,
-            val indent: Int = 16,
-        ) : Row {
-            /** 牌面及下方間距。 */
-            override val height: Int = TILE_HEIGHT + 4
-        }
-
-        /**
-         * 開頭帶玩家的一列牌，例如補花紀錄中「• 頭像 AI 3：」後接移出的花牌。
-         *
-         * @property label 牌前面的玩家名稱。
-         * @property participant 玩家頭像來源；沒有對應玩家時為 null。
-         * @property tiles 保留順序與重複的牌張。
-         * @property bulletIndent 相對卡片左側的項目符號縮排。
-         * @property portraitIndent 相對卡片左側的頭像縮排。
-         * @property labelIndent 相對卡片左側的名稱縮排。
-         * @property tileIndent 相對卡片左側的牌面縮排。
-         */
-        data class LabeledTiles(
-            val label: Text,
-            val participant: HistoryParticipantSummaryDto?,
-            val tiles: List<TileFaceViewDto>,
-            val bulletIndent: Int,
-            val portraitIndent: Int,
-            val labelIndent: Int,
-            val tileIndent: Int,
-        ) : Row {
-            /** 牌面及下方間距。 */
-            override val height: Int = TILE_HEIGHT + 4
-        }
-
-        /**
-         * 段落間距。
-         *
-         * @property height 間距高度。
-         */
-        data class Space(
-            override val height: Int,
-        ) : Row
-
-        /**
-         * 交易標題列：左邊是交易序號與時間，右端是查看局面的放大鏡按鈕。
-         *
-         * @property text 標題文字。
-         * @property index 已確認交易索引。
-         */
-        data class Heading(
-            val text: Text,
-            val index: Int,
-        ) : Row {
-            /** 容得下放大鏡按鈕的列高。 */
-            override val height: Int = MINI_BUTTON_SIZE + 2
-        }
-
-        /**
-         * 載入和牌手牌的按鈕列，留在事件頁展開手牌。
-         *
-         * @property index 已確認交易索引。
-         */
-        data class StateLink(
-            val index: Int,
-        ) : Row {
-            /** 容得下按鈕的列高。 */
-            override val height: Int = MINI_BUTTON_SIZE + 2
-
-            /** 按鈕縮排。 */
-            val indent: Int = 46
-        }
-
-        /**
-         * 完整和牌手牌群組。
-         *
-         * @property layout 共用群組排列。
-         * @property catalog 經驗證的同筆牌目錄。
-         * @property notes 各牌的額外說明，例如副露被鳴的牌來自哪位玩家。
-         */
-        data class Hand(
-            val layout: HistoryTileGroupLayout,
-            val catalog: List<TileFaceViewDto>,
-            val notes: Map<Int, List<HistoryTileNote>> = emptyMap(),
-        ) : Row {
-            /** 牌組完整高度與段落間距。 */
-            override val height: Int = ceil(layout.height).toInt() + 8
-        }
-    }
 
     /** 共用尺寸與配色。 */
     private companion object {
@@ -870,9 +689,6 @@ internal class HistoryRoundEventsScreen(
         /** 時間資訊與卡片區之間的距離。 */
         const val TIMING_BOTTOM_GAP = 3
 
-        /** 卡片內小按鈕的高度，也是放大鏡按鈕的邊長。 */
-        const val MINI_BUTTON_SIZE = 16
-
         /** 卡片內文字按鈕左右的留白。 */
         const val MINI_BUTTON_PADDING = 6
 
@@ -881,36 +697,6 @@ internal class HistoryRoundEventsScreen(
 
         /** 游標不在內容區時交給卡片內按鈕的座標。 */
         const val OFFSCREEN_POINTER = -1
-
-        /** 文字列高度。 */
-        const val LINE_HEIGHT = 11
-
-        /** 牌面寬度。 */
-        const val TILE_WIDTH = 18
-
-        /** 牌面高度。 */
-        const val TILE_HEIGHT = 24
-
-        /** 牌面起點間距。 */
-        const val TILE_STEP = 20
-
-        /** 頭像加上與後方文字的間距。 */
-        const val PORTRAIT_STEP = 14
-
-        /** 依玩家列出牌時，每一列開頭的項目符號。 */
-        val SEAT_LINE_BULLET: Text = Text.literal("• ")
-
-        /** 一般文字。 */
-        const val TEXT_COLOR = 0xffffff
-
-        /** 次要文字。 */
-        const val MUTED_COLOR = 0xaaaaaa
-
-        /** 重要資訊。 */
-        const val ACCENT_COLOR = 0x8ed5df
-
-        /** 失敗訊息。 */
-        const val ERROR_COLOR = 0xff6666
 
         /** 一般卡片。 */
         const val CARD_COLOR = 0xB0202020.toInt()

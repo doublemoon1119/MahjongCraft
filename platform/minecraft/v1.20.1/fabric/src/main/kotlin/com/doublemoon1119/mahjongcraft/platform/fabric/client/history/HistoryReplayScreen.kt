@@ -1,7 +1,9 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.client.history
 
+import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryParticipantSummaryDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryReplayIdentityDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryRoundEventsDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryRoundPositionDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryRoundStateDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.model.TileFaceViewDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.model.WindDto
@@ -33,8 +35,10 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionRepla
 import com.doublemoon1119.mahjongcraft.platform.minecraft.animation.AnimationStep
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.table.MahjongTableFacing
 import com.doublemoon1119.mahjongcraft.platform.minecraft.character.AiCharacterSnapshot
+import com.doublemoon1119.mahjongcraft.platform.minecraft.history.HandReveal
 import com.doublemoon1119.mahjongcraft.platform.minecraft.history.HistoryReplayArrangement
 import com.doublemoon1119.mahjongcraft.platform.minecraft.history.HistoryReplayCharacterAppearance
+import com.doublemoon1119.mahjongcraft.platform.minecraft.history.HistoryReplayHandReveals
 import com.doublemoon1119.mahjongcraft.platform.minecraft.history.HistoryReplayHighlights
 import com.doublemoon1119.mahjongcraft.platform.minecraft.history.MinecraftHistoryScreenKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.history.ReplayTableNotes
@@ -144,6 +148,32 @@ internal class HistoryReplayScreen(
     /** 依牌譜記下的資料畫出的本局資訊、玩家資訊與桌上物件。 */
     private val tableDisplays = HistoryReplayTableDisplays(session)
 
+    /** 停在胡牌或流局那一步時疊在場景上的結算卡片。 */
+    private val settlementCard by lazy {
+        val tileGroups = HistoryTileGroupRenderer(
+            faces = session.tileFaces,
+            assets = session.tileAssets,
+            markerDisplays = session.discardMarkers,
+            displayNames = session.tileDisplayNames,
+            networkRegistries = session.networkRegistries,
+        )
+        HistoryReplaySettlementCard(
+            session = session,
+            textRenderer = textRenderer,
+            outcomeRows = HistoryOutcomeCardRows(session.eventPresenter, session.settlementTemplates, session.setAsideDisplays),
+            rowRenderer = HistoryCardRowRenderer(session, textRenderer, session.tileFaces, session.tileAssets, tileGroups),
+            eventPresenter = session.eventPresenter,
+            actorText = { seat -> session.controller.state.value.replay?.state?.identity?.let { actorText(it, seat) } ?: Text.translatable(MinecraftHistoryScreenKeys.ROUND_SEAT, seat + 1) },
+            participant = { seat -> session.controller.state.value.replay?.state?.identity?.let { participant(it, seat) } },
+        )
+    }
+
+    /** 收起結算卡片的按鈕。 */
+    private lateinit var settlementHideButton: RestartableMarqueeButtonWidget
+
+    /** 收起後重新顯示結算卡片的按鈕。 */
+    private lateinit var settlementShowButton: RestartableMarqueeButtonWidget
+
     /** 最近擺好的牌桌，依條件索引；只留動畫前後兩步需要的份量。 */
     private val arrangements = LinkedHashMap<ArrangementKey, Map<Int, ArrangedTile>?>()
 
@@ -236,6 +266,20 @@ internal class HistoryReplayScreen(
         val backButton = addDrawableChild(button(Text.translatable(MinecraftHistoryScreenKeys.BACK), frame.footerSlot(HistoryPageFrame.LAST_SLOT)) { session.backFromReplay() })
         retryButton = addDrawableChild(button(Text.translatable(MinecraftHistoryScreenKeys.RETRY), HistoryScreenLayout.Bounds(0, 0, RETRY_WIDTH, FormScreenLayout.BUTTON_HEIGHT)) { session.controller.retry() })
         retryButton.visible = false
+        settlementHideButton = addDrawableChild(
+            button(Text.translatable(MinecraftHistoryScreenKeys.REPLAY_SETTLEMENT_HIDE), HistoryScreenLayout.Bounds(0, 0, SETTLEMENT_BUTTON_WIDTH, SETTLEMENT_BUTTON_HEIGHT)) {
+                settlementCard.collapsed = true
+            },
+        )
+        settlementHideButton.tooltip = Tooltip.of(Text.translatable(MinecraftHistoryScreenKeys.REPLAY_SETTLEMENT_HIDE_TOOLTIP))
+        settlementShowButton = addDrawableChild(
+            button(Text.translatable(MinecraftHistoryScreenKeys.REPLAY_SETTLEMENT), HistoryScreenLayout.Bounds(0, 0, SETTLEMENT_BUTTON_WIDTH, SETTLEMENT_BUTTON_HEIGHT)) {
+                settlementCard.collapsed = false
+            },
+        )
+        settlementShowButton.tooltip = Tooltip.of(Text.translatable(MinecraftHistoryScreenKeys.REPLAY_SETTLEMENT_SHOW_TOOLTIP))
+        settlementHideButton.visible = false
+        settlementShowButton.visible = false
         fullscreenButton = addDrawableChild(button(Text.empty(), layout.fullscreenToggle) { toggleFullscreen() })
         if (fullscreen) {
             // 全螢幕只留播放控制；視角、手牌、交易列表與底部按鈕回到一般版面才出現。
@@ -311,6 +355,7 @@ internal class HistoryReplayScreen(
         var tooltip: List<Text>? = null
         updateControls(replay)
         renderScene(context, replay, pointerX, pointerY)
+        renderSettlement(context, replay, pointerX, pointerY)?.let { tooltip = it }
         layout.controlBar?.let { bar -> context.fill(bar.x, bar.y, bar.right, bar.bottom, faded(CONTROL_BAR_BACKGROUND)) }
         if (!layout.fullscreen) {
             renderCaption(context, replay, rows)
@@ -747,17 +792,19 @@ internal class HistoryReplayScreen(
     private fun assetKey(state: HistoryRoundStateDto, index: Int): String? = state.tileCatalog.getOrNull(index)?.toHistoryAssetKey(session.tileAssets, session.networkRegistries)
 
     /**
-     * 擺出整桌的牌：手牌依規則排好，依目前的手牌選擇立著或攤開；最近兩份牌面的結果留著，動畫的前後兩步不必重算。
+     * 擺出整桌的牌：手牌依規則排好，依目前的手牌選擇立著或攤開，攤牌的玩家照對局中倒下或蓋下；最近兩份牌面的結果留著，
+     * 動畫的前後兩步不必重算。
      *
      * @param state 牌面。
      * @return 依局內牌索引的擺放；規則設定還沒讀到或牌譜缺少擺牌資料時為 null。
      */
     private fun arrangement(state: HistoryRoundStateDto): Map<Int, ArrangedTile>? {
         val module = session.ruleModule(state) ?: return null
-        val key = ArrangementKey(state = state, moduleId = module.id, handsOpen = handsOpen)
-        if (key in arrangements) return arrangements[key]
         val sorted = session.replayState(state)
         val notes = ReplayTableNotes.decode(sorted.presentationNotes, session.networkRegistries)
+        val handPoses = notes?.let { HistoryReplayHandReveals.handPoses(sorted, reveals(sorted, it)) }.orEmpty()
+        val key = ArrangementKey(state = state, moduleId = module.id, handsOpen = handsOpen, handPoses = handPoses)
+        if (key in arrangements) return arrangements[key]
         val built = if (sorted.wallPlacements == null || notes == null) {
             null
         } else {
@@ -769,6 +816,7 @@ internal class HistoryReplayScreen(
                     tileLayout = session.tileLayoutProfiles.profileFor(module.id),
                     openHands = handsOpen,
                     sidewaysMarker = { session.discardMarkers.find(it)?.sideways == true },
+                    handPoses = handPoses,
                 )
             }.getOrNull()
         }
@@ -837,7 +885,45 @@ internal class HistoryReplayScreen(
     private fun startAnimation(roundNumber: Int, toStep: Int, before: HistoryRoundStateDto, after: HistoryRoundStateDto): HistoryReplayAnimation? {
         val from = arrangement(before) ?: return null
         val to = arrangement(after) ?: return null
-        return HistoryReplayAnimation(roundNumber = roundNumber, toStep = toStep, before = from, after = to).takeIf { it.durationTicks > 0 }
+        return HistoryReplayAnimation(roundNumber = roundNumber, toStep = toStep, before = from, after = to, reveals = newReveals(before, after))
+            .takeIf { it.durationTicks > 0 }
+    }
+
+    /**
+     * 每一家手牌在這一步的攤牌方式。
+     *
+     * @param state 依規則排好手牌的牌面。
+     * @param notes 這一步的呈現附註。
+     * @return 依玩家在牌面中的位置；沒有攤牌的玩家不列入。
+     */
+    private fun reveals(state: HistoryRoundStateDto, notes: ReplayTableNotes): Map<Int, HandReveal> {
+        val step = when (val position = state.position) {
+            HistoryRoundPositionDto.Initial -> 0
+            is HistoryRoundPositionDto.AfterTransaction -> position.index + 1
+        }
+        val transactions = session.controller.state.value.replay
+            ?.takeIf { it.state?.identity == state.identity }
+            ?.eventPages?.flatMap { it.transactions }.orEmpty()
+        return HistoryReplayHandReveals.reveals(state, notes, HistoryReplayHandReveals.revealedWinners(transactions, step))
+    }
+
+    /**
+     * 往後一步時開始攤牌的手牌。
+     *
+     * @param before 這一步開始時的牌面。
+     * @param after 這一步結束時的牌面。
+     * @return 開始攤牌的手牌；沒有時為空。
+     */
+    private fun newReveals(before: HistoryRoundStateDto, after: HistoryRoundStateDto): List<HistoryReplayHandRevealMotion> {
+        val sortedBefore = session.replayState(before)
+        val sortedAfter = session.replayState(after)
+        val notesBefore = ReplayTableNotes.decode(sortedBefore.presentationNotes, session.networkRegistries) ?: return emptyList()
+        val notesAfter = ReplayTableNotes.decode(sortedAfter.presentationNotes, session.networkRegistries) ?: return emptyList()
+        val previous = reveals(sortedBefore, notesBefore)
+        return reveals(sortedAfter, notesAfter).filter { (index, reveal) -> previous[index] != reveal }.map { (index, reveal) ->
+            val player = sortedAfter.players[index]
+            HistoryReplayHandRevealMotion(tiles = player.handTiles + listOfNotNull(player.lastDrawn), reveal = reveal)
+        }
     }
 
     /**
@@ -1272,6 +1358,7 @@ internal class HistoryReplayScreen(
         }
         if (button != 0) return super.mouseClicked(mouseX, mouseY, button)
         if (super.mouseClicked(mouseX, mouseY, button)) return true
+        if (settlementCard.mouseClicked(mouseX, mouseY)) return true
         val replay = session.controller.state.value.replay ?: return false
         val progress = layout.progress
         val stepCount = replay.stepCount
@@ -1312,7 +1399,46 @@ internal class HistoryReplayScreen(
      */
     private fun isOverScene(mouseX: Double, mouseY: Double): Boolean {
         val scene = layout.scene
-        return mouseX >= scene.x && mouseX < scene.right && mouseY >= scene.y && mouseY < scene.bottom
+        return mouseX >= scene.x && mouseX < scene.right && mouseY >= scene.y && mouseY < scene.bottom && !settlementCard.contains(mouseX, mouseY)
+    }
+
+    /**
+     * 這一局有結算之後，在場景中間偏下畫出到目前這一步為止最近的一筆結算；預設收起，場景下方放一顆展開的按鈕。牌的動畫
+     * 播放中不畫。
+     *
+     * @param context 繪製上下文。
+     * @param replay 目前回放。
+     * @param mouseX 游標水平座標。
+     * @param mouseY 游標垂直座標。
+     * @return 游標指著的內容提示；沒有時為 null。
+     */
+    private fun renderSettlement(context: DrawContext, replay: HistoryBrowseReplayState?, mouseX: Int, mouseY: Int): List<Text>? {
+        val scene = layout.scene
+        val bottom = layout.controlBar?.y ?: scene.bottom
+        val showing = animation == null && settlementCard.available(replay)
+        val tooltip = if (showing) settlementCard.render(context, scene, bottom, replay, mouseX, mouseY) else null
+        val card = settlementCard.bounds.takeIf { showing }
+        settlementHideButton.visible = card != null
+        card?.let {
+            settlementHideButton.x = it.right - SETTLEMENT_BUTTON_MARGIN - settlementHideButton.width
+            settlementHideButton.y = it.y + SETTLEMENT_BUTTON_MARGIN
+        }
+        settlementShowButton.visible = showing && settlementCard.collapsed
+        settlementShowButton.x = scene.x + (scene.width - settlementShowButton.width) / 2
+        settlementShowButton.y = bottom - SETTLEMENT_BUTTON_MARGIN * 2 - settlementShowButton.height
+        return tooltip
+    }
+
+    /**
+     * 依 replay 身分對應摘要玩家，供結算卡片畫頭像。
+     *
+     * @param identity 初始玩家身分。
+     * @param seat 初始座位。
+     * @return 對應的參與者；沒有時為 null。
+     */
+    private fun participant(identity: HistoryReplayIdentityDto, seat: Int): HistoryParticipantSummaryDto? {
+        val id = identity.players.firstOrNull { it.initialSeatIndex == seat }?.playerId ?: return null
+        return session.controller.state.value.summary?.detail?.summary?.participants?.firstOrNull { it.playerId.equals(id, ignoreCase = true) }
     }
 
     /**
@@ -1344,6 +1470,7 @@ internal class HistoryReplayScreen(
      * @return 是否處理。
      */
     override fun mouseDragged(mouseX: Double, mouseY: Double, button: Int, deltaX: Double, deltaY: Double): Boolean {
+        if (settlementCard.mouseDragged(mouseY)) return true
         val replay = session.controller.state.value.replay
         when {
             draggingProgress -> replay?.stepCount?.let { stepCount ->
@@ -1385,6 +1512,7 @@ internal class HistoryReplayScreen(
      * @return 是否處理。
      */
     override fun mouseReleased(mouseX: Double, mouseY: Double, button: Int): Boolean {
+        if (settlementCard.mouseReleased()) return true
         val handled = draggingProgress || draggingListBar || draggingScene || draggingPan
         draggingProgress = false
         draggingListBar = false
@@ -1409,6 +1537,7 @@ internal class HistoryReplayScreen(
             playback.scrolled()
             return true
         }
+        if (settlementCard.mouseScrolled(mouseX, mouseY, amount)) return true
         if (isOverScene(mouseX, mouseY)) {
             setZoom(zoom * ZOOM_STEP.pow(amount.toFloat()))
             return true
@@ -1484,11 +1613,13 @@ internal class HistoryReplayScreen(
      * @property state 牌面。
      * @property moduleId 規則模組 ID。
      * @property handsOpen 手牌是否面朝上攤開。
+     * @property handPoses 攤牌的手牌姿態，依局內牌索引。
      */
     private data class ArrangementKey(
         val state: HistoryRoundStateDto,
         val moduleId: String,
         val handsOpen: Boolean,
+        val handPoses: Map<Int, TilePose>,
     )
 
     /**
@@ -1561,6 +1692,15 @@ internal class HistoryReplayScreen(
 
         /** 目前位置標示的半寬。 */
         const val KNOB_HALF_WIDTH = 3
+
+        /** 結算卡片收起與顯示按鈕的寬度。 */
+        const val SETTLEMENT_BUTTON_WIDTH = 44
+
+        /** 結算卡片收起與顯示按鈕的高度。 */
+        const val SETTLEMENT_BUTTON_HEIGHT = 14
+
+        /** 結算按鈕與卡片邊緣的距離。 */
+        const val SETTLEMENT_BUTTON_MARGIN = 4
 
         /** 進度條上下可點擊的額外範圍。 */
         const val PROGRESS_HIT_MARGIN = 3
