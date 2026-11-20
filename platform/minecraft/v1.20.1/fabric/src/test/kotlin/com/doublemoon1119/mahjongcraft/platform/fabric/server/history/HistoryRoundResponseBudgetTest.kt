@@ -13,6 +13,7 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryRoundEven
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryRoundEventsResponseDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryRoundPositionDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryRoundStateRequestDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryRoundStateResponseDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.DefaultNetworkDtoRegistries
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.logic.base.TileFaceView
@@ -24,6 +25,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
+import kotlin.test.assertTrue
 import kotlin.uuid.Uuid
 
 /** 驗證單局線路預算、截止字典與不跳筆的續查索引。 */
@@ -79,10 +81,34 @@ class HistoryRoundResponseBudgetTest {
             comboCount = 0, finishedPlayerSeats = emptySet(), hasPendingReaction = false, hasPendingRobbingReaction = false, outcome = null,
             wallPlacements = null, discardOrder = emptyList(), tilePoses = emptyMap(), presentationNotes = null,
         )
-        val request = HistoryRoundStateRequestDto("state", identity.matchId.toString(), roundNumber = 1, scope = HistoryQueryScopeDto.OWN, position = HistoryRoundPositionDto.Initial)
-        assertNotNull(boundedHistoryRoundState(request, state, bundledNetworkJson(), DefaultNetworkDtoRegistries()).state)
-        val rejected = boundedHistoryRoundState(request, state, bundledNetworkJson(), DefaultNetworkDtoRegistries(), 1)
+        val request = HistoryRoundStateRequestDto("state", identity.matchId.toString(), roundNumber = 1, scope = HistoryQueryScopeDto.OWN, position = HistoryRoundPositionDto.Initial, count = 1)
+        assertEquals(1, boundedHistoryRoundStates(request, listOf(state), bundledNetworkJson(), DefaultNetworkDtoRegistries()).states.size)
+        val rejected = boundedHistoryRoundStates(request, listOf(state), bundledNetworkJson(), DefaultNetworkDtoRegistries(), 1)
         assertEquals(HistoryQueryErrorCodeDto.CONTENT_TOO_LARGE, rejected.errorCode)
-        assertNull(rejected.state)
+        assertTrue(rejected.states.isEmpty())
+    }
+
+    /** 放不下全部時，從第一份起回傳放得下的連續桌況，每份都完整。 */
+    @Test
+    fun `state responses keep the leading states that fit`() {
+        val identity = HistoryReplayIdentity(Uuid.random(), Uuid.random(), emptyList())
+        val states = (0 until 3).map { index ->
+            HistoryRoundState(
+                identity = identity, roundNumber = 1, position = HistoryRoundPosition.AfterTransaction(index), tileCatalog = HistoryRoundTileCatalog((listOf(Tile.Honor.East)).map(::TileFaceView)),
+                players = emptyList(), wallTiles = emptyList(), reservedTiles = emptyList(), currentPlayerSeat = 0, dealerSeat = 0, prevalentWind = Wind.EAST, roundPosition = MatchRoundPosition.initial(),
+                comboCount = 0, finishedPlayerSeats = emptySet(), hasPendingReaction = false, hasPendingRobbingReaction = false, outcome = null,
+                wallPlacements = null, discardOrder = emptyList(), tilePoses = emptyMap(), presentationNotes = null,
+            )
+        }
+        val request = HistoryRoundStateRequestDto("state", identity.matchId.toString(), roundNumber = 1, scope = HistoryQueryScopeDto.OWN, position = HistoryRoundPositionDto.AfterTransaction(0), count = 3)
+        val all = boundedHistoryRoundStates(request, states, bundledNetworkJson(), DefaultNetworkDtoRegistries())
+        val one = boundedHistoryRoundStates(request.copy(count = 1), states.take(1), bundledNetworkJson(), DefaultNetworkDtoRegistries())
+        val oneSize = encodedHistoryResponseUtf8Size(bundledNetworkJson(), HistoryRoundStateResponseDto.serializer(), one)
+
+        val trimmed = boundedHistoryRoundStates(request, states, bundledNetworkJson(), DefaultNetworkDtoRegistries(), oneSize + 1)
+
+        assertEquals(3, all.states.size)
+        assertEquals(listOf(HistoryRoundPositionDto.AfterTransaction(0)), trimmed.states.map { it.position })
+        assertNull(trimmed.errorCode)
     }
 }

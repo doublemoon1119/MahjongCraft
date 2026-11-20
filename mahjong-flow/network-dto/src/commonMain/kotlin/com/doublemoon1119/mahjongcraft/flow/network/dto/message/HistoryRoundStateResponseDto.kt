@@ -8,8 +8,8 @@ import kotlinx.serialization.Serializable
  * @property requestId 對應請求的識別碼。
  * @property matchId 回應所屬對局識別碼。
  * @property roundNumber 回應所屬局序號。
- * @property position 回應所屬局內位置。
- * @property state 完整桌況；不可提供時為 null。
+ * @property position 要求的第一個局內位置。
+ * @property states 從第一個位置起依先後排列的完整桌況；回覆大小或本局交易不足時少於要求的數量，失敗時為空。
  * @property errorCode 安全的查詢錯誤代碼。
  */
 @Serializable
@@ -18,6 +18,6 @@ data class HistoryRoundStateResponseDto(
     val matchId: String,
     val roundNumber: Int,
     val position: HistoryRoundPositionDto,
-    val state: HistoryRoundStateDto?,
+    val states: List<HistoryRoundStateDto>,
     val errorCode: HistoryQueryErrorCodeDto?,
 )

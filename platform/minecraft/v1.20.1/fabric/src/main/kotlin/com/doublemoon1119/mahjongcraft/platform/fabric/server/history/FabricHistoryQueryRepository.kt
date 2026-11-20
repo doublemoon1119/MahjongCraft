@@ -55,13 +55,13 @@ internal class FabricHistoryQueryRepository(
         .mapQueryResult { it }.flattenRoundResult()
 
     /**
-     * 查閱已公開對局的指定位置，不建立可操作的遊戲狀態。
+     * 查閱已公開對局從指定位置起連續幾個位置，不建立可操作的遊戲狀態。
      *
      * @param access 可信連線身分。
      * @param request 已驗證狀態要求。
-     * @return 完整歷史狀態或安全錯誤。
+     * @return 依位置先後排列的完整歷史狀態或安全錯誤。
      */
-    override suspend fun roundState(access: HistoryQueryAccess, request: HistoryRoundStateRequest): HistoryQueryResult<HistoryRoundState> = writer.queryRoundState(access, request.matchId, request.scope, request.roundNumber, request.position, sessionId)
+    override suspend fun roundStates(access: HistoryQueryAccess, request: HistoryRoundStateRequest): HistoryQueryResult<List<HistoryRoundState>> = writer.queryRoundStates(access, request.matchId, request.scope, request.roundNumber, request.position, request.count, sessionId)
         .mapQueryResult { it }.flattenRoundResult()
 
     /**

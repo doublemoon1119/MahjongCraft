@@ -36,7 +36,7 @@ class BoundedPayloadTest {
         assertEquals(events, decodeBoundedPayload(bufferFor(eventPayload), bundledNetworkJson(), HistoryRoundEventsRequestDto.serializer(), HistoryQueryLimits.REQUEST_BYTES))
         val trailing = bufferFor(eventPayload).also { it.writeByte(1) }
         assertNull(decodeBoundedPayload(trailing, bundledNetworkJson(), HistoryRoundEventsRequestDto.serializer(), HistoryQueryLimits.REQUEST_BYTES))
-        val state = HistoryRoundStateRequestDto("state", events.matchId, roundNumber = 1, position = HistoryRoundPositionDto.AfterTransaction(4), scope = HistoryQueryScopeDto.OWN)
+        val state = HistoryRoundStateRequestDto("state", events.matchId, roundNumber = 1, position = HistoryRoundPositionDto.AfterTransaction(4), scope = HistoryQueryScopeDto.OWN, count = 1)
         val statePayload = Json.encodeToString(HistoryRoundStateRequestDto.serializer(), state)
         assertEquals(state, decodeBoundedPayload(bufferFor(statePayload), bundledNetworkJson(), HistoryRoundStateRequestDto.serializer(), HistoryQueryLimits.REQUEST_BYTES))
         val oversized = Json.encodeToString(HistoryRoundEventsRequestDto.serializer(), events.copy(requestId = "界".repeat(2000)))

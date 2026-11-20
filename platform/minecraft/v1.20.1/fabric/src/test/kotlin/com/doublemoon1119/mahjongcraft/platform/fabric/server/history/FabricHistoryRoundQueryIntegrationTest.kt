@@ -86,9 +86,9 @@ class FabricHistoryRoundQueryIntegrationTest {
             val access = HistoryQueryAccess(table.players.first().id, false)
             val page = assertIs<HistoryManagementResult.Success<*>>(writer.queryRoundEvents(access, matchId, HistoryQueryScope.OWN, 1, 0, 20, session))
             assertIs<HistoryQueryResult.Success<*>>(page.value)
-            val state = writer.queryRoundState(access, matchId, HistoryQueryScope.OWN, 1, HistoryRoundPosition.Initial, session)
+            val state = writer.queryRoundStates(access, matchId, HistoryQueryScope.OWN, 1, HistoryRoundPosition.Initial, 1, session)
             val value = assertIs<HistoryQueryResult.Success<*>>(assertIs<HistoryManagementResult.Success<*>>(state).value)
-            assertEquals(table.players.size, assertIs<HistoryRoundState>(value.value).players.size)
+            assertEquals(table.players.size, assertIs<List<*>>(value.value).filterIsInstance<HistoryRoundState>().single().players.size)
             assertIs<HistoryQueryResult.Success<*>>(
                 value = assertIs<HistoryManagementResult.Success<*>>(writer.confirmRoundPublication(access, matchId, HistoryQueryScope.OWN, session)).value,
             )
@@ -102,7 +102,7 @@ class FabricHistoryRoundQueryIntegrationTest {
             val confirmation = assertIs<HistoryManagementResult.Success<*>>(writer.confirmRoundPublication(access, matchId, HistoryQueryScope.OWN, session))
             assertEquals(HistoryQueryErrorCode.NOT_AVAILABLE, assertIs<HistoryQueryResult.Failure>(confirmation.value).error.code)
             writer.detach()
-            assertIs<HistoryManagementResult.SessionChanged>(writer.queryRoundState(access, matchId, HistoryQueryScope.OWN, 1, HistoryRoundPosition.Initial, session))
+            assertIs<HistoryManagementResult.SessionChanged>(writer.queryRoundStates(access, matchId, HistoryQueryScope.OWN, 1, HistoryRoundPosition.Initial, 1, session))
         } finally {
             writer.detach()
         }

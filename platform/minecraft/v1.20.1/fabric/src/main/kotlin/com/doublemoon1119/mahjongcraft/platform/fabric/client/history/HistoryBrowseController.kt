@@ -913,10 +913,11 @@ internal class HistoryBrowseController(
      * @param intent 原始牌面意圖。
      */
     private fun acceptRoundState(response: HistoryRoundStateResponseDto, intent: Intent.RoundState) {
-        when (val result = HistoryRoundResponseValidator.validateState(intent.request(response.requestId), response)) {
+        when (val result = HistoryRoundResponseValidator.validateStates(intent.request(response.requestId), response)) {
             is HistoryRoundValidationResult.Success -> {
-                roundCache.putState(intent.cacheKey(), result.value, json.encodeToString(result.value).toByteArray(Charsets.UTF_8).size)
-                applyRoundState(result.value, intent)
+                val state = result.value.single()
+                roundCache.putState(intent.cacheKey(), state, json.encodeToString(state).toByteArray(Charsets.UTF_8).size)
+                applyRoundState(state, intent)
             }
             is HistoryRoundValidationResult.Error -> fail(result.code.toBrowseFailure())
             is HistoryRoundValidationResult.Invalid -> fail(HistoryBrowseFailure.NOT_AVAILABLE)
@@ -1139,7 +1140,7 @@ internal class HistoryBrowseController(
              * @param requestId 傳輸配對鍵。
              * @return 牌面要求。
              */
-            fun request(requestId: String = ""): HistoryRoundStateRequestDto = HistoryRoundStateRequestDto(requestId, matchId, query.scope, roundNumber, position)
+            fun request(requestId: String = ""): HistoryRoundStateRequestDto = HistoryRoundStateRequestDto(requestId, matchId, query.scope, roundNumber, position, count = 1)
         }
     }
 

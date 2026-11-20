@@ -477,29 +477,31 @@ class FabricHistoryOutboxWriter(
     }
 
     /**
-     * 在唯一 session 與政策 lease 內重建已授權交易位置。
+     * 在唯一 session 與政策 lease 內，一次走過重建已授權的連續交易位置。
      *
      * @param access 可信連線身分。
      * @param matchId 對局識別碼。
      * @param queryScope 要求範圍。
      * @param roundNumber 保存局序號。
-     * @param position 初始桌況或指定交易後。
+     * @param position 第一個位置：初始桌況或指定交易後。
+     * @param count 最多幾個連續位置。
      * @param sessionId 收到要求時的世界 session。
-     * @return 完整狀態或安全錯誤。
+     * @return 依位置先後排列的完整狀態或安全錯誤。
      */
-    internal suspend fun queryRoundState(
+    internal suspend fun queryRoundStates(
         access: HistoryQueryAccess,
         matchId: Uuid,
         queryScope: HistoryQueryScope,
         roundNumber: Int,
         position: HistoryRoundPosition,
+        count: Int,
         sessionId: Uuid?,
-    ): HistoryManagementResult<HistoryQueryResult<HistoryRoundState>> = manage(sessionId) { activeDatabase, _ ->
+    ): HistoryManagementResult<HistoryQueryResult<List<HistoryRoundState>>> = manage(sessionId) { activeDatabase, _ ->
         readAuthorizedHistoryRound(
             database = activeDatabase, access = access, policy = historyQueryPolicy(), matchId = matchId, scope = queryScope, excluded = excludedHistoryMatches(),
             parse = { parseBoundedReplayJson(it) },
-            read = { CompactReplayRoundReader(replayRegistries.componentViews).readState(it, matchId, roundNumber, position) },
-            identity = { it.identity },
+            read = { CompactReplayRoundReader(replayRegistries.componentViews).readStates(it, matchId, roundNumber, position, count) },
+            identity = { it.first().identity },
         )
     }
 

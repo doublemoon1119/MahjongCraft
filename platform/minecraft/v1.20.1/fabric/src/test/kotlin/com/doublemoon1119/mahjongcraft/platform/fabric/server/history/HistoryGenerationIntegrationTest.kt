@@ -102,7 +102,7 @@ class HistoryGenerationIntegrationTest {
         assertTrue(entry.rounds.size > 1, "The generated match should archive more than one round.")
         entry.rounds.forEach { round ->
             val events = writer.queryRoundEvents(access, matchId, HistoryQueryScope.ALL, round.roundNumber, 0, 1, session)
-            val state = writer.queryRoundState(access, matchId, HistoryQueryScope.ALL, round.roundNumber, HistoryRoundPosition.Initial, session)
+            val state = writer.queryRoundStates(access, matchId, HistoryQueryScope.ALL, round.roundNumber, HistoryRoundPosition.Initial, 1, session)
             assertIs<HistoryQueryResult.Success<*>>(assertIs<HistoryManagementResult.Success<*>>(events).value, "Round ${round.roundNumber} events must be readable.")
             assertIs<HistoryQueryResult.Success<*>>(assertIs<HistoryManagementResult.Success<*>>(state).value, "Round ${round.roundNumber} state must be readable.")
         }

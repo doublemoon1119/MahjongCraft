@@ -112,7 +112,7 @@ class HistoryQueryDtosTest {
             HistoryRoundPositionDto.AfterTransaction(7),
         )
         positions.forEach { position ->
-            val expected = HistoryRoundStateRequestDto("round-state", matchId, roundNumber = 2, position = position, scope = HistoryQueryScopeDto.OWN)
+            val expected = HistoryRoundStateRequestDto("round-state", matchId, roundNumber = 2, position = position, scope = HistoryQueryScopeDto.OWN, count = 1)
             val encoded = expected.encode(bundledNetworkJson())
             assertEquals(expected, Json.decodeFromString(HistoryRoundStateRequestDto.serializer(), encoded))
             assertEquals(expected, encoded.decodeHistoryRoundStateRequest(bundledNetworkJson()))
@@ -149,31 +149,33 @@ class HistoryQueryDtosTest {
             matchId = Uuid.random().toString(),
             roundNumber = 1,
             position = HistoryRoundPositionDto.AfterTransaction(4),
-            state = HistoryRoundStateDto(
-                identity = HistoryReplayIdentityDto(
-                    matchId = Uuid.random().toString(),
-                    venueId = Uuid.random().toString(),
-                    players = listOf(HistoryReplayPlayerIdentityDto(0, Uuid.random().toString(), null)),
+            states = listOf(
+                element = HistoryRoundStateDto(
+                    identity = HistoryReplayIdentityDto(
+                        matchId = Uuid.random().toString(),
+                        venueId = Uuid.random().toString(),
+                        players = listOf(HistoryReplayPlayerIdentityDto(0, Uuid.random().toString(), null)),
+                    ),
+                    roundNumber = 1,
+                    position = HistoryRoundPositionDto.AfterTransaction(4),
+                    tileCatalog = listOf(TileFaceViewDto(TileDto.Extension("custom:flower"), emptyList(), null)),
+                    players = emptyList(),
+                    wallTiles = listOf(0),
+                    reservedTiles = listOf(1),
+                    currentPlayerSeat = 0,
+                    dealerSeat = 0,
+                    prevalentWind = WindDto.EAST,
+                    roundPosition = MatchRoundPositionDto(0, WindDto.EAST, 1, MatchRoundPhaseDto.REGULAR),
+                    comboCount = 0,
+                    finishedPlayerSeats = emptySet(),
+                    hasPendingReaction = false,
+                    hasPendingRobbingReaction = false,
+                    outcome = null,
+                    wallPlacements = null,
+                    discardOrder = emptyList(),
+                    tilePoses = emptyMap(),
+                    presentationNotes = null,
                 ),
-                roundNumber = 1,
-                position = HistoryRoundPositionDto.AfterTransaction(4),
-                tileCatalog = listOf(TileFaceViewDto(TileDto.Extension("custom:flower"), emptyList(), null)),
-                players = emptyList(),
-                wallTiles = listOf(0),
-                reservedTiles = listOf(1),
-                currentPlayerSeat = 0,
-                dealerSeat = 0,
-                prevalentWind = WindDto.EAST,
-                roundPosition = MatchRoundPositionDto(0, WindDto.EAST, 1, MatchRoundPhaseDto.REGULAR),
-                comboCount = 0,
-                finishedPlayerSeats = emptySet(),
-                hasPendingReaction = false,
-                hasPendingRobbingReaction = false,
-                outcome = null,
-                wallPlacements = null,
-                discardOrder = emptyList(),
-                tilePoses = emptyMap(),
-                presentationNotes = null,
             ),
             errorCode = null,
         )

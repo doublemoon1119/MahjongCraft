@@ -464,6 +464,20 @@ class CompactReplayRoundReaderGenuineTest {
         assertEquals("""{"discards":1}""", after.presentationNotes)
     }
 
+    /** 一次讀取連續幾個位置，與逐一讀取的結果相同；本局交易不足時只讀到最後一筆交易之後。 */
+    @Test
+    fun `reader returns consecutive states in one pass`() = runTest {
+        val fixture = fixture()
+        val positions = listOf(HistoryRoundPosition.Initial, HistoryRoundPosition.AfterTransaction(0), HistoryRoundPosition.AfterTransaction(1), HistoryRoundPosition.AfterTransaction(2))
+        val single = positions.map { assertIs<ReplayReadResult.Success<HistoryRoundState>>(reader().readState(fixture.document, fixture.matchId, 1, it)).value }
+
+        val fromStart = assertIs<ReplayReadResult.Success<List<HistoryRoundState>>>(reader().readStates(fixture.document, fixture.matchId, 1, HistoryRoundPosition.Initial, 3)).value
+        val tail = assertIs<ReplayReadResult.Success<List<HistoryRoundState>>>(reader().readStates(fixture.document, fixture.matchId, 1, HistoryRoundPosition.AfterTransaction(1), 16)).value
+
+        assertEquals(single.take(3), fromStart)
+        assertEquals(single.drop(2), tail)
+    }
+
     /** 驗證真實桌況檢查點產生的差異能重建玩家分數與牌參照。 */
     @Test
     fun `reader applies genuine table checkpoint patch`() = runTest {

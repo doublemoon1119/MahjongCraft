@@ -46,6 +46,7 @@ fun HistoryRoundStateRequestDto.toDomain(): HistoryRoundStateRequest = HistoryRo
     scope = scope.toDomain(),
     roundNumber = roundNumber,
     position = position.toDomain(),
+    count = count,
 )
 
 /**

@@ -7,6 +7,7 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryRoundEven
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryRoundEventsRequestDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryRoundEventsResponseDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryRoundOutcomeDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryRoundPositionDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryRoundStateDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryRoundStateRequestDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryRoundStateResponseDto
@@ -102,26 +103,41 @@ internal object HistoryRoundResponseValidator {
     }
 
     /**
-     * 驗證單局桌況回覆。
+     * 驗證單局桌況回覆：從要求的第一個位置起連續、不超過要求數量的完整桌況。
      *
      * @param request 原本送出的桌況要求。
      * @param response 伺服器回覆。
-     * @return 可安全使用的桌況、穩定錯誤或拒絕原因。
+     * @return 依位置先後排列、可安全使用的桌況，穩定錯誤或拒絕原因。
      */
-    fun validateState(
+    fun validateStates(
         request: HistoryRoundStateRequestDto,
         response: HistoryRoundStateResponseDto,
-    ): HistoryRoundValidationResult<HistoryRoundStateDto> {
+    ): HistoryRoundValidationResult<List<HistoryRoundStateDto>> {
         if (response.requestId != request.requestId) return HistoryRoundValidationResult.Invalid(HistoryRoundValidationError.REQUEST_MISMATCH)
         if (response.matchId != request.matchId || response.roundNumber != request.roundNumber) {
             return HistoryRoundValidationResult.Invalid(HistoryRoundValidationError.CONTEXT_MISMATCH)
         }
         if (response.position != request.position) return HistoryRoundValidationResult.Invalid(HistoryRoundValidationError.POSITION_MISMATCH)
         response.errorCode?.let {
-            return if (response.state == null) HistoryRoundValidationResult.Error(it) else HistoryRoundValidationResult.Invalid(HistoryRoundValidationError.CONTENT_MISMATCH)
+            return if (response.states.isEmpty()) HistoryRoundValidationResult.Error(it) else HistoryRoundValidationResult.Invalid(HistoryRoundValidationError.CONTENT_MISMATCH)
         }
-        val state = response.state ?: return HistoryRoundValidationResult.Invalid(HistoryRoundValidationError.CONTENT_MISMATCH)
-        if (state.roundNumber != request.roundNumber || state.position != request.position || !validIdentity(state.identity, request.matchId)) {
+        if (response.states.size !in 1..request.count) return HistoryRoundValidationResult.Invalid(HistoryRoundValidationError.CONTENT_MISMATCH)
+        response.states.forEachIndexed { offset, state ->
+            if (state.position != request.position.advancedBy(offset)) return HistoryRoundValidationResult.Invalid(HistoryRoundValidationError.POSITION_MISMATCH)
+            validateStateContent(request, state)?.let { return it }
+        }
+        return HistoryRoundValidationResult.Success(response.states)
+    }
+
+    /**
+     * 驗證一份桌況的局、對局身分、座位與牌索引。
+     *
+     * @param request 原本送出的桌況要求。
+     * @param state 回覆中的一份桌況。
+     * @return 拒絕原因；可安全使用時為 null。
+     */
+    private fun validateStateContent(request: HistoryRoundStateRequestDto, state: HistoryRoundStateDto): HistoryRoundValidationResult.Invalid? {
+        if (state.roundNumber != request.roundNumber || !validIdentity(state.identity, request.matchId)) {
             return HistoryRoundValidationResult.Invalid(HistoryRoundValidationError.CONTEXT_MISMATCH)
         }
         val seats = seatIndexes(state.identity)
@@ -166,7 +182,19 @@ internal object HistoryRoundResponseValidator {
             }
         }
         if (!validOutcome(state.outcome, seats, state.tileCatalog.size)) return HistoryRoundValidationResult.Invalid(HistoryRoundValidationError.SEAT_INDEX_INVALID)
-        return HistoryRoundValidationResult.Success(state)
+        return null
+    }
+
+    /**
+     * 往後數幾個位置：初始位置的下一個是第 0 筆交易之後。
+     *
+     * @param offset 往後的位置數。
+     * @return 往後數的位置。
+     */
+    private fun HistoryRoundPositionDto.advancedBy(offset: Int): HistoryRoundPositionDto = when {
+        offset == 0 -> this
+        this is HistoryRoundPositionDto.AfterTransaction -> HistoryRoundPositionDto.AfterTransaction(index + offset)
+        else -> HistoryRoundPositionDto.AfterTransaction(offset - 1)
     }
 
     /**

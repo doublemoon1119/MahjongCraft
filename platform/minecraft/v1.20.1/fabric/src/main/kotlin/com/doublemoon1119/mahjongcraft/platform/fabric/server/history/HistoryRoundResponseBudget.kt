@@ -60,26 +60,28 @@ internal fun boundedHistoryRoundEvents(
 }
 
 /**
- * 原子傳送完整歷史桌況，不能為符合預算截斷持牌或牌牆。
+ * 傳送從第一個位置起放得進預算的連續桌況；每份桌況都完整傳送，不截斷持牌或牌牆，放不下的後續位置整份省略。
  *
  * @param request 原查詢上下文。
- * @param state 已授權的完整狀態。
+ * @param states 已授權、依位置先後排列的完整狀態。
  * @param json 線路編碼設定。
  * @param registries 牌面特徵的網路轉換。
  * @param maximumBytes 回覆 UTF-8 位元組上限。
- * @return 完整狀態或超限錯誤。
+ * @return 放得下的連續狀態；第一份就放不下時為超限錯誤。
  */
-internal fun boundedHistoryRoundState(
+internal fun boundedHistoryRoundStates(
     request: HistoryRoundStateRequestDto,
-    state: HistoryRoundState,
+    states: List<HistoryRoundState>,
     json: NetworkJson,
     registries: NetworkDtoRegistries,
     maximumBytes: Int = HistoryQueryLimits.RESPONSE_BYTES,
 ): HistoryRoundStateResponseDto {
-    val response = HistoryRoundStateResponseDto(request.requestId, request.matchId, request.roundNumber, request.position, state = state.toDto(registries), errorCode = null)
-    return if (encodedHistoryResponseUtf8Size(json, HistoryRoundStateResponseDto.serializer(), response) <= maximumBytes) {
-        response
-    } else {
-        HistoryRoundStateResponseDto(request.requestId, request.matchId, request.roundNumber, request.position, errorCode = HistoryQueryErrorCodeDto.CONTENT_TOO_LARGE, state = null)
+    val encoded = states.map { it.toDto(registries) }
+    var count = encoded.size
+    while (count > 0) {
+        val response = HistoryRoundStateResponseDto(request.requestId, request.matchId, request.roundNumber, request.position, states = encoded.take(count), errorCode = null)
+        if (encodedHistoryResponseUtf8Size(json, HistoryRoundStateResponseDto.serializer(), response) <= maximumBytes) return response
+        count--
     }
+    return HistoryRoundStateResponseDto(request.requestId, request.matchId, request.roundNumber, request.position, errorCode = HistoryQueryErrorCodeDto.CONTENT_TOO_LARGE, states = emptyList())
 }

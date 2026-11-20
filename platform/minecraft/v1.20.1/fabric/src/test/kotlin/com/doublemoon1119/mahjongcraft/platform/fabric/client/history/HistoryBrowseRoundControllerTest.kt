@@ -697,7 +697,7 @@ class HistoryBrowseRoundControllerTest {
          */
         fun respondState(roundNumber: Int, position: HistoryRoundPositionDto, requestId: String = roundStateRequests.last().requestId) {
             mutableState.value = ClientHistoryQueryState.RoundStateResult(
-                response = HistoryRoundStateResponseDto(requestId, MATCH_ID, roundNumber, position, state(roundNumber, position), errorCode = null),
+                response = HistoryRoundStateResponseDto(requestId, MATCH_ID, roundNumber, position, listOf(state(roundNumber, position)), errorCode = null),
             )
         }
     }
