@@ -8,7 +8,7 @@ import kotlin.time.Duration.Companion.milliseconds
 
 /** 驗證回放場景的顯示設定與人物不透明度。 */
 class HistoryReplayVisibilityTest {
-    /** 預設人物自動、面板隱藏、桌上物件顯示；改過後恢復預設值。 */
+    /** 預設人物自動、面板隱藏、桌上物件與胡牌特效顯示；改過後恢復預設值。 */
     @Test
     fun `defaults and reset`() {
         val visibility = HistoryReplayVisibility()
@@ -17,17 +17,20 @@ class HistoryReplayVisibilityTest {
         assertFalse(visibility.playerInfo(2))
         assertFalse(visibility.roundInfo)
         assertTrue(visibility.tableProps)
+        assertTrue(visibility.winEffect)
 
         visibility.setFigure(2, HistoryReplayVisibilityOption.HIDDEN)
         visibility.setPlayerInfo(1, true)
         visibility.roundInfo = true
         visibility.tableProps = false
+        visibility.winEffect = false
         assertFalse(visibility.isDefault)
         assertEquals(HistoryReplayVisibilityOption.HIDDEN, visibility.figure(2))
         assertTrue(visibility.playerInfo(1))
 
         visibility.reset()
         assertTrue(visibility.isDefault)
+        assertTrue(visibility.winEffect)
         assertEquals(HistoryReplayVisibilityOption.AUTO, visibility.figure(2))
     }
 

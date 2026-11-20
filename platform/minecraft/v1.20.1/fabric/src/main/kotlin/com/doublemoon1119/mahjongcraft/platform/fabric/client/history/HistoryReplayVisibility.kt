@@ -3,7 +3,8 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.client.history
 /**
  * 牌譜回放場景中各項顯示的設定，在同一次牌譜瀏覽中沿用，換局、換一場也不重設。
  *
- * 人物與玩家資訊依玩家的初始座位記錄；沒有改過的項目使用預設值：人物自動、本局資訊與玩家資訊隱藏、桌上物件顯示。
+ * 人物與玩家資訊依玩家的初始座位記錄；沒有改過的項目使用預設值：人物自動、本局資訊與玩家資訊隱藏、桌上物件與胡牌特效
+ * 顯示。
  */
 internal class HistoryReplayVisibility {
     /** 改過的人物顯示方式，依初始座位。 */
@@ -18,9 +19,16 @@ internal class HistoryReplayVisibility {
     /** 是否畫出桌上物件。 */
     var tableProps: Boolean = DEFAULT_TABLE_PROPS
 
+    /** 是否播放胡牌特效與它的聲音。 */
+    var winEffect: Boolean = DEFAULT_WIN_EFFECT
+
     /** 是否所有項目都是預設值。 */
     val isDefault: Boolean
-        get() = figures.isEmpty() && playerInfo.isEmpty() && roundInfo == DEFAULT_ROUND_INFO && tableProps == DEFAULT_TABLE_PROPS
+        get() = figures.isEmpty() &&
+            playerInfo.isEmpty() &&
+            roundInfo == DEFAULT_ROUND_INFO &&
+            tableProps == DEFAULT_TABLE_PROPS &&
+            winEffect == DEFAULT_WIN_EFFECT
 
     /**
      * 一家人物的顯示方式。
@@ -64,6 +72,7 @@ internal class HistoryReplayVisibility {
         playerInfo.clear()
         roundInfo = DEFAULT_ROUND_INFO
         tableProps = DEFAULT_TABLE_PROPS
+        winEffect = DEFAULT_WIN_EFFECT
     }
 
     /** 各項目的預設值。 */
@@ -79,5 +88,8 @@ internal class HistoryReplayVisibility {
 
         /** 桌上物件預設畫出。 */
         const val DEFAULT_TABLE_PROPS: Boolean = true
+
+        /** 胡牌特效預設播放。 */
+        const val DEFAULT_WIN_EFFECT: Boolean = true
     }
 }

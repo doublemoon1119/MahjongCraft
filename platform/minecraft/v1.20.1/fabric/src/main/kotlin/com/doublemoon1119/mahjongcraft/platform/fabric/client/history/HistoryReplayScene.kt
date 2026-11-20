@@ -7,6 +7,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.client.guide.scene.GuideS
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.guide.scene.GuideSceneFigure
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.guide.scene.GuideSceneTile
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.guide.scene.GuideSceneView
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.guide.scene.GuideSceneWinEffect
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.guide.scene.GuideScenes
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongTilePose
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.table.MahjongTableFacing
@@ -27,6 +28,7 @@ internal object HistoryReplayScene {
      * @param samples 正在播放動畫的牌在這一刻的樣子，取代擺放中的位置；隱形的牌不畫。
      * @param figures 坐在桌邊、以內建機器人外觀畫出的角色。
      * @param entities 坐在桌邊、以原版繪製器畫出的生物，例如真人玩家。
+     * @param winEffects 正在播放的胡牌特效，畫在和牌張這一刻的位置；和牌張不在場景中時不畫。
      * @param assetKey 局內牌索引對應的牌面素材；看不到牌面時為 null。
      * @return 牌桌場景；每張牌的 [GuideSceneTile.key] 是局內牌索引。
      */
@@ -36,6 +38,7 @@ internal object HistoryReplayScene {
         samples: Map<Int, TileAnimationSample>,
         figures: List<GuideSceneFigure>,
         entities: List<GuideSceneEntity>,
+        winEffects: List<HistoryReplayWinEffectFrame>,
         assetKey: (Int) -> String?,
     ): GuideScene {
         val tiles = arranged.mapNotNull { (index, tile) ->
@@ -65,12 +68,18 @@ internal object HistoryReplayScene {
             controllerZ = 0,
             tableFacing = MahjongTableFacing.NORTH,
         )
+        val tilesByIndex = tiles.associateBy { it.key }
+        val effects = winEffects.mapNotNull { effect ->
+            val tile = tilesByIndex[effect.tile] ?: return@mapNotNull null
+            GuideSceneWinEffect(x = tile.x, y = tile.y, z = tile.z, elapsedTicks = effect.elapsedTicks, seed = effect.seed)
+        }
         val furniture = GuideScenes.tableBlocks() + GuideScenes.stools(seats)
         return GuideScene(
             blocks = GuideScenes.floor() + furniture,
             figures = figures,
             entities = entities,
             tiles = tiles,
+            winEffects = effects,
             view = GuideSceneView(yawDegrees = VIEW_YAW, pitchDegrees = VIEW_PITCH),
             frame = GuideSceneBox(
                 minX = furniture.minOf { it.position.x }.toDouble(),

@@ -165,6 +165,7 @@ private fun HistoryRoundOutcome.toDto(registries: NetworkDtoConverter): HistoryR
     scoreChangesBySeat = scoreChangesBySeat,
     winnerDetails = winnerDetails.map { it.toDto(registries) },
     hasEarlierWinSettlement = hasEarlierWinSettlement,
+    winningTile = winningTile?.tileIndex,
 )
 
 /**

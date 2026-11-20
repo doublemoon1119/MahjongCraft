@@ -827,6 +827,12 @@ object MinecraftHistoryScreenKeys {
     /** 可見性畫面「桌上物件」段落與該列的名稱。 */
     const val REPLAY_VISIBILITY_TABLE_PROPS = "mahjongcraft.history_screen.replay.visibility.table_props"
 
+    /** 可見性畫面「特效」段落的標題。 */
+    const val REPLAY_VISIBILITY_EFFECTS = "mahjongcraft.history_screen.replay.visibility.effects"
+
+    /** 可見性畫面「胡牌特效」列的名稱。 */
+    const val REPLAY_VISIBILITY_WIN_EFFECT = "mahjongcraft.history_screen.replay.visibility.win_effect"
+
     /** 可見性畫面「本局資訊」列的名稱。 */
     const val REPLAY_VISIBILITY_ROUND_INFO = "mahjongcraft.history_screen.replay.visibility.round_info"
 
@@ -862,6 +868,9 @@ object MinecraftHistoryScreenKeys {
 
     /** 桌上物件選擇器的說明。 */
     const val REPLAY_VISIBILITY_TABLE_PROPS_DESCRIPTION = "mahjongcraft.history_screen.replay.visibility.table_props.description"
+
+    /** 胡牌特效選擇器的說明。 */
+    const val REPLAY_VISIBILITY_WIN_EFFECT_DESCRIPTION = "mahjongcraft.history_screen.replay.visibility.win_effect.description"
 
     /** 可見性畫面的「恢復預設值」按鈕。 */
     const val REPLAY_VISIBILITY_RESET = "mahjongcraft.history_screen.replay.visibility.reset"

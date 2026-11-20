@@ -5,6 +5,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.MahjongPlay
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.MahjongTileEntityRenderer
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.MahjongTileItemRenderer
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.SceneEntityTranslucency
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.WinCelebrationEffectGeometry
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.tile.LatestDiscardHighlightController
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.tile.MatchingTileHighlightController
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongBotEntity
@@ -29,6 +30,8 @@ import net.minecraft.client.render.VertexFormat
 import net.minecraft.client.render.VertexFormats
 import net.minecraft.client.render.entity.EntityRenderDispatcher
 import net.minecraft.client.render.entity.LivingEntityRenderer
+import net.minecraft.client.render.entity.model.EntityModelLayers
+import net.minecraft.client.render.entity.model.TridentEntityModel
 import net.minecraft.client.render.model.json.ModelTransformationMode
 import net.minecraft.client.world.ClientWorld
 import net.minecraft.entity.Entity
@@ -62,6 +65,9 @@ internal class GuideSceneRenderer : AutoCloseable {
 
     /** 繪製玩家資訊的預覽實體。 */
     private var playerInfoEntity: MahjongPlayerInfoEntity? = null
+
+    /** 胡牌特效的畫法；第一次畫特效時才建立。 */
+    private var winEffectGeometry: WinCelebrationEffectGeometry? = null
 
     /** 讓坐著的生物騎乘的凳子座位，與遊戲中坐凳子時相同；不在世界中，也不是生物，不影響乘客的朝向。 */
     private var seatEntity: Entity? = null
@@ -157,6 +163,7 @@ internal class GuideSceneRenderer : AutoCloseable {
                 consumers.draw()
                 renderFigures(client, scene.figures.filter { it.alpha < 1f }, context, consumers)
                 renderEntities(client, scene.entities.filter { it.alpha < 1f }, context, consumers)
+                renderWinEffects(client, scene.winEffects, context, consumers)
             } finally {
                 consumers.draw()
             }
@@ -340,6 +347,38 @@ internal class GuideSceneRenderer : AutoCloseable {
             matrices.push()
             matrices.translate(info.x, info.y, info.z)
             renderer.renderPanels(entity, matrices, consumers, FULL_LIGHT) { it in info.shownSeats }
+            matrices.pop()
+        }
+    }
+
+    /**
+     * 在胡牌張的位置畫出胡牌特效，與半透明的東西一起最後畫，不擋住後面的牌。
+     *
+     * @param client 目前客戶端。
+     * @param effects 要畫的特效。
+     * @param context GUI 繪製上下文，矩陣已套用場景視角。
+     * @param consumers 頂點緩衝。
+     */
+    private fun renderWinEffects(
+        client: MinecraftClient,
+        effects: List<GuideSceneWinEffect>,
+        context: DrawContext,
+        consumers: VertexConsumerProvider,
+    ) {
+        if (effects.isEmpty()) return
+        val geometry = winEffectGeometry
+            ?: WinCelebrationEffectGeometry(TridentEntityModel(client.entityModelLoader.getModelPart(EntityModelLayers.TRIDENT))).also { winEffectGeometry = it }
+        val matrices = context.matrices
+        effects.forEach { effect ->
+            matrices.push()
+            matrices.translate(effect.x, effect.y, effect.z)
+            geometry.render(
+                elapsedTicks = effect.elapsedTicks,
+                seed = effect.seed,
+                matrices = matrices,
+                vertexConsumers = consumers,
+                light = FULL_LIGHT,
+            )
             matrices.pop()
         }
     }

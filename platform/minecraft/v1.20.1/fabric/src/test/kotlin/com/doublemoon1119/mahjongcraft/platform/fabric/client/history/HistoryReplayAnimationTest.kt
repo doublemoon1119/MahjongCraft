@@ -11,6 +11,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.HandRevealSteps
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileTableLayout
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileWallPlacement
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileRowKey
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.WinCelebrationEffectSteps
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.rotationDegrees
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -94,6 +95,44 @@ class HistoryReplayAnimationTest {
         val sounds = animation.advance(animation.durationTicks)
         assertEquals(listOf(MahjongAnimationSounds.TILE_HAND_TURN), sounds.map { it.soundId })
         assertEquals(TilePose.FACE_UP.rotationDegrees, animation.samples().getValue(0).poseDegrees)
+    }
+
+    /** 攤牌的胡牌：手牌倒完停一下才放特效，兩個聲音照對局中的時刻播放，動畫等特效放完才結束。 */
+    @Test
+    fun `a revealed win plays the effect after the hand lays down`() {
+        val first = tile(index = 0, region = TileRegion.HAND, placement = HAND, pose = TilePose.UPRIGHT)
+        val second = tile(index = 1, region = TileRegion.HAND, placement = OTHER, pose = TilePose.UPRIGHT)
+        val animation = HistoryReplayAnimation(
+            roundNumber = 1,
+            toStep = 5,
+            before = mapOf(0 to first, 1 to second),
+            after = mapOf(0 to first.copy(pose = TilePose.FACE_UP), 1 to second.copy(pose = TilePose.FACE_UP)),
+            reveals = listOf(HistoryReplayHandRevealMotion(tiles = listOf(0, 1), reveal = HandReveal.Win(winningTile = null))),
+            winningTiles = listOf(7),
+        )
+        val start = HandRevealSteps.winTimings(isTsumo = false).end + WinCelebrationEffectSteps.START_DELAY_TICKS
+
+        assertEquals((start + WinCelebrationEffectSteps.DURATION_TICKS).toDouble(), animation.durationTicks)
+        animation.advance(start - 1.0)
+        assertTrue(animation.winEffects().isEmpty())
+        val sounds = animation.advance(animation.durationTicks)
+        assertEquals(WinCelebrationEffectSteps.sounds(start).map { it.soundId }, sounds.map { it.soundId }.filter { it != MahjongAnimationSounds.TILE_HAND_TURN })
+    }
+
+    /** 不攤牌的胡牌：手牌不動，其他牌動完停一下就在和牌張上放特效；同一步重看種子相同。 */
+    @Test
+    fun `an unrevealed win plays the effect on the winning tile in place`() {
+        val still = mapOf(7 to tile(index = 7, region = TileRegion.HAND, placement = HAND, pose = TilePose.UPRIGHT))
+        val animation = HistoryReplayAnimation(roundNumber = 2, toStep = 9, before = still, after = still, winningTiles = listOf(7))
+        val again = HistoryReplayAnimation(roundNumber = 2, toStep = 9, before = still, after = still, winningTiles = listOf(7))
+
+        assertEquals((WinCelebrationEffectSteps.START_DELAY_TICKS + WinCelebrationEffectSteps.DURATION_TICKS).toDouble(), animation.durationTicks)
+        animation.advance(WinCelebrationEffectSteps.START_DELAY_TICKS + 1.0)
+        again.advance(WinCelebrationEffectSteps.START_DELAY_TICKS + 1.0)
+        val frame = animation.winEffects().single()
+        assertEquals(7, frame.tile)
+        assertEquals(1.0, frame.elapsedTicks)
+        assertEquals(again.winEffects().single().seed, frame.seed)
     }
 
     /** 前後擺放相同時沒有動作，動畫立刻結束。 */

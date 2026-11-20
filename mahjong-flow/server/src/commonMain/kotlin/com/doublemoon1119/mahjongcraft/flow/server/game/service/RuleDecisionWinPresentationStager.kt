@@ -92,6 +92,7 @@ class RuleDecisionWinPresentationStager(
                 outcomeId = outcome.outcomeId,
                 winDetails = details,
                 responsiblePlayerIds = outcome.responsiblePlayerIds.toList(),
+                winningTileId = outcome.winningTileId,
             ),
         )
     }

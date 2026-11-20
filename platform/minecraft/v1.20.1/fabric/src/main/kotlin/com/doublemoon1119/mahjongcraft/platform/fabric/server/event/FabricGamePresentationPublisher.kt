@@ -126,6 +126,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileWallTransitio
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileWallTransitionMotionPlanner
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.UNKNOWN_TILE_ASSET_KEY
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.UnsortedHandTiles
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.WinCelebrationEffectSteps
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.backAppearance
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.toArrangementState
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.toAssetKey
@@ -1089,9 +1090,8 @@ class FabricGamePresentationPublisher(
      * 順序（`Hand.organize`，不論贏家原本是否啟用自動整理手牌），委託
      * [MahjongPlayerAreaPresenter.presentWinCelebration] 排定「重排 → （自摸牌單獨倒下 →）等待 → 立牌一起
      * 倒下」序列，最後把算出來的「立牌全部倒下完成」絕對 game time 交給 [effectScheduler] 接續排定
-     * 降臨特效——特效鎖定的目標位置固定是 [WinCelebrationRequest.winningTileId] 目前所在座標：自摸時它已經併入贏家手牌、
-     * 停在整理後的格位；榮和／搶槓時它仍在放銃者的牌河或副露區，天然就是「胡牌張目前所在座標」，
-     * 不需要額外判斷。
+     * 降臨特效——特效鎖定的目標位置固定是 [WinCelebrationRequest.winningTileId] 目前所在座標：自摸時它不併入整理後的手牌，
+     * 而是放在手牌右邊剛摸到的牌的位置；榮和／搶槓時它仍在放銃者的牌河或副露區；不攤牌時它留在原處。
      *
      * 同一請求包含所有贏家，逐位排定理牌與倒牌，再以最晚的倒牌完成時間排定一次共用特效。
      * 一炮多響的贏家共用 [WinCelebrationRequest.winningTileId] 指定的和牌張。
@@ -1366,8 +1366,8 @@ class FabricGamePresentationPublisher(
             requestedWinner.seatIndex to (organizedHand.tiles to melds)
         }
         if (handLaydownEndGameTime != null) {
-            val effectStartGameTime = checkNotNull(handLaydownEndGameTime) + MahjongTileTableLayout.WIN_PRE_EFFECT_DELAY_TICKS
-            val effectEndGameTime = effectStartGameTime + MahjongTileTableLayout.WIN_EFFECT_DURATION_TICKS
+            val effectStartGameTime = checkNotNull(handLaydownEndGameTime) + WinCelebrationEffectSteps.START_DELAY_TICKS
+            val effectEndGameTime = effectStartGameTime + WinCelebrationEffectSteps.DURATION_TICKS
             effectScheduler.schedule(
                 world = resolved.world,
                 tableId = gameId,

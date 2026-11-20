@@ -82,6 +82,7 @@ class HistoryReplayHandRevealsTest {
                     scoreChangesBySeat = emptyMap(),
                     winnerDetails = listOf(winner),
                     hasEarlierWinSettlement = false,
+                    winningTile = null,
                 ),
             ),
         ),

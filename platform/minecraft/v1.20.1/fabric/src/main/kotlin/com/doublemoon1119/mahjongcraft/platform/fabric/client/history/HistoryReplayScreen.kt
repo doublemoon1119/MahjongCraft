@@ -2,6 +2,7 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.client.history
 
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryParticipantSummaryDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryReplayIdentityDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryReplayTransactionDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryRoundEventsDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryRoundPositionDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryRoundStateDto
@@ -40,6 +41,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.history.HistoryReplayA
 import com.doublemoon1119.mahjongcraft.platform.minecraft.history.HistoryReplayCharacterAppearance
 import com.doublemoon1119.mahjongcraft.platform.minecraft.history.HistoryReplayHandReveals
 import com.doublemoon1119.mahjongcraft.platform.minecraft.history.HistoryReplayHighlights
+import com.doublemoon1119.mahjongcraft.platform.minecraft.history.HistoryReplayWinEffects
 import com.doublemoon1119.mahjongcraft.platform.minecraft.history.MinecraftHistoryScreenKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.history.ReplayTableNotes
 import com.doublemoon1119.mahjongcraft.platform.minecraft.seating.MahjongSeatingTableLayout
@@ -573,10 +575,14 @@ internal class HistoryReplayScreen(
         val arranged = arrangement(state) ?: return null
         val (figures, players) = seatedPlayers(state)
         val entities = players + tableDisplays.tableProps(state, arranged)
-        animation?.let { return withGlows(withPanels(withView(HistoryReplayScene.build(state.players.size, arranged, it.samples(), figures, entities) { index -> assetKey(state, index) }, state), state), state, arranged) }
+        animation?.let { running ->
+            val effects = running.winEffects().takeIf { session.replayVisibility.winEffect }.orEmpty()
+            val built = HistoryReplayScene.build(state.players.size, arranged, running.samples(), figures, entities, effects) { index -> assetKey(state, index) }
+            return withGlows(withPanels(withView(built, state), state), state, arranged)
+        }
         val key = SceneKey(state = state, arranged = arranged, viewSeat = viewSeat, figures = figures, entities = entities)
         val built = sceneCache?.takeIf { it.first == key }?.second
-            ?: withView(HistoryReplayScene.build(state.players.size, arranged, emptyMap(), figures, entities) { index -> assetKey(state, index) }, state)
+            ?: withView(HistoryReplayScene.build(state.players.size, arranged, emptyMap(), figures, entities, emptyList()) { index -> assetKey(state, index) }, state)
         sceneCache = key to built
         return withGlows(withPanels(built, state), state, arranged)
     }
@@ -885,8 +891,14 @@ internal class HistoryReplayScreen(
     private fun startAnimation(roundNumber: Int, toStep: Int, before: HistoryRoundStateDto, after: HistoryRoundStateDto): HistoryReplayAnimation? {
         val from = arrangement(before) ?: return null
         val to = arrangement(after) ?: return null
-        return HistoryReplayAnimation(roundNumber = roundNumber, toStep = toStep, before = from, after = to, reveals = newReveals(before, after))
-            .takeIf { it.durationTicks > 0 }
+        return HistoryReplayAnimation(
+            roundNumber = roundNumber,
+            toStep = toStep,
+            before = from,
+            after = to,
+            reveals = newReveals(before, after),
+            winningTiles = if (session.replayVisibility.winEffect) HistoryReplayWinEffects.winningTiles(transactions(after), toStep) else emptyList(),
+        ).takeIf { it.durationTicks > 0 }
     }
 
     /**
@@ -901,11 +913,18 @@ internal class HistoryReplayScreen(
             HistoryRoundPositionDto.Initial -> 0
             is HistoryRoundPositionDto.AfterTransaction -> position.index + 1
         }
-        val transactions = session.controller.state.value.replay
-            ?.takeIf { it.state?.identity == state.identity }
-            ?.eventPages?.flatMap { it.transactions }.orEmpty()
-        return HistoryReplayHandReveals.reveals(state, notes, HistoryReplayHandReveals.revealedWinners(transactions, step))
+        return HistoryReplayHandReveals.reveals(state, notes, HistoryReplayHandReveals.revealedWinners(transactions(state), step))
     }
+
+    /**
+     * 牌面所屬那一局目前讀到的交易。
+     *
+     * @param state 牌面。
+     * @return 依序的交易；回放已經換到別局時為空。
+     */
+    private fun transactions(state: HistoryRoundStateDto): List<HistoryReplayTransactionDto> = session.controller.state.value.replay
+        ?.takeIf { it.state?.identity == state.identity }
+        ?.eventPages?.flatMap { it.transactions }.orEmpty()
 
     /**
      * 往後一步時開始攤牌的手牌。

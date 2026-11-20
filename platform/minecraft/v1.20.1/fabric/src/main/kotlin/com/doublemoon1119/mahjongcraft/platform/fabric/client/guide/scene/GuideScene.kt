@@ -19,6 +19,7 @@ import kotlin.uuid.Uuid
  * @property figures 場景中的角色。
  * @property entities 場景中用原版繪製器畫出的生物，例如牌譜回放中的玩家與第三方角色。
  * @property tiles 場景中的麻將牌。
+ * @property winEffects 場景中的胡牌特效。
  * @property view 觀看場景的斜上方視角。
  * @property focus 縮放、置中與顯示的範圍，範圍外的部分不顯示；`null` 時以所有方塊、角色與牌為準，整個場景都顯示。
  * @property frame 只決定縮放與置中的範圍，範圍外的部分照樣顯示，例如只框住牌桌而地板延伸到畫面外；
@@ -32,6 +33,7 @@ internal data class GuideScene(
     val figures: List<GuideSceneFigure>,
     val entities: List<GuideSceneEntity> = emptyList(),
     val tiles: List<GuideSceneTile>,
+    val winEffects: List<GuideSceneWinEffect> = emptyList(),
     val view: GuideSceneView,
     val focus: GuideSceneBox? = null,
     val frame: GuideSceneBox? = null,
@@ -103,6 +105,23 @@ internal data class GuideSceneEntity(
     val guard: GuideSceneRenderGuard? = null,
     val swingProgress: Float = 0f,
     val alpha: Float = 1f,
+)
+
+/**
+ * 場景中的一個胡牌特效，畫法與對局中打在胡牌張上的特效相同。
+ *
+ * @property x 胡牌張牌底中心的 X 座標。
+ * @property y 胡牌張牌底的 Y 座標。
+ * @property z 胡牌張牌底中心的 Z 座標。
+ * @property elapsedTicks 從特效開始經過的 tick，可以有小數；不在特效長度內時不畫。
+ * @property seed 決定三叉戟角度與閃電形狀的隨機種子。
+ */
+internal data class GuideSceneWinEffect(
+    val x: Double,
+    val y: Double,
+    val z: Double,
+    val elapsedTicks: Double,
+    val seed: Long,
 )
 
 /** 包住場景中一個實體繪製工作的隔離方式。 */

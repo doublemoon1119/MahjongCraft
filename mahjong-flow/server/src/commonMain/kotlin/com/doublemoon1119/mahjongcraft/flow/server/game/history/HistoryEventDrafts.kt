@@ -75,3 +75,11 @@ fun winSettlementHistoryDetails(request: WinSettlementPresentationRequest): List
         hand = HistoryWinningHand(winner.standingTileIds, winner.winningTileId),
     )
 }
+
+/**
+ * 胡牌 request 的和牌張；一炮多響的贏家共用同一張。
+ *
+ * @param request 已建立的胡牌 request。
+ * @return 和牌張；沒有和牌張時為 null。
+ */
+fun winSettlementWinningTileId(request: WinSettlementPresentationRequest): Uuid? = request.winners.firstNotNullOfOrNull { it.winningTileId }

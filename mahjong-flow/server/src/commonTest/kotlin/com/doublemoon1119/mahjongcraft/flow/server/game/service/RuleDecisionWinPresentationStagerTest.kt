@@ -120,6 +120,8 @@ class RuleDecisionWinPresentationStagerTest {
         assertEquals(winner.id, details.playerId)
         assertEquals(winnerPresentation.detailFields, details.detailFields)
         assertNull(details.hand)
+        // 不攤牌時不記手牌，但仍記下和牌張，回放才能把胡牌特效打在它上面。
+        assertEquals(winningFlowerId, fact.winningTileId)
 
         val revealed = assertIs<HistoryFact.WinSettled>(
             value = stager.historyDraft(

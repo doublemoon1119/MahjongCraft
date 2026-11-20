@@ -38,7 +38,7 @@ internal data class HistoryReplayVisibilityContext(
 }
 
 /**
- * 牌譜回放的可見性子頁：分「人物」「遊戲面板」「桌上物件」三段，每列左邊是名稱、右邊是選擇器，改了立即生效；
+ * 牌譜回放的可見性子頁：分「人物」「遊戲面板」「桌上物件」「特效」四段，每列左邊是名稱、右邊是選擇器，改了立即生效；
  * 底部是「恢復預設值」與「完成」。視角所在那一家的人物與玩家資訊固定隱藏並停用。
  *
  * @property session 此畫面所屬的共用瀏覽 session。
@@ -62,6 +62,8 @@ internal class HistoryReplayVisibilityScreen(
         context.seats.forEach { add(VisibilityRow.PlayerInfo(it)) }
         add(VisibilityRow.Heading(MinecraftHistoryScreenKeys.REPLAY_VISIBILITY_TABLE_PROPS))
         add(VisibilityRow.TableProps)
+        add(VisibilityRow.Heading(MinecraftHistoryScreenKeys.REPLAY_VISIBILITY_EFFECTS))
+        add(VisibilityRow.WinEffect)
     }
 
     /** 各列的選擇器；標題列沒有。 */
@@ -165,6 +167,7 @@ internal class HistoryReplayVisibilityScreen(
         is VisibilityRow.PlayerInfo -> shownOrHidden(!isViewed(row.seat) && visibility.playerInfo(row.seat.initialSeat))
         VisibilityRow.RoundInfo -> shownOrHidden(visibility.roundInfo)
         VisibilityRow.TableProps -> shownOrHidden(visibility.tableProps)
+        VisibilityRow.WinEffect -> shownOrHidden(visibility.winEffect)
         is VisibilityRow.Heading -> error("Heading rows have no selector")
     }
 
@@ -181,6 +184,7 @@ internal class HistoryReplayVisibilityScreen(
             is VisibilityRow.PlayerInfo -> visibility.setPlayerInfo(row.seat.initialSeat, shown)
             VisibilityRow.RoundInfo -> visibility.roundInfo = shown
             VisibilityRow.TableProps -> visibility.tableProps = shown
+            VisibilityRow.WinEffect -> visibility.winEffect = shown
             is VisibilityRow.Heading -> Unit
         }
     }
@@ -205,6 +209,7 @@ internal class HistoryReplayVisibilityScreen(
         is VisibilityRow.PlayerInfo -> Text.translatable(MinecraftHistoryScreenKeys.REPLAY_VISIBILITY_PLAYER_INFO, row.seat.label)
         VisibilityRow.RoundInfo -> Text.translatable(MinecraftHistoryScreenKeys.REPLAY_VISIBILITY_ROUND_INFO)
         VisibilityRow.TableProps -> Text.translatable(MinecraftHistoryScreenKeys.REPLAY_VISIBILITY_TABLE_PROPS)
+        VisibilityRow.WinEffect -> Text.translatable(MinecraftHistoryScreenKeys.REPLAY_VISIBILITY_WIN_EFFECT)
     }
 
     /**
@@ -219,6 +224,7 @@ internal class HistoryReplayVisibilityScreen(
             is VisibilityRow.PlayerInfo -> MinecraftHistoryScreenKeys.REPLAY_VISIBILITY_PLAYER_INFO_DESCRIPTION
             VisibilityRow.RoundInfo -> MinecraftHistoryScreenKeys.REPLAY_VISIBILITY_ROUND_INFO_DESCRIPTION
             VisibilityRow.TableProps -> MinecraftHistoryScreenKeys.REPLAY_VISIBILITY_TABLE_PROPS_DESCRIPTION
+            VisibilityRow.WinEffect -> MinecraftHistoryScreenKeys.REPLAY_VISIBILITY_WIN_EFFECT_DESCRIPTION
             is VisibilityRow.Heading -> error("Heading rows have no selector")
         }
         val reason = lockedReason(row)
@@ -394,6 +400,9 @@ internal class HistoryReplayVisibilityScreen(
 
         /** 桌上物件。 */
         data object TableProps : VisibilityRow
+
+        /** 胡牌特效。 */
+        data object WinEffect : VisibilityRow
     }
 
     /** 版面與顏色。 */

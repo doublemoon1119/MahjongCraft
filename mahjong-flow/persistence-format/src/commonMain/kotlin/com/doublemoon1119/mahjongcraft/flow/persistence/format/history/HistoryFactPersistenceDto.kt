@@ -189,6 +189,7 @@ sealed interface HistoryFactPersistenceDto {
      * @property outcomeId 和牌結算原因識別碼。
      * @property winDetails 各贏家在結算時已確定的明細。
      * @property responsiblePlayerIds 放銃或其他責任玩家的 UUID 字串。
+     * @property winningTileId 和牌張 UUID 字串；沒有和牌張時為 null。
      */
     @Serializable
     @SerialName(HistoryFactTypeKeys.WIN_SETTLED)
@@ -196,6 +197,7 @@ sealed interface HistoryFactPersistenceDto {
         val outcomeId: String,
         val winDetails: List<HistoryWinDetailsPersistenceDto>,
         val responsiblePlayerIds: List<String>,
+        val winningTileId: String?,
     ) : HistoryFactPersistenceDto
 
     /**

@@ -52,8 +52,7 @@ class FabricMahjongPlayerAreaPresenter(
      *    [MahjongTileTableLayout.handPlacement]，
      *    全部共用同一個絕對定位時刻，定位後等待 [MahjongTileTableLayout.WIN_POST_REORDER_DELAY_TICKS] 再開始倒牌流程。
      * 2. 自摸（[MahjongWinCelebrationPresentation.isTsumo]）才有的中繼步驟：自摸牌
-     *    （[MahjongWinCelebrationPresentation.winningTileId]，此時已經是 [MahjongWinCelebrationPresentation.organizedStandingTileIds] 之
-     *    一）單獨倒下（[TileAnimationSteps.scheduleLaydown]），姿態從立牌轉平放牌面朝上，位置不變。
+     *    （[MahjongWinCelebrationPresentation.winningTileId]，步驟 1 已放到手牌右側的摸牌位）單獨倒下（[TileAnimationSteps.scheduleLaydown]），姿態從立牌轉平放牌面朝上，位置不變。
      * 3. 其餘立牌（自摸時排除自摸牌，榮和／搶槓時是全部）在共用的絕對時刻一起倒下——自摸要等自摸牌
      *    倒下播完、再等 [MahjongTileTableLayout.WIN_PRE_HAND_LAYDOWN_DELAY_TICKS]；榮和／搶槓省略自摸牌
      *    那一步，直接在整理到位及短暫停頓後等待同一個常數。

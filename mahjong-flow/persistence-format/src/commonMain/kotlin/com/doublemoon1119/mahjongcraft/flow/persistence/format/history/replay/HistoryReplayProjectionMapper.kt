@@ -495,6 +495,7 @@ internal object HistoryReplayProjectionMapper {
             classification = RoundCompletionClassification.WIN,
             responsibleSeats = array(value[ReplaySourceKeys.RESPONSIBLE_PLAYER_IDS] ?: JsonArray(emptyList())).map { context.seat(integer(it)) },
             winnerDetails = details,
+            winningTile = value[ReplaySourceKeys.WINNING_TILE]?.takeUnless { it == JsonNull }?.let { ref(it, context) },
         )
     }
 

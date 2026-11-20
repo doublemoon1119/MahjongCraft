@@ -17,6 +17,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.service.WinCelebrationCu
 import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
 import com.doublemoon1119.mahjongcraft.flow.server.game.history.acceptedActionHistoryDraft
 import com.doublemoon1119.mahjongcraft.flow.server.game.history.winSettlementHistoryDetails
+import com.doublemoon1119.mahjongcraft.flow.server.game.history.winSettlementWinningTileId
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.RuleContractViolationException
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepository
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameSnapshotSynchronizer
@@ -96,6 +97,7 @@ class DeclareTsumoUseCase(
                             fact = HistoryFact.WinSettled(
                                 outcomeId = BuiltInRoundOutcomeIds.TSUMO,
                                 winDetails = winSettlementHistoryDetails(settled.settlement),
+                                winningTileId = winSettlementWinningTileId(settled.settlement),
                             ),
                         ),
                     )
