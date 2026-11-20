@@ -291,7 +291,8 @@ object MahjongPlayerAreaLayout {
      * @return 局部座標。
      */
     private fun cornerTile(slot: PlannedSlot, alongOffsetFromCorner: Double, depthOffset: Double): PlannedTile {
-        val halfDepth = if (slot.isSideways) MahjongTileDimensions.TILE_WIDTH / 2.0 else MahjongTileDimensions.TILE_HEIGHT / 2.0
+        // 疊在橫放牌旁的加槓牌同樣橫放，前後只佔牌的寬度。
+        val halfDepth = if (slot.isSideways || slot.isAddedBeside) MahjongTileDimensions.TILE_WIDTH / 2.0 else MahjongTileDimensions.TILE_HEIGHT / 2.0
         return PlannedTile(
             tileId = slot.tileId,
             x = MahjongTileTableLayout.MELD_AREA_CORNER_OFFSET - alongOffsetFromCorner,
