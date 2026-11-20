@@ -1,6 +1,8 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.client.history
 
 import com.doublemoon1119.mahjongcraft.logic.tile.component.TilePose
+import com.doublemoon1119.mahjongcraft.logic.tile.component.TileRegion
+import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongBotArmAnimation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.animation.AnimationStep
 import com.doublemoon1119.mahjongcraft.platform.minecraft.history.HistoryReplayArrangement
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.ArrangedTile
@@ -9,9 +11,12 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.PlannedTileMotion
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TableStepMotionPlanner
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileAnimationSample
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileAnimationSampler
+import kotlin.uuid.Uuid
 
 /**
  * 回放往後一步時牌的動畫：比較前後兩步的擺放，用對局中同一套規劃與動畫步驟播放，時間以遊戲 tick 計。
+ *
+ * 有牌從手上打進牌河的玩家在動畫開頭揮一次手，與遊戲中打牌時相同。
  *
  * @property roundNumber 局序號。
  * @property toStep 動畫結束時的步數。
@@ -27,7 +32,10 @@ internal class HistoryReplayAnimation(
     /** 有動作的牌依序播放的步驟，依局內牌索引。 */
     private val tileSteps: Map<Int, List<AnimationStep<TilePose>>>
 
-    /** 整步播完需要的 tick。 */
+    /** 這一步打出牌、要揮手的玩家，以回放擺牌的玩家識別碼表示。 */
+    private val swingingPlayers: Set<Uuid>
+
+    /** 整步播完需要的 tick；有人揮手時至少等揮手做完。 */
     val durationTicks: Double
 
     /** 已經播放的 tick。 */
@@ -41,7 +49,24 @@ internal class HistoryReplayAnimation(
         )
         val indexById = after.keys.associateBy(HistoryReplayArrangement::tileId)
         tileSteps = PlannedTileMotionSteps.forStep(motions, startGameTime = 0L).entries.associate { (id, steps) -> indexById.getValue(id) to steps }
-        durationTicks = TableStepMotionPlanner.stepDurationTicks(motions).toDouble()
+        swingingPlayers = after.entries.mapNotNull { (index, tile) ->
+            val from = before[index]?.row ?: return@mapNotNull null
+            tile.row.ownerId.takeIf { from.region in HAND_REGIONS && tile.row.region == TileRegion.DISCARD && from.ownerId == it }
+        }.toSet()
+        val motionTicks = TableStepMotionPlanner.stepDurationTicks(motions).toDouble()
+        durationTicks = if (swingingPlayers.isEmpty()) motionTicks else maxOf(motionTicks, MahjongBotArmAnimation.DURATION_TICKS.toDouble())
+    }
+
+    /**
+     * 某一家目前的揮手進度。
+     *
+     * @param initialSeatIndex 玩家的初始座位。
+     * @return 揮手中為 0 到 1 之間的進度；沒有揮手或已經做完時為 0。
+     */
+    fun swingProgress(initialSeatIndex: Int): Float {
+        if (HistoryReplayArrangement.playerId(initialSeatIndex) !in swingingPlayers) return 0f
+        val progress = (elapsedTicks / MahjongBotArmAnimation.DURATION_TICKS).toFloat()
+        return if (progress < 1f) progress else 0f
     }
 
     /** 是否已經播完。 */
@@ -81,4 +106,10 @@ internal class HistoryReplayAnimation(
      * @return 位置與朝向。
      */
     private fun AnimationStep.Teleport.placement(): MahjongTileWallPlacement = MahjongTileWallPlacement(x, y, z, yaw)
+
+    /** 判斷打牌所用的區域。 */
+    private companion object {
+        /** 打牌時牌原本所在的區域：手牌與剛摸進的牌。 */
+        val HAND_REGIONS: Set<TileRegion> = setOf(TileRegion.HAND, TileRegion.DRAWN)
+    }
 }

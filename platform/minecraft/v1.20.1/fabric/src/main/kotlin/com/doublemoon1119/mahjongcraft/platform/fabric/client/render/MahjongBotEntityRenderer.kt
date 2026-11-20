@@ -81,6 +81,7 @@ class MahjongBotEntityRenderer(
      * @param vertexConsumers 頂點緩衝。
      * @param light 光照。
      * @param seated 是否以坐姿繪製。
+     * @param swingProgress 揮手進度，0 到 1；預設依實體收到的揮手通知計算。
      */
     fun renderPose(
         entity: MahjongBotEntity,
@@ -90,10 +91,10 @@ class MahjongBotEntityRenderer(
         vertexConsumers: VertexConsumerProvider,
         light: Int,
         seated: Boolean,
+        swingProgress: Float = entity.swingProgress(tickDelta),
     ) {
         if (entity.isInvisible) return
         val hipY = if (seated) MahjongStoolSeatGeometry.SEATED_BOTTOM_HEIGHT.toFloat() else LEG_LENGTH
-        val swingProgress = entity.swingProgress(tickDelta)
         val swing = MahjongBotArmAnimation.swingDegrees(swingProgress)
         val phase = (entity.uuid.hashCode().toLong() and IDLE_PHASE_MASK).toDouble() / IDLE_PHASE_MASK * (2.0 * PI)
         val idleTime = (entity.age + tickDelta).toDouble() * IDLE_SPEED + phase

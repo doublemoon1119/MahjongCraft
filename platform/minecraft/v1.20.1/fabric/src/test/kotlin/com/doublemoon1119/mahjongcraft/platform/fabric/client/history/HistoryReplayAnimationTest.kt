@@ -2,6 +2,7 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.client.history
 
 import com.doublemoon1119.mahjongcraft.logic.tile.component.TilePose
 import com.doublemoon1119.mahjongcraft.logic.tile.component.TileRegion
+import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongBotArmAnimation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.animation.MahjongAnimationSounds
 import com.doublemoon1119.mahjongcraft.platform.minecraft.history.HistoryReplayArrangement
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.ArrangedTile
@@ -28,13 +29,46 @@ class HistoryReplayAnimationTest {
         val middle = animation.samples()
         val lastSounds = animation.advance(animation.durationTicks)
 
-        assertEquals(MahjongTileTableLayout.DISCARD_FLIGHT_DURATION_TICKS.toDouble(), animation.durationTicks)
+        // 這一步打出牌的玩家會揮手，動畫至少持續到揮手做完。
+        assertEquals(maxOf(MahjongTileTableLayout.DISCARD_FLIGHT_DURATION_TICKS, MahjongBotArmAnimation.DURATION_TICKS).toDouble(), animation.durationTicks)
         assertEquals(setOf(0), middle.keys)
         assertNotEquals(RIVER, middle.getValue(0).placement)
         assertTrue(firstSounds.isEmpty())
         assertEquals(listOf(MahjongAnimationSounds.TILE_DISCARD_LAND), lastSounds.map { it.soundId })
         assertTrue(animation.finished)
         assertEquals(RIVER, animation.samples().getValue(0).placement)
+    }
+
+    /** 打出牌的玩家在動畫開頭揮一次手，做完回到 0；其他玩家不揮手。 */
+    @Test
+    fun `the discarding player swings once at the start`() {
+        val discarded = tile(index = 0, region = TileRegion.HAND, placement = HAND, pose = TilePose.UPRIGHT)
+        val landed = tile(index = 0, region = TileRegion.DISCARD, placement = RIVER, pose = TilePose.FACE_UP)
+        val animation = HistoryReplayAnimation(roundNumber = 1, toStep = 3, before = mapOf(0 to discarded), after = mapOf(0 to landed))
+
+        assertEquals(0f, animation.swingProgress(0))
+        animation.advance(MahjongBotArmAnimation.DURATION_TICKS / 2.0)
+        assertEquals(0.5f, animation.swingProgress(0))
+        assertEquals(0f, animation.swingProgress(1))
+        animation.advance(MahjongBotArmAnimation.DURATION_TICKS.toDouble())
+        assertEquals(0f, animation.swingProgress(0))
+    }
+
+    /** 牌不是從手上進牌河時沒有人揮手，例如摸牌。 */
+    @Test
+    fun `a draw has no swing`() {
+        val wall = ArrangedTile(
+            tileId = HistoryReplayArrangement.tileId(0),
+            row = TileRowKey(TileRegion.WALL, null, null),
+            orderInRow = 0,
+            placement = RIVER,
+            pose = TilePose.FACE_DOWN,
+        )
+        val drawn = tile(index = 0, region = TileRegion.DRAWN, placement = HAND, pose = TilePose.UPRIGHT)
+        val animation = HistoryReplayAnimation(roundNumber = 1, toStep = 2, before = mapOf(0 to wall), after = mapOf(0 to drawn))
+
+        animation.advance(1.0)
+        assertEquals(0f, animation.swingProgress(0))
     }
 
     /** 前後擺放相同時沒有動作，動畫立刻結束。 */

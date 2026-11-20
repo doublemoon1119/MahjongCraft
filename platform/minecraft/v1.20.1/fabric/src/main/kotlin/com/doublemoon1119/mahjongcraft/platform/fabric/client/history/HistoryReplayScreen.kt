@@ -539,7 +539,7 @@ internal class HistoryReplayScreen(
      * 坐在桌邊的各家，都坐在自己的凳子上面向桌子。
      *
      * AI 照該場保存的角色外觀畫出：內建機器人用保存的牌面；其他角色用該角色的預覽模型，模型還沒建立、沒有對應的預覽能力或
-     * 繪製失敗時改畫內建機器人。真人玩家以玩家模型畫出。
+     * 繪製失敗時改畫內建機器人。真人玩家以玩家模型畫出。這一步打出牌的玩家在牌的動畫開頭揮一次手。
      *
      * @param state 目前牌面。
      * @return 內建機器人外觀的角色與以原版繪製器畫出的模型。
@@ -560,6 +560,7 @@ internal class HistoryReplayScreen(
         val entities = mutableListOf<GuideSceneEntity>()
         state.players.forEachIndexed { index, player ->
             val seat = seats.getOrNull(index) ?: return@forEachIndexed
+            val swing = animation?.swingProgress(player.initialSeatIndex) ?: 0f
             val playerId = state.identity.players.firstOrNull { it.initialSeatIndex == player.initialSeatIndex }?.playerId
             val participant = playerId?.let { id -> summary?.participants?.firstOrNull { it.playerId.equals(id, ignoreCase = true) } }
             val uuid = playerId?.let { runCatching { Uuid.parse(it) }.getOrNull() }
@@ -575,14 +576,15 @@ internal class HistoryReplayScreen(
                         yaw = seat.yaw,
                         seated = true,
                         guard = CharacterModelGuard(session.characterPreviews, character),
+                        swingProgress = swing,
                     )
                 } else {
                     val face = HistoryReplayCharacterAppearance.botFace(character?.definition)
-                    figures += GuideSceneFigure(faceAssetKey = face, x = seat.x, y = feetY, z = seat.z, yaw = seat.yaw, seated = true)
+                    figures += GuideSceneFigure(faceAssetKey = face, x = seat.x, y = feetY, z = seat.z, yaw = seat.yaw, seated = true, swingProgress = swing)
                 }
             } else {
                 val entity = playerEntities.getOrPut(playerId) { playerEntity(world, uuid) }
-                entities += GuideSceneEntity(entity = entity, x = seat.x, y = feetY, z = seat.z, yaw = seat.yaw, seated = true)
+                entities += GuideSceneEntity(entity = entity, x = seat.x, y = feetY, z = seat.z, yaw = seat.yaw, seated = true, swingProgress = swing)
             }
         }
         return figures to entities

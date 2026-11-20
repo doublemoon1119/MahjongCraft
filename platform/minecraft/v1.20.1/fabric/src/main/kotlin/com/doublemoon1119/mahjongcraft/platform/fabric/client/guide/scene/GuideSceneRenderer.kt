@@ -30,6 +30,7 @@ import net.minecraft.client.render.model.json.ModelTransformationMode
 import net.minecraft.client.world.ClientWorld
 import net.minecraft.entity.Entity
 import net.minecraft.entity.LivingEntity
+import net.minecraft.util.Hand
 import net.minecraft.util.math.RotationAxis
 import org.joml.Matrix4f
 import org.joml.Quaternionf
@@ -265,6 +266,7 @@ internal class GuideSceneRenderer : AutoCloseable {
                 vertexConsumers = consumers,
                 light = FULL_LIGHT,
                 seated = figure.seated,
+                swingProgress = figure.swingProgress,
             )
             matrices.pop()
         }
@@ -543,6 +545,9 @@ internal class GuideSceneRenderer : AutoCloseable {
                 entity.prevBodyYaw = figure.yaw
                 entity.headYaw = figure.yaw
                 entity.prevHeadYaw = figure.yaw
+                entity.preferredHand = Hand.MAIN_HAND
+                entity.handSwingProgress = figure.swingProgress
+                entity.lastHandSwingProgress = figure.swingProgress
             }
             entity.yaw = figure.yaw
             entity.prevYaw = figure.yaw
@@ -551,6 +556,10 @@ internal class GuideSceneRenderer : AutoCloseable {
             dispatcher.render(entity, figure.x, figure.y, figure.z, figure.yaw, 1f, context.matrices, consumers, FULL_LIGHT)
         } finally {
             entity.stopRiding()
+            if (entity is LivingEntity) {
+                entity.handSwingProgress = 0f
+                entity.lastHandSwingProgress = 0f
+            }
         }
     }
 

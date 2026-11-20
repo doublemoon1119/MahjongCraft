@@ -61,6 +61,7 @@ internal data class GuideSceneBlock(
  * @property yaw Minecraft 慣例的水平朝向（0 度朝南）。
  * @property seated 是否以坐姿繪製。
  * @property region 滑鼠指著時說明的區塊；不說明時為 null。
+ * @property swingProgress 揮手進度，0 到 1；0 表示沒有揮手。
  */
 internal data class GuideSceneFigure(
     val faceAssetKey: String,
@@ -70,6 +71,7 @@ internal data class GuideSceneFigure(
     val yaw: Float,
     val seated: Boolean,
     val region: GuideSceneRegion? = null,
+    val swingProgress: Float = 0f,
 )
 
 /**
@@ -85,6 +87,7 @@ internal data class GuideSceneFigure(
  * @property yaw Minecraft 慣例的水平朝向（0 度朝南），身體與頭都朝這個方向。
  * @property seated 是否以坐姿繪製。
  * @property guard 包住這個實體繪製工作的隔離方式，例如第三方模型繪製失敗時改用備援；不需要時為 null。
+ * @property swingProgress 生物主手的揮手進度，0 到 1；0 表示沒有揮手，不是生物時不使用。
  */
 internal data class GuideSceneEntity(
     val entity: Entity,
@@ -94,6 +97,7 @@ internal data class GuideSceneEntity(
     val yaw: Float,
     val seated: Boolean,
     val guard: GuideSceneRenderGuard? = null,
+    val swingProgress: Float = 0f,
 )
 
 /** 包住場景中一個實體繪製工作的隔離方式。 */
