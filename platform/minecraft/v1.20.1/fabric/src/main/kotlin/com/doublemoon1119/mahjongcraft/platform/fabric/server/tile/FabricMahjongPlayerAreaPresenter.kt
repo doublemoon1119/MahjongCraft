@@ -12,6 +12,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.server.FabricServerHolder
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.entity.FabricEntitySpawnGateway
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TablePropPresenter
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.HandRevealSteps
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongInitialDealPresentation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongPlayerAreaPresentationResult
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongPlayerAreaPresenter
@@ -114,7 +115,7 @@ class FabricMahjongPlayerAreaPresenter(
         // 整條慶祝動畫鏈都由這個起點推導；接在呼叫端指定的時間軸之後，讓同一條時間軸上的連續胡牌
         // 演出依序播放而不重疊（預設 0 等同 world.time，維持既有行為）。
         val reorderStartGameTime = maxOf(world.time, presentation.earliestStartGameTime)
-        val reorderEndGameTime = reorderStartGameTime + MahjongTileTableLayout.WIN_POST_REORDER_DELAY_TICKS
+        val timings = HandRevealSteps.winTimings(presentation.isTsumo)
 
         val claimedStandingTiles = linkedMapOf<Uuid, MahjongTileEntity>()
         standingHandTileIds.forEachIndexed { orderIndex, tileId ->
@@ -160,21 +161,16 @@ class FabricMahjongPlayerAreaPresenter(
         }
 
         val handLaydownEndGameTime = winningTile?.let {
-            if (presentation.isTsumo) {
-                val winTileLaydownStartGameTime = reorderEndGameTime
-                val winTileLaydownEndGameTime = winTileLaydownStartGameTime + MahjongTileTableLayout.WIN_LAYDOWN_DURATION_TICKS
-                TileAnimationSteps.scheduleLaydown(winningTile, winTileLaydownStartGameTime, playGroupSound = true)
-
-                val restLaydownStartGameTime = winTileLaydownEndGameTime + MahjongTileTableLayout.WIN_PRE_HAND_LAYDOWN_DELAY_TICKS
-                val restTiles = (claimedStandingTiles - presentation.winningTileId).values.toList()
-                TileAnimationSteps.scheduleGroupLaydown(restTiles, restLaydownStartGameTime)
-                restLaydownStartGameTime + MahjongTileTableLayout.WIN_LAYDOWN_DURATION_TICKS
-            } else {
-                val handLaydownStartGameTime = reorderEndGameTime + MahjongTileTableLayout.WIN_PRE_HAND_LAYDOWN_DELAY_TICKS
-                val handTiles = claimedStandingTiles.values.toList()
-                TileAnimationSteps.scheduleGroupLaydown(handTiles, handLaydownStartGameTime)
-                handLaydownStartGameTime + MahjongTileTableLayout.WIN_LAYDOWN_DURATION_TICKS
+            timings.winningTileLaydown?.let { winningTileLaydown ->
+                TileAnimationSteps.scheduleLaydown(winningTile, reorderStartGameTime + winningTileLaydown, playGroupSound = true)
             }
+            val handTiles = if (presentation.isTsumo) {
+                (claimedStandingTiles - presentation.winningTileId).values.toList()
+            } else {
+                claimedStandingTiles.values.toList()
+            }
+            TileAnimationSteps.scheduleGroupLaydown(handTiles, reorderStartGameTime + timings.handLaydown)
+            reorderStartGameTime + timings.end
         }
 
         table.blockEntity.markDirty()

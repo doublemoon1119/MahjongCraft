@@ -17,6 +17,23 @@ import kotlin.uuid.Uuid
 /** 建立規則中立的流局結算資料。 */
 object ExhaustiveDrawSettlementPresentationRequestFactory {
     /**
+     * 流局時公開手牌的玩家：本局沒有先胡牌退場、規則判定可以公開，而且手牌中已經有公開的牌；其他玩家的手牌蓋起來。
+     * 對局中的流局演出與牌譜回放都依這份結果決定誰攤牌。
+     *
+     * @param state 流局結算後的權威桌況。
+     * @param revealedHands 規則判定可公開的手牌結算資料。
+     * @return 公開手牌的玩家識別碼。
+     */
+    fun revealedHandPlayerIds(state: TableState, revealedHands: List<RevealedHandSettlement>): Set<Uuid> {
+        val revealable = revealedHands.mapTo(mutableSetOf()) { it.playerId }
+        return state.players.filter { player ->
+            player.id !in state.finishedPlayerIds &&
+                player.id in revealable &&
+                player.hand.allTiles.any { it.id in state.publicTileEvidenceIds }
+        }.mapTo(mutableSetOf()) { it.id }
+    }
+
+    /**
      * 依結算前後桌況及規則公開結果建立 request。
      *
      * [tenpaiPlayerIds] 為 null 代表途中流局，不顯示一般荒牌流局的聽牌／未聽狀態；[aiPlayerIds] 為由 AI 操控的玩家。
@@ -42,6 +59,7 @@ object ExhaustiveDrawSettlementPresentationRequestFactory {
         val previousRanks = roundRanksByPlayer(previousState, module)
         val currentRanks = roundRanksByPlayer(currentState, module)
         val revealedByPlayer = revealedHands.associateBy { it.playerId }
+        val revealingPlayerIds = revealedHandPlayerIds(currentState, revealedHands)
 
         return ExhaustiveDrawSettlementPresentationRequest(
             reasonId = reason.id,
@@ -58,8 +76,7 @@ object ExhaustiveDrawSettlementPresentationRequestFactory {
                 // 他根本沒有參與這次流局。
                 val isFinished = player.id in currentState.finishedPlayerIds
                 val handDisclosure = when {
-                    isFinished -> ExhaustiveDrawHandDisclosure.CONCEALED
-                    reveal == null || revealedTileIds.isEmpty() -> ExhaustiveDrawHandDisclosure.CONCEALED
+                    player.id !in revealingPlayerIds -> ExhaustiveDrawHandDisclosure.CONCEALED
                     tenpaiPlayerIds != null && player.id in tenpaiPlayerIds -> ExhaustiveDrawHandDisclosure.TENPAI
                     else -> ExhaustiveDrawHandDisclosure.PROOF
                 }

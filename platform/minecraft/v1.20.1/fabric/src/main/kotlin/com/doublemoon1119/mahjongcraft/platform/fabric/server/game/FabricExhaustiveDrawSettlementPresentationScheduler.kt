@@ -11,6 +11,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.PersistentTa
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.tile.TileAnimationSteps
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.table.MahjongTableFacing
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongTableSeatLayout
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.HandRevealSteps
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileTableLayout
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileWallPlacement
 import net.minecraft.server.world.ServerWorld
@@ -112,18 +113,18 @@ class FabricExhaustiveDrawSettlementPresentationScheduler(
                         tileIndex = handTileIds.size - 1 - orderIndex,
                         handShift = handShift,
                     )
-                    TileAnimationSteps.scheduleInstantReorder(tile, sortedPlacement, startGameTime + HAND_REORDER_START_TICK)
+                    TileAnimationSteps.scheduleInstantReorder(tile, sortedPlacement, startGameTime + HandRevealSteps.DRAW_REORDER_TICK)
                 }
                 if (!revealsHand) {
                     TileAnimationSteps.scheduleConceal(
                         tile = tile,
-                        startGameTime = startGameTime + HAND_LAYDOWN_START_TICK,
+                        startGameTime = startGameTime + HandRevealSteps.DRAW_REVEAL_TICK,
                         playGroupSound = orderIndex == tileIds.size / 2,
                     )
                 }
                 presentedTiles += tile
             }
-            if (revealsHand) TileAnimationSteps.scheduleGroupLaydown(presentedTiles, startGameTime + HAND_LAYDOWN_START_TICK)
+            if (revealsHand) TileAnimationSteps.scheduleGroupLaydown(presentedTiles, startGameTime + HandRevealSteps.DRAW_REVEAL_TICK)
         }
         missingPresentationTilesText(missingBySeat)?.let { missing ->
             logger.warn("Exhaustive draw settlement on table {} skips hand tiles whose entities are missing ({})", tableId, missing)
@@ -133,8 +134,6 @@ class FabricExhaustiveDrawSettlementPresentationScheduler(
     }
 
     private companion object {
-        const val HAND_LAYDOWN_START_TICK = 30L
-        const val HAND_REORDER_START_TICK = 5L
         const val STAGE_HEIGHT_OFFSET = 1.4
     }
 }

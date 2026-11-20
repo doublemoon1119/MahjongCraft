@@ -6,6 +6,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongTileEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongTilePose
 import com.doublemoon1119.mahjongcraft.platform.minecraft.animation.AnimationStep
 import com.doublemoon1119.mahjongcraft.platform.minecraft.animation.MahjongAnimationSounds
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.HandRevealSteps
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileTableLayout
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileWallPlacement
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.PlannedTileMotion
@@ -191,6 +192,13 @@ internal object TileAnimationSteps {
         endPoseRotationDegrees = pose.rotationDegrees,
     )
 
+    /** 把實體使用的姿態轉成共用的牌姿態。 */
+    private fun MahjongTilePose.toSharedPose(): TilePose = when (this) {
+        MahjongTilePose.STANDING -> TilePose.UPRIGHT
+        MahjongTilePose.FACE_UP -> TilePose.FACE_UP
+        MahjongTilePose.FACE_DOWN -> TilePose.FACE_DOWN
+    }
+
     /** 把共用的牌姿態轉成實體使用的姿態。 */
     private fun TilePose.toTilePose(): MahjongTilePose = when (this) {
         TilePose.UPRIGHT -> MahjongTilePose.STANDING
@@ -228,10 +236,7 @@ internal object TileAnimationSteps {
     fun instantReorderSteps(
         finalPlacement: MahjongTileWallPlacement,
         startGameTime: Long,
-    ): List<AnimationStep<MahjongTilePose>> = listOf(
-        AnimationStep.WaitUntil(startGameTime),
-        AnimationStep.Teleport(finalPlacement.x, finalPlacement.y, finalPlacement.z, finalPlacement.yaw),
-    )
+    ): List<AnimationStep<MahjongTilePose>> = HandRevealSteps.reorder(finalPlacement, startGameTime).map { it.toEntityStep() }
 
     /**
      * 「倒牌」的單張牌動畫（胡牌慶祝演出）：姿態從佇列最後排定的姿態轉平放牌面朝上，位置完全不動，只有姿態旋轉角
@@ -264,10 +269,7 @@ internal object TileAnimationSteps {
      * @param startPoses 各張牌既有動畫結束後的姿態，依呈現順序排列。
      * @return 負責播放聲音的牌在清單中的位置；全部已平放時為 null。
      */
-    internal fun groupLaydownSoundIndex(startPoses: List<MahjongTilePose>): Int? {
-        val turning = startPoses.indices.filter { startPoses[it] != MahjongTilePose.FACE_UP }
-        return turning.getOrNull(turning.size / 2)
-    }
+    internal fun groupLaydownSoundIndex(startPoses: List<MahjongTilePose>): Int? = HandRevealSteps.groupSoundIndex(startPoses.map { it.toSharedPose() })
 
     /**
      * 從已排定的姿態建立倒牌步驟；已平放時不增加旋轉或翻牌聲。
@@ -281,29 +283,7 @@ internal object TileAnimationSteps {
         startPose: MahjongTilePose,
         startGameTime: Long,
         playGroupSound: Boolean,
-    ): List<AnimationStep<MahjongTilePose>> {
-        if (startPose == MahjongTilePose.FACE_UP) return emptyList()
-        return buildList {
-            if (playGroupSound) {
-                add(handTurnSound(startGameTime + MahjongTileTableLayout.WIN_LAYDOWN_DURATION_TICKS))
-            }
-            addAll(
-                elements = listOf(
-                    AnimationStep.WaitUntil(startGameTime),
-                    AnimationStep.Custom(MahjongTilePose.FACE_UP),
-                    AnimationStep.PlayMotion(
-                        durationTicks = MahjongTileTableLayout.WIN_LAYDOWN_DURATION_TICKS,
-                        arcHeight = 0.0,
-                        startOffsetX = 0.0,
-                        startOffsetY = 0.0,
-                        startOffsetZ = 0.0,
-                        startPoseRotationDegrees = startPose.rotationDegrees,
-                        endPoseRotationDegrees = MahjongTilePose.FACE_UP.rotationDegrees,
-                    ),
-                ),
-            )
-        }
-    }
+    ): List<AnimationStep<MahjongTilePose>> = HandRevealSteps.laydown(startPose.toSharedPose(), startGameTime, playGroupSound).map { it.toEntityStep() }
 
     /**
      * 流局時將未公開手牌由目前姿態平滑蓋成牌背朝上。姿態與動畫步驟一起寫入 entity NBT，重新載入
@@ -314,30 +294,7 @@ internal object TileAnimationSteps {
      * @param playGroupSound 是否為整組播放一次翻牌聲。
      */
     fun scheduleConceal(tile: MahjongTileEntity, startGameTime: Long, playGroupSound: Boolean = false) {
-        val startPose = tile.tilePose
-        tile.enqueueAll(
-            steps = buildList {
-                if (playGroupSound) {
-                    add(handTurnSound(startGameTime + MahjongTileTableLayout.WIN_LAYDOWN_DURATION_TICKS))
-                }
-                addAll(
-                    elements = listOf(
-                        AnimationStep.WaitUntil(startGameTime),
-                        AnimationStep.Custom(MahjongTilePose.FACE_DOWN),
-                        AnimationStep.PlayMotion(
-                            durationTicks = MahjongTileTableLayout.WIN_LAYDOWN_DURATION_TICKS,
-                            arcHeight = 0.0,
-                            startOffsetX = 0.0,
-                            startOffsetY = 0.0,
-                            startOffsetZ = 0.0,
-                            startPoseRotationDegrees = startPose.rotationDegrees,
-                            endPoseRotationDegrees = MahjongTilePose.FACE_DOWN.rotationDegrees,
-                            easeRotation = true,
-                        ),
-                    ),
-                )
-            },
-        )
+        tile.enqueueAll(HandRevealSteps.conceal(tile.tilePose.toSharedPose(), startGameTime, playGroupSound).map { it.toEntityStep() })
     }
 
     /** 開局發牌動畫起飛階段的相對高度，比照 `FabricMahjongTileWallPresenter.WALL_DROP_HEIGHT`。 */
