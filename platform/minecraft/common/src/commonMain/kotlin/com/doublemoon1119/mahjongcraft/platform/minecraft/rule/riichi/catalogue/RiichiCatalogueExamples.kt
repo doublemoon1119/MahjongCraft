@@ -358,31 +358,31 @@ private val p8 = number(Tile.Suit.Dot, 8)
 /** 範例用筒9牌。 */
 private val p9 = number(Tile.Suit.Dot, 9)
 
-/** 範例用條1牌。 */
+/** 範例用索1牌。 */
 private val s1 = number(Tile.Suit.Bamboo, 1)
 
-/** 範例用條2牌。 */
+/** 範例用索2牌。 */
 private val s2 = number(Tile.Suit.Bamboo, 2)
 
-/** 範例用條3牌。 */
+/** 範例用索3牌。 */
 private val s3 = number(Tile.Suit.Bamboo, 3)
 
-/** 範例用條4牌。 */
+/** 範例用索4牌。 */
 private val s4 = number(Tile.Suit.Bamboo, 4)
 
-/** 範例用條5牌。 */
+/** 範例用索5牌。 */
 private val s5 = number(Tile.Suit.Bamboo, 5)
 
-/** 範例用條6牌。 */
+/** 範例用索6牌。 */
 private val s6 = number(Tile.Suit.Bamboo, 6)
 
-/** 範例用條7牌。 */
+/** 範例用索7牌。 */
 private val s7 = number(Tile.Suit.Bamboo, 7)
 
-/** 範例用條8牌。 */
+/** 範例用索8牌。 */
 private val s8 = number(Tile.Suit.Bamboo, 8)
 
-/** 範例用條9牌。 */
+/** 範例用索9牌。 */
 private val s9 = number(Tile.Suit.Bamboo, 9)
 
 /** 範例用東牌。 */
@@ -412,5 +412,5 @@ private val m5Red: TileFaceView = redFive(Tile.Suit.Character)
 /** 範例用赤五筒牌。 */
 private val p5Red: TileFaceView = redFive(Tile.Suit.Dot)
 
-/** 範例用赤五條牌。 */
+/** 範例用赤五索牌。 */
 private val s5Red: TileFaceView = redFive(Tile.Suit.Bamboo)

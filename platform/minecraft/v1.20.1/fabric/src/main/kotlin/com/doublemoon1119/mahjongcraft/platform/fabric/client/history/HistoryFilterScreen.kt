@@ -348,8 +348,8 @@ internal class HistoryFilterScreen(
         return selector
     }
 
-    /** 建立包含不限值在內的排序規則選項；空字串代表不限。 */
-    private fun ruleOptions(): List<String> = listOf("") + session.ruleNames.registrationKeys.sorted()
+    /** 建立規則選項：「不限」在前，其餘依規則名稱的登記順序排列，與房間設定頁一致；空字串代表不限。 */
+    private fun ruleOptions(): List<String> = listOf("") + session.ruleNames.registrationKeys
 
     /**
      * 將規則篩選值轉成顯示文字。

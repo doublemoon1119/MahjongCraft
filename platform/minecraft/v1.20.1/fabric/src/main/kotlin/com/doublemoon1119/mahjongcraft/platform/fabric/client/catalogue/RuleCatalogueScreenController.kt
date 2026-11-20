@@ -2,6 +2,7 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.client.catalogue
 
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.MahjongTileFaceRenderer
+import com.doublemoon1119.mahjongcraft.platform.minecraft.catalogue.BuiltInRuleCatalogueCategoryIds
 import com.doublemoon1119.mahjongcraft.platform.minecraft.catalogue.RuleCatalogueBrowseContext
 import com.doublemoon1119.mahjongcraft.platform.minecraft.catalogue.RuleCatalogueBrowser
 import com.doublemoon1119.mahjongcraft.platform.minecraft.catalogue.RuleCatalogueRegistry
@@ -53,9 +54,21 @@ class RuleCatalogueScreenController internal constructor(
      *
      * @param returnScreen 開啟規則一覽的畫面。
      */
-    fun openFrom(returnScreen: Screen) {
+    fun openFrom(returnScreen: Screen) = openFrom(returnScreen = returnScreen, categoryId = null)
+
+    /**
+     * 立即開啟一般說明的規則一覽並選擇指定分類，返回時回到 [returnScreen]。
+     *
+     * @param returnScreen 開啟規則一覽的畫面。
+     * @param categoryId 開啟時要選擇的分類，例如 [BuiltInRuleCatalogueCategoryIds.BASICS]；所選規則沒有這個分類或為 null 時選擇全部分類。
+     */
+    fun openFrom(returnScreen: Screen, categoryId: String?) {
         MinecraftClient.getInstance().setScreen(
-            createScreen(context = RuleCatalogueBrowseContext(), exit = ReturnRuleCatalogueToScreen(returnScreen)),
+            createScreen(
+                context = RuleCatalogueBrowseContext(),
+                exit = ReturnRuleCatalogueToScreen(returnScreen),
+                initialCategoryId = categoryId,
+            ),
         )
     }
 
@@ -64,9 +77,14 @@ class RuleCatalogueScreenController internal constructor(
      *
      * @param context 開啟時的規則與設定來源。
      * @param exit 關閉後回到哪裡，以及開啟來源是否仍然有效。
+     * @param initialCategoryId 開啟時要選擇的分類；null 時選擇全部分類。
      * @return 規則一覽畫面。
      */
-    internal fun createScreen(context: RuleCatalogueBrowseContext, exit: RuleCatalogueExit): Screen {
+    internal fun createScreen(
+        context: RuleCatalogueBrowseContext,
+        exit: RuleCatalogueExit,
+        initialCategoryId: String? = null,
+    ): Screen {
         val client = MinecraftClient.getInstance()
         return RuleCatalogueScreen(
             browser = RuleCatalogueBrowser(
@@ -74,6 +92,7 @@ class RuleCatalogueScreenController internal constructor(
                 ruleNames = ruleNames,
                 knownRuleIds = moduleRegistry.getAllModuleIds(),
                 context = context,
+                initialCategoryId = initialCategoryId,
             ),
             presenter = RuleCataloguePresenter(
                 translate = ::currentLanguageTranslation,

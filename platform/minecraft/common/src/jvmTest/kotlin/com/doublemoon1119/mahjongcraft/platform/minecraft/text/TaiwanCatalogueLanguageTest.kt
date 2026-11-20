@@ -27,7 +27,12 @@ class TaiwanCatalogueLanguageTest {
                         label.descriptionTranslationKey?.let(::add)
                     }
                     entry.unavailableReasonTranslationKey?.let(::add)
-                    entry.examples.forEach { it.descriptionTranslationKey?.let(::add) }
+                    entry.adjustableSettingNameKeys.forEach(::add)
+                    entry.examples.forEach { example ->
+                        example.descriptionTranslationKey?.let(::add)
+                        example.titleTranslationKey?.let(::add)
+                        example.groups.forEach { group -> group.labelTranslationKey?.let(::add) }
+                    }
                 }
             }
         }

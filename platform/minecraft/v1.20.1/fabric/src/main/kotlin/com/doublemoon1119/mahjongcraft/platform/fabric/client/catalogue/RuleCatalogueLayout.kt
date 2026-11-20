@@ -8,7 +8,6 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.ScrollbarLayou
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.TabStripLayout
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.VerticalScrollbar
 import com.doublemoon1119.mahjongcraft.platform.minecraft.catalogue.RuleCatalogueTileGroup
-import com.doublemoon1119.mahjongcraft.platform.minecraft.catalogue.RuleCatalogueTileGroupRole
 
 /**
  * 目錄畫面使用的矩形邊界。
@@ -263,15 +262,15 @@ internal data class RuleCatalogueTilePlacement(
 )
 
 /**
- * 一段同角色牌組的標題位置，座標相對於牌例區左上角。
+ * 一段同標題牌組的標題位置，座標相對於牌例區左上角。
  *
- * @property role 牌組角色。
+ * @property key 標題文字的翻譯鍵。
  * @property x 左界。
  * @property y 上界。
  * @property maxWidth 標題可用寬度。
  */
 internal data class RuleCatalogueTileHeading(
-    val role: RuleCatalogueTileGroupRole,
+    val key: String,
     val x: Int,
     val y: Int,
     val maxWidth: Int,
@@ -293,7 +292,7 @@ internal data class RuleCatalogueTileLayoutResult(
 /**
  * 將範例牌組依序由左往右排列：放不下的牌組整組移到下一列，只有單組本身超過可用寬度時才在組內換列。
  *
- * 相鄰且角色相同的牌組共用一個標題，組與組之間仍保留間距；角色不同的牌組各有標題。
+ * 相鄰且標題相同的牌組共用一個標題，組與組之間仍保留間距；標題不同的牌組各有標題。
  */
 internal object RuleCatalogueTileLayout {
     /** 牌面寬度。 */
@@ -305,10 +304,10 @@ internal object RuleCatalogueTileLayout {
     /** 同組相鄰牌面的間距。 */
     const val TILE_GAP: Int = 1
 
-    /** 同角色相鄰牌組的間距。 */
+    /** 同標題相鄰牌組的間距。 */
     const val GROUP_GAP: Int = 5
 
-    /** 不同角色牌組的間距。 */
+    /** 不同標題牌組的間距。 */
     const val SECTION_GAP: Int = 10
 
     /** 牌組標題所佔高度。 */
@@ -322,21 +321,25 @@ internal object RuleCatalogueTileLayout {
      *
      * @param groups 依顯示順序排列的牌組。
      * @param width 牌例區可用寬度。
-     * @param headingWidth 取得某角色標題文字的實際寬度。
+     * @param headingKey 取得牌組標題的翻譯鍵。
+     * @param headingWidth 取得標題文字的實際寬度，參數為標題翻譯鍵。
      * @return 牌面位置、標題位置與所需高度。
      */
     fun measure(
         groups: List<RuleCatalogueTileGroup>,
         width: Int,
-        headingWidth: (RuleCatalogueTileGroupRole) -> Int,
+        headingKey: (RuleCatalogueTileGroup) -> String,
+        headingWidth: (String) -> Int,
     ): RuleCatalogueTileLayoutResult {
         val builder = RowBuilder(maxWidth = width.coerceAtLeast(TILE_WIDTH))
+        val keys = groups.map(headingKey)
         groups.forEachIndexed { index, group ->
-            val startsSection = index == 0 || groups[index - 1].role != group.role
+            val startsSection = index == 0 || keys[index - 1] != keys[index]
             val tilesWidth = group.tiles.size * TILE_WIDTH + (group.tiles.size - 1) * TILE_GAP
-            val heading = if (startsSection) headingWidth(group.role).coerceAtLeast(0) else 0
+            val heading = if (startsSection) headingWidth(keys[index]).coerceAtLeast(0) else 0
             builder.place(
                 group = group,
+                headingKey = keys[index],
                 reservedWidth = maxOf(tilesWidth, heading),
                 leadingGap = if (startsSection) SECTION_GAP else GROUP_GAP,
                 startsSection = startsSection,
@@ -360,8 +363,8 @@ internal object RuleCatalogueTileLayout {
         /** 目前列的牌面水平位置。 */
         private val rowTiles = mutableListOf<Pair<TileFaceView, Int>>()
 
-        /** 目前列的標題水平位置與可用寬度。 */
-        private val rowHeadings = mutableListOf<Triple<RuleCatalogueTileGroupRole, Int, Int>>()
+        /** 目前列的標題翻譯鍵、水平位置與可用寬度。 */
+        private val rowHeadings = mutableListOf<Triple<String, Int, Int>>()
 
         /** 目前列的上界。 */
         private var rowTop = 0
@@ -373,19 +376,21 @@ internal object RuleCatalogueTileLayout {
          * 放入一個牌組。
          *
          * @param group 牌組。
+         * @param headingKey 牌組標題的翻譯鍵。
          * @param reservedWidth 牌組連同標題需要的寬度。
          * @param leadingGap 與同列前一組之間的間距。
-         * @param startsSection 是否為一段同角色牌組的第一組。
+         * @param startsSection 是否為一段同標題牌組的第一組。
          */
         fun place(
             group: RuleCatalogueTileGroup,
+            headingKey: String,
             reservedWidth: Int,
             leadingGap: Int,
             startsSection: Boolean,
         ) {
             if (x > 0 && x + leadingGap + reservedWidth > maxWidth) closeRow()
             val left = if (x == 0) 0 else x + leadingGap
-            if (startsSection) rowHeadings += Triple(group.role, left, (maxWidth - left).coerceAtLeast(0))
+            if (startsSection) rowHeadings += Triple(headingKey, left, (maxWidth - left).coerceAtLeast(0))
             if (left + reservedWidth <= maxWidth) {
                 group.tiles.forEachIndexed { index, tile -> rowTiles += tile to left + index * (TILE_WIDTH + TILE_GAP) }
                 x = left + reservedWidth
@@ -407,7 +412,7 @@ internal object RuleCatalogueTileLayout {
         fun closeRow() {
             if (rowTiles.isEmpty() && rowHeadings.isEmpty()) return
             val headingHeight = if (rowHeadings.isEmpty()) 0 else HEADING_HEIGHT
-            rowHeadings.forEach { (role, left, width) -> headings += RuleCatalogueTileHeading(role, left, rowTop, width) }
+            rowHeadings.forEach { (key, left, width) -> headings += RuleCatalogueTileHeading(key, left, rowTop, width) }
             rowTiles.forEach { (tile, left) ->
                 placements += RuleCatalogueTilePlacement(
                     tile = tile,

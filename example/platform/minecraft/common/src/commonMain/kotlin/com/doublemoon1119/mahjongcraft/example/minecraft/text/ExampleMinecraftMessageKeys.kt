@@ -110,6 +110,60 @@ object ExampleMinecraftMessageKeys {
     /** 規則目錄條目詳細說明。 */
     const val CATALOGUE_ENTRY_DESCRIPTION = "mahjongcraft_example.catalogue.entry.pairing.description"
 
+    /** 「基本玩法」：牌與手牌。 */
+    const val BASICS_TILES = "mahjongcraft_example.catalogue.basics.tiles"
+
+    /** 「基本玩法」：牌與手牌的說明。 */
+    const val BASICS_TILES_DESCRIPTION = "mahjongcraft_example.catalogue.basics.tiles.description"
+
+    /** 「基本玩法」：和牌條件。 */
+    const val BASICS_WINNING = "mahjongcraft_example.catalogue.basics.winning"
+
+    /** 「基本玩法」：和牌條件的說明。 */
+    const val BASICS_WINNING_DESCRIPTION = "mahjongcraft_example.catalogue.basics.winning.description"
+
+    /** 「基本玩法」：開局前交換牌。 */
+    const val BASICS_EXCHANGE = "mahjongcraft_example.catalogue.basics.exchange"
+
+    /** 「基本玩法」：開局前交換牌的說明。 */
+    const val BASICS_EXCHANGE_DESCRIPTION = "mahjongcraft_example.catalogue.basics.exchange.description"
+
+    /** 開局前交換牌沒有開啟時的不適用原因。 */
+    const val BASICS_EXCHANGE_UNAVAILABLE = "mahjongcraft_example.catalogue.basics.exchange.unavailable"
+
+    /** 「基本玩法」：加分牌與付款。 */
+    const val BASICS_BONUS = "mahjongcraft_example.catalogue.basics.bonus"
+
+    /** 「基本玩法」：加分牌與付款的說明。 */
+    const val BASICS_BONUS_DESCRIPTION = "mahjongcraft_example.catalogue.basics.bonus.description"
+
+    /** 「基本玩法」：攤牌。 */
+    const val BASICS_REVEAL = "mahjongcraft_example.catalogue.basics.reveal"
+
+    /** 「基本玩法」：攤牌的說明。 */
+    const val BASICS_REVEAL_DESCRIPTION = "mahjongcraft_example.catalogue.basics.reveal.description"
+
+    /** 「基本玩法」：流局與對局結束。 */
+    const val BASICS_DRAW = "mahjongcraft_example.catalogue.basics.draw"
+
+    /** 「基本玩法」：流局與對局結束的說明。 */
+    const val BASICS_DRAW_DESCRIPTION = "mahjongcraft_example.catalogue.basics.draw.description"
+
+    /** 「基本玩法」：公開牌面。 */
+    const val BASICS_PUBLIC_FACES = "mahjongcraft_example.catalogue.basics.public_faces"
+
+    /** 「基本玩法」：公開牌面的說明。 */
+    const val BASICS_PUBLIC_FACES_DESCRIPTION = "mahjongcraft_example.catalogue.basics.public_faces.description"
+
+    /** 公開牌面沒有開啟時的不適用原因。 */
+    const val BASICS_PUBLIC_FACES_UNAVAILABLE = "mahjongcraft_example.catalogue.basics.public_faces.unavailable"
+
+    /** 範例小標題：兩個對子。 */
+    const val BASICS_EXAMPLE_TWO_PAIRS = "mahjongcraft_example.catalogue.basics.example.two_pairs"
+
+    /** 兩個對子範例的說明。 */
+    const val BASICS_EXAMPLE_TWO_PAIRS_NOTE = "mahjongcraft_example.catalogue.basics.example.two_pairs.note"
+
     /** 付款點數詳情欄位名稱。 */
     const val PAYMENT_PER_PLAYER = "mahjongcraft_example.settlement.payment_per_player"
 

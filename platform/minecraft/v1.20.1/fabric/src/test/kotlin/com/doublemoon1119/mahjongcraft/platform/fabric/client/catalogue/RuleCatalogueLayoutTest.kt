@@ -151,10 +151,11 @@ class RuleCatalogueLayoutTest {
                 group(RuleCatalogueTileGroupRole.WINNING_TILE, 1),
             ),
             width = 400,
+            headingKey = ::groupHeadingKey,
             headingWidth = ::headingWidth,
         )
 
-        assertEquals(listOf(RuleCatalogueTileGroupRole.HAND, RuleCatalogueTileGroupRole.WINNING_TILE), result.headings.map { it.role })
+        assertEquals(listOf(roleKey(RuleCatalogueTileGroupRole.HAND), roleKey(RuleCatalogueTileGroupRole.WINNING_TILE)), result.headings.map { it.key })
         assertEquals(1, result.placements.map { it.y }.distinct().size)
         assertEquals(RuleCatalogueTileLayout.HEADING_HEIGHT + RuleCatalogueTileLayout.TILE_HEIGHT, result.height)
         val handGap = result.placements[3].x - (result.placements[2].x + RuleCatalogueTileLayout.TILE_WIDTH)
@@ -175,7 +176,7 @@ class RuleCatalogueLayoutTest {
             group(RuleCatalogueTileGroupRole.HAND, 2),
         )
         val width = 180
-        val result = RuleCatalogueTileLayout.measure(groups = groups, width = width, headingWidth = ::headingWidth)
+        val result = RuleCatalogueTileLayout.measure(groups = groups, width = width, headingKey = ::groupHeadingKey, headingWidth = ::headingWidth)
 
         assertEquals(18, result.placements.size)
         assertEquals(groups.size, result.headings.size)
@@ -200,6 +201,7 @@ class RuleCatalogueLayoutTest {
                 RuleCatalogueTileGroup(RuleCatalogueTileGroupRole.WINNING_TILE, listOf(tiles.last())),
             ),
             width = width,
+            headingKey = ::groupHeadingKey,
             headingWidth = ::headingWidth,
         )
 
@@ -216,6 +218,7 @@ class RuleCatalogueLayoutTest {
         val result = RuleCatalogueTileLayout.measure(
             groups = listOf(group(RuleCatalogueTileGroupRole.WINNING_TILE, 1), group(RuleCatalogueTileGroupRole.HAND, 2)),
             width = 400,
+            headingKey = ::groupHeadingKey,
             headingWidth = { 60 },
         )
 
@@ -272,13 +275,31 @@ class RuleCatalogueLayoutTest {
         tiles = List(count) { TileFaceView(Tile.Numeric(Tile.Suit.Character, it % 9 + 1)) },
     )
 
+    /** 相鄰牌組標籤相同時共用一個標題，自訂標籤不同時各有標題，即使角色相同。 */
+    @Test
+    fun `custom labels decide which groups share a heading`() {
+        val tiles = listOf(TileFaceView(Tile.Numeric(Tile.Suit.Character, 3)))
+        val result = RuleCatalogueTileLayout.measure(
+            groups = listOf(
+                RuleCatalogueTileGroup(RuleCatalogueTileGroupRole.ILLUSTRATION, tiles, labelTranslationKey = "test.called"),
+                RuleCatalogueTileGroup(RuleCatalogueTileGroupRole.ILLUSTRATION, tiles, labelTranslationKey = "test.forbidden"),
+                RuleCatalogueTileGroup(RuleCatalogueTileGroupRole.ILLUSTRATION, tiles, labelTranslationKey = "test.forbidden"),
+            ),
+            width = 400,
+            headingKey = ::groupHeadingKey,
+            headingWidth = ::headingWidth,
+        )
+
+        assertEquals(listOf("test.called", "test.forbidden"), result.headings.map { it.key })
+    }
+
     /**
      * 測試用標題寬度，短於任何一張牌。
      *
-     * @param role 牌組角色。
+     * @param key 標題翻譯鍵。
      * @return 標題寬度。
      */
-    private fun headingWidth(role: RuleCatalogueTileGroupRole): Int = 12
+    private fun headingWidth(key: String): Int = 12
 
     /** 測試門檻。 */
     private companion object {

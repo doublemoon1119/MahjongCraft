@@ -11,24 +11,29 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.RuleModuleDisplay
  *
  * @property catalogues 已完成註冊的目錄來源。
  * @property ruleNames 規則名稱翻譯鍵來源。
- * @param knownRuleIds 設定呈現等來源的已知規則 ID；建構時建立獨立快照。
+ * @param knownRuleIds 設定呈現等來源的已知規則 ID，依登記順序排列；建構時建立獨立快照。
  * @property context 開啟時的原規則與設定來源。
+ * @param initialCategoryId 開啟時要選擇的分類，例如 [BuiltInRuleCatalogueCategoryIds.BASICS]；所選目錄沒有這個分類或為 null 時選擇全部分類。
  */
 class RuleCatalogueBrowser(
     private val catalogues: RuleCatalogueRegistry,
     private val ruleNames: RuleModuleDisplayNameRegistry,
     knownRuleIds: Collection<String>,
     private val context: RuleCatalogueBrowseContext = RuleCatalogueBrowseContext(),
+    initialCategoryId: String? = null,
 ) {
     /** 已登記目錄的獨立 ID 快照，供一般說明的初始選擇使用。 */
     private val catalogueRuleIds = catalogues.registrationKeys.toSet()
 
-    /** 合併來源與原規則後的固定選項，按穩定 ID 排列。 */
+    /**
+     * 合併來源與原規則後的固定選項，依登記順序排列，與房間設定頁的規則選單一致：先是已知規則，
+     * 接著是只提供目錄的規則，最後是不在兩者之中的原規則。內建規則先於第三方規則登記，因此排在最前面。
+     */
     private val ruleIds = buildList {
         addAll(knownRuleIds)
         addAll(catalogueRuleIds)
         context.ruleModuleId?.let(::add)
-    }.distinct().sorted().also { ids ->
+    }.distinct().also { ids ->
         ids.forEach { id -> NamespacedId.requireValid(id) { "Invalid catalogue rule option ID: $id" } }
     }
 
@@ -38,17 +43,18 @@ class RuleCatalogueBrowser(
     /** 是否明確選擇一般說明，不以原設定缺失暗示預設設定。 */
     private var generalExplanation = context.source == RuleCatalogueConfigSource.GENERAL
 
-    /** null 表示全部分類。 */
-    private var selectedCategoryId: String? = null
-
     /** 搜尋輸入的原文字。 */
     private var searchText: String = ""
 
     /** 僅在規則或設定來源變更時解析，不隨文字搜尋反覆呼叫 provider。 */
     private var resolution: RuleCatalogueResolution? = resolveSelection()
 
+    /** null 表示全部分類。 */
+    private var selectedCategoryId: String? = initialCategoryId?.takeIf { it in categoryIds(resolution) }
+
     /**
-     * 切換至已知規則，重設分類但保留搜尋；切回原規則時恢復原設定。
+     * 切換至已知規則並保留搜尋；切回原規則時恢復原設定。
+     * 新目錄也有目前的分類時保留分類，例如各規則共用的「基本玩法」，否則改為全部分類。
      *
      * @param ruleModuleId 已知選項的規則 ID。
      * @return 是否變更所選規則；未知或相同選項為 false。
@@ -59,13 +65,13 @@ class RuleCatalogueBrowser(
         val nextResolution = resolveSelection(ruleModuleId, nextGeneral)
         selectedRuleId = ruleModuleId
         generalExplanation = nextGeneral
-        selectedCategoryId = null
+        selectedCategoryId = selectedCategoryId?.takeIf { it in categoryIds(nextResolution) }
         resolution = nextResolution
         return true
     }
 
     /**
-     * 明確改為所選規則的一般說明，可在原設定缺失或不支援時使用。
+     * 明確改為所選規則的一般說明，可在原設定缺失或不支援時使用；新目錄也有目前的分類時保留分類。
      *
      * @return 是否變更設定來源。
      */
@@ -73,13 +79,13 @@ class RuleCatalogueBrowser(
         if (selectedRuleId == null || generalExplanation) return false
         val nextResolution = resolveSelection(selectedRuleId, true)
         generalExplanation = true
-        selectedCategoryId = null
+        selectedCategoryId = selectedCategoryId?.takeIf { it in categoryIds(nextResolution) }
         resolution = nextResolution
         return true
     }
 
     /**
-     * 在原規則上恢復開啟時的設定來源，包括無法取得設定的狀態。
+     * 在原規則上恢復開啟時的設定來源，包括無法取得設定的狀態；新目錄也有目前的分類時保留分類。
      *
      * @return 是否恢復原設定來源；非原規則或一般說明入口為 false。
      */
@@ -87,7 +93,7 @@ class RuleCatalogueBrowser(
         if (selectedRuleId != context.ruleModuleId || context.source == RuleCatalogueConfigSource.GENERAL || !generalExplanation) return false
         val nextResolution = resolveSelection(selectedRuleId, false)
         generalExplanation = false
-        selectedCategoryId = null
+        selectedCategoryId = selectedCategoryId?.takeIf { it in categoryIds(nextResolution) }
         resolution = nextResolution
         return true
     }
@@ -128,7 +134,7 @@ class RuleCatalogueBrowser(
         val catalogue = (resolution as? RuleCatalogueResolution.Available)?.catalogue
         val query = searchText.trim()
         val entries = catalogue?.entries.orEmpty().filter { entry ->
-            (selectedCategoryId == null || selectedCategoryId in entry.categoryIds) &&
+            inSelectedCategory(entry, searching = query.isNotEmpty()) &&
                 (query.isEmpty() || searchableTexts(entry, translate).any { it.contains(query, ignoreCase = true) })
         }
         val status = when {
@@ -153,6 +159,28 @@ class RuleCatalogueBrowser(
             entries = entries,
         )
     }
+
+    /**
+     * 判斷條目是否屬於目前選擇的分類。
+     *
+     * 全部分類平常不列只屬於「基本玩法」的條目，因為它們另有自己的頁籤；搜尋時仍包含，讓玩家搜得到基本玩法的說明。
+     *
+     * @param entry 條目。
+     * @param searching 是否有搜尋文字。
+     * @return 屬於目前分類時為 true。
+     */
+    private fun inSelectedCategory(entry: RuleCatalogueEntry, searching: Boolean): Boolean {
+        val category = selectedCategoryId ?: return searching || entry.categoryIds.any { it != BuiltInRuleCatalogueCategoryIds.BASICS }
+        return category in entry.categoryIds
+    }
+
+    /**
+     * 解析結果中目錄的分類代號。
+     *
+     * @param resolution 目錄解析結果。
+     * @return 分類代號；沒有可用目錄時為空集合。
+     */
+    private fun categoryIds(resolution: RuleCatalogueResolution?): Set<String> = (resolution as? RuleCatalogueResolution.Available)?.catalogue?.categories.orEmpty().mapTo(mutableSetOf()) { it.id }
 
     /**
      * 解析所選設定，原設定缺失時不呼叫預設來源。
