@@ -16,6 +16,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.RoundOutcom
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.WinSettlementPresentationTemplateRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.RuleWordingRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TableTileLayoutProfileRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileDisplayNameRegistry
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 import net.minecraft.client.MinecraftClient
@@ -46,6 +47,7 @@ import kotlin.uuid.Uuid
  * @property ruleCatalogue 從規則設定頁開啟規則一覽。
  * @property archiveStatus 保存狀態查詢。
  * @property dispatcher 客戶端主執行緒排程。
+ * @property tileLayoutProfiles 規則的桌面牌位配置，供牌桌場景擺牌。
  */
 class HistoryScreenController internal constructor(
     private val transport: HistoryQueryTransport,
@@ -68,6 +70,7 @@ class HistoryScreenController internal constructor(
     private val ruleCatalogue: RuleCatalogueScreenController,
     private val archiveStatus: HistoryArchiveStatusTransport,
     private val dispatcher: ClientThreadCoroutineDispatcher,
+    private val tileLayoutProfiles: TableTileLayoutProfileRegistry,
 ) {
     /** 同一 client 連線共用的歷史查詢送出 gate。 */
     private val requestGate = ClientHistoryRequestGate(
@@ -167,6 +170,7 @@ class HistoryScreenController internal constructor(
             tileAssets = tileAssets,
             tileDisplayNames = tileDisplayNames,
             ruleCatalogue = ruleCatalogue,
+            tileLayoutProfiles = tileLayoutProfiles,
             dispatcher = dispatcher,
             parent = request.parent,
             initialMatchId = request.matchId,

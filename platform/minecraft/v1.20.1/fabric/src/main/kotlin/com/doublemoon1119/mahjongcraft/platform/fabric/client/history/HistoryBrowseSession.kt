@@ -10,6 +10,7 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkDtoRegistrie
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkJson
 import com.doublemoon1119.mahjongcraft.logic.base.TileOrder
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
+import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.catalogue.RuleCatalogueScreenController
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.concurrency.ClientThreadCoroutineDispatcher
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.MahjongTileFaceRenderer
@@ -22,6 +23,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.WinSettleme
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.BuiltInMinecraftTileAppearances
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileSetAppearanceDefinition
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TableTileLayoutProfileRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileDisplayNameRegistry
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
@@ -49,6 +51,7 @@ import kotlin.time.TimeSource
  * @property tileAssets 牌種與 Minecraft 素材的映射來源。
  * @property tileDisplayNames 牌面提示中牌名的查詢來源。
  * @property ruleCatalogue 從規則設定頁開啟規則一覽。
+ * @property tileLayoutProfiles 規則的桌面牌位配置，供牌桌場景擺牌。
  * @param dispatcher 客戶端主執行緒排程。
  * @property parent 關閉後返回的原畫面，指令入口為 null。
  * @param initialMatchId 聊天入口指定的對局；null 表示一般列表。
@@ -71,6 +74,7 @@ internal class HistoryBrowseSession(
     val tileAssets: MinecraftTileAssetRegistry,
     val tileDisplayNames: TileDisplayNameRegistry,
     private val ruleCatalogue: RuleCatalogueScreenController,
+    val tileLayoutProfiles: TableTileLayoutProfileRegistry,
     dispatcher: ClientThreadCoroutineDispatcher,
     private val parent: Screen?,
     initialMatchId: String?,
@@ -152,6 +156,17 @@ internal class HistoryBrowseSession(
      * @return 是否可切換理牌順序。
      */
     fun canSortHand(state: HistoryRoundStateDto): Boolean = handOrder(state) != null
+
+    /**
+     * 取得這場對局的規則模組，供牌桌場景擺牌。
+     *
+     * @param state 目前歷史桌況。
+     * @return 規則模組；規則設定還沒讀到或無法解碼時為 null。
+     */
+    fun ruleModule(state: HistoryRoundStateDto): MahjongRuleModule<*>? {
+        val config = controller.state.value.ruleSettings?.takeIf { it.matchId == state.identity.matchId }?.config ?: return null
+        return runCatching { moduleRegistry.getModule(config.toDomain(networkRegistries).ruleConfig) }.getOrNull()
+    }
 
     /**
      * 快取並解析同場規則牌序，不套用其他對局設定。
